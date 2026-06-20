@@ -1,0 +1,19 @@
+{
+  "name": "g-maiden",
+  "version": "0.1.0",
+  "description": "G-Maiden: Real-time Dota 2 AI companion via Tauri + React",
+  "type": "module",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "dev": "pnpm tauri dev",
+    "build": "pnpm -C src build && pnpm tauri build",
+    "build:fe": "pnpm -C src build",
+    "build:rust": "pnpm tauri build",
+    "preview": "pnpm -C src preview",
+    "lint": "pnpm -C src lint"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.0.0"
+  }
+}

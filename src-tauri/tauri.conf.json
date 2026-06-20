@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "G-Maiden",
+  "version": "0.1.0",
+  "identifier": "com.gmaiden.app",
+  "build": {
+    "beforeBuildCommand": "pnpm -C ../src build",
+    "beforeDevCommand": "pnpm -C ../src dev",
+    "devUrl": "http://localhost:5173",
+    "frontendDist": "gen/web"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "G-Maiden",
+        "label": "main",
+        "width": 1200,
+        "height": 720,
+        "minWidth": 400,
+        "minHeight": 300,
+        "resizable": true,
+        "fullscreen": false,
+        "visible": true
+      }
+    ],
+    "security": {
+      "csp": "default-src 'self' http://localhost:* ws://localhost:*; script-src 'self' 'wasm-unsafe-eval' http://localhost:*; img-src 'self' data:; media-src 'self' data:"
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": ["msi", "nsis"],
+    "icon": ["icons/icon.ico"]
+  }
+}
