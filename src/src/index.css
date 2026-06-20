@@ -6,8 +6,9 @@ html,
 body {
   margin: 0;
   padding: 0;
-  background: #08090c;
+  background: transparent; /* overlay: ให้เกม/เดสก์ท็อปทะลุ; panel มี bg ของตัวเอง */
   color: #e0e0e0;
+  overflow: hidden;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
     'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
     sans-serif;

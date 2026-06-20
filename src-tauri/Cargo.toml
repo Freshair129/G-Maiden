@@ -8,12 +8,12 @@ description = "G-Maiden Rust core — Dota 2 AI companion (latency-critical path
 name = "g-maiden"
 path = "src/main.rs"
 
-# Minimal foundation deps (G0.1). Later tasks add their own:
-# tokio/crossbeam (core), rusqlite (G6.1 G-Log), tracing (G0.4), etc.
 [dependencies]
 tauri      = { version = "2.0", features = [] }
 serde      = { version = "1", features = ["derive"] }
 serde_json = "1"
+tokio      = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
+axum       = "0.7"
 
 [build-dependencies]
 tauri-build = "2.0"
