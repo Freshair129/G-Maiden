@@ -4,8 +4,8 @@
   "version": "0.1.0",
   "identifier": "com.gmaiden.app",
   "build": {
-    "beforeBuildCommand": "pnpm -C ../src build",
-    "beforeDevCommand": "pnpm -C ../src dev",
+    "beforeBuildCommand": "pnpm -C src build",
+    "beforeDevCommand": "pnpm -C src dev",
     "devUrl": "http://localhost:5173",
     "frontendDist": "gen/web"
   },
