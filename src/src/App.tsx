@@ -58,6 +58,19 @@ const panel: React.CSSProperties = {
   fontFamily: '"Segoe UI", system-ui, sans-serif',
 }
 
+const dangerStyle: React.CSSProperties = {
+  background: 'rgba(58, 12, 16, 0.86)',
+  border: '1px solid rgba(255,123,133,0.6)',
+  borderRadius: 12,
+  color: '#ffd6da',
+  padding: '8px 20px',
+  fontWeight: 700,
+  fontSize: 14,
+  backdropFilter: 'blur(10px)',
+  WebkitBackdropFilter: 'blur(10px)',
+  fontFamily: '"Segoe UI", system-ui, sans-serif',
+}
+
 const Stat: React.FC<{ label: string; value: React.ReactNode; color?: string }> = ({ label, value, color }) => (
   <div style={{ textAlign: 'center', minWidth: 56 }}>
     <div style={{ fontSize: 18, fontWeight: 700, color: color ?? C.txt, lineHeight: 1.1 }}>{value}</div>
@@ -103,9 +116,16 @@ export const App: React.FC = () => {
   }
 
   const t = tick
+  const lowHp = t.alive && t.hp_percent > 0 && t.hp_percent <= 25
   return (
     <div style={wrap}>
-      <div style={{ ...panel, padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 22 }}>
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        {lowHp && (
+          <div className="gm-danger" style={dangerStyle}>
+            ⚠ HP เหลือ {t.hp_percent}% — ถอยก่อนค่ะเพื่อน!
+          </div>
+        )}
+        <div style={{ ...panel, padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 22 }}>
         {/* clock + score */}
         <div style={{ textAlign: 'center' }}>
           <div style={{ fontSize: 22, fontWeight: 700, color: C.ice, lineHeight: 1 }}>{fmtClock(t.clock_time)}</div>
@@ -142,6 +162,7 @@ export const App: React.FC = () => {
         <Stat label="Net Worth" value={t.net_worth.toLocaleString()} color={C.ice} />
         <Stat label="GPM" value={t.gpm} />
         <Stat label="XPM" value={t.xpm} />
+        </div>
       </div>
     </div>
   )

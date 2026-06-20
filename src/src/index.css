@@ -17,3 +17,11 @@ body {
 #root {
   min-height: 100vh;
 }
+
+@keyframes gm-pulse {
+  0%, 100% { opacity: 1; box-shadow: 0 0 18px rgba(255, 90, 100, 0.5); }
+  50% { opacity: 0.72; box-shadow: 0 0 30px rgba(255, 90, 100, 0.85); }
+}
+.gm-danger {
+  animation: gm-pulse 0.85s ease-in-out infinite;
+}
