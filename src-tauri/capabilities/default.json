@@ -1,8 +1,8 @@
 {
   "$schema": "../gen/schemas/desktop-schema.json",
   "identifier": "default",
-  "description": "Default capability for the G-Maiden overlay: core APIs + event listen (game-tick).",
-  "windows": ["main"],
+  "description": "Default capability for G-Maiden windows: core APIs + event listen/emit (game-tick, settings).",
+  "windows": ["control", "overlay"],
   "permissions": [
     "core:default",
     "core:event:default",

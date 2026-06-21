@@ -13,15 +13,28 @@
     "windows": [
       {
         "title": "G-Maiden",
-        "label": "main",
+        "label": "control",
+        "width": 960,
+        "height": 640,
+        "minWidth": 760,
+        "minHeight": 520,
+        "resizable": true,
+        "decorations": true,
+        "center": true,
+        "visible": true
+      },
+      {
+        "title": "G-Maiden Overlay",
+        "label": "overlay",
         "width": 1280,
         "height": 720,
         "transparent": true,
         "decorations": false,
         "alwaysOnTop": true,
         "shadow": false,
-        "skipTaskbar": false,
-        "resizable": true,
+        "skipTaskbar": true,
+        "focus": false,
+        "resizable": false,
         "fullscreen": false,
         "visible": true
       }
