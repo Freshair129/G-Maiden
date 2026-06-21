@@ -63,6 +63,7 @@ const EVENTS: &[&str] = &[
     "respawn",
     "manaLow",
     "revision",
+    "advice",
 ];
 
 #[tauri::command]
@@ -133,6 +134,25 @@ fn open_log_dir() {
     log::open_log_dir();
 }
 
+/// List archived match logs (newest first; excludes the currently-recording file).
+#[tauri::command]
+fn list_match_logs() -> Vec<log::MatchLog> {
+    log::list_matches()
+}
+
+/// Delete one archived match log (privacy control).
+#[tauri::command]
+fn delete_match_log(name: String) -> Result<(), String> {
+    log::delete_match(&name)
+}
+
+/// Wipe every archived match log (privacy reset). Currently-recording file
+/// is preserved so the active match survives.
+#[tauri::command]
+fn delete_all_match_logs() -> Result<u32, String> {
+    log::delete_all()
+}
+
 fn main() {
     // Alt+S — show/hide the overlay while in-game (works even when Dota 2 is focused).
     let toggle = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
@@ -164,6 +184,9 @@ fn main() {
             get_log_dir,
             current_match_path,
             open_log_dir,
+            list_match_logs,
+            delete_match_log,
+            delete_all_match_logs,
             request_advice
         ])
         .setup(move |app| {

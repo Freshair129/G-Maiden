@@ -109,6 +109,82 @@ pub fn note_tick(tick: &GameTick) {
     }
 }
 
+/// A single archived match log.
+#[derive(serde::Serialize, Clone)]
+pub struct MatchLog {
+    pub name: String,
+    pub size: u64,
+    pub modified_ms: u64,
+}
+
+/// Enumerate match-*.jsonl files, newest first. Excludes the file currently
+/// being written so it can't be deleted from under us.
+pub fn list_matches() -> Vec<MatchLog> {
+    let dir = log_dir();
+    let current = current_path();
+    let mut out: Vec<MatchLog> = fs::read_dir(&dir)
+        .ok()
+        .map(|it| {
+            it.filter_map(|e| e.ok())
+                .filter_map(|e| {
+                    let path = e.path();
+                    if Some(&path) == current.as_ref() {
+                        return None;
+                    }
+                    let name = path.file_name()?.to_string_lossy().to_string();
+                    if !name.starts_with("match-") || !name.ends_with(".jsonl") {
+                        return None;
+                    }
+                    let meta = e.metadata().ok()?;
+                    let modified_ms = meta
+                        .modified()
+                        .ok()
+                        .and_then(|t| t.duration_since(UNIX_EPOCH).ok())
+                        .map(|d| d.as_millis() as u64)
+                        .unwrap_or(0);
+                    Some(MatchLog {
+                        name,
+                        size: meta.len(),
+                        modified_ms,
+                    })
+                })
+                .collect()
+        })
+        .unwrap_or_default();
+    out.sort_by(|a, b| b.modified_ms.cmp(&a.modified_ms));
+    out
+}
+
+/// Delete a single archived match log. Rejects paths outside the log dir
+/// and the file currently being recorded — both would be a privacy footgun
+/// or a write-during-write corruption.
+pub fn delete_match(name: &str) -> Result<(), String> {
+    if name.contains('/') || name.contains('\\') || name.contains("..") {
+        return Err("ชื่อไฟล์ไม่ถูกต้อง".into());
+    }
+    if !name.starts_with("match-") || !name.ends_with(".jsonl") {
+        return Err("ลบได้เฉพาะไฟล์ match-*.jsonl เท่านั้น".into());
+    }
+    let dir = log_dir();
+    let path = dir.join(name);
+    if current_path().as_deref() == Some(&path) {
+        return Err("ลบไฟล์ที่กำลังบันทึกอยู่ไม่ได้ — รอจบแมตช์ก่อน".into());
+    }
+    fs::remove_file(&path).map_err(|e| format!("ลบไม่สำเร็จ: {e}"))
+}
+
+/// Wipe every archived match. The currently-recording file is preserved so
+/// the active match survives the privacy reset.
+pub fn delete_all() -> Result<u32, String> {
+    let mut count = 0u32;
+    for m in list_matches() {
+        if delete_match(&m.name).is_ok() {
+            count += 1;
+        }
+    }
+    Ok(count)
+}
+
 /// Open the log directory in Windows Explorer (for transparency — the user
 /// can see exactly what we're keeping).
 pub fn open_log_dir() {
