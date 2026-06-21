@@ -38,8 +38,9 @@ interface Settings {
   voiceName: string
   voiceRate: number
   personaLines: boolean
+  autoAdvice: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 
 // Maiden's persona pool — gentle, smart, lightly self-deprecating about CM nerfs,
@@ -169,6 +170,10 @@ const Overlay: React.FC = () => {
   // We don't snapshot the whole tick — only the fields that drive a persona line.
   const prev = useRef<{ level: number; kills: number; deaths: number; alive: boolean; mana: number; hp: number } | null>(null)
   const manaActive = useRef(false)
+  // Auto-advice trigger memory (in clock_time seconds; -Infinity = never fired).
+  // Per-key cooldown keeps the Plan quota honest even if multiple triggers fire close together.
+  const recentDeathClock = useRef<number | null>(null)
+  const advisedAt = useRef<Record<string, number>>({})
   const sRef = useRef(s)
   sRef.current = s
   useEffect(() => {
@@ -277,6 +282,46 @@ const Overlay: React.FC = () => {
     lastSpokeKind.current = 'persona'
     void invoke('speak_event', { event: evt, fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
   }, [t.level, t.kills, t.deaths, t.alive, t.mana_percent, lowHp])
+
+  // Auto-advice (G-Master proactive). Fires Claude Plan request + speaks the
+  // result on key moments: ult level milestones and a death-streak (2 deaths
+  // within 5 clock-min). Per-trigger cooldown 10 clock-min; server-side
+  // throttle (30s wallclock) also caps quota use.
+  useEffect(() => {
+    const p = prev.current
+    if (!p || !sRef.current.autoAdvice || !sRef.current.voiceEnabled) return
+
+    type Trigger = { key: string }
+    const triggers: Trigger[] = []
+
+    if (t.level > p.level && (t.level === 6 || t.level === 11 || t.level === 16)) {
+      triggers.push({ key: `lvl${t.level}` })
+    }
+    if (t.deaths > p.deaths) {
+      const last = recentDeathClock.current
+      if (last !== null && t.clock_time - last > 0 && t.clock_time - last < 300) {
+        triggers.push({ key: 'deathStreak' })
+      }
+      recentDeathClock.current = t.clock_time
+    }
+
+    for (const trig of triggers) {
+      const last = advisedAt.current[trig.key] ?? -Infinity
+      if (t.clock_time - last < 600) continue
+      advisedAt.current[trig.key] = t.clock_time
+      void invoke<{ text: string; cached: boolean }>('request_advice', { tick: t })
+        .then((a) => {
+          if (!a?.text) return
+          void invoke('speak_event', {
+            event: 'advice',
+            fallback: a.text,
+            voice: sRef.current.voiceName || null,
+            rate: sRef.current.voiceRate,
+          }).catch(() => {})
+        })
+        .catch(() => { /* claude CLI missing or login fail — silent in auto mode */ })
+    }
+  }, [t.level, t.deaths, t.clock_time])
 
   return (
     <div style={wrap}>
@@ -389,7 +434,7 @@ const VoiceCacheCard: React.FC = () => {
 
 // ─────────────────────────────── G-MASTER (Claude Plan advisor) ───────────────────────────────
 interface Advice { text: string; cached: boolean }
-const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number }> = ({ tick, voice, rate }) => {
+const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number; autoAdvice: boolean; onAutoAdviceChange: (v: boolean) => void }> = ({ tick, voice, rate, autoAdvice, onAutoAdviceChange }) => {
   const [advice, setAdvice] = useState<Advice | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -414,6 +459,10 @@ const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number 
         <div style={{ fontSize: 12, color: C.mut }}>
           ใช้ Claude CLI ของคุณ (Plan quota · zero cost). throttle 30s/คำขอ.
           {!canAsk && tick?.in_game === false && ' · เปิด Dota 2 ก่อน'}
+        </div>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 'none', fontSize: 12, color: C.mut }}>
+          พูดอัตโนมัติเมื่อเลเวล 6/11/16 หรือตาย 2 รอบติด
+          <Toggle on={autoAdvice} onChange={onAutoAdviceChange} />
         </div>
         <div style={{ display: 'flex', gap: 8, flex: 'none' }}>
           <button onClick={ask} disabled={!canAsk}
@@ -672,7 +721,7 @@ const Control: React.FC = () => {
       </div>
 
       <div style={{ marginTop: 14 }}>
-        <MasterCard tick={tick} voice={s.voiceName} rate={s.voiceRate} />
+        <MasterCard tick={tick} voice={s.voiceName} rate={s.voiceRate} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} />
       </div>
 
       <div style={{ marginTop: 14 }}>
