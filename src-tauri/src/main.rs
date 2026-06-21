@@ -9,6 +9,7 @@ use tauri::Manager;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 mod gsi;
+mod setup;
 mod tts;
 
 /// Show/hide the OSD overlay window (called by the control GUI toggle).
@@ -23,6 +24,18 @@ fn set_overlay_visible(app: tauri::AppHandle, visible: bool) {
 #[tauri::command]
 fn speak(text: String) {
     tts::speak(&text);
+}
+
+/// Discover Dota 2's GSI cfg directory and report whether our cfg is in place.
+#[tauri::command]
+fn detect_gsi_setup() -> setup::SetupStatus {
+    setup::detect()
+}
+
+/// Write our GSI cfg into the discovered Dota 2 directory.
+#[tauri::command]
+fn install_gsi_config() -> setup::SetupStatus {
+    setup::install()
 }
 
 fn main() {
@@ -43,7 +56,12 @@ fn main() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![set_overlay_visible, speak])
+        .invoke_handler(tauri::generate_handler![
+            set_overlay_visible,
+            speak,
+            detect_gsi_setup,
+            install_gsi_config
+        ])
         .setup(move |app| {
             // G1.1: GSI ingestion server (127.0.0.1:3000); emits `game-tick` to all windows.
             let handle = app.handle().clone();

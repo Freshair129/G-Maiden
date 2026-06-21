@@ -192,6 +192,49 @@ const Overlay: React.FC = () => {
   )
 }
 
+// ─────────────────────────────── SETUP (GSI config auto-install) ───────────────────────────────
+interface SetupStatus {
+  installed: boolean
+  steam_path: string | null
+  dota_cfg_dir: string | null
+  cfg_present: boolean
+  message: string
+}
+const SetupCard: React.FC = () => {
+  const [st, setSt] = useState<SetupStatus | null>(null)
+  const [busy, setBusy] = useState(false)
+  const refresh = async () => {
+    try { setSt(await invoke<SetupStatus>('detect_gsi_setup')) } catch { /* command unavailable */ }
+  }
+  useEffect(() => { void refresh() }, [])
+  const install = async () => {
+    setBusy(true)
+    try { setSt(await invoke<SetupStatus>('install_gsi_config')) } finally { setBusy(false) }
+  }
+  if (!st) return (
+    <Card title="Setup (GSI)"><div style={{ fontSize: 12.5, color: C.mut, paddingTop: 8 }}>กำลังตรวจสอบ Steam / Dota 2…</div></Card>
+  )
+  const ok = st.installed
+  const dot = <span style={{ width: 9, height: 9, borderRadius: 99, background: ok ? C.ok : C.warn, display: 'inline-block', marginRight: 8, boxShadow: ok ? `0 0 8px ${C.ok}` : 'none' }} />
+  return (
+    <Card title="Setup (GSI)">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 6 }}>
+        <div style={{ fontSize: 13, color: ok ? C.txt : C.warn }}>{dot}{ok ? 'GSI config พร้อมใช้งาน' : 'ยังไม่ได้ติดตั้ง GSI config'}</div>
+        <button onClick={install} disabled={busy || !st.dota_cfg_dir}
+          style={{ background: ok ? 'transparent' : 'rgba(143,212,255,0.16)', color: st.dota_cfg_dir ? C.ice : C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '6px 13px', fontSize: 12, cursor: st.dota_cfg_dir && !busy ? 'pointer' : 'not-allowed' }}>
+          {busy ? 'กำลังติดตั้ง…' : ok ? 'ติดตั้งซ้ำ' : 'ติดตั้ง GSI config'}
+        </button>
+      </div>
+      <div style={{ fontSize: 11.5, color: C.mut, marginTop: 10, lineHeight: 1.55 }}>
+        {st.steam_path && <div>Steam: <span style={{ color: C.txt }}>{st.steam_path}</span></div>}
+        {st.dota_cfg_dir && <div style={{ wordBreak: 'break-all' }}>Dota 2 cfg: <span style={{ color: C.txt }}>{st.dota_cfg_dir}</span></div>}
+        <div style={{ marginTop: 6 }}>{st.message}</div>
+        {!ok && st.dota_cfg_dir && <div style={{ marginTop: 4, color: C.mut }}>💡 หลังติดตั้ง: เปิด Dota 2 รอบใหม่เพื่อโหลด config.</div>}
+      </div>
+    </Card>
+  )
+}
+
 // ─────────────────────────────── CONTROL GUI (main window) ───────────────────────────────
 const Card: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
   <div style={{ ...panel(0.86), padding: '16px 20px' }}>
@@ -281,12 +324,16 @@ const Control: React.FC = () => {
           )}
         </Card>
 
+        <SetupCard />
+      </div>
+
+      <div style={{ marginTop: 14 }}>
         <Card title="Modules (เร็ว ๆ นี้)">
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, paddingTop: 8, fontSize: 12.5, color: C.mut }}>
-            <div>○ G-Sentry — fog-of-war monitor</div>
-            <div>○ G-Motion — gank path prediction</div>
-            <div>○ G-Signal — voice gank warning</div>
-            <div>○ G-Master — item/skill advisor</div>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, paddingTop: 6, fontSize: 12.5, color: C.mut }}>
+            <span>○ G-Sentry — fog-of-war monitor</span>
+            <span>○ G-Motion — gank path prediction</span>
+            <span>○ G-Signal — voice gank warning</span>
+            <span>○ G-Master — item/skill advisor</span>
           </div>
         </Card>
       </div>
