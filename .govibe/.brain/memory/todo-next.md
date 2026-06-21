@@ -1,7 +1,7 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: 2026-06-21 (turn 6) · Persona event lines (level/kill/death/respawn/mana-low)
-ลง main — Maiden ไม่พูดแค่เส้นเดียวอีกแล้ว (ดู `.govibe/.brain/session/2026-06-21-persona-lines.md`).
+อัปเดตล่าสุด: 2026-06-21 (turn 7) · Belief Revision ลง main — persona requirement
+ของ CLAUDE.md ครบ (ดู `.govibe/.brain/session/2026-06-21-belief-revision.md`).
 
 ## ต้องให้ผู้ใช้ทำ (ทำแทนไม่ได้)
 - [ ] **เปิด Dota 2 จริง** → ยืนยัน overlay + voice end-to-end. POST simulated ทดสอบผ่านแล้ว
