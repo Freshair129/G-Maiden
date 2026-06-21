@@ -9,7 +9,13 @@
 //! which is event-driven and rare. The hard-latency G-Signal path (gank
 //! warning) will need in-process TTS later.
 
-use std::process::{Command, Stdio};
+use std::process::{Child, Command, Stdio};
+use std::sync::Mutex;
+
+// At most one SAPI process at a time — Maiden never speaks two lines in parallel.
+// Belief Revision (per CLAUDE.md) requires canceling a line mid-stream and
+// replacing it; we kill the PowerShell child to interrupt SAPI playback.
+static CURRENT: Mutex<Option<Child>> = Mutex::new(None);
 
 #[derive(serde::Serialize, Clone)]
 pub struct Voice {
@@ -100,14 +106,25 @@ pub fn list_voices() -> Vec<Voice> {
         .collect()
 }
 
-/// Fire-and-forget: speak `text` on a background thread, optionally using a
-/// specific installed voice and a speaking rate in SAPI units (-10..10, 0 = normal).
-/// Safe to call repeatedly; each call spawns its own SAPI process and
-/// returns immediately so the GSI hot path never blocks.
+/// Stop the current SAPI playback (if any). Used by Belief Revision to retract
+/// a warning mid-sentence. Idempotent: no-op when nothing is speaking.
+pub fn cancel() {
+    if let Ok(mut g) = CURRENT.lock() {
+        if let Some(mut c) = g.take() {
+            let _ = c.kill();
+            let _ = c.wait();
+        }
+    }
+}
+
+/// Fire-and-forget: speak `text`, optionally using a specific installed voice
+/// and a speaking rate in SAPI units (-10..10, 0 = normal). Cancels any prior
+/// utterance first so Maiden's voice can never overlap itself.
 pub fn speak(text: &str, voice: Option<&str>, rate: Option<i32>) {
     if text.trim().is_empty() {
         return;
     }
+    cancel();
     let b64 = base64(text.as_bytes());
     // SelectVoice() fails loudly if the voice is missing; wrap in try/catch so
     // we fall back to the system default instead of going silent.
@@ -133,27 +150,34 @@ pub fn speak(text: &str, voice: Option<&str>, rate: Option<i32>) {
          $s.Volume=100; \
          $s.Speak($t)"
     );
-    std::thread::spawn(move || {
-        let mut cmd = Command::new("powershell");
-        cmd.args([
-            "-NoProfile",
-            "-NonInteractive",
-            "-WindowStyle",
-            "Hidden",
-            "-Command",
-            &script,
-        ])
-        .stdin(Stdio::null())
-        .stdout(Stdio::null())
-        .stderr(Stdio::null());
-        #[cfg(windows)]
-        {
-            use std::os::windows::process::CommandExt;
-            // CREATE_NO_WINDOW — keep the PS console flash off-screen.
-            cmd.creation_flags(0x0800_0000);
+    let mut cmd = Command::new("powershell");
+    cmd.args([
+        "-NoProfile",
+        "-NonInteractive",
+        "-WindowStyle",
+        "Hidden",
+        "-Command",
+        &script,
+    ])
+    .stdin(Stdio::null())
+    .stdout(Stdio::null())
+    .stderr(Stdio::null());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        // CREATE_NO_WINDOW — keep the PS console flash off-screen.
+        cmd.creation_flags(0x0800_0000);
+    }
+    let child = match cmd.spawn() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("[G-Maiden TTS] speak spawn failed: {e}");
+            return;
         }
-        if let Err(e) = cmd.spawn().and_then(|mut c| c.wait()) {
-            eprintln!("[G-Maiden TTS] speak failed: {e}");
-        }
-    });
+    };
+    // Stash the child so cancel() can kill it later. Anything previously in the
+    // slot was already drained by the cancel() at the top of this function.
+    if let Ok(mut g) = CURRENT.lock() {
+        *g = Some(child);
+    }
 }

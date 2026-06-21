@@ -72,6 +72,17 @@ const PERSONA_LINES = {
 } as const
 type PersonaEvent = keyof typeof PERSONA_LINES
 
+// Belief Revision (CLAUDE.md persona rule, required of G-Signal). Used when
+// Maiden just warned "ถอย!" but the danger evaporated within the speech window —
+// kill the current line and replace with one of these to keep her honest.
+const REVISION_LINES = {
+  dangerRetracted: [
+    'เอ๊ะ! เดี๋ยวก่อน — ไม่ต้องถอยแล้วนะคะ ปลอดภัยแล้ว',
+    'อ้าว! พลิกได้เก่งมาก — ขอโทษที่เพิ่งบอกถอย',
+    'เอ๊ะ! โทษทีค่ะ คิดเร็วไปหน่อย — ตามล่าต่อได้',
+  ],
+} as const
+
 interface VoiceInfo { name: string; culture: string; gender: string; age: string }
 const loadSettings = (): Settings => {
   try {
@@ -150,9 +161,13 @@ const Overlay: React.FC = () => {
   // not every tick. Reset when HP recovers or the hero dies/respawns.
   const dangerActive = useRef(false)
   const lastSpokeAt = useRef(0)
+  // What Maiden last said (so Belief Revision can retract a danger line specifically)
+  // and the HP at the moment she warned, so we can detect a real recovery.
+  const lastSpokeKind = useRef<'danger' | 'persona' | 'revision' | null>(null)
+  const dangerHpAtSpeak = useRef(0)
   // Previous tick for transition detection (level up, kill, death, respawn).
   // We don't snapshot the whole tick — only the fields that drive a persona line.
-  const prev = useRef<{ level: number; kills: number; deaths: number; alive: boolean; mana: number } | null>(null)
+  const prev = useRef<{ level: number; kills: number; deaths: number; alive: boolean; mana: number; hp: number } | null>(null)
   const manaActive = useRef(false)
   const sRef = useRef(s)
   sRef.current = s
@@ -196,17 +211,43 @@ const Overlay: React.FC = () => {
       if (now - lastSpokeAt.current > 8000) {
         lastSpokeAt.current = now
         dangerActive.current = true
+        lastSpokeKind.current = 'danger'
+        dangerHpAtSpeak.current = t.hp_percent
         void invoke('speak', { text: DANGER_LINE, voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})
       }
     }
   }, [lowHp, t.alive, t.hp_percent, s.alertThreshold, s.voiceEnabled])
+
+  // Belief Revision (CLAUDE.md): if Maiden just yelled "ถอย!" but the danger
+  // evaporated within ~2.5s (player got a kill, or HP swung well above safe),
+  // kill the in-flight line and replace with a self-correcting one.
+  useEffect(() => {
+    const p = prev.current
+    if (!p || lastSpokeKind.current !== 'danger') return
+    const sinceSpoke = Date.now() - lastSpokeAt.current
+    if (sinceSpoke > 2500 || sinceSpoke < 100) return  // out of window / same tick
+    const hpRecovered = t.hp_percent >= dangerHpAtSpeak.current + 25 && t.hp_percent > s.alertThreshold + 15
+    const gotKill = t.kills > p.kills
+    if (!hpRecovered && !gotKill) return
+    const pool = REVISION_LINES.dangerRetracted
+    const line = pool[Math.floor(Math.random() * pool.length)]
+    lastSpokeAt.current = Date.now()
+    lastSpokeKind.current = 'revision'
+    dangerActive.current = false  // arm danger again so a fresh crossing can re-warn
+    void invoke('cancel_speech').catch(() => {})
+    // brief gap lets the killed SAPI process die before the new one starts,
+    // otherwise Windows audio sometimes squashes the first syllable
+    setTimeout(() => {
+      void invoke('speak', { text: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
+    }, 90)
+  }, [t.hp_percent, t.kills, s.alertThreshold])
 
   // Persona events — detect transitions vs. the previous tick. We minimum-gap
   // every utterance to 6s and skip persona lines whenever a danger line is
   // already due, so Maiden never talks over her own warnings.
   useEffect(() => {
     const p = prev.current
-    prev.current = { level: t.level, kills: t.kills, deaths: t.deaths, alive: t.alive, mana: t.mana_percent }
+    prev.current = { level: t.level, kills: t.kills, deaths: t.deaths, alive: t.alive, mana: t.mana_percent, hp: t.hp_percent }
     if (!p || !sRef.current.voiceEnabled || !sRef.current.personaLines) return
     if (lowHp) return // don't talk over a danger warning
 
@@ -233,6 +274,7 @@ const Overlay: React.FC = () => {
     const pool = PERSONA_LINES[evt]
     const line = pool[Math.floor(Math.random() * pool.length)]
     lastSpokeAt.current = now
+    lastSpokeKind.current = 'persona'
     void invoke('speak', { text: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
   }, [t.level, t.kills, t.deaths, t.alive, t.mana_percent, lowHp])
 

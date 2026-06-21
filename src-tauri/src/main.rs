@@ -26,6 +26,12 @@ fn speak(text: String, voice: Option<String>, rate: Option<i32>) {
     tts::speak(&text, voice.as_deref(), rate);
 }
 
+/// Stop the current TTS playback (used by Belief Revision to retract mid-stream).
+#[tauri::command]
+fn cancel_speech() {
+    tts::cancel();
+}
+
 /// List SAPI voices installed on this machine so the UI can let the user pick.
 #[tauri::command]
 fn list_voices() -> Vec<tts::Voice> {
@@ -65,6 +71,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             set_overlay_visible,
             speak,
+            cancel_speech,
             list_voices,
             detect_gsi_setup,
             install_gsi_config
