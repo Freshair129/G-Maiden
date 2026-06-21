@@ -1,7 +1,7 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: 2026-06-21 (turn 12) · G-Master auto-advice บน key moments —
-Maiden เป็น proactive advisor (ดู `.govibe/.brain/session/2026-06-21-auto-advice.md`).
+อัปเดตล่าสุด: 2026-06-21 (turn 13) · G-Log privacy controls + speak_event consistency
+(ดู `.govibe/.brain/session/2026-06-21-privacy-controls.md`).
 
 ## ต้องให้ผู้ใช้ทำ (ทำแทนไม่ได้)
 - [ ] **เปิด Dota 2 จริง** → ยืนยัน overlay + voice end-to-end. POST simulated ทดสอบผ่านแล้ว
