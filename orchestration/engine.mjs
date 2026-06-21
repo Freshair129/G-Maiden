@@ -232,7 +232,13 @@ function pastMistakesBlock(pastMistakes, budgetTokens) {
   return lines.length ? [`## ❌ ความผิดที่เคยเกิดกับงานคล้ายกัน — ห้ามทำซ้ำ (anti-error loop)`, ...lines].join("\n") : null;
 }
 
-export function buildPrompt(t, model, provider = "claude", reworkNote = null, pastMistakes = null) {
+// L2 — grounded context (GRL): "งานที่เกี่ยวข้อง" จาก retrieveContext (เสริม past-mistakes ไม่ซ้ำ)
+function groundedBlock(grounded) {
+  if (!grounded?.lines?.length) return null;
+  return [`## บริบทงานที่เกี่ยวข้อง (grounded · ~${grounded.tokenEstimate ?? "?"} tok)`, ...grounded.lines.slice(0, 8).map((l) => `- ${l}`)].join("\n");
+}
+
+export function buildPrompt(t, model, provider = "claude", reworkNote = null, pastMistakes = null, grounded = null) {
   const s = scopeFor(t);
   const deps = (t.deps || []).join(", ") || "(none)";
   const head = [
@@ -245,6 +251,8 @@ export function buildPrompt(t, model, provider = "claude", reworkNote = null, pa
   if (reworkNote) head.push(reworkNote, ``);
   const pm = pastMistakesBlock(pastMistakes, s.budgetTokens);
   if (pm) head.push(pm, ``);
+  const gb = groundedBlock(grounded);
+  if (gb) head.push(gb, ``);
   if (provider === "ollama") {
     const p = [...head];
     if (s.needs.length) p.push(`## บริบทที่เกี่ยวข้อง`, s.needs.map((n) => `- ${n}`).join("\n"), ``);
@@ -287,7 +295,7 @@ function runClaude(t, name, model, worker, opts = {}) {
     // prompt ส่งทาง stdin (ไม่ใช่ arg) — กัน shell metachar (| ` { } ( )) ทำ prompt พังใต้ shell:true
     const args = [...CONFIG.executor.baseArgs, "--model", name, ...CONFIG.executor.extraArgs];
     const child = spawn(CONFIG.executor.command, args, { cwd: PATHS.ROOT, shell: true, env: childEnv(mode) });
-    child.stdin.write(buildPrompt(t, model, "claude", opts.reworkNote, opts.pastMistakes)); child.stdin.end();
+    child.stdin.write(buildPrompt(t, model, "claude", opts.reworkNote, opts.pastMistakes, opts.grounded)); child.stdin.end();
     let lineBuf = "", resultLine = null;
     child.stdout.on("data", (d) => {
       ws.write(d); lineBuf += d; let i;
@@ -316,7 +324,7 @@ async function runOllama(t, name, model, worker, opts = {}) {
   const options = (CONFIG.ollama?.profiles || {})[scopeFor(t).profile] || {};
   let inTok = 0, outTok = 0, ok = false, acc = "", blocked = false, empty = false;
   try {
-    const payload = { model: name, stream: true, options, messages: [{ role: "user", content: buildPrompt(t, model, "ollama", opts.reworkNote, opts.pastMistakes) }] };
+    const payload = { model: name, stream: true, options, messages: [{ role: "user", content: buildPrompt(t, model, "ollama", opts.reworkNote, opts.pastMistakes, opts.grounded) }] };
     if (typeof CONFIG.ollama?.think === "boolean") payload.think = CONFIG.ollama.think; // ปิด thinking สำหรับงาน draft -> ตอบ content ตรง
     const resp = await fetch(`${host}/api/chat`, {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -512,18 +520,22 @@ function recordOutcome(t, model, worker, status, review) {
   ).catch(() => { /* knowledge store ล้ม -> เงียบ ไม่กระทบ execution */ });
 }
 
-// L1 — ดึง "❌ past mistakes" ที่คล้าย task มา inject ก่อน dispatch (best-effort, ไม่บล็อก/ไม่ throw)
-async function queryPastMistakes(t) {
+// L1/L2 — ดึง context มา inject ก่อน dispatch (best-effort, ไม่บล็อก/ไม่ throw)
+async function queryPastMistakes(t) {       // L1: ❌ ความผิดที่คล้าย
   try { return (await getStore(CONFIG).queryContext(t, { k: 3 })) || []; }
   catch { return []; }
+}
+async function queryGrounded(t) {           // L2: บริบทงานที่เกี่ยวข้อง (GRL; genesisdb เท่านั้น)
+  try { return (await getStore(CONFIG).groundContext(t, { tier: "H1", budget: scopeFor(t).budgetTokens })) || null; }
+  catch { return null; }
 }
 
 // produce -> (review) -> done | needs-rework. จัดการ state เองทั้งหมด. ใช้โดย dispatchOne และ runPool
 export async function executeWithReview(t, model, worker) {
   let round = 0, reworkNote = null;
-  const pastMistakes = await queryPastMistakes(t);   // L1: inject กันผิดซ้ำ
+  const [pastMistakes, grounded] = await Promise.all([queryPastMistakes(t), queryGrounded(t)]);  // L1+L2
   while (true) {
-    const r = await runAgent(t, model, worker, { reworkNote, pastMistakes });
+    const r = await runAgent(t, model, worker, { reworkNote, pastMistakes, grounded });
     if (!r.ok) { setStatus(t.id, "failed"); recordOutcome(t, model, worker, "failed", null); return "failed"; } // empty/blocked/exit≠0
     if (!requireReviewFor(t)) { setStatus(t.id, "done"); return "done"; }
     setStatus(t.id, "reviewing");

@@ -51,6 +51,7 @@ function fileStore() {
         .filter((x) => x.s > 0).sort((a, b) => b.s - a.s);
       return dedupe(scored.map((x) => x.r)).slice(0, k).map(toMistake);
     },
+    async groundContext() { return null; },   // L2 ต้องใช้ GRL ของ GenesisDB — file mode degrade เป็น static scope.docs
     async close() {},
   };
 }
@@ -62,6 +63,7 @@ function genesisStore(g = {}) {
   const EMBED = g.embedModel || "bge-m3:latest";
   const DIM = g.vectorDim || 1024;
   let db = null;
+  const seenTasks = new Set();   // กัน addNode task ซ้ำต่อ process
 
   async function embed(text) {
     const r = await fetch(`${OLLAMA}/api/embeddings`, {
@@ -87,12 +89,15 @@ function genesisStore(g = {}) {
       const rows = failureRows(rec);
       for (const row of rows) appendFail(row);                 // เก็บ jsonl ด้วยเสมอ (durable + debug)
       const d = open();
+      // L2: task node (id เจาะจง) เพื่อให้ retrieveContext มีจุดยึด + ผูก edge -> failure
+      const taskNodeId = `task:${rec.taskId}`;
+      if (!seenTasks.has(taskNodeId)) {
+        try { await d.addNode({ id: taskNodeId, labels: ["task"], lang: "th", props: { id: rec.taskId, title: rec.taskTitle, type: rec.type }, embedding: await embed(`${rec.taskTitle} ${rec.type}`) }); } catch { /* อาจมีแล้ว */ }
+        seenTasks.add(taskNodeId);
+      }
       for (const row of rows) {
-        await d.addNode({
-          labels: ["failure"], lang: "th", causedBy: "verify-gate",
-          props: row,
-          embedding: await embed(`${row.title} :: ${row.issue}`),
-        });
+        const fn = await d.addNode({ labels: ["failure"], lang: "th", causedBy: "verify-gate", props: row, embedding: await embed(`${row.title} :: ${row.issue}`) });
+        try { await d.addEdge({ from: taskNodeId, to: fn.id, rel: "failed_with" }); } catch { /* */ }
       }
     },
     // L1 — semantic: hybridSearch (vector+lexical) บน failure nodes -> "❌ past mistakes" ที่คล้าย task
@@ -103,6 +108,19 @@ function genesisStore(g = {}) {
       catch { return []; }
       const rows = (hits || []).map((h) => h.node?.props).filter((p) => p && p.issue);
       return dedupe(rows).slice(0, k).map(toMistake);
+    },
+    // L2 — grounded context: "ชื่องานที่เกี่ยวข้อง" จาก hybridSearch (เสริม L1 ไม่ซ้ำ — L1 = ความผิด, L2 = งานคล้าย)
+    // retrieveContext (GRL tier+budget) ให้ tokenEstimate/reasoningPath แบบ budgeted
+    async groundContext(task, { tier = "H1", budget = 4000 } = {}) {
+      const d = open();
+      try {
+        const hits = await d.hybridSearch({ queryVector: await embed(`${task.title} :: ${task.accept || ""}`), k: 5, alpha: 0.5, lang: "th" });
+        const titles = [...new Set((hits || []).map((h) => h.node?.props?.title).filter(Boolean).filter((tt) => tt !== task.title))];
+        if (!titles.length) return null;
+        let tokenEstimate, reasoningPath;
+        try { const ctx = await d.retrieveContext(hits[0].node.id, tier, budget, true); tokenEstimate = ctx.tokenEstimate; reasoningPath = ctx.reasoningPath; } catch { /* GRL optional */ }
+        return { tokenEstimate, reasoningPath, lines: titles.slice(0, 6) };
+      } catch { return null; }
     },
     async close() { try { await db?.saveState?.(); } catch { /* */ } },
   };
