@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { emit, listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
+import { check, type Update } from '@tauri-apps/plugin-updater'
+import { relaunch } from '@tauri-apps/plugin-process'
 
 /** Mirrors the Rust `GameTick` emitted by the GSI server (src-tauri/src/gsi.rs). */
 interface GameTick {
@@ -778,8 +780,43 @@ const Control: React.FC = () => {
   const [status, setStatus] = useState<GsiStatus | null>(null)
   const [showWelcome, setShowWelcome] = useState(() => localStorage.getItem('gm-onboarded') !== '1')
   const dismissWelcome = () => { localStorage.setItem('gm-onboarded', '1'); setShowWelcome(false) }
+  // In-app updater (ask-first). updRef holds the pending Update so the button can
+  // download+install it; updPhase drives the UI.
+  const updRef = useRef<Update | null>(null)
+  const [upd, setUpd] = useState<{ version: string; notes: string } | null>(null)
+  const [updPhase, setUpdPhase] = useState<'idle' | 'checking' | 'downloading' | 'uptodate' | 'error'>('idle')
   const sRef = useRef(s)
   sRef.current = s
+
+  // Check GitHub Releases for a newer signed build on startup. Ask-first: we only
+  // surface the prompt; nothing installs until the user clicks. Silent on failure
+  // (offline, or no release published yet).
+  useEffect(() => {
+    void (async () => {
+      try {
+        const u = await check()
+        if (u?.available) { updRef.current = u; setUpd({ version: u.version, notes: u.body ?? '' }) }
+      } catch { /* offline / no endpoint yet */ }
+    })()
+  }, [])
+
+  const checkUpdateNow = async () => {
+    setUpdPhase('checking')
+    try {
+      const u = await check()
+      if (u?.available) { updRef.current = u; setUpd({ version: u.version, notes: u.body ?? '' }); setUpdPhase('idle') }
+      else { setUpd(null); setUpdPhase('uptodate') }
+    } catch { setUpdPhase('error') }
+  }
+
+  const installUpdate = async () => {
+    if (!updRef.current) return
+    setUpdPhase('downloading')
+    try {
+      await updRef.current.downloadAndInstall()
+      await relaunch() // restart into the new version
+    } catch { setUpdPhase('error') }
+  }
 
   // Load installed voices once; if Maiden has never been assigned one, prefer the
   // first Female voice so the default sounds like her instead of a male advisor.
@@ -862,6 +899,26 @@ const Control: React.FC = () => {
           )
         })()}
       </header>
+
+      {upd && (
+        <div style={{ ...panel(0.86), padding: '12px 18px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 14, border: `1px solid ${C.ice}` }}>
+          <span style={{ fontSize: 18 }}>✨</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 600, color: C.ice }}>มีเวอร์ชันใหม่ {upd.version}</div>
+            <div style={{ fontSize: 11.5, color: C.mut, whiteSpace: 'pre-wrap', maxHeight: 60, overflow: 'hidden' }}>
+              {updPhase === 'downloading' ? 'กำลังดาวน์โหลดและติดตั้ง… แอปจะรีสตาร์ทเอง' : (upd.notes || 'อัปเดตแล้วแอปจะรีสตาร์ทให้อัตโนมัติ')}
+            </div>
+          </div>
+          <button onClick={installUpdate} disabled={updPhase === 'downloading'}
+            style={{ background: C.ice, color: '#0c1018', border: 'none', borderRadius: 9, padding: '8px 16px', fontWeight: 700, cursor: 'pointer', fontSize: 12.5 }}>
+            {updPhase === 'downloading' ? 'กำลังอัปเดต…' : 'อัปเดตเลย'}
+          </button>
+          <button onClick={() => setUpd(null)} disabled={updPhase === 'downloading'}
+            style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 9, padding: '8px 14px', cursor: 'pointer', fontSize: 12.5 }}>
+            ภายหลัง
+          </button>
+        </div>
+      )}
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <Card title="Overlay (OSD)">
@@ -953,9 +1010,15 @@ const Control: React.FC = () => {
         </Card>
       </div>
 
-      <footer style={{ marginTop: 18, fontSize: 11.5, color: C.mut, display: 'flex', justifyContent: 'space-between' }}>
+      <footer style={{ marginTop: 18, fontSize: 11.5, color: C.mut, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>GSI: http://127.0.0.1:3000/gsi</span>
-        <span>v0.1.0</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={checkUpdateNow} disabled={updPhase === 'checking' || updPhase === 'downloading'}
+            style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontSize: 11 }}>
+            {updPhase === 'checking' ? 'กำลังตรวจ…' : updPhase === 'uptodate' ? 'เป็นเวอร์ชันล่าสุด ✓' : updPhase === 'error' ? 'ตรวจไม่สำเร็จ' : 'ตรวจหาอัปเดต'}
+          </button>
+          <span>v0.1.0</span>
+        </span>
       </footer>
     </div>
   )
