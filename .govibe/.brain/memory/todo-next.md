@@ -61,19 +61,23 @@ stack = tract + windows-capture v2.0 · ADR-05: ONNX=default, NCC=fallback.
 - ทดสอบ: `cargo test --bin g-maiden` (debug). latency: `cargo test --release --bin
   g-maiden pipeline_latency -- --nocapture`.
 
-## 🔧 จุดที่ต้องไล่แก้ทีละจุด (Phase 2 core เสร็จแล้ว — เหลือ tuning/integration)
-เรียงตามความสำคัญ:
-1. **bundle `models/` เข้า installer** (tauri resource) — ตอนนี้ build production ใหม่
-   model จะไม่ติดไป → detector เป็น candidate-only. ต้องแก้ tauri.conf.json resources.
-2. **เปิด Dota verify จริง** — candidate box เกาะไอคอน?, calibrate bbox ต่อ resolution,
-   วัด CPU จริง ≤2.5%. (debug overlay frontend ที่วาดกรอบยังไม่ได้ทำ — ดู event `minimap-cv`)
-3. **เทรนด้วย official hero minimap icons จริง** — ตอนนี้ 100% เป็น synthetic-icon
-   (ไอคอนแบบที่ NCC ได้ 10%). หา icon จริง → `gen_dataset --icons-dir` → retrain.
-4. **frontend banner** — listen `enemy-missing`/`gank-alert`/`gank-clear` แสดง overlay.
-5. **user voice settings บน Rust path** — ตอนนี้ gank ใช้ default voice/rate.
-6. **in-game gating + adaptive 15Hz** — capture ทำงานตลอดเวลา; ควร gate เฉพาะ in-game
-   + เร่ง rate เมื่อ Sentry สงสัย.
-7. **probability-model calibration** — heuristic v1; จูนด้วย G-Log จริง.
+## 🔧 จุดไล่แก้ (turn 20 — commit `5a2a1ca`, build เขียว, 39 tests, model bundled)
+- [x] **#1 bundle `models/` เข้า installer** — tauri.conf.json `resources` → ยืนยัน
+      `target/release/models/` มีครบ, installer โต 6.6→12MB. `model_dir()` หา resource_dir ก่อน.
+- [x] **#4 frontend banner** — App.tsx listen `gank-alert`/`gank-clear`/`enemy-missing` +
+      gank banner (ice palette, top-center ไม่บังมินิแมพ) + auto-dismiss 6s + Belief Revision echo.
+- [x] **#2 (tooling) CV debug overlay** — toggle `cvDebug` วาด region+candidate+detection boxes
+      + status line (ONNX/candidate-only). **เหลือ verify สดในเกม = งาน user.**
+- [x] **#5 user voice บน Rust path** — `set_cv_voice` + `runtime::voice()`; gank ใช้เสียงที่เลือก.
+      ผูก `set_cv_signal_enabled` กับ `voiceEnabled` (ปิดเสียง = ปิด gank voice ด้วย).
+- [x] **#6 in-game gating + adaptive rate** — `runtime::IN_GAME` (set จาก gsi) gate pipeline;
+      source 15Hz, throttle เหลือ ~8Hz ปกติ, เร่งเต็มเมื่อ Sentry มี missing hero.
+- [ ] **#3 เทรนด้วย official hero icons จริง** — ยังค้าง (ต้องมีไฟล์ icon จริง → `gen_dataset
+      --icons-dir` → retrain). ตอนนี้ model = synthetic-icon (100% หลอกตา).
+- [ ] **#7 probability-model calibration** — heuristic v1; ต้องมีข้อมูล G-Log จริงก่อนจูน.
+
+> เพิ่มจาก user (parallel): system tray + hide-to-tray (`5a2a1ca`), capabilities tray-icon.
+> #3, #7 = data/asset-dependent ทำต่อไม่ได้จนกว่าจะมี input ภายนอก.
 
 ## ต้องให้ผู้ใช้ทำ (ทำแทนไม่ได้)
 - [ ] **เปิด Dota 2 จริง** → ยืนยัน overlay + voice end-to-end. POST simulated ทดสอบผ่านแล้ว
