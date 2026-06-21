@@ -1,0 +1,4 @@
+# G-Maiden P2.1 synthetic dataset generator — minimal deps.
+# Pinned to >= versions known to work; numpy 2.x and Pillow 10+ are fine.
+numpy>=1.24
+Pillow>=10.0

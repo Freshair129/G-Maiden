@@ -51,6 +51,8 @@ impl MinimapRegion {
     /// Kept normalised (not raw Dota world units) so G-Sentry/G-Motion can reason
     /// about lanes/positions without hard-coding world extents; the world-unit
     /// transform is a later, calibratable affine on top of this.
+    /// Consumed by G-Sentry/G-Motion (P2.3+); kept here as region geometry.
+    #[allow(dead_code)]
     pub fn pixel_to_normalised(&self, px: i32, py: i32) -> (f32, f32) {
         let s = self.side.max(1) as f32;
         let nx = (px as f32 / s).clamp(0.0, 1.0);

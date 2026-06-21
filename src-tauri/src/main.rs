@@ -9,6 +9,7 @@ use tauri::Manager;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 mod audio;
+mod capture;
 mod cv;
 mod gsi;
 mod log;
@@ -194,6 +195,10 @@ fn main() {
             // G1.1: GSI ingestion server (127.0.0.1:3000); emits `game-tick` to all windows.
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(gsi::serve(handle));
+
+            // P2.0: minimap capture → prefilter; emits `minimap-cv` debug events.
+            // Read-only WGC; quietly no-ops if capture is unavailable.
+            capture::start(app.handle().clone());
 
             app.global_shortcut().register(toggle)?;
 
