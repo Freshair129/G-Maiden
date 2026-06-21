@@ -72,9 +72,17 @@ stack = tract + windows-capture v2.0 · ADR-05: ONNX=default, NCC=fallback.
       ผูก `set_cv_signal_enabled` กับ `voiceEnabled` (ปิดเสียง = ปิด gank voice ด้วย).
 - [x] **#6 in-game gating + adaptive rate** — `runtime::IN_GAME` (set จาก gsi) gate pipeline;
       source 15Hz, throttle เหลือ ~8Hz ปกติ, เร่งเต็มเมื่อ Sentry มี missing hero.
-- [ ] **#3 เทรนด้วย official hero icons จริง** — ยังค้าง (ต้องมีไฟล์ icon จริง → `gen_dataset
-      --icons-dir` → retrain). ตอนนี้ model = synthetic-icon (100% หลอกตา).
+- [x] **#3 เทรนด้วย official hero icons จริง** — `fetch_icons.py` ดึง 127 ไอคอนจาก
+      dota_react Steam CDN (OpenDota hero list) → `assets/minimap-icons/` (32×32 RGBA).
+      retrain → model 128-class (127 ฮีโร่ + negative, 129KB), tract โหลดได้, val 1.0.
+      ⚠️ val ยังเป็น synthetic-composite — true test = footage จริง (validation-only, ค้าง user).
 - [ ] **#7 probability-model calibration** — heuristic v1; ต้องมีข้อมูล G-Log จริงก่อนจูน.
+
+## เกร็ด turn 21
+- ไอคอนมินิแมพจริง = dota_react CDN `.../heroes/icons/<short>.png` (วงกลม, transparent,
+  32×32 พอดี model input). short = npc_dota_hero_X ตัด prefix. OpenDota API ให้ list.
+- gen_dataset **ไม่ล้าง out-dir** → ต้อง `rm -rf _ds` ก่อน retrain ไม่งั้น class เก่าค้าง
+  (เจอ synthhero_* ปนใน labels รอบแรก).
 
 > เพิ่มจาก user (parallel): system tray + hide-to-tray (`5a2a1ca`), capabilities tray-icon.
 > #3, #7 = data/asset-dependent ทำต่อไม่ได้จนกว่าจะมี input ภายนอก.
