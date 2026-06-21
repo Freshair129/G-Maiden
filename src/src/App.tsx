@@ -252,7 +252,18 @@ const Control: React.FC = () => {
           <Row label={`ขีดเตือน HP: ${s.alertThreshold}%`}>
             <input type="range" min={10} max={50} value={s.alertThreshold} onChange={(e) => set('alertThreshold', Number(e.target.value))} style={{ width: 150 }} disabled={!s.alertEnabled} />
           </Row>
-          <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8 }}>เตือน "ถอยก่อนค่ะเพื่อน!" บน overlay เมื่อเลือดต่ำกว่าขีด</div>
+          <Row label="เสียงพูด (Maiden)">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button onClick={() => void invoke('speak', { text: DANGER_LINE }).catch(() => {})} disabled={!s.voiceEnabled}
+                style={{ background: 'transparent', color: s.voiceEnabled ? C.ice : C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 11px', fontSize: 12, cursor: s.voiceEnabled ? 'pointer' : 'not-allowed' }}>
+                🔊 ทดสอบเสียง
+              </button>
+              <Toggle on={s.voiceEnabled} onChange={(v) => set('voiceEnabled', v)} />
+            </div>
+          </Row>
+          <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8 }}>
+            แบนเนอร์ + Maiden พูดเตือนเมื่อเลือดต่ำกว่าขีด (Windows SAPI · เสียงไทยจะดีขึ้นถ้าติดตั้ง Thai voice ใน Windows)
+          </div>
         </Card>
 
         <Card title="Live (จาก GSI)">

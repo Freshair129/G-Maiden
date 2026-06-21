@@ -9,7 +9,6 @@
 //! which is event-driven and rare. The hard-latency G-Signal path (gank
 //! warning) will need in-process TTS later.
 
-use std::io::Write;
 use std::process::{Command, Stdio};
 
 fn base64(data: &[u8]) -> String {
