@@ -1,7 +1,8 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: 2026-06-21 (turn 13) · G-Log privacy controls + speak_event consistency
-(ดู `.govibe/.brain/session/2026-06-21-privacy-controls.md`).
+อัปเดตล่าสุด: 2026-06-21 (turn 14) · Spike S-1 minimap CV รันจริงแล้ว — accuracy
+FAIL 10% (estimate เดิมผิด), ONNX จำเป็นแล้ว ไม่ใช่ optional (ดู
+`.govibe/.brain/session/2026-06-21-spike-s1-empirical.md`).
 
 ## ต้องให้ผู้ใช้ทำ (ทำแทนไม่ได้)
 - [ ] **เปิด Dota 2 จริง** → ยืนยัน overlay + voice end-to-end. POST simulated ทดสอบผ่านแล้ว
@@ -24,8 +25,12 @@
 - [x] ~~**MSI installer**~~ — ✅ จบ G8.1 (commit `ac56d87`): ice-gem icon ลง bundle ทุกขนาด,
       Welcome modal 2-step (auto-detect + auto-install) + 'gm-onboarded' localStorage flag.
       เหลือเทสต์ใน Dota 2 จริง = งาน user.
-- [ ] **G-Sentry/G-Motion/G-Signal เต็ม** — ต้อง minimap CV (GSI ไม่ให้ตำแหน่งศัตรู, ดู R-02/R-03).
-      ต้องมีเกมจริงทดสอบ. เริ่มจาก spike S-1 (minimap capture + template match).
+- [ ] **G-Sentry/G-Motion/G-Signal เต็ม** — ต้อง minimap CV. **อัปเดต turn 14:**
+      Spike S-1 รันแล้ว (commit `b5b34da`): G-LAT/G-CPU **PASS empirical** ~100x
+      headroom, แต่ G-ACC NCC + prefilter **FAIL 10.2% บน synthetic** เอง →
+      **ต้องใช้ ONNX detector** ตั้งแต่แรก ไม่ใช่ fallback. real-game footage ยัง
+      จำเป็นเพื่อ train + validate ONNX (ไม่ใช่ measure NCC). pipeline เดิม
+      (capture → prefilter → match) คงไว้, เปลี่ยนแค่ match step.
 - [x] ~~**G-Master advisor**~~ — ✅ จบใน turn 11 (commit `33d2fa3`): shell-out
       `claude -p` ใช้ Plan quota, throttle 30s + cache, persona prompt + game
       context auto. ติดตั้ง Claude Code CLI + login = พร้อมใช้.
