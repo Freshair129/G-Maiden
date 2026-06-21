@@ -1,8 +1,7 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: 2026-06-21 (turn 14) · Spike S-1 minimap CV รันจริงแล้ว — accuracy
-FAIL 10% (estimate เดิมผิด), ONNX จำเป็นแล้ว ไม่ใช่ optional (ดู
-`.govibe/.brain/session/2026-06-21-spike-s1-empirical.md`).
+อัปเดตล่าสุด: 2026-06-21 (turn 15) · autonomous wave runner + supervisor review
+ลง branch `GVBR-1-anti-error-loop-l0l1` (ดู `.govibe/.brain/session/2026-06-21-auto-wave.md`).
 
 ## ต้องให้ผู้ใช้ทำ (ทำแทนไม่ได้)
 - [ ] **เปิด Dota 2 จริง** → ยืนยัน overlay + voice end-to-end. POST simulated ทดสอบผ่านแล้ว
