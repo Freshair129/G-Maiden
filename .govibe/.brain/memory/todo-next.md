@@ -42,8 +42,13 @@ stack = tract + windows-capture v2.0 · ADR-05: ONNX=default, NCC=fallback.
 - [x] **P2.1** dataset generator (commit `5d9ad2f`, via subagent): `tools/gen-dataset/`
       Python, degradation profile = spike เป๊ะ, ImageFolder layout, 7/7 tests. มี
       synthetic-icon fallback (รันได้ไม่ต้องมี asset). ต้องหา official icons จริงก่อนเทรนจริง.
-- [ ] **P2.2** train + integrate tract ONNX detector (`cv/detector.rs`); NCC fallback.
-      (ขั้นต่อไป — เพิ่ม `tract-onnx`+`image` deps, train MobileNetV3-small → .onnx)
+- [x] **P2.2** ONNX detector (commit `1c9e466`): `cv/detector.rs` tract-onnx 0.21,
+      patch→32×32 bilinear→softmax/argmax→NMS. contract NCHW[1,3,32,32] RGB/255→logits,
+      labels.json มี `__negative__`. fallback candidate-only ถ้าไม่มี model. 13 cv tests
+      ผ่าน รวม `real_model_loads_and_infers` (พิสูจน์ tract รับ ONNX ที่ export ได้จริง).
+      training: `tools/train-detector/` PyTorch tract-safe CNN → 100% synthetic val
+      (OPTIMISTIC — synthetic-icon; ต้อง icon จริงก่อน ship). model 99KB commit แล้ว.
+      ⚠️ **ยังต้อง bundle models/ เป็น tauri resource** ใน installer (ตอนนี้ dev โหลดจาก repo root).
 - [ ] **P2.3** `sentry.rs` G-Sentry: missing >5s → `EnemyMissing` + เสียงเตือน.
 - [ ] **P2.4** `motion.rs` G-Motion: ring buffer 5 นาที + gank probability.
 - [ ] **P2.5** G-Signal เต็ม (>85% interrupt + Belief Revision) + latency harness
