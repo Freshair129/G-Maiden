@@ -1,7 +1,7 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: 2026-06-21 (turn 9) · fix in_game ที่ state INIT + unit tests แรกของโปรเจกต์
-(ดู `.govibe/.brain/session/2026-06-21-gsi-fix-tests.md`).
+อัปเดตล่าสุด: 2026-06-21 (turn 10) · unit tests 3 → 11 (gsi + setup + tts ครอบครัวเดิม)
+(ดู `.govibe/.brain/session/2026-06-21-tests-expand.md`).
 
 ## ต้องให้ผู้ใช้ทำ (ทำแทนไม่ได้)
 - [ ] **เปิด Dota 2 จริง** → ยืนยัน overlay + voice end-to-end. POST simulated ทดสอบผ่านแล้ว
