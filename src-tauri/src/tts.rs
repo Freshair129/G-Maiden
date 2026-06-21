@@ -181,3 +181,44 @@ pub fn speak(text: &str, voice: Option<&str>, rate: Option<i32>) {
         *g = Some(child);
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    // Hand-verified vectors against `[Convert]::ToBase64String` to lock in
+    // PowerShell-roundtrip correctness — that round-trip is the whole reason
+    // we hand-rolled base64 instead of pulling a crate.
+    #[test]
+    fn base64_matches_powershell_for_ascii() {
+        assert_eq!(base64(b""), "");
+        assert_eq!(base64(b"f"), "Zg==");
+        assert_eq!(base64(b"fo"), "Zm8=");
+        assert_eq!(base64(b"foo"), "Zm9v");
+        assert_eq!(base64(b"foob"), "Zm9vYg==");
+        assert_eq!(base64(b"fooba"), "Zm9vYmE=");
+        assert_eq!(base64(b"foobar"), "Zm9vYmFy");
+    }
+
+    #[test]
+    fn base64_handles_thai_utf8_bytes() {
+        // "ถอยก่อน" — the meaningful start of Maiden's danger line. If this
+        // round-trip ever drifts, the PowerShell SAPI script silently mispronounces.
+        let bytes = "ถอยก่อน".as_bytes();
+        let encoded = base64(bytes);
+        // Verified once against `[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes('ถอยก่อน'))`
+        assert_eq!(encoded, "4LiW4Lit4Lii4LiB4LmI4Lit4LiZ");
+    }
+
+    #[test]
+    fn base64_no_panic_on_arbitrary_bytes() {
+        // Cycle 0..=255 a few times so every chunk-length branch (1/2/3) executes.
+        let bytes: Vec<u8> = (0..=255u8).cycle().take(513).collect();
+        let s = base64(&bytes);
+        // Output length must follow the ceil(n/3)*4 rule with proper padding.
+        let expected_len = (bytes.len() + 2) / 3 * 4;
+        assert_eq!(s.len(), expected_len);
+        let pad = s.chars().rev().take_while(|c| *c == '=').count();
+        assert!(pad <= 2);
+    }
+}
