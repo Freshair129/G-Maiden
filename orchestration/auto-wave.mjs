@@ -23,6 +23,10 @@ import {
 // task ที่ถือว่า "settle แล้ว" ในรอบของ wave runner (ไม่นับ todo ที่ถูกข้ามเพราะ skipped/manual)
 const SETTLED = new Set(["done", "failed", "needs-rework"]);
 
+// stop flag ระดับ autonomous loop — เพราะ runPool รีเซ็ต POOL.stop=false ทุก wave,
+// outer loop จึงต้องจำ stop เอง (MAJOR-1 fix)
+let STOP = false;
+
 const SUPERVISOR_PROMPT_TEMPLATE = `คุณคือ "supervisor" ของ orchestrator ที่ตรวจ "wave" ที่เพิ่งจบ —
 ไม่ใช่ task เดียว ๆ. Verify Gate ตรวจ task แต่ละตัวไปแล้ว; งานคุณคือมองภาพรวมที่
 Gate รายตัวมองไม่เห็น.
@@ -143,8 +147,10 @@ function spawnSupervisor({ prompt, model, logFile }) {
   });
 }
 
+// "remaining" = ยังไม่ done (true completion). needs-rework/failed นับเป็น "ยังไม่เสร็จ" ด้วย
+// (กัน false-complete — done≠passed; needs-rework ที่ค้างจะถูก guard ใน loop จับเป็น HOLD) — MAJOR-2 fix
 function pendingTasks(state) {
-  return BACKLOG.filter((t) => !["done", "failed", "needs-rework"].includes(state.tasks[t.id].status));
+  return BACKLOG.filter((t) => state.tasks[t.id].status !== "done");
 }
 
 // คืน { index, dagLevel, ids } ของ wave แรกที่ยังมี task ที่ยังต้องทำ; null ถ้าไม่มีอะไรเหลือ
@@ -163,6 +169,7 @@ async function waitForWave({ ids, pollMs = 1500, idleMs = 3000, timeoutMs = 60 *
   const start = Date.now();
   let lastBusy = Date.now();
   while (true) {
+    if (STOP) return "stopped";
     if (Date.now() - start > timeoutMs) return "timeout";
     const ps = poolStatus();
     if (ps.running > 0) lastBusy = Date.now();
@@ -207,7 +214,9 @@ export async function runAutonomous({
 
   const summary = { waves: [], stoppedAt: null, holdAt: null, completedAt: null, reportFile };
 
+  STOP = false;
   for (let waveIdx = 0; waveIdx < maxWaves; waveIdx++) {
+    if (STOP) { log(`\n⏹ STOPPED by user at wave ${waveIdx + 1}`); summary.stoppedAt = waveIdx; return summary; }
     const state = loadState();
     if (!pendingTasks(state).length) {
       log(`\n✅ ALL TASKS DONE  ·  elapsed ${((Date.now() - t0) / 1000).toFixed(0)}s`);
@@ -221,6 +230,15 @@ export async function runAutonomous({
       return summary;
     }
     log(`\n## Wave ${waveIdx + 1}  ·  DAG level ${wv.dagLevel + 1}  ·  ${wv.ids.length} tasks: ${wv.ids.join(", ")}`);
+
+    // guard (MAJOR-2): wave นี้มี task ที่รันได้ (todo) ไหม — ถ้าเหลือแต่ needs-rework/failed
+    // runPool ทำอะไรไม่ได้ -> กัน deadlock (วนเรียก supervisor ซ้ำ) + false-complete -> HOLD ให้คนแก้
+    const actionable = wv.ids.filter((id) => state.tasks[id]?.status === "todo");
+    const stuck = wv.ids.filter((id) => ["failed", "needs-rework"].includes(state.tasks[id]?.status));
+    if (!actionable.length) {
+      log(`\n🛑 HOLD — wave ${waveIdx + 1} ไม่มี task ที่รันได้ (ติด: ${stuck.join(", ") || "—"}). fix/reset ก่อนเดินต่อ.`);
+      summary.holdAt = waveIdx; summary.blocked = stuck; return summary;
+    }
 
     // 1. fire the wave
     const r = runPool({ mode: "wave", max: concurrency, worker: workerLabel });
@@ -283,5 +301,6 @@ export async function runAutonomous({
 
 // CLI-friendly stop
 export function stopAutonomous() {
+  STOP = true;
   stopPool();
 }

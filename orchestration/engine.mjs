@@ -395,7 +395,7 @@ export function readUsage() {
 
 // ---------- worker pool (Run wave / Auto-run / Stop) ----------
 let POOL = { active: false, stop: false, running: 0, mode: null, started: null, max: 0 };
-export function poolStatus() { return { active: POOL.active, running: POOL.running, mode: POOL.mode, max: POOL.max }; }
+export function poolStatus() { return { active: POOL.active, running: POOL.running, mode: POOL.mode, max: POOL.max, stop: POOL.stop }; }
 export function stopPool() { POOL.stop = true; return { ok: true }; }
 
 /**
