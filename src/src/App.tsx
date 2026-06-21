@@ -800,7 +800,7 @@ const Control: React.FC = () => {
 
   // While preview is on, emit a synthetic game-tick + an active gsi-status every
   // 1.5s (beating the 4s Rust watchdog that would otherwise hide the overlay).
-  // hp 18% is below the danger threshold, so the danger banner + voice fire too.
+  // HP cycles low↔high so the danger banner + voice fire repeatedly.
   useEffect(() => {
     if (!preview) {
       if (previewTimer.current) { clearInterval(previewTimer.current); previewTimer.current = null }
@@ -809,12 +809,17 @@ const Control: React.FC = () => {
     }
     const tickOnce = () => {
       previewClock.current += 2
+      // Cycle HP low↔high (~10.5s each phase) so the danger alert re-arms on the
+      // high phase and FIRES AGAIN on each new dip — demonstrating the rising-edge
+      // warning repeats (it only stays silent while HP stays continuously low).
+      const lowPhase = Math.floor(previewClock.current / 14) % 2 === 0
+      const hp = lowPhase ? 18 : 80
       void emit('gsi-status', { dota_running: true, gsi_active: true, in_game: true })
       void emit('game-tick', {
         in_game: true, clock_time: previewClock.current, game_state: 'DOTA_GAMERULES_STATE_GAME_IN_PROGRESS',
         daytime: true, radiant_score: 12, dire_score: 9, gold: 1500, net_worth: 8200, gpm: 520, xpm: 610,
         kills: 4, deaths: 2, assists: 7, last_hits: 88, denies: 6, hero: 'npc_dota_hero_crystal_maiden',
-        level: 9, alive: true, hp_percent: 18, mana_percent: 42,
+        level: 9, alive: true, hp_percent: hp, mana_percent: 42,
       })
     }
     tickOnce()
@@ -1055,7 +1060,7 @@ const Control: React.FC = () => {
             style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontSize: 11 }}>
             {updPhase === 'checking' ? 'กำลังตรวจ…' : updPhase === 'uptodate' ? 'เป็นเวอร์ชันล่าสุด ✓' : updPhase === 'error' ? 'ตรวจไม่สำเร็จ' : 'ตรวจหาอัปเดต'}
           </button>
-          <span>v0.4.0</span>
+          <span>v0.4.1</span>
         </span>
       </footer>
     </div>
