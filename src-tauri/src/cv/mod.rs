@@ -7,6 +7,7 @@
 //! spike constants to a runtime-sized minimap region.
 
 pub mod prefilter;
+pub mod region;
 
 /// Dire-red enemy team-ring colour (normalised RGB), from Spike S-1.
 /// The prefilter rewards pixels close to this hue — it is the cheapest signal
