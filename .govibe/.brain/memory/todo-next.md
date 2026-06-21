@@ -76,7 +76,12 @@ stack = tract + windows-capture v2.0 · ADR-05: ONNX=default, NCC=fallback.
       dota_react Steam CDN (OpenDota hero list) → `assets/minimap-icons/` (32×32 RGBA).
       retrain → model 128-class (127 ฮีโร่ + negative, 129KB), tract โหลดได้, val 1.0.
       ⚠️ val ยังเป็น synthetic-composite — true test = footage จริง (validation-only, ค้าง user).
-- [ ] **#7 probability-model calibration** — heuristic v1; ต้องมีข้อมูล G-Log จริงก่อนจูน.
+- [~] **#7 probability-model calibration** — **ปูทางแล้ว** (commit `2b92126`):
+      G-Log บันทึก event `gank_signal`/`gank_revision`/`enemy_missing` ลง match JSONL
+      (time-aligned กับ tick). `tools/analyze-log/analyze.py` join signal→outcome
+      (death/HP drop ใน window) → precision/recall. **เหลือจูนจริงเมื่อมี match data**:
+      เล่นจริง → `python analyze.py` → ปรับ DANGER_THRESHOLD (signal.rs) / missing_risk
+      curve (motion.rs) ตาม precision/recall. 42 Rust tests + analyzer self-test ผ่าน.
 
 ## เกร็ด turn 21
 - ไอคอนมินิแมพจริง = dota_react CDN `.../heroes/icons/<short>.png` (วงกลม, transparent,
