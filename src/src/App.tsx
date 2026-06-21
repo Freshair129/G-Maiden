@@ -241,6 +241,136 @@ const Overlay: React.FC = () => {
     }
   }, [])
 
+  // ── All hooks below run EVERY render, before any early return. React requires
+  // a constant hook order; an early `return` above these (as there was) makes the
+  // hook count change when a match starts and crashes the overlay. They guard on
+  // `tick` internally instead. ──
+  const lowHp = !!tick && tick.in_game && s.alertEnabled && tick.alive
+    && tick.hp_percent > 0 && tick.hp_percent <= s.alertThreshold
+
+  // Speak on the rising edge (alive + crossing the line). Re-arm when safe again,
+  // and throttle to at most once every 8s in case HP flickers across the line.
+  useEffect(() => {
+    if (!tick || !tick.in_game) return
+    if (!tick.alive || tick.hp_percent > s.alertThreshold + 5) {
+      dangerActive.current = false
+      return
+    }
+    if (lowHp && !dangerActive.current && s.voiceEnabled) {
+      const now = Date.now()
+      if (now - lastSpokeAt.current > 8000) {
+        lastSpokeAt.current = now
+        dangerActive.current = true
+        lastSpokeKind.current = 'danger'
+        dangerHpAtSpeak.current = tick.hp_percent
+        void invoke('speak_event', { event: 'danger', fallback: DANGER_LINE, voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})
+      }
+    }
+  }, [lowHp, tick?.in_game, tick?.alive, tick?.hp_percent, s.alertThreshold, s.voiceEnabled])
+
+  // Belief Revision (CLAUDE.md): if Maiden just yelled "ถอย!" but the danger
+  // evaporated within ~2.5s (player got a kill, or HP swung well above safe),
+  // kill the in-flight line and replace with a self-correcting one.
+  useEffect(() => {
+    if (!tick || !tick.in_game) return
+    const p = prev.current
+    if (!p || lastSpokeKind.current !== 'danger') return
+    const sinceSpoke = Date.now() - lastSpokeAt.current
+    if (sinceSpoke > 2500 || sinceSpoke < 100) return  // out of window / same tick
+    const hpRecovered = tick.hp_percent >= dangerHpAtSpeak.current + 25 && tick.hp_percent > s.alertThreshold + 15
+    const gotKill = tick.kills > p.kills
+    if (!hpRecovered && !gotKill) return
+    const pool = REVISION_LINES.dangerRetracted
+    const line = pool[Math.floor(Math.random() * pool.length)]
+    lastSpokeAt.current = Date.now()
+    lastSpokeKind.current = 'revision'
+    dangerActive.current = false  // arm danger again so a fresh crossing can re-warn
+    void invoke('cancel_speech').catch(() => {})
+    // brief gap lets the killed SAPI process die before the new one starts,
+    // otherwise Windows audio sometimes squashes the first syllable
+    setTimeout(() => {
+      void invoke('speak_event', { event: 'revision', fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
+    }, 90)
+  }, [tick?.in_game, tick?.hp_percent, tick?.kills, s.alertThreshold])
+
+  // Persona events — detect transitions vs. the previous tick. We minimum-gap
+  // every utterance to 6s and skip persona lines whenever a danger line is
+  // already due, so Maiden never talks over her own warnings.
+  useEffect(() => {
+    if (!tick || !tick.in_game) return
+    const p = prev.current
+    prev.current = { level: tick.level, kills: tick.kills, deaths: tick.deaths, alive: tick.alive, mana: tick.mana_percent, hp: tick.hp_percent }
+    if (!p || !sRef.current.voiceEnabled || !sRef.current.personaLines) return
+    if (lowHp) return // don't talk over a danger warning
+
+    const events: PersonaEvent[] = []
+    if (tick.level > p.level && tick.level >= 2) events.push('levelUp')
+    if (tick.kills > p.kills) events.push('kill')
+    if (p.alive && !tick.alive) events.push('death')
+    if (!p.alive && tick.alive) events.push('respawn')
+
+    // mana-low rising edge: <= 15% while alive; clear at > 25%.
+    if (tick.alive && tick.mana_percent > 0 && tick.mana_percent <= 15 && !manaActive.current) {
+      events.push('manaLow')
+      manaActive.current = true
+    } else if (tick.mana_percent > 25) {
+      manaActive.current = false
+    }
+    if (events.length === 0) return
+
+    const now = Date.now()
+    if (now - lastSpokeAt.current < 6000) return
+    // Pick the highest-priority event in order: death > respawn > kill > levelUp > manaLow
+    const order: PersonaEvent[] = ['death', 'respawn', 'kill', 'levelUp', 'manaLow']
+    const evt = order.find((e) => events.includes(e))!
+    const pool = PERSONA_LINES[evt]
+    const line = pool[Math.floor(Math.random() * pool.length)]
+    lastSpokeAt.current = now
+    lastSpokeKind.current = 'persona'
+    void invoke('speak_event', { event: evt, fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
+  }, [tick?.in_game, tick?.level, tick?.kills, tick?.deaths, tick?.alive, tick?.mana_percent, lowHp])
+
+  // Auto-advice (G-Master proactive). Fires Claude Plan request + speaks the
+  // result on key moments: ult level milestones and a death-streak (2 deaths
+  // within 5 clock-min). Per-trigger cooldown 10 clock-min; server-side
+  // throttle (30s wallclock) also caps quota use.
+  useEffect(() => {
+    if (!tick || !tick.in_game) return
+    const p = prev.current
+    if (!p || !sRef.current.autoAdvice || !sRef.current.voiceEnabled) return
+
+    type Trigger = { key: string }
+    const triggers: Trigger[] = []
+
+    if (tick.level > p.level && (tick.level === 6 || tick.level === 11 || tick.level === 16)) {
+      triggers.push({ key: `lvl${tick.level}` })
+    }
+    if (tick.deaths > p.deaths) {
+      const last = recentDeathClock.current
+      if (last !== null && tick.clock_time - last > 0 && tick.clock_time - last < 300) {
+        triggers.push({ key: 'deathStreak' })
+      }
+      recentDeathClock.current = tick.clock_time
+    }
+
+    for (const trig of triggers) {
+      const last = advisedAt.current[trig.key] ?? -Infinity
+      if (tick.clock_time - last < 600) continue
+      advisedAt.current[trig.key] = tick.clock_time
+      void invoke<{ text: string; cached: boolean }>('request_advice', { tick })
+        .then((a) => {
+          if (!a?.text) return
+          void invoke('speak_event', {
+            event: 'advice',
+            fallback: a.text,
+            voice: sRef.current.voiceName || null,
+            rate: sRef.current.voiceRate,
+          }).catch(() => {})
+        })
+        .catch(() => { /* claude CLI missing or login fail — silent in auto mode */ })
+    }
+  }, [tick?.in_game, tick?.level, tick?.deaths, tick?.clock_time])
+
   const wrap: React.CSSProperties = {
     position: 'fixed', inset: 0, background: 'transparent', display: 'flex',
     justifyContent: s.position === 'left' ? 'flex-start' : s.position === 'right' ? 'flex-end' : 'center',
@@ -302,126 +432,6 @@ const Overlay: React.FC = () => {
     )
   }
   const t = tick
-  const lowHp = s.alertEnabled && t.alive && t.hp_percent > 0 && t.hp_percent <= s.alertThreshold
-
-  // Speak on the rising edge (alive + crossing the line). Re-arm when safe again,
-  // and throttle to at most once every 8s in case HP flickers across the line.
-  useEffect(() => {
-    if (!t.alive || t.hp_percent > s.alertThreshold + 5) {
-      dangerActive.current = false
-      return
-    }
-    if (lowHp && !dangerActive.current && s.voiceEnabled) {
-      const now = Date.now()
-      if (now - lastSpokeAt.current > 8000) {
-        lastSpokeAt.current = now
-        dangerActive.current = true
-        lastSpokeKind.current = 'danger'
-        dangerHpAtSpeak.current = t.hp_percent
-        void invoke('speak_event', { event: 'danger', fallback: DANGER_LINE, voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})
-      }
-    }
-  }, [lowHp, t.alive, t.hp_percent, s.alertThreshold, s.voiceEnabled])
-
-  // Belief Revision (CLAUDE.md): if Maiden just yelled "ถอย!" but the danger
-  // evaporated within ~2.5s (player got a kill, or HP swung well above safe),
-  // kill the in-flight line and replace with a self-correcting one.
-  useEffect(() => {
-    const p = prev.current
-    if (!p || lastSpokeKind.current !== 'danger') return
-    const sinceSpoke = Date.now() - lastSpokeAt.current
-    if (sinceSpoke > 2500 || sinceSpoke < 100) return  // out of window / same tick
-    const hpRecovered = t.hp_percent >= dangerHpAtSpeak.current + 25 && t.hp_percent > s.alertThreshold + 15
-    const gotKill = t.kills > p.kills
-    if (!hpRecovered && !gotKill) return
-    const pool = REVISION_LINES.dangerRetracted
-    const line = pool[Math.floor(Math.random() * pool.length)]
-    lastSpokeAt.current = Date.now()
-    lastSpokeKind.current = 'revision'
-    dangerActive.current = false  // arm danger again so a fresh crossing can re-warn
-    void invoke('cancel_speech').catch(() => {})
-    // brief gap lets the killed SAPI process die before the new one starts,
-    // otherwise Windows audio sometimes squashes the first syllable
-    setTimeout(() => {
-      void invoke('speak_event', { event: 'revision', fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
-    }, 90)
-  }, [t.hp_percent, t.kills, s.alertThreshold])
-
-  // Persona events — detect transitions vs. the previous tick. We minimum-gap
-  // every utterance to 6s and skip persona lines whenever a danger line is
-  // already due, so Maiden never talks over her own warnings.
-  useEffect(() => {
-    const p = prev.current
-    prev.current = { level: t.level, kills: t.kills, deaths: t.deaths, alive: t.alive, mana: t.mana_percent, hp: t.hp_percent }
-    if (!p || !sRef.current.voiceEnabled || !sRef.current.personaLines) return
-    if (lowHp) return // don't talk over a danger warning
-
-    const events: PersonaEvent[] = []
-    if (t.level > p.level && t.level >= 2) events.push('levelUp')
-    if (t.kills > p.kills) events.push('kill')
-    if (p.alive && !t.alive) events.push('death')
-    if (!p.alive && t.alive) events.push('respawn')
-
-    // mana-low rising edge: <= 15% while alive; clear at > 25%.
-    if (t.alive && t.mana_percent > 0 && t.mana_percent <= 15 && !manaActive.current) {
-      events.push('manaLow')
-      manaActive.current = true
-    } else if (t.mana_percent > 25) {
-      manaActive.current = false
-    }
-    if (events.length === 0) return
-
-    const now = Date.now()
-    if (now - lastSpokeAt.current < 6000) return
-    // Pick the highest-priority event in order: death > respawn > kill > levelUp > manaLow
-    const order: PersonaEvent[] = ['death', 'respawn', 'kill', 'levelUp', 'manaLow']
-    const evt = order.find((e) => events.includes(e))!
-    const pool = PERSONA_LINES[evt]
-    const line = pool[Math.floor(Math.random() * pool.length)]
-    lastSpokeAt.current = now
-    lastSpokeKind.current = 'persona'
-    void invoke('speak_event', { event: evt, fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
-  }, [t.level, t.kills, t.deaths, t.alive, t.mana_percent, lowHp])
-
-  // Auto-advice (G-Master proactive). Fires Claude Plan request + speaks the
-  // result on key moments: ult level milestones and a death-streak (2 deaths
-  // within 5 clock-min). Per-trigger cooldown 10 clock-min; server-side
-  // throttle (30s wallclock) also caps quota use.
-  useEffect(() => {
-    const p = prev.current
-    if (!p || !sRef.current.autoAdvice || !sRef.current.voiceEnabled) return
-
-    type Trigger = { key: string }
-    const triggers: Trigger[] = []
-
-    if (t.level > p.level && (t.level === 6 || t.level === 11 || t.level === 16)) {
-      triggers.push({ key: `lvl${t.level}` })
-    }
-    if (t.deaths > p.deaths) {
-      const last = recentDeathClock.current
-      if (last !== null && t.clock_time - last > 0 && t.clock_time - last < 300) {
-        triggers.push({ key: 'deathStreak' })
-      }
-      recentDeathClock.current = t.clock_time
-    }
-
-    for (const trig of triggers) {
-      const last = advisedAt.current[trig.key] ?? -Infinity
-      if (t.clock_time - last < 600) continue
-      advisedAt.current[trig.key] = t.clock_time
-      void invoke<{ text: string; cached: boolean }>('request_advice', { tick: t })
-        .then((a) => {
-          if (!a?.text) return
-          void invoke('speak_event', {
-            event: 'advice',
-            fallback: a.text,
-            voice: sRef.current.voiceName || null,
-            rate: sRef.current.voiceRate,
-          }).catch(() => {})
-        })
-        .catch(() => { /* claude CLI missing or login fail — silent in auto mode */ })
-    }
-  }, [t.level, t.deaths, t.clock_time])
 
   return (
     <>
