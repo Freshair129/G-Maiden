@@ -37,9 +37,41 @@ interface Settings {
   voiceEnabled: boolean
   voiceName: string
   voiceRate: number
+  personaLines: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0 }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
+
+// Maiden's persona pool — gentle, smart, lightly self-deprecating about CM nerfs,
+// per CLAUDE.md. Multiple lines per event so it doesn't feel scripted.
+const PERSONA_LINES = {
+  levelUp: [
+    'ขึ้นเลเวลแล้วค่ะ สวยมาก ขยายอำนาจต่อเลย',
+    'เลเวลใหม่นะคะ เก็บสกิลตามเพลนเดิม',
+    'เลเวลขึ้นแล้ว — ยังเก่งกว่า movement speed ของซีเอ็มอีกนะ',
+  ],
+  kill: [
+    'ฆ่าได้สวยค่ะ! เก็บไปเรื่อย ๆ',
+    'นั่นน่ะ pick ของชั้น — เอ๊ะ ของเพื่อนก็ได้',
+    'ดีมากเลย รักษาแรงโมเมนตัมไว้',
+  ],
+  death: [
+    'ตายแล้วเหรอคะ ไม่เป็นไรเดี๋ยวกลับมาใหม่',
+    'เสียใจด้วยนะ — มาวิเคราะห์กันว่าเกิดอะไรขึ้น',
+    'เกิดขึ้นได้ค่ะ จดจังหวะ map ไว้นะ',
+  ],
+  respawn: [
+    'กลับมาแล้ว ค่อย ๆ นะคะ',
+    'ฟื้นแล้ว — ดู map ก่อนค่อยเดินออกนะ',
+    'พร้อมแล้วใช่ไหม ไปด้วยกันค่ะ',
+  ],
+  manaLow: [
+    'มานาเหลือน้อยแล้วค่ะ ระวังด้วย',
+    'มานาใกล้หมด — ถอยกลับฐานก่อนไหม',
+  ],
+} as const
+type PersonaEvent = keyof typeof PERSONA_LINES
+
 interface VoiceInfo { name: string; culture: string; gender: string; age: string }
 const loadSettings = (): Settings => {
   try {
@@ -118,6 +150,12 @@ const Overlay: React.FC = () => {
   // not every tick. Reset when HP recovers or the hero dies/respawns.
   const dangerActive = useRef(false)
   const lastSpokeAt = useRef(0)
+  // Previous tick for transition detection (level up, kill, death, respawn).
+  // We don't snapshot the whole tick — only the fields that drive a persona line.
+  const prev = useRef<{ level: number; kills: number; deaths: number; alive: boolean; mana: number } | null>(null)
+  const manaActive = useRef(false)
+  const sRef = useRef(s)
+  sRef.current = s
   useEffect(() => {
     const u1 = listen<GameTick>('game-tick', (e) => { setTick(e.payload); setSeen(true) })
     const u2 = listen<Settings>('settings', (e) => setS({ ...DEFAULTS, ...e.payload }))
@@ -162,6 +200,41 @@ const Overlay: React.FC = () => {
       }
     }
   }, [lowHp, t.alive, t.hp_percent, s.alertThreshold, s.voiceEnabled])
+
+  // Persona events — detect transitions vs. the previous tick. We minimum-gap
+  // every utterance to 6s and skip persona lines whenever a danger line is
+  // already due, so Maiden never talks over her own warnings.
+  useEffect(() => {
+    const p = prev.current
+    prev.current = { level: t.level, kills: t.kills, deaths: t.deaths, alive: t.alive, mana: t.mana_percent }
+    if (!p || !sRef.current.voiceEnabled || !sRef.current.personaLines) return
+    if (lowHp) return // don't talk over a danger warning
+
+    const events: PersonaEvent[] = []
+    if (t.level > p.level && t.level >= 2) events.push('levelUp')
+    if (t.kills > p.kills) events.push('kill')
+    if (p.alive && !t.alive) events.push('death')
+    if (!p.alive && t.alive) events.push('respawn')
+
+    // mana-low rising edge: <= 15% while alive; clear at > 25%.
+    if (t.alive && t.mana_percent > 0 && t.mana_percent <= 15 && !manaActive.current) {
+      events.push('manaLow')
+      manaActive.current = true
+    } else if (t.mana_percent > 25) {
+      manaActive.current = false
+    }
+    if (events.length === 0) return
+
+    const now = Date.now()
+    if (now - lastSpokeAt.current < 6000) return
+    // Pick the highest-priority event in order: death > respawn > kill > levelUp > manaLow
+    const order: PersonaEvent[] = ['death', 'respawn', 'kill', 'levelUp', 'manaLow']
+    const evt = order.find((e) => events.includes(e))!
+    const pool = PERSONA_LINES[evt]
+    const line = pool[Math.floor(Math.random() * pool.length)]
+    lastSpokeAt.current = now
+    void invoke('speak', { text: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
+  }, [t.level, t.kills, t.deaths, t.alive, t.mana_percent, lowHp])
 
   return (
     <div style={wrap}>
@@ -403,6 +476,9 @@ const Control: React.FC = () => {
           </Row>
           <Row label={`ความเร็ว: ${s.voiceRate > 0 ? '+' : ''}${s.voiceRate}`}>
             <input type="range" min={-5} max={5} step={1} value={s.voiceRate} onChange={(e) => set('voiceRate', Number(e.target.value))} disabled={!s.voiceEnabled} style={{ width: 150 }} />
+          </Row>
+          <Row label="พูดเสริมตามเหตุการณ์">
+            <Toggle on={s.personaLines} onChange={(v) => set('personaLines', v)} />
           </Row>
           <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
             Windows SAPI · ติดตั้งเสียงไทยใน Windows Settings · Time & Language · Speech เพื่อให้ Maiden พูดไทยชัดขึ้น
