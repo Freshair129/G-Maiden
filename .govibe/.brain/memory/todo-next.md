@@ -49,11 +49,31 @@ stack = tract + windows-capture v2.0 · ADR-05: ONNX=default, NCC=fallback.
       training: `tools/train-detector/` PyTorch tract-safe CNN → 100% synthetic val
       (OPTIMISTIC — synthetic-icon; ต้อง icon จริงก่อน ship). model 99KB commit แล้ว.
       ⚠️ **ยังต้อง bundle models/ เป็น tauri resource** ใน installer (ตอนนี้ dev โหลดจาก repo root).
-- [ ] **P2.3** `sentry.rs` G-Sentry: missing >5s → `EnemyMissing` + เสียงเตือน.
-- [ ] **P2.4** `motion.rs` G-Motion: ring buffer 5 นาที + gank probability.
-- [ ] **P2.5** G-Signal เต็ม (>85% interrupt + Belief Revision) + latency harness
-      p50≤250ms/p99≤300ms + governor CPU≤2.5%.
-- ทดสอบ: `cargo test --bin g-maiden cv::` (bin ไม่มี lib target).
+- [x] **P2.3** `sentry.rs` (commit `7f1397b`): per-hero last-seen state machine,
+      missing >5s edge-triggered → `EnemyMissing`. 3 tests.
+- [x] **P2.4** `motion.rs` (commit `7f1397b`): ring buffer 5 นาที + v1 gank-risk
+      heuristic (risk ramps ตาม off-map time peak ~12s, decay; +boost ถ้า ≥2 หาย)
+      → `GankRisk`. 4 tests.
+- [x] **P2.5** `signal.rs` (commit `7f1397b`): >85% → Alert (hysteresis), clear
+      <50% → Revision (Belief Revision). เปล่งเสียงตรงจาก Rust (audio/tts interrupt).
+      latency harness (release-only) → **p50 21.6ms / p99 67.4ms < 80ms gate** ✅.
+      39 tests ผ่านหมด.
+- ทดสอบ: `cargo test --bin g-maiden` (debug). latency: `cargo test --release --bin
+  g-maiden pipeline_latency -- --nocapture`.
+
+## 🔧 จุดที่ต้องไล่แก้ทีละจุด (Phase 2 core เสร็จแล้ว — เหลือ tuning/integration)
+เรียงตามความสำคัญ:
+1. **bundle `models/` เข้า installer** (tauri resource) — ตอนนี้ build production ใหม่
+   model จะไม่ติดไป → detector เป็น candidate-only. ต้องแก้ tauri.conf.json resources.
+2. **เปิด Dota verify จริง** — candidate box เกาะไอคอน?, calibrate bbox ต่อ resolution,
+   วัด CPU จริง ≤2.5%. (debug overlay frontend ที่วาดกรอบยังไม่ได้ทำ — ดู event `minimap-cv`)
+3. **เทรนด้วย official hero minimap icons จริง** — ตอนนี้ 100% เป็น synthetic-icon
+   (ไอคอนแบบที่ NCC ได้ 10%). หา icon จริง → `gen_dataset --icons-dir` → retrain.
+4. **frontend banner** — listen `enemy-missing`/`gank-alert`/`gank-clear` แสดง overlay.
+5. **user voice settings บน Rust path** — ตอนนี้ gank ใช้ default voice/rate.
+6. **in-game gating + adaptive 15Hz** — capture ทำงานตลอดเวลา; ควร gate เฉพาะ in-game
+   + เร่ง rate เมื่อ Sentry สงสัย.
+7. **probability-model calibration** — heuristic v1; จูนด้วย G-Log จริง.
 
 ## ต้องให้ผู้ใช้ทำ (ทำแทนไม่ได้)
 - [ ] **เปิด Dota 2 จริง** → ยืนยัน overlay + voice end-to-end. POST simulated ทดสอบผ่านแล้ว
