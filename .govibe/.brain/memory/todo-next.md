@@ -1,7 +1,7 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: 2026-06-21 (turn 3) · GSI auto-install เข้าที่ — ปลด UX friction หลัก
-ของ installer (ดู `.govibe/.brain/session/2026-06-21-gsi-auto-install.md`).
+อัปเดตล่าสุด: 2026-06-21 (turn 4) · G8.1 installer ปิดงาน — ice-gem icon + onboarding wizard
+ครบ (ดู `.govibe/.brain/session/2026-06-21-icon-and-onboarding.md`).
 
 ## ต้องให้ผู้ใช้ทำ (ทำแทนไม่ได้)
 - [ ] **เปิด Dota 2 จริง** → ยืนยัน overlay + voice end-to-end. POST simulated ทดสอบผ่านแล้ว
@@ -14,10 +14,9 @@
 - [ ] **Piper local TTS** (TDD) — มาแทน Windows SAPI. `models/.gitkeep` มีไว้รอแล้ว.
       เสียงคุณภาพสูงกว่ามาก + พูดไทยชัด + latency ต่ำกว่า (ไม่ต้องเปิด PowerShell process).
       Spike: `piper-rs` หรือ shell-out `piper.exe` + รุ่น `th_TH-*.onnx`.
-- [ ] **MSI installer · the remaining quarter** — bundle ออกแล้ว + GSI cfg auto-install เสร็จ
-      (commit `08882e6`, SetupCard ใน Control GUI). เหลือ: (a) custom icons (ตอนนี้ Tauri default),
-      (b) onboarding หน้าแรก: ถ้า `detect_gsi_setup().installed=false` ให้กด install ให้เลย หรือ
-      ขึ้น dialog อธิบายว่าเปิด Dota 2 รอบใหม่เพื่อโหลด config.
+- [x] ~~**MSI installer**~~ — ✅ จบ G8.1 (commit `ac56d87`): ice-gem icon ลง bundle ทุกขนาด,
+      Welcome modal 2-step (auto-detect + auto-install) + 'gm-onboarded' localStorage flag.
+      เหลือเทสต์ใน Dota 2 จริง = งาน user.
 - [ ] **G-Sentry/G-Motion/G-Signal เต็ม** — ต้อง minimap CV (GSI ไม่ให้ตำแหน่งศัตรู, ดู R-02/R-03).
       ต้องมีเกมจริงทดสอบ. เริ่มจาก spike S-1 (minimap capture + template match).
 - [ ] **G-Master advisor** + Gemini persona (cloud brain).
