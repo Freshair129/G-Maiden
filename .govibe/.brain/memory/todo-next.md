@@ -1,19 +1,23 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: 2026-06-21 (turn 4) · G8.1 installer ปิดงาน — ice-gem icon + onboarding wizard
-ครบ (ดู `.govibe/.brain/session/2026-06-21-icon-and-onboarding.md`).
+อัปเดตล่าสุด: 2026-06-21 (turn 5) · Voice picker + rate ลง main — Maiden ฟังเข้า persona
+แล้วโดยไม่ต้องรอ Piper (ดู `.govibe/.brain/session/2026-06-21-voice-picker.md`).
 
 ## ต้องให้ผู้ใช้ทำ (ทำแทนไม่ได้)
 - [ ] **เปิด Dota 2 จริง** → ยืนยัน overlay + voice end-to-end. POST simulated ทดสอบผ่านแล้ว
       (HP=18% → banner + ทาง code path ถึง `speak()`). ถ้าเสียงเงียบ: เช็ค Windows Volume Mixer,
       ลองกดปุ่ม **🔊 ทดสอบเสียง** ใน Control GUI การ์ด Alerts.
 - [ ] (ทางเลือก) ติดตั้ง Thai voice ใน Windows → Settings · Time & Language · Speech · Manage
-      voices · Add voice "ไทย". ตอนนี้ SAPI จะอ่านไทยด้วยเสียงอังกฤษ (เพี้ยน แต่ได้ยิน).
+      voices · Add voice "ไทย". UI จะเด้งโชว์ใน dropdown 'เลือกเสียง' อัตโนมัติ และ warning
+      สีเหลืองจะหายไป.
 
 ## งานต่อ (เรียงตามคุณค่า)
-- [ ] **Piper local TTS** (TDD) — มาแทน Windows SAPI. `models/.gitkeep` มีไว้รอแล้ว.
-      เสียงคุณภาพสูงกว่ามาก + พูดไทยชัด + latency ต่ำกว่า (ไม่ต้องเปิด PowerShell process).
-      Spike: `piper-rs` หรือ shell-out `piper.exe` + รุ่น `th_TH-*.onnx`.
+- [ ] **Piper local TTS** (TDD) — เป้าหมายระยะถัดไป. ตอนนี้ SAPI + voice picker (commit
+      `893ea6d`) เพียงพอแล้วถ้า user ติดตั้ง Thai voice เพิ่ม. Piper ยังคุ้มสำหรับ:
+      (1) เสียงคุณภาพ neural แทน formant-synth, (2) latency in-process (~20ms vs ~200ms),
+      (3) ใช้บน G-Signal hard-path ตอนทำ gank warning. ต้อง spike: หา Thai voice
+      ที่ใช้ได้จริง (community model?) + เลือก `piper-rs` (ONNX dep) vs shell-out
+      `piper.exe`.
 - [x] ~~**MSI installer**~~ — ✅ จบ G8.1 (commit `ac56d87`): ice-gem icon ลง bundle ทุกขนาด,
       Welcome modal 2-step (auto-detect + auto-install) + 'gm-onboarded' localStorage flag.
       เหลือเทสต์ใน Dota 2 จริง = งาน user.
