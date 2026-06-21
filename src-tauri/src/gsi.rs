@@ -86,6 +86,8 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
         hp_percent: i(&v, &["hero", "health_percent"]),
         mana_percent: i(&v, &["hero", "mana_percent"]),
     };
+    // Gate the CV capture pipeline to live matches (saves idle CPU).
+    crate::runtime::set_in_game(tick.in_game);
     crate::log::note_tick(&tick);
     let _ = app.emit("game-tick", tick);
     "ok"

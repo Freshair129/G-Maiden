@@ -6,9 +6,13 @@
 //! Design notes:
 //! - **Read-only**: WGC composites via DWM; we never touch the game process
 //!   (Risk R-06 — no inject / no memory read).
-//! - **Rate**: WGC would fire at monitor refresh (60+ Hz). We cap the source to
-//!   ~8 Hz via `MinimumUpdateIntervalSettings` so CPU stays in budget without us
-//!   busy-dropping frames. Adaptive 15 Hz (when Sentry is suspicious) is P2.3+.
+//! - **Rate**: WGC would fire at monitor refresh (60+ Hz). We cap the *source*
+//!   to [`CAPTURE_HZ`] and then **adaptively** process: normally only every
+//!   [`NORMAL_INTERVAL_MS`] (≈8 Hz) to save CPU, but every frame (up to the
+//!   source cap, ≈15 Hz) when Sentry has missing heroes — i.e. when a gank read
+//!   is in flight and freshness matters.
+//! - **Gating**: the CV pipeline only runs while in a live match
+//!   ([`crate::runtime::in_game`]); at the menu it idles.
 //! - **Color**: we request `Bgra8`, matching [`crate::cv::Frame`]'s byte order.
 //!
 //! Live verification (compile alone is NOT sufficient) needs Dota 2 open — see
@@ -16,7 +20,7 @@
 
 use std::time::{Duration, Instant};
 
-use tauri::{AppHandle, Emitter};
+use tauri::{AppHandle, Emitter, Manager};
 use windows_capture::{
     capture::{Context, GraphicsCaptureApiHandler},
     frame::Frame as WcFrame,
@@ -36,9 +40,14 @@ use crate::motion::Motion;
 use crate::sentry::Sentry;
 use crate::signal::{Signal, SignalEvent};
 
-/// Target source frame rate (Hz) for the capture. ~8 Hz sits in the spike's
-/// proven "normal" band (5–8 Hz) and keeps CPU far under the 2.5% budget.
-const CAPTURE_HZ: u64 = 8;
+/// Source frame-rate cap (Hz). We let WGC deliver up to the "alert" rate and
+/// throttle down in software, so we can speed up instantly without restarting
+/// the capture session.
+const CAPTURE_HZ: u64 = 15;
+
+/// Normal-state processing cadence (ms) ≈ 8 Hz. When Sentry has missing heroes
+/// we drop this throttle and process at the full source rate (≈15 Hz).
+const NORMAL_INTERVAL_MS: u128 = 125;
 
 /// Maiden's spoken gank warning (TTS fallback when no `danger` clip is cached).
 const GANK_LINE: &str = "ระวังนะคะ ศัตรูหายไปจากแมพหลายตัว อาจมีแก๊งค์!";
@@ -74,6 +83,8 @@ struct MinimapCapture {
     signal: Signal,
     /// monotonic clock origin for ms timestamps fed to the pipeline.
     start: Instant,
+    /// last frame we actually processed (drives the adaptive throttle).
+    last_processed: Instant,
 }
 
 impl GraphicsCaptureApiHandler for MinimapCapture {
@@ -83,11 +94,12 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
     fn new(ctx: Context<Self::Flags>) -> Result<Self, Self::Error> {
         let (app, region) = ctx.flags;
         let icon = region.icon_size();
-        let dir = model_dir();
+        let dir = model_dir(&app);
         let detector = Detector::load(
             &dir.join("minimap-detector.onnx"),
             &dir.join("labels.json"),
         );
+        let now = Instant::now();
         Ok(MinimapCapture {
             app,
             region,
@@ -96,7 +108,8 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
             sentry: Sentry::new(),
             motion: Motion::new(),
             signal: Signal::new(),
-            start: Instant::now(),
+            start: now,
+            last_processed: now,
         })
     }
 
@@ -105,6 +118,20 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
         frame: &mut WcFrame<'_>,
         _control: InternalCaptureControl,
     ) -> Result<(), Self::Error> {
+        // Gate to live matches — no CV work at the menu (idle-CPU saver).
+        if !crate::runtime::in_game() {
+            return Ok(());
+        }
+        // Adaptive throttle: process at ~8 Hz normally, but at the full source
+        // rate while Sentry is "suspicious" (has missing heroes) so a developing
+        // gank is read with minimum lag.
+        let now = self.start.elapsed().as_millis() as u64;
+        let suspicious = !self.sentry.missing(now).is_empty();
+        if !suspicious && self.last_processed.elapsed().as_millis() < NORMAL_INTERVAL_MS {
+            return Ok(());
+        }
+        self.last_processed = Instant::now();
+
         let r = self.region;
         // Crop to the minimap square. buffer_crop takes (start_x, start_y,
         // end_x, end_y) with end exclusive, so width == side.
@@ -122,7 +149,7 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
         let _ = buf.as_nopadding_buffer(&mut packed);
 
         if let Some(f) = Frame::from_bgra(w, h, packed) {
-            let now_ms = self.start.elapsed().as_millis() as u64;
+            let now_ms = now; // computed above for the throttle
             let candidates = prefilter_candidates(&f, self.icon, DEFAULT_THRESHOLD_FRAC);
             let detections = self.detector.detect(&f, &candidates, self.icon);
 
@@ -134,17 +161,20 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
             self.motion.record(&detections, &r, now_ms);
             let missing = self.sentry.missing(now_ms);
             let risk = self.motion.assess(&missing, now_ms);
-            // G-Signal: edge-triggered warning + Belief Revision, voiced now.
-            match self.signal.evaluate(&risk) {
-                SignalEvent::Alert(alert) => {
-                    voice_interrupt("danger", GANK_LINE);
-                    let _ = self.app.emit("gank-alert", &alert);
+            // G-Signal: edge-triggered warning + Belief Revision, voiced now
+            // (only when the user has G-Signal enabled).
+            if crate::runtime::signal_enabled() {
+                match self.signal.evaluate(&risk) {
+                    SignalEvent::Alert(alert) => {
+                        voice_interrupt("danger", GANK_LINE);
+                        let _ = self.app.emit("gank-alert", &alert);
+                    }
+                    SignalEvent::Revision => {
+                        voice_interrupt("revision", REVISION_LINE);
+                        let _ = self.app.emit("gank-clear", ());
+                    }
+                    SignalEvent::None => {}
                 }
-                SignalEvent::Revision => {
-                    voice_interrupt("revision", REVISION_LINE);
-                    let _ = self.app.emit("gank-clear", ());
-                }
-                SignalEvent::None => {}
             }
 
             let payload = MinimapDebug {
@@ -207,14 +237,21 @@ fn voice_interrupt(event: &str, fallback: &str) {
     crate::audio::cancel();
     crate::tts::cancel();
     if !crate::audio::play_random(event) {
-        crate::tts::speak(fallback, None, None);
+        let (name, rate) = crate::runtime::voice();
+        crate::tts::speak(fallback, name.as_deref(), rate);
     }
 }
 
-/// Locate the bundled model directory: `models/` next to the executable (how the
-/// installer ships it) with a fallback to `models/` in the working directory
-/// (how `pnpm tauri dev` runs from the repo root).
-fn model_dir() -> std::path::PathBuf {
+/// Locate the model directory, preferring the Tauri resource dir (where the
+/// installer drops `models/`), then `models/` next to the executable, then
+/// `models/` in the working directory (how `pnpm tauri dev` runs from repo root).
+fn model_dir(app: &AppHandle) -> std::path::PathBuf {
+    if let Ok(res) = app.path().resource_dir() {
+        let p = res.join("models");
+        if p.join("minimap-detector.onnx").exists() {
+            return p;
+        }
+    }
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             let p = parent.join("models");

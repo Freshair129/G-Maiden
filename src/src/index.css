@@ -25,3 +25,19 @@ body {
 .gm-danger {
   animation: gm-pulse 0.85s ease-in-out infinite;
 }
+
+/* G-Signal gank banner — animate in, gentle pulse on the ice/amber warning */
+@keyframes gm-gank-in {
+  from { opacity: 0; transform: translateY(-10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes gm-gank-pulse {
+  0%, 100% { box-shadow: 0 0 24px rgba(255, 207, 107, 0.35); }
+  50% { box-shadow: 0 0 34px rgba(255, 207, 107, 0.6); }
+}
+.gm-gank {
+  animation: gm-gank-in 0.22s ease-out, gm-gank-pulse 1.1s ease-in-out 0.22s infinite;
+}
+.gm-gank-clear {
+  animation: gm-gank-in 0.22s ease-out;
+}

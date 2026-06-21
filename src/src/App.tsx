@@ -27,6 +27,17 @@ interface GameTick {
   mana_percent: number
 }
 
+/** CV/G-Signal events emitted by the Rust backend (src-tauri cv pipeline). */
+interface MinimapCv {
+  region: { x: number; y: number; side: number }
+  icon: number
+  candidates: [number, number][]
+  count: number
+  detections: { label: number; name: string; x: number; y: number; score: number }[]
+  classifier: boolean
+}
+interface GankAlert { probability: number; missing_heroes: string[]; eta_ms: number }
+
 type Pos = 'top' | 'left' | 'right'
 interface Settings {
   overlayVisible: boolean
@@ -39,8 +50,10 @@ interface Settings {
   voiceRate: number
   personaLines: boolean
   autoAdvice: boolean
+  gankVisuals: boolean
+  cvDebug: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false, gankVisuals: true, cvDebug: false }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 
 // Maiden's persona pool — gentle, smart, lightly self-deprecating about CM nerfs,
@@ -81,6 +94,11 @@ const REVISION_LINES = {
     'เอ๊ะ! เดี๋ยวก่อน — ไม่ต้องถอยแล้วนะคะ ปลอดภัยแล้ว',
     'อ้าว! พลิกได้เก่งมาก — ขอโทษที่เพิ่งบอกถอย',
     'เอ๊ะ! โทษทีค่ะ คิดเร็วไปหน่อย — ตามล่าต่อได้',
+  ],
+  // G-Signal gank retraction (gank-clear). Soft Belief-Revision echo on the banner.
+  gankCleared: [
+    'เอ๊ะ... ปลอดภัยแล้วค่ะ',
+    'อ้าว ไม่มาแล้ว — ปลอดภัยค่ะ',
   ],
 } as const
 
@@ -154,10 +172,28 @@ const dangerStyle: React.CSSProperties = {
   color: '#ffd6da', padding: '8px 20px', fontWeight: 700, fontSize: 14,
   backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', fontFamily: '"Segoe UI", system-ui, sans-serif',
 }
+// G-Signal gank banner — ice palette, top-center, NEVER over the bottom-left minimap.
+const gankStyle: React.CSSProperties = {
+  background: 'rgba(18,20,28,0.82)', border: `1px solid ${C.warn}`, borderRadius: 12,
+  color: C.warn, padding: '9px 22px', fontWeight: 700, fontSize: 14,
+  backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', fontFamily: '"Segoe UI", system-ui, sans-serif',
+  boxShadow: '0 0 24px rgba(255,207,107,0.35)',
+}
+const gankClearStyle: React.CSSProperties = {
+  ...gankStyle, border: `1px solid ${C.ice}`, color: C.ice, fontWeight: 600,
+  boxShadow: '0 0 18px rgba(143,212,255,0.3)',
+}
+type GankState = { phase: 'alert'; heroes: string[]; probability: number } | { phase: 'clear' } | null
+
 const Overlay: React.FC = () => {
   const [tick, setTick] = useState<GameTick | null>(null)
   const [seen, setSeen] = useState(false)
   const [s, setS] = useState<Settings>(DEFAULTS)
+  // G-Signal gank banner + CV debug feed (item A & B).
+  const [gank, setGank] = useState<GankState>(null)
+  const [cv, setCv] = useState<MinimapCv | null>(null)
+  const gankTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const gankClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // rising-edge state for danger: speak once when HP crosses the threshold down,
   // not every tick. Reset when HP recovers or the hero dies/respawns.
   const dangerActive = useRef(false)
@@ -179,8 +215,30 @@ const Overlay: React.FC = () => {
   useEffect(() => {
     const u1 = listen<GameTick>('game-tick', (e) => { setTick(e.payload); setSeen(true) })
     const u2 = listen<Settings>('settings', (e) => setS({ ...DEFAULTS, ...e.payload }))
+    // CV debug feed — fires 8–15 Hz. Cheap setState; only rendered when cvDebug is on.
+    const u3 = listen<MinimapCv>('minimap-cv', (e) => setCv(e.payload))
+    // G-Signal: show banner on alert, retract on clear (Belief Revision visual echo).
+    const u4 = listen<GankAlert>('gank-alert', (e) => {
+      if (gankClearTimer.current) { clearTimeout(gankClearTimer.current); gankClearTimer.current = null }
+      setGank({ phase: 'alert', heroes: e.payload.missing_heroes ?? [], probability: e.payload.probability })
+      if (gankTimer.current) clearTimeout(gankTimer.current)
+      // auto-dismiss after ~6s if no gank-clear arrives
+      gankTimer.current = setTimeout(() => setGank(null), 6000)
+    })
+    const u5 = listen('gank-clear', () => {
+      if (gankTimer.current) { clearTimeout(gankTimer.current); gankTimer.current = null }
+      setGank({ phase: 'clear' })
+      // brief soft echo, then fade out; don't re-show until a new gank-alert
+      if (gankClearTimer.current) clearTimeout(gankClearTimer.current)
+      gankClearTimer.current = setTimeout(() => setGank(null), 2200)
+    })
     void emit('overlay-ready')
-    return () => { void u1.then((f) => f()); void u2.then((f) => f()) }
+    return () => {
+      void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f())
+      void u4.then((f) => f()); void u5.then((f) => f())
+      if (gankTimer.current) clearTimeout(gankTimer.current)
+      if (gankClearTimer.current) clearTimeout(gankClearTimer.current)
+    }
   }, [])
 
   const wrap: React.CSSProperties = {
@@ -188,17 +246,59 @@ const Overlay: React.FC = () => {
     justifyContent: s.position === 'left' ? 'flex-start' : s.position === 'right' ? 'flex-end' : 'center',
     alignItems: 'flex-start', padding: 12, pointerEvents: 'none',
   }
+
+  // B. CV debug overlay (calibration) — full-screen, screen px == overlay px.
+  // OFF by default; drawn only when settings.cvDebug is on.
+  const cvDebug = s.cvDebug && cv ? (
+    <div style={{ position: 'fixed', inset: 0, pointerEvents: 'none', fontFamily: '"Segoe UI", system-ui, sans-serif' }}>
+      <div style={{
+        position: 'absolute', left: cv.region.x, top: cv.region.y, width: cv.region.side, height: cv.region.side,
+        border: `1px solid ${C.ice}`, boxShadow: '0 0 8px rgba(143,212,255,0.4)',
+      }} />
+      {cv.candidates.map(([cx, cy], i) => (
+        <div key={`c${i}`} style={{
+          position: 'absolute', left: cv.region.x + cx, top: cv.region.y + cy, width: cv.icon, height: cv.icon,
+          border: '1px solid rgba(143,212,255,0.35)', borderRadius: 2,
+        }} />
+      ))}
+      {cv.detections.map((d, i) => (
+        <div key={`d${i}`} style={{ position: 'absolute', left: cv.region.x + d.x, top: cv.region.y + d.y }}>
+          <div style={{ width: cv.icon, height: cv.icon, border: `1.5px solid ${C.warn}`, borderRadius: 2, boxShadow: '0 0 6px rgba(255,207,107,0.5)' }} />
+          <div style={{ fontSize: 9.5, color: C.warn, whiteSpace: 'nowrap', marginTop: 1, textShadow: '0 0 3px #000' }}>{heroName(d.name)} {(d.score * 100).toFixed(0)}%</div>
+        </div>
+      ))}
+      <div style={{ position: 'absolute', left: cv.region.x, top: cv.region.y - 16, fontSize: 10.5, color: C.ice, textShadow: '0 0 3px #000', whiteSpace: 'nowrap' }}>
+        CV: {cv.count} cand · {cv.detections.length} det · {cv.classifier ? 'ONNX' : 'candidate-only'}
+      </div>
+    </div>
+  ) : null
+
+  // A. Gank warning banner — top-center, above the stat HUD, never over the minimap.
+  const gankBanner = s.gankVisuals && gank ? (
+    gank.phase === 'clear'
+      ? <div className="gm-gank-clear" style={gankClearStyle}>{REVISION_LINES.gankCleared[0]}</div>
+      : <div className="gm-gank" style={gankStyle}>
+          ⚠️ ระวังแก๊งค์! {gank.heroes.length ? gank.heroes.map(heroName).join(', ') + ' หาย — ' : ''}{Math.round(gank.probability * 100)}%
+        </div>
+  ) : null
+
   if (!seen || !tick || !tick.in_game) {
     return (
-      <div style={wrap}>
-        <div style={{ ...panel(s.opacity), padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
-          <span style={{ width: 9, height: 9, borderRadius: 99, background: seen ? C.warn : C.mut }} />
-          <div>
-            <div style={{ fontWeight: 600, fontSize: 14 }}>G-Maiden</div>
-            <div style={{ fontSize: 11.5, color: C.mut }}>{seen ? 'เชื่อมต่อ GSI แล้ว — รอเข้าเกม…' : 'รอข้อมูลจาก Dota 2  ·  Alt+S = ซ่อน/แสดง'}</div>
+      <>
+        {cvDebug}
+        <div style={wrap}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+            {gankBanner}
+            <div style={{ ...panel(s.opacity), padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
+              <span style={{ width: 9, height: 9, borderRadius: 99, background: seen ? C.warn : C.mut }} />
+              <div>
+                <div style={{ fontWeight: 600, fontSize: 14 }}>G-Maiden</div>
+                <div style={{ fontSize: 11.5, color: C.mut }}>{seen ? 'เชื่อมต่อ GSI แล้ว — รอเข้าเกม…' : 'รอข้อมูลจาก Dota 2  ·  Alt+S = ซ่อน/แสดง'}</div>
+              </div>
+            </div>
           </div>
         </div>
-      </div>
+      </>
     )
   }
   const t = tick
@@ -324,8 +424,11 @@ const Overlay: React.FC = () => {
   }, [t.level, t.deaths, t.clock_time])
 
   return (
+    <>
+    {cvDebug}
     <div style={wrap}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
+        {gankBanner}
         {lowHp && <div className="gm-danger" style={dangerStyle}>⚠ HP เหลือ {t.hp_percent}% — ถอยก่อนค่ะเพื่อน!</div>}
         <div style={{ ...panel(s.opacity), padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 22 }}>
           <div style={{ textAlign: 'center' }}>
@@ -352,6 +455,7 @@ const Overlay: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   )
 }
 
@@ -696,6 +800,18 @@ const Control: React.FC = () => {
     void invoke('set_overlay_visible', { visible: s.overlayVisible }).catch(() => {})
   }, [s])
 
+  // Item 5: keep Rust's gank voice in sync with the user's chosen voice/rate.
+  // Fires once on startup and on every voice setting change. Best-effort.
+  useEffect(() => {
+    void invoke('set_cv_voice', { name: s.voiceName || null, rate: s.voiceRate ?? null }).catch(() => {})
+  }, [s.voiceName, s.voiceRate])
+
+  // Keep Rust's G-Signal gank voice gated by the master voice toggle, so muting
+  // voice also silences gank warnings (not just the HP-danger line).
+  useEffect(() => {
+    void invoke('set_cv_signal_enabled', { enabled: s.voiceEnabled }).catch(() => {})
+  }, [s.voiceEnabled])
+
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((p) => ({ ...p, [k]: v }))
 
   return (
@@ -757,6 +873,14 @@ const Control: React.FC = () => {
             {voices.length > 0 && voices.every((v) => !v.culture.startsWith('th')) && (
               <span style={{ color: C.warn }}> · ตอนนี้ยังไม่มี Thai voice → จะใช้เสียง {voices[0]?.gender === 'Female' ? 'อังกฤษ' : 'อังกฤษ'} อ่านข้อความไทย</span>
             )}
+          </div>
+        </Card>
+
+        <Card title="G-Signal / CV (gank)">
+          <Row label="แบนเนอร์เตือนแก๊งค์ (gank)"><Toggle on={s.gankVisuals} onChange={(v) => set('gankVisuals', v)} /></Row>
+          <Row label="CV debug overlay (calibrate)"><Toggle on={s.cvDebug} onChange={(v) => set('cvDebug', v)} /></Row>
+          <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
+            แบนเนอร์ขึ้นกลาง-บนของจอเมื่อ G-Signal เตือนแก๊งค์ (ไม่บังมินิแมพ). CV debug แสดงกรอบมินิแมพ + จุดที่ตรวจจับได้ — เปิดเฉพาะตอนปรับเทียบ.
           </div>
         </Card>
 

@@ -5,6 +5,8 @@
     windows_subsystem = "windows"
 )]
 
+use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
+use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::Manager;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
@@ -15,6 +17,7 @@ mod gsi;
 mod log;
 mod master;
 mod motion;
+mod runtime;
 mod sentry;
 mod signal;
 mod setup;
@@ -109,6 +112,19 @@ fn list_voices() -> Vec<tts::Voice> {
     tts::list_voices()
 }
 
+/// Mirror the UI's voice picker to the Rust speech path so G-Signal gank
+/// warnings speak in Maiden's chosen voice (not the SAPI default).
+#[tauri::command]
+fn set_cv_voice(name: Option<String>, rate: Option<i32>) {
+    runtime::set_voice(name, rate);
+}
+
+/// Mirror the UI's G-Signal toggle so the capture loop can skip warning work.
+#[tauri::command]
+fn set_cv_signal_enabled(enabled: bool) {
+    runtime::set_signal_enabled(enabled);
+}
+
 /// Discover Dota 2's GSI cfg directory and report whether our cfg is in place.
 #[tauri::command]
 fn detect_gsi_setup() -> setup::SetupStatus {
@@ -182,6 +198,8 @@ fn main() {
             speak_event,
             cancel_speech,
             list_voices,
+            set_cv_voice,
+            set_cv_signal_enabled,
             voice_cache_status,
             open_voice_cache_dir,
             detect_gsi_setup,
@@ -213,6 +231,56 @@ fn main() {
                 }
                 let _ = ov.set_ignore_cursor_events(true);
             }
+
+            // --- System tray ---
+            let show_item = MenuItem::with_id(app, "show", "Show Control Panel", true, None::<&str>)?;
+            let quit_item = MenuItem::with_id(app, "quit", "Quit G-Maiden", true, None::<&str>)?;
+            let sep = PredefinedMenuItem::separator(app)?;
+            let tray_menu = Menu::with_items(app, &[&show_item, &sep, &quit_item])?;
+
+            TrayIconBuilder::new()
+                .icon(app.default_window_icon().unwrap().clone())
+                .tooltip("G-Maiden")
+                .menu(&tray_menu)
+                .show_menu_on_left_click(false)
+                .on_menu_event(|app, event| match event.id.as_ref() {
+                    "show" => {
+                        if let Some(w) = app.get_webview_window("control") {
+                            let _ = w.show();
+                            let _ = w.set_focus();
+                        }
+                    }
+                    "quit" => app.exit(0),
+                    _ => {}
+                })
+                .on_tray_icon_event(|tray, event| {
+                    if let TrayIconEvent::Click {
+                        button: MouseButton::Left,
+                        button_state: MouseButtonState::Up,
+                        ..
+                    } = event
+                    {
+                        let app = tray.app_handle();
+                        if let Some(w) = app.get_webview_window("control") {
+                            let _ = w.show();
+                            let _ = w.set_focus();
+                        }
+                    }
+                })
+                .build(app)?;
+
+            // Closing the control window hides it to tray instead of quitting the process.
+            // The overlay (and G-Signal) keep running; use tray → Quit to exit.
+            if let Some(ctrl) = app.get_webview_window("control") {
+                let ctrl2 = ctrl.clone();
+                ctrl.on_window_event(move |event| {
+                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+                        api.prevent_close();
+                        let _ = ctrl2.hide();
+                    }
+                });
+            }
+
             Ok(())
         })
         .run(tauri::generate_context!())
