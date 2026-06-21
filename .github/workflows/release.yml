@@ -30,7 +30,7 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          cache: pnpm
+          # no cache: pnpm-lock.yaml is gitignored in this repo
 
       - uses: dtolnay/rust-toolchain@stable
 
