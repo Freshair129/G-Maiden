@@ -1,8 +1,41 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: 2026-06-21 (turn 14) · Spike S-1 minimap CV รันจริงแล้ว — accuracy
-FAIL 10% (estimate เดิมผิด), ONNX จำเป็นแล้ว ไม่ใช่ optional (ดู
+อัปเดตล่าสุด: 2026-06-21 (turn 15) · progress review + re-plan. Spike S-1 (turn 14)
+ยืนยัน: NCC accuracy FAIL 10% → ONNX = mandatory ไม่ใช่ optional (ดู
 `.govibe/.brain/session/2026-06-21-spike-s1-empirical.md`).
+
+## 📊 Progress snapshot (turn 15)
+
+**Phase 0–1 (Foundation + GSI/Overlay): ✅ DONE.** Tauri v2 + React/Vite/Tailwind
+scaffold รันได้, axum GSI :3000 + parser, overlay glassmorphism, Control GUI,
+MSI/NSIS installer + ice-gem icon + onboarding modal.
+
+**โมดูล G-Series — โค้ดจริง (src-tauri/src/, 1,401 บรรทัด, 15 unit tests):**
+| โมดูล | สถานะ | ไฟล์ |
+|-------|-------|------|
+| G-Signal (danger/HP) | ✅ MVP (rising-edge + voice interrupt + Belief Revision) | `gsi.rs` |
+| G-Sensory (overlay) | ✅ MVP (banner + glassmorphism HUD) | `App.tsx` |
+| G-Master (advisor) | ✅ shell-out `claude -p` + auto-advice + throttle/cache | `master.rs` |
+| G-Log (feedback) | ✅ skeleton + privacy controls (local-only) | `log.rs` |
+| Voice/TTS | ✅ SAPI picker + rate + WAV fallback pipeline | `tts.rs`,`audio.rs` |
+| GSI auto-install | ✅ VDF parser + auto-detect Dota path | `setup.rs` |
+| **G-Sentry (fog monitor)** | ⛔ ยังไม่เริ่ม — ต้อง minimap CV | — |
+| **G-Motion (path predict)** | ⛔ ยังไม่เริ่ม — ต้อง minimap CV | — |
+| **G-Signal เต็ม (gank 85%)** | ⛔ ยังเป็น HP-only — ต้อง G-Sentry+G-Motion ก่อน | — |
+
+**Critical path ที่เหลือ = Phase 2 (minimap CV).** Spike S-1 พิสูจน์แล้วว่า
+latency/CPU ผ่านสบาย (~100x headroom) แต่ accuracy ของ NCC ไม่พอ → **ต้อง ONNX
+detector**. นี่คือด่านชี้เป็นชี้ตายตัวต่อไป.
+
+## 🎯 แผนถัดไป — โฟกัส Phase 2 (minimap CV via ONNX)
+ลำดับงานเพื่อ de-risk ให้เร็วที่สุด:
+1. **เก็บ real-game minimap footage** (งาน user — เปิด Dota 2 + capture). scope ใหม่
+   = เก็บ training set ไม่ใช่วัด NCC. ต้องมี enemy-icon ครบ 10 ฮีโร่ + fog ระดับต่าง ๆ.
+2. **Label + train ONNX detector เล็ก** (MobileNetV3-class head). budget เหลือเยอะ.
+3. **DXGI minimap capture loop** ใน Rust + prefilter (จาก spike) → ONNX match step.
+4. **G-Sentry**: missing >5s → `EnemyMissing` event + เสียงเตือน. วัด CPU ≤2.5% จริง.
+5. **G-Motion**: ring buffer 5 นาที + probability เส้น gank.
+6. **G-Signal เต็ม**: รวม G-Sentry+G-Motion → threshold >85% + latency harness p50/p99.
 
 ## ต้องให้ผู้ใช้ทำ (ทำแทนไม่ได้)
 - [ ] **เปิด Dota 2 จริง** → ยืนยัน overlay + voice end-to-end. POST simulated ทดสอบผ่านแล้ว
