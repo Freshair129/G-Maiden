@@ -70,6 +70,7 @@ impl Motion {
     }
 
     /// Number of samples currently retained (history-window size; for tests/diag).
+    #[cfg(test)]
     pub fn history_len(&self) -> usize {
         self.history.len()
     }

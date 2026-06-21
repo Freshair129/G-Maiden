@@ -86,15 +86,57 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
         hp_percent: i(&v, &["hero", "health_percent"]),
         mana_percent: i(&v, &["hero", "mana_percent"]),
     };
-    // Gate the CV capture pipeline to live matches (saves idle CPU).
+    // Note the POST (watchdog uses recency) and gate the CV pipeline to live
+    // matches (saves idle CPU).
+    crate::runtime::mark_post(epoch_ms());
     crate::runtime::set_in_game(tick.in_game);
     crate::log::note_tick(&tick);
     let _ = app.emit("game-tick", tick);
     "ok"
 }
 
+fn epoch_ms() -> u64 {
+    std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
+}
+
+/// Connection/status snapshot pushed to the UI by the watchdog so it can stop
+/// showing "connected" after Dota closes (Dota just goes silent — no final tick).
+#[derive(Serialize, Clone)]
+struct GsiStatus {
+    dota_running: bool,
+    /// a GSI POST arrived recently (heartbeat is ~30s, so we allow a 45s gap).
+    gsi_active: bool,
+    in_game: bool,
+}
+
+/// Watchdog: every few seconds, check whether Dota is still running. When it
+/// isn't, reset in-game state and close the G-Log (otherwise both stay stuck
+/// "live" forever). Always pushes a `gsi-status` event so the UI reflects
+/// reality. Spawned alongside the server.
+async fn watchdog(app: AppHandle) {
+    const STALE_MS: u64 = 45_000; // > GSI heartbeat (30s) + margin
+    loop {
+        tokio::time::sleep(std::time::Duration::from_secs(4)).await;
+        let running = crate::setup::dota_running();
+        if !running {
+            crate::runtime::set_in_game(false);
+            crate::log::force_end();
+        }
+        let last = crate::runtime::last_post_ms();
+        let gsi_active = running && last != 0 && epoch_ms().saturating_sub(last) < STALE_MS;
+        let _ = app.emit(
+            "gsi-status",
+            GsiStatus { dota_running: running, gsi_active, in_game: crate::runtime::in_game() },
+        );
+    }
+}
+
 /// Bind :3000 and serve GSI. Spawned as a background task by `main`.
 pub async fn serve(app: AppHandle) {
+    tauri::async_runtime::spawn(watchdog(app.clone()));
     let router = Router::new().route("/gsi", post(handle)).with_state(app);
     match tokio::net::TcpListener::bind("127.0.0.1:3000").await {
         Ok(listener) => {

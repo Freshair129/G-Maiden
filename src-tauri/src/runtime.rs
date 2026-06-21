@@ -5,7 +5,7 @@
 //! the main thread) and the values are tiny. Plain atomics + a couple of mutexes
 //! keep it lock-light; no extra crate needed (`Mutex::new` is const since 1.63).
 
-use std::sync::atomic::{AtomicBool, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
 use std::sync::Mutex;
 
 /// True while a real match is in progress (set by the GSI server). The capture
@@ -17,9 +17,20 @@ static IN_GAME: AtomicBool = AtomicBool::new(false);
 /// on so a fresh install warns out of the box.
 static SIGNAL_ENABLED: AtomicBool = AtomicBool::new(true);
 
+/// Epoch-ms of the last GSI POST received. 0 = none yet. The watchdog uses this
+/// to tell "Dota open & sending" (heartbeat ~30s) from "gone quiet".
+static LAST_POST_MS: AtomicU64 = AtomicU64::new(0);
+
 /// Maiden's voice for Rust-side (G-Signal) speech, mirrored from the UI picker.
 static VOICE_NAME: Mutex<Option<String>> = Mutex::new(None);
 static VOICE_RATE: Mutex<Option<i32>> = Mutex::new(None);
+
+pub fn mark_post(ms: u64) {
+    LAST_POST_MS.store(ms, Ordering::Relaxed);
+}
+pub fn last_post_ms() -> u64 {
+    LAST_POST_MS.load(Ordering::Relaxed)
+}
 
 pub fn set_in_game(v: bool) {
     IN_GAME.store(v, Ordering::Relaxed);

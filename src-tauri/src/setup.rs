@@ -38,6 +38,23 @@ pub struct SetupStatus {
     pub message: String,
 }
 
+/// Whether the Dota 2 client process is currently running. Used by the GSI
+/// watchdog to reset connection state + close the G-Log when the game exits
+/// (Dota just stops POSTing on close — it doesn't send a final out-of-game tick).
+pub fn dota_running() -> bool {
+    // tasklist filtered to the exact image name; if it's running the name shows
+    // up in stdout, otherwise tasklist prints an "INFO: No tasks" line.
+    let out = Command::new("tasklist")
+        .args(["/FI", "IMAGENAME eq dota2.exe", "/NH"])
+        .output();
+    match out {
+        Ok(o) => String::from_utf8_lossy(&o.stdout)
+            .to_lowercase()
+            .contains("dota2.exe"),
+        Err(_) => false,
+    }
+}
+
 fn read_steam_path() -> Option<PathBuf> {
     // Valve writes SteamPath with forward slashes — fine for std::path on Windows.
     let out = Command::new("reg")

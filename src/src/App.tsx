@@ -37,6 +37,8 @@ interface MinimapCv {
   classifier: boolean
 }
 interface GankAlert { probability: number; missing_heroes: string[]; eta_ms: number }
+/** Connection/status pushed by the Rust watchdog (gsi.rs) every ~4s. */
+interface GsiStatus { dota_running: boolean; gsi_active: boolean; in_game: boolean }
 
 type Pos = 'top' | 'left' | 'right'
 interface Settings {
@@ -192,6 +194,9 @@ const Overlay: React.FC = () => {
   // G-Signal gank banner + CV debug feed (item A & B).
   const [gank, setGank] = useState<GankState>(null)
   const [cv, setCv] = useState<MinimapCv | null>(null)
+  // GSI activity from the watchdog — so the HUD disappears when Dota closes
+  // (Dota stops POSTing without a final tick; `tick` would otherwise stay stale).
+  const [gsiActive, setGsiActive] = useState(true)
   const gankTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const gankClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // rising-edge state for danger: speak once when HP crosses the threshold down,
@@ -232,10 +237,11 @@ const Overlay: React.FC = () => {
       if (gankClearTimer.current) clearTimeout(gankClearTimer.current)
       gankClearTimer.current = setTimeout(() => setGank(null), 2200)
     })
+    const u6 = listen<GsiStatus>('gsi-status', (e) => setGsiActive(e.payload.gsi_active))
     void emit('overlay-ready')
     return () => {
       void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f())
-      void u4.then((f) => f()); void u5.then((f) => f())
+      void u4.then((f) => f()); void u5.then((f) => f()); void u6.then((f) => f())
       if (gankTimer.current) clearTimeout(gankTimer.current)
       if (gankClearTimer.current) clearTimeout(gankClearTimer.current)
     }
@@ -412,7 +418,7 @@ const Overlay: React.FC = () => {
         </div>
   ) : null
 
-  if (!seen || !tick || !tick.in_game) {
+  if (!seen || !tick || !tick.in_game || !gsiActive) {
     return (
       <>
         {cvDebug}
@@ -769,6 +775,7 @@ const Control: React.FC = () => {
   const [seen, setSeen] = useState(false)
   const [s, setS] = useState<Settings>(loadSettings)
   const [voices, setVoices] = useState<VoiceInfo[]>([])
+  const [status, setStatus] = useState<GsiStatus | null>(null)
   const [showWelcome, setShowWelcome] = useState(() => localStorage.getItem('gm-onboarded') !== '1')
   const dismissWelcome = () => { localStorage.setItem('gm-onboarded', '1'); setShowWelcome(false) }
   const sRef = useRef(s)
@@ -800,7 +807,8 @@ const Control: React.FC = () => {
     document.documentElement.style.overflowX = 'hidden'
     const u1 = listen<GameTick>('game-tick', (e) => { setTick(e.payload); setSeen(true) })
     const u2 = listen('overlay-ready', () => { void emit('settings', sRef.current) })
-    return () => { void u1.then((f) => f()); void u2.then((f) => f()) }
+    const u3 = listen<GsiStatus>('gsi-status', (e) => setStatus(e.payload))
+    return () => { void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f()) }
   }, [])
 
   // persist + broadcast + apply overlay visibility on any change
@@ -833,10 +841,26 @@ const Control: React.FC = () => {
           <div style={{ fontSize: 19, fontWeight: 700, letterSpacing: 0.3 }}>G-Maiden</div>
           <div style={{ fontSize: 12, color: C.mut }}>Real-time Dota 2 AI Companion · OSD + Control</div>
         </div>
-        <span style={{ ...panel(0.6), padding: '7px 14px', fontSize: 12.5, color: seen ? C.ok : C.mut, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span style={{ width: 8, height: 8, borderRadius: 99, background: seen ? C.ok : C.mut, boxShadow: seen ? `0 0 8px ${C.ok}` : 'none' }} />
-          {seen ? 'GSI เชื่อมต่อแล้ว' : 'รอ GSI (เปิด Dota 2)'}
-        </span>
+        {(() => {
+          // Drive the chips off the watchdog once it reports; fall back to the
+          // sticky `seen` only until the first status event arrives.
+          const dotaRunning = status?.dota_running ?? false
+          const gsiActive = status ? status.gsi_active : seen
+          const dotaColor = dotaRunning ? C.ok : C.mut
+          const gsiColor = gsiActive ? C.ok : dotaRunning ? C.warn : C.mut
+          const chip = (color: string, on: boolean, label: string) => (
+            <span style={{ ...panel(0.6), padding: '7px 14px', fontSize: 12.5, color, display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: 99, background: color, boxShadow: on ? `0 0 8px ${color}` : 'none' }} />
+              {label}
+            </span>
+          )
+          return (
+            <div style={{ display: 'flex', gap: 8 }}>
+              {chip(dotaColor, dotaRunning, dotaRunning ? 'Dota 2 กำลังรัน' : 'Dota 2 ปิดอยู่')}
+              {chip(gsiColor, gsiActive, gsiActive ? 'GSI เชื่อมต่อแล้ว' : dotaRunning ? 'รอ GSI' : 'GSI หยุด')}
+            </div>
+          )
+        })()}
       </header>
 
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>

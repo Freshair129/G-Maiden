@@ -109,6 +109,18 @@ pub fn note_tick(tick: &GameTick) {
     }
 }
 
+/// Force-close the active match log (used by the GSI watchdog when Dota exits
+/// without sending a final out-of-game tick). Resets in-game state so the next
+/// match starts a fresh file. No-op if nothing is recording.
+pub fn force_end() {
+    if let Ok(mut state) = STATE.lock() {
+        if state.file.is_some() {
+            end_match(&mut state);
+        }
+        state.in_game = false;
+    }
+}
+
 /// Append a typed G-Signal event to the current match log, time-aligned with the
 /// tick stream. No-op when no match is recording. Used to capture the inputs of
 /// each gank decision so we can later (offline) join them against outcomes —
