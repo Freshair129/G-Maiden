@@ -1,0 +1,23 @@
+[package]
+name = "g-maiden-perf-suite"
+version = "0.1.0"
+edition = "2021"
+description = "Performance test harnesses — GATE P3 latency + GATE P7 RAM/FPS"
+
+# GATE P3: G-Signal p50/p99 latency (Engineering Spec §1)
+[[bin]]
+name = "latency_harness"
+path = "src/main.rs"
+
+# GATE P7: RAM ≤400 MB + FPS drop ≤3% (TDD §7 / SRS §5)
+# FPS measured via PresentMon ETW on dota2.exe — NOT DWM composition timing.
+[[bin]]
+name = "perf_p7"
+path = "src/bin/perf_p7.rs"
+
+[dependencies]
+sysinfo = "0.30"
+
+[profile.release]
+opt-level = 3
+strip     = true

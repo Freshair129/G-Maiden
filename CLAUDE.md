@@ -15,9 +15,6 @@ Both are written in Thai. When implementing, treat the SRS numbers (latency, CPU
 constraints, not aspirations. Do not invent build/test commands — none exist until the stack is
 chosen and scaffolded.
 
-> Note: the sibling directory `../govibe` is a **different, unrelated project** (GoVibe Mission
-> Control) with its own `CLAUDE.md`. The two share a Git repo only because `.git` lives at the
-> `G:/` drive root. Don't pull conventions or architecture across the boundary.
 
 ## What G-Maiden is
 
@@ -78,3 +75,6 @@ When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scal
 Premium-dark dashboard: background `#08090c`, frosted ice-aluminium panels
 `rgba(18, 20, 28, 0.72)`, glassmorphism overlay in Maiden's ice palette. Modular control panels;
 global hotkeys (e.g. `Alt+M` → instant situation summary).
+
+## repo https://github.com/Freshair129/G-Maiden.git
+deploy to web by vercel cli

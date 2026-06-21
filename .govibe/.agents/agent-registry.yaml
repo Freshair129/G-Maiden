@@ -1,0 +1,61 @@
+version: "1.0"
+root_contract:
+  global_context:
+
+executor_defaults:
+  default: 
+
+executors:
+  codex:
+    transport: 
+    allowed_modes:
+
+  ollama:
+    transport:
+    allowed_modes:
+
+
+local_sidecar:
+  enabled: true
+  allowed_modes:
+
+  model_tiers:
+    tiny: 
+    default: 
+    pro: 
+    retry: 
+  tier_constraints:
+    tiny: 
+    default: 
+    pro: 
+    retry:
+  max_files: 
+  max_chars_per_file: 
+  output_contract:
+    sections:
+
+knowledge_base:
+   master_block: ".govibe\.brain\masterblock"
+
+agents:
+  xxxxx:
+    label: 
+    role: 
+    domain: 
+    cluster: 
+    responsibility:
+    authority:
+      can:
+
+      cannot:
+
+    source_refs:
+
+    contract: 
+    execution_policy:
+      default_executor: 
+      allowed_executors:
+      default_mode: 
+      local_model_tier: 
+    default_context:
+    allowed_scopes:

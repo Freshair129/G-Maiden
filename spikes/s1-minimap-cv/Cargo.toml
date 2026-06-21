@@ -1,0 +1,19 @@
+[package]
+name = "s1-minimap-cv"
+version = "0.1.0"
+edition = "2021"
+description = "Spike S-1 — minimap CV feasibility (enemy-icon detection via template matching). std-only, no network deps."
+
+[[bin]]
+name = "s1_minimap_cv"
+path = "src/main.rs"
+
+# No external dependencies on purpose:
+#  - keeps the spike runnable offline / hermetic
+#  - the production path is imageproc::match_template (NCC); this PoC implements the
+#    same normalized-cross-correlation math by hand so the measured hot-loop cost is
+#    representative of the Rust core, not of a benchmarking framework.
+
+[profile.release]
+opt-level = 3
+strip     = true

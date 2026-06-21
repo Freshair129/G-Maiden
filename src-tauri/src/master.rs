@@ -1,0 +1,178 @@
+//! G-Master — cloud advisor backed by the user's `claude` CLI (Plan quota).
+//! No API key, no per-token cost: we shell out to `claude -p "<prompt>"` and
+//! the CLI uses the session the user already logged into. Same shell-out
+//! pattern as TTS/registry/VDF — no new Rust dependency.
+//!
+//! Throttle to 30s/request and cache the last answer so a quick double-click
+//! still feels responsive without burning the Plan budget.
+
+use std::process::{Command, Stdio};
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
+
+use crate::gsi::GameTick;
+
+const PERSONA_PROMPT: &str = r#"คุณคือ "Maiden" — ที่ปรึกษา Dota 2 บุคลิก Crystal Maiden แคสเตอร์
+สไตล์: สุภาพ ฉลาด มี humor เกี่ยวกับ Nerf CM. ตอบเป็นไทย สั้นกระชับ (1-2 ประโยค) เน้นคำแนะนำเชิงปฏิบัติทันที
+สำหรับสถานการณ์ที่ให้. ห้ามทักทาย ห้ามสรุป — ตอบคำแนะนำตรง ๆ."#;
+
+const THROTTLE: Duration = Duration::from_secs(30);
+
+static LAST_CALL: Mutex<Option<Instant>> = Mutex::new(None);
+static LAST_RESPONSE: Mutex<Option<String>> = Mutex::new(None);
+
+#[derive(serde::Serialize, Clone)]
+pub struct Advice {
+    pub text: String,
+    pub cached: bool,
+}
+
+fn hero_thai(raw: &str) -> String {
+    raw.strip_prefix("npc_dota_hero_")
+        .unwrap_or(raw)
+        .replace('_', " ")
+}
+
+fn build_prompt(tick: &GameTick) -> String {
+    let phase = if tick.clock_time < 0 {
+        "ก่อนเข้าเลน"
+    } else if tick.clock_time < 600 {
+        "early game"
+    } else if tick.clock_time < 1800 {
+        "mid game"
+    } else {
+        "late game"
+    };
+    format!(
+        "{persona}\n\nสถานการณ์ ({phase} · clock {clock}s): \
+         ฮีโร่ {hero} เลเวล {lvl}, KDA {k}/{d}/{a}, net worth {nw}, gold {gold}, \
+         HP {hp}%, mana {mana}%, score {rs}:{ds}.\n\
+         แนะนำสั้น ๆ ว่าควรทำอะไรต่อ (ซื้อของ/ขึ้นสกิล/positioning).",
+        persona = PERSONA_PROMPT,
+        phase = phase,
+        clock = tick.clock_time,
+        hero = hero_thai(&tick.hero),
+        lvl = tick.level,
+        k = tick.kills,
+        d = tick.deaths,
+        a = tick.assists,
+        nw = tick.net_worth,
+        gold = tick.gold,
+        hp = tick.hp_percent,
+        mana = tick.mana_percent,
+        rs = tick.radiant_score,
+        ds = tick.dire_score,
+    )
+}
+
+/// Ask Maiden (via Claude Plan quota) for advice on the current game state.
+/// Blocking — call from a worker thread. Throttled to 30s; cached responses
+/// are returned with `cached=true` so the UI can hint at staleness.
+pub fn advise(tick: &GameTick) -> Result<Advice, String> {
+    // Throttle window — serve cached.
+    if let Ok(g) = LAST_CALL.lock() {
+        if let Some(t) = *g {
+            if t.elapsed() < THROTTLE {
+                if let Ok(r) = LAST_RESPONSE.lock() {
+                    if let Some(text) = r.clone() {
+                        return Ok(Advice { text, cached: true });
+                    }
+                }
+            }
+        }
+    }
+
+    let prompt = build_prompt(tick);
+    let mut cmd = Command::new("claude");
+    cmd.args(["-p", &prompt])
+        .stdin(Stdio::null())
+        .stdout(Stdio::piped())
+        .stderr(Stdio::piped());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000);
+    }
+    let out = cmd.output().map_err(|e| {
+        format!("เรียก claude CLI ไม่ได้: {e}. ติดตั้ง Claude Code CLI แล้วล็อกอินก่อน.")
+    })?;
+    if !out.status.success() {
+        let stderr = String::from_utf8_lossy(&out.stderr);
+        return Err(format!("claude คืน error: {}", stderr.trim()));
+    }
+    let text = String::from_utf8_lossy(&out.stdout).trim().to_string();
+    if text.is_empty() {
+        return Err("claude คืนผลว่าง".into());
+    }
+
+    if let Ok(mut g) = LAST_CALL.lock() {
+        *g = Some(Instant::now());
+    }
+    if let Ok(mut g) = LAST_RESPONSE.lock() {
+        *g = Some(text.clone());
+    }
+    Ok(Advice {
+        text,
+        cached: false,
+    })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn fake_tick() -> GameTick {
+        GameTick {
+            in_game: true,
+            clock_time: 720,
+            game_state: "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS".into(),
+            daytime: true,
+            radiant_score: 8,
+            dire_score: 5,
+            gold: 1850,
+            net_worth: 8200,
+            gpm: 470,
+            xpm: 540,
+            kills: 4,
+            deaths: 2,
+            assists: 6,
+            last_hits: 92,
+            denies: 5,
+            hero: "npc_dota_hero_crystal_maiden".into(),
+            level: 11,
+            alive: true,
+            hp_percent: 68,
+            mana_percent: 55,
+        }
+    }
+
+    #[test]
+    fn hero_thai_strips_npc_prefix() {
+        assert_eq!(hero_thai("npc_dota_hero_crystal_maiden"), "crystal maiden");
+        assert_eq!(hero_thai(""), "");
+        assert_eq!(hero_thai("foo"), "foo");
+    }
+
+    #[test]
+    fn prompt_includes_phase_and_kda() {
+        let p = build_prompt(&fake_tick());
+        assert!(p.contains("mid game"), "phase missing: {p}");
+        assert!(p.contains("crystal maiden"), "hero name missing: {p}");
+        assert!(p.contains("KDA 4/2/6"), "kda missing: {p}");
+        assert!(p.contains("HP 68%"), "hp missing: {p}");
+        assert!(p.contains("Maiden"), "persona missing: {p}");
+    }
+
+    #[test]
+    fn prompt_phases_by_clock() {
+        let mut t = fake_tick();
+        t.clock_time = -30;
+        assert!(build_prompt(&t).contains("ก่อนเข้าเลน"));
+        t.clock_time = 300;
+        assert!(build_prompt(&t).contains("early game"));
+        t.clock_time = 1200;
+        assert!(build_prompt(&t).contains("mid game"));
+        t.clock_time = 2400;
+        assert!(build_prompt(&t).contains("late game"));
+    }
+}
