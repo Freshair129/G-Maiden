@@ -14,6 +14,9 @@ mod cv;
 mod gsi;
 mod log;
 mod master;
+mod motion;
+mod sentry;
+mod signal;
 mod setup;
 mod tts;
 

@@ -14,7 +14,7 @@
 //! Live verification (compile alone is NOT sufficient) needs Dota 2 open — see
 //! the Phase 2 roadmap P2.0 exit criteria.
 
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use tauri::{AppHandle, Emitter};
 use windows_capture::{
@@ -32,10 +32,18 @@ use crate::cv::detector::{Detection, Detector};
 use crate::cv::prefilter::{prefilter_candidates, DEFAULT_THRESHOLD_FRAC};
 use crate::cv::region::MinimapRegion;
 use crate::cv::Frame;
+use crate::motion::Motion;
+use crate::sentry::Sentry;
+use crate::signal::{Signal, SignalEvent};
 
 /// Target source frame rate (Hz) for the capture. ~8 Hz sits in the spike's
 /// proven "normal" band (5–8 Hz) and keeps CPU far under the 2.5% budget.
 const CAPTURE_HZ: u64 = 8;
+
+/// Maiden's spoken gank warning (TTS fallback when no `danger` clip is cached).
+const GANK_LINE: &str = "ระวังนะคะ ศัตรูหายไปจากแมพหลายตัว อาจมีแก๊งค์!";
+/// Belief-revision retraction line (TTS fallback when no `revision` clip cached).
+const REVISION_LINE: &str = "เอ๊ะ! เดี๋ยวก่อน ดูเหมือนจะปลอดภัยแล้วค่ะ";
 
 /// Debug/result payload emitted per processed frame. Candidates feed the
 /// calibration overlay; detections are the confirmed heroes (empty until the
@@ -60,6 +68,12 @@ struct MinimapCapture {
     region: MinimapRegion,
     icon: usize,
     detector: Detector,
+    // CV → game-knowledge pipeline (P2.3–P2.5).
+    sentry: Sentry,
+    motion: Motion,
+    signal: Signal,
+    /// monotonic clock origin for ms timestamps fed to the pipeline.
+    start: Instant,
 }
 
 impl GraphicsCaptureApiHandler for MinimapCapture {
@@ -74,7 +88,16 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
             &dir.join("minimap-detector.onnx"),
             &dir.join("labels.json"),
         );
-        Ok(MinimapCapture { app, region, icon, detector })
+        Ok(MinimapCapture {
+            app,
+            region,
+            icon,
+            detector,
+            sentry: Sentry::new(),
+            motion: Motion::new(),
+            signal: Signal::new(),
+            start: Instant::now(),
+        })
     }
 
     fn on_frame_arrived(
@@ -99,8 +122,31 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
         let _ = buf.as_nopadding_buffer(&mut packed);
 
         if let Some(f) = Frame::from_bgra(w, h, packed) {
+            let now_ms = self.start.elapsed().as_millis() as u64;
             let candidates = prefilter_candidates(&f, self.icon, DEFAULT_THRESHOLD_FRAC);
             let detections = self.detector.detect(&f, &candidates, self.icon);
+
+            // G-Sentry: flag enemies missing >5s (edge-triggered).
+            for em in self.sentry.update(&detections, &r, now_ms) {
+                let _ = self.app.emit("enemy-missing", &em);
+            }
+            // G-Motion: history + gank-risk over currently-missing enemies.
+            self.motion.record(&detections, &r, now_ms);
+            let missing = self.sentry.missing(now_ms);
+            let risk = self.motion.assess(&missing, now_ms);
+            // G-Signal: edge-triggered warning + Belief Revision, voiced now.
+            match self.signal.evaluate(&risk) {
+                SignalEvent::Alert(alert) => {
+                    voice_interrupt("danger", GANK_LINE);
+                    let _ = self.app.emit("gank-alert", &alert);
+                }
+                SignalEvent::Revision => {
+                    voice_interrupt("revision", REVISION_LINE);
+                    let _ = self.app.emit("gank-clear", ());
+                }
+                SignalEvent::None => {}
+            }
+
             let payload = MinimapDebug {
                 region: r,
                 icon: self.icon,
@@ -151,6 +197,20 @@ fn run(app: AppHandle) -> Result<(), String> {
     MinimapCapture::start(settings).map_err(|e| format!("capture failed: {e}"))
 }
 
+/// Voice a critical event with interrupt semantics: cancel whatever Maiden is
+/// saying, then play a pre-recorded clip for `event` if the cache has one, else
+/// speak `fallback` via SAPI. Used by G-Signal so a gank warning cuts in
+/// immediately (and Belief Revision can retract mid-stream). Default voice/rate
+/// — the user's picked voice lives in the frontend; wiring it here is a P2 tuning
+/// item.
+fn voice_interrupt(event: &str, fallback: &str) {
+    crate::audio::cancel();
+    crate::tts::cancel();
+    if !crate::audio::play_random(event) {
+        crate::tts::speak(fallback, None, None);
+    }
+}
+
 /// Locate the bundled model directory: `models/` next to the executable (how the
 /// installer ships it) with a fallback to `models/` in the working directory
 /// (how `pnpm tauri dev` runs from the repo root).
@@ -164,4 +224,90 @@ fn model_dir() -> std::path::PathBuf {
         }
     }
     std::path::PathBuf::from("models")
+}
+
+#[cfg(test)]
+mod tests {
+    //! P2.5 latency harness — times the controllable compute pipeline
+    //! (prefilter → detect → sentry → motion → signal) over many synthetic
+    //! frames and asserts p99 stays well inside budget. WGC capture (~refresh
+    //! bound) and audio output (~40 ms, cpal) are I/O budgeted separately per the
+    //! Engineering-Spec latency breakdown, so they're not in this measurement.
+    use super::*;
+    use std::path::Path;
+
+    /// 256×256 BGRA frame, dark background with `n` Dire-red blips so prefilter +
+    /// detector have realistic work to do.
+    fn synthetic_frame(n: usize) -> Frame {
+        let (w, h, icon) = (256usize, 256usize, 20usize);
+        let mut bgra = vec![0u8; w * h * 4];
+        for (i, px) in bgra.chunks_mut(4).enumerate() {
+            let (x, _y) = (i % w, i / w);
+            // faint green/brown background
+            px[0] = 18;
+            px[1] = 36 + (x % 7) as u8;
+            px[2] = 14;
+            px[3] = 255;
+        }
+        for k in 0..n {
+            let bx = (k * 37) % (w - icon);
+            let by = (k * 53) % (h - icon);
+            for yy in by..by + icon {
+                for xx in bx..bx + icon {
+                    let p = (yy * w + xx) * 4;
+                    bgra[p] = 41; // B
+                    bgra[p + 1] = 41; // G
+                    bgra[p + 2] = 219; // R (Dire red)
+                }
+            }
+        }
+        Frame::from_bgra(w, h, bgra).unwrap()
+    }
+
+    #[test]
+    fn pipeline_latency_within_budget() {
+        // Latency is only meaningful in release — tract inference in a debug build
+        // is ~100× slower (the spike's 0.85 ms was release). Run this gate with
+        //   cargo test --release --bin g-maiden pipeline_latency
+        // In debug we skip so the normal test suite stays fast.
+        if cfg!(debug_assertions) {
+            eprintln!("skip latency harness in debug; run with --release");
+            return;
+        }
+        let model = Path::new("../models/minimap-detector.onnx");
+        if !model.exists() {
+            eprintln!("skip latency harness: model not present");
+            return;
+        }
+        let detector = Detector::load(model, Path::new("../models/labels.json"));
+        let region = MinimapRegion { x: 0, y: 0, side: 256 };
+        let icon = 20usize;
+        let frame = synthetic_frame(5);
+
+        let mut sentry = Sentry::new();
+        let mut motion = Motion::new();
+        let mut signal = Signal::new();
+
+        let iters = 300usize;
+        let mut samples_us: Vec<u128> = Vec::with_capacity(iters);
+        for i in 0..iters {
+            let now_ms = (i as u64) * 125; // ~8 Hz cadence
+            let t = Instant::now();
+            let cands = prefilter_candidates(&frame, icon, DEFAULT_THRESHOLD_FRAC);
+            let dets = detector.detect(&frame, &cands, icon);
+            let _ = sentry.update(&dets, &region, now_ms);
+            motion.record(&dets, &region, now_ms);
+            let missing = sentry.missing(now_ms);
+            let risk = motion.assess(&missing, now_ms);
+            let _ = signal.evaluate(&risk);
+            samples_us.push(t.elapsed().as_micros());
+        }
+        samples_us.sort_unstable();
+        let p50 = samples_us[iters / 2] as f64 / 1000.0;
+        let p99 = samples_us[(iters * 99) / 100] as f64 / 1000.0;
+        eprintln!("[P2.5 latency] compute pipeline p50={p50:.3} ms  p99={p99:.3} ms");
+        // Generous gate: the spike's whole-loop budget was 80 ms. The CV compute
+        // alone must sit far under that even on slow CI.
+        assert!(p99 < 80.0, "pipeline p99 {p99:.3} ms exceeds 80 ms budget");
+    }
 }
