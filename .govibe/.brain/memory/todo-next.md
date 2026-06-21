@@ -27,15 +27,24 @@ MSI/NSIS installer + ice-gem icon + onboarding modal.
 latency/CPU ผ่านสบาย (~100x headroom) แต่ accuracy ของ NCC ไม่พอ → **ต้อง ONNX
 detector**. นี่คือด่านชี้เป็นชี้ตายตัวต่อไป.
 
-## 🎯 แผนถัดไป — โฟกัส Phase 2 (minimap CV via ONNX)
-ลำดับงานเพื่อ de-risk ให้เร็วที่สุด:
-1. **เก็บ real-game minimap footage** (งาน user — เปิด Dota 2 + capture). scope ใหม่
-   = เก็บ training set ไม่ใช่วัด NCC. ต้องมี enemy-icon ครบ 10 ฮีโร่ + fog ระดับต่าง ๆ.
-2. **Label + train ONNX detector เล็ก** (MobileNetV3-class head). budget เหลือเยอะ.
-3. **DXGI minimap capture loop** ใน Rust + prefilter (จาก spike) → ONNX match step.
-4. **G-Sentry**: missing >5s → `EnemyMissing` event + เสียงเตือน. วัด CPU ≤2.5% จริง.
-5. **G-Motion**: ring buffer 5 นาที + probability เส้น gank.
-6. **G-Signal เต็ม**: รวม G-Sentry+G-Motion → threshold >85% + latency harness p50/p99.
+## 🎯 แผนถัดไป — Phase 2 (minimap CV via ONNX) · roadmap เต็มที่
+`C:\Users\freshair\.claude\plans\roadmap-phase-2-sorted-deer.md`
+**ตัดสินใจแล้ว:** training = synthetic จาก official icons (ไม่รอ footage) ·
+stack = tract + windows-capture v2.0 · ADR-05: ONNX=default, NCC=fallback.
+
+- [x] **P2.0 part 1** — prefilter port (commit `f1c0741`): `cv/prefilter.rs` +
+      `Frame`. แก้ edge-bias (average/pixel) + contrast gate. 4 tests.
+- [x] **P2.0 part 2** — region geometry (commit `520430c`): `cv/region.rs`
+      `MinimapRegion` bbox+icon scale+coord map. 4 tests.
+- [ ] **P2.0 part 3** — `capture.rs` WGC v2.0 loop → crop region → prefilter.
+      adaptive 5–8 Hz. ⚠️ ต้อง verify สดกับ Dota (compile ไม่พอ).
+- [ ] **P2.1** dataset generator จาก official icons (ขนานได้, ไม่รอ footage).
+- [ ] **P2.2** train + integrate tract ONNX detector (`cv/detector.rs`); NCC fallback.
+- [ ] **P2.3** `sentry.rs` G-Sentry: missing >5s → `EnemyMissing` + เสียงเตือน.
+- [ ] **P2.4** `motion.rs` G-Motion: ring buffer 5 นาที + gank probability.
+- [ ] **P2.5** G-Signal เต็ม (>85% interrupt + Belief Revision) + latency harness
+      p50≤250ms/p99≤300ms + governor CPU≤2.5%.
+- ทดสอบ: `cargo test --bin g-maiden cv::` (bin ไม่มี lib target).
 
 ## ต้องให้ผู้ใช้ทำ (ทำแทนไม่ได้)
 - [ ] **เปิด Dota 2 จริง** → ยืนยัน overlay + voice end-to-end. POST simulated ทดสอบผ่านแล้ว
