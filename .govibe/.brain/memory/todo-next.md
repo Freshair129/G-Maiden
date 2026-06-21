@@ -83,6 +83,16 @@ stack = tract + windows-capture v2.0 · ADR-05: ONNX=default, NCC=fallback.
       เล่นจริง → `python analyze.py` → ปรับ DANGER_THRESHOLD (signal.rs) / missing_risk
       curve (motion.rs) ตาม precision/recall. 42 Rust tests + analyzer self-test ผ่าน.
 
+## 🔄 In-app updater (turn 23, commit `34339aa`)
+- Tauri updater + process plugin; ask-first UI ใน Control (เช็คตอนเปิด + ปุ่ม
+  ตรวจหาอัปเดต + banner อัปเดตเลย/ภายหลัง). endpoint = GitHub Releases latest.json.
+- **signing key อยู่ `.tauri/g-maiden-updater.key` (gitignored) — ⚠️ ห้ามหาย/ห้าม commit.**
+  ถ้าหาย = เซ็นอัปเดตไม่ได้อีก ผู้ใช้เก่าจะอัปเดตไม่ได้ ต้อง backup. pubkey อยู่ใน tauri.conf.json.
+- CI: `.github/workflows/release.yml` (tauri-action) build+sign+publish ตอน push tag `v*`.
+  ต้องตั้ง GitHub secrets: `TAURI_SIGNING_PRIVATE_KEY` (เนื้อไฟล์ key), `TAURI_SIGNING_PRIVATE_KEY_PASSWORD` ("").
+- ออกเวอร์ชันใหม่: bump version ใน tauri.conf.json + src/package.json → commit → `git tag vX.Y.Z` → push.
+- local signed build: `TAURI_SIGNING_PRIVATE_KEY="$(cat .tauri/g-maiden-updater.key)" TAURI_SIGNING_PRIVATE_KEY_PASSWORD="" pnpm tauri build` → ได้ .sig.
+
 ## เกร็ด turn 21
 - ไอคอนมินิแมพจริง = dota_react CDN `.../heroes/icons/<short>.png` (วงกลม, transparent,
   32×32 พอดี model input). short = npc_dota_hero_X ตัด prefix. OpenDota API ให้ list.
