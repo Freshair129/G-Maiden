@@ -35,9 +35,12 @@ interface Settings {
   alertEnabled: boolean
   alertThreshold: number
   voiceEnabled: boolean
+  voiceName: string
+  voiceRate: number
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0 }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
+interface VoiceInfo { name: string; culture: string; gender: string; age: string }
 const loadSettings = (): Settings => {
   try {
     return { ...DEFAULTS, ...(JSON.parse(localStorage.getItem('gm-settings') ?? '{}') as Partial<Settings>) }
@@ -155,7 +158,7 @@ const Overlay: React.FC = () => {
       if (now - lastSpokeAt.current > 8000) {
         lastSpokeAt.current = now
         dangerActive.current = true
-        void invoke('speak', { text: DANGER_LINE }).catch(() => {})
+        void invoke('speak', { text: DANGER_LINE, voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})
       }
     }
   }, [lowHp, t.alive, t.hp_percent, s.alertThreshold, s.voiceEnabled])
@@ -311,10 +314,27 @@ const Control: React.FC = () => {
   const [tick, setTick] = useState<GameTick | null>(null)
   const [seen, setSeen] = useState(false)
   const [s, setS] = useState<Settings>(loadSettings)
+  const [voices, setVoices] = useState<VoiceInfo[]>([])
   const [showWelcome, setShowWelcome] = useState(() => localStorage.getItem('gm-onboarded') !== '1')
   const dismissWelcome = () => { localStorage.setItem('gm-onboarded', '1'); setShowWelcome(false) }
   const sRef = useRef(s)
   sRef.current = s
+
+  // Load installed voices once; if Maiden has never been assigned one, prefer the
+  // first Female voice so the default sounds like her instead of a male advisor.
+  useEffect(() => {
+    void (async () => {
+      try {
+        const list = await invoke<VoiceInfo[]>('list_voices')
+        setVoices(list)
+        setS((prev) => {
+          if (prev.voiceName) return prev
+          const female = list.find((v) => v.gender === 'Female')
+          return female ? { ...prev, voiceName: female.name } : prev
+        })
+      } catch { /* command unavailable */ }
+    })()
+  }, [])
 
   // bind once; use ref so the overlay-ready handler always emits current settings
   useEffect(() => {
@@ -365,15 +385,30 @@ const Control: React.FC = () => {
           </Row>
           <Row label="เสียงพูด (Maiden)">
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <button onClick={() => void invoke('speak', { text: DANGER_LINE }).catch(() => {})} disabled={!s.voiceEnabled}
+              <button onClick={() => void invoke('speak', { text: DANGER_LINE, voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})} disabled={!s.voiceEnabled}
                 style={{ background: 'transparent', color: s.voiceEnabled ? C.ice : C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 11px', fontSize: 12, cursor: s.voiceEnabled ? 'pointer' : 'not-allowed' }}>
                 🔊 ทดสอบเสียง
               </button>
               <Toggle on={s.voiceEnabled} onChange={(v) => set('voiceEnabled', v)} />
             </div>
           </Row>
-          <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8 }}>
-            แบนเนอร์ + Maiden พูดเตือนเมื่อเลือดต่ำกว่าขีด (Windows SAPI · เสียงไทยจะดีขึ้นถ้าติดตั้ง Thai voice ใน Windows)
+          <Row label="เลือกเสียง">
+            <select value={s.voiceName} onChange={(e) => set('voiceName', e.target.value)} disabled={!s.voiceEnabled || voices.length === 0}
+              style={{ background: 'rgba(18,20,28,0.86)', color: s.voiceEnabled ? C.txt : C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 10px', fontSize: 12.5, maxWidth: 240 }}>
+              <option value="">— ระบบเลือกเอง —</option>
+              {voices.map((v) => (
+                <option key={v.name} value={v.name}>{v.name} ({v.culture}, {v.gender === 'Female' ? 'หญิง' : v.gender === 'Male' ? 'ชาย' : v.gender})</option>
+              ))}
+            </select>
+          </Row>
+          <Row label={`ความเร็ว: ${s.voiceRate > 0 ? '+' : ''}${s.voiceRate}`}>
+            <input type="range" min={-5} max={5} step={1} value={s.voiceRate} onChange={(e) => set('voiceRate', Number(e.target.value))} disabled={!s.voiceEnabled} style={{ width: 150 }} />
+          </Row>
+          <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
+            Windows SAPI · ติดตั้งเสียงไทยใน Windows Settings · Time & Language · Speech เพื่อให้ Maiden พูดไทยชัดขึ้น
+            {voices.length > 0 && voices.every((v) => !v.culture.startsWith('th')) && (
+              <span style={{ color: C.warn }}> · ตอนนี้ยังไม่มี Thai voice → จะใช้เสียง {voices[0]?.gender === 'Female' ? 'อังกฤษ' : 'อังกฤษ'} อ่านข้อความไทย</span>
+            )}
           </div>
         </Card>
 

@@ -22,8 +22,14 @@ fn set_overlay_visible(app: tauri::AppHandle, visible: bool) {
 
 /// Speak `text` via Maiden's voice (Windows SAPI for now). Fire-and-forget.
 #[tauri::command]
-fn speak(text: String) {
-    tts::speak(&text);
+fn speak(text: String, voice: Option<String>, rate: Option<i32>) {
+    tts::speak(&text, voice.as_deref(), rate);
+}
+
+/// List SAPI voices installed on this machine so the UI can let the user pick.
+#[tauri::command]
+fn list_voices() -> Vec<tts::Voice> {
+    tts::list_voices()
 }
 
 /// Discover Dota 2's GSI cfg directory and report whether our cfg is in place.
@@ -59,6 +65,7 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             set_overlay_visible,
             speak,
+            list_voices,
             detect_gsi_setup,
             install_gsi_config
         ])
