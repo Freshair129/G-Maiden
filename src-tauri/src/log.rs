@@ -109,6 +109,52 @@ pub fn note_tick(tick: &GameTick) {
     }
 }
 
+/// Append a typed G-Signal event to the current match log, time-aligned with the
+/// tick stream. No-op when no match is recording. Used to capture the inputs of
+/// each gank decision so we can later (offline) join them against outcomes —
+/// the raw material for calibrating G-Motion's probability model (#7). The `ts`
+/// field is stamped here; callers pass a record built by the helpers below.
+pub fn note_event(mut value: serde_json::Value) {
+    let Ok(mut state) = STATE.lock() else { return };
+    if state.file.is_none() {
+        return;
+    }
+    if let Some(obj) = value.as_object_mut() {
+        obj.insert("ts".into(), serde_json::json!(now_ms() as u64));
+    }
+    let Ok(line) = serde_json::to_string(&value) else { return };
+    if let Some(f) = state.file.as_mut() {
+        let _ = f.write_all(line.as_bytes());
+        let _ = f.write_all(b"\n");
+        let _ = f.flush();
+    }
+}
+
+/// Record: G-Signal fired a gank warning (the decision + its inputs).
+pub fn gank_signal_record(probability: f32, missing: &[String], eta_ms: u64) -> serde_json::Value {
+    serde_json::json!({
+        "type": "gank_signal",
+        "probability": probability,
+        "missing_heroes": missing,
+        "eta_ms": eta_ms,
+    })
+}
+
+/// Record: Belief Revision retracted a prior warning.
+pub fn gank_revision_record() -> serde_json::Value {
+    serde_json::json!({ "type": "gank_revision" })
+}
+
+/// Record: G-Sentry flagged an enemy missing (a risk feature).
+pub fn enemy_missing_record(hero: &str, missing_for_ms: u64, last_pos: (f32, f32)) -> serde_json::Value {
+    serde_json::json!({
+        "type": "enemy_missing",
+        "hero": hero,
+        "missing_for_ms": missing_for_ms,
+        "last_pos": [last_pos.0, last_pos.1],
+    })
+}
+
 /// A single archived match log.
 #[derive(serde::Serialize, Clone)]
 pub struct MatchLog {
@@ -193,4 +239,34 @@ pub fn open_log_dir() {
     let _ = std::process::Command::new("explorer")
         .arg(dir.as_os_str())
         .spawn();
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn gank_signal_record_shape() {
+        let r = gank_signal_record(0.91, &["CM".into(), "SF".into()], 2500);
+        assert_eq!(r["type"], "gank_signal");
+        assert_eq!(r["eta_ms"], 2500);
+        assert_eq!(r["missing_heroes"].as_array().unwrap().len(), 2);
+        // probability round-trips as a number
+        assert!((r["probability"].as_f64().unwrap() - 0.91).abs() < 1e-6);
+    }
+
+    #[test]
+    fn enemy_missing_record_shape() {
+        let r = enemy_missing_record("CM", 6000, (0.25, 0.5));
+        assert_eq!(r["type"], "enemy_missing");
+        assert_eq!(r["hero"], "CM");
+        let pos = r["last_pos"].as_array().unwrap();
+        assert_eq!(pos.len(), 2);
+        assert!((pos[0].as_f64().unwrap() - 0.25).abs() < 1e-6);
+    }
+
+    #[test]
+    fn revision_record_shape() {
+        assert_eq!(gank_revision_record()["type"], "gank_revision");
+    }
 }

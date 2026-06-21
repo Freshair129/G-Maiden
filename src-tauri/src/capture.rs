@@ -155,6 +155,11 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
 
             // G-Sentry: flag enemies missing >5s (edge-triggered).
             for em in self.sentry.update(&detections, &r, now_ms) {
+                crate::log::note_event(crate::log::enemy_missing_record(
+                    &em.hero,
+                    em.missing_for_ms,
+                    em.last_pos,
+                ));
                 let _ = self.app.emit("enemy-missing", &em);
             }
             // G-Motion: history + gank-risk over currently-missing enemies.
@@ -167,10 +172,16 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                 match self.signal.evaluate(&risk) {
                     SignalEvent::Alert(alert) => {
                         voice_interrupt("danger", GANK_LINE);
+                        crate::log::note_event(crate::log::gank_signal_record(
+                            alert.probability,
+                            &alert.missing_heroes,
+                            alert.eta_ms,
+                        ));
                         let _ = self.app.emit("gank-alert", &alert);
                     }
                     SignalEvent::Revision => {
                         voice_interrupt("revision", REVISION_LINE);
+                        crate::log::note_event(crate::log::gank_revision_record());
                         let _ = self.app.emit("gank-clear", ());
                     }
                     SignalEvent::None => {}
