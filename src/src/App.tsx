@@ -679,6 +679,11 @@ const Control: React.FC = () => {
   // bind once; use ref so the overlay-ready handler always emits current settings
   useEffect(() => {
     document.body.style.background = C.bg
+    // index.css sets html,body { overflow:hidden } for the transparent click-through
+    // overlay window. The control window has more content than fits, so re-enable
+    // vertical scroll here (this effect never runs in the overlay window).
+    document.documentElement.style.overflowY = 'auto'
+    document.documentElement.style.overflowX = 'hidden'
     const u1 = listen<GameTick>('game-tick', (e) => { setTick(e.payload); setSeen(true) })
     const u2 = listen('overlay-ready', () => { void emit('settings', sRef.current) })
     return () => { void u1.then((f) => f()); void u2.then((f) => f()) }
