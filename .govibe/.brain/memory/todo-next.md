@@ -1,7 +1,7 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: 2026-06-21 (turn 8) · G-Log skeleton ลง main — 6 modules ของ CLAUDE.md
-มี skeleton 5/6 แล้ว (ดู `.govibe/.brain/session/2026-06-21-glog.md`).
+อัปเดตล่าสุด: 2026-06-21 (turn 9) · fix in_game ที่ state INIT + unit tests แรกของโปรเจกต์
+(ดู `.govibe/.brain/session/2026-06-21-gsi-fix-tests.md`).
 
 ## ต้องให้ผู้ใช้ทำ (ทำแทนไม่ได้)
 - [ ] **เปิด Dota 2 จริง** → ยืนยัน overlay + voice end-to-end. POST simulated ทดสอบผ่านแล้ว
@@ -27,9 +27,8 @@
 - [ ] อัปเดต CLAUDE.md — "specification stage" ล้าสมัย (มี codebase แล้ว). 09f9048 ตัด govibe
       sibling note ไปแล้ว → ไม่เร่ง. ขอ confirm ก่อนเขียนทับ.
 - [ ] Control GUI: การ์ด Modules ให้ toggle ได้จริง + เลือก hotkey เอง + theme.
-- [ ] **Bug เก่า in_game**: GSI parser ตั้ง `in_game=true` ตั้งแต่ state INIT (เริ่มเขียน
-      log + เริ่ม overlay เร็วกว่าแมตช์จริงเล็กน้อย). แก้: ตัด INIT/HERO_SELECTION/
-      STRATEGY_TIME ออกจาก in_game-truthy. ดู gsi.rs:58.
+- [x] ~~**Bug `in_game` INIT**~~ — ✅ จบใน turn 9 (commit `22a8572`): จับเฉพาะ
+      PRE_GAME / GAME_IN_PROGRESS + unit tests แรกของโปรเจกต์ (3 ผ่าน).
 
 ## เทคนิคที่ค้างรู้ไว้
 - รัน dev: `cd G:\G-Maiden; pnpm tauri dev` (ที่ root, **ห้าม cd src ก่อน** — tauri CLI อยู่
