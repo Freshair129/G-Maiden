@@ -16,6 +16,7 @@ tokio      = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
 axum       = "0.7"
 tauri-plugin-global-shortcut = "2"
 windows-capture = "2.0"
+tract-onnx = "0.21"
 
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }

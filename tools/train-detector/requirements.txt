@@ -1,0 +1,17 @@
+# G-Maiden P2.2 — minimap detector trainer + ONNX exporter.
+#
+# CPU-only torch is sufficient (and preferred — no GPU needed for this tiny CNN).
+# If torch is not installed, install the CPU wheel explicitly:
+#     pip install torch --index-url https://download.pytorch.org/whl/cpu
+# then install the rest:
+#     pip install -r requirements.txt
+#
+# Verified working set (2026-06): torch 2.9.1+cpu, onnx 1.22.0,
+# onnxruntime 1.23.2, numpy 2.3.5, Pillow 12.0.0 on Python 3.13.
+
+torch>=2.1            # CNN training + ONNX export (use the CPU wheel; see above)
+onnx>=1.15            # ONNX graph IR used by torch.onnx.export
+onnxruntime>=1.16     # contract verification (re-run val set through the .onnx)
+numpy>=1.24
+Pillow>=10.0
+pytest>=7.0           # optional: `python -m pytest test_contract.py`

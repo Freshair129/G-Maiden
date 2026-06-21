@@ -6,6 +6,7 @@
 //! latency/CPU budget; the production code generalises the fixed 256×256 / 20px
 //! spike constants to a runtime-sized minimap region.
 
+pub mod detector;
 pub mod prefilter;
 pub mod region;
 

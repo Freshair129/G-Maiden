@@ -25,6 +25,16 @@ Cargo.lock
 *.swp
 *.swo
 
+# Python (CV tooling)
+__pycache__/
+*.pyc
+.pytest_cache/
+
+# Generated datasets (large, regenerable from gen-dataset)
+tools/**/_ds/
+tools/**/_smoke_ds/
+_ds/
+
 # OS
 .DS_Store
 Thumbs.db

@@ -28,6 +28,7 @@ use windows_capture::{
     },
 };
 
+use crate::cv::detector::{Detection, Detector};
 use crate::cv::prefilter::{prefilter_candidates, DEFAULT_THRESHOLD_FRAC};
 use crate::cv::region::MinimapRegion;
 use crate::cv::Frame;
@@ -36,8 +37,9 @@ use crate::cv::Frame;
 /// proven "normal" band (5–8 Hz) and keeps CPU far under the 2.5% budget.
 const CAPTURE_HZ: u64 = 8;
 
-/// Debug payload emitted per processed frame so the overlay can draw candidate
-/// boxes over the minimap while the user calibrates the region.
+/// Debug/result payload emitted per processed frame. Candidates feed the
+/// calibration overlay; detections are the confirmed heroes (empty until the
+/// ONNX model is present — see [`Detector`]).
 #[derive(Clone, serde::Serialize)]
 struct MinimapDebug {
     region: MinimapRegion,
@@ -45,6 +47,10 @@ struct MinimapDebug {
     /// candidate top-left coords *within* the cropped region.
     candidates: Vec<(i32, i32)>,
     count: usize,
+    /// confirmed hero detections (classifier active).
+    detections: Vec<Detection>,
+    /// whether a real ONNX classifier is running (vs candidate-only).
+    classifier: bool,
 }
 
 /// Capture handler state. Flags carry the Tauri handle (to emit) and the
@@ -53,6 +59,7 @@ struct MinimapCapture {
     app: AppHandle,
     region: MinimapRegion,
     icon: usize,
+    detector: Detector,
 }
 
 impl GraphicsCaptureApiHandler for MinimapCapture {
@@ -62,7 +69,12 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
     fn new(ctx: Context<Self::Flags>) -> Result<Self, Self::Error> {
         let (app, region) = ctx.flags;
         let icon = region.icon_size();
-        Ok(MinimapCapture { app, region, icon })
+        let dir = model_dir();
+        let detector = Detector::load(
+            &dir.join("minimap-detector.onnx"),
+            &dir.join("labels.json"),
+        );
+        Ok(MinimapCapture { app, region, icon, detector })
     }
 
     fn on_frame_arrived(
@@ -88,11 +100,14 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
 
         if let Some(f) = Frame::from_bgra(w, h, packed) {
             let candidates = prefilter_candidates(&f, self.icon, DEFAULT_THRESHOLD_FRAC);
+            let detections = self.detector.detect(&f, &candidates, self.icon);
             let payload = MinimapDebug {
                 region: r,
                 icon: self.icon,
                 count: candidates.len(),
                 candidates,
+                detections,
+                classifier: self.detector.is_active(),
             };
             let _ = self.app.emit("minimap-cv", payload);
         }
@@ -134,4 +149,19 @@ fn run(app: AppHandle) -> Result<(), String> {
 
     // Blocking: takes over this (spawned) thread running the WGC message loop.
     MinimapCapture::start(settings).map_err(|e| format!("capture failed: {e}"))
+}
+
+/// Locate the bundled model directory: `models/` next to the executable (how the
+/// installer ships it) with a fallback to `models/` in the working directory
+/// (how `pnpm tauri dev` runs from the repo root).
+fn model_dir() -> std::path::PathBuf {
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            let p = parent.join("models");
+            if p.join("minimap-detector.onnx").exists() {
+                return p;
+            }
+        }
+    }
+    std::path::PathBuf::from("models")
 }
