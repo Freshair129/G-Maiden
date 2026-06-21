@@ -1,7 +1,8 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: 2026-06-21 (turn 10) · unit tests 3 → 11 (gsi + setup + tts ครอบครัวเดิม)
-(ดู `.govibe/.brain/session/2026-06-21-tests-expand.md`).
+อัปเดตล่าสุด: 2026-06-21 (turn 11) · WAV fallback pipeline + G-Master ใช้ Claude Plan quota
+ลง main — 6/6 modules ของ CLAUDE.md มี skeleton ครบ (ดู
+`.govibe/.brain/session/2026-06-21-voice-and-master.md`).
 
 ## ต้องให้ผู้ใช้ทำ (ทำแทนไม่ได้)
 - [ ] **เปิด Dota 2 จริง** → ยืนยัน overlay + voice end-to-end. POST simulated ทดสอบผ่านแล้ว
@@ -12,18 +13,23 @@
       สีเหลืองจะหายไป.
 
 ## งานต่อ (เรียงตามคุณค่า)
-- [ ] **Piper local TTS** (TDD) — เป้าหมายระยะถัดไป. ตอนนี้ SAPI + voice picker (commit
-      `893ea6d`) เพียงพอแล้วถ้า user ติดตั้ง Thai voice เพิ่ม. Piper ยังคุ้มสำหรับ:
-      (1) เสียงคุณภาพ neural แทน formant-synth, (2) latency in-process (~20ms vs ~200ms),
-      (3) ใช้บน G-Signal hard-path ตอนทำ gank warning. ต้อง spike: หา Thai voice
-      ที่ใช้ได้จริง (community model?) + เลือก `piper-rs` (ONNX dep) vs shell-out
-      `piper.exe`.
+- [ ] **WAV clips สำหรับ pre-recorded pool** — pipeline พร้อมใช้ (commit `33d2fa3`).
+      ต้องการ asset: voice generation (ElevenLabs / Piper / RVC) แล้ววางลง
+      `voice-cache/{event}/01.wav` (events: danger, levelUp, kill, death, respawn,
+      manaLow, revision). แนะนำ 5-10 takes ต่อ event กันฟังซ้ำ. ทันทีที่มี ≥1 clip
+      ของ event ใด event นั้นจะใช้ WAV แทน SAPI อัตโนมัติ (no code change needed).
+- [ ] **Piper local TTS** — ลด priority ลงหลังมี Voice Cache + Claude Plan. ตอนนี้
+      เส้นทาง SAPI (predictable events) สามารถถูกแทนที่ด้วย WAV ได้แล้ว; advice
+      ของ G-Master ใช้ SAPI พอใช้ (ผู้ใช้กดอ่านเอง). Piper ยังคุ้มสำหรับ Maiden พูด
+      streaming text ระหว่าง real-time gank warning — เก็บไว้สำหรับ G-Signal full.
 - [x] ~~**MSI installer**~~ — ✅ จบ G8.1 (commit `ac56d87`): ice-gem icon ลง bundle ทุกขนาด,
       Welcome modal 2-step (auto-detect + auto-install) + 'gm-onboarded' localStorage flag.
       เหลือเทสต์ใน Dota 2 จริง = งาน user.
 - [ ] **G-Sentry/G-Motion/G-Signal เต็ม** — ต้อง minimap CV (GSI ไม่ให้ตำแหน่งศัตรู, ดู R-02/R-03).
       ต้องมีเกมจริงทดสอบ. เริ่มจาก spike S-1 (minimap capture + template match).
-- [ ] **G-Master advisor** + Gemini persona (cloud brain).
+- [x] ~~**G-Master advisor**~~ — ✅ จบใน turn 11 (commit `33d2fa3`): shell-out
+      `claude -p` ใช้ Plan quota, throttle 30s + cache, persona prompt + game
+      context auto. ติดตั้ง Claude Code CLI + login = พร้อมใช้.
 - [ ] อัปเดต CLAUDE.md — "specification stage" ล้าสมัย (มี codebase แล้ว). 09f9048 ตัด govibe
       sibling note ไปแล้ว → ไม่เร่ง. ขอ confirm ก่อนเขียนทับ.
 - [ ] Control GUI: การ์ด Modules ให้ toggle ได้จริง + เลือก hotkey เอง + theme.
