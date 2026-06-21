@@ -7,6 +7,7 @@ import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, ope
 import { spawn } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { getStore } from "./store/knowledge.mjs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
 const ROOT = resolve(__dir, "..");
@@ -217,7 +218,21 @@ export function scopeFor(task) {
   };
 }
 
-export function buildPrompt(t, model, provider = "claude", reworkNote = null) {
+// L1 (SPEC--LOCAL-MODEL-ANTI-ERROR-LOOP) — format "❌ past mistakes" คุม budget (~4 ตัวอักษร/token, ≤15% ของ budget)
+function pastMistakesBlock(pastMistakes, budgetTokens) {
+  if (!pastMistakes?.length) return null;
+  const cap = Math.max(240, Math.floor((budgetTokens || 8000) * 0.15) * 4);
+  const lines = [];
+  for (const m of pastMistakes) {
+    if (!m.issue) continue;
+    const line = `- ❌ ${m.issue}${m.fix ? `  →  ✅ ${m.fix}` : ""}`;
+    if (lines.join("\n").length + line.length + 1 > cap) break;
+    lines.push(line);
+  }
+  return lines.length ? [`## ❌ ความผิดที่เคยเกิดกับงานคล้ายกัน — ห้ามทำซ้ำ (anti-error loop)`, ...lines].join("\n") : null;
+}
+
+export function buildPrompt(t, model, provider = "claude", reworkNote = null, pastMistakes = null) {
   const s = scopeFor(t);
   const deps = (t.deps || []).join(", ") || "(none)";
   const head = [
@@ -228,6 +243,8 @@ export function buildPrompt(t, model, provider = "claude", reworkNote = null) {
     `## เกณฑ์ผ่าน (acceptance — ต้องครบ)`, t.accept, ``,
   ];
   if (reworkNote) head.push(reworkNote, ``);
+  const pm = pastMistakesBlock(pastMistakes, s.budgetTokens);
+  if (pm) head.push(pm, ``);
   if (provider === "ollama") {
     const p = [...head];
     if (s.needs.length) p.push(`## บริบทที่เกี่ยวข้อง`, s.needs.map((n) => `- ${n}`).join("\n"), ``);
@@ -270,7 +287,7 @@ function runClaude(t, name, model, worker, opts = {}) {
     // prompt ส่งทาง stdin (ไม่ใช่ arg) — กัน shell metachar (| ` { } ( )) ทำ prompt พังใต้ shell:true
     const args = [...CONFIG.executor.baseArgs, "--model", name, ...CONFIG.executor.extraArgs];
     const child = spawn(CONFIG.executor.command, args, { cwd: PATHS.ROOT, shell: true, env: childEnv(mode) });
-    child.stdin.write(buildPrompt(t, model, "claude", opts.reworkNote)); child.stdin.end();
+    child.stdin.write(buildPrompt(t, model, "claude", opts.reworkNote, opts.pastMistakes)); child.stdin.end();
     let lineBuf = "", resultLine = null;
     child.stdout.on("data", (d) => {
       ws.write(d); lineBuf += d; let i;
@@ -299,7 +316,7 @@ async function runOllama(t, name, model, worker, opts = {}) {
   const options = (CONFIG.ollama?.profiles || {})[scopeFor(t).profile] || {};
   let inTok = 0, outTok = 0, ok = false, acc = "", blocked = false, empty = false;
   try {
-    const payload = { model: name, stream: true, options, messages: [{ role: "user", content: buildPrompt(t, model, "ollama", opts.reworkNote) }] };
+    const payload = { model: name, stream: true, options, messages: [{ role: "user", content: buildPrompt(t, model, "ollama", opts.reworkNote, opts.pastMistakes) }] };
     if (typeof CONFIG.ollama?.think === "boolean") payload.think = CONFIG.ollama.think; // ปิด thinking สำหรับงาน draft -> ตอบ content ตรง
     const resp = await fetch(`${host}/api/chat`, {
       method: "POST", headers: { "Content-Type": "application/json" },
@@ -484,12 +501,30 @@ function formatReworkNote(review, attempt) {
   return `## ROUND ${attempt} — reviewer ตีกลับ แก้ตาม issues ให้ครบ:\n${lines.join("\n")}\n(reviewer summary: ${review.summary || ""})`;
 }
 
+// L0 (ADR-O-003 / SPEC--LOCAL-MODEL-ANTI-ERROR-LOOP) — เก็บความผิดที่ Verify Gate ตีกลับ
+// write-only, fire-and-forget, best-effort: ห้ามทำ Verify Gate/pool ช้าหรือพัง
+function recordOutcome(t, model, worker, status, review) {
+  Promise.resolve().then(() =>
+    getStore(CONFIG).recordOutcome({
+      taskId: t.id, taskTitle: t.title, type: t.type, model, worker, status,
+      at: new Date().toISOString(), issues: review?.issues || [], summary: review?.summary || "",
+    })
+  ).catch(() => { /* knowledge store ล้ม -> เงียบ ไม่กระทบ execution */ });
+}
+
+// L1 — ดึง "❌ past mistakes" ที่คล้าย task มา inject ก่อน dispatch (best-effort, ไม่บล็อก/ไม่ throw)
+async function queryPastMistakes(t) {
+  try { return (await getStore(CONFIG).queryContext(t, { k: 3 })) || []; }
+  catch { return []; }
+}
+
 // produce -> (review) -> done | needs-rework. จัดการ state เองทั้งหมด. ใช้โดย dispatchOne และ runPool
 export async function executeWithReview(t, model, worker) {
   let round = 0, reworkNote = null;
+  const pastMistakes = await queryPastMistakes(t);   // L1: inject กันผิดซ้ำ
   while (true) {
-    const r = await runAgent(t, model, worker, { reworkNote });
-    if (!r.ok) { setStatus(t.id, "failed"); return "failed"; }              // empty/blocked/exit≠0
+    const r = await runAgent(t, model, worker, { reworkNote, pastMistakes });
+    if (!r.ok) { setStatus(t.id, "failed"); recordOutcome(t, model, worker, "failed", null); return "failed"; } // empty/blocked/exit≠0
     if (!requireReviewFor(t)) { setStatus(t.id, "done"); return "done"; }
     setStatus(t.id, "reviewing");
     const review = await runReview(t, model, worker);
@@ -502,6 +537,7 @@ export async function executeWithReview(t, model, worker) {
       continue;
     }
     setStatus(t.id, "needs-rework");
+    recordOutcome(t, model, worker, "needs-rework", review);
     return "needs-rework";
   }
 }
