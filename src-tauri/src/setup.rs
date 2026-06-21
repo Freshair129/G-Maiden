@@ -5,8 +5,14 @@
 //! Dota 2 (appid 570) is discovered by scanning `libraryfolders.vdf`.
 
 use std::fs;
+use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
 use std::process::Command;
+
+/// Win32 CREATE_NO_WINDOW — stop spawned console tools (tasklist, reg) from
+/// flashing a cmd window. Critical for the 4s watchdog `tasklist` poll, which
+/// otherwise pops a console every tick.
+const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 const DOTA_APPID: &str = "570";
 const CFG_NAME: &str = "gamestate_integration_gmaiden.cfg";
@@ -46,6 +52,7 @@ pub fn dota_running() -> bool {
     // up in stdout, otherwise tasklist prints an "INFO: No tasks" line.
     let out = Command::new("tasklist")
         .args(["/FI", "IMAGENAME eq dota2.exe", "/NH"])
+        .creation_flags(CREATE_NO_WINDOW)
         .output();
     match out {
         Ok(o) => String::from_utf8_lossy(&o.stdout)
@@ -64,6 +71,7 @@ fn read_steam_path() -> Option<PathBuf> {
             "/v",
             "SteamPath",
         ])
+        .creation_flags(CREATE_NO_WINDOW)
         .output()
         .ok()?;
     if !out.status.success() {

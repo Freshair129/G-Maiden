@@ -1017,7 +1017,7 @@ const Control: React.FC = () => {
             style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontSize: 11 }}>
             {updPhase === 'checking' ? 'กำลังตรวจ…' : updPhase === 'uptodate' ? 'เป็นเวอร์ชันล่าสุด ✓' : updPhase === 'error' ? 'ตรวจไม่สำเร็จ' : 'ตรวจหาอัปเดต'}
           </button>
-          <span>v0.1.0</span>
+          <span>v0.2.0</span>
         </span>
       </footer>
     </div>
