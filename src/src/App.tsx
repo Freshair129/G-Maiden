@@ -56,8 +56,9 @@ interface Settings {
   autoAdvice: boolean
   gankVisuals: boolean
   cvDebug: boolean
+  showStats: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false, gankVisuals: true, cvDebug: false }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false, gankVisuals: true, cvDebug: false, showStats: false }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 
 // Maiden's persona pool — gentle, smart, lightly self-deprecating about CM nerfs,
@@ -448,6 +449,9 @@ const Overlay: React.FC = () => {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
         {gankBanner}
         {lowHp && <div className="gm-danger" style={dangerStyle}>⚠ HP เหลือ {t.hp_percent}% — ถอยก่อนค่ะเพื่อน!</div>}
+        {/* Stat HUD duplicates Dota's native UI, so it's OFF by default. Enable it
+            in Control → "แสดงแผงสถิติ" if you want the at-a-glance panel. */}
+        {s.showStats && (
         <div style={{ ...panel(s.opacity), padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 22 }}>
           <div style={{ textAlign: 'center' }}>
             <div style={{ fontSize: 22, fontWeight: 700, color: C.ice, lineHeight: 1 }}>{fmtClock(t.clock_time)}</div>
@@ -471,6 +475,7 @@ const Overlay: React.FC = () => {
           <Stat label="GPM" value={t.gpm} />
           <Stat label="XPM" value={t.xpm} />
         </div>
+        )}
       </div>
     </div>
     </>
@@ -956,6 +961,7 @@ const Control: React.FC = () => {
           <Row label={`ความทึบพาเนล: ${Math.round(s.opacity * 100)}%`}>
             <input type="range" min={40} max={100} value={Math.round(s.opacity * 100)} onChange={(e) => set('opacity', Number(e.target.value) / 100)} style={{ width: 150 }} />
           </Row>
+          <Row label="แสดงแผงสถิติ (timer/score/HP/KDA/gold — ซ้ำกับ Dota)"><Toggle on={s.showStats} onChange={(v) => set('showStats', v)} /></Row>
           <Row label="ทดสอบ overlay (จำลอง ไม่ต้องเปิดเกม)"><Toggle on={preview} onChange={setPreview} /></Row>
           <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8 }}>
             💡 กด <b style={{ color: C.ice }}>Alt+S</b> ในเกมเพื่อซ่อน/แสดง overlay · เปิด "ทดสอบ overlay" เพื่อดู HUD + เตือน HP + เสียง โดยไม่ต้องเข้าเกม
@@ -1049,7 +1055,7 @@ const Control: React.FC = () => {
             style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontSize: 11 }}>
             {updPhase === 'checking' ? 'กำลังตรวจ…' : updPhase === 'uptodate' ? 'เป็นเวอร์ชันล่าสุด ✓' : updPhase === 'error' ? 'ตรวจไม่สำเร็จ' : 'ตรวจหาอัปเดต'}
           </button>
-          <span>v0.3.0</span>
+          <span>v0.4.0</span>
         </span>
       </footer>
     </div>
