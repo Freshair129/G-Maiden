@@ -785,8 +785,37 @@ const Control: React.FC = () => {
   const updRef = useRef<Update | null>(null)
   const [upd, setUpd] = useState<{ version: string; notes: string } | null>(null)
   const [updPhase, setUpdPhase] = useState<'idle' | 'checking' | 'downloading' | 'uptodate' | 'error'>('idle')
+  // Overlay preview: feed the overlay a fake in-game tick so you can see the HUD
+  // + danger banner (and hear the voice) without launching Dota.
+  const [preview, setPreview] = useState(false)
+  const previewTimer = useRef<ReturnType<typeof setInterval> | null>(null)
+  const previewClock = useRef(600)
   const sRef = useRef(s)
   sRef.current = s
+
+  // While preview is on, emit a synthetic game-tick + an active gsi-status every
+  // 1.5s (beating the 4s Rust watchdog that would otherwise hide the overlay).
+  // hp 18% is below the danger threshold, so the danger banner + voice fire too.
+  useEffect(() => {
+    if (!preview) {
+      if (previewTimer.current) { clearInterval(previewTimer.current); previewTimer.current = null }
+      void emit('gsi-status', { dota_running: false, gsi_active: false, in_game: false })
+      return
+    }
+    const tickOnce = () => {
+      previewClock.current += 2
+      void emit('gsi-status', { dota_running: true, gsi_active: true, in_game: true })
+      void emit('game-tick', {
+        in_game: true, clock_time: previewClock.current, game_state: 'DOTA_GAMERULES_STATE_GAME_IN_PROGRESS',
+        daytime: true, radiant_score: 12, dire_score: 9, gold: 1500, net_worth: 8200, gpm: 520, xpm: 610,
+        kills: 4, deaths: 2, assists: 7, last_hits: 88, denies: 6, hero: 'npc_dota_hero_crystal_maiden',
+        level: 9, alive: true, hp_percent: 18, mana_percent: 42,
+      })
+    }
+    tickOnce()
+    previewTimer.current = setInterval(tickOnce, 1500)
+    return () => { if (previewTimer.current) { clearInterval(previewTimer.current); previewTimer.current = null } }
+  }, [preview])
 
   // Check GitHub Releases for a newer signed build on startup. Ask-first: we only
   // surface the prompt; nothing installs until the user clicks. Silent on failure
@@ -927,7 +956,10 @@ const Control: React.FC = () => {
           <Row label={`ความทึบพาเนล: ${Math.round(s.opacity * 100)}%`}>
             <input type="range" min={40} max={100} value={Math.round(s.opacity * 100)} onChange={(e) => set('opacity', Number(e.target.value) / 100)} style={{ width: 150 }} />
           </Row>
-          <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8 }}>💡 กด <b style={{ color: C.ice }}>Alt+S</b> ในเกมเพื่อซ่อน/แสดง overlay</div>
+          <Row label="ทดสอบ overlay (จำลอง ไม่ต้องเปิดเกม)"><Toggle on={preview} onChange={setPreview} /></Row>
+          <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8 }}>
+            💡 กด <b style={{ color: C.ice }}>Alt+S</b> ในเกมเพื่อซ่อน/แสดง overlay · เปิด "ทดสอบ overlay" เพื่อดู HUD + เตือน HP + เสียง โดยไม่ต้องเข้าเกม
+          </div>
         </Card>
 
         <Card title="Alerts (G-Signal)">
@@ -937,7 +969,7 @@ const Control: React.FC = () => {
           </Row>
           <Row label="เสียงพูด (Maiden)">
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <button onClick={() => void invoke('speak_event', { event: 'danger', fallback: DANGER_LINE, voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})} disabled={!s.voiceEnabled}
+              <button onClick={() => void invoke('speak', { text: 'G-Maiden voice test. ทดสอบเสียงค่ะ เลือดน้อยแล้ว ถอยก่อน', voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})} disabled={!s.voiceEnabled}
                 style={{ background: 'transparent', color: s.voiceEnabled ? C.ice : C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 11px', fontSize: 12, cursor: s.voiceEnabled ? 'pointer' : 'not-allowed' }}>
                 🔊 ทดสอบเสียง
               </button>
@@ -1017,7 +1049,7 @@ const Control: React.FC = () => {
             style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontSize: 11 }}>
             {updPhase === 'checking' ? 'กำลังตรวจ…' : updPhase === 'uptodate' ? 'เป็นเวอร์ชันล่าสุด ✓' : updPhase === 'error' ? 'ตรวจไม่สำเร็จ' : 'ตรวจหาอัปเดต'}
           </button>
-          <span>v0.2.0</span>
+          <span>v0.3.0</span>
         </span>
       </footer>
     </div>
