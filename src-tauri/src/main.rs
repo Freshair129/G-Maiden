@@ -9,6 +9,7 @@ use tauri::Manager;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 mod audio;
+mod cv;
 mod gsi;
 mod log;
 mod master;
