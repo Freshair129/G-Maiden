@@ -34,8 +34,10 @@ interface Settings {
   opacity: number
   alertEnabled: boolean
   alertThreshold: number
+  voiceEnabled: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', opacity: 0.72, alertEnabled: true, alertThreshold: 25 }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true }
+const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 const loadSettings = (): Settings => {
   try {
     return { ...DEFAULTS, ...(JSON.parse(localStorage.getItem('gm-settings') ?? '{}') as Partial<Settings>) }
@@ -109,6 +111,10 @@ const Overlay: React.FC = () => {
   const [tick, setTick] = useState<GameTick | null>(null)
   const [seen, setSeen] = useState(false)
   const [s, setS] = useState<Settings>(DEFAULTS)
+  // rising-edge state for danger: speak once when HP crosses the threshold down,
+  // not every tick. Reset when HP recovers or the hero dies/respawns.
+  const dangerActive = useRef(false)
+  const lastSpokeAt = useRef(0)
   useEffect(() => {
     const u1 = listen<GameTick>('game-tick', (e) => { setTick(e.payload); setSeen(true) })
     const u2 = listen<Settings>('settings', (e) => setS({ ...DEFAULTS, ...e.payload }))
@@ -136,6 +142,24 @@ const Overlay: React.FC = () => {
   }
   const t = tick
   const lowHp = s.alertEnabled && t.alive && t.hp_percent > 0 && t.hp_percent <= s.alertThreshold
+
+  // Speak on the rising edge (alive + crossing the line). Re-arm when safe again,
+  // and throttle to at most once every 8s in case HP flickers across the line.
+  useEffect(() => {
+    if (!t.alive || t.hp_percent > s.alertThreshold + 5) {
+      dangerActive.current = false
+      return
+    }
+    if (lowHp && !dangerActive.current && s.voiceEnabled) {
+      const now = Date.now()
+      if (now - lastSpokeAt.current > 8000) {
+        lastSpokeAt.current = now
+        dangerActive.current = true
+        void invoke('speak', { text: DANGER_LINE }).catch(() => {})
+      }
+    }
+  }, [lowHp, t.alive, t.hp_percent, s.alertThreshold, s.voiceEnabled])
+
   return (
     <div style={wrap}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>

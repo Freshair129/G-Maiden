@@ -9,6 +9,7 @@ use tauri::Manager;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 mod gsi;
+mod tts;
 
 /// Show/hide the OSD overlay window (called by the control GUI toggle).
 #[tauri::command]
@@ -16,6 +17,12 @@ fn set_overlay_visible(app: tauri::AppHandle, visible: bool) {
     if let Some(ov) = app.get_webview_window("overlay") {
         let _ = if visible { ov.show() } else { ov.hide() };
     }
+}
+
+/// Speak `text` via Maiden's voice (Windows SAPI for now). Fire-and-forget.
+#[tauri::command]
+fn speak(text: String) {
+    tts::speak(&text);
 }
 
 fn main() {
@@ -36,7 +43,7 @@ fn main() {
                 })
                 .build(),
         )
-        .invoke_handler(tauri::generate_handler![set_overlay_visible])
+        .invoke_handler(tauri::generate_handler![set_overlay_visible, speak])
         .setup(move |app| {
             // G1.1: GSI ingestion server (127.0.0.1:3000); emits `game-tick` to all windows.
             let handle = app.handle().clone();
