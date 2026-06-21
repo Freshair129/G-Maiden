@@ -8,8 +8,10 @@
 use tauri::Manager;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
+mod audio;
 mod gsi;
 mod log;
+mod master;
 mod setup;
 mod tts;
 
@@ -28,9 +30,71 @@ fn speak(text: String, voice: Option<String>, rate: Option<i32>) {
 }
 
 /// Stop the current TTS playback (used by Belief Revision to retract mid-stream).
+/// Cancels both pre-recorded clip and SAPI synth so neither leaks past the cut.
 #[tauri::command]
 fn cancel_speech() {
+    audio::cancel();
     tts::cancel();
+}
+
+/// Try to play a pre-recorded clip for `event`. If no clips are present,
+/// fall back to SAPI speaking `fallback`. Keeps the Maiden voice unified at
+/// the call site — the UI doesn't have to know which path is active.
+#[tauri::command]
+fn speak_event(event: String, fallback: String, voice: Option<String>, rate: Option<i32>) {
+    if !audio::play_random(&event) {
+        tts::speak(&fallback, voice.as_deref(), rate);
+    }
+}
+
+/// Voice-cache status: directory + clip count per known event.
+#[derive(serde::Serialize, Clone)]
+struct VoiceCacheStatus {
+    dir: String,
+    counts: std::collections::BTreeMap<String, usize>,
+    total: usize,
+}
+
+const EVENTS: &[&str] = &[
+    "danger",
+    "levelUp",
+    "kill",
+    "death",
+    "respawn",
+    "manaLow",
+    "revision",
+];
+
+#[tauri::command]
+fn voice_cache_status() -> VoiceCacheStatus {
+    let dir = audio::voice_cache_dir().to_string_lossy().to_string();
+    let mut counts = std::collections::BTreeMap::new();
+    let mut total = 0;
+    for e in EVENTS {
+        let c = audio::clip_count(e);
+        total += c;
+        counts.insert((*e).to_string(), c);
+    }
+    VoiceCacheStatus { dir, counts, total }
+}
+
+/// Open the voice-cache directory in Explorer so the user can drop clips in.
+#[tauri::command]
+fn open_voice_cache_dir() {
+    let dir = audio::voice_cache_dir();
+    let _ = std::fs::create_dir_all(&dir);
+    let _ = std::process::Command::new("explorer")
+        .arg(dir.as_os_str())
+        .spawn();
+}
+
+/// Ask Maiden (via Claude Plan quota) for advice on the current game state.
+/// Runs on a blocking thread so the async runtime stays free.
+#[tauri::command]
+async fn request_advice(tick: gsi::GameTick) -> Result<master::Advice, String> {
+    tauri::async_runtime::spawn_blocking(move || master::advise(&tick))
+        .await
+        .map_err(|e| format!("internal: {e}"))?
 }
 
 /// List SAPI voices installed on this machine so the UI can let the user pick.
@@ -90,13 +154,17 @@ fn main() {
         .invoke_handler(tauri::generate_handler![
             set_overlay_visible,
             speak,
+            speak_event,
             cancel_speech,
             list_voices,
+            voice_cache_status,
+            open_voice_cache_dir,
             detect_gsi_setup,
             install_gsi_config,
             get_log_dir,
             current_match_path,
-            open_log_dir
+            open_log_dir,
+            request_advice
         ])
         .setup(move |app| {
             // G1.1: GSI ingestion server (127.0.0.1:3000); emits `game-tick` to all windows.

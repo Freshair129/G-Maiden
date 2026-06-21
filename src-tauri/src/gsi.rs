@@ -8,7 +8,7 @@ use serde_json::Value;
 use tauri::{AppHandle, Emitter};
 
 /// Clean, UI-facing snapshot of the current game state.
-#[derive(Serialize, Clone, Default)]
+#[derive(Serialize, serde::Deserialize, Clone, Default)]
 pub struct GameTick {
     pub in_game: bool,
     pub clock_time: i64,

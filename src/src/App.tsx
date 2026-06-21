@@ -213,7 +213,7 @@ const Overlay: React.FC = () => {
         dangerActive.current = true
         lastSpokeKind.current = 'danger'
         dangerHpAtSpeak.current = t.hp_percent
-        void invoke('speak', { text: DANGER_LINE, voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})
+        void invoke('speak_event', { event: 'danger', fallback: DANGER_LINE, voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})
       }
     }
   }, [lowHp, t.alive, t.hp_percent, s.alertThreshold, s.voiceEnabled])
@@ -238,7 +238,7 @@ const Overlay: React.FC = () => {
     // brief gap lets the killed SAPI process die before the new one starts,
     // otherwise Windows audio sometimes squashes the first syllable
     setTimeout(() => {
-      void invoke('speak', { text: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
+      void invoke('speak_event', { event: 'revision', fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
     }, 90)
   }, [t.hp_percent, t.kills, s.alertThreshold])
 
@@ -275,7 +275,7 @@ const Overlay: React.FC = () => {
     const line = pool[Math.floor(Math.random() * pool.length)]
     lastSpokeAt.current = now
     lastSpokeKind.current = 'persona'
-    void invoke('speak', { text: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
+    void invoke('speak_event', { event: evt, fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
   }, [t.level, t.kills, t.deaths, t.alive, t.mana_percent, lowHp])
 
   return (
@@ -349,6 +349,96 @@ const SetupCard: React.FC = () => {
         <div style={{ marginTop: 6 }}>{st.message}</div>
         {!ok && st.dota_cfg_dir && <div style={{ marginTop: 4, color: C.mut }}>💡 หลังติดตั้ง: เปิด Dota 2 รอบใหม่เพื่อโหลด config.</div>}
       </div>
+    </Card>
+  )
+}
+
+// ─────────────────────────────── VOICE CACHE (pre-recorded clips) ───────────────────────────────
+interface VoiceCacheStatus { dir: string; counts: Record<string, number>; total: number }
+const VoiceCacheCard: React.FC = () => {
+  const [st, setSt] = useState<VoiceCacheStatus | null>(null)
+  const refresh = () => { void invoke<VoiceCacheStatus>('voice_cache_status').then(setSt).catch(() => {}) }
+  useEffect(refresh, [])
+  if (!st) return <Card title="Voice cache"><div style={{ fontSize: 12.5, color: C.mut, paddingTop: 8 }}>กำลังสแกน…</div></Card>
+  const events = Object.entries(st.counts)
+  const ok = st.total > 0
+  return (
+    <Card title="Voice cache (เสียงจริง)">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13 }}>
+          <span style={{ width: 9, height: 9, borderRadius: 99, background: ok ? C.ok : C.mut }} />
+          <span style={{ color: ok ? C.txt : C.mut }}>{ok ? `${st.total} clips พร้อมใช้` : 'ยังไม่มี clip — ใช้ SAPI fallback'}</span>
+        </div>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={refresh} style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>⟳</button>
+          <button onClick={() => void invoke('open_voice_cache_dir').catch(() => {})} style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '6px 13px', fontSize: 12, cursor: 'pointer' }}>📂 เปิดโฟลเดอร์</button>
+        </div>
+      </div>
+      <div style={{ fontSize: 11.5, color: C.mut, marginTop: 10, lineHeight: 1.6 }}>
+        <div style={{ wordBreak: 'break-all', marginBottom: 4 }}>โฟลเดอร์: <span style={{ color: C.txt }}>{st.dir}</span></div>
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px' }}>
+          {events.map(([ev, n]) => (
+            <span key={ev} style={{ color: n > 0 ? C.ok : C.mut }}>{ev}: <b>{n}</b></span>
+          ))}
+        </div>
+        <div style={{ marginTop: 6 }}>วาง WAV ลง <code style={{ color: C.txt }}>{`{event}/{n}.wav`}</code> เช่น <code style={{ color: C.txt }}>danger/01.wav</code>. แนะนำ 5-10 takes ต่อ event กันฟังซ้ำ.</div>
+      </div>
+    </Card>
+  )
+}
+
+// ─────────────────────────────── G-MASTER (Claude Plan advisor) ───────────────────────────────
+interface Advice { text: string; cached: boolean }
+const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number }> = ({ tick, voice, rate }) => {
+  const [advice, setAdvice] = useState<Advice | null>(null)
+  const [error, setError] = useState<string | null>(null)
+  const [busy, setBusy] = useState(false)
+  const canAsk = !!tick && tick.in_game && !busy
+  const ask = async () => {
+    if (!tick) return
+    setBusy(true); setError(null)
+    try {
+      const a = await invoke<Advice>('request_advice', { tick })
+      setAdvice(a)
+    } catch (e: unknown) {
+      setError(typeof e === 'string' ? e : (e instanceof Error ? e.message : String(e)))
+    } finally { setBusy(false) }
+  }
+  const speakAdvice = () => {
+    if (!advice) return
+    void invoke('speak', { text: advice.text, voice: voice || null, rate }).catch(() => {})
+  }
+  return (
+    <Card title="G-Master (advisor · Claude Plan)">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 6, gap: 12 }}>
+        <div style={{ fontSize: 12, color: C.mut }}>
+          ใช้ Claude CLI ของคุณ (Plan quota · zero cost). throttle 30s/คำขอ.
+          {!canAsk && tick?.in_game === false && ' · เปิด Dota 2 ก่อน'}
+        </div>
+        <div style={{ display: 'flex', gap: 8, flex: 'none' }}>
+          <button onClick={ask} disabled={!canAsk}
+            style={{ background: canAsk ? 'rgba(143,212,255,0.18)' : 'rgba(255,255,255,0.06)', color: canAsk ? C.ice : C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '7px 15px', fontSize: 12.5, fontWeight: 600, cursor: canAsk ? 'pointer' : 'not-allowed' }}>
+            {busy ? 'กำลังคิด…' : 'ขอคำแนะนำ'}
+          </button>
+          {advice && (
+            <button onClick={speakAdvice}
+              style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '7px 13px', fontSize: 12.5, cursor: 'pointer' }}>
+              🔊 อ่าน
+            </button>
+          )}
+        </div>
+      </div>
+      {advice && (
+        <div style={{ marginTop: 12, padding: '12px 14px', background: 'rgba(143,212,255,0.06)', border: `1px solid ${C.line}`, borderRadius: 10, lineHeight: 1.55, fontSize: 13.5 }}>
+          {advice.text}
+          {advice.cached && <div style={{ fontSize: 11, color: C.mut, marginTop: 6 }}>· คำตอบที่แคชไว้ (ยังไม่หมด throttle)</div>}
+        </div>
+      )}
+      {error && (
+        <div style={{ marginTop: 12, padding: '10px 13px', background: 'rgba(255,123,133,0.10)', border: '1px solid rgba(255,123,133,0.35)', borderRadius: 10, color: '#ffd6da', fontSize: 12.5 }}>
+          {error}
+        </div>
+      )}
     </Card>
   )
 }
@@ -531,7 +621,7 @@ const Control: React.FC = () => {
           </Row>
           <Row label="เสียงพูด (Maiden)">
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              <button onClick={() => void invoke('speak', { text: DANGER_LINE, voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})} disabled={!s.voiceEnabled}
+              <button onClick={() => void invoke('speak_event', { event: 'danger', fallback: DANGER_LINE, voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})} disabled={!s.voiceEnabled}
                 style={{ background: 'transparent', color: s.voiceEnabled ? C.ice : C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 11px', fontSize: 12, cursor: s.voiceEnabled ? 'pointer' : 'not-allowed' }}>
                 🔊 ทดสอบเสียง
               </button>
@@ -578,6 +668,11 @@ const Control: React.FC = () => {
 
         <SetupCard />
         <LogCard live={!!tick?.in_game} clockTime={tick?.clock_time ?? 0} />
+        <VoiceCacheCard />
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <MasterCard tick={tick} voice={s.voiceName} rate={s.voiceRate} />
       </div>
 
       <div style={{ marginTop: 14 }}>
