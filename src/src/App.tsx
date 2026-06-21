@@ -353,6 +353,37 @@ const SetupCard: React.FC = () => {
   )
 }
 
+// ─────────────────────────────── G-LOG (local match logging) ───────────────────────────────
+const LogCard: React.FC<{ live: boolean; clockTime: number }> = ({ live, clockTime }) => {
+  const [dir, setDir] = useState<string>('')
+  const [current, setCurrent] = useState<string | null>(null)
+  useEffect(() => { void invoke<string>('get_log_dir').then(setDir).catch(() => {}) }, [])
+  // Re-check current match path whenever the in-game flag flips or the clock
+  // makes a sub-minute jump — covers the start of a new match without polling.
+  useEffect(() => {
+    void invoke<string | null>('current_match_path').then(setCurrent).catch(() => {})
+  }, [live, Math.floor(clockTime / 60)])
+  return (
+    <Card title="G-Log (local only)">
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13 }}>
+          <span style={{ width: 9, height: 9, borderRadius: 99, background: live ? C.bad : C.mut, boxShadow: live ? '0 0 8px rgba(255,123,133,0.7)' : 'none' }} />
+          {live ? <span style={{ color: C.txt }}>กำลังบันทึกแมตช์</span> : <span style={{ color: C.mut }}>ไม่ได้บันทึก (รอเข้าเกม)</span>}
+        </div>
+        <button onClick={() => void invoke('open_log_dir').catch(() => {})}
+          style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '6px 13px', fontSize: 12, cursor: 'pointer' }}>
+          📂 เปิดโฟลเดอร์
+        </button>
+      </div>
+      <div style={{ fontSize: 11.5, color: C.mut, marginTop: 10, lineHeight: 1.55 }}>
+        {dir && <div style={{ wordBreak: 'break-all' }}>โฟลเดอร์: <span style={{ color: C.txt }}>{dir}</span></div>}
+        {current && <div style={{ wordBreak: 'break-all' }}>ไฟล์ปัจจุบัน: <span style={{ color: C.txt }}>{current.split(/[\\/]/).pop()}</span></div>}
+        <div style={{ marginTop: 6 }}>ข้อมูลทั้งหมดอยู่บนเครื่องนี้เท่านั้น — ไม่ส่งออกไปไหน. ใช้สำหรับ replay/tuning ในอนาคต.</div>
+      </div>
+    </Card>
+  )
+}
+
 // ─────────────────────────────── ONBOARDING (first run welcome) ───────────────────────────────
 const Welcome: React.FC<{ onDone: () => void }> = ({ onDone }) => {
   const [st, setSt] = useState<SetupStatus | null>(null)
@@ -546,6 +577,7 @@ const Control: React.FC = () => {
         </Card>
 
         <SetupCard />
+        <LogCard live={!!tick?.in_game} clockTime={tick?.clock_time ?? 0} />
       </div>
 
       <div style={{ marginTop: 14 }}>

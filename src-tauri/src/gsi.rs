@@ -76,6 +76,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
         hp_percent: i(&v, &["hero", "health_percent"]),
         mana_percent: i(&v, &["hero", "mana_percent"]),
     };
+    crate::log::note_tick(&tick);
     let _ = app.emit("game-tick", tick);
     "ok"
 }

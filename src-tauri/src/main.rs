@@ -9,6 +9,7 @@ use tauri::Manager;
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 mod gsi;
+mod log;
 mod setup;
 mod tts;
 
@@ -50,6 +51,24 @@ fn install_gsi_config() -> setup::SetupStatus {
     setup::install()
 }
 
+/// Path to the G-Log directory (privacy-first; local only).
+#[tauri::command]
+fn get_log_dir() -> String {
+    log::log_dir().to_string_lossy().to_string()
+}
+
+/// Path of the currently-recording match log, or null if no match is active.
+#[tauri::command]
+fn current_match_path() -> Option<String> {
+    log::current_path().map(|p| p.to_string_lossy().to_string())
+}
+
+/// Open the G-Log directory in Explorer.
+#[tauri::command]
+fn open_log_dir() {
+    log::open_log_dir();
+}
+
 fn main() {
     // Alt+S — show/hide the overlay while in-game (works even when Dota 2 is focused).
     let toggle = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
@@ -74,7 +93,10 @@ fn main() {
             cancel_speech,
             list_voices,
             detect_gsi_setup,
-            install_gsi_config
+            install_gsi_config,
+            get_log_dir,
+            current_match_path,
+            open_log_dir
         ])
         .setup(move |app| {
             // G1.1: GSI ingestion server (127.0.0.1:3000); emits `game-tick` to all windows.
