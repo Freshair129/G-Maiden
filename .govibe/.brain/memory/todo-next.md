@@ -36,10 +36,14 @@ stack = tract + windows-capture v2.0 · ADR-05: ONNX=default, NCC=fallback.
       `Frame`. แก้ edge-bias (average/pixel) + contrast gate. 4 tests.
 - [x] **P2.0 part 2** — region geometry (commit `520430c`): `cv/region.rs`
       `MinimapRegion` bbox+icon scale+coord map. 4 tests.
-- [ ] **P2.0 part 3** — `capture.rs` WGC v2.0 loop → crop region → prefilter.
-      adaptive 5–8 Hz. ⚠️ ต้อง verify สดกับ Dota (compile ไม่พอ).
-- [ ] **P2.1** dataset generator จาก official icons (ขนานได้, ไม่รอ footage).
+- [x] **P2.0 part 3** — `capture.rs` (commit `5d9ad2f`): windows-capture v2 handler,
+      crop region → prefilter → emit `minimap-cv` debug. cap ~8Hz. compile ผ่าน.
+      ⚠️ **ยังต้อง verify สดกับ Dota** (ดู candidate box เกาะไอคอน + วัด CPU) — งาน user.
+- [x] **P2.1** dataset generator (commit `5d9ad2f`, via subagent): `tools/gen-dataset/`
+      Python, degradation profile = spike เป๊ะ, ImageFolder layout, 7/7 tests. มี
+      synthetic-icon fallback (รันได้ไม่ต้องมี asset). ต้องหา official icons จริงก่อนเทรนจริง.
 - [ ] **P2.2** train + integrate tract ONNX detector (`cv/detector.rs`); NCC fallback.
+      (ขั้นต่อไป — เพิ่ม `tract-onnx`+`image` deps, train MobileNetV3-small → .onnx)
 - [ ] **P2.3** `sentry.rs` G-Sentry: missing >5s → `EnemyMissing` + เสียงเตือน.
 - [ ] **P2.4** `motion.rs` G-Motion: ring buffer 5 นาที + gank probability.
 - [ ] **P2.5** G-Signal เต็ม (>85% interrupt + Belief Revision) + latency harness
