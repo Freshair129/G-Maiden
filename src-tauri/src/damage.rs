@@ -181,6 +181,92 @@ pub fn is_lethal(enemy: &HeroData, enemy_level: u32, player_hp: f64, player_armo
     (result.total_burst >= player_hp, result)
 }
 
+// ────────────────────────── Offensive lethality (P-D1) ──────────────────────────
+//
+// The reverse direction of `is_lethal`: "can MY combo kill THAT target right now?".
+// Same burst math, target = enemy. The honest twist is that the target side is never
+// fully observable (current HP via CV ±error, hidden buffs/regen), so we never emit a
+// boolean alone — we emit a `confidence` that feeds Belief Revision (see FEAT-G-DAMAGE §6).
+
+/// Confidence floor at which G-Signal is allowed to say "press it!".
+pub const KILL_CONFIDENCE: f64 = 0.7;
+
+/// Default fractional uncertainty on the target's effective HP when we have no
+/// better signal (hidden buffs/regen, stale item scout, no CV HP-bar read yet).
+pub const DEFAULT_EHP_UNCERTAINTY: f64 = 0.15;
+
+/// Probability that `burst` actually exceeds the target's true effective HP, given
+/// that the true value is uncertain by ±`uncertainty` (fraction) around `ehp`.
+///
+/// Models the unknown true EHP as uniform over `[ehp*(1-u), ehp*(1+u)]` and returns
+/// `P(burst >= true_ehp)`. This is deliberately simple and unit-testable; later phases
+/// can replace the uniform prior with a CV-quality / buff-detection informed one.
+pub fn kill_confidence(burst: f64, ehp: f64, uncertainty: f64) -> f64 {
+    let u = uncertainty.clamp(0.0, 1.0);
+    let lo = ehp * (1.0 - u);
+    let hi = ehp * (1.0 + u);
+    if burst >= hi {
+        1.0
+    } else if burst <= lo {
+        0.0
+    } else {
+        // hi > lo here because ehp > 0 and u > 0
+        ((burst - lo) / (hi - lo)).clamp(0.0, 1.0)
+    }
+}
+
+/// Result of an offensive lethality query: can my combo kill this target now?
+#[derive(Debug, Clone, Serialize)]
+pub struct KillWindow {
+    /// True when `confidence >= KILL_CONFIDENCE`.
+    pub can_kill: bool,
+    /// `burst - effective_hp`. Positive = lethal on paper.
+    pub margin: f64,
+    /// 0.0–1.0. Feeds Belief Revision — low confidence must NOT be reported as a sure kill.
+    pub confidence: f64,
+    /// Abilities that contributed to the burst, in DB order (the suggested combo).
+    pub combo: Vec<String>,
+    /// Full damage breakdown for overlay / debrief.
+    pub burst: BurstResult,
+    /// How long the window stays valid (cooldowns/regen). P-D2 — needs ability
+    /// cooldown + target regen tracking, so `None` in P-D1.
+    pub ttl_ms: Option<u32>,
+}
+
+/// Can `attacker` (my hero) kill a target at its current HP with one burst rotation?
+///
+/// `target_current_hp` is the target's *current* HP (from CV HP-bar read, or an
+/// estimate). `ehp_uncertainty` is the fractional error on that effective HP — pass
+/// [`DEFAULT_EHP_UNCERTAINTY`] when there is no better signal. Damage type reductions
+/// (armor / magic resist) are applied inside [`HeroData::burst_damage`], so the burst
+/// total is already the *effective* damage landed on this target.
+pub fn can_i_kill(
+    attacker: &HeroData,
+    attacker_level: u32,
+    target_current_hp: f64,
+    target_armor: f64,
+    target_magic_res: f64,
+    ehp_uncertainty: f64,
+) -> KillWindow {
+    let burst = attacker.burst_damage(attacker_level, target_armor, target_magic_res);
+    let ehp = target_current_hp.max(0.0);
+    let margin = burst.total_burst - ehp;
+    let confidence = if ehp <= 0.0 {
+        1.0 // already dead
+    } else {
+        kill_confidence(burst.total_burst, ehp, ehp_uncertainty)
+    };
+    let combo = burst.abilities.iter().map(|a| a.name.clone()).collect();
+    KillWindow {
+        can_kill: confidence >= KILL_CONFIDENCE,
+        margin,
+        confidence,
+        combo,
+        burst,
+        ttl_ms: None,
+    }
+}
+
 // ────────────────────────── Hero database ──────────────────────────
 
 fn hero_db() -> &'static HashMap<String, HeroData> {
@@ -390,5 +476,87 @@ mod tests {
         let d1 = sniper.attack_damage_at_level(1);
         let d10 = sniper.attack_damage_at_level(10);
         assert!(d10 > d1, "damage should increase with level");
+    }
+
+    // ───────────── Offensive lethality (P-D1) ─────────────
+
+    #[test]
+    fn kill_confidence_above_band_is_certain() {
+        // burst well above the upper uncertainty bound → 1.0
+        assert!((kill_confidence(1000.0, 500.0, 0.15) - 1.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn kill_confidence_below_band_is_zero() {
+        // burst below the lower uncertainty bound → 0.0
+        assert!(kill_confidence(100.0, 500.0, 0.15).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn kill_confidence_midpoint_is_half() {
+        // burst exactly at ehp, ±15% band → ~0.5
+        let c = kill_confidence(500.0, 500.0, 0.15);
+        assert!((c - 0.5).abs() < 0.01, "midpoint confidence should be ~0.5: got {c}");
+    }
+
+    #[test]
+    fn kill_confidence_monotonic_in_burst() {
+        let low = kill_confidence(450.0, 500.0, 0.15);
+        let mid = kill_confidence(500.0, 500.0, 0.15);
+        let high = kill_confidence(550.0, 500.0, 0.15);
+        assert!(low < mid && mid < high, "confidence must rise with burst: {low} {mid} {high}");
+    }
+
+    #[test]
+    fn can_kill_squishy_target() {
+        let lina = lookup_hero("npc_dota_hero_lina").expect("lina in db");
+        // 200 HP squishy, 0 armor, 25% magic res
+        let kw = can_i_kill(lina, 18, 200.0, 0.0, 25.0, DEFAULT_EHP_UNCERTAINTY);
+        assert!(kw.can_kill, "Lina lv18 should kill a 200HP target: margin={}", kw.margin);
+        assert!(kw.margin > 0.0, "margin should be positive");
+        assert!(kw.confidence >= KILL_CONFIDENCE, "confidence={}", kw.confidence);
+        assert!(!kw.combo.is_empty(), "combo should list contributing abilities");
+    }
+
+    #[test]
+    fn cannot_kill_tanky_target() {
+        let cm = lookup_hero("npc_dota_hero_crystal_maiden").expect("cm in db");
+        // 2500 HP tank
+        let kw = can_i_kill(cm, 6, 2500.0, 5.0, 25.0, DEFAULT_EHP_UNCERTAINTY);
+        assert!(!kw.can_kill, "CM lv6 must not kill a 2500HP tank");
+        assert!(kw.margin < 0.0, "margin should be negative: {}", kw.margin);
+        assert!(kw.confidence < KILL_CONFIDENCE, "confidence={}", kw.confidence);
+    }
+
+    #[test]
+    fn borderline_kill_has_tempered_confidence() {
+        // A target whose HP sits right around the burst total should NOT report a sure kill:
+        // hidden-buff uncertainty must temper confidence below 1.0.
+        let lina = lookup_hero("npc_dota_hero_lina").expect("lina in db");
+        let burst = lina.burst_damage(12, 0.0, 25.0).total_burst;
+        let kw = can_i_kill(lina, 12, burst, 0.0, 25.0, DEFAULT_EHP_UNCERTAINTY);
+        assert!(kw.confidence > 0.0 && kw.confidence < 1.0,
+            "borderline kill must be uncertain, not a sure thing: {}", kw.confidence);
+        // margin ≈ 0 at this point
+        assert!(kw.margin.abs() < 1.0, "margin should be ~0: {}", kw.margin);
+    }
+
+    #[test]
+    fn already_dead_target_is_certain_kill() {
+        let cm = lookup_hero("npc_dota_hero_crystal_maiden").expect("cm in db");
+        let kw = can_i_kill(cm, 6, 0.0, 0.0, 25.0, DEFAULT_EHP_UNCERTAINTY);
+        assert!(kw.can_kill && (kw.confidence - 1.0).abs() < f64::EPSILON,
+            "0 HP target is a certain kill");
+    }
+
+    #[test]
+    fn offensive_uses_target_defenses() {
+        // Higher target armor should reduce margin (more EHP survived) for an attacker
+        // whose burst is partly physical.
+        let pa = lookup_hero("npc_dota_hero_phantom_assassin").expect("pa in db");
+        let soft = can_i_kill(pa, 16, 800.0, 0.0, 25.0, DEFAULT_EHP_UNCERTAINTY);
+        let armored = can_i_kill(pa, 16, 800.0, 20.0, 25.0, DEFAULT_EHP_UNCERTAINTY);
+        assert!(armored.margin < soft.margin,
+            "armor must lower the kill margin: soft={} armored={}", soft.margin, armored.margin);
     }
 }
