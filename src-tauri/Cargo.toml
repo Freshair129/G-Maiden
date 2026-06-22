@@ -19,6 +19,7 @@ tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 windows-capture = "2.0"
 tract-onnx = "0.21"
+rodio      = "0.19"
 
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }

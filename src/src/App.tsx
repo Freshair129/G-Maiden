@@ -42,10 +42,12 @@ interface GankAlert { probability: number; missing_heroes: string[]; eta_ms: num
 /** Connection/status pushed by the Rust watchdog (gsi.rs) every ~4s. */
 interface GsiStatus { dota_running: boolean; gsi_active: boolean; in_game: boolean }
 
-type Pos = 'top' | 'left' | 'right'
+type Pos = 'top' | 'left' | 'right' | 'custom'
 interface Settings {
   overlayVisible: boolean
   position: Pos
+  customX: number
+  customY: number
   opacity: number
   alertEnabled: boolean
   alertThreshold: number
@@ -56,9 +58,14 @@ interface Settings {
   autoAdvice: boolean
   gankVisuals: boolean
   cvDebug: boolean
-  showStats: boolean
+  showTimer: boolean
+  showScore: boolean
+  showHeroBar: boolean
+  showKda: boolean
+  showGold: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false, gankVisuals: true, cvDebug: false, showStats: false }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false, gankVisuals: true, cvDebug: false, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
+interface OverlayProfile { name: string; position: Pos; customX: number; customY: number; opacity: number; showTimer: boolean; showScore: boolean; showHeroBar: boolean; showKda: boolean; showGold: boolean }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 
 // Maiden's persona pool — gentle, smart, lightly self-deprecating about CM nerfs,
@@ -110,13 +117,57 @@ const REVISION_LINES = {
 interface VoiceInfo { name: string; culture: string; gender: string; age: string }
 const loadSettings = (): Settings => {
   try {
-    return { ...DEFAULTS, ...(JSON.parse(localStorage.getItem('gm-settings') ?? '{}') as Partial<Settings>) }
+    const raw = JSON.parse(localStorage.getItem('gm-settings') ?? '{}') as Record<string, unknown>
+    if (typeof raw.showStats === 'boolean' && raw.showStats) {
+      raw.showTimer = raw.showScore = raw.showHeroBar = raw.showKda = raw.showGold = true
+    }
+    delete raw.showStats
+    return { ...DEFAULTS, ...(raw as Partial<Settings>) }
   } catch {
     return DEFAULTS
   }
 }
+const loadProfiles = (): OverlayProfile[] => {
+  try { return JSON.parse(localStorage.getItem('gm-profiles') ?? '[]') } catch { return [] }
+}
 
 const C = { bg: '#08090c', ice: '#8fd4ff', txt: '#e7eef6', mut: '#8794a6', ok: '#5be3a7', warn: '#ffcf6b', bad: '#ff7b85', line: 'rgba(143,212,255,0.16)' }
+
+const APP_VERSION = '0.6.0'
+
+const CHANGELOG: { ver: string; date: string; items: string[] }[] = [
+  { ver: '0.6.0', date: '2026-06-22', items: [
+    'แผงสถิติ overlay เลือกเปิด/ปิดเป็นรายการ (นาฬิกา, สกอร์, HP/Mana, K/D/A, ทอง)',
+    'ตำแหน่ง overlay กำหนดเองได้ (X/Y slider) + บันทึกโปรไฟล์',
+    'ทดสอบ overlay ไม่เปลี่ยนสถานะ Dota/GSI แล้ว',
+    'G-Damage engine — ฐานข้อมูล hero + สูตรคำนวณ burst damage (พื้นฐาน)',
+  ]},
+  { ver: '0.5.0', date: '2026-06-22', items: [
+    'rodio audio backend — WAV เล่นในโปรเซส (ไม่ spawn PowerShell), cancel <1ms',
+    'Changelog viewer — ดูรายละเอียดเวอร์ชันในแอปได้',
+    'ไม่มีหน้าต่าง cmd แวบตอนเล่นเสียงอีกแล้ว',
+  ]},
+  { ver: '0.4.1', date: '2026-06-21', items: [
+    'แก้ไข: แจ้งเตือน HP ต่ำ ตอนนี้แจ้งซ้ำได้ทุกรอบที่ HP ลดลงอีก',
+  ]},
+  { ver: '0.4.0', date: '2026-06-21', items: [
+    'Stat HUD (timer, score, HP bar, K/D/A, gold) ปิดเป็นค่าเริ่มต้น — Dota แสดงอยู่แล้ว',
+    'เปิดได้ในตั้งค่าถ้าต้องการ',
+  ]},
+  { ver: '0.3.0', date: '2026-06-21', items: [
+    'Overlay preview — จำลอง overlay โดยไม่ต้องเปิด Dota',
+    'ทดสอบเสียง Thai + English ในแผงควบคุม',
+  ]},
+  { ver: '0.2.0', date: '2026-06-20', items: [
+    'แก้ไข: หน้าต่าง CMD ไม่แวบทุก 4 วินาทีแล้ว (CREATE_NO_WINDOW)',
+  ]},
+  { ver: '0.1.0', date: '2026-06-20', items: [
+    'เปิดตัว: GSI server, overlay, แผงควบคุม',
+    'Minimap CV pipeline (จับภาพ → ตรวจจับ → แจ้งเตือน gank)',
+    'เสียงพูด SAPI + WAV clips, ระบบอัปเดตในแอป',
+    'G-Log บันทึกแมตช์ในเครื่อง (JSONL)',
+  ]},
+]
 
 const fmtClock = (t: number): string => {
   const a = Math.abs(t)
@@ -200,6 +251,7 @@ const Overlay: React.FC = () => {
   // GSI activity from the watchdog — so the HUD disappears when Dota closes
   // (Dota stops POSTing without a final tick; `tick` would otherwise stay stale).
   const [gsiActive, setGsiActive] = useState(true)
+  const [previewMode, setPreviewMode] = useState(false)
   const gankTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const gankClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // rising-edge state for danger: speak once when HP crosses the threshold down,
@@ -241,10 +293,12 @@ const Overlay: React.FC = () => {
       gankClearTimer.current = setTimeout(() => setGank(null), 2200)
     })
     const u6 = listen<GsiStatus>('gsi-status', (e) => setGsiActive(e.payload.gsi_active))
+    const u7 = listen<boolean>('preview-mode', (e) => setPreviewMode(e.payload))
     void emit('overlay-ready')
     return () => {
       void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f())
       void u4.then((f) => f()); void u5.then((f) => f()); void u6.then((f) => f())
+      void u7.then((f) => f())
       if (gankTimer.current) clearTimeout(gankTimer.current)
       if (gankClearTimer.current) clearTimeout(gankClearTimer.current)
     }
@@ -380,11 +434,13 @@ const Overlay: React.FC = () => {
     }
   }, [tick?.in_game, tick?.level, tick?.deaths, tick?.clock_time])
 
-  const wrap: React.CSSProperties = {
-    position: 'fixed', inset: 0, background: 'transparent', display: 'flex',
-    justifyContent: s.position === 'left' ? 'flex-start' : s.position === 'right' ? 'flex-end' : 'center',
-    alignItems: 'flex-start', padding: 12, pointerEvents: 'none',
-  }
+  const wrap: React.CSSProperties = s.position === 'custom'
+    ? { position: 'fixed', left: `${s.customX}%`, top: `${s.customY}%`, transform: 'translateX(-50%)', pointerEvents: 'none', zIndex: 10 }
+    : {
+        position: 'fixed', inset: 0, background: 'transparent', display: 'flex',
+        justifyContent: s.position === 'left' ? 'flex-start' : s.position === 'right' ? 'flex-end' : 'center',
+        alignItems: 'flex-start', padding: 12, pointerEvents: 'none',
+      }
 
   // B. CV debug overlay (calibration) — full-screen, screen px == overlay px.
   // OFF by default; drawn only when settings.cvDebug is on.
@@ -421,7 +477,7 @@ const Overlay: React.FC = () => {
         </div>
   ) : null
 
-  if (!seen || !tick || !tick.in_game || !gsiActive) {
+  if (!seen || !tick || !tick.in_game || (!gsiActive && !previewMode)) {
     return (
       <>
         {cvDebug}
@@ -449,31 +505,51 @@ const Overlay: React.FC = () => {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
         {gankBanner}
         {lowHp && <div className="gm-danger" style={dangerStyle}>⚠ HP เหลือ {t.hp_percent}% — ถอยก่อนค่ะเพื่อน!</div>}
-        {/* Stat HUD duplicates Dota's native UI, so it's OFF by default. Enable it
-            in Control → "แสดงแผงสถิติ" if you want the at-a-glance panel. */}
-        {s.showStats && (
-        <div style={{ ...panel(s.opacity), padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 22 }}>
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ fontSize: 22, fontWeight: 700, color: C.ice, lineHeight: 1 }}>{fmtClock(t.clock_time)}</div>
-            <div style={{ fontSize: 11, color: C.mut, marginTop: 3 }}>
-              <span style={{ color: C.ok }}>{t.radiant_score}</span><span style={{ margin: '0 5px', opacity: 0.5 }}>:</span><span style={{ color: C.bad }}>{t.dire_score}</span><span style={{ marginLeft: 7 }}>{t.daytime ? '☀' : '🌙'}</span>
+        {(s.showTimer || s.showScore || s.showHeroBar || s.showKda || s.showGold) && (
+        <div style={{ ...panel(s.opacity), padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+          {s.showTimer && (
+            <div style={{ textAlign: 'center', minWidth: 54 }}>
+              <div style={{ fontSize: 22, fontWeight: 700, color: C.ice, lineHeight: 1 }}>{fmtClock(t.clock_time)}</div>
+              <div style={{ fontSize: 10, color: C.mut, marginTop: 3 }}>{t.daytime ? '☀' : '🌙'}</div>
             </div>
-          </div>
-          {sep}
-          <div style={{ minWidth: 120 }}>
-            <div style={{ fontWeight: 600, fontSize: 14, color: t.alive ? C.txt : C.bad }}>{heroName(t.hero)} {!t.alive && '💀'}</div>
-            <div style={{ fontSize: 11, color: C.mut, marginBottom: 5 }}>Lvl {t.level}</div>
-            <div style={{ marginBottom: 3 }}><Bar pct={t.hp_percent} color={C.ok} /></div>
-            <Bar pct={t.mana_percent} color={C.ice} />
-          </div>
-          {sep}
-          <Stat label="K / D / A" value={`${t.kills}/${t.deaths}/${t.assists}`} />
-          <Stat label="LH / DN" value={`${t.last_hits}/${t.denies}`} />
-          {sep}
-          <Stat label="Gold" value={t.gold.toLocaleString()} color={C.warn} />
-          <Stat label="Net Worth" value={t.net_worth.toLocaleString()} color={C.ice} />
-          <Stat label="GPM" value={t.gpm} />
-          <Stat label="XPM" value={t.xpm} />
+          )}
+          {s.showScore && (
+            <div style={{ textAlign: 'center', minWidth: 54 }}>
+              <div style={{ fontSize: 16, fontWeight: 700 }}>
+                <span style={{ color: C.ok }}>{t.radiant_score}</span>
+                <span style={{ margin: '0 4px', opacity: 0.5, color: C.mut }}>:</span>
+                <span style={{ color: C.bad }}>{t.dire_score}</span>
+              </div>
+              <div style={{ fontSize: 10, color: C.mut }}>SCORE</div>
+            </div>
+          )}
+          {s.showHeroBar && (
+            <>
+              {(s.showTimer || s.showScore) && sep}
+              <div style={{ minWidth: 120 }}>
+                <div style={{ fontWeight: 600, fontSize: 14, color: t.alive ? C.txt : C.bad }}>{heroName(t.hero)} {!t.alive && '💀'}</div>
+                <div style={{ fontSize: 11, color: C.mut, marginBottom: 5 }}>Lvl {t.level}</div>
+                <div style={{ marginBottom: 3 }}><Bar pct={t.hp_percent} color={C.ok} /></div>
+                <Bar pct={t.mana_percent} color={C.ice} />
+              </div>
+            </>
+          )}
+          {s.showKda && (
+            <>
+              {(s.showTimer || s.showScore || s.showHeroBar) && sep}
+              <Stat label="K / D / A" value={`${t.kills}/${t.deaths}/${t.assists}`} />
+              <Stat label="LH / DN" value={`${t.last_hits}/${t.denies}`} />
+            </>
+          )}
+          {s.showGold && (
+            <>
+              {(s.showTimer || s.showScore || s.showHeroBar || s.showKda) && sep}
+              <Stat label="Gold" value={t.gold.toLocaleString()} color={C.warn} />
+              <Stat label="NW" value={t.net_worth.toLocaleString()} color={C.ice} />
+              <Stat label="GPM" value={t.gpm} />
+              <Stat label="XPM" value={t.xpm} />
+            </>
+          )}
         </div>
         )}
       </div>
@@ -793,28 +869,41 @@ const Control: React.FC = () => {
   // Overlay preview: feed the overlay a fake in-game tick so you can see the HUD
   // + danger banner (and hear the voice) without launching Dota.
   const [preview, setPreview] = useState(false)
+  const [showChangelog, setShowChangelog] = useState(false)
+  const [profiles, setProfiles] = useState<OverlayProfile[]>(loadProfiles)
   const previewTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const previewClock = useRef(600)
   const sRef = useRef(s)
   sRef.current = s
 
-  // While preview is on, emit a synthetic game-tick + an active gsi-status every
-  // 1.5s (beating the 4s Rust watchdog that would otherwise hide the overlay).
-  // HP cycles low↔high so the danger banner + voice fire repeatedly.
+  const saveProfile = (name: string) => {
+    const p: OverlayProfile = { name, position: s.position, customX: s.customX, customY: s.customY, opacity: s.opacity, showTimer: s.showTimer, showScore: s.showScore, showHeroBar: s.showHeroBar, showKda: s.showKda, showGold: s.showGold }
+    const updated = [...profiles.filter(x => x.name !== name), p]
+    setProfiles(updated)
+    localStorage.setItem('gm-profiles', JSON.stringify(updated))
+  }
+  const applyProfile = (p: OverlayProfile) => {
+    setS(prev => ({ ...prev, position: p.position, customX: p.customX, customY: p.customY, opacity: p.opacity, showTimer: p.showTimer, showScore: p.showScore, showHeroBar: p.showHeroBar, showKda: p.showKda, showGold: p.showGold }))
+  }
+  const deleteProfile = (name: string) => {
+    const updated = profiles.filter(x => x.name !== name)
+    setProfiles(updated)
+    localStorage.setItem('gm-profiles', JSON.stringify(updated))
+  }
+
+  // Preview emits a synthetic game-tick + preview-mode flag to the overlay.
+  // Does NOT emit fake gsi-status — status chips stay real.
   useEffect(() => {
     if (!preview) {
       if (previewTimer.current) { clearInterval(previewTimer.current); previewTimer.current = null }
-      void emit('gsi-status', { dota_running: false, gsi_active: false, in_game: false })
+      void emit('preview-mode', false)
       return
     }
+    void emit('preview-mode', true)
     const tickOnce = () => {
       previewClock.current += 2
-      // Cycle HP low↔high (~10.5s each phase) so the danger alert re-arms on the
-      // high phase and FIRES AGAIN on each new dip — demonstrating the rising-edge
-      // warning repeats (it only stays silent while HP stays continuously low).
       const lowPhase = Math.floor(previewClock.current / 14) % 2 === 0
       const hp = lowPhase ? 18 : 80
-      void emit('gsi-status', { dota_running: true, gsi_active: true, in_game: true })
       void emit('game-tick', {
         in_game: true, clock_time: previewClock.current, game_state: 'DOTA_GAMERULES_STATE_GAME_IN_PROGRESS',
         daytime: true, radiant_score: 12, dire_score: 9, gold: 1500, net_worth: 8200, gpm: 520, xpm: 610,
@@ -962,14 +1051,51 @@ const Control: React.FC = () => {
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
         <Card title="Overlay (OSD)">
           <Row label="แสดง overlay บนเกม"><Toggle on={s.overlayVisible} onChange={(v) => set('overlayVisible', v)} /></Row>
-          <Row label="ตำแหน่ง"><Seg value={s.position} options={[['top', 'บน'], ['left', 'ซ้าย'], ['right', 'ขวา']]} onChange={(v) => set('position', v)} /></Row>
+          <Row label="ตำแหน่ง"><Seg value={s.position} options={[['top', 'บน'], ['left', 'ซ้าย'], ['right', 'ขวา'], ['custom', 'กำหนดเอง']]} onChange={(v) => set('position', v)} /></Row>
+          {s.position === 'custom' && (
+            <>
+              <Row label={`X: ${s.customX}%`}>
+                <input type="range" min={0} max={100} value={s.customX} onChange={(e) => set('customX', Number(e.target.value))} style={{ width: 150 }} />
+              </Row>
+              <Row label={`Y: ${s.customY}%`}>
+                <input type="range" min={0} max={90} value={s.customY} onChange={(e) => set('customY', Number(e.target.value))} style={{ width: 150 }} />
+              </Row>
+            </>
+          )}
           <Row label={`ความทึบพาเนล: ${Math.round(s.opacity * 100)}%`}>
             <input type="range" min={40} max={100} value={Math.round(s.opacity * 100)} onChange={(e) => set('opacity', Number(e.target.value) / 100)} style={{ width: 150 }} />
           </Row>
-          <Row label="แสดงแผงสถิติ (timer/score/HP/KDA/gold — ซ้ำกับ Dota)"><Toggle on={s.showStats} onChange={(v) => set('showStats', v)} /></Row>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderTop: '1px solid rgba(143,212,255,0.08)' }}>
+            <span style={{ fontSize: 13.5 }}>แผงสถิติ overlay</span>
+            <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+              {([['showTimer', 'นาฬิกา'], ['showScore', 'สกอร์'], ['showHeroBar', 'HP/Mana'], ['showKda', 'K/D/A'], ['showGold', 'ทอง/NW']] as [keyof Settings, string][]).map(([k, label]) => (
+                <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: s[k] ? C.txt : C.mut, cursor: 'pointer' }}>
+                  <input type="checkbox" checked={s[k] as boolean} onChange={(e) => set(k, e.target.checked as never)} style={{ accentColor: C.ice }} />
+                  {label}
+                </label>
+              ))}
+            </div>
+          </div>
           <Row label="ทดสอบ overlay (จำลอง ไม่ต้องเปิดเกม)"><Toggle on={preview} onChange={setPreview} /></Row>
-          <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8 }}>
-            💡 กด <b style={{ color: C.ice }}>Alt+S</b> ในเกมเพื่อซ่อน/แสดง overlay · เปิด "ทดสอบ overlay" เพื่อดู HUD + เตือน HP + เสียง โดยไม่ต้องเข้าเกม
+          {profiles.length > 0 && (
+            <div style={{ borderTop: `1px solid ${C.line}`, marginTop: 6, paddingTop: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+              <span style={{ fontSize: 11.5, color: C.mut }}>โปรไฟล์:</span>
+              {profiles.map(p => (
+                <span key={p.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'rgba(143,212,255,0.08)', border: `1px solid ${C.line}`, borderRadius: 7, padding: '3px 8px', fontSize: 11.5 }}>
+                  <button onClick={() => applyProfile(p)} style={{ background: 'none', border: 'none', color: C.ice, cursor: 'pointer', padding: 0, fontSize: 11.5 }}>{p.name}</button>
+                  <button onClick={() => deleteProfile(p.name)} style={{ background: 'none', border: 'none', color: C.mut, cursor: 'pointer', padding: 0, fontSize: 10, lineHeight: 1 }}>✕</button>
+                </span>
+              ))}
+            </div>
+          )}
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+            <div style={{ fontSize: 11.5, color: C.mut }}>
+              💡 กด <b style={{ color: C.ice }}>Alt+S</b> ซ่อน/แสดง overlay
+            </div>
+            <button onClick={() => { const n = prompt('ชื่อโปรไฟล์:'); if (n?.trim()) saveProfile(n.trim()) }}
+              style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 7, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>
+              + บันทึกโปรไฟล์
+            </button>
           </div>
         </Card>
 
@@ -1056,13 +1182,40 @@ const Control: React.FC = () => {
       <footer style={{ marginTop: 18, fontSize: 11.5, color: C.mut, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <span>GSI: http://127.0.0.1:3000/gsi</span>
         <span style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button onClick={() => setShowChangelog(true)}
+            style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontSize: 11 }}>
+            มีอะไรใหม่
+          </button>
           <button onClick={checkUpdateNow} disabled={updPhase === 'checking' || updPhase === 'downloading'}
             style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontSize: 11 }}>
             {updPhase === 'checking' ? 'กำลังตรวจ…' : updPhase === 'uptodate' ? 'เป็นเวอร์ชันล่าสุด ✓' : updPhase === 'error' ? 'ตรวจไม่สำเร็จ' : 'ตรวจหาอัปเดต'}
           </button>
-          <span>v0.4.1</span>
+          <span>v{APP_VERSION}</span>
         </span>
       </footer>
+
+      {showChangelog && (
+        <div onClick={() => setShowChangelog(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div onClick={e => e.stopPropagation()} style={{ ...panel(0.94), maxWidth: 520, maxHeight: '80vh', overflow: 'auto', padding: '24px 28px', width: '90%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+              <span style={{ fontSize: 16, fontWeight: 700, color: C.ice }}>Changelog</span>
+              <button onClick={() => setShowChangelog(false)}
+                style={{ background: 'transparent', color: C.mut, border: 'none', fontSize: 18, cursor: 'pointer' }}>✕</button>
+            </div>
+            {CHANGELOG.map(entry => (
+              <div key={entry.ver} style={{ marginBottom: 16 }}>
+                <div style={{ fontSize: 13.5, fontWeight: 600, color: entry.ver === APP_VERSION ? C.ice : C.txt }}>
+                  v{entry.ver} <span style={{ fontWeight: 400, color: C.mut, fontSize: 11.5 }}>{entry.date}</span>
+                  {entry.ver === APP_VERSION && <span style={{ marginLeft: 8, fontSize: 10, background: C.ice, color: '#0c1018', borderRadius: 6, padding: '1px 6px', fontWeight: 700 }}>ปัจจุบัน</span>}
+                </div>
+                <ul style={{ margin: '6px 0 0 18px', padding: 0, fontSize: 12.5, color: C.txt, lineHeight: 1.7 }}>
+                  {entry.items.map((item, i) => <li key={i}>{item}</li>)}
+                </ul>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

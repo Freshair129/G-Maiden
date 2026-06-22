@@ -1,25 +1,88 @@
-//! WAV playback for pre-recorded persona clips.
-//! Maiden's predictable lines (HP-low warning, level-up congrats, kill, death,
-//! respawn, mana-low, belief-revision opener) sound natural only when they
-//! come from real voice takes — SAPI's formant synth always sounds robotic.
-//! This module owns the pre-recorded path; SAPI is the silent fallback when a
-//! clip is missing.
+//! WAV playback via rodio (in-process, no PowerShell).
 //!
-//! Clips live under `voice-cache/{event}/*.wav`. We resolve the folder
-//! relative to the running exe first (so the installer's voice-cache wins),
-//! then fall back to `assets/voice-cache` so `pnpm tauri dev` from the repo
-//! still works.
+//! Clips live under `voice-cache/{event}/*.wav`. Exe-relative first,
+//! then `assets/voice-cache` for dev mode.
 //!
-//! Single-slot Child mirrors the TTS pattern — Maiden never plays two clips
-//! at once, and Belief Revision can kill an in-flight clip via cancel().
+//! OutputStream is !Sync, so we own it on a dedicated thread and
+//! communicate via a channel. Single-slot: Maiden never plays two
+//! clips at once; cancel() stops the current clip for Belief Revision.
 
 use std::fs;
+use std::io::BufReader;
 use std::path::PathBuf;
-use std::process::{Child, Command, Stdio};
-use std::sync::Mutex;
+use std::sync::{mpsc, Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-static CURRENT: Mutex<Option<Child>> = Mutex::new(None);
+use rodio::{Decoder, OutputStream, Sink};
+
+enum Cmd {
+    Play(PathBuf),
+    Stop,
+}
+
+fn sender() -> &'static Mutex<mpsc::Sender<Cmd>> {
+    static TX: OnceLock<Mutex<mpsc::Sender<Cmd>>> = OnceLock::new();
+    TX.get_or_init(|| {
+        let (tx, rx) = mpsc::channel::<Cmd>();
+        std::thread::Builder::new()
+            .name("g-audio".into())
+            .spawn(move || audio_thread(rx))
+            .expect("audio thread spawn");
+        Mutex::new(tx)
+    })
+}
+
+fn audio_thread(rx: mpsc::Receiver<Cmd>) {
+    let Ok((_stream, handle)) = OutputStream::try_default() else {
+        eprintln!("[G-Maiden audio] no audio output device — clips disabled");
+        for _ in rx {}
+        return;
+    };
+
+    let mut sink: Option<Sink> = None;
+
+    for cmd in rx {
+        match cmd {
+            Cmd::Stop => {
+                if let Some(s) = sink.take() {
+                    s.stop();
+                }
+            }
+            Cmd::Play(path) => {
+                if let Some(s) = sink.take() {
+                    s.stop();
+                }
+                let file = match fs::File::open(&path) {
+                    Ok(f) => f,
+                    Err(e) => {
+                        eprintln!("[G-Maiden audio] open {}: {e}", path.display());
+                        continue;
+                    }
+                };
+                let source = match Decoder::new(BufReader::new(file)) {
+                    Ok(s) => s,
+                    Err(e) => {
+                        eprintln!("[G-Maiden audio] decode {}: {e}", path.display());
+                        continue;
+                    }
+                };
+                match Sink::try_new(&handle) {
+                    Ok(s) => {
+                        s.append(source);
+                        sink = Some(s);
+                    }
+                    Err(e) => eprintln!("[G-Maiden audio] sink: {e}"),
+                }
+            }
+        }
+    }
+}
+
+fn send(cmd: Cmd) {
+    if let Ok(tx) = sender().lock() {
+        let _ = tx.send(cmd);
+    }
+}
 
 /// Where Maiden's clips live. Exe-relative first, then dev-tree fallback.
 pub fn voice_cache_dir() -> PathBuf {
@@ -51,72 +114,29 @@ fn list_clips(event: &str) -> Vec<PathBuf> {
         .unwrap_or_default()
 }
 
-/// How many clips Maiden has for this event (used by the UI to show
-/// "danger: 0 clips · using SAPI fallback").
 pub fn clip_count(event: &str) -> usize {
     list_clips(event).len()
 }
 
-/// Stop the current clip (Belief Revision needs this — same contract as tts::cancel).
+/// Stop the current clip immediately.
 pub fn cancel() {
-    if let Ok(mut g) = CURRENT.lock() {
-        if let Some(mut c) = g.take() {
-            let _ = c.kill();
-            let _ = c.wait();
-        }
-    }
+    send(Cmd::Stop);
 }
 
-/// Try to play a random clip for `event`. Returns true on success (a clip
-/// was found and playback started). false means the caller should fall back
-/// to SAPI synthesis.
+/// Play a random clip for `event`. Returns true if a clip was found and
+/// sent for playback, false if no clips exist (caller falls back to TTS).
 pub fn play_random(event: &str) -> bool {
     let clips = list_clips(event);
     if clips.is_empty() {
         return false;
     }
-    // Cheap entropy — sub-second nanos. Good enough to rotate a pool of 5-10
-    // clips so the player doesn't hear the same take twice in a row.
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
         .map(|d| d.subsec_nanos() as usize)
         .unwrap_or(0);
     let path = clips[nanos % clips.len()].clone();
-
-    cancel();
-    let escaped = path.to_string_lossy().replace('\'', "''");
-    // PlaySync blocks the PowerShell host for the WAV's full duration, so
-    // killing the child cleanly interrupts playback for Belief Revision.
-    let script = format!("(New-Object System.Media.SoundPlayer '{escaped}').PlaySync()");
-    let mut cmd = Command::new("powershell");
-    cmd.args([
-        "-NoProfile",
-        "-NonInteractive",
-        "-WindowStyle",
-        "Hidden",
-        "-Command",
-        &script,
-    ])
-    .stdin(Stdio::null())
-    .stdout(Stdio::null())
-    .stderr(Stdio::null());
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x0800_0000);
-    }
-    match cmd.spawn() {
-        Ok(child) => {
-            if let Ok(mut g) = CURRENT.lock() {
-                *g = Some(child);
-            }
-            true
-        }
-        Err(e) => {
-            eprintln!("[G-Maiden audio] play failed for {event}: {e}");
-            false
-        }
-    }
+    send(Cmd::Play(path));
+    true
 }
 
 #[cfg(test)]
@@ -125,7 +145,6 @@ mod tests {
 
     #[test]
     fn missing_event_folder_returns_zero_clips() {
-        // No panic, no I/O error propagated — caller can treat as "fall back to SAPI".
         assert_eq!(clip_count("__nonexistent_event_xyz__"), 0);
     }
 }

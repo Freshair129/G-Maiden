@@ -1,6 +1,6 @@
 {
   "name": "g-maiden-ui",
-  "version": "0.4.1",
+  "version": "0.6.0",
   "description": "G-Maiden overlay and dashboard UI",
   "type": "module",
   "scripts": {

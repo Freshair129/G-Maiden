@@ -13,6 +13,7 @@ use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut,
 mod audio;
 mod capture;
 mod cv;
+mod damage;
 mod gsi;
 mod log;
 mod master;
