@@ -344,11 +344,13 @@ pub fn can_i_kill_with(
 fn hero_db() -> &'static HashMap<String, HeroData> {
     static DB: OnceLock<HashMap<String, HeroData>> = OnceLock::new();
     DB.get_or_init(|| {
-        let mut m = HashMap::new();
-        for hero in built_in_heroes() {
-            m.insert(hero.internal_name.clone(), hero);
-        }
-        m
+        // Generated from dotaconstants by tools/gen-herodb/gen_herodb.py: base stats
+        // for the full roster; ability tables are curated (verified) entries only —
+        // uncurated heroes have `abilities: []` and rely on attack-damage burst.
+        const RAW: &str = include_str!("../data/heroes.json");
+        let heroes: Vec<HeroData> =
+            serde_json::from_str(RAW).expect("data/heroes.json must be valid HeroData JSON");
+        heroes.into_iter().map(|h| (h.internal_name.clone(), h)).collect()
     })
 }
 
@@ -360,169 +362,18 @@ pub fn all_heroes() -> Vec<&'static HeroData> {
     hero_db().values().collect()
 }
 
-fn built_in_heroes() -> Vec<HeroData> {
-    vec![
-        HeroData {
-            internal_name: "npc_dota_hero_sniper".into(),
-            display_name: "Sniper".into(),
-            base_damage_min: 15.0, base_damage_max: 21.0,
-            base_armor: -1.0, base_magic_resistance: 25.0,
-            primary_attr: "agi".into(),
-            base_str: 19.0, str_gain: 2.0,
-            base_agi: 27.0, agi_gain: 3.2,
-            base_int: 15.0, int_gain: 2.6,
-            base_attack_speed: 100.0, attack_range: 550.0,
-            abilities: vec![
-                AbilityDamage { name: "Shrapnel".into(), damage_type: DamageType::Magical, damage_per_level: vec![75.0, 150.0, 225.0, 300.0], cooldown: 0.0, is_ultimate: false },
-                AbilityDamage { name: "Headshot".into(), damage_type: DamageType::Physical, damage_per_level: vec![15.0, 40.0, 65.0, 90.0], cooldown: 0.0, is_ultimate: false },
-                AbilityDamage { name: "Assassinate".into(), damage_type: DamageType::Magical, damage_per_level: vec![320.0, 485.0, 650.0], cooldown: 20.0, is_ultimate: true },
-            ],
-        },
-        HeroData {
-            internal_name: "npc_dota_hero_silencer".into(),
-            display_name: "Silencer".into(),
-            base_damage_min: 43.0, base_damage_max: 57.0,
-            base_armor: 0.0, base_magic_resistance: 25.0,
-            primary_attr: "int".into(),
-            base_str: 19.0, str_gain: 2.4,
-            base_agi: 22.0, agi_gain: 2.1,
-            base_int: 27.0, int_gain: 3.0,
-            base_attack_speed: 100.0, attack_range: 600.0,
-            abilities: vec![
-                AbilityDamage { name: "Arcane Curse".into(), damage_type: DamageType::Magical, damage_per_level: vec![24.0, 42.0, 60.0, 78.0], cooldown: 20.0, is_ultimate: false },
-                AbilityDamage { name: "Glaives of Wisdom".into(), damage_type: DamageType::Pure, damage_per_level: vec![0.0, 0.0, 0.0, 0.0], cooldown: 0.0, is_ultimate: false },
-                AbilityDamage { name: "Last Word".into(), damage_type: DamageType::Magical, damage_per_level: vec![120.0, 180.0, 240.0, 300.0], cooldown: 28.0, is_ultimate: false },
-            ],
-        },
-        HeroData {
-            internal_name: "npc_dota_hero_crystal_maiden".into(),
-            display_name: "Crystal Maiden".into(),
-            base_damage_min: 16.0, base_damage_max: 22.0,
-            base_armor: 0.0, base_magic_resistance: 25.0,
-            primary_attr: "int".into(),
-            base_str: 18.0, str_gain: 2.2,
-            base_agi: 16.0, agi_gain: 1.6,
-            base_int: 16.0, int_gain: 3.3,
-            base_attack_speed: 100.0, attack_range: 600.0,
-            abilities: vec![
-                AbilityDamage { name: "Crystal Nova".into(), damage_type: DamageType::Magical, damage_per_level: vec![130.0, 170.0, 210.0, 260.0], cooldown: 11.0, is_ultimate: false },
-                AbilityDamage { name: "Frostbite".into(), damage_type: DamageType::Magical, damage_per_level: vec![100.0, 150.0, 200.0, 250.0], cooldown: 9.0, is_ultimate: false },
-                AbilityDamage { name: "Freezing Field".into(), damage_type: DamageType::Magical, damage_per_level: vec![250.0, 350.0, 450.0], cooldown: 110.0, is_ultimate: true },
-            ],
-        },
-        HeroData {
-            internal_name: "npc_dota_hero_lina".into(),
-            display_name: "Lina".into(),
-            base_damage_min: 28.0, base_damage_max: 36.0,
-            base_armor: 0.0, base_magic_resistance: 25.0,
-            primary_attr: "int".into(),
-            base_str: 20.0, str_gain: 2.4,
-            base_agi: 23.0, agi_gain: 1.8,
-            base_int: 30.0, int_gain: 3.7,
-            base_attack_speed: 100.0, attack_range: 670.0,
-            abilities: vec![
-                AbilityDamage { name: "Dragon Slave".into(), damage_type: DamageType::Magical, damage_per_level: vec![85.0, 160.0, 235.0, 310.0], cooldown: 8.0, is_ultimate: false },
-                AbilityDamage { name: "Light Strike Array".into(), damage_type: DamageType::Magical, damage_per_level: vec![120.0, 160.0, 200.0, 240.0], cooldown: 7.0, is_ultimate: false },
-                AbilityDamage { name: "Laguna Blade".into(), damage_type: DamageType::Magical, damage_per_level: vec![500.0, 700.0, 900.0], cooldown: 50.0, is_ultimate: true },
-            ],
-        },
-        HeroData {
-            internal_name: "npc_dota_hero_lion".into(),
-            display_name: "Lion".into(),
-            base_damage_min: 47.0, base_damage_max: 53.0,
-            base_armor: 0.0, base_magic_resistance: 25.0,
-            primary_attr: "int".into(),
-            base_str: 18.0, str_gain: 2.2,
-            base_agi: 15.0, agi_gain: 1.5,
-            base_int: 20.0, int_gain: 3.5,
-            base_attack_speed: 100.0, attack_range: 600.0,
-            abilities: vec![
-                AbilityDamage { name: "Earth Spike".into(), damage_type: DamageType::Magical, damage_per_level: vec![80.0, 140.0, 200.0, 260.0], cooldown: 12.0, is_ultimate: false },
-                AbilityDamage { name: "Finger of Death".into(), damage_type: DamageType::Magical, damage_per_level: vec![600.0, 725.0, 850.0], cooldown: 160.0, is_ultimate: true },
-            ],
-        },
-        HeroData {
-            internal_name: "npc_dota_hero_pudge".into(),
-            display_name: "Pudge".into(),
-            base_damage_min: 68.0, base_damage_max: 74.0,
-            base_armor: 1.0, base_magic_resistance: 25.0,
-            primary_attr: "str".into(),
-            base_str: 25.0, str_gain: 3.5,
-            base_agi: 14.0, agi_gain: 1.5,
-            base_int: 16.0, int_gain: 1.5,
-            base_attack_speed: 100.0, attack_range: 175.0,
-            abilities: vec![
-                AbilityDamage { name: "Meat Hook".into(), damage_type: DamageType::Pure, damage_per_level: vec![150.0, 220.0, 290.0, 360.0], cooldown: 12.0, is_ultimate: false },
-                AbilityDamage { name: "Rot".into(), damage_type: DamageType::Magical, damage_per_level: vec![30.0, 60.0, 90.0, 120.0], cooldown: 0.0, is_ultimate: false },
-                AbilityDamage { name: "Dismember".into(), damage_type: DamageType::Pure, damage_per_level: vec![120.0, 180.0, 240.0], cooldown: 30.0, is_ultimate: true },
-            ],
-        },
-        HeroData {
-            internal_name: "npc_dota_hero_phantom_assassin".into(),
-            display_name: "Phantom Assassin".into(),
-            base_damage_min: 50.0, base_damage_max: 52.0,
-            base_armor: 2.0, base_magic_resistance: 25.0,
-            primary_attr: "agi".into(),
-            base_str: 19.0, str_gain: 2.2,
-            base_agi: 23.0, agi_gain: 3.4,
-            base_int: 15.0, int_gain: 1.4,
-            base_attack_speed: 100.0, attack_range: 150.0,
-            abilities: vec![
-                AbilityDamage { name: "Stifling Dagger".into(), damage_type: DamageType::Physical, damage_per_level: vec![65.0, 100.0, 135.0, 170.0], cooldown: 6.0, is_ultimate: false },
-                AbilityDamage { name: "Fan of Knives".into(), damage_type: DamageType::Pure, damage_per_level: vec![0.0, 0.0, 0.0, 0.0], cooldown: 12.0, is_ultimate: false },
-            ],
-        },
-        HeroData {
-            internal_name: "npc_dota_hero_invoker".into(),
-            display_name: "Invoker".into(),
-            base_damage_min: 42.0, base_damage_max: 48.0,
-            base_armor: 0.0, base_magic_resistance: 25.0,
-            primary_attr: "uni".into(),
-            base_str: 19.0, str_gain: 2.4,
-            base_agi: 20.0, agi_gain: 1.9,
-            base_int: 22.0, int_gain: 4.6,
-            base_attack_speed: 100.0, attack_range: 600.0,
-            abilities: vec![
-                AbilityDamage { name: "Sun Strike".into(), damage_type: DamageType::Pure, damage_per_level: vec![100.0, 162.5, 225.0, 287.5, 350.0, 412.5, 475.0, 537.5], cooldown: 25.0, is_ultimate: false },
-                AbilityDamage { name: "Chaos Meteor".into(), damage_type: DamageType::Magical, damage_per_level: vec![57.0, 76.0, 95.0, 114.0, 133.0, 152.0, 171.0, 190.0], cooldown: 55.0, is_ultimate: false },
-                AbilityDamage { name: "EMP".into(), damage_type: DamageType::Pure, damage_per_level: vec![100.0, 175.0, 250.0, 325.0, 400.0, 475.0, 550.0, 625.0], cooldown: 30.0, is_ultimate: false },
-            ],
-        },
-    ]
-}
-
 // ────────────────────────── Item database ──────────────────────────
 //
-// Curated, burst-relevant items only. Values are approximate to the current
-// patch and should be generated from dotaconstants alongside the hero DB in P-D3.
+// Burst-relevant items, loaded from data/items.json (see FEAT-G-DAMAGE). Values
+// are approximate to the current patch; regenerate alongside the hero DB.
 
 fn item_db() -> &'static HashMap<String, LoadoutItem> {
     static DB: OnceLock<HashMap<String, LoadoutItem>> = OnceLock::new();
     DB.get_or_init(|| {
-        let mut m = HashMap::new();
-        let dmg = |name: &str, atk: f64| LoadoutItem {
-            name: name.into(), bonus_attack_damage: atk, active_burst: 0.0, active_burst_type: DamageType::Physical,
-        };
-        let dagon = |name: &str, burst: f64| LoadoutItem {
-            name: name.into(), bonus_attack_damage: 0.0, active_burst: burst, active_burst_type: DamageType::Magical,
-        };
-        for it in [
-            dmg("item_broadsword", 18.0),
-            dmg("item_claymore", 33.0),
-            dmg("item_demon_edge", 46.0),
-            dmg("item_lesser_crit", 34.0),   // Crystalys
-            dmg("item_greater_crit", 88.0),  // Daedalus (crit chance ignored for now)
-            dmg("item_desolator", 50.0),     // armor shred not modelled yet
-            dmg("item_monkey_king_bar", 40.0),
-            dagon("item_dagon", 400.0),
-            dagon("item_dagon_2", 500.0),
-            dagon("item_dagon_3", 600.0),
-            dagon("item_dagon_4", 700.0),
-            dagon("item_dagon_5", 800.0),
-        ] {
-            m.insert(it.name.clone(), it);
-        }
-        m
+        const RAW: &str = include_str!("../data/items.json");
+        let items: Vec<LoadoutItem> =
+            serde_json::from_str(RAW).expect("data/items.json must be valid LoadoutItem JSON");
+        items.into_iter().map(|it| (it.name.clone(), it)).collect()
     })
 }
 
@@ -594,6 +445,26 @@ mod tests {
         let d1 = sniper.attack_damage_at_level(1);
         let d10 = sniper.attack_damage_at_level(10);
         assert!(d10 > d1, "damage should increase with level");
+    }
+
+    // ───────────── JSON-backed DB (P-D3) ─────────────
+
+    #[test]
+    fn full_roster_loads_from_json() {
+        // data/heroes.json carries the whole roster, not just the curated few.
+        assert!(all_heroes().len() >= 120, "expected full roster, got {}", all_heroes().len());
+    }
+
+    #[test]
+    fn uncurated_hero_has_base_stats_but_no_abilities() {
+        // Axe is in the roster (base stats) but not yet curated — abilities empty,
+        // so it still produces an attack-only burst rather than panicking.
+        let axe = lookup_hero("npc_dota_hero_axe").expect("axe in roster");
+        assert!(axe.abilities.is_empty(), "axe abilities not curated yet");
+        assert!(axe.base_str > 0.0, "base stats must be populated");
+        let burst = axe.burst_damage(10, 0.0, 25.0);
+        assert!(burst.total_burst > 0.0, "attack-only burst should be > 0");
+        assert!(burst.abilities.is_empty(), "no ability burst without curation");
     }
 
     // ───────────── Offensive lethality (P-D1) ─────────────

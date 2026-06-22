@@ -131,7 +131,7 @@ pub fn can_i_kill(attacker, attacker_level, target_current_hp,
 | 1 | `burst_damage` ไม่นับไอเทม | ✅ **P-D2a** | `burst_damage_with()` + item DB (Dagon/แดเมจไอเทม); Aghs ยังไม่ครอบ |
 | 2 | `estimate_ability_level` เดาเลเวลสกิล | ✅ **P-D2a** | รับ `ability_levels` จริงได้แล้ว, estimate เป็น fallback |
 | 3 | ฮาร์ดโค้ด "ตี 2 ที" | ⏳ P-D4 | ต้องมี attack-speed timing |
-| 4 | Hero DB มีแค่ 8 ฮีโร่ | ⏳ P-D3 | generate 124 จาก dotaconstants |
+| 4 | Hero DB มีแค่ 8 ฮีโร่ | 🟡 **P-D3** | base stats ครบ 127 ตัว (JSON); ability tables curate แล้ว 8/127 |
 | 5 | ฝั่ง offensive (`can_i_kill`) | ✅ **P-D1** | + confidence model |
 | 6 | อ่าน current HP ศัตรู | ⏳ P-D4 | HP-bar detector ใน `cv/` |
 
@@ -140,7 +140,7 @@ pub fn can_i_kill(attacker, attacker_level, target_current_hp,
 - ✅ **P-D1 — Offensive core:** `can_i_kill()` + `KillWindow` + `kill_confidence()` (23 tests). DONE `b7ed1c6`.
 - ✅ **P-D2a — Item/ability engine:** `burst_damage_with()` รับ items + ability levels จริง; item DB + `loadout_from_names()`. DONE.
 - ⏳ **P-D2b — GSI wiring:** พาร์ส `items`/`abilities` arrays ใน `gsi.rs` (ตอนนี้ดึงแค่ summary) → ป้อนเข้า `*_with()`; เกราะศัตรูจาก G-Master.
-- ⏳ **P-D3 — Full hero/item DB:** generate 124 ฮีโร่ + ไอเทมครบจาก dotaconstants แทน hardcode.
+- 🟡 **P-D3 — JSON-backed DB:** DB ย้ายออกจาก Rust ไป `data/heroes.json` + `data/items.json` (โหลดผ่าน `include_str!`); generator `tools/gen-herodb/` ดึง base stats ครบ 127 จาก dotaconstants. เหลือ curate ability tables (8/127) — งานข้อมูลล้วน ไม่ต้องแก้ logic.
 - ⏳ **P-D4 — CV HP-bar + attack timing:** enemy HP-bar detector → current HP %; attack-speed → จำนวนตีจริง.
 - ⏳ **P-D5 — Belief revision wiring:** ต่อ confidence → G-Signal interrupt + G-Log calibration loop.
 

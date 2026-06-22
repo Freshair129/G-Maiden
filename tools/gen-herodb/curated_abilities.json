@@ -1,0 +1,41 @@
+{
+  "_comment": "Hand-verified ability burst tables, merged onto dotaconstants base stats by gen_herodb.py. damage_type ∈ Physical|Magical|Pure. damage_per_level index 0 = ability level 1. Add heroes here as they are verified; uncurated heroes get abilities:[] and rely on attack-damage burst only.",
+  "npc_dota_hero_sniper": [
+    { "name": "Shrapnel", "damage_type": "Magical", "damage_per_level": [75, 150, 225, 300], "cooldown": 0.0, "is_ultimate": false },
+    { "name": "Headshot", "damage_type": "Physical", "damage_per_level": [15, 40, 65, 90], "cooldown": 0.0, "is_ultimate": false },
+    { "name": "Assassinate", "damage_type": "Magical", "damage_per_level": [320, 485, 650], "cooldown": 20.0, "is_ultimate": true }
+  ],
+  "npc_dota_hero_silencer": [
+    { "name": "Arcane Curse", "damage_type": "Magical", "damage_per_level": [24, 42, 60, 78], "cooldown": 20.0, "is_ultimate": false },
+    { "name": "Glaives of Wisdom", "damage_type": "Pure", "damage_per_level": [0, 0, 0, 0], "cooldown": 0.0, "is_ultimate": false },
+    { "name": "Last Word", "damage_type": "Magical", "damage_per_level": [120, 180, 240, 300], "cooldown": 28.0, "is_ultimate": false }
+  ],
+  "npc_dota_hero_crystal_maiden": [
+    { "name": "Crystal Nova", "damage_type": "Magical", "damage_per_level": [130, 170, 210, 260], "cooldown": 11.0, "is_ultimate": false },
+    { "name": "Frostbite", "damage_type": "Magical", "damage_per_level": [100, 150, 200, 250], "cooldown": 9.0, "is_ultimate": false },
+    { "name": "Freezing Field", "damage_type": "Magical", "damage_per_level": [250, 350, 450], "cooldown": 110.0, "is_ultimate": true }
+  ],
+  "npc_dota_hero_lina": [
+    { "name": "Dragon Slave", "damage_type": "Magical", "damage_per_level": [85, 160, 235, 310], "cooldown": 8.0, "is_ultimate": false },
+    { "name": "Light Strike Array", "damage_type": "Magical", "damage_per_level": [120, 160, 200, 240], "cooldown": 7.0, "is_ultimate": false },
+    { "name": "Laguna Blade", "damage_type": "Magical", "damage_per_level": [500, 700, 900], "cooldown": 50.0, "is_ultimate": true }
+  ],
+  "npc_dota_hero_lion": [
+    { "name": "Earth Spike", "damage_type": "Magical", "damage_per_level": [80, 140, 200, 260], "cooldown": 12.0, "is_ultimate": false },
+    { "name": "Finger of Death", "damage_type": "Magical", "damage_per_level": [600, 725, 850], "cooldown": 160.0, "is_ultimate": true }
+  ],
+  "npc_dota_hero_pudge": [
+    { "name": "Meat Hook", "damage_type": "Pure", "damage_per_level": [150, 220, 290, 360], "cooldown": 12.0, "is_ultimate": false },
+    { "name": "Rot", "damage_type": "Magical", "damage_per_level": [30, 60, 90, 120], "cooldown": 0.0, "is_ultimate": false },
+    { "name": "Dismember", "damage_type": "Pure", "damage_per_level": [120, 180, 240], "cooldown": 30.0, "is_ultimate": true }
+  ],
+  "npc_dota_hero_phantom_assassin": [
+    { "name": "Stifling Dagger", "damage_type": "Physical", "damage_per_level": [65, 100, 135, 170], "cooldown": 6.0, "is_ultimate": false },
+    { "name": "Fan of Knives", "damage_type": "Pure", "damage_per_level": [0, 0, 0, 0], "cooldown": 12.0, "is_ultimate": false }
+  ],
+  "npc_dota_hero_invoker": [
+    { "name": "Sun Strike", "damage_type": "Pure", "damage_per_level": [100, 162.5, 225, 287.5, 350, 412.5, 475, 537.5], "cooldown": 25.0, "is_ultimate": false },
+    { "name": "Chaos Meteor", "damage_type": "Magical", "damage_per_level": [57, 76, 95, 114, 133, 152, 171, 190], "cooldown": 55.0, "is_ultimate": false },
+    { "name": "EMP", "damage_type": "Pure", "damage_per_level": [100, 175, 250, 325, 400, 475, 550, 625], "cooldown": 30.0, "is_ultimate": false }
+  ]
+}

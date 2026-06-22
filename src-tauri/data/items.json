@@ -1,0 +1,14 @@
+[
+  { "name": "item_broadsword", "bonus_attack_damage": 18.0, "active_burst": 0.0, "active_burst_type": "Physical" },
+  { "name": "item_claymore", "bonus_attack_damage": 33.0, "active_burst": 0.0, "active_burst_type": "Physical" },
+  { "name": "item_demon_edge", "bonus_attack_damage": 46.0, "active_burst": 0.0, "active_burst_type": "Physical" },
+  { "name": "item_lesser_crit", "bonus_attack_damage": 34.0, "active_burst": 0.0, "active_burst_type": "Physical" },
+  { "name": "item_greater_crit", "bonus_attack_damage": 88.0, "active_burst": 0.0, "active_burst_type": "Physical" },
+  { "name": "item_desolator", "bonus_attack_damage": 50.0, "active_burst": 0.0, "active_burst_type": "Physical" },
+  { "name": "item_monkey_king_bar", "bonus_attack_damage": 40.0, "active_burst": 0.0, "active_burst_type": "Physical" },
+  { "name": "item_dagon", "bonus_attack_damage": 0.0, "active_burst": 400.0, "active_burst_type": "Magical" },
+  { "name": "item_dagon_2", "bonus_attack_damage": 0.0, "active_burst": 500.0, "active_burst_type": "Magical" },
+  { "name": "item_dagon_3", "bonus_attack_damage": 0.0, "active_burst": 600.0, "active_burst_type": "Magical" },
+  { "name": "item_dagon_4", "bonus_attack_damage": 0.0, "active_burst": 700.0, "active_burst_type": "Magical" },
+  { "name": "item_dagon_5", "bonus_attack_damage": 0.0, "active_burst": 800.0, "active_burst_type": "Magical" }
+]
