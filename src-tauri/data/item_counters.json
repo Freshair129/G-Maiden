@@ -1,0 +1,89 @@
+{
+  "_comment": "G5.2 meta dataset — item counters by enemy hero/item. Used by master.rs advice engine.",
+  "hero_counters": {
+    "phantom_assassin": {
+      "reason": "High evasion + crit burst",
+      "buy": ["monkey_king_bar", "blade_mail", "nullifier"]
+    },
+    "faceless_void": {
+      "reason": "Chronosphere traps team",
+      "buy": ["force_staff", "ghost", "hurricane_pike"]
+    },
+    "anti_mage": {
+      "reason": "Mana burn + blink escape",
+      "buy": ["force_staff", "orchid", "bkb"]
+    },
+    "silencer": {
+      "reason": "Global silence removes spells",
+      "buy": ["bkb", "linkens_sphere"]
+    },
+    "lina": {
+      "reason": "High magic burst + long stun",
+      "buy": ["bkb", "pipe", "hood_of_defiance"]
+    },
+    "storm_spirit": {
+      "reason": "Mana-gated magic burst mobility",
+      "buy": ["bkb", "orchid", "manta"]
+    },
+    "zeus": {
+      "reason": "Pure nuke + global ult",
+      "buy": ["bkb", "pipe", "aeon_disk"]
+    },
+    "invoker": {
+      "reason": "Spell combo — sun strike/meteor",
+      "buy": ["bkb", "pipe", "linkens_sphere"]
+    },
+    "bristleback": {
+      "reason": "Tanky quill stacker",
+      "buy": ["silver_edge", "diffusal_blade", "desolator"]
+    },
+    "axe": {
+      "reason": "Berserker call + culling blade",
+      "buy": ["bkb", "force_staff", "ghost"]
+    },
+    "pudge": {
+      "reason": "Hook + rot DoT",
+      "buy": ["force_staff", "bkb", "aeon_disk"]
+    },
+    "night_stalker": {
+      "reason": "Blind + silence at night",
+      "buy": ["bkb", "hurricane_pike", "solar_crest"]
+    },
+    "sniper": {
+      "reason": "Long range poke — stay away",
+      "buy": ["blink", "force_staff", "bkb"]
+    },
+    "bloodseeker": {
+      "reason": "Rupture prevents movement",
+      "buy": ["force_staff", "aeon_disk", "bkb"]
+    },
+    "centaur_warrunner": {
+      "reason": "High strength initiator",
+      "buy": ["diffusal_blade", "silver_edge", "ethereal_blade"]
+    }
+  },
+  "item_counters": {
+    "blade_mail": {
+      "reason": "Reflects damage back to caster",
+      "avoid": ["high_damage_spells"],
+      "buy": ["ghost", "pipe"]
+    },
+    "black_king_bar": {
+      "reason": "Spell immunity — physical only",
+      "counter_with": ["silver_edge", "diffusal_blade", "basher"]
+    },
+    "heart_of_tarrasque": {
+      "reason": "Tanky regen",
+      "counter_with": ["silver_edge", "diffusal_blade", "desolator"]
+    },
+    "satanic": {
+      "reason": "Lifesteal burst",
+      "counter_with": ["silver_edge", "diffusal_blade", "aeon_disk"]
+    },
+    "evasion_items": {
+      "items": ["butterfly", "talisman_of_evasion"],
+      "reason": "High evasion",
+      "buy": ["monkey_king_bar", "true_strike_items"]
+    }
+  }
+}

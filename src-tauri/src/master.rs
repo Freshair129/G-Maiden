@@ -10,6 +10,7 @@ use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
+use crate::counter_advice::counter_advice_text;
 use crate::gsi::GameTick;
 
 const PERSONA_PROMPT: &str = r#"คุณคือ "Maiden" — ที่ปรึกษา Dota 2 บุคลิก Crystal Maiden แคสเตอร์
@@ -43,10 +44,16 @@ fn build_prompt(tick: &GameTick) -> String {
     } else {
         "late game"
     };
+
+    // G5.2: inject counter-item advice from dataset
+    // enemies will be provided by G-Sentry when that integration is ready
+    let advice = counter_advice_text(&[]);
+
     format!(
         "{persona}\n\nสถานการณ์ ({phase} · clock {clock}s): \
          ฮีโร่ {hero} เลเวล {lvl}, KDA {k}/{d}/{a}, net worth {nw}, gold {gold}, \
          HP {hp}%, mana {mana}%, score {rs}:{ds}.\n\
+         คำแนะนำ: {advice}\n\
          แนะนำสั้น ๆ ว่าควรทำอะไรต่อ (ซื้อของ/ขึ้นสกิล/positioning).",
         persona = PERSONA_PROMPT,
         phase = phase,
@@ -62,6 +69,7 @@ fn build_prompt(tick: &GameTick) -> String {
         mana = tick.mana_percent,
         rs = tick.radiant_score,
         ds = tick.dire_score,
+        advice = advice, // Inserted advice here
     )
 }
 
