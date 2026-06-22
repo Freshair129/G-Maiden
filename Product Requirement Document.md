@@ -50,6 +50,46 @@
 * **Logic:** บันทึก Decision-making ของผู้เล่นและผลลัพธ์เพื่อนำมาปรับจูนค่าความแม่นยำในการทำนายของ Maiden ในแมตช์ถัดไป  
 * **Maiden's Touch:** สรุปผลหลังจบเกม: "วันนี้เราทำดีที่สุดแล้วนะ ถึงฉันจะช่วยได้ไม่มาก แต่แมตช์หน้า... ฉันว่าเราทำได้ดีกว่านี้แน่"
 
+## **3A. Companion Experience Extensions (Competitive Benchmark: Questie AI)**
+
+จากการวิเคราะห์คู่แข่ง **Questie AI** (เพื่อนเล่นเกม AI ที่ใช้ Vision อ่านหน้าจอ + voice chat รองรับ 50+ เกม รวมถึง Dota 2) เราพบว่า G-Maiden เหนือกว่าด้านเทคนิคแกนหลัก (GSI แม่นกว่า Vision, latency ต่ำกว่า, มี local SLM fallback, privacy-first) แต่ยังขาดคุณสมบัติที่สร้าง **ความผูกพันระยะยาว** กับผู้ใช้ จึงเพิ่มโมดูลส่วนขยายต่อไปนี้ — ยึดจุดยืน **"แคบแต่ลึกใน Dota"** ไม่ไล่ตามการรองรับหลายเกมแบบ Questie
+
+### **G-Voice (Two-Way Voice Conversation) — P0**
+
+* **Description:** สนทนาด้วยเสียงสองทาง ผู้เล่นกด Push-to-Talk (`Alt+M`) เพื่อถาม Maiden ได้  
+* **Logic:** STT → Cloud Brain (อิงบริบท GSI + G-Memory) → TTS; G-Signal ขัดจังหวะได้เสมอเมื่อเกิดเหตุวิกฤต  
+* **Maiden's Touch:** ตอบคำถามเชิงกลยุทธ์แบบเรียลไทม์โดยไม่ต้องหยุดเล่น
+
+### **G-Memory (Persistent Player Memory) — P0**
+
+* **Description:** Maiden "จำผู้เล่นได้" ข้ามแมตช์ (moat หลักของ persona)  
+* **Logic:** เก็บฮีโร่ถนัด/จุดที่มักตาย/เทรนด์ MMR ภายในเครื่องเท่านั้น (Privacy-First) ต่อยอดจาก G-Log  
+* **Maiden's Touch:** "จำได้ไหม สองแมตช์ก่อนคุณก็โดนแกงตรงนี้พอดี"
+
+### **G-Coach (Post-Match Deep Review) — P1**
+
+* **Description:** รีวิวเชิงลึกหลังจบเกม (เหนือกว่า Questie ที่ทำเฉพาะ realtime)  
+* **Logic:** วิเคราะห์ GSI log เต็มแมตช์ ชี้ key decision points + จัด 3 จุดที่ควรปรับปรุง  
+* **Maiden's Touch:** "จุดที่น่าเสียดายที่สุดคือนาทีที่ 24 ที่เราเข้าไฟต์เร็วไป"
+
+### **G-Mind (Cognitive Model Router) — P1**
+
+* **Description:** สลับ/เลือก Cloud LLM ได้ (Gemini ค่าเริ่มต้น) กัน vendor lock-in  
+* **Logic:** คง fallback ไป Local SLM เมื่อขาดคลาวด์ และไม่กระทบ latency ของ G-Signal  
+* **Maiden's Touch:** "ตอนนี้ฉันกำลังคิดด้วยสมองกลีบ Gemini อยู่ค่ะ"
+
+### **G-Persona (Tone & Verbosity Presets) — P2**
+
+* **Description:** ปรับโทน/ความถี่การพูดของ Maiden (เงียบ↔ช่างพูด, จริงจัง↔มีม) โดยคงตัวตนเดียว  
+* **Logic:** ไม่ลบล้างพฤติกรรมบังคับ (Belief Revision, Interrupt, มีม "Nerf CM")  
+* **Maiden's Touch:** ผู้เล่นเลือกได้ว่าจะให้ Maiden เงียบ ๆ หรือพากย์ครื้นเครง
+
+### **G-Stream (Streamer Co-host Mode) — P2**
+
+* **Description:** โหมดผู้ช่วยสำหรับสตรีมเมอร์ + ปกปิดข้อมูลละเอียดอ่อน  
+* **Logic:** ปรับ Overlay/โทนสำหรับออกอากาศ; ไม่ส่ง G-Memory/G-Log ออกนอกเครื่อง  
+* **Maiden's Touch:** "สวัสดีทุกคนในห้องค่ะ~ วันนี้เราจะพา Crystal Maiden ไปได้ไกลแค่ไหนกันนะ"
+
 ## **4\. ADR-01: G-Series Branding Nomenclature**
 
 * **Decision:** ใช้ Prefix **"G-"** สำหรับทุกโมดูลการทำงานภายใน G-Maiden  

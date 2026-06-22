@@ -59,7 +59,13 @@
 - [ ] Thai caster-style intonation (Piper voice fine-tune or model select)
 - [ ] UI: voice preview + A/B compare between TTS engines
 
-**Milestone v0.6.0** — Maiden พูดไทยได้จริง + เสียง persona นุ่ม + ตัด/ต่อคลิปอัจฉริยะ
+### P3.4 — G-Persona: Tone & Verbosity Presets (SRS §3.11) `new`
+- [ ] Verbosity axis: Silent (critical-only) ↔ Chatty (continuous caster commentary)
+- [ ] Tone axis: Coach-serious ↔ Meme/casual (Nerf CM humor preserved in all modes)
+- [ ] Preset picker in settings (3–4 named presets, no raw sliders)
+- [ ] Constraint: never overrides Belief Revision / G-Signal Interrupt behavior
+
+**Milestone v0.6.0** — Maiden พูดไทยได้จริง + เสียง persona นุ่ม + ตัด/ต่อคลิปอัจฉริยะ + ปรับโทนได้
 
 ---
 
@@ -82,7 +88,21 @@
 - [ ] Meta patch data integration (item win-rates by hero matchup)
 - [ ] Persona-flavored advice with Nerf CM humor
 
-**Milestone v0.7.0** — Maiden เป็นนักพากย์สด: narrate + วิเคราะห์ลึก + แนะนำไอเทมเชิง meta
+### P4.4 — G-Voice: Two-Way Voice Conversation (SRS §3.7) `new — P0`
+- [ ] STT integration (Whisper local or cloud STT) — Thai + English
+- [ ] Push-to-Talk via `Alt+M` hold (reuse hotkey infra from P7.3)
+- [ ] STT → Cloud Brain (Gemini) with GSI snapshot + G-Memory context injected
+- [ ] Response as streamed TTS via Piper/rodio pipeline (reuse Phase 3)
+- [ ] G-Signal **always preempts** G-Voice response (Interrupt guaranteed)
+- [ ] Fallback: G-Voice degrades to text-overlay when cloud offline (G-Signal still works via SLM)
+
+### P4.5 — G-Mind: Cognitive Model Router (SRS §3.10) `new — P1`
+- [ ] Abstract `CloudBrainClient` trait — Gemini default, pluggable
+- [ ] Config UI: model selector (Gemini / Claude / future) + API key per model
+- [ ] ADR-03 preserved: critical path (G-Signal) never touches cloud router
+- [ ] Local SLM fallback path unchanged (ADR-07)
+
+**Milestone v0.7.0** — Maiden เป็นนักพากย์สด: narrate + วิเคราะห์ลึก + แนะนำไอเทม + **คุยสองทาง (G-Voice)** + สลับ LLM ได้
 
 ---
 
@@ -120,12 +140,21 @@
 - [ ] Auto-tune G-Sentry/G-Signal thresholds from match data
 - [ ] tuning_state feedback → next match config (Eng §6)
 
-### P6.3 — Post-Match Summary
-- [ ] Maiden summarizes after game end (accuracy, response speed)
-- [ ] Match history UI (stats, timeline, Maiden's calls vs outcomes)
+### P6.3 — G-Coach: Post-Match Deep Review (SRS §3.9) `upgraded — P1`
+- [ ] Consume full-match GSI log (JSONL/SQLite) post-game
+- [ ] Identify key decision points: avoidable deaths, item timing, teamfight positioning
+- [ ] Rank top 3 improvement areas and surface in Dashboard
+- [ ] Maiden voice summary + text report card (non-critical, runs after game end)
 - [ ] Persona line: "แมตช์หน้าฉันจะทำได้ดีกว่านี้"
 
-**Milestone v0.9.0** — Maiden เรียนรู้จากแมตช์จริง: ทำนายแม่นขึ้นทุกเกม + สรุปผลหลังจบ
+### P6.4 — G-Memory: Persistent Player Memory (SRS §3.8) `new — P0`
+- [ ] Extend SQLite schema (from P6.1): hero preferences, per-zone death heatmap, MMR trend, common mistake patterns
+- [ ] Memory context injector: pack top-3 relevant facts → Cloud Brain context for G-Voice / G-Master
+- [ ] In-game references: Maiden cites past-match patterns in voice lines ("ครั้งก่อนตรงนี้คุณโดนแกง")
+- [ ] Privacy gate: G-Memory rows flagged `local_only = true`, verified by no-egress test (P8.2)
+- [ ] Memory management UI: view / delete records
+
+**Milestone v0.9.0** — Maiden เรียนรู้จากแมตช์จริง: ทำนายแม่นขึ้นทุกเกม + **จำผู้เล่นได้ (G-Memory)** + รีวิวเชิงลึก (G-Coach)
 
 ---
 
@@ -171,7 +200,13 @@
 - [ ] Win10 + Win11 compatibility matrix sign-off
 - [ ] README + user guide
 
-**Milestone v1.0.0** — Production release: ครบทุกโมดูล G-Series, ผ่าน NFR ทุกข้อ, พร้อมเปิดให้ใช้จริง
+### P8.4 — G-Stream: Streamer Co-host Mode (SRS §3.12) `new — P2`
+- [ ] Stream-mode toggle in settings: adjusts G-Persona verbosity to broadcast-friendly
+- [ ] Sensitive data mask: MMR, G-Memory stats, raw GPM/XPM hidden from overlay during stream
+- [ ] Privacy gate: verified that G-Stream mode sends zero additional data beyond existing Cloud Brain calls
+- [ ] OBS-friendly overlay crop hint (leave left-side safe zone for facecam)
+
+**Milestone v1.0.0** — Production release: ครบทุกโมดูล G-Series ทั้ง 12 โมดูล, ผ่าน NFR ทุกข้อ, พร้อมเปิดให้ใช้จริง
 
 ---
 
@@ -183,9 +218,11 @@
 | Background CPU | ≤2.5% (mid-range) | SRS §5.1 |
 | RAM | ≤400MB (all modules active, SLM unloaded) | SRS §5.1 |
 | FPS impact | ≤3% Dota 2 FPS drop | SRS §3.5 |
-| Privacy | G-Log + player stats local-only, no egress | SRS §5.2 |
-| Resilience | G-Sentry + G-Signal work without cloud | SRS §5.2 |
-| Persona | Gentle + intelligent + Nerf CM humor + Belief Revision | PRD §2–3 |
+| Privacy | G-Log + G-Memory + player stats local-only, no egress | SRS §5.2 |
+| Resilience | G-Sentry + G-Signal work without cloud; G-Voice degrades gracefully | SRS §5.2 |
+| Persona | Gentle + intelligent + Nerf CM humor + Belief Revision; G-Persona presets never override these | PRD §2–3, SRS §3.11 |
+| G-Voice interrupt | G-Signal always preempts G-Voice response | SRS §3.7 |
+| G-Stream privacy | Stream mode adds zero extra data egress beyond normal Cloud Brain calls | SRS §3.12 |
 
 ## Architecture Decision Records
 
@@ -196,5 +233,7 @@
 | ADR-03 | Critical path = Rust only (no cloud/webview) | Latency + resilience |
 | ADR-04 | G-Signal audio = cache + slot-splicing (no live synth) | Latency budget |
 | ADR-05 | Enemy positions from minimap CV (GSI doesn't provide) | Functional necessity |
-| ADR-06 | G-Log = local-only, no network egress | Privacy-first |
+| ADR-06 | G-Log + G-Memory = local-only, no network egress | Privacy-first |
 | ADR-07 | SLM lazy-load on fallback only | RAM budget |
+| ADR-08 | G-Voice = Push-to-Talk only (no always-on mic) | Privacy + CPU budget |
+| ADR-09 | G-Mind router never touches G-Signal critical path | Latency guarantee |
