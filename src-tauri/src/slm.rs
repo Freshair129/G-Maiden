@@ -39,15 +39,21 @@ pub fn advise_offline(prompt: &str) -> Result<String, String> {
 }
 
 fn call_ollama(json_body: &str) -> Result<String, String> {
-    let out = Command::new("curl")
-        .args([
-            "-s",
-            "--max-time", "90",
-            "-X", "POST",
-            OLLAMA_URL,
-            "-H", "Content-Type: application/json",
-            "-d", json_body,
-        ])
+    let mut cmd = Command::new("curl");
+    cmd.args([
+        "-s",
+        "--max-time", "90",
+        "-X", "POST",
+        OLLAMA_URL,
+        "-H", "Content-Type: application/json",
+        "-d", json_body,
+    ]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW — no console flash
+    }
+    let out = cmd
         .output()
         .map_err(|e| format!("curl launch failed: {e}"))?;
     if !out.status.success() {
@@ -68,8 +74,14 @@ fn call_ollama(json_body: &str) -> Result<String, String> {
 
 /// True if ollama appears to be running (lightweight HEAD check via curl).
 pub fn ollama_available() -> bool {
-    Command::new("curl")
-        .args(["-s", "--max-time", "2", "-o", "/dev/null", "-w", "%{http_code}", "http://127.0.0.1:11434/"])
+    let mut cmd = Command::new("curl");
+    cmd.args(["-s", "--max-time", "2", "-o", "/dev/null", "-w", "%{http_code}", "http://127.0.0.1:11434/"]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW — no console flash
+    }
+    cmd
         .output()
         .map(|o| {
             let code = String::from_utf8_lossy(&o.stdout);

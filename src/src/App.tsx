@@ -139,9 +139,12 @@ const loadProfiles = (): OverlayProfile[] => {
 
 const C = { bg: '#08090c', ice: '#8fd4ff', txt: '#e7eef6', mut: '#8794a6', ok: '#5be3a7', warn: '#ffcf6b', bad: '#ff7b85', line: 'rgba(143,212,255,0.16)' }
 
-const APP_VERSION = '0.7.0'
+const APP_VERSION = '0.7.1'
 
 const CHANGELOG: { ver: string; date: string; items: string[] }[] = [
+  { ver: '0.7.1', date: '2026-06-23', items: [
+    'แก้บั๊ก: หน้าต่าง PowerShell เด้งวน ๆ ตอนเล่นเกม — Resource Governor (ตรวจ RAM/CPU ทุก 10s) และ SLM (curl) ลืมซ่อน console window ตอนนี้ซ่อนด้วย CREATE_NO_WINDOW แล้ว',
+  ]},
   { ver: '0.7.0', date: '2026-06-23', items: [
     'Piper local TTS — neural voice ≤80ms, ไม่ต้องรอ PowerShell cold-start (fallback SAPI)',
     'Overlay advice panel — G-Master ตอบบนหน้าจอโดยตรง 20 วินาที (G5.4)',

@@ -74,10 +74,14 @@ fn measure_ram_mb() -> Option<f64> {
     let script = format!(
         "(Get-Process -Id {pid}).WorkingSet64 / 1MB"
     );
-    let out = std::process::Command::new("powershell")
-        .args(["-NoProfile", "-NonInteractive", "-Command", &script])
-        .output()
-        .ok()?;
+    let mut cmd = std::process::Command::new("powershell");
+    cmd.args(["-NoProfile", "-NonInteractive", "-Command", &script]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW — stop the PS console flashing every poll
+    }
+    let out = cmd.output().ok()?;
     String::from_utf8_lossy(&out.stdout)
         .trim()
         .parse::<f64>()
@@ -97,10 +101,14 @@ fn measure_cpu_pct() -> Option<f64> {
          $cores = [Environment]::ProcessorCount; \
          [math]::Round(($c2 - $c1) / (1000.0 * $cores) * 100.0, 2)"
     );
-    let out = std::process::Command::new("powershell")
-        .args(["-NoProfile", "-NonInteractive", "-Command", &script])
-        .output()
-        .ok()?;
+    let mut cmd = std::process::Command::new("powershell");
+    cmd.args(["-NoProfile", "-NonInteractive", "-Command", &script]);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW — stop the PS console flashing every poll
+    }
+    let out = cmd.output().ok()?;
     String::from_utf8_lossy(&out.stdout)
         .trim()
         .parse::<f64>()
