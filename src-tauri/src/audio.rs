@@ -84,6 +84,12 @@ fn send(cmd: Cmd) {
     }
 }
 
+/// Play a specific WAV file by path (used by Piper TTS to play its output).
+/// Cancels any currently-playing clip first so Maiden never overlaps herself.
+pub fn play_file(path: PathBuf) {
+    send(Cmd::Play(path));
+}
+
 /// Where Maiden's clips live. Exe-relative first, then dev-tree fallback.
 pub fn voice_cache_dir() -> PathBuf {
     if let Ok(exe) = std::env::current_exe() {

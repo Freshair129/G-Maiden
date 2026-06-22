@@ -39,6 +39,10 @@ interface MinimapCv {
   classifier: boolean
 }
 interface GankAlert { probability: number; missing_heroes: string[]; eta_ms: number }
+/** G2.6: emitted by G-Sentry when a hero crosses the 5s missing threshold. */
+interface EnemyMissing { hero: string; missing_for_ms: number; last_pos: [number, number] }
+/** G5.4: advice broadcast from master.rs → overlay. */
+interface AdviceUpdate { text: string; cached: boolean }
 /** Connection/status pushed by the Rust watchdog (gsi.rs) every ~4s. */
 interface GsiStatus { dota_running: boolean; gsi_active: boolean; in_game: boolean }
 
@@ -115,6 +119,8 @@ const REVISION_LINES = {
 } as const
 
 interface VoiceInfo { name: string; culture: string; gender: string; age: string }
+/** G7.2: resource-governor stats emitted every 10s from governor.rs */
+interface ResourceStats { ram_mb: number; cpu_pct: number; over_budget: boolean }
 const loadSettings = (): Settings => {
   try {
     const raw = JSON.parse(localStorage.getItem('gm-settings') ?? '{}') as Record<string, unknown>
@@ -133,9 +139,17 @@ const loadProfiles = (): OverlayProfile[] => {
 
 const C = { bg: '#08090c', ice: '#8fd4ff', txt: '#e7eef6', mut: '#8794a6', ok: '#5be3a7', warn: '#ffcf6b', bad: '#ff7b85', line: 'rgba(143,212,255,0.16)' }
 
-const APP_VERSION = '0.6.0'
+const APP_VERSION = '0.7.0'
 
 const CHANGELOG: { ver: string; date: string; items: string[] }[] = [
+  { ver: '0.7.0', date: '2026-06-23', items: [
+    'Piper local TTS — neural voice ≤80ms, ไม่ต้องรอ PowerShell cold-start (fallback SAPI)',
+    'Overlay advice panel — G-Master ตอบบนหน้าจอโดยตรง 20 วินาที (G5.4)',
+    'Enemy-missing badge — แสดงฮีโร่ที่ G-Sentry ตรวจจับว่าหายบนแผนที่ >5s (G2.6)',
+    'Local SLM fallback — ถ้า Claude CLI offline ใช้ Aroow-9B ผ่าน ollama (G7.1)',
+    'Resource Governor — ตรวจ RAM/CPU ทุก 10s แสดงใน System card (G7.2)',
+    'System card — แสดงสถานะ module ทั้งหมด + แจ้งเตือนเมื่อเกิน budget',
+  ]},
   { ver: '0.6.0', date: '2026-06-22', items: [
     'แผงสถิติ overlay เลือกเปิด/ปิดเป็นรายการ (นาฬิกา, สกอร์, HP/Mana, K/D/A, ทอง)',
     'ตำแหน่ง overlay กำหนดเองได้ (X/Y slider) + บันทึกโปรไฟล์',
@@ -248,6 +262,11 @@ const Overlay: React.FC = () => {
   // G-Signal gank banner + CV debug feed (item A & B).
   const [gank, setGank] = useState<GankState>(null)
   const [cv, setCv] = useState<MinimapCv | null>(null)
+  // G2.6: set of hero names currently flagged as missing by G-Sentry.
+  const [missingHeroes, setMissingHeroes] = useState<Set<string>>(new Set())
+  // G5.4: latest advice from G-Master, shown as an in-overlay panel.
+  const [overlayAdvice, setOverlayAdvice] = useState<string | null>(null)
+  const adviceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // GSI activity from the watchdog — so the HUD disappears when Dota closes
   // (Dota stops POSTing without a final tick; `tick` would otherwise stay stale).
   const [gsiActive, setGsiActive] = useState(true)
@@ -288,19 +307,36 @@ const Overlay: React.FC = () => {
     const u5 = listen('gank-clear', () => {
       if (gankTimer.current) { clearTimeout(gankTimer.current); gankTimer.current = null }
       setGank({ phase: 'clear' })
+      // G2.6: clear the missing-hero indicator when G-Signal retracts.
+      setMissingHeroes(new Set())
       // brief soft echo, then fade out; don't re-show until a new gank-alert
       if (gankClearTimer.current) clearTimeout(gankClearTimer.current)
       gankClearTimer.current = setTimeout(() => setGank(null), 2200)
     })
     const u6 = listen<GsiStatus>('gsi-status', (e) => setGsiActive(e.payload.gsi_active))
     const u7 = listen<boolean>('preview-mode', (e) => setPreviewMode(e.payload))
+    // G2.6: G-Sentry missing-hero events — accumulate into a set; clear when gank clears.
+    const u8 = listen<EnemyMissing>('enemy-missing', (e) => {
+      setMissingHeroes((prev) => new Set([...prev, e.payload.hero]))
+      // auto-clear the hero from the indicator after 30s (they probably re-appeared)
+      setTimeout(() => setMissingHeroes((prev) => { const n = new Set(prev); n.delete(e.payload.hero); return n }), 30_000)
+    })
+    // G5.4: Advice panel — show for 20s then dismiss.
+    const u9 = listen<AdviceUpdate>('advice-update', (e) => {
+      if (!e.payload.cached) {
+        setOverlayAdvice(e.payload.text)
+        if (adviceTimer.current) clearTimeout(adviceTimer.current)
+        adviceTimer.current = setTimeout(() => setOverlayAdvice(null), 20_000)
+      }
+    })
     void emit('overlay-ready')
     return () => {
       void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f())
       void u4.then((f) => f()); void u5.then((f) => f()); void u6.then((f) => f())
-      void u7.then((f) => f())
+      void u7.then((f) => f()); void u8.then((f) => f()); void u9.then((f) => f())
       if (gankTimer.current) clearTimeout(gankTimer.current)
       if (gankClearTimer.current) clearTimeout(gankClearTimer.current)
+      if (adviceTimer.current) clearTimeout(adviceTimer.current)
     }
   }, [])
 
@@ -468,6 +504,36 @@ const Overlay: React.FC = () => {
     </div>
   ) : null
 
+  // G2.6: Enemy-missing indicator — compact badge list. Shows which heroes
+  // G-Sentry has flagged missing >5s but haven't yet hit the 85% gank threshold.
+  // Only shown when NOT already in a full gank-alert (to avoid double-messaging).
+  const missingBadge = missingHeroes.size > 0 && !gank && s.gankVisuals ? (
+    <div style={{
+      background: 'rgba(18,20,28,0.78)', border: `1px solid rgba(255,207,107,0.45)`,
+      borderRadius: 10, padding: '6px 14px', fontFamily: '"Segoe UI", system-ui, sans-serif',
+      fontSize: 12.5, color: C.warn, display: 'flex', alignItems: 'center', gap: 8,
+      backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+    }}>
+      <span style={{ opacity: 0.7 }}>👁️</span>
+      <span>หาย: {[...missingHeroes].map(heroName).join(', ')}</span>
+    </div>
+  ) : null
+
+  // G5.4: Overlay advice panel — shows G-Master response for 20s, dismissable.
+  const advicePanel = overlayAdvice && s.gankVisuals ? (
+    <div style={{
+      ...panel(s.opacity), padding: '10px 16px', maxWidth: 380, fontSize: 13,
+      lineHeight: 1.5, position: 'relative',
+    }}>
+      <div style={{ fontSize: 10.5, color: C.ice, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Maiden แนะนำ</div>
+      <div style={{ color: C.txt }}>{overlayAdvice}</div>
+      <button onClick={() => setOverlayAdvice(null)} style={{
+        position: 'absolute', top: 6, right: 8, background: 'transparent', border: 'none',
+        color: C.mut, cursor: 'pointer', fontSize: 13, lineHeight: 1,
+      }}>✕</button>
+    </div>
+  ) : null
+
   // A. Gank warning banner — top-center, above the stat HUD, never over the minimap.
   const gankBanner = s.gankVisuals && gank ? (
     gank.phase === 'clear'
@@ -484,6 +550,7 @@ const Overlay: React.FC = () => {
         <div style={wrap}>
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             {gankBanner}
+            {missingBadge}
             <div style={{ ...panel(s.opacity), padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
               <span style={{ width: 9, height: 9, borderRadius: 99, background: seen ? C.warn : C.mut }} />
               <div>
@@ -504,7 +571,9 @@ const Overlay: React.FC = () => {
     <div style={wrap}>
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
         {gankBanner}
+        {missingBadge}
         {lowHp && <div className="gm-danger" style={dangerStyle}>⚠ HP เหลือ {t.hp_percent}% — ถอยก่อนค่ะเพื่อน!</div>}
+        {advicePanel}
         {(s.showTimer || s.showScore || s.showHeroBar || s.showKda || s.showGold) && (
         <div style={{ ...panel(s.opacity), padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
           {s.showTimer && (
@@ -859,6 +928,7 @@ const Control: React.FC = () => {
   const [s, setS] = useState<Settings>(loadSettings)
   const [voices, setVoices] = useState<VoiceInfo[]>([])
   const [status, setStatus] = useState<GsiStatus | null>(null)
+  const [resources, setResources] = useState<ResourceStats | null>(null)
   const [showWelcome, setShowWelcome] = useState(() => localStorage.getItem('gm-onboarded') !== '1')
   const dismissWelcome = () => { localStorage.setItem('gm-onboarded', '1'); setShowWelcome(false) }
   // In-app updater (ask-first). updRef holds the pending Update so the button can
@@ -973,7 +1043,8 @@ const Control: React.FC = () => {
     const u1 = listen<GameTick>('game-tick', (e) => { setTick(e.payload); setSeen(true) })
     const u2 = listen('overlay-ready', () => { void emit('settings', sRef.current) })
     const u3 = listen<GsiStatus>('gsi-status', (e) => setStatus(e.payload))
-    return () => { void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f()) }
+    const u4ctrl = listen<ResourceStats>('resource-stats', (e) => setResources(e.payload))
+    return () => { void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f()); void u4ctrl.then((f) => f()) }
   }, [])
 
   // persist + broadcast + apply overlay visibility on any change
@@ -1169,13 +1240,35 @@ const Control: React.FC = () => {
       </div>
 
       <div style={{ marginTop: 14 }}>
-        <Card title="Modules (เร็ว ๆ นี้)">
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, paddingTop: 6, fontSize: 12.5, color: C.mut }}>
-            <span>○ G-Sentry — fog-of-war monitor</span>
-            <span>○ G-Motion — gank path prediction</span>
-            <span>○ G-Signal — voice gank warning</span>
-            <span>○ G-Master — item/skill advisor</span>
+        <Card title="Modules &amp; System">
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, paddingTop: 6, fontSize: 12.5 }}>
+            {[
+              ['G-Sentry', 'fog-of-war monitor'],
+              ['G-Motion', 'gank prediction'],
+              ['G-Signal', 'voice gank warning'],
+              ['G-Master', 'advisor (Claude Plan + SLM fallback)'],
+              ['G-Damage', 'burst lethality engine'],
+              ['G-Log', 'match history'],
+            ].map(([mod, desc]) => (
+              <span key={mod} style={{ color: C.ok }}>
+                <span style={{ color: C.ok }}>✓</span> <b style={{ color: C.ice }}>{mod}</b>
+                <span style={{ color: C.mut }}> — {desc}</span>
+              </span>
+            ))}
           </div>
+          {resources && (
+            <div style={{ borderTop: `1px solid ${C.line}`, marginTop: 10, paddingTop: 8, display: 'flex', gap: 20, fontSize: 12 }}>
+              <span style={{ color: resources.ram_mb > 400 ? C.bad : C.ok }}>
+                RAM: <b>{resources.ram_mb.toFixed(0)} MB</b> / 400 MB
+              </span>
+              <span style={{ color: resources.cpu_pct > 2.5 ? C.bad : C.ok }}>
+                CPU: <b>{resources.cpu_pct.toFixed(1)}%</b> / 2.5%
+              </span>
+              {resources.over_budget && (
+                <span style={{ color: C.warn }}>⚠ เกิน budget — อาจลดความถี่ CV</span>
+              )}
+            </div>
+          )}
         </Card>
       </div>
 

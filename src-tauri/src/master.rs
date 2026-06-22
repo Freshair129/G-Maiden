@@ -74,6 +74,7 @@ fn build_prompt(tick: &GameTick) -> String {
 }
 
 /// Ask Maiden (via Claude Plan quota) for advice on the current game state.
+/// On claude CLI failure, falls back to the local SLM (G7.1, ollama).
 /// Blocking — call from a worker thread. Throttled to 30s; cached responses
 /// are returned with `cached=true` so the UI can hint at staleness.
 pub fn advise(tick: &GameTick) -> Result<Advice, String> {
@@ -91,8 +92,33 @@ pub fn advise(tick: &GameTick) -> Result<Advice, String> {
     }
 
     let prompt = build_prompt(tick);
+
+    // Primary path: claude CLI (Plan quota).
+    let result = try_claude(&prompt);
+    let (text, from_slm) = match result {
+        Ok(t) => (t, false),
+        Err(e) => {
+            eprintln!("[G-Master] claude unavailable ({e}); trying local SLM…");
+            match crate::slm::advise_offline(&prompt) {
+                Ok(t) => (t, true),
+                Err(e2) => return Err(format!("claude: {e}; SLM: {e2}")),
+            }
+        }
+    };
+
+    if let Ok(mut g) = LAST_CALL.lock() {
+        *g = Some(Instant::now());
+    }
+    if let Ok(mut g) = LAST_RESPONSE.lock() {
+        *g = Some(text.clone());
+    }
+    let _ = from_slm; // available for future telemetry
+    Ok(Advice { text, cached: false })
+}
+
+fn try_claude(prompt: &str) -> Result<String, String> {
     let mut cmd = Command::new("claude");
-    cmd.args(["-p", &prompt])
+    cmd.args(["-p", prompt])
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -102,7 +128,7 @@ pub fn advise(tick: &GameTick) -> Result<Advice, String> {
         cmd.creation_flags(0x0800_0000);
     }
     let out = cmd.output().map_err(|e| {
-        format!("เรียก claude CLI ไม่ได้: {e}. ติดตั้ง Claude Code CLI แล้วล็อกอินก่อน.")
+        format!("เรียก claude CLI ไม่ได้: {e}")
     })?;
     if !out.status.success() {
         let stderr = String::from_utf8_lossy(&out.stderr);
@@ -112,17 +138,7 @@ pub fn advise(tick: &GameTick) -> Result<Advice, String> {
     if text.is_empty() {
         return Err("claude คืนผลว่าง".into());
     }
-
-    if let Ok(mut g) = LAST_CALL.lock() {
-        *g = Some(Instant::now());
-    }
-    if let Ok(mut g) = LAST_RESPONSE.lock() {
-        *g = Some(text.clone());
-    }
-    Ok(Advice {
-        text,
-        cached: false,
-    })
+    Ok(text)
 }
 
 #[cfg(test)]

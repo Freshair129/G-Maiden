@@ -106,6 +106,127 @@ pub fn list_voices() -> Vec<Voice> {
         .collect()
 }
 
+// ─────── Piper local TTS (G4.4) ────────────────────────────────────────────
+// Piper is a fast, offline neural TTS engine: https://github.com/rhasspy/piper
+// We look for piper.exe next to the app binary or in PATH. If present AND a
+// model .onnx is found under models/piper/, we shell out and play via rodio.
+// This path is ~40-80 ms (vs SAPI's 150-200 ms) and fully offline.
+
+fn piper_bin() -> Option<std::path::PathBuf> {
+    // Prefer bundled binary next to exe.
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            let bundled = parent.join("piper").join("piper.exe");
+            if bundled.exists() {
+                return Some(bundled);
+            }
+            let alt = parent.join("piper.exe");
+            if alt.exists() {
+                return Some(alt);
+            }
+        }
+    }
+    // Fallback: piper in PATH (developer setup).
+    #[cfg(windows)]
+    {
+        if let Ok(out) = Command::new("where").arg("piper.exe").output() {
+            if out.status.success() {
+                let path = String::from_utf8_lossy(&out.stdout).trim().lines().next()
+                    .map(|s| std::path::PathBuf::from(s.trim()));
+                if let Some(p) = path { return Some(p); }
+            }
+        }
+    }
+    None
+}
+
+fn piper_model_dir() -> Option<std::path::PathBuf> {
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            let d = parent.join("models").join("piper");
+            if d.is_dir() { return Some(d); }
+            let d2 = parent.join("piper").join("models");
+            if d2.is_dir() { return Some(d2); }
+        }
+    }
+    // Dev fallback — models/piper/ at repo root (same lookup as minimap model).
+    let d = std::path::PathBuf::from("models/piper");
+    if d.is_dir() { return Some(d); }
+    None
+}
+
+fn find_piper_model(dir: &std::path::Path) -> Option<std::path::PathBuf> {
+    // Prefer Thai model first (th_TH-*), then any .onnx.
+    std::fs::read_dir(dir).ok()?.filter_map(|e| e.ok()).find_map(|e| {
+        let p = e.path();
+        if p.extension()?.to_ascii_lowercase() == "onnx" {
+            if p.file_name()?.to_string_lossy().starts_with("th_TH") {
+                return Some(p);
+            }
+        }
+        None
+    }).or_else(|| {
+        std::fs::read_dir(dir).ok()?.filter_map(|e| e.ok()).find_map(|e| {
+            let p = e.path();
+            if p.extension()?.to_ascii_lowercase() == "onnx" { Some(p) } else { None }
+        })
+    })
+}
+
+/// Try to speak `text` via Piper. Returns true if Piper was available and the
+/// synthesis succeeded. On false the caller falls back to SAPI.
+pub fn piper_speak(text: &str) -> bool {
+    use std::io::Write;
+    let Some(bin) = piper_bin() else { return false };
+    let Some(model_dir) = piper_model_dir() else { return false };
+    let Some(model) = find_piper_model(&model_dir) else { return false };
+
+    // Write output to a temp WAV file next to the model.
+    let tmp = std::env::temp_dir().join("gmaiden_piper_out.wav");
+    let mut cmd = Command::new(&bin);
+    cmd.args([
+        "--model",
+        model.to_str().unwrap_or_default(),
+        "--output_file",
+        tmp.to_str().unwrap_or_default(),
+    ])
+    .stdin(Stdio::piped())
+    .stdout(Stdio::null())
+    .stderr(Stdio::null());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000);
+    }
+    let mut child = match cmd.spawn() {
+        Ok(c) => c,
+        Err(e) => {
+            eprintln!("[G-Maiden Piper] spawn failed: {e}");
+            return false;
+        }
+    };
+    // Feed text via stdin; piper reads until EOF.
+    if let Some(mut stdin) = child.stdin.take() {
+        let _ = stdin.write_all(text.as_bytes());
+    }
+    match child.wait() {
+        Ok(s) if s.success() => {}
+        Ok(s) => {
+            eprintln!("[G-Maiden Piper] exit code {s}");
+            return false;
+        }
+        Err(e) => {
+            eprintln!("[G-Maiden Piper] wait failed: {e}");
+            return false;
+        }
+    }
+    // Play the generated WAV via rodio (in-process, no PowerShell startup cost).
+    crate::audio::play_file(tmp);
+    true
+}
+
+// ─────── SAPI (Windows) ─────────────────────────────────────────────────────
+
 /// Stop the current SAPI playback (if any). Used by Belief Revision to retract
 /// a warning mid-sentence. Idempotent: no-op when nothing is speaking.
 pub fn cancel() {
@@ -117,14 +238,22 @@ pub fn cancel() {
     }
 }
 
-/// Fire-and-forget: speak `text`, optionally using a specific installed voice
-/// and a speaking rate in SAPI units (-10..10, 0 = normal). Cancels any prior
-/// utterance first so Maiden's voice can never overlap itself.
+/// Fire-and-forget: speak `text`. Tries Piper local TTS first (faster,
+/// offline, no PowerShell startup); falls back to Windows SAPI on failure.
+/// Cancels any prior utterance first. `voice`/`rate` apply only to the SAPI
+/// path (Piper uses the bundled model's default voice).
 pub fn speak(text: &str, voice: Option<&str>, rate: Option<i32>) {
     if text.trim().is_empty() {
         return;
     }
+    // Cancel both SAPI and any in-flight rodio (Piper) clip.
     cancel();
+    crate::audio::cancel();
+    // Fast path: Piper neural TTS (~40-80 ms, no PowerShell cold-start).
+    if piper_speak(text) {
+        return;
+    }
+    // Fallback: SAPI via PowerShell.
     let b64 = base64(text.as_bytes());
     // SelectVoice() fails loudly if the voice is missing; wrap in try/catch so
     // we fall back to the system default instead of going silent.

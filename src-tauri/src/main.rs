@@ -7,7 +7,7 @@
 
 use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
-use tauri::Manager;
+use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 mod audio;
@@ -15,6 +15,7 @@ mod capture;
 mod counter_advice;
 mod cv;
 mod damage;
+mod governor;
 mod gsi;
 mod log;
 mod master;
@@ -23,6 +24,7 @@ mod runtime;
 mod sentry;
 mod signal;
 mod setup;
+mod slm;
 mod tts;
 
 /// Show/hide the OSD overlay window (called by the control GUI toggle).
@@ -101,11 +103,16 @@ fn open_voice_cache_dir() {
 
 /// Ask Maiden (via Claude Plan quota) for advice on the current game state.
 /// Runs on a blocking thread so the async runtime stays free.
+/// Also broadcasts `advice-update` to the overlay window so it can show the
+/// advice inline (G5.4) without the control panel being open.
 #[tauri::command]
-async fn request_advice(tick: gsi::GameTick) -> Result<master::Advice, String> {
-    tauri::async_runtime::spawn_blocking(move || master::advise(&tick))
+async fn request_advice(app: tauri::AppHandle, tick: gsi::GameTick) -> Result<master::Advice, String> {
+    let result = tauri::async_runtime::spawn_blocking(move || master::advise(&tick))
         .await
-        .map_err(|e| format!("internal: {e}"))?
+        .map_err(|e| format!("internal: {e}"))??;
+    // Broadcast to overlay — ignore error (overlay may be hidden).
+    let _ = app.emit("advice-update", &result);
+    Ok(result)
 }
 
 /// List SAPI voices installed on this machine so the UI can let the user pick.
@@ -224,6 +231,9 @@ fn main() {
             // P2.0: minimap capture → prefilter; emits `minimap-cv` debug events.
             // Read-only WGC; quietly no-ops if capture is unavailable.
             capture::start(app.handle().clone());
+
+            // G7.2: resource governor — poll RAM/CPU every 10s, emit resource-stats.
+            governor::start(app.handle().clone());
 
             app.global_shortcut().register(toggle)?;
 
