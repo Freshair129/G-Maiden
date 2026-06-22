@@ -139,7 +139,66 @@ CREATE TABLE tuning_state (key, value, updated_at);  -- params ที่ G-Log �
 
 ---
 
-## 7. Definition of Done (วัด constraint จริง)
+## 7. Orchestrator — Role-based Multi-Platform Agent Dispatch
+
+> ADR: [ADR-O-005](../orchestration/docs/ADR-O-005--provider-registry.md) ·
+> Spec: [SPEC--PROVIDER-REGISTRY](../orchestration/docs/SPEC--PROVIDER-REGISTRY.md) ·
+> Guide: [GUIDE--ADDING-PROVIDER](../orchestration/docs/GUIDE--ADDING-PROVIDER.md)
+
+G-Maiden ใช้ **G-Orch** orchestrator สำหรับจัดการ development agents (AI ที่เขียน code,
+review, และ plan). G-Orch dispatch task ผ่าน **role-based provider registry** —
+แยกชัดเจนระหว่าง "ต้องทำอะไร" (Role) กับ "ใครทำ" (Provider):
+
+```
+Task Type  →  Role  →  Provider (fallback chain + capability matching)
+```
+
+### 7.1 Roles (5 roles)
+
+| Role | requires | ใช้กับ | fallback chain |
+| --- | --- | --- | --- |
+| architect | `long_context` | spike, plan, architecture | claude:opus → openrouter → ollama |
+| coder | `file_edit` | code, test, integration | claude:sonnet → codex → antigravity → ollama |
+| worker | `text_gen` | scaffold, config, docs | claude:haiku → ollama → openrouter |
+| reviewer | `code_review` | Verify Gate | claude:opus → claude:sonnet |
+| scout | `text_gen` | research, draft | ollama → claude:haiku → openrouter |
+
+### 7.2 Providers (5 platforms)
+
+| Provider | Transport | Capabilities | Resilience |
+| --- | --- | --- | --- |
+| claude | subprocess (CLI) | file_edit, shell_exec, code_review, streaming, long_context | Primary |
+| ollama | HTTP (local) | text_gen | Offline-ready, $0 |
+| codex | subprocess (CLI) | file_edit, shell_exec, sandbox | OpenAI fallback |
+| openrouter | HTTP (API) | text_gen, streaming, vision, long_context | Multi-model gateway |
+| antigravity | subprocess | text_gen, file_edit | IDE agent |
+
+### 7.3 Capability tags
+
+`file_edit` · `shell_exec` · `code_review` · `text_gen` · `streaming` · `vision` · `long_context` · `sandbox`
+
+Role ประกาศ `requires`; Provider ประกาศ `capabilities`.
+`resolveForRole()` เดิน fallback chain → skip provider ที่ไม่ครบ capability → **first match wins**.
+
+### 7.4 SRS resilience compliance
+
+- Cloud provider ล่ม → coder role automatic fallback ไป codex → ollama
+- Reviewer ใช้ role-based resolution แทน hardcoded tier map (ADR-O-001)
+- Scout/worker เริ่มจาก ollama (local) → ทำงานได้ offline
+- เพิ่ม provider ใหม่โดยไม่แก้ engine core (แก้ 2 ไฟล์: config.json + providers.mjs)
+
+### 7.5 Prompt routing
+
+| กลุ่ม | Providers | Prompt style |
+| --- | --- | --- |
+| Full-agent | claude, codex, antigravity | ชี้ doc paths ให้ agent อ่านเอง |
+| Text-only | ollama, openrouter | Inline scaffold + small-model rules |
+
+**Implementation:** `orchestration/providers.mjs`, `orchestration/config.json`, `orchestration/engine.mjs`
+
+---
+
+## 8. Definition of Done (วัด constraint จริง)
 
 ทุกฟีเจอร์ต้องผ่าน gate ก่อนถือว่าเสร็จ:
 - [ ] G-Signal p99 end-to-end ≤300ms, p50 ≤250ms (วัดจาก `timestamp_ms`)
@@ -148,3 +207,6 @@ CREATE TABLE tuning_state (key, value, updated_at);  -- params ที่ G-Log �
 - [ ] FPS drop ≤3% (วัดเทียบ baseline เกมจริง)
 - [ ] cloud-loss test: ปิดเน็ต → G-Sentry/G-Signal ยังทำงานครบ
 - [ ] no-egress test: ตรวจว่าไม่มี request พา G-Log/สถิติออกนอกเครื่อง
+- [ ] orchestrator: `resolveForRole()` resolves ทั้ง 5 roles (parseModel → capability check → return)
+- [ ] orchestrator: cloud-loss → coder/scout fallback chain ลงถึง ollama
+- [ ] orchestrator: เพิ่ม provider ใหม่แก้ ≤2 ไฟล์ (config.json + providers.mjs)

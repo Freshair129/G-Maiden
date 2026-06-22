@@ -1,61 +1,116 @@
-version: "1.0"
-root_contract:
-  global_context:
+version: "2.0"
 
-executor_defaults:
-  default: 
+# G-Orch Agent Registry — role-based provider dispatch
+# Roles define WHAT needs to happen; providers define WHO does it.
+# Resolution: task.type → routing[type] → role → roles[role].preferred → first enabled & capable provider
 
-executors:
-  codex:
-    transport: 
-    allowed_modes:
+capabilities:
+  file_edit:     "Can modify files on disk"
+  shell_exec:    "Can run shell commands"
+  code_review:   "Structured review with verdict JSON"
+  text_gen:      "Pure text generation"
+  streaming:     "Streaming output support"
+  vision:        "Image/screenshot input"
+  long_context:  "32k+ context window"
+  sandbox:       "Sandboxed execution environment"
+
+providers:
+  claude:
+    transport: subprocess
+    capabilities: [file_edit, shell_exec, code_review, streaming, long_context]
+    tiers: [opus, sonnet, haiku]
+    auth: plan | apikey
+    notes: "Full agent — file edit, shell, review. Primary provider."
 
   ollama:
-    transport:
-    allowed_modes:
+    transport: http
+    capabilities: [text_gen]
+    auth: none (local)
+    notes: "Local inference, zero cost, offline-ready. Text gen only."
 
+  codex:
+    transport: subprocess
+    capabilities: [file_edit, shell_exec, sandbox]
+    auth: OPENAI_API_KEY
+    notes: "OpenAI Codex CLI. Sandboxed file edit + shell."
 
-local_sidecar:
-  enabled: true
-  allowed_modes:
+  openrouter:
+    transport: http
+    capabilities: [text_gen, streaming, vision, long_context]
+    auth: OPENROUTER_API_KEY
+    notes: "Unified API gateway. Routes to any model (Claude, GPT, Gemma, Llama, Mistral)."
 
-  model_tiers:
-    tiny: 
-    default: 
-    pro: 
-    retry: 
-  tier_constraints:
-    tiny: 
-    default: 
-    pro: 
-    retry:
-  max_files: 
-  max_chars_per_file: 
-  output_contract:
-    sections:
+  antigravity:
+    transport: subprocess
+    capabilities: [text_gen, file_edit]
+    auth: local session
+    notes: "Antigravity IDE agent. File edit + text gen."
+
+roles:
+  architect:
+    label: "Architect"
+    description: "Complex design, planning, spike analysis, architecture decisions"
+    requires: [long_context]
+    preferred:
+      - claude:opus
+      - openrouter:anthropic/claude-sonnet-4
+      - ollama:gemma4:latest
+    authority:
+      can: [create_files, modify_architecture, define_interfaces, write_adrs]
+      cannot: [deploy, modify_ci, delete_production_data]
+
+  coder:
+    label: "Coder"
+    description: "Implementation, testing, integration — needs file access"
+    requires: [file_edit]
+    preferred:
+      - claude:sonnet
+      - codex:o4-mini
+      - antigravity:default
+      - ollama:gemma4-rust-coder:latest
+    authority:
+      can: [create_files, modify_files, run_tests, run_build]
+      cannot: [modify_architecture, deploy, delete_production_data]
+
+  worker:
+    label: "Worker"
+    description: "Scaffolding, config files, documentation — light work"
+    requires: [text_gen]
+    preferred:
+      - claude:haiku
+      - ollama:gemma4:latest
+      - openrouter:google/gemma-3-27b
+    authority:
+      can: [create_files, modify_config, write_docs]
+      cannot: [modify_architecture, deploy]
+
+  reviewer:
+    label: "Reviewer"
+    description: "Independent verification of worker output (Verify Gate)"
+    requires: [code_review]
+    preferred:
+      - claude:opus
+      - claude:sonnet
+    authority:
+      can: [read_files, read_logs, produce_verdict]
+      cannot: [modify_files, deploy]
+
+  scout:
+    label: "Scout"
+    description: "Research, drafting, analysis — text generation focus"
+    requires: [text_gen]
+    preferred:
+      - ollama:gemma4:latest
+      - claude:haiku
+      - openrouter:google/gemma-3-27b
+    authority:
+      can: [read_files, search, produce_report]
+      cannot: [modify_files, deploy]
 
 knowledge_base:
-   master_block: ".govibe\.brain\masterblock"
+  master_block: ".govibe/.brain/masterblock"
 
-agents:
-  xxxxx:
-    label: 
-    role: 
-    domain: 
-    cluster: 
-    responsibility:
-    authority:
-      can:
-
-      cannot:
-
-    source_refs:
-
-    contract: 
-    execution_policy:
-      default_executor: 
-      allowed_executors:
-      default_mode: 
-      local_model_tier: 
-    default_context:
-    allowed_scopes:
+execution_policy:
+  default_context: POLA
+  context_scoping: "docs/CONCEPT--SUBAGENT-CONTEXT-SCOPING.md"
+  small_model_guide: "docs/GUIDE--SMALL-MODEL-PROMPTING.md"
