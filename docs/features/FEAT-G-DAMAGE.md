@@ -126,22 +126,23 @@ pub fn can_i_kill(attacker, attacker_level, target_current_hp,
 
 ## 8. รายการช่องโหว่ในโค้ดปัจจุบันที่ต้องอุด (จาก `damage.rs` v0.6.0)
 
-| # | ช่องโหว่ | บรรทัด | ผลกระทบ |
+| # | ช่องโหว่ | สถานะ | หมายเหตุ |
 | --- | --- | --- | --- |
-| 1 | `burst_damage` **ไม่นับไอเทมเลย** | `damage.rs:92` | Dagon/Aghs/แดเมจไอเทม หาย → คำนวณต่ำกว่าจริงมาก |
-| 2 | `estimate_ability_level` **เดา** เลเวลสกิล | `damage.rs:142` | ควรอ่านจาก GSI ฝั่งเราจริง |
-| 3 | ฮาร์ดโค้ด "ตี 2 ที" | `damage.rs:126` | ไม่ตรงกับ attack speed/ระยะจริง |
-| 4 | Hero DB มีแค่ 8 ฮีโร่ | `damage.rs:205` | ต้องครบ 124 (generate จาก dotaconstants) |
-| 5 | ยังไม่มีฝั่ง offensive | — | เพิ่ม `can_i_kill()` ใช้สูตรเดิมกลับทาง |
-| 6 | ยังไม่อ่าน current HP ศัตรู | `cv/` | เพิ่ม HP-bar detector |
+| 1 | `burst_damage` ไม่นับไอเทม | ✅ **P-D2a** | `burst_damage_with()` + item DB (Dagon/แดเมจไอเทม); Aghs ยังไม่ครอบ |
+| 2 | `estimate_ability_level` เดาเลเวลสกิล | ✅ **P-D2a** | รับ `ability_levels` จริงได้แล้ว, estimate เป็น fallback |
+| 3 | ฮาร์ดโค้ด "ตี 2 ที" | ⏳ P-D4 | ต้องมี attack-speed timing |
+| 4 | Hero DB มีแค่ 8 ฮีโร่ | ⏳ P-D3 | generate 124 จาก dotaconstants |
+| 5 | ฝั่ง offensive (`can_i_kill`) | ✅ **P-D1** | + confidence model |
+| 6 | อ่าน current HP ศัตรู | ⏳ P-D4 | HP-bar detector ใน `cv/` |
 
 ## 9. Implementation Plan (phased)
 
-- **P-D1 — Offensive core:** เพิ่ม `can_i_kill()` + `KillWindow` (สูตรเดิม กลับทาง, target = ศัตรู). ส่ง confidence แบบ static ไปก่อน. *Unit-testable ทันที ไม่ต้องรอ CV.*
-- **P-D2 — Item-aware damage:** ต่อท่อไอเทมฝั่งเรา (GSI) + ฝั่งศัตรู (G-Master) เข้า `burst_damage`. อุดช่องโหว่ #1–3.
-- **P-D3 — Full hero DB:** generate 124 ฮีโร่จาก dotaconstants แทน hardcode (#4).
-- **P-D4 — CV HP-bar:** เพิ่ม enemy HP-bar detector ใน `cv/` → current HP %. ยกระดับ confidence.
-- **P-D5 — Belief revision wiring:** ต่อ confidence → G-Signal interrupt + G-Log calibration loop.
+- ✅ **P-D1 — Offensive core:** `can_i_kill()` + `KillWindow` + `kill_confidence()` (23 tests). DONE `b7ed1c6`.
+- ✅ **P-D2a — Item/ability engine:** `burst_damage_with()` รับ items + ability levels จริง; item DB + `loadout_from_names()`. DONE.
+- ⏳ **P-D2b — GSI wiring:** พาร์ส `items`/`abilities` arrays ใน `gsi.rs` (ตอนนี้ดึงแค่ summary) → ป้อนเข้า `*_with()`; เกราะศัตรูจาก G-Master.
+- ⏳ **P-D3 — Full hero/item DB:** generate 124 ฮีโร่ + ไอเทมครบจาก dotaconstants แทน hardcode.
+- ⏳ **P-D4 — CV HP-bar + attack timing:** enemy HP-bar detector → current HP %; attack-speed → จำนวนตีจริง.
+- ⏳ **P-D5 — Belief revision wiring:** ต่อ confidence → G-Signal interrupt + G-Log calibration loop.
 
 ## 10. Goals / Non-Goals
 
