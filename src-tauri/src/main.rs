@@ -186,7 +186,7 @@ fn delete_all_match_logs() -> Result<u32, String> {
 fn main() {
     // Alt+S — show/hide the overlay while in-game (works even when Dota 2 is focused).
     let toggle = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
-    let toggle_for_handler = toggle.clone();
+    let toggle_for_handler = toggle;
 
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())

@@ -115,12 +115,12 @@ fn parse_dota_library(text: &str) -> Option<PathBuf> {
 }
 
 /// I/O wrapper: read libraryfolders.vdf from the Steam install and parse it.
-fn find_dota_library(steam: &PathBuf) -> Option<PathBuf> {
+fn find_dota_library(steam: &std::path::Path) -> Option<PathBuf> {
     let text = fs::read_to_string(steam.join("steamapps").join("libraryfolders.vdf")).ok()?;
     parse_dota_library(&text)
 }
 
-fn dota_cfg_dir(library: &PathBuf) -> PathBuf {
+fn dota_cfg_dir(library: &std::path::Path) -> PathBuf {
     library
         .join("steamapps")
         .join("common")

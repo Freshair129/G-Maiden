@@ -15,7 +15,7 @@
 //! - input  : NCHW `[1, 3, 32, 32]`, f32, **RGB**, normalized to [0,1] (÷255)
 //! - output : raw logits `[1, num_classes]`; softmax applied here
 //! - labels : `models/labels.json` = class names in output-index order; the
-//!            entry named `"__negative__"` is the background/reject class
+//!   entry named `"__negative__"` is the background/reject class
 //!
 //! If the model or labels are missing the detector loads in **candidate-only**
 //! mode (returns no detections) so the app still runs — the capture loop keeps

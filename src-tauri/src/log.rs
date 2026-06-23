@@ -209,7 +209,7 @@ pub fn list_matches() -> Vec<MatchLog> {
                 .collect()
         })
         .unwrap_or_default();
-    out.sort_by(|a, b| b.modified_ms.cmp(&a.modified_ms));
+    out.sort_by_key(|b| std::cmp::Reverse(b.modified_ms));
     out
 }
 

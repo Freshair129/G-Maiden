@@ -24,6 +24,7 @@ const POLL_INTERVAL_S: u64 = 10;
 /// drop half its ticks automatically.
 static CPU_THROTTLE: AtomicBool = AtomicBool::new(false);
 
+#[allow(dead_code)] // read by the capture loop once throttling is wired
 pub fn cpu_throttle() -> bool {
     CPU_THROTTLE.load(Ordering::Relaxed)
 }

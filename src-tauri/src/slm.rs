@@ -73,6 +73,7 @@ fn call_ollama(json_body: &str) -> Result<String, String> {
 }
 
 /// True if ollama appears to be running (lightweight HEAD check via curl).
+#[allow(dead_code)] // health-check helper, used once local-fallback UX is wired
 pub fn ollama_available() -> bool {
     let mut cmd = Command::new("curl");
     cmd.args(["-s", "--max-time", "2", "-o", "/dev/null", "-w", "%{http_code}", "http://127.0.0.1:11434/"]);

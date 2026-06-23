@@ -5,6 +5,11 @@
 //! resistance. When the player's current HP falls below the calculated
 //! lethal threshold, G-Signal fires a voice warning.
 
+// Complete, unit-tested damage model not yet wired into a Tauri command
+// (G-Signal integration pending) — its public API is unused in the binary build.
+// Allow dead_code until consumed; the test suite already exercises every path.
+#![allow(dead_code)]
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::OnceLock;

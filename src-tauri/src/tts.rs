@@ -27,7 +27,7 @@ pub struct Voice {
 
 fn base64(data: &[u8]) -> String {
     const T: &[u8] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
-    let mut out = String::with_capacity((data.len() + 2) / 3 * 4);
+    let mut out = String::with_capacity(data.len().div_ceil(3) * 4);
     for chunk in data.chunks(3) {
         let b0 = chunk[0];
         let b1 = if chunk.len() > 1 { chunk[1] } else { 0 };
@@ -163,16 +163,15 @@ fn find_piper_model(dir: &std::path::Path) -> Option<std::path::PathBuf> {
     // Prefer Thai model first (th_TH-*), then any .onnx.
     std::fs::read_dir(dir).ok()?.filter_map(|e| e.ok()).find_map(|e| {
         let p = e.path();
-        if p.extension()?.to_ascii_lowercase() == "onnx" {
-            if p.file_name()?.to_string_lossy().starts_with("th_TH") {
+        if p.extension()?.eq_ignore_ascii_case("onnx")
+            && p.file_name()?.to_string_lossy().starts_with("th_TH") {
                 return Some(p);
             }
-        }
         None
     }).or_else(|| {
         std::fs::read_dir(dir).ok()?.filter_map(|e| e.ok()).find_map(|e| {
             let p = e.path();
-            if p.extension()?.to_ascii_lowercase() == "onnx" { Some(p) } else { None }
+            if p.extension()?.eq_ignore_ascii_case("onnx") { Some(p) } else { None }
         })
     })
 }
@@ -349,7 +348,7 @@ mod tests {
         let bytes: Vec<u8> = (0..=255u8).cycle().take(513).collect();
         let s = base64(&bytes);
         // Output length must follow the ceil(n/3)*4 rule with proper padding.
-        let expected_len = (bytes.len() + 2) / 3 * 4;
+        let expected_len = bytes.len().div_ceil(3) * 4;
         assert_eq!(s.len(), expected_len);
         let pad = s.chars().rev().take_while(|c| *c == '=').count();
         assert!(pad <= 2);
