@@ -129,7 +129,11 @@ fn piper_bin() -> Option<std::path::PathBuf> {
     // Fallback: piper in PATH (developer setup).
     #[cfg(windows)]
     {
-        if let Ok(out) = Command::new("where").arg("piper.exe").output() {
+        use std::os::windows::process::CommandExt;
+        let mut cmd = Command::new("where");
+        cmd.arg("piper.exe");
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW — runs on every alert; must not flash
+        if let Ok(out) = cmd.output() {
             if out.status.success() {
                 let path = String::from_utf8_lossy(&out.stdout).trim().lines().next()
                     .map(|s| std::path::PathBuf::from(s.trim()));
