@@ -156,6 +156,45 @@ G-Maiden/
 
 ---
 
+## Release & Update Workflow
+
+The app ships to users through an **in-app updater** (Tauri updater plugin), and releases are
+produced **only by CI on a pushed version tag**. Understand both halves before touching versions.
+
+### How users get updates
+- The running app checks `plugins.updater.endpoints` in `tauri.conf.json` →
+  `https://github.com/Freshair129/G-Maiden/releases/latest/download/latest.json` on launch and via
+  the **"ตรวจหาอัปเดต"** button (`App.tsx`).
+- It compares the published `latest.json` version against the running app's version. If newer, it
+  downloads the signed installer, verifies it against the embedded **minisign pubkey**, installs,
+  and relaunches.
+- **A commit/push to `main` does NOT reach users.** Only a published GitHub Release does. The
+  updater is blind to untagged commits.
+
+### How a release is cut
+- `.github/workflows/release.yml` triggers on tags matching `v*`. It builds, **signs** (using
+  `TAURI_SIGNING_PRIVATE_KEY` from GitHub Secrets — the key is *not* on dev machines), and
+  publishes a GitHub Release with the NSIS/MSI installers, their `.sig` files, and `latest.json`.
+- Steps to release:
+  1. Bump the version in **3 places**: `src-tauri/tauri.conf.json`, `src/package.json`, and
+     `App.tsx` `APP_VERSION` (the first drives the updater; the last drives the UI display).
+  2. Add a `CHANGELOG` entry (in `App.tsx` and `CHANGELOG.md`).
+  3. `git commit` → `git push origin main` → `git tag -a vX.Y.Z -m "..."` → `git push origin vX.Y.Z`.
+  4. CI takes ~13 min. Verify the result: the new version is `Latest` and `latest.json` reports the
+     new version **with `signature` present**.
+- Local `pnpm tauri build` produces installers but **cannot sign** (no private key locally), so it
+  is for smoke-testing only — never the release path.
+
+### Batching policy (IMPORTANT — don't churn versions)
+- **Small fixes → commit to `main` WITHOUT tagging.** Accumulate them.
+- **Only bump the version + push a tag when the user asks to release**, or when a meaningful batch
+  has accumulated. Do not cut a release per fix — that ran 0.7.0→0.7.1→0.7.2 in minutes once and
+  burned version numbers needlessly.
+- If the user needs an unreleased fix tested in-game, build locally (`pnpm tauri build`) or ask
+  before cutting a release.
+
+---
+
 ## Current State (v0.6.0)
 
 ### What works

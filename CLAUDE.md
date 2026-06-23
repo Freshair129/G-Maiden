@@ -2,18 +2,20 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Status: specification stage
+## Status: implemented (v0.7.x), shipping via in-app updater
 
-This directory currently holds **only requirement documents** — there is no source code, build
-tooling, package manifest, or test suite yet. The two specs are the source of truth:
+The project is scaffolded and shipping — **Tauri v2 + React/Vite + Rust**. For the current
+implementation state, module status, repo layout, and coding rules see **AGENTS.md**. The two
+specs remain the source of truth for *requirements*:
 
 - `Product Requirement Document.md` (PRD) — vision, modules, persona, ADR-01 naming.
 - `Software Requirements Specification.md` (SRS) — functional + non-functional requirements,
   external interfaces, performance budgets. The SRS is the more detailed/authoritative of the two.
 
-Both are written in Thai. When implementing, treat the SRS numbers (latency, CPU, RAM) as hard
-constraints, not aspirations. Do not invent build/test commands — none exist until the stack is
-chosen and scaffolded.
+Both are written in Thai. Treat the SRS numbers (latency, CPU, RAM) as hard constraints, not
+aspirations. Build/test commands now exist: `cargo test` (from `src-tauri/`), `npx tsc --noEmit`
+(from `src/`), `pnpm tauri build` (from repo root). Releases go through the **Release & update
+workflow** below.
 
 
 ## What G-Maiden is
@@ -75,6 +77,30 @@ When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scal
 Premium-dark dashboard: background `#08090c`, frosted ice-aluminium panels
 `rgba(18, 20, 28, 0.72)`, glassmorphism overlay in Maiden's ice palette. Modular control panels;
 global hotkeys (e.g. `Alt+M` → instant situation summary).
+
+## Release & update workflow
+
+Users receive updates through an **in-app updater** (Tauri updater plugin), and releases are cut
+**only by CI on a pushed version tag** — never by a plain push to `main`.
+
+- **In-app update:** the app checks `https://github.com/Freshair129/G-Maiden/releases/latest/download/latest.json`
+  (set in `tauri.conf.json` → `plugins.updater`) on launch and via the **"ตรวจหาอัปเดต"** button.
+  If a newer version is published, it downloads the signed installer, verifies the **minisign**
+  signature, installs, and relaunches.
+- **Cutting a release:** push a tag `vX.Y.Z` → `.github/workflows/release.yml` builds, signs (key
+  from GitHub Secrets, *not* local), and publishes the GitHub Release + `latest.json`. Steps: bump
+  version in `src-tauri/tauri.conf.json` + `src/package.json` + `App.tsx` `APP_VERSION`, add a
+  CHANGELOG entry, commit, then `git tag -a vX.Y.Z && git push origin vX.Y.Z`. CI ≈ 13 min.
+- **A commit on `main` does NOT reach users** until a tag is pushed. Local `pnpm tauri build` can't
+  sign — it's for smoke-testing only.
+
+### Batching policy (avoid version churn)
+
+- **Small fixes → commit to `main` WITHOUT tagging.** Accumulate them into a batch.
+- **Only bump the version + push a tag when the user asks to release** (or a meaningful batch is
+  ready). Do not cut a release per fix — releasing every small fix runs the version number up
+  needlessly ("เวอร์ชันวิ่งทะลุโลก"). If an unreleased fix needs in-game testing, build locally or
+  ask before releasing.
 
 ## repo https://github.com/Freshair129/G-Maiden.git
 deploy to web by vercel cli
