@@ -1,0 +1,11 @@
+{
+  "name": "hybrid-meter",
+  "version": "0.1.0",
+  "description": "Live cost meter for hybrid frontier-plan + local-SLM-execute agent runs — see what stayed on-device and what you saved.",
+  "type": "module",
+  "bin": { "hybrid-meter": "./cli.mjs" },
+  "files": ["cli.mjs", "sample-usage.jsonl", "README.md"],
+  "engines": { "node": ">=18" },
+  "keywords": ["llm", "agents", "cost", "local-llm", "ollama", "hybrid"],
+  "license": "MIT"
+}
