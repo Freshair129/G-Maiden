@@ -1,15 +1,15 @@
-# CLAUDE.md
+﻿# CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
 ## Status: implemented (v0.7.x), shipping via in-app updater
 
-The project is scaffolded and shipping — **Tauri v2 + React/Vite + Rust**. For the current
+The project is scaffolded and shipping â€” **Tauri v2 + React/Vite + Rust**. For the current
 implementation state, module status, repo layout, and coding rules see **AGENTS.md**. The two
 specs remain the source of truth for *requirements*:
 
-- `Product Requirement Document.md` (PRD) — vision, modules, persona, ADR-01 naming.
-- `Software Requirements Specification.md` (SRS) — functional + non-functional requirements,
+- `docs/product/product-requirements.md` (PRD) â€” vision, modules, persona, ADR-01 naming.
+- `docs/product/software-requirements-specification.md` (SRS) â€” functional + non-functional requirements,
   external interfaces, performance budgets. The SRS is the more detailed/authoritative of the two.
 
 Both are written in Thai. Treat the SRS numbers (latency, CPU, RAM) as hard constraints, not
@@ -29,39 +29,39 @@ latency budget without disrupting the player's focus.
 
 Hybrid **client-server**, split by latency requirement:
 
-1. **Local Gateway (G-Sensory tier)** — receives raw GSI data, processes the minimap, and emits
+1. **Local Gateway (G-Sensory tier)** â€” receives raw GSI data, processes the minimap, and emits
    ultra-low-latency voice alerts. Critical-path work (gank warnings) runs here so it survives
    cloud disconnection by falling back to a **local SLM**.
-2. **Cloud Brain (Maiden Scribe)** — drives live-caster persona, narrative continuity, and deep
+2. **Cloud Brain (Maiden Scribe)** â€” drives live-caster persona, narrative continuity, and deep
    analysis via a **cloud LLM (Gemini)**. Non-critical; degrades gracefully when offline.
 
 ### The G-Series modules (ADR-01: every module is prefixed `G-`)
 
 | Module | Responsibility |
 | --- | --- |
-| **G-Sentry** | Fog-of-war monitor — polls GSI every 500ms; flags enemies missing from vision >5s |
-| **G-Motion** | Heatmap/path prediction — keeps 5 min of last-seen enemy positions, predicts gank routes |
-| **G-Signal** | Real-time gank warning — **voice interrupt** when danger threshold >85%; the hard-latency path |
-| **G-Master** | Strategic/financial advisor — skill/item build advice vs. enemy Net Worth & items |
+| **G-Sentry** | Fog-of-war monitor â€” polls GSI every 500ms; flags enemies missing from vision >5s |
+| **G-Motion** | Heatmap/path prediction â€” keeps 5 min of last-seen enemy positions, predicts gank routes |
+| **G-Signal** | Real-time gank warning â€” **voice interrupt** when danger threshold >85%; the hard-latency path |
+| **G-Master** | Strategic/financial advisor â€” skill/item build advice vs. enemy Net Worth & items |
 | **G-Sensory** | Overlay rendering + hardware optimization (glassmorphism HUD, FPS/resource budget) |
-| **G-Log** | Feedback loop — logs decisions/outcomes locally to tune prediction params next match |
+| **G-Log** | Feedback loop â€” logs decisions/outcomes locally to tune prediction params next match |
 
 When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scalability unity.
 
-### Hard constraints (non-functional — enforce these)
+### Hard constraints (non-functional â€” enforce these)
 
 - **G-Signal end-to-end latency: target 250ms, never exceed 300ms.**
-- Background CPU usage ≤ **2.5%** on a mid-range chipset; RAM ≤ **400MB** with all modules active.
+- Background CPU usage â‰¤ **2.5%** on a mid-range chipset; RAM â‰¤ **400MB** with all modules active.
 - Overlay must not drop Dota 2 FPS by more than **3%**, and must not obscure minimap, skill bar,
   or stats panels.
-- **Privacy-first:** G-Log raw data and player stats stay **local only** — never upload them.
+- **Privacy-first:** G-Log raw data and player stats stay **local only** â€” never upload them.
 - **Resilience:** on cloud/network loss, G-Sentry and G-Signal must keep running on the local SLM.
 
 ### Key external interfaces
 
-- **Dota 2 GSI** → local HTTP POST on **port 3000**, JSON payloads from the player's own machine.
-- **Cloud cognitive engine** → Gemini streaming API.
-- **TTS module** → text-to-speech tuned for a live-caster vocal style.
+- **Dota 2 GSI** â†’ local HTTP POST on **port 3000**, JSON payloads from the player's own machine.
+- **Cloud cognitive engine** â†’ Gemini streaming API.
+- **TTS module** â†’ text-to-speech tuned for a live-caster vocal style.
 
 ## Persona rules (product-critical, not flavor)
 
@@ -69,38 +69,39 @@ When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scal
 - **Gentle + intelligent**, statistically credible advice.
 - **Meme-aware self-deprecation** about the perennial "Nerf CM" movement-speed nerfs.
 - **Belief Revision:** when a prediction is wrong, Maiden audibly catches itself and changes advice
-  mid-sentence ("เอ๊ะ! เดี๋ยวก่อน!") — this mid-stream correction is a required behavior of
+  mid-sentence ("à¹€à¸­à¹Šà¸°! à¹€à¸”à¸µà¹‹à¸¢à¸§à¸à¹ˆà¸­à¸™!") â€” this mid-stream correction is a required behavior of
   G-Signal, not optional polish.
 
 ## Visual language
 
 Premium-dark dashboard: background `#08090c`, frosted ice-aluminium panels
 `rgba(18, 20, 28, 0.72)`, glassmorphism overlay in Maiden's ice palette. Modular control panels;
-global hotkeys (e.g. `Alt+M` → instant situation summary).
+global hotkeys (e.g. `Alt+M` â†’ instant situation summary).
 
 ## Release & update workflow
 
 Users receive updates through an **in-app updater** (Tauri updater plugin), and releases are cut
-**only by CI on a pushed version tag** — never by a plain push to `main`.
+**only by CI on a pushed version tag** â€” never by a plain push to `main`.
 
 - **In-app update:** the app checks `https://github.com/Freshair129/G-Maiden/releases/latest/download/latest.json`
-  (set in `tauri.conf.json` → `plugins.updater`) on launch and via the **"ตรวจหาอัปเดต"** button.
+  (set in `tauri.conf.json` â†’ `plugins.updater`) on launch and via the **"à¸•à¸£à¸§à¸ˆà¸«à¸²à¸­à¸±à¸›à¹€à¸”à¸•"** button.
   If a newer version is published, it downloads the signed installer, verifies the **minisign**
   signature, installs, and relaunches.
-- **Cutting a release:** push a tag `vX.Y.Z` → `.github/workflows/release.yml` builds, signs (key
+- **Cutting a release:** push a tag `vX.Y.Z` â†’ `.github/workflows/release.yml` builds, signs (key
   from GitHub Secrets, *not* local), and publishes the GitHub Release + `latest.json`. Steps: bump
   version in `src-tauri/tauri.conf.json` + `src/package.json` + `App.tsx` `APP_VERSION`, add a
-  CHANGELOG entry, commit, then `git tag -a vX.Y.Z && git push origin vX.Y.Z`. CI ≈ 13 min.
+  CHANGELOG entry, commit, then `git tag -a vX.Y.Z && git push origin vX.Y.Z`. CI â‰ˆ 13 min.
 - **A commit on `main` does NOT reach users** until a tag is pushed. Local `pnpm tauri build` can't
-  sign — it's for smoke-testing only.
+  sign â€” it's for smoke-testing only.
 
 ### Batching policy (avoid version churn)
 
-- **Small fixes → commit to `main` WITHOUT tagging.** Accumulate them into a batch.
+- **Small fixes â†’ commit to `main` WITHOUT tagging.** Accumulate them into a batch.
 - **Only bump the version + push a tag when the user asks to release** (or a meaningful batch is
-  ready). Do not cut a release per fix — releasing every small fix runs the version number up
-  needlessly ("เวอร์ชันวิ่งทะลุโลก"). If an unreleased fix needs in-game testing, build locally or
+  ready). Do not cut a release per fix â€” releasing every small fix runs the version number up
+  needlessly ("à¹€à¸§à¸­à¸£à¹Œà¸Šà¸±à¸™à¸§à¸´à¹ˆà¸‡à¸—à¸°à¸¥à¸¸à¹‚à¸¥à¸"). If an unreleased fix needs in-game testing, build locally or
   ask before releasing.
 
 ## repo https://github.com/Freshair129/G-Maiden.git
 deploy to web by vercel cli
+

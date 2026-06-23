@@ -218,7 +218,7 @@
 | Background CPU | ≤2.5% (mid-range) | SRS §5.1 |
 | RAM | ≤400MB (all modules active, SLM unloaded) | SRS §5.1 |
 | FPS impact | ≤3% Dota 2 FPS drop | SRS §3.5 |
-| Privacy | G-Log + G-Memory + player stats local-only, no egress | SRS §5.2 |
+| Privacy | local-only **by default**; non-opted-in data = zero egress; opt-in sharing per ADR-11 | SRS §5.2 |
 | Resilience | G-Sentry + G-Signal work without cloud; G-Voice degrades gracefully | SRS §5.2 |
 | Persona | Gentle + intelligent + Nerf CM humor + Belief Revision; G-Persona presets never override these | PRD §2–3, SRS §3.11 |
 | G-Voice interrupt | G-Signal always preempts G-Voice response | SRS §3.7 |
@@ -233,7 +233,10 @@
 | ADR-03 | Critical path = Rust only (no cloud/webview) | Latency + resilience |
 | ADR-04 | G-Signal audio = cache + slot-splicing (no live synth) | Latency budget |
 | ADR-05 | Enemy positions from minimap CV (GSI doesn't provide) | Functional necessity |
-| ADR-06 | G-Log + G-Memory = local-only, no network egress | Privacy-first |
+| ADR-06 | G-Log + G-Memory = local-only by default; **opt-in sharing** allowed (amended by ADR-11) | Privacy-first |
 | ADR-07 | SLM lazy-load on fallback only | RAM budget |
 | ADR-08 | G-Voice = Push-to-Talk only (no always-on mic) | Privacy + CPU budget |
 | ADR-09 | G-Mind router never touches G-Signal critical path | Latency guarantee |
+| ADR-10 | Hybrid ingestion: GSI + CV own-state fallback + replay priors | Resilience vs GSI block · *Accepted* (`docs/ADR-10-*`) |
+| ADR-11 | Opt-in data contribution + match_id flywheel (amends ADR-06) | Data moat without breaking privacy · *Accepted* (`docs/ADR-11-*`) |
+| ADR-12 | Community AI marketplace (trainable + seasonal top-rank payout) | Network-effect moat + engagement · *Accepted, post-v1.0* (`docs/ADR-12-*`) |

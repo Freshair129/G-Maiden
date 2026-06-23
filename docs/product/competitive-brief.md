@@ -189,6 +189,7 @@
 | **Item/build + counter-item** | **Parity ก็พอ** | คู่แข่งแข็งหมด อย่าไปสู้ตรง ๆ ทำให้ "ดีพอ" แล้วโยงกลับ voice |
 | **Draft / hero-pick suggestion** | **ดีเลย์/พิจารณาทีหลัง** | Valve + DotaPlus ครองตลาด ROI ต่ำในช่วงแรก |
 | **Post-game analytics** | **อย่าทำตอนนี้** | Stratz/OpenDota/Dotabuff ครองขาด เผาทรัพยากรเปล่า |
+| **Report-detection / "ล่าคนรีพอร์ต"** | 🚫 **DO-NOT-BUILD** | คอมมูนิตี้ปฏิเสธ (โพสต์ 0 upvotes), "เละที่ SEA server" = ตลาด beachhead เรา, ขัด persona Maiden, Valve จงใจเอา notif นี้ออก (Valve-intent risk). เวอร์ชันที่เข้าแบรนด์ = tilt-coach เชิงบวก ไม่ใช่ล่าคนรีพอร์ต |
 
 ### สิ่งที่ควรทำทันที (ลำดับความสำคัญ)
 1. **พิสูจน์ G-Signal ก่อนอย่างอื่น** — latency ≤300ms + false-positive ต่ำ คือเงื่อนไขแพ้/ชนะ ถ้าทำไม่ได้ จุดต่างหายหมด
@@ -201,6 +202,7 @@
 - การเปลี่ยน **นโยบาย GSI/overlay ของ Valve** (ความเสี่ยงเชิงโครงสร้างต่อทั้งตลาด)
 - ราคา/ฟีเจอร์ใหม่ของ **Dota Coach & DotaPlus** บน Overwolf
 - มี startup ใหม่เข้ามุม voice/real-time หรือไม่ (มุมนี้ว่างอยู่ แต่จะไม่ว่างตลอด)
+- **Overwolf DotaPlus ขยายเข้าสาย social/account** — เม.ย. 2026 ออกฟีเจอร์ "Report Detection" (บอกว่าใครรีพอร์ตคุณ + เทียบ performance ของผู้รีพอร์ต) คอมมูนิตี้ตอบรับลบ/มองว่า toxic → สัญญาณว่า Overwolf เพิ่มฟีเจอร์ถี่ขึ้นและขยายขอบเขต (คนละแกน wedge เรา แต่ควรจับตา) · ระวังชื่อชน "OverPlus" (soft-cheat คนละตัว)
 
 ---
 
@@ -243,6 +245,7 @@
 - [Dota Plus (official) — Valve](https://www.dota2.com/plus) · [The Ultimate Dota Plus Guide — Hawk Live](https://hawk.live/posts/dota-2-plus-guide)
 - [Dota Plus 2025 Price & Benefits](https://pickem-mongolia.com/news/dota-plus-guide/)
 - [Dotabod (streamer overlay)](https://dotabod.com/)
+- [r/DotA2 — Overwolf DotaPlus "Report Detection" thread](https://www.reddit.com/r/DotA2/comments/1t64gas/) (คอมมูนิตี้ตอบรับลบ; อ้างอิงเนื้อหา thread โดยตรง)
 - [GOSU.AI — Tracxn company profile](https://tracxn.com/d/companies/gosuai/__c7ozBd72rN2o8xJLqRICFj4iFFOseXz0_pwjb6qU9zA) · [GOSU.AI FAQ — Dota2Freaks](https://dota2freaks.com/gosu-ai/)
 
 > *บรีฟอิงข้อมูลตลาดที่เปิดเผย ณ 2026-06-22; ค่าของ G-Maiden เป็นเป้าหมายตาม SRS/PRD (ยังไม่ผ่าน production). ตลาด overlay เปลี่ยนเร็ว — รีเฟรชทุก ~1 ไตรมาส*

@@ -1,9 +1,9 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 """Synthetic training-data generator for the G-Maiden minimap hero-detector (P2.1).
 
 WHY THIS EXISTS
 ---------------
-Spike S-1 (docs/SPIKE--S-1-MINIMAP-CV.md) proved the minimap CV hot-loop passes
+Spike S-1 (docs/architecture/spikes/S-1-minimap-cv.md) proved the minimap CV hot-loop passes
 the latency (<=80 ms) and CPU (<=2.5%) gates, but template-matching NCC only hit
 ~10% identity accuracy on degraded icons. That refutes NCC as the detector and
 motivates a small ONNX classifier (Phase 2, P2.x). To train that classifier we
@@ -17,7 +17,7 @@ will actually feed the model at runtime (cropped candidate patches from
 DOMAIN-GAP STRATEGY (important for P2.2)
 ----------------------------------------
 Synthetic data is never identical to real frames. We deliberately reserve REAL
-Dota 2 footage for VALIDATION ONLY — never for training — so the held-out metric
+Dota 2 footage for VALIDATION ONLY â€” never for training â€” so the held-out metric
 honestly measures the synthetic->real gap. If real-footage validation accuracy is
 poor, P2.2 closes the gap with: (a) real icon PNGs via --icons-dir, (b) real
 background crops via --backgrounds-dir, (c) heavier augmentation here. The
@@ -31,7 +31,7 @@ DEGRADATION CONSTANTS (must match spikes/s1-minimap-cv/src/main.rs render_frame)
   additive noise     : per-channel gaussian sigma = 0.035 on 0..1, then clamp
   partial occlusion  : 18% probability, hide the right half of the icon
   distractors        : creep/ward blips 2-3 px, team-colored (negative class)
-  team ring color    : (0.86, 0.16, 0.16) — Dire-red enemy ring (matches cv/ + spike)
+  team ring color    : (0.86, 0.16, 0.16) â€” Dire-red enemy ring (matches cv/ + spike)
 
 Deps: numpy + Pillow only. Deterministic given --seed.
 """
@@ -48,7 +48,7 @@ import numpy as np
 from PIL import Image
 
 # ---------------------------------------------------------------------------
-# Constants copied from the spike (do not "improve" these — they define the
+# Constants copied from the spike (do not "improve" these â€” they define the
 # training distribution that must match the runtime degradation profile).
 # ---------------------------------------------------------------------------
 TEAM_RING = (0.86, 0.16, 0.16)  # Dire-red enemy ring, normalized RGB (== cv/mod TEAM_RING)
@@ -72,7 +72,7 @@ NEG_LABEL = "__negative__"
 
 
 # ---------------------------------------------------------------------------
-# Synthetic icon fallback — exact port of the spike's build_templates().
+# Synthetic icon fallback â€” exact port of the spike's build_templates().
 # ---------------------------------------------------------------------------
 def _hsv(h: float, s: float, v: float) -> tuple[float, float, float]:
     """HSV->RGB, matching the spike's hsv() so synthetic hues line up."""
@@ -154,7 +154,7 @@ def load_real_icons(icons_dir: Path) -> list[tuple[str, np.ndarray]]:
 
 
 # ---------------------------------------------------------------------------
-# Backgrounds — load real crops, else synthesize procedurally (spike step 1).
+# Backgrounds â€” load real crops, else synthesize procedurally (spike step 1).
 # ---------------------------------------------------------------------------
 def load_real_backgrounds(bg_dir: Path) -> list[np.ndarray]:
     """Load real minimap background crops as RGB float (0..1). [] if absent."""
@@ -207,7 +207,7 @@ def random_bg_patch(rng: np.random.Generator, bgs: list[np.ndarray], size: int) 
 
 
 # ---------------------------------------------------------------------------
-# Compositing + degradation — the heart of the matcher, ported from the spike.
+# Compositing + degradation â€” the heart of the matcher, ported from the spike.
 # ---------------------------------------------------------------------------
 def composite_icon(
     rng: np.random.Generator, bg: np.ndarray, icon_rgba: np.ndarray, patch_size: int
@@ -266,7 +266,7 @@ def make_negative(rng: np.random.Generator, bgs: list[np.ndarray], patch_size: i
 
     Distractors mirror the spike's creep/ward blips (2-3 px, team-colored dots):
     red [0.7,0.18,0.18] or green [0.2,0.7,0.3]. These teach the classifier that a
-    small colored dot is NOT a hero — exactly the false positives the color-ring
+    small colored dot is NOT a hero â€” exactly the false positives the color-ring
     prefilter would otherwise pass to the detector.
     """
     out = random_bg_patch(rng, bgs, patch_size)
@@ -310,7 +310,7 @@ def generate(args: argparse.Namespace) -> dict:
         print(
             "WARNING: no real icons found (--icons-dir empty/missing). Falling back\n"
             "         to SYNTHETIC hero icons (spike build_templates). This is LOWER\n"
-            "         FIDELITY — real Dota 2 minimap icons are strongly recommended for\n"
+            "         FIDELITY â€” real Dota 2 minimap icons are strongly recommended for\n"
             "         training; see README.md for the canonical source.",
             file=sys.stderr,
         )
@@ -434,3 +434,4 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+

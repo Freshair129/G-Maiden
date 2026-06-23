@@ -53,6 +53,8 @@
 
 ## 5. Visual Design
 
+Canonical UI/UX contract: `docs/architecture/design-system.md`.
+
 ```
 ┌─────────────────────────────────────────────────────┐
 │                    Dota 2 Game                       │
@@ -109,3 +111,4 @@
 - [ ] `Alt+M` hotkey triggers situation summary
 - [ ] governor auto-throttle เมื่อ resource เกิน budget
 - [ ] glassmorphism visual ตรง design spec
+- [ ] Control Dashboard และ Overlay ใช้ token/component contract จาก `docs/architecture/design-system.md`
