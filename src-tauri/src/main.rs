@@ -20,6 +20,7 @@ mod gsi;
 mod log;
 mod master;
 mod motion;
+mod respawn;
 mod runtime;
 mod sentry;
 mod signal;
