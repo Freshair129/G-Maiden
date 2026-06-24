@@ -1,0 +1,193 @@
+{
+  "$schema": "./docs/architecture/modules.schema.json",
+  "_comment": "Version manifest — maps the G-Maiden app release to the logical version of each G-module. Hand-maintained lightweight SBOM. Bump a module's `ver` (SemVer) when its behavior changes; record app↔module mapping per release in `history`. See docs/architecture/versioning-policy.md.",
+  "app": "0.7.2",
+  "generated": "2026-06-24",
+  "versioning": {
+    "scheme": "semver-2.0",
+    "prerelease": "use hyphen form e.g. 0.8.0-beta.1 (NOT 0.8.0b)",
+    "rollback": "roll forward — revert commits, ship higher app version; flag bad release as pre-release on GitHub"
+  },
+  "modules": {
+    "g-sensory": {
+      "ver": "1.0.0",
+      "status": "done",
+      "tier": "core",
+      "phase": "0-1,7",
+      "responsibility": "Overlay rendering + hardware/resource budget (glassmorphism HUD)",
+      "source": ["src-tauri/src/capture.rs", "src-tauri/src/governor.rs", "src/src/overlay"],
+      "gates": ["FPS<=3%", "CPU<=2.5%", "RAM<=400MB"],
+      "ai": null,
+      "doc": "docs/features/FEAT-G-SENSORY.md"
+    },
+    "g-sentry": {
+      "ver": "1.0.0",
+      "status": "done",
+      "tier": "core",
+      "phase": "2",
+      "responsibility": "Fog-of-war monitor — polls GSI/CV every 500ms; flags enemies missing >5s",
+      "source": ["src-tauri/src/sentry.rs", "src-tauri/src/cv"],
+      "gates": ["CPU<=2.5%"],
+      "ai": null,
+      "doc": "docs/features/FEAT-G-SENTRY.md"
+    },
+    "g-signal": {
+      "ver": "1.0.0",
+      "status": "done",
+      "tier": "core",
+      "phase": "3",
+      "responsibility": "Real-time gank warning — voice interrupt at >85% danger; hysteresis clear <50%; Belief Revision",
+      "source": ["src-tauri/src/signal.rs", "src-tauri/src/audio.rs"],
+      "gates": ["p99<=300ms", "belief-revision-immutable"],
+      "ai": { "model": "local-templates+slm-fallback", "model_ver": "v1", "in_hot_path": false },
+      "doc": "docs/features/FEAT-G-SIGNAL.md"
+    },
+    "g-motion": {
+      "ver": "0.9.0",
+      "status": "done",
+      "tier": "core",
+      "phase": "3",
+      "responsibility": "Heatmap & path prediction — 5-min ring buffer of last-seen positions, gank route prediction",
+      "source": ["src-tauri/src/motion.rs"],
+      "gates": [],
+      "ai": { "model": "heuristic-prediction", "model_ver": "v0", "in_hot_path": false },
+      "note": "Prediction params still tuning; OpenDota lane_pos priors + .dem trajectory training pending (see research/competitor-brightgir-opendota-analysis.md)",
+      "doc": "docs/features/FEAT-G-MOTION.md"
+    },
+    "g-log": {
+      "ver": "0.8.0",
+      "status": "done",
+      "tier": "core",
+      "phase": "6",
+      "responsibility": "Feedback loop — local-only match logging (JSONL)",
+      "source": ["src-tauri/src/log.rs"],
+      "gates": ["no-egress"],
+      "ai": null,
+      "note": "JSONL now; SQLite + probability calibration planned phase 6 (v0.9)",
+      "doc": "docs/features/FEAT-G-LOG.md"
+    },
+    "g-master": {
+      "ver": "0.4.0",
+      "status": "basic",
+      "tier": "core",
+      "phase": "5",
+      "responsibility": "Strategic/financial advisor — skill/item build advice vs enemy net worth & items",
+      "source": ["src-tauri/src/master.rs", "src-tauri/src/counter_advice.rs"],
+      "gates": [],
+      "ai": { "model": "claude-cli", "model_ver": "current", "prompt_ver": "p-master-v1", "kb": null, "in_hot_path": false },
+      "note": "Currently Claude CLI w/ 30s throttle; Gemini integration planned (v0.7, phase 4). RAG pipeline pending — borrow 3-stage pattern from BrightGir.",
+      "doc": "docs/features/FEAT-G-MASTER.md"
+    },
+    "g-damage": {
+      "ver": "0.3.0",
+      "status": "new",
+      "tier": "core",
+      "phase": "5",
+      "responsibility": "Burst damage calculator — hero DB + armor/magic resistance formulas",
+      "source": ["src-tauri/src/damage.rs"],
+      "gates": [],
+      "ai": null,
+      "note": "8-hero database; actively expanding (3 feat commits). Hero attribute grid ref captured in research/assets/dota2-hud-reference.",
+      "doc": "docs/features/FEAT-G-DAMAGE.md"
+    },
+    "g-voice": {
+      "ver": "0.5.0",
+      "status": "partial",
+      "tier": "companion",
+      "priority": "P0",
+      "phase": "4",
+      "responsibility": "Two-way voice — TTS output (done) + STT voice input (pending)",
+      "source": ["src-tauri/src/tts.rs"],
+      "gates": [],
+      "ai": { "model": "piper-local-neural-tts", "model_ver": "th-v1", "in_hot_path": false },
+      "note": "TTS output side done (Piper Thai voice, phase 3/v0.6). Voice-input/STT half not started.",
+      "doc": "docs/features/FEAT-G-VOICE.md"
+    },
+    "g-mind": {
+      "ver": "0.3.0",
+      "status": "partial",
+      "tier": "companion",
+      "priority": "P1",
+      "phase": "4",
+      "responsibility": "Cognitive router — routes requests Cloud/SLM/Template by latency & availability",
+      "source": ["src-tauri/src/runtime.rs", "src-tauri/src/slm.rs"],
+      "gates": [],
+      "ai": { "model": "router", "model_ver": "v0", "in_hot_path": false },
+      "note": "Routing scaffolding emerging in runtime.rs/slm.rs; full brain router pending.",
+      "doc": "docs/features/FEAT-G-MIND.md"
+    },
+    "g-memory": {
+      "ver": "0.1.0",
+      "status": "spec",
+      "tier": "companion",
+      "priority": "P0",
+      "phase": "6",
+      "responsibility": "Persistent memory — cross-match player/opponent memory (local only)",
+      "source": [],
+      "gates": ["no-egress"],
+      "ai": null,
+      "doc": "docs/features/FEAT-G-MEMORY.md"
+    },
+    "g-coach": {
+      "ver": "0.1.0",
+      "status": "spec",
+      "tier": "companion",
+      "priority": "P1",
+      "phase": "6-7",
+      "responsibility": "Post-match review — analyse decisions/outcomes after the game",
+      "source": [],
+      "gates": [],
+      "ai": null,
+      "doc": "docs/features/FEAT-G-COACH.md"
+    },
+    "g-score": {
+      "ver": "0.1.0",
+      "status": "spec",
+      "tier": "companion",
+      "phase": "tbd",
+      "responsibility": "Performance scoring (new spec — untracked)",
+      "source": [],
+      "gates": [],
+      "ai": null,
+      "doc": "docs/features/FEAT-G-SCORE.md"
+    },
+    "g-persona": {
+      "ver": "0.1.0",
+      "status": "spec",
+      "tier": "companion",
+      "priority": "P2",
+      "phase": "7-8",
+      "responsibility": "Tone presets — persona filter (immutable Maiden core + selectable tone)",
+      "source": [],
+      "gates": ["persona-consistency"],
+      "ai": null,
+      "doc": "docs/features/FEAT-G-PERSONA.md"
+    },
+    "g-stream": {
+      "ver": "0.1.0",
+      "status": "spec",
+      "tier": "companion",
+      "priority": "P2",
+      "phase": "8",
+      "responsibility": "Streamer co-host — redact sensitive info, co-host mode",
+      "source": [],
+      "gates": [],
+      "ai": null,
+      "doc": "docs/features/FEAT-G-STREAM.md"
+    }
+  },
+  "history": [
+    {
+      "app": "0.7.2",
+      "date": "2026-06-24",
+      "modules": {
+        "g-sensory": "1.0.0", "g-sentry": "1.0.0", "g-signal": "1.0.0",
+        "g-motion": "0.9.0", "g-log": "0.8.0", "g-master": "0.4.0",
+        "g-damage": "0.3.0", "g-voice": "0.5.0", "g-mind": "0.3.0",
+        "g-memory": "0.1.0", "g-coach": "0.1.0", "g-score": "0.1.0",
+        "g-persona": "0.1.0", "g-stream": "0.1.0"
+      },
+      "note": "Initial manifest baseline. Seeded from AGENTS.md module status + git log scopes + src-tauri source files."
+    }
+  ]
+}
