@@ -22,6 +22,7 @@ mod items;
 mod log;
 mod master;
 mod motion;
+mod ocr;
 mod respawn;
 mod revive;
 mod runtime;

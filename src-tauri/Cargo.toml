@@ -22,6 +22,11 @@ windows = { version = "0.61", features = ["Win32_UI_Shell"] }
 tract-onnx = "0.21"
 rodio      = "0.19"
 image      = "0.25"
+# PP-OCRv5 inference on top of the tract-onnx we already use for minimap CV.
+# Models ship out-of-band (tools/ocr-download/ — too large for git): on first
+# use the engine looks under models/ocr/ next to the exe. See src/ocr.rs.
+pure-onnx-ocr-sync = "0.2"
+geo-types          = "0.7"
 
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }
