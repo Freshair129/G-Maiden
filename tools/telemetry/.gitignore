@@ -1,0 +1,6 @@
+# run artifacts — telemetry captures + OCR test images (may contain player names)
+logs/
+ocr-test/*.png
+ocr-test/out.*
+ocr-test/meta.*
+ocr-test/payload.json
