@@ -30,6 +30,10 @@ pub struct GameTick {
     pub alive: bool,
     pub hp_percent: i64,
     pub mana_percent: i64,
+    /// GSI `hero.buyback_cost` — gold needed to buy back (0 when N/A). Feeds G-Revive.
+    pub buyback_cost: i64,
+    /// GSI `hero.respawn_seconds` — live respawn countdown (0 when alive). Feeds G-Revive.
+    pub respawn_seconds: i64,
 }
 
 // lenient extractors — GSI fields vary by game phase / spectator mode.
@@ -85,6 +89,8 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
         alive: b(&v, &["hero", "alive"]),
         hp_percent: i(&v, &["hero", "health_percent"]),
         mana_percent: i(&v, &["hero", "mana_percent"]),
+        buyback_cost: i(&v, &["hero", "buyback_cost"]),
+        respawn_seconds: i(&v, &["hero", "respawn_seconds"]),
     };
     // Note the POST (watchdog uses recency) and gate the CV pipeline to live
     // matches (saves idle CPU).
@@ -215,6 +221,8 @@ mod tests {
             alive: b(&v, &["hero", "alive"]),
             hp_percent: i(&v, &["hero", "health_percent"]),
             mana_percent: i(&v, &["hero", "mana_percent"]),
+            buyback_cost: i(&v, &["hero", "buyback_cost"]),
+            respawn_seconds: i(&v, &["hero", "respawn_seconds"]),
         }
     }
 
@@ -246,5 +254,18 @@ mod tests {
         assert_eq!(t.hero, "npc_dota_hero_crystal_maiden");
         assert_eq!(t.kills, 7);
         assert_eq!(t.hp_percent, 78);
+    }
+
+    #[test]
+    fn parses_buyback_and_respawn_when_dead() {
+        // When the hero is dead, GSI exposes buyback_cost + respawn_seconds.
+        let t = run_handle(serde_json::json!({
+            "map":  { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS" },
+            "hero": { "name": "npc_dota_hero_crystal_maiden", "level": 16,
+                      "alive": false, "buyback_cost": 1500, "respawn_seconds": 30 }
+        }));
+        assert!(!t.alive);
+        assert_eq!(t.buyback_cost, 1500);
+        assert_eq!(t.respawn_seconds, 30);
     }
 }

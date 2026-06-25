@@ -7,7 +7,11 @@
 //! See `docs/research/assets/dota2-hud-reference.md` (image 9) for the source table.
 //!
 //! Consumed by `crate::revive` (buyback advisor): respawn_seconds,
-//! next_respawn_after_buyback, respawn_with_wk_aura, modifiers.
+//! next_respawn_after_buyback, respawn_with_wk_aura, modifiers. `revive` itself is
+//! not yet wired into the live flow, so the whole table reads as dead in the binary
+//! build — drop this allow once G-Revive's call site lands (see FEAT-G-REVIVE).
+
+#![allow(dead_code)]
 
 use serde::Deserialize;
 use std::sync::OnceLock;
@@ -67,7 +71,6 @@ pub fn respawn_with_wk_aura(level: u32, turbo: bool) -> f64 {
 }
 
 /// Courier respawn time in seconds at a given courier level.
-#[allow(dead_code)] // exposed for a future courier-timing consumer
 pub fn courier_respawn_seconds(courier_level: u32) -> f64 {
     let m = &config().modifiers;
     m.courier_base_respawn + m.courier_respawn_per_level * f64::from(courier_level)
@@ -79,7 +82,6 @@ pub fn modifiers() -> &'static RespawnModifiers {
 }
 
 /// The game patch the loaded respawn table is calibrated for.
-#[allow(dead_code)] // surfaced in diagnostics/UI once wired
 pub fn patch() -> &'static str {
     &config().patch
 }

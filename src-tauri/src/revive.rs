@@ -11,6 +11,12 @@
 //! Respawn timing comes from `crate::respawn` (config-driven table) as a
 //! fallback/predictor; the live GSI `hero.respawn_seconds` is preferred when present.
 
+// Built ahead of its runtime consumer: the verdict is reached deterministically
+// here, but the call site (CV threat estimate + SLM narrative/voice) is follow-up
+// wiring — see FEAT-G-REVIVE acceptance criteria. Drop this once advise_buyback is
+// invoked from the live death-window flow. Exercised by tests today.
+#![allow(dead_code)]
+
 use crate::respawn;
 
 /// What we know at the moment of (or during) death. CV supplies the threat
@@ -36,6 +42,27 @@ pub struct DeathContext {
     /// Estimated seconds until the throne falls if undefended (from CV). None →
     /// threat timing unknown.
     pub seconds_to_base_fall: Option<f64>,
+}
+
+impl DeathContext {
+    /// Build the GSI-derived half of a death context from a game tick. Threat
+    /// fields (base push, allies-alive, base-fall time) come from CV and default
+    /// to "no known threat" until that layer is wired — so the verdict stays
+    /// conservative (no buyback recommended) on GSI data alone.
+    pub fn from_tick(tick: &crate::gsi::GameTick) -> Self {
+        DeathContext {
+            level: tick.level.max(0) as u32,
+            turbo: false, // GSI game_mode not parsed yet
+            gold: tick.gold.max(0) as u32,
+            buyback_cost: (tick.buyback_cost > 0).then_some(tick.buyback_cost as u32),
+            respawn_remaining: (tick.respawn_seconds > 0).then_some(tick.respawn_seconds as f64),
+            seconds_since_death: 0.0,
+            wk_reincarnation_ally: false,
+            allies_alive: 4, // unknown until CV; team-intact is the conservative default
+            base_under_threat: false, // unknown until CV
+            seconds_to_base_fall: None,
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize)]
@@ -242,6 +269,26 @@ mod tests {
         let a = advise_buyback(&ctx);
         // respawn(14)=48, minus 40 elapsed = 8
         assert!((a.natural_respawn_remaining - 8.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn from_tick_maps_gsi_fields() {
+        let tick = crate::gsi::GameTick {
+            level: 16,
+            gold: 1800,
+            buyback_cost: 1500,
+            respawn_seconds: 30,
+            ..Default::default()
+        };
+        let ctx = DeathContext::from_tick(&tick);
+        assert_eq!(ctx.level, 16);
+        assert_eq!(ctx.gold, 1800);
+        assert_eq!(ctx.buyback_cost, Some(1500));
+        assert_eq!(ctx.respawn_remaining, Some(30.0));
+        // Missing GSI fields → None (alive hero: no buyback/respawn exposed).
+        let empty = DeathContext::from_tick(&crate::gsi::GameTick::default());
+        assert_eq!(empty.buyback_cost, None);
+        assert_eq!(empty.respawn_remaining, None);
     }
 
     #[test]
