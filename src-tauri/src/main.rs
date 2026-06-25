@@ -22,6 +22,7 @@ mod log;
 mod master;
 mod motion;
 mod respawn;
+mod revive;
 mod runtime;
 mod sentry;
 mod signal;

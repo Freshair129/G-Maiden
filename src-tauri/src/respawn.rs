@@ -5,10 +5,9 @@
 //! G-Master (buyback decisions), G-Motion (dead enemy is not a threat until respawn).
 //!
 //! See `docs/research/assets/dota2-hud-reference.md` (image 9) for the source table.
-
-// Lookup API built ahead of its consumers (G-Signal danger timing, G-Master buyback
-// advice). Same convention as damage.rs — drop this once the modules are wired.
-#![allow(dead_code)]
+//!
+//! Consumed by `crate::revive` (buyback advisor): respawn_seconds,
+//! next_respawn_after_buyback, respawn_with_wk_aura, modifiers.
 
 use serde::Deserialize;
 use std::sync::OnceLock;
@@ -68,6 +67,7 @@ pub fn respawn_with_wk_aura(level: u32, turbo: bool) -> f64 {
 }
 
 /// Courier respawn time in seconds at a given courier level.
+#[allow(dead_code)] // exposed for a future courier-timing consumer
 pub fn courier_respawn_seconds(courier_level: u32) -> f64 {
     let m = &config().modifiers;
     m.courier_base_respawn + m.courier_respawn_per_level * f64::from(courier_level)
@@ -79,6 +79,7 @@ pub fn modifiers() -> &'static RespawnModifiers {
 }
 
 /// The game patch the loaded respawn table is calibrated for.
+#[allow(dead_code)] // surfaced in diagnostics/UI once wired
 pub fn patch() -> &'static str {
     &config().patch
 }
