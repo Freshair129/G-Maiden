@@ -677,7 +677,7 @@ const Overlay: React.FC = () => {
             <>
               {(s.showTimer || s.showScore || s.showHeroBar || s.showKda) && sep}
               <Stat label="Gold" value={t.gold.toLocaleString()} color={C.warn} />
-              <Stat label="NW" value={t.net_worth > 0 ? t.net_worth.toLocaleString() : '—'} color={C.ice} />
+              <Stat label="NW" value={t.net_worth.toLocaleString()} color={C.ice} />
               <Stat label="GPM" value={t.gpm} />
               <Stat label="XPM" value={t.xpm} />
             </>

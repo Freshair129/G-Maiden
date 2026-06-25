@@ -68,6 +68,12 @@ fn is_in_game(game_state: &str) -> bool {
 async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
     let v: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
     let game_state = s(&v, &["map", "game_state"]);
+    let gold = i(&v, &["player", "gold"]);
+    // GSI sends `player.net_worth = 0` in player mode (only populated for
+    // spectators). When 0, derive it from `items.*.name` × the embedded cost
+    // snapshot so the overlay shows a real number instead of "—".
+    let raw_nw = i(&v, &["player", "net_worth"]);
+    let net_worth = if raw_nw > 0 { raw_nw } else { crate::items::net_worth_from(&v["items"], gold) };
     let tick = GameTick {
         in_game: is_in_game(&game_state),
         clock_time: i(&v, &["map", "clock_time"]),
@@ -75,8 +81,8 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
         daytime: b(&v, &["map", "daytime"]),
         radiant_score: i(&v, &["map", "radiant_score"]),
         dire_score: i(&v, &["map", "dire_score"]),
-        gold: i(&v, &["player", "gold"]),
-        net_worth: i(&v, &["player", "net_worth"]),
+        gold,
+        net_worth,
         gpm: i(&v, &["player", "gpm"]),
         xpm: i(&v, &["player", "xpm"]),
         kills: i(&v, &["player", "kills"]),
@@ -200,6 +206,9 @@ mod tests {
         // Mirror handle()'s body parsing without the Tauri/axum harness.
         let v = payload;
         let game_state = s(&v, &["map", "game_state"]);
+        let gold = i(&v, &["player", "gold"]);
+        let raw_nw = i(&v, &["player", "net_worth"]);
+        let net_worth = if raw_nw > 0 { raw_nw } else { crate::items::net_worth_from(&v["items"], gold) };
         GameTick {
             in_game: is_in_game(&game_state),
             clock_time: i(&v, &["map", "clock_time"]),
@@ -207,8 +216,8 @@ mod tests {
             daytime: b(&v, &["map", "daytime"]),
             radiant_score: i(&v, &["map", "radiant_score"]),
             dire_score: i(&v, &["map", "dire_score"]),
-            gold: i(&v, &["player", "gold"]),
-            net_worth: i(&v, &["player", "net_worth"]),
+            gold,
+            net_worth,
             gpm: i(&v, &["player", "gpm"]),
             xpm: i(&v, &["player", "xpm"]),
             kills: i(&v, &["player", "kills"]),
@@ -254,6 +263,36 @@ mod tests {
         assert_eq!(t.hero, "npc_dota_hero_crystal_maiden");
         assert_eq!(t.kills, 7);
         assert_eq!(t.hp_percent, 78);
+    }
+
+    #[test]
+    fn net_worth_derived_when_gsi_omits_it() {
+        // Player-mode GSI sends net_worth=0; the overlay used to show "—". With
+        // the derivation path, gold + Σ item costs lands a real number.
+        let t = run_handle(serde_json::json!({
+            "map":    { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS" },
+            "player": { "gold": 1500, "net_worth": 0 },
+            "items":  {
+                "slot0": { "name": "item_blink" },           // 2250
+                "slot1": { "name": "item_black_king_bar" },  // 4050
+                "slot2": { "name": "empty" },                // 0
+                "slot3": { "name": "item_tpscroll" },        // 100
+            }
+        }));
+        assert_eq!(t.gold, 1500);
+        assert_eq!(t.net_worth, 1500 + 2250 + 4050 + 100);
+    }
+
+    #[test]
+    fn net_worth_passthrough_when_gsi_sends_real_value() {
+        // Spectator clients populate net_worth — trust it (more accurate than
+        // our cost-snapshot which lags patches).
+        let t = run_handle(serde_json::json!({
+            "map":    { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS" },
+            "player": { "gold": 1500, "net_worth": 19999 },
+            "items":  { "slot0": { "name": "item_blink" } } // would derive to 1500+2250
+        }));
+        assert_eq!(t.net_worth, 19999);
     }
 
     #[test]

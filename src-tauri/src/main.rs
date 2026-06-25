@@ -18,6 +18,7 @@ mod cv;
 mod damage;
 mod governor;
 mod gsi;
+mod items;
 mod log;
 mod master;
 mod motion;
