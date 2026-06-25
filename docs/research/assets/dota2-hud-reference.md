@@ -4,7 +4,11 @@
 > **ที่มา:** Reference screenshots ที่ผู้ใช้แนบ (5 ภาพ)  
 > **จุดประสงค์:** map HUD element → GSI field → G-module เพื่อใช้กับ G-Sensory (overlay non-obstruction), G-Signal/G-Sentry (state), G-Master (net worth), G-Damage (hero DB)
 
-> 📁 **ไฟล์ภาพดิบ:** วางไว้ที่ `docs/research/assets/dota2-hud-reference/` ตามชื่อไฟล์ที่แนะนำในแต่ละหัวข้อ (harness ส่งภาพมาแบบ visual ไม่ใช่ไฟล์ที่ดึงอัตโนมัติได้ — drop PNG เองได้เลย)
+> 📁 **ไฟล์ภาพดิบ:** เก็บไว้ที่ [`docs/reference/dota-ui/`](../../reference/dota-ui/) แล้ว 4 ภาพหลัก:
+> `hud-layout-annotated.webp` (ภาพ 1), `status-stunned.png` (ภาพ 2),
+> `combat-log-panel.png` (ภาพ 4), `hero-grid-strength.webp` (ภาพ 5).
+> ภาพที่เหลือ (scoreboard-buyback, agility/intelligence grids, announcer, respawn-table)
+> เป็น documented-only ในไฟล์นี้ — drop เพิ่มที่ `docs/reference/dota-ui/` ได้ถ้าต้องการ visual ref.
 
 ---
 
@@ -203,4 +207,4 @@ Hero grid หมวด Intelligence (~32 heroes): Ancient Apparition, Bane, **Cr
 
 ---
 
-*Catalog generated 2026-06-24 — drop ภาพดิบที่ `dota2-hud-reference/` หากต้องการเก็บ visual ref คู่กับ catalog นี้*
+*Catalog generated 2026-06-24 — ภาพดิบเก็บที่ `docs/reference/dota-ui/` (4 ภาพหลัก); ที่เหลือ documented-only*

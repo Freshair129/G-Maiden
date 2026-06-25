@@ -90,6 +90,19 @@
       "note": "8-hero database; actively expanding (3 feat commits). Hero attribute grid ref captured in research/assets/dota2-hud-reference.",
       "doc": "docs/features/FEAT-G-DAMAGE.md"
     },
+    "g-revive": {
+      "ver": "0.2.0",
+      "status": "partial",
+      "tier": "companion",
+      "priority": "P1",
+      "phase": "5-6",
+      "responsibility": "Death-window analysis + buyback advisor — deterministic 'should I buy back?' verdict during respawn wait",
+      "source": ["src-tauri/src/revive.rs", "src-tauri/src/respawn.rs", "src-tauri/data/respawn.json"],
+      "gates": ["deterministic-verdict", "no-egress"],
+      "ai": { "model": "local-slm (narrative/voice only)", "model_ver": "tbd", "in_hot_path": false },
+      "note": "Deterministic core + GSI wiring (buyback_cost/respawn_seconds) done; first consumer of respawn.rs config. CV threat estimate + SLM root-cause narrative pending. 10 tests.",
+      "doc": "docs/features/FEAT-G-REVIVE.md"
+    },
     "g-voice": {
       "ver": "0.5.0",
       "status": "partial",
@@ -188,6 +201,18 @@
         "g-persona": "0.1.0", "g-stream": "0.1.0"
       },
       "note": "Initial manifest baseline. Seeded from AGENTS.md module status + git log scopes + src-tauri source files."
+    },
+    {
+      "app": "0.7.2",
+      "date": "2026-06-25",
+      "modules": {
+        "g-sensory": "1.0.0", "g-sentry": "1.0.0", "g-signal": "1.0.0",
+        "g-motion": "0.9.0", "g-log": "0.8.0", "g-master": "0.4.0",
+        "g-damage": "0.3.0", "g-revive": "0.2.0", "g-voice": "0.5.0", "g-mind": "0.3.0",
+        "g-memory": "0.1.0", "g-coach": "0.1.0", "g-score": "0.1.0",
+        "g-persona": "0.1.0", "g-stream": "0.1.0"
+      },
+      "note": "Added g-revive (death-window buyback advisor) + respawn config layer. App still 0.7.2 (unreleased batch)."
     }
   ]
 }
