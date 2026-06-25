@@ -390,7 +390,7 @@ const Overlay: React.FC = () => {
         void invoke('speak_event', { event: 'danger', fallback: DANGER_LINE, voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})
       }
     }
-  }, [lowHp, tick?.in_game, tick?.alive, tick?.hp_percent, s.alertThreshold, s.voiceEnabled])
+  }, [lowHp, tick, tick?.in_game, tick?.alive, tick?.hp_percent, s.alertThreshold, s.voiceEnabled, s.voiceName, s.voiceRate])
 
   // Belief Revision (CLAUDE.md): if Maiden just yelled "ถอย!" but the danger
   // evaporated within ~2.5s (player got a kill, or HP swung well above safe),
@@ -417,7 +417,7 @@ const Overlay: React.FC = () => {
     setTimeout(() => {
       void invoke('speak_event', { event: 'revision', fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
     }, 90)
-  }, [tick?.in_game, tick?.hp_percent, tick?.kills, s.alertThreshold])
+  }, [tick, tick?.in_game, tick?.hp_percent, tick?.kills, s.alertThreshold])
 
   // Persona events — detect transitions vs. the previous tick. We minimum-gap
   // every utterance to 6s and skip persona lines whenever a danger line is
@@ -456,7 +456,7 @@ const Overlay: React.FC = () => {
     setToast({ event: evt, text: line })
     if (sRef.current.calibration) void invoke('capture_calibration_clip', { event: evt, line, context: { clock: tick.clock_time, level: tick.level, kills: tick.kills, deaths: tick.deaths } }).catch(() => {})
     void invoke('speak_event', { event: evt, fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
-  }, [tick?.in_game, tick?.level, tick?.kills, tick?.deaths, tick?.alive, tick?.mana_percent, lowHp])
+  }, [tick, tick?.in_game, tick?.level, tick?.kills, tick?.deaths, tick?.alive, tick?.mana_percent, lowHp])
 
   // Auto-advice (G-Master proactive). Fires Claude Plan request + speaks the
   // result on key moments: ult level milestones and a death-streak (2 deaths
@@ -771,6 +771,10 @@ const VoicePackCard: React.FC = () => {
         )}
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+        <button onClick={() => void invoke('speak_event', { event: 'advice', fallback: 'สวัสดีค่ะ นี่คือเสียงทดสอบของ Maiden', voice: null, rate: null }).catch(() => {})}
+          style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 9, padding: '8px 13px', fontSize: 12.5, cursor: 'pointer' }}>
+          🔊 ทดลองฟัง
+        </button>
         <button onClick={() => void invoke('open_url', { url: VOICE_STORE_URL }).catch(() => {})}
           style={{ background: 'rgba(143,212,255,0.18)', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 9, padding: '8px 15px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
           🛒 ดู / ซื้อ Voice Pack (เปิดเว็บ)
