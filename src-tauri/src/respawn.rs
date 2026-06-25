@@ -6,10 +6,10 @@
 //!
 //! See `docs/research/assets/dota2-hud-reference.md` (image 9) for the source table.
 //!
-//! Consumed by `crate::revive` (buyback advisor): respawn_seconds,
-//! next_respawn_after_buyback, respawn_with_wk_aura, modifiers. `revive` itself is
-//! not yet wired into the live flow, so the whole table reads as dead in the binary
-//! build — drop this allow once G-Revive's call site lands (see FEAT-G-REVIVE).
+//! Core API (respawn_seconds, next_respawn_after_buyback, respawn_with_wk_aura,
+//! modifiers) is consumed live by `crate::revive`. The allow stays for the
+//! forward-looking config fields/helpers (neutral_*, courier_*, patch) that are
+//! parsed from JSON but have no consumer yet — same convention as damage.rs.
 
 #![allow(dead_code)]
 

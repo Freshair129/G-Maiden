@@ -97,7 +97,9 @@ ReviveAdvice {
 
 - [x] buyback verdict เป็น pure function ทดสอบได้ (`revive::advise_buyback`)
 - [x] ใช้ `respawn.rs` config จริง (respawn table + +25 penalty + WK aura)
-- [ ] parse `hero.buyback_cost` + `hero.respawn_seconds` จาก GSI (wiring follow-up)
-- [ ] threat estimate (base-fall time) จาก CV
-- [ ] SLM narrative: root cause + persona voice
+- [x] parse `hero.buyback_cost` + `hero.respawn_seconds` จาก GSI (`DeathContext::from_tick`)
+- [x] live wiring: `request_buyback_advice` command → emit `buyback-advice` + SLM `buyback-narrative`
+- [x] SLM narrative: persona voice (`narrate_prompt` → `slm::advise_offline`, async best-effort)
+- [ ] threat estimate (base-fall time, allies-alive) จาก CV — verdict ยัง conservative จนกว่าจะ wire
+- [ ] root-cause "ทำไมตาย" จาก combat-log CV (ตอนนี้ narrate ห้ามแต่งเหตุการณ์)
 - [ ] verdict ถูกต้อง ≥90% เทียบ scenario เดิมพันบ้าน (manual eval)

@@ -10,12 +10,10 @@
 //!
 //! Respawn timing comes from `crate::respawn` (config-driven table) as a
 //! fallback/predictor; the live GSI `hero.respawn_seconds` is preferred when present.
-
-// Built ahead of its runtime consumer: the verdict is reached deterministically
-// here, but the call site (CV threat estimate + SLM narrative/voice) is follow-up
-// wiring — see FEAT-G-REVIVE acceptance criteria. Drop this once advise_buyback is
-// invoked from the live death-window flow. Exercised by tests today.
-#![allow(dead_code)]
+//!
+//! Live call site: the `request_buyback_advice` Tauri command (main.rs) builds a
+//! DeathContext from the tick, runs `advise_buyback`, and voices the verdict via
+//! the local SLM (`narrate_prompt` → `slm::advise_offline`).
 
 use crate::respawn;
 
@@ -166,6 +164,32 @@ fn build_reason(
     }
 }
 
+/// Build the local-SLM prompt that voices a buyback verdict in Maiden's persona.
+/// The deterministic verdict is ground truth; the SLM only phrases it — and is told
+/// not to invent the death cause (we lack combat-log data until CV is wired).
+pub fn narrate_prompt(advice: &ReviveAdvice, tick: &crate::gsi::GameTick) -> String {
+    let hero = tick
+        .hero
+        .strip_prefix("npc_dota_hero_")
+        .unwrap_or(&tick.hero)
+        .replace('_', " ");
+    let action = if advice.recommend_buyback {
+        "แนะนำให้ซื้อเกิด (buyback)"
+    } else {
+        "ไม่ต้องซื้อเกิด รอเกิดปกติ"
+    };
+    format!(
+        "คุณคือ Maiden ที่ปรึกษา Dota 2 บุคลิก Crystal Maiden — อ่อนโยน ฉลาด ไม่ตำหนิผู้เล่น \
+         มี humor เรื่อง Nerf CM ได้ในจังหวะปลอดภัย. ผู้เล่น ({hero}) เพิ่งตาย กำลังรอเกิดอีก {secs} วินาที. \
+         การตัดสินใจ: {action}. เหตุผล: {reason}. \
+         พูดเป็นไทยสั้น ๆ 1-2 ประโยค ให้กำลังใจและบอกสิ่งที่ควรทำ. ห้ามแต่งเหตุการณ์ที่ไม่รู้.",
+        hero = hero,
+        secs = advice.natural_respawn_remaining.round() as i64,
+        action = action,
+        reason = advice.reason,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -269,6 +293,25 @@ mod tests {
         let a = advise_buyback(&ctx);
         // respawn(14)=48, minus 40 elapsed = 8
         assert!((a.natural_respawn_remaining - 8.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn narrate_prompt_embeds_verdict_and_hero() {
+        let ctx = DeathContext {
+            base_under_threat: true,
+            seconds_to_base_fall: Some(20.0),
+            allies_alive: 0,
+            ..base()
+        };
+        let advice = advise_buyback(&ctx);
+        let tick = crate::gsi::GameTick {
+            hero: "npc_dota_hero_crystal_maiden".into(),
+            ..Default::default()
+        };
+        let p = narrate_prompt(&advice, &tick);
+        assert!(p.contains("crystal maiden"), "prompt should name the hero: {p}");
+        assert!(p.contains("ซื้อเกิด"), "prompt should carry the buyback verdict: {p}");
+        assert!(p.contains(&advice.reason), "prompt should include the deterministic reason");
     }
 
     #[test]

@@ -128,6 +128,27 @@ async fn request_advice(app: tauri::AppHandle, tick: gsi::GameTick) -> Result<ma
     Ok(result)
 }
 
+/// G-Revive: on death, return the deterministic buyback verdict immediately and
+/// fire a best-effort local-SLM narrative that arrives later via `buyback-narrative`.
+/// Threat fields default safe until CV is wired, so the verdict is conservative.
+#[tauri::command]
+async fn request_buyback_advice(app: tauri::AppHandle, tick: gsi::GameTick) -> revive::ReviveAdvice {
+    let ctx = revive::DeathContext::from_tick(&tick);
+    let advice = revive::advise_buyback(&ctx);
+    let _ = app.emit("buyback-advice", &advice);
+
+    // Voice the verdict via the local SLM off the hot path — fire-and-forget so the
+    // UI gets the verdict now; the narrative emits when (if) ollama answers.
+    let prompt = revive::narrate_prompt(&advice, &tick);
+    let app2 = app.clone();
+    tauri::async_runtime::spawn_blocking(move || {
+        if let Ok(text) = slm::advise_offline(&prompt) {
+            let _ = app2.emit("buyback-narrative", text);
+        }
+    });
+    advice
+}
+
 /// List SAPI voices installed on this machine so the UI can let the user pick.
 #[tauri::command]
 fn list_voices() -> Vec<tts::Voice> {
@@ -258,7 +279,8 @@ fn main() {
             list_match_logs,
             delete_match_log,
             delete_all_match_logs,
-            request_advice
+            request_advice,
+            request_buyback_advice
         ])
         .setup(move |app| {
             // G1.1: GSI ingestion server (127.0.0.1:3000); emits `game-tick` to all windows.
