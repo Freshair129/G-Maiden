@@ -55,7 +55,8 @@
     "createUpdaterArtifacts": true,
     "resources": {
       "../models/minimap-detector.onnx": "models/minimap-detector.onnx",
-      "../models/labels.json": "models/labels.json"
+      "../models/labels.json": "models/labels.json",
+      "voice-pack-default": "voice-pack-default"
     }
   },
   "plugins": {

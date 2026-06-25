@@ -72,6 +72,7 @@ struct VoiceCacheStatus {
 
 const EVENTS: &[&str] = &[
     "danger",
+    "gank",
     "levelUp",
     "kill",
     "death",

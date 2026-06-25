@@ -208,7 +208,9 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
             if crate::runtime::signal_enabled() {
                 match self.signal.evaluate(&risk) {
                     SignalEvent::Alert(alert) => {
-                        voice_interrupt("danger", GANK_LINE);
+                        // Use the "gank" event so the bundled voice pack's gank
+                        // takes are picked (separate from the HP-danger pack).
+                        voice_interrupt("gank", GANK_LINE);
                         if crate::calibration::is_enabled() {
                             crate::calibration::record("gank", Some(GANK_LINE), serde_json::json!({
                                 "probability": alert.probability,

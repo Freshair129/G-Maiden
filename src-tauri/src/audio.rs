@@ -1,7 +1,14 @@
-//! WAV playback via rodio (in-process, no PowerShell).
+//! Voice-clip playback via rodio (in-process, no PowerShell).
 //!
-//! Clips live under `voice-cache/{event}/*.wav`. Exe-relative first,
-//! then `assets/voice-cache` for dev mode.
+//! Lookup order per event:
+//!   1. user's `voice-cache/{event}/*.{wav,mp3}` (their installed pack, exe-rel
+//!      first, then `assets/voice-cache` for dev mode)
+//!   2. `voice-pack-default/{event}/*.{wav,mp3}` — the gTTS Thai pack bundled
+//!      with the installer so an *intelligible* Maiden ships out of the box
+//!      (covers user feedback: Windows SAPI Thai is unusable). Users still win
+//!      by dropping their own clips into voice-cache.
+//!
+//! Both .wav and .mp3 work — rodio's Symphonia decodes both.
 //!
 //! OutputStream is !Sync, so we own it on a dedicated thread and
 //! communicate via a channel. Single-slot: Maiden never plays two
@@ -90,7 +97,7 @@ pub fn play_file(path: PathBuf) {
     send(Cmd::Play(path));
 }
 
-/// Where Maiden's clips live. Exe-relative first, then dev-tree fallback.
+/// Where Maiden's user-installed clips live. Exe-relative first, then dev-tree.
 pub fn voice_cache_dir() -> PathBuf {
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
@@ -103,21 +110,59 @@ pub fn voice_cache_dir() -> PathBuf {
     PathBuf::from("assets/voice-cache")
 }
 
-fn list_clips(event: &str) -> Vec<PathBuf> {
-    let dir = voice_cache_dir().join(event);
-    fs::read_dir(&dir)
+/// Where the bundled DEFAULT Thai voice pack lives — installed next to the exe
+/// by the Tauri bundler (resources entry in tauri.conf.json) and committed at
+/// `src-tauri/voice-pack-default/` so devs hit it without an install step.
+fn default_pack_dir() -> Option<PathBuf> {
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(parent) = exe.parent() {
+            let near = parent.join("voice-pack-default");
+            if near.is_dir() {
+                return Some(near);
+            }
+        }
+    }
+    let dev = PathBuf::from("voice-pack-default");
+    if dev.is_dir() {
+        return Some(dev);
+    }
+    None
+}
+
+fn is_clip(p: &std::path::Path) -> bool {
+    p.is_file()
+        && p.extension()
+            .and_then(|x| x.to_str())
+            .map(|x| {
+                let l = x.to_ascii_lowercase();
+                l == "wav" || l == "mp3"
+            })
+            .unwrap_or(false)
+}
+
+fn list_clips_in(dir: &std::path::Path) -> Vec<PathBuf> {
+    fs::read_dir(dir)
         .ok()
         .map(|it| {
             it.filter_map(|e| e.ok())
                 .map(|e| e.path())
-                .filter(|p| {
-                    p.is_file()
-                        && p.extension()
-                            .is_some_and(|x| x.eq_ignore_ascii_case("wav"))
-                })
+                .filter(|p| is_clip(p))
                 .collect()
         })
         .unwrap_or_default()
+}
+
+/// User pack first (so a player's installed/purchased clips override defaults);
+/// fall back to the bundled default pack so Maiden is never silent.
+fn list_clips(event: &str) -> Vec<PathBuf> {
+    let user = list_clips_in(&voice_cache_dir().join(event));
+    if !user.is_empty() {
+        return user;
+    }
+    if let Some(def) = default_pack_dir() {
+        return list_clips_in(&def.join(event));
+    }
+    Vec::new()
 }
 
 pub fn clip_count(event: &str) -> usize {
