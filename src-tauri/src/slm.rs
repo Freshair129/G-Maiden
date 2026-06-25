@@ -17,7 +17,20 @@ const SLM_FALLBACK_MODEL: &str = "gemma4-rust-coder:latest";
 
 /// Ask a local ollama model for advice. Returns the model's text or an error.
 /// Blocking — call from a worker thread (same pattern as `master::advise`).
-pub fn advise_offline(prompt: &str) -> Result<String, String> {
+/// Empty `model` uses the historical SLM_MODEL → SLM_FALLBACK_MODEL chain;
+/// passing an explicit model lets the user pick from the Settings UI.
+pub fn advise_offline(prompt: &str, model: &str) -> Result<String, String> {
+    // Caller-chosen model wins — skip the legacy two-step fallback so the user's
+    // selection isn't quietly downgraded.
+    if !model.is_empty() {
+        let body = serde_json::json!({
+            "model": model,
+            "messages": [{"role": "user", "content": prompt}],
+            "stream": false,
+            "options": { "num_predict": 200, "temperature": 0.4, "num_ctx": 4096 }
+        });
+        return call_ollama(&body.to_string());
+    }
     let body = serde_json::json!({
         "model": SLM_MODEL,
         "messages": [{"role": "user", "content": prompt}],

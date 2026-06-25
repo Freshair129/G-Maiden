@@ -93,17 +93,31 @@ pub fn advise(tick: &GameTick) -> Result<Advice, String> {
 
     let prompt = build_prompt(tick);
 
-    // Primary path: claude CLI (Plan quota).
-    let result = try_claude(&prompt);
-    let (text, from_slm) = match result {
-        Ok(t) => (t, false),
-        Err(e) => {
-            eprintln!("[G-Master] claude unavailable ({e}); trying local SLM…");
-            match crate::slm::advise_offline(&prompt) {
-                Ok(t) => (t, true),
-                Err(e2) => return Err(format!("claude: {e}; SLM: {e2}")),
-            }
+    // Backend choice respects the UI selector — Auto keeps the historical
+    // claude-then-SLM ladder; Claude/Ollama force one path so the user can
+    // route around rate-limits or stay offline by choice.
+    let backend = crate::runtime::master_backend();
+    let ollama_model = crate::runtime::master_ollama_model();
+    let (text, from_slm) = match backend {
+        crate::runtime::MasterBackend::Ollama => {
+            let t = crate::slm::advise_offline(&prompt, &ollama_model)
+                .map_err(|e| format!("ollama: {e}"))?;
+            (t, true)
         }
+        crate::runtime::MasterBackend::Claude => {
+            let t = try_claude(&prompt).map_err(|e| format!("claude: {e}"))?;
+            (t, false)
+        }
+        crate::runtime::MasterBackend::Auto => match try_claude(&prompt) {
+            Ok(t) => (t, false),
+            Err(e) => {
+                eprintln!("[G-Master] claude unavailable ({e}); trying local SLM…");
+                match crate::slm::advise_offline(&prompt, &ollama_model) {
+                    Ok(t) => (t, true),
+                    Err(e2) => return Err(format!("claude: {e}; SLM: {e2}")),
+                }
+            }
+        },
     };
 
     if let Ok(mut g) = LAST_CALL.lock() {

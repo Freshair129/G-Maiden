@@ -31,6 +31,15 @@ static LAST_POST_MS: AtomicU64 = AtomicU64::new(0);
 static VOICE_NAME: Mutex<Option<String>> = Mutex::new(None);
 static VOICE_RATE: Mutex<Option<i32>> = Mutex::new(None);
 
+/// G-Master backend chosen in the UI. 0=Auto (claude→ollama fallback, the
+/// historical behavior), 1=ClaudeOnly, 2=OllamaOnly. Auto is the default so an
+/// installer untouched by the user still works on a Plan account, and the local
+/// path is one click away when claude is rate-limited or offline.
+static MASTER_BACKEND: AtomicU8 = AtomicU8::new(0);
+
+/// Ollama model name the user picked for G-Master (empty → legacy default).
+static MASTER_OLLAMA_MODEL: Mutex<String> = Mutex::new(String::new());
+
 pub fn mark_post(ms: u64) {
     LAST_POST_MS.store(ms, Ordering::Relaxed);
 }
@@ -84,4 +93,37 @@ pub fn voice() -> (Option<String>, Option<i32>) {
     let name = VOICE_NAME.lock().ok().and_then(|g| g.clone());
     let rate = VOICE_RATE.lock().ok().and_then(|g| *g);
     (name, rate)
+}
+
+/// G-Master backend mode picked in the UI.
+#[derive(Copy, Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum MasterBackend {
+    Auto,
+    Claude,
+    Ollama,
+}
+pub fn set_master_backend(b: MasterBackend) {
+    let code: u8 = match b {
+        MasterBackend::Auto => 0,
+        MasterBackend::Claude => 1,
+        MasterBackend::Ollama => 2,
+    };
+    MASTER_BACKEND.store(code, Ordering::Relaxed);
+}
+pub fn master_backend() -> MasterBackend {
+    match MASTER_BACKEND.load(Ordering::Relaxed) {
+        1 => MasterBackend::Claude,
+        2 => MasterBackend::Ollama,
+        _ => MasterBackend::Auto,
+    }
+}
+
+pub fn set_master_ollama_model(name: String) {
+    if let Ok(mut g) = MASTER_OLLAMA_MODEL.lock() {
+        *g = name;
+    }
+}
+pub fn master_ollama_model() -> String {
+    MASTER_OLLAMA_MODEL.lock().ok().map(|g| g.clone()).unwrap_or_default()
 }

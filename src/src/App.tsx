@@ -67,6 +67,8 @@ export interface Settings {
   autoAdvice: boolean
   gankVisuals: boolean
   signalSensitivity: Sensitivity
+  masterBackend: 'auto' | 'claude' | 'ollama'
+  masterOllamaModel: string
   cvDebug: boolean
   calibration: boolean
   uiMode: 'lite' | 'full'
@@ -77,7 +79,7 @@ export interface Settings {
   showKda: boolean
   showGold: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false, gankVisuals: true, signalSensitivity: 'med', cvDebug: false, calibration: false, uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false, gankVisuals: true, signalSensitivity: 'med', masterBackend: 'auto', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
 interface OverlayProfile { name: string; position: Pos; customX: number; customY: number; opacity: number; showTimer: boolean; showScore: boolean; showHeroBar: boolean; showKda: boolean; showGold: boolean }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 
@@ -778,9 +780,26 @@ const VoiceCacheCard: React.FC = () => {
 
 // ─────────────────────────────── VOICE PACKS (store entry; purchase = web only) ───────────────────────────────
 const VOICE_STORE_URL = 'https://g-maiden.app/voicepacks' // TODO: real store URL
+/** Sample lines for the per-event preview buttons — what Maiden actually says
+ * for each trigger. SAPI fallback uses these too, so users hear the same line
+ * whether or not their pack covers the event. */
+const PREVIEW_LINES: Record<string, string> = {
+  danger: 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว',
+  gank: 'ระวังนะคะ ศัตรูหายไปจากแมพหลายตัว อาจมีแก๊งค์',
+  revision: 'เอ๊ะ เดี๋ยวก่อน ดูเหมือนจะปลอดภัยแล้วค่ะ',
+  levelUp: 'ขึ้นเลเวลแล้วค่ะ สวยมาก ขยายอำนาจต่อเลย',
+  kill: 'ฆ่าได้สวยค่ะ เก็บไปเรื่อยๆ',
+  death: 'ตายแล้วเหรอคะ ไม่เป็นไรเดี๋ยวกลับมาใหม่',
+  respawn: 'กลับมาแล้ว ค่อยๆนะคะ',
+  manaLow: 'มานาเหลือน้อยแล้วค่ะ ระวังด้วย',
+  advice: 'ลองดูคำแนะนำนี้นะคะ',
+}
 const VoicePackCard: React.FC = () => {
   const [total, setTotal] = useState<number | null>(null)
   useEffect(() => { void invoke<VoiceCacheStatus>('voice_cache_status').then((st) => setTotal(st.total)).catch(() => {}) }, [])
+  const playEvent = (ev: string) => {
+    void invoke('speak_event', { event: ev, fallback: PREVIEW_LINES[ev], voice: null, rate: null }).catch(() => {})
+  }
   return (
     <Card title="Voice Packs (เสียง Maiden)">
       <div style={{ fontSize: 12.5, color: C.mut, lineHeight: 1.6, paddingTop: 6 }}>
@@ -791,11 +810,18 @@ const VoicePackCard: React.FC = () => {
           </div>
         )}
       </div>
+      <div style={{ marginTop: 12 }}>
+        <div style={{ fontSize: 11, color: C.mut, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>ฟังตัวอย่างแต่ละ event</div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(108px, 1fr))', gap: 6 }}>
+          {Object.keys(PREVIEW_LINES).map((ev) => (
+            <button key={ev} onClick={() => playEvent(ev)}
+              style={{ background: 'transparent', color: C.txt, border: `1px solid ${C.line}`, borderRadius: 8, padding: '7px 10px', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
+              🔊 <span style={{ fontFamily: 'monospace', fontSize: 11.5, color: C.ice }}>{ev}</span>
+            </button>
+          ))}
+        </div>
+      </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
-        <button onClick={() => void invoke('speak_event', { event: 'advice', fallback: 'สวัสดีค่ะ นี่คือเสียงทดสอบของ Maiden', voice: null, rate: null }).catch(() => {})}
-          style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 9, padding: '8px 13px', fontSize: 12.5, cursor: 'pointer' }}>
-          🔊 ทดลองฟัง
-        </button>
         <button onClick={() => void invoke('open_url', { url: VOICE_STORE_URL }).catch(() => {})}
           style={{ background: 'rgba(143,212,255,0.18)', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 9, padding: '8px 15px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
           🛒 ดู / ซื้อ Voice Pack (เปิดเว็บ)
@@ -814,7 +840,8 @@ const VoicePackCard: React.FC = () => {
 
 // ─────────────────────────────── G-MASTER (Claude Plan advisor) ───────────────────────────────
 interface Advice { text: string; cached: boolean }
-const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number; autoAdvice: boolean; onAutoAdviceChange: (v: boolean) => void }> = ({ tick, voice, rate, autoAdvice, onAutoAdviceChange }) => {
+type MasterBackend = 'auto' | 'claude' | 'ollama'
+const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number; autoAdvice: boolean; onAutoAdviceChange: (v: boolean) => void; backend: MasterBackend; onBackendChange: (b: MasterBackend) => void; ollamaModel: string; onOllamaModelChange: (m: string) => void }> = ({ tick, voice, rate, autoAdvice, onAutoAdviceChange, backend, onBackendChange, ollamaModel, onOllamaModelChange }) => {
   const [advice, setAdvice] = useState<Advice | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -834,11 +861,33 @@ const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number;
     // Go through speak_event so a user-supplied advice/ WAV pool is used when present.
     void invoke('speak_event', { event: 'advice', fallback: advice.text, voice: voice || null, rate }).catch(() => {})
   }
+  const backendLabel: Record<MasterBackend, string> = {
+    auto: 'อัตโนมัติ (claude → ollama)',
+    claude: 'Claude CLI (Plan quota)',
+    ollama: `Ollama local${ollamaModel ? ` (${ollamaModel})` : ''}`,
+  }
   return (
-    <Card title="G-Master (advisor · Claude Plan)">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 6, gap: 12 }}>
+    <Card title="G-Master (advisor)">
+      <Row label="Backend">
+        <div style={{ display: 'inline-flex', border: `1px solid ${C.line}`, borderRadius: 9, overflow: 'hidden' }}>
+          {(['auto','claude','ollama'] as MasterBackend[]).map((b) => (
+            <button key={b} onClick={() => onBackendChange(b)}
+              style={{ background: backend === b ? 'rgba(143,212,255,0.16)' : 'transparent', color: backend === b ? C.ice : C.mut, border: 'none', padding: '6px 14px', cursor: 'pointer', fontSize: 12 }}>
+              {b === 'auto' ? 'Auto' : b === 'claude' ? 'Claude' : 'Ollama'}
+            </button>
+          ))}
+        </div>
+      </Row>
+      {(backend === 'ollama' || backend === 'auto') && (
+        <Row label="Ollama model">
+          <input value={ollamaModel} onChange={(e) => onOllamaModelChange(e.target.value)}
+            placeholder="qwen3.5:4b"
+            style={{ background: 'rgba(18,20,28,0.86)', color: C.txt, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 10px', fontSize: 12.5, width: 220 }} />
+        </Row>
+      )}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8, gap: 12 }}>
         <div style={{ fontSize: 12, color: C.mut }}>
-          ใช้ Claude CLI ของคุณ (Plan quota · zero cost). throttle 30s/คำขอ.
+          {backendLabel[backend]} · throttle 30s/คำขอ.
           {!canAsk && tick?.in_game === false && ' · เปิด Dota 2 ก่อน'}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 'none', fontSize: 12, color: C.mut }}>
@@ -1180,6 +1229,14 @@ const Control: React.FC = () => {
     void invoke('set_cv_signal_sensitivity', { level: s.signalSensitivity }).catch(() => {})
   }, [s.signalSensitivity])
 
+  // G-Master backend & ollama model — mirror to the Rust state used by advise().
+  useEffect(() => {
+    void invoke('set_master_backend', { backend: s.masterBackend }).catch(() => {})
+  }, [s.masterBackend])
+  useEffect(() => {
+    void invoke('set_master_ollama_model', { name: s.masterOllamaModel }).catch(() => {})
+  }, [s.masterOllamaModel])
+
   // Toggle in-game calibration evidence capture (off by default; QA/tuning mode).
   useEffect(() => {
     void invoke('set_calibration_enabled', { enabled: s.calibration }).catch(() => {})
@@ -1397,7 +1454,7 @@ const Control: React.FC = () => {
       </div>
 
       <div style={{ marginTop: 14 }}>
-        <MasterCard tick={tick} voice={s.voiceName} rate={s.voiceRate} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} />
+        <MasterCard tick={tick} voice={s.voiceName} rate={s.voiceRate} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} backend={s.masterBackend} onBackendChange={(b) => set('masterBackend', b)} ollamaModel={s.masterOllamaModel} onOllamaModelChange={(m) => set('masterOllamaModel', m)} />
       </div>
 
       <div style={{ marginTop: 14 }}>

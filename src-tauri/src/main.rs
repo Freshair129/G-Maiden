@@ -144,7 +144,9 @@ async fn request_buyback_advice(app: tauri::AppHandle, tick: gsi::GameTick) -> r
     let prompt = revive::narrate_prompt(&advice, &tick);
     let app2 = app.clone();
     tauri::async_runtime::spawn_blocking(move || {
-        if let Ok(text) = slm::advise_offline(&prompt) {
+        // Use the user-picked model from Settings; empty → legacy chain in slm.rs.
+        let model = runtime::master_ollama_model();
+        if let Ok(text) = slm::advise_offline(&prompt, &model) {
             let _ = app2.emit("buyback-narrative", text);
         }
     });
@@ -175,6 +177,20 @@ fn set_cv_signal_enabled(enabled: bool) {
 #[tauri::command]
 fn set_cv_signal_sensitivity(level: signal::Sensitivity) {
     runtime::set_signal_sensitivity(level);
+}
+
+/// Pick the G-Master backend (auto/claude/ollama). The user can route around
+/// claude rate-limits or pin to local for privacy/offline play.
+#[tauri::command]
+fn set_master_backend(backend: runtime::MasterBackend) {
+    runtime::set_master_backend(backend);
+}
+
+/// Pick the Ollama model G-Master uses when the Ollama backend is active.
+/// Empty string = legacy default chain in slm.rs.
+#[tauri::command]
+fn set_master_ollama_model(name: String) {
+    runtime::set_master_ollama_model(name);
 }
 
 /// Toggle in-game calibration evidence capture (screenshots + audit clips).
@@ -276,6 +292,8 @@ fn main() {
             set_cv_voice,
             set_cv_signal_enabled,
             set_cv_signal_sensitivity,
+            set_master_backend,
+            set_master_ollama_model,
             set_calibration_enabled,
             capture_calibration_clip,
             voice_cache_status,
