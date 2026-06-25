@@ -148,9 +148,15 @@ const loadProfiles = (): OverlayProfile[] => {
 
 const C = { bg: '#08090c', ice: '#8fd4ff', txt: '#e7eef6', mut: '#8794a6', ok: '#5be3a7', warn: '#ffcf6b', bad: '#ff7b85', line: 'rgba(143,212,255,0.16)' }
 
-const APP_VERSION = '0.7.3'
+const APP_VERSION = '0.7.4'
 
 const CHANGELOG: { ver: string; date: string; items: string[] }[] = [
+  { ver: '0.7.4', date: '2026-06-26', items: [
+    'แพ็คเสียงไทยติดเครื่อง — Maiden พูดเสียงไทยได้ทันทีโดยไม่ต้องลงเพิ่ม (gTTS, 25 clips, 9 events; แทน SAPI ที่ฟังไม่รู้เรื่อง)',
+    'Net worth แสดงค่าจริง — คำนวณจาก gold + ราคาไอเทมใน inventory (GSI ไม่ส่ง NW ใน player mode)',
+    'G-Signal ความไวปรับได้ — ตึง/สมดุล/ไว (≥85% / ≥65% / ≥50%) ดีฟอลต์ "สมดุล" — แก้ปัญหา "ไม่เคยเตือน"',
+    'Overlay UI editor สะอาดขึ้น — chips เล็กลง, hover ที่ชื่อโมดูล = solo focus (โมดูลอื่นจาง), พื้น Dota HUD ref dim ลง',
+  ]},
   { ver: '0.7.3', date: '2026-06-25', items: [
     'โหมด overlay ใหม่ "Full" — โมดูลแยกชิ้นวางอิสระ + glass ดีไซน์ Maiden Blue (lite ยังเป็นค่าเริ่มต้น)',
     'G-Meter: แถบบอกระดับความเสี่ยง low/med/high (ไม่บอก %) อยู่ตลอด — เห็นแม้ G-Signal ยังไม่ถึงเกณฑ์',
