@@ -22,6 +22,21 @@
 
 **ความเสี่ยงใหญ่สุด:** Valve เป็นทั้ง platform และคู่แข่ง — Dota Plus (in-client) มี Assistant อยู่แล้ว และ Valve ขยายฟีเจอร์ได้ตลอดโดยที่เราคุมไม่ได้
 
+### ทำไมช่องนี้ถึง "ว่าง" — และทำไมมันเข้าทางเรา (framing สำหรับ pitch/ตัดสินใจ)
+
+ไม่มีใครชน Dota Plus *ตรงๆ* — เขาเลือกแข่ง*ข้างๆ* (Overwolf = timer/draft/social, Stratz/Dotabuff = post-game) เพราะการชนหน้าเป็นกับดักเชิงโครงสร้าง:
+
+1. **Valve เป็นเจ้าของที่ดิน** — Dota Plus อยู่ในไคลเอนต์, Valve คุมข้อมูล/GSI/กฎ และทุบฟีเจอร์เจ้าที่สามได้ทุกเมื่อ (Overwolf 2021, ban wave 2023)
+2. **ถูก+ดีพอ+bundled** ($4/ด., official, ban-safe) → เก็บเงินแพงกว่าเพื่อขายของเหมือนกันยาก
+3. **Data moat** — คำแนะนำ build/draft มาจาก aggregate หลักล้านแมตช์ เจ้าที่สามสู้ scale ไม่ได้
+4. **ตลาดเล็ก/หด** → ไม่คุ้ม VC-scale (Blitz+Mobalytics เพิ่ม Deadlock แต่*ข้าม* Dota 2)
+5. **Ban risk = ฆ่า fundability** (single-point-of-failure ที่นักลงทุนเกลียด)
+6. **มีสุสานเตือน** — GOSU.AI (~$5M) + Backseat AI ตายหมด → คนตามไม่กล้า
+
+> **กลับด้าน = โอกาสของ solo dev:** บาเรียที่ไล่บริษัททุนหนาออก (ตลาดเล็ก, ไม่ได้ VC-scale, platform risk) **ไม่ disqualify** ผู้ก่อตั้ง lean ที่อยู่รอดได้ที่ ~125 paid users + มี hybrid ingestion กันความเสี่ยง GSI → บาเรียเหล่านั้นกลายเป็น**คูเมือง**
+>
+> **กฎเหล็ก:** ห้ามแข่ง Dota Plus บนแกนของมัน (build/draft/stats สู้ data Valve ไม่ได้) → ไปที่ Valve *ทำไม่ได้เชิงโครงสร้าง*: เตือน gank ด้วยเสียง + lethality "ฆ่าได้ไหม" (ขึ้นป้ายให้ทั้ง playerbase = พัง competitive integrity) + persona แคสเตอร์ไทย (Valve ไม่มีวันทำ)
+
 ---
 
 ## 2. แผนที่สนามแข่ง (Competitive Landscape)

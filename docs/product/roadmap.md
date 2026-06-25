@@ -210,6 +210,24 @@
 
 ---
 
+## Phase 9: Post-v1.0 / Future `vNext`
+
+> ไม่อยู่ใน core v1.0 — delighter/differentiator + platform plays · **อย่าให้ดีเลย์ core wedge (gank warning)**
+
+### P9.1 — Community AI Marketplace (ADR-12, ADR-11)
+- [ ] UGC trainable styles (persona → advice-logic → bot **practice/sandbox-only**)
+- [ ] rating/ranking + **seasonal top-rank cash payout** (self-fund จาก take-rate) + anti-gaming
+- [ ] opt-in data flywheel — match_id ground-truth dataset (privacy: local-first + credit)
+
+### P9.2 — G-Score: Dynamic GSI-driven Soundtrack `new` (FEAT-G-SCORE)
+- [ ] event→music trigger map (Roshan=boss music, clutch=epic sting, teamfight=combat)
+- [ ] AI-music packs (**DMCA-safe**) + audio hierarchy (voice > SFX > soundtrack, ไม่ต้อง duck ก้าวร้าว)
+- [ ] synergy: **G-Stream** (เพลงปลอด DMCA สำหรับสตรีมเมอร์) + **Marketplace** (community soundtrack packs)
+
+**Milestone vNext** — platform + delighter layer: marketplace creator economy + adaptive soundtrack
+
+---
+
 ## NFR Constraints (enforce throughout)
 
 | Constraint | Target | Source |
@@ -237,6 +255,6 @@
 | ADR-07 | SLM lazy-load on fallback only | RAM budget |
 | ADR-08 | G-Voice = Push-to-Talk only (no always-on mic) | Privacy + CPU budget |
 | ADR-09 | G-Mind router never touches G-Signal critical path | Latency guarantee |
-| ADR-10 | Hybrid ingestion: GSI + CV own-state fallback + replay priors | Resilience vs GSI block · *Accepted* (`docs/ADR-10-*`) |
-| ADR-11 | Opt-in data contribution + match_id flywheel (amends ADR-06) | Data moat without breaking privacy · *Accepted* (`docs/ADR-11-*`) |
-| ADR-12 | Community AI marketplace (trainable + seasonal top-rank payout) | Network-effect moat + engagement · *Accepted, post-v1.0* (`docs/ADR-12-*`) |
+| ADR-10 | Hybrid ingestion: GSI + CV own-state fallback + replay priors | Resilience vs GSI block · *Accepted* (`docs/architecture/adr/ADR-10-*`) |
+| ADR-11 | Opt-in data contribution + match_id flywheel (amends ADR-06) | Data moat without breaking privacy · *Accepted* (`docs/architecture/adr/ADR-11-*`) |
+| ADR-12 | Community AI marketplace (trainable + seasonal top-rank payout) | Network-effect moat + engagement · *Accepted, post-v1.0* (`docs/architecture/adr/ADR-12-*`) |
