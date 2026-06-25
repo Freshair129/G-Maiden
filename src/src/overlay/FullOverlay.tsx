@@ -111,13 +111,18 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
     </Module>
   ) : null
 
-  // ── CompanionStage — Maiden presence (portrait placeholder → real CM art later)
-  // TODO: replace with Crystal Maiden portrait when the FLUX LoRA-generated PNG asset lands.
+  // ── CompanionStage — Maiden presence. Stylized SVG portrait (Crystal-Maiden
+  // archetype: hood, ice palette, frost crystal); a higher-fidelity render can
+  // drop in later by swapping the asset path — the surrounding card sizes it.
   const companion = (
     <div style={{ ...glass(op), padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 11, minWidth: 142 }}>
-      <div style={{ width: 44, height: 44, borderRadius: 14, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at 35% 30%, #bfe6ff, #3f7fb0 68%, #16222f)', boxShadow: '0 0 16px rgba(143,212,255,0.5), inset 0 0 8px rgba(255,255,255,0.25)' }}>
-        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.55), rgba(255,255,255,0) 70%)' }} />
-      </div>
+      <img
+        src="/maiden-portrait.svg"
+        alt="Maiden"
+        width={44}
+        height={44}
+        style={{ flex: 'none', borderRadius: 14, boxShadow: '0 0 16px rgba(143,212,255,0.5)' }}
+      />
       <div>
         <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.6 }}>Maiden</div>
         <div style={{ fontSize: 10.5, color: inGame ? C.ok : C.mut }}>{inGame ? '● กำลังดูแล' : 'รอเข้าเกม…'}</div>

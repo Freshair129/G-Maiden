@@ -1,0 +1,97 @@
+<!--
+G-Maiden CompanionStage portrait — original stylized illustration inspired by
+Crystal Maiden's archetype (ice mage, blue palette, hooded silhouette) without
+copying any specific Valve asset. The actual character icon for the in-app
+companion presence; renders crisply at any size via SVG.
+
+If a higher-fidelity CM render lands later (e.g. an offline FLUX-LoRA pass),
+swap the <img src> in FullOverlay.tsx — the surrounding glass card already
+sizes the asset, so no layout change is needed.
+
+Palette = the overlay's Maiden Blue ice palette (#8fd4ff highlight, #3f7fb0
+mid, #16222f shadow). The hood + crystal motifs read at 44×44 px (the badge
+size in the overlay) AND at the larger preview sizes in the Control window.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="100%" height="100%" aria-label="Maiden">
+  <defs>
+    <radialGradient id="bg" cx="50%" cy="38%" r="60%">
+      <stop offset="0%" stop-color="#bfe6ff" />
+      <stop offset="55%" stop-color="#3f7fb0" />
+      <stop offset="100%" stop-color="#16222f" />
+    </radialGradient>
+    <radialGradient id="glow" cx="50%" cy="30%" r="55%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.55)" />
+      <stop offset="65%" stop-color="rgba(255,255,255,0)" />
+    </radialGradient>
+    <linearGradient id="hood" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#1d2f44" />
+      <stop offset="100%" stop-color="#0e1822" />
+    </linearGradient>
+    <linearGradient id="face" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#dff1ff" />
+      <stop offset="100%" stop-color="#8fd4ff" />
+    </linearGradient>
+    <linearGradient id="hair" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#cfeaff" />
+      <stop offset="100%" stop-color="#6fb6e6" />
+    </linearGradient>
+  </defs>
+
+  <!-- ambient ice halo background -->
+  <circle cx="32" cy="32" r="32" fill="url(#bg)" />
+  <circle cx="32" cy="22" r="24" fill="url(#glow)" />
+
+  <!-- shoulder cape / robe -->
+  <path d="M8 60 L18 42 Q32 36 46 42 L56 60 Z" fill="url(#hood)" />
+  <!-- inner robe trim -->
+  <path d="M14 60 L20 46 Q32 42 44 46 L50 60 Z" fill="#16222f" opacity="0.7" />
+
+  <!-- hood silhouette -->
+  <path d="M16 38 Q16 18 32 14 Q48 18 48 38 L44 44 Q32 38 20 44 Z" fill="url(#hood)" />
+
+  <!-- hood inner shadow rim -->
+  <path d="M19 38 Q19 22 32 18 Q45 22 45 38 L42 41 Q32 35 22 41 Z" fill="#0c1622" opacity="0.6" />
+
+  <!-- face oval -->
+  <ellipse cx="32" cy="33" rx="9.5" ry="11.5" fill="url(#face)" />
+
+  <!-- hair strands peeking under hood -->
+  <path d="M22 28 Q24 38 26 44" stroke="url(#hair)" stroke-width="1.6" fill="none" stroke-linecap="round" />
+  <path d="M42 28 Q40 38 38 44" stroke="url(#hair)" stroke-width="1.6" fill="none" stroke-linecap="round" />
+  <path d="M32 24 Q34 30 33 38" stroke="url(#hair)" stroke-width="1.2" fill="none" stroke-linecap="round" opacity="0.6" />
+
+  <!-- glowing eyes (frostbite cyan) -->
+  <ellipse cx="28.5" cy="33" rx="1.4" ry="2" fill="#e8f6ff" />
+  <ellipse cx="35.5" cy="33" rx="1.4" ry="2" fill="#e8f6ff" />
+  <ellipse cx="28.5" cy="33.5" rx="0.8" ry="1.2" fill="#8fd4ff" />
+  <ellipse cx="35.5" cy="33.5" rx="0.8" ry="1.2" fill="#8fd4ff" />
+
+  <!-- subtle smile -->
+  <path d="M29 39 Q32 41 35 39" stroke="#3f7fb0" stroke-width="0.8" fill="none" stroke-linecap="round" opacity="0.6" />
+
+  <!-- forehead crystal -->
+  <polygon points="32,21 33.3,23.5 32,26 30.7,23.5" fill="#e8f6ff" opacity="0.85" />
+  <polygon points="32,21.6 32.9,23.5 32,25.4 31.1,23.5" fill="#bfe6ff" />
+
+  <!-- snowflake motif left -->
+  <g transform="translate(11 23)" stroke="#cfeaff" stroke-width="0.5" opacity="0.7" stroke-linecap="round">
+    <line x1="0" y1="-3" x2="0" y2="3" />
+    <line x1="-2.6" y1="-1.5" x2="2.6" y2="1.5" />
+    <line x1="-2.6" y1="1.5" x2="2.6" y2="-1.5" />
+  </g>
+  <!-- snowflake motif right -->
+  <g transform="translate(53 25)" stroke="#cfeaff" stroke-width="0.5" opacity="0.7" stroke-linecap="round">
+    <line x1="0" y1="-3" x2="0" y2="3" />
+    <line x1="-2.6" y1="-1.5" x2="2.6" y2="1.5" />
+    <line x1="-2.6" y1="1.5" x2="2.6" y2="-1.5" />
+  </g>
+
+  <!-- ambient frost particles -->
+  <circle cx="14" cy="44" r="0.8" fill="#cfeaff" opacity="0.6" />
+  <circle cx="50" cy="40" r="0.7" fill="#cfeaff" opacity="0.55" />
+  <circle cx="22" cy="52" r="0.6" fill="#cfeaff" opacity="0.5" />
+  <circle cx="44" cy="50" r="0.6" fill="#cfeaff" opacity="0.5" />
+
+  <!-- outer cool rim -->
+  <circle cx="32" cy="32" r="31.5" fill="none" stroke="rgba(143,212,255,0.45)" stroke-width="0.8" />
+</svg>

@@ -1,8 +1,8 @@
 ---
-version: "0.1.0b"
+version: "0.2.0"
 created_at: "2026-06-24T03:10:00+07:00,ATHER,pending"
-last_update: "2026-06-24T03:10:00+07:00,ATHER"
-status: "candidate"
+last_update: "2026-06-26T00:00:00+07:00,Opus"
+status: "accepted"
 superseded_by: null
 attributes:
   domain: "ui-ux"
@@ -44,14 +44,23 @@ flowchart TD
 
   B --> B1["Danger Alert"]
   B --> B2["Advice Panel"]
-  B --> B3["Resource HUD"]
-  B --> B4["Belief Revision"]
-  B --> B5["Stream-safe Mode"]
+  B --> B3["G-Meter (risk gauge)"]
+  B --> B4["Voice Toast (silent fallback)"]
+  B --> B5["Companion Stage"]
+  B --> B6["Enemy Missing Tracker"]
+  B --> B7["Stat Modules (clock / KDA / gold / GPM / XPM / NW / score / HP-mana)"]
+  B --> B8["Belief Revision"]
+  B --> B9["Stream-safe Mode"]
 
   C --> C1["Status Overview"]
-  C --> C2["Overlay Preview"]
+  C --> C2["Overlay UI Editor (drag + grid magnet + HUD ref preview)"]
   C --> C3["GSI Setup"]
   C --> C4["Module Health"]
+  C --> C5["Voice Packs (browse / preview / buy on web)"]
+  C --> C6["Calibration Mode (QA audit)"]
+  C --> C7["Sensitivity (Low / Med / High)"]
+  C --> C8["UI Tier Picker (Lite / Full)"]
+  C --> C9["Exclusive Fullscreen Warning"]
 
   D --> D1["Match Timeline"]
   D --> D2["Local Logs"]
@@ -63,11 +72,15 @@ flowchart TD
   E --> E3["Mood / Alert Tone"]
   E --> E4["Character Skin Future"]
 
-  F --> F1["Overlay Position"]
+  F --> F1["Overlay Position / Layout"]
   F --> F2["Privacy Local-only"]
   F --> F3["Motion Intensity"]
   F --> F4["Performance Governor"]
 ```
+
+> Live Overlay (B) ของ Full tier ประกอบด้วย 12 modules ที่วาง/สเกลแยกอิสระจาก
+> saved layout (peripheral-first; ค่า default แสดงเฉพาะ core modules — stat chips
+> ปิดไว้เพราะ Dota แสดงอยู่แล้ว ให้ผู้เล่นเปิดเฉพาะที่ต้องการ)
 
 ## 3. User Flow
 
@@ -76,13 +89,16 @@ flowchart LR
   A["Launch G-Maiden"] --> B{"Dota + GSI Ready?"}
   B -->|No| C["Setup / Fix GSI"]
   C --> D["Preview Overlay"]
-  B -->|Yes| E["Enter Live Overlay"]
+  B -->|Yes| B2{"Exclusive Fullscreen?"}
+  B2 -->|Yes| W["Warn: switch to Borderless"]
+  W --> E["Enter Live Overlay"]
+  B2 -->|No| E
 
   E --> F["Monitor Match State"]
   F --> G{"Signal Event?"}
   G -->|Safe| H["Ambient Companion State"]
   G -->|Warning| I["Show Advice Panel"]
-  G -->|Critical| J["Show Danger Alert + Voice"]
+  G -->|Critical| J["Show Danger Alert + Voice (toast fallback if silent)"]
 
   J --> K{"Prediction changed?"}
   K -->|Yes| L["Belief Revision"]
@@ -108,18 +124,21 @@ flowchart LR
 - Low-noise overlay that never feels like a full dashboard during combat
 - Soft live wallpaper and subtle character motion
 - Voice, alert, and belief revision states that feel alive but not noisy
+- Continuous risk gradient (no raw probability numbers shown in-game)
 
 ### Screen Directions
 
 #### Companion Control
 
-Player-facing control surface for setup, companion presence, overlay preview, voice, privacy, match memory, and performance governor.
+Player-facing control surface for setup, companion presence, overlay layout editor,
+voice packs, privacy, match memory, sensitivity, calibration, and performance governor.
 
 ![G-Maiden companion control dashboard](assets/screen-directions/g-maiden-companion-control-dashboard.png)
 
 #### Live Overlay
 
-In-game, peripheral-first HUD direction. The overlay should stay light, readable, and avoid blocking core gameplay zones.
+In-game, peripheral-first HUD direction. Lite tier (default) ใช้ single-stack panel
+ที่ stable; Full tier (opt-in) เปิด 12 modules ที่วางอิสระตาม saved layout
 
 ![G-Maiden live overlay](assets/screen-directions/g-maiden-live-overlay.png)
 
@@ -129,11 +148,18 @@ In-game, peripheral-first HUD direction. The overlay should stay light, readable
 | --- | --- | --- |
 | `OverlayAlertBanner` | Critical danger and gank warnings | Top-center, short pulse, strong contrast, no long text |
 | `AdvicePanel` | Maiden guidance during match | Small portrait, waveform, confidence, dismiss state |
+| `GMeter` | Continuous risk gauge (G-Sentry missing + G-Signal alert) | 4-segment LED (ปลอดภัย/ระวัง/เสี่ยง/อันตราย); ไม่แสดง % — มีแต่ gradient |
+| `VoiceToast` | On-screen mirror of last voice event | Silent fallback when voice pack ยังไม่มา; auto-dismiss |
+| `CompanionStage` | Character presence module | Maiden portrait — Crystal Maiden stylized SVG กำลังจะมา; ตอนนี้ใช้ badge เป็น placeholder |
 | `VoiceChip` | Voice/listening state | Compact, icon + text, never color-only |
+| `VoicePackCard` | Browse / preview / buy voice packs | Thai default pack มาในตัว; ปุ่ม "🔊 ทดลองฟัง" + ลิงก์ซื้อผ่านเว็บ |
 | `PrivacyChip` | Local-only assurance | Visible but quiet, stronger in settings/control |
-| `CompanionStage` | Character presence | Realistic portrait/live wallpaper, not blocking controls |
+| `LayoutEditor` | Drag editor สำหรับ Full tier (C2) | 16:9 preview, magnet grid SNAP=5, HUD reference background, per-module scale, hover-solo focus เพื่อ spotlight module เดียว |
+| `SensitivityPicker` | Low / Med / High (G-Signal danger threshold) | Mirror ลง backend ผ่าน Tauri command `set_cv_signal_sensitivity`; thresholds 0.85 / 0.65 / 0.50 |
 | `MotionIntensity` | User control over motion | Low / Medium / High with reduced-motion fallback |
 | `PerformanceGovernor` | Protect FPS/CPU/RAM | Can degrade blur, particles, and animation |
+| `ExclusiveFullscreenWarning` | Detect + warn เมื่อ Dota อยู่ใน Exclusive | Surfaced จาก `exclusive_fullscreen_active()`; แนะนำเปลี่ยนเป็น Borderless |
+| `CalibrationToggle` | QA audit mode | Off by default; เปิดแล้วเก็บ screenshot + GIF clip + `audit.jsonl` ลง local เท่านั้น |
 
 ## 6. Acceptance Criteria
 
@@ -142,6 +168,12 @@ In-game, peripheral-first HUD direction. The overlay should stay light, readable
 - [ ] Companion control can show richer glass/character visuals than the overlay.
 - [ ] Screen direction images resolve from this document.
 - [ ] Motion supports alert state and companion presence without harming performance.
+- [ ] Lite tier remains the stable default; Full tier is opt-in.
+- [ ] Each Full module is independently positionable + scalable from a saved layout.
+- [ ] G-Meter shows a continuous risk gradient (no % numbers).
+- [ ] Voice events have an on-screen toast fallback when no clip plays.
+- [ ] Calibration mode is off by default and writes evidence only locally.
+- [ ] Exclusive Fullscreen is detected and warns the user to switch to Borderless.
 
 ---
 
@@ -150,3 +182,4 @@ In-game, peripheral-first HUD direction. The overlay should stay light, readable
 | Version | Date | Status | Summary | Commit Hash | Agent |
 |---------|------|--------|---------|-------------|-------|
 | 0.1.0b | 2026-06-24 | candidate | Initial G-Maiden-specific sitemap, user flow, presentation board, screen directions, and component notes. | pending | ATHER |
+| 0.2.0 | 2026-06-26 | accepted | Reflect shipped Full overlay (12 modules), LayoutEditor (grid + HUD ref + solo focus), G-Meter, Voice Packs (Thai default), Calibration mode, Sensitivity picker, NW item derivation, Exclusive Fullscreen guard. | pending | Opus |
