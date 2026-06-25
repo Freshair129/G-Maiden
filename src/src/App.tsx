@@ -4,9 +4,12 @@ import { emit, listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import { check, type Update } from '@tauri-apps/plugin-updater'
 import { relaunch } from '@tauri-apps/plugin-process'
+import { FullOverlay } from './overlay/FullOverlay'
+import { LayoutEditor } from './overlay/LayoutEditor'
+import { DEFAULT_LAYOUT, type Layout } from './overlay/modules'
 
 /** Mirrors the Rust `GameTick` emitted by the GSI server (src-tauri/src/gsi.rs). */
-interface GameTick {
+export interface GameTick {
   in_game: boolean
   clock_time: number
   game_state: string
@@ -47,7 +50,7 @@ interface AdviceUpdate { text: string; cached: boolean }
 interface GsiStatus { dota_running: boolean; gsi_active: boolean; in_game: boolean; display_exclusive: boolean }
 
 type Pos = 'top' | 'left' | 'right' | 'custom'
-interface Settings {
+export interface Settings {
   overlayVisible: boolean
   position: Pos
   customX: number
@@ -63,13 +66,15 @@ interface Settings {
   gankVisuals: boolean
   cvDebug: boolean
   calibration: boolean
+  uiMode: 'lite' | 'full'
+  layout: Layout
   showTimer: boolean
   showScore: boolean
   showHeroBar: boolean
   showKda: boolean
   showGold: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false, gankVisuals: true, cvDebug: false, calibration: false, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false, gankVisuals: true, cvDebug: false, calibration: false, uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
 interface OverlayProfile { name: string; position: Pos; customX: number; customY: number; opacity: number; showTimer: boolean; showScore: boolean; showHeroBar: boolean; showKda: boolean; showGold: boolean }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 
@@ -260,7 +265,7 @@ const gankClearStyle: React.CSSProperties = {
   ...gankStyle, border: `1px solid ${C.ice}`, color: C.ice, fontWeight: 600,
   boxShadow: '0 0 18px rgba(143,212,255,0.3)',
 }
-type GankState = { phase: 'alert'; heroes: string[]; probability: number } | { phase: 'clear' } | null
+export type GankState = { phase: 'alert'; heroes: string[]; probability: number } | { phase: 'clear' } | null
 
 const Overlay: React.FC = () => {
   const [tick, setTick] = useState<GameTick | null>(null)
@@ -581,6 +586,11 @@ const Overlay: React.FC = () => {
       <span style={{ opacity: 0.92 }}>{toast.text}</span>
     </div>
   ) : null
+
+  // Redesign tier — isolated render path; lite (below) stays the stable default.
+  if (s.uiMode === 'full') {
+    return <FullOverlay tick={tick} s={s} gank={gank} missingHeroes={missingHeroes} overlayAdvice={overlayAdvice} />
+  }
 
   if (!seen || !tick || !tick.in_game || (!gsiActive && !previewMode)) {
     return (
@@ -1264,6 +1274,23 @@ const Control: React.FC = () => {
               <span style={{ color: C.warn }}> · ตอนนี้ยังไม่มี Thai voice → จะใช้เสียง {voices[0]?.gender === 'Female' ? 'อังกฤษ' : 'อังกฤษ'} อ่านข้อความไทย</span>
             )}
           </div>
+        </Card>
+
+        <Card title="Overlay UI">
+          <Row label="โหมดหน้าตา overlay">
+            <div style={{ display: 'inline-flex', border: `1px solid ${C.line}`, borderRadius: 9, overflow: 'hidden' }}>
+              {(['lite', 'full'] as const).map((m) => (
+                <button key={m} onClick={() => set('uiMode', m)}
+                  style={{ background: s.uiMode === m ? 'rgba(143,212,255,0.16)' : 'transparent', color: s.uiMode === m ? C.ice : C.mut, border: 'none', padding: '6px 16px', cursor: 'pointer', fontSize: 12 }}>
+                  {m === 'lite' ? 'Lite (เดิม)' : 'Full (redesign)'}
+                </button>
+              ))}
+            </div>
+          </Row>
+          <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
+            <b style={{ color: C.txt }}>Lite</b> = overlay เดิม เบา เสถียร · <b style={{ color: C.txt }}>Full</b> = ดีไซน์ใหม่ (โมดูลแยกชิ้น, glass) — กำลังพัฒนา
+          </div>
+          {s.uiMode === 'full' && <LayoutEditor value={s.layout} onChange={(l) => set('layout', l)} />}
         </Card>
 
         <Card title="G-Signal / CV (gank)">
