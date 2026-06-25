@@ -33,12 +33,13 @@ const Module: React.FC<{ cfg: ModuleCfg; children: React.ReactNode }> = ({ cfg, 
 const glass = (op: number): React.CSSProperties => ({
   background: `rgba(14,17,24,${op})`,
   border: `1px solid ${C.edge}`,
-  borderRadius: 14,
+  borderRadius: 16,
   backdropFilter: 'blur(16px)',
   WebkitBackdropFilter: 'blur(16px)',
-  boxShadow: '0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(143,212,255,0.10)',
+  boxShadow: '0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(143,212,255,0.22), inset 0 -1px 0 rgba(0,0,0,0.35)',
   fontFamily: '"Segoe UI", system-ui, sans-serif',
   color: C.txt,
+  transition: 'transform 200ms ease, opacity 200ms ease',
 })
 
 const bar = (pct: number, color: string) => (
@@ -89,11 +90,14 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
   ) : null
 
   // ── CompanionStage — Maiden presence (portrait placeholder → real CM art later)
+  // TODO: replace with Crystal Maiden portrait when the FLUX LoRA-generated PNG asset lands.
   const companion = (
     <div style={{ ...glass(op), padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 11, minWidth: 142 }}>
-      <div style={{ width: 38, height: 38, borderRadius: 12, flex: 'none', background: 'radial-gradient(circle at 35% 30%, #bfe6ff, #3f7fb0 68%, #16222f)', boxShadow: '0 0 16px rgba(143,212,255,0.5), inset 0 0 8px rgba(255,255,255,0.25)' }} />
+      <div style={{ width: 44, height: 44, borderRadius: 14, flex: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'radial-gradient(circle at 35% 30%, #bfe6ff, #3f7fb0 68%, #16222f)', boxShadow: '0 0 16px rgba(143,212,255,0.5), inset 0 0 8px rgba(255,255,255,0.25)' }}>
+        <div style={{ width: 28, height: 28, borderRadius: '50%', background: 'radial-gradient(circle, rgba(255,255,255,0.55), rgba(255,255,255,0) 70%)' }} />
+      </div>
       <div>
-        <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.3 }}>Maiden</div>
+        <div style={{ fontSize: 13, fontWeight: 800, letterSpacing: 0.6 }}>Maiden</div>
         <div style={{ fontSize: 10.5, color: inGame ? C.ok : C.mut }}>{inGame ? '● กำลังดูแล' : 'รอเข้าเกม…'}</div>
       </div>
     </div>
