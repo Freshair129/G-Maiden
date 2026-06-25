@@ -26,6 +26,11 @@ export const LayoutEditor: React.FC<{ value: Layout; onChange: (l: Layout) => vo
   const [drag, setDrag] = useState<ModuleId | null>(null)
   const [bgKind, setBgKind] = useState<BgKind>('hud')
   const [shotUrl, setShotUrl] = useState<string | null>(null)
+  // Solo focus — hovering/clicking a row in the module list spotlights that
+  // module on the preview and dims the others. The preview is much smaller than
+  // a real 1920×1080 screen, so fixed-px chips inevitably crowd; solo lets the
+  // user pick one out without resizing the editor.
+  const [solo, setSolo] = useState<ModuleId | null>(null)
   const [magnet, setMagnet] = useState(true)
 
   const update = (id: ModuleId, patch: Partial<ModuleCfg>) =>
@@ -96,10 +101,14 @@ export const LayoutEditor: React.FC<{ value: Layout; onChange: (l: Layout) => vo
           border: `1px solid ${C.line}`, userSelect: 'none', ...bgStyle,
         }}
       >
+        {/* Dim the HUD reference (lots of baked-in labels) so module chips read on top. */}
+        {bgKind === 'hud' && <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.35)', pointerEvents: 'none' }} />}
         {magnet && <div style={gridOverlay} />}
         {MODULE_META.map((m) => {
           const cfg = cfgOf(value, m.id)
           if (!cfg.enabled) return null
+          const isSolo = solo === m.id
+          const dim = solo !== null && !isSolo
           return (
             <div
               key={m.id}
@@ -108,10 +117,13 @@ export const LayoutEditor: React.FC<{ value: Layout; onChange: (l: Layout) => vo
                 position: 'absolute', left: `${cfg.x}%`, top: `${cfg.y}%`,
                 transform: `translate(-50%, -50%) scale(${cfg.scale})`,
                 cursor: drag === m.id ? 'grabbing' : 'grab',
-                padding: '4px 10px', fontSize: 11, whiteSpace: 'nowrap', borderRadius: 8,
-                background: 'rgba(143,212,255,0.18)', border: `1px solid ${C.ice}`, color: C.ice,
-                boxShadow: drag === m.id ? '0 0 14px rgba(143,212,255,0.6)' : 'none',
-                transition: drag === m.id ? 'none' : 'left 120ms ease, top 120ms ease',
+                padding: '2px 7px', fontSize: 9.5, whiteSpace: 'nowrap', borderRadius: 6,
+                background: isSolo ? 'rgba(143,212,255,0.45)' : 'rgba(143,212,255,0.18)',
+                border: `1px solid ${C.ice}`, color: C.ice,
+                opacity: dim ? 0.25 : 1,
+                boxShadow: isSolo || drag === m.id ? '0 0 14px rgba(143,212,255,0.7)' : 'none',
+                transition: drag === m.id ? 'none' : 'left 120ms ease, top 120ms ease, opacity 150ms, background 150ms',
+                zIndex: isSolo ? 5 : 1,
               }}
             >
               {m.label}
@@ -123,19 +135,32 @@ export const LayoutEditor: React.FC<{ value: Layout; onChange: (l: Layout) => vo
       <div style={{ marginTop: 10 }}>
         {MODULE_META.map((m) => {
           const cfg = cfgOf(value, m.id)
+          const isSolo = solo === m.id
           return (
-            <div key={m.id} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '5px 0', fontSize: 12, borderTop: `1px solid rgba(143,212,255,0.08)` }}>
+            <div
+              key={m.id}
+              onMouseEnter={() => cfg.enabled && setSolo(m.id)}
+              onMouseLeave={() => setSolo((s) => (s === m.id ? null : s))}
+              style={{
+                display: 'flex', alignItems: 'center', gap: 10, padding: '5px 6px',
+                fontSize: 12, borderTop: `1px solid rgba(143,212,255,0.08)`,
+                background: isSolo ? 'rgba(143,212,255,0.07)' : 'transparent',
+                borderRadius: 6, cursor: cfg.enabled ? 'default' : 'not-allowed',
+              }}
+            >
               <input type="checkbox" checked={cfg.enabled} onChange={(e) => update(m.id, { enabled: e.target.checked })} />
               <span style={{ width: 150, color: cfg.enabled ? C.txt : C.mut }}>{m.label}</span>
               <span style={{ color: C.mut, fontSize: 11 }}>ขนาด</span>
               <input type="range" min={0.6} max={1.6} step={0.05} value={cfg.scale} disabled={!cfg.enabled} onChange={(e) => update(m.id, { scale: Number(e.target.value) })} style={{ width: 130 }} />
               <span style={{ color: C.mut, width: 34, fontSize: 11 }}>{cfg.scale.toFixed(2)}×</span>
+              <span style={{ color: C.mut, width: 70, fontSize: 11 }}>{cfg.x}% , {cfg.y}%</span>
             </div>
           )
         })}
       </div>
-      <div style={{ fontSize: 11, color: C.mut, marginTop: 6, lineHeight: 1.5 }}>
-        ลาก-วางบนพรีวิว · เปิด <b style={{ color: C.txt }}>Dota HUD ref</b> เพื่อเห็นตำแหน่งไอคอนจริงของเกม · <b style={{ color: C.txt }}>แม่เหล็ก</b> = snap ที่ขอบกริด ({SNAP}%) · พรีวิวเล็กกว่าจอจริง 5-6 เท่า โมดูลที่ดูซ้อนในนี้บนจอจริงจะไม่ซ้อน
+      <div style={{ fontSize: 11, color: C.mut, marginTop: 6, lineHeight: 1.6 }}>
+        💡 <b style={{ color: C.ice }}>เคล็ดลับ:</b> hover ที่ชื่อโมดูลข้างล่าง → โมดูลนั้นจะสว่าง ตัวอื่นจางลง (solo). กดเช็คบ็อกซ์เพื่อปิดที่ไม่ใช้ออก. ปุ่ม <b style={{ color: C.txt }}>รีเซ็ตตำแหน่ง</b> ถ้าตำแหน่งเก่าซ้อนกัน.
+        <br />⚠️ พรีวิวเล็กกว่าจอจริงประมาณ 5 เท่า — โมดูลที่ดูใกล้กันในนี้ บนจอ 1920×1080 จะห่างกันมาก.
       </div>
     </div>
   )
