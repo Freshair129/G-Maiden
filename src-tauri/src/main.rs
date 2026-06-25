@@ -11,6 +11,7 @@ use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
 mod audio;
+mod calibration;
 mod capture;
 mod counter_advice;
 mod cv;
@@ -135,6 +136,20 @@ fn set_cv_signal_enabled(enabled: bool) {
     runtime::set_signal_enabled(enabled);
 }
 
+/// Toggle in-game calibration evidence capture (screenshots + audit clips).
+/// QA/tuning mode — off by default; writes images locally only.
+#[tauri::command]
+fn set_calibration_enabled(enabled: bool) {
+    calibration::set_enabled(enabled);
+}
+
+/// Trigger a calibration motion clip for a voice-paired event fired in the
+/// frontend (danger / kill / death / advice). No-op when calibration is off.
+#[tauri::command]
+fn capture_calibration_clip(event: String, line: Option<String>, context: Option<serde_json::Value>) {
+    calibration::record(&event, line.as_deref(), context.unwrap_or(serde_json::Value::Null));
+}
+
 /// Discover Dota 2's GSI cfg directory and report whether our cfg is in place.
 #[tauri::command]
 fn detect_gsi_setup() -> setup::SetupStatus {
@@ -185,8 +200,15 @@ fn delete_all_match_logs() -> Result<u32, String> {
 }
 
 fn main() {
-    // Alt+S — show/hide the overlay while in-game (works even when Dota 2 is focused).
-    let toggle = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
+    // Forensics first: route panics on ANY thread (capture / GSI / governor) to
+    // %LOCALAPPDATA%\G-Maiden\logs\error.log so a freeze/crash leaves a trace.
+    log::init_panic_hook();
+    log::error("[startup] G-Maiden process started");
+
+    // Ctrl+Alt+S — show/hide the overlay while in-game. Alt+S / Ctrl+S collide with
+    // Dota hotkeys (Alt = ping modifier, Ctrl+S = a default bind), so use the
+    // 3-key combo. TODO: make this user-configurable (settings + dynamic re-register).
+    let toggle = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyS);
     let toggle_for_handler = toggle;
 
     tauri::Builder::default()
@@ -212,6 +234,8 @@ fn main() {
             list_voices,
             set_cv_voice,
             set_cv_signal_enabled,
+            set_calibration_enabled,
+            capture_calibration_clip,
             voice_cache_status,
             open_voice_cache_dir,
             detect_gsi_setup,

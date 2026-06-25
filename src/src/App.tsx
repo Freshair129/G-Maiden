@@ -44,7 +44,7 @@ interface EnemyMissing { hero: string; missing_for_ms: number; last_pos: [number
 /** G5.4: advice broadcast from master.rs → overlay. */
 interface AdviceUpdate { text: string; cached: boolean }
 /** Connection/status pushed by the Rust watchdog (gsi.rs) every ~4s. */
-interface GsiStatus { dota_running: boolean; gsi_active: boolean; in_game: boolean }
+interface GsiStatus { dota_running: boolean; gsi_active: boolean; in_game: boolean; display_exclusive: boolean }
 
 type Pos = 'top' | 'left' | 'right' | 'custom'
 interface Settings {
@@ -62,13 +62,14 @@ interface Settings {
   autoAdvice: boolean
   gankVisuals: boolean
   cvDebug: boolean
+  calibration: boolean
   showTimer: boolean
   showScore: boolean
   showHeroBar: boolean
   showKda: boolean
   showGold: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false, gankVisuals: true, cvDebug: false, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false, gankVisuals: true, cvDebug: false, calibration: false, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
 interface OverlayProfile { name: string; position: Pos; customX: number; customY: number; opacity: number; showTimer: boolean; showScore: boolean; showHeroBar: boolean; showKda: boolean; showGold: boolean }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 
@@ -277,6 +278,10 @@ const Overlay: React.FC = () => {
   // (Dota stops POSTing without a final tick; `tick` would otherwise stay stale).
   const [gsiActive, setGsiActive] = useState(true)
   const [previewMode, setPreviewMode] = useState(false)
+  // #6: mirror each Maiden voice line as a transient on-screen toast so triggers
+  // are verifiable even before the voice pack / TTS is finalized (debug aid —
+  // becomes a user toggle in the overlay redesign). The voice still fires too.
+  const [toast, setToast] = useState<{ event: string; text: string } | null>(null)
   const gankTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const gankClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // rising-edge state for danger: speak once when HP crosses the threshold down,
@@ -346,6 +351,13 @@ const Overlay: React.FC = () => {
     }
   }, [])
 
+  // #6: auto-dismiss the event toast 4s after the most recent voice event.
+  useEffect(() => {
+    if (!toast) return
+    const id = setTimeout(() => setToast(null), 4000)
+    return () => clearTimeout(id)
+  }, [toast])
+
   // ── All hooks below run EVERY render, before any early return. React requires
   // a constant hook order; an early `return` above these (as there was) makes the
   // hook count change when a match starts and crashes the overlay. They guard on
@@ -368,6 +380,8 @@ const Overlay: React.FC = () => {
         dangerActive.current = true
         lastSpokeKind.current = 'danger'
         dangerHpAtSpeak.current = tick.hp_percent
+        setToast({ event: 'danger', text: DANGER_LINE })
+        if (sRef.current.calibration) void invoke('capture_calibration_clip', { event: 'danger', line: DANGER_LINE, context: { hp: tick.hp_percent, clock: tick.clock_time, level: tick.level } }).catch(() => {})
         void invoke('speak_event', { event: 'danger', fallback: DANGER_LINE, voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})
       }
     }
@@ -390,6 +404,8 @@ const Overlay: React.FC = () => {
     lastSpokeAt.current = Date.now()
     lastSpokeKind.current = 'revision'
     dangerActive.current = false  // arm danger again so a fresh crossing can re-warn
+    setToast({ event: 'revision', text: line })
+    if (sRef.current.calibration) void invoke('capture_calibration_clip', { event: 'revision', line, context: { hp: tick.hp_percent, clock: tick.clock_time } }).catch(() => {})
     void invoke('cancel_speech').catch(() => {})
     // brief gap lets the killed SAPI process die before the new one starts,
     // otherwise Windows audio sometimes squashes the first syllable
@@ -432,6 +448,8 @@ const Overlay: React.FC = () => {
     const line = pool[Math.floor(Math.random() * pool.length)]
     lastSpokeAt.current = now
     lastSpokeKind.current = 'persona'
+    setToast({ event: evt, text: line })
+    if (sRef.current.calibration) void invoke('capture_calibration_clip', { event: evt, line, context: { clock: tick.clock_time, level: tick.level, kills: tick.kills, deaths: tick.deaths } }).catch(() => {})
     void invoke('speak_event', { event: evt, fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
   }, [tick?.in_game, tick?.level, tick?.kills, tick?.deaths, tick?.alive, tick?.mana_percent, lowHp])
 
@@ -465,6 +483,8 @@ const Overlay: React.FC = () => {
       void invoke<{ text: string; cached: boolean }>('request_advice', { tick })
         .then((a) => {
           if (!a?.text) return
+          setToast({ event: 'advice', text: a.text })
+          if (sRef.current.calibration) void invoke('capture_calibration_clip', { event: 'advice', line: a.text, context: { clock: tick.clock_time, level: tick.level } }).catch(() => {})
           void invoke('speak_event', {
             event: 'advice',
             fallback: a.text,
@@ -549,6 +569,19 @@ const Overlay: React.FC = () => {
         </div>
   ) : null
 
+  // #6: transient event toast — same lifetime as a voice cue, near the alert zone.
+  const eventToast = toast ? (
+    <div style={{
+      background: 'rgba(18,20,28,0.86)', border: `1px solid ${C.ice}`, borderRadius: 10,
+      padding: '7px 16px', fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: 12.5,
+      color: C.txt, display: 'flex', alignItems: 'center', gap: 8, maxWidth: 440,
+      backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+    }}>
+      <span style={{ fontSize: 10, color: C.ice, textTransform: 'uppercase', letterSpacing: 0.6, flex: 'none' }}>🔔 {toast.event}</span>
+      <span style={{ opacity: 0.92 }}>{toast.text}</span>
+    </div>
+  ) : null
+
   if (!seen || !tick || !tick.in_game || (!gsiActive && !previewMode)) {
     return (
       <>
@@ -557,11 +590,12 @@ const Overlay: React.FC = () => {
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
             {gankBanner}
             {missingBadge}
+            {eventToast}
             <div style={{ ...panel(s.opacity), padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ width: 9, height: 9, borderRadius: 99, background: seen ? C.warn : C.mut }} />
+              <span style={{ width: 9, height: 9, borderRadius: 99, background: gsiActive ? (seen ? C.ok : C.warn) : C.mut }} />
               <div>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>G-Maiden</div>
-                <div style={{ fontSize: 11.5, color: C.mut }}>{seen ? 'เชื่อมต่อ GSI แล้ว — รอเข้าเกม…' : 'รอข้อมูลจาก Dota 2  ·  Alt+S = ซ่อน/แสดง'}</div>
+                <div style={{ fontSize: 11.5, color: C.mut }}>{!gsiActive ? 'ขาดสัญญาณ GSI — เปิด Dota 2 อยู่ไหม?' : (seen ? 'เชื่อมต่อ GSI แล้ว — รอเข้าเกม…' : 'รอข้อมูลจาก Dota 2  ·  Ctrl+Alt+S = ซ่อน/แสดง')}</div>
               </div>
             </div>
           </div>
@@ -578,6 +612,7 @@ const Overlay: React.FC = () => {
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
         {gankBanner}
         {missingBadge}
+        {eventToast}
         {lowHp && <div className="gm-danger" style={dangerStyle}>⚠ HP เหลือ {t.hp_percent}% — ถอยก่อนค่ะเพื่อน!</div>}
         {advicePanel}
         {(s.showTimer || s.showScore || s.showHeroBar || s.showKda || s.showGold) && (
@@ -620,7 +655,7 @@ const Overlay: React.FC = () => {
             <>
               {(s.showTimer || s.showScore || s.showHeroBar || s.showKda) && sep}
               <Stat label="Gold" value={t.gold.toLocaleString()} color={C.warn} />
-              <Stat label="NW" value={t.net_worth.toLocaleString()} color={C.ice} />
+              <Stat label="NW" value={t.net_worth > 0 ? t.net_worth.toLocaleString() : '—'} color={C.ice} />
               <Stat label="GPM" value={t.gpm} />
               <Stat label="XPM" value={t.xpm} />
             </>
@@ -1072,6 +1107,11 @@ const Control: React.FC = () => {
     void invoke('set_cv_signal_enabled', { enabled: s.voiceEnabled }).catch(() => {})
   }, [s.voiceEnabled])
 
+  // Toggle in-game calibration evidence capture (off by default; QA/tuning mode).
+  useEffect(() => {
+    void invoke('set_calibration_enabled', { enabled: s.calibration }).catch(() => {})
+  }, [s.calibration])
+
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((p) => ({ ...p, [k]: v }))
 
   return (
@@ -1104,6 +1144,19 @@ const Control: React.FC = () => {
           )
         })()}
       </header>
+
+      {status?.display_exclusive && (
+        <div style={{ ...panel(0.9), padding: '12px 18px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 14, border: `1px solid ${C.warn}` }}>
+          <span style={{ fontSize: 20 }}>⚠️</span>
+          <div style={{ flex: 1 }}>
+            <div style={{ fontSize: 13.5, fontWeight: 700, color: C.warn }}>Dota อยู่ในโหมด Exclusive Fullscreen</div>
+            <div style={{ fontSize: 11.5, color: C.mut, lineHeight: 1.55, marginTop: 2 }}>
+              Overlay และการอ่าน minimap จะไม่ทำงาน และจออาจค้าง — สลับเป็น <b style={{ color: C.txt }}>Borderless</b> ที่
+              Dota → Settings → Video → Display Mode (บน Windows ยุคนี้ FPS แทบไม่ต่างจาก fullscreen)
+            </div>
+          </div>
+        </div>
+      )}
 
       {upd && (
         <div style={{ ...panel(0.86), padding: '12px 18px', marginBottom: 14, display: 'flex', alignItems: 'center', gap: 14, border: `1px solid ${C.ice}` }}>
@@ -1216,6 +1269,7 @@ const Control: React.FC = () => {
         <Card title="G-Signal / CV (gank)">
           <Row label="แบนเนอร์เตือนแก๊งค์ (gank)"><Toggle on={s.gankVisuals} onChange={(v) => set('gankVisuals', v)} /></Row>
           <Row label="CV debug overlay (calibrate)"><Toggle on={s.cvDebug} onChange={(v) => set('cvDebug', v)} /></Row>
+          <Row label="Calibration capture (audit: screenshot + clip) — QA"><Toggle on={s.calibration} onChange={(v) => set('calibration', v)} /></Row>
           <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
             แบนเนอร์ขึ้นกลาง-บนของจอเมื่อ G-Signal เตือนแก๊งค์ (ไม่บังมินิแมพ). CV debug แสดงกรอบมินิแมพ + จุดที่ตรวจจับได้ — เปิดเฉพาะตอนปรับเทียบ.
           </div>

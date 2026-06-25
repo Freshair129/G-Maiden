@@ -18,8 +18,10 @@ tauri-plugin-global-shortcut = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
 windows-capture = "2.0"
+windows = { version = "0.61", features = ["Win32_UI_Shell"] }
 tract-onnx = "0.21"
 rodio      = "0.19"
+image      = "0.25"
 
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }

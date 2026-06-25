@@ -50,6 +50,50 @@ fn now_ms() -> u128 {
         .unwrap_or(0)
 }
 
+/// Append one line to the diagnostic error log (`error.log` in the log dir).
+/// Used by the panic hook and any subsystem that hits an unexpected condition
+/// or a notable lifecycle event (capture start/stop, slow frames). Best-effort
+/// and never panics itself — a logging failure must not take the app down.
+pub fn error(msg: &str) {
+    let dir = log_dir();
+    let _ = fs::create_dir_all(&dir);
+    let path = dir.join("error.log");
+    if let Ok(mut f) = OpenOptions::new().create(true).append(true).open(&path) {
+        let _ = writeln!(f, "{} {}", now_ms(), msg);
+        let _ = f.flush();
+    }
+    eprintln!("[G-Maiden] {msg}");
+}
+
+/// Install a global panic hook that records the thread, location, message and a
+/// backtrace to `error.log` before delegating to the default hook. Without this
+/// a panic on a background thread (capture/GSI/governor) leaves no on-disk trace
+/// — the app just freezes or dies silently. Call once, first thing in `main`.
+pub fn init_panic_hook() {
+    let default = std::panic::take_hook();
+    std::panic::set_hook(Box::new(move |info| {
+        let loc = info
+            .location()
+            .map(|l| format!("{}:{}", l.file(), l.line()))
+            .unwrap_or_else(|| "<unknown>".into());
+        let payload = info
+            .payload()
+            .downcast_ref::<&str>()
+            .map(|s| s.to_string())
+            .or_else(|| info.payload().downcast_ref::<String>().cloned())
+            .unwrap_or_else(|| "<non-string panic payload>".into());
+        let thread = std::thread::current()
+            .name()
+            .unwrap_or("<unnamed>")
+            .to_string();
+        let bt = std::backtrace::Backtrace::force_capture();
+        error(&format!(
+            "PANIC thread='{thread}' at {loc}: {payload}\n{bt}"
+        ));
+        default(info);
+    }));
+}
+
 fn start_match(state: &mut LogState) {
     let dir = log_dir();
     if let Err(e) = fs::create_dir_all(&dir) {
@@ -57,6 +101,9 @@ fn start_match(state: &mut LogState) {
         return;
     }
     let ts_sec = now_ms() / 1000;
+    // Tag calibration evidence with the same match id so its screenshots/clips
+    // land in a per-match folder that lines up with this log file.
+    crate::calibration::set_match(&format!("match-{ts_sec}"));
     let path = dir.join(format!("match-{ts_sec}.jsonl"));
     match OpenOptions::new().create(true).append(true).open(&path) {
         Ok(f) => {

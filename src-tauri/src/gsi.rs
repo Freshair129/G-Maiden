@@ -110,6 +110,10 @@ struct GsiStatus {
     /// a GSI POST arrived recently (heartbeat is ~30s, so we allow a 45s gap).
     gsi_active: bool,
     in_game: bool,
+    /// Dota is in *true* Exclusive Fullscreen → overlay + minimap capture can't
+    /// work (no DWM) and the desktop may freeze. UI warns the user to switch to
+    /// Borderless. False for Borderless / Windowed / Fullscreen-Optimizations.
+    display_exclusive: bool,
 }
 
 /// Watchdog: every few seconds, check whether Dota is still running. When it
@@ -127,9 +131,16 @@ async fn watchdog(app: AppHandle) {
         }
         let last = crate::runtime::last_post_ms();
         let gsi_active = running && last != 0 && epoch_ms().saturating_sub(last) < STALE_MS;
+        // Only meaningful while Dota runs; cheap single Win32 query.
+        let display_exclusive = running && crate::setup::exclusive_fullscreen_active();
         let _ = app.emit(
             "gsi-status",
-            GsiStatus { dota_running: running, gsi_active, in_game: crate::runtime::in_game() },
+            GsiStatus {
+                dota_running: running,
+                gsi_active,
+                in_game: crate::runtime::in_game(),
+                display_exclusive,
+            },
         );
     }
 }

@@ -62,6 +62,19 @@ pub fn dota_running() -> bool {
     }
 }
 
+/// True when a *true* exclusive-fullscreen Direct3D app (e.g. Dota in "Exclusive
+/// Fullscreen") is on screen. In that mode Windows bypasses the DWM compositor,
+/// so our WGC minimap capture and the WebView2 overlay can't draw — and the
+/// exclusive↔composited mode-thrash can freeze the whole desktop (observed). The
+/// design forbids render-hook injection (R-06), so Borderless is required.
+/// Borderless / Windowed (and Win10+ Fullscreen-Optimizations) stay
+/// DWM-composited and do NOT trip this — a clean "switch to Borderless" signal.
+pub fn exclusive_fullscreen_active() -> bool {
+    use windows::Win32::UI::Shell::{SHQueryUserNotificationState, QUNS_RUNNING_D3D_FULL_SCREEN};
+    // Read-only query of the shell's current notification state.
+    matches!(unsafe { SHQueryUserNotificationState() }, Ok(QUNS_RUNNING_D3D_FULL_SCREEN))
+}
+
 fn read_steam_path() -> Option<PathBuf> {
     // Valve writes SteamPath with forward slashes — fine for std::path on Windows.
     let out = Command::new("reg")

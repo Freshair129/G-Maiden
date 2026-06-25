@@ -49,6 +49,18 @@ const CAPTURE_HZ: u64 = 15;
 /// we drop this throttle and process at the full source rate (≈15 Hz).
 const NORMAL_INTERVAL_MS: u128 = 125;
 
+/// Cap the rate of the debug/calibration `minimap-cv` event (ms). Independent of
+/// the processing cadence: even when we process at 15 Hz, we only push candidate
+/// boxes to the full-screen overlay webview at ≈5 Hz so the IPC → WebView2 → DWM
+/// compositing path can't pile up over a long match (suspected freeze cause).
+/// Edge-triggered gank alerts / enemy-missing events still emit immediately.
+const DEBUG_EMIT_INTERVAL_MS: u128 = 200;
+
+/// If a single processed frame's compute exceeds this (ms) we log it to
+/// `error.log` — a developing CV/compositor stall shows up as frames creeping
+/// over budget *before* the system locks up.
+const SLOW_FRAME_MS: u128 = 250;
+
 /// Maiden's spoken gank warning (TTS fallback when no `danger` clip is cached).
 const GANK_LINE: &str = "ระวังนะคะ ศัตรูหายไปจากแมพหลายตัว อาจมีแก๊งค์!";
 /// Belief-revision retraction line (TTS fallback when no `revision` clip cached).
@@ -85,6 +97,11 @@ struct MinimapCapture {
     start: Instant,
     /// last frame we actually processed (drives the adaptive throttle).
     last_processed: Instant,
+    /// last time we emitted the debug `minimap-cv` payload to the overlay
+    /// (throttled to ≈5 Hz — see [`DEBUG_EMIT_INTERVAL_MS`]).
+    last_emit: Instant,
+    /// last time we fed a frame to the calibration buffer (≈9 Hz when on).
+    last_calib: Instant,
 }
 
 impl GraphicsCaptureApiHandler for MinimapCapture {
@@ -110,6 +127,8 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
             signal: Signal::new(),
             start: now,
             last_processed: now,
+            last_emit: now,
+            last_calib: now,
         })
     }
 
@@ -122,6 +141,18 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
         if !crate::runtime::in_game() {
             return Ok(());
         }
+        // Calibration evidence feed (≈9 fps; only when the QA mode is on). Runs
+        // before the minimap throttle so the clip ring buffer stays smooth even
+        // when CV processing is throttled.
+        if crate::calibration::is_enabled() && self.last_calib.elapsed().as_millis() >= 110 {
+            self.last_calib = Instant::now();
+            let (fw, fh) = (frame.width(), frame.height());
+            if let Ok(fb) = frame.buffer_crop(0, 0, fw, fh) {
+                let mut full: Vec<u8> = Vec::new();
+                let _ = fb.as_nopadding_buffer(&mut full);
+                crate::calibration::push_full_bgra(&full, fw, fh);
+            }
+        }
         // Adaptive throttle: process at ~8 Hz normally, but at the full source
         // rate while Sentry is "suspicious" (has missing heroes) so a developing
         // gank is read with minimum lag.
@@ -131,6 +162,7 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
             return Ok(());
         }
         self.last_processed = Instant::now();
+        let work_start = Instant::now();
 
         let r = self.region;
         // Crop to the minimap square. buffer_crop takes (start_x, start_y,
@@ -160,6 +192,11 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                     em.missing_for_ms,
                     em.last_pos,
                 ));
+                if crate::calibration::is_enabled() {
+                    crate::calibration::screenshot("enemy-missing", serde_json::json!({
+                        "hero": em.hero, "missing_for_ms": em.missing_for_ms,
+                    }));
+                }
                 let _ = self.app.emit("enemy-missing", &em);
             }
             // G-Motion: history + gank-risk over currently-missing enemies.
@@ -172,6 +209,13 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                 match self.signal.evaluate(&risk) {
                     SignalEvent::Alert(alert) => {
                         voice_interrupt("danger", GANK_LINE);
+                        if crate::calibration::is_enabled() {
+                            crate::calibration::record("gank", Some(GANK_LINE), serde_json::json!({
+                                "probability": alert.probability,
+                                "missing_heroes": alert.missing_heroes,
+                                "eta_ms": alert.eta_ms,
+                            }));
+                        }
                         crate::log::note_event(crate::log::gank_signal_record(
                             alert.probability,
                             &alert.missing_heroes,
@@ -188,15 +232,30 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                 }
             }
 
-            let payload = MinimapDebug {
-                region: r,
-                icon: self.icon,
-                count: candidates.len(),
-                candidates,
-                detections,
-                classifier: self.detector.is_active(),
-            };
-            let _ = self.app.emit("minimap-cv", payload);
+            // Debug/calibration feed — throttled to ≈5 Hz so the full-screen
+            // overlay webview can't back up the DWM compositor over a long match.
+            // (Gank alerts / enemy-missing above are edge-triggered, emitted now.)
+            if self.last_emit.elapsed().as_millis() >= DEBUG_EMIT_INTERVAL_MS {
+                self.last_emit = Instant::now();
+                let payload = MinimapDebug {
+                    region: r,
+                    icon: self.icon,
+                    count: candidates.len(),
+                    candidates,
+                    detections,
+                    classifier: self.detector.is_active(),
+                };
+                let _ = self.app.emit("minimap-cv", payload);
+            }
+        }
+
+        // Stall watchdog: a frame creeping over budget is the early sign of the
+        // CV/compositor lockup — record it so error.log shows the run-up.
+        let work_ms = work_start.elapsed().as_millis();
+        if work_ms > SLOW_FRAME_MS {
+            crate::log::error(&format!(
+                "[capture] SLOW frame {work_ms}ms (suspicious={suspicious}) — possible CV/compositor stall"
+            ));
         }
         Ok(())
     }
@@ -211,8 +270,10 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
 /// of the app keeps running.
 pub fn start(app: AppHandle) {
     std::thread::spawn(move || {
+        crate::log::error("[capture] WGC capture thread started");
         if let Err(e) = run(app) {
             eprintln!("[capture] minimap capture stopped: {e}");
+            crate::log::error(&format!("[capture] STOPPED: {e}"));
         }
     });
 }
