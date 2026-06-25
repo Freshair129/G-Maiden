@@ -3,15 +3,16 @@
  *
  * Isolated from the stable "lite" overlay in App.tsx. Each piece is an
  * independent MODULE positioned + scaled from Settings.layout (edited in the
- * Control window's LayoutEditor), in the "Maiden Blue Quiet Luxury" direction.
- * Backend is shared — same game-tick / gank events drive both tiers.
+ * Control window's LayoutEditor). Backend is shared — same game-tick / gank
+ * events drive both tiers.
  *
- * Phase 1: module system (position + scale + enable from the saved layout).
- * Next: split stats into sub-modules (GPM/XPM/NW), character presence, voice tab.
+ * Phase 2: stats split into individual draggable modules (clock/KDA/gold/GPM/
+ * XPM/NW/score/HP-mana) + a CompanionStage presence module. Next: drop the
+ * Crystal Maiden portrait into CompanionStage, voice-pack tab.
  */
 import React from 'react'
 import type { GameTick, Settings, GankState } from '../App'
-import { cfgOf, type ModuleCfg } from './modules'
+import { cfgOf, type ModuleCfg, type ModuleId } from './modules'
 
 const C = {
   ice: '#8fd4ff', txt: '#e7eef6', mut: '#8794a6',
@@ -23,7 +24,6 @@ const heroName = (raw: string) => {
   return n ? n.replace(/\b\w/g, (c) => c.toUpperCase()) : '—'
 }
 
-/** A positioned, scaled module — the redesign's core: each places itself from cfg. */
 const Module: React.FC<{ cfg: ModuleCfg; children: React.ReactNode }> = ({ cfg, children }) => (
   <div style={{ position: 'fixed', left: `${cfg.x}%`, top: `${cfg.y}%`, transform: `translate(-50%, -50%) scale(${cfg.scale})`, pointerEvents: 'none', zIndex: 10 }}>
     {children}
@@ -33,16 +33,18 @@ const Module: React.FC<{ cfg: ModuleCfg; children: React.ReactNode }> = ({ cfg, 
 const glass = (op: number): React.CSSProperties => ({
   background: `rgba(14,17,24,${op})`,
   border: `1px solid ${C.edge}`,
-  borderRadius: 16,
+  borderRadius: 14,
   backdropFilter: 'blur(16px)',
   WebkitBackdropFilter: 'blur(16px)',
-  boxShadow: '0 8px 44px rgba(0,0,0,0.5), inset 0 1px 0 rgba(143,212,255,0.10)',
+  boxShadow: '0 8px 40px rgba(0,0,0,0.5), inset 0 1px 0 rgba(143,212,255,0.10)',
   fontFamily: '"Segoe UI", system-ui, sans-serif',
   color: C.txt,
 })
 
-const gem = (
-  <div style={{ width: 10, height: 10, borderRadius: 3, transform: 'rotate(45deg)', background: 'linear-gradient(135deg,#8fd4ff,#3f7fb0)', boxShadow: '0 0 12px rgba(143,212,255,0.6)', flex: 'none' }} />
+const bar = (pct: number, color: string) => (
+  <div style={{ height: 5, width: 120, background: 'rgba(255,255,255,0.08)', borderRadius: 99, overflow: 'hidden' }}>
+    <div style={{ height: '100%', width: `${Math.max(0, Math.min(100, pct))}%`, background: color, borderRadius: 99 }} />
+  </div>
 )
 
 interface Props {
@@ -56,72 +58,92 @@ interface Props {
 export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, overlayAdvice }) => {
   const op = s.opacity
   const inGame = !!tick && tick.in_game
+  const t = tick
   const L = s.layout
 
+  /** Wrap content in a positioned module iff it's enabled in the layout. */
+  const M = (id: ModuleId, content: React.ReactNode) => {
+    const cfg = cfgOf(L, id)
+    return cfg.enabled ? <Module key={id} cfg={cfg}>{content}</Module> : null
+  }
+  /** Small stat chip (one value). */
+  const chip = (label: string, value: React.ReactNode, color?: string) => (
+    <div style={{ ...glass(op), padding: '7px 13px', textAlign: 'center', minWidth: 46 }}>
+      <div style={{ fontSize: 16, fontWeight: 700, color: color ?? C.txt, lineHeight: 1 }}>{value}</div>
+      {label && <div style={{ fontSize: 9, color: C.mut, textTransform: 'uppercase', letterSpacing: 0.6, marginTop: 2 }}>{label}</div>}
+    </div>
+  )
+
+  // ── Danger Alert (special — gank state drives the variant)
   const alertCfg = cfgOf(L, 'alert')
-  const alert =
-    s.gankVisuals && gank && alertCfg.enabled ? (
-      <Module cfg={alertCfg}>
-        {gank.phase === 'clear' ? (
-          <div style={{ ...glass(0.82), padding: '9px 22px', border: `1px solid ${C.ice}`, color: C.ice, fontWeight: 600, fontSize: 14 }}>เอ๊ะ… ปลอดภัยแล้วค่ะ</div>
-        ) : (
-          <div style={{ ...glass(0.84), padding: '10px 24px', border: `1px solid ${C.warn}`, color: C.warn, fontWeight: 700, fontSize: 15, boxShadow: '0 0 30px rgba(255,207,107,0.4)' }}>
-            ⚠️ ระวังแก๊งค์! {gank.heroes.length ? gank.heroes.map(heroName).join(', ') + ' — ' : ''}{Math.round(gank.probability * 100)}%
-          </div>
-        )}
-      </Module>
-    ) : null
-
-  const presCfg = cfgOf(L, 'presence')
-  const presence =
-    presCfg.enabled ? (
-      <Module cfg={presCfg}>
-        <div style={{ ...glass(op), padding: '12px 16px', minWidth: 150 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 9, marginBottom: inGame ? 8 : 0 }}>
-            {gem}
-            <span style={{ fontSize: 12.5, fontWeight: 600, letterSpacing: 0.3 }}>Maiden</span>
-            {inGame && <span style={{ marginLeft: 'auto', fontSize: 16, fontWeight: 700, color: C.ice }}>{fmtClock(tick!.clock_time)}</span>}
-          </div>
-          {inGame ? (
-            <div style={{ display: 'flex', gap: 14, fontSize: 12 }}>
-              <span style={{ color: C.mut }}>K/D/A <b style={{ color: C.txt }}>{tick!.kills}/{tick!.deaths}/{tick!.assists}</b></span>
-              <span style={{ color: C.mut }}>Gold <b style={{ color: C.warn }}>{tick!.gold.toLocaleString()}</b></span>
-            </div>
-          ) : (
-            <span style={{ fontSize: 11.5, color: C.mut }}> · Full mode · รอเข้าเกม…</span>
-          )}
+  const alert = s.gankVisuals && gank && alertCfg.enabled ? (
+    <Module key="alert" cfg={alertCfg}>
+      {gank.phase === 'clear' ? (
+        <div style={{ ...glass(0.82), padding: '9px 22px', border: `1px solid ${C.ice}`, color: C.ice, fontWeight: 600, fontSize: 14 }}>เอ๊ะ… ปลอดภัยแล้วค่ะ</div>
+      ) : (
+        <div style={{ ...glass(0.84), padding: '10px 24px', border: `1px solid ${C.warn}`, color: C.warn, fontWeight: 700, fontSize: 15, boxShadow: '0 0 30px rgba(255,207,107,0.4)' }}>
+          ⚠️ ระวังแก๊งค์! {gank.heroes.length ? gank.heroes.map(heroName).join(', ') + ' — ' : ''}{Math.round(gank.probability * 100)}%
         </div>
-      </Module>
-    ) : null
+      )}
+    </Module>
+  ) : null
 
-  const missCfg = cfgOf(L, 'missing')
-  const missing =
-    inGame && missingHeroes.size > 0 && !gank && s.gankVisuals && missCfg.enabled ? (
-      <Module cfg={missCfg}>
-        <div style={{ ...glass(op), padding: '8px 14px', border: `1px solid rgba(255,207,107,0.45)`, color: C.warn, fontSize: 12.5, display: 'flex', gap: 8 }}>
-          <span style={{ opacity: 0.7 }}>👁️</span>
-          <span>หาย: {[...missingHeroes].map(heroName).join(', ')}</span>
-        </div>
-      </Module>
-    ) : null
-
-  const advCfg = cfgOf(L, 'advice')
-  const advice =
-    overlayAdvice && s.gankVisuals && advCfg.enabled ? (
-      <Module cfg={advCfg}>
-        <div style={{ ...glass(op), padding: '12px 18px', maxWidth: 420, fontSize: 13, lineHeight: 1.5 }}>
-          <div style={{ fontSize: 10, color: C.ice, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Maiden แนะนำ</div>
-          <div>{overlayAdvice}</div>
-        </div>
-      </Module>
-    ) : null
+  // ── CompanionStage — Maiden presence (portrait placeholder → real CM art later)
+  const companion = (
+    <div style={{ ...glass(op), padding: '10px 14px', display: 'flex', alignItems: 'center', gap: 11, minWidth: 142 }}>
+      <div style={{ width: 38, height: 38, borderRadius: 12, flex: 'none', background: 'radial-gradient(circle at 35% 30%, #bfe6ff, #3f7fb0 68%, #16222f)', boxShadow: '0 0 16px rgba(143,212,255,0.5), inset 0 0 8px rgba(255,255,255,0.25)' }} />
+      <div>
+        <div style={{ fontSize: 13, fontWeight: 700, letterSpacing: 0.3 }}>Maiden</div>
+        <div style={{ fontSize: 10.5, color: inGame ? C.ok : C.mut }}>{inGame ? '● กำลังดูแล' : 'รอเข้าเกม…'}</div>
+      </div>
+    </div>
+  )
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'transparent', pointerEvents: 'none' }}>
       {alert}
-      {presence}
-      {missing}
-      {advice}
+      {M('companion', companion)}
+
+      {overlayAdvice && s.gankVisuals
+        ? M('advice', (
+            <div style={{ ...glass(op), padding: '12px 18px', maxWidth: 420, fontSize: 13, lineHeight: 1.5 }}>
+              <div style={{ fontSize: 10, color: C.ice, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Maiden แนะนำ</div>
+              <div>{overlayAdvice}</div>
+            </div>
+          ))
+        : null}
+
+      {inGame && missingHeroes.size > 0 && !gank && s.gankVisuals
+        ? M('missing', (
+            <div style={{ ...glass(op), padding: '8px 14px', border: `1px solid rgba(255,207,107,0.45)`, color: C.warn, fontSize: 12.5, display: 'flex', gap: 8 }}>
+              <span style={{ opacity: 0.7 }}>👁️</span>
+              <span>หาย: {[...missingHeroes].map(heroName).join(', ')}</span>
+            </div>
+          ))
+        : null}
+
+      {inGame && t && (
+        <>
+          {M('clock', chip('', fmtClock(t.clock_time), C.ice))}
+          {M('kda', chip('K / D / A', `${t.kills}/${t.deaths}/${t.assists}`))}
+          {M('gold', chip('Gold', t.gold.toLocaleString(), C.warn))}
+          {M('gpm', chip('GPM', t.gpm))}
+          {M('xpm', chip('XPM', t.xpm))}
+          {M('nw', chip('NW', t.net_worth > 0 ? t.net_worth.toLocaleString() : '—', C.ice))}
+          {M('score', chip('Score', (
+            <span><span style={{ color: C.ok }}>{t.radiant_score}</span> <span style={{ color: C.mut }}>:</span> <span style={{ color: C.bad }}>{t.dire_score}</span></span>
+          )))}
+          {M('hero', (
+            <div style={{ ...glass(op), padding: '9px 13px', minWidth: 140 }}>
+              <div style={{ fontSize: 12, fontWeight: 600, color: t.alive ? C.txt : C.bad, marginBottom: 5 }}>
+                {heroName(t.hero)} {!t.alive && '💀'} <span style={{ color: C.mut, fontWeight: 400 }}>Lv{t.level}</span>
+              </div>
+              <div style={{ marginBottom: 3 }}>{bar(t.hp_percent, C.ok)}</div>
+              {bar(t.mana_percent, C.ice)}
+            </div>
+          ))}
+        </>
+      )}
     </div>
   )
 }
