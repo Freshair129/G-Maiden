@@ -206,6 +206,9 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
             // G-Signal: edge-triggered warning + Belief Revision, voiced now
             // (only when the user has G-Signal enabled).
             if crate::runtime::signal_enabled() {
+                // Pull the latest user-tunable sensitivity in case it changed
+                // since the previous tick (atomic read, ~free).
+                self.signal.set_sensitivity(crate::runtime::signal_sensitivity());
                 match self.signal.evaluate(&risk) {
                     SignalEvent::Alert(alert) => {
                         // Use the "gank" event so the bundled voice pack's gank

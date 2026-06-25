@@ -50,6 +50,8 @@ interface AdviceUpdate { text: string; cached: boolean }
 interface GsiStatus { dota_running: boolean; gsi_active: boolean; in_game: boolean; display_exclusive: boolean }
 
 type Pos = 'top' | 'left' | 'right' | 'custom'
+export type Sensitivity = 'low' | 'med' | 'high'
+
 export interface Settings {
   overlayVisible: boolean
   position: Pos
@@ -64,6 +66,7 @@ export interface Settings {
   personaLines: boolean
   autoAdvice: boolean
   gankVisuals: boolean
+  signalSensitivity: Sensitivity
   cvDebug: boolean
   calibration: boolean
   uiMode: 'lite' | 'full'
@@ -74,7 +77,7 @@ export interface Settings {
   showKda: boolean
   showGold: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false, gankVisuals: true, cvDebug: false, calibration: false, uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false, gankVisuals: true, signalSensitivity: 'med', cvDebug: false, calibration: false, uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
 interface OverlayProfile { name: string; position: Pos; customX: number; customY: number; opacity: number; showTimer: boolean; showScore: boolean; showHeroBar: boolean; showKda: boolean; showGold: boolean }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 
@@ -1165,6 +1168,12 @@ const Control: React.FC = () => {
     void invoke('set_cv_signal_enabled', { enabled: s.voiceEnabled }).catch(() => {})
   }, [s.voiceEnabled])
 
+  // Mirror the user's chosen gank-warning sensitivity to the Rust capture loop
+  // (applied on the next CV tick — no restart needed).
+  useEffect(() => {
+    void invoke('set_cv_signal_sensitivity', { level: s.signalSensitivity }).catch(() => {})
+  }, [s.signalSensitivity])
+
   // Toggle in-game calibration evidence capture (off by default; QA/tuning mode).
   useEffect(() => {
     void invoke('set_calibration_enabled', { enabled: s.calibration }).catch(() => {})
@@ -1343,6 +1352,16 @@ const Control: React.FC = () => {
 
         <Card title="G-Signal / CV (gank)">
           <Row label="แบนเนอร์เตือนแก๊งค์ (gank)"><Toggle on={s.gankVisuals} onChange={(v) => set('gankVisuals', v)} /></Row>
+          <Row label="ความไวเตือนแก๊งค์">
+            <div style={{ display: 'inline-flex', border: `1px solid ${C.line}`, borderRadius: 9, overflow: 'hidden' }}>
+              {(['low','med','high'] as Sensitivity[]).map((lv) => (
+                <button key={lv} onClick={() => set('signalSensitivity', lv)}
+                  style={{ background: s.signalSensitivity === lv ? 'rgba(143,212,255,0.16)' : 'transparent', color: s.signalSensitivity === lv ? C.ice : C.mut, border: 'none', padding: '6px 14px', cursor: 'pointer', fontSize: 12 }}>
+                  {lv === 'low' ? 'ตึง (≥85%)' : lv === 'med' ? 'สมดุล (≥65%)' : 'ไว (≥50%)'}
+                </button>
+              ))}
+            </div>
+          </Row>
           <Row label="CV debug overlay (calibrate)"><Toggle on={s.cvDebug} onChange={(v) => set('cvDebug', v)} /></Row>
           <Row label="Calibration capture (audit: screenshot + clip) — QA"><Toggle on={s.calibration} onChange={(v) => set('calibration', v)} /></Row>
           <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>

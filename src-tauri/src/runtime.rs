@@ -5,8 +5,10 @@
 //! the main thread) and the values are tiny. Plain atomics + a couple of mutexes
 //! keep it lock-light; no extra crate needed (`Mutex::new` is const since 1.63).
 
-use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use std::sync::Mutex;
+
+use crate::signal::Sensitivity;
 
 /// True while a real match is in progress (set by the GSI server). The capture
 /// loop uses this to gate the expensive CV pipeline — no point detecting heroes
@@ -16,6 +18,10 @@ static IN_GAME: AtomicBool = AtomicBool::new(false);
 /// Whether G-Signal gank warnings are enabled (mirrors the UI toggle). Defaults
 /// on so a fresh install warns out of the box.
 static SIGNAL_ENABLED: AtomicBool = AtomicBool::new(true);
+
+/// User-tunable gank-warning sensitivity (Low / Med / High). Encoded as `u8` so
+/// the capture loop reads it without locking; Med default matches `Sensitivity`.
+static SIGNAL_SENSITIVITY: AtomicU8 = AtomicU8::new(1); // 0=Low, 1=Med, 2=High
 
 /// Epoch-ms of the last GSI POST received. 0 = none yet. The watchdog uses this
 /// to tell "Dota open & sending" (heartbeat ~30s) from "gone quiet".
@@ -44,6 +50,22 @@ pub fn set_signal_enabled(v: bool) {
 }
 pub fn signal_enabled() -> bool {
     SIGNAL_ENABLED.load(Ordering::Relaxed)
+}
+
+pub fn set_signal_sensitivity(s: Sensitivity) {
+    let code: u8 = match s {
+        Sensitivity::Low => 0,
+        Sensitivity::Med => 1,
+        Sensitivity::High => 2,
+    };
+    SIGNAL_SENSITIVITY.store(code, Ordering::Relaxed);
+}
+pub fn signal_sensitivity() -> Sensitivity {
+    match SIGNAL_SENSITIVITY.load(Ordering::Relaxed) {
+        0 => Sensitivity::Low,
+        2 => Sensitivity::High,
+        _ => Sensitivity::Med,
+    }
 }
 
 /// Mirror the user's chosen voice/rate so G-Signal speaks in Maiden's selected

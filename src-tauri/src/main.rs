@@ -170,6 +170,13 @@ fn set_cv_signal_enabled(enabled: bool) {
     runtime::set_signal_enabled(enabled);
 }
 
+/// Mirror the UI's G-Signal sensitivity picker (Low/Med/High) so the capture
+/// loop trades false positives for hit rate per the player's preference.
+#[tauri::command]
+fn set_cv_signal_sensitivity(level: signal::Sensitivity) {
+    runtime::set_signal_sensitivity(level);
+}
+
 /// Toggle in-game calibration evidence capture (screenshots + audit clips).
 /// QA/tuning mode — off by default; writes images locally only.
 #[tauri::command]
@@ -268,6 +275,7 @@ fn main() {
             list_voices,
             set_cv_voice,
             set_cv_signal_enabled,
+            set_cv_signal_sensitivity,
             set_calibration_enabled,
             capture_calibration_clip,
             voice_cache_status,
