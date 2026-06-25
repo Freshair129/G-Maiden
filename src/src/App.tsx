@@ -145,9 +145,21 @@ const loadProfiles = (): OverlayProfile[] => {
 
 const C = { bg: '#08090c', ice: '#8fd4ff', txt: '#e7eef6', mut: '#8794a6', ok: '#5be3a7', warn: '#ffcf6b', bad: '#ff7b85', line: 'rgba(143,212,255,0.16)' }
 
-const APP_VERSION = '0.7.2'
+const APP_VERSION = '0.7.3'
 
 const CHANGELOG: { ver: string; date: string; items: string[] }[] = [
+  { ver: '0.7.3', date: '2026-06-25', items: [
+    'โหมด overlay ใหม่ "Full" — โมดูลแยกชิ้นวางอิสระ + glass ดีไซน์ Maiden Blue (lite ยังเป็นค่าเริ่มต้น)',
+    'G-Meter: แถบบอกระดับความเสี่ยง low/med/high (ไม่บอก %) อยู่ตลอด — เห็นแม้ G-Signal ยังไม่ถึงเกณฑ์',
+    'Voice notice toast — โชว์ trigger event บนจอแม้ยังไม่มี voice pack ("(voice)" บอก)',
+    'Overlay UI editor — ลาก-วางโมดูลพร้อมแม่เหล็กกริด 5% + พรีวิวซ้อนภาพ Dota HUD reference',
+    'Voice Packs tab — ปุ่ม "ทดลองฟัง" + ลิงก์ร้านเสียง (ซื้อผ่านเว็บ)',
+    'Calibration mode — บันทึก screenshot/clip ทุก event ลง %LOCALAPPDATA%\\G-Maiden\\calibration\\ สำหรับ agent audit (QA)',
+    'แก้ overlay ค้างหลังเล่นยาว — emit throttle 5Hz + slow-frame watchdog + panic hook ลง error.log',
+    'เตือนเมื่อ Dota อยู่โหมด Exclusive Fullscreen (overlay ใช้ไม่ได้ ต้อง Borderless)',
+    'เปลี่ยน hotkey Alt+S → Ctrl+Alt+S (Alt ชนกับ ping ใน Dota)',
+    'GSI status สดจริง (ไม่ค้าง "เชื่อมต่อ" หลังออกเกม) · NW โชว์ "—" เมื่อ GSI ไม่ส่ง',
+  ]},
   { ver: '0.7.2', date: '2026-06-23', items: [
     'แก้บั๊ก: หน้าต่าง PowerShell แวบตอนเตือน HP ต่ำ — TTS หา piper.exe ด้วย `where` โดยไม่ซ่อน console ตอนนี้ใส่ CREATE_NO_WINDOW แล้ว (เส้นทางเสียงไม่แวบจออีก)',
   ]},
@@ -589,7 +601,7 @@ const Overlay: React.FC = () => {
 
   // Redesign tier — isolated render path; lite (below) stays the stable default.
   if (s.uiMode === 'full') {
-    return <FullOverlay tick={tick} s={s} gank={gank} missingHeroes={missingHeroes} overlayAdvice={overlayAdvice} />
+    return <FullOverlay tick={tick} s={s} gank={gank} missingHeroes={missingHeroes} overlayAdvice={overlayAdvice} toast={toast} />
   }
 
   if (!seen || !tick || !tick.in_game || (!gsiActive && !previewMode)) {

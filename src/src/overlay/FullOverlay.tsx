@@ -54,9 +54,31 @@ interface Props {
   gank: GankState
   missingHeroes: Set<string>
   overlayAdvice: string | null
+  /** Last voice event mirrored on-screen (G-Signal/persona/advice). Becomes
+   * the silent fallback when the voice pack hasn't shipped — users still see
+   * which event triggered. Auto-dismisses in the parent. */
+  toast: { event: string; text: string } | null
 }
 
-export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, overlayAdvice }) => {
+/** Continuous-risk level derived from G-Sentry's missing-hero count (and the
+ * G-Signal alert flag, which always pegs to high). G-Signal only fires past a
+ * hard threshold, so this gives the player a *gradient* — "ปลอดภัย/ระวัง/เสี่ยง/
+ * อันตราย" — without showing raw probability percentages. */
+function gmeterLevel(missing: number, gank: GankState): 0 | 1 | 2 | 3 {
+  if (gank?.phase === 'alert') return 3
+  if (missing >= 3) return 3
+  if (missing >= 2) return 2
+  if (missing >= 1) return 1
+  return 0
+}
+const G_LEVELS = [
+  { label: 'ปลอดภัย', color: '#5be3a7', glow: 'rgba(91,227,167,0.35)' },
+  { label: 'ระวัง', color: '#8fd4ff', glow: 'rgba(143,212,255,0.35)' },
+  { label: 'เสี่ยง', color: '#ffcf6b', glow: 'rgba(255,207,107,0.5)' },
+  { label: 'อันตราย', color: '#ff7b85', glow: 'rgba(255,123,133,0.6)' },
+] as const
+
+export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, overlayAdvice, toast }) => {
   const op = s.opacity
   const inGame = !!tick && tick.in_game
   const t = tick
@@ -103,9 +125,42 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
     </div>
   )
 
+  // ── G-Meter — always-on continuous risk indicator (low/med/high, no %).
+  // 4-segment LED-style: lit segments == level (0..3), color shifts safe→danger.
+  const lvl = inGame ? gmeterLevel(missingHeroes.size, gank) : 0
+  const gMeter = (
+    <div style={{ ...glass(op), padding: '7px 12px', display: 'flex', alignItems: 'center', gap: 10, minWidth: 158 }}>
+      <span style={{ fontSize: 10, color: C.mut, textTransform: 'uppercase', letterSpacing: 0.7 }}>Risk</span>
+      <div style={{ display: 'flex', gap: 3 }}>
+        {[0, 1, 2, 3].map((i) => (
+          <div key={i} style={{
+            width: 16, height: 8, borderRadius: 2,
+            background: i <= lvl ? G_LEVELS[lvl].color : 'rgba(255,255,255,0.08)',
+            boxShadow: i <= lvl ? `0 0 6px ${G_LEVELS[lvl].glow}` : 'none',
+            transition: 'background 200ms ease, box-shadow 200ms ease',
+          }} />
+        ))}
+      </div>
+      <span style={{ fontSize: 11.5, fontWeight: 700, color: G_LEVELS[lvl].color, marginLeft: 'auto' }}>
+        {G_LEVELS[lvl].label}
+      </span>
+    </div>
+  )
+
+  // ── Voice notice (toast) — mirrors the spoken cue on-screen so the player
+  // sees the trigger event even when the voice pack isn't installed yet.
+  const toastUi = toast ? (
+    <div style={{ ...glass(0.88), padding: '8px 16px', display: 'flex', alignItems: 'center', gap: 10, maxWidth: 460, border: `1px solid ${C.ice}` }}>
+      <span style={{ fontSize: 10, color: C.ice, textTransform: 'uppercase', letterSpacing: 0.7, flex: 'none' }}>🔔 {toast.event} (voice)</span>
+      <span style={{ fontSize: 12.5, opacity: 0.92 }}>{toast.text}</span>
+    </div>
+  ) : null
+
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'transparent', pointerEvents: 'none' }}>
       {alert}
+      {inGame && M('gmeter', gMeter)}
+      {toastUi && M('toast', toastUi)}
       {M('companion', companion)}
 
       {overlayAdvice && s.gankVisuals

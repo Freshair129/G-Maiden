@@ -9,6 +9,8 @@
 
 export type ModuleId =
   | 'alert'
+  | 'gmeter'
+  | 'toast'
   | 'companion'
   | 'advice'
   | 'missing'
@@ -34,6 +36,8 @@ export type Layout = Record<ModuleId, ModuleCfg>
 
 export const MODULE_META: { id: ModuleId; label: string }[] = [
   { id: 'alert', label: 'Danger Alert' },
+  { id: 'gmeter', label: 'G-Meter (risk)' },
+  { id: 'toast', label: 'Voice Notice (toast)' },
   { id: 'companion', label: 'Maiden Presence' },
   { id: 'advice', label: 'Advice' },
   { id: 'missing', label: 'Enemy Missing' },
@@ -54,6 +58,8 @@ export const MODULE_META: { id: ModuleId; label: string }[] = [
  */
 export const DEFAULT_LAYOUT: Layout = {
   alert: { x: 50, y: 6, scale: 1, enabled: true },
+  gmeter: { x: 50, y: 14, scale: 1, enabled: true },
+  toast: { x: 50, y: 22, scale: 1, enabled: true },
   companion: { x: 9, y: 11, scale: 1, enabled: true },
   advice: { x: 50, y: 88, scale: 1, enabled: true },
   missing: { x: 88, y: 8, scale: 1, enabled: true },
