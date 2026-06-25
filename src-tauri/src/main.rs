@@ -104,6 +104,16 @@ fn open_voice_cache_dir() {
         .spawn();
 }
 
+/// Open an external http(s) URL in the default browser (e.g. the voice-pack
+/// store — purchases happen on the web). `explorer` handles URLs and is a GUI
+/// app, so no console flashes; scheme is validated to avoid arbitrary commands.
+#[tauri::command]
+fn open_url(url: String) {
+    if url.starts_with("https://") || url.starts_with("http://") {
+        let _ = std::process::Command::new("explorer").arg(&url).spawn();
+    }
+}
+
 /// Ask Maiden (via Claude Plan quota) for advice on the current game state.
 /// Runs on a blocking thread so the async runtime stays free.
 /// Also broadcasts `advice-update` to the overlay window so it can show the
@@ -239,6 +249,7 @@ fn main() {
             capture_calibration_clip,
             voice_cache_status,
             open_voice_cache_dir,
+            open_url,
             detect_gsi_setup,
             install_gsi_config,
             get_log_dir,

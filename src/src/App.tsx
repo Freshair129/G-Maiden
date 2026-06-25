@@ -755,6 +755,38 @@ const VoiceCacheCard: React.FC = () => {
   )
 }
 
+// ─────────────────────────────── VOICE PACKS (store entry; purchase = web only) ───────────────────────────────
+const VOICE_STORE_URL = 'https://g-maiden.app/voicepacks' // TODO: real store URL
+const VoicePackCard: React.FC = () => {
+  const [total, setTotal] = useState<number | null>(null)
+  useEffect(() => { void invoke<VoiceCacheStatus>('voice_cache_status').then((st) => setTotal(st.total)).catch(() => {}) }, [])
+  return (
+    <Card title="Voice Packs (เสียง Maiden)">
+      <div style={{ fontSize: 12.5, color: C.mut, lineHeight: 1.6, paddingTop: 6 }}>
+        แพ็คเสียงไทยสไตล์นักพากย์ (เหมือน announcer ใน HoN) — ใช้แทนเสียง SAPI ให้ Maiden พูดมีอารมณ์ขึ้น.
+        {total !== null && (
+          <div style={{ marginTop: 6, color: total > 0 ? C.ok : C.mut }}>
+            {total > 0 ? `● ติดตั้งแล้ว ${total} clips` : '○ ยังไม่มี pack — ใช้ SAPI fallback'}
+          </div>
+        )}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+        <button onClick={() => void invoke('open_url', { url: VOICE_STORE_URL }).catch(() => {})}
+          style={{ background: 'rgba(143,212,255,0.18)', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 9, padding: '8px 15px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
+          🛒 ดู / ซื้อ Voice Pack (เปิดเว็บ)
+        </button>
+        <button onClick={() => void invoke('open_voice_cache_dir').catch(() => {})}
+          style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 9, padding: '8px 13px', fontSize: 12.5, cursor: 'pointer' }}>
+          📂 โฟลเดอร์เสียง
+        </button>
+      </div>
+      <div style={{ fontSize: 11, color: C.mut, marginTop: 8, lineHeight: 1.5 }}>
+        ซื้อผ่านเว็บ → ดาวน์โหลดแล้วแตกลงโฟลเดอร์เสียง (<code style={{ color: C.txt }}>{`{event}/{n}.wav`}</code>). การชำระเงินทำบนเว็บเท่านั้น.
+      </div>
+    </Card>
+  )
+}
+
 // ─────────────────────────────── G-MASTER (Claude Plan advisor) ───────────────────────────────
 interface Advice { text: string; cached: boolean }
 const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number; autoAdvice: boolean; onAutoAdviceChange: (v: boolean) => void }> = ({ tick, voice, rate, autoAdvice, onAutoAdviceChange }) => {
@@ -1320,6 +1352,7 @@ const Control: React.FC = () => {
         <SetupCard />
         <LogCard live={!!tick?.in_game} clockTime={tick?.clock_time ?? 0} />
         <VoiceCacheCard />
+        <VoicePackCard />
       </div>
 
       <div style={{ marginTop: 14 }}>
