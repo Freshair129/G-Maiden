@@ -38,6 +38,7 @@ pub struct OcrHit {
 /// What went wrong. Most callers only care about `Unavailable` vs everything
 /// else, so they can fall back to a "scoreboard OCR off" UX without unwrapping.
 #[derive(Debug)]
+#[allow(dead_code)] // Decode will be constructed in Phase B (crop preprocessing)
 pub enum OcrError {
     /// Model files not present yet — run `tools/ocr-download/`.
     Unavailable,
