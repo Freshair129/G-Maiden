@@ -17,12 +17,19 @@
 - `docs/architecture/engineering-spec.md` — contracts และ engineering rules
 - `docs/architecture/technical-design-document.md` — system design หลัก
 - `docs/architecture/design-system.md` — Iceglass UX/UI design system สำหรับ Control Dashboard และ Overlay
-- `docs/architecture/product-family-design-map.md` — family overview and shared theme for separate G-Maiden and G-Orchestra systems
+- `docs/architecture/product-family-design-map.md` — shared visual overview for G-Maiden and the `orchestration/` G-Orchestra multi-agent dev tool
 - `docs/architecture/g-maiden-ui-sitemap-flow-board.md` — G-Maiden player-facing UI sitemap, user flow, and board
-- `docs/architecture/g-orchestra-ui-sitemap-flow-board.md` — G-Orchestra operator UI sitemap, user flow, and board
 - `docs/architecture/implementation-plan.md` — implementation plan / ultraplan
 - `docs/architecture/adr/` — architecture decisions
 - `docs/architecture/spikes/` — spike และ technical proof
+
+## Orchestration
+
+- `orchestration/docs/SRS--G-ORCHESTRA.md` — SRS สำหรับ G-Orchestra multi-agent orchestrator
+- `orchestration/docs/FEAT--MULTI-AGENT-ORCHESTRATOR.md` — feature spec สำหรับ G-Orchestra multi-agent workflow
+- `orchestration/docs/g-orchestra-ui-sitemap-flow-board.md` — G-Orchestra UI sitemap, user flow, and design board
+- `orchestration/docs/SPEC--*.md` — specs เฉพาะระบบ orchestration เช่น verify gate, provider registry, local model anti-error loop
+- `orchestration/docs/ADR-O-*.md` — architecture decisions ของ orchestration
 
 ## Features
 

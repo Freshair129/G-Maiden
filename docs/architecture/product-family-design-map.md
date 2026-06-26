@@ -1,33 +1,33 @@
 ---
-version: "0.2.0b"
+version: "0.5.0b"
 created_at: "2026-06-24T00:00:00+07:00,ATHER,pending"
-last_update: "2026-06-24T03:10:00+07:00,ATHER"
+last_update: "2026-06-24T05:20:00+07:00,ATHER"
 status: "candidate"
 superseded_by: null
 attributes:
   domain: "ui-ux"
-  scope: "G-Maiden + G-Orchestra product family overview"
+  scope: "G-Maiden product + G-Orchestra multi-agent dev tool shared visual overview"
   language: "th"
 ---
 
 # G-Maiden + G-Orchestra Product Family Design Map
 
-> Family overview for two separate products that share one visual universe:
+> Shared visual overview for the G-Maiden product and the G-Orchestra multi-agent dev tool:
 > **Maiden Blue Quiet Luxury Gaming / Esport**.
 
 ---
 
 ## 1. Purpose
 
-เอกสารนี้เป็น overview ระดับ product family เท่านั้น
+เอกสารนี้เป็น overview ระดับ shared visual family เท่านั้น
 เพื่อยืนยันว่า `G-Maiden` และ `G-Orchestra` เป็นคนละระบบ
 แต่ใช้ shared visual language เดียวกัน
 
 - `G-Maiden` = player-facing AI companion system สำหรับผู้เล่นระหว่างเล่น Dota 2
-- `G-Orchestra` = operator / builder orchestration system สำหรับจัดการ agents, workflows, tasks, reports, approvals
+- `G-Orchestra` = internal multi-agent dev tool ใน `orchestration/` สำหรับจัดการ backlog, DAG, worker pool, providers, usage, logs, review gate
 - Shared theme = glassmorphism, quiet luxury gaming, esport, Maiden blue, cool premium, realistic MOBA companion presence
 
-Rule: `G-Orchestra` is not a sub-page of `G-Maiden`. It is a sister product/control system that shares the same family identity.
+Rule: `G-Orchestra` is not a sub-page of `G-Maiden` and not a shipped player product. It is the repository's internal multi-agent orchestrator in `orchestration/` and shares the same visual identity.
 
 ## 2. Child Docs
 
@@ -36,14 +36,14 @@ Use these child documents for product-specific sitemap, user flow, screen direct
 | Product | Doc | Wikilink |
 | --- | --- | --- |
 | `G-Maiden` | [g-maiden-ui-sitemap-flow-board.md](g-maiden-ui-sitemap-flow-board.md) | `[[g-maiden-ui-sitemap-flow-board]]` |
-| `G-Orchestra` | [g-orchestra-ui-sitemap-flow-board.md](g-orchestra-ui-sitemap-flow-board.md) | `[[g-orchestra-ui-sitemap-flow-board]]` |
+| `G-Orchestra` | [../../orchestration/docs/g-orchestra-ui-sitemap-flow-board.md](../../orchestration/docs/g-orchestra-ui-sitemap-flow-board.md) | `[[g-orchestra-ui-sitemap-flow-board]]` |
 
 ## 3. Product Boundary
 
 | Product | Primary user | Primary job | UX density | Character role |
 | --- | --- | --- | --- | --- |
 | `G-Maiden` | Player | Receive real-time guidance without losing focus | Low to medium | Core companion presence |
-| `G-Orchestra` | Operator / builder / creator | Coordinate agents, graph, runs, approvals, reports | Medium to high | Ambient brand presence only |
+| `G-Orchestra` | Developer / operator / builder | Inspect and coordinate backlog, DAG waves, workers, providers, usage, logs, review gate | Medium to high | Ambient brand presence only |
 
 ## 4. Shared Presentation Board
 
@@ -100,7 +100,8 @@ Use these child documents for product-specific sitemap, user flow, screen direct
 
 ## 6. Acceptance Criteria
 
-- [ ] Family overview clearly states that `G-Maiden` and `G-Orchestra` are separate products.
+- [ ] Family overview clearly states that `G-Maiden` and `G-Orchestra` are separate systems.
+- [ ] Overview states that `G-Orchestra` is the internal multi-agent dev tool in `orchestration/`, not a shipped player product.
 - [ ] Overview links to both child docs using Markdown links and wikilinks.
 - [ ] Shared theme remains centralized here without duplicating each product sitemap.
 - [ ] Child docs own product-specific sitemap, flow, screen direction, and component notes.
@@ -111,5 +112,8 @@ Use these child documents for product-specific sitemap, user flow, screen direct
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 |---------|------|--------|---------|-------------|-------|
+| 0.5.0b | 2026-06-24 | candidate | Updated the G-Orchestra child-doc link to the canonical `orchestration/docs` location. | pending | ATHER |
+| 0.4.0b | 2026-06-24 | candidate | Clarified that G-Orchestra maps to the real `orchestration/` multi-agent system. | pending | ATHER |
+| 0.3.0b | 2026-06-24 | candidate | Reframed G-Orchestra as a standalone internal dev tool rather than a product surface. | pending | ATHER |
 | 0.2.0b | 2026-06-24 | candidate | Split product-specific sitemap and user-flow content into separate G-Maiden and G-Orchestra child docs; kept this file as family overview. | pending | ATHER |
 | 0.1.0b | 2026-06-24 | candidate | Initial product-family sitemap, user flow, and shared presentation board for separate G-Maiden and G-Orchestra systems. | pending | ATHER |
