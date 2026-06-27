@@ -111,6 +111,7 @@ pub fn play_file(path: PathBuf) {
 }
 
 /// Where Maiden's user-installed clips live. Exe-relative first, then dev-tree.
+/// Always returns an absolute path so Explorer opens the right folder.
 pub fn voice_cache_dir() -> PathBuf {
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
@@ -120,7 +121,8 @@ pub fn voice_cache_dir() -> PathBuf {
             }
         }
     }
-    PathBuf::from("assets/voice-cache")
+    let dev = PathBuf::from("assets/voice-cache");
+    std::fs::canonicalize(&dev).unwrap_or_else(|_| std::env::current_dir().unwrap_or_default().join("assets/voice-cache"))
 }
 
 /// Where the bundled DEFAULT Thai voice pack lives — installed next to the exe
