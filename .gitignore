@@ -11,6 +11,9 @@ yarn-error.log*
 
 # Rust
 /src-tauri/target/
+# nested sub-project Tauri/Rust build output (e.g. tools/audio-slicer/src-tauri/target)
+**/src-tauri/target/
+**/src-tauri/gen/
 *.rs.bk
 Cargo.lock
 
