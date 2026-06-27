@@ -30,6 +30,12 @@ pub struct GameTick {
     pub alive: bool,
     pub hp_percent: i64,
     pub mana_percent: i64,
+    /// Number of entries in hero.kill_list — when it grows we know a new kill happened.
+    /// Each entry's `victimid` is a player slot (0-9); the latest entry is the newest kill.
+    pub kill_list_len: i64,
+    /// Player-slot ID of the most recent kill victim (from the last entry in kill_list).
+    /// -1 when kill_list is empty.
+    pub last_victim_slot: i64,
 }
 
 // lenient extractors — GSI fields vary by game phase / spectator mode.
@@ -51,6 +57,24 @@ fn b(v: &Value, path: &[&str]) -> bool {
     dig(v, path).as_bool().unwrap_or(false)
 }
 
+/// Extract the latest victim slot from hero.kill_list. Dota 2 GSI sends this as
+/// `{"0": {"victimid": 5}, "1": {"victimid": 3}, ...}` — sequential string keys.
+/// Returns (count, last_victim_slot).
+fn parse_kill_list(v: &Value) -> (i64, i64) {
+    let kl = &v["hero"]["kill_list"];
+    if let Some(obj) = kl.as_object() {
+        let count = obj.len() as i64;
+        let last = (0..count)
+            .rev()
+            .find_map(|idx| obj.get(&idx.to_string())
+                .and_then(|entry| entry["victimid"].as_i64()))
+            .unwrap_or(-1);
+        (count, last)
+    } else {
+        (0, -1)
+    }
+}
+
 /// Tight definition of "actually in a match" — we want the overlay/voice/log
 /// to engage only when the player is on the map. Excludes hero pick, draft,
 /// load screens, the post-game scoreboard, and disconnects.
@@ -64,6 +88,7 @@ fn is_in_game(game_state: &str) -> bool {
 async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
     let v: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
     let game_state = s(&v, &["map", "game_state"]);
+    let (kl_len, last_victim) = parse_kill_list(&v);
     let tick = GameTick {
         in_game: is_in_game(&game_state),
         clock_time: i(&v, &["map", "clock_time"]),
@@ -85,14 +110,35 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
         alive: b(&v, &["hero", "alive"]),
         hp_percent: i(&v, &["hero", "health_percent"]),
         mana_percent: i(&v, &["hero", "mana_percent"]),
+        kill_list_len: kl_len,
+        last_victim_slot: last_victim,
     };
+    // Announcer: detect kill/streak/state events from the tick and voice the
+    // most significant one (clip-or-silent — these aren't TTS-faked).
+    let announce = crate::announcer::most_important(&crate::announcer::observe(&tick));
     // Note the POST (watchdog uses recency) and gate the CV pipeline to live
     // matches (saves idle CPU).
     crate::runtime::mark_post(epoch_ms());
     crate::runtime::set_in_game(tick.in_game);
     crate::log::note_tick(&tick);
     let _ = app.emit("game-tick", tick);
+    if let Some(ev) = announce {
+        crate::audio::play_random(&ev);
+    }
     "ok"
+}
+
+/// Receive a notify from G-AnnStudio after it installs a pack into voice-cache.
+/// The clips are already on disk (audio.rs reads the dir live), so we just
+/// confirm by returning the current per-event clip counts.
+async fn announcer_install(body: String) -> axum::Json<serde_json::Value> {
+    let pack = serde_json::from_str::<Value>(&body)
+        .ok()
+        .and_then(|v| v["pack"].as_str().map(String::from))
+        .unwrap_or_default();
+    let counts = crate::audio::all_counts();
+    eprintln!("[G-Maiden] announcer pack installed: {pack} ({} events)", counts.len());
+    axum::Json(serde_json::json!({ "ok": true, "pack": pack, "counts": counts }))
 }
 
 fn epoch_ms() -> u64 {
@@ -137,7 +183,10 @@ async fn watchdog(app: AppHandle) {
 /// Bind :3000 and serve GSI. Spawned as a background task by `main`.
 pub async fn serve(app: AppHandle) {
     tauri::async_runtime::spawn(watchdog(app.clone()));
-    let router = Router::new().route("/gsi", post(handle)).with_state(app);
+    let router = Router::new()
+        .route("/gsi", post(handle))
+        .route("/announcer/install", post(announcer_install))
+        .with_state(app);
     match tokio::net::TcpListener::bind("127.0.0.1:3000").await {
         Ok(listener) => {
             eprintln!("[G-Maiden] GSI server listening on http://127.0.0.1:3000/gsi");
@@ -180,9 +229,9 @@ mod tests {
     }
 
     fn run_handle(payload: serde_json::Value) -> GameTick {
-        // Mirror handle()'s body parsing without the Tauri/axum harness.
         let v = payload;
         let game_state = s(&v, &["map", "game_state"]);
+        let (kl_len, last_victim) = parse_kill_list(&v);
         GameTick {
             in_game: is_in_game(&game_state),
             clock_time: i(&v, &["map", "clock_time"]),
@@ -204,6 +253,8 @@ mod tests {
             alive: b(&v, &["hero", "alive"]),
             hp_percent: i(&v, &["hero", "health_percent"]),
             mana_percent: i(&v, &["hero", "mana_percent"]),
+            kill_list_len: kl_len,
+            last_victim_slot: last_victim,
         }
     }
 
@@ -235,5 +286,33 @@ mod tests {
         assert_eq!(t.hero, "npc_dota_hero_crystal_maiden");
         assert_eq!(t.kills, 7);
         assert_eq!(t.hp_percent, 78);
+    }
+
+    #[test]
+    fn kill_list_parsed() {
+        let t = run_handle(serde_json::json!({
+            "map":    { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS" },
+            "player": { "kills": 3 },
+            "hero":   {
+                "name": "npc_dota_hero_crystal_maiden",
+                "kill_list": {
+                    "0": { "victimid": 5 },
+                    "1": { "victimid": 2 },
+                    "2": { "victimid": 7 }
+                }
+            }
+        }));
+        assert_eq!(t.kill_list_len, 3);
+        assert_eq!(t.last_victim_slot, 7);
+    }
+
+    #[test]
+    fn kill_list_empty() {
+        let t = run_handle(serde_json::json!({
+            "map":    { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS" },
+            "hero":   { "name": "npc_dota_hero_invoker" }
+        }));
+        assert_eq!(t.kill_list_len, 0);
+        assert_eq!(t.last_victim_slot, -1);
     }
 }

@@ -10,6 +10,7 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
+mod announcer;
 mod audio;
 mod capture;
 mod counter_advice;
@@ -67,14 +68,26 @@ struct VoiceCacheStatus {
     total: usize,
 }
 
+// The announcer event contract (mirrors G-Suite/schemas/gmaiden-events.json).
+// danger/revision are the G-Signal lines; the rest are fired by `announcer`.
 const EVENTS: &[&str] = &[
     "danger",
-    "levelUp",
+    "revision",
+    "match_start",
+    "first_blood",
     "kill",
+    "double_kill",
+    "triple_kill",
+    "ultra_kill",
+    "rampage",
+    "killing_spree",
+    "unstoppable",
+    "godlike",
     "death",
     "respawn",
+    "levelUp",
+    "hpLow",
     "manaLow",
-    "revision",
     "advice",
 ];
 

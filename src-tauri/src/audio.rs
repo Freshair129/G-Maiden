@@ -124,6 +124,23 @@ pub fn clip_count(event: &str) -> usize {
     list_clips(event).len()
 }
 
+/// Count WAVs in every event sub-dir of voice-cache (used by the install
+/// endpoint to confirm what an installed pack landed).
+pub fn all_counts() -> std::collections::BTreeMap<String, usize> {
+    let mut out = std::collections::BTreeMap::new();
+    if let Ok(it) = fs::read_dir(voice_cache_dir()) {
+        for entry in it.flatten() {
+            let p = entry.path();
+            if p.is_dir() {
+                if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
+                    out.insert(name.to_string(), clip_count(name));
+                }
+            }
+        }
+    }
+    out
+}
+
 /// Stop the current clip immediately.
 pub fn cancel() {
     send(Cmd::Stop);
