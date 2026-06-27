@@ -40,6 +40,15 @@ static MASTER_BACKEND: AtomicU8 = AtomicU8::new(0);
 /// Ollama model name the user picked for G-Master (empty → legacy default).
 static MASTER_OLLAMA_MODEL: Mutex<String> = Mutex::new(String::new());
 
+/// G-Master Claude auth mode. `false` = use the signed-in `claude` CLI Plan quota
+/// (the historical, no-API-key path); `true` = call the Anthropic Messages API
+/// directly with the user's own API key. Lets users who don't have the CLI signed
+/// in (or who want a dedicated key) still drive the cloud advisor.
+static MASTER_USE_APIKEY: AtomicBool = AtomicBool::new(false);
+
+/// The Anthropic API key when `MASTER_USE_APIKEY` is on (empty → not provided).
+static MASTER_API_KEY: Mutex<String> = Mutex::new(String::new());
+
 pub fn mark_post(ms: u64) {
     LAST_POST_MS.store(ms, Ordering::Relaxed);
 }
@@ -126,4 +135,28 @@ pub fn set_master_ollama_model(name: String) {
 }
 pub fn master_ollama_model() -> String {
     MASTER_OLLAMA_MODEL.lock().ok().map(|g| g.clone()).unwrap_or_default()
+}
+
+/// Set the G-Master Claude auth mode + key. `use_api_key=false` keeps the
+/// `claude` CLI Plan path; `true` with a non-empty key routes Claude advice
+/// through the Anthropic Messages API.
+pub fn set_master_auth(use_api_key: bool, key: String) {
+    MASTER_USE_APIKEY.store(use_api_key, Ordering::Relaxed);
+    if let Ok(mut g) = MASTER_API_KEY.lock() {
+        *g = key;
+    }
+}
+
+/// The Anthropic API key to use for Claude advice, or `None` when the user is on
+/// the CLI Plan path (or hasn't entered a key). `Some` only when API-key mode is
+/// on *and* a non-empty key is present, so callers can branch with a single check.
+pub fn master_api_key() -> Option<String> {
+    if !MASTER_USE_APIKEY.load(Ordering::Relaxed) {
+        return None;
+    }
+    MASTER_API_KEY
+        .lock()
+        .ok()
+        .map(|g| g.clone())
+        .filter(|s| !s.trim().is_empty())
 }

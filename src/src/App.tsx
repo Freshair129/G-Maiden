@@ -69,8 +69,12 @@ export interface Settings {
   personaLines: boolean
   autoAdvice: boolean
   gankVisuals: boolean
+  killVisuals: boolean
   signalSensitivity: Sensitivity
+  masterEnabled: boolean
   masterBackend: 'auto' | 'claude' | 'ollama'
+  masterAuth: 'plan' | 'apikey'
+  masterApiKey: string
   masterOllamaModel: string
   cvDebug: boolean
   calibration: boolean
@@ -82,7 +86,7 @@ export interface Settings {
   showKda: boolean
   showGold: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, personaLines: true, autoAdvice: false, gankVisuals: true, signalSensitivity: 'med', masterBackend: 'auto', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, personaLines: true, autoAdvice: false, gankVisuals: true, killVisuals: true, signalSensitivity: 'med', masterEnabled: true, masterBackend: 'auto', masterAuth: 'plan', masterApiKey: '', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
 interface OverlayProfile { name: string; position: Pos; customX: number; customY: number; opacity: number; showTimer: boolean; showScore: boolean; showHeroBar: boolean; showKda: boolean; showGold: boolean }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 
@@ -397,12 +401,22 @@ const Overlay: React.FC = () => {
       if (volToastTimer.current) clearTimeout(volToastTimer.current)
       volToastTimer.current = setTimeout(() => setVolToast(null), 1500)
     })
+    // Kill-banner preview (fired from the settings panel so users can see/hear
+    // the kill/streak banner without being in a match).
+    const uK = listen<{ streak: number; victim: string | null }>('preview-kill', (e) => {
+      if (killTimer.current) clearTimeout(killTimer.current)
+      setKillBanner({ phase: 'show', kills: 0, streak: e.payload.streak, victim: e.payload.victim })
+      killTimer.current = setTimeout(() => {
+        setKillBanner((kb) => kb ? { ...kb, phase: 'exit' } : null)
+        killTimer.current = setTimeout(() => setKillBanner(null), 800)
+      }, 4000)
+    })
     void emit('overlay-ready')
     return () => {
       void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f())
       void u4.then((f) => f()); void u5.then((f) => f()); void u6.then((f) => f())
       void u7.then((f) => f()); void u8.then((f) => f()); void u9.then((f) => f())
-      void u10.then((f) => f())
+      void u10.then((f) => f()); void uK.then((f) => f())
       if (gankTimer.current) clearTimeout(gankTimer.current)
       if (gankClearTimer.current) clearTimeout(gankClearTimer.current)
       if (adviceTimer.current) clearTimeout(adviceTimer.current)
@@ -546,7 +560,7 @@ const Overlay: React.FC = () => {
   useEffect(() => {
     if (!tick || !tick.in_game) return
     const p = prev.current
-    if (!p || !sRef.current.autoAdvice || !sRef.current.voiceEnabled) return
+    if (!p || !sRef.current.masterEnabled || !sRef.current.autoAdvice || !sRef.current.voiceEnabled) return
 
     type Trigger = { key: string }
     const triggers: Trigger[] = []
@@ -718,7 +732,7 @@ const Overlay: React.FC = () => {
         {missingBadge}
         {eventToast}
         {lowHp && <div className="gm-danger" style={dangerStyle}>⚠ HP เหลือ {t.hp_percent}% — ถอยก่อนค่ะเพื่อน!</div>}
-        {killBanner && (
+        {s.killVisuals && killBanner && (
           <div className={killBanner.phase === 'exit' ? 'gm-kill-exit' : 'gm-kill'} style={killBannerStyle}>
             {/* Hero portrait circle + animated red X */}
             <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
@@ -1010,11 +1024,12 @@ const VoicePackCard: React.FC = () => {
 // ─────────────────────────────── G-MASTER (Claude Plan advisor) ───────────────────────────────
 interface Advice { text: string; cached: boolean }
 type MasterBackend = 'auto' | 'claude' | 'ollama'
-const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number; autoAdvice: boolean; onAutoAdviceChange: (v: boolean) => void; backend: MasterBackend; onBackendChange: (b: MasterBackend) => void; ollamaModel: string; onOllamaModelChange: (m: string) => void }> = ({ tick, voice, rate, autoAdvice, onAutoAdviceChange, backend, onBackendChange, ollamaModel, onOllamaModelChange }) => {
+const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number; enabled: boolean; onEnabledChange: (v: boolean) => void; autoAdvice: boolean; onAutoAdviceChange: (v: boolean) => void; backend: MasterBackend; onBackendChange: (b: MasterBackend) => void; auth: 'plan' | 'apikey'; onAuthChange: (a: 'plan' | 'apikey') => void; apiKey: string; onApiKeyChange: (k: string) => void; ollamaModel: string; onOllamaModelChange: (m: string) => void }> = ({ tick, voice, rate, enabled, onEnabledChange, autoAdvice, onAutoAdviceChange, backend, onBackendChange, auth, onAuthChange, apiKey, onApiKeyChange, ollamaModel, onOllamaModelChange }) => {
   const [advice, setAdvice] = useState<Advice | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
-  const canAsk = !!tick && tick.in_game && !busy
+  const canAsk = enabled && !!tick && tick.in_game && !busy
+  const usesClaude = backend === 'claude' || backend === 'auto'
   const ask = async () => {
     if (!tick) return
     setBusy(true); setError(null)
@@ -1037,6 +1052,7 @@ const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number;
   }
   return (
     <Card title="G-Master (advisor)">
+      <Row label="เปิดใช้งาน G-Master"><Toggle on={enabled} onChange={onEnabledChange} /></Row>
       <Row label="Backend">
         <div style={{ display: 'inline-flex', border: `1px solid ${C.line}`, borderRadius: 9, overflow: 'hidden' }}>
           {(['auto','claude','ollama'] as MasterBackend[]).map((b) => (
@@ -1047,6 +1063,22 @@ const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number;
           ))}
         </div>
       </Row>
+      {usesClaude && (
+        <Row label="Login / Auth (Claude)">
+          <select value={auth} onChange={(e) => onAuthChange(e.target.value as 'plan' | 'apikey')}
+            style={{ background: 'rgba(18,20,28,0.86)', color: C.txt, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 10px', fontSize: 12.5 }}>
+            <option value="plan">Plan — claude CLI (ล็อกอินอัตโนมัติ)</option>
+            <option value="apikey">API key — Anthropic</option>
+          </select>
+        </Row>
+      )}
+      {usesClaude && auth === 'apikey' && (
+        <Row label="Anthropic API key">
+          <input type="password" value={apiKey} onChange={(e) => onApiKeyChange(e.target.value)}
+            placeholder="sk-ant-…" autoComplete="off"
+            style={{ background: 'rgba(18,20,28,0.86)', color: C.txt, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 10px', fontSize: 12.5, width: 280 }} />
+        </Row>
+      )}
       {(backend === 'ollama' || backend === 'auto') && (
         <Row label="Ollama model">
           <input value={ollamaModel} onChange={(e) => onOllamaModelChange(e.target.value)}
@@ -1411,6 +1443,10 @@ const Control: React.FC = () => {
   useEffect(() => {
     void invoke('set_master_ollama_model', { name: s.masterOllamaModel }).catch(() => {})
   }, [s.masterOllamaModel])
+  // G-Master auth: plan (claude CLI) vs Anthropic API key.
+  useEffect(() => {
+    void invoke('set_master_auth', { auth: s.masterAuth, apiKey: s.masterApiKey }).catch(() => {})
+  }, [s.masterAuth, s.masterApiKey])
 
   // Toggle in-game calibration evidence capture (off by default; QA/tuning mode).
   useEffect(() => {
@@ -1612,6 +1648,14 @@ const Control: React.FC = () => {
 
         <Card title="G-Signal / CV (gank)">
           <Row label="แบนเนอร์เตือนแก๊งค์ (gank)"><Toggle on={s.gankVisuals} onChange={(v) => set('gankVisuals', v)} /></Row>
+          <Row label="แบนเนอร์ฆ่า / สตรีค (kill banner)">
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button onClick={() => { void emit('preview-kill', { streak: 5, victim: 'npc_dota_hero_lina' }); void invoke('speak_event', { event: 'mega_kill', fallback: 'เมก้าคิล!', voice: null, rate: null }).catch(() => {}) }}
+                title="โชว์ตัวอย่างแบนเนอร์บน overlay (ต้องเปิด overlay อยู่)"
+                style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 11px', fontSize: 12, cursor: 'pointer' }}>▶ ดูตัวอย่าง</button>
+              <Toggle on={s.killVisuals} onChange={(v) => set('killVisuals', v)} />
+            </div>
+          </Row>
           <Row label="ความไวเตือนแก๊งค์">
             <div style={{ display: 'inline-flex', border: `1px solid ${C.line}`, borderRadius: 9, overflow: 'hidden' }}>
               {(['low','med','high'] as Sensitivity[]).map((lv) => (
@@ -1651,7 +1695,7 @@ const Control: React.FC = () => {
       </div>
 
       <div style={{ marginTop: 14 }}>
-        <MasterCard tick={tick} voice={s.voiceName} rate={s.voiceRate} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} backend={s.masterBackend} onBackendChange={(b) => set('masterBackend', b)} ollamaModel={s.masterOllamaModel} onOllamaModelChange={(m) => set('masterOllamaModel', m)} />
+        <MasterCard tick={tick} voice={s.voiceName} rate={s.voiceRate} enabled={s.masterEnabled} onEnabledChange={(v) => set('masterEnabled', v)} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} backend={s.masterBackend} onBackendChange={(b) => set('masterBackend', b)} auth={s.masterAuth} onAuthChange={(a) => set('masterAuth', a)} apiKey={s.masterApiKey} onApiKeyChange={(k) => set('masterApiKey', k)} ollamaModel={s.masterOllamaModel} onOllamaModelChange={(m) => set('masterOllamaModel', m)} />
       </div>
 
       <div style={{ marginTop: 14 }}>

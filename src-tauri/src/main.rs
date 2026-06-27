@@ -213,6 +213,14 @@ fn set_master_ollama_model(name: String) {
     runtime::set_master_ollama_model(name);
 }
 
+/// Pick the G-Master Claude auth method. `auth = "apikey"` routes Claude advice
+/// through the Anthropic Messages API with `api_key`; anything else (e.g. "plan")
+/// keeps the signed-in `claude` CLI Plan quota.
+#[tauri::command]
+fn set_master_auth(auth: String, api_key: String) {
+    runtime::set_master_auth(auth == "apikey", api_key);
+}
+
 /// Toggle in-game calibration evidence capture (screenshots + audit clips).
 /// QA/tuning mode — off by default; writes images locally only.
 #[tauri::command]
@@ -361,6 +369,7 @@ fn main() {
             set_cv_signal_sensitivity,
             set_master_backend,
             set_master_ollama_model,
+            set_master_auth,
             set_calibration_enabled,
             capture_calibration_clip,
             set_volume,

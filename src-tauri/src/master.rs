@@ -10,6 +10,9 @@ use std::process::{Command, Stdio};
 use std::sync::Mutex;
 use std::time::{Duration, Instant};
 
+/// Cheap, fast Anthropic model for short advice calls (1-2 sentence tips).
+const ANTHROPIC_MODEL: &str = "claude-haiku-4-5";
+
 use crate::counter_advice::counter_advice_text;
 use crate::gsi::GameTick;
 
@@ -130,7 +133,67 @@ pub fn advise(tick: &GameTick) -> Result<Advice, String> {
     Ok(Advice { text, cached: false })
 }
 
+/// Claude advice path. When the user has chosen API-key auth and entered a key,
+/// call the Anthropic Messages API directly; otherwise shell out to the signed-in
+/// `claude` CLI (Plan quota, no key).
 fn try_claude(prompt: &str) -> Result<String, String> {
+    if let Some(key) = crate::runtime::master_api_key() {
+        return try_anthropic_api(prompt, &key);
+    }
+    try_claude_cli(prompt)
+}
+
+/// POST the prompt to the Anthropic Messages API via curl (same shell-out pattern
+/// as the ollama path — no new Rust dependency). Parses `content[0].text`.
+fn try_anthropic_api(prompt: &str, key: &str) -> Result<String, String> {
+    let body = serde_json::json!({
+        "model": ANTHROPIC_MODEL,
+        "max_tokens": 300,
+        "messages": [{ "role": "user", "content": prompt }],
+    })
+    .to_string();
+
+    let mut cmd = Command::new("curl");
+    cmd.args([
+        "-s",
+        "--max-time", "30",
+        "-X", "POST",
+        "https://api.anthropic.com/v1/messages",
+        "-H", &format!("x-api-key: {key}"),
+        "-H", "anthropic-version: 2023-06-01",
+        "-H", "content-type: application/json",
+        "-d", &body,
+    ])
+    .stdin(Stdio::null())
+    .stdout(Stdio::piped())
+    .stderr(Stdio::piped());
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW — no console flash
+    }
+    let out = cmd
+        .output()
+        .map_err(|e| format!("เรียก curl ไม่ได้: {e}"))?;
+    if !out.status.success() {
+        return Err(format!("curl exit {:?}", out.status.code()));
+    }
+    let raw = String::from_utf8_lossy(&out.stdout);
+    let v: serde_json::Value = serde_json::from_str(&raw).map_err(|e| {
+        format!("JSON parse: {e} — raw: {}", &raw.chars().take(160).collect::<String>())
+    })?;
+    // Surface API errors (bad key, rate limit) instead of a confusing empty parse.
+    if let Some(err) = v.pointer("/error/message").and_then(|m| m.as_str()) {
+        return Err(format!("Anthropic API: {err}"));
+    }
+    v.pointer("/content/0/text")
+        .and_then(|t| t.as_str())
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
+        .ok_or_else(|| "Anthropic API คืนผลว่าง".into())
+}
+
+fn try_claude_cli(prompt: &str) -> Result<String, String> {
     let mut cmd = Command::new("claude");
     cmd.args(["-p", prompt])
         .stdin(Stdio::null())
