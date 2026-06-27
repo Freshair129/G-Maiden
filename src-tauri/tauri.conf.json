@@ -1,7 +1,7 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "G-Maiden",
-  "version": "0.7.8",
+  "version": "0.7.9",
   "identifier": "com.gmaiden.app",
   "build": {
     "beforeBuildCommand": "pnpm -C src build",
@@ -56,7 +56,8 @@
     "resources": {
       "../models/minimap-detector.onnx": "models/minimap-detector.onnx",
       "../models/labels.json": "models/labels.json",
-      "voice-pack-default": "voice-pack-default"
+      "voice-pack-default": "voice-pack-default",
+      "../assets/voice-cache": "voice-cache"
     }
   },
   "plugins": {
