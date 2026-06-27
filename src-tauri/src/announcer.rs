@@ -43,11 +43,16 @@ fn state() -> &'static Mutex<State> {
 /// events we voice only the most significant one (avoids clips cutting clips).
 fn priority(ev: &str) -> u8 {
     match ev {
-        "rampage" => 100,
+        "beyond_godlike" => 99,
+        "rampage" => 98,
         "godlike" => 95,
+        "monster_kill" => 92,
         "ultra_kill" => 90,
+        "wicked_sick" => 88,
         "unstoppable" => 85,
+        "mega_kill" => 82,
         "triple_kill" => 80,
+        "dominating" => 75,
         "killing_spree" => 70,
         "double_kill" => 65,
         "first_blood" => 60,
@@ -173,26 +178,24 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
             None => out.push("kill".to_string()),
         }
 
-        // streak milestone — announce once per tier crossed
-        let tier = if s.streak >= 9 {
-            3
-        } else if s.streak >= 6 {
-            2
-        } else if s.streak >= 3 {
-            1
-        } else {
-            0
-        };
-        if tier > s.streak_tier {
-            s.streak_tier = tier;
-            out.push(
-                match tier {
-                    3 => "godlike",
-                    2 => "unstoppable",
-                    _ => "killing_spree",
-                }
-                .to_string(),
-            );
+        // streak ladder — mirrors the overlay kill banner exactly
+        // (App.tsx STREAK_LABELS): one rung per consecutive kill, 3→10+.
+        // `streak_tier` holds the highest rung already announced (capped at 10
+        // so Beyond Godlike fires once, then every further kill is silent here).
+        let rung = s.streak.min(10);
+        if rung >= 3 && rung > s.streak_tier {
+            s.streak_tier = rung;
+            let ev = match rung {
+                3 => "killing_spree",
+                4 => "dominating",
+                5 => "mega_kill",
+                6 => "unstoppable",
+                7 => "wicked_sick",
+                8 => "monster_kill",
+                9 => "godlike",
+                _ => "beyond_godlike",
+            };
+            out.push(ev.to_string());
         }
     }
 
@@ -255,5 +258,27 @@ mod tests {
         step(&mut s, &tick(true, 50, 1, true));
         let d = step(&mut s, &tick(true, 60, 1, false));
         assert!(d.contains(&"death".to_string()));
+    }
+
+    #[test]
+    fn streak_ladder_matches_kill_banner() {
+        // one kill per rung — must fire the same labels as App.tsx STREAK_LABELS
+        let mut s = State::default();
+        step(&mut s, &tick(true, 0, 0, true)); // start, baseline kills=0
+        let expect = [
+            (3, "killing_spree"),
+            (4, "dominating"),
+            (5, "mega_kill"),
+            (6, "unstoppable"),
+            (7, "wicked_sick"),
+            (8, "monster_kill"),
+            (9, "godlike"),
+            (10, "beyond_godlike"),
+        ];
+        // space kills > 18s apart so multikill never masks the streak rung
+        for (k, label) in expect {
+            let e = step(&mut s, &tick(true, (k as i64) * 30, k as i64, true));
+            assert!(e.contains(&label.to_string()), "kill {k} should fire {label}, got {e:?}");
+        }
     }
 }
