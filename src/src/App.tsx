@@ -157,9 +157,19 @@ const loadProfiles = (): OverlayProfile[] => {
 
 const C = { bg: '#08090c', ice: '#8fd4ff', txt: '#e7eef6', mut: '#8794a6', ok: '#5be3a7', warn: '#ffcf6b', bad: '#ff7b85', line: 'rgba(143,212,255,0.16)' }
 
-const APP_VERSION = '0.7.5'
+const APP_VERSION = '0.7.6'
 
 const CHANGELOG: { ver: string; date: string; items: string[] }[] = [
+  { ver: '0.7.6', date: '2026-06-28', items: [
+    'Audio Settings ใหม่ — รวม Voice Cache + Voice Packs เป็นการ์ดเดียว แสดง clip เป็น "Voice Pack Set01" (default)',
+    'Event แบ่งกลุ่มตามหมวด (แจ้งเตือน / คิล / สตรีค / สถานะ) เห็นภาพรวมง่ายขึ้น',
+    'กดขยายแต่ละ event ดู clip ทีละไฟล์ + เล่นฟังทีละ clip ได้',
+    'Coverage bar แสดง % event ที่มี clip ครอบคลุม',
+  ]},
+  { ver: '0.7.5', date: '2026-06-27', items: [
+    'G-Master on/off toggle + Claude auth dropdown (Plan / API key) + kill-banner settings & preview',
+    'Announcer pack manager ใน Voice Packs card',
+  ]},
   { ver: '0.7.4', date: '2026-06-26', items: [
     'แพ็คเสียงไทยติดเครื่อง — Maiden พูดเสียงไทยได้ทันทีโดยไม่ต้องลงเพิ่ม (gTTS, 25 clips, 9 events; แทน SAPI ที่ฟังไม่รู้เรื่อง)',
     'Net worth แสดงค่าจริง — คำนวณจาก gold + ราคาไอเทมใน inventory (GSI ไม่ส่ง NW ใน player mode)',
@@ -894,59 +904,21 @@ const SetupCard: React.FC = () => {
   )
 }
 
-// ─────────────────────────────── VOICE CACHE (pre-recorded clips) ───────────────────────────────
+// ─────────────────────────────── AUDIO SETTINGS (unified voice pack + event manager) ───────────────────────────────
 interface VoiceCacheStatus { dir: string; counts: Record<string, number>; total: number }
-const VoiceCacheCard: React.FC = () => {
-  const [st, setSt] = useState<VoiceCacheStatus | null>(null)
-  const refresh = () => { void invoke<VoiceCacheStatus>('voice_cache_status').then(setSt).catch(() => {}) }
-  useEffect(refresh, [])
-  if (!st) return <Card title="Voice cache"><div style={{ fontSize: 12.5, color: C.mut, paddingTop: 8 }}>กำลังสแกน…</div></Card>
-  const events = Object.entries(st.counts)
-  const ok = st.total > 0
-  return (
-    <Card title="Voice cache (เสียงจริง)">
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 6 }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 9, fontSize: 13 }}>
-          <span style={{ width: 9, height: 9, borderRadius: 99, background: ok ? C.ok : C.mut }} />
-          <span style={{ color: ok ? C.txt : C.mut }}>{ok ? `${st.total} clips พร้อมใช้` : 'ยังไม่มี clip — ใช้ SAPI fallback'}</span>
-        </div>
-        <div style={{ display: 'flex', gap: 8 }}>
-          <button onClick={refresh} style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '6px 12px', fontSize: 12, cursor: 'pointer' }}>⟳</button>
-          <button onClick={() => void invoke('open_voice_cache_dir').catch(() => {})} style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '6px 13px', fontSize: 12, cursor: 'pointer' }}>📂 เปิดโฟลเดอร์</button>
-        </div>
-      </div>
-      <div style={{ fontSize: 11.5, color: C.mut, marginTop: 10, lineHeight: 1.6 }}>
-        <div style={{ wordBreak: 'break-all', marginBottom: 4 }}>โฟลเดอร์: <span style={{ color: C.txt }}>{st.dir}</span></div>
-        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '4px 10px' }}>
-          {events.map(([ev, n]) => (
-            <span key={ev} style={{ color: n > 0 ? C.ok : C.mut }}>{ev}: <b>{n}</b></span>
-          ))}
-        </div>
-        <div style={{ marginTop: 6 }}>วาง WAV ลง <code style={{ color: C.txt }}>{`{event}/{n}.wav`}</code> เช่น <code style={{ color: C.txt }}>danger/01.wav</code>. แนะนำ 5-10 takes ต่อ event กันฟังซ้ำ.</div>
-      </div>
-    </Card>
-  )
-}
-
-// ─────────────────────────────── VOICE PACKS (store entry; purchase = web only) ───────────────────────────────
+interface EventClip { name: string; path: string; source: string }
 const VOICE_STORE_URL = 'https://g-maiden.app/voicepacks' // TODO: real store URL
-/** Sample lines for the per-event preview buttons — what Maiden actually says
- * for each trigger. SAPI fallback uses these too, so users hear the same line
- * whether or not their pack covers the event. */
 const PREVIEW_LINES: Record<string, string> = {
-  // match flow
   match_start: 'เริ่มเกมแล้ว ลุยกันเลยค่ะ!',
   danger: 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว',
   gank: 'ระวังนะคะ ศัตรูหายไปจากแมพหลายตัว อาจมีแก๊งค์',
   revision: 'เอ๊ะ เดี๋ยวก่อน ดูเหมือนจะปลอดภัยแล้วค่ะ',
-  // kills
   first_blood: 'เลือดแรกเป็นของเรา!',
   kill: 'ฆ่าได้สวยค่ะ เก็บไปเรื่อยๆ',
   double_kill: 'สองศพรวด เด็ดมาก!',
   triple_kill: 'ขจัดไปสามแล้ว เริ่มมีกลิ่นแล้วนะ!',
   ultra_kill: 'สี่ศพ หยุดไม่อยู่แล้ว!',
   rampage: 'ห้าศพรวด แรมเพจ!',
-  // streaks (ตรงกับ kill banner)
   killing_spree: 'กำลังขึ้น คิลลิ่งสปรี!',
   dominating: 'ครองเกมแล้ว โดมิเนตติ้ง!',
   mega_kill: 'เมก้าคิล!',
@@ -955,7 +927,6 @@ const PREVIEW_LINES: Record<string, string> = {
   monster_kill: 'มอนสเตอร์คิล!',
   godlike: 'ระดับเทพ ก็อดไลก์!',
   beyond_godlike: 'เหนือกว่าเทพ บียอนด์ก็อดไลก์!',
-  // state
   death: 'ตายแล้วเหรอคะ ไม่เป็นไรเดี๋ยวกลับมาใหม่',
   respawn: 'กลับมาแล้ว ค่อยๆนะคะ',
   levelUp: 'ขึ้นเลเวลแล้วค่ะ สวยมาก',
@@ -963,59 +934,154 @@ const PREVIEW_LINES: Record<string, string> = {
   manaLow: 'มานาเหลือน้อยแล้วค่ะ ระวังด้วย',
   advice: 'ลองดูคำแนะนำนี้นะคะ',
 }
-const VoicePackCard: React.FC = () => {
+const EVENT_CATEGORIES: { label: string; color: string; events: string[] }[] = [
+  { label: 'แจ้งเตือน', color: '#ff6b6b', events: ['danger', 'gank', 'revision', 'hpLow', 'manaLow'] },
+  { label: 'คิล / มัลติคิล', color: '#ffd93d', events: ['first_blood', 'kill', 'double_kill', 'triple_kill', 'ultra_kill', 'rampage'] },
+  { label: 'สตรีค', color: '#ff8c42', events: ['killing_spree', 'dominating', 'mega_kill', 'unstoppable', 'wicked_sick', 'monster_kill', 'godlike', 'beyond_godlike'] },
+  { label: 'สถานะ', color: '#6bcb77', events: ['match_start', 'death', 'respawn', 'levelUp', 'advice'] },
+]
+const EVENT_LABELS: Record<string, string> = {
+  danger: 'อันตราย', gank: 'แก๊งค์', revision: 'ยกเลิกเตือน', hpLow: 'เลือดต่ำ', manaLow: 'มานาต่ำ',
+  first_blood: 'เลือดแรก', kill: 'คิล', double_kill: 'ดับเบิล', triple_kill: 'ทริปเปิล', ultra_kill: 'อัลตร้า', rampage: 'แรมเพจ',
+  killing_spree: 'สปรี', dominating: 'ครองเกม', mega_kill: 'เมก้า', unstoppable: 'หยุดไม่ได้',
+  wicked_sick: 'โหดมาก', monster_kill: 'มอนสเตอร์', godlike: 'ก็อดไลก์', beyond_godlike: 'เหนือเทพ',
+  match_start: 'เริ่มเกม', death: 'ตาย', respawn: 'ฟื้น', levelUp: 'เลเวลอัป', advice: 'คำแนะนำ',
+}
+const AudioSettingsCard: React.FC = () => {
   const [st, setSt] = useState<VoiceCacheStatus | null>(null)
+  const [expanded, setExpanded] = useState<string | null>(null)
+  const [clips, setClips] = useState<EventClip[]>([])
+  const [playing, setPlaying] = useState<string | null>(null)
   const refresh = () => { void invoke<VoiceCacheStatus>('voice_cache_status').then(setSt).catch(() => {}) }
   useEffect(refresh, [])
-  const playEvent = (ev: string) => {
-    void invoke('speak_event', { event: ev, fallback: PREVIEW_LINES[ev] ?? '', voice: null, rate: null }).catch(() => {})
-  }
   const counts = st?.counts ?? {}
-  const total = st?.total ?? null
   const allEvents = Object.keys(PREVIEW_LINES)
+  const total = st?.total ?? 0
   const covered = allEvents.filter((ev) => (counts[ev] ?? 0) > 0).length
+  const pct = Math.round((covered / allEvents.length) * 100)
+
+  const toggleExpand = (ev: string) => {
+    if (expanded === ev) { setExpanded(null); setClips([]); return }
+    setExpanded(ev)
+    void invoke<EventClip[]>('list_event_clips', { event: ev }).then(setClips).catch(() => setClips([]))
+  }
+  const playClip = (path: string) => {
+    setPlaying(path)
+    void invoke('play_clip', { path }).catch(() => {})
+    setTimeout(() => setPlaying(null), 2000)
+  }
+  const playEvent = (ev: string) => {
+    setPlaying(ev)
+    void invoke('speak_event', { event: ev, fallback: PREVIEW_LINES[ev] ?? '', voice: null, rate: null }).catch(() => {})
+    setTimeout(() => setPlaying(null), 2000)
+  }
+
+  if (!st) return <Card title="Audio Settings"><div style={{ fontSize: 12.5, color: C.mut, paddingTop: 8 }}>กำลังสแกน…</div></Card>
   return (
-    <Card title="Voice Packs (เสียง Maiden)">
-      <div style={{ fontSize: 12.5, color: C.mut, lineHeight: 1.6, paddingTop: 6 }}>
-        แพ็คเสียงไทยสไตล์นักพากย์ (เหมือน announcer ใน HoN) — สร้างเองด้วย <b style={{ color: C.txt }}>G-AnnStudio</b> แล้วติดตั้งลงโฟลเดอร์เสียง แทนเสียง SAPI.
-        {total !== null && (
-          <div style={{ marginTop: 6, color: total > 0 ? C.ok : C.mut }}>
-            {total > 0 ? `● ติดตั้งแล้ว ${total} clips · ครอบคลุม ${covered}/${allEvents.length} event` : '○ ยังไม่มี pack — ใช้ SAPI fallback'}
+    <Card title="Audio Settings">
+      {/* ── Pack header ── */}
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 8 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(143,212,255,0.12)', border: `1px solid ${C.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🎙️</div>
+          <div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>Voice Pack Set01 <span style={{ fontSize: 10, color: '#0c1018', fontWeight: 600, background: C.ice, borderRadius: 4, padding: '1px 6px', marginLeft: 6 }}>hotfix</span></div>
+            <div style={{ fontSize: 12, color: C.mut }}>{total} clips · {covered}/{allEvents.length} events ({pct}%)</div>
           </div>
-        )}
-      </div>
-      <div style={{ marginTop: 12 }}>
-        <div style={{ fontSize: 11, color: C.mut, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <span>ทดสอบเสียงแต่ละ event</span>
-          <button onClick={refresh} title="สแกนโฟลเดอร์ใหม่" style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 6, padding: '2px 9px', fontSize: 11, cursor: 'pointer' }}>⟳</button>
         </div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(132px, 1fr))', gap: 6 }}>
-          {allEvents.map((ev) => {
-            const n = counts[ev] ?? 0
-            const has = n > 0
-            return (
-              <button key={ev} onClick={() => playEvent(ev)}
-                title={has ? `${n} clip ในแพ็ค — กดเพื่อฟัง` : 'ยังไม่มี clip — จะใช้เสียง SAPI'}
-                style={{ background: has ? 'rgba(91,227,167,0.10)' : 'transparent', color: C.txt, border: `1px solid ${has ? 'rgba(91,227,167,0.40)' : C.line}`, borderRadius: 8, padding: '7px 9px', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'space-between' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>🔊 <span style={{ fontFamily: 'monospace', fontSize: 11, color: has ? C.ok : C.ice, overflow: 'hidden', textOverflow: 'ellipsis' }}>{ev}</span></span>
-                <span style={{ fontSize: 10.5, color: has ? C.ok : C.mut, fontFamily: 'monospace' }}>{has ? `×${n}` : '—'}</span>
-              </button>
-            )
-          })}
+        <div style={{ display: 'flex', gap: 6 }}>
+          <button onClick={refresh} title="สแกนใหม่" style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>⟳</button>
+          <button onClick={() => void invoke('open_voice_cache_dir').catch(() => {})} title="เปิดโฟลเดอร์ voice-cache" style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>📂</button>
         </div>
       </div>
-      <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
+
+      {/* ── Coverage bar ── */}
+      <div style={{ marginTop: 10, background: 'rgba(255,255,255,0.04)', borderRadius: 6, height: 6, overflow: 'hidden' }}>
+        <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? C.ok : C.ice, borderRadius: 6, transition: 'width 0.3s' }} />
+      </div>
+      <div style={{ fontSize: 10.5, color: C.mut, marginTop: 4, display: 'flex', justifyContent: 'space-between' }}>
+        <span>{pct === 100 ? 'ครบทุก event แล้ว!' : `ยังขาด ${allEvents.length - covered} event — ใช้ SAPI fallback`}</span>
+        <span style={{ color: C.ice }}>{st.dir}</span>
+      </div>
+
+      {/* ── Event categories ── */}
+      <div style={{ marginTop: 14 }}>
+        {EVENT_CATEGORIES.map((cat) => (
+          <div key={cat.label} style={{ marginBottom: 12 }}>
+            <div style={{ fontSize: 11, color: cat.color, textTransform: 'uppercase', letterSpacing: 0.6, fontWeight: 600, marginBottom: 6, display: 'flex', alignItems: 'center', gap: 6 }}>
+              <span style={{ width: 8, height: 3, borderRadius: 2, background: cat.color }} />
+              {cat.label}
+              <span style={{ color: C.mut, fontWeight: 400 }}>({cat.events.filter(e => (counts[e] ?? 0) > 0).length}/{cat.events.length})</span>
+            </div>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
+              {cat.events.map((ev) => {
+                const n = counts[ev] ?? 0
+                const has = n > 0
+                const isExpanded = expanded === ev
+                return (
+                  <div key={ev}>
+                    <div
+                      style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '6px 10px', borderRadius: 8, background: isExpanded ? 'rgba(143,212,255,0.08)' : 'transparent', cursor: 'pointer', transition: 'background 0.15s' }}
+                      onClick={() => toggleExpand(ev)}
+                    >
+                      <span style={{ width: 7, height: 7, borderRadius: 99, background: has ? C.ok : 'rgba(255,255,255,0.12)', flexShrink: 0 }} />
+                      <span style={{ fontSize: 12, color: C.txt, flex: 1, minWidth: 0 }}>
+                        <span style={{ fontFamily: 'monospace', fontSize: 11.5, color: has ? C.ice : C.mut }}>{ev}</span>
+                        <span style={{ color: C.mut, marginLeft: 6, fontSize: 11 }}>{EVENT_LABELS[ev] ?? ''}</span>
+                      </span>
+                      <span style={{ fontSize: 11, color: has ? C.ok : C.mut, fontFamily: 'monospace', minWidth: 30, textAlign: 'right' }}>{has ? `${n} clip${n > 1 ? 's' : ''}` : 'SAPI'}</span>
+                      <button
+                        onClick={(e) => { e.stopPropagation(); playEvent(ev) }}
+                        title={has ? 'เล่น clip สุ่ม' : 'เล่นเสียง SAPI'}
+                        style={{ background: 'transparent', color: playing === ev ? C.ok : (has ? C.ice : C.mut), border: `1px solid ${C.line}`, borderRadius: 6, padding: '3px 8px', fontSize: 11, cursor: 'pointer', flexShrink: 0 }}
+                      >{playing === ev ? '⏹' : '▶'}</button>
+                      <span style={{ fontSize: 10, color: C.mut, transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+                    </div>
+                    {isExpanded && (
+                      <div style={{ margin: '2px 0 6px 25px', padding: '8px 12px', background: 'rgba(18,20,28,0.6)', borderRadius: 8, border: `1px solid ${C.line}` }}>
+                        {clips.length > 0 ? (
+                          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                            {clips.map((clip) => (
+                              <div key={clip.path} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 12 }}>
+                                <button
+                                  onClick={() => playClip(clip.path)}
+                                  style={{ background: 'transparent', color: playing === clip.path ? C.ok : C.ice, border: `1px solid ${C.line}`, borderRadius: 5, padding: '2px 7px', fontSize: 11, cursor: 'pointer' }}
+                                >{playing === clip.path ? '⏹' : '▶'}</button>
+                                <span style={{ color: C.txt, fontFamily: 'monospace', fontSize: 11 }}>{clip.name}</span>
+                                <span style={{ fontSize: 10, color: C.mut, padding: '1px 5px', background: clip.source === 'user' ? 'rgba(91,227,167,0.12)' : 'rgba(143,212,255,0.08)', borderRadius: 4 }}>
+                                  {clip.source === 'user' ? 'user' : 'default'}
+                                </span>
+                              </div>
+                            ))}
+                          </div>
+                        ) : (
+                          <div style={{ fontSize: 12, color: C.mut }}>ไม่มี clip — จะใช้ SAPI TTS พูดว่า "<span style={{ color: C.txt, fontStyle: 'italic' }}>{PREVIEW_LINES[ev] ?? ''}</span>"</div>
+                        )}
+                        {clips.length > 0 && clips[0].source === 'default' && (
+                          <div style={{ fontSize: 10.5, color: C.mut, marginTop: 6 }}>💡 วาง clip ใน <code style={{ color: C.txt }}>{ev}/</code> เพื่อ override default pack</div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                )
+              })}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* ── Bottom actions ── */}
+      <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', borderTop: `1px solid ${C.line}`, paddingTop: 10 }}>
         <button onClick={() => void invoke('open_url', { url: VOICE_STORE_URL }).catch(() => {})}
-          style={{ background: 'rgba(143,212,255,0.18)', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 9, padding: '8px 15px', fontSize: 12.5, fontWeight: 600, cursor: 'pointer' }}>
-          🛒 ดู / ซื้อ Voice Pack (เปิดเว็บ)
+          style={{ background: 'rgba(143,212,255,0.12)', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 9, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
+          🛒 ดู Voice Pack เพิ่ม
         </button>
         <button onClick={() => void invoke('open_voice_cache_dir').catch(() => {})}
-          style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 9, padding: '8px 13px', fontSize: 12.5, cursor: 'pointer' }}>
-          📂 โฟลเดอร์เสียง
+          style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 9, padding: '7px 12px', fontSize: 12, cursor: 'pointer' }}>
+          📂 เปิดโฟลเดอร์เสียง
         </button>
       </div>
-      <div style={{ fontSize: 11, color: C.mut, marginTop: 8, lineHeight: 1.5 }}>
-        สร้างแพ็คเอง: ตัดเสียงใน <b style={{ color: C.txt }}>G-AnnStudio</b> → map event → กด “ส่ง G-Maiden” แล้วกด ⟳ ที่นี่. ปุ่มสีเขียว = มี clip ในแพ็คแล้ว.
+      <div style={{ fontSize: 10.5, color: C.mut, marginTop: 6, lineHeight: 1.5 }}>
+        สร้างแพ็คเอง: <b style={{ color: C.txt }}>G-AnnStudio</b> → map event → กด "ส่ง G-Maiden" แล้วกด ⟳ · วาง WAV/MP3 ลง <code style={{ color: C.txt }}>{`{event}/{n}.wav`}</code>
       </div>
     </Card>
   )
@@ -1690,8 +1756,7 @@ const Control: React.FC = () => {
 
         <SetupCard />
         <LogCard live={!!tick?.in_game} clockTime={tick?.clock_time ?? 0} />
-        <VoiceCacheCard />
-        <VoicePackCard />
+        <div style={{ gridColumn: '1 / -1' }}><AudioSettingsCard /></div>
       </div>
 
       <div style={{ marginTop: 14 }}>

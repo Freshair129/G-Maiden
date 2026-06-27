@@ -199,6 +199,34 @@ pub fn all_counts() -> std::collections::BTreeMap<String, usize> {
     out
 }
 
+/// List individual clip file names for a given event (user pack first, then
+/// bundled default). Returns `(filename, full_path, source)` triples where
+/// source is `"user"` or `"default"`.
+pub fn list_event_clips(event: &str) -> Vec<(String, String, String)> {
+    let user_clips = list_clips_in(&voice_cache_dir().join(event));
+    if !user_clips.is_empty() {
+        return user_clips
+            .into_iter()
+            .map(|p| {
+                let name = p.file_name().unwrap_or_default().to_string_lossy().to_string();
+                let full = p.to_string_lossy().to_string();
+                (name, full, "user".to_string())
+            })
+            .collect();
+    }
+    if let Some(def) = default_pack_dir() {
+        return list_clips_in(&def.join(event))
+            .into_iter()
+            .map(|p| {
+                let name = p.file_name().unwrap_or_default().to_string_lossy().to_string();
+                let full = p.to_string_lossy().to_string();
+                (name, full, "default".to_string())
+            })
+            .collect();
+    }
+    Vec::new()
+}
+
 /// Stop the current clip immediately.
 pub fn cancel() {
     send(Cmd::Stop);

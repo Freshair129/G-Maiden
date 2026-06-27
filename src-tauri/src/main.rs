@@ -97,7 +97,6 @@ const EVENTS: &[&str] = &[
     "beyond_godlike",
     "death",
     "respawn",
-    "levelUp",
     "hpLow",
     "manaLow",
     "advice",
@@ -114,6 +113,28 @@ fn voice_cache_status() -> VoiceCacheStatus {
         counts.insert((*e).to_string(), c);
     }
     VoiceCacheStatus { dir, counts, total }
+}
+
+/// List individual clip files for a specific event (for the Audio Settings UI).
+#[tauri::command]
+fn list_event_clips(event: String) -> Vec<EventClip> {
+    audio::list_event_clips(&event)
+        .into_iter()
+        .map(|(name, path, source)| EventClip { name, path, source })
+        .collect()
+}
+
+#[derive(serde::Serialize)]
+struct EventClip {
+    name: String,
+    path: String,
+    source: String,
+}
+
+/// Play a specific clip file by its full path (for previewing individual clips).
+#[tauri::command]
+fn play_clip(path: String) {
+    audio::play_file(std::path::PathBuf::from(path));
 }
 
 /// Open the voice-cache directory in Explorer so the user can drop clips in.
@@ -375,6 +396,8 @@ fn main() {
             set_volume,
             get_volume,
             voice_cache_status,
+            list_event_clips,
+            play_clip,
             open_voice_cache_dir,
             open_url,
             detect_gsi_setup,
