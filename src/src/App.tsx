@@ -27,6 +27,8 @@ interface GameTick {
   alive: boolean
   hp_percent: number
   mana_percent: number
+  kill_list_len: number
+  last_victim_slot: number
 }
 
 /** CV/G-Signal events emitted by the Rust backend (src-tauri cv pipeline). */
@@ -58,6 +60,7 @@ interface Settings {
   voiceEnabled: boolean
   voiceName: string
   voiceRate: number
+  volume: number
   personaLines: boolean
   autoAdvice: boolean
   gankVisuals: boolean
@@ -68,7 +71,7 @@ interface Settings {
   showKda: boolean
   showGold: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, personaLines: true, autoAdvice: false, gankVisuals: true, cvDebug: false, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, personaLines: true, autoAdvice: false, gankVisuals: true, cvDebug: false, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
 interface OverlayProfile { name: string; position: Pos; customX: number; customY: number; opacity: number; showTimer: boolean; showScore: boolean; showHeroBar: boolean; showKda: boolean; showGold: boolean }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 
@@ -259,6 +262,17 @@ const gankClearStyle: React.CSSProperties = {
   ...gankStyle, border: `1px solid ${C.ice}`, color: C.ice, fontWeight: 600,
   boxShadow: '0 0 18px rgba(143,212,255,0.3)',
 }
+const killBannerStyle: React.CSSProperties = {
+  background: 'rgba(12,20,32,0.45)', border: `1px solid rgba(91,227,167,0.35)`,
+  borderRadius: 16, padding: '10px 18px 10px 10px', display: 'flex', alignItems: 'center', gap: 14,
+  backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', fontFamily: '"Segoe UI", system-ui, sans-serif',
+  boxShadow: '0 0 24px rgba(91,227,167,0.2)',
+}
+const STREAK_LABELS: Record<number, string> = {
+  3: 'KILLING SPREE', 4: 'DOMINATING', 5: 'MEGA KILL',
+  6: 'UNSTOPPABLE', 7: 'WICKED SICK', 8: 'MONSTER KILL',
+  9: 'GODLIKE', 10: 'BEYOND GODLIKE',
+}
 type GankState = { phase: 'alert'; heroes: string[]; probability: number } | { phase: 'clear' } | null
 
 const Overlay: React.FC = () => {
@@ -277,8 +291,18 @@ const Overlay: React.FC = () => {
   // (Dota stops POSTing without a final tick; `tick` would otherwise stay stale).
   const [gsiActive, setGsiActive] = useState(true)
   const [previewMode, setPreviewMode] = useState(false)
+  // Kill banner state: 'show' → visible, 'exit' → fading out, null → hidden.
+  const [killBanner, setKillBanner] = useState<{
+    phase: 'show' | 'exit'; kills: number; streak: number; victim: string | null
+  } | null>(null)
+  const killTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const killStreak = useRef(0)
+  const lastKillHeroes = useRef<Set<string>>(new Set())
   const gankTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const gankClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // Volume toast — brief on-screen feedback when player uses Alt+Up/Down/M.
+  const [volToast, setVolToast] = useState<number | null>(null)
+  const volToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // rising-edge state for danger: speak once when HP crosses the threshold down,
   // not every tick. Reset when HP recovers or the hero dies/respawns.
   const dangerActive = useRef(false)
@@ -335,14 +359,21 @@ const Overlay: React.FC = () => {
         adviceTimer.current = setTimeout(() => setOverlayAdvice(null), 20_000)
       }
     })
+    const u10 = listen<number>('volume-change', (e) => {
+      setVolToast(e.payload)
+      if (volToastTimer.current) clearTimeout(volToastTimer.current)
+      volToastTimer.current = setTimeout(() => setVolToast(null), 1500)
+    })
     void emit('overlay-ready')
     return () => {
       void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f())
       void u4.then((f) => f()); void u5.then((f) => f()); void u6.then((f) => f())
       void u7.then((f) => f()); void u8.then((f) => f()); void u9.then((f) => f())
+      void u10.then((f) => f())
       if (gankTimer.current) clearTimeout(gankTimer.current)
       if (gankClearTimer.current) clearTimeout(gankClearTimer.current)
       if (adviceTimer.current) clearTimeout(adviceTimer.current)
+      if (volToastTimer.current) clearTimeout(volToastTimer.current)
     }
   }, [])
 
@@ -434,6 +465,33 @@ const Overlay: React.FC = () => {
     lastSpokeKind.current = 'persona'
     void invoke('speak_event', { event: evt, fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
   }, [tick?.in_game, tick?.level, tick?.kills, tick?.deaths, tick?.alive, tick?.mana_percent, lowHp])
+
+  // Kill banner — pop variant-B banner for 3.5s whenever the player scores a kill.
+  // Guess victim from the set of heroes G-Sentry flagged missing (best we can do
+  // without a dedicated kill-feed in GSI). Track consecutive kills for streak badge.
+  useEffect(() => {
+    if (!tick || !tick.in_game) return
+    const p = prev.current
+    if (!p || tick.kills <= p.kills) return
+    if (killTimer.current) clearTimeout(killTimer.current)
+    killStreak.current += 1
+    const missing = [...missingHeroes]
+    const seen = lastKillHeroes.current
+    const victim = missing.find((h) => !seen.has(h)) ?? missing[0] ?? null
+    if (victim) seen.add(victim)
+    setKillBanner({ phase: 'show', kills: tick.kills, streak: killStreak.current, victim })
+    killTimer.current = setTimeout(() => {
+      setKillBanner((kb) => kb ? { ...kb, phase: 'exit' } : null)
+      killTimer.current = setTimeout(() => setKillBanner(null), 800)
+    }, 4000)
+  }, [tick?.in_game, tick?.kills])
+  // Reset streak on death
+  useEffect(() => {
+    if (tick && prev.current && prev.current.alive && !tick.alive) {
+      killStreak.current = 0
+      lastKillHeroes.current.clear()
+    }
+  }, [tick?.alive])
 
   // Auto-advice (G-Master proactive). Fires Claude Plan request + speaks the
   // result on key moments: ult level milestones and a death-streak (2 deaths
@@ -561,11 +619,24 @@ const Overlay: React.FC = () => {
               <span style={{ width: 9, height: 9, borderRadius: 99, background: seen ? C.warn : C.mut }} />
               <div>
                 <div style={{ fontWeight: 600, fontSize: 14 }}>G-Maiden</div>
-                <div style={{ fontSize: 11.5, color: C.mut }}>{seen ? 'เชื่อมต่อ GSI แล้ว — รอเข้าเกม…' : 'รอข้อมูลจาก Dota 2  ·  Alt+S = ซ่อน/แสดง'}</div>
+                <div style={{ fontSize: 11.5, color: C.mut }}>{seen ? 'เชื่อมต่อ GSI แล้ว — รอเข้าเกม…' : 'รอข้อมูลจาก Dota 2  ·  Ctrl+Alt+S ซ่อน/แสดง · Alt+↑↓ เสียง · Alt+M ปิดเสียง'}</div>
               </div>
             </div>
           </div>
         </div>
+        {volToast !== null && (
+          <div style={{
+            position: 'fixed', bottom: 60, left: '50%', transform: 'translateX(-50%)',
+            ...panel(s.opacity), padding: '8px 18px', display: 'flex', alignItems: 'center', gap: 10,
+            fontSize: 13, pointerEvents: 'none', transition: 'opacity .2s', zIndex: 20,
+          }}>
+            <span>{volToast === 0 ? '🔇' : volToast <= 30 ? '🔈' : volToast <= 70 ? '🔉' : '🔊'}</span>
+            <div style={{ width: 80, height: 5, background: 'rgba(255,255,255,0.12)', borderRadius: 99, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${volToast}%`, background: C.ice, borderRadius: 99, transition: 'width .15s' }} />
+            </div>
+            <span style={{ color: C.ice, fontWeight: 600, minWidth: 32, textAlign: 'right' }}>{volToast}%</span>
+          </div>
+        )}
       </>
     )
   }
@@ -579,6 +650,58 @@ const Overlay: React.FC = () => {
         {gankBanner}
         {missingBadge}
         {lowHp && <div className="gm-danger" style={dangerStyle}>⚠ HP เหลือ {t.hp_percent}% — ถอยก่อนค่ะเพื่อน!</div>}
+        {killBanner && (
+          <div className={killBanner.phase === 'exit' ? 'gm-kill-exit' : 'gm-kill'} style={killBannerStyle}>
+            {/* Hero portrait circle + animated red X */}
+            <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
+              <div style={{
+                width: 56, height: 56, borderRadius: '50%', overflow: 'hidden',
+                background: 'rgba(18,20,28,0.9)', border: '2px solid rgba(91,227,167,0.6)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+              }}>
+                {killBanner.victim ? (
+                  <img
+                    src={`https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${killBanner.victim.replace(/^npc_dota_hero_/, '')}.png`}
+                    alt="" style={{ width: '110%', height: '110%', objectFit: 'cover' }}
+                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+                  />
+                ) : (
+                  <span style={{ fontSize: 22, opacity: 0.6 }}>💀</span>
+                )}
+              </div>
+              <svg className="gm-kill-cross" viewBox="0 0 56 56" style={{
+                position: 'absolute', inset: 0, width: 56, height: 56, pointerEvents: 'none',
+              }}>
+                <line x1="12" y1="12" x2="44" y2="44" stroke="#ff4455" strokeWidth="3.5" strokeLinecap="round" />
+                <line x1="44" y1="12" x2="12" y2="44" stroke="#ff4455" strokeWidth="3.5" strokeLinecap="round" />
+              </svg>
+            </div>
+            {/* Kill text + victim name */}
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <div style={{ fontSize: 11, color: C.ok, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase', opacity: 0.8 }}>
+                {killBanner.streak >= 3 ? (STREAK_LABELS[Math.min(killBanner.streak, 10)] ?? 'BEYOND GODLIKE') : 'ENEMY SLAIN'}
+              </div>
+              <div style={{ fontSize: 17, fontWeight: 700, color: C.txt, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {killBanner.victim ? heroName(killBanner.victim) : 'ฆ่าได้สวยค่ะ!'}
+              </div>
+            </div>
+            {/* YOU : FOE score */}
+            <div style={{
+              background: 'rgba(143,212,255,0.06)', border: '1px solid rgba(143,212,255,0.18)',
+              borderRadius: 10, padding: '5px 16px', textAlign: 'center', flexShrink: 0,
+            }}>
+              <div style={{ fontSize: 20, fontWeight: 800, whiteSpace: 'nowrap', letterSpacing: 1 }}>
+                <span style={{ color: C.ok }}>{t.kills}</span>
+                <span style={{ color: C.mut, fontSize: 14, margin: '0 6px' }}>:</span>
+                <span style={{ color: C.bad }}>{t.deaths}</span>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, letterSpacing: 0.8, marginTop: 2 }}>
+                <span style={{ color: C.ok, fontWeight: 600 }}>YOU</span>
+                <span style={{ color: C.bad, fontWeight: 600 }}>FOE</span>
+              </div>
+            </div>
+          </div>
+        )}
         {advicePanel}
         {(s.showTimer || s.showScore || s.showHeroBar || s.showKda || s.showGold) && (
         <div style={{ ...panel(s.opacity), padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
@@ -629,6 +752,19 @@ const Overlay: React.FC = () => {
         )}
       </div>
     </div>
+    {volToast !== null && (
+      <div style={{
+        position: 'fixed', bottom: 60, left: '50%', transform: 'translateX(-50%)',
+        ...panel(s.opacity), padding: '8px 18px', display: 'flex', alignItems: 'center', gap: 10,
+        fontSize: 13, pointerEvents: 'none', transition: 'opacity .2s', zIndex: 20,
+      }}>
+        <span>{volToast === 0 ? '🔇' : volToast <= 30 ? '🔈' : volToast <= 70 ? '🔉' : '🔊'}</span>
+        <div style={{ width: 80, height: 5, background: 'rgba(255,255,255,0.12)', borderRadius: 99, overflow: 'hidden' }}>
+          <div style={{ height: '100%', width: `${volToast}%`, background: C.ice, borderRadius: 99, transition: 'width .15s' }} />
+        </div>
+        <span style={{ color: C.ice, fontWeight: 600, minWidth: 32, textAlign: 'right' }}>{volToast}%</span>
+      </div>
+    )}
     </>
   )
 }
@@ -900,7 +1036,7 @@ const Welcome: React.FC<{ onDone: () => void }> = ({ onDone }) => {
             <div>
               <div style={{ fontSize: 14, fontWeight: 600 }}>เปิด Dota 2 แล้วเริ่มแมตช์</div>
               <div style={{ fontSize: 12, color: C.mut, marginTop: 3 }}>
-                ถ้า Dota 2 เปิดอยู่ก่อนติดตั้ง: ต้องรีสตาร์ทเกมรอบหนึ่งให้ GSI โหลด. overlay จะขึ้นบนเกมพร้อมข้อมูลสด — กด <b style={{ color: C.ice }}>Alt+S</b> ซ่อน/แสดง.
+                ถ้า Dota 2 เปิดอยู่ก่อนติดตั้ง: ต้องรีสตาร์ทเกมรอบหนึ่งให้ GSI โหลด. overlay จะขึ้นบนเกมพร้อมข้อมูลสด — กด <b style={{ color: C.ice }}>Ctrl+Alt+S</b> ซ่อน/แสดง.
               </div>
             </div>
           </div>
@@ -1038,6 +1174,12 @@ const Control: React.FC = () => {
     })()
   }, [])
 
+  // Sync the saved volume to the Rust backend on startup.
+  useEffect(() => {
+    void invoke('set_volume', { vol: s.volume }).catch(() => {})
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [])
+
   // bind once; use ref so the overlay-ready handler always emits current settings
   useEffect(() => {
     document.body.style.background = C.bg
@@ -1071,6 +1213,19 @@ const Control: React.FC = () => {
   useEffect(() => {
     void invoke('set_cv_signal_enabled', { enabled: s.voiceEnabled }).catch(() => {})
   }, [s.voiceEnabled])
+
+  // Sync master volume to Rust audio backend.
+  useEffect(() => {
+    void invoke('set_volume', { vol: s.volume }).catch(() => {})
+  }, [s.volume])
+
+  // Listen for hotkey-driven volume changes from the backend (Alt+Up/Down/M).
+  useEffect(() => {
+    const u = listen<number>('volume-change', (e) => {
+      setS((prev) => ({ ...prev, volume: e.payload }))
+    })
+    return () => { void u.then((f) => f()) }
+  }, [])
 
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((p) => ({ ...p, [k]: v }))
 
@@ -1166,8 +1321,8 @@ const Control: React.FC = () => {
             </div>
           )}
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
-            <div style={{ fontSize: 11.5, color: C.mut }}>
-              💡 กด <b style={{ color: C.ice }}>Alt+S</b> ซ่อน/แสดง overlay
+            <div style={{ fontSize: 11.5, color: C.mut, lineHeight: 1.6 }}>
+              💡 <b style={{ color: C.ice }}>Ctrl+Alt+S</b> ซ่อน/แสดง · <b style={{ color: C.ice }}>Alt+↑/↓</b> ระดับเสียง · <b style={{ color: C.ice }}>Alt+M</b> ปิด/เปิดเสียง
             </div>
             <button onClick={() => { const n = prompt('ชื่อโปรไฟล์:'); if (n?.trim()) saveProfile(n.trim()) }}
               style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 7, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>
@@ -1201,6 +1356,15 @@ const Control: React.FC = () => {
           </Row>
           <Row label={`ความเร็ว: ${s.voiceRate > 0 ? '+' : ''}${s.voiceRate}`}>
             <input type="range" min={-5} max={5} step={1} value={s.voiceRate} onChange={(e) => set('voiceRate', Number(e.target.value))} disabled={!s.voiceEnabled} style={{ width: 150 }} />
+          </Row>
+          <Row label={`ระดับเสียง: ${s.volume}%${s.volume === 0 ? ' (ปิดเสียง)' : ''}`}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <button onClick={() => set('volume', s.volume === 0 ? 80 : 0)}
+                style={{ background: 'transparent', color: s.volume === 0 ? C.bad : C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '4px 8px', fontSize: 13, cursor: 'pointer', lineHeight: 1 }}>
+                {s.volume === 0 ? '🔇' : s.volume <= 30 ? '🔈' : s.volume <= 70 ? '🔉' : '🔊'}
+              </button>
+              <input type="range" min={0} max={100} step={5} value={s.volume} onChange={(e) => set('volume', Number(e.target.value))} style={{ width: 130 }} />
+            </div>
           </Row>
           <Row label="พูดเสริมตามเหตุการณ์">
             <Toggle on={s.personaLines} onChange={(v) => set('personaLines', v)} />

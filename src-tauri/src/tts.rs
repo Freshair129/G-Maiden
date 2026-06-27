@@ -245,7 +245,8 @@ pub fn cancel() {
 /// Fire-and-forget: speak `text`. Tries Piper local TTS first (faster,
 /// offline, no PowerShell startup); falls back to Windows SAPI on failure.
 /// Cancels any prior utterance first. `voice`/`rate` apply only to the SAPI
-/// path (Piper uses the bundled model's default voice).
+/// path (Piper uses the bundled model's default voice). Volume is read from
+/// `audio::get_volume()` for both paths.
 pub fn speak(text: &str, voice: Option<&str>, rate: Option<i32>) {
     if text.trim().is_empty() {
         return;
@@ -273,6 +274,7 @@ pub fn speak(text: &str, voice: Option<&str>, rate: Option<i32>) {
         _ => String::new(),
     };
     let rate_value = rate.unwrap_or(0).clamp(-10, 10);
+    let sapi_vol = crate::audio::get_volume().min(100);
     let script = format!(
         "Add-Type -AssemblyName System.Speech; \
          $b=[Convert]::FromBase64String('{b64}'); \
@@ -280,7 +282,7 @@ pub fn speak(text: &str, voice: Option<&str>, rate: Option<i32>) {
          $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; \
          {voice_line} \
          $s.Rate={rate_value}; \
-         $s.Volume=100; \
+         $s.Volume={sapi_vol}; \
          $s.Speak($t)"
     );
     let mut cmd = Command::new("powershell");

@@ -10,14 +10,21 @@
 use std::fs;
 use std::io::BufReader;
 use std::path::PathBuf;
+use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::{mpsc, Mutex, OnceLock};
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use rodio::{Decoder, OutputStream, Sink};
 
+/// Master volume 0–100. Shared with the audio thread via atomic so
+/// `set_volume` doesn't need the channel (and the Sink is adjusted
+/// immediately on the next `Play`).
+static VOLUME: AtomicU8 = AtomicU8::new(80);
+
 enum Cmd {
     Play(PathBuf),
     Stop,
+    Volume(f32),
 }
 
 fn sender() -> &'static Mutex<mpsc::Sender<Cmd>> {
@@ -48,6 +55,11 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                     s.stop();
                 }
             }
+            Cmd::Volume(vol) => {
+                if let Some(s) = &sink {
+                    s.set_volume(vol);
+                }
+            }
             Cmd::Play(path) => {
                 if let Some(s) = sink.take() {
                     s.stop();
@@ -68,6 +80,7 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                 };
                 match Sink::try_new(&handle) {
                     Ok(s) => {
+                        s.set_volume(VOLUME.load(Ordering::Relaxed) as f32 / 100.0);
                         s.append(source);
                         sink = Some(s);
                     }
@@ -144,6 +157,19 @@ pub fn all_counts() -> std::collections::BTreeMap<String, usize> {
 /// Stop the current clip immediately.
 pub fn cancel() {
     send(Cmd::Stop);
+}
+
+/// Set the master volume (0–100). Applied to the current clip immediately
+/// and to every future clip.
+pub fn set_volume(vol: u8) {
+    let clamped = vol.min(100);
+    VOLUME.store(clamped, Ordering::Relaxed);
+    send(Cmd::Volume(clamped as f32 / 100.0));
+}
+
+/// Current master volume (0–100).
+pub fn get_volume() -> u8 {
+    VOLUME.load(Ordering::Relaxed)
 }
 
 /// Play a random clip for `event`. Returns true if a clip was found and

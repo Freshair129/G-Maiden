@@ -41,3 +41,48 @@ body {
 .gm-gank-clear {
   animation: gm-gank-in 0.22s ease-out;
 }
+
+/* Kill banner — celebratory ice-green pop with scale-up entrance */
+@keyframes gm-kill-in {
+  0% { opacity: 0; transform: translateY(-14px) scale(0.85); }
+  60% { opacity: 1; transform: translateY(2px) scale(1.04); }
+  100% { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes gm-kill-glow {
+  0%, 100% { box-shadow: 0 0 20px rgba(91, 227, 167, 0.35); }
+  50% { box-shadow: 0 0 36px rgba(91, 227, 167, 0.65); }
+}
+@keyframes gm-kill-out {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(-8px); }
+}
+.gm-kill {
+  animation: gm-kill-in 0.3s ease-out, gm-kill-glow 1s ease-in-out 0.3s infinite;
+}
+.gm-kill-exit {
+  animation: gm-kill-out 0.8s ease-in forwards;
+}
+
+/* Kill cross — red X drawn over hero portrait via stroke-dashoffset */
+@keyframes gm-cross-draw {
+  0% { stroke-dashoffset: 56; opacity: 0.6; }
+  100% { stroke-dashoffset: 0; opacity: 1; }
+}
+.gm-kill-cross line {
+  stroke-dasharray: 56;
+  stroke-dashoffset: 56;
+  animation: gm-cross-draw 0.45s ease-out forwards;
+}
+.gm-kill-cross line:nth-child(2) {
+  animation-delay: 0.18s;
+}
+
+/* Portrait ring pulse on kill */
+@keyframes gm-ring-pulse {
+  0% { stroke-opacity: 0.5; }
+  50% { stroke-opacity: 1; }
+  100% { stroke-opacity: 0.5; }
+}
+.gm-kill-ring {
+  animation: gm-ring-pulse 1.2s ease-in-out 0.5s infinite;
+}

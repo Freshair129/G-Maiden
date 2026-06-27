@@ -167,6 +167,8 @@ mod tests {
             alive: true,
             hp_percent: 68,
             mana_percent: 55,
+            kill_list_len: 4,
+            last_victim_slot: 7,
         }
     }
 

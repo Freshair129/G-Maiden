@@ -147,6 +147,20 @@ fn set_cv_signal_enabled(enabled: bool) {
     runtime::set_signal_enabled(enabled);
 }
 
+/// Set the master voice volume (0–100). Applies to both WAV clips (rodio) and
+/// SAPI TTS. The overlay reflects this via the `volume-change` event.
+#[tauri::command]
+fn set_volume(app: tauri::AppHandle, vol: u8) {
+    audio::set_volume(vol);
+    let _ = app.emit("volume-change", vol);
+}
+
+/// Get the current master volume (0–100).
+#[tauri::command]
+fn get_volume() -> u8 {
+    audio::get_volume()
+}
+
 /// Discover Dota 2's GSI cfg directory and report whether our cfg is in place.
 #[tauri::command]
 fn detect_gsi_setup() -> setup::SetupStatus {
@@ -197,9 +211,19 @@ fn delete_all_match_logs() -> Result<u32, String> {
 }
 
 fn main() {
-    // Alt+S — show/hide the overlay while in-game (works even when Dota 2 is focused).
-    let toggle = Shortcut::new(Some(Modifiers::ALT), Code::KeyS);
-    let toggle_for_handler = toggle.clone();
+    // Global hotkeys — work even when Dota 2 is focused.
+    let toggle = Shortcut::new(Some(Modifiers::ALT | Modifiers::CONTROL), Code::KeyS); // show/hide overlay
+    let vol_up = Shortcut::new(Some(Modifiers::ALT), Code::ArrowUp);    // volume +10
+    let vol_down = Shortcut::new(Some(Modifiers::ALT), Code::ArrowDown);// volume -10
+    let mute = Shortcut::new(Some(Modifiers::ALT), Code::KeyM);         // mute/unmute
+
+    let toggle2 = toggle.clone();
+    let vol_up2 = vol_up.clone();
+    let vol_down2 = vol_down.clone();
+    let mute2 = mute.clone();
+
+    // Volume before mute (so unmute restores the right level).
+    static MUTED_VOL: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
 
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -207,10 +231,33 @@ fn main() {
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(move |app, shortcut, event| {
-                    if shortcut == &toggle_for_handler && event.state() == ShortcutState::Pressed {
+                    if event.state() != ShortcutState::Pressed { return; }
+                    if shortcut == &toggle2 {
                         if let Some(ov) = app.get_webview_window("overlay") {
                             let visible = ov.is_visible().unwrap_or(true);
                             let _ = if visible { ov.hide() } else { ov.show() };
+                        }
+                    } else if shortcut == &vol_up2 {
+                        let cur = audio::get_volume();
+                        let next = (cur + 10).min(100);
+                        audio::set_volume(next);
+                        let _ = app.emit("volume-change", next);
+                    } else if shortcut == &vol_down2 {
+                        let cur = audio::get_volume();
+                        let next = cur.saturating_sub(10);
+                        audio::set_volume(next);
+                        let _ = app.emit("volume-change", next);
+                    } else if shortcut == &mute2 {
+                        let cur = audio::get_volume();
+                        if cur == 0 {
+                            let restore = MUTED_VOL.load(std::sync::atomic::Ordering::Relaxed);
+                            let v = if restore > 0 { restore } else { 80 };
+                            audio::set_volume(v);
+                            let _ = app.emit("volume-change", v);
+                        } else {
+                            MUTED_VOL.store(cur, std::sync::atomic::Ordering::Relaxed);
+                            audio::set_volume(0);
+                            let _ = app.emit("volume-change", 0u8);
                         }
                     }
                 })
@@ -224,6 +271,8 @@ fn main() {
             list_voices,
             set_cv_voice,
             set_cv_signal_enabled,
+            set_volume,
+            get_volume,
             voice_cache_status,
             open_voice_cache_dir,
             detect_gsi_setup,
@@ -249,6 +298,9 @@ fn main() {
             governor::start(app.handle().clone());
 
             app.global_shortcut().register(toggle)?;
+            app.global_shortcut().register(vol_up)?;
+            app.global_shortcut().register(vol_down)?;
+            app.global_shortcut().register(mute)?;
 
             // OSD overlay: full-screen, click-through, over the game.
             if let Some(ov) = app.get_webview_window("overlay") {
