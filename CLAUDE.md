@@ -63,6 +63,29 @@ When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scal
 - **Cloud cognitive engine** â†’ Gemini streaming API.
 - **TTS module** â†’ text-to-speech tuned for a live-caster vocal style.
 
+## Announcer event packs (G-AnnStudio)
+
+Maiden voices community-made announcer packs on top of TTS. Clips live in
+`assets/voice-cache/{event}/*.wav` and are read live (drop-in, no restart): `audio::play_random`
+picks one at random per fired event; `speak_event` falls back to SAPI TTS when an event has no clip.
+
+- **Event contract** — the canonical event ids live in `G-Suite/schemas/gmaiden-events.json`
+  (mirrored in `src-tauri/src/main.rs` `EVENTS`). Beyond G-Signal's `danger`/`revision`, the set is
+  fired by `src-tauri/src/announcer.rs` from each GSI `game-tick`: `match_start`, `first_blood`,
+  `kill`, multi-kills (`double_kill`…`rampage`, 18s window), the streak ladder (`killing_spree`/
+  `dominating`/`mega_kill`/`unstoppable`/`wicked_sick`/`monster_kill`/`godlike`/`beyond_godlike`),
+  and `death`/`respawn`/`levelUp`/`hpLow`/`manaLow`.
+- **Kill-banner sync (enforce)** — the streak ladder in `announcer.rs` mirrors the overlay kill
+  banner (`src/src/App.tsx` `STREAK_LABELS`) exactly, so the voiced streak and the on-screen banner
+  always agree. Both detect kills from `tick.kills` rising-edge and reset on death. Audio is
+  single-slot, so `announcer::most_important` voices only the top-priority event per tick. If you
+  add/rename a streak tier, change it in **both** places + `gmaiden-events.json`.
+- **Authoring + install** — packs are built in **G-AnnStudio** (the
+  [G-Suite](https://github.com/Freshair129/G-Suite) monorepo): import → Whisper auto-split → AI maps
+  clips to events → installs into voice-cache, then `POST /announcer/install` on the :3000 GSI
+  server (handled in `src-tauri/src/gsi.rs`) so the pack is picked up live; the endpoint returns
+  per-event clip counts.
+
 ## Persona rules (product-critical, not flavor)
 
 "Maiden" must stay consistent across every utterance:
