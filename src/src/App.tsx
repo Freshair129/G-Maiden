@@ -153,7 +153,7 @@ const loadProfiles = (): OverlayProfile[] => {
 
 const C = { bg: '#08090c', ice: '#8fd4ff', txt: '#e7eef6', mut: '#8794a6', ok: '#5be3a7', warn: '#ffcf6b', bad: '#ff7b85', line: 'rgba(143,212,255,0.16)' }
 
-const APP_VERSION = '0.7.4'
+const APP_VERSION = '0.7.5'
 
 const CHANGELOG: { ver: string; date: string; items: string[] }[] = [
   { ver: '0.7.4', date: '2026-06-26', items: [

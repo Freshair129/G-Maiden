@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.7.5] — 2026-06-27
+### Added
+- **Announcer event pack system** — Maiden voices the full in-game event taxonomy
+  derived from GSI: `match_start`, `first_blood`, `kill`, multi-kills
+  (`double_kill`…`rampage`), the streak ladder (`killing_spree`/`dominating`/
+  `mega_kill`/`unstoppable`/`wicked_sick`/`monster_kill`/`godlike`/`beyond_godlike`),
+  and `death`/`respawn`/`levelUp`/`hpLow`/`manaLow`. The streak ladder matches the
+  overlay kill banner exactly so audio and visuals stay in sync. Clips live in
+  `voice-cache/{event}/`.
+- **`POST /announcer/install` endpoint** — lets the G-AnnStudio pack editor install
+  an announcer pack into voice-cache and read back per-event clip counts.
+- **Master volume control** — slider + global hotkeys (Ctrl+Alt+S overlay,
+  Alt+↑/↓ volume ±10, Alt+M mute), applied to both WAV clips and SAPI TTS.
+- **G-Master backend picker** — choose auto / Claude / Ollama for advice, with
+  per-event voice preview.
+- **Maiden SVG portrait** on the overlay.
+
+### Fixed
+- WGC capture failing to start on Windows 10 (danger meter stuck on "ปลอดภัย").
+
+### Changed
+- Version files re-synced to 0.7.5 (tauri.conf / package.json / App.tsx).
+
 ## [0.6.0] — 2026-06-22
 ### Added
 - **Individual stat toggles** — overlay stats (timer, score, HP/Mana bar, K/D/A, gold/NW) are now separately toggleable via checkboxes instead of one on/off switch
