@@ -920,41 +920,74 @@ const VOICE_STORE_URL = 'https://g-maiden.app/voicepacks' // TODO: real store UR
  * for each trigger. SAPI fallback uses these too, so users hear the same line
  * whether or not their pack covers the event. */
 const PREVIEW_LINES: Record<string, string> = {
+  // match flow
+  match_start: 'เริ่มเกมแล้ว ลุยกันเลยค่ะ!',
   danger: 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว',
   gank: 'ระวังนะคะ ศัตรูหายไปจากแมพหลายตัว อาจมีแก๊งค์',
   revision: 'เอ๊ะ เดี๋ยวก่อน ดูเหมือนจะปลอดภัยแล้วค่ะ',
-  levelUp: 'ขึ้นเลเวลแล้วค่ะ สวยมาก ขยายอำนาจต่อเลย',
+  // kills
+  first_blood: 'เลือดแรกเป็นของเรา!',
   kill: 'ฆ่าได้สวยค่ะ เก็บไปเรื่อยๆ',
+  double_kill: 'สองศพรวด เด็ดมาก!',
+  triple_kill: 'ขจัดไปสามแล้ว เริ่มมีกลิ่นแล้วนะ!',
+  ultra_kill: 'สี่ศพ หยุดไม่อยู่แล้ว!',
+  rampage: 'ห้าศพรวด แรมเพจ!',
+  // streaks (ตรงกับ kill banner)
+  killing_spree: 'กำลังขึ้น คิลลิ่งสปรี!',
+  dominating: 'ครองเกมแล้ว โดมิเนตติ้ง!',
+  mega_kill: 'เมก้าคิล!',
+  unstoppable: 'ไม่มีใครหยุดได้ อันสต็อปเปเบิล!',
+  wicked_sick: 'โหดเกินไปแล้ว วิคเก็ดซิค!',
+  monster_kill: 'มอนสเตอร์คิล!',
+  godlike: 'ระดับเทพ ก็อดไลก์!',
+  beyond_godlike: 'เหนือกว่าเทพ บียอนด์ก็อดไลก์!',
+  // state
   death: 'ตายแล้วเหรอคะ ไม่เป็นไรเดี๋ยวกลับมาใหม่',
   respawn: 'กลับมาแล้ว ค่อยๆนะคะ',
+  levelUp: 'ขึ้นเลเวลแล้วค่ะ สวยมาก',
+  hpLow: 'เลือดน้อยมากแล้ว ระวังตัวด้วย!',
   manaLow: 'มานาเหลือน้อยแล้วค่ะ ระวังด้วย',
   advice: 'ลองดูคำแนะนำนี้นะคะ',
 }
 const VoicePackCard: React.FC = () => {
-  const [total, setTotal] = useState<number | null>(null)
-  useEffect(() => { void invoke<VoiceCacheStatus>('voice_cache_status').then((st) => setTotal(st.total)).catch(() => {}) }, [])
+  const [st, setSt] = useState<VoiceCacheStatus | null>(null)
+  const refresh = () => { void invoke<VoiceCacheStatus>('voice_cache_status').then(setSt).catch(() => {}) }
+  useEffect(refresh, [])
   const playEvent = (ev: string) => {
-    void invoke('speak_event', { event: ev, fallback: PREVIEW_LINES[ev], voice: null, rate: null }).catch(() => {})
+    void invoke('speak_event', { event: ev, fallback: PREVIEW_LINES[ev] ?? '', voice: null, rate: null }).catch(() => {})
   }
+  const counts = st?.counts ?? {}
+  const total = st?.total ?? null
+  const allEvents = Object.keys(PREVIEW_LINES)
+  const covered = allEvents.filter((ev) => (counts[ev] ?? 0) > 0).length
   return (
     <Card title="Voice Packs (เสียง Maiden)">
       <div style={{ fontSize: 12.5, color: C.mut, lineHeight: 1.6, paddingTop: 6 }}>
-        แพ็คเสียงไทยสไตล์นักพากย์ (เหมือน announcer ใน HoN) — ใช้แทนเสียง SAPI ให้ Maiden พูดมีอารมณ์ขึ้น.
+        แพ็คเสียงไทยสไตล์นักพากย์ (เหมือน announcer ใน HoN) — สร้างเองด้วย <b style={{ color: C.txt }}>G-AnnStudio</b> แล้วติดตั้งลงโฟลเดอร์เสียง แทนเสียง SAPI.
         {total !== null && (
           <div style={{ marginTop: 6, color: total > 0 ? C.ok : C.mut }}>
-            {total > 0 ? `● ติดตั้งแล้ว ${total} clips` : '○ ยังไม่มี pack — ใช้ SAPI fallback'}
+            {total > 0 ? `● ติดตั้งแล้ว ${total} clips · ครอบคลุม ${covered}/${allEvents.length} event` : '○ ยังไม่มี pack — ใช้ SAPI fallback'}
           </div>
         )}
       </div>
       <div style={{ marginTop: 12 }}>
-        <div style={{ fontSize: 11, color: C.mut, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6 }}>ฟังตัวอย่างแต่ละ event</div>
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(108px, 1fr))', gap: 6 }}>
-          {Object.keys(PREVIEW_LINES).map((ev) => (
-            <button key={ev} onClick={() => playEvent(ev)}
-              style={{ background: 'transparent', color: C.txt, border: `1px solid ${C.line}`, borderRadius: 8, padding: '7px 10px', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'center' }}>
-              🔊 <span style={{ fontFamily: 'monospace', fontSize: 11.5, color: C.ice }}>{ev}</span>
-            </button>
-          ))}
+        <div style={{ fontSize: 11, color: C.mut, textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 6, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <span>ทดสอบเสียงแต่ละ event</span>
+          <button onClick={refresh} title="สแกนโฟลเดอร์ใหม่" style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 6, padding: '2px 9px', fontSize: 11, cursor: 'pointer' }}>⟳</button>
+        </div>
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(132px, 1fr))', gap: 6 }}>
+          {allEvents.map((ev) => {
+            const n = counts[ev] ?? 0
+            const has = n > 0
+            return (
+              <button key={ev} onClick={() => playEvent(ev)}
+                title={has ? `${n} clip ในแพ็ค — กดเพื่อฟัง` : 'ยังไม่มี clip — จะใช้เสียง SAPI'}
+                style={{ background: has ? 'rgba(91,227,167,0.10)' : 'transparent', color: C.txt, border: `1px solid ${has ? 'rgba(91,227,167,0.40)' : C.line}`, borderRadius: 8, padding: '7px 9px', fontSize: 12, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, justifyContent: 'space-between' }}>
+                <span style={{ display: 'flex', alignItems: 'center', gap: 5, minWidth: 0 }}>🔊 <span style={{ fontFamily: 'monospace', fontSize: 11, color: has ? C.ok : C.ice, overflow: 'hidden', textOverflow: 'ellipsis' }}>{ev}</span></span>
+                <span style={{ fontSize: 10.5, color: has ? C.ok : C.mut, fontFamily: 'monospace' }}>{has ? `×${n}` : '—'}</span>
+              </button>
+            )
+          })}
         </div>
       </div>
       <div style={{ display: 'flex', gap: 8, marginTop: 12, flexWrap: 'wrap' }}>
@@ -968,7 +1001,7 @@ const VoicePackCard: React.FC = () => {
         </button>
       </div>
       <div style={{ fontSize: 11, color: C.mut, marginTop: 8, lineHeight: 1.5 }}>
-        ซื้อผ่านเว็บ → ดาวน์โหลดแล้วแตกลงโฟลเดอร์เสียง (<code style={{ color: C.txt }}>{`{event}/{n}.wav`}</code>). การชำระเงินทำบนเว็บเท่านั้น.
+        สร้างแพ็คเอง: ตัดเสียงใน <b style={{ color: C.txt }}>G-AnnStudio</b> → map event → กด “ส่ง G-Maiden” แล้วกด ⟳ ที่นี่. ปุ่มสีเขียว = มี clip ในแพ็คแล้ว.
       </div>
     </Card>
   )
