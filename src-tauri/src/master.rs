@@ -183,6 +183,8 @@ mod tests {
             mana_percent: 55,
             buyback_cost: 0,
             respawn_seconds: 0,
+            kill_list_len: 4,
+            last_victim_slot: 7,
         }
     }
 

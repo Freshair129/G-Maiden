@@ -10,6 +10,7 @@ use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent}
 use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 
+mod announcer;
 mod audio;
 mod calibration;
 mod capture;
@@ -72,15 +73,33 @@ struct VoiceCacheStatus {
     total: usize,
 }
 
+// The announcer event contract (mirrors G-Suite/schemas/gmaiden-events.json).
+// danger/revision are the G-Signal lines; the rest are fired by `announcer`.
 const EVENTS: &[&str] = &[
     "danger",
     "gank",
+    "revision",
     "levelUp",
+    "match_start",
+    "first_blood",
     "kill",
+    "double_kill",
+    "triple_kill",
+    "ultra_kill",
+    "rampage",
+    "killing_spree",
+    "dominating",
+    "mega_kill",
+    "unstoppable",
+    "wicked_sick",
+    "monster_kill",
+    "godlike",
+    "beyond_godlike",
     "death",
     "respawn",
+    "levelUp",
+    "hpLow",
     "manaLow",
-    "revision",
     "advice",
 ];
 
@@ -208,6 +227,20 @@ fn capture_calibration_clip(event: String, line: Option<String>, context: Option
     calibration::record(&event, line.as_deref(), context.unwrap_or(serde_json::Value::Null));
 }
 
+/// Set the master voice volume (0–100). Applies to both WAV clips (rodio) and
+/// SAPI TTS. The overlay reflects this via the `volume-change` event.
+#[tauri::command]
+fn set_volume(app: tauri::AppHandle, vol: u8) {
+    audio::set_volume(vol);
+    let _ = app.emit("volume-change", vol);
+}
+
+/// Get the current master volume (0–100).
+#[tauri::command]
+fn get_volume() -> u8 {
+    audio::get_volume()
+}
+
 /// Discover Dota 2's GSI cfg directory and report whether our cfg is in place.
 #[tauri::command]
 fn detect_gsi_setup() -> setup::SetupStatus {
@@ -263,11 +296,21 @@ fn main() {
     log::init_panic_hook();
     log::error("[startup] G-Maiden process started");
 
-    // Ctrl+Alt+S — show/hide the overlay while in-game. Alt+S / Ctrl+S collide with
-    // Dota hotkeys (Alt = ping modifier, Ctrl+S = a default bind), so use the
-    // 3-key combo. TODO: make this user-configurable (settings + dynamic re-register).
-    let toggle = Shortcut::new(Some(Modifiers::CONTROL | Modifiers::ALT), Code::KeyS);
-    let toggle_for_handler = toggle;
+    // Global hotkeys — work even when Dota 2 is focused.
+    // Ctrl+Alt+S = overlay show/hide (Alt+S / Ctrl+S collide with Dota binds).
+    let toggle = Shortcut::new(Some(Modifiers::ALT | Modifiers::CONTROL), Code::KeyS);
+    let vol_up = Shortcut::new(Some(Modifiers::ALT), Code::ArrowUp);    // volume +10
+    let vol_down = Shortcut::new(Some(Modifiers::ALT), Code::ArrowDown);// volume -10
+    let mute = Shortcut::new(Some(Modifiers::ALT), Code::KeyM);         // mute/unmute
+
+    // Shortcut is Copy — clippy::clone_on_copy. Plain rebind moves into the handler.
+    let toggle2 = toggle;
+    let vol_up2 = vol_up;
+    let vol_down2 = vol_down;
+    let mute2 = mute;
+
+    // Volume before mute (so unmute restores the right level).
+    static MUTED_VOL: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
 
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
@@ -275,10 +318,33 @@ fn main() {
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(move |app, shortcut, event| {
-                    if shortcut == &toggle_for_handler && event.state() == ShortcutState::Pressed {
+                    if event.state() != ShortcutState::Pressed { return; }
+                    if shortcut == &toggle2 {
                         if let Some(ov) = app.get_webview_window("overlay") {
                             let visible = ov.is_visible().unwrap_or(true);
                             let _ = if visible { ov.hide() } else { ov.show() };
+                        }
+                    } else if shortcut == &vol_up2 {
+                        let cur = audio::get_volume();
+                        let next = (cur + 10).min(100);
+                        audio::set_volume(next);
+                        let _ = app.emit("volume-change", next);
+                    } else if shortcut == &vol_down2 {
+                        let cur = audio::get_volume();
+                        let next = cur.saturating_sub(10);
+                        audio::set_volume(next);
+                        let _ = app.emit("volume-change", next);
+                    } else if shortcut == &mute2 {
+                        let cur = audio::get_volume();
+                        if cur == 0 {
+                            let restore = MUTED_VOL.load(std::sync::atomic::Ordering::Relaxed);
+                            let v = if restore > 0 { restore } else { 80 };
+                            audio::set_volume(v);
+                            let _ = app.emit("volume-change", v);
+                        } else {
+                            MUTED_VOL.store(cur, std::sync::atomic::Ordering::Relaxed);
+                            audio::set_volume(0);
+                            let _ = app.emit("volume-change", 0u8);
                         }
                     }
                 })
@@ -297,6 +363,8 @@ fn main() {
             set_master_ollama_model,
             set_calibration_enabled,
             capture_calibration_clip,
+            set_volume,
+            get_volume,
             voice_cache_status,
             open_voice_cache_dir,
             open_url,
@@ -324,6 +392,9 @@ fn main() {
             governor::start(app.handle().clone());
 
             app.global_shortcut().register(toggle)?;
+            app.global_shortcut().register(vol_up)?;
+            app.global_shortcut().register(vol_down)?;
+            app.global_shortcut().register(mute)?;
 
             // OSD overlay: full-screen, click-through, over the game.
             if let Some(ov) = app.get_webview_window("overlay") {

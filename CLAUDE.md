@@ -72,11 +72,22 @@ When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scal
   mid-sentence ("à¹€à¸­à¹Šà¸°! à¹€à¸”à¸µà¹‹à¸¢à¸§à¸à¹ˆà¸­à¸™!") â€” this mid-stream correction is a required behavior of
   G-Signal, not optional polish.
 
+## Global hotkeys
+
+All hotkeys are registered as global shortcuts (work even when Dota 2 is focused).
+Defined in `src-tauri/src/main.rs` via `tauri_plugin_global_shortcut`.
+
+| Hotkey | Action |
+| --- | --- |
+| **Ctrl+Alt+S** | ซ่อน/แสดง overlay |
+| **Alt+↑** | เพิ่มระดับเสียง +10% |
+| **Alt+↓** | ลดระดับเสียง -10% |
+| **Alt+M** | ปิด/เปิดเสียง (mute toggle — กลับเป็นระดับเดิมเมื่อ unmute) |
+
 ## Visual language
 
 Premium-dark dashboard: background `#08090c`, frosted ice-aluminium panels
-`rgba(18, 20, 28, 0.72)`, glassmorphism overlay in Maiden's ice palette. Modular control panels;
-global hotkeys (e.g. `Alt+M` â†’ instant situation summary).
+`rgba(18, 20, 28, 0.72)`, glassmorphism overlay in Maiden's ice palette. Modular control panels.
 
 ## Release & update workflow
 
