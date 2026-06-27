@@ -289,7 +289,37 @@ fn run(app: AppHandle) -> Result<(), String> {
     let sh = monitor.height().map_err(|e| format!("monitor height: {e}"))?;
     let region = MinimapRegion::for_resolution(sw, sh);
 
-    let settings = Settings::new(
+    // WGC's border-toggle (`DrawBorderSettings::WithoutBorder`) and custom
+    // update-interval are Windows 11 / build ≥ 20348 features. On Windows 10
+    // (e.g. 19045) constructing the session with them throws "…not supported by
+    // the Graphics Capture API on this platform" and the capture thread dies at
+    // startup — which silently took down the *entire* CV pipeline: no frames →
+    // G-Sentry tracks nobody → G-Motion risk stays 0 → the G-Meter is pinned to
+    // "ปลอดภัย" and G-Signal never warns. Try the modern path first (border-free
+    // on Win11), then fall back to platform defaults so capture actually runs on
+    // Win10. On Win10 the border feature doesn't exist, so `Default` draws none.
+    match MinimapCapture::start(modern_settings(monitor, region, app.clone())) {
+        Ok(()) => Ok(()),
+        Err(e) => {
+            let msg = e.to_string();
+            if msg.contains("not supported") || msg.contains("platform") {
+                crate::log::error(&format!(
+                    "[capture] modern WGC settings unsupported ({msg}); retrying with platform defaults (Win10 path)"
+                ));
+                let monitor = Monitor::primary().map_err(|e| format!("no primary monitor: {e}"))?;
+                MinimapCapture::start(compat_settings(monitor, region, app))
+                    .map_err(|e| format!("capture failed (compat): {e}"))
+            } else {
+                Err(format!("capture failed: {e}"))
+            }
+        }
+    }
+}
+
+/// Win11/modern WGC settings: border-free capture and a software FPS cap.
+type CaptureSettings = Settings<(AppHandle, MinimapRegion), Monitor>;
+fn modern_settings(monitor: Monitor, region: MinimapRegion, app: AppHandle) -> CaptureSettings {
+    Settings::new(
         monitor,
         CursorCaptureSettings::WithoutCursor,
         DrawBorderSettings::WithoutBorder,
@@ -298,10 +328,24 @@ fn run(app: AppHandle) -> Result<(), String> {
         DirtyRegionSettings::Default,
         ColorFormat::Bgra8,
         (app, region),
-    );
+    )
+}
 
-    // Blocking: takes over this (spawned) thread running the WGC message loop.
-    MinimapCapture::start(settings).map_err(|e| format!("capture failed: {e}"))
+/// Windows 10 fallback: every newer-than-WGC-baseline toggle left at platform
+/// `Default` so session creation doesn't touch an unsupported property. The
+/// source then fires at refresh rate; the adaptive throttle in
+/// [`MinimapCapture::on_frame_arrived`] still caps *processing* to ≈8 Hz.
+fn compat_settings(monitor: Monitor, region: MinimapRegion, app: AppHandle) -> CaptureSettings {
+    Settings::new(
+        monitor,
+        CursorCaptureSettings::WithoutCursor,
+        DrawBorderSettings::Default,
+        SecondaryWindowSettings::Default,
+        MinimumUpdateIntervalSettings::Default,
+        DirtyRegionSettings::Default,
+        ColorFormat::Bgra8,
+        (app, region),
+    )
 }
 
 /// Voice a critical event with interrupt semantics: cancel whatever Maiden is
