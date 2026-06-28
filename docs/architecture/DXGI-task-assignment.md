@@ -681,8 +681,137 @@ Day 2 PM:  Wave 4 ─── Sonnet(SPR03-01) → gemma-e2e(SPR03-02)
 Day 3:     Wave 5 ─── gemma4(SPR04-01) ∥ Human(SPR04-02+03) ∥ gemma-e2e(SPR04-04+06) ∥ aroon(SPR04-05)
 ```
 
+---
+
+## DAG — Dependency Map
+
+```
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 1 — DXGI Wrapper (Day 1)                                                        │
+│                                                                                         │
+│  ┌──────────────┐     ┌────────────────────┐     ┌──────────────┐     ┌──────────────┐  │
+│  │ SPR01-01     │────▶│ SPR01-02 + 03      │────▶│ SPR01-04     │────▶│ SPR01-05     │  │
+│  │ Cargo.toml   │     │ DxgiCapture::new() │     │ Drop trait   │     │ Unit test    │  │
+│  │ features     │     │ + acquire_frame()  │     │ (cleanup)    │     │ (10 frames)  │  │
+│  │              │     │                    │     │              │     │              │  │
+│  │ ⬤ gemma-e2e │     │ ⬤ OPUS      10pt  │     │ ⬤ aroon  1pt│     │ ⬤ Sonnet 3pt│  │
+│  │ 1pt          │     │ ⚡ CRITICAL PATH   │     │              │     │              │  │
+│  └──────────────┘     └────────────────────┘     └──────────────┘     └──────────────┘  │
+│       ⛓️ SERIAL ──────────────────────────────────────────────────────────▶              │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                                         │
+                                         ▼
+┌─────────────────────────────────────────────────────────────────────────────────────────┐
+│  PHASE 2 — Integration (Day 2)                                                          │
+│                                                                                         │
+│  ┌──────────────┐     ┌────────────────────┐     ┌──────────────┐                       │
+│  │ SPR02-01     │──┬─▶│ SPR02-02           │──┬─▶│ SPR02-04     │                       │
+│  │ Rename +     │  │  │ DXGI capture loop  │  │  │ GSI-only     │                       │
+│  │ feature gate │  │  │ (main integration) │  │  │ fallback     │                       │
+│  │              │  │  │                    │  │  │              │                       │
+│  │ ⬤ gemma-e2e │  │  │ ⬤ OPUS       8pt  │  │  │ ⬤ Sonnet 3pt│                       │
+│  │ 2pt          │  │  │ ⚡ CRITICAL PATH   │  │  │              │                       │
+│  └──────────────┘  │  └────────────────────┘  │  └──────────────┘                       │
+│                    │                          │                                         │
+│                    │  ┌──────────────┐        │  ┌──────────────┐                       │
+│                    └─▶│ SPR02-03     │        └─▶│ SPR02-05     │                       │
+│                 🔀    │ Cadence      │     🔀    │ capture-mode │                       │
+│                       │ constants    │           │ event        │                       │
+│                       │              │           │              │                       │
+│                       │ ⬤ gemma-e2e │           │ ⬤ gemma-e2e │                       │
+│                       │ 1pt          │           │ 1pt          │                       │
+│                       └──────────────┘           └──────────────┘                       │
+└─────────────────────────────────────────────────────────────────────────────────────────┘
+                    │                                    │
+                    ▼                                    ▼
+┌──────────────────────────────────┐  ┌───────────────────────────────────────────────────┐
+│  PHASE 3 — Frontend (Day 2 PM)  │  │  PHASE 4 — Validation & Cleanup (Day 3)           │
+│                                  │  │                                                   │
+│  ┌──────────────┐ ┌────────────┐ │  │  ┌──────────────┐     ┌──────────────┐            │
+│  │ SPR03-01     │▶│ SPR03-02   │ │  │  │ SPR04-01     │────▶│ SPR04-02     │──┬────────▶│
+│  │ Badge UI     │ │ Tooltip    │ │  │  │ perf_p7      │     │ In-game test │  │         │
+│  │ (React)      │ │            │ │  │  │ benchmark    │     │ (Dota+OBS)   │  │         │
+│  │              │ │            │ │  │  │              │     │              │  │         │
+│  │ ⬤ Sonnet    │ │ ⬤ gemma   │ │  │  │ ⬤ gemma4    │     │ ⬤ HUMAN     │  │         │
+│  │ 2pt          │ │ -e2e  1pt │ │  │  │ :12b    3pt  │     │ 5pt          │  │         │
+│  └──────────────┘ └────────────┘ │  │  └──────────────┘     └──────────────┘  │         │
+│                                  │  │       ⚡ CRITICAL PATH ────────────────▶ │         │
+└──────────────────────────────────┘  │                                         │         │
+                                      │  ┌──────────────┐                       │         │
+                                      │  │ SPR04-03     │◀──── (from SPR02-04)  │         │
+                                      │  │ Lite mode    │                🔀     │         │
+                                      │  │ verify       │                       │         │
+                                      │  │              │  ┌──────────────┐     │         │
+                                      │  │ ⬤ HUMAN     │  │ SPR04-04     │◀────┘         │
+                                      │  │ 2pt          │  │ Cleanup      │               │
+                                      │  └──────────────┘  │ Cargo.toml   │               │
+                                      │                    │ ⬤ gemma-e2e │               │
+                                      │                    │ 1pt          │    🔀         │
+                                      │                    └──────────────┘               │
+                                      │                    ┌──────────────┐               │
+                                      │                    │ SPR04-05     │◀──── (after   │
+                                      │                    │ CLAUDE.md    │      SPR04-02) │
+                                      │                    │ ⬤ aroon 1pt │               │
+                                      │                    └──────────────┘    🔀         │
+                                      │                    ┌──────────────┐               │
+                                      │                    │ SPR04-06     │◀────┘         │
+                                      │                    │ modules.json │               │
+                                      │                    │ ⬤ gemma-e2e │               │
+                                      │                    │ 1pt          │               │
+                                      │                    └──────────────┘               │
+                                      └───────────────────────────────────────────────────┘
+```
+
+### Critical Path (⚡)
+
+```
+SPR01-01 → SPR01-02+03 → SPR01-04 → SPR01-05 → SPR02-01 → SPR02-02 → SPR04-01 → SPR04-02
+   1pt         10pt          1pt         3pt         2pt         8pt         3pt        5pt
+ gemma-e2e    OPUS        aroon-rust   Sonnet     gemma-e2e    OPUS       gemma4:12b  HUMAN
+                                                                          ─────────────────
+                                                                          Total: 33pt
+                                                                          Bottleneck: Opus (18pt)
+```
+
+### Parallel Execution Opportunities
+
+| Parallel Slot | Tasks | Models Running Concurrently | Dependency Gate |
+|---|---|---|---|
+| **P1** | SPR02-02 🔀 SPR02-03 | Opus + gemma-e2e | Both wait for SPR02-01 |
+| **P2** | SPR02-04 🔀 SPR02-05 | Sonnet + gemma-e2e | Both wait for SPR02-02 |
+| **P3** | SPR03-01 (Phase 3) 🔀 SPR04-01 (Phase 4) | Sonnet + gemma4:12b | Phase 3 needs SPR02-04; Phase 4 needs SPR02-02 (independent) |
+| **P4** | SPR04-02 🔀 SPR04-03 | Human × 2 | SPR04-02 needs SPR04-01; SPR04-03 needs SPR02-04 |
+| **P5** | SPR04-04 🔀 SPR04-05 🔀 SPR04-06 | gemma-e2e + aroon-rust + gemma-e2e | All wait for SPR04-02 pass |
+
+### Adjacency List (machine-readable)
+
+```json
+{
+  "SPR01-01": { "depends_on": [],           "unlocks": ["SPR01-02"] },
+  "SPR01-02": { "depends_on": ["SPR01-01"], "unlocks": ["SPR01-04"] },
+  "SPR01-04": { "depends_on": ["SPR01-02"], "unlocks": ["SPR01-05"] },
+  "SPR01-05": { "depends_on": ["SPR01-04"], "unlocks": ["SPR02-01"] },
+  "SPR02-01": { "depends_on": ["SPR01-05"], "unlocks": ["SPR02-02", "SPR02-03"] },
+  "SPR02-02": { "depends_on": ["SPR02-01"], "unlocks": ["SPR02-04", "SPR02-05", "SPR04-01"] },
+  "SPR02-03": { "depends_on": ["SPR02-01"], "unlocks": [] },
+  "SPR02-04": { "depends_on": ["SPR02-02"], "unlocks": ["SPR03-01", "SPR04-03"] },
+  "SPR02-05": { "depends_on": ["SPR02-02"], "unlocks": [] },
+  "SPR03-01": { "depends_on": ["SPR02-04"], "unlocks": ["SPR03-02"] },
+  "SPR03-02": { "depends_on": ["SPR03-01"], "unlocks": [] },
+  "SPR04-01": { "depends_on": ["SPR02-02"], "unlocks": ["SPR04-02"] },
+  "SPR04-02": { "depends_on": ["SPR04-01"], "unlocks": ["SPR04-04", "SPR04-05", "SPR04-06"] },
+  "SPR04-03": { "depends_on": ["SPR02-04"], "unlocks": [] },
+  "SPR04-04": { "depends_on": ["SPR04-02"], "unlocks": [] },
+  "SPR04-05": { "depends_on": ["SPR04-02"], "unlocks": [] },
+  "SPR04-06": { "depends_on": ["SPR04-02"], "unlocks": [] }
+}
+```
+
+---
+
 ## Changelog
 
 | Version | Date | Summary |
 |---|---|---|
 | 0.1.0 | 2026-06-28 | Initial assignment — 5 waves, 6 models, 18 tasks |
+| 0.2.0 | 2026-06-28 | Added DAG dependency map, critical path, parallel slots, adjacency list |
