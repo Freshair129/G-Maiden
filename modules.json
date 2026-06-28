@@ -10,14 +10,15 @@
   },
   "modules": {
     "g-sensory": {
-      "ver": "1.0.0",
+      "ver": "1.1.0",
       "status": "done",
       "tier": "core",
       "phase": "0-1,7",
       "responsibility": "Overlay rendering + hardware/resource budget (glassmorphism HUD)",
-      "source": ["src-tauri/src/capture.rs", "src-tauri/src/governor.rs", "src/src/overlay"],
+      "source": ["src-tauri/src/capture.rs", "src-tauri/src/dxgi.rs", "src-tauri/src/governor.rs", "src/src/overlay"],
       "gates": ["FPS<=3%", "CPU<=2.5%", "RAM<=400MB"],
       "ai": null,
+      "note": "Capture backend migrated WGC → DXGI Desktop Duplication (ADR-13/CR-001); borderless-fullscreen required, GSI-only Lite-mode fallback on init failure. Old WGC preserved behind --features wgc (capture_wgc.rs).",
       "doc": "docs/features/FEAT-G-SENSORY.md"
     },
     "g-sentry": {
@@ -213,6 +214,18 @@
         "g-persona": "0.1.0", "g-stream": "0.1.0"
       },
       "note": "Added g-revive (death-window buyback advisor) + respawn config layer. App still 0.7.2 (unreleased batch)."
+    },
+    {
+      "app": "0.7.2",
+      "date": "2026-06-29",
+      "modules": {
+        "g-sensory": "1.1.0", "g-sentry": "1.0.0", "g-signal": "1.0.0",
+        "g-motion": "0.9.0", "g-log": "0.8.0", "g-master": "0.4.0",
+        "g-damage": "0.3.0", "g-revive": "0.2.0", "g-voice": "0.5.0", "g-mind": "0.3.0",
+        "g-memory": "0.1.0", "g-coach": "0.1.0", "g-score": "0.1.0",
+        "g-persona": "0.1.0", "g-stream": "0.1.0"
+      },
+      "note": "g-sensory 1.0.0 → 1.1.0: capture backend migrated WGC → DXGI Desktop Duplication (ADR-13/CR-001), +dxgi.rs source, borderless-fullscreen req + GSI-only Lite-mode fallback, WGC behind --features wgc. App still 0.7.2 (unreleased batch)."
     }
   ]
 }

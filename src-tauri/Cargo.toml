@@ -17,8 +17,15 @@ axum       = "0.7"
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-updater = "2"
 tauri-plugin-process = "2"
-windows-capture = "2.0"
-windows = { version = "0.61", features = ["Win32_UI_Shell"] }
+windows-capture = { version = "2.0", optional = true }
+windows = { version = "0.61", features = [
+    "Win32_UI_Shell",
+    "Win32_Foundation",
+    "Win32_Graphics_Dxgi",
+    "Win32_Graphics_Dxgi_Common",
+    "Win32_Graphics_Direct3D",
+    "Win32_Graphics_Direct3D11",
+] }
 tract-onnx = "0.21"
 rodio      = "0.19"
 image      = "0.25"
@@ -27,6 +34,11 @@ image      = "0.25"
 # use the engine looks under models/ocr/ next to the exe. See src/ocr.rs.
 pure-onnx-ocr-sync = "0.2"
 geo-types          = "0.7"
+
+[features]
+# Legacy WGC capture backend (ADR-13 rollback). Default build uses DXGI Desktop
+# Duplication; `--features wgc` re-enables windows-capture + src/capture_wgc.rs.
+wgc = ["dep:windows-capture"]
 
 [build-dependencies]
 tauri-build = { version = "2.0", features = [] }

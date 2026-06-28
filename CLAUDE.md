@@ -46,6 +46,11 @@ Hybrid **client-server**, split by latency requirement:
 | **G-Sensory** | Overlay rendering + hardware optimization (glassmorphism HUD, FPS/resource budget) |
 | **G-Log** | Feedback loop â€” logs decisions/outcomes locally to tune prediction params next match |
 
+**Screen capture (G-Sensory CV)** uses **DXGI Desktop Duplication**, not WGC (ADR-13 / CR-001) â€”
+GPU copy within one vsync. Dota 2 ต้องรันแบบ borderless-fullscreen (`-window -noborder`); ถ้า capture
+เริ่มไม่ได้ แอปจะ fall back เป็น **GSI-only "Lite mode"** (ไม่มี minimap CV แต่เสียง/overlay/G-Master ยังทำงาน).
+WGC เดิมเก็บไว้หลัง `--features wgc` (`capture_wgc.rs`).
+
 When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scalability unity.
 
 ### Hard constraints (non-functional â€” enforce these)

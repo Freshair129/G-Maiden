@@ -14,9 +14,13 @@ mod announcer;
 mod audio;
 mod calibration;
 mod capture;
+#[cfg(feature = "wgc")]
+mod capture_wgc;
 mod counter_advice;
 mod cv;
 mod damage;
+#[cfg(not(feature = "wgc"))]
+mod dxgi;
 mod governor;
 mod gsi;
 mod items;

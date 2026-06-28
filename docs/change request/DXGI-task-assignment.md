@@ -12,13 +12,13 @@ related_docs: ["IMPL-PLAN-DXGI-migration", "ADR-13-dxgi-capture-migration"]
 
 ## Model Tier Strategy
 
-| Tier | Model | Strengths | Assign When |
-|---|---|---|---|
-| **T1 — Opus** | Claude Opus | Architecture, unsafe Rust, complex Windows API, multi-file reasoning | Complex tasks ที่ต้องเข้าใจ context ข้ามไฟล์ + unsafe code + error handling ที่ซับซ้อน |
-| **T2 — Sonnet** | Claude Sonnet | General Rust/TS, moderate complexity, good reasoning | Tasks ทั่วไปที่ต้อง reasoning แต่ไม่ซับซ้อนระดับ architecture |
-| **T3a — gemma4:12b** | Ollama local | Top local performance, Rust capable | Tasks ที่ต้อง reasoning + Rust แต่ scope ชัดเจน ไม่ต้องข้ามไฟล์เยอะ |
-| **T3b — aroon-rust:9b** | Ollama local | Rust-specialized, efficient | Rust-focused tasks ที่ scope แคบ, boilerplate, pattern-matching |
-| **T3c — gemma-e2e** | Ollama local | Fast execution | Mechanical edits, config changes, trivial code gen |
+| Tier | Model |Quantization| Strengths | Assign When |
+|---|---|---|---|---|
+| **T1 — Opus** | Claude Opus | N/A | Architecture, unsafe Rust, complex Windows API, multi-file reasoning | Complex tasks ที่ต้องเข้าใจ context ข้ามไฟล์ + unsafe code + error handling ที่ซับซ้อน |
+| **T2 — Sonnet** | Claude Sonnet | N/A | General Rust/TS, moderate complexity, good reasoning | Tasks ทั่วไปที่ต้อง reasoning แต่ไม่ซับซ้อนระดับ architecture |
+| **T3a — gemma4:12b** | Ollama local | Q4_K_XL | Top local performance, Rust capable | Tasks ที่ต้อง reasoning + Rust แต่ scope ชัดเจน ไม่ต้องข้ามไฟล์เยอะ |
+| **T3b — Aroow-Rust-Coder-9B** | Ollama local | Q4_K_S | Rust-specialized, efficient | Rust-focused tasks ที่ scope แคบ, boilerplate, pattern-matching |
+| **T3c — gemma-e2e** | Ollama local | 4-bit | Fast execution | Mechanical edits, config changes, trivial code gen |
 
 ---
 
@@ -31,7 +31,7 @@ related_docs: ["IMPL-PLAN-DXGI-migration", "ADR-13-dxgi-capture-migration"]
 | SPR01-01 | เพิ่ม `windows` crate features ใน Cargo.toml | 1 | T3c | **gemma-e2e** | Mechanical — แค่เพิ่ม feature flags |
 | SPR01-02 | `DxgiCapture::new()` — D3D11 + output duplication | 5 | T1 | **Opus** | Complex unsafe Windows API, multi-step init chain, error handling critical |
 | SPR01-03 | `acquire_frame()` → BGRA bytes | 5 | T1 | **Opus** | GPU texture mapping, stride handling, unsafe pointer arithmetic |
-| SPR01-04 | `Drop` trait — cleanup resources | 1 | T3b | **aroon-rust:9b** | Pattern-based Rust Drop impl, scope ชัดเจน |
+| SPR01-04 | `Drop` trait — cleanup resources | 1 | T3b | **Aroow-Rust-Coder-9B** | Pattern-based Rust Drop impl, scope ชัดเจน |
 | SPR01-05 | Unit test: capture 10 frames | 3 | T2 | **Sonnet** | Test design needs reasoning about assertions + edge cases |
 
 ### Phase 2 — Integration
@@ -71,7 +71,7 @@ related_docs: ["IMPL-PLAN-DXGI-migration", "ADR-13-dxgi-capture-migration"]
 | **Opus** (T1) | 3 tasks (SPR01-02, SPR01-03, SPR02-02) | 18 pt | 39% — heavy lifting |
 | **Sonnet** (T2) | 4 tasks (SPR01-05, SPR02-04, SPR03-01) | 9 pt | 20% — moderate |
 | **gemma4:12b** (T3a) | 1 task (SPR04-01) | 3 pt | 7% — perf validation |
-| **aroon-rust:9b** (T3b) | 2 tasks (SPR01-04, SPR04-05) | 2 pt | 4% — Rust patterns |
+| **Aroow-Rust-Coder-9B** (T3b) | 2 tasks (SPR01-04, SPR04-05) | 2 pt | 4% — Rust patterns |
 | **gemma-e2e** (T3c) | 6 tasks (SPR01-01, SPR02-01, SPR02-03, SPR02-05, SPR03-02, SPR04-04, SPR04-06) | 7 pt | 15% — mechanical |
 | **Human** | 2 tasks (SPR04-02, SPR04-03) | 7 pt | 15% — manual test |
 

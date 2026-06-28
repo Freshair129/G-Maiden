@@ -4,6 +4,12 @@
 //!   • RAM ≤ 400 MB  (always-on background footprint, cloud-online, SLM not loaded)
 //!   • FPS drop ≤ 3% (Dota 2 in-game FPS measured via PresentMon ETW on dota2.exe)
 //!
+//! NOTE (ADR-13 — DXGI capture migration): this gate asserts RAM + FPS-drop only;
+//! it does NOT assert raw capture CPU%.  Post-migration the capture CPU target
+//! dropped from ~8% (old WGC backend, which also stalled at ~0.7 Hz) to ≤1.5%
+//! (DXGI Desktop Duplication, GPU copy).  That CPU figure is observed separately
+//! via the app's own resource-stats (governor/resource panel), not gated here.
+//!
 //! # Why NOT DwmGetCompositionTimingInfo
 //!
 //! DWM composition timing counts frames the Desktop Window Manager composites for

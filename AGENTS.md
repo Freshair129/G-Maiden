@@ -20,7 +20,7 @@ The persona is "**Maiden**" â€” inspired by Dota 2's Crystal Maiden. Gentle
 | Desktop shell | **Tauri v2** (Rust + WebView2) | RAM/CPU budget; transparent overlay; native perf |
 | Frontend | **React 18 + Vite + TypeScript** | Single-file App.tsx, inline styles (glassmorphism) |
 | Backend | **Rust** (axum, tokio, rodio, tract-onnx) | Latency-critical path must be Rust-only (ADR-03) |
-| CV pipeline | **Windows Graphics Capture â†’ ONNX detector** | Minimap hero detection for gank warnings |
+| CV pipeline | **DXGI Desktop Duplication â†’ ONNX detector** (ADR-13) | Minimap hero detection; borderless-fullscreen required, Lite-mode fallback |
 | Audio | **rodio** (in-process WAV playback) | Sub-1ms cancel, no cmd flash |
 | TTS | **Windows SAPI** (PowerShell, planned: Piper ONNX) | Thai voice, latency fallback chain |
 | Cloud brain | **Gemini** (planned Phase 4) | Narrative, deep analysis, item advice |
@@ -61,7 +61,7 @@ G-Maiden/
 â”‚       â”œâ”€â”€ damage.rs      # G-Damage: burst damage calculator + hero DB
 â”‚       â”œâ”€â”€ audio.rs       # rodio playback (dedicated thread + mpsc channel)
 â”‚       â”œâ”€â”€ tts.rs         # Windows SAPI TTS (PowerShell, base64 Thai)
-â”‚       â”œâ”€â”€ capture.rs     # Windows Graphics Capture (screen â†’ frames)
+â”‚       â”œâ”€â”€ capture.rs     # DXGI Desktop Duplication (screen â†’ frames); WGC behind --features wgc (capture_wgc.rs)
 â”‚       â”œâ”€â”€ cv/            # Computer vision pipeline
 â”‚       â”‚   â”œâ”€â”€ mod.rs     # Pipeline orchestrator
 â”‚       â”‚   â”œâ”€â”€ region.rs  # Minimap region detection
@@ -90,7 +90,7 @@ G-Maiden/
 â”‚  â””â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”˜       â”‚
 â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”             â”‚
 â”‚  â”‚ Capture  â”‚â†’â”‚  CV    â”‚â†’â”‚G-Damage â”‚â†’ HP WARNING   â”‚
-â”‚  â”‚ (WGC)   â”‚  â”‚(ONNX)  â”‚  â”‚(burst)  â”‚              â”‚
+â”‚  â”‚ (DXGI)  â”‚  â”‚(ONNX)  â”‚  â”‚(burst)  â”‚              â”‚
 â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜             â”‚
 â”‚                                                      â”‚
 â”‚  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”                           â”‚
@@ -144,6 +144,7 @@ G-Maiden/
 - All new modules must follow `G-` naming convention (ADR-01)
 - Run `cargo test` before committing â€” currently 50 tests, all must pass
 - Resource-heavy operations (ONNX inference, screen capture) must respect the CPU/RAM budget
+- **Screen capture = DXGI Desktop Duplication** (`dxgi.rs` + `capture.rs`), not WGC (ADR-13 / CR-001). WGC on Win10 stalled at ~0.7 Hz / 8% CPU and crashed on the `WithoutBorder` toggle; DXGI is a GPU copy that lands within one vsync. Dota 2 **must run borderless-fullscreen** (`-window -noborder`) — exclusive fullscreen is unsupported, so on init failure the app auto-falls back to **GSI-only "Lite mode"** (no minimap CV; voice/overlay/G-Master still work) and shows a Lite badge. Old WGC path preserved behind `--features wgc` (`capture_wgc.rs`); default build = DXGI.
 
 ### TypeScript (src/)
 - **Single-file architecture**: `src/src/App.tsx` contains both Overlay and Control components
@@ -207,7 +208,7 @@ produced **only by CI on a pushed version tag**. Understand both halves before t
 - GSI server receives Dota 2 game state on `:3000`
 - Transparent overlay with glassmorphism HUD (position: top/left/right/custom)
 - HP danger alerts with voice (rising-edge, 8s throttle, belief revision)
-- Minimap CV pipeline: WGC capture â†’ color prefilter â†’ ONNX detector â†’ G-Sentry â†’ G-Motion â†’ G-Signal
+- Minimap CV pipeline: DXGI capture â†’ color prefilter â†’ ONNX detector â†’ G-Sentry â†’ G-Motion â†’ G-Signal (borderless-fullscreen required; GSI-only Lite-mode fallback on capture-init failure — ADR-13/CR-001)
 - Gank warning banners + voice with hysteresis
 - Persona voice lines (level up, kill, death, respawn, mana low)
 - rodio audio backend (in-process WAV, <1ms cancel)

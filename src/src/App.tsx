@@ -1353,6 +1353,7 @@ const Control: React.FC = () => {
   const [voices, setVoices] = useState<VoiceInfo[]>([])
   const [status, setStatus] = useState<GsiStatus | null>(null)
   const [resources, setResources] = useState<ResourceStats | null>(null)
+  const [captureMode, setCaptureMode] = useState<string>('initializing')
   const [showWelcome, setShowWelcome] = useState(() => localStorage.getItem('gm-onboarded') !== '1')
   const dismissWelcome = () => { localStorage.setItem('gm-onboarded', '1'); setShowWelcome(false) }
   // In-app updater (ask-first). updRef holds the pending Update so the button can
@@ -1474,7 +1475,8 @@ const Control: React.FC = () => {
     const u2 = listen('overlay-ready', () => { void emit('settings', sRef.current) })
     const u3 = listen<GsiStatus>('gsi-status', (e) => setStatus(e.payload))
     const u4ctrl = listen<ResourceStats>('resource-stats', (e) => setResources(e.payload))
-    return () => { void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f()); void u4ctrl.then((f) => f()) }
+    const u5cap = listen<string>('capture-mode', (e) => setCaptureMode(e.payload))
+    return () => { void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f()); void u4ctrl.then((f) => f()); void u5cap.then((f) => f()) }
   }, [])
 
   // persist + broadcast + apply overlay visibility on any change
@@ -1765,6 +1767,21 @@ const Control: React.FC = () => {
 
       <div style={{ marginTop: 14 }}>
         <Card title="Modules &amp; System">
+          {(() => {
+            const capAcc = captureMode === 'dxgi' ? C.ok : captureMode === 'lite' ? C.warn : C.mut
+            const capLabel = captureMode === 'dxgi' ? 'DXGI' : captureMode === 'lite' ? 'Lite' : '…'
+            const capTitle = captureMode === 'dxgi'
+              ? 'DXGI Desktop Duplication — minimap detection active'
+              : captureMode === 'lite'
+                ? 'Minimap detection ปิดอยู่ — ใช้ borderless fullscreen เพื่อเปิด full detection เต็มรูปแบบ'
+                : 'กำลังเริ่มต้น capture'
+            return (
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 6, fontSize: 11.5, color: C.mut }}>
+                <span>Capture</span>
+                <span title={capTitle} style={{ padding: '2px 9px', borderRadius: 99, fontSize: 11, fontWeight: 600, color: capAcc, background: `${capAcc}1f`, border: `1px solid ${capAcc}` }}>{capLabel}</span>
+              </div>
+            )
+          })()}
           <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, paddingTop: 6, fontSize: 12.5 }}>
             {[
               ['G-Sentry', 'fog-of-war monitor'],
