@@ -129,6 +129,19 @@ impl DxgiCapture {
             return None;
         }
 
+        // A frame with no present time carries only pointer/metadata updates — the
+        // desktop image is unchanged, and on the very first acquire it is undefined
+        // (can be all-zero). Skip it so the CV pipeline never sees a blank/stale
+        // frame. In-game the screen updates every vsync, so real frames always have
+        // a non-zero present time.
+        if info.LastPresentTime == 0 {
+            // SAFETY: matched 1:1 with the successful AcquireNextFrame above.
+            unsafe {
+                let _ = self.duplication.ReleaseFrame();
+            }
+            return None;
+        }
+
         let result = self.copy_frame(resource);
         // Always release the frame, even if the copy failed, or the next
         // AcquireNextFrame will deadlock.
@@ -256,8 +269,10 @@ unsafe fn create_staging_texture(
 mod tests {
     use super::*;
 
-    // These need a real display + GPU, so they are #[ignore] by default.
-    // Run on a desktop session with: `cargo test --lib dxgi -- --ignored`
+    // These need a real display + GPU, so they are #[ignore] by default. DXGI
+    // allows only ONE duplication per output, so they must run serially. Run on a
+    // desktop session with:
+    //   cargo test --bin g-maiden dxgi -- --ignored --test-threads=1
 
     #[test]
     #[ignore = "requires a real display/GPU"]
