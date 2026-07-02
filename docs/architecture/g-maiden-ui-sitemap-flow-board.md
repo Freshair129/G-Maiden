@@ -61,6 +61,7 @@ flowchart TD
   C --> C7["Sensitivity (Low / Med / High)"]
   C --> C8["UI Tier Picker (Lite / Full)"]
   C --> C9["Exclusive Fullscreen Warning"]
+  C --> C10["Account / GID (opt-in sign-in, public OpenDota profile)"]
 
   D --> D1["Match Timeline"]
   D --> D2["Local Logs"]
@@ -160,6 +161,7 @@ In-game, peripheral-first HUD direction. Lite tier (default) ใช้ single-st
 | `PerformanceGovernor` | Protect FPS/CPU/RAM | Can degrade blur, particles, and animation |
 | `ExclusiveFullscreenWarning` | Detect + warn เมื่อ Dota อยู่ใน Exclusive | Surfaced จาก `exclusive_fullscreen_active()`; แนะนำเปลี่ยนเป็น Borderless |
 | `CalibrationToggle` | QA audit mode | Off by default; เปิดแล้วเก็บ screenshot + GIF clip + `audit.jsonl` ลง local เท่านั้น |
+| `AccountGidPanel` (C10) | Optional Google sign-in, GID display, linked Steam/public OpenDota profile + baselines | Opt-in per ADR-11; sign-in card + GID codec `G-[Gen][Payload][Checksum]`; match/CV/G-Log stay local — see ADR-14 |
 
 ## 6. Acceptance Criteria
 

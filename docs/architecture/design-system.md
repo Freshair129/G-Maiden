@@ -388,6 +388,13 @@ Governor visual degradation levels:
 
 ## 10. Implementation Boundaries
 
+> **SHIPPED (2026-07-02):** The command-deck dashboard shell, the live-wire data
+> path (CR-002 Phase 2a/2b), and the `App.tsx` / `CommandDeck.tsx` split have
+> already shipped, merged at `170805b8`. `App.tsx` now owns the overlay window
+> + window routing, and `CommandDeck.tsx` owns the control window. The
+> "Not allowed until approval" list below and the task packet in Section 11
+> are historical — treat `UI-1` through `UI-4` as done, not pending.
+
 ### Allowed in Phase 1 (documentation only)
 
 - Add this design system doc.
@@ -403,9 +410,23 @@ Governor visual degradation levels:
 - Update release changelog.
 - Modify `orchestration/backlog.json` for execution.
 
+### 10.1 Accounts / GID Surface (shipped, opt-in)
+
+An optional, additive Google OAuth sign-in surface now exists in the control
+window per **ADR-14**: a sign-in card, a GID display (cross-G-series identity,
+format `G-[Gen][Payload][Checksum]`), and a linked-Steam/OpenDota profile chip
+showing the player's public OpenDota profile + baselines. It is opt-in per
+ADR-11; match/CV/G-Log data stays local, and the account layer stores only
+identity + public data (email, public Steam ids, display name, GID). See
+`docs/architecture/adr/ADR-14-gid-account-identity.md`.
+
 ## 11. G-Orch Execution Plan
 
 After this document is approved, implement through G-Orch as a scoped, dependency-gated wave. Do not dispatch broad repo-wide UI work.
+
+> **SHIPPED:** `UI-1` through `UI-4` (token mapping, command deck shell,
+> profile dialog, Combat HUD preservation) are done — see the Section 10
+> status note above. This packet is kept as historical record.
 
 ### Proposed task packet
 

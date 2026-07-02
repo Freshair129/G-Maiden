@@ -84,6 +84,10 @@ related_docs: ["ADR-13-dxgi-capture-migration", "IMPL-PLAN-DXGI-migration", "DXG
 
 ## D. Verified Interface Appendix (ใช้ตอน execute — ไม่ต้องค้นใหม่)
 
+> **Note (post CR-002):** the `src/src/App.tsx` line anchors below predate the
+> App.tsx/CommandDeck.tsx split — they now point to `CommandDeck.tsx` /
+> `src/src/live/` instead.
+
 **capture.rs (เดิม, จะกลายเป็น `capture_wgc.rs`)**
 - `pub fn start(app: AppHandle)` `:276`; invoked `main.rs:421`
 - `struct MinimapCapture` `:87–105` fields: `app, region, icon, detector, sentry, motion, signal, start, last_processed, last_emit, last_calib`

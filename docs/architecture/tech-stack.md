@@ -24,6 +24,7 @@
 | Local store (G-Log) | **SQLite** à¸œà¹ˆà¸²à¸™ `rusqlite` | privacy-first, local-only, à¹„à¸¡à¹ˆà¸¡à¸µ server |
 | Web dashboard | **Vercel** (Vite static build à¸‚à¸­à¸‡ React à¹€à¸”à¸µà¸¢à¸§à¸à¸±à¸™) | landing + remote config (à¹„à¸¡à¹ˆà¸¡à¸µà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ªà¹ˆà¸§à¸™à¸•à¸±à¸§à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™) |
 | Build/CI | **pnpm + cargo + GitHub Actions + Tauri bundler** (MSI/NSIS) | |
+| Accounts & Identity | **Google OAuth + Supabase `gstore` (profiles+RLS) + GID codec (`src/src/gid.ts`) + Steam identity (`identity.rs`)** | optional/additive sign-in; stores only public data (ADR-11/ADR-14) |
 
 ---
 

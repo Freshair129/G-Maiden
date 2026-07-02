@@ -24,6 +24,7 @@
 | **G-Voice** — Two-Way Voice | P0 | 4 | [FEAT-G-VOICE](FEAT-G-VOICE.md) |
 | **G-Memory** — Persistent Memory | P0 | 6 | [FEAT-G-MEMORY](FEAT-G-MEMORY.md) |
 | **G-Coach** — Post-Match Review | P1 | 6–7 | [FEAT-G-COACH](FEAT-G-COACH.md) |
+| **G-Revive** — Death Analysis & Buyback Advisor | P1 | 5–6 | [FEAT-G-REVIVE](FEAT-G-REVIVE.md) |
 | **G-Mind** — Cognitive Router | P1 | 4 | [FEAT-G-MIND](FEAT-G-MIND.md) |
 | **G-Persona** — Tone Presets | P2 | 7–8 | [FEAT-G-PERSONA](FEAT-G-PERSONA.md) |
 | **G-Stream** — Streamer Co-host | P2 | 8 | [FEAT-G-STREAM](FEAT-G-STREAM.md) |

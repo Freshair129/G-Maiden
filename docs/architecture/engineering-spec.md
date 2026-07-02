@@ -196,6 +196,23 @@ Role à¸›à¸£à¸°à¸à¸²à¸¨ `requires`; Provider à¸›à¸£à�
 
 **Implementation:** `orchestration/providers.mjs`, `orchestration/config.json`, `orchestration/engine.mjs`
 
+### 7.6 Live Tauri events (command deck) & GID/account contract
+
+Command deck (CR-002 Phase 2a/2b, merged `170805b8`) subscribes to live Tauri events via
+`useCompanionData`, feeding pure builders in `src/src/live/` that are merged over a MOCK
+fallback (renders signed-out/offline). Events actually emitted: `game-tick`, `gsi-status`,
+`minimap-cv`, `enemy-missing`, `gank-alert`.
+
+Accounts/GID (ADR-14): optional, additive Google-OAuth sign-in producing a GID
+(cross-G-series identity; codec `src/src/gid.ts`, format `G-[Gen][Payload][Checksum]`).
+Backend is the shared Supabase project `gstore` (`profiles` table + RLS). Steam identity
+links via `src-tauri/src/identity.rs` (`resolve_steam_id`) and loads the player's public
+OpenDota profile + baselines. Match/CV/G-Log data stays local; the account stores identity
++ public data only (opt-in per ADR-11).
+
+> See [ADR-14-gid-account-identity](adr/ADR-14-gid-account-identity.md) and
+> [CR-002-Phase2-wire-backend](../change%20request/CR-002-Phase2-wire-backend.md).
+
 ---
 
 ## 8. Definition of Done (à¸§à¸±à¸” constraint à¸ˆà¸£à¸´à¸‡)

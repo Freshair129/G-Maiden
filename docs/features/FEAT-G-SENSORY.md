@@ -79,6 +79,12 @@ Canonical UI/UX contract: `docs/architecture/design-system.md`.
 | Data Fetching | React Query |
 | IPC | Tauri events (`listen`/`emit`) |
 
+> **Note (CR-002 Phase 2a/2b):** `App.tsx` = the overlay window + window routing;
+> `CommandDeck.tsx` = the control window. The control dashboard is **live-wired**
+> via Tauri events (`game-tick`, `gsi-status`, `minimap-cv`, `enemy-missing`,
+> `gank-alert`) into pure builders under `src/src/live/`, merged over a MOCK
+> fallback (renders signed-out/offline) — not mock-only.
+
 ## 7. Persona Behavior
 
 - Overlay สี/โทนปรับตามฮีโร่: ice palette default, fire สำหรับ Lina, etc.

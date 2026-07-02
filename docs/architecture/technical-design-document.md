@@ -136,6 +136,9 @@ G-Maiden/
 â”‚  â””â”€ tauri.conf.json
 â”œâ”€ src/                  # React (overlay + dashboard à¹ƒà¸Šà¹‰à¸£à¹ˆà¸§à¸¡)
 â”‚  â”œâ”€ overlay/  dashboard/  components/  store/
+â”‚  â”œâ”€ App.tsx            # overlay window + window routing; CommandDeck.tsx = control window
+â”‚  â”œâ”€ src/live/           # live-wire builders (Tauri events â†’ UI state); src/gid.ts = GID codec
+â”‚  â””â”€ (accounts/GID layer: identity.rs + Supabase gstore â€” see ADR-14, CR-002-Phase2)
 â”œâ”€ assets/voice-cache/   # à¸„à¸¥à¸´à¸›à¹€à¸ªà¸µà¸¢à¸‡ critical à¸—à¸µà¹ˆ render à¸¥à¹ˆà¸§à¸‡à¸«à¸™à¹‰à¸²
 â”œâ”€ models/               # Piper voice + SLM (à¹‚à¸«à¸¥à¸”à¹à¸¢à¸, à¹„à¸¡à¹ˆ commit à¹„à¸Ÿà¸¥à¹Œà¹ƒà¸«à¸à¹ˆ)
 â”œâ”€ docs/                 # à¹€à¸­à¸à¸ªà¸²à¸£à¸Šà¸¸à¸”à¸™à¸µà¹‰
@@ -155,6 +158,7 @@ G-Maiden/
 | **ADR-05** | à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸¨à¸±à¸•à¸£à¸¹à¸ˆà¸²à¸ **minimap CV** (GSI à¹„à¸¡à¹ˆà¹ƒà¸«à¹‰) | functional necessity |
 | **ADR-06** | G-Log = SQLite local-only, no egress | privacy-first |
 | **ADR-07** | SLM lazy-load à¹€à¸‰à¸žà¸²à¸° fallback; à¸›à¸à¸•à¸´à¹ƒà¸Šà¹‰ cloud/template | RAM budget |
+| **ADR-14** | Accounts/GID — additive Google-OAuth identity on shared Supabase gstore; match/CV data stays local, account stores public data only | privacy-first + opt-in cross-G-series identity |
 
 ---
 

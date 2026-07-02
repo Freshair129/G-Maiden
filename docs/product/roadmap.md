@@ -35,7 +35,7 @@
 - [x] G-Master basic (Claude CLI shell-out, 30s throttle)
 - [x] CI/CD release workflow (tag → signed NSIS/MSI)
 - [x] Changelog viewer in-app
-- [x] 42 unit tests across all modules
+- [x] 42 unit tests across all modules (Rust cargo suite; frontend now has 87 Vitest tests, see Phase 3+ below)
 
 **Milestone v0.5.0** — ใช้ได้จริง: GSI + CV gank detection + voice alerts ครบ loop
 
@@ -66,6 +66,14 @@
 - [ ] Constraint: never overrides Belief Revision / G-Signal Interrupt behavior
 
 **Milestone v0.6.0** — Maiden พูดไทยได้จริง + เสียง persona นุ่ม + ตัด/ต่อคลิปอัจฉริยะ + ปรับโทนได้
+
+### P3.5 — Accounts & GID: Google OAuth + Command Deck Live-Wire (ADR-14, CR-002) `done`
+- [x] Optional, additive Google-OAuth sign-in → cross-G-series GID identity (`src/src/gid.ts`)
+- [x] Backend: shared Supabase project `gstore` (profiles table + RLS)
+- [x] Steam linked via `src-tauri/src/identity.rs` (`resolve_steam_id`) → public OpenDota profile + baselines
+- [x] Command deck live-wired to Tauri events (game-tick, gsi-status, minimap-cv, enemy-missing, gank-alert) via `useCompanionData` → `src/src/live/` builders, merged over MOCK fallback (CR-002 Phase 2a/2b)
+- [x] Privacy: match/CV/G-Log stay local; account stores identity + public data only, opt-in per ADR-11
+- See `docs/architecture/adr/ADR-14-gid-account-identity.md` and `docs/change request/CR-002-Phase2-wire-backend.md`
 
 ---
 
