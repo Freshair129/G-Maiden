@@ -3274,6 +3274,10 @@ body {
 
 /* sidebar: balanced icon rail (shell reserved 272px for a ~30px rail) */
 .app.shell-v2 { grid-template-columns: 78px minmax(0, 1fr) !important; }
+/* sidebar is position:absolute (out of flow) so main-shell was auto-placing in
+   col1 (the narrow rail track), collapsing the deck into a thin strip. Pin it
+   to the wide column. */
+.app.shell-v2 .main-shell { grid-column: 2 !important; }
 .floating-sidebar { width: 52px; }
 .floating-sidebar:hover { width: 236px; }
 .floating-sidebar .nav-item { justify-content: center; }
