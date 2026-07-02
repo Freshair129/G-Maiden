@@ -1,5 +1,10 @@
-import { useEffect, useState } from "react";
-import { apiUrl } from "./api";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { listen } from "@tauri-apps/api/event";
+import type { GameTick, GsiStatus, MinimapCv, EnemyMissing, SignalAlert } from "./live/events";
+import { buildMatch } from "./live/buildMatch";
+import { buildHeroes } from "./live/buildHeroes";
+import { buildMarkers } from "./live/buildMarkers";
+import { buildSignals } from "./live/buildSignals";
 
 export type CompanionTone = "info" | "warn" | "danger" | "good";
 export type HeroState = "visible" | "missing" | "dead";
@@ -370,41 +375,93 @@ export const MOCK: CompanionData = {
   ]
 };
 
+// Phase 2a (CR-002): live-wire the deck to the Rust backend's Tauri events. The
+// hook subscribes to game-tick / gsi-status / minimap-cv / enemy-missing /
+// gank-alert / gank-clear, holds the latest of each, and merges the four pure
+// builders (live/build*.ts) over MOCK. Every builder falls back to its MOCK
+// slice when its source is absent, so partially-wired data still renders. When
+// NO live event ever arrives (e.g. plain browser, no Tauri), we return MOCK
+// untouched — the full demo. Fields not yet live (telemetry, weeklyReport,
+// profile, insights, history, buildAdvisor, agentSector) stay MOCK until 2b.
+type LiveState = {
+  tick: GameTick | null;
+  status: GsiStatus | null;
+  cv: MinimapCv | null;
+  gank: SignalAlert | null;
+  missing: Map<string, number>;
+  active: boolean; // flips true after the first live event (else pure MOCK demo)
+};
+
+const EMPTY_LIVE: LiveState = {
+  tick: null, status: null, cv: null, gank: null, missing: new Map(), active: false
+};
+
 export function useCompanionData() {
-  const [data, setData] = useState<CompanionData>(MOCK);
-  const loading = false;
-  const [error, setError] = useState<string | null>(null);
+  const [live, setLive] = useState<LiveState>(EMPTY_LIVE);
+  const expiryTimers = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     let cancelled = false;
+    const unlisteners: Array<() => void> = [];
+    const timers = expiryTimers.current;
 
-    async function load() {
+    function sub<T>(event: string, handler: (payload: T) => void) {
       try {
-        const response = await fetch(apiUrl("/api/companion"));
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = await response.json();
-        if (!cancelled) {
-          setData(payload);
-          setError(null);
-        }
+        listen<T>(event, (e) => { if (!cancelled) handler(e.payload); })
+          .then((fn) => { if (cancelled) fn(); else unlisteners.push(fn); })
+          .catch(() => { /* Tauri event API unavailable */ });
       } catch {
-        // Phase 1: no backend — keep the rich MOCK demo data.
-        if (!cancelled) {
-          setData(MOCK);
-          setError(null);
-        }
+        /* not running under Tauri — stay on MOCK */
       }
     }
 
-    load();
-    const timer = window.setInterval(load, 2000);
+    sub<GameTick>("game-tick", (p) => setLive((s) => ({ ...s, tick: p, active: true })));
+    sub<GsiStatus>("gsi-status", (p) => setLive((s) => ({ ...s, status: p, active: true })));
+    sub<MinimapCv>("minimap-cv", (p) => setLive((s) => ({ ...s, cv: p, active: true })));
+    sub<SignalAlert>("gank-alert", (p) => setLive((s) => ({ ...s, gank: p, active: true })));
+    // Belief revision: G-Signal retracts — clear the gank + the missing set.
+    sub<unknown>("gank-clear", () => setLive((s) => ({ ...s, gank: null, missing: new Map(), active: true })));
+    sub<EnemyMissing>("enemy-missing", (p) => {
+      setLive((s) => {
+        const missing = new Map(s.missing);
+        missing.set(p.hero, p.missing_for_ms);
+        return { ...s, missing, active: true };
+      });
+      // Auto-expire a missing hero after 30s (mirrors App.tsx overlay behaviour).
+      const prev = timers.get(p.hero);
+      if (prev) window.clearTimeout(prev);
+      const t = window.setTimeout(() => {
+        setLive((s) => {
+          if (!s.missing.has(p.hero)) return s;
+          const missing = new Map(s.missing);
+          missing.delete(p.hero);
+          return { ...s, missing };
+        });
+        timers.delete(p.hero);
+      }, 30_000);
+      timers.set(p.hero, t);
+    });
+
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      unlisteners.forEach((fn) => fn());
+      timers.forEach((t) => window.clearTimeout(t));
+      timers.clear();
     };
   }, []);
 
-  return { data, loading, error };
+  const data = useMemo<CompanionData>(() => {
+    if (!live.active) return MOCK;
+    return {
+      ...MOCK,
+      match: buildMatch(live.tick, live.status, MOCK.match),
+      heroes: buildHeroes(live.tick, live.missing, live.cv, MOCK.heroes),
+      markers: buildMarkers(live.cv, live.missing, MOCK.markers),
+      signals: buildSignals(live.gank, live.missing, MOCK.signals)
+    };
+  }, [live]);
+
+  return { data, loading: false as const, error: null as string | null };
 }
 
 export function toneClass(tone: CompanionTone) {
