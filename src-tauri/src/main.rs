@@ -157,8 +157,17 @@ fn open_voice_cache_dir() {
 /// app, so no console flashes; scheme is validated to avoid arbitrary commands.
 #[tauri::command]
 fn open_url(url: String) {
+    // `explorer <url>` mishandles URLs with query strings (e.g. OAuth `?a&b`) and
+    // opens a folder instead of the browser. rundll32's FileProtocolHandler is the
+    // canonical opener and passes the whole URL through untouched. CREATE_NO_WINDOW
+    // keeps Dota from being kicked out of fullscreen (windows-spawn rule).
     if url.starts_with("https://") || url.starts_with("http://") {
-        let _ = std::process::Command::new("explorer").arg(&url).spawn();
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let _ = std::process::Command::new("rundll32")
+            .args(["url.dll,FileProtocolHandler", &url])
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn();
     }
 }
 
