@@ -110,6 +110,13 @@ export default function AudioSettings() {
   async function refresh() {
     try {
       const next = await readJson("/api/voice");
+      // Guard: G-Maiden's Tauri app has no /api/voice backend (that was the
+      // orchestra-standalone server). Vite serves the SPA index.html for unknown
+      // paths, so `next` can be an HTML string, not a VoiceState — validate the
+      // shape before rendering or `state.groups.map` / `state.packs` explodes.
+      if (!next || typeof next !== "object" || !Array.isArray(next.groups) || !Array.isArray(next.packs)) {
+        throw new Error("Voice pack service is unavailable in this build (no /api/voice backend).");
+      }
       setState(next);
       setSelectedEventId((current) => current || next.activePack?.items?.[0]?.id || null);
       setErr(null);
@@ -371,7 +378,11 @@ export default function AudioSettings() {
     setPackDescription(selectedPack.description || "");
   }, [selectedPack]);
 
-  if (!state) return <div className="audio-page"><div className="empty">loading audio settings...</div></div>;
+  if (!state) return (
+    <div className="audio-page">
+      <div className="empty">{err ? err : "loading audio settings..."}</div>
+    </div>
+  );
 
   return (
     <div className="audio-page">
