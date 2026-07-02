@@ -26,7 +26,7 @@ const NAV: Array<{ key: string; label: string; group: string; icon: string }> = 
 
 // Phase 1 (CR-002): the command deck runs standalone with mock data. The old
 // G-Orchestra store (startPolling/useStore) is gone; loading/error are static
-// and the sidebar counts/progress derive from companion data.
+// and the sidebar count derives from companion data.
 export default function CommandDeck() {
   const [tab, setTab] = useState("dashboard");
   const [profileOpen, setProfileOpen] = useState(false);
@@ -36,9 +36,6 @@ export default function CommandDeck() {
   const loading = false;
   const error: string | null = null;
   const activeAlerts = data.match.activeAlerts || 0;
-  const progressTotal = 37;
-  const progressDone = Math.min(progressTotal, Math.round(data.insights.objectiveControl / 100 * progressTotal));
-  const progressPct = Math.round((progressDone / progressTotal) * 100);
 
   // Re-add the capture-mode badge (DXGI / Lite) driven by the Rust backend.
   // Guarded so it no-ops when Tauri isn't present (e.g. plain browser build).
@@ -94,17 +91,6 @@ export default function CommandDeck() {
             </div>
           ))}
         </nav>
-
-        <div className="sidebar-foot card-shell">
-          <div className={`health-dot ${error ? "degraded" : "ok"}`} />
-          <div className="eyebrow">System health</div>
-          <strong>{error ? "Signal degraded" : "All systems operational"}</strong>
-          <span>{data.agentSector.name} · {data.agentSector.status}</span>
-          <div className="mini-progress">
-            <div className="bar"><div className="fill" style={{ width: `${progressPct}%` }} /></div>
-            <span>{progressDone}/{progressTotal}</span>
-          </div>
-        </div>
       </aside>
 
       <div className="main-shell shell-main-v2">
