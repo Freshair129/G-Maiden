@@ -11,7 +11,8 @@ import {
 } from "./CompanionPages";
 import { useCompanionData } from "./companion";
 import Dashboard from "./Dashboard";
-import SteamLink from "./SteamLink";
+import AccountPage from "./AccountPage";
+import { useProfile } from "./profile";
 import "./styles.css";
 
 const NAV: Array<{ key: string; label: string; group: string; icon: string }> = [
@@ -53,6 +54,10 @@ export default function CommandDeck() {
   const [profileOpen, setProfileOpen] = useState(false);
   const [captureMode, setCaptureMode] = useState<string>("");
   const { data } = useCompanionData();
+  const { displayName, email } = useProfile();
+  // Topbar identity: GID display name → email local-part → signed-out placeholder.
+  const gName = displayName || (email ? email.split("@")[0] : "Guest");
+  const gSub = email || data.agentSector.title;
 
   const loading = false;
   const error: string | null = null;
@@ -134,20 +139,18 @@ export default function CommandDeck() {
             <span className="utility-chip">{data.match.overlayMode}</span>
             <div className={`profile-wrap${profileOpen ? " open" : ""}`}>
               <button className="profile-trigger" type="button" onClick={() => setProfileOpen((open) => !open)}>
-                <span className="profile-core">N</span>
+                <span className="profile-core">{gName.charAt(0).toUpperCase()}</span>
                 <span className="profile-copy">
-                  <strong>Nikitin</strong>
-                  <small>{data.agentSector.title}</small>
+                  <strong>{gName}</strong>
+                  <small>{gSub}</small>
                 </span>
                 <span className="profile-caret">▾</span>
               </button>
               {profileOpen ? (
                 <div className="profile-dropdown">
-                  <SteamLink />
-                  <button type="button">Profile</button>
-                  <button type="button">Voice Packs</button>
-                  <button type="button">Privacy</button>
-                  <button type="button">System Logs</button>
+                  <button type="button" onClick={() => { setTab("account"); setProfileOpen(false); }}>Account &amp; Steam</button>
+                  <button type="button" onClick={() => { setTab("voice"); setProfileOpen(false); }}>Voice Packs</button>
+                  <button type="button" onClick={() => { setTab("settings"); setProfileOpen(false); }}>Settings</button>
                 </div>
               ) : null}
             </div>
@@ -168,6 +171,7 @@ export default function CommandDeck() {
             {tab === "voice" && <AudioSettings />}
             {tab === "history" && <HistoryPage />}
             {tab === "settings" && <SettingsPage />}
+            {tab === "account" && <AccountPage />}
           </main>
         )}
 
