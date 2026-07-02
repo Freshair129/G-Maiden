@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { listen } from "@tauri-apps/api/event";
 import AudioSettings from "./AudioSettings";
 import {
@@ -23,6 +23,26 @@ const NAV: Array<{ key: string; label: string; group: string; icon: string }> = 
   { key: "history", label: "History", group: "Analysis", icon: "HS" },
   { key: "settings", label: "Settings", group: "System", icon: "ST" }
 ];
+
+// Monochrome line icons (inherit currentColor) — replace the DB/LV letter tags.
+const NAV_ICONS: Record<string, ReactNode> = {
+  dashboard: (<><rect x="3" y="3" width="7.5" height="7.5" rx="1.5" /><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" /><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" /><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5" /></>),
+  live: (<><circle cx="12" cy="12" r="8.5" /><path d="M10 8.5l6 3.5-6 3.5z" fill="currentColor" stroke="none" /></>),
+  companion: (<path d="M12 2.5l2.2 6.3 6.3 2.2-6.3 2.2L12 19.5l-2.2-6.3L3.5 11l6.3-2.2z" fill="currentColor" stroke="none" />),
+  voice: (<><path d="M4 9.5h3l4.5-3.5v12L7 14.5H4z" /><path d="M16 9a4.5 4.5 0 0 1 0 6" /></>),
+  build: (<><path d="M12 2.6l8.4 4.7v9.4L12 21.4l-8.4-4.7V7.3z" /><path d="M12 12l8.4-4.7M12 12v9.4M12 12L3.6 7.3" /></>),
+  insights: (<path d="M5 20V11M12 20V4M19 20v-6" />),
+  history: (<><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>),
+  settings: (<><path d="M4 7h9M4 12h16M11 17h9" /><circle cx="16" cy="7" r="2.3" fill="currentColor" stroke="none" /><circle cx="8" cy="17" r="2.3" fill="currentColor" stroke="none" /></>)
+};
+
+function NavIcon({ name }: { name: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {NAV_ICONS[name] ?? null}
+    </svg>
+  );
+}
 
 // Phase 1 (CR-002): the command deck runs standalone with mock data. The old
 // G-Orchestra store (startPolling/useStore) is gone; loading/error are static
@@ -81,9 +101,9 @@ export default function CommandDeck() {
           {Object.entries(grouped).map(([group, items]) => (
             <div key={group} className="sidebar-group">
               <div className="nav-group-label">{group}</div>
-              {items.map(({ key, label, icon }) => (
+              {items.map(({ key, label }) => (
                 <button key={key} className={`nav-item${tab === key ? " active" : ""}`} onClick={() => setTab(key)} title={label}>
-                  <span className="nav-icon">{icon}</span>
+                  <span className="nav-icon"><NavIcon name={key} /></span>
                   <span className="nav-copy">{label}</span>
                   {key === "dashboard" ? <small>{activeAlerts}</small> : null}
                 </button>

@@ -3263,6 +3263,38 @@ body {
 .board-bento .gsignal-bento { grid-column: 3 !important; grid-row: 2 / 4 !important; }
 .board-bento .warning-bento { grid-column: 1 !important; grid-row: 3 !important; }
 .board-bento .status-bento  { grid-column: 2 !important; grid-row: 3 !important; }
+
+/* --- follow-up polish: status fit, sidebar balance, fixed-width stats --- */
+/* status card: kill inner scroll, compact 2x2 to fit its cell */
+.status-bento .status-matrix { overflow: hidden !important; height: auto !important; gap: 6px; }
+.status-bento .status-card { padding: 5px 9px; border-radius: 12px; }
+.status-bento .status-card strong { font-size: 12.5px; }
+.status-bento .status-card .status-kicker { font-size: 9px; }
+.status-bento .status-card > span:last-child { font-size: 9px; }
+
+/* sidebar: balanced icon rail (shell reserved 272px for a ~30px rail) */
+.app.shell-v2 { grid-template-columns: 78px minmax(0, 1fr) !important; }
+.floating-sidebar { width: 52px; }
+.floating-sidebar:hover { width: 236px; }
+.floating-sidebar .nav-item { justify-content: center; }
+.floating-sidebar:hover .nav-item { justify-content: flex-start; }
+.floating-sidebar .nav-icon { width: 34px; height: 34px; }
+.floating-sidebar .nav-icon svg { width: 19px; height: 19px; display: block; }
+
+/* stat chips: fixed width, no grow/shift (reserve max-value width) */
+.deck-statbar > .deck-stat-chip { flex: 0 0 auto; min-width: 74px; }
+.deck-statbar > .deck-stat-group { min-width: 110px; }
+.deck-statbar > .deck-ping { min-width: 74px; }
+.deck-stat-chip strong, .deck-stat-gvals, .deck-ping strong,
+.deck-stat-chip .trend { font-variant-numeric: tabular-nums; }
+
+/* final: shrink Status head + cards to fully fit its cell; trim Agent copy */
+.status-bento .bento-head .eyebrow { display: none; }
+.status-bento .bento-head h3 { font-size: 12px; }
+.status-bento .status-card { padding: 5px 8px; }
+.status-bento .status-card strong { font-size: 12px; line-height: 1.15; }
+.agent-bento .agent-copy { gap: 2px; }
+.agent-bento .agent-copy p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 /* activity + event logs move to the Live / History tabs so the deck fits */
 .activity-bento,
 .event-bento { display: none; }
