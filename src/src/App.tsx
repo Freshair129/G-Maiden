@@ -7,6 +7,7 @@ import { relaunch } from '@tauri-apps/plugin-process'
 import { FullOverlay } from './overlay/FullOverlay'
 import { LayoutEditor } from './overlay/LayoutEditor'
 import { DEFAULT_LAYOUT, type Layout } from './overlay/modules'
+import CommandDeck from './CommandDeck'
 
 /** Mirrors the Rust `GameTick` emitted by the GSI server (src-tauri/src/gsi.rs). */
 export interface GameTick {
@@ -1346,7 +1347,10 @@ const Card: React.FC<{ title: string; children: React.ReactNode }> = ({ title, c
     {children}
   </div>
 )
-const Control: React.FC = () => {
+// CR-002 Phase 1: the command deck (<CommandDeck/>) now renders in the control
+// window. The original control panel is retained (exported) but no longer routed,
+// so its overlay-preview / voice / updater logic stays available for reference.
+export const Control: React.FC = () => {
   const [tick, setTick] = useState<GameTick | null>(null)
   const [seen, setSeen] = useState(false)
   const [s, setS] = useState<Settings>(loadSettings)
@@ -1856,5 +1860,7 @@ const Control: React.FC = () => {
 
 export const App: React.FC = () => {
   const label = getCurrentWindow().label
-  return label === 'overlay' ? <Overlay /> : <Control />
+  // Overlay window keeps the original transparent CV/voice overlay. The control
+  // window now renders the ported command-deck shell (CR-002 Phase 1).
+  return label === 'overlay' ? <Overlay /> : <CommandDeck />
 }
