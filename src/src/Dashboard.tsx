@@ -385,26 +385,26 @@ function HeroCard({ slotId, hero, placeholder, side }: { slotId: number; hero?: 
     >
       <div className="hero-card-inner">
         <div className="hero-card-face hero-card-front">
-          <span className={`hc-status hc-status-${status}`}>
-            <em>{statusLabel}</em>
-            {showTimer ? <b>{formatTimer(hero.timer)}</b> : null}
-          </span>
           <div className="hc-row hc-top">
             <div className="hc-ident">
               <span className="hc-name">{hero.player}</span>
               <span className="hc-rank">{hero.rank}</span>
               <span className="hc-mmr">{fmtK(hero.mmr)}</span>
             </div>
-            <div className="hc-badges">
-              <span className={`hc-badge ${hero.buyback ? "on" : ""}`}>BB</span>
-              <span className={`hc-badge ${hero.tp ? "on" : ""}`}>TP</span>
-              <span className={`hc-badge ${hero.ultReady ? "on" : ""}`}>ULT</span>
-            </div>
+            <span className={`hc-status hc-status-${status}`}>
+              <em>{statusLabel}</em>
+              {showTimer ? <b>{formatTimer(hero.timer)}</b> : null}
+            </span>
           </div>
           <div className="hc-row hc-mid">
             <span className="hc-lvl">Lv {hero.level}</span>
             <span className="hc-heroname">{hero.hero}</span>
             <span className="hc-kda">{hero.kills} / {hero.deaths} / {hero.assists}</span>
+            <div className="hc-badges">
+              <span className={`hc-badge ${hero.buyback ? "on" : ""}`}>BB</span>
+              <span className={`hc-badge ${hero.tp ? "on" : ""}`}>TP</span>
+              <span className={`hc-badge ${hero.ultReady ? "on" : ""}`}>ULT</span>
+            </div>
           </div>
           <div className="hc-items">
             {items.map((item, idx) => (

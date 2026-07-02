@@ -3302,10 +3302,7 @@ body {
 
 /* hero-card status badge: VISIBLE/LOW (no timer) · MISSING/DEAD (+timer) */
 .hc-status {
-  position: absolute;
-  top: 5px;
-  right: 6px;
-  z-index: 3;
+  flex: 0 0 auto;
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -3315,9 +3312,13 @@ body {
   font-weight: 800;
   letter-spacing: 0.04em;
   line-height: 1.5;
+  white-space: nowrap;
   border: 1px solid transparent;
   background: rgba(10, 18, 34, 0.74);
 }
+/* BB/TP/ULT moved to the mid row (right of KDA) so it no longer collides with status */
+.hc-mid .hc-badges { margin-left: 4px; }
+.hc-mid .hc-badge { min-width: 19px; }
 .hc-status em { font-style: normal; }
 .hc-status b { font-weight: 800; font-variant-numeric: tabular-nums; }
 .hc-status-ok      { color: var(--ok);     border-color: rgba(91, 227, 167, 0.45); }
