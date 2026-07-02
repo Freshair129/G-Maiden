@@ -3299,6 +3299,31 @@ body {
 .status-bento .status-card strong { font-size: 12px; line-height: 1.15; }
 .agent-bento .agent-copy { gap: 2px; }
 .agent-bento .agent-copy p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* hero-card status badge: VISIBLE/LOW (no timer) · MISSING/DEAD (+timer) */
+.hc-status {
+  position: absolute;
+  top: 5px;
+  right: 6px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  font-size: 8px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  line-height: 1.5;
+  border: 1px solid transparent;
+  background: rgba(10, 18, 34, 0.74);
+}
+.hc-status em { font-style: normal; }
+.hc-status b { font-weight: 800; font-variant-numeric: tabular-nums; }
+.hc-status-ok      { color: var(--ok);     border-color: rgba(91, 227, 167, 0.45); }
+.hc-status-low     { color: var(--warn);   border-color: rgba(255, 207, 107, 0.5); }
+.hc-status-missing { color: var(--danger); border-color: rgba(255, 123, 133, 0.5); }
+.hc-status-dead    { color: #8794a6;       border-color: rgba(135, 148, 166, 0.42); }
 /* activity + event logs move to the Live / History tabs so the deck fits */
 .activity-bento,
 .event-bento { display: none; }

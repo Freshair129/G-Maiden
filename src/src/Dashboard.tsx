@@ -374,6 +374,7 @@ function HeroCard({ slotId, hero, placeholder, side }: { slotId: number; hero?: 
 
   const status = heroStatus(hero);
   const showTimer = hero.state === "missing" || hero.state === "dead";
+  const statusLabel = status === "low" ? "LOW" : status === "missing" ? "MISSING" : status === "dead" ? "DEAD" : "VISIBLE";
   const items = [...hero.items, "", "", "", "", "", ""].slice(0, 6);
 
   return (
@@ -384,7 +385,10 @@ function HeroCard({ slotId, hero, placeholder, side }: { slotId: number; hero?: 
     >
       <div className="hero-card-inner">
         <div className="hero-card-face hero-card-front">
-          {showTimer ? <span className="hc-timer">{formatTimer(hero.timer)}</span> : null}
+          <span className={`hc-status hc-status-${status}`}>
+            <em>{statusLabel}</em>
+            {showTimer ? <b>{formatTimer(hero.timer)}</b> : null}
+          </span>
           <div className="hc-row hc-top">
             <div className="hc-ident">
               <span className="hc-name">{hero.player}</span>
