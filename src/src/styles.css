@@ -2044,21 +2044,7 @@ body {
 .auth-row { display: flex; justify-content: space-between; align-items: center; }
 .auth-badge { font-size: 9px; font-weight: 700; letter-spacing: 0.5px; color: #0b1220; background: #81b4ff; border-radius: 5px; padding: 1px 5px; }
 .auth-sub { font-size: 11px; color: #9fb0cc; word-break: break-all; }
-.auth-input {
-  width: 100%;
-  box-sizing: border-box;
-  border-radius: 9px;
-  border: 1px solid rgba(129, 180, 255, 0.22);
-  background: rgba(9, 15, 27, 0.9);
-  color: #dce9ff;
-  padding: 8px 10px;
-  font-size: 12px;
-}
-.auth-input:focus { outline: none; border-color: rgba(129, 180, 255, 0.55); }
-.auth-go { border: 0; border-radius: 10px; padding: 8px 12px; font-weight: 600; cursor: pointer; background: rgba(129, 180, 255, 0.16); color: #cfe2ff; }
-.auth-go:disabled { opacity: 0.5; cursor: default; }
 .auth-out { border: 0; border-radius: 10px; padding: 7px 12px; cursor: pointer; background: rgba(255, 123, 133, 0.14); color: #ffb4bb; align-self: flex-start; }
-.auth-link { background: none; border: 0; color: #81b4ff; font-size: 11px; cursor: pointer; text-align: left; padding: 0; }
 .auth-err { font-size: 11px; color: #ff7b85; }
 .auth-hint { font-size: 10px; color: #6f7d99; line-height: 1.35; }
 .auth-gid-label { font-size: 9px; letter-spacing: 0.6px; text-transform: uppercase; color: #6f7d99; }
@@ -2078,8 +2064,6 @@ body {
 }
 .auth-google:disabled { opacity: 0.6; cursor: default; }
 .auth-google-g { font-weight: 800; color: #4285f4; }
-.auth-divider { display: flex; align-items: center; gap: 8px; color: #6f7d99; font-size: 10px; }
-.auth-divider::before, .auth-divider::after { content: ""; flex: 1; height: 1px; background: rgba(129, 180, 255, 0.14); }
 
 .account-page { padding: 4px 2px 20px; overflow-y: auto; height: 100%; }
 .account-title { font-size: 22px; font-weight: 800; color: #eaf2ff; margin: 6px 0 4px; }

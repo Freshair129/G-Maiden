@@ -1,6 +1,6 @@
-// G-Maiden account (GID) auth — email OTP, additive (the deck works signed-out).
-// Sign in creates/loads a Supabase auth user (= GID); on verify we upsert the
-// `profiles` row and link the current Steam identity. Phone OTP comes later.
+// G-Maiden account (GID) auth — Google sign-in, additive (the deck works
+// signed-out). Signing in loads/creates a Supabase auth user (= GID); on
+// sign-in we upsert the `profiles` row and link the current Steam identity.
 
 import { useCallback, useEffect, useState } from "react";
 import type { Session } from "@supabase/supabase-js";
@@ -12,8 +12,6 @@ import { loadIdentity } from "./live/identity";
 // Fixed loopback redirect served by the GSI axum server (/auth/callback). Must
 // be in Supabase → Auth → URL Configuration → Redirect URLs.
 const OAUTH_REDIRECT = "http://127.0.0.1:3000/auth/callback";
-
-export type AuthStep = "email" | "code" | "signedin";
 
 function msg(e: unknown): string {
   return (e as { message?: string })?.message ?? String(e) ?? "something went wrong";
@@ -35,7 +33,6 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [pendingEmail, setPendingEmail] = useState<string | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -72,7 +69,7 @@ export function useAuth() {
         });
         if (cancelled) { u1(); u2(); } else { unsubs.push(u1, u2); }
       } catch {
-        /* not under Tauri — Google sign-in unavailable, email OTP still works */
+        /* not under Tauri — Google sign-in unavailable */
       }
     })();
 
@@ -100,58 +97,11 @@ export function useAuth() {
     }
   }, []);
 
-  const sendCode = useCallback(async (email: string) => {
-    setBusy(true);
-    setError(null);
-    try {
-      const { error } = await supabase.auth.signInWithOtp({
-        email,
-        options: { shouldCreateUser: true },
-      });
-      if (error) throw error;
-      setPendingEmail(email);
-    } catch (e) {
-      setError(msg(e));
-    } finally {
-      setBusy(false);
-    }
-  }, []);
-
-  const verifyCode = useCallback(async (token: string) => {
-    if (!pendingEmail) return;
-    setBusy(true);
-    setError(null);
-    try {
-      const { data, error } = await supabase.auth.verifyOtp({
-        email: pendingEmail,
-        token,
-        type: "email",
-      });
-      if (error) throw error;
-      setSession(data.session);
-      const email = data.user?.email ?? pendingEmail;
-      setPendingEmail(null);
-      if (data.user) await linkProfile(data.user.id, email).catch(() => {});
-    } catch (e) {
-      setError(msg(e));
-    } finally {
-      setBusy(false);
-    }
-  }, [pendingEmail]);
-
   const signOut = useCallback(async () => {
     await supabase.auth.signOut();
     setSession(null);
-    setPendingEmail(null);
     setError(null);
   }, []);
 
-  const resetFlow = useCallback(() => {
-    setPendingEmail(null);
-    setError(null);
-  }, []);
-
-  const step: AuthStep = session ? "signedin" : pendingEmail ? "code" : "email";
-
-  return { session, user: session?.user ?? null, loading, busy, error, step, pendingEmail, sendCode, verifyCode, signInWithGoogle, signOut, resetFlow };
+  return { session, user: session?.user ?? null, loading, busy, error, signInWithGoogle, signOut };
 }
