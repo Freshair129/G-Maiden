@@ -1,5 +1,17 @@
-import { useEffect, useState } from "react";
-import { apiUrl } from "./api";
+import { useEffect, useMemo, useRef, useState } from "react";
+import { listen } from "@tauri-apps/api/event";
+import type { GameTick, GsiStatus, MinimapCv, EnemyMissing, SignalAlert } from "./live/events";
+import { buildMatch } from "./live/buildMatch";
+import { buildHeroes } from "./live/buildHeroes";
+import { buildMarkers } from "./live/buildMarkers";
+import { buildSignals } from "./live/buildSignals";
+import { buildProfile } from "./live/buildProfile";
+import { buildBaselines } from "./live/buildBaselines";
+import { fetchOpenDotaProfile, type OpenDotaProfile } from "./live/opendota";
+import { loadIdentity, saveIdentity, IDENTITY_EVENT } from "./live/identity";
+import { heroName } from "./live/heroNames";
+
+const STEAMID64_BASE = 76561197960265728n;
 
 export type CompanionTone = "info" | "warn" | "danger" | "good";
 export type HeroState = "visible" | "missing" | "dead";
@@ -370,41 +382,153 @@ export const MOCK: CompanionData = {
   ]
 };
 
+// Phase 2a (CR-002): live-wire the deck to the Rust backend's Tauri events. The
+// hook subscribes to game-tick / gsi-status / minimap-cv / enemy-missing /
+// gank-alert / gank-clear, holds the latest of each, and merges the four pure
+// builders (live/build*.ts) over MOCK. Every builder falls back to its MOCK
+// slice when its source is absent, so partially-wired data still renders. When
+// NO live event ever arrives (e.g. plain browser, no Tauri), we return MOCK
+// untouched — the full demo. Fields not yet live (telemetry, weeklyReport,
+// profile, insights, history, buildAdvisor, agentSector) stay MOCK until 2b.
+type LiveState = {
+  tick: GameTick | null;
+  status: GsiStatus | null;
+  cv: MinimapCv | null;
+  gank: SignalAlert | null;
+  missing: Map<string, number>;
+  missingPos: Map<string, [number, number]>; // 2b-B: last-seen pos of missing enemies (markers)
+  active: boolean; // flips true after the first live event (else pure MOCK demo)
+  od: OpenDotaProfile | null; // Phase 2b-A: your public OpenDota profile (no DB)
+};
+
+const EMPTY_LIVE: LiveState = {
+  tick: null, status: null, cv: null, gank: null, missing: new Map(), missingPos: new Map(), active: false, od: null
+};
+
 export function useCompanionData() {
-  const [data, setData] = useState<CompanionData>(MOCK);
-  const loading = false;
-  const [error, setError] = useState<string | null>(null);
+  const [live, setLive] = useState<LiveState>(EMPTY_LIVE);
+  const [accountId, setAccountId] = useState<number | null>(null);
+  const expiryTimers = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
     let cancelled = false;
+    const unlisteners: Array<() => void> = [];
+    const timers = expiryTimers.current;
 
-    async function load() {
+    function sub<T>(event: string, handler: (payload: T) => void) {
       try {
-        const response = await fetch(apiUrl("/api/companion"));
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-        const payload = await response.json();
-        if (!cancelled) {
-          setData(payload);
-          setError(null);
-        }
+        listen<T>(event, (e) => { if (!cancelled) handler(e.payload); })
+          .then((fn) => { if (cancelled) fn(); else unlisteners.push(fn); })
+          .catch(() => { /* Tauri event API unavailable */ });
       } catch {
-        // Phase 1: no backend — keep the rich MOCK demo data.
-        if (!cancelled) {
-          setData(MOCK);
-          setError(null);
-        }
+        /* not running under Tauri — stay on MOCK */
       }
     }
 
-    load();
-    const timer = window.setInterval(load, 2000);
+    sub<GameTick>("game-tick", (p) => setLive((s) => ({ ...s, tick: p, active: true })));
+    sub<GsiStatus>("gsi-status", (p) => setLive((s) => ({ ...s, status: p, active: true })));
+    sub<MinimapCv>("minimap-cv", (p) => setLive((s) => ({ ...s, cv: p, active: true })));
+    sub<SignalAlert>("gank-alert", (p) => setLive((s) => ({ ...s, gank: p, active: true })));
+    // Belief revision: G-Signal retracts — clear the gank + the missing set.
+    sub<unknown>("gank-clear", () => setLive((s) => ({ ...s, gank: null, missing: new Map(), missingPos: new Map(), active: true })));
+    sub<EnemyMissing>("enemy-missing", (p) => {
+      setLive((s) => {
+        const missing = new Map(s.missing);
+        missing.set(p.hero, p.missing_for_ms);
+        const missingPos = new Map(s.missingPos);
+        missingPos.set(p.hero, p.last_pos);
+        return { ...s, missing, missingPos, active: true };
+      });
+      // Auto-expire a missing hero after 30s (mirrors App.tsx overlay behaviour).
+      const prev = timers.get(p.hero);
+      if (prev) window.clearTimeout(prev);
+      const t = window.setTimeout(() => {
+        setLive((s) => {
+          if (!s.missing.has(p.hero) && !s.missingPos.has(p.hero)) return s;
+          const missing = new Map(s.missing);
+          missing.delete(p.hero);
+          const missingPos = new Map(s.missingPos);
+          missingPos.delete(p.hero);
+          return { ...s, missing, missingPos };
+        });
+        timers.delete(p.hero);
+      }, 30_000);
+      timers.set(p.hero, t);
+    });
+
     return () => {
       cancelled = true;
-      window.clearInterval(timer);
+      unlisteners.forEach((fn) => fn());
+      timers.forEach((t) => window.clearTimeout(t));
+      timers.clear();
     };
   }, []);
 
-  return { data, loading, error };
+  // Phase A: account id comes from the persisted Steam identity (set via the
+  // login screen -> Tauri store) so there's no manual localStorage juggling.
+  useEffect(() => {
+    let cancelled = false;
+    const sync = () => loadIdentity().then((id) => { if (!cancelled) setAccountId(id?.accountId ?? null); });
+    void sync();
+    // Re-sync the moment the login screen links/unlinks — no reload needed.
+    window.addEventListener(IDENTITY_EVENT, sync);
+    return () => { cancelled = true; window.removeEventListener(IDENTITY_EVENT, sync); };
+  }, []);
+
+  // Auto-identify: once GSI reports the local player's steamid in-game, adopt it
+  // (SteamID64 -> account_id, offline) and persist — no login needed while playing.
+  useEffect(() => {
+    const sid = live.tick?.steamid;
+    if (!sid || accountId != null) return;
+    try {
+      const acc = Number(BigInt(sid) - STEAMID64_BASE);
+      if (acc > 0) {
+        setAccountId(acc);
+        void saveIdentity({ steamid64: sid, accountId: acc });
+      }
+    } catch {
+      /* malformed steamid — ignore */
+    }
+  }, [live.tick?.steamid, accountId]);
+
+  // Phase 2b-A: pull the player's PUBLIC OpenDota profile once we know the
+  // account id — no DB, RAM only. Offline / private / unset leave `od` null and
+  // the builders fall back to MOCK. heroName resolves mainHero's hero id -> name.
+  useEffect(() => {
+    if (accountId == null) return;
+    let cancelled = false;
+    fetchOpenDotaProfile(String(accountId), heroName)
+      .then((od) => { if (!cancelled && od) setLive((s) => ({ ...s, od })); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [accountId]);
+
+  const data = useMemo<CompanionData>(() => {
+    // Base: pure MOCK until a live event arrives, else the live-merged deck.
+    let d: CompanionData = live.active
+      ? {
+          ...MOCK,
+          match: buildMatch(live.tick, live.status, MOCK.match),
+          heroes: buildHeroes(live.tick, live.missing, live.cv, MOCK.heroes),
+          markers: buildMarkers(live.cv, live.missingPos, MOCK.markers),
+          signals: buildSignals(live.gank, live.missing, MOCK.signals)
+        }
+      : MOCK;
+
+    // OpenDota enrichment is YOUR historical data — apply it to the self slot +
+    // stat-bar baselines whenever present, independent of live-match state.
+    const od = live.od;
+    if (od) {
+      d = {
+        ...d,
+        match: { ...d.match, player: buildBaselines(d.match.player, od) },
+        heroes: d.heroes.map((h, i) => (i === 0 ? { ...h, profile: buildProfile(od, h.profile) } : h))
+      };
+    }
+    return d;
+  }, [live]);
+
+  return { data, loading: false as const, error: null as string | null };
 }
 
 export function toneClass(tone: CompanionTone) {

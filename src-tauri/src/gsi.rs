@@ -2,7 +2,12 @@
 //! Local HTTP server on 127.0.0.1:3000 that receives Dota 2 Game State Integration
 //! POSTs, extracts the useful fields, and emits a clean `game-tick` event to the UI.
 
-use axum::{extract::State, routing::post, Router};
+use axum::{
+    extract::{Query, State},
+    response::Html,
+    routing::{get, post},
+    Router,
+};
 use serde::Serialize;
 use serde_json::Value;
 use tauri::{AppHandle, Emitter};
@@ -30,6 +35,10 @@ pub struct GameTick {
     pub alive: bool,
     pub hp_percent: i64,
     pub mana_percent: i64,
+    /// GSI `player.steamid` (SteamID64 string) — identifies the local player so
+    /// the deck can auto-load their OpenDota profile without manual entry. "" when
+    /// absent (menu / some spectator states).
+    pub steamid: String,
     /// GSI `hero.buyback_cost` — gold needed to buy back (0 when N/A). Feeds G-Revive.
     pub buyback_cost: i64,
     /// GSI `hero.respawn_seconds` — live respawn countdown (0 when alive). Feeds G-Revive.
@@ -120,6 +129,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
         alive: b(&v, &["hero", "alive"]),
         hp_percent: i(&v, &["hero", "health_percent"]),
         mana_percent: i(&v, &["hero", "mana_percent"]),
+        steamid: s(&v, &["player", "steamid"]),
         buyback_cost: i(&v, &["hero", "buyback_cost"]),
         respawn_seconds: i(&v, &["hero", "respawn_seconds"]),
         kill_list_len: kl_len,
@@ -151,6 +161,27 @@ async fn announcer_install(body: String) -> axum::Json<serde_json::Value> {
     let counts = crate::audio::all_counts();
     eprintln!("[G-Maiden] announcer pack installed: {pack} ({} events)", counts.len());
     axum::Json(serde_json::json!({ "ok": true, "pack": pack, "counts": counts }))
+}
+
+const OAUTH_CALLBACK_HTML: &str = "<!doctype html><meta charset=utf-8><title>G-Maiden</title>\
+<body style=\"font-family:system-ui;background:#0b1220;color:#dce9ff;display:grid;place-items:center;height:100vh;margin:0\">\
+<div style=\"text-align:center\"><h2>G-Maiden</h2><p>เข้าสู่ระบบสำเร็จ — กลับไปที่แอปได้เลย</p>\
+<p style=\"opacity:.6\">ปิดหน้านี้ได้</p></div><script>setTimeout(()=>window.close(),800)</script></body>";
+
+/// OAuth (Google) redirect target. The system browser lands here after the
+/// provider + Supabase round-trip; we hand the PKCE `code` back to the webview
+/// via an event and it calls exchangeCodeForSession. Reuses the GSI :3000 server
+/// so there's no extra listener/port (redirect URL is fixed for the allowlist).
+async fn oauth_callback(
+    State(app): State<AppHandle>,
+    Query(params): Query<std::collections::HashMap<String, String>>,
+) -> Html<&'static str> {
+    if let Some(code) = params.get("code") {
+        let _ = app.emit("oauth-callback", code.clone());
+    } else if let Some(err) = params.get("error_description").or_else(|| params.get("error")) {
+        let _ = app.emit("oauth-error", err.clone());
+    }
+    Html(OAUTH_CALLBACK_HTML)
 }
 
 fn epoch_ms() -> u64 {
@@ -209,6 +240,7 @@ pub async fn serve(app: AppHandle) {
     let router = Router::new()
         .route("/gsi", post(handle))
         .route("/announcer/install", post(announcer_install))
+        .route("/auth/callback", get(oauth_callback))
         .with_state(app);
     match tokio::net::TcpListener::bind("127.0.0.1:3000").await {
         Ok(listener) => {
@@ -279,6 +311,7 @@ mod tests {
             alive: b(&v, &["hero", "alive"]),
             hp_percent: i(&v, &["hero", "health_percent"]),
             mana_percent: i(&v, &["hero", "mana_percent"]),
+            steamid: s(&v, &["player", "steamid"]),
             buyback_cost: i(&v, &["hero", "buyback_cost"]),
             respawn_seconds: i(&v, &["hero", "respawn_seconds"]),
             kill_list_len: kl_len,

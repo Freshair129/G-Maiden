@@ -23,6 +23,7 @@ mod damage;
 mod dxgi;
 mod governor;
 mod gsi;
+mod identity;
 mod items;
 mod log;
 mod master;
@@ -156,8 +157,17 @@ fn open_voice_cache_dir() {
 /// app, so no console flashes; scheme is validated to avoid arbitrary commands.
 #[tauri::command]
 fn open_url(url: String) {
+    // `explorer <url>` mishandles URLs with query strings (e.g. OAuth `?a&b`) and
+    // opens a folder instead of the browser. rundll32's FileProtocolHandler is the
+    // canonical opener and passes the whole URL through untouched. CREATE_NO_WINDOW
+    // keeps Dota from being kicked out of fullscreen (windows-spawn rule).
     if url.starts_with("https://") || url.starts_with("http://") {
-        let _ = std::process::Command::new("explorer").arg(&url).spawn();
+        use std::os::windows::process::CommandExt;
+        const CREATE_NO_WINDOW: u32 = 0x0800_0000;
+        let _ = std::process::Command::new("rundll32")
+            .args(["url.dll,FileProtocolHandler", &url])
+            .creation_flags(CREATE_NO_WINDOW)
+            .spawn();
     }
 }
 
@@ -348,6 +358,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(move |app, shortcut, event| {
@@ -413,7 +424,8 @@ fn main() {
             delete_match_log,
             delete_all_match_logs,
             request_advice,
-            request_buyback_advice
+            request_buyback_advice,
+            identity::resolve_steam_id
         ])
         .setup(move |app| {
             // G1.1: GSI ingestion server (127.0.0.1:3000); emits `game-tick` to all windows.
