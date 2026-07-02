@@ -33,7 +33,7 @@ export default function Dashboard() {
           <div className="bento-head deck-head">
             <div className={`live-badge ${data.match.gsiOnline ? "online" : "offline"}`}>
               <span className="live-dot" />
-              {data.match.gsiOnline ? "LIVE" : "OFFLINE"}
+              {data.match.gsiOnline ? "GSI Online" : "GSI Offline"}
             </div>
             <div className="deck-clock-cluster">
               <div className="deck-clock-team">

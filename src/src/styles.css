@@ -3239,3 +3239,86 @@ body {
 .hc-private .hc-lock { font-size: 16px; }
 .hc-private strong { color: #dfeaf3; font-size: 11px; }
 .hc-private small { color: #7f9bbc; font-size: 8px; }
+
+/* ===== CR-002: capture-badge idle color + fit dashboard to one screen ===== */
+.gsi-pill.idle { color: var(--muted); border-color: var(--line); }
+.gsi-pill.idle .gsi-dot { background: var(--muted); box-shadow: none; }
+
+.surface.page-dashboard,
+.dashboard-v2 { height: 100%; min-height: 0; overflow: hidden; }
+
+.board-bento {
+  height: 100%;
+  min-height: 0;
+  grid-template-columns: 1.75fr 1fr 1fr;
+  grid-template-rows: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
+  grid-template-areas:
+    "minimap minimap agent"
+    "minimap minimap gsignal"
+    "warning status weekly";
+  gap: 10px;
+}
+.minimap-bento { grid-area: minimap; }
+.agent-bento   { grid-area: agent; }
+.gsignal-bento { grid-area: gsignal; }
+.warning-bento { grid-area: warning; }
+.status-bento  { grid-area: status; }
+.weekly-bento  { grid-area: weekly; }
+/* activity + event logs move to the Live / History tabs so the deck fits */
+.activity-bento,
+.event-bento { display: none; }
+
+/* each card stays inside its grid cell — no inner scrollbars */
+.board-bento > .bento-card { min-height: 0; overflow: hidden; }
+.board-bento > .bento-card > .bento-head { flex: 0 0 auto; margin-bottom: 6px; }
+.status-matrix { gap: 6px; }
+.status-card { padding: 6px 9px; }
+.weekly-summary { gap: 8px; }
+.weekly-hero-list { gap: 4px; }
+.weekly-hero-row { padding: 4px 7px; }
+
+/* compact card heads so cells keep room for content */
+.board-bento .bento-head { padding: 0; }
+.board-bento .bento-head .eyebrow { font-size: 9px; margin-bottom: 1px; }
+.board-bento .bento-head h3 { font-size: 13px; line-height: 1.15; }
+
+/* Alert deck: compact 2-col tiles, 2-line clamp */
+.warning-tabs-dense { grid-template-columns: 1fr 1fr; grid-auto-rows: min-content; align-content: start; gap: 6px; }
+.warning-tab { padding: 6px 8px; gap: 2px; min-height: 0; }
+.warning-tab strong { font-size: 15px; line-height: 1; }
+.warning-tab span { font-size: 9px; }
+.warning-tab small { font-size: 9px; line-height: 1.2; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+
+/* G-Signal: shrink chips + bars, tighten */
+.gsignal-layout { gap: 8px; }
+.missing-rail-list { gap: 5px; }
+.missing-hero-card { padding: 5px 7px; }
+.signal-bar-card { padding: 6px 9px; }
+.signal-list-compact { display: flex; flex-wrap: wrap; gap: 5px; }
+.signal-chip { flex-direction: row; align-items: center; gap: 5px; padding: 3px 8px; min-height: 0; }
+.signal-chip span { font-size: 9px; }
+.signal-chip strong { font-size: 11px; }
+
+/* Weekly: smaller hero rows + metrics */
+.weekly-hero-row { gap: 8px; }
+.weekly-hero-copy strong { font-size: 12px; }
+.weekly-hero-copy span { font-size: 9px; }
+.weekly-metric strong { font-size: 18px; }
+
+/* second pass — close residual clipping on the fitted deck */
+.warning-tab small { -webkit-line-clamp: 1; }
+.warning-tab { padding: 5px 8px; }
+.weekly-hero-list .weekly-hero-row:nth-child(n+3) { display: none; }
+.gsignal-layout { gap: 6px; }
+.signal-bar-card { padding: 5px 9px; }
+.missing-hero-card { padding: 4px 7px; }
+.signal-chip { padding: 2px 7px; }
+.agent-copy p { font-size: 9px; line-height: 1.25; margin: 0; }
+.agent-copy strong { font-size: 12px; }
+
+/* reclaim vertical space from chrome so every card cell gets more room */
+.telemetry-footer { padding: 6px 12px; gap: 10px; }
+.telemetry-metric strong { font-size: 14px; }
+.telemetry-metric span { font-size: 9px; }
+.telemetry-metric small { font-size: 8px; }
+.floating-topbar { padding-top: 8px; padding-bottom: 8px; }

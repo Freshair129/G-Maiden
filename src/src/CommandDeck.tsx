@@ -56,7 +56,7 @@ export default function CommandDeck() {
     ? { cls: "online", label: "DXGI" }
     : captureMode === "lite"
       ? { cls: "warn", label: "Lite" }
-      : { cls: "offline", label: "…" };
+      : { cls: "idle", label: "…" };
 
   const grouped = useMemo(() => NAV.reduce<Record<string, typeof NAV>>((acc, item) => {
     if (!acc[item.group]) acc[item.group] = [];
@@ -96,12 +96,7 @@ export default function CommandDeck() {
       <div className="main-shell shell-main-v2">
         <header className="floating-topbar">
           <div className="topbar-left">
-            <div className={`gsi-pill ${data.match.gsiOnline ? "online" : "offline"}`}>
-              <span className="gsi-dot" />
-              <span>GSI {data.match.gsiOnline ? "Online" : "Offline"}</span>
-            </div>
-
-            <div className={`gsi-pill ${captureBadge.cls}`} title="Screen capture mode">
+            <div className={`gsi-pill ${captureBadge.cls}`} title="Screen capture mode (DXGI / Lite)">
               <span className="gsi-dot" />
               <span>{captureBadge.label}</span>
             </div>
