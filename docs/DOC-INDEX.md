@@ -20,7 +20,8 @@
 - `docs/architecture/product-family-design-map.md` — shared visual overview for G-Maiden and the `orchestration/` G-Orchestra multi-agent dev tool
 - `docs/architecture/g-maiden-ui-sitemap-flow-board.md` — G-Maiden player-facing UI sitemap, user flow, and board
 - `docs/architecture/implementation-plan.md` — implementation plan / ultraplan
-- `docs/architecture/adr/` — architecture decisions
+- `docs/architecture/adr/` — architecture decisions (ADR-10/11/12 strategy, ADR-13 DXGI,
+  **ADR-14 GID account & identity layer** — Supabase `gstore`, Google OAuth, GID codec, privacy reconcile)
 - `docs/architecture/spikes/` — spike และ technical proof
 
 ## Orchestration

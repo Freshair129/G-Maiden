@@ -147,7 +147,13 @@ G-Maiden/
 - **Screen capture = DXGI Desktop Duplication** (`dxgi.rs` + `capture.rs`), not WGC (ADR-13 / CR-001). WGC on Win10 stalled at ~0.7 Hz / 8% CPU and crashed on the `WithoutBorder` toggle; DXGI is a GPU copy that lands within one vsync. Dota 2 **must run borderless-fullscreen** (`-window -noborder`) — exclusive fullscreen is unsupported, so on init failure the app auto-falls back to **GSI-only "Lite mode"** (no minimap CV; voice/overlay/G-Master still work) and shows a Lite badge. Old WGC path preserved behind `--features wgc` (`capture_wgc.rs`); default build = DXGI.
 
 ### TypeScript (src/)
-- **Single-file architecture**: `src/src/App.tsx` contains both Overlay and Control components
+- **Two UI surfaces** (App.tsx is no longer single-file): `src/src/App.tsx` = the **overlay**
+  window (in-game HUD) + window routing; `src/src/CommandDeck.tsx` = the **control** window (bento
+  deck) with `Dashboard.tsx`, `companion.ts`, pure live builders in `src/src/live/`, and the
+  account system (`auth.ts` / `profile.ts` / `supabase.ts` / `gid.ts` + `AccountPage` / `AuthPanel`
+  / `SteamLink`). Live data is Tauri events → builders → merged over `MOCK` (CR-002 / ADR-14).
+- Frontend tests: **Vitest** (`pnpm -C src test`) — currently 87 tests across the live builders +
+  GID codec. Run alongside `tsc --noEmit`.
 - Inline styles using the `C` color palette and `panel()` glassmorphism helper
 - Settings persisted to `localStorage('gm-settings')` â€” broadcast to overlay via Tauri `emit('settings', ...)`
 - Two windows: `control` (main UI) and `overlay` (transparent, click-through, always-on-top)
@@ -214,8 +220,14 @@ produced **only by CI on a pushed version tag**. Understand both halves before t
 - Command-deck control UI (`src/src/CommandDeck.tsx` + `Dashboard.tsx` + `companion.ts`): bento deck
   with GSI/LIVE header, trend stat bar (NW/GPM/XPM/KDA/CS-DN/PING), and hero flip cards (front:
   rank/MMR + BB/TP/ULT + items + status VISIBLE/LOW/MISSING/DEAD; back: profile/hours/winrate).
-  MOCK data now (`/api/companion` -> baked `MOCK` fallback); Phase 2 = wire live GSI/CV/DXGI.
-  Overlay window + DXGI backend unchanged (routing in `App.tsx`). Branch merged from feat/command-deck-ui.
+  **Live-wired** (CR-002 Phase 2a/2b, merged `170805b8`): Tauri events → pure builders in
+  `src/src/live/` → merged over baked `MOCK` fallback (renders signed-out/offline). Own-game limit:
+  GSI = local player only; other 9 heroes get CV identity/position + missing state (KDA/items hidden).
+  Overlay window + DXGI backend unchanged (routing in `App.tsx`).
+- **Accounts & GID (ADR-14)**: optional, additive Google-OAuth sign-in → a cross-G-series **GID**
+  (`gid.ts`, `G-[Gen][Payload][Checksum]`) on the shared `gstore` Supabase backend; links Steam
+  (`identity.rs`) and loads the player's public OpenDota profile. Match/CV/G-Log data stay local;
+  the account stores identity only (email + public Steam ids + display name + GID).
 - rodio audio backend (in-process WAV, <1ms cancel)
 - Individual stat toggles (timer, score, HP/Mana, K/D/A, gold/NW)
 - Custom overlay positioning with X/Y sliders + profile save/load

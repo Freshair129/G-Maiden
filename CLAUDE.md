@@ -53,10 +53,20 @@ WGC เดิมเก็บไว้หลัง `--features wgc` (`capture_wgc
 
 **Command-deck UI (`src/src/CommandDeck.tsx`)** -- the control window renders a bento "command
 deck" (`Dashboard.tsx` + `companion.ts`) with a GSI/LIVE header, a trend stat bar, and hero flip
-cards (status VISIBLE / LOW / MISSING / DEAD). Currently on **mock data**: `useCompanionData()`
-fetches `/api/companion` and falls back to a baked `MOCK`. Phase 2 wires it to live GSI/CV/DXGI.
-The overlay window + DXGI backend are untouched (window routing lives in `App.tsx`). Plan +
-change-request docs under `docs/change request/`.
+cards (status VISIBLE / LOW / MISSING / DEAD). It is **live-wired** (CR-002 Phase 2a/2b, merged
+`170805b8`): `useCompanionData()` subscribes to Tauri events (`game-tick`/`gsi-status`/`minimap-cv`/
+`enemy-missing`/`gank-alert`) and merges pure builders in `src/src/live/` over a baked `MOCK`
+fallback, so it renders signed-out/offline. Own-game honest limit: GSI exposes only the local
+player, so the other 9 heroes get CV identity/position + missing state only (KDA/items hidden).
+The overlay window + DXGI backend are untouched (window routing lives in `App.tsx`).
+
+**Accounts & GID (ADR-14)** -- optional, **additive** sign-in (the deck works without it). Google
+OAuth (PKCE, callback on the GSI `:3000/auth/callback` route) → a **GID**, the human-facing
+cross-G-series identity (`G-[Gen][Payload][Checksum]`, `src/src/gid.ts`); internal key stays the
+Supabase UUID. Backend is the shared `gstore` Supabase project (`profiles` + RLS). Steam is linked
+(`resolve_steam_id` in `identity.rs` — vanity/profile/SteamID64) so the deck loads the player's
+**public OpenDota** profile + trend baselines. Files: `auth.ts`, `profile.ts`, `supabase.ts`,
+`AccountPage/AuthPanel/SteamLink.tsx`. See ADR-14 + `docs/change request/CR-002-*`.
 
 When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scalability unity.
 
@@ -66,7 +76,10 @@ When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scal
 - Background CPU usage â‰¤ **2.5%** on a mid-range chipset; RAM â‰¤ **400MB** with all modules active.
 - Overlay must not drop Dota 2 FPS by more than **3%**, and must not obscure minimap, skill bar,
   or stats panels.
-- **Privacy-first:** G-Log raw data and player stats stay **local only** â€” never upload them.
+- **Privacy-first (match data):** G-Log raw data, live match state, and CV detections stay
+  **local only** - never upload them. The **opt-in account layer** (ADR-14) is the only exception
+  and stores identity only: email (Google auth), public Steam ids, display name, GID - plus reads
+  **public** OpenDota data. No private match data leaves the machine.
 - **Resilience:** on cloud/network loss, G-Sentry and G-Signal must keep running on the local SLM.
 
 ### Key external interfaces

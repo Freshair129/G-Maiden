@@ -1,7 +1,7 @@
 ---
 title: "CR-002 Phase 2 — Wire command-deck UI to live backend + run in Tauri"
 doc_id: "CR-002-Phase2-wire-backend"
-status: "PLAN — next session"
+status: "IMPLEMENTED — merged to main 170805b8 (2026-07-02)"
 version: "0.1.0"
 updated: "2026-06-29"
 owner: "Boss"
