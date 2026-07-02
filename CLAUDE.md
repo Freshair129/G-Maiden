@@ -51,6 +51,13 @@ GPU copy within one vsync. Dota 2 ต้องรันแบบ borderless-full
 เริ่มไม่ได้ แอปจะ fall back เป็น **GSI-only "Lite mode"** (ไม่มี minimap CV แต่เสียง/overlay/G-Master ยังทำงาน).
 WGC เดิมเก็บไว้หลัง `--features wgc` (`capture_wgc.rs`).
 
+**Command-deck UI (`src/src/CommandDeck.tsx`)** -- the control window renders a bento "command
+deck" (`Dashboard.tsx` + `companion.ts`) with a GSI/LIVE header, a trend stat bar, and hero flip
+cards (status VISIBLE / LOW / MISSING / DEAD). Currently on **mock data**: `useCompanionData()`
+fetches `/api/companion` and falls back to a baked `MOCK`. Phase 2 wires it to live GSI/CV/DXGI.
+The overlay window + DXGI backend are untouched (window routing lives in `App.tsx`). Plan +
+change-request docs under `docs/change request/`.
+
 When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scalability unity.
 
 ### Hard constraints (non-functional â€” enforce these)

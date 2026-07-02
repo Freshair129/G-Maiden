@@ -211,6 +211,11 @@ produced **only by CI on a pushed version tag**. Understand both halves before t
 - Minimap CV pipeline: DXGI capture â†’ color prefilter â†’ ONNX detector â†’ G-Sentry â†’ G-Motion â†’ G-Signal (borderless-fullscreen required; GSI-only Lite-mode fallback on capture-init failure — ADR-13/CR-001)
 - Gank warning banners + voice with hysteresis
 - Persona voice lines (level up, kill, death, respawn, mana low)
+- Command-deck control UI (`src/src/CommandDeck.tsx` + `Dashboard.tsx` + `companion.ts`): bento deck
+  with GSI/LIVE header, trend stat bar (NW/GPM/XPM/KDA/CS-DN/PING), and hero flip cards (front:
+  rank/MMR + BB/TP/ULT + items + status VISIBLE/LOW/MISSING/DEAD; back: profile/hours/winrate).
+  MOCK data now (`/api/companion` -> baked `MOCK` fallback); Phase 2 = wire live GSI/CV/DXGI.
+  Overlay window + DXGI backend unchanged (routing in `App.tsx`). Branch merged from feat/command-deck-ui.
 - rodio audio backend (in-process WAV, <1ms cancel)
 - Individual stat toggles (timer, score, HP/Mana, K/D/A, gold/NW)
 - Custom overlay positioning with X/Y sliders + profile save/load

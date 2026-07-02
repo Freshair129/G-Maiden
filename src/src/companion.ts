@@ -92,6 +92,7 @@ export type CompanionData = {
       mainHero: { name: string; games: number; winRate: number };
       behavior: number;
       role: string;
+      hours?: number;
     };
   }>;
   markers: Array<{

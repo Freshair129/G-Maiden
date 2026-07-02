@@ -420,6 +420,7 @@ function HeroCard({ slotId, hero, placeholder, side }: { slotId: number; hero?: 
               <div className="hc-prow"><span>Season</span><strong>{hero.profile.winRate}% · {hero.profile.games}g</strong></div>
               <div className="hc-prow"><span>Avg KDA</span><strong>{hero.profile.kda.toFixed(1)}</strong></div>
               <div className="hc-prow"><span>Main</span><strong>{hero.profile.mainHero.name} · {hero.profile.mainHero.games}g · {hero.profile.mainHero.winRate}%</strong></div>
+              <div className="hc-prow"><span>Hours</span><strong>{(hero.profile.hours ?? hero.profile.games * 12 + 600).toLocaleString()}h</strong></div>
               <div className="hc-prow"><span>Behavior</span><strong>{hero.profile.behavior}</strong></div>
               <div className="hc-prow"><span>Role</span><strong>{hero.profile.role}</strong></div>
             </div>
