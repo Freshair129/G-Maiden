@@ -1859,7 +1859,10 @@ export const Control: React.FC = () => {
 }
 
 export const App: React.FC = () => {
-  const label = getCurrentWindow().label
+  // getCurrentWindow() throws outside a Tauri runtime (e.g. plain-browser dev
+  // preview). Default to the control window so the deck still renders.
+  let label = 'control'
+  try { label = getCurrentWindow().label } catch { /* not running under Tauri */ }
   // Overlay window keeps the original transparent CV/voice overlay. The control
   // window now renders the ported command-deck shell (CR-002 Phase 1).
   return label === 'overlay' ? <Overlay /> : <CommandDeck />
