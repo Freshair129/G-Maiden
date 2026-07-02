@@ -5,6 +5,9 @@ import { buildMatch } from "./live/buildMatch";
 import { buildHeroes } from "./live/buildHeroes";
 import { buildMarkers } from "./live/buildMarkers";
 import { buildSignals } from "./live/buildSignals";
+import { buildProfile } from "./live/buildProfile";
+import { buildBaselines } from "./live/buildBaselines";
+import { fetchOpenDotaProfile, type OpenDotaProfile } from "./live/opendota";
 
 export type CompanionTone = "info" | "warn" | "danger" | "good";
 export type HeroState = "visible" | "missing" | "dead";
@@ -390,10 +393,11 @@ type LiveState = {
   gank: SignalAlert | null;
   missing: Map<string, number>;
   active: boolean; // flips true after the first live event (else pure MOCK demo)
+  od: OpenDotaProfile | null; // Phase 2b-A: your public OpenDota profile (no DB)
 };
 
 const EMPTY_LIVE: LiveState = {
-  tick: null, status: null, cv: null, gank: null, missing: new Map(), active: false
+  tick: null, status: null, cv: null, gank: null, missing: new Map(), active: false, od: null
 };
 
 export function useCompanionData() {
@@ -450,15 +454,49 @@ export function useCompanionData() {
     };
   }, []);
 
+  // Phase 2b-A: pull the player's PUBLIC OpenDota profile once — no DB, RAM only.
+  // account id comes from localStorage `gmaiden.account_id` (raw id / SteamID64 /
+  // steamcommunity URL — resolveAccountId normalises). Offline / unset / private
+  // all leave `od` null and the builders fall back to MOCK. heroName is stubbed
+  // ("" ) until a hero_id→name map is wired (labels.json) — mainHero.name only.
+  useEffect(() => {
+    let cancelled = false;
+    let accountId: string | null = null;
+    try {
+      accountId = window.localStorage.getItem("gmaiden.account_id");
+    } catch {
+      /* no localStorage */
+    }
+    if (!accountId) return;
+    fetchOpenDotaProfile(accountId, () => "")
+      .then((od) => { if (!cancelled && od) setLive((s) => ({ ...s, od })); })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, []);
+
   const data = useMemo<CompanionData>(() => {
-    if (!live.active) return MOCK;
-    return {
-      ...MOCK,
-      match: buildMatch(live.tick, live.status, MOCK.match),
-      heroes: buildHeroes(live.tick, live.missing, live.cv, MOCK.heroes),
-      markers: buildMarkers(live.cv, live.missing, MOCK.markers),
-      signals: buildSignals(live.gank, live.missing, MOCK.signals)
-    };
+    // Base: pure MOCK until a live event arrives, else the live-merged deck.
+    let d: CompanionData = live.active
+      ? {
+          ...MOCK,
+          match: buildMatch(live.tick, live.status, MOCK.match),
+          heroes: buildHeroes(live.tick, live.missing, live.cv, MOCK.heroes),
+          markers: buildMarkers(live.cv, live.missing, MOCK.markers),
+          signals: buildSignals(live.gank, live.missing, MOCK.signals)
+        }
+      : MOCK;
+
+    // OpenDota enrichment is YOUR historical data — apply it to the self slot +
+    // stat-bar baselines whenever present, independent of live-match state.
+    const od = live.od;
+    if (od) {
+      d = {
+        ...d,
+        match: { ...d.match, player: buildBaselines(d.match.player, od) },
+        heroes: d.heroes.map((h, i) => (i === 0 ? { ...h, profile: buildProfile(od, h.profile) } : h))
+      };
+    }
+    return d;
   }, [live]);
 
   return { data, loading: false as const, error: null as string | null };
