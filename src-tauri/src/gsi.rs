@@ -30,6 +30,10 @@ pub struct GameTick {
     pub alive: bool,
     pub hp_percent: i64,
     pub mana_percent: i64,
+    /// GSI `player.steamid` (SteamID64 string) — identifies the local player so
+    /// the deck can auto-load their OpenDota profile without manual entry. "" when
+    /// absent (menu / some spectator states).
+    pub steamid: String,
     /// GSI `hero.buyback_cost` — gold needed to buy back (0 when N/A). Feeds G-Revive.
     pub buyback_cost: i64,
     /// GSI `hero.respawn_seconds` — live respawn countdown (0 when alive). Feeds G-Revive.
@@ -120,6 +124,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
         alive: b(&v, &["hero", "alive"]),
         hp_percent: i(&v, &["hero", "health_percent"]),
         mana_percent: i(&v, &["hero", "mana_percent"]),
+        steamid: s(&v, &["player", "steamid"]),
         buyback_cost: i(&v, &["hero", "buyback_cost"]),
         respawn_seconds: i(&v, &["hero", "respawn_seconds"]),
         kill_list_len: kl_len,
@@ -279,6 +284,7 @@ mod tests {
             alive: b(&v, &["hero", "alive"]),
             hp_percent: i(&v, &["hero", "health_percent"]),
             mana_percent: i(&v, &["hero", "mana_percent"]),
+            steamid: s(&v, &["player", "steamid"]),
             buyback_cost: i(&v, &["hero", "buyback_cost"]),
             respawn_seconds: i(&v, &["hero", "respawn_seconds"]),
             kill_list_len: kl_len,

@@ -34,6 +34,8 @@ export interface GameTick {
   alive: boolean;
   hp_percent: number;      // 0..100
   mana_percent: number;    // 0..100
+  steamid?: string;        // player.steamid (SteamID64), "" / absent in menu — auto-identify
+
   buyback_cost: number;    // 0 when N/A
   respawn_seconds: number; // 0 when alive
   kill_list_len: number;

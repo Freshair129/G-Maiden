@@ -11,6 +11,7 @@ import {
 } from "./CompanionPages";
 import { useCompanionData } from "./companion";
 import Dashboard from "./Dashboard";
+import SteamLink from "./SteamLink";
 import "./styles.css";
 
 const NAV: Array<{ key: string; label: string; group: string; icon: string }> = [
@@ -142,6 +143,7 @@ export default function CommandDeck() {
               </button>
               {profileOpen ? (
                 <div className="profile-dropdown">
+                  <SteamLink />
                   <button type="button">Profile</button>
                   <button type="button">Voice Packs</button>
                   <button type="button">Privacy</button>

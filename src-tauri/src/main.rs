@@ -23,6 +23,7 @@ mod damage;
 mod dxgi;
 mod governor;
 mod gsi;
+mod identity;
 mod items;
 mod log;
 mod master;
@@ -348,6 +349,7 @@ fn main() {
     tauri::Builder::default()
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
+        .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(move |app, shortcut, event| {
@@ -413,7 +415,8 @@ fn main() {
             delete_match_log,
             delete_all_match_logs,
             request_advice,
-            request_buyback_advice
+            request_buyback_advice,
+            identity::resolve_steam_id
         ])
         .setup(move |app| {
             // G1.1: GSI ingestion server (127.0.0.1:3000); emits `game-tick` to all windows.

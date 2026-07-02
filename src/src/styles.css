@@ -1860,6 +1860,8 @@ body {
 }
 
 .floating-topbar {
+  position: relative;
+  z-index: 50;
   width: min(1040px, calc(100% - 360px));
   min-height: 58px;
   margin: 0 auto;
@@ -1927,6 +1929,7 @@ body {
 
 .profile-wrap {
   position: relative;
+  z-index: 60;
 }
 
 .profile-trigger {
@@ -1965,7 +1968,7 @@ body {
   position: absolute;
   right: 0;
   top: calc(100% + 10px);
-  min-width: 180px;
+  min-width: 250px;
   display: flex;
   flex-direction: column;
   gap: 6px;
@@ -1974,6 +1977,7 @@ body {
   background: rgba(9, 15, 27, 0.98);
   border: 1px solid rgba(129, 180, 255, 0.18);
   box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+  z-index: 200;
 }
 
 .profile-dropdown button {
@@ -1984,6 +1988,46 @@ body {
   background: rgba(18, 29, 54, 0.72);
   color: #dce9ff;
 }
+
+.steam-link {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px;
+  border-radius: 12px;
+  background: rgba(18, 29, 54, 0.55);
+  border: 1px solid rgba(129, 180, 255, 0.14);
+  margin-bottom: 4px;
+}
+.steam-link.muted { color: #7f8ba6; font-size: 12px; }
+.steam-link-label { font-size: 11px; letter-spacing: 0.6px; text-transform: uppercase; color: #81b4ff; }
+.steam-link-row { display: flex; justify-content: space-between; align-items: baseline; }
+.steam-link-id { font-weight: 700; color: #dce9ff; font-variant-numeric: tabular-nums; }
+.steam-link-sub { font-size: 10.5px; color: #7f8ba6; word-break: break-all; }
+.steam-link-input {
+  width: 100%;
+  box-sizing: border-box;
+  border-radius: 9px;
+  border: 1px solid rgba(129, 180, 255, 0.22);
+  background: rgba(9, 15, 27, 0.9);
+  color: #dce9ff;
+  padding: 8px 10px;
+  font-size: 12px;
+}
+.steam-link-input:focus { outline: none; border-color: rgba(129, 180, 255, 0.55); }
+.steam-link-go, .steam-link-unlink {
+  border: 0;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 600;
+  cursor: pointer;
+  background: rgba(129, 180, 255, 0.16);
+  color: #cfe2ff;
+}
+.steam-link-go:disabled { opacity: 0.5; cursor: default; }
+.steam-link-unlink { background: rgba(255, 123, 133, 0.14); color: #ffb4bb; align-self: flex-start; }
+.steam-link-err { font-size: 11px; color: #ff7b85; }
+.steam-link-hint { font-size: 10px; color: #6f7d99; line-height: 1.35; }
 
 .surface {
   height: 100%;

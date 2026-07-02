@@ -8,6 +8,9 @@ import { buildSignals } from "./live/buildSignals";
 import { buildProfile } from "./live/buildProfile";
 import { buildBaselines } from "./live/buildBaselines";
 import { fetchOpenDotaProfile, type OpenDotaProfile } from "./live/opendota";
+import { loadIdentity, saveIdentity, IDENTITY_EVENT } from "./live/identity";
+
+const STEAMID64_BASE = 76561197960265728n;
 
 export type CompanionTone = "info" | "warn" | "danger" | "good";
 export type HeroState = "visible" | "missing" | "dead";
@@ -402,6 +405,7 @@ const EMPTY_LIVE: LiveState = {
 
 export function useCompanionData() {
   const [live, setLive] = useState<LiveState>(EMPTY_LIVE);
+  const [accountId, setAccountId] = useState<number | null>(null);
   const expiryTimers = useRef<Map<string, number>>(new Map());
 
   useEffect(() => {
@@ -454,25 +458,45 @@ export function useCompanionData() {
     };
   }, []);
 
-  // Phase 2b-A: pull the player's PUBLIC OpenDota profile once — no DB, RAM only.
-  // account id comes from localStorage `gmaiden.account_id` (raw id / SteamID64 /
-  // steamcommunity URL — resolveAccountId normalises). Offline / unset / private
-  // all leave `od` null and the builders fall back to MOCK. heroName is stubbed
-  // ("" ) until a hero_id→name map is wired (labels.json) — mainHero.name only.
+  // Phase A: account id comes from the persisted Steam identity (set via the
+  // login screen -> Tauri store) so there's no manual localStorage juggling.
   useEffect(() => {
     let cancelled = false;
-    let accountId: string | null = null;
+    const sync = () => loadIdentity().then((id) => { if (!cancelled) setAccountId(id?.accountId ?? null); });
+    void sync();
+    // Re-sync the moment the login screen links/unlinks — no reload needed.
+    window.addEventListener(IDENTITY_EVENT, sync);
+    return () => { cancelled = true; window.removeEventListener(IDENTITY_EVENT, sync); };
+  }, []);
+
+  // Auto-identify: once GSI reports the local player's steamid in-game, adopt it
+  // (SteamID64 -> account_id, offline) and persist — no login needed while playing.
+  useEffect(() => {
+    const sid = live.tick?.steamid;
+    if (!sid || accountId != null) return;
     try {
-      accountId = window.localStorage.getItem("gmaiden.account_id");
+      const acc = Number(BigInt(sid) - STEAMID64_BASE);
+      if (acc > 0) {
+        setAccountId(acc);
+        void saveIdentity({ steamid64: sid, accountId: acc });
+      }
     } catch {
-      /* no localStorage */
+      /* malformed steamid — ignore */
     }
-    if (!accountId) return;
-    fetchOpenDotaProfile(accountId, () => "")
+  }, [live.tick?.steamid, accountId]);
+
+  // Phase 2b-A: pull the player's PUBLIC OpenDota profile once we know the
+  // account id — no DB, RAM only. Offline / private / unset leave `od` null and
+  // the builders fall back to MOCK. heroName stubbed until a hero_id->name map
+  // (labels.json) lands — affects mainHero.name only.
+  useEffect(() => {
+    if (accountId == null) return;
+    let cancelled = false;
+    fetchOpenDotaProfile(String(accountId), () => "")
       .then((od) => { if (!cancelled && od) setLive((s) => ({ ...s, od })); })
       .catch(() => {});
     return () => { cancelled = true; };
-  }, []);
+  }, [accountId]);
 
   const data = useMemo<CompanionData>(() => {
     // Base: pure MOCK until a live event arrives, else the live-merged deck.

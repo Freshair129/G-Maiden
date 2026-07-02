@@ -244,6 +244,7 @@ mod tests {
             alive: true,
             hp_percent: 68,
             mana_percent: 55,
+            steamid: String::new(),
             buyback_cost: 0,
             respawn_seconds: 0,
             kill_list_len: 4,
