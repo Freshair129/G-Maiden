@@ -1,4 +1,8 @@
+import { useState } from "react";
 import { formatTimer, toneClass, useCompanionData } from "./companion";
+import type { CompanionData } from "./companion";
+
+type Hero = CompanionData["heroes"][number];
 import agentBackground from "./assets/agent-layers/maiden-agent-bg-generated.png";
 import agentCharacter from "./assets/agent-layers/maiden-agent-character.png";
 import agentHairGlow from "./assets/agent-layers/maiden-agent-hair-glow.png";
@@ -26,43 +30,61 @@ export default function Dashboard() {
     <div className="dashboard-v2">
       <div className="board-bento">
         <section className="bento-card minimap-bento tilt-card">
-          <div className="bento-head">
-            <div>
-              <div className="eyebrow">GSI panel</div>
-              <h3 className="gsi-panel-title">
-                <span className={`gsi-status-dot ${data.match.gsiOnline ? "online" : "offline"}`} />
-                GSI {data.match.gsiOnline ? "Online" : "Offline"}
-              </h3>
+          <div className="bento-head deck-head">
+            <div className={`live-badge ${data.match.gsiOnline ? "online" : "offline"}`}>
+              <span className="live-dot" />
+              {data.match.gsiOnline ? "LIVE" : "OFFLINE"}
             </div>
-            {!isPregame ? <span className="state-pill live">Live</span> : null}
-          </div>
-
-          <div className={`minimap-spectator ${isPregame ? "is-pregame" : "is-live"}`}>
-            <div className="minimap-user-strip">
-              <MiniStat label="Net" value={data.match.playerStats.net} />
-              <MiniStat label="Ward" value={data.match.playerStats.ward} />
-              <MiniStat label="GPM" value={String(data.match.playerStats.gpm)} />
-              <MiniStat label="XPM" value={String(data.match.playerStats.xpm)} />
-            </div>
-            <div className={`minimap-scoreline ${isPregame ? "is-pregame" : ""}`}>
-              <div className="score-team score-team-left">
+            <div className="deck-clock-cluster">
+              <div className="deck-clock-team">
                 <span>{data.match.leftTeamName}</span>
                 <strong>{data.match.leftScore}</strong>
               </div>
-              <div className="score-center">
-                <span>{data.match.centerLabel}</span>
-                {!isPregame ? <strong>{data.match.centerSubLabel}</strong> : null}
+              <div className="deck-clock-core">
+                <strong>{data.match.clock}</strong>
+                <span>{data.match.mode || data.match.centerLabel}</span>
               </div>
-              <div className="score-team score-team-right">
+              <div className="deck-clock-team">
                 <strong>{data.match.rightScore}</strong>
                 <span>{data.match.rightTeamName}</span>
+              </div>
+            </div>
+            <div className="deck-viewers-chip">
+              <span className="deck-eye" />
+              {data.match.viewers}
+            </div>
+          </div>
+
+          <div className={`minimap-spectator ${isPregame ? "is-pregame" : "is-live"}`}>
+            <div className="deck-statbar">
+              <TrendChip label="NW" value={data.match.player.nw} avg={data.match.player.nwAvg} format={fmtK} />
+              <TrendChip label="GPM" value={data.match.player.gpm} avg={data.match.player.gpmAvg} />
+              <TrendChip label="XPM" value={data.match.player.xpm} avg={data.match.player.xpmAvg} />
+              <div className="deck-stat-chip deck-stat-group">
+                <span className="deck-stat-glabel">K / D / A</span>
+                <div className="deck-stat-gvals">
+                  <TrendVal label="K" value={data.match.player.k} avg={data.match.player.kAvg} />
+                  <TrendVal label="D" value={data.match.player.d} avg={data.match.player.dAvg} higherIsBetter={false} />
+                  <TrendVal label="A" value={data.match.player.a} avg={data.match.player.aAvg} />
+                </div>
+              </div>
+              <div className="deck-stat-chip deck-stat-group">
+                <span className="deck-stat-glabel">CS / DN</span>
+                <div className="deck-stat-gvals">
+                  <TrendVal label="CS" value={data.match.player.cs} avg={data.match.player.csAvg} />
+                  <TrendVal label="DN" value={data.match.player.denies} avg={data.match.player.deniesAvg} />
+                </div>
+              </div>
+              <div className={`deck-stat-chip deck-ping ${pingClass(data.match.player.ping)}`}>
+                <span className="deck-stat-glabel">PING</span>
+                <strong>{data.match.player.ping} ms</strong>
               </div>
             </div>
 
             <div className="spectator-stage live-match-stage">
               <div className="team-column team-column-left slot-rail">
                 {[0, 1, 2, 3, 4].map((idx) => (
-                  <LiveSlotRow key={`ally-${idx}`} slotId={idx + 1} hero={allyHeroes[idx]} placeholder={isPregame} side="ally" />
+                  <HeroCard key={`ally-${idx}`} slotId={idx + 1} hero={allyHeroes[idx]} placeholder={isPregame} side="ally" />
                 ))}
               </div>
               <div className="minimap-frame live-map-stack">
@@ -86,7 +108,7 @@ export default function Dashboard() {
               </div>
               <div className="team-column team-column-right slot-rail">
                 {[0, 1, 2, 3, 4].map((idx) => (
-                  <LiveSlotRow key={`enemy-${idx}`} slotId={idx + 6} hero={enemyHeroes[idx]} placeholder={isPregame} side="enemy" />
+                  <HeroCard key={`enemy-${idx}`} slotId={idx + 6} hero={enemyHeroes[idx]} placeholder={isPregame} side="enemy" />
                 ))}
               </div>
             </div>
@@ -301,43 +323,141 @@ function StatusCard({ label, value, text }: { label: string; value: string; text
   );
 }
 
-function MiniStat({ label, value }: { label: string; value: string }) {
+function fmtK(n: number) {
+  return n >= 1000 ? `${(n / 1000).toFixed(1)}k` : String(n);
+}
+
+function pingClass(ping: number) {
+  if (ping < 40) return "good";
+  if (ping < 80) return "warn";
+  return "danger";
+}
+
+function trendInfo(value: number, avg: number, higherIsBetter: boolean) {
+  const diff = value - avg;
+  const good = higherIsBetter ? diff > 0 : diff < 0;
+  const arrow = diff === 0 ? "–" : good ? "▲" : "▼";
+  const cls = diff === 0 ? "trend-flat" : good ? "trend-up" : "trend-down";
+  const label = diff > 0 ? `+${diff}` : String(diff);
+  return { arrow, cls, label };
+}
+
+function TrendChip({ label, value, avg, format }: { label: string; value: number; avg: number; format?: (n: number) => string }) {
+  const { arrow, cls, label: diff } = trendInfo(value, avg, true);
+  const show = format ? format(value) : String(value);
   return (
-    <div className="minimap-mini-stat">
-      <span>{label}</span>
-      <strong>{value}</strong>
+    <div className="deck-stat-chip">
+      <span className="deck-stat-glabel">{label}</span>
+      <div className="deck-stat-line">
+        <strong>{show}</strong>
+        <span className={`trend ${cls}`}>{arrow}{diff}</span>
+      </div>
     </div>
   );
 }
 
-function LiveSlotRow({ slotId, hero, placeholder, side }: { slotId: number; hero?: { id: string; hero: string; player: string; level: number; kills: number; deaths: number; assists: number; state: string; team: string; timer: number; lane: string; items: string[]; pingMs: number; connection: "online" | "lagging" | "offline" }; placeholder: boolean; side: "ally" | "enemy" }) {
-  const empty = placeholder || !hero;
-  const items = empty ? Array(6).fill("") : [...hero.items, "", "", "", "", "", ""].slice(0, 6);
+function TrendVal({ label, value, avg, higherIsBetter = true }: { label: string; value: number; avg: number; higherIsBetter?: boolean }) {
+  const { arrow, cls, label: diff } = trendInfo(value, avg, higherIsBetter);
   return (
-    <div className={`live-slot-row ${side} ${hero?.state || "waiting"} ${empty ? "is-empty" : ""}`}>
-      <div className={`slot-avatar ${side} ${hero?.state || "waiting"}`}>{empty ? "--" : hero.hero.slice(0, 2)}</div>
-      <div className="slot-copy">
-        <div className="slot-title">
-          <strong>{empty ? `Slot ID ${slotId}` : hero.player}</strong>
-          <span className="slot-rank-icon">{empty ? "R-" : `Lv ${hero.level}`}</span>
-        </div>
-          <span className="slot-hero-name">{empty ? "" : hero.hero}</span>
-        <div className="slot-items">
-          {items.map((item, idx) => (
-            <span key={`${slotId}-${idx}`} className={`slot-item ${item ? "filled" : ""}`}>{item}</span>
-          ))}
-        </div>
-        <div className="slot-footer">
-          <span className="slot-kda">{empty ? "0 / 0 / 0" : `${hero.kills} / ${hero.deaths} / ${hero.assists}`}</span>
-          <div className={`slot-connection ${hero?.connection || "offline"}`}>
-            <span />
-            {empty ? "-- ms" : `${hero.pingMs} ms`}
+    <div className="deck-trend-val">
+      <span className="deck-trend-key">{label}</span>
+      <strong>{value}</strong>
+      <span className={`trend ${cls}`}>{arrow}{diff}</span>
+    </div>
+  );
+}
+
+function heroStatus(hero?: Hero): "dead" | "missing" | "low" | "ok" {
+  if (!hero) return "ok";
+  if (hero.state === "dead") return "dead";
+  if (hero.state === "missing") return "missing";
+  if (hero.state === "visible" && hero.hpPercent < 35) return "low";
+  return "ok";
+}
+
+function HeroCard({ slotId, hero, placeholder, side }: { slotId: number; hero?: Hero; placeholder: boolean; side: "ally" | "enemy" }) {
+  const [flipped, setFlipped] = useState(false);
+  const empty = placeholder || !hero;
+  if (empty) {
+    return (
+      <div className={`hero-card status-ok ${side} is-empty`}>
+        <div className="hero-card-inner">
+          <div className="hero-card-face hero-card-front">
+            <div className="hc-row hc-top">
+              <span className="hc-name">Slot ID {slotId}</span>
+            </div>
+            <div className="hc-row hc-mid">
+              <span className="hc-lvl">Lv –</span>
+              <span className="hc-heroname">Waiting</span>
+              <span className="hc-kda">0 / 0 / 0</span>
+            </div>
+            <div className="hc-items">
+              {Array(6).fill("").map((_, idx) => (
+                <span key={idx} className="hc-item" />
+              ))}
+              <span className="hc-item hc-neutral" />
+            </div>
           </div>
         </div>
       </div>
-      <div className="slot-state">
-        {empty ? "" : hero.state}
-        {!empty && hero.state !== "visible" ? <strong>{formatTimer(hero.timer)}</strong> : null}
+    );
+  }
+
+  const status = heroStatus(hero);
+  const showTimer = hero.state === "missing" || hero.state === "dead";
+  const items = [...hero.items, "", "", "", "", "", ""].slice(0, 6);
+
+  return (
+    <div
+      className={`hero-card status-${status} ${side} ${flipped ? "is-flipped" : ""}`}
+      onClick={() => setFlipped((f) => !f)}
+      title="Click to flip profile"
+    >
+      <div className="hero-card-inner">
+        <div className="hero-card-face hero-card-front">
+          {showTimer ? <span className="hc-timer">{formatTimer(hero.timer)}</span> : null}
+          <div className="hc-row hc-top">
+            <div className="hc-ident">
+              <span className="hc-name">{hero.player}</span>
+              <span className="hc-rank">{hero.rank}</span>
+              <span className="hc-mmr">{fmtK(hero.mmr)}</span>
+            </div>
+            <div className="hc-badges">
+              <span className={`hc-badge ${hero.buyback ? "on" : ""}`}>BB</span>
+              <span className={`hc-badge ${hero.tp ? "on" : ""}`}>TP</span>
+              <span className={`hc-badge ${hero.ultReady ? "on" : ""}`}>ULT</span>
+            </div>
+          </div>
+          <div className="hc-row hc-mid">
+            <span className="hc-lvl">Lv {hero.level}</span>
+            <span className="hc-heroname">{hero.hero}</span>
+            <span className="hc-kda">{hero.kills} / {hero.deaths} / {hero.assists}</span>
+          </div>
+          <div className="hc-items">
+            {items.map((item, idx) => (
+              <span key={idx} className={`hc-item ${item ? "filled" : ""}`}>{item}</span>
+            ))}
+            <span className={`hc-item hc-neutral ${hero.neutral ? "filled" : ""}`}>{hero.neutral}</span>
+          </div>
+        </div>
+        <div className="hero-card-face hero-card-back">
+          {hero.profile.public ? (
+            <div className="hc-profile">
+              <div className="hc-prow"><span>Rank</span><strong>{hero.rank} · {fmtK(hero.mmr)}</strong></div>
+              <div className="hc-prow"><span>Season</span><strong>{hero.profile.winRate}% · {hero.profile.games}g</strong></div>
+              <div className="hc-prow"><span>Avg KDA</span><strong>{hero.profile.kda.toFixed(1)}</strong></div>
+              <div className="hc-prow"><span>Main</span><strong>{hero.profile.mainHero.name} · {hero.profile.mainHero.games}g · {hero.profile.mainHero.winRate}%</strong></div>
+              <div className="hc-prow"><span>Behavior</span><strong>{hero.profile.behavior}</strong></div>
+              <div className="hc-prow"><span>Role</span><strong>{hero.profile.role}</strong></div>
+            </div>
+          ) : (
+            <div className="hc-private">
+              <span className="hc-lock">🔒</span>
+              <strong>Private profile</strong>
+              <small>Stats hidden by player</small>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

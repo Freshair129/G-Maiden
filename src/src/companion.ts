@@ -37,6 +37,25 @@ export type CompanionData = {
       gpm: number;
       xpm: number;
     };
+    player: {
+      nw: number;
+      nwAvg: number;
+      gpm: number;
+      gpmAvg: number;
+      xpm: number;
+      xpmAvg: number;
+      k: number;
+      kAvg: number;
+      d: number;
+      dAvg: number;
+      a: number;
+      aAvg: number;
+      cs: number;
+      csAvg: number;
+      denies: number;
+      deniesAvg: number;
+      ping: number;
+    };
   };
   heroes: Array<{
     id: string;
@@ -53,6 +72,27 @@ export type CompanionData = {
     items: string[];
     pingMs: number;
     connection: "online" | "lagging" | "offline";
+    nw: number;
+    gpm: number;
+    xpm: number;
+    lastHits: number;
+    denies: number;
+    mmr: number;
+    rank: string;
+    hpPercent: number;
+    buyback: boolean;
+    tp: boolean;
+    ultReady: boolean;
+    neutral: string;
+    profile: {
+      public: boolean;
+      winRate: number;
+      games: number;
+      kda: number;
+      mainHero: { name: string; games: number; winRate: number };
+      behavior: number;
+      role: string;
+    };
   }>;
   markers: Array<{
     id: string;
@@ -145,7 +185,12 @@ export const FALLBACK: CompanionData = {
     privacy: "Local-only",
     performance: "Balanced",
     systemStatus: "Companion monitoring",
-    playerStats: { goal: "Hold river", net: "0", ward: "0/0", gpm: 0, xpm: 0 }
+    playerStats: { goal: "Hold river", net: "0", ward: "0/0", gpm: 0, xpm: 0 },
+    player: {
+      nw: 0, nwAvg: 0, gpm: 0, gpmAvg: 0, xpm: 0, xpmAvg: 0,
+      k: 0, kAvg: 0, d: 0, dAvg: 0, a: 0, aAvg: 0,
+      cs: 0, csAvg: 0, denies: 0, deniesAvg: 0, ping: 0
+    }
   },
   heroes: [],
   markers: [],
@@ -198,19 +243,24 @@ export const MOCK: CompanionData = {
     privacy: "Local-only",
     performance: "Balanced",
     systemStatus: "Companion monitoring",
-    playerStats: { goal: "Avoid river", net: "14.8k", ward: "6/3", gpm: 612, xpm: 721 }
+    playerStats: { goal: "Avoid river", net: "14.8k", ward: "6/3", gpm: 612, xpm: 721 },
+    player: {
+      nw: 14800, nwAvg: 12100, gpm: 612, gpmAvg: 540, xpm: 721, xpmAvg: 690,
+      k: 5, kAvg: 1, d: 2, dAvg: 3, a: 11, aAvg: 12,
+      cs: 214, csAvg: 236, denies: 12, deniesAvg: 9, ping: 18
+    }
   },
   heroes: [
-    { id: "a1", hero: "Maiden", player: "Nikitin", team: "ally", level: 18, kills: 8, deaths: 2, assists: 11, state: "visible", timer: 0, lane: "Mid", items: ["Bo", "Gm", "Fo", "Lo", "Wa", "Sm"], pingMs: 18, connection: "online" },
-    { id: "a2", hero: "Bulwark", player: "Aegis", team: "ally", level: 16, kills: 4, deaths: 5, assists: 14, state: "visible", timer: 0, lane: "Offlane", items: ["Bl", "Cr", "Pi", "Va", "Tp", ""], pingMs: 24, connection: "online" },
-    { id: "a3", hero: "Echo", player: "RuneFox", team: "ally", level: 15, kills: 2, deaths: 3, assists: 17, state: "visible", timer: 0, lane: "Support", items: ["Ar", "Gl", "Wa", "Du", "Sm", ""], pingMs: 31, connection: "online" },
-    { id: "a4", hero: "Nyx", player: "Shade", team: "ally", level: 17, kills: 6, deaths: 4, assists: 10, state: "visible", timer: 0, lane: "Roam", items: ["Da", "Ec", "Fo", "Sm", "Wa", ""], pingMs: 48, connection: "lagging" },
-    { id: "a5", hero: "Razor", player: "Arc", team: "ally", level: 15, kills: 3, deaths: 2, assists: 9, state: "visible", timer: 0, lane: "Safe", items: ["Ma", "Bb", "Sa", "Tp", "", ""], pingMs: 21, connection: "online" },
-    { id: "e1", hero: "Warden", player: "Frost", team: "enemy", level: 17, kills: 7, deaths: 4, assists: 6, state: "missing", timer: 14, lane: "Fog", items: ["Da", "Bk", "Or", "Tp", "", ""], pingMs: 54, connection: "lagging" },
-    { id: "e2", hero: "Hex", player: "Crow", team: "enemy", level: 15, kills: 3, deaths: 6, assists: 9, state: "visible", timer: 0, lane: "Top", items: ["Bl", "Fo", "Wa", "", "", ""], pingMs: 33, connection: "online" },
-    { id: "e3", hero: "Titan", player: "Stone", team: "enemy", level: 14, kills: 1, deaths: 5, assists: 7, state: "dead", timer: 21, lane: "Jungle", items: ["Va", "Br", "Tp", "", "", ""], pingMs: 0, connection: "offline" },
-    { id: "e4", hero: "Mirage", player: "Sable", team: "enemy", level: 16, kills: 5, deaths: 3, assists: 10, state: "missing", timer: 36, lane: "Bot", items: ["Sn", "Da", "Cr", "Tp", "", ""], pingMs: 41, connection: "online" },
-    { id: "e5", hero: "Oracle", player: "Aster", team: "enemy", level: 13, kills: 0, deaths: 7, assists: 8, state: "visible", timer: 0, lane: "River", items: ["Gl", "Fo", "Wa", "Sm", "", ""], pingMs: 29, connection: "online" }
+    { id: "a1", hero: "Maiden", player: "Nikitin", team: "ally", level: 18, kills: 8, deaths: 2, assists: 11, state: "visible", timer: 0, lane: "Mid", items: ["Bo", "Gm", "Fo", "Lo", "Wa", "Sm"], pingMs: 18, connection: "online", nw: 18200, gpm: 612, xpm: 721, lastHits: 214, denies: 12, mmr: 6120, rank: "Divine II", hpPercent: 88, buyback: true, tp: true, ultReady: true, neutral: "Tk", profile: { public: true, winRate: 58, games: 1420, kda: 4.2, mainHero: { name: "Maiden", games: 312, winRate: 62 }, behavior: 9840, role: "Mid" } },
+    { id: "a2", hero: "Bulwark", player: "Aegis", team: "ally", level: 16, kills: 4, deaths: 5, assists: 14, state: "visible", timer: 0, lane: "Offlane", items: ["Bl", "Cr", "Pi", "Va", "Tp", ""], pingMs: 24, connection: "online", nw: 13400, gpm: 478, xpm: 602, lastHits: 138, denies: 4, mmr: 5480, rank: "Ancient V", hpPercent: 26, buyback: false, tp: true, ultReady: false, neutral: "Vs", profile: { public: true, winRate: 53, games: 890, kda: 3.1, mainHero: { name: "Bulwark", games: 176, winRate: 55 }, behavior: 9210, role: "Offlane" } },
+    { id: "a3", hero: "Echo", player: "RuneFox", team: "ally", level: 15, kills: 2, deaths: 3, assists: 17, state: "visible", timer: 0, lane: "Support", items: ["Ar", "Gl", "Wa", "Du", "Sm", ""], pingMs: 31, connection: "online", nw: 8600, gpm: 342, xpm: 458, lastHits: 42, denies: 2, mmr: 4900, rank: "Ancient I", hpPercent: 71, buyback: false, tp: true, ultReady: true, neutral: "", profile: { public: true, winRate: 51, games: 640, kda: 2.8, mainHero: { name: "Echo", games: 210, winRate: 54 }, behavior: 8600, role: "Support" } },
+    { id: "a4", hero: "Nyx", player: "Shade", team: "ally", level: 17, kills: 6, deaths: 4, assists: 10, state: "visible", timer: 0, lane: "Roam", items: ["Da", "Ec", "Fo", "Sm", "Wa", ""], pingMs: 48, connection: "lagging", nw: 12800, gpm: 452, xpm: 588, lastHits: 96, denies: 6, mmr: 5210, rank: "Ancient III", hpPercent: 54, buyback: true, tp: false, ultReady: true, neutral: "Pn", profile: { public: true, winRate: 56, games: 1120, kda: 3.6, mainHero: { name: "Nyx", games: 288, winRate: 60 }, behavior: 9500, role: "Roam" } },
+    { id: "a5", hero: "Razor", player: "Arc", team: "ally", level: 15, kills: 3, deaths: 2, assists: 9, state: "visible", timer: 0, lane: "Safe", items: ["Ma", "Bb", "Sa", "Tp", "", ""], pingMs: 21, connection: "online", nw: 11200, gpm: 506, xpm: 534, lastHits: 178, denies: 8, mmr: 5340, rank: "Ancient IV", hpPercent: 92, buyback: false, tp: true, ultReady: false, neutral: "Gr", profile: { public: true, winRate: 54, games: 760, kda: 3.3, mainHero: { name: "Razor", games: 142, winRate: 57 }, behavior: 9100, role: "Carry" } },
+    { id: "e1", hero: "Warden", player: "Frost", team: "enemy", level: 17, kills: 7, deaths: 4, assists: 6, state: "missing", timer: 14, lane: "Fog", items: ["Da", "Bk", "Or", "Tp", "", ""], pingMs: 54, connection: "lagging", nw: 15600, gpm: 588, xpm: 640, lastHits: 202, denies: 10, mmr: 5960, rank: "Divine I", hpPercent: 100, buyback: true, tp: true, ultReady: true, neutral: "Tk", profile: { public: false, winRate: 0, games: 0, kda: 0, mainHero: { name: "", games: 0, winRate: 0 }, behavior: 0, role: "" } },
+    { id: "e2", hero: "Hex", player: "Crow", team: "enemy", level: 15, kills: 3, deaths: 6, assists: 9, state: "visible", timer: 0, lane: "Top", items: ["Bl", "Fo", "Wa", "", "", ""], pingMs: 33, connection: "online", nw: 9200, gpm: 368, xpm: 470, lastHits: 88, denies: 3, mmr: 4820, rank: "Ancient I", hpPercent: 31, buyback: false, tp: false, ultReady: true, neutral: "Vs", profile: { public: true, winRate: 49, games: 540, kda: 2.4, mainHero: { name: "Hex", games: 132, winRate: 52 }, behavior: 8200, role: "Support" } },
+    { id: "e3", hero: "Titan", player: "Stone", team: "enemy", level: 14, kills: 1, deaths: 5, assists: 7, state: "dead", timer: 21, lane: "Jungle", items: ["Va", "Br", "Tp", "", "", ""], pingMs: 0, connection: "offline", nw: 7400, gpm: 298, xpm: 402, lastHits: 64, denies: 1, mmr: 4600, rank: "Legend V", hpPercent: 0, buyback: false, tp: false, ultReady: false, neutral: "", profile: { public: true, winRate: 47, games: 410, kda: 2.1, mainHero: { name: "Titan", games: 98, winRate: 50 }, behavior: 7900, role: "Offlane" } },
+    { id: "e4", hero: "Mirage", player: "Sable", team: "enemy", level: 16, kills: 5, deaths: 3, assists: 10, state: "missing", timer: 36, lane: "Bot", items: ["Sn", "Da", "Cr", "Tp", "", ""], pingMs: 41, connection: "online", nw: 14100, gpm: 542, xpm: 596, lastHits: 190, denies: 7, mmr: 5710, rank: "Divine III", hpPercent: 100, buyback: true, tp: true, ultReady: false, neutral: "Pn", profile: { public: false, winRate: 0, games: 0, kda: 0, mainHero: { name: "", games: 0, winRate: 0 }, behavior: 0, role: "" } },
+    { id: "e5", hero: "Oracle", player: "Aster", team: "enemy", level: 13, kills: 0, deaths: 7, assists: 8, state: "visible", timer: 0, lane: "River", items: ["Gl", "Fo", "Wa", "Sm", "", ""], pingMs: 29, connection: "online", nw: 6800, gpm: 312, xpm: 388, lastHits: 38, denies: 2, mmr: 4400, rank: "Legend III", hpPercent: 66, buyback: false, tp: true, ultReady: true, neutral: "Gr", profile: { public: true, winRate: 45, games: 320, kda: 1.9, mainHero: { name: "Oracle", games: 76, winRate: 48 }, behavior: 7600, role: "Support" } }
   ],
   markers: [
     { id: "m1", heroId: "a1", x: 22, y: 34, kind: "ally", state: "visible" },
