@@ -194,6 +194,28 @@ export function InsightsPage() {
         <StatCard label="Objective Control" value={`${data.insights.objectiveControl}%`} />
         <StatCard label="Ward Efficiency" value={`${data.insights.wardEfficiency}%`} />
       </div>
+
+      <section className="card-shell domain-card">
+        <div className="panel-head compact">
+          <div>
+            <div className="eyebrow">Weekly report</div>
+            <h3>Win rate and hero pool</h3>
+          </div>
+        </div>
+        <div className="stats-grid compact">
+          <div className="stat-box"><span>Win rate</span><strong>{data.weeklyReport.winRate}%</strong></div>
+          <div className="stat-box"><span>KD</span><strong>{data.weeklyReport.kd}</strong></div>
+        </div>
+        <div className="history-list">
+          {data.weeklyReport.topHeroes.map((hero) => (
+            <div key={`${hero.rank}-${hero.hero}`} className="history-row">
+              <div><strong>{hero.hero}</strong><span>Top {hero.rank}</span></div>
+              <div>{hero.kd}</div>
+              <p>{hero.games} games · {hero.winRate}% WR</p>
+            </div>
+          ))}
+        </div>
+      </section>
     </div>
   );
 }

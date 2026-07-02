@@ -3255,15 +3255,14 @@ body {
   grid-template-areas:
     "minimap minimap agent"
     "minimap minimap gsignal"
-    "warning status weekly";
+    "warning status gsignal";
   gap: 10px;
 }
-.minimap-bento { grid-area: minimap; }
-.agent-bento   { grid-area: agent; }
-.gsignal-bento { grid-area: gsignal; }
-.warning-bento { grid-area: warning; }
-.status-bento  { grid-area: status; }
-.weekly-bento  { grid-area: weekly; }
+.board-bento .minimap-bento { grid-column: 1 / 3 !important; grid-row: 1 / 3 !important; }
+.board-bento .agent-bento   { grid-column: 3 !important; grid-row: 1 !important; }
+.board-bento .gsignal-bento { grid-column: 3 !important; grid-row: 2 / 4 !important; }
+.board-bento .warning-bento { grid-column: 1 !important; grid-row: 3 !important; }
+.board-bento .status-bento  { grid-column: 2 !important; grid-row: 3 !important; }
 /* activity + event logs move to the Live / History tabs so the deck fits */
 .activity-bento,
 .event-bento { display: none; }

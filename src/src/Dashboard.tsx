@@ -262,38 +262,7 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="bento-card weekly-bento tilt-card">
-          <div className="bento-head compact">
-            <div>
-              <div className="eyebrow">Weekly report</div>
-              <h3>Win rate and hero pool</h3>
-            </div>
-          </div>
-          <div className="weekly-summary">
-            <div className="weekly-hero-metrics">
-              <div className="weekly-metric">
-                <span>Win rate</span>
-                <strong>{data.weeklyReport.winRate}%</strong>
-              </div>
-              <div className="weekly-metric">
-                <span>KD</span>
-                <strong>{data.weeklyReport.kd}</strong>
-              </div>
-            </div>
-            <div className="weekly-hero-list">
-              {data.weeklyReport.topHeroes.map((hero) => (
-                <div key={`${hero.rank}-${hero.hero}`} className="weekly-hero-row">
-                  <div className="weekly-rank">Top {hero.rank}</div>
-                  <div className="weekly-hero-copy">
-                    <strong>{hero.hero}</strong>
-                    <span>{hero.games} games · {hero.winRate}% WR</span>
-                  </div>
-                  <div className="weekly-hero-kd">{hero.kd}</div>
-                </div>
-              ))}
-            </div>
-          </div>
-        </section>
+        {/* Weekly report moved to the Insights tab (CR-002) to keep the deck one-screen. */}
       </div>
     </div>
   );
