@@ -9,6 +9,7 @@ import { buildProfile } from "./live/buildProfile";
 import { buildBaselines } from "./live/buildBaselines";
 import { fetchOpenDotaProfile, type OpenDotaProfile } from "./live/opendota";
 import { loadIdentity, saveIdentity, IDENTITY_EVENT } from "./live/identity";
+import { heroName } from "./live/heroNames";
 
 const STEAMID64_BASE = 76561197960265728n;
 
@@ -395,12 +396,13 @@ type LiveState = {
   cv: MinimapCv | null;
   gank: SignalAlert | null;
   missing: Map<string, number>;
+  missingPos: Map<string, [number, number]>; // 2b-B: last-seen pos of missing enemies (markers)
   active: boolean; // flips true after the first live event (else pure MOCK demo)
   od: OpenDotaProfile | null; // Phase 2b-A: your public OpenDota profile (no DB)
 };
 
 const EMPTY_LIVE: LiveState = {
-  tick: null, status: null, cv: null, gank: null, missing: new Map(), active: false, od: null
+  tick: null, status: null, cv: null, gank: null, missing: new Map(), missingPos: new Map(), active: false, od: null
 };
 
 export function useCompanionData() {
@@ -428,22 +430,26 @@ export function useCompanionData() {
     sub<MinimapCv>("minimap-cv", (p) => setLive((s) => ({ ...s, cv: p, active: true })));
     sub<SignalAlert>("gank-alert", (p) => setLive((s) => ({ ...s, gank: p, active: true })));
     // Belief revision: G-Signal retracts — clear the gank + the missing set.
-    sub<unknown>("gank-clear", () => setLive((s) => ({ ...s, gank: null, missing: new Map(), active: true })));
+    sub<unknown>("gank-clear", () => setLive((s) => ({ ...s, gank: null, missing: new Map(), missingPos: new Map(), active: true })));
     sub<EnemyMissing>("enemy-missing", (p) => {
       setLive((s) => {
         const missing = new Map(s.missing);
         missing.set(p.hero, p.missing_for_ms);
-        return { ...s, missing, active: true };
+        const missingPos = new Map(s.missingPos);
+        missingPos.set(p.hero, p.last_pos);
+        return { ...s, missing, missingPos, active: true };
       });
       // Auto-expire a missing hero after 30s (mirrors App.tsx overlay behaviour).
       const prev = timers.get(p.hero);
       if (prev) window.clearTimeout(prev);
       const t = window.setTimeout(() => {
         setLive((s) => {
-          if (!s.missing.has(p.hero)) return s;
+          if (!s.missing.has(p.hero) && !s.missingPos.has(p.hero)) return s;
           const missing = new Map(s.missing);
           missing.delete(p.hero);
-          return { ...s, missing };
+          const missingPos = new Map(s.missingPos);
+          missingPos.delete(p.hero);
+          return { ...s, missing, missingPos };
         });
         timers.delete(p.hero);
       }, 30_000);
@@ -487,12 +493,11 @@ export function useCompanionData() {
 
   // Phase 2b-A: pull the player's PUBLIC OpenDota profile once we know the
   // account id — no DB, RAM only. Offline / private / unset leave `od` null and
-  // the builders fall back to MOCK. heroName stubbed until a hero_id->name map
-  // (labels.json) lands — affects mainHero.name only.
+  // the builders fall back to MOCK. heroName resolves mainHero's hero id -> name.
   useEffect(() => {
     if (accountId == null) return;
     let cancelled = false;
-    fetchOpenDotaProfile(String(accountId), () => "")
+    fetchOpenDotaProfile(String(accountId), heroName)
       .then((od) => { if (!cancelled && od) setLive((s) => ({ ...s, od })); })
       .catch(() => {});
     return () => { cancelled = true; };
@@ -505,7 +510,7 @@ export function useCompanionData() {
           ...MOCK,
           match: buildMatch(live.tick, live.status, MOCK.match),
           heroes: buildHeroes(live.tick, live.missing, live.cv, MOCK.heroes),
-          markers: buildMarkers(live.cv, live.missing, MOCK.markers),
+          markers: buildMarkers(live.cv, live.missingPos, MOCK.markers),
           signals: buildSignals(live.gank, live.missing, MOCK.signals)
         }
       : MOCK;

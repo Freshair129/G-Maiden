@@ -22,32 +22,55 @@ function shortCode(npcName: string): string {
 
 export function buildMarkers(
   cv: MinimapCv | null,
-  missing: Map<string, number>,
+  missingPos: Map<string, [number, number]>,
   base: CompanionData["markers"]
 ): CompanionData["markers"] {
-  void missing; // positions for missing heroes are out of scope for this builder (see spec)
+  const hasCv =
+    !!cv && !!cv.region && cv.region.side > 0 && !!cv.detections && cv.detections.length > 0;
+  const hasMissing = missingPos.size > 0;
 
-  if (!cv || !cv.region || cv.region.side <= 0 || !cv.detections || cv.detections.length === 0) {
+  if (!hasCv && !hasMissing) {
     return base;
   }
 
-  const side = cv.region.side;
   const markers: CompanionData["markers"] = [];
 
-  cv.detections.forEach((det, index) => {
-    const nx = clamp0to100((det.x / side) * 100);
-    const ny = clamp0to100((det.y / side) * 100);
-    if (Number.isNaN(nx) || Number.isNaN(ny)) return;
+  if (hasCv && cv) {
+    const side = cv.region.side;
+    cv.detections.forEach((det, index) => {
+      const nx = clamp0to100((det.x / side) * 100);
+      const ny = clamp0to100((det.y / side) * 100);
+      if (Number.isNaN(nx) || Number.isNaN(ny)) return;
+
+      markers.push({
+        id: `cv-${index}`,
+        heroId: undefined,
+        x: nx,
+        y: ny,
+        kind: "hero",
+        label: shortCode(det.name),
+      });
+    });
+  }
+
+  let missIndex = 0;
+  for (const [npcName, pos] of missingPos) {
+    const [nx01, ny01] = pos;
+    const nx = clamp0to100(nx01 * 100);
+    const ny = clamp0to100(ny01 * 100);
+    if (Number.isNaN(nx) || Number.isNaN(ny)) continue;
 
     markers.push({
-      id: `cv-${index}`,
+      id: `miss-${missIndex}`,
       heroId: undefined,
       x: nx,
       y: ny,
-      kind: "hero",
-      label: shortCode(det.name),
+      kind: "enemy",
+      state: "missing",
+      label: shortCode(npcName),
     });
-  });
+    missIndex += 1;
+  }
 
   return markers;
 }
