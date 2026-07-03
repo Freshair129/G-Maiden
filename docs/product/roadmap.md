@@ -5,6 +5,32 @@
 
 ---
 
+## สถานะปัจจุบัน (updated 2026-07-03)
+
+**Released:** v0.7.9 (2026-06-28) — announcer packs + voice-cache bundle ถึงมือผู้ใช้แล้ว
+**Unreleased on `main`:** 49 commits (ถึง `a2dba63b`) = command deck live-wire (CR-002 Phase 2a/2b)
++ GID accounts / Steam identity (ADR-14) + doc sweep — **ยังไม่ถึงผู้ใช้จนกว่าจะ push tag**
+
+> ⚠️ **Version drift:** เลขเวอร์ชันจริง (v0.7.9) วิ่งเลย milestone labels ด้านล่างแล้ว
+> (Phase 3 ยัง label ว่า `v0.6`). ตั้งแต่ update นี้ milestone = **feature-gated** ไม่ผูกเลขเวอร์ชัน
+> ตายตัว — label เดิมคงไว้เป็น historical reference เท่านั้น
+
+### Now — ก่อน release ถัดไป (candidate v0.8.0, batch ใหญ่พอเป็น MINOR)
+- [ ] **Voice Packs surface decision** — หน้า Voice Packs (`AudioSettings.tsx`) เรียก `/api/voice`
+      ซึ่งไม่มี backend ใน Tauri app (ตอนนี้ guard แล้ว แสดง "service unavailable"):
+      เลือก **wire endpoints เข้า axum :3000 (`gsi.rs`)** หรือ **ซ่อน nav** ก่อน release
+- [ ] **Release verification** — `pnpm tauri build` จาก main → smoke: deck + overlay + DXGI
+      + Google-login → GID end-to-end → จึงค่อย bump + tag
+
+### Next
+- [ ] Phase 3 — Voice & Persona (Piper / audio-cache / presets — รายละเอียดด้านล่าง)
+- [ ] แชร์ GID codec (`src/src/gid.ts`) เป็น shared lib ให้ G-app อื่น (G-Suite / G-Link / G-Market)
+      ให้ derive GID เดียวกันจาก source fields เดียวกัน
+- [ ] Generation switch: เมื่อ ecosystem เปิด Beta/Public เปลี่ยน `handle_new_user` trigger
+      `gen := 'F'` → `'B'`/`'P'` ใน Supabase `gstore` (พิจารณา config table แทน hardcode)
+
+---
+
 ## Phase 0–2: Foundation + CV Pipeline `v0.1–0.5` ✅ DONE
 
 ### P0 — Scaffold
@@ -38,6 +64,19 @@
 - [x] 42 unit tests across all modules (Rust cargo suite; frontend now has 87 Vitest tests, see Phase 3+ below)
 
 **Milestone v0.5.0** — ใช้ได้จริง: GSI + CV gank detection + voice alerts ครบ loop
+
+### Shipped increments `v0.6.0 → v0.7.9` (มิ.ย. 2026 — งานที่ ship นอกแผน phase เดิม)
+- [x] Stat toggles รายตัว + custom overlay positioning + saved profiles (v0.6.0)
+- [x] **G-Damage** burst-damage calculator (v0.6.0)
+- [x] **Announcer event pack system** — full GSI event taxonomy (kill / multi-kill / streak
+      ladder sync กับ kill banner) + `POST /announcer/install` สำหรับ **G-AnnStudio** (v0.7.5)
+- [x] Master volume + global hotkeys (Ctrl+Alt+S, Alt+↑/↓, Alt+M) (v0.7.5)
+- [x] G-Master backend picker: auto / Claude / **Ollama offline** (`slm.rs`) (v0.7.5)
+- [x] Capture switch WGC → **DXGI Desktop Duplication** (ADR-13 / CR-001; WGC เก็บหลัง
+      `--features wgc`) + GSI-only **Lite mode** fallback
+- [x] voice-cache bundled เข้า installer (v0.7.9)
+- [x] **P3.5 / CR-002** — command deck live-wire + GID accounts (ดู Phase 3 ด้านล่าง)
+      `merged to main, unreleased`
 
 ---
 
@@ -117,6 +156,9 @@
 ## Phase 5: Offline Resilience (Local SLM) `v0.8`
 
 ### P5.1 — Local SLM (SRS §5.2)
+> `partial` — `slm.rs` ship แล้ว: Ollama-backed offline advice ผ่าน G-Master backend picker
+> (v0.7.5). ที่ยังเปิดอยู่คือ embedded lazy-load ตาม ADR-07 (ไม่พึ่ง Ollama ภายนอก) + model
+> download manager. Model picks ปัจจุบัน: Llama-3.2-1B Q4 (G-Signal), Typhoon2-3B Thai (G-Master)
 - [ ] Qwen2.5-0.5B/1.5B Q4 via llama-cpp-rs or candle
 - [ ] Lazy-load only on cloud disconnect (ADR-07)
 - [ ] Model download manager (on-demand, not bundled)
@@ -144,6 +186,8 @@
 - [ ] Privacy audit: verify zero network egress from G-Log tables
 
 ### P6.2 — Probability Calibration
+> `partial` — `calibration.rs` wired แล้ว (event recording + toggle จาก main.rs);
+> analyze.py มีอยู่ใน `tools/analyze-log/` — เหลือจูนจริงเมื่อมี match data
 - [ ] analyze.py: precision/recall from gank_signal → outcome
 - [ ] Auto-tune G-Sentry/G-Signal thresholds from match data
 - [ ] tuning_state feedback → next match config (Eng §6)
@@ -169,6 +213,8 @@
 ## Phase 7: Polish & Performance `v0.10`
 
 ### P7.1 — Resource Governor (TDD §7)
+> `partial` — `governor.rs` start ที่ launch แล้ว (main.rs:440); ยังต้อง validate throttle
+> actions ครบตาม TDD §7 + วัดจริงกับ NFR budgets
 - [ ] 1Hz CPU/RAM/FPS monitor (ResourceStat event)
 - [ ] Auto-throttle: CPU >2.5% → lower capture rate
 - [ ] Auto-throttle: RAM >400MB → unload SLM, reduce cache
