@@ -38,6 +38,7 @@ mod setup;
 mod slm;
 mod tts;
 mod usage;
+mod voice_api;
 
 /// Show/hide the OSD overlay window (called by the control GUI toggle).
 #[tauri::command]
@@ -81,42 +82,15 @@ struct VoiceCacheStatus {
 
 // The announcer event contract (mirrors G-Suite/schemas/gmaiden-events.json).
 // danger/revision are the G-Signal lines; the rest are fired by `announcer`.
-const EVENTS: &[&str] = &[
-    "danger",
-    "gank",
-    "revision",
-    "levelUp",
-    "match_start",
-    "first_blood",
-    "kill",
-    "double_kill",
-    "triple_kill",
-    "ultra_kill",
-    "rampage",
-    "killing_spree",
-    "dominating",
-    "mega_kill",
-    "unstoppable",
-    "wicked_sick",
-    "monster_kill",
-    "godlike",
-    "beyond_godlike",
-    "death",
-    "respawn",
-    "hpLow",
-    "manaLow",
-    "advice",
-];
-
 #[tauri::command]
 fn voice_cache_status() -> VoiceCacheStatus {
     let dir = audio::voice_cache_dir().to_string_lossy().to_string();
     let mut counts = std::collections::BTreeMap::new();
     let mut total = 0;
-    for e in EVENTS {
+    for e in voice_api::event_ids() {
         let c = audio::clip_count(e);
         total += c;
-        counts.insert((*e).to_string(), c);
+        counts.insert(e.to_string(), c);
     }
     VoiceCacheStatus { dir, counts, total }
 }
@@ -151,6 +125,41 @@ fn open_voice_cache_dir() {
     let _ = std::process::Command::new("explorer")
         .arg(dir.as_os_str())
         .spawn();
+}
+
+#[tauri::command]
+fn voice_api_state() -> Result<voice_api::VoiceState, String> {
+    voice_api::state()
+}
+
+#[tauri::command]
+fn voice_api_action(action: String, pack_id: Option<String>) -> Result<voice_api::VoiceState, String> {
+    voice_api::action(&action, pack_id.as_deref())
+}
+
+#[tauri::command]
+fn voice_api_create_template(pack_id: String, name: String, locale: String) -> Result<voice_api::VoiceState, String> {
+    voice_api::create_template(&pack_id, &name, &locale)
+}
+
+#[tauri::command]
+fn voice_api_upload_asset(pack_id: String, kind: String, name: String, bytes: Vec<u8>) -> Result<voice_api::UploadResult, String> {
+    voice_api::upload_asset(&pack_id, &kind, &name, &bytes)
+}
+
+#[tauri::command]
+fn voice_api_import_archive(name: String, bytes: Vec<u8>) -> Result<voice_api::ImportResult, String> {
+    voice_api::import_archive(&name, &bytes)
+}
+
+#[tauri::command]
+fn voice_api_map_event(payload: voice_api::MapEventRequest) -> Result<voice_api::VoiceState, String> {
+    voice_api::map_event(payload)
+}
+
+#[tauri::command]
+fn voice_api_update_pack(payload: voice_api::UpdatePackRequest) -> Result<voice_api::VoiceState, String> {
+    voice_api::update_pack(payload)
 }
 
 /// Open an external http(s) URL in the default browser (e.g. the voice-pack
@@ -424,6 +433,13 @@ fn main() {
             set_volume,
             get_volume,
             voice_cache_status,
+            voice_api_state,
+            voice_api_action,
+            voice_api_create_template,
+            voice_api_upload_asset,
+            voice_api_import_archive,
+            voice_api_map_event,
+            voice_api_update_pack,
             list_event_clips,
             play_clip,
             open_voice_cache_dir,
