@@ -21,15 +21,15 @@ use tauri::{AppHandle, Emitter};
 
 const POLL_INTERVAL_S: u64 = 10;
 
-/// Two GPU telemetry sources, user-selectable via `set_telemetry_source`:
-///   - **feeder** — the bundled headless `gpu-feeder` sidecar PUSHes GPU-only
-///     samples to `POST /telemetry` (`ingest_gpu`). Light, always available.
-///   - **G-Telemetry** — the sibling app writes a RICHER file (adds CPU temp,
-///     ~200ms) at `%LOCALAPPDATA%\G-Series\telemetry-latest.json`; we read it.
-/// The main app never runs nvidia-smi itself, so the NFR budgets keep covering
-/// only our own work. Sources (matches `TelemetrySource` in the frontend):
-///   0 = auto (prefer the rich G-Telemetry file, else the feeder push)
-///   1 = feeder only · 2 = G-Telemetry only · 3 = off
+/// GPU telemetry source, user-selectable via `set_telemetry_source`. The bundled
+/// headless `gpu-feeder` sidecar PUSHes GPU-only samples to `POST /telemetry`
+/// (`ingest_gpu`) — light and always available. The sibling G-Telemetry app
+/// writes a RICHER file (adds CPU temp, ~200ms) at
+/// `%LOCALAPPDATA%\G-Series\telemetry-latest.json` which we read. The main app
+/// never runs nvidia-smi itself, so the NFR budgets keep covering only our own
+/// work. Source values (match `telemetrySource` in the frontend): 0 = auto
+/// (prefer the rich G-Telemetry file, else the feeder push), 1 = feeder only,
+/// 2 = G-Telemetry only, 3 = off.
 static TELEMETRY_SOURCE: AtomicU8 = AtomicU8::new(0);
 
 /// Set the active telemetry source (from the settings UI).
