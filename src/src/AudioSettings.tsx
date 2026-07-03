@@ -192,6 +192,15 @@ export default function AudioSettings() {
     speakPreview(text);
   }
 
+  // Fire this event through the REAL overlay path (same payload gsi.rs emits
+  // in-game): plays the pack's clip and shows its banner on the overlay window,
+  // so a pack's banner+sound bundle can be verified without launching Dota.
+  function previewOnOverlay(event: VoiceEvent) {
+    const packId = state?.activePack?.id;
+    if (!packId) return;
+    invoke("preview_announcer_event", { packId, event: event.id }).catch(() => {});
+  }
+
   function previewClip(clip: VoiceAssetOption) {
     playUrl(clip.url);
   }
@@ -574,6 +583,7 @@ export default function AudioSettings() {
                 <div className="audio-detail-row"><span>selected clips</span><span>{selectedClips.length || "none"}</span></div>
                 <div className="audio-preview-actions">
                   <button className="audio-btn primary" onClick={() => previewEvent(selectedEvent)}>Play preview</button>
+                  <button className="audio-btn" onClick={() => previewOnOverlay(selectedEvent)} title="แสดง banner + เสียงบน overlay จริง (ไม่ต้องเข้าเกม)">Show on overlay</button>
                   <button className="audio-btn" onClick={() => run("open-root")}>Open pack folder</button>
                 </div>
               </div>

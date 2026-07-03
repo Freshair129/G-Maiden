@@ -145,7 +145,21 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
     crate::log::note_tick(&tick);
     let _ = app.emit("game-tick", tick);
     if let Some(ev) = announce {
+        // Voice the clip and show the banner from the SAME active pack, so the
+        // announcer sound and its queue banner always fire together (the bundle).
         crate::audio::play_random(&ev);
+        let _ = app.emit("announcer-banner", crate::voice_api::fired_banner(&ev));
+    }
+    "ok"
+}
+
+/// Receive a GPU telemetry sample PUSHed by the headless `gpu-feeder` sidecar
+/// (own process, runs nvidia-smi). Body: `{ "gpus": [ { loadPercent, tempC,
+/// vramUsedMb, vramTotalMb } ] }`. Stashed in the governor; the next
+/// `resource-stats` emit carries it to the deck footer.
+async fn telemetry_ingest(body: String) -> &'static str {
+    if let Ok(v) = serde_json::from_str::<Value>(&body) {
+        crate::governor::ingest_gpu(&v);
     }
     "ok"
 }
@@ -240,6 +254,7 @@ pub async fn serve(app: AppHandle) {
     let router = Router::new()
         .route("/gsi", post(handle))
         .route("/announcer/install", post(announcer_install))
+        .route("/telemetry", post(telemetry_ingest))
         .route("/auth/callback", get(oauth_callback))
         .with_state(app);
     match tokio::net::TcpListener::bind("127.0.0.1:3000").await {

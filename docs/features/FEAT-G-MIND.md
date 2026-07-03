@@ -1,5 +1,7 @@
 # FEAT-G-MIND — Cognitive Model Router
 
+> **สถานะ (2026-07): ยังไม่ได้ทำ (spec ล่วงหน้า) — ยังไม่มีโมดูลนี้ในโค้ด (`src-tauri/src/`)**
+
 > **Module:** G-Mind · **Priority:** Companion P1 · **Phase:** 4
 > **PRD:** §3A G-Mind · **SRS:** §3.10
 
@@ -7,22 +9,28 @@
 
 ## 1. Purpose
 
-เลือก/สลับ Cloud LLM ได้ (Gemini เป็น default) เพื่อกัน vendor lock-in.
+จะให้เลือก/สลับ Cloud LLM ได้เพื่อกัน vendor lock-in.
 คง fallback chain ไป Local SLM เมื่อ cloud ไม่ได้.
 **ไม่กระทบ G-Signal latency path** — G-Signal ไม่ผ่าน LLM อยู่แล้ว.
 
-## 2. Architecture
+> **หมายเหตุสแตกปัจจุบัน:** spec เดิมเขียนโดยตั้ง **Gemini** เป็น default cloud และ **Qwen2.5** เป็น local SLM. โค้ดที่ ship จริงใช้ **Claude CLI / Anthropic API** เป็น cloud brain และ **Ollama** (Aroow-9B, ยังไม่ pin Qwen/llama-cpp) เป็น local SLM. G-Mind ในฐานะ router layer ยังไม่มีในโค้ด — ตัวเลือก provider ด้านล่างเป็น design ล่วงหน้า.
+
+## 2. Architecture (planned)
 
 ```
 G-Mind = Brain Router configuration layer
 
-                    ┌── Cloud LLM (Gemini 2.0 Flash)  ← default
-G-Mind ─────────────┤── Cloud LLM (Claude, GPT, etc.) ← selectable
-(non-critical path) ├── Local SLM (Qwen2.5 / Gemma)   ← fallback
-                    └── Template Engine                ← last resort
+                    ┌── Cloud LLM (Claude CLI / Anthropic)  ← สแตกปัจจุบัน
+G-Mind ─────────────┤── Cloud LLM (Gemini, GPT, etc.)       ← selectable (planned)
+(non-critical path) ├── Local SLM (Ollama — Aroow-9B)       ← fallback (ที่ ship จริง)
+                    └── Template Engine                     ← last resort
 ```
 
-## 3. Configuration
+> เดิม spec วางให้ Gemini 2.0 Flash เป็น default และ Qwen2.5/Gemma เป็น local — ยังคงไว้เป็นตัวเลือกในอนาคต แต่โค้ดที่ ship ตอนนี้คือ Claude (cloud) + Ollama Aroow-9B (local).
+
+## 3. Configuration (proposed schema — ยังไม่ได้ implement)
+
+> ตัวอย่างด้านล่างเป็น schema ที่เสนอไว้ ยังไม่มีไฟล์ config นี้ในโค้ด. ค่า default `"gemini"` และ `"qwen2.5:7b"` เป็นของ spec เดิม — สแตกจริงคือ Claude + Ollama Aroow-9B.
 
 ```json
 {
@@ -100,4 +108,4 @@ query(prompt, context):
 - [ ] timeout ≤1500ms per cloud call
 - [ ] redaction: ไม่ส่ง PII/raw G-Log
 - [ ] G-Signal ไม่ถูกกระทบโดย model switch
-- [ ] ≥2 cloud providers ใช้ได้ (Gemini + 1)
+- [ ] ≥2 cloud providers ใช้ได้ (Claude ที่ ship จริง + อีก 1 เช่น Gemini)

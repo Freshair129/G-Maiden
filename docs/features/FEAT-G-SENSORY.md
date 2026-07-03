@@ -22,34 +22,53 @@
 
 ### 2b. Resource Governor (TDD §7)
 
-วัดทุก 1 วินาที แล้วบังคับ budget:
+วัดทุก **10 วินาที** (`governor.rs` `POLL_INTERVAL_S = 10`) → emit `resource-stats`
+event ไปยัง control window แล้วเช็ค budget:
 
 | Resource | Limit | Mitigation |
 | --- | --- | --- |
-| CPU | ≤2.5% | ลด capture rate, ลด vision frequency, batch |
-| RAM | ≤400 MB | unload SLM, ลด cache, GC ring buffer |
-| FPS impact | ≤3% | ลด overlay redraw, ปิด blur/effects, static HUD |
+| CPU | ≤2.5% | CPU-throttle flag → capture loop drop ~ครึ่งหนึ่งของ tick |
+| RAM | ≤400 MB | (นับรวมใน over-budget flag เดียวกัน) |
+| FPS impact | ≤3% | budget TARGET เท่านั้น — ยังไม่ instrument |
+
+> **สถานะ (2026-07): mitigation ที่ทำจริงคือ CPU-throttle flag ตัวเดียว** —
+> `measure()` ตั้ง `over_budget = ram_mb > 400 || cpu_pct > 2.5` แล้ว
+> `poll_loop` เก็บลง `CPU_THROTTLE` (atomic) ให้ capture loop อ่านเพื่อ drop
+> ~ครึ่งหนึ่งของ tick. ตาราง "unload SLM / ปิด blur / static HUD" ยังเป็น
+> aspirational (ยังไม่ได้ทำ). FPS-impact ไม่ถูกวัดที่ใดเลย (ไม่มี `est_fps`).
 
 ### 2c. Global Hotkeys
 
+Global shortcuts จริงจาก `src-tauri/src/main.rs` (ทำงานแม้ Dota 2 โฟกัสอยู่):
+
 | Hotkey | Action |
 | --- | --- |
-| `Alt + M` | Maiden สรุปสถานการณ์ทันที (`request_situation_summary`) |
-| (future) | toggle overlay, mute, sensitivity +/- |
+| `Ctrl + Alt + S` | ซ่อน/แสดง overlay |
+| `Alt + ↑` | เพิ่มระดับเสียง +10% |
+| `Alt + ↓` | ลดระดับเสียง −10% |
+| `Alt + M` | ปิด/เปิดเสียง (mute toggle — กลับเป็นระดับเดิมเมื่อ unmute) |
 
 ## 3. Input
 
 | Source | Data |
 | --- | --- |
 | All G-Series modules | `CoreEvent` (EnemyMissing, GankRisk, SignalAlert, Advice, Narration) |
-| Resource telemetry | CPU %, RAM MB, est. FPS impact |
+| Resource telemetry | RAM MB, CPU %, GPU load/temp, VRAM (จาก `gpu-feeder` sidecar) |
 | User input | Hotkeys, overlay settings |
 
 ## 4. Output
 
 - UI state → React overlay (Tauri events: `listen('core-event', ...)`)
 - Render commands → GPU-composited transparent window
-- `ResourceStat { cpu_pct, ram_mb, est_fps_impact_pct }` → G-Log
+- Announcer pack banner → overlay (`packBanner` ใน `App.tsx`, driven โดย
+  `announcer-banner` event; รูปของ pack แทน built-in kill card เมื่อ event fire)
+- `ResourceStats { ram_mb, cpu_pct, over_budget, gpu_pct, gpu_temp_c, vram_used_mb, vram_total_mb }`
+  (ทั้งหมด `f64`, `governor.rs`) → emit `resource-stats` ไปยัง control window
+
+> **สถานะ (2026-07): ไม่มีฟิลด์ `est_fps_impact_pct`** — struct จริงคือ
+> `ResourceStats` ข้างบน. GPU load/temp + VRAM เป็นฟิลด์จริงที่ป้อนโดย
+> `gpu-feeder` sidecar (nvidia-smi → `POST /telemetry` → `governor::ingest_gpu`,
+> staleness 30s; main app ไม่รัน nvidia-smi เอง). `-1` = ไม่มีค่า → footer แสดง "—".
 
 ## 5. Visual Design
 
@@ -114,7 +133,7 @@ Canonical UI/UX contract: `docs/architecture/design-system.md`.
 - [ ] **FPS drop ≤3%** vs baseline (GATE P7)
 - [ ] **CPU ≤2.5%** total (GATE P2/P7)
 - [ ] **RAM ≤400 MB** (GATE P7)
-- [ ] `Alt+M` hotkey triggers situation summary
+- [ ] global hotkeys ทำงาน: `Ctrl+Alt+S` (toggle overlay), `Alt+↑/↓` (vol ±10%), `Alt+M` (mute toggle)
 - [ ] governor auto-throttle เมื่อ resource เกิน budget
 - [ ] glassmorphism visual ตรง design spec
 - [ ] Control Dashboard และ Overlay ใช้ token/component contract จาก `docs/architecture/design-system.md`

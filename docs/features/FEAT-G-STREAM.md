@@ -1,5 +1,9 @@
 # FEAT-G-STREAM — Streamer Co-host Mode
 
+> **สถานะ (2026-07): ยังไม่ได้ทำ (spec ล่วงหน้า) — ไม่มีโมดูลนี้ในโค้ด (`src-tauri/src/`)**
+> ไม่มี `mod stream` ใน `main.rs` และไม่มีไฟล์ `stream.rs` — เอกสารนี้เป็น design vision ล่วงหน้า ยังไม่ได้ implement.
+> หมายเหตุ dependency: `G-Memory` และ `G-Persona` ที่อ้างถึงด้านล่างก็ยังไม่มีเป็นโมดูลจริงในโค้ดเช่นกัน.
+
 > **Module:** G-Stream · **Priority:** Companion P2 · **Phase:** 8
 > **PRD:** §3A G-Stream · **SRS:** §3.12
 
@@ -7,7 +11,7 @@
 
 ## 1. Purpose
 
-โหมดผู้ช่วยสำหรับสตรีมเมอร์ — ปรับ overlay/โทนสำหรับออกอากาศ
+(แผน) โหมดผู้ช่วยสำหรับสตรีมเมอร์ — ปรับ overlay/โทนสำหรับออกอากาศ
 + ปกปิดข้อมูลละเอียดอ่อน (MMR, personal stats, G-Memory data)
 เพื่อให้ Maiden เป็น co-host ที่ปลอดภัยสำหรับ broadcast.
 

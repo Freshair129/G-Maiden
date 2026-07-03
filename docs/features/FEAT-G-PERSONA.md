@@ -12,6 +12,10 @@
 
 ## 2. Preset Dimensions
 
+> **สถานะ (2026-07): §2/§4/§5 เป็น design-only (Phase 7-8) — ยังไม่ได้ wire.** backend ยัง
+> **ไม่มี** verbosity/tone preset, config `{persona:{...}}`, หรือ `apply_tone()` (grep ยืนยัน).
+> ส่วนที่ทำแล้วจริงคือ **§3 Immutable Behaviors** (Belief Revision + G-Signal interrupt).
+
 ### 2a. Verbosity (ปริมาณการพูด)
 
 | Level | Label | Behavior |
@@ -29,7 +33,10 @@
 | 2 | **Balanced** | Default — friendly + analytical |
 | 3 | **Playful** | Meme-heavy, more Nerf CM jokes, casual tone |
 
-## 3. Immutable Behaviors (ลบไม่ได้ไม่ว่า preset ใด)
+## 3. Immutable Behaviors (ลบไม่ได้ไม่ว่า preset ใด) — **ทำแล้ว**
+
+Belief Revision + G-Signal interrupt เป็นของจริงในโค้ด (`signal.rs` `SignalEvent::Revision`,
+`capture.rs` `REVISION_LINE` + `voice_interrupt`, `tts.rs::cancel` ตัดเสียงกลางประโยค).
 
 | Behavior | เหตุผล |
 | --- | --- |
@@ -38,7 +45,7 @@
 | **Nerf CM self-awareness** | Brand identity — อย่างน้อยต้อง reference ได้ |
 | **Gentle core tone** | ห้าม toxic / aggressive ไม่ว่า preset ใด |
 
-## 4. Configuration
+## 4. Configuration *(design-only — ยังไม่ได้ทำ)*
 
 ```json
 {
@@ -51,7 +58,7 @@
 }
 ```
 
-## 5. Logic
+## 5. Logic *(design-only — `apply_tone()` / verbosity filter ยังไม่มีใน backend)*
 
 ```
 on event received (advice, narration, signal):
@@ -96,10 +103,10 @@ on event received (advice, narration, signal):
 
 ## 9. Acceptance Criteria
 
-- [ ] verbosity 1 (silent): เฉพาะ G-Signal alerts เท่านั้น
-- [ ] verbosity 4 (verbose): continuous narration ≥1 comment per 30s
-- [ ] tone 1 (serious): no humor in output
-- [ ] tone 3 (playful): Nerf CM jokes appear
-- [ ] Belief Revision ทำงานทุก verbosity/tone level
-- [ ] G-Signal interrupt ทำงานทุก preset
-- [ ] hot-switch: เปลี่ยน preset ระหว่างเกมได้ทันที
+- [ ] verbosity 1 (silent): เฉพาะ G-Signal alerts เท่านั้น *(planned)*
+- [ ] verbosity 4 (verbose): continuous narration ≥1 comment per 30s *(planned)*
+- [ ] tone 1 (serious): no humor in output *(planned)*
+- [ ] tone 3 (playful): Nerf CM jokes appear *(planned)*
+- [x] Belief Revision ทำงาน (immutable — ทำแล้ว)
+- [x] G-Signal interrupt ทำงาน (immutable — ทำแล้ว)
+- [ ] hot-switch: เปลี่ยน preset ระหว่างเกมได้ทันที *(planned)*

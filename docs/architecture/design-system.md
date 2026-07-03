@@ -294,6 +294,16 @@ Each G-Series module gets a compact card:
 
 Do not introduce fake module data. Use "waiting" or "not connected" states when runtime data is absent.
 
+> **Known exception (shipped):** the deck intentionally keeps a rich `MOCK` fallback
+> (documented in `src/src/companion.ts`) so the command deck renders a full demo
+> when there is no live source — e.g. plain browser / no Tauri, or panels with no
+> live path yet. Live builders (`live/build*.ts`) merge over MOCK per-field; any
+> field with no live source stays on MOCK rather than showing a waiting state.
+> **`buildAdvisor` has no live path at all** and always renders MOCK (no structured
+> G-Master build feed yet). This demo-fallback is deliberate, not the "fake module
+> data" this rule forbids; the intent is that any field *with* a live source must
+> flip to it (and its waiting/not-connected states) rather than show fabricated live data.
+
 ### 7.6 Activity Cards
 
 Use for latest tactical events:
@@ -394,6 +404,14 @@ Governor visual degradation levels:
 > + window routing, and `CommandDeck.tsx` owns the control window. The
 > "Not allowed until approval" list below and the task packet in Section 11
 > are historical — treat `UI-1` through `UI-4` as done, not pending.
+>
+> **SHIPPED (2026-07-03, Phase 2c):** the remaining deck panels are now LIVE-wired
+> too — telemetry footer, `weeklyReport`, `insights`, `history`, and
+> `agentSector.status` merge live builders (`src/src/live/build{Telemetry,Weekly,Insights,History}.ts`)
+> over MOCK. The voice-pack **overlay banner** (announcer bundle: the active pack's
+> image renders on the overlay when an event fires, `packBanner` in `App.tsx` via
+> the `announcer-banner` event) and **gpu-feeder telemetry** (GPU load/temp + VRAM
+> in the deck footer, fed by the out-of-process `gpu-feeder` sidecar) also shipped.
 
 ### Allowed in Phase 1 (documentation only)
 

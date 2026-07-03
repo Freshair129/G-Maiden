@@ -56,7 +56,7 @@ flowchart TD
   C --> C2["Overlay UI Editor (drag + grid magnet + HUD ref preview)"]
   C --> C3["GSI Setup"]
   C --> C4["Module Health"]
-  C --> C5["Voice Packs (browse / preview / buy on web)"]
+  C --> C5["Voice Packs (bundle: upload clip/banner → active pack, activate = in-game voice, Show-on-overlay preview)"]
   C --> C6["Calibration Mode (QA audit)"]
   C --> C7["Sensitivity (Low / Med / High)"]
   C --> C8["UI Tier Picker (Lite / Full)"]
@@ -147,13 +147,13 @@ In-game, peripheral-first HUD direction. Lite tier (default) ใช้ single-st
 
 | Component | Purpose | UI notes |
 | --- | --- | --- |
-| `OverlayAlertBanner` | Critical danger and gank warnings | Top-center, short pulse, strong contrast, no long text |
+| `OverlayAlertBanner` | Critical danger and gank warnings | Top-center, short pulse, strong contrast, no long text. **Announcer pack banner layer:** เมื่อ event ยิงและ pack ที่ active map รูปไว้ ระบบ render banner image ของ pack บน overlay (`packBanner` ใน `App.tsx` ผ่าน event `announcer-banner`) — มี priority เหนือ lettered kill-banner ในตัว (แทนที่ card เดิม) |
 | `AdvicePanel` | Maiden guidance during match | Small portrait, waveform, confidence, dismiss state |
 | `GMeter` | Continuous risk gauge (G-Sentry missing + G-Signal alert) | 4-segment LED (ปลอดภัย/ระวัง/เสี่ยง/อันตราย); ไม่แสดง % — มีแต่ gradient |
 | `VoiceToast` | On-screen mirror of last voice event | Silent fallback when voice pack ยังไม่มา; auto-dismiss |
 | `CompanionStage` | Character presence module | Maiden portrait — Crystal Maiden stylized SVG กำลังจะมา; ตอนนี้ใช้ badge เป็น placeholder |
 | `VoiceChip` | Voice/listening state | Compact, icon + text, never color-only |
-| `VoicePackCard` | Browse / preview / buy voice packs | Thai default pack มาในตัว; ปุ่ม "🔊 ทดลองฟัง" + ลิงก์ซื้อผ่านเว็บ |
+| `VoicePackCard` | จัดการ voice pack แบบ **bundle** (AudioSettings.tsx) | pack = bundle: upload clip/banner เข้า pack ที่ active; activate → resolve เสียง announcer ในเกม; ปุ่ม "Play preview" (เสียง) + "Show on overlay" (`preview_announcer_event` → emit `announcer-banner` → banner+เสียงบน overlay จริงโดยไม่ต้องเข้าเกม) |
 | `PrivacyChip` | Local-only assurance | Visible but quiet, stronger in settings/control |
 | `LayoutEditor` | Drag editor สำหรับ Full tier (C2) | 16:9 preview, magnet grid SNAP=5, HUD reference background, per-module scale, hover-solo focus เพื่อ spotlight module เดียว |
 | `SensitivityPicker` | Low / Med / High (G-Signal danger threshold) | Mirror ลง backend ผ่าน Tauri command `set_cv_signal_sensitivity`; thresholds 0.85 / 0.65 / 0.50 |

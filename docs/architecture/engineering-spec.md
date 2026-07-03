@@ -60,7 +60,7 @@
 ### 2.6 G-Log (Feedback Loop) â€” local only
 - **Input:** decisions à¸—à¸µà¹ˆ Maiden à¸ªà¹ˆà¸‡ + à¸œà¸¥à¸¥à¸±à¸žà¸˜à¹Œ (death/teamfight/win)
 - **Logic:** à¹€à¸—à¸µà¸¢à¸šà¸„à¸³à¹à¸™à¸°à¸™à¸³ vs à¸œà¸¥ â†’ à¸›à¸£à¸±à¸š tuning params à¸‚à¸­à¸‡ G-Sentry/G-Signal à¹€à¸à¸¡à¸«à¸™à¹‰à¸²
-- **Output:** à¹€à¸‚à¸µà¸¢à¸™ SQLite local; à¸ªà¹ˆà¸‡ `TuningDelta` à¸à¸¥à¸±à¸šà¹€à¸‚à¹‰à¸² config (à¸”à¸¹ Â§6)
+- **Output:** เขียน G-Log เป็น JSONL local (`match-*.jsonl` ใน `%LOCALAPPDATA%\G-Maiden\logs\`, `log.rs`); ส่ง `TuningDelta` กลับเข้า config (ดู §6)
 
 ---
 
@@ -87,20 +87,22 @@
   `abilities`, `items`, `provider`
 - **à¸‚à¹‰à¸­à¸ˆà¸³à¸à¸±à¸”à¸ªà¸³à¸„à¸±à¸:** GSI **à¹„à¸¡à¹ˆà¸ªà¹ˆà¸‡à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸®à¸µà¹‚à¸£à¹ˆà¸¨à¸±à¸•à¸£à¸¹** â†’ à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸¨à¸±à¸•à¸£à¸¹à¸¡à¸²à¸ˆà¸²à¸ minimap CV (à¸”à¸¹ TDD R-02)
 
-### 4.2 Cloud Cognitive Engine â€” Gemini (SRS Â§4.2)
-- `POST https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:streamGenerateContent`
+### 4.2 Cloud Cognitive Engine — Claude CLI / Anthropic API (SRS §4.2)
+- โค้ดจริง: **Claude CLI** (subprocess) หรือ **Anthropic Messages API** `POST https://api.anthropic.com/v1/messages` (`model: claude-haiku-4-5`, `master.rs`)
 - streaming (SSE-style chunks) â†’ feed à¹€à¸‚à¹‰à¸² narration queue (preemptible)
-- timeout 1500ms; à¸–à¹‰à¸² fail â†’ fallback local SLM/templates (resilience)
+- timeout สั้น; ถ้า fail → fallback local SLM ผ่าน **Ollama** (resilience)
 - à¸ªà¹ˆà¸‡à¹€à¸‰à¸žà¸²à¸° context à¸—à¸µà¹ˆà¸œà¹ˆà¸²à¸™ redaction â€” **à¹„à¸¡à¹ˆà¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸£à¸°à¸šà¸¸à¸•à¸±à¸§à¸•à¸™/à¹„à¸Ÿà¸¥à¹Œ G-Log à¸”à¸´à¸š**
+
+> **สถานะ (2026-07): Gemini เป็นเป้า Phase-4 — ยังไม่ wired. Cloud brain ปัจจุบันคือ Claude CLI / Anthropic Messages API (`claude-haiku-4-5`) แล้ว fallback เป็น Ollama SLM.**
 
 ### 4.3 TTS Module
 - **Critical:** à¸­à¹ˆà¸²à¸™à¸ˆà¸²à¸ audio cache (key â†’ PCM/Ogg à¸—à¸µà¹ˆ render à¹„à¸§à¹‰)
-- **Persona à¸—à¸±à¹ˆà¸§à¹„à¸›:** Piper (ONNX voice model) à¸ªà¸±à¸‡à¹€à¸„à¸£à¸²à¸°à¸«à¹Œà¸ªà¸”, à¸ªà¹„à¸•à¸¥à¹Œà¸™à¸±à¸à¸žà¸²à¸à¸¢à¹Œ
+- **Persona ทั่วไป (planned/opportunistic):** Piper (ONNX voice model) สังเคราะห์สด — ใช้เฉพาะเมื่อพบ `piper.exe` + โมเดลข้าง binary; ไม่งั้น default = Windows SAPI
 - **Fallback:** Windows SAPI
 - à¸ªà¸±à¸à¸à¸²: `synthesize(text, voice_profile) -> AudioHandle` ; `play(handle, {interrupt})`
 
 ### 4.4 Global Hotkeys (SRS Â§4.1)
-- `Alt + M` â†’ Maiden à¸ªà¸£à¸¸à¸›à¸ªà¸–à¸²à¸™à¸à¸²à¸£à¸“à¹Œ à¸“ à¸§à¸´à¸™à¸²à¸—à¸µà¸™à¸±à¹‰à¸™à¸—à¸±à¸™à¸—à¸µ (`request_situation_summary`)
+- `Alt + M` → **สลับ mute/unmute เสียง Maiden** (main.rs; unmute กลับเป็นระดับเดิม). > **สถานะ (2026-07): ไม่มี `request_situation_summary` — `Alt+M` คือ mute toggle**
 - à¸¥à¸‡à¸—à¸°à¹€à¸šà¸µà¸¢à¸™à¸œà¹ˆà¸²à¸™ Tauri global-shortcut plugin
 - (à¸‚à¸¢à¸²à¸¢à¸ à¸²à¸¢à¸«à¸¥à¸±à¸‡: toggle overlay, mute, sensitivity +/-)
 
@@ -117,24 +119,24 @@ enum CoreEvent {
     SignalAlert   { severity: Severity, clip_key: String, interrupt: bool },
     Advice        { topic: Topic, text: String, rationale: String },
     Narration     { text: String, source: BrainSource }, // Cloud | LocalSLM | Template
-    ResourceStat  { cpu_pct: f32, ram_mb: u32, est_fps_impact_pct: f32 },
+    ResourceStats { ram_mb: f64, cpu_pct: f64, over_budget: bool,
+                    gpu_pct: f64, gpu_temp_c: f64, vram_used_mb: f64, vram_total_mb: f64 },
 }
 ```
 
-UI subscribe à¸œà¹ˆà¸²à¸™ `listen('core-event', ...)`; commands à¸à¸±à¹ˆà¸‡ UI à¹€à¸Šà¹ˆà¸™ `set_sensitivity`, `toggle_module`.
+UI subscribe ผ่าน event แยกชื่อ (ไม่มี channel รวม `core-event`): `game-tick`, `gsi-status`, `resource-stats`, `minimap-cv`, `gank-alert`, `gank-clear`, `enemy-missing`, `announcer-banner`, `advice-update`, `buyback-advice`, `buyback-narrative`, `capture-mode`, `volume-change`, `oauth-callback`, `oauth-error`, `preview-kill`. commands ที่สั่งจาก UI เช่น `set_cv_signal_sensitivity`, `set_cv_signal_enabled` (ไม่มี `set_sensitivity`/`toggle_module`).
+
+> **สถานะ (2026-07): `enum CoreEvent` ด้านบนเป็นแบบจำลอง — โค้ดจริง emit แต่ละ event แยกชื่อตามรายการนี้ และ `ResourceStats` มาจาก `governor.rs`.**
 
 ---
 
-## 6. à¹‚à¸„à¸£à¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ G-Log (SQLite, local-only)
+## 6. โครงข้อมูล G-Log (JSONL flat files, local-only)
 
-```sql
-CREATE TABLE matches      (id, hero, started_at, ended_at, result);
-CREATE TABLE decisions    (id, match_id, t_ms, module, payload, outcome);  -- à¹€à¸—à¸µà¸¢à¸šà¸„à¸³à¹à¸™à¸°à¸™à¸³ vs à¸œà¸¥
-CREATE TABLE signals      (id, match_id, t_ms, probability, latency_ms, survived);
-CREATE TABLE tuning_state (key, value, updated_at);  -- params à¸—à¸µà¹ˆ G-Log à¸ˆà¸¹à¸™à¸à¸¥à¸±à¸š
-```
+> **สถานะ (2026-07): ไม่ใช่ SQLite/`rusqlite` — G-Log เก็บเป็น JSONL flat files (`log.rs`)**
 
-`tuning_state` à¸›à¹‰à¸­à¸™à¸à¸¥à¸±à¸šà¹€à¸‚à¹‰à¸² G-Sentry/G-Signal à¸•à¸­à¸™à¹€à¸£à¸´à¹ˆà¸¡à¹à¸¡à¸•à¸Šà¹Œà¸–à¸±à¸”à¹„à¸› (à¸›à¸´à¸” feedback loop, SRS Â§3.6).
+หนึ่งไฟล์ `match-*.jsonl` ต่อแมตช์ใน `%LOCALAPPDATA%\G-Maiden\logs\` — append หนึ่ง JSON object ต่อ tick/เหตุการณ์ (match-start/decision/signal/outcome) ไม่มีสคีมา SQL, ไม่มี network egress. tuning params ที่ G-Log จูนกลับถูกเขียนแยกเป็น config ในโฟลเดอร์เดียวกัน (ป้อน feedback loop, SRS §3.6).
+
+tuning params ที่ G-Log จูนถูกป้อนกลับเข้า G-Sentry/G-Signal ตอนเริ่มแมตช์ถัดไป (ปิด feedback loop, SRS §3.6).
 **à¹„à¸¡à¹ˆà¸¡à¸µ network egress à¸ˆà¸²à¸à¸•à¸²à¸£à¸²à¸‡à¹€à¸«à¸¥à¹ˆà¸²à¸™à¸µà¹‰.**
 
 ---
@@ -201,7 +203,7 @@ Role à¸›à¸£à¸°à¸à¸²à¸¨ `requires`; Provider à¸›à¸£à�
 Command deck (CR-002 Phase 2a/2b, merged `170805b8`) subscribes to live Tauri events via
 `useCompanionData`, feeding pure builders in `src/src/live/` that are merged over a MOCK
 fallback (renders signed-out/offline). Events actually emitted: `game-tick`, `gsi-status`,
-`minimap-cv`, `enemy-missing`, `gank-alert`.
+`minimap-cv`, `enemy-missing`, `gank-alert`, `gank-clear`, `resource-stats`. Live builders อยู่ใน `src/src/live/` (เช่น `buildTelemetry`/`buildWeekly`/`buildInsights`/`buildHistory`).
 
 Accounts/GID (ADR-14): optional, additive Google-OAuth sign-in producing a GID
 (cross-G-series identity; codec `src/src/gid.ts`, format `G-[Gen][Payload][Checksum]`).

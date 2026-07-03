@@ -162,6 +162,18 @@ fn voice_api_update_pack(payload: voice_api::UpdatePackRequest) -> Result<voice_
     voice_api::update_pack(payload)
 }
 
+/// Preview an announcer event on the overlay WITHOUT being in-game: play the
+/// pack's mapped clip and emit the same `announcer-banner` payload gsi.rs emits
+/// on a real fired event, so the pack's banner shows on the overlay exactly as it
+/// will in a match. Lets users verify a pack's banner+sound bundle before playing.
+#[tauri::command]
+fn preview_announcer_event(app: tauri::AppHandle, pack_id: String, event: String) {
+    if let Some(clip) = voice_api::preview_clip(&pack_id, &event) {
+        audio::play_file(clip);
+    }
+    let _ = app.emit("announcer-banner", voice_api::preview_banner(&pack_id, &event));
+}
+
 /// Open an external http(s) URL in the default browser (e.g. the voice-pack
 /// store — purchases happen on the web). `explorer` handles URLs and is a GUI
 /// app, so no console flashes; scheme is validated to avoid arbitrary commands.
@@ -300,6 +312,14 @@ fn set_volume(app: tauri::AppHandle, vol: u8) {
     let _ = app.emit("volume-change", vol);
 }
 
+/// Select the GPU/CPU-temp telemetry source shown in the deck footer:
+/// 0 = auto (prefer the rich G-Telemetry file, else the light feeder push),
+/// 1 = feeder only, 2 = G-Telemetry only, 3 = off.
+#[tauri::command]
+fn set_telemetry_source(source: u8) {
+    governor::set_telemetry_source(source);
+}
+
 /// Get the current master volume (0–100).
 #[tauri::command]
 fn get_volume() -> u8 {
@@ -432,6 +452,7 @@ fn main() {
             capture_calibration_clip,
             set_volume,
             get_volume,
+            set_telemetry_source,
             voice_cache_status,
             voice_api_state,
             voice_api_action,
@@ -440,6 +461,7 @@ fn main() {
             voice_api_import_archive,
             voice_api_map_event,
             voice_api_update_pack,
+            preview_announcer_event,
             list_event_clips,
             play_clip,
             open_voice_cache_dir,
@@ -469,6 +491,9 @@ fn main() {
 
             // G7.2: resource governor — poll RAM/CPU every 10s, emit resource-stats.
             governor::start(app.handle().clone());
+            // Headless GPU feeder sidecar → pushes nvidia-smi metrics to
+            // POST /telemetry (own process; keeps nvidia-smi out of the main app).
+            governor::spawn_gpu_feeder();
 
             app.global_shortcut().register(toggle)?;
             app.global_shortcut().register(vol_up)?;

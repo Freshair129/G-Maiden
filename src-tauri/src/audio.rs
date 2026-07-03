@@ -167,9 +167,16 @@ fn list_clips_in(dir: &std::path::Path) -> Vec<PathBuf> {
         .unwrap_or_default()
 }
 
-/// User pack first (so a player's installed/purchased clips override defaults);
-/// fall back to the bundled default pack so Maiden is never silent.
+/// Resolution order (first non-empty wins):
+///   1. the ACTIVE voice pack's clips mapped to this event (the bundle — so
+///      activating a pack actually changes what plays in-game)
+///   2. flat `voice-cache/{event}/` (legacy / G-AnnStudio install layout)
+///   3. the bundled default pack, so Maiden is never silent
 fn list_clips(event: &str) -> Vec<PathBuf> {
+    let active = crate::voice_api::active_event_clips(event);
+    if !active.is_empty() {
+        return active;
+    }
     let user = list_clips_in(&voice_cache_dir().join(event));
     if !user.is_empty() {
         return user;

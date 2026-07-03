@@ -8,9 +8,15 @@
 
 ## 1. Purpose
 
-ระบบแจ้งเตือนวิกฤตแบบทันที. เมื่อ G-Motion รายงาน probability >85% จะ **interrupt**
-เสียงที่กำลังเล่น แล้วเล่นคลิปเตือนทันที. รวมถึงพฤติกรรม **Belief Revision** —
-เปลี่ยนคำพูดกลางประโยคเมื่อข้อมูลเปลี่ยน.
+ระบบแจ้งเตือนวิกฤตแบบทันที. เมื่อ G-Motion รายงาน probability ข้าม danger threshold
+จะ **interrupt** เสียงที่กำลังเล่น แล้วเล่นคลิปเตือนทันที. รวมถึงพฤติกรรม
+**Belief Revision** — เปลี่ยนคำพูดกลางประโยคเมื่อข้อมูลเปลี่ยน.
+
+> **สถานะ (2026-07): threshold ที่ ship จริงเป็น runtime `Sensitivity` enum**
+> (`signal.rs`), ตั้งผ่าน `set_cv_signal_sensitivity`. default = `Med`
+> (`#[default]`) = **0.65 danger / 0.40 clear**. 0.85 เป็นแค่ระดับ `Low` / SRS
+> baseline — เพิ่ม Sensitivity มาเพราะ bar 85% แทบไม่เคย fire ในเกมจริง. ระดับ:
+> Low `(0.85, 0.50)`, Med `(0.65, 0.40)`, High `(0.50, 0.30)`.
 
 **นี่คือ hard-latency path ที่สำคัญที่สุดของ G-Maiden.**
 
@@ -18,52 +24,56 @@
 
 | Source | Data |
 | --- | --- |
-| G-Motion | `GankRisk { lane, probability, paths, eta_ms }` |
+| G-Motion | `GankRisk { probability: f32, missing_heroes, eta_ms }` |
 
 ## 3. Internal State
 
 ```rust
-struct SignalState {
-    currently_speaking: Option<ClipKey>,
-    interruptible: bool,
-    revision_in_flight: bool,
-    last_alert_at: Instant,
-    cooldown_ms: u32,          // ป้องกัน spam (default 3000ms)
+struct Signal {
+    alerted: bool,   // hysteresis latch
+    danger: f32,     // จาก Sensitivity ที่เลือก (default 0.65)
+    clear: f32,      // จาก Sensitivity (default 0.40)
 }
 ```
+
+> **สถานะ (2026-07): struct จริงเป็น hysteresis latch เท่านั้น** — ไม่มี
+> `currently_speaking` / `revision_in_flight` / `cooldown_ms`. thresholds อยู่บน
+> instance (ไม่ใช่ const) ให้ capture loop สลับ `Sensitivity` ได้ทุก tick.
 
 ## 4. Logic
 
 ```
-on GankRisk(risk):
-  if risk.probability < DANGER_THRESHOLD (85%): return
-  if cooldown_active: return
-
-  if currently_speaking && revision_in_flight == false:
-    // Belief Revision — กำลังพูดอยู่แต่ข้อมูลเปลี่ยน
-    send Interrupt(reason: "belief_revision") → audio channel (priority สูงสุด)
-    revision_in_flight = true
-    queue: [stutter_clip("เอ๊ะ! เดี๋ยวก่อน!"), new_alert_clip(risk)]
-
-  else:
-    // Normal alert
-    send SignalAlert { severity: critical, clip_key, interrupt: true } → audio engine
-
-  last_alert_at = now
-  log_to_glog(risk, "signal_fired")
+evaluate(risk):                                  // edge-triggered + hysteresis
+  if !alerted && risk.probability >= danger:      // danger = จาก Sensitivity (default 0.65)
+    alerted = true
+    return Alert(SignalAlert { probability, missing_heroes, eta_ms })
+  if alerted && risk.probability < clear:         // clear = จาก Sensitivity (default 0.40)
+    alerted = false
+    return Revision                               // Belief Revision — "เอ๊ะ! เดี๋ยวก่อน!"
+  return None
 ```
+
+> **สถานะ (2026-07):** Belief Revision fire เมื่อ risk **ตกกลับ** ต่ำกว่า clear
+> threshold หลังจากเคย alert (ศัตรูโผล่กลับ / อ่านผิด). hysteresis (danger สูง,
+> clear ต่ำ) กัน chattering แทนกลไก cooldown แบบเดิม. state machine เป็น pure —
+> capture loop เป็นเจ้าของการ voice + log.
 
 ## 5. Output
 
 ```rust
-SignalAlert {
-    severity: Severity,     // critical | warning
-    voice_clip_key: String, // key → pre-rendered audio cache
-    interrupt: bool,        // true = หยุดเสียงที่เล่นอยู่ทันที
+enum SignalEvent { Alert(SignalAlert), Revision, None }
+
+struct SignalAlert {
+    probability: f32,
+    missing_heroes: Vec<String>,
+    eta_ms: u64,
 }
 ```
 
-→ ส่งเข้า **Audio Engine** (interrupt channel, non-blocking)
+→ ส่งเข้า **Audio Engine** (capture loop voice ต่อจาก event)
+
+> **สถานะ (2026-07): ไม่มีฟิลด์ `severity` / `voice_clip_key` / `interrupt`** —
+> output จริงคือ `SignalEvent` (Alert/Revision/None) + `SignalAlert` ข้างบน.
 
 ## 6. Belief Revision (SRS §3.3, บังคับ)
 
@@ -77,7 +87,7 @@ SignalAlert {
 
 ## 7. Persona Behavior
 
-- **Critical (≥85%):** *"ถอยเร็ว! ศัตรูกำลังมา!"* — เสียงเร่งด่วน ไม่มีมุก
+- **Critical (ข้าม danger threshold):** *"ถอยเร็ว! ศัตรูกำลังมา!"* — เสียงเร่งด่วน ไม่มีมุก
 - **Belief Revision:** *"เอ๊ะ! เดี๋ยวก่อน! ...ไม่ใช่แล้ว ถอยเลยค่ะ!"*
 - **ห้ามมีมุกตลกในระดับ critical** — persona comedy อยู่ที่ G-Master/G-Voice
 - Nerf CM self-awareness ใช้ได้เฉพาะ post-alert debrief
@@ -90,22 +100,24 @@ SignalAlert {
 | Signal logic | ≤10ms | Eng Spec §1 ขั้น 4 |
 | Audio clips | Pre-rendered cache | ห้ามสังเคราะห์สด (TTS ~80–150ms จะเกิน budget) |
 | Interrupt channel | Non-blocking, priority สูงสุด | ไม่ queue หลัง narration ทั่วไป |
-| Cooldown | 3s default | ป้องกัน alert spam |
+| Anti-spam | Hysteresis latch | danger สูง / clear ต่ำ กัน chatter (แทน cooldown timer) |
 | **ไม่มี LLM/network** | ทั้ง path | Rule-based + cached audio เท่านั้น |
 
 ## 9. Audio Cache Contract
 
+คลิปเป็นไฟล์ `.wav` ของ **announcer pack** ใต้ `assets/voice-cache/{event}/*.wav`
+เลือกแบบสุ่มต่อ event ด้วย `audio::play_random` (`speak_event` fallback เป็น SAPI
+TTS เมื่อ event ไม่มีคลิป). ไม่ใช่ key `.ogg` ตายตัว.
+
 ```
-alert_clips/
-  gank_warning_critical.ogg    — "ถอยเร็ว! ศัตรูกำลังมา!"
-  belief_revision_stutter.ogg  — "เอ๊ะ! เดี๋ยวก่อน!"
-  gank_warning_lane_top.ogg    — "เลนบนอันตราย!"
-  gank_warning_lane_mid.ogg    — "กลางเลนระวัง!"
-  gank_warning_lane_bot.ogg    — "เลนล่างถอย!"
-  ...per-hero slot clips        — "[ชื่อฮีโร่] กำลังมา!"
+assets/voice-cache/
+  danger/*.wav       — คลิปเตือน gank (G-Signal Alert)
+  revision/*.wav     — คลิป belief-revision "เอ๊ะ! เดี๋ยวก่อน!"
+  ...{event}/*.wav   — event อื่น ๆ ตาม gmaiden-events.json
 ```
 
-Slot-splicing: ต่อคลิปประโยคหลัก + คลิปชื่อฮีโร่ที่ cache ไว้ (Eng Spec §1)
+> **สถานะ (2026-07): ไม่มี fixed `.ogg` clip key** — pack `.wav` อ่านสด (drop-in,
+> ไม่ต้อง restart), สุ่มหนึ่งคลิปต่อ event.
 
 ## 10. Dependencies
 
@@ -120,8 +132,8 @@ Slot-splicing: ต่อคลิปประโยคหลัก + คลิ�
 
 - [ ] **p99 end-to-end ≤300ms** (capture → audio output, วัดด้วย timestamp_ms)
 - [ ] **p50 end-to-end ≤250ms**
-- [ ] probability >85% → alert fires ภายใน 10ms ของ signal logic
-- [ ] Belief Revision: interrupt at word boundary, เล่น stutter clip, ต่อบทใหม่
-- [ ] cooldown ป้องกัน spam (ไม่ fire ซ้ำภายใน 3s)
+- [ ] probability ข้าม danger threshold → alert fires ภายใน 10ms ของ signal logic
+- [ ] Belief Revision: fire เมื่อ risk ตกต่ำกว่า clear threshold หลัง alert, เล่น stutter clip, ต่อบทใหม่
+- [ ] hysteresis ป้องกัน chatter (alert ไม่ fire ซ้ำจนกว่าจะ clear แล้วข้าม danger ใหม่)
 - [ ] ทำงานได้ offline (ไม่พึ่ง cloud/network)
 - [ ] ไม่ crash เมื่อ audio engine ไม่พร้อม (graceful skip)

@@ -13,17 +13,18 @@
 | Desktop shell | **Tauri v2** (Rust core + WebView2) | à¸à¸´à¸™ RAM/CPU à¸•à¹ˆà¸³à¸à¸§à¹ˆà¸² Electron à¸«à¸¥à¸²à¸¢à¹€à¸—à¹ˆà¸², à¹ƒà¸Šà¹‰ WebView2 à¸—à¸µà¹ˆà¸¡à¸²à¸à¸±à¸š Windows, à¸£à¸­à¸‡à¸£à¸±à¸š transparent/click-through overlay |
 | Critical-path core | **Rust** (tokio, axum, crossbeam) | à¸‡à¸²à¸™à¸—à¸µà¹ˆà¸•à¹‰à¸­à¸‡ â‰¤300ms (G-Sentry/G-Signal) à¸•à¹‰à¸­à¸‡à¹€à¸›à¹‡à¸™ native à¹„à¸¡à¹ˆà¸œà¹ˆà¸²à¸™ JS event loop |
 | GSI ingestion | **axum** HTTP server à¸šà¸™à¸žà¸­à¸£à¹Œà¸• 3000 | à¸£à¸±à¸š Valve GSI JSON POST à¸ˆà¸²à¸à¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™à¹€à¸­à¸‡ |
-| Minimap CV | **windows-capture** (DXGI Desktop Duplication) + **ort** (ONNX Runtime) | à¸”à¸¶à¸‡à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸¨à¸±à¸•à¸£à¸¹ â€” GSI à¹„à¸¡à¹ˆà¹ƒà¸«à¹‰à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸¨à¸±à¸•à¸£à¸¹à¸•à¸£à¸‡ à¹† à¸•à¹‰à¸­à¸‡à¸­à¹ˆà¸²à¸™à¸ˆà¸²à¸ minimap |
-| TTS (critical) | **Pre-rendered audio cache** + **Piper** (local neural TTS, ONNX) | à¹€à¸ªà¸µà¸¢à¸‡à¹€à¸•à¸·à¸­à¸™à¸§à¸´à¸à¸¤à¸•à¸•à¹‰à¸­à¸‡à¹€à¸¥à¹ˆà¸™à¸—à¸±à¸™à¸—à¸µ (cache) à¸ªà¹ˆà¸§à¸™à¸šà¸—à¸žà¸²à¸à¸¢à¹Œà¸—à¸±à¹ˆà¸§à¹„à¸›à¸ªà¸±à¸‡à¹€à¸„à¸£à¸²à¸°à¸«à¹Œà¸ªà¸”à¸”à¹‰à¸§à¸¢ Piper |
-| TTS (fallback) | **Windows SAPI** (WinRT SpeechSynthesis) | à¸ªà¸³à¸£à¸­à¸‡à¹€à¸¡à¸·à¹ˆà¸­ Piper à¹„à¸¡à¹ˆà¸žà¸£à¹‰à¸­à¸¡, latency à¸•à¹ˆà¸³, à¹„à¸¡à¹ˆà¸•à¹‰à¸­à¸‡à¹€à¸™à¹‡à¸• |
+| Minimap CV | **`windows` crate** (DXGI Desktop Duplication — `capture.rs`/`dxgi.rs`) + **`tract-onnx`** (ONNX inference) + **`pure-onnx-ocr-sync`** (OCR) | ดึงตำแหน่งศัตรู — GSI ไม่ให้ตำแหน่งศัตรูตรง ๆ ต้องอ่านจาก minimap. `windows-capture` (WGC) อยู่หลัง `--features wgc` เท่านั้น |
+| TTS (default) | **Windows SAPI** ผ่าน PowerShell (`tts.rs`) + **audio cache** (clip สำเร็จรูปใน voice-cache) | เส้นทางที่ shipping จริง — เล่นคลิปทันทีถ้ามี ไม่งั้น SAPI พูดผ่าน PowerShell |
+| TTS (planned/opportunistic) | **Piper** (local neural TTS, ONNX) | ใช้อัตโนมัติ *เฉพาะเมื่อ* พบ `piper.exe` + โมเดลข้าง binary; latency ต่ำกว่า SAPI แต่ยังไม่ใช่ค่าเริ่มต้น |
 | Audio engine | **rodio / cpal** | à¹€à¸¥à¹ˆà¸™à¹€à¸ªà¸µà¸¢à¸‡ + à¸Šà¹ˆà¸­à¸‡ interrupt à¸ªà¸³à¸«à¸£à¸±à¸š Belief Revision |
-| Cloud Brain | **Gemini 2.0 Flash** (streaming REST) | persona narration + à¸§à¸´à¹€à¸„à¸£à¸²à¸°à¸«à¹Œà¹€à¸Šà¸´à¸‡à¸¥à¸¶à¸ (non-critical) |
-| Local SLM (fallback) | **Qwen2.5-1.5B-Instruct Q4** à¸œà¹ˆà¸²à¸™ `llama-cpp-rs` à¸«à¸£à¸·à¸­ **candle** | à¸ªà¸£à¹‰à¸²à¸‡à¸šà¸—à¸žà¸¹à¸” persona à¸•à¸­à¸™ cloud à¸«à¸¥à¸¸à¸” (à¹‚à¸«à¸¥à¸” lazy) |
+| Cloud Brain | **Claude CLI / Anthropic Messages API** (`claude-haiku-4-5`, `master.rs`) มี **Ollama SLM fallback** | persona narration + วิเคราะห์เชิงลึก (non-critical). > **สถานะ (2026-07): Gemini เป็นเป้า Phase-4 — ยังไม่ wired; โค้ดจริงเรียก Claude CLI/Anthropic API แล้ว fallback Ollama** |
+| Local SLM (fallback) | **Ollama over HTTP** (`master.rs`/`slm.rs`/`runtime.rs`) | สร้างบทพูด persona ตอน cloud หลุด. ไม่ pin โมเดลในโค้ด — เลือกใน UI. > **สถานะ (2026-07): ไม่ใช่ `llama-cpp-rs`/`candle`; เป็น Ollama HTTP** |
 | Overlay + Dashboard UI | **React 18 + TypeScript + Vite + TailwindCSS** | glassmorphism HUD; à¹‚à¸„à¹‰à¸”à¹€à¸”à¸µà¸¢à¸§à¹ƒà¸Šà¹‰à¹„à¸”à¹‰à¸—à¸±à¹‰à¸‡ overlay à¹à¸¥à¸° web dashboard |
 | FE state | **Zustand** (overlay) + **TanStack Query** (dashboard) | à¹€à¸šà¸², à¹„à¸¡à¹ˆà¸¡à¸µ boilerplate |
-| Local store (G-Log) | **SQLite** à¸œà¹ˆà¸²à¸™ `rusqlite` | privacy-first, local-only, à¹„à¸¡à¹ˆà¸¡à¸µ server |
+| Local store (G-Log) | **JSONL flat files** (`log.rs`) — หนึ่ง `match-*.jsonl` ต่อแมตช์ใน `%LOCALAPPDATA%\G-Maiden\logs\` | privacy-first, local-only, ไม่มี server. > **สถานะ (2026-07): ไม่ใช่ SQLite/`rusqlite` — เป็น JSONL** |
 | Web dashboard | **Vercel** (Vite static build à¸‚à¸­à¸‡ React à¹€à¸”à¸µà¸¢à¸§à¸à¸±à¸™) | landing + remote config (à¹„à¸¡à¹ˆà¸¡à¸µà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ªà¹ˆà¸§à¸™à¸•à¸±à¸§à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™) |
 | Build/CI | **pnpm + cargo + GitHub Actions + Tauri bundler** (MSI/NSIS) | |
+| GPU telemetry sidecar | **`gpu-feeder/`** (repo-root zero-dep crate, bundled เป็น Tauri `externalBin`) | รัน `nvidia-smi` แล้ว POST ไป `POST /telemetry` ของ G-Maiden; main process ไม่รัน `nvidia-smi` เอง (คุม NFR budget) |
 | Accounts & Identity | **Google OAuth + Supabase `gstore` (profiles+RLS) + GID codec (`src/src/gid.ts`) + Steam identity (`identity.rs`)** | optional/additive sign-in; stores only public data (ADR-11/ADR-14) |
 
 ---
@@ -52,14 +53,14 @@
 â”‚  â”‚  â€¢ axum GSI server :3000                       â”‚   â”‚ React overlay     â”‚  â”‚
 â”‚  â”‚  â€¢ Minimap capture + CV                        â”‚â—„â”€â–ºâ”‚ (glassmorphism)   â”‚  â”‚
 â”‚  â”‚  â€¢ G-Sentry / G-Motion / G-Signal (â‰¤300ms)     â”‚IPCâ”‚ Control dashboard â”‚  â”‚
-â”‚  â”‚  â€¢ Audio engine + TTS (Piper / cache)          â”‚   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â”‚
-â”‚  â”‚  â€¢ SQLite (G-Log, local-only)                  â”‚                          â”‚
-â”‚  â”‚  â€¢ Local SLM (fallback)                        â”‚                          â”‚
+â”‚  â”‚  â€¢ Audio engine + TTS (SAPI / cache; Piper opt)â”‚   â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜  â”‚
+â”‚  â”‚  â€¢ G-Log JSONL (match-*.jsonl, local-only)     â”‚                          â”‚
+â”‚  â”‚  â€¢ Local SLM via Ollama (fallback)             â”‚                          â”‚
 â”‚  â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜                         â”‚
 â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¼â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
                     â”‚ (non-critical, async, degrade-gracefully)
             â”Œâ”€â”€â”€â”€â”€â”€â”€â–¼â”€â”€â”€â”€â”€â”€â”€â”€â”
-            â”‚  Cloud Brain   â”‚  Gemini 2.0 Flash (streaming) â€” Maiden Scribe
+            â”‚  Cloud Brain   â”‚  Claude CLI / Anthropic API (haiku) â€” Maiden Scribe [Gemini = Phase-4 target]
             â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
@@ -76,12 +77,14 @@ cloud à¹à¸¥à¸° webview **à¸«à¹‰à¸²à¸¡** à¸­à¸¢à¸�
 | CPU â‰¤2.5% background | Rust + tokio (async, à¹„à¸¡à¹ˆ busy-loop); minimap capture à¹à¸šà¸š event-driven/throttled; à¹„à¸¡à¹ˆà¸¡à¸µ Chromium |
 | RAM â‰¤400MB | Tauri (WebView2 à¹ƒà¸Šà¹‰à¸£à¹ˆà¸§à¸¡à¸à¸±à¸šà¸£à¸°à¸šà¸š); SLM à¹‚à¸«à¸¥à¸”à¹à¸šà¸š lazy à¹€à¸‰à¸žà¸²à¸°à¸•à¸­à¸™ fallback (à¸”à¸¹ Â§5 à¸«à¸¡à¸²à¸¢à¹€à¸«à¸•à¸¸) |
 | FPS drop â‰¤3% | DXGI Desktop Duplication (GPU-assisted capture, à¹„à¸¡à¹ˆ block render); overlay à¹€à¸›à¹‡à¸™ window à¹à¸¢à¸ composited à¹‚à¸”à¸¢ DWM |
-| Privacy-first | G-Log à¹€à¸à¹‡à¸šà¹ƒà¸™ SQLite local; à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸”à¸´à¸š/à¸ªà¸–à¸´à¸•à¸´à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™ **à¹„à¸¡à¹ˆà¸­à¸±à¸›à¹‚à¸«à¸¥à¸”**; cloud à¸£à¸±à¸šà¹€à¸‰à¸žà¸²à¸° context à¸—à¸µà¹ˆà¸œà¹ˆà¸²à¸™ redaction |
+| Privacy-first | G-Log à¹€à¸à¹‡à¸šà¹ƒà¸™ JSONL local (match-*.jsonl); à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸”à¸´à¸š/à¸ªà¸–à¸´à¸•à¸´à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™ **à¹„à¸¡à¹ˆà¸­à¸±à¸›à¹‚à¸«à¸¥à¸”**; cloud à¸£à¸±à¸šà¹€à¸‰à¸žà¸²à¸° context à¸—à¸µà¹ˆà¸œà¹ˆà¸²à¸™ redaction |
 | Resilient offline | G-Sentry/G-Signal à¸—à¸³à¸‡à¸²à¸™à¸šà¸™ Rust core 100%; persona text fallback à¹„à¸› local SLM/templated lines |
 
 ---
 
 ## 5. à¸«à¸¡à¸²à¸¢à¹€à¸«à¸•à¸¸à¸ªà¸³à¸„à¸±à¸à¹€à¸£à¸·à¹ˆà¸­à¸‡ RAM à¸à¸±à¸š Local SLM (à¸•à¹‰à¸­à¸‡à¸•à¸±à¸”à¸ªà¸´à¸™à¹ƒà¸ˆà¸•à¸±à¹‰à¸‡à¹à¸•à¹ˆà¸•à¹‰à¸™)
+
+> **สถานะ (2026-07): Local SLM รันผ่าน Ollama (ไม่ pin โมเดลในโค้ด — เลือกใน UI). ตัวเลข Qwen2.5 ด้านล่างเป็นแนวคิด sizing เดิม ไม่ใช่โมเดลที่ hard-code.**
 
 à¹‚à¸¡à¹€à¸”à¸¥ SLM 1.5B à¹à¸šà¸š Q4 à¸à¸´à¸™à¸«à¸™à¹ˆà¸§à¸¢à¸„à¸§à¸²à¸¡à¸ˆà¸³ ~1â€“1.3GB à¸•à¸­à¸™à¹‚à¸«à¸¥à¸” â€” **à¹€à¸à¸´à¸™** budget 400MB à¸–à¹‰à¸²à¹‚à¸«à¸¥à¸”à¸„à¹‰à¸²à¸‡à¹„à¸§à¹‰à¸•à¸¥à¸­à¸”.
 à¸”à¸±à¸‡à¸™à¸±à¹‰à¸™à¸™à¸´à¸¢à¸²à¸¡ budget à¹ƒà¸«à¹‰à¸Šà¸±à¸”:

@@ -189,10 +189,10 @@ export function InsightsPage() {
         </div>
       </section>
       <div className="stats-grid large">
-        <StatCard label="Power Score" value={data.insights.powerScore.toLocaleString()} />
-        <StatCard label="Win Rate" value={`${data.insights.winRate}%`} />
-        <StatCard label="Objective Control" value={`${data.insights.objectiveControl}%`} />
-        <StatCard label="Ward Efficiency" value={`${data.insights.wardEfficiency}%`} />
+        <StatCard label="Power Score" value={statValue(data.insights.powerScore)} />
+        <StatCard label="Win Rate" value={statValue(data.insights.winRate, "%")} />
+        <StatCard label="Objective Control" value={statValue(data.insights.objectiveControl, "%")} />
+        <StatCard label="Ward Efficiency" value={statValue(data.insights.wardEfficiency, "%")} />
       </div>
 
       <section className="card-shell domain-card">
@@ -299,4 +299,10 @@ function StatCard({ label, value }: { label: string; value: string }) {
       <strong>{value}</strong>
     </div>
   );
+}
+
+// A negative insight value is the NO_SENSOR sentinel (buildInsights) — the metric
+// has no backend source yet, so render "—" instead of a fabricated number.
+function statValue(v: number, suffix = ""): string {
+  return v < 0 ? "—" : `${v.toLocaleString()}${suffix}`;
 }

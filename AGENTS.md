@@ -23,8 +23,9 @@ The persona is "**Maiden**" â€” inspired by Dota 2's Crystal Maiden. Gentle
 | CV pipeline | **DXGI Desktop Duplication â†’ ONNX detector** (ADR-13) | Minimap hero detection; borderless-fullscreen required, Lite-mode fallback |
 | Audio | **rodio** (in-process WAV playback) | Sub-1ms cancel, no cmd flash |
 | TTS | **Windows SAPI** (PowerShell, planned: Piper ONNX) | Thai voice, latency fallback chain |
-| Cloud brain | **Gemini** (planned Phase 4) | Narrative, deep analysis, item advice |
-| Local SLM | **Qwen2.5** via llama-cpp-rs (planned Phase 5) | Offline resilience fallback |
+| Cloud brain | **Claude CLI / Anthropic API** (`claude-haiku-4-5`) | Narrative, deep analysis, item advice (Gemini = design target, not wired) |
+| Local SLM | **Ollama** (HTTP, model chosen in UI) | Offline resilience fallback (no llama-cpp/Qwen pin in code) |
+| GPU telemetry | **`gpu-feeder/`** sidecar (nvidia-smi â†’ POST /telemetry) | GPU/VRAM/temp in the deck footer; keeps nvidia-smi out of the main process |
 
 ---
 
@@ -49,15 +50,17 @@ G-Maiden/
 |  |- features/
 |  `- operations/
 â”œâ”€â”€ models/                # ONNX models + labels (bundled in release)
+â”œâ”€â”€ gpu-feeder/            # Headless nvidia-smi sidecar (zero-dep crate) â†’ POST /telemetry
 â”œâ”€â”€ src/                   # Frontend (React/Vite)
 â”‚   â”œâ”€â”€ package.json
-â”‚   â””â”€â”€ src/App.tsx        # Single-file UI: Overlay + Control components
+â”‚   â””â”€â”€ src/               # App.tsx (Overlay+Control), CommandDeck.tsx + companion.ts + live/*.ts (deck),
+â”‚                          #   AudioSettings.tsx (voice packs), account/auth/gid modules
 â”œâ”€â”€ src-tauri/             # Rust backend
 â”‚   â”œâ”€â”€ Cargo.toml
 â”‚   â”œâ”€â”€ tauri.conf.json
 â”‚   â””â”€â”€ src/
 â”‚       â”œâ”€â”€ main.rs        # Entry point, Tauri commands, module registry
-â”‚       â”œâ”€â”€ gsi.rs         # GSI HTTP server (axum :3000) + watchdog
+â”‚       â”œâ”€â”€ gsi.rs         # GSI HTTP server (axum :3000): /gsi, /telemetry, /announcer/install, /auth/callback + watchdog
 â”‚       â”œâ”€â”€ damage.rs      # G-Damage: burst damage calculator + hero DB
 â”‚       â”œâ”€â”€ audio.rs       # rodio playback (dedicated thread + mpsc channel)
 â”‚       â”œâ”€â”€ tts.rs         # Windows SAPI TTS (PowerShell, base64 Thai)
@@ -68,14 +71,20 @@ G-Maiden/
 â”‚       â”‚   â”œâ”€â”€ prefilter.rs # Color-ring candidate prefilter
 â”‚       â”‚   â””â”€â”€ detector.rs  # ONNX inference (128 heroes)
 â”‚       â”œâ”€â”€ sentry.rs      # G-Sentry: fog-of-war monitor (missing >5s)
-â”‚       â”œâ”€â”€ motion.rs      # G-Motion: 5-min ring buffer, gank path prediction
-â”‚       â”œâ”€â”€ signal.rs      # G-Signal: hysteresis alert/clear + belief revision
-â”‚       â”œâ”€â”€ master.rs      # G-Master: Claude CLI shell-out advisor
+â”‚       â”œâ”€â”€ motion.rs      # G-Motion: 5-min last-seen ring buffer + time-off-map risk heuristic (no heatmap/path model yet)
+â”‚       â”œâ”€â”€ signal.rs      # G-Signal: hysteresis danger/clear latch + Sensitivity (Low/Med/High) + belief revision
+â”‚       â”œâ”€â”€ master.rs      # G-Master: advisor via Claude CLI / Anthropic API + Ollama SLM fallback (Auto|Claude|Ollama)
 â”‚       â”œâ”€â”€ log.rs         # G-Log: local JSONL match logging
 â”‚       â”œâ”€â”€ runtime.rs     # Shared state (in_game, last_post_ms)
 â”‚       â””â”€â”€ setup.rs       # GSI config auto-install + Dota process detection
 â””â”€â”€ .github/workflows/     # CI: tag â†’ signed NSIS/MSI release
 ```
+
+Also in `src-tauri/src/` (not drawn above): `dxgi.rs` (DXGI backend), `announcer.rs` (announcer event
+detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`), `governor.rs`
+(resource governor + GPU telemetry ingest), `slm.rs` (Ollama offline advice), `revive.rs`/`respawn.rs`
+(G-Revive buyback), `counter_advice.rs`/`items.rs` (counter-item build advice), `ocr.rs` (PP-OCR),
+`identity.rs` (Steam id resolution), `usage.rs` (Claude quota), `calibration.rs` (capture calibration).
 
 ---
 
@@ -100,9 +109,9 @@ G-Maiden/
 â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
          â†• (non-critical, degrades gracefully)
 â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
-â”‚  CLOUD BRAIN (Maiden Scribe) â€” planned              â”‚
-â”‚  Gemini streaming API â†’ narration + deep analysis   â”‚
-â”‚  Fallback: Local SLM â†’ Template engine              â”‚
+â”‚  CLOUD BRAIN (Maiden Scribe)                        â”‚
+â”‚  Claude CLI / Anthropic API â†’ narration + advice    â”‚
+â”‚  Fallback: Ollama local SLM  (Gemini = design only) â”‚
 â””â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
 ```
 
@@ -113,9 +122,9 @@ G-Maiden/
 | Module | Status | Responsibility |
 |--------|--------|---------------|
 | **G-Sentry** | Done | Fog-of-war monitor â€” polls GSI/CV every 500ms; flags enemies missing >5s |
-| **G-Motion** | Done | Heatmap/path prediction â€” 5-min ring buffer of last-seen positions |
-| **G-Signal** | Done | Gank warning â€” voice interrupt at >85% danger; hysteresis clear at <50% |
-| **G-Master** | Basic | Advisor â€” currently Claude CLI, planned Gemini integration |
+| **G-Motion** | Done | Time-off-map risk heuristic â€” 5-min ring buffer of last-seen positions (no heatmap/path model yet) |
+| **G-Signal** | Done | Gank warning â€” voice interrupt at the Sensitivity danger threshold (default Med 0.65; clear 0.40) |
+| **G-Master** | Basic | Advisor â€” Claude CLI / Anthropic API + Ollama SLM fallback (Auto\|Claude\|Ollama) |
 | **G-Sensory** | Done | Overlay rendering + resource budget (glassmorphism HUD) |
 | **G-Log** | Done | Local-only match logging (JSONL) |
 | **G-Damage** | New | Burst damage calculator â€” hero DB + armor/magic resistance formulas |
@@ -142,7 +151,7 @@ G-Maiden/
 - Critical path (GSI â†’ G-Signal â†’ voice) must be **pure Rust** â€” no cloud, no webview in the hot path (ADR-03)
 - `OutputStream` (rodio) is `!Sync` â€” lives on dedicated `g-audio` thread, communicate via `mpsc::channel<Cmd>`
 - All new modules must follow `G-` naming convention (ADR-01)
-- Run `cargo test` before committing â€” currently 50 tests, all must pass
+- Run `cargo test` before committing â€” ~130 tests, all must pass. CI gate is `cargo clippy --all-targets -- -D warnings` (built-ahead modules need `#![allow(dead_code)]`)
 - Resource-heavy operations (ONNX inference, screen capture) must respect the CPU/RAM budget
 - **Screen capture = DXGI Desktop Duplication** (`dxgi.rs` + `capture.rs`), not WGC (ADR-13 / CR-001). WGC on Win10 stalled at ~0.7 Hz / 8% CPU and crashed on the `WithoutBorder` toggle; DXGI is a GPU copy that lands within one vsync. Dota 2 **must run borderless-fullscreen** (`-window -noborder`) — exclusive fullscreen is unsupported, so on init failure the app auto-falls back to **GSI-only "Lite mode"** (no minimap CV; voice/overlay/G-Master still work) and shows a Lite badge. Old WGC path preserved behind `--features wgc` (`capture_wgc.rs`); default build = DXGI.
 
@@ -152,8 +161,8 @@ G-Maiden/
   deck) with `Dashboard.tsx`, `companion.ts`, pure live builders in `src/src/live/`, and the
   account system (`auth.ts` / `profile.ts` / `supabase.ts` / `gid.ts` + `AccountPage` / `AuthPanel`
   / `SteamLink`). Live data is Tauri events → builders → merged over `MOCK` (CR-002 / ADR-14).
-- Frontend tests: **Vitest** (`pnpm -C src test`) — currently 87 tests across the live builders +
-  GID codec. Run alongside `tsc --noEmit`.
+- Frontend tests: **Vitest** (`pnpm -C src test`) — ~110 tests across the live builders (incl.
+  telemetry/weekly/insights/history) + GID codec. Run alongside `tsc --noEmit`.
 - Inline styles using the `C` color palette and `panel()` glassmorphism helper
 - Settings persisted to `localStorage('gm-settings')` â€” broadcast to overlay via Tauri `emit('settings', ...)`
 - Two windows: `control` (main UI) and `overlay` (transparent, click-through, always-on-top)
@@ -208,7 +217,7 @@ produced **only by CI on a pushed version tag**. Understand both halves before t
 
 ---
 
-## Current State (v0.6.0)
+## Current State (v0.7.x shipping; v0.8.0 in progress)
 
 ### What works
 - GSI server receives Dota 2 game state on `:3000`
@@ -233,17 +242,24 @@ produced **only by CI on a pushed version tag**. Understand both halves before t
 - Custom overlay positioning with X/Y sliders + profile save/load
 - Overlay preview without affecting Dota/GSI status chips
 - G-Damage engine with 8-hero database and burst damage calculator
-- G-Master advisor (Claude CLI, 30s throttle)
+- G-Master advisor (Claude CLI / Anthropic API + Ollama SLM fallback, 30s throttle)
 - G-Log local JSONL logging
+- **Announcer packs = bundles**: activating a pack changes the in-game voice (active-pack-first clip
+  resolution) and shows the pack's **banner image** on the overlay when an event fires
+  (`announcer-banner` event); "Show on overlay" previews a pack without a match
+- **Deck panels live-wired (Phase 2c)**: telemetry footer, weeklyReport, insights, history,
+  agentSector.status now use real data (resource-stats / OpenDota / G-Log / GSI); buildAdvisor still MOCK
+- **GPU/VRAM/temp telemetry**: bundled headless `gpu-feeder` sidecar (nvidia-smi → POST /telemetry);
+  deck footer shows real GPU or "—" when the feeder isn't running
 - In-app updater (GitHub Releases + minisign)
 - GSI config auto-installer + Dota watchdog
-- 50 unit tests across all modules
+- ~130 Rust unit tests + ~110 Vitest across all modules
 
 ### What's next (see `docs/product/roadmap.md`)
-- **Phase 3** (v0.6): Piper local neural TTS for Thai voice
-- **Phase 4** (v0.7): Gemini cloud brain integration
-- **Phase 5** (v0.8): Local SLM offline resilience
-- **Phase 6** (v0.9): G-Log SQLite + probability calibration
+- **Phase 3** (v0.6): Piper local neural TTS for Thai voice (SAPI ships today)
+- **Phase 4** (v0.7): cloud brain — DONE via Claude CLI/Anthropic API (Gemini specifically deferred)
+- **Phase 5** (v0.8): Local SLM offline resilience — DONE via Ollama
+- **Phase 6** (v0.9): G-Log probability calibration (logs are already JSONL, not SQLite)
 - **Phase 7** (v0.10): Resource governor + advanced overlay
 - **Phase 8** (v1.0): Validation + ship
 

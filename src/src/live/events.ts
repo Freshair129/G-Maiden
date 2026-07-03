@@ -90,11 +90,17 @@ export interface SignalAlert {
   eta_ms: number;
 }
 
-/** resource-stats — G-Governor RAM/CPU sample every 10s. */
+/** resource-stats — G-Governor RAM/CPU sample every 10s. GPU fields are bridged
+ *  in from the sibling G-Telemetry app; `-1` = unavailable (bridge not running). */
 export interface ResourceStats {
   ram_mb: number;
   cpu_pct: number;
   over_budget: boolean;
+  gpu_pct: number;        // -1 when the active telemetry source is absent/stale
+  gpu_temp_c: number;     // -1 = unavailable
+  vram_used_mb: number;   // -1 = unavailable
+  vram_total_mb: number;  // -1 = unavailable
+  cpu_temp_c: number;     // -1 unless the rich G-Telemetry source provides it
 }
 
 export type CaptureMode = "lite" | "dxgi" | "";

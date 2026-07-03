@@ -1,5 +1,8 @@
 # G-Maiden Tauri v2 + React Monorepo — Scaffold Setup (G0.1)
 
+> ⚠️ **เอกสารเชิงประวัติ (scaffold phase G0.1).** บันทึกตอนตั้งโปรเจกต์ครั้งแรก — บาง choice
+> เปลี่ยนไปแล้ว (เช่น G-Log = JSONL ไม่ใช่ `rusqlite`/SQLite). สถานะจริงล่าสุดดูที่ `AGENTS.md`.
+
 ## What was scaffolded
 
 This document verifies the completion of task **G0.1: Scaffold Tauri v2 + React/Vite/Tailwind monorepo**.

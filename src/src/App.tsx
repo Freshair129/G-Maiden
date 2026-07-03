@@ -80,6 +80,7 @@ export interface Settings {
   masterOllamaModel: string
   cvDebug: boolean
   calibration: boolean
+  telemetrySource: 'auto' | 'feeder' | 'gtelemetry' | 'off'
   uiMode: 'lite' | 'full'
   layout: Layout
   showTimer: boolean
@@ -88,7 +89,7 @@ export interface Settings {
   showKda: boolean
   showGold: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, personaLines: true, autoAdvice: false, gankVisuals: true, killVisuals: true, signalSensitivity: 'med', masterEnabled: true, masterBackend: 'auto', masterAuth: 'plan', masterApiKey: '', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, personaLines: true, autoAdvice: false, gankVisuals: true, killVisuals: true, signalSensitivity: 'med', masterEnabled: true, masterBackend: 'auto', masterAuth: 'plan', masterApiKey: '', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, telemetrySource: 'auto', uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
 interface OverlayProfile { name: string; position: Pos; customX: number; customY: number; opacity: number; showTimer: boolean; showScore: boolean; showHeroBar: boolean; showKda: boolean; showGold: boolean }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 
@@ -313,6 +314,13 @@ const killBannerStyle: React.CSSProperties = {
   backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', fontFamily: '"Segoe UI", system-ui, sans-serif',
   boxShadow: '0 0 24px rgba(91,227,167,0.2)',
 }
+// Pack banner (announcer bundle) — a frame for the pack's own image. Relative so
+// the caption can be absolutely positioned over the bottom of the image.
+const packBannerStyle: React.CSSProperties = {
+  position: 'relative', display: 'inline-block', lineHeight: 0,
+  borderRadius: 16, overflow: 'hidden',
+  boxShadow: '0 0 24px rgba(91,227,167,0.25)',
+}
 const STREAK_LABELS: Record<number, string> = {
   3: 'KILLING SPREE', 4: 'DOMINATING', 5: 'MEGA KILL',
   6: 'UNSTOPPABLE', 7: 'WICKED SICK', 8: 'MONSTER KILL',
@@ -347,6 +355,14 @@ const Overlay: React.FC = () => {
   const killTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const killStreak = useRef(0)
   const lastKillHeroes = useRef<Set<string>>(new Set())
+  // Pack banner (announcer bundle) — the active voice pack's image for a fired
+  // event. When present it REPLACES the built-in kill card; falls back to the
+  // card when the pack has no banner for that event. Driven by the backend
+  // `announcer-banner` event so the image and the voiced clip fire together.
+  const [packBanner, setPackBanner] = useState<{
+    phase: 'show' | 'exit'; url: string; text: string; thai: string
+  } | null>(null)
+  const packBannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const gankTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const gankClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Volume toast — brief on-screen feedback when player uses Alt+Up/Down/M.
@@ -423,16 +439,31 @@ const Overlay: React.FC = () => {
         killTimer.current = setTimeout(() => setKillBanner(null), 800)
       }, 4000)
     })
+    // Announcer bundle: the active pack's banner image for a fired event. Only
+    // shows when the pack actually maps an image (bannerUrl); otherwise we leave
+    // the built-in kill card to handle it. Clears the card so we never stack both.
+    const uPB = listen<{ event: string; bannerData: string | null; bannerText: string; thai: string }>('announcer-banner', (e) => {
+      if (!e.payload.bannerData || !sRef.current.killVisuals) return
+      if (killTimer.current) { clearTimeout(killTimer.current); killTimer.current = null }
+      setKillBanner(null)
+      if (packBannerTimer.current) clearTimeout(packBannerTimer.current)
+      setPackBanner({ phase: 'show', url: e.payload.bannerData, text: e.payload.bannerText, thai: e.payload.thai })
+      packBannerTimer.current = setTimeout(() => {
+        setPackBanner((pb) => pb ? { ...pb, phase: 'exit' } : null)
+        packBannerTimer.current = setTimeout(() => setPackBanner(null), 800)
+      }, 4000)
+    })
     void emit('overlay-ready')
     return () => {
       void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f())
       void u4.then((f) => f()); void u5.then((f) => f()); void u6.then((f) => f())
       void u7.then((f) => f()); void u8.then((f) => f()); void u9.then((f) => f())
-      void u10.then((f) => f()); void uK.then((f) => f())
+      void u10.then((f) => f()); void uK.then((f) => f()); void uPB.then((f) => f())
       if (gankTimer.current) clearTimeout(gankTimer.current)
       if (gankClearTimer.current) clearTimeout(gankClearTimer.current)
       if (adviceTimer.current) clearTimeout(adviceTimer.current)
       if (volToastTimer.current) clearTimeout(volToastTimer.current)
+      if (packBannerTimer.current) clearTimeout(packBannerTimer.current)
     }
   }, [])
 
@@ -764,7 +795,29 @@ const Overlay: React.FC = () => {
         {missingBadge}
         {eventToast}
         {lowHp && <div className="gm-danger" style={dangerStyle}>⚠ HP เหลือ {t.hp_percent}% — ถอยก่อนค่ะเพื่อน!</div>}
-        {s.killVisuals && killBanner && (
+        {/* Announcer bundle: the active pack's queue banner image (replaces the
+            built-in card when the pack maps an image for the fired event). */}
+        {s.killVisuals && packBanner && (
+          <div className={packBanner.phase === 'exit' ? 'gm-kill-exit' : 'gm-kill'} style={packBannerStyle}>
+            <img
+              src={packBanner.url}
+              alt={packBanner.text}
+              style={{ display: 'block', maxWidth: 420, maxHeight: 150, width: 'auto', height: 'auto', objectFit: 'contain' }}
+              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+            />
+            {(packBanner.text || packBanner.thai) && (
+              <div style={{ position: 'absolute', left: 0, right: 0, bottom: 6, textAlign: 'center', pointerEvents: 'none' }}>
+                {packBanner.text && (
+                  <div style={{ fontSize: 12, fontWeight: 700, color: C.txt, letterSpacing: 1, textTransform: 'uppercase', textShadow: '0 1px 4px rgba(0,0,0,0.85)' }}>{packBanner.text}</div>
+                )}
+                {packBanner.thai && (
+                  <div style={{ fontSize: 13, fontWeight: 600, color: C.ice, textShadow: '0 1px 4px rgba(0,0,0,0.85)' }}>{packBanner.thai}</div>
+                )}
+              </div>
+            )}
+          </div>
+        )}
+        {s.killVisuals && killBanner && !packBanner && (
           <div className={killBanner.phase === 'exit' ? 'gm-kill-exit' : 'gm-kill'} style={killBannerStyle}>
             {/* Hero portrait circle + animated red X */}
             <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
@@ -1531,6 +1584,12 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
     void invoke('set_cv_signal_sensitivity', { level: s.signalSensitivity }).catch(() => {})
   }, [s.signalSensitivity])
 
+  // Telemetry source for the deck footer (GPU/CPU-temp): auto/feeder/gtelemetry/off.
+  useEffect(() => {
+    const src = { auto: 0, feeder: 1, gtelemetry: 2, off: 3 }[s.telemetrySource] ?? 0
+    void invoke('set_telemetry_source', { source: src }).catch(() => {})
+  }, [s.telemetrySource])
+
   // G-Master backend & ollama model — mirror to the Rust state used by advise().
   useEffect(() => {
     void invoke('set_master_backend', { backend: s.masterBackend }).catch(() => {})
@@ -1764,8 +1823,19 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
           </Row>
           <Row label="CV debug overlay (calibrate)"><Toggle on={s.cvDebug} onChange={(v) => set('cvDebug', v)} /></Row>
           <Row label="Calibration capture (audit: screenshot + clip) — QA"><Toggle on={s.calibration} onChange={(v) => set('calibration', v)} /></Row>
+          <Row label="แหล่งข้อมูล GPU/อุณหภูมิ (telemetry)">
+            <div style={{ display: 'inline-flex', border: `1px solid ${C.line}`, borderRadius: 9, overflow: 'hidden' }}>
+              {(['auto','feeder','gtelemetry','off'] as Settings['telemetrySource'][]).map((src) => (
+                <button key={src} onClick={() => set('telemetrySource', src)}
+                  title={src === 'auto' ? 'ใช้ G-Telemetry ถ้ามี ไม่งั้น feeder' : src === 'feeder' ? 'gpu-feeder ในตัว (เบา, GPU อย่างเดียว)' : src === 'gtelemetry' ? 'G-Telemetry (ละเอียด: CPU temp, ~200ms)' : 'ปิด'}
+                  style={{ background: s.telemetrySource === src ? 'rgba(143,212,255,0.16)' : 'transparent', color: s.telemetrySource === src ? C.ice : C.mut, border: 'none', padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}>
+                  {src === 'auto' ? 'อัตโนมัติ' : src === 'feeder' ? 'Feeder' : src === 'gtelemetry' ? 'G-Telemetry' : 'ปิด'}
+                </button>
+              ))}
+            </div>
+          </Row>
           <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
-            แบนเนอร์ขึ้นกลาง-บนของจอเมื่อ G-Signal เตือนแก๊งค์ (ไม่บังมินิแมพ). CV debug แสดงกรอบมินิแมพ + จุดที่ตรวจจับได้ — เปิดเฉพาะตอนปรับเทียบ.
+            แบนเนอร์ขึ้นกลาง-บนของจอเมื่อ G-Signal เตือนแก๊งค์ (ไม่บังมินิแมพ). CV debug แสดงกรอบมินิแมพ + จุดที่ตรวจจับได้ — เปิดเฉพาะตอนปรับเทียบ. แหล่ง telemetry: <b>Feeder</b> = gpu-feeder ในตัว (GPU); <b>G-Telemetry</b> = แอปแยก (เพิ่ม CPU temp, ~200ms) ต้องเปิดแอปนั้น.
           </div>
         </Card>
 

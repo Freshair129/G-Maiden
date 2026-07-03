@@ -34,6 +34,12 @@ jobs:
           pnpm install
           pnpm -C src install
 
+      # The gpu-feeder sidecar is bundled via tauri.conf externalBin, which
+      # tauri-build validates at *any* cargo invocation (clippy included). The
+      # built binary is gitignored, so stage it before cargo runs.
+      - name: Stage gpu-feeder sidecar
+        run: node src-tauri/scripts/stage-gpu-feeder.mjs
+
       # Fix: cargo clippy directly — not via pnpm exec (clippy is not a Node package)
       - name: Clippy
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings

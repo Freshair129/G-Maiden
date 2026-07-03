@@ -15,6 +15,8 @@ yarn-error.log*
 **/src-tauri/target/
 # any other standalone Cargo crate build output (e.g. tests/perf/target)
 **/target/
+# staged gpu-feeder sidecar binary (built by scripts/stage-gpu-feeder.mjs)
+/src-tauri/binaries/
 **/src-tauri/gen/
 *.rs.bk
 Cargo.lock

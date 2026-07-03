@@ -184,10 +184,10 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
         )}
 
         <footer className="telemetry-footer card-shell">
-          <TelemetryMetric label="CPU Load" value={`${data.telemetry.cpuLoad}%`} sub={`${data.telemetry.cpuTemp}°C`} />
-          <TelemetryMetric label="RAM Temp" value={`${data.telemetry.ramLoad}%`} sub={`${data.telemetry.ramTemp}°C`} />
-          <TelemetryMetric label="GPU Load" value={`${data.telemetry.gpuLoad}%`} sub={`${data.telemetry.gpuTemp}°C`} />
-          <TelemetryMetric label="VRAM Temp" value={`${data.telemetry.vramLoad}%`} sub={`${data.telemetry.vramTemp}°C`} />
+          <TelemetryMetric label="CPU Load" value={pct(data.telemetry.cpuLoad)} sub={temp(data.telemetry.cpuTemp)} />
+          <TelemetryMetric label="RAM Used" value={mem(data.telemetry.ramUsedGb)} sub={memTotal(data.telemetry.ramTotalGb)} />
+          <TelemetryMetric label="GPU Load" value={pct(data.telemetry.gpuLoad)} sub={temp(data.telemetry.gpuTemp)} />
+          <TelemetryMetric label="VRAM Used" value={mem(data.telemetry.vramUsedGb)} sub={memTotal(data.telemetry.vramTotalGb)} />
           <div className="telemetry-sync">Last sync {new Date(data.updatedAt).toLocaleTimeString()}</div>
         </footer>
       </div>
@@ -195,16 +195,29 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   );
 }
 
+// Telemetry formatters. A negative value is the NO_SENSOR sentinel (buildTelemetry)
+// — the local governor measures only CPU%/RAM, so unmeasured metrics render "—".
+function pct(v: number): string {
+  return v < 0 ? "—" : `${v}%`;
+}
+function temp(v: number): string {
+  return v < 0 ? "—" : `${v}°C`;
+}
+function mem(gb: number): string {
+  if (gb < 0) return "—";
+  return gb < 1 ? `${Math.round(gb * 1024)} MB` : `${gb.toFixed(1)} GB`;
+}
+function memTotal(gb: number): string {
+  if (gb < 0) return "";
+  return gb < 1 ? `/ ${Math.round(gb * 1024)} MB` : `/ ${gb.toFixed(1)} GB`;
+}
+
 function TelemetryMetric({ label, value, sub }: { label: string; value: string; sub: string }) {
-  const isMemoryMetric = label === "RAM Temp" || label === "VRAM Temp";
-  const displayLabel = label === "RAM Temp" ? "RAM Used" : label === "VRAM Temp" ? "VRAM Used" : label;
-  const displayValue = isMemoryMetric ? value.replace("%", "GB") : value;
-  const displaySub = isMemoryMetric ? `/ ${sub.replace("Â°C", "GB").replace("°C", "GB")}` : sub;
   return (
     <div className="telemetry-metric">
-      <span>{displayLabel}</span>
-      <strong>{displayValue}</strong>
-      <small>{displaySub}</small>
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{sub}</small>
     </div>
   );
 }
