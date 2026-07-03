@@ -180,13 +180,13 @@ export type CompanionData = {
 export const FALLBACK: CompanionData = {
   updatedAt: Date.now(),
   match: {
-    clock: "24:18",
-    seconds: 24 * 60 + 18,
-    mode: "Tactical Assist",
+    clock: "--:--",
+    seconds: 0,
+    mode: "—",
     phase: "pregame",
     minimapState: "empty",
     gsiOnline: false,
-    centerLabel: "CAPTAINS MODE",
+    centerLabel: "NOT IN A MATCH",
     centerSubLabel: "WAITING FOR GSI",
     leftTeamName: "TEAM RADIANT",
     rightTeamName: "TEAM DIRE",
@@ -224,10 +224,11 @@ export const FALLBACK: CompanionData = {
   warningTabs: [],
   buildAdvisor: { hero: "Maiden", lane: "Support", itemPath: [], nextItem: "", notes: [] },
   companion: { overlayEnabled: true, voiceEnabled: true, motionIntensity: 60, dangerThreshold: 70, hotkeys: [] },
-  telemetry: { cpuLoad: 0, cpuTemp: 0, gpuLoad: 0, gpuTemp: 0, ramLoad: 0, ramTemp: 0, vramLoad: 0, vramTemp: 0, ramUsedGb: 0, ramTotalGb: 0, vramUsedGb: 0, vramTotalGb: 0 },
-  weeklyReport: { winRate: 0, kd: 0, topHeroes: [] },
+  // -1 = "no reading" so the footer/stat cards render "—" (waiting), not a fake 0.
+  telemetry: { cpuLoad: -1, cpuTemp: -1, gpuLoad: -1, gpuTemp: -1, ramLoad: -1, ramTemp: -1, vramLoad: -1, vramTemp: -1, ramUsedGb: -1, ramTotalGb: -1, vramUsedGb: -1, vramTotalGb: -1 },
+  weeklyReport: { winRate: -1, kd: -1, topHeroes: [] },
   agentSector: { name: "G-Maiden", title: "Tactical AI", status: "Standby", summary: [] },
-  insights: { powerScore: 0, winRate: 0, objectiveControl: 0, wardEfficiency: 0, learnedMatches: 0 },
+  insights: { powerScore: -1, winRate: -1, objectiveControl: -1, wardEfficiency: -1, learnedMatches: -1 },
   history: []
 };
 
@@ -530,16 +531,20 @@ export function useCompanionData() {
   }, [inGame]);
 
   const data = useMemo<CompanionData>(() => {
-    // Base: pure MOCK until a live event arrives, else the live-merged deck.
+    // Base: honest FALLBACK (empty "waiting / not connected" states) until a live
+    // source fills a panel — so signed-out / no-match users never see a fake
+    // match. In a live match we still use the rich MOCK slices as *scaffolds* for
+    // the match/hero builders (real data overwrites them); everything without a
+    // live source (weekly/insights/history/telemetry/…) stays on FALLBACK.
     let d: CompanionData = live.active
       ? {
-          ...MOCK,
+          ...FALLBACK,
           match: buildMatch(live.tick, live.status, MOCK.match),
           heroes: buildHeroes(live.tick, live.missing, live.cv, MOCK.heroes),
           markers: buildMarkers(live.cv, live.missingPos, MOCK.markers),
           signals: buildSignals(live.gank, live.missing, MOCK.signals)
         }
-      : MOCK;
+      : FALLBACK;
 
     // OpenDota enrichment is YOUR historical data — apply it to the self slot +
     // stat-bar baselines + the weekly/insights cards whenever present,

@@ -203,17 +203,17 @@ export function InsightsPage() {
           </div>
         </div>
         <div className="stats-grid compact">
-          <div className="stat-box"><span>Win rate</span><strong>{data.weeklyReport.winRate}%</strong></div>
-          <div className="stat-box"><span>KD</span><strong>{data.weeklyReport.kd}</strong></div>
+          <div className="stat-box"><span>Win rate</span><strong>{statValue(data.weeklyReport.winRate, "%")}</strong></div>
+          <div className="stat-box"><span>KD</span><strong>{statValue(data.weeklyReport.kd)}</strong></div>
         </div>
         <div className="history-list">
-          {data.weeklyReport.topHeroes.map((hero) => (
+          {data.weeklyReport.topHeroes.length ? data.weeklyReport.topHeroes.map((hero) => (
             <div key={`${hero.rank}-${hero.hero}`} className="history-row">
               <div><strong>{hero.hero}</strong><span>Top {hero.rank}</span></div>
               <div>{hero.kd}</div>
               <p>{hero.games} games · {hero.winRate}% WR</p>
             </div>
-          ))}
+          )) : <p className="empty">ลิงก์ Steam ในหน้า Account เพื่อดึงสถิติจาก OpenDota</p>}
         </div>
       </section>
     </div>
@@ -233,7 +233,7 @@ export function HistoryPage() {
       </section>
       <section className="card-shell domain-card">
         <div className="history-list">
-          {data.history.map((row) => (
+          {data.history.length ? data.history.map((row) => (
             <div key={row.id} className="history-row">
               <div>
                 <strong>{row.result}</strong>
@@ -242,7 +242,7 @@ export function HistoryPage() {
               <div>{row.kda}</div>
               <p>{row.note}</p>
             </div>
-          ))}
+          )) : <p className="empty">ยังไม่มีประวัติแมตช์ — เล่นจบ 1 เกม (G-Log จะบันทึกไว้ในเครื่อง)</p>}
         </div>
       </section>
     </div>
