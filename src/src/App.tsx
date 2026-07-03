@@ -8,6 +8,7 @@ import { FullOverlay } from './overlay/FullOverlay'
 import { LayoutEditor } from './overlay/LayoutEditor'
 import { DEFAULT_LAYOUT, type Layout } from './overlay/modules'
 import CommandDeck from './CommandDeck'
+import QuotaCard from './QuotaCard'
 
 /** Mirrors the Rust `GameTick` emitted by the GSI server (src-tauri/src/gsi.rs). */
 export interface GameTick {
@@ -591,7 +592,26 @@ const Overlay: React.FC = () => {
       const last = advisedAt.current[trig.key] ?? -Infinity
       if (tick.clock_time - last < 600) continue
       advisedAt.current[trig.key] = tick.clock_time
-      void invoke<{ text: string; cached: boolean }>('request_advice', { tick })
+      void (async () => {
+        // Budget gate — silent throttle when the user set a USD ceiling in the
+        // QuotaCard and we've blown past it. Only auto-triggers are gated;
+        // the manual ask button stays available (= explicit user intent).
+        try {
+          const raw = localStorage.getItem('gm-quota-budget')
+          if (raw) {
+            const budget = JSON.parse(raw) as Partial<{ sessionUsd: number; weeklyUsd: number }>
+            const hasBudget = (typeof budget.sessionUsd === 'number' && budget.sessionUsd > 0)
+              || (typeof budget.weeklyUsd === 'number' && budget.weeklyUsd > 0)
+            if (hasBudget) {
+              const stats = await invoke<{ session: { cost_usd: number }; weekly: { cost_usd: number } }>('read_usage')
+              if (typeof budget.sessionUsd === 'number' && budget.sessionUsd > 0
+                  && stats.session.cost_usd >= budget.sessionUsd) return
+              if (typeof budget.weeklyUsd === 'number' && budget.weeklyUsd > 0
+                  && stats.weekly.cost_usd >= budget.weeklyUsd) return
+            }
+          }
+        } catch { /* budget parse failure -> let the request through */ }
+        return invoke<{ text: string; cached: boolean }>('request_advice', { tick })
         .then((a) => {
           if (!a?.text) return
           setToast({ event: 'advice', text: a.text })
@@ -604,6 +624,7 @@ const Overlay: React.FC = () => {
           }).catch(() => {})
         })
         .catch(() => { /* claude CLI missing or login fail — silent in auto mode */ })
+      })()
     }
   }, [tick?.in_game, tick?.level, tick?.deaths, tick?.clock_time])
 
@@ -1091,7 +1112,7 @@ const AudioSettingsCard: React.FC = () => {
 // ─────────────────────────────── G-MASTER (Claude Plan advisor) ───────────────────────────────
 interface Advice { text: string; cached: boolean }
 type MasterBackend = 'auto' | 'claude' | 'ollama'
-const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number; enabled: boolean; onEnabledChange: (v: boolean) => void; autoAdvice: boolean; onAutoAdviceChange: (v: boolean) => void; backend: MasterBackend; onBackendChange: (b: MasterBackend) => void; auth: 'plan' | 'apikey'; onAuthChange: (a: 'plan' | 'apikey') => void; apiKey: string; onApiKeyChange: (k: string) => void; ollamaModel: string; onOllamaModelChange: (m: string) => void }> = ({ tick, voice, rate, enabled, onEnabledChange, autoAdvice, onAutoAdviceChange, backend, onBackendChange, auth, onAuthChange, apiKey, onApiKeyChange, ollamaModel, onOllamaModelChange }) => {
+const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number; enabled: boolean; onEnabledChange: (v: boolean) => void; autoAdvice: boolean; onAutoAdviceChange: (v: boolean) => void; backend: MasterBackend; onBackendChange: (b: MasterBackend) => void; auth: 'plan' | 'apikey'; onAuthChange: (a: 'plan' | 'apikey') => void; apiKey: string; onApiKeyChange: (k: string) => void; ollamaModel: string; onOllamaModelChange: (m: string) => void; onUsageChanged?: () => void }> = ({ tick, voice, rate, enabled, onEnabledChange, autoAdvice, onAutoAdviceChange, backend, onBackendChange, auth, onAuthChange, apiKey, onApiKeyChange, ollamaModel, onOllamaModelChange, onUsageChanged }) => {
   const [advice, setAdvice] = useState<Advice | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -1103,6 +1124,7 @@ const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number;
     try {
       const a = await invoke<Advice>('request_advice', { tick })
       setAdvice(a)
+      if (!a.cached) onUsageChanged?.()
     } catch (e: unknown) {
       setError(typeof e === 'string' ? e : (e instanceof Error ? e.message : String(e)))
     } finally { setBusy(false) }
@@ -1369,6 +1391,7 @@ export const Control: React.FC = () => {
   // + danger banner (and hear the voice) without launching Dota.
   const [preview, setPreview] = useState(false)
   const [showChangelog, setShowChangelog] = useState(false)
+  const [quotaTick, setQuotaTick] = useState(0)
   const [profiles, setProfiles] = useState<OverlayProfile[]>(loadProfiles)
   const previewTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const previewClock = useRef(600)
@@ -1766,7 +1789,11 @@ export const Control: React.FC = () => {
       </div>
 
       <div style={{ marginTop: 14 }}>
-        <MasterCard tick={tick} voice={s.voiceName} rate={s.voiceRate} enabled={s.masterEnabled} onEnabledChange={(v) => set('masterEnabled', v)} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} backend={s.masterBackend} onBackendChange={(b) => set('masterBackend', b)} auth={s.masterAuth} onAuthChange={(a) => set('masterAuth', a)} apiKey={s.masterApiKey} onApiKeyChange={(k) => set('masterApiKey', k)} ollamaModel={s.masterOllamaModel} onOllamaModelChange={(m) => set('masterOllamaModel', m)} />
+        <MasterCard tick={tick} voice={s.voiceName} rate={s.voiceRate} enabled={s.masterEnabled} onEnabledChange={(v) => set('masterEnabled', v)} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} backend={s.masterBackend} onBackendChange={(b) => set('masterBackend', b)} auth={s.masterAuth} onAuthChange={(a) => set('masterAuth', a)} apiKey={s.masterApiKey} onApiKeyChange={(k) => set('masterApiKey', k)} ollamaModel={s.masterOllamaModel} onOllamaModelChange={(m) => set('masterOllamaModel', m)} onUsageChanged={() => setQuotaTick((n) => n + 1)} />
+      </div>
+
+      <div style={{ marginTop: 14 }}>
+        <QuotaCard refreshTrigger={quotaTick} />
       </div>
 
       <div style={{ marginTop: 14 }}>

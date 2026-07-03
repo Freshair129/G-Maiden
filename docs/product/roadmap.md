@@ -16,6 +16,11 @@
 > ตายตัว — label เดิมคงไว้เป็น historical reference เท่านั้น
 
 ### Now — ก่อน release ถัดไป (candidate v0.8.0, batch ใหญ่พอเป็น MINOR)
+- [ ] **Settings จริงหายจาก deck (พบ 2026-07-03)** — control window ตอนนี้ render `CommandDeck`
+      แต่ `SettingsPage` ของ deck เป็น display-only mock; การ์ดตั้งค่าจริงทั้งหมด (G-Master
+      backend picker, GSI setup, voice picker, overlay position, updater) อยู่ใน `Control`
+      เก่าที่ **ไม่ถูก mount แล้ว** → ถ้า release ตามนี้ผู้ใช้เสียหน้าตั้งค่าทั้งหมด.
+      ต้อง port การ์ดตั้งค่าเข้า deck Settings tab (หรือ mount `Control` เป็น tab ชั่วคราว)
 - [ ] **Voice Packs surface decision** — หน้า Voice Packs (`AudioSettings.tsx`) เรียก `/api/voice`
       ซึ่งไม่มี backend ใน Tauri app (ตอนนี้ guard แล้ว แสดง "service unavailable"):
       เลือก **wire endpoints เข้า axum :3000 (`gsi.rs`)** หรือ **ซ่อน nav** ก่อน release

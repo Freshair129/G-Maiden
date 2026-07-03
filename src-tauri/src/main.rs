@@ -37,6 +37,7 @@ mod signal;
 mod setup;
 mod slm;
 mod tts;
+mod usage;
 
 /// Show/hide the OSD overlay window (called by the control GUI toggle).
 #[tauri::command]
@@ -206,6 +207,18 @@ async fn request_buyback_advice(app: tauri::AppHandle, tick: gsi::GameTick) -> r
         }
     });
     advice
+}
+
+/// Aggregated Claude usage stats for the QuotaCard (5h + 7d windows).
+#[tauri::command]
+fn read_usage() -> usage::UsageStats {
+    usage::read_stats()
+}
+
+/// Privacy reset for the usage log (parallel to delete_all_match_logs for G-Log).
+#[tauri::command]
+fn clear_usage_log() -> Result<(), String> {
+    usage::clear()
 }
 
 /// List SAPI voices installed on this machine so the UI can let the user pick.
@@ -425,6 +438,8 @@ fn main() {
             delete_all_match_logs,
             request_advice,
             request_buyback_advice,
+            read_usage,
+            clear_usage_log,
             identity::resolve_steam_id
         ])
         .setup(move |app| {

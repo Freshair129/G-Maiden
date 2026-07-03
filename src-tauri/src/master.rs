@@ -129,7 +129,11 @@ pub fn advise(tick: &GameTick) -> Result<Advice, String> {
     if let Ok(mut g) = LAST_RESPONSE.lock() {
         *g = Some(text.clone());
     }
-    let _ = from_slm; // available for future telemetry
+    // Quota monitor — only Claude-served responses burn Plan/API quota.
+    // Ollama answers are free, and cached hits returned before this point.
+    if !from_slm {
+        crate::usage::record_advice(prompt.chars().count(), text.chars().count());
+    }
     Ok(Advice { text, cached: false })
 }
 

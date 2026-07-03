@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { listen } from "@tauri-apps/api/event";
 import AudioSettings from "./AudioSettings";
+import QuotaCard from "./QuotaCard";
 import {
   BuildAdvisorPage,
   CompanionPage,
@@ -170,7 +171,12 @@ export default function CommandDeck() {
             {tab === "insights" && <InsightsPage />}
             {tab === "voice" && <AudioSettings />}
             {tab === "history" && <HistoryPage />}
-            {tab === "settings" && <SettingsPage />}
+            {tab === "settings" && (
+              <div style={{ display: "grid", gap: 16 }}>
+                <SettingsPage />
+                <QuotaCard />
+              </div>
+            )}
             {tab === "account" && <AccountPage />}
           </main>
         )}
