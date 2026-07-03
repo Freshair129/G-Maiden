@@ -162,6 +162,18 @@ fn voice_api_update_pack(payload: voice_api::UpdatePackRequest) -> Result<voice_
     voice_api::update_pack(payload)
 }
 
+/// Preview an announcer event on the overlay WITHOUT being in-game: play the
+/// pack's mapped clip and emit the same `announcer-banner` payload gsi.rs emits
+/// on a real fired event, so the pack's banner shows on the overlay exactly as it
+/// will in a match. Lets users verify a pack's banner+sound bundle before playing.
+#[tauri::command]
+fn preview_announcer_event(app: tauri::AppHandle, pack_id: String, event: String) {
+    if let Some(clip) = voice_api::preview_clip(&pack_id, &event) {
+        audio::play_file(clip);
+    }
+    let _ = app.emit("announcer-banner", voice_api::preview_banner(&pack_id, &event));
+}
+
 /// Open an external http(s) URL in the default browser (e.g. the voice-pack
 /// store — purchases happen on the web). `explorer` handles URLs and is a GUI
 /// app, so no console flashes; scheme is validated to avoid arbitrary commands.
@@ -440,6 +452,7 @@ fn main() {
             voice_api_import_archive,
             voice_api_map_event,
             voice_api_update_pack,
+            preview_announcer_event,
             list_event_clips,
             play_clip,
             open_voice_cache_dir,

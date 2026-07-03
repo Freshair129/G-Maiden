@@ -387,16 +387,27 @@ pub struct FiredBanner {
 const MAX_BANNER_BYTES: u64 = 3 * 1024 * 1024;
 
 /// Resolve the banner for a just-fired announcer `event` against the active pack.
-/// Always returns sensible defaults (event label/thai) so the overlay can render
-/// even with no pack installed; `banner_data` is `Some` only when the active pack
-/// maps an existing, reasonably-sized image to this event.
+/// Used on the live GSI path (gsi.rs).
 pub fn fired_banner(event: &str) -> FiredBanner {
+    fired_banner_from(read_active_pack_id(), event)
+}
+
+/// Resolve the banner against a SPECIFIC pack — used by the overlay preview so a
+/// user can see a pack's banner without it being the active one / being in-game.
+pub fn preview_banner(pack_id: &str, event: &str) -> FiredBanner {
+    fired_banner_from(Some(pack_id.to_string()), event)
+}
+
+/// Shared resolver. Always returns sensible defaults (event label/thai) so the
+/// overlay can render even with no pack; `banner_data` is `Some` only when the
+/// pack maps an existing, reasonably-sized image to this event.
+fn fired_banner_from(pack_id: Option<String>, event: &str) -> FiredBanner {
     let def = EVENTS.iter().find(|e| e.id == event);
     let mut banner_text = def.map(|d| d.label.to_string()).unwrap_or_else(|| event.to_string());
     let mut thai = def.map(|d| d.thai.to_string()).unwrap_or_default();
     let mut banner_data = None;
 
-    if let Some(id) = read_active_pack_id() {
+    if let Some(id) = pack_id {
         let dir = packs_dir().join(sanitize_id(&id));
         if let Ok(manifest) = read_manifest(&dir) {
             if let Some(mapping) = manifest.mappings.get(event) {
@@ -415,6 +426,19 @@ pub fn fired_banner(event: &str) -> FiredBanner {
     }
 
     FiredBanner { event: event.to_string(), banner_data, banner_text, thai }
+}
+
+/// A clip mapped to `event` in a SPECIFIC pack, to play during an overlay preview
+/// (first mapped, existing file). `None` when the pack maps no playable clip.
+pub fn preview_clip(pack_id: &str, event: &str) -> Option<PathBuf> {
+    let dir = packs_dir().join(sanitize_id(pack_id));
+    let manifest = read_manifest(&dir).ok()?;
+    let mapping = manifest.mappings.get(event)?;
+    mapping
+        .clips
+        .iter()
+        .map(|rel| dir.join(rel.replace('\\', "/")))
+        .find(|path| path.is_file())
 }
 
 /// Read an image file into a base64 `data:` URL, or `None` if missing/too large.
