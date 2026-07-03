@@ -312,6 +312,14 @@ fn set_volume(app: tauri::AppHandle, vol: u8) {
     let _ = app.emit("volume-change", vol);
 }
 
+/// Select the GPU/CPU-temp telemetry source shown in the deck footer:
+/// 0 = auto (prefer the rich G-Telemetry file, else the light feeder push),
+/// 1 = feeder only, 2 = G-Telemetry only, 3 = off.
+#[tauri::command]
+fn set_telemetry_source(source: u8) {
+    governor::set_telemetry_source(source);
+}
+
 /// Get the current master volume (0–100).
 #[tauri::command]
 fn get_volume() -> u8 {
@@ -444,6 +452,7 @@ fn main() {
             capture_calibration_clip,
             set_volume,
             get_volume,
+            set_telemetry_source,
             voice_cache_status,
             voice_api_state,
             voice_api_action,

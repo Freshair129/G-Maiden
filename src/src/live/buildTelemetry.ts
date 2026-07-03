@@ -25,7 +25,8 @@ export function buildTelemetry(stats: ResourceStats | null, fallback: Telemetry)
   const has = (n: number) => n >= 0;
   return {
     cpuLoad: round1(stats.cpu_pct),
-    cpuTemp: NO_SENSOR, // no CPU-temp sensor on either side yet
+    // CPU temp only comes from the rich G-Telemetry source; the light feeder omits it.
+    cpuTemp: has(stats.cpu_temp_c) ? round1(stats.cpu_temp_c) : NO_SENSOR,
     gpuLoad: has(stats.gpu_pct) ? round1(stats.gpu_pct) : NO_SENSOR,
     gpuTemp: has(stats.gpu_temp_c) ? round1(stats.gpu_temp_c) : NO_SENSOR,
     ramLoad: round2(ramGb),

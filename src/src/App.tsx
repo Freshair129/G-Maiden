@@ -80,6 +80,7 @@ export interface Settings {
   masterOllamaModel: string
   cvDebug: boolean
   calibration: boolean
+  telemetrySource: 'auto' | 'feeder' | 'gtelemetry' | 'off'
   uiMode: 'lite' | 'full'
   layout: Layout
   showTimer: boolean
@@ -88,7 +89,7 @@ export interface Settings {
   showKda: boolean
   showGold: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, personaLines: true, autoAdvice: false, gankVisuals: true, killVisuals: true, signalSensitivity: 'med', masterEnabled: true, masterBackend: 'auto', masterAuth: 'plan', masterApiKey: '', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, personaLines: true, autoAdvice: false, gankVisuals: true, killVisuals: true, signalSensitivity: 'med', masterEnabled: true, masterBackend: 'auto', masterAuth: 'plan', masterApiKey: '', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, telemetrySource: 'auto', uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
 interface OverlayProfile { name: string; position: Pos; customX: number; customY: number; opacity: number; showTimer: boolean; showScore: boolean; showHeroBar: boolean; showKda: boolean; showGold: boolean }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 
@@ -1583,6 +1584,12 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
     void invoke('set_cv_signal_sensitivity', { level: s.signalSensitivity }).catch(() => {})
   }, [s.signalSensitivity])
 
+  // Telemetry source for the deck footer (GPU/CPU-temp): auto/feeder/gtelemetry/off.
+  useEffect(() => {
+    const src = { auto: 0, feeder: 1, gtelemetry: 2, off: 3 }[s.telemetrySource] ?? 0
+    void invoke('set_telemetry_source', { source: src }).catch(() => {})
+  }, [s.telemetrySource])
+
   // G-Master backend & ollama model — mirror to the Rust state used by advise().
   useEffect(() => {
     void invoke('set_master_backend', { backend: s.masterBackend }).catch(() => {})
@@ -1816,8 +1823,19 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
           </Row>
           <Row label="CV debug overlay (calibrate)"><Toggle on={s.cvDebug} onChange={(v) => set('cvDebug', v)} /></Row>
           <Row label="Calibration capture (audit: screenshot + clip) — QA"><Toggle on={s.calibration} onChange={(v) => set('calibration', v)} /></Row>
+          <Row label="แหล่งข้อมูล GPU/อุณหภูมิ (telemetry)">
+            <div style={{ display: 'inline-flex', border: `1px solid ${C.line}`, borderRadius: 9, overflow: 'hidden' }}>
+              {(['auto','feeder','gtelemetry','off'] as Settings['telemetrySource'][]).map((src) => (
+                <button key={src} onClick={() => set('telemetrySource', src)}
+                  title={src === 'auto' ? 'ใช้ G-Telemetry ถ้ามี ไม่งั้น feeder' : src === 'feeder' ? 'gpu-feeder ในตัว (เบา, GPU อย่างเดียว)' : src === 'gtelemetry' ? 'G-Telemetry (ละเอียด: CPU temp, ~200ms)' : 'ปิด'}
+                  style={{ background: s.telemetrySource === src ? 'rgba(143,212,255,0.16)' : 'transparent', color: s.telemetrySource === src ? C.ice : C.mut, border: 'none', padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}>
+                  {src === 'auto' ? 'อัตโนมัติ' : src === 'feeder' ? 'Feeder' : src === 'gtelemetry' ? 'G-Telemetry' : 'ปิด'}
+                </button>
+              ))}
+            </div>
+          </Row>
           <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
-            แบนเนอร์ขึ้นกลาง-บนของจอเมื่อ G-Signal เตือนแก๊งค์ (ไม่บังมินิแมพ). CV debug แสดงกรอบมินิแมพ + จุดที่ตรวจจับได้ — เปิดเฉพาะตอนปรับเทียบ.
+            แบนเนอร์ขึ้นกลาง-บนของจอเมื่อ G-Signal เตือนแก๊งค์ (ไม่บังมินิแมพ). CV debug แสดงกรอบมินิแมพ + จุดที่ตรวจจับได้ — เปิดเฉพาะตอนปรับเทียบ. แหล่ง telemetry: <b>Feeder</b> = gpu-feeder ในตัว (GPU); <b>G-Telemetry</b> = แอปแยก (เพิ่ม CPU temp, ~200ms) ต้องเปิดแอปนั้น.
           </div>
         </Card>
 

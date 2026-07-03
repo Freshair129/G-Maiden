@@ -10,7 +10,7 @@ const fallback = MOCK.telemetry;
 function stats(over: Partial<ResourceStats> = {}): ResourceStats {
   return {
     cpu_pct: 1.7, ram_mb: 384, over_budget: false,
-    gpu_pct: -1, gpu_temp_c: -1, vram_used_mb: -1, vram_total_mb: -1,
+    gpu_pct: -1, gpu_temp_c: -1, vram_used_mb: -1, vram_total_mb: -1, cpu_temp_c: -1,
     ...over
   };
 }
@@ -25,6 +25,11 @@ describe("buildTelemetry", () => {
     expect(result.cpuLoad).toBe(1.7);
     expect(result.ramUsedGb).toBeCloseTo(0.38, 2); // 384 MB
     expect(result.ramTotalGb).toBeCloseTo(400 / 1024, 5);
+  });
+
+  it("uses CPU temp from the rich G-Telemetry source when present", () => {
+    const result = buildTelemetry(stats({ cpu_temp_c: 55 }), fallback);
+    expect(result.cpuTemp).toBe(55);
   });
 
   it("marks GPU/VRAM/temps as NO_SENSOR when the bridge is absent", () => {

@@ -96,10 +96,11 @@ export interface ResourceStats {
   ram_mb: number;
   cpu_pct: number;
   over_budget: boolean;
-  gpu_pct: number;        // -1 when the G-Telemetry bridge is absent/stale
+  gpu_pct: number;        // -1 when the active telemetry source is absent/stale
   gpu_temp_c: number;     // -1 = unavailable
   vram_used_mb: number;   // -1 = unavailable
   vram_total_mb: number;  // -1 = unavailable
+  cpu_temp_c: number;     // -1 unless the rich G-Telemetry source provides it
 }
 
 export type CaptureMode = "lite" | "dxgi" | "";
