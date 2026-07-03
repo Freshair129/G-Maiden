@@ -4,8 +4,8 @@
   "version": "0.7.9",
   "identifier": "com.gmaiden.app",
   "build": {
-    "beforeBuildCommand": "pnpm -C src build",
-    "beforeDevCommand": "pnpm -C src dev",
+    "beforeBuildCommand": "node src-tauri/scripts/stage-gpu-feeder.mjs && pnpm -C src build",
+    "beforeDevCommand": "node src-tauri/scripts/stage-gpu-feeder.mjs && pnpm -C src dev",
     "devUrl": "http://localhost:5173",
     "frontendDist": "gen/web"
   },
@@ -53,6 +53,9 @@
       "icons/icon.ico"
     ],
     "createUpdaterArtifacts": true,
+    "externalBin": [
+      "binaries/gpu-feeder"
+    ],
     "resources": {
       "../models/minimap-detector.onnx": "models/minimap-detector.onnx",
       "../models/labels.json": "models/labels.json",

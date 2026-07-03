@@ -14,26 +14,34 @@
 //! Throttle callbacks are exported so the capture loop can check whether to
 //! drop a processing tick (reducing from ~8 Hz to ~4 Hz) when CPU is high.
 
-use std::path::PathBuf;
 use std::sync::atomic::{AtomicBool, Ordering};
-use std::time::{Duration, SystemTime, UNIX_EPOCH};
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
 use tauri::{AppHandle, Emitter};
 
 const POLL_INTERVAL_S: u64 = 10;
 
-/// GPU telemetry is measured by the sibling **G-Telemetry** tray app (which owns
-/// nvidia-smi / LibreHardwareMonitor) and dropped into a shared JSON file. We
-/// only READ it here — G-Maiden never spawns nvidia-smi itself, so the app stays
-/// light and the NFR budgets keep covering only our own work. Contract:
-///   `%LOCALAPPDATA%\G-Series\telemetry-latest.json`
-///   { "ts": <unix ms>, "gpus": [ { "loadPercent", "tempC",
-///     "vramUsedMb", "vramTotalMb" } ] }
-/// Samples older than this are treated as "bridge not running" → GPU shows "—".
-const BRIDGE_STALE_MS: u64 = 30_000;
+/// GPU telemetry comes from the headless `gpu-feeder` sidecar (own process, runs
+/// nvidia-smi) which PUSHes samples to `POST /telemetry` on our :3000 server —
+/// see `ingest_gpu`. The main app never spawns nvidia-smi itself, so the NFR
+/// budgets keep covering only our own work. A pushed sample older than this is
+/// treated as "feeder not running" → GPU shows "—".
+const GPU_STALE: Duration = Duration::from_secs(30);
 
-/// Sentinel meaning "no reading" (bridge absent / stale / no GPU). Mirrors the
+/// Sentinel meaning "no reading" (feeder absent / stale / no GPU). Mirrors the
 /// frontend's NO_SENSOR so the telemetry footer renders "—".
 const NO_READING: f64 = -1.0;
+
+/// Latest GPU sample pushed by the feeder, stamped with local arrival time for
+/// staleness. `None` until the first push.
+struct GpuSample {
+    load: f64,
+    temp: f64,
+    used_mb: f64,
+    total_mb: f64,
+    at: Instant,
+}
+static LATEST_GPU: Mutex<Option<GpuSample>> = Mutex::new(None);
 
 /// True while resource usage is over budget; the capture loop reads this to
 /// drop half its ticks automatically.
@@ -86,40 +94,68 @@ fn poll_loop(app: AppHandle) {
 fn measure() -> ResourceStats {
     let ram_mb = measure_ram_mb().unwrap_or(0.0);
     let cpu_pct = measure_cpu_pct().unwrap_or(0.0);
-    // Own-process budgets — GPU (from the bridge) is intentionally NOT part of
-    // this: it's the sibling app's/whole-machine's number, not ours.
+    // Own-process budgets — GPU (pushed by the feeder) is intentionally NOT part
+    // of this: it's a whole-machine number, not our process's.
     let over_budget = ram_mb > 400.0 || cpu_pct > 2.5;
     let (gpu_pct, gpu_temp_c, vram_used_mb, vram_total_mb) =
-        read_bridge_gpu().unwrap_or((NO_READING, NO_READING, NO_READING, NO_READING));
+        read_pushed_gpu().unwrap_or((NO_READING, NO_READING, NO_READING, NO_READING));
     ResourceStats { ram_mb, cpu_pct, over_budget, gpu_pct, gpu_temp_c, vram_used_mb, vram_total_mb }
 }
 
-/// Path to the G-Telemetry → G-Maiden bridge file, if `LOCALAPPDATA` is set.
-fn bridge_path() -> Option<PathBuf> {
-    std::env::var("LOCALAPPDATA")
-        .ok()
-        .map(|base| PathBuf::from(base).join("G-Series").join("telemetry-latest.json"))
-}
-
-/// Read the first GPU's (load%, tempC, vramUsedMb, vramTotalMb) from the bridge
-/// file. `None` when missing, malformed, stale, or no GPU — caller falls back to
-/// the NO_READING sentinel.
-fn read_bridge_gpu() -> Option<(f64, f64, f64, f64)> {
-    let raw = std::fs::read_to_string(bridge_path()?).ok()?;
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).ok()?.as_millis() as u64;
-    parse_bridge_gpu(&raw, now)
-}
-
-/// Pure parse+staleness check, split out so it's testable without env or fs.
-fn parse_bridge_gpu(raw: &str, now_ms: u64) -> Option<(f64, f64, f64, f64)> {
-    let v: serde_json::Value = serde_json::from_str(raw).ok()?;
-    let ts = v.get("ts")?.as_u64()?;
-    if now_ms.saturating_sub(ts) > BRIDGE_STALE_MS {
-        return None; // bridge app not running / went idle
+/// Store a GPU sample pushed by the feeder (called from the `POST /telemetry`
+/// handler). Ignores payloads that don't carry a usable first GPU.
+pub fn ingest_gpu(body: &serde_json::Value) {
+    if let Some((load, temp, used_mb, total_mb)) = parse_gpu(body) {
+        if let Ok(mut slot) = LATEST_GPU.lock() {
+            *slot = Some(GpuSample { load, temp, used_mb, total_mb, at: Instant::now() });
+        }
     }
+}
+
+/// The freshest pushed GPU reading, or `None` if never pushed / gone stale.
+fn read_pushed_gpu() -> Option<(f64, f64, f64, f64)> {
+    let slot = LATEST_GPU.lock().ok()?;
+    let s = slot.as_ref()?;
+    if s.at.elapsed() > GPU_STALE {
+        return None; // feeder stopped pushing
+    }
+    Some((s.load, s.temp, s.used_mb, s.total_mb))
+}
+
+/// Pure parse of the feeder's `{ "gpus": [ { loadPercent, tempC, vramUsedMb,
+/// vramTotalMb } ] }` body. Split out so it's unit-testable.
+fn parse_gpu(v: &serde_json::Value) -> Option<(f64, f64, f64, f64)> {
     let gpu = v.get("gpus")?.as_array()?.first()?;
     let num = |key: &str| gpu.get(key).and_then(serde_json::Value::as_f64);
     Some((num("loadPercent")?, num("tempC")?, num("vramUsedMb")?, num("vramTotalMb")?))
+}
+
+/// Spawn the headless `gpu-feeder` sidecar (own process; runs nvidia-smi and
+/// pushes to `POST /telemetry`). Looks next to our exe: the bundled name first,
+/// then the dev second-bin name. No-ops if neither exists (GPU stays "—").
+pub fn spawn_gpu_feeder() {
+    let Ok(exe) = std::env::current_exe() else { return };
+    let Some(dir) = exe.parent() else { return };
+    let path = dir.join("gpu-feeder.exe");
+    if !path.is_file() {
+        return; // not bundled (e.g. no GPU build) — GPU telemetry stays "—"
+    }
+    // Clear any feeder left over from a previous run so restarts don't stack them.
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        let _ = std::process::Command::new("taskkill")
+            .args(["/F", "/IM", "gpu-feeder.exe"])
+            .creation_flags(0x0800_0000) // CREATE_NO_WINDOW
+            .output();
+    }
+    let mut cmd = std::process::Command::new(&path);
+    #[cfg(windows)]
+    {
+        use std::os::windows::process::CommandExt;
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+    }
+    let _ = cmd.spawn();
 }
 
 fn measure_ram_mb() -> Option<f64> {
@@ -196,25 +232,30 @@ mod tests {
     }
 
     #[test]
-    fn bridge_parses_a_fresh_sample() {
-        let raw = r#"{ "ts": 1000, "gpus": [
-            { "loadPercent": 42.5, "tempC": 63.0, "vramUsedMb": 3200.0, "vramTotalMb": 8192.0 }
-        ] }"#;
-        // now within BRIDGE_STALE_MS of ts
-        let got = parse_bridge_gpu(raw, 1000 + 5_000).unwrap();
-        assert_eq!(got, (42.5, 63.0, 3200.0, 8192.0));
+    fn parse_gpu_reads_first_gpu() {
+        let v: serde_json::Value = serde_json::from_str(
+            r#"{ "gpus": [ { "loadPercent": 42.5, "tempC": 63.0, "vramUsedMb": 3200.0, "vramTotalMb": 8192.0 } ] }"#,
+        ).unwrap();
+        assert_eq!(parse_gpu(&v), Some((42.5, 63.0, 3200.0, 8192.0)));
     }
 
     #[test]
-    fn bridge_rejects_a_stale_sample() {
-        let raw = r#"{ "ts": 1000, "gpus": [ { "loadPercent": 1, "tempC": 1, "vramUsedMb": 1, "vramTotalMb": 1 } ] }"#;
-        assert!(parse_bridge_gpu(raw, 1000 + BRIDGE_STALE_MS + 1).is_none());
+    fn parse_gpu_rejects_no_gpu_or_missing_fields() {
+        let empty: serde_json::Value = serde_json::from_str(r#"{ "gpus": [] }"#).unwrap();
+        assert!(parse_gpu(&empty).is_none());
+        let no_key: serde_json::Value = serde_json::from_str(r#"{}"#).unwrap();
+        assert!(parse_gpu(&no_key).is_none());
+        let partial: serde_json::Value = serde_json::from_str(r#"{ "gpus": [ { "loadPercent": 1 } ] }"#).unwrap();
+        assert!(parse_gpu(&partial).is_none()); // missing tempC/vram
     }
 
     #[test]
-    fn bridge_rejects_no_gpu_or_garbage() {
-        assert!(parse_bridge_gpu(r#"{ "ts": 1000, "gpus": [] }"#, 1000).is_none());
-        assert!(parse_bridge_gpu("not json", 1000).is_none());
-        assert!(parse_bridge_gpu(r#"{ "gpus": [] }"#, 1000).is_none()); // no ts
+    fn ingest_then_read_roundtrips_a_pushed_sample() {
+        let v: serde_json::Value = serde_json::from_str(
+            r#"{ "gpus": [ { "loadPercent": 10.0, "tempC": 50.0, "vramUsedMb": 1024.0, "vramTotalMb": 4096.0 } ] }"#,
+        ).unwrap();
+        ingest_gpu(&v);
+        // Just-pushed sample is fresh, so it reads back.
+        assert_eq!(read_pushed_gpu(), Some((10.0, 50.0, 1024.0, 4096.0)));
     }
 }

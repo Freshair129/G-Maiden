@@ -1,0 +1,20 @@
+# Standalone, dependency-free GPU telemetry feeder for G-Maiden.
+# Built separately (see src-tauri/scripts/stage-gpu-feeder.mjs) and bundled as a
+# Tauri externalBin sidecar. Kept OUT of the main src-tauri crate so it compiles
+# without the Tauri build context and stays a tiny std-only binary.
+[package]
+name = "gpu-feeder"
+version = "0.1.0"
+edition = "2021"
+publish = false
+
+[[bin]]
+name = "gpu-feeder"
+path = "src/main.rs"
+
+[dependencies]
+
+[profile.release]
+opt-level = "z"
+lto = true
+strip = true

@@ -153,6 +153,17 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
     "ok"
 }
 
+/// Receive a GPU telemetry sample PUSHed by the headless `gpu-feeder` sidecar
+/// (own process, runs nvidia-smi). Body: `{ "gpus": [ { loadPercent, tempC,
+/// vramUsedMb, vramTotalMb } ] }`. Stashed in the governor; the next
+/// `resource-stats` emit carries it to the deck footer.
+async fn telemetry_ingest(body: String) -> &'static str {
+    if let Ok(v) = serde_json::from_str::<Value>(&body) {
+        crate::governor::ingest_gpu(&v);
+    }
+    "ok"
+}
+
 /// Receive a notify from G-AnnStudio after it installs a pack into voice-cache.
 /// The clips are already on disk (audio.rs reads the dir live), so we just
 /// confirm by returning the current per-event clip counts.
@@ -243,6 +254,7 @@ pub async fn serve(app: AppHandle) {
     let router = Router::new()
         .route("/gsi", post(handle))
         .route("/announcer/install", post(announcer_install))
+        .route("/telemetry", post(telemetry_ingest))
         .route("/auth/callback", get(oauth_callback))
         .with_state(app);
     match tokio::net::TcpListener::bind("127.0.0.1:3000").await {

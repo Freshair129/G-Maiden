@@ -482,6 +482,9 @@ fn main() {
 
             // G7.2: resource governor — poll RAM/CPU every 10s, emit resource-stats.
             governor::start(app.handle().clone());
+            // Headless GPU feeder sidecar → pushes nvidia-smi metrics to
+            // POST /telemetry (own process; keeps nvidia-smi out of the main app).
+            governor::spawn_gpu_feeder();
 
             app.global_shortcut().register(toggle)?;
             app.global_shortcut().register(vol_up)?;
