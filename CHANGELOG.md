@@ -1,5 +1,29 @@
 # Changelog
 
+## [0.8.0] — 2026-07-04
+### Added
+- **Command deck fully live-wired** — the telemetry footer, weekly report, match
+  insights, history, and agent-sector status now use real data (`resource-stats`,
+  OpenDota, local G-Log match files, live GSI) instead of MOCK; sourceless metrics
+  render "—" rather than fabricated numbers.
+- **Announcer packs are now bundles** — a pack's banner **image** and its sound
+  fire together in-game. Activating a pack changes what's voiced (active-pack clip
+  resolution), a new `announcer-banner` event shows the pack banner on the overlay
+  (replacing the built-in kill card), and a **"Show on overlay"** button previews a
+  pack's banner+sound without a match.
+- **GPU / VRAM / temperature telemetry** in the deck footer via a bundled headless
+  `gpu-feeder` sidecar (`nvidia-smi` → `POST /telemetry`) — the main app never runs
+  nvidia-smi itself, keeping the NFR budgets about its own work.
+- **Selectable telemetry source** (auto / feeder / G-Telemetry / off) — the sibling
+  G-Telemetry app can feed a richer stream (CPU temperature, ~200 ms) which the deck
+  prefers in `auto`; falls back to the light feeder or "—".
+
+### Changed
+- Documentation reconciled with the shipped codebase (SQLite→JSONL, cloud brain =
+  Claude CLI/Ollama not Gemini, governor 10 s not 1 Hz, module tree, etc.); unbuilt
+  feature specs now carry a dated "not implemented" banner.
+- Version files bumped to 0.8.0 (tauri.conf / package.json / App.tsx).
+
 ## [0.7.5] — 2026-06-27
 ### Added
 - **Announcer event pack system** — Maiden voices the full in-game event taxonomy
