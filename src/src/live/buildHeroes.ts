@@ -26,6 +26,7 @@ export function buildHeroes(
     if (tick && index === 0) {
       next = {
         ...next,
+        hero: prettyHeroName(tick.hero) || next.hero, // your REAL hero, not the scaffold name
         level: tick.level,
         kills: tick.kills,
         deaths: tick.deaths,
