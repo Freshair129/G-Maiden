@@ -1,4 +1,5 @@
-import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, CSSProperties, DragEvent, useEffect, useMemo, useRef, useState } from "react";
+import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 
 type VoiceAssetOption = {
   path: string;
@@ -54,15 +55,27 @@ type VoiceState = {
   groups: { id: string; label: string; accent: string }[];
 };
 
-async function readJson(url: string, init?: RequestInit) {
-  const resp = await fetch(url, init);
-  const contentType = resp.headers.get("content-type") || "";
-  const body = contentType.includes("application/json") ? await resp.json() : await resp.text();
-  if (!resp.ok) {
-    const message = typeof body === "string" ? body : body?.error || `HTTP ${resp.status}`;
-    throw new Error(String(message));
+async function readJson<T = unknown>(url: string, init?: RequestInit): Promise<T> {
+  const body = init?.body && typeof init.body === "string" ? JSON.parse(init.body) : {};
+
+  if (url === "/api/voice") return invoke("voice_api_state") as Promise<T>;
+
+  if (url.startsWith("/api/voice/import")) {
+    const name = new URLSearchParams(url.split("?")[1] || "").get("name") || "voice-pack.zip";
+    return invoke("voice_api_import_archive", {
+      name,
+      bytes: Array.from(new Uint8Array(init?.body as ArrayBuffer))
+    }) as Promise<T>;
   }
-  return body;
+
+  if (url.startsWith("/api/voice/")) {
+    const action = url.replace("/api/voice/", "");
+    if (action === "map-event") return invoke("voice_api_map_event", { payload: body }) as Promise<T>;
+    if (action === "update-pack") return invoke("voice_api_update_pack", { payload: body }) as Promise<T>;
+    return invoke("voice_api_action", { action, packId: body.packId || null }) as Promise<T>;
+  }
+
+  throw new Error(`Unsupported voice API route: ${url}`);
 }
 
 function groupLabel(state: VoiceState, groupId: string) {
@@ -109,19 +122,19 @@ export default function AudioSettings() {
 
   async function refresh() {
     try {
-      const next = await readJson("/api/voice");
+      const next = await readJson<VoiceState>("/api/voice");
       // Guard: G-Maiden's Tauri app has no /api/voice backend (that was the
       // orchestra-standalone server). Vite serves the SPA index.html for unknown
       // paths, so `next` can be an HTML string, not a VoiceState — validate the
       // shape before rendering or `state.groups.map` / `state.packs` explodes.
       if (!next || typeof next !== "object" || !Array.isArray(next.groups) || !Array.isArray(next.packs)) {
-        throw new Error("Voice pack service is unavailable in this build (no /api/voice backend).");
+        throw new Error("Voice pack backend returned an invalid response.");
       }
       setState(next);
       setSelectedEventId((current) => current || next.activePack?.items?.[0]?.id || null);
       setErr(null);
-    } catch (e: any) {
-      setErr(String(e?.message || e));
+    } catch (e) {
+      setErr(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -143,7 +156,7 @@ export default function AudioSettings() {
     setSelectedClips(selectedEvent.mapping?.clips || []);
   }, [selectedEvent]);
 
-  async function run(action: "rescan" | "open-root" | "activate", body: Record<string, any> = {}) {
+  async function run(action: "rescan" | "open-root" | "activate", body: Record<string, unknown> = {}) {
     setBusy(true);
     try {
       await readJson(`/api/voice/${action}`, {
@@ -154,14 +167,18 @@ export default function AudioSettings() {
       await refresh();
       setErr(null);
       setNotice(action === "rescan" ? "Voice packs rescanned." : null);
-    } catch (e: any) {
-      setErr(String(e?.message || e));
+    } catch (e) {
+      setErr(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
   }
 
   function playUrl(url: string) {
+    if (/^[a-z]:[\\/]/i.test(url) || url.startsWith("\\\\")) {
+      invoke("play_clip", { path: url }).catch(() => {});
+      return;
+    }
     const audio = new Audio(url);
     audio.play().catch(() => {});
   }
@@ -182,7 +199,7 @@ export default function AudioSettings() {
   async function uploadArchive(file: File) {
     setBusy(true);
     try {
-      const result = await readJson(`/api/voice/import?name=${encodeURIComponent(file.name)}`, {
+      const result = await readJson<{ imported?: string[] }>(`/api/voice/import?name=${encodeURIComponent(file.name)}`, {
         method: "POST",
         headers: { "content-type": file.type || "application/zip" },
         body: await file.arrayBuffer()
@@ -190,8 +207,8 @@ export default function AudioSettings() {
       await refresh();
       setErr(null);
       setNotice(`Imported pack: ${(result?.imported || []).join(", ") || file.name}`);
-    } catch (e: any) {
-      setErr(String(e?.message || e));
+    } catch (e) {
+      setErr(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
       setNotice(null);
     } finally {
       setBusy(false);
@@ -202,35 +219,16 @@ export default function AudioSettings() {
   async function createTemplate() {
     setCreatingTemplate(true);
     try {
-      const resp = await fetch("/api/voice/template", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({
-          packId: sanitizePackId(templatePackId),
-          name: templateName,
-          locale: templateLocale
-        })
+      const next = await invoke<VoiceState>("voice_api_create_template", {
+        packId: sanitizePackId(templatePackId),
+        name: templateName,
+        locale: templateLocale
       });
-      if (!resp.ok) {
-        let message = `HTTP ${resp.status}`;
-        try {
-          const body = await resp.json();
-          message = body?.error || message;
-        } catch {}
-        throw new Error(message);
-      }
-      const blob = await resp.blob();
-      const href = URL.createObjectURL(blob);
-      const anchor = document.createElement("a");
-      const downloadName = `${sanitizePackId(templatePackId) || "voice-pack-template"}.zip`;
-      anchor.href = href;
-      anchor.download = downloadName;
-      anchor.click();
-      URL.revokeObjectURL(href);
+      setState(next);
       setErr(null);
-      setNotice(`Downloaded template: ${downloadName}`);
-    } catch (e: any) {
-      setErr(String(e?.message || e));
+      setNotice(`Created template pack: ${sanitizePackId(templatePackId) || "voice-pack-template"}`);
+    } catch (e) {
+      setErr(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
       setNotice(null);
     } finally {
       setCreatingTemplate(false);
@@ -241,26 +239,18 @@ export default function AudioSettings() {
     if (!selectedPack) return;
     setBusy(true);
     try {
-      const resp = await fetch(`/api/voice/upload-asset?pack=${encodeURIComponent(selectedPack.id)}&kind=${encodeURIComponent(kind)}&name=${encodeURIComponent(file.name)}`, {
-        method: "POST",
-        headers: { "content-type": file.type || "application/octet-stream" },
-        body: await file.arrayBuffer()
+      const result = await invoke<{ path: string }>("voice_api_upload_asset", {
+        packId: selectedPack.id,
+        kind,
+        name: file.name,
+        bytes: Array.from(new Uint8Array(await file.arrayBuffer()))
       });
-      if (!resp.ok) {
-        let message = `HTTP ${resp.status}`;
-        try {
-          const body = await resp.json();
-          message = body?.error || message;
-        } catch {}
-        throw new Error(message);
-      }
-      const result = await resp.json();
       setErr(null);
       setNotice(`Uploaded ${kind}: ${result.path}`);
       await refresh();
       if (kind === "banner" && !formBannerAsset) setFormBannerAsset(result.path);
-    } catch (e: any) {
-      setErr(String(e?.message || e));
+    } catch (e) {
+      setErr(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
       setNotice(null);
     } finally {
       setBusy(false);
@@ -294,7 +284,7 @@ export default function AudioSettings() {
     if (!state?.activePack || !selectedEvent) return;
     setSavingMap(true);
     try {
-      const next = await readJson("/api/voice/map-event", {
+      const next = await readJson<VoiceState>("/api/voice/map-event", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -310,8 +300,8 @@ export default function AudioSettings() {
       setState(next);
       setErr(null);
       setNotice(`Saved mapping for ${selectedEvent.id}.`);
-    } catch (e: any) {
-      setErr(String(e?.message || e));
+    } catch (e) {
+      setErr(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
       setNotice(null);
     } finally {
       setSavingMap(false);
@@ -322,7 +312,7 @@ export default function AudioSettings() {
     if (!selectedPack) return;
     setSavingPackMeta(true);
     try {
-      const next = await readJson("/api/voice/update-pack", {
+      const next = await readJson<VoiceState>("/api/voice/update-pack", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -337,8 +327,8 @@ export default function AudioSettings() {
       setState(next);
       setErr(null);
       setNotice(`Saved pack details for ${selectedPack.id}.`);
-    } catch (e: any) {
-      setErr(String(e?.message || e));
+    } catch (e) {
+      setErr(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
       setNotice(null);
     } finally {
       setSavingPackMeta(false);
@@ -355,6 +345,7 @@ export default function AudioSettings() {
   const selectedClipOptions = selectedEvent?.mapping?.clipOptions || [];
   const selectedBannerOption = selectedPack?.availableBanners.find((banner) => banner.path === formBannerAsset) || null;
   const selectedBannerUrl = selectedBannerOption?.url || selectedEvent?.mapping?.bannerUrl || null;
+  const selectedBannerSrc = selectedBannerUrl ? convertFileSrc(selectedBannerUrl) : null;
   const coverage = selectedPack ? Math.round((selectedPack.coveredEvents / Math.max(selectedPack.totalEvents, 1)) * 100) : 0;
   const packMetaDirty =
     packName !== (selectedPack?.name || "") ||
@@ -460,7 +451,7 @@ export default function AudioSettings() {
           </label>
           <div className="audio-preview-actions">
             <button className="audio-btn primary" onClick={createTemplate} disabled={creatingTemplate || !templatePackId || !templateName}>
-              Download template zip
+              Create template pack
             </button>
           </div>
         </div>
@@ -565,10 +556,10 @@ export default function AudioSettings() {
           <div className="audio-preview-h">Event Preview</div>
           {selectedEvent ? (
             <>
-              {selectedBannerUrl ? (
-                <img className="audio-banner-image" src={selectedBannerUrl} alt={`${selectedEvent.label} banner`} />
+              {selectedBannerSrc ? (
+                <img className="audio-banner-image" src={selectedBannerSrc} alt={`${selectedEvent.label} banner`} />
               ) : (
-                <div className="audio-banner-card" style={{ ["--accent" as any]: selectedEvent.accent }}>
+                <div className="audio-banner-card" style={{ "--accent": selectedEvent.accent } as CSSProperties}>
                   <div className="audio-banner-kicker">{groupLabel(state, selectedEvent.group)}</div>
                   <div className="audio-banner-title">{selectedEvent.label}</div>
                   <div className="audio-banner-sub">{selectedEvent.subtitle}</div>
