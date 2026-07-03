@@ -7,40 +7,48 @@
 
 ## 1. Purpose
 
-ตรวจจับฮีโร่ศัตรูตำแหน่งแก๊ง (Mid, Pos 4/5) ที่หายจากวิสัยทัศน์เกิน 5 วินาที
-แล้วส่ง event ให้ G-Motion ประเมินความเสี่ยง. เป็น **ต้นทางของ critical path** ทั้งหมด.
+ตรวจจับฮีโร่ศัตรู **ทุกตัว** ที่หายจากวิสัยทัศน์เกิน 5 วินาที แล้วส่ง event ให้
+G-Motion ประเมินความเสี่ยง. เป็น **ต้นทางของ critical path** ทั้งหมด.
+
+> **สถานะ (2026-07): `sentry.rs` ไม่มี concept ของ role** — flag ศัตรูทุกตัวที่หาย
+> >5s เท่ากันหมด (ไม่กรอง Mid/Pos4/Pos5). การกรองตามตำแหน่งแก๊งยังไม่ได้ทำ.
 
 ## 2. Input
 
 | Source | Data | Rate |
 | --- | --- | --- |
-| GSI tick | `hero.is_visible`, `hero.role`, `clock_time` | ทุก 500ms (SRS §3.1) |
-| Minimap CV | `enemy_position { hero, x, y }` | 5–15 Hz (adaptive, TDD §5) |
+| Minimap CV | `Detection { name, x, y }` (per-frame) | 5–15 Hz (adaptive, TDD §5) |
+
+> **หมายเหตุ:** input จริงของ `Sentry::update` คือ `&[Detection]` จาก minimap CV
+> (ไม่ใช่ `hero.role` จาก GSI — sentry ไม่มี role). last_pos ถูก normalise 0..1.
 
 ## 3. Internal State
 
 ```rust
-struct SentryState {
-    per_hero: HashMap<HeroId, HeroTracker>,
+struct Sentry {
+    tracks: HashMap<String, Track>,   // key = hero name
 }
-struct HeroTracker {
-    last_seen_at: Instant,
-    last_seen_pos: Vec2,
-    is_visible: bool,
-    role: Role,          // mid, pos4, pos5, carry, offlane
+struct Track {
+    last_seen_ms: u64,
+    last_pos: (f32, f32),             // normalised 0..1
+    missing_emitted: bool,            // edge flag — emit once per absence
 }
 ```
+
+> **สถานะ (2026-07): ไม่มีฟิลด์ `role`** — struct จริงคือ `Track` ข้างบน
+> (ไม่มี `is_visible`; ใช้ `last_seen_ms` + threshold แทน).
 
 ## 4. Logic
 
 ```
-every GSI tick:
-  for each enemy hero:
-    if visible → update last_seen_at, last_seen_pos, is_visible=true
-    if !visible && role in [mid, pos4, pos5]:
-      missing_for = now - last_seen_at
-      if missing_for > 5s:
-        emit EnemyMissing { hero, missing_for_ms, last_pos, role }
+every CV frame (Sentry::update):
+  for each detected hero:
+    update last_seen_ms, last_pos; re-arm missing_emitted = false
+  for each tracked hero:
+    elapsed = now_ms - last_seen_ms
+    if elapsed >= 5000ms && !missing_emitted:      // ทุกตัว, ไม่กรอง role
+      missing_emitted = true
+      emit EnemyMissing { hero, missing_for_ms, last_pos }
 ```
 
 - **Adaptive capture:** เมื่อ missing เริ่มนับ → สั่ง capture module เร่งเป็น ~15 Hz (TDD §5)
@@ -50,12 +58,13 @@ every GSI tick:
 
 ```rust
 EnemyMissing {
-    hero: HeroId,
-    missing_for_ms: u32,
-    last_pos: Vec2,
-    role: Role,
+    hero: String,
+    missing_for_ms: u64,
+    last_pos: (f32, f32),   // normalised 0..1
 }
 ```
+
+> **สถานะ (2026-07): ไม่มีฟิลด์ `role`** ใน `EnemyMissing`.
 
 → ส่งเข้า **G-Motion** ผ่าน bounded channel
 
@@ -83,7 +92,7 @@ EnemyMissing {
 ## 9. Acceptance Criteria
 
 - [ ] ตรวจจับ hero missing >5s ได้ภายใน 1 GSI tick หลังหลุด vision
-- [ ] emit `EnemyMissing` event ถูกต้อง (hero, pos, role, duration)
+- [ ] emit `EnemyMissing` event ถูกต้อง (hero, last_pos, missing_for_ms)
 - [ ] dedup: ไม่ emit ซ้ำสำหรับ hero ที่ยัง missing อยู่
 - [ ] adaptive capture: เร่ง CV rate เมื่อเริ่มสงสัย
 - [ ] CPU contribution ≤0.3% (ส่วนของ sentry logic เท่านั้น)

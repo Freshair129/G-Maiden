@@ -33,7 +33,8 @@ Hybrid **client-server**, split by latency requirement:
    ultra-low-latency voice alerts. Critical-path work (gank warnings) runs here so it survives
    cloud disconnection by falling back to a **local SLM**.
 2. **Cloud Brain (Maiden Scribe)** â€” drives live-caster persona, narrative continuity, and deep
-   analysis via a **cloud LLM (Gemini)**. Non-critical; degrades gracefully when offline.
+   analysis via a **cloud LLM** (design target was Gemini; **shipped** path is Claude CLI / Anthropic
+   API with an Ollama local-SLM fallback — see `master.rs`). Non-critical; degrades gracefully offline.
 
 ### The G-Series modules (ADR-01: every module is prefixed `G-`)
 
@@ -85,21 +86,41 @@ When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scal
 ### Key external interfaces
 
 - **Dota 2 GSI** â†’ local HTTP POST on **port 3000**, JSON payloads from the player's own machine.
-- **Cloud cognitive engine** â†’ Gemini streaming API.
-- **TTS module** â†’ text-to-speech tuned for a live-caster vocal style.
+  The same :3000 server also accepts `POST /telemetry` (GPU feeder, below) and `POST /announcer/install`.
+- **Cloud cognitive engine** â†’ Gemini was the original design target, but the **shipped** cloud path
+  is the **Claude CLI / Anthropic Messages API** (`claude-haiku-4-5`) with an **Ollama** local-SLM
+  fallback (`src-tauri/src/master.rs`, backends `Auto | Claude | Ollama`). Gemini is not wired.
+- **TTS module** â†’ text-to-speech tuned for a live-caster vocal style (Windows SAPI via PowerShell
+  today; Piper local-ONNX TTS is planned but not the default).
+- **GPU telemetry** â†’ a bundled headless sidecar `gpu-feeder/` (repo-root, zero-dep crate) runs
+  `nvidia-smi` in its own process and `POST`s to `/telemetry`; the main app never spawns nvidia-smi,
+  so the NFR budgets stay about its own work. Governor merges it into `resource-stats` (deck footer);
+  shows "—" when the feeder isn't running (30s staleness).
 
 ## Announcer event packs (G-AnnStudio)
 
-Maiden voices community-made announcer packs on top of TTS. Clips live in
-`assets/voice-cache/{event}/*.wav` and are read live (drop-in, no restart): `audio::play_random`
-picks one at random per fired event; `speak_event` falls back to SAPI TTS when an event has no clip.
+Maiden voices community-made announcer packs on top of TTS. A pack is a **bundle** — a folder
+`voice-cache/packs/<id>/` with a `manifest.json` that maps each event to clips **and a banner image**,
+plus `clips/` and `banners/` (managed by `voice_api.rs` + `src/src/AudioSettings.tsx`). Per fired
+event, `audio::play_random` resolves clips in order: **(1) the ACTIVE pack's mapped clips**
+(`voice_api::active_event_clips`), (2) the legacy flat `voice-cache/{event}/*.wav`, (3) the bundled
+default pack; `speak_event` falls back to SAPI TTS when none is found — so **activating a pack
+actually changes what's voiced in-game**.
 
 - **Event contract** — the canonical event ids live in `G-Suite/schemas/gmaiden-events.json`
-  (mirrored in `src-tauri/src/main.rs` `EVENTS`). Beyond G-Signal's `danger`/`revision`, the set is
-  fired by `src-tauri/src/announcer.rs` from each GSI `game-tick`: `match_start`, `first_blood`,
-  `kill`, multi-kills (`double_kill`…`rampage`, 18s window), the streak ladder (`killing_spree`/
-  `dominating`/`mega_kill`/`unstoppable`/`wicked_sick`/`monster_kill`/`godlike`/`beyond_godlike`),
-  and `death`/`respawn`/`levelUp`/`hpLow`/`manaLow`.
+  (mirrored in `src-tauri/src/voice_api.rs` `EVENTS`). Beyond G-Signal's `danger`/`gank`/`revision`
+  and G-Master's `advice`, the announcer set is fired by `src-tauri/src/announcer.rs` from each GSI
+  `game-tick`: `match_start`, `first_blood`, `kill`, multi-kills (`double_kill`/`triple_kill`/
+  `ultra_kill`/`rampage`, 18s window), the streak ladder (`killing_spree`/`dominating`/`mega_kill`/
+  `unstoppable`/`wicked_sick`/`monster_kill`/`godlike`/`beyond_godlike`), and
+  `death`/`respawn`/`levelUp`/`hpLow`/`manaLow`.
+- **Banner + sound bundle ("queue banner")** — on the GSI path, when `announcer::most_important`
+  picks the event to voice, `gsi.rs` also emits the **`announcer-banner`** event
+  (`voice_api::fired_banner`; the banner image is inlined as a base64 `data:` URL because the overlay
+  CSP is `img-src 'self' data:`). The overlay (`App.tsx` `packBanner`) then shows the active pack's
+  banner **image** for that event, replacing the built-in kill card (falls back to the card when the
+  pack maps no image). Preview without a match: the **"Show on overlay"** button in `AudioSettings.tsx`
+  → the `preview_announcer_event(pack_id, event)` command fires the exact same path.
 - **Kill-banner sync (enforce)** — the streak ladder in `announcer.rs` mirrors the overlay kill
   banner (`src/src/App.tsx` `STREAK_LABELS`) exactly, so the voiced streak and the on-screen banner
   always agree. Both detect kills from `tick.kills` rising-edge and reset on death. Audio is

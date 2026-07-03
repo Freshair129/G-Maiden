@@ -12,23 +12,23 @@
 
 - **Tier A â€” Local Gateway (G-Sensory):** Rust core à¹ƒà¸™ Tauri. à¸–à¸·à¸­ critical path à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”.
   à¸£à¸­à¸”à¹„à¸”à¹‰à¹à¸¡à¹‰ cloud à¸«à¸¥à¸¸à¸” (fallback local SLM/templates).
-- **Tier B â€” Cloud Brain (Maiden Scribe):** Gemini. persona narration + à¸§à¸´à¹€à¸„à¸£à¸²à¸°à¸«à¹Œà¸¥à¸¶à¸. non-critical, degrade gracefully.
+- **Tier B — Cloud Brain (Maiden Scribe):** Claude CLI / Anthropic Messages API (`claude-haiku-4-5`). persona narration + วิเคราะห์ลึก. non-critical, degrade gracefully. > **สถานะ (2026-07): Gemini = เป้า Phase-4 — ยังไม่ wired**
 
 ```
 Dota 2  â”€â”€GSI POST :3000â”€â”€â–º  â”Œâ”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€ Rust Core (Tier A) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”
                              â”‚ GSI Server (axum/tokio)                    â”‚
-Screen â”€DXGI captureâ”€â”€â”€â”€â”€â”€â–º  â”‚ Minimap CV (ort/imageproc)                 â”‚
+Screen ─DXGI capture──────►  │ Minimap CV (tract-onnx + image + pure-onnx-ocr-sync)     │
                              â”‚   â”‚                                        â”‚
                              â”‚   â–¼                                        â”‚
                              â”‚ G-Sentry â”€â–º G-Motion â”€â–º G-Signal â”€â”€â”       â”‚
                              â”‚                                    â–¼       â”‚
                              â”‚ Audio Engine (rodio) â—„â”€â”€ interrupt channel â”‚
-                             â”‚ G-Log (SQLite) â—„â”€â”€ decisions/outcomes      â”‚
+                             │ G-Log (JSONL match-*.jsonl) ◄── decisions/outcomes        │
                              â”‚ Brain Router â”€â”€â–º Cloud | LocalSLM | Tmpl   â”‚
                              â””â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¬â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”˜
                                 IPC â”‚ (Tauri events)      â”‚ async (non-critical)
                                     â–¼                     â–¼
-                          React Overlay UI         Gemini 2.0 Flash (Tier B)
+                          React Overlay UI         Claude CLI / Anthropic API (Tier B)
 ```
 
 ---
@@ -45,8 +45,8 @@ Screen â”€DXGI captureâ”€â”€â”€â”€â”€â”€â–
 | `signal` | threshold + interrupt (critical) | **high-priority** path |
 | `audio` | playback + interrupt channel | dedicated thread (realtime-ish) |
 | `brain_router` | à¹€à¸¥à¸·à¸­à¸ Cloud/SLM/Template + redaction | tokio task |
-| `glog` | à¹€à¸‚à¸µà¸¢à¸™ SQLite, à¸›à¹‰à¸­à¸™ tuning à¸à¸¥à¸±à¸š | tokio task (batched writes) |
-| `governor` | à¸§à¸±à¸” CPU/RAM/FPS, à¸ªà¸±à¹ˆà¸‡ throttle | tokio task (1Hz) |
+| `log` | เขียน G-Log **JSONL** (`match-*.jsonl`), ป้อน tuning กลับ | dedicated thread (append writes) |
+| `governor` | วัด CPU/RAM/GPU, สั่ง throttle | dedicated thread (ทุก 10s) |
 
 à¸à¸²à¸£à¸ªà¸·à¹ˆà¸­à¸ªà¸²à¸£à¸ à¸²à¸¢à¹ƒà¸™à¹ƒà¸Šà¹‰ **bounded channels** (crossbeam/tokio mpsc). à¸Šà¹ˆà¸­à¸‡ interrupt à¸‚à¸­à¸‡ audio à¹€à¸›à¹‡à¸™
 **priority à¸ªà¸¹à¸‡à¸ªà¸¸à¸”** à¹à¸¥à¸° non-blocking.
@@ -71,7 +71,7 @@ signal: prob>85%? â”€10msâ”€â–º [interrupt audio] â”€30msâ�
 
 ## 4. à¹‚à¸¡à¹€à¸”à¸¥ Concurrency & threading
 
-- **async runtime:** tokio (multi-thread) à¸ªà¸³à¸«à¸£à¸±à¸š I/O (GSI, cloud, SQLite)
+- **async runtime:** tokio (multi-thread) สำหรับ I/O (GSI, cloud, JSONL log writes)
 - **CPU-bound:** vision à¹ƒà¸Šà¹‰ rayon pool à¹à¸¢à¸ à¹„à¸¡à¹ˆà¹à¸¢à¹ˆà¸‡ tokio worker
 - **realtime-ish:** audio thread à¹à¸¢à¸, OS priority à¸ªà¸¹à¸‡à¸à¸§à¹ˆà¸²à¸›à¸à¸•à¸´à¹€à¸¥à¹‡à¸à¸™à¹‰à¸­à¸¢
 - **backpressure:** à¸—à¸¸à¸ channel bounded; à¸–à¹‰à¸²à¹€à¸•à¹‡à¸¡ drop frame à¹€à¸à¹ˆà¸² (capture) à¸”à¸µà¸à¸§à¹ˆà¸²à¸„à¹‰à¸²à¸‡
@@ -85,8 +85,8 @@ GSI à¸‚à¸­à¸‡ Dota 2 **à¹„à¸¡à¹ˆà¹€à¸›à¸´à¸”
 à¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸¨à¸±à¸•à¸£à¸¹ â†’ à¸­à¹ˆà¸²à¸™à¸ˆà¸²à¸ minimap:
 
 1. DXGI Desktop Duplication à¸”à¸¶à¸‡à¹€à¸‰à¸žà¸²à¸° **bounding box à¸‚à¸­à¸‡ minimap** (config à¹„à¸”à¹‰à¸•à¸²à¸¡ resolution/HUD scale)
-2. à¸•à¸£à¸§à¸ˆà¹„à¸­à¸„à¸­à¸™à¸®à¸µà¹‚à¸£à¹ˆà¸¨à¸±à¸•à¸£à¸¹: à¹€à¸£à¸´à¹ˆà¸¡à¸”à¹‰à¸§à¸¢ **template matching** (imageproc) à¸‚à¸­à¸‡ portrait 10 à¸®à¸µà¹‚à¸£à¹ˆà¹ƒà¸™à¹€à¸à¸¡à¸™à¸±à¹‰à¸™
-   (à¸£à¸¹à¹‰à¸£à¸²à¸¢à¸Šà¸·à¹ˆà¸­à¸ˆà¸²à¸ draft/GSI) â†’ à¸–à¹‰à¸²à¹à¸¡à¹ˆà¸™à¹„à¸¡à¹ˆà¸žà¸­ à¸¢à¸à¸£à¸°à¸”à¸±à¸šà¹€à¸›à¹‡à¸™ **ONNX detector à¹€à¸¥à¹‡à¸** (ort)
+2. ตรวจไอคอนฮีโร่ศัตรู: เริ่มด้วย **template matching** (`image` crate) ของ portrait 10 ฮีโร่ในเกมนั้น
+   (รูปรายชื่อจาก draft/GSI) → ถ้าแม่นไม่พอ ยกระดับเป็น **ONNX detector เล็ก** (`tract-onnx`)
 3. map à¸žà¸´à¸à¸±à¸” pixel â†’ à¸žà¸´à¸à¸±à¸”à¹€à¸à¸¡ â†’ à¸›à¹‰à¸­à¸™ `sentry`/`motion`
 4. capture à¹à¸šà¸š **adaptive rate:** à¸›à¸à¸•à¸´ ~5â€“8Hz, à¹€à¸£à¹ˆà¸‡à¹€à¸›à¹‡à¸™ ~15Hz à¹€à¸¡à¸·à¹ˆà¸­ Sentry à¸ªà¸‡à¸ªà¸±à¸¢ (missing à¹€à¸£à¸´à¹ˆà¸¡à¸™à¸±à¸š)
 
@@ -98,9 +98,9 @@ GSI à¸‚à¸­à¸‡ Dota 2 **à¹„à¸¡à¹ˆà¹€à¸›à¸´à¸”
 ## 6. Brain Router & Resilience (SRS Â§5.2)
 
 ```
-                       â”Œâ”€â”€ online?  â”€â”€â–º Cloud (Gemini)  â”€â”€ persona à¸£à¸§à¸¢, à¸§à¸´à¹€à¸„à¸£à¸²à¸°à¸«à¹Œà¸¥à¸¶à¸
+                       ┌── online?  ──► Cloud (Claude CLI / Anthropic API)  ── persona ราย, วิเคราะห์ลึก
 Brain Router â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”¤
-(non-critical text)    â”œâ”€â”€ cloud fail / offline â”€â”€â–º Local SLM (Qwen2.5, lazy-load)
+(non-critical text)    ├── cloud fail / offline ──► Local SLM (Ollama, ไม่ pin โมเดล)
                        â”‚
                        â””â”€â”€ SLM à¹„à¸¡à¹ˆà¸žà¸£à¹‰à¸­à¸¡ / latency à¸ªà¸¹à¸‡ â”€â”€â–º Template engine (à¹€à¸£à¹‡à¸§à¹€à¸ªà¸¡à¸­)
 ```
@@ -113,7 +113,7 @@ Brain Router â”€â”€â”€â”€â”€â”€â”€â”€â�
 
 ## 7. à¸à¸²à¸£à¸à¸³à¸à¸±à¸šà¸—à¸£à¸±à¸žà¸¢à¸²à¸à¸£ (Resource Governor)
 
-`governor` à¸§à¸±à¸”à¸—à¸¸à¸ 1s à¹à¸¥à¹‰à¸§à¸šà¸±à¸‡à¸„à¸±à¸š budget:
+`governor` วัดทุก 10s แล้วบังคับ budget:
 - **CPU > 2.5%** â†’ à¸¥à¸” capture rate, à¸¥à¸” vision frequency, batch à¸‡à¸²à¸™
 - **RAM à¹ƒà¸à¸¥à¹‰ 400MB** â†’ unload SLM, à¸¥à¸” cache, GC ring buffer à¸ªà¹ˆà¸§à¸™à¹€à¸à¸´à¸™
 - **FPS impact > 3%** â†’ à¸¥à¸” overlay redraw, à¸›à¸´à¸” effect à¸«à¸™à¸±à¸ (blur), drop à¹„à¸› static HUD
@@ -130,17 +130,20 @@ Overlay: à¸«à¸™à¹‰à¸²à¸•à¹ˆà¸²à¸‡ transparent à¹
 G-Maiden/
 â”œâ”€ src-tauri/            # Rust core
 â”‚  â”œâ”€ src/
-â”‚  â”‚  â”œâ”€ gsi/  vision/  sentry/  motion/  signal/
-â”‚  â”‚  â”œâ”€ audio/  brain/  glog/  governor/
-â”‚  â”‚  â””â”€ main.rs
+│  │  ├─ main.rs  gsi.rs  capture.rs  dxgi.rs  capture_wgc.rs (--features wgc)  cv.rs  ocr.rs
+│  │  ├─ sentry.rs  motion.rs  signal.rs  audio.rs  announcer.rs  governor.rs  log.rs
+│  │  ├─ master.rs  slm.rs  runtime.rs  voice_api.rs  tts.rs  identity.rs  calibration.rs
+│  │  ├─ items.rs  usage.rs  damage.rs  revive.rs  respawn.rs  counter_advice.rs  setup.rs
+│  │  └─ (โครงจริงเป็น **ไฟล์ .rs แบน** ไม่ใช่โฟลเดอร์ย่อย — ดู `main.rs` mod)
 â”‚  â””â”€ tauri.conf.json
 â”œâ”€ src/                  # React (overlay + dashboard à¹ƒà¸Šà¹‰à¸£à¹ˆà¸§à¸¡)
 â”‚  â”œâ”€ overlay/  dashboard/  components/  store/
 â”‚  â”œâ”€ App.tsx            # overlay window + window routing; CommandDeck.tsx = control window
 â”‚  â”œâ”€ src/live/           # live-wire builders (Tauri events â†’ UI state); src/gid.ts = GID codec
 â”‚  â””â”€ (accounts/GID layer: identity.rs + Supabase gstore â€” see ADR-14, CR-002-Phase2)
+├─ gpu-feeder/           # zero-dep telemetry sidecar (nvidia-smi → POST /telemetry); Tauri externalBin
 â”œâ”€ assets/voice-cache/   # à¸„à¸¥à¸´à¸›à¹€à¸ªà¸µà¸¢à¸‡ critical à¸—à¸µà¹ˆ render à¸¥à¹ˆà¸§à¸‡à¸«à¸™à¹‰à¸²
-â”œâ”€ models/               # Piper voice + SLM (à¹‚à¸«à¸¥à¸”à¹à¸¢à¸, à¹„à¸¡à¹ˆ commit à¹„à¸Ÿà¸¥à¹Œà¹ƒà¸«à¸à¹ˆ)
+├─ models/               # Piper voice (opt) + Ollama SLM external (โหลดแยก, ไม่ commit ไฟล์ใหญ่)
 â”œâ”€ docs/                 # à¹€à¸­à¸à¸ªà¸²à¸£à¸Šà¸¸à¸”à¸™à¸µà¹‰
 â””â”€ tests/perf/           # latency/CPU/RAM/FPS harness (Definition of Done)
 ```
@@ -156,8 +159,8 @@ G-Maiden/
 | **ADR-03** | critical path à¹€à¸›à¹‡à¸™ Rust à¸¥à¹‰à¸§à¸™, cloud/UI à¸«à¹‰à¸²à¸¡à¸­à¸¢à¸¹à¹ˆà¸šà¸™à¹€à¸ªà¹‰à¸™à¸—à¸²à¸‡ â‰¤300ms | latency + resilience |
 | **ADR-04** | à¹€à¸ªà¸µà¸¢à¸‡ G-Signal à¹ƒà¸Šà¹‰ **audio cache + slot-splicing** à¹„à¸¡à¹ˆà¸ªà¸±à¸‡à¹€à¸„à¸£à¸²à¸°à¸«à¹Œà¸ªà¸” | budget latency |
 | **ADR-05** | à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸¨à¸±à¸•à¸£à¸¹à¸ˆà¸²à¸ **minimap CV** (GSI à¹„à¸¡à¹ˆà¹ƒà¸«à¹‰) | functional necessity |
-| **ADR-06** | G-Log = SQLite local-only, no egress | privacy-first |
-| **ADR-07** | SLM lazy-load à¹€à¸‰à¸žà¸²à¸° fallback; à¸›à¸à¸•à¸´à¹ƒà¸Šà¹‰ cloud/template | RAM budget |
+| **ADR-06** | G-Log = **JSONL match logs** (`match-*.jsonl`) local-only, no egress | privacy-first |
+| **ADR-07** | Local SLM = **Ollama** (ไม่ pin โมเดล), เรียกเฉพาะ fallback; ปกติใช้ cloud/template | RAM budget |
 | **ADR-14** | Accounts/GID — additive Google-OAuth identity on shared Supabase gstore; match/CV data stays local, account stores public data only | privacy-first + opt-in cross-G-series identity |
 
 ---

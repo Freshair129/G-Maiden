@@ -14,83 +14,78 @@
 
 ## 2. Input
 
+ที่บันทึกจริงวันนี้: tick stream + G-Signal/G-Sentry events. แถวที่ทำเครื่องหมาย
+*(planned)* ยังไม่ได้ต่อสายเข้า G-Log.
+
 | Source | Data |
 | --- | --- |
-| G-Signal | `SignalAlert` (fired/missed, probability, latency) |
-| G-Master | `Advice` (recommendation given) |
-| G-Motion | `GankRisk` (probability vs actual outcome) |
-| GSI | Match result, deaths, teamfight outcomes |
-| Governor | `ResourceStat` (CPU/RAM/FPS telemetry) |
+| GSI tick | cleaned `GameTick` (~1 Hz) — **ทำแล้ว** |
+| G-Signal | `gank_signal` (probability, missing heroes, eta) + `gank_revision` — **ทำแล้ว** |
+| G-Sentry | `enemy_missing` (hero, missing_for_ms, last_pos) — **ทำแล้ว** |
+| G-Master | `Advice` (recommendation given) — *(planned)* |
+| G-Motion | `GankRisk` (probability vs actual outcome) — *(planned)* |
+| Governor | `ResourceStat` (CPU/RAM/FPS telemetry) — *(planned)* |
 
-## 3. Schema (SQLite, local-only)
+## 3. Storage format (JSONL, local-only)
 
-```sql
-CREATE TABLE matches (
-    id TEXT PRIMARY KEY,
-    hero TEXT NOT NULL,
-    started_at INTEGER,
-    ended_at INTEGER,
-    result TEXT           -- win | loss | abandon
-);
+> **โค้ดจริง (`log.rs`):** ไม่มี SQLite / rusqlite เลย. G-Log เขียน **JSONL หนึ่งไฟล์ต่อ
+> แมตช์** ที่ `%LOCALAPPDATA%\G-Maiden\logs\match-<epoch-sec>.jsonl` — แต่ละบรรทัดเป็น JSON
+> หนึ่ง record. (Schema SQLite ด้านล่างเดิมเป็นดีไซน์ที่ยัง**ไม่ได้ทำ** — เก็บไว้ในหัวข้อ
+> "Planned" §5.)
 
-CREATE TABLE decisions (
-    id TEXT PRIMARY KEY,
-    match_id TEXT REFERENCES matches(id),
-    t_ms INTEGER,         -- game clock ms
-    module TEXT,           -- g-signal | g-master | g-motion
-    payload TEXT,          -- JSON of decision/advice
-    outcome TEXT           -- survived | died | teamfight_won | teamfight_lost
-);
+**Tick record** — sampled ~1 Hz (debounce บน `clock_time`):
 
-CREATE TABLE signals (
-    id TEXT PRIMARY KEY,
-    match_id TEXT REFERENCES matches(id),
-    t_ms INTEGER,
-    probability INTEGER,  -- 0–100
-    latency_ms INTEGER,   -- end-to-end measured
-    survived BOOLEAN
-);
-
-CREATE TABLE tuning_state (
-    key TEXT PRIMARY KEY,
-    value TEXT,            -- JSON
-    updated_at INTEGER
-);
+```json
+{ "ts": 1719900000123, "tick": { /* cleaned GameTick ที่ overlay ได้รับ */ } }
 ```
 
-## 4. Logic
+**Typed event records** — เขียน time-aligned กับ tick stream ผ่าน `note_event`:
+
+```json
+{ "type": "gank_signal", "ts": ..., "probability": 0.91, "missing_heroes": ["CM","SF"], "eta_ms": 2500 }
+{ "type": "gank_revision", "ts": ... }
+{ "type": "enemy_missing", "ts": ..., "hero": "CM", "missing_for_ms": 6000, "last_pos": [0.25, 0.5] }
+```
+
+`ts` = Unix-epoch milliseconds. ไฟล์ถูก flush ทีละบรรทัด เพื่อให้ power-cut กลางแมตช์ยัง
+เหลือ prefix ที่อ่านได้.
+
+## 4. Logic (ปัจจุบัน)
+
+`note_tick` ตรวจ transition `in_game` เพื่อเปิด/ปิดไฟล์แมตช์ แล้วเขียน record ตามด้านล่าง.
+ยังไม่มี outcome backfill หรือ metric ใด ๆ — บันทึกดิบเพื่อ join แบบ offline ทีหลัง.
 
 ```
 during match:
-  on SignalAlert → write signals row (async batch)
-  on Advice → write decisions row (async batch)
-  on death/teamfight → backfill outcome in decisions/signals
-
-post match:
-  calculate accuracy metrics:
-    signal_accuracy = signals where survived=true / total signals
-    advice_hit_rate = decisions with positive outcome / total decisions
-  
-  update tuning_state:
-    if signal_accuracy < 80% → adjust DANGER_THRESHOLD (±5%)
-    if signal latency p99 > 280ms → flag for investigation
-  
-  tuning_state feeds back into G-Sentry/G-Signal on next match start
+  on GSI tick (clock_time advanced) → append {ts, tick} record (~1 Hz, flush ต่อบรรทัด)
+  on G-Signal fire   → append {type:"gank_signal", ...}
+  on Belief Revision → append {type:"gank_revision"}
+  on enemy missing   → append {type:"enemy_missing", ...}
+  in_game flips false → close match file
 ```
 
-## 5. Output
+**การลบ/ความเป็นส่วนตัว:** `delete_match` / `delete_all` ลบไฟล์ที่ archive แล้ว แต่
+**กันไฟล์ที่กำลังบันทึกอยู่** (active match) ไว้เสมอ; `open_log_dir` เปิดโฟลเดอร์ให้ผู้ใช้
+ตรวจสอบเองได้.
 
-- **During match:** async writes (batched, non-blocking)
-- **Post match:** `TuningDelta { key, old_value, new_value, reason }`
-- **On next match start:** load `tuning_state` → inject into G-Sentry/G-Signal config
+## 5. Output + Planned tuning loop
+
+**ปัจจุบัน (ทำแล้ว):**
+- append JSONL แบบ flush ต่อบรรทัด (non-blocking พอสำหรับ ~1 Hz)
+- ไม่มี metric / TuningDelta / feedback ใด ๆ ส่งกลับเข้า runtime
+
+**Planned (ยังไม่ได้ทำ — `log.rs` เรียกส่วนนี้ว่า "Future use"):** replay ไฟล์ JSONL แบบ
+offline เพื่อคำนวณ `signal_accuracy` / `advice_hit_rate`, สร้าง `TuningDelta { key,
+old_value, new_value, reason }`, แล้ว inject เข้า config ของ G-Sentry/G-Signal ในแมตช์ถัดไป.
+ตอนนี้ยังไม่มี `tuning_state`, accuracy metric, หรือ inject-on-next-match.
 
 ## 6. Privacy (GATE P6)
 
 - **ห้ามเด็ดขาด:**
-  - ไม่มี network egress จากตาราง G-Log
-  - ไม่ส่ง SQLite file ขึ้น cloud
+  - ไม่มี network egress จากข้อมูล G-Log
+  - ไม่ส่งไฟล์ JSONL (`match-*.jsonl`) ขึ้น cloud
   - ไม่ sync กับ external service
-  - ไม่ include G-Log data ใน cloud LLM prompts (redaction at brain_router)
+  - ไม่ include G-Log data ใน cloud LLM prompts
 - **Validation:** no-egress test — monitor all network calls ตลอด session, verify ว่า
   ไม่มี request พาข้อมูล G-Log ออก
 
@@ -102,8 +97,8 @@ post match:
 
 ## 8. Constraints
 
-- **Latency:** non-critical (batched async writes)
-- **Storage:** SQLite ≤50 MB per 100 matches; auto-archive old matches
+- **Latency:** non-critical (append + flush ต่อบรรทัด, ~1 Hz)
+- **Storage:** JSONL ~1 ไฟล์ต่อแมตช์; แมตช์ 40 นาทีอยู่ต่ำกว่า 2 MB สบาย ๆ
 - **Write impact:** ≤0.1% CPU overhead from logging
 - **Privacy:** GATE P6 — zero egress
 
@@ -115,13 +110,13 @@ post match:
 | Advice data | **G-Master** |
 | Risk data | **G-Motion** |
 | Match results | GSI |
-| → Tuning output | **G-Sentry**, **G-Signal** (next match) |
+| → Tuning output | **G-Sentry**, **G-Signal** (next match) — *(planned)* |
 
 ## 10. Acceptance Criteria
 
-- [ ] writes ไม่ block game loop (async batch)
-- [ ] SQLite schema ตรงตาม Eng Spec §6
-- [ ] tuning feedback ทำงาน: post-match → update tuning_state → load next match
+- [x] writes ไม่ block game loop (append JSONL, ~1 Hz)
+- [x] JSONL record format ตรงตาม §3 (tick + typed events)
+- [ ] tuning feedback ทำงาน: replay → TuningDelta → load next match *(planned — ยังไม่ได้ทำ)*
 - [ ] **no-egress test pass** (GATE P6) — zero network calls with G-Log data
-- [ ] storage ≤50 MB per 100 matches
+- [x] delete_match / delete_all กันไฟล์ที่กำลังบันทึกอยู่
 - [ ] CPU overhead from logging ≤0.1%

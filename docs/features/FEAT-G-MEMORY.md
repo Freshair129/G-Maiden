@@ -1,5 +1,7 @@
 # FEAT-G-MEMORY — Persistent Player Memory
 
+> **สถานะ (2026-07): ยังไม่ได้ทำ (spec ล่วงหน้า) — ยังไม่มีโมดูลนี้ในโค้ด (`src-tauri/src/`)**
+
 > **Module:** G-Memory · **Priority:** Companion P0 · **Phase:** 6
 > **PRD:** §3A G-Memory · **SRS:** §3.8
 
@@ -7,9 +9,9 @@
 
 ## 1. Purpose
 
-Maiden "จำผู้เล่นได้" ข้ามแมตช์ — เก็บฮีโร่ถนัด, จุดที่มักตาย, เทรนด์ MMR,
-play style preferences. ข้อมูลอยู่ **local เท่านั้น** (Privacy-First).
-เป็น moat หลักของ persona — ทำให้ Maiden รู้สึกเป็น companion จริง ไม่ใช่ bot ใหม่ทุกแมตช์.
+จะทำให้ Maiden "จำผู้เล่นได้" ข้ามแมตช์ — เก็บฮีโร่ถนัด, จุดที่มักตาย, เทรนด์ MMR,
+play style preferences. ข้อมูลจะอยู่ **local เท่านั้น** (Privacy-First).
+ตั้งใจให้เป็น moat หลักของ persona — ทำให้ Maiden รู้สึกเป็น companion จริง ไม่ใช่ bot ใหม่ทุกแมตช์.
 
 ## 2. Data Model
 
@@ -37,8 +39,8 @@ PlayerMemory {
 
 ## 3. Storage
 
-- **Backend:** SQLite (extends G-Log database, separate tables)
-- **Location:** local disk only — same DB file as G-Log
+- **Backend (planned):** SQLite (separate tables). **หมายเหตุ — สแตกปัจจุบันต่างจากนี้:** G-Log ที่ ship จริงเขียนเป็น **JSONL** (`match-*.jsonl` ใน `%LOCALAPPDATA%\G-Maiden\logs\`) ไม่มี SQLite database. ตอน implement ต้องเลือกว่าจะ (ก) เพิ่ม SQLite ใหม่สำหรับ memory หรือ (ข) derive memory จากไฟล์ JSONL ที่มีอยู่.
+- **Location:** local disk only — อยู่ข้างข้อมูล G-Log
 - **Retention:** indefinite (player data grows slowly)
 - **Size:** ≤5 MB per 1000 matches of memory
 
@@ -93,7 +95,7 @@ during match:
 - [ ] จำ favorite heroes + winrate ถูกต้องข้ามแมตช์
 - [ ] death hotspots aggregate ถูก position
 - [ ] MMR trend tracks win/loss pattern
-- [ ] memory query ≤5ms (SQLite indexed)
+- [ ] memory query ≤5ms (SQLite indexed — หรือเทียบเท่าถ้า derive จาก JSONL)
 - [ ] **no-egress:** memory data ไม่ถูกส่งขึ้น cloud (ส่งได้เฉพาะ summary)
 - [ ] player สามารถ delete all memory ได้
 - [ ] storage ≤5 MB per 1000 matches

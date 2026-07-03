@@ -1,5 +1,7 @@
 # FEAT-G-COACH — Post-Match Deep Review
 
+> **สถานะ (2026-07): ยังไม่ได้ทำ (spec ล่วงหน้า) — ยังไม่มีโมดูลนี้ในโค้ด (`src-tauri/src/`)**
+
 > **Module:** G-Coach · **Priority:** Companion P1 · **Phase:** 6–7
 > **PRD:** §3A G-Coach · **SRS:** §3.9
 
@@ -7,9 +9,9 @@
 
 ## 1. Purpose
 
-วิเคราะห์เชิงลึกหลังจบเกม — ชี้ key decision points, จุดที่ควรปรับปรุง,
+จะวิเคราะห์เชิงลึกหลังจบเกม — ชี้ key decision points, จุดที่ควรปรับปรุง,
 และ 3 recommendations สำหรับเกมหน้า. ใช้ full match data จาก G-Log.
-เหนือกว่า competitors (Questie) ที่ทำได้แค่ realtime — G-Coach ให้ retrospective analysis.
+เป้าหมายคือเหนือกว่า competitors (Questie) ที่ทำได้แค่ realtime — G-Coach จะให้ retrospective analysis.
 
 ## 2. Input
 
@@ -67,9 +69,9 @@ CoachReview {
 ## 6. Constraints
 
 - **Non-critical:** post-match, async — ไม่มี latency budget
-- **Cloud preferred:** deep analysis ต้อง long context → Gemini/Cloud LLM
-- **Fallback:** local SLM → shorter analysis; template → basic stats only
-- **Privacy:** ส่งเฉพาะ aggregated match stats ขึ้น cloud, ไม่ส่ง raw G-Log
+- **Cloud preferred:** deep analysis ต้อง long context → Cloud LLM (สแตกที่ ship จริงคือ **Claude CLI / Anthropic API** — spec เดิมอ้าง Gemini แต่โค้ดปัจจุบันใช้ Claude)
+- **Fallback:** local SLM (Ollama) → shorter analysis; template → basic stats only
+- **Privacy:** ส่งเฉพาะ aggregated match stats ขึ้น cloud, ไม่ส่ง raw G-Log (JSONL `match-*.jsonl`)
 
 ## 7. Dependencies
 

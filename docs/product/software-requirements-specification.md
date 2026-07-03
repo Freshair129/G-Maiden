@@ -181,6 +181,10 @@ G-Maiden ทำงานในฐานะแอปพลิเคชันป�
 
 * **Dota 2 GSI Engine:** เชื่อมต่อผ่าน Local HTTP Post ที่พอร์ต 3000 โดยได้รับโครงสร้าง JSON ส่งจากเครื่องผู้ใช้เอง  
 * **Cloud Cognitive Engine:** เชื่อมต่อ API ของ Gemini (ผ่านช่องทางส่งข้อความสตรีมมิ่งที่ระบุ)  
+  > **สถานะ (2026-07): ยังไม่ได้ wire — เป็น Phase-4 target.** ปัจจุบันยังไม่มี Gemini client;
+  > เส้นทาง cloud advice ที่ ship แล้วใช้ **Claude CLI / Anthropic API** + **Ollama SLM (offline)**
+  > ผ่าน G-Master backend picker (`slm.rs`). requirement นี้คงไว้เป็นเป้าหมาย โดย ADR-14/G-Mind
+  > (§3.10) รองรับสลับ LLM ได้ในภายหลัง
 * **TTS Module (Text-to-Speech):** เชื่อมโยงโมดูลการถอดเสียงเป็นข้อความพูดที่ตอบสนองความถี่สูง โดยมีสไตล์น้ำเสียงที่ใกล้เคียงกับอารมณ์นักพากย์มากที่สุด  
 * **STT Module (Speech-to-Text):** สำหรับ G-Voice — แปลงเสียงพูดของผู้เล่น (Push-to-Talk) เป็นข้อความเพื่อส่งให้ Cloud Brain รองรับทั้งภาษาไทยและอังกฤษ
 
@@ -190,6 +194,9 @@ G-Maiden ทำงานในฐานะแอปพลิเคชันป�
 
 * **Latency:** เวลาตอบสนองต่อการสแกนและส่งออกผลลัพธ์เสียงทางตรง (End-to-End Latency) ของ G-Signal ต้องเสร็จสิ้นใน **250ms** และห้ามเกิน **300ms** เด็ดขาด  
 * **CPU Usage:** โปรแกรมส่วนที่ทำงานเบื้องหลังต้องกินประสิทธิภาพของ CPU บนชิปเซ็ตระดับกลางไม่เกิน **2.5%** \* **Memory Usage:** กินหน่วยความจำชั่วคราว (RAM) สูงสุดไม่เกิน **400MB** ในระหว่างที่มีการประมวลผลโมดูลทั้งหมดค้างอยู่
+  > **หมายเหตุ (2026-07):** ปัจจุบันแอปยัง surface **GPU load/temp + VRAM** เพิ่มที่ deck footer
+  > ด้วย (ingest ผ่าน `POST /telemetry` ที่ feed จาก `gpu-feeder` sidecar ซึ่งรัน nvidia-smi
+  > out-of-process) — เป็นข้อมูลเชิง informational เท่านั้น ไม่ใช่การเปลี่ยน budget ของ NFR ข้างต้น
 
 ### **5.2 ความน่าเชื่อถือและการบำรุงรักษา (Reliability & Maintainability)**
 

@@ -17,7 +17,7 @@ related_docs: ["FEAT-G-SIGNAL", "FEAT-G-MASTER", "FEAT-G-MOTION", "FEAT-G-SENSOR
 
 > **Module:** G-Damage · **Priority:** Core · **Phase:** 3 (feeds G-Signal)
 > **SRS:** §3.3, §3.4 · **Eng Spec:** §2.3 · **TDD:** §3
-> **สถานะโค้ดปัจจุบัน:** `src-tauri/src/damage.rs` v0.6.0 — มีฝั่ง **defensive** + สูตรแกน, ยังขาดฝั่ง offensive/ไอเทม/CV
+> **สถานะโค้ดปัจจุบัน:** `src-tauri/src/damage.rs` — defensive (`is_lethal`) + offensive (`can_i_kill`, P-D1) + item/ability-level engine (`burst_damage_with`, P-D2a) + JSON hero/item DB (P-D3) พร้อม 23 unit tests. **ยังขาด:** GSI wiring จริง (P-D2b), CV HP-bar (P-D4), belief-revision wiring (P-D5) — โมดูลยัง `#![allow(dead_code)]` (ยังไม่ต่อเข้า Tauri command / G-Signal)
 
 ---
 
@@ -39,7 +39,7 @@ related_docs: ["FEAT-G-SIGNAL", "FEAT-G-MASTER", "FEAT-G-MOTION", "FEAT-G-SENSOR
 | GSI (ฝั่งเรา) | hero, level, abilities, items, talents, hp, mana | ✅ แม่น 100% |
 | G-Master | ไอเทม/Net Worth ศัตรูที่สอดแนมได้ | ✅ มี (ต่อท่อ) |
 | CV (`src-tauri/src/cv/`) | แถบเลือดศัตรู (current HP %) | ⚠️ ต้องเพิ่ม HP-bar detector |
-| Hero DB | base stats + ability damage tables ทุกฮีโร่ | ⚠️ มี 8 ฮีโร่ ต้องครบ 124 |
+| Hero DB | base stats + ability damage tables ทุกฮีโร่ | ⚠️ base stats ครบ 127 ตัว, ability tables curate แล้ว 8/127 |
 
 ## 3. The Two-Sided Problem (หลักการสำคัญที่สุด)
 
@@ -74,18 +74,19 @@ on tick(my_state, target):
     emit KillWindow { target, margin, confidence, combo, ttl_ms }
       → G-Signal ("กดเลย!") / G-Master overlay
 
-// DEFENSIVE — is_lethal (มีแล้วใน damage.rs:179, คงไว้)
+// DEFENSIVE — is_lethal (มีแล้วใน damage.rs:240, คงไว้ — ยังไม่ต่อเข้า G-Signal command จริง)
 on tick: if enemy_burst >= my_hp → G-Signal ("ถอย!")
 ```
 
 ## 5. Output
 
 ```rust
+// ตรงกับ damage.rs:281 (P-D1)
 pub struct KillWindow {
-    pub target: HeroRef,
+    pub can_kill: bool,       // true เมื่อ confidence >= KILL_CONFIDENCE
     pub margin: f64,          // burst - effective_hp (บวก = ฆ่าได้)
     pub confidence: f64,      // 0.0–1.0 — ป้อน belief revision
-    pub combo: Vec<String>,   // สกิลที่ใช้ ตามลำดับ
+    pub combo: Vec<String>,   // ชื่อสกิลที่ contribute (ตาม DB order)
     pub burst: BurstResult,   // breakdown เต็มสำหรับ overlay/debrief
     pub ttl_ms: Option<u32>,  // หน้าต่างยังจริงอีกกี่ ms — None ใน P-D1 (ต้องมี cooldown/regen tracking ใน P-D2)
 }
@@ -97,8 +98,11 @@ pub struct KillWindow {
 pub const KILL_CONFIDENCE: f64 = 0.7;
 pub const DEFAULT_EHP_UNCERTAINTY: f64 = 0.15;
 pub fn kill_confidence(burst: f64, ehp: f64, uncertainty: f64) -> f64;  // P(burst >= true_ehp)
-pub fn can_i_kill(attacker, attacker_level, target_current_hp,
-                  target_armor, target_magic_res, ehp_uncertainty) -> KillWindow;
+pub fn can_i_kill(attacker: &HeroData, attacker_level: u32, target_current_hp: f64,
+                  target_armor: f64, target_magic_res: f64, ehp_uncertainty: f64) -> KillWindow;
+// P-D2: item/ability-level aware variant
+pub fn can_i_kill_with(attacker, attacker_level, ability_levels, items,
+                       target_current_hp, target_armor, target_magic_res, ehp_uncertainty) -> KillWindow;
 ```
 
 → ส่งเข้า **G-Signal** (offensive prompt) และ **G-Sensory** (overlay margin bar)
@@ -168,7 +172,7 @@ pub fn can_i_kill(attacker, attacker_level, target_current_hp,
 - [ ] `can_i_kill()` คืน `KillWindow` ถูกต้องตามสูตร (unit test เทียบค่ามือคำนวณ)
 - [ ] `burst_damage` นับไอเทม (Dagon/Aghs/แดเมจไอเทม) ได้ถูกต้อง
 - [ ] อ่านเลเวลสกิล/มานา/คูลดาวน์จาก GSI จริง (ไม่เดา) — คอมโบ "พร้อมยิงไหม" ถูกต้อง
-- [ ] Hero DB ครบ 124 ฮีโร่
+- [ ] Hero DB ครบทั้ง roster (127 ตัว; base stats ครบแล้ว, ability tables 8/127)
 - [ ] CV อ่าน current HP ศัตรูได้ ±5% ใน budget capture เดิม
 - [ ] ส่ง **confidence ไม่ใช่ boolean**; confidence ต่ำ → trigger belief revision
 - [ ] ฝั่ง defensive (`is_lethal`) เดิมยังทำงานปกติ (ไม่ regress)

@@ -1,5 +1,8 @@
 # FEAT-G-SCORE — Dynamic GSI-driven Soundtrack
 
+> **สถานะ (2026-07): ยังไม่ได้ทำ (spec ล่วงหน้า) — ไม่มีโมดูลนี้ในโค้ด (`src-tauri/src/`)**
+> ไม่มี `mod score` ใน `main.rs` และไม่มีไฟล์ `score.rs` — เอกสารนี้เป็น design vision ล่วงหน้า ยังไม่ได้ implement.
+
 > **Module:** G-Score (โมดูลที่ 13, proposed) · **Priority:** Delighter / Differentiator · **Phase:** post-v1.0
 > **PRD/SRS:** new (proposed) · **Synergy:** G-Motion, G-Stream, G-Persona, Marketplace (ADR-12)
 

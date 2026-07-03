@@ -1,5 +1,10 @@
 # G-Maiden — Ultraplan (Master Implementation Plan)
 
+> ⚠️ **เอกสารเชิงประวัติ (planning artifact, ~v0.1–0.5).** แผนนี้เขียนก่อนลงมือ และหลายอย่าง
+> เปลี่ยนไปตอน implement จริง — เช่น G-Log เป็น **JSONL** ไม่ใช่ SQLite, SLM ใช้ **Ollama** ไม่ใช่
+> llama-cpp/Qwen, cloud ใช้ **Claude CLI/Anthropic API** ไม่ใช่ Gemini, โมดูลเป็นไฟล์ `.rs` แบน
+> ไม่ใช่โฟลเดอร์. **สถานะจริงล่าสุดดูที่ `AGENTS.md` + `CLAUDE.md`.** เก็บไว้เป็นบันทึกแผนเดิม.
+
 > แผนลงมือสร้างระดับ task-by-task — ต่อยอดจาก `01`–`04`. ใช้เป็น "คัมภีร์ build":
 > มี toolchain ที่แน่นอน, spike de-risk ก่อนลงทุน, backlog แยกเป็น task id ที่มี deliverable +
 > ไฟล์ + acceptance + dependency + estimate, critical path, perf harness และ sprint แรกที่ทำได้ทันที.

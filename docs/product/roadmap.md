@@ -24,9 +24,18 @@
       (merge `ebe55631`, 2026-07-03): port `/api/voice*` เป็น **native Tauri commands**
       (`voice_api.rs` + shim `readJson→invoke` ใน `AudioSettings.tsx`) — หน้า Voice Packs
       กลับมาใช้งานได้โดยไม่ต้องมี node backend
+- [x] ~~**Deck panels ยังเป็น mock**~~ — ปิดแล้ว (2026-07-03, Phase 2c): telemetry-footer /
+      `weeklyReport` / `insights` / `history` / `agentSector.status` live-wired จริงผ่าน
+      `src/src/live/build{Telemetry,Weekly,Insights,History}.ts` (merge over MOCK ใน `companion.ts`)
+- [x] ~~**Voice pack = เสียงในเกมจริง**~~ — ปิดแล้ว (2026-07-03): activate pack เปลี่ยนเสียง
+      announcer ในเกม + banner image ของ pack โผล่บน overlay (event ใหม่ `announcer-banner`) +
+      ปุ่ม "Show on overlay" (`preview_announcer_event`) ให้ preview banner+เสียงบน overlay จริง
+      โดยไม่ต้องเข้าเกม
+- [x] ~~**GPU/VRAM/temp telemetry**~~ — ปิดแล้ว (2026-07-03): `gpu-feeder` sidecar (own process,
+      รัน nvidia-smi) PUSH sample → `POST /telemetry` :3000 → deck footer แสดง GPU load/temp + VRAM
 - [ ] **Release verification** — `pnpm tauri build` จาก main → smoke: deck + overlay + DXGI
-      + Settings tab (Control embedded) + Voice Packs (import/activate/preview)
-      + Google-login → GID end-to-end → จึงค่อย bump + tag
+      + Settings tab (Control embedded) + Voice Packs (import/activate/preview + Show-on-overlay banner)
+      + telemetry footer (GPU/VRAM) + Google-login → GID end-to-end → จึงค่อย bump + tag
 
 ### Next
 - [ ] Phase 3 — Voice & Persona (Piper / audio-cache / presets — รายละเอียดด้านล่าง)
@@ -220,8 +229,10 @@
 
 ### P7.1 — Resource Governor (TDD §7)
 > `partial` — `governor.rs` start ที่ launch แล้ว (main.rs:440); ยังต้อง validate throttle
-> actions ครบตาม TDD §7 + วัดจริงกับ NFR budgets
-- [ ] 1Hz CPU/RAM/FPS monitor (ResourceStat event)
+> actions ครบตาม TDD §7 + วัดจริงกับ NFR budgets. **GPU-telemetry-feeder path done:**
+> `gpu-feeder` sidecar รัน nvidia-smi **out-of-process** (protect NFR budget) → PUSH → `POST /telemetry`;
+> governor poll ทุก **10s** (ไม่ใช่ 1Hz). FPS-impact ยัง **ไม่ instrument**
+- [ ] CPU/RAM monitor ทุก 10s (ResourceStat event) — GPU/VRAM/temp via feeder ✅; FPS ยังไม่วัด
 - [ ] Auto-throttle: CPU >2.5% → lower capture rate
 - [ ] Auto-throttle: RAM >400MB → unload SLM, reduce cache
 - [ ] Auto-throttle: FPS drop >3% → disable blur, static HUD
