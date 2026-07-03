@@ -1,12 +1,17 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { listen } from "@tauri-apps/api/event";
-import type { GameTick, GsiStatus, MinimapCv, EnemyMissing, SignalAlert } from "./live/events";
+import { invoke } from "@tauri-apps/api/core";
+import type { GameTick, GsiStatus, MinimapCv, EnemyMissing, SignalAlert, ResourceStats } from "./live/events";
 import { buildMatch } from "./live/buildMatch";
 import { buildHeroes } from "./live/buildHeroes";
 import { buildMarkers } from "./live/buildMarkers";
 import { buildSignals } from "./live/buildSignals";
 import { buildProfile } from "./live/buildProfile";
 import { buildBaselines } from "./live/buildBaselines";
+import { buildTelemetry } from "./live/buildTelemetry";
+import { buildWeekly } from "./live/buildWeekly";
+import { buildInsights } from "./live/buildInsights";
+import { buildHistory, type MatchLog } from "./live/buildHistory";
 import { fetchOpenDotaProfile, type OpenDotaProfile } from "./live/opendota";
 import { loadIdentity, saveIdentity, IDENTITY_EVENT } from "./live/identity";
 import { heroName } from "./live/heroNames";
@@ -228,8 +233,9 @@ export const FALLBACK: CompanionData = {
 
 // Phase 1 (CR-002): rich standalone demo data. Mirrors the live-phase output of
 // store/companion.mjs so the command deck renders a full match with NO backend.
-// The fetch to /api/companion is still attempted (Phase 2 wires real data); on
-// any failure we fall back to MOCK instead of the sparse FALLBACK above.
+// useCompanionData() below subscribes to the Rust backend's Tauri events and
+// merges the pure live/build*.ts builders over this MOCK; any field with no live
+// source falls through to the slice here (never the sparse FALLBACK above).
 export const MOCK: CompanionData = {
   updatedAt: Date.now(),
   match: {
@@ -388,8 +394,10 @@ export const MOCK: CompanionData = {
 // builders (live/build*.ts) over MOCK. Every builder falls back to its MOCK
 // slice when its source is absent, so partially-wired data still renders. When
 // NO live event ever arrives (e.g. plain browser, no Tauri), we return MOCK
-// untouched — the full demo. Fields not yet live (telemetry, weeklyReport,
-// profile, insights, history, buildAdvisor, agentSector) stay MOCK until 2b.
+// untouched — the full demo. Phase 2c wires the remaining panels to the data the
+// backend actually has: telemetry ← resource-stats (governor), weeklyReport +
+// insights ← OpenDota, history + learnedMatches ← local G-Log files, agentSector
+// status ← live GSI. buildAdvisor stays MOCK (no structured G-Master build path).
 type LiveState = {
   tick: GameTick | null;
   status: GsiStatus | null;
@@ -399,10 +407,13 @@ type LiveState = {
   missingPos: Map<string, [number, number]>; // 2b-B: last-seen pos of missing enemies (markers)
   active: boolean; // flips true after the first live event (else pure MOCK demo)
   od: OpenDotaProfile | null; // Phase 2b-A: your public OpenDota profile (no DB)
+  stats: ResourceStats | null; // Phase 2c: governor RAM/CPU sample (telemetry footer)
+  logs: MatchLog[] | null;     // Phase 2c: local G-Log match files (history + learnedMatches)
 };
 
 const EMPTY_LIVE: LiveState = {
-  tick: null, status: null, cv: null, gank: null, missing: new Map(), missingPos: new Map(), active: false, od: null
+  tick: null, status: null, cv: null, gank: null, missing: new Map(), missingPos: new Map(),
+  active: false, od: null, stats: null, logs: null
 };
 
 export function useCompanionData() {
@@ -427,6 +438,9 @@ export function useCompanionData() {
 
     sub<GameTick>("game-tick", (p) => setLive((s) => ({ ...s, tick: p, active: true })));
     sub<GsiStatus>("gsi-status", (p) => setLive((s) => ({ ...s, status: p, active: true })));
+    // resource-stats is app-level (governor runs whether or not a match is live),
+    // so it feeds telemetry WITHOUT flipping `active` into live-match mode.
+    sub<ResourceStats>("resource-stats", (p) => setLive((s) => ({ ...s, stats: p })));
     sub<MinimapCv>("minimap-cv", (p) => setLive((s) => ({ ...s, cv: p, active: true })));
     sub<SignalAlert>("gank-alert", (p) => setLive((s) => ({ ...s, gank: p, active: true })));
     // Belief revision: G-Signal retracts — clear the gank + the missing set.
@@ -503,6 +517,18 @@ export function useCompanionData() {
     return () => { cancelled = true; };
   }, [accountId]);
 
+  // Phase 2c: pull the local G-Log match files for the History page + the
+  // learnedMatches count. Reloads when a match ends (in_game -> false writes a
+  // fresh file). No-ops off-Tauri, leaving `logs` null so History stays on MOCK.
+  const inGame = live.tick?.in_game ?? false;
+  useEffect(() => {
+    let cancelled = false;
+    invoke<MatchLog[]>("list_match_logs")
+      .then((rows) => { if (!cancelled) setLive((s) => ({ ...s, logs: rows })); })
+      .catch(() => { /* not under Tauri / command unavailable — stay on MOCK */ });
+    return () => { cancelled = true; };
+  }, [inGame]);
+
   const data = useMemo<CompanionData>(() => {
     // Base: pure MOCK until a live event arrives, else the live-merged deck.
     let d: CompanionData = live.active
@@ -516,13 +542,44 @@ export function useCompanionData() {
       : MOCK;
 
     // OpenDota enrichment is YOUR historical data — apply it to the self slot +
-    // stat-bar baselines whenever present, independent of live-match state.
+    // stat-bar baselines + the weekly/insights cards whenever present,
+    // independent of live-match state.
     const od = live.od;
     if (od) {
       d = {
         ...d,
         match: { ...d.match, player: buildBaselines(d.match.player, od) },
-        heroes: d.heroes.map((h, i) => (i === 0 ? { ...h, profile: buildProfile(od, h.profile) } : h))
+        heroes: d.heroes.map((h, i) => (i === 0 ? { ...h, profile: buildProfile(od, h.profile) } : h)),
+        weeklyReport: buildWeekly(od, d.weeklyReport),
+        insights: buildInsights(od, d.insights)
+      };
+    }
+
+    // Telemetry footer — the governor samples RAM/CPU whether or not a match is
+    // live, so apply it independent of `active` (buildTelemetry no-ops on null).
+    if (live.stats) {
+      d = { ...d, telemetry: buildTelemetry(live.stats, d.telemetry) };
+    }
+
+    // History + the real "learned matches" count come from the on-device G-Log
+    // files. With zero logs (or off-Tauri) we keep the MOCK demo so the page
+    // stays full rather than showing an empty list + a bare "0".
+    if (live.logs && live.logs.length > 0) {
+      d = {
+        ...d,
+        history: buildHistory(live.logs, d.history),
+        insights: { ...d.insights, learnedMatches: live.logs.length }
+      };
+    }
+
+    // agentSector status pill reflects real GSI liveliness once we're live.
+    if (live.active) {
+      d = {
+        ...d,
+        agentSector: {
+          ...d.agentSector,
+          status: live.status?.gsi_active ? "Live orchestration" : "Standby"
+        }
       };
     }
     return d;

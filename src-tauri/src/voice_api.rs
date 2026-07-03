@@ -348,6 +348,114 @@ pub fn update_pack(payload: UpdatePackRequest) -> Result<VoiceState, String> {
     state()
 }
 
+/// Absolute paths to the clips the ACTIVE pack maps to `event`. The active pack
+/// (its manifest) is the source of truth for playback, so a fired announcer event
+/// voices the pack's clips and its banner together — the "bundle" contract.
+/// Existing files only; empty when there is no active pack / manifest / mapping.
+pub fn active_event_clips(event: &str) -> Vec<PathBuf> {
+    let Some(id) = read_active_pack_id() else { return Vec::new() };
+    let dir = packs_dir().join(sanitize_id(&id));
+    let Ok(manifest) = read_manifest(&dir) else { return Vec::new() };
+    let Some(mapping) = manifest.mappings.get(event) else { return Vec::new() };
+    mapping
+        .clips
+        .iter()
+        .map(|rel| dir.join(rel.replace('\\', "/")))
+        .filter(|path| path.is_file())
+        .collect()
+}
+
+/// Banner payload emitted to the overlay when an announcer event fires, so the
+/// on-screen banner and the voiced clip come from the SAME pack.
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct FiredBanner {
+    pub event: String,
+    /// The active pack's banner image for this event as a self-contained `data:`
+    /// URL (base64). We inline it rather than a file path so the overlay's strict
+    /// CSP (`img-src 'self' data:`) renders it with no asset-protocol setup.
+    /// `None` → the overlay falls back to its built-in card.
+    pub banner_data: Option<String>,
+    /// Caption: the pack's banner override if set, else the event's default label.
+    pub banner_text: String,
+    /// Thai line: the pack's override if set, else the event's default.
+    pub thai: String,
+}
+
+/// Cap on the banner image we inline into an event payload (keeps the event bus
+/// light). Banners are small; anything larger is almost certainly a mistake.
+const MAX_BANNER_BYTES: u64 = 3 * 1024 * 1024;
+
+/// Resolve the banner for a just-fired announcer `event` against the active pack.
+/// Always returns sensible defaults (event label/thai) so the overlay can render
+/// even with no pack installed; `banner_data` is `Some` only when the active pack
+/// maps an existing, reasonably-sized image to this event.
+pub fn fired_banner(event: &str) -> FiredBanner {
+    let def = EVENTS.iter().find(|e| e.id == event);
+    let mut banner_text = def.map(|d| d.label.to_string()).unwrap_or_else(|| event.to_string());
+    let mut thai = def.map(|d| d.thai.to_string()).unwrap_or_default();
+    let mut banner_data = None;
+
+    if let Some(id) = read_active_pack_id() {
+        let dir = packs_dir().join(sanitize_id(&id));
+        if let Ok(manifest) = read_manifest(&dir) {
+            if let Some(mapping) = manifest.mappings.get(event) {
+                if !mapping.banner.is_empty() {
+                    banner_text = mapping.banner.clone();
+                }
+                if !mapping.thai.is_empty() {
+                    thai = mapping.thai.clone();
+                }
+                if !mapping.banner_asset.is_empty() {
+                    let path = dir.join(mapping.banner_asset.replace('\\', "/"));
+                    banner_data = read_banner_data_url(&path);
+                }
+            }
+        }
+    }
+
+    FiredBanner { event: event.to_string(), banner_data, banner_text, thai }
+}
+
+/// Read an image file into a base64 `data:` URL, or `None` if missing/too large.
+fn read_banner_data_url(path: &Path) -> Option<String> {
+    let meta = fs::metadata(path).ok()?;
+    if !meta.is_file() || meta.len() > MAX_BANNER_BYTES {
+        return None;
+    }
+    let bytes = fs::read(path).ok()?;
+    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or_default();
+    Some(format!("data:{};base64,{}", image_mime(ext), base64_encode(&bytes)))
+}
+
+fn image_mime(ext: &str) -> &'static str {
+    match ext.to_ascii_lowercase().as_str() {
+        "png" => "image/png",
+        "jpg" | "jpeg" => "image/jpeg",
+        "webp" => "image/webp",
+        "gif" => "image/gif",
+        "svg" => "image/svg+xml",
+        _ => "application/octet-stream",
+    }
+}
+
+/// Standard base64 (RFC 4648) — small and dependency-free.
+fn base64_encode(input: &[u8]) -> String {
+    const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
+    let mut out = String::with_capacity(input.len().div_ceil(3) * 4);
+    for chunk in input.chunks(3) {
+        let b0 = chunk[0] as u32;
+        let b1 = *chunk.get(1).unwrap_or(&0) as u32;
+        let b2 = *chunk.get(2).unwrap_or(&0) as u32;
+        let n = (b0 << 16) | (b1 << 8) | b2;
+        out.push(TABLE[((n >> 18) & 63) as usize] as char);
+        out.push(TABLE[((n >> 12) & 63) as usize] as char);
+        out.push(if chunk.len() > 1 { TABLE[((n >> 6) & 63) as usize] as char } else { '=' });
+        out.push(if chunk.len() > 2 { TABLE[(n & 63) as usize] as char } else { '=' });
+    }
+    out
+}
+
 fn voice_root() -> PathBuf {
     audio::voice_cache_dir()
 }
@@ -549,4 +657,36 @@ fn sanitize_file_name(value: &str) -> String {
         .chars()
         .filter(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '.' | '-' | '_' | ' '))
         .collect::<String>()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn base64_rfc4648_vectors() {
+        // Canonical RFC 4648 §10 test vectors — a wrong encoder = broken banners.
+        assert_eq!(base64_encode(b""), "");
+        assert_eq!(base64_encode(b"f"), "Zg==");
+        assert_eq!(base64_encode(b"fo"), "Zm8=");
+        assert_eq!(base64_encode(b"foo"), "Zm9v");
+        assert_eq!(base64_encode(b"foob"), "Zm9vYg==");
+        assert_eq!(base64_encode(b"fooba"), "Zm9vYmE=");
+        assert_eq!(base64_encode(b"foobar"), "Zm9vYmFy");
+    }
+
+    #[test]
+    fn base64_handles_high_bytes() {
+        assert_eq!(base64_encode(&[0xff, 0xff, 0xff]), "////");
+        assert_eq!(base64_encode(&[0x00, 0x00, 0x00]), "AAAA");
+    }
+
+    #[test]
+    fn image_mime_maps_known_extensions() {
+        assert_eq!(image_mime("PNG"), "image/png");
+        assert_eq!(image_mime("jpg"), "image/jpeg");
+        assert_eq!(image_mime("jpeg"), "image/jpeg");
+        assert_eq!(image_mime("svg"), "image/svg+xml");
+        assert_eq!(image_mime("bmp"), "application/octet-stream");
+    }
 }

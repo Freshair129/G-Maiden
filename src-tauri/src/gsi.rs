@@ -145,7 +145,10 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
     crate::log::note_tick(&tick);
     let _ = app.emit("game-tick", tick);
     if let Some(ev) = announce {
+        // Voice the clip and show the banner from the SAME active pack, so the
+        // announcer sound and its queue banner always fire together (the bundle).
         crate::audio::play_random(&ev);
+        let _ = app.emit("announcer-banner", crate::voice_api::fired_banner(&ev));
     }
     "ok"
 }
