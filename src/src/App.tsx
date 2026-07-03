@@ -1372,7 +1372,7 @@ const Card: React.FC<{ title: string; children: React.ReactNode }> = ({ title, c
 // CR-002 Phase 1: the command deck (<CommandDeck/>) now renders in the control
 // window. The original control panel is retained (exported) but no longer routed,
 // so its overlay-preview / voice / updater logic stays available for reference.
-export const Control: React.FC = () => {
+export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
   const [tick, setTick] = useState<GameTick | null>(null)
   const [seen, setSeen] = useState(false)
   const [s, setS] = useState<Settings>(loadSettings)
@@ -1564,9 +1564,10 @@ export const Control: React.FC = () => {
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((p) => ({ ...p, [k]: v }))
 
   return (
-    <div style={{ minHeight: '100vh', background: C.bg, color: C.txt, fontFamily: '"Segoe UI", system-ui, sans-serif', padding: '22px 26px' }}>
+    <div style={{ minHeight: embedded ? undefined : '100vh', background: embedded ? 'transparent' : C.bg, color: C.txt, fontFamily: '"Segoe UI", system-ui, sans-serif', padding: embedded ? 0 : '22px 26px' }}>
       {showWelcome && <Welcome onDone={dismissWelcome} />}
-      <header style={{ display: 'flex', alignItems: 'center', gap: 13, marginBottom: 18 }}>
+      {/* Embedded (deck Settings tab): the deck header already shows brand + GSI/LIVE status. */}
+      <header style={{ display: embedded ? 'none' : 'flex', alignItems: 'center', gap: 13, marginBottom: 18 }}>
         <Gem size={30} />
         <div style={{ flex: 1 }}>
           <div style={{ fontSize: 19, fontWeight: 700, letterSpacing: 0.3 }}>G-Maiden</div>
@@ -1892,5 +1893,7 @@ export const App: React.FC = () => {
   try { label = getCurrentWindow().label } catch { /* not running under Tauri */ }
   // Overlay window keeps the original transparent CV/voice overlay. The control
   // window now renders the ported command-deck shell (CR-002 Phase 1).
-  return label === 'overlay' ? <Overlay /> : <CommandDeck />
+  // The real settings panel (legacy Control) mounts inside the deck's Settings
+  // tab — passed as a prop so CommandDeck never imports App (no module cycle).
+  return label === 'overlay' ? <Overlay /> : <CommandDeck settingsPanel={<Control embedded />} />
 }

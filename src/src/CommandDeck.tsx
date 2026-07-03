@@ -50,7 +50,7 @@ function NavIcon({ name }: { name: string }) {
 // Phase 1 (CR-002): the command deck runs standalone with mock data. The old
 // G-Orchestra store (startPolling/useStore) is gone; loading/error are static
 // and the sidebar count derives from companion data.
-export default function CommandDeck() {
+export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNode } = {}) {
   const [tab, setTab] = useState("dashboard");
   const [profileOpen, setProfileOpen] = useState(false);
   const [captureMode, setCaptureMode] = useState<string>("");
@@ -172,10 +172,12 @@ export default function CommandDeck() {
             {tab === "voice" && <AudioSettings />}
             {tab === "history" && <HistoryPage />}
             {tab === "settings" && (
-              <div style={{ display: "grid", gap: 16 }}>
-                <SettingsPage />
-                <QuotaCard />
-              </div>
+              settingsPanel ?? (
+                <div style={{ display: "grid", gap: 16 }}>
+                  <SettingsPage />
+                  <QuotaCard />
+                </div>
+              )
             )}
             {tab === "account" && <AccountPage />}
           </main>
