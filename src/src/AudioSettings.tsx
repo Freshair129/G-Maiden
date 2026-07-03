@@ -1,4 +1,4 @@
-import { ChangeEvent, DragEvent, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, CSSProperties, DragEvent, useEffect, useMemo, useRef, useState } from "react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
 
 type VoiceAssetOption = {
@@ -55,7 +55,7 @@ type VoiceState = {
   groups: { id: string; label: string; accent: string }[];
 };
 
-async function readJson<T = any>(url: string, init?: RequestInit): Promise<T> {
+async function readJson<T = unknown>(url: string, init?: RequestInit): Promise<T> {
   const body = init?.body && typeof init.body === "string" ? JSON.parse(init.body) : {};
 
   if (url === "/api/voice") return invoke("voice_api_state") as Promise<T>;
@@ -122,7 +122,7 @@ export default function AudioSettings() {
 
   async function refresh() {
     try {
-      const next = await readJson("/api/voice");
+      const next = await readJson<VoiceState>("/api/voice");
       // Guard: G-Maiden's Tauri app has no /api/voice backend (that was the
       // orchestra-standalone server). Vite serves the SPA index.html for unknown
       // paths, so `next` can be an HTML string, not a VoiceState — validate the
@@ -133,8 +133,8 @@ export default function AudioSettings() {
       setState(next);
       setSelectedEventId((current) => current || next.activePack?.items?.[0]?.id || null);
       setErr(null);
-    } catch (e: any) {
-      setErr(String(e?.message || e));
+    } catch (e) {
+      setErr(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
     }
   }
 
@@ -156,7 +156,7 @@ export default function AudioSettings() {
     setSelectedClips(selectedEvent.mapping?.clips || []);
   }, [selectedEvent]);
 
-  async function run(action: "rescan" | "open-root" | "activate", body: Record<string, any> = {}) {
+  async function run(action: "rescan" | "open-root" | "activate", body: Record<string, unknown> = {}) {
     setBusy(true);
     try {
       await readJson(`/api/voice/${action}`, {
@@ -167,8 +167,8 @@ export default function AudioSettings() {
       await refresh();
       setErr(null);
       setNotice(action === "rescan" ? "Voice packs rescanned." : null);
-    } catch (e: any) {
-      setErr(String(e?.message || e));
+    } catch (e) {
+      setErr(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
     } finally {
       setBusy(false);
     }
@@ -199,7 +199,7 @@ export default function AudioSettings() {
   async function uploadArchive(file: File) {
     setBusy(true);
     try {
-      const result = await readJson(`/api/voice/import?name=${encodeURIComponent(file.name)}`, {
+      const result = await readJson<{ imported?: string[] }>(`/api/voice/import?name=${encodeURIComponent(file.name)}`, {
         method: "POST",
         headers: { "content-type": file.type || "application/zip" },
         body: await file.arrayBuffer()
@@ -207,8 +207,8 @@ export default function AudioSettings() {
       await refresh();
       setErr(null);
       setNotice(`Imported pack: ${(result?.imported || []).join(", ") || file.name}`);
-    } catch (e: any) {
-      setErr(String(e?.message || e));
+    } catch (e) {
+      setErr(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
       setNotice(null);
     } finally {
       setBusy(false);
@@ -227,8 +227,8 @@ export default function AudioSettings() {
       setState(next);
       setErr(null);
       setNotice(`Created template pack: ${sanitizePackId(templatePackId) || "voice-pack-template"}`);
-    } catch (e: any) {
-      setErr(String(e?.message || e));
+    } catch (e) {
+      setErr(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
       setNotice(null);
     } finally {
       setCreatingTemplate(false);
@@ -249,8 +249,8 @@ export default function AudioSettings() {
       setNotice(`Uploaded ${kind}: ${result.path}`);
       await refresh();
       if (kind === "banner" && !formBannerAsset) setFormBannerAsset(result.path);
-    } catch (e: any) {
-      setErr(String(e?.message || e));
+    } catch (e) {
+      setErr(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
       setNotice(null);
     } finally {
       setBusy(false);
@@ -284,7 +284,7 @@ export default function AudioSettings() {
     if (!state?.activePack || !selectedEvent) return;
     setSavingMap(true);
     try {
-      const next = await readJson("/api/voice/map-event", {
+      const next = await readJson<VoiceState>("/api/voice/map-event", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -300,8 +300,8 @@ export default function AudioSettings() {
       setState(next);
       setErr(null);
       setNotice(`Saved mapping for ${selectedEvent.id}.`);
-    } catch (e: any) {
-      setErr(String(e?.message || e));
+    } catch (e) {
+      setErr(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
       setNotice(null);
     } finally {
       setSavingMap(false);
@@ -312,7 +312,7 @@ export default function AudioSettings() {
     if (!selectedPack) return;
     setSavingPackMeta(true);
     try {
-      const next = await readJson("/api/voice/update-pack", {
+      const next = await readJson<VoiceState>("/api/voice/update-pack", {
         method: "POST",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({
@@ -327,8 +327,8 @@ export default function AudioSettings() {
       setState(next);
       setErr(null);
       setNotice(`Saved pack details for ${selectedPack.id}.`);
-    } catch (e: any) {
-      setErr(String(e?.message || e));
+    } catch (e) {
+      setErr(typeof e === "string" ? e : e instanceof Error ? e.message : String(e));
       setNotice(null);
     } finally {
       setSavingPackMeta(false);
@@ -559,7 +559,7 @@ export default function AudioSettings() {
               {selectedBannerSrc ? (
                 <img className="audio-banner-image" src={selectedBannerSrc} alt={`${selectedEvent.label} banner`} />
               ) : (
-                <div className="audio-banner-card" style={{ ["--accent" as any]: selectedEvent.accent }}>
+                <div className="audio-banner-card" style={{ "--accent": selectedEvent.accent } as CSSProperties}>
                   <div className="audio-banner-kicker">{groupLabel(state, selectedEvent.group)}</div>
                   <div className="audio-banner-title">{selectedEvent.label}</div>
                   <div className="audio-banner-sub">{selectedEvent.subtitle}</div>
