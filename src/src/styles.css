@@ -2973,6 +2973,7 @@ body {
   .board-bento {
     grid-template-columns: repeat(4, minmax(0, 1fr));
     grid-template-rows: auto;
+    height: auto;  /* let the stacked layout grow so the deck scrolls (not clips) */
   }
 
   .board-bento > .bento-card {
@@ -3341,7 +3342,7 @@ body {
 .gsi-pill.idle .gsi-dot { background: var(--muted); box-shadow: none; }
 
 .surface.page-dashboard,
-.dashboard-v2 { height: 100%; min-height: 0; overflow: hidden; }
+.dashboard-v2 { height: 100%; min-height: 0; overflow-x: hidden; overflow-y: auto; }
 
 .board-bento {
   height: 100%;
