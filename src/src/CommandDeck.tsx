@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { listen } from "@tauri-apps/api/event";
-import AudioSettings from "./AudioSettings";
+import VoicePacksPage from "./VoicePacksPage";
 import QuotaCard from "./QuotaCard";
 import {
   BuildAdvisorPage,
@@ -169,7 +169,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
             {tab === "companion" && <CompanionPage />}
             {tab === "build" && <BuildAdvisorPage />}
             {tab === "insights" && <InsightsPage />}
-            {tab === "voice" && <AudioSettings />}
+            {tab === "voice" && <VoicePacksPage />}
             {tab === "history" && <HistoryPage />}
             {tab === "settings" && (
               settingsPanel ?? (

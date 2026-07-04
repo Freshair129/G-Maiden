@@ -1,59 +1,6 @@
 import { ChangeEvent, CSSProperties, DragEvent, useEffect, useMemo, useRef, useState } from "react";
 import { convertFileSrc, invoke } from "@tauri-apps/api/core";
-
-type VoiceAssetOption = {
-  path: string;
-  name: string;
-  url: string;
-};
-
-type VoiceEvent = {
-  id: string;
-  group: string;
-  label: string;
-  subtitle: string;
-  thai: string;
-  accent: string;
-  mapping: null | {
-    text: string;
-    thai: string;
-    banner: string;
-    bannerAsset: string;
-    bannerUrl: string | null;
-    clip: string;
-    clips: string[];
-    hasClip: boolean;
-    clipCount: number;
-    clipUrl: string | null;
-    clipOptions: VoiceAssetOption[];
-  };
-};
-
-type VoicePack = {
-  id: string;
-  name: string;
-  version: string;
-  locale: string;
-  author: string;
-  description: string;
-  path: string;
-  coveredEvents: number;
-  totalEvents: number;
-  clips: number;
-  availableClips: VoiceAssetOption[];
-  availableBanners: VoiceAssetOption[];
-  items: VoiceEvent[];
-};
-
-type VoiceState = {
-  rootDir: string;
-  packsDir: string;
-  cacheDir: string;
-  activePackId: string | null;
-  activePack: VoicePack | null;
-  packs: VoicePack[];
-  groups: { id: string; label: string; accent: string }[];
-};
+import type { VoiceAssetOption, VoiceEvent, VoiceState } from "./voice-types";
 
 async function readJson<T = unknown>(url: string, init?: RequestInit): Promise<T> {
   const body = init?.body && typeof init.body === "string" ? JSON.parse(init.body) : {};
@@ -93,7 +40,11 @@ function sanitizePackId(value: string) {
   return value.toLowerCase().replace(/[^a-z0-9-_]+/g, "-").replace(/^-+|-+$/g, "");
 }
 
-export default function AudioSettings() {
+type AudioSettingsProps = {
+  onBack?: () => void;
+};
+
+export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
   const [state, setState] = useState<VoiceState | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -113,6 +64,7 @@ export default function AudioSettings() {
   const [packLocale, setPackLocale] = useState("");
   const [packAuthor, setPackAuthor] = useState("");
   const [packDescription, setPackDescription] = useState("");
+  const [packCoverImage, setPackCoverImage] = useState("");
   const [templatePackId, setTemplatePackId] = useState("voice-pack-template");
   const [templateName, setTemplateName] = useState("My Voice Pack");
   const [templateLocale, setTemplateLocale] = useState("th-TH");
@@ -330,7 +282,8 @@ export default function AudioSettings() {
           version: packVersion,
           locale: packLocale,
           author: packAuthor,
-          description: packDescription
+          description: packDescription,
+          coverImage: packCoverImage
         })
       });
       setState(next);
@@ -361,7 +314,8 @@ export default function AudioSettings() {
     packVersion !== (selectedPack?.version || "") ||
     packLocale !== (selectedPack?.locale || "") ||
     packAuthor !== (selectedPack?.author || "") ||
-    packDescription !== (selectedPack?.description || "");
+    packDescription !== (selectedPack?.description || "") ||
+    packCoverImage !== (selectedPack?.coverImage || "");
   const dirty =
     formText !== (selectedEvent?.mapping?.text || "") ||
     formThai !== (selectedEvent?.mapping?.thai || selectedEvent?.thai || "") ||
@@ -376,6 +330,7 @@ export default function AudioSettings() {
     setPackLocale(selectedPack.locale || "");
     setPackAuthor(selectedPack.author || "");
     setPackDescription(selectedPack.description || "");
+    setPackCoverImage(selectedPack.coverImage || "");
   }, [selectedPack]);
 
   if (!state) return (
@@ -388,7 +343,28 @@ export default function AudioSettings() {
     <div className="audio-page">
       <section className="audio-hero">
         <div className="audio-hero-main">
-          <div className="audio-kicker">Voice Pack Config</div>
+          <div style={{ display: "flex", alignItems: "center", gap: 8 }}>
+            {onBack ? (
+              <button
+                type="button"
+                onClick={onBack}
+                aria-label="Back to inventory"
+                style={{
+                  background: "transparent",
+                  border: "1px solid var(--line)",
+                  borderRadius: 6,
+                  color: "var(--muted)",
+                  cursor: "pointer",
+                  padding: "2px 8px",
+                  fontSize: 11,
+                  fontWeight: 600
+                }}
+              >
+                ← Inventory
+              </button>
+            ) : null}
+            <span className="audio-kicker">Voice Pack Config</span>
+          </div>
           <div className="audio-title-row">
             <h2>{selectedPack?.name || "No active voice pack"}</h2>
             {selectedPack && <span className="audio-chip">{selectedPack.locale}</span>}
@@ -488,6 +464,16 @@ export default function AudioSettings() {
           <label className="audio-field">
             <span>Description</span>
             <input className="audio-input" value={packDescription} onChange={(e) => setPackDescription(e.target.value)} placeholder="Short summary of this pack" />
+          </label>
+          <label className="audio-field">
+            <span>Cover image</span>
+            <select className="audio-select" value={packCoverImage} onChange={(e) => setPackCoverImage(e.target.value)}>
+              <option value="">Auto (first banner) / none</option>
+              {(selectedPack?.availableBanners || []).map((banner) => (
+                <option key={banner.path} value={banner.path}>{banner.path}</option>
+              ))}
+            </select>
+            <div className="audio-hint">แสดงบนไทล์ในหน้า Inventory. ถ้าเว้นไว้ ระบบจะใช้ภาพ banner แรก.</div>
           </label>
           <div className="audio-preview-actions">
             <button className="audio-btn primary" onClick={savePackMeta} disabled={!selectedPack || !packMetaDirty || savingPackMeta}>

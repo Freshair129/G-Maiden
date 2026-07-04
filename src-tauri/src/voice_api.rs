@@ -114,6 +114,14 @@ pub struct VoicePack {
     available_clips: Vec<VoiceAssetOption>,
     available_banners: Vec<VoiceAssetOption>,
     items: Vec<VoiceEvent>,
+    /// Relative path within the pack dir to the pack's cover image (from
+    /// manifest.coverImage OR the alphabetically-first banner as fallback).
+    /// Empty string when no cover can be resolved.
+    cover_image: String,
+    /// Cover image inlined as a `data:` URL for the inventory grid — same
+    /// mechanism as the fired-banner path so the overlay CSP has nothing new
+    /// to allow. `None` → the frontend renders a gradient placeholder.
+    cover_image_url: Option<String>,
 }
 
 #[derive(Serialize, Clone)]
@@ -167,6 +175,8 @@ pub struct UpdatePackRequest {
     locale: String,
     author: String,
     description: String,
+    #[serde(default)]
+    cover_image: String,
 }
 
 #[derive(Deserialize, Serialize, Default)]
@@ -178,6 +188,11 @@ struct Manifest {
     locale: String,
     author: String,
     description: String,
+    /// Pack-level cover image (relative path within the pack dir). Empty when
+    /// the pack didn't ship one — build_pack() will fall back to the first
+    /// banner file so packs still have a visible tile in the inventory.
+    #[serde(default)]
+    cover_image: String,
     mappings: BTreeMap<String, ManifestMapping>,
 }
 
@@ -344,6 +359,7 @@ pub fn update_pack(payload: UpdatePackRequest) -> Result<VoiceState, String> {
     manifest.locale = payload.locale;
     manifest.author = payload.author;
     manifest.description = payload.description;
+    manifest.cover_image = payload.cover_image;
     write_manifest(&dir, &manifest)?;
     state()
 }
@@ -522,6 +538,7 @@ fn create_pack_skeleton(dir: &Path, id: &str, name: &str, locale: &str) -> Resul
             locale: locale.into(),
             author: String::new(),
             description: "User voice pack".into(),
+            cover_image: String::new(),
             mappings: BTreeMap::new(),
         };
         write_manifest(dir, &manifest)?;
@@ -545,6 +562,23 @@ fn build_pack(dir: &Path) -> Result<VoicePack, String> {
     let manifest = read_manifest(dir)?;
     let clips = list_assets(dir, "clips", &["wav", "mp3", "ogg", "m4a"]);
     let banners = list_assets(dir, "banners", &["png", "jpg", "jpeg", "webp", "svg"]);
+
+    // Cover image resolution — pack tiles need SOMETHING to show, so:
+    //   1. `manifest.coverImage` (what G-AnnStudio writes when it ships a pack)
+    //   2. first banner alphabetically (banners are sorted by list_assets)
+    //   3. neither → cover_image = "" and cover_image_url = None; the inventory
+    //      renders a gradient placeholder client-side.
+    let (cover_image, cover_image_url) = if !manifest.cover_image.is_empty() {
+        let path = dir.join(manifest.cover_image.replace('\\', "/"));
+        let url = read_banner_data_url(&path);
+        (manifest.cover_image.clone(), url)
+    } else if let Some(first) = banners.first() {
+        let path = dir.join(first.path.replace('\\', "/"));
+        (first.path.clone(), read_banner_data_url(&path))
+    } else {
+        (String::new(), None)
+    };
+
     let mut covered = 0;
 
     let items = EVENTS
@@ -604,6 +638,8 @@ fn build_pack(dir: &Path) -> Result<VoicePack, String> {
         available_clips: clips,
         available_banners: banners,
         items,
+        cover_image,
+        cover_image_url,
     })
 }
 
