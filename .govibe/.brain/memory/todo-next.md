@@ -1,8 +1,75 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: 2026-06-21 (turn 15) · progress review + re-plan. Spike S-1 (turn 14)
-ยืนยัน: NCC accuracy FAIL 10% → ONNX = mandatory ไม่ใช่ optional (ดู
-`.govibe/.brain/session/2026-06-21-spike-s1-empirical.md`).
+อัปเดตล่าสุด: **2026-07-05** · deck-redesign / design-system / orchestration thread
+(ดู session `.govibe/.brain/session/2026-07-05-deck-redesign-designsystem.md`).
+ก่อนหน้า = account/security (2026-07-04). ด้านล่างจากบรรทัด "📊 Progress snapshot
+(turn 15)" คือ CV/Signal thread เดิม (2026-06-21) — เก็บไว้เป็น trail ยังใช้ได้.
+
+## 🔵 Deck redesign / Design-system / Orchestration thread (2026-07-05) — ล่าสุด
+
+**Branch `feat/deck-glass-redesign-ds`** (2 commits: code `a5fd9900`, docs `62b2c680`).
+ยังไม่ push / ยังไม่ merge / ยังไม่ tag.
+
+- **Design-system SSOT** ใหม่ที่ `docs/design-system/` (hub + 01–06 + assets SVG + `prototype.html`).
+  ทิศทาง = **Command Deck HUD v2**: glass panel เว้าแหว่ง (Subtract) + FAB ลอย, P1–P5 = anchor
+  (ไม่ใช่ nav), accent ice + **lime #A3E635**. บันทึกใน **ADR-15**. **ยัง draft** — `styles.css`
+  ยังใช้ token เก่า (`--bg #060913`); migration map อยู่ `02-tokens.md §1.6`.
+- **CR-004** (voice+browser) + **CR-005** (landing+auth+social) = **draft รอ approve**.
+  CR-005 lock: landing=web+in-app, community=page เต็ม, auth=multi-provider (ต้องแก้ ADR-14).
+  **2 open question ค้าง:** auth provider ตัวที่ 2 (default ผมเสนอ **Discord**), landing location
+  (default **`web/landing/` ใน repo**). W1–W5 waves.
+- **Orchestration model (ตั้งวงแล้ว, ยังไม่รัน build):** Claude=orchestrator+final gate; +audit/review
+  subagent 1 ชั้นก่อน lead (ลด context); subagent swap by **role** (module-base ยังไม่มีใน G-Orchestra);
+  local SLM = **Ollama @ 127.0.0.1:11434** (เรียก `/api/chat` ตรง, copy `runOllama`+VRAM guard จาก
+  `G:/GenesisBlock_Dev/Rwang_remote/providers.mjs`; config `Rwang_remote/config.json`; coder=Aroow-9B/
+  gemma4-rust, worker=qwen3.5:4b, embed=bge-m3; **serialize, ห้าม concurrent, ห้าม q8_0 KV**).
+- **G-Orchestra verdict (จาก subagent audit):** planning/govern substrate ที่ **mature** (DAG,
+  atom-schema, adaptive-decompose, DACI approval-chain, Verify Gate, ownership, providers, telemetry
+  = solid). **ใช้เป็น decompose+govern ได้** แต่ **ไม่ใช่ executor** สำหรับ Claude subagent. Gap:
+  ไม่มี pre-lead audit tier, DDD (แค่ text), diagram-to-code ingestion, AST edits, module-base swap.
+  → **แผน hybrid:** G-Orchestra ทำ `atoms.cr005.json`+compile (DAG/waves) + Claude subagent execute
+  + review subagent เป็น audit gate + ยืม DACI/`requiresConfirm` rule (drop transport :4577).
+
+### 🎯 งานต่อ thread นี้
+1. ตอบ 2 open question CR-005 (auth provider, landing repo) → ปลดล็อก decompose ที่แม่น
+2. **decompose CR-005 → `atoms.cr005.json`** (ตาม precedent CR-003) ด้วย G-Orchestra compile
+3. รัน build ผ่าน hybrid orchestration: เริ่ม W1 (web landing, เสี่ยงต่ำ) — **ห้ามแตะ deck layout**
+4. (แยก) migrate `styles.css` → `--g-*` tokens ทีละ component เมื่อ approve ทิศทาง design-system
+5. ADR-14 amendment (multi-provider auth) ก่อน implement W2
+
+## 🟢 Account / Auth / Security thread (2026-07-04)
+
+**SEC-001 auth hardening: APPLIED LIVE + merged (PR #6, main `72162e66`).**
+ปิด F1 (ปลอม Founder GID / self-admin) บน live gstore แล้ว: profiles column-locked,
+mint-gid Edge Fn ทำหน้าที่ mint gid_code ฝั่ง server. รายละเอียด+กับดัก PUBLIC-revoke
+อยู่ใน auto-memory `gstore-security-findings.md` + SEC-001 audit doc.
+
+**CR-003 account MVP = design เสร็จ (ยังไม่ implement).** wallet/inventory/history/
+billing(PromptPay+TrueMoney/Omise) + no-scroll UI policy. แตกเป็น 51 atoms/8 waves
+(`orchestration/gks/atoms.cr003.json` → MASTERPLAN-account-phase1.md).
+
+### 🎯 งานต่อ thread นี้ (เรียงตามคุณค่า)
+1. **Cut app release** (bump tauri.conf.json + src/package.json + App.tsx APP_VERSION
+   + CHANGELOG + tag `vX.Y.Z`) → ส่ง SEC-001 client changes ถึง user, ปิด self-healing
+   window (installed v0.8.0: signup ใหม่เห็น GID ว่างชั่วคราว). **user ต้องสั่ง release ก่อน.**
+2. **pre-public/pre-scale gate** (⚠️ ต้องทำก่อนเปิดคนใช้จริง/scale): สร้าง Supabase dev
+   branch → apply Part B → รัน `supabase/tests/sec001_identity_lock.sql` (pgTAP) +
+   full `get_advisors(security)`. เลื่อนมาเพราะ dev branch มีค่าใช้จ่าย.
+3. F8 leaked-password dashboard toggle (minor). Omise onboarding (ทะเบียนพาณิชย์ +
+   TrueMoney channel) = critical path non-code ก่อนเปิด billing.
+4. **implement CR-003** ตาม waves ใน MASTERPLAN (เริ่ม wave 0: types + migrations +
+   no-scroll policy + micro lane). รันด้วย `GORCH_BACKLOG=gks/backlog.cr003.json`.
+
+### กับดักใหม่ (account/security thread)
+- **Postgres ให้ EXECUTE กับ PUBLIC เป็น default** → revoke จาก anon/authenticated เฉย ๆ
+  เป็น no-op; ต้อง `revoke … from public`. Re-verify ด้วย `has_function_privilege` เสมอ.
+- **Tauri app ไม่มี backend :4577** — UI ที่ port จาก orchestra-standalone แล้วยิง `/api/*`
+  จะ crash. Store page ของ CR-003 จะแทนหน้า Voice Packs slot นั้น (Supabase = backend).
+- **deno ติดตั้งแล้วแต่ไม่อยู่ใน PATH** → รันผ่าน `C:\Users\freshair\.deno\bin\deno.exe`.
+
+---
+
+## 📊 Progress snapshot (turn 15)
 
 ## 📊 Progress snapshot (turn 15)
 
