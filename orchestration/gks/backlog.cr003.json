@@ -1,0 +1,1138 @@
+{
+  "$schema": "engine backlog (compiled from atoms.cr003.json — do NOT hand-edit; run `node gks/compile.mjs gks/atoms.cr003.json`)",
+  "block": "Genesis::GMaiden-CR003-Account",
+  "tasks": [
+    {
+      "id": "runbook--omise-onboarding",
+      "title": "Opn/Omise Live-Mode Onboarding (non-code critical path) — Human/Boss task, started in parallel with dev: register business entity, apply for Opn Payments live keys, request the TrueMoney Wallet channel (separate approval)",
+      "type": "docs",
+      "phase": "P0",
+      "deps": [],
+      "est": 1,
+      "accept": "Runbook doc exists with a dated checklist (entity, Opn application, TrueMoney channel, webhook URL registered) and current status; blockers escalated to Boss.",
+      "scope": {
+        "budgetTokens": 4000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "requiresConfirm": true,
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "concept--noscroll-ui-policy",
+      "title": "No-Scroll Desktop-First UI Policy — Codify the fixed-viewport rule: NO page-level scroll anywhere in the deck; unbounded data (ledger, catalog) uses in-frame pagination sized by algo--fit-rows; overflow means add a tab, never scroll",
+      "type": "design",
+      "phase": "P0",
+      "deps": [],
+      "est": 1,
+      "accept": "CR-003 §3.0 written: min-window spec, DPI matrix, per-tab content budget (rows/cards per tab at baseline), tab-count ceiling (<=7 top-level), and the pagination-not-scroll rule. Reviewed by Boss.",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md",
+          "docs/architecture/design-system.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "entity--account-domain-types",
+      "title": "Account Domain Types (DDD ubiquitous language) — Create src/src/wallet/types.ts: pure TS types mirroring CR-003 §2.2 column-for-column — Wallet, LedgerEntry (entry_type union), CoinPackage, TopupOrder (status union, provider union), CatalogItem, Purchase, InventoryRow (source union), ReceiptView",
+      "type": "code",
+      "phase": "P0",
+      "deps": [],
+      "est": 1,
+      "accept": "npx tsc --noEmit passes; every table in CR-003 §2.2 has a matching type with identical field names; file header carries `// Doc: CR-003 §2.2 (entity--account-domain-types)`.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "no react",
+          "no supabase client",
+          "types only — zero runtime code"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "config--local-first-micro-role",
+      "title": "G-Orchestra 'micro' role + routing (local-first claim lane) — Edit orchestration/config.json: add roles.micro = { requires:[\"file_edit\"], preferred:[\"ollama:hf.co/sillykiwi/Aroow-Rust-Coder-9B-Q4_K_S-GGUF:Q4_K_S\", \"ollama:qwen3.5:4b\", \"claude:haiku\"] } and routing \"micro\":\"micro\"",
+      "type": "config",
+      "phase": "P0",
+      "deps": [],
+      "est": 1,
+      "accept": "Engine dry-run resolves an engineType:'micro' task to an ollama provider first; existing roles/routing untouched; JSON valid.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "orchestration/config.json"
+        ],
+        "excludes": [
+          "do not reorder existing roles' preferred lists",
+          "do not touch providers"
+        ]
+      },
+      "moscow": "must",
+      "state": "extend"
+    },
+    {
+      "id": "guard--traceability-lint",
+      "title": "Doc<->Code traceability lint (pure scan) — Write scripts/trace-lint.mjs",
+      "type": "micro",
+      "phase": "P0",
+      "deps": [
+        "config--local-first-micro-role"
+      ],
+      "est": 1,
+      "accept": "node --test scripts/trace-lint.test.mjs green (written before impl); running the CLI on a file without the header exits 1 and prints the path.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/product/MASTERPLAN-account-phase1.md"
+        ],
+        "excludes": [
+          "single file + its test only",
+          "no deps beyond node:fs/node:path",
+          "do not modify CI config"
+        ]
+      },
+      "moscow": "should",
+      "state": "new"
+    },
+    {
+      "id": "config--sql-migration-wallet",
+      "title": "Migration: wallets + wallet_ledger — Create supabase/migrations/<ts>_cr003_wallet.sql with wallets + wallet_ledger EXACTLY as CR-003 §2.2 (checks, index, identity pk)",
+      "type": "config",
+      "phase": "P0",
+      "deps": [],
+      "est": 1,
+      "accept": "supabase db reset applies cleanly; \\d wallets and \\d wallet_ledger match the spec column-for-column incl. checks.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "tables only — no policies, no functions, no seed"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "config--sql-migration-billing",
+      "title": "Migration: coin_packages + topup_orders + webhook_events — Create supabase/migrations/<ts>_cr003_billing.sql per CR-003 §2.2: coin_packages, topup_orders (status/provider unions as CHECKs, unique provider_charge_id), webhook_events (composite PK provider+event_id)",
+      "type": "config",
+      "phase": "P0",
+      "deps": [],
+      "est": 1,
+      "accept": "supabase db reset applies cleanly; all checks + unique constraints present per spec.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "tables only — no policies, no functions, no seed"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "config--sql-migration-store",
+      "title": "Migration: catalog_items + purchases + inventory — Create supabase/migrations/<ts>_cr003_store.sql per CR-003 §2.2: catalog_items (sku unique, status check), purchases (unique(user_id,item_id) — the double-buy fence), inventory (unique(user_id,item_id), source check)",
+      "type": "config",
+      "phase": "P0",
+      "deps": [],
+      "est": 1,
+      "accept": "supabase db reset applies cleanly; both unique(user_id,item_id) constraints verified present.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "tables only — no policies, no functions, no seed"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "config--sql-migration-ops",
+      "title": "Migration: redeem_codes + redemptions + deletion_requests + profiles.role — Create supabase/migrations/<ts>_cr003_ops.sql per CR-003 §2.2: redeem_codes (grant_type XOR check), redemptions (PK code+user_id), deletion_requests, and ALTER profiles ADD role",
+      "type": "config",
+      "phase": "P0",
+      "deps": [
+        "config--sql-migration-store"
+      ],
+      "est": 1,
+      "accept": "supabase db reset applies cleanly; redeem_codes XOR check rejects a row with both coins and item_id.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "tables only — no policies, no functions, no seed"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "eval--pgtap-rls-isolation",
+      "title": "pgTAP: RLS isolation (DB-01/02) — RED first — Write supabase/tests/cr003_rls.sql (pgTAP) BEFORE the policies exist (must be red): DB-01 authenticated cannot UPDATE wallets / INSERT wallet_ledger directly; DB-02 user A selecting user B's wallets/ledger/orders/inventory gets 0 rows",
+      "type": "test",
+      "phase": "P1",
+      "deps": [
+        "config--sql-migration-wallet",
+        "config--sql-migration-billing",
+        "config--sql-migration-store"
+      ],
+      "est": 1,
+      "accept": "supabase test db runs the file; all assertions fail (red) pre-policies and are written to pass once config--rls-policies lands.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "tests only — do not create policies"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "config--rls-policies",
+      "title": "RLS policies + revokes (all 11 tables) — Security-critical: implement CR-003 §2.3 verbatim — enable RLS on all 11 tables, own-row SELECT policies, public read on active coin_packages/catalog_items, no client write policies anywhere, plus the REVOKE block",
+      "type": "code",
+      "phase": "P1",
+      "deps": [
+        "eval--pgtap-rls-isolation",
+        "config--sql-migration-ops"
+      ],
+      "est": 2,
+      "accept": "eval--pgtap-rls-isolation goes GREEN; a manual psql check as authenticated confirms catalog is readable signed-out and wallets are not writable.",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "eval--pgtap-purchase-atomic",
+      "title": "pgTAP: purchase atomicity + concurrency (DB-03/04/05) — RED first — Write supabase/tests/cr003_purchase.sql BEFORE purchase_item exists: DB-03 happy path inserts purchases+inventory+ledger and decrements balance with consistent balance_after; DB-04 insufficient balance raises and inserts NOTHING; DB-05 two concurrent sessions buying with balance for one — at most one succeeds, balance never negative (use two dblink/pg_background sessions or advisory-lock simulation)",
+      "type": "test",
+      "phase": "P1",
+      "deps": [
+        "config--sql-migration-wallet",
+        "config--sql-migration-store"
+      ],
+      "est": 2,
+      "accept": "File runs red (function missing) and encodes all three scenarios as pgTAP assertions.",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "tests only — do not implement purchase_item"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "algo--fn-purchase-item",
+      "title": "plpgsql purchase_item(p_item_id) — atomic buy — Implement CR-003 §2.4 purchase_item: SECURITY DEFINER, price read server-side from catalog_items, wallet row FOR UPDATE lock, unique(user_id,item_id) as double-buy fence, single tx writing purchases+inventory+ledger+wallets",
+      "type": "code",
+      "phase": "P1",
+      "deps": [
+        "eval--pgtap-purchase-atomic",
+        "config--rls-policies"
+      ],
+      "est": 2,
+      "accept": "eval--pgtap-purchase-atomic GREEN incl. the concurrency case (DB-05).",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "eval--pgtap-credit-idempotent",
+      "title": "pgTAP: credit_topup idempotency (DB-06) — RED first — Write supabase/tests/cr003_credit.sql BEFORE credit_topup exists: calling credit_topup 3x on one pending order credits exactly once, exactly one ledger row, order status pending->paid with paid_at set",
+      "type": "test",
+      "phase": "P1",
+      "deps": [
+        "config--sql-migration-wallet",
+        "config--sql-migration-billing"
+      ],
+      "est": 1,
+      "accept": "File runs red and encodes DB-06 as pgTAP assertions.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "tests only"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "algo--fn-credit-topup",
+      "title": "plpgsql credit_topup(p_order_id) — idempotent credit — Implement CR-003 §2.4 credit_topup: status-guarded UPDATE (pending->paid) as the idempotency latch, wallet FOR UPDATE, ledger insert",
+      "type": "code",
+      "phase": "P1",
+      "deps": [
+        "eval--pgtap-credit-idempotent",
+        "config--rls-policies"
+      ],
+      "est": 1,
+      "accept": "eval--pgtap-credit-idempotent GREEN; \\df+ shows no EXECUTE for authenticated.",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "eval--pgtap-redeem",
+      "title": "pgTAP: redeem_code rules (DB-07) — RED first — Write supabase/tests/cr003_redeem.sql BEFORE redeem_code exists: same-user re-redeem rejected (PK), over max_uses rejected, expired rejected, used_count accurate under two concurrent redemptions of a max_uses=1 code",
+      "type": "test",
+      "phase": "P1",
+      "deps": [
+        "config--sql-migration-ops"
+      ],
+      "est": 1,
+      "accept": "File runs red and encodes DB-07 as pgTAP assertions.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "tests only"
+        ]
+      },
+      "moscow": "should",
+      "state": "new"
+    },
+    {
+      "id": "algo--fn-redeem-code",
+      "title": "plpgsql redeem_code(p_code) — locked grant — Implement CR-003 §2.4 redeem_code: lock the code row FOR UPDATE, check expiry/max_uses, insert redemptions (PK = per-user fence), grant coins (ledger 'redeem') or item (inventory 'redeem'), bump used_count",
+      "type": "code",
+      "phase": "P1",
+      "deps": [
+        "eval--pgtap-redeem",
+        "config--rls-policies"
+      ],
+      "est": 1,
+      "accept": "eval--pgtap-redeem GREEN.",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "should",
+      "state": "new"
+    },
+    {
+      "id": "eval--pgtap-ledger-invariant",
+      "title": "pgTAP: balance == Σ ledger invariant (DB-08) — closing gate P1 — Write supabase/tests/cr003_invariant.sql: after running a mixed scenario (topup, purchase, redeem, failed purchase), assert for every user wallets.balance = SUM(wallet_ledger.amount) and every balance_after chain is consistent",
+      "type": "test",
+      "phase": "P1",
+      "deps": [
+        "algo--fn-purchase-item",
+        "algo--fn-credit-topup",
+        "algo--fn-redeem-code"
+      ],
+      "est": 1,
+      "accept": "GREEN on the seeded scenario; query documented for nightly reuse.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "config--signup-wallet-trigger",
+      "title": "Signup trigger: create wallet + welcome grant (+backfill) — Extend the existing ADR-14 handle_new_user trigger: also insert wallets row + welcome grant (ledger entry_type 'grant', note 'welcome', amount from a constant)",
+      "type": "code",
+      "phase": "P1",
+      "deps": [
+        "config--sql-migration-wallet"
+      ],
+      "est": 1,
+      "accept": "New-user test shows wallet + one 'grant' ledger row; backfill leaves zero profiles without a wallet; existing GID minting behavior unchanged.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md",
+          "docs/architecture/adr/ADR-14-gid-account-identity.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "extend"
+    },
+    {
+      "id": "config--seed-dev",
+      "title": "Dev seed: packages, catalog, codes, test users — supabase/seed.sql per CR-003 §5.1: 3 coin_packages (S/M/L incl",
+      "type": "config",
+      "phase": "P1",
+      "deps": [
+        "config--sql-migration-billing",
+        "config--sql-migration-store",
+        "config--sql-migration-ops"
+      ],
+      "est": 1,
+      "accept": "supabase db reset --seed leaves the exact fixture set; ids stable for tests.",
+      "scope": {
+        "budgetTokens": 4000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "seed only — no schema changes"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "eval--ef-test-topup-create",
+      "title": "Deno tests: topup-create (EF-01/02) — RED first — Write supabase/functions/tests/topup-create.test.ts BEFORE the function: EF-01 valid package x2 providers returns order_id + qr/authorize URI, price taken from DB even when client sends a fake price; EF-02 no JWT -> 401, inactive package -> 400",
+      "type": "test",
+      "phase": "P2",
+      "deps": [
+        "entity--account-domain-types",
+        "config--seed-dev"
+      ],
+      "est": 1,
+      "accept": "deno test runs red (function missing) with all EF-01/02 assertions encoded.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "tests only"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "feature--ef-topup-create",
+      "title": "Edge Fn topup-create (PromptPay/TrueMoney charge) — Implement CR-003 §2.5 topup-create: JWT auth, read package price from coin_packages (never from client), create Omise charge (source promptpay | truemoney), insert topup_orders pending with snapshots + expires_at, return {order_id, qr_image_uri|authorize_uri, expires_at}",
+      "type": "code",
+      "phase": "P2",
+      "deps": [
+        "eval--ef-test-topup-create"
+      ],
+      "est": 2,
+      "accept": "eval--ef-test-topup-create GREEN; manual sandbox call yields a scannable test QR.",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "guard--webhook-verify",
+      "title": "Pure fn: decideWebhookAction(charge, order) — Single pure function in supabase/functions/_shared/webhook-verify.ts: `decideWebhookAction(fetchedCharge: {id,status,amount,metadata}, order: {id,status,price_satang,provider_charge_id}): 'credit'|'fail'|'expire'|'ignore'`",
+      "type": "micro",
+      "phase": "P2",
+      "deps": [
+        "config--local-first-micro-role",
+        "entity--account-domain-types"
+      ],
+      "est": 1,
+      "accept": "deno test green with all 6+ cases, tests committed before impl; function is pure (no fetch, no db).",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "one function + its test only",
+          "no fetch/db/side effects",
+          "do not write the webhook handler"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "eval--ef-test-webhook",
+      "title": "Deno tests: payment-webhook (EF-03/04/05) — RED first — Write supabase/functions/tests/payment-webhook.test.ts BEFORE the handler: EF-03 forged event (charge not found on refetch) credits nothing; EF-04 same event id x5 -> 200 every time, credited once (webhook_events PK); EF-05 failed/expired flips order status with no ledger row",
+      "type": "test",
+      "phase": "P2",
+      "deps": [
+        "config--seed-dev"
+      ],
+      "est": 1,
+      "accept": "deno test runs red with EF-03/04/05 encoded.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "tests only"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "feature--ef-payment-webhook",
+      "title": "Edge Fn payment-webhook (verify-by-refetch + idempotent credit) — Implement CR-003 §2.5 payment-webhook: insert webhook_events (on conflict do nothing -> 200 early-exit), refetch the charge from Omise with the secret key (never trust payload), call decideWebhookAction, then credit_topup / status update via service_role",
+      "type": "code",
+      "phase": "P2",
+      "deps": [
+        "eval--ef-test-webhook",
+        "guard--webhook-verify",
+        "algo--fn-credit-topup"
+      ],
+      "est": 2,
+      "accept": "eval--ef-test-webhook GREEN; sandbox end-to-end: test-pay a charge -> order paid + balance credited exactly once.",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "feature--ef-pack-download",
+      "title": "Edge Fn pack-download (entitlement-gated signed URL) — Implement CR-003 §2.5 pack-download: JWT auth, check inventory row for the item, issue a 5-min signed URL for bundle_path in the private 'packs' Storage bucket",
+      "type": "code",
+      "phase": "P2",
+      "deps": [
+        "config--sql-migration-store"
+      ],
+      "est": 1,
+      "accept": "All 4 test cases green (written first); URL stops working after expiry.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "guard--rate-limit-topup",
+      "title": "Rate limit: max pending topups per user (EF-07) — Add to topup-create: count pending topup_orders for the user in the last hour; >5 -> 429 with a Thai-friendly error body",
+      "type": "code",
+      "phase": "P2",
+      "deps": [
+        "feature--ef-topup-create"
+      ],
+      "est": 1,
+      "accept": "Test: 6th create within the window returns 429; earlier orders unaffected.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "should",
+      "state": "extend"
+    },
+    {
+      "id": "algo--fmt-money",
+      "title": "Pure fns: formatCoins / formatSatang — src/src/wallet/format.ts: `formatCoins(n: number): string` -> thousands-separated, e.g",
+      "type": "micro",
+      "phase": "P3",
+      "deps": [
+        "config--local-first-micro-role",
+        "entity--account-domain-types"
+      ],
+      "est": 1,
+      "accept": "vitest green (tests committed before impl); no locale API dependence (deterministic output).",
+      "scope": {
+        "budgetTokens": 4000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "one file + its test only",
+          "no react, no supabase",
+          "no Intl.NumberFormat"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "algo--countdown",
+      "title": "Pure fn: qrCountdown(expiresAt, now) — src/src/wallet/countdown.ts: `qrCountdown(expiresAtIso: string, nowMs: number): {mm: string, ss: string, expired: boolean}` — e.g",
+      "type": "micro",
+      "phase": "P3",
+      "deps": [
+        "config--local-first-micro-role",
+        "entity--account-domain-types"
+      ],
+      "est": 1,
+      "accept": "vitest green, tests first; pure — caller passes now (no Date.now inside).",
+      "scope": {
+        "budgetTokens": 4000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "one file + its test only",
+          "no timers, no react"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "algo--suggest-package",
+      "title": "Pure fn: suggestPackage(deficit, packages) — src/src/wallet/suggest.ts: `suggestPackage(deficitCoins: number, packages: CoinPackage[]): CoinPackage | null` — cheapest active package whose coins+bonus >= deficit; null if none",
+      "type": "micro",
+      "phase": "P3",
+      "deps": [
+        "config--local-first-micro-role",
+        "entity--account-domain-types"
+      ],
+      "est": 1,
+      "accept": "vitest green, tests first; deterministic tie-break by price_satang asc.",
+      "scope": {
+        "budgetTokens": 4000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "one file + its test only",
+          "no react, no supabase"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "algo--ledger-page",
+      "title": "Pure fn: mergeLedger(existing, incoming, pageSize) — src/src/wallet/ledger-page.ts: `mergeLedger(existing: LedgerEntry[], incoming: LedgerEntry[], pageSize: number): LedgerEntry[]` — dedupe by id, sort created_at desc then id desc, truncate to pageSize",
+      "type": "micro",
+      "phase": "P3",
+      "deps": [
+        "config--local-first-micro-role",
+        "entity--account-domain-types"
+      ],
+      "est": 1,
+      "accept": "vitest green, tests first; stable ordering proven by a shuffled-input property case.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "one file + its test only",
+          "no react, no supabase"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "algo--fit-rows",
+      "title": "Pure fn: rowsThatFit(viewportH, chromeH, rowH) — no-scroll budget — src/src/wallet/fit.ts: `rowsThatFit(viewportH: number, chromeH: number, rowH: number, min=3, max=20): number` — floor((viewportH-chromeH)/rowH) clamped to [min,max]",
+      "type": "micro",
+      "phase": "P3",
+      "deps": [
+        "config--local-first-micro-role",
+        "concept--noscroll-ui-policy"
+      ],
+      "est": 1,
+      "accept": "vitest green, tests first; used by wallet/history tabs (grep proves call sites later).",
+      "scope": {
+        "budgetTokens": 4000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "one file + its test only",
+          "no DOM access — caller measures"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "algo--receipt-view",
+      "title": "Pure fn: toReceipt(order) — receipt projection — src/src/wallet/receipt.ts: `toReceipt(order: TopupOrder, pkg: CoinPackage | null): ReceiptView` — maps to {orderId, channelLabel('PromptPay QR'|'TrueMoney Wallet'), amountLabel(formatSatang), coinsLabel(base+bonus), providerRef, paidAtLabel}",
+      "type": "micro",
+      "phase": "P3",
+      "deps": [
+        "config--local-first-micro-role",
+        "entity--account-domain-types"
+      ],
+      "est": 1,
+      "accept": "vitest green, tests first; output matches the mockup receipt fields 1:1.",
+      "scope": {
+        "budgetTokens": 4000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "one file + its test only",
+          "no react, no supabase"
+        ]
+      },
+      "moscow": "should",
+      "state": "new"
+    },
+    {
+      "id": "eval--vitest-wallet-hook",
+      "title": "Vitest: useWallet realtime states — RED first — Write src/src/__tests__/wallet-hook.test.ts BEFORE useWallet: mocked supabase client; cases — signed-out returns null wallet without subscribing; initial load populates balance+ledger; realtime wallet UPDATE mutates balance; realtime ledger INSERT prepends via mergeLedger; unsubscribes on unmount",
+      "type": "test",
+      "phase": "P3",
+      "deps": [
+        "entity--account-domain-types"
+      ],
+      "est": 1,
+      "accept": "vitest runs red (hook missing) with all 5 states encoded.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "tests only"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "feature--wallet-hook",
+      "title": "useWallet() — balance + ledger + orders, realtime — src/src/wallet/wallet.ts: useWallet() following the useProfile()/useAuth() patterns — loads wallets + recent ledger + pending topup_orders, subscribes Supabase Realtime on all three (own rows), merges via mergeLedger, exposes {wallet, ledger, pendingOrders, loaded}",
+      "type": "code",
+      "phase": "P3",
+      "deps": [
+        "eval--vitest-wallet-hook",
+        "algo--ledger-page"
+      ],
+      "est": 2,
+      "accept": "eval--vitest-wallet-hook GREEN; npx tsc --noEmit passes; no direct DB writes anywhere in the file.",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md",
+          "src/src/profile.ts",
+          "src/src/auth.ts"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "feature--store-api",
+      "title": "storeApi.ts — thin client for RPC/Edge Fns — src/src/wallet/storeApi.ts: listCatalog(), listPackages(), purchase(itemId) -> rpc purchase_item, redeem(code) -> rpc redeem_code, createTopup(packageId, provider) -> fn topup-create, packDownloadUrl(itemId) -> fn pack-download",
+      "type": "code",
+      "phase": "P3",
+      "deps": [
+        "entity--account-domain-types"
+      ],
+      "est": 1,
+      "accept": "vitest green (tests first); every export is <=15 lines; no price/balance math in this file.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "no react components",
+          "no business rules — server owns them"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "feature--account-tabs-shell",
+      "title": "Fixed-viewport Account shell: 4 tabs, zero page scroll — Extend AccountPage.tsx into the tabbed shell [Account | Wallet | Inventory | History] per the CR-003 mockup: fixed-height layout (100% of the deck content area, overflow:hidden at page level), tab bar + content pane grid",
+      "type": "code",
+      "phase": "P4",
+      "deps": [
+        "concept--noscroll-ui-policy"
+      ],
+      "est": 2,
+      "accept": "At 1280x800 logical, document.scrollingElement.scrollHeight == clientHeight on every tab (empty states); existing Account tests/behavior unchanged; tab state preserved across switches.",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md",
+          "src/src/AccountPage.tsx"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "extend"
+    },
+    {
+      "id": "feature--wallet-tab",
+      "title": "Wallet tab — balance hero + 3-row ledger preview — src/src/wallet/WalletTab.tsx per mockup §1: balance hero (formatCoins, lifetime stats, GID), pending-order badge, '+ เติมเหรียญ' button opening TopupModal, ledger preview capped by rowsThatFit (default 3)",
+      "type": "code",
+      "phase": "P4",
+      "deps": [
+        "feature--account-tabs-shell",
+        "feature--wallet-hook",
+        "algo--fmt-money",
+        "algo--fit-rows"
+      ],
+      "est": 1,
+      "accept": "Renders from useWallet only (no direct supabase); no overflow at baseline; vitest snapshot for signed-in/out/pending states.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "eval--vitest-topup-states",
+      "title": "Vitest: topup modal state machine — RED first — Write src/src/__tests__/topup-modal.test.ts BEFORE the modal: state machine pick-package -> pick-provider -> paying(pending) -> paid|expired|failed; assertions — paid closes with success feedback, expired offers 'สร้าง QR ใหม่' creating a NEW order (old never reused), closing mid-pending keeps the pending badge, provider=truemoney opens external browser exactly once",
+      "type": "test",
+      "phase": "P4",
+      "deps": [
+        "entity--account-domain-types"
+      ],
+      "est": 1,
+      "accept": "vitest red (modal missing) with all transitions + the no-reuse rule encoded.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "tests only"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "feature--topup-modal",
+      "title": "Top-up modal — 3 steps, QR countdown, realtime settle — src/src/wallet/TopupModal.tsx per mockup §2: package cards (M tagged 'คุ้มสุด'), provider buttons, QR pane with qrCountdown + realtime status flip via useWallet pendingOrders, TrueMoney external-browser path, success/expired/failed states per the mockup",
+      "type": "code",
+      "phase": "P4",
+      "deps": [
+        "eval--vitest-topup-states",
+        "feature--store-api",
+        "algo--countdown",
+        "algo--suggest-package",
+        "feature--ef-topup-create"
+      ],
+      "est": 2,
+      "accept": "eval--vitest-topup-states GREEN; sandbox manual run: test-pay flips the modal to success without reload.",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "feature--store-page",
+      "title": "Store page — paged catalog grid (replaces dead Voice Packs) — src/src/wallet/StorePage.tsx per mockup §3, wired into the deck nav slot of the old Voice Packs page (which crashes on :4577 /api/*): fixed grid (page size from viewport, pager not scroll), card states buy/owned/insufficient(-> TopupModal with deficit)/signed-out('เข้าสู่ระบบเพื่อซื้อ'), 'ลองฟัง' preview via existing audio preview command, confirm sheet before purchase()",
+      "type": "code",
+      "phase": "P4",
+      "deps": [
+        "feature--account-tabs-shell",
+        "feature--store-api",
+        "algo--suggest-package",
+        "algo--fmt-money"
+      ],
+      "est": 2,
+      "accept": "Old /api/* fetches fully removed from the nav path; signed-out renders the full catalog; purchase flow green against seeded data; no overflow at baseline.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md",
+          "src/src/CompanionPages.tsx"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "extend"
+    },
+    {
+      "id": "feature--inventory-tab",
+      "title": "Inventory tab — owned grid + redeem row — src/src/wallet/InventoryTab.tsx per mockup §4: owned cards with source badges + acquisition date, redeem-code input row (redeem() -> new card appears), button ladder ติดตั้ง/ใช้งาน/กำลังใช้งาน (install wiring itself lands in feature--pack-install-wire — render states only here, injected via props/callback)",
+      "type": "code",
+      "phase": "P4",
+      "deps": [
+        "feature--account-tabs-shell",
+        "feature--store-api"
+      ],
+      "est": 1,
+      "accept": "Redeem success adds the card without reload; duplicate redeem shows the polite error from typed storeApi errors; no overflow at baseline.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "feature--history-tab",
+      "title": "History tab — paged ledger + inline receipt — src/src/wallet/HistoryTab.tsx per mockup §5: filter chips (ทั้งหมด/เติมเหรียญ/ซื้อ/รับฟรี), rows-per-page from rowsThatFit + pager (no scroll), topup rows expand to the toReceipt view with copy buttons, empty state per spec",
+      "type": "code",
+      "phase": "P4",
+      "deps": [
+        "feature--account-tabs-shell",
+        "feature--wallet-hook",
+        "algo--receipt-view",
+        "algo--fit-rows"
+      ],
+      "est": 1,
+      "accept": "Filters compose with pagination correctly (assert on seeded fixture); receipt fields match toReceipt 1:1; no overflow at baseline.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": [
+          "do not modify CompanionPages HistoryPage (match history)"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "feature--deletion-request",
+      "title": "Danger zone — PDPA deletion request (2-step confirm) — Add the Danger zone to the Account tab: 'ขอลบบัญชี' -> confirm by typing the GID -> insert deletion_requests (own-row RLS) -> notice '30 วัน / ข้อมูลแมตช์อยู่ในเครื่องคุณอยู่แล้ว'",
+      "type": "code",
+      "phase": "P4",
+      "deps": [
+        "feature--account-tabs-shell",
+        "config--sql-migration-ops"
+      ],
+      "est": 1,
+      "accept": "Wrong GID blocks submit; successful request persists and renders the pending notice on next load; deck remains fully usable signed-out after.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "should",
+      "state": "extend"
+    },
+    {
+      "id": "guard--e2e-no-scroll",
+      "title": "E2E gate: zero page scroll on every tab (success meter) — WebdriverIO spec: for each of the 6 surfaces (4 tabs + Store + open TopupModal) at 1280x800 and DPI 125% emulation, assert scrollHeight <= clientHeight on the page root, with BOTH empty-state and max-seeded data",
+      "type": "code",
+      "phase": "P4",
+      "deps": [
+        "feature--wallet-tab",
+        "feature--topup-modal",
+        "feature--store-page",
+        "feature--inventory-tab",
+        "feature--history-tab"
+      ],
+      "est": 1,
+      "accept": "Spec green on all 6x2x2 combinations; intentionally breaking one tab makes it fail (verified once).",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "feature--pack-install-wire",
+      "title": "Install pipeline: signed URL -> POST /announcer/install -> activate — Wire Inventory's ติดตั้ง/ใช้งาน: packDownloadUrl() -> download bundle -> POST /announcer/install on the existing :3000 GSI endpoint (same pipeline as G-AnnStudio) -> activate via the existing active-pack mechanism (voice_api.rs)",
+      "type": "code",
+      "phase": "P5",
+      "deps": [
+        "feature--ef-pack-download",
+        "feature--inventory-tab"
+      ],
+      "est": 2,
+      "accept": "US-10 end-to-end: purchased pack lands in voice-cache/packs/<id>/ with manifest, becomes ACTIVE, and the next fired event voices from it (audio::play_random order per AGENTS/CLAUDE contract).",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md",
+          "src-tauri/src/voice_api.rs",
+          "src-tauri/src/gsi.rs"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "extend"
+    },
+    {
+      "id": "eval--e2e-golden-path",
+      "title": "E2E-01 golden path (sign-in -> topup -> buy -> install -> history) — WebdriverIO + tauri-driver journey per CR-003 E2E-01: mock session injection -> welcome coins visible -> topup via Omise test-pay API -> balance flips realtime -> buy pack -> inventory install (manifest on disk) -> activate -> History shows 3 entries",
+      "type": "test",
+      "phase": "P5",
+      "deps": [
+        "feature--pack-install-wire",
+        "feature--topup-modal",
+        "feature--store-page"
+      ],
+      "est": 2,
+      "accept": "Spec green on a Windows runner against the dev-branch Supabase + Omise sandbox; disk assertion on voice-cache manifest included.",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "eval--e2e-billing-edge",
+      "title": "E2E billing edges (expiry / insufficient / close-app / rate-limit) — WebdriverIO specs per CR-003 E2E-03/04/07 + EF-07: shortened-expiry QR -> UI offers regenerate, old order stays expired-uncredited; insufficient coins -> CTA opens modal with deficit package, zero RPC fired; pay-after-app-close -> reopen shows correct balance+history; 6th pending topup -> polite 429 surface",
+      "type": "test",
+      "phase": "P5",
+      "deps": [
+        "feature--topup-modal",
+        "guard--rate-limit-topup"
+      ],
+      "est": 2,
+      "accept": "All four specs green; each asserts DB state, not just UI.",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "config--feature-flag-wallet",
+      "title": "Remote flag wallet_enabled (ship dark until Omise live) — Add app_flags table (public read, service write) with wallet_enabled boolean; when false the top-up button renders disabled with 'เร็ว ๆ นี้' while Store's free items + redeem still work (per MASTERPLAN gate: economy usable before payments go live)",
+      "type": "config",
+      "phase": "P5",
+      "deps": [
+        "feature--wallet-tab",
+        "feature--topup-modal"
+      ],
+      "est": 1,
+      "accept": "Flipping the flag in DB changes the UI within one app restart (or realtime); with flag off, golden-path e2e still passes its redeem-based variant.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "audit--pdpa-deletion",
+      "title": "PDPA/privacy audit vs ADR-14 reconciliation — ATHER-style audit: verify the account layer still stores identity+transactions only (no card data, no match data), deletion flow works, ToS wording covers closed-loop non-refundable coins (CR-003 D1), and every table matches the CR-003 §7 table",
+      "type": "config",
+      "phase": "P5",
+      "deps": [
+        "feature--deletion-request"
+      ],
+      "est": 1,
+      "accept": "Checklist committed with evidence links (queries/screens); any DRIFT item has an owner + follow-up atom.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md",
+          "docs/architecture/adr/ADR-14-gid-account-identity.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "should",
+      "state": "new"
+    },
+    {
+      "id": "runbook--release-cr003",
+      "title": "Release CR-003 (batching rule + gates checklist) — Release checklist per the repo release workflow: all gates green (pgTAP, deno, vitest, e2e, no-scroll), migrations applied to prod gstore, Edge Fns deployed, flag OFF, then version bump + tag per CLAUDE.md batching policy (only when Boss asks)",
+      "type": "docs",
+      "phase": "P5",
+      "deps": [
+        "eval--e2e-golden-path",
+        "eval--e2e-billing-edge",
+        "config--feature-flag-wallet",
+        "audit--pdpa-deletion",
+        "guard--e2e-no-scroll"
+      ],
+      "est": 1,
+      "accept": "Checklist doc exists; dry-run walkthrough completed once with every gate's actual command recorded.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    }
+  ]
+}

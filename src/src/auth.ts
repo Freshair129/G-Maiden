@@ -17,15 +17,17 @@ function msg(e: unknown): string {
   return (e as { message?: string })?.message ?? String(e) ?? "something went wrong";
 }
 
-/** Upsert the GID's profile row and link the stored Steam identity (best-effort). */
-async function linkProfile(userId: string, email: string | null): Promise<void> {
+/** Link the stored Steam identity onto the GID's profile row (best-effort).
+ *  The row + email are created server-side by the signup trigger, and identity
+ *  columns are column-locked (SEC-001 §2 Phase B), so the client only updates
+ *  the Steam link fields it is granted — never id/email/generation/gid_code. */
+async function linkProfile(userId: string): Promise<void> {
   const identity = await loadIdentity();
-  const row: { id: string; email: string | null; steamid64?: string; account_id?: number } = { id: userId, email };
-  if (identity) {
-    row.steamid64 = identity.steamid64;
-    row.account_id = identity.accountId;
-  }
-  await supabase.from("profiles").upsert(row, { onConflict: "id" });
+  if (!identity) return; // nothing to link yet
+  await supabase
+    .from("profiles")
+    .update({ steamid64: identity.steamid64, account_id: identity.accountId })
+    .eq("id", userId);
 }
 
 export function useAuth() {
@@ -56,7 +58,7 @@ export function useAuth() {
           try {
             const { data, error } = await supabase.auth.exchangeCodeForSession(e.payload);
             if (error) throw error;
-            if (data.user) await linkProfile(data.user.id, data.user.email ?? null).catch(() => {});
+            if (data.user) await linkProfile(data.user.id).catch(() => {});
           } catch (err) {
             setError(msg(err));
           } finally {

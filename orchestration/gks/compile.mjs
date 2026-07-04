@@ -4,14 +4,18 @@
 // engine backlog + renders canonical Markdown, and self-checks the Markdown<->object round-trip.
 // Zero-dependency Node ESM. Run from orchestration/:  node gks/compile.mjs
 import { readFileSync, writeFileSync, mkdirSync, rmSync } from "node:fs";
-import { join, dirname } from "node:path";
+import { join, dirname, basename, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { validateSet, toBacklogTask, renderAtomMarkdown, parseAtomMarkdown } from "./atom-schema.mjs";
 
 const __dir = dirname(fileURLToPath(import.meta.url));
-const SRC = join(__dir, "atoms.gorch.json");
-const OUT_BACKLOG = join(__dir, "backlog.gorch.json");
-const OUT_ATOMS = join(__dir, "atoms");
+// Optional argv: compile another Genesis block (e.g. `node gks/compile.mjs gks/atoms.cr003.json`)
+// -> emits backlog.<suffix>.json + gks/atoms-<suffix>/, leaving the default gorch outputs untouched.
+const customSrc = process.argv[2];
+const SRC = customSrc ? resolve(customSrc) : join(__dir, "atoms.gorch.json");
+const suffix = customSrc ? basename(SRC).replace(/^atoms\./, "").replace(/\.json$/, "") : null;
+const OUT_BACKLOG = suffix ? join(__dir, `backlog.${suffix}.json`) : join(__dir, "backlog.gorch.json");
+const OUT_ATOMS = suffix ? join(__dir, `atoms-${suffix}`) : join(__dir, "atoms");
 
 const src = JSON.parse(readFileSync(SRC, "utf8"));
 const atoms = src.atoms || [];
@@ -22,7 +26,7 @@ if (errors.length) { console.error("✗ VALIDATION FAILED:\n" + errors.map((e) =
 
 // ---- ASSEMBLE: emit engine backlog ----
 const tasks = atoms.map(toBacklogTask);
-writeFileSync(OUT_BACKLOG, JSON.stringify({ $schema: "engine backlog (compiled from gks/atoms.gorch.json — do NOT hand-edit; run `node gks/compile.mjs`)", block: src.block, tasks }, null, 2) + "\n", "utf8");
+writeFileSync(OUT_BACKLOG, JSON.stringify({ $schema: `engine backlog (compiled from ${basename(SRC)} — do NOT hand-edit; run \`node gks/compile.mjs${suffix ? " gks/" + basename(SRC) : ""}\`)`, block: src.block, tasks }, null, 2) + "\n", "utf8");
 
 // ---- render each atom to canonical Markdown ----
 rmSync(OUT_ATOMS, { recursive: true, force: true });
@@ -43,7 +47,7 @@ for (const a of atoms) {
 const byPhase = {};
 for (const a of atoms) (byPhase[a.phase] ||= []).push(a.id);
 console.log(`✓ compiled ${atoms.length} atoms  (GKS-001 ✓ · GKS-002 ✓ · round-trip ${rtChecked}/${atoms.length} ✓)`);
-console.log(`  wrote ${OUT_BACKLOG.split(/[\\/]/).pop()} (${tasks.length} tasks) + ${atoms.length} atom .md in gks/atoms/`);
+console.log(`  wrote ${OUT_BACKLOG.split(/[\\/]/).pop()} (${tasks.length} tasks) + ${atoms.length} atom .md in gks/${OUT_ATOMS.split(/[\\/]/).pop()}/`);
 console.log(`  phases: ` + Object.entries(byPhase).map(([p, xs]) => `${p}=${xs.length}`).join("  "));
 const byState = {}; for (const a of atoms) byState[a.state || "new"] = (byState[a.state || "new"] || 0) + 1;
 console.log(`  state:  ` + ["exists", "extend", "new"].filter((s) => byState[s]).map((s) => `${s}=${byState[s]}`).join("  "));
