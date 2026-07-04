@@ -1,0 +1,46 @@
+<svg viewBox="-30 -30 1340 790" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
+  <rect x="-30" y="-30" width="1340" height="790" fill="#06070A"/>
+
+  <!-- ambient hint -->
+  <defs>
+    <radialGradient id="amb" cx="76%" cy="14%" r="50%">
+      <stop offset="0" stop-color="#3a5ca8" stop-opacity="0.5"/>
+      <stop offset="1" stop-color="#06070A" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="rim" x1="0" y1="0" x2="1280" y2="720" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#b4d7ff" stop-opacity="0.4"/>
+      <stop offset="0.5" stop-color="#96c8ff" stop-opacity="0.12"/>
+      <stop offset="1" stop-color="#a3e635" stop-opacity="0.22"/>
+    </linearGradient>
+  </defs>
+  <rect x="-30" y="-30" width="1340" height="790" fill="url(#amb)"/>
+
+  <!-- the Subtract panel -->
+  <path d="M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 410 A 20 20 0 0 1 1248,430 H 764 A 20 20 0 0 0 744,450 V 688 A 20 20 0 0 1 724,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z"
+        fill="#0e1626" fill-opacity="0.82" stroke="url(#rim)" stroke-width="1.5"/>
+
+  <!-- notch callouts -->
+  <g font-size="14" font-weight="700">
+    <!-- topbar notch -->
+    <rect x="836" y="12" width="432" height="50" rx="14" fill="#0e121c" fill-opacity="0.6" stroke="#a3e635" stroke-width="1"/>
+    <text x="1052" y="42" fill="#a3e635" text-anchor="middle">Topbar FAB · 432×50</text>
+    <!-- sidebar notch -->
+    <rect x="14" y="342" width="64" height="306" rx="16" fill="#0e121c" fill-opacity="0.6" stroke="#a3e635" stroke-width="1"/>
+    <text x="46" y="500" fill="#a3e635" text-anchor="middle" transform="rotate(-90,46,500)">Sidebar FAB · 64×306</text>
+    <rect x="14" y="656" width="64" height="44" rx="14" fill="#0e121c" fill-opacity="0.6" stroke="#f43f5e" stroke-width="1"/>
+    <text x="46" y="683" fill="#f43f5e" text-anchor="middle" font-size="12">✕</text>
+    <!-- signals notch -->
+    <rect x="756" y="442" width="512" height="254" rx="16" fill="#0e121c" fill-opacity="0.6" stroke="#a3e635" stroke-width="1"/>
+    <text x="1012" y="575" fill="#a3e635" text-anchor="middle">Signals D/E/F/G · 512×254</text>
+  </g>
+
+  <!-- fillet callouts -->
+  <g font-size="12" fill="#8fd4ff">
+    <circle cx="40" cy="40" r="4" fill="none" stroke="#8fd4ff"/>
+    <text x="56" y="30">outer r=28</text>
+    <circle cx="820" cy="32" r="3" fill="none" stroke="#8fd4ff"/>
+    <text x="640" y="26">notch r=20</text>
+  </g>
+
+  <text x="1240" y="748" fill="#8ba4c6" font-size="13" text-anchor="end">panel path — canvas 1280×720 · glassmorphism via clip-path + backdrop blur</text>
+</svg>

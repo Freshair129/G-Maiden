@@ -12,6 +12,10 @@ attributes:
 
 # G-Maiden Iceglass Design System
 
+> **⚠️ ต่อยอดแล้วที่ `docs/design-system/` (SSOT v2 "Command Deck HUD").** ไฟล์นี้เป็นต้นทาง Iceglass
+> (palette/persona/principles ยังใช้ได้) แต่ shell layout ถูก supersede ด้วย Subtract-glass shell —
+> token/layout/component ล่าสุดยึด `docs/design-system/README.md`
+
 > Candidate design system for the G-Maiden control dashboard and in-game overlay.
 > Source intent: PRD/SRS require a premium dark dashboard and transparent ice-glass overlay.
 > Visual direction: adapt the supplied dark premium game-launcher reference into a Maiden-specific command deck, not a direct Red Dead/red-warm clone.
