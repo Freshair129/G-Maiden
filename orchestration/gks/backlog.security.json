@@ -1,0 +1,244 @@
+{
+  "$schema": "engine backlog (compiled from atoms.security.json — do NOT hand-edit; run `node gks/compile.mjs gks/atoms.security.json`)",
+  "block": "Genesis::GMaiden-SEC001-AuthHardening",
+  "tasks": [
+    {
+      "id": "eval--pgtap-identity-lock",
+      "title": "pgTAP: identity columns unforgeable (F1) — RED first — Write supabase/tests/sec001_identity_lock.sql BEFORE the Part B migration (must be RED on today's schema): as an authenticated user, UPDATE own profiles SET generation='B' -> must be denied; SET gid_code='G-FFAKE' -> denied; SET role='admin' (after role exists) -> denied; SET display_name='ok' -> allowed",
+      "type": "test",
+      "phase": "P0",
+      "deps": [],
+      "est": 1,
+      "accept": "File runs; the deny-assertions FAIL on the current schema (proving the hole is real) and PASS after config--migration-identity-hardening Part B.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/audits/SEC-001-auth-identity-hardening.md"
+        ],
+        "excludes": [
+          "tests only — no schema change"
+        ]
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "config--migration-identity-hardening-part-a",
+      "title": "Migration Part A — revokes + search_path (safe) — Apply Part A of supabase/migrations/20260704120000_sec001_identity_hardening.sql: revoke EXECUTE on alloc_cohort_seq + handle_new_user from anon/authenticated (F2/F3), revoke all on gid_counters + profiles from anon (F4), pin touch_updated_at search_path (F7)",
+      "type": "code",
+      "phase": "P0",
+      "deps": [],
+      "est": 1,
+      "accept": "After apply: get_advisors(security) no longer flags 0011/0028/0029 for these functions; signup still mints a cohort seq (trigger path unaffected); existing signed-in profile reads still work.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/audits/SEC-001-auth-identity-hardening.md"
+        ],
+        "excludes": [
+          "Part A only — do NOT run Part B",
+          "live apply needs Boss approval"
+        ]
+      },
+      "requiresConfirm": true,
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "config--auth-leaked-password",
+      "title": "Enable leaked-password protection (F8) — Auth config toggle (not SQL): Dashboard/API -> Auth -> Password -> enable HaveIBeenPwned check",
+      "type": "config",
+      "phase": "P0",
+      "deps": [],
+      "est": 1,
+      "accept": "get_advisors(security) no longer returns auth_leaked_password_protection.",
+      "scope": {
+        "budgetTokens": 4000,
+        "needs": [
+          "docs/audits/SEC-001-auth-identity-hardening.md"
+        ],
+        "excludes": []
+      },
+      "requiresConfirm": true,
+      "moscow": "should",
+      "state": "new"
+    },
+    {
+      "id": "feature--ef-mint-gid",
+      "title": "Edge Fn mint-gid — server-authoritative GID (reuses gid.ts) — supabase/functions/mint-gid/index.ts: JWT auth, load the caller's profile (generation, cohort_seq, created_at), import the SAME src/src/gid.ts codec (generateGid) so the algorithm stays single-sourced per ADR-14, and UPDATE profiles SET gid_code=..",
+      "type": "code",
+      "phase": "P1",
+      "deps": [
+        "config--migration-identity-hardening-part-a"
+      ],
+      "est": 2,
+      "accept": "deno test green (tests first); minting works with the profiles UPDATE(gid_code) grant revoked from the client; output GID byte-identical to gid.ts for the same source fields.",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/audits/SEC-001-auth-identity-hardening.md",
+          "src/src/gid.ts",
+          "docs/architecture/adr/ADR-14-gid-account-identity.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "feature--client-gid-mint-move",
+      "title": "Client: stop writing gid_code / email; call mint-gid — profile.ts: delete the client-side `update profiles set gid_code` (the .is('gid_code',null) block); instead invoke the mint-gid function when gid_code is empty, then read it back",
+      "type": "code",
+      "phase": "P1",
+      "deps": [
+        "feature--ef-mint-gid"
+      ],
+      "est": 1,
+      "accept": "npx tsc --noEmit + vitest pass; a fresh Google sign-in still yields a persisted G-F… GID; no client code writes generation/gid_code/cohort_seq/email anymore (grep proves it).",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/audits/SEC-001-auth-identity-hardening.md",
+          "src/src/profile.ts",
+          "src/src/auth.ts"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "extend"
+    },
+    {
+      "id": "config--migration-identity-hardening-part-b",
+      "title": "Migration Part B — column-lock + role column (BREAKING) — Uncomment + apply Part B: revoke INSERT/UPDATE on profiles from authenticated, drop own_profile_insert, grant UPDATE(display_name,steamid64,account_id) only, add locked `role` column (default 'user', check user/creator/admin, no client grant)",
+      "type": "code",
+      "phase": "P1",
+      "deps": [
+        "eval--pgtap-identity-lock",
+        "feature--ef-mint-gid",
+        "feature--client-gid-mint-move"
+      ],
+      "est": 1,
+      "accept": "eval--pgtap-identity-lock GREEN (forgery denied, display_name allowed); mint-gid + sign-in still work end-to-end; get_advisors(security) clean for the account schema.",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/audits/SEC-001-auth-identity-hardening.md"
+        ],
+        "excludes": [
+          "apply only after the mint-gid EF + client changes are live",
+          "live apply needs Boss approval"
+        ]
+      },
+      "requiresConfirm": true,
+      "moscow": "must",
+      "state": "new"
+    },
+    {
+      "id": "eval--vitest-secure-session-store",
+      "title": "Vitest: encrypted session storage adapter (F5) — RED first — Write src/src/__tests__/secure-store.test.ts BEFORE the adapter: getItem/setItem/removeItem round-trip through a mocked Tauri encrypted store; asserts nothing is written to window.localStorage",
+      "type": "test",
+      "phase": "P2",
+      "deps": [],
+      "est": 1,
+      "accept": "vitest red (adapter missing) with the no-localStorage assertion encoded.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/audits/SEC-001-auth-identity-hardening.md"
+        ],
+        "excludes": [
+          "tests only"
+        ]
+      },
+      "moscow": "should",
+      "state": "new"
+    },
+    {
+      "id": "feature--secure-session-store",
+      "title": "Encrypted Supabase session storage adapter (F5) — src/src/secureStore.ts: a Supabase auth `storage` adapter backed by an encrypted Tauri store (tauri-plugin-store + OS DPAPI, or Stronghold), replacing plaintext WebView2 localStorage for the session",
+      "type": "code",
+      "phase": "P2",
+      "deps": [
+        "eval--vitest-secure-session-store"
+      ],
+      "est": 2,
+      "accept": "eval--vitest-secure-session-store GREEN; after sign-in, the WebView2 localStorage holds no JWT/refresh token; session survives app restart.",
+      "scope": {
+        "budgetTokens": 8000,
+        "needs": [
+          "docs/audits/SEC-001-auth-identity-hardening.md",
+          "src/src/supabase.ts"
+        ],
+        "excludes": []
+      },
+      "moscow": "should",
+      "state": "extend"
+    },
+    {
+      "id": "guard--oauth-state-nonce",
+      "title": "Pure fn: OAuth state nonce verify (F6) — Pure core in src/src/oauthState.ts: `makeState(): string` (caller stores it) and `verifyState(expected: string|null, got: string|null): boolean` — true only when both present and equal; false on null/mismatch/reuse (caller clears expected after true)",
+      "type": "micro",
+      "phase": "P2",
+      "deps": [],
+      "est": 1,
+      "accept": "vitest green (tests first); function is pure (no crypto side effects beyond a passed RNG or a fixed test seed), no DOM/Tauri imports.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/audits/SEC-001-auth-identity-hardening.md"
+        ],
+        "excludes": [
+          "one file + its test only",
+          "no react/tauri imports — pure logic"
+        ]
+      },
+      "moscow": "should",
+      "state": "new"
+    },
+    {
+      "id": "guard--open-url-allowlist",
+      "title": "open_url scheme/host allowlist (Rust) — Harden src-tauri/src/main.rs open_url: only launch https:// URLs (reject file:/data:/custom schemes) so a crafted OAuth url can't shell out",
+      "type": "code",
+      "phase": "P2",
+      "deps": [],
+      "est": 1,
+      "accept": "cargo test green incl. the new validator test; a non-https url is refused and logged; the real Google/Supabase auth url still opens.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/audits/SEC-001-auth-identity-hardening.md",
+          "src-tauri/src/main.rs"
+        ],
+        "excludes": []
+      },
+      "moscow": "should",
+      "state": "extend"
+    },
+    {
+      "id": "audit--sec001-signoff",
+      "title": "SEC-001 sign-off — advisors clean + gate into CR-003 — ATHER sign-off: re-run get_advisors(security) -> zero WARN/ERROR for the account schema; walk SEC-001 §3 verification table with recorded evidence; confirm F1 forgery is dead",
+      "type": "config",
+      "phase": "P3",
+      "deps": [
+        "config--migration-identity-hardening-part-b",
+        "config--migration-identity-hardening-part-a",
+        "config--auth-leaked-password",
+        "feature--secure-session-store",
+        "guard--oauth-state-nonce",
+        "guard--open-url-allowlist"
+      ],
+      "est": 1,
+      "accept": "SEC-001 §3 table all green with evidence links; advisor run attached; CR-003 unblocked to start Phase 0.",
+      "scope": {
+        "budgetTokens": 6000,
+        "needs": [
+          "docs/audits/SEC-001-auth-identity-hardening.md",
+          "docs/change request/CR-003-account-phase1-wallet-billing.md"
+        ],
+        "excludes": []
+      },
+      "moscow": "must",
+      "state": "new"
+    }
+  ]
+}

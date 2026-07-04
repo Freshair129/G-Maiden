@@ -5,7 +5,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { supabase } from "./supabase";
 import { useAuth } from "./auth";
-import { generateGid, GENERATIONS, type Generation } from "./gid";
+import { GENERATIONS, type Generation } from "./gid";
 
 const PROFILE_EVENT = "gmaiden:profile";
 
@@ -20,7 +20,7 @@ export function useProfile() {
     if (!user) { setDisplayName(""); setGidCode(""); setGeneration(null); setLoaded(true); return; }
     const { data } = await supabase
       .from("profiles")
-      .select("display_name, gid_code, generation, cohort_seq, created_at")
+      .select("display_name, gid_code, generation")
       .eq("id", user.id)
       .maybeSingle();
 
@@ -28,15 +28,14 @@ export function useProfile() {
     setDisplayName((data?.display_name as string | null) ?? "");
     setGeneration(gen && gen in GENERATIONS ? gen : null);
 
+    // GID is minted server-side (Edge Fn `mint-gid`, SEC-001 §2 Phase B): the
+    // client can no longer write gid_code (it's column-locked to prevent GID /
+    // Founder forgery), so ask the server to mint it once — idempotent there.
     let code = (data?.gid_code as string | null) ?? "";
-    const seq = data?.cohort_seq as number | null;
-    const createdAt = data?.created_at as string | null;
-    // Mint the GID once, from the app's single-sourced codec, and persist it
-    // immutably (the `.is null` guard prevents overwriting or racing).
-    if (!code && gen && gen in GENERATIONS && seq && createdAt) {
+    if (!code) {
       try {
-        code = generateGid({ generation: gen, registeredAt: new Date(createdAt), cohortSeq: seq });
-        await supabase.from("profiles").update({ gid_code: code }).eq("id", user.id).is("gid_code", null);
+        const { data: minted } = await supabase.functions.invoke<{ gid_code?: string }>("mint-gid");
+        code = minted?.gid_code ?? "";
       } catch {
         code = "";
       }
