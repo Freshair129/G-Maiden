@@ -1697,14 +1697,8 @@ body {
   background: linear-gradient(180deg, rgba(8, 14, 28, 0.96), rgba(7, 11, 23, 0.94));
   backdrop-filter: blur(16px);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
-  transition: width 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
   overflow: hidden;
-}
-
-.floating-sidebar:hover {
-  width: 232px;
-  border-color: rgba(129, 206, 255, 0.32);
-  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.46), 0 0 0 1px rgba(129, 206, 255, 0.1);
 }
 
 .sidebar-brand {
@@ -1714,6 +1708,10 @@ body {
   justify-content: center;
 }
 
+/* Icon-only rail — labels stay hidden permanently. A width-on-hover expand
+   used to overlay the dashboard behind it (absolute-positioned rail) and
+   jittered on collapse; label discovery now relies on the native `title`
+   tooltip on each nav-item instead. */
 .sidebar-brand-copy,
 .nav-copy,
 .nav-group-label,
@@ -1724,22 +1722,6 @@ body {
   opacity: 0;
   width: 0;
   overflow: hidden;
-  transition: opacity 0.18s ease;
-}
-
-.floating-sidebar:hover .sidebar-brand {
-  justify-content: flex-start;
-}
-
-.floating-sidebar:hover .sidebar-brand-copy,
-.floating-sidebar:hover .nav-copy,
-.floating-sidebar:hover .nav-group-label,
-.floating-sidebar:hover .sidebar-foot span,
-.floating-sidebar:hover .sidebar-foot .eyebrow,
-.floating-sidebar:hover .sidebar-foot strong,
-.floating-sidebar:hover .nav-item small {
-  opacity: 1;
-  width: auto;
 }
 
 .sidebar-nav {
@@ -1797,10 +1779,6 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 11px;
-}
-
-.floating-sidebar:hover .nav-item {
-  justify-content: flex-start;
 }
 
 .nav-item small {
@@ -1868,64 +1846,21 @@ body {
   padding: 8px 10px 8px 12px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
-  border-radius: 18px;
+  border-radius: 14px;
   border: 1px solid rgba(129, 180, 255, 0.16);
   background: linear-gradient(180deg, rgba(8, 15, 31, 0.95), rgba(8, 14, 26, 0.86));
   backdrop-filter: blur(18px);
   box-shadow: 0 22px 54px rgba(0, 0, 0, 0.3);
 }
 
-.topbar-left,
 .topbar-right {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.topbar-left {
-  flex: 1;
-  min-width: 0;
-}
-
-.gsi-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 999px;
-  background: rgba(14, 27, 51, 0.84);
-  border: 1px solid rgba(129, 180, 255, 0.16);
-  color: #dbe9ff;
-  white-space: nowrap;
-}
-
-.gsi-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #f05d6d;
-  box-shadow: 0 0 0 4px rgba(240, 93, 109, 0.12), 0 0 16px rgba(240, 93, 109, 0.38);
-}
-
-.gsi-pill.online .gsi-dot {
-  background: #55e49f;
-  box-shadow: 0 0 0 4px rgba(85, 228, 159, 0.12), 0 0 16px rgba(85, 228, 159, 0.42);
-}
-
-.topbar-search {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border: 0;
-  color: #dbe9ff;
-  border-radius: 14px;
-  background: rgba(13, 23, 42, 0.9);
-  padding: 10px 12px;
-}
 
 .profile-wrap {
   position: relative;
@@ -1935,58 +1870,116 @@ body {
 .profile-trigger {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 7px;
   border: 0;
-  border-radius: 14px;
-  padding: 6px 8px;
-  background: rgba(13, 23, 42, 0.9);
+  border-radius: 10px;
+  padding: 3px 8px 3px 3px;
+  background: rgba(13, 23, 42, 0.85);
+  border: 1px solid rgba(129, 180, 255, 0.12);
   color: #eef5ff;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  font-size: 12px;
+}
+.profile-trigger:hover {
+  background: rgba(20, 32, 58, 0.95);
+  border-color: rgba(129, 180, 255, 0.25);
+}
+.profile-wrap.open .profile-trigger {
+  background: rgba(20, 32, 58, 0.95);
+  border-color: rgba(143, 212, 255, 0.3);
 }
 
 .profile-core {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #2f4b88, #1a2642);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2f4b88, #1a2d52);
   color: #9be7ff;
-  font-weight: 800;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
 }
 
 .profile-copy {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  line-height: 1.2;
+  gap: 1px;
+}
+.profile-copy strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.profile-copy small {
+  font-size: 10px;
+  color: #6b8bb5;
+  letter-spacing: 0.02em;
 }
 
-.profile-copy small {
-  color: #89a4c8;
+.profile-caret {
+  font-size: 10px;
+  color: #6b8bb5;
+  transition: transform 0.2s;
+  margin-left: -2px;
+}
+.profile-wrap.open .profile-caret {
+  transform: rotate(180deg);
 }
 
 .profile-dropdown {
   position: absolute;
   right: 0;
-  top: calc(100% + 10px);
-  min-width: 250px;
+  top: calc(100% + 6px);
+  min-width: 200px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-  border-radius: 18px;
-  background: rgba(9, 15, 27, 0.98);
-  border: 1px solid rgba(129, 180, 255, 0.18);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+  gap: 2px;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(9, 14, 25, 0.97);
+  border: 1px solid rgba(129, 180, 255, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0,0,0,0.2);
   z-index: 200;
+  backdrop-filter: blur(16px);
+  animation: dropIn 0.12s ease-out;
+}
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .profile-dropdown button {
   border: 0;
-  border-radius: 12px;
-  padding: 10px 12px;
+  border-radius: 8px;
+  padding: 8px 10px;
   text-align: left;
-  background: rgba(18, 29, 54, 0.72);
-  color: #dce9ff;
+  background: transparent;
+  color: #c4d6ee;
+  font-size: 12.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.12s, color 0.12s;
+}
+.profile-dropdown button:hover {
+  background: rgba(143, 212, 255, 0.1);
+  color: #eef5ff;
+}
+.profile-dropdown .dd-icon {
+  width: 16px;
+  text-align: center;
+  font-size: 13px;
+  opacity: 0.6;
+}
+.profile-dropdown .dd-sep {
+  height: 1px;
+  background: rgba(129, 180, 255, 0.1);
+  margin: 2px 4px;
 }
 
 .steam-link {
@@ -3024,7 +3017,6 @@ body {
     align-items: stretch;
   }
 
-  .topbar-left,
   .topbar-right {
     flex-wrap: wrap;
   }
@@ -3337,12 +3329,9 @@ body {
 .hc-private strong { color: #dfeaf3; font-size: 11px; }
 .hc-private small { color: #7f9bbc; font-size: 8px; }
 
-/* ===== CR-002: capture-badge idle color + fit dashboard to one screen ===== */
-.gsi-pill.idle { color: var(--muted); border-color: var(--line); }
-.gsi-pill.idle .gsi-dot { background: var(--muted); box-shadow: none; }
-
+/* ===== CR-002: fit dashboard to one screen ===== */
 .surface.page-dashboard,
-.dashboard-v2 { height: 100%; min-height: 0; overflow-x: hidden; overflow-y: auto; }
+.dashboard-v2 { height: 100%; min-height: 0; overflow: hidden; }
 
 .board-bento {
   height: 100%;
@@ -3376,9 +3365,7 @@ body {
    to the wide column. */
 .app.shell-v2 .main-shell { grid-column: 2 !important; }
 .floating-sidebar { width: 52px; }
-.floating-sidebar:hover { width: 236px; }
 .floating-sidebar .nav-item { justify-content: center; }
-.floating-sidebar:hover .nav-item { justify-content: flex-start; }
 .floating-sidebar .nav-icon { width: 34px; height: 34px; }
 .floating-sidebar .nav-icon svg { width: 19px; height: 19px; display: block; }
 
@@ -3388,12 +3375,8 @@ body {
 /* --- Modern glass sidebar (adapted from govibe "Modern Glass Sidebar") --- */
 /* Bug fix: .brand-mark was 54px but the collapsed rail is 52px, so the "G" tile
    overflowed the rail and the header letter overlapped / skewed the scale. Size
-   the tile to the rail. One smooth `ease` expand over 0.6s — no hover-intent
-   delay (that read as a two-beat stutter). */
-.floating-sidebar {
-  transition: width 0.6s ease, box-shadow 0.4s ease, border-color 0.4s ease;
-}
-
+   the tile to the rail. Fixed-width rail — no hover expand, so labels never
+   overlay the dashboard behind it; icon labels surface via native title tooltip. */
 .floating-sidebar .brand-mark {
   width: 34px;
   height: 34px;
@@ -3406,45 +3389,39 @@ body {
 .floating-sidebar .brand { font-size: 15px; line-height: 1.1; }
 .floating-sidebar .brand-sub { font-size: 9px; letter-spacing: 0.14em; }
 
-/* Text reveal: fade + slide in together with the panel over the same 0.6s
-   `ease` window — one continuous motion, no separate beat. */
-.floating-sidebar .sidebar-brand-copy,
-.floating-sidebar .nav-copy,
-.floating-sidebar .nav-group-label,
-.floating-sidebar .nav-item small {
-  transform: translateX(-6px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-.floating-sidebar:hover .sidebar-brand-copy,
-.floating-sidebar:hover .nav-copy,
-.floating-sidebar:hover .nav-group-label,
-.floating-sidebar:hover .nav-item small {
-  transform: translateX(0);
-}
-
-/* Native-title tooltips are jarring; show a glass tooltip only while collapsed. */
-.floating-sidebar .nav-item { position: relative; }
-.floating-sidebar:not(:hover) .nav-item[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  left: calc(100% + 12px);
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(9, 15, 27, 0.97);
-  border: 1px solid rgba(129, 180, 255, 0.2);
-  color: #dce9ff;
-  padding: 5px 10px;
-  border-radius: 8px;
-  font-size: 11px;
-  white-space: nowrap;
-  z-index: 40;
-  pointer-events: none;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
-}
 .deck-statbar > .deck-stat-group { min-width: 110px; }
 .deck-statbar > .deck-ping { min-width: 74px; }
 .deck-stat-chip strong, .deck-stat-gvals, .deck-ping strong,
 .deck-stat-chip .trend { font-variant-numeric: tabular-nums; }
+
+/* Custom window controls (no native decorations) */
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 6px;
+}
+.win-btn {
+  width: 32px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #8794a6;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.win-btn:hover {
+  background: rgba(143, 212, 255, 0.12);
+  color: #e7eef6;
+}
+.win-close:hover {
+  background: rgba(255, 80, 90, 0.7);
+  color: #fff;
+}
 
 /* final: shrink Status head + cards to fully fit its cell; trim Agent copy */
 .status-bento .bento-head .eyebrow { display: none; }
@@ -3965,3 +3942,131 @@ body {
 }
 .voice-toast.ok { background: rgba(49, 208, 160, 0.14); color: var(--ok); border: 1px solid rgba(49, 208, 160, 0.3); }
 .voice-toast.err { background: rgba(255, 92, 122, 0.14); color: var(--danger); border: 1px solid rgba(255, 92, 122, 0.3); }
+
+/* ===== Deck v3: sidebar → horizontal topbar nav ===== */
+.deck-v3 {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #08090c;
+  color: #e7eef6;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  overflow: hidden;
+}
+
+.deck-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 44px;
+  min-height: 44px;
+  background: linear-gradient(180deg, rgba(8, 15, 31, 0.98), rgba(8, 14, 26, 0.92));
+  border-bottom: 1px solid rgba(129, 180, 255, 0.12);
+  padding: 0 0 0 12px;
+  position: relative;
+  z-index: 50;
+  -webkit-app-region: drag;
+}
+
+.deck-topbar-brand {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(143, 212, 255, 0.22), rgba(62, 120, 200, 0.28));
+  border: 1px solid rgba(143, 212, 255, 0.3);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 900;
+  color: #8fd4ff;
+  flex: none;
+  margin-right: 10px;
+  -webkit-app-region: no-drag;
+}
+
+.deck-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.deck-tab {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #8794a6;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+.deck-tab:hover {
+  background: rgba(143, 212, 255, 0.08);
+  color: #c8ddf0;
+}
+.deck-tab.active {
+  background: rgba(143, 212, 255, 0.14);
+  color: #8fd4ff;
+}
+
+.deck-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding-right: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.deck-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.deck-v3 .surface {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.deck-v3 .telemetry-footer {
+  flex: none;
+}
+
+/* Window size preset buttons (Settings → Display) */
+.window-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.preset-btn {
+  padding: 4px 10px;
+  border: 1px solid rgba(129, 180, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(13, 23, 42, 0.6);
+  color: #8794a6;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.preset-btn:hover {
+  background: rgba(143, 212, 255, 0.1);
+  color: #c8ddf0;
+}
+.preset-btn.active {
+  background: rgba(143, 212, 255, 0.18);
+  color: #8fd4ff;
+  border-color: rgba(143, 212, 255, 0.4);
+}

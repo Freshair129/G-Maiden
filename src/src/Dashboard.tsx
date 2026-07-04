@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { formatTimer, toneClass, useCompanionData } from "./companion";
+import { formatTimer, useCompanionData } from "./companion";
 import type { CompanionData } from "./companion";
 
 type Hero = CompanionData["heroes"][number];
@@ -23,8 +23,8 @@ export default function Dashboard() {
   const missingCycle = hiddenMissingEnemies.length
     ? Array.from({ length: Math.min(3, hiddenMissingEnemies.length) }, (_, index) => hiddenMissingEnemies[(missingRotation + index) % hiddenMissingEnemies.length])
     : [];
-  const gankRisk = isPregame ? 10 : Math.min(100, 26 + hiddenMissingEnemies.length * 24 + data.match.activeAlerts * 8);
-  const safePush = isPregame ? 18 : Math.max(0, 88 - hiddenMissingEnemies.length * 18 - data.match.activeAlerts * 10);
+  const gankRisk = isPregame ? 0 : Math.min(100, 26 + hiddenMissingEnemies.length * 24 + data.match.activeAlerts * 8);
+  const safePush = isPregame ? 0 : Math.max(0, 88 - hiddenMissingEnemies.length * 18 - data.match.activeAlerts * 10);
 
   return (
     <div className="dashboard-v2">
@@ -228,41 +228,8 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="bento-card activity-bento tilt-card">
-          <div className="bento-head compact">
-            <div>
-              <div className="eyebrow">Activity log</div>
-              <h3>Map movement</h3>
-            </div>
-          </div>
-          <div className="log-list">
-            {data.activity.map((item) => (
-              <div key={item.id} className={`log-row ${toneClass(item.tone)}`}>
-                <span className="log-time">{item.at}</span>
-                <span className="log-text">{item.text}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="bento-card event-bento tilt-card">
-          <div className="bento-head compact">
-            <div>
-              <div className="eyebrow">Event log</div>
-              <h3>Major outcomes</h3>
-            </div>
-          </div>
-          <div className="log-list">
-            {data.events.map((item) => (
-              <div key={item.id} className={`log-row ${toneClass(item.tone)}`}>
-                <span className="log-time">{item.at}</span>
-                <span className="log-text">{item.text}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Weekly report moved to the Insights tab (CR-002) to keep the deck one-screen. */}
+        {/* Activity / Event logs live in the Insights + History tabs (CR-002).
+           Dashboard is a fixed-grid, no-scroll layout — only the 5 bento cards above. */}
       </div>
     </div>
   );

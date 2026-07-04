@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { formatTimer, toneClass, useCompanionData } from "./companion";
 
 export function LiveMatchPage() {
@@ -249,8 +249,27 @@ export function HistoryPage() {
   );
 }
 
+const WINDOW_PRESETS: { label: string; w: number; h: number }[] = [
+  { label: "1200 × 780", w: 1200, h: 780 },
+  { label: "1280 × 800", w: 1280, h: 800 },
+  { label: "1440 × 900", w: 1440, h: 900 },
+  { label: "1600 × 1000", w: 1600, h: 1000 },
+  { label: "1920 × 1080", w: 1920, h: 1080 },
+];
+
 export function SettingsPage() {
   const { data } = useCompanionData();
+  const [activeSize, setActiveSize] = useState("1200 × 780");
+
+  const applySize = async (preset: typeof WINDOW_PRESETS[number]) => {
+    try {
+      const { getCurrentWindow } = await import("@tauri-apps/api/window");
+      const { LogicalSize } = await import("@tauri-apps/api/dpi");
+      await getCurrentWindow().setSize(new LogicalSize(preset.w, preset.h));
+      setActiveSize(preset.label);
+    } catch {}
+  };
+
   return (
     <div className="domain-page">
       <section className="card-shell page-hero">
@@ -269,8 +288,14 @@ export function SettingsPage() {
           <div className="toggle-row"><span>GSI score</span><strong>{data.match.gsiScore}/100</strong></div>
           <div className="toggle-row"><span>Latency</span><strong>{data.match.latencyMs}ms</strong></div>
         </Card>
-        <Card title="Display" kicker="Delivery">
-          <div className="toggle-row"><span>Second-screen</span><strong>Primary mode</strong></div>
+        <Card title="Window" kicker="Display">
+          <div className="window-presets">
+            {WINDOW_PRESETS.map((p) => (
+              <button key={p.label} className={`preset-btn${activeSize === p.label ? " active" : ""}`} onClick={() => applySize(p)}>
+                {p.label}
+              </button>
+            ))}
+          </div>
           <div className="toggle-row"><span>Overlay state</span><strong>{data.match.overlayMode}</strong></div>
         </Card>
       </div>
