@@ -232,11 +232,12 @@ export const FALLBACK: CompanionData = {
   history: []
 };
 
-// Phase 1 (CR-002): rich standalone demo data. Mirrors the live-phase output of
-// store/companion.mjs so the command deck renders a full match with NO backend.
-// useCompanionData() below subscribes to the Rust backend's Tauri events and
-// merges the pure live/build*.ts builders over this MOCK; any field with no live
-// source falls through to the slice here (never the sparse FALLBACK above).
+// TEST FIXTURE ONLY. This rich object used to seed the deck as a demo when no
+// live data was flowing — that has been retired. Production code (useCompanionData
+// below) now stays on FALLBACK until live events arrive, so signed-out / no-match
+// users only see honest "waiting / not connected" states. The 9 build*.ts tests
+// still consume slices of this object as an integration fixture; do not import it
+// into any new UI code.
 export const MOCK: CompanionData = {
   updatedAt: Date.now(),
   match: {
@@ -392,13 +393,12 @@ export const MOCK: CompanionData = {
 // Phase 2a (CR-002): live-wire the deck to the Rust backend's Tauri events. The
 // hook subscribes to game-tick / gsi-status / minimap-cv / enemy-missing /
 // gank-alert / gank-clear, holds the latest of each, and merges the four pure
-// builders (live/build*.ts) over MOCK. Every builder falls back to its MOCK
-// slice when its source is absent, so partially-wired data still renders. When
-// NO live event ever arrives (e.g. plain browser, no Tauri), we return MOCK
-// untouched — the full demo. Phase 2c wires the remaining panels to the data the
-// backend actually has: telemetry ← resource-stats (governor), weeklyReport +
-// insights ← OpenDota, history + learnedMatches ← local G-Log files, agentSector
-// status ← live GSI. buildAdvisor stays MOCK (no structured G-Master build path).
+// builders (live/build*.ts) over FALLBACK (empty scaffold). Every builder falls
+// back to its FALLBACK slice when its source is absent, so partially-wired data
+// still renders honestly — never as a fake demo. Phase 2c wires the remaining
+// panels to the data the backend actually has: telemetry ← resource-stats
+// (governor), weeklyReport + insights ← OpenDota, history + learnedMatches ←
+// local G-Log files, agentSector status ← live GSI.
 type LiveState = {
   tick: GameTick | null;
   status: GsiStatus | null;
@@ -406,7 +406,7 @@ type LiveState = {
   gank: SignalAlert | null;
   missing: Map<string, number>;
   missingPos: Map<string, [number, number]>; // 2b-B: last-seen pos of missing enemies (markers)
-  active: boolean; // flips true after the first live event (else pure MOCK demo)
+  active: boolean; // flips true after the first live event (else pure FALLBACK)
   od: OpenDotaProfile | null; // Phase 2b-A: your public OpenDota profile (no DB)
   stats: ResourceStats | null; // Phase 2c: governor RAM/CPU sample (telemetry footer)
   logs: MatchLog[] | null;     // Phase 2c: local G-Log match files (history + learnedMatches)
@@ -433,7 +433,7 @@ export function useCompanionData() {
           .then((fn) => { if (cancelled) fn(); else unlisteners.push(fn); })
           .catch(() => { /* Tauri event API unavailable */ });
       } catch {
-        /* not running under Tauri — stay on MOCK */
+        /* not running under Tauri — stay on FALLBACK */
       }
     }
 
@@ -507,8 +507,8 @@ export function useCompanionData() {
   }, [live.tick?.steamid, accountId]);
 
   // Phase 2b-A: pull the player's PUBLIC OpenDota profile once we know the
-  // account id — no DB, RAM only. Offline / private / unset leave `od` null and
-  // the builders fall back to MOCK. heroName resolves mainHero's hero id -> name.
+  // account id — no DB, RAM only. Offline / private / unset leave `od` null so
+  // the OpenDota-enriched panels stay on FALLBACK.
   useEffect(() => {
     if (accountId == null) return;
     let cancelled = false;
@@ -526,23 +526,23 @@ export function useCompanionData() {
     let cancelled = false;
     invoke<MatchLog[]>("list_match_logs")
       .then((rows) => { if (!cancelled) setLive((s) => ({ ...s, logs: rows })); })
-      .catch(() => { /* not under Tauri / command unavailable — stay on MOCK */ });
+      .catch(() => { /* not under Tauri / command unavailable — stay on FALLBACK */ });
     return () => { cancelled = true; };
   }, [inGame]);
 
   const data = useMemo<CompanionData>(() => {
     // Base: honest FALLBACK (empty "waiting / not connected" states) until a live
     // source fills a panel — so signed-out / no-match users never see a fake
-    // match. In a live match we still use the rich MOCK slices as *scaffolds* for
-    // the match/hero builders (real data overwrites them); everything without a
-    // live source (weekly/insights/history/telemetry/…) stays on FALLBACK.
+    // match. When a live event lands the builders merge real data over FALLBACK
+    // slices (the same empty scaffold), so unmapped fields stay empty rather
+    // than showing baked demo values.
     let d: CompanionData = live.active
       ? {
           ...FALLBACK,
-          match: buildMatch(live.tick, live.status, MOCK.match),
-          heroes: buildHeroes(live.tick, live.missing, live.cv, MOCK.heroes),
-          markers: buildMarkers(live.cv, live.missingPos, MOCK.markers),
-          signals: buildSignals(live.gank, live.missing, MOCK.signals)
+          match: buildMatch(live.tick, live.status, FALLBACK.match),
+          heroes: buildHeroes(live.tick, live.missing, live.cv, FALLBACK.heroes),
+          markers: buildMarkers(live.cv, live.missingPos, FALLBACK.markers),
+          signals: buildSignals(live.gank, live.missing, FALLBACK.signals)
         }
       : FALLBACK;
 
@@ -567,8 +567,8 @@ export function useCompanionData() {
     }
 
     // History + the real "learned matches" count come from the on-device G-Log
-    // files. With zero logs (or off-Tauri) we keep the MOCK demo so the page
-    // stays full rather than showing an empty list + a bare "0".
+    // files. With zero logs (or off-Tauri) the page stays on FALLBACK (empty
+    // list + "0") — no fake demo entries.
     if (live.logs && live.logs.length > 0) {
       d = {
         ...d,
