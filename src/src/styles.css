@@ -4153,9 +4153,10 @@ body {
   transform-origin: center center;
 }
 
-/* ---- sidebar FAB (icon nav, left) ---- */
+/* ---- sidebar FAB (icon nav) — floats in the bottom-left notch, BELOW the
+   P1–P5 sector; a single power FAB sits below it in the same notch ---- */
 .g-sidebar-fab {
-  position: absolute; left: 10px; top: 10px; bottom: 10px; width: 60px;
+  position: absolute; left: 12px; top: 238px; bottom: 86px; width: 64px;
   z-index: var(--g-z-fab);
   background: var(--g-fab); border: 1px solid var(--g-fab-rim); border-radius: var(--g-r-fab);
   box-shadow: var(--g-shadow-fab);
@@ -4195,7 +4196,7 @@ body {
 
 /* ---- glass panel body — SUBTRACT shape: concave notch (top-right) wraps the topbar FAB ---- */
 .g-deck-panel {
-  position: absolute; left: 82px; top: 10px; right: 10px; bottom: 10px; z-index: var(--g-z-content);
+  position: absolute; left: 12px; top: 10px; right: 10px; bottom: 10px; z-index: var(--g-z-content);
   /* more visible frosted fill so the concave Subtract silhouette reads over the dark void */
   background: linear-gradient(158deg, rgba(36, 48, 78, 0.52), rgba(14, 19, 33, 0.60));
   border-radius: 18px;
@@ -4203,14 +4204,15 @@ body {
   /* rim + depth that FOLLOW the clip-path shape (drop-shadow respects clip-path) */
   filter: drop-shadow(0 0 1px rgba(160, 200, 255, 0.45)) drop-shadow(0 16px 40px rgba(0, 0, 0, 0.5));
   overflow: hidden; display: flex; flex-direction: column;
-  /* Boolean-Subtract: two notches — top-right (topbar FAB) + bottom-right (G-Signal FABs).
-     Both FABs are right-anchored fixed-size, so the notches track them on resize. */
-  --ntw: 474px; --nth: 60px;   /* top-right notch (topbar) */
-  --nbw: 382px; --nbh: 206px;  /* bottom-right notch (signals, dashboard only) */
-  /* base: top-right notch only (all tabs) */
-  --clip-top: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% 100%, 0 100%);
+  /* Boolean-Subtract: THREE notches — top-right (topbar FAB), bottom-left
+     (sidebar + power FABs, always) and bottom-right (G-Signal FABs, dashboard). */
+  --ntw: 364px; --nth: 58px;   /* top-right notch (topbar) */
+  --nlw: 72px; --nlt: 216px;   /* bottom-left notch (sidebar + power) */
+  --nbw: 372px; --nbh: 196px;  /* bottom-right notch (signals, dashboard only) */
+  /* base: top-right + bottom-left notch (all tabs) */
+  --clip-top: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% 100%, var(--nlw) 100%, var(--nlw) var(--nlt), 0 var(--nlt));
   /* dashboard: + bottom-right notch */
-  --clip-both: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% calc(100% - var(--nbh)), calc(100% - var(--nbw)) calc(100% - var(--nbh)), calc(100% - var(--nbw)) 100%, 0 100%);
+  --clip-both: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% calc(100% - var(--nbh)), calc(100% - var(--nbw)) calc(100% - var(--nbh)), calc(100% - var(--nbw)) 100%, var(--nlw) 100%, var(--nlw) var(--nlt), 0 var(--nlt));
   clip-path: var(--clip-top);
 }
 .g-deck-panel.has-signals { clip-path: var(--clip-both); }
@@ -4219,15 +4221,15 @@ body {
 .g-deck-panel::before {
   content:''; position:absolute; inset:0; z-index:2; pointer-events:none; box-shadow: var(--g-rim-top);
 }
-/* content clears the top-right notch (panel extends up to y10; content starts ~y70) */
-.g-deck-panel .surface { flex: 1; min-height: 0; overflow: hidden; padding: 62px 16px 16px; }
-/* dashboard: left gutter for the P1–P5 anchor rail */
-.g-deck-panel.has-signals .surface { padding-left: 58px; }
+/* content clears the top-right notch (top) + the left rail: P1–P5 anchors
+   (top-left, inside panel) and the bottom-left sidebar notch. */
+.g-deck-panel .surface { flex: 1; min-height: 0; overflow: hidden; padding: 62px 16px 16px 92px; }
 
-/* ---- P1–P5 agent anchor rail (dashboard, panel top-left gutter) ---- */
+/* ---- P1–P5 agent anchor rail — the "P sector", top-left inside the panel,
+   ABOVE the sidebar FAB (spatial anchors for agent comms, not nav) ---- */
 .g-anchor-rail {
-  position: absolute; left: 92px; top: 82px; z-index: 60;
-  display: flex; flex-direction: column; gap: 5px; -webkit-app-region: no-drag;
+  position: absolute; left: 22px; top: 26px; z-index: 60;
+  display: flex; flex-direction: column; gap: 6px; -webkit-app-region: no-drag;
 }
 .g-anchor {
   width: 40px; padding: 7px 0; text-align: center; border-radius: 9px;
@@ -4236,6 +4238,44 @@ body {
   transition: color var(--g-t-micro), background var(--g-t-micro);
 }
 .g-anchor.active { color: var(--g-lime-500); background: var(--g-lime-soft); border-color: var(--g-lime-line); }
+
+/* ---- power FAB (bottom-left corner) — single power block; click reveals a
+   radial menu (minimize / maximize / close). Replaces topbar window buttons. ---- */
+.g-power-scrim {
+  position: absolute; inset: 0; z-index: 190;
+  background: rgba(6, 9, 16, 0.5);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+}
+.g-power {
+  position: absolute; left: 12px; bottom: 10px; width: 64px; height: 64px;
+  z-index: var(--g-z-pop); -webkit-app-region: no-drag;
+}
+.g-power-btn {
+  position: absolute; inset: 0; z-index: 2;
+  border-radius: var(--g-r-fab); border: 1px solid var(--g-fab-rim);
+  background: var(--g-fab); color: var(--g-text-dim); cursor: pointer;
+  display: grid; place-items: center; box-shadow: var(--g-shadow-fab);
+  -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
+  transition: color var(--g-t-micro), background var(--g-t-micro), border-color var(--g-t-micro);
+}
+.g-power-btn:hover { color: var(--g-ice-500); border-color: rgba(143, 212, 255, .34); }
+.g-power.open .g-power-btn { color: var(--g-lime-500); border-color: var(--g-lime-line); background: var(--g-lime-soft); }
+/* radial items — hidden under the button, arc up + right when open */
+.g-power-item {
+  position: absolute; left: 12px; top: 12px; width: 40px; height: 40px; z-index: 1;
+  border-radius: 12px; border: 1px solid var(--g-fab-rim); background: var(--g-fab);
+  color: var(--g-text); font-size: 14px; cursor: pointer; display: grid; place-items: center;
+  box-shadow: var(--g-shadow-fab);
+  -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
+  opacity: 0; transform: translate(0, 0) scale(.6); pointer-events: none;
+  transition: transform var(--g-t-pop, .18s cubic-bezier(.34,1.56,.64,1)), opacity var(--g-t-micro);
+}
+.g-power.open .g-power-item { opacity: 1; pointer-events: auto; }
+.g-power.open .pi-min { transform: translate(0, -72px) scale(1); }
+.g-power.open .pi-max { transform: translate(52px, -52px) scale(1); }
+.g-power.open .pi-close { transform: translate(72px, 0) scale(1); }
+.g-power-item:hover { border-color: rgba(143, 212, 255, .34); color: var(--g-ice-500); }
+.pi-close:hover { border-color: rgba(244, 63, 94, .4); color: var(--g-danger, #f43f5e); background: rgba(244, 63, 94, .14); }
 
 /* ---- G-Signal FABs (D/E/F/G) — float in the bottom-right notch (dashboard only) ---- */
 .g-signals-fab {

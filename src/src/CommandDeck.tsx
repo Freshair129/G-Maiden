@@ -54,6 +54,7 @@ const NAV: Array<{ key: string; label: string; Icon: (p: { size?: number }) => R
 export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNode } = {}) {
   const [tab, setTab] = useState("dashboard");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [powerOpen, setPowerOpen] = useState(false);
   const { data } = useCompanionData();
   const { displayName, email } = useProfile();
   const gName = displayName || (email ? email.split("@")[0] : "Guest");
@@ -139,12 +140,6 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
             </div>
           ) : null}
         </div>
-
-        <div className="window-controls">
-          <button type="button" className="win-btn" onClick={() => { try { void getCurrentWindow().minimize() } catch { /* noop */ } }}>─</button>
-          <button type="button" className="win-btn" onClick={() => { try { void getCurrentWindow().toggleMaximize() } catch { /* noop */ } }}>□</button>
-          <button type="button" className="win-btn win-close" onClick={() => { try { void getCurrentWindow().close() } catch { /* noop */ } }}>✕</button>
-        </div>
       </header>
 
       {/* P1–P5 agent anchor rail (dashboard) — spatial anchors for agent comms, not nav */}
@@ -208,17 +203,51 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
           </div>
         </div>
       )}
+
+      {/* power FAB (bottom-left) — single block; click opens a radial menu with
+          minimize / maximize / close (window controls live here, not the topbar) */}
+      {powerOpen && <div className="g-power-scrim" onClick={() => setPowerOpen(false)} />}
+      <div className={`g-power${powerOpen ? " open" : ""}`}>
+        <button type="button" className="g-power-item pi-min" title="ย่อ (Minimize)" aria-label="Minimize" onClick={() => { winOp("min"); setPowerOpen(false); }}>─</button>
+        <button type="button" className="g-power-item pi-max" title="ขยาย/พับ (Maximize)" aria-label="Maximize" onClick={() => { winOp("max"); setPowerOpen(false); }}>□</button>
+        <button type="button" className="g-power-item pi-close" title="ปิด (Close)" aria-label="Close" onClick={() => { winOp("close"); setPowerOpen(false); }}>✕</button>
+        <button type="button" className="g-power-btn" title="Window" aria-label="Window controls" onClick={() => setPowerOpen((o) => !o)}>
+          <IconPower size={22} />
+        </button>
+      </div>
       </div>{/* /g-deck-stage */}
     </div>
   );
 }
 
-// build a rounded-corner (fillet) SVG path for the concave Subtract panel
+function winOp(op: "min" | "max" | "close") {
+  try {
+    const w = getCurrentWindow();
+    if (op === "min") void w.minimize();
+    else if (op === "max") void w.toggleMaximize();
+    else void w.close();
+  } catch { /* noop (browser preview has no Tauri window) */ }
+}
+
+function IconPower({ size = 22 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M12 3.5v8" />
+      <path d="M6.6 6.6a8 8 0 1 0 10.8 0" />
+    </svg>
+  );
+}
+
+// build a rounded-corner (fillet) SVG path for the concave Subtract panel.
+// Three notches: top-right (topbar FAB), bottom-left (sidebar + power FABs,
+// always present) and bottom-right (G-Signal cards, dashboard only).
 function buildPanelPath(w: number, h: number, hasSignals: boolean): string {
-  const ntw = 474, nth = 60, nbw = 382, nbh = 206;
+  const ntw = 364, nth = 58;   // top-right notch (topbar FAB)
+  const nlw = 72, nlt = 216;   // bottom-left notch (sidebar + power FABs)
+  const nbw = 372, nbh = 196;  // bottom-right notch (signal cards)
   const pts: Array<[number, number]> = hasSignals
-    ? [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h - nbh], [w - nbw, h - nbh], [w - nbw, h], [0, h]]
-    : [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h], [0, h]];
+    ? [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h - nbh], [w - nbw, h - nbh], [w - nbw, h], [nlw, h], [nlw, nlt], [0, nlt]]
+    : [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h], [nlw, h], [nlw, nlt], [0, nlt]];
   return roundedPath(pts, 16);
 }
 function roundedPath(pts: Array<[number, number]>, r: number): string {
