@@ -6,6 +6,30 @@
   --txt: #d8e6f2; --muted: #8fa6c0;
   --ok: #31d0a0; --warn: #ffb86b; --danger: #ff5c7a;
 }
+
+/* === Design-system v2 tokens (docs/design-system/02-tokens.md §9). Additive —
+   legacy vars above stay until per-component migration (§1.6). Single :root. === */
+:root {
+  --g-void: #06070A; --g-ink: #0B0E16;
+  --g-glass-a: rgba(34,46,74,0.30); --g-glass-b: rgba(10,13,22,0.42);
+  --g-glass-rim: rgba(160,200,255,0.16);
+  --g-card: rgba(150,200,255,0.05); --g-card-line: rgba(150,200,255,0.08);
+  --g-fab: rgba(14,18,28,0.45); --g-fab-rim: rgba(160,200,255,0.14);
+  --g-ice-100: #CFECFF; --g-ice-300: #9BE7FF; --g-ice-500: #8FD4FF;
+  --g-ice-600: #64C7FF; --g-ice-700: #226CFF; --g-ice-dim: #6B8BB5;
+  --g-lime-500: #A3E635; --g-lime-soft: rgba(163,230,53,0.16); --g-lime-line: rgba(163,230,53,0.34);
+  --g-text: #EEF4FB; --g-text-dim: #8BA4C6; --g-text-mute: #5E7699;
+  --g-safe: #22C55E; --g-ok: #31D0A0; --g-warn: #F59E0B; --g-danger: #F43F5E;
+  --g-font-ui: "Segoe UI", system-ui, sans-serif; --g-font-mono: Consolas, ui-monospace, monospace;
+  --g-r-sm: 8px; --g-r-card: 11px; --g-r-panel: 14px; --g-r-fab: 16px; --g-r-pill: 999px;
+  --g-r-frame-outer: 28px; --g-r-frame-notch: 20px;
+  --g-shadow-fab: 0 12px 34px rgba(0,0,0,0.42); --g-shadow-panel: 0 18px 50px rgba(0,0,0,0.55);
+  --g-rim-top: inset 0 1px 0 rgba(255,255,255,0.06);
+  --g-blur-panel: blur(30px) saturate(150%); --g-blur-fab: blur(24px) saturate(160%); --g-blur-tile: blur(6px);
+  --g-t-micro: 0.12s; --g-t-hover: 0.15s; --g-t-state: 0.2s; --g-t-bar: 0.3s;
+  --g-t-ambient: 14s ease-in-out infinite; --g-ease: ease-out;
+  --g-z-bg: 0; --g-z-panel: 1; --g-z-content: 10; --g-z-fab: 100; --g-z-pop: 200;
+}
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
 body { background: var(--bg); color: var(--txt); font: 13px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
@@ -4070,3 +4094,92 @@ body {
   color: #8fd4ff;
   border-color: rgba(143, 212, 255, 0.4);
 }
+
+/* ============================================================
+   Command Deck HUD v2 — glass FAB shell (ADR-15 / design-system SSOT)
+   Floating topbar + sidebar FABs over a frosted glass panel that hosts
+   the existing (rich, live-wired) page content. Keeps deck-v3 fluid.
+   ============================================================ */
+.deck-v3.g-deck {
+  position: fixed; inset: 0;
+  display: block;
+  background: var(--g-void);
+  color: var(--g-text);
+  overflow: hidden;
+}
+/* ambient BG the glass blurs through */
+.g-deck-bg {
+  position: fixed; inset: 0; z-index: var(--g-z-bg); pointer-events: none;
+  background:
+    radial-gradient(ellipse 44% 40% at 78% 12%, rgba(58,92,168,.45), transparent 66%),
+    radial-gradient(ellipse 40% 46% at 10% 88%, rgba(60,130,190,.28), transparent 70%),
+    radial-gradient(ellipse 50% 45% at 88% 92%, rgba(163,230,53,.08), transparent 64%),
+    var(--g-void);
+}
+.g-deck-bg::after {
+  content:''; position:absolute; inset:-20%;
+  background: linear-gradient(115deg, transparent 42%, rgba(143,212,255,.06) 50%, transparent 58%);
+  animation: g-drift 16s ease-in-out infinite;
+}
+@keyframes g-drift { 0%,100%{transform:translateX(-6%)} 50%{transform:translateX(6%)} }
+@media (prefers-reduced-motion: reduce){ .g-deck-bg::after{animation:none} }
+
+/* ---- sidebar FAB (icon nav, left) ---- */
+.g-sidebar-fab {
+  position: absolute; left: 10px; top: 10px; bottom: 10px; width: 60px;
+  z-index: var(--g-z-fab);
+  background: var(--g-fab); border: 1px solid var(--g-fab-rim); border-radius: var(--g-r-fab);
+  box-shadow: var(--g-shadow-fab);
+  -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
+  display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 4px;
+  -webkit-app-region: no-drag;
+}
+.g-sidebar-fab .g-brand {
+  width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center;
+  background: var(--g-lime-soft); border: 1px solid var(--g-lime-line); color: var(--g-lime-500);
+  font-weight: 800; font-size: 16px; margin-bottom: 8px; flex-shrink: 0;
+}
+.g-sidebar-fab nav { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; justify-content: center; }
+.g-nav-item {
+  position: relative; width: 42px; height: 40px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--g-text-dim); display: grid; place-items: center; cursor: pointer;
+  transition: background var(--g-t-micro), color var(--g-t-micro);
+}
+.g-nav-item:hover { background: rgba(143,212,255,.08); color: var(--g-text); }
+.g-nav-item.active { background: rgba(143,212,255,.14); color: var(--g-ice-500); }
+.g-nav-item.active::before { content:''; position:absolute; left:-6px; top:11px; width:3px; height:18px; border-radius:2px; background: var(--g-ice-500); }
+
+/* ---- topbar FAB (top-right) ---- */
+.g-topbar-fab {
+  position: absolute; top: 10px; right: 10px; height: 48px; z-index: var(--g-z-fab);
+  display: flex; align-items: center; gap: 12px; padding: 0 8px 0 16px;
+  background: var(--g-fab); border: 1px solid var(--g-fab-rim); border-radius: var(--g-r-panel);
+  box-shadow: var(--g-shadow-fab);
+  -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
+}
+.g-topbar-fab .g-logo { font-weight: 800; letter-spacing: 1.5px; font-size: 13px; color: var(--g-ice-500); }
+.g-telemetry { display: flex; gap: 10px; }
+.g-telchip { display: flex; flex-direction: column; line-height: 1.1; font-size: 8px; letter-spacing: .5px; color: var(--g-text-dim); text-transform: uppercase; }
+.g-telchip strong { font-size: 11px; color: var(--g-text); font-variant-numeric: tabular-nums; }
+.g-topbar-fab .profile-wrap,
+.g-topbar-fab .window-controls { -webkit-app-region: no-drag; }
+
+/* ---- glass panel body (hosts active tab) ---- */
+.g-deck-panel {
+  position: absolute; left: 82px; top: 68px; right: 10px; bottom: 10px; z-index: var(--g-z-content);
+  background: linear-gradient(158deg, var(--g-glass-a), var(--g-glass-b));
+  border: 1px solid var(--g-glass-rim); border-radius: 18px;
+  -webkit-backdrop-filter: var(--g-blur-panel); backdrop-filter: var(--g-blur-panel);
+  overflow: hidden; display: flex; flex-direction: column;
+}
+.g-deck-panel::before { content:''; position:absolute; inset:0; border-radius:18px; box-shadow: var(--g-rim-top); pointer-events:none; }
+.g-deck-panel .surface { flex: 1; min-height: 0; overflow: hidden; padding: 14px; }
+.g-deck-panel .surface.page-voice,
+.g-deck-panel .surface.page-account,
+.g-deck-panel .surface.page-settings,
+.g-deck-panel .surface.page-insights,
+.g-deck-panel .surface.page-history,
+.g-deck-panel .surface.page-build,
+.g-deck-panel .surface.page-companion,
+.g-deck-panel .surface.page-live { overflow-y: auto; }
+.g-deck-panel .banner.err { margin: 10px 14px 0; }

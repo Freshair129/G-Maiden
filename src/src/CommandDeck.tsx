@@ -14,17 +14,41 @@ import { useCompanionData } from "./companion";
 import Dashboard from "./Dashboard";
 import AccountPage from "./AccountPage";
 import { useProfile } from "./profile";
+import {
+  IconDashboard,
+  IconLive,
+  IconVoice,
+  IconBuild,
+  IconInsights,
+  IconSettings
+} from "./DeckIcons";
 import "./styles.css";
 
-const NAV: Array<{ key: string; label: string }> = [
-  { key: "dashboard", label: "Dashboard" },
-  { key: "live", label: "Live" },
-  { key: "companion", label: "Companion" },
-  { key: "voice", label: "Voice" },
-  { key: "build", label: "Build" },
-  { key: "insights", label: "Insights" },
-  { key: "history", label: "History" },
-  { key: "settings", label: "Settings" }
+// companion + history have no codex glyph — tiny inline fallbacks
+function IconCompanion({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="7" width="16" height="11" rx="3" /><path d="M12 4v3M9 12h.01M15 12h.01" />
+    </svg>
+  );
+}
+function IconHistory({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1M3.5 5v3.5H7" /><path d="M12 8v4l2.5 1.5" />
+    </svg>
+  );
+}
+
+const NAV: Array<{ key: string; label: string; Icon: (p: { size?: number }) => ReactNode }> = [
+  { key: "dashboard", label: "Dashboard", Icon: IconDashboard },
+  { key: "live", label: "Live", Icon: IconLive },
+  { key: "companion", label: "Companion", Icon: IconCompanion },
+  { key: "voice", label: "Voice", Icon: IconVoice },
+  { key: "build", label: "Build", Icon: IconBuild },
+  { key: "insights", label: "Insights", Icon: IconInsights },
+  { key: "history", label: "History", Icon: IconHistory },
+  { key: "settings", label: "Settings", Icon: IconSettings }
 ];
 
 export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNode } = {}) {
@@ -35,89 +59,90 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   const gName = displayName || (email ? email.split("@")[0] : "Guest");
   const gSub = email || data.agentSector.title;
 
-  const loading = false;
   const error: string | null = null;
 
   return (
-    <div className="app deck-v3">
-      <div className="live-background" />
+    <div className="app deck-v3 g-deck">
+      <div className="g-deck-bg" />
 
-      <header className="deck-topbar" data-tauri-drag-region="">
-        <div className="deck-topbar-brand">G</div>
-
-        <nav className="deck-nav">
-          {NAV.map(({ key, label }) => (
+      {/* sidebar FAB — icon nav */}
+      <aside className="g-sidebar-fab">
+        <div className="g-brand" title="G-Maiden">G</div>
+        <nav>
+          {NAV.map(({ key, label, Icon }) => (
             <button
               key={key}
-              className={`deck-tab${tab === key ? " active" : ""}`}
+              type="button"
+              className={`g-nav-item${tab === key ? " active" : ""}`}
+              title={label}
+              aria-label={label}
               onClick={() => setTab(key)}
             >
-              {label}
+              <Icon size={20} />
             </button>
           ))}
         </nav>
+      </aside>
 
-        <div className="deck-topbar-right">
-          <div className={`profile-wrap${profileOpen ? " open" : ""}`}>
-            <button className="profile-trigger" type="button" onClick={() => setProfileOpen((o) => !o)}>
-              <span className="profile-core">{gName.charAt(0).toUpperCase()}</span>
-              <span className="profile-copy">
-                <strong>{gName}</strong>
-                <small>{gSub}</small>
-              </span>
-              <span className="profile-caret">▾</span>
-            </button>
-            {profileOpen ? (
-              <div className="profile-dropdown">
-                <button type="button" onClick={() => { setTab("account"); setProfileOpen(false); }}><span className="dd-icon">👤</span>Account &amp; Steam</button>
-                <button type="button" onClick={() => { setTab("voice"); setProfileOpen(false); }}><span className="dd-icon">🎙</span>Voice Packs</button>
-                <div className="dd-sep" />
-                <button type="button" onClick={() => { setTab("settings"); setProfileOpen(false); }}><span className="dd-icon">⚙</span>Settings</button>
-              </div>
-            ) : null}
-          </div>
-          <div className="window-controls">
-            <button type="button" className="win-btn" onClick={() => { try { void getCurrentWindow().minimize() } catch {} }}>─</button>
-            <button type="button" className="win-btn" onClick={() => { try { void getCurrentWindow().toggleMaximize() } catch {} }}>□</button>
-            <button type="button" className="win-btn win-close" onClick={() => { try { void getCurrentWindow().close() } catch {} }}>✕</button>
-          </div>
+      {/* topbar FAB — brand + telemetry + profile + window controls */}
+      <header className="g-topbar-fab" data-tauri-drag-region="">
+        <span className="g-logo">G-MAIDEN</span>
+
+        <div className="g-telemetry">
+          <div className="g-telchip"><span>CPU</span><strong>{pct(data.telemetry.cpuLoad)}</strong></div>
+          <div className="g-telchip"><span>RAM</span><strong>{mem(data.telemetry.ramUsedGb)}</strong></div>
+          <div className="g-telchip"><span>GPU</span><strong>{pct(data.telemetry.gpuLoad)}</strong></div>
+          <div className="g-telchip"><span>VRAM</span><strong>{mem(data.telemetry.vramUsedGb)}</strong></div>
+        </div>
+
+        <div className={`profile-wrap${profileOpen ? " open" : ""}`}>
+          <button className="profile-trigger" type="button" onClick={() => setProfileOpen((o) => !o)}>
+            <span className="profile-core">{gName.charAt(0).toUpperCase()}</span>
+            <span className="profile-copy">
+              <strong>{gName}</strong>
+              <small>{gSub}</small>
+            </span>
+            <span className="profile-caret">▾</span>
+          </button>
+          {profileOpen ? (
+            <div className="profile-dropdown">
+              <button type="button" onClick={() => { setTab("account"); setProfileOpen(false); }}><span className="dd-icon">👤</span>Account &amp; Steam</button>
+              <button type="button" onClick={() => { setTab("voice"); setProfileOpen(false); }}><span className="dd-icon">🎙</span>Voice Packs</button>
+              <div className="dd-sep" />
+              <button type="button" onClick={() => { setTab("settings"); setProfileOpen(false); }}><span className="dd-icon">⚙</span>Settings</button>
+            </div>
+          ) : null}
+        </div>
+
+        <div className="window-controls">
+          <button type="button" className="win-btn" onClick={() => { try { void getCurrentWindow().minimize() } catch {} }}>─</button>
+          <button type="button" className="win-btn" onClick={() => { try { void getCurrentWindow().toggleMaximize() } catch {} }}>□</button>
+          <button type="button" className="win-btn win-close" onClick={() => { try { void getCurrentWindow().close() } catch {} }}>✕</button>
         </div>
       </header>
 
-      <div className="deck-body">
-        {error ? (
-          <div className="banner err">engine offline ({error})</div>
-        ) : null}
-
-        {loading ? <div className="loading">loading tactical dashboard...</div> : (
-          <main className={`surface page-${tab}`}>
-            {tab === "dashboard" && <Dashboard />}
-            {tab === "live" && <LiveMatchPage />}
-            {tab === "companion" && <CompanionPage />}
-            {tab === "build" && <BuildAdvisorPage />}
-            {tab === "insights" && <InsightsPage />}
-            {tab === "voice" && <VoicePacksPage />}
-            {tab === "history" && <HistoryPage />}
-            {tab === "settings" && (
-              settingsPanel ?? (
-                <div style={{ display: "grid", gap: 16 }}>
-                  <SettingsPage />
-                  <QuotaCard />
-                </div>
-              )
-            )}
-            {tab === "account" && <AccountPage />}
-          </main>
-        )}
-
-        <footer className="telemetry-footer card-shell">
-          <TelemetryMetric label="CPU Load" value={pct(data.telemetry.cpuLoad)} sub={temp(data.telemetry.cpuTemp)} />
-          <TelemetryMetric label="RAM Used" value={mem(data.telemetry.ramUsedGb)} sub={memTotal(data.telemetry.ramTotalGb)} />
-          <TelemetryMetric label="GPU Load" value={pct(data.telemetry.gpuLoad)} sub={temp(data.telemetry.gpuTemp)} />
-          <TelemetryMetric label="VRAM Used" value={mem(data.telemetry.vramUsedGb)} sub={memTotal(data.telemetry.vramTotalGb)} />
-          <div className="telemetry-sync">Last sync {new Date(data.updatedAt).toLocaleTimeString()}</div>
-        </footer>
-      </div>
+      {/* glass panel — hosts the active tab (rich, live-wired content preserved) */}
+      <main className="g-deck-panel">
+        {error ? <div className="banner err">engine offline ({error})</div> : null}
+        <div className={`surface page-${tab}`}>
+          {tab === "dashboard" && <Dashboard />}
+          {tab === "live" && <LiveMatchPage />}
+          {tab === "companion" && <CompanionPage />}
+          {tab === "build" && <BuildAdvisorPage />}
+          {tab === "insights" && <InsightsPage />}
+          {tab === "voice" && <VoicePacksPage />}
+          {tab === "history" && <HistoryPage />}
+          {tab === "settings" && (
+            settingsPanel ?? (
+              <div style={{ display: "grid", gap: 16 }}>
+                <SettingsPage />
+                <QuotaCard />
+              </div>
+            )
+          )}
+          {tab === "account" && <AccountPage />}
+        </div>
+      </main>
     </div>
   );
 }
@@ -125,24 +150,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
 function pct(v: number): string {
   return v < 0 ? "—" : `${v}%`;
 }
-function temp(v: number): string {
-  return v < 0 ? "—" : `${v}°C`;
-}
 function mem(gb: number): string {
   if (gb < 0) return "—";
-  return gb < 1 ? `${Math.round(gb * 1024)} MB` : `${gb.toFixed(1)} GB`;
-}
-function memTotal(gb: number): string {
-  if (gb < 0) return "";
-  return gb < 1 ? `/ ${Math.round(gb * 1024)} MB` : `/ ${gb.toFixed(1)} GB`;
-}
-
-function TelemetryMetric({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return (
-    <div className="telemetry-metric">
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <small>{sub}</small>
-    </div>
-  );
+  return gb < 1 ? `${Math.round(gb * 1024)}M` : `${gb.toFixed(1)}G`;
 }
