@@ -3417,15 +3417,19 @@ body {
    top-right topbar FAB, so offset it down to clear the topbar notch. */
 .board-bento .agent-bento   { grid-column: 3 !important; grid-row: 1 !important; margin-top: 40px; }
 
-/* announcer event callout — sits inside the Agent sector, above the caster feed */
+/* announcer event callout — sits inside the Agent sector, above the caster feed.
+   Centred over the LEFT half (the dark side of the art, aligned with the caster
+   text) so it clears Maiden on the right and never gets clipped by the edge. */
 .deck-event-banner {
-  align-self: center; text-align: center; pointer-events: none;
+  align-self: center; position: relative; right: 17%; /* nudge to the left half */
+  text-align: center; pointer-events: none;
   animation: deb-in 0.34s cubic-bezier(0.2, 1.5, 0.5, 1);
 }
 .deck-event-banner.out { animation: deb-out 0.42s ease forwards; }
 .deb-label {
-  display: inline-block; font-weight: 900; font-size: 18px; letter-spacing: 2px;
-  padding: 5px 14px; border-radius: 8px;
+  display: inline-block; white-space: nowrap;
+  font-weight: 900; font-size: 15px; letter-spacing: 1.5px;
+  padding: 5px 13px; border-radius: 8px;
   background: rgba(6, 10, 20, 0.55);
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
 }
