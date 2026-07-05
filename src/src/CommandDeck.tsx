@@ -141,9 +141,9 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
         </div>
 
         <div className="window-controls">
-          <button type="button" className="win-btn" onClick={() => { try { void getCurrentWindow().minimize() } catch {} }}>─</button>
-          <button type="button" className="win-btn" onClick={() => { try { void getCurrentWindow().toggleMaximize() } catch {} }}>□</button>
-          <button type="button" className="win-btn win-close" onClick={() => { try { void getCurrentWindow().close() } catch {} }}>✕</button>
+          <button type="button" className="win-btn" onClick={() => { try { void getCurrentWindow().minimize() } catch { /* noop */ } }}>─</button>
+          <button type="button" className="win-btn" onClick={() => { try { void getCurrentWindow().toggleMaximize() } catch { /* noop */ } }}>□</button>
+          <button type="button" className="win-btn win-close" onClick={() => { try { void getCurrentWindow().close() } catch { /* noop */ } }}>✕</button>
         </div>
       </header>
 

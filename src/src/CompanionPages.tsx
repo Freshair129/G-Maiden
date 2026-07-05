@@ -267,7 +267,7 @@ export function SettingsPage() {
       const { LogicalSize } = await import("@tauri-apps/api/dpi");
       await getCurrentWindow().setSize(new LogicalSize(preset.w, preset.h));
       setActiveSize(preset.label);
-    } catch {}
+    } catch { /* noop */ }
   };
 
   return (
