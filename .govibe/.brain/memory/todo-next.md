@@ -1,11 +1,29 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: **2026-07-05 (B)** · deck HUD v2 ลงโค้ด + G-Offload Monitor
-(ดู session `.govibe/.brain/session/2026-07-05-B-deck-hud-impl-offload-monitor.md`;
-part A = `...-deck-redesign-designsystem.md`). ก่อนหน้า = account/security (2026-07-04).
-ด้านล่างจาก "📊 Progress snapshot (turn 15)" คือ CV/Signal thread เดิม (2026-06-21) — trail.
+อัปเดตล่าสุด: **2026-07-05 (C)** · deck: signals→grid, caster feed, event banner (wired), telemetry rail, topbar+drag, flatten pass 1
+(ดู session `.govibe/.brain/session/2026-07-05-C-deck-feed-banner-telemetry-glass.md`).
+ก่อนหน้า: B = `...-B-deck-hud-impl-offload-monitor.md`, A = `...-deck-redesign-designsystem.md`. **PR #8 เปิดแล้ว**.
 
-## 🟣 Deck HUD v2 impl + G-Offload Monitor thread (2026-07-05 B) — ล่าสุด
+## 🟢 Deck polish thread (2026-07-05 C) — ล่าสุด
+
+**Branch `feat/deck-glass-redesign-ds`** — ahead origin **3** (`2be6f4b7`/`c8de30b8`/`d3b14d4a` จะ push ตอนปิด), **ยังไม่ merge/tag**. **PR #8** = https://github.com/Freshair129/G-Maiden/pull/8
+
+- **DONE Subtract ปรับตาม prototype+feedback**: 2 notch (top-right topbar + bottom-left sidebar); **G-Signal ย้ายเข้า bento grid** (`.gsignal-bento` cell, ไม่ใช่ FAB ลอยแล้ว); power radial menu (min/max/close); window controls ออกจาก topbar.
+- **DONE Agent sector**: caster feed sliding-window (Maiden typewriter) + **event banner wired เข้า `announcer-banner`** (ครอบ kill+streak, tone blood/gold/fire, top 40% ครึ่งซ้าย, detached จาก feed). ทั้งคู่ **demo fallback ตอนไม่มี Tauri**.
+- **DONE left rail v2**: P1=**logo tile** (codex icon, inline `LogoMark`), P2-P5=**telemetry ย้ายจาก topbar** (CPU load+temp/RAM/GPU load+temp/VRAM). sidebar เอา G ออก+ลงล่าง(300). panel top ยืดลง `nlt 216→286`.
+- **DONE topbar v2**: version ใต้ G-MAIDEN (`getVersion`), ปุ่ม update (`check()`, status=toast), กระดิ่ง+dropdown (sample). **drag fix** = เพิ่ม capability `core:window:allow-start-dragging` + `startDragging()`. notch `ntw→324` กัน topbar ยื่นซ้อน.
+- **DONE flatten pass 1**: panel ดำแบนสีเดียว `rgba(18,20,26,.72)` + card แบน + ตัด gloss/เงา/tilt. lime คงเดิม. **ยัง eyeball ไม่ได้** (screenshot timeout) → **ต้อง user ดู contrast**.
+- **DONE minimap overlap fix**: `.minimap-bento { min-height:0 !important }` (grid item min-height:auto ล้นทับแถว 3).
+
+### 🎯 งานต่อ thread นี้ (เรียงตามคุณค่า)
+1. **REBUILD desktop** — drag/version/bell/update ทดสอบได้เฉพาะ Tauri; build เดิม (0.8.0) predate logo/telemetry/topbar/flatten. `pnpm tauri build` จาก root (~12 นาที).
+2. **glass ทะลุ desktop** = window `transparent:true` (tauri.conf) + เอา opaque bg ออก + card = translucent glass blur desktop. **architectural, verify ต้อง rebuild, perf risk** — user เลือกทำ**หลัง**flatten. เป็น step แยก.
+3. **de-nest** sub-card ชั้นในลึก + **eyeball flatten** ว่าจางไปไหม (tune contrast).
+4. wire จริง: notification bell feed (ตอนนี้ sample), agent caster narration event (`agent-message`?).
+5. push branch (ปิด session นี้) → merge PR #8 เมื่อ deck นิ่ง.
+6. **DOC DRIFT (pre-existing, ยังไม่แก้)**: `CLAUDE.md:5` = "implemented (v0.7.x)" และ `AGENTS.md:220` = "Current State (v0.7.x shipping; v0.8.0 in progress)" — จริง = **v0.8.0 shipped 2026-07-04** (ทุกไฟล์ version 0.8.0). แก้ status line เมื่อ user สั่ง.
+
+## 🟣 Deck HUD v2 impl + G-Offload Monitor thread (2026-07-05 B)
 
 **Branch `feat/deck-glass-redesign-ds`** — 15 commits, **ยังไม่ push/merge/tag**.
 
