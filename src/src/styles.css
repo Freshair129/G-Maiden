@@ -2649,31 +2649,45 @@ body {
 .agent-front-fragments span:nth-child(2) { right: -10px; top: 102px; }
 .agent-front-fragments span:nth-child(3) { left: 24px; bottom: 60px; width: 148px; }
 
-.agent-copy {
+/* Agent caster feed — sliding-window narration overlaid on the art bottom.
+   Maiden types the newest line (af-now + caret); the previous line (af-old)
+   sits above, faded; new lines push it up (keyed remount replays af-in). */
+.agent-feed {
   position: absolute;
-  left: 14px;
-  right: 14px;
+  left: 12px;
+  right: 12px;
   bottom: 12px;
   z-index: 5;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  justify-content: center;
-  padding: 10px;
+  gap: 6px;
+  padding: 26px 12px 10px;
   border-radius: 12px;
-  background: linear-gradient(90deg, rgba(6, 12, 24, 0.82), rgba(6, 12, 24, 0.24));
-  border: 1px solid rgba(126, 177, 255, 0.12);
+  /* scrim so text reads over the art; fades to transparent at the top */
+  background: linear-gradient(180deg, rgba(6, 12, 24, 0) 0%, rgba(6, 12, 24, 0.6) 34%, rgba(6, 12, 24, 0.9) 100%);
 }
-
-.agent-copy strong {
-  font-size: 15px;
+.agent-feed-tag {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 8px; font-weight: 800; letter-spacing: 1.4px; color: var(--g-ice-500, #8fd4ff);
 }
-
-.agent-copy p {
-  margin: 0;
-  color: #9ab1cc;
-  line-height: 1.35;
-  font-size: 11px;
+.agent-feed-tag .af-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--g-lime-500, #a3e635);
+  box-shadow: 0 0 8px rgba(163, 230, 53, 0.8); animation: af-pulse 1.6s ease-in-out infinite;
+}
+@keyframes af-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.agent-feed-log { display: flex; flex-direction: column; gap: 3px; min-height: 0; }
+.af-line { margin: 0; line-height: 1.32; }
+.af-old { font-size: 10px; color: rgba(154, 177, 204, 0.5); }
+.af-now { font-size: 12px; color: #eaf2ff; animation: af-in 0.28s ease; }
+.af-caret {
+  display: inline-block; width: 6px; height: 12px; margin-left: 2px; vertical-align: -1px;
+  background: var(--g-lime-500, #a3e635); animation: af-blink 1s step-end infinite;
+}
+@keyframes af-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes af-blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .af-caret, .agent-feed-tag .af-dot { animation: none; }
+  .af-now { animation: none; }
 }
 
 .status-matrix {
@@ -3476,8 +3490,6 @@ body {
 .status-bento .bento-head h3 { font-size: 12px; }
 .status-bento .status-card { padding: 5px 8px; }
 .status-bento .status-card strong { font-size: 12px; line-height: 1.15; }
-.agent-bento .agent-copy { gap: 2px; }
-.agent-bento .agent-copy p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* hero-card status badge: VISIBLE/LOW (no timer) · MISSING/DEAD (+timer) */
 .hc-status {
@@ -3553,8 +3565,6 @@ body {
 .signal-bar-card { padding: 5px 9px; }
 .missing-hero-card { padding: 4px 7px; }
 .signal-chip { padding: 2px 7px; }
-.agent-copy p { font-size: 9px; line-height: 1.25; margin: 0; }
-.agent-copy strong { font-size: 12px; }
 
 /* reclaim vertical space from chrome so every card cell gets more room */
 .telemetry-footer { padding: 6px 12px; gap: 10px; }

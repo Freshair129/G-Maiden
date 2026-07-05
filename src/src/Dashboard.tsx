@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { formatTimer, useCompanionData } from "./companion";
 import type { CompanionData } from "./companion";
 
@@ -134,12 +134,7 @@ export default function Dashboard() {
                 <span />
               </div>
             </div>
-            <div className="agent-copy">
-              <strong>{data.agentSector.title}</strong>
-              {data.agentSector.summary.map((line) => (
-                <p key={line}>{line}</p>
-              ))}
-            </div>
+            <AgentFeed lines={data.agentSector.summary} />
           </div>
         </section>
 
@@ -213,6 +208,68 @@ export default function Dashboard() {
 
         {/* Activity / Event logs live in the Insights + History tabs (CR-002).
            Dashboard is a fixed-grid, no-scroll layout — only the 5 bento cards above. */}
+      </div>
+    </div>
+  );
+}
+
+// Agent sector caster feed — Maiden "types" the newest line; completed lines
+// slide up and fade (sliding window). No live AI-narration event exists yet, so
+// this cycles the agent summary (or Maiden persona lines) as a demo. When a real
+// stream lands (e.g. a `agent-message` / advice Tauri event), feed it in as
+// `lines` / push onto `history` instead of the interval rotator below.
+const MAIDEN_LINES = [
+  "เฝ้ามินิแมพให้อยู่นะ เดี๋ยวมีคนหายจากสายตา",
+  "ฟาร์มต่อได้ ตอนนี้ยังปลอดภัยอยู่",
+  "ระวังโรมมิ่งจากเลนบน มืดไปหลายวิแล้ว",
+  "เก็บ vision รอบ objective ก่อนจะเข้าน้า",
+  "เอ๊ะ! เดี๋ยวก่อน… ถอยดีกว่า เขามากันสาม",
+];
+
+function AgentFeed({ lines }: { lines: string[] }) {
+  const pool = lines.length ? lines : MAIDEN_LINES;
+  const [history, setHistory] = useState<string[]>([]); // completed, newest last
+  const [typed, setTyped] = useState("");
+  const idx = useRef(0);
+
+  useEffect(() => {
+    let alive = true;
+    let timer: number;
+    const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    const commit = () => {
+      if (!alive) return;
+      const line = pool[idx.current % pool.length];
+      setHistory((h) => [...h, line].slice(-1)); // keep 1 previous line above
+      setTyped("");
+      idx.current += 1;
+      timer = window.setTimeout(typeNext, 520);
+    };
+    const typeNext = () => {
+      if (!alive) return;
+      const line = pool[idx.current % pool.length];
+      if (reduce) { setTyped(line); timer = window.setTimeout(commit, 3600); return; }
+      let n = 0;
+      const step = () => {
+        if (!alive) return;
+        n += 1;
+        setTyped(line.slice(0, n));
+        timer = window.setTimeout(n < line.length ? step : commit, n < line.length ? 42 : 3200);
+      };
+      step();
+    };
+    typeNext();
+    return () => { alive = false; window.clearTimeout(timer); };
+  }, [pool]);
+
+  return (
+    <div className="agent-feed">
+      <div className="agent-feed-tag"><span className="af-dot" />MAIDEN</div>
+      <div className="agent-feed-log">
+        {history.map((line, i) => (
+          <p key={`h${i}-${line}`} className="af-line af-old">{line}</p>
+        ))}
+        {typed && <p className="af-line af-now">{typed}<span className="af-caret" /></p>}
       </div>
     </div>
   );
