@@ -3412,7 +3412,7 @@ body {
     "warning status gsignal";
   gap: 10px;
 }
-.board-bento .minimap-bento { grid-column: 1 / 3 !important; grid-row: 1 / 3 !important; }
+.board-bento .minimap-bento { grid-column: 1 / 3 !important; grid-row: 1 / 3 !important; min-height: 0 !important; }
 /* content rises to the top band (beside P1); the agent card sits under the
    top-right topbar FAB, so offset it down to clear the topbar notch. */
 .board-bento .agent-bento   { grid-column: 3 !important; grid-row: 1 !important; margin-top: 40px; }
