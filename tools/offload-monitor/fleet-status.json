@@ -33,12 +33,10 @@
   ],
   "progress": [
     { "id": "U1-tokens", "title": "--g-* design tokens → styles.css", "status": "done" },
-    { "id": "U1U2-shell", "title": "Subtract glass shell + topbar FAB", "status": "blocked", "note": "audit rework: freeze .deck-v3 .stage/.zone contract; land U1+U2 together" },
-    { "id": "U3-sidebar", "title": "Sidebar FAB nav (+ codex icons)", "status": "pending" },
-    { "id": "U4-anchor", "title": "P1–P5 anchor rail", "status": "pending" },
-    { "id": "U5-score", "title": "Score header + stats bar", "status": "pending" },
-    { "id": "U6-battle", "title": "Hero slots + minimap + agent card", "status": "pending" },
-    { "id": "U7-signals", "title": "Activity log + G-Signal cards", "status": "pending" },
+    { "id": "U1U2-shell", "title": "Glass shell + topbar FAB", "status": "done", "note": "FAB shell over existing content (kept rich Dashboard); commit b14df060" },
+    { "id": "U3-sidebar", "title": "Sidebar FAB icon nav (codex icons)", "status": "done" },
+    { "id": "U4-anchor", "title": "P1–P5 anchor rail", "status": "pending", "note": "deferred — anchors not wired to agent yet" },
+    { "id": "U5U6U7-content", "title": "Score/stats/battle/signals zones", "status": "done", "note": "kept existing rich live-wired content (not downgraded to prototype)" },
     { "id": "monitor", "title": "G-Offload Monitor tooling", "status": "done" },
     { "id": "openrouter", "title": "OpenRouter provider wire", "status": "done", "note": "key in .openrouter.key; cap max_tokens for low-credit accounts" },
     { "id": "cr005", "title": "CR-005 landing / auth / community", "status": "draft" }
