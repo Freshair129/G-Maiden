@@ -4204,18 +4204,14 @@ body {
   /* rim + depth that FOLLOW the clip-path shape (drop-shadow respects clip-path) */
   filter: drop-shadow(0 0 1px rgba(160, 200, 255, 0.45)) drop-shadow(0 16px 40px rgba(0, 0, 0, 0.5));
   overflow: hidden; display: flex; flex-direction: column;
-  /* Boolean-Subtract: THREE notches — top-right (topbar FAB), bottom-left
-     (sidebar + power FABs, always) and bottom-right (G-Signal FABs, dashboard). */
+  /* Boolean-Subtract: TWO notches — top-right (topbar FAB) + bottom-left
+     (sidebar + power FABs). The G-Signal cards sit ON the panel's bottom-right
+     (grounded on frost), so there is no bottom-right cut. */
   --ntw: 364px; --nth: 58px;   /* top-right notch (topbar) */
   --nlw: 72px; --nlt: 216px;   /* bottom-left notch (sidebar + power) */
-  --nbw: 372px; --nbh: 196px;  /* bottom-right notch (signals, dashboard only) */
-  /* base: top-right + bottom-left notch (all tabs) */
   --clip-top: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% 100%, var(--nlw) 100%, var(--nlw) var(--nlt), 0 var(--nlt));
-  /* dashboard: + bottom-right notch */
-  --clip-both: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% calc(100% - var(--nbh)), calc(100% - var(--nbw)) calc(100% - var(--nbh)), calc(100% - var(--nbw)) 100%, var(--nlw) 100%, var(--nlw) var(--nlt), 0 var(--nlt));
   clip-path: var(--clip-top);
 }
-.g-deck-panel.has-signals { clip-path: var(--clip-both); }
 /* JS sets an inline clip-path: path(...) with rounded fillets — the vars above are the
    sharp-polygon fallback until the effect runs. ::before top-highlight is clipped by the parent. */
 .g-deck-panel::before {

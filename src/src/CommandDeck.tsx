@@ -78,7 +78,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
         stage.style.transform = `translate(-50%, -50%) scale(${s})`;
       }
       const p = panelRef.current;
-      if (p) p.style.clipPath = `path('${buildPanelPath(p.offsetWidth, p.offsetHeight, tab === "dashboard")}')`;
+      if (p) p.style.clipPath = `path('${buildPanelPath(p.offsetWidth, p.offsetHeight)}')`;
     };
     apply();
     window.addEventListener("resize", apply);
@@ -239,15 +239,13 @@ function IconPower({ size = 22 }: { size?: number }) {
 }
 
 // build a rounded-corner (fillet) SVG path for the concave Subtract panel.
-// Three notches: top-right (topbar FAB), bottom-left (sidebar + power FABs,
-// always present) and bottom-right (G-Signal cards, dashboard only).
-function buildPanelPath(w: number, h: number, hasSignals: boolean): string {
+// Two notches: top-right (topbar FAB) and bottom-left (sidebar + power FABs).
+// The G-Signal cards (D–G) sit ON the panel's bottom-right (grounded on the
+// frosted glass), NOT in a cutout — a hole there made them float over the void.
+function buildPanelPath(w: number, h: number): string {
   const ntw = 364, nth = 58;   // top-right notch (topbar FAB)
   const nlw = 72, nlt = 216;   // bottom-left notch (sidebar + power FABs)
-  const nbw = 372, nbh = 196;  // bottom-right notch (signal cards)
-  const pts: Array<[number, number]> = hasSignals
-    ? [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h - nbh], [w - nbw, h - nbh], [w - nbw, h], [nlw, h], [nlw, nlt], [0, nlt]]
-    : [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h], [nlw, h], [nlw, nlt], [0, nlt]];
+  const pts: Array<[number, number]> = [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h], [nlw, h], [nlw, nlt], [0, nlt]];
   return roundedPath(pts, 16);
 }
 function roundedPath(pts: Array<[number, number]>, r: number): string {
