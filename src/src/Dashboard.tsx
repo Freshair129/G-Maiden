@@ -1,4 +1,5 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { formatTimer, useCompanionData } from "./companion";
 import type { CompanionData } from "./companion";
 
@@ -217,11 +218,21 @@ export default function Dashboard() {
 }
 
 // Announcer event banner (First Blood / Double Kill / streak ladder …), shown as
-// a transient callout inside the Agent sector, above the caster feed. Mirrors the
-// overlay's STREAK_LABELS. No deck-side announcer event is wired yet, so this
-// cycles a demo set; TODO: drive from the `announcer-banner` Tauri event
-// (payload.bannerText) + game-tick kill rising-edge, like src/src/App.tsx.
-const DECK_EVENTS: Array<{ label: string; tone: "blood" | "gold" | "fire" }> = [
+// a transient callout inside the Agent sector. Driven by the backend
+// `announcer-banner` Tauri event (gsi.rs → voice_api::fired_banner): its `event`
+// id already covers the kill + streak ladder (announcer.rs), so this one listener
+// wires both the announcer banners and kill streaks. When not under Tauri (browser
+// preview), it falls back to a demo cycler so the slot is still visible.
+type DebTone = "blood" | "gold" | "fire";
+// canonical announcer event id → tone (only these ids surface as a big callout;
+// warning/state/advisor events are handled elsewhere — G-Signal / caster feed).
+const EVENT_TONE: Record<string, DebTone> = {
+  first_blood: "blood", rampage: "blood", monster_kill: "blood",
+  unstoppable: "blood", wicked_sick: "blood", godlike: "blood", beyond_godlike: "blood",
+  kill: "gold", double_kill: "gold", triple_kill: "gold",
+  ultra_kill: "fire", killing_spree: "fire", dominating: "fire", mega_kill: "fire",
+};
+const DEMO_EVENTS: Array<{ label: string; tone: DebTone }> = [
   { label: "FIRST BLOOD", tone: "blood" },
   { label: "DOUBLE KILL", tone: "gold" },
   { label: "TRIPLE KILL", tone: "gold" },
@@ -230,32 +241,56 @@ const DECK_EVENTS: Array<{ label: string; tone: "blood" | "gold" | "fire" }> = [
 ];
 
 function DeckEventBanner() {
-  const [idx, setIdx] = useState(-1);
+  const [evt, setEvt] = useState<{ label: string; tone: DebTone } | null>(null);
   const [show, setShow] = useState(false);
+  const [seq, setSeq] = useState(0); // remount key so the entrance anim replays
+  const liveRef = useRef(false);     // a real announcer event has arrived
+  const hideRef = useRef<number | undefined>(undefined);
 
+  const fire = useCallback((label: string, tone: DebTone) => {
+    window.clearTimeout(hideRef.current);
+    setEvt({ label, tone });
+    setSeq((s) => s + 1);
+    setShow(true);
+    hideRef.current = window.setTimeout(() => setShow(false), 3600);
+  }, []);
+
+  // real events — announcer-banner covers kills, multi-kills and the streak ladder
+  useEffect(() => {
+    let alive = true;
+    let un: (() => void) | null = null;
+    try {
+      listen<{ event: string; bannerText: string }>("announcer-banner", (e) => {
+        const tone = EVENT_TONE[e.payload.event];
+        if (!tone) return; // not a callout-worthy event
+        liveRef.current = true; // real feed took over — silence the demo
+        fire((e.payload.bannerText || e.payload.event).toUpperCase(), tone);
+      })
+        .then((fn) => { if (!alive) fn(); else un = fn; })
+        .catch(() => { /* not under Tauri */ });
+    } catch { /* not under Tauri */ }
+    return () => { alive = false; if (un) un(); window.clearTimeout(hideRef.current); };
+  }, [fire]);
+
+  // demo fallback — only while no real announcer event has arrived
   useEffect(() => {
     let alive = true;
     let t: number;
     let i = 0;
     const run = () => {
-      if (!alive) return;
-      setIdx(i % DECK_EVENTS.length);
-      setShow(true);
-      t = window.setTimeout(() => {
-        if (!alive) return;
-        setShow(false); // trigger exit animation
-        i += 1;
-        t = window.setTimeout(run, 1500);
-      }, 2400);
+      if (!alive || liveRef.current) return;
+      const d = DEMO_EVENTS[i % DEMO_EVENTS.length];
+      fire(d.label, d.tone);
+      i += 1;
+      t = window.setTimeout(run, 4000);
     };
     t = window.setTimeout(run, 1400);
     return () => { alive = false; window.clearTimeout(t); };
-  }, []);
+  }, [fire]);
 
-  const evt = idx >= 0 ? DECK_EVENTS[idx] : null;
   if (!evt) return null;
   return (
-    <div className={`deck-event-banner tone-${evt.tone}${show ? "" : " out"}`} aria-live="polite">
+    <div key={seq} className={`deck-event-banner tone-${evt.tone}${show ? "" : " out"}`} aria-live="polite">
       <span className="deb-label">{evt.label}</span>
     </div>
   );

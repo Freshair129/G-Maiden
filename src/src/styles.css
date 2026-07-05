@@ -3421,7 +3421,7 @@ body {
    of the caster feed (so it never shifts when the feed's line count changes).
    Vertically centred; horizontally on a 10-col grid at cols 2-4 (10%..40%). */
 .deck-event-banner {
-  position: absolute; left: 10%; top: 50%; transform: translateY(-50%);
+  position: absolute; left: 10%; top: 40%; transform: translateY(-50%);
   z-index: 6; text-align: left; pointer-events: none; /* left edge at grid col 2 (of 10) */
 }
 /* the label carries the pop animation (parent owns the centring transform) */
