@@ -1,8 +1,10 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: **2026-07-05 (C)** · deck: signals→grid, caster feed, event banner (wired), telemetry rail, topbar+drag, flatten pass 1
-(ดู session `.govibe/.brain/session/2026-07-05-C-deck-feed-banner-telemetry-glass.md`).
-ก่อนหน้า: B = `...-B-deck-hud-impl-offload-monitor.md`, A = `...-deck-redesign-designsystem.md`. **PR #8 เปิดแล้ว**.
+อัปเดตล่าสุด: **2026-07-06** · **FluxNode side-quest** (repo อื่น — ไม่แตะ G-Maiden). ก่อนหน้า: 2026-07-05 (C) deck thread.
+(session ล่าสุด `.govibe/.brain/session/2026-07-06-fluxnode-ai-copilot.md`; deck `...-2026-07-05-C-...md`). **PR #8 (deck) เปิดแล้ว**.
+
+## ⚪ FluxNode AI copilot (2026-07-06) — คนละ repo `D:\fluxnode-dev`
+งานทั้ง session อยู่ที่ FluxNode ไม่ใช่ G-Maiden. สร้าง agent-native layer (Action registry 30 actions + brain/agent loop + media adapter + MCP + `--agent`/`--mcp`), E2E-verified ผ่าน Ollama. **9 commits @ master `c6810e5`, local ล้วน ไม่มี remote.** งานต่อ + gotchas ทั้งหมดอยู่ที่ **`D:\fluxnode-dev\HANDOFF.md`** (อย่าก๊อป FluxNode todo มาปนที่นี่). บทเรียน reusable: [[codex-vs-ollama-rust-boilerplate]]. **G-Maiden ไม่มี drift ใหม่จาก session นี้.**
 
 ## 🟢 Deck polish thread (2026-07-05 C) — ล่าสุด
 
