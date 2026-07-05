@@ -4273,14 +4273,15 @@ body {
 .g-power-item:hover { border-color: rgba(143, 212, 255, .34); color: var(--g-ice-500); }
 .pi-close:hover { border-color: rgba(244, 63, 94, .4); color: var(--g-danger, #f43f5e); background: rgba(244, 63, 94, .14); }
 
-/* ---- G-Signal FABs (D/E/F/G) — float in the bottom-right notch (dashboard only) ---- */
+/* ---- G-Signal cards (D/E/F/G) — inset cells on the panel's bottom-right
+   (dashboard only). Flat card styling (no FAB shadow/blur) so they sit flush
+   on the frosted panel like the Alert Deck / Companion cards, not floating. ---- */
 .g-signals-fab {
-  position: absolute; right: 10px; bottom: 10px; width: 372px; height: 196px; z-index: var(--g-z-fab);
-  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px;
+  position: absolute; right: 16px; bottom: 16px; width: 360px; height: 184px; z-index: 12;
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px;
 }
 .g-sig {
-  position: relative; border-radius: var(--g-r-fab); background: var(--g-fab); border: 1px solid var(--g-fab-rim);
-  box-shadow: var(--g-shadow-fab); -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
+  position: relative; border-radius: var(--g-r-card); background: var(--g-card); border: 1px solid var(--g-card-line);
   padding: 12px 14px; display: flex; flex-direction: column;
 }
 .g-sig .sg-tag { position: absolute; top: 9px; right: 12px; font-size: 9px; font-weight: 800; color: var(--g-text-dim); opacity: .5; }
