@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, type ReactNode } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { getVersion } from "@tauri-apps/api/app";
+import { check } from "@tauri-apps/plugin-updater";
 import VoicePacksPage from "./VoicePacksPage";
 import QuotaCard from "./QuotaCard";
 import {
@@ -55,6 +57,28 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   const [tab, setTab] = useState("dashboard");
   const [profileOpen, setProfileOpen] = useState(false);
   const [powerOpen, setPowerOpen] = useState(false);
+  const [notifOpen, setNotifOpen] = useState(false);
+  const [version, setVersion] = useState("0.8.0");
+  const [updText, setUpdText] = useState<string | null>(null);
+
+  useEffect(() => { getVersion().then(setVersion).catch(() => { /* browser preview */ }); }, []);
+
+  const checkUpdate = async () => {
+    if (updText === "กำลังตรวจ…") return;
+    setUpdText("กำลังตรวจ…");
+    try {
+      const up = await check();
+      if (up) { setUpdText(`มีอัปเดต v${up.version}`); setTab("settings"); }
+      else setUpdText("ล่าสุดแล้ว ✓");
+    } catch { setUpdText("ตรวจไม่ได้"); }
+    window.setTimeout(() => setUpdText(null), 4000);
+  };
+
+  // sample notifications — TODO: wire to a real feed (alerts / update / GSI status)
+  const notifs = [
+    { id: "gsi", title: "GSI พร้อมทำงาน", body: "ฟัง game-tick ที่พอร์ต :3000", time: "เมื่อสักครู่" },
+    { id: "welcome", title: "ยินดีต้อนรับสู่ G-Maiden", body: "เปิด Dota 2 เพื่อเริ่มการวิเคราะห์สด", time: "วันนี้" },
+  ];
   const { data } = useCompanionData();
   const { displayName, email } = useProfile();
   const gName = displayName || (email ? email.split("@")[0] : "Guest");
@@ -103,9 +127,41 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
         </nav>
       </aside>
 
-      {/* topbar FAB — brand + profile (telemetry moved to the P2–P5 rail) */}
-      <header className="g-topbar-fab" data-tauri-drag-region="">
-        <span className="g-logo">G-MAIDEN</span>
+      {/* topbar FAB — brand + version + update + notifications + profile.
+          onMouseDown drags the frameless window (data-tauri-drag-region is
+          unreliable inside the scaled stage). */}
+      <header className="g-topbar-fab" data-tauri-drag-region="" onMouseDown={startWindowDrag}>
+        <div className="g-brandcol">
+          <span className="g-logo">G-MAIDEN</span>
+          <span className="g-ver">v{version}</span>
+        </div>
+
+        <button type="button" className="g-tb-btn g-upd-btn" title="ตรวจหาอัปเดต" onClick={checkUpdate}>
+          <IconUpdate size={16} />
+          {updText ? <span className="g-upd-text">{updText}</span> : null}
+        </button>
+
+        <div className={`g-notif-wrap${notifOpen ? " open" : ""}`}>
+          <button type="button" className="g-tb-btn" title="การแจ้งเตือน" aria-label="Notifications" onClick={() => setNotifOpen((o) => !o)}>
+            <IconBell size={17} />
+            {notifs.length > 0 ? <span className="g-notif-dot" /> : null}
+          </button>
+          {notifOpen ? (
+            <>
+              <div className="g-notif-scrim" onMouseDown={(e) => { e.stopPropagation(); setNotifOpen(false); }} />
+              <div className="g-notif-drop">
+                <div className="g-notif-head">การแจ้งเตือน<span>{notifs.length}</span></div>
+                {notifs.length ? notifs.map((n) => (
+                  <div key={n.id} className="g-notif-item">
+                    <strong>{n.title}</strong>
+                    <p>{n.body}</p>
+                    <small>{n.time}</small>
+                  </div>
+                )) : <div className="g-notif-empty">ไม่มีการแจ้งเตือน</div>}
+              </div>
+            </>
+          ) : null}
+        </div>
 
         <div className={`profile-wrap${profileOpen ? " open" : ""}`}>
           <button className="profile-trigger" type="button" onClick={() => setProfileOpen((o) => !o)}>
@@ -196,6 +252,30 @@ function winOp(op: "min" | "max" | "close") {
   } catch { /* noop (browser preview has no Tauri window) */ }
 }
 
+// Drag the frameless window from the topbar's empty space. data-tauri-drag-region
+// is unreliable inside the CSS-scaled stage, so start the drag imperatively.
+function startWindowDrag(e: { target: EventTarget | null; button: number }) {
+  const el = e.target as HTMLElement | null;
+  if (e.button !== 0) return;
+  if (el?.closest("button, .g-notif-drop, .profile-dropdown")) return;
+  try { void getCurrentWindow().startDragging(); } catch { /* browser preview */ }
+}
+
+function IconBell({ size = 17 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M18 8a6 6 0 0 0-12 0c0 7-3 9-3 9h18s-3-2-3-9" /><path d="M13.7 21a2 2 0 0 1-3.4 0" />
+    </svg>
+  );
+}
+function IconUpdate({ size = 16 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M21 12a9 9 0 1 1-2.6-6.4" /><path d="M21 4v5h-5" />
+    </svg>
+  );
+}
+
 function IconPower({ size = 22 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" strokeLinejoin="round">
@@ -210,7 +290,7 @@ function IconPower({ size = 22 }: { size?: number }) {
 // The G-Signal cards (D–G) sit ON the panel's bottom-right (grounded on the
 // frosted glass), NOT in a cutout — a hole there made them float over the void.
 function buildPanelPath(w: number, h: number): string {
-  const ntw = 256, nth = 58;   // top-right notch (topbar FAB, telemetry removed)
+  const ntw = 324, nth = 58;   // top-right notch — wraps the topbar (brand+ver+update+bell+profile)
   const nlw = 72, nlt = 286;   // bottom-left notch (sidebar + power); top area extended down for the rail
   const pts: Array<[number, number]> = [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h], [nlw, h], [nlw, nlt], [0, nlt]];
   return roundedPath(pts, 16);

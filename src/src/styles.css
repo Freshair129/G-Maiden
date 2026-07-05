@@ -4236,12 +4236,45 @@ body {
   box-shadow: var(--g-shadow-fab);
   -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
 }
-.g-topbar-fab .g-logo { font-weight: 800; letter-spacing: 1.5px; font-size: 13px; color: var(--g-ice-500); }
-.g-telemetry { display: flex; gap: 10px; }
-.g-telchip { display: flex; flex-direction: column; line-height: 1.1; font-size: 8px; letter-spacing: .5px; color: var(--g-text-dim); text-transform: uppercase; }
-.g-telchip strong { font-size: 11px; color: var(--g-text); font-variant-numeric: tabular-nums; }
-.g-topbar-fab .profile-wrap,
-.g-topbar-fab .window-controls { -webkit-app-region: no-drag; }
+.g-topbar-fab { gap: 8px; }
+.g-brandcol { display: flex; flex-direction: column; line-height: 1; gap: 3px; margin-right: 2px; pointer-events: none; }
+.g-brandcol .g-logo { font-weight: 800; letter-spacing: 1.5px; font-size: 13px; color: var(--g-ice-500); }
+.g-brandcol .g-ver { font-size: 8px; letter-spacing: .5px; color: var(--g-text-dim); font-variant-numeric: tabular-nums; }
+/* topbar action buttons (update / bell) */
+.g-tb-btn {
+  -webkit-app-region: no-drag; position: relative; width: 30px; height: 30px; border: 0; border-radius: 9px;
+  background: transparent; color: var(--g-text-dim); display: grid; place-items: center; cursor: pointer;
+  transition: background var(--g-t-micro), color var(--g-t-micro);
+}
+.g-tb-btn:hover { background: rgba(143, 212, 255, .1); color: var(--g-text); }
+/* update status shows as a toast under the button so the topbar width (and its
+   notch) stays fixed regardless of the status text length */
+.g-upd-text {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 200;
+  font-size: 9px; font-weight: 700; color: var(--g-ice-500); white-space: nowrap;
+  background: var(--g-fab); border: 1px solid var(--g-fab-rim); border-radius: 8px;
+  padding: 4px 9px; box-shadow: var(--g-shadow-fab);
+  -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
+}
+.g-notif-dot { position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--g-lime-500); box-shadow: 0 0 6px rgba(163, 230, 53, .8); }
+/* notification dropdown */
+.g-notif-wrap { position: relative; -webkit-app-region: no-drag; }
+.g-notif-scrim { position: fixed; inset: 0; z-index: 199; }
+.g-notif-drop {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 200; width: 262px;
+  background: var(--g-fab); border: 1px solid var(--g-fab-rim); border-radius: 12px;
+  box-shadow: var(--g-shadow-fab); -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
+  padding: 6px; display: flex; flex-direction: column; gap: 2px;
+}
+.g-notif-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px 8px; font-size: 10px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--g-text-dim); }
+.g-notif-head span { background: var(--g-lime-soft); color: var(--g-lime-500); border-radius: 999px; padding: 1px 7px; font-size: 9px; }
+.g-notif-item { padding: 8px; border-radius: 9px; }
+.g-notif-item:hover { background: rgba(143, 212, 255, .06); }
+.g-notif-item strong { display: block; font-size: 11.5px; color: var(--g-text); }
+.g-notif-item p { margin: 2px 0 3px; font-size: 10px; color: var(--g-text-dim); line-height: 1.3; }
+.g-notif-item small { font-size: 8.5px; color: var(--g-text-dim); opacity: .7; }
+.g-notif-empty { padding: 18px; text-align: center; font-size: 10px; color: var(--g-text-dim); }
+.g-topbar-fab .profile-wrap { -webkit-app-region: no-drag; }
 
 /* ---- glass panel body — SUBTRACT shape: concave notch (top-right) wraps the topbar FAB ---- */
 .g-deck-panel {
@@ -4256,7 +4289,7 @@ body {
   /* Boolean-Subtract: TWO notches — top-right (topbar FAB) + bottom-left
      (sidebar + power FABs). The G-Signal cards sit ON the panel's bottom-right
      (grounded on frost), so there is no bottom-right cut. */
-  --ntw: 256px; --nth: 58px;   /* top-right notch (topbar, telemetry removed) */
+  --ntw: 324px; --nth: 58px;   /* top-right notch — wraps the topbar (brand+ver+update+bell+profile) */
   --nlw: 72px; --nlt: 286px;   /* bottom-left notch (sidebar + power); top panel area extended down for the P1-P5 rail */
   --clip-top: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% 100%, var(--nlw) 100%, var(--nlw) var(--nlt), 0 var(--nlt));
   clip-path: var(--clip-top);
