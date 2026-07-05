@@ -3408,6 +3408,30 @@ body {
 /* content rises to the top band (beside P1); the agent card sits under the
    top-right topbar FAB, so offset it down to clear the topbar notch. */
 .board-bento .agent-bento   { grid-column: 3 !important; grid-row: 1 !important; margin-top: 40px; }
+
+/* announcer event callout — occupies the minimap cell, top-centre, over the map */
+.deck-event-banner {
+  grid-area: minimap; align-self: start; justify-self: center;
+  margin-top: 92px; z-index: 40; pointer-events: none; text-align: center;
+  animation: deb-in 0.34s cubic-bezier(0.2, 1.5, 0.5, 1);
+}
+.deck-event-banner.out { animation: deb-out 0.42s ease forwards; }
+.deb-label {
+  display: inline-block; font-weight: 900; font-size: 30px; letter-spacing: 3px;
+  padding: 7px 20px; border-radius: 10px;
+  background: rgba(6, 10, 20, 0.42);
+  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
+  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7);
+}
+.deck-event-banner.tone-gold .deb-label { color: #ffd76a; box-shadow: 0 0 26px rgba(255, 200, 80, 0.28); }
+.deck-event-banner.tone-blood .deb-label { color: #ff6072; box-shadow: 0 0 26px rgba(244, 63, 94, 0.3); }
+.deck-event-banner.tone-fire .deb-label { color: #ff9a3c; box-shadow: 0 0 26px rgba(255, 140, 50, 0.3); }
+@keyframes deb-in { from { opacity: 0; transform: scale(0.7) translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes deb-out { to { opacity: 0; transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) {
+  .deck-event-banner, .deck-event-banner.out { animation: none; }
+  .deck-event-banner.out { opacity: 0; }
+}
 .board-bento .gsignal-bento { grid-column: 3 !important; grid-row: 2 / 4 !important; }
 .board-bento .warning-bento { grid-column: 1 !important; grid-row: 3 !important; }
 .board-bento .status-bento  { grid-column: 2 !important; grid-row: 3 !important; }
