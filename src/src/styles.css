@@ -4171,25 +4171,51 @@ body {
   border-radius: 18px;
   -webkit-backdrop-filter: var(--g-blur-panel); backdrop-filter: var(--g-blur-panel);
   overflow: hidden; display: flex; flex-direction: column;
-  /* Boolean-Subtract: bite a rectangle out of the top-right for the topbar FAB.
-     FAB is right-anchored fixed ~463px wide, so the notch tracks it on resize. */
-  --notch-w: 474px; --notch-h: 60px;
+  /* Boolean-Subtract: two notches — top-right (topbar FAB) + bottom-right (G-Signal FABs).
+     Both FABs are right-anchored fixed-size, so the notches track them on resize. */
+  --ntw: 474px; --nth: 60px;   /* top-right notch (topbar) */
+  --nbw: 382px; --nbh: 206px;  /* bottom-right notch (signals) */
   clip-path: polygon(
     0 0,
-    calc(100% - var(--notch-w)) 0,
-    calc(100% - var(--notch-w)) var(--notch-h),
-    100% var(--notch-h),
-    100% 100%,
+    calc(100% - var(--ntw)) 0,
+    calc(100% - var(--ntw)) var(--nth),
+    100% var(--nth),
+    100% calc(100% - var(--nbh)),
+    calc(100% - var(--nbw)) calc(100% - var(--nbh)),
+    calc(100% - var(--nbw)) 100%,
     0 100%
   );
 }
 .g-deck-panel::before {
   content:''; position:absolute; inset:0; z-index:2; pointer-events:none;
   border:1px solid var(--g-glass-rim); border-radius:18px; box-shadow: var(--g-rim-top);
-  clip-path: polygon(0 0, calc(100% - var(--notch-w)) 0, calc(100% - var(--notch-w)) var(--notch-h), 100% var(--notch-h), 100% 100%, 0 100%);
+  clip-path: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% calc(100% - var(--nbh)), calc(100% - var(--nbw)) calc(100% - var(--nbh)), calc(100% - var(--nbw)) 100%, 0 100%);
 }
-/* content clears the top-right notch (panel now extends up to y10; content starts ~y70) */
+/* content clears the top-right notch (panel extends up to y10; content starts ~y70) */
 .g-deck-panel .surface { flex: 1; min-height: 0; overflow: hidden; padding: 62px 16px 16px; }
+
+/* ---- G-Signal FABs (D/E/F/G) — float in the bottom-right notch (dashboard only) ---- */
+.g-signals-fab {
+  position: absolute; right: 10px; bottom: 10px; width: 372px; height: 196px; z-index: var(--g-z-fab);
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px;
+}
+.g-sig {
+  position: relative; border-radius: var(--g-r-fab); background: var(--g-fab); border: 1px solid var(--g-fab-rim);
+  box-shadow: var(--g-shadow-fab); -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
+  padding: 12px 14px; display: flex; flex-direction: column;
+}
+.g-sig .sg-tag { position: absolute; top: 9px; right: 12px; font-size: 9px; font-weight: 800; color: var(--g-text-dim); opacity: .5; }
+.g-sig .sg-label { font-size: 9px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--g-text-dim); }
+.g-sig .sg-val { font-size: 26px; font-weight: 800; margin: auto 0 8px; font-variant-numeric: tabular-nums; line-height: 1; }
+.g-sig .sg-bar { height: 6px; border-radius: 4px; background: rgba(143, 212, 255, .12); overflow: hidden; }
+.g-sig .sg-fill { height: 100%; border-radius: 4px; }
+.g-sig.hero { background: rgba(163, 230, 53, .9); border-color: transparent; color: #0c1206; }
+.g-sig.hero .sg-label, .g-sig.hero .sg-tag { color: rgba(12, 18, 6, .6); }
+.g-sig.hero .sg-bar { background: rgba(12, 18, 6, .18); }
+.g-sig.hero .sg-fill { background: #0c1206; }
+.sg-fill-ice { background: var(--g-ice-500); }
+.sg-fill-safe { background: var(--g-safe); }
+.sg-fill-warn { background: var(--g-warn); }
 .g-deck-panel .surface.page-voice,
 .g-deck-panel .surface.page-account,
 .g-deck-panel .surface.page-settings,

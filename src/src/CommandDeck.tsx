@@ -59,6 +59,13 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   const gName = displayName || (email ? email.split("@")[0] : "Guest");
   const gSub = email || data.agentSector.title;
 
+  // G-Signal values for the bottom-right notch FABs (dashboard tab)
+  const isPregame = data.match.minimapState === "empty";
+  const enemyMissing = isPregame ? 0 : data.heroes.filter((h) => h.team === "enemy" && h.state === "missing").length;
+  const gankRisk = isPregame ? 0 : Math.min(100, 26 + enemyMissing * 24 + data.match.activeAlerts * 8);
+  const safePush = isPregame ? 0 : Math.max(0, 88 - enemyMissing * 18 - data.match.activeAlerts * 10);
+  const vision = data.signals.find((s) => s.label.toLowerCase().startsWith("vision"))?.value ?? "—";
+
   const error: string | null = null;
 
   return (
@@ -143,6 +150,36 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
           {tab === "account" && <AccountPage />}
         </div>
       </main>
+
+      {/* G-Signal FABs (D/E/F/G) — float in the bottom-right Subtract notch */}
+      {tab === "dashboard" && (
+        <div className="g-signals-fab">
+          <div className="g-sig">
+            <span className="sg-tag">D</span>
+            <span className="sg-label">Enemy Missing</span>
+            <span className="sg-val">{enemyMissing}</span>
+            <div className="sg-bar"><div className="sg-fill sg-fill-ice" style={{ width: `${Math.min(100, enemyMissing * 20)}%` }} /></div>
+          </div>
+          <div className="g-sig hero">
+            <span className="sg-tag">E</span>
+            <span className="sg-label">Gank Risk</span>
+            <span className="sg-val">{gankRisk}%</span>
+            <div className="sg-bar"><div className="sg-fill" style={{ width: `${gankRisk}%` }} /></div>
+          </div>
+          <div className="g-sig">
+            <span className="sg-tag">F</span>
+            <span className="sg-label">Safe Push</span>
+            <span className="sg-val">{safePush}%</span>
+            <div className="sg-bar"><div className="sg-fill sg-fill-safe" style={{ width: `${safePush}%` }} /></div>
+          </div>
+          <div className="g-sig">
+            <span className="sg-tag">G</span>
+            <span className="sg-label">Vision</span>
+            <span className="sg-val">{vision}</span>
+            <div className="sg-bar"><div className="sg-fill sg-fill-warn" style={{ width: "40%" }} /></div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
