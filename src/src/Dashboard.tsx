@@ -134,8 +134,8 @@ export default function Dashboard() {
                 <span />
               </div>
             </div>
+            <DeckEventBanner />
             <div className="agent-overlay">
-              <DeckEventBanner />
               <AgentFeed lines={data.agentSector.summary} />
             </div>
           </div>

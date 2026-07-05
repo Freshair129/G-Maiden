@@ -3417,30 +3417,31 @@ body {
    top-right topbar FAB, so offset it down to clear the topbar notch. */
 .board-bento .agent-bento   { grid-column: 3 !important; grid-row: 1 !important; margin-top: 40px; }
 
-/* announcer event callout — sits inside the Agent sector, above the caster feed.
-   Centred over the LEFT half (the dark side of the art, aligned with the caster
-   text) so it clears Maiden on the right and never gets clipped by the edge. */
+/* announcer event callout — absolutely placed in the Agent sector, INDEPENDENT
+   of the caster feed (so it never shifts when the feed's line count changes).
+   Vertically centred; horizontally on a 10-col grid at cols 2-4 (10%..40%). */
 .deck-event-banner {
-  align-self: center; position: relative; right: 17%; /* nudge to the left half */
-  text-align: center; pointer-events: none;
-  animation: deb-in 0.34s cubic-bezier(0.2, 1.5, 0.5, 1);
+  position: absolute; left: 10%; top: 50%; transform: translateY(-50%);
+  z-index: 6; text-align: left; pointer-events: none; /* left edge at grid col 2 (of 10) */
 }
-.deck-event-banner.out { animation: deb-out 0.42s ease forwards; }
+/* the label carries the pop animation (parent owns the centring transform) */
 .deb-label {
   display: inline-block; white-space: nowrap;
   font-weight: 900; font-size: 15px; letter-spacing: 1.5px;
   padding: 5px 13px; border-radius: 8px;
   background: rgba(6, 10, 20, 0.55);
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+  animation: deb-in 0.34s cubic-bezier(0.2, 1.5, 0.5, 1);
 }
+.deck-event-banner.out .deb-label { animation: deb-out 0.42s ease forwards; }
 .deck-event-banner.tone-gold .deb-label { color: #ffd76a; box-shadow: 0 0 22px rgba(255, 200, 80, 0.3); }
 .deck-event-banner.tone-blood .deb-label { color: #ff6072; box-shadow: 0 0 22px rgba(244, 63, 94, 0.32); }
 .deck-event-banner.tone-fire .deb-label { color: #ff9a3c; box-shadow: 0 0 22px rgba(255, 140, 50, 0.32); }
 @keyframes deb-in { from { opacity: 0; transform: scale(0.7) translateY(-8px); } to { opacity: 1; transform: none; } }
 @keyframes deb-out { to { opacity: 0; transform: scale(1.12); } }
 @media (prefers-reduced-motion: reduce) {
-  .deck-event-banner, .deck-event-banner.out { animation: none; }
-  .deck-event-banner.out { opacity: 0; }
+  .deb-label { animation: none; }
+  .deck-event-banner.out .deb-label { animation: none; opacity: 0; }
 }
 .board-bento .gsignal-bento { grid-column: 3 !important; grid-row: 2 / 4 !important; }
 .board-bento .warning-bento { grid-column: 1 !important; grid-row: 3 !important; }
