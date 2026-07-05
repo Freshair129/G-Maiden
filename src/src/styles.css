@@ -4164,16 +4164,32 @@ body {
 .g-topbar-fab .profile-wrap,
 .g-topbar-fab .window-controls { -webkit-app-region: no-drag; }
 
-/* ---- glass panel body (hosts active tab) ---- */
+/* ---- glass panel body — SUBTRACT shape: concave notch (top-right) wraps the topbar FAB ---- */
 .g-deck-panel {
-  position: absolute; left: 82px; top: 68px; right: 10px; bottom: 10px; z-index: var(--g-z-content);
+  position: absolute; left: 82px; top: 10px; right: 10px; bottom: 10px; z-index: var(--g-z-content);
   background: linear-gradient(158deg, var(--g-glass-a), var(--g-glass-b));
-  border: 1px solid var(--g-glass-rim); border-radius: 18px;
+  border-radius: 18px;
   -webkit-backdrop-filter: var(--g-blur-panel); backdrop-filter: var(--g-blur-panel);
   overflow: hidden; display: flex; flex-direction: column;
+  /* Boolean-Subtract: bite a rectangle out of the top-right for the topbar FAB.
+     FAB is right-anchored fixed ~463px wide, so the notch tracks it on resize. */
+  --notch-w: 474px; --notch-h: 60px;
+  clip-path: polygon(
+    0 0,
+    calc(100% - var(--notch-w)) 0,
+    calc(100% - var(--notch-w)) var(--notch-h),
+    100% var(--notch-h),
+    100% 100%,
+    0 100%
+  );
 }
-.g-deck-panel::before { content:''; position:absolute; inset:0; border-radius:18px; box-shadow: var(--g-rim-top); pointer-events:none; }
-.g-deck-panel .surface { flex: 1; min-height: 0; overflow: hidden; padding: 14px; }
+.g-deck-panel::before {
+  content:''; position:absolute; inset:0; z-index:2; pointer-events:none;
+  border:1px solid var(--g-glass-rim); border-radius:18px; box-shadow: var(--g-rim-top);
+  clip-path: polygon(0 0, calc(100% - var(--notch-w)) 0, calc(100% - var(--notch-w)) var(--notch-h), 100% var(--notch-h), 100% 100%, 0 100%);
+}
+/* content clears the top-right notch (panel now extends up to y10; content starts ~y70) */
+.g-deck-panel .surface { flex: 1; min-height: 0; overflow: hidden; padding: 62px 16px 16px; }
 .g-deck-panel .surface.page-voice,
 .g-deck-panel .surface.page-account,
 .g-deck-panel .surface.page-settings,
