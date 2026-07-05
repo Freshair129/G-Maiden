@@ -23,6 +23,12 @@ const OLLAMA = process.env.OLLAMA_HOST || "http://127.0.0.1:11434";
 
 function openrouterKey() {
   if (process.env.OPENROUTER_API_KEY) return process.env.OPENROUTER_API_KEY;
+  // local key file — paste your OpenRouter key here; it is gitignored (.openrouter.key)
+  const keyFile = join(HERE, ".openrouter.key");
+  if (existsSync(keyFile)) {
+    const k = readFileSync(keyFile, "utf8").trim();
+    if (k) return k;
+  }
   // fall back to RWANG's .env (the user's own key) without printing it
   const envPath = "G:/GenesisBlock_Dev/Rwang_remote/.env";
   if (existsSync(envPath)) {

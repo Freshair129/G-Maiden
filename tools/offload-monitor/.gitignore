@@ -1,0 +1,6 @@
+# secrets — never commit
+.openrouter.key
+.env
+# runtime append log + local UI backup
+offload-log.jsonl
+index.v1.html
