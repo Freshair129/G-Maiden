@@ -4167,9 +4167,12 @@ body {
 /* ---- glass panel body — SUBTRACT shape: concave notch (top-right) wraps the topbar FAB ---- */
 .g-deck-panel {
   position: absolute; left: 82px; top: 10px; right: 10px; bottom: 10px; z-index: var(--g-z-content);
-  background: linear-gradient(158deg, var(--g-glass-a), var(--g-glass-b));
+  /* more visible frosted fill so the concave Subtract silhouette reads over the dark void */
+  background: linear-gradient(158deg, rgba(36, 48, 78, 0.52), rgba(14, 19, 33, 0.60));
   border-radius: 18px;
   -webkit-backdrop-filter: var(--g-blur-panel); backdrop-filter: var(--g-blur-panel);
+  /* rim + depth that FOLLOW the clip-path shape (drop-shadow respects clip-path) */
+  filter: drop-shadow(0 0 1px rgba(160, 200, 255, 0.45)) drop-shadow(0 16px 40px rgba(0, 0, 0, 0.5));
   overflow: hidden; display: flex; flex-direction: column;
   /* Boolean-Subtract: two notches — top-right (topbar FAB) + bottom-right (G-Signal FABs).
      Both FABs are right-anchored fixed-size, so the notches track them on resize. */
