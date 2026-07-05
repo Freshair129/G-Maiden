@@ -68,7 +68,7 @@ async function runOpenRouter(model, prompt) {
   const r = await fetch("https://openrouter.ai/api/v1/chat/completions", {
     method: "POST",
     headers: { "content-type": "application/json", authorization: `Bearer ${key}` },
-    body: JSON.stringify({ model, messages: [{ role: "user", content: prompt }] }),
+    body: JSON.stringify({ model, messages: [{ role: "user", content: prompt }], max_tokens: 1024 }),
   });
   if (!r.ok) throw new Error(`openrouter ${r.status}: ${await r.text()}`);
   const j = await r.json();

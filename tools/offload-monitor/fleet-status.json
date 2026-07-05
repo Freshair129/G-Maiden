@@ -40,7 +40,7 @@
     { "id": "U6-battle", "title": "Hero slots + minimap + agent card", "status": "pending" },
     { "id": "U7-signals", "title": "Activity log + G-Signal cards", "status": "pending" },
     { "id": "monitor", "title": "G-Offload Monitor tooling", "status": "done" },
-    { "id": "openrouter", "title": "OpenRouter provider wire", "status": "blocked", "note": "needs OPENROUTER_API_KEY in env" },
+    { "id": "openrouter", "title": "OpenRouter provider wire", "status": "done", "note": "key in .openrouter.key; cap max_tokens for low-credit accounts" },
     { "id": "cr005", "title": "CR-005 landing / auth / community", "status": "draft" }
   ]
 }
