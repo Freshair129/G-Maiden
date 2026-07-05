@@ -1,5 +1,5 @@
-import { useEffect, useMemo, useState, type ReactNode } from "react";
-import { listen } from "@tauri-apps/api/event";
+import { useState, useRef, useEffect, type ReactNode } from "react";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import VoicePacksPage from "./VoicePacksPage";
 import QuotaCard from "./QuotaCard";
 import {
@@ -14,210 +14,234 @@ import { useCompanionData } from "./companion";
 import Dashboard from "./Dashboard";
 import AccountPage from "./AccountPage";
 import { useProfile } from "./profile";
+import {
+  IconDashboard,
+  IconLive,
+  IconVoice,
+  IconBuild,
+  IconInsights,
+  IconSettings
+} from "./DeckIcons";
 import "./styles.css";
 
-const NAV: Array<{ key: string; label: string; group: string; icon: string }> = [
-  { key: "dashboard", label: "Dashboard", group: "Real-Time", icon: "DB" },
-  { key: "live", label: "Live Match", group: "Real-Time", icon: "LV" },
-  { key: "companion", label: "Companion", group: "Assistant", icon: "AI" },
-  { key: "voice", label: "Voice Packs", group: "Assistant", icon: "VO" },
-  { key: "build", label: "Build Advisor", group: "Analysis", icon: "BD" },
-  { key: "insights", label: "Match Insights", group: "Analysis", icon: "IN" },
-  { key: "history", label: "History", group: "Analysis", icon: "HS" },
-  { key: "settings", label: "Settings", group: "System", icon: "ST" }
-];
-
-// Monochrome line icons (inherit currentColor) — replace the DB/LV letter tags.
-const NAV_ICONS: Record<string, ReactNode> = {
-  dashboard: (<><rect x="3" y="3" width="7.5" height="7.5" rx="1.5" /><rect x="13.5" y="3" width="7.5" height="7.5" rx="1.5" /><rect x="3" y="13.5" width="7.5" height="7.5" rx="1.5" /><rect x="13.5" y="13.5" width="7.5" height="7.5" rx="1.5" /></>),
-  live: (<><circle cx="12" cy="12" r="8.5" /><path d="M10 8.5l6 3.5-6 3.5z" fill="currentColor" stroke="none" /></>),
-  companion: (<path d="M12 2.5l2.2 6.3 6.3 2.2-6.3 2.2L12 19.5l-2.2-6.3L3.5 11l6.3-2.2z" fill="currentColor" stroke="none" />),
-  voice: (<><path d="M4 9.5h3l4.5-3.5v12L7 14.5H4z" /><path d="M16 9a4.5 4.5 0 0 1 0 6" /></>),
-  build: (<><path d="M12 2.6l8.4 4.7v9.4L12 21.4l-8.4-4.7V7.3z" /><path d="M12 12l8.4-4.7M12 12v9.4M12 12L3.6 7.3" /></>),
-  insights: (<path d="M5 20V11M12 20V4M19 20v-6" />),
-  history: (<><circle cx="12" cy="12" r="8.5" /><path d="M12 7.5V12l3 2" /></>),
-  settings: (<><path d="M4 7h9M4 12h16M11 17h9" /><circle cx="16" cy="7" r="2.3" fill="currentColor" stroke="none" /><circle cx="8" cy="17" r="2.3" fill="currentColor" stroke="none" /></>)
-};
-
-function NavIcon({ name }: { name: string }) {
+// companion + history have no codex glyph — tiny inline fallbacks
+function IconCompanion({ size = 20 }: { size?: number }) {
   return (
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {NAV_ICONS[name] ?? null}
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <rect x="4" y="7" width="16" height="11" rx="3" /><path d="M12 4v3M9 12h.01M15 12h.01" />
+    </svg>
+  );
+}
+function IconHistory({ size = 20 }: { size?: number }) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1M3.5 5v3.5H7" /><path d="M12 8v4l2.5 1.5" />
     </svg>
   );
 }
 
-// Phase 1 (CR-002): the command deck runs standalone with mock data. The old
-// G-Orchestra store (startPolling/useStore) is gone; loading/error are static
-// and the sidebar count derives from companion data.
+const NAV: Array<{ key: string; label: string; Icon: (p: { size?: number }) => ReactNode }> = [
+  { key: "dashboard", label: "Dashboard", Icon: IconDashboard },
+  { key: "live", label: "Live", Icon: IconLive },
+  { key: "companion", label: "Companion", Icon: IconCompanion },
+  { key: "voice", label: "Voice", Icon: IconVoice },
+  { key: "build", label: "Build", Icon: IconBuild },
+  { key: "insights", label: "Insights", Icon: IconInsights },
+  { key: "history", label: "History", Icon: IconHistory },
+  { key: "settings", label: "Settings", Icon: IconSettings }
+];
+
 export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNode } = {}) {
   const [tab, setTab] = useState("dashboard");
   const [profileOpen, setProfileOpen] = useState(false);
-  const [captureMode, setCaptureMode] = useState<string>("");
   const { data } = useCompanionData();
   const { displayName, email } = useProfile();
-  // Topbar identity: GID display name → email local-part → signed-out placeholder.
   const gName = displayName || (email ? email.split("@")[0] : "Guest");
   const gSub = email || data.agentSector.title;
 
-  const loading = false;
-  const error: string | null = null;
-  const activeAlerts = data.match.activeAlerts || 0;
+  // G-Signal values for the bottom-right notch FABs (dashboard tab)
+  const isPregame = data.match.minimapState === "empty";
+  const enemyMissing = isPregame ? 0 : data.heroes.filter((h) => h.team === "enemy" && h.state === "missing").length;
+  const gankRisk = isPregame ? 0 : Math.min(100, 26 + enemyMissing * 24 + data.match.activeAlerts * 8);
+  const safePush = isPregame ? 0 : Math.max(0, 88 - enemyMissing * 18 - data.match.activeAlerts * 10);
+  const vision = data.signals.find((s) => s.label.toLowerCase().startsWith("vision"))?.value ?? "—";
 
-  // Re-add the capture-mode badge (DXGI / Lite) driven by the Rust backend.
-  // Guarded so it no-ops when Tauri isn't present (e.g. plain browser build).
+  // fixed 1280×800 stage scaled to fill any window (1280 → 1920) + rounded-fillet Subtract clip
+  const stageRef = useRef<HTMLDivElement>(null);
+  const panelRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    if (typeof window === "undefined") return;
-    let unlisten: (() => void) | undefined;
-    try {
-      listen<string>("capture-mode", (e) => setCaptureMode(e.payload))
-        .then((fn) => { unlisten = fn; })
-        .catch(() => {});
-    } catch {
-      /* Tauri event API unavailable */
-    }
-    return () => { if (unlisten) unlisten(); };
-  }, []);
+    const apply = () => {
+      const stage = stageRef.current;
+      if (stage) {
+        const s = Math.min(window.innerWidth / 1280, window.innerHeight / 800);
+        stage.style.transform = `translate(-50%, -50%) scale(${s})`;
+      }
+      const p = panelRef.current;
+      if (p) p.style.clipPath = `path('${buildPanelPath(p.offsetWidth, p.offsetHeight, tab === "dashboard")}')`;
+    };
+    apply();
+    window.addEventListener("resize", apply);
+    return () => window.removeEventListener("resize", apply);
+  }, [tab]);
 
-  const captureBadge = captureMode === "dxgi"
-    ? { cls: "online", label: "DXGI" }
-    : captureMode === "lite"
-      ? { cls: "warn", label: "Lite" }
-      : { cls: "idle", label: "…" };
-
-  const grouped = useMemo(() => NAV.reduce<Record<string, typeof NAV>>((acc, item) => {
-    if (!acc[item.group]) acc[item.group] = [];
-    acc[item.group].push(item);
-    return acc;
-  }, {}), []);
+  const error: string | null = null;
 
   return (
-    <div className="app shell-v2">
-      <div className="live-background" />
+    <div className="app deck-v3 g-deck">
+      <div className="g-deck-bg" />
 
-      <aside className="floating-sidebar">
-        <div className="sidebar-brand">
-          <div className="brand-mark">G</div>
-          <div className="sidebar-brand-copy">
-            <div className="brand">G-Maiden</div>
-            <div className="brand-sub">Command Deck</div>
-          </div>
-        </div>
-
-        <nav className="sidebar-nav">
-          {Object.entries(grouped).map(([group, items]) => (
-            <div key={group} className="sidebar-group">
-              <div className="nav-group-label">{group}</div>
-              {items.map(({ key, label }) => (
-                <button key={key} className={`nav-item${tab === key ? " active" : ""}`} onClick={() => setTab(key)} title={label}>
-                  <span className="nav-icon"><NavIcon name={key} /></span>
-                  <span className="nav-copy">{label}</span>
-                  {key === "dashboard" ? <small>{activeAlerts}</small> : null}
-                </button>
-              ))}
-            </div>
+      <div className="g-deck-stage" ref={stageRef}>
+      {/* sidebar FAB — icon nav */}
+      <aside className="g-sidebar-fab">
+        <div className="g-brand" title="G-Maiden">G</div>
+        <nav>
+          {NAV.map(({ key, label, Icon }) => (
+            <button
+              key={key}
+              type="button"
+              className={`g-nav-item${tab === key ? " active" : ""}`}
+              title={label}
+              aria-label={label}
+              onClick={() => setTab(key)}
+            >
+              <Icon size={20} />
+            </button>
           ))}
         </nav>
       </aside>
 
-      <div className="main-shell shell-main-v2">
-        <header className="floating-topbar">
-          <div className="topbar-left">
-            <div className={`gsi-pill ${captureBadge.cls}`} title="Screen capture mode (DXGI / Lite)">
-              <span className="gsi-dot" />
-              <span>{captureBadge.label}</span>
+      {/* topbar FAB — brand + telemetry + profile + window controls */}
+      <header className="g-topbar-fab" data-tauri-drag-region="">
+        <span className="g-logo">G-MAIDEN</span>
+
+        <div className="g-telemetry">
+          <div className="g-telchip"><span>CPU</span><strong>{pct(data.telemetry.cpuLoad)}</strong></div>
+          <div className="g-telchip"><span>RAM</span><strong>{mem(data.telemetry.ramUsedGb)}</strong></div>
+          <div className="g-telchip"><span>GPU</span><strong>{pct(data.telemetry.gpuLoad)}</strong></div>
+          <div className="g-telchip"><span>VRAM</span><strong>{mem(data.telemetry.vramUsedGb)}</strong></div>
+        </div>
+
+        <div className={`profile-wrap${profileOpen ? " open" : ""}`}>
+          <button className="profile-trigger" type="button" onClick={() => setProfileOpen((o) => !o)}>
+            <span className="profile-core">{gName.charAt(0).toUpperCase()}</span>
+            <span className="profile-copy">
+              <strong>{gName}</strong>
+              <small>{gSub}</small>
+            </span>
+            <span className="profile-caret">▾</span>
+          </button>
+          {profileOpen ? (
+            <div className="profile-dropdown">
+              <button type="button" onClick={() => { setTab("account"); setProfileOpen(false); }}><span className="dd-icon">👤</span>Account &amp; Steam</button>
+              <button type="button" onClick={() => { setTab("voice"); setProfileOpen(false); }}><span className="dd-icon">🎙</span>Voice Packs</button>
+              <div className="dd-sep" />
+              <button type="button" onClick={() => { setTab("settings"); setProfileOpen(false); }}><span className="dd-icon">⚙</span>Settings</button>
             </div>
+          ) : null}
+        </div>
 
-            <button className="topbar-search" type="button">
-              <span className="search-icon">⌕</span>
-              <span className="search-copy">Command palette / search modules</span>
-              <span className="search-hotkey">Ctrl K</span>
-            </button>
+        <div className="window-controls">
+          <button type="button" className="win-btn" onClick={() => { try { void getCurrentWindow().minimize() } catch { /* noop */ } }}>─</button>
+          <button type="button" className="win-btn" onClick={() => { try { void getCurrentWindow().toggleMaximize() } catch { /* noop */ } }}>□</button>
+          <button type="button" className="win-btn win-close" onClick={() => { try { void getCurrentWindow().close() } catch { /* noop */ } }}>✕</button>
+        </div>
+      </header>
+
+      {/* P1–P5 agent anchor rail (dashboard) — spatial anchors for agent comms, not nav */}
+      {tab === "dashboard" && (
+        <div className="g-anchor-rail">
+          {["P1", "P2", "P3", "P4", "P5"].map((p, i) => (
+            <div key={p} className={`g-anchor${i === 0 ? " active" : ""}`} title={`Anchor ${p}`}>{p}</div>
+          ))}
+        </div>
+      )}
+
+      {/* glass panel — hosts the active tab (rich, live-wired content preserved) */}
+      <main ref={panelRef} className={`g-deck-panel${tab === "dashboard" ? " has-signals" : ""}`}>
+        {error ? <div className="banner err">engine offline ({error})</div> : null}
+        <div className={`surface page-${tab}`}>
+          {tab === "dashboard" && <Dashboard />}
+          {tab === "live" && <LiveMatchPage />}
+          {tab === "companion" && <CompanionPage />}
+          {tab === "build" && <BuildAdvisorPage />}
+          {tab === "insights" && <InsightsPage />}
+          {tab === "voice" && <VoicePacksPage />}
+          {tab === "history" && <HistoryPage />}
+          {tab === "settings" && (
+            settingsPanel ?? (
+              <div style={{ display: "grid", gap: 16 }}>
+                <SettingsPage />
+                <QuotaCard />
+              </div>
+            )
+          )}
+          {tab === "account" && <AccountPage />}
+        </div>
+      </main>
+
+      {/* G-Signal FABs (D/E/F/G) — float in the bottom-right Subtract notch */}
+      {tab === "dashboard" && (
+        <div className="g-signals-fab">
+          <div className="g-sig">
+            <span className="sg-tag">D</span>
+            <span className="sg-label">Enemy Missing</span>
+            <span className="sg-val">{enemyMissing}</span>
+            <div className="sg-bar"><div className="sg-fill sg-fill-ice" style={{ width: `${Math.min(100, enemyMissing * 20)}%` }} /></div>
           </div>
-
-          <div className="topbar-right">
-            <span className="utility-chip">Alerts {activeAlerts}</span>
-            <span className="utility-chip">{data.match.overlayMode}</span>
-            <div className={`profile-wrap${profileOpen ? " open" : ""}`}>
-              <button className="profile-trigger" type="button" onClick={() => setProfileOpen((open) => !open)}>
-                <span className="profile-core">{gName.charAt(0).toUpperCase()}</span>
-                <span className="profile-copy">
-                  <strong>{gName}</strong>
-                  <small>{gSub}</small>
-                </span>
-                <span className="profile-caret">▾</span>
-              </button>
-              {profileOpen ? (
-                <div className="profile-dropdown">
-                  <button type="button" onClick={() => { setTab("account"); setProfileOpen(false); }}>Account &amp; Steam</button>
-                  <button type="button" onClick={() => { setTab("voice"); setProfileOpen(false); }}>Voice Packs</button>
-                  <button type="button" onClick={() => { setTab("settings"); setProfileOpen(false); }}>Settings</button>
-                </div>
-              ) : null}
-            </div>
+          <div className="g-sig hero">
+            <span className="sg-tag">E</span>
+            <span className="sg-label">Gank Risk</span>
+            <span className="sg-val">{gankRisk}%</span>
+            <div className="sg-bar"><div className="sg-fill" style={{ width: `${gankRisk}%` }} /></div>
           </div>
-        </header>
-
-        {error ? (
-          <div className="banner err">engine offline ({error})</div>
-        ) : null}
-
-        {loading ? <div className="loading">loading tactical dashboard...</div> : (
-          <main className={`surface page-${tab}`}>
-            {tab === "dashboard" && <Dashboard />}
-            {tab === "live" && <LiveMatchPage />}
-            {tab === "companion" && <CompanionPage />}
-            {tab === "build" && <BuildAdvisorPage />}
-            {tab === "insights" && <InsightsPage />}
-            {tab === "voice" && <VoicePacksPage />}
-            {tab === "history" && <HistoryPage />}
-            {tab === "settings" && (
-              settingsPanel ?? (
-                <div style={{ display: "grid", gap: 16 }}>
-                  <SettingsPage />
-                  <QuotaCard />
-                </div>
-              )
-            )}
-            {tab === "account" && <AccountPage />}
-          </main>
-        )}
-
-        <footer className="telemetry-footer card-shell">
-          <TelemetryMetric label="CPU Load" value={pct(data.telemetry.cpuLoad)} sub={temp(data.telemetry.cpuTemp)} />
-          <TelemetryMetric label="RAM Used" value={mem(data.telemetry.ramUsedGb)} sub={memTotal(data.telemetry.ramTotalGb)} />
-          <TelemetryMetric label="GPU Load" value={pct(data.telemetry.gpuLoad)} sub={temp(data.telemetry.gpuTemp)} />
-          <TelemetryMetric label="VRAM Used" value={mem(data.telemetry.vramUsedGb)} sub={memTotal(data.telemetry.vramTotalGb)} />
-          <div className="telemetry-sync">Last sync {new Date(data.updatedAt).toLocaleTimeString()}</div>
-        </footer>
-      </div>
+          <div className="g-sig">
+            <span className="sg-tag">F</span>
+            <span className="sg-label">Safe Push</span>
+            <span className="sg-val">{safePush}%</span>
+            <div className="sg-bar"><div className="sg-fill sg-fill-safe" style={{ width: `${safePush}%` }} /></div>
+          </div>
+          <div className="g-sig">
+            <span className="sg-tag">G</span>
+            <span className="sg-label">Vision</span>
+            <span className="sg-val">{vision}</span>
+            <div className="sg-bar"><div className="sg-fill sg-fill-warn" style={{ width: "40%" }} /></div>
+          </div>
+        </div>
+      )}
+      </div>{/* /g-deck-stage */}
     </div>
   );
 }
 
-// Telemetry formatters. A negative value is the NO_SENSOR sentinel (buildTelemetry)
-// — the local governor measures only CPU%/RAM, so unmeasured metrics render "—".
+// build a rounded-corner (fillet) SVG path for the concave Subtract panel
+function buildPanelPath(w: number, h: number, hasSignals: boolean): string {
+  const ntw = 474, nth = 60, nbw = 382, nbh = 206;
+  const pts: Array<[number, number]> = hasSignals
+    ? [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h - nbh], [w - nbw, h - nbh], [w - nbw, h], [0, h]]
+    : [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h], [0, h]];
+  return roundedPath(pts, 16);
+}
+function roundedPath(pts: Array<[number, number]>, r: number): string {
+  const n = pts.length;
+  let d = "";
+  for (let i = 0; i < n; i++) {
+    const [x0, y0] = pts[(i - 1 + n) % n];
+    const [x1, y1] = pts[i];
+    const [x2, y2] = pts[(i + 1) % n];
+    const d1 = Math.hypot(x0 - x1, y0 - y1) || 1;
+    const d2 = Math.hypot(x2 - x1, y2 - y1) || 1;
+    const rr = Math.min(r, d1 / 2, d2 / 2);
+    const ax = x1 + ((x0 - x1) / d1) * rr, ay = y1 + ((y0 - y1) / d1) * rr;
+    const bx = x1 + ((x2 - x1) / d2) * rr, by = y1 + ((y2 - y1) / d2) * rr;
+    d += (i === 0 ? `M ${ax} ${ay} ` : `L ${ax} ${ay} `) + `Q ${x1} ${y1} ${bx} ${by} `;
+  }
+  return d + "Z";
+}
+
 function pct(v: number): string {
   return v < 0 ? "—" : `${v}%`;
 }
-function temp(v: number): string {
-  return v < 0 ? "—" : `${v}°C`;
-}
 function mem(gb: number): string {
   if (gb < 0) return "—";
-  return gb < 1 ? `${Math.round(gb * 1024)} MB` : `${gb.toFixed(1)} GB`;
-}
-function memTotal(gb: number): string {
-  if (gb < 0) return "";
-  return gb < 1 ? `/ ${Math.round(gb * 1024)} MB` : `/ ${gb.toFixed(1)} GB`;
-}
-
-function TelemetryMetric({ label, value, sub }: { label: string; value: string; sub: string }) {
-  return (
-    <div className="telemetry-metric">
-      <span>{label}</span>
-      <strong>{value}</strong>
-      <small>{sub}</small>
-    </div>
-  );
+  return gb < 1 ? `${Math.round(gb * 1024)}M` : `${gb.toFixed(1)}G`;
 }

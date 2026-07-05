@@ -11,6 +11,17 @@
 - `docs/product/roadmap.md` — roadmap หลักที่ใช้งานปัจจุบัน
 - `docs/product/roadmap-legacy.md` — roadmap รุ่นเก่าที่ยังเก็บไว้เป็นประวัติ
 
+## Design System
+
+- `docs/design-system/README.md` — **SSOT hub** ของ design system (Command Deck HUD v2)
+- `docs/design-system/01-foundations.md` — principles, visual language, surfaces, NFR gate, a11y
+- `docs/design-system/02-tokens.md` — design tokens (color/type/space/radius/elevation/blur/motion) + `:root`
+- `docs/design-system/03-layout.md` — Subtract-shape geometry, dimensions, responsive
+- `docs/design-system/04-components.md` — component catalog (anatomy/dim/states)
+- `docs/design-system/05-sitemap-ia.md` — IA, navigation, page inventory, flows
+- `docs/design-system/06-stack.md` — tech stack + code map + migration checklist
+- `docs/design-system/assets/` — annotated wireframe/subtract-shape/swatches (SVG) + glass prototype (HTML)
+
 ## Architecture
 
 - `docs/architecture/tech-stack.md` — เทคโนโลยีและเหตุผลการเลือก

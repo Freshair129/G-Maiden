@@ -1,0 +1,42 @@
+<svg viewBox="0 0 760 420" xmlns="http://www.w3.org/2000/svg" font-family="Segoe UI, system-ui, sans-serif">
+  <rect width="760" height="420" fill="#06070A"/>
+  <text x="24" y="34" fill="#eef4fb" font-size="16" font-weight="800">G-Maiden — token swatches</text>
+
+  <!-- ground -->
+  <text x="24" y="66" fill="#8ba4c6" font-size="12" font-weight="700">GROUND / GLASS</text>
+  <g font-size="10" fill="#8ba4c6">
+    <rect x="24"  y="76" width="90" height="48" rx="8" fill="#06070A" stroke="#96c8ff33"/><text x="30" y="140">void 06070A</text>
+    <rect x="124" y="76" width="90" height="48" rx="8" fill="#0B0E16" stroke="#96c8ff33"/><text x="130" y="140">ink 0B0E16</text>
+    <rect x="224" y="76" width="90" height="48" rx="8" fill="#222e4a" fill-opacity="0.5" stroke="#96c8ff33"/><text x="230" y="140">glass</text>
+    <rect x="324" y="76" width="90" height="48" rx="8" fill="#96c8ff" fill-opacity="0.05" stroke="#96c8ff33"/><text x="330" y="140">card</text>
+  </g>
+
+  <!-- ice -->
+  <text x="24" y="176" fill="#8ba4c6" font-size="12" font-weight="700">ICE (primary)</text>
+  <g font-size="10" fill="#0b0e16">
+    <rect x="24"  y="186" width="86" height="44" rx="8" fill="#CFECFF"/><text x="30" y="212">100</text>
+    <rect x="120" y="186" width="86" height="44" rx="8" fill="#9BE7FF"/><text x="126" y="212">300</text>
+    <rect x="216" y="186" width="86" height="44" rx="8" fill="#8FD4FF"/><text x="222" y="212">500★</text>
+    <rect x="312" y="186" width="86" height="44" rx="8" fill="#64C7FF"/><text x="318" y="212">600</text>
+    <rect x="408" y="186" width="86" height="44" rx="8" fill="#226CFF"/><text x="414" y="212" fill="#eef4fb">700</text>
+  </g>
+
+  <!-- lime + semantic -->
+  <text x="24" y="272" fill="#8ba4c6" font-size="12" font-weight="700">LIME (signal) · SEMANTIC</text>
+  <g font-size="10" fill="#0c1206">
+    <rect x="24"  y="282" width="110" height="44" rx="8" fill="#A3E635"/><text x="30" y="308">lime 500</text>
+    <rect x="144" y="282" width="90" height="44" rx="8" fill="#22C55E"/><text x="150" y="308">safe</text>
+    <rect x="244" y="282" width="90" height="44" rx="8" fill="#31D0A0"/><text x="250" y="308">ok</text>
+    <rect x="344" y="282" width="90" height="44" rx="8" fill="#F59E0B"/><text x="350" y="308">warn</text>
+    <rect x="444" y="282" width="90" height="44" rx="8" fill="#F43F5E"/><text x="450" y="308" fill="#fff">danger</text>
+  </g>
+
+  <!-- text -->
+  <text x="24" y="368" fill="#8ba4c6" font-size="12" font-weight="700">TEXT</text>
+  <g font-size="13">
+    <text x="24"  y="396" fill="#EEF4FB">text EEF4FB</text>
+    <text x="180" y="396" fill="#8BA4C6">dim 8BA4C6</text>
+    <text x="330" y="396" fill="#5E7699">mute 5E7699</text>
+    <text x="470" y="396" fill="#6B8BB5">ice-dim 6B8BB5</text>
+  </g>
+</svg>

@@ -6,6 +6,30 @@
   --txt: #d8e6f2; --muted: #8fa6c0;
   --ok: #31d0a0; --warn: #ffb86b; --danger: #ff5c7a;
 }
+
+/* === Design-system v2 tokens (docs/design-system/02-tokens.md §9). Additive —
+   legacy vars above stay until per-component migration (§1.6). Single :root. === */
+:root {
+  --g-void: #06070A; --g-ink: #0B0E16;
+  --g-glass-a: rgba(34,46,74,0.30); --g-glass-b: rgba(10,13,22,0.42);
+  --g-glass-rim: rgba(160,200,255,0.16);
+  --g-card: rgba(150,200,255,0.05); --g-card-line: rgba(150,200,255,0.08);
+  --g-fab: rgba(14,18,28,0.45); --g-fab-rim: rgba(160,200,255,0.14);
+  --g-ice-100: #CFECFF; --g-ice-300: #9BE7FF; --g-ice-500: #8FD4FF;
+  --g-ice-600: #64C7FF; --g-ice-700: #226CFF; --g-ice-dim: #6B8BB5;
+  --g-lime-500: #A3E635; --g-lime-soft: rgba(163,230,53,0.16); --g-lime-line: rgba(163,230,53,0.34);
+  --g-text: #EEF4FB; --g-text-dim: #8BA4C6; --g-text-mute: #5E7699;
+  --g-safe: #22C55E; --g-ok: #31D0A0; --g-warn: #F59E0B; --g-danger: #F43F5E;
+  --g-font-ui: "Segoe UI", system-ui, sans-serif; --g-font-mono: Consolas, ui-monospace, monospace;
+  --g-r-sm: 8px; --g-r-card: 11px; --g-r-panel: 14px; --g-r-fab: 16px; --g-r-pill: 999px;
+  --g-r-frame-outer: 28px; --g-r-frame-notch: 20px;
+  --g-shadow-fab: 0 12px 34px rgba(0,0,0,0.42); --g-shadow-panel: 0 18px 50px rgba(0,0,0,0.55);
+  --g-rim-top: inset 0 1px 0 rgba(255,255,255,0.06);
+  --g-blur-panel: blur(30px) saturate(150%); --g-blur-fab: blur(24px) saturate(160%); --g-blur-tile: blur(6px);
+  --g-t-micro: 0.12s; --g-t-hover: 0.15s; --g-t-state: 0.2s; --g-t-bar: 0.3s;
+  --g-t-ambient: 14s ease-in-out infinite; --g-ease: ease-out;
+  --g-z-bg: 0; --g-z-panel: 1; --g-z-content: 10; --g-z-fab: 100; --g-z-pop: 200;
+}
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
 body { background: var(--bg); color: var(--txt); font: 13px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
@@ -1697,14 +1721,8 @@ body {
   background: linear-gradient(180deg, rgba(8, 14, 28, 0.96), rgba(7, 11, 23, 0.94));
   backdrop-filter: blur(16px);
   box-shadow: 0 24px 60px rgba(0, 0, 0, 0.38);
-  transition: width 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+  transition: box-shadow 0.25s ease, border-color 0.25s ease;
   overflow: hidden;
-}
-
-.floating-sidebar:hover {
-  width: 232px;
-  border-color: rgba(129, 206, 255, 0.32);
-  box-shadow: 0 28px 72px rgba(0, 0, 0, 0.46), 0 0 0 1px rgba(129, 206, 255, 0.1);
 }
 
 .sidebar-brand {
@@ -1714,6 +1732,10 @@ body {
   justify-content: center;
 }
 
+/* Icon-only rail — labels stay hidden permanently. A width-on-hover expand
+   used to overlay the dashboard behind it (absolute-positioned rail) and
+   jittered on collapse; label discovery now relies on the native `title`
+   tooltip on each nav-item instead. */
 .sidebar-brand-copy,
 .nav-copy,
 .nav-group-label,
@@ -1724,22 +1746,6 @@ body {
   opacity: 0;
   width: 0;
   overflow: hidden;
-  transition: opacity 0.18s ease;
-}
-
-.floating-sidebar:hover .sidebar-brand {
-  justify-content: flex-start;
-}
-
-.floating-sidebar:hover .sidebar-brand-copy,
-.floating-sidebar:hover .nav-copy,
-.floating-sidebar:hover .nav-group-label,
-.floating-sidebar:hover .sidebar-foot span,
-.floating-sidebar:hover .sidebar-foot .eyebrow,
-.floating-sidebar:hover .sidebar-foot strong,
-.floating-sidebar:hover .nav-item small {
-  opacity: 1;
-  width: auto;
 }
 
 .sidebar-nav {
@@ -1797,10 +1803,6 @@ body {
   overflow: hidden;
   text-overflow: ellipsis;
   font-size: 11px;
-}
-
-.floating-sidebar:hover .nav-item {
-  justify-content: flex-start;
 }
 
 .nav-item small {
@@ -1868,64 +1870,21 @@ body {
   padding: 8px 10px 8px 12px;
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   gap: 16px;
-  border-radius: 18px;
+  border-radius: 14px;
   border: 1px solid rgba(129, 180, 255, 0.16);
   background: linear-gradient(180deg, rgba(8, 15, 31, 0.95), rgba(8, 14, 26, 0.86));
   backdrop-filter: blur(18px);
   box-shadow: 0 22px 54px rgba(0, 0, 0, 0.3);
 }
 
-.topbar-left,
 .topbar-right {
   display: flex;
   align-items: center;
   gap: 8px;
 }
 
-.topbar-left {
-  flex: 1;
-  min-width: 0;
-}
-
-.gsi-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 8px 10px;
-  border-radius: 999px;
-  background: rgba(14, 27, 51, 0.84);
-  border: 1px solid rgba(129, 180, 255, 0.16);
-  color: #dbe9ff;
-  white-space: nowrap;
-}
-
-.gsi-dot {
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background: #f05d6d;
-  box-shadow: 0 0 0 4px rgba(240, 93, 109, 0.12), 0 0 16px rgba(240, 93, 109, 0.38);
-}
-
-.gsi-pill.online .gsi-dot {
-  background: #55e49f;
-  box-shadow: 0 0 0 4px rgba(85, 228, 159, 0.12), 0 0 16px rgba(85, 228, 159, 0.42);
-}
-
-.topbar-search {
-  flex: 1;
-  min-width: 0;
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  border: 0;
-  color: #dbe9ff;
-  border-radius: 14px;
-  background: rgba(13, 23, 42, 0.9);
-  padding: 10px 12px;
-}
 
 .profile-wrap {
   position: relative;
@@ -1935,58 +1894,116 @@ body {
 .profile-trigger {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 7px;
   border: 0;
-  border-radius: 14px;
-  padding: 6px 8px;
-  background: rgba(13, 23, 42, 0.9);
+  border-radius: 10px;
+  padding: 3px 8px 3px 3px;
+  background: rgba(13, 23, 42, 0.85);
+  border: 1px solid rgba(129, 180, 255, 0.12);
   color: #eef5ff;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  font-size: 12px;
+}
+.profile-trigger:hover {
+  background: rgba(20, 32, 58, 0.95);
+  border-color: rgba(129, 180, 255, 0.25);
+}
+.profile-wrap.open .profile-trigger {
+  background: rgba(20, 32, 58, 0.95);
+  border-color: rgba(143, 212, 255, 0.3);
 }
 
 .profile-core {
-  width: 36px;
-  height: 36px;
+  width: 28px;
+  height: 28px;
   display: grid;
   place-items: center;
-  border-radius: 14px;
-  background: linear-gradient(180deg, #2f4b88, #1a2642);
+  border-radius: 8px;
+  background: linear-gradient(135deg, #2f4b88, #1a2d52);
   color: #9be7ff;
-  font-weight: 800;
+  font-weight: 700;
+  font-size: 13px;
+  flex-shrink: 0;
 }
 
 .profile-copy {
   display: flex;
   flex-direction: column;
   align-items: flex-start;
+  line-height: 1.2;
+  gap: 1px;
+}
+.profile-copy strong {
+  font-size: 12px;
+  font-weight: 600;
+}
+.profile-copy small {
+  font-size: 10px;
+  color: #6b8bb5;
+  letter-spacing: 0.02em;
 }
 
-.profile-copy small {
-  color: #89a4c8;
+.profile-caret {
+  font-size: 10px;
+  color: #6b8bb5;
+  transition: transform 0.2s;
+  margin-left: -2px;
+}
+.profile-wrap.open .profile-caret {
+  transform: rotate(180deg);
 }
 
 .profile-dropdown {
   position: absolute;
   right: 0;
-  top: calc(100% + 10px);
-  min-width: 250px;
+  top: calc(100% + 6px);
+  min-width: 200px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 10px;
-  border-radius: 18px;
-  background: rgba(9, 15, 27, 0.98);
-  border: 1px solid rgba(129, 180, 255, 0.18);
-  box-shadow: 0 18px 40px rgba(0, 0, 0, 0.32);
+  gap: 2px;
+  padding: 6px;
+  border-radius: 12px;
+  background: rgba(9, 14, 25, 0.97);
+  border: 1px solid rgba(129, 180, 255, 0.15);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(0,0,0,0.2);
   z-index: 200;
+  backdrop-filter: blur(16px);
+  animation: dropIn 0.12s ease-out;
+}
+@keyframes dropIn {
+  from { opacity: 0; transform: translateY(-4px); }
+  to   { opacity: 1; transform: translateY(0); }
 }
 
 .profile-dropdown button {
   border: 0;
-  border-radius: 12px;
-  padding: 10px 12px;
+  border-radius: 8px;
+  padding: 8px 10px;
   text-align: left;
-  background: rgba(18, 29, 54, 0.72);
-  color: #dce9ff;
+  background: transparent;
+  color: #c4d6ee;
+  font-size: 12.5px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  transition: background 0.12s, color 0.12s;
+}
+.profile-dropdown button:hover {
+  background: rgba(143, 212, 255, 0.1);
+  color: #eef5ff;
+}
+.profile-dropdown .dd-icon {
+  width: 16px;
+  text-align: center;
+  font-size: 13px;
+  opacity: 0.6;
+}
+.profile-dropdown .dd-sep {
+  height: 1px;
+  background: rgba(129, 180, 255, 0.1);
+  margin: 2px 4px;
 }
 
 .steam-link {
@@ -3024,7 +3041,6 @@ body {
     align-items: stretch;
   }
 
-  .topbar-left,
   .topbar-right {
     flex-wrap: wrap;
   }
@@ -3337,12 +3353,9 @@ body {
 .hc-private strong { color: #dfeaf3; font-size: 11px; }
 .hc-private small { color: #7f9bbc; font-size: 8px; }
 
-/* ===== CR-002: capture-badge idle color + fit dashboard to one screen ===== */
-.gsi-pill.idle { color: var(--muted); border-color: var(--line); }
-.gsi-pill.idle .gsi-dot { background: var(--muted); box-shadow: none; }
-
+/* ===== CR-002: fit dashboard to one screen ===== */
 .surface.page-dashboard,
-.dashboard-v2 { height: 100%; min-height: 0; overflow-x: hidden; overflow-y: auto; }
+.dashboard-v2 { height: 100%; min-height: 0; overflow: hidden; }
 
 .board-bento {
   height: 100%;
@@ -3376,9 +3389,7 @@ body {
    to the wide column. */
 .app.shell-v2 .main-shell { grid-column: 2 !important; }
 .floating-sidebar { width: 52px; }
-.floating-sidebar:hover { width: 236px; }
 .floating-sidebar .nav-item { justify-content: center; }
-.floating-sidebar:hover .nav-item { justify-content: flex-start; }
 .floating-sidebar .nav-icon { width: 34px; height: 34px; }
 .floating-sidebar .nav-icon svg { width: 19px; height: 19px; display: block; }
 
@@ -3388,12 +3399,8 @@ body {
 /* --- Modern glass sidebar (adapted from govibe "Modern Glass Sidebar") --- */
 /* Bug fix: .brand-mark was 54px but the collapsed rail is 52px, so the "G" tile
    overflowed the rail and the header letter overlapped / skewed the scale. Size
-   the tile to the rail. One smooth `ease` expand over 0.6s — no hover-intent
-   delay (that read as a two-beat stutter). */
-.floating-sidebar {
-  transition: width 0.6s ease, box-shadow 0.4s ease, border-color 0.4s ease;
-}
-
+   the tile to the rail. Fixed-width rail — no hover expand, so labels never
+   overlay the dashboard behind it; icon labels surface via native title tooltip. */
 .floating-sidebar .brand-mark {
   width: 34px;
   height: 34px;
@@ -3406,45 +3413,39 @@ body {
 .floating-sidebar .brand { font-size: 15px; line-height: 1.1; }
 .floating-sidebar .brand-sub { font-size: 9px; letter-spacing: 0.14em; }
 
-/* Text reveal: fade + slide in together with the panel over the same 0.6s
-   `ease` window — one continuous motion, no separate beat. */
-.floating-sidebar .sidebar-brand-copy,
-.floating-sidebar .nav-copy,
-.floating-sidebar .nav-group-label,
-.floating-sidebar .nav-item small {
-  transform: translateX(-6px);
-  transition: opacity 0.6s ease, transform 0.6s ease;
-}
-.floating-sidebar:hover .sidebar-brand-copy,
-.floating-sidebar:hover .nav-copy,
-.floating-sidebar:hover .nav-group-label,
-.floating-sidebar:hover .nav-item small {
-  transform: translateX(0);
-}
-
-/* Native-title tooltips are jarring; show a glass tooltip only while collapsed. */
-.floating-sidebar .nav-item { position: relative; }
-.floating-sidebar:not(:hover) .nav-item[title]:hover::after {
-  content: attr(title);
-  position: absolute;
-  left: calc(100% + 12px);
-  top: 50%;
-  transform: translateY(-50%);
-  background: rgba(9, 15, 27, 0.97);
-  border: 1px solid rgba(129, 180, 255, 0.2);
-  color: #dce9ff;
-  padding: 5px 10px;
-  border-radius: 8px;
-  font-size: 11px;
-  white-space: nowrap;
-  z-index: 40;
-  pointer-events: none;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.4);
-}
 .deck-statbar > .deck-stat-group { min-width: 110px; }
 .deck-statbar > .deck-ping { min-width: 74px; }
 .deck-stat-chip strong, .deck-stat-gvals, .deck-ping strong,
 .deck-stat-chip .trend { font-variant-numeric: tabular-nums; }
+
+/* Custom window controls (no native decorations) */
+.window-controls {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  margin-left: 6px;
+}
+.win-btn {
+  width: 32px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: #8794a6;
+  font-size: 12px;
+  cursor: pointer;
+  border-radius: 6px;
+  display: grid;
+  place-items: center;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.win-btn:hover {
+  background: rgba(143, 212, 255, 0.12);
+  color: #e7eef6;
+}
+.win-close:hover {
+  background: rgba(255, 80, 90, 0.7);
+  color: #fff;
+}
 
 /* final: shrink Status head + cards to fully fit its cell; trim Agent copy */
 .status-bento .bento-head .eyebrow { display: none; }
@@ -3965,3 +3966,285 @@ body {
 }
 .voice-toast.ok { background: rgba(49, 208, 160, 0.14); color: var(--ok); border: 1px solid rgba(49, 208, 160, 0.3); }
 .voice-toast.err { background: rgba(255, 92, 122, 0.14); color: var(--danger); border: 1px solid rgba(255, 92, 122, 0.3); }
+
+/* ===== Deck v3: sidebar → horizontal topbar nav ===== */
+.deck-v3 {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  background: #08090c;
+  color: #e7eef6;
+  font-family: "Segoe UI", system-ui, sans-serif;
+  overflow: hidden;
+}
+
+.deck-topbar {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  height: 44px;
+  min-height: 44px;
+  background: linear-gradient(180deg, rgba(8, 15, 31, 0.98), rgba(8, 14, 26, 0.92));
+  border-bottom: 1px solid rgba(129, 180, 255, 0.12);
+  padding: 0 0 0 12px;
+  position: relative;
+  z-index: 50;
+  -webkit-app-region: drag;
+}
+
+.deck-topbar-brand {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(143, 212, 255, 0.22), rgba(62, 120, 200, 0.28));
+  border: 1px solid rgba(143, 212, 255, 0.3);
+  display: grid;
+  place-items: center;
+  font-size: 14px;
+  font-weight: 900;
+  color: #8fd4ff;
+  flex: none;
+  margin-right: 10px;
+  -webkit-app-region: no-drag;
+}
+
+.deck-nav {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  flex: 1;
+  min-width: 0;
+  overflow-x: auto;
+}
+
+.deck-tab {
+  padding: 6px 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: #8794a6;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease;
+  -webkit-app-region: no-drag;
+}
+.deck-tab:hover {
+  background: rgba(143, 212, 255, 0.08);
+  color: #c8ddf0;
+}
+.deck-tab.active {
+  background: rgba(143, 212, 255, 0.14);
+  color: #8fd4ff;
+}
+
+.deck-topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  padding-right: 6px;
+  -webkit-app-region: no-drag;
+}
+
+.deck-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+  z-index: 1;
+}
+
+.deck-v3 .surface {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.deck-v3 .telemetry-footer {
+  flex: none;
+}
+
+/* Window size preset buttons (Settings → Display) */
+.window-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+.preset-btn {
+  padding: 4px 10px;
+  border: 1px solid rgba(129, 180, 255, 0.18);
+  border-radius: 8px;
+  background: rgba(13, 23, 42, 0.6);
+  color: #8794a6;
+  font-size: 11px;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+.preset-btn:hover {
+  background: rgba(143, 212, 255, 0.1);
+  color: #c8ddf0;
+}
+.preset-btn.active {
+  background: rgba(143, 212, 255, 0.18);
+  color: #8fd4ff;
+  border-color: rgba(143, 212, 255, 0.4);
+}
+
+/* ============================================================
+   Command Deck HUD v2 — glass FAB shell (ADR-15 / design-system SSOT)
+   Floating topbar + sidebar FABs over a frosted glass panel that hosts
+   the existing (rich, live-wired) page content. Keeps deck-v3 fluid.
+   ============================================================ */
+.deck-v3.g-deck {
+  position: fixed; inset: 0;
+  display: block;
+  background: var(--g-void);
+  color: var(--g-text);
+  overflow: hidden;
+}
+/* ambient BG the glass blurs through */
+.g-deck-bg {
+  position: fixed; inset: 0; z-index: var(--g-z-bg); pointer-events: none;
+  background:
+    radial-gradient(ellipse 44% 40% at 78% 12%, rgba(58,92,168,.45), transparent 66%),
+    radial-gradient(ellipse 40% 46% at 10% 88%, rgba(60,130,190,.28), transparent 70%),
+    radial-gradient(ellipse 50% 45% at 88% 92%, rgba(163,230,53,.08), transparent 64%),
+    var(--g-void);
+}
+.g-deck-bg::after {
+  content:''; position:absolute; inset:-20%;
+  background: linear-gradient(115deg, transparent 42%, rgba(143,212,255,.06) 50%, transparent 58%);
+  animation: g-drift 16s ease-in-out infinite;
+}
+@keyframes g-drift { 0%,100%{transform:translateX(-6%)} 50%{transform:translateX(6%)} }
+@media (prefers-reduced-motion: reduce){ .g-deck-bg::after{animation:none} }
+
+/* fixed 1280×800 design stage, scaled by JS to fill any window (1280 → 1920).
+   All FABs + panel anchor to THIS (not the window), so the layout is identical at every size. */
+.g-deck-stage {
+  position: absolute; left: 50%; top: 50%;
+  width: 1280px; height: 800px;
+  transform: translate(-50%, -50%) scale(1);
+  transform-origin: center center;
+}
+
+/* ---- sidebar FAB (icon nav, left) ---- */
+.g-sidebar-fab {
+  position: absolute; left: 10px; top: 10px; bottom: 10px; width: 60px;
+  z-index: var(--g-z-fab);
+  background: var(--g-fab); border: 1px solid var(--g-fab-rim); border-radius: var(--g-r-fab);
+  box-shadow: var(--g-shadow-fab);
+  -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
+  display: flex; flex-direction: column; align-items: center; padding: 10px 0; gap: 4px;
+  -webkit-app-region: no-drag;
+}
+.g-sidebar-fab .g-brand {
+  width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center;
+  background: var(--g-lime-soft); border: 1px solid var(--g-lime-line); color: var(--g-lime-500);
+  font-weight: 800; font-size: 16px; margin-bottom: 8px; flex-shrink: 0;
+}
+.g-sidebar-fab nav { display: flex; flex-direction: column; align-items: center; gap: 3px; flex: 1; justify-content: center; }
+.g-nav-item {
+  position: relative; width: 42px; height: 40px; border: 0; border-radius: 10px;
+  background: transparent; color: var(--g-text-dim); display: grid; place-items: center; cursor: pointer;
+  transition: background var(--g-t-micro), color var(--g-t-micro);
+}
+.g-nav-item:hover { background: rgba(143,212,255,.08); color: var(--g-text); }
+.g-nav-item.active { background: rgba(143,212,255,.14); color: var(--g-ice-500); }
+.g-nav-item.active::before { content:''; position:absolute; left:-6px; top:11px; width:3px; height:18px; border-radius:2px; background: var(--g-ice-500); }
+
+/* ---- topbar FAB (top-right) ---- */
+.g-topbar-fab {
+  position: absolute; top: 10px; right: 10px; height: 48px; z-index: var(--g-z-fab);
+  display: flex; align-items: center; gap: 12px; padding: 0 8px 0 16px;
+  background: var(--g-fab); border: 1px solid var(--g-fab-rim); border-radius: var(--g-r-panel);
+  box-shadow: var(--g-shadow-fab);
+  -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
+}
+.g-topbar-fab .g-logo { font-weight: 800; letter-spacing: 1.5px; font-size: 13px; color: var(--g-ice-500); }
+.g-telemetry { display: flex; gap: 10px; }
+.g-telchip { display: flex; flex-direction: column; line-height: 1.1; font-size: 8px; letter-spacing: .5px; color: var(--g-text-dim); text-transform: uppercase; }
+.g-telchip strong { font-size: 11px; color: var(--g-text); font-variant-numeric: tabular-nums; }
+.g-topbar-fab .profile-wrap,
+.g-topbar-fab .window-controls { -webkit-app-region: no-drag; }
+
+/* ---- glass panel body — SUBTRACT shape: concave notch (top-right) wraps the topbar FAB ---- */
+.g-deck-panel {
+  position: absolute; left: 82px; top: 10px; right: 10px; bottom: 10px; z-index: var(--g-z-content);
+  /* more visible frosted fill so the concave Subtract silhouette reads over the dark void */
+  background: linear-gradient(158deg, rgba(36, 48, 78, 0.52), rgba(14, 19, 33, 0.60));
+  border-radius: 18px;
+  -webkit-backdrop-filter: var(--g-blur-panel); backdrop-filter: var(--g-blur-panel);
+  /* rim + depth that FOLLOW the clip-path shape (drop-shadow respects clip-path) */
+  filter: drop-shadow(0 0 1px rgba(160, 200, 255, 0.45)) drop-shadow(0 16px 40px rgba(0, 0, 0, 0.5));
+  overflow: hidden; display: flex; flex-direction: column;
+  /* Boolean-Subtract: two notches — top-right (topbar FAB) + bottom-right (G-Signal FABs).
+     Both FABs are right-anchored fixed-size, so the notches track them on resize. */
+  --ntw: 474px; --nth: 60px;   /* top-right notch (topbar) */
+  --nbw: 382px; --nbh: 206px;  /* bottom-right notch (signals, dashboard only) */
+  /* base: top-right notch only (all tabs) */
+  --clip-top: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% 100%, 0 100%);
+  /* dashboard: + bottom-right notch */
+  --clip-both: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% calc(100% - var(--nbh)), calc(100% - var(--nbw)) calc(100% - var(--nbh)), calc(100% - var(--nbw)) 100%, 0 100%);
+  clip-path: var(--clip-top);
+}
+.g-deck-panel.has-signals { clip-path: var(--clip-both); }
+/* JS sets an inline clip-path: path(...) with rounded fillets — the vars above are the
+   sharp-polygon fallback until the effect runs. ::before top-highlight is clipped by the parent. */
+.g-deck-panel::before {
+  content:''; position:absolute; inset:0; z-index:2; pointer-events:none; box-shadow: var(--g-rim-top);
+}
+/* content clears the top-right notch (panel extends up to y10; content starts ~y70) */
+.g-deck-panel .surface { flex: 1; min-height: 0; overflow: hidden; padding: 62px 16px 16px; }
+/* dashboard: left gutter for the P1–P5 anchor rail */
+.g-deck-panel.has-signals .surface { padding-left: 58px; }
+
+/* ---- P1–P5 agent anchor rail (dashboard, panel top-left gutter) ---- */
+.g-anchor-rail {
+  position: absolute; left: 92px; top: 82px; z-index: 60;
+  display: flex; flex-direction: column; gap: 5px; -webkit-app-region: no-drag;
+}
+.g-anchor {
+  width: 40px; padding: 7px 0; text-align: center; border-radius: 9px;
+  font-size: 11px; font-weight: 700; letter-spacing: .5px; color: var(--g-text-dim);
+  background: rgba(150, 200, 255, .05); border: 1px solid var(--g-card-line);
+  transition: color var(--g-t-micro), background var(--g-t-micro);
+}
+.g-anchor.active { color: var(--g-lime-500); background: var(--g-lime-soft); border-color: var(--g-lime-line); }
+
+/* ---- G-Signal FABs (D/E/F/G) — float in the bottom-right notch (dashboard only) ---- */
+.g-signals-fab {
+  position: absolute; right: 10px; bottom: 10px; width: 372px; height: 196px; z-index: var(--g-z-fab);
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px;
+}
+.g-sig {
+  position: relative; border-radius: var(--g-r-fab); background: var(--g-fab); border: 1px solid var(--g-fab-rim);
+  box-shadow: var(--g-shadow-fab); -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
+  padding: 12px 14px; display: flex; flex-direction: column;
+}
+.g-sig .sg-tag { position: absolute; top: 9px; right: 12px; font-size: 9px; font-weight: 800; color: var(--g-text-dim); opacity: .5; }
+.g-sig .sg-label { font-size: 9px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--g-text-dim); }
+.g-sig .sg-val { font-size: 26px; font-weight: 800; margin: auto 0 8px; font-variant-numeric: tabular-nums; line-height: 1; }
+.g-sig .sg-bar { height: 6px; border-radius: 4px; background: rgba(143, 212, 255, .12); overflow: hidden; }
+.g-sig .sg-fill { height: 100%; border-radius: 4px; }
+.g-sig.hero { background: rgba(163, 230, 53, .9); border-color: transparent; color: #0c1206; }
+.g-sig.hero .sg-label, .g-sig.hero .sg-tag { color: rgba(12, 18, 6, .6); }
+.g-sig.hero .sg-bar { background: rgba(12, 18, 6, .18); }
+.g-sig.hero .sg-fill { background: #0c1206; }
+.sg-fill-ice { background: var(--g-ice-500); }
+.sg-fill-safe { background: var(--g-safe); }
+.sg-fill-warn { background: var(--g-warn); }
+.g-deck-panel .surface.page-voice,
+.g-deck-panel .surface.page-account,
+.g-deck-panel .surface.page-settings,
+.g-deck-panel .surface.page-insights,
+.g-deck-panel .surface.page-history,
+.g-deck-panel .surface.page-build,
+.g-deck-panel .surface.page-companion,
+.g-deck-panel .surface.page-live { overflow-y: auto; }
+.g-deck-panel .banner.err { margin: 10px 14px 0; }

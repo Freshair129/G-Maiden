@@ -166,7 +166,7 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
       {alert}
       {inGame && M('gmeter', gMeter)}
       {toastUi && M('toast', toastUi)}
-      {M('companion', companion)}
+      {inGame && M('companion', companion)}
 
       {overlayAdvice && s.gankVisuals
         ? M('advice', (

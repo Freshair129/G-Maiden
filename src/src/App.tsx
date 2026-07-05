@@ -759,11 +759,11 @@ const Overlay: React.FC = () => {
             {gankBanner}
             {missingBadge}
             {eventToast}
-            <div style={{ ...panel(s.opacity), padding: '14px 20px', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ width: 9, height: 9, borderRadius: 99, background: gsiActive ? (seen ? C.ok : C.warn) : C.mut }} />
+            <div style={{ ...panel(s.opacity), padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+              <span style={{ width: 8, height: 8, borderRadius: 99, background: gsiActive ? C.ok : C.bad }} />
               <div>
-                <div style={{ fontWeight: 600, fontSize: 14 }}>G-Maiden</div>
-                <div style={{ fontSize: 11.5, color: C.mut }}>{!gsiActive ? 'ขาดสัญญาณ GSI — เปิด Dota 2 อยู่ไหม?' : (seen ? 'เชื่อมต่อ GSI แล้ว — รอเข้าเกม…' : 'รอข้อมูลจาก Dota 2  ·  Ctrl+Alt+S ซ่อน/แสดง · Alt+↑↓ เสียง · Alt+M ปิดเสียง')}</div>
+                <div style={{ fontWeight: 600, fontSize: 13 }}>G-Maiden</div>
+                <div style={{ fontSize: 11, color: C.mut }}>GSI Signal</div>
               </div>
             </div>
           </div>

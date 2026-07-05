@@ -1,0 +1,44 @@
+{
+  "updatedAt": "2026-07-05T14:40:00+07:00",
+  "fleets": [
+    {
+      "id": "wf_5936587d",
+      "name": "Subtract-glass migration — draft fleet",
+      "status": "done",
+      "verdict": "REJECT / rework-before-apply",
+      "tokens": 692749,
+      "agents": [
+        { "label": "draft:U1-tokens-shell", "phase": "Draft", "model": "opus-4-8", "status": "done" },
+        { "label": "draft:U2-topbar-fab", "phase": "Draft", "model": "opus-4-8", "status": "done" },
+        { "label": "draft:U3-sidebar-fab", "phase": "Draft", "model": "opus-4-8", "status": "done" },
+        { "label": "draft:U4-anchor-rail", "phase": "Draft", "model": "opus-4-8", "status": "done" },
+        { "label": "draft:U5-score-stats", "phase": "Draft", "model": "opus-4-8", "status": "done" },
+        { "label": "draft:U6-battle-agent", "phase": "Draft", "model": "opus-4-8", "status": "done" },
+        { "label": "draft:U7-sector-signals", "phase": "Draft", "model": "opus-4-8", "status": "done" },
+        { "label": "audit-gate", "phase": "Audit", "model": "opus-4-8", "status": "done", "note": "caught 3 blockers" }
+      ]
+    },
+    {
+      "id": "recon",
+      "name": "Recon agents (RWANG / G-Orchestra / 12-7 / GitNexus)",
+      "status": "done",
+      "tokens": 339000,
+      "agents": [
+        { "label": "rwang-slm-recon", "phase": "Recon", "model": "sonnet", "status": "done" },
+        { "label": "g-orchestra-analysis", "phase": "Recon", "model": "sonnet", "status": "done" },
+        { "label": "explore:12-7", "phase": "Recon", "model": "sonnet", "status": "done" },
+        { "label": "explore:phase-governor", "phase": "Recon", "model": "sonnet", "status": "done" }
+      ]
+    }
+  ],
+  "progress": [
+    { "id": "U1-tokens", "title": "--g-* design tokens → styles.css", "status": "done" },
+    { "id": "U1U2-shell", "title": "Glass shell + topbar FAB", "status": "done", "note": "FAB shell over existing content (kept rich Dashboard); commit b14df060" },
+    { "id": "U3-sidebar", "title": "Sidebar FAB icon nav (codex icons)", "status": "done" },
+    { "id": "U4-anchor", "title": "P1–P5 anchor rail", "status": "pending", "note": "deferred — anchors not wired to agent yet" },
+    { "id": "U5U6U7-content", "title": "Score/stats/battle/signals zones", "status": "done", "note": "kept existing rich live-wired content (not downgraded to prototype)" },
+    { "id": "monitor", "title": "G-Offload Monitor tooling", "status": "done" },
+    { "id": "openrouter", "title": "OpenRouter provider wire", "status": "done", "note": "key in .openrouter.key; cap max_tokens for low-credit accounts" },
+    { "id": "cr005", "title": "CR-005 landing / auth / community", "status": "draft" }
+  ]
+}

@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { formatTimer, toneClass, useCompanionData } from "./companion";
+import { formatTimer, useCompanionData } from "./companion";
 import type { CompanionData } from "./companion";
 
 type Hero = CompanionData["heroes"][number];
@@ -13,18 +13,8 @@ export default function Dashboard() {
   const allyHeroes = data.heroes.filter((hero) => hero.team === "ally");
   const enemyHeroes = data.heroes.filter((hero) => hero.team === "enemy");
   const visibleMarkers = isPregame ? [] : data.markers;
-  const visibleEnemyIds = new Set(
-    visibleMarkers
-      .filter((marker) => marker.kind === "enemy" && marker.heroId)
-      .map((marker) => marker.heroId as string)
-  );
-  const hiddenMissingEnemies = enemyHeroes.filter((hero) => hero.state === "missing" && !visibleEnemyIds.has(hero.id));
-  const missingRotation = hiddenMissingEnemies.length ? Math.floor(data.updatedAt / 2000) % hiddenMissingEnemies.length : 0;
-  const missingCycle = hiddenMissingEnemies.length
-    ? Array.from({ length: Math.min(3, hiddenMissingEnemies.length) }, (_, index) => hiddenMissingEnemies[(missingRotation + index) % hiddenMissingEnemies.length])
-    : [];
-  const gankRisk = isPregame ? 10 : Math.min(100, 26 + hiddenMissingEnemies.length * 24 + data.match.activeAlerts * 8);
-  const safePush = isPregame ? 18 : Math.max(0, 88 - hiddenMissingEnemies.length * 18 - data.match.activeAlerts * 10);
+  // G-Signal (Enemy Missing / Gank Risk / Safe Push / Vision) now renders as bottom-right
+  // FAB cards in CommandDeck's Subtract notch — see CommandDeck.tsx.
 
   return (
     <div className="dashboard-v2">
@@ -148,53 +138,6 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="bento-card gsignal-bento tilt-card">
-          <div className="bento-head compact">
-            <div>
-              <div className="eyebrow">G-Signal</div>
-              <h3>Threat pulse</h3>
-            </div>
-          </div>
-          <div className="gsignal-layout">
-            <div className="missing-rail">
-              <div className="signal-section-head">
-                <span>Enemy Missing</span>
-                <strong>{hiddenMissingEnemies.length}</strong>
-              </div>
-              <div className="missing-rail-list">
-                {missingCycle.length ? (
-                  missingCycle.map((hero) => (
-                    <div key={hero.id} className="missing-hero-card">
-                      <div className={`missing-hero-icon ${hero.team}`}>{hero.hero.slice(0, 2)}</div>
-                      <div className="missing-hero-copy">
-                        <strong>{hero.hero}</strong>
-                        <span>{hero.player}</span>
-                      </div>
-                      <div className="missing-hero-timer">{formatTimer(hero.timer)}</div>
-                    </div>
-                  ))
-                ) : (
-                  <div className="missing-rail-empty">No hidden enemy right now</div>
-                )}
-              </div>
-            </div>
-            <div className="signal-bar-stack">
-              <SignalBar label="Gank Risk" value={gankRisk} tone="danger" />
-              <SignalBar label="Safe Push" value={safePush} tone="good" />
-            </div>
-            <div className="signal-list signal-list-compact">
-              {data.signals
-                .filter((signal) => signal.label !== "Enemy Missing" && signal.label !== "Gank Risk" && signal.label !== "Safe Push")
-                .map((signal) => (
-                  <div key={signal.label} className={`signal-chip ${signal.tone}`}>
-                    <span>{signal.label}</span>
-                    <strong>{signal.value}</strong>
-                  </div>
-                ))}
-            </div>
-          </div>
-        </section>
-
         <section className="bento-card status-bento tilt-card">
           <div className="bento-head compact">
             <div>
@@ -228,55 +171,8 @@ export default function Dashboard() {
           </div>
         </section>
 
-        <section className="bento-card activity-bento tilt-card">
-          <div className="bento-head compact">
-            <div>
-              <div className="eyebrow">Activity log</div>
-              <h3>Map movement</h3>
-            </div>
-          </div>
-          <div className="log-list">
-            {data.activity.map((item) => (
-              <div key={item.id} className={`log-row ${toneClass(item.tone)}`}>
-                <span className="log-time">{item.at}</span>
-                <span className="log-text">{item.text}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        <section className="bento-card event-bento tilt-card">
-          <div className="bento-head compact">
-            <div>
-              <div className="eyebrow">Event log</div>
-              <h3>Major outcomes</h3>
-            </div>
-          </div>
-          <div className="log-list">
-            {data.events.map((item) => (
-              <div key={item.id} className={`log-row ${toneClass(item.tone)}`}>
-                <span className="log-time">{item.at}</span>
-                <span className="log-text">{item.text}</span>
-              </div>
-            ))}
-          </div>
-        </section>
-
-        {/* Weekly report moved to the Insights tab (CR-002) to keep the deck one-screen. */}
-      </div>
-    </div>
-  );
-}
-
-function SignalBar({ label, value, tone }: { label: string; value: number; tone: "danger" | "good" | "warn" | "info" }) {
-  return (
-    <div className={`signal-bar-card ${tone}`}>
-      <div className="signal-bar-head">
-        <span>{label}</span>
-        <strong>{value}%</strong>
-      </div>
-      <div className="signal-bar-track">
-        <div className="signal-bar-fill" style={{ width: `${value}%` }} />
+        {/* Activity / Event logs live in the Insights + History tabs (CR-002).
+           Dashboard is a fixed-grid, no-scroll layout — only the 5 bento cards above. */}
       </div>
     </div>
   );
