@@ -1,0 +1,892 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>G-OFFLOAD MONITOR</title>
+<style>
+:root{
+  --g-void:#06070A; --g-ink:#0B0E16; --g-glass-a:rgba(34,46,74,.30); --g-glass-b:rgba(10,13,22,.42);
+  --g-fab:rgba(14,18,28,.45); --g-fab-rim:rgba(160,200,255,.14); --g-card:rgba(150,200,255,.05); --g-card-line:rgba(150,200,255,.08);
+  --g-ice-300:#9BE7FF; --g-ice-500:#8FD4FF; --g-ice-dim:#6B8BB5; --g-lime-500:#A3E635; --g-lime-soft:rgba(163,230,53,.16);
+  --g-text:#EEF4FB; --g-text-dim:#8BA4C6; --g-safe:#22C55E; --g-warn:#F59E0B; --g-danger:#F43F5E;
+  --g-r-card:11px; --g-r-fab:16px; --g-r-pill:999px; --g-shadow-fab:0 12px 34px rgba(0,0,0,.42); --g-blur-fab:blur(24px) saturate(160%);
+}
+*{box-sizing:border-box}
+html{min-height:100%;background:var(--g-void);overflow-x:hidden}
+body{
+  margin:0;
+  min-height:100vh;
+  color:var(--g-text);
+  font:14px/1.45 Inter,ui-sans-serif,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Arial,sans-serif;
+  background:
+    radial-gradient(circle at 16% 8%, rgba(143,212,255,.16), transparent 30rem),
+    radial-gradient(circle at 88% 10%, rgba(155,231,255,.10), transparent 26rem),
+    radial-gradient(circle at 72% 92%, rgba(163,230,53,.10), transparent 24rem),
+    var(--g-void);
+  overflow-x:hidden;
+}
+button,input,select,textarea{font:inherit}
+button{border:0}
+.mono{font-family:Consolas,"SFMono-Regular","Roboto Mono",monospace}
+.shell,.num{font-family:Consolas,"SFMono-Regular","Roboto Mono",monospace;font-variant-numeric:tabular-nums}
+.app{
+  width:min(1380px,calc(100vw - 32px));
+  margin:0 auto;
+  padding:28px 0 34px;
+}
+.header{
+  display:flex;
+  align-items:flex-end;
+  justify-content:space-between;
+  gap:18px;
+  margin-bottom:16px;
+}
+.brand{
+  display:flex;
+  align-items:center;
+  gap:14px;
+  min-width:0;
+}
+h1{
+  margin:0;
+  color:var(--g-ice-300);
+  font-size:clamp(26px,4vw,48px);
+  line-height:.95;
+  letter-spacing:0;
+  text-shadow:0 0 28px rgba(143,212,255,.24);
+}
+.liveRow{
+  display:flex;
+  align-items:center;
+  gap:10px;
+  flex-wrap:wrap;
+  justify-content:flex-end;
+  color:var(--g-text-dim);
+}
+.livePill,.pill,.badge,.chip,.agentChip,.providerChip{
+  display:inline-flex;
+  align-items:center;
+  border-radius:var(--g-r-pill);
+  white-space:nowrap;
+}
+.livePill{
+  gap:7px;
+  padding:8px 12px;
+  color:var(--g-lime-500);
+  background:var(--g-lime-soft);
+  border:1px solid rgba(163,230,53,.25);
+  font-weight:800;
+  font-size:12px;
+}
+.liveDot{
+  width:8px;
+  height:8px;
+  border-radius:999px;
+  background:var(--g-lime-500);
+  box-shadow:0 0 16px rgba(163,230,53,.7);
+}
+.updated{
+  min-width:112px;
+  text-align:right;
+}
+.tabs{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:8px;
+  padding:8px;
+  margin-bottom:18px;
+  border-radius:var(--g-r-fab);
+  background:linear-gradient(135deg,var(--g-glass-a),var(--g-glass-b));
+  border:1px solid var(--g-fab-rim);
+  backdrop-filter:var(--g-blur-fab);
+  box-shadow:var(--g-shadow-fab);
+}
+.tab{
+  min-width:0;
+  padding:13px 12px;
+  border-radius:12px;
+  color:var(--g-text-dim);
+  background:transparent;
+  cursor:pointer;
+  font-weight:800;
+  letter-spacing:.06em;
+  font-size:12px;
+  transition:background .18s ease,color .18s ease,box-shadow .18s ease;
+}
+.tab:hover{color:var(--g-ice-300);background:rgba(143,212,255,.06)}
+.tab.active{
+  color:var(--g-lime-500);
+  background:var(--g-lime-soft);
+  box-shadow:inset 0 0 0 1px rgba(163,230,53,.28),0 0 24px rgba(163,230,53,.08);
+}
+.view{display:none}
+.view.active{display:block}
+.grid{
+  display:grid;
+  gap:16px;
+}
+.card,.panel,.providerCard,.fleetCard,.activityBlock,.totalsBar{
+  background:var(--g-fab);
+  backdrop-filter:var(--g-blur-fab);
+  border:1px solid var(--g-fab-rim);
+  border-radius:var(--g-r-fab);
+  box-shadow:var(--g-shadow-fab);
+}
+.totalsBar{
+  display:grid;
+  grid-template-columns:repeat(3,minmax(0,1fr));
+  gap:1px;
+  overflow:hidden;
+  margin-bottom:16px;
+}
+.totalItem{
+  min-width:0;
+  padding:18px;
+  background:linear-gradient(180deg,rgba(150,200,255,.055),rgba(150,200,255,.025));
+}
+.label{
+  color:var(--g-text-dim);
+  font-size:12px;
+  font-weight:800;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+}
+.value{
+  margin-top:8px;
+  font-size:28px;
+  line-height:1;
+  font-weight:900;
+  color:var(--g-text);
+}
+.value.lime{color:var(--g-lime-500)}
+.providerGrid{
+  display:grid;
+  grid-template-columns:repeat(4,minmax(0,1fr));
+  gap:16px;
+  margin-bottom:16px;
+}
+.providerCard{
+  min-width:0;
+  padding:18px;
+  position:relative;
+  overflow:hidden;
+}
+.providerCard:before{
+  content:"";
+  position:absolute;
+  inset:0;
+  background:linear-gradient(135deg,var(--provider-glow),transparent 42%);
+  opacity:.14;
+  pointer-events:none;
+}
+.providerTop,.panelHead,.fleetTop,.progressHead,.activityHead,.activityMeta{
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:12px;
+  min-width:0;
+}
+.providerName{
+  display:flex;
+  align-items:center;
+  gap:9px;
+  min-width:0;
+  font-weight:900;
+  color:var(--g-ice-300);
+}
+.statusDot{
+  width:10px;
+  height:10px;
+  flex:0 0 auto;
+  border-radius:999px;
+  background:var(--g-text-dim);
+  box-shadow:0 0 14px currentColor;
+}
+.statusDot.ok,.statusDot.done{background:var(--g-safe);color:var(--g-safe)}
+.statusDot.running{background:var(--g-warn);color:var(--g-warn)}
+.statusDot.error,.statusDot.blocked{background:var(--g-danger);color:var(--g-danger)}
+.statusDot.pending,.statusDot.draft{background:var(--g-text-dim);color:var(--g-text-dim)}
+.badge{
+  padding:5px 9px;
+  border:1px solid rgba(143,212,255,.20);
+  background:rgba(143,212,255,.08);
+  color:var(--g-ice-500);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.04em;
+}
+.badge.free{
+  color:var(--g-lime-500);
+  background:var(--g-lime-soft);
+  border-color:rgba(163,230,53,.28);
+}
+.lastModel{
+  min-width:0;
+  margin:16px 0 14px;
+  padding:10px 11px;
+  color:var(--provider-color);
+  background:rgba(0,0,0,.18);
+  border:1px solid var(--g-card-line);
+  border-radius:var(--g-r-card);
+  white-space:nowrap;
+  overflow:hidden;
+  text-overflow:ellipsis;
+}
+.providerStats{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:10px;
+}
+.statBox{
+  min-width:0;
+  padding:12px;
+  border-radius:var(--g-r-card);
+  background:var(--g-card);
+  border:1px solid var(--g-card-line);
+}
+.statBox .num{
+  margin-top:6px;
+  color:var(--g-text);
+  font-size:24px;
+  line-height:1;
+  font-weight:900;
+}
+.panel{
+  min-width:0;
+  padding:18px;
+}
+.panelHead{margin-bottom:12px}
+.panelTitle{
+  margin:0;
+  color:var(--g-ice-300);
+  font-size:15px;
+  letter-spacing:.08em;
+}
+.muted{color:var(--g-text-dim)}
+.tableWrap{
+  max-height:470px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding-right:4px;
+}
+.logGrid{
+  display:grid;
+  grid-template-columns:minmax(58px,.55fr) minmax(86px,.85fr) minmax(90px,1fr) minmax(110px,1.35fr) minmax(72px,.7fr) minmax(70px,.65fr) minmax(72px,.7fr);
+  gap:10px;
+  align-items:center;
+  min-width:0;
+}
+.logHead{
+  position:sticky;
+  top:0;
+  z-index:1;
+  padding:10px 8px;
+  color:var(--g-text-dim);
+  background:rgba(6,7,10,.88);
+  backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--g-card-line);
+  font-size:11px;
+  font-weight:900;
+  letter-spacing:.08em;
+}
+.logRow{
+  padding:10px 8px;
+  border-bottom:1px solid var(--g-card-line);
+}
+.logRow:last-child{border-bottom:0}
+.logGrid>*{min-width:0;overflow:hidden;text-overflow:ellipsis}
+.right{text-align:right}
+.providerChip{
+  width:max-content;
+  max-width:100%;
+  padding:4px 8px;
+  color:var(--provider-color);
+  background:color-mix(in srgb,var(--provider-color) 12%, transparent);
+  border:1px solid color-mix(in srgb,var(--provider-color) 24%, transparent);
+  font-weight:900;
+  font-size:12px;
+  text-transform:capitalize;
+}
+.pill{
+  width:max-content;
+  max-width:100%;
+  padding:5px 9px;
+  border:1px solid rgba(139,164,198,.18);
+  background:rgba(139,164,198,.10);
+  color:var(--g-text-dim);
+  font-size:11px;
+  font-weight:900;
+  text-transform:uppercase;
+  letter-spacing:.04em;
+}
+.pill.ok,.pill.done{color:var(--g-safe);background:rgba(34,197,94,.13);border-color:rgba(34,197,94,.28)}
+.pill.running,.pill.draft{color:var(--g-warn);background:rgba(245,158,11,.13);border-color:rgba(245,158,11,.28)}
+.pill.error,.pill.blocked{color:var(--g-danger);background:rgba(244,63,94,.13);border-color:rgba(244,63,94,.28)}
+.pill.pending{color:var(--g-text-dim);background:rgba(139,164,198,.10);border-color:rgba(139,164,198,.16)}
+.twoCol{
+  display:grid;
+  grid-template-columns:minmax(0,1.2fr) minmax(320px,.8fr);
+  gap:16px;
+}
+.fleetList,.progressList,.activityList{
+  display:grid;
+  gap:12px;
+}
+.fleetCard{
+  padding:16px;
+}
+.fleetName{
+  min-width:0;
+  color:var(--g-ice-300);
+  font-size:16px;
+  font-weight:900;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.fleetMeta{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:8px;
+  flex-wrap:wrap;
+}
+.verdict{
+  max-width:100%;
+  color:var(--g-text-dim);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.verdict.reject{color:var(--g-danger)}
+.agentWrap{
+  display:flex;
+  gap:8px;
+  flex-wrap:wrap;
+  margin-top:14px;
+}
+.agentChip{
+  gap:8px;
+  max-width:100%;
+  padding:8px 10px;
+  background:var(--g-card);
+  border:1px solid var(--g-card-line);
+  color:var(--g-text);
+}
+.agentLabel{
+  min-width:0;
+  max-width:150px;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-weight:800;
+}
+.phaseTag{
+  max-width:110px;
+  padding:3px 7px;
+  border-radius:var(--g-r-pill);
+  background:rgba(143,212,255,.08);
+  color:var(--g-ice-dim);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+  font-size:11px;
+}
+.progressRow{
+  display:grid;
+  grid-template-columns:auto minmax(0,1fr);
+  gap:10px 12px;
+  align-items:start;
+  padding:12px;
+  border-radius:var(--g-r-card);
+  background:var(--g-card);
+  border:1px solid var(--g-card-line);
+}
+.progressTitle{
+  min-width:0;
+  font-weight:800;
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.progressNote{
+  grid-column:2;
+  min-width:0;
+  color:var(--g-text-dim);
+  overflow:hidden;
+  text-overflow:ellipsis;
+  white-space:nowrap;
+}
+.activityHead{
+  margin-bottom:12px;
+}
+.activityBlock{
+  min-width:0;
+  padding:15px;
+}
+.activityMeta{
+  justify-content:flex-start;
+  margin-bottom:10px;
+  flex-wrap:wrap;
+}
+.cmdLine{
+  min-width:0;
+  padding:10px 11px;
+  color:var(--g-ice-500);
+  background:rgba(0,0,0,.22);
+  border:1px solid var(--g-card-line);
+  border-radius:var(--g-r-card);
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.outputBlock{
+  margin-top:8px;
+  max-height:120px;
+  overflow-y:auto;
+  overflow-x:hidden;
+  padding:10px 11px;
+  color:var(--g-text-dim);
+  background:rgba(0,0,0,.18);
+  border:1px solid rgba(150,200,255,.06);
+  border-radius:var(--g-r-card);
+  white-space:pre-wrap;
+  overflow-wrap:anywhere;
+}
+.compactActivity{
+  display:grid;
+  grid-template-columns:72px auto minmax(0,1fr);
+  gap:10px;
+  align-items:center;
+  padding:12px;
+  border-radius:var(--g-r-card);
+  background:var(--g-card);
+  border:1px solid var(--g-card-line);
+}
+.empty{
+  padding:28px;
+  text-align:center;
+  color:var(--g-text-dim);
+  border:1px dashed rgba(160,200,255,.18);
+  border-radius:var(--g-r-card);
+  background:rgba(150,200,255,.035);
+}
+.fetchState{
+  color:var(--g-text-dim);
+  font-size:12px;
+}
+.fetchState.warn{color:var(--g-warn)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:rgba(255,255,255,.03);border-radius:999px}
+::-webkit-scrollbar-thumb{background:rgba(143,212,255,.18);border-radius:999px}
+::-webkit-scrollbar-thumb:hover{background:rgba(163,230,53,.26)}
+@media (max-width:980px){
+  .header{align-items:flex-start;flex-direction:column}
+  .liveRow{justify-content:flex-start}
+  .updated{text-align:left}
+  .providerGrid,.totalsBar,.twoCol{grid-template-columns:1fr}
+  .tableWrap{max-height:520px}
+  .logGrid{
+    grid-template-columns:minmax(54px,.6fr) minmax(78px,.9fr) minmax(92px,1.1fr) minmax(96px,1.2fr) minmax(62px,.8fr) minmax(58px,.75fr) minmax(62px,.8fr);
+    gap:6px;
+    font-size:12px;
+  }
+  .logHead{font-size:10px}
+}
+@media (max-width:640px){
+  .app{width:min(100vw - 20px,1380px);padding-top:18px}
+  .tabs{grid-template-columns:1fr}
+  .tab{text-align:left}
+  .panel,.providerCard,.fleetCard,.activityBlock{padding:14px}
+  .logGrid{
+    grid-template-columns:.65fr .95fr 1fr .85fr;
+  }
+  .logGrid .col-model,.logGrid .col-duration,.logGrid .col-status{display:none}
+  .compactActivity{grid-template-columns:60px auto;gap:8px}
+  .compactActivity .compactTask{grid-column:1 / -1}
+}
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="header">
+    <div class="brand">
+      <h1>G-OFFLOAD MONITOR</h1>
+    </div>
+    <div class="liveRow">
+      <span class="livePill"><span class="liveDot"></span>LIVE</span>
+      <span id="updatedAgo" class="updated">updated —</span>
+      <span id="fetchState" class="fetchState">waiting for data</span>
+    </div>
+  </header>
+
+  <nav class="tabs" aria-label="Monitor tabs">
+    <button class="tab active" type="button" data-tab="providers">PROVIDERS</button>
+    <button class="tab" type="button" data-tab="fleet">FLEET &amp; PROGRESS</button>
+    <button class="tab" type="button" data-tab="activity">ACTIVITY</button>
+  </nav>
+
+  <main>
+    <section id="tab-providers" class="view active" aria-labelledby="providers">
+      <div class="totalsBar">
+        <div class="totalItem">
+          <div class="label">Total tokens</div>
+          <div id="totalTokens" class="value num">0</div>
+        </div>
+        <div class="totalItem">
+          <div class="label">Claude tokens saved</div>
+          <div id="savedTokens" class="value lime num">0</div>
+        </div>
+        <div class="totalItem">
+          <div class="label">Est. cost</div>
+          <div class="value">— <span class="muted">(est.)</span></div>
+        </div>
+      </div>
+
+      <div id="providerCards" class="providerGrid"></div>
+
+      <section class="panel">
+        <div class="panelHead">
+          <h2 class="panelTitle">LIVE CALL LOG</h2>
+          <span id="logCount" class="muted mono">0 calls</span>
+        </div>
+        <div class="tableWrap">
+          <div class="logGrid logHead">
+            <div>TIME</div>
+            <div>PROVIDER</div>
+            <div class="col-model">MODEL</div>
+            <div>TASK</div>
+            <div class="right">TOKENS</div>
+            <div class="col-duration">DURATION</div>
+            <div class="col-status">STATUS</div>
+          </div>
+          <div id="callLog"></div>
+        </div>
+      </section>
+    </section>
+
+    <section id="tab-fleet" class="view" aria-labelledby="fleet">
+      <div class="twoCol">
+        <section class="panel">
+          <div class="panelHead">
+            <h2 class="panelTitle">FLEET</h2>
+            <span id="fleetCount" class="muted mono">0 fleets</span>
+          </div>
+          <div id="fleetList" class="fleetList"></div>
+        </section>
+
+        <section class="panel">
+          <div class="progressHead">
+            <h2 class="panelTitle">PROGRESS</h2>
+            <span id="progressDone" class="muted mono">0/0 done</span>
+          </div>
+          <div id="progressList" class="progressList" style="margin-top:12px"></div>
+        </section>
+      </div>
+    </section>
+
+    <section id="tab-activity" class="view" aria-labelledby="activity">
+      <section class="panel">
+        <div class="activityHead">
+          <h2 class="panelTitle">ACTIVITY</h2>
+          <span class="muted">what each offloaded agent actually ran</span>
+        </div>
+        <div id="activityList" class="activityList"></div>
+      </section>
+    </section>
+  </main>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  const PROVIDERS = [
+    {key:"ollama", title:"Ollama·local", badge:"FREE/LOCAL", badgeClass:"free", color:"#A3E635"},
+    {key:"codex", title:"Codex CLI", badge:"OPENAI", badgeClass:"", color:"#8FD4FF"},
+    {key:"openrouter", title:"OpenRouter", badge:"CLOUD", badgeClass:"", color:"#c084fc"},
+    {key:"claude", title:"Claude", badge:"LEAD/FRONTIER", badgeClass:"", color:"#9BE7FF"}
+  ];
+
+  const state = {
+    log: [],
+    fleet: {updatedAt:null,fleets:[],progress:[]},
+    loadedAt: 0,
+    errors: []
+  };
+
+  const $ = (id) => document.getElementById(id);
+  const fmt = new Intl.NumberFormat();
+  const esc = (value) => String(value == null ? "" : value).replace(/[&<>"']/g, (m) => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"
+  }[m]));
+
+  function providerKey(provider){
+    const raw = String(provider || "").toLowerCase();
+    if(raw.includes("ollama")) return "ollama";
+    if(raw.includes("codex") || raw.includes("openai")) return "codex";
+    if(raw.includes("openrouter")) return "openrouter";
+    if(raw.includes("claude") || raw.includes("anthropic")) return "claude";
+    return raw || "unknown";
+  }
+
+  function providerColor(provider){
+    const key = providerKey(provider);
+    const found = PROVIDERS.find((p) => p.key === key);
+    return found ? found.color : "var(--g-text-dim)";
+  }
+
+  function cssProvider(provider){
+    return 'style="--provider-color:'+esc(providerColor(provider))+';--provider-glow:'+esc(providerColor(provider))+'"';
+  }
+
+  function toTime(ts){
+    if(!ts) return "—";
+    const d = new Date(ts);
+    if(Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleTimeString([], {hour:"2-digit", minute:"2-digit", second:"2-digit", hour12:false});
+  }
+
+  function latestTimestamp(){
+    const times = [];
+    if(state.fleet.updatedAt) times.push(new Date(state.fleet.updatedAt).getTime());
+    state.log.forEach((entry) => {
+      if(entry && entry.ts) {
+        const t = new Date(entry.ts).getTime();
+        if(!Number.isNaN(t)) times.push(t);
+      }
+    });
+    if(state.loadedAt) times.push(state.loadedAt);
+    return Math.max(0, ...times.filter(Number.isFinite));
+  }
+
+  function ago(ms){
+    if(!ms) return "updated —";
+    const sec = Math.max(0, Math.floor((Date.now() - ms) / 1000));
+    if(sec < 60) return "updated " + sec + "s ago";
+    const min = Math.floor(sec / 60);
+    if(min < 60) return "updated " + min + "m ago";
+    const hrs = Math.floor(min / 60);
+    return "updated " + hrs + "h ago";
+  }
+
+  function statusClass(status){
+    const s = String(status || "").toLowerCase();
+    if(["ok","done","complete","completed","success","succeeded"].includes(s)) return "ok";
+    if(["running","active","in_progress","draft"].includes(s)) return s === "draft" ? "draft" : "running";
+    if(["error","failed","fail","blocked","rejected"].includes(s)) return s === "blocked" ? "blocked" : "error";
+    if(["pending","queued","waiting"].includes(s)) return "pending";
+    return s || "pending";
+  }
+
+  function statusPill(status){
+    const label = String(status || "pending");
+    return '<span class="pill '+esc(statusClass(label))+'">'+esc(label)+'</span>';
+  }
+
+  function providerChip(provider){
+    const label = provider || "unknown";
+    return '<span class="providerChip" '+cssProvider(label)+'>'+esc(label)+'</span>';
+  }
+
+  function duration(ms){
+    const n = Number(ms || 0);
+    if(!n) return "—";
+    if(n < 1000) return fmt.format(Math.round(n)) + "ms";
+    return (n / 1000).toFixed(n < 10000 ? 1 : 0) + "s";
+  }
+
+  function sortedLog(){
+    return [...state.log].sort((a,b) => new Date(b.ts || 0) - new Date(a.ts || 0));
+  }
+
+  function renderProviders(){
+    const totalTokens = state.log.reduce((sum, e) => sum + Number(e.tokens || 0), 0);
+    const savedTokens = state.log.reduce((sum, e) => providerKey(e.provider) === "claude" ? sum : sum + Number(e.tokens || 0), 0);
+    $("totalTokens").textContent = fmt.format(totalTokens);
+    $("savedTokens").textContent = fmt.format(savedTokens);
+    $("logCount").textContent = fmt.format(state.log.length) + " calls";
+
+    const cards = PROVIDERS.map((p) => {
+      const entries = state.log.filter((e) => providerKey(e.provider) === p.key);
+      const last = [...entries].sort((a,b) => new Date(b.ts || 0) - new Date(a.ts || 0))[0];
+      const total = entries.reduce((sum,e) => sum + Number(e.tokens || 0), 0);
+      const active = last ? statusClass(last.status) : "pending";
+      return `
+        <article class="providerCard" style="--provider-color:${p.color};--provider-glow:${p.color}">
+          <div class="providerTop">
+            <div class="providerName"><span class="statusDot ${esc(active)}"></span><span>${esc(p.title)}</span></div>
+            <span class="badge ${esc(p.badgeClass)}">${esc(p.badge)}</span>
+          </div>
+          <div class="lastModel mono">${esc(last && last.model ? last.model : "—")}</div>
+          <div class="providerStats">
+            <div class="statBox">
+              <div class="label">Calls</div>
+              <div class="num">${fmt.format(entries.length)}</div>
+            </div>
+            <div class="statBox">
+              <div class="label">Tokens</div>
+              <div class="num">${fmt.format(total)}</div>
+            </div>
+          </div>
+        </article>
+      `;
+    }).join("");
+    $("providerCards").innerHTML = cards;
+
+    const rows = sortedLog().map((entry) => `
+      <div class="logGrid logRow">
+        <div class="mono">${esc(toTime(entry.ts))}</div>
+        <div>${providerChip(entry.provider)}</div>
+        <div class="col-model mono" title="${esc(entry.model || "")}">${esc(entry.model || "—")}</div>
+        <div title="${esc(entry.task || "")}">${esc(entry.task || "—")}</div>
+        <div class="right num">${fmt.format(Number(entry.tokens || 0))}</div>
+        <div class="col-duration mono">${esc(duration(entry.durationMs))}</div>
+        <div class="col-status">${statusPill(entry.status)}</div>
+      </div>
+    `).join("");
+    $("callLog").innerHTML = rows || '<div class="empty">No offload calls yet.</div>';
+  }
+
+  function renderFleet(){
+    const fleets = Array.isArray(state.fleet.fleets) ? state.fleet.fleets : [];
+    const progress = Array.isArray(state.fleet.progress) ? state.fleet.progress : [];
+    $("fleetCount").textContent = fmt.format(fleets.length) + " fleets";
+
+    $("fleetList").innerHTML = fleets.map((fleet) => {
+      const verdict = fleet.verdict || "";
+      const reject = String(verdict).toUpperCase().includes("REJECT");
+      const agents = Array.isArray(fleet.agents) ? fleet.agents : [];
+      return `
+        <article class="fleetCard">
+          <div class="fleetTop">
+            <div class="fleetName" title="${esc(fleet.name || fleet.id || "")}">${esc(fleet.name || fleet.id || "Unnamed fleet")}</div>
+            <div class="fleetMeta">
+              ${statusPill(fleet.status)}
+              ${verdict ? '<span class="verdict '+(reject ? "reject" : "")+'" title="'+esc(verdict)+'">'+esc(verdict)+'</span>' : ""}
+              <span class="mono muted">${fmt.format(Number(fleet.tokens || 0))} tokens</span>
+            </div>
+          </div>
+          <div class="agentWrap">
+            ${agents.map((agent) => `
+              <span class="agentChip">
+                <span class="statusDot ${esc(statusClass(agent.status))}"></span>
+                <span class="agentLabel" title="${esc(agent.label || "")}">${esc(agent.label || "agent")}</span>
+                <span class="phaseTag" title="${esc(agent.phase || "")}">${esc(agent.phase || "phase")}</span>
+              </span>
+            `).join("") || '<span class="muted">No agents reported.</span>'}
+          </div>
+        </article>
+      `;
+    }).join("") || '<div class="empty">No fleet status available.</div>';
+
+    const done = progress.filter((p) => statusClass(p.status) === "ok").length;
+    $("progressDone").textContent = fmt.format(done) + "/" + fmt.format(progress.length) + " done";
+    $("progressList").innerHTML = progress.map((item) => `
+      <div class="progressRow">
+        ${statusPill(item.status)}
+        <div class="progressTitle" title="${esc(item.title || "")}">${esc(item.title || item.id || "Untitled")}</div>
+        ${item.note ? '<div class="progressNote" title="'+esc(item.note)+'">'+esc(item.note)+'</div>' : '<div class="progressNote"></div>'}
+      </div>
+    `).join("") || '<div class="empty">No progress items available.</div>';
+  }
+
+  function renderActivity(){
+    const entries = sortedLog();
+    $("activityList").innerHTML = entries.map((entry) => {
+      if(entry.cmd){
+        return `
+          <article class="activityBlock">
+            <div class="activityMeta">
+              ${providerChip(entry.provider)}
+              <span class="mono muted">${esc(toTime(entry.ts))}</span>
+              ${statusPill(entry.status)}
+            </div>
+            <div class="cmdLine mono">$ ${esc(entry.cmd)}</div>
+            <div class="outputBlock mono">${esc(entry.output || entry.note || "")}</div>
+          </article>
+        `;
+      }
+      return `
+        <div class="compactActivity">
+          <span class="mono muted">${esc(toTime(entry.ts))}</span>
+          ${providerChip(entry.provider)}
+          <span class="compactTask" title="${esc(entry.task || "")}">${esc(entry.task || "—")}</span>
+        </div>
+      `;
+    }).join("") || '<div class="empty">No activity available.</div>';
+  }
+
+  function renderStatus(){
+    $("updatedAgo").textContent = ago(latestTimestamp());
+    if(state.errors.length){
+      $("fetchState").textContent = state.errors.join(" · ");
+      $("fetchState").className = "fetchState warn";
+    } else if(state.loadedAt){
+      $("fetchState").textContent = "data stream healthy";
+      $("fetchState").className = "fetchState";
+    } else {
+      $("fetchState").textContent = "waiting for data";
+      $("fetchState").className = "fetchState";
+    }
+  }
+
+  function render(){
+    renderProviders();
+    renderFleet();
+    renderActivity();
+    renderStatus();
+  }
+
+  async function getJson(path){
+    const res = await fetch(path, {cache:"no-store"});
+    if(!res.ok) throw new Error(path + " " + res.status);
+    return res.json();
+  }
+
+  async function poll(){
+    const errors = [];
+    const [logResult, fleetResult] = await Promise.allSettled([
+      getJson("./offload-log.json"),
+      getJson("./fleet-status.json")
+    ]);
+
+    if(logResult.status === "fulfilled" && Array.isArray(logResult.value)){
+      state.log = logResult.value;
+    } else {
+      errors.push("offload-log unavailable");
+    }
+
+    if(fleetResult.status === "fulfilled" && fleetResult.value && typeof fleetResult.value === "object"){
+      state.fleet = {
+        updatedAt: fleetResult.value.updatedAt || null,
+        fleets: Array.isArray(fleetResult.value.fleets) ? fleetResult.value.fleets : [],
+        progress: Array.isArray(fleetResult.value.progress) ? fleetResult.value.progress : []
+      };
+    } else {
+      errors.push("fleet-status unavailable");
+    }
+
+    if(logResult.status === "fulfilled" || fleetResult.status === "fulfilled"){
+      state.loadedAt = Date.now();
+    }
+    state.errors = errors;
+    render();
+  }
+
+  document.querySelectorAll(".tab").forEach((tab) => {
+    tab.addEventListener("click", () => {
+      const target = tab.dataset.tab;
+      document.querySelectorAll(".tab").forEach((t) => t.classList.toggle("active", t === tab));
+      document.querySelectorAll(".view").forEach((view) => view.classList.toggle("active", view.id === "tab-" + target));
+    });
+  });
+
+  render();
+  poll();
+  setInterval(poll, 3000);
+  setInterval(renderStatus, 1000);
+})();
+</script>
+</body>
+</html>
