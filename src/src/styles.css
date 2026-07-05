@@ -2649,10 +2649,9 @@ body {
 .agent-front-fragments span:nth-child(2) { right: -10px; top: 102px; }
 .agent-front-fragments span:nth-child(3) { left: 24px; bottom: 60px; width: 148px; }
 
-/* Agent caster feed — sliding-window narration overlaid on the art bottom.
-   Maiden types the newest line (af-now + caret); the previous line (af-old)
-   sits above, faded; new lines push it up (keyed remount replays af-in). */
-.agent-feed {
+/* Agent bottom overlay — holds the event banner (top) + caster feed (below),
+   anchored to the art bottom with a shared readability scrim. */
+.agent-overlay {
   position: absolute;
   left: 12px;
   right: 12px;
@@ -2660,11 +2659,20 @@ body {
   z-index: 5;
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  padding: 26px 12px 10px;
+  gap: 8px;
+  padding: 28px 12px 10px;
   border-radius: 12px;
   /* scrim so text reads over the art; fades to transparent at the top */
   background: linear-gradient(180deg, rgba(6, 12, 24, 0) 0%, rgba(6, 12, 24, 0.6) 34%, rgba(6, 12, 24, 0.9) 100%);
+}
+
+/* Agent caster feed — sliding-window narration. Maiden types the newest line
+   (af-now + caret); the previous line (af-old) sits above, faded; new lines
+   push it up (keyed remount replays af-in). */
+.agent-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 .agent-feed-tag {
   display: flex; align-items: center; gap: 6px;
@@ -3409,23 +3417,21 @@ body {
    top-right topbar FAB, so offset it down to clear the topbar notch. */
 .board-bento .agent-bento   { grid-column: 3 !important; grid-row: 1 !important; margin-top: 40px; }
 
-/* announcer event callout — occupies the minimap cell, top-centre, over the map */
+/* announcer event callout — sits inside the Agent sector, above the caster feed */
 .deck-event-banner {
-  grid-area: minimap; align-self: start; justify-self: center;
-  margin-top: 92px; z-index: 40; pointer-events: none; text-align: center;
+  align-self: center; text-align: center; pointer-events: none;
   animation: deb-in 0.34s cubic-bezier(0.2, 1.5, 0.5, 1);
 }
 .deck-event-banner.out { animation: deb-out 0.42s ease forwards; }
 .deb-label {
-  display: inline-block; font-weight: 900; font-size: 30px; letter-spacing: 3px;
-  padding: 7px 20px; border-radius: 10px;
-  background: rgba(6, 10, 20, 0.42);
-  -webkit-backdrop-filter: blur(3px); backdrop-filter: blur(3px);
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.7);
+  display: inline-block; font-weight: 900; font-size: 18px; letter-spacing: 2px;
+  padding: 5px 14px; border-radius: 8px;
+  background: rgba(6, 10, 20, 0.55);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
 }
-.deck-event-banner.tone-gold .deb-label { color: #ffd76a; box-shadow: 0 0 26px rgba(255, 200, 80, 0.28); }
-.deck-event-banner.tone-blood .deb-label { color: #ff6072; box-shadow: 0 0 26px rgba(244, 63, 94, 0.3); }
-.deck-event-banner.tone-fire .deb-label { color: #ff9a3c; box-shadow: 0 0 26px rgba(255, 140, 50, 0.3); }
+.deck-event-banner.tone-gold .deb-label { color: #ffd76a; box-shadow: 0 0 22px rgba(255, 200, 80, 0.3); }
+.deck-event-banner.tone-blood .deb-label { color: #ff6072; box-shadow: 0 0 22px rgba(244, 63, 94, 0.32); }
+.deck-event-banner.tone-fire .deb-label { color: #ff9a3c; box-shadow: 0 0 22px rgba(255, 140, 50, 0.32); }
 @keyframes deb-in { from { opacity: 0; transform: scale(0.7) translateY(-8px); } to { opacity: 1; transform: none; } }
 @keyframes deb-out { to { opacity: 0; transform: scale(1.12); } }
 @media (prefers-reduced-motion: reduce) {

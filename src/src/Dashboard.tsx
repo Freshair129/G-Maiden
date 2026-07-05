@@ -134,7 +134,10 @@ export default function Dashboard() {
                 <span />
               </div>
             </div>
-            <AgentFeed lines={data.agentSector.summary} />
+            <div className="agent-overlay">
+              <DeckEventBanner />
+              <AgentFeed lines={data.agentSector.summary} />
+            </div>
           </div>
         </section>
 
@@ -206,9 +209,6 @@ export default function Dashboard() {
           </div>
         </section>
 
-        {/* announcer event callout — overlays the top-center of the minimap cell */}
-        <DeckEventBanner />
-
         {/* Activity / Event logs live in the Insights + History tabs (CR-002).
            Dashboard is a fixed-grid, no-scroll layout — only the 5 bento cards above. */}
       </div>
@@ -217,7 +217,7 @@ export default function Dashboard() {
 }
 
 // Announcer event banner (First Blood / Double Kill / streak ladder …), shown as
-// a transient Dota-style callout over the top of the minimap cell. Mirrors the
+// a transient callout inside the Agent sector, above the caster feed. Mirrors the
 // overlay's STREAK_LABELS. No deck-side announcer event is wired yet, so this
 // cycles a demo set; TODO: drive from the `announcer-banner` Tauri event
 // (payload.bannerText) + game-tick kill rising-edge, like src/src/App.tsx.
