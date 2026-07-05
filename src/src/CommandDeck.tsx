@@ -66,19 +66,22 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   const safePush = isPregame ? 0 : Math.max(0, 88 - enemyMissing * 18 - data.match.activeAlerts * 10);
   const vision = data.signals.find((s) => s.label.toLowerCase().startsWith("vision"))?.value ?? "—";
 
-  // rounded-fillet Subtract clip — recomputed from the panel's live size (adapts to preset/resize)
+  // fixed 1280×800 stage scaled to fill any window (1280 → 1920) + rounded-fillet Subtract clip
+  const stageRef = useRef<HTMLDivElement>(null);
   const panelRef = useRef<HTMLElement>(null);
   useEffect(() => {
-    const el = panelRef.current;
-    if (!el) return;
     const apply = () => {
-      el.style.clipPath = `path('${buildPanelPath(el.offsetWidth, el.offsetHeight, tab === "dashboard")}')`;
+      const stage = stageRef.current;
+      if (stage) {
+        const s = Math.min(window.innerWidth / 1280, window.innerHeight / 800);
+        stage.style.transform = `translate(-50%, -50%) scale(${s})`;
+      }
+      const p = panelRef.current;
+      if (p) p.style.clipPath = `path('${buildPanelPath(p.offsetWidth, p.offsetHeight, tab === "dashboard")}')`;
     };
     apply();
-    const ro = new ResizeObserver(apply);
-    ro.observe(el);
     window.addEventListener("resize", apply);
-    return () => { ro.disconnect(); window.removeEventListener("resize", apply); };
+    return () => window.removeEventListener("resize", apply);
   }, [tab]);
 
   const error: string | null = null;
@@ -87,6 +90,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
     <div className="app deck-v3 g-deck">
       <div className="g-deck-bg" />
 
+      <div className="g-deck-stage" ref={stageRef}>
       {/* sidebar FAB — icon nav */}
       <aside className="g-sidebar-fab">
         <div className="g-brand" title="G-Maiden">G</div>
@@ -204,6 +208,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
           </div>
         </div>
       )}
+      </div>{/* /g-deck-stage */}
     </div>
   );
 }

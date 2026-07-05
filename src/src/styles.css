@@ -4124,6 +4124,15 @@ body {
 @keyframes g-drift { 0%,100%{transform:translateX(-6%)} 50%{transform:translateX(6%)} }
 @media (prefers-reduced-motion: reduce){ .g-deck-bg::after{animation:none} }
 
+/* fixed 1280×800 design stage, scaled by JS to fill any window (1280 → 1920).
+   All FABs + panel anchor to THIS (not the window), so the layout is identical at every size. */
+.g-deck-stage {
+  position: absolute; left: 50%; top: 50%;
+  width: 1280px; height: 800px;
+  transform: translate(-50%, -50%) scale(1);
+  transform-origin: center center;
+}
+
 /* ---- sidebar FAB (icon nav, left) ---- */
 .g-sidebar-fab {
   position: absolute; left: 10px; top: 10px; bottom: 10px; width: 60px;
