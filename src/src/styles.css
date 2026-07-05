@@ -4273,16 +4273,17 @@ body {
 .g-power-item:hover { border-color: rgba(143, 212, 255, .34); color: var(--g-ice-500); }
 .pi-close:hover { border-color: rgba(244, 63, 94, .4); color: var(--g-danger, #f43f5e); background: rgba(244, 63, 94, .14); }
 
-/* ---- G-Signal cards (D/E/F/G) — inset cells on the panel's bottom-right
-   (dashboard only). Flat card styling (no FAB shadow/blur) so they sit flush
-   on the frosted panel like the Alert Deck / Companion cards, not floating. ---- */
-.g-signals-fab {
-  position: absolute; right: 16px; bottom: 16px; width: 360px; height: 184px; z-index: 12;
+/* ---- G-Signal sector (D/E/F/G) — a proper bento grid cell (area `gsignal`),
+   NOT a floating FAB. The 4 cells are a 2×2 grid inside the bento card, so the
+   sector aligns to the deck grid like every other sector. ---- */
+.gsignal-bento { display: flex; flex-direction: column; }
+.gsignal-bento .gsignal-cells {
+  flex: 1; min-height: 0;
   display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px;
 }
 .g-sig {
   position: relative; border-radius: var(--g-r-card); background: var(--g-card); border: 1px solid var(--g-card-line);
-  padding: 12px 14px; display: flex; flex-direction: column;
+  padding: 10px 12px; display: flex; flex-direction: column; min-height: 0; overflow: hidden;
 }
 .g-sig .sg-tag { position: absolute; top: 9px; right: 12px; font-size: 9px; font-weight: 800; color: var(--g-text-dim); opacity: .5; }
 .g-sig .sg-label { font-size: 9px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--g-text-dim); }

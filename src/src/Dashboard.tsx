@@ -13,8 +13,13 @@ export default function Dashboard() {
   const allyHeroes = data.heroes.filter((hero) => hero.team === "ally");
   const enemyHeroes = data.heroes.filter((hero) => hero.team === "enemy");
   const visibleMarkers = isPregame ? [] : data.markers;
-  // G-Signal (Enemy Missing / Gank Risk / Safe Push / Vision) now renders as bottom-right
-  // FAB cards in CommandDeck's Subtract notch — see CommandDeck.tsx.
+
+  // G-Signal sector (D/E/F/G) — a proper bento grid cell (area `gsignal`),
+  // not a floating FAB, so it aligns with the other sectors on the grid.
+  const enemyMissing = isPregame ? 0 : enemyHeroes.filter((h) => h.state === "missing").length;
+  const gankRisk = isPregame ? 0 : Math.min(100, 26 + enemyMissing * 24 + data.match.activeAlerts * 8);
+  const safePush = isPregame ? 0 : Math.max(0, 88 - enemyMissing * 18 - data.match.activeAlerts * 10);
+  const vision = data.signals.find((s) => s.label.toLowerCase().startsWith("vision"))?.value ?? "—";
 
   return (
     <div className="dashboard-v2">
@@ -134,6 +139,41 @@ export default function Dashboard() {
               {data.agentSector.summary.map((line) => (
                 <p key={line}>{line}</p>
               ))}
+            </div>
+          </div>
+        </section>
+
+        <section className="bento-card gsignal-bento tilt-card">
+          <div className="bento-head compact">
+            <div>
+              <div className="eyebrow">G-Signal</div>
+              <h3>Threat radar</h3>
+            </div>
+          </div>
+          <div className="gsignal-cells">
+            <div className="g-sig">
+              <span className="sg-tag">D</span>
+              <span className="sg-label">Enemy Missing</span>
+              <span className="sg-val">{enemyMissing}</span>
+              <div className="sg-bar"><div className="sg-fill sg-fill-ice" style={{ width: `${Math.min(100, enemyMissing * 20)}%` }} /></div>
+            </div>
+            <div className="g-sig hero">
+              <span className="sg-tag">E</span>
+              <span className="sg-label">Gank Risk</span>
+              <span className="sg-val">{gankRisk}%</span>
+              <div className="sg-bar"><div className="sg-fill" style={{ width: `${gankRisk}%` }} /></div>
+            </div>
+            <div className="g-sig">
+              <span className="sg-tag">F</span>
+              <span className="sg-label">Safe Push</span>
+              <span className="sg-val">{safePush}%</span>
+              <div className="sg-bar"><div className="sg-fill sg-fill-safe" style={{ width: `${safePush}%` }} /></div>
+            </div>
+            <div className="g-sig">
+              <span className="sg-tag">G</span>
+              <span className="sg-label">Vision</span>
+              <span className="sg-val">{vision}</span>
+              <div className="sg-bar"><div className="sg-fill sg-fill-warn" style={{ width: "40%" }} /></div>
             </div>
           </div>
         </section>
