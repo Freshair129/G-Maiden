@@ -2176,36 +2176,28 @@ body {
   gap: 10px;
 }
 
+/* FLAT pass — cards are a subtle lift on the single flat panel surface, no
+   gradient / gloss / drop-shadow (those read as extra layers). Accent cards
+   (lime) still pop; dark cards read as gentle divisions of one surface. */
 .bento-card {
   position: relative;
   min-height: 0;
   padding: 10px;
   border-radius: 14px;
-  border: 1px solid rgba(129, 180, 255, 0.16);
-  background:
-    linear-gradient(180deg, rgba(11, 19, 35, 0.96), rgba(8, 14, 27, 0.9));
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.025);
   overflow: hidden;
 }
 
-.bento-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: radial-gradient(circle at top left, rgba(140, 203, 255, 0.08), transparent 30%);
-}
+.bento-card::after { display: none; }
 
 .tilt-card {
-  transform-style: preserve-3d;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  transition: border-color 0.18s ease, background 0.18s ease;
 }
 
 .tilt-card:hover {
-  transform: perspective(1400px) rotateX(2deg) rotateY(-3deg) translateY(-2px);
-  border-color: rgba(132, 214, 255, 0.3);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(132, 214, 255, 0.08), 0 0 28px rgba(67, 136, 255, 0.14);
+  border-color: rgba(143, 212, 255, 0.22);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .bento-head {
@@ -4279,12 +4271,14 @@ body {
 /* ---- glass panel body — SUBTRACT shape: concave notch (top-right) wraps the topbar FAB ---- */
 .g-deck-panel {
   position: absolute; left: 12px; top: 10px; right: 10px; bottom: 10px; z-index: var(--g-z-content);
-  /* more visible frosted fill so the concave Subtract silhouette reads over the dark void */
-  background: linear-gradient(158deg, rgba(36, 48, 78, 0.52), rgba(14, 19, 33, 0.60));
+  /* FLAT pass — one neutral dark frosted surface (no blue gradient) so panel +
+     cards read as a single layer. True glass-through-desktop comes later with
+     window transparency. */
+  background: rgba(18, 20, 26, 0.72);
   border-radius: 18px;
   -webkit-backdrop-filter: var(--g-blur-panel); backdrop-filter: var(--g-blur-panel);
-  /* rim + depth that FOLLOW the clip-path shape (drop-shadow respects clip-path) */
-  filter: drop-shadow(0 0 1px rgba(160, 200, 255, 0.45)) drop-shadow(0 16px 40px rgba(0, 0, 0, 0.5));
+  /* thin rim only (follows the clip-path); drop the heavy depth shadow */
+  filter: drop-shadow(0 0 1px rgba(160, 200, 255, 0.28));
   overflow: hidden; display: flex; flex-direction: column;
   /* Boolean-Subtract: TWO notches — top-right (topbar FAB) + bottom-left
      (sidebar + power FABs). The G-Signal cards sit ON the panel's bottom-right
