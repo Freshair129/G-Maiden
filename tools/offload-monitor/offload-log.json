@@ -67,5 +67,99 @@
     "durationMs": 0,
     "status": "error",
     "note": "OPENROUTER_API_KEY not set (env or Rwang_remote/.env)"
+  },
+  {
+    "ts": "2026-07-05T00:15:16.089Z",
+    "provider": "ollama",
+    "model": "aroow-rust-coder-9b:latest",
+    "task": "In one short sentence, what is a DAG?",
+    "tokens": 41,
+    "durationMs": 1297,
+    "status": "ok",
+    "cmd": "POST http://127.0.0.1:11434/api/chat  model=aroow-rust-coder-9b:latest",
+    "output": "<think>\n\n</think>\n\nA Directed Acyclic Graph (DAG) is a finite directed graph with no cycles."
+  },
+  {
+    "ts": "2026-07-05T00:16:26.618Z",
+    "provider": "openrouter",
+    "model": "meta-llama/llama-3.3-70b-instruct:free",
+    "task": "Reply with exactly: OPENROUTER_OK",
+    "tokens": 0,
+    "durationMs": 961,
+    "status": "error",
+    "cmd": "POST openrouter.ai/api/v1/chat/completions  model=meta-llama/llama-3.3-70b-instruct:free",
+    "output": "",
+    "note": "openrouter 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"meta-llama/llama-3.3-70b-instruct:free is temporarily rate-limited u"
+  },
+  {
+    "ts": "2026-07-05T00:16:59.236Z",
+    "provider": "openrouter",
+    "model": "google/gemini-2.0-flash-exp:free",
+    "task": "Reply with exactly: OPENROUTER_OK",
+    "tokens": 0,
+    "durationMs": 142,
+    "status": "error",
+    "cmd": "POST openrouter.ai/api/v1/chat/completions  model=google/gemini-2.0-flash-exp:free",
+    "output": "",
+    "note": "openrouter 404: {\"error\":{\"message\":\"No endpoints found for google/gemini-2.0-flash-exp:free.\",\"code\":404},\"user_id\":\"user_3EkIAXdAbxI9MV8onsuT8GYgIzU\"}"
+  },
+  {
+    "ts": "2026-07-05T00:17:25.842Z",
+    "provider": "openrouter",
+    "model": "qwen/qwen-2.5-coder-32b-instruct:free",
+    "task": "Reply with exactly: OPENROUTER_OK",
+    "tokens": 0,
+    "durationMs": 142,
+    "status": "error",
+    "cmd": "POST openrouter.ai/api/v1/chat/completions  model=qwen/qwen-2.5-coder-32b-instruct:free",
+    "output": "",
+    "note": "openrouter 404: {\"error\":{\"message\":\"This model is unavailable for free. The paid version is available now - use this slug instead: qwen/qwen-2.5-coder-32b-inst"
+  },
+  {
+    "ts": "2026-07-05T00:17:52.969Z",
+    "provider": "openrouter",
+    "model": "google/gemini-flash-1.5",
+    "task": "Reply with exactly: OPENROUTER_OK",
+    "tokens": 0,
+    "durationMs": 132,
+    "status": "error",
+    "cmd": "POST openrouter.ai/api/v1/chat/completions  model=google/gemini-flash-1.5",
+    "output": "",
+    "note": "openrouter 404: {\"error\":{\"message\":\"No endpoints found for google/gemini-flash-1.5.\",\"code\":404},\"user_id\":\"user_3EkIAXdAbxI9MV8onsuT8GYgIzU\"}"
+  },
+  {
+    "ts": "2026-07-05T00:18:31.299Z",
+    "provider": "openrouter",
+    "model": "poolside/laguna-xs-2.1:free",
+    "task": "Reply with exactly: OPENROUTER_OK",
+    "tokens": 0,
+    "durationMs": 380,
+    "status": "error",
+    "cmd": "POST openrouter.ai/api/v1/chat/completions  model=poolside/laguna-xs-2.1:free",
+    "output": "",
+    "note": "openrouter 429: {\"error\":{\"message\":\"Provider returned error\",\"code\":429,\"metadata\":{\"raw\":\"poolside/laguna-xs-2.1:free is temporarily rate-limited upstream. Pl"
+  },
+  {
+    "ts": "2026-07-05T00:18:31.813Z",
+    "provider": "openrouter",
+    "model": "google/gemini-3.1-flash-lite",
+    "task": "Reply with exactly: OPENROUTER_OK",
+    "tokens": 0,
+    "durationMs": 138,
+    "status": "error",
+    "cmd": "POST openrouter.ai/api/v1/chat/completions  model=google/gemini-3.1-flash-lite",
+    "output": "",
+    "note": "openrouter 402: {\"error\":{\"message\":\"This request requires more credits, or fewer max_tokens. You requested up to 65536 tokens, but can only afford 26666. To in"
+  },
+  {
+    "ts": "2026-07-05T00:19:03.703Z",
+    "provider": "openrouter",
+    "model": "google/gemini-3.1-flash-lite",
+    "task": "Reply with exactly: OPENROUTER_OK",
+    "tokens": 15,
+    "durationMs": 1058,
+    "status": "ok",
+    "cmd": "POST openrouter.ai/api/v1/chat/completions  model=google/gemini-3.1-flash-lite",
+    "output": "OPENROUTER_OK"
   }
 ]
