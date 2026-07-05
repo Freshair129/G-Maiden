@@ -883,6 +883,26 @@ body {
 .spectator-map.empty {
   filter: saturate(0.75);
 }
+/* pregame / GSI-offline: the terrain blobs + grid are meaningless noise (they
+   read as random grey blobs through the glass). Fade them out and show a clean
+   "waiting for match" placeholder instead. */
+.spectator-map.empty .map-terrain { opacity: 0.06; filter: blur(3px); }
+.spectator-map.empty .map-grid { opacity: 0.35; }
+.spectator-map.empty .river-line { opacity: 0.4; }
+.spectator-map.empty::after {
+  content: "WAITING FOR MATCH";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 24px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: rgba(143, 176, 208, 0.55);
+  pointer-events: none;
+}
 
 .map-grid,
 .river-line {
