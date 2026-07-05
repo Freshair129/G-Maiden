@@ -1,4 +1,4 @@
-import { useState, type ReactNode } from "react";
+import { useState, useRef, useEffect, type ReactNode } from "react";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import VoicePacksPage from "./VoicePacksPage";
 import QuotaCard from "./QuotaCard";
@@ -66,6 +66,21 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   const safePush = isPregame ? 0 : Math.max(0, 88 - enemyMissing * 18 - data.match.activeAlerts * 10);
   const vision = data.signals.find((s) => s.label.toLowerCase().startsWith("vision"))?.value ?? "—";
 
+  // rounded-fillet Subtract clip — recomputed from the panel's live size (adapts to preset/resize)
+  const panelRef = useRef<HTMLElement>(null);
+  useEffect(() => {
+    const el = panelRef.current;
+    if (!el) return;
+    const apply = () => {
+      el.style.clipPath = `path('${buildPanelPath(el.offsetWidth, el.offsetHeight, tab === "dashboard")}')`;
+    };
+    apply();
+    const ro = new ResizeObserver(apply);
+    ro.observe(el);
+    window.addEventListener("resize", apply);
+    return () => { ro.disconnect(); window.removeEventListener("resize", apply); };
+  }, [tab]);
+
   const error: string | null = null;
 
   return (
@@ -128,8 +143,17 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
         </div>
       </header>
 
+      {/* P1–P5 agent anchor rail (dashboard) — spatial anchors for agent comms, not nav */}
+      {tab === "dashboard" && (
+        <div className="g-anchor-rail">
+          {["P1", "P2", "P3", "P4", "P5"].map((p, i) => (
+            <div key={p} className={`g-anchor${i === 0 ? " active" : ""}`} title={`Anchor ${p}`}>{p}</div>
+          ))}
+        </div>
+      )}
+
       {/* glass panel — hosts the active tab (rich, live-wired content preserved) */}
-      <main className={`g-deck-panel${tab === "dashboard" ? " has-signals" : ""}`}>
+      <main ref={panelRef} className={`g-deck-panel${tab === "dashboard" ? " has-signals" : ""}`}>
         {error ? <div className="banner err">engine offline ({error})</div> : null}
         <div className={`surface page-${tab}`}>
           {tab === "dashboard" && <Dashboard />}
@@ -182,6 +206,31 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
       )}
     </div>
   );
+}
+
+// build a rounded-corner (fillet) SVG path for the concave Subtract panel
+function buildPanelPath(w: number, h: number, hasSignals: boolean): string {
+  const ntw = 474, nth = 60, nbw = 382, nbh = 206;
+  const pts: Array<[number, number]> = hasSignals
+    ? [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h - nbh], [w - nbw, h - nbh], [w - nbw, h], [0, h]]
+    : [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h], [0, h]];
+  return roundedPath(pts, 16);
+}
+function roundedPath(pts: Array<[number, number]>, r: number): string {
+  const n = pts.length;
+  let d = "";
+  for (let i = 0; i < n; i++) {
+    const [x0, y0] = pts[(i - 1 + n) % n];
+    const [x1, y1] = pts[i];
+    const [x2, y2] = pts[(i + 1) % n];
+    const d1 = Math.hypot(x0 - x1, y0 - y1) || 1;
+    const d2 = Math.hypot(x2 - x1, y2 - y1) || 1;
+    const rr = Math.min(r, d1 / 2, d2 / 2);
+    const ax = x1 + ((x0 - x1) / d1) * rr, ay = y1 + ((y0 - y1) / d1) * rr;
+    const bx = x1 + ((x2 - x1) / d2) * rr, by = y1 + ((y2 - y1) / d2) * rr;
+    d += (i === 0 ? `M ${ax} ${ay} ` : `L ${ax} ${ay} `) + `Q ${x1} ${y1} ${bx} ${by} `;
+  }
+  return d + "Z";
 }
 
 function pct(v: number): string {

@@ -4182,14 +4182,28 @@ body {
   clip-path: var(--clip-top);
 }
 .g-deck-panel.has-signals { clip-path: var(--clip-both); }
+/* JS sets an inline clip-path: path(...) with rounded fillets — the vars above are the
+   sharp-polygon fallback until the effect runs. ::before top-highlight is clipped by the parent. */
 .g-deck-panel::before {
-  content:''; position:absolute; inset:0; z-index:2; pointer-events:none;
-  border:1px solid var(--g-glass-rim); border-radius:18px; box-shadow: var(--g-rim-top);
-  clip-path: var(--clip-top);
+  content:''; position:absolute; inset:0; z-index:2; pointer-events:none; box-shadow: var(--g-rim-top);
 }
-.g-deck-panel.has-signals::before { clip-path: var(--clip-both); }
 /* content clears the top-right notch (panel extends up to y10; content starts ~y70) */
 .g-deck-panel .surface { flex: 1; min-height: 0; overflow: hidden; padding: 62px 16px 16px; }
+/* dashboard: left gutter for the P1–P5 anchor rail */
+.g-deck-panel.has-signals .surface { padding-left: 58px; }
+
+/* ---- P1–P5 agent anchor rail (dashboard, panel top-left gutter) ---- */
+.g-anchor-rail {
+  position: absolute; left: 92px; top: 82px; z-index: 60;
+  display: flex; flex-direction: column; gap: 5px; -webkit-app-region: no-drag;
+}
+.g-anchor {
+  width: 40px; padding: 7px 0; text-align: center; border-radius: 9px;
+  font-size: 11px; font-weight: 700; letter-spacing: .5px; color: var(--g-text-dim);
+  background: rgba(150, 200, 255, .05); border: 1px solid var(--g-card-line);
+  transition: color var(--g-t-micro), background var(--g-t-micro);
+}
+.g-anchor.active { color: var(--g-lime-500); background: var(--g-lime-soft); border-color: var(--g-lime-line); }
 
 /* ---- G-Signal FABs (D/E/F/G) — float in the bottom-right notch (dashboard only) ---- */
 .g-signals-fab {
