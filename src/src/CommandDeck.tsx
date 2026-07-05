@@ -106,7 +106,6 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
 
   return (
     <div className="app deck-v3 g-deck">
-      <div className="g-deck-bg" />
 
       <div className="g-deck-stage" ref={stageRef}>
       {/* sidebar FAB — icon nav (brand moved to the P1 logo tile) */}

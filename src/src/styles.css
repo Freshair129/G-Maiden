@@ -31,8 +31,8 @@
   --g-z-bg: 0; --g-z-panel: 1; --g-z-content: 10; --g-z-fab: 100; --g-z-pop: 200;
 }
 * { box-sizing: border-box; }
-html, body, #root { height: 100%; margin: 0; }
-body { background: var(--bg); color: var(--txt); font: 13px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
+html, body, #root { height: 100%; margin: 0; background: transparent; }
+body { background: transparent; color: var(--txt); font: 13px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
 code { background: #0b1424; border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; color: var(--cyan); font-size: 12px; }
 h3 { margin: 0 0 8px; }
 
@@ -286,10 +286,7 @@ h3 { margin: 0 0 8px; }
 /* ---- G-Maiden companion shell ---- */
 body {
   overflow: hidden;
-  background:
-    radial-gradient(circle at top center, rgba(59, 115, 255, 0.18), transparent 34%),
-    radial-gradient(circle at bottom left, rgba(31, 208, 160, 0.08), transparent 28%),
-    #050914;
+  background: transparent;
   color: #eef5ff;
   font-family: "Segoe UI", "Inter", sans-serif;
 }
@@ -4164,7 +4161,7 @@ body {
 .deck-v3.g-deck {
   position: fixed; inset: 0;
   display: block;
-  background: var(--g-void);
+  background: transparent;
   color: var(--g-text);
   overflow: hidden;
 }
@@ -4397,3 +4394,7 @@ body {
 .g-deck-panel .surface.page-companion,
 .g-deck-panel .surface.page-live { overflow-y: auto; }
 .g-deck-panel .banner.err { margin: 10px 14px 0; }
+
+/* transparent-window drag: the topbar FAB is the drag handle; interactive children
+   (buttons/bell/profile) + cards keep -webkit-app-region: no-drag (default). */
+.g-topbar-fab { -webkit-app-region: drag; }

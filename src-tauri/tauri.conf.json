@@ -21,7 +21,8 @@
         "resizable": false,
         "decorations": false,
         "center": true,
-        "visible": true
+        "visible": true,
+        "transparent": true
       },
       {
         "title": "G-Maiden Overlay",
