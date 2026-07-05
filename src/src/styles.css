@@ -4205,7 +4205,7 @@ body {
 /* ---- sidebar FAB (icon nav) — floats in the bottom-left notch, BELOW the
    P1–P5 sector; a single power FAB sits below it in the same notch ---- */
 .g-sidebar-fab {
-  position: absolute; left: 12px; top: 238px; bottom: 86px; width: 64px;
+  position: absolute; left: 12px; top: 300px; bottom: 86px; width: 64px;
   z-index: var(--g-z-fab);
   background: var(--g-fab); border: 1px solid var(--g-fab-rim); border-radius: var(--g-r-fab);
   box-shadow: var(--g-shadow-fab);
@@ -4256,8 +4256,8 @@ body {
   /* Boolean-Subtract: TWO notches — top-right (topbar FAB) + bottom-left
      (sidebar + power FABs). The G-Signal cards sit ON the panel's bottom-right
      (grounded on frost), so there is no bottom-right cut. */
-  --ntw: 348px; --nth: 58px;   /* top-right notch (topbar) */
-  --nlw: 72px; --nlt: 216px;   /* bottom-left notch (sidebar + power) */
+  --ntw: 256px; --nth: 58px;   /* top-right notch (topbar, telemetry removed) */
+  --nlw: 72px; --nlt: 286px;   /* bottom-left notch (sidebar + power); top panel area extended down for the P1-P5 rail */
   --clip-top: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% 100%, var(--nlw) 100%, var(--nlw) var(--nlt), 0 var(--nlt));
   clip-path: var(--clip-top);
 }
@@ -4274,19 +4274,30 @@ body {
    content doesn't run under the top-right topbar notch. */
 .g-deck-panel .surface.page-dashboard { padding-top: 22px; }
 
-/* ---- P1–P5 agent anchor rail — the "P sector", top-left inside the panel,
-   ABOVE the sidebar FAB (spatial anchors for agent comms, not nav) ---- */
+/* ---- left rail (top-left, inside the panel) — P1 = brand logo tile,
+   P2–P5 = telemetry (CPU/RAM/GPU/VRAM, moved off the topbar) ---- */
 .g-anchor-rail {
-  position: absolute; left: 22px; top: 26px; z-index: 60;
+  position: absolute; left: 14px; top: 14px; width: 64px; z-index: 60;
   display: flex; flex-direction: column; gap: 6px; -webkit-app-region: no-drag;
 }
-.g-anchor {
-  width: 40px; padding: 7px 0; text-align: center; border-radius: 9px;
-  font-size: 11px; font-weight: 700; letter-spacing: .5px; color: var(--g-text-dim);
-  background: rgba(150, 200, 255, .05); border: 1px solid var(--g-card-line);
-  transition: color var(--g-t-micro), background var(--g-t-micro);
+.g-logo-tile {
+  width: 64px; height: 56px; border-radius: 14px; padding: 9px;
+  display: grid; place-items: center; flex-shrink: 0;
+  background: var(--g-lime-soft); border: 1px solid var(--g-lime-line);
 }
-.g-anchor.active { color: var(--g-lime-500); background: var(--g-lime-soft); border-color: var(--g-lime-line); }
+.g-logo-tile svg { width: 100%; height: 100%; display: block; }
+.g-tele {
+  width: 64px; border-radius: 11px; padding: 6px 6px 7px;
+  background: rgba(150, 200, 255, .05); border: 1px solid var(--g-card-line);
+  display: flex; flex-direction: column; gap: 3px;
+}
+.g-tele .gt-k { font-size: 8px; font-weight: 700; letter-spacing: .6px; color: var(--g-text-dim); text-transform: uppercase; }
+.g-tele .gt-v {
+  font-size: 13px; font-weight: 800; color: var(--g-text); line-height: 1;
+  font-variant-numeric: tabular-nums; display: flex; align-items: baseline; gap: 3px;
+  white-space: nowrap;
+}
+.g-tele .gt-v em { font-size: 8px; font-weight: 600; font-style: normal; color: var(--g-ice-500); }
 
 /* ---- power FAB (bottom-left corner) — single power block; click reveals a
    radial menu (minimize / maximize / close). Replaces topbar window buttons. ---- */

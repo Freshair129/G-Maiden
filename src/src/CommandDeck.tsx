@@ -85,9 +85,8 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
       <div className="g-deck-bg" />
 
       <div className="g-deck-stage" ref={stageRef}>
-      {/* sidebar FAB — icon nav */}
+      {/* sidebar FAB — icon nav (brand moved to the P1 logo tile) */}
       <aside className="g-sidebar-fab">
-        <div className="g-brand" title="G-Maiden">G</div>
         <nav>
           {NAV.map(({ key, label, Icon }) => (
             <button
@@ -104,16 +103,9 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
         </nav>
       </aside>
 
-      {/* topbar FAB — brand + telemetry + profile + window controls */}
+      {/* topbar FAB — brand + profile (telemetry moved to the P2–P5 rail) */}
       <header className="g-topbar-fab" data-tauri-drag-region="">
         <span className="g-logo">G-MAIDEN</span>
-
-        <div className="g-telemetry">
-          <div className="g-telchip"><span>CPU</span><strong>{pct(data.telemetry.cpuLoad)}</strong></div>
-          <div className="g-telchip"><span>RAM</span><strong>{mem(data.telemetry.ramUsedGb)}</strong></div>
-          <div className="g-telchip"><span>GPU</span><strong>{pct(data.telemetry.gpuLoad)}</strong></div>
-          <div className="g-telchip"><span>VRAM</span><strong>{mem(data.telemetry.vramUsedGb)}</strong></div>
-        </div>
 
         <div className={`profile-wrap${profileOpen ? " open" : ""}`}>
           <button className="profile-trigger" type="button" onClick={() => setProfileOpen((o) => !o)}>
@@ -135,14 +127,26 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
         </div>
       </header>
 
-      {/* P1–P5 agent anchor rail (dashboard) — spatial anchors for agent comms, not nav */}
-      {tab === "dashboard" && (
-        <div className="g-anchor-rail">
-          {["P1", "P2", "P3", "P4", "P5"].map((p, i) => (
-            <div key={p} className={`g-anchor${i === 0 ? " active" : ""}`} title={`Anchor ${p}`}>{p}</div>
-          ))}
+      {/* left rail — P1 = brand logo, P2–P5 = telemetry (moved off the topbar) */}
+      <div className="g-anchor-rail">
+        <div className="g-anchor g-logo-tile" title="G-Maiden"><LogoMark /></div>
+        <div className="g-tele" title="CPU load / temp">
+          <span className="gt-k">CPU</span>
+          <span className="gt-v">{pct(data.telemetry.cpuLoad)}<em>{deg(data.telemetry.cpuTemp)}</em></span>
         </div>
-      )}
+        <div className="g-tele" title="RAM in use">
+          <span className="gt-k">RAM</span>
+          <span className="gt-v">{mem(data.telemetry.ramUsedGb)}</span>
+        </div>
+        <div className="g-tele" title="GPU load / temp">
+          <span className="gt-k">GPU</span>
+          <span className="gt-v">{pct(data.telemetry.gpuLoad)}<em>{deg(data.telemetry.gpuTemp)}</em></span>
+        </div>
+        <div className="g-tele" title="VRAM in use">
+          <span className="gt-k">VRAM</span>
+          <span className="gt-v">{mem(data.telemetry.vramUsedGb)}</span>
+        </div>
+      </div>
 
       {/* glass panel — hosts the active tab (rich, live-wired content preserved) */}
       <main ref={panelRef} className="g-deck-panel">
@@ -206,8 +210,8 @@ function IconPower({ size = 22 }: { size?: number }) {
 // The G-Signal cards (D–G) sit ON the panel's bottom-right (grounded on the
 // frosted glass), NOT in a cutout — a hole there made them float over the void.
 function buildPanelPath(w: number, h: number): string {
-  const ntw = 348, nth = 58;   // top-right notch (topbar FAB)
-  const nlw = 72, nlt = 216;   // bottom-left notch (sidebar + power FABs)
+  const ntw = 256, nth = 58;   // top-right notch (topbar FAB, telemetry removed)
+  const nlw = 72, nlt = 286;   // bottom-left notch (sidebar + power); top area extended down for the rail
   const pts: Array<[number, number]> = [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h], [nlw, h], [nlw, nlt], [0, nlt]];
   return roundedPath(pts, 16);
 }
@@ -234,4 +238,25 @@ function pct(v: number): string {
 function mem(gb: number): string {
   if (gb < 0) return "—";
   return gb < 1 ? `${Math.round(gb * 1024)}M` : `${gb.toFixed(1)}G`;
+}
+function deg(v: number): string {
+  return v < 0 ? "" : `${Math.round(v)}°`;
+}
+
+// G-Maiden brand mark (Crystal-Maiden ice motif) — designed via codex, inlined
+// so it can be tinted/scaled in the P1 tile. viewBox-only so it scales to fit.
+function LogoMark() {
+  return (
+    <svg viewBox="0 0 48 48" xmlns="http://www.w3.org/2000/svg" fill="none" aria-hidden="true">
+      <defs>
+        <linearGradient id="gmark-ice" x1="24" y1="6" x2="24" y2="42" gradientUnits="userSpaceOnUse">
+          <stop offset="0" stopColor="#BEEBFF" />
+          <stop offset="1" stopColor="#5DBCF6" />
+        </linearGradient>
+      </defs>
+      <path d="M24 6L27.2 12.8L34 14.2L29 19.1L29.9 26L24 22.9L18.1 26L19 19.1L14 14.2L20.8 12.8L24 6Z" fill="url(#gmark-ice)" />
+      <path d="M24 9C15.7 9 9 15.7 9 24C9 32.3 15.7 39 24 39C30.1 39 35.4 35.4 37.8 30H30.8L27.8 33H22.2L19 29.8V18.2L22.2 15H34L31 18H23V30H31L34 27H26V22H40V24C40 32.8 32.8 40 24 40C15.2 40 8 32.8 8 24C8 15.2 15.2 8 24 8C30.6 8 36.2 12 38.6 17.7H35.5C33.3 13.6 29 11 24 11V9Z" fill="url(#gmark-ice)" />
+      <path d="M35 16L38.5 12.5L40 14L36.5 17.5L35 16Z" fill="#A3E635" />
+    </svg>
+  );
 }
