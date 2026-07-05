@@ -129,7 +129,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
       </header>
 
       {/* glass panel — hosts the active tab (rich, live-wired content preserved) */}
-      <main className="g-deck-panel">
+      <main className={`g-deck-panel${tab === "dashboard" ? " has-signals" : ""}`}>
         {error ? <div className="banner err">engine offline ({error})</div> : null}
         <div className={`surface page-${tab}`}>
           {tab === "dashboard" && <Dashboard />}

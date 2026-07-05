@@ -4174,23 +4174,20 @@ body {
   /* Boolean-Subtract: two notches — top-right (topbar FAB) + bottom-right (G-Signal FABs).
      Both FABs are right-anchored fixed-size, so the notches track them on resize. */
   --ntw: 474px; --nth: 60px;   /* top-right notch (topbar) */
-  --nbw: 382px; --nbh: 206px;  /* bottom-right notch (signals) */
-  clip-path: polygon(
-    0 0,
-    calc(100% - var(--ntw)) 0,
-    calc(100% - var(--ntw)) var(--nth),
-    100% var(--nth),
-    100% calc(100% - var(--nbh)),
-    calc(100% - var(--nbw)) calc(100% - var(--nbh)),
-    calc(100% - var(--nbw)) 100%,
-    0 100%
-  );
+  --nbw: 382px; --nbh: 206px;  /* bottom-right notch (signals, dashboard only) */
+  /* base: top-right notch only (all tabs) */
+  --clip-top: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% 100%, 0 100%);
+  /* dashboard: + bottom-right notch */
+  --clip-both: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% calc(100% - var(--nbh)), calc(100% - var(--nbw)) calc(100% - var(--nbh)), calc(100% - var(--nbw)) 100%, 0 100%);
+  clip-path: var(--clip-top);
 }
+.g-deck-panel.has-signals { clip-path: var(--clip-both); }
 .g-deck-panel::before {
   content:''; position:absolute; inset:0; z-index:2; pointer-events:none;
   border:1px solid var(--g-glass-rim); border-radius:18px; box-shadow: var(--g-rim-top);
-  clip-path: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% calc(100% - var(--nbh)), calc(100% - var(--nbw)) calc(100% - var(--nbh)), calc(100% - var(--nbw)) 100%, 0 100%);
+  clip-path: var(--clip-top);
 }
+.g-deck-panel.has-signals::before { clip-path: var(--clip-both); }
 /* content clears the top-right notch (panel extends up to y10; content starts ~y70) */
 .g-deck-panel .surface { flex: 1; min-height: 0; overflow: hidden; padding: 62px 16px 16px; }
 
