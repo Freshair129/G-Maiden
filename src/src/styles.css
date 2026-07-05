@@ -3380,7 +3380,9 @@ body {
 .board-bento {
   height: 100%;
   min-height: 0;
-  grid-template-columns: 1.75fr 1fr 1fr;
+  /* col1-2 (minimap) narrowed a touch so its top-right clears the top-right
+     topbar notch when content rises to the top band; col3 (agent/signal) wider */
+  grid-template-columns: 1.6fr 1fr 1.1fr;
   grid-template-rows: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas:
     "minimap minimap agent"
@@ -3389,7 +3391,9 @@ body {
   gap: 10px;
 }
 .board-bento .minimap-bento { grid-column: 1 / 3 !important; grid-row: 1 / 3 !important; }
-.board-bento .agent-bento   { grid-column: 3 !important; grid-row: 1 !important; }
+/* content rises to the top band (beside P1); the agent card sits under the
+   top-right topbar FAB, so offset it down to clear the topbar notch. */
+.board-bento .agent-bento   { grid-column: 3 !important; grid-row: 1 !important; margin-top: 40px; }
 .board-bento .gsignal-bento { grid-column: 3 !important; grid-row: 2 / 4 !important; }
 .board-bento .warning-bento { grid-column: 1 !important; grid-row: 3 !important; }
 .board-bento .status-bento  { grid-column: 2 !important; grid-row: 3 !important; }
@@ -4207,7 +4211,7 @@ body {
   /* Boolean-Subtract: TWO notches — top-right (topbar FAB) + bottom-left
      (sidebar + power FABs). The G-Signal cards sit ON the panel's bottom-right
      (grounded on frost), so there is no bottom-right cut. */
-  --ntw: 364px; --nth: 58px;   /* top-right notch (topbar) */
+  --ntw: 348px; --nth: 58px;   /* top-right notch (topbar) */
   --nlw: 72px; --nlt: 216px;   /* bottom-left notch (sidebar + power) */
   --clip-top: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% 100%, var(--nlw) 100%, var(--nlw) var(--nlt), 0 var(--nlt));
   clip-path: var(--clip-top);
@@ -4219,7 +4223,11 @@ body {
 }
 /* content clears the top-right notch (top) + the left rail: P1–P5 anchors
    (top-left, inside panel) and the bottom-left sidebar notch. */
-.g-deck-panel .surface { flex: 1; min-height: 0; overflow: hidden; padding: 62px 16px 16px 92px; }
+.g-deck-panel .surface { flex: 1; min-height: 0; overflow: hidden; padding: 62px 16px 16px 78px; }
+/* dashboard raises content into the top band beside P1 (agent card offsets down
+   to clear the topbar); other tabs keep top clearance so their full-width top
+   content doesn't run under the top-right topbar notch. */
+.g-deck-panel .surface.page-dashboard { padding-top: 22px; }
 
 /* ---- P1–P5 agent anchor rail — the "P sector", top-left inside the panel,
    ABOVE the sidebar FAB (spatial anchors for agent comms, not nav) ---- */

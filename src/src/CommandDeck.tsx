@@ -206,7 +206,7 @@ function IconPower({ size = 22 }: { size?: number }) {
 // The G-Signal cards (D–G) sit ON the panel's bottom-right (grounded on the
 // frosted glass), NOT in a cutout — a hole there made them float over the void.
 function buildPanelPath(w: number, h: number): string {
-  const ntw = 364, nth = 58;   // top-right notch (topbar FAB)
+  const ntw = 348, nth = 58;   // top-right notch (topbar FAB)
   const nlw = 72, nlt = 216;   // bottom-left notch (sidebar + power FABs)
   const pts: Array<[number, number]> = [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h], [nlw, h], [nlw, nlt], [0, nlt]];
   return roundedPath(pts, 16);
