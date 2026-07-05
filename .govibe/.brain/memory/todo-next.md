@@ -1,11 +1,45 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: **2026-07-05** · deck-redesign / design-system / orchestration thread
-(ดู session `.govibe/.brain/session/2026-07-05-deck-redesign-designsystem.md`).
-ก่อนหน้า = account/security (2026-07-04). ด้านล่างจากบรรทัด "📊 Progress snapshot
-(turn 15)" คือ CV/Signal thread เดิม (2026-06-21) — เก็บไว้เป็น trail ยังใช้ได้.
+อัปเดตล่าสุด: **2026-07-05 (B)** · deck HUD v2 ลงโค้ด + G-Offload Monitor
+(ดู session `.govibe/.brain/session/2026-07-05-B-deck-hud-impl-offload-monitor.md`;
+part A = `...-deck-redesign-designsystem.md`). ก่อนหน้า = account/security (2026-07-04).
+ด้านล่างจาก "📊 Progress snapshot (turn 15)" คือ CV/Signal thread เดิม (2026-06-21) — trail.
 
-## 🔵 Deck redesign / Design-system / Orchestration thread (2026-07-05) — ล่าสุด
+## 🟣 Deck HUD v2 impl + G-Offload Monitor thread (2026-07-05 B) — ล่าสุด
+
+**Branch `feat/deck-glass-redesign-ds`** — 15 commits, **ยังไม่ push/merge/tag**.
+
+- **Deck Subtract HUD ลงโค้ดจริงแล้ว** (`b14df060`→`dbd87287`): glass FAB shell (topbar+telemetry /
+  sidebar icon nav `DeckIcons.tsx`) + panel เว้า 2 โหว่ (top-right topbar + bottom-right signals)
+  **มุมมน `clip-path: path()` JS rounded fillet** + G-Signal FAB cards D/E/F/G (ย้ายจาก Dashboard) +
+  P1–P5 anchor rail + **scale-to-fit stage** (fixed 1280×800 → scale เต็มจอทุกขนาด, 1920=1.35) +
+  panel rim (drop-shadow ตาม clip). **เก็บ Dashboard รวยเดิม** (ไม่ downgrade เป็น prototype).
+  ⚠️ **user ยังบอก "ยังไม่หาย"** — Subtract ยังไม่เป๊ะ 100% (ต้องดูภาพจริงรอบหน้า + จูน).
+- **G-Offload Monitor** (`tools/offload-monitor/`, `ed3d7110`→`a1a91698`): `run.mjs` wrapper
+  (ollama/openrouter/codex, log cmd+output) + UI 3 tabs (codex เขียน). เสิร์ฟ :5176. ดู [[codex-cli-offload]] [[rwang-local-slm]].
+- **Provider tiers ใช้ได้ครบ:** ollama local (up, 43 models) · codex (`</dev/null` gotcha) ·
+  **openrouter (key ใน `.openrouter.key` gitignore; ต้อง cap max_tokens; free models เยอะตัว dead —
+  ใช้ `google/gemini-3.1-flash-lite`).**
+- **Orchestration:** fleet (Workflow) 7 drafters + audit gate → audit **REJECT** จับ selector-fracture
+  (บทเรียน: freeze selector contract ก่อน fan-out งาน CSS ไฟล์ร่วม). audit gate คุ้ม.
+
+### 🎯 งานต่อ thread นี้ (เรียงตามคุณค่า)
+1. **จูน deck Subtract ให้เป๊ะ** — ดูภาพจริง localhost:5173 (screenshot ผม/agent timeout เพราะ
+   backdrop-filter; ต้องให้ user ส่งภาพ หรือลด blur ชั่วคราวตอน dev). สงสัย: signal FAB ล่างขวาชิดขอบ/ตัด,
+   สัดส่วนโหว่, panel edge. **verify ด้วย preview_eval geometry ได้แต่ตาเปล่าไม่ได้.**
+2. P1–P5 wire เข้า agent-comm จริง (ตอนนี้ static)
+3. re-skin inner zones (score/stats/battle) เป็น `--g-*` เต็ม
+4. push branch + PR เมื่อ deck นิ่ง (ยังไม่ทำ)
+5. (แยก) implement CR-005 landing/auth/community (draft) + ADR-14 amendment (multi-provider auth)
+
+### กับดักใหม่ (thread นี้)
+- **preview_screenshot timeout เสมอบน deck** (backdrop-filter+clip-path หนัก) → verify ต้องใช้
+  `preview_eval` computed-style/geometry; ตาเปล่าต้องพึ่ง user.
+- **vite bind :5173 ไม่ใช่ :5174** (launch.json ตั้ง 5174 แต่ vite strictPort:false → 5173).
+- **codex echo v1 กลับ** ถ้าสั่ง "อ่านไฟล์เดิมแล้วต่อ" — ต้อง self-contained prompt (generate fresh).
+- deck เป็น **fixed 1280×800 stage scaled** แล้ว — แก้ layout ต้องคิดใน coord 1280×800 (ไม่ใช่ window).
+
+## 🔵 Deck redesign / Design-system / Orchestration thread (2026-07-05 A)
 
 **Branch `feat/deck-glass-redesign-ds`** (2 commits: code `a5fd9900`, docs `62b2c680`).
 ยังไม่ push / ยังไม่ merge / ยังไม่ tag.
