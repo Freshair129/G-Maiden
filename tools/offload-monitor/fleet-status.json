@@ -1,0 +1,46 @@
+{
+  "updatedAt": "2026-07-05T14:40:00+07:00",
+  "fleets": [
+    {
+      "id": "wf_5936587d",
+      "name": "Subtract-glass migration — draft fleet",
+      "status": "done",
+      "verdict": "REJECT / rework-before-apply",
+      "tokens": 692749,
+      "agents": [
+        { "label": "draft:U1-tokens-shell", "phase": "Draft", "model": "opus-4-8", "status": "done" },
+        { "label": "draft:U2-topbar-fab", "phase": "Draft", "model": "opus-4-8", "status": "done" },
+        { "label": "draft:U3-sidebar-fab", "phase": "Draft", "model": "opus-4-8", "status": "done" },
+        { "label": "draft:U4-anchor-rail", "phase": "Draft", "model": "opus-4-8", "status": "done" },
+        { "label": "draft:U5-score-stats", "phase": "Draft", "model": "opus-4-8", "status": "done" },
+        { "label": "draft:U6-battle-agent", "phase": "Draft", "model": "opus-4-8", "status": "done" },
+        { "label": "draft:U7-sector-signals", "phase": "Draft", "model": "opus-4-8", "status": "done" },
+        { "label": "audit-gate", "phase": "Audit", "model": "opus-4-8", "status": "done", "note": "caught 3 blockers" }
+      ]
+    },
+    {
+      "id": "recon",
+      "name": "Recon agents (RWANG / G-Orchestra / 12-7 / GitNexus)",
+      "status": "done",
+      "tokens": 339000,
+      "agents": [
+        { "label": "rwang-slm-recon", "phase": "Recon", "model": "sonnet", "status": "done" },
+        { "label": "g-orchestra-analysis", "phase": "Recon", "model": "sonnet", "status": "done" },
+        { "label": "explore:12-7", "phase": "Recon", "model": "sonnet", "status": "done" },
+        { "label": "explore:phase-governor", "phase": "Recon", "model": "sonnet", "status": "done" }
+      ]
+    }
+  ],
+  "progress": [
+    { "id": "U1-tokens", "title": "--g-* design tokens → styles.css", "status": "done" },
+    { "id": "U1U2-shell", "title": "Subtract glass shell + topbar FAB", "status": "blocked", "note": "audit rework: freeze .deck-v3 .stage/.zone contract; land U1+U2 together" },
+    { "id": "U3-sidebar", "title": "Sidebar FAB nav (+ codex icons)", "status": "pending" },
+    { "id": "U4-anchor", "title": "P1–P5 anchor rail", "status": "pending" },
+    { "id": "U5-score", "title": "Score header + stats bar", "status": "pending" },
+    { "id": "U6-battle", "title": "Hero slots + minimap + agent card", "status": "pending" },
+    { "id": "U7-signals", "title": "Activity log + G-Signal cards", "status": "pending" },
+    { "id": "monitor", "title": "G-Offload Monitor tooling", "status": "done" },
+    { "id": "openrouter", "title": "OpenRouter provider wire", "status": "blocked", "note": "needs OPENROUTER_API_KEY in env" },
+    { "id": "cr005", "title": "CR-005 landing / auth / community", "status": "draft" }
+  ]
+}

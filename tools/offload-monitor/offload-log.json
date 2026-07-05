@@ -1,0 +1,71 @@
+[
+  {
+    "ts": "2026-07-05T14:02:11+07:00",
+    "provider": "claude",
+    "model": "opus-4-8 (workflow fleet)",
+    "task": "Subtract-glass migration — 7 component drafters",
+    "tokens": 602000,
+    "durationMs": 300000,
+    "status": "ok",
+    "note": "parallel draft fleet"
+  },
+  {
+    "ts": "2026-07-05T14:07:33+07:00",
+    "provider": "claude",
+    "model": "opus-4-8 (audit gate)",
+    "task": "audit gate — reconcile 7 drafts",
+    "tokens": 90749,
+    "durationMs": 53000,
+    "status": "ok",
+    "note": "REJECT + 3 blockers caught"
+  },
+  {
+    "ts": "2026-07-05T14:15:02+07:00",
+    "provider": "codex",
+    "model": "gpt-5.5",
+    "task": "codex smoke test",
+    "tokens": 19362,
+    "durationMs": 8000,
+    "status": "ok",
+    "note": "auth verified"
+  },
+  {
+    "ts": "2026-07-05T14:19:44+07:00",
+    "provider": "codex",
+    "model": "gpt-5.5",
+    "task": "deck nav SVG icon set (6 icons)",
+    "tokens": 16000,
+    "durationMs": 60000,
+    "status": "ok",
+    "note": "69-line tsx, est tokens"
+  },
+  {
+    "ts": "2026-07-05T14:31:20+07:00",
+    "provider": "codex",
+    "model": "gpt-5.5",
+    "task": "G-Offload Monitor UI (this dashboard)",
+    "tokens": 24000,
+    "durationMs": 90000,
+    "status": "ok",
+    "note": "visual work offloaded off Claude"
+  },
+  {
+    "ts": "2026-07-04T23:54:09.888Z",
+    "provider": "ollama",
+    "model": "aroow-rust-coder-9b:latest",
+    "task": "Reply with exactly this token and nothing else: OLLAMA_OK",
+    "tokens": 29,
+    "durationMs": 90362,
+    "status": "ok"
+  },
+  {
+    "ts": "2026-07-04T23:59:50.056Z",
+    "provider": "openrouter",
+    "model": "meta-llama/llama-3.3-70b-instruct",
+    "task": "Reply with exactly: OPENROUTER_OK",
+    "tokens": 0,
+    "durationMs": 0,
+    "status": "error",
+    "note": "OPENROUTER_API_KEY not set (env or Rwang_remote/.env)"
+  }
+]
