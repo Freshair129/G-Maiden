@@ -24,7 +24,7 @@
   --g-r-sm: 8px; --g-r-card: 11px; --g-r-panel: 14px; --g-r-fab: 16px; --g-r-pill: 999px;
   --g-r-frame-outer: 28px; --g-r-frame-notch: 20px;
   --g-shadow-fab: 0 12px 34px rgba(0,0,0,0.42); --g-shadow-panel: 0 18px 50px rgba(0,0,0,0.55);
-  --g-rim-top: inset 0 1px 0 rgba(255,255,255,0.06);
+  --g-rim-top: inset 0 1px 0 rgba(200,220,255,0.04);
   --g-blur-panel: blur(30px) saturate(150%); --g-blur-fab: blur(24px) saturate(160%); --g-blur-tile: blur(6px);
   --g-t-micro: 0.12s; --g-t-hover: 0.15s; --g-t-state: 0.2s; --g-t-bar: 0.3s;
   --g-t-ambient: 14s ease-in-out infinite; --g-ease: ease-out;
@@ -4275,7 +4275,7 @@ body {
   border-radius: 18px;
   -webkit-backdrop-filter: var(--g-blur-panel); backdrop-filter: var(--g-blur-panel);
   /* thin rim only (follows the clip-path); drop the heavy depth shadow */
-  filter: drop-shadow(0 0 1px rgba(160, 200, 255, 0.28));
+  filter: drop-shadow(0 0 0.5px rgba(190, 210, 255, 0.16));
   overflow: hidden; display: flex; flex-direction: column;
   /* Boolean-Subtract: TWO notches — top-right (topbar FAB) + bottom-left
      (sidebar + power FABs). The G-Signal cards sit ON the panel's bottom-right
