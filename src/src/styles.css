@@ -4398,3 +4398,20 @@ body {
 /* transparent-window drag: the topbar FAB is the drag handle; interactive children
    (buttons/bell/profile) + cards keep -webkit-app-region: no-drag (default). */
 .g-topbar-fab { -webkit-app-region: drag; }
+
+/* ============================================================
+   Glass BG layer — the "white" base under the dark HUD (content/sidebar/topbar).
+   Fills the whole deck footprint (rounded rect, no notch cuts) BEHIND everything,
+   so the Subtract notch gaps show frosted glass instead of raw desktop. On a
+   transparent window this is the see-through frosted layer. (Real desktop-blur on
+   Windows needs Tauri acrylic; CSS backdrop-filter tints + frosts within webview.)
+   ============================================================ */
+.g-deck-glass-bg {
+  position: absolute; left: 10px; top: 10px; right: 10px; bottom: 10px;
+  z-index: 0; pointer-events: none;
+  border-radius: 24px;
+  background: rgba(228, 238, 255, 0.15);
+  -webkit-backdrop-filter: blur(26px) saturate(135%);
+  backdrop-filter: blur(26px) saturate(135%);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+}
