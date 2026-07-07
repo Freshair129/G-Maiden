@@ -1,11 +1,42 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: **2026-07-05 (B)** · deck HUD v2 ลงโค้ด + G-Offload Monitor
-(ดู session `.govibe/.brain/session/2026-07-05-B-deck-hud-impl-offload-monitor.md`;
-part A = `...-deck-redesign-designsystem.md`). ก่อนหน้า = account/security (2026-07-04).
-ด้านล่างจาก "📊 Progress snapshot (turn 15)" คือ CV/Signal thread เดิม (2026-06-21) — trail.
+อัปเดตล่าสุด: **2026-07-08** · จบ full independent audit ทั้งระบบ + วางแผน level-up scoping.
+รายงานเต็ม → `docs/audits/2026-07-07-independent-full-audit.md`. ด้านล่าง = thread ก่อนหน้า
+(2026-07-05 deck HUD v2 / design-system · 2026-07-04 account/security · turn-15 trail 2026-06-21).
 
-## 🟣 Deck HUD v2 impl + G-Offload Monitor thread (2026-07-05 B) — ล่าสุด
+## 🎯 Highest-leverage next work (จาก audit 2026-07-08, เรียงลำดับ) — ล่าสุด
+
+**Batch "Make-it-work" (correctness, pure-logic, มีเทสต์ครอบ — commit main ไม่ tag):**
+1. **Level-up เฉพาะเลเวลสำคัญ** — สั่งแล้วแต่ยังไม่ลงมือ. แก้ **2 ทาง**: `announcer.rs:128`
+   (pack path) + `App.tsx:544` (persona TTS path, อันนี้พูดทุกเลเวลจริง). ใช้ shared const
+   milestone — รอผู้ใช้เลือก `{6,12,18,25}` (อัลติ) vs `{6,10,15,20,25}` (talent). เตือน: ใช้
+   logic "ข้ามผ่าน milestone" (`s.level < m <= tick.level`) กันเลเวลกระโดด, sync 2 ที่แบบ STREAK_LABELS.
+2. **Dire blindness** 🔴 — `cv/mod.rs:16` ring color hardcode Dire-red → gank ตาย ~50% เกม.
+   parse `player.team_name` เข้า GameTick (`gsi.rs`) → เลือกสี ring ตามทีม (ต้องหาค่า Radiant-green).
+3. **Audio priority** 🟠 — `audio.rs` `Cmd::Play(path, prio)`; gank/revision/danger = critical
+   ห้ามโดน announcer (kill/levelup) ทับ.
+
+**Make-it-gated (release safety) — ทำเร็ว impact สูง:**
+4. CI รัน `cargo test` + `vitest run` (146 test ไม่เคยรัน) + gate `release.yml` บน CI เขียว.
+5. Latency harness ตัวจริงแทน stub (`tests/perf/src/main.rs` sleep=budget → PASSED เสมอ).
+
+**Quick wins <1 วัน:** CSP เพิ่ม origin Supabase (Google sign-in พังใน build จริง) · commit
+`Cargo.lock`+`pnpm-lock.yaml` · LICENSE+README · pack path-traversal (ก่อนเปิด marketplace) ·
+ย้าย secret ออกจาก localStorage. (version drift = **DONE** 2026-07-08.)
+
+**Strategic (ตัดสินใจถูก ไม่เสียโค้ด):** legal read live-CV (Valve ban risk) · เลิก match-data
+flywheel · freeze CR-003 wallet จนพิสูจน์ retention · เลือก niche-ไทย vs global.
+
+## 🚫 Do-not-repeat / hard-won (audit 2026-07-08)
+- Level-up (และเสียง persona อื่น) มี **2 code path** เสมอ — announcer.rs + App.tsx persona. แก้ที่เดียวไม่พอ.
+- SEC-001 F1 = **ปิดสนิทจริง** (live-verified) — สร้างต่อได้ ไม่ต้อง re-audit RLS forge.
+- TTS PowerShell = **injection-safe** (base64 ก่อน interpolate) — ไม่ใช่ช่องโหว่.
+- `:3000` = bind `127.0.0.1` แต่ **ไม่มี auth** → local/web spoof GSI ได้ (M).
+- version drift แก้แล้ว (Cargo/root pkg + CLAUDE/AGENTS → 0.8.0) PR #9.
+
+---
+
+## 🟣 Deck HUD v2 impl + G-Offload Monitor thread (2026-07-05 B)
 
 **Branch `feat/deck-glass-redesign-ds`** — 15 commits, **ยังไม่ push/merge/tag**.
 

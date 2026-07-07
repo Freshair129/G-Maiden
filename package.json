@@ -1,6 +1,6 @@
 {
   "name": "g-maiden",
-  "version": "0.1.0",
+  "version": "0.8.0",
   "description": "G-Maiden: Real-time Dota 2 AI companion via Tauri + React",
   "type": "module",
   "private": true,
