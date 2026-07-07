@@ -4166,22 +4166,6 @@ body {
   overflow: hidden;
 }
 /* ambient BG the glass blurs through */
-.g-deck-bg {
-  position: fixed; inset: 0; z-index: var(--g-z-bg); pointer-events: none;
-  background:
-    radial-gradient(ellipse 44% 40% at 78% 12%, rgba(58,92,168,.45), transparent 66%),
-    radial-gradient(ellipse 40% 46% at 10% 88%, rgba(60,130,190,.28), transparent 70%),
-    radial-gradient(ellipse 50% 45% at 88% 92%, rgba(163,230,53,.08), transparent 64%),
-    var(--g-void);
-}
-.g-deck-bg::after {
-  content:''; position:absolute; inset:-20%;
-  background: linear-gradient(115deg, transparent 42%, rgba(143,212,255,.06) 50%, transparent 58%);
-  animation: g-drift 16s ease-in-out infinite;
-}
-@keyframes g-drift { 0%,100%{transform:translateX(-6%)} 50%{transform:translateX(6%)} }
-@media (prefers-reduced-motion: reduce){ .g-deck-bg::after{animation:none} }
-
 /* fixed 1280×800 design stage, scaled by JS to fill any window (1280 → 1920).
    All FABs + panel anchor to THIS (not the window), so the layout is identical at every size. */
 .g-deck-stage {
@@ -4194,8 +4178,11 @@ body {
 /* ---- sidebar FAB (icon nav) — floats in the bottom-left notch, BELOW the
    P1–P5 sector; a single power FAB sits below it in the same notch ---- */
 .g-sidebar-fab {
-  position: absolute; left: 12px; top: 300px; bottom: 86px; width: 64px;
+  position: absolute; left: 16px; top: 300px; bottom: 86px; width: 56px;
   z-index: var(--g-z-fab);
+  /* detached floating FAB — same glass treatment + layer as the topbar FAB; sits
+     16px clear of the main panel (widened bottom-left notch nlw), frosted-glass base
+     shows in the gap. */
   background: var(--g-fab); border: 1px solid var(--g-fab-rim); border-radius: var(--g-r-fab);
   box-shadow: var(--g-shadow-fab);
   -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
@@ -4219,7 +4206,7 @@ body {
 
 /* ---- topbar FAB (top-right) ---- */
 .g-topbar-fab {
-  position: absolute; top: 10px; right: 10px; height: 48px; z-index: var(--g-z-fab);
+  position: absolute; top: 10px; right: 10px; height: 40px; z-index: var(--g-z-fab);
   display: flex; align-items: center; gap: 12px; padding: 0 8px 0 16px;
   background: var(--g-fab); border: 1px solid var(--g-fab-rim); border-radius: var(--g-r-panel);
   box-shadow: var(--g-shadow-fab);
@@ -4280,8 +4267,8 @@ body {
   /* Boolean-Subtract: TWO notches — top-right (topbar FAB) + bottom-left
      (sidebar + power FABs). The G-Signal cards sit ON the panel's bottom-right
      (grounded on frost), so there is no bottom-right cut. */
-  --ntw: 324px; --nth: 58px;   /* top-right notch — wraps the topbar (brand+ver+update+bell+profile) */
-  --nlw: 72px; --nlt: 286px;   /* bottom-left notch (sidebar + power); top panel area extended down for the P1-P5 rail */
+  --ntw: 280px; --nth: 54px;   /* top-right notch — hugs the topbar (brand+ver+update+bell+profile); sync with buildPanelPath() in CommandDeck.tsx */
+  --nlw: 76px; --nlt: 274px;   /* bottom-left notch — 16px clearance (right+top) around the detached sidebar FAB; sync with buildPanelPath() */
   --clip-top: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% 100%, var(--nlw) 100%, var(--nlw) var(--nlt), 0 var(--nlt));
   clip-path: var(--clip-top);
 }
@@ -4307,12 +4294,12 @@ body {
 .g-logo-tile {
   width: 64px; height: 56px; border-radius: 14px; padding: 9px;
   display: grid; place-items: center; flex-shrink: 0;
-  background: var(--g-lime-soft); border: 1px solid var(--g-lime-line);
+  /* no box — logo art floats directly on the panel (removed lime bg/border) */
 }
 .g-logo-tile svg { width: 100%; height: 100%; display: block; }
 .g-tele {
   width: 64px; border-radius: 11px; padding: 6px 6px 7px;
-  background: rgba(150, 200, 255, .05); border: 1px solid var(--g-card-line);
+  /* no box — telemetry key/value float directly on the panel (removed bg/border) */
   display: flex; flex-direction: column; gap: 3px;
 }
 .g-tele .gt-k { font-size: 8px; font-weight: 700; letter-spacing: .6px; color: var(--g-text-dim); text-transform: uppercase; }
@@ -4399,19 +4386,28 @@ body {
    (buttons/bell/profile) + cards keep -webkit-app-region: no-drag (default). */
 .g-topbar-fab { -webkit-app-region: drag; }
 
-/* ============================================================
-   Glass BG layer — the "white" base under the dark HUD (content/sidebar/topbar).
-   Fills the whole deck footprint (rounded rect, no notch cuts) BEHIND everything,
-   so the Subtract notch gaps show frosted glass instead of raw desktop. On a
-   transparent window this is the see-through frosted layer. (Real desktop-blur on
-   Windows needs Tauri acrylic; CSS backdrop-filter tints + frosts within webview.)
-   ============================================================ */
+/* PERF: while dragging the frameless window, drop the panel's heavy full-size
+   backdrop-filter so the OS move loop stays smooth. Toggled by startWindowDrag()
+   (CommandDeck.tsx) on mousedown → mouseup. Acrylic still frosts the desktop, so
+   the drop is barely perceptible and snaps back on release. */
+.g-deck-stage.is-dragging .g-deck-panel,
+.g-deck-stage.is-dragging .g-sidebar-fab,
+.g-deck-stage.is-dragging .g-topbar-fab {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Backmost frosted-glass base — a single rounded-rect cropped to the deck rim
+   (inset to the footprint, no notch cuts) sitting BEHIND the panel + floating FABs.
+   It fills the 16px gaps between the pieces with a translucent frosted pane; the
+   OS acrylic effect supplies the actual desktop blur (a CSS backdrop-filter here
+   would blur nothing on a transparent window and only stall window drag). */
 .g-deck-glass-bg {
-  position: absolute; left: 10px; top: 10px; right: 10px; bottom: 10px;
+  /* flush with the panel's outer envelope (left 12 / others 10, radius 18) so the
+     frosted pane never pokes beyond the rim — it just fills the Subtract notch gaps. */
+  position: absolute; left: 12px; top: 10px; right: 10px; bottom: 10px;
   z-index: 0; pointer-events: none;
-  border-radius: 24px;
-  background: rgba(228, 238, 255, 0.15);
-  -webkit-backdrop-filter: blur(26px) saturate(135%);
-  backdrop-filter: blur(26px) saturate(135%);
-  box-shadow: inset 0 1px 0 rgba(255,255,255,0.14);
+  border-radius: 18px;
+  background: rgba(224, 236, 255, 0.09);  /* translucent frosted tint; acrylic supplies the blur */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
 }

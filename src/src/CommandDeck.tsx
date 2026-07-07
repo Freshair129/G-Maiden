@@ -95,11 +95,28 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
         stage.style.transform = `translate(-50%, -50%) scale(${s})`;
       }
       const p = panelRef.current;
-      if (p) p.style.clipPath = `path('${buildPanelPath(p.offsetWidth, p.offsetHeight)}')`;
+      if (p) {
+        // measure the live topbar rect so the notch hugs it exactly (~2px seam),
+        // not an oversized cut that exposes the panel's frost rim beyond the topbar.
+        const tb = stageRef.current?.querySelector<HTMLElement>(".g-topbar-fab");
+        let ntw = 303, nth = 42;
+        if (tb) {
+          const pr = p.getBoundingClientRect();
+          const tr = tb.getBoundingClientRect();
+          const s = pr.width / p.offsetWidth || 1; // undo the stage scale → design px
+          ntw = Math.round((pr.right - tr.left) / s + 2);
+          nth = Math.round((tr.bottom - pr.top) / s + 2);
+        }
+        p.style.clipPath = `path('${buildPanelPath(p.offsetWidth, p.offsetHeight, ntw, nth)}')`;
+      }
     };
     apply();
     window.addEventListener("resize", apply);
-    return () => window.removeEventListener("resize", apply);
+    // topbar width can change after mount (async version/profile) — re-hug on resize
+    const tb = stageRef.current?.querySelector<HTMLElement>(".g-topbar-fab");
+    const ro = tb ? new ResizeObserver(apply) : null;
+    if (tb && ro) ro.observe(tb);
+    return () => { window.removeEventListener("resize", apply); ro?.disconnect(); };
   }, [tab]);
 
   const error: string | null = null;
@@ -108,6 +125,8 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
     <div className="app deck-v3 g-deck">
 
       <div className="g-deck-stage" ref={stageRef}>
+      {/* backmost frosted-glass base — cropped to the deck rim; shows through the
+          gaps between the floating FABs and the main panel (acrylic supplies the blur) */}
       <div className="g-deck-glass-bg" />
       {/* sidebar FAB — icon nav (brand moved to the P1 logo tile) */}
       <aside className="g-sidebar-fab">
@@ -258,6 +277,24 @@ function startWindowDrag(e: { target: EventTarget | null; button: number }) {
   const el = e.target as HTMLElement | null;
   if (e.button !== 0) return;
   if (el?.closest("button, .g-notif-drop, .profile-dropdown")) return;
+  // PERF: drop the panel's full-size backdrop-filter while the OS move loop runs.
+  // blur(30px) repaints every frame during drag and is the main cause of drag lag;
+  // it snaps back the instant the button is released (eye can't catch the gap).
+  const stage = document.querySelector(".g-deck-stage");
+  stage?.classList.add("is-dragging");
+  let done = false;
+  const clear = () => {
+    if (done) return;
+    done = true;
+    stage?.classList.remove("is-dragging");
+    window.removeEventListener("mouseup", clear);
+    window.removeEventListener("pointerup", clear);
+    window.removeEventListener("blur", clear);
+  };
+  window.addEventListener("mouseup", clear);
+  window.addEventListener("pointerup", clear);
+  window.addEventListener("blur", clear);
+  window.setTimeout(clear, 8000); // safety: never leave blur disabled
   try { void getCurrentWindow().startDragging(); } catch { /* browser preview */ }
 }
 
@@ -289,11 +326,14 @@ function IconPower({ size = 22 }: { size?: number }) {
 // Two notches: top-right (topbar FAB) and bottom-left (sidebar + power FABs).
 // The G-Signal cards (D–G) sit ON the panel's bottom-right (grounded on the
 // frosted glass), NOT in a cutout — a hole there made them float over the void.
-function buildPanelPath(w: number, h: number): string {
-  const ntw = 324, nth = 58;   // top-right notch — wraps the topbar (brand+ver+update+bell+profile)
-  const nlw = 72, nlt = 286;   // bottom-left notch (sidebar + power); top area extended down for the rail
+function buildPanelPath(w: number, h: number, ntw = 303, nth = 42): string {
+  // ntw/nth are measured from the live topbar rect (see the apply() effect) so the
+  // top-right notch hugs the topbar exactly (only a ~2px seam) regardless of
+  // brand/version/profile length — no oversized notch exposing the panel's frost rim.
+  const nlw = 76, nlt = 274;   // bottom-left notch — 16px clearance (right+top) around the detached sidebar FAB; sync with --nlw/--nlt
+  const r = Math.min(14, nth - 2); // corner fillet can't exceed the notch depth
   const pts: Array<[number, number]> = [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h], [nlw, h], [nlw, nlt], [0, nlt]];
-  return roundedPath(pts, 16);
+  return roundedPath(pts, r);
 }
 function roundedPath(pts: Array<[number, number]>, r: number): string {
   const n = pts.length;
