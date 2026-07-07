@@ -1,12 +1,51 @@
 # TODO / self-note — next session
 
-อัปเดตล่าสุด: **2026-07-06** · **FluxNode side-quest** (repo อื่น — ไม่แตะ G-Maiden). ก่อนหน้า: 2026-07-05 (C) deck thread.
-(session ล่าสุด `.govibe/.brain/session/2026-07-06-fluxnode-ai-copilot.md`; deck `...-2026-07-05-C-...md`). **PR #8 (deck) เปิดแล้ว**.
+อัปเดตล่าสุด: **2026-07-08** · deck glass-redesign thread ต่อ (transparent window + acrylic + sidebar FAB + glass base) บน branch `feat/deck-glass-redesign-ds` (PR #8) + merge `origin/main` เข้ามา (audit/version/AGENTS/CLAUDE). ก่อนหน้า: audit ทั้งระบบ 2026-07-08 · FluxNode side-quest 2026-07-06 · deck 2026-07-05 C.
+
+## 🟢 Deck glass-redesign thread (2026-07-06 → 2026-07-08) — ล่าสุด (branch `feat/deck-glass-redesign-ds`, PR #8)
+- **transparent Tauri window** (`transparent:true`, tauri.conf control window) + **acrylic** `windowEffects` (real desktop-blur) + ตัด ambient rectangle นอก HUD (`.g-deck-bg` dead code ลบ).
+- **drag lag fix**: ลบ `backdrop-filter` ของ glass-bg (ไร้ผลบน transparent window — acrylic เบลอ desktop แทน) + ปิด panel blur ตอนลาก (`.is-dragging` toggle จาก `startWindowDrag`, suppress panel+sidebar+topbar; safety timeout 8s).
+- **topbar** 40px + **notch หุ้ม topbar อัตโนมัติ** (วัด rect จริง `pr.right-tr.left`, ResizeObserver) เหลือ seam 2px. `buildPanelPath(w,h,ntw,nth)` รับ ntw/nth วัดสด.
+- **sidebar = detached FAB** (treatment+z เดียวกับ topbar) ห่าง panel body **16px** (notch `nlw=76/nlt=274`, sync CSS var + JS); logo/telemetry tiles **unbox** (ลอยบน panel, เก็บ active-nav highlight).
+- **backmost glass base** re-add (`.g-deck-glass-bg` div): rounded rect แนบ envelope panel (left:12 radius:18, **ไม่ล้ำ rim**), โปร่ง `rgba(224,236,255,.09)`, **เบลอมาจาก acrylic** (CSS backdrop-filter บน backmost layer = no-op + laggy).
+- ⚠️ **verify**: DOM geometry ผ่าน `preview_eval` บน probe vite แยก port (:5180, config `deckprobe` ลบทิ้งแล้ว) — `preview_screenshot` timeout เสมอ (backdrop-filter+clip หนัก); native transparent window **capture ไม่ได้** (Claude window ทะลุผ่าน). **user eyeball เท่านั้นสำหรับ look**.
+- **งานทั้งหมด committed บน branch** (6 commits ahead origin: transparent/rim/glass-BG/acrylic + WIP `eb2f92f4` = sidebar FAB/glass base/notch). epitaxy auto-commit + switch HEAD กลับ main (เลย working tree main clean). **ยังไม่ tag/release.**
+- **งานต่อ**: user ยัง eyeball sidebar FAB + glass gap อยู่ (frosted เบลอพอไหม, P1-P5 เข้า sidebar FAB ไหม) · REBUILD desktop (build เดิม predate ทั้ง thread) · push branch (merge main แล้ว ตอน resolve conflict นี้) → merge PR #8 เมื่อ deck นิ่ง.
 
 ## ⚪ FluxNode AI copilot (2026-07-06) — คนละ repo `D:\fluxnode-dev`
-งานทั้ง session อยู่ที่ FluxNode ไม่ใช่ G-Maiden. สร้าง agent-native layer (Action registry 30 actions + brain/agent loop + media adapter + MCP + `--agent`/`--mcp`), E2E-verified ผ่าน Ollama. **9 commits @ master `c6810e5`, local ล้วน ไม่มี remote.** งานต่อ + gotchas ทั้งหมดอยู่ที่ **`D:\fluxnode-dev\HANDOFF.md`** (อย่าก๊อป FluxNode todo มาปนที่นี่). บทเรียน reusable: [[codex-vs-ollama-rust-boilerplate]]. **G-Maiden ไม่มี drift ใหม่จาก session นี้.**
+งานทั้ง session อยู่ที่ FluxNode ไม่ใช่ G-Maiden. สร้าง agent-native layer (Action registry 30 actions + brain/agent loop + media adapter + MCP + `--agent`/`--mcp`), E2E-verified ผ่าน Ollama. **9 commits @ master `c6810e5`, local ล้วน ไม่มี remote.** งานต่อ + gotchas ทั้งหมดอยู่ที่ **`D:\fluxnode-dev\HANDOFF.md`** (อย่าก๊อป FluxNode todo มาปนที่นี่). บทเรียน reusable: [[codex-vs-ollama-rust-boilerplate]]. **G-Maiden ไม่มี drift ใหม่จาก session นั้น.**
 
-## 🟢 Deck polish thread (2026-07-05 C) — ล่าสุด
+## 🎯 Highest-leverage next work (จาก audit 2026-07-08, เรียงลำดับ)
+
+**Batch "Make-it-work" (correctness, pure-logic, มีเทสต์ครอบ — commit main ไม่ tag):**
+1. **Level-up เฉพาะเลเวลสำคัญ** — สั่งแล้วแต่ยังไม่ลงมือ. แก้ **2 ทาง**: `announcer.rs:128`
+   (pack path) + `App.tsx:544` (persona TTS path, อันนี้พูดทุกเลเวลจริง). ใช้ shared const
+   milestone — รอผู้ใช้เลือก `{6,12,18,25}` (อัลติ) vs `{6,10,15,20,25}` (talent). เตือน: ใช้
+   logic "ข้ามผ่าน milestone" (`s.level < m <= tick.level`) กันเลเวลกระโดด, sync 2 ที่แบบ STREAK_LABELS.
+2. **Dire blindness** 🔴 — `cv/mod.rs:16` ring color hardcode Dire-red → gank ตาย ~50% เกม.
+   parse `player.team_name` เข้า GameTick (`gsi.rs`) → เลือกสี ring ตามทีม (ต้องหาค่า Radiant-green).
+3. **Audio priority** 🟠 — `audio.rs` `Cmd::Play(path, prio)`; gank/revision/danger = critical
+   ห้ามโดน announcer (kill/levelup) ทับ.
+
+**Make-it-gated (release safety) — ทำเร็ว impact สูง:**
+4. CI รัน `cargo test` + `vitest run` (146 test ไม่เคยรัน) + gate `release.yml` บน CI เขียว.
+5. Latency harness ตัวจริงแทน stub (`tests/perf/src/main.rs` sleep=budget → PASSED เสมอ).
+
+**Quick wins <1 วัน:** CSP เพิ่ม origin Supabase (Google sign-in พังใน build จริง) · commit
+`Cargo.lock`+`pnpm-lock.yaml` · LICENSE+README · pack path-traversal (ก่อนเปิด marketplace) ·
+ย้าย secret ออกจาก localStorage. (version drift = **DONE** 2026-07-08.)
+
+**Strategic (ตัดสินใจถูก ไม่เสียโค้ด):** legal read live-CV (Valve ban risk) · เลิก match-data
+flywheel · freeze CR-003 wallet จนพิสูจน์ retention · เลือก niche-ไทย vs global.
+
+## 🚫 Do-not-repeat / hard-won (audit 2026-07-08)
+- Level-up (และเสียง persona อื่น) มี **2 code path** เสมอ — announcer.rs + App.tsx persona. แก้ที่เดียวไม่พอ.
+- SEC-001 F1 = **ปิดสนิทจริง** (live-verified) — สร้างต่อได้ ไม่ต้อง re-audit RLS forge.
+- TTS PowerShell = **injection-safe** (base64 ก่อน interpolate) — ไม่ใช่ช่องโหว่.
+- `:3000` = bind `127.0.0.1` แต่ **ไม่มี auth** → local/web spoof GSI ได้ (M).
+- version drift แก้แล้ว (Cargo/root pkg + CLAUDE/AGENTS → 0.8.0) PR #9.
+
+## 🟢 Deck polish thread (2026-07-05 C)
 
 **Branch `feat/deck-glass-redesign-ds`** — ahead origin **3** (`2be6f4b7`/`c8de30b8`/`d3b14d4a` จะ push ตอนปิด), **ยังไม่ merge/tag**. **PR #8** = https://github.com/Freshair129/G-Maiden/pull/8
 
@@ -24,6 +63,7 @@
 4. wire จริง: notification bell feed (ตอนนี้ sample), agent caster narration event (`agent-message`?).
 5. push branch (ปิด session นี้) → merge PR #8 เมื่อ deck นิ่ง.
 6. **DOC DRIFT (pre-existing, ยังไม่แก้)**: `CLAUDE.md:5` = "implemented (v0.7.x)" และ `AGENTS.md:220` = "Current State (v0.7.x shipping; v0.8.0 in progress)" — จริง = **v0.8.0 shipped 2026-07-04** (ทุกไฟล์ version 0.8.0). แก้ status line เมื่อ user สั่ง.
+---
 
 ## 🟣 Deck HUD v2 impl + G-Offload Monitor thread (2026-07-05 B)
 

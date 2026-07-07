@@ -217,7 +217,7 @@ produced **only by CI on a pushed version tag**. Understand both halves before t
 
 ---
 
-## Current State (v0.7.x shipping; v0.8.0 in progress)
+## Current State (v0.8.0 shipping)
 
 ### What works
 - GSI server receives Dota 2 game state on `:3000`

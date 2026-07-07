@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Status: implemented (v0.7.x), shipping via in-app updater
+## Status: implemented (v0.8.x), shipping via in-app updater
 
 The project is scaffolded and shipping â€” **Tauri v2 + React/Vite + Rust**. For the current
 implementation state, module status, repo layout, and coding rules see **AGENTS.md**. The two
