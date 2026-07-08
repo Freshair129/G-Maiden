@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect, type ReactNode } from "react";
+import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import VoicePacksPage from "./VoicePacksPage";
 import QuotaCard from "./QuotaCard";
@@ -10,8 +11,7 @@ import {
   LiveMatchPage,
   SettingsPage
 } from "./CompanionPages";
-import { useCompanionData } from "./companion";
-import Dashboard from "./Dashboard";
+import { useCompanionData, type CompanionData } from "./companion";
 import AccountPage from "./AccountPage";
 import { useProfile } from "./profile";
 import {
@@ -23,6 +23,9 @@ import {
   IconSettings
 } from "./DeckIcons";
 import "./styles.css";
+
+const FUNG_PANEL_PATH =
+  "M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 688 A 20 20 0 0 1 1248,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z";
 
 // companion + history have no codex glyph — tiny inline fallbacks
 function IconCompanion({ size = 20 }: { size?: number }) {
@@ -54,6 +57,9 @@ const NAV: Array<{ key: string; label: string; Icon: (p: { size?: number }) => R
 export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNode } = {}) {
   const [tab, setTab] = useState("dashboard");
   const [profileOpen, setProfileOpen] = useState(false);
+  const [powerOpen, setPowerOpen] = useState(false);
+  const [annVolume, setAnnVolume] = useState(74);
+  const [signalVolume, setSignalVolume] = useState(82);
   const { data } = useCompanionData();
   const { displayName, email } = useProfile();
   const gName = displayName || (email ? email.split("@")[0] : "Guest");
@@ -68,31 +74,66 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
 
   // fixed 1280×800 stage scaled to fill any window (1280 → 1920) + rounded-fillet Subtract clip
   const stageRef = useRef<HTMLDivElement>(null);
-  const panelRef = useRef<HTMLElement>(null);
   useEffect(() => {
     const apply = () => {
       const stage = stageRef.current;
       if (stage) {
-        const s = Math.min(window.innerWidth / 1280, window.innerHeight / 800);
+        const s = Math.min(window.innerWidth / 1304, window.innerHeight / 744, 1.4);
         stage.style.transform = `translate(-50%, -50%) scale(${s})`;
       }
-      const p = panelRef.current;
-      if (p) p.style.clipPath = `path('${buildPanelPath(p.offsetWidth, p.offsetHeight, tab === "dashboard")}')`;
     };
     apply();
     window.addEventListener("resize", apply);
     return () => window.removeEventListener("resize", apply);
-  }, [tab]);
+  }, []);
+
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("gm-deck-audio-rail");
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as { ann?: number; signal?: number };
+      if (typeof parsed.ann === "number") setAnnVolume(parsed.ann);
+      if (typeof parsed.signal === "number") setSignalVolume(parsed.signal);
+    } catch {
+      /* noop */
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("gm-deck-audio-rail", JSON.stringify({ ann: annVolume, signal: signalVolume }));
+    } catch {
+      /* noop */
+    }
+  }, [annVolume, signalVolume]);
 
   const error: string | null = null;
+  const trayWindow = () => { try { void getCurrentWindow().hide(); } catch { /* noop */ } };
+  const quitWindow = () => { void invoke("quit_application").catch(() => {}); };
+  const startWindowDrag = () => { try { void getCurrentWindow().startDragging(); } catch { /* noop */ } };
+  const dragFromSurface = (event: React.MouseEvent<HTMLElement>) => {
+    if (event.button !== 0) return;
+    const target = event.target as HTMLElement | null;
+    if (target?.closest("button, input, select, textarea, a, [data-no-drag='true']")) return;
+    startWindowDrag();
+  };
 
   return (
     <div className="app deck-v3 g-deck">
       <div className="g-deck-bg" />
 
       <div className="g-deck-stage" ref={stageRef}>
+      <div className="g-l1-white-glass" aria-hidden="true" />
+      <svg className="g-clip-defs" width="0" height="0" viewBox="0 0 1280 720" aria-hidden="true" focusable="false">
+        <defs>
+          <path id="gSubtractPanelPath" d={FUNG_PANEL_PATH} />
+          <clipPath id="gPanelClip" clipPathUnits="userSpaceOnUse">
+            <use href="#gSubtractPanelPath" />
+          </clipPath>
+        </defs>
+      </svg>
       {/* sidebar FAB — icon nav */}
-      <aside className="g-sidebar-fab">
+      <aside className="g-sidebar-fab" onMouseDown={dragFromSurface}>
         <div className="g-brand" title="G-Maiden">G</div>
         <nav>
           {NAV.map(({ key, label, Icon }) => (
@@ -110,8 +151,53 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
         </nav>
       </aside>
 
+      <div className={`g-power-radial${powerOpen ? " open" : ""}`}>
+        <button
+          type="button"
+          className="g-power-main"
+          aria-label="Power menu"
+          title="Power menu"
+          onClick={() => setPowerOpen((open) => !open)}
+        >
+          <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round">
+            <path d="M12 3v8" />
+            <path d="M6.3 7.8a8 8 0 1 0 11.4 0" />
+          </svg>
+        </button>
+        <div className="g-power-menu" aria-hidden={!powerOpen}>
+          <button type="button" className="g-power-action tray" title="Tray mode" aria-label="Tray mode" onClick={trayWindow}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 7.5h14v7H5z" />
+              <path d="M9 11h6" />
+              <path d="M8 17h8" />
+            </svg>
+          </button>
+          <button type="button" className="g-power-action quit" title="Quit application" aria-label="Quit application" onClick={quitWindow}>
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M6 6l12 12M18 6L6 18" />
+            </svg>
+          </button>
+          <button
+            type="button"
+            className="g-power-action drag"
+            title="Hold and drag window"
+            aria-label="Hold and drag window"
+            onMouseDown={(event) => {
+              event.preventDefault();
+              if (event.button !== 0) return;
+              startWindowDrag();
+            }}
+          >
+            <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 4v16M16 4v16" />
+              <path d="M4 8h16M4 16h16" />
+            </svg>
+          </button>
+        </div>
+      </div>
+
       {/* topbar FAB — brand + telemetry + profile + window controls */}
-      <header className="g-topbar-fab" data-tauri-drag-region="">
+      <header className="g-topbar-fab" data-tauri-drag-region="" onMouseDown={dragFromSurface}>
         <span className="g-logo">G-MAIDEN</span>
 
         <div className="g-telemetry">
@@ -140,27 +226,34 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
           ) : null}
         </div>
 
-        <div className="window-controls">
-          <button type="button" className="win-btn" onClick={() => { try { void getCurrentWindow().minimize() } catch { /* noop */ } }}>─</button>
-          <button type="button" className="win-btn" onClick={() => { try { void getCurrentWindow().toggleMaximize() } catch { /* noop */ } }}>□</button>
-          <button type="button" className="win-btn win-close" onClick={() => { try { void getCurrentWindow().close() } catch { /* noop */ } }}>✕</button>
-        </div>
       </header>
 
-      {/* P1–P5 agent anchor rail (dashboard) — spatial anchors for agent comms, not nav */}
+      {/* Audio rail replaces the old P-section */}
       {tab === "dashboard" && (
-        <div className="g-anchor-rail">
-          {["P1", "P2", "P3", "P4", "P5"].map((p, i) => (
-            <div key={p} className={`g-anchor${i === 0 ? " active" : ""}`} title={`Anchor ${p}`}>{p}</div>
-          ))}
+        <div className="g-audio-rail" onMouseDown={dragFromSurface}>
+          <VolumeRail
+            label="ANN"
+            value={annVolume}
+            accent="ice"
+            onChange={setAnnVolume}
+          />
+          <VolumeRail
+            label="SIGNAL"
+            value={signalVolume}
+            accent="lime"
+            onChange={setSignalVolume}
+          />
         </div>
       )}
 
       {/* glass panel — hosts the active tab (rich, live-wired content preserved) */}
-      <main ref={panelRef} className={`g-deck-panel${tab === "dashboard" ? " has-signals" : ""}`}>
+      <main className={`g-deck-panel${tab === "dashboard" ? " has-signals" : ""}`}>
+        <svg className="g-panel-rim" viewBox="0 0 1280 720" aria-hidden="true" focusable="false">
+          <use href="#gSubtractPanelPath" />
+        </svg>
         {error ? <div className="banner err">engine offline ({error})</div> : null}
         <div className={`surface page-${tab}`}>
-          {tab === "dashboard" && <Dashboard />}
+          {tab === "dashboard" && <GMaidenFungDashboard data={data} />}
           {tab === "live" && <LiveMatchPage />}
           {tab === "companion" && <CompanionPage />}
           {tab === "build" && <BuildAdvisorPage />}
@@ -177,65 +270,172 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
           )}
           {tab === "account" && <AccountPage />}
         </div>
+        {tab === "dashboard" && (
+          <SignalGrid enemyMissing={enemyMissing} gankRisk={gankRisk} safePush={safePush} vision={vision} />
+        )}
       </main>
-
-      {/* G-Signal FABs (D/E/F/G) — float in the bottom-right Subtract notch */}
-      {tab === "dashboard" && (
-        <div className="g-signals-fab">
-          <div className="g-sig">
-            <span className="sg-tag">D</span>
-            <span className="sg-label">Enemy Missing</span>
-            <span className="sg-val">{enemyMissing}</span>
-            <div className="sg-bar"><div className="sg-fill sg-fill-ice" style={{ width: `${Math.min(100, enemyMissing * 20)}%` }} /></div>
-          </div>
-          <div className="g-sig hero">
-            <span className="sg-tag">E</span>
-            <span className="sg-label">Gank Risk</span>
-            <span className="sg-val">{gankRisk}%</span>
-            <div className="sg-bar"><div className="sg-fill" style={{ width: `${gankRisk}%` }} /></div>
-          </div>
-          <div className="g-sig">
-            <span className="sg-tag">F</span>
-            <span className="sg-label">Safe Push</span>
-            <span className="sg-val">{safePush}%</span>
-            <div className="sg-bar"><div className="sg-fill sg-fill-safe" style={{ width: `${safePush}%` }} /></div>
-          </div>
-          <div className="g-sig">
-            <span className="sg-tag">G</span>
-            <span className="sg-label">Vision</span>
-            <span className="sg-val">{vision}</span>
-            <div className="sg-bar"><div className="sg-fill sg-fill-warn" style={{ width: "40%" }} /></div>
-          </div>
-        </div>
-      )}
       </div>{/* /g-deck-stage */}
     </div>
   );
 }
 
-// build a rounded-corner (fillet) SVG path for the concave Subtract panel
-function buildPanelPath(w: number, h: number, hasSignals: boolean): string {
-  const ntw = 474, nth = 60, nbw = 382, nbh = 206;
-  const pts: Array<[number, number]> = hasSignals
-    ? [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h - nbh], [w - nbw, h - nbh], [w - nbw, h], [0, h]]
-    : [[0, 0], [w - ntw, 0], [w - ntw, nth], [w, nth], [w, h], [0, h]];
-  return roundedPath(pts, 16);
+function GMaidenFungDashboard({ data }: { data: CompanionData }) {
+  const allyHeroes = data.heroes.filter((hero) => hero.team === "ally");
+  const enemyHeroes = data.heroes.filter((hero) => hero.team === "enemy");
+
+  return (
+    <div className="gm-fung-layout">
+      <section className="gm-score-header">
+        <div>
+          <span className={`gm-live-dot ${data.match.gsiOnline ? "online" : ""}`} />
+          {data.match.gsiOnline ? "GSI Online" : "GSI Offline"}
+        </div>
+        <strong>{data.match.leftTeamName} {data.match.leftScore}</strong>
+        <span className="gm-clock">{data.match.clock}</span>
+        <strong>{data.match.rightScore} {data.match.rightTeamName}</strong>
+      </section>
+
+      <section className="gm-stats-bar">
+        <MiniStat label="NW" value={String(data.match.player.nw)} sub="Local" />
+        <MiniStat label="GPM" value={String(data.match.player.gpm)} sub="Farm" />
+        <MiniStat label="XPM" value={String(data.match.player.xpm)} sub="Tempo" />
+        <MiniStat label="PING" value={`${data.match.player.ping}ms`} sub="GSI" />
+      </section>
+
+      <section className="gm-battle-grid">
+        <div className="gm-slot-column">
+          {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`a-${idx}`} id={idx + 1} hero={allyHeroes[idx]} />)}
+        </div>
+        <div className="gm-minimap">
+          <div className="gm-map-grid" />
+          <div className="gm-river" />
+          <span className="gm-orb orb-a" />
+          <span className="gm-orb orb-b" />
+          <span className="gm-orb orb-c" />
+        </div>
+        <div className="gm-slot-column">
+          {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`e-${idx}`} id={idx + 6} hero={enemyHeroes[idx]} />)}
+        </div>
+      </section>
+
+      <section className="gm-agent-card">
+        <div className="gm-card-head">
+          <div><span>Agent sector</span><strong>{data.agentSector.name}</strong></div>
+          <em>{data.agentSector.status}</em>
+        </div>
+        <div className="gm-agent-art">
+          <strong>{data.agentSector.title}</strong>
+        </div>
+      </section>
+
+      <section className="gm-sector-log">
+        <div>
+          <h3>Alert Deck</h3>
+          <p>Threat tabs</p>
+        </div>
+        <div>
+          <h3>Companion State</h3>
+          <div className="gm-state-grid">
+            <MiniStat label="Voice" value={data.match.voicePack} sub="Current pack" />
+            <MiniStat label="Overlay" value={data.match.overlayMode} sub="Mirror mode" />
+            <MiniStat label="Server" value={data.match.server} sub={`${data.match.latencyMs}ms`} />
+            <MiniStat label="Perf" value={data.match.performance} sub="Companion mode" />
+          </div>
+        </div>
+      </section>
+    </div>
+  );
 }
-function roundedPath(pts: Array<[number, number]>, r: number): string {
-  const n = pts.length;
-  let d = "";
-  for (let i = 0; i < n; i++) {
-    const [x0, y0] = pts[(i - 1 + n) % n];
-    const [x1, y1] = pts[i];
-    const [x2, y2] = pts[(i + 1) % n];
-    const d1 = Math.hypot(x0 - x1, y0 - y1) || 1;
-    const d2 = Math.hypot(x2 - x1, y2 - y1) || 1;
-    const rr = Math.min(r, d1 / 2, d2 / 2);
-    const ax = x1 + ((x0 - x1) / d1) * rr, ay = y1 + ((y0 - y1) / d1) * rr;
-    const bx = x1 + ((x2 - x1) / d2) * rr, by = y1 + ((y2 - y1) / d2) * rr;
-    d += (i === 0 ? `M ${ax} ${ay} ` : `L ${ax} ${ay} `) + `Q ${x1} ${y1} ${bx} ${by} `;
-  }
-  return d + "Z";
+
+function MiniStat({ label, value, sub }: { label: string; value: string; sub: string }) {
+  return (
+    <div className="gm-mini-stat">
+      <span>{label}</span>
+      <strong>{value}</strong>
+      <small>{sub}</small>
+    </div>
+  );
+}
+
+function VolumeRail({
+  label,
+  value,
+  accent,
+  onChange
+}: {
+  label: string;
+  value: number;
+  accent: "ice" | "lime";
+  onChange: (value: number) => void;
+}) {
+  return (
+    <div className={`g-volume-rail ${accent}`} data-no-drag="true">
+      <div className="g-volume-copy">
+        <strong>{label}</strong>
+        <span>{value}%</span>
+      </div>
+      <input
+        type="range"
+        min={0}
+        max={100}
+        step={1}
+        value={value}
+        onChange={(event) => onChange(Number(event.target.value))}
+        aria-label={`${label} volume`}
+      />
+    </div>
+  );
+}
+
+function HeroSlot({ id, hero }: { id: number; hero?: CompanionData["heroes"][number] }) {
+  return (
+    <div className={`gm-hero-slot ${hero?.state ?? "empty"}`}>
+      <strong>Slot ID {id}</strong>
+      <span>{hero?.state ?? "Waiting"}</span>
+      <em>{hero ? `${hero.kills}/${hero.deaths}/${hero.assists}` : "0 / 0 / 0"}</em>
+    </div>
+  );
+}
+
+function SignalGrid({
+  enemyMissing,
+  gankRisk,
+  safePush,
+  vision
+}: {
+  enemyMissing: number;
+  gankRisk: number;
+  safePush: number;
+  vision: string;
+}) {
+  return (
+    <div className="g-signals-fab">
+      <div className="g-sig">
+        <span className="sg-tag">D</span>
+        <span className="sg-label">Enemy Missing</span>
+        <span className="sg-val">{enemyMissing}</span>
+        <div className="sg-bar"><div className="sg-fill sg-fill-ice" style={{ width: `${Math.min(100, enemyMissing * 20)}%` }} /></div>
+      </div>
+      <div className="g-sig hero">
+        <span className="sg-tag">E</span>
+        <span className="sg-label">Gank Risk</span>
+        <span className="sg-val">{gankRisk}%</span>
+        <div className="sg-bar"><div className="sg-fill" style={{ width: `${gankRisk}%` }} /></div>
+      </div>
+      <div className="g-sig">
+        <span className="sg-tag">F</span>
+        <span className="sg-label">Safe Push</span>
+        <span className="sg-val">{safePush}%</span>
+        <div className="sg-bar"><div className="sg-fill sg-fill-safe" style={{ width: `${safePush}%` }} /></div>
+      </div>
+      <div className="g-sig">
+        <span className="sg-tag">G</span>
+        <span className="sg-label">Vision</span>
+        <span className="sg-val">{vision}</span>
+        <div className="sg-bar"><div className="sg-fill sg-fill-warn" style={{ width: "40%" }} /></div>
+      </div>
+    </div>
+  );
 }
 
 function pct(v: number): string {

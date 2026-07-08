@@ -62,6 +62,11 @@ fn cancel_speech() {
     tts::cancel();
 }
 
+#[tauri::command]
+fn quit_application(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 /// Try to play a pre-recorded clip for `event`. If no clips are present,
 /// fall back to SAPI speaking `fallback`. Keeps the Maiden voice unified at
 /// the call site — the UI doesn't have to know which path is active.
@@ -484,6 +489,7 @@ fn main() {
             speak,
             speak_event,
             cancel_speech,
+            quit_application,
             list_voices,
             set_cv_voice,
             set_cv_signal_enabled,

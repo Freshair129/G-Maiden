@@ -1,7 +1,7 @@
-import { useState, type ReactNode } from "react";
+import { memo, useState, type ReactNode } from "react";
 import { formatTimer, toneClass, useCompanionData } from "./companion";
 
-export function LiveMatchPage() {
+export const LiveMatchPage = memo(function LiveMatchPage() {
   const { data } = useCompanionData();
   const objectives = [
     { label: "Roshan", value: "Likely contest in 00:38" },
@@ -98,9 +98,9 @@ export function LiveMatchPage() {
       </div>
     </div>
   );
-}
+});
 
-export function CompanionPage() {
+export const CompanionPage = memo(function CompanionPage() {
   const { data } = useCompanionData();
   return (
     <div className="domain-page">
@@ -148,9 +148,9 @@ export function CompanionPage() {
       </section>
     </div>
   );
-}
+});
 
-export function BuildAdvisorPage() {
+export const BuildAdvisorPage = memo(function BuildAdvisorPage() {
   const { data } = useCompanionData();
   return (
     <div className="domain-page">
@@ -175,9 +175,9 @@ export function BuildAdvisorPage() {
       </div>
     </div>
   );
-}
+});
 
-export function InsightsPage() {
+export const InsightsPage = memo(function InsightsPage() {
   const { data } = useCompanionData();
   return (
     <div className="domain-page">
@@ -218,9 +218,9 @@ export function InsightsPage() {
       </section>
     </div>
   );
-}
+});
 
-export function HistoryPage() {
+export const HistoryPage = memo(function HistoryPage() {
   const { data } = useCompanionData();
   return (
     <div className="domain-page">
@@ -247,7 +247,7 @@ export function HistoryPage() {
       </section>
     </div>
   );
-}
+});
 
 const WINDOW_PRESETS: { label: string; w: number; h: number }[] = [
   { label: "1200 × 780", w: 1200, h: 780 },
@@ -257,7 +257,7 @@ const WINDOW_PRESETS: { label: string; w: number; h: number }[] = [
   { label: "1920 × 1080", w: 1920, h: 1080 },
 ];
 
-export function SettingsPage() {
+export const SettingsPage = memo(function SettingsPage() {
   const { data } = useCompanionData();
   const [activeSize, setActiveSize] = useState("1200 × 780");
 
@@ -301,7 +301,7 @@ export function SettingsPage() {
       </div>
     </div>
   );
-}
+});
 
 function Card({ title, kicker, children }: { title: string; kicker: string; children: ReactNode }) {
   return (

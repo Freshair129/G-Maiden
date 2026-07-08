@@ -1,4 +1,4 @@
-import { useSyncExternalStore } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -504,6 +504,14 @@ function publish() {
   subscribers.forEach((fn) => fn());
 }
 
+function subscribeStore(onStoreChange: () => void) {
+  ensureRuntime();
+  subscribers.add(onStoreChange);
+  return () => {
+    subscribers.delete(onStoreChange);
+  };
+}
+
 function applyDerivedSideEffects() {
   const sid = liveState.tick?.steamid;
   if (sid && accountIdState == null) {
@@ -691,15 +699,32 @@ function ensureRuntime() {
 
 export function useCompanionData() {
   return useSyncExternalStore(
-    (onStoreChange) => {
-      ensureRuntime();
-      subscribers.add(onStoreChange);
-      return () => {
-        subscribers.delete(onStoreChange);
-      };
-    },
+    subscribeStore,
     () => snapshot,
     () => snapshot
+  );
+}
+
+export function useCompanionDataSelector<T>(
+  selector: (data: CompanionData) => T,
+  isEqual: (prev: T, next: T) => boolean = Object.is
+) {
+  const selectionRef = useRef<T>(selector(snapshot.data));
+  const selectorRef = useRef(selector);
+  const isEqualRef = useRef(isEqual);
+  selectorRef.current = selector;
+  isEqualRef.current = isEqual;
+
+  return useSyncExternalStore(
+    subscribeStore,
+    () => {
+      const next = selectorRef.current(snapshot.data);
+      if (!isEqualRef.current(selectionRef.current, next)) {
+        selectionRef.current = next;
+      }
+      return selectionRef.current;
+    },
+    () => selectionRef.current
   );
 }
 
