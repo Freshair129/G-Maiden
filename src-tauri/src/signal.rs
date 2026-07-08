@@ -84,7 +84,11 @@ impl Default for Signal {
 impl Signal {
     pub fn new() -> Self {
         let (d, c) = Sensitivity::default().thresholds();
-        Signal { alerted: false, danger: d, clear: c }
+        Signal {
+            alerted: false,
+            danger: d,
+            clear: c,
+        }
     }
 
     /// Swap in the player's current sensitivity. Cheap (two float writes); the
@@ -117,7 +121,11 @@ mod tests {
     use super::*;
 
     fn risk(p: f32) -> GankRisk {
-        GankRisk { probability: p, missing_heroes: vec!["CM".into()], eta_ms: 2000 }
+        GankRisk {
+            probability: p,
+            missing_heroes: vec!["CM".into()],
+            eta_ms: 2000,
+        }
     }
 
     #[test]

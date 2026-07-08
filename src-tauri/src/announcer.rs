@@ -14,6 +14,14 @@ use std::sync::{Mutex, OnceLock};
 const MULTIKILL_WINDOW_S: i64 = 18; // kills within this span chain into double/triple/…
 const MANA_LOW: i64 = 15;
 const HP_LOW: i64 = 20;
+const LEVEL_UP_MILESTONES: [i64; 4] = [6, 12, 18, 25];
+
+fn crossed_level_up_milestone(prev_level: i64, next_level: i64) -> bool {
+    next_level > prev_level
+        && LEVEL_UP_MILESTONES
+            .iter()
+            .any(|&milestone| prev_level < milestone && milestone <= next_level)
+}
 
 #[derive(Default)]
 struct State {
@@ -125,7 +133,7 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
     }
 
     // level up
-    if tick.level > s.level {
+    if crossed_level_up_milestone(s.level, tick.level) {
         out.push("levelUp".to_string());
     }
 
@@ -239,7 +247,7 @@ mod tests {
     fn first_blood_and_multikill_chain() {
         let mut s = State::default();
         step(&mut s, &tick(true, 0, 0, true)); // start
-        // first kill at score 0-0 → first_blood + kill
+                                               // first kill at score 0-0 → first_blood + kill
         let e1 = step(&mut s, &tick(true, 100, 1, true));
         assert!(e1.contains(&"first_blood".to_string()));
         // second kill within window → double_kill
@@ -278,7 +286,56 @@ mod tests {
         // space kills > 18s apart so multikill never masks the streak rung
         for (k, label) in expect {
             let e = step(&mut s, &tick(true, (k as i64) * 30, k as i64, true));
-            assert!(e.contains(&label.to_string()), "kill {k} should fire {label}, got {e:?}");
+            assert!(
+                e.contains(&label.to_string()),
+                "kill {k} should fire {label}, got {e:?}"
+            );
         }
+    }
+
+    #[test]
+    fn level_up_only_fires_on_milestones() {
+        let mut s = State::default();
+        let mut t = tick(true, 0, 0, true);
+        t.level = 5;
+        step(&mut s, &t);
+
+        t.level = 6;
+        let e = step(&mut s, &t);
+        assert!(e.contains(&"levelUp".to_string()));
+
+        t.level = 7;
+        let e = step(&mut s, &t);
+        assert!(!e.contains(&"levelUp".to_string()));
+    }
+
+    #[test]
+    fn level_up_fires_when_a_milestone_is_skipped_over() {
+        let mut s = State::default();
+        let mut t = tick(true, 0, 0, true);
+        t.level = 11;
+        step(&mut s, &t);
+
+        t.level = 13;
+        let e = step(&mut s, &t);
+        assert!(
+            e.contains(&"levelUp".to_string()),
+            "11 -> 13 should fire because level 12 milestone was crossed"
+        );
+    }
+
+    #[test]
+    fn level_up_skips_when_no_milestone_is_crossed() {
+        let mut s = State::default();
+        let mut t = tick(true, 0, 0, true);
+        t.level = 13;
+        step(&mut s, &t);
+
+        t.level = 17;
+        let e = step(&mut s, &t);
+        assert!(
+            !e.contains(&"levelUp".to_string()),
+            "13 -> 17 should stay silent because no milestone was crossed"
+        );
     }
 }

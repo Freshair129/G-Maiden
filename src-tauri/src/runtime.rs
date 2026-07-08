@@ -26,6 +26,7 @@ static SIGNAL_SENSITIVITY: AtomicU8 = AtomicU8::new(1); // 0=Low, 1=Med, 2=High
 /// Epoch-ms of the last GSI POST received. 0 = none yet. The watchdog uses this
 /// to tell "Dota open & sending" (heartbeat ~30s) from "gone quiet".
 static LAST_POST_MS: AtomicU64 = AtomicU64::new(0);
+static PLAYER_TEAM: AtomicU8 = AtomicU8::new(0);
 
 /// Maiden's voice for Rust-side (G-Signal) speech, mirrored from the UI picker.
 static VOICE_NAME: Mutex<Option<String>> = Mutex::new(None);
@@ -61,6 +62,24 @@ pub fn set_in_game(v: bool) {
 }
 pub fn in_game() -> bool {
     IN_GAME.load(Ordering::Relaxed)
+}
+
+pub fn set_player_team_name(name: &str) {
+    let code = if name.eq_ignore_ascii_case("radiant") {
+        1
+    } else if name.eq_ignore_ascii_case("dire") {
+        2
+    } else {
+        0
+    };
+    PLAYER_TEAM.store(code, Ordering::Relaxed);
+}
+
+pub fn enemy_team_ring() -> (f32, f32, f32) {
+    match PLAYER_TEAM.load(Ordering::Relaxed) {
+        2 => crate::cv::RADIANT_RING,
+        _ => crate::cv::DIRE_RING,
+    }
 }
 
 pub fn set_signal_enabled(v: bool) {
@@ -134,7 +153,11 @@ pub fn set_master_ollama_model(name: String) {
     }
 }
 pub fn master_ollama_model() -> String {
-    MASTER_OLLAMA_MODEL.lock().ok().map(|g| g.clone()).unwrap_or_default()
+    MASTER_OLLAMA_MODEL
+        .lock()
+        .ok()
+        .map(|g| g.clone())
+        .unwrap_or_default()
 }
 
 /// Set the G-Master Claude auth mode + key. `use_api_key=false` keeps the

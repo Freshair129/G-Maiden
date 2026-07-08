@@ -36,6 +36,12 @@ event ไปยัง control window แล้วเช็ค budget:
 > `poll_loop` เก็บลง `CPU_THROTTLE` (atomic) ให้ capture loop อ่านเพื่อ drop
 > ~ครึ่งหนึ่งของ tick. ตาราง "unload SLM / ปิด blur / static HUD" ยังเป็น
 > aspirational (ยังไม่ได้ทำ). FPS-impact ไม่ถูกวัดที่ใดเลย (ไม่มี `est_fps`).
+>
+> **Open issue (2026-07-08):** มี observation ล่าสุดจาก **Windows Task Manager**
+> ว่า process CPU peak ไปที่ `20%+` ซึ่งยังถือว่า **ผิด spec** (`<=2.5%`).
+> หลักฐานในโค้ดปัจจุบันชี้ว่า governor วัดแบบ 1-second burst sample แต่ re-check
+> ทุก `10s` และ mitigation จริงลดได้แค่ capture cadence; จึงยังไม่ใช่หลักประกัน
+> ว่า steady-state ทั้ง app จะอยู่ใน budget และอาจไม่สะท้อนภาระจริงที่ OS เห็นครบทุกช่วง.
 
 ### 2c. Global Hotkeys
 
@@ -137,3 +143,14 @@ Canonical UI/UX contract: `docs/architecture/design-system.md`.
 - [ ] governor auto-throttle เมื่อ resource เกิน budget
 - [ ] glassmorphism visual ตรง design spec
 - [ ] Control Dashboard และ Overlay ใช้ token/component contract จาก `docs/architecture/design-system.md`
+
+## 11. Current Issue
+
+- Spec hard limit คือ **background CPU <= 2.5%** แต่ observation ล่าสุดจาก Windows Task Manager มี peak `20%+`.
+- Root cause ที่ยืนยันได้ตอนนี้คือ protection path ยังหยาบเกินไป: sample burst 1 วินาที,
+  governor ตรวจซ้ำทุก `10s`, และ throttle แค่ minimap capture cadence.
+- สถานะนี้ยังไม่ถือว่าผ่าน gate จนกว่าจะมี sustained harness บนเส้นทางจริงของ app
+  ที่พิสูจน์ได้ว่า CPU steady-state อยู่ใน budget.
+- Harness ที่ควรใช้ไล่เรื่องนี้คือ `tests/perf/src/bin/perf_cpu_tree.rs` ซึ่งรวม root
+  host + child WebView2/utility/sidecar แบบใกล้เคียง Task Manager มากกว่า
+  `governor.rs` ที่วัดแค่ current process.

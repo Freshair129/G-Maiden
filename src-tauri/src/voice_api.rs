@@ -24,38 +24,202 @@ struct EventDef {
 }
 
 const GROUPS: &[GroupDef] = &[
-    GroupDef { id: "warning", label: "แจ้งเตือน", accent: "#ff6370" },
-    GroupDef { id: "combat", label: "คิล / มัลติคิล", accent: "#ffe24a" },
-    GroupDef { id: "streak", label: "สตรีค", accent: "#ff9b45" },
-    GroupDef { id: "state", label: "สถานะ", accent: "#66f2b5" },
-    GroupDef { id: "advisor", label: "คำแนะนำ", accent: "#8fd3ff" },
+    GroupDef {
+        id: "warning",
+        label: "แจ้งเตือน",
+        accent: "#ff6370",
+    },
+    GroupDef {
+        id: "combat",
+        label: "คิล / มัลติคิล",
+        accent: "#ffe24a",
+    },
+    GroupDef {
+        id: "streak",
+        label: "สตรีค",
+        accent: "#ff9b45",
+    },
+    GroupDef {
+        id: "state",
+        label: "สถานะ",
+        accent: "#66f2b5",
+    },
+    GroupDef {
+        id: "advisor",
+        label: "คำแนะนำ",
+        accent: "#8fd3ff",
+    },
 ];
 
 const EVENTS: &[EventDef] = &[
-    EventDef { id: "danger", group: "warning", label: "Danger", subtitle: "High danger warning", thai: "อันตราย" },
-    EventDef { id: "gank", group: "warning", label: "Gank", subtitle: "Incoming gank", thai: "แก๊งค์" },
-    EventDef { id: "revision", group: "warning", label: "Revision", subtitle: "Belief revision", thai: "ยกเลิกเตือน" },
-    EventDef { id: "hpLow", group: "warning", label: "HP Low", subtitle: "Health is low", thai: "เลือดต่ำ" },
-    EventDef { id: "manaLow", group: "warning", label: "Mana Low", subtitle: "Mana is low", thai: "มานาต่ำ" },
-    EventDef { id: "first_blood", group: "combat", label: "First Blood", subtitle: "First blood", thai: "เลือดแรก" },
-    EventDef { id: "kill", group: "combat", label: "Kill", subtitle: "Hero kill", thai: "คิล" },
-    EventDef { id: "double_kill", group: "combat", label: "Double Kill", subtitle: "Double kill", thai: "ดับเบิลคิล" },
-    EventDef { id: "triple_kill", group: "combat", label: "Triple Kill", subtitle: "Triple kill", thai: "ทริปเปิลคิล" },
-    EventDef { id: "ultra_kill", group: "combat", label: "Ultra Kill", subtitle: "Ultra kill", thai: "อัลตร้า" },
-    EventDef { id: "rampage", group: "combat", label: "Rampage", subtitle: "Rampage", thai: "แรมเพจ" },
-    EventDef { id: "killing_spree", group: "streak", label: "Killing Spree", subtitle: "Killing spree", thai: "สปรี" },
-    EventDef { id: "dominating", group: "streak", label: "Dominating", subtitle: "Dominating", thai: "ครอบครอง" },
-    EventDef { id: "mega_kill", group: "streak", label: "Mega Kill", subtitle: "Mega kill", thai: "เมก้าคิล" },
-    EventDef { id: "unstoppable", group: "streak", label: "Unstoppable", subtitle: "Unstoppable", thai: "หยุดไม่ได้" },
-    EventDef { id: "wicked_sick", group: "streak", label: "Wicked Sick", subtitle: "Wicked sick", thai: "โหดจัด" },
-    EventDef { id: "monster_kill", group: "streak", label: "Monster Kill", subtitle: "Monster kill", thai: "มอนสเตอร์คิล" },
-    EventDef { id: "godlike", group: "streak", label: "Godlike", subtitle: "Godlike", thai: "เทพเจ้า" },
-    EventDef { id: "beyond_godlike", group: "streak", label: "Beyond Godlike", subtitle: "Beyond godlike", thai: "เหนือเทพเจ้า" },
-    EventDef { id: "levelUp", group: "state", label: "Level Up", subtitle: "Level up", thai: "เลเวลอัพ" },
-    EventDef { id: "match_start", group: "state", label: "Match Start", subtitle: "Match start", thai: "เริ่มเกม" },
-    EventDef { id: "death", group: "state", label: "Death", subtitle: "Hero died", thai: "ตาย" },
-    EventDef { id: "respawn", group: "state", label: "Respawn", subtitle: "Respawn", thai: "เกิดใหม่" },
-    EventDef { id: "advice", group: "advisor", label: "Advice", subtitle: "Advisor line", thai: "คำแนะนำ" },
+    EventDef {
+        id: "danger",
+        group: "warning",
+        label: "Danger",
+        subtitle: "High danger warning",
+        thai: "อันตราย",
+    },
+    EventDef {
+        id: "gank",
+        group: "warning",
+        label: "Gank",
+        subtitle: "Incoming gank",
+        thai: "แก๊งค์",
+    },
+    EventDef {
+        id: "revision",
+        group: "warning",
+        label: "Revision",
+        subtitle: "Belief revision",
+        thai: "ยกเลิกเตือน",
+    },
+    EventDef {
+        id: "hpLow",
+        group: "warning",
+        label: "HP Low",
+        subtitle: "Health is low",
+        thai: "เลือดต่ำ",
+    },
+    EventDef {
+        id: "manaLow",
+        group: "warning",
+        label: "Mana Low",
+        subtitle: "Mana is low",
+        thai: "มานาต่ำ",
+    },
+    EventDef {
+        id: "first_blood",
+        group: "combat",
+        label: "First Blood",
+        subtitle: "First blood",
+        thai: "เลือดแรก",
+    },
+    EventDef {
+        id: "kill",
+        group: "combat",
+        label: "Kill",
+        subtitle: "Hero kill",
+        thai: "คิล",
+    },
+    EventDef {
+        id: "double_kill",
+        group: "combat",
+        label: "Double Kill",
+        subtitle: "Double kill",
+        thai: "ดับเบิลคิล",
+    },
+    EventDef {
+        id: "triple_kill",
+        group: "combat",
+        label: "Triple Kill",
+        subtitle: "Triple kill",
+        thai: "ทริปเปิลคิล",
+    },
+    EventDef {
+        id: "ultra_kill",
+        group: "combat",
+        label: "Ultra Kill",
+        subtitle: "Ultra kill",
+        thai: "อัลตร้า",
+    },
+    EventDef {
+        id: "rampage",
+        group: "combat",
+        label: "Rampage",
+        subtitle: "Rampage",
+        thai: "แรมเพจ",
+    },
+    EventDef {
+        id: "killing_spree",
+        group: "streak",
+        label: "Killing Spree",
+        subtitle: "Killing spree",
+        thai: "สปรี",
+    },
+    EventDef {
+        id: "dominating",
+        group: "streak",
+        label: "Dominating",
+        subtitle: "Dominating",
+        thai: "ครอบครอง",
+    },
+    EventDef {
+        id: "mega_kill",
+        group: "streak",
+        label: "Mega Kill",
+        subtitle: "Mega kill",
+        thai: "เมก้าคิล",
+    },
+    EventDef {
+        id: "unstoppable",
+        group: "streak",
+        label: "Unstoppable",
+        subtitle: "Unstoppable",
+        thai: "หยุดไม่ได้",
+    },
+    EventDef {
+        id: "wicked_sick",
+        group: "streak",
+        label: "Wicked Sick",
+        subtitle: "Wicked sick",
+        thai: "โหดจัด",
+    },
+    EventDef {
+        id: "monster_kill",
+        group: "streak",
+        label: "Monster Kill",
+        subtitle: "Monster kill",
+        thai: "มอนสเตอร์คิล",
+    },
+    EventDef {
+        id: "godlike",
+        group: "streak",
+        label: "Godlike",
+        subtitle: "Godlike",
+        thai: "เทพเจ้า",
+    },
+    EventDef {
+        id: "beyond_godlike",
+        group: "streak",
+        label: "Beyond Godlike",
+        subtitle: "Beyond godlike",
+        thai: "เหนือเทพเจ้า",
+    },
+    EventDef {
+        id: "levelUp",
+        group: "state",
+        label: "Level Up",
+        subtitle: "Level up",
+        thai: "เลเวลอัพ",
+    },
+    EventDef {
+        id: "match_start",
+        group: "state",
+        label: "Match Start",
+        subtitle: "Match start",
+        thai: "เริ่มเกม",
+    },
+    EventDef {
+        id: "death",
+        group: "state",
+        label: "Death",
+        subtitle: "Hero died",
+        thai: "ตาย",
+    },
+    EventDef {
+        id: "respawn",
+        group: "state",
+        label: "Respawn",
+        subtitle: "Respawn",
+        thai: "เกิดใหม่",
+    },
+    EventDef {
+        id: "advice",
+        group: "advisor",
+        label: "Advice",
+        subtitle: "Advisor line",
+        thai: "คำแนะนำ",
+    },
 ];
 
 pub fn event_ids() -> impl Iterator<Item = &'static str> {
@@ -245,7 +409,11 @@ pub fn state() -> Result<VoiceState, String> {
         packs: packs_out,
         groups: GROUPS
             .iter()
-            .map(|g| VoiceGroup { id: g.id.into(), label: g.label.into(), accent: g.accent.into() })
+            .map(|g| VoiceGroup {
+                id: g.id.into(),
+                label: g.label.into(),
+                accent: g.accent.into(),
+            })
             .collect(),
     })
 }
@@ -261,7 +429,9 @@ pub fn action(action: &str, pack_id: Option<&str>) -> Result<VoiceState, String>
         "open-root" => {
             let dir = voice_root();
             fs::create_dir_all(&dir).map_err(|e| format!("create voice root: {e}"))?;
-            let _ = std::process::Command::new("explorer").arg(dir.as_os_str()).spawn();
+            let _ = std::process::Command::new("explorer")
+                .arg(dir.as_os_str())
+                .spawn();
             state()
         }
         _ => Err(format!("unknown voice action: {action}")),
@@ -279,7 +449,12 @@ pub fn create_template(pack_id: &str, name: &str, locale: &str) -> Result<VoiceS
     state()
 }
 
-pub fn upload_asset(pack_id: &str, kind: &str, name: &str, bytes: &[u8]) -> Result<UploadResult, String> {
+pub fn upload_asset(
+    pack_id: &str,
+    kind: &str,
+    name: &str,
+    bytes: &[u8],
+) -> Result<UploadResult, String> {
     let base = pack_dir(pack_id)?;
     let folder = match kind {
         "clip" => "clips",
@@ -293,12 +468,23 @@ pub fn upload_asset(pack_id: &str, kind: &str, name: &str, bytes: &[u8]) -> Resu
     let rel = format!("{folder}/{file_name}");
     let dest = base.join(&rel);
     write_bytes(&dest, bytes)?;
-    Ok(UploadResult { path: rel.replace('\\', "/") })
+    Ok(UploadResult {
+        path: rel.replace('\\', "/"),
+    })
 }
 
 pub fn import_archive(name: &str, bytes: &[u8]) -> Result<ImportResult, String> {
-    let id = sanitize_id(Path::new(name).file_stem().and_then(|s| s.to_str()).unwrap_or("imported-pack"));
-    let id = if id.is_empty() { "imported-pack".to_string() } else { id };
+    let id = sanitize_id(
+        Path::new(name)
+            .file_stem()
+            .and_then(|s| s.to_str())
+            .unwrap_or("imported-pack"),
+    );
+    let id = if id.is_empty() {
+        "imported-pack".to_string()
+    } else {
+        id
+    };
     let root = voice_root();
     let imports = root.join("imports");
     fs::create_dir_all(&imports).map_err(|e| format!("create imports dir: {e}"))?;
@@ -369,10 +555,16 @@ pub fn update_pack(payload: UpdatePackRequest) -> Result<VoiceState, String> {
 /// voices the pack's clips and its banner together — the "bundle" contract.
 /// Existing files only; empty when there is no active pack / manifest / mapping.
 pub fn active_event_clips(event: &str) -> Vec<PathBuf> {
-    let Some(id) = read_active_pack_id() else { return Vec::new() };
+    let Some(id) = read_active_pack_id() else {
+        return Vec::new();
+    };
     let dir = packs_dir().join(sanitize_id(&id));
-    let Ok(manifest) = read_manifest(&dir) else { return Vec::new() };
-    let Some(mapping) = manifest.mappings.get(event) else { return Vec::new() };
+    let Ok(manifest) = read_manifest(&dir) else {
+        return Vec::new();
+    };
+    let Some(mapping) = manifest.mappings.get(event) else {
+        return Vec::new();
+    };
     mapping
         .clips
         .iter()
@@ -419,7 +611,9 @@ pub fn preview_banner(pack_id: &str, event: &str) -> FiredBanner {
 /// pack maps an existing, reasonably-sized image to this event.
 fn fired_banner_from(pack_id: Option<String>, event: &str) -> FiredBanner {
     let def = EVENTS.iter().find(|e| e.id == event);
-    let mut banner_text = def.map(|d| d.label.to_string()).unwrap_or_else(|| event.to_string());
+    let mut banner_text = def
+        .map(|d| d.label.to_string())
+        .unwrap_or_else(|| event.to_string());
     let mut thai = def.map(|d| d.thai.to_string()).unwrap_or_default();
     let mut banner_data = None;
 
@@ -441,7 +635,12 @@ fn fired_banner_from(pack_id: Option<String>, event: &str) -> FiredBanner {
         }
     }
 
-    FiredBanner { event: event.to_string(), banner_data, banner_text, thai }
+    FiredBanner {
+        event: event.to_string(),
+        banner_data,
+        banner_text,
+        thai,
+    }
 }
 
 /// A clip mapped to `event` in a SPECIFIC pack, to play during an overlay preview
@@ -464,8 +663,15 @@ fn read_banner_data_url(path: &Path) -> Option<String> {
         return None;
     }
     let bytes = fs::read(path).ok()?;
-    let ext = path.extension().and_then(|e| e.to_str()).unwrap_or_default();
-    Some(format!("data:{};base64,{}", image_mime(ext), base64_encode(&bytes)))
+    let ext = path
+        .extension()
+        .and_then(|e| e.to_str())
+        .unwrap_or_default();
+    Some(format!(
+        "data:{};base64,{}",
+        image_mime(ext),
+        base64_encode(&bytes)
+    ))
 }
 
 fn image_mime(ext: &str) -> &'static str {
@@ -490,8 +696,16 @@ fn base64_encode(input: &[u8]) -> String {
         let n = (b0 << 16) | (b1 << 8) | b2;
         out.push(TABLE[((n >> 18) & 63) as usize] as char);
         out.push(TABLE[((n >> 12) & 63) as usize] as char);
-        out.push(if chunk.len() > 1 { TABLE[((n >> 6) & 63) as usize] as char } else { '=' });
-        out.push(if chunk.len() > 2 { TABLE[(n & 63) as usize] as char } else { '=' });
+        out.push(if chunk.len() > 1 {
+            TABLE[((n >> 6) & 63) as usize] as char
+        } else {
+            '='
+        });
+        out.push(if chunk.len() > 2 {
+            TABLE[(n & 63) as usize] as char
+        } else {
+            '='
+        });
     }
     out
 }
@@ -554,7 +768,8 @@ fn read_manifest(dir: &Path) -> Result<Manifest, String> {
 
 fn write_manifest(dir: &Path, manifest: &Manifest) -> Result<(), String> {
     let path = dir.join("manifest.json");
-    let raw = serde_json::to_string_pretty(manifest).map_err(|e| format!("serialize manifest: {e}"))?;
+    let raw =
+        serde_json::to_string_pretty(manifest).map_err(|e| format!("serialize manifest: {e}"))?;
     fs::write(&path, raw).map_err(|e| format!("write {}: {e}", path.display()))
 }
 
@@ -584,7 +799,11 @@ fn build_pack(dir: &Path) -> Result<VoicePack, String> {
     let items = EVENTS
         .iter()
         .map(|event| {
-            let accent = GROUPS.iter().find(|group| group.id == event.group).map(|group| group.accent).unwrap_or("#8fd3ff");
+            let accent = GROUPS
+                .iter()
+                .find(|group| group.id == event.group)
+                .map(|group| group.accent)
+                .unwrap_or("#8fd3ff");
             let mapping = manifest.mappings.get(event.id).map(|raw| {
                 covered += 1;
                 let clip_options = raw
@@ -652,16 +871,30 @@ fn list_assets(dir: &Path, folder: &str, extensions: &[&str]) -> Vec<VoiceAssetO
 }
 
 fn collect_assets(base: &Path, dir: &Path, extensions: &[&str], out: &mut Vec<VoiceAssetOption>) {
-    let Ok(entries) = fs::read_dir(dir) else { return; };
+    let Ok(entries) = fs::read_dir(dir) else {
+        return;
+    };
     for entry in entries.flatten() {
         let path = entry.path();
         if path.is_dir() {
             collect_assets(base, &path, extensions, out);
             continue;
         }
-        let Some(ext) = path.extension().and_then(|x| x.to_str()).map(|x| x.to_ascii_lowercase()) else { continue; };
+        let Some(ext) = path
+            .extension()
+            .and_then(|x| x.to_str())
+            .map(|x| x.to_ascii_lowercase())
+        else {
+            continue;
+        };
         if extensions.iter().any(|allowed| *allowed == ext) {
-            if let Some(asset) = asset_option(base, path.strip_prefix(base).unwrap_or(&path).to_string_lossy().as_ref()) {
+            if let Some(asset) = asset_option(
+                base,
+                path.strip_prefix(base)
+                    .unwrap_or(&path)
+                    .to_string_lossy()
+                    .as_ref(),
+            ) {
                 out.push(asset);
             }
         }
@@ -682,7 +915,10 @@ fn asset_option(base: &Path, rel: &str) -> Option<VoiceAssetOption> {
 }
 
 fn read_active_pack_id() -> Option<String> {
-    fs::read_to_string(active_path()).ok().map(|s| s.trim().to_string()).filter(|s| !s.is_empty())
+    fs::read_to_string(active_path())
+        .ok()
+        .map(|s| s.trim().to_string())
+        .filter(|s| !s.is_empty())
 }
 
 fn write_active_pack_id(id: &str) -> Result<(), String> {
@@ -696,14 +932,21 @@ fn write_bytes(path: &Path, bytes: &[u8]) -> Result<(), String> {
         fs::create_dir_all(parent).map_err(|e| format!("create {}: {e}", parent.display()))?;
     }
     let mut file = fs::File::create(path).map_err(|e| format!("create {}: {e}", path.display()))?;
-    file.write_all(bytes).map_err(|e| format!("write {}: {e}", path.display()))
+    file.write_all(bytes)
+        .map_err(|e| format!("write {}: {e}", path.display()))
 }
 
 fn sanitize_id(value: &str) -> String {
     value
         .to_ascii_lowercase()
         .chars()
-        .map(|ch| if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' { ch } else { '-' })
+        .map(|ch| {
+            if ch.is_ascii_alphanumeric() || ch == '-' || ch == '_' {
+                ch
+            } else {
+                '-'
+            }
+        })
         .collect::<String>()
         .trim_matches('-')
         .to_string()

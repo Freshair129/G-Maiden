@@ -11,7 +11,10 @@
 //! 3×3 of candidate top-left offsets around every grid cell whose score clears
 //! a fraction of the peak. Output feeds the detector (ONNX / NCC fallback).
 
-use super::{Frame, TEAM_RING};
+use super::Frame;
+
+#[cfg(test)]
+use super::{DIRE_RING, RADIANT_RING};
 
 /// Cells scoring above this fraction of the peak become candidates (spike: 0.18).
 pub const DEFAULT_THRESHOLD_FRAC: f32 = 0.18;
@@ -26,7 +29,12 @@ const CONTRAST_K: f32 = 1.5;
 /// `threshold_frac` selects grid cells above that fraction of the peak score;
 /// use [`DEFAULT_THRESHOLD_FRAC`]. Coords are clamped so a full `icon×icon`
 /// patch always fits inside the frame.
-pub fn prefilter_candidates(img: &Frame, icon: usize, threshold_frac: f32) -> Vec<(i32, i32)> {
+pub fn prefilter_candidates(
+    img: &Frame,
+    icon: usize,
+    threshold_frac: f32,
+    team_ring: (f32, f32, f32),
+) -> Vec<(i32, i32)> {
     let (w, h) = (img.width, img.height);
     // Degenerate frames (too small for even one icon) have no candidates.
     if icon == 0 || w < icon || h < icon {
@@ -42,9 +50,9 @@ pub fn prefilter_candidates(img: &Frame, icon: usize, threshold_frac: f32) -> Ve
         for x in 0..w {
             let c = img.at(x, y);
             // closeness to the team-red ring (1.0 == exact match, 0.0 == far)
-            let dr = c[0] - TEAM_RING.0;
-            let dg = c[1] - TEAM_RING.1;
-            let db = c[2] - TEAM_RING.2;
+            let dr = c[0] - team_ring.0;
+            let dg = c[1] - team_ring.1;
+            let db = c[2] - team_ring.2;
             let ring = (1.0 - (dr * dr + dg * dg + db * db).sqrt()).max(0.0);
             let bright = 0.299 * c[0] + 0.587 * c[1] + 0.114 * c[2];
             // width/height aren't always divisible by cell — clamp to the last
@@ -133,8 +141,12 @@ mod tests {
         // the contrast gate rejects it because peak ≈ mean. This guards against
         // a fully-fogged or red-tinted minimap flagging every cell.
         let f = frame_with_blip(128, 128, [60, 30, 30], [60, 30, 30], 0, 0, 1);
-        let c = prefilter_candidates(&f, 20, DEFAULT_THRESHOLD_FRAC);
-        assert!(c.is_empty(), "flat frame must yield no candidates, got {}", c.len());
+        let c = prefilter_candidates(&f, 20, DEFAULT_THRESHOLD_FRAC, DIRE_RING);
+        assert!(
+            c.is_empty(),
+            "flat frame must yield no candidates, got {}",
+            c.len()
+        );
     }
 
     #[test]
@@ -144,7 +156,7 @@ mod tests {
         let icon = 20;
         let (px, py) = (60usize, 40usize);
         let f = frame_with_blip(160, 160, [12, 28, 12], [219, 41, 41], px, py, icon);
-        let cands = prefilter_candidates(&f, icon, DEFAULT_THRESHOLD_FRAC);
+        let cands = prefilter_candidates(&f, icon, DEFAULT_THRESHOLD_FRAC, DIRE_RING);
         assert!(!cands.is_empty(), "red blip must yield candidates");
         let hit = cands.iter().any(|&(x, y)| {
             (x - px as i32).abs() <= icon as i32 && (y - py as i32).abs() <= icon as i32
@@ -156,7 +168,7 @@ mod tests {
     fn candidates_fit_inside_frame() {
         let icon = 20;
         let f = frame_with_blip(100, 100, [12, 28, 12], [219, 41, 41], 80, 80, icon);
-        for (x, y) in prefilter_candidates(&f, icon, DEFAULT_THRESHOLD_FRAC) {
+        for (x, y) in prefilter_candidates(&f, icon, DEFAULT_THRESHOLD_FRAC, DIRE_RING) {
             assert!(x >= 0 && x <= (100 - icon) as i32);
             assert!(y >= 0 && y <= (100 - icon) as i32);
         }
@@ -165,6 +177,25 @@ mod tests {
     #[test]
     fn region_smaller_than_icon_is_safe() {
         let f = frame_with_blip(10, 10, [12, 28, 12], [219, 41, 41], 0, 0, 5);
-        assert!(prefilter_candidates(&f, 20, DEFAULT_THRESHOLD_FRAC).is_empty());
+        assert!(prefilter_candidates(&f, 20, DEFAULT_THRESHOLD_FRAC, DIRE_RING).is_empty());
+    }
+
+    #[test]
+    fn green_blip_is_found_when_enemy_ring_is_radiant() {
+        let icon = 20;
+        let (px, py) = (70usize, 50usize);
+        let f = frame_with_blip(160, 160, [16, 20, 16], [102, 219, 77], px, py, icon);
+        let cands = prefilter_candidates(&f, icon, DEFAULT_THRESHOLD_FRAC, RADIANT_RING);
+        assert!(
+            !cands.is_empty(),
+            "radiant-green blip must yield candidates"
+        );
+        let hit = cands.iter().any(|&(x, y)| {
+            (x - px as i32).abs() <= icon as i32 && (y - py as i32).abs() <= icon as i32
+        });
+        assert!(
+            hit,
+            "a candidate should land within one icon of the green blip"
+        );
     }
 }

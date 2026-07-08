@@ -15,7 +15,7 @@ use std::sync::Mutex;
 // At most one SAPI process at a time — Maiden never speaks two lines in parallel.
 // Belief Revision (per CLAUDE.md) requires canceling a line mid-stream and
 // replacing it; we kill the PowerShell child to interrupt SAPI playback.
-static CURRENT: Mutex<Option<Child>> = Mutex::new(None);
+static CURRENT: Mutex<Option<(Child, crate::audio::Priority)>> = Mutex::new(None);
 
 #[derive(serde::Serialize, Clone)]
 pub struct Voice {
@@ -135,9 +135,14 @@ fn piper_bin() -> Option<std::path::PathBuf> {
         cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW — runs on every alert; must not flash
         if let Ok(out) = cmd.output() {
             if out.status.success() {
-                let path = String::from_utf8_lossy(&out.stdout).trim().lines().next()
+                let path = String::from_utf8_lossy(&out.stdout)
+                    .trim()
+                    .lines()
+                    .next()
                     .map(|s| std::path::PathBuf::from(s.trim()));
-                if let Some(p) = path { return Some(p); }
+                if let Some(p) = path {
+                    return Some(p);
+                }
             }
         }
     }
@@ -148,41 +153,63 @@ fn piper_model_dir() -> Option<std::path::PathBuf> {
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             let d = parent.join("models").join("piper");
-            if d.is_dir() { return Some(d); }
+            if d.is_dir() {
+                return Some(d);
+            }
             let d2 = parent.join("piper").join("models");
-            if d2.is_dir() { return Some(d2); }
+            if d2.is_dir() {
+                return Some(d2);
+            }
         }
     }
     // Dev fallback — models/piper/ at repo root (same lookup as minimap model).
     let d = std::path::PathBuf::from("models/piper");
-    if d.is_dir() { return Some(d); }
+    if d.is_dir() {
+        return Some(d);
+    }
     None
 }
 
 fn find_piper_model(dir: &std::path::Path) -> Option<std::path::PathBuf> {
     // Prefer Thai model first (th_TH-*), then any .onnx.
-    std::fs::read_dir(dir).ok()?.filter_map(|e| e.ok()).find_map(|e| {
-        let p = e.path();
-        if p.extension()?.eq_ignore_ascii_case("onnx")
-            && p.file_name()?.to_string_lossy().starts_with("th_TH") {
+    std::fs::read_dir(dir)
+        .ok()?
+        .filter_map(|e| e.ok())
+        .find_map(|e| {
+            let p = e.path();
+            if p.extension()?.eq_ignore_ascii_case("onnx")
+                && p.file_name()?.to_string_lossy().starts_with("th_TH")
+            {
                 return Some(p);
             }
-        None
-    }).or_else(|| {
-        std::fs::read_dir(dir).ok()?.filter_map(|e| e.ok()).find_map(|e| {
-            let p = e.path();
-            if p.extension()?.eq_ignore_ascii_case("onnx") { Some(p) } else { None }
+            None
         })
-    })
+        .or_else(|| {
+            std::fs::read_dir(dir)
+                .ok()?
+                .filter_map(|e| e.ok())
+                .find_map(|e| {
+                    let p = e.path();
+                    if p.extension()?.eq_ignore_ascii_case("onnx") {
+                        Some(p)
+                    } else {
+                        None
+                    }
+                })
+        })
 }
 
 /// Try to speak `text` via Piper. Returns true if Piper was available and the
 /// synthesis succeeded. On false the caller falls back to SAPI.
-pub fn piper_speak(text: &str) -> bool {
+pub fn piper_speak_with_priority(text: &str, priority: crate::audio::Priority) -> bool {
     use std::io::Write;
     let Some(bin) = piper_bin() else { return false };
-    let Some(model_dir) = piper_model_dir() else { return false };
-    let Some(model) = find_piper_model(&model_dir) else { return false };
+    let Some(model_dir) = piper_model_dir() else {
+        return false;
+    };
+    let Some(model) = find_piper_model(&model_dir) else {
+        return false;
+    };
 
     // Write output to a temp WAV file next to the model.
     let tmp = std::env::temp_dir().join("gmaiden_piper_out.wav");
@@ -224,7 +251,7 @@ pub fn piper_speak(text: &str) -> bool {
         }
     }
     // Play the generated WAV via rodio (in-process, no PowerShell startup cost).
-    crate::audio::play_file(tmp);
+    crate::audio::play_file_with_priority(tmp, priority);
     true
 }
 
@@ -234,10 +261,31 @@ pub fn piper_speak(text: &str) -> bool {
 /// a warning mid-sentence. Idempotent: no-op when nothing is speaking.
 pub fn cancel() {
     if let Ok(mut g) = CURRENT.lock() {
-        if let Some(mut c) = g.take() {
+        if let Some((mut c, _)) = g.take() {
             let _ = c.kill();
             let _ = c.wait();
         }
+    }
+}
+
+fn active_priority() -> crate::audio::Priority {
+    let Ok(mut g) = CURRENT.lock() else {
+        return crate::audio::Priority::Cosmetic;
+    };
+    if let Some((child, priority)) = g.as_mut() {
+        match child.try_wait() {
+            Ok(Some(_)) => {
+                *g = None;
+                crate::audio::Priority::Cosmetic
+            }
+            Ok(None) => *priority,
+            Err(_) => {
+                *g = None;
+                crate::audio::Priority::Cosmetic
+            }
+        }
+    } else {
+        crate::audio::Priority::Cosmetic
     }
 }
 
@@ -247,14 +295,26 @@ pub fn cancel() {
 /// path (Piper uses the bundled model's default voice). Volume is read from
 /// `audio::get_volume()` for both paths.
 pub fn speak(text: &str, voice: Option<&str>, rate: Option<i32>) {
+    speak_with_priority(text, voice, rate, crate::audio::Priority::Normal);
+}
+
+pub fn speak_with_priority(
+    text: &str,
+    voice: Option<&str>,
+    rate: Option<i32>,
+    priority: crate::audio::Priority,
+) {
     if text.trim().is_empty() {
+        return;
+    }
+    if crate::audio::active_priority() > priority || active_priority() > priority {
         return;
     }
     // Cancel both SAPI and any in-flight rodio (Piper) clip.
     cancel();
     crate::audio::cancel();
     // Fast path: Piper neural TTS (~40-80 ms, no PowerShell cold-start).
-    if piper_speak(text) {
+    if piper_speak_with_priority(text, priority) {
         return;
     }
     // Fallback: SAPI via PowerShell.
@@ -312,7 +372,7 @@ pub fn speak(text: &str, voice: Option<&str>, rate: Option<i32>) {
     // Stash the child so cancel() can kill it later. Anything previously in the
     // slot was already drained by the cancel() at the top of this function.
     if let Ok(mut g) = CURRENT.lock() {
-        *g = Some(child);
+        *g = Some((child, priority));
     }
 }
 

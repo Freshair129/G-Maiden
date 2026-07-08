@@ -100,10 +100,20 @@ mod tests {
     use super::*;
 
     fn det(name: &str, x: i32, y: i32) -> Detection {
-        Detection { label: 0, name: name.into(), x, y, score: 0.9 }
+        Detection {
+            label: 0,
+            name: name.into(),
+            x,
+            y,
+            score: 0.9,
+        }
     }
     fn region() -> MinimapRegion {
-        MinimapRegion { x: 0, y: 0, side: 256 }
+        MinimapRegion {
+            x: 0,
+            y: 0,
+            side: 256,
+        }
     }
 
     #[test]

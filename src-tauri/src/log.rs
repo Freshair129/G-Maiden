@@ -147,7 +147,9 @@ pub fn note_tick(tick: &GameTick) {
     state.last_clock = tick.clock_time;
 
     let payload = serde_json::json!({ "ts": now_ms() as u64, "tick": tick });
-    let Ok(line) = serde_json::to_string(&payload) else { return };
+    let Ok(line) = serde_json::to_string(&payload) else {
+        return;
+    };
     if let Some(f) = state.file.as_mut() {
         let _ = f.write_all(line.as_bytes());
         let _ = f.write_all(b"\n");
@@ -181,7 +183,9 @@ pub fn note_event(mut value: serde_json::Value) {
     if let Some(obj) = value.as_object_mut() {
         obj.insert("ts".into(), serde_json::json!(now_ms() as u64));
     }
-    let Ok(line) = serde_json::to_string(&value) else { return };
+    let Ok(line) = serde_json::to_string(&value) else {
+        return;
+    };
     if let Some(f) = state.file.as_mut() {
         let _ = f.write_all(line.as_bytes());
         let _ = f.write_all(b"\n");
@@ -205,7 +209,11 @@ pub fn gank_revision_record() -> serde_json::Value {
 }
 
 /// Record: G-Sentry flagged an enemy missing (a risk feature).
-pub fn enemy_missing_record(hero: &str, missing_for_ms: u64, last_pos: (f32, f32)) -> serde_json::Value {
+pub fn enemy_missing_record(
+    hero: &str,
+    missing_for_ms: u64,
+    last_pos: (f32, f32),
+) -> serde_json::Value {
     serde_json::json!({
         "type": "enemy_missing",
         "hero": hero,

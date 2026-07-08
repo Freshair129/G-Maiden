@@ -34,7 +34,10 @@ fn table() -> &'static HashMap<String, i64> {
 /// Cost of one item by its bare or `item_`-prefixed GSI name. Empty/unknown
 /// names return 0 so the caller can sum without conditionals.
 pub fn item_cost(name: &str) -> i64 {
-    let key = name.strip_prefix("item_").unwrap_or(name).to_ascii_lowercase();
+    let key = name
+        .strip_prefix("item_")
+        .unwrap_or(name)
+        .to_ascii_lowercase();
     if key.is_empty() || key == "empty" {
         return 0;
     }
@@ -49,7 +52,9 @@ pub fn item_cost(name: &str) -> i64 {
 /// derivation survives future GSI additions (e.g. extra backpack slots, ward
 /// charges) without code changes — anything with a `name` field counts.
 pub fn item_cost_sum(items_block: &Value) -> i64 {
-    let Some(obj) = items_block.as_object() else { return 0 };
+    let Some(obj) = items_block.as_object() else {
+        return 0;
+    };
     let mut total = 0;
     for (_slot, item) in obj.iter() {
         if let Some(name) = item.get("name").and_then(|n| n.as_str()) {
@@ -121,6 +126,10 @@ mod tests {
     #[test]
     fn table_loaded_and_nontrivial() {
         // Sanity: the embedded JSON parsed and has hundreds of entries.
-        assert!(table().len() > 100, "table size {} — embed file broken?", table().len());
+        assert!(
+            table().len() > 100,
+            "table size {} — embed file broken?",
+            table().len()
+        );
     }
 }

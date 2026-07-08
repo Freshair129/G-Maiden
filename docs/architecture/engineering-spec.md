@@ -45,6 +45,9 @@
   à¸–à¹‰à¸²à¸¡à¸µ alert à¹€à¸à¹ˆà¸²à¸à¸³à¸¥à¸±à¸‡à¸žà¸¹à¸”à¹à¸¥à¸° confidence à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ â†’ trigger **Belief Revision** (à¸”à¸¹ Â§3)
 - **Output:** `SignalAlert { severity, voice_clip_key, interrupt: true }` â†’ audio engine
 - **Constraint:** à¸•à¹‰à¸­à¸‡à¸ˆà¸šà¹ƒà¸™ budget Â§1
+- **Speech priority contract:** `Critical = danger | gank | revision`, `Normal = manual/advice speech`, `Cosmetic = announcer events`; cosmetic à¸«à¹‰à¸²à¸¡à¸—à¸±à¸š critical
+- **Level-up milestone contract:** announcer/persona path à¹ƒà¸Šà¹‰à¸ˆà¸¸à¸” `6, 12, 18, 25` à¹à¸¥à¸°à¸–à¸·à¸­à¸§à¹ˆà¸² "triggered" à¹€à¸¡à¸·à¹ˆà¸­à¸‚à¹‰à¸²à¸¡ milestone à¹à¸¡à¹‰à¸›à¸¥à¸²à¸¢à¸—à¸²à¸‡à¸ˆà¸°à¹„à¸¡à¹ˆà¸•à¸£à¸‡ milestone à¸žà¸­à¸”à¸µ (`11 -> 13` à¸•à¹‰à¸­à¸‡à¸¢à¸±à¸‡ fire)
+- **Latency harness contract:** à¸•à¹‰à¸­à¸‡à¸¡à¸µ harness à¸—à¸µà¹ˆà¸§à¸±à¸”à¹€à¸ªà¹‰à¸™à¸—à¸²à¸‡ in-process `GSI JSON parse -> team-side routing -> signal evaluate -> audio enqueue intent` à¹€à¸žà¸´à¹ˆà¸¡à¸ˆà¸²à¸ compute-only harness
 
 ### 2.4 G-Master (Strategic & Financial Advisor) â€” non-critical
 - **Input:** GSI (net worth, items, abilities à¸‚à¸­à¸‡à¹€à¸£à¸² + à¸—à¸µà¹ˆà¸¡à¸­à¸‡à¹€à¸«à¹‡à¸™à¸‚à¸­à¸‡à¸¨à¸±à¸•à¸£à¸¹) + meta dataset
@@ -222,6 +225,8 @@ OpenDota profile + baselines. Match/CV/G-Log data stays local; the account store
 à¸—à¸¸à¸à¸Ÿà¸µà¹€à¸ˆà¸­à¸£à¹Œà¸•à¹‰à¸­à¸‡à¸œà¹ˆà¸²à¸™ gate à¸à¹ˆà¸­à¸™à¸–à¸·à¸­à¸§à¹ˆà¸²à¹€à¸ªà¸£à¹‡à¸ˆ:
 - [ ] G-Signal p99 end-to-end â‰¤300ms, p50 â‰¤250ms (à¸§à¸±à¸”à¸ˆà¸²à¸ `timestamp_ms`)
 - [ ] background CPU â‰¤2.5% à¸šà¸™à¸Šà¸´à¸›à¹€à¸‹à¹‡à¸•à¸£à¸°à¸”à¸±à¸šà¸à¸¥à¸²à¸‡ (à¸§à¸±à¸”à¸”à¹‰à¸§à¸¢ harness 10 à¸™à¸²à¸—à¸µ)
+- [ ] CPU gate à¸•à¹‰à¸­à¸‡à¸žà¸´à¸ªà¸¹à¸ˆà¸™à¹Œà¸ˆà¸²à¸ sustained app-path harness; Windows Task Manager peak `20%+` ณ 2026-07-08 à¸¢à¸±à¸‡à¸–à¸·à¸­à¸§à¹ˆà¸² fail spec à¸ˆà¸™à¸à¸§à¹ˆà¸²à¸ˆà¸°à¸¢à¸·à¸™à¸¢à¸±à¸™ steady-state à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™ budget
+- [ ] CPU investigation à¸•à¹‰à¸­à¸‡à¹à¸¢à¸ `Rust host` vs `WebView2 child processes` vs `sidecars/subprocesses`; harness à¸«à¸¥à¸±à¸à¸„à¸·à¸­ `tests/perf/src/bin/perf_cpu_tree.rs`
 - [ ] RAM â‰¤400MB (à¸ªà¸–à¸²à¸™à¸° cloud-online, SLM à¹„à¸¡à¹ˆà¹‚à¸«à¸¥à¸”)
 - [ ] FPS drop â‰¤3% (à¸§à¸±à¸”à¹€à¸—à¸µà¸¢à¸š baseline à¹€à¸à¸¡à¸ˆà¸£à¸´à¸‡)
 - [ ] cloud-loss test: à¸›à¸´à¸”à¹€à¸™à¹‡à¸• â†’ G-Sentry/G-Signal à¸¢à¸±à¸‡à¸—à¸³à¸‡à¸²à¸™à¸„à¸£à¸š

@@ -77,10 +77,10 @@ describe("buildHeroes", () => {
     }
   });
 
-  it("does not overwrite name/rank/mmr/profile on index-0 hero", () => {
+  it("only overwrites the live hero name on index-0 and preserves profile fields", () => {
     const tick = makeTick();
     const result = buildHeroes(tick, new Map(), null, MOCK.heroes);
-    expect(result[0].hero).toBe(MOCK.heroes[0].hero);
+    expect(result[0].hero).toBe("Crystal Maiden");
     expect(result[0].player).toBe(MOCK.heroes[0].player);
     expect(result[0].rank).toBe(MOCK.heroes[0].rank);
     expect(result[0].mmr).toBe(MOCK.heroes[0].mmr);

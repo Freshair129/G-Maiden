@@ -25,14 +25,20 @@ fn from_steamid64(id64: u64) -> Option<SteamIdentity> {
     if acc == 0 || acc > u32::MAX as u64 {
         return None;
     }
-    Some(SteamIdentity { steamid64: id64.to_string(), account_id: acc as u32 })
+    Some(SteamIdentity {
+        steamid64: id64.to_string(),
+        account_id: acc as u32,
+    })
 }
 
 fn from_account_id(acc: u32) -> Option<SteamIdentity> {
     if acc == 0 {
         return None;
     }
-    Some(SteamIdentity { steamid64: (STEAMID64_BASE + acc as u64).to_string(), account_id: acc })
+    Some(SteamIdentity {
+        steamid64: (STEAMID64_BASE + acc as u64).to_string(),
+        account_id: acc,
+    })
 }
 
 /// Parse a pure-digits identity: `/profiles/{id64}`, a raw 17-digit SteamID64,
@@ -40,7 +46,10 @@ fn from_account_id(acc: u32) -> Option<SteamIdentity> {
 fn parse_digits(input: &str) -> Option<SteamIdentity> {
     let s = input.trim();
     let digits: String = if let Some(idx) = s.find("/profiles/") {
-        s[idx + 10..].chars().take_while(|c| c.is_ascii_digit()).collect()
+        s[idx + 10..]
+            .chars()
+            .take_while(|c| c.is_ascii_digit())
+            .collect()
     } else if !s.is_empty() && s.chars().all(|c| c.is_ascii_digit()) {
         s.to_string()
     } else {
@@ -61,7 +70,11 @@ fn vanity_token(input: &str) -> Option<String> {
     let s = input.trim();
     if let Some(idx) = s.find("/id/") {
         let name = s[idx + 4..].split('/').next().unwrap_or("").trim();
-        return if name.is_empty() { None } else { Some(name.to_string()) };
+        return if name.is_empty() {
+            None
+        } else {
+            Some(name.to_string())
+        };
     }
     if !s.is_empty() && !s.contains('/') && !s.chars().all(|c| c.is_ascii_digit()) {
         return Some(s.to_string());
@@ -81,7 +94,11 @@ fn extract_tag(xml: &str, tag: &str) -> Option<String> {
         .and_then(|s| s.strip_suffix("]]>"))
         .unwrap_or(inner);
     let digits: String = inner.chars().filter(|c| c.is_ascii_digit()).collect();
-    if digits.is_empty() { None } else { Some(digits) }
+    if digits.is_empty() {
+        None
+    } else {
+        Some(digits)
+    }
 }
 
 async fn resolve_vanity(name: &str) -> Result<SteamIdentity, String> {
@@ -116,10 +133,18 @@ mod tests {
 
     #[test]
     fn digit_forms_resolve_offline() {
-        assert_eq!(parse_digits("76561198115363193").unwrap().account_id, 155_097_465);
-        assert_eq!(parse_digits("155097465").unwrap().steamid64, "76561198115363193");
         assert_eq!(
-            parse_digits("https://steamcommunity.com/profiles/76561198115363193").unwrap().account_id,
+            parse_digits("76561198115363193").unwrap().account_id,
+            155_097_465
+        );
+        assert_eq!(
+            parse_digits("155097465").unwrap().steamid64,
+            "76561198115363193"
+        );
+        assert_eq!(
+            parse_digits("https://steamcommunity.com/profiles/76561198115363193")
+                .unwrap()
+                .account_id,
             155_097_465
         );
         assert!(parse_digits("suanranger129").is_none());
@@ -128,20 +153,37 @@ mod tests {
 
     #[test]
     fn vanity_token_extraction() {
-        assert_eq!(vanity_token("https://steamcommunity.com/id/suanranger129").as_deref(), Some("suanranger129"));
-        assert_eq!(vanity_token("https://steamcommunity.com/id/suanranger129/").as_deref(), Some("suanranger129"));
-        assert_eq!(vanity_token("suanranger129").as_deref(), Some("suanranger129"));
+        assert_eq!(
+            vanity_token("https://steamcommunity.com/id/suanranger129").as_deref(),
+            Some("suanranger129")
+        );
+        assert_eq!(
+            vanity_token("https://steamcommunity.com/id/suanranger129/").as_deref(),
+            Some("suanranger129")
+        );
+        assert_eq!(
+            vanity_token("suanranger129").as_deref(),
+            Some("suanranger129")
+        );
         assert!(vanity_token("76561198115363193").is_none());
     }
 
     #[test]
     fn tag_extraction_handles_cdata() {
         assert_eq!(
-            extract_tag("<a><steamID64>76561198115363193</steamID64></a>", "steamID64").as_deref(),
+            extract_tag(
+                "<a><steamID64>76561198115363193</steamID64></a>",
+                "steamID64"
+            )
+            .as_deref(),
             Some("76561198115363193")
         );
         assert_eq!(
-            extract_tag("<steamID64><![CDATA[76561198115363193]]></steamID64>", "steamID64").as_deref(),
+            extract_tag(
+                "<steamID64><![CDATA[76561198115363193]]></steamID64>",
+                "steamID64"
+            )
+            .as_deref(),
             Some("76561198115363193")
         );
     }
@@ -150,7 +192,9 @@ mod tests {
     #[tokio::test]
     #[ignore]
     async fn live_vanity_resolve() {
-        let id = resolve_steam_id("https://steamcommunity.com/id/suanranger129".into()).await.unwrap();
+        let id = resolve_steam_id("https://steamcommunity.com/id/suanranger129".into())
+            .await
+            .unwrap();
         assert_eq!(id.steamid64, "76561198115363193");
         assert_eq!(id.account_id, 155_097_465);
     }

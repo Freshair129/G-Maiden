@@ -72,18 +72,16 @@ pub fn dota_running() -> bool {
 pub fn exclusive_fullscreen_active() -> bool {
     use windows::Win32::UI::Shell::{SHQueryUserNotificationState, QUNS_RUNNING_D3D_FULL_SCREEN};
     // Read-only query of the shell's current notification state.
-    matches!(unsafe { SHQueryUserNotificationState() }, Ok(QUNS_RUNNING_D3D_FULL_SCREEN))
+    matches!(
+        unsafe { SHQueryUserNotificationState() },
+        Ok(QUNS_RUNNING_D3D_FULL_SCREEN)
+    )
 }
 
 fn read_steam_path() -> Option<PathBuf> {
     // Valve writes SteamPath with forward slashes — fine for std::path on Windows.
     let out = Command::new("reg")
-        .args([
-            "query",
-            r"HKCU\Software\Valve\Steam",
-            "/v",
-            "SteamPath",
-        ])
+        .args(["query", r"HKCU\Software\Valve\Steam", "/v", "SteamPath"])
         .creation_flags(CREATE_NO_WINDOW)
         .output()
         .ok()?;
@@ -270,7 +268,10 @@ mod tests {
 
     #[test]
     fn parses_single_library() {
-        assert_eq!(parse_dota_library(VDF_SINGLE), Some(PathBuf::from("D:\\steam")));
+        assert_eq!(
+            parse_dota_library(VDF_SINGLE),
+            Some(PathBuf::from("D:\\steam"))
+        );
     }
 
     #[test]
@@ -289,8 +290,8 @@ mod tests {
     #[test]
     fn returns_none_on_empty_or_malformed_vdf() {
         assert_eq!(parse_dota_library(""), None);
-        assert_eq!(parse_dota_library("garbage \"570\""), None);  // 570 without a prior path block
-        assert_eq!(parse_dota_library("\"path\" \"D:\\\\steam\""), None);  // path but no 570
+        assert_eq!(parse_dota_library("garbage \"570\""), None); // 570 without a prior path block
+        assert_eq!(parse_dota_library("\"path\" \"D:\\\\steam\""), None); // path but no 570
     }
 
     #[test]
@@ -299,6 +300,8 @@ mod tests {
         let dir = dota_cfg_dir(&library);
         let s = dir.to_string_lossy().replace('/', "\\");
         // Must hit the exact spot Dota 2 scans for GSI configs.
-        assert!(s.ends_with("\\steamapps\\common\\dota 2 beta\\game\\dota\\cfg\\gamestate_integration"));
+        assert!(
+            s.ends_with("\\steamapps\\common\\dota 2 beta\\game\\dota\\cfg\\gamestate_integration")
+        );
     }
 }

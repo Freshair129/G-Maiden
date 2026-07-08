@@ -130,10 +130,20 @@ mod tests {
     use super::*;
 
     fn det(name: &str, x: i32, y: i32) -> Detection {
-        Detection { label: 0, name: name.into(), x, y, score: 0.9 }
+        Detection {
+            label: 0,
+            name: name.into(),
+            x,
+            y,
+            score: 0.9,
+        }
     }
     fn region() -> MinimapRegion {
-        MinimapRegion { x: 0, y: 0, side: 256 }
+        MinimapRegion {
+            x: 0,
+            y: 0,
+            side: 256,
+        }
     }
 
     #[test]
@@ -157,7 +167,10 @@ mod tests {
     fn two_heroes_missing_crosses_danger_threshold() {
         let m = Motion::new();
         let risk = m.assess(
-            &[("CM".into(), 11_000, (0.4, 0.4)), ("SF".into(), 11_000, (0.6, 0.6))],
+            &[
+                ("CM".into(), 11_000, (0.4, 0.4)),
+                ("SF".into(), 11_000, (0.6, 0.6)),
+            ],
             11_000,
         );
         // independent ~0.6 each => 1-0.4*0.4=0.84, *1.15 boost => >0.85

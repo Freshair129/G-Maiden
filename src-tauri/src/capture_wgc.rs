@@ -112,10 +112,7 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
         let (app, region) = ctx.flags;
         let icon = region.icon_size();
         let dir = model_dir(&app);
-        let detector = Detector::load(
-            &dir.join("minimap-detector.onnx"),
-            &dir.join("labels.json"),
-        );
+        let detector = Detector::load(&dir.join("minimap-detector.onnx"), &dir.join("labels.json"));
         let now = Instant::now();
         Ok(MinimapCapture {
             app,
@@ -182,7 +179,12 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
 
         if let Some(f) = Frame::from_bgra(w, h, packed) {
             let now_ms = now; // computed above for the throttle
-            let candidates = prefilter_candidates(&f, self.icon, DEFAULT_THRESHOLD_FRAC);
+            let candidates = prefilter_candidates(
+                &f,
+                self.icon,
+                DEFAULT_THRESHOLD_FRAC,
+                crate::runtime::enemy_team_ring(),
+            );
             let detections = self.detector.detect(&f, &candidates, self.icon);
 
             // G-Sentry: flag enemies missing >5s (edge-triggered).
@@ -193,9 +195,12 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                     em.last_pos,
                 ));
                 if crate::calibration::is_enabled() {
-                    crate::calibration::screenshot("enemy-missing", serde_json::json!({
-                        "hero": em.hero, "missing_for_ms": em.missing_for_ms,
-                    }));
+                    crate::calibration::screenshot(
+                        "enemy-missing",
+                        serde_json::json!({
+                            "hero": em.hero, "missing_for_ms": em.missing_for_ms,
+                        }),
+                    );
                 }
                 let _ = self.app.emit("enemy-missing", &em);
             }
@@ -208,18 +213,23 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
             if crate::runtime::signal_enabled() {
                 // Pull the latest user-tunable sensitivity in case it changed
                 // since the previous tick (atomic read, ~free).
-                self.signal.set_sensitivity(crate::runtime::signal_sensitivity());
+                self.signal
+                    .set_sensitivity(crate::runtime::signal_sensitivity());
                 match self.signal.evaluate(&risk) {
                     SignalEvent::Alert(alert) => {
                         // Use the "gank" event so the bundled voice pack's gank
                         // takes are picked (separate from the HP-danger pack).
                         voice_interrupt("gank", GANK_LINE);
                         if crate::calibration::is_enabled() {
-                            crate::calibration::record("gank", Some(GANK_LINE), serde_json::json!({
-                                "probability": alert.probability,
-                                "missing_heroes": alert.missing_heroes,
-                                "eta_ms": alert.eta_ms,
-                            }));
+                            crate::calibration::record(
+                                "gank",
+                                Some(GANK_LINE),
+                                serde_json::json!({
+                                    "probability": alert.probability,
+                                    "missing_heroes": alert.missing_heroes,
+                                    "eta_ms": alert.eta_ms,
+                                }),
+                            );
                         }
                         crate::log::note_event(crate::log::gank_signal_record(
                             alert.probability,
@@ -286,7 +296,9 @@ pub fn start(app: AppHandle) {
 fn run(app: AppHandle) -> Result<(), String> {
     let monitor = Monitor::primary().map_err(|e| format!("no primary monitor: {e}"))?;
     let sw = monitor.width().map_err(|e| format!("monitor width: {e}"))?;
-    let sh = monitor.height().map_err(|e| format!("monitor height: {e}"))?;
+    let sh = monitor
+        .height()
+        .map_err(|e| format!("monitor height: {e}"))?;
     let region = MinimapRegion::for_resolution(sw, sh);
 
     // WGC's border-toggle (`DrawBorderSettings::WithoutBorder`) and custom
@@ -359,7 +371,12 @@ fn voice_interrupt(event: &str, fallback: &str) {
     crate::tts::cancel();
     if !crate::audio::play_random(event) {
         let (name, rate) = crate::runtime::voice();
-        crate::tts::speak(fallback, name.as_deref(), rate);
+        crate::tts::speak_with_priority(
+            fallback,
+            name.as_deref(),
+            rate,
+            crate::audio::Priority::Critical,
+        );
     }
 }
 
@@ -438,7 +455,11 @@ mod tests {
             return;
         }
         let detector = Detector::load(model, Path::new("../models/labels.json"));
-        let region = MinimapRegion { x: 0, y: 0, side: 256 };
+        let region = MinimapRegion {
+            x: 0,
+            y: 0,
+            side: 256,
+        };
         let icon = 20usize;
         let frame = synthetic_frame(5);
 
@@ -451,7 +472,8 @@ mod tests {
         for i in 0..iters {
             let now_ms = (i as u64) * 125; // ~8 Hz cadence
             let t = Instant::now();
-            let cands = prefilter_candidates(&frame, icon, DEFAULT_THRESHOLD_FRAC);
+            let cands =
+                prefilter_candidates(&frame, icon, DEFAULT_THRESHOLD_FRAC, crate::cv::DIRE_RING);
             let dets = detector.detect(&frame, &cands, icon);
             let _ = sentry.update(&dets, &region, now_ms);
             motion.record(&dets, &region, now_ms);
