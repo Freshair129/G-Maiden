@@ -23,7 +23,13 @@
         "decorations": false,
         "shadow": false,
         "center": true,
-        "visible": true
+        "visible": true,
+        "transparent": true,
+        "windowEffects": {
+          "effects": [
+            "acrylic"
+          ]
+        }
       },
       {
         "title": "G-Maiden Overlay",
