@@ -1,7 +1,7 @@
 ---
-version: "2.0.0-draft"
+version: "2.1.0-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-05T00:00:00+07:00,Opus"
+last_update: "2026-07-09T10:32:00+07:00,Codex"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -9,129 +9,230 @@ attributes:
   language: "th/en"
 ---
 
-# 03 — Layout
+# 03 - Layout
 
-> Mockup ที่ระบุ dimension: [`assets/wireframe-annotated.svg`](assets/wireframe-annotated.svg) ·
-> รูปทรง panel: [`assets/subtract-shape.svg`](assets/subtract-shape.svg)
+> Current implementation source of truth:
+> [src/src/CommandDeck.tsx](../../src/src/CommandDeck.tsx) and
+> [src/src/styles.css](../../src/src/styles.css)
 
-## 1. Layout concept — "Subtract HUD"
+## 1. Current layout contract
 
-Command Deck **ไม่ใช่กล่องสี่เหลี่ยม** — เป็น glass panel แผ่นเดียวที่ถูก **เว้า (Boolean Subtract)**
-3 จุด เพื่อเปิดช่องให้ FAB ลอยอยู่ในนั้น:
+CR-006 is currently implemented as a layered desktop shell with:
 
-```
-┌──────────────────────────────┐   ← มุมนอก r=28
-│  panel (frosted glass)   ╔══╗ │   ← notch ขวาบน → Topbar FAB
-│  P1..P5   score/stats    ╚══╝ │
-│  ┌────┐ ┌──────┐ ┌─────────┐  │
-│  │slot│ │minimap│ │ Agent B │  │
-│  └────┘ └──────┘ └─────────┘  │
-│  ┌──────────────┐  ┌──┐┌──┐   │
-│╔╗│  Activity C  │  │D ││E │   │   ← notch ขวาล่าง → Signal cards D/E/F/G
-│╚╝└──────────────┘  └──┘└──┘   │
-└──────────────────────────────┘
- ↑ notch ซ้ายล่าง → Sidebar FAB
-```
+- one outer fixed stage
+- one L1 white-glass underlay
+- one clipped main shell panel
+- three floating shell attachments:
+  - topbar FAB
+  - sidebar/tool FAB
+  - power radial cluster
+- one dashboard-owned signal card cluster
 
-- **panel** โปร่ง เห็น ambient BG เบลอทะลุ (glassmorphism)
-- **FAB** (topbar / sidebar / signal cards) ลอย **นอก** panel ในช่องเว้า → รู้สึก borderless, เป็น HUD
-- ทุกมุมเว้ามี fillet โค้ง (notch r=20) ให้ negative space ดู intentional ไม่ใช่ตัดตรง ๆ
+This is the geometry that exists in code now. The old "P1-P5 anchor rail" mock is no longer the active shell model.
 
-## 2. Canvas & scaling
+## 2. Coordinate systems
 
-| ค่า | ราคา |
-| --- | --- |
-| Design canvas | **1280 × 720** (16:9) — พิกัดทุก zone อ้างอิงระบบนี้ |
-| Origin | top-left = (0,0) |
-| Scaling | stage `transform: scale(s)`, `s = min(vw/1304, vh/744, 1.4)`, origin center |
-| Min window | 1200 × 780 (จาก preset ใน Settings) |
+There are two active coordinate spaces:
 
-> พิกัดใน §4 เป็น px บน canvas 1280×720 — implementation จริงใช้ค่าเหล่านี้ตรง ๆ แล้ว scale ทั้ง stage
-
-## 3. Subtract-shape path (SVG)
-
-panel = `<div>` ที่ `clip-path: url(#panelClip)` เพื่อให้ `backdrop-filter` เบลอ BG ผ่านรูปทรงจริง
-(SVG fill เบลอ BG ไม่ได้ — ต้องใช้ clip บน div) เส้นขอบ (rim) วาดแยกด้วย `<path stroke>` ทับ
-
-```
-M 40,12  H 800  A 20 20 0 0 1 820,32   V 54   A 20 20 0 0 0 840,74
-H 1248  A 20 20 0 0 1 1268,94   V 410  A 20 20 0 0 1 1248,430
-H 764   A 20 20 0 0 0 744,450   V 688  A 20 20 0 0 1 724,708
-H 112   A 20 20 0 0 1 92,688    V 350  A 20 20 0 0 0 72,330
-H 32    A 20 20 0 0 1 12,310    V 40   A 28 28 0 0 1 40,12  Z
-```
-
-| notch | สร้างช่องให้ | พิกัดคร่าว ๆ |
+| Space | Size | Purpose |
 | --- | --- | --- |
-| ขวาบน | Topbar FAB | เว้าจาก x≈820 ลงไป 42px แล้วต่อขึ้น x=840 |
-| ซ้ายล่าง | Sidebar FAB | เว้าเข้ามาที่ x≈92 ตั้งแต่ y≈330 ลงล่าง |
-| ขวาล่าง | Signal D/E/F/G | เว้าที่ x≈744 ตั้งแต่ y≈430 ลงล่าง |
+| Stage | `1420 x 760` | outer placement world for all shell siblings |
+| Panel clip world | `1280 x 720` | subtract-path shell panel and its rim |
 
-> แก้รูปทรง = แก้ path นี้ที่เดียว (ทั้ง `clipPath` และ `stroke` ใช้ path เดียวกัน) แล้ว regenerate SVG asset
+Scaling is applied to the whole stage:
 
-## 4. Zone dimensions (px บน 1280×720)
+```ts
+s = min(window.innerWidth / 1420, window.innerHeight / 760, 1.4)
+```
 
-### 4.1 ใน panel (glass)
+This means shell polish must be done in stage coordinates first, not screenshot pixels.
 
-| zone | x | y | w | h | หมายเหตุ |
-| --- | --- | --- | --- | --- | --- |
-| Anchor rail (P1–P5) | 16 | 22 | 70 | auto | คอลัมน์ซ้าย — anchor สื่อสาร agent |
-| Score header | 104 | 18 | 690 | 50 | GSI badge + scoreboard |
-| Stats bar | 104 | 76 | 700 | 42 | 6 cells (NW/GPM/XPM/KDA/CS·DN/PING) |
-| Battle zone | 104 | 128 | 700 | 290 | grid `178 \| 1fr \| 178`, gap 10 |
-| — slot col L | | | 178 | | Slot 1–5 |
-| — minimap | | | 1fr | | tag "7" |
-| — slot col R | | | 178 | | Slot 6–10 |
-| Agent card (B) | 848 | 92 | 404 | 326 | อยู่ใต้ notch topbar |
-| Sector C (log) | 104 | 430 | 624 | 266 | grid 2 คอลัมน์ (Activity/Events) |
+## 3. Layer stack
 
-### 4.2 FAB (ลอยในช่องเว้า, นอก panel)
-
-| FAB | x | y | w | h | radius |
-| --- | --- | --- | --- | --- | --- |
-| Topbar (A) | 836 | 12 | 432 | 50 | 14 |
-| Sidebar (I) | 14 | 342 | 64 | 306 | 16 |
-| Close (X) | 14 | 656 | 64 | 44 | 14 |
-| Signals D/E/F/G | 756 | 442 | 512 | 254 | 16 (2×2, gap 12) |
-
-### 4.3 Figma authoring reference (ต้นทาง)
-
-ค่าจาก wireframe ต้นฉบับ (Figma "Desktop-6") — ใช้เป็น *เจตนา* แล้วแพ็คลง 1280×720 ตาม §4.1–4.2:
-
-| element | Figma dim |
-| --- | --- |
-| Content รวม | 1280px (inner 1180 + pad 16×2 + rail 100) |
-| Anchor col | 100px |
-| Topbar FAB | 432 × 50 |
-| Agent card | 400 × 380 |
-| Sidebar | 100 × 380 |
-| Signal card (แต่ละใบ) | 280 × 160 |
-| Gap มาตรฐาน | 16px |
-
-## 5. Grid systems
-
-- **Stats bar:** flex 6 cells เท่ากัน (`flex: 1`), gap 8
-- **Battle:** CSS grid `178px 1fr 178px`, gap 10
-- **Sector C:** grid `1fr 1fr` (Activity | Events) — แบ่ง sub-grid เพิ่มได้ตามเนื้อหา (ยืดหยุ่น)
-- **Signals:** grid `1fr 1fr` × 2 แถว, gap 12
-
-## 6. Responsive / window presets
-
-หน้าต่างไม่ resize อิสระ (decorations off, `resizable: false`) — เลือก preset ใน Settings:
-
-| preset | w × h | ใช้เมื่อ |
+| Layer | Element | Current role |
 | --- | --- | --- |
-| Compact | 1200 × 780 | จอเล็ก / เล่นคู่เกม |
-| Standard | 1280 × 800 | ค่า default |
-| Wide | 1440 × 900 | จอใหญ่ |
-| XL | 1600 × 1000 | ultrawide บางส่วน |
-| Max | 1920 × 1080 | full-HD deck |
+| L0 | Window canvas | transparent desktop window owned by Tauri |
+| L1 | `.g-l1-white-glass` | large soft white-glass support plate under the app mass |
+| L2 | `.g-deck-panel` | clipped subtract-shell body |
+| L3 | `.g-sidebar-fab`, `.g-topbar-fab`, `.g-audio-rail` | floating shell attachments |
+| L4 | `.g-power-radial`, `.g-signals-fab` | interaction overlays and status cards |
 
-ทุก preset scale stage 1280×720 เดิม → สัดส่วน zone คงที่เสมอ, ไม่มี scrollbar (content fit-to-grid)
+## 4. Subtract panel path
 
-## 7. กติกา layout
+The panel shape is driven by `FUNG_PANEL_PATH` in `src/src/CommandDeck.tsx`.
 
-1. **ไม่มี scrollbar** — content ต้อง fit ในกรอบ; เกิน → หน้าใหม่/หน้าย่อย, ขาด → placeholder อนาคต
-2. ตำแหน่ง zone **คงที่** ทุกแมตช์ (peripheral-first) — ห้าม reflow จนหาด้วยหางตาไม่เจอ
-3. FAB ต้องอยู่ในช่องเว้าพอดี — ถ้าขยับ FAB ต้องขยับ notch ใน path ด้วย (§3)
-4. drag window ผ่านพื้นที่ว่างของ topbar FAB (`data-tauri-drag-region`); ปุ่ม/badge = `no-drag`
+Current path:
+
+```svg
+M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74
+H 1248 A 20 20 0 0 1 1268,94 V 688 A 20 20 0 0 1 1248,708
+H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330
+H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z
+```
+
+Current notch behavior:
+
+| Notch | Status | Opens for |
+| --- | --- | --- |
+| Top-right | active | topbar FAB |
+| Bottom-left side cut | active | sidebar/tool mass |
+| Bottom-right | not active in current path | none |
+
+Important: current implementation does **not** use a bottom-right subtract notch in the path.
+
+## 5. Current shell geometry
+
+### 5.1 Stage shell constants
+
+From `src/src/styles.css`:
+
+| Token | Value |
+| --- | --- |
+| `--cr6-panel-left` | `12px` |
+| `--cr6-panel-top` | `12px` |
+| `--cr6-panel-width` | `1280px` |
+| `--cr6-panel-height` | `720px` |
+| `--cr6-topbar-left` | `834px` |
+| `--cr6-topbar-top` | `24px` |
+| `--cr6-topbar-width` | `446px` |
+| `--cr6-sidebar-left` | `26px` |
+| `--cr6-sidebar-top` | `354px` |
+| `--cr6-power-left` | `-34px` |
+| `--cr6-power-top` | `626px` |
+| `--cr6-power-main-left` | `92px` |
+| `--cr6-power-main-top` | `42px` |
+
+### 5.2 L1 white-glass underlay
+
+Current L1 is inset symmetrically:
+
+| Property | Value |
+| --- | --- |
+| `left` | `24px` |
+| `top` | `24px` |
+| `right` | `24px` |
+| `bottom` | `24px` |
+| `border-radius` | `16px` |
+| `blur` | `78px` |
+| `saturate` | `176%` |
+
+This was recently reduced so it no longer bleeds beyond the visible outer shell edges.
+
+### 5.3 Topbar FAB
+
+| Property | Value |
+| --- | --- |
+| x | `834px` |
+| y | `24px` |
+| w | `446px` |
+| h | `50px` |
+
+Current topbar contents:
+
+- brand wordmark
+- GSI status pill
+- ping pill
+- profile trigger
+
+Window controls are currently hidden in this shell variant.
+
+### 5.4 Sidebar/tool FAB
+
+| Property | Value |
+| --- | --- |
+| x | `26px` |
+| y | `354px` |
+| w | `64px` |
+| h | `306px` |
+
+Current sidebar is tool navigation, not page anchors.
+
+### 5.5 Power radial cluster
+
+| Property | Value |
+| --- | --- |
+| container x | `-34px` |
+| container y | `626px` |
+| container w | `184px` |
+| container h | `154px` |
+| main button size | `46 x 46` |
+| action button size | `36 x 36` |
+
+Current actions:
+
+- tray mode
+- full quit
+- drag window
+
+Known issue: power radial placement still needs polish relative to the bottom-left shell corner.
+
+### 5.6 Audio rail
+
+The old P1-P5 page anchor rail has been replaced by a compact audio rail:
+
+| Property | Value |
+| --- | --- |
+| x | `42px` |
+| y | `40px` |
+| w | `54px` |
+| h | `158px` |
+
+Contents:
+
+- one vertical master volume slider
+- ANN toggle
+- SIGNAL toggle
+
+### 5.7 Signal cards
+
+Current dashboard signal cluster:
+
+| Property | Value |
+| --- | --- |
+| x | `828px` |
+| y | `520px` |
+| w | `420px` |
+| h | `174px` |
+| grid | `2 x 2` |
+
+Cards:
+
+- D = Enemy Missing
+- E = Gank Risk
+- F = Safe Push
+- G = Vision
+
+## 6. Dashboard sector geometry
+
+Current dashboard sectors inside `.gm-fung-layout`:
+
+| Sector | x | y | w | h |
+| --- | --- | --- | --- | --- |
+| Score header | `128` | `42` | `640` | `48` |
+| Stats row | `128` | `98` | `478` | `42` |
+| Battle grid | `128` | `148` | `640` | `260` |
+| Agent card | `808` | `42` | `440` | `354` |
+| Sector log | `128` | `418` | `620` | `170` |
+
+## 7. Responsive behavior
+
+- The shell is still a fixed authored composition.
+- Responsiveness is done by scaling the whole stage, not by reflowing individual sectors.
+- No freeform browser-style responsive collapse is currently part of the implementation.
+
+## 8. Known drift / known gaps
+
+These are intentionally documented so design review uses repo truth:
+
+1. The doc model and code model previously drifted apart on stage size (`1280x720` vs `1420x760` outer stage).
+2. The current path has no bottom-right subtract notch, even though some older mock docs referenced one.
+3. The old P1-P5 page anchor rail is no longer the active shell object; the current shell uses an audio rail there instead.
+4. Power radial placement is not final and remains the main open shell defect.
+
+## 9. Review rule
+
+When shell geometry changes, update these three artifacts together:
+
+1. `src/src/CommandDeck.tsx`
+2. `src/src/styles.css`
+3. this file plus `assets/cr006-layer-dev-overlay.svg`
