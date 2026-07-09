@@ -1,7 +1,7 @@
 ---
-version: "2.2.0-draft"
+version: "2.2.1-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-09T13:15:00+07:00,Claude"
+last_update: "2026-07-09T15:00:00+07:00,Claude"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -52,7 +52,7 @@ This means shell polish must be done in stage coordinates first, not screenshot 
 | Layer | Element | Current role |
 | --- | --- | --- |
 | L0 | Window canvas | transparent desktop window owned by Tauri |
-| L1 | `.g-l1-white-glass` | large soft white-glass support plate under the app mass |
+| L1 | `.g-l1-white-glass` | low-alpha support plate under the app mass, clamped to the panel envelope; no backdrop blur |
 | L2 | `.g-deck-panel` | clipped subtract-shell body |
 | L3 | `.g-sidebar-fab`, `.g-topbar-fab`, `.g-audio-rail` | floating shell attachments |
 | L4 | `.g-power-radial`, `.g-signals-fab` | interaction overlays and status cards |
@@ -125,26 +125,34 @@ From `src/src/styles.css`:
 | `--cr6-topbar-width` | `446px` |
 | `--cr6-sidebar-left` | `26px` |
 | `--cr6-sidebar-top` | `354px` |
-| `--cr6-power-left` | `-34px` |
-| `--cr6-power-top` | `626px` |
-| `--cr6-power-main-left` | `92px` |
-| `--cr6-power-main-top` | `42px` |
+| `--cr6-power-left` | `0px` |
+| `--cr6-power-top` | `620px` |
+| `--cr6-power-main-left` | `104px` |
+| `--cr6-power-main-top` | `52px` |
 
 ### 5.2 L1 white-glass underlay
 
-Current L1 is inset symmetrically:
+CR-007 follow-up (post WP-1): L1 is clamped to the panel's own envelope in stage coordinates
+(`--cr6-panel-left/top` = `12px`, `--cr6-panel-width/height` = `1280x720`, so the panel's
+real right/bottom edges sit at `x1292`/`y732` in the `1420x760` stage) instead of an inset-24
+box off the stage edges, which used to overshoot the panel by up to 104px on the right and
+below — spilling a frosted plate into the dead margin outside the shell silhouette.
 
 | Property | Value |
 | --- | --- |
-| `left` | `24px` |
-| `top` | `24px` |
-| `right` | `24px` |
-| `bottom` | `24px` |
+| `left` | `12px` |
+| `top` | `12px` |
+| `right` | `128px` |
+| `bottom` | `28px` |
 | `border-radius` | `16px` |
-| `blur` | `78px` |
-| `saturate` | `176%` |
+| `backdrop-filter` | none |
 
-This was recently reduced so it no longer bleeds beyond the visible outer shell edges.
+Backdrop blur was removed entirely: with window-level acrylic gone (see §6, if present, or
+`tauri.conf.json`), CSS `backdrop-filter` on a transparent Tauri window only blurs
+webview-internal layers, and nothing else renders behind L1 — so the blur was pure
+compositing cost with no visual effect other than drag lag. The fill alphas were also lowered
+(max `~0.06`, down from `~0.1`) so the plate reads as a faint depth cue through the panel's
+subtract notches rather than a bright/milky surface.
 
 ### 5.3 Topbar FAB
 

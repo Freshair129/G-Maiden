@@ -124,7 +124,46 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   const error: string | null = null;
   const trayWindow = () => { try { void getCurrentWindow().hide(); } catch { /* noop */ } };
   const quitWindow = () => { void invoke("quit_application").catch(() => {}); };
-  const startWindowDrag = () => { try { void getCurrentWindow().startDragging(); } catch { /* noop */ } };
+  // CR-007 WP-2: suppress backdrop-filter/box-shadow while the native drag is in
+  // flight (see .is-dragging in styles.css) — WebView2 recomposites those large
+  // translucent/shadowed layers on every window-move tick, which is the drag lag.
+  // Native window-drag swallows the mouse, so `mouseup` frequently never reaches
+  // the webview; blur->focus and an 8s safety timeout are both needed as backstops
+  // so the class can never get stuck on.
+  const startWindowDrag = () => {
+    const root = document.documentElement;
+    root.classList.add("is-dragging");
+
+    let cleaned = false;
+    let safetyTimer: number | undefined;
+
+    const onFocusAfterBlur = () => {
+      window.removeEventListener("focus", onFocusAfterBlur);
+      cleanup();
+    };
+    const onBlur = () => {
+      window.addEventListener("focus", onFocusAfterBlur);
+    };
+    const cleanup = () => {
+      if (cleaned) return;
+      cleaned = true;
+      root.classList.remove("is-dragging");
+      window.removeEventListener("mouseup", cleanup);
+      window.removeEventListener("blur", onBlur);
+      window.removeEventListener("focus", onFocusAfterBlur);
+      if (safetyTimer !== undefined) window.clearTimeout(safetyTimer);
+    };
+
+    window.addEventListener("mouseup", cleanup);
+    window.addEventListener("blur", onBlur);
+    safetyTimer = window.setTimeout(cleanup, 8000);
+
+    try {
+      void getCurrentWindow().startDragging();
+    } catch {
+      cleanup();
+    }
+  };
   const dragFromSurface = (event: React.MouseEvent<HTMLElement>) => {
     if (event.button !== 0) return;
     const target = event.target as HTMLElement | null;
@@ -266,7 +305,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
       )}
 
       {/* glass panel — hosts the active tab (rich, live-wired content preserved) */}
-      <main className={`g-deck-panel${tab === "dashboard" ? " has-signals" : ""}`}>
+      <main className="g-deck-panel">
         <svg className="g-panel-rim" viewBox="0 0 1280 720" aria-hidden="true" focusable="false">
           <use href="#gSubtractPanelPath" />
         </svg>
