@@ -15,9 +15,9 @@ use windows::core::Interface;
 use windows::Win32::Foundation::HMODULE;
 use windows::Win32::Graphics::Direct3D::{D3D_DRIVER_TYPE_HARDWARE, D3D_FEATURE_LEVEL_11_0};
 use windows::Win32::Graphics::Direct3D11::{
-    D3D11CreateDevice, ID3D11Device, ID3D11DeviceContext, ID3D11Texture2D,
-    D3D11_CPU_ACCESS_READ, D3D11_CREATE_DEVICE_BGRA_SUPPORT, D3D11_MAPPED_SUBRESOURCE,
-    D3D11_MAP_READ, D3D11_SDK_VERSION, D3D11_TEXTURE2D_DESC, D3D11_USAGE_STAGING,
+    D3D11CreateDevice, ID3D11Device, ID3D11DeviceContext, ID3D11Texture2D, D3D11_CPU_ACCESS_READ,
+    D3D11_CREATE_DEVICE_BGRA_SUPPORT, D3D11_MAPPED_SUBRESOURCE, D3D11_MAP_READ, D3D11_SDK_VERSION,
+    D3D11_TEXTURE2D_DESC, D3D11_USAGE_STAGING,
 };
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_SAMPLE_DESC};
 use windows::Win32::Graphics::Dxgi::{
@@ -60,9 +60,9 @@ impl DxgiCapture {
             let adapter: IDXGIAdapter = dxgi_device
                 .GetAdapter()
                 .map_err(|e| format!("IDXGIDevice::GetAdapter failed: {e}"))?;
-            let output = adapter
-                .EnumOutputs(monitor_index)
-                .map_err(|e| format!("EnumOutputs({monitor_index}) failed (no such monitor?): {e}"))?;
+            let output = adapter.EnumOutputs(monitor_index).map_err(|e| {
+                format!("EnumOutputs({monitor_index}) failed (no such monitor?): {e}")
+            })?;
             let output1: IDXGIOutput1 = output
                 .cast()
                 .map_err(|e| format!("cast IDXGIOutput->IDXGIOutput1 failed: {e}"))?;
@@ -115,8 +115,10 @@ impl DxgiCapture {
         let mut resource: Option<IDXGIResource> = None;
 
         // SAFETY: out-params are owned locals; we check the Result before use.
-        let acquired =
-            unsafe { self.duplication.AcquireNextFrame(ACQUIRE_TIMEOUT_MS, &mut info, &mut resource) };
+        let acquired = unsafe {
+            self.duplication
+                .AcquireNextFrame(ACQUIRE_TIMEOUT_MS, &mut info, &mut resource)
+        };
         if let Err(e) = acquired {
             match e.code() {
                 DXGI_ERROR_WAIT_TIMEOUT => {} // no change this tick — silent, common

@@ -52,7 +52,11 @@ fn config() -> &'static RespawnConfig {
 /// (level 1 .. 25+). `turbo` selects the Turbo-mode table.
 pub fn respawn_seconds(level: u32, turbo: bool) -> f64 {
     let cfg = config();
-    let table = if turbo { &cfg.turbo_respawn } else { &cfg.default_respawn };
+    let table = if turbo {
+        &cfg.turbo_respawn
+    } else {
+        &cfg.default_respawn
+    };
     let max_level = table.len() as u32;
     let idx = (level.clamp(1, max_level) - 1) as usize;
     table[idx]
@@ -66,7 +70,9 @@ pub fn next_respawn_after_buyback(level: u32, turbo: bool) -> f64 {
 
 /// Respawn time with Wraith King's Reincarnation aura applied (−reduction%).
 pub fn respawn_with_wk_aura(level: u32, turbo: bool) -> f64 {
-    let pct = config().modifiers.wraith_king_reincarnation_ally_reduction_pct;
+    let pct = config()
+        .modifiers
+        .wraith_king_reincarnation_ally_reduction_pct;
     respawn_seconds(level, turbo) * (1.0 - pct / 100.0)
 }
 
@@ -92,8 +98,16 @@ mod tests {
 
     #[test]
     fn config_tables_have_25_entries() {
-        assert_eq!(config().default_respawn.len(), 25, "default table must cover levels 1..25+");
-        assert_eq!(config().turbo_respawn.len(), 25, "turbo table must cover levels 1..25+");
+        assert_eq!(
+            config().default_respawn.len(),
+            25,
+            "default table must cover levels 1..25+"
+        );
+        assert_eq!(
+            config().turbo_respawn.len(),
+            25,
+            "turbo table must cover levels 1..25+"
+        );
     }
 
     #[test]

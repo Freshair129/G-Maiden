@@ -274,7 +274,10 @@ mod tests {
 
     #[test]
     fn prefers_live_gsi_respawn_over_table() {
-        let ctx = DeathContext { respawn_remaining: Some(7.0), ..base() };
+        let ctx = DeathContext {
+            respawn_remaining: Some(7.0),
+            ..base()
+        };
         let a = advise_buyback(&ctx);
         assert!((a.natural_respawn_remaining - 7.0).abs() < 1e-9);
     }
@@ -282,14 +285,23 @@ mod tests {
     #[test]
     fn wk_aura_shortens_table_respawn() {
         let no_wk = advise_buyback(&base()).natural_respawn_remaining;
-        let with_wk = advise_buyback(&DeathContext { wk_reincarnation_ally: true, ..base() })
-            .natural_respawn_remaining;
-        assert!(with_wk < no_wk, "WK aura should reduce respawn: {with_wk} !< {no_wk}");
+        let with_wk = advise_buyback(&DeathContext {
+            wk_reincarnation_ally: true,
+            ..base()
+        })
+        .natural_respawn_remaining;
+        assert!(
+            with_wk < no_wk,
+            "WK aura should reduce respawn: {with_wk} !< {no_wk}"
+        );
     }
 
     #[test]
     fn elapsed_time_reduces_remaining() {
-        let ctx = DeathContext { seconds_since_death: 40.0, ..base() };
+        let ctx = DeathContext {
+            seconds_since_death: 40.0,
+            ..base()
+        };
         let a = advise_buyback(&ctx);
         // respawn(14)=48, minus 40 elapsed = 8
         assert!((a.natural_respawn_remaining - 8.0).abs() < 1e-9);
@@ -309,9 +321,18 @@ mod tests {
             ..Default::default()
         };
         let p = narrate_prompt(&advice, &tick);
-        assert!(p.contains("crystal maiden"), "prompt should name the hero: {p}");
-        assert!(p.contains("ซื้อเกิด"), "prompt should carry the buyback verdict: {p}");
-        assert!(p.contains(&advice.reason), "prompt should include the deterministic reason");
+        assert!(
+            p.contains("crystal maiden"),
+            "prompt should name the hero: {p}"
+        );
+        assert!(
+            p.contains("ซื้อเกิด"),
+            "prompt should carry the buyback verdict: {p}"
+        );
+        assert!(
+            p.contains(&advice.reason),
+            "prompt should include the deterministic reason"
+        );
     }
 
     #[test]

@@ -13,7 +13,8 @@ pub mod region;
 /// Dire-red enemy team-ring colour (normalised RGB), from Spike S-1.
 /// The prefilter rewards pixels close to this hue — it is the cheapest signal
 /// that a hero blip (not creep/ward) is present.
-pub const TEAM_RING: (f32, f32, f32) = (0.86, 0.16, 0.16);
+pub const DIRE_RING: (f32, f32, f32) = (0.86, 0.16, 0.16);
+pub const RADIANT_RING: (f32, f32, f32) = (0.40, 0.86, 0.30);
 
 /// A captured minimap region in BGRA8 (the byte order `windows-capture` yields).
 /// Stored as borrowed-or-owned bytes so a capture callback can hand us a slice
@@ -30,7 +31,11 @@ impl Frame {
     /// Construct from a raw BGRA buffer, validating the length.
     pub fn from_bgra(width: usize, height: usize, bgra: Vec<u8>) -> Option<Self> {
         if bgra.len() == width * height * 4 {
-            Some(Frame { width, height, bgra })
+            Some(Frame {
+                width,
+                height,
+                bgra,
+            })
         } else {
             None
         }

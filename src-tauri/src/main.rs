@@ -33,8 +33,8 @@ mod respawn;
 mod revive;
 mod runtime;
 mod sentry;
-mod signal;
 mod setup;
+mod signal;
 mod slm;
 mod tts;
 mod usage;
@@ -62,13 +62,23 @@ fn cancel_speech() {
     tts::cancel();
 }
 
+#[tauri::command]
+fn quit_application(app: tauri::AppHandle) {
+    app.exit(0);
+}
+
 /// Try to play a pre-recorded clip for `event`. If no clips are present,
 /// fall back to SAPI speaking `fallback`. Keeps the Maiden voice unified at
 /// the call site — the UI doesn't have to know which path is active.
 #[tauri::command]
 fn speak_event(event: String, fallback: String, voice: Option<String>, rate: Option<i32>) {
     if !audio::play_random(&event) {
-        tts::speak(&fallback, voice.as_deref(), rate);
+        tts::speak_with_priority(
+            &fallback,
+            voice.as_deref(),
+            rate,
+            audio::priority_for_event(&event),
+        );
     }
 }
 
@@ -133,32 +143,51 @@ fn voice_api_state() -> Result<voice_api::VoiceState, String> {
 }
 
 #[tauri::command]
-fn voice_api_action(action: String, pack_id: Option<String>) -> Result<voice_api::VoiceState, String> {
+fn voice_api_action(
+    action: String,
+    pack_id: Option<String>,
+) -> Result<voice_api::VoiceState, String> {
     voice_api::action(&action, pack_id.as_deref())
 }
 
 #[tauri::command]
-fn voice_api_create_template(pack_id: String, name: String, locale: String) -> Result<voice_api::VoiceState, String> {
+fn voice_api_create_template(
+    pack_id: String,
+    name: String,
+    locale: String,
+) -> Result<voice_api::VoiceState, String> {
     voice_api::create_template(&pack_id, &name, &locale)
 }
 
 #[tauri::command]
-fn voice_api_upload_asset(pack_id: String, kind: String, name: String, bytes: Vec<u8>) -> Result<voice_api::UploadResult, String> {
+fn voice_api_upload_asset(
+    pack_id: String,
+    kind: String,
+    name: String,
+    bytes: Vec<u8>,
+) -> Result<voice_api::UploadResult, String> {
     voice_api::upload_asset(&pack_id, &kind, &name, &bytes)
 }
 
 #[tauri::command]
-fn voice_api_import_archive(name: String, bytes: Vec<u8>) -> Result<voice_api::ImportResult, String> {
+fn voice_api_import_archive(
+    name: String,
+    bytes: Vec<u8>,
+) -> Result<voice_api::ImportResult, String> {
     voice_api::import_archive(&name, &bytes)
 }
 
 #[tauri::command]
-fn voice_api_map_event(payload: voice_api::MapEventRequest) -> Result<voice_api::VoiceState, String> {
+fn voice_api_map_event(
+    payload: voice_api::MapEventRequest,
+) -> Result<voice_api::VoiceState, String> {
     voice_api::map_event(payload)
 }
 
 #[tauri::command]
-fn voice_api_update_pack(payload: voice_api::UpdatePackRequest) -> Result<voice_api::VoiceState, String> {
+fn voice_api_update_pack(
+    payload: voice_api::UpdatePackRequest,
+) -> Result<voice_api::VoiceState, String> {
     voice_api::update_pack(payload)
 }
 
@@ -171,7 +200,10 @@ fn preview_announcer_event(app: tauri::AppHandle, pack_id: String, event: String
     if let Some(clip) = voice_api::preview_clip(&pack_id, &event) {
         audio::play_file(clip);
     }
-    let _ = app.emit("announcer-banner", voice_api::preview_banner(&pack_id, &event));
+    let _ = app.emit(
+        "announcer-banner",
+        voice_api::preview_banner(&pack_id, &event),
+    );
 }
 
 /// Open an external http(s) URL in the default browser (e.g. the voice-pack
@@ -198,7 +230,10 @@ fn open_url(url: String) {
 /// Also broadcasts `advice-update` to the overlay window so it can show the
 /// advice inline (G5.4) without the control panel being open.
 #[tauri::command]
-async fn request_advice(app: tauri::AppHandle, tick: gsi::GameTick) -> Result<master::Advice, String> {
+async fn request_advice(
+    app: tauri::AppHandle,
+    tick: gsi::GameTick,
+) -> Result<master::Advice, String> {
     let result = tauri::async_runtime::spawn_blocking(move || master::advise(&tick))
         .await
         .map_err(|e| format!("internal: {e}"))??;
@@ -211,7 +246,10 @@ async fn request_advice(app: tauri::AppHandle, tick: gsi::GameTick) -> Result<ma
 /// fire a best-effort local-SLM narrative that arrives later via `buyback-narrative`.
 /// Threat fields default safe until CV is wired, so the verdict is conservative.
 #[tauri::command]
-async fn request_buyback_advice(app: tauri::AppHandle, tick: gsi::GameTick) -> revive::ReviveAdvice {
+async fn request_buyback_advice(
+    app: tauri::AppHandle,
+    tick: gsi::GameTick,
+) -> revive::ReviveAdvice {
     let ctx = revive::DeathContext::from_tick(&tick);
     let advice = revive::advise_buyback(&ctx);
     let _ = app.emit("buyback-advice", &advice);
@@ -300,8 +338,16 @@ fn set_calibration_enabled(enabled: bool) {
 /// Trigger a calibration motion clip for a voice-paired event fired in the
 /// frontend (danger / kill / death / advice). No-op when calibration is off.
 #[tauri::command]
-fn capture_calibration_clip(event: String, line: Option<String>, context: Option<serde_json::Value>) {
-    calibration::record(&event, line.as_deref(), context.unwrap_or(serde_json::Value::Null));
+fn capture_calibration_clip(
+    event: String,
+    line: Option<String>,
+    context: Option<serde_json::Value>,
+) {
+    calibration::record(
+        &event,
+        line.as_deref(),
+        context.unwrap_or(serde_json::Value::Null),
+    );
 }
 
 /// Set the master voice volume (0–100). Applies to both WAV clips (rodio) and
@@ -384,9 +430,9 @@ fn main() {
     // Global hotkeys — work even when Dota 2 is focused.
     // Ctrl+Alt+S = overlay show/hide (Alt+S / Ctrl+S collide with Dota binds).
     let toggle = Shortcut::new(Some(Modifiers::ALT | Modifiers::CONTROL), Code::KeyS);
-    let vol_up = Shortcut::new(Some(Modifiers::ALT), Code::ArrowUp);    // volume +10
-    let vol_down = Shortcut::new(Some(Modifiers::ALT), Code::ArrowDown);// volume -10
-    let mute = Shortcut::new(Some(Modifiers::ALT), Code::KeyM);         // mute/unmute
+    let vol_up = Shortcut::new(Some(Modifiers::ALT), Code::ArrowUp); // volume +10
+    let vol_down = Shortcut::new(Some(Modifiers::ALT), Code::ArrowDown); // volume -10
+    let mute = Shortcut::new(Some(Modifiers::ALT), Code::KeyM); // mute/unmute
 
     // Shortcut is Copy — clippy::clone_on_copy. Plain rebind moves into the handler.
     let toggle2 = toggle;
@@ -404,7 +450,9 @@ fn main() {
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(move |app, shortcut, event| {
-                    if event.state() != ShortcutState::Pressed { return; }
+                    if event.state() != ShortcutState::Pressed {
+                        return;
+                    }
                     if shortcut == &toggle2 {
                         if let Some(ov) = app.get_webview_window("overlay") {
                             let visible = ov.is_visible().unwrap_or(true);
@@ -441,6 +489,7 @@ fn main() {
             speak,
             speak_event,
             cancel_speech,
+            quit_application,
             list_voices,
             set_cv_voice,
             set_cv_signal_enabled,
@@ -510,7 +559,8 @@ fn main() {
             }
 
             // --- System tray ---
-            let show_item = MenuItem::with_id(app, "show", "Show Control Panel", true, None::<&str>)?;
+            let show_item =
+                MenuItem::with_id(app, "show", "Show Control Panel", true, None::<&str>)?;
             let quit_item = MenuItem::with_id(app, "quit", "Quit G-Maiden", true, None::<&str>)?;
             let sep = PredefinedMenuItem::separator(app)?;
             let tray_menu = Menu::with_items(app, &[&show_item, &sep, &quit_item])?;

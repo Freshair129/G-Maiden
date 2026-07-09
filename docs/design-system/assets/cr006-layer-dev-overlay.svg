@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1361" height="755" viewBox="0 0 1361 755">
+  <defs>
+    <style>
+      .title { font: 700 20px 'Segoe UI', Arial, sans-serif; fill: #f7fbff; }
+      .legend { font: 600 13px 'Segoe UI', Arial, sans-serif; fill: #eaf2ff; }
+      .small { font: 500 11px 'Segoe UI', Arial, sans-serif; fill: #b8cae6; }
+      .tag { font: 700 12px 'Segoe UI', Arial, sans-serif; fill: #06111e; }
+      .name { font: 700 15px 'Segoe UI', Arial, sans-serif; fill: #f7fbff; }
+      .box { fill-opacity: 0.10; stroke-width: 3; rx: 18; }
+      .callout { rx: 10; ry: 10; }
+      .debug-dot { stroke: #06111e; stroke-opacity: 0.55; stroke-width: 2; }
+      .debug-letter { font: 800 16px 'Segoe UI', Arial, sans-serif; fill: #06111e; text-anchor: middle; dominant-baseline: middle; }
+    </style>
+  </defs>
+
+  <image href="cr006-layer-base.png" x="0" y="0" width="1361" height="755" />
+
+  <!-- Window canvas -->
+  <rect x="4" y="4" width="1353" height="747" fill="none" stroke="#ff5a5f" stroke-width="6" stroke-dasharray="14 10" />
+  <rect x="18" y="678" width="170" height="56" fill="#ff5a5f" fill-opacity="0.92" class="callout" />
+  <text x="32" y="702" class="tag">A/C</text>
+  <text x="72" y="702" class="name">Window Canvas</text>
+  <text x="72" y="719" class="small">L0 outer transparent window</text>
+
+  <!-- White glass base plate -->
+  <rect x="0" y="57" width="972" height="551" fill="#ffffff" fill-opacity="0.14" stroke="#ffffff" stroke-opacity="0.92" stroke-width="4" class="box" />
+  <rect x="264" y="678" width="228" height="56" fill="#ffffff" fill-opacity="0.96" class="callout" />
+  <text x="280" y="702" class="tag">L1</text>
+  <text x="320" y="702" class="name" fill="#06111e">White Glass Plate</text>
+  <text x="320" y="719" class="small" fill="#203046">base glass sheet under app mass</text>
+
+  <!-- Main app shell -->
+  <rect x="78" y="24" width="1118" height="636" fill="#8ea4c9" stroke="#8ea4c9" class="box" />
+  <rect x="520" y="678" width="210" height="56" fill="#8ea4c9" fill-opacity="0.92" class="callout" />
+  <text x="536" y="702" class="tag">D</text>
+  <text x="568" y="702" class="name">Main App Shell</text>
+  <text x="568" y="719" class="small">L2 clipped application mass</text>
+
+  <!-- Page rail -->
+  <rect x="39" y="30" width="68" height="280" fill="#d66bff" stroke="#d66bff" class="box" />
+  <rect x="120" y="180" width="156" height="52" fill="#d66bff" fill-opacity="0.92" class="callout" />
+  <text x="136" y="202" class="tag">E</text>
+  <text x="166" y="202" class="name">Page Rail</text>
+  <text x="166" y="219" class="small">L3 page anchors P1-P5</text>
+
+  <!-- Tool sidebar -->
+  <rect x="42" y="330" width="56" height="275" fill="#8cff87" stroke="#8cff87" class="box" />
+  <rect x="126" y="486" width="164" height="52" fill="#8cff87" fill-opacity="0.92" class="callout" />
+  <text x="142" y="508" class="tag">F</text>
+  <text x="172" y="508" class="name">Tool Sidebar</text>
+  <text x="172" y="525" class="small">L3 primary tool nav</text>
+
+  <!-- Power fab -->
+  <rect x="36" y="616" width="64" height="44" fill="#ffbd4a" stroke="#ffbd4a" class="box" />
+  <rect x="126" y="612" width="142" height="52" fill="#ffbd4a" fill-opacity="0.96" class="callout" />
+  <text x="142" y="634" class="tag">G</text>
+  <text x="172" y="634" class="name">Power FAB</text>
+  <text x="172" y="651" class="small">L4 fold / tray / close</text>
+
+  <!-- Topbar fab -->
+  <rect x="804" y="24" width="392" height="46" fill="#69ffa8" stroke="#69ffa8" class="box" />
+  <rect x="1012" y="142" width="182" height="52" fill="#69ffa8" fill-opacity="0.92" class="callout" />
+  <text x="1028" y="164" class="tag">H</text>
+  <text x="1058" y="164" class="name">Topbar FAB</text>
+  <text x="1058" y="181" class="small">L4 command header</text>
+
+  <!-- Legend -->
+  <rect x="1006" y="528" width="328" height="194" rx="18" fill="#06101b" fill-opacity="0.88" stroke="#dbe9ff" stroke-opacity="0.20" />
+  <text x="1028" y="556" class="title">CR-006 Layer Stack</text>
+  <text x="1028" y="584" class="legend">L0  A/C  Window Canvas</text>
+  <text x="1028" y="606" class="legend">L1       White Glass Plate</text>
+  <text x="1028" y="628" class="legend">L2  D    Main App Shell</text>
+  <text x="1028" y="650" class="legend">L3  E    Page Rail / F Tool Sidebar</text>
+  <text x="1028" y="672" class="legend">L4  G    Power FAB</text>
+  <text x="1028" y="694" class="legend">L4  H    Topbar FAB</text>
+
+  <!-- Debug labels on real positions -->
+  <circle cx="28" cy="703" r="18" fill="#ff5a5f" class="debug-dot" />
+  <text x="28" y="703" class="debug-letter">A</text>
+
+  <circle cx="1318" cy="28" r="18" fill="#ff5a5f" class="debug-dot" />
+  <text x="1318" y="28" class="debug-letter">C</text>
+
+  <circle cx="681" cy="694" r="18" fill="#8ea4c9" class="debug-dot" />
+  <text x="681" y="694" class="debug-letter">D</text>
+
+  <circle cx="74" cy="277" r="18" fill="#d66bff" class="debug-dot" />
+  <text x="74" y="277" class="debug-letter">E</text>
+
+  <circle cx="76" cy="430" r="18" fill="#8cff87" class="debug-dot" />
+  <text x="76" y="430" class="debug-letter">F</text>
+
+  <circle cx="76" cy="634" r="18" fill="#ffbd4a" class="debug-dot" />
+  <text x="76" y="634" class="debug-letter">G</text>
+
+  <circle cx="939" cy="45" r="18" fill="#69ffa8" class="debug-dot" />
+  <text x="939" y="45" class="debug-letter">H</text>
+</svg>

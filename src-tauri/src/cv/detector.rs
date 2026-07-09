@@ -79,24 +79,28 @@ impl Detector {
                      (looked for {})",
                     model_path.display()
                 );
-                Detector { model: None, labels: Vec::new(), negative_idx: None }
+                Detector {
+                    model: None,
+                    labels: Vec::new(),
+                    negative_idx: None,
+                }
             }
         }
     }
 
     fn try_load(model_path: &Path, labels_path: &Path) -> TractResult<Self> {
-        let labels: Vec<String> =
-            serde_json::from_str(&std::fs::read_to_string(labels_path)?)?;
+        let labels: Vec<String> = serde_json::from_str(&std::fs::read_to_string(labels_path)?)?;
         let negative_idx = labels.iter().position(|l| l == NEGATIVE_LABEL);
         let model = tract_onnx::onnx()
             .model_for_path(model_path)?
-            .with_input_fact(
-                0,
-                f32::fact([1, 3, MODEL_INPUT, MODEL_INPUT]).into(),
-            )?
+            .with_input_fact(0, f32::fact([1, 3, MODEL_INPUT, MODEL_INPUT]).into())?
             .into_optimized()?
             .into_runnable()?;
-        Ok(Detector { model: Some(model), labels, negative_idx })
+        Ok(Detector {
+            model: Some(model),
+            labels,
+            negative_idx,
+        })
     }
 
     /// True if a real classifier is loaded (vs candidate-only fallback).
@@ -127,7 +131,13 @@ impl Detector {
                 continue;
             }
             let name = self.labels.get(idx).cloned().unwrap_or_default();
-            raw.push(Detection { label: idx, name, x: px, y: py, score: conf });
+            raw.push(Detection {
+                label: idx,
+                name,
+                x: px,
+                y: py,
+                score: conf,
+            });
         }
         nms(raw, icon)
     }
@@ -195,7 +205,11 @@ fn softmax_argmax(logits: &[f32]) -> (usize, f32) {
 /// within half an icon of an already-kept, higher-scoring one. Ported from the
 /// spike's `detect()` NMS.
 fn nms(mut raw: Vec<Detection>, icon: usize) -> Vec<Detection> {
-    raw.sort_by(|a, b| b.score.partial_cmp(&a.score).unwrap_or(std::cmp::Ordering::Equal));
+    raw.sort_by(|a, b| {
+        b.score
+            .partial_cmp(&a.score)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     let r = icon as i32 / 2;
     let mut kept: Vec<Detection> = Vec::new();
     for d in raw {

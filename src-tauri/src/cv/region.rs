@@ -81,12 +81,20 @@ mod tests {
         let r1440 = MinimapRegion::for_resolution(2560, 1440);
         assert!(r1440.icon_size() > r1080.icon_size());
         // ~13px on 1080p (0.078 * 168)
-        assert!((10..=16).contains(&r1080.icon_size()), "icon {}", r1080.icon_size());
+        assert!(
+            (10..=16).contains(&r1080.icon_size()),
+            "icon {}",
+            r1080.icon_size()
+        );
     }
 
     #[test]
     fn normalised_mapping_corners_and_clamp() {
-        let r = MinimapRegion { x: 0, y: 912, side: 168 };
+        let r = MinimapRegion {
+            x: 0,
+            y: 912,
+            side: 168,
+        };
         assert_eq!(r.pixel_to_normalised(0, 0), (0.0, 0.0));
         let (nx, ny) = r.pixel_to_normalised(168, 168);
         assert!((nx - 1.0).abs() < 1e-6 && (ny - 1.0).abs() < 1e-6);

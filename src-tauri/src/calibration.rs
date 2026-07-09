@@ -74,7 +74,13 @@ fn base_dir() -> PathBuf {
 
 fn sanitize(s: &str) -> String {
     s.chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '-' || c == '_' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' || c == '_' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect()
 }
 
@@ -147,7 +153,12 @@ pub fn push_full_bgra(bgra: &[u8], w: u32, h: u32) {
         return;
     }
     let t = now_ms();
-    let f = Frame { t_ms: t, w: tw, h: th, rgba };
+    let f = Frame {
+        t_ms: t,
+        w: tw,
+        h: th,
+        rgba,
+    };
     // ring buffer: keep the last RING_MS of frames as pre-roll.
     s.ring.push_back(f.clone());
     while let Some(front) = s.ring.front() {
@@ -182,7 +193,9 @@ pub fn screenshot(event: &str, context: serde_json::Value) {
             Err(_) => return,
         };
         let Some(s) = g.as_ref() else { return };
-        let Some(f) = s.ring.back().cloned() else { return };
+        let Some(f) = s.ring.back().cloned() else {
+            return;
+        };
         (s.dir.join(&s.match_id), f)
     };
     let event = event.to_string();
@@ -299,7 +312,12 @@ mod tests {
             px[2] = 40;
             px[3] = 255;
         }
-        Frame { t_ms: 0, w, h, rgba }
+        Frame {
+            t_ms: 0,
+            w,
+            h,
+            rgba,
+        }
     }
 
     #[test]
@@ -321,11 +339,17 @@ mod tests {
 
         let png = dir.join("k.png");
         save_png(&png, &frames[0]);
-        assert!(fs::metadata(&png).map(|m| m.len() > 0).unwrap_or(false), "png not written");
+        assert!(
+            fs::metadata(&png).map(|m| m.len() > 0).unwrap_or(false),
+            "png not written"
+        );
 
         let gif = dir.join("clip.gif");
         save_gif(&gif, &frames);
-        assert!(fs::metadata(&gif).map(|m| m.len() > 0).unwrap_or(false), "gif not written");
+        assert!(
+            fs::metadata(&gif).map(|m| m.len() > 0).unwrap_or(false),
+            "gif not written"
+        );
 
         let _ = fs::remove_dir_all(&dir);
     }

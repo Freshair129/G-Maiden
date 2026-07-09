@@ -234,6 +234,7 @@
 > governor poll ทุก **10s** (ไม่ใช่ 1Hz). FPS-impact ยัง **ไม่ instrument**
 - [ ] CPU/RAM monitor ทุก 10s (ResourceStat event) — GPU/VRAM/temp via feeder ✅; FPS ยังไม่วัด
 - [ ] Auto-throttle: CPU >2.5% → lower capture rate
+- [ ] Investigate latest `cpu_pct` peak `20%+` against the hard `<=2.5%` budget; add sustained app-path harness and broader mitigation than capture-rate throttling alone
 - [ ] Auto-throttle: RAM >400MB → unload SLM, reduce cache
 - [ ] Auto-throttle: FPS drop >3% → disable blur, static HUD
 

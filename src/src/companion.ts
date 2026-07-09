@@ -1,6 +1,7 @@
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useRef, useSyncExternalStore } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
+import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { GameTick, GsiStatus, MinimapCv, EnemyMissing, SignalAlert, ResourceStats } from "./live/events";
 import { buildMatch } from "./live/buildMatch";
 import { buildHeroes } from "./live/buildHeroes";
@@ -417,180 +418,314 @@ const EMPTY_LIVE: LiveState = {
   active: false, od: null, stats: null, logs: null
 };
 
-export function useCompanionData() {
-  const [live, setLive] = useState<LiveState>(EMPTY_LIVE);
-  const [accountId, setAccountId] = useState<number | null>(null);
-  const expiryTimers = useRef<Map<string, number>>(new Map());
+type CompanionSnapshot = {
+  data: CompanionData;
+  loading: false;
+  error: string | null;
+};
 
-  useEffect(() => {
-    let cancelled = false;
-    const unlisteners: Array<() => void> = [];
-    const timers = expiryTimers.current;
+const CV_UPDATE_MS = 1000;
+const LIVE_FLUSH_MS = 250;
+const subscribers = new Set<() => void>();
+const expiryTimers = new Map<string, number>();
+let liveState: LiveState = EMPTY_LIVE;
+let snapshot: CompanionSnapshot = { data: FALLBACK, loading: false, error: null };
+let accountIdState: number | null = null;
+let runtimeStarted = false;
+let runtimeActive = true;
+let docVisible = true;
+let windowFocused = true;
+let pendingLive: LiveState | null = null;
+let flushTimer: number | null = null;
+let lastCvAt = 0;
+let logsLoadedForInGame: boolean | null = null;
+let lastOpenDotaAccountId: number | null = null;
+let logsRequestSeq = 0;
+let profileRequestSeq = 0;
 
-    function sub<T>(event: string, handler: (payload: T) => void) {
-      try {
-        listen<T>(event, (e) => { if (!cancelled) handler(e.payload); })
-          .then((fn) => { if (cancelled) fn(); else unlisteners.push(fn); })
-          .catch(() => { /* Tauri event API unavailable */ });
-      } catch {
-        /* not running under Tauri — stay on FALLBACK */
+function cloneLive(state: LiveState): LiveState {
+  return {
+    ...state,
+    missing: new Map(state.missing),
+    missingPos: new Map(state.missingPos),
+  };
+}
+
+function buildCompanionData(live: LiveState): CompanionData {
+  let d: CompanionData = live.active
+    ? {
+        ...FALLBACK,
+        updatedAt: Date.now(),
+        match: buildMatch(live.tick, live.status, FALLBACK.match),
+        heroes: buildHeroes(live.tick, live.missing, live.cv, FALLBACK.heroes),
+        markers: buildMarkers(live.cv, live.missingPos, FALLBACK.markers),
+        signals: buildSignals(live.gank, live.missing, FALLBACK.signals)
       }
-    }
+    : { ...FALLBACK, updatedAt: Date.now() };
 
-    sub<GameTick>("game-tick", (p) => setLive((s) => ({ ...s, tick: p, active: true })));
-    sub<GsiStatus>("gsi-status", (p) => setLive((s) => ({ ...s, status: p, active: true })));
-    // resource-stats is app-level (governor runs whether or not a match is live),
-    // so it feeds telemetry WITHOUT flipping `active` into live-match mode.
-    sub<ResourceStats>("resource-stats", (p) => setLive((s) => ({ ...s, stats: p })));
-    sub<MinimapCv>("minimap-cv", (p) => setLive((s) => ({ ...s, cv: p, active: true })));
-    sub<SignalAlert>("gank-alert", (p) => setLive((s) => ({ ...s, gank: p, active: true })));
-    // Belief revision: G-Signal retracts — clear the gank + the missing set.
-    sub<unknown>("gank-clear", () => setLive((s) => ({ ...s, gank: null, missing: new Map(), missingPos: new Map(), active: true })));
-    sub<EnemyMissing>("enemy-missing", (p) => {
-      setLive((s) => {
-        const missing = new Map(s.missing);
-        missing.set(p.hero, p.missing_for_ms);
-        const missingPos = new Map(s.missingPos);
-        missingPos.set(p.hero, p.last_pos);
-        return { ...s, missing, missingPos, active: true };
-      });
-      // Auto-expire a missing hero after 30s (mirrors App.tsx overlay behaviour).
-      const prev = timers.get(p.hero);
-      if (prev) window.clearTimeout(prev);
-      const t = window.setTimeout(() => {
-        setLive((s) => {
-          if (!s.missing.has(p.hero) && !s.missingPos.has(p.hero)) return s;
-          const missing = new Map(s.missing);
-          missing.delete(p.hero);
-          const missingPos = new Map(s.missingPos);
-          missingPos.delete(p.hero);
-          return { ...s, missing, missingPos };
-        });
-        timers.delete(p.hero);
-      }, 30_000);
-      timers.set(p.hero, t);
-    });
-
-    return () => {
-      cancelled = true;
-      unlisteners.forEach((fn) => fn());
-      timers.forEach((t) => window.clearTimeout(t));
-      timers.clear();
+  const od = live.od;
+  if (od) {
+    d = {
+      ...d,
+      match: { ...d.match, player: buildBaselines(d.match.player, od) },
+      heroes: d.heroes.map((h, i) => (i === 0 ? { ...h, profile: buildProfile(od, h.profile) } : h)),
+      weeklyReport: buildWeekly(od, d.weeklyReport),
+      insights: buildInsights(od, d.insights)
     };
-  }, []);
+  }
 
-  // Phase A: account id comes from the persisted Steam identity (set via the
-  // login screen -> Tauri store) so there's no manual localStorage juggling.
-  useEffect(() => {
-    let cancelled = false;
-    const sync = () => loadIdentity().then((id) => { if (!cancelled) setAccountId(id?.accountId ?? null); });
-    void sync();
-    // Re-sync the moment the login screen links/unlinks — no reload needed.
-    window.addEventListener(IDENTITY_EVENT, sync);
-    return () => { cancelled = true; window.removeEventListener(IDENTITY_EVENT, sync); };
-  }, []);
+  if (live.stats) {
+    d = { ...d, telemetry: buildTelemetry(live.stats, d.telemetry) };
+  }
 
-  // Auto-identify: once GSI reports the local player's steamid in-game, adopt it
-  // (SteamID64 -> account_id, offline) and persist — no login needed while playing.
-  useEffect(() => {
-    const sid = live.tick?.steamid;
-    if (!sid || accountId != null) return;
+  if (live.logs && live.logs.length > 0) {
+    d = {
+      ...d,
+      history: buildHistory(live.logs, d.history),
+      insights: { ...d.insights, learnedMatches: live.logs.length }
+    };
+  }
+
+  if (live.active) {
+    d = {
+      ...d,
+      agentSector: {
+        ...d.agentSector,
+        status: live.status?.gsi_active ? "Live orchestration" : "Standby"
+      }
+    };
+  }
+
+  return d;
+}
+
+function publish() {
+  snapshot = { data: buildCompanionData(liveState), loading: false, error: null };
+  subscribers.forEach((fn) => fn());
+}
+
+function subscribeStore(onStoreChange: () => void) {
+  ensureRuntime();
+  subscribers.add(onStoreChange);
+  return () => {
+    subscribers.delete(onStoreChange);
+  };
+}
+
+function applyDerivedSideEffects() {
+  const sid = liveState.tick?.steamid;
+  if (sid && accountIdState == null) {
     try {
       const acc = Number(BigInt(sid) - STEAMID64_BASE);
       if (acc > 0) {
-        setAccountId(acc);
+        accountIdState = acc;
         void saveIdentity({ steamid64: sid, accountId: acc });
+        void refreshOpenDotaProfile(acc);
       }
     } catch {
       /* malformed steamid — ignore */
     }
-  }, [live.tick?.steamid, accountId]);
+  }
 
-  // Phase 2b-A: pull the player's PUBLIC OpenDota profile once we know the
-  // account id — no DB, RAM only. Offline / private / unset leave `od` null so
-  // the OpenDota-enriched panels stay on FALLBACK.
-  useEffect(() => {
-    if (accountId == null) return;
-    let cancelled = false;
-    fetchOpenDotaProfile(String(accountId), heroName)
-      .then((od) => { if (!cancelled && od) setLive((s) => ({ ...s, od })); })
-      .catch(() => {});
-    return () => { cancelled = true; };
-  }, [accountId]);
+  const inGame = liveState.tick?.in_game ?? false;
+  if (logsLoadedForInGame !== inGame) {
+    logsLoadedForInGame = inGame;
+    void refreshMatchLogs();
+  }
+}
 
-  // Phase 2c: pull the local G-Log match files for the History page + the
-  // learnedMatches count. Reloads when a match ends (in_game -> false writes a
-  // fresh file). No-ops off-Tauri, leaving `logs` null so History stays on MOCK.
-  const inGame = live.tick?.in_game ?? false;
-  useEffect(() => {
-    let cancelled = false;
-    invoke<MatchLog[]>("list_match_logs")
-      .then((rows) => { if (!cancelled) setLive((s) => ({ ...s, logs: rows })); })
-      .catch(() => { /* not under Tauri / command unavailable — stay on FALLBACK */ });
-    return () => { cancelled = true; };
-  }, [inGame]);
+function commitLive(next: LiveState, notify: boolean) {
+  liveState = next;
+  applyDerivedSideEffects();
+  if (notify) publish();
+}
 
-  const data = useMemo<CompanionData>(() => {
-    // Base: honest FALLBACK (empty "waiting / not connected" states) until a live
-    // source fills a panel — so signed-out / no-match users never see a fake
-    // match. When a live event lands the builders merge real data over FALLBACK
-    // slices (the same empty scaffold), so unmapped fields stay empty rather
-    // than showing baked demo values.
-    let d: CompanionData = live.active
-      ? {
-          ...FALLBACK,
-          match: buildMatch(live.tick, live.status, FALLBACK.match),
-          heroes: buildHeroes(live.tick, live.missing, live.cv, FALLBACK.heroes),
-          markers: buildMarkers(live.cv, live.missingPos, FALLBACK.markers),
-          signals: buildSignals(live.gank, live.missing, FALLBACK.signals)
-        }
-      : FALLBACK;
+function flushPending() {
+  if (flushTimer !== null) {
+    window.clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  if (!pendingLive) return;
+  const next = pendingLive;
+  pendingLive = null;
+  commitLive(next, true);
+}
 
-    // OpenDota enrichment is YOUR historical data — apply it to the self slot +
-    // stat-bar baselines + the weekly/insights cards whenever present,
-    // independent of live-match state.
-    const od = live.od;
-    if (od) {
-      d = {
-        ...d,
-        match: { ...d.match, player: buildBaselines(d.match.player, od) },
-        heroes: d.heroes.map((h, i) => (i === 0 ? { ...h, profile: buildProfile(od, h.profile) } : h)),
-        weeklyReport: buildWeekly(od, d.weeklyReport),
-        insights: buildInsights(od, d.insights)
-      };
+function scheduleFlush() {
+  if (!runtimeActive || flushTimer !== null) return;
+  flushTimer = window.setTimeout(() => {
+    flushTimer = null;
+    flushPending();
+  }, LIVE_FLUSH_MS);
+}
+
+function updateLive(mutator: (state: LiveState) => LiveState, immediate = false) {
+  const base = pendingLive ?? liveState;
+  const next = mutator(base);
+  if (next === base) return;
+  if (!runtimeActive) {
+    pendingLive = null;
+    commitLive(next, false);
+    return;
+  }
+  if (immediate) {
+    pendingLive = null;
+    commitLive(next, true);
+    return;
+  }
+  pendingLive = next;
+  scheduleFlush();
+}
+
+function syncRuntimeActive() {
+  const next = docVisible && windowFocused;
+  if (runtimeActive === next) return;
+  runtimeActive = next;
+  if (runtimeActive) flushPending();
+}
+
+async function refreshOpenDotaProfile(accountId: number) {
+  if (lastOpenDotaAccountId === accountId) return;
+  lastOpenDotaAccountId = accountId;
+  const req = ++profileRequestSeq;
+  try {
+    const od = await fetchOpenDotaProfile(String(accountId), heroName);
+    if (req !== profileRequestSeq || !od) return;
+    updateLive((s) => (s.od === od ? s : { ...s, od }), true);
+  } catch {
+    /* offline / private profile — stay on fallback */
+  }
+}
+
+async function refreshMatchLogs() {
+  const req = ++logsRequestSeq;
+  try {
+    const rows = await invoke<MatchLog[]>("list_match_logs");
+    if (req !== logsRequestSeq) return;
+    updateLive((s) => ({ ...s, logs: rows }), true);
+  } catch {
+    /* not under Tauri / command unavailable — stay on fallback */
+  }
+}
+
+function bindControlActivity() {
+  if (typeof document !== "undefined") {
+    docVisible = document.visibilityState !== "hidden";
+    document.addEventListener("visibilitychange", () => {
+      docVisible = document.visibilityState !== "hidden";
+      syncRuntimeActive();
+    });
+  }
+  if (typeof window !== "undefined") {
+    window.addEventListener("focus", () => {
+      windowFocused = true;
+      syncRuntimeActive();
+    });
+    window.addEventListener("blur", () => {
+      windowFocused = false;
+      syncRuntimeActive();
+    });
+  }
+  try {
+    void getCurrentWindow().onFocusChanged(({ payload }) => {
+      windowFocused = payload;
+      syncRuntimeActive();
+    });
+  } catch {
+    /* plain browser dev / non-Tauri runtime */
+  }
+  syncRuntimeActive();
+}
+
+function ensureRuntime() {
+  if (runtimeStarted) return;
+  runtimeStarted = true;
+  bindControlActivity();
+
+  function sub<T>(event: string, handler: (payload: T) => void) {
+    try {
+      listen<T>(event, (e) => handler(e.payload)).catch(() => {});
+    } catch {
+      /* not running under Tauri — stay on FALLBACK */
     }
+  }
 
-    // Telemetry footer — the governor samples RAM/CPU whether or not a match is
-    // live, so apply it independent of `active` (buildTelemetry no-ops on null).
-    if (live.stats) {
-      d = { ...d, telemetry: buildTelemetry(live.stats, d.telemetry) };
-    }
+  sub<GameTick>("game-tick", (p) => updateLive((s) => ({ ...s, tick: p, active: true })));
+  sub<GsiStatus>("gsi-status", (p) => updateLive((s) => ({ ...s, status: p, active: true })));
+  sub<ResourceStats>("resource-stats", (p) => updateLive((s) => ({ ...s, stats: p }), true));
+  sub<MinimapCv>("minimap-cv", (p) => {
+    const now = Date.now();
+    if (now - lastCvAt < CV_UPDATE_MS) return;
+    lastCvAt = now;
+    updateLive((s) => ({ ...s, cv: p, active: true }));
+  });
+  sub<SignalAlert>("gank-alert", (p) => updateLive((s) => ({ ...s, gank: p, active: true }), true));
+  sub<unknown>("gank-clear", () => updateLive((s) => ({ ...s, gank: null, missing: new Map(), missingPos: new Map(), active: true }), true));
+  sub<EnemyMissing>("enemy-missing", (p) => {
+    updateLive((s) => {
+      const next = cloneLive(s);
+      next.missing.set(p.hero, p.missing_for_ms);
+      next.missingPos.set(p.hero, p.last_pos);
+      next.active = true;
+      return next;
+    });
+    const prev = expiryTimers.get(p.hero);
+    if (prev) window.clearTimeout(prev);
+    const t = window.setTimeout(() => {
+      updateLive((s) => {
+        if (!s.missing.has(p.hero) && !s.missingPos.has(p.hero)) return s;
+        const next = cloneLive(s);
+        next.missing.delete(p.hero);
+        next.missingPos.delete(p.hero);
+        return next;
+      }, true);
+      expiryTimers.delete(p.hero);
+    }, 30_000);
+    expiryTimers.set(p.hero, t);
+  });
 
-    // History + the real "learned matches" count come from the on-device G-Log
-    // files. With zero logs (or off-Tauri) the page stays on FALLBACK (empty
-    // list + "0") — no fake demo entries.
-    if (live.logs && live.logs.length > 0) {
-      d = {
-        ...d,
-        history: buildHistory(live.logs, d.history),
-        insights: { ...d.insights, learnedMatches: live.logs.length }
-      };
-    }
+  const syncIdentity = () => {
+    void loadIdentity().then((id) => {
+      const next = id?.accountId ?? null;
+      if (accountIdState === next) return;
+      accountIdState = next;
+      if (next != null) void refreshOpenDotaProfile(next);
+    });
+  };
+  syncIdentity();
+  if (typeof window !== "undefined") window.addEventListener(IDENTITY_EVENT, syncIdentity);
+  void refreshMatchLogs();
+}
 
-    // agentSector status pill reflects real GSI liveliness once we're live.
-    if (live.active) {
-      d = {
-        ...d,
-        agentSector: {
-          ...d.agentSector,
-          status: live.status?.gsi_active ? "Live orchestration" : "Standby"
-        }
-      };
-    }
-    return d;
-  }, [live]);
+export function useCompanionData() {
+  return useSyncExternalStore(
+    subscribeStore,
+    () => snapshot,
+    () => snapshot
+  );
+}
 
-  return { data, loading: false as const, error: null as string | null };
+export function useCompanionDataSelector<T>(
+  selector: (data: CompanionData) => T,
+  isEqual: (prev: T, next: T) => boolean = Object.is
+) {
+  const selectionRef = useRef<T>(selector(snapshot.data));
+  const selectorRef = useRef(selector);
+  const isEqualRef = useRef(isEqual);
+  selectorRef.current = selector;
+  isEqualRef.current = isEqual;
+
+  return useSyncExternalStore(
+    subscribeStore,
+    () => {
+      const next = selectorRef.current(snapshot.data);
+      if (!isEqualRef.current(selectionRef.current, next)) {
+        selectionRef.current = next;
+      }
+      return selectionRef.current;
+    },
+    () => selectionRef.current
+  );
 }
 
 export function toneClass(tone: CompanionTone) {

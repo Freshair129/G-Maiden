@@ -49,7 +49,9 @@ pub enum OcrError {
 impl std::fmt::Display for OcrError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            OcrError::Unavailable => write!(f, "OCR models not installed — see tools/ocr-download/"),
+            OcrError::Unavailable => {
+                write!(f, "OCR models not installed — see tools/ocr-download/")
+            }
             OcrError::Decode(e) => write!(f, "image decode: {e}"),
             OcrError::Inference(e) => write!(f, "ocr inference: {e}"),
         }
@@ -63,11 +65,15 @@ fn models_dir() -> Option<PathBuf> {
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             let p = parent.join("models").join("ocr");
-            if files_present(&p) { return Some(p); }
+            if files_present(&p) {
+                return Some(p);
+            }
         }
     }
     let dev = PathBuf::from("models/ocr");
-    if files_present(&dev) { return Some(dev); }
+    if files_present(&dev) {
+        return Some(dev);
+    }
     None
 }
 
@@ -85,7 +91,9 @@ static ENGINE: OnceLock<Mutex<Option<pure_onnx_ocr_sync::OcrEngine>>> = OnceLock
 
 fn engine() -> Result<&'static Mutex<Option<pure_onnx_ocr_sync::OcrEngine>>, OcrError> {
     let m = ENGINE.get_or_init(|| Mutex::new(None));
-    let mut g = m.lock().map_err(|_| OcrError::Inference("engine mutex poisoned".into()))?;
+    let mut g = m
+        .lock()
+        .map_err(|_| OcrError::Inference("engine mutex poisoned".into()))?;
     if g.is_none() {
         let dir = models_dir().ok_or(OcrError::Unavailable)?;
         let built = pure_onnx_ocr_sync::OcrEngineBuilder::new()
@@ -113,9 +121,15 @@ pub fn available() -> bool {
 #[allow(dead_code)] // wired in Phase B/C
 pub fn recognize(img: &DynamicImage) -> Result<Vec<OcrHit>, OcrError> {
     let m = engine()?;
-    let g = m.lock().map_err(|_| OcrError::Inference("engine mutex poisoned".into()))?;
-    let Some(eng) = g.as_ref() else { return Err(OcrError::Unavailable) };
-    let raw = eng.run_from_image(img).map_err(|e| OcrError::Inference(format!("{e}")))?;
+    let g = m
+        .lock()
+        .map_err(|_| OcrError::Inference("engine mutex poisoned".into()))?;
+    let Some(eng) = g.as_ref() else {
+        return Err(OcrError::Unavailable);
+    };
+    let raw = eng
+        .run_from_image(img)
+        .map_err(|e| OcrError::Inference(format!("{e}")))?;
     let mut hits: Vec<OcrHit> = raw
         .into_iter()
         .map(|r| {
@@ -125,10 +139,18 @@ pub fn recognize(img: &DynamicImage) -> Result<Vec<OcrHit>, OcrError> {
             let (mut xmin, mut ymin) = (f64::INFINITY, f64::INFINITY);
             let (mut xmax, mut ymax) = (f64::NEG_INFINITY, f64::NEG_INFINITY);
             for c in exterior.0.iter() {
-                if c.x < xmin { xmin = c.x; }
-                if c.x > xmax { xmax = c.x; }
-                if c.y < ymin { ymin = c.y; }
-                if c.y > ymax { ymax = c.y; }
+                if c.x < xmin {
+                    xmin = c.x;
+                }
+                if c.x > xmax {
+                    xmax = c.x;
+                }
+                if c.y < ymin {
+                    ymin = c.y;
+                }
+                if c.y > ymax {
+                    ymax = c.y;
+                }
             }
             OcrHit {
                 text: r.text,
@@ -165,7 +187,10 @@ mod tests {
     #[test]
     fn available_false_when_models_dir_missing() {
         if !std::path::Path::new("models/ocr").exists() {
-            assert!(!available(), "available() must be false until tools/ocr-download/ has been run");
+            assert!(
+                !available(),
+                "available() must be false until tools/ocr-download/ has been run"
+            );
         }
     }
 }

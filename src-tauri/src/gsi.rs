@@ -28,6 +28,7 @@ pub struct GameTick {
     pub kills: i64,
     pub deaths: i64,
     pub assists: i64,
+    pub team_name: String,
     pub last_hits: i64,
     pub denies: i64,
     pub hero: String,
@@ -61,7 +62,9 @@ fn dig<'a>(v: &'a Value, path: &[&str]) -> &'a Value {
 }
 fn i(v: &Value, path: &[&str]) -> i64 {
     let c = dig(v, path);
-    c.as_i64().or_else(|| c.as_f64().map(|f| f as i64)).unwrap_or(0)
+    c.as_i64()
+        .or_else(|| c.as_f64().map(|f| f as i64))
+        .unwrap_or(0)
 }
 fn s(v: &Value, path: &[&str]) -> String {
     dig(v, path).as_str().unwrap_or("").to_string()
@@ -79,8 +82,10 @@ fn parse_kill_list(v: &Value) -> (i64, i64) {
         let count = obj.len() as i64;
         let last = (0..count)
             .rev()
-            .find_map(|idx| obj.get(&idx.to_string())
-                .and_then(|entry| entry["victimid"].as_i64()))
+            .find_map(|idx| {
+                obj.get(&idx.to_string())
+                    .and_then(|entry| entry["victimid"].as_i64())
+            })
             .unwrap_or(-1);
         (count, last)
     } else {
@@ -98,43 +103,53 @@ fn is_in_game(game_state: &str) -> bool {
     )
 }
 
-async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
-    let v: Value = serde_json::from_str(&body).unwrap_or(Value::Null);
-    let game_state = s(&v, &["map", "game_state"]);
-    let gold = i(&v, &["player", "gold"]);
-    // GSI sends `player.net_worth = 0` in player mode (only populated for
-    // spectators). When 0, derive it from `items.*.name` × the embedded cost
-    // snapshot so the overlay shows a real number instead of "—".
-    let raw_nw = i(&v, &["player", "net_worth"]);
-    let net_worth = if raw_nw > 0 { raw_nw } else { crate::items::net_worth_from(&v["items"], gold) };
-    let (kl_len, last_victim) = parse_kill_list(&v);
-    let tick = GameTick {
+pub(crate) fn parse_tick_from_value(v: &Value) -> GameTick {
+    let game_state = s(v, &["map", "game_state"]);
+    let gold = i(v, &["player", "gold"]);
+    let raw_nw = i(v, &["player", "net_worth"]);
+    let net_worth = if raw_nw > 0 {
+        raw_nw
+    } else {
+        crate::items::net_worth_from(&v["items"], gold)
+    };
+    let (kl_len, last_victim) = parse_kill_list(v);
+    GameTick {
         in_game: is_in_game(&game_state),
-        clock_time: i(&v, &["map", "clock_time"]),
+        clock_time: i(v, &["map", "clock_time"]),
         game_state,
-        daytime: b(&v, &["map", "daytime"]),
-        radiant_score: i(&v, &["map", "radiant_score"]),
-        dire_score: i(&v, &["map", "dire_score"]),
+        daytime: b(v, &["map", "daytime"]),
+        radiant_score: i(v, &["map", "radiant_score"]),
+        dire_score: i(v, &["map", "dire_score"]),
         gold,
         net_worth,
-        gpm: i(&v, &["player", "gpm"]),
-        xpm: i(&v, &["player", "xpm"]),
-        kills: i(&v, &["player", "kills"]),
-        deaths: i(&v, &["player", "deaths"]),
-        assists: i(&v, &["player", "assists"]),
-        last_hits: i(&v, &["player", "last_hits"]),
-        denies: i(&v, &["player", "denies"]),
-        hero: s(&v, &["hero", "name"]),
-        level: i(&v, &["hero", "level"]),
-        alive: b(&v, &["hero", "alive"]),
-        hp_percent: i(&v, &["hero", "health_percent"]),
-        mana_percent: i(&v, &["hero", "mana_percent"]),
-        steamid: s(&v, &["player", "steamid"]),
-        buyback_cost: i(&v, &["hero", "buyback_cost"]),
-        respawn_seconds: i(&v, &["hero", "respawn_seconds"]),
+        gpm: i(v, &["player", "gpm"]),
+        xpm: i(v, &["player", "xpm"]),
+        kills: i(v, &["player", "kills"]),
+        deaths: i(v, &["player", "deaths"]),
+        assists: i(v, &["player", "assists"]),
+        team_name: s(v, &["player", "team_name"]),
+        last_hits: i(v, &["player", "last_hits"]),
+        denies: i(v, &["player", "denies"]),
+        hero: s(v, &["hero", "name"]),
+        level: i(v, &["hero", "level"]),
+        alive: b(v, &["hero", "alive"]),
+        hp_percent: i(v, &["hero", "health_percent"]),
+        mana_percent: i(v, &["hero", "mana_percent"]),
+        steamid: s(v, &["player", "steamid"]),
+        buyback_cost: i(v, &["hero", "buyback_cost"]),
+        respawn_seconds: i(v, &["hero", "respawn_seconds"]),
         kill_list_len: kl_len,
         last_victim_slot: last_victim,
-    };
+    }
+}
+
+pub(crate) fn parse_tick_from_json(body: &str) -> GameTick {
+    let v: Value = serde_json::from_str(body).unwrap_or(Value::Null);
+    parse_tick_from_value(&v)
+}
+
+async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
+    let tick = parse_tick_from_json(&body);
     // Announcer: detect kill/streak/state events from the tick and voice the
     // most significant one (clip-or-silent — these aren't TTS-faked).
     let announce = crate::announcer::most_important(&crate::announcer::observe(&tick));
@@ -142,6 +157,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
     // matches (saves idle CPU).
     crate::runtime::mark_post(epoch_ms());
     crate::runtime::set_in_game(tick.in_game);
+    crate::runtime::set_player_team_name(&tick.team_name);
     crate::log::note_tick(&tick);
     let _ = app.emit("game-tick", tick);
     if let Some(ev) = announce {
@@ -173,7 +189,10 @@ async fn announcer_install(body: String) -> axum::Json<serde_json::Value> {
         .and_then(|v| v["pack"].as_str().map(String::from))
         .unwrap_or_default();
     let counts = crate::audio::all_counts();
-    eprintln!("[G-Maiden] announcer pack installed: {pack} ({} events)", counts.len());
+    eprintln!(
+        "[G-Maiden] announcer pack installed: {pack} ({} events)",
+        counts.len()
+    );
     axum::Json(serde_json::json!({ "ok": true, "pack": pack, "counts": counts }))
 }
 
@@ -192,7 +211,10 @@ async fn oauth_callback(
 ) -> Html<&'static str> {
     if let Some(code) = params.get("code") {
         let _ = app.emit("oauth-callback", code.clone());
-    } else if let Some(err) = params.get("error_description").or_else(|| params.get("error")) {
+    } else if let Some(err) = params
+        .get("error_description")
+        .or_else(|| params.get("error"))
+    {
         let _ = app.emit("oauth-error", err.clone());
     }
     Html(OAUTH_CALLBACK_HTML)
@@ -299,39 +321,7 @@ mod tests {
     }
 
     fn run_handle(payload: serde_json::Value) -> GameTick {
-        let v = payload;
-        let game_state = s(&v, &["map", "game_state"]);
-        let gold = i(&v, &["player", "gold"]);
-        let raw_nw = i(&v, &["player", "net_worth"]);
-        let net_worth = if raw_nw > 0 { raw_nw } else { crate::items::net_worth_from(&v["items"], gold) };
-        let (kl_len, last_victim) = parse_kill_list(&v);
-        GameTick {
-            in_game: is_in_game(&game_state),
-            clock_time: i(&v, &["map", "clock_time"]),
-            game_state,
-            daytime: b(&v, &["map", "daytime"]),
-            radiant_score: i(&v, &["map", "radiant_score"]),
-            dire_score: i(&v, &["map", "dire_score"]),
-            gold,
-            net_worth,
-            gpm: i(&v, &["player", "gpm"]),
-            xpm: i(&v, &["player", "xpm"]),
-            kills: i(&v, &["player", "kills"]),
-            deaths: i(&v, &["player", "deaths"]),
-            assists: i(&v, &["player", "assists"]),
-            last_hits: i(&v, &["player", "last_hits"]),
-            denies: i(&v, &["player", "denies"]),
-            hero: s(&v, &["hero", "name"]),
-            level: i(&v, &["hero", "level"]),
-            alive: b(&v, &["hero", "alive"]),
-            hp_percent: i(&v, &["hero", "health_percent"]),
-            mana_percent: i(&v, &["hero", "mana_percent"]),
-            steamid: s(&v, &["player", "steamid"]),
-            buyback_cost: i(&v, &["hero", "buyback_cost"]),
-            respawn_seconds: i(&v, &["hero", "respawn_seconds"]),
-            kill_list_len: kl_len,
-            last_victim_slot: last_victim,
-        }
+        parse_tick_from_value(&payload)
     }
 
     #[test]
@@ -352,6 +342,7 @@ mod tests {
                         "clock_time": 612, "daytime": true,
                         "radiant_score": 14, "dire_score": 9 },
             "player": { "gold": 2300, "net_worth": 14500, "gpm": 520, "xpm": 610,
+                        "team_name": "radiant",
                         "kills": 7, "deaths": 2, "assists": 10,
                         "last_hits": 145, "denies": 8 },
             "hero":   { "name": "npc_dota_hero_crystal_maiden", "level": 14,
@@ -360,6 +351,7 @@ mod tests {
         assert!(t.in_game);
         assert_eq!(t.clock_time, 612);
         assert_eq!(t.hero, "npc_dota_hero_crystal_maiden");
+        assert_eq!(t.team_name, "radiant");
         assert_eq!(t.kills, 7);
         assert_eq!(t.hp_percent, 78);
     }

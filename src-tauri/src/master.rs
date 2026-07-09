@@ -134,7 +134,10 @@ pub fn advise(tick: &GameTick) -> Result<Advice, String> {
     if !from_slm {
         crate::usage::record_advice(prompt.chars().count(), text.chars().count());
     }
-    Ok(Advice { text, cached: false })
+    Ok(Advice {
+        text,
+        cached: false,
+    })
 }
 
 /// Claude advice path. When the user has chosen API-key auth and entered a key,
@@ -160,13 +163,19 @@ fn try_anthropic_api(prompt: &str, key: &str) -> Result<String, String> {
     let mut cmd = Command::new("curl");
     cmd.args([
         "-s",
-        "--max-time", "30",
-        "-X", "POST",
+        "--max-time",
+        "30",
+        "-X",
+        "POST",
         "https://api.anthropic.com/v1/messages",
-        "-H", &format!("x-api-key: {key}"),
-        "-H", "anthropic-version: 2023-06-01",
-        "-H", "content-type: application/json",
-        "-d", &body,
+        "-H",
+        &format!("x-api-key: {key}"),
+        "-H",
+        "anthropic-version: 2023-06-01",
+        "-H",
+        "content-type: application/json",
+        "-d",
+        &body,
     ])
     .stdin(Stdio::null())
     .stdout(Stdio::piped())
@@ -176,15 +185,16 @@ fn try_anthropic_api(prompt: &str, key: &str) -> Result<String, String> {
         use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW — no console flash
     }
-    let out = cmd
-        .output()
-        .map_err(|e| format!("เรียก curl ไม่ได้: {e}"))?;
+    let out = cmd.output().map_err(|e| format!("เรียก curl ไม่ได้: {e}"))?;
     if !out.status.success() {
         return Err(format!("curl exit {:?}", out.status.code()));
     }
     let raw = String::from_utf8_lossy(&out.stdout);
     let v: serde_json::Value = serde_json::from_str(&raw).map_err(|e| {
-        format!("JSON parse: {e} — raw: {}", &raw.chars().take(160).collect::<String>())
+        format!(
+            "JSON parse: {e} — raw: {}",
+            &raw.chars().take(160).collect::<String>()
+        )
     })?;
     // Surface API errors (bad key, rate limit) instead of a confusing empty parse.
     if let Some(err) = v.pointer("/error/message").and_then(|m| m.as_str()) {
@@ -208,9 +218,9 @@ fn try_claude_cli(prompt: &str) -> Result<String, String> {
         use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x0800_0000);
     }
-    let out = cmd.output().map_err(|e| {
-        format!("เรียก claude CLI ไม่ได้: {e}")
-    })?;
+    let out = cmd
+        .output()
+        .map_err(|e| format!("เรียก claude CLI ไม่ได้: {e}"))?;
     if !out.status.success() {
         let stderr = String::from_utf8_lossy(&out.stderr);
         return Err(format!("claude คืน error: {}", stderr.trim()));
@@ -241,6 +251,7 @@ mod tests {
             kills: 4,
             deaths: 2,
             assists: 6,
+            team_name: "radiant".into(),
             last_hits: 92,
             denies: 5,
             hero: "npc_dota_hero_crystal_maiden".into(),

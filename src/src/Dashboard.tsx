@@ -1,362 +1,277 @@
-import { useState, useEffect, useRef, useCallback } from "react";
-import { listen } from "@tauri-apps/api/event";
-import { formatTimer, useCompanionData } from "./companion";
+import { memo, useState } from "react";
+import { formatTimer, useCompanionDataSelector } from "./companion";
 import type { CompanionData } from "./companion";
 
 type Hero = CompanionData["heroes"][number];
+
 import agentBackground from "./assets/agent-layers/maiden-agent-bg-generated.png";
 import agentCharacter from "./assets/agent-layers/maiden-agent-character.png";
 import agentHairGlow from "./assets/agent-layers/maiden-agent-hair-glow.png";
 
-export default function Dashboard() {
-  const { data } = useCompanionData();
-  const isPregame = data.match.minimapState === "empty";
-  const allyHeroes = data.heroes.filter((hero) => hero.team === "ally");
-  const enemyHeroes = data.heroes.filter((hero) => hero.team === "enemy");
-  const visibleMarkers = isPregame ? [] : data.markers;
-
-  // G-Signal sector (D/E/F/G) — a proper bento grid cell (area `gsignal`),
-  // not a floating FAB, so it aligns with the other sectors on the grid.
-  const enemyMissing = isPregame ? 0 : enemyHeroes.filter((h) => h.state === "missing").length;
-  const gankRisk = isPregame ? 0 : Math.min(100, 26 + enemyMissing * 24 + data.match.activeAlerts * 8);
-  const safePush = isPregame ? 0 : Math.max(0, 88 - enemyMissing * 18 - data.match.activeAlerts * 10);
-  const vision = data.signals.find((s) => s.label.toLowerCase().startsWith("vision"))?.value ?? "—";
-
+function DashboardImpl() {
   return (
     <div className="dashboard-v2">
       <div className="board-bento">
         <section className="bento-card minimap-bento tilt-card">
-          <div className="bento-head deck-head">
-            <div className={`live-badge ${data.match.gsiOnline ? "online" : "offline"}`}>
-              <span className="live-dot" />
-              {data.match.gsiOnline ? "GSI Online" : "GSI Offline"}
-            </div>
-            <div className="deck-clock-cluster">
-              <div className="deck-clock-team">
-                <span>{data.match.leftTeamName}</span>
-                <strong>{data.match.leftScore}</strong>
-              </div>
-              <div className="deck-clock-core">
-                <strong>{data.match.clock}</strong>
-                <span>{data.match.mode || data.match.centerLabel}</span>
-              </div>
-              <div className="deck-clock-team">
-                <strong>{data.match.rightScore}</strong>
-                <span>{data.match.rightTeamName}</span>
-              </div>
-            </div>
-            <div className="deck-viewers-chip">
-              <span className="deck-eye" />
-              {data.match.viewers}
-            </div>
-          </div>
-
-          <div className={`minimap-spectator ${isPregame ? "is-pregame" : "is-live"}`}>
-            <div className="deck-statbar">
-              <TrendChip label="NW" value={data.match.player.nw} avg={data.match.player.nwAvg} format={fmtK} />
-              <TrendChip label="GPM" value={data.match.player.gpm} avg={data.match.player.gpmAvg} />
-              <TrendChip label="XPM" value={data.match.player.xpm} avg={data.match.player.xpmAvg} />
-              <div className="deck-stat-chip deck-stat-group">
-                <span className="deck-stat-glabel">K / D / A</span>
-                <div className="deck-stat-gvals">
-                  <TrendVal label="K" value={data.match.player.k} avg={data.match.player.kAvg} />
-                  <TrendVal label="D" value={data.match.player.d} avg={data.match.player.dAvg} higherIsBetter={false} />
-                  <TrendVal label="A" value={data.match.player.a} avg={data.match.player.aAvg} />
-                </div>
-              </div>
-              <div className="deck-stat-chip deck-stat-group">
-                <span className="deck-stat-glabel">CS / DN</span>
-                <div className="deck-stat-gvals">
-                  <TrendVal label="CS" value={data.match.player.cs} avg={data.match.player.csAvg} />
-                  <TrendVal label="DN" value={data.match.player.denies} avg={data.match.player.deniesAvg} />
-                </div>
-              </div>
-              <div className={`deck-stat-chip deck-ping ${pingClass(data.match.player.ping)}`}>
-                <span className="deck-stat-glabel">PING</span>
-                <strong>{data.match.player.ping} ms</strong>
-              </div>
-            </div>
-
-            <div className="spectator-stage live-match-stage">
-              <div className="team-column team-column-left slot-rail">
-                {[0, 1, 2, 3, 4].map((idx) => (
-                  <HeroCard key={`ally-${idx}`} slotId={idx + 1} hero={allyHeroes[idx]} placeholder={isPregame} side="ally" />
-                ))}
-              </div>
-              <div className="minimap-frame live-map-stack">
-                <div className={`map-canvas spectator-map ${isPregame ? "empty" : ""}`}>
-                  <div className="map-grid" />
-                  <div className="river-line" />
-                  <div className="map-terrain map-terrain-radiant" />
-                  <div className="map-terrain map-terrain-dire" />
-                  <div className="map-terrain map-terrain-mid" />
-                  {visibleMarkers.map((marker) => (
-                    <div
-                      key={marker.id}
-                      className={`map-marker ${marker.kind} ${marker.state || ""}`}
-                      style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
-                      title={marker.heroId || marker.label || marker.kind}
-                    >
-                      {marker.label || marker.heroId?.slice(0, 1) || marker.kind.slice(0, 1).toUpperCase()}
-                    </div>
-                  ))}
-                </div>
-              </div>
-              <div className="team-column team-column-right slot-rail">
-                {[0, 1, 2, 3, 4].map((idx) => (
-                  <HeroCard key={`enemy-${idx}`} slotId={idx + 6} hero={enemyHeroes[idx]} placeholder={isPregame} side="enemy" />
-                ))}
-              </div>
-            </div>
-          </div>
+          <DashboardHeader />
+          <SpectatorStage />
         </section>
-
-        <section className="bento-card agent-bento tilt-card">
-          <div className="bento-head">
-            <div>
-              <div className="eyebrow">Agent sector</div>
-              <h3>{data.agentSector.name}</h3>
-            </div>
-            <span className="state-pill">{data.agentSector.status}</span>
-          </div>
-          <div className="agent-sector">
-            <div className="agent-layer-stack">
-              <div className="agent-bg-layer" />
-              <img className="agent-bg-art" src={agentBackground} alt="" />
-              <div className="agent-back-layer" />
-              <div className="agent-wave agent-wave-a" />
-              <div className="agent-wave agent-wave-b" />
-              <img className="agent-art" src={agentCharacter} alt="" />
-              <img className="agent-hair-layer hair-layer-a" src={agentHairGlow} alt="" />
-              <img className="agent-hair-layer hair-layer-b" src={agentHairGlow} alt="" />
-              <div className="agent-front-fragments">
-                <span />
-                <span />
-                <span />
-              </div>
-            </div>
-            <DeckEventBanner />
-            <div className="agent-overlay">
-              <AgentFeed lines={data.agentSector.summary} />
-            </div>
-          </div>
-        </section>
-
-        <section className="bento-card gsignal-bento tilt-card">
-          <div className="bento-head compact">
-            <div>
-              <div className="eyebrow">G-Signal</div>
-              <h3>Threat radar</h3>
-            </div>
-          </div>
-          <div className="gsignal-cells">
-            <div className="g-sig">
-              <span className="sg-tag">D</span>
-              <span className="sg-label">Enemy Missing</span>
-              <span className="sg-val">{enemyMissing}</span>
-              <div className="sg-bar"><div className="sg-fill sg-fill-ice" style={{ width: `${Math.min(100, enemyMissing * 20)}%` }} /></div>
-            </div>
-            <div className="g-sig hero">
-              <span className="sg-tag">E</span>
-              <span className="sg-label">Gank Risk</span>
-              <span className="sg-val">{gankRisk}%</span>
-              <div className="sg-bar"><div className="sg-fill" style={{ width: `${gankRisk}%` }} /></div>
-            </div>
-            <div className="g-sig">
-              <span className="sg-tag">F</span>
-              <span className="sg-label">Safe Push</span>
-              <span className="sg-val">{safePush}%</span>
-              <div className="sg-bar"><div className="sg-fill sg-fill-safe" style={{ width: `${safePush}%` }} /></div>
-            </div>
-            <div className="g-sig">
-              <span className="sg-tag">G</span>
-              <span className="sg-label">Vision</span>
-              <span className="sg-val">{vision}</span>
-              <div className="sg-bar"><div className="sg-fill sg-fill-warn" style={{ width: "40%" }} /></div>
-            </div>
-          </div>
-        </section>
-
-        <section className="bento-card status-bento tilt-card">
-          <div className="bento-head compact">
-            <div>
-              <div className="eyebrow">Status</div>
-              <h3>Companion state</h3>
-            </div>
-          </div>
-          <div className="status-matrix">
-            <StatusCard label="Voice" value={data.match.voicePack} text="Current pack" />
-            <StatusCard label="Overlay" value={data.match.overlayMode} text="Mirror mode" />
-            <StatusCard label="Server" value={data.match.server} text={`${data.match.latencyMs}ms`} />
-            <StatusCard label="Perf" value={data.match.performance} text={data.match.systemStatus} />
-          </div>
-        </section>
-
-        <section className="bento-card warning-bento tilt-card">
-          <div className="bento-head compact">
-            <div>
-              <div className="eyebrow">Alert deck</div>
-              <h3>Threat tabs</h3>
-            </div>
-          </div>
-          <div className="warning-tabs warning-tabs-dense">
-            {data.warningTabs.map((tab) => (
-              <div key={tab.key} className={`warning-tab ${warningClass(tab.key)}`}>
-                <span>{tab.label}</span>
-                <strong>{tab.count}</strong>
-                <small>{tab.text}</small>
-              </div>
-            ))}
-          </div>
-        </section>
-
+        <AgentSection />
+        <StatusSection />
+        <WarningSection />
         {/* Activity / Event logs live in the Insights + History tabs (CR-002).
-           Dashboard is a fixed-grid, no-scroll layout — only the 5 bento cards above. */}
+           Dashboard is a fixed-grid, no-scroll layout â€” only the 5 bento cards above. */}
       </div>
     </div>
   );
 }
 
-// Announcer event banner (First Blood / Double Kill / streak ladder …), shown as
-// a transient callout inside the Agent sector. Driven by the backend
-// `announcer-banner` Tauri event (gsi.rs → voice_api::fired_banner): its `event`
-// id already covers the kill + streak ladder (announcer.rs), so this one listener
-// wires both the announcer banners and kill streaks. When not under Tauri (browser
-// preview), it falls back to a demo cycler so the slot is still visible.
-type DebTone = "blood" | "gold" | "fire";
-// canonical announcer event id → tone (only these ids surface as a big callout;
-// warning/state/advisor events are handled elsewhere — G-Signal / caster feed).
-const EVENT_TONE: Record<string, DebTone> = {
-  first_blood: "blood", rampage: "blood", monster_kill: "blood",
-  unstoppable: "blood", wicked_sick: "blood", godlike: "blood", beyond_godlike: "blood",
-  kill: "gold", double_kill: "gold", triple_kill: "gold",
-  ultra_kill: "fire", killing_spree: "fire", dominating: "fire", mega_kill: "fire",
-};
-const DEMO_EVENTS: Array<{ label: string; tone: DebTone }> = [
-  { label: "FIRST BLOOD", tone: "blood" },
-  { label: "DOUBLE KILL", tone: "gold" },
-  { label: "TRIPLE KILL", tone: "gold" },
-  { label: "KILLING SPREE", tone: "fire" },
-  { label: "RAMPAGE", tone: "blood" },
-];
+const Dashboard = memo(DashboardImpl);
+export default Dashboard;
 
-function DeckEventBanner() {
-  const [evt, setEvt] = useState<{ label: string; tone: DebTone } | null>(null);
-  const [show, setShow] = useState(false);
-  const [seq, setSeq] = useState(0); // remount key so the entrance anim replays
-  const liveRef = useRef(false);     // a real announcer event has arrived
-  const hideRef = useRef<number | undefined>(undefined);
+function DashboardHeaderImpl() {
+  const header = useCompanionDataSelector(
+    (data) => ({
+      gsiOnline: data.match.gsiOnline,
+      leftTeamName: data.match.leftTeamName,
+      leftScore: data.match.leftScore,
+      clock: data.match.clock,
+      mode: data.match.mode,
+      centerLabel: data.match.centerLabel,
+      rightScore: data.match.rightScore,
+      rightTeamName: data.match.rightTeamName,
+      viewers: data.match.viewers,
+      nw: data.match.player.nw,
+      nwAvg: data.match.player.nwAvg,
+      gpm: data.match.player.gpm,
+      gpmAvg: data.match.player.gpmAvg,
+      xpm: data.match.player.xpm,
+      xpmAvg: data.match.player.xpmAvg,
+      k: data.match.player.k,
+      kAvg: data.match.player.kAvg,
+      d: data.match.player.d,
+      dAvg: data.match.player.dAvg,
+      a: data.match.player.a,
+      aAvg: data.match.player.aAvg,
+      cs: data.match.player.cs,
+      csAvg: data.match.player.csAvg,
+      denies: data.match.player.denies,
+      deniesAvg: data.match.player.deniesAvg,
+      ping: data.match.player.ping
+    }),
+    sameHeader
+  );
 
-  const fire = useCallback((label: string, tone: DebTone) => {
-    window.clearTimeout(hideRef.current);
-    setEvt({ label, tone });
-    setSeq((s) => s + 1);
-    setShow(true);
-    hideRef.current = window.setTimeout(() => setShow(false), 3600);
-  }, []);
-
-  // real events — announcer-banner covers kills, multi-kills and the streak ladder
-  useEffect(() => {
-    let alive = true;
-    let un: (() => void) | null = null;
-    try {
-      listen<{ event: string; bannerText: string }>("announcer-banner", (e) => {
-        const tone = EVENT_TONE[e.payload.event];
-        if (!tone) return; // not a callout-worthy event
-        liveRef.current = true; // real feed took over — silence the demo
-        fire((e.payload.bannerText || e.payload.event).toUpperCase(), tone);
-      })
-        .then((fn) => { if (!alive) fn(); else un = fn; })
-        .catch(() => { /* not under Tauri */ });
-    } catch { /* not under Tauri */ }
-    return () => { alive = false; if (un) un(); window.clearTimeout(hideRef.current); };
-  }, [fire]);
-
-  // demo fallback — only while no real announcer event has arrived
-  useEffect(() => {
-    let alive = true;
-    let t: number;
-    let i = 0;
-    const run = () => {
-      if (!alive || liveRef.current) return;
-      const d = DEMO_EVENTS[i % DEMO_EVENTS.length];
-      fire(d.label, d.tone);
-      i += 1;
-      t = window.setTimeout(run, 4000);
-    };
-    t = window.setTimeout(run, 1400);
-    return () => { alive = false; window.clearTimeout(t); };
-  }, [fire]);
-
-  if (!evt) return null;
   return (
-    <div key={seq} className={`deck-event-banner tone-${evt.tone}${show ? "" : " out"}`} aria-live="polite">
-      <span className="deb-label">{evt.label}</span>
-    </div>
+    <>
+      <div className="bento-head deck-head">
+        <div className={`live-badge ${header.gsiOnline ? "online" : "offline"}`}>
+          <span className="live-dot" />
+          {header.gsiOnline ? "GSI Online" : "GSI Offline"}
+        </div>
+        <div className="deck-clock-cluster">
+          <div className="deck-clock-team">
+            <span>{header.leftTeamName}</span>
+            <strong>{header.leftScore}</strong>
+          </div>
+          <div className="deck-clock-core">
+            <strong>{header.clock}</strong>
+            <span>{header.mode || header.centerLabel}</span>
+          </div>
+          <div className="deck-clock-team">
+            <strong>{header.rightScore}</strong>
+            <span>{header.rightTeamName}</span>
+          </div>
+        </div>
+        <div className="deck-viewers-chip">
+          <span className="deck-eye" />
+          {header.viewers}
+        </div>
+      </div>
+
+      <div className="minimap-spectator is-live">
+        <div className="deck-statbar">
+          <TrendChip label="NW" value={header.nw} avg={header.nwAvg} format={fmtK} />
+          <TrendChip label="GPM" value={header.gpm} avg={header.gpmAvg} />
+          <TrendChip label="XPM" value={header.xpm} avg={header.xpmAvg} />
+          <div className="deck-stat-chip deck-stat-group">
+            <span className="deck-stat-glabel">K / D / A</span>
+            <div className="deck-stat-gvals">
+              <TrendVal label="K" value={header.k} avg={header.kAvg} />
+              <TrendVal label="D" value={header.d} avg={header.dAvg} higherIsBetter={false} />
+              <TrendVal label="A" value={header.a} avg={header.aAvg} />
+            </div>
+          </div>
+          <div className="deck-stat-chip deck-stat-group">
+            <span className="deck-stat-glabel">CS / DN</span>
+            <div className="deck-stat-gvals">
+              <TrendVal label="CS" value={header.cs} avg={header.csAvg} />
+              <TrendVal label="DN" value={header.denies} avg={header.deniesAvg} />
+            </div>
+          </div>
+          <div className={`deck-stat-chip deck-ping ${pingClass(header.ping)}`}>
+            <span className="deck-stat-glabel">PING</span>
+            <strong>{header.ping} ms</strong>
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
 
-// Agent sector caster feed — Maiden "types" the newest line; completed lines
-// slide up and fade (sliding window). No live AI-narration event exists yet, so
-// this cycles the agent summary (or Maiden persona lines) as a demo. When a real
-// stream lands (e.g. a `agent-message` / advice Tauri event), feed it in as
-// `lines` / push onto `history` instead of the interval rotator below.
-const MAIDEN_LINES = [
-  "เฝ้ามินิแมพให้อยู่นะ เดี๋ยวมีคนหายจากสายตา",
-  "ฟาร์มต่อได้ ตอนนี้ยังปลอดภัยอยู่",
-  "ระวังโรมมิ่งจากเลนบน มืดไปหลายวิแล้ว",
-  "เก็บ vision รอบ objective ก่อนจะเข้าน้า",
-  "เอ๊ะ! เดี๋ยวก่อน… ถอยดีกว่า เขามากันสาม",
-];
+const DashboardHeader = memo(DashboardHeaderImpl);
 
-function AgentFeed({ lines }: { lines: string[] }) {
-  const pool = lines.length ? lines : MAIDEN_LINES;
-  const [history, setHistory] = useState<string[]>([]); // completed, newest last
-  const [typed, setTyped] = useState("");
-  const idx = useRef(0);
-
-  useEffect(() => {
-    let alive = true;
-    let timer: number;
-    const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
-
-    const commit = () => {
-      if (!alive) return;
-      const line = pool[idx.current % pool.length];
-      setHistory((h) => [...h, line].slice(-1)); // keep 1 previous line above
-      setTyped("");
-      idx.current += 1;
-      timer = window.setTimeout(typeNext, 520);
-    };
-    const typeNext = () => {
-      if (!alive) return;
-      const line = pool[idx.current % pool.length];
-      if (reduce) { setTyped(line); timer = window.setTimeout(commit, 3600); return; }
-      let n = 0;
-      const step = () => {
-        if (!alive) return;
-        n += 1;
-        setTyped(line.slice(0, n));
-        timer = window.setTimeout(n < line.length ? step : commit, n < line.length ? 42 : 3200);
-      };
-      step();
-    };
-    typeNext();
-    return () => { alive = false; window.clearTimeout(timer); };
-  }, [pool]);
+function SpectatorStageImpl() {
+  const stage = useCompanionDataSelector(
+    (data) => ({
+      isPregame: data.match.minimapState === "empty",
+      allyHeroes: data.heroes.filter((hero) => hero.team === "ally"),
+      enemyHeroes: data.heroes.filter((hero) => hero.team === "enemy"),
+      markers: data.match.minimapState === "empty" ? [] : data.markers
+    }),
+    sameStage
+  );
 
   return (
-    <div className="agent-feed">
-      <div className="agent-feed-tag"><span className="af-dot" />MAIDEN</div>
-      <div className="agent-feed-log">
-        {history.map((line, i) => (
-          <p key={`h${i}-${line}`} className="af-line af-old">{line}</p>
+    <div className={`spectator-stage live-match-stage ${stage.isPregame ? "is-pregame" : "is-live"}`}>
+      <div className="team-column team-column-left slot-rail">
+        {[0, 1, 2, 3, 4].map((idx) => (
+          <HeroCard key={`ally-${idx}`} slotId={idx + 1} hero={stage.allyHeroes[idx]} placeholder={stage.isPregame} side="ally" />
         ))}
-        {typed && <p className="af-line af-now">{typed}<span className="af-caret" /></p>}
+      </div>
+      <div className="minimap-frame live-map-stack">
+        <div className={`map-canvas spectator-map ${stage.isPregame ? "empty" : ""}`}>
+          <div className="map-grid" />
+          <div className="river-line" />
+          <div className="map-terrain map-terrain-radiant" />
+          <div className="map-terrain map-terrain-dire" />
+          <div className="map-terrain map-terrain-mid" />
+          {stage.markers.map((marker) => (
+            <MapMarker key={marker.id} marker={marker} />
+          ))}
+        </div>
+      </div>
+      <div className="team-column team-column-right slot-rail">
+        {[0, 1, 2, 3, 4].map((idx) => (
+          <HeroCard key={`enemy-${idx}`} slotId={idx + 6} hero={stage.enemyHeroes[idx]} placeholder={stage.isPregame} side="enemy" />
+        ))}
       </div>
     </div>
   );
 }
+
+const SpectatorStage = memo(SpectatorStageImpl);
+
+function AgentSectionImpl() {
+  const agent = useCompanionDataSelector(
+    (data) => ({
+      name: data.agentSector.name,
+      title: data.agentSector.title,
+      status: data.agentSector.status,
+      summary: data.agentSector.summary
+    }),
+    sameAgent
+  );
+
+  return (
+    <section className="bento-card agent-bento tilt-card">
+      <div className="bento-head">
+        <div>
+          <div className="eyebrow">Agent sector</div>
+          <h3>{agent.name}</h3>
+        </div>
+        <span className="state-pill">{agent.status}</span>
+      </div>
+      <div className="agent-sector">
+        <div className="agent-layer-stack">
+          <div className="agent-bg-layer" />
+          <img className="agent-bg-art" src={agentBackground} alt="" />
+          <div className="agent-back-layer" />
+          <div className="agent-wave agent-wave-a" />
+          <div className="agent-wave agent-wave-b" />
+          <img className="agent-art" src={agentCharacter} alt="" />
+          <img className="agent-hair-layer hair-layer-a" src={agentHairGlow} alt="" />
+          <img className="agent-hair-layer hair-layer-b" src={agentHairGlow} alt="" />
+          <div className="agent-front-fragments">
+            <span />
+            <span />
+            <span />
+          </div>
+        </div>
+        <div className="agent-copy">
+          <strong>{agent.title}</strong>
+          {agent.summary.map((line) => (
+            <p key={line}>{line}</p>
+          ))}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const AgentSection = memo(AgentSectionImpl);
+
+function StatusSectionImpl() {
+  const status = useCompanionDataSelector(
+    (data) => ({
+      voicePack: data.match.voicePack,
+      overlayMode: data.match.overlayMode,
+      server: data.match.server,
+      latencyMs: data.match.latencyMs,
+      performance: data.match.performance,
+      systemStatus: data.match.systemStatus
+    }),
+    sameStatus
+  );
+
+  return (
+    <section className="bento-card status-bento tilt-card">
+      <div className="bento-head compact">
+        <div>
+          <div className="eyebrow">Status</div>
+          <h3>Companion state</h3>
+        </div>
+      </div>
+      <div className="status-matrix">
+        <StatusCard label="Voice" value={status.voicePack} text="Current pack" />
+        <StatusCard label="Overlay" value={status.overlayMode} text="Mirror mode" />
+        <StatusCard label="Server" value={status.server} text={`${status.latencyMs}ms`} />
+        <StatusCard label="Perf" value={status.performance} text={status.systemStatus} />
+      </div>
+    </section>
+  );
+}
+
+const StatusSection = memo(StatusSectionImpl);
+
+function WarningSectionImpl() {
+  const warnings = useCompanionDataSelector(
+    (data) => data.warningTabs,
+    sameWarnings
+  );
+
+  return (
+    <section className="bento-card warning-bento tilt-card">
+      <div className="bento-head compact">
+        <div>
+          <div className="eyebrow">Alert deck</div>
+          <h3>Threat tabs</h3>
+        </div>
+      </div>
+      <div className="warning-tabs warning-tabs-dense">
+        {warnings.map((tab) => (
+          <div key={tab.key} className={`warning-tab ${warningClass(tab.key)}`}>
+            <span>{tab.label}</span>
+            <strong>{tab.count}</strong>
+            <small>{tab.text}</small>
+          </div>
+        ))}
+      </div>
+    </section>
+  );
+}
+
+const WarningSection = memo(WarningSectionImpl);
 
 function StatusCard({ label, value, text }: { label: string; value: string; text: string }) {
   return (
@@ -420,7 +335,7 @@ function heroStatus(hero?: Hero): "dead" | "missing" | "low" | "ok" {
   return "ok";
 }
 
-function HeroCard({ slotId, hero, placeholder, side }: { slotId: number; hero?: Hero; placeholder: boolean; side: "ally" | "enemy" }) {
+const HeroCard = memo(function HeroCard({ slotId, hero, placeholder, side }: { slotId: number; hero?: Hero; placeholder: boolean; side: "ally" | "enemy" }) {
   const [flipped, setFlipped] = useState(false);
   const empty = placeholder || !hero;
   if (empty) {
@@ -432,7 +347,7 @@ function HeroCard({ slotId, hero, placeholder, side }: { slotId: number; hero?: 
               <span className="hc-name">Slot ID {slotId}</span>
             </div>
             <div className="hc-row hc-mid">
-              <span className="hc-lvl">Lv –</span>
+              <span className="hc-lvl">Lv â€“</span>
               <span className="hc-heroname">Waiting</span>
               <span className="hc-kda">0 / 0 / 0</span>
             </div>
@@ -489,28 +404,222 @@ function HeroCard({ slotId, hero, placeholder, side }: { slotId: number; hero?: 
             <span className={`hc-item hc-neutral ${hero.neutral ? "filled" : ""}`}>{hero.neutral}</span>
           </div>
         </div>
-        <div className="hero-card-face hero-card-back">
-          {hero.profile.public ? (
-            <div className="hc-profile">
-              <div className="hc-prow"><span>Rank</span><strong>{hero.rank} · {fmtK(hero.mmr)}</strong></div>
-              <div className="hc-prow"><span>Season</span><strong>{hero.profile.winRate}% · {hero.profile.games}g</strong></div>
-              <div className="hc-prow"><span>Avg KDA</span><strong>{hero.profile.kda.toFixed(1)}</strong></div>
-              <div className="hc-prow"><span>Main</span><strong>{hero.profile.mainHero.name} · {hero.profile.mainHero.games}g · {hero.profile.mainHero.winRate}%</strong></div>
-              <div className="hc-prow"><span>Hours</span><strong>{(hero.profile.hours ?? hero.profile.games * 12 + 600).toLocaleString()}h</strong></div>
-              <div className="hc-prow"><span>Behavior</span><strong>{hero.profile.behavior}</strong></div>
-              <div className="hc-prow"><span>Role</span><strong>{hero.profile.role}</strong></div>
-            </div>
-          ) : (
-            <div className="hc-private">
-              <span className="hc-lock">🔒</span>
-              <strong>Private profile</strong>
-              <small>Stats hidden by player</small>
-            </div>
-          )}
-        </div>
+        {flipped ? (
+          <div className="hero-card-face hero-card-back">
+            {hero.profile.public ? (
+              <div className="hc-profile">
+                <div className="hc-prow"><span>Rank</span><strong>{hero.rank} Â· {fmtK(hero.mmr)}</strong></div>
+                <div className="hc-prow"><span>Season</span><strong>{hero.profile.winRate}% Â· {hero.profile.games}g</strong></div>
+                <div className="hc-prow"><span>Avg KDA</span><strong>{hero.profile.kda.toFixed(1)}</strong></div>
+                <div className="hc-prow"><span>Main</span><strong>{hero.profile.mainHero.name} Â· {hero.profile.mainHero.games}g Â· {hero.profile.mainHero.winRate}%</strong></div>
+                <div className="hc-prow"><span>Hours</span><strong>{(hero.profile.hours ?? hero.profile.games * 12 + 600).toLocaleString()}h</strong></div>
+                <div className="hc-prow"><span>Behavior</span><strong>{hero.profile.behavior}</strong></div>
+                <div className="hc-prow"><span>Role</span><strong>{hero.profile.role}</strong></div>
+              </div>
+            ) : (
+              <div className="hc-private">
+                <span className="hc-lock">🔒</span>
+                <strong>Private profile</strong>
+                <small>Stats hidden by player</small>
+              </div>
+            )}
+          </div>
+        ) : null}
       </div>
     </div>
   );
+}, sameHeroCard);
+
+function MapMarkerImpl({ marker }: { marker: CompanionData["markers"][number] }) {
+  return (
+    <div
+      className={`map-marker ${marker.kind} ${marker.state || ""}`}
+      style={{ left: `${marker.x}%`, top: `${marker.y}%` }}
+      title={marker.heroId || marker.label || marker.kind}
+    >
+      {marker.label || marker.heroId?.slice(0, 1) || marker.kind.slice(0, 1).toUpperCase()}
+    </div>
+  );
+}
+
+const MapMarker = memo(MapMarkerImpl, sameMarkerCard);
+
+function sameHeader(
+  a: {
+    gsiOnline: boolean;
+    leftTeamName: string;
+    leftScore: number;
+    clock: string;
+    mode: string;
+    centerLabel: string;
+    rightScore: number;
+    rightTeamName: string;
+    viewers: number;
+    nw: number;
+    nwAvg: number;
+    gpm: number;
+    gpmAvg: number;
+    xpm: number;
+    xpmAvg: number;
+    k: number;
+    kAvg: number;
+    d: number;
+    dAvg: number;
+    a: number;
+    aAvg: number;
+    cs: number;
+    csAvg: number;
+    denies: number;
+    deniesAvg: number;
+    ping: number;
+  },
+  b: typeof a
+) {
+  return a.gsiOnline === b.gsiOnline
+    && a.leftTeamName === b.leftTeamName
+    && a.leftScore === b.leftScore
+    && a.clock === b.clock
+    && a.mode === b.mode
+    && a.centerLabel === b.centerLabel
+    && a.rightScore === b.rightScore
+    && a.rightTeamName === b.rightTeamName
+    && a.viewers === b.viewers
+    && a.nw === b.nw
+    && a.nwAvg === b.nwAvg
+    && a.gpm === b.gpm
+    && a.gpmAvg === b.gpmAvg
+    && a.xpm === b.xpm
+    && a.xpmAvg === b.xpmAvg
+    && a.k === b.k
+    && a.kAvg === b.kAvg
+    && a.d === b.d
+    && a.dAvg === b.dAvg
+    && a.a === b.a
+    && a.aAvg === b.aAvg
+    && a.cs === b.cs
+    && a.csAvg === b.csAvg
+    && a.denies === b.denies
+    && a.deniesAvg === b.deniesAvg
+    && a.ping === b.ping;
+}
+
+function sameStatus(a: { voicePack: string; overlayMode: string; server: string; latencyMs: number; performance: string; systemStatus: string }, b: typeof a) {
+  return a.voicePack === b.voicePack
+    && a.overlayMode === b.overlayMode
+    && a.server === b.server
+    && a.latencyMs === b.latencyMs
+    && a.performance === b.performance
+    && a.systemStatus === b.systemStatus;
+}
+
+function sameAgent(a: { name: string; title: string; status: string; summary: string[] }, b: typeof a) {
+  return a.name === b.name
+    && a.title === b.title
+    && a.status === b.status
+    && sameStringArray(a.summary, b.summary);
+}
+
+function sameWarnings(a: CompanionData["warningTabs"], b: CompanionData["warningTabs"]) {
+  if (a.length !== b.length) return false;
+  return a.every((tab, index) => {
+    const other = b[index];
+    return tab.key === other.key && tab.label === other.label && tab.count === other.count && tab.text === other.text;
+  });
+}
+
+function sameStage(
+  a: {
+    isPregame: boolean;
+    allyHeroes: CompanionData["heroes"];
+    enemyHeroes: CompanionData["heroes"];
+    markers: CompanionData["markers"];
+  },
+  b: typeof a
+) {
+  return a.isPregame === b.isPregame
+    && sameHeroList(a.allyHeroes, b.allyHeroes)
+    && sameHeroList(a.enemyHeroes, b.enemyHeroes)
+    && sameMarkerList(a.markers, b.markers);
+}
+
+function sameHeroList(a: CompanionData["heroes"], b: CompanionData["heroes"]) {
+  if (a.length !== b.length) return false;
+  return a.every((hero, index) => sameHero(hero, b[index]));
+}
+
+function sameHero(a?: Hero, b?: Hero) {
+  if (!a || !b) return a === b;
+  return a.id === b.id
+    && a.hero === b.hero
+    && a.player === b.player
+    && a.team === b.team
+    && a.level === b.level
+    && a.kills === b.kills
+    && a.deaths === b.deaths
+    && a.assists === b.assists
+    && a.state === b.state
+    && a.timer === b.timer
+    && a.lane === b.lane
+    && sameStringArray(a.items, b.items)
+    && a.pingMs === b.pingMs
+    && a.connection === b.connection
+    && a.nw === b.nw
+    && a.gpm === b.gpm
+    && a.xpm === b.xpm
+    && a.lastHits === b.lastHits
+    && a.denies === b.denies
+    && a.mmr === b.mmr
+    && a.rank === b.rank
+    && a.hpPercent === b.hpPercent
+    && a.buyback === b.buyback
+    && a.tp === b.tp
+    && a.ultReady === b.ultReady
+    && a.neutral === b.neutral
+    && a.profile.public === b.profile.public
+    && a.profile.winRate === b.profile.winRate
+    && a.profile.games === b.profile.games
+    && a.profile.kda === b.profile.kda
+    && a.profile.mainHero.name === b.profile.mainHero.name
+    && a.profile.mainHero.games === b.profile.mainHero.games
+    && a.profile.mainHero.winRate === b.profile.mainHero.winRate
+    && a.profile.behavior === b.profile.behavior
+    && a.profile.role === b.profile.role
+    && a.profile.hours === b.profile.hours;
+}
+
+function sameHeroCard(prev: { slotId: number; hero?: Hero; placeholder: boolean; side: "ally" | "enemy" }, next: typeof prev) {
+  return prev.slotId === next.slotId
+    && prev.placeholder === next.placeholder
+    && prev.side === next.side
+    && sameHero(prev.hero, next.hero);
+}
+
+function sameMarkerList(a: CompanionData["markers"], b: CompanionData["markers"]) {
+  if (a.length !== b.length) return false;
+  return a.every((marker, index) => sameMarker(marker, b[index]));
+}
+
+function sameMarker(a?: CompanionData["markers"][number], b?: CompanionData["markers"][number]) {
+  if (!a || !b) return a === b;
+  return a.id === b.id
+    && a.heroId === b.heroId
+    && a.x === b.x
+    && a.y === b.y
+    && a.kind === b.kind
+    && a.label === b.label
+    && a.state === b.state;
+}
+
+function sameMarkerCard(prev: { marker: CompanionData["markers"][number] }, next: typeof prev) {
+  return sameMarker(prev.marker, next.marker);
+}
+
+function sameStringArray(a: string[], b: string[]) {
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i += 1) {
+    if (a[i] !== b[i]) return false;
+  }
+  return true;
 }
 
 function warningClass(key: string) {

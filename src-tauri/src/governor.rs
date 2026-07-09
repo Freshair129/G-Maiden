@@ -6,10 +6,9 @@
 //!   - RAM ≤ 400 MB working set
 //!   - Background CPU ≤ 2.5% on a mid-range chipset
 //!
-//! On Windows we read from PROCESS_MEMORY_COUNTERS via a PowerShell one-liner
-//! (zero extra Rust crates). CPU is estimated from two WMI snapshots taken
-//! POLL_INTERVAL_S apart. Both are cheap calls that run on the governor thread,
-//! which itself sleeps almost all the time.
+//! On Windows we read memory + CPU directly from Win32 APIs. This avoids the
+//! old PowerShell subprocess probes, which showed up as grouped CPU spikes in
+//! Task Manager and distorted the app-level budget story.
 //!
 //! Throttle callbacks are exported so the capture loop can check whether to
 //! drop a processing tick (reducing from ~8 Hz to ~4 Hz) when CPU is high.
@@ -18,6 +17,12 @@ use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter};
+#[cfg(windows)]
+use windows::Win32::Foundation::FILETIME;
+#[cfg(windows)]
+use windows::Win32::System::ProcessStatus::{GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS};
+#[cfg(windows)]
+use windows::Win32::System::Threading::{GetCurrentProcess, GetProcessTimes};
 
 const POLL_INTERVAL_S: u64 = 10;
 
@@ -60,6 +65,15 @@ static LATEST_GPU: Mutex<Option<GpuSample>> = Mutex::new(None);
 /// True while resource usage is over budget; the capture loop reads this to
 /// drop half its ticks automatically.
 static CPU_THROTTLE: AtomicBool = AtomicBool::new(false);
+#[cfg(windows)]
+static CPU_SAMPLE: Mutex<Option<CpuSample>> = Mutex::new(None);
+
+#[cfg(windows)]
+#[derive(Clone, Copy)]
+struct CpuSample {
+    total_100ns: u64,
+    wall: Instant,
+}
 
 #[allow(dead_code)] // read by the capture loop once throttling is wired
 pub fn cpu_throttle() -> bool {
@@ -109,14 +123,31 @@ fn poll_loop(app: AppHandle) {
 }
 
 fn measure() -> ResourceStats {
+    #[cfg(windows)]
+    let ram_mb = measure_ram_mb_native()
+        .or_else(measure_ram_mb)
+        .unwrap_or(0.0);
+    #[cfg(not(windows))]
     let ram_mb = measure_ram_mb().unwrap_or(0.0);
+
+    #[cfg(windows)]
+    let cpu_pct = measure_cpu_pct_native()
+        .or_else(measure_cpu_pct)
+        .unwrap_or(0.0);
+    #[cfg(not(windows))]
     let cpu_pct = measure_cpu_pct().unwrap_or(0.0);
     // Own-process budgets — GPU/CPU-temp are whole-machine numbers, NOT ours.
     let over_budget = ram_mb > 400.0 || cpu_pct > 2.5;
     let g = resolve_gpu();
     ResourceStats {
-        ram_mb, cpu_pct, over_budget,
-        gpu_pct: g.0, gpu_temp_c: g.1, vram_used_mb: g.2, vram_total_mb: g.3, cpu_temp_c: g.4,
+        ram_mb,
+        cpu_pct,
+        over_budget,
+        gpu_pct: g.0,
+        gpu_temp_c: g.1,
+        vram_used_mb: g.2,
+        vram_total_mb: g.3,
+        cpu_temp_c: g.4,
     }
 }
 
@@ -128,10 +159,10 @@ fn resolve_gpu() -> (f64, f64, f64, f64, f64) {
     let feeder = || read_pushed_gpu().map(|(l, t, u, v)| (l, t, u, v, NO_READING));
     let rich = read_bridge_file;
     match TELEMETRY_SOURCE.load(Ordering::Relaxed) {
-        3 => none,                                    // off
-        1 => feeder().unwrap_or(none),                // feeder only
-        2 => rich().unwrap_or(none),                  // G-Telemetry only
-        _ => rich().or_else(feeder).unwrap_or(none),  // auto: prefer the rich file
+        3 => none,                                   // off
+        1 => feeder().unwrap_or(none),               // feeder only
+        2 => rich().unwrap_or(none),                 // G-Telemetry only
+        _ => rich().or_else(feeder).unwrap_or(none), // auto: prefer the rich file
     }
 }
 
@@ -140,7 +171,13 @@ fn resolve_gpu() -> (f64, f64, f64, f64, f64) {
 pub fn ingest_gpu(body: &serde_json::Value) {
     if let Some((load, temp, used_mb, total_mb)) = parse_gpu(body) {
         if let Ok(mut slot) = LATEST_GPU.lock() {
-            *slot = Some(GpuSample { load, temp, used_mb, total_mb, at: Instant::now() });
+            *slot = Some(GpuSample {
+                load,
+                temp,
+                used_mb,
+                total_mb,
+                at: Instant::now(),
+            });
         }
     }
 }
@@ -160,7 +197,12 @@ fn read_pushed_gpu() -> Option<(f64, f64, f64, f64)> {
 fn parse_gpu(v: &serde_json::Value) -> Option<(f64, f64, f64, f64)> {
     let gpu = v.get("gpus")?.as_array()?.first()?;
     let num = |key: &str| gpu.get(key).and_then(serde_json::Value::as_f64);
-    Some((num("loadPercent")?, num("tempC")?, num("vramUsedMb")?, num("vramTotalMb")?))
+    Some((
+        num("loadPercent")?,
+        num("tempC")?,
+        num("vramUsedMb")?,
+        num("vramTotalMb")?,
+    ))
 }
 
 /// Read the RICH G-Telemetry bridge file (adds CPU temp, ~200ms fresh):
@@ -169,9 +211,14 @@ fn parse_gpu(v: &serde_json::Value) -> Option<(f64, f64, f64, f64)> {
 /// NO_READING when the file omits it or reports null (no LHM sensor).
 fn read_bridge_file() -> Option<(f64, f64, f64, f64, f64)> {
     let base = std::env::var("LOCALAPPDATA").ok()?;
-    let path = std::path::Path::new(&base).join("G-Series").join("telemetry-latest.json");
+    let path = std::path::Path::new(&base)
+        .join("G-Series")
+        .join("telemetry-latest.json");
     let raw = std::fs::read_to_string(path).ok()?;
-    let now = SystemTime::now().duration_since(UNIX_EPOCH).ok()?.as_millis() as u64;
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .ok()?
+        .as_millis() as u64;
     parse_bridge_file(&raw, now)
 }
 
@@ -202,7 +249,9 @@ fn parse_bridge_file(raw: &str, now_ms: u64) -> Option<(f64, f64, f64, f64, f64)
 /// pushes to `POST /telemetry`). Looks next to our exe: the bundled name first,
 /// then the dev second-bin name. No-ops if neither exists (GPU stays "—").
 pub fn spawn_gpu_feeder() {
-    let Ok(exe) = std::env::current_exe() else { return };
+    let Ok(exe) = std::env::current_exe() else {
+        return;
+    };
     let Some(dir) = exe.parent() else { return };
     let path = dir.join("gpu-feeder.exe");
     if !path.is_file() {
@@ -226,12 +275,62 @@ pub fn spawn_gpu_feeder() {
     let _ = cmd.spawn();
 }
 
+#[cfg(windows)]
+fn measure_ram_mb_native() -> Option<f64> {
+    let handle = unsafe { GetCurrentProcess() };
+    let mut counters = PROCESS_MEMORY_COUNTERS::default();
+    let ok = unsafe {
+        GetProcessMemoryInfo(
+            handle,
+            &mut counters,
+            std::mem::size_of::<PROCESS_MEMORY_COUNTERS>() as u32,
+        )
+    }
+    .is_ok();
+    if !ok {
+        return None;
+    }
+    Some(counters.WorkingSetSize as f64 / 1_048_576.0)
+}
+
+#[cfg(windows)]
+fn measure_cpu_pct_native() -> Option<f64> {
+    let handle = unsafe { GetCurrentProcess() };
+    let mut creation = FILETIME::default();
+    let mut exit = FILETIME::default();
+    let mut kernel = FILETIME::default();
+    let mut user = FILETIME::default();
+    let ok = unsafe { GetProcessTimes(handle, &mut creation, &mut exit, &mut kernel, &mut user) }
+        .is_ok();
+    if !ok {
+        return None;
+    }
+    let total_100ns = filetime_to_u64(kernel) + filetime_to_u64(user);
+    let now = Instant::now();
+    let mut slot = CPU_SAMPLE.lock().ok()?;
+    let prev = slot.replace(CpuSample {
+        total_100ns,
+        wall: now,
+    });
+    let prev = prev?;
+    let cpu_delta_ms = (total_100ns.saturating_sub(prev.total_100ns) as f64) / 10_000.0;
+    let wall_ms = now.duration_since(prev.wall).as_secs_f64() * 1000.0;
+    if wall_ms <= 0.0 {
+        return Some(0.0);
+    }
+    let cores = std::thread::available_parallelism().ok()?.get() as f64;
+    Some(((cpu_delta_ms / (wall_ms * cores)) * 100.0).max(0.0))
+}
+
+#[cfg(windows)]
+fn filetime_to_u64(ft: FILETIME) -> u64 {
+    ((ft.dwHighDateTime as u64) << 32) | (ft.dwLowDateTime as u64)
+}
+
 fn measure_ram_mb() -> Option<f64> {
     // PowerShell: get working-set bytes of *this* process, convert to MB.
     let pid = std::process::id();
-    let script = format!(
-        "(Get-Process -Id {pid}).WorkingSet64 / 1MB"
-    );
+    let script = format!("(Get-Process -Id {pid}).WorkingSet64 / 1MB");
     let mut cmd = std::process::Command::new("powershell");
     cmd.args(["-NoProfile", "-NonInteractive", "-Command", &script]);
     #[cfg(windows)]
@@ -285,15 +384,24 @@ mod tests {
         // RAM: a running Rust test binary should be at least a few MB.
         // CPU: 0-100% per core.
         assert!(s.ram_mb >= 0.0, "ram_mb must be non-negative: {}", s.ram_mb);
-        assert!(s.cpu_pct >= 0.0 && s.cpu_pct <= 200.0, "cpu_pct out of range: {}", s.cpu_pct);
+        assert!(
+            s.cpu_pct >= 0.0 && s.cpu_pct <= 200.0,
+            "cpu_pct out of range: {}",
+            s.cpu_pct
+        );
     }
 
     #[test]
     fn over_budget_flag_set_when_ram_high() {
         let s = ResourceStats {
-            ram_mb: 450.0, cpu_pct: 1.0, over_budget: false,
-            gpu_pct: NO_READING, gpu_temp_c: NO_READING,
-            vram_used_mb: NO_READING, vram_total_mb: NO_READING, cpu_temp_c: NO_READING,
+            ram_mb: 450.0,
+            cpu_pct: 1.0,
+            over_budget: false,
+            gpu_pct: NO_READING,
+            gpu_temp_c: NO_READING,
+            vram_used_mb: NO_READING,
+            vram_total_mb: NO_READING,
+            cpu_temp_c: NO_READING,
         };
         let recomputed = s.ram_mb > 400.0 || s.cpu_pct > 2.5;
         assert!(recomputed);
@@ -313,7 +421,8 @@ mod tests {
         assert!(parse_gpu(&empty).is_none());
         let no_key: serde_json::Value = serde_json::from_str(r#"{}"#).unwrap();
         assert!(parse_gpu(&no_key).is_none());
-        let partial: serde_json::Value = serde_json::from_str(r#"{ "gpus": [ { "loadPercent": 1 } ] }"#).unwrap();
+        let partial: serde_json::Value =
+            serde_json::from_str(r#"{ "gpus": [ { "loadPercent": 1 } ] }"#).unwrap();
         assert!(parse_gpu(&partial).is_none()); // missing tempC/vram
     }
 
@@ -331,7 +440,10 @@ mod tests {
     fn parse_bridge_file_reads_cpu_temp_and_gpu() {
         let raw = r#"{ "ts": 1000, "cpu": { "loadPercent": 4.0, "tempC": 55.0 },
             "gpus": [ { "loadPercent": 42.0, "tempC": 63.0, "vramUsedMb": 3200.0, "vramTotalMb": 8192.0 } ] }"#;
-        assert_eq!(parse_bridge_file(raw, 1000 + 1000), Some((42.0, 63.0, 3200.0, 8192.0, 55.0)));
+        assert_eq!(
+            parse_bridge_file(raw, 1000 + 1000),
+            Some((42.0, 63.0, 3200.0, 8192.0, 55.0))
+        );
     }
 
     #[test]
@@ -339,7 +451,10 @@ mod tests {
         // null CPU temp (no LHM sensor) → NO_READING, GPU still read.
         let null_temp = r#"{ "ts": 1000, "cpu": { "tempC": null },
             "gpus": [ { "loadPercent": 1, "tempC": 2, "vramUsedMb": 3, "vramTotalMb": 4 } ] }"#;
-        assert_eq!(parse_bridge_file(null_temp, 1000), Some((1.0, 2.0, 3.0, 4.0, NO_READING)));
+        assert_eq!(
+            parse_bridge_file(null_temp, 1000),
+            Some((1.0, 2.0, 3.0, 4.0, NO_READING))
+        );
         // Stale (older than BRIDGE_FILE_STALE_MS) → None.
         assert!(parse_bridge_file(null_temp, 1000 + BRIDGE_FILE_STALE_MS + 1).is_none());
     }

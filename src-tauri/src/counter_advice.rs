@@ -90,25 +90,40 @@ mod tests {
     #[test]
     fn pa_gives_mkb() {
         let result = counter_advice_text(&["phantom_assassin".to_string()]);
-        assert!(result.contains("MKB"), "PA counter must include MKB, got: {result}");
+        assert!(
+            result.contains("MKB"),
+            "PA counter must include MKB, got: {result}"
+        );
     }
 
     #[test]
     fn magic_burst_gives_bkb_pipe() {
         let result = counter_advice_text(&["lina".to_string(), "storm_spirit".to_string()]);
-        assert!(result.contains("BKB"), "magic burst must suggest BKB, got: {result}");
-        assert!(result.contains("Pipe"), "magic burst must suggest Pipe, got: {result}");
+        assert!(
+            result.contains("BKB"),
+            "magic burst must suggest BKB, got: {result}"
+        );
+        assert!(
+            result.contains("Pipe"),
+            "magic burst must suggest Pipe, got: {result}"
+        );
     }
 
     #[test]
     fn unknown_hero_returns_empty() {
         let result = counter_advice_text(&["unknown_hero".to_string()]);
-        assert!(result.is_empty(), "unknown hero should give no advice, got: {result}");
+        assert!(
+            result.is_empty(),
+            "unknown hero should give no advice, got: {result}"
+        );
     }
 
     #[test]
     fn strip_npc_prefix() {
         let result = counter_advice_text(&["npc_dota_hero_phantom_assassin".to_string()]);
-        assert!(result.contains("MKB"), "npc_ prefix should be stripped, got: {result}");
+        assert!(
+            result.contains("MKB"),
+            "npc_ prefix should be stripped, got: {result}"
+        );
     }
 }

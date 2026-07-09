@@ -55,11 +55,15 @@ fn call_ollama(json_body: &str) -> Result<String, String> {
     let mut cmd = Command::new("curl");
     cmd.args([
         "-s",
-        "--max-time", "90",
-        "-X", "POST",
+        "--max-time",
+        "90",
+        "-X",
+        "POST",
         OLLAMA_URL,
-        "-H", "Content-Type: application/json",
-        "-d", json_body,
+        "-H",
+        "Content-Type: application/json",
+        "-d",
+        json_body,
     ]);
     #[cfg(windows)]
     {
@@ -73,8 +77,12 @@ fn call_ollama(json_body: &str) -> Result<String, String> {
         return Err(format!("curl exit {:?}", out.status.code()));
     }
     let raw = String::from_utf8_lossy(&out.stdout);
-    let v: serde_json::Value = serde_json::from_str(&raw)
-        .map_err(|e| format!("JSON parse: {e} — raw: {}", &raw.chars().take(120).collect::<String>()))?;
+    let v: serde_json::Value = serde_json::from_str(&raw).map_err(|e| {
+        format!(
+            "JSON parse: {e} — raw: {}",
+            &raw.chars().take(120).collect::<String>()
+        )
+    })?;
     if let Some(err) = v.get("error").and_then(|e| e.as_str()) {
         return Err(format!("ollama error: {err}"));
     }
@@ -89,14 +97,22 @@ fn call_ollama(json_body: &str) -> Result<String, String> {
 #[allow(dead_code)] // health-check helper, used once local-fallback UX is wired
 pub fn ollama_available() -> bool {
     let mut cmd = Command::new("curl");
-    cmd.args(["-s", "--max-time", "2", "-o", "/dev/null", "-w", "%{http_code}", "http://127.0.0.1:11434/"]);
+    cmd.args([
+        "-s",
+        "--max-time",
+        "2",
+        "-o",
+        "/dev/null",
+        "-w",
+        "%{http_code}",
+        "http://127.0.0.1:11434/",
+    ]);
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW — no console flash
     }
-    cmd
-        .output()
+    cmd.output()
         .map(|o| {
             let code = String::from_utf8_lossy(&o.stdout);
             code.trim() == "200"

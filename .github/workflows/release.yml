@@ -1,36 +1,98 @@
 name: release
 
-# Build, sign, and publish a GitHub Release whenever you push a version tag
-# (e.g. `git tag v0.2.0 && git push origin v0.2.0`). The release includes the
-# NSIS/MSI installers, the signed updater artifacts, and `latest.json` — which
-# the in-app updater reads from
-#   https://github.com/Freshair129/G-Maiden/releases/latest/download/latest.json
-#
-# Required repo secrets (Settings → Secrets and variables → Actions):
-#   TAURI_SIGNING_PRIVATE_KEY           contents of .tauri/g-maiden-updater.key
-#   TAURI_SIGNING_PRIVATE_KEY_PASSWORD  the key password ("" if none)
-# GITHUB_TOKEN is provided automatically.
-
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
 
 jobs:
+  verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: pnpm/action-setup@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+
+      - name: Cache cargo
+        uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      - name: Install dependencies
+        run: |
+          pnpm install
+          pnpm -C src install
+
+      - name: Stage GPU feeder
+        run: node src-tauri/scripts/stage-gpu-feeder.mjs
+
+      - name: Assert tagged SHA matches workflow SHA
+        shell: pwsh
+        run: |
+          $headSha = (git rev-parse HEAD).Trim()
+          $tagSha = (git rev-list -n 1 "${{ github.ref_name }}").Trim()
+          if ($headSha -ne "${{ github.sha }}") {
+            throw "workflow sha mismatch: head=$headSha workflow=${{ github.sha }}"
+          }
+          if ($tagSha -ne $headSha) {
+            throw "tag ${{ github.ref_name }} points to $tagSha, expected $headSha"
+          }
+
+      - name: Rust lint
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+
+      - name: Rust tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml
+
+      - name: Frontend lint
+        run: pnpm -C src exec eslint .
+
+      - name: Frontend types
+        run: pnpm -C src exec tsc --noEmit
+
+      - name: Frontend tests
+        run: pnpm -C src test -- --run
+
+      - name: Tauri smoke build
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tagName: ""
+          releaseName: ""
+          releaseBody: ""
+          releaseDraft: true
+          prerelease: true
+
   release:
+    needs: verify
     permissions:
       contents: write
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - uses: pnpm/action-setup@v4
-        # version comes from package.json "packageManager" (pnpm@9.0.0)
 
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-          # no cache: pnpm-lock.yaml is gitignored in this repo
 
       - uses: dtolnay/rust-toolchain@stable
 
@@ -44,6 +106,21 @@ jobs:
           pnpm install
           pnpm -C src install
 
+      - name: Stage GPU feeder
+        run: node src-tauri/scripts/stage-gpu-feeder.mjs
+
+      - name: Re-assert tagged SHA lineage
+        shell: pwsh
+        run: |
+          $headSha = (git rev-parse HEAD).Trim()
+          $tagSha = (git rev-list -n 1 "${{ github.ref_name }}").Trim()
+          if ($headSha -ne "${{ github.sha }}") {
+            throw "workflow sha mismatch: head=$headSha workflow=${{ github.sha }}"
+          }
+          if ($tagSha -ne $headSha) {
+            throw "tag ${{ github.ref_name }} points to $tagSha, expected $headSha"
+          }
+
       - name: Build, sign, and publish release
         uses: tauri-apps/tauri-action@v0
         env:
@@ -52,7 +129,7 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tagName: ${{ github.ref_name }}
-          releaseName: 'G-Maiden ${{ github.ref_name }}'
-          releaseBody: 'See the assets below to download and install.'
+          releaseName: "G-Maiden ${{ github.ref_name }}"
+          releaseBody: "See the assets below to download and install."
           releaseDraft: false
           prerelease: false

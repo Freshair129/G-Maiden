@@ -109,7 +109,12 @@ impl HeroData {
 
     /// Maximum single-rotation burst damage at given hero level vs target's defenses.
     /// Convenience wrapper: estimates ability levels and carries no items.
-    pub fn burst_damage(&self, hero_level: u32, target_armor: f64, target_magic_res: f64) -> BurstResult {
+    pub fn burst_damage(
+        &self,
+        hero_level: u32,
+        target_armor: f64,
+        target_magic_res: f64,
+    ) -> BurstResult {
         self.burst_damage_with(hero_level, None, &[], target_armor, target_magic_res)
     }
 
@@ -147,7 +152,9 @@ impl HeroData {
             if ab_level == 0 {
                 continue;
             }
-            let idx = (ab_level as usize).saturating_sub(1).min(ability.damage_per_level.len().saturating_sub(1));
+            let idx = (ab_level as usize)
+                .saturating_sub(1)
+                .min(ability.damage_per_level.len().saturating_sub(1));
             let raw = ability.damage_per_level.get(idx).copied().unwrap_or(0.0);
 
             let effective = match ability.damage_type {
@@ -237,7 +244,13 @@ pub struct BurstResult {
 }
 
 /// Compute whether the enemy can kill the player in one burst.
-pub fn is_lethal(enemy: &HeroData, enemy_level: u32, player_hp: f64, player_armor: f64, player_magic_res: f64) -> (bool, BurstResult) {
+pub fn is_lethal(
+    enemy: &HeroData,
+    enemy_level: u32,
+    player_hp: f64,
+    player_armor: f64,
+    player_magic_res: f64,
+) -> (bool, BurstResult) {
     let result = enemy.burst_damage(enemy_level, player_armor, player_magic_res);
     (result.total_burst >= player_hp, result)
 }
@@ -309,7 +322,16 @@ pub fn can_i_kill(
     target_magic_res: f64,
     ehp_uncertainty: f64,
 ) -> KillWindow {
-    can_i_kill_with(attacker, attacker_level, None, &[], target_current_hp, target_armor, target_magic_res, ehp_uncertainty)
+    can_i_kill_with(
+        attacker,
+        attacker_level,
+        None,
+        &[],
+        target_current_hp,
+        target_armor,
+        target_magic_res,
+        ehp_uncertainty,
+    )
 }
 
 /// Item- and ability-level-aware offensive lethality (P-D2). See [`can_i_kill`].
@@ -325,7 +347,13 @@ pub fn can_i_kill_with(
     target_magic_res: f64,
     ehp_uncertainty: f64,
 ) -> KillWindow {
-    let burst = attacker.burst_damage_with(attacker_level, ability_levels, items, target_armor, target_magic_res);
+    let burst = attacker.burst_damage_with(
+        attacker_level,
+        ability_levels,
+        items,
+        target_armor,
+        target_magic_res,
+    );
     let ehp = target_current_hp.max(0.0);
     let margin = burst.total_burst - ehp;
     let confidence = if ehp <= 0.0 {
@@ -355,7 +383,10 @@ fn hero_db() -> &'static HashMap<String, HeroData> {
         const RAW: &str = include_str!("../data/heroes.json");
         let heroes: Vec<HeroData> =
             serde_json::from_str(RAW).expect("data/heroes.json must be valid HeroData JSON");
-        heroes.into_iter().map(|h| (h.internal_name.clone(), h)).collect()
+        heroes
+            .into_iter()
+            .map(|h| (h.internal_name.clone(), h))
+            .collect()
     })
 }
 
@@ -390,7 +421,10 @@ pub fn lookup_item(name: &str) -> Option<&'static LoadoutItem> {
 /// Build a loadout from GSI item names, dropping any we don't model. Items not in
 /// the DB (boots, consumables, sustain) simply contribute nothing to burst.
 pub fn loadout_from_names<I: AsRef<str>>(names: &[I]) -> Vec<LoadoutItem> {
-    names.iter().filter_map(|n| lookup_item(n.as_ref()).cloned()).collect()
+    names
+        .iter()
+        .filter_map(|n| lookup_item(n.as_ref()).cloned())
+        .collect()
 }
 
 #[cfg(test)]
@@ -427,8 +461,15 @@ mod tests {
         let sniper = lookup_hero("npc_dota_hero_sniper").expect("sniper in db");
         let result = sniper.burst_damage(6, 3.0, 25.0);
         // Should have Assassinate + Shrapnel + Headshot + 2 attacks
-        assert!(result.total_burst > 200.0, "burst should be significant: {}", result.total_burst);
-        assert!(result.abilities.iter().any(|a| a.name == "Assassinate"), "should include ult");
+        assert!(
+            result.total_burst > 200.0,
+            "burst should be significant: {}",
+            result.total_burst
+        );
+        assert!(
+            result.abilities.iter().any(|a| a.name == "Assassinate"),
+            "should include ult"
+        );
     }
 
     #[test]
@@ -436,7 +477,11 @@ mod tests {
         let lina = lookup_hero("npc_dota_hero_lina").expect("lina in db");
         // Squishy hero with 0 armor, 25% magic res, 600 HP
         let (lethal, result) = is_lethal(lina, 6, 600.0, 0.0, 25.0);
-        assert!(lethal, "Lina should kill 600HP target at 6: burst={}", result.total_burst);
+        assert!(
+            lethal,
+            "Lina should kill 600HP target at 6: burst={}",
+            result.total_burst
+        );
     }
 
     #[test]
@@ -457,7 +502,11 @@ mod tests {
     #[test]
     fn full_roster_loads_from_json() {
         // data/heroes.json carries the whole roster, not just the curated few.
-        assert!(all_heroes().len() >= 120, "expected full roster, got {}", all_heroes().len());
+        assert!(
+            all_heroes().len() >= 120,
+            "expected full roster, got {}",
+            all_heroes().len()
+        );
     }
 
     #[test]
@@ -469,7 +518,10 @@ mod tests {
         assert!(axe.base_str > 0.0, "base stats must be populated");
         let burst = axe.burst_damage(10, 0.0, 25.0);
         assert!(burst.total_burst > 0.0, "attack-only burst should be > 0");
-        assert!(burst.abilities.is_empty(), "no ability burst without curation");
+        assert!(
+            burst.abilities.is_empty(),
+            "no ability burst without curation"
+        );
     }
 
     // ───────────── Offensive lethality (P-D1) ─────────────
@@ -490,7 +542,10 @@ mod tests {
     fn kill_confidence_midpoint_is_half() {
         // burst exactly at ehp, ±15% band → ~0.5
         let c = kill_confidence(500.0, 500.0, 0.15);
-        assert!((c - 0.5).abs() < 0.01, "midpoint confidence should be ~0.5: got {c}");
+        assert!(
+            (c - 0.5).abs() < 0.01,
+            "midpoint confidence should be ~0.5: got {c}"
+        );
     }
 
     #[test]
@@ -498,7 +553,10 @@ mod tests {
         let low = kill_confidence(450.0, 500.0, 0.15);
         let mid = kill_confidence(500.0, 500.0, 0.15);
         let high = kill_confidence(550.0, 500.0, 0.15);
-        assert!(low < mid && mid < high, "confidence must rise with burst: {low} {mid} {high}");
+        assert!(
+            low < mid && mid < high,
+            "confidence must rise with burst: {low} {mid} {high}"
+        );
     }
 
     #[test]
@@ -506,10 +564,21 @@ mod tests {
         let lina = lookup_hero("npc_dota_hero_lina").expect("lina in db");
         // 200 HP squishy, 0 armor, 25% magic res
         let kw = can_i_kill(lina, 18, 200.0, 0.0, 25.0, DEFAULT_EHP_UNCERTAINTY);
-        assert!(kw.can_kill, "Lina lv18 should kill a 200HP target: margin={}", kw.margin);
+        assert!(
+            kw.can_kill,
+            "Lina lv18 should kill a 200HP target: margin={}",
+            kw.margin
+        );
         assert!(kw.margin > 0.0, "margin should be positive");
-        assert!(kw.confidence >= KILL_CONFIDENCE, "confidence={}", kw.confidence);
-        assert!(!kw.combo.is_empty(), "combo should list contributing abilities");
+        assert!(
+            kw.confidence >= KILL_CONFIDENCE,
+            "confidence={}",
+            kw.confidence
+        );
+        assert!(
+            !kw.combo.is_empty(),
+            "combo should list contributing abilities"
+        );
     }
 
     #[test]
@@ -519,7 +588,11 @@ mod tests {
         let kw = can_i_kill(cm, 6, 2500.0, 5.0, 25.0, DEFAULT_EHP_UNCERTAINTY);
         assert!(!kw.can_kill, "CM lv6 must not kill a 2500HP tank");
         assert!(kw.margin < 0.0, "margin should be negative: {}", kw.margin);
-        assert!(kw.confidence < KILL_CONFIDENCE, "confidence={}", kw.confidence);
+        assert!(
+            kw.confidence < KILL_CONFIDENCE,
+            "confidence={}",
+            kw.confidence
+        );
     }
 
     #[test]
@@ -529,8 +602,11 @@ mod tests {
         let lina = lookup_hero("npc_dota_hero_lina").expect("lina in db");
         let burst = lina.burst_damage(12, 0.0, 25.0).total_burst;
         let kw = can_i_kill(lina, 12, burst, 0.0, 25.0, DEFAULT_EHP_UNCERTAINTY);
-        assert!(kw.confidence > 0.0 && kw.confidence < 1.0,
-            "borderline kill must be uncertain, not a sure thing: {}", kw.confidence);
+        assert!(
+            kw.confidence > 0.0 && kw.confidence < 1.0,
+            "borderline kill must be uncertain, not a sure thing: {}",
+            kw.confidence
+        );
         // margin ≈ 0 at this point
         assert!(kw.margin.abs() < 1.0, "margin should be ~0: {}", kw.margin);
     }
@@ -539,8 +615,10 @@ mod tests {
     fn already_dead_target_is_certain_kill() {
         let cm = lookup_hero("npc_dota_hero_crystal_maiden").expect("cm in db");
         let kw = can_i_kill(cm, 6, 0.0, 0.0, 25.0, DEFAULT_EHP_UNCERTAINTY);
-        assert!(kw.can_kill && (kw.confidence - 1.0).abs() < f64::EPSILON,
-            "0 HP target is a certain kill");
+        assert!(
+            kw.can_kill && (kw.confidence - 1.0).abs() < f64::EPSILON,
+            "0 HP target is a certain kill"
+        );
     }
 
     #[test]
@@ -550,8 +628,12 @@ mod tests {
         let pa = lookup_hero("npc_dota_hero_phantom_assassin").expect("pa in db");
         let soft = can_i_kill(pa, 16, 800.0, 0.0, 25.0, DEFAULT_EHP_UNCERTAINTY);
         let armored = can_i_kill(pa, 16, 800.0, 20.0, 25.0, DEFAULT_EHP_UNCERTAINTY);
-        assert!(armored.margin < soft.margin,
-            "armor must lower the kill margin: soft={} armored={}", soft.margin, armored.margin);
+        assert!(
+            armored.margin < soft.margin,
+            "armor must lower the kill margin: soft={} armored={}",
+            soft.margin,
+            armored.margin
+        );
     }
 
     // ───────────── Item / ability-level aware (P-D2) ─────────────
@@ -560,13 +642,20 @@ mod tests {
     fn item_db_lookup() {
         assert!(lookup_item("item_dagon_5").is_some());
         assert!(lookup_item("item_demon_edge").is_some());
-        assert!(lookup_item("item_boots_of_travel").is_none(), "unmodelled item → None");
+        assert!(
+            lookup_item("item_boots_of_travel").is_none(),
+            "unmodelled item → None"
+        );
     }
 
     #[test]
     fn loadout_drops_unknown_items() {
         let loadout = loadout_from_names(&["item_demon_edge", "item_tango", "item_dagon"]);
-        assert_eq!(loadout.len(), 2, "tango is not burst-relevant and should be dropped");
+        assert_eq!(
+            loadout.len(),
+            2,
+            "tango is not burst-relevant and should be dropped"
+        );
     }
 
     #[test]
@@ -575,8 +664,12 @@ mod tests {
         let bare = pa.burst_damage_with(16, None, &[], 0.0, 25.0);
         let edge = loadout_from_names(&["item_greater_crit"]);
         let armed = pa.burst_damage_with(16, None, &edge, 0.0, 25.0);
-        assert!(armed.total_burst > bare.total_burst,
-            "a +damage item must raise burst: bare={} armed={}", bare.total_burst, armed.total_burst);
+        assert!(
+            armed.total_burst > bare.total_burst,
+            "a +damage item must raise burst: bare={} armed={}",
+            bare.total_burst,
+            armed.total_burst
+        );
         // +88 damage over 2 unmitigated hits (0 armor) = +176
         assert!((armed.total_burst - bare.total_burst - 176.0).abs() < 0.5);
     }
@@ -586,10 +679,17 @@ mod tests {
         let cm = lookup_hero("npc_dota_hero_crystal_maiden").expect("cm in db");
         let dagon = loadout_from_names(&["item_dagon_5"]);
         let with = cm.burst_damage_with(6, None, &dagon, 0.0, 25.0);
-        assert!(with.abilities.iter().any(|a| a.name == "item_dagon_5"),
-            "dagon should appear in the burst breakdown");
+        assert!(
+            with.abilities.iter().any(|a| a.name == "item_dagon_5"),
+            "dagon should appear in the burst breakdown"
+        );
         // 800 magical * 0.75 (25% MR) = 600 effective
-        let dagon_eff = with.abilities.iter().find(|a| a.name == "item_dagon_5").unwrap().effective_damage;
+        let dagon_eff = with
+            .abilities
+            .iter()
+            .find(|a| a.name == "item_dagon_5")
+            .unwrap()
+            .effective_damage;
         assert!((dagon_eff - 600.0).abs() < 0.5, "got {dagon_eff}");
     }
 
@@ -599,9 +699,12 @@ mod tests {
         // At level 6 the estimate gives non-ults lv3, ult lv1. Feed actual MAX levels.
         let estimated = lina.burst_damage(6, 0.0, 25.0);
         let maxed = lina.burst_damage_with(6, Some(&[4, 4, 3]), &[], 0.0, 25.0);
-        assert!(maxed.total_burst > estimated.total_burst,
+        assert!(
+            maxed.total_burst > estimated.total_burst,
             "real higher ability levels must beat the estimate: est={} real={}",
-            estimated.total_burst, maxed.total_burst);
+            estimated.total_burst,
+            maxed.total_burst
+        );
     }
 
     #[test]
@@ -610,9 +713,24 @@ mod tests {
         let cm = lookup_hero("npc_dota_hero_crystal_maiden").expect("cm in db");
         let bare = can_i_kill(cm, 6, 700.0, 0.0, 25.0, DEFAULT_EHP_UNCERTAINTY);
         let dagon = loadout_from_names(&["item_dagon_5"]);
-        let armed = can_i_kill_with(cm, 6, None, &dagon, 700.0, 0.0, 25.0, DEFAULT_EHP_UNCERTAINTY);
-        assert!(!bare.can_kill, "bare CM should not kill a 700HP target at lv6");
-        assert!(armed.can_kill, "Dagon 5 (+600 effective) should flip it to a kill");
+        let armed = can_i_kill_with(
+            cm,
+            6,
+            None,
+            &dagon,
+            700.0,
+            0.0,
+            25.0,
+            DEFAULT_EHP_UNCERTAINTY,
+        );
+        assert!(
+            !bare.can_kill,
+            "bare CM should not kill a 700HP target at lv6"
+        );
+        assert!(
+            armed.can_kill,
+            "Dagon 5 (+600 effective) should flip it to a kill"
+        );
         assert!(armed.confidence > bare.confidence);
     }
 }

@@ -9,6 +9,7 @@ import { LayoutEditor } from './overlay/LayoutEditor'
 import { DEFAULT_LAYOUT, type Layout } from './overlay/modules'
 import CommandDeck from './CommandDeck'
 import QuotaCard from './QuotaCard'
+import { crossedAnyLevelUpMilestone, crossedLevelUpMilestones } from './personaMilestones'
 
 /** Mirrors the Rust `GameTick` emitted by the GSI server (src-tauri/src/gsi.rs). */
 export interface GameTick {
@@ -257,6 +258,12 @@ const panel = (op: number): React.CSSProperties => ({
   boxShadow: '0 8px 40px rgba(0,0,0,0.45)',
   fontFamily: '"Segoe UI", system-ui, sans-serif',
 })
+const overlayPanel = (op: number): React.CSSProperties => ({
+  ...panel(op),
+  backdropFilter: 'none',
+  WebkitBackdropFilter: 'none',
+  boxShadow: '0 8px 24px rgba(0,0,0,0.28)',
+})
 const Gem: React.FC<{ size?: number }> = ({ size = 22 }) => (
   <div style={{ width: size, height: size, borderRadius: size * 0.27, transform: 'rotate(45deg)', background: 'linear-gradient(135deg,#8fd4ff,#3f7fb0)', boxShadow: '0 0 14px rgba(143,212,255,0.5)', flex: 'none' }} />
 )
@@ -295,13 +302,13 @@ const Row: React.FC<{ label: string; children: React.ReactNode }> = ({ label, ch
 const dangerStyle: React.CSSProperties = {
   background: 'rgba(58,12,16,0.86)', border: '1px solid rgba(255,123,133,0.6)', borderRadius: 12,
   color: '#ffd6da', padding: '8px 20px', fontWeight: 700, fontSize: 14,
-  backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)', fontFamily: '"Segoe UI", system-ui, sans-serif',
+  backdropFilter: 'none', WebkitBackdropFilter: 'none', fontFamily: '"Segoe UI", system-ui, sans-serif',
 }
 // G-Signal gank banner — ice palette, top-center, NEVER over the bottom-left minimap.
 const gankStyle: React.CSSProperties = {
   background: 'rgba(18,20,28,0.82)', border: `1px solid ${C.warn}`, borderRadius: 12,
   color: C.warn, padding: '9px 22px', fontWeight: 700, fontSize: 14,
-  backdropFilter: 'blur(12px)', WebkitBackdropFilter: 'blur(12px)', fontFamily: '"Segoe UI", system-ui, sans-serif',
+  backdropFilter: 'none', WebkitBackdropFilter: 'none', fontFamily: '"Segoe UI", system-ui, sans-serif',
   boxShadow: '0 0 24px rgba(255,207,107,0.35)',
 }
 const gankClearStyle: React.CSSProperties = {
@@ -311,7 +318,7 @@ const gankClearStyle: React.CSSProperties = {
 const killBannerStyle: React.CSSProperties = {
   background: 'rgba(12,20,32,0.45)', border: `1px solid rgba(91,227,167,0.35)`,
   borderRadius: 16, padding: '10px 18px 10px 10px', display: 'flex', alignItems: 'center', gap: 14,
-  backdropFilter: 'blur(18px)', WebkitBackdropFilter: 'blur(18px)', fontFamily: '"Segoe UI", system-ui, sans-serif',
+  backdropFilter: 'none', WebkitBackdropFilter: 'none', fontFamily: '"Segoe UI", system-ui, sans-serif',
   boxShadow: '0 0 24px rgba(91,227,167,0.2)',
 }
 // Pack banner (announcer bundle) — a frame for the pack's own image. Relative so
@@ -390,7 +397,10 @@ const Overlay: React.FC = () => {
     const u1 = listen<GameTick>('game-tick', (e) => { setTick(e.payload); setSeen(true) })
     const u2 = listen<Settings>('settings', (e) => setS({ ...DEFAULTS, ...e.payload }))
     // CV debug feed — fires 8–15 Hz. Cheap setState; only rendered when cvDebug is on.
-    const u3 = listen<MinimapCv>('minimap-cv', (e) => setCv(e.payload))
+    const u3 = listen<MinimapCv>('minimap-cv', (e) => {
+      if (!sRef.current.cvDebug) return
+      setCv(e.payload)
+    })
     // G-Signal: show banner on alert, retract on clear (Belief Revision visual echo).
     const u4 = listen<GankAlert>('gank-alert', (e) => {
       if (gankClearTimer.current) { clearTimeout(gankClearTimer.current); gankClearTimer.current = null }
@@ -541,7 +551,7 @@ const Overlay: React.FC = () => {
     if (lowHp) return // don't talk over a danger warning
 
     const events: PersonaEvent[] = []
-    if (tick.level > p.level && tick.level >= 2) events.push('levelUp')
+    if (crossedAnyLevelUpMilestone(p.level, tick.level)) events.push('levelUp')
     if (tick.kills > p.kills) events.push('kill')
     if (p.alive && !tick.alive) events.push('death')
     if (!p.alive && tick.alive) events.push('respawn')
@@ -608,8 +618,8 @@ const Overlay: React.FC = () => {
     type Trigger = { key: string }
     const triggers: Trigger[] = []
 
-    if (tick.level > p.level && (tick.level === 6 || tick.level === 11 || tick.level === 16)) {
-      triggers.push({ key: `lvl${tick.level}` })
+    for (const milestone of crossedLevelUpMilestones(p.level, tick.level)) {
+      triggers.push({ key: `lvl${milestone}` })
     }
     if (tick.deaths > p.deaths) {
       const last = recentDeathClock.current
@@ -701,7 +711,7 @@ const Overlay: React.FC = () => {
       background: 'rgba(18,20,28,0.78)', border: `1px solid rgba(255,207,107,0.45)`,
       borderRadius: 10, padding: '6px 14px', fontFamily: '"Segoe UI", system-ui, sans-serif',
       fontSize: 12.5, color: C.warn, display: 'flex', alignItems: 'center', gap: 8,
-      backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+      boxShadow: '0 6px 18px rgba(0,0,0,0.24)',
     }}>
       <span style={{ opacity: 0.7 }}>👁️</span>
       <span>หาย: {[...missingHeroes].map(heroName).join(', ')}</span>
@@ -711,7 +721,7 @@ const Overlay: React.FC = () => {
   // G5.4: Overlay advice panel — shows G-Master response for 20s, dismissable.
   const advicePanel = overlayAdvice && s.gankVisuals ? (
     <div style={{
-      ...panel(s.opacity), padding: '10px 16px', maxWidth: 380, fontSize: 13,
+      ...overlayPanel(s.opacity), padding: '10px 16px', maxWidth: 380, fontSize: 13,
       lineHeight: 1.5, position: 'relative',
     }}>
       <div style={{ fontSize: 10.5, color: C.ice, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Maiden แนะนำ</div>
@@ -738,7 +748,7 @@ const Overlay: React.FC = () => {
       background: 'rgba(18,20,28,0.86)', border: `1px solid ${C.ice}`, borderRadius: 10,
       padding: '7px 16px', fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: 12.5,
       color: C.txt, display: 'flex', alignItems: 'center', gap: 8, maxWidth: 440,
-      backdropFilter: 'blur(10px)', WebkitBackdropFilter: 'blur(10px)',
+      boxShadow: '0 6px 18px rgba(0,0,0,0.24)',
     }}>
       <span style={{ fontSize: 10, color: C.ice, textTransform: 'uppercase', letterSpacing: 0.6, flex: 'none' }}>🔔 {toast.event}</span>
       <span style={{ opacity: 0.92 }}>{toast.text}</span>
@@ -759,7 +769,7 @@ const Overlay: React.FC = () => {
             {gankBanner}
             {missingBadge}
             {eventToast}
-            <div style={{ ...panel(s.opacity), padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+            <div style={{ ...overlayPanel(s.opacity), padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
               <span style={{ width: 8, height: 8, borderRadius: 99, background: gsiActive ? C.ok : C.bad }} />
               <div>
                 <div style={{ fontWeight: 600, fontSize: 13 }}>G-Maiden</div>
@@ -771,7 +781,7 @@ const Overlay: React.FC = () => {
         {volToast !== null && (
           <div style={{
             position: 'fixed', bottom: 60, left: '50%', transform: 'translateX(-50%)',
-            ...panel(s.opacity), padding: '8px 18px', display: 'flex', alignItems: 'center', gap: 10,
+            ...overlayPanel(s.opacity), padding: '8px 18px', display: 'flex', alignItems: 'center', gap: 10,
             fontSize: 13, pointerEvents: 'none', transition: 'opacity .2s', zIndex: 20,
           }}>
             <span>{volToast === 0 ? '🔇' : volToast <= 30 ? '🔈' : volToast <= 70 ? '🔉' : '🔊'}</span>
@@ -871,7 +881,7 @@ const Overlay: React.FC = () => {
         )}
         {advicePanel}
         {(s.showTimer || s.showScore || s.showHeroBar || s.showKda || s.showGold) && (
-        <div style={{ ...panel(s.opacity), padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+        <div style={{ ...overlayPanel(s.opacity), padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
           {s.showTimer && (
             <div style={{ textAlign: 'center', minWidth: 54 }}>
               <div style={{ fontSize: 22, fontWeight: 700, color: C.ice, lineHeight: 1 }}>{fmtClock(t.clock_time)}</div>
@@ -922,7 +932,7 @@ const Overlay: React.FC = () => {
     {volToast !== null && (
       <div style={{
         position: 'fixed', bottom: 60, left: '50%', transform: 'translateX(-50%)',
-        ...panel(s.opacity), padding: '8px 18px', display: 'flex', alignItems: 'center', gap: 10,
+        ...overlayPanel(s.opacity), padding: '8px 18px', display: 'flex', alignItems: 'center', gap: 10,
         fontSize: 13, pointerEvents: 'none', transition: 'opacity .2s', zIndex: 20,
       }}>
         <span>{volToast === 0 ? '🔇' : volToast <= 30 ? '🔈' : volToast <= 70 ? '🔉' : '🔊'}</span>
@@ -1234,7 +1244,7 @@ const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number;
           {!canAsk && tick?.in_game === false && ' · เปิด Dota 2 ก่อน'}
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 'none', fontSize: 12, color: C.mut }}>
-          พูดอัตโนมัติเมื่อเลเวล 6/11/16 หรือตาย 2 รอบติด
+          พูดอัตโนมัติเมื่อเลเวล 6/12/18/25 หรือตาย 2 รอบติด
           <Toggle on={autoAdvice} onChange={onAutoAdviceChange} />
         </div>
         <div style={{ display: 'flex', gap: 8, flex: 'none' }}>
@@ -1449,6 +1459,7 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
   const previewTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const previewClock = useRef(600)
   const sRef = useRef(s)
+  const controlActiveRef = useRef(true)
   sRef.current = s
 
   const saveProfile = (name: string) => {
@@ -1551,12 +1562,41 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
     // vertical scroll here (this effect never runs in the overlay window).
     document.documentElement.style.overflowY = 'auto'
     document.documentElement.style.overflowX = 'hidden'
-    const u1 = listen<GameTick>('game-tick', (e) => { setTick(e.payload); setSeen(true) })
+    const syncControlActive = (focused?: boolean) => {
+      const docVisible = document.visibilityState !== 'hidden'
+      controlActiveRef.current = focused == null ? docVisible : (docVisible && focused)
+    }
+    syncControlActive()
+    const onVisibility = () => syncControlActive()
+    document.addEventListener('visibilitychange', onVisibility)
+    let offFocus: (() => void) | null = null
+    try {
+      void getCurrentWindow().onFocusChanged(({ payload }) => {
+        syncControlActive(payload)
+      }).then((fn) => { offFocus = fn }).catch(() => {})
+    } catch { /* plain-browser dev / non-Tauri runtime */ }
+    const u1 = listen<GameTick>('game-tick', (e) => {
+      if (!controlActiveRef.current) return
+      setTick(e.payload); setSeen(true)
+    })
     const u2 = listen('overlay-ready', () => { void emit('settings', sRef.current) })
-    const u3 = listen<GsiStatus>('gsi-status', (e) => setStatus(e.payload))
-    const u4ctrl = listen<ResourceStats>('resource-stats', (e) => setResources(e.payload))
-    const u5cap = listen<string>('capture-mode', (e) => setCaptureMode(e.payload))
-    return () => { void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f()); void u4ctrl.then((f) => f()); void u5cap.then((f) => f()) }
+    const u3 = listen<GsiStatus>('gsi-status', (e) => {
+      if (!controlActiveRef.current) return
+      setStatus(e.payload)
+    })
+    const u4ctrl = listen<ResourceStats>('resource-stats', (e) => {
+      if (!controlActiveRef.current) return
+      setResources(e.payload)
+    })
+    const u5cap = listen<string>('capture-mode', (e) => {
+      if (!controlActiveRef.current) return
+      setCaptureMode(e.payload)
+    })
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility)
+      offFocus?.()
+      void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f()); void u4ctrl.then((f) => f()); void u5cap.then((f) => f())
+    }
   }, [])
 
   // persist + broadcast + apply overlay visibility on any change

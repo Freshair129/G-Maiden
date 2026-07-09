@@ -240,7 +240,12 @@ mod backend {
         };
 
         if let Some(f) = Frame::from_bgra(w, h, cropped) {
-            let candidates = prefilter_candidates(&f, state.icon, DEFAULT_THRESHOLD_FRAC);
+            let candidates = prefilter_candidates(
+                &f,
+                state.icon,
+                DEFAULT_THRESHOLD_FRAC,
+                crate::runtime::enemy_team_ring(),
+            );
             let detections = state.detector.detect(&f, &candidates, state.icon);
 
             // G-Sentry: flag enemies missing >5s (edge-triggered).
@@ -269,7 +274,9 @@ mod backend {
             // G-Signal: edge-triggered warning + Belief Revision, voiced now (only
             // when the user has G-Signal enabled).
             if crate::runtime::signal_enabled() {
-                state.signal.set_sensitivity(crate::runtime::signal_sensitivity());
+                state
+                    .signal
+                    .set_sensitivity(crate::runtime::signal_sensitivity());
                 match state.signal.evaluate(&risk) {
                     SignalEvent::Alert(alert) => {
                         voice_interrupt("gank", GANK_LINE);
@@ -334,7 +341,12 @@ mod backend {
         crate::tts::cancel();
         if !crate::audio::play_random(event) {
             let (name, rate) = crate::runtime::voice();
-            crate::tts::speak(fallback, name.as_deref(), rate);
+            crate::tts::speak_with_priority(
+                fallback,
+                name.as_deref(),
+                rate,
+                crate::audio::Priority::Critical,
+            );
         }
     }
 
@@ -365,6 +377,8 @@ mod backend {
         //! asserts p99 stays well inside budget. Capture I/O is budgeted
         //! separately, so it's not in this measurement.
         use super::*;
+        use crate::audio::{priority_for_event, should_accept_incoming, Priority};
+        use crate::motion::GankRisk;
         use std::path::Path;
 
         fn synthetic_frame(n: usize) -> Frame {
@@ -404,7 +418,11 @@ mod backend {
                 return;
             }
             let detector = Detector::load(model, Path::new("../models/labels.json"));
-            let region = MinimapRegion { x: 0, y: 0, side: 256 };
+            let region = MinimapRegion {
+                x: 0,
+                y: 0,
+                side: 256,
+            };
             let icon = 20usize;
             let frame = synthetic_frame(5);
 
@@ -417,7 +435,12 @@ mod backend {
             for i in 0..iters {
                 let now_ms = (i as u64) * 125;
                 let t = Instant::now();
-                let cands = prefilter_candidates(&frame, icon, DEFAULT_THRESHOLD_FRAC);
+                let cands = prefilter_candidates(
+                    &frame,
+                    icon,
+                    DEFAULT_THRESHOLD_FRAC,
+                    crate::cv::DIRE_RING,
+                );
                 let dets = detector.detect(&frame, &cands, icon);
                 let _ = sentry.update(&dets, &region, now_ms);
                 motion.record(&dets, &region, now_ms);
@@ -431,6 +454,51 @@ mod backend {
             let p99 = samples_us[(iters * 99) / 100] as f64 / 1000.0;
             eprintln!("[latency] compute pipeline p50={p50:.3} ms  p99={p99:.3} ms");
             assert!(p99 < 80.0, "pipeline p99 {p99:.3} ms exceeds 80 ms budget");
+        }
+
+        #[test]
+        fn gsi_to_signal_audio_enqueue_latency_within_budget() {
+            let body = r#"{
+              "map": { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS", "clock_time": 612, "daytime": true, "radiant_score": 14, "dire_score": 9 },
+              "player": { "gold": 2300, "net_worth": 14500, "gpm": 520, "xpm": 610, "kills": 7, "deaths": 2, "assists": 10, "last_hits": 145, "denies": 8, "team_name": "dire" },
+              "hero": { "name": "npc_dota_hero_crystal_maiden", "level": 14, "alive": true, "health_percent": 78, "mana_percent": 65 }
+            }"#;
+
+            let iters = 1000usize;
+            let mut samples_us: Vec<u128> = Vec::with_capacity(iters);
+            for _ in 0..iters {
+                let mut signal = Signal::new();
+                signal.set_sensitivity(crate::signal::Sensitivity::Med);
+
+                let t = Instant::now();
+                let tick = crate::gsi::parse_tick_from_json(body);
+                crate::runtime::set_player_team_name(&tick.team_name);
+                let ring = crate::runtime::enemy_team_ring();
+                assert_eq!(
+                    ring,
+                    crate::cv::RADIANT_RING,
+                    "Dire local player should target Radiant-green enemy ring"
+                );
+
+                let risk = GankRisk {
+                    probability: 0.91,
+                    missing_heroes: vec!["npc_dota_hero_axe".into(), "npc_dota_hero_lina".into()],
+                    eta_ms: 2400,
+                };
+                let event = signal.evaluate(&risk);
+                let accepted = matches!(event, SignalEvent::Alert(_))
+                    && should_accept_incoming(Priority::Cosmetic, priority_for_event("gank"));
+                assert!(accepted, "critical gank alert should be enqueueable");
+                samples_us.push(t.elapsed().as_micros());
+            }
+            samples_us.sort_unstable();
+            let p50 = samples_us[iters / 2] as f64 / 1000.0;
+            let p99 = samples_us[(iters * 99) / 100] as f64 / 1000.0;
+            eprintln!("[latency] gsi->signal->audio-enqueue p50={p50:.3} ms  p99={p99:.3} ms");
+            assert!(
+                p99 < 10.0,
+                "gsi->signal->audio-enqueue p99 {p99:.3} ms exceeds 10 ms budget"
+            );
         }
     }
 }
