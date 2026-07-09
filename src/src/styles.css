@@ -24,15 +24,15 @@
   --g-r-sm: 8px; --g-r-card: 11px; --g-r-panel: 14px; --g-r-fab: 16px; --g-r-pill: 999px;
   --g-r-frame-outer: 28px; --g-r-frame-notch: 20px;
   --g-shadow-fab: 0 12px 34px rgba(0,0,0,0.42); --g-shadow-panel: 0 18px 50px rgba(0,0,0,0.55);
-  --g-rim-top: inset 0 1px 0 rgba(255,255,255,0.06);
+  --g-rim-top: inset 0 1px 0 rgba(200,220,255,0.04);
   --g-blur-panel: blur(30px) saturate(150%); --g-blur-fab: blur(24px) saturate(160%); --g-blur-tile: blur(6px);
   --g-t-micro: 0.12s; --g-t-hover: 0.15s; --g-t-state: 0.2s; --g-t-bar: 0.3s;
   --g-t-ambient: 14s ease-in-out infinite; --g-ease: ease-out;
   --g-z-bg: 0; --g-z-panel: 1; --g-z-content: 10; --g-z-fab: 100; --g-z-pop: 200;
 }
 * { box-sizing: border-box; }
-html, body, #root { height: 100%; margin: 0; }
-body { background: var(--bg); color: var(--txt); font: 13px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
+html, body, #root { height: 100%; margin: 0; background: transparent; }
+body { background: transparent; color: var(--txt); font: 13px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
 code { background: #0b1424; border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; color: var(--cyan); font-size: 12px; }
 h3 { margin: 0 0 8px; }
 
@@ -286,10 +286,7 @@ h3 { margin: 0 0 8px; }
 /* ---- G-Maiden companion shell ---- */
 body {
   overflow: hidden;
-  background:
-    radial-gradient(circle at top center, rgba(59, 115, 255, 0.18), transparent 34%),
-    radial-gradient(circle at bottom left, rgba(31, 208, 160, 0.08), transparent 28%),
-    #050914;
+  background: transparent;
   color: #eef5ff;
   font-family: "Segoe UI", "Inter", sans-serif;
 }
@@ -882,6 +879,26 @@ body {
 
 .spectator-map.empty {
   filter: saturate(0.75);
+}
+/* pregame / GSI-offline: the terrain blobs + grid are meaningless noise (they
+   read as random grey blobs through the glass). Fade them out and show a clean
+   "waiting for match" placeholder instead. */
+.spectator-map.empty .map-terrain { opacity: 0.06; filter: blur(3px); }
+.spectator-map.empty .map-grid { opacity: 0.35; }
+.spectator-map.empty .river-line { opacity: 0.4; }
+.spectator-map.empty::after {
+  content: "WAITING FOR MATCH";
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 24px;
+  text-align: center;
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 1.5px;
+  color: rgba(143, 176, 208, 0.55);
+  pointer-events: none;
 }
 
 .map-grid,
@@ -2156,36 +2173,28 @@ body {
   gap: 10px;
 }
 
+/* FLAT pass — cards are a subtle lift on the single flat panel surface, no
+   gradient / gloss / drop-shadow (those read as extra layers). Accent cards
+   (lime) still pop; dark cards read as gentle divisions of one surface. */
 .bento-card {
   position: relative;
   min-height: 0;
   padding: 10px;
   border-radius: 14px;
-  border: 1px solid rgba(129, 180, 255, 0.16);
-  background:
-    linear-gradient(180deg, rgba(11, 19, 35, 0.96), rgba(8, 14, 27, 0.9));
-  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.24);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  background: rgba(255, 255, 255, 0.025);
   overflow: hidden;
 }
 
-.bento-card::after {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  pointer-events: none;
-  background: radial-gradient(circle at top left, rgba(140, 203, 255, 0.08), transparent 30%);
-}
+.bento-card::after { display: none; }
 
 .tilt-card {
-  transform-style: preserve-3d;
-  transition: transform 0.22s ease, box-shadow 0.22s ease, border-color 0.22s ease;
+  transition: border-color 0.18s ease, background 0.18s ease;
 }
 
 .tilt-card:hover {
-  transform: perspective(1400px) rotateX(2deg) rotateY(-3deg) translateY(-2px);
-  border-color: rgba(132, 214, 255, 0.3);
-  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.34), 0 0 0 1px rgba(132, 214, 255, 0.08), 0 0 28px rgba(67, 136, 255, 0.14);
+  border-color: rgba(143, 212, 255, 0.22);
+  background: rgba(255, 255, 255, 0.04);
 }
 
 .bento-head {
@@ -2629,31 +2638,53 @@ body {
 .agent-front-fragments span:nth-child(2) { right: -10px; top: 102px; }
 .agent-front-fragments span:nth-child(3) { left: 24px; bottom: 60px; width: 148px; }
 
-.agent-copy {
+/* Agent bottom overlay — holds the event banner (top) + caster feed (below),
+   anchored to the art bottom with a shared readability scrim. */
+.agent-overlay {
   position: absolute;
-  left: 14px;
-  right: 14px;
+  left: 12px;
+  right: 12px;
   bottom: 12px;
   z-index: 5;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  justify-content: center;
-  padding: 10px;
+  gap: 8px;
+  padding: 28px 12px 10px;
   border-radius: 12px;
-  background: linear-gradient(90deg, rgba(6, 12, 24, 0.82), rgba(6, 12, 24, 0.24));
-  border: 1px solid rgba(126, 177, 255, 0.12);
+  /* scrim so text reads over the art; fades to transparent at the top */
+  background: linear-gradient(180deg, rgba(6, 12, 24, 0) 0%, rgba(6, 12, 24, 0.6) 34%, rgba(6, 12, 24, 0.9) 100%);
 }
 
-.agent-copy strong {
-  font-size: 15px;
+/* Agent caster feed — sliding-window narration. Maiden types the newest line
+   (af-now + caret); the previous line (af-old) sits above, faded; new lines
+   push it up (keyed remount replays af-in). */
+.agent-feed {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
-
-.agent-copy p {
-  margin: 0;
-  color: #9ab1cc;
-  line-height: 1.35;
-  font-size: 11px;
+.agent-feed-tag {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 8px; font-weight: 800; letter-spacing: 1.4px; color: var(--g-ice-500, #8fd4ff);
+}
+.agent-feed-tag .af-dot {
+  width: 6px; height: 6px; border-radius: 50%; background: var(--g-lime-500, #a3e635);
+  box-shadow: 0 0 8px rgba(163, 230, 53, 0.8); animation: af-pulse 1.6s ease-in-out infinite;
+}
+@keyframes af-pulse { 0%, 100% { opacity: 1; } 50% { opacity: 0.35; } }
+.agent-feed-log { display: flex; flex-direction: column; gap: 3px; min-height: 0; }
+.af-line { margin: 0; line-height: 1.32; }
+.af-old { font-size: 10px; color: rgba(154, 177, 204, 0.5); }
+.af-now { font-size: 12px; color: #eaf2ff; animation: af-in 0.28s ease; }
+.af-caret {
+  display: inline-block; width: 6px; height: 12px; margin-left: 2px; vertical-align: -1px;
+  background: var(--g-lime-500, #a3e635); animation: af-blink 1s step-end infinite;
+}
+@keyframes af-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+@keyframes af-blink { 50% { opacity: 0; } }
+@media (prefers-reduced-motion: reduce) {
+  .af-caret, .agent-feed-tag .af-dot { animation: none; }
+  .af-now { animation: none; }
 }
 
 .status-matrix {
@@ -3360,7 +3391,9 @@ body {
 .board-bento {
   height: 100%;
   min-height: 0;
-  grid-template-columns: 1.75fr 1fr 1fr;
+  /* col1-2 (minimap) narrowed a touch so its top-right clears the top-right
+     topbar notch when content rises to the top band; col3 (agent/signal) wider */
+  grid-template-columns: 1.6fr 1fr 1.1fr;
   grid-template-rows: minmax(0, 1.6fr) minmax(0, 1fr) minmax(0, 1fr);
   grid-template-areas:
     "minimap minimap agent"
@@ -3368,8 +3401,37 @@ body {
     "warning status gsignal";
   gap: 10px;
 }
-.board-bento .minimap-bento { grid-column: 1 / 3 !important; grid-row: 1 / 3 !important; }
-.board-bento .agent-bento   { grid-column: 3 !important; grid-row: 1 !important; }
+.board-bento .minimap-bento { grid-column: 1 / 3 !important; grid-row: 1 / 3 !important; min-height: 0 !important; }
+/* content rises to the top band (beside P1); the agent card sits under the
+   top-right topbar FAB, so offset it down to clear the topbar notch. */
+.board-bento .agent-bento   { grid-column: 3 !important; grid-row: 1 !important; margin-top: 40px; }
+
+/* announcer event callout — absolutely placed in the Agent sector, INDEPENDENT
+   of the caster feed (so it never shifts when the feed's line count changes).
+   Vertically centred; horizontally on a 10-col grid at cols 2-4 (10%..40%). */
+.deck-event-banner {
+  position: absolute; left: 10%; top: 40%; transform: translateY(-50%);
+  z-index: 6; text-align: left; pointer-events: none; /* left edge at grid col 2 (of 10) */
+}
+/* the label carries the pop animation (parent owns the centring transform) */
+.deb-label {
+  display: inline-block; white-space: nowrap;
+  font-weight: 900; font-size: 15px; letter-spacing: 1.5px;
+  padding: 5px 13px; border-radius: 8px;
+  background: rgba(6, 10, 20, 0.55);
+  text-shadow: 0 2px 12px rgba(0, 0, 0, 0.7);
+  animation: deb-in 0.34s cubic-bezier(0.2, 1.5, 0.5, 1);
+}
+.deck-event-banner.out .deb-label { animation: deb-out 0.42s ease forwards; }
+.deck-event-banner.tone-gold .deb-label { color: #ffd76a; box-shadow: 0 0 22px rgba(255, 200, 80, 0.3); }
+.deck-event-banner.tone-blood .deb-label { color: #ff6072; box-shadow: 0 0 22px rgba(244, 63, 94, 0.32); }
+.deck-event-banner.tone-fire .deb-label { color: #ff9a3c; box-shadow: 0 0 22px rgba(255, 140, 50, 0.32); }
+@keyframes deb-in { from { opacity: 0; transform: scale(0.7) translateY(-8px); } to { opacity: 1; transform: none; } }
+@keyframes deb-out { to { opacity: 0; transform: scale(1.12); } }
+@media (prefers-reduced-motion: reduce) {
+  .deb-label { animation: none; }
+  .deck-event-banner.out .deb-label { animation: none; opacity: 0; }
+}
 .board-bento .gsignal-bento { grid-column: 3 !important; grid-row: 2 / 4 !important; }
 .board-bento .warning-bento { grid-column: 1 !important; grid-row: 3 !important; }
 .board-bento .status-bento  { grid-column: 2 !important; grid-row: 3 !important; }
@@ -3452,8 +3514,6 @@ body {
 .status-bento .bento-head h3 { font-size: 12px; }
 .status-bento .status-card { padding: 5px 8px; }
 .status-bento .status-card strong { font-size: 12px; line-height: 1.15; }
-.agent-bento .agent-copy { gap: 2px; }
-.agent-bento .agent-copy p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 
 /* hero-card status badge: VISIBLE/LOW (no timer) · MISSING/DEAD (+timer) */
 .hc-status {
@@ -3529,8 +3589,6 @@ body {
 .signal-bar-card { padding: 5px 9px; }
 .missing-hero-card { padding: 4px 7px; }
 .signal-chip { padding: 2px 7px; }
-.agent-copy p { font-size: 9px; line-height: 1.25; margin: 0; }
-.agent-copy strong { font-size: 12px; }
 
 /* reclaim vertical space from chrome so every card cell gets more room */
 .telemetry-footer { padding: 6px 12px; gap: 10px; }
@@ -4103,27 +4161,11 @@ body {
 .deck-v3.g-deck {
   position: fixed; inset: 0;
   display: block;
-  background: var(--g-void);
+  background: transparent;
   color: var(--g-text);
   overflow: hidden;
 }
 /* ambient BG the glass blurs through */
-.g-deck-bg {
-  position: fixed; inset: 0; z-index: var(--g-z-bg); pointer-events: none;
-  background:
-    radial-gradient(ellipse 44% 40% at 78% 12%, rgba(58,92,168,.45), transparent 66%),
-    radial-gradient(ellipse 40% 46% at 10% 88%, rgba(60,130,190,.28), transparent 70%),
-    radial-gradient(ellipse 50% 45% at 88% 92%, rgba(163,230,53,.08), transparent 64%),
-    var(--g-void);
-}
-.g-deck-bg::after {
-  content:''; position:absolute; inset:-20%;
-  background: linear-gradient(115deg, transparent 42%, rgba(143,212,255,.06) 50%, transparent 58%);
-  animation: g-drift 16s ease-in-out infinite;
-}
-@keyframes g-drift { 0%,100%{transform:translateX(-6%)} 50%{transform:translateX(6%)} }
-@media (prefers-reduced-motion: reduce){ .g-deck-bg::after{animation:none} }
-
 /* fixed 1280×800 design stage, scaled by JS to fill any window (1280 → 1920).
    All FABs + panel anchor to THIS (not the window), so the layout is identical at every size. */
 .g-deck-stage {
@@ -4133,10 +4175,14 @@ body {
   transform-origin: center center;
 }
 
-/* ---- sidebar FAB (icon nav, left) ---- */
+/* ---- sidebar FAB (icon nav) — floats in the bottom-left notch, BELOW the
+   P1–P5 sector; a single power FAB sits below it in the same notch ---- */
 .g-sidebar-fab {
-  position: absolute; left: 10px; top: 10px; bottom: 10px; width: 60px;
+  position: absolute; left: 16px; top: 300px; bottom: 86px; width: 56px;
   z-index: var(--g-z-fab);
+  /* detached floating FAB — same glass treatment + layer as the topbar FAB; sits
+     16px clear of the main panel (widened bottom-left notch nlw), frosted-glass base
+     shows in the gap. */
   background: var(--g-fab); border: 1px solid var(--g-fab-rim); border-radius: var(--g-r-fab);
   box-shadow: var(--g-shadow-fab);
   -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
@@ -4160,72 +4206,159 @@ body {
 
 /* ---- topbar FAB (top-right) ---- */
 .g-topbar-fab {
-  position: absolute; top: 10px; right: 10px; height: 48px; z-index: var(--g-z-fab);
+  position: absolute; top: 10px; right: 10px; height: 40px; z-index: var(--g-z-fab);
   display: flex; align-items: center; gap: 12px; padding: 0 8px 0 16px;
   background: var(--g-fab); border: 1px solid var(--g-fab-rim); border-radius: var(--g-r-panel);
   box-shadow: var(--g-shadow-fab);
   -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
 }
-.g-topbar-fab .g-logo { font-weight: 800; letter-spacing: 1.5px; font-size: 13px; color: var(--g-ice-500); }
-.g-telemetry { display: flex; gap: 10px; }
-.g-telchip { display: flex; flex-direction: column; line-height: 1.1; font-size: 8px; letter-spacing: .5px; color: var(--g-text-dim); text-transform: uppercase; }
-.g-telchip strong { font-size: 11px; color: var(--g-text); font-variant-numeric: tabular-nums; }
-.g-topbar-fab .profile-wrap,
-.g-topbar-fab .window-controls { -webkit-app-region: no-drag; }
+.g-topbar-fab { gap: 8px; }
+.g-brandcol { display: flex; flex-direction: column; line-height: 1; gap: 3px; margin-right: 2px; pointer-events: none; }
+.g-brandcol .g-logo { font-weight: 800; letter-spacing: 1.5px; font-size: 13px; color: var(--g-ice-500); }
+.g-brandcol .g-ver { font-size: 8px; letter-spacing: .5px; color: var(--g-text-dim); font-variant-numeric: tabular-nums; }
+/* topbar action buttons (update / bell) */
+.g-tb-btn {
+  -webkit-app-region: no-drag; position: relative; width: 30px; height: 30px; border: 0; border-radius: 9px;
+  background: transparent; color: var(--g-text-dim); display: grid; place-items: center; cursor: pointer;
+  transition: background var(--g-t-micro), color var(--g-t-micro);
+}
+.g-tb-btn:hover { background: rgba(143, 212, 255, .1); color: var(--g-text); }
+/* update status shows as a toast under the button so the topbar width (and its
+   notch) stays fixed regardless of the status text length */
+.g-upd-text {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 200;
+  font-size: 9px; font-weight: 700; color: var(--g-ice-500); white-space: nowrap;
+  background: var(--g-fab); border: 1px solid var(--g-fab-rim); border-radius: 8px;
+  padding: 4px 9px; box-shadow: var(--g-shadow-fab);
+  -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
+}
+.g-notif-dot { position: absolute; top: 4px; right: 5px; width: 6px; height: 6px; border-radius: 50%; background: var(--g-lime-500); box-shadow: 0 0 6px rgba(163, 230, 53, .8); }
+/* notification dropdown */
+.g-notif-wrap { position: relative; -webkit-app-region: no-drag; }
+.g-notif-scrim { position: fixed; inset: 0; z-index: 199; }
+.g-notif-drop {
+  position: absolute; top: calc(100% + 8px); right: 0; z-index: 200; width: 262px;
+  background: var(--g-fab); border: 1px solid var(--g-fab-rim); border-radius: 12px;
+  box-shadow: var(--g-shadow-fab); -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
+  padding: 6px; display: flex; flex-direction: column; gap: 2px;
+}
+.g-notif-head { display: flex; justify-content: space-between; align-items: center; padding: 6px 8px 8px; font-size: 10px; font-weight: 800; letter-spacing: .5px; text-transform: uppercase; color: var(--g-text-dim); }
+.g-notif-head span { background: var(--g-lime-soft); color: var(--g-lime-500); border-radius: 999px; padding: 1px 7px; font-size: 9px; }
+.g-notif-item { padding: 8px; border-radius: 9px; }
+.g-notif-item:hover { background: rgba(143, 212, 255, .06); }
+.g-notif-item strong { display: block; font-size: 11.5px; color: var(--g-text); }
+.g-notif-item p { margin: 2px 0 3px; font-size: 10px; color: var(--g-text-dim); line-height: 1.3; }
+.g-notif-item small { font-size: 8.5px; color: var(--g-text-dim); opacity: .7; }
+.g-notif-empty { padding: 18px; text-align: center; font-size: 10px; color: var(--g-text-dim); }
+.g-topbar-fab .profile-wrap { -webkit-app-region: no-drag; }
 
 /* ---- glass panel body — SUBTRACT shape: concave notch (top-right) wraps the topbar FAB ---- */
 .g-deck-panel {
-  position: absolute; left: 82px; top: 10px; right: 10px; bottom: 10px; z-index: var(--g-z-content);
-  /* more visible frosted fill so the concave Subtract silhouette reads over the dark void */
-  background: linear-gradient(158deg, rgba(36, 48, 78, 0.52), rgba(14, 19, 33, 0.60));
+  position: absolute; left: 12px; top: 10px; right: 10px; bottom: 10px; z-index: var(--g-z-content);
+  /* FLAT pass — one neutral dark frosted surface (no blue gradient) so panel +
+     cards read as a single layer. True glass-through-desktop comes later with
+     window transparency. */
+  background: rgba(18, 20, 26, 0.72);
   border-radius: 18px;
   -webkit-backdrop-filter: var(--g-blur-panel); backdrop-filter: var(--g-blur-panel);
-  /* rim + depth that FOLLOW the clip-path shape (drop-shadow respects clip-path) */
-  filter: drop-shadow(0 0 1px rgba(160, 200, 255, 0.45)) drop-shadow(0 16px 40px rgba(0, 0, 0, 0.5));
+  /* thin rim only (follows the clip-path); drop the heavy depth shadow */
+  filter: drop-shadow(0 0 0.5px rgba(190, 210, 255, 0.16));
   overflow: hidden; display: flex; flex-direction: column;
-  /* Boolean-Subtract: two notches — top-right (topbar FAB) + bottom-right (G-Signal FABs).
-     Both FABs are right-anchored fixed-size, so the notches track them on resize. */
-  --ntw: 474px; --nth: 60px;   /* top-right notch (topbar) */
-  --nbw: 382px; --nbh: 206px;  /* bottom-right notch (signals, dashboard only) */
-  /* base: top-right notch only (all tabs) */
-  --clip-top: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% 100%, 0 100%);
-  /* dashboard: + bottom-right notch */
-  --clip-both: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% calc(100% - var(--nbh)), calc(100% - var(--nbw)) calc(100% - var(--nbh)), calc(100% - var(--nbw)) 100%, 0 100%);
+  /* Boolean-Subtract: TWO notches — top-right (topbar FAB) + bottom-left
+     (sidebar + power FABs). The G-Signal cards sit ON the panel's bottom-right
+     (grounded on frost), so there is no bottom-right cut. */
+  --ntw: 280px; --nth: 54px;   /* top-right notch — hugs the topbar (brand+ver+update+bell+profile); sync with buildPanelPath() in CommandDeck.tsx */
+  --nlw: 76px; --nlt: 274px;   /* bottom-left notch — 16px clearance (right+top) around the detached sidebar FAB; sync with buildPanelPath() */
+  --clip-top: polygon(0 0, calc(100% - var(--ntw)) 0, calc(100% - var(--ntw)) var(--nth), 100% var(--nth), 100% 100%, var(--nlw) 100%, var(--nlw) var(--nlt), 0 var(--nlt));
   clip-path: var(--clip-top);
 }
-.g-deck-panel.has-signals { clip-path: var(--clip-both); }
 /* JS sets an inline clip-path: path(...) with rounded fillets — the vars above are the
    sharp-polygon fallback until the effect runs. ::before top-highlight is clipped by the parent. */
 .g-deck-panel::before {
   content:''; position:absolute; inset:0; z-index:2; pointer-events:none; box-shadow: var(--g-rim-top);
 }
-/* content clears the top-right notch (panel extends up to y10; content starts ~y70) */
-.g-deck-panel .surface { flex: 1; min-height: 0; overflow: hidden; padding: 62px 16px 16px; }
-/* dashboard: left gutter for the P1–P5 anchor rail */
-.g-deck-panel.has-signals .surface { padding-left: 58px; }
+/* content clears the top-right notch (top) + the left rail: P1–P5 anchors
+   (top-left, inside panel) and the bottom-left sidebar notch. */
+.g-deck-panel .surface { flex: 1; min-height: 0; overflow: hidden; padding: 62px 16px 16px 78px; }
+/* dashboard raises content into the top band beside P1 (agent card offsets down
+   to clear the topbar); other tabs keep top clearance so their full-width top
+   content doesn't run under the top-right topbar notch. */
+.g-deck-panel .surface.page-dashboard { padding-top: 22px; }
 
-/* ---- P1–P5 agent anchor rail (dashboard, panel top-left gutter) ---- */
+/* ---- left rail (top-left, inside the panel) — P1 = brand logo tile,
+   P2–P5 = telemetry (CPU/RAM/GPU/VRAM, moved off the topbar) ---- */
 .g-anchor-rail {
-  position: absolute; left: 92px; top: 82px; z-index: 60;
-  display: flex; flex-direction: column; gap: 5px; -webkit-app-region: no-drag;
+  position: absolute; left: 14px; top: 14px; width: 64px; z-index: 60;
+  display: flex; flex-direction: column; gap: 6px; -webkit-app-region: no-drag;
 }
-.g-anchor {
-  width: 40px; padding: 7px 0; text-align: center; border-radius: 9px;
-  font-size: 11px; font-weight: 700; letter-spacing: .5px; color: var(--g-text-dim);
-  background: rgba(150, 200, 255, .05); border: 1px solid var(--g-card-line);
-  transition: color var(--g-t-micro), background var(--g-t-micro);
+.g-logo-tile {
+  width: 64px; height: 56px; border-radius: 14px; padding: 9px;
+  display: grid; place-items: center; flex-shrink: 0;
+  /* no box — logo art floats directly on the panel (removed lime bg/border) */
 }
-.g-anchor.active { color: var(--g-lime-500); background: var(--g-lime-soft); border-color: var(--g-lime-line); }
+.g-logo-tile svg { width: 100%; height: 100%; display: block; }
+.g-tele {
+  width: 64px; border-radius: 11px; padding: 6px 6px 7px;
+  /* no box — telemetry key/value float directly on the panel (removed bg/border) */
+  display: flex; flex-direction: column; gap: 3px;
+}
+.g-tele .gt-k { font-size: 8px; font-weight: 700; letter-spacing: .6px; color: var(--g-text-dim); text-transform: uppercase; }
+.g-tele .gt-v {
+  font-size: 13px; font-weight: 800; color: var(--g-text); line-height: 1;
+  font-variant-numeric: tabular-nums; display: flex; align-items: baseline; gap: 3px;
+  white-space: nowrap;
+}
+.g-tele .gt-v em { font-size: 8px; font-weight: 600; font-style: normal; color: var(--g-ice-500); }
 
-/* ---- G-Signal FABs (D/E/F/G) — float in the bottom-right notch (dashboard only) ---- */
-.g-signals-fab {
-  position: absolute; right: 10px; bottom: 10px; width: 372px; height: 196px; z-index: var(--g-z-fab);
-  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 10px;
+/* ---- power FAB (bottom-left corner) — single power block; click reveals a
+   radial menu (minimize / maximize / close). Replaces topbar window buttons. ---- */
+.g-power-scrim {
+  position: absolute; inset: 0; z-index: 190;
+  background: rgba(6, 9, 16, 0.5);
+  -webkit-backdrop-filter: blur(2px); backdrop-filter: blur(2px);
+}
+.g-power {
+  position: absolute; left: 12px; bottom: 10px; width: 64px; height: 64px;
+  z-index: var(--g-z-pop); -webkit-app-region: no-drag;
+}
+.g-power-btn {
+  position: absolute; inset: 0; z-index: 2;
+  border-radius: var(--g-r-fab); border: 1px solid var(--g-fab-rim);
+  background: var(--g-fab); color: var(--g-text-dim); cursor: pointer;
+  display: grid; place-items: center; box-shadow: var(--g-shadow-fab);
+  -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
+  transition: color var(--g-t-micro), background var(--g-t-micro), border-color var(--g-t-micro);
+}
+.g-power-btn:hover { color: var(--g-ice-500); border-color: rgba(143, 212, 255, .34); }
+.g-power.open .g-power-btn { color: var(--g-lime-500); border-color: var(--g-lime-line); background: var(--g-lime-soft); }
+/* radial items — hidden under the button, arc up + right when open */
+.g-power-item {
+  position: absolute; left: 12px; top: 12px; width: 40px; height: 40px; z-index: 1;
+  border-radius: 12px; border: 1px solid var(--g-fab-rim); background: var(--g-fab);
+  color: var(--g-text); font-size: 14px; cursor: pointer; display: grid; place-items: center;
+  box-shadow: var(--g-shadow-fab);
+  -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
+  opacity: 0; transform: translate(0, 0) scale(.6); pointer-events: none;
+  transition: transform var(--g-t-pop, .18s cubic-bezier(.34,1.56,.64,1)), opacity var(--g-t-micro);
+}
+.g-power.open .g-power-item { opacity: 1; pointer-events: auto; }
+.g-power.open .pi-min { transform: translate(0, -72px) scale(1); }
+.g-power.open .pi-max { transform: translate(52px, -52px) scale(1); }
+.g-power.open .pi-close { transform: translate(72px, 0) scale(1); }
+.g-power-item:hover { border-color: rgba(143, 212, 255, .34); color: var(--g-ice-500); }
+.pi-close:hover { border-color: rgba(244, 63, 94, .4); color: var(--g-danger, #f43f5e); background: rgba(244, 63, 94, .14); }
+
+/* ---- G-Signal sector (D/E/F/G) — a proper bento grid cell (area `gsignal`),
+   NOT a floating FAB. The 4 cells are a 2×2 grid inside the bento card, so the
+   sector aligns to the deck grid like every other sector. ---- */
+.gsignal-bento { display: flex; flex-direction: column; }
+.gsignal-bento .gsignal-cells {
+  flex: 1; min-height: 0;
+  display: grid; grid-template-columns: 1fr 1fr; grid-template-rows: 1fr 1fr; gap: 8px;
 }
 .g-sig {
-  position: relative; border-radius: var(--g-r-fab); background: var(--g-fab); border: 1px solid var(--g-fab-rim);
-  box-shadow: var(--g-shadow-fab); -webkit-backdrop-filter: var(--g-blur-fab); backdrop-filter: var(--g-blur-fab);
-  padding: 12px 14px; display: flex; flex-direction: column;
+  position: relative; border-radius: var(--g-r-card); background: var(--g-card); border: 1px solid var(--g-card-line);
+  padding: 10px 12px; display: flex; flex-direction: column; min-height: 0; overflow: hidden;
 }
 .g-sig .sg-tag { position: absolute; top: 9px; right: 12px; font-size: 9px; font-weight: 800; color: var(--g-text-dim); opacity: .5; }
 .g-sig .sg-label { font-size: 9px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--g-text-dim); }
@@ -4248,3 +4381,33 @@ body {
 .g-deck-panel .surface.page-companion,
 .g-deck-panel .surface.page-live { overflow-y: auto; }
 .g-deck-panel .banner.err { margin: 10px 14px 0; }
+
+/* transparent-window drag: the topbar FAB is the drag handle; interactive children
+   (buttons/bell/profile) + cards keep -webkit-app-region: no-drag (default). */
+.g-topbar-fab { -webkit-app-region: drag; }
+
+/* PERF: while dragging the frameless window, drop the panel's heavy full-size
+   backdrop-filter so the OS move loop stays smooth. Toggled by startWindowDrag()
+   (CommandDeck.tsx) on mousedown → mouseup. Acrylic still frosts the desktop, so
+   the drop is barely perceptible and snaps back on release. */
+.g-deck-stage.is-dragging .g-deck-panel,
+.g-deck-stage.is-dragging .g-sidebar-fab,
+.g-deck-stage.is-dragging .g-topbar-fab {
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* Backmost frosted-glass base — a single rounded-rect cropped to the deck rim
+   (inset to the footprint, no notch cuts) sitting BEHIND the panel + floating FABs.
+   It fills the 16px gaps between the pieces with a translucent frosted pane; the
+   OS acrylic effect supplies the actual desktop blur (a CSS backdrop-filter here
+   would blur nothing on a transparent window and only stall window drag). */
+.g-deck-glass-bg {
+  /* flush with the panel's outer envelope (left 12 / others 10, radius 18) so the
+     frosted pane never pokes beyond the rim — it just fills the Subtract notch gaps. */
+  position: absolute; left: 12px; top: 10px; right: 10px; bottom: 10px;
+  z-index: 0; pointer-events: none;
+  border-radius: 18px;
+  background: rgba(224, 236, 255, 0.09);  /* translucent frosted tint; acrylic supplies the blur */
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.10);
+}

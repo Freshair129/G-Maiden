@@ -1,4 +1,5 @@
-import { useState } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
+import { listen } from "@tauri-apps/api/event";
 import { formatTimer, useCompanionData } from "./companion";
 import type { CompanionData } from "./companion";
 
@@ -13,8 +14,13 @@ export default function Dashboard() {
   const allyHeroes = data.heroes.filter((hero) => hero.team === "ally");
   const enemyHeroes = data.heroes.filter((hero) => hero.team === "enemy");
   const visibleMarkers = isPregame ? [] : data.markers;
-  // G-Signal (Enemy Missing / Gank Risk / Safe Push / Vision) now renders as bottom-right
-  // FAB cards in CommandDeck's Subtract notch — see CommandDeck.tsx.
+
+  // G-Signal sector (D/E/F/G) — a proper bento grid cell (area `gsignal`),
+  // not a floating FAB, so it aligns with the other sectors on the grid.
+  const enemyMissing = isPregame ? 0 : enemyHeroes.filter((h) => h.state === "missing").length;
+  const gankRisk = isPregame ? 0 : Math.min(100, 26 + enemyMissing * 24 + data.match.activeAlerts * 8);
+  const safePush = isPregame ? 0 : Math.max(0, 88 - enemyMissing * 18 - data.match.activeAlerts * 10);
+  const vision = data.signals.find((s) => s.label.toLowerCase().startsWith("vision"))?.value ?? "—";
 
   return (
     <div className="dashboard-v2">
@@ -129,11 +135,44 @@ export default function Dashboard() {
                 <span />
               </div>
             </div>
-            <div className="agent-copy">
-              <strong>{data.agentSector.title}</strong>
-              {data.agentSector.summary.map((line) => (
-                <p key={line}>{line}</p>
-              ))}
+            <DeckEventBanner />
+            <div className="agent-overlay">
+              <AgentFeed lines={data.agentSector.summary} />
+            </div>
+          </div>
+        </section>
+
+        <section className="bento-card gsignal-bento tilt-card">
+          <div className="bento-head compact">
+            <div>
+              <div className="eyebrow">G-Signal</div>
+              <h3>Threat radar</h3>
+            </div>
+          </div>
+          <div className="gsignal-cells">
+            <div className="g-sig">
+              <span className="sg-tag">D</span>
+              <span className="sg-label">Enemy Missing</span>
+              <span className="sg-val">{enemyMissing}</span>
+              <div className="sg-bar"><div className="sg-fill sg-fill-ice" style={{ width: `${Math.min(100, enemyMissing * 20)}%` }} /></div>
+            </div>
+            <div className="g-sig hero">
+              <span className="sg-tag">E</span>
+              <span className="sg-label">Gank Risk</span>
+              <span className="sg-val">{gankRisk}%</span>
+              <div className="sg-bar"><div className="sg-fill" style={{ width: `${gankRisk}%` }} /></div>
+            </div>
+            <div className="g-sig">
+              <span className="sg-tag">F</span>
+              <span className="sg-label">Safe Push</span>
+              <span className="sg-val">{safePush}%</span>
+              <div className="sg-bar"><div className="sg-fill sg-fill-safe" style={{ width: `${safePush}%` }} /></div>
+            </div>
+            <div className="g-sig">
+              <span className="sg-tag">G</span>
+              <span className="sg-label">Vision</span>
+              <span className="sg-val">{vision}</span>
+              <div className="sg-bar"><div className="sg-fill sg-fill-warn" style={{ width: "40%" }} /></div>
             </div>
           </div>
         </section>
@@ -173,6 +212,147 @@ export default function Dashboard() {
 
         {/* Activity / Event logs live in the Insights + History tabs (CR-002).
            Dashboard is a fixed-grid, no-scroll layout — only the 5 bento cards above. */}
+      </div>
+    </div>
+  );
+}
+
+// Announcer event banner (First Blood / Double Kill / streak ladder …), shown as
+// a transient callout inside the Agent sector. Driven by the backend
+// `announcer-banner` Tauri event (gsi.rs → voice_api::fired_banner): its `event`
+// id already covers the kill + streak ladder (announcer.rs), so this one listener
+// wires both the announcer banners and kill streaks. When not under Tauri (browser
+// preview), it falls back to a demo cycler so the slot is still visible.
+type DebTone = "blood" | "gold" | "fire";
+// canonical announcer event id → tone (only these ids surface as a big callout;
+// warning/state/advisor events are handled elsewhere — G-Signal / caster feed).
+const EVENT_TONE: Record<string, DebTone> = {
+  first_blood: "blood", rampage: "blood", monster_kill: "blood",
+  unstoppable: "blood", wicked_sick: "blood", godlike: "blood", beyond_godlike: "blood",
+  kill: "gold", double_kill: "gold", triple_kill: "gold",
+  ultra_kill: "fire", killing_spree: "fire", dominating: "fire", mega_kill: "fire",
+};
+const DEMO_EVENTS: Array<{ label: string; tone: DebTone }> = [
+  { label: "FIRST BLOOD", tone: "blood" },
+  { label: "DOUBLE KILL", tone: "gold" },
+  { label: "TRIPLE KILL", tone: "gold" },
+  { label: "KILLING SPREE", tone: "fire" },
+  { label: "RAMPAGE", tone: "blood" },
+];
+
+function DeckEventBanner() {
+  const [evt, setEvt] = useState<{ label: string; tone: DebTone } | null>(null);
+  const [show, setShow] = useState(false);
+  const [seq, setSeq] = useState(0); // remount key so the entrance anim replays
+  const liveRef = useRef(false);     // a real announcer event has arrived
+  const hideRef = useRef<number | undefined>(undefined);
+
+  const fire = useCallback((label: string, tone: DebTone) => {
+    window.clearTimeout(hideRef.current);
+    setEvt({ label, tone });
+    setSeq((s) => s + 1);
+    setShow(true);
+    hideRef.current = window.setTimeout(() => setShow(false), 3600);
+  }, []);
+
+  // real events — announcer-banner covers kills, multi-kills and the streak ladder
+  useEffect(() => {
+    let alive = true;
+    let un: (() => void) | null = null;
+    try {
+      listen<{ event: string; bannerText: string }>("announcer-banner", (e) => {
+        const tone = EVENT_TONE[e.payload.event];
+        if (!tone) return; // not a callout-worthy event
+        liveRef.current = true; // real feed took over — silence the demo
+        fire((e.payload.bannerText || e.payload.event).toUpperCase(), tone);
+      })
+        .then((fn) => { if (!alive) fn(); else un = fn; })
+        .catch(() => { /* not under Tauri */ });
+    } catch { /* not under Tauri */ }
+    return () => { alive = false; if (un) un(); window.clearTimeout(hideRef.current); };
+  }, [fire]);
+
+  // demo fallback — only while no real announcer event has arrived
+  useEffect(() => {
+    let alive = true;
+    let t: number;
+    let i = 0;
+    const run = () => {
+      if (!alive || liveRef.current) return;
+      const d = DEMO_EVENTS[i % DEMO_EVENTS.length];
+      fire(d.label, d.tone);
+      i += 1;
+      t = window.setTimeout(run, 4000);
+    };
+    t = window.setTimeout(run, 1400);
+    return () => { alive = false; window.clearTimeout(t); };
+  }, [fire]);
+
+  if (!evt) return null;
+  return (
+    <div key={seq} className={`deck-event-banner tone-${evt.tone}${show ? "" : " out"}`} aria-live="polite">
+      <span className="deb-label">{evt.label}</span>
+    </div>
+  );
+}
+
+// Agent sector caster feed — Maiden "types" the newest line; completed lines
+// slide up and fade (sliding window). No live AI-narration event exists yet, so
+// this cycles the agent summary (or Maiden persona lines) as a demo. When a real
+// stream lands (e.g. a `agent-message` / advice Tauri event), feed it in as
+// `lines` / push onto `history` instead of the interval rotator below.
+const MAIDEN_LINES = [
+  "เฝ้ามินิแมพให้อยู่นะ เดี๋ยวมีคนหายจากสายตา",
+  "ฟาร์มต่อได้ ตอนนี้ยังปลอดภัยอยู่",
+  "ระวังโรมมิ่งจากเลนบน มืดไปหลายวิแล้ว",
+  "เก็บ vision รอบ objective ก่อนจะเข้าน้า",
+  "เอ๊ะ! เดี๋ยวก่อน… ถอยดีกว่า เขามากันสาม",
+];
+
+function AgentFeed({ lines }: { lines: string[] }) {
+  const pool = lines.length ? lines : MAIDEN_LINES;
+  const [history, setHistory] = useState<string[]>([]); // completed, newest last
+  const [typed, setTyped] = useState("");
+  const idx = useRef(0);
+
+  useEffect(() => {
+    let alive = true;
+    let timer: number;
+    const reduce = typeof window !== "undefined" && window.matchMedia?.("(prefers-reduced-motion: reduce)").matches;
+
+    const commit = () => {
+      if (!alive) return;
+      const line = pool[idx.current % pool.length];
+      setHistory((h) => [...h, line].slice(-1)); // keep 1 previous line above
+      setTyped("");
+      idx.current += 1;
+      timer = window.setTimeout(typeNext, 520);
+    };
+    const typeNext = () => {
+      if (!alive) return;
+      const line = pool[idx.current % pool.length];
+      if (reduce) { setTyped(line); timer = window.setTimeout(commit, 3600); return; }
+      let n = 0;
+      const step = () => {
+        if (!alive) return;
+        n += 1;
+        setTyped(line.slice(0, n));
+        timer = window.setTimeout(n < line.length ? step : commit, n < line.length ? 42 : 3200);
+      };
+      step();
+    };
+    typeNext();
+    return () => { alive = false; window.clearTimeout(timer); };
+  }, [pool]);
+
+  return (
+    <div className="agent-feed">
+      <div className="agent-feed-tag"><span className="af-dot" />MAIDEN</div>
+      <div className="agent-feed-log">
+        {history.map((line, i) => (
+          <p key={`h${i}-${line}`} className="af-line af-old">{line}</p>
+        ))}
+        {typed && <p className="af-line af-now">{typed}<span className="af-caret" /></p>}
       </div>
     </div>
   );
