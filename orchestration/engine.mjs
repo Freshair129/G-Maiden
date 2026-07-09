@@ -4,7 +4,7 @@
  * ฟังก์ชันทั้งหมด return ค่าแบบ structured (ไม่ print) เพื่อให้ทั้ง CLI/HTTP ใช้ได้.
  */
 import { readFileSync, writeFileSync, appendFileSync, existsSync, mkdirSync, openSync, closeSync, unlinkSync, readdirSync, createWriteStream, statSync, readSync } from "node:fs";
-import { spawn } from "node:child_process";
+import { spawn, spawnSync } from "node:child_process";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { getStore } from "./store/knowledge.mjs";
@@ -387,8 +387,54 @@ function isTextOnly(provider) {
 }
 
 const FULL_PERM_TYPES = new Set(["code", "eval", "guard"]);
+// access-scope binding (SPEC--RWANG-STANDALONE-GOVERNANCE-FRAMEWORK §5 / RFC--H-AXIS-0.6.0 D2;
+// matrix policy `access-scope-enforcement`): an atom that DECLARES its H tier gets that tier
+// as a permission CEILING — it can lower the type-derived profile, never raise it. Atoms with
+// no declared tier keep the legacy type defaults verbatim, so nothing regresses.
+const PERM_RANK = { read: 0, safe: 1, shell: 2, full: 3 };
 function permissionFor(t) {
-  return FULL_PERM_TYPES.has(t.type) ? "full" : (CONFIG.providers?.claude?.defaultPermission || "safe");
+  const typePerm = FULL_PERM_TYPES.has(t.type) ? "full" : (CONFIG.providers?.claude?.defaultPermission || "safe");
+  const tier = typeof t.tier === "string" ? t.tier.toUpperCase() : null;
+  const tierPerm = tier ? CONFIG.providers?.claude?.tierPermissions?.[tier] : null;
+  if (!tierPerm || !(tierPerm in PERM_RANK)) return typePerm;
+  return PERM_RANK[tierPerm] < (PERM_RANK[typePerm] ?? 9) ? tierPerm : typePerm;
+}
+
+// ---------- governance interlock (engine-lint-interlock — RCA Phase B2 #2) ----------
+// run.js refuses to start when governance_lint fails; the engine daemon must honor the same
+// meta-guard or the daemon IS the bypass SPEC §13 forbids. The full lint runs every guard_test
+// (slow), so the verdict is cached and refreshed only when governance.yaml changes or the TTL
+// lapses. While the matrix row is `planned`: missing python / missing governance dir → warn and
+// allow; set governance.required=true in config.json to fail closed already.
+const GOV = { checkedAt: 0, ok: null, detail: "", mtime: 0 };
+const GOV_TTL_MS = 10 * 60 * 1000;
+export function governanceInterlock({ force = false } = {}) {
+  const rel = CONFIG.governance?.lint || "orchestrator/governance/governance_lint.py";
+  const lint = resolve(__dir, rel);
+  const required = !!CONFIG.governance?.required;
+  if (!existsSync(lint)) {
+    GOV.ok = required ? false : null;
+    GOV.detail = `governance lint not found: ${lint}` + (required ? " (governance.required → blocked)" : " (warn only)");
+    GOV.checkedAt = now();
+    return { ...GOV };
+  }
+  const matrix = join(dirname(lint), "governance.yaml");
+  const mt = existsSync(matrix) ? statSync(matrix).mtimeMs : 0;
+  if (!force && GOV.checkedAt && GOV.mtime === mt && now() - GOV.checkedAt < GOV_TTL_MS) return { ...GOV };
+  const r = spawnSync("python", [lint, "--json"], { cwd: __dir, encoding: "utf-8", timeout: 300000 });
+  if (r.error || typeof r.status !== "number") {
+    GOV.ok = required ? false : null;
+    GOV.detail = `governance lint could not run (${r.error?.message || "python unavailable?"})` + (required ? " → blocked" : " — warn only");
+  } else {
+    GOV.ok = r.status === 0;
+    GOV.detail = GOV.ok ? "governance lint OK" : `governance lint exit ${r.status} — GOVERNANCE BROKEN, no new dispatch`;
+  }
+  GOV.checkedAt = now(); GOV.mtime = mt;
+  return { ...GOV };
+}
+function governanceBlock() {
+  const g = governanceInterlock();
+  return g.ok === false ? g.detail : null; // null verdict (lint unavailable, not required) = warn path
 }
 
 export function buildPrompt(t, model, provider = "claude", reworkNote = null, pastMistakes = null, grounded = null) {
@@ -532,6 +578,8 @@ export function runPool({ mode = "wave", max = CONFIG.concurrency, worker = "poo
   if (POOL.active) return { ok: false, error: "pool กำลังทำงานอยู่ (กด stop ก่อน)" };
   const block0 = capBlock();
   if (block0) return { ok: false, error: "cost cap: " + block0 };
+  const gv0 = governanceBlock();
+  if (gv0) return { ok: false, error: "⛔ governance interlock: " + gv0 };
   POOL = { active: true, stop: false, running: 0, mode, started: now(), max, capReason: null };
   let idx = 0;
   const inflight = new Set();
@@ -727,6 +775,8 @@ export function dispatchOne(id, worker = "ui") {
   const t = byId(id); if (!t) return { ok: false, error: `ไม่พบ task ${id}` };
   const block = capBlock();
   if (block) return { ok: false, error: "cost cap: " + block };
+  const gvBlk = governanceBlock();
+  if (gvBlk) return { ok: false, error: "⛔ governance interlock: " + gvBlk };
   // governance gate: requiresConfirm atoms need explicit human confirm before dispatch
   if (needsConfirm(t) && !isConfirmed(t, loadState())) {
     return { ok: false, error: `⛔ governance gate: ${id} ต้อง confirm ก่อน dispatch (requiresConfirm / auto-gate type=${t.type})` };
