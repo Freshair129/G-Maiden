@@ -58,8 +58,9 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   const [tab, setTab] = useState("dashboard");
   const [profileOpen, setProfileOpen] = useState(false);
   const [powerOpen, setPowerOpen] = useState(false);
-  const [annVolume, setAnnVolume] = useState(74);
-  const [signalVolume, setSignalVolume] = useState(82);
+  const [masterVolume, setMasterVolume] = useState(78);
+  const [annEnabled, setAnnEnabled] = useState(true);
+  const [signalEnabled, setSignalEnabled] = useState(true);
   const { data } = useCompanionData();
   const { displayName, email } = useProfile();
   const gName = displayName || (email ? email.split("@")[0] : "Guest");
@@ -78,7 +79,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
     const apply = () => {
       const stage = stageRef.current;
       if (stage) {
-        const s = Math.min(window.innerWidth / 1304, window.innerHeight / 744, 1.4);
+        const s = Math.min(window.innerWidth / 1420, window.innerHeight / 760, 1.4);
         stage.style.transform = `translate(-50%, -50%) scale(${s})`;
       }
     };
@@ -91,9 +92,10 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
     try {
       const raw = localStorage.getItem("gm-deck-audio-rail");
       if (!raw) return;
-      const parsed = JSON.parse(raw) as { ann?: number; signal?: number };
-      if (typeof parsed.ann === "number") setAnnVolume(parsed.ann);
-      if (typeof parsed.signal === "number") setSignalVolume(parsed.signal);
+      const parsed = JSON.parse(raw) as { master?: number; annEnabled?: boolean; signalEnabled?: boolean };
+      if (typeof parsed.master === "number") setMasterVolume(parsed.master);
+      if (typeof parsed.annEnabled === "boolean") setAnnEnabled(parsed.annEnabled);
+      if (typeof parsed.signalEnabled === "boolean") setSignalEnabled(parsed.signalEnabled);
     } catch {
       /* noop */
     }
@@ -101,11 +103,15 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
 
   useEffect(() => {
     try {
-      localStorage.setItem("gm-deck-audio-rail", JSON.stringify({ ann: annVolume, signal: signalVolume }));
+      localStorage.setItem("gm-deck-audio-rail", JSON.stringify({
+        master: masterVolume,
+        annEnabled,
+        signalEnabled
+      }));
     } catch {
       /* noop */
     }
-  }, [annVolume, signalVolume]);
+  }, [masterVolume, annEnabled, signalEnabled]);
 
   const error: string | null = null;
   const trayWindow = () => { try { void getCurrentWindow().hide(); } catch { /* noop */ } };
@@ -200,11 +206,20 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
       <header className="g-topbar-fab" data-tauri-drag-region="" onMouseDown={dragFromSurface}>
         <span className="g-logo">G-MAIDEN</span>
 
-        <div className="g-telemetry">
-          <div className="g-telchip"><span>CPU</span><strong>{pct(data.telemetry.cpuLoad)}</strong></div>
-          <div className="g-telchip"><span>RAM</span><strong>{mem(data.telemetry.ramUsedGb)}</strong></div>
-          <div className="g-telchip"><span>GPU</span><strong>{pct(data.telemetry.gpuLoad)}</strong></div>
-          <div className="g-telchip"><span>VRAM</span><strong>{mem(data.telemetry.vramUsedGb)}</strong></div>
+        <div className="g-topbar-status">
+          <div className={`g-status-pill${data.match.gsiOnline ? " online" : ""}`}>
+            <span className="dot" />
+            <strong>{data.match.gsiOnline ? "GSI Online" : "GSI Offline"}</strong>
+          </div>
+          <div className="g-ping-pill" title={`Ping ${data.match.player.ping}ms`}>
+            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M5 18h2" />
+              <path d="M9 14h2" />
+              <path d="M13 10h2" />
+              <path d="M17 6h2" />
+            </svg>
+            <strong>{data.match.player.ping}ms</strong>
+          </div>
         </div>
 
         <div className={`profile-wrap${profileOpen ? " open" : ""}`}>
@@ -232,16 +247,12 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
       {tab === "dashboard" && (
         <div className="g-audio-rail" onMouseDown={dragFromSurface}>
           <VolumeRail
-            label="ANN"
-            value={annVolume}
-            accent="ice"
-            onChange={setAnnVolume}
-          />
-          <VolumeRail
-            label="SIGNAL"
-            value={signalVolume}
-            accent="lime"
-            onChange={setSignalVolume}
+            value={masterVolume}
+            annEnabled={annEnabled}
+            signalEnabled={signalEnabled}
+            onVolumeChange={setMasterVolume}
+            onAnnToggle={() => setAnnEnabled((value) => !value)}
+            onSignalToggle={() => setSignalEnabled((value) => !value)}
           />
         </div>
       )}
@@ -286,10 +297,6 @@ function GMaidenFungDashboard({ data }: { data: CompanionData }) {
   return (
     <div className="gm-fung-layout">
       <section className="gm-score-header">
-        <div>
-          <span className={`gm-live-dot ${data.match.gsiOnline ? "online" : ""}`} />
-          {data.match.gsiOnline ? "GSI Online" : "GSI Offline"}
-        </div>
         <strong>{data.match.leftTeamName} {data.match.leftScore}</strong>
         <span className="gm-clock">{data.match.clock}</span>
         <strong>{data.match.rightScore} {data.match.rightTeamName}</strong>
@@ -299,7 +306,6 @@ function GMaidenFungDashboard({ data }: { data: CompanionData }) {
         <MiniStat label="NW" value={String(data.match.player.nw)} sub="Local" />
         <MiniStat label="GPM" value={String(data.match.player.gpm)} sub="Farm" />
         <MiniStat label="XPM" value={String(data.match.player.xpm)} sub="Tempo" />
-        <MiniStat label="PING" value={`${data.match.player.ping}ms`} sub="GSI" />
       </section>
 
       <section className="gm-battle-grid">
@@ -358,20 +364,24 @@ function MiniStat({ label, value, sub }: { label: string; value: string; sub: st
 }
 
 function VolumeRail({
-  label,
   value,
-  accent,
-  onChange
+  annEnabled,
+  signalEnabled,
+  onVolumeChange,
+  onAnnToggle,
+  onSignalToggle
 }: {
-  label: string;
   value: number;
-  accent: "ice" | "lime";
-  onChange: (value: number) => void;
+  annEnabled: boolean;
+  signalEnabled: boolean;
+  onVolumeChange: (value: number) => void;
+  onAnnToggle: () => void;
+  onSignalToggle: () => void;
 }) {
   return (
-    <div className={`g-volume-rail ${accent}`} data-no-drag="true">
+    <div className="g-volume-rail" data-no-drag="true">
       <div className="g-volume-copy">
-        <strong>{label}</strong>
+        <strong>VOLUM</strong>
         <span>{value}%</span>
       </div>
       <input
@@ -380,9 +390,17 @@ function VolumeRail({
         max={100}
         step={1}
         value={value}
-        onChange={(event) => onChange(Number(event.target.value))}
-        aria-label={`${label} volume`}
+        onChange={(event) => onVolumeChange(Number(event.target.value))}
+        aria-label="Master volume"
       />
+      <div className="g-volume-toggles">
+        <button type="button" className={`g-volume-toggle${annEnabled ? " on" : ""}`} onClick={onAnnToggle}>
+          ANN
+        </button>
+        <button type="button" className={`g-volume-toggle signal${signalEnabled ? " on" : ""}`} onClick={onSignalToggle}>
+          SIGNAL
+        </button>
+      </div>
     </div>
   );
 }
@@ -438,10 +456,4 @@ function SignalGrid({
   );
 }
 
-function pct(v: number): string {
-  return v < 0 ? "—" : `${v}%`;
-}
-function mem(gb: number): string {
-  if (gb < 0) return "—";
-  return gb < 1 ? `${Math.round(gb * 1024)}M` : `${gb.toFixed(1)}G`;
-}
+
