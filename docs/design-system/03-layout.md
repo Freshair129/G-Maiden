@@ -1,7 +1,7 @@
 ---
-version: "2.2.2-draft"
+version: "2.2.3-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-09T18:00:00+07:00,Claude"
+last_update: "2026-07-10T00:00:00+07:00,Claude"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -42,8 +42,14 @@ There are two active coordinate spaces:
 Scaling is applied to the whole stage:
 
 ```ts
-s = min(window.innerWidth / 1420, window.innerHeight / 760, 1.4)
+s = min(window.innerWidth / 1420, window.innerHeight / 760, 1.0)
 ```
+
+The upper clamp was `1.4` until CR-007 follow-up (Boss feedback 2026-07-09): on a
+1920x1080 screen that resolved to ~1.35x, upscaling every 1px rim/text into a fat
+blurry line ("chunky" feedback). The clamp is now `1.0` — the stage only ever scales
+*down* to fit a smaller window, never up past its authored 1420x760 size, so rims and
+text stay crisp at 1:1 on anything 1420x760 or larger.
 
 This means shell polish must be done in stage coordinates first, not screenshot pixels.
 
@@ -54,6 +60,7 @@ This means shell polish must be done in stage coordinates first, not screenshot 
 | L0 | Window canvas | transparent desktop window owned by Tauri |
 | L1 | `.g-l1-white-glass` | low-alpha support plate under the app mass, clamped to the panel envelope; no backdrop blur |
 | L2 | `.g-deck-panel` | clipped subtract-shell body |
+| L2r | `.g-panel-rim` | stage-sibling rim overlay (not a panel child — the panel's clip/overflow/contain would eat its drop-shadow); overlays the panel box, `z-index:11` |
 | L3 | `.g-sidebar-fab`, `.g-topbar-fab`, `.g-audio-rail` | floating shell attachments |
 | L4 | `.g-power-radial`, `.g-signals-fab` | interaction overlays and status cards |
 
@@ -311,6 +318,8 @@ Current dashboard sectors inside `.gm-fung-layout`:
 
 - The shell is still a fixed authored composition.
 - Responsiveness is done by scaling the whole stage, not by reflowing individual sectors.
+- The stage scale is clamped to a max of `1.0` (§2) — it only ever scales down for a
+  window smaller than 1420x760; it never scales up past authored size.
 - No freeform browser-style responsive collapse is currently part of the implementation.
 
 ## 8. Known drift / known gaps

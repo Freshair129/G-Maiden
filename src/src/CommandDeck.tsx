@@ -87,7 +87,10 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
     const apply = () => {
       const stage = stageRef.current;
       if (stage) {
-        const s = Math.min(window.innerWidth / 1420, window.innerHeight / 760, 1.4);
+        // CR-007 follow-up: never upscale past authored 1420×760 size — a >1.0
+        // scale factor blows up 1px rims/text into fat blurry lines ("chunky"
+        // feedback). Downscale for small windows still applies via the min().
+        const s = Math.min(window.innerWidth / 1420, window.innerHeight / 760, 1.0);
         stage.style.transform = `translate(-50%, -50%) scale(${s})`;
       }
     };
@@ -306,9 +309,6 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
 
       {/* glass panel — hosts the active tab (rich, live-wired content preserved) */}
       <main className="g-deck-panel">
-        <svg className="g-panel-rim" viewBox="0 0 1280 720" aria-hidden="true" focusable="false">
-          <use href="#gSubtractPanelPath" />
-        </svg>
         {error ? <div className="banner err">engine offline ({error})</div> : null}
         <div className={`surface page-${tab}`}>
           {tab === "dashboard" && <GMaidenFungDashboard data={data} />}
@@ -329,6 +329,17 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
           {tab === "account" && <AccountPage />}
         </div>
       </main>
+
+      {/* Panel rim — g-deck-stage sibling of g-deck-panel, NOT a child. .g-deck-panel has
+          overflow:hidden + contain:paint + clip-path, so a filter/drop-shadow on a child
+          of it is clipped to the panel silhouette and never reaches the background. As a
+          stage sibling positioned to exactly overlay the panel (same box, same shared
+          #gSubtractPanelPath def above), its drop-shadow feathers outward past the
+          notches instead of being clipped away with the panel. Same escape pattern as
+          SignalGrid below. */}
+      <svg className="g-panel-rim" viewBox="0 0 1280 720" aria-hidden="true" focusable="false">
+        <use href="#gSubtractPanelPath" />
+      </svg>
 
       {/* G-Signal cluster (D/E/F/G) — stage-level sibling of g-deck-panel, NOT a child.
           It must live outside the clipped panel so it renders inside the bottom-right

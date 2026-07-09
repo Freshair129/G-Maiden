@@ -23,7 +23,12 @@
   --g-font-ui: "Segoe UI", system-ui, sans-serif; --g-font-mono: Consolas, ui-monospace, monospace;
   --g-r-sm: 8px; --g-r-card: 11px; --g-r-panel: 14px; --g-r-fab: 16px; --g-r-pill: 999px;
   --g-r-frame-outer: 28px; --g-r-frame-notch: 20px;
-  --g-shadow-fab: 0 12px 34px rgba(0,0,0,0.42); --g-shadow-panel: 0 18px 50px rgba(0,0,0,0.55);
+  /* CR-007 follow-up (Boss feedback 2026-07-09): feathered ambient-shadow family so
+     the shell reads as one floating composition instead of hard-edged cutouts —
+     two soft layers (near + far) in the same rgba(3,6,12,…) hue used everywhere. */
+  --g-shadow-fab: 0 22px 56px rgba(3,6,12,0.50), 0 5px 18px rgba(3,6,12,0.38);
+  --g-shadow-tight: 0 14px 34px rgba(3,6,12,0.44), 0 3px 12px rgba(3,6,12,0.34);
+  --g-shadow-panel: 0 18px 50px rgba(0,0,0,0.55);
   --g-rim-top: inset 0 1px 0 rgba(255,255,255,0.06);
   --g-blur-panel: blur(30px) saturate(150%); --g-blur-fab: blur(24px) saturate(160%); --g-blur-tile: blur(6px);
   --g-t-micro: 0.12s; --g-t-hover: 0.15s; --g-t-state: 0.2s; --g-t-bar: 0.3s;
@@ -4317,12 +4322,14 @@ body {
 .deck-v3.g-deck .warning-tab,
 .deck-v3.g-deck .hero-card-face,
 .deck-v3.g-deck .live-badge,
-.deck-v3.g-deck .g-telchip,
-.deck-v3.g-deck .g-sig,
-.deck-v3.g-deck .g-sidebar-fab,
-.deck-v3.g-deck .g-topbar-fab {
+.deck-v3.g-deck .g-telchip {
   box-shadow: none !important;
 }
+/* CR-007 follow-up: .g-sig / .g-sidebar-fab / .g-topbar-fab used to be flattened here
+   too (box-shadow: none !important) — that's what made the shell read as hard-edged
+   paper cutouts (Boss feedback 2026-07-09). They now carry the feathered shadow
+   family instead; see the dedicated .g-sidebar-fab / .g-topbar-fab / .g-sig rules
+   below (the CR-006 skeleton-port cascade) which set box-shadow directly. */
 
 .deck-v3.g-deck .board-bento .bento-card,
 .deck-v3.g-deck .hero-card-face,
@@ -4419,23 +4426,27 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.025);
 }
 
-/* CR-007 follow-up: drag-lag suppression — WebView2 recomposites large backdrop-filter
-   and box-shadow layers on every window-move tick during a native drag. Only
-   .g-deck-panel and .g-l1-white-glass carry real cost here (the FAB/notch
-   elements already run backdrop-filter:none + box-shadow:none via the CR-006
-   cascade); the rest of the selector list is kept for defense-in-depth in case
-   that cascade ever changes. Toggled by startWindowDrag() in CommandDeck.tsx. */
+/* CR-007 follow-up: drag-lag suppression — WebView2 recomposites large backdrop-filter,
+   box-shadow AND filter (drop-shadow) layers on every window-move tick during a native
+   drag. .g-sidebar-fab / .g-topbar-fab / .g-sig / .g-power-main / .g-power-action now
+   carry the feathered box-shadow family (Boss feedback 2026-07-09 — see --g-shadow-fab
+   / --g-shadow-tight above), and .g-panel-rim use carries a 3-layer drop-shadow filter,
+   so all of them must be listed here too, not just .g-deck-panel / .g-l1-white-glass.
+   Toggled by startWindowDrag() in CommandDeck.tsx. */
 .is-dragging .g-deck-panel,
+.is-dragging .g-panel-rim use,
 .is-dragging .g-sidebar-fab,
 .is-dragging .g-topbar-fab,
 .is-dragging .g-l1-white-glass,
 .is-dragging .g-signals-fab,
+.is-dragging .g-sig,
 .is-dragging .g-audio-rail,
 .is-dragging .g-power-main,
 .is-dragging .g-power-action {
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
   box-shadow: none !important;
+  filter: none !important;
   transition: none !important;
 }
 
@@ -4466,21 +4477,40 @@ body {
   display: none !important;
 }
 
+/* CR-007 follow-up (2026-07-10 gate fix): .g-panel-rim used to live INSIDE
+   .g-deck-panel, but that panel has overflow:hidden + contain:paint + clip-path
+   (Subtract silhouette) — any filter/drop-shadow on a child is clipped to the
+   panel shape and never reaches the background, so the "feathered edge" never
+   actually rendered. .g-panel-rim is now a .g-deck-stage sibling (see
+   CommandDeck.tsx, rendered right after </main>), positioned in stage
+   coordinates to exactly overlay the panel box. As a sibling it sits outside
+   the panel's clip/overflow/contain, so its drop-shadow diffuses outward past
+   the notches into the background — the same escape pattern SignalGrid uses.
+   z-index sits just above the panel (10) and below the FAB layer (32-35) so
+   the sidebar/topbar/power/signal FABs still draw on top of it. */
 .g-panel-rim {
   position: absolute;
-  inset: 0;
-  z-index: 9;
+  left: var(--cr6-panel-left);
+  top: var(--cr6-panel-top);
   width: var(--cr6-panel-width);
   height: var(--cr6-panel-height);
+  z-index: 11;
   pointer-events: none;
   overflow: visible;
 }
 
 .g-panel-rim use {
   fill: none;
-  stroke: rgba(184, 218, 255, 0.42);
+  stroke: rgba(184, 218, 255, 0.30);
   stroke-width: 1.15;
-  filter: drop-shadow(0 0 16px rgba(108, 164, 255, 0.2));
+  /* Panel-edge feather: two dark ambient layers (near + far) + a very faint ice
+     bloom, same family/hue as the FAB shadows below. This is the layer that
+     actually diffuses the panel edge into the background (see the stage-sibling
+     comment above .g-panel-rim for why it has to live outside .g-deck-panel). */
+  filter:
+    drop-shadow(0 32px 80px rgba(3, 6, 12, 0.55))
+    drop-shadow(0 10px 30px rgba(3, 6, 12, 0.42))
+    drop-shadow(0 0 40px rgba(143, 212, 255, 0.07));
 }
 
 .g-deck-panel .surface {
@@ -4528,12 +4558,12 @@ body {
      gradient/translucency — so this reads as the SAME frosted-dark family as the
      rest of the left column instead of a sheer chip over raw wallpaper. */
   background: #0a0e15;
-  border: 1px solid rgba(150, 185, 230, 0.2);
+  border: 1px solid rgba(150, 185, 230, 0.16);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   cursor: pointer;
   box-shadow:
-    0 10px 18px rgba(0,0,0,.2),
+    var(--g-shadow-tight),
     inset 0 1px 0 rgba(255,255,255,.04);
   -webkit-app-region: no-drag;
   position: absolute;
@@ -4566,7 +4596,7 @@ body {
   display: grid;
   place-items: center;
   border-radius: 10px;
-  border: 1px solid rgba(184, 218, 255, 0.14);
+  border: 1px solid rgba(184, 218, 255, 0.11);
   color: #dceaff;
   /* Same solid material as .g-sidebar-fab / .g-power-main — see comment there. */
   background: #0a0e15;
@@ -4577,7 +4607,7 @@ body {
   font-weight: 800;
   line-height: 1;
   box-shadow:
-    0 8px 16px rgba(0,0,0,.16),
+    var(--g-shadow-tight),
     inset 0 1px 0 rgba(255,255,255,.035);
   position: absolute;
   /* fan RIGHT of the main button in a compact row, vertically centered on it
@@ -4586,18 +4616,18 @@ body {
 }
 
 .g-power-action.tray {
-  border-color: rgba(184, 218, 255, 0.16);
+  border-color: rgba(184, 218, 255, 0.13);
   left: 58px;
 }
 
 .g-power-action.quit {
-  border-color: rgba(255, 139, 139, 0.2);
+  border-color: rgba(255, 139, 139, 0.16);
   color: #ffd7d7;
   left: 106px;
 }
 
 .g-power-action.drag {
-  border-color: rgba(160, 196, 255, 0.26);
+  border-color: rgba(160, 196, 255, 0.2);
   color: #f5f8ff;
   left: 154px;
 }
@@ -4614,7 +4644,8 @@ body {
   display: block !important;
   border-radius: 18px !important;
   background: #0a0e15 !important;
-  border: 1px solid rgba(150, 185, 230, 0.2) !important;
+  border: 1px solid rgba(150, 185, 230, 0.16) !important;
+  box-shadow: var(--g-shadow-fab) !important;
   -webkit-app-region: drag !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
@@ -4659,8 +4690,8 @@ body {
   padding: 0 14px !important;
   border-radius: 18px !important;
   background: #0b0e15 !important;
-  border: 1px solid rgba(150, 185, 230, 0.18) !important;
-  box-shadow: 0 18px 36px rgba(0, 0, 0, 0.36) !important;
+  border: 1px solid rgba(150, 185, 230, 0.14) !important;
+  box-shadow: var(--g-shadow-fab) !important;
   -webkit-app-region: drag !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
@@ -4891,7 +4922,8 @@ body {
 .g-sig {
   border-radius: 12px !important;
   background: #0c111a !important;
-  border-color: rgba(142, 176, 226, 0.24) !important;
+  border-color: rgba(142, 176, 226, 0.18) !important;
+  box-shadow: var(--g-shadow-tight) !important;
   -webkit-backdrop-filter: none !important;
   backdrop-filter: none !important;
   padding: 10px 12px !important;

@@ -1,7 +1,7 @@
 ---
-version: "2.1.0-draft"
+version: "2.1.1-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-09T10:32:00+07:00,Codex"
+last_update: "2026-07-10T00:00:00+07:00,Claude"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -34,6 +34,7 @@ Dashboard:
 Primitives:
 - Status pill
 - Button
+- Elevation / shadow family
 
 ## 1. Topbar FAB
 
@@ -281,7 +282,52 @@ Shared rules:
 - light blue rim
 - `no-drag` on interactive targets
 
-## 13. Removed or superseded component ideas
+## 13. Elevation / shadow family
+
+CR-007 follow-up (Boss feedback 2026-07-09): "ปรับ scale และปรับขอบให้ฟุ้ง" — the shell
+pieces read as hard-edged paper cutouts because an earlier flatten pass had set
+`box-shadow: none !important` on the FABs. All shell pieces now share one feathered
+ambient-shadow family so the stack reads as one floating composition, not stacked cards.
+
+Tokens (`:root` in `src/src/styles.css`):
+- `--g-shadow-fab: 0 22px 56px rgba(3,6,12,0.50), 0 5px 18px rgba(3,6,12,0.38)` — large
+  FABs: `.g-sidebar-fab`, `.g-topbar-fab`.
+- `--g-shadow-tight: 0 14px 34px rgba(3,6,12,0.44), 0 3px 12px rgba(3,6,12,0.34)` — small
+  buttons/cards: `.g-power-main`, `.g-power-action`, `.g-sig`.
+
+ค่าเบลอถูกดันขึ้นหนึ่งขั้น (Boss feedback 2026-07-10 "เพิ่มความเบลอไปอีก"):
+panel-rim feather = `drop-shadow(0 32px 80px @.55) + (0 10px 30px @.42) + ice bloom (0 0 40px @.07)`.
+
+Panel edge: `.g-deck-panel` is clipped by the Subtract path (`clip-path`, plus
+`overflow:hidden` + `contain:paint`), so a `box-shadow` — or a `filter` on a
+child of the panel — never draws outside the notches. `.g-panel-rim` fixes this
+by living as a **`.g-deck-stage` sibling** of `.g-deck-panel` (rendered right
+after `</main>` in `CommandDeck.tsx`, same escape pattern as `SignalGrid`),
+positioned in stage coordinates to exactly overlay the panel box while reusing
+the same `#gSubtractPanelPath` def. As a sibling it sits outside the panel's
+clip/overflow/contain, so its 3-layer `filter: drop-shadow(...)` (two dark
+ambient layers + a faint ice bloom, same hue family as the FABs above) is the
+only thing that actually diffuses the panel edge into the background. Stacking:
+`.g-panel-rim` is `z-index: 11` — just above `.g-deck-panel` (`10`) and below
+the FAB layer (`32`-`35`), so the sidebar/topbar/power/signal FABs still draw
+on top of it.
+
+Rim lines: border/stroke alpha on `.g-sidebar-fab`, `.g-topbar-fab`, `.g-power-main`,
+`.g-power-action.*`, `.g-sig`, and the `.g-panel-rim use` stroke were softened
+~20-30% so the 1px rim line doesn't fight the new soft shadow.
+
+Not shadowed: `.g-audio-rail` / `.g-volume-rail` stay transparent/borderless — the
+prior "drop milky window plate" fix (commit `0eb35042`) deliberately removed their
+plate, and a shadow on a fill-less box would reintroduce a hazy floating-rectangle
+artifact with nothing backing it. Revisit only if the audio rail gets a real plate
+again.
+
+Drag-lag guard: `.is-dragging` (see `startWindowDrag()` in `CommandDeck.tsx`) forces
+`box-shadow: none !important` and `filter: none !important` on every element above
+(plus `.g-panel-rim use` specifically for the filter) during a native window drag —
+WebView2 recomposites these layers on every window-move tick otherwise.
+
+## 14. Removed or superseded component ideas
 
 These appear in older mock/design notes but are not the current active shell:
 
