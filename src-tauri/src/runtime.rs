@@ -89,6 +89,23 @@ pub fn signal_enabled() -> bool {
     SIGNAL_ENABLED.load(Ordering::Relaxed)
 }
 
+/// Whether G-AnnStudio announcer voice lines (kill/streak/death/etc., fired
+/// from `gsi.rs`'s `announcer::most_important` path) are enabled. Defaults on
+/// so a fresh install narrates out of the box.
+///
+/// This is intentionally independent of `SIGNAL_ENABLED` above: G-Signal's
+/// gank/danger/revision interrupts are a different, always-critical path
+/// (capture.rs's `voice_interrupt`, gated only by `signal_enabled()`) and must
+/// never be gated by this flag — CLAUDE.md's audio priority rule.
+static ANNOUNCER_ENABLED: AtomicBool = AtomicBool::new(true);
+
+pub fn set_announcer_enabled(v: bool) {
+    ANNOUNCER_ENABLED.store(v, Ordering::Relaxed);
+}
+pub fn announcer_enabled() -> bool {
+    ANNOUNCER_ENABLED.load(Ordering::Relaxed)
+}
+
 pub fn set_signal_sensitivity(s: Sensitivity) {
     let code: u8 = match s {
         Sensitivity::Low => 0,
@@ -182,4 +199,36 @@ pub fn master_api_key() -> Option<String> {
         .ok()
         .map(|g| g.clone())
         .filter(|s| !s.trim().is_empty())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn announcer_enabled_defaults_true_and_toggles() {
+        assert!(announcer_enabled(), "announcer must default to enabled");
+        set_announcer_enabled(false);
+        assert!(!announcer_enabled());
+        set_announcer_enabled(true);
+        assert!(announcer_enabled());
+    }
+
+    #[test]
+    fn signal_enabled_and_announcer_enabled_are_independent_flags() {
+        // CLAUDE.md audio priority rule: the announcer toggle must never gate
+        // G-Signal (danger/gank/revision), and vice versa.
+        set_signal_enabled(false);
+        set_announcer_enabled(true);
+        assert!(!signal_enabled());
+        assert!(announcer_enabled());
+
+        set_signal_enabled(true);
+        set_announcer_enabled(false);
+        assert!(signal_enabled());
+        assert!(!announcer_enabled());
+
+        // restore defaults for any other test sharing this process
+        set_announcer_enabled(true);
+    }
 }

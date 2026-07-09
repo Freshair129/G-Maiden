@@ -1,5 +1,5 @@
 import { memo, useState, type ReactNode } from "react";
-import { formatTimer, toneClass, useCompanionData } from "./companion";
+import { formatKda, formatTimer, toneClass, useCompanionData } from "./companion";
 
 export const LiveMatchPage = memo(function LiveMatchPage() {
   const { data } = useCompanionData();
@@ -51,7 +51,7 @@ export const LiveMatchPage = memo(function LiveMatchPage() {
                   </div>
                   <div className="hero-meta">
                     <span>{hero.player}</span>
-                    <span>{hero.kills}/{hero.deaths}/{hero.assists}</span>
+                    <span>{formatKda(hero, "/")}</span>
                   </div>
                 </div>
                 <div className={`hero-state ${hero.state}`}>

@@ -294,9 +294,23 @@ fn set_cv_voice(name: Option<String>, rate: Option<i32>) {
 }
 
 /// Mirror the UI's G-Signal toggle so the capture loop can skip warning work.
+/// Emits `signal-change` (mirrors `set_volume`'s `volume-change`) so any
+/// surface that owns this flag (the deck's audio rail) stays in sync even
+/// when a different writer changes it (CR-007 WP-4 Fix 1).
 #[tauri::command]
-fn set_cv_signal_enabled(enabled: bool) {
+fn set_cv_signal_enabled(app: tauri::AppHandle, enabled: bool) {
     runtime::set_signal_enabled(enabled);
+    let _ = app.emit("signal-change", enabled);
+}
+
+/// Mirror the UI's announcer toggle (G-AnnStudio kill/streak/death lines,
+/// gated in gsi.rs). Independent of G-Signal — danger/gank/revision always
+/// fire regardless of this flag (see runtime::ANNOUNCER_ENABLED doc comment).
+/// Emits `announcer-change` so other surfaces stay in sync (CR-007 WP-4 Fix 1).
+#[tauri::command]
+fn set_announcer_enabled(app: tauri::AppHandle, enabled: bool) {
+    runtime::set_announcer_enabled(enabled);
+    let _ = app.emit("announcer-change", enabled);
 }
 
 /// Mirror the UI's G-Signal sensitivity picker (Low/Med/High) so the capture
@@ -493,6 +507,7 @@ fn main() {
             list_voices,
             set_cv_voice,
             set_cv_signal_enabled,
+            set_announcer_enabled,
             set_cv_signal_sensitivity,
             set_master_backend,
             set_master_ollama_model,

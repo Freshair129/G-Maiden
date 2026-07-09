@@ -4,7 +4,7 @@ import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import type { GameTick, GsiStatus, MinimapCv, EnemyMissing, SignalAlert, ResourceStats } from "./live/events";
 import { buildMatch } from "./live/buildMatch";
-import { buildHeroes } from "./live/buildHeroes";
+import { buildHeroes, assignEnemySlot } from "./live/buildHeroes";
 import { buildMarkers } from "./live/buildMarkers";
 import { buildSignals } from "./live/buildSignals";
 import { buildProfile } from "./live/buildProfile";
@@ -13,6 +13,7 @@ import { buildTelemetry } from "./live/buildTelemetry";
 import { buildWeekly } from "./live/buildWeekly";
 import { buildInsights } from "./live/buildInsights";
 import { buildHistory, type MatchLog } from "./live/buildHistory";
+import { buildActivity } from "./live/buildActivity";
 import { fetchOpenDotaProfile, type OpenDotaProfile } from "./live/opendota";
 import { loadIdentity, saveIdentity, IDENTITY_EVENT } from "./live/identity";
 import { heroName } from "./live/heroNames";
@@ -20,7 +21,9 @@ import { heroName } from "./live/heroNames";
 const STEAMID64_BASE = 76561197960265728n;
 
 export type CompanionTone = "info" | "warn" | "danger" | "good";
-export type HeroState = "visible" | "missing" | "dead";
+// "empty" = an honestly-unknown slot (CR-007 WP-4): GSI exposes only the
+// local player, so 9 of the 10 hero slots start with no identity at all.
+export type HeroState = "visible" | "missing" | "dead" | "empty";
 
 export type CompanionData = {
   updatedAt: number;
@@ -40,13 +43,11 @@ export type CompanionData = {
     viewers: number;
     watchLabel: string;
     activeAlerts: number;
-    server: string;
     latencyMs: number;
     gsiScore: number;
     overlayMode: string;
     voicePack: string;
     privacy: string;
-    performance: string;
     systemStatus: string;
     playerStats: {
       goal: string;
@@ -80,24 +81,26 @@ export type CompanionData = {
     hero: string;
     player: string;
     team: "ally" | "enemy";
-    level: number;
-    kills: number;
-    deaths: number;
-    assists: number;
+    // CR-007 WP-4 (honest state): GSI/CV can tell us a slot is occupied
+    // without telling us its KDA/economy — these render "—", never a fake 0.
+    level?: number;
+    kills?: number;
+    deaths?: number;
+    assists?: number;
     state: HeroState;
     timer: number;
     lane: string;
     items: string[];
-    pingMs: number;
+    pingMs?: number;
     connection: "online" | "lagging" | "offline";
-    nw: number;
-    gpm: number;
-    xpm: number;
-    lastHits: number;
-    denies: number;
-    mmr: number;
+    nw?: number;
+    gpm?: number;
+    xpm?: number;
+    lastHits?: number;
+    denies?: number;
+    mmr?: number;
     rank: string;
-    hpPercent: number;
+    hpPercent?: number;
     buyback: boolean;
     tp: boolean;
     ultReady: boolean;
@@ -122,11 +125,11 @@ export type CompanionData = {
     label?: string;
     state?: HeroState;
   }>;
-  signals: Array<{ label: string; tone: CompanionTone; value: string }>;
-  recommendations: string[];
+  // CR-007 WP-4: D/E/F/G annunciator cluster. barPct (0-100) drives the bar
+  // fill directly — no ad-hoc math left in the UI layer (see buildSignals.ts).
+  signals: Array<{ label: string; tone: CompanionTone; value: string; barPct: number }>;
   activity: Array<{ id: string; at: string; text: string; tone: CompanionTone }>;
   events: Array<{ id: string; at: string; text: string; tone: CompanionTone }>;
-  warningTabs: Array<{ key: string; label: string; count: number; text: string }>;
   buildAdvisor: {
     hero: string;
     lane: string;
@@ -176,6 +179,43 @@ export type CompanionData = {
   history: Array<{ id: string; result: string; hero: string; kda: string; note: string }>;
 };
 
+// CR-007 WP-4: an honestly-empty hero slot. GSI only ever exposes the local
+// player (ally slot 0); every other slot starts with no identity and no
+// numeric stats — those render "—", never a fabricated 0. buildHeroes() fills
+// enemy slots in from the `missing` map / MinimapCv as real identities arrive.
+function emptyHeroSlot(id: string, team: "ally" | "enemy"): CompanionData["heroes"][number] {
+  return {
+    id,
+    hero: "—",
+    player: "—",
+    team,
+    state: "empty",
+    timer: 0,
+    lane: "—",
+    items: [],
+    connection: "online",
+    rank: "—",
+    buyback: false,
+    tp: false,
+    ultReady: false,
+    neutral: "",
+    profile: { public: false, winRate: 0, games: 0, kda: 0, mainHero: { name: "", games: 0, winRate: 0 }, behavior: 0, role: "" }
+  };
+}
+
+const FALLBACK_HEROES: CompanionData["heroes"] = [
+  emptyHeroSlot("a1", "ally"),
+  emptyHeroSlot("a2", "ally"),
+  emptyHeroSlot("a3", "ally"),
+  emptyHeroSlot("a4", "ally"),
+  emptyHeroSlot("a5", "ally"),
+  emptyHeroSlot("e1", "enemy"),
+  emptyHeroSlot("e2", "enemy"),
+  emptyHeroSlot("e3", "enemy"),
+  emptyHeroSlot("e4", "enemy"),
+  emptyHeroSlot("e5", "enemy")
+];
+
 // Retained sparse pregame fallback (exported for reference / future use). Phase 1
 // renders the rich MOCK below instead so the deck shows a full demo with no backend.
 export const FALLBACK: CompanionData = {
@@ -196,13 +236,11 @@ export const FALLBACK: CompanionData = {
     viewers: 0,
     watchLabel: "WATCH IN-GAME",
     activeAlerts: 3,
-    server: "SEA",
     latencyMs: 18,
     gsiScore: 86,
     overlayMode: "Mirror mode",
     voicePack: "Calm tactical",
     privacy: "Local-only",
-    performance: "Balanced",
     systemStatus: "Companion monitoring",
     playerStats: { goal: "Hold river", net: "0", ward: "0/0", gpm: 0, xpm: 0 },
     player: {
@@ -211,18 +249,20 @@ export const FALLBACK: CompanionData = {
       cs: 0, csAvg: 0, denies: 0, deniesAvg: 0, ping: 0
     }
   },
-  heroes: [],
+  heroes: FALLBACK_HEROES,
   markers: [],
+  // Honest "not connected yet" state — no invented baseline (CR-007 WP-4).
+  // Once live data arrives, buildSignals() computes these fresh from real
+  // gank-alert/missing-map inputs, which naturally settle on the same shape
+  // (0 missing / no gank) when the match is genuinely quiet.
   signals: [
-    { label: "Enemy Missing", tone: "danger", value: "Standby" },
-    { label: "Gank Risk", tone: "warn", value: "Low" },
-    { label: "Vision Pressure", tone: "info", value: "Waiting" },
-    { label: "Safe Push", tone: "good", value: "Hold" }
+    { label: "Enemy Missing", tone: "info", value: "—", barPct: 0 },
+    { label: "Gank Risk", tone: "info", value: "—", barPct: 0 },
+    { label: "Risk Level", tone: "info", value: "—", barPct: 0 },
+    { label: "Gank ETA", tone: "info", value: "—", barPct: 0 }
   ],
-  recommendations: [],
   activity: [],
   events: [],
-  warningTabs: [],
   buildAdvisor: { hero: "Maiden", lane: "Support", itemPath: [], nextItem: "", notes: [] },
   companion: { overlayEnabled: true, voiceEnabled: true, motionIntensity: 60, dangerThreshold: 70, hotkeys: [] },
   // -1 = "no reading" so the footer/stat cards render "—" (waiting), not a fake 0.
@@ -257,13 +297,11 @@ export const MOCK: CompanionData = {
     viewers: 5,
     watchLabel: "WATCH IN-GAME",
     activeAlerts: 3,
-    server: "SEA",
     latencyMs: 18,
     gsiScore: 86,
     overlayMode: "Mirror mode",
     voicePack: "Calm tactical",
     privacy: "Local-only",
-    performance: "Balanced",
     systemStatus: "Companion monitoring",
     playerStats: { goal: "Avoid river", net: "14.8k", ward: "6/3", gpm: 612, xpm: 721 },
     player: {
@@ -300,16 +338,10 @@ export const MOCK: CompanionData = {
     { id: "roshan", x: 73, y: 31, kind: "objective", label: "R" }
   ],
   signals: [
-    { label: "Enemy Missing", tone: "danger", value: "2 heroes" },
-    { label: "Roshan Window", tone: "warn", value: "00:38" },
-    { label: "Ward Suggestion", tone: "info", value: "Top rune" },
-    { label: "Push Opportunity", tone: "good", value: "Bot T1" }
-  ],
-  recommendations: [
-    "Back off river in 8s: smoke route prediction active.",
-    "Place a ward at top rune before the next wisdom cycle.",
-    "Bot lane is the safest push window while 2 enemy heroes are off map.",
-    "Roshan contest likelihood increased after enemy carry respawn."
+    { label: "Enemy Missing", tone: "danger", value: "2 heroes", barPct: 40 },
+    { label: "Roshan Window", tone: "warn", value: "00:38", barPct: 60 },
+    { label: "Ward Suggestion", tone: "info", value: "Top rune", barPct: 80 },
+    { label: "Push Opportunity", tone: "good", value: "Bot T1", barPct: 25 }
   ],
   activity: [
     { id: "ac1", at: "24:11", text: "Two enemy heroes still off map; river route remains unsafe.", tone: "warn" },
@@ -324,12 +356,6 @@ export const MOCK: CompanionData = {
     { id: "ev3", at: "23:44", text: "Wisdom rune captured.", tone: "info" },
     { id: "ev4", at: "23:30", text: "Ultimate ready: Maiden callout armed.", tone: "info" },
     { id: "ev5", at: "23:02", text: "Enemy carry used buyback.", tone: "danger" }
-  ],
-  warningTabs: [
-    { key: "danger", label: "Danger", count: 3, text: "2 off-map heroes, smoke risk, mid collapse" },
-    { key: "objectives", label: "Objectives", count: 2, text: "Roshan window and bot tower pressure" },
-    { key: "vision", label: "Vision", count: 4, text: "Fresh ward path and deward candidate near river" },
-    { key: "power", label: "Power Spike", count: 1, text: "Ultimate stack ready for next fight" }
   ],
   buildAdvisor: {
     hero: "Maiden",
@@ -407,15 +433,27 @@ type LiveState = {
   gank: SignalAlert | null;
   missing: Map<string, number>;
   missingPos: Map<string, [number, number]>; // 2b-B: last-seen pos of missing enemies (markers)
+  // CR-007 WP-4 Fix 3: permanent npcHeroName -> enemy-slot-index (0-4) table.
+  // Assigned once per hero (assignEnemySlot in buildHeroes.ts), never
+  // reassigned, so enemy slots stop shuffling mid-match. Reset only on a new
+  // match — see the game-tick handler in ensureRuntime() below.
+  enemySlots: Map<string, number>;
   active: boolean; // flips true after the first live event (else pure FALLBACK)
   od: OpenDotaProfile | null; // Phase 2b-A: your public OpenDota profile (no DB)
   stats: ResourceStats | null; // Phase 2c: governor RAM/CPU sample (telemetry footer)
   logs: MatchLog[] | null;     // Phase 2c: local G-Log match files (history + learnedMatches)
+  // CR-007 WP-4: persisted ring buffer for the Alert Deck, same pattern as
+  // `missing`/`missingPos` above — appended incrementally by buildActivity()
+  // as discrete gank-alert/gank-clear/enemy-missing events arrive, not
+  // recomputed from scratch on every publish (a ring buffer has no "current
+  // value" to re-derive, only a history to append to).
+  activityLog: CompanionData["activity"];
 };
 
 const EMPTY_LIVE: LiveState = {
   tick: null, status: null, cv: null, gank: null, missing: new Map(), missingPos: new Map(),
-  active: false, od: null, stats: null, logs: null
+  enemySlots: new Map(),
+  active: false, od: null, stats: null, logs: null, activityLog: []
 };
 
 type CompanionSnapshot = {
@@ -442,12 +480,14 @@ let logsLoadedForInGame: boolean | null = null;
 let lastOpenDotaAccountId: number | null = null;
 let logsRequestSeq = 0;
 let profileRequestSeq = 0;
+let activitySeq = 0; // monotonic id source for buildActivity() — keeps ids pure/deterministic
 
 function cloneLive(state: LiveState): LiveState {
   return {
     ...state,
     missing: new Map(state.missing),
     missingPos: new Map(state.missingPos),
+    enemySlots: new Map(state.enemySlots),
   };
 }
 
@@ -457,9 +497,10 @@ function buildCompanionData(live: LiveState): CompanionData {
         ...FALLBACK,
         updatedAt: Date.now(),
         match: buildMatch(live.tick, live.status, FALLBACK.match),
-        heroes: buildHeroes(live.tick, live.missing, live.cv, FALLBACK.heroes),
+        heroes: buildHeroes(live.tick, live.missing, live.cv, FALLBACK.heroes, live.enemySlots),
         markers: buildMarkers(live.cv, live.missingPos, FALLBACK.markers),
-        signals: buildSignals(live.gank, live.missing, FALLBACK.signals)
+        signals: buildSignals(live.gank, live.missing),
+        activity: live.activityLog
       }
     : { ...FALLBACK, updatedAt: Date.now() };
 
@@ -650,23 +691,65 @@ function ensureRuntime() {
     }
   }
 
-  sub<GameTick>("game-tick", (p) => updateLive((s) => ({ ...s, tick: p, active: true })));
+  sub<GameTick>("game-tick", (p) =>
+    updateLive((s) => {
+      // CR-007 WP-4 Fix 3: reset the permanent enemy-slot table (+ the missing
+      // map that feeds it) on a new match. `clock_time <= 5` is the same
+      // "match just started" heuristic the backend already uses for the
+      // `match_start` announcer event (announcer.rs, `tick.clock_time <= 5`);
+      // reusing it here means we detect a new match with the same signal the
+      // rest of the app already treats as authoritative, instead of inventing
+      // a second one. Guarded by the previous tick so we only reset on the
+      // actual transition (pre-game -> pre-game with clock<=5 would otherwise
+      // re-reset every single tick).
+      const isNewMatch = p.clock_time <= 5 && (!s.tick || s.tick.clock_time > 5 || !s.tick.in_game);
+      if (isNewMatch) {
+        return { ...s, tick: p, active: true, missing: new Map(), missingPos: new Map(), enemySlots: new Map() };
+      }
+      return { ...s, tick: p, active: true };
+    })
+  );
   sub<GsiStatus>("gsi-status", (p) => updateLive((s) => ({ ...s, status: p, active: true })));
   sub<ResourceStats>("resource-stats", (p) => updateLive((s) => ({ ...s, stats: p }), true));
   sub<MinimapCv>("minimap-cv", (p) => {
     const now = Date.now();
     if (now - lastCvAt < CV_UPDATE_MS) return;
     lastCvAt = now;
-    updateLive((s) => ({ ...s, cv: p, active: true }));
+    updateLive((s) => {
+      let enemySlots = s.enemySlots;
+      for (const d of p.detections) {
+        if (d.name) enemySlots = assignEnemySlot(enemySlots, d.name);
+      }
+      if (enemySlots === s.enemySlots) return { ...s, cv: p, active: true };
+      return { ...s, cv: p, enemySlots, active: true };
+    });
   });
-  sub<SignalAlert>("gank-alert", (p) => updateLive((s) => ({ ...s, gank: p, active: true }), true));
-  sub<unknown>("gank-clear", () => updateLive((s) => ({ ...s, gank: null, missing: new Map(), missingPos: new Map(), active: true }), true));
+  sub<SignalAlert>("gank-alert", (p) =>
+    updateLive((s) => ({
+      ...s,
+      gank: p,
+      active: true,
+      activityLog: buildActivity({ kind: "gank-alert", payload: p }, Date.now(), ++activitySeq, s.activityLog)
+    }), true)
+  );
+  sub<unknown>("gank-clear", () =>
+    updateLive((s) => ({
+      ...s,
+      gank: null,
+      missing: new Map(),
+      missingPos: new Map(),
+      active: true,
+      activityLog: buildActivity({ kind: "gank-clear" }, Date.now(), ++activitySeq, s.activityLog)
+    }), true)
+  );
   sub<EnemyMissing>("enemy-missing", (p) => {
     updateLive((s) => {
       const next = cloneLive(s);
       next.missing.set(p.hero, p.missing_for_ms);
       next.missingPos.set(p.hero, p.last_pos);
+      next.enemySlots = assignEnemySlot(next.enemySlots, p.hero);
       next.active = true;
+      next.activityLog = buildActivity({ kind: "enemy-missing", payload: p }, Date.now(), ++activitySeq, s.activityLog);
       return next;
     });
     const prev = expiryTimers.get(p.hero);
@@ -730,6 +813,20 @@ export function useCompanionDataSelector<T>(
 
 export function toneClass(tone: CompanionTone) {
   return `tone-${tone}`;
+}
+
+// CR-007 WP-4 Fix 2: hero.kills/deaths/assists are optional (honest "unknown"
+// slots — see HeroState "empty" + emptyHeroSlot above). Every consumer that
+// renders a K/D/A line must go through this guard instead of interpolating
+// the three fields directly, or an undefined field renders as a literal
+// "undefined" and the missing separators collapse into a bare "//".
+export function formatKda(
+  hero: { kills?: number; deaths?: number; assists?: number },
+  separator = " / "
+): string {
+  return hero.kills !== undefined && hero.deaths !== undefined && hero.assists !== undefined
+    ? `${hero.kills}${separator}${hero.deaths}${separator}${hero.assists}`
+    : "—";
 }
 
 export function formatTimer(totalSeconds: number) {

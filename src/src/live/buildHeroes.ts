@@ -1,24 +1,76 @@
-// Phase 2a partial: only the local player slot is live; full 10-hero GSI = 2b.
+// Phase 2a partial + CR-007 WP-4 (honest content): only the local player slot
+// (ally #1 / index 0) is backed by real GSI data — game-tick only exposes the
+// LOCAL player, so ally slots 1-4 stay honestly "—" forever (GSI never
+// reveals teammates' identities). Enemy slots (index 5-9) get filled in from
+// two identity sources, both enemy-only:
 //
-// game-tick only exposes the LOCAL player (~30s heartbeat), so this builder can
-// only refresh a single ally slot with real stats. The remaining nine hero slots
-// stay on MOCK data until a GSI players block exists (Phase 2b). Enemy-missing
-// overlays are layered on top by matching npc hero names against base.hero.
+//   1. the `missing` map (G-Sentry "enemy-missing" events) — fog-of-war only
+//      ever tracks the *other* team.
+//   2. MinimapCv detections — also enemy-only: the CV pipeline pre-filters
+//      candidates to the enemy color ring (`enemy_team_ring()` in
+//      capture.rs/runtime.rs), so a detection's hero identity is always an
+//      enemy, never an ally.
+//
+// CR-007 WP-4 Fix 3 (gate regression): slot order used to be RE-DERIVED every
+// tick (missing-map insertion order, then CV-only names alphabetically), so a
+// newly-seen name that sorted earlier could push already-placed heroes into a
+// different slot mid-match (tick1: CV sees Zeus -> e1; tick2: CV sees Axe +
+// Zeus -> Axe takes e1 (alphabetically first), Zeus bumped to e2). Enemy
+// identity -> slot is now assigned ONCE, permanently, in `enemySlots`
+// (Map<npcHeroName, slotIndex 0-4>, owned + persisted by the live store in
+// companion.ts, reset only on a new match — see companion.ts's game-tick
+// handler). buildHeroes() stays pure: it only *reads* enemySlots to place an
+// already-assigned identity into its permanent slot; it never assigns or
+// reorders one itself. See `assignEnemySlot` below for the one place new
+// names actually claim a slot.
 
 import type { GameTick, MinimapCv } from "./events";
 import { prettyHeroName } from "./events";
 import type { CompanionData } from "../companion";
 
+export const ENEMY_SLOT_COUNT = 5;
+
+/**
+ * Claim the first free enemy slot (0-4) for `npcName` if it doesn't already
+ * have one. Pure/immutable: returns a NEW Map when it assigns a slot, or the
+ * SAME Map reference when there's nothing to do (already known, empty name,
+ * or all 5 slots already claimed) — callers can cheaply skip work by
+ * reference-comparing the result, matching the rest of live/companion.ts's
+ * "return same reference = no-op" convention.
+ *
+ * Once a name claims a slot here it keeps it for the rest of the match; nothing
+ * in this module ever removes or reassigns an entry (see companion.ts for the
+ * one place that resets the whole table on a new match).
+ */
+export function assignEnemySlot(assignments: Map<string, number>, npcName: string): Map<string, number> {
+  if (!npcName || assignments.has(npcName) || assignments.size >= ENEMY_SLOT_COUNT) return assignments;
+  const used = new Set(assignments.values());
+  for (let slot = 0; slot < ENEMY_SLOT_COUNT; slot++) {
+    if (!used.has(slot)) {
+      const next = new Map(assignments);
+      next.set(npcName, slot);
+      return next;
+    }
+  }
+  return assignments;
+}
+
 export function buildHeroes(
   tick: GameTick | null,
   missing: Map<string, number>,
-  _cv: MinimapCv | null,
-  base: CompanionData["heroes"]
+  cv: MinimapCv | null,
+  base: CompanionData["heroes"],
+  enemySlots: Map<string, number>
 ): CompanionData["heroes"] {
-  // cv is reserved for Phase 2b (position-only use lives in buildMarkers).
-  void _cv;
+  const cvNames = cv?.detections?.length ? cv.detections.map((d) => d.name).filter(Boolean) : [];
+  if (!tick && missing.size === 0 && cvNames.length === 0 && enemySlots.size === 0) return base;
 
-  if (!tick && missing.size === 0) return base;
+  // Reverse index: slot -> npc name, so each enemy hero slot in `base` can be
+  // filled straight from its permanent assignment (no re-derivation).
+  const slotToName = new Map<number, string>();
+  for (const [name, slot] of enemySlots.entries()) slotToName.set(slot, name);
+
+  let enemySlotIndex = 0;
 
   return base.map((hero, index) => {
     let next = hero;
@@ -42,16 +94,18 @@ export function buildHeroes(
       };
     }
 
-    if (missing.size > 0) {
-      for (const [npcName, missingForMs] of missing) {
-        if (prettyHeroName(npcName).toLowerCase() === next.hero.toLowerCase()) {
-          next = {
-            ...next,
-            state: "missing",
-            timer: Math.round(missingForMs / 1000),
-          };
-          break;
-        }
+    if (hero.team === "enemy") {
+      const enemyIndex = enemySlotIndex;
+      enemySlotIndex += 1;
+      const npcName = slotToName.get(enemyIndex);
+      if (npcName) {
+        const missingMs = missing.get(npcName);
+        next = {
+          ...next,
+          hero: prettyHeroName(npcName) || next.hero,
+          state: missingMs !== undefined ? "missing" : "visible",
+          timer: missingMs !== undefined ? Math.round(missingMs / 1000) : 0,
+        };
       }
     }
 

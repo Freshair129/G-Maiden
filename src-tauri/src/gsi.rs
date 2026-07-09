@@ -160,11 +160,17 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
     crate::runtime::set_player_team_name(&tick.team_name);
     crate::log::note_tick(&tick);
     let _ = app.emit("game-tick", tick);
+    // CR-007 WP-4: the announcer (kill/streak/death lines) is a separate,
+    // non-critical path from G-Signal — `runtime::signal_enabled()` gates
+    // capture.rs's gank/danger/revision voice_interrupt() calls, which never
+    // pass through here. Muting the announcer must never touch that path.
     if let Some(ev) = announce {
-        // Voice the clip and show the banner from the SAME active pack, so the
-        // announcer sound and its queue banner always fire together (the bundle).
-        crate::audio::play_random(&ev);
-        let _ = app.emit("announcer-banner", crate::voice_api::fired_banner(&ev));
+        if crate::runtime::announcer_enabled() {
+            // Voice the clip and show the banner from the SAME active pack, so the
+            // announcer sound and its queue banner always fire together (the bundle).
+            crate::audio::play_random(&ev);
+            let _ = app.emit("announcer-banner", crate::voice_api::fired_banner(&ev));
+        }
     }
     "ok"
 }

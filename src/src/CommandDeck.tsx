@@ -1,5 +1,6 @@
 import { useState, useRef, useEffect, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
 import VoicePacksPage from "./VoicePacksPage";
 import QuotaCard from "./QuotaCard";
@@ -11,9 +12,10 @@ import {
   LiveMatchPage,
   SettingsPage
 } from "./CompanionPages";
-import { useCompanionData, type CompanionData } from "./companion";
+import { useCompanionData, toneClass, formatKda, type CompanionData } from "./companion";
 import AccountPage from "./AccountPage";
 import { useProfile } from "./profile";
+import type { VoiceState } from "./voice-types";
 import {
   IconDashboard,
   IconLive,
@@ -69,17 +71,12 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   const [masterVolume, setMasterVolume] = useState(78);
   const [annEnabled, setAnnEnabled] = useState(true);
   const [signalEnabled, setSignalEnabled] = useState(true);
+  const [voicePackName, setVoicePackName] = useState<string | null>(null);
+  const volumeDebounceRef = useRef<number | null>(null);
   const { data } = useCompanionData();
   const { displayName, email } = useProfile();
   const gName = displayName || (email ? email.split("@")[0] : "Guest");
   const gSub = email || data.agentSector.title;
-
-  // G-Signal values for the bottom-right notch FABs (dashboard tab)
-  const isPregame = data.match.minimapState === "empty";
-  const enemyMissing = isPregame ? 0 : data.heroes.filter((h) => h.team === "enemy" && h.state === "missing").length;
-  const gankRisk = isPregame ? 0 : Math.min(100, 26 + enemyMissing * 24 + data.match.activeAlerts * 8);
-  const safePush = isPregame ? 0 : Math.max(0, 88 - enemyMissing * 18 - data.match.activeAlerts * 10);
-  const vision = data.signals.find((s) => s.label.toLowerCase().startsWith("vision"))?.value ?? "—";
 
   // fixed 1280×800 stage scaled to fill any window (1280 → 1920) + rounded-fillet Subtract clip
   const stageRef = useRef<HTMLDivElement>(null);
@@ -99,30 +96,121 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
     return () => window.removeEventListener("resize", apply);
   }, []);
 
+  // CR-007 WP-4 Fix 1: the deck's audio rail is the SINGLE owner of volume,
+  // signalEnabled, and announcerEnabled. It persists all three under one
+  // localStorage key and pushes all three to the backend once on mount — the
+  // persisted value is the seed (no `get_volume` round-trip needed, and it
+  // fixes a real bug: a saved volume never used to reach the backend on a
+  // cold start unless the user opened Settings, since Control's set_volume
+  // effect only fired if/when its component mounted).
   useEffect(() => {
+    let volume = 78;
+    let ann = true;
+    let signal = true;
     try {
       const raw = localStorage.getItem("gm-deck-audio-rail");
-      if (!raw) return;
-      const parsed = JSON.parse(raw) as { master?: number; annEnabled?: boolean; signalEnabled?: boolean };
-      if (typeof parsed.master === "number") setMasterVolume(parsed.master);
-      if (typeof parsed.annEnabled === "boolean") setAnnEnabled(parsed.annEnabled);
-      if (typeof parsed.signalEnabled === "boolean") setSignalEnabled(parsed.signalEnabled);
+      if (raw) {
+        const parsed = JSON.parse(raw) as { volume?: number; master?: number; annEnabled?: boolean; signalEnabled?: boolean };
+        // `master` is the pre-WP-4 key name — read it so an upgrading user keeps their volume.
+        const saved = typeof parsed.volume === "number" ? parsed.volume : parsed.master;
+        if (typeof saved === "number") volume = saved;
+        if (typeof parsed.annEnabled === "boolean") ann = parsed.annEnabled;
+        if (typeof parsed.signalEnabled === "boolean") signal = parsed.signalEnabled;
+      }
     } catch {
       /* noop */
     }
+    setMasterVolume(volume);
+    setAnnEnabled(ann);
+    setSignalEnabled(signal);
+    // Push the persisted values to the backend once on mount — the backend
+    // has no way to recall a prior session's choice on its own (volume aside,
+    // there is no get_announcer_enabled / get_cv_signal_enabled query command).
+    void invoke("set_volume", { vol: volume }).catch(() => {});
+    void invoke("set_announcer_enabled", { enabled: ann }).catch(() => {});
+    void invoke("set_cv_signal_enabled", { enabled: signal }).catch(() => {});
   }, []);
 
   useEffect(() => {
     try {
-      localStorage.setItem("gm-deck-audio-rail", JSON.stringify({
-        master: masterVolume,
-        annEnabled,
-        signalEnabled
-      }));
+      localStorage.setItem("gm-deck-audio-rail", JSON.stringify({ volume: masterVolume, annEnabled, signalEnabled }));
     } catch {
       /* noop */
     }
   }, [masterVolume, annEnabled, signalEnabled]);
+
+  // Stay in sync when any OTHER surface (e.g. the legacy Control panel under
+  // Settings, or the Alt+↑/↓/M global hotkeys) changes one of these three —
+  // the backend emits *-change events for all three (main.rs) precisely so
+  // no single owner can be silently desynced by another writer.
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    listen<number>("volume-change", (e) => setMasterVolume(e.payload))
+      .then((fn) => { unlisten = fn; })
+      .catch(() => {
+        /* not running under Tauri — ignore */
+      });
+    return () => unlisten?.();
+  }, []);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    listen<boolean>("signal-change", (e) => setSignalEnabled(e.payload))
+      .then((fn) => { unlisten = fn; })
+      .catch(() => {
+        /* not running under Tauri — ignore */
+      });
+    return () => unlisten?.();
+  }, []);
+
+  useEffect(() => {
+    let unlisten: (() => void) | undefined;
+    listen<boolean>("announcer-change", (e) => setAnnEnabled(e.payload))
+      .then((fn) => { unlisten = fn; })
+      .catch(() => {
+        /* not running under Tauri — ignore */
+      });
+    return () => unlisten?.();
+  }, []);
+
+  // CR-007 WP-4 Fix 5: clear any in-flight volume debounce on unmount so a
+  // stale timer never fires `set_volume` against an unmounted deck.
+  useEffect(() => {
+    return () => {
+      if (volumeDebounceRef.current !== null) window.clearTimeout(volumeDebounceRef.current);
+    };
+  }, []);
+
+  // Companion State "Voice" tile — active announcer pack name, fetched once.
+  useEffect(() => {
+    invoke<VoiceState>("voice_api_state")
+      .then((s) => setVoicePackName(s.activePack?.name ?? null))
+      .catch(() => setVoicePackName(null));
+  }, []);
+
+  const handleVolumeChange = (value: number) => {
+    setMasterVolume(value);
+    if (volumeDebounceRef.current !== null) window.clearTimeout(volumeDebounceRef.current);
+    volumeDebounceRef.current = window.setTimeout(() => {
+      void invoke("set_volume", { vol: value }).catch(() => {});
+    }, 80);
+  };
+
+  const handleAnnToggle = () => {
+    setAnnEnabled((prev) => {
+      const next = !prev;
+      void invoke("set_announcer_enabled", { enabled: next }).catch(() => {});
+      return next;
+    });
+  };
+
+  const handleSignalToggle = () => {
+    setSignalEnabled((prev) => {
+      const next = !prev;
+      void invoke("set_cv_signal_enabled", { enabled: next }).catch(() => {});
+      return next;
+    });
+  };
 
   const error: string | null = null;
   const trayWindow = () => { try { void getCurrentWindow().hide(); } catch { /* noop */ } };
@@ -261,14 +349,14 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
             <span className="dot" />
             <strong>{data.match.gsiOnline ? "GSI Online" : "GSI Offline"}</strong>
           </div>
-          <div className="g-ping-pill" title={`Ping ${data.match.player.ping}ms`}>
+          <div className="g-ping-pill" title="GSI does not report ping — Dota 2's Game State Integration feed has no ping field">
             <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
               <path d="M5 18h2" />
               <path d="M9 14h2" />
               <path d="M13 10h2" />
               <path d="M17 6h2" />
             </svg>
-            <strong>{data.match.player.ping}ms</strong>
+            <strong>—</strong>
           </div>
         </div>
 
@@ -300,9 +388,9 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
             value={masterVolume}
             annEnabled={annEnabled}
             signalEnabled={signalEnabled}
-            onVolumeChange={setMasterVolume}
-            onAnnToggle={() => setAnnEnabled((value) => !value)}
-            onSignalToggle={() => setSignalEnabled((value) => !value)}
+            onVolumeChange={handleVolumeChange}
+            onAnnToggle={handleAnnToggle}
+            onSignalToggle={handleSignalToggle}
           />
         </div>
       )}
@@ -311,7 +399,9 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
       <main className="g-deck-panel">
         {error ? <div className="banner err">engine offline ({error})</div> : null}
         <div className={`surface page-${tab}`}>
-          {tab === "dashboard" && <GMaidenFungDashboard data={data} />}
+          {tab === "dashboard" && (
+            <GMaidenFungDashboard data={data} voicePackName={voicePackName} signalEnabled={signalEnabled} />
+          )}
           {tab === "live" && <LiveMatchPage />}
           {tab === "companion" && <CompanionPage />}
           {tab === "build" && <BuildAdvisorPage />}
@@ -344,17 +434,28 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
       {/* G-Signal cluster (D/E/F/G) — stage-level sibling of g-deck-panel, NOT a child.
           It must live outside the clipped panel so it renders inside the bottom-right
           subtract notch (FUNG_PANEL_PATH_SIGNALS) instead of being clipped away with it. */}
-      {tab === "dashboard" && (
-        <SignalGrid enemyMissing={enemyMissing} gankRisk={gankRisk} safePush={safePush} vision={vision} />
-      )}
+      {tab === "dashboard" && <SignalGrid signals={data.signals} />}
       </div>{/* /g-deck-stage */}
     </div>
   );
 }
 
-function GMaidenFungDashboard({ data }: { data: CompanionData }) {
+function GMaidenFungDashboard({
+  data,
+  voicePackName,
+  signalEnabled
+}: {
+  data: CompanionData;
+  voicePackName: string | null;
+  signalEnabled: boolean;
+}) {
   const allyHeroes = data.heroes.filter((hero) => hero.team === "ally");
   const enemyHeroes = data.heroes.filter((hero) => hero.team === "enemy");
+
+  // CR-007 WP-4: real governor readings — NO_SENSOR (-1, see buildTelemetry.ts)
+  // renders "—" instead of a fake 0.
+  const cpuValue = data.telemetry.cpuLoad >= 0 ? `${data.telemetry.cpuLoad}%` : "—";
+  const ramValue = data.telemetry.ramUsedGb >= 0 ? `${Math.round(data.telemetry.ramUsedGb * 1024)} MB` : "—";
 
   return (
     <div className="gm-fung-layout">
@@ -399,15 +500,29 @@ function GMaidenFungDashboard({ data }: { data: CompanionData }) {
       <section className="gm-sector-log">
         <div>
           <h3>Alert Deck</h3>
-          <p>Threat tabs</p>
+          <div className="log-list">
+            {data.activity.length === 0 ? (
+              <div className="log-row">
+                <span className="log-time">--:--:--</span>
+                <span className="log-text">No alerts yet</span>
+              </div>
+            ) : (
+              data.activity.map((item) => (
+                <div key={item.id} className={`log-row ${toneClass(item.tone)}`}>
+                  <span className="log-time">{item.at}</span>
+                  <span className="log-text">{item.text}</span>
+                </div>
+              ))
+            )}
+          </div>
         </div>
         <div>
           <h3>Companion State</h3>
           <div className="gm-state-grid">
-            <MiniStat label="Voice" value={data.match.voicePack} sub="Current pack" />
-            <MiniStat label="Overlay" value={data.match.overlayMode} sub="Mirror mode" />
-            <MiniStat label="Server" value={data.match.server} sub={`${data.match.latencyMs}ms`} />
-            <MiniStat label="Perf" value={data.match.performance} sub="Companion mode" />
+            <MiniStat label="Voice" value={voicePackName ?? "—"} sub="Active pack" />
+            <MiniStat label="Signal" value={signalEnabled ? "ON" : "OFF"} sub="G-Signal" />
+            <MiniStat label="CPU" value={cpuValue} sub="Governor" />
+            <MiniStat label="RAM" value={ramValue} sub="Governor" />
           </div>
         </div>
       </section>
@@ -456,7 +571,12 @@ function VolumeRail({
         aria-label="Master volume"
       />
       <div className="g-volume-toggles">
-        <button type="button" className={`g-volume-toggle${annEnabled ? " on" : ""}`} onClick={onAnnToggle}>
+        <button
+          type="button"
+          className={`g-volume-toggle${annEnabled ? " on" : ""}`}
+          onClick={onAnnToggle}
+          title="Mutes G-AnnStudio announcer-pack events only (kill/streak/death lines). Maiden's persona voice and G-Signal gank warnings are separate and stay on."
+        >
           ANN
         </button>
         <button type="button" className={`g-volume-toggle signal${signalEnabled ? " on" : ""}`} onClick={onSignalToggle}>
@@ -468,52 +588,36 @@ function VolumeRail({
 }
 
 function HeroSlot({ id, hero }: { id: number; hero?: CompanionData["heroes"][number] }) {
+  const heroName = hero && hero.hero !== "—" ? hero.hero : "—";
+  const stateLabel = !hero || hero.state === "empty" ? "Waiting" : hero.state;
+  const kda = hero ? formatKda(hero) : "—";
   return (
-    <div className={`gm-hero-slot ${hero?.state ?? "empty"}`}>
-      <strong>Slot ID {id}</strong>
-      <span>{hero?.state ?? "Waiting"}</span>
-      <em>{hero ? `${hero.kills}/${hero.deaths}/${hero.assists}` : "0 / 0 / 0"}</em>
+    <div className={`gm-hero-slot ${hero?.state ?? "empty"}`} aria-label={`Hero slot ${id}`}>
+      <strong>{heroName}</strong>
+      <span>{stateLabel}</span>
+      <em>{kda}</em>
     </div>
   );
 }
 
-function SignalGrid({
-  enemyMissing,
-  gankRisk,
-  safePush,
-  vision
-}: {
-  enemyMissing: number;
-  gankRisk: number;
-  safePush: number;
-  vision: string;
-}) {
+function SignalGrid({ signals }: { signals: CompanionData["signals"] }) {
+  const tags = ["D", "E", "F", "G"];
+  const fillClass = ["sg-fill-ice", "", "sg-fill-safe", "sg-fill-warn"];
   return (
     <div className="g-signals-fab">
-      <div className="g-sig">
-        <span className="sg-tag">D</span>
-        <span className="sg-label">Enemy Missing</span>
-        <span className="sg-val">{enemyMissing}</span>
-        <div className="sg-bar"><div className="sg-fill sg-fill-ice" style={{ width: `${Math.min(100, enemyMissing * 20)}%` }} /></div>
-      </div>
-      <div className="g-sig hero">
-        <span className="sg-tag">E</span>
-        <span className="sg-label">Gank Risk</span>
-        <span className="sg-val">{gankRisk}%</span>
-        <div className="sg-bar"><div className="sg-fill" style={{ width: `${gankRisk}%` }} /></div>
-      </div>
-      <div className="g-sig">
-        <span className="sg-tag">F</span>
-        <span className="sg-label">Safe Push</span>
-        <span className="sg-val">{safePush}%</span>
-        <div className="sg-bar"><div className="sg-fill sg-fill-safe" style={{ width: `${safePush}%` }} /></div>
-      </div>
-      <div className="g-sig">
-        <span className="sg-tag">G</span>
-        <span className="sg-label">Vision</span>
-        <span className="sg-val">{vision}</span>
-        <div className="sg-bar"><div className="sg-fill sg-fill-warn" style={{ width: "40%" }} /></div>
-      </div>
+      {signals.map((sig, i) => (
+        <div key={sig.label} className={`g-sig${i === 1 ? " hero" : ""}`}>
+          <span className="sg-tag">{tags[i]}</span>
+          <span className="sg-label">{sig.label}</span>
+          <span className="sg-val">{sig.value}</span>
+          <div className="sg-bar">
+            <div
+              className={`sg-fill${fillClass[i] ? ` ${fillClass[i]}` : ""}`}
+              style={{ width: `${sig.barPct}%` }}
+            />
+          </div>
+        </div>
+      ))}
     </div>
   );
 }

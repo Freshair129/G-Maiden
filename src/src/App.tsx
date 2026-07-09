@@ -1548,12 +1548,6 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
     })()
   }, [])
 
-  // Sync the saved volume to the Rust backend on startup.
-  useEffect(() => {
-    void invoke('set_volume', { vol: s.volume }).catch(() => {})
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [])
-
   // bind once; use ref so the overlay-ready handler always emits current settings
   useEffect(() => {
     document.body.style.background = C.bg
@@ -1612,11 +1606,13 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
     void invoke('set_cv_voice', { name: s.voiceName || null, rate: s.voiceRate ?? null }).catch(() => {})
   }, [s.voiceName, s.voiceRate])
 
-  // Keep Rust's G-Signal gank voice gated by the master voice toggle, so muting
-  // voice also silences gank warnings (not just the HP-danger line).
-  useEffect(() => {
-    void invoke('set_cv_signal_enabled', { enabled: s.voiceEnabled }).catch(() => {})
-  }, [s.voiceEnabled])
+  // CR-007 WP-4 Fix 1: `s.voiceEnabled` gates Maiden's PERSONA voice only.
+  // G-Signal's own gate is now owned solely by the deck's audio rail SIGNAL
+  // toggle (CommandDeck.tsx, `set_cv_signal_enabled`) — this effect used to
+  // also push `set_cv_signal_enabled` here, which meant muting persona voice
+  // silently desynced the deck's SIGNAL toggle (two owners writing the same
+  // backend flag). Do not re-add an invoke('set_cv_signal_enabled', ...) call
+  // keyed off s.voiceEnabled; see CR-007-frostline-deck-refresh.md WP-4.
 
   // Mirror the user's chosen gank-warning sensitivity to the Rust capture loop
   // (applied on the next CV tick — no restart needed).
@@ -1647,8 +1643,18 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
     void invoke('set_calibration_enabled', { enabled: s.calibration }).catch(() => {})
   }, [s.calibration])
 
-  // Sync master volume to Rust audio backend.
+  // Sync master volume to Rust audio backend on user-driven changes only.
+  // CR-007 WP-4 Fix 1: the deck's audio rail is now the single owner that
+  // pushes volume on MOUNT (CommandDeck.tsx) — if this effect also fired on
+  // mount (it did: a `[s.volume]`-keyed effect runs on the initial render
+  // too), Control's locally-loaded `s.volume` could stomp the rail's
+  // just-pushed value the instant Control mounted (e.g. opening Settings).
+  // The skip-first-run guard below means this only invokes on an actual
+  // subsequent change, while the existing `volume-change` listener below
+  // keeps Control's own slider in sync with whoever else changed it.
+  const volumeFirstRun = useRef(true)
   useEffect(() => {
+    if (volumeFirstRun.current) { volumeFirstRun.current = false; return }
     void invoke('set_volume', { vol: s.volume }).catch(() => {})
   }, [s.volume])
 
