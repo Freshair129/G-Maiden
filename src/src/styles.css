@@ -4363,16 +4363,20 @@ body {
   --cr6-topbar-width: 446px;
   --cr6-sidebar-left: 26px;
   --cr6-sidebar-top: 354px;
-  /* CR-007 WP-1 surgical fix: derived from the sidebar's real bottom-left corner
-     (stage 26,660) + the approved mock's offsets (container -44,-40 from sidebar
-     bottom-left; main 104,52 in container-local space) — see tmp-power-radial-check.html.
-     Raw result (-18,620) clips the "drag" button off the left edge of the window at
-     scale 1.0, so the whole cluster is shifted +18px right (top unchanged) until the
-     leftmost button (drag) lands flush at stage x=8. */
-  --cr6-power-left: 0px;
-  --cr6-power-top: 620px;
-  --cr6-power-main-left: 104px;
-  --cr6-power-main-top: 52px;
+  /* CR-007 follow-up (Boss feedback 2026-07-09): power cluster rebuilt as a proper corner
+     FAB directly under the sidebar, not a free-floating radial. Main button is
+     centered on the sidebar column (sidebar x26..90, center x58 -> button x35..81)
+     and sits 12px below the sidebar's bottom edge (sidebar bottom y660 -> button
+     y672..718). Actions fan RIGHT of the main button (compact row, not an arc) so
+     the whole cluster reads as one FAB stack, not a spread claw. Container is sized
+     tight to button+menu (190x46) — no overhang past the 760px stage bottom.
+     tmp-power-radial-check.html is SUPERSEDED — see docs/design-system/03-layout.md
+     §5.5 for the full derivation, including the panel-void geometry this cluster
+     floats over (same void the sidebar itself sits in). */
+  --cr6-power-left: 35px;
+  --cr6-power-top: 672px;
+  --cr6-power-main-left: 0px;
+  --cr6-power-main-top: 0px;
   transform: translate(-50%, -50%) scale(1);
   transform-origin: center center !important;
   background: transparent !important;
@@ -4415,7 +4419,7 @@ body {
     inset 0 1px 0 rgba(255, 255, 255, 0.025);
 }
 
-/* CR-007 WP-2: drag-lag suppression — WebView2 recomposites large backdrop-filter
+/* CR-007 follow-up: drag-lag suppression — WebView2 recomposites large backdrop-filter
    and box-shadow layers on every window-move tick during a native drag. Only
    .g-deck-panel and .g-l1-white-glass carry real cost here (the FAB/notch
    elements already run backdrop-filter:none + box-shadow:none via the CR-006
@@ -4507,8 +4511,8 @@ body {
   position: absolute;
   left: var(--cr6-power-left);
   top: var(--cr6-power-top);
-  width: 176px;
-  height: 148px;
+  width: 190px;
+  height: 46px;
   z-index: 35;
   -webkit-app-region: drag;
 }
@@ -4519,9 +4523,12 @@ body {
   display: grid;
   place-items: center;
   border-radius: 12px;
-  border: 1px solid rgba(184, 218, 255, 0.16);
   color: #f5f8ff;
-  background: linear-gradient(180deg, rgba(14, 21, 34, 0.98), rgba(8, 13, 22, 0.98));
+  /* Same solid material as .g-sidebar-fab (below) — opaque hex + thin rim, no
+     gradient/translucency — so this reads as the SAME frosted-dark family as the
+     rest of the left column instead of a sheer chip over raw wallpaper. */
+  background: #0a0e15;
+  border: 1px solid rgba(150, 185, 230, 0.2);
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   cursor: pointer;
@@ -4541,7 +4548,8 @@ body {
   pointer-events: none;
   opacity: 0;
   transform: scale(.96);
-  transform-origin: 127px 75px;
+  /* main button's own center in container-local coords (46x46 at local 0,0) */
+  transform-origin: 23px 23px;
   transition: opacity .14s ease, transform .14s ease;
   -webkit-app-region: no-drag;
 }
@@ -4560,7 +4568,8 @@ body {
   border-radius: 10px;
   border: 1px solid rgba(184, 218, 255, 0.14);
   color: #dceaff;
-  background: linear-gradient(180deg, rgba(16, 23, 37, 0.98), rgba(10, 16, 27, 0.98));
+  /* Same solid material as .g-sidebar-fab / .g-power-main — see comment there. */
+  background: #0a0e15;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
   cursor: pointer;
@@ -4571,26 +4580,26 @@ body {
     0 8px 16px rgba(0,0,0,.16),
     inset 0 1px 0 rgba(255,255,255,.035);
   position: absolute;
+  /* fan RIGHT of the main button in a compact row, vertically centered on it
+     (main is 46px tall at local y0, action is 36px -> local top = (46-36)/2 = 5) */
+  top: 5px;
 }
 
-.g-power-action.drag {
-  border-color: rgba(160, 196, 255, 0.26);
-  color: #f5f8ff;
-  left: 8px;
-  top: 56px;
+.g-power-action.tray {
+  border-color: rgba(184, 218, 255, 0.16);
+  left: 58px;
 }
 
 .g-power-action.quit {
   border-color: rgba(255, 139, 139, 0.2);
   color: #ffd7d7;
-  left: 36px;
-  top: 16px;
+  left: 106px;
 }
 
-.g-power-action.tray {
-  border-color: rgba(184, 218, 255, 0.16);
-  left: 36px;
-  top: 96px;
+.g-power-action.drag {
+  border-color: rgba(160, 196, 255, 0.26);
+  color: #f5f8ff;
+  left: 154px;
 }
 
 .g-sidebar-fab {

@@ -1,7 +1,7 @@
 ---
-version: "2.2.1-draft"
+version: "2.2.2-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-09T15:00:00+07:00,Claude"
+last_update: "2026-07-09T18:00:00+07:00,Claude"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -125,10 +125,10 @@ From `src/src/styles.css`:
 | `--cr6-topbar-width` | `446px` |
 | `--cr6-sidebar-left` | `26px` |
 | `--cr6-sidebar-top` | `354px` |
-| `--cr6-power-left` | `0px` |
-| `--cr6-power-top` | `620px` |
-| `--cr6-power-main-left` | `104px` |
-| `--cr6-power-main-top` | `52px` |
+| `--cr6-power-left` | `35px` |
+| `--cr6-power-top` | `672px` |
+| `--cr6-power-main-left` | `0px` |
+| `--cr6-power-main-top` | `0px` |
 
 ### 5.2 L1 white-glass underlay
 
@@ -185,41 +185,76 @@ Current sidebar is tool navigation, not page anchors.
 
 ### 5.5 Power radial cluster
 
-CR-007 WP-1 surgical fix: the container is now derived from the sidebar's real bottom-left
-corner (stage `26,660`) plus the approved mock's offsets
-(`tmp-power-radial-check.html`; container offset `-44,-40` from sidebar bottom-left, main at
-container-local `104,52`). That raw math gives container `(-18, 620)`, which clips the "drag"
-action off the left edge of the window at scale 1.0 (`-18 + 8 = -10`). The whole cluster is
-shifted +18px right (top unchanged) so the leftmost button (drag) lands flush at stage `x = 8`.
+CR-007 follow-up (Boss feedback 2026-07-09) replaced the WP-1 arc/claw layout with a proper corner
+FAB directly under the sidebar — the slot the old wireframe reserved for its "P5" pill. The old
+WP-1 container overflowed the stage bottom by 8px (`y620 + 148 = 768 > 760`) and floated the
+cluster off to the side of the sidebar rather than under it; both are fixed here.
+`tmp-power-radial-check.html` is **superseded** — do not use it as a reference anymore.
+
+**Main button derivation** — centered on the sidebar column and tucked 12px below it:
+
+- sidebar spans stage `x26..90` (center `x = 26 + 64/2 = 58`)
+- main button is `46x46`, so centered means `left = 58 - 46/2 = 35` -> stage `x35..81`
+- sidebar bottom edge is stage `y = 354 + 306 = 660`; +12px gap -> main button `y672..718`
+
+**Action row** — 3 actions (`36x36`) fan RIGHT of the main button (not an arc) in a single
+compact row, vertically centered on the main button's center (`y = (672+718)/2 = 695`, so
+action top/bottom = `695 -/+ 18 = 677/713`), with 12px gaps: `tray` at local `left=58`
+(`46 + 12`), `quit` at `left=106` (`58 + 36 + 12`), `drag` at `left=154` (`106 + 36 + 12`).
+Container is sized tight to exactly this: `190 x 46` (main's own height, since every action's
+local top/bottom, `5..41`, sits inside `0..46`).
 
 | Property | Value |
 | --- | --- |
-| container x | `0px` |
-| container y | `620px` |
-| container w | `176px` |
-| container h | `148px` |
-| main button size | `46 x 46`, at container-local `104,52` |
-| action button size | `36 x 36` |
+| container x | `35px` |
+| container y | `672px` |
+| container w | `190px` |
+| container h | `46px` |
+| main button size | `46 x 46`, at container-local `0,0` |
+| action button size | `36 x 36`, at container-local top `5px` |
 
-Current actions (container-local offsets):
+Current actions (container-local offsets, JSX order tray/quit/drag left-to-right):
 
-- drag window — `8,56`
-- full quit — `36,16`
-- tray mode — `36,96`
+- tray mode — `58,5`
+- full quit — `106,5`
+- drag window — `154,5`
 
 Final absolute (stage) rects, open state — all within `0..1420 x 0..760`:
 
 | Element | x | y | w | h |
 | --- | --- | --- | --- | --- |
-| container | 0 | 620 | 176 | 148 |
-| main | 104 | 672 | 46 | 46 |
-| drag | 8 | 676 | 36 | 36 |
-| quit | 36 | 636 | 36 | 36 |
-| tray | 36 | 716 | 36 | 36 |
+| container | 35 | 672 | 190 | 46 |
+| main | 35 | 672 | 46 | 46 |
+| tray | 93 | 677 | 36 | 36 |
+| quit | 141 | 677 | 36 | 36 |
+| drag | 189 | 677 | 36 | 36 |
 
-(The container's own box extends to stage y=768, 8px past the window's 760px height, but it
-holds no interactive content there — every button stays within bounds. `.g-power-menu`'s
-`transform-origin` was updated to `127px 75px` to track the new main-button center.)
+`.g-power-menu`'s `transform-origin` tracks the main button's own center in container-local
+space: `23px 23px` (was `127px 75px`).
+
+**Material** — per Boss feedback #3, `.g-power-main` and `.g-power-action` no longer use a
+translucent `linear-gradient`; they now use the exact same opaque fill + rim as
+`.g-sidebar-fab`'s winning (`!important`) rule below: `background: #0a0e15; border: 1px solid
+rgba(150, 185, 230, 0.2);`. A transparent Tauri window can't give per-element `backdrop-filter`
+anything real to blur, so matching the sidebar's solid material (instead of trying to fake more
+blur) is what makes the whole left column read as one frosted-dark family.
+
+**Panel-void relationship (verified against `FUNG_PANEL_PATH`)** — the panel's clip path is
+walked in its own `1280x720` local space, then offset by the panel's stage position
+(`--cr6-panel-left/top = 12,12`) to get stage coordinates. Tracing the path's vertices gives the
+panel's true (notch-free) bounding box as stage `x24..1280, y24..720` — so **the panel's
+stage-space bottom edge is `y720`**, not `y708` (that `708` is the *local*, pre-offset number).
+The sidebar/tool notch is not a separate hole — the path's own left boundary bows inward from
+`x24` to `x104` for `y362..700`, i.e. **there is no panel material under the sidebar's own
+footprint, all the way down through the power cluster's row (`y672..718`)** — the same void the
+sidebar FAB itself already floats over. Concretely: `tray` (`x93..129`) straddles the void wall
+(roughly `x93..104` void, `x104..129` panel mass), while `quit` (`x141..177`) and `drag`
+(`x189..225`) sit entirely past `x124` (the wall's max extent at the very bottom fillet) and are
+fully over panel mass. This means the main button and part of `tray` are **not** "over the dark
+shell mass" in the literal sense — they float in the same void as the sidebar — but since they
+now share the sidebar's opaque material, that reads as intentional rather than as a floating
+error. Widening the gap enough to clear the wall for `tray` too (~44px instead of 12px) was
+rejected as it breaks the "compact row" requirement and the fixed main-button position.
 
 ### 5.6 Audio rail
 
