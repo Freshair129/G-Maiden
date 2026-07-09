@@ -27,6 +27,14 @@ import "./styles.css";
 const FUNG_PANEL_PATH =
   "M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 688 A 20 20 0 0 1 1248,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z";
 
+// dashboard-only variant — CR-007 WP-1: adds the bottom-right subtract notch so the
+// G-Signal cluster (D/E/F/G) sits in a real void instead of floating on solid glass.
+// Same 12px-margin rhythm as the top-right topbar notch; 20px fillets throughout.
+// Only used while tab === "dashboard" (the only tab that renders the signal cluster) —
+// every other tab keeps the plain FUNG_PANEL_PATH so no stray hole appears.
+const FUNG_PANEL_PATH_SIGNALS =
+  "M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 488 A 20 20 0 0 1 1248,508 H 836 A 20 20 0 0 0 816,528 V 688 A 20 20 0 0 1 796,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z";
+
 // companion + history have no codex glyph — tiny inline fallbacks
 function IconCompanion({ size = 20 }: { size?: number }) {
   return (
@@ -132,7 +140,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
       <div className="g-l1-white-glass" aria-hidden="true" />
       <svg className="g-clip-defs" width="0" height="0" viewBox="0 0 1280 720" aria-hidden="true" focusable="false">
         <defs>
-          <path id="gSubtractPanelPath" d={FUNG_PANEL_PATH} />
+          <path id="gSubtractPanelPath" d={tab === "dashboard" ? FUNG_PANEL_PATH_SIGNALS : FUNG_PANEL_PATH} />
           <clipPath id="gPanelClip" clipPathUnits="userSpaceOnUse">
             <use href="#gSubtractPanelPath" />
           </clipPath>
@@ -281,10 +289,14 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
           )}
           {tab === "account" && <AccountPage />}
         </div>
-        {tab === "dashboard" && (
-          <SignalGrid enemyMissing={enemyMissing} gankRisk={gankRisk} safePush={safePush} vision={vision} />
-        )}
       </main>
+
+      {/* G-Signal cluster (D/E/F/G) — stage-level sibling of g-deck-panel, NOT a child.
+          It must live outside the clipped panel so it renders inside the bottom-right
+          subtract notch (FUNG_PANEL_PATH_SIGNALS) instead of being clipped away with it. */}
+      {tab === "dashboard" && (
+        <SignalGrid enemyMissing={enemyMissing} gankRisk={gankRisk} safePush={safePush} vision={vision} />
+      )}
       </div>{/* /g-deck-stage */}
     </div>
   );

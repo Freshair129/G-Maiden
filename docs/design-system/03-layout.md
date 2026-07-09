@@ -1,7 +1,7 @@
 ---
-version: "2.1.0-draft"
+version: "2.2.0-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-09T10:32:00+07:00,Codex"
+last_update: "2026-07-09T13:15:00+07:00,Claude"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -59,9 +59,14 @@ This means shell polish must be done in stage coordinates first, not screenshot 
 
 ## 4. Subtract panel path
 
-The panel shape is driven by `FUNG_PANEL_PATH` in `src/src/CommandDeck.tsx`.
+The panel shape is driven by two constants in `src/src/CommandDeck.tsx`, selected per tab:
+`d={tab === "dashboard" ? FUNG_PANEL_PATH_SIGNALS : FUNG_PANEL_PATH}`. Only the dashboard tab
+renders the G-Signal cluster (`SignalGrid`), so only the dashboard tab gets the bottom-right
+notch — every other tab keeps the plain (no-notch) path, avoiding a stray hole where nothing
+fills it. Both constants feed the same `<path id="gSubtractPanelPath">`, so the `clipPath` and
+the `.g-panel-rim` `<use>` always stay in sync automatically.
 
-Current path:
+Base path (`FUNG_PANEL_PATH`, all non-dashboard tabs):
 
 ```svg
 M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74
@@ -70,15 +75,38 @@ H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330
 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z
 ```
 
+Dashboard path (`FUNG_PANEL_PATH_SIGNALS`, CR-007 WP-1 — adds the bottom-right notch):
+
+```svg
+M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74
+H 1248 A 20 20 0 0 1 1268,94 V 488 A 20 20 0 0 1 1248,508
+H 836 A 20 20 0 0 0 816,528 V 688 A 20 20 0 0 1 796,708
+H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330
+H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z
+```
+
+Only the segment between the top-right notch and the sidebar notch changed (the old single
+`V 688 A 20 20 0 0 1 1248,708` corner fillet became a 3-arc corner cut: `V 488 A…1248,508
+H 836 A…816,528 V 688 A…796,708`). All new arcs use r=20 (matching every other notch fillet;
+only the outer top-left corner uses r=28). The cut opens directly to the panel's true right
+edge (local x=1268) and bottom edge (local y=708) — no new wall needed there — and adds two
+new interior walls: top wall at local y=508, left wall at local x=816, each 12px clear of the
+signal-cluster rect (panel-local x828..1256, y520..696) — the same 12px rhythm as the
+top-right notch's topbar gap (topbar bottom y62 vs notch floor y74). Right/bottom margins land
+at 12px too because the cluster's `.g-signals-fab` box was widened 420→428px and heightened
+174→176px (a few-px nudge, position unchanged) to exactly fill the notch on all four sides.
+
 Current notch behavior:
 
 | Notch | Status | Opens for |
 | --- | --- | --- |
 | Top-right | active | topbar FAB |
 | Bottom-left side cut | active | sidebar/tool mass |
-| Bottom-right | not active in current path | none |
+| Bottom-right | active (dashboard tab only, via `FUNG_PANEL_PATH_SIGNALS`) | signal cluster (D/E/F/G) |
 
-Important: current implementation does **not** use a bottom-right subtract notch in the path.
+`SignalGrid` was moved out of `.g-deck-panel` to be a `.g-deck-stage` sibling (like the topbar/
+sidebar FABs and the power radial) — it must render outside the clipped panel, otherwise the
+panel's own `clip-path` would clip the cards away along with the rest of the notch void.
 
 ## 5. Current shell geometry
 
@@ -149,22 +177,41 @@ Current sidebar is tool navigation, not page anchors.
 
 ### 5.5 Power radial cluster
 
+CR-007 WP-1 surgical fix: the container is now derived from the sidebar's real bottom-left
+corner (stage `26,660`) plus the approved mock's offsets
+(`tmp-power-radial-check.html`; container offset `-44,-40` from sidebar bottom-left, main at
+container-local `104,52`). That raw math gives container `(-18, 620)`, which clips the "drag"
+action off the left edge of the window at scale 1.0 (`-18 + 8 = -10`). The whole cluster is
+shifted +18px right (top unchanged) so the leftmost button (drag) lands flush at stage `x = 8`.
+
 | Property | Value |
 | --- | --- |
-| container x | `-34px` |
-| container y | `626px` |
-| container w | `184px` |
-| container h | `154px` |
-| main button size | `46 x 46` |
+| container x | `0px` |
+| container y | `620px` |
+| container w | `176px` |
+| container h | `148px` |
+| main button size | `46 x 46`, at container-local `104,52` |
 | action button size | `36 x 36` |
 
-Current actions:
+Current actions (container-local offsets):
 
-- tray mode
-- full quit
-- drag window
+- drag window — `8,56`
+- full quit — `36,16`
+- tray mode — `36,96`
 
-Known issue: power radial placement still needs polish relative to the bottom-left shell corner.
+Final absolute (stage) rects, open state — all within `0..1420 x 0..760`:
+
+| Element | x | y | w | h |
+| --- | --- | --- | --- | --- |
+| container | 0 | 620 | 176 | 148 |
+| main | 104 | 672 | 46 | 46 |
+| drag | 8 | 676 | 36 | 36 |
+| quit | 36 | 636 | 36 | 36 |
+| tray | 36 | 716 | 36 | 36 |
+
+(The container's own box extends to stage y=768, 8px past the window's 760px height, but it
+holds no interactive content there — every button stays within bounds. `.g-power-menu`'s
+`transform-origin` was updated to `127px 75px` to track the new main-button center.)
 
 ### 5.6 Audio rail
 
@@ -185,14 +232,17 @@ Contents:
 
 ### 5.7 Signal cards
 
-Current dashboard signal cluster:
+CR-007 WP-1: `SignalGrid` moved from a `.g-deck-panel` child to a `.g-deck-stage` sibling (see
+§4) so it renders inside the new bottom-right notch instead of being clipped away with it. Its
+position is now given directly in stage coordinates; size was nudged +8px/+2px (position
+unchanged) to land with an even 12px margin on all four notch sides.
 
 | Property | Value |
 | --- | --- |
-| x | `828px` |
-| y | `520px` |
-| w | `420px` |
-| h | `174px` |
+| x | `840px` |
+| y | `532px` |
+| w | `428px` (was 420px) |
+| h | `176px` (was 174px) |
 | grid | `2 x 2` |
 
 Cards:
@@ -225,9 +275,9 @@ Current dashboard sectors inside `.gm-fung-layout`:
 These are intentionally documented so design review uses repo truth:
 
 1. The doc model and code model previously drifted apart on stage size (`1280x720` vs `1420x760` outer stage).
-2. The current path has no bottom-right subtract notch, even though some older mock docs referenced one.
+2. ~~The current path has no bottom-right subtract notch...~~ **Resolved by CR-007 WP-1** — see §4 (`FUNG_PANEL_PATH_SIGNALS`) and §5.7.
 3. The old P1-P5 page anchor rail is no longer the active shell object; the current shell uses an audio rail there instead.
-4. Power radial placement is not final and remains the main open shell defect.
+4. ~~Power radial placement is not final...~~ **Resolved by CR-007 WP-1** — see §5.5 for final numbers.
 
 ## 9. Review rule
 

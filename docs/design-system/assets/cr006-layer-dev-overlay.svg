@@ -17,14 +17,16 @@
 
   <rect x="24" y="24" width="1372" height="712" fill="#ffffff" fill-opacity="0.08" stroke="#ffffff" stroke-opacity="0.70" stroke-width="2" class="box" />
 
-  <path d="M 52,36 H 812 A 20 20 0 0 1 832,56 V 78 A 20 20 0 0 0 852,98 H 1260 A 20 20 0 0 1 1280,118 V 712 A 20 20 0 0 1 1260,732 H 124 A 20 20 0 0 1 104,712 V 374 A 20 20 0 0 0 84,354 H 44 A 20 20 0 0 1 24,334 V 64 A 28 28 0 0 1 52,36 Z"
+  <!-- CR-007 WP-1: bottom-right corner now has a real subtract notch (12px margin,
+       20px fillets) so the signal-card box below sits in a void instead of on solid glass. -->
+  <path d="M 52,36 H 812 A 20 20 0 0 1 832,56 V 78 A 20 20 0 0 0 852,98 H 1260 A 20 20 0 0 1 1280,118 V 512 A 20 20 0 0 1 1260,532 H 848 A 20 20 0 0 0 828,552 V 712 A 20 20 0 0 1 808,732 H 124 A 20 20 0 0 1 104,712 V 374 A 20 20 0 0 0 84,354 H 44 A 20 20 0 0 1 24,334 V 64 A 28 28 0 0 1 52,36 Z"
         fill="#8ea4c9" fill-opacity="0.14" stroke="#8ea4c9" stroke-width="3" />
 
   <rect x="834" y="24" width="446" height="50" fill="#69ffa8" stroke="#69ffa8" class="box" />
   <rect x="26" y="354" width="64" height="306" fill="#8cff87" stroke="#8cff87" class="box" />
-  <rect x="-34" y="626" width="184" height="154" fill="#ffbd4a" stroke="#ffbd4a" class="box" />
+  <rect x="0" y="620" width="176" height="148" fill="#ffbd4a" stroke="#ffbd4a" class="box" />
   <rect x="42" y="40" width="54" height="158" fill="#7fd4ff" stroke="#7fd4ff" class="box" />
-  <rect x="828" y="520" width="420" height="174" fill="#d66bff" stroke="#d66bff" class="box" />
+  <rect x="840" y="532" width="428" height="176" fill="#d66bff" stroke="#d66bff" class="box" />
 
   <rect x="12" y="680" width="196" height="56" fill="#ff5a5f" fill-opacity="0.92" class="callout" />
   <text x="28" y="703" class="tag">L0</text>

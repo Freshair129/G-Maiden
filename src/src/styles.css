@@ -4369,10 +4369,16 @@ body {
   --cr6-topbar-width: 446px;
   --cr6-sidebar-left: 26px;
   --cr6-sidebar-top: 354px;
-  --cr6-power-left: -34px;
-  --cr6-power-top: 626px;
-  --cr6-power-main-left: 92px;
-  --cr6-power-main-top: 42px;
+  /* CR-007 WP-1 surgical fix: derived from the sidebar's real bottom-left corner
+     (stage 26,660) + the approved mock's offsets (container -44,-40 from sidebar
+     bottom-left; main 104,52 in container-local space) — see tmp-power-radial-check.html.
+     Raw result (-18,620) clips the "drag" button off the left edge of the window at
+     scale 1.0, so the whole cluster is shifted +18px right (top unchanged) until the
+     leftmost button (drag) lands flush at stage x=8. */
+  --cr6-power-left: 0px;
+  --cr6-power-top: 620px;
+  --cr6-power-main-left: 104px;
+  --cr6-power-main-top: 52px;
   transform: translate(-50%, -50%) scale(1);
   transform-origin: center center !important;
   background: transparent !important;
@@ -4481,8 +4487,8 @@ body {
   position: absolute;
   left: var(--cr6-power-left);
   top: var(--cr6-power-top);
-  width: 184px;
-  height: 154px;
+  width: 176px;
+  height: 148px;
   z-index: 35;
   -webkit-app-region: drag;
 }
@@ -4515,7 +4521,7 @@ body {
   pointer-events: none;
   opacity: 0;
   transform: scale(.96);
-  transform-origin: 116px 64px;
+  transform-origin: 127px 75px;
   transition: opacity .14s ease, transform .14s ease;
   -webkit-app-region: no-drag;
 }
@@ -4550,21 +4556,21 @@ body {
 .g-power-action.drag {
   border-color: rgba(160, 196, 255, 0.26);
   color: #f5f8ff;
-  left: 0;
-  top: 50px;
+  left: 8px;
+  top: 56px;
 }
 
 .g-power-action.quit {
   border-color: rgba(255, 139, 139, 0.2);
   color: #ffd7d7;
-  left: 34px;
-  top: 6px;
+  left: 36px;
+  top: 16px;
 }
 
 .g-power-action.tray {
   border-color: rgba(184, 218, 255, 0.16);
-  left: 34px;
-  top: 94px;
+  left: 36px;
+  top: 96px;
 }
 
 .g-sidebar-fab {
@@ -4834,15 +4840,19 @@ body {
   color: #f3ffd4;
 }
 
+/* CR-007 WP-1: now a g-deck-stage sibling (see CommandDeck.tsx), positioned in STAGE
+   coordinates — panel-local (816,508)-(1268,708) notch + 12px panel-box offset = stage
+   (828,520)-(1280,720). Sized/nudged to sit with an even 12px margin on all four sides
+   of the new bottom-right notch (matches the topbar notch's 12px rhythm). */
 .g-signals-fab {
   position: absolute !important;
-  left: 828px !important;
-  top: 520px !important;
+  left: 840px !important;
+  top: 532px !important;
   right: auto !important;
   bottom: auto !important;
-  width: 420px !important;
-  height: 174px !important;
-  z-index: 6 !important;
+  width: 428px !important;
+  height: 176px !important;
+  z-index: 33 !important;
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
   grid-template-rows: 1fr 1fr !important;
