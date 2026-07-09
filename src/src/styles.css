@@ -26,8 +26,8 @@
   /* CR-007 follow-up (Boss feedback 2026-07-09): feathered ambient-shadow family so
      the shell reads as one floating composition instead of hard-edged cutouts —
      two soft layers (near + far) in the same rgba(3,6,12,…) hue used everywhere. */
-  --g-shadow-fab: 0 30px 78px rgba(3,6,12,0.52), 0 8px 26px rgba(3,6,12,0.40);
-  --g-shadow-tight: 0 20px 48px rgba(3,6,12,0.46), 0 5px 18px rgba(3,6,12,0.36);
+  --g-shadow-fab: 0 36px 96px rgba(3,6,12,0.54), 0 10px 32px rgba(3,6,12,0.40);
+  --g-shadow-tight: 0 24px 60px rgba(3,6,12,0.48), 0 6px 22px rgba(3,6,12,0.36);
   --g-shadow-panel: 0 18px 50px rgba(0,0,0,0.55);
   --g-rim-top: inset 0 1px 0 rgba(255,255,255,0.06);
   --g-blur-panel: blur(30px) saturate(150%); --g-blur-fab: blur(24px) saturate(160%); --g-blur-tile: blur(6px);
@@ -4508,9 +4508,9 @@ body {
      actually diffuses the panel edge into the background (see the stage-sibling
      comment above .g-panel-rim for why it has to live outside .g-deck-panel). */
   filter:
-    drop-shadow(0 44px 112px rgba(3, 6, 12, 0.58))
-    drop-shadow(0 16px 46px rgba(3, 6, 12, 0.44))
-    drop-shadow(0 0 58px rgba(143, 212, 255, 0.09));
+    drop-shadow(0 56px 140px rgba(3, 6, 12, 0.60))
+    drop-shadow(0 20px 58px rgba(3, 6, 12, 0.46))
+    drop-shadow(0 0 74px rgba(143, 212, 255, 0.10));
 }
 
 .g-deck-panel .surface {

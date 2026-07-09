@@ -289,14 +289,15 @@ pieces read as hard-edged paper cutouts because an earlier flatten pass had set
 `box-shadow: none !important` on the FABs. All shell pieces now share one feathered
 ambient-shadow family so the stack reads as one floating composition, not stacked cards.
 
-Tokens (`:root` in `src/src/styles.css`):
-- `--g-shadow-fab: 0 22px 56px rgba(3,6,12,0.50), 0 5px 18px rgba(3,6,12,0.38)` — large
+Tokens (`:root` in `src/src/styles.css`) — ค่าปัจจุบันหลัง Boss จูนความฟุ้ง 3 รอบ (2026-07-10):
+- `--g-shadow-fab: 0 36px 96px rgba(3,6,12,0.54), 0 10px 32px rgba(3,6,12,0.40)` — large
   FABs: `.g-sidebar-fab`, `.g-topbar-fab`.
-- `--g-shadow-tight: 0 14px 34px rgba(3,6,12,0.44), 0 3px 12px rgba(3,6,12,0.34)` — small
+- `--g-shadow-tight: 0 24px 60px rgba(3,6,12,0.48), 0 6px 22px rgba(3,6,12,0.36)` — small
   buttons/cards: `.g-power-main`, `.g-power-action`, `.g-sig`.
+- panel-rim feather (`.g-panel-rim use`) =
+  `drop-shadow(0 56px 140px @.60) + (0 20px 58px @.46) + ice bloom (0 0 74px @.10)`.
 
-ค่าเบลอถูกดันขึ้นหนึ่งขั้น (Boss feedback 2026-07-10 "เพิ่มความเบลอไปอีก"):
-panel-rim feather = `drop-shadow(0 32px 80px @.55) + (0 10px 30px @.42) + ice bloom (0 0 40px @.07)`.
+ถ้าจะจูนต่อ แก้ 3 จุดนี้ที่เดียว — ห้าม fork ค่าเงาลง component (governance ข้อ 1)
 
 Panel edge: `.g-deck-panel` is clipped by the Subtract path (`clip-path`, plus
 `overflow:hidden` + `contain:paint`), so a `box-shadow` — or a `filter` on a
