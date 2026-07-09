@@ -26,8 +26,8 @@
   /* CR-007 follow-up (Boss feedback 2026-07-09): feathered ambient-shadow family so
      the shell reads as one floating composition instead of hard-edged cutouts —
      two soft layers (near + far) in the same rgba(3,6,12,…) hue used everywhere. */
-  --g-shadow-fab: 0 22px 56px rgba(3,6,12,0.50), 0 5px 18px rgba(3,6,12,0.38);
-  --g-shadow-tight: 0 14px 34px rgba(3,6,12,0.44), 0 3px 12px rgba(3,6,12,0.34);
+  --g-shadow-fab: 0 30px 78px rgba(3,6,12,0.52), 0 8px 26px rgba(3,6,12,0.40);
+  --g-shadow-tight: 0 20px 48px rgba(3,6,12,0.46), 0 5px 18px rgba(3,6,12,0.36);
   --g-shadow-panel: 0 18px 50px rgba(0,0,0,0.55);
   --g-rim-top: inset 0 1px 0 rgba(255,255,255,0.06);
   --g-blur-panel: blur(30px) saturate(150%); --g-blur-fab: blur(24px) saturate(160%); --g-blur-tile: blur(6px);
@@ -4508,9 +4508,9 @@ body {
      actually diffuses the panel edge into the background (see the stage-sibling
      comment above .g-panel-rim for why it has to live outside .g-deck-panel). */
   filter:
-    drop-shadow(0 32px 80px rgba(3, 6, 12, 0.55))
-    drop-shadow(0 10px 30px rgba(3, 6, 12, 0.42))
-    drop-shadow(0 0 40px rgba(143, 212, 255, 0.07));
+    drop-shadow(0 44px 112px rgba(3, 6, 12, 0.58))
+    drop-shadow(0 16px 46px rgba(3, 6, 12, 0.44))
+    drop-shadow(0 0 58px rgba(143, 212, 255, 0.09));
 }
 
 .g-deck-panel .surface {
@@ -5126,7 +5126,10 @@ body {
 .gm-agent-card {
   position: absolute;
   left: 808px;
-  top: 42px;
+  /* top clears the topbar-notch floor (panel-local y74) + 12px rhythm — was 42px,
+     which pushed the card 32px up into the notch void where the panel clip-path
+     chopped its top-right corner ("แหว่ง"). Column below is empty so it just shifts down. */
+  top: 86px;
   width: 440px;
   height: 354px;
   padding: 14px;

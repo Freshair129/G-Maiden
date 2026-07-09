@@ -1,5 +1,5 @@
 ---
-version: "2.1.1-draft"
+version: "2.1.2-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
 last_update: "2026-07-10T00:00:00+07:00,Claude"
 status: "draft"

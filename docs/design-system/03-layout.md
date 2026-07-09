@@ -1,5 +1,5 @@
 ---
-version: "2.2.3-draft"
+version: "2.2.4-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
 last_update: "2026-07-10T00:00:00+07:00,Claude"
 status: "draft"
@@ -311,8 +311,13 @@ Current dashboard sectors inside `.gm-fung-layout`:
 | Score header | `128` | `42` | `640` | `48` |
 | Stats row | `128` | `98` | `478` | `42` |
 | Battle grid | `128` | `148` | `640` | `260` |
-| Agent card | `808` | `42` | `440` | `354` |
+| Agent card | `808` | `86` | `440` | `354` |
 | Sector log | `128` | `418` | `620` | `170` |
+
+> Agent card `y` was `42` until CR-007 follow-up (Boss feedback 2026-07-10): at `y42` its top
+> 32px sat inside the topbar-notch void (notch floor is panel-local `y74`), so the panel
+> `clip-path` chopped its top-right corner. Moved to `y86` (notch floor + 12px rhythm); the
+> right column below is empty so height/width are unchanged, the card just shifts down.
 
 ## 7. Responsive behavior
 
