@@ -1,7 +1,7 @@
 ---
-version: "2.0.0-draft"
+version: "2.1.0-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-05T00:00:00+07:00,Opus"
+last_update: "2026-07-09T00:00:00+07:00,Fable"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -24,14 +24,21 @@ G-Maiden มี **2 หน้าต่าง** (routing ใน `src/src/App.tsx`
 | **Overlay** | Combat HUD (โปร่ง, click-through, บนเกม) | widget เบา เฉพาะที่จำเป็น |
 
 Overlay ไม่ใช้ chrome ของ Deck — แชร์แค่ token (สี/type/สถานะ) เพื่อความต่อเนื่องทางสายตา
+Design contract ของ overlay อยู่ที่ [`07-combat-hud.md`](07-combat-hud.md)
 
 ## 2. Navigation model
 
-**สองแกน อย่าปนกัน:**
+**สามแกน อย่าปนกัน:**
 
 1. **Sidebar FAB (I)** = navigation จริง → สลับ *page* ใน Command Deck
-2. **Anchor rail (P1–P5)** = ไม่ใช่ nav → เป็น spatial anchor สื่อสารตำแหน่งกับ agent
-   (พูด/ชี้ตำแหน่งบน map/รอบตัว) — ผูกกับ persona ไม่ใช่ page switch
+2. **Audio rail** (แทน P1–P5 anchor rail เดิม — ดู 03-layout §5.6) = ไม่ใช่ nav →
+   master volume + ANN/SIGNAL toggle บนหน้า dashboard
+3. **แกนเฟส (CR-007, pending)** = ไม่ใช่ nav และไม่ขยับ layout — เนื้อหาใน sector เดิม
+   ของ dashboard สลับตามสถานะแมตช์ `standby → prep → live → debrief`
+   (อัตโนมัติจาก GSI, override มือได้) — สเปกเต็มอยู่ใน CR-007 §WP-5
+
+**Command palette (CR-007 WP-6, pending):** `Ctrl+K` overlay ลอยเหนือ stage —
+ทางลัดครอบทุกแกนโดยไม่แตะ geometry
 
 ## 3. Sitemap (Command Deck pages)
 
@@ -47,10 +54,11 @@ flowchart TD
   Deck --> Account["Account — GID + Steam link"]
   Deck --> Settings["Settings — window/privacy/system"]
 
-  Overlay["Combat HUD (Overlay window)"]
-  Overlay --> Sig["G-Signal meter"]
-  Overlay --> Banner["Announcer banner"]
-  Overlay --> Mini["Minimap CV markers"]
+  Overlay["Combat HUD (Overlay window) — ดู 07-combat-hud.md"]
+  Overlay --> Sig["Signal: gank banner + belief-revision echo + G-Meter + enemy missing"]
+  Overlay --> Banner["Announcer: kill/streak card + pack banner + voice toast"]
+  Overlay --> Comp["Companion: Maiden presence + advice (G-Master)"]
+  Overlay --> Stats["Stat modules: clock/KDA/gold/GPM/XPM/NW/score/HP-mana (Full tier)"]
 ```
 
 ## 4. Page inventory
@@ -63,7 +71,7 @@ flowchart TD
 | **Build Advisor** | `CompanionPages.tsx` `BuildAdvisorPage` | item path, advisor notes | scaffold |
 | **Insights** | `CompanionPages.tsx` `InsightsPage` | power/win/objective/ward + weekly report | scaffold (OpenDota) |
 | **History** | `CompanionPages.tsx` `HistoryPage` | recent sessions (local G-Log) | scaffold |
-| **Account** | `AccountPage.tsx` / `AuthPanel.tsx` / `SteamLink.tsx` | GID, Google OAuth, Steam link | live (ADR-14) |
+| **Account** | `AccountPage.tsx` / `AuthPanel.tsx` / `SteamLink.tsx` | GID, Google OAuth, Steam link — UX spec: [`08-account-gid.md`](08-account-gid.md) | live (ADR-14) |
 | **Settings** | `CompanionPages.tsx` `SettingsPage` | window preset, privacy, system health | live |
 | **Companion** | `CompanionPages.tsx` `CompanionPage` | overlay/voice/alert behavior, hotkeys | live |
 

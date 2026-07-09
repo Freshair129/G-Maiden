@@ -1,7 +1,7 @@
 ---
-version: "2.0.0-draft"
+version: "2.1.0-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-05T00:00:00+07:00,Opus"
+last_update: "2026-07-09T00:00:00+07:00,Fable"
 status: "draft"
 supersedes: "docs/architecture/design-system.md (Iceglass v0.1.0b, candidate)"
 attributes:
@@ -33,6 +33,8 @@ attributes:
 | 04 | [`04-components.md`](04-components.md) | component catalog — anatomy, dimension, states, variants |
 | 05 | [`05-sitemap-ia.md`](05-sitemap-ia.md) | information architecture, navigation model, page inventory, window model, user flow |
 | 06 | [`06-stack.md`](06-stack.md) | tech stack + code map (token/component อยู่ไฟล์ไหนในโค้ดจริง) |
+| 07 | [`07-combat-hud.md`](07-combat-hud.md) | Combat HUD (overlay) design contract — อิง implementation จริง |
+| 08 | [`08-account-gid.md`](08-account-gid.md) | Login (Google OAuth) + GID + Steam link — UX design |
 | — | [`assets/`](assets/) | wireframe/mockup ที่ระบุ dimension (SVG) + swatches |
 
 ### Mockup / snapshot (ระบุ dimension)
@@ -90,5 +92,6 @@ attributes:
 
 | version | date | สรุป |
 | --- | --- | --- |
+| 2.1.0-draft | 2026-07-09 | CR-007 design package: layout freeze บันทึกเป็นกติกา; เพิ่มไฟล์ 07 (Combat HUD contract) + 08 (Account/GID UX); 05 sync กับ shell จริง (audio rail แทน P1–P5, แกนเฟส pending) |
 | 2.0.0-draft | 2026-07-05 | ตั้งชุดเอกสาร SSOT ใหม่; Command Deck HUD (Subtract glass shell); reconcile ice+lime tokens; FAB cutout system |
 | 0.1.0b | 2026-06-23 | Iceglass candidate เดิม (`docs/architecture/design-system.md`) |
