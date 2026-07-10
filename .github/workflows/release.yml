@@ -72,11 +72,11 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
-          tagName: ""
-          releaseName: ""
-          releaseBody: ""
-          releaseDraft: true
-          prerelease: true
+          # Compile Rust + build the frontend to catch build breaks, but skip
+          # bundling the installers/updater — that step signs the updater
+          # artifact and needs TAURI_SIGNING_PRIVATE_KEY, which only the
+          # publishing `release` job below carries. A sign-less smoke build.
+          args: --no-bundle
 
   release:
     needs: verify
