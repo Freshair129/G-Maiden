@@ -226,7 +226,6 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
     root.classList.add("is-dragging");
 
     let cleaned = false;
-    let safetyTimer: number | undefined;
 
     const onFocusAfterBlur = () => {
       window.removeEventListener("focus", onFocusAfterBlur);
@@ -242,12 +241,12 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
       window.removeEventListener("mouseup", cleanup);
       window.removeEventListener("blur", onBlur);
       window.removeEventListener("focus", onFocusAfterBlur);
-      if (safetyTimer !== undefined) window.clearTimeout(safetyTimer);
+      window.clearTimeout(safetyTimer);
     };
 
     window.addEventListener("mouseup", cleanup);
     window.addEventListener("blur", onBlur);
-    safetyTimer = window.setTimeout(cleanup, 8000);
+    const safetyTimer = window.setTimeout(cleanup, 8000);
 
     try {
       void getCurrentWindow().startDragging();
