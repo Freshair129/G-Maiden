@@ -193,7 +193,7 @@ fn try_anthropic_api(prompt: &str, key: &str) -> Result<String, String> {
     let v: serde_json::Value = serde_json::from_str(&raw).map_err(|e| {
         format!(
             "JSON parse: {e} — raw: {}",
-            &raw.chars().take(160).collect::<String>()
+            raw.chars().take(160).collect::<String>()
         )
     })?;
     // Surface API errors (bad key, rate limit) instead of a confusing empty parse.

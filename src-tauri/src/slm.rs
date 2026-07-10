@@ -80,7 +80,7 @@ fn call_ollama(json_body: &str) -> Result<String, String> {
     let v: serde_json::Value = serde_json::from_str(&raw).map_err(|e| {
         format!(
             "JSON parse: {e} — raw: {}",
-            &raw.chars().take(120).collect::<String>()
+            raw.chars().take(120).collect::<String>()
         )
     })?;
     if let Some(err) = v.get("error").and_then(|e| e.as_str()) {
