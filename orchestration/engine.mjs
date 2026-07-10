@@ -149,13 +149,29 @@ export function blockedTasks(s) { return BACKLOG.filter((t) => s.tasks[t.id].sta
 
 // ---------- governance gate (guard--governance-gate / ADR B4) ----------
 const AUTO_GATE_TYPES = new Set(["safety", "guard", "audit"]);
+const W4_MIN = 9;
+export function fanoutDegree(t) {
+  const out = (t.deps || []).length;
+  const inc = BACKLOG.reduce((n, x) => n + ((x.deps || []).includes(t.id) ? 1 : 0), 0);
+  return out + inc;
+}
+export function isW4(t) { return fanoutDegree(t) >= W4_MIN; }
 export function needsConfirm(t) {
   if (t.requiresConfirm) return true;
   // auto-gate by original atom type (encoded in id prefix: "guard--foo" → "guard")
   const atomType = t.id?.split("--")[0];
   if (atomType && AUTO_GATE_TYPES.has(atomType)) return true;
   if (AUTO_GATE_TYPES.has(t.type)) return true;
+  if (isW4(t)) return true;   // §8 W4 super-hub
   return false;
+}
+// why a task is gated — makes the dispatch refusal name its cause (W4 vs auto-gate/requiresConfirm)
+export function confirmReason(t) {
+  if (t.requiresConfirm) return "requiresConfirm";
+  const atomType = t.id?.split("--")[0];
+  if ((atomType && AUTO_GATE_TYPES.has(atomType)) || AUTO_GATE_TYPES.has(t.type)) return `auto-gate type=${t.type}`;
+  if (isW4(t)) return `W4 super-hub (degree ${fanoutDegree(t)} ≥ ${W4_MIN}) — decompose or approve (SPEC §8)`;
+  return "gated";
 }
 export function isConfirmed(t, s) {
   return !!s.tasks[t.id]?.confirmed;
@@ -221,7 +237,7 @@ export function setStatus(id, status, extra = {}) {
     const s = loadState();
     // governance gate (guard--governance-gate): gated atoms cannot transition to running without confirm
     if (status === "running" && needsConfirm(t) && !isConfirmed(t, s)) {
-      return { ok: false, error: `⛔ governance gate: ${id} ต้อง confirm ก่อน running (requiresConfirm / auto-gate type=${t.type})` };
+      return { ok: false, error: `⛔ governance gate: ${id} ต้อง confirm ก่อน running (${confirmReason(t)})` };
     }
     s.tasks[id] = { ...s.tasks[id], status, ...extra };
     if (status === "todo") { s.tasks[id].worker = null; s.tasks[id].claimedAt = null; }
@@ -787,7 +803,7 @@ export function dispatchOne(id, worker = "ui") {
   if (gvBlk) return { ok: false, error: "⛔ governance interlock: " + gvBlk };
   // governance gate: requiresConfirm atoms need explicit human confirm before dispatch
   if (needsConfirm(t) && !isConfirmed(t, loadState())) {
-    return { ok: false, error: `⛔ governance gate: ${id} ต้อง confirm ก่อน dispatch (requiresConfirm / auto-gate type=${t.type})` };
+    return { ok: false, error: `⛔ governance gate: ${id} ต้อง confirm ก่อน dispatch (${confirmReason(t)})` };
   }
   const cur = loadState().tasks[id]?.status;
   if (["needs-rework", "failed", "reviewing"].includes(cur)) setStatus(id, "todo"); // re-dispatch
