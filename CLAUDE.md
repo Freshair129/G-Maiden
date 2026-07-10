@@ -129,8 +129,16 @@ actually changes what's voiced in-game**.
 - **Authoring + install** — packs are built in **G-AnnStudio** (the
   [G-Suite](https://github.com/Freshair129/G-Suite) monorepo): import → Whisper auto-split → AI maps
   clips to events → installs into voice-cache, then `POST /announcer/install` on the :3000 GSI
-  server (handled in `src-tauri/src/gsi.rs`) so the pack is picked up live; the endpoint returns
-  per-event clip counts.
+  server (handled in `src-tauri/src/gsi.rs` `announcer_install`). The handler **auto-activates**
+  the installed pack (`voice_api::activate_if_exists` — the same file write the "activate" UI
+  action uses) unless the body sets `"activate": false`, so the pack really is picked up live, not
+  just copied to disk. It accepts `packId` (preferred) or the legacy `pack` key, and returns real
+  per-event counts resolved from the pack's manifest (`voice_api::install_report`, replacing the
+  old `audio::all_counts()` folder-count that had no notion of a manifest-based pack). Because
+  `:3000` has no auth, activation is limited to packs that already exist on disk — the endpoint
+  never creates/writes/moves/extracts files, so the worst a rogue local POST can do is switch the
+  active pack. Known gap: an already-open Voice Packs UI does not auto-refresh after a remote
+  install (no listener wired) — reopen it to see the change.
 
 ## Persona rules (product-critical, not flavor)
 

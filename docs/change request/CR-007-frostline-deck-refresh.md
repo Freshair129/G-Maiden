@@ -90,6 +90,24 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
   mount; the backend emits `volume-change` / `signal-change` / `announcer-change`
   so any other surface (e.g. the legacy Control panel under Settings) stays in
   sync instead of silently overwriting the rail's state.
+- **G-AnnStudio install endpoint fix (2026-07-10):** `POST /announcer/install`
+  (`src-tauri/src/gsi.rs` `announcer_install`) was a near no-op — it logged the
+  pack name and returned `audio::all_counts()`, which counts subfolders of the
+  legacy flat `voice-cache/` tree (including non-event dirs like `packs/` and
+  `imports/`) and never activated the pack, so CLAUDE.md's "picked up live"
+  claim was false. Fixed: the handler now reads `packId` (falls back to legacy
+  `pack`), auto-activates via `voice_api::activate_if_exists` (default
+  `activate: true`, opt out with `"activate": false`), and returns real
+  per-event counts + `unmappedEvents` + `missingClips` from
+  `voice_api::install_report`, which resolves the pack's manifest against disk
+  the same way live playback does. **Constraint that shaped the design:** :3000
+  has no auth, so any local process can POST here — activation only ever
+  targets a pack that already has a readable `manifest.json` on disk, and the
+  path never creates/writes/moves/extracts files, so a rogue POST can at worst
+  swap between already-installed packs. Path-traversal/zip-slip hardening of
+  manifest-relative clip paths elsewhere in `voice_api.rs` remains deferred,
+  separate work. Known gap: an already-open Voice Packs UI does not
+  auto-refresh after a remote install.
 
 ### WP-5 — Phase-aware content (เนื้อหารู้เฟส, ช่องอยู่ที่เดิม)
 - `src/src/live/phase.ts`: state machine `standby → prep → live → debrief`

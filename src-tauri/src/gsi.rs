@@ -186,20 +186,92 @@ async fn telemetry_ingest(body: String) -> &'static str {
     "ok"
 }
 
-/// Receive a notify from G-AnnStudio after it installs a pack into voice-cache.
-/// The clips are already on disk (audio.rs reads the dir live), so we just
-/// confirm by returning the current per-event clip counts.
+/// Body accepted by `POST /announcer/install`. `pack_id` is preferred;
+/// `pack` is the legacy key kept for G-AnnStudio builds that predate this
+/// fix. `activate` defaults to true — install almost always means "use this
+/// pack now", but the caller can opt out (e.g. to stage a pack ahead of time).
+struct InstallRequest {
+    pack_id: String,
+    activate: bool,
+}
+
+fn parse_install_request(body: &str) -> InstallRequest {
+    let v: Value = serde_json::from_str(body).unwrap_or(Value::Null);
+    let pack_id = v["packId"]
+        .as_str()
+        .or_else(|| v["pack"].as_str())
+        .unwrap_or("")
+        .to_string();
+    let activate = v["activate"].as_bool().unwrap_or(true);
+    InstallRequest { pack_id, activate }
+}
+
+/// Receive a notify from G-AnnStudio after it installs a pack into
+/// `voice-cache/packs/<id>/`. `:3000` has no auth, so this only ever
+/// activates a pack that's ALREADY on disk (`voice_api::activate_if_exists`) —
+/// it never creates, writes, moves, or extracts anything; the clip files
+/// themselves are G-AnnStudio's job. Returns real per-event counts resolved
+/// from the pack's manifest (`voice_api::install_report`), replacing the old
+/// `audio::all_counts()` call which counted subfolders of the legacy flat
+/// `voice-cache/` layout and had no notion of a manifest-based pack.
 async fn announcer_install(body: String) -> axum::Json<serde_json::Value> {
-    let pack = serde_json::from_str::<Value>(&body)
-        .ok()
-        .and_then(|v| v["pack"].as_str().map(String::from))
-        .unwrap_or_default();
-    let counts = crate::audio::all_counts();
+    axum::Json(run_announcer_install(&parse_install_request(&body)))
+}
+
+/// Pure decision logic, split out of the async handler so it's unit-testable
+/// without spinning up axum/tokio.
+fn run_announcer_install(req: &InstallRequest) -> serde_json::Value {
+    if req.pack_id.is_empty() {
+        return serde_json::json!({ "ok": false, "error": "missing packId" });
+    }
+
+    let report = match crate::voice_api::install_report(&req.pack_id) {
+        Ok(r) => r,
+        Err(e) => {
+            // Keep the absolute path in the local log only: `:3000` has no auth,
+            // so the response must not echo the install directory back to a caller.
+            eprintln!(
+                "[G-Maiden] announcer install: pack '{}' not found/readable: {e}",
+                req.pack_id
+            );
+            return serde_json::json!({
+                "ok": false,
+                "pack": req.pack_id,
+                "error": "pack not found or manifest unreadable"
+            });
+        }
+    };
+
+    let activated = if req.activate {
+        match crate::voice_api::activate_if_exists(&report.pack_id) {
+            Ok(()) => true,
+            Err(e) => {
+                eprintln!(
+                    "[G-Maiden] announcer install: activation of '{}' failed: {e}",
+                    report.pack_id
+                );
+                return serde_json::json!({ "ok": false, "pack": report.pack_id, "error": e });
+            }
+        }
+    } else {
+        false
+    };
+
     eprintln!(
-        "[G-Maiden] announcer pack installed: {pack} ({} events)",
-        counts.len()
+        "[G-Maiden] announcer pack installed: {} (activated={activated}, {}/{} events mapped)",
+        report.pack_id,
+        report.counts.values().filter(|c| **c > 0).count(),
+        report.counts.len()
     );
-    axum::Json(serde_json::json!({ "ok": true, "pack": pack, "counts": counts }))
+    serde_json::json!({
+        "ok": true,
+        "pack": report.pack_id,
+        "packId": report.pack_id,
+        "activated": activated,
+        "counts": report.counts,
+        "unmappedEvents": report.unmapped_events,
+        "missingClips": report.missing_clips,
+    })
 }
 
 const OAUTH_CALLBACK_HTML: &str = "<!doctype html><meta charset=utf-8><title>G-Maiden</title>\
@@ -431,5 +503,129 @@ mod tests {
         }));
         assert_eq!(t.kill_list_len, 0);
         assert_eq!(t.last_victim_slot, -1);
+    }
+
+    // --- POST /announcer/install (`run_announcer_install`) ---------------
+
+    fn install_temp_root(tag: &str) -> std::path::PathBuf {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir = std::env::temp_dir().join(format!("gmaiden-gsi-install-test-{tag}-{nanos}"));
+        std::fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    /// Writes `packs/<id>/manifest.json` by hand (matching `voice_api`'s
+    /// camelCase `Manifest`/`ManifestMapping` serde shape) since those structs
+    /// are private to that module.
+    fn install_write_pack(root: &std::path::Path, id: &str, mappings_json: &str) {
+        let dir = root.join("packs").join(id);
+        std::fs::create_dir_all(dir.join("clips")).unwrap();
+        let manifest = format!(
+            "{{\"id\":\"{id}\",\"name\":\"Test\",\"version\":\"0.1.0\",\"locale\":\"th-TH\",\
+             \"author\":\"\",\"description\":\"\",\"coverImage\":\"\",\"mappings\":{mappings_json}}}"
+        );
+        std::fs::write(dir.join("manifest.json"), manifest).unwrap();
+    }
+
+    struct InstallRootGuard(std::path::PathBuf);
+    impl Drop for InstallRootGuard {
+        fn drop(&mut self) {
+            crate::voice_api::set_test_voice_root(None);
+            let _ = std::fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn install_activates_existing_pack_and_reports_real_counts() {
+        let root = install_temp_root("ok");
+        crate::voice_api::set_test_voice_root(Some(root.clone()));
+        let _guard = InstallRootGuard(root.clone());
+
+        install_write_pack(
+            &root,
+            "demo",
+            r#"{"kill":{"text":"","thai":"","banner":"","bannerAsset":"","clips":["clips/kill_01.wav","clips/kill_02.wav"]}}"#,
+        );
+        std::fs::write(root.join("packs/demo/clips/kill_01.wav"), b"x").unwrap();
+        std::fs::write(root.join("packs/demo/clips/kill_02.wav"), b"x").unwrap();
+
+        let resp = run_announcer_install(&InstallRequest {
+            pack_id: "demo".into(),
+            activate: true,
+        });
+        assert_eq!(resp["ok"], true);
+        assert_eq!(resp["activated"], true);
+        assert_eq!(resp["packId"], "demo");
+        assert_eq!(resp["counts"]["kill"], 2);
+
+        let active = std::fs::read_to_string(root.join("active-pack.txt")).unwrap();
+        assert_eq!(active.trim(), "demo");
+    }
+
+    #[test]
+    fn install_accepts_legacy_pack_key_when_pack_id_absent() {
+        let root = install_temp_root("legacy-key");
+        crate::voice_api::set_test_voice_root(Some(root.clone()));
+        let _guard = InstallRootGuard(root.clone());
+
+        install_write_pack(&root, "demo", r#"{}"#);
+
+        let req = parse_install_request(r#"{"pack":"demo"}"#);
+        assert_eq!(req.pack_id, "demo");
+        assert!(req.activate); // default true when omitted
+
+        let resp = run_announcer_install(&req);
+        assert_eq!(resp["ok"], true);
+        assert_eq!(resp["activated"], true);
+    }
+
+    #[test]
+    fn install_activate_false_returns_counts_without_writing_active_pack() {
+        let root = install_temp_root("no-activate");
+        crate::voice_api::set_test_voice_root(Some(root.clone()));
+        let _guard = InstallRootGuard(root.clone());
+
+        install_write_pack(
+            &root,
+            "demo",
+            r#"{"kill":{"text":"","thai":"","banner":"","bannerAsset":"","clips":["clips/kill_01.wav"]}}"#,
+        );
+        std::fs::write(root.join("packs/demo/clips/kill_01.wav"), b"x").unwrap();
+
+        let resp = run_announcer_install(&InstallRequest {
+            pack_id: "demo".into(),
+            activate: false,
+        });
+        assert_eq!(resp["ok"], true);
+        assert_eq!(resp["activated"], false);
+        assert_eq!(resp["counts"]["kill"], 1);
+        assert!(!root.join("active-pack.txt").is_file());
+    }
+
+    #[test]
+    fn install_unknown_pack_id_is_not_activated_and_leaves_active_pack_untouched() {
+        let root = install_temp_root("unknown");
+        crate::voice_api::set_test_voice_root(Some(root.clone()));
+        let _guard = InstallRootGuard(root.clone());
+
+        std::fs::write(root.join("active-pack.txt"), "previous").unwrap();
+
+        let resp = run_announcer_install(&InstallRequest {
+            pack_id: "does-not-exist".into(),
+            activate: true,
+        });
+        assert_eq!(resp["ok"], false);
+
+        let active = std::fs::read_to_string(root.join("active-pack.txt")).unwrap();
+        assert_eq!(active.trim(), "previous");
+    }
+
+    #[test]
+    fn install_missing_pack_id_in_body_is_rejected() {
+        let resp = run_announcer_install(&parse_install_request("{}"));
+        assert_eq!(resp["ok"], false);
     }
 }

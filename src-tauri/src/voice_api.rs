@@ -565,8 +565,15 @@ pub fn active_event_clips(event: &str) -> Vec<PathBuf> {
     let Some(mapping) = manifest.mappings.get(event) else {
         return Vec::new();
     };
-    mapping
-        .clips
+    resolve_existing_clips(&dir, &mapping.clips)
+}
+
+/// Resolve a manifest mapping's `clips` (paths relative to the pack dir) to
+/// absolute paths, keeping only the ones that actually exist on disk. Shared
+/// by live playback (`active_event_clips`) and `install_report` below so both
+/// always agree on what counts as "this event has a clip".
+fn resolve_existing_clips(dir: &Path, clips: &[String]) -> Vec<PathBuf> {
+    clips
         .iter()
         .map(|rel| dir.join(rel.replace('\\', "/")))
         .filter(|path| path.is_file())
@@ -656,6 +663,84 @@ pub fn preview_clip(pack_id: &str, event: &str) -> Option<PathBuf> {
         .find(|path| path.is_file())
 }
 
+/// Real per-event report for a pack, used by `POST /announcer/install`
+/// (`gsi.rs`). Replaces the old `audio::all_counts()` there, which counted
+/// subfolders of the flat `voice-cache/` tree (and had no notion of a
+/// manifest-based pack at all — it would happily count `packs/` and
+/// `imports/` as if they were events).
+pub struct InstallReport {
+    pub pack_id: String,
+    pub counts: BTreeMap<String, usize>,
+    pub unmapped_events: Vec<String>,
+    pub missing_clips: Vec<String>,
+}
+
+/// Build an [`InstallReport`] for `pack_id` by reading its manifest and
+/// resolving every mapped clip against disk via the same
+/// [`resolve_existing_clips`] helper `active_event_clips` uses — so the
+/// numbers reported here always match what will actually play in-game.
+/// Errs (and reports nothing) if the pack has no readable `manifest.json`;
+/// callers MUST NOT activate a pack when this errs.
+pub fn install_report(pack_id: &str) -> Result<InstallReport, String> {
+    let id = sanitize_id(pack_id);
+    if id.is_empty() {
+        return Err("pack id is required".into());
+    }
+    let dir = packs_dir().join(&id);
+    let manifest = read_manifest(&dir)?;
+
+    let mut counts = BTreeMap::new();
+    let mut unmapped_events = Vec::new();
+    let mut missing_clips = Vec::new();
+
+    for event in event_ids() {
+        let Some(mapping) = manifest.mappings.get(event) else {
+            counts.insert(event.to_string(), 0);
+            unmapped_events.push(event.to_string());
+            continue;
+        };
+        for rel in &mapping.clips {
+            if !dir.join(rel.replace('\\', "/")).is_file() {
+                missing_clips.push(rel.clone());
+            }
+        }
+        let existing = resolve_existing_clips(&dir, &mapping.clips).len();
+        counts.insert(event.to_string(), existing);
+        if existing == 0 {
+            unmapped_events.push(event.to_string());
+        }
+    }
+
+    Ok(InstallReport {
+        pack_id: id,
+        counts,
+        unmapped_events,
+        missing_clips,
+    })
+}
+
+/// Activate `pack_id` — but ONLY if it already exists on disk (a readable
+/// `manifest.json`). `:3000` has no auth, so any local process can hit
+/// `POST /announcer/install`; limiting activation to packs already installed
+/// means the worst a rogue local POST can do is swap between packs a human
+/// already put on disk. This must never grow a path that creates, writes,
+/// moves, or extracts files — that hardening is separate, deliberately
+/// deferred work.
+///
+/// Reuses the exact same write the "activate" UI action uses
+/// (`action("activate", ..)` -> `write_active_pack_id`) rather than a new
+/// hand-rolled file write.
+pub fn activate_if_exists(pack_id: &str) -> Result<(), String> {
+    let id = sanitize_id(pack_id);
+    if id.is_empty() {
+        return Err("pack id is required".into());
+    }
+    if !packs_dir().join(&id).join("manifest.json").is_file() {
+        return Err(format!("pack not found: {id}"));
+    }
+    write_active_pack_id(&id)
+}
+
 /// Read an image file into a base64 `data:` URL, or `None` if missing/too large.
 fn read_banner_data_url(path: &Path) -> Option<String> {
     let meta = fs::metadata(path).ok()?;
@@ -710,7 +795,29 @@ fn base64_encode(input: &[u8]) -> String {
     out
 }
 
+// Test-only root override. `voice_cache_dir()` is resolved from the exe path /
+// dev-tree with no injection point, so the install-report/activation unit
+// tests below need something to redirect `voice_root()` at a scratch temp dir.
+// `thread_local` keeps each `#[test]` thread's override isolated from the
+// others (Rust runs tests on separate threads by default) without touching
+// any production code path — non-test builds never read this.
+#[cfg(test)]
+thread_local! {
+    static TEST_VOICE_ROOT: std::cell::RefCell<Option<PathBuf>> = const { std::cell::RefCell::new(None) };
+}
+
+#[cfg(test)]
+pub(crate) fn set_test_voice_root(path: Option<PathBuf>) {
+    TEST_VOICE_ROOT.with(|cell| *cell.borrow_mut() = path);
+}
+
 fn voice_root() -> PathBuf {
+    #[cfg(test)]
+    {
+        if let Some(p) = TEST_VOICE_ROOT.with(|cell| cell.borrow().clone()) {
+            return p;
+        }
+    }
     audio::voice_cache_dir()
 }
 
@@ -991,5 +1098,156 @@ mod tests {
         assert_eq!(image_mime("jpeg"), "image/jpeg");
         assert_eq!(image_mime("svg"), "image/svg+xml");
         assert_eq!(image_mime("bmp"), "application/octet-stream");
+    }
+
+    #[test]
+    fn sanitize_id_collapses_path_traversal_to_a_plain_name() {
+        // A malicious "packId" like "../../evil" must never let a caller of
+        // packs_dir().join(sanitize_id(..)) walk outside packs/. sanitize_id
+        // maps every non alnum/-/_ char (including '.' and '/') to '-', then
+        // trims leading/trailing '-', so this collapses to a bare "evil" —
+        // still confined under packs_dir(), never an actual traversal.
+        assert_eq!(sanitize_id("../../evil"), "evil");
+        assert_eq!(sanitize_id("..\\..\\evil"), "evil");
+        assert_eq!(sanitize_id("/etc/passwd"), "etc-passwd");
+    }
+
+    /// Scratch dir for the install-report / activation tests below, isolated
+    /// per test via `set_test_voice_root` (thread_local — see its comment).
+    fn temp_root(tag: &str) -> PathBuf {
+        let nanos = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let dir =
+            std::env::temp_dir().join(format!("gmaiden-voice-api-test-{tag}-{}", nanos));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    fn write_pack(root: &Path, id: &str, mappings: BTreeMap<String, ManifestMapping>) -> PathBuf {
+        let dir = root.join("packs").join(id);
+        fs::create_dir_all(dir.join("clips")).unwrap();
+        let manifest = Manifest {
+            id: id.to_string(),
+            name: "Test Pack".into(),
+            version: "0.1.0".into(),
+            locale: "th-TH".into(),
+            author: String::new(),
+            description: String::new(),
+            cover_image: String::new(),
+            mappings,
+        };
+        write_manifest(&dir, &manifest).unwrap();
+        dir
+    }
+
+    fn mapping(clips: &[&str]) -> ManifestMapping {
+        ManifestMapping {
+            text: String::new(),
+            thai: String::new(),
+            banner: String::new(),
+            banner_asset: String::new(),
+            clips: clips.iter().map(|c| c.to_string()).collect(),
+        }
+    }
+
+    struct RootGuard(PathBuf);
+    impl Drop for RootGuard {
+        fn drop(&mut self) {
+            set_test_voice_root(None);
+            let _ = fs::remove_dir_all(&self.0);
+        }
+    }
+
+    #[test]
+    fn install_report_happy_path_counts_existing_clips() {
+        let root = temp_root("happy");
+        set_test_voice_root(Some(root.clone()));
+        let _guard = RootGuard(root.clone());
+
+        let pack_dir = write_pack(
+            &root,
+            "demo",
+            BTreeMap::from([("kill".to_string(), mapping(&["clips/kill_01.wav", "clips/kill_02.wav"]))]),
+        );
+        fs::write(pack_dir.join("clips/kill_01.wav"), b"x").unwrap();
+        fs::write(pack_dir.join("clips/kill_02.wav"), b"x").unwrap();
+
+        let report = install_report("demo").expect("report");
+        assert_eq!(report.pack_id, "demo");
+        assert_eq!(report.counts.get("kill"), Some(&2));
+        assert!(!report.unmapped_events.contains(&"kill".to_string()));
+        assert!(report.missing_clips.is_empty());
+
+        activate_if_exists("demo").expect("activate");
+        let active = fs::read_to_string(root.join("active-pack.txt")).unwrap();
+        assert_eq!(active.trim(), "demo");
+    }
+
+    #[test]
+    fn install_report_flags_mapped_but_missing_clip() {
+        let root = temp_root("missing-clip");
+        set_test_voice_root(Some(root.clone()));
+        let _guard = RootGuard(root.clone());
+
+        let pack_dir = write_pack(
+            &root,
+            "demo",
+            BTreeMap::from([("kill".to_string(), mapping(&["clips/kill_01.wav", "clips/ghost.wav"]))]),
+        );
+        fs::write(pack_dir.join("clips/kill_01.wav"), b"x").unwrap();
+        // clips/ghost.wav intentionally never written.
+
+        let report = install_report("demo").expect("report");
+        assert_eq!(report.counts.get("kill"), Some(&1));
+        assert!(report
+            .missing_clips
+            .iter()
+            .any(|c| c == "clips/ghost.wav"));
+    }
+
+    #[test]
+    fn install_report_flags_event_with_zero_clips_as_unmapped() {
+        let root = temp_root("zero-clip");
+        set_test_voice_root(Some(root.clone()));
+        let _guard = RootGuard(root.clone());
+
+        write_pack(
+            &root,
+            "demo",
+            BTreeMap::from([("kill".to_string(), mapping(&[]))]),
+        );
+
+        let report = install_report("demo").expect("report");
+        assert_eq!(report.counts.get("kill"), Some(&0));
+        assert!(report.unmapped_events.contains(&"kill".to_string()));
+    }
+
+    #[test]
+    fn install_report_errs_for_nonexistent_pack_and_activation_is_skipped() {
+        let root = temp_root("no-pack");
+        set_test_voice_root(Some(root.clone()));
+        let _guard = RootGuard(root.clone());
+
+        assert!(install_report("does-not-exist").is_err());
+        assert!(activate_if_exists("does-not-exist").is_err());
+        assert!(!root.join("active-pack.txt").is_file());
+    }
+
+    #[test]
+    fn traversal_pack_id_resolves_only_under_packs_dir_never_escapes() {
+        let root = temp_root("traversal");
+        set_test_voice_root(Some(root.clone()));
+        let _guard = RootGuard(root.clone());
+
+        // No pack named "evil" exists anywhere — including outside packs/ at
+        // the literal relative path "../../evil" the raw id spells out. Since
+        // sanitize_id collapses it to "evil" and packs_dir().join(..) confines
+        // the lookup under root/packs/, this must fail exactly like any other
+        // unknown id — never read/activate something outside packs_dir().
+        assert!(install_report("../../evil").is_err());
+        assert!(activate_if_exists("../../evil").is_err());
+        assert!(!root.join("active-pack.txt").is_file());
     }
 }

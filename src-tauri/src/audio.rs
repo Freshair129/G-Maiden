@@ -241,6 +241,14 @@ pub fn clip_count(event: &str) -> usize {
 }
 
 /// Count clips in every event sub-dir of voice-cache.
+///
+/// Not called from production code right now (its former caller, GSI's
+/// `POST /announcer/install` handler, was replaced by
+/// `voice_api::install_report` — this walks flat `voice-cache/{event}/` dirs
+/// and has no notion of a manifest-based pack, so it under/over-counts once a
+/// pack is active). Left in place and `pub` per instruction not to remove it —
+/// other callers may still want the legacy flat-layout counts.
+#[allow(dead_code)]
 pub fn all_counts() -> std::collections::BTreeMap<String, usize> {
     let mut out = std::collections::BTreeMap::new();
     if let Ok(it) = fs::read_dir(voice_cache_dir()) {
