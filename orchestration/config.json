@@ -29,10 +29,16 @@
           "--permission-mode",
           "bypassPermissions"
         ],
-        "_comment": "read=plan (ROLE profile: gate-owning roles §7.2 — ห้าม tier ไหน map มาที่นี่), bounded=แก้ไฟล์ที่ได้รับได้ แต่ห้ามค้นหา/shell (H0 \"0 hop\"), safe=แก้ไฟล์ + ค้นหาได้ Bash ถูก block, shell=+Bash, full=bypass ทั้งหมด. --disallowedTools เป็น variadic ต้องอยู่ท้ายสุดของ permArgs เสมอ",
+        "_comment": "read=ROLE read-only (§7.2): อ่าน/ค้นได้ แต่ Edit/Write/MultiEdit/NotebookEdit/Bash ถูกถอด; bounded=แก้ไฟล์ที่ได้รับ ห้ามค้นหา/shell (H0); safe=แก้ไฟล์+ค้นหา; shell=+Bash; full=bypass",
         "read": [
           "--permission-mode",
-          "plan"
+          "acceptEdits",
+          "--disallowedTools",
+          "Edit",
+          "Write",
+          "MultiEdit",
+          "NotebookEdit",
+          "Bash"
         ],
         "shell": [
           "--permission-mode",
@@ -67,6 +73,10 @@
         "H3": "shell",
         "H4": "full",
         "_comment": "Access Scope ceiling (SPEC §5 v0.6.1): H คุม REACH เท่านั้น; read-only เป็นเรื่อง ROLE (§7.2). lint-locked โดย access_scope_check.py ฝั่ง Rwang"
+      },
+      "rolePermissions": {
+        "reviewer": "read",
+        "_comment": "§7.2 gate owner อ่านอย่างเดียวต่อ artifact ที่ตัวเอง gate; lint-locked โดย role_readonly_check.py ฝั่ง Rwang"
       }
     },
     "ollama": {
