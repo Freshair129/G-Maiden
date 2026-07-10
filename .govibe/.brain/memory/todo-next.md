@@ -1,12 +1,76 @@
 # TODO / self-note - next session
 
-อัปเดตล่าสุด: **2026-07-08** · ปิด CR-006 backend handoff batch + ไล่ CPU จริงจาก Task Manager จนแยกได้ว่าเหลืองาน frontend runtime/WebView2
-รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-08-B-control-window-cpu-throttle.md`
+อัปเดตล่าสุด: **2026-07-10** · **release v0.9.0 สำเร็จ** (FROSTLINE deck refresh + honest data + voice-pack pipeline) + login เปิดใช้จริง + ADR-16 credit economy
+รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-10-cr007-frostline-release-v0.9.0.md`
 
-## Highest-leverage next work - ล่าสุด
-1. **Frontend CPU pass on real app path** - รับช่วงจาก `e87e20b3` และ session `2026-07-08-B-control-window-cpu-throttle.md`; เป้าคือ Task Manager-aligned grouped peak `<= 2.5%` ตอน Dota 2 เปิดจริง, ไม่ใช่แค่ average ต่ำ
-2. **Profile visible control window/WebView2** - root cause ตอนนี้เหลือ compositor/render path; เริ่มที่ `src/src/companion.ts` consumer fan-out และ surface ที่อ่าน `useCompanionData()` ทั้งก้อน
-3. **ตัดสินใจ policy ผลิตภัณฑ์** - ถ้ายังผ่าน peak ไม่ได้ ต้องเลือกว่าจะบังคับ “ซ่อน dashboard ระหว่างเล่น” เป็น UX/policy ชั่วคราว หรือจะลงทุนรื้อ visible control runtime ต่อ
+## 🎯 Highest-leverage next work (จาก session 2026-07-10, เรียงลำดับ)
+1. **Secret encryption (Phase 2)** 🔴 — refresh token (Supabase persistSession) + Anthropic API key
+   (settings blob `App.tsx`) ยัง plaintext ใน localStorage/WebView2 leveldb. audit: token หลุด =
+   ยึดบัญชี GID; key หลุด = ขโมยบิล. Boss เคยสั่งรวมกับ login. แก้: custom Supabase storage adapter
+   หนุน Windows DPAPI (win-only ตรงกับแอป) + ย้าย key ออกจาก localStorage → invoke เท่านั้น +
+   migration ย้ายของเดิมเข้า secure store แล้วลบ plaintext.
+2. **CLAUDE.md:5 version drift** — เขียน "implemented (v0.8.x)" จริง = **v0.9.0 shipped 2026-07-10**
+   (4 ไฟล์ version = 0.9.0). AGENTS.md ก็บอก bump "3 ที่" แต่จริงมี `src-tauri/Cargo.toml` เป็นที่ 4.
+   แก้เมื่อ Boss สั่ง (skill §4).
+3. **Silent-arm efficacy study (local ล้วน)** — ก่อน ingestion ใด ๆ: สุ่มปิด G-Signal เป็นบางแมตช์
+   (ยัง log ครบ ไม่พูด) → เทียบอัตราตายหลัง "เตือน" vs "เงียบ" ต่อ *เหตุการณ์เตือน* (ไม่ใช่ต่อแมตช์).
+   ตอบ "G-Maiden ช่วยจริงไหม" โดยไม่แตะ privacy rule + เป็นฟีเจอร์ในตัว. G-Log + `tools/analyze-log/`
+   มี join signal→outcome อยู่แล้ว 80%.
+4. **CI hardening (จาก RCA release gate)** — (a) review gate ต้องรัน `pnpm -C src exec eslint .` ด้วย
+   ไม่ใช่แค่ tsc+vitest; (b) pin CI Rust toolchain (`rust-toolchain.toml`) กัน clippy stable ลอย
+   ทำโค้ดเขียวกลายแดง; (c) tag หลัง CI-on-main เขียวเท่านั้น. ดู `docs/rca/2026-07-10-release-gate-drift-v0.9.0.md`.
+
+## DONE ใน session 2026-07-10
+- [DONE] **release v0.9.0 published** (setup.exe/.msi + .sig + latest.json, in-app updater live) — CI run 29118296158
+- [DONE] CR-007 shell refresh: notch ขวาล่างจริง + power corner FAB + acrylic ออก + drag lag + scale 1.0 + blur + unchip card
+- [DONE] WP-4 honest data + audio rail single-owner (แก้ dual-ownership BLOCKER ที่ gate จับ)
+- [DONE] announcer install auto-activate + manifest counts จริง
+- [DONE] **voice-pack path-traversal + zip-slip CLOSED** (`safe_pack_path` + zip crate) — RCA เขียนแล้ว
+- [DONE] CSP + Supabase/Steam-CDN origins (sign-in ใช้ได้ใน build)
+- [DONE] **ADR-16 credit economy** (shard/wallet + OpenDota mint oracle + match_ref HMAC) + reconcile CLAUDE.md privacy rule (ADR-11/12 ไม่ได้หาย แค่ CLAUDE.md ขัดกันเอง) + CR-003 ติด `provenance` constraint
+- [DONE] **login เปิดใช้จริง**: LIVE เพิ่ม redirect URL `http://127.0.0.1:3000/auth/callback` ใน Supabase gstore (Boss กด Save) — allowlist เดิมว่างเปล่า
+- [DONE] RCA ×2: voice-pack path-traversal + release-gate drift
+- [DONE] docs ใหม่: CR-007, design-system 07-combat-hud / 08-account-gid, ADR-16
+
+## Hard-won facts / อย่าพลาดซ้ำ (2026-07-10)
+- **ADR-11 (opt-in data→credit) + ADR-12 (marketplace) = Accepted แล้วตั้งแต่ 2026-06-23** — ไม่ใช่
+  ไอเดียใหม่. ที่ "หาย" ซ้ำเพราะ CLAUDE.md เขียน privacy rule absolute ไม่อ้าง ADR-11. **แก้แล้ว** —
+  CLAUDE.md ตอนนี้ระบุ 2 opt-in แยกกัน. ดู [[credit-economy-adr16]].
+- **CR-006 layout ล็อกโดย Boss** — ห้ามเสนอ rewrite shell อีก. redesign = skin/content/quality เท่านั้น.
+  ดู [[cr006-layout-locked]].
+- **acrylic windowEffects = ต้นเหตุทั้งแผ่นขุ่นรอบ shell และ drag lag** — ถอดออก, ชั้น glass ที่เหลือ
+  ต้องทึบ (บน transparent window เบลอ desktop รายชิ้นไม่ได้ — CSS backdrop-filter เป็น no-op).
+- **CI checks ที่ review gate ต้องแมตช์**: clippy + cargo test + **eslint** + tsc + vitest + tauri
+  smoke build (`--no-bundle`, verify job ห้ามเซ็น). gate ที่รัน subset ปล่อยโค้ดแดงผ่าน. ดู [[ci-gate-clippy-not-test]].
+- **re-tag ปลอดภัยถ้า release job ยัง skip** (fail ก่อน publish → `gh release view` = not found) —
+  ไม่ต้อง burn เป็น v0.9.1.
+- Chrome MCP capture หน้า dashboard ได้ปกติ (ต่างจาก native transparent window ของแอปที่ capture ไม่ได้).
+
+---
+
+## Highest-leverage next work - 2026-07-09 (trail)
+1. **Power radial surgical fix only** - แก้ตำแหน่ง/ทรง/การเกาะมุมของปุ่ม power และ radial menu โดยห้ามรื้อ shell geometry ใหญ่ทั้งก้อนอีก; ใช้ shell ปัจจุบันบน `main` เป็นฐาน
+2. **Visual verify บน exe จริงหลัง polish รอบสุดท้าย** - เปิด artifact จริง, จับ screenshot ใหม่, แล้วเช็ก subtract rim / topbar island / sidebar bottom-left corner / power zone ให้จบก่อนขยับไปงานอื่น
+3. **ค่อยย้อนกลับไปเรื่อง CPU/WebView2 หลัง shell นิ่ง** - งาน perf จาก `2026-07-08-B-control-window-cpu-throttle.md` ยังสำคัญ แต่ตอนนี้อย่าเอา layout shell ไปปนกับ pass perf อีกรอบ
+
+## DONE ใน session 2026-07-09
+- [DONE 2026-07-09] CR-006 shell หลักถูก merge เข้า `main` แล้ว (`17214968`)
+- [DONE 2026-07-09] Rewrite design-system shell docs ให้ตรงกับ live UI (`03-layout.md`, `04-components.md`, `cr006-layer-dev-overlay.svg`) (`189eb2e5`)
+- [DONE 2026-07-09] เขียน RCA สำหรับ shell disable regression / subtract-rim layout instability / doc drift (`189eb2e5`)
+- [DONE 2026-07-09] build artifact หลายรอบและคัดลอก exe/setup ไป Desktop ให้เปิดตรวจจริง
+
+## Hard-won facts / อย่าพลาดซ้ำ
+- CR-006 shell มีหลาย coordinate systems ซ้อนกัน: **stage 1420x760** กับ **panel clip world 1280x720**; ถ้าเผลอปรับโดยไม่แยก ownership จะเกิด drift ง่ายมาก
+- `docs/design-system/03-layout.md` และ `04-components.md` ตอนนี้ถูก rewrite ให้ตรงกับของจริงบน `main` แล้ว; รอบหน้าห้ามย้อนกลับไปเชื่อ mock เก่าก่อนเช็ก docs ชุดนี้
+- ปัญหาหลักของรอบนี้ไม่ใช่ CSS ค่าเดียว แต่คือ **legacy shell + CR-006 shell + scaled stage + mock docs drift** แข่งกันเป็น source of truth
+- `pnpm tauri build` ทำ artifact ได้ แต่จะจบ fail ที่ signing step ถ้า local env ไม่มี `TAURI_SIGNING_PRIVATE_KEY`; นี่เป็นข้อจำกัดปกติ ไม่ใช่ regression ใหม่
+- `tmp-power-radial-check.html` เป็นไฟล์ temp ค้างใน working tree; อย่าลบอัตโนมัติถ้ายังไม่ได้เช็กว่าผู้ใช้ต้องการเก็บ reference ไว้หรือไม่
+- คำเตือนเก่า “ห้ามแตะ `src/src/CommandDeck.tsx` / `docs/design-system/assets/cr-006-*` ถ้า user ไม่สั่งตรง ๆ” ยังจริงเชิง policy แต่ **รอบนี้ user สั่งตรงแล้วและของจริงบน `main` เปลี่ยนไปแล้ว**
+
+## Ranked next checks
+1. เปิด exe ล่าสุดแล้วเช็กมุมซ้ายล่าง power zone กับมุมขวาบน topbar island ก่อนเลย - อย่าเริ่มจาก refactor
+2. ถ้าจะขยับ L1/L2 อีก ให้เทียบจาก screenshot จริงและเช็กว่าไปชน shell clip path หรือเปล่าก่อนแก้ opacity/blur
+3. ถ้าจะกลับไป pass perf ให้เริ่มจาก note `2026-07-08-B-control-window-cpu-throttle.md` และแยก session ออกจากงาน shell โดยชัดเจน
 
 ## DONE ใน session 2026-07-08 B
 - [DONE 2026-07-08] Level-up milestone logic ใช้ชุด `6,12,18,25` ทั้ง announcer และ persona path พร้อม skip-level tests
