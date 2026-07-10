@@ -29,7 +29,7 @@
           "--permission-mode",
           "bypassPermissions"
         ],
-        "_comment": "safe=แก้ไฟล์ได้แต่ Bash ถูก block, full=ทำได้ทุกอย่าง (รัน test/build). เลือกต่อ task ผ่าน routing หรือ UI",
+        "_comment": "read=plan (ROLE profile: gate-owning roles §7.2 — ห้าม tier ไหน map มาที่นี่), bounded=แก้ไฟล์ที่ได้รับได้ แต่ห้ามค้นหา/shell (H0 \"0 hop\"), safe=แก้ไฟล์ + ค้นหาได้ Bash ถูก block, shell=+Bash, full=bypass ทั้งหมด. --disallowedTools เป็น variadic ต้องอยู่ท้ายสุดของ permArgs เสมอ",
         "read": [
           "--permission-mode",
           "plan"
@@ -38,6 +38,14 @@
           "--permission-mode",
           "acceptEdits",
           "--allowedTools",
+          "Bash"
+        ],
+        "bounded": [
+          "--permission-mode",
+          "acceptEdits",
+          "--disallowedTools",
+          "Glob",
+          "Grep",
           "Bash"
         ]
       },
@@ -53,12 +61,12 @@
         "haiku": "haiku"
       },
       "tierPermissions": {
-        "H0": "read",
-        "H1": "read",
+        "H0": "bounded",
+        "H1": "safe",
         "H2": "safe",
         "H3": "shell",
         "H4": "full",
-        "_comment": "Access Scope ceiling (SPEC 0.6.0 §5): declared tier กด profile ลงเท่านั้น ไม่ยกขึ้น; ไม่ประกาศ = พฤติกรรมเดิม (lint-locked โดย access_scope_check.py ฝั่ง Rwang)"
+        "_comment": "Access Scope ceiling (SPEC §5 v0.6.1): H คุม REACH เท่านั้น; read-only เป็นเรื่อง ROLE (§7.2). lint-locked โดย access_scope_check.py ฝั่ง Rwang"
       }
     },
     "ollama": {
