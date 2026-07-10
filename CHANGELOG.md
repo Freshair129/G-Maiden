@@ -1,5 +1,40 @@
 # Changelog
 
+## [0.9.0] — 2026-07-10
+### Changed
+- **Command Deck shell refresh (CR-007, FROSTLINE)** — the control window keeps its
+  subtract-glass silhouette but everything inside is sharper and calmer: the panel now
+  renders 1:1 (no upscaling past authored size, so rims and text stay crisp), the
+  bottom-right signal notch is a real cutout, the power controls became a corner FAB
+  under the sidebar, and every shell piece shares one soft ambient-shadow family so the
+  stack reads as one floating composition instead of stacked cards.
+- **Window is fully transparent again** — dropped the acrylic window effect that painted a
+  milky plate outside the shell and made dragging lag; the L1 support plate is clamped to
+  the panel footprint, and heavy effects are suppressed while dragging.
+
+### Added
+- **Honest deck data** — hero slots show real hero names (or "—" when unknown, never fake
+  0/0/0), the signal cards (Enemy Missing / Gank Risk / Risk Level / Gank ETA) read from
+  real events instead of an in-UI formula, the Alert Deck shows a live event feed, and the
+  Companion State tiles reflect the real active pack / signal state / CPU / RAM.
+- **Audio rail wired to the backend** — the deck's volume slider and the SIGNAL / ANN
+  toggles now drive the app for real and stay in sync with the global hotkeys (previously
+  they only wrote to localStorage). ANN is a new announcer-pack mute that leaves Maiden's
+  voice and gank warnings untouched.
+- **G-AnnStudio install actually activates** — `POST /announcer/install` now auto-activates
+  the installed pack and returns real per-event clip counts from its manifest (plus
+  unmapped-event and missing-clip lists), so a pack authored in G-AnnStudio is voiced
+  in-game immediately instead of only after a manual Activate.
+
+### Fixed
+- **Google sign-in works in packaged builds** — the content-security policy now allows the
+  Supabase and Steam-CDN origins it needs (previously sign-in and the kill-banner hero
+  image only worked in dev).
+- **Voice-pack security** — a crafted or corrupted pack manifest could point a clip or
+  banner at any file on disk (played, or inlined into the overlay just by opening Audio
+  Settings); manifest paths are now contained to the pack folder, and archive import
+  validates every entry against zip-slip.
+
 ## [0.8.0] — 2026-07-04
 ### Added
 - **Command deck fully live-wired** — the telemetry footer, weekly report, match
