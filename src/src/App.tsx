@@ -77,7 +77,6 @@ export interface Settings {
   masterEnabled: boolean
   masterBackend: 'auto' | 'claude' | 'ollama'
   masterAuth: 'plan' | 'apikey'
-  masterApiKey: string
   masterOllamaModel: string
   cvDebug: boolean
   calibration: boolean
@@ -90,7 +89,7 @@ export interface Settings {
   showKda: boolean
   showGold: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, personaLines: true, autoAdvice: false, gankVisuals: true, killVisuals: true, signalSensitivity: 'med', masterEnabled: true, masterBackend: 'auto', masterAuth: 'plan', masterApiKey: '', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, telemetrySource: 'auto', uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, personaLines: true, autoAdvice: false, gankVisuals: true, killVisuals: true, signalSensitivity: 'med', masterEnabled: true, masterBackend: 'auto', masterAuth: 'plan', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, telemetrySource: 'auto', uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
 interface OverlayProfile { name: string; position: Pos; customX: number; customY: number; opacity: number; showTimer: boolean; showScore: boolean; showHeroBar: boolean; showKda: boolean; showGold: boolean }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 
@@ -1175,10 +1174,14 @@ const AudioSettingsCard: React.FC = () => {
 // ─────────────────────────────── G-MASTER (Claude Plan advisor) ───────────────────────────────
 interface Advice { text: string; cached: boolean }
 type MasterBackend = 'auto' | 'claude' | 'ollama'
-const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number; enabled: boolean; onEnabledChange: (v: boolean) => void; autoAdvice: boolean; onAutoAdviceChange: (v: boolean) => void; backend: MasterBackend; onBackendChange: (b: MasterBackend) => void; auth: 'plan' | 'apikey'; onAuthChange: (a: 'plan' | 'apikey') => void; apiKey: string; onApiKeyChange: (k: string) => void; ollamaModel: string; onOllamaModelChange: (m: string) => void; onUsageChanged?: () => void }> = ({ tick, voice, rate, enabled, onEnabledChange, autoAdvice, onAutoAdviceChange, backend, onBackendChange, auth, onAuthChange, apiKey, onApiKeyChange, ollamaModel, onOllamaModelChange, onUsageChanged }) => {
+const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number; enabled: boolean; onEnabledChange: (v: boolean) => void; autoAdvice: boolean; onAutoAdviceChange: (v: boolean) => void; backend: MasterBackend; onBackendChange: (b: MasterBackend) => void; auth: 'plan' | 'apikey'; onAuthChange: (a: 'plan' | 'apikey') => void; apiKeyPresent: boolean; onApiKeySave: (k: string) => void; ollamaModel: string; onOllamaModelChange: (m: string) => void; onUsageChanged?: () => void }> = ({ tick, voice, rate, enabled, onEnabledChange, autoAdvice, onAutoAdviceChange, backend, onBackendChange, auth, onAuthChange, apiKeyPresent, onApiKeySave, ollamaModel, onOllamaModelChange, onUsageChanged }) => {
   const [advice, setAdvice] = useState<Advice | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
+  // CR-008 WP-2: the key never round-trips back to the webview. We keep only a
+  // transient draft; on save it goes straight to the DPAPI store via the backend
+  // and is cleared here. `apiKeyPresent` reflects stored state (has_master_api_key).
+  const [keyDraft, setKeyDraft] = useState('')
   const canAsk = enabled && !!tick && tick.in_game && !busy
   const usesClaude = backend === 'claude' || backend === 'auto'
   const ask = async () => {
@@ -1226,9 +1229,17 @@ const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number;
       )}
       {usesClaude && auth === 'apikey' && (
         <Row label="Anthropic API key">
-          <input type="password" value={apiKey} onChange={(e) => onApiKeyChange(e.target.value)}
-            placeholder="sk-ant-…" autoComplete="off"
-            style={{ background: 'rgba(18,20,28,0.86)', color: C.txt, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 10px', fontSize: 12.5, width: 280 }} />
+          <div style={{ display: 'inline-flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
+            <input type="password" value={keyDraft} onChange={(e) => setKeyDraft(e.target.value)}
+              placeholder={apiKeyPresent ? '•••••• บันทึกไว้แล้ว — พิมพ์เพื่อแทนที่' : 'sk-ant-…'} autoComplete="off"
+              style={{ background: 'rgba(18,20,28,0.86)', color: C.txt, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 10px', fontSize: 12.5, width: 260 }} />
+            <button onClick={() => { const k = keyDraft.trim(); if (k) { onApiKeySave(k); setKeyDraft('') } }} disabled={!keyDraft.trim()}
+              style={{ background: keyDraft.trim() ? 'rgba(143,212,255,0.16)' : 'transparent', color: keyDraft.trim() ? C.ice : C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 12px', fontSize: 12, cursor: keyDraft.trim() ? 'pointer' : 'default' }}>บันทึก</button>
+            {apiKeyPresent && (
+              <button onClick={() => { onApiKeySave(''); setKeyDraft('') }}
+                style={{ background: 'transparent', color: C.bad, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 12px', fontSize: 12, cursor: 'pointer' }}>ลบคีย์</button>
+            )}
+          </div>
         </Row>
       )}
       {(backend === 'ollama' || backend === 'auto') && (
@@ -1439,6 +1450,9 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
   const [tick, setTick] = useState<GameTick | null>(null)
   const [seen, setSeen] = useState(false)
   const [s, setS] = useState<Settings>(loadSettings)
+  // CR-008 WP-2: reflects whether an Anthropic key is stored in the DPAPI secret
+  // store (backend `has_master_api_key`) — the plaintext is never held here.
+  const [apiKeyPresent, setApiKeyPresent] = useState(false)
   const [voices, setVoices] = useState<VoiceInfo[]>([])
   const [status, setStatus] = useState<GsiStatus | null>(null)
   const [resources, setResources] = useState<ResourceStats | null>(null)
@@ -1633,10 +1647,44 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
   useEffect(() => {
     void invoke('set_master_ollama_model', { name: s.masterOllamaModel }).catch(() => {})
   }, [s.masterOllamaModel])
-  // G-Master auth: plan (claude CLI) vs Anthropic API key.
+  // G-Master auth MODE only (plan vs apikey). CR-008 WP-2: the key is owned by
+  // the DPAPI secret store, not this effect — pushing it here would clobber the
+  // startup-loaded key with '' (gate finding B2).
   useEffect(() => {
-    void invoke('set_master_auth', { auth: s.masterAuth, apiKey: s.masterApiKey }).catch(() => {})
-  }, [s.masterAuth, s.masterApiKey])
+    void invoke('set_master_mode', { auth: s.masterAuth }).catch(() => {})
+  }, [s.masterAuth])
+
+  // CR-008 WP-2: store/clear the Anthropic key in the DPAPI secret store (backend
+  // owns the plaintext). Passing '' clears it. Refresh saved-state from the
+  // backend rather than trusting the local string.
+  const saveMasterApiKey = async (k: string) => {
+    try {
+      await invoke('set_master_api_key', { key: k })
+      setApiKeyPresent(await invoke<boolean>('has_master_api_key'))
+    } catch { /* not under Tauri (browser dev) — nothing to persist */ }
+  }
+
+  // CR-008 WP-2 one-time migration: move a legacy plaintext key out of the
+  // localStorage settings blob into the DPAPI store, then scrub it. We read the
+  // value straight from localStorage (source of truth, independent of the `[s]`
+  // save-effect ordering) and only delete the plaintext AFTER a confirmed DPAPI
+  // write — on any failure the plaintext is kept and retried next launch (no
+  // silent loss). Also seeds `apiKeyPresent` from the backend.
+  useEffect(() => {
+    void (async () => {
+      try {
+        const raw = JSON.parse(localStorage.getItem('gm-settings') ?? '{}') as Record<string, unknown>
+        const legacy = typeof raw.masterApiKey === 'string' ? raw.masterApiKey.trim() : ''
+        if (legacy) {
+          await invoke('set_master_api_key', { key: legacy }) // throws → caught, plaintext kept
+          delete raw.masterApiKey
+          localStorage.setItem('gm-settings', JSON.stringify(raw))
+          setS((p) => { const cp: Record<string, unknown> = { ...p }; delete cp.masterApiKey; return cp as unknown as Settings })
+        }
+      } catch { /* not under Tauri, or DPAPI write failed — keep plaintext, retry next launch */ }
+      try { setApiKeyPresent(await invoke<boolean>('has_master_api_key')) } catch { /* browser dev */ }
+    })()
+  }, [])
 
   // Toggle in-game calibration evidence capture (off by default; QA/tuning mode).
   useEffect(() => {
@@ -1906,7 +1954,7 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
       </div>
 
       <div style={{ marginTop: 14 }}>
-        <MasterCard tick={tick} voice={s.voiceName} rate={s.voiceRate} enabled={s.masterEnabled} onEnabledChange={(v) => set('masterEnabled', v)} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} backend={s.masterBackend} onBackendChange={(b) => set('masterBackend', b)} auth={s.masterAuth} onAuthChange={(a) => set('masterAuth', a)} apiKey={s.masterApiKey} onApiKeyChange={(k) => set('masterApiKey', k)} ollamaModel={s.masterOllamaModel} onOllamaModelChange={(m) => set('masterOllamaModel', m)} onUsageChanged={() => setQuotaTick((n) => n + 1)} />
+        <MasterCard tick={tick} voice={s.voiceName} rate={s.voiceRate} enabled={s.masterEnabled} onEnabledChange={(v) => set('masterEnabled', v)} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} backend={s.masterBackend} onBackendChange={(b) => set('masterBackend', b)} auth={s.masterAuth} onAuthChange={(a) => set('masterAuth', a)} apiKeyPresent={apiKeyPresent} onApiKeySave={saveMasterApiKey} ollamaModel={s.masterOllamaModel} onOllamaModelChange={(m) => set('masterOllamaModel', m)} onUsageChanged={() => setQuotaTick((n) => n + 1)} />
       </div>
 
       <div style={{ marginTop: 14 }}>

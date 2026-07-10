@@ -53,7 +53,7 @@ fn estimate_cost(in_tok: u64, out_tok: u64) -> f64 {
 }
 
 /// Which Claude auth mode the advice path is on — mirrors the UI's G-Master
-/// auth setting (`set_master_auth`), not an env-var heuristic.
+/// auth setting (`set_master_mode`), not an env-var heuristic.
 pub fn plan_mode() -> &'static str {
     if crate::runtime::master_api_key().is_some() {
         "apikey"

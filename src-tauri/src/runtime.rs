@@ -177,14 +177,33 @@ pub fn master_ollama_model() -> String {
         .unwrap_or_default()
 }
 
-/// Set the G-Master Claude auth mode + key. `use_api_key=false` keeps the
-/// `claude` CLI Plan path; `true` with a non-empty key routes Claude advice
-/// through the Anthropic Messages API.
-pub fn set_master_auth(use_api_key: bool, key: String) {
+/// Set the G-Master Claude auth *mode* only. `false` keeps the `claude` CLI Plan
+/// path; `true` routes Claude advice through the Anthropic Messages API using the
+/// key held separately by [`set_master_api_key`]. The key is deliberately NOT a
+/// parameter here so the frontend's mode-sync effect can never overwrite the
+/// DPAPI-loaded key with an empty string (CR-008 WP-2, gate finding B2).
+pub fn set_master_mode(use_api_key: bool) {
     MASTER_USE_APIKEY.store(use_api_key, Ordering::Relaxed);
+}
+
+/// Set (or clear, with `None`/empty) the Anthropic API key. Owned separately from
+/// the mode: written once at startup from the DPAPI secret store and again only
+/// on an explicit user edit — never from the mount-time mode sync.
+pub fn set_master_api_key(key: Option<String>) {
     if let Ok(mut g) = MASTER_API_KEY.lock() {
-        *g = key;
+        *g = key.filter(|s| !s.trim().is_empty()).unwrap_or_default();
     }
+}
+
+/// Whether an Anthropic API key is currently stored (regardless of auth mode).
+/// Drives the UI "key saved" state without ever handing the plaintext back to
+/// the webview.
+pub fn master_api_key_present() -> bool {
+    MASTER_API_KEY
+        .lock()
+        .ok()
+        .map(|g| !g.trim().is_empty())
+        .unwrap_or(false)
 }
 
 /// The Anthropic API key to use for Claude advice, or `None` when the user is on

@@ -32,6 +32,7 @@ mod ocr;
 mod respawn;
 mod revive;
 mod runtime;
+mod secret;
 mod sentry;
 mod setup;
 mod signal;
@@ -334,12 +335,36 @@ fn set_master_ollama_model(name: String) {
     runtime::set_master_ollama_model(name);
 }
 
-/// Pick the G-Master Claude auth method. `auth = "apikey"` routes Claude advice
-/// through the Anthropic Messages API with `api_key`; anything else (e.g. "plan")
-/// keeps the signed-in `claude` CLI Plan quota.
+/// Pick the G-Master Claude auth *mode*. `auth = "apikey"` routes Claude advice
+/// through the Anthropic Messages API using the separately-stored key; anything
+/// else (e.g. "plan") keeps the signed-in `claude` CLI Plan quota. The key is
+/// NOT passed here — see `set_master_api_key` (CR-008 WP-2).
 #[tauri::command]
-fn set_master_auth(auth: String, api_key: String) {
-    runtime::set_master_auth(auth == "apikey", api_key);
+fn set_master_mode(auth: String) {
+    runtime::set_master_mode(auth == "apikey");
+}
+
+/// Store (or clear, when empty) the Anthropic API key in the DPAPI secret store
+/// and mirror it into the live runtime. The plaintext never round-trips back to
+/// the webview; the UI reflects saved-state via `has_master_api_key`.
+#[tauri::command]
+fn set_master_api_key(app: tauri::AppHandle, key: String) -> Result<(), String> {
+    let trimmed = key.trim().to_string();
+    if trimmed.is_empty() {
+        secret::secret_delete(app, "anthropic_api_key".to_string())?;
+        runtime::set_master_api_key(None);
+    } else {
+        secret::secret_set(app, "anthropic_api_key".to_string(), trimmed.clone())?;
+        runtime::set_master_api_key(Some(trimmed));
+    }
+    Ok(())
+}
+
+/// Whether an Anthropic API key is currently stored — drives the UI "key saved"
+/// state without exposing the plaintext to the webview.
+#[tauri::command]
+fn has_master_api_key() -> bool {
+    runtime::master_api_key_present()
 }
 
 /// Toggle in-game calibration evidence capture (screenshots + audit clips).
@@ -511,7 +536,12 @@ fn main() {
             set_cv_signal_sensitivity,
             set_master_backend,
             set_master_ollama_model,
-            set_master_auth,
+            set_master_mode,
+            set_master_api_key,
+            has_master_api_key,
+            secret::secret_set,
+            secret::secret_get,
+            secret::secret_delete,
             set_calibration_enabled,
             capture_calibration_clip,
             set_volume,
@@ -545,6 +575,13 @@ fn main() {
             identity::resolve_steam_id
         ])
         .setup(move |app| {
+            // CR-008 WP-2: load the Anthropic API key from the DPAPI secret store
+            // into the runtime once at startup. Owned separately from the auth
+            // mode so the frontend's mode-sync effect can never clobber it (B2).
+            if let Some(key) = secret::load_secret(app.handle(), "anthropic_api_key") {
+                runtime::set_master_api_key(Some(key));
+            }
+
             // G1.1: GSI ingestion server (127.0.0.1:3000); emits `game-tick` to all windows.
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(gsi::serve(handle));

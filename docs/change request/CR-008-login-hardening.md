@@ -1,0 +1,73 @@
+# CR-008: Login system — ทำให้ sign-in ใช้งานได้จริงและปลอดภัย
+
+**Status:** PLAN — รอ Boss approve ก่อนลงมือ (R4: C-2, risk HIGH เพราะแตะ auth + secret storage)
+**Author:** Claude (spec) — Boss (approver)
+**Date:** 2026-07-10
+**Predecessor:** ADR-14 (GID/account), SEC-001 (identity hardening, merged `00f2fc11`),
+`docs/design-system/08-account-gid.md` (UX spec), audit `2026-07-07-independent-full-audit.md`
+**Related:** CR-005 (landing + multi-provider auth + G-Social) — ยัง DRAFT, ทับซ้อนบางส่วน (ดู §6)
+
+---
+
+## 1. สถานะจริงวันนี้ (ตรวจจากโค้ด ไม่ใช่จากเอกสาร)
+
+โค้ด auth **เขียนครบแล้ว** และถูกต้องตามสถาปัตยกรรม (PKCE, loopback callback, column-locked profiles)
+แต่ **ใช้งานจริงไม่ได้ใน build ที่ผู้ใช้ได้รับ** และมีช่องความปลอดภัยที่ต้องปิดก่อนเปิดใช้จริง
+
+| ชิ้น | สถานะ | หลักฐาน |
+| --- | --- | --- |
+| Google OAuth PKCE flow | โค้ดครบ | `src/src/auth.ts` `signInWithGoogle` → `open_url` → browser |
+| Loopback callback | ทำงาน | `gsi.rs:358` `.route("/auth/callback", get(oauth_callback))` → emit `oauth-callback` |
+| Supabase client | ตั้งค่าถูก (`flowType: "pkce"`, `detectSessionInUrl: false`) | `src/src/supabase.ts` |
+| `profiles` RLS + GID mint | **ปิดสนิทแล้ว** (verified live) | SEC-001 §2 Phase B |
+| **CSP** | 🔴 **บล็อก Supabase ทั้งหมด** | `tauri.conf.json:46` `connect-src 'self' http://localhost:* ws://localhost:* https://api.opendota.com` — ไม่มี `https://wsseitulmcgnolgsrxgh.supabase.co` |
+| **Refresh token** | 🔴 เก็บ plaintext ใน WebView2 localStorage | `persistSession: true` ไม่มี encrypted storage adapter |
+| **Anthropic API key** | 🔴 อยู่ใน settings blob ใน localStorage | `App.tsx` (audit §Secrets) |
+| **`/auth/callback` state** | 🟠 ไม่ verify `state` | `gsi.rs:287-297` รับ `code` อะไรก็ได้แล้ว exchange ทันที |
+
+### 1.1 ทำไม sign-in พังทั้งที่โค้ดถูก
+
+`exchangeCodeForSession()` ต้อง `POST https://<project>.supabase.co/auth/v1/token` แต่ CSP `connect-src`
+ไม่มี origin นั้น → WebView2 บล็อก → sign-in ค้างที่ "รอการยืนยัน" ตลอดกาล
+เช่นเดียวกับ `linkProfile()` (`profiles` update) และ `getSession()` refresh
+
+**นี่คือ blocker เดียวที่กั้นระหว่าง "โค้ดพร้อม" กับ "ใช้ได้"** — แก้บรรทัดเดียว แต่ต้อง verify บน
+packaged build ไม่ใช่ dev (Tauri inject CSP ต่างกัน)
+
+---
+
+## 2. Work packages
+
+### WP-1 — ปลดล็อก sign-in (blocker, เล็ก)
+- `tauri.conf.json` `security.csp` → เพิ่ม `https://wsseitulmcgnolgsrxgh.supabase.co` ใน `connect-src`
+  (และ `wss://` ถ้าจะใช้ realtime ในอนาคต — **ยังไม่ใส่จนกว่าจะใช้จริง**)
+- ตรวจว่าต้องเพิ่ม Steam/OpenDota origin เพิ่มไหม (`api.opendota.com` มีแล้ว; audit ระบุ "Steam origins" ด้วย
+  — ยืนยันว่า `resolve_steam_id` ยิงจาก **Rust** ไม่ใช่ webview → ไม่ต้องแตะ CSP)
+- **Verify บน artifact จริง** (`pnpm tauri build` → รัน exe → sign-in ให้จบ flow) ไม่ใช่ `tauri dev`
+- Acceptance: กด Sign in → browser เปิด → อนุญาต → กลับมาแอปแล้วเห็นชื่อ + GID ภายใน 5 วินาที
+
+### WP-2 — เก็บ secret ให้ถูกที่ (HIGH, ต้องทำก่อนเปิดใช้จริง)
+Refresh token ใน localStorage = **ยึดบัญชี GID ได้เต็ม** ถ้ามีมัลแวร์/สคริปต์อ่าน WebView2 leveldb
+API key ของ Anthropic = ขโมยเครดิตได้
+
+- เขียน **encrypted storage adapter** ให้ supabase-js (`auth.storage`) ที่วิ่งผ่าน Tauri command →
+  Rust ฝั่ง เก็บด้วย **Windows DPAPI** (`CryptProtectData`, ผูกกับ user account) หรือ
+  `tauri-plugin-stronghold`
+  - เลือก DPAPI: dependency น้อยกว่า, ไม่ต้องให้ผู้ใช้ตั้ง passphrase, พอสำหรับ threat model
+    (มัลแวร์ที่รันเป็น user เดียวกันยัง decrypt ได้ — แต่ยกระดับจาก "อ่านไฟล์เฉย ๆ" เป็น "ต้องรันโค้ด")
+- ย้าย Anthropic API key ออกจาก settings blob → ที่เก็บเดียวกัน
+- migration: อ่านค่าเก่าจาก localStorage ครั้งเดียว → เขียนที่ใหม่ → **ลบของเก่า**
+- Acceptance: grep WebView2 leveldb แล้วไม่พบ refresh token / API key
+
+### WP-3 — ปิดช่อง `/auth/callback` (MEDIUM)
+`:3000` ไม่มี auth และ handler รับ `code` อะไรก็ได้ → โปรเซสในเครื่อง (หรือหน้าเว็
+---
+
+## Implementation status
+
+- **WP-1 (CSP unblock sign-in)** — ✅ DONE (session 2026-07-10; Supabase origin ใน `connect-src`, login เปิดใช้จริง).
+- **WP-2 (secret encryption / DPAPI)** — ✅ IMPLEMENTED 2026-07-11, **Opus adversarial gate PASS** (design-review + final code-gate). CI-parity ครบเขียว (cargo test 169/0 · clippy `-D warnings` · tsc · eslint · vitest 148/148).
+  - Rust: `src-tauri/src/secret.rs` (DPAPI per-file store `app_local_data_dir()/secrets/<name>.bin`, `WRITE_LOCK` + atomic same-dir temp-rename, `validate_name`, `secret_set/get/delete` + `load_secret`); `runtime.rs` แยก mode/secret (`set_master_mode` / `set_master_api_key` / `master_api_key_present`); startup โหลด `anthropic_api_key` จาก DPAPI. Cargo features `Win32_Security_Cryptography` + `Win32_System_Memory`.
+  - Frontend: `src/src/secureStorage.ts` (supabase-js `auth.storage` adapter — DPAPI ใต้ Tauri, localStorage fallback ใน browser dev); `App.tsx` ลบ `masterApiKey` ออกจาก settings blob + UI "key saved / พิมพ์เพื่อแทนที่" (คีย์ไม่กลับเข้า webview) + one-time migration ที่ scrub plaintext เฉพาะหลังยืนยัน DPAPI write (no silent loss).
+  - **DoD reconciliation (gate WARN):** "grep leveldb ไม่พบ token/key" เป็นจริงสำหรับ *live* localStorage entry และ fresh installs ทันที. WebView2 localStorage เป็น log-structured leveldb → **หลัง upgrade-migration ค่า plaintext เก่าอาจค้างใน `.log`/`.ldb` segment จนกว่า Chromium จะ compact** (เป็นข้อจำกัดโดยธรรมชาติของการ migrate ออกจาก localStorage, แก้จาก JS ไม่ได้). ความลับใหม่ไม่แตะ localStorage เลย. ถือ DoD = "ไม่มี live localStorage entry" แทน raw-disk grep.
+- **WP-3 (`/auth/callback` verify `state`, MEDIUM)** — ยังไม่ทำ (นอก scope งาน secret encryption; งานถัดไปได้).
