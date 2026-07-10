@@ -38,6 +38,13 @@ image      = "0.25"
 # use the engine looks under models/ocr/ next to the exe. See src/ocr.rs.
 pure-onnx-ocr-sync = "0.2"
 geo-types          = "0.7"
+# In-process, zip-slip-safe archive extraction for imported voice packs
+# (voice_api.rs import_archive) — `zip` is already pulled in transitively via
+# tauri-plugin-updater (same major version), so this just makes it an
+# explicit, minimally-featured direct dependency instead of a shell-out to
+# PowerShell Expand-Archive. `deflate` is the only codec real-world .zip
+# packs need (Explorer/7-Zip/Compress-Archive all default to it).
+zip = { version = "4", default-features = false, features = ["deflate"] }
 
 [features]
 # Legacy WGC capture backend (ADR-13 rollback). Default build uses DXGI Desktop

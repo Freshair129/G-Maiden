@@ -104,10 +104,34 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
   has no auth, so any local process can POST here — activation only ever
   targets a pack that already has a readable `manifest.json` on disk, and the
   path never creates/writes/moves/extracts files, so a rogue POST can at worst
-  swap between already-installed packs. Path-traversal/zip-slip hardening of
-  manifest-relative clip paths elsewhere in `voice_api.rs` remains deferred,
-  separate work. Known gap: an already-open Voice Packs UI does not
-  auto-refresh after a remote install.
+  swap between already-installed packs. Known gap: an already-open Voice
+  Packs UI does not auto-refresh after a remote install.
+- **Manifest path-traversal + zip-slip hardening — CLOSED (2026-07-10):** the
+  deferred item above got more valuable to close the moment `/announcer/install`
+  could auto-activate an existing pack: `manifest.json`'s `clips[]`,
+  `bannerAsset`, and `coverImage` are attacker-influenced strings (the manifest
+  ships inside imported `.zip` packs) and were joined straight onto the pack
+  dir with no containment check — a crafted manifest could point a "clip" at
+  any file on disk (played via `audio::play_file`) or point a banner/cover at
+  any file (base64-inlined onto the Tauri event bus, reachable just by opening
+  Audio Settings, not only on a fired event). Fixed via one shared helper,
+  `voice_api::safe_pack_path(pack_dir, rel) -> Option<PathBuf>`: rejects
+  drive/UNC/verbatim prefixes, leading `/`/`\`, and any `..` component via
+  parsed `Path::components()` (not substring matching), and — only when the
+  target exists as a file — canonicalizes both the pack dir and the candidate
+  and requires containment, which is what catches a symlink planted inside a
+  pack whose target escapes it. Every manifest-string join in `voice_api.rs`
+  (`resolve_existing_clips`/`active_event_clips`, `fired_banner_from`,
+  `preview_clip`, `install_report`, and `build_pack`'s `cover_image`/
+  `clip_options`/`banner_url` — i.e. the pack-listing path `state()` hits too,
+  not just the fire path) now goes through it. Separately, `import_archive`'s
+  `Expand-Archive` PowerShell shell-out (whose safety depended entirely on the
+  .NET implementation) was replaced with in-process extraction using the `zip`
+  crate (already pulled in transitively via `tauri-plugin-updater`, now an
+  explicit `default-features = false, features = ["deflate"]` dependency):
+  every entry is validated via `ZipFile::enclosed_name()` + `is_symlink()`
+  BEFORE any entry is written, and the whole import is refused (nothing
+  written) if any entry is unsafe. See `docs/rca/2026-07-10-voice-pack-path-traversal.md`.
 
 ### WP-5 — Phase-aware content (เนื้อหารู้เฟส, ช่องอยู่ที่เดิม)
 - `src/src/live/phase.ts`: state machine `standby → prep → live → debrief`

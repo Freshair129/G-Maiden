@@ -1,7 +1,7 @@
 use std::collections::BTreeMap;
 use std::fs;
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::{Component, Path, PathBuf};
 
 use serde::{Deserialize, Serialize};
 
@@ -494,30 +494,93 @@ pub fn import_archive(name: &str, bytes: &[u8]) -> Result<ImportResult, String> 
     let dest = packs_dir().join(&id);
     fs::create_dir_all(&dest).map_err(|e| format!("create import dir: {e}"))?;
 
-    #[cfg(target_os = "windows")]
-    {
-        let status = std::process::Command::new("powershell")
-            .args([
-                "-NoProfile",
-                "-ExecutionPolicy",
-                "Bypass",
-                "-Command",
-                "Expand-Archive -LiteralPath $args[0] -DestinationPath $args[1] -Force",
-            ])
-            .arg(&archive)
-            .arg(&dest)
-            .status()
-            .map_err(|e| format!("expand zip: {e}"))?;
-        if !status.success() {
-            return Err("Expand-Archive failed".into());
-        }
-    }
+    extract_pack_zip(bytes, &dest, &id)?;
 
     if !dest.join("manifest.json").is_file() {
         create_pack_skeleton(&dest, &id, name, "th-TH")?;
     }
     write_active_pack_id(&id)?;
     Ok(ImportResult { imported: vec![id] })
+}
+
+/// In-process, zip-slip-safe extraction of an imported pack archive.
+///
+/// Replaces the previous `Expand-Archive` shell-out, whose safety depended
+/// entirely on the .NET implementation (no app-level validation at all) —
+/// and, as a side benefit, removes a `powershell.exe` spawn entirely, so
+/// there's no `CREATE_NO_WINDOW` concern left on this path (a spawn without
+/// it flashes a console and has been known to minimize a focused Dota 2
+/// window; see `governor.rs`/`tts.rs`/`master.rs`/`setup.rs` for the existing
+/// pattern this codebase uses everywhere it *does* still spawn PowerShell).
+///
+/// `zip` is already pulled in transitively via `tauri-plugin-updater` at the
+/// same major version (`4`), so this adds it as an explicit, minimally
+/// featured (`default-features = false`, `features = ["deflate"]`) direct
+/// dependency rather than a brand-new one.
+///
+/// Validates EVERY entry before writing ANY of them (two-pass): an entry is
+/// refused if `ZipFile::enclosed_name()` returns `None` — the zip crate's own
+/// component-based check, which rejects absolute paths, drive/UNC/verbatim
+/// prefixes, and any entry whose `..` count would walk it outside the
+/// archive root — or if `ZipFile::is_symlink()` is true. Unlike
+/// `ZipArchive::extract()` (which *would* create a symlink if its target
+/// happens to resolve inside the destination), we refuse symlink entries
+/// outright: a voice pack directory should never contain a live symlink. On
+/// the first unsafe entry the whole import is refused and nothing is
+/// written under `dest` (pass 1 touches no files).
+fn extract_pack_zip(bytes: &[u8], dest: &Path, pack_id: &str) -> Result<(), String> {
+    let mut archive =
+        zip::ZipArchive::new(std::io::Cursor::new(bytes)).map_err(|e| format!("open zip: {e}"))?;
+
+    // Pass 1 — validate every entry before writing anything.
+    let mut entries = Vec::with_capacity(archive.len());
+    for i in 0..archive.len() {
+        let file = archive
+            .by_index(i)
+            .map_err(|e| format!("read zip entry {i}: {e}"))?;
+        let raw_name = file.name().to_string();
+        let is_dir = file.is_dir();
+        let is_symlink = file.is_symlink();
+        let enclosed = file.enclosed_name();
+        drop(file);
+
+        let Some(rel) = enclosed else {
+            eprintln!(
+                "[G-Maiden] voice pack import '{pack_id}': refused unsafe archive entry '{raw_name}'"
+            );
+            return Err("archive contains an unsafe entry path".into());
+        };
+        if is_symlink {
+            eprintln!(
+                "[G-Maiden] voice pack import '{pack_id}': refused symlink archive entry '{raw_name}'"
+            );
+            return Err("archive contains a symlink entry".into());
+        }
+        entries.push((i, rel, is_dir));
+    }
+
+    // Pass 2 — every entry validated; now actually extract, confined to `dest`
+    // by construction (`enclosed_name()` already guarantees no `..`/absolute
+    // escape, so a plain `dest.join(rel)` cannot land outside it).
+    for (i, rel, is_dir) in entries {
+        let outpath = dest.join(&rel);
+        if is_dir {
+            fs::create_dir_all(&outpath)
+                .map_err(|e| format!("create {}: {e}", outpath.display()))?;
+            continue;
+        }
+        if let Some(parent) = outpath.parent() {
+            fs::create_dir_all(parent).map_err(|e| format!("create {}: {e}", parent.display()))?;
+        }
+        let mut file = archive
+            .by_index(i)
+            .map_err(|e| format!("read zip entry {i}: {e}"))?;
+        let mut outfile = fs::File::create(&outpath)
+            .map_err(|e| format!("create {}: {e}", outpath.display()))?;
+        std::io::copy(&mut file, &mut outfile)
+            .map_err(|e| format!("write {}: {e}", outpath.display()))?;
+    }
+    Ok(())
 }
 
 pub fn map_event(payload: MapEventRequest) -> Result<VoiceState, String> {
@@ -568,15 +631,136 @@ pub fn active_event_clips(event: &str) -> Vec<PathBuf> {
     resolve_existing_clips(&dir, &mapping.clips)
 }
 
+/// Safely resolve a manifest-relative asset path — a `clips[]` entry,
+/// `bannerAsset`, or `coverImage` — against `pack_dir`.
+///
+/// `manifest.json` is attacker-influenced: it ships inside imported `.zip`
+/// packs, and `POST /announcer/install` on the unauthenticated `:3000` GSI
+/// server can auto-activate any pack already on disk. Joining a raw manifest
+/// string onto a directory with no validation is a path-traversal /
+/// arbitrary-local-file primitive — the resolved path gets **played**
+/// (`audio::play_file`) or **base64-inlined onto the Tauri event bus**
+/// (`fired_banner` -> `announcer-banner`, and the pack inventory's cover /
+/// clip tiles), so this one helper is the single choke point every call site
+/// below must go through.
+///
+/// Returns `None` for anything unsafe; the caller treats that exactly like a
+/// missing clip (skips the entry — the existing missing/fallback handling
+/// covers it, nothing new to plumb through). Returns `Some(path)` only when
+/// the path is safe AND currently resolves to a regular file:
+///
+/// - Rejects (before touching the filesystem) any relative string whose
+///   *parsed* `Path::components()` contain a `Prefix` (drive letter `C:\`,
+///   UNC `\\server\share`, verbatim `\\?\`), a `RootDir` (leading `/` or
+///   `\`), or a `ParentDir` (`..`) anywhere. Checked on both the raw string
+///   and the `\`->`/`-normalized form (matching the existing normalization
+///   convention used elsewhere in this file), so this is structural —
+///   immune to separator-mixing tricks — not a substring match. Zero
+///   syscalls.
+/// - A path that clears the structural check but doesn't exist as a file
+///   (missing, or resolves to a directory) also returns `None` — same
+///   "missing" bucket, no special-case needed by callers.
+/// - Only when the target DOES exist as a file do we pay for
+///   `fs::canonicalize` on both `pack_dir` and the candidate and require the
+///   candidate's canonical form to sit inside the canonical pack dir. This
+///   is what catches a symlink planted inside the pack whose target escapes
+///   it — the structural component check alone can't see through a symlink.
+///   This is the only extra cost versus the pre-fix code path (which was a
+///   single `is_file()` stat): one stat (unchanged) + two canonicalize calls,
+///   paid only for entries that actually exist.
+///
+/// Rejections are logged once via `eprintln!` with the pack id (from
+/// `pack_dir`'s file name) and the *relative* string only — never an
+/// absolute path. `:3000` has no auth, so error/log detail must not leak the
+/// install directory (same precedent as `gsi.rs run_announcer_install`).
+fn safe_pack_path(pack_dir: &Path, rel: &str) -> Option<PathBuf> {
+    safe_pack_path_canon(pack_dir, None, rel)
+}
+
+/// Like [`safe_pack_path`] but accepts a pre-canonicalized `pack_dir`, so a
+/// caller resolving many clips at once (the G-Signal gank path via
+/// [`resolve_existing_clips`], which has a ≤300ms budget) pays the pack-dir
+/// `canonicalize` once per call instead of once per clip. `None` = canonicalize
+/// it here (single-shot callers).
+fn safe_pack_path_canon(pack_dir: &Path, canon_dir: Option<&Path>, rel: &str) -> Option<PathBuf> {
+    let normalized = rel.replace('\\', "/");
+    if has_unsafe_component(rel) || has_unsafe_component(&normalized) {
+        eprintln!(
+            "[G-Maiden] voice pack '{}': rejected unsafe manifest path '{normalized}'",
+            pack_id_for_log(pack_dir)
+        );
+        return None;
+    }
+    if normalized.trim().is_empty() {
+        return None;
+    }
+
+    let candidate = pack_dir.join(&normalized);
+    match fs::metadata(&candidate) {
+        Ok(meta) if meta.is_file() => {
+            // Resolve the containment base once (reuse the caller's if given).
+            let canon_dir_owned;
+            let base = match canon_dir {
+                Some(d) => d,
+                None => match fs::canonicalize(pack_dir) {
+                    Ok(d) => {
+                        canon_dir_owned = d;
+                        canon_dir_owned.as_path()
+                    }
+                    // canonicalize erroring on a dir we're serving from is
+                    // exotic (a race); fail closed rather than trust it.
+                    Err(_) => return None,
+                },
+            };
+            match fs::canonicalize(&candidate) {
+                Ok(canon_candidate) if canon_candidate.starts_with(base) => Some(candidate),
+                Ok(_) => {
+                    eprintln!(
+                        "[G-Maiden] voice pack '{}': rejected symlink escape at '{normalized}'",
+                        pack_id_for_log(pack_dir)
+                    );
+                    None
+                }
+                Err(_) => None,
+            }
+        }
+        // Exists but isn't a regular file (a directory, e.g. an empty/`.`
+        // manifest entry), or doesn't exist at all — either way, "missing".
+        _ => None,
+    }
+}
+
+/// Structural traversal/absolute-path check shared by both the raw and
+/// normalized forms of a manifest string in [`safe_pack_path`]. Operates on
+/// parsed `Path::components()`, not substring matching, so it's immune to
+/// `foo/../bar` tricks and mixed `/`/`\` separators.
+fn has_unsafe_component(s: &str) -> bool {
+    Path::new(s).components().any(|c| {
+        matches!(
+            c,
+            Component::ParentDir | Component::RootDir | Component::Prefix(_)
+        )
+    })
+}
+
+fn pack_id_for_log(pack_dir: &Path) -> String {
+    pack_dir
+        .file_name()
+        .map(|n| n.to_string_lossy().to_string())
+        .unwrap_or_else(|| "?".to_string())
+}
+
 /// Resolve a manifest mapping's `clips` (paths relative to the pack dir) to
-/// absolute paths, keeping only the ones that actually exist on disk. Shared
-/// by live playback (`active_event_clips`) and `install_report` below so both
-/// always agree on what counts as "this event has a clip".
+/// absolute paths, keeping only the ones that are safe AND actually exist on
+/// disk. Shared by live playback (`active_event_clips`) and `install_report`
+/// below so both always agree on what counts as "this event has a clip".
 fn resolve_existing_clips(dir: &Path, clips: &[String]) -> Vec<PathBuf> {
+    // Canonicalize the pack dir once for the whole clip list — this runs on the
+    // ≤300ms gank path, so we don't repeat it per clip (gate WARN 2026-07-10).
+    let canon_dir = fs::canonicalize(dir).ok();
     clips
         .iter()
-        .map(|rel| dir.join(rel.replace('\\', "/")))
-        .filter(|path| path.is_file())
+        .filter_map(|rel| safe_pack_path_canon(dir, canon_dir.as_deref(), rel))
         .collect()
 }
 
@@ -635,8 +819,9 @@ fn fired_banner_from(pack_id: Option<String>, event: &str) -> FiredBanner {
                     thai = mapping.thai.clone();
                 }
                 if !mapping.banner_asset.is_empty() {
-                    let path = dir.join(mapping.banner_asset.replace('\\', "/"));
-                    banner_data = read_banner_data_url(&path);
+                    if let Some(path) = safe_pack_path(&dir, &mapping.banner_asset) {
+                        banner_data = read_banner_data_url(&path);
+                    }
                 }
             }
         }
@@ -656,11 +841,7 @@ pub fn preview_clip(pack_id: &str, event: &str) -> Option<PathBuf> {
     let dir = packs_dir().join(sanitize_id(pack_id));
     let manifest = read_manifest(&dir).ok()?;
     let mapping = manifest.mappings.get(event)?;
-    mapping
-        .clips
-        .iter()
-        .map(|rel| dir.join(rel.replace('\\', "/")))
-        .find(|path| path.is_file())
+    mapping.clips.iter().find_map(|rel| safe_pack_path(&dir, rel))
 }
 
 /// Real per-event report for a pack, used by `POST /announcer/install`
@@ -700,7 +881,12 @@ pub fn install_report(pack_id: &str) -> Result<InstallReport, String> {
             continue;
         };
         for rel in &mapping.clips {
-            if !dir.join(rel.replace('\\', "/")).is_file() {
+            // Rejected (unsafe) and genuinely-missing entries both surface
+            // here identically — see `safe_pack_path`'s doc comment for why
+            // that's the deliberate, documented choice rather than an
+            // omission: the JSON response shape stays exactly as before, and
+            // the distinction is preserved only in the local eprintln log.
+            if safe_pack_path(&dir, rel).is_none() {
                 missing_clips.push(rel.clone());
             }
         }
@@ -891,8 +1077,11 @@ fn build_pack(dir: &Path) -> Result<VoicePack, String> {
     //   3. neither → cover_image = "" and cover_image_url = None; the inventory
     //      renders a gradient placeholder client-side.
     let (cover_image, cover_image_url) = if !manifest.cover_image.is_empty() {
-        let path = dir.join(manifest.cover_image.replace('\\', "/"));
-        let url = read_banner_data_url(&path);
+        // manifest.coverImage is attacker-influenced exactly like clips[] and
+        // bannerAsset (see safe_pack_path) — this path runs on every
+        // `state()` call, i.e. merely opening Audio Settings, not just on a
+        // fired event, so it must be validated too.
+        let url = safe_pack_path(dir, &manifest.cover_image).and_then(|path| read_banner_data_url(&path));
         (manifest.cover_image.clone(), url)
     } else if let Some(first) = banners.first() {
         let path = dir.join(first.path.replace('\\', "/"));
@@ -913,16 +1102,31 @@ fn build_pack(dir: &Path) -> Result<VoicePack, String> {
                 .unwrap_or("#8fd3ff");
             let mapping = manifest.mappings.get(event.id).map(|raw| {
                 covered += 1;
+                // raw.clips / raw.banner_asset are manifest-derived (same
+                // attacker-influenced fields as everywhere else in this
+                // file) — validate through safe_pack_path before building a
+                // VoiceAssetOption, instead of the unguarded asset_option()
+                // join that collect_assets()'s directory-walk results use
+                // (those are already safe: they come from files we found on
+                // disk, not from manifest strings).
                 let clip_options = raw
                     .clips
                     .iter()
-                    .filter_map(|rel| asset_option(dir, rel))
+                    .filter_map(|rel| {
+                        let full = safe_pack_path(dir, rel)?;
+                        Some(VoiceAssetOption {
+                            path: rel.replace('\\', "/"),
+                            name: full.file_name()?.to_string_lossy().to_string(),
+                            url: full.to_string_lossy().to_string(),
+                        })
+                    })
                     .collect::<Vec<_>>();
                 let clip_url = clip_options.first().map(|clip| clip.url.clone());
                 let banner_url = if raw.banner_asset.is_empty() {
                     None
                 } else {
-                    asset_option(dir, &raw.banner_asset).map(|asset| asset.url)
+                    safe_pack_path(dir, &raw.banner_asset)
+                        .map(|full| full.to_string_lossy().to_string())
                 };
                 VoiceMapping {
                     text: raw.text.clone(),
@@ -1249,5 +1453,257 @@ mod tests {
         assert!(install_report("../../evil").is_err());
         assert!(activate_if_exists("../../evil").is_err());
         assert!(!root.join("active-pack.txt").is_file());
+    }
+
+    // -- Gap 1: manifest-relative path traversal (safe_pack_path) -------
+
+    #[test]
+    fn safe_pack_path_rejects_dot_dot_traversal() {
+        let root = temp_root("safe-path-dotdot");
+        let _guard = RootGuard(root.clone());
+        let dir = write_pack(&root, "demo", BTreeMap::new());
+
+        assert!(safe_pack_path(&dir, "../../../../Windows/System32/config/SAM").is_none());
+        assert!(safe_pack_path(&dir, "..\\..\\..\\..\\Windows\\System32\\config\\SAM").is_none());
+        // `..` buried mid-path must be caught too — not just a leading match.
+        assert!(safe_pack_path(&dir, "clips/../../evil.wav").is_none());
+    }
+
+    #[test]
+    fn safe_pack_path_rejects_absolute_paths() {
+        let root = temp_root("safe-path-absolute");
+        let _guard = RootGuard(root.clone());
+        let dir = write_pack(&root, "demo", BTreeMap::new());
+
+        assert!(safe_pack_path(&dir, "C:\\Windows\\notepad.exe").is_none());
+        assert!(safe_pack_path(&dir, "/etc/passwd").is_none());
+    }
+
+    #[test]
+    fn safe_pack_path_rejects_unc_and_verbatim_prefixes() {
+        let root = temp_root("safe-path-unc");
+        let _guard = RootGuard(root.clone());
+        let dir = write_pack(&root, "demo", BTreeMap::new());
+
+        assert!(safe_pack_path(&dir, "\\\\server\\share\\evil.wav").is_none());
+        assert!(safe_pack_path(&dir, "\\\\?\\C:\\Windows\\notepad.exe").is_none());
+    }
+
+    #[test]
+    fn safe_pack_path_accepts_well_formed_nested_path() {
+        let root = temp_root("safe-path-nested");
+        let _guard = RootGuard(root.clone());
+        let dir = write_pack(&root, "demo", BTreeMap::new());
+        fs::create_dir_all(dir.join("clips/sub")).unwrap();
+        fs::write(dir.join("clips/sub/kill_01.wav"), b"x").unwrap();
+
+        // No false positive: a legitimate nested path inside the pack must
+        // still resolve, canonicalize-containment check included.
+        assert_eq!(
+            safe_pack_path(&dir, "clips/sub/kill_01.wav"),
+            Some(dir.join("clips/sub/kill_01.wav"))
+        );
+    }
+
+    #[test]
+    fn safe_pack_path_treats_missing_file_as_none_not_error() {
+        let root = temp_root("safe-path-missing");
+        let _guard = RootGuard(root.clone());
+        let dir = write_pack(&root, "demo", BTreeMap::new());
+
+        // Safe by construction, but nothing on disk — same bucket as a
+        // rejected path from the caller's point of view (both are skipped),
+        // yet this path never touches the eprintln-tagged rejection branch.
+        assert!(safe_pack_path(&dir, "clips/does_not_exist.wav").is_none());
+    }
+
+    #[test]
+    fn safe_pack_path_rejects_symlink_escape_when_creatable() {
+        let root = temp_root("safe-path-symlink");
+        let _guard = RootGuard(root.clone());
+        let dir = write_pack(&root, "demo", BTreeMap::new());
+
+        let outside = root.join("outside-secret.txt");
+        fs::write(&outside, b"secret").unwrap();
+        let link = dir.join("clips").join("escape.wav");
+
+        #[cfg(windows)]
+        let created = std::os::windows::fs::symlink_file(&outside, &link).is_ok();
+        #[cfg(not(windows))]
+        let created = std::os::unix::fs::symlink(&outside, &link).is_ok();
+
+        if !created {
+            // Most sandboxed/CI Windows accounts lack
+            // SeCreateSymbolicLinkPrivilege — covered instead by
+            // `canonicalize_containment_predicate_direct` below, which
+            // exercises the exact same starts_with() containment math this
+            // branch relies on, without needing symlink-creation rights.
+            eprintln!(
+                "skipping safe_pack_path_rejects_symlink_escape_when_creatable: \
+                 no permission to create symlinks in this environment"
+            );
+            return;
+        }
+        assert!(safe_pack_path(&dir, "clips/escape.wav").is_none());
+    }
+
+    /// Direct test of the canonicalize + `starts_with` containment predicate
+    /// `safe_pack_path` uses to catch a symlink escape, independent of
+    /// whether this environment can actually create a symlink (see above).
+    #[test]
+    fn canonicalize_containment_predicate_direct() {
+        let root = temp_root("containment-predicate");
+        let _guard = RootGuard(root.clone());
+        let pack_dir = root.join("packs").join("demo");
+        let sibling_dir = root.join("packs").join("other");
+        fs::create_dir_all(pack_dir.join("clips")).unwrap();
+        fs::create_dir_all(&sibling_dir).unwrap();
+        fs::write(pack_dir.join("clips/kill_01.wav"), b"x").unwrap();
+        fs::write(sibling_dir.join("secret.txt"), b"x").unwrap();
+
+        let canon_pack = fs::canonicalize(&pack_dir).unwrap();
+        let canon_inside = fs::canonicalize(pack_dir.join("clips/kill_01.wav")).unwrap();
+        let canon_outside = fs::canonicalize(sibling_dir.join("secret.txt")).unwrap();
+
+        assert!(
+            canon_inside.starts_with(&canon_pack),
+            "a legitimate nested file must be considered contained"
+        );
+        assert!(
+            !canon_outside.starts_with(&canon_pack),
+            "a file in a sibling directory must NOT be considered contained — \
+             this is exactly the check that rejects a symlink whose real \
+             target canonicalizes to a path like `canon_outside`"
+        );
+    }
+
+    #[test]
+    fn fired_banner_ignores_traversal_banner_asset() {
+        let root = temp_root("banner-traversal");
+        set_test_voice_root(Some(root.clone()));
+        let _guard = RootGuard(root.clone());
+
+        let mut evil_mapping = mapping(&[]);
+        evil_mapping.banner_asset = "../../../../Windows/win.ini".to_string();
+        write_pack(
+            &root,
+            "demo",
+            BTreeMap::from([("kill".to_string(), evil_mapping)]),
+        );
+        write_active_pack_id("demo").unwrap();
+
+        // Falls back to the built-in card (no banner_data) instead of
+        // resolving the traversal and inlining whatever it points at.
+        let banner = fired_banner("kill");
+        assert!(banner.banner_data.is_none());
+        assert_eq!(banner.event, "kill");
+    }
+
+    #[test]
+    fn preview_clip_ignores_traversal_and_finds_real_clip_after() {
+        let root = temp_root("preview-clip-traversal");
+        set_test_voice_root(Some(root.clone()));
+        let _guard = RootGuard(root.clone());
+
+        let dir = write_pack(
+            &root,
+            "demo",
+            BTreeMap::from([(
+                "kill".to_string(),
+                mapping(&["../../evil.wav", "clips/kill_01.wav"]),
+            )]),
+        );
+        fs::write(dir.join("clips/kill_01.wav"), b"x").unwrap();
+
+        // The traversal entry is skipped; the real clip after it is still found.
+        let clip = preview_clip("demo", "kill");
+        assert_eq!(clip, Some(dir.join("clips/kill_01.wav")));
+    }
+
+    #[test]
+    fn install_report_rejects_traversal_clip_as_missing() {
+        let root = temp_root("install-report-traversal");
+        set_test_voice_root(Some(root.clone()));
+        let _guard = RootGuard(root.clone());
+
+        write_pack(
+            &root,
+            "demo",
+            BTreeMap::from([(
+                "kill".to_string(),
+                mapping(&["../../../evil.wav"]),
+            )]),
+        );
+
+        let report = install_report("demo").expect("report");
+        assert_eq!(report.counts.get("kill"), Some(&0));
+        assert!(report.missing_clips.iter().any(|c| c == "../../../evil.wav"));
+        assert!(report.unmapped_events.contains(&"kill".to_string()));
+    }
+
+    // -- Gap 2: zip-slip on archive import (extract_pack_zip) -----------
+
+    /// Builds an in-memory `.zip` with the given (entry name, contents)
+    /// pairs, using `Stored` (uncompressed) so the test needs no codec
+    /// feature beyond what the crate always provides.
+    fn build_test_zip(entries: &[(&str, &[u8])]) -> Vec<u8> {
+        let mut buf = Vec::new();
+        {
+            let cursor = std::io::Cursor::new(&mut buf);
+            let mut writer = zip::ZipWriter::new(cursor);
+            let options = zip::write::SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Stored);
+            for (name, data) in entries {
+                writer.start_file(*name, options).unwrap();
+                writer.write_all(data).unwrap();
+            }
+            writer.finish().unwrap();
+        }
+        buf
+    }
+
+    #[test]
+    fn extract_pack_zip_refuses_traversal_entry_and_writes_nothing() {
+        let root = temp_root("zip-traversal");
+        let _guard = RootGuard(root.clone());
+        let dest = root.join("dest");
+        let bytes = build_test_zip(&[
+            ("manifest.json", b"{}" as &[u8]),
+            ("../evil.txt", b"pwned"),
+        ]);
+
+        assert!(extract_pack_zip(&bytes, &dest, "demo").is_err());
+        assert!(!root.join("evil.txt").is_file());
+        // Two-pass validation: pass 1 rejected before pass 2 wrote anything,
+        // so not even the well-formed sibling entry landed.
+        assert!(!dest.join("manifest.json").is_file());
+    }
+
+    #[test]
+    fn extract_pack_zip_refuses_absolute_path_entry() {
+        let root = temp_root("zip-absolute");
+        let _guard = RootGuard(root.clone());
+        let dest = root.join("dest");
+        let bytes = build_test_zip(&[("/evil.txt", b"pwned" as &[u8])]);
+
+        assert!(extract_pack_zip(&bytes, &dest, "demo").is_err());
+        assert!(!std::path::Path::new("/evil.txt").is_file());
+    }
+
+    #[test]
+    fn extract_pack_zip_imports_clean_archive() {
+        let root = temp_root("zip-clean");
+        let _guard = RootGuard(root.clone());
+        let dest = root.join("dest");
+        fs::create_dir_all(&dest).unwrap();
+        let bytes = build_test_zip(&[
+            ("manifest.json", b"{}" as &[u8]),
+            ("clips/kill_01.wav", b"clipdata"),
+        ]);
+
+        extract_pack_zip(&bytes, &dest, "demo").expect("clean archive should import");
+        assert!(dest.join("manifest.json").is_file());
+        assert!(dest.join("clips/kill_01.wav").is_file());
+        assert_eq!(fs::read(dest.join("clips/kill_01.wav")).unwrap(), b"clipdata");
     }
 }

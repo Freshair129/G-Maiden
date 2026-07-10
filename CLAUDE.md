@@ -139,6 +139,16 @@ actually changes what's voiced in-game**.
   never creates/writes/moves/extracts files, so the worst a rogue local POST can do is switch the
   active pack. Known gap: an already-open Voice Packs UI does not auto-refresh after a remote
   install (no listener wired) — reopen it to see the change.
+- **Manifest path-traversal + zip-slip hardening — CLOSED (2026-07-10):** `manifest.json`'s
+  `clips[]` / `bannerAsset` / `coverImage` are attacker-influenced (the manifest ships inside
+  imported `.zip` packs), so every join of one of those strings onto a pack dir in `voice_api.rs`
+  now goes through one shared helper, `safe_pack_path(pack_dir, rel) -> Option<PathBuf>` — it
+  rejects absolute/drive/UNC/verbatim paths and any `..` component structurally (via
+  `Path::components()`), and canonicalizes+contains-checks the target when it exists (catches a
+  symlink escape too). Archive import (`voice_api::import_archive`) no longer shells out to
+  PowerShell `Expand-Archive`; it extracts in-process via the `zip` crate (already transitive via
+  `tauri-plugin-updater`), validating every entry's `enclosed_name()`/`is_symlink()` before writing
+  anything. See `docs/rca/2026-07-10-voice-pack-path-traversal.md`.
 
 ## Persona rules (product-critical, not flavor)
 
