@@ -6,8 +6,14 @@ version: "0.1.0"
 updated: "2026-07-04"
 owner: "Boss"
 source_of_truth: true
-related_docs: ["ADR-14-gid-account-identity", "ADR-12-community-ai-marketplace", "ADR-11-optin-data-contribution-flywheel", "CR-002-Phase2-wire-backend"]
+related_docs: ["ADR-14-gid-account-identity", "ADR-12-community-ai-marketplace", "ADR-11-optin-data-contribution-flywheel", "ADR-16-credit-economy-and-mint-oracle", "CR-002-Phase2-wire-backend"]
+blocked_by: "ADR-16 §7 — schema ต้องแยก provenance (earned/purchased) ตั้งแต่ migration แรก"
 ---
+
+> 🔴 **อ่าน ADR-16 ก่อนเขียน migration แรกของ wallet/credit**
+> ADR-16 §1/§7 บังคับว่าเครดิตมี **สองสกุลแยกขาด** — `shard` (earned, ซื้อของ creator ไม่ได้,
+> แปลงเป็นเงินไม่ได้) กับ `wallet` (purchased) — และ **`provenance` ต้องมีตั้งแต่ migration แรก
+> เพราะใส่ย้อนหลังไม่ได้** กฎการใช้จ่ายต้องบังคับที่ระดับ DB/RLS ไม่ใช่แค่ใน UI
 
 # CR-003: ระบบ Account (GID) เฟสแรก — Wallet · Inventory · History · Billing
 

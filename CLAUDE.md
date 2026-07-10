@@ -77,10 +77,21 @@ When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scal
 - Background CPU usage â‰¤ **2.5%** on a mid-range chipset; RAM â‰¤ **400MB** with all modules active.
 - Overlay must not drop Dota 2 FPS by more than **3%**, and must not obscure minimap, skill bar,
   or stats panels.
-- **Privacy-first (match data):** G-Log raw data, live match state, and CV detections stay
-  **local only** - never upload them. The **opt-in account layer** (ADR-14) is the only exception
-  and stores identity only: email (Google auth), public Steam ids, display name, GID - plus reads
-  **public** OpenDota data. No private match data leaves the machine.
+- **Privacy-first (match data), local-first by default:** G-Log raw data, live match state, and
+  CV detections stay **local only** unless the user explicitly opts in. **Two opt-ins exist, and
+  they are separate:**
+  1. **Account layer (ADR-14)** - stores identity only: email (Google auth), public Steam ids,
+     display name, GID - plus reads **public** OpenDota data.
+  2. **Data contribution (ADR-11, accepted 2026-06-23; economics in ADR-16)** - the user may
+     opt in to share a *specific finished match* in exchange for shard credit. This is the
+     data flywheel + marketplace moat (ADR-12). It is **not** enabled by signing in.
+  **Hard rules that survive both opt-ins:** nothing leaves the machine for a match the user did
+  not submit; **CV detections never leave the machine, ever** (third-party consent + Valve risk);
+  shared data is used **post-match / as aggregate prior only** - never fed back as live enemy
+  positions into the same match (= maphack; Valve banned ~40k accounts and killed Overwolf for
+  this - ADR-11 §5); `match_id` is stored only as `HMAC(match_id)` (ADR-16 §5).
+  If you are about to enforce "never upload anything", read ADR-11 and ADR-16 first - an absolute
+  reading of this rule has silently dropped the flywheel strategy several times.
 - **Resilience:** on cloud/network loss, G-Sentry and G-Signal must keep running on the local SLM.
 
 ### Key external interfaces
