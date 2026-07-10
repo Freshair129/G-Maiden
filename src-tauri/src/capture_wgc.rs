@@ -217,10 +217,21 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                     .set_sensitivity(crate::runtime::signal_sensitivity());
                 match self.signal.evaluate(&risk) {
                     SignalEvent::Alert(alert) => {
+                        // Silent-arm efficacy study (TASK 2): when this match is
+                        // silent-armed the pipeline + logging still run, but the
+                        // gank alert (voice + banner) is suppressed. `armed` = the
+                        // user WAS alerted. Mirrors capture.rs (DXGI backend).
+                        let armed = !crate::runtime::silent_arm();
                         // Use the "gank" event so the bundled voice pack's gank
                         // takes are picked (separate from the HP-danger pack).
-                        voice_interrupt("gank", GANK_LINE);
-                        if crate::calibration::is_enabled() {
+                        if armed {
+                            voice_interrupt("gank", GANK_LINE);
+                        }
+                        // W2: only capture calibration evidence when the line
+                        // was actually voiced — in the silent arm GANK_LINE is
+                        // suppressed, so recording it would falsely log it as
+                        // spoken. The gank_signal log below stays unconditional.
+                        if armed && crate::calibration::is_enabled() {
                             crate::calibration::record(
                                 "gank",
                                 Some(GANK_LINE),
@@ -235,13 +246,21 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                             alert.probability,
                             &alert.missing_heroes,
                             alert.eta_ms,
+                            armed,
                         ));
-                        let _ = self.app.emit("gank-alert", &alert);
+                        if armed {
+                            let _ = self.app.emit("gank-alert", &alert);
+                        }
                     }
                     SignalEvent::Revision => {
-                        voice_interrupt("revision", REVISION_LINE);
+                        let armed = !crate::runtime::silent_arm();
+                        if armed {
+                            voice_interrupt("revision", REVISION_LINE);
+                        }
                         crate::log::note_event(crate::log::gank_revision_record());
-                        let _ = self.app.emit("gank-clear", ());
+                        if armed {
+                            let _ = self.app.emit("gank-clear", ());
+                        }
                     }
                     SignalEvent::None => {}
                 }

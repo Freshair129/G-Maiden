@@ -64,6 +64,25 @@ def split(recs: list[dict]):
     return ticks, signals
 
 
+def is_armed(signal: dict) -> bool:
+    """Whether the user was actually alerted for this warning event (silent-arm
+    efficacy study, RWANG TASK 2). Logs written before the study shipped have
+    no `armed` field — every alert back then was actually voiced, so default
+    to True."""
+    return bool(signal.get("armed", True))
+
+
+def study_flag(recs: list[dict]) -> bool:
+    """Whether this match was rolled UNDER the efficacy study — read from the
+    `match_start` record's `study` field (finding W1). Only such matches carry
+    the randomized armed/silent split, so only they should feed the efficacy
+    buckets. Legacy logs (no `match_start`, or `study` absent) → False."""
+    for r in recs:
+        if r.get("type") == "match_start":
+            return bool(r.get("study", False))
+    return False
+
+
 def death_events(ticks: list[dict]) -> list[int]:
     """Timestamps (ms) where the player's death count increased."""
     out, prev = [], None
@@ -80,9 +99,43 @@ def hp_in_window(ticks: list[dict], start: int, end: int) -> int:
     return min(lows) if lows else 100
 
 
+def bucket_by_arm(signals: list[dict], deaths: list[int], window_ms: int) -> dict:
+    """Silent-arm efficacy comparison (RWANG TASK 2): "does G-Signal's gank
+    warning actually reduce deaths?" Buckets each `gank_signal` warning EVENT
+    (not each match) by whether the user was actually alerted (`armed`) or the
+    alert was suppressed (`silent`), and reports the death rate following each
+    warning within `window_ms`. A match with many warnings weighs
+    proportionally more since the bucket is per-event."""
+    buckets = {
+        "armed": {"events": 0, "deaths": 0},
+        "silent": {"events": 0, "deaths": 0},
+    }
+    for s in signals:
+        key = "armed" if is_armed(s) else "silent"
+        ts = s.get("ts", 0)
+        buckets[key]["events"] += 1
+        if any(ts < d <= ts + window_ms for d in deaths):
+            buckets[key]["deaths"] += 1
+    for b in buckets.values():
+        b["rate"] = (b["deaths"] / b["events"]) if b["events"] else None
+    return buckets
+
+
+def merge_arm_buckets(a: dict, b: dict) -> dict:
+    """Add two `bucket_by_arm`-shaped dicts together (events/deaths only —
+    rate is recomputed by the caller once all matches are merged)."""
+    out = {"armed": {"events": 0, "deaths": 0}, "silent": {"events": 0, "deaths": 0}}
+    for arm in ("armed", "silent"):
+        out[arm]["events"] = a[arm]["events"] + b[arm]["events"]
+        out[arm]["deaths"] = a[arm]["deaths"] + b[arm]["deaths"]
+    return out
+
+
 def analyze_match(path: str, window_ms: int, death_hp: int) -> dict:
-    ticks, signals = split(load_records(path))
+    recs = load_records(path)
+    ticks, signals = split(recs)
     deaths = death_events(ticks)
+    is_study = study_flag(recs)
 
     # Precision: each alert is a true positive if a death OR a steep HP drop
     # follows within the window.
@@ -104,6 +157,13 @@ def analyze_match(path: str, window_ms: int, death_hp: int) -> dict:
 
     n_alerts = len(signals)
     n_deaths = len(deaths)
+    # W1: only feed the efficacy buckets from matches rolled under the study —
+    # a non-study / legacy match has no randomized silent arm, so counting its
+    # (all-armed) events would bias the armed bucket with a different
+    # population. Precision/recall above still cover every match.
+    arms = (bucket_by_arm(signals, deaths, window_ms) if is_study
+            else {"armed": {"events": 0, "deaths": 0, "rate": None},
+                  "silent": {"events": 0, "deaths": 0, "rate": None}})
     return {
         "match": os.path.basename(path),
         "alerts": n_alerts,
@@ -113,6 +173,8 @@ def analyze_match(path: str, window_ms: int, death_hp: int) -> dict:
         "deaths_covered": covered,
         "recall": (covered / n_deaths) if n_deaths else None,
         "details": alert_details,
+        "study": is_study,
+        "arms": arms,
     }
 
 
@@ -136,6 +198,7 @@ def main() -> int:
         return 1
 
     tot_alerts = tot_deaths = tot_tp = tot_cov = 0
+    tot_arms = {"armed": {"events": 0, "deaths": 0}, "silent": {"events": 0, "deaths": 0}}
     for path in files:
         r = analyze_match(path, args.window_ms, args.death_hp)
         prec = f"{r['precision']:.0%}" if r["precision"] is not None else "n/a"
@@ -150,6 +213,7 @@ def main() -> int:
         tot_deaths += r["deaths"]
         tot_tp += r["true_positives"]
         tot_cov += r["deaths_covered"]
+        tot_arms = merge_arm_buckets(tot_arms, r["arms"])
 
     print("-" * 60)
     prec = f"{tot_tp / tot_alerts:.0%}" if tot_alerts else "n/a"
@@ -158,6 +222,26 @@ def main() -> int:
           f"precision={prec} recall={rec}")
     print("\nTuning hint: low precision -> raise DANGER_THRESHOLD or the missing_risk "
           "curve (signal.rs/motion.rs); low recall -> lower it / add features.")
+
+    # Silent-arm efficacy study (RWANG TASK 2): "does G-Signal's gank warning
+    # actually reduce deaths?" Compared PER WARNING EVENT, not per match.
+    armed, silent = tot_arms["armed"], tot_arms["silent"]
+    armed_rate = (armed["deaths"] / armed["events"]) if armed["events"] else None
+    silent_rate = (silent["deaths"] / silent["events"]) if silent["events"] else None
+    print("\n" + "-" * 60)
+    print("Silent-arm efficacy study (per warning event):")
+    armed_str = f"{armed_rate:.0%}" if armed_rate is not None else "n/a"
+    silent_str = f"{silent_rate:.0%}" if silent_rate is not None else "n/a"
+    print(f"  armed  (user alerted):  events={armed['events']:>4} deaths={armed['deaths']:>4} "
+          f"death-rate={armed_str}")
+    print(f"  silent (alert muted):   events={silent['events']:>4} deaths={silent['deaths']:>4} "
+          f"death-rate={silent_str}")
+    if armed_rate is not None and silent_rate is not None:
+        delta = armed_rate - silent_rate
+        print(f"  delta (armed - silent): {delta:+.0%} "
+              f"({'warning appears to help' if delta < 0 else 'no measured benefit yet' if delta >= 0 else 'n/a'})")
+    else:
+        print("  delta: n/a (need events in both arms — enable the efficacy study opt-in and play more matches)")
     return 0
 
 

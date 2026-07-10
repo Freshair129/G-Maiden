@@ -106,7 +106,27 @@ fn start_match(state: &mut LogState) {
     crate::calibration::set_match(&format!("match-{ts_sec}"));
     let path = dir.join(format!("match-{ts_sec}.jsonl"));
     match OpenOptions::new().create(true).append(true).open(&path) {
-        Ok(f) => {
+        Ok(mut f) => {
+            // Silent-arm efficacy study (RWANG TASK 2): roll the per-match arm
+            // exactly once, right here at match start, and persist the choice
+            // into the log so the analyzer/in-app card can join it later.
+            let silent_arm = crate::runtime::roll_match_arm();
+            // `study` = whether this match was rolled UNDER the efficacy study.
+            // The analyzer/in-app card count a match's gank_signal events into
+            // the armed/silent buckets ONLY when this is true, so legacy /
+            // opted-out matches (whose events all default to armed) can't
+            // bias the armed arm with a different population (finding W1).
+            let start_record = serde_json::json!({
+                "ts": now_ms() as u64,
+                "type": "match_start",
+                "silent_arm": silent_arm,
+                "study": crate::runtime::efficacy_enabled(),
+            });
+            if let Ok(line) = serde_json::to_string(&start_record) {
+                let _ = f.write_all(line.as_bytes());
+                let _ = f.write_all(b"\n");
+                let _ = f.flush();
+            }
             state.file = Some(f);
             state.path = Some(path);
             state.last_clock = i64::MIN;
@@ -194,12 +214,21 @@ pub fn note_event(mut value: serde_json::Value) {
 }
 
 /// Record: G-Signal fired a gank warning (the decision + its inputs).
-pub fn gank_signal_record(probability: f32, missing: &[String], eta_ms: u64) -> serde_json::Value {
+/// `armed` = `true` when the user was actually alerted (voice + banner);
+/// `false` in the silent arm of the efficacy study, where the alert is
+/// suppressed but the decision is still logged (RWANG TASK 2).
+pub fn gank_signal_record(
+    probability: f32,
+    missing: &[String],
+    eta_ms: u64,
+    armed: bool,
+) -> serde_json::Value {
     serde_json::json!({
         "type": "gank_signal",
         "probability": probability,
         "missing_heroes": missing,
         "eta_ms": eta_ms,
+        "armed": armed,
     })
 }
 
@@ -308,18 +337,196 @@ pub fn open_log_dir() {
         .spawn();
 }
 
+// ─────────────────────────── Efficacy study (RWANG TASK 2) ───────────────────────────
+// Silent-arm study: does G-Signal's gank warning actually reduce deaths? Joins
+// each `gank_signal` event to a death within a fixed window, per match log,
+// and buckets the result by the event's `armed` field. 100% local — this only
+// reads the same on-disk logs `analyze.py` reads; nothing leaves the machine.
+// Kept in lockstep with `tools/analyze-log/analyze.py`'s default window so the
+// in-app card and the offline analyzer agree.
+
+/// Window (ms) after a `gank_signal` within which a death still counts as the
+/// outcome of that warning (or lack thereof).
+const EFFICACY_WINDOW_MS: u64 = 8000;
+
+/// One `gank_signal` event extracted from a match log, reduced to what the
+/// efficacy join needs.
+struct EfficacySignal {
+    ts: u64,
+    armed: bool,
+}
+
+#[derive(Default, Clone, Copy)]
+struct ArmBucket {
+    events: u32,
+    deaths: u32,
+}
+
+impl ArmBucket {
+    fn add(&mut self, other: ArmBucket) {
+        self.events += other.events;
+        self.deaths += other.deaths;
+    }
+    fn to_json(self) -> serde_json::Value {
+        let rate = if self.events > 0 {
+            self.deaths as f64 / self.events as f64
+        } else {
+            0.0
+        };
+        serde_json::json!({ "events": self.events, "deaths": self.deaths, "rate": rate })
+    }
+}
+
+/// The efficacy-relevant contents of one match log: death timestamps, the
+/// gank_signal rows, and whether the match was rolled under the study.
+struct MatchEfficacy {
+    deaths: Vec<u64>,
+    signals: Vec<EfficacySignal>,
+    /// `true` when the `match_start` record has `study: true` — only such
+    /// matches carry the randomized armed/silent split, so only they are
+    /// counted into the buckets (finding W1). Legacy logs (no `match_start`,
+    /// or `study` absent) → `false`.
+    study: bool,
+}
+
+/// Parse one match log's raw JSONL text. Tolerates a torn last line (power-cut
+/// mid-write), same as the python analyzer. Legacy logs written before this
+/// feature shipped have no `armed` field on `gank_signal` — they default to
+/// `armed: true` since every alert was voiced back then — and no `study` flag,
+/// so they are excluded from the efficacy buckets by the caller.
+fn parse_efficacy_records(content: &str) -> MatchEfficacy {
+    let mut deaths = Vec::new();
+    let mut signals = Vec::new();
+    let mut study = false;
+    let mut prev_deaths: Option<i64> = None;
+    for line in content.lines() {
+        let line = line.trim();
+        if line.is_empty() {
+            continue;
+        }
+        let Ok(v) = serde_json::from_str::<serde_json::Value>(line) else {
+            continue;
+        };
+        let ts = v.get("ts").and_then(|t| t.as_u64()).unwrap_or(0);
+        if let Some(tick) = v.get("tick") {
+            let d = tick.get("deaths").and_then(|d| d.as_i64()).unwrap_or(0);
+            if let Some(prev) = prev_deaths {
+                if d > prev {
+                    deaths.push(ts);
+                }
+            }
+            prev_deaths = Some(d);
+        } else {
+            match v.get("type").and_then(|t| t.as_str()) {
+                Some("gank_signal") => {
+                    let armed = v.get("armed").and_then(|a| a.as_bool()).unwrap_or(true);
+                    signals.push(EfficacySignal { ts, armed });
+                }
+                Some("match_start") => {
+                    study = v.get("study").and_then(|s| s.as_bool()).unwrap_or(false);
+                }
+                _ => {}
+            }
+        }
+    }
+    MatchEfficacy {
+        deaths,
+        signals,
+        study,
+    }
+}
+
+/// Join `signals` to `deaths` within `window_ms` and bucket by `armed`. Pure —
+/// no I/O — so it's directly unit-testable against synthetic records.
+fn join_and_bucket(
+    deaths: &[u64],
+    signals: &[EfficacySignal],
+    window_ms: u64,
+) -> (ArmBucket, ArmBucket) {
+    let mut armed = ArmBucket::default();
+    let mut silent = ArmBucket::default();
+    for sig in signals {
+        let bucket = if sig.armed { &mut armed } else { &mut silent };
+        bucket.events += 1;
+        if deaths.iter().any(|&d| d > sig.ts && d <= sig.ts + window_ms) {
+            bucket.deaths += 1;
+        }
+    }
+    (armed, silent)
+}
+
+/// Scan every match log in `dir`, join each `gank_signal` event to a death
+/// within [`EFFICACY_WINDOW_MS`], and bucket by `armed`. Only matches rolled
+/// under the study (`match_start.study == true`) are counted (W1). Split from
+/// [`efficacy_summary`] so it can be tested against a temp dir without touching
+/// the real `log_dir()`.
+fn efficacy_summary_in_dir(dir: &std::path::Path) -> serde_json::Value {
+    let mut armed_total = ArmBucket::default();
+    let mut silent_total = ArmBucket::default();
+
+    if let Ok(entries) = fs::read_dir(dir) {
+        for entry in entries.filter_map(|e| e.ok()) {
+            let path = entry.path();
+            let name = path
+                .file_name()
+                .map(|n| n.to_string_lossy().to_string())
+                .unwrap_or_default();
+            if !name.starts_with("match-") || !name.ends_with(".jsonl") {
+                continue;
+            }
+            let Ok(content) = fs::read_to_string(&path) else {
+                continue;
+            };
+            let m = parse_efficacy_records(&content);
+            // W1: only study-enabled matches carry the randomized armed/silent
+            // split; skip legacy / opted-out matches so the two buckets compare
+            // the same population.
+            if !m.study {
+                continue;
+            }
+            let (armed, silent) = join_and_bucket(&m.deaths, &m.signals, EFFICACY_WINDOW_MS);
+            armed_total.add(armed);
+            silent_total.add(silent);
+        }
+    }
+    // A missing log dir (fresh install, no matches) yields an empty summary,
+    // not an error — the `if let Ok` above already handles that path.
+
+    serde_json::json!({
+        "armed": armed_total.to_json(),
+        "silent": silent_total.to_json(),
+    })
+}
+
+/// Scan every match log in `log_dir()`, join each `gank_signal` event to a
+/// death within [`EFFICACY_WINDOW_MS`], and bucket by `armed` (whether the
+/// user was actually alerted). Returns
+/// `{ armed: {events, deaths, rate}, silent: {events, deaths, rate} }` so the
+/// UI can show the user their own two-arm comparison. Local-only: reads from
+/// disk, never sends anything anywhere.
+pub fn efficacy_summary() -> Result<serde_json::Value, String> {
+    Ok(efficacy_summary_in_dir(&log_dir()))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
 
     #[test]
     fn gank_signal_record_shape() {
-        let r = gank_signal_record(0.91, &["CM".into(), "SF".into()], 2500);
+        let r = gank_signal_record(0.91, &["CM".into(), "SF".into()], 2500, true);
         assert_eq!(r["type"], "gank_signal");
         assert_eq!(r["eta_ms"], 2500);
         assert_eq!(r["missing_heroes"].as_array().unwrap().len(), 2);
+        assert_eq!(r["armed"], true);
         // probability round-trips as a number
         assert!((r["probability"].as_f64().unwrap() - 0.91).abs() < 1e-6);
+    }
+
+    #[test]
+    fn gank_signal_record_carries_armed_false_in_the_silent_arm() {
+        let r = gank_signal_record(0.7, &["Lion".into()], 1800, false);
+        assert_eq!(r["armed"], false);
     }
 
     #[test]
@@ -335,5 +542,136 @@ mod tests {
     #[test]
     fn revision_record_shape() {
         assert_eq!(gank_revision_record()["type"], "gank_revision");
+    }
+
+    #[test]
+    fn parse_efficacy_records_extracts_deaths_armed_signals_and_study_flag() {
+        let content = concat!(
+            "{\"ts\":0,\"type\":\"match_start\",\"silent_arm\":false,\"study\":true}\n",
+            "{\"ts\":0,\"tick\":{\"deaths\":0}}\n",
+            "{\"ts\":1000,\"type\":\"gank_signal\",\"armed\":true,\"probability\":0.9}\n",
+            "{\"ts\":4000,\"tick\":{\"deaths\":1}}\n",
+            "{\"ts\":5000,\"type\":\"gank_signal\",\"armed\":false}\n",
+            "not json, a torn power-cut line\n",
+        );
+        let m = parse_efficacy_records(content);
+        assert_eq!(m.deaths, vec![4000]);
+        assert_eq!(m.signals.len(), 2);
+        assert!(m.signals[0].armed);
+        assert!(!m.signals[1].armed);
+        assert!(m.study, "study flag must be read from match_start");
+    }
+
+    #[test]
+    fn parse_efficacy_records_defaults_study_false_and_armed_true_for_legacy_logs() {
+        // Logs written before this feature shipped have no `match_start`
+        // record (→ study defaults false) and no `armed` field on signals
+        // (→ armed defaults true; every alert back then was actually voiced).
+        let content = "{\"ts\":1000,\"type\":\"gank_signal\",\"probability\":0.9}";
+        let m = parse_efficacy_records(content);
+        assert_eq!(m.signals.len(), 1);
+        assert!(m.signals[0].armed);
+        assert!(!m.study, "legacy match with no match_start must not be a study match");
+    }
+
+    #[test]
+    fn parse_efficacy_records_study_false_when_match_start_opted_out() {
+        let content = concat!(
+            "{\"ts\":0,\"type\":\"match_start\",\"silent_arm\":false,\"study\":false}\n",
+            "{\"ts\":1000,\"type\":\"gank_signal\",\"armed\":true}\n",
+        );
+        let m = parse_efficacy_records(content);
+        assert!(!m.study);
+    }
+
+    #[test]
+    fn join_and_bucket_splits_by_armed_and_counts_deaths_in_window() {
+        let deaths = vec![4000u64, 20000];
+        let signals = vec![
+            EfficacySignal { ts: 1000, armed: true }, // death at 4000 -> hit
+            EfficacySignal { ts: 5000, armed: false }, // no death in (5000,13000] -> miss
+            EfficacySignal { ts: 19000, armed: false }, // death at 20000 -> hit
+        ];
+        let (armed, silent) = join_and_bucket(&deaths, &signals, 8000);
+        assert_eq!(armed.events, 1);
+        assert_eq!(armed.deaths, 1);
+        assert_eq!(silent.events, 2);
+        assert_eq!(silent.deaths, 1);
+    }
+
+    #[test]
+    fn join_and_bucket_death_exactly_at_window_edge_counts() {
+        let deaths = vec![9000u64];
+        let signals = vec![EfficacySignal { ts: 1000, armed: true }];
+        let (armed, _) = join_and_bucket(&deaths, &signals, 8000);
+        assert_eq!(armed.events, 1);
+        assert_eq!(armed.deaths, 1, "death at ts+window_ms is inclusive");
+    }
+
+    #[test]
+    fn arm_bucket_to_json_rate_is_zero_when_no_events() {
+        let b = ArmBucket::default();
+        let j = b.to_json();
+        assert_eq!(j["events"], 0);
+        assert_eq!(j["deaths"], 0);
+        assert!((j["rate"].as_f64().unwrap() - 0.0).abs() < 1e-9);
+    }
+
+    #[test]
+    fn arm_bucket_add_accumulates_across_matches() {
+        let mut total = ArmBucket::default();
+        total.add(ArmBucket { events: 3, deaths: 1 });
+        total.add(ArmBucket { events: 2, deaths: 2 });
+        assert_eq!(total.events, 5);
+        assert_eq!(total.deaths, 3);
+    }
+
+    #[test]
+    fn efficacy_summary_counts_only_study_matches_and_excludes_legacy() {
+        // W1: a study=true match contributes to the buckets; a study=false /
+        // legacy match (no match_start) is excluded entirely, so the armed
+        // arm can't be polluted by a different (pre-study) population.
+        let dir = std::env::temp_dir().join(format!(
+            "gmaiden-eff-test-{}",
+            now_ms()
+        ));
+        fs::create_dir_all(&dir).unwrap();
+
+        // Study match: 1 armed signal followed by a death, 1 silent signal not.
+        let study_match = concat!(
+            "{\"ts\":0,\"type\":\"match_start\",\"silent_arm\":false,\"study\":true}\n",
+            "{\"ts\":0,\"tick\":{\"deaths\":0}}\n",
+            "{\"ts\":1000,\"type\":\"gank_signal\",\"armed\":true}\n",
+            "{\"ts\":4000,\"tick\":{\"deaths\":1}}\n",
+            "{\"ts\":10000,\"type\":\"gank_signal\",\"armed\":false}\n",
+            "{\"ts\":30000,\"tick\":{\"deaths\":2}}\n",
+        );
+        fs::write(dir.join("match-100.jsonl"), study_match).unwrap();
+
+        // Legacy match (no match_start → study=false): must be ignored.
+        let legacy_match = concat!(
+            "{\"ts\":0,\"tick\":{\"deaths\":0}}\n",
+            "{\"ts\":1000,\"type\":\"gank_signal\",\"probability\":0.9}\n",
+            "{\"ts\":4000,\"tick\":{\"deaths\":1}}\n",
+        );
+        fs::write(dir.join("match-050.jsonl"), legacy_match).unwrap();
+
+        // Opted-out study match (study=false): also ignored.
+        let opted_out = concat!(
+            "{\"ts\":0,\"type\":\"match_start\",\"silent_arm\":false,\"study\":false}\n",
+            "{\"ts\":1000,\"type\":\"gank_signal\",\"armed\":true}\n",
+            "{\"ts\":4000,\"tick\":{\"deaths\":1}}\n",
+        );
+        fs::write(dir.join("match-075.jsonl"), opted_out).unwrap();
+
+        let summary = efficacy_summary_in_dir(&dir);
+        // Only the study match's events count: armed 1 event / 1 death,
+        // silent 1 event / 0 deaths (no death in (10000, 18000]).
+        assert_eq!(summary["armed"]["events"], 1);
+        assert_eq!(summary["armed"]["deaths"], 1);
+        assert_eq!(summary["silent"]["events"], 1);
+        assert_eq!(summary["silent"]["deaths"], 0);
+
+        let _ = fs::remove_dir_all(&dir);
     }
 }

@@ -374,6 +374,24 @@ fn set_calibration_enabled(enabled: bool) {
     calibration::set_enabled(enabled);
 }
 
+/// Toggle the silent-arm efficacy study opt-in (RWANG TASK 2, C-2). Off by
+/// default; small random proportion of matches get their gank alert silenced
+/// (voice + banner) while G-Signal keeps computing and logging as normal, so
+/// the user can later compare warned-vs-silent death rates. Instantly
+/// disable-able — see `runtime::set_efficacy_enabled`.
+#[tauri::command]
+fn set_efficacy_enabled(enabled: bool) {
+    runtime::set_efficacy_enabled(enabled);
+}
+
+/// Scan the local match logs and return the user's own two-arm efficacy
+/// comparison (`{ armed: {events, deaths, rate}, silent: {...} }`). Local-only
+/// — reads `log::log_dir()`, never uploads anything.
+#[tauri::command]
+fn efficacy_summary() -> Result<serde_json::Value, String> {
+    log::efficacy_summary()
+}
+
 /// Trigger a calibration motion clip for a voice-paired event fired in the
 /// frontend (danger / kill / death / advice). No-op when calibration is off.
 #[tauri::command]
@@ -544,6 +562,8 @@ fn main() {
             secret::secret_delete,
             set_calibration_enabled,
             capture_calibration_clip,
+            set_efficacy_enabled,
+            efficacy_summary,
             set_volume,
             get_volume,
             set_telemetry_source,

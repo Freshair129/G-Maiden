@@ -7,6 +7,7 @@
 
 use std::sync::atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering};
 use std::sync::Mutex;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::signal::Sensitivity;
 
@@ -49,6 +50,19 @@ static MASTER_USE_APIKEY: AtomicBool = AtomicBool::new(false);
 
 /// The Anthropic API key when `MASTER_USE_APIKEY` is on (empty → not provided).
 static MASTER_API_KEY: Mutex<String> = Mutex::new(String::new());
+
+/// Silent-arm efficacy study opt-in (RWANG TASK 2, C-2): "does G-Signal's gank
+/// warning actually reduce deaths?". Mirrors the UI toggle. Off by default —
+/// nothing about G-Signal's behavior changes unless the user opts in.
+static EFFICACY_ENABLED: AtomicBool = AtomicBool::new(false);
+
+/// Whether the CURRENT match was randomly assigned to the study's "silent arm"
+/// (G-Signal still computes + logs everything, but the gank alert — voice and
+/// banner — is suppressed). Rolled once per match by [`roll_match_arm`].
+static SILENT_ARM: AtomicBool = AtomicBool::new(false);
+
+/// Percent chance (0-100) a match is silent-armed when the study is enabled.
+const SILENT_ARM_PROB: u32 = 25;
 
 pub fn mark_post(ms: u64) {
     LAST_POST_MS.store(ms, Ordering::Relaxed);
@@ -220,6 +234,67 @@ pub fn master_api_key() -> Option<String> {
         .filter(|s| !s.trim().is_empty())
 }
 
+/// Toggle the silent-arm efficacy study. When turned OFF, instantly force the
+/// current match out of the silent arm — the user must never keep silently
+/// un-alerted matches running after opting back out (spec 2.2: "instant off").
+pub fn set_efficacy_enabled(v: bool) {
+    EFFICACY_ENABLED.store(v, Ordering::Relaxed);
+    if !v {
+        SILENT_ARM.store(false, Ordering::Relaxed);
+    }
+}
+pub fn efficacy_enabled() -> bool {
+    EFFICACY_ENABLED.load(Ordering::Relaxed)
+}
+
+/// Whether the match currently in progress is silent-armed (alert suppressed).
+pub fn silent_arm() -> bool {
+    SILENT_ARM.load(Ordering::Relaxed)
+}
+
+fn set_silent_arm(v: bool) {
+    SILENT_ARM.store(v, Ordering::Relaxed);
+}
+
+/// Pure decision function for the silent-arm randomization, isolated from real
+/// time / global state so it's directly unit-testable. `entropy % 100 < prob_pct`
+/// gives a `prob_pct`-out-of-100 chance; disabled always returns `false`.
+///
+/// NOTE: `entropy` must already be well-mixed across its low decimal digits —
+/// pass raw clock nanos through [`mix_entropy`] first. On Windows `SystemTime`
+/// is FILETIME-backed (100 ns granularity), so raw nanos are always a multiple
+/// of 100 and `raw % 100` is a constant `0` — feeding raw nanos here would
+/// silence 100% of matches (blocker B1). The finalizer breaks that quantization.
+pub fn decide_silent_arm(entropy: u64, enabled: bool, prob_pct: u32) -> bool {
+    enabled && (entropy % 100) < prob_pct as u64
+}
+
+/// splitmix64 finalizer — avalanches a low-entropy / quantized input (e.g. a
+/// FILETIME clock value that's always a multiple of 100) so its low decimal
+/// digits are uniformly distributed. Pure + deterministic.
+fn mix_entropy(raw: u64) -> u64 {
+    let mut x = raw.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    x = (x ^ (x >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    x = (x ^ (x >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    x ^ (x >> 31)
+}
+
+/// Roll the silent-arm decision for the match that is just starting. Call
+/// exactly once per match (from `log::start_match`, itself gated on the
+/// GSI in-game rising edge). Stores the result in `SILENT_ARM` and returns it
+/// so the caller can persist it into the match-start log record.
+pub fn roll_match_arm() -> bool {
+    let raw = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_nanos() as u64)
+        .unwrap_or(0);
+    // Mix BEFORE the modulo — raw Windows nanos are FILETIME-quantized to
+    // multiples of 100, so `raw % 100` is a degenerate constant without this.
+    let arm = decide_silent_arm(mix_entropy(raw), efficacy_enabled(), SILENT_ARM_PROB);
+    set_silent_arm(arm);
+    arm
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -249,5 +324,89 @@ mod tests {
 
         // restore defaults for any other test sharing this process
         set_announcer_enabled(true);
+    }
+
+    #[test]
+    fn decide_silent_arm_disabled_is_always_false() {
+        for entropy in [0u64, 1, 24, 25, 50, 99, 12345] {
+            assert!(!decide_silent_arm(entropy, false, 25));
+        }
+    }
+
+    #[test]
+    fn decide_silent_arm_prob_zero_is_always_false() {
+        for entropy in [0u64, 1, 50, 99, 999] {
+            assert!(!decide_silent_arm(entropy, true, 0));
+        }
+    }
+
+    #[test]
+    fn decide_silent_arm_prob_hundred_is_always_true() {
+        for entropy in [0u64, 1, 50, 99, 999] {
+            assert!(decide_silent_arm(entropy, true, 100));
+        }
+    }
+
+    #[test]
+    fn decide_silent_arm_respects_the_prob_pct_boundary() {
+        // prob_pct=25 → entropy%100 in [0,25) is silent-armed, [25,100) is not.
+        assert!(decide_silent_arm(0, true, 25));
+        assert!(decide_silent_arm(24, true, 25));
+        assert!(!decide_silent_arm(25, true, 25));
+        assert!(!decide_silent_arm(99, true, 25));
+        // wraps via modulo regardless of the raw entropy magnitude.
+        assert!(decide_silent_arm(100_024, true, 25));
+        assert!(!decide_silent_arm(100_025, true, 25));
+    }
+
+    #[test]
+    fn set_efficacy_enabled_false_forces_silent_arm_off_instantly() {
+        set_efficacy_enabled(true);
+        set_silent_arm(true);
+        assert!(silent_arm());
+        set_efficacy_enabled(false);
+        assert!(!silent_arm(), "turning the study off must instantly clear silent-arm");
+        assert!(!efficacy_enabled());
+    }
+
+    #[test]
+    fn roll_match_arm_is_false_when_efficacy_disabled() {
+        set_efficacy_enabled(false);
+        assert!(!roll_match_arm());
+        assert!(!silent_arm());
+    }
+
+    #[test]
+    fn arm_distribution_not_degenerate_under_filetime_quantization() {
+        // Blocker B1 reproduction: Windows `SystemTime` is FILETIME-backed
+        // (100 ns granularity), so raw clock nanos are ALWAYS a multiple of
+        // 100 → `raw % 100 == 0` → `decide_silent_arm(raw, true, 25)` would be
+        // `true` for EVERY match (100% silenced). Feeding FILETIME-like inputs
+        // (a large base, stepped by 100) through `mix_entropy` first must
+        // restore a ~25% split — neither 0 nor n.
+        let n = 10_000u64;
+        let base = 133_800_000_000_000_000u64; // FILETIME-scale, multiple of 100
+        let mut silent = 0u64;
+        // Sanity: without mixing this would be all-or-nothing.
+        let mut raw_hits = 0u64;
+        for i in 0..n {
+            let raw = base + i * 100; // always a multiple of 100, like FILETIME
+            if decide_silent_arm(mix_entropy(raw), true, 25) {
+                silent += 1;
+            }
+            if decide_silent_arm(raw, true, 25) {
+                raw_hits += 1;
+            }
+        }
+        // The bug: raw (unmixed) FILETIME inputs are degenerate — every one is
+        // silenced. This asserts the defect exists so the fix is meaningful.
+        assert_eq!(raw_hits, n, "raw FILETIME nanos should be 100% silenced (the B1 bug)");
+        // The fix: mixed entropy lands in a loose band around 25%.
+        let low = n * 15 / 100;
+        let high = n * 35 / 100;
+        assert!(
+            silent > low && silent < high,
+            "silent-arm share {silent}/{n} outside 15%-35% band — randomization degenerate"
+        );
     }
 }

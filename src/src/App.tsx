@@ -80,6 +80,7 @@ export interface Settings {
   masterOllamaModel: string
   cvDebug: boolean
   calibration: boolean
+  efficacyStudy: boolean
   telemetrySource: 'auto' | 'feeder' | 'gtelemetry' | 'off'
   uiMode: 'lite' | 'full'
   layout: Layout
@@ -89,7 +90,7 @@ export interface Settings {
   showKda: boolean
   showGold: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, personaLines: true, autoAdvice: false, gankVisuals: true, killVisuals: true, signalSensitivity: 'med', masterEnabled: true, masterBackend: 'auto', masterAuth: 'plan', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, telemetrySource: 'auto', uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, personaLines: true, autoAdvice: false, gankVisuals: true, killVisuals: true, signalSensitivity: 'med', masterEnabled: true, masterBackend: 'auto', masterAuth: 'plan', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, efficacyStudy: false, telemetrySource: 'auto', uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
 interface OverlayProfile { name: string; position: Pos; customX: number; customY: number; opacity: number; showTimer: boolean; showScore: boolean; showHeroBar: boolean; showKda: boolean; showGold: boolean }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 
@@ -1291,6 +1292,52 @@ interface MatchLog { name: string; size: number; modified_ms: number }
 const fmtSize = (b: number) => b < 1024 ? `${b} B` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1024 / 1024).toFixed(2)} MB`
 const fmtDate = (ms: number) => { if (!ms) return ''; const d = new Date(ms); return `${d.toLocaleDateString()} ${d.toLocaleTimeString().slice(0, 5)}` }
 
+// Silent-arm efficacy study result (RWANG TASK 2). Read-only — shows the
+// user their OWN warned-vs-silent death rate, computed entirely on-device by
+// `efficacy_summary` from the local match logs. Only rendered when the user
+// has opted into `efficacyStudy`.
+interface EfficacyArm { events: number; deaths: number; rate: number }
+interface EfficacySummary { armed: EfficacyArm; silent: EfficacyArm }
+const EfficacyCard: React.FC = () => {
+  const [data, setData] = useState<EfficacySummary | null>(null)
+  const [err, setErr] = useState(false)
+  const refresh = () => {
+    setErr(false)
+    void invoke<EfficacySummary>('efficacy_summary').then(setData).catch(() => setErr(true))
+  }
+  useEffect(() => { refresh() }, [])
+
+  const armed = data?.armed
+  const silent = data?.silent
+  const delta = armed && silent ? armed.rate - silent.rate : null
+
+  return (
+    <Card title="ผลการศึกษาประสิทธิภาพเสียงเตือน G-Signal">
+      <div style={{ fontSize: 11.5, color: C.mut, marginTop: 6, lineHeight: 1.55 }}>
+        เปรียบเทียบอัตราการตายหลังการเตือนแก๊งค์ — ระหว่างแมตช์ที่ <b style={{ color: C.txt }}>ได้ยินเสียงเตือน</b> กับแมตช์ที่ถูกสุ่ม
+        <b style={{ color: C.txt }}> ปิดเสียงเตือนไว้</b> (silent arm) เพื่อวัดผลจริง — คิดต่อ 1 เหตุการณ์เตือน ไม่ใช่ต่อแมตช์ ข้อมูลทั้งหมดอยู่ในเครื่องนี้เท่านั้น ไม่ส่งออกไปไหน.
+      </div>
+      {err && <div style={{ fontSize: 12, color: C.bad, marginTop: 10 }}>อ่านข้อมูลไม่สำเร็จ — ลองใหม่อีกครั้ง</div>}
+      {!err && !data && <div style={{ fontSize: 12, color: C.mut, marginTop: 10 }}>กำลังโหลด…</div>}
+      {armed && silent && (
+        <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 12 }}>
+          <Stat label="ได้ยินเสียงเตือน (armed)" value={`${armed.events} ครั้ง · ตาย ${(armed.rate * 100).toFixed(0)}%`} color={C.ice} />
+          <Stat label="ปิดเสียงเตือน (silent)" value={`${silent.events} ครั้ง · ตาย ${(silent.rate * 100).toFixed(0)}%`} color={C.warn} />
+          {delta !== null && (armed.events > 0 || silent.events > 0) && (
+            <Stat label="ผลต่าง" value={`${delta <= 0 ? '' : '+'}${(delta * 100).toFixed(0)}%`} color={delta < 0 ? C.ok : delta > 0 ? C.bad : C.mut} />
+          )}
+        </div>
+      )}
+      <div style={{ marginTop: 12 }}>
+        <button onClick={refresh}
+          style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '6px 11px', fontSize: 12, cursor: 'pointer' }}>
+          🔄 รีเฟรช
+        </button>
+      </div>
+    </Card>
+  )
+}
+
 const LogCard: React.FC<{ live: boolean; clockTime: number }> = ({ live, clockTime }) => {
   const [dir, setDir] = useState<string>('')
   const [current, setCurrent] = useState<string | null>(null)
@@ -1691,6 +1738,11 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
     void invoke('set_calibration_enabled', { enabled: s.calibration }).catch(() => {})
   }, [s.calibration])
 
+  // Silent-arm efficacy study opt-in (RWANG TASK 2) — off by default, local only.
+  useEffect(() => {
+    void invoke('set_efficacy_enabled', { enabled: s.efficacyStudy }).catch(() => {})
+  }, [s.efficacyStudy])
+
   // Sync master volume to Rust audio backend on user-driven changes only.
   // CR-007 WP-4 Fix 1: the deck's audio rail is now the single owner that
   // pushes volume on MOUNT (CommandDeck.tsx) — if this effect also fired on
@@ -1917,6 +1969,9 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
           </Row>
           <Row label="CV debug overlay (calibrate)"><Toggle on={s.cvDebug} onChange={(v) => set('cvDebug', v)} /></Row>
           <Row label="Calibration capture (audit: screenshot + clip) — QA"><Toggle on={s.calibration} onChange={(v) => set('calibration', v)} /></Row>
+          <Row label="การศึกษาประสิทธิภาพ (สุ่มปิดเสียงเตือนบางแมตช์เพื่อวัดผล — ข้อมูลอยู่ในเครื่องเท่านั้น)">
+            <Toggle on={s.efficacyStudy} onChange={(v) => set('efficacyStudy', v)} />
+          </Row>
           <Row label="แหล่งข้อมูล GPU/อุณหภูมิ (telemetry)">
             <div style={{ display: 'inline-flex', border: `1px solid ${C.line}`, borderRadius: 9, overflow: 'hidden' }}>
               {(['auto','feeder','gtelemetry','off'] as Settings['telemetrySource'][]).map((src) => (
@@ -1932,6 +1987,8 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
             แบนเนอร์ขึ้นกลาง-บนของจอเมื่อ G-Signal เตือนแก๊งค์ (ไม่บังมินิแมพ). CV debug แสดงกรอบมินิแมพ + จุดที่ตรวจจับได้ — เปิดเฉพาะตอนปรับเทียบ. แหล่ง telemetry: <b>Feeder</b> = gpu-feeder ในตัว (GPU); <b>G-Telemetry</b> = แอปแยก (เพิ่ม CPU temp, ~200ms) ต้องเปิดแอปนั้น.
           </div>
         </Card>
+
+        {s.efficacyStudy && <EfficacyCard />}
 
         <Card title="Live (จาก GSI)">
           {tick && tick.in_game ? (

@@ -277,10 +277,23 @@ mod backend {
                 state
                     .signal
                     .set_sensitivity(crate::runtime::signal_sensitivity());
+                // Silent-arm efficacy study (RWANG TASK 2): when the current
+                // match was randomly assigned to the silent arm, the pipeline
+                // still runs and everything is still logged — only the
+                // user-facing alert (voice + banner) is suppressed, so we can
+                // later measure whether the warning itself changed the death
+                // rate. `armed` = the user WAS alerted this time.
+                let armed = !crate::runtime::silent_arm();
                 match state.signal.evaluate(&risk) {
                     SignalEvent::Alert(alert) => {
-                        voice_interrupt("gank", GANK_LINE);
-                        if crate::calibration::is_enabled() {
+                        if armed {
+                            voice_interrupt("gank", GANK_LINE);
+                        }
+                        // W2: only capture calibration evidence when the line
+                        // was actually voiced — in the silent arm GANK_LINE is
+                        // suppressed, so recording it would falsely log it as
+                        // spoken. The gank_signal log below stays unconditional.
+                        if armed && crate::calibration::is_enabled() {
                             crate::calibration::record(
                                 "gank",
                                 Some(GANK_LINE),
@@ -295,13 +308,20 @@ mod backend {
                             alert.probability,
                             &alert.missing_heroes,
                             alert.eta_ms,
+                            armed,
                         ));
-                        let _ = state.app.emit("gank-alert", &alert);
+                        if armed {
+                            let _ = state.app.emit("gank-alert", &alert);
+                        }
                     }
                     SignalEvent::Revision => {
-                        voice_interrupt("revision", REVISION_LINE);
+                        if armed {
+                            voice_interrupt("revision", REVISION_LINE);
+                        }
                         crate::log::note_event(crate::log::gank_revision_record());
-                        let _ = state.app.emit("gank-clear", ());
+                        if armed {
+                            let _ = state.app.emit("gank-clear", ());
+                        }
                     }
                     SignalEvent::None => {}
                 }
