@@ -43,7 +43,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' http://localhost:* ws://localhost:*; connect-src 'self' http://localhost:* ws://localhost:* https://api.opendota.com; script-src 'self' 'wasm-unsafe-eval' http://localhost:*; img-src 'self' data:; media-src 'self' data:"
+      "csp": "default-src 'self' http://localhost:* ws://localhost:*; connect-src 'self' http://localhost:* ws://localhost:* https://api.opendota.com https://wsseitulmcgnolgsrxgh.supabase.co; script-src 'self' 'wasm-unsafe-eval' http://localhost:*; img-src 'self' data: https://cdn.cloudflare.steamstatic.com; media-src 'self' data:"
     }
   },
   "bundle": {
