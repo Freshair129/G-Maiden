@@ -214,6 +214,25 @@ produced **only by CI on a pushed version tag**. Understand both halves before t
   burned version numbers needlessly.
 - If the user needs an unreleased fix tested in-game, build locally (`pnpm tauri build`) or ask
   before cutting a release.
+- **Push a version tag ONLY after the CI run on `main` is green.** Never tag off a commit whose CI
+  status is unknown, pending, or red â€” watch the `CI` workflow finish on the exact commit being
+  tagged first. (Root cause + evidence: `docs/rca/2026-07-10-release-gate-drift-v0.9.0.md` â€” tag
+  `v0.9.0` failed three times against pre-existing clippy/eslint/verify-gate debt that a green
+  CI-on-main run would have caught before burning a release attempt.)
+
+### Review / verify-gate checklist (must match CI, not a subset)
+The pre-lead review gate's definition of "green" must run the **same checks CI runs** â€” a gate
+that only runs a subset of CI will pass changes CI then rejects. Before calling any change ready
+to hand off or tag, run all of:
+- `cargo test` (Rust, from `src-tauri/`)
+- `cargo clippy --all-targets -- -D warnings` (from `src-tauri/`; toolchain pinned by
+  `rust-toolchain.toml` at the repo root so local clippy == CI clippy)
+- `pnpm -C src exec eslint .` (0 errors â€” frequently skipped locally; this is what let a
+  `prefer-const` error through to `main` in the v0.9.0 RCA)
+- `pnpm -C src exec tsc --noEmit` (zero errors)
+- `pnpm -C src test -- --run` (Vitest)
+- Tauri smoke build, `--no-bundle` (compiles Rust + builds the frontend without needing the
+  updater signing secret; the `verify` job in `release.yml` runs this unsigned)
 
 ---
 

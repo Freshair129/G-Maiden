@@ -23,7 +23,7 @@ jobs:
         with:
           node-version: 20
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.96.0
         with:
           components: clippy
 
@@ -94,7 +94,7 @@ jobs:
         with:
           node-version: 20
 
-      - uses: dtolnay/rust-toolchain@stable
+      - uses: dtolnay/rust-toolchain@1.96.0
 
       - name: Cache cargo
         uses: Swatinem/rust-cache@v2
