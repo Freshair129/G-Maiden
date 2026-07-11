@@ -1,20 +1,42 @@
 # TODO / self-note - next session
 
-อัปเดตล่าสุด: **2026-07-11** · **ปิด backlog 3 งาน + CR-008 ครบ** (DPAPI secrets / silent-arm study / CI hardening + WP-3) ผ่าน multi-agent orchestration (Codex + Sonnet ขนาน + Opus gates) — commit range `a9c492e8..ec5543ec`
-รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-11-secrets-efficacy-ci-wp3-orchestration.md`
+อัปเดตล่าสุด: **2026-07-11 (B)** · **ปิด backlog 3 งาน + CR-008 ครบ + G-Master grounding + self-burst** — audit criticals ที่แก้ด้วยโค้ดได้ **ปิดครบ**. commit ทั้ง session `a9c492e8..1f9274dc` (session B `55b0703c..1f9274dc` ยัง **ไม่ push**)
+รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-11-B-gmaster-grounding.md` (+ `...-secrets-efficacy-ci-wp3-orchestration.md` = session A)
 
-## 🎯 Highest-leverage next work (จาก session 2026-07-11, เรียงลำดับ)
+## 🎯 Highest-leverage next work (จาก session 2026-07-11 B, เรียงลำดับ)
 1. **Behavioral verify ที่ค้าง (ต้อง Boss ทำ — ทำแทนไม่ได้)** — packaged build จริง + Google sign-in จริง:
-   (a) T1 sign-in persist ข้าม restart แล้ว grep WebView2 leveldb (`%LOCALAPPDATA%\...\EBWebView\...\leveldb`)
-   ว่าไม่มี refresh token/API key; (b) T2 เปิด efficacyStudy เล่นจริง เช็ก silent arm suppress เสียง+banner
-   แต่ยัง log + EfficacyCard แสดงผล. (sign-in เป็น action ที่ agent ทำแทนไม่ได้.)
-2. **Version drift (แก้เร็ว, รอ Boss สั่ง — skill §4)** — `CLAUDE.md:5` "implemented (v0.8.x)" + `AGENTS.md:239`
-   "Current State (v0.8.0 shipping)" → จริง = **v0.9.0** (tauri.conf/package.json/App.tsx ตรงกันหมด). แก้ =
-   bump แค่ 2 บรรทัด status. AGENTS bump "3 ที่" ก็ยังผิด (มี `src-tauri/Cargo.toml` เป็นที่ 4).
-3. **WP-3 optional hardening (ทีหลัง)** — pending-gate + PKCE ปิด drive-by แล้ว. ถ้าจะแน่นกว่า: per-flow
-   nonce/state binding — แต่ **แตะ OAuth redirect URL → เสี่ยง Supabase allowlist พัง** และ **live-test OAuth
-   ไม่ได้ใน session** → ทำเฉพาะตอนพร้อม verify sign-in จริงเท่านั้น.
-4. **CR-003 wallet / marketplace** — ยังติด ADR-16 `provenance` constraint (เดิม). ไม่ใช่ของ session นี้.
+   (a) T1 sign-in persist ข้าม restart + grep WebView2 leveldb ว่าไม่มี refresh token/API key;
+   (b) T2 efficacyStudy เล่นจริง เช็ก silent-arm suppress; (c) **G-Master grounding** — เปิดเกมจริง ดูว่า
+   counter-advice โผล่ตามศัตรูที่ CV เห็น + self-burst line มีเลข. (sign-in = ทำแทน Boss ไม่ได้.)
+2. **push commit ของ session B** (`55b0703c..1f9274dc`, 3 ตัว) เมื่อ Boss สั่ง — ไม่ tag/release.
+3. **WP-3 optional hardening (ทีหลัง)** — pending-gate + PKCE พอแล้ว; per-flow nonce แตะ redirect URL →
+   เสี่ยง allowlist + live-test OAuth ไม่ได้ → ทำตอนพร้อม verify sign-in จริงเท่านั้น.
+4. **enemy-facing lethality (`damage.rs` is_lethal/can_i_kill) = BLOCKED-BY-DATA ถาวร** — enemy level/items/HP
+   มองไม่เห็นใน own-game. ยังเป็น dead code (`#![allow(dead_code)]`). OpenDota ได้แค่ prior (ไม่ใช่ HP จริง).
+   **อย่าพยายาม wire อีก** เว้นแต่มีแหล่งข้อมูลใหม่. self-burst (ฮีโร่ตัวเอง) = ทำไปแล้ว.
+5. **CR-003 wallet / marketplace** — ยังติด ADR-16 `provenance` constraint (เดิม). strategic.
+
+## DONE ใน session 2026-07-11 B
+- [DONE] **version drift แก้แล้ว** `5c412a7b` — CLAUDE.md:5 + AGENTS.md:239 → v0.9.0 (ที่เคยค้าง).
+- [DONE] **G-Master counter-advice grounding** `55b0703c` — เดิม `counter_advice_text(&[])` ว่างตลอด →
+  ground บนศัตรูที่ CV เห็น. source of truth = **Rust `runtime::KNOWN_ENEMIES`** (ไม่ใช่ frontend
+  companion — Overlay window ไม่รัน companion runtime). alias `antimage/zuus/centaur`. sightings≥3.
+- [DONE] **G-Master self-burst grounding** `1f9274dc` — wire `damage.rs` (เดิม dead code) บน real hero+level+
+  items (ability estimate). baseline target. line ใน prompt. enemy-lethality ยัง blocked.
+- [DONE] **latency harness** `ce75bb02` — ยืนยัน real harness มีอยู่แล้ว (`capture.rs` 2 tests); main.rs = doc pointer.
+
+## Hard-won facts / อย่าพลาดซ้ำ (2026-07-11 B)
+- **แอปมี 2 หน้าต่าง Tauri แยก JS context** 🔴 — `companion.ts` singleton **ต่อหน้าต่าง** ไม่ใช่ทั้งแอป.
+  `useCompanionData/ensureRuntime` เรียกจาก **CommandDeck (Control window) เท่านั้น** → Overlay window
+  ไม่มี enemySlots/roster. อะไรที่ auto-advice/overlay ต้องใช้ **ต้องเอาจาก Rust backend** ไม่ใช่ frontend
+  singleton. (Opus gate จับ B1 นี้ตอน counter_advice.) → ดู [[gmaster-grounding-backend-source]].
+- **`counter_advice_text` รับ hero *names* ไม่ใช่ items** — เลย ground ได้ (CV มี identity). ที่ audit บอก
+  "blocked" เข้าใจผิด. แต่ **damage.rs lethality vs ศัตรู blocked จริง** (ต้อง enemy level/items/HP).
+- **CV label ≠ dataset key** — labels.json ใช้ Valve internal (`antimage/zuus/centaur`); dataset อื่นอาจใช้
+  friendly. เช็ก alias ก่อน join ชื่อฮีโร่ข้าม dataset. (3/15 diverge ใน item_counters.json.)
+- **self-burst: อย่า parse GSI ability levels** — `HeroData.abilities` เป็น curated subset, align กับ GSI
+  ability slot ไม่ได้โดยไม่มี live GSI → ป้อนผิด = เลขผิดเงียบ. ใช้ `estimate_ability_level` (None). items+level แม่นจริง.
+- **damage.rs = `#![allow(dead_code)]`** — self_burst ใช้แล้ว แต่ is_lethal/can_i_kill_with ยัง dead (enemy-facing). อย่าเผลอลบ allow.
 
 ## DONE ใน session 2026-07-11
 - [DONE] **T1 DPAPI secret store (CR-008 WP-2)** `a9c492e8` — `secret.rs` (per-file DPAPI, WRITE_LOCK,
