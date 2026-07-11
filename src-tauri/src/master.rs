@@ -54,11 +54,25 @@ fn build_prompt(tick: &GameTick, enemies: &[String]) -> String {
     // CV never spots simply don't contribute).
     let advice = counter_advice_text(enemies);
 
+    // Ground the advice on the player's OWN single-combo burst (real hero + level
+    // + items; skill build estimated). Empty when the hero isn't in the damage DB.
+    // Own-data only — enemy defenses aren't observable, so this is "combo hits ~X
+    // on a soft target", not a kill call.
+    let burst_line = crate::damage::self_burst(&tick.hero, tick.level.max(1) as u32, &tick.item_names)
+        .map(|b| {
+            format!(
+                "พลังคอมโบโดยประมาณ ~{:.0} dmg (คิดกับเป้าเปลือย เกราะ 0 / ต้านเวท 25%, สกิลบิลด์มาตรฐาน).",
+                b.total_burst
+            )
+        })
+        .unwrap_or_default();
+
     format!(
         "{persona}\n\nสถานการณ์ ({phase} · clock {clock}s): \
          ฮีโร่ {hero} เลเวล {lvl}, KDA {k}/{d}/{a}, net worth {nw}, gold {gold}, \
          HP {hp}%, mana {mana}%, score {rs}:{ds}.\n\
          คำแนะนำ: {advice}\n\
+         {burst}\n\
          แนะนำสั้น ๆ ว่าควรทำอะไรต่อ (ซื้อของ/ขึ้นสกิล/positioning).",
         persona = PERSONA_PROMPT,
         phase = phase,
@@ -74,7 +88,8 @@ fn build_prompt(tick: &GameTick, enemies: &[String]) -> String {
         mana = tick.mana_percent,
         rs = tick.radiant_score,
         ds = tick.dire_score,
-        advice = advice, // Inserted advice here
+        advice = advice,
+        burst = burst_line,
     )
 }
 
@@ -266,6 +281,7 @@ mod tests {
             respawn_seconds: 0,
             kill_list_len: 4,
             last_victim_slot: 7,
+            item_names: vec!["item_dagon".into()],
         }
     }
 
@@ -284,6 +300,8 @@ mod tests {
         assert!(p.contains("KDA 4/2/6"), "kda missing: {p}");
         assert!(p.contains("HP 68%"), "hp missing: {p}");
         assert!(p.contains("Maiden"), "persona missing: {p}");
+        // Self-burst grounding: CM is in the damage DB, so the estimate appears.
+        assert!(p.contains("พลังคอมโบโดยประมาณ"), "self-burst line missing: {p}");
     }
 
     #[test]

@@ -427,6 +427,32 @@ pub fn loadout_from_names<I: AsRef<str>>(names: &[I]) -> Vec<LoadoutItem> {
         .collect()
 }
 
+// Baseline defender for the self-burst estimate. Enemy armor/HP/magic-res aren't
+// observable in own-game (CLAUDE.md honest limit), so instead of a kill verdict
+// we express raw combo potential against a soft target: 0 armor, the default
+// 25% hero magic resistance. "your combo hits ~X on a squishy", not "you kill Y".
+const BASELINE_TARGET_ARMOR: f64 = 0.0;
+const BASELINE_TARGET_MAGIC_RES: f64 = 0.25;
+
+/// Estimate the LOCAL player's single-combo burst from their real hero + level +
+/// items. The skill build is estimated (`ability_levels = None`) on purpose: GSI's
+/// ability-slot ordering can't be aligned to the curated `HeroData.abilities`
+/// without live verification, and a misaligned level would silently produce a
+/// wrong number — worse than the built-in standard-build estimate. Items and
+/// level are exact. `None` when the hero isn't in the DB. Grounds G-Master advice
+/// on real kill potential instead of an LLM guess. Own-hero only.
+pub fn self_burst(hero_internal: &str, level: u32, item_names: &[String]) -> Option<BurstResult> {
+    let hero = lookup_hero(hero_internal)?;
+    let items = loadout_from_names(item_names);
+    Some(hero.burst_damage_with(
+        level,
+        None,
+        &items,
+        BASELINE_TARGET_ARMOR,
+        BASELINE_TARGET_MAGIC_RES,
+    ))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -441,6 +467,23 @@ mod tests {
     #[test]
     fn armor_mult_zero() {
         assert!((armor_multiplier(0.0) - 1.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn self_burst_grounds_on_hero_and_items() {
+        // Unknown hero → None (no confabulation).
+        assert!(self_burst("npc_dota_hero_not_a_hero", 10, &[]).is_none());
+        // Known hero → positive burst from real level; a burst item raises it.
+        let bare = self_burst("npc_dota_hero_antimage", 16, &[]).expect("known hero in DB");
+        let armed = self_burst("npc_dota_hero_antimage", 16, &["item_desolator".to_string()])
+            .expect("known hero in DB");
+        assert!(bare.total_burst > 0.0, "level alone yields attack burst");
+        assert!(
+            armed.total_burst >= bare.total_burst,
+            "a modelled attack item can only add burst: {} vs {}",
+            armed.total_burst,
+            bare.total_burst
+        );
     }
 
     #[test]

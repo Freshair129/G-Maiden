@@ -50,6 +50,12 @@ pub struct GameTick {
     /// Player-slot ID of the most recent kill victim (from the last entry in kill_list).
     /// -1 when kill_list is empty.
     pub last_victim_slot: i64,
+    /// The player's own item names from the GSI `items` block (empty slots
+    /// dropped). Grounds G-Master's self-burst estimate (damage.rs). Own-hero
+    /// data only — never the enemies'. `#[serde(default)]` so an older/partial
+    /// tick (e.g. round-tripped from a prior build) still deserializes.
+    #[serde(default)]
+    pub item_names: Vec<String>,
 }
 
 // lenient extractors — GSI fields vary by game phase / spectator mode.
@@ -140,6 +146,7 @@ pub(crate) fn parse_tick_from_value(v: &Value) -> GameTick {
         respawn_seconds: i(v, &["hero", "respawn_seconds"]),
         kill_list_len: kl_len,
         last_victim_slot: last_victim,
+        item_names: crate::items::item_names_from(&v["items"]),
     }
 }
 

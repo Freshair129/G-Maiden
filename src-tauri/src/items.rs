@@ -70,6 +70,20 @@ pub fn net_worth_from(items_block: &Value, gold: i64) -> i64 {
     gold + item_cost_sum(items_block)
 }
 
+/// Collect the internal item names present in the GSI `items` block, skipping
+/// empty slots. Feeds the self-burst estimate (damage.rs) so G-Master's advice is
+/// grounded on the player's real loadout. Same tolerant walk as `item_cost_sum`.
+pub fn item_names_from(items_block: &Value) -> Vec<String> {
+    let Some(obj) = items_block.as_object() else {
+        return Vec::new();
+    };
+    obj.values()
+        .filter_map(|item| item.get("name").and_then(|n| n.as_str()))
+        .filter(|n| !n.is_empty() && *n != "empty")
+        .map(|n| n.to_string())
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -114,6 +128,20 @@ mod tests {
         assert_eq!(item_cost_sum(&items), expected);
         // net_worth includes carried gold.
         assert_eq!(net_worth_from(&items, 1234), expected + 1234);
+    }
+
+    #[test]
+    fn item_names_skips_empty_slots() {
+        let items = json!({
+            "slot0": { "name": "item_blink" },
+            "slot1": { "name": "empty" },
+            "slot2": { "name": "" },
+            "stash0": { "name": "item_dagon" },
+        });
+        let mut names = item_names_from(&items);
+        names.sort();
+        assert_eq!(names, vec!["item_blink".to_string(), "item_dagon".to_string()]);
+        assert!(item_names_from(&Value::Null).is_empty());
     }
 
     #[test]
