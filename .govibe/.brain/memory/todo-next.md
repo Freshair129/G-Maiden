@@ -1,24 +1,50 @@
 # TODO / self-note - next session
 
-อัปเดตล่าสุด: **2026-07-10** · **release v0.9.0 สำเร็จ** (FROSTLINE deck refresh + honest data + voice-pack pipeline) + login เปิดใช้จริง + ADR-16 credit economy
-รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-10-cr007-frostline-release-v0.9.0.md`
+อัปเดตล่าสุด: **2026-07-11** · **ปิด backlog 3 งาน + CR-008 ครบ** (DPAPI secrets / silent-arm study / CI hardening + WP-3) ผ่าน multi-agent orchestration (Codex + Sonnet ขนาน + Opus gates) — commit range `a9c492e8..ec5543ec`
+รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-11-secrets-efficacy-ci-wp3-orchestration.md`
 
-## 🎯 Highest-leverage next work (จาก session 2026-07-10, เรียงลำดับ)
-1. **Secret encryption (Phase 2)** 🔴 — refresh token (Supabase persistSession) + Anthropic API key
-   (settings blob `App.tsx`) ยัง plaintext ใน localStorage/WebView2 leveldb. audit: token หลุด =
-   ยึดบัญชี GID; key หลุด = ขโมยบิล. Boss เคยสั่งรวมกับ login. แก้: custom Supabase storage adapter
-   หนุน Windows DPAPI (win-only ตรงกับแอป) + ย้าย key ออกจาก localStorage → invoke เท่านั้น +
-   migration ย้ายของเดิมเข้า secure store แล้วลบ plaintext.
-2. **CLAUDE.md:5 version drift** — เขียน "implemented (v0.8.x)" จริง = **v0.9.0 shipped 2026-07-10**
-   (4 ไฟล์ version = 0.9.0). AGENTS.md ก็บอก bump "3 ที่" แต่จริงมี `src-tauri/Cargo.toml` เป็นที่ 4.
-   แก้เมื่อ Boss สั่ง (skill §4).
-3. **Silent-arm efficacy study (local ล้วน)** — ก่อน ingestion ใด ๆ: สุ่มปิด G-Signal เป็นบางแมตช์
-   (ยัง log ครบ ไม่พูด) → เทียบอัตราตายหลัง "เตือน" vs "เงียบ" ต่อ *เหตุการณ์เตือน* (ไม่ใช่ต่อแมตช์).
-   ตอบ "G-Maiden ช่วยจริงไหม" โดยไม่แตะ privacy rule + เป็นฟีเจอร์ในตัว. G-Log + `tools/analyze-log/`
-   มี join signal→outcome อยู่แล้ว 80%.
-4. **CI hardening (จาก RCA release gate)** — (a) review gate ต้องรัน `pnpm -C src exec eslint .` ด้วย
-   ไม่ใช่แค่ tsc+vitest; (b) pin CI Rust toolchain (`rust-toolchain.toml`) กัน clippy stable ลอย
-   ทำโค้ดเขียวกลายแดง; (c) tag หลัง CI-on-main เขียวเท่านั้น. ดู `docs/rca/2026-07-10-release-gate-drift-v0.9.0.md`.
+## 🎯 Highest-leverage next work (จาก session 2026-07-11, เรียงลำดับ)
+1. **Behavioral verify ที่ค้าง (ต้อง Boss ทำ — ทำแทนไม่ได้)** — packaged build จริง + Google sign-in จริง:
+   (a) T1 sign-in persist ข้าม restart แล้ว grep WebView2 leveldb (`%LOCALAPPDATA%\...\EBWebView\...\leveldb`)
+   ว่าไม่มี refresh token/API key; (b) T2 เปิด efficacyStudy เล่นจริง เช็ก silent arm suppress เสียง+banner
+   แต่ยัง log + EfficacyCard แสดงผล. (sign-in เป็น action ที่ agent ทำแทนไม่ได้.)
+2. **Version drift (แก้เร็ว, รอ Boss สั่ง — skill §4)** — `CLAUDE.md:5` "implemented (v0.8.x)" + `AGENTS.md:239`
+   "Current State (v0.8.0 shipping)" → จริง = **v0.9.0** (tauri.conf/package.json/App.tsx ตรงกันหมด). แก้ =
+   bump แค่ 2 บรรทัด status. AGENTS bump "3 ที่" ก็ยังผิด (มี `src-tauri/Cargo.toml` เป็นที่ 4).
+3. **WP-3 optional hardening (ทีหลัง)** — pending-gate + PKCE ปิด drive-by แล้ว. ถ้าจะแน่นกว่า: per-flow
+   nonce/state binding — แต่ **แตะ OAuth redirect URL → เสี่ยง Supabase allowlist พัง** และ **live-test OAuth
+   ไม่ได้ใน session** → ทำเฉพาะตอนพร้อม verify sign-in จริงเท่านั้น.
+4. **CR-003 wallet / marketplace** — ยังติด ADR-16 `provenance` constraint (เดิม). ไม่ใช่ของ session นี้.
+
+## DONE ใน session 2026-07-11
+- [DONE] **T1 DPAPI secret store (CR-008 WP-2)** `a9c492e8` — `secret.rs` (per-file DPAPI, WRITE_LOCK,
+  atomic same-dir temp-rename), mode/secret split, startup load, supabase-js `secureStorage.ts` adapter,
+  key ออกจาก localStorage + migration. Opus design REVISE→APPROVE (จับ B1 race/B2 clobber ก่อนโค้ด) → code PASS.
+- [DONE] **T3 CI hardening** `c5d8d4cb` — `rust-toolchain.toml` pin 1.96.0 + ci.yml/release.yml + AGENTS.md
+  (tag-after-CI-green + review-gate checklist). eslint อยู่ใน gate ทั้งสองอยู่แล้ว.
+- [DONE] **T2 silent-arm efficacy study** `5bacec51` — สุ่มปิด G-Signal 25% (opt-in, instant-off), log `armed`,
+  analyzer + EfficacyCard เทียบ armed vs silent ต่อ event, local ล้วน. Opus FAIL(B1 FILETIME)→fix→PASS.
+- [DONE] **CR-008 WP-3 login-CSRF gate** `ec5543ec` — callback pending-gate (single-use+timeout, ไม่แตะ redirect URL) + PKCE. Opus security PASS.
+- [DONE] RWANG:MasterPlan adopt ที่ **Phase 7** `2e582604` (`state/PROJECT_STATE.json`) — ไม่ทำ greenfield (product ship แล้ว).
+
+## Hard-won facts / อย่าพลาดซ้ำ (2026-07-11)
+- **FILETIME quantization = randomness trap บน Windows** 🔴 — `SystemTime::now()...as_nanos()` บน Windows
+  เป็น FILETIME (100ns) → **เป็นพหุคูณของ 100 เสมอ** → `nanos % 100 ≡ 0`. ใครก็ตามที่สุ่มจาก clock nanos
+  ด้วย `% N` เล็ก ๆ จะได้ค่าคงที่. **ต้อง mix (splitmix64) ก่อน modulo** เสมอ. บั๊กนี้ CI เขียวมองไม่เห็นเพราะ
+  test inject entropy ตรง ๆ — **ต้องมี test ที่ป้อน input แบบ quantized จริง**. ดู `runtime.rs mix_entropy`.
+- **windows 0.61: `LocalFree`/`HLOCAL` อยู่ใน `Win32::Foundation`** (ไม่ใช่ System::Memory) — DPAPI
+  `CryptProtectData/UnprotectData` + `CRYPT_INTEGER_BLOB` ใน `Win32::Security::Cryptography`. เพิ่ม feature
+  `Win32_Security_Cryptography` + `Win32_System_Memory` ไว้ (แม้ import จริงมาจาก Foundation).
+- **parallel executor ในทรีเดียวกัน = clippy ปนกัน** — agent 2 ตัวแก้ Rust พร้อมกัน แล้วตัวนึง spawn clippy →
+  compile โค้ดครึ่ง ๆ ของอีกตัว = false fail. ให้ executor **หยุด self-verify Rust**, lead รัน combined
+  CI-parity authoritative รอบเดียวหลังทั้งคู่จบ. (ไฟล์ disjoint OK; แต่ target/ + toolchain shared.)
+- **capture มี 2 backend เสมอ** — `capture.rs` (DXGI, default) + `capture_wgc.rs` (`--features wgc` rollback).
+  แก้ signature ที่ backend เดียว → `cargo check --features wgc` แดง (default gates มองไม่เห็น). **gate ต้องรัน
+  `cargo check --features wgc` ด้วย** เมื่อแตะ log/signal/capture path.
+- **Opus adversarial gate คุ้มทุกงาน** — จับ silent-logout race, key-clobber, FILETIME bug ที่ CI เขียวปล่อยผ่าน.
+  worker self-report เขียว ≠ ถูก; lead ต้องรัน combined gate เอง + Opus review.
+- **WP-3 ทำไมไม่ใช้ state/nonce**: nonce ต้องใส่ใน redirect URL → เสี่ยง Supabase allowlist match พัง และ
+  **live-test OAuth ไม่ได้** (Google sign-in = ทำแทน Boss ไม่ได้) → เลือก pending-gate ที่ไม่แตะ URL + PKCE ชั้นสอง.
 
 ## DONE ใน session 2026-07-10
 - [DONE] **release v0.9.0 published** (setup.exe/.msi + .sig + latest.json, in-app updater live) — CI run 29118296158
