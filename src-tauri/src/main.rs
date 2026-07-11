@@ -235,7 +235,12 @@ async fn request_advice(
     app: tauri::AppHandle,
     tick: gsi::GameTick,
 ) -> Result<master::Advice, String> {
-    let result = tauri::async_runtime::spawn_blocking(move || master::advise(&tick))
+    // Ground counter-advice on the enemies CV has identified this match. Read
+    // from the Rust runtime (single source of truth) rather than a per-window
+    // frontend list — the always-on advice path fires from the overlay window,
+    // whose companion store is never populated.
+    let enemies = runtime::known_enemies();
+    let result = tauri::async_runtime::spawn_blocking(move || master::advise(&tick, &enemies))
         .await
         .map_err(|e| format!("internal: {e}"))??;
     // Broadcast to overlay — ignore error (overlay may be hidden).

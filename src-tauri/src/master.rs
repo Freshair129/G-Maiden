@@ -37,7 +37,7 @@ fn hero_thai(raw: &str) -> String {
         .replace('_', " ")
 }
 
-fn build_prompt(tick: &GameTick) -> String {
+fn build_prompt(tick: &GameTick, enemies: &[String]) -> String {
     let phase = if tick.clock_time < 0 {
         "ก่อนเข้าเลน"
     } else if tick.clock_time < 600 {
@@ -48,9 +48,11 @@ fn build_prompt(tick: &GameTick) -> String {
         "late game"
     };
 
-    // G5.2: inject counter-item advice from dataset
-    // enemies will be provided by G-Sentry when that integration is ready
-    let advice = counter_advice_text(&[]);
+    // G5.2: inject counter-item advice from the dataset, grounded on the enemy
+    // heroes the CV pipeline has identified this match (passed from the frontend
+    // via request_advice). Empty list → empty advice string (best-effort: heroes
+    // CV never spots simply don't contribute).
+    let advice = counter_advice_text(enemies);
 
     format!(
         "{persona}\n\nสถานการณ์ ({phase} · clock {clock}s): \
@@ -80,7 +82,7 @@ fn build_prompt(tick: &GameTick) -> String {
 /// On claude CLI failure, falls back to the local SLM (G7.1, ollama).
 /// Blocking — call from a worker thread. Throttled to 30s; cached responses
 /// are returned with `cached=true` so the UI can hint at staleness.
-pub fn advise(tick: &GameTick) -> Result<Advice, String> {
+pub fn advise(tick: &GameTick, enemies: &[String]) -> Result<Advice, String> {
     // Throttle window — serve cached.
     if let Ok(g) = LAST_CALL.lock() {
         if let Some(t) = *g {
@@ -94,7 +96,7 @@ pub fn advise(tick: &GameTick) -> Result<Advice, String> {
         }
     }
 
-    let prompt = build_prompt(tick);
+    let prompt = build_prompt(tick, enemies);
 
     // Backend choice respects the UI selector — Auto keeps the historical
     // claude-then-SLM ladder; Claude/Ollama force one path so the user can
@@ -276,7 +278,7 @@ mod tests {
 
     #[test]
     fn prompt_includes_phase_and_kda() {
-        let p = build_prompt(&fake_tick());
+        let p = build_prompt(&fake_tick(), &[]);
         assert!(p.contains("mid game"), "phase missing: {p}");
         assert!(p.contains("crystal maiden"), "hero name missing: {p}");
         assert!(p.contains("KDA 4/2/6"), "kda missing: {p}");
@@ -288,12 +290,23 @@ mod tests {
     fn prompt_phases_by_clock() {
         let mut t = fake_tick();
         t.clock_time = -30;
-        assert!(build_prompt(&t).contains("ก่อนเข้าเลน"));
+        assert!(build_prompt(&t, &[]).contains("ก่อนเข้าเลน"));
         t.clock_time = 300;
-        assert!(build_prompt(&t).contains("early game"));
+        assert!(build_prompt(&t, &[]).contains("early game"));
         t.clock_time = 1200;
-        assert!(build_prompt(&t).contains("mid game"));
+        assert!(build_prompt(&t, &[]).contains("mid game"));
         t.clock_time = 2400;
-        assert!(build_prompt(&t).contains("late game"));
+        assert!(build_prompt(&t, &[]).contains("late game"));
+    }
+
+    #[test]
+    fn prompt_grounds_counter_advice_on_enemies() {
+        // With no enemies the counter line is blank; with a known enemy the
+        // dataset advice is injected into the prompt (grounding, not confabulation).
+        let empty = build_prompt(&fake_tick(), &[]);
+        assert!(!empty.contains("counter:"), "no enemies → no counter line: {empty}");
+        let grounded = build_prompt(&fake_tick(), &["phantom_assassin".to_string()]);
+        assert!(grounded.contains("counter:"), "enemy → counter line present: {grounded}");
+        assert!(grounded.contains("MKB"), "PA counter item must reach the prompt: {grounded}");
     }
 }

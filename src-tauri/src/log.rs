@@ -111,6 +111,9 @@ fn start_match(state: &mut LogState) {
             // exactly once, right here at match start, and persist the choice
             // into the log so the analyzer/in-app card can join it later.
             let silent_arm = crate::runtime::roll_match_arm();
+            // New match → reset the identified-enemy roster used to ground
+            // G-Master counter advice (capture loops repopulate it as they detect).
+            crate::runtime::clear_known_enemies();
             // `study` = whether this match was rolled UNDER the efficacy study.
             // The analyzer/in-app card count a match's gank_signal events into
             // the armed/silent buckets ONLY when this is true, so legacy /

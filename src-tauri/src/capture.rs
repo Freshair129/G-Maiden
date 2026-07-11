@@ -248,6 +248,13 @@ mod backend {
             );
             let detections = state.detector.detect(&f, &candidates, state.icon);
 
+            // Record identified enemies so G-Master's counter advice is grounded
+            // on who's actually in the match (runtime is the single source of
+            // truth; cleared at match start). Best-effort, dedup handled inside.
+            for d in &detections {
+                crate::runtime::add_known_enemy(&d.name);
+            }
+
             // G-Sentry: flag enemies missing >5s (edge-triggered).
             for em in state.sentry.update(&detections, &r, now_ms) {
                 crate::log::note_event(crate::log::enemy_missing_record(

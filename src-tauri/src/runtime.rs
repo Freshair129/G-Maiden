@@ -295,6 +295,53 @@ pub fn roll_match_arm() -> bool {
     arm
 }
 
+// ── Enemy roster the CV pipeline has identified this match ───────────────────
+// Grounds G-Master's counter-item advice on the heroes actually seen (instead of
+// the old hardcoded empty list). Populated by the capture loops as detections
+// arrive, cleared at match start (`log::start_match`). It lives in Rust on
+// purpose: it's the SINGLE source of truth regardless of which webview window
+// asks for advice — the frontend companion store is per-window and is NOT
+// populated in the overlay window, so the always-on advice path can't rely on
+// it. Raw Valve/CV internal hero names (labels.json form).
+// (hero name, sighting count). A hero only counts as "known" once seen in
+// `MIN_ENEMY_SIGHTINGS` frames, so a single spurious CV misclassification can't
+// latch a wrong hero into the advice prompt for the whole match (a real enemy on
+// the minimap is detected many times a second, so it crosses the bar in a blink).
+static KNOWN_ENEMIES: Mutex<Vec<(String, u32)>> = Mutex::new(Vec::new());
+const MIN_ENEMY_SIGHTINGS: u32 = 3;
+
+pub fn add_known_enemy(name: &str) {
+    if name.is_empty() {
+        return;
+    }
+    if let Ok(mut g) = KNOWN_ENEMIES.lock() {
+        if let Some(entry) = g.iter_mut().find(|(n, _)| n == name) {
+            entry.1 = entry.1.saturating_add(1);
+        } else {
+            g.push((name.to_string(), 1));
+        }
+    }
+}
+
+/// Enemy heroes confirmed by repeated CV sightings this match (raw label form).
+pub fn known_enemies() -> Vec<String> {
+    KNOWN_ENEMIES
+        .lock()
+        .map(|g| {
+            g.iter()
+                .filter(|(_, c)| *c >= MIN_ENEMY_SIGHTINGS)
+                .map(|(n, _)| n.clone())
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+pub fn clear_known_enemies() {
+    if let Ok(mut g) = KNOWN_ENEMIES.lock() {
+        g.clear();
+    }
+}
+
 // ── OAuth callback anti-CSRF gate (CR-008 WP-3) ──────────────────────────────
 // `:3000/auth/callback` is an unauthenticated local endpoint. Without a gate,
 // any local process — or a drive-by web page (`<img src=".../auth/callback?code
@@ -353,6 +400,24 @@ mod tests {
         set_oauth_pending(10_000);
         assert!(take_oauth_pending(10_500), "first consume within window");
         assert!(!take_oauth_pending(10_600), "already consumed → reject the replay");
+    }
+
+    #[test]
+    fn known_enemies_needs_repeat_sightings_then_clears() {
+        clear_known_enemies();
+        for _ in 0..MIN_ENEMY_SIGHTINGS {
+            add_known_enemy("antimage");
+        }
+        add_known_enemy("lina"); // seen once → below threshold, excluded
+        add_known_enemy(""); // ignored
+        let e = known_enemies();
+        assert_eq!(e, vec!["antimage".to_string()], "only repeatedly-seen heroes qualify: {e:?}");
+        for _ in 0..MIN_ENEMY_SIGHTINGS {
+            add_known_enemy("lina");
+        }
+        assert_eq!(known_enemies().len(), 2, "lina crosses the bar after repeats");
+        clear_known_enemies();
+        assert!(known_enemies().is_empty(), "cleared on match start");
     }
 
     #[test]

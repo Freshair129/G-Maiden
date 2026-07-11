@@ -14,7 +14,7 @@ pub fn counter_advice_text(enemies: &[String]) -> String {
 
     let mut parts: Vec<String> = Vec::new();
     for enemy in enemies {
-        let key = strip_hero_prefix(enemy);
+        let key = canonical_hero_key(enemy);
         if let Some(entry) = hero_map.and_then(|m| m.get(key)) {
             let items = entry
                 .get("buy")
@@ -43,6 +43,21 @@ pub fn counter_advice_text(enemies: &[String]) -> String {
 
 fn strip_hero_prefix(raw: &str) -> &str {
     raw.strip_prefix("npc_dota_hero_").unwrap_or(raw)
+}
+
+/// Normalize a runtime hero name (CV label / GSI internal — e.g. `"antimage"`,
+/// `"zuus"`, `"centaur"`) to the key used in `item_counters.json`. CV/GSI use
+/// Valve internal names, but a few dataset entries use friendlier keys, so
+/// without this bridge the lookup silently blanks for those heroes. Extend this
+/// match when the dataset gains more heroes whose internal name diverges from
+/// its `item_counters.json` key.
+fn canonical_hero_key(raw: &str) -> &str {
+    match strip_hero_prefix(raw) {
+        "antimage" => "anti_mage",
+        "zuus" => "zeus",
+        "centaur" => "centaur_warrunner",
+        other => other,
+    }
 }
 
 fn capitalize_hero(key: &str) -> String {
@@ -125,5 +140,19 @@ mod tests {
             result.contains("MKB"),
             "npc_ prefix should be stripped, got: {result}"
         );
+    }
+
+    #[test]
+    fn cv_internal_names_alias_to_dataset_keys() {
+        // The CV classifier emits Valve internal names (antimage/zuus/centaur)
+        // that diverge from item_counters.json keys (anti_mage/zeus/
+        // centaur_warrunner); the alias must resolve them, not silently blank.
+        for cv_name in ["antimage", "zuus", "centaur"] {
+            let result = counter_advice_text(&[cv_name.to_string()]);
+            assert!(
+                !result.is_empty(),
+                "CV name {cv_name} must resolve to counter advice, got empty"
+            );
+        }
     }
 }

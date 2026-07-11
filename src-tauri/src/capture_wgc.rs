@@ -187,6 +187,12 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
             );
             let detections = self.detector.detect(&f, &candidates, self.icon);
 
+            // Record identified enemies for grounded G-Master counter advice
+            // (runtime source of truth, cleared at match start). Mirrors capture.rs.
+            for d in &detections {
+                crate::runtime::add_known_enemy(&d.name);
+            }
+
             // G-Sentry: flag enemies missing >5s (edge-triggered).
             for em in self.sentry.update(&detections, &r, now_ms) {
                 crate::log::note_event(crate::log::enemy_missing_record(
