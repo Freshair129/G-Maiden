@@ -236,7 +236,7 @@ to hand off or tag, run all of:
 
 ---
 
-## Current State (v0.8.0 shipping)
+## Current State (v0.9.0 shipping)
 
 ### What works
 - GSI server receives Dota 2 game state on `:3000`
