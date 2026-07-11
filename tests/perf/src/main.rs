@@ -15,6 +15,24 @@
 //! `hop_N_*()` function with the real module call (see WIRE comments).
 //! The `Instant` wrapper stays; only the inner work changes.
 //!
+//! # Real-path coverage already exists (do not duplicate here)
+//! This file is the synthetic budget-envelope shape-check only. The actual
+//! compute path is exercised, with real functions (no spins), by two
+//! `#[cfg(test)]` harnesses in the main crate's `src-tauri/src/capture.rs`
+//! (`capture::backend::tests` module):
+//!   - `pipeline_latency_within_budget` — real ONNX detector + prefilter →
+//!     `Sentry` → `Motion` → `Signal` over synthetic frames (asserts p99 <
+//!     80 ms; release-only, needs `models/minimap-detector.onnx`).
+//!   - `gsi_to_signal_audio_enqueue_latency_within_budget` — real
+//!     `gsi::parse_tick_from_json` → `runtime::set_player_team_name`/
+//!     `enemy_team_ring` → `Signal::evaluate` → `audio::should_accept_incoming`
+//!     admission check (asserts p99 < 10 ms).
+//! Together they cover hops 2-5 (vision/motion/signal/interrupt-admission)
+//! end to end with production code. Hop 1 (DXGI capture) and the tail of hop 6
+//! (real audio device output buffer) are still not covered by an in-process
+//! test — they need a running capture loop / audio device and are budgeted
+//! separately. Run: `cargo test --release --bin g-maiden latency -- --nocapture`.
+//!
 //! # Runtime
 //! ITERATIONS (100) × ~180 ms/iter ≈ 18 s total.  Use `cargo run --release`
 //! (debug mode adds optimizer overhead that inflates timings).
