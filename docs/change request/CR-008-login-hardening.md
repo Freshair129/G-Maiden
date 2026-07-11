@@ -78,3 +78,54 @@ API key ของ Anthropic = ขโมยเครดิตได้
   **ไม่แตะ OAuth redirect URL** (คงตรงกับ Supabase allowlist — ไม่เสี่ยงพัง login ที่เพิ่งใช้ได้). residual
   window ที่เหลือถูก PKCE (`exchangeCodeForSession` bind กับ local `code_verifier`) กันอีกชั้น. ไฟล์:
   `runtime.rs` (gate + Release/Acquire), `gsi.rs oauth_callback`, `main.rs oauth_begin`, `auth.ts`.
+
+### WP-3 optional hardening — per-flow nonce (design only, NOT implemented — 2026-07-11)
+
+**Status: design-only.** Not scheduled for implementation until Boss is doing a live sign-in
+verification pass anyway (see risk in §3 below). This section exists so the design doesn't have
+to be re-derived next time it comes up.
+
+**1. What it would actually buy.** The current gate is a single global flag: "a sign-in this app
+started is in flight, within the last 10 minutes." A per-flow nonce would instead bind each
+`oauth_begin` call to a specific callback, so two overlapping sign-in attempts (double-click
+"Sign in", or a stale browser tab from a previous attempt) can't cross-consume each other's gate
+slot. **But** `exchangeCodeForSession()` already fails closed in that scenario: PKCE ties the
+`code` to a `code_verifier` supabase-js stored locally for *that specific* `signInWithOAuth` call,
+so even if the wrong pending flag were consumed, the exchange itself would reject a mismatched
+code with `invalid_grant`. Net effect: a nonce closes a race condition that already fails safe,
+not a real account-takeover path. This is why it's optional, not required.
+
+**2. Why it's not a redirect-URL edit.** Standard OAuth2 CSRF protection uses a `state` query
+param that round-trips through the provider back to the redirect URI — it does **not** require
+changing the redirect URI itself. But `supabase-js`'s `signInWithOAuth()` doesn't expose a
+pass-through `state` param that survives to the final `redirectTo` callback (its `queryParams`
+option only affects the *provider's* authorization request, e.g. Google's `prompt`/`access_type`).
+The only way to smuggle app-level correlation data to our own `:3000/auth/callback` is to append
+it directly onto `redirectTo` itself, e.g. `http://127.0.0.1:3000/auth/callback?flow=<nonce>`.
+
+**3. The actual risk.** Supabase's Auth redirect-URL allowlist is registered as the exact string
+`http://127.0.0.1:3000/auth/callback` (no wildcard). Two unknowns, neither answerable from code:
+   - Does Supabase's allowlist check match on the full string (query included) or origin+path
+     only? If it's a full-string match, `?flow=...` gets **rejected before the browser even opens**
+     — silent, total login breakage.
+   - Does Supabase preserve a custom query param already present in `redirectTo` when it appends
+     its own `?code=...` on the way back, or does it discard/overwrite the query string entirely?
+   Neither can be resolved by reading code — it's Supabase server-side behavior, and the only way
+   to know is to test a real `signInWithOAuth` round-trip, i.e. Boss's Google sign-in.
+
+**4. If/when this gets implemented:**
+   - Convert the Supabase allowlist entry to a wildcard (`http://127.0.0.1:3000/auth/callback*`
+     if Supabase's dashboard supports it) or add a second explicit allowlist entry, **on a
+     Supabase dev branch first** (the pre-scale gate already on the backlog mentions creating one
+     — reuse it, don't test against the production `gstore` project's live allowlist).
+   - Rust: replace the single `OAUTH_PENDING` bool with a small in-memory map
+     `HashMap<String /* nonce */, u64 /* since_ms */>`, capped size + same 10-min TTL, generated in
+     `oauth_begin` and returned to the frontend.
+   - Frontend: append `?flow=<nonce>` to `OAUTH_REDIRECT` per call; `oauth_callback` reads the
+     `flow` query param and matches it against the map instead of a single flag.
+   - Acceptance gate (in addition to the usual CI-parity): a real `signInWithGoogle()` round-trip
+     on a packaged build reaching a session — this is the one auth change in this project that
+     cannot be Opus/code-reviewed to "done," only human-verified.
+   - If the allowlist/query-preservation assumption turns out false, fall back cleanly to the
+     current global single-slot gate — it already fails safe, so there's no regression to guard
+     against, only a wasted implementation attempt.
