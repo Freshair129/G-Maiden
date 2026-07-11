@@ -295,9 +295,65 @@ pub fn roll_match_arm() -> bool {
     arm
 }
 
+// ── OAuth callback anti-CSRF gate (CR-008 WP-3) ──────────────────────────────
+// `:3000/auth/callback` is an unauthenticated local endpoint. Without a gate,
+// any local process — or a drive-by web page (`<img src=".../auth/callback?code
+// =ATTACKER">`) — could hand the app an OAuth `code` and sign the user into an
+// attacker's account (login CSRF / session fixation). We only honor a callback
+// while a sign-in the app *itself* started is in flight: single-use + time-boxed.
+// The OAuth redirect URL is deliberately left untouched so it keeps matching the
+// Supabase redirect allowlist.
+static OAUTH_PENDING: AtomicBool = AtomicBool::new(false);
+static OAUTH_PENDING_SINCE_MS: AtomicU64 = AtomicU64::new(0);
+const OAUTH_PENDING_TIMEOUT_MS: u64 = 600_000; // 10 min — generous for the browser round-trip
+
+/// Arm the gate: a sign-in the app initiated is now in flight (called from the
+/// frontend right before it opens the system browser).
+pub fn set_oauth_pending(now_ms: u64) {
+    OAUTH_PENDING_SINCE_MS.store(now_ms, Ordering::Relaxed);
+    // Release publishes the SINCE store above to any thread that Acquire-observes
+    // this flag in take_oauth_pending (the callback runs on a different thread).
+    OAUTH_PENDING.store(true, Ordering::Release);
+}
+
+/// Pure, testable window check for the gate.
+fn oauth_pending_ok(pending: bool, since_ms: u64, now_ms: u64, timeout_ms: u64) -> bool {
+    pending && now_ms.saturating_sub(since_ms) <= timeout_ms
+}
+
+/// Consume the gate (single-use): `true` only if a sign-in is in flight AND still
+/// within the timeout window. Clears the flag either way so a code is honored at
+/// most once.
+pub fn take_oauth_pending(now_ms: u64) -> bool {
+    let was = OAUTH_PENDING.swap(false, Ordering::AcqRel);
+    let since = OAUTH_PENDING_SINCE_MS.load(Ordering::Relaxed);
+    oauth_pending_ok(was, since, now_ms, OAUTH_PENDING_TIMEOUT_MS)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn oauth_gate_rejects_unsolicited_and_expired_callbacks() {
+        assert!(!oauth_pending_ok(false, 0, 1_000, 600_000), "no sign-in in flight → reject");
+        assert!(oauth_pending_ok(true, 1_000, 1_000, 600_000), "same instant → accept");
+        assert!(
+            oauth_pending_ok(true, 1_000, 1_000 + 599_000, 600_000),
+            "within window → accept"
+        );
+        assert!(
+            !oauth_pending_ok(true, 1_000, 1_000 + 600_001, 600_000),
+            "past window → reject"
+        );
+    }
+
+    #[test]
+    fn take_oauth_pending_is_single_use() {
+        set_oauth_pending(10_000);
+        assert!(take_oauth_pending(10_500), "first consume within window");
+        assert!(!take_oauth_pending(10_600), "already consumed → reject the replay");
+    }
 
     #[test]
     fn announcer_enabled_defaults_true_and_toggles() {

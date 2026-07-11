@@ -368,10 +368,12 @@ impl ArmBucket {
         self.deaths += other.deaths;
     }
     fn to_json(self) -> serde_json::Value {
+        // No events → the rate is undefined; emit `null` (matching analyze.py's
+        // `None`) rather than a misleading 0.0 that reads as "0% deaths".
         let rate = if self.events > 0 {
-            self.deaths as f64 / self.events as f64
+            serde_json::json!(self.deaths as f64 / self.events as f64)
         } else {
-            0.0
+            serde_json::Value::Null
         };
         serde_json::json!({ "events": self.events, "deaths": self.deaths, "rate": rate })
     }
@@ -398,6 +400,7 @@ fn parse_efficacy_records(content: &str) -> MatchEfficacy {
     let mut deaths = Vec::new();
     let mut signals = Vec::new();
     let mut study = false;
+    let mut seen_match_start = false;
     let mut prev_deaths: Option<i64> = None;
     for line in content.lines() {
         let line = line.trim();
@@ -422,8 +425,12 @@ fn parse_efficacy_records(content: &str) -> MatchEfficacy {
                     let armed = v.get("armed").and_then(|a| a.as_bool()).unwrap_or(true);
                     signals.push(EfficacySignal { ts, armed });
                 }
-                Some("match_start") => {
+                Some("match_start") if !seen_match_start => {
+                    // Read the study flag from the FIRST match_start only, matching
+                    // analyze.py's `study_flag` (one match_start per file by design;
+                    // this keeps the two analyzers byte-for-byte consistent).
                     study = v.get("study").and_then(|s| s.as_bool()).unwrap_or(false);
+                    seen_match_start = true;
                 }
                 _ => {}
             }
@@ -609,12 +616,13 @@ mod tests {
     }
 
     #[test]
-    fn arm_bucket_to_json_rate_is_zero_when_no_events() {
+    fn arm_bucket_to_json_rate_is_null_when_no_events() {
         let b = ArmBucket::default();
         let j = b.to_json();
         assert_eq!(j["events"], 0);
         assert_eq!(j["deaths"], 0);
-        assert!((j["rate"].as_f64().unwrap() - 0.0).abs() < 1e-9);
+        // undefined rate → null (consistent with analyze.py's None), not 0.0.
+        assert!(j["rate"].is_null());
     }
 
     #[test]

@@ -1296,8 +1296,9 @@ const fmtDate = (ms: number) => { if (!ms) return ''; const d = new Date(ms); re
 // user their OWN warned-vs-silent death rate, computed entirely on-device by
 // `efficacy_summary` from the local match logs. Only rendered when the user
 // has opted into `efficacyStudy`.
-interface EfficacyArm { events: number; deaths: number; rate: number }
+interface EfficacyArm { events: number; deaths: number; rate: number | null }
 interface EfficacySummary { armed: EfficacyArm; silent: EfficacyArm }
+const armRate = (a: EfficacyArm): string => a.rate !== null ? `ตาย ${(a.rate * 100).toFixed(0)}%` : 'ยังไม่มีข้อมูล'
 const EfficacyCard: React.FC = () => {
   const [data, setData] = useState<EfficacySummary | null>(null)
   const [err, setErr] = useState(false)
@@ -1309,7 +1310,7 @@ const EfficacyCard: React.FC = () => {
 
   const armed = data?.armed
   const silent = data?.silent
-  const delta = armed && silent ? armed.rate - silent.rate : null
+  const delta = armed && silent && armed.rate !== null && silent.rate !== null ? armed.rate - silent.rate : null
 
   return (
     <Card title="ผลการศึกษาประสิทธิภาพเสียงเตือน G-Signal">
@@ -1321,8 +1322,8 @@ const EfficacyCard: React.FC = () => {
       {!err && !data && <div style={{ fontSize: 12, color: C.mut, marginTop: 10 }}>กำลังโหลด…</div>}
       {armed && silent && (
         <div style={{ display: 'flex', gap: 20, flexWrap: 'wrap', marginTop: 12 }}>
-          <Stat label="ได้ยินเสียงเตือน (armed)" value={`${armed.events} ครั้ง · ตาย ${(armed.rate * 100).toFixed(0)}%`} color={C.ice} />
-          <Stat label="ปิดเสียงเตือน (silent)" value={`${silent.events} ครั้ง · ตาย ${(silent.rate * 100).toFixed(0)}%`} color={C.warn} />
+          <Stat label="ได้ยินเสียงเตือน (armed)" value={`${armed.events} ครั้ง · ${armRate(armed)}`} color={C.ice} />
+          <Stat label="ปิดเสียงเตือน (silent)" value={`${silent.events} ครั้ง · ${armRate(silent)}`} color={C.warn} />
           {delta !== null && (armed.events > 0 || silent.events > 0) && (
             <Stat label="ผลต่าง" value={`${delta <= 0 ? '' : '+'}${(delta * 100).toFixed(0)}%`} color={delta < 0 ? C.ok : delta > 0 ? C.bad : C.mut} />
           )}

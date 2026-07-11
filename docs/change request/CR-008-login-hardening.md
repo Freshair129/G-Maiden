@@ -70,4 +70,11 @@ API key ของ Anthropic = ขโมยเครดิตได้
   - Rust: `src-tauri/src/secret.rs` (DPAPI per-file store `app_local_data_dir()/secrets/<name>.bin`, `WRITE_LOCK` + atomic same-dir temp-rename, `validate_name`, `secret_set/get/delete` + `load_secret`); `runtime.rs` แยก mode/secret (`set_master_mode` / `set_master_api_key` / `master_api_key_present`); startup โหลด `anthropic_api_key` จาก DPAPI. Cargo features `Win32_Security_Cryptography` + `Win32_System_Memory`.
   - Frontend: `src/src/secureStorage.ts` (supabase-js `auth.storage` adapter — DPAPI ใต้ Tauri, localStorage fallback ใน browser dev); `App.tsx` ลบ `masterApiKey` ออกจาก settings blob + UI "key saved / พิมพ์เพื่อแทนที่" (คีย์ไม่กลับเข้า webview) + one-time migration ที่ scrub plaintext เฉพาะหลังยืนยัน DPAPI write (no silent loss).
   - **DoD reconciliation (gate WARN):** "grep leveldb ไม่พบ token/key" เป็นจริงสำหรับ *live* localStorage entry และ fresh installs ทันที. WebView2 localStorage เป็น log-structured leveldb → **หลัง upgrade-migration ค่า plaintext เก่าอาจค้างใน `.log`/`.ldb` segment จนกว่า Chromium จะ compact** (เป็นข้อจำกัดโดยธรรมชาติของการ migrate ออกจาก localStorage, แก้จาก JS ไม่ได้). ความลับใหม่ไม่แตะ localStorage เลย. ถือ DoD = "ไม่มี live localStorage entry" แทน raw-disk grep.
-- **WP-3 (`/auth/callback` verify `state`, MEDIUM)** — ยังไม่ทำ (นอก scope งาน secret encryption; งานถัดไปได้).
+- **WP-3 (`/auth/callback` hardening, MEDIUM)** — ✅ IMPLEMENTED 2026-07-11, **Opus security gate PASS**.
+  `:3000/auth/callback` ไม่มี auth → เดิมแลก `?code=` อะไรก็ได้ทันที (drive-by page ยิง
+  `<img src=".../auth/callback?code=ATTACKER">` → session fixation). แก้ด้วย **pending-gate**: แอปเรียก
+  `oauth_begin` ตั้งธง (single-use + timeout 10 นาที, `runtime::set_oauth_pending`) ก่อนเปิด browser เท่านั้น;
+  callback จะ emit `oauth-callback` ต่อเมื่อ `take_oauth_pending()` จริงเท่านั้น มิฉะนั้น emit `oauth-error`.
+  **ไม่แตะ OAuth redirect URL** (คงตรงกับ Supabase allowlist — ไม่เสี่ยงพัง login ที่เพิ่งใช้ได้). residual
+  window ที่เหลือถูก PKCE (`exchangeCodeForSession` bind กับ local `code_verifier`) กันอีกชั้น. ไฟล์:
+  `runtime.rs` (gate + Release/Acquire), `gsi.rs oauth_callback`, `main.rs oauth_begin`, `auth.ts`.

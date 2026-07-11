@@ -91,7 +91,13 @@ export function useAuth() {
         options: { redirectTo: OAUTH_REDIRECT, skipBrowserRedirect: true },
       });
       if (error) throw error;
-      if (data?.url) await invoke("open_url", { url: data.url });
+      if (data?.url) {
+        // CR-008 WP-3: arm the callback gate so :3000/auth/callback only accepts
+        // a code for this app-initiated sign-in (login-CSRF guard), then open the
+        // system browser.
+        await invoke("oauth_begin");
+        await invoke("open_url", { url: data.url });
+      }
       // The session arrives asynchronously via the oauth-callback listener.
     } catch (e) {
       setError(msg(e));

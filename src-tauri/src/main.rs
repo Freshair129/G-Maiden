@@ -367,6 +367,18 @@ fn has_master_api_key() -> bool {
     runtime::master_api_key_present()
 }
 
+/// Arm the OAuth callback gate right before the frontend opens the sign-in
+/// browser, so `:3000/auth/callback` only honors a code for a sign-in the app
+/// actually initiated (CR-008 WP-3 — login-CSRF / session-fixation guard).
+#[tauri::command]
+fn oauth_begin() {
+    let now = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0);
+    runtime::set_oauth_pending(now);
+}
+
 /// Toggle in-game calibration evidence capture (screenshots + audit clips).
 /// QA/tuning mode — off by default; writes images locally only.
 #[tauri::command]
@@ -557,6 +569,7 @@ fn main() {
             set_master_mode,
             set_master_api_key,
             has_master_api_key,
+            oauth_begin,
             secret::secret_set,
             secret::secret_get,
             secret::secret_delete,

@@ -288,7 +288,18 @@ async fn oauth_callback(
     Query(params): Query<std::collections::HashMap<String, String>>,
 ) -> Html<&'static str> {
     if let Some(code) = params.get("code") {
-        let _ = app.emit("oauth-callback", code.clone());
+        // CR-008 WP-3: only honor a code for a sign-in the app itself started
+        // (single-use, time-boxed). This unauthenticated local endpoint would
+        // otherwise let a drive-by page inject an attacker's `code` → session
+        // fixation. An unsolicited/expired callback is ignored, not exchanged.
+        if crate::runtime::take_oauth_pending(epoch_ms()) {
+            let _ = app.emit("oauth-callback", code.clone());
+        } else {
+            let _ = app.emit(
+                "oauth-error",
+                "การเข้าสู่ระบบหมดเวลา หรือไม่ได้เริ่มจากแอป — กรุณาลองใหม่".to_string(),
+            );
+        }
     } else if let Some(err) = params
         .get("error_description")
         .or_else(|| params.get("error"))
