@@ -1,20 +1,54 @@
 # TODO / self-note - next session
 
-อัปเดตล่าสุด: **2026-07-11 (B)** · **ปิด backlog 3 งาน + CR-008 ครบ + G-Master grounding + self-burst** — audit criticals ที่แก้ด้วยโค้ดได้ **ปิดครบ**. commit ทั้ง session `a9c492e8..1f9274dc` (session B `55b0703c..1f9274dc` ยัง **ไม่ push**)
-รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-11-B-gmaster-grounding.md` (+ `...-secrets-efficacy-ci-wp3-orchestration.md` = session A)
+อัปเดตล่าสุด: **2026-07-12** · **CR-003 wallet implement เต็มระบบ + รันจริง 69/69 pgTAP บน local Postgres** — reconcile ADR-16 → 7 parallel agents → Opus gate จับ 7 บั๊ก → verify ด้วยการ execute จริง (ไม่ใช่แค่อ่าน). commit session นี้ `f675fabb..a90da645` (4 ตัว) **ยังไม่ push**
+รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-12-cr003-impl-verify-supabase-local.md`
 
-## 🎯 Highest-leverage next work (จาก session 2026-07-11 B, เรียงลำดับ)
-1. **Behavioral verify ที่ค้าง (ต้อง Boss ทำ — ทำแทนไม่ได้)** — packaged build จริง + Google sign-in จริง:
-   (a) T1 sign-in persist ข้าม restart + grep WebView2 leveldb ว่าไม่มี refresh token/API key;
-   (b) T2 efficacyStudy เล่นจริง เช็ก silent-arm suppress; (c) **G-Master grounding** — เปิดเกมจริง ดูว่า
-   counter-advice โผล่ตามศัตรูที่ CV เห็น + self-burst line มีเลข. (sign-in = ทำแทน Boss ไม่ได้.)
-2. **push commit ของ session B** (`55b0703c..1f9274dc`, 3 ตัว) เมื่อ Boss สั่ง — ไม่ tag/release.
-3. **WP-3 optional hardening (ทีหลัง)** — pending-gate + PKCE พอแล้ว; per-flow nonce แตะ redirect URL →
-   เสี่ยง allowlist + live-test OAuth ไม่ได้ → ทำตอนพร้อม verify sign-in จริงเท่านั้น.
-4. **enemy-facing lethality (`damage.rs` is_lethal/can_i_kill) = BLOCKED-BY-DATA ถาวร** — enemy level/items/HP
-   มองไม่เห็นใน own-game. ยังเป็น dead code (`#![allow(dead_code)]`). OpenDota ได้แค่ prior (ไม่ใช่ HP จริง).
-   **อย่าพยายาม wire อีก** เว้นแต่มีแหล่งข้อมูลใหม่. self-burst (ฮีโร่ตัวเอง) = ทำไปแล้ว.
-5. **CR-003 wallet / marketplace** — ยังติด ADR-16 `provenance` constraint (เดิม). strategic.
+## 🎯 Highest-leverage next work (จาก session 2026-07-12, เรียงลำดับ)
+1. **push CR-003 commits** (`f675fabb..a90da645`, 4 ตัว) เมื่อ Boss สั่ง — ไม่ tag/release. (รวม session-B ที่ push แล้ว = clean).
+2. **CR-003 ยัง deploy live ไม่ได้** — 3 blocker ที่จด in-code: (a) Omise API field names ยังไม่ยืนยันกับ docs
+   จริง (sandbox-only), (b) shard-scoring formula = placeholder รอ balancing pass, (c) signup-trigger
+   welcome-grant ยังเป็น TODO (มี `ensure_wallet()` safety net อยู่แล้ว จึงไม่ใช่ correctness gap). apply migration
+   live/deploy Edge Fn = **ต้อง Boss ตัดสิน** (แตะ production gstore).
+3. **Behavioral verify ที่ค้าง (ต้อง Boss ทำ)** — packaged build + Google sign-in จริง: T1 sign-in persist +
+   grep WebView2 leveldb; T2 efficacyStudy; G-Master grounding ในเกมจริง. (sign-in ทำแทนไม่ได้.)
+4. **AGENTS.md drift (จด session นี้)** — Repository Layout (บรรทัด 32-88) ไม่ list `supabase/` เลย ทั้งที่ tracked
+   มาตั้งแต่ SEC-001 + ขยายเยอะ session นี้ (migrations/functions/tests). แก้ตอน reconcile รอบหน้า (เพิ่ม dir
+   ใน tree, factual, ไม่ rewrite prose).
+5. **MatchShareCard.matchId ยังเป็น prop เปล่า** — ไม่มี "last local match id" source ใน `src/src/live/`
+   (MatchLog มีแค่ name/size/modified_ms ไม่มี OpenDota match id). ต้อง wire แหล่งใหม่ก่อน shard MVP ใช้ได้จริง.
+6. **enemy-facing lethality (`damage.rs`) = BLOCKED-BY-DATA ถาวร** — อย่า wire อีกเว้นแต่มีแหล่งข้อมูลใหม่. self-burst ทำแล้ว.
+
+## DONE ใน session 2026-07-12
+- [DONE] **CR-008 WP-3 nonce = design-only** `f675fabb` — PKCE ปิด race อยู่แล้ว = defense-in-depth; supabase-js
+  ไม่มี state pass-through → ต้องแตะ redirectTo → live-test ไม่ได้. เขียน design ต่อท้าย CR-008 doc, ไม่ลงโค้ด.
+- [DONE] **CR-003 v0.3.0 ADR-16 reconcile** `3e7bda87` — สองสกุล shard/wallet + provenance + match_submissions/
+  tips/economy_config + mint_shard_from_match/tip + match-share-submit + catalog separation. shard ไม่ติด Omise.
+- [DONE] **CR-003 implement (7 parallel Sonnet agents)** `5096ecb3` — migration+4 Edge Fn+7 frontend+pgTAP.
+  Opus gate จับ 6 บั๊ก + re-verify จับ 1 (deadlock ที่ fix สร้าง) → แก้ครบ.
+- [DONE] **รันจริง 69/69 pgTAP บน local Postgres** `a90da645` — reconstruct 2 migration ที่ขาด (ADR-14 baseline +
+  platform default privileges) + fix 6 test-authoring bug. supabase init scaffolding.
+
+## Hard-won facts / อย่าพลาดซ้ำ (2026-07-12)
+- **migration history ของ repo นี้ไม่ครบ** 🔴 — objects เก่า (profiles/gid_counters/handle_new_user/alloc_cohort_seq
+  + Supabase platform default privileges) สร้างตรงบน live gstore **ก่อนมี migrations/ folder** → `supabase start`
+  บน clone ใหม่พังมาตลอดจนถึง session นี้. reconstruct แล้ว (2 migration ใหม่ dated ก่อน SEC-001). ถ้าเจอ object
+  ที่ migration อ้างแต่ไม่มีไฟล์สร้าง = เช็ก live schema (read-only) ก่อนเดา.
+- **pgTAP `throws_ok(sql, str)` 2-arg = กับดัก** 🔴 — arg2 ถูกตีความเป็น **expected error message** ไม่ใช่ description.
+  RPC ที่ raise error ถูกต้องจะ "fail" เพราะ message ไม่ match. ต้อง `throws_ok(sql, null, null, desc)` (4-arg) เสมอ
+  เมื่อแค่อยากเช็กว่า "throw อะไรก็ได้". เจอ 6 จุดใน cr003 test.
+- **pgTAP อ่านตาราง RLS ต้อง reset role ก่อน** — test ที่ act เป็น user แล้วอ่านตารางของ user อื่น / ตารางไม่มี
+  SELECT policy (redeem_codes) จะได้ 0 แถวเงียบ ๆ → assertion fail. `reset role` ก่อน read (แบบ DB-08) แล้ว
+  `set local role` กลับ. และ `sum()` = numeric ต้อง `::bigint` ก่อนเทียบ.
+- **Supabase branching = Pro plan เท่านั้น** — free project สร้าง dev branch ไม่ได้ (reject ตั้งแต่ plan check,
+  ไม่มีค่าใช้จ่าย). ทางฟรีที่ได้ผลเทียบเท่า = local `supabase start` (Docker) รัน migration+pgTAP จริง.
+- **Supabase local บน Windows** — analytics service ต้อง `enabled=false` ใน config.toml (ต้องการ Docker TCP:2375);
+  storage/studio อาจ unhealthy → ใช้ `--ignore-health-check` (DB ยังใช้ได้). `supabase test db` shell ออกไปเรียก
+  `docker` CLI ตรง ๆ → ต้องมี `docker.exe` ใน PATH (ที่ `G:\Docker\Docker\resources\bin`).
+- **Docker Desktop installer** — ต้องมี verb `install` นำหน้า flags (`install --quiet ...`) ไม่งั้น "Unknown command".
+  ต้อง admin elevation (คลิก UAC แทน Boss ไม่ได้). `--installation-dir` + `--wsl-default-data-root` แยกที่ app กับ
+  WSL2 disk ได้ (ลงไว้ `G:\Docker\` กัน C: เต็ม). ตัว docker CLI ไม่ขึ้น PATH ใน shell ที่เปิดก่อนลง.
+- **Opus adversarial gate คุ้มมากกับ parallel-agent code** — mechanical checks (tsc/deno เขียว) มองไม่เห็น
+  บั๊ก "ช่องว่างระหว่าง fn" (P0 no-wallet-row, tip value-loss, free-item, cap race, deadlock). 7 บั๊กจริงต่อ 1 feature.
 
 ## DONE ใน session 2026-07-11 B
 - [DONE] **version drift แก้แล้ว** `5c412a7b` — CLAUDE.md:5 + AGENTS.md:239 → v0.9.0 (ที่เคยค้าง).
