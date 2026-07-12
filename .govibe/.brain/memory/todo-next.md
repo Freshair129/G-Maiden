@@ -1,7 +1,7 @@
 # TODO / self-note - next session
 
-อัปเดตล่าสุด: **2026-07-12** · **CR-003 wallet implement เต็มระบบ + รันจริง 69/69 pgTAP บน local Postgres** — reconcile ADR-16 → 7 parallel agents → Opus gate จับ 7 บั๊ก → verify ด้วยการ execute จริง (ไม่ใช่แค่อ่าน). commit session นี้ `f675fabb..a90da645` (4 ตัว) **ยังไม่ push**
-รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-12-cr003-impl-verify-supabase-local.md`
+อัปเดตล่าสุด: **2026-07-13** · **side-track ใน G-Ann (repo พี่น้อง G-Suite): mastering deck ครบชุด + ทดสอบ pan export จริง** — ยืนยัน L/R stereo ถึงคลิปที่ export (Δ 11.93dB ≈ 12dB ที่ dial บนไฟล์จริง). ไม่แตะ G-Maiden. G-Maiden priorities ด้านล่างยังเหมือนเดิม (CR-003 ยังไม่ push)
+รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-13-gann-mastering-deck-complete.md` (ก่อนหน้า: `2026-07-12-cr003-impl-verify-supabase-local.md`)
 
 ## 🎯 Highest-leverage next work (จาก session 2026-07-12, เรียงลำดับ)
 1. **push CR-003 commits** (`f675fabb..a90da645`, 4 ตัว) เมื่อ Boss สั่ง — ไม่ tag/release. (รวม session-B ที่ push แล้ว = clean).
@@ -17,6 +17,15 @@
 5. **MatchShareCard.matchId ยังเป็น prop เปล่า** — ไม่มี "last local match id" source ใน `src/src/live/`
    (MatchLog มีแค่ name/size/modified_ms ไม่มี OpenDota match id). ต้อง wire แหล่งใหม่ก่อน shard MVP ใช้ได้จริง.
 6. **enemy-facing lethality (`damage.rs`) = BLOCKED-BY-DATA ถาวร** — อย่า wire อีกเว้นแต่มีแหล่งข้อมูลใหม่. self-burst ทำแล้ว.
+
+## DONE ใน session 2026-07-13 (G-Ann / G-Suite — uncommitted ฝั่งนั้น)
+- [DONE] **G-Ann mastering deck ครบชุด + ทดสอบจบ** — 12 knob wire เข้า ffmpeg จริง (EQ/presence/
+  de-esser/comp/character/sat/fade/normalize/speed/gain + **L/R pan**) + LUFS จริง BS.1770 ที่ bar
+  เป็น fader (L/R/M). Proof: pan export บน KOM wav → stereo, Δ 11.93dB ≈ 12dB ที่ dial. tsc=0.
+  **ค้าง**: live-audio drag test (งาน Boss, `pnpm ann-studio:dev`). **ถัดไป = event mapping + banner**
+  (EventTestGrid + tone banners 23 + `install_gmaiden_pack` มีแล้ว; เหลือ UX map + polish banner).
+- [NOTE] browser preview (vite) **ทดสอบ Tauri app ไม่ได้** — `__TAURI__.invoke` undefined ใน browser เปล่า.
+  ทดสอบ export path ด้วยการรัน ffmpeg filter จริงบนไฟล์แทน = วิธีที่ได้ผล.
 
 ## DONE ใน session 2026-07-12
 - [DONE] **CR-008 WP-3 nonce = design-only** `f675fabb` — PKCE ปิด race อยู่แล้ว = defense-in-depth; supabase-js
