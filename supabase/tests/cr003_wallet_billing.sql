@@ -275,6 +275,7 @@ set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000a3","r
 
 select throws_ok(
   $$ select public.purchase_item('10000000-0000-0000-0000-000000000003') $$,
+  null, null,
   'DB-04: purchase_item rejects when balance is insufficient');
 
 select is_empty(
@@ -313,6 +314,7 @@ select is(
 
 select throws_ok(
   $$ select public.purchase_item('10000000-0000-0000-0000-000000000005') $$,
+  null, null,
   'DB-05 (seq. call 2/2): second 60-cost purchase is rejected against a 40 balance');
 
 select is(
@@ -377,37 +379,55 @@ select is(
   2000::bigint,
   'DB-07: A wallet_balance credited by the redeemed code (1900+100)');
 
+-- redeem_codes has no client SELECT policy at all (by design — codes are never
+-- readable by clients, validated entirely server-side inside redeem_code()); reset to
+-- the seed/owner role before reading it directly, matching DB-08's pattern below.
+reset role;
 select is(
   (select used_count from public.redeem_codes where code = 'TESTCODE1'),
   1,
   'DB-07: TESTCODE1 used_count incremented to 1');
 
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000a1","role":"authenticated"}';
+
 select throws_ok(
   $$ select public.redeem_code('TESTCODE1') $$,
+  null, null,
   'DB-07: same user cannot redeem the same code twice');
 
+-- redeem_codes has no client SELECT policy at all (by design — codes are never
+-- readable by clients, validated entirely server-side inside redeem_code()); reset to
+-- the seed/owner role before reading it directly, matching DB-08's pattern below.
+reset role;
 select is(
   (select used_count from public.redeem_codes where code = 'TESTCODE1'),
   1,
   'DB-07: used_count unchanged after the rejected repeat redemption');
 
-reset role;
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000a2","role":"authenticated"}';
 
 select throws_ok(
   $$ select public.redeem_code('TESTCODE1') $$,
+  null, null,
   'DB-07: a different user cannot redeem a code that is already at max_uses');
 
+reset role;
 select is(
   (select used_count from public.redeem_codes where code = 'TESTCODE1'),
   1,
   'DB-07: used_count still 1 after the max_uses-exceeded rejection');
 
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000a2","role":"authenticated"}';
+
 select throws_ok(
   $$ select public.redeem_code('TESTEXPIRED') $$,
+  null, null,
   'DB-07: an expired code is rejected');
 
+reset role;
 select is(
   (select used_count from public.redeem_codes where code = 'TESTEXPIRED'),
   0,
@@ -496,6 +516,7 @@ select is(
 select throws_ok(
   $$ select public.mint_shard_from_match(
        '00000000-0000-0000-0000-0000000000a7', 'matchref-g-2', 1, 'sig-g-2') $$,
+  null, null,
   'DB-11: minting even 1 more shard once at the daily cap is rejected');
 
 select is_empty(
@@ -527,6 +548,7 @@ select is(
 
 select throws_ok(
   $$ select public.tip('00000000-0000-0000-0000-0000000000a9', 40, 'wallet') $$,
+  null, null,
   'DB-12a (call 2/2): repeat tip is rejected once balance is insufficient (10<40)');
 
 select is(
@@ -549,20 +571,29 @@ select lives_ok(
   $$ select public.tip('00000000-0000-0000-0000-0000000000ab', 200, 'shard') $$,
   'DB-12b (call 1/2): J tips K 200 shard, within the daily receive cap (300)');
 
+-- wallet_ledger's RLS is "own read" (auth.uid() = user_id) — J (the acting role here) cannot
+-- read K's ledger rows. Reset to the seed/owner role to inspect K's side, matching the
+-- DB-07/DB-08 pattern, then restore J's session before the second tip() call.
+reset role;
 select is(
-  (select coalesce(sum(amount),0) from public.wallet_ledger
+  (select coalesce(sum(amount),0)::bigint from public.wallet_ledger
      where user_id = '00000000-0000-0000-0000-0000000000ab'
        and currency = 'shard' and entry_type = 'tip_received'
        and created_at >= date_trunc('day', now())),
   200::bigint,
   'DB-12b: K received exactly 200 shard today so far');
 
+set local role authenticated;
+set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000aa","role":"authenticated"}';
+
 select throws_ok(
   $$ select public.tip('00000000-0000-0000-0000-0000000000ab', 200, 'shard') $$,
+  null, null,
   'DB-12b (call 2/2): a second 200-shard tip is rejected (200+200 > 300 cap)');
 
+reset role;
 select is(
-  (select coalesce(sum(amount),0) from public.wallet_ledger
+  (select coalesce(sum(amount),0)::bigint from public.wallet_ledger
      where user_id = '00000000-0000-0000-0000-0000000000ab'
        and currency = 'shard' and entry_type = 'tip_received'
        and created_at >= date_trunc('day', now())),
