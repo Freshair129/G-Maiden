@@ -77,6 +77,16 @@ body {
   animation-delay: 0.18s;
 }
 
+/* Slain portrait fades to black & white once the X finishes drawing (~0.65s) */
+@keyframes gm-kill-desat {
+  from { filter: grayscale(0) brightness(1); }
+  to   { filter: grayscale(1) brightness(0.68); }
+}
+.gm-kill img,
+.gm-kill-exit img {
+  animation: gm-kill-desat 0.55s ease-out 0.66s forwards;
+}
+
 /* Portrait ring pulse on kill */
 @keyframes gm-ring-pulse {
   0% { stroke-opacity: 0.5; }
