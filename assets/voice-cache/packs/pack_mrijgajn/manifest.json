@@ -1,0 +1,130 @@
+{
+  "author": "",
+  "coverImage": "banners/killing_spree.webp",
+  "description": "",
+  "id": "pack_mrijgajn",
+  "locale": "th",
+  "mappings": {
+    "death": {
+      "banner": "",
+      "bannerAsset": "banners/death.webp",
+      "clips": [
+        "clips/death_01.wav",
+        "clips/death_02.wav"
+      ],
+      "text": "",
+      "thai": ""
+    },
+    "dominating": {
+      "banner": "",
+      "bannerAsset": "banners/dominating.webp",
+      "clips": [
+        "clips/dominating_01.wav"
+      ],
+      "text": "",
+      "thai": ""
+    },
+    "double_kill": {
+      "banner": "",
+      "bannerAsset": "banners/double_kill.webp",
+      "clips": [
+        "clips/double_kill_01.wav"
+      ],
+      "text": "",
+      "thai": ""
+    },
+    "first_blood": {
+      "banner": "",
+      "bannerAsset": "banners/first_blood.webp",
+      "clips": [
+        "clips/first_blood_01.wav"
+      ],
+      "text": "",
+      "thai": ""
+    },
+    "kill": {
+      "banner": "",
+      "bannerAsset": "banners/kill.webp",
+      "clips": [
+        "clips/kill_01.wav"
+      ],
+      "text": "",
+      "thai": ""
+    },
+    "killing_spree": {
+      "banner": "",
+      "bannerAsset": "banners/killing_spree.webp",
+      "clips": [
+        "clips/killing_spree_01.wav"
+      ],
+      "text": "",
+      "thai": ""
+    },
+    "mega_kill": {
+      "banner": "",
+      "bannerAsset": "banners/mega_kill.webp",
+      "clips": [
+        "clips/mega_kill_01.wav",
+        "clips/mega_kill_02.wav"
+      ],
+      "text": "",
+      "thai": ""
+    },
+    "monster_kill": {
+      "banner": "",
+      "bannerAsset": "banners/monster_kill.webp",
+      "clips": [
+        "clips/monster_kill_01.wav"
+      ],
+      "text": "",
+      "thai": ""
+    },
+    "respawn": {
+      "banner": "",
+      "bannerAsset": "banners/respawn.webp",
+      "clips": [
+        "clips/respawn_01.wav"
+      ],
+      "text": "",
+      "thai": ""
+    },
+    "triple_kill": {
+      "banner": "",
+      "bannerAsset": "banners/triple_kill.webp",
+      "clips": [
+        "clips/triple_kill_01.wav"
+      ],
+      "text": "",
+      "thai": ""
+    },
+    "ultra_kill": {
+      "banner": "",
+      "bannerAsset": "banners/ultra_kill.webp",
+      "clips": [
+        "clips/ultra_kill_01.wav"
+      ],
+      "text": "",
+      "thai": ""
+    },
+    "unstoppable": {
+      "banner": "",
+      "bannerAsset": "banners/unstoppable.webp",
+      "clips": [
+        "clips/unstoppable_01.wav"
+      ],
+      "text": "",
+      "thai": ""
+    },
+    "wicked_sick": {
+      "banner": "",
+      "bannerAsset": "banners/wicked_sick.webp",
+      "clips": [
+        "clips/wicked_sick_01.wav"
+      ],
+      "text": "",
+      "thai": ""
+    }
+  },
+  "name": "ann-pack",
+  "version": "0.1.0"
+}
