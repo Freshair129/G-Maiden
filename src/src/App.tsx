@@ -35,6 +35,11 @@ export interface GameTick {
   mana_percent: number
   kill_list_len: number
   last_victim_slot: number
+  // Exact slain hero (npc name) resolved backend-side from last_victim_slot +
+  // the roster the backend already holds (GSI/CV). Optional — when the backend
+  // populates it, the kill banner shows the exact victim; until then we guess
+  // from G-Sentry's missing set below. See CR-010.
+  last_victim_hero?: string
 }
 
 /** CV/G-Signal events emitted by the Rust backend (src-tauri cv pipeline). */
@@ -615,7 +620,9 @@ const Overlay: React.FC = () => {
     killStreak.current += 1
     const missing = [...missingHeroes]
     const seen = lastKillHeroes.current
-    const victim = missing.find((h) => !seen.has(h)) ?? missing[0] ?? null
+    // exact victim from the backend (CR-010) if resolved, else guess from the
+    // G-Sentry missing set (best we can do without a dedicated GSI kill feed).
+    const victim = tick.last_victim_hero || missing.find((h) => !seen.has(h)) || missing[0] || null
     if (victim) seen.add(victim)
     setKillBanner({ phase: 'show', kills: tick.kills, streak: killStreak.current, victim })
     killTimer.current = setTimeout(() => {
