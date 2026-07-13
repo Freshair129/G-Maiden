@@ -779,6 +779,10 @@ pub struct FiredBanner {
     pub banner_text: String,
     /// Thai line: the pack's override if set, else the event's default.
     pub thai: String,
+    /// Absolute path of the clip that was voiced (set by the caller after
+    /// picking it), so the overlay can play a silent copy for the reactive
+    /// waveform. `None` when the event fired silent (no clip mapped).
+    pub clip: Option<String>,
 }
 
 /// Cap on the banner image we inline into an event payload (keeps the event bus
@@ -832,6 +836,7 @@ fn fired_banner_from(pack_id: Option<String>, event: &str) -> FiredBanner {
         banner_data,
         banner_text,
         thai,
+        clip: None,
     }
 }
 

@@ -331,17 +331,60 @@ pub fn play_random(event: &str) -> bool {
 }
 
 pub fn play_random_with_priority(event: &str, priority: Priority) -> bool {
+    match pick_clip(event) {
+        Some(path) => {
+            send(Cmd::Play(path, priority));
+            true
+        }
+        None => false,
+    }
+}
+
+/// Resolve the clip that WOULD play for an event (active pack → legacy → default),
+/// picking one at random. Split out so the caller can play it AND hand the same
+/// path to the overlay (it plays a silent copy to drive the reactive waveform).
+pub fn pick_clip(event: &str) -> Option<PathBuf> {
     let clips = list_clips(event);
     if clips.is_empty() {
-        return false;
+        return None;
     }
+    // NOTE: Windows FILETIME nanos are multiples of 100, so `nanos % N` is biased
+    // — mix before the modulo (splitmix64) so multi-take events actually vary.
     let nanos = SystemTime::now()
         .duration_since(UNIX_EPOCH)
-        .map(|d| d.subsec_nanos() as usize)
+        .map(|d| d.as_nanos() as u64)
         .unwrap_or(0);
-    let path = clips[nanos % clips.len()].clone();
-    send(Cmd::Play(path, priority));
-    true
+    let mut z = nanos.wrapping_add(0x9E37_79B9_7F4A_7C15);
+    z = (z ^ (z >> 30)).wrapping_mul(0xBF58_476D_1CE4_E5B9);
+    z = (z ^ (z >> 27)).wrapping_mul(0x94D0_49BB_1331_11EB);
+    z ^= z >> 31;
+    Some(clips[(z as usize) % clips.len()].clone())
+}
+
+/// Play a specific already-resolved clip file (the twin of pick_clip).
+pub fn play_path(path: PathBuf, event: &str) {
+    send(Cmd::Play(path, priority_for_event(event)));
+}
+
+/// Read a clip's raw bytes for the overlay's Web Audio waveform. Confined to the
+/// voice-cache / bundled-default roots and to audio files: the caller only ever
+/// passes a path our own resolver produced, but we contain-check anyway so a
+/// stray path can't turn this into an arbitrary file read.
+pub fn read_clip_bytes(path: &str) -> Result<Vec<u8>, String> {
+    let p = std::path::Path::new(path);
+    if !is_clip(p) {
+        return Err("not an audio clip".into());
+    }
+    let canon = p.canonicalize().map_err(|e| e.to_string())?;
+    let roots = [voice_cache_dir().canonicalize().ok(), default_pack_dir().and_then(|d| d.canonicalize().ok())];
+    let allowed = roots
+        .into_iter()
+        .flatten()
+        .any(|root| canon.starts_with(&root));
+    if !allowed {
+        return Err("clip outside voice-cache".into());
+    }
+    fs::read(&canon).map_err(|e| e.to_string())
 }
 
 #[cfg(test)]

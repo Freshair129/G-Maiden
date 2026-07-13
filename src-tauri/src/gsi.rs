@@ -185,8 +185,15 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
         if crate::runtime::announcer_enabled() {
             // Voice the clip and show the banner from the SAME active pack, so the
             // announcer sound and its queue banner always fire together (the bundle).
-            crate::audio::play_random(&ev);
-            let _ = app.emit("announcer-banner", crate::voice_api::fired_banner(&ev));
+            // Resolve the clip ONCE so the overlay can drive its reactive waveform
+            // from a silent copy of the exact clip that plays.
+            let clip = crate::audio::pick_clip(&ev);
+            if let Some(p) = &clip {
+                crate::audio::play_path(p.clone(), &ev);
+            }
+            let mut banner = crate::voice_api::fired_banner(&ev);
+            banner.clip = clip.map(|p| p.to_string_lossy().into_owned());
+            let _ = app.emit("announcer-banner", banner);
         }
     }
     "ok"

@@ -349,6 +349,69 @@ const STREAK_LABELS: Record<number, string> = {
   6: 'UNSTOPPABLE', 7: 'WICKED SICK', 8: 'MONSTER KILL',
   9: 'GODLIKE', 10: 'BEYOND GODLIKE',
 }
+
+// Reactive waveform for a fired announcer clip. The BACKEND plays the audible
+// copy; here we decode the SAME clip and run it through an AnalyserNode at gain 0
+// (silent) purely to drive the bars — so the waveform moves with the real sound,
+// not a synthetic playhead. Cosmetic: any failure is swallowed and it renders
+// nothing. Cleans up its AudioContext + rAF on unmount (single-slot banner, so a
+// new event unmounts the old wave and stops its silent source).
+const VoiceWave: React.FC<{ clip: string }> = ({ clip }) => {
+  const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  useEffect(() => {
+    let ctx: AudioContext | null = null
+    let src: AudioBufferSourceNode | null = null
+    let raf = 0
+    let cancelled = false
+    ;(async () => {
+      try {
+        const bytes = await invoke<number[]>('read_audio_bytes', { path: clip })
+        if (cancelled) return
+        const buf = new Uint8Array(bytes).buffer
+        ctx = new AudioContext()
+        await ctx.resume().catch(() => {})
+        const audio = await ctx.decodeAudioData(buf)
+        if (cancelled) { void ctx.close(); return }
+        const analyser = ctx.createAnalyser()
+        analyser.fftSize = 128
+        analyser.smoothingTimeConstant = 0.75
+        const gain = ctx.createGain()
+        gain.gain.value = 0 // silent — the backend owns the audible playback
+        src = ctx.createBufferSource()
+        src.buffer = audio
+        src.connect(analyser); analyser.connect(gain); gain.connect(ctx.destination)
+        src.start()
+        const bins = new Uint8Array(analyser.frequencyBinCount)
+        const draw = () => {
+          const cvs = canvasRef.current
+          if (cvs) {
+            const c = cvs.getContext('2d')
+            if (c) {
+              analyser.getByteFrequencyData(bins)
+              const W = cvs.width, H = cvs.height, n = bins.length, bw = W / n
+              c.clearRect(0, 0, W, H)
+              for (let i = 0; i < n; i++) {
+                const v = bins[i] / 255
+                const bh = Math.max(2, v * H)
+                c.fillStyle = `rgba(91,227,167,${0.3 + 0.65 * v})`
+                c.fillRect(i * bw + bw * 0.15, (H - bh) / 2, bw * 0.7, bh)
+              }
+            }
+          }
+          raf = requestAnimationFrame(draw)
+        }
+        draw()
+      } catch { /* cosmetic — ignore */ }
+    })()
+    return () => {
+      cancelled = true
+      if (raf) cancelAnimationFrame(raf)
+      try { src?.stop() } catch { /* already stopped */ }
+      void ctx?.close()
+    }
+  }, [clip])
+  return <canvas ref={canvasRef} width={280} height={38} style={{ display: 'block', width: 280, height: 38 }} />
+}
 export type GankState = { phase: 'alert'; heroes: string[]; probability: number } | { phase: 'clear' } | null
 
 const Overlay: React.FC = () => {
@@ -387,7 +450,7 @@ const Overlay: React.FC = () => {
   // card when the pack has no banner for that event. Driven by the backend
   // `announcer-banner` event so the image and the voiced clip fire together.
   const [packBanner, setPackBanner] = useState<{
-    phase: 'show' | 'exit'; url: string; text: string; thai: string
+    phase: 'show' | 'exit'; url: string | null; text: string; thai: string; clip: string | null
   } | null>(null)
   const packBannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const gankTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -481,12 +544,14 @@ const Overlay: React.FC = () => {
     // Announcer bundle: the active pack's banner image for a fired event. Only
     // shows when the pack actually maps an image (bannerUrl); otherwise we leave
     // the built-in kill card to handle it. Clears the card so we never stack both.
-    const uPB = listen<{ event: string; bannerData: string | null; bannerText: string; thai: string }>('announcer-banner', (e) => {
-      if (!e.payload.bannerData || !sRef.current.killVisuals) return
+    const uPB = listen<{ event: string; bannerData: string | null; bannerText: string; thai: string; clip: string | null }>('announcer-banner', (e) => {
+      // Show the bundle banner when the pack maps an image OR a voice clip fired —
+      // a voice-only event still gets the transcript + reactive waveform strip.
+      if ((!e.payload.bannerData && !e.payload.clip) || !sRef.current.killVisuals) return
       if (killTimer.current) { clearTimeout(killTimer.current); killTimer.current = null }
       setKillBanner(null)
       if (packBannerTimer.current) clearTimeout(packBannerTimer.current)
-      setPackBanner({ phase: 'show', url: e.payload.bannerData, text: e.payload.bannerText, thai: e.payload.thai })
+      setPackBanner({ phase: 'show', url: e.payload.bannerData, text: e.payload.bannerText, thai: e.payload.thai, clip: e.payload.clip })
       packBannerTimer.current = setTimeout(() => {
         setPackBanner((pb) => pb ? { ...pb, phase: 'exit' } : null)
         packBannerTimer.current = setTimeout(() => setPackBanner(null), 800)
@@ -885,13 +950,15 @@ const Overlay: React.FC = () => {
             built-in card when the pack maps an image for the fired event). */}
         {s.killVisuals && packBanner && (
           <div className={packBanner.phase === 'exit' ? 'gm-kill-exit' : 'gm-kill'} style={packBannerStyle}>
-            <img
-              src={packBanner.url}
-              alt={packBanner.text}
-              style={{ display: 'block', maxWidth: 420, maxHeight: 150, width: 'auto', height: 'auto', objectFit: 'contain' }}
-              onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-            />
-            {(packBanner.text || packBanner.thai) && (
+            {packBanner.url && (
+              <img
+                src={packBanner.url}
+                alt={packBanner.text}
+                style={{ display: 'block', maxWidth: 420, maxHeight: 150, width: 'auto', height: 'auto', objectFit: 'contain' }}
+                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
+              />
+            )}
+            {packBanner.url && (packBanner.text || packBanner.thai) && (
               <div style={{ position: 'absolute', left: 0, right: 0, bottom: 6, textAlign: 'center', pointerEvents: 'none' }}>
                 {packBanner.text && (
                   <div style={{ fontSize: 12, fontWeight: 700, color: C.txt, letterSpacing: 1, textTransform: 'uppercase', textShadow: '0 1px 4px rgba(0,0,0,0.85)' }}>{packBanner.text}</div>
@@ -899,6 +966,28 @@ const Overlay: React.FC = () => {
                 {packBanner.thai && (
                   <div style={{ fontSize: 13, fontWeight: 600, color: C.ice, textShadow: '0 1px 4px rgba(0,0,0,0.85)' }}>{packBanner.thai}</div>
                 )}
+              </div>
+            )}
+            {/* Voice strip: the transcript caption + a waveform reactive to the
+                clip the overlay is playing (silently). Footer under an image, or
+                the whole banner when the pack maps no image for this event. */}
+            {packBanner.clip && (
+              <div style={{
+                display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center',
+                padding: packBanner.url ? '6px 10px 8px' : '10px 14px',
+                background: 'rgba(12,14,20,0.82)', lineHeight: 1.25,
+              }}>
+                {!packBanner.url && (packBanner.text || packBanner.thai) && (
+                  <div style={{ textAlign: 'center' }}>
+                    {packBanner.text && (
+                      <div style={{ fontSize: 12, fontWeight: 700, color: C.txt, letterSpacing: 1, textTransform: 'uppercase', textShadow: '0 1px 4px rgba(0,0,0,0.85)' }}>{packBanner.text}</div>
+                    )}
+                    {packBanner.thai && (
+                      <div style={{ fontSize: 13, fontWeight: 600, color: C.ice, textShadow: '0 1px 4px rgba(0,0,0,0.85)' }}>{packBanner.thai}</div>
+                    )}
+                  </div>
+                )}
+                <VoiceWave key={packBanner.clip} clip={packBanner.clip} />
               </div>
             )}
           </div>

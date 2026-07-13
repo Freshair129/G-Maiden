@@ -198,13 +198,21 @@ fn voice_api_update_pack(
 /// will in a match. Lets users verify a pack's banner+sound bundle before playing.
 #[tauri::command]
 fn preview_announcer_event(app: tauri::AppHandle, pack_id: String, event: String) {
-    if let Some(clip) = voice_api::preview_clip(&pack_id, &event) {
-        audio::play_file(clip);
+    let clip = voice_api::preview_clip(&pack_id, &event);
+    if let Some(p) = &clip {
+        audio::play_file(p.clone());
     }
-    let _ = app.emit(
-        "announcer-banner",
-        voice_api::preview_banner(&pack_id, &event),
-    );
+    let mut banner = voice_api::preview_banner(&pack_id, &event);
+    banner.clip = clip.map(|p| p.to_string_lossy().into_owned());
+    let _ = app.emit("announcer-banner", banner);
+}
+
+/// Read a voiced clip's bytes so the overlay can decode it via Web Audio and drive
+/// a reactive waveform from the SAME audio it hears. Confined to the voice-cache
+/// dir — the path always originates from our own clip resolver, never user input.
+#[tauri::command]
+fn read_audio_bytes(path: String) -> Result<Vec<u8>, String> {
+    audio::read_clip_bytes(&path)
 }
 
 /// Open an external http(s) URL in the default browser (e.g. the voice-pack
@@ -605,6 +613,7 @@ fn main() {
             voice_api_map_event,
             voice_api_update_pack,
             preview_announcer_event,
+            read_audio_bytes,
             list_event_clips,
             play_clip,
             open_voice_cache_dir,
