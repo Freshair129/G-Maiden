@@ -1,7 +1,16 @@
 # TODO / self-note - next session
 
-อัปเดตล่าสุด: **2026-07-13** · **side-track ใน G-Ann (repo พี่น้อง G-Suite): mastering deck ครบชุด + ทดสอบ pan export จริง** — ยืนยัน L/R stereo ถึงคลิปที่ export (Δ 11.93dB ≈ 12dB ที่ dial บนไฟล์จริง). ไม่แตะ G-Maiden. G-Maiden priorities ด้านล่างยังเหมือนเดิม (CR-003 ยังไม่ push)
-รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-13-gann-mastering-deck-complete.md` (ก่อนหน้า: `2026-07-12-cr003-impl-verify-supabase-local.md`)
+อัปเดตล่าสุด: **2026-07-13 B** · **side-track ใน G-Ann (repo พี่น้อง G-Suite): event mapping + banner ครบ 3 ชิ้น + PUSHED** — (1) banner override rail ใส่ภาพเอง png/webp/gif, (2) animated-WebP bake (tone banner มี entrance animation, พิสูจน์ container จริง VP8X 0x12/12 frame/loop 1 + Pillow alpha ramp), (3) W4 HoN→Dota label resolver (36/36). **committed + pushed ขึ้น G-Suite `origin/main` (`be37053..8c1c11a`)**. ไม่แตะ G-Maiden. G-Maiden priorities ด้านล่างยังเหมือนเดิม (CR-003 ยังไม่ push).
+รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-13-B-gann-event-mapping-banner.md` (ก่อนหน้า: `2026-07-13-gann-mastering-deck-complete.md`, `2026-07-12-cr003-impl-verify-supabase-local.md`)
+
+## 🎨 G-Ann event-mapping+banner thread — งานต่อ (side-repo G-Suite, 2026-07-13 B)
+- **live in-game verify (งาน Boss)**: `pnpm ann-studio:dev` → import HoN video → auto-split → auto-map
+  (ดู deterministic pass ยิงกี่อัน) → banner override / เปิด "banner เคลื่อนไหว" → install → เข้าเกมดู banner
+  เด้ง+animated+เสียงตรง event. (browser preview รัน Tauri app นี้ไม่ได้ — `__TAURI__.invoke` undefined.)
+- **W4 OCR frame-reader ยังไม่ทำ** (env-dependent): `detect_buttons.py` sidecar — PyAV frame extract +
+  OCR engine (tesseract/easyocr ใน venv) + HoN button ROI/highlight → emit `{labels:[{startMs,endMs,label}]}`
+  → resolve ผ่าน `honEventMap.ts` (single source of truth). contract เขียนใน `sidecar/README.md`. calibration ต่อวิดีโอ.
+- animated bake = frames 12/fps 24 (~0.5s) ปรับใน `bakeBanner.ts`; กริดยังไม่มี live-preview ของ animation.
 
 ## 🎯 Highest-leverage next work (จาก session 2026-07-12, เรียงลำดับ)
 1. **push CR-003 commits** (`f675fabb..a90da645`, 4 ตัว) เมื่อ Boss สั่ง — ไม่ tag/release. (รวม session-B ที่ push แล้ว = clean).

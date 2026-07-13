@@ -1,0 +1,79 @@
+# 2026-07-13 B — G-Ann Event Mapping + Banner (banner override → animated-WebP bake → W4 label)
+
+> ⚠️ **งาน session นี้อยู่ใน repo พี่น้อง `G:\G-Suite\packages\ann-studio` (G-AnnStudio) ไม่ใช่ G-Maiden.**
+> บันทึกใน brain ของ G-Maiden เพราะ G-Ann คือเครื่องมือผลิต voice pack + banner ให้ G-Maiden.
+> **ต่างจาก session ก่อนหน้า (2026-07-13 A mastering deck): รอบนี้ committed + pushed ขึ้น G-Suite remote จริง.**
+
+## Entry point
+ต่อจาก 2026-07-13 A (mastering deck complete). Boss สั่ง "เริ่ม event mapping + banner เลย" แล้ว
+สั่งต่อทีละชิ้น: banner override → animated-WebP bake → W4 OCR label → commit → push.
+ของพื้นฐานมีแล้ว (EventTestGrid, tone banners 23, `install_gmaiden_pack` เขียน manifest pack จริง จาก commit `be37053`).
+
+## สิ่งที่ทำ (3 commit บน G-Suite `main`, pushed `be37053..8c1c11a`)
+
+### 1. Banner override rail — `ce65e3d`
+- **จุดสำคัญที่เจอ**: ฝั่ง Rust `install_gmaiden_pack` รับ `banners[]` = `{event, b64, ext}` และเขียน ext
+  png/webp/gif/apng อยู่แล้ว (lib.rs:691-713) → **override + animated รองรับ backend แล้ว**; ช่องว่างจริง
+  = frontend ส่งแต่ tone-banner PNG อัตโนมัติ ไม่มีทางให้ author ใส่ภาพเอง.
+- store: `bannerOverrides: Record<event,{b64,ext,mime}>` + `setBannerOverride` + persist เข้า project.
+- EventTestGrid: ปุ่ม "แทนภาพเอง/เปลี่ยน/ล้าง" ต่อการ์ด (file input, png/webp/gif/apng) + preview บนการ์ด+เวที
+  + badge "ภาพเอง·ext" + นับใน header. exportGmaidenPack: override ชนะ tone banner ต่อ event.
+- **APNG → normalize เป็น png**: G-Maiden `image_mime` (voice_api.rs:948) รองรับ png/webp/gif แต่**ไม่มี apng**
+  (จะตกเป็น octet-stream = ภาพแตกใน overlay). APNG เป็น PNG container ที่ Chromium/WebView2 เล่นภายใต้
+  image/png → normalize ตั้งแต่ต้นทาง.
+
+### 2. Animated-WebP bake — `792214b`
+- ตอน install: event ที่ไม่มี override → bake **animated WebP** แทน static PNG: 12 เฟรมของ
+  `drawToneBanner(progress 0→1)` (entrance slide-up+fade ที่ปูใน `progress` param) → ffmpeg `libwebp_anim`
+  (lossless, `-loop 1` เล่นครั้งเดียวแล้วค้าง). Rust cmd ใหม่ `bake_animated_webp` (frames b64 → temp dir →
+  webp b64), register ใน handler. frontend `lib/bakeBanner.ts` (offscreen canvas → เรียก cmd).
+  exportGmaidenPack priority: **override image > baked webp > static PNG** (bake fail = fallback PNG).
+  UI toggle "banner เคลื่อนไหว" (default เปิด).
+
+### 3. W4 HoN→Dota announcer-label resolver — `8c1c11a`
+- `lib/honEventMap.ts` `matchAnnouncerLabel(raw) -> eventId|null`: HoN streak ladder ≈ 1:1 กับ Dota,
+  multikill map ตามจำนวนศพ (**Quad=ultra_kill, Annihilation=rampage**). ทน OCR noise (case/วรรค/
+  เครื่องหมาย), whole-word membership กัน "kill" เดี่ยวหลุดเป็น killing_spree. event label/id ของ Dota resolve ได้.
+- `autoMapEvents` เพิ่ม **deterministic pass ก่อน LLM**: clip ที่ชื่อมีป้าย announcer → map ทันที,
+  เหลือส่ง LLM แล้วรายงานแยก "กี่อันจากป้าย/กี่อันจาก AI" → แม่นขึ้น + ลด LLM load.
+- **OCR frame-reader (`detect_buttons.py`) ยังไม่ทำ** — เป็น env-dependent (ต้อง sample video + OCR engine
+  ใน sidecar venv + ROI calibration). contract เขียนใน `sidecar/README.md`: sidecar ปล่อย raw label text
+  อย่างเดียว, resolve ที่ honEventMap.ts ที่เดียว (single source of truth).
+
+## Verify (gate ที่รันจริง)
+| Gate | ผล |
+| --- | --- |
+| `npx tsc --noEmit` (G-Ann src/) ทุกรอบ | ✅ exit 0 |
+| `cargo check` (src-tauri) | ✅ exit 0 |
+| ffmpeg bake exact args บน ffmpeg-static จริง | ✅ valid animated WebP 6030B |
+| WebP container inspect | ✅ VP8X `0x12`=alpha+anim · **12 ANMF** · loop=1 |
+| WebP alpha ramp (Pillow decode) | ✅ frame0 (0,0) → frame11 (253,253) = fade-in + alpha ครบ |
+| resolver → CJS แล้วรัน node | ✅ **36/36** (HoN button/OCR noise/dropped-word/Dota-native/negative) |
+| live in-game (banner เด้ง/เสียง) + drag | ❌ ต้อง Boss เปิด Tauri — browser preview รัน Tauri app นี้ไม่ได้ |
+
+## Key facts / กับดักที่กันไว้ (session นี้)
+- **`-loop` ต้องอยู่หลัง `-i`** (encoder option = webp loop count) ไม่งั้นเป็น image-demuxer input-loop.
+- **`-start_number 0`** จำเป็น — image2 demuxer default start=1 จะทิ้ง frame 0 (เฟรมโปร่งใสตอนเริ่ม entrance).
+- **ALPH chunk = 0 เป็นเรื่องปกติของ lossless webp** — VP8L เก็บ alpha inline ไม่มี ALPH chunk แยก;
+  เช็ก VP8X flag bit 0x10 แทน (อย่าเข้าใจผิดว่า alpha หาย).
+- **ffmpeg-static ไม่มี ffprobe + decoder อ่าน animated webp ไม่ได้** (ข้อจำกัด ffmpeg) → verify ต้อง
+  container-inspect + Pillow (decoder อิสระ เหมือน Chromium/WebView2 ในเกม).
+- **G-Maiden มี event `kill` เดี่ยวจริง** — resolver คืน "kill"→kill ถูกต้อง (เกือบจด false-fail).
+- **Node 24 type-strip อ่าน extensionless import ไม่ได้** → verify TS logic ด้วยการ compile→CJS ก่อนรัน node
+  (ไม่ใช่รัน .ts ตรง). vitest ไม่มีใน G-Ann frontend.
+
+## State ปลาย turn
+- **G-Suite**: `main` sync กับ `origin/main` (pushed). clean.
+- **G-Maiden**: branch `main`, ไม่แตะทั้ง session. เหลือ `orchestration/src-tauri/Cargo.toml` M เดิม
+  (CRLF/build flicker มาตั้งแต่ต้น session, `git checkout --` ทิ้งได้).
+- **ไม่ tag/ไม่ release** (batching). G-Ann ยังไม่มี release workflow.
+
+## งานต่อ (เรียงค่า)
+1. **live in-game verify** (งาน Boss) — `pnpm ann-studio:dev` → import HoN video → auto-split → auto-map
+   (ดู deterministic pass ยิงกี่อัน) → ใส่ banner override / เปิด "banner เคลื่อนไหว" → install → เข้าเกมดู
+   banner เด้ง + animated + เสียงตรง event.
+2. **W4 OCR frame-reader** `detect_buttons.py` — sidecar (PyAV frame extract เหมือน detect_boundaries.py)
+   + OCR engine (tesseract/easyocr ใน venv) + HoN button ROI/highlight detect → emit `{labels:[{startMs,
+   endMs,label}]}` → frontend resolve ผ่าน honEventMap.ts. calibration ต่อวิดีโอ (เหมือน caveat W1).
+3. **animated bake ปรับได้**: ตอนนี้ frames=12/fps=24 (~0.5s). ถ้า Boss อยากได้ entrance ยาว/สั้นกว่านี้
+   ปรับใน bakeBanner.ts. ยังไม่มี live-preview ของ animated ในกริด (การ์ดโชว์ progress=1 นิ่ง).
