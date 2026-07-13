@@ -17,6 +17,24 @@ use crate::cv::region::MinimapRegion;
 /// A hero unseen for at least this long counts as "missing" (SRS: 5 s).
 pub const MISSING_THRESHOLD_MS: u64 = 5_000;
 
+/// A detected name must recur in at least this many frames (within
+/// [`CONFIRM_WINDOW_MS`]) before Sentry trusts it as a hero actually in the
+/// match. The minimap classifier is a tiny synthetic-trained model that
+/// over-fires on non-hero blips (creeps/wards/couriers/noise), producing
+/// one-off misclassifications across its whole 127-hero label set. Those never
+/// recur consistently, so a "seen N times recently" gate drops them — without
+/// it a single stray frame spawns a phantom hero that later reports "missing".
+const CONFIRM_HITS: u32 = 3;
+
+/// Sliding window for accumulating confirmation hits. If a name isn't re-seen
+/// within this long, its streak resets — a stray hit an age ago must not help
+/// confirm a later one.
+const CONFIRM_WINDOW_MS: u64 = 4_000;
+
+/// Drop an UNconfirmed track not re-seen within this long, so scattered phantom
+/// misclassifications don't accumulate in the map.
+const STALE_UNCONFIRMED_MS: u64 = 8_000;
+
 /// One enemy that just crossed the missing threshold.
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct EnemyMissing {
@@ -32,6 +50,11 @@ struct Track {
     last_pos: (f32, f32),
     /// edge flag — true once we've emitted EnemyMissing for the current absence.
     missing_emitted: bool,
+    /// consecutive-window sightings accumulated toward [`CONFIRM_HITS`].
+    hits: u32,
+    /// true once `hits` reached the threshold — only confirmed heroes are ever
+    /// reported missing. Sticky: a confirmed hero stays confirmed for the match.
+    confirmed: bool,
 }
 
 /// Per-hero last-seen state machine.
@@ -53,22 +76,53 @@ impl Sentry {
         region: &MinimapRegion,
         now_ms: u64,
     ) -> Vec<EnemyMissing> {
-        // 1) refresh every hero seen this frame (and re-arm its missing edge)
+        // 1) refresh every hero seen this frame (accumulate confirmation hits,
+        //    re-arm its missing edge)
         for d in detections {
             let pos = region.pixel_to_normalised(d.x, d.y);
-            let t = self.tracks.entry(d.name.clone()).or_insert(Track {
-                last_seen_ms: now_ms,
-                last_pos: pos,
-                missing_emitted: false,
-            });
-            t.last_seen_ms = now_ms;
-            t.last_pos = pos;
-            t.missing_emitted = false;
+            match self.tracks.get_mut(&d.name) {
+                Some(t) => {
+                    // streak resets if the gap since the last hit blew the window
+                    // (only matters while still unconfirmed — confirmed is sticky)
+                    if !t.confirmed && now_ms.saturating_sub(t.last_seen_ms) > CONFIRM_WINDOW_MS {
+                        t.hits = 0;
+                    }
+                    t.hits = t.hits.saturating_add(1);
+                    if t.hits >= CONFIRM_HITS {
+                        t.confirmed = true;
+                    }
+                    t.last_seen_ms = now_ms;
+                    t.last_pos = pos;
+                    t.missing_emitted = false;
+                }
+                None => {
+                    self.tracks.insert(
+                        d.name.clone(),
+                        Track {
+                            last_seen_ms: now_ms,
+                            last_pos: pos,
+                            missing_emitted: false,
+                            hits: 1,
+                            // first sight is never enough (CONFIRM_HITS > 1);
+                            // subsequent recurrences flip this in the arm above.
+                            confirmed: false,
+                        },
+                    );
+                }
+            }
         }
 
-        // 2) flag any hero that has now been unseen past the threshold (once)
+        // 2) drop unconfirmed phantom noise that hasn't recurred — keeps stray
+        //    misclassifications from piling up (confirmed heroes are kept).
+        self.tracks
+            .retain(|_, t| t.confirmed || now_ms.saturating_sub(t.last_seen_ms) <= STALE_UNCONFIRMED_MS);
+
+        // 3) flag any CONFIRMED hero now unseen past the threshold (once)
         let mut out = Vec::new();
         for (hero, t) in self.tracks.iter_mut() {
+            if !t.confirmed {
+                continue;
+            }
             let elapsed = now_ms.saturating_sub(t.last_seen_ms);
             if elapsed >= MISSING_THRESHOLD_MS && !t.missing_emitted {
                 t.missing_emitted = true;
@@ -88,6 +142,9 @@ impl Sentry {
         self.tracks
             .iter()
             .filter_map(|(h, t)| {
+                if !t.confirmed {
+                    return None;
+                }
                 let e = now_ms.saturating_sub(t.last_seen_ms);
                 (e >= MISSING_THRESHOLD_MS).then(|| (h.clone(), e, t.last_pos))
             })
@@ -120,18 +177,20 @@ mod tests {
     fn missing_fires_once_after_threshold_then_rearms() {
         let mut s = Sentry::new();
         let r = region();
-        // seen at t=0
-        assert!(s.update(&[det("CM", 10, 10)], &r, 0).is_empty());
-        // still within 5s — nothing
+        // confirm CM: CONFIRM_HITS sightings inside the window (last seen 300ms)
+        for t in [0, 150, 300] {
+            assert!(s.update(&[det("CM", 10, 10)], &r, t).is_empty());
+        }
+        // still within 5s of the last sighting — nothing
         assert!(s.update(&[], &r, 4_000).is_empty());
-        // crosses 5s — fires once
-        let e = s.update(&[], &r, 5_001);
+        // crosses 5s since last seen — fires once
+        let e = s.update(&[], &r, 5_301);
         assert_eq!(e.len(), 1);
         assert_eq!(e[0].hero, "CM");
         assert!(e[0].missing_for_ms >= 5_000);
         // still missing — does NOT re-fire
         assert!(s.update(&[], &r, 7_000).is_empty());
-        // reappears, then disappears again — edge re-arms and fires anew
+        // reappears (already confirmed → one sighting refreshes), gone again → re-arms
         assert!(s.update(&[det("CM", 12, 12)], &r, 8_000).is_empty());
         let e2 = s.update(&[], &r, 13_500);
         assert_eq!(e2.len(), 1);
@@ -141,7 +200,10 @@ mod tests {
     fn missing_list_reflects_current_state() {
         let mut s = Sentry::new();
         let r = region();
-        s.update(&[det("CM", 10, 10), det("SF", 200, 200)], &r, 0);
+        // confirm both, then SF stays seen while CM disappears
+        for t in [0, 150, 300] {
+            s.update(&[det("CM", 10, 10), det("SF", 200, 200)], &r, t);
+        }
         s.update(&[det("SF", 205, 205)], &r, 6_000); // SF still seen, CM gone
         let m = s.missing(6_000);
         assert_eq!(m.len(), 1);
@@ -152,9 +214,35 @@ mod tests {
     fn last_pos_is_normalised() {
         let mut s = Sentry::new();
         let r = region(); // side 256
-        s.update(&[det("CM", 128, 64)], &r, 0);
+        for t in [0, 150, 300] {
+            s.update(&[det("CM", 128, 64)], &r, t);
+        }
         let e = s.update(&[], &r, 6_000);
         let (nx, ny) = e[0].last_pos;
         assert!((nx - 0.5).abs() < 1e-3 && (ny - 0.25).abs() < 1e-3);
+    }
+
+    #[test]
+    fn single_frame_phantom_is_never_reported() {
+        let mut s = Sentry::new();
+        let r = region();
+        // one stray misclassification that never recurs
+        assert!(s.update(&[det("Phantom", 30, 30)], &r, 0).is_empty());
+        // well past the missing threshold — must stay silent (never confirmed)
+        assert!(s.update(&[], &r, 20_000).is_empty());
+        assert!(s.missing(20_000).is_empty());
+    }
+
+    #[test]
+    fn scattered_phantoms_do_not_accumulate() {
+        let mut s = Sentry::new();
+        let r = region();
+        // six different one-off misclassifications spread over time — the shape
+        // of the "10 phantom heroes reported missing" bug this gate closes.
+        for (i, name) in ["A", "B", "C", "D", "E", "F"].iter().enumerate() {
+            assert!(s.update(&[det(name, 10, 10)], &r, i as u64 * 1_000).is_empty());
+        }
+        // none reached CONFIRM_HITS → nothing is ever reported missing
+        assert!(s.missing(30_000).is_empty());
     }
 }
