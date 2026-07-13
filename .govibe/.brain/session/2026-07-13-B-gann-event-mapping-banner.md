@@ -194,10 +194,24 @@ installed (auto-detect fallback, G:\GM\G-Maiden\voice-cache). cargo 0, tsc 0.
   ใต้ sounds_dir, ไม่ ss/t/padding), segment-clip ตัดเหมือนเดิม. relax wavPath req ถ้าเป็น file-clip หมด.
 - ตอบ Boss: source_path **อยู่ใน DB** แล้ว (column) แต่เดิม Clip ไม่พก → หาย. ตอนนี้ per-clip แล้ว pack อ้าง origin จริงได้.
 
+### 15. G-Maiden touch: hero portraits (deck) + kill banner grayscale + CR-010 (ครั้งแรกที่แตะ G-Maiden code)
+Boss ส่งรูป hero grid → "ทำ hero portrait". fetch จาก CDN แทนครอปรูป (chat attachment เซฟ disk ไม่ได้).
+- 🔴 **coordination**: agent อีก session ถือ **companion.ts/buildHeroes.ts/events.ts + backend (gsi/cv/runtime) dirty**.
+  ผมแตะแค่ไฟล์ **clean** (CommandDeck.tsx, App.tsx, index.css, heroPortrait.ts, CR-010) — commit เฉพาะไฟล์ผม ไม่ stage ของเขา.
+- **`0eba982b` deck hero portraits** — `heroPortrait.ts`: `dota_react/heroes/{short}.png` (256x144, CSP อนุญาต CDN แล้ว →
+  runtime ไม่ bundle). reverse `hero.hero`=prettyHeroName(npc short)=titlecase → `.toLowerCase().replace(/\s+/,"_")` ตรงเป๊ะ
+  (Nevermore→nevermore, Zuus→zuus). CommandDeck HeroSlot: portrait จางหลังการ์ด (dead จางกว่า, missing ขาวดำ) + onError fallback.
+- **`5b0fdc33` kill banner grayscale** — App.tsx:899 มี portrait+X stroke-by-stroke อยู่แล้ว (index.css gm-cross-draw).
+  เพิ่ม `gm-kill-desat`: portrait → ขาวดำ หลัง X วาดจบ (~0.66s) ค้างตอน exit. ตอบ Boss: 2/3 มีอยู่แล้ว เพิ่มแค่ grayscale.
+- **`0eb7efc9` exact victim + CR-010** — overlay เดา victim จาก G-Sentry missing set (ผิดบ่อย). wire `Tick.last_victim_hero?`
+  (optional) prefer ก่อน guess → **backend เติม field → overlay upgrade ทันที ไม่ต้องแก้อีก**. CR-010 ขอ backend resolve
+  last_victim_slot→hero ใส่ game-tick (channel เดียวกับ CR-009 ที่เขาตอบ). Part B (voice transcript + reactive waveform)
+  ยังไม่ทำ — audio เล่นใน Rust ไม่มี samples ใน overlay, ต้องตัดสิน architecture (envelope stream / overlay เล่นเอง).
+
 ## State ปลาย turn
-- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..809e717`, 25 commit thread นี้). clean.
-- **Phase 1+2 ครบ + bugfix รอบ Boss**. เหลือ live-test (Boss): drag pack/sound, save file-clip, AI name-gen,
-  backlink/radar (ต้อง Tauri IPC + library data). old sounds ยังใช้ filename ไทยเดิม (save ใหม่=eng).
+- **G-Suite**: `main` sync (pushed `be37053..3d7c1d0..1b5c8a3..809e717`, G-Ann thread). clean.
+- **G-Maiden**: `main` sync `origin/main` (pushed ถึง `0eb7efc9`). แตะแค่ไฟล์ clean, ไม่ชน agent อื่น. CR-010 รอ backend.
+- **Phase 1+2 G-Ann ครบ + bugfix + hero portraits/kill banner G-Maiden**. เหลือ live-test (Boss) + Part B voice waveform (รอเลือก arch).
 - **ปิด `tauri dev`** — เปิดใหม่ `pnpm ann-studio:dev` ถ้าจะเทสต์ (ปิด dev เก่าให้หมดก่อน กัน port ชน strictPort:5174).
 - **G-Maiden**: branch `main`, ไม่แตะทั้ง session. เหลือ `orchestration/src-tauri/Cargo.toml` M เดิม
   (CRLF/build flicker มาตั้งแต่ต้น session, `git checkout --` ทิ้งได้).

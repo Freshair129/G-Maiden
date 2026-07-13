@@ -19,6 +19,11 @@
   `8c1f05d7`, จาก CR-009 §77 ที่ agent อีก session เติม): 13 events, death/mega_kill=2 takes. ถ้า G-Ann install ทับ
   pack นี้ด้วย shape ใหม่ → test แดง → ping ฝั่ง G-Maiden ก่อน.
 - **white screen = zombie dev ชนกัน** (vite เก่า :5174 + ใหม่ :5290) — ปิด dev เก่าให้หมดก่อนเปิดใหม่ (strictPort:5174).
+- 🆕 **G-Maiden hero portraits + kill banner** (แตะ G-Maiden ครั้งแรก, pushed ถึง `0eb7efc9`): `0eba982b` deck hero
+  portrait (heroPortrait.ts, CDN runtime, CSP อนุญาตแล้ว) · `5b0fdc33` kill banner grayscale หลัง X · `0eb7efc9` wire
+  `Tick.last_victim_hero?` + **CR-010** ขอ backend resolve victim. แตะแค่ไฟล์ clean (CommandDeck/App.tsx/index.css/
+  heroPortrait/CR-010) ไม่ชน agent อื่นที่ถือ companion/buildHeroes/gsi/cv/runtime dirty. **Part B voice transcript+
+  reactive waveform ยังไม่ทำ** (audio เล่นใน Rust, overlay ไม่มี samples — ต้องเลือก arch: envelope stream / overlay เล่นเอง).
 - **install channel G-Ann→G-Maiden**: เขียน pack ลง `voice_cache_root(base)/packs/<id>/` แล้ว `POST :3000/announcer/install {packId}` auto-activate. **3 target** (auto-detect probe ตามลำดับ): **release build `G:\G-Maiden\src-tauri\target\release`** (Boss ใช้อันนี้, → target/release/voice-cache) → debug → **installed `G:\GM\G-Maiden`** (.lnk, → voice-cache). default (no path) = dev-source repo `G:\G-Maiden` (→ assets/voice-cache). Settings→G-Maiden Path ปุ่ม auto-detect เติมให้.
 - **live verify ทั้ง flow (งาน Boss)**: `pnpm ann-studio:dev` → (a) import วิดีโอ → "วิเคราะห์วิดีโอ" ดู clips+auto-map,
   (b) Save to Library เจ้าของเสียง + import ใหม่ (guard), (c) หน้าทดสอบ ลาก/+เพิ่มเสียง → set G-Maiden path (auto-detect)
