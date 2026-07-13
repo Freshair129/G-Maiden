@@ -173,10 +173,21 @@ installed (auto-detect fallback, G:\GM\G-Maiden\voice-cache). cargo 0, tsc 0.
   ล็อก `pack_mrijgajn` ด้วย G-Maiden reader test (`8c1f05d7`, 13 events, death/mega_kill=2 takes). **ถ้า G-Ann
   regenerate/install pack นี้ทับด้วย shape ใหม่ (filename `<idx>_<eng>` ใหม่) → test เขาแดง → ต้อง ping ก่อน**. ตอนนี้ยังไม่ชน.
 
+### 13. Phase 2 UI — voice-library asset management (ครบ, pushed `1b5c8a3`)
+- **`3d7c1d0` AI name_en ในหน้า save** — SaveToLibDialog list clip (TH readonly + EN input แก้ได้) + ปุ่ม
+  "✨ AI ตั้งชื่อ ENG" เรียก `llm_complete` (Ollama/Claude) ตั้งชื่อ snake_case สื่อความหมาย → name_en ไป
+  save_clips → filename `NN_<eng>.wav`. ว่าง → fallback event.
+- **`64bf80e` backlink + multi-event ในคลัง** — SoundRow โชว์ events chips (slice 2 + "+N") + ปุ่ม 🔗 (Link2)
+  toggle → invoke `sound_usage(sound.id)` → list `{pack_name · event}`.
+- **`1b5c8a3` impact-radar** — `ImpactRadar.tsx` SVG radial: voice(กลาง r30) → events(ring RE=88, lime) →
+  packs(ring RP=150, per event, spread .5rad). เปิดจากปุ่ม Radar บน SoundRow. self-fetch sound_usage.
+  geometry verified node: events 120° เท่ากัน, 0 NaN/0 OOB.
+
 ## State ปลาย turn
-- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..1ba8d9a`, 19 commit thread นี้). clean.
-- **Phase 2 ต่อ (Boss สั่ง)**: AI เติม name_en ในหน้า save (แก้ได้), + backlink/multi-event UI ในคลัง, + impact-radar view.
-- **ปิด `tauri dev`** — เปิดใหม่ `pnpm ann-studio:dev` ถ้าจะเทสต์ (ปิด dev เก่าให้หมดก่อน กัน port ชน).
+- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..1b5c8a3`, 23 commit thread นี้). clean.
+- **Phase 1+2 ครบ** (voice-library data model + asset-management UI). เหลือ live-test (Boss): AI name-gen จริง,
+  backlink/radar render จริง (ต้อง Tauri IPC + library data). old sounds ยังใช้ filename ไทยเดิม (save ใหม่=eng).
+- **ปิด `tauri dev`** — เปิดใหม่ `pnpm ann-studio:dev` ถ้าจะเทสต์ (ปิด dev เก่าให้หมดก่อน กัน port ชน strictPort:5174).
 - **G-Maiden**: branch `main`, ไม่แตะทั้ง session. เหลือ `orchestration/src-tauri/Cargo.toml` M เดิม
   (CRLF/build flicker มาตั้งแต่ต้น session, `git checkout --` ทิ้งได้).
 - **ไม่ tag/ไม่ release** (batching). G-Ann ยังไม่มี release workflow.
