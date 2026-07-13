@@ -2,7 +2,7 @@ import { useRef, useSyncExternalStore } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { GameTick, GsiStatus, MinimapCv, MinimapFrame, EnemyMissing, SignalAlert, ResourceStats } from "./live/events";
+import type { GameTick, GsiStatus, MinimapCv, MinimapFrame, DraftRoster, EnemyMissing, SignalAlert, ResourceStats } from "./live/events";
 import { buildMatch } from "./live/buildMatch";
 import { buildHeroes, assignEnemySlot } from "./live/buildHeroes";
 import { buildMarkers } from "./live/buildMarkers";
@@ -463,12 +463,17 @@ type LiveState = {
   // Rolling game-momentum accumulator (EWMA), advanced per game-tick. Reset on a
   // new match alongside the enemy-slot table. See live/buildMomentum.ts.
   mom: MomentumState;
+  // Draft-CV: the full 10-hero roster read off the pick screen (short label form,
+  // split by team). Fills ally slots 1-4 + pre-seeds enemy identities. NOT reset
+  // on the game-start tick (the draft that produced it ran just before) — it's
+  // replaced when the next match's draft emits a fresh `draft-roster`.
+  roster: DraftRoster | null;
 };
 
 const EMPTY_LIVE: LiveState = {
   tick: null, status: null, cv: null, gank: null, missing: new Map(), missingPos: new Map(),
   enemySlots: new Map(),
-  active: false, od: null, stats: null, logs: null, activityLog: [], mom: EMPTY_MOMENTUM
+  active: false, od: null, stats: null, logs: null, activityLog: [], mom: EMPTY_MOMENTUM, roster: null
 };
 
 type CompanionSnapshot = {
@@ -517,7 +522,7 @@ function buildCompanionData(live: LiveState): CompanionData {
         ...FALLBACK,
         updatedAt: Date.now(),
         match: buildMatch(live.tick, live.status, FALLBACK.match),
-        heroes: buildHeroes(live.tick, live.missing, live.cv, FALLBACK.heroes, live.enemySlots),
+        heroes: buildHeroes(live.tick, live.missing, live.cv, FALLBACK.heroes, live.enemySlots, live.roster, live.tick?.team_name ?? ""),
         markers: buildMarkers(live.cv, live.missingPos, FALLBACK.markers),
         signals: buildSignals(live.gank, live.missing),
         activity: live.activityLog,
@@ -749,6 +754,9 @@ function ensureRuntime() {
       return { ...s, cv: p, enemySlots, active: true };
     });
   });
+  sub<DraftRoster>("draft-roster", (p) =>
+    updateLive((s) => ({ ...s, roster: p, active: true }), true)
+  );
   sub<MinimapFrame>("minimap-frame", (p) => {
     const now = Date.now();
     if (now - lastFrameAt < MINIMAP_IMG_MS) return;

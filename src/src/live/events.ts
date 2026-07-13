@@ -7,6 +7,7 @@
 //   gsi-status    gsi.rs:194        every 4s watchdog
 //   minimap-cv    capture.rs:314    ~5Hz CV debug (detections = pixels within region)
 //   minimap-frame capture.rs        ~3Hz live minimap mirror (base64 PNG data URL)
+//   draft-roster  capture.rs / set_draft_roster cmd  10-hero roster from the pick screen
 //   enemy-missing capture.rs:261    edge, per hero crossing 5s threshold
 //   gank-alert    capture.rs:292    edge, gank probability >= danger threshold
 //   gank-clear    capture.rs:297    edge, unit payload
@@ -84,6 +85,14 @@ export interface MinimapCv {
 export interface MinimapFrame {
   image: string;
   region: MinimapRegion;
+}
+
+/** draft-roster — the full 10-hero roster read off the pick screen (Draft-CV),
+ *  raw labels.json short form (e.g. "crystal_maiden"). Fills ally identities GSI
+ *  can't expose and pre-seeds enemy slots. Split by team; index-independent. */
+export interface DraftRoster {
+  radiant: string[];
+  dire: string[];
 }
 
 /** enemy-missing — edge event, last_pos already normalised to [0,1]². */

@@ -1,7 +1,7 @@
 import { describe, it, expect } from "vitest";
 import { buildHeroes, assignEnemySlot, ENEMY_SLOT_COUNT } from "../buildHeroes";
 import { MOCK, FALLBACK } from "../../companion";
-import type { GameTick, MinimapCv } from "../events";
+import type { GameTick, MinimapCv, DraftRoster } from "../events";
 
 function makeTick(overrides: Partial<GameTick> = {}): GameTick {
   return {
@@ -220,6 +220,53 @@ describe("buildHeroes — honest FALLBACK base (CR-007 WP-4 regression)", () => 
     const result = buildHeroes(null, new Map(), null, FALLBACK.heroes, enemySlots);
     expect(result[5].hero).toBe("Oracle");
     expect(result[5].state).toBe("visible");
+  });
+});
+
+// Draft-CV: a full pick-screen roster fills ally slots 1-4 (impossible from GSI)
+// and pre-seeds enemy identities before CV ever sights them.
+describe("buildHeroes — Draft-CV roster fill", () => {
+  const roster: DraftRoster = {
+    radiant: ["crystal_maiden", "juggernaut", "pudge", "lion", "axe"],
+    dire: ["invoker", "zeus", "sniper", "lina", "tinker"],
+  };
+
+  it("fills ally slots 1-4 from the local player's team (minus the local hero)", () => {
+    const tick = makeTick({ team_name: "radiant" }); // local = crystal_maiden
+    const result = buildHeroes(tick, new Map(), null, FALLBACK.heroes, new Map(), roster, "radiant");
+    expect(result[0].hero).toBe("Crystal Maiden"); // local from GSI
+    expect(result.slice(1, 5).map((h) => h.hero)).toEqual(["Juggernaut", "Pudge", "Lion", "Axe"]);
+  });
+
+  it("keeps ally identity-only (no fabricated KDA — GSI still can't see teammates)", () => {
+    const tick = makeTick({ team_name: "radiant" });
+    const result = buildHeroes(tick, new Map(), null, FALLBACK.heroes, new Map(), roster, "radiant");
+    expect(result[1].kills).toBeUndefined();
+    expect(result[1].nw).toBeUndefined();
+  });
+
+  it("pre-seeds enemy slots 5-9 from the opposing team", () => {
+    const tick = makeTick({ team_name: "radiant" });
+    const result = buildHeroes(tick, new Map(), null, FALLBACK.heroes, new Map(), roster, "radiant");
+    expect(result.slice(5, 10).map((h) => h.hero)).toEqual(["Invoker", "Zeus", "Sniper", "Lina", "Tinker"]);
+    expect(result[5].state).toBe("visible");
+  });
+
+  it("flips ally/enemy when the local player is on Dire", () => {
+    const tick = makeTick({ team_name: "dire", hero: "npc_dota_hero_invoker" });
+    const result = buildHeroes(tick, new Map(), null, FALLBACK.heroes, new Map(), roster, "dire");
+    expect(result[0].hero).toBe("Invoker");
+    expect(result.slice(1, 5).map((h) => h.hero)).toEqual(["Zeus", "Sniper", "Lina", "Tinker"]);
+    expect(result.slice(5, 10).map((h) => h.hero)).toEqual(["Crystal Maiden", "Juggernaut", "Pudge", "Lion", "Axe"]);
+  });
+
+  it("still marks a roster enemy 'missing' when it's in the missing map", () => {
+    const tick = makeTick({ team_name: "radiant" });
+    const missing = new Map<string, number>([["zeus", 7000]]);
+    const result = buildHeroes(tick, missing, null, FALLBACK.heroes, new Map(), roster, "radiant");
+    expect(result[6].hero).toBe("Zeus");
+    expect(result[6].state).toBe("missing");
+    expect(result[6].timer).toBe(7);
   });
 });
 

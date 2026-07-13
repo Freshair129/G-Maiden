@@ -24,7 +24,7 @@
 // reorders one itself. See `assignEnemySlot` below for the one place new
 // names actually claim a slot.
 
-import type { GameTick, MinimapCv } from "./events";
+import type { GameTick, MinimapCv, DraftRoster } from "./events";
 import { prettyHeroName } from "./events";
 import type { CompanionData } from "../companion";
 
@@ -60,44 +60,69 @@ export function buildHeroes(
   missing: Map<string, number>,
   cv: MinimapCv | null,
   base: CompanionData["heroes"],
-  enemySlots: Map<string, number>
+  enemySlots: Map<string, number>,
+  roster: DraftRoster | null = null,
+  teamName = ""
 ): CompanionData["heroes"] {
   const cvNames = cv?.detections?.length ? cv.detections.map((d) => d.name).filter(Boolean) : [];
-  if (!tick && missing.size === 0 && cvNames.length === 0 && enemySlots.size === 0) return base;
+  if (!tick && missing.size === 0 && cvNames.length === 0 && enemySlots.size === 0 && !roster) return base;
 
   // Reverse index: slot -> npc name, so each enemy hero slot in `base` can be
   // filled straight from its permanent assignment (no re-derivation).
   const slotToName = new Map<number, string>();
   for (const [name, slot] of enemySlots.entries()) slotToName.set(slot, name);
 
-  let enemySlotIndex = 0;
+  // Draft-CV: the full roster (all 10 identities) split by the LOCAL player's
+  // team — this is what fills ally slots 1-4 (which GSI never reveals) and
+  // pre-seeds enemy identities before CV ever sights them. Short label form.
+  let allyOthers: string[] = [];
+  let enemyRoster: string[] = [];
+  if (roster && teamName) {
+    const mine = teamName === "radiant" ? roster.radiant : roster.dire;
+    const theirs = teamName === "radiant" ? roster.dire : roster.radiant;
+    const localShort = tick ? tick.hero.replace(/^npc_dota_hero_/, "") : "";
+    allyOthers = mine.filter((n) => n !== localShort); // the 4 teammates
+    enemyRoster = theirs;
+  }
+
+  let allyIndex = 0;
+  let enemyIndex = 0;
 
   return base.map((hero, index) => {
     let next = hero;
 
-    if (tick && index === 0) {
-      next = {
-        ...next,
-        hero: prettyHeroName(tick.hero) || next.hero, // your REAL hero, not the scaffold name
-        level: tick.level,
-        kills: tick.kills,
-        deaths: tick.deaths,
-        assists: tick.assists,
-        nw: tick.net_worth,
-        gpm: tick.gpm,
-        xpm: tick.xpm,
-        lastHits: tick.last_hits,
-        denies: tick.denies,
-        hpPercent: tick.hp_percent,
-        state: tick.alive ? "visible" : "dead",
-        timer: tick.alive ? 0 : Math.round(tick.respawn_seconds),
-      };
+    if (hero.team === "ally") {
+      const a = allyIndex;
+      allyIndex += 1;
+      if (tick && index === 0) {
+        next = {
+          ...next,
+          hero: prettyHeroName(tick.hero) || next.hero, // your REAL hero, not the scaffold name
+          level: tick.level,
+          kills: tick.kills,
+          deaths: tick.deaths,
+          assists: tick.assists,
+          nw: tick.net_worth,
+          gpm: tick.gpm,
+          xpm: tick.xpm,
+          lastHits: tick.last_hits,
+          denies: tick.denies,
+          hpPercent: tick.hp_percent,
+          state: tick.alive ? "visible" : "dead",
+          timer: tick.alive ? 0 : Math.round(tick.respawn_seconds),
+        };
+      } else if (a >= 1 && allyOthers[a - 1]) {
+        // Ally slots 1-4: identity ONLY (GSI never exposes teammate KDA/economy,
+        // so those stay "—"). This is the honest gain Draft-CV unlocks.
+        next = { ...next, hero: prettyHeroName(allyOthers[a - 1]) || next.hero };
+      }
     }
 
     if (hero.team === "enemy") {
-      const enemyIndex = enemySlotIndex;
-      enemySlotIndex += 1;
-      const npcName = slotToName.get(enemyIndex);
+      const e = enemyIndex;
+      enemyIndex += 1;
+      // Identity: prefer the pre-known draft roster; else the CV/missing slot map.
+      const npcName = enemyRoster[e] ?? slotToName.get(e);
       if (npcName) {
         const missingMs = missing.get(npcName);
         next = {
