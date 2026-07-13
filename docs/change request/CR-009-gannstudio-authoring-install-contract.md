@@ -74,7 +74,7 @@
 
 **Heads-up / no action needed:**
 - The vision sidecars (`detect_boundaries.py` / `detect_buttons.py` / `transcribe.py`) + `analyze_video` orchestration live **entirely in G-Ann**, not G-Maiden. The contract between the tools is the **manifest + endpoint**, not the Python. Please don't re-implement a pack pipeline inside G-Maiden — extend the manifest/endpoint if you need more.
-- `pack_mrijgajn` (G-Maiden commit `2a7ba551`) is a real installed pack — usable as test data for the reader.
+- `pack_mrijgajn` (G-Maiden commit `2a7ba551`) is a real installed pack — usable as test data for the reader. **It is now pinned by a G-Maiden reader test** (`voice_api.rs::real_pack_mrijgajn_maps_voice_and_banners`, commit `8c1f05d7`) that asserts its exact mapping — no dangling clips, 13 mapped events, `death`/`mega_kill` = 2 takes. Re-authoring or overwriting this pack (changing its clip counts / events) will fail that test until it's updated. If G-Ann needs to regenerate it, either keep the shape or ping the G-Maiden side to update the assertions.
 - G-Ann is Windows-only; the installed-build auto-detect shells out to PowerShell (`WScript.Shell`) to resolve the Start-menu shortcut.
 
 **What I need from you (if applicable):** if the backend-wire work moves the GSI server off `:3000`, or puts auth in front of `/announcer/install`, tell me the new address/scheme so G-Ann can target it (the endpoint is currently hardcoded and unauthenticated by design).
