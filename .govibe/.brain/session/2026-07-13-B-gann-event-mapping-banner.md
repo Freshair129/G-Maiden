@@ -231,3 +231,20 @@ Boss ส่งรูป hero grid → "ทำ hero portrait". fetch จาก CD
    (panel คนละที่/cursor คนละสี) ต้อง learn ต่อวิดีโอ. OCR noise คำเพี้ยนหนัก → author map เอง.
 5. **bake params ปรับได้**: entrance frames=12/fps=24 (~0.5s); reactive fps=18/max 48 frames. แก้ใน
    bakeBanner.ts. reactive waveform visual เห็นเฉพาะใน webview (canvas) — encoding path พิสูจน์แล้ว.
+
+## Part B — reactive voice waveform (overlay เล่น audio เอง) — DONE `48ccbb0f` (pushed)
+Arch ที่เลือก (แก้ข้อค้างเรื่อง "ไม่มี samples ใน overlay"): **resolve clip ครั้งเดียวใน backend →
+backend เล่น audible เหมือนเดิม (ไม่ regression) + ส่ง clip path มากับ event → overlay decode คลิป
+**เดียวกัน** เล่นผ่าน AnalyserNode ที่ gain 0 (เงียบ) เพื่อขับ waveform** → เสียงที่ได้ยินกับ bar ไม่มีวัน drift.
+- `audio.rs`: แยก `pick_clip()`/`play_path()` ออกจาก `play_random_with_priority` (splitmix64 mix FILETIME
+  กัน Windows `nanos%N` = ค่าคงที่ — [[windows-filetime-randomness-trap]]); เพิ่ม `read_clip_bytes()` จำกัด
+  เฉพาะ voice-cache / default-pack root (canonicalize + starts_with) กัน arbitrary read.
+- `voice_api.rs`: `FiredBanner` +`clip: Option<String>` (serde camelCase → field `clip`).
+- `gsi.rs` + `main.rs`(preview_announcer_event): resolve clip ครั้งเดียว → เล่น → ใส่ path ใน banner.
+- `App.tsx`: `<VoiceWave clip>` component (invoke `read_audio_bytes` → decodeAudioData → BufferSource→
+  Analyser→Gain(0)→dest, rAF วาด canvas 128-fft bars) + voice strip. **event ที่มี voice แต่ pack ไม่มีภาพ**
+  ก็โชว์ caption+waveform ได้ (เดิม early-return ถ้าไม่มี bannerData). cmd `read_audio_bytes` register แล้ว.
+- **transcript = caption (banner_text/thai)** เท่านั้น — G-Maiden ไม่มี per-clip ASR text (manifest ไม่เก็บ).
+  ถ้าอยากได้ transcript จริงต้องให้ G-Ann เขียน text ต่อ clip ลง manifest แล้ว FiredBanner ส่งต่อ.
+- verify: `cargo check` + `tsc --noEmit` ผ่าน. **ยังไม่ได้ verify visual** (Tauri + fired event เท่านั้น —
+  browser preview รันไม่ได้). ทางเทสเร็ว: `preview_announcer_event(pack, event)` ยิง path เดียวกัน.
