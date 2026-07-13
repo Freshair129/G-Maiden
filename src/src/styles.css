@@ -5033,7 +5033,10 @@ body {
   left: 128px;
   top: 148px;
   width: 640px;
-  height: 260px;
+  /* 5 hero cards per column: each card's min-content is ~44px (padding+border+2
+     text lines) so the 5-row 1fr grid needs ~248px; 260 was ~8px short and the
+     bottom card overflowed into .gm-sector-log below. 276 gives ~45px tracks. */
+  height: 276px;
   display: grid;
   grid-template-columns: 170px 1fr 170px;
   gap: 10px;
@@ -5069,6 +5072,12 @@ body {
 
 .gm-hero-slot strong {
   font-size: 11px;
+  /* long hero names (e.g. "Ancient Apparition") must stay one line — a wrap makes
+     the card exceed its grid track and re-triggers the column overflow. */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: calc(100% - 34px); /* leave room for the right-aligned KDA (em) */
 }
 
 .gm-hero-slot span {
@@ -5254,7 +5263,9 @@ body {
 .gm-sector-log {
   position: absolute;
   left: 128px;
-  top: 418px;
+  /* follows the taller battle-grid (bottom now 424) + 10px rhythm; bottom 604 still
+     clears the surface, leaving headroom. */
+  top: 434px;
   width: 620px;
   height: 170px;
   display: grid;
