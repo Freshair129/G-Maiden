@@ -1430,6 +1430,81 @@ mod tests {
     }
 
     #[test]
+    fn real_pack_mrijgajn_maps_voice_and_banners() {
+        // Exercises the manifest reader against the REAL committed announcer pack
+        // (G-Maiden `2a7ba551`, blessed as reader test data by CR-009 §3): the
+        // local half of CR-009's still-pending "install → activate → hear/see in
+        // Dota" gate — it proves the pack's voice + banner mapping resolves.
+        // cargo test runs from `src-tauri/`, so the repo assets are one level up.
+        let root = PathBuf::from("../assets/voice-cache");
+        if !root.join("packs/pack_mrijgajn/manifest.json").is_file() {
+            eprintln!("skip: pack_mrijgajn not present under {}", root.display());
+            return;
+        }
+        // Reset the override on the way out. Do NOT delete the dir — unlike the
+        // scratch-tempdir tests above, this points at the real repo asset.
+        struct Reset;
+        impl Drop for Reset {
+            fn drop(&mut self) {
+                set_test_voice_root(None);
+            }
+        }
+        let _reset = Reset;
+        set_test_voice_root(Some(root));
+
+        let report = install_report("pack_mrijgajn").expect("report for real pack");
+
+        // Core integrity: every mapped clip resolves to a real, in-bounds file —
+        // no dangling or path-escaping references.
+        assert!(
+            report.missing_clips.is_empty(),
+            "pack has dangling/unsafe clip refs: {:?}",
+            report.missing_clips
+        );
+
+        // Each of the 13 mapped events resolves >=1 clip; two have two takes.
+        for ev in [
+            "death", "dominating", "double_kill", "first_blood", "kill",
+            "killing_spree", "mega_kill", "monster_kill", "respawn",
+            "triple_kill", "ultra_kill", "unstoppable", "wicked_sick",
+        ] {
+            assert!(
+                report.counts.get(ev).copied().unwrap_or(0) >= 1,
+                "mapped event {ev} resolved no clips"
+            );
+            assert!(
+                !report.unmapped_events.contains(&ev.to_string()),
+                "{ev} wrongly reported unmapped"
+            );
+        }
+        assert_eq!(report.counts.get("death"), Some(&2));
+        assert_eq!(report.counts.get("mega_kill"), Some(&2));
+
+        // Events the pack doesn't cover fall through cleanly (count 0, unmapped).
+        for ev in ["danger", "gank", "match_start", "advice"] {
+            assert_eq!(report.counts.get(ev), Some(&0), "{ev} unexpectedly mapped");
+            assert!(report.unmapped_events.contains(&ev.to_string()));
+        }
+
+        // Banner resolution: a mapped event inlines its webp as a data: URL and
+        // carries the event's default Thai caption; an unmapped event yields no
+        // image but still the default caption (overlay falls back to its card).
+        let kill = fired_banner_from(Some("pack_mrijgajn".to_string()), "kill");
+        assert!(
+            kill.banner_data
+                .as_deref()
+                .unwrap_or("")
+                .starts_with("data:image/webp;base64,"),
+            "kill banner did not resolve to a webp data URL"
+        );
+        assert_eq!(kill.thai, "คิล");
+
+        let danger = fired_banner_from(Some("pack_mrijgajn".to_string()), "danger");
+        assert!(danger.banner_data.is_none());
+        assert_eq!(danger.thai, "อันตราย");
+    }
+
+    #[test]
     fn install_report_errs_for_nonexistent_pack_and_activation_is_skipped() {
         let root = temp_root("no-pack");
         set_test_voice_root(Some(root.clone()));
