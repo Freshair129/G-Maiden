@@ -144,8 +144,17 @@ pure frontend, ใช้ building block ที่พิสูจน์แล้�
   + `detect_gmaiden_installed` cmd + Settings field แก้ได้ + ปุ่ม auto-detect + persist gmaidenPath ส่งเข้า install.
   cargo 0, tsc 0. path logic ตรงกับ dir จริง (installed มี voice-cache/, repo มีแค่ assets/voice-cache).
 
+### 11. auto-detect รองรับ release build (Boss's workflow) — `cfeff6c`
+Boss เทสผ่าน **`G:\G-Maiden\src-tauri\target\release\g-maiden.exe`** ที่อ่าน pack จาก
+`target/release/voice-cache/packs` (location ที่ 3 ต่างจาก dev-source `assets/voice-cache` + installed
+`G:\GM\G-Maiden\voice-cache`). `detect_gmaiden_target()` probe: repo target/release → target/debug →
+installed(.lnk), คืนตัวแรกที่มี `voice-cache/`. ปุ่ม auto-detect + resolve fallback ใช้อันนี้ → บนเครื่อง Boss
+คืน `...\target\release` → `voice_cache_root` เขียน `target/release/voice-cache/packs` ตรงที่ release exe อ่าน.
+**3 scenario ครบ:** dev-source (auto, assets/voice-cache) · release build (auto-detect, target/release/voice-cache) ·
+installed (auto-detect fallback, G:\GM\G-Maiden\voice-cache). cargo 0, tsc 0.
+
 ## State ปลาย turn
-- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..30ef90f`, 15 commit thread นี้). clean.
+- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..cfeff6c`, 16 commit thread นี้). clean.
 - **ปิด `tauri dev` process ไปแล้ว** (จับ build lock ตอน cargo check) — เปิดใหม่ `pnpm ann-studio:dev` ถ้าจะเทสต์ต่อ.
 - **G-Maiden**: branch `main`, ไม่แตะทั้ง session. เหลือ `orchestration/src-tauri/Cargo.toml` M เดิม
   (CRLF/build flicker มาตั้งแต่ต้น session, `git checkout --` ทิ้งได้).
