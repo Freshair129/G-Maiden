@@ -21,6 +21,7 @@ function makeTick(overrides: Partial<GameTick> = {}): GameTick {
     last_hits: 214,
     denies: 12,
     hero: "npc_dota_hero_crystal_maiden",
+    team_name: "radiant",
     level: 18,
     alive: true,
     hp_percent: 88,

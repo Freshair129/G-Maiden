@@ -14,6 +14,7 @@ import { buildWeekly } from "./live/buildWeekly";
 import { buildInsights } from "./live/buildInsights";
 import { buildHistory, type MatchLog } from "./live/buildHistory";
 import { buildActivity } from "./live/buildActivity";
+import { stepMomentum, momentumView, EMPTY_MOMENTUM, type MomentumState, type GamePhase } from "./live/buildMomentum";
 import { fetchOpenDotaProfile, type OpenDotaProfile } from "./live/opendota";
 import { loadIdentity, saveIdentity, IDENTITY_EVENT } from "./live/identity";
 import { heroName } from "./live/heroNames";
@@ -177,6 +178,15 @@ export type CompanionData = {
     learnedMatches: number;
   };
   history: Array<{ id: string; result: string; hero: string; kda: string; note: string }>;
+  // Game-momentum proxy + phase (see live/buildMomentum.ts). value is -100..100
+  // from OUR team's perspective; phase is the clock-based laning/mid/late split.
+  momentum: {
+    value: number;
+    label: string;
+    tone: CompanionTone;
+    phase: GamePhase;
+    phaseLabel: string;
+  };
 };
 
 // CR-007 WP-4: an honestly-empty hero slot. GSI only ever exposes the local
@@ -270,7 +280,8 @@ export const FALLBACK: CompanionData = {
   weeklyReport: { winRate: -1, kd: -1, topHeroes: [] },
   agentSector: { name: "G-Maiden", title: "Tactical AI", status: "Standby", summary: [] },
   insights: { powerScore: -1, winRate: -1, objectiveControl: -1, wardEfficiency: -1, learnedMatches: -1 },
-  history: []
+  history: [],
+  momentum: { value: 0, label: "—", tone: "info", phase: "pregame", phaseLabel: "ก่อนเกม" }
 };
 
 // TEST FIXTURE ONLY. This rich object used to seed the deck as a demo when no
@@ -414,7 +425,8 @@ export const MOCK: CompanionData = {
     { id: "m-1", result: "Win", hero: "Maiden", kda: "14 / 3 / 18", note: "Strong ward control and objective pacing." },
     { id: "m-2", result: "Loss", hero: "Nyx", kda: "6 / 8 / 11", note: "Late smoke read came 12s too late." },
     { id: "m-3", result: "Win", hero: "Razor", kda: "9 / 2 / 15", note: "Top pressure and rune contest looked clean." }
-  ]
+  ],
+  momentum: { value: 34, label: "กำลังนำ", tone: "good", phase: "mid", phaseLabel: "กลางเกม" }
 };
 
 // Phase 2a (CR-002): live-wire the deck to the Rust backend's Tauri events. The
@@ -448,12 +460,15 @@ type LiveState = {
   // recomputed from scratch on every publish (a ring buffer has no "current
   // value" to re-derive, only a history to append to).
   activityLog: CompanionData["activity"];
+  // Rolling game-momentum accumulator (EWMA), advanced per game-tick. Reset on a
+  // new match alongside the enemy-slot table. See live/buildMomentum.ts.
+  mom: MomentumState;
 };
 
 const EMPTY_LIVE: LiveState = {
   tick: null, status: null, cv: null, gank: null, missing: new Map(), missingPos: new Map(),
   enemySlots: new Map(),
-  active: false, od: null, stats: null, logs: null, activityLog: []
+  active: false, od: null, stats: null, logs: null, activityLog: [], mom: EMPTY_MOMENTUM
 };
 
 type CompanionSnapshot = {
@@ -505,7 +520,8 @@ function buildCompanionData(live: LiveState): CompanionData {
         heroes: buildHeroes(live.tick, live.missing, live.cv, FALLBACK.heroes, live.enemySlots),
         markers: buildMarkers(live.cv, live.missingPos, FALLBACK.markers),
         signals: buildSignals(live.gank, live.missing),
-        activity: live.activityLog
+        activity: live.activityLog,
+        momentum: momentumView(live.mom, live.tick)
       }
     : { ...FALLBACK, updatedAt: Date.now() };
 
@@ -708,10 +724,14 @@ function ensureRuntime() {
       // actual transition (pre-game -> pre-game with clock<=5 would otherwise
       // re-reset every single tick).
       const isNewMatch = p.clock_time <= 5 && (!s.tick || s.tick.clock_time > 5 || !s.tick.in_game);
+      // Advance the momentum EWMA from the prior state (reset on a new match so
+      // last match's swing doesn't bleed in). gpm baseline isn't threaded here
+      // yet, so pass p.gpm → the economy term is 0 (kill-lead + swing only).
+      const mom = stepMomentum(isNewMatch ? EMPTY_MOMENTUM : s.mom, p, p.gpm);
       if (isNewMatch) {
-        return { ...s, tick: p, active: true, missing: new Map(), missingPos: new Map(), enemySlots: new Map() };
+        return { ...s, tick: p, active: true, missing: new Map(), missingPos: new Map(), enemySlots: new Map(), mom };
       }
-      return { ...s, tick: p, active: true };
+      return { ...s, tick: p, active: true, mom };
     })
   );
   sub<GsiStatus>("gsi-status", (p) => updateLive((s) => ({ ...s, status: p, active: true })));

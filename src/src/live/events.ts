@@ -31,6 +31,7 @@ export interface GameTick {
   last_hits: number;
   denies: number;
   hero: string;            // "npc_dota_hero_crystal_maiden"
+  team_name: string;       // "radiant" | "dire" | "" — the LOCAL player's side
   level: number;
   alive: boolean;
   hp_percent: number;      // 0..100

@@ -5109,6 +5109,61 @@ body {
   pointer-events: none;
 }
 
+/* --- Game momentum meter + phase --- */
+.gm-momentum {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid rgba(88, 132, 194, 0.2);
+  background: rgba(18, 20, 28, 0.55);
+}
+.gm-mom-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+}
+.gm-mom-phase {
+  color: #8fd4ff;
+  text-transform: uppercase;
+  background: rgba(143, 212, 255, 0.12);
+  border-radius: 5px;
+  padding: 1px 6px;
+}
+.gm-mom-title { color: #6b7c92; letter-spacing: 0.14em; }
+.gm-mom-label { font-weight: 900; }
+.gm-mom-track {
+  position: relative;
+  height: 8px;
+  border-radius: 99px;
+  background: rgba(255, 255, 255, 0.06);
+  overflow: hidden;
+}
+.gm-mom-center {
+  position: absolute;
+  left: 50%;
+  top: -2px;
+  bottom: -2px;
+  width: 1px;
+  background: rgba(255, 255, 255, 0.28);
+  transform: translateX(-0.5px);
+  z-index: 2;
+}
+.gm-mom-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: 99px;
+  transition: left 0.4s ease, width 0.4s ease;
+}
+.gm-mom-fill.pos { background: linear-gradient(90deg, rgba(91, 227, 167, 0.35), #5be3a7); }
+.gm-mom-fill.neg { background: linear-gradient(90deg, #ff7b85, rgba(255, 123, 133, 0.35)); }
+
 .gm-map-grid {
   position: absolute;
   inset: 0;
