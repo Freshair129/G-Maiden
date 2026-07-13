@@ -1,6 +1,6 @@
 # TODO / self-note - next session
 
-อัปเดตล่าสุด: **2026-07-13 B** · **side-track ใน G-Ann (repo พี่น้อง G-Suite): 12 commit + PUSHED** — banner ×6 (override/animated-WebP/voice-caption/audio-reactive/AI-SD) + W4 label resolver + **W4 button-OCR `detect_buttons.py`** (e2e KOM 11/11) + **`analyze_video` wrapper W1→whisper→W4** (e2e KOM 11 windows fused) + **authoring/library UX**: Save-to-Library แยกเจ้าของเสียง (แก้ dialog ที่ App ไม่เคย render) + import guard + **หน้าทดสอบ = library pack builder** (ลากเสียงจากคลัง+add → `install_library_pack`). **pushed G-Suite `origin/main` `be37053..e4c0620`**. ไม่แตะ G-Maiden code. G-Maiden priorities ด้านล่างเหมือนเดิม (CR-003 ยังไม่ push).
+อัปเดตล่าสุด: **2026-07-13 B** · **side-track ใน G-Ann (repo พี่น้อง G-Suite): 12 commit + PUSHED** — banner ×6 (override/animated-WebP/voice-caption/audio-reactive/AI-SD) + W4 label resolver + **W4 button-OCR `detect_buttons.py`** (e2e KOM 11/11) + **`analyze_video` wrapper W1→whisper→W4** (e2e KOM 11 windows fused) + **authoring/library UX**: Save-to-Library แยกเจ้าของเสียง (แก้ dialog ที่ App ไม่เคย render) + import guard + **หน้าทดสอบ = library pack builder** (ลากเสียงจากคลัง+add → `install_library_pack`, banner ครบ caption/reactive). **pushed G-Suite `origin/main` `be37053..ef905f2` (13 commit)**. ไม่แตะ G-Maiden code. G-Maiden priorities ด้านล่างเหมือนเดิม (CR-003 ยังไม่ push).
 รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-13-B-gann-event-mapping-banner.md` (ก่อนหน้า: `2026-07-13-gann-mastering-deck-complete.md`, `2026-07-12-cr003-impl-verify-supabase-local.md`)
 
 ## 🎨 G-Ann thread — งานต่อ (side-repo G-Suite, 2026-07-13 B)
@@ -8,7 +8,7 @@
   (vision chain) ดู clips+auto-map, (b) Save to Library เป็นเจ้าของเสียง + import ใหม่ (guard เตือน),
   (c) หน้าทดสอบ ลากเสียงจากคลัง/+เพิ่มเสียง → "ติดตั้งจากคลัง" → เข้าเกมดู. (Tauri app — preview browser รันไม่ได้.)
 - **AI banner ต้องมี SD backend**: เปิด SD WebUI `--api` ที่ `127.0.0.1:7860` (Settings→AI). ภาพ SD = RGB ทึบ (ไม่มี alpha).
-- **library banner ยังไม่รวม caption/reactive** — เพิ่มได้ (caption=ชื่อ sound, reactive=clipEnvelope ทั้งไฟล์).
+- [DONE `ef905f2`] library banner caption/reactive — ครบเท่า session แล้ว.
 - **W4 calibration ต่อวิดีโอ**: `--roi`/cursor threshold tune กับ Na Khom/HoN; community videos ต้อง learn.
   `rapidocr-onnxruntime` install ใน sidecar `.venv` (gitignored) + requirements.txt แล้ว.
 - bake params: entrance 12f/24fps, reactive 18fps/max48f แก้ `bakeBanner.ts`. reactive visual เห็นใน webview เท่านั้น.

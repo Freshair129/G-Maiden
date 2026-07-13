@@ -124,8 +124,14 @@ Boss ขอ: (a) Rust wrapper chain W1→whisper→W4, (b) save-to-library ท�
   `installLibraryPack` banner = override→animated tone→PNG (ยังไม่รวม caption/reactive — library sound ไม่มี window).
 - gotcha: closure-returning-future ใน Rust ติด lifetime → ใช้ free async fn `spawn_sidecar` แทน.
 
+### 9. Library banner caption/reactive — `ef905f2`
+`installLibraryPack` รองรับ banner ครบเท่า session path: caption = ชื่อ library sound ตัวแรกของ event,
+reactive = `clipEnvelope(abs, 0, dur, dur)` ของทั้งไฟล์ (library sound = wav ทั้งไฟล์) → `bakeReactiveWebp`.
+priority override→reactive→animated→PNG. ปุ่ม "ติดตั้งจากคลัง" ส่ง toggle animate/voiceCaption/reactive.
+pure frontend, ใช้ building block ที่พิสูจน์แล้ว. tsc 0.
+
 ## State ปลาย turn
-- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..e4c0620`, 12 commit thread นี้). clean.
+- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..ef905f2`, 13 commit thread นี้). clean.
 - **G-Maiden**: branch `main`, ไม่แตะทั้ง session. เหลือ `orchestration/src-tauri/Cargo.toml` M เดิม
   (CRLF/build flicker มาตั้งแต่ต้น session, `git checkout --` ทิ้งได้).
 - **ไม่ tag/ไม่ release** (batching). G-Ann ยังไม่มี release workflow.
@@ -135,9 +141,7 @@ Boss ขอ: (a) Rust wrapper chain W1→whisper→W4, (b) save-to-library ท�
    (vision chain) → ดู clips + event auto-map, (b) Save to Library เป็นเจ้าของเสียง + ลอง import ใหม่ (guard เตือน),
    (c) หน้าทดสอบ: ลากเสียงจากคลังวางบน event / "+ เพิ่มเสียง" → "ติดตั้งจากคลัง" → เข้าเกมดู banner+เสียง.
    (browser preview รัน Tauri app นี้ไม่ได้ — `__TAURI__.invoke` undefined.)
-2. **library banner ยังไม่รวม caption/reactive** — `installLibraryPack` banner = override→animated tone→PNG.
-   ถ้าอยากได้ caption/reactive ต่อ library sound: caption = ชื่อ sound, reactive = `clipEnvelope(file,0,dur,dur)`
-   (library sound เป็น wav ทั้งไฟล์). ทำเพิ่มได้.
+2. **[DONE `ef905f2`] library banner caption/reactive** — ครบเท่า session แล้ว.
 3. **AI banner (#6) ต้องมี SD backend** — เปิด Stable Diffusion WebUI แบบ `--api` ที่ `127.0.0.1:7860`
    (หรือแก้ endpoint ใน Settings→AI) ก่อนกด "✨ AI". ยังไม่ได้ verify e2e เพราะไม่มี SD รัน headless.
    ภาพ SD ออกมาเป็น RGB ทึบ (ไม่มี alpha) — banner จะเป็นสี่เหลี่ยมทึบ (ยอมรับได้ เป็น author choice).
