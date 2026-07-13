@@ -183,10 +183,21 @@ installed (auto-detect fallback, G:\GM\G-Maiden\voice-cache). cargo 0, tsc 0.
   packs(ring RP=150, per event, spread .5rad). เปิดจากปุ่ม Radar บน SoundRow. self-fetch sound_usage.
   geometry verified node: events 120° เท่ากัน, 0 NaN/0 OOB.
 
+### 14. bugfix รอบ Boss: drag pack + per-clip source (`809e717`)
+- **ลาก pack ไม่ได้** — pack row ไม่ draggable (แค่ SoundRow). แก้: pack row draggable (`application/x-library-pack`),
+  SourceView drop รับทั้ง pack (query_sounds→setClips) + sound เดี่ยว. `acceptsDrag()` เช็ก 2 type.
+- 🔴 **source origin หาย** — Clip ไม่มี field `source` → ลาก/เปิด library sound (มี source_path ใน DB) → source
+  หาย → save ใหม่ใช้ opts.origin (import ปัจจุบัน) ผิด. แก้: Clip เพิ่ม `source`; library sound พก source_path เข้า Clip
+  (openPack + drop); save_clips เก็บ **per-clip source** (`clip.source` else `opts.origin` สำหรับ clip split ใหม่).
+- 🔴 **(bug ที่เจอเพิ่ม) save file-clip ตัดผิด** — save_clips เดิมตัดทุก clip จาก source wav เดียว, แต่ file-clip มีไฟล์
+  เสียงตัวเอง → เสียงผิด. แก้: `SaveToLibClip.file_path` → file-clip **copy ไฟล์ตัวเองทั้งไฟล์** (canonicalize+contain
+  ใต้ sounds_dir, ไม่ ss/t/padding), segment-clip ตัดเหมือนเดิม. relax wavPath req ถ้าเป็น file-clip หมด.
+- ตอบ Boss: source_path **อยู่ใน DB** แล้ว (column) แต่เดิม Clip ไม่พก → หาย. ตอนนี้ per-clip แล้ว pack อ้าง origin จริงได้.
+
 ## State ปลาย turn
-- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..1b5c8a3`, 23 commit thread นี้). clean.
-- **Phase 1+2 ครบ** (voice-library data model + asset-management UI). เหลือ live-test (Boss): AI name-gen จริง,
-  backlink/radar render จริง (ต้อง Tauri IPC + library data). old sounds ยังใช้ filename ไทยเดิม (save ใหม่=eng).
+- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..809e717`, 25 commit thread นี้). clean.
+- **Phase 1+2 ครบ + bugfix รอบ Boss**. เหลือ live-test (Boss): drag pack/sound, save file-clip, AI name-gen,
+  backlink/radar (ต้อง Tauri IPC + library data). old sounds ยังใช้ filename ไทยเดิม (save ใหม่=eng).
 - **ปิด `tauri dev`** — เปิดใหม่ `pnpm ann-studio:dev` ถ้าจะเทสต์ (ปิด dev เก่าให้หมดก่อน กัน port ชน strictPort:5174).
 - **G-Maiden**: branch `main`, ไม่แตะทั้ง session. เหลือ `orchestration/src-tauri/Cargo.toml` M เดิม
   (CRLF/build flicker มาตั้งแต่ต้น session, `git checkout --` ทิ้งได้).
