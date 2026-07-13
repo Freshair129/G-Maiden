@@ -7,6 +7,8 @@
 //! spike constants to a runtime-sized minimap region.
 
 pub mod detector;
+pub mod draft_detector;
+pub mod draft_region;
 pub mod prefilter;
 pub mod region;
 

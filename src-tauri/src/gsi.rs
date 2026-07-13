@@ -109,6 +109,15 @@ fn is_in_game(game_state: &str) -> bool {
     )
 }
 
+/// The hero-pick / strategy window before the horn. Draft-CV wakes the capture
+/// loop here to read the roster off the pick screen (see `runtime::in_draft`).
+fn is_in_draft(game_state: &str) -> bool {
+    matches!(
+        game_state,
+        "DOTA_GAMERULES_STATE_HERO_SELECTION" | "DOTA_GAMERULES_STATE_STRATEGY_TIME"
+    )
+}
+
 pub(crate) fn parse_tick_from_value(v: &Value) -> GameTick {
     let game_state = s(v, &["map", "game_state"]);
     let gold = i(v, &["player", "gold"]);
@@ -164,6 +173,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
     // matches (saves idle CPU).
     crate::runtime::mark_post(epoch_ms());
     crate::runtime::set_in_game(tick.in_game);
+    crate::runtime::set_in_draft(is_in_draft(&tick.game_state));
     crate::runtime::set_player_team_name(&tick.team_name);
     crate::log::note_tick(&tick);
     let _ = app.emit("game-tick", tick);

@@ -342,6 +342,71 @@ pub fn clear_known_enemies() {
     }
 }
 
+// ── Draft phase gate (Draft-CV) ──────────────────────────────────────────────
+// True while the client is in hero selection / strategy time (pre-horn). The
+// capture loop wakes for Draft-CV during this window even though `in_game()` is
+// false: the match isn't running, so there's no FPS/latency budget to protect —
+// heavy portrait CV is fine here (same idle-window logic G-Revive uses on death).
+// Set from `gsi.rs` off the raw `game_state`.
+static IN_DRAFT: AtomicBool = AtomicBool::new(false);
+
+pub fn set_in_draft(v: bool) {
+    let was = IN_DRAFT.swap(v, Ordering::Relaxed);
+    // Entering a fresh draft → drop any prior match's roster so the capture loop
+    // re-reads THIS match's picks. We clear here (not at match start like
+    // KNOWN_ENEMIES) because the roster is read DURING the draft, before the
+    // match starts — clearing it at match start would wipe what we just read.
+    if v && !was {
+        clear_roster();
+    }
+}
+
+pub fn in_draft() -> bool {
+    IN_DRAFT.load(Ordering::Relaxed)
+}
+
+// ── Match roster (Draft-CV) ──────────────────────────────────────────────────
+// The 10 hero identities read off the pick screen (raw labels.json form), split
+// by team. Unlike KNOWN_ENEMIES (which trickles in enemy-only from minimap
+// sightings), this is the FULL roster known before the horn. It (a) fills ally
+// identities the GSI never exposes, and (b) constrains the minimap classifier to
+// the real 10 heroes via `roster_labels()`, so a misclassification into a hero
+// not in the match is dropped (the definitive phantom-hero fix). Cleared at
+// match start alongside KNOWN_ENEMIES.
+static ROSTER: Mutex<Option<Roster>> = Mutex::new(None);
+
+#[derive(Clone, Default, Debug, PartialEq, serde::Serialize)]
+pub struct Roster {
+    pub radiant: Vec<String>,
+    pub dire: Vec<String>,
+}
+
+pub fn set_roster(radiant: Vec<String>, dire: Vec<String>) {
+    if let Ok(mut g) = ROSTER.lock() {
+        *g = Some(Roster { radiant, dire });
+    }
+}
+
+pub fn roster() -> Option<Roster> {
+    ROSTER.lock().ok().and_then(|g| g.clone())
+}
+
+/// All roster hero labels (both teams), or `None` if no roster has been read yet
+/// (or it's empty). The minimap detector consults this to reject detections whose
+/// hero isn't one of the real 10 — the roster-grounded phantom-hero fix.
+pub fn roster_labels() -> Option<Vec<String>> {
+    let g = ROSTER.lock().ok()?;
+    let r = g.as_ref()?;
+    let all: Vec<String> = r.radiant.iter().chain(r.dire.iter()).cloned().collect();
+    (!all.is_empty()).then_some(all)
+}
+
+pub fn clear_roster() {
+    if let Ok(mut g) = ROSTER.lock() {
+        *g = None;
+    }
+}
+
 // ── OAuth callback anti-CSRF gate (CR-008 WP-3) ──────────────────────────────
 // `:3000/auth/callback` is an unauthenticated local endpoint. Without a gate,
 // any local process — or a drive-by web page (`<img src=".../auth/callback?code

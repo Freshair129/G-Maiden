@@ -114,6 +114,10 @@ fn start_match(state: &mut LogState) {
             // New match → reset the identified-enemy roster used to ground
             // G-Master counter advice (capture loops repopulate it as they detect).
             crate::runtime::clear_known_enemies();
+            // NB: the Draft-CV roster is NOT cleared here — it's read during the
+            // draft, BEFORE this match-start fires, so clearing it now would wipe
+            // what we just read. It's cleared on the draft rising edge instead
+            // (`runtime::set_in_draft`).
             // `study` = whether this match was rolled UNDER the efficacy study.
             // The analyzer/in-app card count a match's gank_signal events into
             // the armed/silent buckets ONLY when this is true, so legacy /

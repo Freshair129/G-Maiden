@@ -36,6 +36,8 @@ mod backend {
     use tauri::{AppHandle, Emitter, Manager};
 
     use crate::cv::detector::{Detection, Detector};
+    use crate::cv::draft_detector::DraftRecognizer;
+    use crate::cv::draft_region::DraftRegion;
     use crate::cv::prefilter::{prefilter_candidates, DEFAULT_THRESHOLD_FRAC};
     use crate::cv::region::MinimapRegion;
     use crate::cv::Frame;
@@ -53,6 +55,11 @@ mod backend {
     /// Throttled cadence (ms) ≈ 2 Hz — used when the governor reports the process
     /// is over its CPU/RAM budget. Resource safety wins over freshness here.
     const THROTTLE_INTERVAL_MS: u64 = 500;
+
+    /// Draft-CV poll cadence (ms) ≈ 2 Hz while in the pick window. The pick screen
+    /// changes only when someone picks, and the match isn't running, so there's no
+    /// latency budget to protect — this is unhurried.
+    const DRAFT_INTERVAL_MS: u64 = 500;
 
     /// Cap the rate of the debug/calibration `minimap-cv` event (ms) ≈ 5 Hz, so
     /// the IPC → WebView2 → DWM path can't pile up over a long match. Edge-
@@ -121,14 +128,19 @@ mod backend {
         last_frame_emit: Instant,
         /// last calibration-buffer feed (≈9 Hz when QA mode on).
         last_calib: Instant,
+        /// Draft-CV: pick-screen portrait recognizer + the 10 portrait boxes.
+        draft: DraftRecognizer,
+        draft_region: DraftRegion,
     }
 
     impl CaptureState {
-        fn new(app: AppHandle, region: MinimapRegion) -> Self {
+        fn new(app: AppHandle, region: MinimapRegion, screen_w: u32, screen_h: u32) -> Self {
             let icon = region.icon_size();
             let dir = model_dir(&app);
             let detector =
                 Detector::load(&dir.join("minimap-detector.onnx"), &dir.join("labels.json"));
+            let draft = DraftRecognizer::load(&dir.join("portraits"));
+            let draft_region = DraftRegion::for_resolution(screen_w, screen_h);
             let now = Instant::now();
             CaptureState {
                 app,
@@ -142,6 +154,8 @@ mod backend {
                 last_emit: now,
                 last_frame_emit: now,
                 last_calib: now,
+                draft,
+                draft_region,
             }
         }
     }
@@ -182,9 +196,23 @@ mod backend {
             region.x,
             region.y
         ));
-        let mut state = CaptureState::new(app, region);
+        let (screen_w, screen_h) = (dxgi.width(), dxgi.height());
+        let mut state = CaptureState::new(app, region, screen_w, screen_h);
 
         loop {
+            // Draft-CV: read the roster off the pick screen before the horn. Runs
+            // ONLY while in hero selection and ONLY until a roster is committed
+            // (`roster().is_none()`), then idles. `in_game()` is false here, so
+            // this is the only place the loop wakes during the draft.
+            if crate::runtime::in_draft() {
+                if crate::runtime::roster().is_none() {
+                    if let Some((full, fw, fh)) = dxgi.acquire_frame() {
+                        process_draft_frame(&mut state, &full, fw, fh);
+                    }
+                }
+                std::thread::sleep(Duration::from_millis(DRAFT_INTERVAL_MS));
+                continue;
+            }
             // Gate to live matches — no CV work at the menu (idle-CPU saver).
             if !crate::runtime::in_game() {
                 std::thread::sleep(Duration::from_millis(500));
@@ -220,13 +248,27 @@ mod backend {
         fh: u32,
         r: &MinimapRegion,
     ) -> Option<(Vec<u8>, usize, usize)> {
-        let end_x = (r.x + r.side).min(fw);
-        let end_y = (r.y + r.side).min(fh);
-        if r.x >= end_x || r.y >= end_y {
+        crop_square(full, fw, fh, r.x, r.y, r.side)
+    }
+
+    /// Crop an arbitrary square box `(x, y, side)` out of a full-screen tightly-
+    /// packed BGRA8 buffer — shared by the minimap crop and Draft-CV's portrait
+    /// boxes. `None` if the box is off-screen or the buffer is short.
+    fn crop_square(
+        full: &[u8],
+        fw: u32,
+        fh: u32,
+        x: u32,
+        y: u32,
+        side: u32,
+    ) -> Option<(Vec<u8>, usize, usize)> {
+        let end_x = (x + side).min(fw);
+        let end_y = (y + side).min(fh);
+        if x >= end_x || y >= end_y {
             return None;
         }
-        let w = (end_x - r.x) as usize;
-        let h = (end_y - r.y) as usize;
+        let w = (end_x - x) as usize;
+        let h = (end_y - y) as usize;
         let stride = fw as usize * 4;
         if full.len() < end_y as usize * stride {
             return None; // defensive: DXGI always gives fw*fh*4, but never index OOB
@@ -234,11 +276,47 @@ mod backend {
         let row_bytes = w * 4;
         let mut out = vec![0u8; row_bytes * h];
         for row in 0..h {
-            let src = (r.y as usize + row) * stride + r.x as usize * 4;
+            let src = (y as usize + row) * stride + x as usize * 4;
             let dst = row * row_bytes;
             out[dst..dst + row_bytes].copy_from_slice(&full[src..src + row_bytes]);
         }
         Some((out, w, h))
+    }
+
+    /// Draft-CV: crop the 10 pick-screen portrait boxes, recognize each, and —
+    /// once ALL 10 read confidently (i.e. the draft is complete) — commit the
+    /// roster to `runtime` and emit `draft-roster`. A partial pick screen (picks
+    /// still coming in) recognizes fewer than 10 and simply retries next poll.
+    /// No-op when the recognizer has no templates (asset pack not shipped yet).
+    fn process_draft_frame(state: &mut CaptureState, full: &[u8], fw: u32, fh: u32) {
+        if !state.draft.is_active() {
+            return;
+        }
+        let mut radiant = Vec::with_capacity(5);
+        let mut dire = Vec::with_capacity(5);
+        for (i, b) in state.draft_region.boxes.iter().enumerate() {
+            let name = crop_square(full, fw, fh, b.x, b.y, b.side)
+                .and_then(|(bytes, w, h)| Frame::from_bgra(w, h, bytes))
+                .and_then(|f| state.draft.recognize(&f))
+                .map(|(name, _score)| name);
+            match name {
+                Some(n) if i < 5 => radiant.push(n),
+                Some(n) => dire.push(n),
+                None => {}
+            }
+        }
+        // Only commit a COMPLETE roster (both teams fully identified). This
+        // naturally waits for the draft to finish — unpicked slots recognize
+        // nothing — and once committed, `roster().is_some()` idles the loop.
+        if radiant.len() == 5 && dire.len() == 5 {
+            crate::log::error(&format!(
+                "[draft] roster read — radiant {radiant:?} dire {dire:?}"
+            ));
+            crate::runtime::set_roster(radiant.clone(), dire.clone());
+            let _ = state
+                .app
+                .emit("draft-roster", crate::runtime::Roster { radiant, dire });
+        }
     }
 
     /// Downscale a cropped BGRA minimap to [`MINIMAP_FRAME_WIDTH`] and PNG-encode
@@ -310,7 +388,17 @@ mod backend {
                 DEFAULT_THRESHOLD_FRAC,
                 crate::runtime::enemy_team_ring(),
             );
-            let detections = state.detector.detect(&f, &candidates, state.icon);
+            let mut detections = state.detector.detect(&f, &candidates, state.icon);
+
+            // Roster-grounded phantom-hero fix (Draft-CV): once the pick-screen
+            // roster is known, drop any detection classified as a hero that isn't
+            // actually in this match — the tiny minimap model otherwise misfires
+            // non-hero blips into random heroes. Complements G-Sentry's temporal
+            // confirmation gate; this one is a hard identity constraint. No-op
+            // until a roster has been read (own-game may never read one).
+            if let Some(roster) = crate::runtime::roster_labels() {
+                detections.retain(|d| roster.iter().any(|h| h == &d.name));
+            }
 
             // Record identified enemies so G-Master's counter advice is grounded
             // on who's actually in the match (runtime is the single source of

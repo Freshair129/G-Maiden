@@ -274,6 +274,17 @@ async fn request_buyback_advice(
     advice
 }
 
+/// Manual roster injection (Draft-CV). Sets the match roster by hand — 10 hero
+/// labels in labels.json short form (e.g. "crystal_maiden") — without waiting for
+/// the pick-screen recognizer. Lets the ally/enemy slot fill + roster-grounded
+/// phantom filter be exercised before the portrait asset pack / calibration ship.
+/// Emits `draft-roster` exactly as the capture loop's Draft-CV path does.
+#[tauri::command]
+fn set_draft_roster(app: tauri::AppHandle, radiant: Vec<String>, dire: Vec<String>) {
+    runtime::set_roster(radiant.clone(), dire.clone());
+    let _ = app.emit("draft-roster", runtime::Roster { radiant, dire });
+}
+
 /// Aggregated Claude usage stats for the QuotaCard (5h + 7d windows).
 #[tauri::command]
 fn read_usage() -> usage::UsageStats {
@@ -608,6 +619,7 @@ fn main() {
             delete_all_match_logs,
             request_advice,
             request_buyback_advice,
+            set_draft_roster,
             read_usage,
             clear_usage_log,
             identity::resolve_steam_id
