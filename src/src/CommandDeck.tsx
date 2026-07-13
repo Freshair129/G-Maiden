@@ -13,6 +13,7 @@ import {
   SettingsPage
 } from "./CompanionPages";
 import { useCompanionData, useMinimapImage, toneClass, formatKda, type CompanionData } from "./companion";
+import { heroPortraitUrl } from "./heroPortrait";
 import AccountPage from "./AccountPage";
 import { useProfile } from "./profile";
 import type { VoiceState } from "./voice-types";
@@ -631,11 +632,39 @@ function HeroSlot({ id, hero }: { id: number; hero?: CompanionData["heroes"][num
   const heroName = hero && hero.hero !== "—" ? hero.hero : "—";
   const stateLabel = !hero || hero.state === "empty" ? "Waiting" : hero.state;
   const kda = hero ? formatKda(hero) : "—";
+  // portrait art behind the card (CDN, dimmed); dead = fainter, missing = grey.
+  const portrait = heroPortraitUrl(hero?.hero);
+  const overlay = { position: "relative", zIndex: 1 } as const;
   return (
-    <div className={`gm-hero-slot ${hero?.state ?? "empty"}`} aria-label={`Hero slot ${id}`}>
-      <strong>{heroName}</strong>
-      <span>{stateLabel}</span>
-      <em>{kda}</em>
+    <div
+      className={`gm-hero-slot ${hero?.state ?? "empty"}`}
+      style={portrait ? { position: "relative", overflow: "hidden" } : undefined}
+      aria-label={`Hero slot ${id}`}
+    >
+      {portrait && (
+        <img
+          src={portrait}
+          alt=""
+          draggable={false}
+          onError={(e) => {
+            (e.currentTarget as HTMLImageElement).style.display = "none";
+          }}
+          style={{
+            position: "absolute",
+            inset: 0,
+            width: "100%",
+            height: "100%",
+            objectFit: "cover",
+            opacity: hero?.state === "dead" ? 0.12 : 0.3,
+            filter: hero?.state === "missing" ? "grayscale(0.7)" : undefined,
+            pointerEvents: "none",
+            zIndex: 0,
+          }}
+        />
+      )}
+      <strong style={portrait ? overlay : undefined}>{heroName}</strong>
+      <span style={portrait ? overlay : undefined}>{stateLabel}</span>
+      <em style={portrait ? overlay : undefined}>{kda}</em>
     </div>
   );
 }
