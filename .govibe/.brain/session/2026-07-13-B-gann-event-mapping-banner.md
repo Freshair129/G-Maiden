@@ -153,9 +153,30 @@ installed(.lnk), คืนตัวแรกที่มี `voice-cache/`. ป�
 **3 scenario ครบ:** dev-source (auto, assets/voice-cache) · release build (auto-detect, target/release/voice-cache) ·
 installed (auto-detect fallback, G:\GM\G-Maiden\voice-cache). cargo 0, tsc 0.
 
+### 12. white-screen fix + open-pack-on-canvas + voice-library data model
+- **white screen แก้แล้ว** — ไม่ใช่บั๊กโค้ด, เป็น **zombie dev process ชนกัน**: vite เก่าค้าง :5174 → dev ใหม่ไป :5290
+  → Tauri window โหลด devUrl :5174 (stale) = ขาว + cargo rebuild storm. แก้: kill process ค้างทั้งหมด (ทั้ง 2 port
+  + exe + cargo) แล้ว start dev เดียวสะอาด. **กันซ้ำ: ปิด dev เก่าให้หมดก่อนเปิดใหม่** (vite strictPort:5174 ชนแล้วเพี้ยน).
+  frontend ไม่เคยพัง (browser render ได้ตลอด via read_page).
+- **`76917e7` open pack on canvas + drag voice in** — คลิกขวา pack ในคลัง → "เปิดแก้ไขบน canvas" (query_sounds
+  → setClips เป็น file-clips), ลาก voice จากคลัง → SourceView. Clip เพิ่ม `filePath?/fileDur?` (clip เป็นไฟล์
+  library ของตัวเอง). ClipWaveform per-clip อยู่แล้ว → SourceView ป้อน clipSrc/clipDur ต่อ clip. InstallClip เพิ่ม
+  file_path → install cut จากไฟล์ clip (contain ใต้ sounds_dir).
+- **`6e673cd` duration ปัด 2dp** — export_all manifest + save_clips (เดิม 3.145416…). cut ยังใช้ precision เต็ม.
+- 🔴 **`1ba8d9a` voice-library data model migration** (Boss spec): sounds → name_th/name_en, file_path=`<idx>_<eng>.wav`,
+  source_path (ต้นฉบับ), events JSON array (multi-event kill+killing_spree), speaker=package(+index บน name),
+  **`sound_usage(sound_id,pack_id,event)` reverse index** rebuild ตอน save_pack/delete_pack → backlink/radar O(1)
+  ไม่ scan. `migrate_sounds()` additive+idempotent. **verified บน library.db จริง (copy): 61 sounds/2 pkg ครบ,
+  event→events migrate ถูก, 0 หลุด**. LibSound TS + consumers ทั้งหมด (.name→.name_th, .event→.events[0]).
+- **BPM** = `120×speed` (MasteringPanel) derived จาก speed knob, ไม่ใช่ tempo จริง ไม่มี time signature.
+- **CR-009 coordination สองทาง**: agent backend-wire อีก session เติมบรรทัดใน CR-009 (`0773823a`) ตอบกลับ —
+  ล็อก `pack_mrijgajn` ด้วย G-Maiden reader test (`8c1f05d7`, 13 events, death/mega_kill=2 takes). **ถ้า G-Ann
+  regenerate/install pack นี้ทับด้วย shape ใหม่ (filename `<idx>_<eng>` ใหม่) → test เขาแดง → ต้อง ping ก่อน**. ตอนนี้ยังไม่ชน.
+
 ## State ปลาย turn
-- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..cfeff6c`, 16 commit thread นี้). clean.
-- **ปิด `tauri dev` process ไปแล้ว** (จับ build lock ตอน cargo check) — เปิดใหม่ `pnpm ann-studio:dev` ถ้าจะเทสต์ต่อ.
+- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..1ba8d9a`, 19 commit thread นี้). clean.
+- **Phase 2 ต่อ (Boss สั่ง)**: AI เติม name_en ในหน้า save (แก้ได้), + backlink/multi-event UI ในคลัง, + impact-radar view.
+- **ปิด `tauri dev`** — เปิดใหม่ `pnpm ann-studio:dev` ถ้าจะเทสต์ (ปิด dev เก่าให้หมดก่อน กัน port ชน).
 - **G-Maiden**: branch `main`, ไม่แตะทั้ง session. เหลือ `orchestration/src-tauri/Cargo.toml` M เดิม
   (CRLF/build flicker มาตั้งแต่ต้น session, `git checkout --` ทิ้งได้).
 - **ไม่ tag/ไม่ release** (batching). G-Ann ยังไม่มี release workflow.
