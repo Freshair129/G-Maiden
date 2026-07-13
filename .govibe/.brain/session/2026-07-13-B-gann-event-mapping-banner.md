@@ -89,21 +89,40 @@ Verify เพิ่ม: tsc 0 ทุก commit · cargo 0 (#5 loop, #6 txt2img) 
 ffmpeg-static จริง (VP8X 0x12, 12 ANMF, loop=0) · `bannerPrompt` compiled+asserted **8/8**
 (mood/subject/text-free ทุก event). Node 24 อ่าน extensionless import ไม่ได้ → compile→CJS ก่อนรัน.
 
+### 7. W4 button-OCR frame reader — `2b42a34` (grounded บนวิดีโอจริง)
+- `sidecar/detect_buttons.py`: อ่านปุ่ม active ต่อ line window — OCR button panel (rapidocr-onnxruntime,
+  ONNX ไม่ต้อง PyTorch/tesseract) → label+ตำแหน่ง; หา **cursor ทองแบบ Dota** (warm blob R>G>B) → ปุ่มที่ใกล้สุด,
+  vote หลาย sample. emit **raw label** → resolve ที่ `matchAnnouncerLabel` (single source). contract mirror
+  detect_boundaries.py (`--windows` in, `{labels:[{startMs,endMs,label,cursor,conf}]}` out). ROI+cursor thr = params.
+- `honEventMap`: `norm()` split camelCase (OCR ต่อคำ "DoubleTap"/"HatTrick") + "hat trick"→triple_kill.
+- **Mechanic ที่เจอจากเฟรมจริง** (KOM 1280x720): HoN preview UI = grid ปุ่ม fixed (bottom-right panel),
+  user คลิกทีละปุ่ม, cursor ทองชี้ปุ่ม active, caption เขียว = บทพูด (ที่ W1 จับ). ปุ่ม active = ตาม cursor ไม่ใช่ order.
+- **Verify e2e จริง**: detect_boundaries→11 windows→detect_buttons **label ครบ 11/11 มี cursor** (Hat Trick,
+  Bloodlust, Double Tap, Immortal, Annihilation, Genocide, Smackdown, Humiliation…). OCR อ่านปุ่ม 9/9.
+  resolver 17/17 (camelCase+hat trick). tsc 0.
+- **honest**: OCR noise บางคำ (Annihilation→Ansihilation) → เพี้ยนหนัก resolve null (author map เอง = by design).
+  HoN events หลายตัว (Bloodlust/Immortal/Genocide/Smackdown/Humiliation/Denied) ไม่มี G-Maiden equivalent → null ตั้งใจ.
+- **ยังไม่ wire**: Rust wrapper chain W1→whisper→W4 (W1 ก็ไม่มี wrapper) = integration task แยก.
+- **installed rapidocr-onnxruntime ใน sidecar `.venv`** (gitignored) + เพิ่มใน requirements.txt.
+
 ## State ปลาย turn
-- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..e5d8606`, 7 commit thread นี้). clean.
+- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..2b42a34`, 8 commit thread นี้). clean.
 - **G-Maiden**: branch `main`, ไม่แตะทั้ง session. เหลือ `orchestration/src-tauri/Cargo.toml` M เดิม
   (CRLF/build flicker มาตั้งแต่ต้น session, `git checkout --` ทิ้งได้).
 - **ไม่ tag/ไม่ release** (batching). G-Ann ยังไม่มี release workflow.
 
 ## งานต่อ (เรียงค่า)
-1. **live in-game verify** (งาน Boss) — `pnpm ann-studio:dev` → import HoN video → auto-split → auto-map
+1. **Rust wrapper chain W1→whisper→W4** (integration ที่เหลือของ vision pipeline) — เขียน tauri cmd spawn
+   detect_boundaries.py → whisper transcribe.py → detect_buttons.py, รวมผลเป็น clips {start,end,name(transcript),
+   event(resolve honEventMap จาก raw label)}. ตอนนี้ทั้ง 3 sidecar รันแยกได้จริงแล้ว แต่ยังไม่มี cmd ต่อร้อย
+   (W1 ก็ยังไม่มี wrapper). mirror `transcribe_audio` (lib.rs:305).
+2. **live in-game verify** (งาน Boss) — `pnpm ann-studio:dev` → import HoN video → auto-split → auto-map
    (ดู deterministic pass ยิงกี่อัน) → เลือก caption/reactive/AI banner + override → install → เข้าเกมดู
    banner เด้ง + animated/pulse + เสียงตรง event. (browser preview รัน Tauri app นี้ไม่ได้.)
-2. **AI banner (#6) ต้องมี SD backend** — เปิด Stable Diffusion WebUI แบบ `--api` ที่ `127.0.0.1:7860`
+3. **AI banner (#6) ต้องมี SD backend** — เปิด Stable Diffusion WebUI แบบ `--api` ที่ `127.0.0.1:7860`
    (หรือแก้ endpoint ใน Settings→AI) ก่อนกด "✨ AI". ยังไม่ได้ verify e2e เพราะไม่มี SD รัน headless.
    ภาพ SD ออกมาเป็น RGB ทึบ (ไม่มี alpha) — banner จะเป็นสี่เหลี่ยมทึบ (ยอมรับได้ เป็น author choice).
-3. **W4 OCR frame-reader** `detect_buttons.py` — sidecar (PyAV frame extract เหมือน detect_boundaries.py)
-   + OCR engine (tesseract/easyocr ใน venv) + HoN button ROI/highlight detect → emit `{labels:[{startMs,
-   endMs,label}]}` → frontend resolve ผ่าน honEventMap.ts. calibration ต่อวิดีโอ (เหมือน caveat W1).
-4. **bake params ปรับได้**: entrance frames=12/fps=24 (~0.5s); reactive fps=18/max 48 frames. แก้ใน
+4. **W4 calibration ต่อวิดีโอ** — `--roi`/cursor threshold ตอนนี้ tune กับ Na Khom/HoN panel; community videos
+   (panel คนละที่/cursor คนละสี) ต้อง learn ต่อวิดีโอ. OCR noise คำเพี้ยนหนัก → author map เอง.
+5. **bake params ปรับได้**: entrance frames=12/fps=24 (~0.5s); reactive fps=18/max 48 frames. แก้ใน
    bakeBanner.ts. reactive waveform visual เห็นเฉพาะใน webview (canvas) — encoding path พิสูจน์แล้ว.
