@@ -12,7 +12,7 @@ import {
   LiveMatchPage,
   SettingsPage
 } from "./CompanionPages";
-import { useCompanionData, toneClass, formatKda, type CompanionData } from "./companion";
+import { useCompanionData, useMinimapImage, toneClass, formatKda, type CompanionData } from "./companion";
 import AccountPage from "./AccountPage";
 import { useProfile } from "./profile";
 import type { VoiceState } from "./voice-types";
@@ -439,6 +439,29 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   );
 }
 
+/** Live mirror of the real in-game minimap (captured + downscaled by the DXGI CV
+ *  pipeline, arrives as a base64 PNG on `minimap-frame`). Falls back to the
+ *  decorative grid before the first frame / when capture is in Lite mode. Its own
+ *  hook keeps the ≈2 Hz image refresh from re-rendering the rest of the deck. */
+function MinimapMirror() {
+  const image = useMinimapImage();
+  return (
+    <div className={`gm-minimap${image ? " gm-minimap-live" : ""}`}>
+      {image ? (
+        <img className="gm-minimap-img" src={image} alt="In-game minimap" draggable={false} />
+      ) : (
+        <>
+          <div className="gm-map-grid" />
+          <div className="gm-river" />
+          <span className="gm-orb orb-a" />
+          <span className="gm-orb orb-b" />
+          <span className="gm-orb orb-c" />
+        </>
+      )}
+    </div>
+  );
+}
+
 function GMaidenFungDashboard({
   data,
   voicePackName,
@@ -474,13 +497,7 @@ function GMaidenFungDashboard({
         <div className="gm-slot-column">
           {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`a-${idx}`} id={idx + 1} hero={allyHeroes[idx]} />)}
         </div>
-        <div className="gm-minimap">
-          <div className="gm-map-grid" />
-          <div className="gm-river" />
-          <span className="gm-orb orb-a" />
-          <span className="gm-orb orb-b" />
-          <span className="gm-orb orb-c" />
-        </div>
+        <MinimapMirror />
         <div className="gm-slot-column">
           {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`e-${idx}`} id={idx + 6} hero={enemyHeroes[idx]} />)}
         </div>

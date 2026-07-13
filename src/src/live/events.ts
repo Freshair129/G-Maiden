@@ -6,6 +6,7 @@
 //   game-tick     gsi.rs:136        ~30s GSI heartbeat (LOCAL player only)
 //   gsi-status    gsi.rs:194        every 4s watchdog
 //   minimap-cv    capture.rs:314    ~5Hz CV debug (detections = pixels within region)
+//   minimap-frame capture.rs        ~3Hz live minimap mirror (base64 PNG data URL)
 //   enemy-missing capture.rs:261    edge, per hero crossing 5s threshold
 //   gank-alert    capture.rs:292    edge, gank probability >= danger threshold
 //   gank-clear    capture.rs:297    edge, unit payload
@@ -74,6 +75,14 @@ export interface MinimapCv {
   count: number;
   detections: CvDetection[];
   classifier: boolean;
+}
+
+/** minimap-frame — live minimap mirror for the Command Deck (~3Hz). `image` is a
+ *  ready-to-render base64 `data:image/png` URL of the downscaled captured minimap;
+ *  `region` is the same geometry as minimap-cv, in screen px. */
+export interface MinimapFrame {
+  image: string;
+  region: MinimapRegion;
 }
 
 /** enemy-missing — edge event, last_pos already normalised to [0,1]². */

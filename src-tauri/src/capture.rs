@@ -59,6 +59,16 @@ mod backend {
     /// triggered gank alerts / enemy-missing events still emit immediately.
     const DEBUG_EMIT_INTERVAL_MS: u128 = 200;
 
+    /// Cap the rate of the live minimap mirror (`minimap-frame`) — a downscaled
+    /// PNG of the captured minimap sent to the Command Deck (ms) ≈ 3 Hz. The
+    /// mirror only needs to be glanceable, so we keep the encode + base64 + IPC
+    /// cost low against the CPU/RAM budget rather than matching capture cadence.
+    const MINIMAP_FRAME_INTERVAL_MS: u128 = 300;
+    /// Target width (px) the mirrored minimap is downscaled to before PNG-encode.
+    /// The real region is ≈15.6% of screen height (≈220–320 px), so this is a
+    /// mild shrink that keeps the base64 payload to a few KB.
+    const MINIMAP_FRAME_WIDTH: u32 = 220;
+
     /// If a single frame's compute exceeds this (ms) we log it — a developing CV
     /// stall shows up as frames creeping over budget before anything locks up.
     const SLOW_FRAME_MS: u128 = 100;
@@ -81,6 +91,17 @@ mod backend {
         classifier: bool,
     }
 
+    /// Live minimap mirror for the Command Deck: a downscaled PNG of the exact
+    /// pixels we already crop for CV, inlined as a base64 `data:` URL (the same
+    /// technique pack banners use — the overlay/deck CSP allows `img-src data:`).
+    /// `region` travels alongside so the deck can place markers in the same
+    /// coordinate space as the image if it wants.
+    #[derive(Clone, serde::Serialize)]
+    struct MinimapFrame {
+        image: String,
+        region: MinimapRegion,
+    }
+
     /// Per-frame pipeline state. Same shape as the old WGC `MinimapCapture` minus
     /// the capture-API trait (the DXGI loop owns cadence) and `last_processed`
     /// (the explicit loop sleep replaces the per-frame throttle).
@@ -96,6 +117,8 @@ mod backend {
         start: Instant,
         /// last debug `minimap-cv` emit (throttled ≈5 Hz).
         last_emit: Instant,
+        /// last live minimap-mirror `minimap-frame` emit (throttled ≈3 Hz).
+        last_frame_emit: Instant,
         /// last calibration-buffer feed (≈9 Hz when QA mode on).
         last_calib: Instant,
     }
@@ -117,6 +140,7 @@ mod backend {
                 signal: Signal::new(),
                 start: now,
                 last_emit: now,
+                last_frame_emit: now,
                 last_calib: now,
             }
         }
@@ -215,6 +239,46 @@ mod backend {
             out[dst..dst + row_bytes].copy_from_slice(&full[src..src + row_bytes]);
         }
         Some((out, w, h))
+    }
+
+    /// Downscale a cropped BGRA minimap to [`MINIMAP_FRAME_WIDTH`] and PNG-encode
+    /// it into a base64 `data:image/png` URL for the Command Deck mirror. Nearest-
+    /// neighbour resize (same cheap kernel `calibration.rs` uses) so it stays well
+    /// inside budget at the ≈3 Hz call rate. Returns `None` on a degenerate size
+    /// or an encode failure — the caller then simply skips this frame.
+    fn encode_minimap_dataurl(bgra: &[u8], w: usize, h: usize) -> Option<String> {
+        use image::codecs::png::PngEncoder;
+        use image::{ExtendedColorType, ImageEncoder};
+
+        if w == 0 || h == 0 {
+            return None;
+        }
+        let (sw, sh) = (w as u32, h as u32);
+        let tw = MINIMAP_FRAME_WIDTH.min(sw);
+        let th = ((tw as u64 * sh as u64) / sw as u64).max(1) as u32;
+        let mut rgba = vec![0u8; (tw as usize) * (th as usize) * 4];
+        for y in 0..th {
+            let sy = (y as u64 * sh as u64 / th as u64) as usize;
+            for x in 0..tw {
+                let sx = (x as u64 * sw as u64 / tw as u64) as usize;
+                let si = (sy * w + sx) * 4;
+                let di = ((y * tw + x) * 4) as usize;
+                if si + 3 < bgra.len() {
+                    rgba[di] = bgra[si + 2]; // R (BGRA → RGBA)
+                    rgba[di + 1] = bgra[si + 1]; // G
+                    rgba[di + 2] = bgra[si]; // B
+                    rgba[di + 3] = 255; // A
+                }
+            }
+        }
+        let mut png: Vec<u8> = Vec::new();
+        PngEncoder::new(&mut png)
+            .write_image(&rgba, tw, th, ExtendedColorType::Rgba8)
+            .ok()?;
+        Some(format!(
+            "data:image/png;base64,{}",
+            crate::voice_api::base64_encode(&png)
+        ))
     }
 
     /// Run the full CV → game-knowledge pipeline on one captured full-screen
@@ -346,6 +410,16 @@ mod backend {
                     classifier: state.detector.is_active(),
                 };
                 let _ = state.app.emit("minimap-cv", payload);
+            }
+
+            // Live minimap mirror for the Command Deck (throttled ≈3 Hz). Encodes
+            // the same cropped pixels we just ran CV over — no extra capture. Kept
+            // at the tail so it never delays the G-Signal latency path above.
+            if state.last_frame_emit.elapsed().as_millis() >= MINIMAP_FRAME_INTERVAL_MS {
+                state.last_frame_emit = Instant::now();
+                if let Some(image) = encode_minimap_dataurl(&f.bgra, f.width, f.height) {
+                    let _ = state.app.emit("minimap-frame", MinimapFrame { image, region: r });
+                }
             }
         }
 

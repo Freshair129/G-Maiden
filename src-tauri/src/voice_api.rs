@@ -956,8 +956,9 @@ fn image_mime(ext: &str) -> &'static str {
     }
 }
 
-/// Standard base64 (RFC 4648) — small and dependency-free.
-fn base64_encode(input: &[u8]) -> String {
+/// Standard base64 (RFC 4648) — small and dependency-free. Shared with
+/// `capture.rs` for inlining the live minimap PNG onto the event bus.
+pub(crate) fn base64_encode(input: &[u8]) -> String {
     const TABLE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
     let mut out = String::with_capacity(input.len().div_ceil(3) * 4);
     for chunk in input.chunks(3) {

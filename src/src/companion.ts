@@ -2,7 +2,7 @@ import { useRef, useSyncExternalStore } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { GameTick, GsiStatus, MinimapCv, EnemyMissing, SignalAlert, ResourceStats } from "./live/events";
+import type { GameTick, GsiStatus, MinimapCv, MinimapFrame, EnemyMissing, SignalAlert, ResourceStats } from "./live/events";
 import { buildMatch } from "./live/buildMatch";
 import { buildHeroes, assignEnemySlot } from "./live/buildHeroes";
 import { buildMarkers } from "./live/buildMarkers";
@@ -463,6 +463,10 @@ type CompanionSnapshot = {
 };
 
 const CV_UPDATE_MS = 1000;
+// Live minimap mirror publishes at ≈2 Hz on the frontend — smooth enough to
+// glance at, and (unlike the full deck data) isolated in its own store so this
+// cadence re-renders only the <img>, never the whole deck tree.
+const MINIMAP_IMG_MS = 500;
 const LIVE_FLUSH_MS = 250;
 const subscribers = new Set<() => void>();
 const expiryTimers = new Map<string, number>();
@@ -476,6 +480,7 @@ let windowFocused = true;
 let pendingLive: LiveState | null = null;
 let flushTimer: number | null = null;
 let lastCvAt = 0;
+let lastFrameAt = 0;
 let logsLoadedForInGame: boolean | null = null;
 let lastOpenDotaAccountId: number | null = null;
 let logsRequestSeq = 0;
@@ -724,6 +729,12 @@ function ensureRuntime() {
       return { ...s, cv: p, enemySlots, active: true };
     });
   });
+  sub<MinimapFrame>("minimap-frame", (p) => {
+    const now = Date.now();
+    if (now - lastFrameAt < MINIMAP_IMG_MS) return;
+    lastFrameAt = now;
+    setMinimapImage(p.image || null);
+  });
   sub<SignalAlert>("gank-alert", (p) =>
     updateLive((s) => ({
       ...s,
@@ -785,6 +796,39 @@ export function useCompanionData() {
     subscribeStore,
     () => snapshot,
     () => snapshot
+  );
+}
+
+// --- Live minimap mirror -----------------------------------------------------
+// The captured minimap image (base64 PNG data URL from capture.rs `minimap-frame`)
+// lives in its OWN tiny external store, deliberately separate from CompanionData.
+// The image refreshes ≈2 Hz and is a few KB; folding it into the big snapshot
+// would re-run every deck builder and re-render the whole tree at that cadence.
+// Isolated here, only the <img> subtree (useMinimapImage consumers) updates —
+// the WebView2 render fan-out is the sensitive CPU path in this window.
+let minimapImage: string | null = null;
+const minimapSubs = new Set<() => void>();
+
+function setMinimapImage(url: string | null) {
+  if (minimapImage === url) return;
+  minimapImage = url;
+  for (const cb of minimapSubs) cb();
+}
+
+/** Latest live minimap mirror as a `data:` URL, or `null` before any frame /
+ *  outside Tauri. Subscribing also guarantees the event runtime is started. */
+export function useMinimapImage(): string | null {
+  // Piggy-back on the main store's subscribe so the Tauri `minimap-frame`
+  // listener (registered in ensureRuntime) is running even if a consumer uses
+  // only this hook.
+  useSyncExternalStore(subscribeStore, () => snapshot, () => snapshot);
+  return useSyncExternalStore(
+    (cb) => {
+      minimapSubs.add(cb);
+      return () => minimapSubs.delete(cb);
+    },
+    () => minimapImage,
+    () => minimapImage
   );
 }
 
