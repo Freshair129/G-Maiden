@@ -4,8 +4,9 @@
 รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-13-B-gann-event-mapping-banner.md` (ก่อนหน้า: `2026-07-13-gann-mastering-deck-complete.md`, `2026-07-12-cr003-impl-verify-supabase-local.md`)
 
 ## 🎨 G-Ann thread — งานต่อ (side-repo G-Suite, 2026-07-13 B) · pushed ถึง `1ba8d9a` (19 commit)
-- **Phase 2 กำลังทำ (Boss สั่งต่อ)**: (1) AI เติม `name_en` ในหน้า save (แก้ได้ก่อน save) — เลือกไว้ "AI+แก้ได้",
-  (2) แสดง backlink (`sound_usage` command) + multi-event ในคลัง, (3) impact-radar view (voice→events/packs).
+- **Phase 2**: (1) ✅ `3d7c1d0` AI เติม name_en ในหน้า save (list clip TH+EN input, ปุ่ม AI → llm_complete),
+  (2) ✅ `64bf80e` backlink + multi-event chips ในคลัง (SoundRow: events chips + ปุ่ม 🔗 → sound_usage command),
+  (3) 🔨 **impact-radar view กำลังทำ** (radial graph voice→events/packs, ใช้ sound_usage). pushed ถึง `64bf80e`.
 - **voice-library data model migrate แล้ว** (`1ba8d9a`): sounds = name_th/name_en/source_path/events(JSON)/
   file_path=`<idx>_<eng>.wav`; `sound_usage` reverse index (rebuild ตอน save/delete pack, ไม่ scan); speaker=package.
   migrate_sounds() verified บน library.db จริง (61 sounds ครบ). ⚠️ old sounds ยังใช้ filename ไทยเดิม (แค่ save ใหม่ที่เป็น eng).
