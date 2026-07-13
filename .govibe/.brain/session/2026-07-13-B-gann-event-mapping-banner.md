@@ -105,20 +105,39 @@ ffmpeg-static จริง (VP8X 0x12, 12 ANMF, loop=0) · `bannerPrompt` compil
 - **ยังไม่ wire**: Rust wrapper chain W1→whisper→W4 (W1 ก็ไม่มี wrapper) = integration task แยก.
 - **installed rapidocr-onnxruntime ใน sidecar `.venv`** (gitignored) + เพิ่มใน requirements.txt.
 
+### 8. Vision-pipeline wrapper + authoring/library UX (`7f0f117..e4c0620`)
+Boss ขอ: (a) Rust wrapper chain W1→whisper→W4, (b) save-to-library ที่ใช้ได้จริง แยกตามเจ้าของเสียง,
+(c) หน้าทดสอบเพิ่มเสียงได้, "Design UX/UI flow ตรงนี้ด้วย". → ถาม design (AskUserQuestion) ยืนยัน:
+**package name = เจ้าของเสียง** (ไม่แตะ schema) + **หน้าทดสอบ = library pack builder (ลาก+add)**.
+- **`7f0f117` `analyze_video`** — tauri cmd orchestrate 3 sidecar (spawn_sidecar helper): detect_boundaries
+  → transcribe → detect_buttons, fuse per window เป็น clips {start,end,text,label}. คืน [] ถ้า vision ไม่เจอ
+  window (fallback whisper). detect_buttons fail = label ว่าง ไม่ error. frontend `runAnalyzeVideo` resolve
+  label→event ผ่าน matchAnnouncerLabel. ปุ่ม "แยกอัตโนมัติ" ใช้ vision เมื่อ source เป็นวิดีโอ (VIDEO_EXT).
+  **verified e2e KOM: 11 windows fused** (Hat Trick→triple_kill + ข้อความไทยจาก whisper).
+- **`9a55927` Save to Library (Phase A+B)** — 🔴 **root cause: `SaveToLibDialog` ถูก mount แค่ใน `ClipList.tsx`
+  ที่ `App.tsx` ไม่เคย render** → หน้า authoring มีแค่ Export/Install. แก้: ปุ่ม Save to Library ใน SourceView +
+  relabel dialog "ชื่อเจ้าของเสียง" + guard ตอน import (confirm ก่อนล้าง clip ค้าง = กันเสียงปน).
+- **`e4c0620` Test-screen pack builder (Phase C)** — store `packBuilder` (event→LibSound[], persisted) +
+  การ์ด event = drop target (drag `application/x-library-sound-json`) + picker "+ เพิ่มเสียงจากคลัง" + ✕ +
+  ปุ่ม "ติดตั้งจากคลัง". Rust `install_library_pack` = **copy library wav (canonicalize+contain ใต้ sounds_dir)**
+  แทน ffmpeg cut (library sound เป็นไฟล์แยก ไม่ใช่ source เดียว) + banner/manifest เหมือน install_gmaiden_pack.
+  `installLibraryPack` banner = override→animated tone→PNG (ยังไม่รวม caption/reactive — library sound ไม่มี window).
+- gotcha: closure-returning-future ใน Rust ติด lifetime → ใช้ free async fn `spawn_sidecar` แทน.
+
 ## State ปลาย turn
-- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..2b42a34`, 8 commit thread นี้). clean.
+- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..e4c0620`, 12 commit thread นี้). clean.
 - **G-Maiden**: branch `main`, ไม่แตะทั้ง session. เหลือ `orchestration/src-tauri/Cargo.toml` M เดิม
   (CRLF/build flicker มาตั้งแต่ต้น session, `git checkout --` ทิ้งได้).
 - **ไม่ tag/ไม่ release** (batching). G-Ann ยังไม่มี release workflow.
 
 ## งานต่อ (เรียงค่า)
-1. **Rust wrapper chain W1→whisper→W4** (integration ที่เหลือของ vision pipeline) — เขียน tauri cmd spawn
-   detect_boundaries.py → whisper transcribe.py → detect_buttons.py, รวมผลเป็น clips {start,end,name(transcript),
-   event(resolve honEventMap จาก raw label)}. ตอนนี้ทั้ง 3 sidecar รันแยกได้จริงแล้ว แต่ยังไม่มี cmd ต่อร้อย
-   (W1 ก็ยังไม่มี wrapper). mirror `transcribe_audio` (lib.rs:305).
-2. **live in-game verify** (งาน Boss) — `pnpm ann-studio:dev` → import HoN video → auto-split → auto-map
-   (ดู deterministic pass ยิงกี่อัน) → เลือก caption/reactive/AI banner + override → install → เข้าเกมดู
-   banner เด้ง + animated/pulse + เสียงตรง event. (browser preview รัน Tauri app นี้ไม่ได้.)
+1. **live verify ทั้ง flow ใหม่** (งาน Boss) — `pnpm ann-studio:dev`: (a) import วิดีโอ → "วิเคราะห์วิดีโอ"
+   (vision chain) → ดู clips + event auto-map, (b) Save to Library เป็นเจ้าของเสียง + ลอง import ใหม่ (guard เตือน),
+   (c) หน้าทดสอบ: ลากเสียงจากคลังวางบน event / "+ เพิ่มเสียง" → "ติดตั้งจากคลัง" → เข้าเกมดู banner+เสียง.
+   (browser preview รัน Tauri app นี้ไม่ได้ — `__TAURI__.invoke` undefined.)
+2. **library banner ยังไม่รวม caption/reactive** — `installLibraryPack` banner = override→animated tone→PNG.
+   ถ้าอยากได้ caption/reactive ต่อ library sound: caption = ชื่อ sound, reactive = `clipEnvelope(file,0,dur,dur)`
+   (library sound เป็น wav ทั้งไฟล์). ทำเพิ่มได้.
 3. **AI banner (#6) ต้องมี SD backend** — เปิด Stable Diffusion WebUI แบบ `--api` ที่ `127.0.0.1:7860`
    (หรือแก้ endpoint ใน Settings→AI) ก่อนกด "✨ AI". ยังไม่ได้ verify e2e เพราะไม่มี SD รัน headless.
    ภาพ SD ออกมาเป็น RGB ทึบ (ไม่มี alpha) — banner จะเป็นสี่เหลี่ยมทึบ (ยอมรับได้ เป็น author choice).
