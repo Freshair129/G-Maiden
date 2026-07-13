@@ -1,12 +1,13 @@
 # TODO / self-note - next session
 
-อัปเดตล่าสุด: **2026-07-13 B** · **side-track ใน G-Ann (repo พี่น้อง G-Suite): 12 commit + PUSHED** — banner ×6 (override/animated-WebP/voice-caption/audio-reactive/AI-SD) + W4 label resolver + **W4 button-OCR `detect_buttons.py`** (e2e KOM 11/11) + **`analyze_video` wrapper W1→whisper→W4** (e2e KOM 11 windows fused) + **authoring/library UX**: Save-to-Library แยกเจ้าของเสียง (แก้ dialog ที่ App ไม่เคย render) + import guard + **หน้าทดสอบ = library pack builder** (ลากเสียงจากคลัง+add → `install_library_pack`, banner ครบ caption/reactive). **pushed G-Suite `origin/main` `be37053..ef905f2` (13 commit)**. ไม่แตะ G-Maiden code. G-Maiden priorities ด้านล่างเหมือนเดิม (CR-003 ยังไม่ push).
+อัปเดตล่าสุด: **2026-07-13 B** · **side-track ใน G-Ann (repo พี่น้อง G-Suite): 12 commit + PUSHED** — banner ×6 (override/animated-WebP/voice-caption/audio-reactive/AI-SD) + W4 label resolver + **W4 button-OCR `detect_buttons.py`** (e2e KOM 11/11) + **`analyze_video` wrapper W1→whisper→W4** (e2e KOM 11 windows fused) + **authoring/library UX**: Save-to-Library แยกเจ้าของเสียง + import guard + **หน้าทดสอบ = library pack builder** + **build/run test** (vite+tauri dev ✅, UI verify via read_page) + **`.taurignore`** (venv watcher) + 🔴 **install เข้า installed G-Maiden** (`voice_cache_root` mirror + auto-detect .lnk + Settings path field — เดิมเขียน `assets/voice-cache` แต่ installed อ่าน `voice-cache`). **pushed G-Suite `origin/main` `be37053..30ef90f` (15 commit)**. ไม่แตะ G-Maiden code. G-Maiden priorities ด้านล่างเหมือนเดิม (CR-003 ยังไม่ push).
 รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-13-B-gann-event-mapping-banner.md` (ก่อนหน้า: `2026-07-13-gann-mastering-deck-complete.md`, `2026-07-12-cr003-impl-verify-supabase-local.md`)
 
 ## 🎨 G-Ann thread — งานต่อ (side-repo G-Suite, 2026-07-13 B)
-- **live verify ทั้ง flow ใหม่ (งาน Boss)**: `pnpm ann-studio:dev` → (a) import วิดีโอ → "วิเคราะห์วิดีโอ"
-  (vision chain) ดู clips+auto-map, (b) Save to Library เป็นเจ้าของเสียง + import ใหม่ (guard เตือน),
-  (c) หน้าทดสอบ ลากเสียงจากคลัง/+เพิ่มเสียง → "ติดตั้งจากคลัง" → เข้าเกมดู. (Tauri app — preview browser รันไม่ได้.)
+- **install channel G-Ann→G-Maiden**: เขียน pack ลง `voice_cache_root(base)/packs/<id>/` แล้ว `POST :3000/announcer/install {packId}` auto-activate. path จริง: **installed=`G:\GM\G-Maiden`** (voice-cache/, จาก Start Menu .lnk), **repo=`G:\G-Maiden`** (assets/voice-cache/). Boss เลือก target ผ่าน Settings→G-Maiden Path (ปุ่ม auto-detect เติม installed).
+- **live verify ทั้ง flow (งาน Boss)**: `pnpm ann-studio:dev` → (a) import วิดีโอ → "วิเคราะห์วิดีโอ" ดู clips+auto-map,
+  (b) Save to Library เจ้าของเสียง + import ใหม่ (guard), (c) หน้าทดสอบ ลาก/+เพิ่มเสียง → set G-Maiden path (auto-detect)
+  → "ติดตั้งจากคลัง" → เปิด installed G-Maiden → เข้าเกมดู. (Tauri app — preview browser รันไม่ได้.)
 - **AI banner ต้องมี SD backend**: เปิด SD WebUI `--api` ที่ `127.0.0.1:7860` (Settings→AI). ภาพ SD = RGB ทึบ (ไม่มี alpha).
 - [DONE `ef905f2`] library banner caption/reactive — ครบเท่า session แล้ว.
 - **W4 calibration ต่อวิดีโอ**: `--roi`/cursor threshold tune กับ Na Khom/HoN; community videos ต้อง learn.

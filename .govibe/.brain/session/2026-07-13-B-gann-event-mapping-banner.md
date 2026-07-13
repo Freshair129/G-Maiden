@@ -130,17 +130,33 @@ reactive = `clipEnvelope(abs, 0, dur, dur)` ของทั้งไฟล์ (l
 priority override→reactive→animated→PNG. ปุ่ม "ติดตั้งจากคลัง" ส่ง toggle animate/voiceCaption/reactive.
 pure frontend, ใช้ building block ที่พิสูจน์แล้ว. tsc 0.
 
+### 10. Build+run test + install-to-installed-G-Maiden fix — `222349a`, `30ef90f`
+- **build จริง**: frontend prod (vite 1621 modules) ✅ + `pnpm tauri dev` compile Rust 1m48s → exe launch ✅.
+  UI ใหม่ทั้งหมด verify ผ่าน read_page (browser render shell ได้ แต่ invoke ไม่ได้): ปุ่ม "ติดตั้งจากคลัง",
+  "+ เพิ่มเสียงจากคลัง" ทุกการ์ด, 3 toggle, override/AI — ครบ. (screenshot browser ยัง timeout เหมือนเดิม.)
+- **`222349a` `.taurignore`** — `tauri dev` watch `src-tauri/` รวม sidecar `.venv` (rapidocr พันไฟล์) → sidecar
+  เขียน __pycache__ = rebuild Rust กลางคัน. exclude `.venv/__pycache__/gen`.
+- 🔴 **`30ef90f` install เข้า installed G-Maiden** — เดิม G-Ann เขียน `<base>/assets/voice-cache/packs`
+  เสมอ แต่ **installed G-Maiden อ่าน `<exe_dir>/voice-cache/packs`** (`voice_cache_dir()` เลือก exe-adjacent
+  `voice-cache/` ก่อน `assets/voice-cache/`). path จริง: installed = `G:\GM\G-Maiden` (จาก Start Menu .lnk),
+  repo = `G:\G-Maiden`. แก้: `voice_cache_root(base)` mirror logic G-Maiden (voice-cache/ ชนะ assets/voice-cache/)
+  → install fn ทุกตัวใช้. + `resolve_gmaiden_dir` fallback detect installed ผ่าน .lnk (PowerShell WScript.Shell).
+  + `detect_gmaiden_installed` cmd + Settings field แก้ได้ + ปุ่ม auto-detect + persist gmaidenPath ส่งเข้า install.
+  cargo 0, tsc 0. path logic ตรงกับ dir จริง (installed มี voice-cache/, repo มีแค่ assets/voice-cache).
+
 ## State ปลาย turn
-- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..ef905f2`, 13 commit thread นี้). clean.
+- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..30ef90f`, 15 commit thread นี้). clean.
+- **ปิด `tauri dev` process ไปแล้ว** (จับ build lock ตอน cargo check) — เปิดใหม่ `pnpm ann-studio:dev` ถ้าจะเทสต์ต่อ.
 - **G-Maiden**: branch `main`, ไม่แตะทั้ง session. เหลือ `orchestration/src-tauri/Cargo.toml` M เดิม
   (CRLF/build flicker มาตั้งแต่ต้น session, `git checkout --` ทิ้งได้).
 - **ไม่ tag/ไม่ release** (batching). G-Ann ยังไม่มี release workflow.
 
 ## งานต่อ (เรียงค่า)
-1. **live verify ทั้ง flow ใหม่** (งาน Boss) — `pnpm ann-studio:dev`: (a) import วิดีโอ → "วิเคราะห์วิดีโอ"
-   (vision chain) → ดู clips + event auto-map, (b) Save to Library เป็นเจ้าของเสียง + ลอง import ใหม่ (guard เตือน),
-   (c) หน้าทดสอบ: ลากเสียงจากคลังวางบน event / "+ เพิ่มเสียง" → "ติดตั้งจากคลัง" → เข้าเกมดู banner+เสียง.
-   (browser preview รัน Tauri app นี้ไม่ได้ — `__TAURI__.invoke` undefined.)
+1. **live verify ทั้ง flow + install เข้า installed G-Maiden** (งาน Boss) — `pnpm ann-studio:dev`:
+   (a) import วิดีโอ → "วิเคราะห์วิดีโอ" → clips+auto-map, (b) Save to Library เป็นเจ้าของเสียง + import ใหม่ (guard),
+   (c) หน้าทดสอบ ลาก/+เพิ่มเสียง → **Settings→G-Maiden กดปุ่ม auto-detect (เติม `G:\GM\G-Maiden`)** →
+   "ติดตั้งจากคลัง" → เปิด installed G-Maiden → เข้าเกมดู banner+เสียง. (browser รัน Tauri ไม่ได้.)
+   ยังไม่ได้ e2e install จริง (ต้อง pack + app รัน) — path logic verify by construction แล้ว.
 2. **[DONE `ef905f2`] library banner caption/reactive** — ครบเท่า session แล้ว.
 3. **AI banner (#6) ต้องมี SD backend** — เปิด Stable Diffusion WebUI แบบ `--api` ที่ `127.0.0.1:7860`
    (หรือแก้ endpoint ใน Settings→AI) ก่อนกด "✨ AI". ยังไม่ได้ verify e2e เพราะไม่มี SD รัน headless.
