@@ -79,7 +79,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   const gName = displayName || (email ? email.split("@")[0] : "Guest");
   const gSub = email || data.agentSector.title;
 
-  // fixed 1280×800 stage scaled to fill any window (1280 → 1920) + rounded-fillet Subtract clip
+  // fixed 1420×760 stage (SSOT 03-layout.md) scaled to fill any window + rounded-fillet Subtract clip
   const stageRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     const apply = () => {

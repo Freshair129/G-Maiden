@@ -4130,11 +4130,14 @@ body {
 @keyframes g-drift { 0%,100%{transform:translateX(-6%)} 50%{transform:translateX(6%)} }
 @media (prefers-reduced-motion: reduce){ .g-deck-bg::after{animation:none} }
 
-/* fixed 1280×800 design stage, scaled by JS to fill any window (1280 → 1920).
-   All FABs + panel anchor to THIS (not the window), so the layout is identical at every size. */
+/* fixed 1420×760 design stage (SSOT docs/design-system/03-layout.md), scaled by JS
+   to fill any window. All FABs + panel anchor to THIS (not the window), so the layout
+   is identical at every size. The box MUST match the scale divisor in CommandDeck.tsx
+   (window.innerWidth / 1420, window.innerHeight / 760) — a mismatch places every
+   stage-authored element (panel insets, right-anchored FABs, Subtract notches) wrong. */
 .g-deck-stage {
   position: absolute; left: 50%; top: 50%;
-  width: 1280px; height: 800px;
+  width: 1420px; height: 760px;
   transform: translate(-50%, -50%) scale(1);
   transform-origin: center center;
 }
