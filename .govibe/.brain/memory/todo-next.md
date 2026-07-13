@@ -1,16 +1,19 @@
 # TODO / self-note - next session
 
-อัปเดตล่าสุด: **2026-07-13 B** · **side-track ใน G-Ann (repo พี่น้อง G-Suite): event mapping + banner ครบ 3 ชิ้น + PUSHED** — (1) banner override rail ใส่ภาพเอง png/webp/gif, (2) animated-WebP bake (tone banner มี entrance animation, พิสูจน์ container จริง VP8X 0x12/12 frame/loop 1 + Pillow alpha ramp), (3) W4 HoN→Dota label resolver (36/36). **committed + pushed ขึ้น G-Suite `origin/main` (`be37053..8c1c11a`)**. ไม่แตะ G-Maiden. G-Maiden priorities ด้านล่างยังเหมือนเดิม (CR-003 ยังไม่ push).
+อัปเดตล่าสุด: **2026-07-13 B** · **side-track ใน G-Ann (repo พี่น้อง G-Suite): event mapping + banner ครบ 6 ชิ้น + PUSHED** — (1) banner override rail, (2) animated-WebP bake, (3) W4 HoN→Dota label resolver (36/36), แล้ว Boss สั่ง "banner build ตาม voice → ทั้งหมดเลย": (4) voice-caption (subtitle จาก transcript), (5) audio-reactive (waveform+glow เต้นตาม envelope, live-synced preview), (6) AI banner art (SD WebUI A1111 txt2img → override). **pushed G-Suite `origin/main` `be37053..e5d8606` (7 commit)**. ไม่แตะ G-Maiden code. G-Maiden priorities ด้านล่างยังเหมือนเดิม (CR-003 ยังไม่ push).
 รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-13-B-gann-event-mapping-banner.md` (ก่อนหน้า: `2026-07-13-gann-mastering-deck-complete.md`, `2026-07-12-cr003-impl-verify-supabase-local.md`)
 
 ## 🎨 G-Ann event-mapping+banner thread — งานต่อ (side-repo G-Suite, 2026-07-13 B)
 - **live in-game verify (งาน Boss)**: `pnpm ann-studio:dev` → import HoN video → auto-split → auto-map
-  (ดู deterministic pass ยิงกี่อัน) → banner override / เปิด "banner เคลื่อนไหว" → install → เข้าเกมดู banner
-  เด้ง+animated+เสียงตรง event. (browser preview รัน Tauri app นี้ไม่ได้ — `__TAURI__.invoke` undefined.)
+  (ดู deterministic pass ยิงกี่อัน) → เลือก caption/reactive/AI banner + override → install → เข้าเกมดู banner
+  เด้ง+animated/pulse+เสียงตรง event. (browser preview รัน Tauri app นี้ไม่ได้ — `__TAURI__.invoke` undefined.)
+- **AI banner (#6) ต้องมี SD backend**: เปิด Stable Diffusion WebUI `--api` ที่ `127.0.0.1:7860` (endpoint ใน
+  Settings→AI) ก่อนกด "✨ AI". verify e2e ไม่ได้ headless. ภาพ SD = RGB ทึบ (ไม่มี alpha) = banner สี่เหลี่ยมทึบ.
 - **W4 OCR frame-reader ยังไม่ทำ** (env-dependent): `detect_buttons.py` sidecar — PyAV frame extract +
   OCR engine (tesseract/easyocr ใน venv) + HoN button ROI/highlight → emit `{labels:[{startMs,endMs,label}]}`
   → resolve ผ่าน `honEventMap.ts` (single source of truth). contract เขียนใน `sidecar/README.md`. calibration ต่อวิดีโอ.
-- animated bake = frames 12/fps 24 (~0.5s) ปรับใน `bakeBanner.ts`; กริดยังไม่มี live-preview ของ animation.
+- bake params: entrance frames 12/fps 24 (~0.5s), reactive fps 18/max 48. แก้ใน `bakeBanner.ts`. reactive
+  waveform visual เห็นเฉพาะใน webview (canvas) — encoding path พิสูจน์แล้ว (loop=0 valid webp).
 
 ## 🎯 Highest-leverage next work (จาก session 2026-07-12, เรียงลำดับ)
 1. **push CR-003 commits** (`f675fabb..a90da645`, 4 ตัว) เมื่อ Boss สั่ง — ไม่ tag/release. (รวม session-B ที่ push แล้ว = clean).

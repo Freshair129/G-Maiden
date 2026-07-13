@@ -62,18 +62,48 @@
 - **Node 24 type-strip อ่าน extensionless import ไม่ได้** → verify TS logic ด้วยการ compile→CJS ก่อนรัน node
   (ไม่ใช่รัน .ts ตรง). vitest ไม่มีใน G-Ann frontend.
 
+## สิ่งที่ทำ (เพิ่มเติม — banner-build "ตาม voice" 3 แบบ, pushed `8c1c11a..e5d8606`)
+
+Boss ถาม "banner เราจะ build ยังไง เริ่มจาก build ตาม voice ก็ได้" → ถาม interpretation
+(AskUserQuestion) → ตอบ **"ทั้งหมดเลย"** → สร้าง 3 แบบเรียงตาม dependency+risk:
+
+### 4. Voice-caption banner — `5a33047`
+- `drawToneBanner` รับ optional `caption` = transcript จริงที่ voice พูด (clip แรกของ event)
+  แทน `EVENT_THAI` คงที่ + `fitText` auto-truncate ellipsis ให้พอดี panel. ผ่าน static PNG +
+  animated bake + preview กริด/เวที + toggle "ข้อความจาก voice" (default on) → install.
+
+### 5. Audio-reactive banner — `d05869d`
+- `drawToneBanner` รับ optional `BannerWave {env, head}`: waveform strip + border-glow **เต้นตาม
+  loudness** ที่ playhead. `peaks.ts clipEnvelope()` downsample [start,end] → normalized buckets.
+  `bakeReactiveWebp` bake เฟรมตามความยาว clip (playhead sweep) encode `loop=0` (pulse ต่อเนื่อง).
+  Rust `bake_animated_webp` เพิ่ม `loop_count` (0=forever, default 1). **live preview เวทีซิงก์เสียงจริง**
+  (`ReactiveBanner` rAF อ่าน `audio.currentTime`). priority: override>reactive>entrance>PNG.
+
+### 6. AI banner art (Stable Diffusion) — `e5d8606`
+- `bannerPrompt.ts` (pure, mood ตาม tone ladder) → Rust `generate_banner_image` ยิง SD WebUI
+  A1111 `/sdapi/v1/txt2img` → base64 PNG → เป็น `bannerOverride` (ไหลผ่าน pipeline เดิม). ปุ่ม
+  "✨ AI" ต่อการ์ด + SD endpoint field ใน Settings (store `sdEndpoint`, default `127.0.0.1:7860`).
+  **backend env-dependent** — ต้องมี SD WebUI รัน `--api` ถึงสร้างภาพจริง (Boss verify).
+
+Verify เพิ่ม: tsc 0 ทุก commit · cargo 0 (#5 loop, #6 txt2img) · reactive bake `loop=0` บน
+ffmpeg-static จริง (VP8X 0x12, 12 ANMF, loop=0) · `bannerPrompt` compiled+asserted **8/8**
+(mood/subject/text-free ทุก event). Node 24 อ่าน extensionless import ไม่ได้ → compile→CJS ก่อนรัน.
+
 ## State ปลาย turn
-- **G-Suite**: `main` sync กับ `origin/main` (pushed). clean.
+- **G-Suite**: `main` sync กับ `origin/main` (pushed `be37053..e5d8606`, 7 commit thread นี้). clean.
 - **G-Maiden**: branch `main`, ไม่แตะทั้ง session. เหลือ `orchestration/src-tauri/Cargo.toml` M เดิม
   (CRLF/build flicker มาตั้งแต่ต้น session, `git checkout --` ทิ้งได้).
 - **ไม่ tag/ไม่ release** (batching). G-Ann ยังไม่มี release workflow.
 
 ## งานต่อ (เรียงค่า)
 1. **live in-game verify** (งาน Boss) — `pnpm ann-studio:dev` → import HoN video → auto-split → auto-map
-   (ดู deterministic pass ยิงกี่อัน) → ใส่ banner override / เปิด "banner เคลื่อนไหว" → install → เข้าเกมดู
-   banner เด้ง + animated + เสียงตรง event.
-2. **W4 OCR frame-reader** `detect_buttons.py` — sidecar (PyAV frame extract เหมือน detect_boundaries.py)
+   (ดู deterministic pass ยิงกี่อัน) → เลือก caption/reactive/AI banner + override → install → เข้าเกมดู
+   banner เด้ง + animated/pulse + เสียงตรง event. (browser preview รัน Tauri app นี้ไม่ได้.)
+2. **AI banner (#6) ต้องมี SD backend** — เปิด Stable Diffusion WebUI แบบ `--api` ที่ `127.0.0.1:7860`
+   (หรือแก้ endpoint ใน Settings→AI) ก่อนกด "✨ AI". ยังไม่ได้ verify e2e เพราะไม่มี SD รัน headless.
+   ภาพ SD ออกมาเป็น RGB ทึบ (ไม่มี alpha) — banner จะเป็นสี่เหลี่ยมทึบ (ยอมรับได้ เป็น author choice).
+3. **W4 OCR frame-reader** `detect_buttons.py` — sidecar (PyAV frame extract เหมือน detect_boundaries.py)
    + OCR engine (tesseract/easyocr ใน venv) + HoN button ROI/highlight detect → emit `{labels:[{startMs,
    endMs,label}]}` → frontend resolve ผ่าน honEventMap.ts. calibration ต่อวิดีโอ (เหมือน caveat W1).
-3. **animated bake ปรับได้**: ตอนนี้ frames=12/fps=24 (~0.5s). ถ้า Boss อยากได้ entrance ยาว/สั้นกว่านี้
-   ปรับใน bakeBanner.ts. ยังไม่มี live-preview ของ animated ในกริด (การ์ดโชว์ progress=1 นิ่ง).
+4. **bake params ปรับได้**: entrance frames=12/fps=24 (~0.5s); reactive fps=18/max 48 frames. แก้ใน
+   bakeBanner.ts. reactive waveform visual เห็นเฉพาะใน webview (canvas) — encoding path พิสูจน์แล้ว.
