@@ -51,6 +51,17 @@ interface GankAlert { probability: number; missing_heroes: string[]; eta_ms: num
 interface EnemyMissing { hero: string; missing_for_ms: number; last_pos: [number, number] }
 /** G5.4: advice broadcast from master.rs → overlay. */
 interface AdviceUpdate { text: string; cached: boolean }
+/** G-Revive: deterministic buyback verdict (revive.rs → `buyback-advice`).
+ *  Mirrors `ReviveAdvice`; `urgency` is the serde-serialized `Urgency` enum. */
+export type BuybackUrgency = 'None' | 'Consider' | 'Strong'
+export interface ReviveAdvice {
+  recommend_buyback: boolean
+  urgency: BuybackUrgency
+  natural_respawn_remaining: number
+  affordable: boolean | null
+  next_respawn_if_buyback: number
+  reason: string
+}
 /** Connection/status pushed by the Rust watchdog (gsi.rs) every ~4s. */
 interface GsiStatus { dota_running: boolean; gsi_active: boolean; in_game: boolean; display_exclusive: boolean }
 
@@ -347,6 +358,10 @@ const Overlay: React.FC = () => {
   // G5.4: latest advice from G-Master, shown as an in-overlay panel.
   const [overlayAdvice, setOverlayAdvice] = useState<string | null>(null)
   const adviceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  // G-Revive: buyback verdict shown while the player is dead. `advice` is the
+  // deterministic verdict; `narrative` is the local-SLM voiced line that arrives
+  // a beat later on `buyback-narrative`. Cleared on respawn.
+  const [buyback, setBuyback] = useState<{ advice: ReviveAdvice; narrative: string | null } | null>(null)
   // GSI activity from the watchdog — so the HUD disappears when Dota closes
   // (Dota stops POSTing without a final tick; `tick` would otherwise stay stale).
   const [gsiActive, setGsiActive] = useState(true)
@@ -434,6 +449,15 @@ const Overlay: React.FC = () => {
         adviceTimer.current = setTimeout(() => setOverlayAdvice(null), 20_000)
       }
     })
+    // G-Revive: buyback verdict card. `buyback-advice` carries the deterministic
+    // verdict (broadcast, so it shows regardless of which window triggered the
+    // request); `buyback-narrative` follows with Maiden's voiced line.
+    const uBA = listen<ReviveAdvice>('buyback-advice', (e) => {
+      setBuyback({ advice: e.payload, narrative: null })
+    })
+    const uBN = listen<string>('buyback-narrative', (e) => {
+      setBuyback((b) => (b ? { ...b, narrative: e.payload } : b))
+    })
     const u10 = listen<number>('volume-change', (e) => {
       setVolToast(e.payload)
       if (volToastTimer.current) clearTimeout(volToastTimer.current)
@@ -469,6 +493,7 @@ const Overlay: React.FC = () => {
       void u4.then((f) => f()); void u5.then((f) => f()); void u6.then((f) => f())
       void u7.then((f) => f()); void u8.then((f) => f()); void u9.then((f) => f())
       void u10.then((f) => f()); void uK.then((f) => f()); void uPB.then((f) => f())
+      void uBA.then((f) => f()); void uBN.then((f) => f())
       if (gankTimer.current) clearTimeout(gankTimer.current)
       if (gankClearTimer.current) clearTimeout(gankClearTimer.current)
       if (adviceTimer.current) clearTimeout(adviceTimer.current)
@@ -598,11 +623,27 @@ const Overlay: React.FC = () => {
       killTimer.current = setTimeout(() => setKillBanner(null), 800)
     }, 4000)
   }, [tick?.in_game, tick?.kills])
-  // Reset streak on death
+  // Reset streak on death + fire the G-Revive buyback verdict; clear on respawn.
+  // Uses its OWN prev-alive ref rather than the shared `prev.current`: the persona
+  // effect above overwrites `prev.current` at the top of its body (and runs first,
+  // every tick), so reading it here would always miss the alive→dead edge.
+  const prevAlive = useRef<boolean | null>(null)
   useEffect(() => {
-    if (tick && prev.current && prev.current.alive && !tick.alive) {
+    if (!tick) return
+    const was = prevAlive.current
+    prevAlive.current = tick.alive
+    if (was === null) return
+    if (was && !tick.alive) {
       killStreak.current = 0
       lastKillHeroes.current.clear()
+      // G-Revive: ask the backend for this death's buyback verdict. The verdict
+      // returns immediately (deterministic) and is broadcast on `buyback-advice`
+      // — the listener above owns display; the voiced narrative follows on
+      // `buyback-narrative`. Fire-and-forget; ignore errors (SLM/CLI absent).
+      if (tick.in_game) void invoke('request_buyback_advice', { tick }).catch(() => {})
+    }
+    if (!was && tick.alive) {
+      setBuyback(null) // respawned — dismiss the card
     }
   }, [tick?.alive])
 
@@ -733,6 +774,34 @@ const Overlay: React.FC = () => {
     </div>
   ) : null
 
+  // G-Revive: buyback verdict card — shown while dead, dismissed on respawn.
+  // Accent tracks urgency: Strong = red (buy back NOW), Consider = amber, else ice.
+  const buybackPanel = buyback && s.gankVisuals ? (() => {
+    const a = buyback.advice
+    const accent = a.urgency === 'Strong' ? C.bad : a.urgency === 'Consider' ? C.warn : C.ice
+    const verdict = a.recommend_buyback ? (a.urgency === 'Strong' ? 'ซื้อเกิดเลย!' : 'ควรซื้อเกิด') : 'รอเกิด'
+    const secs = Math.max(0, Math.round(a.natural_respawn_remaining))
+    return (
+      <div style={{
+        ...overlayPanel(s.opacity), padding: '10px 16px', maxWidth: 380, fontSize: 13,
+        lineHeight: 1.5, position: 'relative', border: `1px solid ${accent}`,
+      }}>
+        <div style={{ fontSize: 10.5, color: accent, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5, display: 'flex', alignItems: 'center', gap: 8 }}>
+          <span>💀 Buyback</span>
+          <span style={{ background: accent, color: C.bg, borderRadius: 6, padding: '1px 7px', fontWeight: 700, letterSpacing: 0.4 }}>{verdict}</span>
+        </div>
+        <div style={{ color: C.txt }}>{buyback.narrative || a.reason}</div>
+        <div style={{ fontSize: 11, color: C.mut, marginTop: 4 }}>
+          เกิดเองใน {secs}s{a.affordable === false ? ' · เงินไม่พอซื้อเกิด' : ''}
+        </div>
+        <button onClick={() => setBuyback(null)} style={{
+          position: 'absolute', top: 6, right: 8, background: 'transparent', border: 'none',
+          color: C.mut, cursor: 'pointer', fontSize: 13, lineHeight: 1,
+        }}>✕</button>
+      </div>
+    )
+  })() : null
+
   // A. Gank warning banner — top-center, above the stat HUD, never over the minimap.
   const gankBanner = s.gankVisuals && gank ? (
     gank.phase === 'clear'
@@ -757,7 +826,7 @@ const Overlay: React.FC = () => {
 
   // Redesign tier — isolated render path; lite (below) stays the stable default.
   if (s.uiMode === 'full') {
-    return <FullOverlay tick={tick} s={s} gank={gank} missingHeroes={missingHeroes} overlayAdvice={overlayAdvice} toast={toast} />
+    return <FullOverlay tick={tick} s={s} gank={gank} missingHeroes={missingHeroes} overlayAdvice={overlayAdvice} buyback={buyback} toast={toast} />
   }
 
   if (!seen || !tick || !tick.in_game || (!gsiActive && !previewMode)) {
@@ -879,6 +948,7 @@ const Overlay: React.FC = () => {
             </div>
           </div>
         )}
+        {buybackPanel}
         {advicePanel}
         {(s.showTimer || s.showScore || s.showHeroBar || s.showKda || s.showGold) && (
         <div style={{ ...overlayPanel(s.opacity), padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>

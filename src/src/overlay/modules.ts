@@ -13,6 +13,7 @@ export type ModuleId =
   | 'toast'
   | 'companion'
   | 'advice'
+  | 'buyback'
   | 'missing'
   | 'clock'
   | 'kda'
@@ -40,6 +41,7 @@ export const MODULE_META: { id: ModuleId; label: string }[] = [
   { id: 'toast', label: 'Voice Notice (toast)' },
   { id: 'companion', label: 'Maiden Presence' },
   { id: 'advice', label: 'Advice' },
+  { id: 'buyback', label: 'Buyback (G-Revive)' },
   { id: 'missing', label: 'Enemy Missing' },
   { id: 'clock', label: 'Clock' },
   { id: 'kda', label: 'K / D / A' },
@@ -62,6 +64,7 @@ export const DEFAULT_LAYOUT: Layout = {
   toast: { x: 50, y: 22, scale: 1, enabled: true },
   companion: { x: 9, y: 11, scale: 1, enabled: true },
   advice: { x: 50, y: 88, scale: 1, enabled: true },
+  buyback: { x: 50, y: 78, scale: 1, enabled: true },
   missing: { x: 88, y: 8, scale: 1, enabled: true },
   clock: { x: 50, y: 4, scale: 1, enabled: false },
   kda: { x: 20, y: 24, scale: 1, enabled: true },

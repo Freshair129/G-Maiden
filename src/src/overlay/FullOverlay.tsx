@@ -11,7 +11,7 @@
  * Crystal Maiden portrait into CompanionStage, voice-pack tab.
  */
 import React from 'react'
-import type { GameTick, Settings, GankState } from '../App'
+import type { GameTick, Settings, GankState, ReviveAdvice } from '../App'
 import { cfgOf, type ModuleCfg, type ModuleId } from './modules'
 
 const C = {
@@ -54,6 +54,8 @@ interface Props {
   gank: GankState
   missingHeroes: Set<string>
   overlayAdvice: string | null
+  /** G-Revive buyback verdict shown while dead (null when alive/none). */
+  buyback: { advice: ReviveAdvice; narrative: string | null } | null
   /** Last voice event mirrored on-screen (G-Signal/persona/advice). Becomes
    * the silent fallback when the voice pack hasn't shipped — users still see
    * which event triggered. Auto-dismisses in the parent. */
@@ -78,7 +80,7 @@ const G_LEVELS = [
   { label: 'อันตราย', color: '#ff7b85', glow: 'rgba(255,123,133,0.6)' },
 ] as const
 
-export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, overlayAdvice, toast }) => {
+export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, overlayAdvice, buyback, toast }) => {
   const op = s.opacity
   const inGame = !!tick && tick.in_game
   const t = tick
@@ -175,6 +177,25 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
               <div>{overlayAdvice}</div>
             </div>
           ))
+        : null}
+
+      {buyback && s.gankVisuals
+        ? M('buyback', (() => {
+            const a = buyback.advice
+            const accent = a.urgency === 'Strong' ? C.bad : a.urgency === 'Consider' ? C.warn : C.ice
+            const verdict = a.recommend_buyback ? (a.urgency === 'Strong' ? 'ซื้อเกิดเลย!' : 'ควรซื้อเกิด') : 'รอเกิด'
+            const secs = Math.max(0, Math.round(a.natural_respawn_remaining))
+            return (
+              <div style={{ ...glass(op), padding: '12px 18px', maxWidth: 420, fontSize: 13, lineHeight: 1.5, border: `1px solid ${accent}` }}>
+                <div style={{ fontSize: 10, color: accent, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5, display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <span>💀 Buyback</span>
+                  <span style={{ background: accent, color: '#08090c', borderRadius: 6, padding: '1px 7px', fontWeight: 700 }}>{verdict}</span>
+                </div>
+                <div>{buyback.narrative || a.reason}</div>
+                <div style={{ fontSize: 11, color: C.mut, marginTop: 4 }}>เกิดเองใน {secs}s{a.affordable === false ? ' · เงินไม่พอซื้อเกิด' : ''}</div>
+              </div>
+            )
+          })())
         : null}
 
       {inGame && missingHeroes.size > 0 && !gank && s.gankVisuals
