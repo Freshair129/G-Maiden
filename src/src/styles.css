@@ -36,18 +36,18 @@
   --g-instrument: #0B0E16; --g-instrument-2: #0D1119;
   --g-hairline: rgba(150,185,230,0.10); --g-hairline-2: rgba(150,185,230,0.16);
   --g-coin: #E4C36B; /* economy gold — never a status color */
-  --g-blur-console: none; /* default = shipped v0.9.0 behavior (panel blur was removed as a
-     deliberate WebView2 perf fix — transparent Tauri window has nothing behind to blur).
-     Cinematic/balanced tiers OPT IN below; enable only with a perf_cpu_tree before/after. */
+  --g-blur-console: blur(30px) saturate(150%); /* cinematic DEFAULT — owner decision
+     2026-07-14 ("เอา panel blur กลับมา"), overriding the earlier none-default. The blur
+     acts on webview-internal layers (ambient bg + L1 plate). Drag-lag stays fixed via
+     .is-dragging (blur force-off during native drag). gq-balanced/gq-eco step down. */
   --g-t-micro: 0.12s; --g-t-hover: 0.15s; --g-t-state: 0.2s; --g-t-bar: 0.3s;
   --g-t-ambient: 14s ease-in-out infinite; --g-ease: ease-out;
   --g-z-bg: 0; --g-z-panel: 1; --g-z-content: 10; --g-z-fab: 100; --g-z-pop: 200;
 }
-/* CR-011 §H quality tiers — DEFAULT (no class) = eco-equivalent none, matching shipped
-   v0.9.0 (see --g-blur-console note above). cinematic/balanced are opt-in enhancements
-   toggled by a future JS wave setting the class on <html>; .g-deck-panel below consumes
-   var(--g-blur-console) so no other rule needs to change per tier. NFR gate: enabling
-   cinematic by default requires a perf_cpu_tree.rs before/after run first. */
+/* CR-011 §H quality tiers — DEFAULT (no class) = cinematic (owner decision 2026-07-14).
+   balanced/eco step the console-glass blur down for lighter machines; toggled by a
+   future JS wave setting the class on <html>; .g-deck-panel below consumes
+   var(--g-blur-console) so no other rule needs to change per tier. */
 html.gq-cinematic { --g-blur-console: blur(30px) saturate(150%); }
 html.gq-balanced { --g-blur-console: blur(16px) saturate(150%); }
 html.gq-eco { --g-blur-console: none; }

@@ -1,6 +1,6 @@
 # CR-011: COLD BOOTH — Desktop UX/UI direction for the Command Deck
 
-**Status:** PROPOSAL (design direction — supersedes nothing until accepted; absorbs and extends CR-007 FROSTLINE WP-2..6)
+**Status:** ACCEPTED (owner "อนุมัติทั้งหมด" 2026-07-14 — absorbs and extends CR-007 FROSTLINE WP-2..6; owner amendment: panel blur returns as the cinematic DEFAULT tier, overriding §H's shipped-parity default)
 **Author:** Claude (direction study) for Boss
 **Date:** 2026-07-14
 **Inputs read:** PRD + SRS (`docs/product/`), design-system SSOT v2.1 (`docs/design-system/00–08`), CR-006 lock + CR-007 design package, `CommandDeck.tsx` / `CompanionPages.tsx` / `App.tsx` / `styles.css` / `companion.ts` + `live/*`, CR-003 orphan surfaces (Store/Wallet/Ledger/Inventory), sitemap flow board, screen-direction boards, live dev-server DOM.
