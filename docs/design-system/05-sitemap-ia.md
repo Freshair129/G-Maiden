@@ -1,7 +1,7 @@
 ---
-version: "2.1.0-draft"
+version: "2.2.0-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-09T00:00:00+07:00,Fable"
+last_update: "2026-07-15T00:00:00+07:00,Claude"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -33,12 +33,48 @@ Design contract ของ overlay อยู่ที่ [`07-combat-hud.md`](07-
 1. **Sidebar FAB (I)** = navigation จริง → สลับ *page* ใน Command Deck
 2. **Audio rail** (แทน P1–P5 anchor rail เดิม — ดู 03-layout §5.6) = ไม่ใช่ nav →
    master volume + ANN/SIGNAL toggle บนหน้า dashboard
-3. **แกนเฟส (CR-007, pending)** = ไม่ใช่ nav และไม่ขยับ layout — เนื้อหาใน sector เดิม
-   ของ dashboard สลับตามสถานะแมตช์ `standby → prep → live → debrief`
-   (อัตโนมัติจาก GSI, override มือได้) — สเปกเต็มอยู่ใน CR-007 §WP-5
+3. **แกนเฟส (CR-011 §D/§E, shipped waves P1–P3)** = ไม่ใช่ nav และไม่ขยับ layout —
+   เนื้อหาใน sector เดิมของ dashboard สลับตามสถานะแมตช์
+   `standby → prep → live → debrief` (อัตโนมัติจาก GSI) — ดู §2.1 ด้านล่าง
 
-**Command palette (CR-007 WP-6, pending):** `Ctrl+K` overlay ลอยเหนือ stage —
-ทางลัดครอบทุกแกนโดยไม่แตะ geometry
+**Command palette ("Maiden Line", CR-011 §L/§M, shipped CR011-P4a):** `Ctrl+K`
+ลอยเหนือ stage (window space, ไม่ใช่ scaled stage) — ทางลัดครอบทุกแกนโดยไม่แตะ
+geometry; `Ctrl+/` หรือ `?` เปิด shortcut sheet คู่กัน (รายละเอียด anatomy:
+`04-components.md` §10a/§10b)
+
+### 2.1 Phase axis (CR-011 §D/§E — `src/src/live/phase.ts`)
+
+Match phase คือ derived state จาก GSI signal ที่มีอยู่แล้ว (ไม่มี concept ใหม่ฝั่ง
+backend) — คำนวณด้วย `stepPhase(prev, input)` ทุกครั้งที่มี GSI tick ใหม่ ผลลัพธ์คือ
+`MatchPhase = "standby" | "prep" | "live" | "debrief"`:
+
+```
+standby ──(draft/hero-select/loading state)──▶ prep
+   ▲                                              │
+   │                                    (live state / inGame)
+   │                                              ▼
+   └────(GSI offline, no prior debrief)──── live ─┐
+                                                   │ (post-game state, or
+                                                   │  live→disconnect w/o
+   debrief ◀─────────────────────────────────────┘   explicit POST_GAME)
+      │
+      └── sticky: stays "debrief" across GSI going offline (Dota closing) or
+          any unrecognized state, until the next real prep/live tick
+```
+
+**Geometry-frozen, content-swap only** — the sectors that swap content per phase
+never move or resize; only what renders *inside* the frozen box changes:
+
+| phase | `.gm-battle-grid` content (was: hero columns + minimap) | `.gm-agent-card` content |
+| --- | --- | --- |
+| `standby` / `prep` | **Readiness rundown** (`ReadinessRundown`, 04-components §9d) — honest checklist of what's actually ready (GSI, voice pack, G-Signal, ANN, volume); optional "กำลังดราฟต์" note during `prep` | ON AIR console (04-components §9b) — unaffected by phase, always the utterance ledger |
+| `live` | hero columns + minimap (unchanged, pre-CR-011 content) | ON AIR console |
+| `debrief` | **Debrief timeline** (`DebriefTimeline`, 04-components §9e) — most-recently-archived match's event log, sticky (survives GSI dropping) until the user goes "back to live" or a new prep/live tick arrives | ON AIR console |
+
+The score header's **phase chip** (`.gm-phase-chip`, 04-components §6b) is the one
+persistent on-screen indicator of the current phase across all four states —
+absolutely positioned at the header's right edge, never shifting the centered
+clock/score.
 
 ## 3. Sitemap (Command Deck pages)
 
