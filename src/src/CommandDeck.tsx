@@ -513,6 +513,88 @@ function MinimapMirror() {
   );
 }
 
+const UTT_SOURCE_LABEL: Record<"signal" | "master" | "announcer", string> = {
+  signal: "SIGNAL",
+  master: "MASTER",
+  announcer: "ANN"
+};
+
+/** CR-011 §B: the agent sector reborn as an utterance ledger — Maiden's
+ *  presence as what she said, when, and where she corrected herself, instead
+ *  of a static art block. Renders inside the frozen `.gm-agent-card` box
+ *  (440x354, geometry untouched) via new `gm-onair-*` classes only. */
+function OnAirConsole({ data }: { data: CompanionData }) {
+  const list = data.utterances;
+  const newest = list[0] ?? null;
+  const rest = list.slice(1);
+  // Backend chip: the newest MASTER-sourced line tells us which engine answered
+  // ("ollama" = the local-SLM fallback, anything else = the cloud path).
+  const latestMaster = list.find((u) => u.source === "master");
+  const isLocalSlm = latestMaster?.meta === "ollama";
+  const tallyOn = data.match.gsiOnline;
+
+  return (
+    <div className="gm-onair">
+      <div className="gm-onair-head">
+        <span className={`gm-tally${tallyOn ? " gm-tally-onair" : ""}`} />
+        <b className="gm-onair-title">ON AIR — MAIDEN</b>
+        <span className="gm-onair-end">
+          <span className={`gm-onair-chip ${isLocalSlm ? "gm-onair-chip-local" : "gm-onair-chip-cloud"}`}>
+            {isLocalSlm ? "LOCAL SLM" : "CLOUD"}
+          </span>
+          <span className="gm-onair-agent">{data.agentSector.name}</span>
+        </span>
+      </div>
+
+      {newest ? (
+        <div className="gm-onair-now">
+          <span className="gm-onair-now-meta">{newest.timeLabel} · {UTT_SOURCE_LABEL[newest.source]}</span>
+          <p className="gm-onair-now-text">
+            {/* Belief revision is the headline signature — the strikethrough must
+                show at the most prominent slot too, not only in the log rows
+                (Opus gate, CR011-P2). */}
+            {newest.kind === "revision" && newest.retracted ? (
+              <>
+                <s className="gm-onair-retract">{newest.retracted}</s> <b>{newest.text}</b>
+              </>
+            ) : (
+              newest.text
+            )}
+            {newest.source === "announcer" && newest.meta ? (
+              <span className="gm-onair-pack"> — แพ็ก {newest.meta}</span>
+            ) : null}
+          </p>
+        </div>
+      ) : (
+        <div className="gm-onair-empty">
+          ยังไม่มีเสียงพูดในเซสชันนี้ — เข้าเกมแล้ว Maiden จะเริ่มรายงานที่นี่
+        </div>
+      )}
+
+      <div className="gm-onair-log">
+        {rest.map((u) => (
+          <div key={u.id} className="gm-onair-row">
+            <span className="gm-onair-row-time">{u.timeLabel}</span>
+            <span className={`gm-onair-row-chip gm-onair-row-chip-${u.source}`}>{UTT_SOURCE_LABEL[u.source]}</span>
+            <p className="gm-onair-row-text">
+              {u.kind === "revision" && u.retracted ? (
+                <>
+                  <s className="gm-onair-retract">{u.retracted}</s> <b>{u.text}</b>
+                </>
+              ) : (
+                u.text
+              )}
+              {u.source === "announcer" && u.meta ? (
+                <span className="gm-onair-pack"> — แพ็ก {u.meta}</span>
+              ) : null}
+            </p>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function GMaidenFungDashboard({
   data,
   voicePackName,
@@ -557,18 +639,12 @@ function GMaidenFungDashboard({
       </section>
 
       <section className="gm-agent-card">
-        <div className="gm-card-head">
-          <div><span>Agent sector</span><strong>{data.agentSector.name}</strong></div>
-          <em>{data.agentSector.status}</em>
-        </div>
-        <div className="gm-agent-art">
-          <strong>{data.agentSector.title}</strong>
-        </div>
+        <OnAirConsole data={data} />
       </section>
 
       <section className="gm-sector-log">
         <div>
-          <h3>Alert Deck</h3>
+          <h3><span className={`gm-tally${data.match.gsiOnline ? " gm-tally-onair" : ""}`} />Alert Deck</h3>
           <div className="log-list">
             {data.activity.length === 0 ? (
               <div className="log-row">
@@ -586,7 +662,7 @@ function GMaidenFungDashboard({
           </div>
         </div>
         <div>
-          <h3>Companion State</h3>
+          <h3><span className={`gm-tally${data.match.gsiOnline ? " gm-tally-onair" : ""}`} />Companion State</h3>
           <div className="gm-state-grid">
             <MiniStat label="Voice" value={voicePackName ?? "—"} sub="Active pack" />
             <MiniStat label="Signal" value={signalEnabled ? "ON" : "OFF"} sub="G-Signal" />

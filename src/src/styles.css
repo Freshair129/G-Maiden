@@ -5248,6 +5248,13 @@ body {
   /* CR-011 §B two-material rule: instrument matte, no blur/shadow. */
   border: 1px solid var(--g-hairline);
   background: var(--g-instrument);
+  /* The now-block is content-driven (long G-Master advice) — the frozen 354px
+     box must clip, never spill toward sector-log (Opus gate, CR011-P2). */
+  overflow: hidden;
+}
+.gm-onair-pack {
+  color: var(--g-text-mute);
+  font-size: 10px;
 }
 
 .gm-card-head {
@@ -5420,3 +5427,148 @@ body {
 .topup-spinner { width: 26px; height: 26px; border-radius: 50%; border: 3px solid rgba(129, 180, 255, 0.2); border-top-color: #81b4ff; animation: topup-spin 0.9s linear infinite; }
 @keyframes topup-spin { to { transform: rotate(360deg); } }
 .topup-msg { font-size: 11px; color: #cfe2ff; }
+
+/* ===== CR-011 §B: ON AIR console + tally dots (P2 Honest booth) =====
+   Additive only — .gm-agent-card / .gm-sector-log geometry above is untouched.
+   Ported from docs/change request/assets/cr011-cold-booth-mock.html
+   (.tally / .chip / .now / .log / .utt), namespaced gm-onair-*/gm-tally. */
+
+/* -- tally dot (broadcast on-air light): off = idle matte square, onair = lime
+   + glow-decay pulse. Used in the ON AIR header and the two gm-sector-log h3s. */
+.gm-tally {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 1.5px;
+  background: #1b2434;
+  margin-right: 7px;
+  vertical-align: middle;
+  flex: none;
+}
+.gm-tally-onair {
+  background: var(--g-lime-500);
+  box-shadow: 0 0 8px rgba(163, 230, 53, 0.8);
+  animation: gm-tally-decay 0.6s ease-out;
+}
+@keyframes gm-tally-decay {
+  from { box-shadow: 0 0 14px rgba(163, 230, 53, 1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gm-tally-onair { animation: none; }
+}
+
+/* -- ON AIR console: fills the frozen 440x354 .gm-agent-card box. -- */
+.gm-onair {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.gm-onair-head {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+.gm-onair-title {
+  font: 600 10px/1 var(--g-font-ui);
+  letter-spacing: 1px;
+  color: var(--g-text-mute);
+}
+
+.gm-onair-end {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gm-onair-chip {
+  font: 600 8px/1 var(--g-font-ui);
+  letter-spacing: 0.8px;
+  border: 1px solid var(--g-hairline-2);
+  border-radius: 4px;
+  padding: 2.5px 5px;
+  color: var(--g-text-dim);
+}
+.gm-onair-chip-cloud { color: var(--g-ice-500); border-color: rgba(143, 212, 255, 0.3); }
+.gm-onair-chip-local { color: var(--g-ice-300); border-color: rgba(143, 212, 255, 0.3); }
+
+.gm-onair-agent {
+  font: 500 10px/1 var(--g-font-ui);
+  color: var(--g-text-mute);
+}
+
+.gm-onair-now {
+  flex: none;
+  padding: 12px 2px 10px;
+  border-bottom: 1px solid var(--g-hairline);
+  min-height: 0;
+}
+
+.gm-onair-now-meta {
+  font: 500 10px/1 var(--g-font-mono);
+  color: var(--g-text-mute);
+}
+
+.gm-onair-now-text {
+  margin: 6px 0 0;
+  font: 500 15px/1.6 var(--g-font-ui);
+  color: var(--g-text);
+}
+
+.gm-onair-empty {
+  flex: none;
+  padding: 12px 2px;
+  font: 400 12px/1.6 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+
+/* list area — the card is a fixed box; clip rather than let a 31st row push
+   the seat out of its frozen 354px height. */
+.gm-onair-log {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gm-onair-row {
+  display: grid;
+  grid-template-columns: 44px 52px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  padding: 6px 4px;
+  border-radius: 7px;
+  min-height: 0;
+}
+
+.gm-onair-row-time {
+  font: 400 9.5px/1.6 var(--g-font-mono);
+  color: var(--g-text-mute);
+}
+
+.gm-onair-row-chip {
+  font: 600 8px/1 var(--g-font-ui);
+  letter-spacing: 0.6px;
+  color: var(--g-text-dim);
+}
+.gm-onair-row-chip-signal { color: var(--g-warn); }
+.gm-onair-row-chip-master { color: var(--g-ice-300); }
+.gm-onair-row-chip-announcer { color: var(--g-coin); }
+
+.gm-onair-row-text {
+  margin: 0;
+  font: 400 11px/1.6 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+
+.gm-onair-retract {
+  color: var(--g-danger);
+  text-decoration: line-through 1px rgba(244, 63, 94, 0.85);
+  text-underline-offset: 2px;
+}

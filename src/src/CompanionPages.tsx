@@ -3,10 +3,13 @@ import { formatKda, formatTimer, toneClass, useCompanionData } from "./companion
 
 export const LiveMatchPage = memo(function LiveMatchPage() {
   const { data } = useCompanionData();
+  // CR-011 §E/Q: no source exposes objective timing (GSI is local-player-only,
+  // OpenDota has no live objective feed) — honest "—" placeholders, not the
+  // old hardcoded Roshan/T2/Smoke demo strings, until this is really wired.
   const objectives = [
-    { label: "Roshan", value: "Likely contest in 00:38" },
-    { label: "Top T2", value: "Pressure window open" },
-    { label: "Smoke Risk", value: "High near river" }
+    { label: "Roshan", value: "—" },
+    { label: "Top T2", value: "—" },
+    { label: "Smoke Risk", value: "—" }
   ];
 
   return (

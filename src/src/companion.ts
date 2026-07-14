@@ -2,8 +2,9 @@ import { useRef, useSyncExternalStore } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { GameTick, GsiStatus, MinimapCv, MinimapFrame, DraftRoster, EnemyMissing, SignalAlert, ResourceStats } from "./live/events";
+import type { GameTick, GsiStatus, MinimapCv, MinimapFrame, DraftRoster, EnemyMissing, SignalAlert, ResourceStats, UtteranceEvent } from "./live/events";
 import { buildMatch } from "./live/buildMatch";
+import { buildUtterances, type Utterance } from "./live/utterances";
 import { buildHeroes, assignEnemySlot } from "./live/buildHeroes";
 import { buildMarkers } from "./live/buildMarkers";
 import { buildSignals } from "./live/buildSignals";
@@ -187,6 +188,10 @@ export type CompanionData = {
     phase: GamePhase;
     phaseLabel: string;
   };
+  // CR-011 §B: the ON AIR console ledger — Maiden's persona rendered as an
+  // utterance log (most-recent-first, capped) instead of a static agent-art
+  // block. See live/utterances.ts; fed by the `utterance` Tauri event.
+  utterances: Utterance[];
 };
 
 // CR-007 WP-4: an honestly-empty hero slot. GSI only ever exposes the local
@@ -281,8 +286,22 @@ export const FALLBACK: CompanionData = {
   agentSector: { name: "G-Maiden", title: "Tactical AI", status: "Standby", summary: [] },
   insights: { powerScore: -1, winRate: -1, objectiveControl: -1, wardEfficiency: -1, learnedMatches: -1 },
   history: [],
-  momentum: { value: 0, label: "—", tone: "info", phase: "pregame", phaseLabel: "ก่อนเกม" }
+  momentum: { value: 0, label: "—", tone: "info", phase: "pregame", phaseLabel: "ก่อนเกม" },
+  // Honest empty ledger — the ON AIR console shows its Thai teaching line
+  // until the first real `utterance` event arrives (see CommandDeck.tsx).
+  utterances: []
 };
+
+// Small helper for the MOCK utterance ledger below: computes a wall-clock
+// atMs/timeLabel pair `minutesAgo` minutes before now, keeping the two fields
+// consistent. MOCK/FALLBACK already read Date.now() directly elsewhere in this
+// file (e.g. `updatedAt`) — the pure builder (live/utterances.ts) is the one
+// that avoids it, since it's the piece under test for determinism.
+function mockUtteranceAt(minutesAgo: number): { atMs: number; timeLabel: string } {
+  const d = new Date(Date.now() - minutesAgo * 60_000);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return { atMs: d.getTime(), timeLabel: `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}` };
+}
 
 // TEST FIXTURE ONLY. This rich object used to seed the deck as a demo when no
 // live data was flowing — that has been retired. Production code (useCompanionData
@@ -426,7 +445,40 @@ export const MOCK: CompanionData = {
     { id: "m-2", result: "Loss", hero: "Nyx", kda: "6 / 8 / 11", note: "Late smoke read came 12s too late." },
     { id: "m-3", result: "Win", hero: "Razor", kda: "9 / 2 / 15", note: "Top pressure and rune contest looked clean." }
   ],
-  momentum: { value: 34, label: "กำลังนำ", tone: "good", phase: "mid", phaseLabel: "กลางเกม" }
+  momentum: { value: 34, label: "กำลังนำ", tone: "good", phase: "mid", phaseLabel: "กลางเกม" },
+  // CR-011 §B: ON AIR console fixture — 3 plausible Thai lines (most-recent
+  // first), one of them a belief-revision so the struck-through pattern has
+  // something to render in the demo. MOCK-only, same honesty rule as the rest
+  // of this object (see the fixture comment above); never used as a live default.
+  utterances: [
+    {
+      id: "utt-mock-1",
+      ...mockUtteranceAt(1),
+      source: "signal",
+      kind: "revision",
+      text: "เอ๊ะ! เดี๋ยวก่อน — เจอ Pudge ที่รูนบนค่ะ ถอยก่อนนะคะ",
+      retracted: "เลนบนปลอดภัย เดินหน้าได้เลย",
+      meta: null
+    },
+    {
+      id: "utt-mock-2",
+      ...mockUtteranceAt(3),
+      source: "master",
+      kind: "line",
+      text: "ศัตรูมี magic burst สูง — ชิ้นต่อไปแนะนำ Glimmer Cape ค่ะ (เหลืออีก 350 ทอง)",
+      retracted: null,
+      meta: "claude"
+    },
+    {
+      id: "utt-mock-3",
+      ...mockUtteranceAt(5),
+      source: "announcer",
+      kind: "line",
+      text: "ดับเบิลคิล (Double Kill) — แพ็ก Thai Caster Vol.2",
+      retracted: null,
+      meta: "Thai Caster Vol.2"
+    }
+  ]
 };
 
 // Phase 2a (CR-002): live-wire the deck to the Rust backend's Tauri events. The
@@ -468,12 +520,18 @@ type LiveState = {
   // on the game-start tick (the draft that produced it ran just before) — it's
   // replaced when the next match's draft emits a fresh `draft-roster`.
   roster: DraftRoster | null;
+  // CR-011 §B: ON AIR console ledger, same ring-buffer ownership pattern as
+  // `activityLog` above — appended via buildUtterances() as each `utterance`
+  // Tauri event arrives. NOT reset on a new match (the pre-match "last session"
+  // line is honest context, not stale data).
+  utterances: Utterance[];
 };
 
 const EMPTY_LIVE: LiveState = {
   tick: null, status: null, cv: null, gank: null, missing: new Map(), missingPos: new Map(),
   enemySlots: new Map(),
-  active: false, od: null, stats: null, logs: null, activityLog: [], mom: EMPTY_MOMENTUM, roster: null
+  active: false, od: null, stats: null, logs: null, activityLog: [], mom: EMPTY_MOMENTUM, roster: null,
+  utterances: []
 };
 
 type CompanionSnapshot = {
@@ -495,6 +553,8 @@ let snapshot: CompanionSnapshot = { data: FALLBACK, loading: false, error: null 
 let accountIdState: number | null = null;
 let runtimeStarted = false;
 let runtimeActive = true;
+// Collision breaker for utterance ids — see the `utterance` sub below.
+let utteranceSeq = 0;
 let docVisible = true;
 let windowFocused = true;
 let pendingLive: LiveState | null = null;
@@ -526,7 +586,8 @@ function buildCompanionData(live: LiveState): CompanionData {
         markers: buildMarkers(live.cv, live.missingPos, FALLBACK.markers),
         signals: buildSignals(live.gank, live.missing),
         activity: live.activityLog,
-        momentum: momentumView(live.mom, live.tick)
+        momentum: momentumView(live.mom, live.tick),
+        utterances: live.utterances
       }
     : { ...FALLBACK, updatedAt: Date.now() };
 
@@ -804,6 +865,14 @@ function ensureRuntime() {
       expiryTimers.delete(p.hero);
     }, 30_000);
     expiryTimers.set(p.hero, t);
+  });
+  sub<UtteranceEvent>("utterance", (p) => {
+    // Monotonic seq (not Date.now()) as the collision breaker: a 3rd same-source
+    // event in one wall-clock ms would otherwise regenerate the same fallback id
+    // and duplicate a React key (Opus gate, CR011-P2).
+    utteranceSeq += 1;
+    const seq = utteranceSeq;
+    updateLive((s) => ({ ...s, active: true, utterances: buildUtterances(s.utterances, p, p.atMs + seq) }), true);
   });
 
   const syncIdentity = () => {

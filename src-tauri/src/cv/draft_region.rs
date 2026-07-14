@@ -67,11 +67,17 @@ impl DraftRegion {
     }
 
     /// Radiant portrait boxes (indices 0–4).
+    // Built-ahead accessor (Draft-CV scaffold): exercised by this module's tests
+    // only until the calibration phase wires team-split reads — clippy's bin
+    // target would otherwise fail `-D warnings` on dead_code (known CI-gate rule).
+    #[allow(dead_code)]
     pub fn radiant(&self) -> &[PortraitBox] {
         &self.boxes[..5]
     }
 
     /// Dire portrait boxes (indices 5–9).
+    // See radiant() — same built-ahead-scaffold allowance.
+    #[allow(dead_code)]
     pub fn dire(&self) -> &[PortraitBox] {
         &self.boxes[5..]
     }

@@ -39,6 +39,7 @@ mod signal;
 mod slm;
 mod tts;
 mod usage;
+mod utterance;
 mod voice_api;
 
 /// Show/hide the OSD overlay window (called by the control GUI toggle).
@@ -253,6 +254,20 @@ async fn request_advice(
         .map_err(|e| format!("internal: {e}"))??;
     // Broadcast to overlay — ignore error (overlay may be hidden).
     let _ = app.emit("advice-update", &result);
+    // CR-011 §B utterance ledger — fired after the broadcast above, never
+    // before, so it can't add latency to the advice dispatch itself. `meta`
+    // is the resolved backend ("claude"/"ollama") when `advise()` just ran a
+    // fresh (non-cached) call; best-effort, so `None` on a cache-miss race.
+    // Cached re-fetches are NOT logged: the auto path re-voices the same text
+    // within its cooldown window, and verbatim duplicates would crowd genuine
+    // signal/announcer entries out of the 30-cap ledger (Opus gate, CR011-P2).
+    if !result.cached {
+        let backend_meta = master::last_backend().map(str::to_string);
+        utterance::emit(
+            &app,
+            utterance::UtterancePayload::new("master", "line", result.text.clone(), None, backend_meta),
+        );
+    }
     Ok(result)
 }
 
