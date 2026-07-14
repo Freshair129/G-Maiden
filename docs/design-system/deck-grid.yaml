@@ -1,0 +1,101 @@
+# =============================================================================
+# G-Maiden Deck — Grid Layout SSOT  (canvas = real deck stage 1420x760)
+# Edit here or in docs/design-system/deck-grid.html (Load / Export round-trips).
+# RULES: round sizes (mult of 20/40, no 3-8 remainders), gaps 16 outer / 8 inner
+# (D/E/F/G only). Content bbox 1232x696 <= shell 1256 → shell FITS BY SHRINKING.
+# =============================================================================
+canvas:
+  width: 1420
+  height: 760
+  margin: 16
+unit: 40
+gap:
+  outer: 16
+  inner: 8
+layers:  # bottom -> top (stacking order)
+  - id: content
+    name: "Content"
+    visible: true
+    locked: false
+  - id: fab
+    name: "FAB / Overlay (shell-pinned)"
+    visible: true
+    locked: false
+zones:
+  - id: Z2
+    label: "Z2"
+    layer: content
+    x: 94
+    y: 24
+    w: 80
+    h: 320
+  - id: sidebar
+    label: "SIDEBAR / NAVBAR (nav rail)"
+    layer: fab
+    x: 94
+    y: 360
+    w: 80
+    h: 260
+  - id: Z1
+    label: "Z1"
+    layer: content
+    x: 94
+    y: 636
+    w: 80
+    h: 80
+  - id: A
+    label: "A - MAIN (score / stats / hero grid)"
+    layer: content
+    x: 190
+    y: 24
+    w: 720
+    h: 520
+  - id: C
+    label: "C - ALERT DECK / COMPANION STATE"
+    layer: content
+    x: 190
+    y: 560
+    w: 720
+    h: 160
+  - id: topbar
+    label: "TOP BAR / MENU BAR"
+    layer: fab
+    x: 926
+    y: 24
+    w: 400
+    h: 60
+  - id: B
+    label: "B - AGENT SECTOR"
+    layer: content
+    x: 926
+    y: 100
+    w: 400
+    h: 440
+  - id: D
+    label: "D - G-Signal"
+    layer: fab
+    x: 926
+    y: 556
+    w: 190
+    h: 80
+  - id: E
+    label: "E - G-Signal"
+    layer: fab
+    x: 1124
+    y: 556
+    w: 190
+    h: 80
+  - id: F
+    label: "F - G-Signal"
+    layer: fab
+    x: 926
+    y: 644
+    w: 190
+    h: 80
+  - id: G
+    label: "G - G-Signal"
+    layer: fab
+    x: 1124
+    y: 644
+    w: 190
+    h: 80

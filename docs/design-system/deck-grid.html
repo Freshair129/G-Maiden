@@ -1,0 +1,337 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>G-Maiden Deck — Grid Layout Editor</title>
+<style>
+  :root{
+    --bg:#0a0d14; --panel:#111826; --line:rgba(143,212,255,.18); --txt:#e8eef8; --mut:#8aa0bd;
+    --p0:#5be3a7; --p1:#7fb2ff; --p2:#4fd6e0; --p3:#facc15; --p4:#c58bff; --p5:#ff8fa3; --p6:#a9b6cc; --p7:#c7d3e6;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);font:13px/1.5 "Segoe UI",system-ui,sans-serif}
+  h1{font-size:15px;margin:0;font-weight:800}
+  .app{display:grid;grid-template-columns:1fr 360px;height:100vh}
+  .left{display:flex;flex-direction:column;min-width:0;padding:14px 16px;gap:12px}
+  .bar{display:flex;flex-wrap:wrap;align-items:center;gap:12px}
+  .bar label{display:flex;align-items:center;gap:6px;color:var(--mut);font-size:12px}
+  .bar input[type=number]{width:60px;background:#0c1626;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:4px 6px}
+  .bar input[type=checkbox]{accent-color:var(--p0)}
+  .stageWrap{flex:1;min-height:0;display:flex;align-items:center;justify-content:center;
+     background:repeating-linear-gradient(45deg,#0b0f18,#0b0f18 10px,#0c1120 10px,#0c1120 20px);
+     border:1px solid var(--line);border-radius:12px;overflow:auto;padding:18px}
+  .stage{position:relative;background:#070a10;box-shadow:0 0 0 1px var(--line);flex:none}
+  .gridlines{position:absolute;inset:0;pointer-events:none;opacity:.5}
+  .shell{position:absolute;left:0;top:0;pointer-events:none;z-index:1}
+  .shell path{fill:rgba(72,116,190,.06);stroke:rgba(143,212,255,.4);stroke-width:2.5}
+  .zone{position:absolute;z-index:2;border-radius:10px;cursor:grab;overflow:hidden;
+     border:2px solid var(--zc);background:color-mix(in srgb,var(--zc) 12%,transparent)}
+  .zone.sel{box-shadow:0 0 0 2px #fff,0 0 18px var(--zc);z-index:99}
+  .zone.locked{cursor:not-allowed;opacity:.75}
+  .zone.bad{outline:2px dashed #ff6e6e;outline-offset:-4px}
+  .zone .zl{position:absolute;left:8px;top:6px;font-weight:800;color:var(--zc);font-size:13px;pointer-events:none}
+  .zone .zd{position:absolute;left:8px;bottom:6px;color:var(--mut);font-size:11px;pointer-events:none;font-variant-numeric:tabular-nums}
+  .zone .rh{position:absolute;right:0;bottom:0;width:16px;height:16px;cursor:nwse-resize;background:linear-gradient(135deg,transparent 45%,var(--zc) 45%)}
+  .panel{border-left:1px solid var(--line);background:var(--panel);display:flex;flex-direction:column;min-height:0;overflow:hidden}
+  .sec{padding:11px 14px;border-bottom:1px solid var(--line)}
+  .sec.grow{flex:1;min-height:0;overflow:auto}
+  h2{font-size:10px;letter-spacing:.08em;text-transform:uppercase;color:var(--mut);margin:0 0 8px;display:flex;justify-content:space-between;align-items:center}
+  .grid4{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+  .fld{display:flex;flex-direction:column;gap:3px}
+  .fld span{font-size:10px;color:var(--mut)}
+  .fld input,.fld select{background:#0c1626;color:var(--txt);border:1px solid var(--line);border-radius:6px;padding:5px 7px;width:100%}
+  .row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px;cursor:pointer}
+  .row:hover{background:#0e1a2e}.row.sel{background:#12213a}
+  .dot{width:11px;height:11px;border-radius:3px;flex:none}
+  .row b{font-size:12px}.row small{color:var(--mut);margin-left:auto;font-variant-numeric:tabular-nums}
+  .lyr{display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:7px;cursor:pointer;border:1px solid transparent}
+  .lyr:hover{background:#0e1a2e}.lyr.active{background:#12213a;border-color:var(--line)}
+  .lyr .nm{flex:1;font-size:12px;font-weight:600}
+  .ic{background:none;border:0;color:var(--mut);cursor:pointer;padding:2px 4px;font-size:13px;border-radius:5px}
+  .ic:hover{color:var(--txt);background:#1a2b47}.ic.on{color:var(--p0)}
+  .io{display:flex;gap:8px;flex-wrap:wrap}
+  button{background:#11203a;color:var(--txt);border:1px solid var(--line);border-radius:7px;padding:7px 11px;cursor:pointer;font-size:12px}
+  button:hover{background:#16294a}
+  button.pri{background:var(--p0);color:#08120c;border-color:var(--p0);font-weight:700}
+  button.add{background:#122a1e;border-color:#2c6b47;color:#8ef0be}
+  button.del{background:#2a1016;border-color:#5a2336;color:#ff9bb0}
+  textarea{width:100%;height:150px;background:#0c1626;color:#bfe;border:1px solid var(--line);border-radius:8px;padding:10px;font:11px/1.45 ui-monospace,Consolas,monospace;resize:vertical}
+  .warn{color:#ff9a9a;font-size:11px;min-height:14px}
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="left">
+    <div class="bar">
+      <h1>Deck Grid Editor</h1>
+      <label>canvas <input type="number" id="cw" step="20"> × <input type="number" id="ch" step="20"></label>
+      <label>unit <input type="number" id="unit" step="4"></label>
+      <label>gap <input type="number" id="go" step="2">/<input type="number" id="gi" step="2"></label>
+      <label><input type="checkbox" id="snap" checked> snap</label>
+      <label><input type="checkbox" id="showgrid" checked> grid</label>
+      <label><input type="checkbox" id="showshell" checked> shell</label>
+    </div>
+    <div class="stageWrap"><div class="stage" id="stage"><canvas class="gridlines" id="gl"></canvas><svg class="shell" id="shell"></svg></div></div>
+  </div>
+
+  <div class="panel">
+    <!-- Layers -->
+    <div class="sec">
+      <h2>Layers <button class="ic on" id="addLayer" title="add layer">＋</button></h2>
+      <div id="layers"></div>
+    </div>
+    <!-- Selected zone -->
+    <div class="sec">
+      <h2>Selected piece <button class="ic" id="delZone" title="delete piece" style="color:#ff9bb0">🗑</button></h2>
+      <div class="fld" style="margin-bottom:8px"><span>label</span><input id="e_label"></div>
+      <div class="grid4" style="margin-bottom:8px">
+        <div class="fld"><span>x</span><input type="number" id="e_x"></div>
+        <div class="fld"><span>y</span><input type="number" id="e_y"></div>
+        <div class="fld"><span>w</span><input type="number" id="e_w"></div>
+        <div class="fld"><span>h</span><input type="number" id="e_h"></div>
+      </div>
+      <div class="fld"><span>layer</span><select id="e_layer"></select></div>
+    </div>
+    <!-- Pieces list -->
+    <div class="sec grow">
+      <h2>Pieces <button class="add" id="addZone">＋ piece</button></h2>
+      <div id="zlist"></div>
+    </div>
+    <div class="sec"><div class="warn" id="warn"></div>
+      <div class="io">
+        <button class="pri" id="exp">Export YAML ▾</button>
+        <button id="imp">Load YAML ▴</button>
+        <button id="centerAll" title="center all pieces in the canvas">⊕ center</button>
+        <button id="reset">Reset</button>
+      </div>
+    </div>
+    <div class="sec" style="border-bottom:0"><textarea id="yaml" spellcheck="false"></textarea></div>
+  </div>
+</div>
+<script>
+const PALETTE=['--p0','--p1','--p2','--p3','--p4','--p5','--p6','--p7'];
+// Real shell Subtract silhouette (panel-local 1280x720, from CommandDeck.tsx
+// FUNG_PANEL_PATH_SIGNALS). Drawn at the panel offset (12,12) for context.
+const PANEL_PATH="M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 488 A 20 20 0 0 1 1248,508 H 836 A 20 20 0 0 0 816,528 V 688 A 20 20 0 0 1 796,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z";
+const PANEL_OFFSET={x:12,y:12};
+// Coords are 1:1 with the REAL deck shell (stage 1420x760, styles.css --cr6-* +
+// FUNG_PANEL_PATH). FAB zones = shell notch positions (shell-pinned). Content
+// zones A/B/C = notch-safe rectangles inside the panel. => zero drift on import.
+const DEFAULT = {
+  canvas:{width:1420,height:760,margin:0}, unit:40, gap:{outer:16,inner:8},
+  layers:[
+    {id:'content', name:'Content', visible:true, locked:false},
+    {id:'fab', name:'FAB / Overlay (shell-pinned)', visible:true, locked:false},
+  ],
+  // grid-cleaned: 16px outer gaps everywhere, 8px inner gaps only within D/E/F/G,
+  // shared edges aligned (A|B bottoms=552, C|D-G tops=568).
+  zones:[
+    {id:'Z2',     label:'Z2',x:94,y:24,w:80,h:320,layer:'content',color:'--p5'},
+    {id:'sidebar',label:'SIDEBAR / NAVBAR (nav rail)',x:94,y:360,w:80,h:260,layer:'fab',color:'--p6'},
+    {id:'Z1',     label:'Z1',x:94,y:636,w:80,h:80,layer:'content',color:'--p4'},
+    {id:'A',      label:'A - MAIN (score / stats / hero grid)',x:190,y:24,w:720,h:520,layer:'content',color:'--p0'},
+    {id:'C',      label:'C - ALERT DECK / COMPANION STATE',x:190,y:560,w:720,h:160,layer:'content',color:'--p2'},
+    {id:'topbar', label:'TOP BAR / MENU BAR',x:926,y:24,w:400,h:60,layer:'fab',color:'--p7'},
+    {id:'B',      label:'B - AGENT SECTOR',x:926,y:100,w:400,h:440,layer:'content',color:'--p1'},
+    {id:'D',      label:'D - G-Signal',x:926,y:556,w:190,h:80,layer:'fab',color:'--p3'},
+    {id:'E',      label:'E - G-Signal',x:1124,y:556,w:190,h:80,layer:'fab',color:'--p3'},
+    {id:'F',      label:'F - G-Signal',x:926,y:644,w:190,h:80,layer:'fab',color:'--p3'},
+    {id:'G',      label:'G - G-Signal',x:1124,y:644,w:190,h:80,layer:'fab',color:'--p3'},
+  ]
+};
+const LS='deck-grid-cfg-v2';
+function saveCfg(){ try{ localStorage.setItem(LS, JSON.stringify(cfg)); }catch(e){} }
+let cfg = structuredClone(DEFAULT);
+let sel='A', activeLayer='content', scale=1;
+const $=s=>document.querySelector(s), stage=$('#stage'), gl=$('#gl');
+const layerOf=id=>cfg.layers.find(l=>l.id===id)||cfg.layers[0];
+const zoneOf=id=>cfg.zones.find(z=>z.id===id);
+function snapv(v){ if(!$('#snap').checked) return Math.round(v); const u=cfg.unit||40; return Math.round(v/u)*u; }
+
+function fitScale(){
+  const wrap=stage.parentElement,pad=36;
+  scale=Math.min((wrap.clientWidth-pad)/cfg.canvas.width,(wrap.clientHeight-pad)/cfg.canvas.height);
+  stage.style.width=cfg.canvas.width*scale+'px'; stage.style.height=cfg.canvas.height*scale+'px';
+}
+function drawGrid(){
+  gl.width=cfg.canvas.width*scale; gl.height=cfg.canvas.height*scale;
+  const c=gl.getContext('2d'); c.clearRect(0,0,gl.width,gl.height);
+  if(!$('#showgrid').checked) return;
+  const u=(cfg.unit||40)*scale; c.strokeStyle='rgba(140,190,255,.08)'; c.lineWidth=1;
+  for(let x=0;x<=gl.width;x+=u){c.beginPath();c.moveTo(x,0);c.lineTo(x,gl.height);c.stroke();}
+  for(let y=0;y<=gl.height;y+=u){c.beginPath();c.moveTo(0,y);c.lineTo(gl.width,y);c.stroke();}
+}
+const bad=z=>z.x<0||z.y<0||z.x+z.w>cfg.canvas.width||z.y+z.h>cfg.canvas.height;
+
+// panel path bbox in its own coords (12,12 .. 1268,708)
+const SHELL_BB={x:12,y:12,w:1256,h:696};
+function zonesBBox(){
+  if(!cfg.zones.length) return {x:0,y:0,w:cfg.canvas.width,h:cfg.canvas.height};
+  const xs=cfg.zones.map(z=>z.x), ys=cfg.zones.map(z=>z.y);
+  const minX=Math.min(...xs), minY=Math.min(...ys);
+  const maxX=Math.max(...cfg.zones.map(z=>z.x+z.w)), maxY=Math.max(...cfg.zones.map(z=>z.y+z.h));
+  return {x:minX,y:minY,w:maxX-minX,h:maxY-minY};
+}
+function drawShell(){
+  const sh=document.getElementById('shell'); const on=$('#showshell').checked;
+  sh.style.display=on?'block':'none'; if(!on) return;
+  // fit the shell EXACTLY to the pieces' bounding box (no over/under-hang).
+  const zb=zonesBBox();
+  const sx=zb.w/SHELL_BB.w, sy=zb.h/SHELL_BB.h;
+  const tx=zb.x-SHELL_BB.x*sx, ty=zb.y-SHELL_BB.y*sy;
+  sh.setAttribute('width',cfg.canvas.width*scale); sh.setAttribute('height',cfg.canvas.height*scale);
+  sh.setAttribute('viewBox',`0 0 ${cfg.canvas.width} ${cfg.canvas.height}`);
+  sh.innerHTML=`<g transform="translate(${tx.toFixed(2)},${ty.toFixed(2)}) scale(${sx.toFixed(4)},${sy.toFixed(4)})"><path d="${PANEL_PATH}" vector-effect="non-scaling-stroke"/></g>`;
+}
+
+function render(){
+  fitScale(); drawGrid(); drawShell();
+  [...stage.querySelectorAll('.zone')].forEach(e=>e.remove());
+  let bads=[];
+  // render in layer order (bottom -> top) so stacking is correct
+  cfg.layers.forEach(L=>{
+    if(!L.visible) return;
+    cfg.zones.filter(z=>z.layer===L.id).forEach(z=>{
+      const d=document.createElement('div');
+      d.className='zone'+(z.id===sel?' sel':'')+(L.locked?' locked':'');
+      d.style.setProperty('--zc',`var(${z.color||'--p6'})`);
+      d.style.left=z.x*scale+'px'; d.style.top=z.y*scale+'px'; d.style.width=z.w*scale+'px'; d.style.height=z.h*scale+'px';
+      if(bad(z)){d.classList.add('bad');bads.push(z.id);}
+      d.innerHTML=`<div class="zl">${z.id}</div><div class="zd">${z.w}×${z.h}</div>${L.locked?'':'<div class="rh"></div>'}`;
+      d.addEventListener('mousedown',e=>{sel=z.id; if(!L.locked) startDrag(e,z,d); render();});
+      stage.appendChild(d);
+    });
+  });
+  renderLayers(); renderList(); syncEditor();
+  $('#warn').textContent=bads.length?'⚠ out of canvas: '+bads.join(', '):'';
+  saveCfg();
+}
+
+function renderLayers(){
+  const el=$('#layers'); el.innerHTML='';
+  // show top layer first in the panel
+  [...cfg.layers].reverse().forEach(L=>{
+    const r=document.createElement('div'); r.className='lyr'+(L.id===activeLayer?' active':'');
+    r.innerHTML=`<span class="ic ${L.visible?'on':''}" data-a="vis" title="show/hide">${L.visible?'👁':'🚫'}</span>
+      <span class="ic ${L.locked?'on':''}" data-a="lock" title="lock">${L.locked?'🔒':'🔓'}</span>
+      <span class="nm">${L.name}</span>
+      <small style="color:var(--mut)">${cfg.zones.filter(z=>z.layer===L.id).length}</small>
+      <span class="ic" data-a="up" title="up">▲</span><span class="ic" data-a="down" title="down">▼</span>
+      <span class="ic" data-a="ren" title="rename">✎</span>`;
+    r.onclick=e=>{
+      const a=e.target.getAttribute('data-a'); const i=cfg.layers.indexOf(L);
+      if(a==='vis'){L.visible=!L.visible;}
+      else if(a==='lock'){L.locked=!L.locked;}
+      else if(a==='up'&&i<cfg.layers.length-1){cfg.layers.splice(i,1);cfg.layers.splice(i+1,0,L);}
+      else if(a==='down'&&i>0){cfg.layers.splice(i,1);cfg.layers.splice(i-1,0,L);}
+      else if(a==='ren'){const n=prompt('Layer name',L.name); if(n)L.name=n;}
+      else{activeLayer=L.id;}
+      render();
+    };
+    el.appendChild(r);
+  });
+  // layer dropdown in editor
+  const sel2=$('#e_layer'); sel2.innerHTML=cfg.layers.map(l=>`<option value="${l.id}">${l.name}</option>`).join('');
+}
+function renderList(){
+  const el=$('#zlist'); el.innerHTML='';
+  cfg.zones.forEach(z=>{
+    const r=document.createElement('div'); r.className='row'+(z.id===sel?' sel':'');
+    const hidden=!layerOf(z.layer).visible;
+    r.innerHTML=`<span class="dot" style="background:var(${z.color||'--p6'})"></span><b>${z.id}</b>
+      <small>${hidden?'(hidden) ':''}${z.w}×${z.h}</small>`;
+    r.style.opacity=hidden?.5:1;
+    r.onclick=()=>{sel=z.id;render();};
+    el.appendChild(r);
+  });
+}
+function syncEditor(){
+  const z=zoneOf(sel); if(!z){return;}
+  $('#e_label').value=z.label; $('#e_x').value=z.x; $('#e_y').value=z.y; $('#e_w').value=z.w; $('#e_h').value=z.h;
+  $('#e_layer').value=z.layer;
+}
+['e_x','e_y','e_w','e_h'].forEach(id=>$('#'+id).addEventListener('input',()=>{const z=zoneOf(sel);if(z){z[id.slice(2)]=+$('#'+id).value||0;render();}}));
+$('#e_label').addEventListener('input',()=>{const z=zoneOf(sel);if(z)z.label=$('#e_label').value;});
+$('#e_layer').addEventListener('change',()=>{const z=zoneOf(sel);if(z){z.layer=$('#e_layer').value;render();}});
+
+function startDrag(e,z,d){
+  if(e.target===d.querySelector('.rh')||!e.target.classList.contains('rh')){} // allow
+  e.preventDefault();
+  const resize=e.target.classList.contains('rh');
+  const sx=e.clientX,sy=e.clientY,ox=z.x,oy=z.y,ow=z.w,oh=z.h;
+  function mv(ev){
+    const dx=(ev.clientX-sx)/scale,dy=(ev.clientY-sy)/scale;
+    if(resize){z.w=Math.max(cfg.unit,snapv(ow+dx));z.h=Math.max(cfg.unit,snapv(oh+dy));}
+    else{z.x=snapv(ox+dx);z.y=snapv(oy+dy);}
+    render();
+  }
+  function up(){document.removeEventListener('mousemove',mv);document.removeEventListener('mouseup',up);}
+  document.addEventListener('mousemove',mv);document.addEventListener('mouseup',up);
+}
+
+// add / delete pieces + layers
+$('#addZone').onclick=()=>{
+  let n=1; while(zoneOf('Z'+n)) n++; const id='Z'+n;
+  const color=PALETTE[cfg.zones.length%PALETTE.length];
+  cfg.zones.push({id,label:id,x:snapv(cfg.canvas.width/2-100),y:snapv(cfg.canvas.height/2-80),w:200,h:160,layer:activeLayer,color});
+  sel=id; render();
+};
+$('#delZone').onclick=()=>{ const i=cfg.zones.findIndex(z=>z.id===sel); if(i>=0){cfg.zones.splice(i,1); sel=cfg.zones[0]?.id; render();} };
+$('#addLayer').onclick=()=>{ let n=1; while(cfg.layers.find(l=>l.id==='layer'+n)) n++; const id='layer'+n;
+  cfg.layers.push({id,name:'Layer '+n,visible:true,locked:false}); activeLayer=id; render(); };
+
+['cw','ch','unit','go','gi'].forEach(id=>$('#'+id).addEventListener('input',()=>{
+  cfg.canvas.width=+$('#cw').value; cfg.canvas.height=+$('#ch').value; cfg.unit=+$('#unit').value||40;
+  cfg.gap.outer=+$('#go').value; cfg.gap.inner=+$('#gi').value; render();
+}));
+$('#showgrid').addEventListener('change',render); $('#showshell').addEventListener('change',render); window.addEventListener('resize',render);
+
+// ---- YAML ----
+function toYAML(){
+  let s=`canvas:\n  width: ${cfg.canvas.width}\n  height: ${cfg.canvas.height}\n  margin: ${cfg.canvas.margin}\n`;
+  s+=`unit: ${cfg.unit}\ngap:\n  outer: ${cfg.gap.outer}\n  inner: ${cfg.gap.inner}\n`;
+  s+=`layers:  # bottom -> top (stacking order)\n`;
+  cfg.layers.forEach(l=>{ s+=`  - id: ${l.id}\n    name: "${l.name}"\n    visible: ${l.visible}\n    locked: ${l.locked}\n`; });
+  s+=`zones:\n`;
+  cfg.zones.forEach(z=>{ s+=`  - id: ${z.id}\n    label: "${z.label}"\n    layer: ${z.layer}\n    x: ${z.x}\n    y: ${z.y}\n    w: ${z.w}\n    h: ${z.h}\n`; });
+  return s;
+}
+function fromYAML(t){
+  try{
+    const g=re=>{const m=t.match(re);return m?+m[1]:undefined;};
+    const nc=structuredClone(cfg);
+    const w=g(/width:\s*(\d+)/),h=g(/height:\s*(\d+)/);
+    if(w&&h) nc.canvas={width:w,height:h,margin:g(/margin:\s*(\d+)/)??20};
+    nc.unit=g(/\nunit:\s*(\d+)/)??nc.unit; nc.gap={outer:g(/outer:\s*(\d+)/)??20,inner:g(/inner:\s*(\d+)/)??8};
+    const layers=[]; const lre=/- id:\s*(\S+)\n\s*name:\s*"([^"]*)"\n\s*visible:\s*(true|false)\n\s*locked:\s*(true|false)/g; let m;
+    while((m=lre.exec(t))) layers.push({id:m[1],name:m[2],visible:m[3]==='true',locked:m[4]==='true'});
+    if(layers.length) nc.layers=layers;
+    const zones=[]; const zre=/- id:\s*(\S+)\n\s*label:\s*"([^"]*)"\n\s*layer:\s*(\S+)\n\s*x:\s*(-?\d+)\n\s*y:\s*(-?\d+)\n\s*w:\s*(\d+)\n\s*h:\s*(\d+)/g;
+    let i=0; while((m=zre.exec(t))){ zones.push({id:m[1],label:m[2],layer:m[3],x:+m[4],y:+m[5],w:+m[6],h:+m[7],color:PALETTE[i++%PALETTE.length]}); }
+    if(zones.length) nc.zones=zones;
+    cfg=nc; if(!zoneOf(sel))sel=cfg.zones[0]?.id; if(!layerOf(activeLayer))activeLayer=cfg.layers[0]?.id;
+    render(); syncToolbar();
+  }catch(err){ $('#warn').textContent='parse error: '+err.message; }
+}
+$('#exp').onclick=()=>{$('#yaml').value=toYAML();$('#yaml').select();};
+$('#imp').onclick=()=>fromYAML($('#yaml').value);
+$('#centerAll').onclick=()=>{
+  if(!cfg.zones.length) return;
+  const minX=Math.min(...cfg.zones.map(z=>z.x)), maxX=Math.max(...cfg.zones.map(z=>z.x+z.w));
+  const minY=Math.min(...cfg.zones.map(z=>z.y)), maxY=Math.max(...cfg.zones.map(z=>z.y+z.h));
+  const dx=Math.round((cfg.canvas.width-(maxX-minX))/2-minX), dy=Math.round((cfg.canvas.height-(maxY-minY))/2-minY);
+  cfg.zones.forEach(z=>{z.x+=dx;z.y+=dy;}); render();
+};
+$('#reset').onclick=()=>{ if(!confirm('Reset to default layout? (clears your saved edits)'))return; localStorage.removeItem(LS); cfg=structuredClone(DEFAULT);sel='A';activeLayer='content';syncToolbar();render();$('#centerAll').click();};
+function syncToolbar(){$('#cw').value=cfg.canvas.width;$('#ch').value=cfg.canvas.height;$('#unit').value=cfg.unit;$('#go').value=cfg.gap.outer;$('#gi').value=cfg.gap.inner;}
+// restore saved edits so a reload never loses your work; fresh load starts centered
+const _saved=localStorage.getItem(LS);
+if(_saved){ try{ const p=JSON.parse(_saved); if(p&&Array.isArray(p.zones)&&p.zones.length){ cfg=p; if(!cfg.layers)cfg.layers=structuredClone(DEFAULT.layers); } }catch(e){} }
+if(!zoneOf(sel)) sel=cfg.zones[0]?.id;
+if(!layerOf(activeLayer)) activeLayer=cfg.layers[0]?.id;
+syncToolbar(); render();
+if(!_saved) $('#centerAll').click();
+</script>
+</body>
+</html>
