@@ -10,3 +10,5 @@
 {"ts":"2026-07-14T00:00:18+07:00","event":"Merge","detail":"wave CR011-P3 committed + pushed. Owner picked Option B for G-Orchestra: native RWANG ingest adapter in orchestration/ (wave GORCH-RW1, exploration running)"}
 {"ts":"2026-07-14T00:00:19+07:00","event":"OwnerDecision","detail":"G-Orchestra integration: Option B (native RWANG ingest adapter in orchestration/) selected by owner"}
 {"ts":"2026-07-14T00:00:20+07:00","event":"Dispatch","detail":"Wave GORCH-RW1: worker G (gks/rwang-ingest.mjs + /api/rwang/state route + config registry + node:test), worker H (studio RwangIngest tab + legacy UI panel). Gate=opus."}
+{"ts":"2026-07-14T00:00:25+07:00","event":"Dispatch","detail":"Wave CR011-P4a: worker I (sonnet) — shortcuts registry + Maiden Line palette + shortcut sheet. Gate=opus after."}
+{"ts":"2026-07-14T00:00:27+07:00","event":"Dispatch","detail":"Wave CR011-P7a (parallel, docs-only, zero file overlap with P4a gate): sync docs/design-system SSOT (02 tokens v3, 04 components: tally/onair/rundown/debrief/phase-chip, 01 materials rule) to the merged P1-P3 reality. Worker=sonnet."}

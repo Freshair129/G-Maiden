@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, type ReactNode } from "react";
+import { useState, useRef, useEffect, useMemo, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -18,6 +18,8 @@ import { heroPortraitUrl } from "./heroPortrait";
 import AccountPage from "./AccountPage";
 import { useProfile } from "./profile";
 import type { VoiceState } from "./voice-types";
+import MaidenLine from "./MaidenLine";
+import { buildRegistry, matchCombo, type DeckActions, type ShortcutDef } from "./shortcuts";
 import {
   IconDashboard,
   IconLive,
@@ -28,6 +30,18 @@ import {
   IconAccount
 } from "./DeckIcons";
 import "./styles.css";
+
+/** CR-011 §L "Global (ทำงานแม้อยู่ในเกม)" table — the Rust-owned global
+ *  shortcuts (tauri_plugin_global_shortcut, main.rs). These are NOT in the
+ *  shortcuts.ts registry (that registry is in-app-only, routed through this
+ *  component's own keydown listener) — they're listed here purely so the
+ *  shortcut sheet can document them alongside the in-app ones, per CLAUDE.md's
+ *  hotkey table. Never rebind these in-app. */
+const GLOBAL_HOTKEYS: Array<{ combo: string; labelTh: string }> = [
+  { combo: "Ctrl+Alt+S", labelTh: "ซ่อน/แสดง overlay" },
+  { combo: "Alt+↑ / Alt+↓", labelTh: "เพิ่ม/ลดระดับเสียง ±10%" },
+  { combo: "Alt+M", labelTh: "ปิด/เปิดเสียง (mute toggle)" },
+];
 
 const FUNG_PANEL_PATH =
   "M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 688 A 20 20 0 0 1 1248,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z";
@@ -76,6 +90,12 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   const [signalEnabled, setSignalEnabled] = useState(true);
   const [voicePackName, setVoicePackName] = useState<string | null>(null);
   const volumeDebounceRef = useRef<number | null>(null);
+  // CR011-P4a-01: Maiden Line (Ctrl+K) + the shortcut sheet (Ctrl+Shift+/ / ?).
+  // State lives here (CommandDeck is the single owner of tab/palette/sheet),
+  // the components themselves are mounted as stage SIBLINGS below (window
+  // space, never inside the scaled/clipped `.g-deck-stage`).
+  const [paletteOpen, setPaletteOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);
   const { data } = useCompanionData();
   const { displayName, email } = useProfile();
   const gName = displayName || (email ? email.split("@")[0] : "Guest");
@@ -214,6 +234,70 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
       return next;
     });
   };
+
+  // CR011-P4a-01: DeckActions bridges the shortcuts.ts registry + Maiden Line
+  // to this component's existing state/handlers — reused, never duplicated.
+  const deckActions: DeckActions = {
+    setTab,
+    openPalette: () => setPaletteOpen(true),
+    openSheet: () => {
+      setPaletteOpen(false);
+      setSheetOpen(true);
+    },
+    closeOverlays: () => {
+      setPaletteOpen(false);
+      setSheetOpen(false);
+    },
+    toggleAnn: handleAnnToggle,
+    toggleSignal: handleSignalToggle,
+  };
+
+  // The registry itself is static (no closures over component state — see
+  // shortcuts.ts), so it's built once. The single window keydown listener
+  // below reads the LATEST deckActions/paletteOpen via refs instead of
+  // depending on them, so it can be registered once and cleaned up once
+  // (never re-added on every render/state change).
+  const registry = useMemo(() => buildRegistry(), []);
+
+  const deckActionsRef = useRef<DeckActions>(deckActions);
+  useEffect(() => {
+    deckActionsRef.current = deckActions;
+  });
+
+  const paletteOpenRef = useRef(paletteOpen);
+  useEffect(() => {
+    paletteOpenRef.current = paletteOpen;
+  }, [paletteOpen]);
+
+  // CR011-P4a-01: ONE window keydown listener, registered once and cleaned
+  // up on unmount — routes every keystroke through the single-source
+  // registry. Ignores keystrokes while focus sits in an
+  // input/textarea/contenteditable EXCEPT Ctrl-combos, so typing (e.g. the
+  // Steam-link field, or Maiden Line's own filter input) never fires a
+  // page-switch shortcut by accident, while Ctrl+1..8/Ctrl+K/Ctrl+Shift+/
+  // still work everywhere. Esc is deliberately NOT routed here when a
+  // component with input focus wants it first (MaidenLine's arm/disarm
+  // nuance) — that component calls stopPropagation on its own Escape
+  // handling; this listener is what closes the shortcut sheet (no input to
+  // steal focus) and acts as the Esc fallback everywhere else.
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      const target = e.target as HTMLElement | null;
+      const isEditable =
+        !!target && (target.tagName === "INPUT" || target.tagName === "TEXTAREA" || target.isContentEditable);
+      if (isEditable && !e.ctrlKey && !e.metaKey) return;
+      for (const def of registry) {
+        if (def.when === "palette-closed" && paletteOpenRef.current) continue;
+        if (matchCombo(e, def.combo)) {
+          e.preventDefault();
+          def.run(deckActionsRef.current);
+          return;
+        }
+      }
+    }
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [registry]);
 
   const error: string | null = null;
   const trayWindow = () => { try { void getCurrentWindow().hide(); } catch { /* noop */ } };
@@ -436,6 +520,66 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
           subtract notch (FUNG_PANEL_PATH_SIGNALS) instead of being clipped away with it. */}
       {tab === "dashboard" && <SignalGrid signals={data.signals} />}
       </div>{/* /g-deck-stage */}
+
+      {/* CR-011 §M/§L — Maiden Line + the shortcut sheet float in WINDOW space:
+          mounted here as siblings of .g-deck-stage (which carries the scale
+          transform), never inside it, so they never shrink/shift with the
+          1420×760 authored stage. */}
+      <MaidenLine
+        open={paletteOpen}
+        onClose={() => setPaletteOpen(false)}
+        onOpenSheet={() => {
+          setPaletteOpen(false);
+          setSheetOpen(true);
+        }}
+        actions={deckActions}
+        matchPhase={data.match.matchPhase}
+      />
+      <ShortcutSheet open={sheetOpen} onClose={() => setSheetOpen(false)} registry={registry} />
+    </div>
+  );
+}
+
+/** CR-011 §L: the shortcut sheet, generated FROM the shortcuts.ts registry
+ *  (single source, no hand-copied list) plus the Rust-owned GLOBAL_HOTKEYS
+ *  table above. Same console-glass material as Maiden Line; Esc closes it via
+ *  CommandDeck's global keydown listener (registry's "close-overlay" entry —
+ *  this component has no input to steal Escape, unlike MaidenLine). */
+function ShortcutSheet({ open, onClose, registry }: { open: boolean; onClose: () => void; registry: ShortcutDef[] }) {
+  // Take focus on open: an aria-modal dialog that never receives focus leaves
+  // keyboard/screen-reader users interacting with a background the a11y tree
+  // claims is inert (Opus gate, CR011-P4a). Full focus trap = later polish.
+  const sheetRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (open) sheetRef.current?.focus();
+  }, [open]);
+  if (!open) return null;
+  return (
+    <div className="gm-sheet-backdrop" onClick={onClose}>
+      <div ref={sheetRef} tabIndex={-1} className="gm-sheet" role="dialog" aria-modal="true" aria-label="Shortcuts" onClick={(e) => e.stopPropagation()}>
+        <div className="gm-sheet-head">
+          <span>คีย์ลัด (Shortcuts)</span>
+          <button type="button" className="gm-sheet-close" onClick={onClose} aria-label="ปิด">×</button>
+        </div>
+        <div>
+          <div className="gm-sheet-section-label">In-app</div>
+          {registry.map((def) => (
+            <div key={def.id} className="gm-sheet-row">
+              <span>{def.labelTh}</span>
+              <span className="gm-sheet-row-combo">{def.combo}</span>
+            </div>
+          ))}
+        </div>
+        <div>
+          <div className="gm-sheet-section-label">Global (ทำงานแม้อยู่ในเกม)</div>
+          {GLOBAL_HOTKEYS.map((hk) => (
+            <div key={hk.combo} className="gm-sheet-row">
+              <span>{hk.labelTh}</span>
+              <span className="gm-sheet-row-combo">{hk.combo}</span>
+            </div>
+          ))}
+        </div>
+      </div>
     </div>
   );
 }

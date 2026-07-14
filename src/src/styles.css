@@ -5793,3 +5793,189 @@ body {
   text-decoration: line-through 1px rgba(244, 63, 94, 0.85);
   text-underline-offset: 2px;
 }
+
+/* === CR-011 §L/§M/CR011-P4a-01 — Maiden Line palette + shortcut sheet ===
+   Both float in WINDOW space (fixed to the viewport, mounted as siblings of
+   `.g-deck-stage` in CommandDeck.tsx — NOT inside the scaled/clipped stage),
+   at `--g-z-pop`, the console-glass material (one of the few blur-permitted
+   surfaces per §B) via var(--g-blur-console) so quality tiers (gq-eco = no
+   blur) still apply. Additive only — no existing class touched. */
+
+.gm-palette-backdrop,
+.gm-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: var(--g-z-pop);
+  display: flex;
+  justify-content: center;
+  cursor: default;
+}
+
+.gm-palette-backdrop {
+  align-items: flex-start;
+}
+.gm-sheet-backdrop {
+  align-items: center;
+  background: rgba(4, 7, 13, 0.5);
+}
+
+.gm-palette,
+.gm-sheet {
+  position: relative;
+  background: rgba(11, 14, 22, 0.88);
+  border: 1px solid var(--g-glass-rim);
+  border-radius: var(--g-r-panel);
+  box-shadow: var(--g-shadow-fab);
+  -webkit-backdrop-filter: var(--g-blur-console);
+  backdrop-filter: var(--g-blur-console);
+  color: var(--g-text);
+  animation: gm-pop-in 140ms var(--g-ease);
+  transform-origin: top center;
+}
+
+@keyframes gm-pop-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gm-palette, .gm-sheet { animation: none; }
+}
+
+/* Maiden Line — floats top-center, ~18% down, max ~7 rows tall. */
+.gm-palette {
+  margin-top: 18vh;
+  width: 560px;
+  max-width: calc(100vw - 48px);
+  max-height: 360px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.gm-palette-input {
+  flex: none;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--g-hairline);
+  outline: none;
+  color: var(--g-text);
+  font: 400 14px/1.4 var(--g-font-ui);
+  padding: 14px 16px;
+}
+.gm-palette-input::placeholder { color: var(--g-text-mute); }
+
+.gm-palette-list {
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.gm-palette-section + .gm-palette-section { margin-top: 4px; }
+.gm-palette-section-label {
+  font: 600 10px/1.2 var(--g-font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--g-text-mute);
+  padding: 8px 10px 4px;
+}
+
+.gm-palette-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--g-r-sm);
+  cursor: pointer;
+  color: var(--g-text-dim);
+}
+.gm-palette-row:hover { background: rgba(143, 212, 255, 0.06); }
+.gm-palette-row.selected { background: rgba(143, 212, 255, 0.1); color: var(--g-text); }
+.gm-palette-row.danger {
+  background: rgba(244, 63, 94, 0.14);
+  color: var(--g-danger);
+  border: 1px solid rgba(244, 63, 94, 0.34);
+}
+
+.gm-palette-row-label {
+  font: 400 12px/1.4 var(--g-font-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gm-palette-row-hotkey {
+  flex: none;
+  font: 500 10px/1 var(--g-font-mono);
+  color: var(--g-text-mute);
+  border: 1px solid var(--g-hairline-2);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+
+.gm-palette-empty {
+  padding: 18px 10px;
+  text-align: center;
+  color: var(--g-text-mute);
+  font: 400 12px/1.5 var(--g-font-ui);
+}
+
+/* Shortcut sheet — a simple two-section reference list, same glass material. */
+.gm-sheet {
+  width: 420px;
+  max-width: calc(100vw - 48px);
+  max-height: min(72vh, 560px);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px 18px;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.gm-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font: 600 13px/1.3 var(--g-font-ui);
+  color: var(--g-text);
+}
+
+.gm-sheet-close {
+  background: transparent;
+  border: 1px solid var(--g-hairline-2);
+  border-radius: var(--g-r-sm);
+  color: var(--g-text-dim);
+  width: 26px;
+  height: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.gm-sheet-close:hover { color: var(--g-text); background: rgba(143, 212, 255, 0.06); }
+
+.gm-sheet-section-label {
+  font: 600 10px/1.2 var(--g-font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--g-text-mute);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--g-hairline);
+  margin-bottom: 6px;
+}
+
+.gm-sheet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 2px;
+  font: 400 11.5px/1.5 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+.gm-sheet-row-combo {
+  flex: none;
+  font: 500 10px/1 var(--g-font-mono);
+  color: var(--g-ice-300);
+  border: 1px solid var(--g-hairline-2);
+  border-radius: 5px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
