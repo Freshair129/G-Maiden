@@ -72,6 +72,33 @@ describe("matchCombo", () => {
     expect(matchCombo(key("?"), "?")).toBe(true);
     expect(matchCombo(key("?", { ctrlKey: true, shiftKey: true }), "?")).toBe(false);
   });
+
+  // CR011-P4b-01: F-keys are multi-character `e.key` values ("F6", "F10"),
+  // never single digit chars, so DIGIT_PATTERN (which only matches a lone
+  // "0".."9" keyPart) can never mistake "F6" for the digit "6" — verified
+  // rather than assumed, per the task's "fix ONLY if needed" instruction.
+  // No change to matchCombo was needed.
+  it("matches a plain F-key combo without confusing it with the digit rule", () => {
+    expect(matchCombo(key("F6"), "F6")).toBe(true);
+    expect(matchCombo(key("F10"), "F10")).toBe(true);
+  });
+
+  it("matches Shift+F6 and Shift+F10", () => {
+    expect(matchCombo(key("F6", { shiftKey: true }), "Shift+F6")).toBe(true);
+    expect(matchCombo(key("F10", { shiftKey: true }), "Shift+F10")).toBe(true);
+  });
+
+  it("rejects F6 when Shift is unexpectedly held (and vice versa)", () => {
+    expect(matchCombo(key("F6", { shiftKey: true }), "F6")).toBe(false);
+    expect(matchCombo(key("F6"), "Shift+F6")).toBe(false);
+  });
+
+  it("does not cross-match an F-key combo against the plain digit it contains", () => {
+    // "F6" the keyPart must never satisfy a "6" (Ctrl+6 digit-code) combo or
+    // vice versa — they are unrelated bindings that happen to share a glyph.
+    expect(matchCombo(key("6", { ctrlKey: true, code: "Digit6" }), "F6")).toBe(false);
+    expect(matchCombo(key("F6"), "Ctrl+6")).toBe(false);
+  });
 });
 
 describe("buildRegistry", () => {
@@ -95,5 +122,32 @@ describe("buildRegistry", () => {
     const registry = buildRegistry();
     const ids = registry.map((r) => r.id);
     expect(new Set(ids).size).toBe(ids.length);
+  });
+
+  it("includes F6, Shift+F6, and Shift+F10 (CR011-P4b-01)", () => {
+    const registry = buildRegistry();
+    const combos = registry.map((r) => r.combo);
+    expect(combos).toContain("F6");
+    expect(combos).toContain("Shift+F6");
+    expect(combos).toContain("Shift+F10");
+  });
+
+  it("F6/Shift+F6 call focusSeat with the right direction, Shift+F10 calls openContextMenuAtFocus", () => {
+    const registry = buildRegistry();
+    const calls: string[] = [];
+    const ctx = {
+      setTab: () => {},
+      openPalette: () => {},
+      openSheet: () => {},
+      closeOverlays: () => {},
+      toggleAnn: () => {},
+      toggleSignal: () => {},
+      focusSeat: (dir: 1 | -1) => calls.push(`focusSeat(${dir})`),
+      openContextMenuAtFocus: () => calls.push("openContextMenuAtFocus"),
+    };
+    registry.find((r) => r.combo === "F6")?.run(ctx);
+    registry.find((r) => r.combo === "Shift+F6")?.run(ctx);
+    registry.find((r) => r.combo === "Shift+F10")?.run(ctx);
+    expect(calls).toEqual(["focusSeat(1)", "focusSeat(-1)", "openContextMenuAtFocus"]);
   });
 });

@@ -5979,3 +5979,73 @@ body {
   padding: 2px 6px;
   white-space: nowrap;
 }
+
+/* === CR-011 §F.9/§J/CR011-P4b-01 — reusable context-menu primitive ===
+   Floats in WINDOW space like Maiden Line/the shortcut sheet above (a
+   `.g-deck-stage` sibling — see ContextMenu.tsx). Material is INSTRUMENT
+   MATTE per §B's two-material rule (NOT console glass — menus are small, no
+   backdrop-filter here), still at the shared `--g-z-pop` tier. Additive only. */
+.gm-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: var(--g-z-pop);
+  cursor: default;
+}
+
+.gm-menu {
+  position: fixed;
+  min-width: 200px;
+  max-width: 280px;
+  background: var(--g-instrument-2);
+  border: 1px solid var(--g-hairline-2);
+  border-radius: var(--g-r-card);
+  box-shadow: var(--g-shadow-tight);
+  padding: 5px;
+  color: var(--g-text);
+  animation: gm-menu-in 120ms var(--g-ease);
+  transform-origin: top left;
+}
+@keyframes gm-menu-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gm-menu { animation: none; }
+}
+
+.gm-menu-item {
+  display: block;
+  padding: 7px 10px;
+  border-radius: var(--g-r-sm);
+  font: 400 12px/1.4 var(--g-font-ui);
+  color: var(--g-text-dim);
+  cursor: pointer;
+  outline: none;
+}
+.gm-menu-item:hover { background: rgba(143, 212, 255, 0.06); color: var(--g-text); }
+.gm-menu-item.danger { color: var(--g-danger); }
+.gm-menu-item.danger:hover { background: rgba(244, 63, 94, 0.12); }
+.gm-menu-item.disabled { color: var(--g-text-mute); cursor: default; }
+.gm-menu-item.disabled:hover { background: transparent; color: var(--g-text-mute); }
+
+.gm-menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--g-hairline);
+}
+
+/* CR-011 accessibility spec: visible 2px ice focus ring — shared by the F6
+   seat-cycling targets (`[data-seat]`) and every context-menu invoker/item so
+   keyboard users always see where focus is, without relying on each browser's
+   default (inconsistent) focus style. `:focus-visible` keeps it from showing
+   on a plain mouse click. */
+[data-seat]:focus-visible,
+.gm-hero-slot:focus-visible,
+.gm-onair-now:focus-visible,
+.gm-onair-row:focus-visible,
+.g-sig:focus-visible,
+.gm-menu-item:focus-visible {
+  outline: 2px solid var(--g-ice-500);
+  outline-offset: 2px;
+}

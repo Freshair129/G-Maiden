@@ -4,10 +4,12 @@
 // house pattern as live/phase.ts and buildMomentum.ts.
 //
 // Scope note: this registry only carries the bindings actually wired in
-// CR011-P4a-01 (Ctrl+K, Ctrl+1..8, Ctrl+/ + "?", Esc). The fuller §L
-// table (Ctrl+Tab, F6, Space, Ctrl+D, Shift+F10, F2) belongs to later waves
-// (context menu, density toggle, inspector, seat focus) that don't exist yet
-// — the sheet should never claim a binding this build doesn't honor.
+// CR011-P4a-01 (Ctrl+K, Ctrl+1..8, Ctrl+/ + "?", Esc) PLUS, as of
+// CR011-P4b-01, F6/Shift+F6 (seat focus cycling) and Shift+F10 (context
+// menu at focus). The fuller §L table (Ctrl+Tab, Space, Ctrl+D, F2) still
+// belongs to later waves (density toggle, inspector, row navigation) that
+// don't exist yet — the sheet should never claim a binding this build
+// doesn't honor.
 
 /** Actions the registry can invoke, supplied by CommandDeck (the single owner
  *  of tab/palette/sheet state and the existing volume/ann/signal handlers —
@@ -20,6 +22,17 @@ export type DeckActions = {
   closeOverlays(): void;
   toggleAnn(): void;
   toggleSignal(): void;
+  /** CR011-P4b-01: move focus to the next (`1`) or previous (`-1`) `[data-seat]`
+   *  section on the current page, wrapping at either end. No-op when no seats
+   *  are mounted (e.g. a non-dashboard tab). */
+  focusSeat(dir: 1 | -1): void;
+  /** CR011-P4b-01: best-effort fallback for the Shift+F10 registry entry — the
+   *  real menu targets (hero seat / utterance row / annunciator) handle
+   *  Shift+F10 locally the instant they have focus (see ContextMenu.tsx's
+   *  `openFromKeyboard`, which stops propagation so this never double-fires
+   *  for them). This only runs when focus sits somewhere with no menu wired,
+   *  where correctly doing nothing IS the honest behavior. */
+  openContextMenuAtFocus(): void;
 };
 
 export type ShortcutDef = {
@@ -155,6 +168,30 @@ export function buildRegistry(): ShortcutDef[] {
       labelTh: "ปิดหน้าต่างคำสั่ง",
       when: "always",
       run: (ctx) => ctx.closeOverlays(),
+    },
+    {
+      id: "focus-next-seat",
+      combo: "F6",
+      label: "Focus next seat",
+      labelTh: "โฟกัสช่องถัดไป",
+      when: "always",
+      run: (ctx) => ctx.focusSeat(1),
+    },
+    {
+      id: "focus-prev-seat",
+      combo: "Shift+F6",
+      label: "Focus previous seat",
+      labelTh: "โฟกัสช่องก่อนหน้า",
+      when: "always",
+      run: (ctx) => ctx.focusSeat(-1),
+    },
+    {
+      id: "open-context-menu",
+      combo: "Shift+F10",
+      label: "Open context menu",
+      labelTh: "เมนูบริบท",
+      when: "always",
+      run: (ctx) => ctx.openContextMenuAtFocus(),
     },
   ];
 }

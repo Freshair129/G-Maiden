@@ -21,6 +21,12 @@ import type { VoiceState } from "./voice-types";
 import MaidenLine from "./MaidenLine";
 import { buildRegistry, matchCombo, type DeckActions, type ShortcutDef } from "./shortcuts";
 import {
+  ContextMenu,
+  useContextMenu,
+  type ContextMenuController,
+  type ContextMenuEntry
+} from "./ContextMenu";
+import {
   IconDashboard,
   IconLive,
   IconVoice,
@@ -96,6 +102,10 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   // space, never inside the scaled/clipped `.g-deck-stage`).
   const [paletteOpen, setPaletteOpen] = useState(false);
   const [sheetOpen, setSheetOpen] = useState(false);
+  // CR011-P4b-01: one shared context-menu instance for the whole deck — the
+  // hero seat / utterance row / annunciator targets all open through it (see
+  // ContextMenu.tsx), same "single owner" shape as palette/sheet above.
+  const menu = useContextMenu();
   const { data } = useCompanionData();
   const { displayName, email } = useProfile();
   const gName = displayName || (email ? email.split("@")[0] : "Guest");
@@ -247,9 +257,31 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
     closeOverlays: () => {
       setPaletteOpen(false);
       setSheetOpen(false);
+      // Catch-all: a menu whose focus never entered it (all-disabled items, or
+      // the focused row churned away) can't see its own Esc — the global Esc
+      // must be able to kill it (Opus gate, CR011-P4b).
+      menu.close();
     },
     toggleAnn: handleAnnToggle,
     toggleSignal: handleSignalToggle,
+    // CR011-P4b-01: F6/Shift+F6 seat cycling — walks the `[data-seat]`
+    // sections in DOM order (they only exist while tab === "dashboard", so
+    // this safely no-ops with zero matches on every other page).
+    focusSeat: (dir) => {
+      const seats = Array.from(document.querySelectorAll<HTMLElement>("[data-seat]"));
+      if (seats.length === 0) return;
+      const active = document.activeElement as HTMLElement | null;
+      const idx = active ? seats.indexOf(active) : -1;
+      const next = idx === -1 ? (dir === 1 ? 0 : seats.length - 1) : (idx + dir + seats.length) % seats.length;
+      seats[next]?.focus();
+    },
+    // CR011-P4b-01: intentionally a no-op — see the DeckActions doc comment
+    // in shortcuts.ts. The three real menu targets already open their menu
+    // the instant Shift+F10 fires while THEY have focus (ContextMenu.tsx's
+    // `openFromKeyboard` stops propagation before this global listener ever
+    // sees the keystroke), so this only runs when focus is somewhere with no
+    // menu wired — where doing nothing is the honest behavior, not a stub.
+    openContextMenuAtFocus: () => {},
   };
 
   // The registry itself is static (no closures over component state — see
@@ -484,6 +516,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
               signalEnabled={signalEnabled}
               annEnabled={annEnabled}
               masterVolume={masterVolume}
+              menu={menu}
             />
           )}
           {tab === "live" && <LiveMatchPage />}
@@ -518,8 +551,13 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
       {/* G-Signal cluster (D/E/F/G) — stage-level sibling of g-deck-panel, NOT a child.
           It must live outside the clipped panel so it renders inside the bottom-right
           subtract notch (FUNG_PANEL_PATH_SIGNALS) instead of being clipped away with it. */}
-      {tab === "dashboard" && <SignalGrid signals={data.signals} />}
+      {tab === "dashboard" && <SignalGrid signals={data.signals} menu={menu} />}
       </div>{/* /g-deck-stage */}
+
+      {/* CR011-P4b-01: the context-menu primitive floats in WINDOW space too
+          (see ContextMenu.tsx doc comment) — mounted here as a stage sibling,
+          same convention as Maiden Line / the shortcut sheet just below. */}
+      <ContextMenu state={menu.state} onClose={menu.close} />
 
       {/* CR-011 §M/§L — Maiden Line + the shortcut sheet float in WINDOW space:
           mounted here as siblings of .g-deck-stage (which carries the scale
@@ -627,7 +665,7 @@ function MomentumMeter({ momentum }: { momentum: CompanionData["momentum"] }) {
   const mag = Math.min(50, Math.abs(v) / 2); // % of the half-track
   const fill = v >= 0 ? { left: "50%", width: `${mag}%` } : { left: `${50 - mag}%`, width: `${mag}%` };
   return (
-    <section className="gm-momentum">
+    <section className="gm-momentum" data-seat="momentum" tabIndex={-1}>
       <div className="gm-mom-head">
         <span className="gm-mom-phase">{momentum.phaseLabel}</span>
         <span className="gm-mom-title">MOMENTUM</span>
@@ -670,11 +708,32 @@ const UTT_SOURCE_LABEL: Record<"signal" | "master" | "announcer", string> = {
   announcer: "ANN"
 };
 
+/** Text copied by the utterance row's "คัดลอกข้อความ" context-menu item —
+ *  includes the retracted prefix when the line is a belief-revision, so the
+ *  copy reflects what was actually said (both the retraction and the
+ *  correction), not just the final text (CR011-P4b-01). */
+function utteranceCopyText(u: CompanionData["utterances"][number]): string {
+  if (u.kind === "revision" && u.retracted) return `${u.retracted} → ${u.text}`;
+  return u.text;
+}
+
+function utteranceMenuItems(u: CompanionData["utterances"][number]): ContextMenuEntry[] {
+  return [
+    {
+      id: "utt-copy",
+      label: "คัดลอกข้อความ",
+      run: () => {
+        void navigator.clipboard?.writeText(utteranceCopyText(u)).catch(() => {});
+      }
+    }
+  ];
+}
+
 /** CR-011 §B: the agent sector reborn as an utterance ledger — Maiden's
  *  presence as what she said, when, and where she corrected herself, instead
  *  of a static art block. Renders inside the frozen `.gm-agent-card` box
  *  (440x354, geometry untouched) via new `gm-onair-*` classes only. */
-function OnAirConsole({ data }: { data: CompanionData }) {
+function OnAirConsole({ data, menu }: { data: CompanionData; menu: ContextMenuController }) {
   const list = data.utterances;
   const newest = list[0] ?? null;
   const rest = list.slice(1);
@@ -698,7 +757,12 @@ function OnAirConsole({ data }: { data: CompanionData }) {
       </div>
 
       {newest ? (
-        <div className="gm-onair-now">
+        <div
+          className="gm-onair-now"
+          tabIndex={0}
+          onContextMenu={(e) => menu.openFromMouseEvent(e, utteranceMenuItems(newest))}
+          onKeyDown={(e) => menu.openFromKeyboard(e, utteranceMenuItems(newest))}
+        >
           <span className="gm-onair-now-meta">{newest.timeLabel} · {UTT_SOURCE_LABEL[newest.source]}</span>
           <p className="gm-onair-now-text">
             {/* Belief revision is the headline signature — the strikethrough must
@@ -724,7 +788,13 @@ function OnAirConsole({ data }: { data: CompanionData }) {
 
       <div className="gm-onair-log">
         {rest.map((u) => (
-          <div key={u.id} className="gm-onair-row">
+          <div
+            key={u.id}
+            className="gm-onair-row"
+            tabIndex={0}
+            onContextMenu={(e) => menu.openFromMouseEvent(e, utteranceMenuItems(u))}
+            onKeyDown={(e) => menu.openFromKeyboard(e, utteranceMenuItems(u))}
+          >
             <span className="gm-onair-row-time">{u.timeLabel}</span>
             <span className={`gm-onair-row-chip gm-onair-row-chip-${u.source}`}>{UTT_SOURCE_LABEL[u.source]}</span>
             <p className="gm-onair-row-text">
@@ -931,13 +1001,15 @@ function GMaidenFungDashboard({
   voicePackName,
   signalEnabled,
   annEnabled,
-  masterVolume
+  masterVolume,
+  menu
 }: {
   data: CompanionData;
   voicePackName: string | null;
   signalEnabled: boolean;
   annEnabled: boolean;
   masterVolume: number;
+  menu: ContextMenuController;
 }) {
   const allyHeroes = data.heroes.filter((hero) => hero.team === "ally");
   const enemyHeroes = data.heroes.filter((hero) => hero.team === "enemy");
@@ -964,14 +1036,14 @@ function GMaidenFungDashboard({
 
   return (
     <div className="gm-fung-layout">
-      <section className="gm-score-header">
+      <section className="gm-score-header" data-seat="score-header" tabIndex={-1}>
         <strong>{data.match.leftTeamName} {data.match.leftScore}</strong>
         <span className="gm-clock">{data.match.clock}</span>
         <strong>{data.match.rightScore} {data.match.rightTeamName}</strong>
         <PhaseChip phase={realPhase} />
       </section>
 
-      <section className="gm-stats-bar">
+      <section className="gm-stats-bar" data-seat="stats" tabIndex={-1}>
         <MiniStat label="NW" value={String(data.match.player.nw)} sub="Local" />
         <MiniStat label="GPM" value={String(data.match.player.gpm)} sub="Farm" />
         <MiniStat label="XPM" value={String(data.match.player.xpm)} sub="Tempo" />
@@ -979,15 +1051,15 @@ function GMaidenFungDashboard({
 
       <MomentumMeter momentum={data.momentum} />
 
-      <section className="gm-battle-grid">
+      <section className="gm-battle-grid" data-seat="battle-grid" tabIndex={-1}>
         {seatPhase === "live" ? (
           <>
             <div className="gm-slot-column">
-              {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`a-${idx}`} id={idx + 1} hero={allyHeroes[idx]} />)}
+              {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`a-${idx}`} id={idx + 1} hero={allyHeroes[idx]} menu={menu} />)}
             </div>
             <MinimapMirror />
             <div className="gm-slot-column">
-              {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`e-${idx}`} id={idx + 6} hero={enemyHeroes[idx]} />)}
+              {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`e-${idx}`} id={idx + 6} hero={enemyHeroes[idx]} menu={menu} />)}
             </div>
           </>
         ) : seatPhase === "debrief" ? (
@@ -1004,11 +1076,11 @@ function GMaidenFungDashboard({
         )}
       </section>
 
-      <section className="gm-agent-card">
-        <OnAirConsole data={data} />
+      <section className="gm-agent-card" data-seat="on-air" tabIndex={-1}>
+        <OnAirConsole data={data} menu={menu} />
       </section>
 
-      <section className="gm-sector-log">
+      <section className="gm-sector-log" data-seat="sector-log" tabIndex={-1}>
         <div>
           <h3><span className={`gm-tally${data.match.gsiOnline ? " gm-tally-onair" : ""}`} />Alert Deck</h3>
           <div className="log-list">
@@ -1098,8 +1170,34 @@ function VolumeRail({
   );
 }
 
-function HeroSlot({ id, hero }: { id: number; hero?: CompanionData["heroes"][number] }) {
+/** CR011-P4b-01 honesty check: an OpenDota hero-profile link needs a numeric
+ *  hero id, but the deck only ever has `hero.hero` = `prettyHeroName(npcShort)`
+ *  (title-cased words, spaces — see live/events.ts), while heroNames.ts's
+ *  HERO_NAMES is keyed id -> OpenDota's OWN localized spelling ("Anti-Mage",
+ *  "Nature's Prophet", "Queen of Pain" — hyphens/apostrophes the npc-short
+ *  reconstruction never produces, e.g. npc short "antimage" round-trips to
+ *  "Antimage", not "Anti-Mage"). There is no npc-short -> id table anywhere in
+ *  the repo, so a reverse-name lookup would silently fail for a large chunk of
+ *  the roster. Per the task's honesty rule ("no menu item that can't truly
+ *  act"), the OpenDota-profile item is OMITTED rather than wired to a lookup
+ *  that would be wrong for names like Anti-Mage/Nature's Prophet/Queen of
+ *  Pain — only the copy-name action is offered. */
+function heroMenuItems(heroName: string, known: boolean): ContextMenuEntry[] {
+  return [
+    {
+      id: "hero-copy-name",
+      label: "คัดลอกชื่อฮีโร่",
+      disabled: !known,
+      run: () => {
+        void navigator.clipboard?.writeText(heroName).catch(() => {});
+      }
+    }
+  ];
+}
+
+function HeroSlot({ id, hero, menu }: { id: number; hero?: CompanionData["heroes"][number]; menu: ContextMenuController }) {
   const heroName = hero && hero.hero !== "—" ? hero.hero : "—";
+  const known = heroName !== "—";
   const stateLabel = !hero || hero.state === "empty" ? "Waiting" : hero.state;
   const kda = hero ? formatKda(hero) : "—";
   // portrait art behind the card (CDN, dimmed); dead = fainter, missing = grey.
@@ -1110,6 +1208,11 @@ function HeroSlot({ id, hero }: { id: number; hero?: CompanionData["heroes"][num
       className={`gm-hero-slot ${hero?.state ?? "empty"}`}
       style={portrait ? { position: "relative", overflow: "hidden" } : undefined}
       aria-label={`Hero slot ${id}`}
+      tabIndex={0}
+      // No menu at all for unknown slots — a popup whose only item is disabled
+      // is keyboard-inert dead chrome (Opus gate, CR011-P4b).
+      onContextMenu={(e) => { if (known) menu.openFromMouseEvent(e, heroMenuItems(heroName, known)); }}
+      onKeyDown={(e) => { if (known) menu.openFromKeyboard(e, heroMenuItems(heroName, known)); }}
     >
       {portrait && (
         <img
@@ -1139,13 +1242,85 @@ function HeroSlot({ id, hero }: { id: number; hero?: CompanionData["heroes"][num
   );
 }
 
-function SignalGrid({ signals }: { signals: CompanionData["signals"] }) {
+/** CR011-P4b-01: G-Signal sensitivity (Low/Med/High). `set_cv_signal_sensitivity`
+ *  IS wired in main.rs (`level: signal::Sensitivity`, serde `rename_all =
+ *  "lowercase"`), so the menu really can change it — verified by grep before
+ *  wiring, per the task instruction. The legacy Control panel (App.tsx) stores
+ *  the current choice under `localStorage['gm-settings'].signalSensitivity`
+ *  ('low'|'med'|'high', default 'med') and pushes it to this exact command on
+ *  change; there is no get_* query command, so this is the only place to read
+ *  the current value from — a read (AND write-back, so the two surfaces never
+ *  silently diverge) rather than a strict read-only peek, but still additive/
+ *  local-storage-only, no new component wiring. */
+type SigSensitivity = "low" | "med" | "high";
+const SIG_SENSITIVITY_LABEL: Record<SigSensitivity, string> = { low: "Low", med: "Med", high: "High" };
+
+function readSignalSensitivity(): SigSensitivity {
+  try {
+    const raw = JSON.parse(localStorage.getItem("gm-settings") ?? "{}") as Record<string, unknown>;
+    const v = raw.signalSensitivity;
+    if (v === "low" || v === "med" || v === "high") return v;
+  } catch {
+    /* noop — browser dev / no localStorage */
+  }
+  return "med";
+}
+
+// DEPENDENCY NOTE (Opus gate, CR011-P4b): no clobber race with the legacy
+// Control panel today ONLY because the menu targets render dashboard-only
+// while <Control embedded> mounts on the Settings tab and re-reads
+// localStorage on each remount. If Control ever becomes persistently
+// mounted, its whole-object settings write-back would silently revert this
+// value on the next unrelated edit — revisit this seam then.
+function writeSignalSensitivity(level: SigSensitivity) {
+  try {
+    const raw = JSON.parse(localStorage.getItem("gm-settings") ?? "{}") as Record<string, unknown>;
+    raw.signalSensitivity = level;
+    localStorage.setItem("gm-settings", JSON.stringify(raw));
+  } catch {
+    /* noop */
+  }
+}
+
+function annunciatorMenuItems(): ContextMenuEntry[] {
+  const current = readSignalSensitivity();
+  const sensitivityItems: ContextMenuEntry[] = (Object.keys(SIG_SENSITIVITY_LABEL) as SigSensitivity[]).map((level) => ({
+    id: `sig-sensitivity-${level}`,
+    label: `ความไว G-Signal: ${SIG_SENSITIVITY_LABEL[level]}${level === current ? " (ปัจจุบัน)" : ""}`,
+    // Selecting the already-active level would be a no-op — disabling it
+    // doubles as the "mark the current level" the task asks for.
+    disabled: level === current,
+    run: () => {
+      writeSignalSensitivity(level);
+      void invoke("set_cv_signal_sensitivity", { level }).catch(() => {});
+    }
+  }));
+  return [
+    ...sensitivityItems,
+    { id: "sig-sep", separator: true },
+    {
+      id: "sig-test-alert",
+      label: "ทดสอบเสียงเตือน",
+      run: () => {
+        void invoke("speak_event", { event: "danger", fallback: "ทดสอบสัญญาณเตือนค่ะ" }).catch(() => {});
+      }
+    }
+  ];
+}
+
+function SignalGrid({ signals, menu }: { signals: CompanionData["signals"]; menu: ContextMenuController }) {
   const tags = ["D", "E", "F", "G"];
   const fillClass = ["sg-fill-ice", "", "sg-fill-safe", "sg-fill-warn"];
   return (
     <div className="g-signals-fab">
       {signals.map((sig, i) => (
-        <div key={sig.label} className={`g-sig${i === 1 ? " hero" : ""}`}>
+        <div
+          key={sig.label}
+          className={`g-sig${i === 1 ? " hero" : ""}`}
+          tabIndex={0}
+          onContextMenu={(e) => menu.openFromMouseEvent(e, annunciatorMenuItems())}
+          onKeyDown={(e) => menu.openFromKeyboard(e, annunciatorMenuItems())}
+        >
           <span className="sg-tag">{tags[i]}</span>
           <span className="sg-label">{sig.label}</span>
           <span className="sg-val">{sig.value}</span>

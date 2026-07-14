@@ -485,10 +485,34 @@ Current anatomy:
 - each row: Thai label + mono combo chip (e.g. `Ctrl+K`, `Ctrl+Alt+S`)
 
 Registry scope note (honesty rule): `shortcuts.ts`'s `buildRegistry()` only
-carries bindings actually wired as of CR011-P4a-01 (`Ctrl+K`, `Ctrl+1`..`8`,
-`Ctrl+/` + `?`, `Esc`) — it must never list a binding the build doesn't honor
-yet (a fuller table incl. `Ctrl+Tab`/`F6`/`Space`/`Ctrl+D`/`Shift+F10`/`F2`
-belongs to later, not-yet-shipped waves).
+carries bindings actually wired (as of CR011-P4b-01: `Ctrl+K`, `Ctrl+1`..`8`,
+`Ctrl+/` + `?`, `F6`/`Shift+F6` seat-focus cycling, `Shift+F10` context menu,
+`Esc`) — it must never list a binding the build doesn't honor yet
+(`Ctrl+Tab`/`Space`/`Ctrl+D`/`F2` belong to later, not-yet-shipped waves).
+
+## 10c. Context menu
+
+Code:
+- `src/src/ContextMenu.tsx` (`ContextMenu` + `useContextMenu`)
+- `.gm-menu-*` in `styles.css`
+
+Current anatomy:
+
+- window-space popup at cursor / focused target, viewport-clamped (measured
+  via `useLayoutEffect` before first paint — no overflow flash)
+- material: **instrument matte + hairline** (NOT blur — menus are small, per
+  the two-material rule), z `--g-z-pop`, 120ms fade, reduced-motion instant
+- keyboard: ↑↓ wrap, Enter runs, Esc/Tab closes; focus enters on open and
+  returns to the invoker on close; `role="menu"`/`menuitem`
+
+Current targets (all read/act honestly — no item that cannot truly act):
+
+- hero seat: copy hero name (OpenDota link deliberately omitted — no reliable
+  npc-short→id mapping exists; a sometimes-wrong link violates honest state)
+- utterance row: copy text (revision rows prefix the retracted claim)
+- annunciator card: G-Signal sensitivity Low/Med/High (invokes
+  `set_cv_signal_sensitivity`, syncs `gm-settings.signalSensitivity` so the
+  legacy Settings panel never disagrees; active level disabled) + test alert
 
 ## 11. Status pill
 
