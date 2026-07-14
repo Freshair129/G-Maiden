@@ -23,7 +23,8 @@ import {
   IconVoice,
   IconBuild,
   IconInsights,
-  IconSettings
+  IconSettings,
+  IconAccount
 } from "./DeckIcons";
 import "./styles.css";
 
@@ -349,15 +350,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
             <span className="dot" />
             <strong>{data.match.gsiOnline ? "GSI Online" : "GSI Offline"}</strong>
           </div>
-          <div className="g-ping-pill" title="GSI does not report ping — Dota 2's Game State Integration feed has no ping field">
-            <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M5 18h2" />
-              <path d="M9 14h2" />
-              <path d="M13 10h2" />
-              <path d="M17 6h2" />
-            </svg>
-            <strong>—</strong>
-          </div>
+          <FeedAgePill updatedAt={data.updatedAt} online={data.match.gsiOnline} />
         </div>
 
         <div className={`profile-wrap${profileOpen ? " open" : ""}`}>
@@ -371,10 +364,10 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
           </button>
           {profileOpen ? (
             <div className="profile-dropdown">
-              <button type="button" onClick={() => { setTab("account"); setProfileOpen(false); }}><span className="dd-icon">👤</span>Account &amp; Steam</button>
-              <button type="button" onClick={() => { setTab("voice"); setProfileOpen(false); }}><span className="dd-icon">🎙</span>Voice Packs</button>
+              <button type="button" onClick={() => { setTab("account"); setProfileOpen(false); }}><span className="dd-icon"><IconAccount size={14} /></span>Account &amp; Steam</button>
+              <button type="button" onClick={() => { setTab("voice"); setProfileOpen(false); }}><span className="dd-icon"><IconVoice size={14} /></span>Voice Packs</button>
               <div className="dd-sep" />
-              <button type="button" onClick={() => { setTab("settings"); setProfileOpen(false); }}><span className="dd-icon">⚙</span>Settings</button>
+              <button type="button" onClick={() => { setTab("settings"); setProfileOpen(false); }}><span className="dd-icon"><IconSettings size={14} /></span>Settings</button>
             </div>
           ) : null}
         </div>
@@ -436,6 +429,41 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
           subtract notch (FUNG_PANEL_PATH_SIGNALS) instead of being clipped away with it. */}
       {tab === "dashboard" && <SignalGrid signals={data.signals} />}
       </div>{/* /g-deck-stage */}
+    </div>
+  );
+}
+
+/** Honest replacement for the old permanent "—" ping readout: GSI has no ping
+ *  field at all, so instead of faking one we show how stale the last data tick
+ *  is. Ticks its own 1s interval locally (not from useCompanionData) so this
+ *  is the only thing in the topbar re-rendering every second, not the whole
+ *  deck. See CR-011 §B for the feed-age rationale. */
+function FeedAgePill({ updatedAt, online }: { updatedAt: number; online: boolean }) {
+  const [, forceTick] = useState(0);
+  useEffect(() => {
+    const id = window.setInterval(() => forceTick((n) => n + 1), 1000);
+    return () => window.clearInterval(id);
+  }, []);
+
+  let value = "—";
+  if (online && updatedAt > 0) {
+    const age = Date.now() - updatedAt;
+    value = age < 1000 ? "<1s" : `${Math.min(99, Math.round(age / 1000))}s`;
+  }
+
+  return (
+    // No text label: the topbar is a fixed 446px contain:paint box — a "FEED" span
+    // (~40px) risks clipping the profile trigger (Opus gate, CR011-P1). Icon + value
+    // only, like the old ping pill. Tooltip says "sync" not "GSI tick": updatedAt is
+    // stamped on ANY snapshot rebuild (incl. resource-stats), not GSI ticks alone.
+    <div className="g-ping-pill" title="เวลาตั้งแต่ sync ข้อมูลล่าสุดจาก backend (GSI ไม่มีค่า ping จริง)">
+      <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <path d="M5 18h2" />
+        <path d="M9 14h2" />
+        <path d="M13 10h2" />
+        <path d="M17 6h2" />
+      </svg>
+      <strong>{value}</strong>
     </div>
   );
 }
@@ -599,7 +627,7 @@ function VolumeRail({
   return (
     <div className="g-volume-rail" data-no-drag="true">
       <div className="g-volume-copy">
-        <strong>VOLUM</strong>
+        <strong>VOLUME</strong>
         <span>{value}%</span>
       </div>
       <input

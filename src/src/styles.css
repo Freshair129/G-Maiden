@@ -18,9 +18,10 @@
   --g-ice-100: #CFECFF; --g-ice-300: #9BE7FF; --g-ice-500: #8FD4FF;
   --g-ice-600: #64C7FF; --g-ice-700: #226CFF; --g-ice-dim: #6B8BB5;
   --g-lime-500: #A3E635; --g-lime-soft: rgba(163,230,53,0.16); --g-lime-line: rgba(163,230,53,0.34);
-  --g-text: #EEF4FB; --g-text-dim: #8BA4C6; --g-text-mute: #5E7699;
+  --g-text: #EEF4FB; --g-text-dim: #A9BEDB; --g-text-mute: #5E7699;
   --g-safe: #22C55E; --g-ok: #31D0A0; --g-warn: #F59E0B; --g-danger: #F43F5E;
-  --g-font-ui: "Segoe UI", system-ui, sans-serif; --g-font-mono: Consolas, ui-monospace, monospace;
+  --g-font-ui: "IBM Plex Sans Thai Looped","IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --g-font-mono: "IBM Plex Mono",Consolas,ui-monospace,monospace;
   --g-r-sm: 8px; --g-r-card: 11px; --g-r-panel: 14px; --g-r-fab: 16px; --g-r-pill: 999px;
   --g-r-frame-outer: 28px; --g-r-frame-notch: 20px;
   /* CR-007 follow-up (Boss feedback 2026-07-09): feathered ambient-shadow family so
@@ -31,13 +32,28 @@
   --g-shadow-panel: 0 18px 50px rgba(0,0,0,0.55);
   --g-rim-top: inset 0 1px 0 rgba(255,255,255,0.06);
   --g-blur-panel: blur(30px) saturate(150%); --g-blur-fab: blur(24px) saturate(160%); --g-blur-tile: blur(6px);
+  /* v3 CR-011: hex today, OKLCH literal migration is a later mechanical pass — keep hue identity */
+  --g-instrument: #0B0E16; --g-instrument-2: #0D1119;
+  --g-hairline: rgba(150,185,230,0.10); --g-hairline-2: rgba(150,185,230,0.16);
+  --g-coin: #E4C36B; /* economy gold — never a status color */
+  --g-blur-console: none; /* default = shipped v0.9.0 behavior (panel blur was removed as a
+     deliberate WebView2 perf fix — transparent Tauri window has nothing behind to blur).
+     Cinematic/balanced tiers OPT IN below; enable only with a perf_cpu_tree before/after. */
   --g-t-micro: 0.12s; --g-t-hover: 0.15s; --g-t-state: 0.2s; --g-t-bar: 0.3s;
   --g-t-ambient: 14s ease-in-out infinite; --g-ease: ease-out;
   --g-z-bg: 0; --g-z-panel: 1; --g-z-content: 10; --g-z-fab: 100; --g-z-pop: 200;
 }
+/* CR-011 §H quality tiers — DEFAULT (no class) = eco-equivalent none, matching shipped
+   v0.9.0 (see --g-blur-console note above). cinematic/balanced are opt-in enhancements
+   toggled by a future JS wave setting the class on <html>; .g-deck-panel below consumes
+   var(--g-blur-console) so no other rule needs to change per tier. NFR gate: enabling
+   cinematic by default requires a perf_cpu_tree.rs before/after run first. */
+html.gq-cinematic { --g-blur-console: blur(30px) saturate(150%); }
+html.gq-balanced { --g-blur-console: blur(16px) saturate(150%); }
+html.gq-eco { --g-blur-console: none; }
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
-body { background: var(--bg); color: var(--txt); font: 13px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
+body { background: var(--bg); color: var(--txt); font: 13px/1.5 var(--g-font-ui); }
 code { background: #0b1424; border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; color: var(--cyan); font-size: 12px; }
 h3 { margin: 0 0 8px; }
 
@@ -296,7 +312,7 @@ body {
     radial-gradient(circle at bottom left, rgba(31, 208, 160, 0.08), transparent 28%),
     #050914;
   color: #eef5ff;
-  font-family: "Segoe UI", "Inter", sans-serif;
+  font-family: var(--g-font-ui);
 }
 
 .app {
@@ -1307,8 +1323,9 @@ body {
   align-items: start;
   padding: 10px 12px;
   border-radius: 14px;
-  background: rgba(16, 27, 50, 0.66);
-  border: 1px solid rgba(126, 177, 255, 0.08);
+  /* CR-011 §B two-material rule: instrument matte (was translucent), no blur/shadow. */
+  background: var(--g-instrument);
+  border: 1px solid var(--g-hairline);
 }
 
 .log-time {
@@ -3979,7 +3996,7 @@ body {
   height: 100vh;
   background: #08090c;
   color: #e7eef6;
-  font-family: "Segoe UI", system-ui, sans-serif;
+  font-family: var(--g-font-ui);
   overflow: hidden;
 }
 
@@ -4179,7 +4196,7 @@ body {
 }
 .g-topbar-fab .g-logo { font-weight: 800; letter-spacing: 1.5px; font-size: 13px; color: var(--g-ice-500); }
 .g-telemetry { display: flex; gap: 10px; }
-.g-telchip { display: flex; flex-direction: column; line-height: 1.1; font-size: 8px; letter-spacing: .5px; color: var(--g-text-dim); text-transform: uppercase; }
+.g-telchip { display: flex; flex-direction: column; line-height: 1.1; font-size: 10px; letter-spacing: .5px; color: var(--g-text-dim); text-transform: uppercase; }
 .g-telchip strong { font-size: 11px; color: var(--g-text); font-variant-numeric: tabular-nums; }
 .g-topbar-fab .profile-wrap,
 .g-topbar-fab .window-controls { -webkit-app-region: no-drag; }
@@ -4190,7 +4207,9 @@ body {
   /* more visible frosted fill so the concave Subtract silhouette reads over the dark void */
   background: linear-gradient(158deg, rgba(22, 29, 42, 0.97), rgba(12, 16, 24, 0.98));
   border-radius: 18px;
-  -webkit-backdrop-filter: none; backdrop-filter: none;
+  /* CR-011 §H: console glass is the one blur-permitted shell surface; the actual
+     px value steps per quality tier via --g-blur-console (see :root / html.gq-*). */
+  -webkit-backdrop-filter: var(--g-blur-console); backdrop-filter: var(--g-blur-console);
   /* rim + depth that FOLLOW the clip-path shape (drop-shadow respects clip-path) */
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
   overflow: hidden; display: flex; flex-direction: column;
@@ -4235,8 +4254,8 @@ body {
   box-shadow: var(--g-shadow-fab); -webkit-backdrop-filter: none; backdrop-filter: none;
   padding: 12px 14px; display: flex; flex-direction: column;
 }
-.g-sig .sg-tag { position: absolute; top: 9px; right: 12px; font-size: 9px; font-weight: 800; color: var(--g-text-dim); opacity: .5; }
-.g-sig .sg-label { font-size: 9px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--g-text-dim); }
+.g-sig .sg-tag { position: absolute; top: 9px; right: 12px; font-size: 10px; font-weight: 800; color: var(--g-text-dim); opacity: .5; }
+.g-sig .sg-label { font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--g-text-dim); }
 .g-sig .sg-val { font-size: 26px; font-weight: 800; margin: auto 0 8px; font-variant-numeric: tabular-nums; line-height: 1; }
 .g-sig .sg-bar { height: 6px; border-radius: 4px; background: rgba(143, 212, 255, .12); overflow: hidden; }
 .g-sig .sg-fill { height: 100%; border-radius: 4px; }
@@ -4469,8 +4488,11 @@ body {
     linear-gradient(155deg, #182032, #070c14) !important;
   border: 0 !important;
   box-shadow: 0 28px 60px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255,255,255,0.08) !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
+  /* CR-011 §H: console glass — the shell's one blur-permitted surface, stepped
+     per quality tier via --g-blur-console (:root / html.gq-*). .is-dragging
+     still forces backdrop-filter: none !important (higher specificity, below). */
+  -webkit-backdrop-filter: var(--g-blur-console) !important;
+  backdrop-filter: var(--g-blur-console) !important;
   overflow: hidden !important;
   display: block !important;
   contain: paint !important;
@@ -4799,12 +4821,12 @@ body {
 }
 
 .g-topbar-fab .profile-copy small {
-  font-size: 9px !important;
+  font-size: 10px !important;
   color: #9fb2cb !important;
 }
 
 .g-topbar-fab .profile-caret {
-  font-size: 9px !important;
+  font-size: 10px !important;
   color: #9fb2cb !important;
 }
 
@@ -4856,13 +4878,13 @@ body {
 }
 
 .g-volume-copy strong {
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.08em;
   color: #eef5ff;
 }
 
 .g-volume-copy span {
-  font-size: 9px;
+  font-size: 10px;
   color: #94a8c4;
 }
 
@@ -4887,7 +4909,7 @@ body {
   border: 1px solid rgba(150, 185, 230, 0.22);
   background: rgba(15, 21, 34, 0.68);
   color: #9fb2cb;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -4962,11 +4984,10 @@ body {
   align-items: center;
   gap: 14px;
   padding: 0 14px;
-  border: 1px solid rgba(88, 132, 194, 0.36);
+  /* CR-011 §B two-material rule: instrument matte, no blur/shadow (shell owns those). */
+  border: 1px solid var(--g-hairline);
   border-radius: 12px;
-  background: #0b121f;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  background: var(--g-instrument);
 }
 
 .gm-live-dot {
@@ -5004,17 +5025,16 @@ body {
   min-width: 0;
   padding: 8px 10px;
   border-radius: 10px;
-  border: 1px solid rgba(88, 132, 194, 0.28);
-  background: #0d1727;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  /* CR-011 §B two-material rule: instrument matte, no blur/shadow. */
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument);
 }
 
 .gm-mini-stat span,
 .gm-mini-stat small,
 .gm-card-head span {
   display: block;
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1;
   color: #93a6c3;
   letter-spacing: 0.08em;
@@ -5042,10 +5062,9 @@ body {
   gap: 10px;
   padding: 10px;
   border-radius: 14px;
-  border: 1px solid rgba(88, 132, 194, 0.34);
-  background: #080e18;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  /* CR-011 §B two-material rule: instrument matte, no blur/shadow. */
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument);
 }
 
 .gm-slot-column {
@@ -5058,8 +5077,9 @@ body {
   position: relative;
   padding: 8px 10px;
   border-radius: 10px;
-  border: 1px solid rgba(88, 132, 194, 0.24);
-  background: #0a121e;
+  /* CR-011 §B two-material rule: instrument matte, no blur/shadow. */
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument);
 }
 
 .gm-hero-slot strong,
@@ -5082,6 +5102,9 @@ body {
 
 .gm-hero-slot span {
   margin-top: 3px;
+  /* Stays 10px (micro tier, NOT the 11px caption floor): the battle grid's frozen 276px
+     height gives each of the 5 cards a ~45.2px track with ~1px slack (commit 5269cda3);
+     an 11px caption re-overflows the bottom card into sector-log (Opus gate, CR011-P1). */
   font-size: 10px;
   color: #aebbd0;
 }
@@ -5099,8 +5122,10 @@ body {
   position: relative;
   overflow: hidden;
   border-radius: 10px;
-  border: 1px solid rgba(88, 132, 194, 0.28);
-  background: #121a22;
+  /* CR-011 §B two-material rule: instrument matte (ground uses the slightly
+     lifted instrument-2 tone), no blur/shadow. */
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument-2);
 }
 
 /* Live in-game minimap mirror (real captured pixels). */
@@ -5128,15 +5153,16 @@ body {
   gap: 5px;
   padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(88, 132, 194, 0.2);
-  background: rgba(18, 20, 28, 0.55);
+  /* CR-011 §B two-material rule: instrument matte (was translucent), no blur/shadow. */
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument);
 }
 .gm-mom-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.08em;
 }
@@ -5219,10 +5245,9 @@ body {
   height: 354px;
   padding: 14px;
   border-radius: 14px;
-  border: 1px solid rgba(88, 132, 194, 0.34);
-  background: #0a121e;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  /* CR-011 §B two-material rule: instrument matte, no blur/shadow. */
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument);
 }
 
 .gm-card-head {
@@ -5273,10 +5298,9 @@ body {
   gap: 16px;
   padding: 18px;
   border-radius: 14px;
-  border: 1px solid rgba(88, 132, 194, 0.34);
-  background: #0a121e;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  /* CR-011 §B two-material rule: instrument matte, no blur/shadow. */
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument);
 }
 
 .gm-sector-log h3 {

@@ -1,0 +1,73 @@
+{
+  "version": "1.0.0",
+  "project": "G-Maiden",
+  "wave": "CR011-P1",
+  "wave_title": "Materials & tokens (CR-007 WP-2/WP-3 + CR-011 P1)",
+  "note": "Phase 7 wave on branch claude/gmaidens-desktop-ux-redesign-69b00b. CR-011 is PROPOSAL — wave stays on this branch, no push to main, until owner rules on CR-011. Roster (owner directive 2026-07-14): Executor=sonnet, Reviewer gate=opus, Architect/Verifier/Merger=lead.",
+  "tasks": [
+    {
+      "id": "CR011-P1-01",
+      "title": "Token layer v3: OKLCH-intent tokens + quality tiers + contrast fix in styles.css :root",
+      "category": "UI",
+      "dependencies": [],
+      "priority": 1,
+      "required_capability": "Implementation/UI-CSS",
+      "estimated_complexity": "S",
+      "estimated_context": "Medium",
+      "parallelizable": true,
+      "local_eligibility": "LOCAL_SAFE",
+      "verification": ["tsc", "eslint", "vitest"],
+      "ready": true,
+      "status": "dispatched",
+      "worker_group": "A"
+    },
+    {
+      "id": "CR011-P1-02",
+      "title": "Two-material rule: interior dashboard sectors -> instrument matte (no interior blur/shadow); shell glass untouched",
+      "category": "UI",
+      "dependencies": ["CR011-P1-01"],
+      "priority": 1,
+      "required_capability": "Implementation/UI-CSS",
+      "estimated_complexity": "M",
+      "estimated_context": "Medium",
+      "parallelizable": false,
+      "local_eligibility": "LOCAL_SAFE",
+      "verification": ["tsc", "eslint", "vitest"],
+      "ready": true,
+      "status": "dispatched",
+      "worker_group": "A"
+    },
+    {
+      "id": "CR011-P1-03",
+      "title": "Type floors (micro 8.5->10, caption 9->11) + Plex-first font stack (no woff2 bundling yet - download needs owner approval)",
+      "category": "UI",
+      "dependencies": ["CR011-P1-01"],
+      "priority": 2,
+      "required_capability": "Implementation/UI-CSS",
+      "estimated_complexity": "S",
+      "estimated_context": "Small",
+      "parallelizable": false,
+      "local_eligibility": "LOCAL_SAFE",
+      "verification": ["tsc", "eslint", "vitest"],
+      "ready": true,
+      "status": "dispatched",
+      "worker_group": "A"
+    },
+    {
+      "id": "CR011-P1-04",
+      "title": "Deck chrome honesty: dropdown emoji -> stroke icons, VOLUM typo, ping pill -> GSI feed-age readout",
+      "category": "UI",
+      "dependencies": [],
+      "priority": 1,
+      "required_capability": "Implementation/React-TS",
+      "estimated_complexity": "M",
+      "estimated_context": "Medium",
+      "parallelizable": true,
+      "local_eligibility": "LOCAL_SAFE",
+      "verification": ["tsc", "eslint", "vitest"],
+      "ready": true,
+      "status": "dispatched",
+      "worker_group": "B"
+    }
+  ]
+}

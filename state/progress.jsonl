@@ -1,0 +1,10 @@
+{"ts":"2026-07-14T00:00:02+07:00","task":"CR011-P1-01","status":"Started"}
+{"ts":"2026-07-14T00:00:02+07:00","task":"CR011-P1-02","status":"Started"}
+{"ts":"2026-07-14T00:00:02+07:00","task":"CR011-P1-03","status":"Started"}
+{"ts":"2026-07-14T00:00:02+07:00","task":"CR011-P1-04","status":"Started"}
+{"ts":"2026-07-14T00:00:03+07:00","task":"CR011-P1-04","status":"Completed","detail":"worker B: CommandDeck.tsx+DeckIcons.tsx; IconAccount added, IconVoice/IconSettings reused; FeedAgePill isolated 1s tick; tsc/eslint/vitest pass (162 tests)"}
+{"ts":"2026-07-14T00:00:04+07:00","task":"CR011-P1-01","status":"Completed","detail":"worker A + architect fix: --g-blur-console default inverted to none (shipped parity; cinematic/balanced opt-in) after worker flagged CR-007 perf-fix conflict"}
+{"ts":"2026-07-14T00:00:04+07:00","task":"CR011-P1-02","status":"Completed","detail":"worker A: interior sectors matted (gm-* + log-row); shell untouched"}
+{"ts":"2026-07-14T00:00:04+07:00","task":"CR011-P1-03","status":"Completed","detail":"worker A: type floors + Plex-first stacks (no font files bundled — owner approval pending)"}
+{"ts":"2026-07-14T00:00:05+07:00","task":"wave:CR011-P1","status":"Verified","detail":"tsc pass, eslint 0 errors, vitest 162/162; live geometry assertions: slotOverflow=[], grid-log gap 9px, topbar overflow 0, profile clearance 14px, panelBackdrop=none"}
+{"ts":"2026-07-14T00:00:06+07:00","task":"wave:CR011-P1","status":"Reviewed","detail":"Opus gate APPROVE_WITH_FIXES: 2 MAJOR (hero-slot 11px zero-slack overflow risk; FEED label topbar clip risk) — both fixed (span back to 10px w/ rationale comment; label dropped, tooltip reworded to generic sync age). 3 MINOR noted: updatedAt=any-snapshot honesty (tooltip fixed), token nits (--g-instrument~--g-ink fork, unused --g-hairline-2/--g-coin fwd-looking, .g-telchip dead CSS), log-row leak into domain feed (accepted, visual check pending Boss)"}
