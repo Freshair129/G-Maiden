@@ -16,6 +16,7 @@ import { buildInsights } from "./live/buildInsights";
 import { buildHistory, type MatchLog } from "./live/buildHistory";
 import { buildActivity } from "./live/buildActivity";
 import { stepMomentum, momentumView, EMPTY_MOMENTUM, type MomentumState, type GamePhase } from "./live/buildMomentum";
+import { stepPhase, type MatchPhase } from "./live/phase";
 import { fetchOpenDotaProfile, type OpenDotaProfile } from "./live/opendota";
 import { loadIdentity, saveIdentity, IDENTITY_EVENT } from "./live/identity";
 import { heroName } from "./live/heroNames";
@@ -34,6 +35,11 @@ export type CompanionData = {
     seconds: number;
     mode: string;
     phase: "pregame" | "live";
+    // CR-011 §B/§E phase axis (CR011-P3-02): standby -> prep -> live -> debrief,
+    // derived by live/phase.ts's stepPhase() from GSI online + game_state. Kept
+    // separate from the existing `phase` field above (that one stays exactly as
+    // it was — this is additive, not a replacement).
+    matchPhase: MatchPhase;
     minimapState: "empty" | "live";
     gsiOnline: boolean;
     centerLabel: string;
@@ -240,6 +246,7 @@ export const FALLBACK: CompanionData = {
     seconds: 0,
     mode: "—",
     phase: "pregame",
+    matchPhase: "standby",
     minimapState: "empty",
     gsiOnline: false,
     centerLabel: "NOT IN A MATCH",
@@ -316,6 +323,7 @@ export const MOCK: CompanionData = {
     seconds: 24 * 60 + 18,
     mode: "All Pick",
     phase: "live",
+    matchPhase: "live",
     minimapState: "live",
     gsiOnline: true,
     centerLabel: "ALL PICK",
@@ -525,13 +533,19 @@ type LiveState = {
   // Tauri event arrives. NOT reset on a new match (the pre-match "last session"
   // line is honest context, not stale data).
   utterances: Utterance[];
+  // CR-011 §E phase axis (CR011-P3-02): the persisted `prev` the stepPhase()
+  // state machine advances from on every game-tick/gsi-status. NOT reset on a
+  // new match — debrief must survive until the *next* real prep/live tick
+  // (stepPhase's own stickiness rule), so resetting it here would defeat that.
+  phase: MatchPhase;
 };
 
 const EMPTY_LIVE: LiveState = {
   tick: null, status: null, cv: null, gank: null, missing: new Map(), missingPos: new Map(),
   enemySlots: new Map(),
   active: false, od: null, stats: null, logs: null, activityLog: [], mom: EMPTY_MOMENTUM, roster: null,
-  utterances: []
+  utterances: [],
+  phase: "standby"
 };
 
 type CompanionSnapshot = {
@@ -581,7 +595,7 @@ function buildCompanionData(live: LiveState): CompanionData {
     ? {
         ...FALLBACK,
         updatedAt: Date.now(),
-        match: buildMatch(live.tick, live.status, FALLBACK.match),
+        match: { ...buildMatch(live.tick, live.status, FALLBACK.match), matchPhase: live.phase },
         heroes: buildHeroes(live.tick, live.missing, live.cv, FALLBACK.heroes, live.enemySlots, live.roster, live.tick?.team_name ?? ""),
         markers: buildMarkers(live.cv, live.missingPos, FALLBACK.markers),
         signals: buildSignals(live.gank, live.missing),
@@ -794,13 +808,35 @@ function ensureRuntime() {
       // last match's swing doesn't bleed in). gpm baseline isn't threaded here
       // yet, so pass p.gpm → the economy term is 0 (kill-lead + swing only).
       const mom = stepMomentum(isNewMatch ? EMPTY_MOMENTUM : s.mom, p, p.gpm);
+      // CR-011 §E: advance the phase axis from this tick's game_state/in_game,
+      // using whatever gsi-status last reported (a game-tick implies GSI is
+      // posting, but `gsiOnline` here should still reflect the watchdog's own
+      // view, not be inferred from the mere fact a tick arrived).
+      const phase = stepPhase(s.phase, {
+        gsiOnline: s.status?.gsi_active ?? false,
+        gameState: p.game_state,
+        inGame: p.in_game,
+        clockSeconds: p.clock_time
+      });
       if (isNewMatch) {
-        return { ...s, tick: p, active: true, missing: new Map(), missingPos: new Map(), enemySlots: new Map(), mom };
+        return { ...s, tick: p, active: true, missing: new Map(), missingPos: new Map(), enemySlots: new Map(), mom, phase };
       }
-      return { ...s, tick: p, active: true, mom };
+      return { ...s, tick: p, active: true, mom, phase };
     })
   );
-  sub<GsiStatus>("gsi-status", (p) => updateLive((s) => ({ ...s, status: p, active: true })));
+  sub<GsiStatus>("gsi-status", (p) =>
+    updateLive((s) => ({
+      ...s,
+      status: p,
+      active: true,
+      phase: stepPhase(s.phase, {
+        gsiOnline: p.gsi_active,
+        gameState: s.tick?.game_state ?? null,
+        inGame: s.tick?.in_game ?? false,
+        clockSeconds: s.tick?.clock_time ?? -1
+      })
+    }))
+  );
   sub<ResourceStats>("resource-stats", (p) => updateLive((s) => ({ ...s, stats: p }), true));
   sub<MinimapCv>("minimap-cv", (p) => {
     const now = Date.now();

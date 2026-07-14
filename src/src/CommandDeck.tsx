@@ -13,6 +13,7 @@ import {
   SettingsPage
 } from "./CompanionPages";
 import { useCompanionData, useMinimapImage, toneClass, formatKda, type CompanionData } from "./companion";
+import type { MatchPhase } from "./live/phase";
 import { heroPortraitUrl } from "./heroPortrait";
 import AccountPage from "./AccountPage";
 import { useProfile } from "./profile";
@@ -393,7 +394,13 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
         {error ? <div className="banner err">engine offline ({error})</div> : null}
         <div className={`surface page-${tab}`}>
           {tab === "dashboard" && (
-            <GMaidenFungDashboard data={data} voicePackName={voicePackName} signalEnabled={signalEnabled} />
+            <GMaidenFungDashboard
+              data={data}
+              voicePackName={voicePackName}
+              signalEnabled={signalEnabled}
+              annEnabled={annEnabled}
+              masterVolume={masterVolume}
+            />
           )}
           {tab === "live" && <LiveMatchPage />}
           {tab === "companion" && <CompanionPage />}
@@ -595,14 +602,198 @@ function OnAirConsole({ data }: { data: CompanionData }) {
   );
 }
 
+const PHASE_LABEL: Record<MatchPhase, string> = {
+  standby: "STANDBY",
+  prep: "PREP",
+  live: "LIVE",
+  debrief: "DEBRIEF"
+};
+
+/** CR-011 §D/§E: the score header's phase axis chip — STANDBY/PREP/LIVE/DEBRIEF.
+ *  `.gm-score-header` is a fixed 640x48 box laid out as a 3-column grid (left
+ *  score / clock / right score) with almost no horizontal slack between the
+ *  clock and the right-side score text, so this renders absolutely positioned
+ *  (the header is itself `position:absolute`, i.e. already a containing block
+ *  for this) along the header's bottom edge — clear of the horizontally-
+ *  centered score/clock text above it, never shifting or wrapping them. */
+function PhaseChip({ phase }: { phase: MatchPhase }) {
+  return <span className={`gm-phase-chip gm-phase-chip-${phase}`}>{PHASE_LABEL[phase]}</span>;
+}
+
+/** CR-011 §E standby/prep seat content — replaces the hero columns + minimap
+ *  with a readiness rundown built ONLY from data the deck genuinely has today
+ *  (no fake "Dota detected" checks). Ready rows get an ice check glyph;
+ *  not-ready rows render an honest "—" mute, never a fake pass. */
+function ReadinessRundown({
+  gsiOnline,
+  voicePackName,
+  signalEnabled,
+  annEnabled,
+  masterVolume,
+  draftNote
+}: {
+  gsiOnline: boolean;
+  voicePackName: string | null;
+  signalEnabled: boolean;
+  annEnabled: boolean;
+  masterVolume: number;
+  draftNote: boolean;
+}) {
+  // "ปิด"/"ปิดเสียง" for deliberately-toggled-off features — a user choice is not
+  // the same state as a genuinely-absent capability ("—") (Opus gate, CR011-P3).
+  const rows: Array<{ label: string; ready: boolean; value: string }> = [
+    { label: "เชื่อมต่อ GSI", ready: gsiOnline, value: gsiOnline ? "ออนไลน์" : "—" },
+    { label: "แพ็กเสียง", ready: voicePackName != null, value: voicePackName ?? "—" },
+    { label: "G-Signal", ready: signalEnabled, value: signalEnabled ? "พร้อม" : "ปิด" },
+    { label: "เสียงประกาศ ANN", ready: annEnabled, value: annEnabled ? "พร้อม" : "ปิด" },
+    { label: "ระดับเสียง", ready: masterVolume > 0, value: masterVolume > 0 ? `${masterVolume}%` : "ปิดเสียง" }
+  ];
+
+  return (
+    <div className="gm-battle-alt gm-rundown">
+      {draftNote ? <div className="gm-rundown-note">กำลังดราฟต์ — รอเข้าเกม</div> : null}
+      <div className="gm-rundown-list">
+        {rows.map((row) => (
+          <div key={row.label} className={`gm-rundown-row${row.ready ? " ready" : ""}`}>
+            <span className="gm-rundown-glyph">{row.ready ? "✓" : "—"}</span>
+            <span className="gm-rundown-label">{row.label}</span>
+            <span className="gm-rundown-value">{row.value}</span>
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+/** Return shape of `list_match_logs` (log.rs MatchLog) — same fields buildHistory.ts
+ *  already consumes; redeclared locally rather than importing a private helper type. */
+type DebriefLogMeta = { name: string; size: number; modified_ms: number };
+
+/** Return shape of `read_match_log` (log.rs TimelineEntry, camelCase per the
+ *  CR011-P3 contract — see live/events.ts's comment on the `utterance` payload
+ *  for why this one Rust struct breaks the snake_case wire convention). */
+type DebriefEntry = { atMs: number; kind: string; text: string };
+
+const DEBRIEF_KIND_LABEL: Record<string, string> = {
+  gank_signal: "GANK",
+  gank_revision: "แก้คำทำนาย",
+  enemy_missing: "หาย",
+  match_start: "เริ่ม"
+};
+
+function debriefKindLabel(kind: string): string {
+  return DEBRIEF_KIND_LABEL[kind] ?? kind.replace(/_/g, " ").toUpperCase();
+}
+
+/** Modifier suffix for `.gm-debrief-row-chip-*` — a small fixed set of tone
+ *  classes instead of interpolating the raw `kind` string directly into a
+ *  class name (keeps the CSS surface finite and predictable). */
+function debriefKindTone(kind: string): string {
+  switch (kind) {
+    case "gank_signal":
+      return "gank";
+    case "gank_revision":
+      return "revision";
+    case "enemy_missing":
+      return "missing";
+    case "match_start":
+      return "start";
+    default:
+      return "other";
+  }
+}
+
+function debriefTimeLabel(atMs: number): string {
+  const d = new Date(atMs);
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${p(d.getHours())}:${p(d.getMinutes())}:${p(d.getSeconds())}`;
+}
+
+/** Cap on rows actually rendered (Opus/Rust already caps the parsed timeline
+ *  at 500 — see log.rs TIMELINE_MAX_ENTRIES); the seat itself is a fixed box
+ *  with `overflow:hidden`, so this is a data-size guard, not a scroll promise. */
+const DEBRIEF_ROW_CAP = 200;
+
+/** CR-011 §E debrief seat content: the timeline of the MOST RECENT archived
+ *  match log (`list_match_logs` -> newest by modified time -> `read_match_log`).
+ *  Renders inside the frozen `.gm-battle-grid` box in place of the hero
+ *  columns + minimap. Every invoke is guarded — a failed/missing command
+ *  renders an honest Thai notice, never a blank or fake row (house rule: every
+ *  Tauri invoke in this codebase degrades to a stated fallback, never silence). */
+function DebriefTimeline({ onBackToLive }: { onBackToLive: () => void }) {
+  const [state, setState] = useState<{ status: "loading" | "ready" | "error"; entries: DebriefEntry[] }>({
+    status: "loading",
+    entries: []
+  });
+
+  useEffect(() => {
+    let cancelled = false;
+    setState({ status: "loading", entries: [] });
+    (async () => {
+      try {
+        const logs = await invoke<DebriefLogMeta[]>("list_match_logs");
+        if (cancelled) return;
+        if (!logs || logs.length === 0) {
+          setState({ status: "error", entries: [] });
+          return;
+        }
+        const newest = logs.slice().sort((a, b) => b.modified_ms - a.modified_ms)[0];
+        const entries = await invoke<DebriefEntry[]>("read_match_log", { name: newest.name });
+        if (cancelled) return;
+        // Most-recent-first, matching the ON AIR ledger's convention — the
+        // seat is a fixed box (overflow:hidden, no scroll), so keeping the
+        // newest events at the top is what actually stays visible.
+        setState({ status: "ready", entries: entries.slice(-DEBRIEF_ROW_CAP).reverse() });
+      } catch {
+        if (!cancelled) setState({ status: "error", entries: [] });
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  return (
+    <div className="gm-battle-alt gm-debrief">
+      <div className="gm-debrief-head">
+        <span className="gm-debrief-title">สรุปแมตช์ล่าสุด</span>
+        <button type="button" className="gm-debrief-back" onClick={onBackToLive}>
+          กลับไปดูสด
+        </button>
+      </div>
+      {state.status === "loading" ? (
+        <div className="gm-debrief-empty">กำลังโหลดสรุปแมตช์…</div>
+      ) : state.status === "error" ? (
+        <div className="gm-debrief-empty">ยังอ่านสรุปแมตช์ไม่ได้ — ดูที่หน้า History</div>
+      ) : (
+        <div className="gm-debrief-list">
+          {state.entries.map((entry, i) => (
+            <div key={`${entry.atMs}-${i}`} className="gm-debrief-row">
+              <span className="gm-debrief-row-time">{debriefTimeLabel(entry.atMs)}</span>
+              <span className={`gm-debrief-row-chip gm-debrief-row-chip-${debriefKindTone(entry.kind)}`}>
+                {debriefKindLabel(entry.kind)}
+              </span>
+              <span className="gm-debrief-row-text">{entry.text}</span>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function GMaidenFungDashboard({
   data,
   voicePackName,
-  signalEnabled
+  signalEnabled,
+  annEnabled,
+  masterVolume
 }: {
   data: CompanionData;
   voicePackName: string | null;
   signalEnabled: boolean;
+  annEnabled: boolean;
+  masterVolume: number;
 }) {
   const allyHeroes = data.heroes.filter((hero) => hero.team === "ally");
   const enemyHeroes = data.heroes.filter((hero) => hero.team === "enemy");
@@ -612,12 +803,28 @@ function GMaidenFungDashboard({
   const cpuValue = data.telemetry.cpuLoad >= 0 ? `${data.telemetry.cpuLoad}%` : "—";
   const ramValue = data.telemetry.ramUsedGb >= 0 ? `${Math.round(data.telemetry.ramUsedGb * 1024)} MB` : "—";
 
+  // CR-011 §E: the seat content follows the real phase axis, except a quiet
+  // local override ("กลับไปดูสด" in the debrief timeline) can force the live
+  // layout back on — it resets the instant the REAL phase actually changes
+  // (a new prep/live/standby observation), never sticking across matches.
+  const realPhase = data.match.matchPhase;
+  const [forceLive, setForceLive] = useState(false);
+  const prevPhaseRef = useRef(realPhase);
+  useEffect(() => {
+    if (prevPhaseRef.current !== realPhase) {
+      prevPhaseRef.current = realPhase;
+      setForceLive(false);
+    }
+  }, [realPhase]);
+  const seatPhase: MatchPhase = forceLive ? "live" : realPhase;
+
   return (
     <div className="gm-fung-layout">
       <section className="gm-score-header">
         <strong>{data.match.leftTeamName} {data.match.leftScore}</strong>
         <span className="gm-clock">{data.match.clock}</span>
         <strong>{data.match.rightScore} {data.match.rightTeamName}</strong>
+        <PhaseChip phase={realPhase} />
       </section>
 
       <section className="gm-stats-bar">
@@ -629,13 +836,28 @@ function GMaidenFungDashboard({
       <MomentumMeter momentum={data.momentum} />
 
       <section className="gm-battle-grid">
-        <div className="gm-slot-column">
-          {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`a-${idx}`} id={idx + 1} hero={allyHeroes[idx]} />)}
-        </div>
-        <MinimapMirror />
-        <div className="gm-slot-column">
-          {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`e-${idx}`} id={idx + 6} hero={enemyHeroes[idx]} />)}
-        </div>
+        {seatPhase === "live" ? (
+          <>
+            <div className="gm-slot-column">
+              {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`a-${idx}`} id={idx + 1} hero={allyHeroes[idx]} />)}
+            </div>
+            <MinimapMirror />
+            <div className="gm-slot-column">
+              {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`e-${idx}`} id={idx + 6} hero={enemyHeroes[idx]} />)}
+            </div>
+          </>
+        ) : seatPhase === "debrief" ? (
+          <DebriefTimeline onBackToLive={() => setForceLive(true)} />
+        ) : (
+          <ReadinessRundown
+            gsiOnline={data.match.gsiOnline}
+            voicePackName={voicePackName}
+            signalEnabled={signalEnabled}
+            annEnabled={annEnabled}
+            masterVolume={masterVolume}
+            draftNote={seatPhase === "prep"}
+          />
+        )}
       </section>
 
       <section className="gm-agent-card">

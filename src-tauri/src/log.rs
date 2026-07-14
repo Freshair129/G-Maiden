@@ -9,7 +9,7 @@
 
 use std::fs::{self, File, OpenOptions};
 use std::io::Write;
-use std::path::PathBuf;
+use std::path::{Component, Path, PathBuf};
 use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
@@ -332,6 +332,200 @@ pub fn delete_all() -> Result<u32, String> {
         }
     }
     Ok(count)
+}
+
+// ─────────────────────────── Debrief timeline (CR-011 P3) ───────────────────────────
+// The deck's debrief view wants the CONTENT of one archived match log, not
+// just its name/size (`list_matches` above). `read_match_log` resolves an
+// untrusted UI-supplied filename to a path confined to `log_dir()`, reads it,
+// and reduces the JSONL into a small ordered list of human-readable moments.
+
+/// One human-readable line for the deck's debrief timeline, derived from a
+/// single JSONL record in a match log. Never invents data — every field in
+/// `text` comes straight from the record; records this module doesn't
+/// recognize (including raw `tick` snapshots, which have no `type`) are
+/// skipped before a `TimelineEntry` is ever built. See [`parse_timeline`].
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+#[serde(rename_all = "camelCase")]
+pub struct TimelineEntry {
+    /// Record timestamp (epoch ms), taken verbatim from the record's `ts`.
+    pub at_ms: u64,
+    /// The record's own `type` discriminator, lowercased (e.g. `"gank_signal"`,
+    /// `"enemy_missing"`) — not a separate taxonomy invented for the deck.
+    pub kind: String,
+    /// Short human-readable line derived only from fields present on the record.
+    pub text: String,
+}
+
+/// Cap on the number of entries [`parse_timeline`] returns. A 40-minute match
+/// can log many `gank_signal` / `enemy_missing` events; the newest matter most
+/// for a post-match debrief, so once over the cap the oldest are dropped.
+const TIMELINE_MAX_ENTRIES: usize = 500;
+
+/// Turn one already-parsed JSON record into a [`TimelineEntry`], or `None` if
+/// it's missing its timestamp, isn't one of the record kinds G-Log itself
+/// writes (see the `*_record` helpers above), or is missing a field its own
+/// text depends on. Recognizes exactly: `match_start`, `gank_signal`,
+/// `gank_revision`, `enemy_missing`. Raw `tick` snapshots (no `type` field)
+/// are intentionally not surfaced — the timeline is a highlight reel of
+/// discrete events, not a per-second replay.
+fn to_timeline_entry(v: &serde_json::Value) -> Option<TimelineEntry> {
+    let at_ms = v.get("ts").and_then(|t| t.as_u64())?;
+    let record_type = v.get("type").and_then(|t| t.as_str())?;
+    let kind = record_type.to_lowercase();
+    let text = match record_type {
+        "match_start" => {
+            let study = v.get("study").and_then(|s| s.as_bool()).unwrap_or(false);
+            if study {
+                let silent_arm = v.get("silent_arm").and_then(|s| s.as_bool()).unwrap_or(false);
+                format!(
+                    "Match started (efficacy study; G-Signal {})",
+                    if silent_arm { "silenced" } else { "armed" }
+                )
+            } else {
+                "Match started".to_string()
+            }
+        }
+        "gank_signal" => {
+            let probability = v.get("probability").and_then(|p| p.as_f64())?;
+            let eta_ms = v.get("eta_ms").and_then(|e| e.as_u64())?;
+            let armed = v.get("armed").and_then(|a| a.as_bool()).unwrap_or(true);
+            let missing: Vec<String> = v
+                .get("missing_heroes")
+                .and_then(|m| m.as_array())
+                .map(|arr| arr.iter().filter_map(|h| h.as_str().map(str::to_string)).collect())
+                .unwrap_or_default();
+            let missing_part = if missing.is_empty() {
+                String::new()
+            } else {
+                format!(" — missing: {}", missing.join(", "))
+            };
+            let silenced_part = if armed { "" } else { " [silenced]" };
+            format!(
+                "Gank warning: {:.0}% risk, ETA {eta_ms}ms{missing_part}{silenced_part}",
+                probability * 100.0
+            )
+        }
+        "gank_revision" => "Gank warning revised (threat retracted)".to_string(),
+        "enemy_missing" => {
+            let hero = v.get("hero").and_then(|h| h.as_str())?;
+            let missing_for_ms = v.get("missing_for_ms").and_then(|m| m.as_u64())?;
+            let pos_part = match v.get("last_pos").and_then(|p| p.as_array()) {
+                Some(arr) if arr.len() == 2 => {
+                    let x = arr[0].as_f64().unwrap_or(0.0);
+                    let y = arr[1].as_f64().unwrap_or(0.0);
+                    format!(" (last seen {x:.2}, {y:.2})")
+                }
+                _ => String::new(),
+            };
+            format!("{hero} missing for {missing_for_ms}ms{pos_part}")
+        }
+        _ => return None,
+    };
+    Some(TimelineEntry { at_ms, kind, text })
+}
+
+/// Parse a match log's raw JSONL text into a debrief timeline: one entry per
+/// recognized event record, in file order, capped to the last
+/// [`TIMELINE_MAX_ENTRIES`]. Tolerant of malformed/unknown lines — each line
+/// is parsed independently and a bad one (including a torn last line from a
+/// power-cut mid-write, same as [`parse_efficacy_records`]) is skipped, never
+/// aborts the whole file.
+pub fn parse_timeline(jsonl: &str) -> Vec<TimelineEntry> {
+    let mut entries: Vec<TimelineEntry> = jsonl
+        .lines()
+        .filter_map(|line| {
+            let line = line.trim();
+            if line.is_empty() {
+                return None;
+            }
+            let v: serde_json::Value = serde_json::from_str(line).ok()?;
+            to_timeline_entry(&v)
+        })
+        .collect();
+    if entries.len() > TIMELINE_MAX_ENTRIES {
+        let drop = entries.len() - TIMELINE_MAX_ENTRIES;
+        entries.drain(0..drop);
+    }
+    entries
+}
+
+/// Structural check that `s` is a single, ordinary path component — no
+/// separators, no `..`, no drive/UNC/verbatim prefix, no root. Checked on
+/// both the raw string and its `\`->`/` normalized form, matching the
+/// house pattern in `voice_api::safe_pack_path` (backslash parses as a
+/// separator natively on Windows, but checking both keeps this correct on
+/// any platform `cargo test` runs on, and mirrors the existing convention).
+/// Returns the component's text when safe, `None` otherwise.
+fn as_bare_filename(s: &str) -> Option<&str> {
+    if s.trim().is_empty() {
+        return None;
+    }
+    let normalized = s.replace('\\', "/");
+    for candidate in [s, normalized.as_str()] {
+        let mut comps = Path::new(candidate).components();
+        match (comps.next(), comps.next()) {
+            (Some(Component::Normal(_)), None) => {}
+            _ => return None,
+        }
+    }
+    // Reject a colon anywhere in the name: on Windows this is either a drive
+    // prefix (already caught above as a `Prefix` component when it leads the
+    // string) or NTFS alternate-data-stream syntax (`name.jsonl:hidden`),
+    // which `Path::components()` does not surface as a distinct component.
+    if s.contains(':') {
+        return None;
+    }
+    Some(s)
+}
+
+/// Resolve `name` to a path inside `dir`, rejecting anything that isn't a
+/// bare `match-*.jsonl` filename. `name` is untrusted UI input, so this is a
+/// structural check (via [`as_bare_filename`]), not a substring blocklist —
+/// the same posture the manifest-path hardening in
+/// `voice_api::safe_pack_path` takes for the same class of bug (attacker-
+/// influenced string joined onto a directory). Takes `dir` explicitly (rather
+/// than hard-coding [`log_dir()`]) so it can be exercised against a temp dir
+/// in tests without touching the real log directory; [`read_match_log`]
+/// always calls it with `log_dir()`.
+fn safe_log_path_in_dir(dir: &Path, name: &str) -> Option<PathBuf> {
+    let bare = as_bare_filename(name)?;
+    if !bare.starts_with("match-") || !bare.ends_with(".jsonl") {
+        return None;
+    }
+    Some(dir.join(bare))
+}
+
+/// Read one archived match log (from `dir`) and reduce it to a debrief
+/// timeline. `name` must resolve to a bare `match-*.jsonl` filename inside
+/// `dir` — see [`safe_log_path_in_dir`] for the guard. When the resolved path
+/// exists, it is additionally canonicalized and checked to still sit inside
+/// the canonicalized `dir` (catches a symlink planted in the log dir whose
+/// target escapes it — the structural component check alone can't see
+/// through that), matching `voice_api::safe_pack_path`'s containment step.
+/// Split from [`read_match_log`] so it can be tested against a temp dir
+/// without touching the real `log_dir()`.
+fn read_match_log_in_dir(dir: &Path, name: &str) -> Result<Vec<TimelineEntry>, String> {
+    let path = safe_log_path_in_dir(dir, name).ok_or_else(|| "ชื่อไฟล์ไม่ถูกต้อง".to_string())?;
+
+    if let Ok(canon_candidate) = fs::canonicalize(&path) {
+        match fs::canonicalize(dir) {
+            Ok(canon_dir) if canon_candidate.starts_with(&canon_dir) => {}
+            _ => return Err("ชื่อไฟล์ไม่ถูกต้อง".to_string()),
+        }
+    }
+    // If canonicalize fails above, the file doesn't exist yet — fall through
+    // to a normal read error below rather than treating "missing" as unsafe.
+
+    let content = fs::read_to_string(&path).map_err(|e| format!("อ่านไฟล์ไม่สำเร็จ: {e}"))?;
+    Ok(parse_timeline(&content))
+}
+
+/// Read one archived match log (from [`log_dir()`]) and reduce it to a
+/// debrief timeline for the deck's debrief view. See
+/// [`read_match_log_in_dir`] for the full contract.
+pub fn read_match_log(name: &str) -> Result<Vec<TimelineEntry>, String> {
+    read_match_log_in_dir(&log_dir(), name)
 }
 
 /// Open the log directory in Windows Explorer (for transparency — the user
@@ -687,6 +881,150 @@ mod tests {
         assert_eq!(summary["silent"]["events"], 1);
         assert_eq!(summary["silent"]["deaths"], 0);
 
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    // ─────────────────────── Debrief timeline (CR-011 P3) ───────────────────────
+
+    #[test]
+    fn parse_timeline_happy_path_recognizes_known_record_shapes() {
+        // Real shapes copied from the `*_record` helpers / existing tests above.
+        let content = concat!(
+            "{\"ts\":0,\"type\":\"match_start\",\"silent_arm\":true,\"study\":true}\n",
+            "{\"ts\":1500,\"type\":\"gank_signal\",\"probability\":0.91,\"missing_heroes\":[\"CM\",\"SF\"],\"eta_ms\":2500,\"armed\":false}\n",
+            "{\"ts\":6000,\"type\":\"gank_revision\"}\n",
+            "{\"ts\":9000,\"type\":\"enemy_missing\",\"hero\":\"CM\",\"missing_for_ms\":6000,\"last_pos\":[0.25,0.5]}\n",
+        );
+        let entries = parse_timeline(content);
+        assert_eq!(entries.len(), 4);
+
+        assert_eq!(entries[0].at_ms, 0);
+        assert_eq!(entries[0].kind, "match_start");
+        assert!(entries[0].text.contains("study"));
+        assert!(entries[0].text.contains("silenced"));
+
+        assert_eq!(entries[1].at_ms, 1500);
+        assert_eq!(entries[1].kind, "gank_signal");
+        assert!(entries[1].text.contains("91%"));
+        assert!(entries[1].text.contains("CM, SF"));
+        assert!(entries[1].text.contains("2500ms"));
+        assert!(entries[1].text.contains("silenced"));
+
+        assert_eq!(entries[2].at_ms, 6000);
+        assert_eq!(entries[2].kind, "gank_revision");
+        assert!(entries[2].text.to_lowercase().contains("revised"));
+
+        assert_eq!(entries[3].at_ms, 9000);
+        assert_eq!(entries[3].kind, "enemy_missing");
+        assert!(entries[3].text.contains("CM"));
+        assert!(entries[3].text.contains("6000ms"));
+        assert!(entries[3].text.contains("0.25"));
+    }
+
+    #[test]
+    fn parse_timeline_skips_malformed_unknown_and_tick_lines() {
+        let content = concat!(
+            "not json, a torn power-cut line\n",
+            "{\"ts\":0,\"tick\":{\"deaths\":0}}\n", // raw tick snapshot: no `type`
+            "{\"ts\":10,\"type\":\"some_future_event\",\"x\":1}\n", // unrecognized type
+            "{\"type\":\"gank_revision\"}\n", // missing ts
+            "{\"ts\":20,\"type\":\"gank_revision\"}\n", // the only valid line
+        );
+        let entries = parse_timeline(content);
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].at_ms, 20);
+        assert_eq!(entries[0].kind, "gank_revision");
+    }
+
+    #[test]
+    fn parse_timeline_caps_at_last_500_entries() {
+        let mut content = String::new();
+        for i in 0..600u64 {
+            content.push_str(&format!("{{\"ts\":{i},\"type\":\"gank_revision\"}}\n"));
+        }
+        let entries = parse_timeline(&content);
+        assert_eq!(entries.len(), 500);
+        // The oldest 100 (ts 0..=99) must have been dropped — newest kept.
+        assert_eq!(entries.first().unwrap().at_ms, 100);
+        assert_eq!(entries.last().unwrap().at_ms, 599);
+    }
+
+    #[test]
+    fn parse_timeline_empty_file_returns_empty_vec() {
+        assert!(parse_timeline("").is_empty());
+    }
+
+    fn temp_log_dir(tag: &str) -> PathBuf {
+        let dir = std::env::temp_dir().join(format!("gmaiden-readlog-test-{tag}-{}", now_ms()));
+        fs::create_dir_all(&dir).unwrap();
+        dir
+    }
+
+    #[test]
+    fn safe_log_path_rejects_separators_dotdot_absolute_and_empty() {
+        let dir = temp_log_dir("guard");
+        assert!(safe_log_path_in_dir(&dir, "../match-1.jsonl").is_none());
+        assert!(safe_log_path_in_dir(&dir, "sub/match-1.jsonl").is_none());
+        assert!(safe_log_path_in_dir(&dir, "sub\\match-1.jsonl").is_none());
+        assert!(safe_log_path_in_dir(&dir, "..\\..\\match-1.jsonl").is_none());
+        assert!(safe_log_path_in_dir(&dir, "C:\\Windows\\notepad.exe").is_none());
+        assert!(safe_log_path_in_dir(&dir, "/etc/passwd").is_none());
+        assert!(safe_log_path_in_dir(&dir, "\\\\server\\share\\evil.jsonl").is_none());
+        assert!(safe_log_path_in_dir(&dir, "..").is_none());
+        assert!(safe_log_path_in_dir(&dir, "").is_none());
+        assert!(safe_log_path_in_dir(&dir, "match-1.jsonl:hidden").is_none());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn safe_log_path_rejects_names_outside_the_match_naming_convention() {
+        let dir = temp_log_dir("naming");
+        assert!(safe_log_path_in_dir(&dir, "error.log").is_none());
+        assert!(safe_log_path_in_dir(&dir, "match-1.txt").is_none());
+        assert!(safe_log_path_in_dir(&dir, "notes.jsonl").is_none());
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn safe_log_path_accepts_well_formed_bare_filename() {
+        let dir = temp_log_dir("accept");
+        let resolved = safe_log_path_in_dir(&dir, "match-1752345600.jsonl").expect("should be accepted");
+        assert_eq!(resolved, dir.join("match-1752345600.jsonl"));
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn read_match_log_rejects_traversal_before_touching_disk() {
+        let dir = temp_log_dir("traversal");
+        assert_eq!(
+            read_match_log_in_dir(&dir, "../../secret.jsonl"),
+            Err("ชื่อไฟล์ไม่ถูกต้อง".to_string())
+        );
+        assert_eq!(
+            read_match_log_in_dir(&dir, "C:\\Windows\\notepad.exe"),
+            Err("ชื่อไฟล์ไม่ถูกต้อง".to_string())
+        );
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn read_match_log_reads_and_parses_a_real_file() {
+        let dir = temp_log_dir("readfile");
+        let name = "match-123.jsonl";
+        fs::write(dir.join(name), "{\"ts\":5,\"type\":\"gank_revision\"}\n").unwrap();
+
+        let entries = read_match_log_in_dir(&dir, name).expect("should read the file");
+        assert_eq!(entries.len(), 1);
+        assert_eq!(entries[0].kind, "gank_revision");
+
+        let _ = fs::remove_dir_all(&dir);
+    }
+
+    #[test]
+    fn read_match_log_errs_when_file_does_not_exist() {
+        let dir = temp_log_dir("missing");
+        let err = read_match_log_in_dir(&dir, "match-999.jsonl").unwrap_err();
+        assert!(err.contains("ไม่สำเร็จ"));
         let _ = fs::remove_dir_all(&dir);
     }
 }

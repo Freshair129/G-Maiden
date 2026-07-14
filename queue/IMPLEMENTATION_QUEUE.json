@@ -1,13 +1,13 @@
 {
-  "version": "1.1.0",
+  "version": "1.2.0",
   "project": "G-Maiden",
-  "wave": "CR011-P2",
-  "wave_title": "Honest booth (CR-011 P2): utterance ledger + ON AIR console + de-stub",
-  "note": "Prior wave CR011-P1/P1b merged (53dfb956, 63e5c2f0) and branch pushed. CR-011 ACCEPTED by owner 2026-07-14 (blur amendment applied). Overlay window stays frozen — PERSONA utterance source deferred. Contract: event 'utterance' payload {atMs:number, source:'signal'|'master'|'announcer', kind:'line'|'revision', text:string, retracted?:string|null, meta?:string|null} camelCase.",
+  "wave": "CR011-P3",
+  "wave_title": "Time (CR-011 P3): phase axis + standby rundown + debrief timeline",
+  "note": "Prior waves P1/P1b/P2 merged + pushed (53dfb956, 63e5c2f0, 8f97d3bd). Owner approved Rust additions 2026-07-14. Scope discipline: stats-delta debrief + on-air revision record deferred to P4. Frozen geometry law unchanged.",
   "tasks": [
     {
-      "id": "CR011-P2-01",
-      "title": "Rust: emit 'utterance' event at voice choke points (signal gank+revision, master advice+backend, announcer voiced event+pack)",
+      "id": "CR011-P3-01",
+      "title": "Rust: read_match_log command (parse one G-Log JSONL into a typed timeline; filename-only arg, traversal-guarded, capped)",
       "category": "Core",
       "dependencies": [],
       "priority": 1,
@@ -19,11 +19,11 @@
       "verification": ["cargo test", "cargo clippy -D warnings"],
       "ready": true,
       "status": "dispatched",
-      "worker_group": "C"
+      "worker_group": "E"
     },
     {
-      "id": "CR011-P2-02",
-      "title": "Frontend: live/utterances.ts builder + tests, companion.ts subscribe, ON AIR console in gm-agent-card (geometry frozen), tally dots, LiveMatch objective de-stub",
+      "id": "CR011-P3-02",
+      "title": "Frontend: live/phase.ts state machine (standby|prep|live|debrief) + tests, phase chip in score header, standby readiness rundown + debrief timeline in the battle-grid seat (geometry frozen)",
       "category": "UI",
       "dependencies": [],
       "priority": 1,
@@ -35,7 +35,7 @@
       "verification": ["tsc", "eslint", "vitest"],
       "ready": true,
       "status": "dispatched",
-      "worker_group": "D"
+      "worker_group": "F"
     }
   ]
 }

@@ -522,6 +522,14 @@ fn delete_match_log(name: String) -> Result<(), String> {
     log::delete_match(&name)
 }
 
+/// Read one archived match log's content, reduced to a debrief timeline
+/// (CR-011 P3). `name` is validated inside `log::read_match_log` — it must
+/// resolve to a bare `match-*.jsonl` filename confined to `log::log_dir()`.
+#[tauri::command]
+fn read_match_log(name: String) -> Result<Vec<log::TimelineEntry>, String> {
+    log::read_match_log(&name)
+}
+
 /// Wipe every archived match log (privacy reset). Currently-recording file
 /// is preserved so the active match survives.
 #[tauri::command]
@@ -640,6 +648,7 @@ fn main() {
             open_log_dir,
             list_match_logs,
             delete_match_log,
+            read_match_log,
             delete_all_match_logs,
             request_advice,
             request_buyback_advice,

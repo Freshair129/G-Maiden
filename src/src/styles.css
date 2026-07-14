@@ -4989,6 +4989,15 @@ body {
   border-radius: 12px;
   background: var(--g-instrument);
 }
+/* Reserve the phase chip's right-edge lane: the right-team text is
+   text-align:start in a 1fr cell — without this a long team name runs
+   under the absolutely-positioned chip (lead merge-fix wave CR011-P3). */
+.gm-score-header > strong:last-of-type {
+  padding-right: 80px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 
 .gm-live-dot {
   display: inline-block;
@@ -5008,6 +5017,52 @@ body {
   font-weight: 800;
   text-align: center;
   letter-spacing: 2px;
+}
+
+/* CR-011 §D/§E phase axis chip (CR011-P3-02) — additive. `.gm-score-header` is
+   a fixed 640x48 box (grid: 1fr / 74px clock / 1fr) with almost no horizontal
+   gap between the clock column and the right-side score text, so this chip is
+   absolutely positioned along the header's own bottom edge (the header is
+   `position:absolute`, i.e. already the containing block for this) instead of
+   joining the grid flow — it can never shift or wrap the centered clock/score,
+   and it stays clear of that horizontally-centered text by sitting below it. */
+.gm-phase-chip {
+  position: absolute;
+  /* Far-right edge, vertically centred (like the CR-011 mock): centre-relative
+     offsets collide with real glyphs on BOTH sides — the mono clock extends
+     ~25px right of centre and the right-team text is text-align:start, so the
+     only reliably-empty lane is the header's right end (measured live, lead
+     merge-fix wave CR011-P3). The right-team <strong> reserves this lane via
+     padding-right below, so long team names can't run under the chip. */
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  font: 600 8px/1 var(--g-font-ui);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 2.5px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--g-hairline-2);
+  background: var(--g-instrument-2);
+  color: var(--g-text-dim);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.gm-phase-chip-standby { color: var(--g-text-mute); border-color: var(--g-hairline); }
+.gm-phase-chip-prep {
+  color: var(--g-ice-500);
+  border-color: rgba(143, 212, 255, 0.3);
+  background: rgba(143, 212, 255, 0.1);
+}
+.gm-phase-chip-live {
+  color: var(--g-lime-500);
+  border-color: var(--g-lime-line);
+  background: var(--g-lime-soft);
+}
+.gm-phase-chip-debrief {
+  color: var(--g-ice-300);
+  border-color: rgba(143, 212, 255, 0.3);
+  background: rgba(143, 212, 255, 0.06);
 }
 
 .gm-stats-bar {
@@ -5116,6 +5171,172 @@ body {
   color: #aebbd0;
   font-size: 11px;
   font-weight: 800;
+}
+
+/* ===== CR-011 §E phase axis: standby/prep/debrief seat content (CR011-P3-02) =====
+   Additive only — `.gm-battle-grid`'s own geometry/CSS above is untouched; these
+   classes style the swapped-in content that replaces the hero columns + minimap
+   for non-live phases. `.gm-battle-alt` spans the frozen 3-column grid track
+   (170px / 1fr / 170px) as one full-width, full-height, clipped root — the
+   "defensive overflow:hidden" the seat requires so nothing can spill into
+   `.gm-sector-log` below. */
+.gm-battle-alt {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.gm-rundown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px;
+}
+
+.gm-rundown-note {
+  flex: none;
+  font: 500 11px/1.5 var(--g-font-ui);
+  color: var(--g-ice-500);
+  background: rgba(143, 212, 255, 0.08);
+  border: 1px solid rgba(143, 212, 255, 0.24);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+
+.gm-rundown-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.gm-rundown-row {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument-2);
+}
+
+.gm-rundown-glyph {
+  font: 700 12px/1 var(--g-font-mono);
+  text-align: center;
+  color: var(--g-text-mute);
+}
+
+.gm-rundown-row.ready .gm-rundown-glyph {
+  color: var(--g-ice-500);
+}
+
+.gm-rundown-label {
+  font: 500 12px/1.3 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+
+.gm-rundown-row.ready .gm-rundown-label {
+  color: var(--g-text);
+}
+
+.gm-rundown-value {
+  font: 500 12px/1 var(--g-font-mono);
+  color: var(--g-text-mute);
+  white-space: nowrap;
+}
+
+.gm-rundown-row.ready .gm-rundown-value {
+  color: var(--g-ice-300);
+}
+
+/* -- debrief timeline (most recent archived match log) -- */
+.gm-debrief {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 4px;
+}
+
+.gm-debrief-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.gm-debrief-title {
+  font: 600 10px/1 var(--g-font-ui);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--g-text-mute);
+}
+
+.gm-debrief-back {
+  font: 500 10.5px/1 var(--g-font-ui);
+  color: var(--g-ice-500);
+  background: transparent;
+  border: 1px solid rgba(143, 212, 255, 0.3);
+  border-radius: 999px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.gm-debrief-back:hover {
+  background: rgba(143, 212, 255, 0.08);
+}
+
+.gm-debrief-empty {
+  flex: none;
+  font: 400 12px/1.6 var(--g-font-ui);
+  color: var(--g-text-dim);
+  padding: 8px 2px;
+}
+
+.gm-debrief-list {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.gm-debrief-row {
+  display: grid;
+  grid-template-columns: 54px 68px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 6px;
+  border-radius: 7px;
+}
+
+.gm-debrief-row-time {
+  font: 400 9.5px/1.6 var(--g-font-mono);
+  color: var(--g-text-mute);
+}
+
+.gm-debrief-row-chip {
+  font: 600 8px/1 var(--g-font-ui);
+  letter-spacing: 0.6px;
+  color: var(--g-text-dim);
+}
+.gm-debrief-row-chip-gank { color: var(--g-warn); }
+.gm-debrief-row-chip-revision { color: var(--g-danger); }
+.gm-debrief-row-chip-missing { color: var(--g-text-dim); }
+.gm-debrief-row-chip-start { color: var(--g-ice-300); }
+.gm-debrief-row-chip-other { color: var(--g-text-mute); }
+
+.gm-debrief-row-text {
+  margin: 0;
+  font: 400 11px/1.6 var(--g-font-ui);
+  color: var(--g-text-dim);
 }
 
 .gm-minimap {
