@@ -8,3 +8,5 @@
 {"ts":"2026-07-14T00:00:10+07:00","event":"Dispatch","detail":"Wave CR011-P2 (Honest booth): worker C (sonnet, Rust utterance event: signal/master/announcer choke points), worker D (sonnet, frontend: utterances builder + ON AIR console + tally dots + LiveMatch de-stub). Overlay window stays frozen — PERSONA source deferred. Gate=opus after both return."}
 {"ts":"2026-07-14T00:00:14+07:00","event":"Merge","detail":"wave CR011-P2 committed + pushed to branch; next wave P3 (Time: phase.ts + debrief + read_match_log) pending dispatch"}
 {"ts":"2026-07-14T00:00:18+07:00","event":"Merge","detail":"wave CR011-P3 committed + pushed. Owner picked Option B for G-Orchestra: native RWANG ingest adapter in orchestration/ (wave GORCH-RW1, exploration running)"}
+{"ts":"2026-07-14T00:00:19+07:00","event":"OwnerDecision","detail":"G-Orchestra integration: Option B (native RWANG ingest adapter in orchestration/) selected by owner"}
+{"ts":"2026-07-14T00:00:20+07:00","event":"Dispatch","detail":"Wave GORCH-RW1: worker G (gks/rwang-ingest.mjs + /api/rwang/state route + config registry + node:test), worker H (studio RwangIngest tab + legacy UI panel). Gate=opus."}

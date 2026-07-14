@@ -1,41 +1,48 @@
 {
-  "version": "1.2.0",
+  "version": "1.3.0",
   "project": "G-Maiden",
-  "wave": "CR011-P3",
-  "wave_title": "Time (CR-011 P3): phase axis + standby rundown + debrief timeline",
-  "note": "Prior waves P1/P1b/P2 merged + pushed (53dfb956, 63e5c2f0, 8f97d3bd). Owner approved Rust additions 2026-07-14. Scope discipline: stats-delta debrief + on-air revision record deferred to P4. Frozen geometry law unchanged.",
+  "wave": "GORCH-RW1",
+  "wave_title": "G-Orchestra native RWANG ingest (owner Option B, 2026-07-14)",
+  "note": "Adapter lives in orchestration/ (G-Orchestra product, same repo). Read-only mirror first: RWANG queue+state files -> snapshot-shaped JSON -> studio tab + legacy UI panel. Security: /api/rwang/state serves ONLY roots registered in config.json (no arbitrary path reads on the unauthenticated :4577). CR011-P4..P6 queued after.",
   "tasks": [
     {
-      "id": "CR011-P3-01",
-      "title": "Rust: read_match_log command (parse one G-Log JSONL into a typed timeline; filename-only arg, traversal-guarded, capped)",
-      "category": "Core",
+      "id": "GORCH-RW1-01",
+      "title": "gks/rwang-ingest.mjs adapter + server route + config projects registry + node:test suite",
+      "category": "Agent",
       "dependencies": [],
       "priority": 1,
-      "required_capability": "Implementation/Rust",
+      "required_capability": "Implementation/NodeESM",
       "estimated_complexity": "M",
       "estimated_context": "Medium",
       "parallelizable": true,
-      "local_eligibility": "CLOUD_REQUIRED",
-      "verification": ["cargo test", "cargo clippy -D warnings"],
+      "local_eligibility": "LOCAL_SAFE",
+      "verification": [
+        "node --test"
+      ],
       "ready": true,
       "status": "dispatched",
-      "worker_group": "E"
+      "worker_group": "G"
     },
     {
-      "id": "CR011-P3-02",
-      "title": "Frontend: live/phase.ts state machine (standby|prep|live|debrief) + tests, phase chip in score header, standby readiness rundown + debrief timeline in the battle-grid seat (geometry frozen)",
+      "id": "GORCH-RW1-02",
+      "title": "Studio RwangIngest tab + legacy public/index.html RWANG panel (read-only, poll /api/rwang/state)",
       "category": "UI",
-      "dependencies": [],
-      "priority": 1,
+      "dependencies": [
+        "GORCH-RW1-01"
+      ],
+      "priority": 2,
       "required_capability": "Implementation/React-TS",
-      "estimated_complexity": "L",
-      "estimated_context": "Large",
+      "estimated_complexity": "M",
+      "estimated_context": "Medium",
       "parallelizable": true,
       "local_eligibility": "LOCAL_SAFE",
-      "verification": ["tsc", "eslint", "vitest"],
+      "verification": [
+        "vite build",
+        "server smoke"
+      ],
       "ready": true,
       "status": "dispatched",
-      "worker_group": "F"
+      "worker_group": "H"
     }
   ]
 }

@@ -415,5 +415,14 @@
     "required": false,
     "lint": "G:/Rwang/orchestrator/governance/governance_lint.py",
     "_comment": "engine-lint-interlock: ชี้ meta-guard ของ Rwang (control plane) บนเครื่องนี้; required=true = fail-closed"
+  },
+  "rwang": {
+    "_comment": "feature--gorch-rw1-ingest: registered RWANG project roots the /api/rwang/state route may read. root is resolved relative to orchestration/ — never accept an arbitrary filesystem path from the query string.",
+    "projects": [
+      {
+        "name": "G-Maiden",
+        "root": ".."
+      }
+    ]
   }
 }

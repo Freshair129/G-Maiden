@@ -9,10 +9,11 @@ import Cockpit from "./Cockpit";
 import Loadout from "./Loadout";
 import Copilot from "./Copilot";
 import Memory from "./Memory";
+import RwangIngest from "./RwangIngest";
 import CommandBar from "./CommandBar";
 import { useStore, startPolling } from "./store";
 
-const TABS: [string, string][] = [["progress", "Develop"], ["board", "Board"], ["graph", "Graph"], ["pipeline", "Pipeline"], ["nodedb", "Node↔DB"], ["ingest", "Diagram"], ["cockpit", "Cockpit"], ["loadout", "Loadout"], ["copilot", "Copilot"], ["memory", "Memory"]];
+const TABS: [string, string][] = [["progress", "Develop"], ["board", "Board"], ["graph", "Graph"], ["pipeline", "Pipeline"], ["nodedb", "Node↔DB"], ["ingest", "Diagram"], ["cockpit", "Cockpit"], ["loadout", "Loadout"], ["copilot", "Copilot"], ["memory", "Memory"], ["rwang", "RWANG"]];
 
 export default function App() {
   const [tab, setTab] = useState("progress");
@@ -55,6 +56,7 @@ export default function App() {
           {tab === "loadout" && <Loadout />}
           {tab === "copilot" && <Copilot />}
           {tab === "memory" && <Memory />}
+          {tab === "rwang" && <RwangIngest />}
         </main>
       )}
     </div>

@@ -138,6 +138,24 @@
   .legend{ margin-top:18px; color:var(--mut); font-size:11.5px; display:flex; gap:14px; flex-wrap:wrap; }
   .hidden{ display:none !important; }
 
+  /* RWANG project mirror (feature--gorch-rw1-02, read-only) */
+  .rwang-panel{ margin-top:18px; background:var(--panel); border:1px solid var(--line); border-radius:14px; overflow:hidden; backdrop-filter:blur(8px); }
+  .rwang-h{ display:flex; align-items:center; gap:10px; padding:13px 18px; cursor:pointer; flex-wrap:wrap; }
+  .rwang-h:hover{ background:rgba(143,212,255,0.05); }
+  .rwang-caret{ color:var(--mut); font-size:11px; width:12px; }
+  .rwang-sub{ color:var(--mut); font-size:12px; }
+  .rwang-spacer{ flex:1; }
+  .rwang-pct{ color:var(--ice); font-size:12px; font-weight:700; }
+  .rwang-body{ padding:0 18px 16px; }
+  .rwang-wave{ color:var(--mut); font-size:12px; margin:2px 0 10px; }
+  .rwang-tasks{ display:flex; flex-direction:column; gap:5px; max-height:340px; overflow:auto; }
+  .rwang-row{ display:grid; grid-template-columns:100px 1fr auto; gap:10px; align-items:center;
+    background:var(--panel-2); border:1px solid var(--line); border-radius:8px; padding:6px 10px; font-size:12px; }
+  .rwang-id{ font-family:"Cascadia Code",Consolas,monospace; color:var(--mut); font-size:11px; }
+  .rwang-title{ overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .rwang-warn{ color:var(--warn); font-size:11.5px; margin-top:10px; }
+  .rwang-err{ color:var(--bad); font-size:12px; margin-top:10px; }
+
   /* auth + usage */
   .metabar{ display:flex; gap:12px; flex-wrap:wrap; align-items:stretch; margin:0 0 14px; }
   .authbox{ background:var(--panel); border:1px solid var(--line); border-radius:13px;
@@ -236,6 +254,23 @@
     <span>model: <b style="color:var(--opus)">opus</b>=วางแผน/architecture · <b style="color:var(--sonnet)">sonnet</b>=coding · <b style="color:var(--haiku)">haiku</b>=งานง่าย</span>
     <span>○ ready · ▶ running · ✓ done · ✗ failed</span>
   </div>
+
+  <section class="rwang-panel">
+    <header class="rwang-h" onclick="toggleRwang()">
+      <span class="rwang-caret" id="rwangCaret">▾</span>
+      <b>RWANG — G-Maiden</b>
+      <span class="rwang-sub" id="rwangSub">—</span>
+      <span class="rwang-spacer"></span>
+      <span class="rwang-pct" id="rwangPct">—</span>
+    </header>
+    <div class="rwang-body" id="rwangBody">
+      <div class="track"><div class="fill" id="rwangFill"></div></div>
+      <div class="rwang-wave" id="rwangWave">wave —</div>
+      <div class="rwang-tasks" id="rwangTasks"></div>
+      <div class="rwang-warn" id="rwangWarn"></div>
+      <div class="rwang-err" id="rwangErr" style="display:none"></div>
+    </div>
+  </section>
 </div>
 
 <div class="ov" id="ov"><div class="modal">
@@ -457,6 +492,47 @@ function renderMeta(){
     + card("Weekly","≤"+(u.weekWindowD||7)+"d", u.weekly, lim.weeklyUsd);
 }
 function refreshOllama(){ fetch("/api/ollama").then(r=>r.json()).then(j=>{ OLLAMA=j; if(DATA) renderMeta(); }).catch(()=>{}); }
+
+/* ---------- RWANG project mirror (feature--gorch-rw1-02, read-only — no commands here) ---------- */
+let RWANG = null;
+async function loadRwang(){
+  try {
+    const r = await fetch("/api/rwang/state?project=G-Maiden");
+    if(!r.ok) throw new Error("HTTP "+r.status);
+    RWANG = await r.json();
+    renderRwang();
+  } catch(e){
+    renderRwangError(String(e && e.message || e));
+  }
+}
+function toggleRwang(){
+  const body=$("#rwangBody"), caret=$("#rwangCaret");
+  const opening = body.style.display === "none";
+  body.style.display = opening ? "" : "none";
+  caret.textContent = opening ? "▾" : "▸";
+}
+function renderRwangError(msg){
+  $("#rwangErr").style.display = "";
+  $("#rwangErr").textContent = "engine unreachable / project not registered — retry: "+msg;
+  $("#rwangSub").textContent = "offline";
+}
+function renderRwang(){
+  if(!RWANG) return;
+  $("#rwangErr").style.display = "none";
+  const p = RWANG.progress || {done:0,total:0,pct:0};
+  $("#rwangPct").textContent = p.done+"/"+p.total+" · "+p.pct+"%";
+  $("#rwangFill").style.width = p.pct+"%";
+  const proj = RWANG.project || {}, wave = RWANG.wave || {};
+  $("#rwangSub").textContent = (proj.name||"—")+" · "+(proj.phase||"—")+"/"+(proj.phaseStatus||"—");
+  $("#rwangWave").textContent = "wave "+(wave.name||"—")+(wave.title?" — "+wave.title:"");
+  const tasks = RWANG.tasks || [];
+  $("#rwangTasks").innerHTML = tasks.map(t=>`<div class="rwang-row">
+    <span class="rwang-id">${esc(t.id)}</span>
+    <span class="rwang-title" title="${esc(t.title||"")}">${esc(t.title||"")}</span>
+    <span class="st st-${t.status}">${esc(t.status)}</span></div>`).join("") || `<div class="empty">ยังไม่มี task</div>`;
+  const warns = RWANG.warnings || [];
+  $("#rwangWarn").textContent = warns.length ? ("⚠ "+warns.join(" · ")) : "";
+}
 function renderPool(){
   const p=DATA.pool||{}; const bar=$("#poolbar");
   $("#stop").classList.toggle("hidden", !p.active);
@@ -473,11 +549,12 @@ $("#refresh").onclick=load;
 $("#reset").onclick=()=>{ if(confirm("ล้าง state กลับ todo ทั้งหมด?")){ Object.keys(streams).forEach(k=>delete streams[k]); roomSig=""; api("reset",{}); } };
 ["q","fphase","fstatus","fmodel"].forEach(id=>$("#"+id).addEventListener("input",renderList));
 
-// poll: state ทุก 1.5s ; log streaming เร็วกว่า (900ms) เมื่ออยู่ room หรือเปิด modal ; ollama ทุก 10s
-setInterval(()=>{ if($("#auto").checked) load(); },1500);
+// poll: state ทุก 1.5s (piggyback RWANG mirror on the same loop, no second timer) ;
+// log streaming เร็วกว่า (900ms) เมื่ออยู่ room หรือเปิด modal ; ollama ทุก 10s
+setInterval(()=>{ if($("#auto").checked) { load(); loadRwang(); } },1500);
 setInterval(()=>{ if(VIEW==="room") renderRoom(); if(modalId) pump(modalId); },900);
 setInterval(refreshOllama, 10000);
-load(); refreshOllama();
+load(); refreshOllama(); loadRwang();
 </script>
 </body>
 </html>
