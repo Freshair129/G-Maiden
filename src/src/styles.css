@@ -2110,6 +2110,57 @@ body {
 .account-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start; }
 .account-card { background: rgba(13, 20, 36, 0.72); border: 1px solid rgba(129, 180, 255, 0.14); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 .account-card.muted { opacity: 0.75; }
+
+/* CR011-P5-01 (CR-011 §B/§C): instrument-matte pill mode-switch, shared
+   visual language across the Packs (Voice) page and Account's sub-tabs.
+   Two independent class families — they gate different pages/props and are
+   never mixed in one tree — but both read tokens only, so they present as
+   one system. */
+.gm-packs-tabs,
+.gm-account-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+  margin: 0 0 14px;
+  background: var(--g-instrument);
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-pill);
+  width: fit-content;
+}
+.gm-packs-tab,
+.gm-account-tab {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--g-text-dim);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  padding: 7px 14px;
+  border-radius: var(--g-r-pill);
+  cursor: pointer;
+  transition: background var(--g-t-hover) var(--g-ease), color var(--g-t-hover) var(--g-ease),
+    border-color var(--g-t-hover) var(--g-ease);
+}
+.gm-packs-tab:hover,
+.gm-account-tab:hover { color: var(--g-text); background: var(--g-instrument-2); }
+.gm-packs-tab.active,
+.gm-account-tab.active {
+  background: var(--g-instrument-2);
+  border-color: var(--g-hairline-2);
+  color: var(--g-ice-300);
+}
+.gm-packs-tab:focus-visible,
+.gm-account-tab:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+
+/* Packs page shell — the mode body fills whatever's left; the surrounding
+   `.surface.page-voice` already carries `overflow-y: auto` (see the shared
+   rule further down), so this doesn't need its own scroll/height math —
+   each mounted mode (VoiceInventory/StorePage/InventoryTab/AudioSettings)
+   already manages its own internal layout. */
+.gm-packs-page { display: flex; flex-direction: column; min-height: 100%; padding: 4px; }
+.gm-packs-body { flex: 1; min-height: 0; }
 .account-h3 { font-size: 12px; letter-spacing: 0.8px; text-transform: uppercase; color: #81b4ff; margin: 0 0 4px; }
 .account-note { font-size: 11px; color: #8794a6; line-height: 1.4; }
 .account-hint { font-size: 12px; color: #8794a6; line-height: 1.45; margin: 0; }

@@ -56,14 +56,18 @@ export type ShortcutDef = {
 // was hand-copied in three places and the Thai labels had already drifted
 // within one wave; Opus gate, CR011-P4a). CommandDeck's NAV keeps its own
 // JSX-carrying array but the keys/order are asserted equal by the tests.
+// CR011-P5-01: rail order per CR-011 §C — Companion dissolves (its content
+// moved into Settings/the shortcut sheet already); Account joins the rail
+// (was dropdown-only). Order: dashboard, live, voice, build, insights,
+// history, account, settings.
 export const PAGES: Array<{ key: string; label: string; labelTh: string }> = [
   { key: "dashboard", label: "Dashboard", labelTh: "บูธ (Dashboard)" },
   { key: "live", label: "Live", labelTh: "แมตช์สด (Live)" },
-  { key: "companion", label: "Companion", labelTh: "คอมพาเนียน (Companion)" },
   { key: "voice", label: "Voice", labelTh: "แพ็กเสียง (Voice)" },
   { key: "build", label: "Build", labelTh: "บิลด์ (Build)" },
   { key: "insights", label: "Insights", labelTh: "ข้อมูลเชิงลึก (Insights)" },
   { key: "history", label: "History", labelTh: "ประวัติ (History)" },
+  { key: "account", label: "Account", labelTh: "บัญชี (Account)" },
   { key: "settings", label: "Settings", labelTh: "ตั้งค่า (Settings)" },
 ];
 

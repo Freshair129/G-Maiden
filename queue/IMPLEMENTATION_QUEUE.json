@@ -1,18 +1,18 @@
 {
-  "version": "1.4.0",
+  "version": "1.5.0",
   "project": "G-Maiden",
-  "wave": "CR011-P4a",
-  "wave_title": "Hands, part 1 (CR-011 P4): Maiden Line palette + shortcut registry + sheet",
-  "note": "GORCH-RW1 merged 41c6b879. P4 split: P4a = palette+keyboard (this wave); P4b = context menus + inspector slide-over (next). Frozen geometry law unchanged; palette floats OVER the stage (console-glass material, one of the few blur-permitted surfaces).",
+  "wave": "CR011-P5",
+  "wave_title": "Economy & IA (CR-011 P5): nav rewire + Packs merge + Account hosts wallet + kill the second palette",
+  "note": "P4a/P4b/P7a merged (0d736fd2, 294df18f, 11f6bc14). Single worker (files interlock). PAGES in shortcuts.ts is the single source \u2014 nav swap syncs palette/sheet/Ctrl+n automatically.",
   "tasks": [
     {
-      "id": "CR011-P4a-01",
-      "title": "shortcuts.ts registry + MaidenLine.tsx (Ctrl+K, verb-first bilingual, phase-aware ranking, inline destructive confirm) + Ctrl+1..8 + ? sheet",
+      "id": "CR011-P5-01",
+      "title": "NAV Companion->Account swap + Packs page (inventory/store/editor) + Account sub-tabs (identity/wallet/ledger) + CR-003 inline navy/cyan -> tokens",
       "category": "UI",
       "dependencies": [],
       "priority": 1,
       "required_capability": "Implementation/React-TS",
-      "estimated_complexity": "L",
+      "estimated_complexity": "XL",
       "estimated_context": "Large",
       "parallelizable": false,
       "local_eligibility": "LOCAL_SAFE",
@@ -23,7 +23,7 @@
       ],
       "ready": true,
       "status": "dispatched",
-      "worker_group": "I"
+      "worker_group": "L"
     }
   ]
 }

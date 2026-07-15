@@ -6,7 +6,6 @@ import VoicePacksPage from "./VoicePacksPage";
 import QuotaCard from "./QuotaCard";
 import {
   BuildAdvisorPage,
-  CompanionPage,
   HistoryPage,
   InsightsPage,
   LiveMatchPage,
@@ -19,7 +18,7 @@ import AccountPage from "./AccountPage";
 import { useProfile } from "./profile";
 import type { VoiceState } from "./voice-types";
 import MaidenLine from "./MaidenLine";
-import { buildRegistry, matchCombo, type DeckActions, type ShortcutDef } from "./shortcuts";
+import { buildRegistry, matchCombo, PAGES, type DeckActions, type ShortcutDef } from "./shortcuts";
 import {
   ContextMenu,
   useContextMenu,
@@ -60,14 +59,7 @@ const FUNG_PANEL_PATH =
 const FUNG_PANEL_PATH_SIGNALS =
   "M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 488 A 20 20 0 0 1 1248,508 H 836 A 20 20 0 0 0 816,528 V 688 A 20 20 0 0 1 796,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z";
 
-// companion + history have no codex glyph — tiny inline fallbacks
-function IconCompanion({ size = 20 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <rect x="4" y="7" width="16" height="11" rx="3" /><path d="M12 4v3M9 12h.01M15 12h.01" />
-    </svg>
-  );
-}
+// history has no codex glyph — tiny inline fallback
 function IconHistory({ size = 20 }: { size?: number }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
@@ -76,16 +68,22 @@ function IconHistory({ size = 20 }: { size?: number }) {
   );
 }
 
-const NAV: Array<{ key: string; label: string; Icon: (p: { size?: number }) => ReactNode }> = [
-  { key: "dashboard", label: "Dashboard", Icon: IconDashboard },
-  { key: "live", label: "Live", Icon: IconLive },
-  { key: "companion", label: "Companion", Icon: IconCompanion },
-  { key: "voice", label: "Voice", Icon: IconVoice },
-  { key: "build", label: "Build", Icon: IconBuild },
-  { key: "insights", label: "Insights", Icon: IconInsights },
-  { key: "history", label: "History", Icon: IconHistory },
-  { key: "settings", label: "Settings", Icon: IconSettings }
-];
+// CR011-P5 gate fix: NAV is DERIVED from shortcuts.ts PAGES — the two arrays
+// were hand-aligned duplicates and nothing guarded the alignment (the old
+// comment claimed tests did; they did not). Now Ctrl+1..8, the palette, the
+// sheet, and the rail literally cannot drift: one array, one icon map.
+const NAV_ICONS: Record<string, (p: { size?: number }) => ReactNode> = {
+  dashboard: IconDashboard,
+  live: IconLive,
+  voice: IconVoice,
+  build: IconBuild,
+  insights: IconInsights,
+  history: IconHistory,
+  account: IconAccount,
+  settings: IconSettings
+};
+const NAV: Array<{ key: string; label: string; Icon: (p: { size?: number }) => ReactNode }> =
+  PAGES.map((p) => ({ key: p.key, label: p.label, Icon: NAV_ICONS[p.key] ?? IconDashboard }));
 
 export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNode } = {}) {
   const [tab, setTab] = useState("dashboard");
@@ -106,6 +104,14 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   // hero seat / utterance row / annunciator targets all open through it (see
   // ContextMenu.tsx), same "single owner" shape as palette/sheet above.
   const menu = useContextMenu();
+  // CR011-P5 gate fix: account sub-tab deep-link (Store "เติมเหรียญ" -> Wallet).
+  const [accountEntry, setAccountEntry] = useState<{ mode: "account" | "wallet" | "ledger"; n: number }>({ mode: "account", n: 0 });
+  const navigateTo = (t: string, sub?: string) => {
+    if (t === "account" && (sub === "wallet" || sub === "ledger" || sub === "account")) {
+      setAccountEntry((prev) => ({ mode: sub, n: prev.n + 1 }));
+    }
+    setTab(t);
+  };
   const { data } = useCompanionData();
   const { displayName, email } = useProfile();
   const gName = displayName || (email ? email.split("@")[0] : "Guest");
@@ -520,11 +526,11 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
             />
           )}
           {tab === "live" && <LiveMatchPage />}
-          {tab === "companion" && <CompanionPage />}
+          {tab === "voice" && <VoicePacksPage onNavigate={navigateTo} />}
           {tab === "build" && <BuildAdvisorPage />}
           {tab === "insights" && <InsightsPage />}
-          {tab === "voice" && <VoicePacksPage />}
           {tab === "history" && <HistoryPage />}
+          {tab === "account" && <AccountPage entryMode={accountEntry.mode} entryNonce={accountEntry.n} />}
           {tab === "settings" && (
             settingsPanel ?? (
               <div style={{ display: "grid", gap: 16 }}>
@@ -533,7 +539,6 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
               </div>
             )
           )}
-          {tab === "account" && <AccountPage />}
         </div>
       </main>
 
