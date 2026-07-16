@@ -4608,6 +4608,16 @@ body {
 .g-deck-panel .surface.page-companion,
 .g-deck-panel .surface.page-live {
   overflow-y: auto !important;
+  /* Boss 2026-07-16 "เข้า settings แล้วพัง": the CR-006 rule above zeroes the
+     surface padding for the dashboard (whose sectors self-position), but these
+     FLOW pages lost their interior inset with it — content jammed into the
+     panel's top-left fillet, slid under the top-right topbar NOTCH (where the
+     subtract clip erases it), and ran behind the lower-left sidebar cut. The
+     pre-CR-006 surface carried `padding: 62px 16px 16px` for exactly this.
+     Insets (panel-local): top 74 clears the notch floor (62) + 12 rhythm;
+     left 104 clears the lower-left sidebar cut (local x80) + 24; right 28 /
+     bottom 24 rhythm. Dashboard keeps padding:0 from the rule above. */
+  padding: 74px 28px 24px 104px !important;
 }
 
 .g-deck-panel .banner.err {
@@ -5183,13 +5193,27 @@ body {
 }
 
 .gm-slot-column {
-  display: grid;
-  grid-template-rows: repeat(5, 1fr);
+  /* CR012-P3-02: was `display:grid; grid-template-rows: repeat(5, 1fr)`. A
+     flex `1fr` grid track's automatic MINIMUM size is `auto` (min-content),
+     not 0 — so a card whose content needs more than its even 1/5 share
+     forces that row track to grow past it, pushing the column's total
+     height past the frozen 276px `.gm-battle-grid` box (min-height:auto is
+     the same trap flex items have without min-height:0). Flex column + each
+     card `flex:1 1 0; min-height:0` below removes that floor structurally:
+     the 5 cards ALWAYS divide the column height evenly at any stage scale,
+     clipping (not growing) if content ever needs more room. */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   gap: 7px;
 }
 
 .gm-hero-slot {
   position: relative;
+  /* CR012-P3-02: even division + hard clip — see .gm-slot-column comment. */
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
   padding: 8px 10px;
   border-radius: 10px;
   /* CR-011 §B two-material rule: instrument matte, no blur/shadow. */
@@ -5420,7 +5444,13 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  /* Boss 2026-07-16: the captured mirror is a SQUARE crop (region.rs side==side),
+     but the .gm-minimap box isn't exactly square (~260x256 inside the frozen
+     battle-grid) — `contain` fit the whole square inside, leaving a visible
+     letterbox band on the slightly-shorter axis. `cover` fills the box exactly,
+     cropping a couple px off the wider axis instead — the box already clips via
+     `overflow:hidden` on .gm-minimap, so this crops safely with no distortion. */
+  object-fit: cover;
   image-rendering: auto;
   -webkit-user-select: none;
   user-select: none;
