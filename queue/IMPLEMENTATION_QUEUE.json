@@ -1,18 +1,18 @@
 {
-  "version": "1.5.0",
+  "version": "1.6.0",
   "project": "G-Maiden",
-  "wave": "CR011-P5",
-  "wave_title": "Economy & IA (CR-011 P5): nav rewire + Packs merge + Account hosts wallet + kill the second palette",
-  "note": "P4a/P4b/P7a merged (0d736fd2, 294df18f, 11f6bc14). Single worker (files interlock). PAGES in shortcuts.ts is the single source \u2014 nav swap syncs palette/sheet/Ctrl+n automatically.",
+  "wave": "CR011-P6",
+  "wave_title": "Comfort (CR-011 P6, final): quality-tier switcher + density modes + glance mode + crisp snap",
+  "note": "P5 merged 4725f3c3. Job chips DEFERRED (no real job-event source yet \u2014 honest scope, needs its own CR). P7b (class-based palette unification) queued after as cleanup. This closes CR-011 \u00a7O.",
   "tasks": [
     {
-      "id": "CR011-P5-01",
-      "title": "NAV Companion->Account swap + Packs page (inventory/store/editor) + Account sub-tabs (identity/wallet/ledger) + CR-003 inline navy/cyan -> tokens",
+      "id": "CR011-P6-01",
+      "title": "gm-deck-prefs (quality gq-*/density/crisp) + Settings deck card + Ctrl+D + palette entries + glance mode (house lights)",
       "category": "UI",
       "dependencies": [],
       "priority": 1,
       "required_capability": "Implementation/React-TS",
-      "estimated_complexity": "XL",
+      "estimated_complexity": "L",
       "estimated_context": "Large",
       "parallelizable": false,
       "local_eligibility": "LOCAL_SAFE",
@@ -23,7 +23,7 @@
       ],
       "ready": true,
       "status": "dispatched",
-      "worker_group": "L"
+      "worker_group": "M"
     }
   ]
 }

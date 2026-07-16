@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { MatchPhase } from "./live/phase";
 import { PAGES } from "./shortcuts";
-import type { DeckActions } from "./shortcuts";
+import type { DeckActions, DeckQuality } from "./shortcuts";
 
 // CR-011 §M "Maiden Line" — the command palette. Follows the spec exactly:
 // floats in WINDOW space (fixed, above the scaled stage — mounted as a
@@ -19,6 +19,10 @@ type PaletteEntry = {
   labelTh: string;
   hotkey?: string;
   destructive?: boolean;
+  /** CR011-P6-01: a visible-but-inert row (e.g. the CURRENT quality tier —
+   *  shown so the user can see which tier is active, but selecting it would
+   *  be a no-op so it never runs/closes). */
+  disabled?: boolean;
   run: () => void;
 };
 
@@ -49,9 +53,13 @@ export type MaidenLineProps = {
   onOpenSheet: () => void;
   actions: DeckActions;
   matchPhase: MatchPhase;
+  /** CR011-P6-01: current quality tier (gm-deck-prefs) — the matching
+   *  "คุณภาพกราฟิก: …" entry renders disabled so the active tier is visible
+   *  but not re-selectable. */
+  quality: DeckQuality;
 };
 
-export default function MaidenLine({ open, onClose, onOpenSheet, actions, matchPhase }: MaidenLineProps) {
+export default function MaidenLine({ open, onClose, onOpenSheet, actions, matchPhase, quality }: MaidenLineProps) {
   const [query, setQuery] = useState("");
   const [selected, setSelected] = useState(0);
   const [armedId, setArmedId] = useState<string | null>(null);
@@ -145,6 +153,27 @@ export default function MaidenLine({ open, onClose, onOpenSheet, actions, matchP
       labelTh: "สลับหน้า Settings",
       run: () => actions.setTab("settings"),
     },
+    // CR011-P6-01: quality tiers + density — same gm-deck-prefs store as the
+    // Settings deck card / Ctrl+D (DeckActions.setQuality / toggleDensity).
+    // The CURRENT tier renders disabled (visible marker, inert row).
+    ...(["cinematic", "balanced", "eco"] as const).map(
+      (q): PaletteEntry => ({
+        id: `quality-${q}`,
+        section: "settings",
+        label: `Graphics quality: ${q.charAt(0).toUpperCase()}${q.slice(1)}`,
+        labelTh: `คุณภาพกราฟิก: ${q.charAt(0).toUpperCase()}${q.slice(1)}`,
+        disabled: quality === q,
+        run: () => actions.setQuality(q),
+      })
+    ),
+    {
+      id: "toggle-density",
+      section: "settings",
+      label: "Toggle density",
+      labelTh: "สลับความหนาแน่น",
+      hotkey: "Ctrl+D",
+      run: () => actions.toggleDensity(),
+    },
     {
       id: "open-shortcut-sheet",
       section: "settings",
@@ -198,6 +227,9 @@ export default function MaidenLine({ open, onClose, onOpenSheet, actions, matchP
   }, [activeId]);
 
   function runEntry(entry: PaletteEntry) {
+    // Disabled rows (the current quality tier) are visible markers only —
+    // Enter/click on one neither runs nor closes the palette.
+    if (entry.disabled) return;
     if (entry.destructive) {
       if (armedId === entry.id) {
         entry.run();
@@ -284,11 +316,12 @@ export default function MaidenLine({ open, onClose, onOpenSheet, actions, matchP
                       id={`gm-palette-opt-${entry.id}`}
                       role="option"
                       aria-selected={isSelected}
+                      aria-disabled={entry.disabled || undefined}
                       ref={(el) => {
                         if (el) rowRefs.current.set(entry.id, el);
                         else rowRefs.current.delete(entry.id);
                       }}
-                      className={`gm-palette-row${isSelected ? " selected" : ""}${isArmed ? " danger" : ""}`}
+                      className={`gm-palette-row${isSelected ? " selected" : ""}${isArmed ? " danger" : ""}${entry.disabled ? " disabled" : ""}`}
                       onMouseEnter={() => setSelected(flat.indexOf(entry))}
                       onClick={() => runEntry(entry)}
                     >

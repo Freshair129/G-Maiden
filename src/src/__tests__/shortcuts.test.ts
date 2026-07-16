@@ -99,6 +99,14 @@ describe("matchCombo", () => {
     expect(matchCombo(key("6", { ctrlKey: true, code: "Digit6" }), "F6")).toBe(false);
     expect(matchCombo(key("F6"), "Ctrl+6")).toBe(false);
   });
+
+  // CR011-P6-01: Ctrl+D (density toggle)
+  it("matches Ctrl+D case-insensitively and rejects it without Ctrl or with extra Shift", () => {
+    expect(matchCombo(key("d", { ctrlKey: true }), "Ctrl+D")).toBe(true);
+    expect(matchCombo(key("D", { ctrlKey: true }), "Ctrl+D")).toBe(true);
+    expect(matchCombo(key("d"), "Ctrl+D")).toBe(false);
+    expect(matchCombo(key("d", { ctrlKey: true, shiftKey: true }), "Ctrl+D")).toBe(false);
+  });
 });
 
 describe("buildRegistry", () => {
@@ -144,10 +152,35 @@ describe("buildRegistry", () => {
       toggleSignal: () => {},
       focusSeat: (dir: 1 | -1) => calls.push(`focusSeat(${dir})`),
       openContextMenuAtFocus: () => calls.push("openContextMenuAtFocus"),
+      setQuality: () => {},
+      toggleDensity: () => {},
     };
     registry.find((r) => r.combo === "F6")?.run(ctx);
     registry.find((r) => r.combo === "Shift+F6")?.run(ctx);
     registry.find((r) => r.combo === "Shift+F10")?.run(ctx);
     expect(calls).toEqual(["focusSeat(1)", "focusSeat(-1)", "openContextMenuAtFocus"]);
+  });
+
+  // CR011-P6-01: Ctrl+D density toggle rides the same single-source registry.
+  it("includes Ctrl+D and its entry calls toggleDensity (CR011-P6-01)", () => {
+    const registry = buildRegistry();
+    const entry = registry.find((r) => r.combo === "Ctrl+D");
+    expect(entry).toBeDefined();
+    expect(entry?.id).toBe("toggle-density");
+    const calls: string[] = [];
+    const ctx = {
+      setTab: () => {},
+      openPalette: () => {},
+      openSheet: () => {},
+      closeOverlays: () => {},
+      toggleAnn: () => {},
+      toggleSignal: () => {},
+      focusSeat: () => {},
+      openContextMenuAtFocus: () => {},
+      setQuality: () => {},
+      toggleDensity: () => calls.push("toggleDensity"),
+    };
+    entry?.run(ctx);
+    expect(calls).toEqual(["toggleDensity"]);
   });
 });

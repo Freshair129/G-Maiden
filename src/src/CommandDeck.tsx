@@ -18,7 +18,7 @@ import AccountPage from "./AccountPage";
 import { useProfile } from "./profile";
 import type { VoiceState } from "./voice-types";
 import MaidenLine from "./MaidenLine";
-import { buildRegistry, matchCombo, PAGES, type DeckActions, type ShortcutDef } from "./shortcuts";
+import { buildRegistry, matchCombo, PAGES, type DeckActions, type DeckQuality, type ShortcutDef } from "./shortcuts";
 import {
   ContextMenu,
   useContextMenu,
@@ -47,6 +47,45 @@ const GLOBAL_HOTKEYS: Array<{ combo: string; labelTh: string }> = [
   { combo: "Alt+↑ / Alt+↓", labelTh: "เพิ่ม/ลดระดับเสียง ±10%" },
   { combo: "Alt+M", labelTh: "ปิด/เปิดเสียง (mute toggle)" },
 ];
+
+/** CR011-P6-01 (CR-011 §H/§J/§N): the deck comfort prefs — ONE localStorage
+ *  key, same seed pattern as gm-deck-audio-rail (persisted value is the seed,
+ *  loaded once on CommandDeck mount, written back on every change). */
+type DeckDensity = "comfortable" | "compact";
+type DeckPrefs = { quality: DeckQuality; density: DeckDensity; crisp: boolean };
+const DECK_PREFS_KEY = "gm-deck-prefs";
+const DEFAULT_DECK_PREFS: DeckPrefs = { quality: "cinematic", density: "comfortable", crisp: false };
+
+function loadDeckPrefs(): DeckPrefs {
+  try {
+    const raw = localStorage.getItem(DECK_PREFS_KEY);
+    if (raw) {
+      const p = JSON.parse(raw) as Partial<Record<keyof DeckPrefs, unknown>>;
+      return {
+        quality: p.quality === "balanced" || p.quality === "eco" ? p.quality : "cinematic",
+        density: p.density === "compact" ? "compact" : "comfortable",
+        crisp: p.crisp === true
+      };
+    }
+  } catch {
+    /* noop — corrupt/absent storage falls through to defaults */
+  }
+  return DEFAULT_DECK_PREFS;
+}
+
+/** CR-011 §N crisp-text snap steps — s snaps DOWN to the nearest step so a
+ *  fractional scale never blurs 1px hairlines/rims. Never snaps ABOVE the
+ *  fit value; below the 0.5 floor (window smaller than the 710×398 minimum)
+ *  the raw fit value is kept rather than upscaling to a step. */
+const CRISP_SCALE_STEPS = [1.0, 0.875, 0.75, 0.5];
+
+function snapScaleDown(s: number): number {
+  let best: number | null = null;
+  for (const step of CRISP_SCALE_STEPS) {
+    if (step <= s + 1e-9 && (best === null || step > best)) best = step;
+  }
+  return best ?? s;
+}
 
 const FUNG_PANEL_PATH =
   "M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 688 A 20 20 0 0 1 1248,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z";
@@ -117,8 +156,74 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   const gName = displayName || (email ? email.split("@")[0] : "Guest");
   const gSub = email || data.agentSector.title;
 
+  // CR011-P6-01: deck comfort prefs (quality/density/crisp) — lazy-seeded from
+  // localStorage once on mount (gm-deck-audio-rail pattern), persisted below.
+  const [deckPrefs, setDeckPrefs] = useState<DeckPrefs>(loadDeckPrefs);
+  useEffect(() => {
+    try {
+      localStorage.setItem(DECK_PREFS_KEY, JSON.stringify(deckPrefs));
+    } catch {
+      /* noop */
+    }
+  }, [deckPrefs]);
+
+  // quality → gq-* class on <html>. Cinematic IS the :root default (owner
+  // decision 2026-07-14) so it maps to NO class — this effect only ever
+  // touches the gq-* names, preserving every other class on <html>
+  // (.is-dragging lives there too).
+  useEffect(() => {
+    const root = document.documentElement;
+    root.classList.remove("gq-cinematic", "gq-balanced", "gq-eco");
+    if (deckPrefs.quality === "balanced") root.classList.add("gq-balanced");
+    else if (deckPrefs.quality === "eco") root.classList.add("gq-eco");
+  }, [deckPrefs.quality]);
+
+  // CR-011 §J glance mode ("house lights"): live match + window unfocused
+  // >10s → `gm-glance` on the .g-deck root; any focus/input clears it
+  // instantly. One timeout armed on blur — nothing ticks while focused (no
+  // interval churn), and the effect tears its own timer down on phase change
+  // or unmount.
+  const [glance, setGlance] = useState(false);
+  const matchPhase = data.match.matchPhase;
+  useEffect(() => {
+    if (matchPhase !== "live") {
+      setGlance(false);
+      return;
+    }
+    let timer: number | null = null;
+    const clearTimer = () => {
+      if (timer !== null) {
+        window.clearTimeout(timer);
+        timer = null;
+      }
+    };
+    const arm = () => {
+      clearTimer();
+      timer = window.setTimeout(() => setGlance(true), 10_000);
+    };
+    const disarm = () => {
+      clearTimer();
+      setGlance(false);
+    };
+    window.addEventListener("blur", arm);
+    window.addEventListener("focus", disarm);
+    // "remove instantly on input": pointer/keys reaching the webview count as
+    // the user being back at the deck even if a focus event is swallowed.
+    window.addEventListener("pointerdown", disarm);
+    window.addEventListener("keydown", disarm);
+    if (!document.hasFocus()) arm();
+    return () => {
+      window.removeEventListener("blur", arm);
+      window.removeEventListener("focus", disarm);
+      window.removeEventListener("pointerdown", disarm);
+      window.removeEventListener("keydown", disarm);
+      clearTimer();
+    };
+  }, [matchPhase]);
+
   // fixed 1420×760 stage (SSOT 03-layout.md) scaled to fill any window + rounded-fillet Subtract clip
   const stageRef = useRef<HTMLDivElement>(null);
+  const crisp = deckPrefs.crisp;
   useEffect(() => {
     const apply = () => {
       const stage = stageRef.current;
@@ -126,14 +231,18 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
         // CR-007 follow-up: never upscale past authored 1420×760 size — a >1.0
         // scale factor blows up 1px rims/text into fat blurry lines ("chunky"
         // feedback). Downscale for small windows still applies via the min().
-        const s = Math.min(window.innerWidth / 1420, window.innerHeight / 760, 1.0);
+        let s = Math.min(window.innerWidth / 1420, window.innerHeight / 760, 1.0);
+        // CR-011 §N crisp-text snap (opt-in): quantize the downscale to
+        // 1.0/0.875/0.75/0.5 (letterboxing the remainder) so 1px lines stay
+        // crisp — never snapping above the fit value.
+        if (crisp) s = snapScaleDown(s);
         stage.style.transform = `translate(-50%, -50%) scale(${s})`;
       }
     };
     apply();
     window.addEventListener("resize", apply);
     return () => window.removeEventListener("resize", apply);
-  }, []);
+  }, [crisp]);
 
   // CR-007 WP-4 Fix 1: the deck's audio rail is the SINGLE owner of volume,
   // signalEnabled, and announcerEnabled. It persists all three under one
@@ -288,6 +397,12 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
     // sees the keystroke), so this only runs when focus is somewhere with no
     // menu wired — where doing nothing is the honest behavior, not a stub.
     openContextMenuAtFocus: () => {},
+    // CR011-P6-01: gm-deck-prefs writers — the palette (quality entries) and
+    // Ctrl+D (density) route through the same single prefs store as the
+    // Settings deck card, so no surface can desync another.
+    setQuality: (q: DeckQuality) => setDeckPrefs((p) => (p.quality === q ? p : { ...p, quality: q })),
+    toggleDensity: () =>
+      setDeckPrefs((p) => ({ ...p, density: p.density === "compact" ? "comfortable" : "compact" })),
   };
 
   // The registry itself is static (no closures over component state — see
@@ -387,7 +502,9 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   };
 
   return (
-    <div className="app deck-v3 g-deck">
+    <div
+      className={`app deck-v3 g-deck${deckPrefs.density === "compact" ? " gm-compact" : ""}${glance ? " gm-glance" : ""}`}
+    >
       <div className="g-deck-bg" />
 
       <div className="g-deck-stage" ref={stageRef}>
@@ -532,12 +649,24 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
           {tab === "history" && <HistoryPage />}
           {tab === "account" && <AccountPage entryMode={accountEntry.mode} entryNonce={accountEntry.n} />}
           {tab === "settings" && (
-            settingsPanel ?? (
-              <div style={{ display: "grid", gap: 16 }}>
-                <SettingsPage />
-                <QuotaCard />
-              </div>
-            )
+            <div style={{ display: "grid", gap: 16 }}>
+              {/* CR011-P6-01: the Deck comfort card sits ABOVE whichever
+                  settings body renders (injected settingsPanel or the
+                  SettingsPage/QuotaCard fallback) — quality/density/crisp
+                  live with the deck, not with the legacy Control panel. */}
+              <DeckPrefsCard
+                prefs={deckPrefs}
+                onQuality={(q) => deckActions.setQuality(q)}
+                onDensity={(d) => setDeckPrefs((p) => (p.density === d ? p : { ...p, density: d }))}
+                onCrispToggle={() => setDeckPrefs((p) => ({ ...p, crisp: !p.crisp }))}
+              />
+              {settingsPanel ?? (
+                <>
+                  <SettingsPage />
+                  <QuotaCard />
+                </>
+              )}
+            </div>
           )}
         </div>
       </main>
@@ -577,6 +706,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
         }}
         actions={deckActions}
         matchPhase={data.match.matchPhase}
+        quality={deckPrefs.quality}
       />
       <ShortcutSheet open={sheetOpen} onClose={() => setSheetOpen(false)} registry={registry} />
     </div>
@@ -624,6 +754,85 @@ function ShortcutSheet({ open, onClose, registry }: { open: boolean; onClose: ()
         </div>
       </div>
     </div>
+  );
+}
+
+const QUALITY_LABEL: Record<DeckQuality, string> = {
+  cinematic: "Cinematic",
+  balanced: "Balanced",
+  eco: "Eco"
+};
+
+/** CR011-P6-01 (CR-011 §E Settings): the compact "Deck" comfort card —
+ *  quality tier / density / crisp-text snap. Pure presenter over the
+ *  gm-deck-prefs store owned by CommandDeck; instrument-matte material via
+ *  additive `gm-deckprefs-*` classes only. */
+function DeckPrefsCard({
+  prefs,
+  onQuality,
+  onDensity,
+  onCrispToggle
+}: {
+  prefs: DeckPrefs;
+  onQuality: (q: DeckQuality) => void;
+  onDensity: (d: DeckDensity) => void;
+  onCrispToggle: () => void;
+}) {
+  return (
+    <section className="gm-deckprefs">
+      <div className="gm-deckprefs-head">Deck</div>
+      <div className="gm-deckprefs-row">
+        <span className="gm-deckprefs-label">คุณภาพกราฟิก</span>
+        <div className="gm-deckprefs-pills" role="group" aria-label="คุณภาพกราฟิก">
+          {(Object.keys(QUALITY_LABEL) as DeckQuality[]).map((q) => (
+            <button
+              key={q}
+              type="button"
+              className={`gm-deckprefs-pill${prefs.quality === q ? " active" : ""}`}
+              aria-pressed={prefs.quality === q}
+              onClick={() => onQuality(q)}
+            >
+              {QUALITY_LABEL[q]}
+            </button>
+          ))}
+        </div>
+      </div>
+      <div className="gm-deckprefs-row">
+        <span className="gm-deckprefs-label">ความหนาแน่น</span>
+        <div className="gm-deckprefs-pills" role="group" aria-label="ความหนาแน่น">
+          <button
+            type="button"
+            className={`gm-deckprefs-pill${prefs.density === "comfortable" ? " active" : ""}`}
+            aria-pressed={prefs.density === "comfortable"}
+            onClick={() => onDensity("comfortable")}
+          >
+            สบายตา
+          </button>
+          <button
+            type="button"
+            className={`gm-deckprefs-pill${prefs.density === "compact" ? " active" : ""}`}
+            aria-pressed={prefs.density === "compact"}
+            onClick={() => onDensity("compact")}
+          >
+            กะทัดรัด
+          </button>
+        </div>
+      </div>
+      <div className="gm-deckprefs-row">
+        <span className="gm-deckprefs-label">ตัวอักษรคมชัด</span>
+        <div className="gm-deckprefs-pills">
+          <button
+            type="button"
+            className={`gm-deckprefs-pill${prefs.crisp ? " active" : ""}`}
+            aria-pressed={prefs.crisp}
+            onClick={onCrispToggle}
+          >
+            {prefs.crisp ? "เปิด" : "ปิด"}
+          </button>
+        </div>
+      </div>
+      <p className="gm-deckprefs-note">ล็อกสเกลเป็นขั้นเพื่อให้เส้น 1px คม เมื่อย่อหน้าต่าง</p>
+    </section>
   );
 }
 

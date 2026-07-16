@@ -45,9 +45,10 @@
   --g-z-bg: 0; --g-z-panel: 1; --g-z-content: 10; --g-z-fab: 100; --g-z-pop: 200;
 }
 /* CR-011 §H quality tiers — DEFAULT (no class) = cinematic (owner decision 2026-07-14).
-   balanced/eco step the console-glass blur down for lighter machines; toggled by a
-   future JS wave setting the class on <html>; .g-deck-panel below consumes
-   var(--g-blur-console) so no other rule needs to change per tier. */
+   balanced/eco step the console-glass blur down for lighter machines; toggled by
+   CommandDeck's gm-deck-prefs store (CR011-P6-01) setting the class on <html>;
+   .g-deck-panel below consumes var(--g-blur-console) so no other rule needs to
+   change per tier. */
 html.gq-cinematic { --g-blur-console: blur(30px) saturate(150%); }
 html.gq-balanced { --g-blur-console: blur(16px) saturate(150%); }
 html.gq-eco { --g-blur-console: none; }
@@ -6100,3 +6101,147 @@ body {
   outline: 2px solid var(--g-ice-500);
   outline-offset: 2px;
 }
+
+/* === CR011-P6-01 — deck comfort: prefs card, density, glance (CR-011 §E/§H/§J/§N) ===
+   Additive only. ZERO geometry changes: every rule below touches interior
+   paddings/gaps/type or content-only opacity — never a sector's
+   position/width/height (the frozen boxes just breathe more content). */
+
+/* -- Settings "Deck" card (quality / density / crisp) — instrument matte. -- */
+.gm-deckprefs {
+  border: 1px solid var(--g-hairline);
+  border-radius: 14px;
+  background: var(--g-instrument);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gm-deckprefs-head {
+  font: 600 10px/1 var(--g-font-ui);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--g-text-mute);
+}
+
+.gm-deckprefs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gm-deckprefs-label {
+  flex: none;
+  width: 132px;
+  font: 500 12px/1.4 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+
+.gm-deckprefs-pills {
+  display: flex;
+  gap: 6px;
+}
+
+.gm-deckprefs-pill {
+  font: 500 11px/1 var(--g-font-ui);
+  color: var(--g-text-dim);
+  background: var(--g-instrument-2);
+  border: 1px solid var(--g-hairline);
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background var(--g-t-hover) var(--g-ease), color var(--g-t-hover) var(--g-ease);
+}
+.gm-deckprefs-pill:hover {
+  background: rgba(143, 212, 255, 0.06);
+  color: var(--g-text);
+}
+.gm-deckprefs-pill:focus-visible {
+  outline: 2px solid var(--g-ice-500);
+  outline-offset: 2px;
+}
+/* active = ice fill (CR-011 §F selected grammar: ice hairline + ice-tinted fill) */
+.gm-deckprefs-pill.active {
+  color: #06111f;
+  background: var(--g-ice-500);
+  border-color: var(--g-ice-500);
+}
+
+.gm-deckprefs-note {
+  margin: 0;
+  font: 400 11px/1.5 var(--g-font-ui);
+  color: var(--g-text-mute);
+}
+
+/* -- Maiden Line: disabled row (current quality tier — visible, inert). -- */
+.gm-palette-row.disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* -- Density: compact (`gm-compact` on the .g-deck root; Ctrl+D / Settings).
+   Interior-only per CR-011 §J/§D "density mode paddings": seat paddings step
+   down 2–4px, list rows tighten one step (padding + line-height), 12px list
+   text drops to 11px. Labels/micro type (8–10px) untouched — the §G floors
+   hold, nothing drops below 10px.
+   Box math (frozen sectors, content only):
+   · battle grid 640×276: padding 10→8 ⇒ column height 276−2(border)−16=258,
+     5 tracks @ (258−4×7 gaps)/5 = 46px; hero card min-content drops to
+     2(border)+12(pad 6×2)+12.1(11px name ×1.1)+3+11(10px state ×1.1) ≈ 40px
+     — MORE slack than comfortable's ≈44 in ≈45.6 tracks. No overflow.
+   · ON AIR 440×354: .gm-agent-card keeps overflow:hidden and .gm-onair-log
+     is flex:1/min-height:0/overflow:hidden — rows are clipped by design, so
+     tighter rows (≈24px vs ≈30px) only mean 1–2 MORE visible rows, never
+     spill toward sector-log. */
+.g-deck.gm-compact .gm-battle-grid { padding: 8px; }
+.g-deck.gm-compact .gm-hero-slot { padding: 6px 8px; }
+.g-deck.gm-compact .gm-agent-card { padding: 11px 12px; }
+.g-deck.gm-compact .gm-sector-log { padding: 14px 16px; }
+.g-deck.gm-compact .gm-momentum { padding: 6px 10px; }
+.g-deck.gm-compact .gm-mini-stat { padding: 6px 8px; }
+
+/* list rows — one step tighter (padding + line-height) */
+.g-deck.gm-compact .gm-onair-row { padding: 4px; }
+.g-deck.gm-compact .gm-onair-now { padding: 9px 2px 7px; }
+.g-deck.gm-compact .gm-onair-row-text { line-height: 1.45; }
+.g-deck.gm-compact .gm-onair-now-text { line-height: 1.45; }
+.g-deck.gm-compact .gm-debrief-row { padding: 3px 6px; }
+.g-deck.gm-compact .gm-debrief-row-text { line-height: 1.45; }
+.g-deck.gm-compact .gm-rundown-row { padding: 6px 10px; }
+.g-deck.gm-compact .gm-rundown-list { gap: 5px; }
+.g-deck.gm-compact .log-list { gap: 6px; }
+.g-deck.gm-compact .log-row { padding: 7px 10px; gap: 10px; }
+
+/* body 12px list text → 11px (list text ONLY — labels/micro keep §G floors;
+   .gm-onair-row-text/.gm-debrief-row-text are ALREADY 11px and stay there) */
+.g-deck.gm-compact .gm-rundown-label,
+.g-deck.gm-compact .gm-rundown-value { font-size: 11px; }
+.g-deck.gm-compact .log-time,
+.g-deck.gm-compact .log-text { font-size: 12px; }
+
+/* -- Glance mode ("house lights", CR-011 §J): `gm-glance` on .g-deck while a
+   live match runs unfocused >10s. Content-only — interior seats dim to .88
+   while the score/clock/momentum type lifts, zero geometry/box changes.
+   Clock-fit math (MEASURED live in the rendered deck, not estimated —
+   .gm-clock renders Arial 800 in the header grid's fixed 74px middle
+   column): at the spec's 24px bump "24:31" ≈ 77.5px — OVERFLOWS; at 22px/
+   tracking 1px "24:31" = 71.0px but the pre-horn clock "-01:30" = 79.4px
+   still overflows, and PRE_GAME *is* matchPhase "live" (live/phase.ts
+   LIVE_STATES) so glance can show a negative clock. Bump therefore trimmed
+   to 20px + tracking 1px: measured "24:31" = 64.6px, "-01:30" = 72.2px —
+   both inside 74px. Score strong lifts one §G step (13→15px inside its 1fr
+   cells); momentum head (10→11px) lifts phase/title/label together (they
+   inherit it). */
+.g-deck.gm-glance .gm-stats-bar,
+.g-deck.gm-glance .gm-battle-grid,
+.g-deck.gm-glance .gm-agent-card,
+.g-deck.gm-glance .gm-sector-log {
+  opacity: 0.88;
+}
+.g-deck.gm-glance .gm-score-header strong { font-size: 15px; }
+.g-deck.gm-glance .gm-clock {
+  font-size: 20px;
+  letter-spacing: 1px;
+}
+.g-deck.gm-glance .gm-mom-head { font-size: 11px; }

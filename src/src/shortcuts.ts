@@ -6,10 +6,17 @@
 // Scope note: this registry only carries the bindings actually wired in
 // CR011-P4a-01 (Ctrl+K, Ctrl+1..8, Ctrl+/ + "?", Esc) PLUS, as of
 // CR011-P4b-01, F6/Shift+F6 (seat focus cycling) and Shift+F10 (context
-// menu at focus). The fuller §L table (Ctrl+Tab, Space, Ctrl+D, F2) still
-// belongs to later waves (density toggle, inspector, row navigation) that
+// menu at focus), PLUS, as of CR011-P6-01, Ctrl+D (density toggle — the
+// gm-deck-prefs store in CommandDeck). The remaining §L rows (Ctrl+Tab,
+// Space, F2) still belong to later waves (inspector, row navigation) that
 // don't exist yet — the sheet should never claim a binding this build
 // doesn't honor.
+
+/** CR011-P6-01: the three quality tiers of the `gm-deck-prefs` store
+ *  (CR-011 §H). "cinematic" is the :root DEFAULT — it maps to NO gq-* class
+ *  on <html> (owner decision 2026-07-14); balanced/eco add gq-balanced /
+ *  gq-eco respectively. */
+export type DeckQuality = "cinematic" | "balanced" | "eco";
 
 /** Actions the registry can invoke, supplied by CommandDeck (the single owner
  *  of tab/palette/sheet state and the existing volume/ann/signal handlers —
@@ -33,6 +40,12 @@ export type DeckActions = {
    *  for them). This only runs when focus sits somewhere with no menu wired,
    *  where correctly doing nothing IS the honest behavior. */
   openContextMenuAtFocus(): void;
+  /** CR011-P6-01: set the graphics-quality tier (gm-deck-prefs `quality`) —
+   *  CommandDeck persists it and swaps the gq-* class on <html>. */
+  setQuality(q: DeckQuality): void;
+  /** CR011-P6-01: flip gm-deck-prefs `density` between comfortable and
+   *  compact (the `.g-deck.gm-compact` interior-only tightening) — Ctrl+D. */
+  toggleDensity(): void;
 };
 
 export type ShortcutDef = {
@@ -47,15 +60,10 @@ export type ShortcutDef = {
   run: (ctx: DeckActions) => void;
 };
 
-/** Pages in NAV order (CommandDeck.tsx `NAV`) — Ctrl+1..8. Kept as a plain
- *  array (not imported from CommandDeck) so this file stays free of React/
- *  component imports; the order is asserted to match NAV by contract/review,
- *  not by shared code, since NAV carries JSX (Icon components) this file must
- *  not depend on. */
-// Exported so MaidenLine consumes the SAME list (single source — the page list
-// was hand-copied in three places and the Thai labels had already drifted
-// within one wave; Opus gate, CR011-P4a). CommandDeck's NAV keeps its own
-// JSX-carrying array but the keys/order are asserted equal by the tests.
+/** THE page list — the single source. CommandDeck's NAV is DERIVED from this
+ *  array (PAGES.map + an icon lookup, CR011-P5 gate fix), MaidenLine consumes
+ *  it directly, and Ctrl+1..8 index into it — rail/palette/sheet/hotkeys
+ *  cannot drift because there is exactly one array. */
 // CR011-P5-01: rail order per CR-011 §C — Companion dissolves (its content
 // moved into Settings/the shortcut sheet already); Account joins the rail
 // (was dropdown-only). Order: dashboard, live, voice, build, insights,
@@ -196,6 +204,14 @@ export function buildRegistry(): ShortcutDef[] {
       labelTh: "เมนูบริบท",
       when: "always",
       run: (ctx) => ctx.openContextMenuAtFocus(),
+    },
+    {
+      id: "toggle-density",
+      combo: "Ctrl+D",
+      label: "Toggle density",
+      labelTh: "สลับความหนาแน่น",
+      when: "always",
+      run: (ctx) => ctx.toggleDensity(),
     },
   ];
 }
