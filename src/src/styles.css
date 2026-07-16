@@ -5044,11 +5044,19 @@ body {
   border-radius: 12px;
   background: var(--g-instrument);
 }
-/* Reserve the phase chip's right-edge lane: the right-team text is
-   text-align:start in a 1fr cell — without this a long team name runs
-   under the absolutely-positioned chip (lead merge-fix wave CR011-P3). */
+/* Boss 2026-07-14: team labels hug their own edges (left team flush left,
+   right team flush right). The old 80px chip-lane reservation is gone — the
+   two-tier header puts the chip in the BOTTOM band, the text in the TOP band,
+   so they no longer share vertical space. Ellipsis kept as a guard. */
+.gm-score-header > strong:first-of-type {
+  justify-self: start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
 .gm-score-header > strong:last-of-type {
-  padding-right: 80px;
+  justify-self: end;
+  text-align: right;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -5083,15 +5091,12 @@ body {
    and it stays clear of that horizontally-centered text by sitting below it. */
 .gm-phase-chip {
   position: absolute;
-  /* Far-right edge, vertically centred (like the CR-011 mock): centre-relative
-     offsets collide with real glyphs on BOTH sides — the mono clock extends
-     ~25px right of centre and the right-team text is text-align:start, so the
-     only reliably-empty lane is the header's right end (measured live, lead
-     merge-fix wave CR011-P3). The right-team <strong> reserves this lane via
-     padding-right below, so long team names can't run under the chip. */
+  /* Two-tier header (Boss 2026-07-14): the chip lives in the BOTTOM band with
+     the momentum bar — the top band belongs to the scoreline text, which is
+     now flush right, so the old vertically-centred anchor collided with the
+     Dire label (measured live). */
   right: 10px;
-  top: 50%;
-  transform: translateY(-50%);
+  bottom: 5px;
   font: 600 8px/1 var(--g-font-ui);
   letter-spacing: 0.8px;
   text-transform: uppercase;
