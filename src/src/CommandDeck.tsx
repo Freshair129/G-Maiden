@@ -874,22 +874,24 @@ function FeedAgePill({ updatedAt, online }: { updatedAt: number; online: boolean
 /** Game-momentum meter + laning/mid/late phase chip. Signed bar grows right
  *  (green, we're ahead) or left (red, behind) from centre; value is the proxy
  *  from companion.momentum (kill lead + teamfight swing). See buildMomentum.ts. */
-function MomentumMeter({ momentum }: { momentum: CompanionData["momentum"] }) {
+/** Boss feedback (2026-07-14): the old standalone .gm-momentum section had NO
+ *  position rule since its very first commit — it flowed as a full-width block
+ *  over the score-header zone ("สเกลผิด"). Momentum now lives INSIDE the score
+ *  header as a slim broadcast-style win-bar under the scoreline (teams/clock
+ *  row), where a momentum readout belongs. */
+function MomentumInline({ momentum }: { momentum: CompanionData["momentum"] }) {
   const v = Math.max(-100, Math.min(100, momentum.value));
   const mag = Math.min(50, Math.abs(v) / 2); // % of the half-track
   const fill = v >= 0 ? { left: "50%", width: `${mag}%` } : { left: `${50 - mag}%`, width: `${mag}%` };
   return (
-    <section className="gm-momentum" data-seat="momentum" tabIndex={-1}>
-      <div className="gm-mom-head">
-        <span className="gm-mom-phase">{momentum.phaseLabel}</span>
-        <span className="gm-mom-title">MOMENTUM</span>
-        <span className={`gm-mom-label ${toneClass(momentum.tone)}`}>{momentum.label}</span>
-      </div>
-      <div className="gm-mom-track">
+    <div className="gm-mom-inline" title={`MOMENTUM ${v >= 0 ? "+" : ""}${v} — ${momentum.label}`}>
+      <span className="gm-mom-inline-phase">{momentum.phaseLabel}</span>
+      <div className="gm-mom-inline-track">
         <span className="gm-mom-center" />
         <span className={`gm-mom-fill ${v >= 0 ? "pos" : "neg"}`} style={fill} />
       </div>
-    </section>
+      <span className={`gm-mom-inline-label ${toneClass(momentum.tone)}`}>{momentum.label}</span>
+    </div>
   );
 }
 
@@ -1263,6 +1265,7 @@ function GMaidenFungDashboard({
         <span className="gm-clock">{data.match.clock}</span>
         <strong>{data.match.rightScore} {data.match.rightTeamName}</strong>
         <PhaseChip phase={realPhase} />
+        <MomentumInline momentum={data.momentum} />
       </section>
 
       <section className="gm-stats-bar" data-seat="stats" tabIndex={-1}>
@@ -1270,8 +1273,6 @@ function GMaidenFungDashboard({
         <MiniStat label="GPM" value={String(data.match.player.gpm)} sub="Farm" />
         <MiniStat label="XPM" value={String(data.match.player.xpm)} sub="Tempo" />
       </section>
-
-      <MomentumMeter momentum={data.momentum} />
 
       <section className="gm-battle-grid" data-seat="battle-grid" tabIndex={-1}>
         {seatPhase === "live" ? (

@@ -5033,9 +5033,12 @@ body {
   height: 48px;
   display: grid;
   grid-template-columns: 1fr 74px 1fr;
-  align-items: center;
+  /* Two-tier composition (Boss 2026-07-14): scoreline text rides the TOP band,
+     freeing the bottom band for the inline momentum bar + phase chip — the
+     48px box itself is unchanged. Was align-items:center / padding 0. */
+  align-items: start;
   gap: 14px;
-  padding: 0 14px;
+  padding: 7px 14px 0;
   /* CR-011 §B two-material rule: instrument matte, no blur/shadow (shell owns those). */
   border: 1px solid var(--g-hairline);
   border-radius: 12px;
@@ -6249,3 +6252,60 @@ body {
 /* CR-011 polish (Boss): live-layout preview escape on the standby rundown —
    same pill as gm-debrief-back, just spaced below the checklist. */
 .gm-rundown-preview { margin-top: 10px; align-self: flex-start; }
+
+/* Boss feedback (2026-07-14): momentum as a slim broadcast win-bar inside the
+   score header bottom strip (the old standalone .gm-momentum block had no
+   position rule and flowed full-width over this very zone). Centered cluster
+   stays clear of the right-anchored phase chip and the mid-row glyphs. */
+.gm-mom-inline {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 12px;
+}
+.gm-mom-inline-phase {
+  font: 600 10px/1 var(--g-font-ui);
+  letter-spacing: 0.6px;
+  color: var(--g-text-mute);
+  white-space: nowrap;
+}
+.gm-mom-inline-track {
+  position: relative;
+  width: 180px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(150, 185, 230, 0.10);
+  overflow: hidden;
+}
+.gm-mom-inline-track .gm-mom-center {
+  position: absolute;
+  left: 50%;
+  top: -1px;
+  bottom: -1px;
+  width: 1px;
+  background: var(--g-hairline-2);
+}
+.gm-mom-inline-track .gm-mom-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transition: width var(--g-t-bar) var(--g-ease), left var(--g-t-bar) var(--g-ease);
+}
+.gm-mom-inline-track .gm-mom-fill.pos { background: var(--g-safe); border-radius: 0 3px 3px 0; }
+.gm-mom-inline-track .gm-mom-fill.neg { background: var(--g-danger); border-radius: 3px 0 0 3px; }
+.gm-mom-inline-label {
+  font: 600 10px/1 var(--g-font-ui);
+  white-space: nowrap;
+}
+.gm-mom-inline-label.good { color: var(--g-safe); }
+.gm-mom-inline-label.warn { color: var(--g-warn); }
+.gm-mom-inline-label.danger { color: var(--g-danger); }
+.gm-mom-inline-label.info { color: var(--g-text-dim); }
+
+/* Clock line-box was taller than its glyphs and kissed the momentum strip by
+   ~3px in the two-tier header — pin it to its ink height (Boss 2026-07-14). */
+.gm-score-header .gm-clock { line-height: 1; }
