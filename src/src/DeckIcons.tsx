@@ -69,6 +69,17 @@ export function IconAccount({ size = 20, className }: IconProps) {
   );
 }
 
+export function IconStore({ size = 20, className }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>
+      <path d="M4 9.5l1-5h14l1 5" />
+      <path d="M4 9.5a2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0 2.5 2.5 0 0 0 5 0" />
+      <path d="M5 9.8V20h14V9.8" />
+      <path d="M9.5 20v-5.5h5V20" />
+    </svg>
+  );
+}
+
 export function IconSettings({ size = 20, className }: IconProps) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className={className}>

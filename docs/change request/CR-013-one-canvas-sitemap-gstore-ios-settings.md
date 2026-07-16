@@ -1,6 +1,6 @@
 # CR-013: ONE CANVAS — sitemap ใหม่, G-Store เข้า nav, Settings แบบ iOS
 
-**Status:** PROPOSED (รอ Boss อนุมัติ)
+**Status:** ACCEPTED (Boss "อนุมัติ CR-013" 2026-07-16) — implement via RWANG Phase-7 waves (Sonnet worker / Opus gate / Fable architect+merger)
 **Author:** Claude (architect) for Boss
 **Date:** 2026-07-16
 **Amends:** CR-011 COLD BOOTH (§C Information architecture, §E Core screens) — ไม่แตะ §B direction, §F–§I ระบบ component/type/color/motion

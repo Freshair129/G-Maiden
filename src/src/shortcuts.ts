@@ -64,17 +64,17 @@ export type ShortcutDef = {
  *  array (PAGES.map + an icon lookup, CR011-P5 gate fix), MaidenLine consumes
  *  it directly, and Ctrl+1..8 index into it — rail/palette/sheet/hotkeys
  *  cannot drift because there is exactly one array. */
-// CR011-P5-01: rail order per CR-011 §C — Companion dissolves (its content
-// moved into Settings/the shortcut sheet already); Account joins the rail
-// (was dropdown-only). Order: dashboard, live, voice, build, insights,
-// history, account, settings.
+// CR-013 W1-01: ONE CANVAS nav consolidation — Build folds into Live as an
+// in-page segmented tab ("สด"/"บิลด์"), History folds into Insights the same
+// way ("ภาพรวม"/"รายสัปดาห์"/"ประวัติ"), and G-Store gets its own rail seat
+// (routes to the existing StorePage catalog). 8 pages -> 7. Order: dashboard,
+// live, voice, store, insights, account, settings.
 export const PAGES: Array<{ key: string; label: string; labelTh: string }> = [
   { key: "dashboard", label: "Dashboard", labelTh: "บูธ (Dashboard)" },
   { key: "live", label: "Live", labelTh: "แมตช์สด (Live)" },
   { key: "voice", label: "Voice", labelTh: "แพ็กเสียง (Voice)" },
-  { key: "build", label: "Build", labelTh: "บิลด์ (Build)" },
-  { key: "insights", label: "Insights", labelTh: "ข้อมูลเชิงลึก (Insights)" },
-  { key: "history", label: "History", labelTh: "ประวัติ (History)" },
+  { key: "store", label: "Store", labelTh: "G-Store" },
+  { key: "insights", label: "Insights", labelTh: "สถิติ (Insights)" },
   { key: "account", label: "Account", labelTh: "บัญชี (Account)" },
   { key: "settings", label: "Settings", labelTh: "ตั้งค่า (Settings)" },
 ];

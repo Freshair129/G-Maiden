@@ -2155,6 +2155,66 @@ body {
 .gm-packs-tab:focus-visible,
 .gm-account-tab:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
 
+/* CR-013 W1-01: ONE CANVAS in-page tabs — Live's สด/บิลด์ split and
+   Insights' ภาพรวม/รายสัปดาห์/ประวัติ split. Same instrument-matte
+   segmented-control language as .gm-account-tabs above (deliberately not
+   merged into that selector family: those two gate different components'
+   props, this one is presentational/caller-owned — see DeckTabs in
+   CommandDeck.tsx), so all three read as one system without sharing state. */
+.deck-tabbed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+.deck-tabbed-body {
+  flex: 1;
+  min-height: 0;
+  /* CR-013 W1 gate fix (Opus): the page SURFACE stays overflow:hidden (R1 — no
+     page-level scroll, and the tab bar above stays pinned), but the tab BODY
+     scrolls internally as an INTERIM. LiveMatchPage's สด content is ~789px in
+     the ~570px body and InsightsPage's ประวัติ list grows with match count —
+     hard-clipping them silently loses content (looks broken). W5 replaces this
+     internal scroll with fit-to-canvas layout + fixed-height paginated frames
+     (rowsThatFit) so nothing scrolls at all, per Boss's no-scroll rule. */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+.deck-tabs {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 8px;
+  padding: 4px;
+  background: var(--g-instrument);
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-pill);
+  width: fit-content;
+  flex: 0 0 auto;
+}
+.deck-tab {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--g-text-dim);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  padding: 7px 14px;
+  border-radius: var(--g-r-pill);
+  cursor: pointer;
+  transition: background var(--g-t-hover) var(--g-ease), color var(--g-t-hover) var(--g-ease),
+    border-color var(--g-t-hover) var(--g-ease);
+}
+.deck-tab:hover { color: var(--g-text); background: var(--g-instrument-2); }
+.deck-tab.on {
+  background: var(--g-instrument-2);
+  border-color: var(--g-hairline-2);
+  color: var(--g-ice-300);
+}
+.deck-tab:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+
 /* Packs page shell — the mode body fills whatever's left; the surrounding
    `.surface.page-voice` already carries `overflow-y: auto` (see the shared
    rule further down), so this doesn't need its own scroll/height math —
@@ -4606,8 +4666,8 @@ body {
 .g-deck-panel .surface.page-history,
 .g-deck-panel .surface.page-build,
 .g-deck-panel .surface.page-companion,
-.g-deck-panel .surface.page-live {
-  overflow-y: auto !important;
+.g-deck-panel .surface.page-live,
+.g-deck-panel .surface.page-store {
   /* Boss 2026-07-16 "เข้า settings แล้วพัง": the CR-006 rule above zeroes the
      surface padding for the dashboard (whose sectors self-position), but these
      FLOW pages lost their interior inset with it — content jammed into the
@@ -4618,6 +4678,28 @@ body {
      left 104 clears the lower-left sidebar cut (local x80) + 24; right 28 /
      bottom 24 rhythm. Dashboard keeps padding:0 from the rule above. */
   padding: 74px 28px 24px 104px !important;
+}
+
+/* CR-013 W1-01: page-live/page-insights/page-store now each own their content
+   fully (LiveMatchPage/InsightsPage/StorePage already manage their own
+   internal scroll — LiveMatchPage and InsightsPage did before this change
+   too, they just inherited page-level scroll harmlessly; StorePage is new
+   here), so they clip at the surface instead of double-scrolling. The
+   remaining flow pages below (voice/account/settings/history/build/
+   companion) keep page-level auto-scroll — unconverted, later-wave territory. */
+.g-deck-panel .surface.page-voice,
+.g-deck-panel .surface.page-account,
+.g-deck-panel .surface.page-settings,
+.g-deck-panel .surface.page-history,
+.g-deck-panel .surface.page-build,
+.g-deck-panel .surface.page-companion {
+  overflow-y: auto !important;
+}
+
+.g-deck-panel .surface.page-live,
+.g-deck-panel .surface.page-insights,
+.g-deck-panel .surface.page-store {
+  overflow: hidden !important;
 }
 
 .g-deck-panel .banner.err {

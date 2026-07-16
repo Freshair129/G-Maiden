@@ -1,39 +1,22 @@
 {
-  "version": "2.2.0",
+  "version": "2.3.0",
   "project": "G-Maiden",
-  "wave": "CR012-P3",
-  "wave_title": "CV/deck refinements: minimap region size (#1) + hero-card overlap (#2) + phantom-hero reduction (#3)",
-  "note": "Boss demo feedback after CV works: (1) minimap mirror shows only half - region 0.156 frac too small vs measured ~0.26 real minimap; (2) hero cards overlap when window shrinks; (3) wrong hero names - phantom detections (partly inherent to demo w/o draft roster; raise confidence+temporal). Rust critical path for 1+3.",
+  "wave": "CR013-W1",
+  "wave_title": "ONE CANVAS skeleton: PAGES restructure (7-nav) + DeckTabs shell + Live/Insights consolidation + G-Store seat",
+  "cr": "CR-013",
+  "roster": "Sonnet worker / Opus gate / Fable architect+merger",
+  "architect_note": "R1 global overflow:hidden flip DEFERRED to W5 (final assertion) to avoid intermediate breakage: pages not yet fit (voice/account/settings) keep overflow-y:auto until their own wave converts them. W1 only sets overflow:hidden on pages it makes no-scroll now (live/insights/store).",
   "tasks": [
     {
-      "id": "CR012-P3-01",
-      "title": "Rust: minimap region frac 0.156->measured ~0.26 (+test update) + raise CONF_THRESHOLD + tighten sentry temporal confirm to cut phantom heroes",
-      "category": "Core",
-      "dependencies": [],
-      "priority": 1,
-      "required_capability": "Implementation/Rust-CV",
-      "estimated_complexity": "M",
-      "estimated_context": "Medium",
-      "parallelizable": true,
-      "local_eligibility": "CLOUD_REQUIRED",
-      "verification": [
-        "cargo test",
-        "cargo clippy -D warnings"
-      ],
-      "ready": true,
-      "status": "dispatched",
-      "worker_group": "P"
-    },
-    {
-      "id": "CR012-P3-02",
-      "title": "Frontend: hero-card column never overlaps at any deck scale (reproduce at small window, fix gm-slot-column layout)",
+      "id": "CR013-W1-01",
+      "title": "PAGES 7-nav restructure + DeckTabs segmented shell + Live[สด|บิลด์] + Insights[ภาพรวม|รายสัปดาห์|ประวัติ] + G-Store seat (StorePage catalog)",
       "category": "UI",
       "dependencies": [],
       "priority": 1,
       "required_capability": "Implementation/React-CSS",
-      "estimated_complexity": "M",
-      "estimated_context": "Medium",
-      "parallelizable": true,
+      "estimated_complexity": "L",
+      "estimated_context": "Large",
+      "parallelizable": false,
       "local_eligibility": "LOCAL_SAFE",
       "verification": [
         "tsc",
@@ -42,7 +25,7 @@
       ],
       "ready": true,
       "status": "dispatched",
-      "worker_group": "Q"
+      "worker_group": "W"
     }
   ]
 }

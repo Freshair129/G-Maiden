@@ -15,6 +15,7 @@ import { useCompanionData, useMinimapImage, toneClass, formatKda, type Companion
 import type { MatchPhase } from "./live/phase";
 import { heroPortraitUrl } from "./heroPortrait";
 import AccountPage from "./AccountPage";
+import StorePage from "./StorePage";
 import { useProfile } from "./profile";
 import type { VoiceState } from "./voice-types";
 import MaidenLine from "./MaidenLine";
@@ -29,7 +30,7 @@ import {
   IconDashboard,
   IconLive,
   IconVoice,
-  IconBuild,
+  IconStore,
   IconInsights,
   IconSettings,
   IconAccount
@@ -129,26 +130,18 @@ const FUNG_PANEL_PATH =
 const FUNG_PANEL_PATH_SIGNALS =
   "M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 488 A 20 20 0 0 1 1248,508 H 836 A 20 20 0 0 0 816,528 V 688 A 20 20 0 0 1 796,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z";
 
-// history has no codex glyph — tiny inline fallback
-function IconHistory({ size = 20 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1M3.5 5v3.5H7" /><path d="M12 8v4l2.5 1.5" />
-    </svg>
-  );
-}
-
 // CR011-P5 gate fix: NAV is DERIVED from shortcuts.ts PAGES — the two arrays
 // were hand-aligned duplicates and nothing guarded the alignment (the old
-// comment claimed tests did; they did not). Now Ctrl+1..8, the palette, the
+// comment claimed tests did; they did not). Now Ctrl+1..7, the palette, the
 // sheet, and the rail literally cannot drift: one array, one icon map.
+// CR-013 W1-01: build/history no longer have their own rail seat (they moved
+// into in-page DeckTabs under live/insights) — store takes a seat instead.
 const NAV_ICONS: Record<string, (p: { size?: number }) => ReactNode> = {
   dashboard: IconDashboard,
   live: IconLive,
   voice: IconVoice,
-  build: IconBuild,
+  store: IconStore,
   insights: IconInsights,
-  history: IconHistory,
   account: IconAccount,
   settings: IconSettings
 };
@@ -163,6 +156,11 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   const [annEnabled, setAnnEnabled] = useState(true);
   const [signalEnabled, setSignalEnabled] = useState(true);
   const [voicePackName, setVoicePackName] = useState<string | null>(null);
+  // CR-013 W1-01: in-page tabs — Live folds in Build, Insights folds in
+  // History. Local to CommandDeck (same "single owner" shape as `tab` above);
+  // no persistence, no URL sync — a page switch always lands on the default sub-tab.
+  const [liveTab, setLiveTab] = useState("live"); // "live" | "build"
+  const [insightsTab, setInsightsTab] = useState("overview"); // "overview" | "history"
   const volumeDebounceRef = useRef<number | null>(null);
   // CR011-P4a-01: Maiden Line (Ctrl+K) + the shortcut sheet (Ctrl+Shift+/ / ?).
   // State lives here (CommandDeck is the single owner of tab/palette/sheet),
@@ -691,11 +689,48 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
               menu={menu}
             />
           )}
-          {tab === "live" && <LiveMatchPage />}
+          {tab === "live" && (
+            <div className="deck-tabbed">
+              <DeckTabs
+                tabs={[
+                  { key: "live", label: "สด" },
+                  { key: "build", label: "บิลด์" }
+                ]}
+                active={liveTab}
+                onChange={setLiveTab}
+              />
+              <div className="deck-tabbed-body">
+                {liveTab === "live" ? <LiveMatchPage /> : <BuildAdvisorPage />}
+              </div>
+            </div>
+          )}
           {tab === "voice" && <VoicePacksPage onNavigate={navigateTo} />}
-          {tab === "build" && <BuildAdvisorPage />}
-          {tab === "insights" && <InsightsPage />}
-          {tab === "history" && <HistoryPage />}
+          {tab === "store" && (
+            <StorePage
+              onNavigateToWallet={() => navigateTo("account", "wallet")}
+              onRequestSignIn={() => navigateTo("account", "account")}
+            />
+          )}
+          {tab === "insights" && (
+            <div className="deck-tabbed">
+              {/* CR-013 W1 gate fix (Opus): InsightsPage already renders the
+                  weekly-report section inline, so a separate "รายสัปดาห์" tab
+                  showed byte-identical content — a dead pill. Dropped until a
+                  distinct weekly view exists (buildWeekly.ts is scaffolded).
+                  Tabs are ภาพรวม / ประวัติ only. */}
+              <DeckTabs
+                tabs={[
+                  { key: "overview", label: "ภาพรวม" },
+                  { key: "history", label: "ประวัติ" }
+                ]}
+                active={insightsTab}
+                onChange={setInsightsTab}
+              />
+              <div className="deck-tabbed-body">
+                {insightsTab === "history" ? <HistoryPage /> : <InsightsPage />}
+              </div>
+            </div>
+          )}
           {tab === "account" && <AccountPage entryMode={accountEntry.mode} entryNonce={accountEntry.n} />}
           {tab === "settings" && (
             <div style={{ display: "grid", gap: 16 }}>
@@ -1114,6 +1149,36 @@ const PHASE_LABEL: Record<MatchPhase, string> = {
  *  centered score/clock text above it, never shifting or wrapping them. */
 function PhaseChip({ phase }: { phase: MatchPhase }) {
   return <span className={`gm-phase-chip gm-phase-chip-${phase}`}>{PHASE_LABEL[phase]}</span>;
+}
+
+/** CR-013 W1-01: a thin segmented control that lets a single rail page host
+ *  two-or-three in-page views (Live: สด/บิลด์; Insights: ภาพรวม/รายสัปดาห์/
+ *  ประวัติ) — this is presentational only, the caller owns which key is
+ *  active and swaps the mounted content underneath. */
+function DeckTabs({
+  tabs,
+  active,
+  onChange
+}: {
+  tabs: { key: string; label: string }[];
+  active: string;
+  onChange: (k: string) => void;
+}) {
+  return (
+    <div className="deck-tabs" role="tablist">
+      {tabs.map((t) => (
+        <button
+          key={t.key}
+          role="tab"
+          aria-selected={active === t.key}
+          className={`deck-tab${active === t.key ? " on" : ""}`}
+          onClick={() => onChange(t.key)}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 /** CR-011 §E standby/prep seat content — replaces the hero columns + minimap
