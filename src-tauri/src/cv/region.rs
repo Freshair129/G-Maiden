@@ -9,10 +9,18 @@
 
 use serde::{Deserialize, Serialize};
 
-/// Default minimap side as a fraction of screen height. Dota's default-scale
-/// minimap is ≈15.6% of a 1080p screen's height; close enough to seed capture,
-/// refined by calibration. Tunable via [`MinimapRegion::for_resolution`].
-const MINIMAP_SIDE_FRAC_OF_HEIGHT: f32 = 0.156;
+/// Default minimap side as a fraction of screen height. MEASURED on a real
+/// 1920×1080 client (2026-07 field test): the minimap square spans roughly
+/// x 8–290, y 790–1070 — ≈282px tall, bottom-inset ≈10px, left-inset ≈8px.
+/// A plain bottom-anchored box of exactly that height (0.26 ⇒ side 281,
+/// y 799) lands ~9px too low/narrow and clips the minimap's top and right
+/// edge — the same class of bug this constant was raised to fix, just
+/// smaller. 0.27 (⇒ side 292 on 1080p) fully contains the measured box with
+/// margin on every edge instead of exactly matching it, so the "grab a
+/// sliver of HUD, never clip the map" principle actually holds; the
+/// detector's negative class filters the extra HUD margin anyway. Refined
+/// per-user by calibration. Tunable via [`MinimapRegion::for_resolution`].
+const MINIMAP_SIDE_FRAC_OF_HEIGHT: f32 = 0.27;
 
 /// Hero blip side as a fraction of the minimap side (spike used 20px on a 256px
 /// map ≈ 7.8%). Drives the prefilter grid cell size at any resolution.
@@ -29,6 +37,10 @@ pub struct MinimapRegion {
 impl MinimapRegion {
     /// Default bounding box for a screen of `screen_w × screen_h`, assuming the
     /// minimap is anchored at the bottom-left corner of the HUD at default scale.
+    /// Anchored flush at (0, screen_h - side): real HUDs have a few px of inset
+    /// that varies by resolution/HUD scale, but we deliberately don't hardcode a
+    /// user-specific offset here — per-user precision is the existing
+    /// calibration path (Phase 2 P2.0/P2.3), not this default.
     pub fn for_resolution(screen_w: u32, screen_h: u32) -> Self {
         let side = ((screen_h as f32) * MINIMAP_SIDE_FRAC_OF_HEIGHT).round() as u32;
         let side = side.clamp(1, screen_h.min(screen_w));
@@ -69,9 +81,11 @@ mod tests {
     fn region_anchored_bottom_left() {
         let r = MinimapRegion::for_resolution(1920, 1080);
         assert_eq!(r.x, 0);
-        // side ≈ 0.156 * 1080 ≈ 168
-        assert!((160..=176).contains(&r.side), "side was {}", r.side);
-        // bottom-anchored: y + side == screen height
+        // side = round(0.27 * 1080) = 292 (Opus gate, CR012-P3: 0.26 still clipped
+        // the measured minimap's top/right by ~9px; 0.27 fully contains it)
+        assert_eq!(r.side, 292);
+        // bottom-anchored: y + side == screen height (y == 788)
+        assert_eq!(r.y, 788);
         assert_eq!(r.y + r.side, 1080);
     }
 
@@ -80,12 +94,8 @@ mod tests {
         let r1080 = MinimapRegion::for_resolution(1920, 1080);
         let r1440 = MinimapRegion::for_resolution(2560, 1440);
         assert!(r1440.icon_size() > r1080.icon_size());
-        // ~13px on 1080p (0.078 * 168)
-        assert!(
-            (10..=16).contains(&r1080.icon_size()),
-            "icon {}",
-            r1080.icon_size()
-        );
+        // ~23px on 1080p (0.078 * 292)
+        assert_eq!(r1080.icon_size(), 23);
     }
 
     #[test]

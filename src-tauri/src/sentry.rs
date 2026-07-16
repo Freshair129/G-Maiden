@@ -8,6 +8,15 @@
 //!
 //! Time is passed in as a monotonic millisecond stamp so the state machine is
 //! deterministically testable without a clock.
+//!
+//! Residual limit: [`CONFIRM_HITS`]/[`STALE_UNCONFIRMED_MS`] are a general
+//! recurrence gate and cut phantom names in real matches, but they cannot
+//! fully eliminate them — without a draft roster to ground against (e.g. a
+//! demo/practice match, or own-game with no pick screen observed), a blip
+//! that genuinely recurs (a courier or ward sitting in one spot, a creep wave
+//! bunched up) can still confirm as a phantom hero. The real fix there is the
+//! roster filter (only classify to heroes actually in the draft), which is
+//! only available once a drafted match's picks are known.
 
 use std::collections::HashMap;
 
@@ -24,7 +33,15 @@ pub const MISSING_THRESHOLD_MS: u64 = 5_000;
 /// one-off misclassifications across its whole 127-hero label set. Those never
 /// recur consistently, so a "seen N times recently" gate drops them — without
 /// it a single stray frame spawns a phantom hero that later reports "missing".
-const CONFIRM_HITS: u32 = 3;
+///
+/// Raised 3 -> 4 (2026-07-16 field test): a demo showed the classifier
+/// hallucinating hero names on creep/ward/building blips; 3 hits let a
+/// flickering non-hero blip (re-detected a couple of times by chance, e.g.
+/// on a busy teamfight frame) slip through. A persistent real hero — seen
+/// on effectively every frame — still confirms one tick later than before,
+/// which is well inside the 5s missing budget, so this doesn't meaningfully
+/// delay real detections.
+const CONFIRM_HITS: u32 = 4;
 
 /// Sliding window for accumulating confirmation hits. If a name isn't re-seen
 /// within this long, its streak resets — a stray hit an age ago must not help
@@ -33,7 +50,13 @@ const CONFIRM_WINDOW_MS: u64 = 4_000;
 
 /// Drop an UNconfirmed track not re-seen within this long, so scattered phantom
 /// misclassifications don't accumulate in the map.
-const STALE_UNCONFIRMED_MS: u64 = 8_000;
+///
+/// Shortened 8s -> 6s (2026-07-16 field test, paired with the CONFIRM_HITS
+/// bump above): with a stricter hit requirement, unconfirmed phantom tracks
+/// take longer to reach confirmation, so they should also be swept out sooner
+/// rather than lingering in the map accumulating stray hits toward the new,
+/// higher bar.
+const STALE_UNCONFIRMED_MS: u64 = 6_000;
 
 /// One enemy that just crossed the missing threshold.
 #[derive(Clone, Debug, serde::Serialize)]
@@ -177,14 +200,14 @@ mod tests {
     fn missing_fires_once_after_threshold_then_rearms() {
         let mut s = Sentry::new();
         let r = region();
-        // confirm CM: CONFIRM_HITS sightings inside the window (last seen 300ms)
-        for t in [0, 150, 300] {
+        // confirm CM: CONFIRM_HITS sightings inside the window (last seen 450ms)
+        for t in [0, 150, 300, 450] {
             assert!(s.update(&[det("CM", 10, 10)], &r, t).is_empty());
         }
         // still within 5s of the last sighting — nothing
         assert!(s.update(&[], &r, 4_000).is_empty());
-        // crosses 5s since last seen — fires once
-        let e = s.update(&[], &r, 5_301);
+        // crosses 5s since last seen (450 + 5301) — fires once
+        let e = s.update(&[], &r, 5_751);
         assert_eq!(e.len(), 1);
         assert_eq!(e[0].hero, "CM");
         assert!(e[0].missing_for_ms >= 5_000);
@@ -201,7 +224,7 @@ mod tests {
         let mut s = Sentry::new();
         let r = region();
         // confirm both, then SF stays seen while CM disappears
-        for t in [0, 150, 300] {
+        for t in [0, 150, 300, 450] {
             s.update(&[det("CM", 10, 10), det("SF", 200, 200)], &r, t);
         }
         s.update(&[det("SF", 205, 205)], &r, 6_000); // SF still seen, CM gone
@@ -214,7 +237,7 @@ mod tests {
     fn last_pos_is_normalised() {
         let mut s = Sentry::new();
         let r = region(); // side 256
-        for t in [0, 150, 300] {
+        for t in [0, 150, 300, 450] {
             s.update(&[det("CM", 128, 64)], &r, t);
         }
         let e = s.update(&[], &r, 6_000);

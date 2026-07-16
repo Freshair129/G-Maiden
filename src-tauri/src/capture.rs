@@ -61,6 +61,15 @@ mod backend {
     /// latency budget to protect — this is unhurried.
     const DRAFT_INTERVAL_MS: u64 = 500;
 
+    /// How often (ms) the loop re-runs Dota-monitor auto-detection
+    /// (CR012-P1-01). Throttled deliberately — `detect_dota_monitor` walks
+    /// `EnumWindows` + DXGI output enumeration, which is cheap but not
+    /// per-frame-cheap, and the G-Signal path must stay ≤300ms end-to-end.
+    /// Checked with a plain `Instant::elapsed()` comparison every loop tick
+    /// (near-zero cost); the actual win32/DXGI work only runs once this
+    /// elapses.
+    const MONITOR_RECHECK_MS: u64 = 2000;
+
     /// Cap the rate of the debug/calibration `minimap-cv` event (ms) ≈ 5 Hz, so
     /// the IPC → WebView2 → DWM path can't pile up over a long match. Edge-
     /// triggered gank alerts / enemy-missing events still emit immediately.
@@ -158,6 +167,25 @@ mod backend {
                 draft_region,
             }
         }
+
+        /// Re-target the pipeline at a new capture resolution/region after a
+        /// monitor switch (CR012-P1-01). `region`/`icon` drive minimap CV;
+        /// `draft_region` drives the pick-screen portrait boxes — both are
+        /// resolution-dependent, so both must move together. G-Sentry and
+        /// G-Motion are reset: their tracked positions are expressed in the
+        /// OLD monitor's coordinate space and would otherwise misfire as
+        /// bogus "enemy moved instantly" events against the new one. A
+        /// monitor switch is rare (Dota relocated to another screen, or the
+        /// app started before Dota launched), so losing a few seconds of
+        /// missing/motion history here is the right trade against silently
+        /// capturing the wrong screen.
+        fn set_region(&mut self, region: MinimapRegion, screen_w: u32, screen_h: u32) {
+            self.region = region;
+            self.icon = region.icon_size();
+            self.draft_region = DraftRegion::for_resolution(screen_w, screen_h);
+            self.sentry = Sentry::new();
+            self.motion = Motion::new();
+        }
     }
 
     /// Spawn the minimap capture on its own thread. Non-blocking; on any failure
@@ -181,15 +209,19 @@ mod backend {
             .expect("capture thread spawn");
     }
 
-    /// Initialise DXGI for the primary monitor and run the capture loop forever.
+    /// Initialise DXGI for whichever monitor Dota 2 is actually running on
+    /// (CR012-P1-01 — falls back to monitor 0 / primary if Dota isn't found
+    /// yet, e.g. the app started first) and run the capture loop forever.
     /// Returns `Err` only if the duplication can't be created — the caller turns
     /// that into Lite mode.
     fn run_dxgi(app: AppHandle) -> Result<(), String> {
-        let mut dxgi = DxgiCapture::new(0)?;
+        let mut current_monitor = crate::dxgi::detect_dota_monitor().unwrap_or(0);
+        let mut dxgi = DxgiCapture::new(current_monitor)?;
         let _ = app.emit("capture-mode", "dxgi");
         let region = MinimapRegion::for_resolution(dxgi.width(), dxgi.height());
         crate::log::error(&format!(
-            "[capture] DXGI active — {}x{}, minimap {}px @ ({},{})",
+            "[capture] DXGI active — monitor {}, {}x{}, minimap {}px @ ({},{})",
+            current_monitor,
             dxgi.width(),
             dxgi.height(),
             region.side,
@@ -198,8 +230,51 @@ mod backend {
         ));
         let (screen_w, screen_h) = (dxgi.width(), dxgi.height());
         let mut state = CaptureState::new(app, region, screen_w, screen_h);
+        let mut last_monitor_check = Instant::now();
 
         loop {
+            // CR012-P1-01: periodically re-detect which monitor Dota 2 is on
+            // and hot-swap the DXGI duplication if it moved (or if the app
+            // started before Dota launched and only now can find it).
+            // Throttled to `MONITOR_RECHECK_MS` — the `Instant::elapsed()`
+            // check itself is ~free every tick; the win32/DXGI enumeration
+            // only runs once that elapses. On that single tick per 2s the
+            // enumeration (EnumWindows + a DXGI factory/output enum, a bounded
+            // few ms of non-blocking syscalls) runs before this tick's acquire,
+            // so it delays at most ONE frame per 2s — well inside the 300ms
+            // G-Signal budget (Opus gate, CR012-P1). Don't pile more work here.
+            // Runs even while not
+            // in-game so the right monitor is already locked in before the
+            // horn.
+            if last_monitor_check.elapsed() >= Duration::from_millis(MONITOR_RECHECK_MS) {
+                last_monitor_check = Instant::now();
+                if let Some(idx) = crate::dxgi::detect_dota_monitor() {
+                    if idx != current_monitor {
+                        match DxgiCapture::new(idx) {
+                            Ok(new_dxgi) => {
+                                dxgi = new_dxgi;
+                                current_monitor = idx;
+                                let region =
+                                    MinimapRegion::for_resolution(dxgi.width(), dxgi.height());
+                                state.set_region(region, dxgi.width(), dxgi.height());
+                                crate::log::error(&format!(
+                                    "[capture] Dota moved — switched to monitor {} ({}x{})",
+                                    current_monitor,
+                                    dxgi.width(),
+                                    dxgi.height()
+                                ));
+                            }
+                            Err(e) => {
+                                crate::log::error(&format!(
+                                    "[capture] monitor switch to {idx} failed, keeping \
+                                     monitor {current_monitor}: {e}"
+                                ));
+                            }
+                        }
+                    }
+                }
+            }
+
             // Draft-CV: read the roster off the pick screen before the horn. Runs
             // ONLY while in hero selection and ONLY until a roster is committed
             // (`roster().is_none()`), then idles. `in_game()` is false here, so
