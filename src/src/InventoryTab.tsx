@@ -131,7 +131,17 @@ async function loadInventory(userId: string): Promise<InventoryRow[]> {
     }));
 }
 
-export default function InventoryTab() {
+export interface InventoryTabProps {
+  /** CR-013 W4-01 (§5.3 cross-link): fires once a pack goes from
+   *  not-installed to installed-and-active (either straight off "ติดตั้ง",
+   *  which auto-activates via /announcer/install, or off the explicit
+   *  "ใช้งาน" button) — lets the caller jump the user to the Voice page to
+   *  see it live. Defaults to a no-op so InventoryTab's existing standalone
+   *  use inside VoicePacksPage.tsx (already ON the Voice page) is unaffected. */
+  onActivated?: () => void;
+}
+
+export default function InventoryTab({ onActivated }: InventoryTabProps = {}) {
   const { user } = useAuth();
   const { redeem } = useWallet();
 
@@ -251,6 +261,9 @@ export default function InventoryTab() {
       if (!json.ok) throw new Error(json.error || "ติดตั้ง pack ไม่สำเร็จ");
 
       await refreshVoiceState();
+      // install auto-activates (body sets "activate": true above) — the pack
+      // is live now, so this is the right moment to offer the Voice jump.
+      onActivated?.();
     } catch (e) {
       setRowError((r) => ({ ...r, [item.id]: errMessage(e) }));
     } finally {
@@ -265,6 +278,7 @@ export default function InventoryTab() {
     try {
       const next = await invoke<VoiceState>("voice_api_action", { action: "activate", packId: item.packId });
       setVoiceState(next);
+      onActivated?.();
     } catch (e) {
       setRowError((r) => ({ ...r, [item.id]: errMessage(e) }));
     } finally {

@@ -18,6 +18,9 @@ import type { MatchPhase } from "./live/phase";
 import { heroPortraitUrl } from "./heroPortrait";
 import AccountPage from "./AccountPage";
 import StorePage from "./StorePage";
+import WalletTab from "./WalletTab";
+import InventoryTab from "./InventoryTab";
+import LedgerTab from "./LedgerTab";
 import { useProfile } from "./profile";
 import { useAppUpdate } from "./useAppUpdate";
 import type { VoiceState } from "./voice-types";
@@ -183,6 +186,12 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
   // no persistence, no URL sync — a page switch always lands on the default sub-tab.
   const [liveTab, setLiveTab] = useState("live"); // "live" | "build"
   const [insightsTab, setInsightsTab] = useState("overview"); // "overview" | "history"
+  // CR-013 W4-01: G-Store's own in-page tabs (§5.1) — shop/wallet/inventory/
+  // ledger, same "single local owner, no persistence" shape as liveTab/
+  // insightsTab above. StorePage's internal "เติมเลย"/"แชร์แมตช์เพื่อได้ Shard
+  // เพิ่ม" affordances now switch THIS tab (via onNavigateToWallet below)
+  // instead of leaving the page to Account's Wallet/Ledger sub-tabs.
+  const [storeTab, setStoreTab] = useState("shop"); // shop | wallet | inventory | ledger
   // CR-013 W2 (§4 iOS-style Settings split view): which category rail entry
   // is selected. "general" is CommandDeck-owned (deck prefs + window size —
   // never routed through Control); every other value is handed to
@@ -762,10 +771,29 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
           )}
           {tab === "voice" && <VoicePacksPage onNavigate={navigateTo} />}
           {tab === "store" && (
-            <StorePage
-              onNavigateToWallet={() => navigateTo("account", "wallet")}
-              onRequestSignIn={() => navigateTo("account", "account")}
-            />
+            <div className="deck-tabbed">
+              <DeckTabs
+                tabs={[
+                  { key: "shop", label: "ร้านค้า" },
+                  { key: "wallet", label: "กระเป๋า" },
+                  { key: "inventory", label: "คลัง" },
+                  { key: "ledger", label: "บันทึก" }
+                ]}
+                active={storeTab}
+                onChange={setStoreTab}
+              />
+              <div className="deck-tabbed-body">
+                {storeTab === "shop" && (
+                  <StorePage
+                    onNavigateToWallet={() => setStoreTab("wallet")}
+                    onRequestSignIn={() => navigateTo("account", "account")}
+                  />
+                )}
+                {storeTab === "wallet" && <WalletTab onViewAllTransactions={() => setStoreTab("ledger")} />}
+                {storeTab === "inventory" && <InventoryTab onActivated={() => navigateTo("voice")} />}
+                {storeTab === "ledger" && <LedgerTab />}
+              </div>
+            </div>
           )}
           {tab === "insights" && (
             <div className="deck-tabbed">
