@@ -52,9 +52,9 @@ const GLOBAL_HOTKEYS: Array<{ combo: string; labelTh: string }> = [
  *  key, same seed pattern as gm-deck-audio-rail (persisted value is the seed,
  *  loaded once on CommandDeck mount, written back on every change). */
 type DeckDensity = "comfortable" | "compact";
-type DeckPrefs = { quality: DeckQuality; density: DeckDensity; crisp: boolean };
+type DeckPrefs = { quality: DeckQuality; density: DeckDensity; crisp: boolean; bigMode: boolean };
 const DECK_PREFS_KEY = "gm-deck-prefs";
-const DEFAULT_DECK_PREFS: DeckPrefs = { quality: "cinematic", density: "comfortable", crisp: false };
+const DEFAULT_DECK_PREFS: DeckPrefs = { quality: "cinematic", density: "comfortable", crisp: false, bigMode: false };
 
 function loadDeckPrefs(): DeckPrefs {
   try {
@@ -64,7 +64,8 @@ function loadDeckPrefs(): DeckPrefs {
       return {
         quality: p.quality === "balanced" || p.quality === "eco" ? p.quality : "cinematic",
         density: p.density === "compact" ? "compact" : "comfortable",
-        crisp: p.crisp === true
+        crisp: p.crisp === true,
+        bigMode: p.bigMode === true
       };
     }
   } catch {
@@ -85,6 +86,36 @@ function snapScaleDown(s: number): number {
     if (step <= s + 1e-9 && (best === null || step > best)) best = step;
   }
   return best ?? s;
+}
+
+/** Boss 2026-07-16 "big mode": an opt-in override of the CR-007 "never
+ *  upscale past 1.0" lock. The lock exists because a FREE/continuous scale
+ *  factor above 1.0 softens 1px hairlines/rims (non-integer device-pixel
+ *  hairlines anti-alias into a "chunky" line). Big mode does not remove that
+ *  lock for everyone — it stays OFF by default — it adds a small set of
+ *  fixed, deliberately-chosen upscale steps (same "snap to a named step"
+ *  shape as CRISP_SCALE_STEPS below 1.0), so scaling up is still to a crisp
+ *  ratio, never a random fractional one. 1.35 is the largest step that fits
+ *  a 1920×1080 monitor edge-to-edge (measured: min(1920/1420,1080/760)
+ *  ≈1.352); larger steps exist for bigger displays and are only ever
+ *  selected when the window is actually large enough (the `<= fit` guard
+ *  below can never overflow the window, on any monitor). */
+const BIG_SCALE_STEPS = [1.0, 1.15, 1.25, 1.35, 1.5, 1.75, 2.0];
+
+function snapScaleUp(fit: number): number {
+  // Defensive fallback only — the call site guards `fit > 1.0` before calling
+  // this, so BIG_SCALE_STEPS[0]=1.0 always qualifies in practice. But
+  // initializing `best` to a STEP (not null) is exactly the bug that shipped
+  // once already: if this is ever called with fit < 1.0, every step fails the
+  // `<=` check, `best` never updates, and the un-clamped 1.0 default gets
+  // returned as the scale — overflowing a window smaller than 1420×760. Bare
+  // `fit` (no upscale, no cap needed since fit<1.0 here) is the correct
+  // fallback, matching snapScaleDown's `best ?? s` shape.
+  let best: number | null = null;
+  for (const step of BIG_SCALE_STEPS) {
+    if (step <= fit + 1e-9) best = step;
+  }
+  return best ?? fit;
 }
 
 const FUNG_PANEL_PATH =
@@ -224,25 +255,41 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   // fixed 1420×760 stage (SSOT 03-layout.md) scaled to fill any window + rounded-fillet Subtract clip
   const stageRef = useRef<HTMLDivElement>(null);
   const crisp = deckPrefs.crisp;
+  const bigMode = deckPrefs.bigMode;
   useEffect(() => {
     const apply = () => {
       const stage = stageRef.current;
       if (stage) {
-        // CR-007 follow-up: never upscale past authored 1420×760 size — a >1.0
-        // scale factor blows up 1px rims/text into fat blurry lines ("chunky"
-        // feedback). Downscale for small windows still applies via the min().
-        let s = Math.min(window.innerWidth / 1420, window.innerHeight / 760, 1.0);
-        // CR-011 §N crisp-text snap (opt-in): quantize the downscale to
-        // 1.0/0.875/0.75/0.5 (letterboxing the remainder) so 1px lines stay
-        // crisp — never snapping above the fit value.
-        if (crisp) s = snapScaleDown(s);
+        let s: number;
+        const fit = Math.min(window.innerWidth / 1420, window.innerHeight / 760);
+        if (bigMode && fit > 1.0) {
+          // Boss 2026-07-16 "big mode": deliberate, explicit opt-out of the
+          // CR-007 "never upscale" lock below — snaps UP to a fixed crisp
+          // step instead of the locked 1.0 ceiling. ONLY takes this branch
+          // when the window is actually bigger than the authored 1420×760
+          // (fit > 1.0); a window smaller than that falls through to the
+          // exact same downscale path as bigMode=false below — big mode
+          // grows the deck when there's room, it doesn't change how a small
+          // window behaves. snapScaleUp only ever returns a step <= fit, so
+          // this can never overflow the window on any monitor.
+          s = snapScaleUp(fit);
+        } else {
+          // CR-007 follow-up: never upscale past authored 1420×760 size — a >1.0
+          // scale factor blows up 1px rims/text into fat blurry lines ("chunky"
+          // feedback). Downscale for small windows still applies via the min().
+          s = Math.min(fit, 1.0);
+          // CR-011 §N crisp-text snap (opt-in): quantize the downscale to
+          // 1.0/0.875/0.75/0.5 (letterboxing the remainder) so 1px lines stay
+          // crisp — never snapping above the fit value.
+          if (crisp) s = snapScaleDown(s);
+        }
         stage.style.transform = `translate(-50%, -50%) scale(${s})`;
       }
     };
     apply();
     window.addEventListener("resize", apply);
     return () => window.removeEventListener("resize", apply);
-  }, [crisp]);
+  }, [crisp, bigMode]);
 
   // CR-007 WP-4 Fix 1: the deck's audio rail is the SINGLE owner of volume,
   // signalEnabled, and announcerEnabled. It persists all three under one
@@ -661,6 +708,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
                 onQuality={(q) => deckActions.setQuality(q)}
                 onDensity={(d) => setDeckPrefs((p) => (p.density === d ? p : { ...p, density: d }))}
                 onCrispToggle={() => setDeckPrefs((p) => ({ ...p, crisp: !p.crisp }))}
+                onBigModeToggle={() => setDeckPrefs((p) => ({ ...p, bigMode: !p.bigMode }))}
               />
               {settingsPanel ?? (
                 <>
@@ -773,12 +821,14 @@ function DeckPrefsCard({
   prefs,
   onQuality,
   onDensity,
-  onCrispToggle
+  onCrispToggle,
+  onBigModeToggle
 }: {
   prefs: DeckPrefs;
   onQuality: (q: DeckQuality) => void;
   onDensity: (d: DeckDensity) => void;
   onCrispToggle: () => void;
+  onBigModeToggle: () => void;
 }) {
   return (
     <section className="gm-deckprefs">
@@ -834,6 +884,20 @@ function DeckPrefsCard({
         </div>
       </div>
       <p className="gm-deckprefs-note">ล็อกสเกลเป็นขั้นเพื่อให้เส้น 1px คม เมื่อย่อหน้าต่าง</p>
+      <div className="gm-deckprefs-row">
+        <span className="gm-deckprefs-label">โหมดขยายใหญ่</span>
+        <div className="gm-deckprefs-pills">
+          <button
+            type="button"
+            className={`gm-deckprefs-pill${prefs.bigMode ? " active" : ""}`}
+            aria-pressed={prefs.bigMode}
+            onClick={onBigModeToggle}
+          >
+            {prefs.bigMode ? "เปิด" : "ปิด"}
+          </button>
+        </div>
+      </div>
+      <p className="gm-deckprefs-note">ขยายสเกลเกิน 100% เป็นขั้นที่เลือกไว้ (1.15×/1.25×/1.35×/1.5×...) ไม่เกินขอบจอ</p>
     </section>
   );
 }

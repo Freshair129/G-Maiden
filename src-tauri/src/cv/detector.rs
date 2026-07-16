@@ -31,7 +31,15 @@ use super::Frame;
 pub const MODEL_INPUT: usize = 32;
 
 /// Minimum softmax confidence to accept a (non-negative) classification.
-const CONF_THRESHOLD: f32 = 0.60;
+/// Raised from 0.60 to 0.72 (2026-07-16 field test): a demo run showed the
+/// tiny minimap classifier assigning random hero labels (Winter Wyvern,
+/// Tidehunter, ...) to creep/ward/building blips at borderline confidence.
+/// Real hero blips classify well above 0.72, so this cuts weak/ambiguous
+/// classifications without dropping genuine detections. Paired with the
+/// tighter temporal-confirmation gate in `sentry.rs`; without a draft roster
+/// (demo / own-game with no pick screen) some phantoms are still possible —
+/// the roster filter is the real fix once a draft is known.
+const CONF_THRESHOLD: f32 = 0.72;
 
 /// The reject/background class name in `labels.json`.
 const NEGATIVE_LABEL: &str = "__negative__";
