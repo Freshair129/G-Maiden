@@ -614,9 +614,11 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
 
       </header>
 
-      {/* Audio rail replaces the old P-section */}
+      {/* Audio rail replaces the old P-section. The match-phase badge rides
+          just above it (Boss 2026-07-14 — moved out of the score header). */}
       {tab === "dashboard" && (
         <div className="g-audio-rail" onMouseDown={dragFromSurface}>
+          <PhaseChip phase={data.match.matchPhase} />
           <VolumeRail
             value={masterVolume}
             annEnabled={annEnabled}
@@ -1264,7 +1266,6 @@ function GMaidenFungDashboard({
         <strong>{data.match.leftTeamName} {data.match.leftScore}</strong>
         <span className="gm-clock">{data.match.clock}</span>
         <strong>{data.match.rightScore} {data.match.rightTeamName}</strong>
-        <PhaseChip phase={realPhase} />
         <MomentumInline momentum={data.momentum} />
       </section>
 

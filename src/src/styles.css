@@ -6314,3 +6314,15 @@ body {
 /* Clock line-box was taller than its glyphs and kissed the momentum strip by
    ~3px in the two-tier header — pin it to its ink height (Boss 2026-07-14). */
 .gm-score-header .gm-clock { line-height: 1; }
+
+/* Boss 2026-07-14: the match-phase badge rides centered just above the audio
+   rail (was in the score header). The rail shell box (42,40 54x158) is
+   untouched — the chip is an absolutely-anchored hat on it. */
+.g-audio-rail .gm-phase-chip {
+  right: auto;
+  bottom: auto;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}
