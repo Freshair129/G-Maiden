@@ -24,11 +24,22 @@ const THROTTLE: Duration = Duration::from_secs(30);
 
 static LAST_CALL: Mutex<Option<Instant>> = Mutex::new(None);
 static LAST_RESPONSE: Mutex<Option<String>> = Mutex::new(None);
+/// Which backend resolved the most recent *fresh* (non-cached) `advise()`
+/// call — "claude" or "ollama". Recorded purely for the CR-011 §B utterance
+/// ledger's `meta` field (main.rs::request_advice) so that event can say who
+/// produced the advice without changing `Advice`/the `advice-update` payload.
+static LAST_BACKEND: Mutex<Option<&'static str>> = Mutex::new(None);
 
 #[derive(serde::Serialize, Clone)]
 pub struct Advice {
     pub text: String,
     pub cached: bool,
+}
+
+/// Backend that produced the last fresh advice ("claude"/"ollama"), if known.
+/// `None` before the first call, or if the mutex is poisoned.
+pub fn last_backend() -> Option<&'static str> {
+    LAST_BACKEND.lock().ok().and_then(|g| *g)
 }
 
 fn hero_thai(raw: &str) -> String {
@@ -145,6 +156,9 @@ pub fn advise(tick: &GameTick, enemies: &[String]) -> Result<Advice, String> {
     }
     if let Ok(mut g) = LAST_RESPONSE.lock() {
         *g = Some(text.clone());
+    }
+    if let Ok(mut g) = LAST_BACKEND.lock() {
+        *g = Some(if from_slm { "ollama" } else { "claude" });
     }
     // Quota monitor — only Claude-served responses burn Plan/API quota.
     // Ollama answers are free, and cached hits returned before this point.
@@ -326,5 +340,16 @@ mod tests {
         let grounded = build_prompt(&fake_tick(), &["phantom_assassin".to_string()]);
         assert!(grounded.contains("counter:"), "enemy → counter line present: {grounded}");
         assert!(grounded.contains("MKB"), "PA counter item must reach the prompt: {grounded}");
+    }
+
+    #[test]
+    fn last_backend_reports_the_most_recent_write() {
+        // Direct static access — no test in this module calls the real
+        // (network/process) `advise()`, so this is the only writer and the
+        // read-back is deterministic without spinning up claude/ollama.
+        if let Ok(mut g) = LAST_BACKEND.lock() {
+            *g = Some("ollama");
+        }
+        assert_eq!(last_backend(), Some("ollama"));
     }
 }

@@ -2,6 +2,41 @@
 @tailwind components;
 @tailwind utilities;
 
+/* CR-011 WP-3 (owner-approved 2026-07-14): bundled IBM Plex — local files under
+   /public/fonts, no CDN at runtime (CSP default-src 'self'). Deck consumes them
+   via --g-font-ui / --g-font-mono in styles.css; the overlay window's inline
+   styles keep their own stacks (07-combat-hud contract — FPS-measure first). */
+@font-face {
+  font-family: "IBM Plex Sans Thai Looped";
+  src: url("/fonts/IBMPlexSansThaiLooped-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans Thai Looped";
+  src: url("/fonts/IBMPlexSansThaiLooped-Medium.woff2") format("woff2");
+  font-weight: 500; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans Thai Looped";
+  src: url("/fonts/IBMPlexSansThaiLooped-SemiBold.woff2") format("woff2");
+  font-weight: 600; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Sans Thai Looped";
+  src: url("/fonts/IBMPlexSansThaiLooped-Bold.woff2") format("woff2");
+  font-weight: 700 800; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-Regular.woff2") format("woff2");
+  font-weight: 400; font-style: normal; font-display: swap;
+}
+@font-face {
+  font-family: "IBM Plex Mono";
+  src: url("/fonts/IBMPlexMono-Medium.woff2") format("woff2");
+  font-weight: 500 700; font-style: normal; font-display: swap;
+}
+
 html,
 body {
   margin: 0;

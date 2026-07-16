@@ -10,6 +10,7 @@ import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
 import * as E from "./engine.mjs";
 import { writeNode, writeEdge, queryNodes } from "./store/knowledge.mjs";
+import { loadRwangProject, toSnapshot, listProjects } from "./gks/rwang-ingest.mjs";
 
 const PORT = Number((process.argv.includes("--port") ? process.argv[process.argv.indexOf("--port") + 1] : 0)) || 4577;
 const UI = join(E.PATHS.__dir, "public", "index.html");
@@ -35,6 +36,17 @@ const server = createServer(async (req, res) => {
     if (req.method === "GET" && url.pathname === "/api/personas") {
       try { const p = JSON.parse(readFileSync(new URL("./personas.json", import.meta.url), "utf8")); return send(res, 200, p.personas || []); }
       catch { return send(res, 200, []); }
+    }
+    // RWANG project ingest (feature--gorch-rw1-ingest, read-only mirror). SECURITY: never accept a
+    // filesystem path from the query string — only a registered project name from config.rwang.projects.
+    if (req.method === "GET" && url.pathname === "/api/rwang/state") {
+      try {
+        const name = url.searchParams.get("project");
+        const projects = listProjects(E.CONFIG);
+        const proj = name ? projects.find((p) => p.name === name) : projects[0];
+        if (!proj) return send(res, 404, { ok: false, error: `unknown rwang project: ${name || "(none registered)"}` });
+        return send(res, 200, toSnapshot(loadRwangProject(proj.root)));
+      } catch (e) { return send(res, 500, { ok: false, error: e.message }); }
     }
     if (req.method === "GET" && url.pathname === "/api/log") {
       const id = url.searchParams.get("id") || "";

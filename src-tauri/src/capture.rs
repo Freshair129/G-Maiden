@@ -447,6 +447,19 @@ mod backend {
                     SignalEvent::Alert(alert) => {
                         if armed {
                             voice_interrupt("gank", GANK_LINE);
+                            // CR-011 §B utterance ledger — after the voice
+                            // dispatch above, never before, so it can't add
+                            // latency to the G-Signal path (CLAUDE.md ≤300ms).
+                            crate::utterance::emit(
+                                &state.app,
+                                crate::utterance::UtterancePayload::new(
+                                    "signal",
+                                    "line",
+                                    GANK_LINE,
+                                    None,
+                                    None,
+                                ),
+                            );
                         }
                         // W2: only capture calibration evidence when the line
                         // was actually voiced — in the silent arm GANK_LINE is
@@ -476,6 +489,18 @@ mod backend {
                     SignalEvent::Revision => {
                         if armed {
                             voice_interrupt("revision", REVISION_LINE);
+                            // Belief Revision — retracted carries the earlier
+                            // GANK_LINE warning being struck through.
+                            crate::utterance::emit(
+                                &state.app,
+                                crate::utterance::UtterancePayload::new(
+                                    "signal",
+                                    "revision",
+                                    REVISION_LINE,
+                                    Some(GANK_LINE.to_string()),
+                                    None,
+                                ),
+                            );
                         }
                         crate::log::note_event(crate::log::gank_revision_record());
                         if armed {

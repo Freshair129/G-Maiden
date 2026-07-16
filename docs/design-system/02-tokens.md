@@ -1,7 +1,7 @@
 ---
-version: "2.0.0-draft"
+version: "2.1.0-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-05T00:00:00+07:00,Opus"
+last_update: "2026-07-15T00:00:00+07:00,Claude"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -54,12 +54,30 @@ attributes:
 > **ทำไมมี 2 accent:** ice = แบรนด์/navigation (เย็น, นิ่ง); lime = "มีอะไรต้องสนใจ" (G-Signal, live).
 > อย่าใช้สลับกัน — lime สงวนไว้สำหรับ tactical/attention เท่านั้น กันไม่ให้ทั้งจอเขียว
 
+### 1.3b Materials — instrument matte (CR-011 §B, v3, shipped waves P1–P3)
+
+> Two-material rule เต็ม ๆ อยู่ที่ `01-foundations.md` §2.1 — ตารางนี้คือค่าจริงในโค้ด
+> (`src/src/styles.css` `:root`). Interior sector/card ทุกอันใช้กลุ่มนี้ **แทน**
+> `--g-glass-*`/`--g-blur-*` — ห้ามมี blur/shadow บน instrument.
+
+| token | hex / rgba | ใช้ที่ |
+| --- | --- | --- |
+| `--g-instrument` | `#0B0E16` | พื้น interior sector หลัก (score header, hero slot, battle grid, sector log, agent/on-air card, momentum, ฯลฯ) |
+| `--g-instrument-2` | `#0D1119` | พื้นชั้นยกอีกนิด (phase chip fill, rundown row, minimap ground) |
+| `--g-hairline` | `rgba(150, 185, 230, 0.10)` | เส้นขอบ 1px มาตรฐานของ instrument |
+| `--g-hairline-2` | `rgba(150, 185, 230, 0.16)` | เส้นขอบเข้มขึ้น (phase chip, onair chip, palette hairline) |
+| `--g-coin` | `#E4C36B` | economy gold — **ห้ามใช้เป็น status color** (แยกจาก safe/warn/danger) |
+
+> โค้ดปัจจุบันยังเก็บค่าเป็น hex ตรง ๆ (ไม่ใช่ OKLCH ตามที่ CR-011 §H ร่างไว้) — คอมเมนต์ใน
+> `styles.css` ระบุชัดว่า "hex today, OKLCH literal migration is a later mechanical pass";
+> เอกสารนี้ยึดค่าจริงในโค้ด ไม่ใช่ค่าร่างใน CR
+
 ### 1.4 Text
 
 | token | hex | ใช้ที่ |
 | --- | --- | --- |
 | `--g-text` | `#EEF4FB` | ข้อความหลัก |
-| `--g-text-dim` | `#8BA4C6` | label, caption, meta |
+| `--g-text-dim` | `#A9BEDB` | label, caption, meta (v3: ยกจาก `#8BA4C6` เดิม — contrast บนพื้น `--g-instrument` ทึบ, CR-011 §H "raised until ≥4.5:1") |
 | `--g-text-mute` | `#5E7699` | disabled / placeholder |
 
 ### 1.5 Semantic (แยกจาก accent — ห้ามนับเป็นสีแบรนด์)
@@ -84,10 +102,15 @@ attributes:
 | primary ice | (ไม่มี) | `--g-ice-500 #8FD4FF` | **add** |
 | accent | (ไม่มี) | `--g-lime-500 #A3E635` | **add** |
 | text | `--txt #D8E6F2` | `--g-text #EEF4FB` | migrate |
-| muted | `--muted #8FA6C0` | `--g-text-dim #8BA4C6` | migrate |
+| muted | `--muted #8FA6C0` | `--g-text-dim #A9BEDB` (v3, raised from `#8BA4C6`) | migrate |
 | ok | `--ok #31D0A0` | `--g-ok` (mint) + `--g-safe #22C55E` (แยก 2 role) | split |
 | warn | `--warn #FFB86B` | `--g-warn #F59E0B` | migrate |
 | danger | `--danger #FF5C7A` | `--g-danger #F43F5E` | migrate |
+| interior fill (v3) | (ไม่มี, เดิมใช้ `--g-glass-*` + blur ทุก panel) | `--g-instrument #0B0E16` / `--g-instrument-2 #0D1119` | **add** (CR-011 §B — instrument matte แทน glass บน interior) |
+| interior line (v3) | `--g-card-line` | `--g-hairline` / `--g-hairline-2` | **add**, ใช้คู่กับ instrument เท่านั้น |
+| economy accent (v3) | (ไม่มี) | `--g-coin #E4C36B` | **add** — gold, ไม่ใช่ status color |
+| ui font (v3) | `"Segoe UI", system-ui, sans-serif` | `"IBM Plex Sans Thai Looped","IBM Plex Sans","Segoe UI",system-ui,sans-serif` (bundled woff2) | migrate |
+| mono font (v3) | `Consolas, ui-monospace, monospace` | `"IBM Plex Mono",Consolas,ui-monospace,monospace` (bundled woff2) | migrate |
 
 ---
 
@@ -95,8 +118,25 @@ attributes:
 
 | token | ค่า | ใช้ที่ |
 | --- | --- | --- |
-| `--g-font-ui` | `"Segoe UI", system-ui, sans-serif` | UI ทั้งหมด (รองรับไทยบน Windows) |
-| `--g-font-mono` | `Consolas, ui-monospace, monospace` | clock, ping, ตัวเลขจัดคอลัมน์ |
+| `--g-font-ui` | `"IBM Plex Sans Thai Looped","IBM Plex Sans","Segoe UI",system-ui,sans-serif` | UI ทั้งหมด (v3, CR-011 §G/WP-3 — was `"Segoe UI", system-ui, sans-serif`) |
+| `--g-font-mono` | `"IBM Plex Mono",Consolas,ui-monospace,monospace` | clock, feed-age, ตัวเลขจัดคอลัมน์ (v3, was `Consolas, ui-monospace, monospace`) |
+
+### 2.1 Bundled font files (v3 — no CDN, CSP `default-src 'self'`)
+
+`src/src/index.css` `@font-face` loads from `src/public/fonts/` (local woff2, `font-display: swap`) —
+6 files, matching the weights actually declared:
+
+| file | family | weight |
+| --- | --- | --- |
+| `IBMPlexSansThaiLooped-Regular.woff2` | IBM Plex Sans Thai Looped | 400 |
+| `IBMPlexSansThaiLooped-Medium.woff2` | IBM Plex Sans Thai Looped | 500 |
+| `IBMPlexSansThaiLooped-SemiBold.woff2` | IBM Plex Sans Thai Looped | 600 |
+| `IBMPlexSansThaiLooped-Bold.woff2` | IBM Plex Sans Thai Looped | 700–800 |
+| `IBMPlexMono-Regular.woff2` | IBM Plex Mono | 400 |
+| `IBMPlexMono-Medium.woff2` | IBM Plex Mono | 500–700 |
+
+> Overlay (Combat HUD) keeps its own inline font stack per `07-combat-hud.md` (FPS-measure
+> first before bundling Plex into the overlay window too) — this bundle is Command-Deck-only.
 
 **Type scale (px)** — ยึด scale นี้ อย่าใช้ค่านอกลิสต์:
 
@@ -157,9 +197,24 @@ scale ฐาน 2 (px): **2 · 4 · 6 · 8 · 10 · 12 · 14 · 16**
 
 | token | ค่า | ใช้ที่ |
 | --- | --- | --- |
-| `--g-blur-panel` | `blur(30px) saturate(150%)` | main glass panel |
+| `--g-blur-panel` | `blur(30px) saturate(150%)` | main glass panel (legacy v2 token — interior sectors no longer consume this, ดู §1.3b two-material rule) |
 | `--g-blur-fab` | `blur(24px) saturate(160%)` | FAB, signal card |
-| `--g-blur-tile` | `blur(6px)` | agent card, chip บนภาพ |
+| `--g-blur-tile` | `blur(6px)` | agent card, chip บนภาพ (legacy) |
+| `--g-blur-console` | `blur(30px) saturate(150%)` | v3 (CR-011 §B) — **the only** blur token interior/pop layers should reference: `.g-deck-panel` shell + Maiden Line palette (`.gm-palette`) + shortcut sheet (`.gm-sheet`) |
+
+### 6.1 Quality tiers (v3, CR-011 §H — `html.gq-*` class)
+
+`--g-blur-console` is re-declared per tier so **no other rule needs to change** — every
+consumer just reads the variable:
+
+| class | `--g-blur-console` | หมายเหตุ |
+| --- | --- | --- |
+| *(no class)* = `html.gq-cinematic` | `blur(30px) saturate(150%)` | **DEFAULT** — owner decision 2026-07-14 ("เอา panel blur กลับมา"), overriding an earlier none-default. Acts on webview-internal layers only (ambient bg + L1 plate); drag-lag stays fixed via `.is-dragging` (blur force-off during native window drag). |
+| `html.gq-balanced` | `blur(16px) saturate(150%)` | lighter machines |
+| `html.gq-eco` | `none` | no `backdrop-filter` anywhere |
+
+Tier class is toggled on `<html>` by a Settings control (not yet wired as of this sync —
+document reflects the CSS contract, wiring is a later wave).
 
 > **Overlay (Combat HUD) ข้อควรระวัง NFR:** `backdrop-filter` มีต้นทุน GPU — ใน overlay ระหว่างเล่นจริง
 > ให้จำกัด blur เฉพาะ panel เดียว/องค์ประกอบเล็ก และวัด FPS drop ≤3% เสมอ (ดูไฟล์ 01 §NFR gate)
@@ -221,9 +276,16 @@ scale ฐาน 2 (px): **2 · 4 · 6 · 8 · 10 · 12 · 14 · 16**
   --g-lime-soft: rgba(163, 230, 53, 0.16);
   --g-lime-line: rgba(163, 230, 53, 0.34);
 
+  /* materials (v3, CR-011 §B — instrument matte, see §1.3b) */
+  --g-instrument:   #0B0E16;
+  --g-instrument-2: #0D1119;
+  --g-hairline:     rgba(150, 185, 230, 0.10);
+  --g-hairline-2:   rgba(150, 185, 230, 0.16);
+  --g-coin:         #E4C36B;
+
   /* text */
   --g-text:      #EEF4FB;
-  --g-text-dim:  #8BA4C6;
+  --g-text-dim:  #A9BEDB; /* v3: raised from #8BA4C6 */
   --g-text-mute: #5E7699;
 
   /* semantic */
@@ -232,9 +294,9 @@ scale ฐาน 2 (px): **2 · 4 · 6 · 8 · 10 · 12 · 14 · 16**
   --g-warn:   #F59E0B;
   --g-danger: #F43F5E;
 
-  /* type */
-  --g-font-ui:   "Segoe UI", system-ui, sans-serif;
-  --g-font-mono: Consolas, ui-monospace, monospace;
+  /* type (v3: Plex-first, bundled woff2 — see §2.1) */
+  --g-font-ui:   "IBM Plex Sans Thai Looped","IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --g-font-mono: "IBM Plex Mono",Consolas,ui-monospace,monospace;
 
   /* radius */
   --g-r-sm: 8px;  --g-r-card: 11px; --g-r-panel: 14px;
@@ -242,21 +304,30 @@ scale ฐาน 2 (px): **2 · 4 · 6 · 8 · 10 · 12 · 14 · 16**
   --g-r-frame-outer: 28px; --g-r-frame-notch: 20px;
 
   /* elevation */
-  --g-shadow-fab:   0 12px 34px rgba(0,0,0,0.42);
+  --g-shadow-fab:   0 36px 96px rgba(3,6,12,0.54), 0 10px 32px rgba(3,6,12,0.40);
+  --g-shadow-tight: 0 24px 60px rgba(3,6,12,0.48), 0 6px 22px rgba(3,6,12,0.36);
   --g-shadow-panel: 0 18px 50px rgba(0,0,0,0.55);
+  --g-rim-top:      inset 0 1px 0 rgba(255,255,255,0.06);
 
   /* blur */
-  --g-blur-panel: blur(30px) saturate(150%);
-  --g-blur-fab:   blur(24px) saturate(160%);
-  --g-blur-tile:  blur(6px);
+  --g-blur-panel:   blur(30px) saturate(150%); /* legacy — interior no longer consumes this */
+  --g-blur-fab:     blur(24px) saturate(160%);
+  --g-blur-tile:    blur(6px); /* legacy */
+  --g-blur-console: blur(30px) saturate(150%); /* v3 (CR-011 §B) — shell/FAB/pop only, see §6.1 */
 
   /* motion */
   --g-t-micro: 0.12s; --g-t-hover: 0.15s; --g-t-state: 0.2s; --g-t-bar: 0.3s;
+  --g-t-ambient: 14s ease-in-out infinite;
   --g-ease: ease-out;
 
   /* z-index */
   --g-z-bg: 0; --g-z-panel: 1; --g-z-content: 10; --g-z-fab: 100; --g-z-pop: 200;
 }
+/* CR-011 §H quality tiers — DEFAULT (no class) = cinematic (owner decision 2026-07-14).
+   balanced/eco step --g-blur-console down for lighter machines; see §6.1. */
+html.gq-cinematic { --g-blur-console: blur(30px) saturate(150%); }
+html.gq-balanced { --g-blur-console: blur(16px) saturate(150%); }
+html.gq-eco { --g-blur-console: none; }
 ```
 
 > เมื่อ migrate: เพิ่ม block นี้ก่อน แล้วค่อยแทนที่ `var(--bg)` ฯลฯ ทีละ component — อย่า big-bang

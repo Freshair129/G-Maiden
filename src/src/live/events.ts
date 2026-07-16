@@ -124,6 +124,19 @@ export interface ResourceStats {
 
 export type CaptureMode = "lite" | "dxgi" | "";
 
+/** utterance — G-Signal/G-Master/G-AnnStudio persona line for the ON AIR console
+ *  (CR-011 §B). Unlike the events above (snake_case, mirroring serde JSON on the
+ *  wire), this payload is camelCase per the CR011-P2-02 contract — the backend
+ *  worker adding the emit side is following the same shape. */
+export interface UtteranceEvent {
+  atMs: number;
+  source: "signal" | "master" | "announcer";
+  kind: "line" | "revision";
+  text: string;
+  retracted?: string | null;
+  meta?: string | null; // master: "claude"|"ollama"; announcer: pack name
+}
+
 /** Strip the GSI prefix and title-case: "npc_dota_hero_crystal_maiden" -> "Crystal Maiden". */
 export function prettyHeroName(npcName: string): string {
   if (!npcName) return "";

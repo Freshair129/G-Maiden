@@ -631,6 +631,22 @@ pub fn active_event_clips(event: &str) -> Vec<PathBuf> {
     resolve_existing_clips(&dir, &mapping.clips)
 }
 
+/// Human-facing name of the currently active pack, if any. Used only to tag
+/// the CR-011 §B `utterance` telemetry event with which pack voiced a line —
+/// same cost profile as `active_event_clips` above (two small file reads: the
+/// active-pack pointer, then that pack's manifest). `None` when there's no
+/// active pack or its manifest can't be read.
+pub fn active_pack_name() -> Option<String> {
+    let id = read_active_pack_id()?;
+    let dir = packs_dir().join(sanitize_id(&id));
+    let manifest = read_manifest(&dir).ok()?;
+    Some(if manifest.name.is_empty() {
+        manifest.id
+    } else {
+        manifest.name
+    })
+}
+
 /// Safely resolve a manifest-relative asset path — a `clips[]` entry,
 /// `bannerAsset`, or `coverImage` — against `pack_dir`.
 ///
@@ -1786,5 +1802,28 @@ mod tests {
         assert!(dest.join("manifest.json").is_file());
         assert!(dest.join("clips/kill_01.wav").is_file());
         assert_eq!(fs::read(dest.join("clips/kill_01.wav")).unwrap(), b"clipdata");
+    }
+
+    // --- active_pack_name (CR-011 §B utterance ledger meta) ---------------
+
+    #[test]
+    fn active_pack_name_none_when_nothing_activated() {
+        let root = temp_root("active-name-none");
+        set_test_voice_root(Some(root.clone()));
+        let _guard = RootGuard(root.clone());
+
+        assert_eq!(active_pack_name(), None);
+    }
+
+    #[test]
+    fn active_pack_name_returns_the_manifest_name() {
+        let root = temp_root("active-name-ok");
+        set_test_voice_root(Some(root.clone()));
+        let _guard = RootGuard(root.clone());
+
+        write_pack(&root, "demo", BTreeMap::new());
+        activate_if_exists("demo").expect("activate");
+
+        assert_eq!(active_pack_name(), Some("Test Pack".to_string()));
     }
 }

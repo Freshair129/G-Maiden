@@ -3,10 +3,13 @@ import { formatKda, formatTimer, toneClass, useCompanionData } from "./companion
 
 export const LiveMatchPage = memo(function LiveMatchPage() {
   const { data } = useCompanionData();
+  // CR-011 §E/Q: no source exposes objective timing (GSI is local-player-only,
+  // OpenDota has no live objective feed) — honest "—" placeholders, not the
+  // old hardcoded Roshan/T2/Smoke demo strings, until this is really wired.
   const objectives = [
-    { label: "Roshan", value: "Likely contest in 00:38" },
-    { label: "Top T2", value: "Pressure window open" },
-    { label: "Smoke Risk", value: "High near river" }
+    { label: "Roshan", value: "—" },
+    { label: "Top T2", value: "—" },
+    { label: "Smoke Risk", value: "—" }
   ];
 
   return (
@@ -100,55 +103,12 @@ export const LiveMatchPage = memo(function LiveMatchPage() {
   );
 });
 
-export const CompanionPage = memo(function CompanionPage() {
-  const { data } = useCompanionData();
-  return (
-    <div className="domain-page">
-      <section className="card-shell page-hero">
-        <div>
-          <div className="eyebrow">Companion</div>
-          <h2>Behavior and presence tuning</h2>
-          <p>Adjust how G-Maiden speaks, moves, warns, and mirrors overlay data onto the second-screen dashboard.</p>
-        </div>
-      </section>
-
-      <div className="domain-grid three-up">
-        <Card title="Overlay mode" kicker="Delivery">
-          <div className="toggle-row"><span>Overlay</span><strong>{data.companion.overlayEnabled ? "Enabled" : "Disabled"}</strong></div>
-          <div className="toggle-row"><span>Dashboard mirror</span><strong>Always on</strong></div>
-          <p className="domain-copy">Even with overlay disabled, the dashboard still shows every G-Signal and warning rail.</p>
-        </Card>
-        <Card title="Voice pack" kicker="Audio">
-          <div className="toggle-row"><span>Current pack</span><strong>{data.match.voicePack}</strong></div>
-          <div className="toggle-row"><span>Voice state</span><strong>{data.companion.voiceEnabled ? "Listening" : "Muted"}</strong></div>
-          <p className="domain-copy">Voice delivery stays calm by default and escalates only for danger-tier alerts.</p>
-        </Card>
-        <Card title="Alert behavior" kicker="Signal policy">
-          <div className="toggle-row"><span>Danger threshold</span><strong>{data.companion.dangerThreshold}%</strong></div>
-          <div className="toggle-row"><span>Motion intensity</span><strong>{data.companion.motionIntensity}%</strong></div>
-          <p className="domain-copy">Use these as companion presets before wiring per-hero or per-role personalities.</p>
-        </Card>
-      </div>
-
-      <section className="card-shell domain-card">
-        <div className="panel-head compact">
-          <div>
-            <div className="eyebrow">Hotkeys</div>
-            <h3>Quick triggers</h3>
-          </div>
-        </div>
-        <div className="stats-grid compact">
-          {data.companion.hotkeys.map((key) => (
-            <div key={key.label} className="stat-box">
-              <span>{key.label}</span>
-              <strong>{key.combo}</strong>
-            </div>
-          ))}
-        </div>
-      </section>
-    </div>
-  );
-});
+// CR011-P5-01: CompanionPage dissolved (CR-011 §C) — its hotkey grid is
+// superseded by the Ctrl+/ shortcut sheet (shortcuts.ts/ShortcutSheet in
+// CommandDeck.tsx) and its overlay/voice toggle cards duplicated the legacy
+// Control panel already embedded in SettingsPage below. Grepped for
+// `CompanionPage` before deleting: the only importer was CommandDeck.tsx
+// (now removed), so no other surface depended on this export.
 
 export const BuildAdvisorPage = memo(function BuildAdvisorPage() {
   const { data } = useCompanionData();

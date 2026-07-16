@@ -405,29 +405,29 @@ const styles: Record<string, React.CSSProperties> = {
   redeemRow: { display: "flex", alignItems: "center", gap: 10, flexWrap: "wrap" },
   input: {
     flex: "0 1 320px",
-    background: "#0c1626",
-    border: "1px solid #2b3e5c",
+    background: "var(--g-instrument)",
+    border: "1px solid var(--g-hairline-2)",
     borderRadius: 10,
-    color: "#d8e6f2",
+    color: "var(--g-text)",
     padding: "9px 12px",
     fontSize: 13,
   },
   btn: {
     borderRadius: 10,
     fontSize: 12.5,
-    border: "1px solid #2b3e5c",
-    background: "#11203a",
-    color: "#d8e6f2",
+    border: "1px solid var(--g-hairline-2)",
+    background: "var(--g-instrument-2)",
+    color: "var(--g-text)",
     padding: "9px 14px",
     cursor: "pointer",
   },
-  btnPrimary: { borderColor: "#64c7ff", color: "#9be7ff" },
+  btnPrimary: { borderColor: "var(--g-ice-600)", color: "var(--g-ice-300)" },
   btnGhost: { background: "transparent" },
-  btnActive: { borderColor: "#31d0a0", color: "#31d0a0", cursor: "default", opacity: 0.9 },
-  redeemOk: { color: "#31d0a0", fontSize: 12.5 },
-  redeemErr: { color: "#ff5c7a", fontSize: 12.5 },
-  empty: { color: "#8fa6c0", padding: "24px 4px", fontSize: 13 },
-  emptyErr: { color: "#ff5c7a", padding: "24px 4px", fontSize: 13 },
+  btnActive: { borderColor: "var(--g-ok)", color: "var(--g-ok)", cursor: "default", opacity: 0.9 },
+  redeemOk: { color: "var(--g-ok)", fontSize: 12.5 },
+  redeemErr: { color: "var(--g-danger)", fontSize: 12.5 },
+  empty: { color: "var(--g-text-dim)", padding: "24px 4px", fontSize: 13 },
+  emptyErr: { color: "var(--g-danger)", padding: "24px 4px", fontSize: 13 },
   grid: {
     display: "grid",
     gridTemplateColumns: "repeat(4, minmax(0, 1fr))",
@@ -437,14 +437,14 @@ const styles: Record<string, React.CSSProperties> = {
     overflow: "hidden",
   },
   card: {
-    background: "rgba(18, 20, 28, 0.72)",
-    border: "1px solid #24344e",
+    background: "var(--g-instrument)",
+    border: "1px solid var(--g-hairline)",
     borderRadius: 14,
     display: "flex",
     flexDirection: "column",
     overflow: "hidden",
   },
-  banner: { position: "relative", height: 92, background: "#0a1120" },
+  banner: { position: "relative", height: 92, background: "var(--g-instrument-2)" },
   bannerImg: { width: "100%", height: "100%", objectFit: "cover" },
   bannerPlaceholder: {
     width: "100%",
@@ -456,8 +456,9 @@ const styles: Record<string, React.CSSProperties> = {
     padding: "0 8px",
     fontSize: 12,
     fontWeight: 700,
-    color: "#9be7ff",
-    background: "linear-gradient(135deg, rgba(100,199,255,.22), #0b1220 65%, #060913 100%)",
+    color: "var(--g-ice-300)",
+    background:
+      "linear-gradient(135deg, color-mix(in srgb, var(--g-ice-600) 22%, transparent), var(--g-instrument-2) 65%, var(--g-void) 100%)",
   },
   sourceBadge: {
     position: "absolute",
@@ -466,26 +467,26 @@ const styles: Record<string, React.CSSProperties> = {
     fontSize: 9.5,
     textTransform: "uppercase",
     letterSpacing: 0.4,
-    background: "rgba(6,9,19,.78)",
-    border: "1px solid #2b3e5c",
+    background: "color-mix(in srgb, var(--g-void) 78%, transparent)",
+    border: "1px solid var(--g-hairline-2)",
     borderRadius: 999,
     padding: "2px 7px",
-    color: "#8fa6c0",
+    color: "var(--g-text-dim)",
   },
   cardBody: { padding: 10, display: "flex", flexDirection: "column", gap: 6, flex: 1, minHeight: 0 },
-  cardTitle: { fontSize: 12.5, fontWeight: 700, color: "#d8e6f2", lineHeight: 1.2 },
-  cardMeta: { fontSize: 10.5, color: "#8fa6c0" },
-  cardErr: { fontSize: 10, color: "#ff5c7a" },
+  cardTitle: { fontSize: 12.5, fontWeight: 700, color: "var(--g-text)", lineHeight: 1.2 },
+  cardMeta: { fontSize: 10.5, color: "var(--g-text-dim)" },
+  cardErr: { fontSize: 10, color: "var(--g-danger)" },
   pager: { display: "flex", alignItems: "center", justifyContent: "center", gap: 12 },
-  pagerLabel: { fontSize: 12, color: "#8fa6c0" },
+  pagerLabel: { fontSize: 12, color: "var(--g-text-dim)" },
 };
 
 const cssBlock = `
 @keyframes walletInvPop {
-  0% { transform: scale(.92); box-shadow: 0 0 0 0 rgba(100,199,255,.5); }
-  60% { transform: scale(1.015); box-shadow: 0 0 0 6px rgba(100,199,255,.12); }
-  100% { transform: scale(1); box-shadow: 0 0 0 0 rgba(100,199,255,0); }
+  0% { transform: scale(.92); box-shadow: 0 0 0 0 color-mix(in srgb, var(--g-ice-600) 50%, transparent); }
+  60% { transform: scale(1.015); box-shadow: 0 0 0 6px color-mix(in srgb, var(--g-ice-600) 12%, transparent); }
+  100% { transform: scale(1); box-shadow: 0 0 0 0 transparent; }
 }
-.wallet-inv-card.is-new { animation: walletInvPop 900ms ease-out; border-color: #64c7ff !important; }
-.wallet-inv-input:focus { outline: none; border-color: #64c7ff !important; }
+.wallet-inv-card.is-new { animation: walletInvPop 900ms ease-out; border-color: var(--g-ice-600) !important; }
+.wallet-inv-input:focus { outline: none; border-color: var(--g-ice-600) !important; }
 `;
