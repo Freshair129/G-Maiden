@@ -6294,6 +6294,219 @@ body {
   color: var(--g-text-mute);
 }
 
+/* === CR-013 W2 (§4 iOS-style Settings split view) — category rail + detail
+   pane. New "COLD BOOTH" row kit: every color below is a --g-* token, no
+   inline hex (R3 — replaces the legacy Control panel's inline `C` palette
+   for the shell/rail + "ทั่วไป" category; the heavier re-homed cards under
+   the other categories keep their existing look for now, per W2 scope). === */
+.settings-split {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 14px;
+  height: 100%;
+  min-height: 0;
+}
+
+.settings-cats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-panel);
+  background: var(--g-instrument);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.settings-cat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: var(--g-r-card);
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background var(--g-t-hover) var(--g-ease), border-color var(--g-t-hover) var(--g-ease);
+}
+.settings-cat:hover { background: var(--g-instrument-2); }
+.settings-cat.on {
+  background: var(--g-instrument-2);
+  border-color: var(--g-hairline-2);
+}
+.settings-cat:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+
+.settings-cat-glyph {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--g-r-sm);
+  background: var(--g-instrument-2);
+  border: 1px solid var(--g-hairline);
+  color: var(--g-text-dim);
+  font-size: 14px;
+  line-height: 1;
+}
+.settings-cat.on .settings-cat-glyph {
+  color: var(--g-ice-300);
+  border-color: var(--g-hairline-2);
+}
+
+.settings-cat-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.settings-cat-label {
+  font: 600 12.5px/1.3 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+.settings-cat.on .settings-cat-label { color: var(--g-text); }
+.settings-cat-sub {
+  font: 400 10.5px/1.3 var(--g-font-ui);
+  color: var(--g-text-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-detail {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* R1 (no page-level scroll): the split's outer surface stays clipped — only
+   the detail BODY (below) scrolls internally, same interim shape as
+   .deck-tabbed-body above. `.settings-split-mode` is added on `.surface` only
+   when tab==="settings" (CommandDeck.tsx), so this 3-class selector (more
+   specific than the shared 2-class `.surface.page-settings`/`.page-settings`
+   rules elsewhere in this file) overrides ONLY the settings split view —
+   those other rules are left untouched for any other code path. */
+.surface.page-settings.settings-split-mode {
+  overflow: hidden;
+}
+.settings-detail-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-right: 4px;
+}
+
+.settings-group {
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-panel);
+  background: var(--g-instrument);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.settings-group-head {
+  font: 600 10px/1 var(--g-font-ui);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--g-text-mute);
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.settings-row-label {
+  font: 500 12.5px/1.4 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+.settings-winpresets { display: flex; gap: 6px; flex-wrap: wrap; }
+.settings-winpreset {
+  font: 500 11px/1 var(--g-font-ui);
+  color: var(--g-text-dim);
+  background: var(--g-instrument-2);
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-pill);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background var(--g-t-hover) var(--g-ease), color var(--g-t-hover) var(--g-ease);
+}
+.settings-winpreset:hover { background: var(--g-instrument-2); color: var(--g-text); }
+.settings-winpreset:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+/* active = ice fill (CR-011 §F selected grammar), text goes dark-on-ice via
+   the existing --g-ink token (no new hex — matches .gm-deckprefs-pill.active's
+   intent without introducing a second literal for the same "ink on ice" idea). */
+.settings-winpreset.active {
+  color: var(--g-ink);
+  background: var(--g-ice-500);
+  border-color: var(--g-ice-500);
+}
+.settings-foot {
+  margin: 0;
+  font: 400 11px/1.5 var(--g-font-ui);
+  color: var(--g-text-mute);
+}
+.settings-row-value {
+  font: 500 12px/1 var(--g-font-mono, var(--g-font-ui));
+  color: var(--g-ice-300);
+}
+/* CR-013 W2 gate fix (Opus F1): app-level update banner, pinned above every
+   settings category. Instrument matte + ice rim (two-material rule — the only
+   blurred surface is the shell), COLD BOOTH tokens only. */
+.settings-update-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 12px 16px;
+  background: var(--g-instrument-2);
+  border: 1px solid var(--g-ice-500);
+  border-radius: 12px;
+}
+.settings-update-spark { font-size: 16px; line-height: 1; }
+.settings-update-copy { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.settings-update-copy strong { font: 600 13px/1.3 var(--g-font-ui); color: var(--g-ice-300); }
+.settings-update-copy span {
+  font: 400 11px/1.4 var(--g-font-ui);
+  color: var(--g-text-mute);
+  white-space: pre-wrap;
+  max-height: 44px;
+  overflow: hidden;
+}
+.settings-update-install {
+  flex: 0 0 auto;
+  font: 600 12px/1 var(--g-font-ui);
+  color: var(--g-ink);
+  background: var(--g-ice-500);
+  border: none;
+  border-radius: 9px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+.settings-update-install:disabled { opacity: 0.6; cursor: default; }
+.settings-update-later {
+  flex: 0 0 auto;
+  font: 500 12px/1 var(--g-font-ui);
+  color: var(--g-text-dim);
+  background: transparent;
+  border: 1px solid var(--g-hairline-2);
+  border-radius: 9px;
+  padding: 8px 13px;
+  cursor: pointer;
+}
+.settings-update-later:disabled { opacity: 0.6; cursor: default; }
+
 /* -- Maiden Line: disabled row (current quality tier — visible, inert). -- */
 .gm-palette-row.disabled {
   opacity: 0.45;

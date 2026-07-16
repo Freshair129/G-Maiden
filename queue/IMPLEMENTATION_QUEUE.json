@@ -1,8 +1,8 @@
 {
   "version": "2.3.0",
   "project": "G-Maiden",
-  "wave": "CR013-W1",
-  "wave_title": "ONE CANVAS skeleton: PAGES restructure (7-nav) + DeckTabs shell + Live/Insights consolidation + G-Store seat",
+  "wave": "CR013-W2",
+  "wave_title": "Settings iOS split view: Control category-prop partition + split-view shell (7 cats) + useAppUpdate lift",
   "cr": "CR-013",
   "roster": "Sonnet worker / Opus gate / Fable architect+merger",
   "architect_note": "R1 global overflow:hidden flip DEFERRED to W5 (final assertion) to avoid intermediate breakage: pages not yet fit (voice/account/settings) keep overflow-y:auto until their own wave converts them. W1 only sets overflow:hidden on pages it makes no-scroll now (live/insights/store).",

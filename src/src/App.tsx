@@ -72,6 +72,12 @@ interface GsiStatus { dota_running: boolean; gsi_active: boolean; in_game: boole
 
 type Pos = 'top' | 'left' | 'right' | 'custom'
 export type Sensitivity = 'low' | 'med' | 'high'
+/** CR-013 §4 (iOS-style Settings split view). `Control` groups its existing
+ *  cards/rows into these six categories when `category` is passed — see the
+ *  `if (category)` branch near the bottom of `Control` for the mapping.
+ *  "ทั่วไป"/general is deliberately NOT here: it's deck-prefs (quality/density/
+ *  crisp/big-mode + window size), owned entirely by CommandDeck, not Control. */
+export type SettingsCat = 'overlay' | 'voice' | 'ai' | 'modules' | 'privacy' | 'system'
 
 export interface Settings {
   overlayVisible: boolean
@@ -1660,7 +1666,7 @@ const Card: React.FC<{ title: string; children: React.ReactNode }> = ({ title, c
 // CR-002 Phase 1: the command deck (<CommandDeck/>) now renders in the control
 // window. The original control panel is retained (exported) but no longer routed,
 // so its overlay-preview / voice / updater logic stays available for reference.
-export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
+export const Control: React.FC<{ embedded?: boolean; category?: SettingsCat }> = ({ embedded, category }) => {
   const [tick, setTick] = useState<GameTick | null>(null)
   const [seen, setSeen] = useState(false)
   const [s, setS] = useState<Settings>(loadSettings)
@@ -1730,18 +1736,11 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
     return () => { if (previewTimer.current) { clearInterval(previewTimer.current); previewTimer.current = null } }
   }, [preview])
 
-  // Check GitHub Releases for a newer signed build on startup. Ask-first: we only
-  // surface the prompt; nothing installs until the user clicks. Silent on failure
-  // (offline, or no release published yet).
-  useEffect(() => {
-    void (async () => {
-      try {
-        const u = await check()
-        if (u?.available) { updRef.current = u; setUpd({ version: u.version, notes: u.body ?? '' }) }
-      } catch { /* offline / no endpoint yet */ }
-    })()
-  }, [])
-
+  // CR-013 W2 gate fix (Opus F1): the launch auto-check moved to useAppUpdate
+  // (owned by CommandDeck) so it fires regardless of which settings category —
+  // or tab — is open. The state below is retained only for the legacy full
+  // render (unreachable now that the deck always passes a `category`; removed
+  // in W3 when that dead branch is deleted).
   const checkUpdateNow = async () => {
     setUpdPhase('checking')
     try {
@@ -1934,6 +1933,337 @@ export const Control: React.FC<{ embedded?: boolean }> = ({ embedded }) => {
   }, [])
 
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((p) => ({ ...p, [k]: v }))
+
+  // CR-013 W2 (§4 + §4.3 "move the skin, not the brain"): when a `category`
+  // is given (the new iOS-style Settings split view, CommandDeck.tsx), render
+  // ONLY that category's groups — bare, no outer page chrome (no app header,
+  // no update/exclusive-fullscreen banners floating loose, no 2-col grid).
+  // Every row below is the EXACT same JSX/handlers as the full render further
+  // down (same `s`/`set`/invoke/emit, same sub-components) — just re-homed
+  // under a switch instead of stacked in one long page. `category` undefined
+  // (no caller passes one today except the new split view) falls through to
+  // the ORIGINAL full render, byte-for-byte unchanged.
+  if (category) {
+    return (
+      <>
+        {showWelcome && <Welcome onDone={dismissWelcome} />}
+        <div className="settings-detail-body">
+          {category === 'overlay' && (
+            <>
+              <Card title="Overlay (OSD)">
+                <Row label="แสดง overlay บนเกม"><Toggle on={s.overlayVisible} onChange={(v) => set('overlayVisible', v)} /></Row>
+                <Row label="ตำแหน่ง"><Seg value={s.position} options={[['top', 'บน'], ['left', 'ซ้าย'], ['right', 'ขวา'], ['custom', 'กำหนดเอง']]} onChange={(v) => set('position', v)} /></Row>
+                {s.position === 'custom' && (
+                  <>
+                    <Row label={`X: ${s.customX}%`}>
+                      <input type="range" min={0} max={100} value={s.customX} onChange={(e) => set('customX', Number(e.target.value))} style={{ width: 150 }} />
+                    </Row>
+                    <Row label={`Y: ${s.customY}%`}>
+                      <input type="range" min={0} max={90} value={s.customY} onChange={(e) => set('customY', Number(e.target.value))} style={{ width: 150 }} />
+                    </Row>
+                  </>
+                )}
+                <Row label={`ความทึบพาเนล: ${Math.round(s.opacity * 100)}%`}>
+                  <input type="range" min={40} max={100} value={Math.round(s.opacity * 100)} onChange={(e) => set('opacity', Number(e.target.value) / 100)} style={{ width: 150 }} />
+                </Row>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderTop: '1px solid rgba(143,212,255,0.08)' }}>
+                  <span style={{ fontSize: 13.5 }}>แผงสถิติ overlay</span>
+                  <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
+                    {([['showTimer', 'นาฬิกา'], ['showScore', 'สกอร์'], ['showHeroBar', 'HP/Mana'], ['showKda', 'K/D/A'], ['showGold', 'ทอง/NW']] as [keyof Settings, string][]).map(([k, label]) => (
+                      <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: s[k] ? C.txt : C.mut, cursor: 'pointer' }}>
+                        <input type="checkbox" checked={s[k] as boolean} onChange={(e) => set(k, e.target.checked as never)} style={{ accentColor: C.ice }} />
+                        {label}
+                      </label>
+                    ))}
+                  </div>
+                </div>
+                <Row label="ทดสอบ overlay (จำลอง ไม่ต้องเปิดเกม)"><Toggle on={preview} onChange={setPreview} /></Row>
+                {profiles.length > 0 && (
+                  <div style={{ borderTop: `1px solid ${C.line}`, marginTop: 6, paddingTop: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span style={{ fontSize: 11.5, color: C.mut }}>โปรไฟล์:</span>
+                    {profiles.map(p => (
+                      <span key={p.name} style={{ display: 'inline-flex', alignItems: 'center', gap: 3, background: 'rgba(143,212,255,0.08)', border: `1px solid ${C.line}`, borderRadius: 7, padding: '3px 8px', fontSize: 11.5 }}>
+                        <button onClick={() => applyProfile(p)} style={{ background: 'none', border: 'none', color: C.ice, cursor: 'pointer', padding: 0, fontSize: 11.5 }}>{p.name}</button>
+                        <button onClick={() => deleteProfile(p.name)} style={{ background: 'none', border: 'none', color: C.mut, cursor: 'pointer', padding: 0, fontSize: 10, lineHeight: 1 }}>✕</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6 }}>
+                  <div style={{ fontSize: 11.5, color: C.mut, lineHeight: 1.6 }}>
+                    💡 <b style={{ color: C.ice }}>Ctrl+Alt+S</b> ซ่อน/แสดง · <b style={{ color: C.ice }}>Alt+↑/↓</b> ระดับเสียง · <b style={{ color: C.ice }}>Alt+M</b> ปิด/เปิดเสียง
+                  </div>
+                  <button onClick={() => { const n = prompt('ชื่อโปรไฟล์:'); if (n?.trim()) saveProfile(n.trim()) }}
+                    style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 7, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>
+                    + บันทึกโปรไฟล์
+                  </button>
+                </div>
+              </Card>
+
+              <Card title="Overlay UI">
+                <Row label="โหมดหน้าตา overlay">
+                  <div style={{ display: 'inline-flex', border: `1px solid ${C.line}`, borderRadius: 9, overflow: 'hidden' }}>
+                    {(['lite', 'full'] as const).map((m) => (
+                      <button key={m} onClick={() => set('uiMode', m)}
+                        style={{ background: s.uiMode === m ? 'rgba(143,212,255,0.16)' : 'transparent', color: s.uiMode === m ? C.ice : C.mut, border: 'none', padding: '6px 16px', cursor: 'pointer', fontSize: 12 }}>
+                        {m === 'lite' ? 'Lite (เดิม)' : 'Full (redesign)'}
+                      </button>
+                    ))}
+                  </div>
+                </Row>
+                <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
+                  <b style={{ color: C.txt }}>Lite</b> = overlay เดิม เบา เสถียร · <b style={{ color: C.txt }}>Full</b> = ดีไซน์ใหม่ (โมดูลแยกชิ้น, glass) — กำลังพัฒนา
+                </div>
+                {s.uiMode === 'full' && <LayoutEditor value={s.layout} onChange={(l) => set('layout', l)} />}
+              </Card>
+            </>
+          )}
+
+          {category === 'voice' && (
+            <>
+              <Card title="Alerts (G-Signal)">
+                <Row label="เตือนเมื่อ HP ต่ำ"><Toggle on={s.alertEnabled} onChange={(v) => set('alertEnabled', v)} /></Row>
+                <Row label={`ขีดเตือน HP: ${s.alertThreshold}%`}>
+                  <input type="range" min={10} max={50} value={s.alertThreshold} onChange={(e) => set('alertThreshold', Number(e.target.value))} style={{ width: 150 }} disabled={!s.alertEnabled} />
+                </Row>
+                <Row label="เสียงพูด (Maiden)">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button onClick={() => void invoke('speak', { text: 'G-Maiden voice test. ทดสอบเสียงค่ะ เลือดน้อยแล้ว ถอยก่อน', voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})} disabled={!s.voiceEnabled}
+                      style={{ background: 'transparent', color: s.voiceEnabled ? C.ice : C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 11px', fontSize: 12, cursor: s.voiceEnabled ? 'pointer' : 'not-allowed' }}>
+                      🔊 ทดสอบเสียง
+                    </button>
+                    <Toggle on={s.voiceEnabled} onChange={(v) => set('voiceEnabled', v)} />
+                  </div>
+                </Row>
+                <Row label="เลือกเสียง">
+                  <select value={s.voiceName} onChange={(e) => set('voiceName', e.target.value)} disabled={!s.voiceEnabled || voices.length === 0}
+                    style={{ background: 'rgba(18,20,28,0.86)', color: s.voiceEnabled ? C.txt : C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 10px', fontSize: 12.5, maxWidth: 240 }}>
+                    <option value="">— ระบบเลือกเอง —</option>
+                    {voices.map((v) => (
+                      <option key={v.name} value={v.name}>{v.name} ({v.culture}, {v.gender === 'Female' ? 'หญิง' : v.gender === 'Male' ? 'ชาย' : v.gender})</option>
+                    ))}
+                  </select>
+                </Row>
+                <Row label={`ความเร็ว: ${s.voiceRate > 0 ? '+' : ''}${s.voiceRate}`}>
+                  <input type="range" min={-5} max={5} step={1} value={s.voiceRate} onChange={(e) => set('voiceRate', Number(e.target.value))} disabled={!s.voiceEnabled} style={{ width: 150 }} />
+                </Row>
+                <Row label={`ระดับเสียง: ${s.volume}%${s.volume === 0 ? ' (ปิดเสียง)' : ''}`}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <button onClick={() => set('volume', s.volume === 0 ? 80 : 0)}
+                      style={{ background: 'transparent', color: s.volume === 0 ? C.bad : C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '4px 8px', fontSize: 13, cursor: 'pointer', lineHeight: 1 }}>
+                      {s.volume === 0 ? '🔇' : s.volume <= 30 ? '🔈' : s.volume <= 70 ? '🔉' : '🔊'}
+                    </button>
+                    <input type="range" min={0} max={100} step={5} value={s.volume} onChange={(e) => set('volume', Number(e.target.value))} style={{ width: 130 }} />
+                  </div>
+                </Row>
+                <Row label="พูดเสริมตามเหตุการณ์">
+                  <Toggle on={s.personaLines} onChange={(v) => set('personaLines', v)} />
+                </Row>
+                <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
+                  Windows SAPI · ติดตั้งเสียงไทยใน Windows Settings · Time & Language · Speech เพื่อให้ Maiden พูดไทยชัดขึ้น
+                  {voices.length > 0 && voices.every((v) => !v.culture.startsWith('th')) && (
+                    <span style={{ color: C.warn }}> · ตอนนี้ยังไม่มี Thai voice → จะใช้เสียง {voices[0]?.gender === 'Female' ? 'อังกฤษ' : 'อังกฤษ'} อ่านข้อความไทย</span>
+                  )}
+                </div>
+              </Card>
+
+              <Card title="G-Signal — แบนเนอร์แจ้งเตือน">
+                <Row label="แบนเนอร์เตือนแก๊งค์ (gank)"><Toggle on={s.gankVisuals} onChange={(v) => set('gankVisuals', v)} /></Row>
+                <Row label="แบนเนอร์ฆ่า / สตรีค (kill banner)">
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <button onClick={() => { void emit('preview-kill', { streak: 5, victim: 'npc_dota_hero_lina' }); void invoke('speak_event', { event: 'mega_kill', fallback: 'เมก้าคิล!', voice: null, rate: null }).catch(() => {}) }}
+                      title="โชว์ตัวอย่างแบนเนอร์บน overlay (ต้องเปิด overlay อยู่)"
+                      style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 11px', fontSize: 12, cursor: 'pointer' }}>▶ ดูตัวอย่าง</button>
+                    <Toggle on={s.killVisuals} onChange={(v) => set('killVisuals', v)} />
+                  </div>
+                </Row>
+                <Row label="ความไวเตือนแก๊งค์">
+                  <div style={{ display: 'inline-flex', border: `1px solid ${C.line}`, borderRadius: 9, overflow: 'hidden' }}>
+                    {(['low','med','high'] as Sensitivity[]).map((lv) => (
+                      <button key={lv} onClick={() => set('signalSensitivity', lv)}
+                        style={{ background: s.signalSensitivity === lv ? 'rgba(143,212,255,0.16)' : 'transparent', color: s.signalSensitivity === lv ? C.ice : C.mut, border: 'none', padding: '6px 14px', cursor: 'pointer', fontSize: 12 }}>
+                        {lv === 'low' ? 'ตึง (≥85%)' : lv === 'med' ? 'สมดุล (≥65%)' : 'ไว (≥50%)'}
+                      </button>
+                    ))}
+                  </div>
+                </Row>
+                <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
+                  แบนเนอร์ขึ้นกลาง-บนของจอเมื่อ G-Signal เตือนแก๊งค์ (ไม่บังมินิแมพ).
+                </div>
+              </Card>
+
+              <AudioSettingsCard />
+            </>
+          )}
+
+          {category === 'ai' && (
+            <>
+              <MasterCard tick={tick} voice={s.voiceName} rate={s.voiceRate} enabled={s.masterEnabled} onEnabledChange={(v) => set('masterEnabled', v)} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} backend={s.masterBackend} onBackendChange={(b) => set('masterBackend', b)} auth={s.masterAuth} onAuthChange={(a) => set('masterAuth', a)} apiKeyPresent={apiKeyPresent} onApiKeySave={saveMasterApiKey} ollamaModel={s.masterOllamaModel} onOllamaModelChange={(m) => set('masterOllamaModel', m)} onUsageChanged={() => setQuotaTick((n) => n + 1)} />
+              <QuotaCard refreshTrigger={quotaTick} />
+            </>
+          )}
+
+          {category === 'modules' && (
+            <>
+              <Card title="Modules &amp; System">
+                {(() => {
+                  const capAcc = captureMode === 'dxgi' ? C.ok : captureMode === 'lite' ? C.warn : C.mut
+                  const capLabel = captureMode === 'dxgi' ? 'DXGI' : captureMode === 'lite' ? 'Lite' : '…'
+                  const capTitle = captureMode === 'dxgi'
+                    ? 'DXGI Desktop Duplication — minimap detection active'
+                    : captureMode === 'lite'
+                      ? 'Minimap detection ปิดอยู่ — ใช้ borderless fullscreen เพื่อเปิด full detection เต็มรูปแบบ'
+                      : 'กำลังเริ่มต้น capture'
+                  return (
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 6, fontSize: 11.5, color: C.mut }}>
+                      <span>Capture</span>
+                      <span title={capTitle} style={{ padding: '2px 9px', borderRadius: 99, fontSize: 11, fontWeight: 600, color: capAcc, background: `${capAcc}1f`, border: `1px solid ${capAcc}` }}>{capLabel}</span>
+                    </div>
+                  )
+                })()}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, paddingTop: 6, fontSize: 12.5 }}>
+                  {[
+                    ['G-Sentry', 'fog-of-war monitor'],
+                    ['G-Motion', 'gank prediction'],
+                    ['G-Signal', 'voice gank warning'],
+                    ['G-Master', 'advisor (Claude Plan + SLM fallback)'],
+                    ['G-Damage', 'burst lethality engine'],
+                    ['G-Log', 'match history'],
+                  ].map(([mod, desc]) => (
+                    <span key={mod} style={{ color: C.ok }}>
+                      <span style={{ color: C.ok }}>✓</span> <b style={{ color: C.ice }}>{mod}</b>
+                      <span style={{ color: C.mut }}> — {desc}</span>
+                    </span>
+                  ))}
+                </div>
+                {resources && (
+                  <div style={{ borderTop: `1px solid ${C.line}`, marginTop: 10, paddingTop: 8, display: 'flex', gap: 20, fontSize: 12 }}>
+                    <span style={{ color: resources.ram_mb > 400 ? C.bad : C.ok }}>
+                      RAM: <b>{resources.ram_mb.toFixed(0)} MB</b> / 400 MB
+                    </span>
+                    <span style={{ color: resources.cpu_pct > 2.5 ? C.bad : C.ok }}>
+                      CPU: <b>{resources.cpu_pct.toFixed(1)}%</b> / 2.5%
+                    </span>
+                    {resources.over_budget && (
+                      <span style={{ color: C.warn }}>⚠ เกิน budget — อาจลดความถี่ CV</span>
+                    )}
+                  </div>
+                )}
+              </Card>
+
+              <Card title="G-Signal / CV (calibrate)">
+                <Row label="CV debug overlay (calibrate)"><Toggle on={s.cvDebug} onChange={(v) => set('cvDebug', v)} /></Row>
+                <Row label="Calibration capture (audit: screenshot + clip) — QA"><Toggle on={s.calibration} onChange={(v) => set('calibration', v)} /></Row>
+                <Row label="แหล่งข้อมูล GPU/อุณหภูมิ (telemetry)">
+                  <div style={{ display: 'inline-flex', border: `1px solid ${C.line}`, borderRadius: 9, overflow: 'hidden' }}>
+                    {(['auto','feeder','gtelemetry','off'] as Settings['telemetrySource'][]).map((src) => (
+                      <button key={src} onClick={() => set('telemetrySource', src)}
+                        title={src === 'auto' ? 'ใช้ G-Telemetry ถ้ามี ไม่งั้น feeder' : src === 'feeder' ? 'gpu-feeder ในตัว (เบา, GPU อย่างเดียว)' : src === 'gtelemetry' ? 'G-Telemetry (ละเอียด: CPU temp, ~200ms)' : 'ปิด'}
+                        style={{ background: s.telemetrySource === src ? 'rgba(143,212,255,0.16)' : 'transparent', color: s.telemetrySource === src ? C.ice : C.mut, border: 'none', padding: '6px 12px', cursor: 'pointer', fontSize: 12 }}>
+                        {src === 'auto' ? 'อัตโนมัติ' : src === 'feeder' ? 'Feeder' : src === 'gtelemetry' ? 'G-Telemetry' : 'ปิด'}
+                      </button>
+                    ))}
+                  </div>
+                </Row>
+                <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
+                  CV debug แสดงกรอบมินิแมพ + จุดที่ตรวจจับได้ — เปิดเฉพาะตอนปรับเทียบ. แหล่ง telemetry: <b>Feeder</b> = gpu-feeder ในตัว (GPU); <b>G-Telemetry</b> = แอปแยก (เพิ่ม CPU temp, ~200ms) ต้องเปิดแอปนั้น.
+                </div>
+              </Card>
+            </>
+          )}
+
+          {category === 'privacy' && (
+            <>
+              <Card title="ความเป็นส่วนตัว">
+                <div style={{ fontSize: 11.5, color: C.mut, lineHeight: 1.6, paddingTop: 6 }}>
+                  ข้อมูลแมตช์ (G-Log), สถานะเกมสด และผลตรวจจับจาก CV <b style={{ color: C.txt }}>อยู่ในเครื่องนี้เท่านั้น</b> โดยดีฟอลต์ —
+                  ผลตรวจจับ CV จะไม่ถูกส่งออกจากเครื่องไม่ว่ากรณีใด การเข้าสู่ระบบ (บัญชี) และการแชร์ข้อมูลแมตช์เพื่อแลกเครดิตเป็นคนละ opt-in
+                  แยกจากกัน และไม่ผูกกัน — ล็อกอินไม่ได้แปลว่าข้อมูลแมตช์ถูกแชร์ไปด้วย
+                </div>
+                <Row label="การศึกษาประสิทธิภาพ (สุ่มปิดเสียงเตือนบางแมตช์เพื่อวัดผล — ข้อมูลอยู่ในเครื่องเท่านั้น)">
+                  <Toggle on={s.efficacyStudy} onChange={(v) => set('efficacyStudy', v)} />
+                </Row>
+              </Card>
+              {s.efficacyStudy && <EfficacyCard />}
+            </>
+          )}
+
+          {category === 'system' && (
+            <>
+              {status?.display_exclusive && (
+                <div style={{ ...panel(0.9), padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 14, border: `1px solid ${C.warn}` }}>
+                  <span style={{ fontSize: 20 }}>⚠️</span>
+                  <div style={{ flex: 1 }}>
+                    <div style={{ fontSize: 13.5, fontWeight: 700, color: C.warn }}>Dota อยู่ในโหมด Exclusive Fullscreen</div>
+                    <div style={{ fontSize: 11.5, color: C.mut, lineHeight: 1.55, marginTop: 2 }}>
+                      Overlay และการอ่าน minimap จะไม่ทำงาน และจออาจค้าง — สลับเป็น <b style={{ color: C.txt }}>Borderless</b> ที่
+                      Dota → Settings → Video → Display Mode (บน Windows ยุคนี้ FPS แทบไม่ต่างจาก fullscreen)
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* CR-013 W2 gate fix (Opus F1): the update banner + version/
+                  update-check moved to the deck-owned settings shell (always
+                  visible, launch auto-check) — see CommandDeck.tsx + useAppUpdate.
+                  This category keeps GSI/diagnostics only. */}
+
+              <Card title="Live (จาก GSI)">
+                {tick && tick.in_game ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', paddingTop: 6 }}>
+                    <Stat label="Clock" value={fmtClock(tick.clock_time)} color={C.ice} />
+                    <Stat label="Hero" value={heroName(tick.hero)} />
+                    <Stat label="Lvl" value={tick.level} />
+                    <Stat label="K/D/A" value={`${tick.kills}/${tick.deaths}/${tick.assists}`} />
+                    <Stat label="Net Worth" value={tick.net_worth.toLocaleString()} color={C.ice} />
+                    <Stat label="HP" value={`${tick.hp_percent}%`} color={tick.hp_percent <= s.alertThreshold ? C.bad : C.ok} />
+                  </div>
+                ) : (
+                  <div style={{ fontSize: 13, color: C.mut, paddingTop: 10 }}>{seen ? 'เชื่อมต่อแล้ว — รอเข้าเกม Dota 2' : 'เปิด Dota 2 (ติดตั้ง GSI config แล้ว) เพื่อดูข้อมูลสด'}</div>
+                )}
+              </Card>
+
+              <SetupCard />
+              <LogCard live={!!tick?.in_game} clockTime={tick?.clock_time ?? 0} />
+
+              <Card title="ระบบ">
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 6, flexWrap: 'wrap', gap: 10 }}>
+                  <span style={{ fontSize: 11.5, color: C.mut }}>GSI: http://127.0.0.1:3000/gsi</span>
+                  <button onClick={() => setShowChangelog(true)}
+                    style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '4px 10px', cursor: 'pointer', fontSize: 11 }}>
+                    มีอะไรใหม่
+                  </button>
+                </div>
+              </Card>
+
+              {showChangelog && (
+                <div onClick={() => setShowChangelog(false)} style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 999, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <div onClick={e => e.stopPropagation()} style={{ ...panel(0.94), maxWidth: 520, maxHeight: '80vh', overflow: 'auto', padding: '24px 28px', width: '90%' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                      <span style={{ fontSize: 16, fontWeight: 700, color: C.ice }}>Changelog</span>
+                      <button onClick={() => setShowChangelog(false)}
+                        style={{ background: 'transparent', color: C.mut, border: 'none', fontSize: 18, cursor: 'pointer' }}>✕</button>
+                    </div>
+                    {CHANGELOG.map(entry => (
+                      <div key={entry.ver} style={{ marginBottom: 16 }}>
+                        <div style={{ fontSize: 13.5, fontWeight: 600, color: entry.ver === APP_VERSION ? C.ice : C.txt }}>
+                          v{entry.ver} <span style={{ fontWeight: 400, color: C.mut, fontSize: 11.5 }}>{entry.date}</span>
+                          {entry.ver === APP_VERSION && <span style={{ marginLeft: 8, fontSize: 10, background: C.ice, color: '#0c1018', borderRadius: 6, padding: '1px 6px', fontWeight: 700 }}>ปัจจุบัน</span>}
+                        </div>
+                        <ul style={{ margin: '6px 0 0 18px', padding: 0, fontSize: 12.5, color: C.txt, lineHeight: 1.7 }}>
+                          {entry.items.map((item, i) => <li key={i}>{item}</li>)}
+                        </ul>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </>
+          )}
+        </div>
+      </>
+    )
+  }
 
   return (
     <div style={{ minHeight: embedded ? undefined : '100vh', background: embedded ? 'transparent' : C.bg, color: C.txt, fontFamily: '"Segoe UI", system-ui, sans-serif', padding: embedded ? 0 : '22px 26px' }}>
@@ -2282,6 +2612,8 @@ export const App: React.FC = () => {
   // Overlay window keeps the original transparent CV/voice overlay. The control
   // window now renders the ported command-deck shell (CR-002 Phase 1).
   // The real settings panel (legacy Control) mounts inside the deck's Settings
-  // tab — passed as a prop so CommandDeck never imports App (no module cycle).
-  return label === 'overlay' ? <Overlay /> : <CommandDeck settingsPanel={<Control embedded />} />
+  // tab — passed as a RENDER PROP (CR-013 W2) so CommandDeck can request just
+  // one category at a time (its iOS-style split view) without importing App
+  // (no module cycle) and without Control ever needing to know about tabs/rails.
+  return label === 'overlay' ? <Overlay /> : <CommandDeck renderSettings={(cat) => <Control embedded category={cat} />} />
 }
