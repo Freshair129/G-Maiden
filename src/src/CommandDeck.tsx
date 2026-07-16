@@ -1058,7 +1058,8 @@ function ReadinessRundown({
   signalEnabled,
   annEnabled,
   masterVolume,
-  draftNote
+  draftNote,
+  onPreviewLive
 }: {
   gsiOnline: boolean;
   voicePackName: string | null;
@@ -1066,6 +1067,7 @@ function ReadinessRundown({
   annEnabled: boolean;
   masterVolume: number;
   draftNote: boolean;
+  onPreviewLive: () => void;
 }) {
   // "ปิด"/"ปิดเสียง" for deliberately-toggled-off features — a user choice is not
   // the same state as a genuinely-absent capability ("—") (Opus gate, CR011-P3).
@@ -1089,6 +1091,12 @@ function ReadinessRundown({
           </div>
         ))}
       </div>
+      {/* Same escape debrief has ("กลับไปดูสด"): preview the live seat layout
+          (hero grid + minimap mirror) without waiting for a match — resets on
+          the next real phase change like the debrief one (Boss request). */}
+      <button type="button" className="gm-debrief-back gm-rundown-preview" onClick={onPreviewLive}>
+        ดูหน้าจอสด (hero grid + minimap)
+      </button>
     </div>
   );
 }
@@ -1286,6 +1294,7 @@ function GMaidenFungDashboard({
             annEnabled={annEnabled}
             masterVolume={masterVolume}
             draftNote={seatPhase === "prep"}
+            onPreviewLive={() => setForceLive(true)}
           />
         )}
       </section>

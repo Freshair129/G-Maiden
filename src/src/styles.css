@@ -6245,3 +6245,7 @@ body {
   letter-spacing: 1px;
 }
 .g-deck.gm-glance .gm-mom-head { font-size: 11px; }
+
+/* CR-011 polish (Boss): live-layout preview escape on the standby rundown —
+   same pill as gm-debrief-back, just spaced below the checklist. */
+.gm-rundown-preview { margin-top: 10px; align-self: flex-start; }
