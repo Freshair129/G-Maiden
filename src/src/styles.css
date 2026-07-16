@@ -6461,6 +6461,63 @@ body {
   font: 500 12px/1 var(--g-font-mono, var(--g-font-ui));
   color: var(--g-ice-300);
 }
+/* CR-013 W3: divider between stacked rows inside one .settings-group — skipped
+   on the first row of a group (nothing above it to divide from the head). */
+.settings-group .settings-row + .settings-row {
+  padding-top: 10px;
+  border-top: 1px solid var(--g-hairline);
+}
+
+/* CR-013 W3: re-skinned legacy `Toggle`/`Seg`/`Row`/`Card` primitives (App.tsx)
+   onto the settings token kit — no more inline hex from the old `C` palette. */
+.settings-toggle {
+  appearance: none;
+  width: 44px;
+  height: 24px;
+  border-radius: var(--g-r-pill);
+  border: 1px solid var(--g-hairline-2);
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  flex: none;
+  background: var(--g-instrument-2);
+  transition: background var(--g-t-hover) var(--g-ease), border-color var(--g-t-hover) var(--g-ease);
+}
+.settings-toggle.on { background: var(--g-ice-500); border-color: var(--g-ice-500); }
+.settings-toggle:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+.settings-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--g-r-pill);
+  background: var(--g-ink);
+  transition: left var(--g-t-hover) var(--g-ease);
+}
+.settings-toggle.on .settings-toggle-knob { left: 22px; }
+
+.settings-seg {
+  display: inline-flex;
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-sm);
+  overflow: hidden;
+  background: var(--g-instrument);
+  flex: none;
+}
+.settings-seg-opt {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--g-text-mute);
+  font: 500 12px/1 var(--g-font-ui);
+  padding: 6px 13px;
+  cursor: pointer;
+  transition: background var(--g-t-hover) var(--g-ease), color var(--g-t-hover) var(--g-ease);
+}
+.settings-seg-opt:hover { color: var(--g-text-dim); }
+.settings-seg-opt.on { background: var(--g-instrument-2); color: var(--g-ice-300); }
+.settings-seg-opt:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
 /* CR-013 W2 gate fix (Opus F1): app-level update banner, pinned above every
    settings category. Instrument matte + ice rim (two-material rule — the only
    blurred surface is the shell), COLD BOOTH tokens only. */

@@ -1780,10 +1780,10 @@ function readSignalSensitivity(): SigSensitivity {
   return "med";
 }
 
-// DEPENDENCY NOTE (Opus gate, CR011-P4b): no clobber race with the legacy
-// Control panel today ONLY because the menu targets render dashboard-only
-// while <Control embedded> mounts on the Settings tab and re-reads
-// localStorage on each remount. If Control ever becomes persistently
+// DEPENDENCY NOTE (Opus gate, CR011-P4b; updated CR-013 W3): no clobber race
+// with the legacy Control panel today ONLY because the menu targets render
+// dashboard-only while <Control category={...}> mounts on the Settings tab and
+// re-reads localStorage on each remount. If Control ever becomes persistently
 // mounted, its whole-object settings write-back would silently revert this
 // value on the next unrelated edit — revisit this seam then.
 function writeSignalSensitivity(level: SigSensitivity) {

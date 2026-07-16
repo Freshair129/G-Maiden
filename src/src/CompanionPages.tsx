@@ -1,4 +1,4 @@
-import { memo, useState, type ReactNode } from "react";
+import { memo, type ReactNode } from "react";
 import { formatKda, formatTimer, toneClass, useCompanionData } from "./companion";
 
 export const LiveMatchPage = memo(function LiveMatchPage() {
@@ -209,59 +209,10 @@ export const HistoryPage = memo(function HistoryPage() {
   );
 });
 
-const WINDOW_PRESETS: { label: string; w: number; h: number }[] = [
-  { label: "1200 × 780", w: 1200, h: 780 },
-  { label: "1280 × 800", w: 1280, h: 800 },
-  { label: "1440 × 900", w: 1440, h: 900 },
-  { label: "1600 × 1000", w: 1600, h: 1000 },
-  { label: "1920 × 1080", w: 1920, h: 1080 },
-];
-
-export const SettingsPage = memo(function SettingsPage() {
-  const { data } = useCompanionData();
-  const [activeSize, setActiveSize] = useState("1200 × 780");
-
-  const applySize = async (preset: typeof WINDOW_PRESETS[number]) => {
-    try {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      const { LogicalSize } = await import("@tauri-apps/api/dpi");
-      await getCurrentWindow().setSize(new LogicalSize(preset.w, preset.h));
-      setActiveSize(preset.label);
-    } catch { /* noop */ }
-  };
-
-  return (
-    <div className="domain-page">
-      <section className="card-shell page-hero">
-        <div>
-          <div className="eyebrow">Settings</div>
-          <h2>System, privacy, and device controls</h2>
-          <p>Release-facing defaults for local-first play, overlay mirroring, and dashboard delivery.</p>
-        </div>
-      </section>
-      <div className="domain-grid three-up">
-        <Card title="Privacy" kicker="Policy">
-          <div className="toggle-row"><span>Mode</span><strong>{data.match.privacy}</strong></div>
-          <div className="toggle-row"><span>Data path</span><strong>On-device only</strong></div>
-        </Card>
-        <Card title="System" kicker="Health">
-          <div className="toggle-row"><span>GSI score</span><strong>{data.match.gsiScore}/100</strong></div>
-          <div className="toggle-row"><span>Latency</span><strong>{data.match.latencyMs}ms</strong></div>
-        </Card>
-        <Card title="Window" kicker="Display">
-          <div className="window-presets">
-            {WINDOW_PRESETS.map((p) => (
-              <button key={p.label} className={`preset-btn${activeSize === p.label ? " active" : ""}`} onClick={() => applySize(p)}>
-                {p.label}
-              </button>
-            ))}
-          </div>
-          <div className="toggle-row"><span>Overlay state</span><strong>{data.match.overlayMode}</strong></div>
-        </Card>
-      </div>
-    </div>
-  );
-});
+// CR-013 W3: `SettingsPage` (+ its `WINDOW_PRESETS`/`applySize`) was the
+// pre-CR-013 flat Settings tab body. Since W2's iOS-style split view
+// (CommandDeck.tsx rail + Control-per-category), nothing imported this
+// export — grepped before deleting, zero importers found.
 
 function Card({ title, kicker, children }: { title: string; kicker: string; children: ReactNode }) {
   return (
