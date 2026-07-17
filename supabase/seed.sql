@@ -41,6 +41,31 @@ on conflict (sku) do update
       status      = excluded.status,
       updated_at  = now();
 
+-- Coming-soon placeholders — no real bundle exists yet (pack_id null). Kept
+-- visible (status=active) but NON-purchasable by pricing them in shard: the shard
+-- faucet is not deployed, so no user holds any shard and purchase_item() always
+-- fails "insufficient balance". ADR-16 §6: shard items are official-only prestige
+-- sinks → creator_id must be null. Replace with a real pack_id + wallet price (or
+-- delete) once the pack is authored in G-AnnStudio.
+insert into public.catalog_items (sku, item_type, title, description, currency, price, pack_id, creator_id, status)
+values
+  ('pack.frost', 'announcer_pack', 'Maiden — Frost Pack (เร็ว ๆ นี้)',
+   'แพ็กเสียงธีมน้ำแข็ง — กำลังจะเปิดให้ปลดล็อกด้วย shard เร็ว ๆ นี้',
+   'shard', 500, null, null, 'active'),
+  ('pack.meme', 'announcer_pack', 'Maiden — Meme Pack (เร็ว ๆ นี้)',
+   'แพ็กเสียงสายมีม (Nerf CM!) — กำลังจะเปิดให้ปลดล็อกด้วย shard เร็ว ๆ นี้',
+   'shard', 800, null, null, 'active')
+on conflict (sku) do update
+  set title       = excluded.title,
+      description = excluded.description,
+      item_type   = excluded.item_type,
+      currency    = excluded.currency,
+      price       = excluded.price,
+      pack_id     = excluded.pack_id,
+      creator_id  = excluded.creator_id,
+      status      = excluded.status,
+      updated_at  = now();
+
 -- ---------------------------------------------------------------------------
 -- Coin packages (real-money top-up bundles — wallet currency only, ADR-16)
 -- ---------------------------------------------------------------------------
