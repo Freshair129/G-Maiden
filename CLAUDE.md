@@ -61,6 +61,19 @@ fallback, so it renders signed-out/offline. Own-game honest limit: GSI exposes o
 player, so the other 9 heroes get CV identity/position + missing state only (KDA/items hidden).
 The overlay window + DXGI backend are untouched (window routing lives in `App.tsx`).
 
+**ONE CANVAS sitemap (CR-013, accepted 2026-07-16).** The deck has **7 nav pages**
+(single source `src/src/shortcuts.ts` `PAGES`, `Ctrl+1..7`): Dashboard, Live, Voice, **G-Store**,
+Insights, Account, Settings. Build folds into Live as a tab (`[สด | บิลด์]`), History into Insights
+(`[ภาพรวม | ประวัติ]`) via the reusable `DeckTabs`; **G-Store** gives the orphaned CR-003 economy
+(`StorePage`/`WalletTab`/`InventoryTab`/`LedgerTab`) its own seat (`[ร้านค้า | กระเป๋า | คลัง | บันทึก]`).
+**Settings is an iOS split view** — a category rail in `CommandDeck.tsx` + `Control` (`App.tsx`)
+rendering ONE category at a time via a required `category` prop (the old ~340-line full render is
+gone); the in-app updater lives in `src/src/useAppUpdate.ts` (owned by CommandDeck, banner shows on
+every settings category). Three standing laws (SSOT `docs/design-system/05-sitemap-ia.md` §2.2):
+**R1** no page-level scroll (`.surface`=`overflow:hidden`; only bounded regions scroll), **R2**
+overflow → tab or `rowsThatFit()` pagination, **R3** COLD BOOTH `--g-*` tokens only in the deck
+(the legacy inline `C` hex palette is Overlay-only).
+
 **Accounts & GID (ADR-14)** -- optional, **additive** sign-in (the deck works without it). Google
 OAuth (PKCE, callback on the GSI `:3000/auth/callback` route) → a **GID**, the human-facing
 cross-G-series identity (`G-[Gen][Payload][Checksum]`, `src/src/gid.ts`); internal key stays the

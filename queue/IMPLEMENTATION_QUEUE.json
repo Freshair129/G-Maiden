@@ -1,8 +1,8 @@
 {
   "version": "2.3.0",
   "project": "G-Maiden",
-  "wave": "CR013-W4",
-  "wave_title": "G-Store 4-tab economy home + CR-003 CSS re-skin to COLD BOOTH + cross-links",
+  "wave": "CR013-W5",
+  "wave_title": "Fit-to-canvas + History pagination + store friendly empty-state + docs sync (FINAL)",
   "cr": "CR-013",
   "roster": "Sonnet worker / Opus gate / Fable architect+merger",
   "architect_note": "R1 global overflow:hidden flip DEFERRED to W5 (final assertion) to avoid intermediate breakage: pages not yet fit (voice/account/settings) keep overflow-y:auto until their own wave converts them. W1 only sets overflow:hidden on pages it makes no-scroll now (live/insights/store).",

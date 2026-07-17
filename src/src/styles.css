@@ -1536,6 +1536,52 @@ body {
   margin: 0;
 }
 
+/* CR-013 W5-01: HistoryPage's list has no natural bound (match count grows
+   forever) — same fixed-height-frame + pager pattern StorePage.tsx uses
+   (rowsThatFit, CR-003 §3.0), applied to a single-column list instead of a
+   2-up grid. See CR-013 §2 R2. */
+.history-frame {
+  flex: 1;
+  min-height: 0;
+  /* CR-013 W5 gate fix (Opus F2): flex column so the inner .history-list's
+     overflow:auto is a REAL backstop (frame gives it a definite height to
+     bound against) instead of the frame just clipping if a page ever
+     over-fills — pagination keeps it from happening, this makes it safe. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.history-frame .history-list { flex: 1; min-height: 0; }
+
+.history-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding-top: 10px;
+}
+
+.history-pager-btn {
+  border: 1px solid var(--g-hairline-2);
+  background: var(--g-instrument);
+  color: var(--g-text-dim);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.history-pager-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.history-pager-label {
+  font-size: 12px;
+  color: var(--g-text-mute);
+}
+
 @media (max-width: 1400px) {
   .dashboard-grid {
     grid-template-columns: 1.4fr 1fr;
@@ -2171,16 +2217,84 @@ body {
 .deck-tabbed-body {
   flex: 1;
   min-height: 0;
-  /* CR-013 W1 gate fix (Opus): the page SURFACE stays overflow:hidden (R1 — no
-     page-level scroll, and the tab bar above stays pinned), but the tab BODY
-     scrolls internally as an INTERIM. LiveMatchPage's สด content is ~789px in
-     the ~570px body and InsightsPage's ประวัติ list grows with match count —
-     hard-clipping them silently loses content (looks broken). W5 replaces this
-     internal scroll with fit-to-canvas layout + fixed-height paginated frames
-     (rowsThatFit) so nothing scrolls at all, per Boss's no-scroll rule. */
-  overflow-y: auto;
-  overflow-x: hidden;
+  /* CR-013 W5-01: the W1 interim (`overflow-y: auto` here, quoted below) is
+     retired now that the fit-to-canvas rules above make every domain-page
+     bound its own feed regions instead of stacking past the body — verified
+     by DOM measurement (scrollHeight === clientHeight, 0 overflow) at the
+     1200x780 floor for every .deck-tabbed-body consumer: Live's สด/บิลด์,
+     Insights' ภาพรวม/ประวัติ (History now paginates via rowsThatFit — R2),
+     and all 4 Store sub-tabs (ร้านค้า/กระเป๋า/คลัง/บันทึก). Per R1, no
+     scrollbar should ever appear here — clip (not scroll) is now the
+     backstop if a future page regresses this.
+     W1 gate fix note this replaces: "the page SURFACE stays overflow:hidden
+     (R1), but the tab BODY scrolls internally as an INTERIM — LiveMatchPage's
+     สด content was ~789px in the ~570px body and InsightsPage's ประวัติ list
+     grew with match count; hard-clipping them silently lost content." */
+  overflow: hidden;
 }
+
+/* CR-013 W5-01: fit-to-canvas for the Live/Insights domain pages that render
+   inside .deck-tabbed-body (LiveMatchPage/BuildAdvisorPage/InsightsPage/
+   HistoryPage — CompanionPages.tsx). Instead of letting feed content stack
+   past the body's height (forcing the interim body-level scroll above), the
+   page frame is fixed to the body's height and only the genuinely-unbounded
+   inner regions scroll in place — the same fixed-frame pattern the dashboard
+   itself already uses for .gm-sector-log/.log-list, and StorePage.tsx uses
+   for its catalog grid. See CR-013 §2 R1/R2. */
+.deck-tabbed-body .domain-page {
+  height: 100%;
+  min-height: 0;
+}
+.deck-tabbed-body .domain-page > .domain-grid {
+  flex: 1;
+  min-height: 0;
+}
+/* The trailing domain-card (InsightsPage's weekly-report card, HistoryPage's
+   list card) grows to fill the remaining canvas instead of stacking past it.
+   Scoped to a direct child of .domain-page so it does NOT match the two
+   side-by-side cards nested inside LiveMatchPage's .domain-grid — those are
+   sized by the grid rule above instead. */
+.deck-tabbed-body .domain-page > .domain-card:last-child {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.deck-tabbed-body .domain-card {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.deck-tabbed-body .scoreboard-list,
+.deck-tabbed-body .split-logs {
+  flex: 1;
+  min-height: 0;
+}
+.deck-tabbed-body .log-box .log-list {
+  flex: 1;
+}
+.deck-tabbed-body .history-list {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Compact hero for the tabbed pages (page-hero is otherwise a big marketing
+   block) — tightened so the feed content below actually has room. Only
+   CompanionPages.tsx renders .page-hero, and only inside .deck-tabbed-body,
+   so this scoping cannot leak onto another page's hero. */
+.deck-tabbed-body .page-hero {
+  padding: 14px 18px;
+}
+.deck-tabbed-body .page-hero h2 {
+  font-size: 20px;
+  margin-top: 3px;
+}
+.deck-tabbed-body .page-hero p {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
 .deck-tabs {
   display: inline-flex;
   align-self: flex-start;

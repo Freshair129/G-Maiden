@@ -1,5 +1,18 @@
-import { memo, type ReactNode } from "react";
+import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import { formatKda, formatTimer, toneClass, useCompanionData } from "./companion";
+
+// CR-013 W5-01: content that grows (match history) paginates within a
+// fixed-height frame instead of scrolling the whole tab body (R2) — same pure
+// "rows that fit" pattern as StorePage.tsx's `rowsThatFit` (CR-003 §3.0).
+// Duplicated locally (StorePage's copy isn't exported) — keep both in sync if
+// the calc ever changes.
+function rowsThatFit(viewportH: number, chromeH: number, rowH: number): number {
+  if (rowH <= 0) return 1;
+  return Math.max(1, Math.floor((viewportH - chromeH) / rowH));
+}
+
+const HISTORY_ROW_H = 100; // row height (14px pad *2 + ~2-line content) + list gap
+const HISTORY_FRAME_DEFAULT_H = 4 * HISTORY_ROW_H; // pre-measurement fallback fed into rowsThatFit
 
 export const LiveMatchPage = memo(function LiveMatchPage() {
   const { data } = useCompanionData();
@@ -182,6 +195,29 @@ export const InsightsPage = memo(function InsightsPage() {
 
 export const HistoryPage = memo(function HistoryPage() {
   const { data } = useCompanionData();
+  const frameRef = useRef<HTMLDivElement | null>(null);
+  const [frameH, setFrameH] = useState(HISTORY_FRAME_DEFAULT_H);
+  const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const measure = () => setFrameH(el.clientHeight || HISTORY_FRAME_DEFAULT_H);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const perPage = rowsThatFit(frameH, 0, HISTORY_ROW_H);
+  const totalPages = Math.max(1, Math.ceil(data.history.length / perPage));
+
+  useEffect(() => {
+    setPage((p) => Math.min(p, totalPages - 1));
+  }, [totalPages]);
+
+  const pageItems = data.history.slice(page * perPage, page * perPage + perPage);
+
   return (
     <div className="domain-page">
       <section className="card-shell page-hero">
@@ -192,18 +228,38 @@ export const HistoryPage = memo(function HistoryPage() {
         </div>
       </section>
       <section className="card-shell domain-card">
-        <div className="history-list">
-          {data.history.length ? data.history.map((row) => (
-            <div key={row.id} className="history-row">
-              <div>
-                <strong>{row.result}</strong>
-                <span>{row.hero}</span>
-              </div>
-              <div>{row.kda}</div>
-              <p>{row.note}</p>
+        <div className="history-frame" ref={frameRef}>
+          {data.history.length ? (
+            <div className="history-list">
+              {pageItems.map((row) => (
+                <div key={row.id} className="history-row">
+                  <div>
+                    <strong>{row.result}</strong>
+                    <span>{row.hero}</span>
+                  </div>
+                  <div>{row.kda}</div>
+                  <p>{row.note}</p>
+                </div>
+              ))}
             </div>
-          )) : <p className="empty">ยังไม่มีประวัติแมตช์ — เล่นจบ 1 เกม (G-Log จะบันทึกไว้ในเครื่อง)</p>}
+          ) : <p className="empty">ยังไม่มีประวัติแมตช์ — เล่นจบ 1 เกม (G-Log จะบันทึกไว้ในเครื่อง)</p>}
         </div>
+        {totalPages > 1 ? (
+          <div className="history-pager">
+            <button type="button" className="history-pager-btn" disabled={page <= 0} onClick={() => setPage((p) => p - 1)}>
+              ‹ ก่อนหน้า
+            </button>
+            <span className="history-pager-label">หน้า {page + 1} / {totalPages}</span>
+            <button
+              type="button"
+              className="history-pager-btn"
+              disabled={page >= totalPages - 1}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              ถัดไป ›
+            </button>
+          </div>
+        ) : null}
       </section>
     </div>
   );
