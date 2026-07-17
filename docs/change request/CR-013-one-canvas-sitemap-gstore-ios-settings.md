@@ -1,6 +1,8 @@
 # CR-013: ONE CANVAS — sitemap ใหม่, G-Store เข้า nav, Settings แบบ iOS
 
-**Status:** ACCEPTED (Boss "อนุมัติ CR-013" 2026-07-16) — implement via RWANG Phase-7 waves (Sonnet worker / Opus gate / Fable architect+merger)
+**Status:** SHIPPED (Boss "อนุมัติ CR-013" 2026-07-16 → all 5 waves W1–W5 merged to branch `claude/gmaidens-desktop-ux-redesign-69b00b`, each Opus-gated + built + verified in-app) — via RWANG Phase-7 waves (Sonnet worker / Opus gate / Fable architect+merger). Commits: W1 `f6141086`, W2 `cb7023e9`, W3 `23dceb1f`, W4 `62578c5e`, W5 `c3638bf8`.
+
+**Deferred follow-ups (not blockers — logged for a later CR):** (1) economy DEDUP — Wallet/Ledger still also live in Account and Inventory in Voice (temporary non-breaking duplication; needs the `entryMode`/`accountEntry` deep-link rework to fully move them into G-Store); (2) `LedgerTab` fixed `height:400` → `rowsThatFit`; (3) the heavy settings sub-cards (MasterCard/SetupCard/LogCard/AudioSettingsCard/LayoutEditor) still carry bespoke inline `C.ice` selects/buttons/bars — they read ice-dark already, so this is pixel-polish, not an R3 break in the shared primitives.
 **Author:** Claude (architect) for Boss
 **Date:** 2026-07-16
 **Amends:** CR-011 COLD BOOTH (§C Information architecture, §E Core screens) — ไม่แตะ §B direction, §F–§I ระบบ component/type/color/motion
