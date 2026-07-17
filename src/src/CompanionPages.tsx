@@ -1,5 +1,18 @@
-import { memo, useState, type ReactNode } from "react";
+import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import { formatKda, formatTimer, toneClass, useCompanionData } from "./companion";
+
+// CR-013 W5-01: content that grows (match history) paginates within a
+// fixed-height frame instead of scrolling the whole tab body (R2) — same pure
+// "rows that fit" pattern as StorePage.tsx's `rowsThatFit` (CR-003 §3.0).
+// Duplicated locally (StorePage's copy isn't exported) — keep both in sync if
+// the calc ever changes.
+function rowsThatFit(viewportH: number, chromeH: number, rowH: number): number {
+  if (rowH <= 0) return 1;
+  return Math.max(1, Math.floor((viewportH - chromeH) / rowH));
+}
+
+const HISTORY_ROW_H = 100; // row height (14px pad *2 + ~2-line content) + list gap
+const HISTORY_FRAME_DEFAULT_H = 4 * HISTORY_ROW_H; // pre-measurement fallback fed into rowsThatFit
 
 export const LiveMatchPage = memo(function LiveMatchPage() {
   const { data } = useCompanionData();
@@ -182,6 +195,29 @@ export const InsightsPage = memo(function InsightsPage() {
 
 export const HistoryPage = memo(function HistoryPage() {
   const { data } = useCompanionData();
+  const frameRef = useRef<HTMLDivElement | null>(null);
+  const [frameH, setFrameH] = useState(HISTORY_FRAME_DEFAULT_H);
+  const [page, setPage] = useState(0);
+
+  useEffect(() => {
+    const el = frameRef.current;
+    if (!el) return;
+    const measure = () => setFrameH(el.clientHeight || HISTORY_FRAME_DEFAULT_H);
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
+
+  const perPage = rowsThatFit(frameH, 0, HISTORY_ROW_H);
+  const totalPages = Math.max(1, Math.ceil(data.history.length / perPage));
+
+  useEffect(() => {
+    setPage((p) => Math.min(p, totalPages - 1));
+  }, [totalPages]);
+
+  const pageItems = data.history.slice(page * perPage, page * perPage + perPage);
+
   return (
     <div className="domain-page">
       <section className="card-shell page-hero">
@@ -192,76 +228,47 @@ export const HistoryPage = memo(function HistoryPage() {
         </div>
       </section>
       <section className="card-shell domain-card">
-        <div className="history-list">
-          {data.history.length ? data.history.map((row) => (
-            <div key={row.id} className="history-row">
-              <div>
-                <strong>{row.result}</strong>
-                <span>{row.hero}</span>
-              </div>
-              <div>{row.kda}</div>
-              <p>{row.note}</p>
+        <div className="history-frame" ref={frameRef}>
+          {data.history.length ? (
+            <div className="history-list">
+              {pageItems.map((row) => (
+                <div key={row.id} className="history-row">
+                  <div>
+                    <strong>{row.result}</strong>
+                    <span>{row.hero}</span>
+                  </div>
+                  <div>{row.kda}</div>
+                  <p>{row.note}</p>
+                </div>
+              ))}
             </div>
-          )) : <p className="empty">ยังไม่มีประวัติแมตช์ — เล่นจบ 1 เกม (G-Log จะบันทึกไว้ในเครื่อง)</p>}
+          ) : <p className="empty">ยังไม่มีประวัติแมตช์ — เล่นจบ 1 เกม (G-Log จะบันทึกไว้ในเครื่อง)</p>}
         </div>
-      </section>
-    </div>
-  );
-});
-
-const WINDOW_PRESETS: { label: string; w: number; h: number }[] = [
-  { label: "1200 × 780", w: 1200, h: 780 },
-  { label: "1280 × 800", w: 1280, h: 800 },
-  { label: "1440 × 900", w: 1440, h: 900 },
-  { label: "1600 × 1000", w: 1600, h: 1000 },
-  { label: "1920 × 1080", w: 1920, h: 1080 },
-];
-
-export const SettingsPage = memo(function SettingsPage() {
-  const { data } = useCompanionData();
-  const [activeSize, setActiveSize] = useState("1200 × 780");
-
-  const applySize = async (preset: typeof WINDOW_PRESETS[number]) => {
-    try {
-      const { getCurrentWindow } = await import("@tauri-apps/api/window");
-      const { LogicalSize } = await import("@tauri-apps/api/dpi");
-      await getCurrentWindow().setSize(new LogicalSize(preset.w, preset.h));
-      setActiveSize(preset.label);
-    } catch { /* noop */ }
-  };
-
-  return (
-    <div className="domain-page">
-      <section className="card-shell page-hero">
-        <div>
-          <div className="eyebrow">Settings</div>
-          <h2>System, privacy, and device controls</h2>
-          <p>Release-facing defaults for local-first play, overlay mirroring, and dashboard delivery.</p>
-        </div>
-      </section>
-      <div className="domain-grid three-up">
-        <Card title="Privacy" kicker="Policy">
-          <div className="toggle-row"><span>Mode</span><strong>{data.match.privacy}</strong></div>
-          <div className="toggle-row"><span>Data path</span><strong>On-device only</strong></div>
-        </Card>
-        <Card title="System" kicker="Health">
-          <div className="toggle-row"><span>GSI score</span><strong>{data.match.gsiScore}/100</strong></div>
-          <div className="toggle-row"><span>Latency</span><strong>{data.match.latencyMs}ms</strong></div>
-        </Card>
-        <Card title="Window" kicker="Display">
-          <div className="window-presets">
-            {WINDOW_PRESETS.map((p) => (
-              <button key={p.label} className={`preset-btn${activeSize === p.label ? " active" : ""}`} onClick={() => applySize(p)}>
-                {p.label}
-              </button>
-            ))}
+        {totalPages > 1 ? (
+          <div className="history-pager">
+            <button type="button" className="history-pager-btn" disabled={page <= 0} onClick={() => setPage((p) => p - 1)}>
+              ‹ ก่อนหน้า
+            </button>
+            <span className="history-pager-label">หน้า {page + 1} / {totalPages}</span>
+            <button
+              type="button"
+              className="history-pager-btn"
+              disabled={page >= totalPages - 1}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              ถัดไป ›
+            </button>
           </div>
-          <div className="toggle-row"><span>Overlay state</span><strong>{data.match.overlayMode}</strong></div>
-        </Card>
-      </div>
+        ) : null}
+      </section>
     </div>
   );
 });
+
+// CR-013 W3: `SettingsPage` (+ its `WINDOW_PRESETS`/`applySize`) was the
+// pre-CR-013 flat Settings tab body. Since W2's iOS-style split view
+// (CommandDeck.tsx rail + Control-per-category), nothing imported this
+// export — grepped before deleting, zero importers found.
 
 function Card({ title, kicker, children }: { title: string; kicker: string; children: ReactNode }) {
   return (

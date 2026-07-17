@@ -2,20 +2,27 @@ import { useState, useRef, useEffect, useMemo, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
+import { LogicalSize } from "@tauri-apps/api/dpi";
+// Type-only — erased at compile time, so this does NOT create a runtime
+// import cycle with App.tsx (which imports CommandDeck as a value).
+import type { SettingsCat } from "./App";
 import VoicePacksPage from "./VoicePacksPage";
-import QuotaCard from "./QuotaCard";
 import {
   BuildAdvisorPage,
   HistoryPage,
   InsightsPage,
-  LiveMatchPage,
-  SettingsPage
+  LiveMatchPage
 } from "./CompanionPages";
 import { useCompanionData, useMinimapImage, toneClass, formatKda, type CompanionData } from "./companion";
 import type { MatchPhase } from "./live/phase";
 import { heroPortraitUrl } from "./heroPortrait";
 import AccountPage from "./AccountPage";
+import StorePage from "./StorePage";
+import WalletTab from "./WalletTab";
+import InventoryTab from "./InventoryTab";
+import LedgerTab from "./LedgerTab";
 import { useProfile } from "./profile";
+import { useAppUpdate } from "./useAppUpdate";
 import type { VoiceState } from "./voice-types";
 import MaidenLine from "./MaidenLine";
 import { buildRegistry, matchCombo, PAGES, type DeckActions, type DeckQuality, type ShortcutDef } from "./shortcuts";
@@ -29,7 +36,7 @@ import {
   IconDashboard,
   IconLive,
   IconVoice,
-  IconBuild,
+  IconStore,
   IconInsights,
   IconSettings,
   IconAccount
@@ -129,33 +136,44 @@ const FUNG_PANEL_PATH =
 const FUNG_PANEL_PATH_SIGNALS =
   "M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 488 A 20 20 0 0 1 1248,508 H 836 A 20 20 0 0 0 816,528 V 688 A 20 20 0 0 1 796,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z";
 
-// history has no codex glyph — tiny inline fallback
-function IconHistory({ size = 20 }: { size?: number }) {
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round">
-      <path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1M3.5 5v3.5H7" /><path d="M12 8v4l2.5 1.5" />
-    </svg>
-  );
-}
-
 // CR011-P5 gate fix: NAV is DERIVED from shortcuts.ts PAGES — the two arrays
 // were hand-aligned duplicates and nothing guarded the alignment (the old
-// comment claimed tests did; they did not). Now Ctrl+1..8, the palette, the
+// comment claimed tests did; they did not). Now Ctrl+1..7, the palette, the
 // sheet, and the rail literally cannot drift: one array, one icon map.
+// CR-013 W1-01: build/history no longer have their own rail seat (they moved
+// into in-page DeckTabs under live/insights) — store takes a seat instead.
 const NAV_ICONS: Record<string, (p: { size?: number }) => ReactNode> = {
   dashboard: IconDashboard,
   live: IconLive,
   voice: IconVoice,
-  build: IconBuild,
+  store: IconStore,
   insights: IconInsights,
-  history: IconHistory,
   account: IconAccount,
   settings: IconSettings
 };
 const NAV: Array<{ key: string; label: string; Icon: (p: { size?: number }) => ReactNode }> =
   PAGES.map((p) => ({ key: p.key, label: p.label, Icon: NAV_ICONS[p.key] ?? IconDashboard }));
 
-export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNode } = {}) {
+// CR-013 W2 §4: the Settings iOS split-view left rail. "general" is
+// deck-owned (deck prefs + window size); the rest map 1:1 to Control's
+// `SettingsCat` union (App.tsx) and are handed to `renderSettings`.
+const SETTINGS_CATS: Array<{ key: SettingsCat | "general"; glyph: string; label: string; sub: string }> = [
+  { key: "general", glyph: "◧", label: "ทั่วไป", sub: "คุณภาพ · ขนาดหน้าต่าง" },
+  { key: "overlay", glyph: "▭", label: "Overlay", sub: "ตำแหน่ง · สไตล์ overlay" },
+  { key: "voice", glyph: "♪", label: "เสียง & เตือน", sub: "เสียงพูด · แบนเนอร์แจ้งเตือน" },
+  { key: "ai", glyph: "✦", label: "AI (G-Master)", sub: "ผู้ช่วยวิเคราะห์" },
+  { key: "modules", glyph: "▤", label: "โมดูล & CV", sub: "สถานะโมดูล · การจับภาพ" },
+  { key: "privacy", glyph: "◐", label: "ความเป็นส่วนตัว", sub: "ข้อมูลในเครื่อง" },
+  { key: "system", glyph: "⚙", label: "ระบบ", sub: "GSI · อัปเดต · Log" }
+];
+
+const WINDOW_SIZE_PRESETS: Array<{ label: string; w: number; h: number }> = [
+  { label: "1200 × 780", w: 1200, h: 780 },
+  { label: "1440 × 900", w: 1440, h: 900 },
+  { label: "1920 × 1080", w: 1920, h: 1080 }
+];
+
+export default function CommandDeck({ renderSettings }: { renderSettings?: (cat: SettingsCat) => ReactNode } = {}) {
   const [tab, setTab] = useState("dashboard");
   const [profileOpen, setProfileOpen] = useState(false);
   const [powerOpen, setPowerOpen] = useState(false);
@@ -163,6 +181,51 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
   const [annEnabled, setAnnEnabled] = useState(true);
   const [signalEnabled, setSignalEnabled] = useState(true);
   const [voicePackName, setVoicePackName] = useState<string | null>(null);
+  // CR-013 W1-01: in-page tabs — Live folds in Build, Insights folds in
+  // History. Local to CommandDeck (same "single owner" shape as `tab` above);
+  // no persistence, no URL sync — a page switch always lands on the default sub-tab.
+  const [liveTab, setLiveTab] = useState("live"); // "live" | "build"
+  const [insightsTab, setInsightsTab] = useState("overview"); // "overview" | "history"
+  // CR-013 W4-01: G-Store's own in-page tabs (§5.1) — shop/wallet/inventory/
+  // ledger, same "single local owner, no persistence" shape as liveTab/
+  // insightsTab above. StorePage's internal "เติมเลย"/"แชร์แมตช์เพื่อได้ Shard
+  // เพิ่ม" affordances now switch THIS tab (via onNavigateToWallet below)
+  // instead of leaving the page to Account's Wallet/Ledger sub-tabs.
+  const [storeTab, setStoreTab] = useState("shop"); // shop | wallet | inventory | ledger
+  // CR-013 W2 (§4 iOS-style Settings split view): which category rail entry
+  // is selected. "general" is CommandDeck-owned (deck prefs + window size —
+  // never routed through Control); every other value is handed to
+  // `renderSettings` so the legacy Control panel renders just that category.
+  const [settingsCat, setSettingsCat] = useState<SettingsCat | "general">("general");
+  // "ทั่วไป" window-size presets — same setSize(LogicalSize) pattern as
+  // CompanionPages.tsx SettingsPage's applySize (that page is the pre-CR-013
+  // fallback and is no longer reachable from the deck's Settings tab, but the
+  // pattern is kept identical so behavior doesn't drift).
+  const [activeWindowSize, setActiveWindowSize] = useState<string | null>(null);
+  const applyWindowSize = async (preset: { label: string; w: number; h: number }) => {
+    try {
+      await getCurrentWindow().setSize(new LogicalSize(preset.w, preset.h));
+      setActiveWindowSize(preset.label);
+    } catch {
+      /* not running under Tauri (browser dev) — nothing to resize */
+    }
+  };
+
+  // CR-013 W2 gate fix (Opus F1): the in-app updater is owned here now (not the
+  // per-category Control), so the launch auto-check fires and the banner shows
+  // regardless of which settings category — or tab — the user is on.
+  const update = useAppUpdate();
+  const [appVersion, setAppVersion] = useState("");
+  useEffect(() => {
+    void (async () => {
+      try {
+        const { getVersion } = await import("@tauri-apps/api/app");
+        setAppVersion(await getVersion());
+      } catch {
+        /* browser dev — no Tauri app version */
+      }
+    })();
+  }, []);
   const volumeDebounceRef = useRef<number | null>(null);
   // CR011-P4a-01: Maiden Line (Ctrl+K) + the shortcut sheet (Ctrl+Shift+/ / ?).
   // State lives here (CommandDeck is the single owner of tab/palette/sheet),
@@ -680,7 +743,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
       {/* glass panel — hosts the active tab (rich, live-wired content preserved) */}
       <main className="g-deck-panel">
         {error ? <div className="banner err">engine offline ({error})</div> : null}
-        <div className={`surface page-${tab}`}>
+        <div className={`surface page-${tab}${tab === "settings" ? " settings-split-mode" : ""}`}>
           {tab === "dashboard" && (
             <GMaidenFungDashboard
               data={data}
@@ -691,31 +754,191 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
               menu={menu}
             />
           )}
-          {tab === "live" && <LiveMatchPage />}
+          {tab === "live" && (
+            <div className="deck-tabbed">
+              <DeckTabs
+                tabs={[
+                  { key: "live", label: "สด" },
+                  { key: "build", label: "บิลด์" }
+                ]}
+                active={liveTab}
+                onChange={setLiveTab}
+              />
+              <div className="deck-tabbed-body">
+                {liveTab === "live" ? <LiveMatchPage /> : <BuildAdvisorPage />}
+              </div>
+            </div>
+          )}
           {tab === "voice" && <VoicePacksPage onNavigate={navigateTo} />}
-          {tab === "build" && <BuildAdvisorPage />}
-          {tab === "insights" && <InsightsPage />}
-          {tab === "history" && <HistoryPage />}
+          {tab === "store" && (
+            <div className="deck-tabbed">
+              <DeckTabs
+                tabs={[
+                  { key: "shop", label: "ร้านค้า" },
+                  { key: "wallet", label: "กระเป๋า" },
+                  { key: "inventory", label: "คลัง" },
+                  { key: "ledger", label: "บันทึก" }
+                ]}
+                active={storeTab}
+                onChange={setStoreTab}
+              />
+              <div className="deck-tabbed-body">
+                {storeTab === "shop" && (
+                  <StorePage
+                    onNavigateToWallet={() => setStoreTab("wallet")}
+                    onRequestSignIn={() => navigateTo("account", "account")}
+                  />
+                )}
+                {storeTab === "wallet" && <WalletTab onViewAllTransactions={() => setStoreTab("ledger")} />}
+                {storeTab === "inventory" && <InventoryTab onActivated={() => navigateTo("voice")} />}
+                {storeTab === "ledger" && <LedgerTab />}
+              </div>
+            </div>
+          )}
+          {tab === "insights" && (
+            <div className="deck-tabbed">
+              {/* CR-013 W1 gate fix (Opus): InsightsPage already renders the
+                  weekly-report section inline, so a separate "รายสัปดาห์" tab
+                  showed byte-identical content — a dead pill. Dropped until a
+                  distinct weekly view exists (buildWeekly.ts is scaffolded).
+                  Tabs are ภาพรวม / ประวัติ only. */}
+              <DeckTabs
+                tabs={[
+                  { key: "overview", label: "ภาพรวม" },
+                  { key: "history", label: "ประวัติ" }
+                ]}
+                active={insightsTab}
+                onChange={setInsightsTab}
+              />
+              <div className="deck-tabbed-body">
+                {insightsTab === "history" ? <HistoryPage /> : <InsightsPage />}
+              </div>
+            </div>
+          )}
           {tab === "account" && <AccountPage entryMode={accountEntry.mode} entryNonce={accountEntry.n} />}
           {tab === "settings" && (
-            <div style={{ display: "grid", gap: 16 }}>
-              {/* CR011-P6-01: the Deck comfort card sits ABOVE whichever
-                  settings body renders (injected settingsPanel or the
-                  SettingsPage/QuotaCard fallback) — quality/density/crisp
-                  live with the deck, not with the legacy Control panel. */}
-              <DeckPrefsCard
-                prefs={deckPrefs}
-                onQuality={(q) => deckActions.setQuality(q)}
-                onDensity={(d) => setDeckPrefs((p) => (p.density === d ? p : { ...p, density: d }))}
-                onCrispToggle={() => setDeckPrefs((p) => ({ ...p, crisp: !p.crisp }))}
-                onBigModeToggle={() => setDeckPrefs((p) => ({ ...p, bigMode: !p.bigMode }))}
-              />
-              {settingsPanel ?? (
-                <>
-                  <SettingsPage />
-                  <QuotaCard />
-                </>
-              )}
+            <div className="settings-split">
+              <nav className="settings-cats" aria-label="หมวดตั้งค่า">
+                {SETTINGS_CATS.map((c) => (
+                  <button
+                    key={c.key}
+                    type="button"
+                    className={`settings-cat${settingsCat === c.key ? " on" : ""}`}
+                    aria-pressed={settingsCat === c.key}
+                    onClick={() => setSettingsCat(c.key)}
+                  >
+                    <span className="settings-cat-glyph" aria-hidden="true">{c.glyph}</span>
+                    <span className="settings-cat-copy">
+                      <span className="settings-cat-label">{c.label}</span>
+                      <span className="settings-cat-sub">{c.sub}</span>
+                    </span>
+                  </button>
+                ))}
+              </nav>
+              <div className="settings-detail">
+                {/* CR-013 W2 gate fix (Opus F1): the update banner is app-level,
+                    not per-category — it renders at the top of the detail pane on
+                    EVERY settings category (and the launch auto-check in
+                    useAppUpdate fires regardless of where the user is). */}
+                {update.available && (
+                  <div className="settings-update-banner" role="status">
+                    <span className="settings-update-spark" aria-hidden="true">✨</span>
+                    <div className="settings-update-copy">
+                      <strong>มีเวอร์ชันใหม่ {update.available.version}</strong>
+                      <span>
+                        {update.phase === "downloading"
+                          ? "กำลังดาวน์โหลดและติดตั้ง… แอปจะรีสตาร์ทเอง"
+                          : update.available.notes || "อัปเดตแล้วแอปจะรีสตาร์ทให้อัตโนมัติ"}
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      className="settings-update-install"
+                      onClick={() => void update.install()}
+                      disabled={update.phase === "downloading"}
+                    >
+                      {update.phase === "downloading" ? "กำลังอัปเดต…" : "อัปเดตเลย"}
+                    </button>
+                    <button
+                      type="button"
+                      className="settings-update-later"
+                      onClick={update.dismiss}
+                      disabled={update.phase === "downloading"}
+                    >
+                      ภายหลัง
+                    </button>
+                  </div>
+                )}
+                {settingsCat === "general" ? (
+                  <div className="settings-detail-body">
+                    {/* CR011-P6-01: quality/density/crisp/big-mode live with the
+                        deck, not the legacy Control panel — unchanged handlers,
+                        just re-homed from "always visible above Settings" into
+                        the "ทั่วไป" category (CR-013 W2 §4.3). */}
+                    <DeckPrefsCard
+                      prefs={deckPrefs}
+                      onQuality={(q) => deckActions.setQuality(q)}
+                      onDensity={(d) => setDeckPrefs((p) => (p.density === d ? p : { ...p, density: d }))}
+                      onCrispToggle={() => setDeckPrefs((p) => ({ ...p, crisp: !p.crisp }))}
+                      onBigModeToggle={() => setDeckPrefs((p) => ({ ...p, bigMode: !p.bigMode }))}
+                    />
+                    <section className="settings-group">
+                      <div className="settings-group-head">ขนาดหน้าต่าง</div>
+                      <div className="settings-row">
+                        <span className="settings-row-label">พรีเซ็ต</span>
+                        <div className="settings-winpresets" role="group" aria-label="ขนาดหน้าต่าง">
+                          {WINDOW_SIZE_PRESETS.map((p) => (
+                            <button
+                              key={p.label}
+                              type="button"
+                              className={`settings-winpreset${activeWindowSize === p.label ? " active" : ""}`}
+                              onClick={() => void applyWindowSize(p)}
+                            >
+                              {p.label}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                      <p className="settings-foot">ปรับขนาดหน้าต่างจริงของแอป (ไม่ใช่การซูมภายในเดค)</p>
+                    </section>
+                    {/* CR-013 W2 gate fix (Opus F1): version + manual update check
+                        re-homed from Control's "system" category into ทั่วไป (the
+                        iOS "General/About" grouping), so it lives with the always-
+                        visible banner above rather than being buried. */}
+                    <section className="settings-group">
+                      <div className="settings-group-head">เวอร์ชัน &amp; อัปเดต</div>
+                      <div className="settings-row">
+                        <span className="settings-row-label">เวอร์ชันปัจจุบัน</span>
+                        <span className="settings-row-value">{appVersion ? `v${appVersion}` : "—"}</span>
+                      </div>
+                      <div className="settings-row">
+                        <span className="settings-row-label">ตรวจหาอัปเดต</span>
+                        <button
+                          type="button"
+                          className="settings-winpreset"
+                          onClick={() => void update.checkNow()}
+                          disabled={update.phase === "checking" || update.phase === "downloading"}
+                        >
+                          {update.phase === "checking"
+                            ? "กำลังตรวจ…"
+                            : update.phase === "uptodate"
+                              ? "เป็นเวอร์ชันล่าสุด ✓"
+                              : update.phase === "error"
+                                ? "ตรวจไม่สำเร็จ"
+                                : "ตรวจหาอัปเดต"}
+                        </button>
+                      </div>
+                      <p className="settings-foot">อัปเดตผ่านตัวติดตั้งที่เซ็นแล้วจาก GitHub Releases โดยอัตโนมัติ</p>
+                    </section>
+                  </div>
+                ) : (
+                  renderSettings?.(settingsCat) ?? (
+                    <div className="settings-detail-body">
+                      <p className="settings-foot">หมวดนี้ยังไม่พร้อมใช้งาน</p>
+                    </div>
+                  )
+                )}
+              </div>
             </div>
           )}
         </div>
@@ -1114,6 +1337,36 @@ const PHASE_LABEL: Record<MatchPhase, string> = {
  *  centered score/clock text above it, never shifting or wrapping them. */
 function PhaseChip({ phase }: { phase: MatchPhase }) {
   return <span className={`gm-phase-chip gm-phase-chip-${phase}`}>{PHASE_LABEL[phase]}</span>;
+}
+
+/** CR-013 W1-01: a thin segmented control that lets a single rail page host
+ *  two-or-three in-page views (Live: สด/บิลด์; Insights: ภาพรวม/รายสัปดาห์/
+ *  ประวัติ) — this is presentational only, the caller owns which key is
+ *  active and swaps the mounted content underneath. */
+function DeckTabs({
+  tabs,
+  active,
+  onChange
+}: {
+  tabs: { key: string; label: string }[];
+  active: string;
+  onChange: (k: string) => void;
+}) {
+  return (
+    <div className="deck-tabs" role="tablist">
+      {tabs.map((t) => (
+        <button
+          key={t.key}
+          role="tab"
+          aria-selected={active === t.key}
+          className={`deck-tab${active === t.key ? " on" : ""}`}
+          onClick={() => onChange(t.key)}
+        >
+          {t.label}
+        </button>
+      ))}
+    </div>
+  );
 }
 
 /** CR-011 §E standby/prep seat content — replaces the hero columns + minimap
@@ -1555,10 +1808,10 @@ function readSignalSensitivity(): SigSensitivity {
   return "med";
 }
 
-// DEPENDENCY NOTE (Opus gate, CR011-P4b): no clobber race with the legacy
-// Control panel today ONLY because the menu targets render dashboard-only
-// while <Control embedded> mounts on the Settings tab and re-reads
-// localStorage on each remount. If Control ever becomes persistently
+// DEPENDENCY NOTE (Opus gate, CR011-P4b; updated CR-013 W3): no clobber race
+// with the legacy Control panel today ONLY because the menu targets render
+// dashboard-only while <Control category={...}> mounts on the Settings tab and
+// re-reads localStorage on each remount. If Control ever becomes persistently
 // mounted, its whole-object settings write-back would silently revert this
 // value on the next unrelated edit — revisit this seam then.
 function writeSignalSensitivity(level: SigSensitivity) {

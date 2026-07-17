@@ -110,11 +110,15 @@ describe("matchCombo", () => {
 });
 
 describe("buildRegistry", () => {
-  it("includes Ctrl+K, all eight Ctrl+1..8 page shortcuts, the sheet openers, and Esc", () => {
+  it("includes Ctrl+K, all seven Ctrl+1..7 page shortcuts, the sheet openers, and Esc", () => {
+    // CR-013 W1-01: PAGES dropped from 8 to 7 (Build/History folded into
+    // in-page tabs under Live/Insights, Store took the freed rail seat) — the
+    // registry's Ctrl+digit entries are derived 1:1 from PAGES.length.
     const registry = buildRegistry();
     const combos = registry.map((r) => r.combo);
     expect(combos).toContain("Ctrl+K");
-    for (let n = 1; n <= 8; n++) expect(combos).toContain(`Ctrl+${n}`);
+    for (let n = 1; n <= 7; n++) expect(combos).toContain(`Ctrl+${n}`);
+    expect(combos).not.toContain("Ctrl+8");
     expect(combos).toContain("Ctrl+/");
     expect(combos).toContain("?");
     expect(combos).toContain("Esc");

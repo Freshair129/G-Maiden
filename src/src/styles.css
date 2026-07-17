@@ -1536,6 +1536,52 @@ body {
   margin: 0;
 }
 
+/* CR-013 W5-01: HistoryPage's list has no natural bound (match count grows
+   forever) — same fixed-height-frame + pager pattern StorePage.tsx uses
+   (rowsThatFit, CR-003 §3.0), applied to a single-column list instead of a
+   2-up grid. See CR-013 §2 R2. */
+.history-frame {
+  flex: 1;
+  min-height: 0;
+  /* CR-013 W5 gate fix (Opus F2): flex column so the inner .history-list's
+     overflow:auto is a REAL backstop (frame gives it a definite height to
+     bound against) instead of the frame just clipping if a page ever
+     over-fills — pagination keeps it from happening, this makes it safe. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.history-frame .history-list { flex: 1; min-height: 0; }
+
+.history-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding-top: 10px;
+}
+
+.history-pager-btn {
+  border: 1px solid var(--g-hairline-2);
+  background: var(--g-instrument);
+  color: var(--g-text-dim);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.history-pager-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.history-pager-label {
+  font-size: 12px;
+  color: var(--g-text-mute);
+}
+
 @media (max-width: 1400px) {
   .dashboard-grid {
     grid-template-columns: 1.4fr 1fr;
@@ -2154,6 +2200,134 @@ body {
 }
 .gm-packs-tab:focus-visible,
 .gm-account-tab:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+
+/* CR-013 W1-01: ONE CANVAS in-page tabs — Live's สด/บิลด์ split and
+   Insights' ภาพรวม/รายสัปดาห์/ประวัติ split. Same instrument-matte
+   segmented-control language as .gm-account-tabs above (deliberately not
+   merged into that selector family: those two gate different components'
+   props, this one is presentational/caller-owned — see DeckTabs in
+   CommandDeck.tsx), so all three read as one system without sharing state. */
+.deck-tabbed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+.deck-tabbed-body {
+  flex: 1;
+  min-height: 0;
+  /* CR-013 W5-01: the W1 interim (`overflow-y: auto` here, quoted below) is
+     retired now that the fit-to-canvas rules above make every domain-page
+     bound its own feed regions instead of stacking past the body — verified
+     by DOM measurement (scrollHeight === clientHeight, 0 overflow) at the
+     1200x780 floor for every .deck-tabbed-body consumer: Live's สด/บิลด์,
+     Insights' ภาพรวม/ประวัติ (History now paginates via rowsThatFit — R2),
+     and all 4 Store sub-tabs (ร้านค้า/กระเป๋า/คลัง/บันทึก). Per R1, no
+     scrollbar should ever appear here — clip (not scroll) is now the
+     backstop if a future page regresses this.
+     W1 gate fix note this replaces: "the page SURFACE stays overflow:hidden
+     (R1), but the tab BODY scrolls internally as an INTERIM — LiveMatchPage's
+     สด content was ~789px in the ~570px body and InsightsPage's ประวัติ list
+     grew with match count; hard-clipping them silently lost content." */
+  overflow: hidden;
+}
+
+/* CR-013 W5-01: fit-to-canvas for the Live/Insights domain pages that render
+   inside .deck-tabbed-body (LiveMatchPage/BuildAdvisorPage/InsightsPage/
+   HistoryPage — CompanionPages.tsx). Instead of letting feed content stack
+   past the body's height (forcing the interim body-level scroll above), the
+   page frame is fixed to the body's height and only the genuinely-unbounded
+   inner regions scroll in place — the same fixed-frame pattern the dashboard
+   itself already uses for .gm-sector-log/.log-list, and StorePage.tsx uses
+   for its catalog grid. See CR-013 §2 R1/R2. */
+.deck-tabbed-body .domain-page {
+  height: 100%;
+  min-height: 0;
+}
+.deck-tabbed-body .domain-page > .domain-grid {
+  flex: 1;
+  min-height: 0;
+}
+/* The trailing domain-card (InsightsPage's weekly-report card, HistoryPage's
+   list card) grows to fill the remaining canvas instead of stacking past it.
+   Scoped to a direct child of .domain-page so it does NOT match the two
+   side-by-side cards nested inside LiveMatchPage's .domain-grid — those are
+   sized by the grid rule above instead. */
+.deck-tabbed-body .domain-page > .domain-card:last-child {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.deck-tabbed-body .domain-card {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.deck-tabbed-body .scoreboard-list,
+.deck-tabbed-body .split-logs {
+  flex: 1;
+  min-height: 0;
+}
+.deck-tabbed-body .log-box .log-list {
+  flex: 1;
+}
+.deck-tabbed-body .history-list {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Compact hero for the tabbed pages (page-hero is otherwise a big marketing
+   block) — tightened so the feed content below actually has room. Only
+   CompanionPages.tsx renders .page-hero, and only inside .deck-tabbed-body,
+   so this scoping cannot leak onto another page's hero. */
+.deck-tabbed-body .page-hero {
+  padding: 14px 18px;
+}
+.deck-tabbed-body .page-hero h2 {
+  font-size: 20px;
+  margin-top: 3px;
+}
+.deck-tabbed-body .page-hero p {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.deck-tabs {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 8px;
+  padding: 4px;
+  background: var(--g-instrument);
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-pill);
+  width: fit-content;
+  flex: 0 0 auto;
+}
+.deck-tab {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--g-text-dim);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  padding: 7px 14px;
+  border-radius: var(--g-r-pill);
+  cursor: pointer;
+  transition: background var(--g-t-hover) var(--g-ease), color var(--g-t-hover) var(--g-ease),
+    border-color var(--g-t-hover) var(--g-ease);
+}
+.deck-tab:hover { color: var(--g-text); background: var(--g-instrument-2); }
+.deck-tab.on {
+  background: var(--g-instrument-2);
+  border-color: var(--g-hairline-2);
+  color: var(--g-ice-300);
+}
+.deck-tab:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
 
 /* Packs page shell — the mode body fills whatever's left; the surrounding
    `.surface.page-voice` already carries `overflow-y: auto` (see the shared
@@ -4606,8 +4780,8 @@ body {
 .g-deck-panel .surface.page-history,
 .g-deck-panel .surface.page-build,
 .g-deck-panel .surface.page-companion,
-.g-deck-panel .surface.page-live {
-  overflow-y: auto !important;
+.g-deck-panel .surface.page-live,
+.g-deck-panel .surface.page-store {
   /* Boss 2026-07-16 "เข้า settings แล้วพัง": the CR-006 rule above zeroes the
      surface padding for the dashboard (whose sectors self-position), but these
      FLOW pages lost their interior inset with it — content jammed into the
@@ -4618,6 +4792,28 @@ body {
      left 104 clears the lower-left sidebar cut (local x80) + 24; right 28 /
      bottom 24 rhythm. Dashboard keeps padding:0 from the rule above. */
   padding: 74px 28px 24px 104px !important;
+}
+
+/* CR-013 W1-01: page-live/page-insights/page-store now each own their content
+   fully (LiveMatchPage/InsightsPage/StorePage already manage their own
+   internal scroll — LiveMatchPage and InsightsPage did before this change
+   too, they just inherited page-level scroll harmlessly; StorePage is new
+   here), so they clip at the surface instead of double-scrolling. The
+   remaining flow pages below (voice/account/settings/history/build/
+   companion) keep page-level auto-scroll — unconverted, later-wave territory. */
+.g-deck-panel .surface.page-voice,
+.g-deck-panel .surface.page-account,
+.g-deck-panel .surface.page-settings,
+.g-deck-panel .surface.page-history,
+.g-deck-panel .surface.page-build,
+.g-deck-panel .surface.page-companion {
+  overflow-y: auto !important;
+}
+
+.g-deck-panel .surface.page-live,
+.g-deck-panel .surface.page-insights,
+.g-deck-panel .surface.page-store {
+  overflow: hidden !important;
 }
 
 .g-deck-panel .banner.err {
@@ -5636,108 +5832,116 @@ body {
   gap: 8px;
 }
 
-/* ===== CR-003 Phase 1: Store / Wallet / Top-up (§3.2/§3.3) ===== */
+/* ===== CR-003 Phase 1: Store / Wallet / Top-up (§3.2/§3.3) =====
+   CR-013 W4-01: re-skinned from CR-003's inline navy/cyan (#64c7ff/#31d0a0-
+   family "second blue" CR-011 §1.5 condemned) to COLD BOOTH --g-* tokens.
+   Structure/sizing untouched — colors only. See CR-013 §5.2. */
 
 /* -- Store -- */
 .store-page { padding: 4px 2px 12px; height: 100%; min-height: 0; display: flex; flex-direction: column; }
-.store-title { font-size: 22px; font-weight: 800; color: #eaf2ff; margin: 6px 0 4px; }
-.store-lead { font-size: 12.5px; color: #8794a6; max-width: 640px; margin: 0 0 14px; line-height: 1.5; }
+.store-title { font-size: 22px; font-weight: 800; color: var(--g-text); margin: 6px 0 4px; }
+.store-lead { font-size: 12.5px; color: var(--g-text-mute); max-width: 640px; margin: 0 0 14px; line-height: 1.5; }
 .store-frame { flex: 1; min-height: 0; overflow: hidden; position: relative; }
 .store-grid { display: grid; gap: 16px; height: 100%; align-content: start; }
-.store-card { position: relative; background: rgba(13, 20, 36, 0.72); border: 1px solid rgba(129, 180, 255, 0.14); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
-.store-card-badge { position: absolute; top: 10px; left: 10px; z-index: 1; background: rgba(129, 180, 255, 0.9); color: #06111f; font-size: 10.5px; font-weight: 700; padding: 4px 8px; border-radius: 999px; }
-.store-card-banner { height: 96px; background: rgba(9, 15, 27, 0.9) center / cover no-repeat; border-bottom: 1px solid rgba(129, 180, 255, 0.14); }
+.store-card { position: relative; background: var(--g-instrument); border: 1px solid var(--g-hairline); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
+.store-card-badge { position: absolute; top: 10px; left: 10px; z-index: 1; background: var(--g-ice-500); color: var(--g-void); font-size: 10.5px; font-weight: 700; padding: 4px 8px; border-radius: 999px; }
+.store-card-banner { height: 96px; background: var(--g-instrument-2) center / cover no-repeat; border-bottom: 1px solid var(--g-hairline); }
 .store-card-body { padding: 10px 12px 6px; flex: 1; min-height: 0; }
-.store-card-title { font-size: 14px; font-weight: 700; color: #eaf2ff; margin-bottom: 4px; }
-.store-card-desc { font-size: 11.5px; color: #8794a6; line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.store-card-title { font-size: 14px; font-weight: 700; color: var(--g-text); margin-bottom: 4px; }
+.store-card-desc { font-size: 11.5px; color: var(--g-text-mute); line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .store-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px 12px; }
-.store-preview-btn { border: 1px solid rgba(129, 180, 255, 0.22); background: transparent; color: #9fb0cc; border-radius: 10px; padding: 6px 10px; font-size: 11.5px; cursor: pointer; }
-.store-buy-btn { border: 0; border-radius: 10px; padding: 7px 12px; font-weight: 700; font-size: 12px; cursor: pointer; background: rgba(129, 180, 255, 0.2); color: #cfe2ff; }
+.store-preview-btn { border: 1px solid var(--g-hairline-2); background: transparent; color: var(--g-text-mute); border-radius: 10px; padding: 6px 10px; font-size: 11.5px; cursor: pointer; }
+/* CR-013 W4 gate fix (Opus N1): primary "ซื้อ" CTA reads as an accent action
+   (ice fill / ink text), not a ghost control indistinguishable from secondary. */
+.store-buy-btn { border: 0; border-radius: 10px; padding: 7px 12px; font-weight: 700; font-size: 12px; cursor: pointer; background: var(--g-ice-500); color: var(--g-ink); }
 .store-buy-btn:disabled { opacity: 0.6; cursor: default; }
-.store-buy-btn.insufficient { background: rgba(255, 122, 122, 0.14); color: #ffb0b0; cursor: default; }
-.store-buy-btn.signin { background: rgba(255, 199, 107, 0.16); color: #ffcf7a; }
-.store-owned-badge { font-size: 11.5px; font-weight: 700; color: #5be3a7; }
+.store-buy-btn.insufficient { background: color-mix(in srgb, var(--g-danger) 14%, transparent); color: var(--g-danger); cursor: default; }
+.store-buy-btn.signin { background: color-mix(in srgb, var(--g-coin) 16%, transparent); color: var(--g-coin); }
+.store-owned-badge { font-size: 11.5px; font-weight: 700; color: var(--g-ok); }
 .store-insufficient { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-.store-link-btn { border: 0; background: transparent; color: #81b4ff; font-size: 11px; cursor: pointer; padding: 0; text-decoration: underline; }
+.store-link-btn { border: 0; background: transparent; color: var(--g-ice-300); font-size: 11px; cursor: pointer; padding: 0; text-decoration: underline; }
 .store-pager { display: flex; align-items: center; justify-content: center; gap: 14px; padding-top: 10px; }
-.store-pager-btn { border: 1px solid rgba(129, 180, 255, 0.22); background: rgba(13, 20, 36, 0.72); color: #cfe2ff; border-radius: 10px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+.store-pager-btn { border: 1px solid var(--g-hairline-2); background: var(--g-instrument); color: var(--g-text-dim); border-radius: 10px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
 .store-pager-btn:disabled { opacity: 0.4; cursor: default; }
-.store-pager-label { font-size: 12px; color: #8794a6; }
-.store-hint { font-size: 12.5px; color: #8794a6; padding: 24px 4px; }
-.store-msg { font-size: 11.5px; color: #cfe2ff; padding-top: 6px; }
-.store-confirm-overlay { position: fixed; inset: 0; background: rgba(4, 7, 13, 0.6); display: flex; align-items: center; justify-content: center; z-index: 50; }
-.store-confirm-sheet { background: #0d1424; border: 1px solid rgba(129, 180, 255, 0.28); border-radius: 16px; padding: 20px; width: 320px; display: flex; flex-direction: column; gap: 12px; }
-.store-confirm-title { font-size: 14px; font-weight: 700; color: #eaf2ff; }
-.store-confirm-item { font-size: 12.5px; color: #8794a6; }
+.store-pager-label { font-size: 12px; color: var(--g-text-mute); }
+.store-hint { font-size: 12.5px; color: var(--g-text-mute); padding: 24px 4px; }
+.store-msg { font-size: 11.5px; color: var(--g-text-dim); padding-top: 6px; }
+.store-confirm-overlay { position: fixed; inset: 0; background: color-mix(in srgb, var(--g-void) 60%, transparent); display: flex; align-items: center; justify-content: center; z-index: 50; }
+.store-confirm-sheet { background: var(--g-instrument); border: 1px solid var(--g-hairline-2); border-radius: 16px; padding: 20px; width: 320px; display: flex; flex-direction: column; gap: 12px; }
+.store-confirm-title { font-size: 14px; font-weight: 700; color: var(--g-text); }
+.store-confirm-item { font-size: 12.5px; color: var(--g-text-mute); }
 .store-confirm-actions { display: flex; justify-content: flex-end; gap: 10px; }
-.store-confirm-cancel { border: 1px solid rgba(129, 180, 255, 0.22); background: transparent; color: #9fb0cc; border-radius: 10px; padding: 8px 14px; cursor: pointer; }
-.store-confirm-ok { border: 0; background: rgba(129, 180, 255, 0.22); color: #cfe2ff; border-radius: 10px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
+.store-confirm-cancel { border: 1px solid var(--g-hairline-2); background: transparent; color: var(--g-text-mute); border-radius: 10px; padding: 8px 14px; cursor: pointer; }
+.store-confirm-ok { border: 0; background: var(--g-ice-500); color: var(--g-ink); border-radius: 10px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
 .store-confirm-ok:disabled { opacity: 0.6; cursor: default; }
 
 /* -- Wallet -- */
 .wallet-tab { display: flex; flex-direction: column; gap: 14px; height: 100%; min-height: 0; }
-.wallet-hero { background: rgba(13, 20, 36, 0.72); border: 1px solid rgba(129, 180, 255, 0.14); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.wallet-hero { background: var(--g-instrument); border: 1px solid var(--g-hairline); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
 .wallet-balance-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
 .wallet-balance { display: flex; align-items: baseline; gap: 6px; }
 .wallet-balance-icon { font-size: 18px; }
-.wallet-balance-num { font-size: 20px; font-weight: 800; color: #eaf2ff; }
-.wallet-balance.shard .wallet-balance-num { color: #a9cbff; }
-.wallet-balance.coin .wallet-balance-num { color: #ffd98f; }
-.wallet-balance-label { font-size: 11px; color: #8794a6; }
-.wallet-topup-btn { position: relative; margin-left: auto; border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 12.5px; cursor: pointer; background: rgba(129, 180, 255, 0.2); color: #cfe2ff; }
-.wallet-pending-badge { position: absolute; top: -9px; right: -8px; background: #ffb14a; color: #241300; font-size: 9.5px; font-weight: 800; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
-.wallet-shard-meta { font-size: 11.5px; color: #9fb0cc; }
-.wallet-lifetime-meta { font-size: 11px; color: #7f8ba6; }
-.wallet-hint { font-size: 12px; color: #8794a6; padding: 6px 2px; }
-.wallet-ledger-preview { background: rgba(13, 20, 36, 0.72); border: 1px solid rgba(129, 180, 255, 0.14); border-radius: 16px; padding: 14px 16px; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 8px; }
-.wallet-ledger-head { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: #8794a6; }
-.wallet-view-all { border: 0; background: transparent; color: #81b4ff; font-size: 11.5px; cursor: pointer; padding: 0; }
+.wallet-balance-num { font-size: 20px; font-weight: 800; color: var(--g-text); }
+.wallet-balance.shard .wallet-balance-num { color: var(--g-ice-300); }
+.wallet-balance.coin .wallet-balance-num { color: var(--g-coin); }
+.wallet-balance-label { font-size: 11px; color: var(--g-text-mute); }
+/* CR-013 W4 gate fix (Opus N1): top-up is a money action → coin-accent CTA. */
+.wallet-topup-btn { position: relative; margin-left: auto; border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 12.5px; cursor: pointer; background: var(--g-coin); color: var(--g-void); }
+.wallet-pending-badge { position: absolute; top: -9px; right: -8px; background: var(--g-warn); color: var(--g-void); font-size: 9.5px; font-weight: 800; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
+.wallet-shard-meta { font-size: 11.5px; color: var(--g-text-dim); }
+.wallet-lifetime-meta { font-size: 11px; color: var(--g-text-mute); }
+.wallet-hint { font-size: 12px; color: var(--g-text-mute); padding: 6px 2px; }
+.wallet-ledger-preview { background: var(--g-instrument); border: 1px solid var(--g-hairline); border-radius: 16px; padding: 14px 16px; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 8px; }
+.wallet-ledger-head { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--g-text-mute); }
+.wallet-view-all { border: 0; background: transparent; color: var(--g-ice-300); font-size: 11.5px; cursor: pointer; padding: 0; }
 .wallet-ledger-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.wallet-ledger-row { display: grid; grid-template-columns: 20px 1fr auto auto; align-items: center; gap: 10px; font-size: 12px; padding: 6px 0; border-top: 1px solid rgba(129, 180, 255, 0.08); }
+.wallet-ledger-row { display: grid; grid-template-columns: 20px 1fr auto auto; align-items: center; gap: 10px; font-size: 12px; padding: 6px 0; border-top: 1px solid var(--g-hairline); }
 .wallet-ledger-row:first-child { border-top: none; }
 .wallet-ledger-icon { text-align: center; }
-.wallet-ledger-desc { color: #dce9ff; }
+.wallet-ledger-desc { color: var(--g-text-dim); }
 .wallet-ledger-amount { font-weight: 700; font-variant-numeric: tabular-nums; }
-.wallet-ledger-amount.positive { color: #5be3a7; }
-.wallet-ledger-amount.negative { color: #ff9f9f; }
-.wallet-ledger-date { color: #7f8ba6; font-size: 10.5px; white-space: nowrap; }
-.wallet-msg { font-size: 11.5px; color: #cfe2ff; }
+.wallet-ledger-amount.positive { color: var(--g-ok); }
+.wallet-ledger-amount.negative { color: var(--g-danger); }
+.wallet-ledger-date { color: var(--g-text-mute); font-size: 10.5px; white-space: nowrap; }
+.wallet-msg { font-size: 11.5px; color: var(--g-text-dim); }
 
 /* -- Top-up modal -- */
-.topup-overlay { position: fixed; inset: 0; background: rgba(4, 7, 13, 0.62); display: flex; align-items: center; justify-content: center; z-index: 60; }
-.topup-modal { position: relative; width: 360px; max-height: 560px; background: #0d1424; border: 1px solid rgba(129, 180, 255, 0.28); border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
-.topup-close { position: absolute; top: 10px; right: 12px; border: 0; background: transparent; color: #8794a6; font-size: 18px; cursor: pointer; line-height: 1; }
-.topup-step-label { font-size: 10.5px; letter-spacing: 0.6px; text-transform: uppercase; color: #7f8ba6; }
+.topup-overlay { position: fixed; inset: 0; background: color-mix(in srgb, var(--g-void) 60%, transparent); display: flex; align-items: center; justify-content: center; z-index: 60; }
+.topup-modal { position: relative; width: 360px; max-height: 560px; background: var(--g-instrument); border: 1px solid var(--g-hairline-2); border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+.topup-close { position: absolute; top: 10px; right: 12px; border: 0; background: transparent; color: var(--g-text-mute); font-size: 18px; cursor: pointer; line-height: 1; }
+.topup-step-label { font-size: 10.5px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--g-text-mute); }
 .topup-step { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: hidden; }
-.topup-h3 { font-size: 15px; font-weight: 800; color: #eaf2ff; margin: 0; }
-.topup-hint { font-size: 12px; color: #8794a6; }
+.topup-h3 { font-size: 15px; font-weight: 800; color: var(--g-text); margin: 0; }
+.topup-hint { font-size: 12px; color: var(--g-text-mute); }
 .topup-hint.small { font-size: 10.5px; text-align: center; }
 .topup-package-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.topup-package-card { position: relative; border: 1px solid rgba(129, 180, 255, 0.2); background: rgba(9, 15, 27, 0.7); border-radius: 12px; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; color: #dce9ff; }
-.topup-package-card.best { border-color: rgba(255, 199, 107, 0.6); }
-.topup-package-badge { position: absolute; top: -9px; background: #ffc76b; color: #241300; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 999px; }
-.topup-package-title { font-size: 11px; color: #9fb0cc; }
+.topup-package-card { position: relative; border: 1px solid var(--g-hairline-2); background: var(--g-instrument-2); border-radius: 12px; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; color: var(--g-text-dim); }
+.topup-package-card.best { border-color: color-mix(in srgb, var(--g-coin) 60%, transparent); }
+.topup-package-badge { position: absolute; top: -9px; background: var(--g-coin); color: var(--g-void); font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 999px; }
+.topup-package-title { font-size: 11px; color: var(--g-text-mute); }
 .topup-package-coins { font-size: 13px; font-weight: 700; }
-.topup-package-bonus { color: #5be3a7; }
-.topup-package-price { font-size: 12px; color: #8794a6; }
+.topup-package-bonus { color: var(--g-ok); }
+.topup-package-price { font-size: 12px; color: var(--g-text-mute); }
 .topup-provider-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.topup-provider-btn { border: 1px solid rgba(129, 180, 255, 0.22); background: rgba(9, 15, 27, 0.7); color: #dce9ff; border-radius: 12px; padding: 18px 10px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.topup-provider-btn { border: 1px solid var(--g-hairline-2); background: var(--g-instrument-2); color: var(--g-text-dim); border-radius: 12px; padding: 18px 10px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .topup-provider-btn:disabled { opacity: 0.5; cursor: default; }
 .topup-provider-icon { font-size: 22px; }
-.topup-back-btn { align-self: flex-start; border: 0; background: transparent; color: #81b4ff; font-size: 11.5px; cursor: pointer; padding: 0; }
+.topup-back-btn { align-self: flex-start; border: 0; background: transparent; color: var(--g-ice-300); font-size: 11.5px; cursor: pointer; padding: 0; }
 .topup-payment { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0; }
+/* #fff kept literal on purpose: a QR code needs a real white quiet-zone to
+   scan reliably — this is a functional requirement, not a theme color. */
 .topup-qr { width: 180px; height: 180px; border-radius: 12px; background: #fff; padding: 8px; }
 .topup-qr.expired { opacity: 0.35; }
-.topup-countdown { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; color: #eaf2ff; }
-.topup-pending-pulse { font-size: 12px; color: #ffc76b; animation: topup-pulse 1.4s ease-in-out infinite; }
+.topup-countdown { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--g-text); }
+.topup-pending-pulse { font-size: 12px; color: var(--g-coin); animation: topup-pulse 1.4s ease-in-out infinite; }
 @keyframes topup-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-.topup-success { font-size: 14px; font-weight: 700; color: #5be3a7; text-align: center; line-height: 1.6; }
-.topup-error { font-size: 13px; color: #ff9f9f; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.topup-retry-btn, .topup-check-btn { border: 1px solid rgba(129, 180, 255, 0.28); background: rgba(129, 180, 255, 0.16); color: #cfe2ff; border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 12px; cursor: pointer; }
+.topup-success { font-size: 14px; font-weight: 700; color: var(--g-ok); text-align: center; line-height: 1.6; }
+.topup-error { font-size: 13px; color: var(--g-danger); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.topup-retry-btn, .topup-check-btn { border: 0; background: var(--g-ice-500); color: var(--g-ink); border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 12px; cursor: pointer; }
 .topup-retry-btn:disabled { opacity: 0.5; cursor: default; }
-.topup-spinner { width: 26px; height: 26px; border-radius: 50%; border: 3px solid rgba(129, 180, 255, 0.2); border-top-color: #81b4ff; animation: topup-spin 0.9s linear infinite; }
+.topup-spinner { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--g-hairline-2); border-top-color: var(--g-ice-300); animation: topup-spin 0.9s linear infinite; }
 @keyframes topup-spin { to { transform: rotate(360deg); } }
-.topup-msg { font-size: 11px; color: #cfe2ff; }
+.topup-msg { font-size: 11px; color: var(--g-text-dim); }
 
 /* ===== CR-011 §B: ON AIR console + tally dots (P2 Honest booth) =====
    Additive only — .gm-agent-card / .gm-sector-log geometry above is untouched.
@@ -6211,6 +6415,276 @@ body {
   font: 400 11px/1.5 var(--g-font-ui);
   color: var(--g-text-mute);
 }
+
+/* === CR-013 W2 (§4 iOS-style Settings split view) — category rail + detail
+   pane. New "COLD BOOTH" row kit: every color below is a --g-* token, no
+   inline hex (R3 — replaces the legacy Control panel's inline `C` palette
+   for the shell/rail + "ทั่วไป" category; the heavier re-homed cards under
+   the other categories keep their existing look for now, per W2 scope). === */
+.settings-split {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 14px;
+  height: 100%;
+  min-height: 0;
+}
+
+.settings-cats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-panel);
+  background: var(--g-instrument);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.settings-cat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: var(--g-r-card);
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background var(--g-t-hover) var(--g-ease), border-color var(--g-t-hover) var(--g-ease);
+}
+.settings-cat:hover { background: var(--g-instrument-2); }
+.settings-cat.on {
+  background: var(--g-instrument-2);
+  border-color: var(--g-hairline-2);
+}
+.settings-cat:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+
+.settings-cat-glyph {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--g-r-sm);
+  background: var(--g-instrument-2);
+  border: 1px solid var(--g-hairline);
+  color: var(--g-text-dim);
+  font-size: 14px;
+  line-height: 1;
+}
+.settings-cat.on .settings-cat-glyph {
+  color: var(--g-ice-300);
+  border-color: var(--g-hairline-2);
+}
+
+.settings-cat-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.settings-cat-label {
+  font: 600 12.5px/1.3 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+.settings-cat.on .settings-cat-label { color: var(--g-text); }
+.settings-cat-sub {
+  font: 400 10.5px/1.3 var(--g-font-ui);
+  color: var(--g-text-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-detail {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* R1 (no page-level scroll): the split's outer surface stays clipped — only
+   the detail BODY (below) scrolls internally, same interim shape as
+   .deck-tabbed-body above. `.settings-split-mode` is added on `.surface` only
+   when tab==="settings" (CommandDeck.tsx), so this 3-class selector (more
+   specific than the shared 2-class `.surface.page-settings`/`.page-settings`
+   rules elsewhere in this file) overrides ONLY the settings split view —
+   those other rules are left untouched for any other code path. */
+.surface.page-settings.settings-split-mode {
+  overflow: hidden;
+}
+.settings-detail-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-right: 4px;
+}
+
+.settings-group {
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-panel);
+  background: var(--g-instrument);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.settings-group-head {
+  font: 600 10px/1 var(--g-font-ui);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--g-text-mute);
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.settings-row-label {
+  font: 500 12.5px/1.4 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+.settings-winpresets { display: flex; gap: 6px; flex-wrap: wrap; }
+.settings-winpreset {
+  font: 500 11px/1 var(--g-font-ui);
+  color: var(--g-text-dim);
+  background: var(--g-instrument-2);
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-pill);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background var(--g-t-hover) var(--g-ease), color var(--g-t-hover) var(--g-ease);
+}
+.settings-winpreset:hover { background: var(--g-instrument-2); color: var(--g-text); }
+.settings-winpreset:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+/* active = ice fill (CR-011 §F selected grammar), text goes dark-on-ice via
+   the existing --g-ink token (no new hex — matches .gm-deckprefs-pill.active's
+   intent without introducing a second literal for the same "ink on ice" idea). */
+.settings-winpreset.active {
+  color: var(--g-ink);
+  background: var(--g-ice-500);
+  border-color: var(--g-ice-500);
+}
+.settings-foot {
+  margin: 0;
+  font: 400 11px/1.5 var(--g-font-ui);
+  color: var(--g-text-mute);
+}
+.settings-row-value {
+  font: 500 12px/1 var(--g-font-mono, var(--g-font-ui));
+  color: var(--g-ice-300);
+}
+/* CR-013 W3: divider between stacked rows inside one .settings-group — skipped
+   on the first row of a group (nothing above it to divide from the head). */
+.settings-group .settings-row + .settings-row {
+  padding-top: 10px;
+  border-top: 1px solid var(--g-hairline);
+}
+
+/* CR-013 W3: re-skinned legacy `Toggle`/`Seg`/`Row`/`Card` primitives (App.tsx)
+   onto the settings token kit — no more inline hex from the old `C` palette. */
+.settings-toggle {
+  appearance: none;
+  width: 44px;
+  height: 24px;
+  border-radius: var(--g-r-pill);
+  border: 1px solid var(--g-hairline-2);
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  flex: none;
+  background: var(--g-instrument-2);
+  transition: background var(--g-t-hover) var(--g-ease), border-color var(--g-t-hover) var(--g-ease);
+}
+.settings-toggle.on { background: var(--g-ice-500); border-color: var(--g-ice-500); }
+.settings-toggle:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+.settings-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--g-r-pill);
+  background: var(--g-ink);
+  transition: left var(--g-t-hover) var(--g-ease);
+}
+.settings-toggle.on .settings-toggle-knob { left: 22px; }
+
+.settings-seg {
+  display: inline-flex;
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-sm);
+  overflow: hidden;
+  background: var(--g-instrument);
+  flex: none;
+}
+.settings-seg-opt {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--g-text-mute);
+  font: 500 12px/1 var(--g-font-ui);
+  padding: 6px 13px;
+  cursor: pointer;
+  transition: background var(--g-t-hover) var(--g-ease), color var(--g-t-hover) var(--g-ease);
+}
+.settings-seg-opt:hover { color: var(--g-text-dim); }
+.settings-seg-opt.on { background: var(--g-instrument-2); color: var(--g-ice-300); }
+.settings-seg-opt:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+/* CR-013 W2 gate fix (Opus F1): app-level update banner, pinned above every
+   settings category. Instrument matte + ice rim (two-material rule — the only
+   blurred surface is the shell), COLD BOOTH tokens only. */
+.settings-update-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 12px 16px;
+  background: var(--g-instrument-2);
+  border: 1px solid var(--g-ice-500);
+  border-radius: 12px;
+}
+.settings-update-spark { font-size: 16px; line-height: 1; }
+.settings-update-copy { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.settings-update-copy strong { font: 600 13px/1.3 var(--g-font-ui); color: var(--g-ice-300); }
+.settings-update-copy span {
+  font: 400 11px/1.4 var(--g-font-ui);
+  color: var(--g-text-mute);
+  white-space: pre-wrap;
+  max-height: 44px;
+  overflow: hidden;
+}
+.settings-update-install {
+  flex: 0 0 auto;
+  font: 600 12px/1 var(--g-font-ui);
+  color: var(--g-ink);
+  background: var(--g-ice-500);
+  border: none;
+  border-radius: 9px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+.settings-update-install:disabled { opacity: 0.6; cursor: default; }
+.settings-update-later {
+  flex: 0 0 auto;
+  font: 500 12px/1 var(--g-font-ui);
+  color: var(--g-text-dim);
+  background: transparent;
+  border: 1px solid var(--g-hairline-2);
+  border-radius: 9px;
+  padding: 8px 13px;
+  cursor: pointer;
+}
+.settings-update-later:disabled { opacity: 0.6; cursor: default; }
 
 /* -- Maiden Line: disabled row (current quality tier — visible, inert). -- */
 .gm-palette-row.disabled {
