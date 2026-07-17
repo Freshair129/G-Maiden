@@ -33,7 +33,26 @@ Maiden ไม่ใช่แค่ dashboard — เป็น **companion** ท�
 - **Surface:** frosted glass (blur + rim บาง) ลอยบน ambient glow — ไม่ใช้ panel ทึบขอบหนา
 - **Accent:** ice (แบรนด์) + lime (signal) — ดู tokens §1.2–1.3 ว่าห้ามใช้สลับ
 - **Shape:** มุมโค้งใหญ่, panel **เว้าแหว่ง** (Subtract) เพื่อให้ FAB ลอยในช่อง — นี่คือ signature ของ deck
-- **Typography:** UI face เดียว (Segoe UI, รองรับไทย) + mono สำหรับตัวเลข; ลำดับชั้นมาจาก weight/size ไม่ใช่สี
+- **Typography:** IBM Plex Sans Thai Looped (bundled woff2) + IBM Plex Mono สำหรับตัวเลข; ลำดับชั้นมาจาก weight/size ไม่ใช่สี (ดู §02 tokens §2)
+
+### 2.1 Two-material rule (CR-011 §B — COLD BOOTH, shipped waves P1/P1b/P2/P3)
+
+**Two materials, strictly assigned — ห้ามผสม:**
+
+- **Console glass** (the ONLY blur in the deck): the Subtract shell panel, FABs, และ
+  pop layers เท่านั้น — Maiden Line palette (`.gm-palette`), shortcut sheet (`.gm-sheet`).
+  ใช้ `var(--g-blur-console)` เสมอ (ไม่ hardcode `blur()`) เพื่อให้ quality tier
+  (`html.gq-cinematic/balanced/eco`, §02 tokens) คุมได้จุดเดียว.
+- **Instrument matte**: ทุก interior sector/card (score header, mini stat, hero slot,
+  battle grid, sector log, agent/on-air card, momentum, minimap frame ฯลฯ) — พื้นทึบ
+  `var(--g-instrument)` / `var(--g-instrument-2)`, ขอบ `var(--g-hairline)` /
+  `var(--g-hairline-2)` **1px เท่านั้น ห้ามมี blur/shadow**. เหตุผล: interior เลิกแย่งซีน
+  กับ shell, GPU cost ลด, glass กลับมามีความหมาย (shell ลอย, instrument ถูก "ฝัง" อยู่ในนั้น).
+
+ผลคือ blur ในดeck เหลือ "ที่เดียว" (shell) แทนที่จะกระจายไปทุก panel เหมือน v2 เดิม
+(`--g-blur-panel`/`--g-blur-tile` ที่เคยใช้กับ interior — ค่านั้นยังอยู่ในโค้ดเป็น legacy
+แต่ interior sector ใหม่ทั้งหมดต้อง reference `--g-instrument*`/`--g-hairline*` ไม่ใช่
+blur token). Overlay (Combat HUD) ไม่แตะกติกานี้ — ดู `07-combat-hud.md`.
 
 ### Do / Don't
 

@@ -1,5 +1,28 @@
 # Changelog
 
+## [0.9.1] — 2026-07-16
+### Added
+- **Command Deck redesign (CR-011, COLD BOOTH)** — the deck becomes a broadcast booth:
+  phase-aware layout (standby / prep / live / debrief), ON AIR utterance ledger with
+  Maiden's mid-sentence belief-revision strikethrough, Maiden Line command palette
+  (Ctrl+K), glance mode, quality tiers (cinematic / balanced / eco) and density presets
+  in a new Deck prefs card.
+- **Big mode** — opt-in snap-up scale steps (1.15×–2.0×) so the deck can grow past 100%
+  on large windows while keeping the 1420×760 aspect; small windows are unaffected.
+- **Announcer pack `pack_mrijgajn`** ships pre-activated.
+
+### Fixed
+- **CV capture on multi-monitor setups (CR-012)** — G-Maiden now auto-detects which
+  monitor Dota 2 is on (and follows it if the game moves), logs per-5s capture
+  diagnostics, and falls back to GDI capture when DXGI duplication keeps losing access
+  (MPO / independent-flip fullscreen-borderless). Minimap region retuned; fewer phantom
+  hero detections (higher confidence + confirmation thresholds).
+- **Settings page layout** — flow pages (Settings / Voice / Account / Insights / History /
+  Build / Live) regained their interior inset; content no longer jams into the panel
+  corner or slides under the topbar notch.
+- **Minimap mirror fills its frame** (no letterboxing) and **hero slots no longer
+  overlap** in the deck grid.
+
 ## [0.9.0] — 2026-07-10
 ### Changed
 - **Command Deck shell refresh (CR-007, FROSTLINE)** — the control window keeps its

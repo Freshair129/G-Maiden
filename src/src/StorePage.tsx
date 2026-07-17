@@ -36,6 +36,32 @@ function errText(e: unknown): string {
   return (e as { message?: string })?.message ?? String(e) ?? "เกิดข้อผิดพลาด";
 }
 
+// CR-013 W5-01: CR-003 wallet/store isn't deployed live yet (§5.4 degrade
+// ladder) — until then, `catalog_items` doesn't exist and every query fails
+// with Postgres' undefined_table (42P01) / PostgREST's "schema cache" wording.
+// That's an expected, honest "not live yet" state, not a bug — surface it as
+// the store's normal empty-state in friendly Thai instead of the raw
+// Supabase/Postgres string. Any OTHER error still surfaces via `msg` below
+// (never swallowed).
+const CATALOG_UNAVAILABLE_MSG = "ร้านค้ายังไม่เปิดให้บริการ — เร็ว ๆ นี้";
+
+function isTableMissingError(e: unknown): boolean {
+  const err = e as { code?: string; message?: string } | null | undefined;
+  if (!err) return false;
+  if (err.code === "42P01") return true; // Postgres: undefined_table
+  const msg = (err.message ?? "").toLowerCase();
+  // CR-013 W5 gate fix (Opus F1): keep "does not exist" scoped to the TABLE/
+  // RELATION being absent. A bare `.includes("does not exist")` also matched
+  // Postgres 42703 `column ... does not exist` — a real deploy/schema bug —
+  // and swallowed it into the friendly "coming soon" state. Column/other
+  // "does not exist" errors now fall through to `setMsg` and surface honestly.
+  return (
+    msg.includes("could not find the table") ||
+    msg.includes("schema cache") ||
+    ((msg.includes("relation") || msg.includes("table")) && msg.includes("does not exist"))
+  );
+}
+
 function toCatalogItem(row: CatalogRow): CatalogItem {
   return {
     id: row.id,
@@ -96,6 +122,7 @@ export default function StorePage({ onNavigateToWallet, onRequestSignIn }: Store
   const [confirmItem, setConfirmItem] = useState<CatalogItem | null>(null);
   const [topupOpen, setTopupOpen] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
+  const [catalogUnavailable, setCatalogUnavailable] = useState(false);
 
   const frameRef = useRef<HTMLDivElement | null>(null);
   const [frameH, setFrameH] = useState(STORE_FRAME_DEFAULT_H);
@@ -112,9 +139,14 @@ export default function StorePage({ onNavigateToWallet, onRequestSignIn }: Store
         .order("created_at", { ascending: true });
       if (cancelled) return;
       if (error) {
-        setMsg(errText(error));
+        if (isTableMissingError(error)) {
+          setCatalogUnavailable(true);
+        } else {
+          setMsg(errText(error));
+        }
         setItems([]);
       } else {
+        setCatalogUnavailable(false);
         setItems(((data as CatalogRow[] | null) ?? []).map(toCatalogItem));
       }
       setLoading(false);
@@ -234,6 +266,8 @@ export default function StorePage({ onNavigateToWallet, onRequestSignIn }: Store
       <div className="store-frame" ref={frameRef}>
         {loading ? (
           <div className="store-hint">กำลังโหลดร้านค้า…</div>
+        ) : catalogUnavailable ? (
+          <div className="store-hint">{CATALOG_UNAVAILABLE_MSG}</div>
         ) : pageItems.length === 0 ? (
           <div className="store-hint">ยังไม่มีสินค้าในร้านค้าตอนนี้</div>
         ) : (

@@ -114,8 +114,8 @@ export default function MatchShareCard({ matchId }: MatchShareCardProps) {
 
 const styles: Record<string, React.CSSProperties> = {
   card: {
-    background: "rgba(18, 20, 28, 0.72)",
-    border: "1px solid #24344e",
+    background: "var(--g-instrument)",
+    border: "1px solid var(--g-hairline)",
     borderRadius: 14,
     padding: 14,
     display: "flex",
@@ -124,24 +124,36 @@ const styles: Record<string, React.CSSProperties> = {
   },
   head: { display: "flex", alignItems: "center", gap: 10 },
   icon: { fontSize: 22 },
-  title: { fontSize: 13.5, fontWeight: 700, color: "#d8e6f2" },
-  sub: { fontSize: 11, color: "#8fa6c0", marginTop: 2 },
+  title: { fontSize: 13.5, fontWeight: 700, color: "var(--g-text)" },
+  sub: { fontSize: 11, color: "var(--g-text-dim)", marginTop: 2 },
   btn: {
     borderRadius: 10,
     fontSize: 12.5,
     fontWeight: 600,
-    border: "1px solid #64c7ff",
-    background: "#11203a",
-    color: "#9be7ff",
+    border: "1px solid var(--g-ice-600)",
+    background: "var(--g-instrument-2)",
+    color: "var(--g-ice-300)",
     padding: "10px 14px",
     cursor: "pointer",
   },
   btnBusy: { opacity: 0.7, cursor: "wait" },
-  hint: { fontSize: 11, color: "#8fa6c0" },
+  hint: { fontSize: 11, color: "var(--g-text-dim)" },
   toast: { display: "flex", alignItems: "center", justifyContent: "space-between", gap: 10, borderRadius: 10, padding: "9px 12px", fontSize: 12 },
-  toastSuccess: { background: "rgba(49, 208, 160, 0.14)", border: "1px solid rgba(49, 208, 160, 0.3)", color: "#31d0a0" },
-  toastInfo: { background: "rgba(100, 199, 255, 0.12)", border: "1px solid rgba(100, 199, 255, 0.3)", color: "#9be7ff" },
-  toastError: { background: "rgba(255, 92, 122, 0.14)", border: "1px solid rgba(255, 92, 122, 0.3)", color: "#ff5c7a" },
+  toastSuccess: {
+    background: "color-mix(in srgb, var(--g-ok) 14%, transparent)",
+    border: "1px solid color-mix(in srgb, var(--g-ok) 30%, transparent)",
+    color: "var(--g-ok)",
+  },
+  toastInfo: {
+    background: "color-mix(in srgb, var(--g-ice-600) 12%, transparent)",
+    border: "1px solid color-mix(in srgb, var(--g-ice-600) 30%, transparent)",
+    color: "var(--g-ice-300)",
+  },
+  toastError: {
+    background: "color-mix(in srgb, var(--g-danger) 14%, transparent)",
+    border: "1px solid color-mix(in srgb, var(--g-danger) 30%, transparent)",
+    color: "var(--g-danger)",
+  },
   retryBtn: {
     borderRadius: 8,
     fontSize: 11,
@@ -158,5 +170,7 @@ const cssBlock = `
 @keyframes matchShareIn { from { opacity: 0; transform: translateY(-4px); } to { opacity: 1; transform: translateY(0); } }
 .match-share-toast.success { animation: matchShareIn 260ms ease-out; }
 .match-share-btn:disabled { opacity: .55; cursor: not-allowed; }
-.match-share-btn:not(:disabled):hover { background: #16294a; }
+/* hover must be visibly lighter than the button's own instrument-2 base
+   (both collapsed onto the same token in the migration — Opus gate, CR011-P5) */
+.match-share-btn:not(:disabled):hover { background: color-mix(in srgb, var(--g-ice-600) 10%, var(--g-instrument-2)); }
 `;

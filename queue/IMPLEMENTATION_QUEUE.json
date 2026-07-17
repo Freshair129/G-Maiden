@@ -1,0 +1,31 @@
+{
+  "version": "2.3.0",
+  "project": "G-Maiden",
+  "wave": "CR013-W5",
+  "wave_title": "Fit-to-canvas + History pagination + store friendly empty-state + docs sync (FINAL)",
+  "cr": "CR-013",
+  "roster": "Sonnet worker / Opus gate / Fable architect+merger",
+  "architect_note": "R1 global overflow:hidden flip DEFERRED to W5 (final assertion) to avoid intermediate breakage: pages not yet fit (voice/account/settings) keep overflow-y:auto until their own wave converts them. W1 only sets overflow:hidden on pages it makes no-scroll now (live/insights/store).",
+  "tasks": [
+    {
+      "id": "CR013-W1-01",
+      "title": "PAGES 7-nav restructure + DeckTabs segmented shell + Live[สด|บิลด์] + Insights[ภาพรวม|รายสัปดาห์|ประวัติ] + G-Store seat (StorePage catalog)",
+      "category": "UI",
+      "dependencies": [],
+      "priority": 1,
+      "required_capability": "Implementation/React-CSS",
+      "estimated_complexity": "L",
+      "estimated_context": "Large",
+      "parallelizable": false,
+      "local_eligibility": "LOCAL_SAFE",
+      "verification": [
+        "tsc",
+        "eslint",
+        "vitest"
+      ],
+      "ready": true,
+      "status": "dispatched",
+      "worker_group": "W"
+    }
+  ]
+}

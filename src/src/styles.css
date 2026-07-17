@@ -18,9 +18,10 @@
   --g-ice-100: #CFECFF; --g-ice-300: #9BE7FF; --g-ice-500: #8FD4FF;
   --g-ice-600: #64C7FF; --g-ice-700: #226CFF; --g-ice-dim: #6B8BB5;
   --g-lime-500: #A3E635; --g-lime-soft: rgba(163,230,53,0.16); --g-lime-line: rgba(163,230,53,0.34);
-  --g-text: #EEF4FB; --g-text-dim: #8BA4C6; --g-text-mute: #5E7699;
+  --g-text: #EEF4FB; --g-text-dim: #A9BEDB; --g-text-mute: #5E7699;
   --g-safe: #22C55E; --g-ok: #31D0A0; --g-warn: #F59E0B; --g-danger: #F43F5E;
-  --g-font-ui: "Segoe UI", system-ui, sans-serif; --g-font-mono: Consolas, ui-monospace, monospace;
+  --g-font-ui: "IBM Plex Sans Thai Looped","IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+  --g-font-mono: "IBM Plex Mono",Consolas,ui-monospace,monospace;
   --g-r-sm: 8px; --g-r-card: 11px; --g-r-panel: 14px; --g-r-fab: 16px; --g-r-pill: 999px;
   --g-r-frame-outer: 28px; --g-r-frame-notch: 20px;
   /* CR-007 follow-up (Boss feedback 2026-07-09): feathered ambient-shadow family so
@@ -31,13 +32,29 @@
   --g-shadow-panel: 0 18px 50px rgba(0,0,0,0.55);
   --g-rim-top: inset 0 1px 0 rgba(255,255,255,0.06);
   --g-blur-panel: blur(30px) saturate(150%); --g-blur-fab: blur(24px) saturate(160%); --g-blur-tile: blur(6px);
+  /* v3 CR-011: hex today, OKLCH literal migration is a later mechanical pass — keep hue identity */
+  --g-instrument: #0B0E16; --g-instrument-2: #0D1119;
+  --g-hairline: rgba(150,185,230,0.10); --g-hairline-2: rgba(150,185,230,0.16);
+  --g-coin: #E4C36B; /* economy gold — never a status color */
+  --g-blur-console: blur(30px) saturate(150%); /* cinematic DEFAULT — owner decision
+     2026-07-14 ("เอา panel blur กลับมา"), overriding the earlier none-default. The blur
+     acts on webview-internal layers (ambient bg + L1 plate). Drag-lag stays fixed via
+     .is-dragging (blur force-off during native drag). gq-balanced/gq-eco step down. */
   --g-t-micro: 0.12s; --g-t-hover: 0.15s; --g-t-state: 0.2s; --g-t-bar: 0.3s;
   --g-t-ambient: 14s ease-in-out infinite; --g-ease: ease-out;
   --g-z-bg: 0; --g-z-panel: 1; --g-z-content: 10; --g-z-fab: 100; --g-z-pop: 200;
 }
+/* CR-011 §H quality tiers — DEFAULT (no class) = cinematic (owner decision 2026-07-14).
+   balanced/eco step the console-glass blur down for lighter machines; toggled by
+   CommandDeck's gm-deck-prefs store (CR011-P6-01) setting the class on <html>;
+   .g-deck-panel below consumes var(--g-blur-console) so no other rule needs to
+   change per tier. */
+html.gq-cinematic { --g-blur-console: blur(30px) saturate(150%); }
+html.gq-balanced { --g-blur-console: blur(16px) saturate(150%); }
+html.gq-eco { --g-blur-console: none; }
 * { box-sizing: border-box; }
 html, body, #root { height: 100%; margin: 0; }
-body { background: var(--bg); color: var(--txt); font: 13px/1.5 -apple-system, "Segoe UI", Roboto, sans-serif; }
+body { background: var(--bg); color: var(--txt); font: 13px/1.5 var(--g-font-ui); }
 code { background: #0b1424; border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; color: var(--cyan); font-size: 12px; }
 h3 { margin: 0 0 8px; }
 
@@ -296,7 +313,7 @@ body {
     radial-gradient(circle at bottom left, rgba(31, 208, 160, 0.08), transparent 28%),
     #050914;
   color: #eef5ff;
-  font-family: "Segoe UI", "Inter", sans-serif;
+  font-family: var(--g-font-ui);
 }
 
 .app {
@@ -1307,8 +1324,9 @@ body {
   align-items: start;
   padding: 10px 12px;
   border-radius: 14px;
-  background: rgba(16, 27, 50, 0.66);
-  border: 1px solid rgba(126, 177, 255, 0.08);
+  /* CR-011 §B two-material rule: instrument matte (was translucent), no blur/shadow. */
+  background: var(--g-instrument);
+  border: 1px solid var(--g-hairline);
 }
 
 .log-time {
@@ -1516,6 +1534,52 @@ body {
 
 .history-row p {
   margin: 0;
+}
+
+/* CR-013 W5-01: HistoryPage's list has no natural bound (match count grows
+   forever) — same fixed-height-frame + pager pattern StorePage.tsx uses
+   (rowsThatFit, CR-003 §3.0), applied to a single-column list instead of a
+   2-up grid. See CR-013 §2 R2. */
+.history-frame {
+  flex: 1;
+  min-height: 0;
+  /* CR-013 W5 gate fix (Opus F2): flex column so the inner .history-list's
+     overflow:auto is a REAL backstop (frame gives it a definite height to
+     bound against) instead of the frame just clipping if a page ever
+     over-fills — pagination keeps it from happening, this makes it safe. */
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: relative;
+}
+.history-frame .history-list { flex: 1; min-height: 0; }
+
+.history-pager {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 14px;
+  padding-top: 10px;
+}
+
+.history-pager-btn {
+  border: 1px solid var(--g-hairline-2);
+  background: var(--g-instrument);
+  color: var(--g-text-dim);
+  border-radius: 10px;
+  padding: 6px 12px;
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.history-pager-btn:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.history-pager-label {
+  font-size: 12px;
+  color: var(--g-text-mute);
 }
 
 @media (max-width: 1400px) {
@@ -2093,6 +2157,185 @@ body {
 .account-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start; }
 .account-card { background: rgba(13, 20, 36, 0.72); border: 1px solid rgba(129, 180, 255, 0.14); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 .account-card.muted { opacity: 0.75; }
+
+/* CR011-P5-01 (CR-011 §B/§C): instrument-matte pill mode-switch, shared
+   visual language across the Packs (Voice) page and Account's sub-tabs.
+   Two independent class families — they gate different pages/props and are
+   never mixed in one tree — but both read tokens only, so they present as
+   one system. */
+.gm-packs-tabs,
+.gm-account-tabs {
+  display: flex;
+  gap: 8px;
+  padding: 4px;
+  margin: 0 0 14px;
+  background: var(--g-instrument);
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-pill);
+  width: fit-content;
+}
+.gm-packs-tab,
+.gm-account-tab {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--g-text-dim);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  padding: 7px 14px;
+  border-radius: var(--g-r-pill);
+  cursor: pointer;
+  transition: background var(--g-t-hover) var(--g-ease), color var(--g-t-hover) var(--g-ease),
+    border-color var(--g-t-hover) var(--g-ease);
+}
+.gm-packs-tab:hover,
+.gm-account-tab:hover { color: var(--g-text); background: var(--g-instrument-2); }
+.gm-packs-tab.active,
+.gm-account-tab.active {
+  background: var(--g-instrument-2);
+  border-color: var(--g-hairline-2);
+  color: var(--g-ice-300);
+}
+.gm-packs-tab:focus-visible,
+.gm-account-tab:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+
+/* CR-013 W1-01: ONE CANVAS in-page tabs — Live's สด/บิลด์ split and
+   Insights' ภาพรวม/รายสัปดาห์/ประวัติ split. Same instrument-matte
+   segmented-control language as .gm-account-tabs above (deliberately not
+   merged into that selector family: those two gate different components'
+   props, this one is presentational/caller-owned — see DeckTabs in
+   CommandDeck.tsx), so all three read as one system without sharing state. */
+.deck-tabbed {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  height: 100%;
+  min-height: 0;
+}
+.deck-tabbed-body {
+  flex: 1;
+  min-height: 0;
+  /* CR-013 W5-01: the W1 interim (`overflow-y: auto` here, quoted below) is
+     retired now that the fit-to-canvas rules above make every domain-page
+     bound its own feed regions instead of stacking past the body — verified
+     by DOM measurement (scrollHeight === clientHeight, 0 overflow) at the
+     1200x780 floor for every .deck-tabbed-body consumer: Live's สด/บิลด์,
+     Insights' ภาพรวม/ประวัติ (History now paginates via rowsThatFit — R2),
+     and all 4 Store sub-tabs (ร้านค้า/กระเป๋า/คลัง/บันทึก). Per R1, no
+     scrollbar should ever appear here — clip (not scroll) is now the
+     backstop if a future page regresses this.
+     W1 gate fix note this replaces: "the page SURFACE stays overflow:hidden
+     (R1), but the tab BODY scrolls internally as an INTERIM — LiveMatchPage's
+     สด content was ~789px in the ~570px body and InsightsPage's ประวัติ list
+     grew with match count; hard-clipping them silently lost content." */
+  overflow: hidden;
+}
+
+/* CR-013 W5-01: fit-to-canvas for the Live/Insights domain pages that render
+   inside .deck-tabbed-body (LiveMatchPage/BuildAdvisorPage/InsightsPage/
+   HistoryPage — CompanionPages.tsx). Instead of letting feed content stack
+   past the body's height (forcing the interim body-level scroll above), the
+   page frame is fixed to the body's height and only the genuinely-unbounded
+   inner regions scroll in place — the same fixed-frame pattern the dashboard
+   itself already uses for .gm-sector-log/.log-list, and StorePage.tsx uses
+   for its catalog grid. See CR-013 §2 R1/R2. */
+.deck-tabbed-body .domain-page {
+  height: 100%;
+  min-height: 0;
+}
+.deck-tabbed-body .domain-page > .domain-grid {
+  flex: 1;
+  min-height: 0;
+}
+/* The trailing domain-card (InsightsPage's weekly-report card, HistoryPage's
+   list card) grows to fill the remaining canvas instead of stacking past it.
+   Scoped to a direct child of .domain-page so it does NOT match the two
+   side-by-side cards nested inside LiveMatchPage's .domain-grid — those are
+   sized by the grid rule above instead. */
+.deck-tabbed-body .domain-page > .domain-card:last-child {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.deck-tabbed-body .domain-card {
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+.deck-tabbed-body .scoreboard-list,
+.deck-tabbed-body .split-logs {
+  flex: 1;
+  min-height: 0;
+}
+.deck-tabbed-body .log-box .log-list {
+  flex: 1;
+}
+.deck-tabbed-body .history-list {
+  min-height: 0;
+  overflow-y: auto;
+}
+
+/* Compact hero for the tabbed pages (page-hero is otherwise a big marketing
+   block) — tightened so the feed content below actually has room. Only
+   CompanionPages.tsx renders .page-hero, and only inside .deck-tabbed-body,
+   so this scoping cannot leak onto another page's hero. */
+.deck-tabbed-body .page-hero {
+  padding: 14px 18px;
+}
+.deck-tabbed-body .page-hero h2 {
+  font-size: 20px;
+  margin-top: 3px;
+}
+.deck-tabbed-body .page-hero p {
+  margin: 4px 0 0;
+  font-size: 12.5px;
+  line-height: 1.4;
+}
+
+.deck-tabs {
+  display: inline-flex;
+  align-self: flex-start;
+  gap: 8px;
+  padding: 4px;
+  background: var(--g-instrument);
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-pill);
+  width: fit-content;
+  flex: 0 0 auto;
+}
+.deck-tab {
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--g-text-dim);
+  font: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+  padding: 7px 14px;
+  border-radius: var(--g-r-pill);
+  cursor: pointer;
+  transition: background var(--g-t-hover) var(--g-ease), color var(--g-t-hover) var(--g-ease),
+    border-color var(--g-t-hover) var(--g-ease);
+}
+.deck-tab:hover { color: var(--g-text); background: var(--g-instrument-2); }
+.deck-tab.on {
+  background: var(--g-instrument-2);
+  border-color: var(--g-hairline-2);
+  color: var(--g-ice-300);
+}
+.deck-tab:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+
+/* Packs page shell — the mode body fills whatever's left; the surrounding
+   `.surface.page-voice` already carries `overflow-y: auto` (see the shared
+   rule further down), so this doesn't need its own scroll/height math —
+   each mounted mode (VoiceInventory/StorePage/InventoryTab/AudioSettings)
+   already manages its own internal layout. */
+.gm-packs-page { display: flex; flex-direction: column; min-height: 100%; padding: 4px; }
+.gm-packs-body { flex: 1; min-height: 0; }
 .account-h3 { font-size: 12px; letter-spacing: 0.8px; text-transform: uppercase; color: #81b4ff; margin: 0 0 4px; }
 .account-note { font-size: 11px; color: #8794a6; line-height: 1.4; }
 .account-hint { font-size: 12px; color: #8794a6; line-height: 1.45; margin: 0; }
@@ -3979,7 +4222,7 @@ body {
   height: 100vh;
   background: #08090c;
   color: #e7eef6;
-  font-family: "Segoe UI", system-ui, sans-serif;
+  font-family: var(--g-font-ui);
   overflow: hidden;
 }
 
@@ -4137,7 +4380,7 @@ body {
    stage-authored element (panel insets, right-anchored FABs, Subtract notches) wrong. */
 .g-deck-stage {
   position: absolute; left: 50%; top: 50%;
-  width: 1420px; height: 720px;
+  width: 1420px; height: 760px;
   transform: translate(-50%, -50%) scale(1);
   transform-origin: center center;
 }
@@ -4179,7 +4422,7 @@ body {
 }
 .g-topbar-fab .g-logo { font-weight: 800; letter-spacing: 1.5px; font-size: 13px; color: var(--g-ice-500); }
 .g-telemetry { display: flex; gap: 10px; }
-.g-telchip { display: flex; flex-direction: column; line-height: 1.1; font-size: 8px; letter-spacing: .5px; color: var(--g-text-dim); text-transform: uppercase; }
+.g-telchip { display: flex; flex-direction: column; line-height: 1.1; font-size: 10px; letter-spacing: .5px; color: var(--g-text-dim); text-transform: uppercase; }
 .g-telchip strong { font-size: 11px; color: var(--g-text); font-variant-numeric: tabular-nums; }
 .g-topbar-fab .profile-wrap,
 .g-topbar-fab .window-controls { -webkit-app-region: no-drag; }
@@ -4190,7 +4433,9 @@ body {
   /* more visible frosted fill so the concave Subtract silhouette reads over the dark void */
   background: linear-gradient(158deg, rgba(22, 29, 42, 0.97), rgba(12, 16, 24, 0.98));
   border-radius: 18px;
-  -webkit-backdrop-filter: none; backdrop-filter: none;
+  /* CR-011 §H: console glass is the one blur-permitted shell surface; the actual
+     px value steps per quality tier via --g-blur-console (see :root / html.gq-*). */
+  -webkit-backdrop-filter: var(--g-blur-console); backdrop-filter: var(--g-blur-console);
   /* rim + depth that FOLLOW the clip-path shape (drop-shadow respects clip-path) */
   box-shadow: 0 16px 40px rgba(0, 0, 0, 0.5);
   overflow: hidden; display: flex; flex-direction: column;
@@ -4235,8 +4480,8 @@ body {
   box-shadow: var(--g-shadow-fab); -webkit-backdrop-filter: none; backdrop-filter: none;
   padding: 12px 14px; display: flex; flex-direction: column;
 }
-.g-sig .sg-tag { position: absolute; top: 9px; right: 12px; font-size: 9px; font-weight: 800; color: var(--g-text-dim); opacity: .5; }
-.g-sig .sg-label { font-size: 9px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--g-text-dim); }
+.g-sig .sg-tag { position: absolute; top: 9px; right: 12px; font-size: 10px; font-weight: 800; color: var(--g-text-dim); opacity: .5; }
+.g-sig .sg-label { font-size: 10px; font-weight: 700; letter-spacing: .6px; text-transform: uppercase; color: var(--g-text-dim); }
 .g-sig .sg-val { font-size: 26px; font-weight: 800; margin: auto 0 8px; font-variant-numeric: tabular-nums; line-height: 1; }
 .g-sig .sg-bar { height: 6px; border-radius: 4px; background: rgba(143, 212, 255, .12); overflow: hidden; }
 .g-sig .sg-fill { height: 100%; border-radius: 4px; }
@@ -4363,19 +4608,16 @@ body {
   left: 50% !important;
   top: 50% !important;
   width: 1420px !important;
-  height: 720px !important;
-  /* deck-grid v3 (1420x720, 14col×10row): panel FILLS the stage so panel user-space
-     == stage coords and the generated Apple-round clip lands 1:1 on the design. */
-  --cr6-panel-left: 0px;
-  --cr6-panel-top: 0px;
-  --cr6-panel-width: 1420px;
+  height: 760px !important;
+  --cr6-panel-left: 12px;
+  --cr6-panel-top: 12px;
+  --cr6-panel-width: 1280px;
   --cr6-panel-height: 720px;
-  /* deck-grid v3 FAB positions (stage coords, snapped to cells, match the notches) */
-  --cr6-topbar-left: 910px;
-  --cr6-topbar-top: 0px;
-  --cr6-topbar-width: 400px;
-  --cr6-sidebar-left: 110px;
-  --cr6-sidebar-top: 360px;
+  --cr6-topbar-left: 834px;
+  --cr6-topbar-top: 24px;
+  --cr6-topbar-width: 446px;
+  --cr6-sidebar-left: 26px;
+  --cr6-sidebar-top: 354px;
   /* CR-007 follow-up (Boss feedback 2026-07-09): power cluster rebuilt as a proper corner
      FAB directly under the sidebar, not a free-floating radial. Main button is
      centered on the sidebar column (sidebar x26..90, center x58 -> button x35..81)
@@ -4386,8 +4628,8 @@ body {
      tmp-power-radial-check.html is SUPERSEDED — see docs/design-system/03-layout.md
      §5.5 for the full derivation, including the panel-void geometry this cluster
      floats over (same void the sidebar itself sits in). */
-  --cr6-power-left: 110px;
-  --cr6-power-top: 648px;
+  --cr6-power-left: 35px;
+  --cr6-power-top: 672px;
   --cr6-power-main-left: 0px;
   --cr6-power-main-top: 0px;
   transform: translate(-50%, -50%) scale(1);
@@ -4472,8 +4714,11 @@ body {
     linear-gradient(155deg, #182032, #070c14) !important;
   border: 0 !important;
   box-shadow: 0 28px 60px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255,255,255,0.08) !important;
-  -webkit-backdrop-filter: none !important;
-  backdrop-filter: none !important;
+  /* CR-011 §H: console glass — the shell's one blur-permitted surface, stepped
+     per quality tier via --g-blur-console (:root / html.gq-*). .is-dragging
+     still forces backdrop-filter: none !important (higher specificity, below). */
+  -webkit-backdrop-filter: var(--g-blur-console) !important;
+  backdrop-filter: var(--g-blur-console) !important;
   overflow: hidden !important;
   display: block !important;
   contain: paint !important;
@@ -4535,8 +4780,40 @@ body {
 .g-deck-panel .surface.page-history,
 .g-deck-panel .surface.page-build,
 .g-deck-panel .surface.page-companion,
-.g-deck-panel .surface.page-live {
+.g-deck-panel .surface.page-live,
+.g-deck-panel .surface.page-store {
+  /* Boss 2026-07-16 "เข้า settings แล้วพัง": the CR-006 rule above zeroes the
+     surface padding for the dashboard (whose sectors self-position), but these
+     FLOW pages lost their interior inset with it — content jammed into the
+     panel's top-left fillet, slid under the top-right topbar NOTCH (where the
+     subtract clip erases it), and ran behind the lower-left sidebar cut. The
+     pre-CR-006 surface carried `padding: 62px 16px 16px` for exactly this.
+     Insets (panel-local): top 74 clears the notch floor (62) + 12 rhythm;
+     left 104 clears the lower-left sidebar cut (local x80) + 24; right 28 /
+     bottom 24 rhythm. Dashboard keeps padding:0 from the rule above. */
+  padding: 74px 28px 24px 104px !important;
+}
+
+/* CR-013 W1-01: page-live/page-insights/page-store now each own their content
+   fully (LiveMatchPage/InsightsPage/StorePage already manage their own
+   internal scroll — LiveMatchPage and InsightsPage did before this change
+   too, they just inherited page-level scroll harmlessly; StorePage is new
+   here), so they clip at the surface instead of double-scrolling. The
+   remaining flow pages below (voice/account/settings/history/build/
+   companion) keep page-level auto-scroll — unconverted, later-wave territory. */
+.g-deck-panel .surface.page-voice,
+.g-deck-panel .surface.page-account,
+.g-deck-panel .surface.page-settings,
+.g-deck-panel .surface.page-history,
+.g-deck-panel .surface.page-build,
+.g-deck-panel .surface.page-companion {
   overflow-y: auto !important;
+}
+
+.g-deck-panel .surface.page-live,
+.g-deck-panel .surface.page-insights,
+.g-deck-panel .surface.page-store {
+  overflow: hidden !important;
 }
 
 .g-deck-panel .banner.err {
@@ -4548,19 +4825,17 @@ body {
   left: var(--cr6-power-left);
   top: var(--cr6-power-top);
   width: 190px;
-  height: 56px;
+  height: 46px;
   z-index: 35;
   -webkit-app-region: drag;
 }
 
 .g-power-main {
-  /* deck-grid v3: match the nav rail width (84px) + radius (18px) so power reads
-     as the bottom "cap" of the same left-rail stack, not a detached narrow chip. */
-  width: 84px;
-  height: 56px;
+  width: 46px;
+  height: 46px;
   display: grid;
   place-items: center;
-  border-radius: 18px;
+  border-radius: 12px;
   color: #f5f8ff;
   /* Same solid material as .g-sidebar-fab (below) — opaque hex + thin rim, no
      gradient/translucency — so this reads as the SAME frosted-dark family as the
@@ -4586,8 +4861,8 @@ body {
   pointer-events: none;
   opacity: 0;
   transform: scale(.96);
-  /* main button's own center in container-local coords (84x56 at local 0,0) */
-  transform-origin: 42px 28px;
+  /* main button's own center in container-local coords (46x46 at local 0,0) */
+  transform-origin: 23px 23px;
   transition: opacity .14s ease, transform .14s ease;
   -webkit-app-region: no-drag;
 }
@@ -4644,11 +4919,10 @@ body {
   left: var(--cr6-sidebar-left) !important;
   top: var(--cr6-sidebar-top) !important;
   bottom: auto !important;
-  width: 84px !important;
-  /* row 6-9 = y360..632 (272 tall); leaves a 16px gap above the power cap at y648 */
-  height: 272px !important;
+  width: 64px !important;
+  height: 306px !important;
   z-index: 32 !important;
-  padding: 14px 8px !important;
+  padding: 10px 8px !important;
   gap: 0 !important;
   display: block !important;
   border-radius: 18px !important;
@@ -4675,7 +4949,7 @@ body {
 
 .g-nav-item {
   width: 42px !important;
-  height: 30px !important;
+  height: 32px !important;
   border-radius: 10px !important;
   -webkit-app-region: no-drag !important;
 }
@@ -4694,7 +4968,7 @@ body {
   right: auto !important;
   top: var(--cr6-topbar-top) !important;
   width: var(--cr6-topbar-width) !important;
-  height: 60px !important;
+  height: 50px !important;
   z-index: 34 !important;
   padding: 0 14px !important;
   border-radius: 18px !important;
@@ -4805,12 +5079,12 @@ body {
 }
 
 .g-topbar-fab .profile-copy small {
-  font-size: 9px !important;
+  font-size: 10px !important;
   color: #9fb2cb !important;
 }
 
 .g-topbar-fab .profile-caret {
-  font-size: 9px !important;
+  font-size: 10px !important;
   color: #9fb2cb !important;
 }
 
@@ -4829,8 +5103,8 @@ body {
 
 .g-audio-rail {
   position: absolute;
-  left: 128px;
-  top: 90px;
+  left: 42px;
+  top: 40px;
   width: 54px;
   height: 158px;
   z-index: 33;
@@ -4862,13 +5136,13 @@ body {
 }
 
 .g-volume-copy strong {
-  font-size: 9px;
+  font-size: 10px;
   letter-spacing: 0.08em;
   color: #eef5ff;
 }
 
 .g-volume-copy span {
-  font-size: 9px;
+  font-size: 10px;
   color: #94a8c4;
 }
 
@@ -4893,7 +5167,7 @@ body {
   border: 1px solid rgba(150, 185, 230, 0.22);
   background: rgba(15, 21, 34, 0.68);
   color: #9fb2cb;
-  font-size: 8px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: 0.08em;
   cursor: pointer;
@@ -4915,17 +5189,17 @@ body {
    of the new bottom-right notch (matches the topbar notch's 12px rhythm). */
 .g-signals-fab {
   position: absolute !important;
-  left: 918px !important;
-  top: 512px !important;
+  left: 840px !important;
+  top: 532px !important;
   right: auto !important;
   bottom: auto !important;
-  width: 384px !important;
-  height: 200px !important;
+  width: 428px !important;
+  height: 176px !important;
   z-index: 33 !important;
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
   grid-template-rows: 1fr 1fr !important;
-  gap: 8px !important;
+  gap: 10px !important;
 }
 
 .g-sig {
@@ -4959,20 +5233,39 @@ body {
 
 .gm-score-header {
   position: absolute;
-  left: 210px;
-  top: 8px;
-  width: 700px;
+  left: 128px;
+  top: 42px;
+  width: 640px;
   height: 48px;
   display: grid;
   grid-template-columns: 1fr 74px 1fr;
-  align-items: center;
+  /* Two-tier composition (Boss 2026-07-14): scoreline text rides the TOP band,
+     freeing the bottom band for the inline momentum bar + phase chip — the
+     48px box itself is unchanged. Was align-items:center / padding 0. */
+  align-items: start;
   gap: 14px;
-  padding: 0 14px;
-  border: 1px solid rgba(88, 132, 194, 0.36);
-  border-radius: 16px;
-  background: #0b121f;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  padding: 7px 14px 0;
+  /* CR-011 §B two-material rule: instrument matte, no blur/shadow (shell owns those). */
+  border: 1px solid var(--g-hairline);
+  border-radius: 12px;
+  background: var(--g-instrument);
+}
+/* Boss 2026-07-14: team labels hug their own edges (left team flush left,
+   right team flush right). The old 80px chip-lane reservation is gone — the
+   two-tier header puts the chip in the BOTTOM band, the text in the TOP band,
+   so they no longer share vertical space. Ellipsis kept as a guard. */
+.gm-score-header > strong:first-of-type {
+  justify-self: start;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gm-score-header > strong:last-of-type {
+  justify-self: end;
+  text-align: right;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .gm-live-dot {
@@ -4995,12 +5288,55 @@ body {
   letter-spacing: 2px;
 }
 
+/* CR-011 §D/§E phase axis chip (CR011-P3-02) — additive. `.gm-score-header` is
+   a fixed 640x48 box (grid: 1fr / 74px clock / 1fr) with almost no horizontal
+   gap between the clock column and the right-side score text, so this chip is
+   absolutely positioned along the header's own bottom edge (the header is
+   `position:absolute`, i.e. already the containing block for this) instead of
+   joining the grid flow — it can never shift or wrap the centered clock/score,
+   and it stays clear of that horizontally-centered text by sitting below it. */
+.gm-phase-chip {
+  position: absolute;
+  /* Two-tier header (Boss 2026-07-14): the chip lives in the BOTTOM band with
+     the momentum bar — the top band belongs to the scoreline text, which is
+     now flush right, so the old vertically-centred anchor collided with the
+     Dire label (measured live). */
+  right: 10px;
+  bottom: 5px;
+  font: 600 8px/1 var(--g-font-ui);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  padding: 2.5px 7px;
+  border-radius: 999px;
+  border: 1px solid var(--g-hairline-2);
+  background: var(--g-instrument-2);
+  color: var(--g-text-dim);
+  white-space: nowrap;
+  pointer-events: none;
+}
+.gm-phase-chip-standby { color: var(--g-text-mute); border-color: var(--g-hairline); }
+.gm-phase-chip-prep {
+  color: var(--g-ice-500);
+  border-color: rgba(143, 212, 255, 0.3);
+  background: rgba(143, 212, 255, 0.1);
+}
+.gm-phase-chip-live {
+  color: var(--g-lime-500);
+  border-color: var(--g-lime-line);
+  background: var(--g-lime-soft);
+}
+.gm-phase-chip-debrief {
+  color: var(--g-ice-300);
+  border-color: rgba(143, 212, 255, 0.3);
+  background: rgba(143, 212, 255, 0.06);
+}
+
 .gm-stats-bar {
   position: absolute;
-  left: 210px;
-  top: 62px;
-  width: 700px;
-  height: 44px;
+  left: 128px;
+  top: 98px;
+  width: 478px;
+  height: 42px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
@@ -5010,17 +5346,16 @@ body {
   min-width: 0;
   padding: 8px 10px;
   border-radius: 10px;
-  border: 1px solid rgba(88, 132, 194, 0.28);
-  background: #0d1727;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  /* CR-011 §B two-material rule: instrument matte, no blur/shadow. */
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument);
 }
 
 .gm-mini-stat span,
 .gm-mini-stat small,
 .gm-card-head span {
   display: block;
-  font-size: 9px;
+  font-size: 10px;
   line-height: 1;
   color: #93a6c3;
   letter-spacing: 0.08em;
@@ -5036,35 +5371,50 @@ body {
 
 .gm-battle-grid {
   position: absolute;
-  left: 210px;
-  top: 156px;
-  width: 700px;
-  /* zone A hero grid (v3 grid: C3-C9, below the momentum strip → y156-500). 5
-     hero cards per column fit with room. */
-  height: 344px;
+  left: 128px;
+  top: 148px;
+  width: 640px;
+  /* 5 hero cards per column: each card's min-content is ~44px (padding+border+2
+     text lines) so the 5-row 1fr grid needs ~248px; 260 was ~8px short and the
+     bottom card overflowed into .gm-sector-log below. 276 gives ~45px tracks. */
+  height: 276px;
   display: grid;
-  grid-template-columns: 190px 1fr 190px;
+  grid-template-columns: 170px 1fr 170px;
   gap: 10px;
   padding: 10px;
-  border-radius: 16px;
-  border: 1px solid rgba(88, 132, 194, 0.34);
-  background: #080e18;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  border-radius: 14px;
+  /* CR-011 §B two-material rule: instrument matte, no blur/shadow. */
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument);
 }
 
 .gm-slot-column {
-  display: grid;
-  grid-template-rows: repeat(5, 1fr);
+  /* CR012-P3-02: was `display:grid; grid-template-rows: repeat(5, 1fr)`. A
+     flex `1fr` grid track's automatic MINIMUM size is `auto` (min-content),
+     not 0 — so a card whose content needs more than its even 1/5 share
+     forces that row track to grow past it, pushing the column's total
+     height past the frozen 276px `.gm-battle-grid` box (min-height:auto is
+     the same trap flex items have without min-height:0). Flex column + each
+     card `flex:1 1 0; min-height:0` below removes that floor structurally:
+     the 5 cards ALWAYS divide the column height evenly at any stage scale,
+     clipping (not growing) if content ever needs more room. */
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
   gap: 7px;
 }
 
 .gm-hero-slot {
   position: relative;
+  /* CR012-P3-02: even division + hard clip — see .gm-slot-column comment. */
+  flex: 1 1 0;
+  min-height: 0;
+  overflow: hidden;
   padding: 8px 10px;
   border-radius: 10px;
-  border: 1px solid rgba(88, 132, 194, 0.24);
-  background: #0a121e;
+  /* CR-011 §B two-material rule: instrument matte, no blur/shadow. */
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument);
 }
 
 .gm-hero-slot strong,
@@ -5087,6 +5437,9 @@ body {
 
 .gm-hero-slot span {
   margin-top: 3px;
+  /* Stays 10px (micro tier, NOT the 11px caption floor): the battle grid's frozen 276px
+     height gives each of the 5 cards a ~45.2px track with ~1px slack (commit 5269cda3);
+     an 11px caption re-overflows the bottom card into sector-log (Opus gate, CR011-P1). */
   font-size: 10px;
   color: #aebbd0;
 }
@@ -5100,12 +5453,180 @@ body {
   font-weight: 800;
 }
 
+/* ===== CR-011 §E phase axis: standby/prep/debrief seat content (CR011-P3-02) =====
+   Additive only — `.gm-battle-grid`'s own geometry/CSS above is untouched; these
+   classes style the swapped-in content that replaces the hero columns + minimap
+   for non-live phases. `.gm-battle-alt` spans the frozen 3-column grid track
+   (170px / 1fr / 170px) as one full-width, full-height, clipped root — the
+   "defensive overflow:hidden" the seat requires so nothing can spill into
+   `.gm-sector-log` below. */
+.gm-battle-alt {
+  grid-column: 1 / -1;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.gm-rundown {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 4px;
+}
+
+.gm-rundown-note {
+  flex: none;
+  font: 500 11px/1.5 var(--g-font-ui);
+  color: var(--g-ice-500);
+  background: rgba(143, 212, 255, 0.08);
+  border: 1px solid rgba(143, 212, 255, 0.24);
+  border-radius: 8px;
+  padding: 7px 10px;
+}
+
+.gm-rundown-list {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  overflow: hidden;
+}
+
+.gm-rundown-row {
+  display: grid;
+  grid-template-columns: 20px 1fr auto;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument-2);
+}
+
+.gm-rundown-glyph {
+  font: 700 12px/1 var(--g-font-mono);
+  text-align: center;
+  color: var(--g-text-mute);
+}
+
+.gm-rundown-row.ready .gm-rundown-glyph {
+  color: var(--g-ice-500);
+}
+
+.gm-rundown-label {
+  font: 500 12px/1.3 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+
+.gm-rundown-row.ready .gm-rundown-label {
+  color: var(--g-text);
+}
+
+.gm-rundown-value {
+  font: 500 12px/1 var(--g-font-mono);
+  color: var(--g-text-mute);
+  white-space: nowrap;
+}
+
+.gm-rundown-row.ready .gm-rundown-value {
+  color: var(--g-ice-300);
+}
+
+/* -- debrief timeline (most recent archived match log) -- */
+.gm-debrief {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+  padding: 4px;
+}
+
+.gm-debrief-head {
+  flex: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.gm-debrief-title {
+  font: 600 10px/1 var(--g-font-ui);
+  letter-spacing: 0.8px;
+  text-transform: uppercase;
+  color: var(--g-text-mute);
+}
+
+.gm-debrief-back {
+  font: 500 10.5px/1 var(--g-font-ui);
+  color: var(--g-ice-500);
+  background: transparent;
+  border: 1px solid rgba(143, 212, 255, 0.3);
+  border-radius: 999px;
+  padding: 5px 10px;
+  cursor: pointer;
+}
+.gm-debrief-back:hover {
+  background: rgba(143, 212, 255, 0.08);
+}
+
+.gm-debrief-empty {
+  flex: none;
+  font: 400 12px/1.6 var(--g-font-ui);
+  color: var(--g-text-dim);
+  padding: 8px 2px;
+}
+
+.gm-debrief-list {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.gm-debrief-row {
+  display: grid;
+  grid-template-columns: 54px 68px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  padding: 5px 6px;
+  border-radius: 7px;
+}
+
+.gm-debrief-row-time {
+  font: 400 9.5px/1.6 var(--g-font-mono);
+  color: var(--g-text-mute);
+}
+
+.gm-debrief-row-chip {
+  font: 600 8px/1 var(--g-font-ui);
+  letter-spacing: 0.6px;
+  color: var(--g-text-dim);
+}
+.gm-debrief-row-chip-gank { color: var(--g-warn); }
+.gm-debrief-row-chip-revision { color: var(--g-danger); }
+.gm-debrief-row-chip-missing { color: var(--g-text-dim); }
+.gm-debrief-row-chip-start { color: var(--g-ice-300); }
+.gm-debrief-row-chip-other { color: var(--g-text-mute); }
+
+.gm-debrief-row-text {
+  margin: 0;
+  font: 400 11px/1.6 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+
 .gm-minimap {
   position: relative;
   overflow: hidden;
   border-radius: 10px;
-  border: 1px solid rgba(88, 132, 194, 0.28);
-  background: #121a22;
+  /* CR-011 §B two-material rule: instrument matte (ground uses the slightly
+     lifted instrument-2 tone), no blur/shadow. */
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument-2);
 }
 
 /* Live in-game minimap mirror (real captured pixels). */
@@ -5119,7 +5640,13 @@ body {
   inset: 0;
   width: 100%;
   height: 100%;
-  object-fit: contain;
+  /* Boss 2026-07-16: the captured mirror is a SQUARE crop (region.rs side==side),
+     but the .gm-minimap box isn't exactly square (~260x256 inside the frozen
+     battle-grid) — `contain` fit the whole square inside, leaving a visible
+     letterbox band on the slightly-shorter axis. `cover` fills the box exactly,
+     cropping a couple px off the wider axis instead — the box already clips via
+     `overflow:hidden` on .gm-minimap, so this crops safely with no distortion. */
+  object-fit: cover;
   image-rendering: auto;
   -webkit-user-select: none;
   user-select: none;
@@ -5128,29 +5655,21 @@ body {
 
 /* --- Game momentum meter + phase --- */
 .gm-momentum {
-  /* deck-grid v3: explicit slot in zone A (C3-C9), between stats and hero grid.
-     Was an in-flow <section> among absolute siblings → collapsed to (0,0) and
-     was painted behind the panel. Now pinned in stage coords like its peers. */
-  position: absolute;
-  left: 210px;
-  top: 110px;
-  width: 700px;
-  height: 40px;
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  gap: 4px;
-  padding: 6px 12px;
+  gap: 5px;
+  padding: 8px 12px;
   border-radius: 10px;
-  border: 1px solid rgba(88, 132, 194, 0.2);
-  background: rgba(18, 20, 28, 0.55);
+  /* CR-011 §B two-material rule: instrument matte (was translucent), no blur/shadow. */
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument);
 }
 .gm-mom-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 800;
   letter-spacing: 0.08em;
 }
@@ -5224,17 +5743,25 @@ body {
 
 .gm-agent-card {
   position: absolute;
-  /* zone B (agent sector), stage coords — v3 grid C10-C13, rows 2-7 */
-  left: 910px;
-  top: 80px;
-  width: 400px;
-  height: 416px;
+  left: 808px;
+  /* top clears the topbar-notch floor (panel-local y74) + 12px rhythm — was 42px,
+     which pushed the card 32px up into the notch void where the panel clip-path
+     chopped its top-right corner ("แหว่ง"). Column below is empty so it just shifts down. */
+  top: 86px;
+  width: 440px;
+  height: 354px;
   padding: 14px;
-  border-radius: 18px;
-  border: 1px solid rgba(88, 132, 194, 0.34);
-  background: #0a121e;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  border-radius: 14px;
+  /* CR-011 §B two-material rule: instrument matte, no blur/shadow. */
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument);
+  /* The now-block is content-driven (long G-Master advice) — the frozen 354px
+     box must clip, never spill toward sector-log (Opus gate, CR011-P2). */
+  overflow: hidden;
+}
+.gm-onair-pack {
+  color: var(--g-text-mute);
+  font-size: 10px;
 }
 
 .gm-card-head {
@@ -5274,20 +5801,20 @@ body {
 
 .gm-sector-log {
   position: absolute;
-  /* zone C (alert deck / companion state), stage coords — v3 grid C3-C9, rows 8-10 */
-  left: 210px;
-  top: 512px;
-  width: 700px;
-  height: 200px;
+  left: 128px;
+  /* follows the taller battle-grid (bottom now 424) + 10px rhythm; bottom 604 still
+     clears the surface, leaving headroom. */
+  top: 434px;
+  width: 620px;
+  height: 170px;
   display: grid;
   grid-template-columns: 1fr 260px;
   gap: 16px;
   padding: 18px;
-  border-radius: 18px;
-  border: 1px solid rgba(88, 132, 194, 0.34);
-  background: #0a121e;
-  -webkit-backdrop-filter: none;
-  backdrop-filter: none;
+  border-radius: 14px;
+  /* CR-011 §B two-material rule: instrument matte, no blur/shadow. */
+  border: 1px solid var(--g-hairline);
+  background: var(--g-instrument);
 }
 
 .gm-sector-log h3 {
@@ -5305,105 +5832,1001 @@ body {
   gap: 8px;
 }
 
-/* ===== CR-003 Phase 1: Store / Wallet / Top-up (§3.2/§3.3) ===== */
+/* ===== CR-003 Phase 1: Store / Wallet / Top-up (§3.2/§3.3) =====
+   CR-013 W4-01: re-skinned from CR-003's inline navy/cyan (#64c7ff/#31d0a0-
+   family "second blue" CR-011 §1.5 condemned) to COLD BOOTH --g-* tokens.
+   Structure/sizing untouched — colors only. See CR-013 §5.2. */
 
 /* -- Store -- */
 .store-page { padding: 4px 2px 12px; height: 100%; min-height: 0; display: flex; flex-direction: column; }
-.store-title { font-size: 22px; font-weight: 800; color: #eaf2ff; margin: 6px 0 4px; }
-.store-lead { font-size: 12.5px; color: #8794a6; max-width: 640px; margin: 0 0 14px; line-height: 1.5; }
+.store-title { font-size: 22px; font-weight: 800; color: var(--g-text); margin: 6px 0 4px; }
+.store-lead { font-size: 12.5px; color: var(--g-text-mute); max-width: 640px; margin: 0 0 14px; line-height: 1.5; }
 .store-frame { flex: 1; min-height: 0; overflow: hidden; position: relative; }
 .store-grid { display: grid; gap: 16px; height: 100%; align-content: start; }
-.store-card { position: relative; background: rgba(13, 20, 36, 0.72); border: 1px solid rgba(129, 180, 255, 0.14); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
-.store-card-badge { position: absolute; top: 10px; left: 10px; z-index: 1; background: rgba(129, 180, 255, 0.9); color: #06111f; font-size: 10.5px; font-weight: 700; padding: 4px 8px; border-radius: 999px; }
-.store-card-banner { height: 96px; background: rgba(9, 15, 27, 0.9) center / cover no-repeat; border-bottom: 1px solid rgba(129, 180, 255, 0.14); }
+.store-card { position: relative; background: var(--g-instrument); border: 1px solid var(--g-hairline); border-radius: 16px; overflow: hidden; display: flex; flex-direction: column; }
+.store-card-badge { position: absolute; top: 10px; left: 10px; z-index: 1; background: var(--g-ice-500); color: var(--g-void); font-size: 10.5px; font-weight: 700; padding: 4px 8px; border-radius: 999px; }
+.store-card-banner { height: 96px; background: var(--g-instrument-2) center / cover no-repeat; border-bottom: 1px solid var(--g-hairline); }
 .store-card-body { padding: 10px 12px 6px; flex: 1; min-height: 0; }
-.store-card-title { font-size: 14px; font-weight: 700; color: #eaf2ff; margin-bottom: 4px; }
-.store-card-desc { font-size: 11.5px; color: #8794a6; line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+.store-card-title { font-size: 14px; font-weight: 700; color: var(--g-text); margin-bottom: 4px; }
+.store-card-desc { font-size: 11.5px; color: var(--g-text-mute); line-height: 1.4; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
 .store-card-footer { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 10px 12px 12px; }
-.store-preview-btn { border: 1px solid rgba(129, 180, 255, 0.22); background: transparent; color: #9fb0cc; border-radius: 10px; padding: 6px 10px; font-size: 11.5px; cursor: pointer; }
-.store-buy-btn { border: 0; border-radius: 10px; padding: 7px 12px; font-weight: 700; font-size: 12px; cursor: pointer; background: rgba(129, 180, 255, 0.2); color: #cfe2ff; }
+.store-preview-btn { border: 1px solid var(--g-hairline-2); background: transparent; color: var(--g-text-mute); border-radius: 10px; padding: 6px 10px; font-size: 11.5px; cursor: pointer; }
+/* CR-013 W4 gate fix (Opus N1): primary "ซื้อ" CTA reads as an accent action
+   (ice fill / ink text), not a ghost control indistinguishable from secondary. */
+.store-buy-btn { border: 0; border-radius: 10px; padding: 7px 12px; font-weight: 700; font-size: 12px; cursor: pointer; background: var(--g-ice-500); color: var(--g-ink); }
 .store-buy-btn:disabled { opacity: 0.6; cursor: default; }
-.store-buy-btn.insufficient { background: rgba(255, 122, 122, 0.14); color: #ffb0b0; cursor: default; }
-.store-buy-btn.signin { background: rgba(255, 199, 107, 0.16); color: #ffcf7a; }
-.store-owned-badge { font-size: 11.5px; font-weight: 700; color: #5be3a7; }
+.store-buy-btn.insufficient { background: color-mix(in srgb, var(--g-danger) 14%, transparent); color: var(--g-danger); cursor: default; }
+.store-buy-btn.signin { background: color-mix(in srgb, var(--g-coin) 16%, transparent); color: var(--g-coin); }
+.store-owned-badge { font-size: 11.5px; font-weight: 700; color: var(--g-ok); }
 .store-insufficient { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
-.store-link-btn { border: 0; background: transparent; color: #81b4ff; font-size: 11px; cursor: pointer; padding: 0; text-decoration: underline; }
+.store-link-btn { border: 0; background: transparent; color: var(--g-ice-300); font-size: 11px; cursor: pointer; padding: 0; text-decoration: underline; }
 .store-pager { display: flex; align-items: center; justify-content: center; gap: 14px; padding-top: 10px; }
-.store-pager-btn { border: 1px solid rgba(129, 180, 255, 0.22); background: rgba(13, 20, 36, 0.72); color: #cfe2ff; border-radius: 10px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
+.store-pager-btn { border: 1px solid var(--g-hairline-2); background: var(--g-instrument); color: var(--g-text-dim); border-radius: 10px; padding: 6px 12px; font-size: 12px; cursor: pointer; }
 .store-pager-btn:disabled { opacity: 0.4; cursor: default; }
-.store-pager-label { font-size: 12px; color: #8794a6; }
-.store-hint { font-size: 12.5px; color: #8794a6; padding: 24px 4px; }
-.store-msg { font-size: 11.5px; color: #cfe2ff; padding-top: 6px; }
-.store-confirm-overlay { position: fixed; inset: 0; background: rgba(4, 7, 13, 0.6); display: flex; align-items: center; justify-content: center; z-index: 50; }
-.store-confirm-sheet { background: #0d1424; border: 1px solid rgba(129, 180, 255, 0.28); border-radius: 16px; padding: 20px; width: 320px; display: flex; flex-direction: column; gap: 12px; }
-.store-confirm-title { font-size: 14px; font-weight: 700; color: #eaf2ff; }
-.store-confirm-item { font-size: 12.5px; color: #8794a6; }
+.store-pager-label { font-size: 12px; color: var(--g-text-mute); }
+.store-hint { font-size: 12.5px; color: var(--g-text-mute); padding: 24px 4px; }
+.store-msg { font-size: 11.5px; color: var(--g-text-dim); padding-top: 6px; }
+.store-confirm-overlay { position: fixed; inset: 0; background: color-mix(in srgb, var(--g-void) 60%, transparent); display: flex; align-items: center; justify-content: center; z-index: 50; }
+.store-confirm-sheet { background: var(--g-instrument); border: 1px solid var(--g-hairline-2); border-radius: 16px; padding: 20px; width: 320px; display: flex; flex-direction: column; gap: 12px; }
+.store-confirm-title { font-size: 14px; font-weight: 700; color: var(--g-text); }
+.store-confirm-item { font-size: 12.5px; color: var(--g-text-mute); }
 .store-confirm-actions { display: flex; justify-content: flex-end; gap: 10px; }
-.store-confirm-cancel { border: 1px solid rgba(129, 180, 255, 0.22); background: transparent; color: #9fb0cc; border-radius: 10px; padding: 8px 14px; cursor: pointer; }
-.store-confirm-ok { border: 0; background: rgba(129, 180, 255, 0.22); color: #cfe2ff; border-radius: 10px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
+.store-confirm-cancel { border: 1px solid var(--g-hairline-2); background: transparent; color: var(--g-text-mute); border-radius: 10px; padding: 8px 14px; cursor: pointer; }
+.store-confirm-ok { border: 0; background: var(--g-ice-500); color: var(--g-ink); border-radius: 10px; padding: 8px 14px; font-weight: 700; cursor: pointer; }
 .store-confirm-ok:disabled { opacity: 0.6; cursor: default; }
 
 /* -- Wallet -- */
 .wallet-tab { display: flex; flex-direction: column; gap: 14px; height: 100%; min-height: 0; }
-.wallet-hero { background: rgba(13, 20, 36, 0.72); border: 1px solid rgba(129, 180, 255, 0.14); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
+.wallet-hero { background: var(--g-instrument); border: 1px solid var(--g-hairline); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 8px; }
 .wallet-balance-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
 .wallet-balance { display: flex; align-items: baseline; gap: 6px; }
 .wallet-balance-icon { font-size: 18px; }
-.wallet-balance-num { font-size: 20px; font-weight: 800; color: #eaf2ff; }
-.wallet-balance.shard .wallet-balance-num { color: #a9cbff; }
-.wallet-balance.coin .wallet-balance-num { color: #ffd98f; }
-.wallet-balance-label { font-size: 11px; color: #8794a6; }
-.wallet-topup-btn { position: relative; margin-left: auto; border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 12.5px; cursor: pointer; background: rgba(129, 180, 255, 0.2); color: #cfe2ff; }
-.wallet-pending-badge { position: absolute; top: -9px; right: -8px; background: #ffb14a; color: #241300; font-size: 9.5px; font-weight: 800; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
-.wallet-shard-meta { font-size: 11.5px; color: #9fb0cc; }
-.wallet-lifetime-meta { font-size: 11px; color: #7f8ba6; }
-.wallet-hint { font-size: 12px; color: #8794a6; padding: 6px 2px; }
-.wallet-ledger-preview { background: rgba(13, 20, 36, 0.72); border: 1px solid rgba(129, 180, 255, 0.14); border-radius: 16px; padding: 14px 16px; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 8px; }
-.wallet-ledger-head { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: #8794a6; }
-.wallet-view-all { border: 0; background: transparent; color: #81b4ff; font-size: 11.5px; cursor: pointer; padding: 0; }
+.wallet-balance-num { font-size: 20px; font-weight: 800; color: var(--g-text); }
+.wallet-balance.shard .wallet-balance-num { color: var(--g-ice-300); }
+.wallet-balance.coin .wallet-balance-num { color: var(--g-coin); }
+.wallet-balance-label { font-size: 11px; color: var(--g-text-mute); }
+/* CR-013 W4 gate fix (Opus N1): top-up is a money action → coin-accent CTA. */
+.wallet-topup-btn { position: relative; margin-left: auto; border: 0; border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 12.5px; cursor: pointer; background: var(--g-coin); color: var(--g-void); }
+.wallet-pending-badge { position: absolute; top: -9px; right: -8px; background: var(--g-warn); color: var(--g-void); font-size: 9.5px; font-weight: 800; padding: 2px 6px; border-radius: 999px; white-space: nowrap; }
+.wallet-shard-meta { font-size: 11.5px; color: var(--g-text-dim); }
+.wallet-lifetime-meta { font-size: 11px; color: var(--g-text-mute); }
+.wallet-hint { font-size: 12px; color: var(--g-text-mute); padding: 6px 2px; }
+.wallet-ledger-preview { background: var(--g-instrument); border: 1px solid var(--g-hairline); border-radius: 16px; padding: 14px 16px; flex: 1; min-height: 0; overflow: hidden; display: flex; flex-direction: column; gap: 8px; }
+.wallet-ledger-head { display: flex; align-items: center; justify-content: space-between; font-size: 11.5px; color: var(--g-text-mute); }
+.wallet-view-all { border: 0; background: transparent; color: var(--g-ice-300); font-size: 11.5px; cursor: pointer; padding: 0; }
 .wallet-ledger-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
-.wallet-ledger-row { display: grid; grid-template-columns: 20px 1fr auto auto; align-items: center; gap: 10px; font-size: 12px; padding: 6px 0; border-top: 1px solid rgba(129, 180, 255, 0.08); }
+.wallet-ledger-row { display: grid; grid-template-columns: 20px 1fr auto auto; align-items: center; gap: 10px; font-size: 12px; padding: 6px 0; border-top: 1px solid var(--g-hairline); }
 .wallet-ledger-row:first-child { border-top: none; }
 .wallet-ledger-icon { text-align: center; }
-.wallet-ledger-desc { color: #dce9ff; }
+.wallet-ledger-desc { color: var(--g-text-dim); }
 .wallet-ledger-amount { font-weight: 700; font-variant-numeric: tabular-nums; }
-.wallet-ledger-amount.positive { color: #5be3a7; }
-.wallet-ledger-amount.negative { color: #ff9f9f; }
-.wallet-ledger-date { color: #7f8ba6; font-size: 10.5px; white-space: nowrap; }
-.wallet-msg { font-size: 11.5px; color: #cfe2ff; }
+.wallet-ledger-amount.positive { color: var(--g-ok); }
+.wallet-ledger-amount.negative { color: var(--g-danger); }
+.wallet-ledger-date { color: var(--g-text-mute); font-size: 10.5px; white-space: nowrap; }
+.wallet-msg { font-size: 11.5px; color: var(--g-text-dim); }
 
 /* -- Top-up modal -- */
-.topup-overlay { position: fixed; inset: 0; background: rgba(4, 7, 13, 0.62); display: flex; align-items: center; justify-content: center; z-index: 60; }
-.topup-modal { position: relative; width: 360px; max-height: 560px; background: #0d1424; border: 1px solid rgba(129, 180, 255, 0.28); border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
-.topup-close { position: absolute; top: 10px; right: 12px; border: 0; background: transparent; color: #8794a6; font-size: 18px; cursor: pointer; line-height: 1; }
-.topup-step-label { font-size: 10.5px; letter-spacing: 0.6px; text-transform: uppercase; color: #7f8ba6; }
+.topup-overlay { position: fixed; inset: 0; background: color-mix(in srgb, var(--g-void) 60%, transparent); display: flex; align-items: center; justify-content: center; z-index: 60; }
+.topup-modal { position: relative; width: 360px; max-height: 560px; background: var(--g-instrument); border: 1px solid var(--g-hairline-2); border-radius: 18px; padding: 22px; display: flex; flex-direction: column; gap: 12px; overflow: hidden; }
+.topup-close { position: absolute; top: 10px; right: 12px; border: 0; background: transparent; color: var(--g-text-mute); font-size: 18px; cursor: pointer; line-height: 1; }
+.topup-step-label { font-size: 10.5px; letter-spacing: 0.6px; text-transform: uppercase; color: var(--g-text-mute); }
 .topup-step { display: flex; flex-direction: column; gap: 12px; min-height: 0; overflow: hidden; }
-.topup-h3 { font-size: 15px; font-weight: 800; color: #eaf2ff; margin: 0; }
-.topup-hint { font-size: 12px; color: #8794a6; }
+.topup-h3 { font-size: 15px; font-weight: 800; color: var(--g-text); margin: 0; }
+.topup-hint { font-size: 12px; color: var(--g-text-mute); }
 .topup-hint.small { font-size: 10.5px; text-align: center; }
 .topup-package-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; }
-.topup-package-card { position: relative; border: 1px solid rgba(129, 180, 255, 0.2); background: rgba(9, 15, 27, 0.7); border-radius: 12px; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; color: #dce9ff; }
-.topup-package-card.best { border-color: rgba(255, 199, 107, 0.6); }
-.topup-package-badge { position: absolute; top: -9px; background: #ffc76b; color: #241300; font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 999px; }
-.topup-package-title { font-size: 11px; color: #9fb0cc; }
+.topup-package-card { position: relative; border: 1px solid var(--g-hairline-2); background: var(--g-instrument-2); border-radius: 12px; padding: 12px 8px; display: flex; flex-direction: column; align-items: center; gap: 4px; cursor: pointer; color: var(--g-text-dim); }
+.topup-package-card.best { border-color: color-mix(in srgb, var(--g-coin) 60%, transparent); }
+.topup-package-badge { position: absolute; top: -9px; background: var(--g-coin); color: var(--g-void); font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 999px; }
+.topup-package-title { font-size: 11px; color: var(--g-text-mute); }
 .topup-package-coins { font-size: 13px; font-weight: 700; }
-.topup-package-bonus { color: #5be3a7; }
-.topup-package-price { font-size: 12px; color: #8794a6; }
+.topup-package-bonus { color: var(--g-ok); }
+.topup-package-price { font-size: 12px; color: var(--g-text-mute); }
 .topup-provider-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-.topup-provider-btn { border: 1px solid rgba(129, 180, 255, 0.22); background: rgba(9, 15, 27, 0.7); color: #dce9ff; border-radius: 12px; padding: 18px 10px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; }
+.topup-provider-btn { border: 1px solid var(--g-hairline-2); background: var(--g-instrument-2); color: var(--g-text-dim); border-radius: 12px; padding: 18px 10px; font-weight: 700; font-size: 13px; cursor: pointer; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .topup-provider-btn:disabled { opacity: 0.5; cursor: default; }
 .topup-provider-icon { font-size: 22px; }
-.topup-back-btn { align-self: flex-start; border: 0; background: transparent; color: #81b4ff; font-size: 11.5px; cursor: pointer; padding: 0; }
+.topup-back-btn { align-self: flex-start; border: 0; background: transparent; color: var(--g-ice-300); font-size: 11.5px; cursor: pointer; padding: 0; }
 .topup-payment { display: flex; flex-direction: column; align-items: center; gap: 10px; padding: 6px 0; }
+/* #fff kept literal on purpose: a QR code needs a real white quiet-zone to
+   scan reliably — this is a functional requirement, not a theme color. */
 .topup-qr { width: 180px; height: 180px; border-radius: 12px; background: #fff; padding: 8px; }
 .topup-qr.expired { opacity: 0.35; }
-.topup-countdown { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; color: #eaf2ff; }
-.topup-pending-pulse { font-size: 12px; color: #ffc76b; animation: topup-pulse 1.4s ease-in-out infinite; }
+.topup-countdown { font-size: 22px; font-weight: 800; font-variant-numeric: tabular-nums; color: var(--g-text); }
+.topup-pending-pulse { font-size: 12px; color: var(--g-coin); animation: topup-pulse 1.4s ease-in-out infinite; }
 @keyframes topup-pulse { 0%, 100% { opacity: 0.5; } 50% { opacity: 1; } }
-.topup-success { font-size: 14px; font-weight: 700; color: #5be3a7; text-align: center; line-height: 1.6; }
-.topup-error { font-size: 13px; color: #ff9f9f; display: flex; flex-direction: column; align-items: center; gap: 10px; }
-.topup-retry-btn, .topup-check-btn { border: 1px solid rgba(129, 180, 255, 0.28); background: rgba(129, 180, 255, 0.16); color: #cfe2ff; border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 12px; cursor: pointer; }
+.topup-success { font-size: 14px; font-weight: 700; color: var(--g-ok); text-align: center; line-height: 1.6; }
+.topup-error { font-size: 13px; color: var(--g-danger); display: flex; flex-direction: column; align-items: center; gap: 10px; }
+.topup-retry-btn, .topup-check-btn { border: 0; background: var(--g-ice-500); color: var(--g-ink); border-radius: 10px; padding: 8px 14px; font-weight: 700; font-size: 12px; cursor: pointer; }
 .topup-retry-btn:disabled { opacity: 0.5; cursor: default; }
-.topup-spinner { width: 26px; height: 26px; border-radius: 50%; border: 3px solid rgba(129, 180, 255, 0.2); border-top-color: #81b4ff; animation: topup-spin 0.9s linear infinite; }
+.topup-spinner { width: 26px; height: 26px; border-radius: 50%; border: 3px solid var(--g-hairline-2); border-top-color: var(--g-ice-300); animation: topup-spin 0.9s linear infinite; }
 @keyframes topup-spin { to { transform: rotate(360deg); } }
-.topup-msg { font-size: 11px; color: #cfe2ff; }
+.topup-msg { font-size: 11px; color: var(--g-text-dim); }
+
+/* ===== CR-011 §B: ON AIR console + tally dots (P2 Honest booth) =====
+   Additive only — .gm-agent-card / .gm-sector-log geometry above is untouched.
+   Ported from docs/change request/assets/cr011-cold-booth-mock.html
+   (.tally / .chip / .now / .log / .utt), namespaced gm-onair-*/gm-tally. */
+
+/* -- tally dot (broadcast on-air light): off = idle matte square, onair = lime
+   + glow-decay pulse. Used in the ON AIR header and the two gm-sector-log h3s. */
+.gm-tally {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 1.5px;
+  background: #1b2434;
+  margin-right: 7px;
+  vertical-align: middle;
+  flex: none;
+}
+.gm-tally-onair {
+  background: var(--g-lime-500);
+  box-shadow: 0 0 8px rgba(163, 230, 53, 0.8);
+  animation: gm-tally-decay 0.6s ease-out;
+}
+@keyframes gm-tally-decay {
+  from { box-shadow: 0 0 14px rgba(163, 230, 53, 1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gm-tally-onair { animation: none; }
+}
+
+/* -- ON AIR console: fills the frozen 440x354 .gm-agent-card box. -- */
+.gm-onair {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  min-height: 0;
+}
+
+.gm-onair-head {
+  display: flex;
+  align-items: center;
+  flex: none;
+}
+
+.gm-onair-title {
+  font: 600 10px/1 var(--g-font-ui);
+  letter-spacing: 1px;
+  color: var(--g-text-mute);
+}
+
+.gm-onair-end {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.gm-onair-chip {
+  font: 600 8px/1 var(--g-font-ui);
+  letter-spacing: 0.8px;
+  border: 1px solid var(--g-hairline-2);
+  border-radius: 4px;
+  padding: 2.5px 5px;
+  color: var(--g-text-dim);
+}
+.gm-onair-chip-cloud { color: var(--g-ice-500); border-color: rgba(143, 212, 255, 0.3); }
+.gm-onair-chip-local { color: var(--g-ice-300); border-color: rgba(143, 212, 255, 0.3); }
+
+.gm-onair-agent {
+  font: 500 10px/1 var(--g-font-ui);
+  color: var(--g-text-mute);
+}
+
+.gm-onair-now {
+  flex: none;
+  padding: 12px 2px 10px;
+  border-bottom: 1px solid var(--g-hairline);
+  min-height: 0;
+}
+
+.gm-onair-now-meta {
+  font: 500 10px/1 var(--g-font-mono);
+  color: var(--g-text-mute);
+}
+
+.gm-onair-now-text {
+  margin: 6px 0 0;
+  font: 500 15px/1.6 var(--g-font-ui);
+  color: var(--g-text);
+}
+
+.gm-onair-empty {
+  flex: none;
+  padding: 12px 2px;
+  font: 400 12px/1.6 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+
+/* list area — the card is a fixed box; clip rather than let a 31st row push
+   the seat out of its frozen 354px height. */
+.gm-onair-log {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  padding-top: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.gm-onair-row {
+  display: grid;
+  grid-template-columns: 44px 52px 1fr;
+  gap: 8px;
+  align-items: baseline;
+  padding: 6px 4px;
+  border-radius: 7px;
+  min-height: 0;
+}
+
+.gm-onair-row-time {
+  font: 400 9.5px/1.6 var(--g-font-mono);
+  color: var(--g-text-mute);
+}
+
+.gm-onair-row-chip {
+  font: 600 8px/1 var(--g-font-ui);
+  letter-spacing: 0.6px;
+  color: var(--g-text-dim);
+}
+.gm-onair-row-chip-signal { color: var(--g-warn); }
+.gm-onair-row-chip-master { color: var(--g-ice-300); }
+.gm-onair-row-chip-announcer { color: var(--g-coin); }
+
+.gm-onair-row-text {
+  margin: 0;
+  font: 400 11px/1.6 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+
+.gm-onair-retract {
+  color: var(--g-danger);
+  text-decoration: line-through 1px rgba(244, 63, 94, 0.85);
+  text-underline-offset: 2px;
+}
+
+/* === CR-011 §L/§M/CR011-P4a-01 — Maiden Line palette + shortcut sheet ===
+   Both float in WINDOW space (fixed to the viewport, mounted as siblings of
+   `.g-deck-stage` in CommandDeck.tsx — NOT inside the scaled/clipped stage),
+   at `--g-z-pop`, the console-glass material (one of the few blur-permitted
+   surfaces per §B) via var(--g-blur-console) so quality tiers (gq-eco = no
+   blur) still apply. Additive only — no existing class touched. */
+
+.gm-palette-backdrop,
+.gm-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: var(--g-z-pop);
+  display: flex;
+  justify-content: center;
+  cursor: default;
+}
+
+.gm-palette-backdrop {
+  align-items: flex-start;
+}
+.gm-sheet-backdrop {
+  align-items: center;
+  background: rgba(4, 7, 13, 0.5);
+}
+
+.gm-palette,
+.gm-sheet {
+  position: relative;
+  background: rgba(11, 14, 22, 0.88);
+  border: 1px solid var(--g-glass-rim);
+  border-radius: var(--g-r-panel);
+  box-shadow: var(--g-shadow-fab);
+  -webkit-backdrop-filter: var(--g-blur-console);
+  backdrop-filter: var(--g-blur-console);
+  color: var(--g-text);
+  animation: gm-pop-in 140ms var(--g-ease);
+  transform-origin: top center;
+}
+
+@keyframes gm-pop-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gm-palette, .gm-sheet { animation: none; }
+}
+
+/* Maiden Line — floats top-center, ~18% down, max ~7 rows tall. */
+.gm-palette {
+  margin-top: 18vh;
+  width: 560px;
+  max-width: calc(100vw - 48px);
+  max-height: 360px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.gm-palette-input {
+  flex: none;
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--g-hairline);
+  outline: none;
+  color: var(--g-text);
+  font: 400 14px/1.4 var(--g-font-ui);
+  padding: 14px 16px;
+}
+.gm-palette-input::placeholder { color: var(--g-text-mute); }
+
+.gm-palette-list {
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.gm-palette-section + .gm-palette-section { margin-top: 4px; }
+.gm-palette-section-label {
+  font: 600 10px/1.2 var(--g-font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--g-text-mute);
+  padding: 8px 10px 4px;
+}
+
+.gm-palette-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 7px 10px;
+  border-radius: var(--g-r-sm);
+  cursor: pointer;
+  color: var(--g-text-dim);
+}
+.gm-palette-row:hover { background: rgba(143, 212, 255, 0.06); }
+.gm-palette-row.selected { background: rgba(143, 212, 255, 0.1); color: var(--g-text); }
+.gm-palette-row.danger {
+  background: rgba(244, 63, 94, 0.14);
+  color: var(--g-danger);
+  border: 1px solid rgba(244, 63, 94, 0.34);
+}
+
+.gm-palette-row-label {
+  font: 400 12px/1.4 var(--g-font-ui);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.gm-palette-row-hotkey {
+  flex: none;
+  font: 500 10px/1 var(--g-font-mono);
+  color: var(--g-text-mute);
+  border: 1px solid var(--g-hairline-2);
+  border-radius: 5px;
+  padding: 2px 6px;
+}
+
+.gm-palette-empty {
+  padding: 18px 10px;
+  text-align: center;
+  color: var(--g-text-mute);
+  font: 400 12px/1.5 var(--g-font-ui);
+}
+
+/* Shortcut sheet — a simple two-section reference list, same glass material. */
+.gm-sheet {
+  width: 420px;
+  max-width: calc(100vw - 48px);
+  max-height: min(72vh, 560px);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 18px 18px;
+  gap: 12px;
+  overflow-y: auto;
+}
+
+.gm-sheet-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font: 600 13px/1.3 var(--g-font-ui);
+  color: var(--g-text);
+}
+
+.gm-sheet-close {
+  background: transparent;
+  border: 1px solid var(--g-hairline-2);
+  border-radius: var(--g-r-sm);
+  color: var(--g-text-dim);
+  width: 26px;
+  height: 26px;
+  line-height: 1;
+  cursor: pointer;
+}
+.gm-sheet-close:hover { color: var(--g-text); background: rgba(143, 212, 255, 0.06); }
+
+.gm-sheet-section-label {
+  font: 600 10px/1.2 var(--g-font-ui);
+  text-transform: uppercase;
+  letter-spacing: 0.6px;
+  color: var(--g-text-mute);
+  padding-bottom: 6px;
+  border-bottom: 1px solid var(--g-hairline);
+  margin-bottom: 6px;
+}
+
+.gm-sheet-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 5px 2px;
+  font: 400 11.5px/1.5 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+.gm-sheet-row-combo {
+  flex: none;
+  font: 500 10px/1 var(--g-font-mono);
+  color: var(--g-ice-300);
+  border: 1px solid var(--g-hairline-2);
+  border-radius: 5px;
+  padding: 2px 6px;
+  white-space: nowrap;
+}
+
+/* === CR-011 §F.9/§J/CR011-P4b-01 — reusable context-menu primitive ===
+   Floats in WINDOW space like Maiden Line/the shortcut sheet above (a
+   `.g-deck-stage` sibling — see ContextMenu.tsx). Material is INSTRUMENT
+   MATTE per §B's two-material rule (NOT console glass — menus are small, no
+   backdrop-filter here), still at the shared `--g-z-pop` tier. Additive only. */
+.gm-menu-backdrop {
+  position: fixed;
+  inset: 0;
+  background: transparent;
+  z-index: var(--g-z-pop);
+  cursor: default;
+}
+
+.gm-menu {
+  position: fixed;
+  min-width: 200px;
+  max-width: 280px;
+  background: var(--g-instrument-2);
+  border: 1px solid var(--g-hairline-2);
+  border-radius: var(--g-r-card);
+  box-shadow: var(--g-shadow-tight);
+  padding: 5px;
+  color: var(--g-text);
+  animation: gm-menu-in 120ms var(--g-ease);
+  transform-origin: top left;
+}
+@keyframes gm-menu-in {
+  from { opacity: 0; transform: scale(0.98); }
+  to { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+  .gm-menu { animation: none; }
+}
+
+.gm-menu-item {
+  display: block;
+  padding: 7px 10px;
+  border-radius: var(--g-r-sm);
+  font: 400 12px/1.4 var(--g-font-ui);
+  color: var(--g-text-dim);
+  cursor: pointer;
+  outline: none;
+}
+.gm-menu-item:hover { background: rgba(143, 212, 255, 0.06); color: var(--g-text); }
+.gm-menu-item.danger { color: var(--g-danger); }
+.gm-menu-item.danger:hover { background: rgba(244, 63, 94, 0.12); }
+.gm-menu-item.disabled { color: var(--g-text-mute); cursor: default; }
+.gm-menu-item.disabled:hover { background: transparent; color: var(--g-text-mute); }
+
+.gm-menu-sep {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--g-hairline);
+}
+
+/* CR-011 accessibility spec: visible 2px ice focus ring — shared by the F6
+   seat-cycling targets (`[data-seat]`) and every context-menu invoker/item so
+   keyboard users always see where focus is, without relying on each browser's
+   default (inconsistent) focus style. `:focus-visible` keeps it from showing
+   on a plain mouse click. */
+[data-seat]:focus-visible,
+.gm-hero-slot:focus-visible,
+.gm-onair-now:focus-visible,
+.gm-onair-row:focus-visible,
+.g-sig:focus-visible,
+.gm-menu-item:focus-visible {
+  outline: 2px solid var(--g-ice-500);
+  outline-offset: 2px;
+}
+
+/* === CR011-P6-01 — deck comfort: prefs card, density, glance (CR-011 §E/§H/§J/§N) ===
+   Additive only. ZERO geometry changes: every rule below touches interior
+   paddings/gaps/type or content-only opacity — never a sector's
+   position/width/height (the frozen boxes just breathe more content). */
+
+/* -- Settings "Deck" card (quality / density / crisp) — instrument matte. -- */
+.gm-deckprefs {
+  border: 1px solid var(--g-hairline);
+  border-radius: 14px;
+  background: var(--g-instrument);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.gm-deckprefs-head {
+  font: 600 10px/1 var(--g-font-ui);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--g-text-mute);
+}
+
+.gm-deckprefs-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.gm-deckprefs-label {
+  flex: none;
+  width: 132px;
+  font: 500 12px/1.4 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+
+.gm-deckprefs-pills {
+  display: flex;
+  gap: 6px;
+}
+
+.gm-deckprefs-pill {
+  font: 500 11px/1 var(--g-font-ui);
+  color: var(--g-text-dim);
+  background: var(--g-instrument-2);
+  border: 1px solid var(--g-hairline);
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background var(--g-t-hover) var(--g-ease), color var(--g-t-hover) var(--g-ease);
+}
+.gm-deckprefs-pill:hover {
+  background: rgba(143, 212, 255, 0.06);
+  color: var(--g-text);
+}
+.gm-deckprefs-pill:focus-visible {
+  outline: 2px solid var(--g-ice-500);
+  outline-offset: 2px;
+}
+/* active = ice fill (CR-011 §F selected grammar: ice hairline + ice-tinted fill) */
+.gm-deckprefs-pill.active {
+  color: #06111f;
+  background: var(--g-ice-500);
+  border-color: var(--g-ice-500);
+}
+
+.gm-deckprefs-note {
+  margin: 0;
+  font: 400 11px/1.5 var(--g-font-ui);
+  color: var(--g-text-mute);
+}
+
+/* === CR-013 W2 (§4 iOS-style Settings split view) — category rail + detail
+   pane. New "COLD BOOTH" row kit: every color below is a --g-* token, no
+   inline hex (R3 — replaces the legacy Control panel's inline `C` palette
+   for the shell/rail + "ทั่วไป" category; the heavier re-homed cards under
+   the other categories keep their existing look for now, per W2 scope). === */
+.settings-split {
+  display: grid;
+  grid-template-columns: 240px 1fr;
+  gap: 14px;
+  height: 100%;
+  min-height: 0;
+}
+
+.settings-cats {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 8px;
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-panel);
+  background: var(--g-instrument);
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.settings-cat {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  appearance: none;
+  border: 1px solid transparent;
+  background: transparent;
+  border-radius: var(--g-r-card);
+  padding: 8px 10px;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: background var(--g-t-hover) var(--g-ease), border-color var(--g-t-hover) var(--g-ease);
+}
+.settings-cat:hover { background: var(--g-instrument-2); }
+.settings-cat.on {
+  background: var(--g-instrument-2);
+  border-color: var(--g-hairline-2);
+}
+.settings-cat:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+
+.settings-cat-glyph {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  border-radius: var(--g-r-sm);
+  background: var(--g-instrument-2);
+  border: 1px solid var(--g-hairline);
+  color: var(--g-text-dim);
+  font-size: 14px;
+  line-height: 1;
+}
+.settings-cat.on .settings-cat-glyph {
+  color: var(--g-ice-300);
+  border-color: var(--g-hairline-2);
+}
+
+.settings-cat-copy {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  min-width: 0;
+}
+.settings-cat-label {
+  font: 600 12.5px/1.3 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+.settings-cat.on .settings-cat-label { color: var(--g-text); }
+.settings-cat-sub {
+  font: 400 10.5px/1.3 var(--g-font-ui);
+  color: var(--g-text-mute);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.settings-detail {
+  min-width: 0;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+/* R1 (no page-level scroll): the split's outer surface stays clipped — only
+   the detail BODY (below) scrolls internally, same interim shape as
+   .deck-tabbed-body above. `.settings-split-mode` is added on `.surface` only
+   when tab==="settings" (CommandDeck.tsx), so this 3-class selector (more
+   specific than the shared 2-class `.surface.page-settings`/`.page-settings`
+   rules elsewhere in this file) overrides ONLY the settings split view —
+   those other rules are left untouched for any other code path. */
+.surface.page-settings.settings-split-mode {
+  overflow: hidden;
+}
+.settings-detail-body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  padding-right: 4px;
+}
+
+.settings-group {
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-panel);
+  background: var(--g-instrument);
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.settings-group-head {
+  font: 600 10px/1 var(--g-font-ui);
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--g-text-mute);
+}
+.settings-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.settings-row-label {
+  font: 500 12.5px/1.4 var(--g-font-ui);
+  color: var(--g-text-dim);
+}
+.settings-winpresets { display: flex; gap: 6px; flex-wrap: wrap; }
+.settings-winpreset {
+  font: 500 11px/1 var(--g-font-ui);
+  color: var(--g-text-dim);
+  background: var(--g-instrument-2);
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-pill);
+  padding: 6px 12px;
+  cursor: pointer;
+  transition: background var(--g-t-hover) var(--g-ease), color var(--g-t-hover) var(--g-ease);
+}
+.settings-winpreset:hover { background: var(--g-instrument-2); color: var(--g-text); }
+.settings-winpreset:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+/* active = ice fill (CR-011 §F selected grammar), text goes dark-on-ice via
+   the existing --g-ink token (no new hex — matches .gm-deckprefs-pill.active's
+   intent without introducing a second literal for the same "ink on ice" idea). */
+.settings-winpreset.active {
+  color: var(--g-ink);
+  background: var(--g-ice-500);
+  border-color: var(--g-ice-500);
+}
+.settings-foot {
+  margin: 0;
+  font: 400 11px/1.5 var(--g-font-ui);
+  color: var(--g-text-mute);
+}
+.settings-row-value {
+  font: 500 12px/1 var(--g-font-mono, var(--g-font-ui));
+  color: var(--g-ice-300);
+}
+/* CR-013 W3: divider between stacked rows inside one .settings-group — skipped
+   on the first row of a group (nothing above it to divide from the head). */
+.settings-group .settings-row + .settings-row {
+  padding-top: 10px;
+  border-top: 1px solid var(--g-hairline);
+}
+
+/* CR-013 W3: re-skinned legacy `Toggle`/`Seg`/`Row`/`Card` primitives (App.tsx)
+   onto the settings token kit — no more inline hex from the old `C` palette. */
+.settings-toggle {
+  appearance: none;
+  width: 44px;
+  height: 24px;
+  border-radius: var(--g-r-pill);
+  border: 1px solid var(--g-hairline-2);
+  padding: 0;
+  cursor: pointer;
+  position: relative;
+  flex: none;
+  background: var(--g-instrument-2);
+  transition: background var(--g-t-hover) var(--g-ease), border-color var(--g-t-hover) var(--g-ease);
+}
+.settings-toggle.on { background: var(--g-ice-500); border-color: var(--g-ice-500); }
+.settings-toggle:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+.settings-toggle-knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 18px;
+  height: 18px;
+  border-radius: var(--g-r-pill);
+  background: var(--g-ink);
+  transition: left var(--g-t-hover) var(--g-ease);
+}
+.settings-toggle.on .settings-toggle-knob { left: 22px; }
+
+.settings-seg {
+  display: inline-flex;
+  border: 1px solid var(--g-hairline);
+  border-radius: var(--g-r-sm);
+  overflow: hidden;
+  background: var(--g-instrument);
+  flex: none;
+}
+.settings-seg-opt {
+  appearance: none;
+  border: none;
+  background: transparent;
+  color: var(--g-text-mute);
+  font: 500 12px/1 var(--g-font-ui);
+  padding: 6px 13px;
+  cursor: pointer;
+  transition: background var(--g-t-hover) var(--g-ease), color var(--g-t-hover) var(--g-ease);
+}
+.settings-seg-opt:hover { color: var(--g-text-dim); }
+.settings-seg-opt.on { background: var(--g-instrument-2); color: var(--g-ice-300); }
+.settings-seg-opt:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+/* CR-013 W2 gate fix (Opus F1): app-level update banner, pinned above every
+   settings category. Instrument matte + ice rim (two-material rule — the only
+   blurred surface is the shell), COLD BOOTH tokens only. */
+.settings-update-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 14px;
+  padding: 12px 16px;
+  background: var(--g-instrument-2);
+  border: 1px solid var(--g-ice-500);
+  border-radius: 12px;
+}
+.settings-update-spark { font-size: 16px; line-height: 1; }
+.settings-update-copy { display: flex; flex-direction: column; gap: 2px; flex: 1; min-width: 0; }
+.settings-update-copy strong { font: 600 13px/1.3 var(--g-font-ui); color: var(--g-ice-300); }
+.settings-update-copy span {
+  font: 400 11px/1.4 var(--g-font-ui);
+  color: var(--g-text-mute);
+  white-space: pre-wrap;
+  max-height: 44px;
+  overflow: hidden;
+}
+.settings-update-install {
+  flex: 0 0 auto;
+  font: 600 12px/1 var(--g-font-ui);
+  color: var(--g-ink);
+  background: var(--g-ice-500);
+  border: none;
+  border-radius: 9px;
+  padding: 8px 16px;
+  cursor: pointer;
+}
+.settings-update-install:disabled { opacity: 0.6; cursor: default; }
+.settings-update-later {
+  flex: 0 0 auto;
+  font: 500 12px/1 var(--g-font-ui);
+  color: var(--g-text-dim);
+  background: transparent;
+  border: 1px solid var(--g-hairline-2);
+  border-radius: 9px;
+  padding: 8px 13px;
+  cursor: pointer;
+}
+.settings-update-later:disabled { opacity: 0.6; cursor: default; }
+
+/* -- Maiden Line: disabled row (current quality tier — visible, inert). -- */
+.gm-palette-row.disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+/* -- Density: compact (`gm-compact` on the .g-deck root; Ctrl+D / Settings).
+   Interior-only per CR-011 §J/§D "density mode paddings": seat paddings step
+   down 2–4px, list rows tighten one step (padding + line-height), 12px list
+   text drops to 11px. Labels/micro type (8–10px) untouched — the §G floors
+   hold, nothing drops below 10px.
+   Box math (frozen sectors, content only):
+   · battle grid 640×276: padding 10→8 ⇒ column height 276−2(border)−16=258,
+     5 tracks @ (258−4×7 gaps)/5 = 46px; hero card min-content drops to
+     2(border)+12(pad 6×2)+12.1(11px name ×1.1)+3+11(10px state ×1.1) ≈ 40px
+     — MORE slack than comfortable's ≈44 in ≈45.6 tracks. No overflow.
+   · ON AIR 440×354: .gm-agent-card keeps overflow:hidden and .gm-onair-log
+     is flex:1/min-height:0/overflow:hidden — rows are clipped by design, so
+     tighter rows (≈24px vs ≈30px) only mean 1–2 MORE visible rows, never
+     spill toward sector-log. */
+.g-deck.gm-compact .gm-battle-grid { padding: 8px; }
+.g-deck.gm-compact .gm-hero-slot { padding: 6px 8px; }
+.g-deck.gm-compact .gm-agent-card { padding: 11px 12px; }
+.g-deck.gm-compact .gm-sector-log { padding: 14px 16px; }
+.g-deck.gm-compact .gm-momentum { padding: 6px 10px; }
+.g-deck.gm-compact .gm-mini-stat { padding: 6px 8px; }
+
+/* list rows — one step tighter (padding + line-height) */
+.g-deck.gm-compact .gm-onair-row { padding: 4px; }
+.g-deck.gm-compact .gm-onair-now { padding: 9px 2px 7px; }
+.g-deck.gm-compact .gm-onair-row-text { line-height: 1.45; }
+.g-deck.gm-compact .gm-onair-now-text { line-height: 1.45; }
+.g-deck.gm-compact .gm-debrief-row { padding: 3px 6px; }
+.g-deck.gm-compact .gm-debrief-row-text { line-height: 1.45; }
+.g-deck.gm-compact .gm-rundown-row { padding: 6px 10px; }
+.g-deck.gm-compact .gm-rundown-list { gap: 5px; }
+.g-deck.gm-compact .log-list { gap: 6px; }
+.g-deck.gm-compact .log-row { padding: 7px 10px; gap: 10px; }
+
+/* body 12px list text → 11px (list text ONLY — labels/micro keep §G floors;
+   .gm-onair-row-text/.gm-debrief-row-text are ALREADY 11px and stay there) */
+.g-deck.gm-compact .gm-rundown-label,
+.g-deck.gm-compact .gm-rundown-value { font-size: 11px; }
+.g-deck.gm-compact .log-time,
+.g-deck.gm-compact .log-text { font-size: 12px; }
+
+/* -- Glance mode ("house lights", CR-011 §J): `gm-glance` on .g-deck while a
+   live match runs unfocused >10s. Content-only — interior seats dim to .88
+   while the score/clock/momentum type lifts, zero geometry/box changes.
+   Clock-fit math (MEASURED live in the rendered deck, not estimated —
+   .gm-clock renders Arial 800 in the header grid's fixed 74px middle
+   column): at the spec's 24px bump "24:31" ≈ 77.5px — OVERFLOWS; at 22px/
+   tracking 1px "24:31" = 71.0px but the pre-horn clock "-01:30" = 79.4px
+   still overflows, and PRE_GAME *is* matchPhase "live" (live/phase.ts
+   LIVE_STATES) so glance can show a negative clock. Bump therefore trimmed
+   to 20px + tracking 1px: measured "24:31" = 64.6px, "-01:30" = 72.2px —
+   both inside 74px. Score strong lifts one §G step (13→15px inside its 1fr
+   cells); momentum head (10→11px) lifts phase/title/label together (they
+   inherit it). */
+.g-deck.gm-glance .gm-stats-bar,
+.g-deck.gm-glance .gm-battle-grid,
+.g-deck.gm-glance .gm-agent-card,
+.g-deck.gm-glance .gm-sector-log {
+  opacity: 0.88;
+}
+.g-deck.gm-glance .gm-score-header strong { font-size: 15px; }
+.g-deck.gm-glance .gm-clock {
+  font-size: 20px;
+  letter-spacing: 1px;
+}
+.g-deck.gm-glance .gm-mom-head { font-size: 11px; }
+
+/* CR-011 polish (Boss): live-layout preview escape on the standby rundown —
+   same pill as gm-debrief-back, just spaced below the checklist. */
+.gm-rundown-preview { margin-top: 10px; align-self: flex-start; }
+
+/* Boss feedback (2026-07-14): momentum as a slim broadcast win-bar inside the
+   score header bottom strip (the old standalone .gm-momentum block had no
+   position rule and flowed full-width over this very zone). Centered cluster
+   stays clear of the right-anchored phase chip and the mid-row glyphs. */
+.gm-mom-inline {
+  position: absolute;
+  left: 50%;
+  bottom: 4px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 12px;
+}
+.gm-mom-inline-phase {
+  font: 600 10px/1 var(--g-font-ui);
+  letter-spacing: 0.6px;
+  color: var(--g-text-mute);
+  white-space: nowrap;
+}
+.gm-mom-inline-track {
+  position: relative;
+  width: 180px;
+  height: 5px;
+  border-radius: 3px;
+  background: rgba(150, 185, 230, 0.10);
+  overflow: hidden;
+}
+.gm-mom-inline-track .gm-mom-center {
+  position: absolute;
+  left: 50%;
+  top: -1px;
+  bottom: -1px;
+  width: 1px;
+  background: var(--g-hairline-2);
+}
+.gm-mom-inline-track .gm-mom-fill {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  transition: width var(--g-t-bar) var(--g-ease), left var(--g-t-bar) var(--g-ease);
+}
+.gm-mom-inline-track .gm-mom-fill.pos { background: var(--g-safe); border-radius: 0 3px 3px 0; }
+.gm-mom-inline-track .gm-mom-fill.neg { background: var(--g-danger); border-radius: 3px 0 0 3px; }
+.gm-mom-inline-label {
+  font: 600 10px/1 var(--g-font-ui);
+  white-space: nowrap;
+}
+.gm-mom-inline-label.good { color: var(--g-safe); }
+.gm-mom-inline-label.warn { color: var(--g-warn); }
+.gm-mom-inline-label.danger { color: var(--g-danger); }
+.gm-mom-inline-label.info { color: var(--g-text-dim); }
+
+/* Clock line-box was taller than its glyphs and kissed the momentum strip by
+   ~3px in the two-tier header — pin it to its ink height (Boss 2026-07-14). */
+.gm-score-header .gm-clock { line-height: 1; }
+
+/* Boss 2026-07-14: the match-phase badge rides centered just above the audio
+   rail (was in the score header). The rail shell box (42,40 54x158) is
+   untouched — the chip is an absolutely-anchored hat on it. */
+.g-audio-rail .gm-phase-chip {
+  right: auto;
+  bottom: auto;
+  top: -26px;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+}

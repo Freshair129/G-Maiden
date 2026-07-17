@@ -1,7 +1,7 @@
 ---
-version: "2.1.0-draft"
+version: "2.3.0-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-09T00:00:00+07:00,Fable"
+last_update: "2026-07-16T00:00:00+07:00,Fable (CR-013 ONE CANVAS)"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -33,26 +33,80 @@ Design contract ของ overlay อยู่ที่ [`07-combat-hud.md`](07-
 1. **Sidebar FAB (I)** = navigation จริง → สลับ *page* ใน Command Deck
 2. **Audio rail** (แทน P1–P5 anchor rail เดิม — ดู 03-layout §5.6) = ไม่ใช่ nav →
    master volume + ANN/SIGNAL toggle บนหน้า dashboard
-3. **แกนเฟส (CR-007, pending)** = ไม่ใช่ nav และไม่ขยับ layout — เนื้อหาใน sector เดิม
-   ของ dashboard สลับตามสถานะแมตช์ `standby → prep → live → debrief`
-   (อัตโนมัติจาก GSI, override มือได้) — สเปกเต็มอยู่ใน CR-007 §WP-5
+3. **แกนเฟส (CR-011 §D/§E, shipped waves P1–P3)** = ไม่ใช่ nav และไม่ขยับ layout —
+   เนื้อหาใน sector เดิมของ dashboard สลับตามสถานะแมตช์
+   `standby → prep → live → debrief` (อัตโนมัติจาก GSI) — ดู §2.1 ด้านล่าง
 
-**Command palette (CR-007 WP-6, pending):** `Ctrl+K` overlay ลอยเหนือ stage —
-ทางลัดครอบทุกแกนโดยไม่แตะ geometry
+**Command palette ("Maiden Line", CR-011 §L/§M, shipped CR011-P4a):** `Ctrl+K`
+ลอยเหนือ stage (window space, ไม่ใช่ scaled stage) — ทางลัดครอบทุกแกนโดยไม่แตะ
+geometry; `Ctrl+/` หรือ `?` เปิด shortcut sheet คู่กัน (รายละเอียด anatomy:
+`04-components.md` §10a/§10b)
+
+### 2.2 ONE CANVAS laws (CR-013 — accepted 2026-07-16, shipped W1–W5)
+
+กฎสามข้อที่ทุกหน้าใน Command Deck ต้องเคารพ (บังคับเชิงกลไก + ตรวจใน RWANG gate):
+
+- **R1 — One Canvas:** ทุกหน้า = canvas ตายตัวใน panel world (1280×720) เหมือน
+  dashboard **ห้ามมี scrollbar ระดับหน้า** ทุกขนาดหน้าต่างที่ stage รองรับ
+  (`.g-deck-panel .surface` = `overflow:hidden`). scroll ที่ยอมได้คือ region
+  ย่อยที่มีขอบเขต (feed list, tab body) เท่านั้น ไม่ใช่ทั้งหน้า
+- **R2 — Overflow → Tab / Paginate:** เนื้อหาเกิน canvas → แตกเป็น segmented tab
+  (`DeckTabs`) หรือ paginate ในกรอบสูงคงที่ผ่าน helper แบบ `rowsThatFit()`
+  (`StorePage.tsx`, `HistoryPage`) — ห้ามยืดหน้า/ย่อ font หนี
+- **R3 — One Language:** ทุกหน้าใช้ภาษา COLD BOOTH (sector frame, instrument
+  matte, `--g-*` token) — legacy inline-hex `C` palette / CR-003 navy-cyan
+  "second blue" ห้ามโผล่ใน deck surface (Overlay window แยกต่างหาก, ใช้ `C` ได้)
+
+CR-013 ยังยุบ nav 8→7: **Build พับเข้า Live เป็น tab** (`[สด | บิลด์]`),
+**History พับเข้า Insights** (`[ภาพรวม | ประวัติ]`), และ **G-Store** ได้ที่นั่ง
+nav ของตัวเอง (economy 4 tab). Settings รื้อใหม่เป็น iOS split view (7 หมวด).
+
+### 2.1 Phase axis (CR-011 §D/§E — `src/src/live/phase.ts`)
+
+Match phase คือ derived state จาก GSI signal ที่มีอยู่แล้ว (ไม่มี concept ใหม่ฝั่ง
+backend) — คำนวณด้วย `stepPhase(prev, input)` ทุกครั้งที่มี GSI tick ใหม่ ผลลัพธ์คือ
+`MatchPhase = "standby" | "prep" | "live" | "debrief"`:
+
+```
+standby ──(draft/hero-select/loading state)──▶ prep
+   ▲                                              │
+   │                                    (live state / inGame)
+   │                                              ▼
+   └────(GSI offline, no prior debrief)──── live ─┐
+                                                   │ (post-game state, or
+                                                   │  live→disconnect w/o
+   debrief ◀─────────────────────────────────────┘   explicit POST_GAME)
+      │
+      └── sticky: stays "debrief" across GSI going offline (Dota closing) or
+          any unrecognized state, until the next real prep/live tick
+```
+
+**Geometry-frozen, content-swap only** — the sectors that swap content per phase
+never move or resize; only what renders *inside* the frozen box changes:
+
+| phase | `.gm-battle-grid` content (was: hero columns + minimap) | `.gm-agent-card` content |
+| --- | --- | --- |
+| `standby` / `prep` | **Readiness rundown** (`ReadinessRundown`, 04-components §9d) — honest checklist of what's actually ready (GSI, voice pack, G-Signal, ANN, volume); optional "กำลังดราฟต์" note during `prep` | ON AIR console (04-components §9b) — unaffected by phase, always the utterance ledger |
+| `live` | hero columns + minimap (unchanged, pre-CR-011 content) | ON AIR console |
+| `debrief` | **Debrief timeline** (`DebriefTimeline`, 04-components §9e) — most-recently-archived match's event log, sticky (survives GSI dropping) until the user goes "back to live" or a new prep/live tick arrives | ON AIR console |
+
+The score header's **phase chip** (`.gm-phase-chip`, 04-components §6b) is the one
+persistent on-screen indicator of the current phase across all four states —
+absolutely positioned at the header's right edge, never shifting the centered
+clock/score.
 
 ## 3. Sitemap (Command Deck pages)
 
 ```mermaid
 flowchart TD
-  Deck["Command Deck (Control window)"]
+  Deck["Command Deck (Control window) — 7 nav pages (CR-013)"]
   Deck --> Dash["Dashboard — สรุปสด (default)"]
-  Deck --> Live["Live Match — battlefield + logs"]
-  Deck --> Voice["Voice Packs — announcer packs"]
-  Deck --> Build["Build Advisor — item/skill path"]
-  Deck --> Insights["Insights — posture, tempo, weekly"]
-  Deck --> History["History — past sessions (G-Log)"]
+  Deck --> Live["Live — battlefield + logs · tab [สด | บิลด์] (Build folded in)"]
+  Deck --> Voice["Voice Packs — announcer packs · หาแพ็กเพิ่ม → G-Store"]
+  Deck --> Store["G-Store — economy · tab [ร้านค้า | กระเป๋า | คลัง | บันทึก] (CR-003)"]
+  Deck --> Insights["Insights — posture/tempo · tab [ภาพรวม | ประวัติ] (History folded in)"]
   Deck --> Account["Account — GID + Steam link"]
-  Deck --> Settings["Settings — window/privacy/system"]
+  Deck --> Settings["Settings — iOS split view, 7 หมวด"]
 
   Overlay["Combat HUD (Overlay window) — ดู 07-combat-hud.md"]
   Overlay --> Sig["Signal: gank banner + belief-revision echo + G-Meter + enemy missing"]
@@ -63,17 +117,20 @@ flowchart TD
 
 ## 4. Page inventory
 
+7 nav pages (CR-013). Build/History are no longer standalone pages — they are
+in-page tabs; `SettingsPage`/`CompanionPage` from `CompanionPages.tsx` were
+deleted (Settings is now Control's category render; Companion was dissolved in
+CR-011 §C).
+
 | page | โมดูล/ไฟล์ | เนื้อหาหลัก | สถานะ |
 | --- | --- | --- | --- |
 | **Dashboard** | `Dashboard.tsx` | scoreboard, G-Signal pulse, companion state, 5 bento | live-wired |
-| **Live Match** | `CompanionPages.tsx` `LiveMatchPage` | objective board, enemy visibility, activity/event feed | live |
-| **Voice Packs** | `VoicePacksPage.tsx` / `VoiceInventory.tsx` | announcer pack inventory + active | live |
-| **Build Advisor** | `CompanionPages.tsx` `BuildAdvisorPage` | item path, advisor notes | scaffold |
-| **Insights** | `CompanionPages.tsx` `InsightsPage` | power/win/objective/ward + weekly report | scaffold (OpenDota) |
-| **History** | `CompanionPages.tsx` `HistoryPage` | recent sessions (local G-Log) | scaffold |
+| **Live** | `CompanionPages.tsx` `LiveMatchPage` + `BuildAdvisorPage` | tab `[สด | บิลด์]` — objective board, enemy visibility, feeds / build path | live + scaffold |
+| **Voice Packs** | `VoicePacksPage.tsx` / `VoiceInventory.tsx` | announcer pack inventory + active; "หาแพ็กเพิ่ม →" cross-links G-Store | live |
+| **G-Store** | `CommandDeck` store tab → `StorePage` / `WalletTab` / `InventoryTab` / `LedgerTab` | tab `[ร้านค้า | กระเป๋า | คลัง | บันทึก]` (CR-003 economy) | catalog degrades until `catalog_items` deploys |
+| **Insights** | `CompanionPages.tsx` `InsightsPage` + `HistoryPage` | tab `[ภาพรวม | ประวัติ]` — power/win/ward + weekly / paginated G-Log history | scaffold (OpenDota) |
 | **Account** | `AccountPage.tsx` / `AuthPanel.tsx` / `SteamLink.tsx` | GID, Google OAuth, Steam link — UX spec: [`08-account-gid.md`](08-account-gid.md) | live (ADR-14) |
-| **Settings** | `CompanionPages.tsx` `SettingsPage` | window preset, privacy, system health | live |
-| **Companion** | `CompanionPages.tsx` `CompanionPage` | overlay/voice/alert behavior, hotkeys | live |
+| **Settings** | `App.tsx` `Control` (category render) + `CommandDeck` split shell | iOS split view, 7 หมวด: ทั่วไป / Overlay / เสียง & เตือน / AI / โมดูล & CV / ความเป็นส่วนตัว / ระบบ | live |
 
 ## 5. Core flows
 

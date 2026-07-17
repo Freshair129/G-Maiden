@@ -1,0 +1,296 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>CR-013 ONE CANVAS — Settings iOS / G-Store / Sitemap mock</title>
+<style>
+  /* ============ CR-011 tokens (unchanged — CR-013 adds no colors) ============ */
+  :root{
+    --void:#06070A; --instrument:#0B0E16; --instrument-2:#0D1119;
+    --hairline:rgba(150,185,230,.10); --hairline-2:rgba(150,185,230,.16);
+    --glass-a:rgba(34,46,74,.30); --glass-b:rgba(10,13,22,.42); --glass-rim:rgba(160,200,255,.16);
+    --ice:#8FD4FF; --ice-3:#9BE7FF; --ice-7:#226CFF; --lime:#A3E635;
+    --lime-soft:rgba(163,230,53,.14); --lime-line:rgba(163,230,53,.34);
+    --text:#EEF4FB; --dim:#A9BEDB; --mute:#5E7699;
+    --safe:#22C55E; --ok:#31D0A0; --warn:#F59E0B; --danger:#F43F5E; --coin:#E4C36B;
+    --font-ui:"IBM Plex Sans Thai Looped","IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+    --font-mono:"IBM Plex Mono",Consolas,ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0}
+  html,body{height:100%}
+  body{background:var(--void);color:var(--text);font:400 12px/1.45 var(--font-ui);overflow:hidden}
+  .note{position:fixed;left:12px;bottom:8px;color:var(--mute);font-size:10px;z-index:99}
+
+  /* view switcher (mock chrome, not product UI) */
+  .switch{position:fixed;top:10px;left:50%;transform:translateX(-50%);z-index:98;display:flex;gap:6px}
+  .switch button{background:#0a0e15;border:1px solid var(--hairline-2);border-radius:999px;color:var(--dim);
+    font:600 11px/1 var(--font-ui);padding:7px 16px;cursor:pointer;letter-spacing:.4px}
+  .switch button.on{color:var(--ice);border-color:rgba(143,212,255,.45);background:rgba(143,212,255,.08)}
+
+  /* ============ stage (locked CR-006 geometry) ============ */
+  .stage{position:absolute;left:50%;top:50%;width:1420px;height:760px;transform-origin:center;
+    transform:translate(-50%,-50%) scale(var(--s,1))}
+  .panel{position:absolute;left:12px;top:12px;width:1280px;height:720px;
+    background:linear-gradient(160deg,var(--glass-a),var(--glass-b));
+    -webkit-backdrop-filter:blur(30px) saturate(150%);backdrop-filter:blur(30px) saturate(150%);
+    clip-path:url(#clip)}
+  svg.rim{position:absolute;left:12px;top:12px;width:1280px;height:720px;overflow:visible;pointer-events:none;z-index:11}
+  svg.rim path{fill:none;stroke:var(--glass-rim);stroke-width:1;
+    filter:drop-shadow(0 40px 110px rgba(3,6,12,.55)) drop-shadow(0 0 60px rgba(143,212,255,.08))}
+
+  /* shell attachments */
+  .fab{position:absolute;background:#0a0e15;border:1px solid rgba(150,185,230,.20);border-radius:16px;
+    box-shadow:0 36px 96px rgba(3,6,12,.54),0 10px 32px rgba(3,6,12,.40)}
+  .topbar{left:834px;top:24px;width:446px;height:50px;border-radius:18px;display:flex;align-items:center;gap:10px;padding:0 12px;z-index:33}
+  .logo{font:600 12px/1 var(--font-ui);letter-spacing:2.5px;color:var(--ice);margin-right:auto}
+  .pill{display:flex;align-items:center;gap:6px;border:1px solid var(--hairline-2);border-radius:999px;
+    padding:4px 10px;font:600 10px/1 var(--font-ui);letter-spacing:.6px;color:var(--dim);white-space:nowrap}
+  .pill .dot{width:6px;height:6px;border-radius:50%;background:var(--lime);box-shadow:0 0 8px var(--lime)}
+  .avatar{width:24px;height:24px;border-radius:8px;background:linear-gradient(160deg,var(--ice-7),#0a1a3a);
+    display:grid;place-items:center;font:600 11px/1 var(--font-ui);color:#fff}
+
+  .sidebar{left:26px;top:354px;width:64px;height:306px;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:5px;z-index:33}
+  .nav{width:42px;height:30px;border-radius:9px;display:grid;place-items:center;color:var(--mute);border:1px solid transparent;font:600 13px/1 var(--font-ui)}
+  .nav.active{color:var(--ice);border-color:var(--hairline-2);background:rgba(143,212,255,.08)}
+  .nav.new{color:var(--coin)}
+  .nav.spare{color:rgba(94,118,153,.4);border:1px dashed rgba(150,185,230,.14)}
+  .power{left:35px;top:672px;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;color:var(--dim);z-index:34;font-size:15px}
+
+  /* ============ page canvas (R1: fixed, overflow hidden) ============ */
+  .surface{position:absolute;left:12px;top:12px;width:1280px;height:720px;z-index:20;
+    padding:74px 28px 24px 104px;overflow:hidden;display:none}
+  .surface.on{display:block}
+
+  /* page header + segmented tabs (R2) */
+  .pagehead{display:flex;align-items:flex-end;gap:18px;margin-bottom:14px}
+  .pagehead .eyebrow{font:600 9.5px/1 var(--font-mono);letter-spacing:2.2px;color:var(--mute);text-transform:uppercase;margin-bottom:5px}
+  .pagehead h2{font:600 19px/1.15 var(--font-ui);letter-spacing:.2px}
+  .seg{margin-left:auto;display:flex;border:1px solid var(--hairline-2);border-radius:11px;overflow:hidden}
+  .seg span{padding:7px 16px;font:600 11px/1 var(--font-ui);color:var(--mute);border-right:1px solid var(--hairline)}
+  .seg span:last-child{border-right:none}
+  .seg span.on{color:var(--ice);background:rgba(143,212,255,.09)}
+
+  /* ============ VIEW 1: Settings — iOS split ============ */
+  .split{display:grid;grid-template-columns:240px 1fr;gap:16px;height:568px}
+  .cats{background:var(--instrument);border:1px solid var(--hairline);border-radius:14px;padding:8px;display:flex;flex-direction:column;gap:2px}
+  .cat{display:flex;gap:10px;align-items:center;border-radius:10px;padding:9px 10px;color:var(--dim)}
+  .cat .ic{width:26px;height:26px;border-radius:8px;display:grid;place-items:center;font-size:13px;background:rgba(143,212,255,.07);border:1px solid var(--hairline)}
+  .cat b{display:block;font:600 12px/1.25 var(--font-ui);color:var(--text)}
+  .cat small{display:block;font:400 9.5px/1.3 var(--font-ui);color:var(--mute)}
+  .cat.on{background:rgba(143,212,255,.10);border:1px solid rgba(143,212,255,.22)}
+  .cat.on b{color:var(--ice)}
+  .detail{background:var(--instrument);border:1px solid var(--hairline);border-radius:14px;padding:18px 22px;overflow:hidden}
+  .grp{margin-bottom:14px}
+  .grp .gh{font:600 9.5px/1 var(--font-mono);letter-spacing:2px;color:var(--mute);text-transform:uppercase;margin-bottom:6px}
+  .rows{border:1px solid var(--hairline);border-radius:12px;overflow:hidden;background:var(--instrument-2)}
+  .row{display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--hairline);min-height:38px}
+  .row:last-child{border-bottom:none}
+  .row .lbl{font:500 12px/1.3 var(--font-ui);color:var(--text)}
+  .row .sub{font:400 10px/1.3 var(--font-ui);color:var(--mute)}
+  .row .ctl{margin-left:auto;display:flex;align-items:center;gap:10px}
+  .fn{font:400 10px/1.5 var(--font-ui);color:var(--mute);padding:5px 4px 0}
+  .tgl{width:36px;height:20px;border-radius:99px;background:rgba(94,118,153,.28);position:relative;flex:none}
+  .tgl::after{content:"";position:absolute;top:2.5px;left:3px;width:15px;height:15px;border-radius:50%;background:#c8d8ec}
+  .tgl.on{background:rgba(143,212,255,.55)}
+  .tgl.on::after{left:18px;background:#fff}
+  .segm{display:inline-flex;border:1px solid var(--hairline-2);border-radius:9px;overflow:hidden}
+  .segm i{font:600 10.5px/1 var(--font-ui);font-style:normal;color:var(--mute);padding:5px 11px;border-right:1px solid var(--hairline)}
+  .segm i:last-child{border-right:none}
+  .segm i.on{color:var(--ice);background:rgba(143,212,255,.12)}
+  .val{font:500 11px/1 var(--font-mono);color:var(--ice)}
+  .chev{color:var(--mute);font-size:13px}
+  .slider{width:130px;height:4px;border-radius:99px;background:rgba(94,118,153,.3);position:relative}
+  .slider::before{content:"";position:absolute;left:0;top:0;height:100%;width:72%;border-radius:99px;background:var(--ice)}
+  .slider::after{content:"";position:absolute;top:-4px;left:calc(72% - 6px);width:12px;height:12px;border-radius:50%;background:#fff}
+
+  /* ============ VIEW 2: G-Store ============ */
+  .storewrap{display:grid;grid-template-rows:1fr auto;height:568px;gap:12px}
+  .shelf{display:grid;grid-template-columns:1fr 1fr;grid-auto-rows:164px;gap:12px;overflow:hidden}
+  .pack{background:var(--instrument);border:1px solid var(--hairline);border-radius:14px;padding:14px 16px;display:grid;grid-template-columns:96px 1fr;gap:14px;overflow:hidden}
+  .art{border-radius:10px;background:linear-gradient(160deg,rgba(34,108,255,.5),rgba(10,17,34,.9));border:1px solid var(--hairline-2);display:grid;place-items:center;font:600 10px/1 var(--font-mono);color:var(--ice-3);letter-spacing:1px}
+  .art.warm{background:linear-gradient(160deg,rgba(228,195,107,.4),rgba(30,20,8,.9));color:var(--coin)}
+  .art.grim{background:linear-gradient(160deg,rgba(244,63,94,.35),rgba(28,8,14,.9));color:#ff9db0}
+  .pack h4{font:600 13.5px/1.25 var(--font-ui);margin-bottom:3px}
+  .pack p{font:400 10.5px/1.45 var(--font-ui);color:var(--dim);margin-bottom:auto}
+  .pack .meta{display:flex;align-items:center;gap:8px;margin-top:8px}
+  .price{font:600 12px/1 var(--font-mono);color:var(--coin)}
+  .buy{margin-left:auto;border:1px solid rgba(143,212,255,.4);border-radius:9px;background:rgba(143,212,255,.10);color:var(--ice);font:600 11px/1 var(--font-ui);padding:7px 16px}
+  .buy.soon{border-color:var(--hairline-2);background:transparent;color:var(--mute)}
+  .tag{font:600 8.5px/1 var(--font-mono);letter-spacing:1.2px;color:var(--mute);border:1px solid var(--hairline);border-radius:99px;padding:3px 8px;text-transform:uppercase}
+  .storebar{display:flex;align-items:center;gap:14px;background:var(--instrument);border:1px solid var(--hairline);border-radius:12px;padding:10px 16px}
+  .coinbal{display:flex;align-items:center;gap:7px;font:600 12px/1 var(--font-mono);color:var(--coin)}
+  .coin{width:16px;height:16px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#f4dfa0,#a8862e);border:1px solid rgba(228,195,107,.6)}
+  .pgr{margin-left:auto;display:flex;gap:6px;align-items:center;color:var(--mute);font:500 10.5px/1 var(--font-mono)}
+  .pgr b{color:var(--ice)}
+
+  /* ============ VIEW 3: sitemap ============ */
+  .mapwrap{height:568px;display:grid;grid-template-rows:auto 1fr;gap:14px;overflow:hidden}
+  .laws{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  .law{background:var(--instrument);border:1px solid var(--lime-line);border-radius:12px;padding:12px 16px}
+  .law b{display:block;font:600 12px/1 var(--font-ui);color:var(--lime);margin-bottom:5px}
+  .law span{font:400 10.5px/1.5 var(--font-ui);color:var(--dim)}
+  .tree{background:var(--instrument);border:1px solid var(--hairline);border-radius:14px;padding:20px 24px;display:grid;grid-template-columns:repeat(7,1fr);gap:12px;align-content:start}
+  .node{border:1px solid var(--hairline-2);border-radius:12px;padding:12px 12px 10px;background:var(--instrument-2);min-height:170px}
+  .node.new{border-color:rgba(228,195,107,.5)}
+  .node .num{font:600 9px/1 var(--font-mono);color:var(--mute);letter-spacing:1px}
+  .node h4{font:600 13px/1.2 var(--font-ui);color:var(--ice);margin:5px 0 2px}
+  .node.new h4{color:var(--coin)}
+  .node small{display:block;font:400 9.5px/1.4 var(--font-ui);color:var(--mute);margin-bottom:9px}
+  .node .tb{display:flex;flex-direction:column;gap:4px}
+  .node .tb i{font:500 10px/1 var(--font-ui);font-style:normal;color:var(--dim);border:1px solid var(--hairline);border-radius:7px;padding:5px 8px;background:rgba(143,212,255,.04)}
+  .node .tb i.from{border-style:dashed;color:var(--mute)}
+  .legend{grid-column:1/-1;display:flex;gap:18px;color:var(--mute);font:400 10px/1 var(--font-ui);padding-top:2px}
+  .legend i{font-style:normal}
+  .legend .sw{display:inline-block;width:9px;height:9px;border-radius:3px;vertical-align:-1px;margin-right:5px}
+</style>
+</head>
+<body>
+
+<svg width="0" height="0"><defs>
+  <clipPath id="clip" clipPathUnits="userSpaceOnUse">
+    <path d="M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 488 A 20 20 0 0 1 1248,508 H 836 A 20 20 0 0 0 816,528 V 688 A 20 20 0 0 1 796,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z"/>
+  </clipPath>
+</defs></svg>
+
+<div class="switch">
+  <button data-v="settings" class="on">ตั้งค่า (iOS split)</button>
+  <button data-v="store">G-Store</button>
+  <button data-v="map">Sitemap + กฎ</button>
+</div>
+
+<div class="stage">
+  <div class="panel"></div>
+  <svg class="rim" viewBox="0 0 1280 720"><path d="M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 488 A 20 20 0 0 1 1248,508 H 836 A 20 20 0 0 0 816,528 V 688 A 20 20 0 0 1 796,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z"/></svg>
+
+  <!-- shell -->
+  <div class="fab topbar"><span class="logo">G-MAIDEN</span><span class="pill"><span class="dot"></span>GSI LIVE</span><span class="pill"><span class="avatar">F</span>Freshair129</span></div>
+  <div class="fab sidebar">
+    <span class="nav" title="บูธ">▦</span>
+    <span class="nav" title="แมตช์สด">⟟</span>
+    <span class="nav" title="แพ็กเสียง">♪</span>
+    <span class="nav new" title="G-Store ★ใหม่">◈</span>
+    <span class="nav" title="สถิติ">∿</span>
+    <span class="nav" title="บัญชี">◉</span>
+    <span class="nav active" title="ตั้งค่า">⚙</span>
+    <span class="nav spare" title="ที่นั่งสำรอง">·</span>
+  </div>
+  <div class="fab power">⏻</div>
+
+  <!-- ============ VIEW 1: Settings ============ -->
+  <section class="surface on" id="v-settings">
+    <div class="pagehead">
+      <div><div class="eyebrow">SETTINGS · ONE CANVAS</div><h2>ตั้งค่า</h2></div>
+    </div>
+    <div class="split">
+      <div class="cats">
+        <div class="cat on"><span class="ic">⚙</span><span><b>ทั่วไป</b><small>หน้าต่าง · คุณภาพ · สเกล</small></span></div>
+        <div class="cat"><span class="ic">▣</span><span><b>Overlay</b><small>OSD บนเกม</small></span></div>
+        <div class="cat"><span class="ic">♪</span><span><b>เสียง &amp; เตือน</b><small>TTS · G-Signal</small></span></div>
+        <div class="cat"><span class="ic">✦</span><span><b>AI (G-Master)</b><small>backend · โควตา</small></span></div>
+        <div class="cat"><span class="ic">◫</span><span><b>โมดูล &amp; CV</b><small>capture · telemetry</small></span></div>
+        <div class="cat"><span class="ic">🛡</span><span><b>ความเป็นส่วนตัว</b><small>local-first</small></span></div>
+        <div class="cat"><span class="ic">ℹ</span><span><b>ระบบ</b><small>GSI · อัปเดต · log</small></span></div>
+      </div>
+      <div class="detail">
+        <div class="grp">
+          <div class="gh">หน้าต่าง</div>
+          <div class="rows">
+            <div class="row"><span class="lbl">ขนาดหน้าต่าง</span><span class="ctl"><span class="segm"><i>1200×780</i><i class="on">1440×900</i><i>1920×1080</i></span></span></div>
+            <div class="row"><span class="lbl">โหมดขยายใหญ่<div class="sub">ขยายเกิน 100% เป็นขั้น 1.15×–2.0× คงอัตราส่วน</div></span><span class="ctl"><span class="tgl on"></span></span></div>
+            <div class="row"><span class="lbl">ตัวอักษรคมชัด (crisp snap)</span><span class="ctl"><span class="tgl"></span></span></div>
+          </div>
+        </div>
+        <div class="grp">
+          <div class="gh">คุณภาพกราฟิก</div>
+          <div class="rows">
+            <div class="row"><span class="lbl">ระดับคุณภาพ</span><span class="ctl"><span class="segm"><i class="on">Cinematic</i><i>Balanced</i><i>Eco</i></span></span></div>
+            <div class="row"><span class="lbl">ความหนาแน่น</span><span class="ctl"><span class="segm"><i class="on">สบายตา</i><i>กะทัดรัด</i></span></span></div>
+          </div>
+          <div class="fn">Cinematic เปิด blur เต็มที่ตามดีไซน์ · Eco ตัด effect หนักเพื่อประหยัด CPU/GPU</div>
+        </div>
+        <div class="grp">
+          <div class="gh">ภาษา</div>
+          <div class="rows">
+            <div class="row"><span class="lbl">ภาษาแอป</span><span class="ctl"><span class="val">ไทย</span><span class="chev">›</span></span></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VIEW 2: G-Store ============ -->
+  <section class="surface" id="v-store">
+    <div class="pagehead">
+      <div><div class="eyebrow">G-STORE · CR-003 ECONOMY</div><h2>G-Store</h2></div>
+      <div class="seg"><span class="on">ร้านค้า</span><span>กระเป๋า</span><span>คลัง</span><span>บันทึก</span></div>
+    </div>
+    <div class="storewrap">
+      <div class="shelf">
+        <div class="pack"><div class="art">MRIJGAJN</div><div><h4>pack_mrijgajn</h4><p>แคสเตอร์สายฮึกเหิม เสียงคุมเกมทุกสตรีค ครบ 22 อีเวนต์</p><div class="meta"><span class="tag">ติดตั้งแล้ว</span><span class="price">—</span><span class="buy soon">ใช้งานอยู่</span></div></div></div>
+        <div class="pack"><div class="art warm">TH CASTER</div><div><h4>Golden Throat TH</h4><p>เสียงพากย์ไทยโทนทอง สำหรับสาย carry ที่อยากได้เสียงเชียร์หนักๆ</p><div class="meta"><span class="tag">22 อีเวนต์</span><span class="price">◆ 350</span><span class="buy">ซื้อ</span></div></div></div>
+        <div class="pack"><div class="art grim">DOOM CALL</div><div><h4>Doom Caller</h4><p>โทนต่ำ ทุ้ม เตือนแก๊งค์แบบหนังสยองขวัญ — เตือนแล้วขนลุกแน่นอน</p><div class="meta"><span class="tag">18 อีเวนต์</span><span class="price">◆ 280</span><span class="buy">ซื้อ</span></div></div></div>
+        <div class="pack"><div class="art">FROST MAIDEN</div><div><h4>Frost Maiden Classic</h4><p>เสียง Maiden ดั้งเดิมเวอร์ชันขัดเงา ปรับ mix ใหม่ทุกคลิป</p><div class="meta"><span class="tag">22 อีเวนต์</span><span class="price">◆ 420</span><span class="buy">ซื้อ</span></div></div></div>
+        <div class="pack"><div class="art warm">HYPE EN</div><div><h4>Tournament Hype EN</h4><p>สไตล์แคสเตอร์รายการใหญ่ ภาษาอังกฤษ เหมาะสตรีมลง YouTube</p><div class="meta"><span class="tag">20 อีเวนต์</span><span class="price">◆ 300</span><span class="buy">ซื้อ</span></div></div></div>
+        <div class="pack"><div class="art grim">SILENT OPS</div><div><h4>Silent Ops</h4><p>เตือนสั้น กระชับ ไม่มีน้ำ — สำหรับคนที่อยากได้แค่สัญญาณ</p><div class="meta"><span class="tag">12 อีเวนต์</span><span class="price">◆ 180</span><span class="buy">ซื้อ</span></div></div></div>
+      </div>
+      <div class="storebar">
+        <span class="coinbal"><span class="coin"></span>1,240 shards</span>
+        <span class="tag">เติม shard</span>
+        <span class="pgr">หน้า <b>1</b> / 3 — เลื่อนหน้าในกรอบเดิม (R2: ไม่มี scroll)  ‹ ›</span>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ VIEW 3: Sitemap ============ -->
+  <section class="surface" id="v-map">
+    <div class="pagehead">
+      <div><div class="eyebrow">CR-013 · INFORMATION ARCHITECTURE</div><h2>Sitemap ใหม่ — 7 หน้า + 1 ที่นั่งสำรอง</h2></div>
+    </div>
+    <div class="mapwrap">
+      <div class="laws">
+        <div class="law"><b>R1 — One Canvas</b><span>ทุกหน้า = fixed canvas 1280×720 ห้ามมี scrollbar ระดับหน้า ทุกขนาดหน้าต่าง</span></div>
+        <div class="law"><b>R2 — Overflow → Tab</b><span>เนื้อหาเกินจอ → แตก segmented tab เท่านั้น list ที่โต → paginate ในกรอบ (rowsThatFit)</span></div>
+        <div class="law"><b>R3 — One Language</b><span>ภาษา COLD BOOTH เท่านั้น — legacy Card / inline-style จาก App.tsx ห้ามโผล่ใน deck</span></div>
+      </div>
+      <div class="tree">
+        <div class="node"><span class="num">CTRL+1</span><h4>บูธ</h4><small>Dashboard — anchor ไม่แตะ</small><div class="tb"><i>5 sector คงเดิม</i></div></div>
+        <div class="node"><span class="num">CTRL+2</span><h4>แมตช์สด</h4><small>Live — ควบ Build</small><div class="tb"><i>สด</i><i class="from">บิลด์ ← Build เดิม</i></div></div>
+        <div class="node"><span class="num">CTRL+3</span><h4>แพ็กเสียง</h4><small>ของที่ "มี" (local)</small><div class="tb"><i>ติดตั้งแล้ว</i><i>ผูกอีเวนต์</i><i class="from">หาแพ็กเพิ่ม → Store</i></div></div>
+        <div class="node new"><span class="num">CTRL+4</span><h4>G-Store ★</h4><small>ของที่ "ซื้อ" (cloud, CR-003)</small><div class="tb"><i>ร้านค้า</i><i>กระเป๋า</i><i>คลัง</i><i>บันทึก</i></div></div>
+        <div class="node"><span class="num">CTRL+5</span><h4>สถิติ</h4><small>Insights — ควบ History</small><div class="tb"><i>ภาพรวม</i><i>รายสัปดาห์</i><i class="from">ประวัติ ← History เดิม</i></div></div>
+        <div class="node"><span class="num">CTRL+6</span><h4>บัญชี</h4><small>GID · Steam · OpenDota</small><div class="tb"><i>คงเดิม</i></div></div>
+        <div class="node"><span class="num">CTRL+7</span><h4>ตั้งค่า</h4><small>iOS split view — รื้อใหม่</small><div class="tb"><i>ทั่วไป</i><i>Overlay</i><i>เสียง&amp;เตือน</i><i>AI · โมดูล&amp;CV</i><i>ส่วนตัว · ระบบ</i></div></div>
+        <div class="legend">
+          <i><span class="sw" style="background:rgba(228,195,107,.5)"></span>หน้าใหม่ (ของ CR-003 ที่ orphan อยู่)</i>
+          <i><span class="sw" style="border:1px dashed rgba(150,185,230,.3)"></span>เนื้อหาย้ายมาจากหน้าที่ยุบ / cross-link</i>
+          <i>ยุบ: Build → Live · History → สถิติ | ลบ: Control embedded (App.tsx) · SettingsPage mock (CompanionPages)</i>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+
+<div class="note">CR-013 ONE CANVAS mock — geometry per CR-006 lock (stage 1420×760, panel 1280×720) · tokens per CR-011 v3 · ตัวเลข/แพ็กในร้านเป็นตัวอย่างประกอบดีไซน์</div>
+
+<script>
+  // stage fit (downscale only, per CR-007 rule). Some embedded panes report a
+  // 0-size viewport at parse time and never fire resize — retry until non-zero.
+  function fit(){
+    if(!innerWidth||!innerHeight){requestAnimationFrame(fit);return}
+    var s=Math.min(innerWidth/1440,innerHeight/800,1);
+    document.querySelector('.stage').style.setProperty('--s',s);
+  }
+  addEventListener('resize',fit);addEventListener('load',fit);fit();
+  // view switcher (deep-linkable: ?v=settings|store|map)
+  function show(v){
+    if(!document.getElementById('v-'+v))return;
+    document.querySelectorAll('.switch button').forEach(function(x){x.classList.toggle('on',x.dataset.v===v)});
+    document.querySelectorAll('.surface').forEach(function(x){x.classList.remove('on')});
+    document.getElementById('v-'+v).classList.add('on');
+  }
+  document.querySelectorAll('.switch button').forEach(function(b){b.onclick=function(){show(b.dataset.v)}});
+  var q=new URLSearchParams(location.search).get('v');if(q)show(q);
+</script>
+</body>
+</html>

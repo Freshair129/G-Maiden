@@ -190,6 +190,19 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
             let clip = crate::audio::pick_clip(&ev);
             if let Some(p) = &clip {
                 crate::audio::play_path(p.clone(), &ev);
+                // CR-011 §B utterance ledger — only when a clip actually
+                // played (Maiden stayed silent otherwise), and after the
+                // dispatch above so this never delays the clip itself.
+                crate::utterance::emit(
+                    &app,
+                    crate::utterance::UtterancePayload::new(
+                        "announcer",
+                        "line",
+                        ev.clone(),
+                        None,
+                        crate::voice_api::active_pack_name(),
+                    ),
+                );
             }
             let mut banner = crate::voice_api::fired_banner(&ev);
             banner.clip = clip.map(|p| p.to_string_lossy().into_owned());

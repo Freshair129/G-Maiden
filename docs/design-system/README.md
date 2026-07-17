@@ -1,7 +1,7 @@
 ---
-version: "2.1.0-draft"
+version: "3.0.0-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-09T00:00:00+07:00,Fable"
+last_update: "2026-07-15T00:00:00+07:00,Claude"
 status: "draft"
 supersedes: "docs/architecture/design-system.md (Iceglass v0.1.0b, candidate)"
 attributes:
@@ -71,14 +71,17 @@ attributes:
 | กลุ่ม | canonical | หมายเหตุ |
 | --- | --- | --- |
 | Window void | `#06070A` | พื้นหลังนอก glass |
-| Glass fill | `rgba(34,46,74,0.30)` → `rgba(10,13,22,0.42)` | gradient + `backdrop-filter: blur(30px)` |
+| Glass fill (shell only, v3) | `rgba(34,46,74,0.30)` → `rgba(10,13,22,0.42)` | gradient + `backdrop-filter` — **ตอนนี้จำกัดเฉพาะ shell/FAB/pop layers เท่านั้น** (two-material rule, CR-011 §B — ดู 01-foundations §2.1) |
+| Instrument matte (v3) | `#0B0E16` / `#0D1119` + hairline `rgba(150,185,230,0.10/0.16)` | **NEW** — พื้น interior sector ทุกอันทั้งดeck, opaque, ไม่มี blur/shadow |
 | Ice (primary) | `#8FD4FF` | แบรนด์หลัก — text link, active, focus |
-| Lime (signal) | `#A3E635` | accent สำหรับ tactical/G-Signal + index chips |
-| Text / dim | `#EEF4FB` / `#8BA4C6` | neutral biased ไปทางน้ำเงิน |
+| Lime (signal) | `#A3E635` | accent สำหรับ tactical/G-Signal + index chips; ตอนนี้รวมถึง tally-on-air + LIVE phase chip |
+| Coin (economy, v3) | `#E4C36B` | **NEW** — gold, ห้ามใช้เป็น status color |
+| Text / dim | `#EEF4FB` / `#A9BEDB` | neutral biased ไปทางน้ำเงิน; dim ยกจาก `#8BA4C6` (v3, contrast บนพื้น instrument ทึบ) |
 | Safe / Warn / Danger | `#22C55E` / `#F59E0B` / `#F43F5E` | semantic (แยกจาก accent) |
+| Font (v3) | IBM Plex Sans Thai Looped + IBM Plex Mono | **bundled woff2** (`src/public/fonts/`, no CDN) — was system `Segoe UI`/Consolas |
 | Radius | 8 / 11 / 14 / 16 / 999 | sm / card / panel / fab / pill |
 | Frame fillet | outer `28` · notch `20` | ของ Subtract shape |
-| Blur | panel `30` · fab `24` · tile `6` | px, คู่กับ `saturate(150–160%)` |
+| Blur (v3) | shell/console `30` (cinematic tier, default) · fab `24` · legacy panel/tile tokens unused on interior | px, คู่กับ `saturate(150–160%)`; `html.gq-balanced`→`16`, `html.gq-eco`→none (quality tiers, CR-011 §H) |
 
 ## 5. กติกาการแก้ (governance)
 
@@ -92,6 +95,7 @@ attributes:
 
 | version | date | สรุป |
 | --- | --- | --- |
+| 3.0.0-draft | 2026-07-15 | **v3 COLD BOOTH sync** (CR-011 ACCEPTED, waves P1/P1b/P2/P3 merged): two-material rule (console glass = shell/FAB/pop only; instrument matte = all interior sectors, no blur/shadow — 01 §2.1); v3 tokens (`--g-instrument/-2`, `--g-hairline/-2`, `--g-coin`, `--g-blur-console` + `gq-cinematic/balanced/eco` quality tiers, `--g-text-dim` raised `#8BA4C6`→`#A9BEDB` — 02 §1.3b/§6.1); IBM Plex Sans Thai Looped + Plex Mono bundled locally, no CDN (02 §2.1); phase axis `standby→prep→live→debrief` shipped as content-swap-only, geometry frozen (05 §2.1); ON AIR console = utterance ledger with belief-revision strikethrough, replacing the static agent-card art field (04 §9b, §14); Maiden Line palette (`Ctrl+K`) + shortcut sheet (`Ctrl+/`), single-source registry (04 §10a/§10b) |
 | 2.1.0-draft | 2026-07-09 | CR-007 design package: layout freeze บันทึกเป็นกติกา; เพิ่มไฟล์ 07 (Combat HUD contract) + 08 (Account/GID UX); 05 sync กับ shell จริง (audio rail แทน P1–P5, แกนเฟส pending) |
 | 2.0.0-draft | 2026-07-05 | ตั้งชุดเอกสาร SSOT ใหม่; Command Deck HUD (Subtract glass shell); reconcile ice+lime tokens; FAB cutout system |
 | 0.1.0b | 2026-06-23 | Iceglass candidate เดิม (`docs/architecture/design-system.md`) |

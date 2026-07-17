@@ -1,0 +1,341 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<title>CR-011 COLD BOOTH — Booth (live phase) mock</title>
+<style>
+  /* ============ CR-011 tokens (v3 intent; hex approximations of the OKLCH spec) ============ */
+  :root{
+    --void:#06070A; --instrument:#0B0E16; --instrument-2:#0D1119;
+    --hairline:rgba(150,185,230,.10); --hairline-2:rgba(150,185,230,.16);
+    --glass-a:rgba(34,46,74,.30); --glass-b:rgba(10,13,22,.42); --glass-rim:rgba(160,200,255,.16);
+    --ice:#8FD4FF; --ice-3:#9BE7FF; --ice-7:#226CFF; --lime:#A3E635;
+    --lime-soft:rgba(163,230,53,.14); --lime-line:rgba(163,230,53,.34);
+    --text:#EEF4FB; --dim:#A9BEDB; --mute:#5E7699;
+    --safe:#22C55E; --ok:#31D0A0; --warn:#F59E0B; --danger:#F43F5E; --coin:#E4C36B;
+    --font-ui:"IBM Plex Sans Thai Looped","IBM Plex Sans","Segoe UI",system-ui,sans-serif;
+    --font-mono:"IBM Plex Mono",Consolas,ui-monospace,monospace;
+  }
+  *{box-sizing:border-box;margin:0}
+  html,body{height:100%}
+  body{background:var(--void);color:var(--text);font:400 12px/1.45 var(--font-ui);overflow:hidden}
+  .note{position:fixed;left:12px;bottom:8px;color:var(--mute);font-size:10px;z-index:99}
+
+  /* ============ stage (locked CR-006 geometry, 1420x760, downscale-only) ============ */
+  .stage{position:absolute;left:50%;top:50%;width:1420px;height:760px;transform-origin:center;
+    transform:translate(-50%,-50%) scale(var(--s,1))}
+  /* console glass panel — the ONLY blurred material */
+  .panel{position:absolute;left:12px;top:12px;width:1280px;height:720px;
+    background:linear-gradient(160deg,var(--glass-a),var(--glass-b));
+    -webkit-backdrop-filter:blur(30px) saturate(150%);backdrop-filter:blur(30px) saturate(150%);
+    clip-path:url(#clip)}
+  svg.rim{position:absolute;left:12px;top:12px;width:1280px;height:720px;overflow:visible;pointer-events:none;z-index:11}
+  svg.rim path{fill:none;stroke:var(--glass-rim);stroke-width:1;
+    filter:drop-shadow(0 40px 110px rgba(3,6,12,.55)) drop-shadow(0 0 60px rgba(143,212,255,.08))}
+
+  /* ============ shell attachments (geometry per 03-layout.md) ============ */
+  .fab{position:absolute;background:#0a0e15;border:1px solid rgba(150,185,230,.20);border-radius:16px;
+    box-shadow:0 36px 96px rgba(3,6,12,.54),0 10px 32px rgba(3,6,12,.40)}
+  .topbar{left:834px;top:24px;width:446px;height:50px;border-radius:18px;display:flex;align-items:center;gap:10px;padding:0 12px;z-index:33}
+  .logo{font:600 12px/1 var(--font-ui);letter-spacing:2.5px;color:var(--ice);margin-right:auto}
+  .pill{display:flex;align-items:center;gap:6px;border:1px solid var(--hairline-2);border-radius:999px;
+    padding:4px 10px;font:600 10px/1 var(--font-ui);letter-spacing:.6px;color:var(--dim);white-space:nowrap}
+  .pill .dot{width:6px;height:6px;border-radius:50%;background:var(--mute)}
+  .pill.on .dot{background:var(--lime);box-shadow:0 0 8px var(--lime)}
+  .pill.on{color:var(--text)}
+  .pill .mono{font:500 10px/1 var(--font-mono);color:var(--ice)}
+  .profile{display:flex;align-items:center;gap:8px;border:1px solid var(--hairline-2);border-radius:10px;padding:4px 8px}
+  .avatar{width:24px;height:24px;border-radius:8px;background:linear-gradient(160deg,var(--ice-7),#0a1a3a);
+    display:grid;place-items:center;font:600 11px/1 var(--font-ui);color:#fff}
+  .profile b{font:600 11px/1.2 var(--font-ui)} .profile small{display:block;font:400 9px/1.2 var(--font-ui);color:var(--mute)}
+
+  .sidebar{left:26px;top:354px;width:64px;height:306px;display:flex;flex-direction:column;align-items:center;
+    justify-content:center;gap:6px;z-index:33}
+  .nav{width:42px;height:32px;border-radius:9px;display:grid;place-items:center;color:var(--mute);border:1px solid transparent}
+  .nav.active{color:var(--ice);border-color:var(--hairline-2);background:rgba(143,212,255,.08)}
+  .nav svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+  .power{left:35px;top:672px;width:46px;height:46px;border-radius:14px;display:grid;place-items:center;color:var(--dim);z-index:34}
+  .power svg{width:18px;height:18px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+
+  .audiorail{position:absolute;left:42px;top:40px;width:54px;height:158px;z-index:33;display:flex;
+    flex-direction:column;align-items:center;gap:8px;color:var(--dim)}
+  .audiorail b{font:600 9px/1 var(--font-ui);letter-spacing:1px;color:var(--mute)}
+  .audiorail .val{font:500 11px/1 var(--font-mono);color:var(--text)}
+  .vtrack{flex:1;width:4px;border-radius:2px;background:var(--hairline-2);position:relative}
+  .vtrack i{position:absolute;left:0;right:0;bottom:0;height:78%;border-radius:2px;background:var(--ice)}
+  .tgl{font:600 8.5px/1 var(--font-ui);letter-spacing:.8px;border:1px solid var(--hairline-2);border-radius:999px;
+    padding:3px 8px;color:var(--mute)}
+  .tgl.on{color:var(--lime);border-color:var(--lime-line);background:var(--lime-soft)}
+
+  /* ============ seats — instrument matte (NO blur, NO shadow) ============ */
+  .seat{position:absolute;background:var(--instrument);border:1px solid var(--hairline);border-radius:11px;z-index:12}
+  .seat-h{display:flex;align-items:center;gap:7px;padding:8px 12px 0}
+  .tally{width:6px;height:6px;border-radius:1.5px;background:#1b2434;flex:none}
+  .tally.armed{background:var(--ice)}
+  .tally.onair{background:var(--lime);box-shadow:0 0 8px rgba(163,230,53,.8);animation:decay 0.6s ease-out}
+  .tally.alarm{background:var(--danger);box-shadow:0 0 8px rgba(244,63,94,.8)}
+  @keyframes decay{from{box-shadow:0 0 14px rgba(163,230,53,1)}}
+  @media (prefers-reduced-motion:reduce){.tally.onair{animation:none}}
+  .seat-h b{font:600 10px/1 var(--font-ui);letter-spacing:1px;color:var(--mute)}
+  .seat-h .end{margin-left:auto;display:flex;gap:6px;align-items:center}
+
+  /* score header 128,42,640,48 */
+  .score{left:140px;top:54px;width:640px;height:48px;display:flex;align-items:center;gap:14px;padding:0 16px}
+  .score b{font:500 21px/1 var(--font-mono);letter-spacing:.5px}
+  .score .team{font:600 10px/1.2 var(--font-ui);letter-spacing:1px;color:var(--dim)}
+  .clock{margin:0 auto;text-align:center}
+  .clock b{font:500 20px/1 var(--font-mono);color:var(--ice-3)}
+  .phase{font:600 8.5px/1 var(--font-ui);letter-spacing:1.2px;color:var(--lime);border:1px solid var(--lime-line);
+    background:var(--lime-soft);border-radius:999px;padding:3px 8px}
+
+  /* stats row 128,98,478,42 — baseline whiskers */
+  .stats{left:140px;top:110px;width:478px;height:42px;display:flex;gap:8px;background:none;border:none}
+  .stat{flex:1;background:var(--instrument);border:1px solid var(--hairline);border-radius:9px;padding:5px 10px;position:relative}
+  .stat span{font:600 8.5px/1 var(--font-ui);letter-spacing:1px;color:var(--mute)}
+  .stat b{display:block;font:500 13px/1.3 var(--font-mono);color:var(--text)}
+  .stat .wh{position:absolute;right:10px;top:7px;font:500 9px/1.4 var(--font-mono)}
+  .up{color:var(--safe)} .down{color:var(--danger)}
+  .stat .base{position:absolute;right:10px;bottom:5px;font:400 8.5px/1 var(--font-mono);color:var(--mute)}
+
+  /* momentum (between stats and grid) */
+  .mom{left:626px;top:110px;width:142px;height:42px;padding:5px 10px}
+  .mom .row{display:flex;justify-content:space-between;align-items:center}
+  .mom span{font:600 8.5px/1 var(--font-ui);letter-spacing:1px;color:var(--mute)}
+  .mom em{font:600 9px/1 var(--font-ui);font-style:normal;color:var(--safe)}
+  .track{margin-top:7px;height:5px;border-radius:3px;background:rgba(150,185,230,.08);position:relative}
+  .track .c{position:absolute;left:50%;top:-2px;bottom:-2px;width:1px;background:var(--hairline-2)}
+  .track .f{position:absolute;left:50%;width:19%;top:0;bottom:0;background:var(--safe);border-radius:0 3px 3px 0}
+
+  /* battle grid 128,148,640,260 (taller live variant ~276) */
+  .grid{left:140px;top:162px;width:640px;height:262px;background:none;border:none;display:grid;
+    grid-template-columns:150px 1fr 150px;gap:8px}
+  .col{display:flex;flex-direction:column;gap:6px}
+  .hero{flex:1;background:var(--instrument);border:1px solid var(--hairline);border-radius:9px;
+    padding:5px 9px;display:flex;flex-direction:column;justify-content:center;position:relative;overflow:hidden}
+  .hero b{font:600 10.5px/1.3 var(--font-ui)}
+  .hero span{font:400 9px/1.2 var(--font-ui);color:var(--mute)}
+  .hero em{position:absolute;right:8px;top:50%;transform:translateY(-50%);font:500 10px/1 var(--font-mono);
+    font-style:normal;color:var(--dim)}
+  .hero.you{border-color:rgba(143,212,255,.35)}
+  .hero.you::after{content:"YOU";position:absolute;right:6px;top:4px;font:600 7.5px/1 var(--font-ui);
+    letter-spacing:.8px;color:var(--ice)}
+  .hero.missing{border-color:rgba(245,158,11,.35)}
+  .hero.missing span{color:var(--warn)}
+  .hero.dead b{color:var(--mute);text-decoration:line-through 1px rgba(244,63,94,.6)}
+  .map{background:var(--instrument-2);border:1px solid var(--hairline);border-radius:11px;position:relative;overflow:hidden}
+  .map .gridlines{position:absolute;inset:0;
+    background:linear-gradient(var(--hairline) 1px,transparent 1px),linear-gradient(90deg,var(--hairline) 1px,transparent 1px);
+    background-size:34px 34px;opacity:.5}
+  .map .river{position:absolute;left:-20%;top:58%;width:140%;height:34px;background:rgba(143,212,255,.06);transform:rotate(-42deg)}
+  .map .tag{position:absolute;left:8px;bottom:6px;font:600 8.5px/1 var(--font-ui);letter-spacing:1px;color:var(--mute)}
+  .map .tag i{color:var(--lime);font-style:normal}
+  .mk{position:absolute;width:8px;height:8px;border-radius:50%;border:1px solid rgba(255,255,255,.5)}
+  .mk.a{background:var(--safe)} .mk.e{background:var(--danger)}
+  .mk.ghost{background:transparent;border:1px dashed var(--warn)}
+
+  /* on-air console 808,86,440,354 */
+  .seat.onair{left:820px;top:98px;width:440px;height:354px;display:flex;flex-direction:column}
+  .seat.onair .seat-h b{color:var(--dim)}
+  .chip{font:600 8px/1 var(--font-ui);letter-spacing:.8px;border:1px solid var(--hairline-2);border-radius:4px;
+    padding:2.5px 5px;color:var(--dim)}
+  .chip.cloud{color:var(--ice);border-color:rgba(143,212,255,.3)}
+  .chip.sig{color:var(--warn);border-color:rgba(245,158,11,.3)}
+  .chip.mas{color:var(--ice-3)} .chip.ann{color:var(--coin);border-color:rgba(228,195,107,.3)}
+  .now{padding:14px 16px 12px;border-bottom:1px solid var(--hairline)}
+  .now .t{font:500 10px/1 var(--font-mono);color:var(--mute)}
+  .now p{margin-top:6px;font:500 15px/1.6 var(--font-ui);color:var(--text)}
+  .wave{display:flex;gap:2px;align-items:flex-end;height:10px;margin-top:8px}
+  .wave i{width:2px;background:var(--ice);opacity:.7;border-radius:1px}
+  .log{flex:1;overflow:hidden;padding:6px 6px 8px 6px;display:flex;flex-direction:column;gap:2px}
+  .utt{display:grid;grid-template-columns:44px 52px 1fr;gap:8px;align-items:baseline;padding:6px 10px;border-radius:7px}
+  .utt:hover{background:rgba(143,212,255,.05)}
+  .utt .t{font:400 9.5px/1.6 var(--font-mono);color:var(--mute)}
+  .utt p{font:400 11px/1.6 var(--font-ui);color:var(--dim)}
+  .utt p s{color:var(--danger);text-decoration:line-through 1px rgba(244,63,94,.85);text-underline-offset:2px}
+  .utt p b{color:var(--text);font-weight:500}
+  .avatar-sm{width:26px;height:26px;border-radius:8px;background:linear-gradient(160deg,#1a3a5c,#0a1526);
+    display:grid;place-items:center;color:var(--ice);font:600 12px/1 var(--font-ui)}
+
+  /* sector log 128,418,620,170 (live: 140,432 in stage coords) */
+  .sector{left:140px;top:436px;width:640px;height:172px;display:grid;grid-template-columns:1.5fr 1fr;gap:0}
+  .sector>div{padding:10px 14px}
+  .sector>div+div{border-left:1px solid var(--hairline)}
+  .sector h3{font:600 10px/1 var(--font-ui);letter-spacing:1px;color:var(--mute);display:flex;align-items:center;gap:7px}
+  .ev{display:flex;gap:10px;padding:4px 0;border-bottom:1px dashed rgba(150,185,230,.06)}
+  .ev:last-child{border:none}
+  .ev .t{font:400 9.5px/1.7 var(--font-mono);color:var(--mute);flex:none}
+  .ev p{font:400 10.5px/1.7 var(--font-ui);color:var(--dim)}
+  .ev.warn p{color:var(--warn)} .ev.good p{color:var(--safe)}
+  .quart{display:grid;grid-template-columns:1fr 1fr;gap:6px;margin-top:8px}
+  .q{border:1px solid var(--hairline);border-radius:8px;padding:5px 9px}
+  .q span{font:600 8px/1 var(--font-ui);letter-spacing:1px;color:var(--mute)}
+  .q b{display:block;font:500 11.5px/1.4 var(--font-mono)}
+  .q small{font:400 8.5px/1 var(--font-ui);color:var(--mute)}
+
+  /* annunciators — notch cluster 840,532,428,176 */
+  .ann-cluster{position:absolute;left:840px;top:532px;width:428px;height:176px;display:grid;
+    grid-template-columns:1fr 1fr;grid-template-rows:1fr 1fr;gap:8px;z-index:34}
+  .ann{background:#0a0e15;border:1px solid rgba(150,185,230,.20);border-radius:14px;padding:9px 12px;
+    position:relative;box-shadow:0 24px 60px rgba(3,6,12,.48),0 6px 22px rgba(3,6,12,.36)}
+  .ann .tag{position:absolute;right:9px;top:7px;font:600 8px/1 var(--font-mono);color:var(--mute)}
+  .ann span{font:600 8.5px/1 var(--font-ui);letter-spacing:1px;color:var(--mute)}
+  .ann b{display:block;margin-top:3px;font:500 24px/1.1 var(--font-mono);color:var(--text)}
+  .bar{margin-top:6px;height:4px;border-radius:2px;background:rgba(150,185,230,.10);position:relative}
+  .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:2px;background:var(--ice)}
+  .bar .tick{position:absolute;top:-3px;bottom:-3px;width:1px;background:rgba(238,244,251,.35)}
+  .ann.alarm{border-color:var(--lime-line);background:linear-gradient(180deg,rgba(163,230,53,.10),rgba(10,14,21,1) 65%)}
+  .ann.alarm b{color:var(--lime)} .ann.alarm .bar i{background:var(--lime)}
+</style>
+</head>
+<body>
+<svg width="0" height="0" aria-hidden="true"><defs>
+  <clipPath id="clip" clipPathUnits="userSpaceOnUse">
+    <path d="M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 488 A 20 20 0 0 1 1248,508 H 836 A 20 20 0 0 0 816,528 V 688 A 20 20 0 0 1 796,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z"/>
+  </clipPath>
+</defs></svg>
+
+<div class="stage" id="stage">
+  <div class="panel"></div>
+  <svg class="rim" viewBox="0 0 1280 720"><path d="M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 488 A 20 20 0 0 1 1248,508 H 836 A 20 20 0 0 0 816,528 V 688 A 20 20 0 0 1 796,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z"/></svg>
+
+  <!-- topbar FAB -->
+  <header class="fab topbar">
+    <span class="logo">G-MAIDEN</span>
+    <span class="pill on"><span class="dot"></span>GSI ONLINE</span>
+    <span class="pill">FEED <span class="mono">480ms</span></span>
+    <span class="profile"><span class="avatar">B</span><span><b>Boss</b><small>G-F43KRAKGE</small></span></span>
+  </header>
+
+  <!-- sidebar FAB (8 seats) -->
+  <aside class="fab sidebar">
+    <span class="nav active"><svg viewBox="0 0 24 24"><rect x="4" y="4" width="7" height="7" rx="2"/><rect x="13" y="4" width="7" height="7" rx="2"/><rect x="4" y="13" width="7" height="7" rx="2"/><rect x="13" y="13" width="7" height="7" rx="2"/></svg></span>
+    <span class="nav"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.5"/></svg></span>
+    <span class="nav"><svg viewBox="0 0 24 24"><path d="M12 4v10M8 8l4-4 4 4"/><rect x="5" y="16" width="14" height="4" rx="2"/></svg></span>
+    <span class="nav"><svg viewBox="0 0 24 24"><path d="M7 4h10v6a5 5 0 0 1-10 0zM12 15v4M8 21h8"/></svg></span>
+    <span class="nav"><svg viewBox="0 0 24 24"><path d="M4 18v-6M9 18V8M14 18v-8M19 18V5"/></svg></span>
+    <span class="nav"><svg viewBox="0 0 24 24"><path d="M3.5 12a8.5 8.5 0 1 0 2.6-6.1M3.5 5v3.5H7M12 8v4l2.5 1.5"/></svg></span>
+    <span class="nav"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg></span>
+    <span class="nav"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3M5.6 5.6l2.1 2.1M16.3 16.3l2.1 2.1M18.4 5.6l-2.1 2.1M7.7 16.3l-2.1 2.1"/></svg></span>
+  </aside>
+  <span class="fab power"><svg viewBox="0 0 24 24"><path d="M12 3v8M6.3 7.8a8 8 0 1 0 11.4 0"/></svg></span>
+
+  <!-- audio rail -->
+  <div class="audiorail">
+    <b>VOLUME</b><span class="val">78%</span>
+    <div class="vtrack"><i></i></div>
+    <span class="tgl on">ANN</span><span class="tgl on">SIGNAL</span>
+  </div>
+
+  <!-- score header -->
+  <section class="seat score">
+    <span class="team">TEAM RADIANT</span><b>18</b>
+    <span class="clock"><b>24:31</b></span>
+    <b>9</b><span class="team">TEAM DIRE</span>
+    <span class="phase">LIVE · MID GAME</span>
+  </section>
+
+  <!-- stats with baseline whiskers -->
+  <div class="seat stats">
+    <div class="stat"><span>NW</span><b>12.4k</b><span class="wh up">▲</span><span class="base">avg 10.9k</span></div>
+    <div class="stat"><span>GPM</span><b>512</b><span class="wh up">▲</span><span class="base">avg 468</span></div>
+    <div class="stat"><span>XPM</span><b>587</b><span class="wh down">▼</span><span class="base">avg 601</span></div>
+  </div>
+
+  <!-- momentum -->
+  <div class="seat mom">
+    <div class="row"><span>MOMENTUM</span><em>เรากำลังนำ</em></div>
+    <div class="track"><span class="c"></span><span class="f"></span></div>
+  </div>
+
+  <!-- battle grid -->
+  <div class="seat grid">
+    <div class="col">
+      <div class="hero you"><b>Crystal Maiden</b><span>Visible</span><em>4/2/16</em></div>
+      <div class="hero"><b>Juggernaut</b><span>Visible</span><em>7/1/5</em></div>
+      <div class="hero"><b>Pangolier</b><span>Visible</span><em>3/4/9</em></div>
+      <div class="hero dead"><b>Tidehunter</b><span>Dead · 14s</span><em>1/5/11</em></div>
+      <div class="hero"><b>Sniper</b><span>Visible</span><em>6/2/4</em></div>
+    </div>
+    <div class="map">
+      <div class="gridlines"></div><div class="river"></div>
+      <span class="mk a" style="left:22%;top:64%"></span>
+      <span class="mk a" style="left:30%;top:70%"></span>
+      <span class="mk e" style="left:66%;top:30%"></span>
+      <span class="mk e" style="left:58%;top:38%"></span>
+      <span class="mk ghost" style="left:44%;top:52%"></span>
+      <span class="tag">MINIMAP MIRROR · <i>CV LIVE</i></span>
+    </div>
+    <div class="col">
+      <div class="hero missing"><b>Pudge</b><span>Missing · 9s</span><em>—</em></div>
+      <div class="hero"><b>Lion</b><span>Visible</span><em>—</em></div>
+      <div class="hero missing"><b>Spectre</b><span>Missing · 21s</span><em>—</em></div>
+      <div class="hero"><b>Templar Assassin</b><span>Visible</span><em>—</em></div>
+      <div class="hero"><b>Undying</b><span>Visible</span><em>—</em></div>
+    </div>
+  </div>
+
+  <!-- ON AIR console (agent sector reborn) -->
+  <section class="seat onair">
+    <div class="seat-h">
+      <span class="tally onair"></span><b>ON AIR — MAIDEN</b>
+      <span class="end"><span class="chip cloud">CLOUD</span><span class="avatar-sm">M</span></span>
+    </div>
+    <div class="now">
+      <span class="t">24:31 · G-SIGNAL</span>
+      <p>ระวังนะคะ — Pudge กับ Spectre หายจากแมพพร้อมกัน มีโอกาสเข้ากลางสูงค่ะ</p>
+      <div class="wave"><i style="height:3px"></i><i style="height:7px"></i><i style="height:10px"></i><i style="height:5px"></i><i style="height:8px"></i><i style="height:4px"></i><i style="height:9px"></i><i style="height:6px"></i><i style="height:3px"></i><i style="height:7px"></i><i style="height:5px"></i><i style="height:2px"></i></div>
+    </div>
+    <div class="log">
+      <div class="utt"><span class="t">23:58</span><span class="chip sig">SIGNAL</span>
+        <p><s>เลนบนปลอดภัย เดินหน้าได้เลย</s> <b>เอ๊ะ! เดี๋ยวก่อน — เจอ Pudge ที่รูนบนค่ะ ถอยก่อนนะคะ</b></p></div>
+      <div class="utt"><span class="t">23:12</span><span class="chip mas">MASTER</span>
+        <p>ศัตรูมี magic burst สูง — ชิ้นต่อไปแนะนำ Glimmer Cape ค่ะ (เหลืออีก 350 ทอง)</p></div>
+      <div class="utt"><span class="t">22:47</span><span class="chip ann">ANN</span>
+        <p>DOUBLE KILL — แพ็ก "Thai Caster Vol.2"</p></div>
+      <div class="utt"><span class="t">21:30</span><span class="chip sig">SIGNAL</span>
+        <p>ปลอดภัยแล้วค่ะ ศัตรูโผล่ครบทั้งห้าที่เลนล่าง</p></div>
+    </div>
+  </section>
+
+  <!-- sector log + companion state -->
+  <section class="seat sector">
+    <div>
+      <h3><span class="tally onair"></span>EVENT FEED</h3>
+      <div style="margin-top:6px">
+        <div class="ev warn"><span class="t">24:31</span><p>Gank risk 72% — Pudge + Spectre หาย</p></div>
+        <div class="ev good"><span class="t">24:02</span><p>Juggernaut ได้ double kill กลางเลน</p></div>
+        <div class="ev"><span class="t">23:41</span><p>Tower Tier-1 กลางของเราถูกทำลาย</p></div>
+        <div class="ev"><span class="t">22:47</span><p>แพ็กเสียงเล่น "double_kill" (Thai Caster Vol.2)</p></div>
+      </div>
+    </div>
+    <div>
+      <h3>COMPANION STATE</h3>
+      <div class="quart">
+        <div class="q"><span>VOICE</span><b style="font-family:var(--font-ui);font-size:10.5px">Thai Caster Vol.2</b><small>Active pack</small></div>
+        <div class="q"><span>SIGNAL</span><b class="up" style="color:var(--safe)">ON</b><small>G-Signal</small></div>
+        <div class="q"><span>CPU</span><b>1.8%</b><small>Governor</small></div>
+        <div class="q"><span>RAM</span><b>312 MB</b><small>Governor</small></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- annunciators in the bottom-right notch -->
+  <div class="ann-cluster">
+    <div class="ann"><span class="tag">D</span><span>ENEMY MISSING</span><b>2</b>
+      <div class="bar"><i style="width:40%"></i><span class="tick" style="left:20%"></span><span class="tick" style="left:60%"></span></div></div>
+    <div class="ann alarm"><span class="tag">E</span><span>GANK RISK</span><b>72%</b>
+      <div class="bar"><i style="width:72%"></i><span class="tick" style="left:40%"></span><span class="tick" style="left:65%"></span></div></div>
+    <div class="ann"><span class="tag">F</span><span>RISK LEVEL</span><b style="font-size:16px;font-family:var(--font-ui);font-weight:600;color:var(--warn)">เสี่ยง</b>
+      <div class="bar"><i style="width:55%;background:var(--warn)"></i></div></div>
+    <div class="ann"><span class="tag">G</span><span>GANK ETA</span><b>~12s</b>
+      <div class="bar"><i style="width:30%"></i></div></div>
+  </div>
+</div>
+
+<p class="note">CR-011 COLD BOOTH mock — Booth seat map, live phase · locked CR-006 geometry (stage 1420×760, Subtract panel + 3 notches) · two materials: console glass (shell only) + instrument matte (interior) · tick marks on GANK RISK = the real 0.40/0.65 hysteresis latch · struck text in ON AIR = belief-revision ink</p>
+<script>
+  const fit=()=>{const s=Math.min(innerWidth/1420,innerHeight/760,1);document.getElementById('stage').style.setProperty('--s',s)};
+  addEventListener('resize',fit);fit();
+</script>
+</body>
+</html>
