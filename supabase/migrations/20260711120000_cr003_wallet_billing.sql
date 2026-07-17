@@ -8,8 +8,11 @@
 -- default 'user' check (role in ('user','creator','admin'))`). CR-003 §2.2 lists that statement
 -- too because the doc predates knowing it had already landed; skipping the duplicate here.
 --
--- Not applied to any live database. Do not run this against gstore without a review pass first
--- (pgTAP Layer 1 tests per CR-003 §5.2 do not exist yet).
+-- APPLIED to live gstore on 2026-07-17 (schema-only) after local pgTAP 69/69 PASS + a review
+-- pass. The shard faucet (mint_shard_from_match) and payment (credit_topup) RPCs are deployed
+-- but are service_role-only, and their Edge Functions (match-share-submit / payment-webhook)
+-- are deliberately NOT deployed — so minting/ingestion/payment stay closed until ADR-16
+-- §Prerequisites (Valve legal status + consent/terms copy) are resolved.
 
 begin;
 

@@ -84,7 +84,7 @@ palette, and the shortcut sheet are all **derived** from it — rail/palette/she
 | 1 | **Dashboard** (`dashboard`) | phase-aware single canvas: minimap mirror · ON AIR console · G-Signal cluster · phase chip · volume rail | `CommandDeck.tsx` (`GMaidenFungDashboard`, `OnAirConsole`, `MinimapMirror`, `SignalGrid`, `PhaseChip`, `VolumeRail`) | 🟢 SHIPPED — live-wired via `useCompanionData` |
 | 2 | **Live** (`live`) | `[สด \| บิลด์]` (Build folded in, CR-013 W1) | `CompanionPages.tsx` (`LiveMatchPage`, `BuildAdvisorPage`) | 🟡 PARTIAL — score/visibility/feeds live; **objective board is honest `"—"`** placeholders; Build advisor is mock-fed |
 | 3 | **Voice** (`voice`) | คลังของฉัน / ไอเทม / ตัวแก้ไข (+ cross-link → Store) | `VoicePacksPage.tsx`, `VoiceInventory.tsx`, `AudioSettings.tsx` | 🟢 SHIPPED — install/activate/edit via real `voice_api_*` cmds |
-| 4 | **G-Store** (`store`) | `[ร้านค้า \| กระเป๋า \| คลัง \| บันทึก]` | `StorePage.tsx`, `WalletTab.tsx`, `InventoryTab.tsx`, `LedgerTab.tsx`, `wallet.ts` | 🟡 PARTIAL — frontend fully wired to Supabase RPCs, but **CR-003 backend not deployed** → catalog shows `"ร้านค้ายังไม่เปิด"` empty-state |
+| 4 | **G-Store** (`store`) | `[ร้านค้า \| กระเป๋า \| คลัง \| บันทึก]` | `StorePage.tsx`, `WalletTab.tsx`, `InventoryTab.tsx`, `LedgerTab.tsx`, `wallet.ts` | 🟡 PARTIAL — frontend wired + **CR-003 schema DEPLOYED to live gstore (2026-07-17)**; catalog empty (no items seeded) so Store still shows the coming-soon state, and faucet/payment stay gated (below) |
 | 5 | **Insights** (`insights`) | `[ภาพรวม \| ประวัติ]` (History folded in, CR-013 W1) | `CompanionPages.tsx` (`InsightsPage`, `HistoryPage`), `live/buildInsights.ts`, `buildHistory.ts` | 🟡 PARTIAL — real values when Steam linked (OpenDota); `"—"` NO_SENSOR sentinel otherwise; History paginates via `rowsThatFit` |
 | 6 | **Account** (`account`) | บัญชี / กระเป๋า / ประวัติธุรกรรม | `AccountPage.tsx`, `AuthPanel.tsx`, `SteamLink.tsx`, `auth.ts`, `profile.ts`, `gid.ts` | 🟢 SHIPPED (identity) — Google OAuth + Steam link + GID mint; embeds Wallet/Ledger (same PARTIAL economy backend) |
 | 7 | **Settings** (`settings`) | iOS split view — `general` + 6 Control categories | `CommandDeck.tsx` split + `App.tsx` `Control`, `DeckPrefsCard`, `useAppUpdate.ts` | 🟢 SHIPPED — general deck-owned; overlay/voice/ai/modules/privacy/system routed to `Control` |
@@ -98,7 +98,7 @@ palette, and the shortcut sheet are all **derived** from it — rail/palette/she
 | --- | --- | --- |
 | Live wiring → Tauri events | `companion.ts` (`useCompanionData`), `live/events.ts`, `live/*` (pure builders), `live/phase.ts`, `live/utterances.ts` | 🟢 SHIPPED — subscribes to `game-tick`/`gsi-status`/`resource-stats`/`minimap-cv`/`draft-roster`/`gank-alert`/`enemy-missing`/`utterance`; merges over baked `MOCK` (renders offline) |
 | Accounts / GID | `auth.ts`, `profile.ts`, `supabase.ts`, `gid.ts`, `AccountPage.tsx`, `AuthPanel.tsx`, `SteamLink.tsx` | 🟢 SHIPPED — Google OAuth PKCE + Supabase `gstore`; GID codec + `mint-gid` edge fn |
-| Economy / G-Store | `StorePage.tsx`, `WalletTab.tsx`, `InventoryTab.tsx`, `LedgerTab.tsx`, `wallet.ts` | 🟡 PARTIAL — frontend complete; Supabase RPC backend not deployed live |
+| Economy / G-Store | `StorePage.tsx`, `WalletTab.tsx`, `InventoryTab.tsx`, `LedgerTab.tsx`, `wallet.ts`; `supabase/migrations/20260711120000_cr003_wallet_billing.sql` | 🟡 PARTIAL — frontend complete + **schema live on gstore (2026-07-17)**; catalog empty + faucet/payment Edge Fns undeployed (ADR-16 §Prereq) |
 | Maiden Line command palette (Ctrl+K) | `MaidenLine.tsx`, `shortcuts.ts` | 🟢 SHIPPED — verb-first bilingual, phase-aware ranking, arm/confirm Quit |
 | ON AIR utterance console | `CommandDeck.tsx` (`OnAirConsole`), `live/utterances.ts` | 🟢 SHIPPED — belief-revision strikethrough, LOCAL/CLOUD chip, copy-context menu |
 | Phase axis (standby→prep→live→debrief) | `live/phase.ts` (`stepPhase`), `PhaseChip` | 🟢 SHIPPED — derived from GSI; geometry-frozen |
@@ -141,9 +141,12 @@ Specified but **not shipped** — the "Companion Experience Extensions" layered 
 
 ## 5. Notable gaps (consolidated — the map's "watch list")
 
-1. **Economy backend not deployed** — the entire G-Store + Wallet + Ledger frontend is wired
-   against Supabase RPCs (`purchase_item`/`redeem_code`/`tip`) that are pgTAP-verified locally
-   but **not live**, so users see the `"ร้านค้ายังไม่เปิด"` empty-state. Biggest frontend-vs-reality gap.
+1. **Economy: schema live, store still closed** — CR-003 wallet/billing schema was DEPLOYED to
+   live gstore on 2026-07-17 (14 tables + RLS + RPCs, pgTAP 69/69). What remains before the Store
+   actually "opens": (a) seed `catalog_items` (currently empty → coming-soon state persists), and
+   (b) the faucet (`mint_shard_from_match`) + payment (`credit_topup`) RPCs are deployed but
+   service_role-only and their Edge Functions (`match-share-submit`/`payment-webhook`) are NOT
+   deployed — gated on ADR-16 §Prerequisites (Valve legal status + consent/terms copy).
 2. **G-Signal/G-Sentry depend on DXGI** — in Dota exclusive-fullscreen (or any DXGI-start
    failure) the app drops to **Lite mode** and the whole minimap-CV → Sentry → Motion → Signal
    chain goes silent; gank warnings are not GSI-derivable. A real functional cliff, not just degraded quality.
