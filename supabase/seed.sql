@@ -40,3 +40,25 @@ on conflict (sku) do update
       creator_id  = excluded.creator_id,
       status      = excluded.status,
       updated_at  = now();
+
+-- ---------------------------------------------------------------------------
+-- Coin packages (real-money top-up bundles — wallet currency only, ADR-16)
+-- ---------------------------------------------------------------------------
+-- price_satang = THB × 100. Seeded with active=false ON PURPOSE: the payment path
+-- (topup-create / payment-webhook Edge Functions + Omise config) is not deployed,
+-- so these must NOT surface in TopupModal yet. The coin_packages RLS policy is
+-- `for select using (active)`, so active=false rows exist in the DB but are hidden
+-- from clients — flip active=true only once payments are live and these prices are
+-- final. Prices below are Boss's 2026-07-17 decision (S ฿69 / M ฿179 / L ฿349).
+insert into public.coin_packages (id, title, coins, bonus_coins, price_satang, active, sort)
+values
+  ('coins_s', 'แพ็กเริ่มต้น', 250,  0,   6900,  false, 1),
+  ('coins_m', 'แพ็กคุ้มค่า',  700,  50,  17900, false, 2),
+  ('coins_l', 'แพ็กใหญ่',     1500, 200, 34900, false, 3)
+on conflict (id) do update
+  set title        = excluded.title,
+      coins        = excluded.coins,
+      bonus_coins  = excluded.bonus_coins,
+      price_satang = excluded.price_satang,
+      active       = excluded.active,
+      sort         = excluded.sort;
