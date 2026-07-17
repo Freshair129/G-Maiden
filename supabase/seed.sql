@@ -62,3 +62,23 @@ on conflict (id) do update
       price_satang = excluded.price_satang,
       active       = excluded.active,
       sort         = excluded.sort;
+
+-- ---------------------------------------------------------------------------
+-- Redeem codes
+-- ---------------------------------------------------------------------------
+-- MAIDENFREE — a shared promo code that grants the free "Maiden — Community Pack"
+-- into the redeemer's inventory (grant_type='item'). Codes are validated entirely
+-- inside the redeem_code() RPC (never client-SELECTable). The (code, user_id) PK on
+-- `redemptions` blocks the same account redeeming twice; max_uses caps total
+-- redemptions across all users. item_id is resolved by SKU so this stays portable
+-- across DBs (must run AFTER the catalog insert above). Codes are stored UPPERCASE.
+insert into public.redeem_codes (code, grant_type, coins, item_id, max_uses, expires_at, created_by)
+select 'MAIDENFREE', 'item', null, ci.id, 100000, null, null
+  from public.catalog_items ci
+ where ci.sku = 'pack.mrijgajn'
+on conflict (code) do update
+  set grant_type = excluded.grant_type,
+      coins      = excluded.coins,
+      item_id    = excluded.item_id,
+      max_uses   = excluded.max_uses,
+      expires_at = excluded.expires_at;
