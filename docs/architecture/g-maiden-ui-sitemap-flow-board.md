@@ -1,7 +1,7 @@
 ---
-version: "0.2.0"
+version: "0.3.0"
 created_at: "2026-06-24T03:10:00+07:00,ATHER,pending"
-last_update: "2026-06-26T00:00:00+07:00,Opus"
+last_update: "2026-07-17T00:00:00+07:00,Opus (CR-013 ONE CANVAS refresh)"
 status: "accepted"
 superseded_by: null
 attributes:
@@ -14,6 +14,12 @@ attributes:
 
 > Product-specific design map for `G-Maiden`, the player-facing AI companion.
 > Family overview: [product-family-design-map.md](product-family-design-map.md)
+>
+> **Layering (read this first):** the **Deck / navigation** layer's authoritative SSOT is
+> [`docs/design-system/05-sitemap-ia.md`](../design-system/05-sitemap-ia.md) (CR-013 ONE CANVAS).
+> This board is the higher-level **product-boundary + user-flow + Overlay** map; it stays
+> authoritative for the **Overlay (Combat HUD)** layer (§5) and the presentation direction.
+> Feature → file → status lives in [`PROJECT_FEATURE_MAP.md`](../../PROJECT_FEATURE_MAP.md).
 
 ---
 
@@ -32,96 +38,100 @@ attributes:
 | Character role | Core companion presence |
 | Not this | Operator graph builder, approval system, agent workflow admin |
 
-## 2. Sitemap
+## 2. Sitemap (ONE CANVAS, CR-013)
+
+G-Maiden มี **สองหน้าต่าง** (routing ใน `src/src/App.tsx`): **Control** (Command Deck — หน้าต่างหลัก)
+และ **Overlay** (Combat HUD — โปร่ง click-through บนเกม). Deck คือ **ONE CANVAS 7 หน้า**
+(single source `src/src/shortcuts.ts` `PAGES`, `Ctrl+1..7`); Build ยุบเข้า Live, History ยุบเข้า Insights.
 
 ```mermaid
 flowchart TD
-  A["G-Maiden"] --> B["Live Overlay"]
-  A --> C["Companion Control"]
-  A --> D["Match Memory"]
-  A --> E["Persona / Voice"]
-  A --> F["Settings"]
+  A["G-Maiden"] --> CTRL["Control — Command Deck (7 pages, Ctrl+1..7)"]
+  A --> OV["Overlay — Combat HUD (transparent, over game)"]
 
-  B --> B1["Danger Alert"]
-  B --> B2["Advice Panel"]
-  B --> B3["G-Meter (risk gauge)"]
-  B --> B4["Voice Toast (silent fallback)"]
-  B --> B5["Companion Stage"]
-  B --> B6["Enemy Missing Tracker"]
-  B --> B7["Stat Modules (clock / KDA / gold / GPM / XPM / NW / score / HP-mana)"]
-  B --> B8["Belief Revision"]
-  B --> B9["Stream-safe Mode"]
+  CTRL --> P1["1 · Dashboard (phase-aware)"]
+  CTRL --> P2["2 · Live  [สด | บิลด์]"]
+  CTRL --> P3["3 · Voice (packs)"]
+  CTRL --> P4["4 · G-Store  [ร้านค้า | กระเป๋า | คลัง | บันทึก]"]
+  CTRL --> P5["5 · Insights  [ภาพรวม | ประวัติ]"]
+  CTRL --> P6["6 · Account (GID)"]
+  CTRL --> P7["7 · Settings (iOS split, 7 categories)"]
 
-  C --> C1["Status Overview"]
-  C --> C2["Overlay UI Editor (drag + grid magnet + HUD ref preview)"]
-  C --> C3["GSI Setup"]
-  C --> C4["Module Health"]
-  C --> C5["Voice Packs (bundle: upload clip/banner → active pack, activate = in-game voice, Show-on-overlay preview)"]
-  C --> C6["Calibration Mode (QA audit)"]
-  C --> C7["Sensitivity (Low / Med / High)"]
-  C --> C8["UI Tier Picker (Lite / Full)"]
-  C --> C9["Exclusive Fullscreen Warning"]
-  C --> C10["Account / GID (opt-in sign-in, public OpenDota profile)"]
+  P1 --> PH["Phase axis: standby → prep → live → debrief"]
+  P1 --> AR["Audio rail (volume + ANN/SIGNAL) — not nav"]
 
-  D --> D1["Match Timeline"]
-  D --> D2["Local Logs"]
-  D --> D3["Post-match Review"]
-  D --> D4["Improvement Notes"]
+  P7 --> S1["ทั่วไป"] & S2["Overlay"] & S3["เสียง & เตือน"] & S4["AI (G-Master)"]
+  P7 --> S5["โมดูล & CV"] & S6["ความเป็นส่วนตัว"] & S7["ระบบ"]
 
-  E --> E1["Maiden Presence"]
-  E --> E2["Voice Style"]
-  E --> E3["Mood / Alert Tone"]
-  E --> E4["Character Skin Future"]
+  OV --> B1["Danger Alert / gank banner"]
+  OV --> B2["Advice Panel (G-Master)"]
+  OV --> B3["G-Meter (risk gauge)"]
+  OV --> B4["Voice Toast + announcer pack banner"]
+  OV --> B5["Companion Stage"]
+  OV --> B6["Enemy Missing Tracker"]
+  OV --> B7["Buyback / G-Revive verdict"]
+  OV --> B8["Stat Modules — Full tier only (clock/KDA/gold/GPM/XPM/NW/score/HP-mana)"]
+  OV --> B9["Belief Revision"]
 
-  F --> F1["Overlay Position / Layout"]
-  F --> F2["Privacy Local-only"]
-  F --> F3["Motion Intensity"]
-  F --> F4["Performance Governor"]
+  CROSS["Maiden Line — command palette Ctrl+K (cross-cuts all axes)"]
 ```
 
-> Live Overlay (B) ของ Full tier ประกอบด้วย 12 modules ที่วาง/สเกลแยกอิสระจาก
-> saved layout (peripheral-first; ค่า default แสดงเฉพาะ core modules — stat chips
-> ปิดไว้เพราะ Dota แสดงอยู่แล้ว ให้ผู้เล่นเปิดเฉพาะที่ต้องการ)
+**Three axes, never mix** (05-sitemap-ia §2):
+1. **Sidebar FAB** = the only real nav → switches page (`PAGES`, `Ctrl+1..7`).
+2. **Audio rail** (replaces old P1–P5 anchor rail) = **not nav** → master volume + ANN/SIGNAL on Dashboard.
+3. **Phase axis** = **not nav, does not move layout** → Dashboard sector content swaps by match state.
+
+> Overlay (B) Full tier = 12 modules ที่วาง/สเกลแยกอิสระจาก saved layout (peripheral-first;
+> default แสดงเฉพาะ core — stat chips ปิดไว้เพราะ Dota แสดงอยู่แล้ว). Lite tier (default) = single-stack.
 
 ## 3. User Flow
 
 ```mermaid
 flowchart LR
   A["Launch G-Maiden"] --> B{"Dota + GSI Ready?"}
-  B -->|No| C["Setup / Fix GSI"]
-  C --> D["Preview Overlay"]
+  B -->|No| C["Setup / Fix GSI (:3000 cfg)"]
+  C --> D["Preview Overlay / Lite mode"]
   B -->|Yes| B2{"Exclusive Fullscreen?"}
-  B2 -->|Yes| W["Warn: switch to Borderless"]
-  W --> E["Enter Live Overlay"]
+  B2 -->|Yes| W["Warn: switch to Borderless (else Lite mode, no CV)"]
+  W --> E["Dashboard: phase = standby/prep"]
   B2 -->|No| E
 
-  E --> F["Monitor Match State"]
-  F --> G{"Signal Event?"}
-  G -->|Safe| H["Ambient Companion State"]
-  G -->|Warning| I["Show Advice Panel"]
-  G -->|Critical| J["Show Danger Alert + Voice (toast fallback if silent)"]
+  E --> PH{"Match phase (from GSI)"}
+  PH -->|prep| RR["Readiness rundown (checklist)"]
+  PH -->|live| F["Monitor: minimap mirror + G-Signal cluster + Overlay HUD"]
+  PH -->|debrief| DT["Debrief timeline (sticky)"]
 
+  F --> G{"Signal Event?"}
+  G -->|Safe| H["Ambient companion state"]
+  G -->|Warning| I["G-Master advice panel"]
+  G -->|Critical ≥85%| J["Danger alert + VOICE INTERRUPT (toast fallback if silent)"]
   J --> K{"Prediction changed?"}
-  K -->|Yes| L["Belief Revision"]
-  K -->|No| M["Continue Monitoring"]
+  K -->|Yes| L["Belief Revision (mid-sentence correction)"]
+  K -->|No| M["Continue monitoring"]
   L --> M
   I --> M
   H --> M
+  M --> N["G-Log: write local match memory"]
+  N --> DT
 
-  M --> N["Write Local Match Memory"]
-  N --> O["Post-match Review"]
+  subgraph OPT["Optional additive sign-in (ADR-14)"]
+    O1["Google OAuth PKCE → :3000/auth/callback"] --> O2["GID minted"]
+    O2 --> O3["Link Steam → public OpenDota baselines"]
+  end
 ```
+
+Global hotkeys (unchanged): **Ctrl+Alt+S** (hide/show overlay), **Alt+↑/↓** (volume ±10%), **Alt+M** (mute toggle).
 
 ## 4. Presentation Board
 
 ### Direction
 
-`Maiden Blue Quiet Luxury Gaming / Esport`
+`Maiden Blue Quiet Luxury Gaming / Esport` — COLD BOOTH broadcast language (CR-011).
 
 ### Visual Priorities
 
 - Realistic MOBA/Dota-like female support companion presence
-- Dark smoked glass with Maiden blue edge light
+- Dark smoked glass with Maiden blue edge light (COLD BOOTH sector frame + instrument matte)
 - Low-noise overlay that never feels like a full dashboard during combat
 - Soft live wallpaper and subtle character motion
 - Voice, alert, and belief revision states that feel alive but not noisy
@@ -129,53 +139,59 @@ flowchart LR
 
 ### Screen Directions
 
-#### Companion Control
+#### Command Deck (Control)
 
-Player-facing control surface for setup, companion presence, overlay layout editor,
-voice packs, privacy, match memory, sensitivity, calibration, and performance governor.
+The player-facing control surface — now the **ONE CANVAS deck** of 7 nav pages (broadcast "booth"),
+not a single control screen. Each page is a fixed 1280×720 panel-world canvas (§2.2 laws). Dashboard
+is phase-aware; setup/health/privacy/updates live under Settings' iOS split view.
 
-![G-Maiden companion control dashboard](assets/screen-directions/g-maiden-companion-control-dashboard.png)
+![G-Maiden command deck](assets/screen-directions/g-maiden-companion-control-dashboard.png)
 
 #### Live Overlay
 
-In-game, peripheral-first HUD direction. Lite tier (default) ใช้ single-stack panel
-ที่ stable; Full tier (opt-in) เปิด 12 modules ที่วางอิสระตาม saved layout
+In-game, peripheral-first HUD direction. Lite tier (default) ใช้ single-stack panel ที่ stable;
+Full tier (opt-in) เปิด 12 modules ที่วางอิสระตาม saved layout.
 
 ![G-Maiden live overlay](assets/screen-directions/g-maiden-live-overlay.png)
 
-## 5. Component Notes
+## 5. Overlay Component Notes (Combat HUD — authoritative here)
+
+> Contract: [`docs/design-system/07-combat-hud.md`](../design-system/07-combat-hud.md).
+> The Overlay window is separate from the Deck and may use the legacy `C` inline palette.
 
 | Component | Purpose | UI notes |
 | --- | --- | --- |
-| `OverlayAlertBanner` | Critical danger and gank warnings | Top-center, short pulse, strong contrast, no long text. **Announcer pack banner layer:** เมื่อ event ยิงและ pack ที่ active map รูปไว้ ระบบ render banner image ของ pack บน overlay (`packBanner` ใน `App.tsx` ผ่าน event `announcer-banner`) — มี priority เหนือ lettered kill-banner ในตัว (แทนที่ card เดิม) |
-| `AdvicePanel` | Maiden guidance during match | Small portrait, waveform, confidence, dismiss state |
-| `GMeter` | Continuous risk gauge (G-Sentry missing + G-Signal alert) | 4-segment LED (ปลอดภัย/ระวัง/เสี่ยง/อันตราย); ไม่แสดง % — มีแต่ gradient |
+| `OverlayAlertBanner` | Critical danger / gank warnings | Top-center, short pulse, strong contrast. **Announcer pack banner layer:** เมื่อ event ยิงและ pack ที่ active map รูปไว้ → render banner image ของ pack (`packBanner` ใน `App.tsx` ผ่าน event `announcer-banner`) — priority เหนือ lettered kill-banner (แทน card เดิม) |
+| `AdvicePanel` | Maiden guidance (G-Master) | Small portrait, waveform, confidence, dismiss state; 20s auto-dismiss |
+| `GMeter` | Continuous risk gauge (G-Sentry missing + G-Signal alert) | 4-segment LED (ปลอดภัย/ระวัง/เสี่ยง/อันตราย); ไม่แสดง % — gradient only |
 | `VoiceToast` | On-screen mirror of last voice event | Silent fallback when voice pack ยังไม่มา; auto-dismiss |
-| `CompanionStage` | Character presence module | Maiden portrait — Crystal Maiden stylized SVG กำลังจะมา; ตอนนี้ใช้ badge เป็น placeholder |
-| `VoiceChip` | Voice/listening state | Compact, icon + text, never color-only |
-| `VoicePackCard` | จัดการ voice pack แบบ **bundle** (AudioSettings.tsx) | pack = bundle: upload clip/banner เข้า pack ที่ active; activate → resolve เสียง announcer ในเกม; ปุ่ม "Play preview" (เสียง) + "Show on overlay" (`preview_announcer_event` → emit `announcer-banner` → banner+เสียงบน overlay จริงโดยไม่ต้องเข้าเกม) |
-| `PrivacyChip` | Local-only assurance | Visible but quiet, stronger in settings/control |
-| `LayoutEditor` | Drag editor สำหรับ Full tier (C2) | 16:9 preview, magnet grid SNAP=5, HUD reference background, per-module scale, hover-solo focus เพื่อ spotlight module เดียว |
-| `SensitivityPicker` | Low / Med / High (G-Signal danger threshold) | Mirror ลง backend ผ่าน Tauri command `set_cv_signal_sensitivity`; thresholds 0.85 / 0.65 / 0.50 |
-| `MotionIntensity` | User control over motion | Low / Medium / High with reduced-motion fallback |
-| `PerformanceGovernor` | Protect FPS/CPU/RAM | Can degrade blur, particles, and animation |
-| `ExclusiveFullscreenWarning` | Detect + warn เมื่อ Dota อยู่ใน Exclusive | Surfaced จาก `exclusive_fullscreen_active()`; แนะนำเปลี่ยนเป็น Borderless |
-| `CalibrationToggle` | QA audit mode | Off by default; เปิดแล้วเก็บ screenshot + GIF clip + `audit.jsonl` ลง local เท่านั้น |
-| `AccountGidPanel` (C10) | Optional Google sign-in, GID display, linked Steam/public OpenDota profile + baselines | Opt-in per ADR-11; sign-in card + GID codec `G-[Gen][Payload][Checksum]`; match/CV/G-Log stay local — see ADR-14 |
+| `BuybackVerdict` | G-Revive buyback advice | Verdict + narrative on death |
+| `CompanionStage` | Character presence module | Crystal Maiden stylized SVG กำลังมา; ตอนนี้ badge placeholder |
+| `VoicePackCard` | จัดการ voice pack แบบ **bundle** (AudioSettings.tsx) | upload clip/banner → active pack; activate → resolve เสียงในเกม; "Play preview" + "Show on overlay" (`preview_announcer_event` → `announcer-banner`) |
+| `LayoutEditor` | Drag editor สำหรับ Full tier | 16:9 preview, magnet grid SNAP=5, HUD reference bg, per-module scale, hover-solo focus |
+| `SensitivityPicker` | G-Signal danger threshold | Mirror → `set_cv_signal_sensitivity`; thresholds 0.85 / 0.65 / 0.50 |
+| `MotionIntensity` | Motion control | Low / Medium / High + reduced-motion fallback |
+| `PerformanceGovernor` | Protect FPS/CPU/RAM | Degrades blur / particles / animation; quality tiers cinematic/balanced/eco |
+| `ExclusiveFullscreenWarning` | Detect + warn เมื่อ Dota อยู่ใน Exclusive | จาก `exclusive_fullscreen_active()`; แนะนำ Borderless (else Lite mode = ไม่มี CV) |
+| `CalibrationToggle` | QA audit mode | Off by default; screenshot + GIF + `audit.jsonl` local only |
+
+> **Deck components** (nav rail, ON AIR utterance console, phase chip, DeckTabs, Maiden Line,
+> Settings split view, G-Store tabs) are documented in `05-sitemap-ia.md` + `04-components.md`
+> and mapped in `PROJECT_FEATURE_MAP.md` — they are not re-listed here to keep one SSOT each.
 
 ## 6. Acceptance Criteria
 
 - [ ] G-Maiden remains player-facing and does not include operator/admin graph workflows.
-- [ ] Live overlay is peripheral-first and low-noise.
-- [ ] Companion control can show richer glass/character visuals than the overlay.
-- [ ] Screen direction images resolve from this document.
-- [ ] Motion supports alert state and companion presence without harming performance.
-- [ ] Lite tier remains the stable default; Full tier is opt-in.
+- [ ] Deck is ONE CANVAS: **R1** no page-level scrollbar (only bounded sub-regions scroll); **R2** overflow → `DeckTabs` tab or `rowsThatFit()` pagination (never stretch/shrink font); **R3** COLD BOOTH `--g-*` tokens only on Deck surfaces (legacy `C` hex = Overlay only).
+- [ ] Nav is a single source: `PAGES` (`shortcuts.ts`) drives rail + `Ctrl+1..7` + Maiden Line + sheet — no drift.
+- [ ] Phase axis (standby→prep→live→debrief) swaps Dashboard content **without moving geometry**.
+- [ ] Live overlay is peripheral-first and low-noise; Lite tier is the stable default, Full tier opt-in.
 - [ ] Each Full module is independently positionable + scalable from a saved layout.
 - [ ] G-Meter shows a continuous risk gradient (no % numbers).
 - [ ] Voice events have an on-screen toast fallback when no clip plays.
 - [ ] Calibration mode is off by default and writes evidence only locally.
 - [ ] Exclusive Fullscreen is detected and warns the user to switch to Borderless.
+- [ ] Screen direction images resolve from this document.
 
 ---
 
@@ -183,5 +199,6 @@ In-game, peripheral-first HUD direction. Lite tier (default) ใช้ single-st
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 |---------|------|--------|---------|-------------|-------|
-| 0.1.0b | 2026-06-24 | candidate | Initial G-Maiden-specific sitemap, user flow, presentation board, screen directions, and component notes. | pending | ATHER |
-| 0.2.0 | 2026-06-26 | accepted | Reflect shipped Full overlay (12 modules), LayoutEditor (grid + HUD ref + solo focus), G-Meter, Voice Packs (Thai default), Calibration mode, Sensitivity picker, NW item derivation, Exclusive Fullscreen guard. | pending | Opus |
+| 0.1.0b | 2026-06-24 | candidate | Initial G-Maiden-specific sitemap, user flow, presentation board, screen directions, component notes. | pending | ATHER |
+| 0.2.0 | 2026-06-26 | accepted | Reflect shipped Full overlay (12 modules), LayoutEditor, G-Meter, Voice Packs (Thai default), Calibration, Sensitivity picker, NW item derivation, Exclusive Fullscreen guard. | pending | Opus |
+| 0.3.0 | 2026-07-17 | accepted | **CR-013 ONE CANVAS refresh.** Rebuild sitemap to 7-page deck (Build→Live tab, History→Insights tab, new G-Store, Account as page, Settings iOS split view); add phase axis + Maiden Line + 3 axes + R1/R2/R3 laws; add sign-in flow; scope this board to Overlay + product-boundary and cross-ref `05-sitemap-ia.md` (Deck SSOT) + `PROJECT_FEATURE_MAP.md`. | pending | Opus |
