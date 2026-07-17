@@ -107,3 +107,16 @@ on conflict (code) do update
       item_id    = excluded.item_id,
       max_uses   = excluded.max_uses,
       expires_at = excluded.expires_at;
+
+-- WELCOME250 — grants 250 wallet coins (grant_type='coins'). Codes can only ever
+-- grant WALLET coins or an item, never shard (ADR-16 §3: shard must come from a
+-- verified OpenDota match — minting shard from a giveaway code would be a fake
+-- faucet; the redeem_code() RPC enforces this). item_id stays null for coins.
+insert into public.redeem_codes (code, grant_type, coins, item_id, max_uses, expires_at, created_by)
+values ('WELCOME250', 'coins', 250, null, 100000, null, null)
+on conflict (code) do update
+  set grant_type = excluded.grant_type,
+      coins      = excluded.coins,
+      item_id    = excluded.item_id,
+      max_uses   = excluded.max_uses,
+      expires_at = excluded.expires_at;
