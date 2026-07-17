@@ -4137,7 +4137,7 @@ body {
    stage-authored element (panel insets, right-anchored FABs, Subtract notches) wrong. */
 .g-deck-stage {
   position: absolute; left: 50%; top: 50%;
-  width: 1420px; height: 760px;
+  width: 1420px; height: 720px;
   transform: translate(-50%, -50%) scale(1);
   transform-origin: center center;
 }
@@ -4363,16 +4363,19 @@ body {
   left: 50% !important;
   top: 50% !important;
   width: 1420px !important;
-  height: 760px !important;
-  --cr6-panel-left: 12px;
-  --cr6-panel-top: 12px;
-  --cr6-panel-width: 1280px;
+  height: 720px !important;
+  /* deck-grid v3 (1420x720, 14col×10row): panel FILLS the stage so panel user-space
+     == stage coords and the generated Apple-round clip lands 1:1 on the design. */
+  --cr6-panel-left: 0px;
+  --cr6-panel-top: 0px;
+  --cr6-panel-width: 1420px;
   --cr6-panel-height: 720px;
-  --cr6-topbar-left: 834px;
-  --cr6-topbar-top: 24px;
-  --cr6-topbar-width: 446px;
-  --cr6-sidebar-left: 26px;
-  --cr6-sidebar-top: 354px;
+  /* deck-grid v3 FAB positions (stage coords, snapped to cells, match the notches) */
+  --cr6-topbar-left: 910px;
+  --cr6-topbar-top: 0px;
+  --cr6-topbar-width: 400px;
+  --cr6-sidebar-left: 110px;
+  --cr6-sidebar-top: 360px;
   /* CR-007 follow-up (Boss feedback 2026-07-09): power cluster rebuilt as a proper corner
      FAB directly under the sidebar, not a free-floating radial. Main button is
      centered on the sidebar column (sidebar x26..90, center x58 -> button x35..81)
@@ -4383,8 +4386,8 @@ body {
      tmp-power-radial-check.html is SUPERSEDED — see docs/design-system/03-layout.md
      §5.5 for the full derivation, including the panel-void geometry this cluster
      floats over (same void the sidebar itself sits in). */
-  --cr6-power-left: 35px;
-  --cr6-power-top: 672px;
+  --cr6-power-left: 110px;
+  --cr6-power-top: 648px;
   --cr6-power-main-left: 0px;
   --cr6-power-main-top: 0px;
   transform: translate(-50%, -50%) scale(1);
@@ -4545,17 +4548,19 @@ body {
   left: var(--cr6-power-left);
   top: var(--cr6-power-top);
   width: 190px;
-  height: 46px;
+  height: 56px;
   z-index: 35;
   -webkit-app-region: drag;
 }
 
 .g-power-main {
-  width: 46px;
-  height: 46px;
+  /* deck-grid v3: match the nav rail width (84px) + radius (18px) so power reads
+     as the bottom "cap" of the same left-rail stack, not a detached narrow chip. */
+  width: 84px;
+  height: 56px;
   display: grid;
   place-items: center;
-  border-radius: 12px;
+  border-radius: 18px;
   color: #f5f8ff;
   /* Same solid material as .g-sidebar-fab (below) — opaque hex + thin rim, no
      gradient/translucency — so this reads as the SAME frosted-dark family as the
@@ -4581,8 +4586,8 @@ body {
   pointer-events: none;
   opacity: 0;
   transform: scale(.96);
-  /* main button's own center in container-local coords (46x46 at local 0,0) */
-  transform-origin: 23px 23px;
+  /* main button's own center in container-local coords (84x56 at local 0,0) */
+  transform-origin: 42px 28px;
   transition: opacity .14s ease, transform .14s ease;
   -webkit-app-region: no-drag;
 }
@@ -4639,10 +4644,11 @@ body {
   left: var(--cr6-sidebar-left) !important;
   top: var(--cr6-sidebar-top) !important;
   bottom: auto !important;
-  width: 64px !important;
-  height: 306px !important;
+  width: 84px !important;
+  /* row 6-9 = y360..632 (272 tall); leaves a 16px gap above the power cap at y648 */
+  height: 272px !important;
   z-index: 32 !important;
-  padding: 10px 8px !important;
+  padding: 14px 8px !important;
   gap: 0 !important;
   display: block !important;
   border-radius: 18px !important;
@@ -4669,7 +4675,7 @@ body {
 
 .g-nav-item {
   width: 42px !important;
-  height: 32px !important;
+  height: 30px !important;
   border-radius: 10px !important;
   -webkit-app-region: no-drag !important;
 }
@@ -4688,7 +4694,7 @@ body {
   right: auto !important;
   top: var(--cr6-topbar-top) !important;
   width: var(--cr6-topbar-width) !important;
-  height: 50px !important;
+  height: 60px !important;
   z-index: 34 !important;
   padding: 0 14px !important;
   border-radius: 18px !important;
@@ -4823,8 +4829,8 @@ body {
 
 .g-audio-rail {
   position: absolute;
-  left: 42px;
-  top: 40px;
+  left: 128px;
+  top: 90px;
   width: 54px;
   height: 158px;
   z-index: 33;
@@ -4909,17 +4915,17 @@ body {
    of the new bottom-right notch (matches the topbar notch's 12px rhythm). */
 .g-signals-fab {
   position: absolute !important;
-  left: 840px !important;
-  top: 532px !important;
+  left: 918px !important;
+  top: 512px !important;
   right: auto !important;
   bottom: auto !important;
-  width: 428px !important;
-  height: 176px !important;
+  width: 384px !important;
+  height: 200px !important;
   z-index: 33 !important;
   display: grid !important;
   grid-template-columns: 1fr 1fr !important;
   grid-template-rows: 1fr 1fr !important;
-  gap: 10px !important;
+  gap: 8px !important;
 }
 
 .g-sig {
@@ -4953,9 +4959,9 @@ body {
 
 .gm-score-header {
   position: absolute;
-  left: 128px;
-  top: 42px;
-  width: 640px;
+  left: 210px;
+  top: 8px;
+  width: 700px;
   height: 48px;
   display: grid;
   grid-template-columns: 1fr 74px 1fr;
@@ -4963,7 +4969,7 @@ body {
   gap: 14px;
   padding: 0 14px;
   border: 1px solid rgba(88, 132, 194, 0.36);
-  border-radius: 12px;
+  border-radius: 16px;
   background: #0b121f;
   -webkit-backdrop-filter: none;
   backdrop-filter: none;
@@ -4991,10 +4997,10 @@ body {
 
 .gm-stats-bar {
   position: absolute;
-  left: 128px;
-  top: 98px;
-  width: 478px;
-  height: 42px;
+  left: 210px;
+  top: 62px;
+  width: 700px;
+  height: 44px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
   gap: 8px;
@@ -5030,18 +5036,17 @@ body {
 
 .gm-battle-grid {
   position: absolute;
-  left: 128px;
-  top: 148px;
-  width: 640px;
-  /* 5 hero cards per column: each card's min-content is ~44px (padding+border+2
-     text lines) so the 5-row 1fr grid needs ~248px; 260 was ~8px short and the
-     bottom card overflowed into .gm-sector-log below. 276 gives ~45px tracks. */
-  height: 276px;
+  left: 210px;
+  top: 156px;
+  width: 700px;
+  /* zone A hero grid (v3 grid: C3-C9, below the momentum strip → y156-500). 5
+     hero cards per column fit with room. */
+  height: 344px;
   display: grid;
-  grid-template-columns: 170px 1fr 170px;
+  grid-template-columns: 190px 1fr 190px;
   gap: 10px;
   padding: 10px;
-  border-radius: 14px;
+  border-radius: 16px;
   border: 1px solid rgba(88, 132, 194, 0.34);
   background: #080e18;
   -webkit-backdrop-filter: none;
@@ -5123,10 +5128,19 @@ body {
 
 /* --- Game momentum meter + phase --- */
 .gm-momentum {
+  /* deck-grid v3: explicit slot in zone A (C3-C9), between stats and hero grid.
+     Was an in-flow <section> among absolute siblings → collapsed to (0,0) and
+     was painted behind the panel. Now pinned in stage coords like its peers. */
+  position: absolute;
+  left: 210px;
+  top: 110px;
+  width: 700px;
+  height: 40px;
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  padding: 8px 12px;
+  justify-content: center;
+  gap: 4px;
+  padding: 6px 12px;
   border-radius: 10px;
   border: 1px solid rgba(88, 132, 194, 0.2);
   background: rgba(18, 20, 28, 0.55);
@@ -5210,15 +5224,13 @@ body {
 
 .gm-agent-card {
   position: absolute;
-  left: 808px;
-  /* top clears the topbar-notch floor (panel-local y74) + 12px rhythm — was 42px,
-     which pushed the card 32px up into the notch void where the panel clip-path
-     chopped its top-right corner ("แหว่ง"). Column below is empty so it just shifts down. */
-  top: 86px;
-  width: 440px;
-  height: 354px;
+  /* zone B (agent sector), stage coords — v3 grid C10-C13, rows 2-7 */
+  left: 910px;
+  top: 80px;
+  width: 400px;
+  height: 416px;
   padding: 14px;
-  border-radius: 14px;
+  border-radius: 18px;
   border: 1px solid rgba(88, 132, 194, 0.34);
   background: #0a121e;
   -webkit-backdrop-filter: none;
@@ -5262,17 +5274,16 @@ body {
 
 .gm-sector-log {
   position: absolute;
-  left: 128px;
-  /* follows the taller battle-grid (bottom now 424) + 10px rhythm; bottom 604 still
-     clears the surface, leaving headroom. */
-  top: 434px;
-  width: 620px;
-  height: 170px;
+  /* zone C (alert deck / companion state), stage coords — v3 grid C3-C9, rows 8-10 */
+  left: 210px;
+  top: 512px;
+  width: 700px;
+  height: 200px;
   display: grid;
   grid-template-columns: 1fr 260px;
   gap: 16px;
   padding: 18px;
-  border-radius: 14px;
+  border-radius: 18px;
   border: 1px solid rgba(88, 132, 194, 0.34);
   background: #0a121e;
   -webkit-backdrop-filter: none;

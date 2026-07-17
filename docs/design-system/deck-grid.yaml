@@ -1,14 +1,20 @@
 # =============================================================================
-# G-Maiden Deck — Grid Layout SSOT  (canvas = real deck stage 1420x760)
+# G-Maiden Deck — Grid Layout SSOT  (canvas = real deck stage 1420x720)
 # Edit here or in docs/design-system/deck-grid.html (Load / Export round-trips).
-# RULES: round sizes (mult of 20/40, no 3-8 remainders), gaps 16 outer / 8 inner
-# (D/E/F/G only). Content bbox 1232x696 <= shell 1256 → shell FITS BY SHRINKING.
+# GRID: 14 cols × 10 rows. C1/C14 = 110px transparent margins; C2-C13 = 100px each
+# (= 1200 liquid-glass panel). Rows = 72px each (× 10 = 720). Notches (Apple-round):
+# topbar top-right, nav+power left, G-Signal D-G bottom-right.
 # =============================================================================
 canvas:
   width: 1420
-  height: 760
-  margin: 16
-unit: 40
+  height: 720
+  margin: 110       # C1 / C14 transparent side margins
+unit: 100           # column width (C2-C13); row height = 72
+grid:
+  cols: 14
+  rows: 10
+  col: 100          # C2-C13 width
+  row: 72
 gap:
   outer: 16
   inner: 8
@@ -23,79 +29,79 @@ layers:  # bottom -> top (stacking order)
     locked: false
 zones:
   - id: Z2
-    label: "Z2"
+    label: "Z2 — AUDIO RAIL (C2, R1-5)"
     layer: content
-    x: 94
-    y: 24
-    w: 80
-    h: 320
+    x: 110
+    y: 0
+    w: 100
+    h: 360
   - id: sidebar
-    label: "SIDEBAR / NAVBAR (nav rail)"
+    label: "SIDEBAR / NAVBAR (C2, R6-9)"
     layer: fab
-    x: 94
+    x: 110
     y: 360
-    w: 80
-    h: 260
-  - id: Z1
-    label: "Z1"
-    layer: content
-    x: 94
-    y: 636
-    w: 80
-    h: 80
+    w: 100
+    h: 288
+  - id: power
+    label: "POWER (C2, R10)"
+    layer: fab
+    x: 110
+    y: 648
+    w: 100
+    h: 72
   - id: A
-    label: "A - MAIN (score / stats / hero grid)"
+    label: "A - MAIN (score / stats / hero grid) C3-C9, R1-7"
     layer: content
-    x: 190
-    y: 24
-    w: 720
-    h: 520
+    x: 210
+    y: 0
+    w: 700
+    h: 504
   - id: C
-    label: "C - ALERT DECK / COMPANION STATE"
+    label: "C - ALERT DECK / COMPANION STATE (C3-C9, R8-10)"
     layer: content
-    x: 190
-    y: 560
-    w: 720
-    h: 160
+    x: 210
+    y: 504
+    w: 700
+    h: 216
   - id: topbar
-    label: "TOP BAR / MENU BAR"
+    label: "TOP BAR / MENU BAR (C10-C13, R1)"
     layer: fab
-    x: 926
-    y: 24
+    x: 910
+    y: 0
     w: 400
-    h: 60
+    h: 72
   - id: B
-    label: "B - AGENT SECTOR"
+    label: "B - AGENT SECTOR (C10-C13, R2-7)"
     layer: content
-    x: 926
-    y: 100
+    x: 910
+    y: 72
     w: 400
-    h: 440
+    h: 432
   - id: D
-    label: "D - G-Signal"
+    label: "D - G-Signal (C10-C11, R8-9)"
     layer: fab
-    x: 926
-    y: 556
-    w: 190
-    h: 80
+    x: 910
+    y: 504
+    w: 200
+    h: 108
   - id: E
-    label: "E - G-Signal"
+    label: "E - G-Signal (C12-C13, R8-9)"
     layer: fab
-    x: 1124
-    y: 556
-    w: 190
-    h: 80
+    x: 1110
+    y: 504
+    w: 200
+    h: 108
   - id: F
-    label: "F - G-Signal"
+    label: "F - G-Signal (C10-C11, R10)"
     layer: fab
-    x: 926
-    y: 644
-    w: 190
-    h: 80
+    x: 910
+    y: 612
+    w: 200
+    h: 108
   - id: G
-    label: "G - G-Signal"
+    label: "G - G-Signal (C12-C13, R10)"
     layer: fab
-    x: 1124
-    y: 644
-    w: 190
-    h: 80
+    x: 1110
+    y: 612
+    w: 200
+    h: 108

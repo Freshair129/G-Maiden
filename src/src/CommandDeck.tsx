@@ -27,16 +27,14 @@ import {
 } from "./DeckIcons";
 import "./styles.css";
 
-const FUNG_PANEL_PATH =
-  "M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 688 A 20 20 0 0 1 1248,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z";
-
-// dashboard-only variant — CR-007 WP-1: adds the bottom-right subtract notch so the
-// G-Signal cluster (D/E/F/G) sits in a real void instead of floating on solid glass.
-// Same 12px-margin rhythm as the top-right topbar notch; 20px fillets throughout.
-// Only used while tab === "dashboard" (the only tab that renders the signal cluster) —
-// every other tab keeps the plain FUNG_PANEL_PATH so no stray hole appears.
+// Panel Subtract silhouette — deck-grid v3 (1420x720, 14col×10row). C2-C13 liquid
+// glass. Notches (Apple-round): topbar (top-right C10-13·R1), nav+power (left
+// C2·R6-10), G-Signal D-G (bottom-right C10-13·R8-10). Z2 + A/B/C covered.
 const FUNG_PANEL_PATH_SIGNALS =
-  "M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74 H 1248 A 20 20 0 0 1 1268,94 V 488 A 20 20 0 0 1 1248,508 H 836 A 20 20 0 0 0 816,528 V 688 A 20 20 0 0 1 796,708 H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z";
+  "M 136,0 H 892 A 18 18 0 0 1 910 18 V 54 A 18 18 0 0 0 928 72 H 1292 A 18 18 0 0 1 1310 90 V 486 A 18 18 0 0 1 1292 504 H 928 A 18 18 0 0 0 910 522 V 702 A 18 18 0 0 1 892 720 H 228 A 18 18 0 0 1 210 702 V 378 A 18 18 0 0 0 192 360 H 128 A 18 18 0 0 1 110 342 V 26 A 26 26 0 0 1 136 0 Z";
+// non-dashboard tabs — same shell minus the bottom-right signal notch (right edge straight)
+const FUNG_PANEL_PATH =
+  "M 136,0 H 892 A 18 18 0 0 1 910 18 V 54 A 18 18 0 0 0 928 72 H 1292 A 18 18 0 0 1 1310 90 V 694 A 26 26 0 0 1 1284 720 H 228 A 18 18 0 0 1 210 702 V 378 A 18 18 0 0 0 192 360 H 128 A 18 18 0 0 1 110 342 V 26 A 26 26 0 0 1 136 0 Z";
 
 // companion + history have no codex glyph — tiny inline fallbacks
 function IconCompanion({ size = 20 }: { size?: number }) {
@@ -88,7 +86,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
         // CR-007 follow-up: never upscale past authored 1420×760 size — a >1.0
         // scale factor blows up 1px rims/text into fat blurry lines ("chunky"
         // feedback). Downscale for small windows still applies via the min().
-        const s = Math.min(window.innerWidth / 1420, window.innerHeight / 760, 1.0);
+        const s = Math.min(window.innerWidth / 1420, window.innerHeight / 720, 1.0);
         stage.style.transform = `translate(-50%, -50%) scale(${s})`;
       }
     };
@@ -268,7 +266,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
 
       <div className="g-deck-stage" ref={stageRef}>
       <div className="g-l1-white-glass" aria-hidden="true" />
-      <svg className="g-clip-defs" width="0" height="0" viewBox="0 0 1280 720" aria-hidden="true" focusable="false">
+      <svg className="g-clip-defs" width="0" height="0" viewBox="0 0 1420 720" aria-hidden="true" focusable="false">
         <defs>
           <path id="gSubtractPanelPath" d={tab === "dashboard" ? FUNG_PANEL_PATH_SIGNALS : FUNG_PANEL_PATH} />
           <clipPath id="gPanelClip" clipPathUnits="userSpaceOnUse">
@@ -427,7 +425,7 @@ export default function CommandDeck({ settingsPanel }: { settingsPanel?: ReactNo
           #gSubtractPanelPath def above), its drop-shadow feathers outward past the
           notches instead of being clipped away with the panel. Same escape pattern as
           SignalGrid below. */}
-      <svg className="g-panel-rim" viewBox="0 0 1280 720" aria-hidden="true" focusable="false">
+      <svg className="g-panel-rim" viewBox="0 0 1420 720" aria-hidden="true" focusable="false">
         <use href="#gSubtractPanelPath" />
       </svg>
 

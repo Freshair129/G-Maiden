@@ -25,7 +25,7 @@
   .gridlines{position:absolute;inset:0;pointer-events:none;opacity:.5}
   .shell{position:absolute;left:0;top:0;pointer-events:none;z-index:1}
   .shell path{fill:rgba(72,116,190,.06);stroke:rgba(143,212,255,.4);stroke-width:2.5}
-  .zone{position:absolute;z-index:2;border-radius:10px;cursor:grab;overflow:hidden;
+  .zone{position:absolute;z-index:2;border-radius:18px;cursor:grab;overflow:hidden;
      border:2px solid var(--zc);background:color-mix(in srgb,var(--zc) 12%,transparent)}
   .zone.sel{box-shadow:0 0 0 2px #fff,0 0 18px var(--zc);z-index:99}
   .zone.locked{cursor:not-allowed;opacity:.75}
@@ -173,16 +173,43 @@ function zonesBBox(){
   const maxX=Math.max(...cfg.zones.map(z=>z.x+z.w)), maxY=Math.max(...cfg.zones.map(z=>z.y+z.h));
   return {x:minX,y:minY,w:maxX-minX,h:maxY-minY};
 }
+// Build the panel Subtract silhouette DIRECTLY from the zones (canvas coords, no
+// scaling) so it ALWAYS matches the layout: panel = all-zones bbox, with notches
+// cut where the topbar (top-right), sidebar (left) and D-G signal cluster
+// (bottom-right) FAB zones sit. => zero mismatch, whatever sizes you draw.
+function buildPanelPath(){
+  const R=26, r=18, g=cfg.gap.outer;   // R=outer corner (Apple-generous), r=notch fillet
+  const z=id=>cfg.zones.find(q=>q.id===id);
+  const bx=zs=>{const x=Math.min(...zs.map(s=>s.x)),y=Math.min(...zs.map(s=>s.y));
+    return{x,y,w:Math.max(...zs.map(s=>s.x+s.w))-x,h:Math.max(...zs.map(s=>s.y+s.h))-y};};
+  const cov=cfg.zones.filter(q=>q.id!=='Z1'); if(!cov.length) return '';   // Z1 not covered; Z2 is
+  const b=bx(cov); const L=b.x,T=b.y,Rt=b.x+b.w,B=b.y+b.h;
+  const tb=z('topbar');
+  const sigZ=['D','E','F','G'].map(z).filter(Boolean); const sig=sigZ.length?bx(sigZ):null;
+  const lc=[z('sidebar'),z('Z1')].filter(Boolean).filter(q=>q.x-L<8); const ln=lc.length?bx(lc):null;
+  // A = rounded fillet arc (sweep 1 = convex/outer, 0 = concave/notch)
+  const A=(rr,sw,x,y)=>`A ${rr} ${rr} 0 0 ${sw} ${x} ${y} `;
+  let d=`M ${L+R},${T} `;
+  if(tb){ const x=tb.x-g, yb=tb.y+tb.h+g;
+    d+=`H ${x-r} `+A(r,1,x,T+r)+`V ${yb-r} `+A(r,0,x+r,yb)+`H ${Rt-r} `+A(r,1,Rt,yb+r);
+  } else d+=`H ${Rt-R} `+A(R,1,Rt,T+R);
+  if(sig){ const x=sig.x-g, yt=sig.y-g;
+    d+=`V ${yt-r} `+A(r,1,Rt-r,yt)+`H ${x+r} `+A(r,0,x,yt+r)+`V ${B-r} `+A(r,1,x-r,B);
+  } else d+=`V ${B-R} `+A(R,1,Rt-R,B);
+  if(ln && (B-(ln.y+ln.h))<24){ const x=ln.x+ln.w+g, yt=ln.y-g;   // left notch -> bottom-left corner
+    d+=`H ${x+r} `+A(r,1,x,B-r)+`V ${yt+r} `+A(r,0,x-r,yt)+`H ${L+r} `+A(r,1,L,yt-r);
+  } else if(ln){ const x=ln.x+ln.w+g, yt=ln.y-g, yb=ln.y+ln.h+g;
+    d+=`H ${L+R} `+A(R,1,L,B-R)+`V ${yb+r} `+A(r,1,x,yb)+`H ${x-r}`+A(r,0,x-r,yb-r)+`V ${yt+r} `+A(r,0,x-r,yt)+`H ${L+r}`+A(r,1,L,yt-r);
+  } else d+=`H ${L+R} `+A(R,1,L,B-R);
+  d+=`V ${T+R} `+A(R,1,L+R,T)+`Z`;
+  return d;
+}
 function drawShell(){
   const sh=document.getElementById('shell'); const on=$('#showshell').checked;
   sh.style.display=on?'block':'none'; if(!on) return;
-  // fit the shell EXACTLY to the pieces' bounding box (no over/under-hang).
-  const zb=zonesBBox();
-  const sx=zb.w/SHELL_BB.w, sy=zb.h/SHELL_BB.h;
-  const tx=zb.x-SHELL_BB.x*sx, ty=zb.y-SHELL_BB.y*sy;
   sh.setAttribute('width',cfg.canvas.width*scale); sh.setAttribute('height',cfg.canvas.height*scale);
   sh.setAttribute('viewBox',`0 0 ${cfg.canvas.width} ${cfg.canvas.height}`);
-  sh.innerHTML=`<g transform="translate(${tx.toFixed(2)},${ty.toFixed(2)}) scale(${sx.toFixed(4)},${sy.toFixed(4)})"><path d="${PANEL_PATH}" vector-effect="non-scaling-stroke"/></g>`;
+  sh.innerHTML=`<path d="${buildPanelPath()}" vector-effect="non-scaling-stroke"/>`;
 }
 
 function render(){
