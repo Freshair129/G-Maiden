@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.10.0] — 2026-07-17
+### Changed
+- **ONE CANVAS sitemap (CR-013)** — the deck consolidates to 7 nav pages (`Ctrl+1..7`):
+  Dashboard, Live, Voice, G-Store, Insights, Account, Settings. Build folds into Live as a
+  tab (`[สด | บิลด์]`) and History folds into Insights (`[ภาพรวม | ประวัติ]`) via a reusable
+  tab strip — no more orphaned top-level pages.
+- **Settings is now an iOS-style split view** — a category rail (ทั่วไป / Overlay /
+  เสียง & เตือน / AI (G-Master) / โมดูล & CV / ความเป็นส่วนตัว / ระบบ) renders one category
+  at a time, replacing the old single long settings page.
+### Added
+- **G-Store** — the shard/wallet economy (CR-003) gets its own nav seat with a 4-tab home
+  (`[ร้านค้า | กระเป๋า | คลัง | บันทึก]`), history pagination, and a "coming soon" store
+  empty-state.
+### Fixed
+- **No page-level scroll (laws R1/R2)** — the deck surface never scrolls; only bounded
+  regions do, and overflow folds into a tab or paginates. Deck fits to canvas cleanly.
+
 ## [0.9.1] — 2026-07-16
 ### Added
 - **Command Deck redesign (CR-011, COLD BOOTH)** — the deck becomes a broadcast booth:
