@@ -36,6 +36,18 @@ pub struct GameTick {
     pub alive: bool,
     pub hp_percent: i64,
     pub mana_percent: i64,
+    /// GSI `hero.health` — absolute current HP (0 when absent). Together with
+    /// `max_hp` this is the input a lethal-HP / burst-danger warning needs that a
+    /// percentage alone cannot give (damage.rs `is_lethal`, feature-map #6).
+    /// GROUNDWORK ONLY: GSI does not send the player's armor / magic-resistance
+    /// (those would be derived from the local loadout, like self-burst), and it
+    /// never sends ANY enemy stat — so a truthful enemy-burst warning still needs
+    /// an enemy hero-level source (scoreboard-CV, deferred) before it can fire.
+    #[serde(default)]
+    pub hp: i64,
+    /// GSI `hero.max_health` — absolute max HP (0 when absent).
+    #[serde(default)]
+    pub max_hp: i64,
     /// GSI `player.steamid` (SteamID64 string) — identifies the local player so
     /// the deck can auto-load their OpenDota profile without manual entry. "" when
     /// absent (menu / some spectator states).
@@ -150,6 +162,8 @@ pub(crate) fn parse_tick_from_value(v: &Value) -> GameTick {
         alive: b(v, &["hero", "alive"]),
         hp_percent: i(v, &["hero", "health_percent"]),
         mana_percent: i(v, &["hero", "mana_percent"]),
+        hp: i(v, &["hero", "health"]),
+        max_hp: i(v, &["hero", "max_health"]),
         steamid: s(v, &["player", "steamid"]),
         buyback_cost: i(v, &["hero", "buyback_cost"]),
         respawn_seconds: i(v, &["hero", "respawn_seconds"]),
@@ -472,7 +486,8 @@ mod tests {
                         "kills": 7, "deaths": 2, "assists": 10,
                         "last_hits": 145, "denies": 8 },
             "hero":   { "name": "npc_dota_hero_crystal_maiden", "level": 14,
-                        "alive": true, "health_percent": 78, "mana_percent": 65 }
+                        "alive": true, "health_percent": 78, "mana_percent": 65,
+                        "health": 507, "max_health": 650 }
         }));
         assert!(t.in_game);
         assert_eq!(t.clock_time, 612);
@@ -480,6 +495,9 @@ mod tests {
         assert_eq!(t.team_name, "radiant");
         assert_eq!(t.kills, 7);
         assert_eq!(t.hp_percent, 78);
+        // abs HP/max HP (feature-map #6 groundwork) parse alongside the percentage
+        assert_eq!(t.hp, 507);
+        assert_eq!(t.max_hp, 650);
     }
 
     #[test]

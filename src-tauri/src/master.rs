@@ -290,6 +290,8 @@ mod tests {
             alive: true,
             hp_percent: 68,
             mana_percent: 55,
+            hp: 897,
+            max_hp: 1320,
             steamid: String::new(),
             buyback_cost: 0,
             respawn_seconds: 0,
