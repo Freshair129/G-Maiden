@@ -5,44 +5,48 @@
 
 ---
 
-## สถานะปัจจุบัน (updated 2026-07-03)
+## สถานะปัจจุบัน (updated 2026-07-18)
 
-**Released:** v0.7.9 (2026-06-28) — announcer packs + voice-cache bundle ถึงมือผู้ใช้แล้ว
-**Unreleased on `main`:** 49 commits (ถึง `a2dba63b`) = command deck live-wire (CR-002 Phase 2a/2b)
-+ GID accounts / Steam identity (ADR-14) + doc sweep — **ยังไม่ถึงผู้ใช้จนกว่าจะ push tag**
+**Released:** v0.10.0 (2026-07-17) — CR-013 ONE CANVAS sitemap ถึงมือผู้ใช้ผ่าน in-app updater
+**Live-deployed backend:** CR-003 economy schema (wallet/store/ledger) apply ขึ้น Supabase `gstore`
+2026-07-17 (schema-only — faucet/payment ยัง gated ตาม ADR-16)
 
-> ⚠️ **Version drift:** เลขเวอร์ชันจริง (v0.7.9) วิ่งเลย milestone labels ด้านล่างแล้ว
-> (Phase 3 ยัง label ว่า `v0.6`). ตั้งแต่ update นี้ milestone = **feature-gated** ไม่ผูกเลขเวอร์ชัน
-> ตายตัว — label เดิมคงไว้เป็น historical reference เท่านั้น
+> **Milestone = feature-gated** (ไม่ผูกเลขเวอร์ชันตายตัว). เลขเวอร์ชันจริง (v0.10.0) วิ่งเลย phase
+> labels ด้านล่างไปแล้ว — label คงไว้เป็น historical reference เท่านั้น. สถานะจริงรายฟีเจอร์อยู่ที่
+> **[`PROJECT_FEATURE_MAP.md`](../../PROJECT_FEATURE_MAP.md)** (feature → file → status).
 
-### Now — ก่อน release ถัดไป (candidate v0.8.0, batch ใหญ่พอเป็น MINOR)
-- [x] ~~**Settings จริงหายจาก deck**~~ — ปิดแล้ว `90c94c8a` (2026-07-03): `Control` เก่า
-      (การ์ดตั้งค่าจริงทั้งหมด + Quota monitor) mount เข้า deck **Settings tab** ผ่าน prop
-      `settingsPanel` (โหมด `embedded` ตัด header/พื้นหลังซ้ำ). ระยะยาวค่อย redesign
-      การ์ดเป็นสไตล์ deck ทีละใบ
-- [x] ~~**Voice Packs surface decision**~~ — ปิดแล้ว [PR #3](https://github.com/Freshair129/G-Maiden/pull/3)
-      (merge `ebe55631`, 2026-07-03): port `/api/voice*` เป็น **native Tauri commands**
-      (`voice_api.rs` + shim `readJson→invoke` ใน `AudioSettings.tsx`) — หน้า Voice Packs
-      กลับมาใช้งานได้โดยไม่ต้องมี node backend
-- [x] ~~**Deck panels ยังเป็น mock**~~ — ปิดแล้ว (2026-07-03, Phase 2c): telemetry-footer /
-      `weeklyReport` / `insights` / `history` / `agentSector.status` live-wired จริงผ่าน
-      `src/src/live/build{Telemetry,Weekly,Insights,History}.ts` (merge over MOCK ใน `companion.ts`)
-- [x] ~~**Voice pack = เสียงในเกมจริง**~~ — ปิดแล้ว (2026-07-03): activate pack เปลี่ยนเสียง
-      announcer ในเกม + banner image ของ pack โผล่บน overlay (event ใหม่ `announcer-banner`) +
-      ปุ่ม "Show on overlay" (`preview_announcer_event`) ให้ preview banner+เสียงบน overlay จริง
-      โดยไม่ต้องเข้าเกม
-- [x] ~~**GPU/VRAM/temp telemetry**~~ — ปิดแล้ว (2026-07-03): `gpu-feeder` sidecar (own process,
-      รัน nvidia-smi) PUSH sample → `POST /telemetry` :3000 → deck footer แสดง GPU load/temp + VRAM
-- [ ] **Release verification** — `pnpm tauri build` จาก main → smoke: deck + overlay + DXGI
-      + Settings tab (Control embedded) + Voice Packs (import/activate/preview + Show-on-overlay banner)
-      + telemetry footer (GPU/VRAM) + Google-login → GID end-to-end → จึงค่อย bump + tag
+### Shipped v0.8.0 → v0.10.0 (มิ.ย.–ก.ค. 2026) — งานที่ roadmap ฉบับก่อน (2026-07-03) ยังไม่บันทึก
+- [x] **CR-006** design-system shell (liquid glass, fixed stage 1420×760) + **CR-007** materials &
+      tokens (feathered ambient shadows, IBM Plex bundled)
+- [x] **CR-008** security hardening — DPAPI secret store (WP-2) + `/auth/callback` login-CSRF gate
+      (WP-3); voice-pack manifest path-traversal/zip-slip closed
+- [x] **CR-011 COLD BOOTH** — broadcast-booth deck: phase axis (standby→prep→live→debrief), ON AIR
+      utterance ledger + Belief Revision strikethrough, Maiden Line palette (Ctrl+K), quality tiers,
+      opt-in big mode
+- [x] **CR-013 ONE CANVAS** — 7-page sitemap (`Ctrl+1..7`), Build→Live tab, History→Insights tab,
+      **G-Store** nav seat, iOS-style Settings split view; standing laws R1/R2/R3 (no page-level scroll)
+- [x] **CR-012** multi-monitor CV auto-detect + GDI fallback + phantom-hero tuning
+- [x] **CR-003 economy DEPLOYED LIVE** — wallet/store/ledger/RPC schema on `gstore` (69/69 pgTAP,
+      advisors clean); catalog seeded (free pack + 2 coming-soon), redeem codes (item + coins),
+      coin_packages (hidden); every RPC + payment-webhook flow behaviorally verified. Faucet/payment
+      Edge Fns intentionally NOT deployed — see [CR-003-payment-golive-checklist](../change%20request/CR-003-payment-golive-checklist.md)
+- [x] **G-Motion heading-aware** gank risk (pre-vanish direction) + `GameTick` abs-HP groundwork (#6)
+
+### Now — งานถัดไป (candidate next MINOR)
+- [ ] **Phase 7 NFR closeout** — instrument FPS-drop + resolve background-CPU budget (เห็น 6–7% บน
+      **debug** build in-game; ต้องวัด **release** ด้วย `tests/perf/` harness เทียบ ≤2.5% CPU / ≤3% FPS)
+- [ ] **Phase 3 Voice** — Piper local-ONNX TTS แทน SAPI default + audio-cache slot-splicing +
+      G-Persona presets (รายละเอียดด้านล่าง)
+- [ ] **Payment go-live** — ตาม CR-003 checklist: Phase 0 legal/terms + Phase 1 Omise (Boss) →
+      Phase 2 deploy Edge Fns (assistant) → flip `coin_packages.active`
 
 ### Next
-- [ ] Phase 3 — Voice & Persona (Piper / audio-cache / presets — รายละเอียดด้านล่าง)
+- [ ] **Phase 6** — G-Log JSONL → SQLite → **G-Memory** (persistent player memory) + **G-Coach** (post-match review)
+- [ ] **Phase 4** — Cloud Brain: **G-Voice** (Push-to-Talk STT → brain → TTS) + **G-Mind** model-router UX
+      (Gemini path superseded by shipped Claude/Ollama — see Phase 4 note)
 - [ ] แชร์ GID codec (`src/src/gid.ts`) เป็น shared lib ให้ G-app อื่น (G-Suite / G-Link / G-Market)
-      ให้ derive GID เดียวกันจาก source fields เดียวกัน
-- [ ] Generation switch: เมื่อ ecosystem เปิด Beta/Public เปลี่ยน `handle_new_user` trigger
-      `gen := 'F'` → `'B'`/`'P'` ใน Supabase `gstore` (พิจารณา config table แทน hardcode)
+- [ ] Generation switch: `handle_new_user` trigger `gen := 'F'` → `'B'`/`'P'` เมื่อเปิด Beta/Public
+- [ ] **Phase 9** — Community marketplace UI บน economy ที่ deploy แล้ว (post-v1.0, ADR-12)
 
 ---
 
@@ -95,7 +99,11 @@
 
 ---
 
-## Phase 3: Voice & Persona `v0.6` ← NEXT
+## Phase 3: Voice & Persona `v0.6`
+
+> **Status (v0.10.0):** P3.5 (Accounts & GID) shipped. The **voice/persona half is still open** —
+> Piper TTS, audio-cache slot-splicing, and G-Persona presets are all PLANNED (TTS today is Windows
+> SAPI via PowerShell). This is the top "Now" item alongside the Phase 7 NFR closeout.
 
 ### P3.1 — Piper Local Neural TTS (SRS §4.3)
 - [ ] Integrate Piper ONNX via tract (reuse existing dep)
@@ -132,6 +140,14 @@
 ---
 
 ## Phase 4: Cloud Brain (Gemini) `v0.7`
+
+> **Reality diverged (as of v0.10.0):** the shipped cloud path is the **Claude CLI / Anthropic
+> Messages API** (`claude-haiku-4-5`) with an **Ollama** local-SLM fallback (`master.rs`,
+> backends `Auto | Claude | Ollama`) — **Gemini was never wired**. P4.3 G-Master basic (counter-
+> advice on CV enemies + self-burst) shipped on that path; enemy Net Worth comparison is
+> blocked-by-data (own-game GSI + CV give no enemy items). G-Voice (P4.4) and the G-Mind model-
+> router UX (P4.5) remain PLANNED. Treat "Gemini" below as "cloud LLM" — the engine choice is
+> settled (Claude), not open.
 
 ### P4.1 — Gemini Integration (SRS §4.2)
 - [ ] Gemini 2.0 Flash streaming API client (SSE chunks)
