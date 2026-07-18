@@ -169,8 +169,11 @@ pub fn voice_cache_dir() -> PathBuf {
     })
 }
 
-/// Where the bundled default Thai voice pack lives.
-fn default_pack_dir() -> Option<PathBuf> {
+/// Where the bundled default Thai voice pack lives. `pub(crate)` so
+/// `voice_api` can surface it as a first-class, read-only pack in the
+/// inventory (CS2-music-kit style: the default kit is always an equippable
+/// item, not an invisible fallback).
+pub(crate) fn default_pack_dir() -> Option<PathBuf> {
     if let Ok(exe) = std::env::current_exe() {
         if let Some(parent) = exe.parent() {
             let near = parent.join("voice-pack-default");
@@ -226,6 +229,15 @@ fn list_clips(event: &str) -> Vec<PathBuf> {
         return list_clips_in(&def.join(event));
     }
     Vec::new()
+}
+
+/// Clips the bundled default pack ships for `event` (empty when the default
+/// pack is absent or has no folder for it). Used by `voice_api` to report the
+/// per-event fallback truthfully: pack clip → default clip → TTS.
+pub(crate) fn default_event_clips(event: &str) -> Vec<PathBuf> {
+    default_pack_dir()
+        .map(|dir| list_clips_in(&dir.join(event)))
+        .unwrap_or_default()
 }
 
 pub fn priority_for_event(event: &str) -> Priority {

@@ -31,6 +31,10 @@ export type VoiceEvent = {
   thai: string;
   accent: string;
   mapping: VoiceMapping | null;
+  // The real fallback chain, so the UI never claims "missing" for an event
+  // that will actually be voiced: pack clip → bundled default clip → TTS.
+  defaultClipCount: number;
+  defaultClipUrl: string | null;
 };
 
 export type VoicePack = {
@@ -51,6 +55,9 @@ export type VoicePack = {
   // no cover — the inventory renders a gradient placeholder in that case.
   coverImage: string;
   coverImageUrl: string | null;
+  // True for the synthesized bundled-default pack: pinned first, read-only
+  // (no mapping editor / uploads), equippable like any other pack.
+  builtIn: boolean;
 };
 
 export type VoiceGroup = {

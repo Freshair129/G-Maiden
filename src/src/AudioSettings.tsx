@@ -140,6 +140,12 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
       playUrl(event.mapping.clipUrl);
       return;
     }
+    // No pack clip → preview the bundled default clip this event actually
+    // falls back to in-game (audio.rs chain); browser TTS is the last resort.
+    if (event.defaultClipUrl) {
+      playUrl(event.defaultClipUrl);
+      return;
+    }
     const text = event.mapping?.thai || event.mapping?.text || event.thai || event.label;
     speakPreview(text);
   }
@@ -304,6 +310,9 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
   }
 
   const selectedPack = state?.activePack || null;
+  // The bundled default pack is read-only: browse + preview stay available,
+  // but mapping/details/uploads are hidden (create your own pack to edit).
+  const readOnly = !!selectedPack?.builtIn;
   const selectedClipOptions = selectedEvent?.mapping?.clipOptions || [];
   const selectedBannerOption = selectedPack?.availableBanners.find((banner) => banner.path === formBannerAsset) || null;
   const selectedBannerUrl = selectedBannerOption?.url || selectedEvent?.mapping?.bannerUrl || null;
@@ -442,6 +451,14 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
         </div>
       </section>
 
+      {readOnly ? (
+        <div className="audio-banner ok">
+          แพ็ก &quot;{selectedPack?.name}&quot; เป็นเสียงกลางที่ติดตั้งมากับแอป — แก้ไขไม่ได้
+          ถ้าอยากทำแพ็กของตัวเอง ใช้ Template Generator ด้านบนแล้ว equip แพ็กนั้นก่อนแก้ไข
+        </div>
+      ) : null}
+
+      {!readOnly ? (
       <section className="audio-tools-grid">
         <div className="audio-panel">
           <div className="audio-editor-h">Pack Details</div>
@@ -498,6 +515,7 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
           <input ref={bannerInputRef} type="file" accept=".png,.jpg,.jpeg,.webp,.svg" hidden onChange={(e) => onPickAsset("banner", e)} />
         </div>
       </section>
+      ) : null}
 
       {notice ? <div className="audio-banner ok">{notice}</div> : null}
       {err ? <div className="audio-banner err">{err}</div> : null}
@@ -526,8 +544,8 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
                         <span className="audio-event-th">{event.thai}</span>
                       </div>
                       <div className="audio-event-actions">
-                        <span className={"audio-event-status" + (event.mapping?.hasClip ? " clip" : event.mapping ? " fallback" : " empty")}>
-                          {event.mapping?.hasClip ? `${event.mapping.clipCount} clips` : event.mapping ? "fallback" : "missing"}
+                        <span className={"audio-event-status" + (event.mapping?.hasClip ? " clip" : event.defaultClipCount > 0 ? " fallback" : " empty")}>
+                          {event.mapping?.hasClip ? `${event.mapping.clipCount} clips` : event.defaultClipCount > 0 ? "เสียงกลาง" : "TTS"}
                         </span>
                         <span className={"audio-event-status" + (event.mapping?.bannerUrl ? " clip" : " fallback")}>
                           {event.mapping?.bannerUrl ? "banner asset" : "live card"}
@@ -574,6 +592,7 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
                 </div>
               </div>
 
+              {readOnly ? null : (
               <div className="audio-editor">
                 <div className="audio-editor-h">Event Mapping</div>
                 <label className="audio-field">
@@ -658,6 +677,7 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
                   </button>
                 </div>
               </div>
+              )}
             </>
           ) : (
             <div className="empty">Select an event to inspect its voice line and banner.</div>

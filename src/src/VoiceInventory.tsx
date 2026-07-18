@@ -33,6 +33,7 @@ function PackCard({
     <button type="button" className={className} onClick={onSelect}>
       <div className="voice-card-cover">
         {equipped ? <span className="voice-card-badge">ถูกใช้อยู่</span> : null}
+        {pack.builtIn ? <span className="voice-card-badge builtin">ติดมากับแอป</span> : null}
         {pack.coverImageUrl ? (
           <img src={pack.coverImageUrl} alt={`${pack.name} cover`} />
         ) : (
@@ -71,20 +72,27 @@ function pickAccentGradient(pack: VoicePack): string {
 
 // One event row in the detail panel — clip status + play button that goes
 // through the same `play_clip` Tauri command AudioSettings uses.
+//
+// Status mirrors the REAL runtime resolution chain (audio.rs list_clips):
+// pack clip → bundled default clip → TTS. "missing" is never shown — an
+// unmapped event still voices via the default pack, and the play button
+// previews exactly the sound the player will hear in-game.
 function EventRow({ event, onPlay }: { event: VoiceEvent; onPlay: (event: VoiceEvent) => void }) {
-  const status = event.mapping?.hasClip ? "clip" : event.mapping ? "fallback" : "empty";
-  const statusText = event.mapping?.hasClip
-    ? `${event.mapping.clipCount} clip${event.mapping.clipCount === 1 ? "" : "s"}`
-    : event.mapping
-    ? "fallback"
-    : "missing";
+  const hasPackClip = !!event.mapping?.hasClip;
+  const status = hasPackClip ? "clip" : event.defaultClipCount > 0 ? "default" : "tts";
+  const statusText = hasPackClip
+    ? `${event.mapping!.clipCount} คลิป`
+    : event.defaultClipCount > 0
+    ? "เสียงกลาง"
+    : "TTS";
+  const playable = hasPackClip ? event.mapping?.clipUrl : event.defaultClipUrl;
   return (
     <div className="voice-event-row">
       <button
         type="button"
         className="voice-event-play"
         onClick={() => onPlay(event)}
-        disabled={!event.mapping}
+        disabled={!playable}
         aria-label={`Play ${event.id}`}
       >
         ▶
@@ -150,8 +158,10 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
   }, []);
 
   const playEventClip = useCallback((event: VoiceEvent) => {
-    if (!event.mapping?.clipUrl) return;
-    const url = event.mapping.clipUrl;
+    // Preview what will REALLY play: the pack's clip, else the bundled
+    // default clip this event falls back to (audio.rs resolution chain).
+    const url = event.mapping?.clipUrl || event.defaultClipUrl;
+    if (!url) return;
     // Windows paths go through the Tauri command; anything else is treated
     // as a URL and played via <audio>. Matches AudioSettings.playUrl().
     if (/^[a-z]:[\\/]/i.test(url) || url.startsWith("\\\\")) {
@@ -288,6 +298,7 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
               <div className="voice-detail-meta">
                 <h3>{selectedPack.name}</h3>
                 <div className="voice-detail-chips">
+                  {selectedPack.builtIn ? <span className="voice-detail-chip builtin">ติดมากับแอป</span> : null}
                   {selectedPack.author ? <span className="voice-detail-chip">by {selectedPack.author}</span> : null}
                   <span className="voice-detail-chip">v{selectedPack.version || "0.0.0"}</span>
                   <span className="voice-detail-chip">{selectedPack.locale || "th-TH"}</span>

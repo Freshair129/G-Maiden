@@ -226,6 +226,16 @@ pub fn event_ids() -> impl Iterator<Item = &'static str> {
     EVENTS.iter().map(|event| event.id)
 }
 
+/// Reserved id for the bundled default pack (`voice-pack-default/` next to the
+/// exe). It is surfaced as a first-class, read-only pack in the inventory —
+/// the same pattern CS2 uses for the default music kit — so the user can SEE
+/// and re-equip what actually voices Maiden out of the box. There is no
+/// manifest behind this id: "equipping" it just writes the id to
+/// `active-pack.txt`, and because `active_event_clips` finds no manifest for
+/// it, playback naturally falls through to the flat voice-cache and then the
+/// bundled default clips — exactly the out-of-the-box chain.
+pub const DEFAULT_PACK_ID: &str = "voice-pack-default";
+
 #[derive(Serialize, Clone)]
 #[serde(rename_all = "camelCase")]
 pub struct VoiceAssetOption {
@@ -260,6 +270,13 @@ pub struct VoiceEvent {
     thai: String,
     accent: String,
     mapping: Option<VoiceMapping>,
+    /// How many clips the bundled default pack ships for this event. Lets the
+    /// UI report the REAL fallback chain (pack clip → default clip → TTS)
+    /// instead of a flat "missing" for anything the pack doesn't map.
+    default_clip_count: usize,
+    /// Absolute path of the first bundled default clip for this event, so the
+    /// UI can preview what will actually be heard when the pack has no clip.
+    default_clip_url: Option<String>,
 }
 
 #[derive(Serialize, Clone)]
@@ -286,6 +303,10 @@ pub struct VoicePack {
     /// mechanism as the fired-banner path so the overlay CSP has nothing new
     /// to allow. `None` → the frontend renders a gradient placeholder.
     cover_image_url: Option<String>,
+    /// True only for the synthesized bundled-default pack ([`DEFAULT_PACK_ID`]).
+    /// The UI treats built-in packs as read-only (no mapping editor, no
+    /// uploads) and pins them first in the grid.
+    built_in: bool,
 }
 
 #[derive(Serialize, Clone)]
@@ -382,11 +403,20 @@ pub fn state() -> Result<VoiceState, String> {
         pack_dirs.push(starter);
     }
 
+    let bundled_default = default_pack();
+
+    // With no explicit choice on record, the truthful "equipped" pack is the
+    // bundled default (that IS what voices Maiden out of the box) — only when
+    // it's absent do we fall back to the first user pack dir.
     let active_id = read_active_pack_id().or_else(|| {
-        pack_dirs
-            .first()
-            .and_then(|dir| dir.file_name())
-            .map(|name| name.to_string_lossy().to_string())
+        if bundled_default.is_some() {
+            Some(DEFAULT_PACK_ID.to_string())
+        } else {
+            pack_dirs
+                .first()
+                .and_then(|dir| dir.file_name())
+                .map(|name| name.to_string_lossy().to_string())
+        }
     });
 
     let mut packs_out = Vec::new();
@@ -394,6 +424,10 @@ pub fn state() -> Result<VoiceState, String> {
         packs_out.push(build_pack(&dir)?);
     }
     packs_out.sort_by(|a, b| a.name.cmp(&b.name));
+    // Built-in default pinned first, like a store's default kit slot.
+    if let Some(default) = bundled_default {
+        packs_out.insert(0, default);
+    }
 
     let active_pack_id = active_id.or_else(|| packs_out.first().map(|pack| pack.id.clone()));
     let active_pack = active_pack_id
@@ -858,7 +892,12 @@ fn fired_banner_from(pack_id: Option<String>, event: &str) -> FiredBanner {
 
 /// A clip mapped to `event` in a SPECIFIC pack, to play during an overlay preview
 /// (first mapped, existing file). `None` when the pack maps no playable clip.
+/// The synthesized built-in pack has no manifest — previewing it resolves the
+/// bundled default clip directly, so "Preview" on the default card is not silent.
 pub fn preview_clip(pack_id: &str, event: &str) -> Option<PathBuf> {
+    if sanitize_id(pack_id) == DEFAULT_PACK_ID {
+        return audio::default_event_clips(event).into_iter().next();
+    }
     let dir = packs_dir().join(sanitize_id(pack_id));
     let manifest = read_manifest(&dir).ok()?;
     let mapping = manifest.mappings.get(event)?;
@@ -1164,6 +1203,7 @@ fn build_pack(dir: &Path) -> Result<VoicePack, String> {
                     clip_options,
                 }
             });
+            let default_clips = audio::default_event_clips(event.id);
             VoiceEvent {
                 id: event.id.into(),
                 group: event.group.into(),
@@ -1172,6 +1212,10 @@ fn build_pack(dir: &Path) -> Result<VoicePack, String> {
                 thai: event.thai.into(),
                 accent: accent.into(),
                 mapping,
+                default_clip_count: default_clips.len(),
+                default_clip_url: default_clips
+                    .first()
+                    .map(|p| p.to_string_lossy().to_string()),
             }
         })
         .collect::<Vec<_>>();
@@ -1192,6 +1236,96 @@ fn build_pack(dir: &Path) -> Result<VoicePack, String> {
         items,
         cover_image,
         cover_image_url,
+        built_in: false,
+    })
+}
+
+/// Synthesize the bundled `voice-pack-default/` folder (flat `{event}/*.mp3`
+/// layout, no manifest) into a first-class, read-only [`VoicePack`] so the
+/// inventory always shows the pack that actually voices Maiden out of the box.
+/// `None` when the bundled folder is missing entirely (dev tree without assets).
+fn default_pack() -> Option<VoicePack> {
+    let dir = audio::default_pack_dir()?;
+    let mut covered = 0;
+    let mut total_clips = 0;
+
+    let items = EVENTS
+        .iter()
+        .map(|event| {
+            let accent = GROUPS
+                .iter()
+                .find(|group| group.id == event.group)
+                .map(|group| group.accent)
+                .unwrap_or("#8fd3ff");
+            let clips = audio::default_event_clips(event.id);
+            let clip_options = clips
+                .iter()
+                .filter_map(|full| {
+                    Some(VoiceAssetOption {
+                        path: format!(
+                            "{}/{}",
+                            event.id,
+                            full.file_name()?.to_string_lossy()
+                        ),
+                        name: full.file_name()?.to_string_lossy().to_string(),
+                        url: full.to_string_lossy().to_string(),
+                    })
+                })
+                .collect::<Vec<_>>();
+            let mapping = if clip_options.is_empty() {
+                None
+            } else {
+                covered += 1;
+                total_clips += clip_options.len();
+                Some(VoiceMapping {
+                    text: event.label.to_string(),
+                    thai: event.thai.to_string(),
+                    banner: String::new(),
+                    banner_asset: String::new(),
+                    banner_url: None,
+                    clip: clip_options
+                        .first()
+                        .map(|c| c.path.clone())
+                        .unwrap_or_default(),
+                    clips: clip_options.iter().map(|c| c.path.clone()).collect(),
+                    has_clip: true,
+                    clip_count: clip_options.len(),
+                    clip_url: clip_options.first().map(|c| c.url.clone()),
+                    clip_options,
+                })
+            };
+            VoiceEvent {
+                id: event.id.into(),
+                group: event.group.into(),
+                label: event.label.into(),
+                subtitle: event.subtitle.into(),
+                thai: event.thai.into(),
+                accent: accent.into(),
+                mapping,
+                // On the default card itself the "fallback" IS the pack.
+                default_clip_count: clips.len(),
+                default_clip_url: clips.first().map(|p| p.to_string_lossy().to_string()),
+            }
+        })
+        .collect::<Vec<_>>();
+
+    Some(VoicePack {
+        id: DEFAULT_PACK_ID.to_string(),
+        name: "Maiden Default (ไทย)".to_string(),
+        version: env!("CARGO_PKG_VERSION").to_string(),
+        locale: "th-TH".to_string(),
+        author: "G-Maiden".to_string(),
+        description: "เสียงไทยมาตรฐานที่ติดตั้งมากับแอป — ใช้เป็นเสียงสำรองให้ทุกแพ็กเสมอ".to_string(),
+        path: dir.to_string_lossy().to_string(),
+        covered_events: covered,
+        total_events: EVENTS.len(),
+        clips: total_clips,
+        available_clips: Vec::new(),
+        available_banners: Vec::new(),
+        items,
+        cover_image: String::new(),
+        cover_image_url: None,
+        built_in: true,
     })
 }
 
@@ -1825,5 +1959,44 @@ mod tests {
         activate_if_exists("demo").expect("activate");
 
         assert_eq!(active_pack_name(), Some("Test Pack".to_string()));
+    }
+
+    // --- bundled default pack (the out-of-the-box voice) -------------------
+
+    /// Every event in the contract must ship at least one clip in the bundled
+    /// default pack. This is the "event ไม่ครบ" regression guard: adding an
+    /// event to `EVENTS` without adding lines to
+    /// `tools/voice-gen/gen_default_pack.py` (and regenerating) fails here.
+    #[test]
+    fn bundled_default_pack_covers_every_event() {
+        // cargo test runs from src-tauri/, where the committed pack lives.
+        let Some(pack) = default_pack() else {
+            panic!("bundled voice-pack-default/ missing next to src-tauri");
+        };
+        assert!(pack.built_in);
+        assert_eq!(pack.total_events, EVENTS.len());
+        let missing: Vec<_> = pack
+            .items
+            .iter()
+            .filter(|item| item.mapping.is_none())
+            .map(|item| item.id.clone())
+            .collect();
+        assert!(
+            missing.is_empty(),
+            "default pack has no clips for: {} — add lines to gen_default_pack.py and re-run it",
+            missing.join(", ")
+        );
+    }
+
+    /// Previewing the built-in pack must resolve a real clip even though it
+    /// has no manifest (the UI "Preview" button on the default card).
+    #[test]
+    fn preview_clip_resolves_bundled_default_clips() {
+        if audio::default_pack_dir().is_none() {
+            eprintln!("skip: bundled voice-pack-default not present");
+            return;
+        }
+        let clip = preview_clip(DEFAULT_PACK_ID, "kill");
+        assert!(clip.is_some_and(|p| p.is_file()));
     }
 }

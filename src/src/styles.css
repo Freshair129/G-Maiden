@@ -3921,6 +3921,19 @@ body {
   text-transform: uppercase;
   box-shadow: 0 4px 10px rgba(0, 0, 0, 0.35);
 }
+/* Built-in (bundled default) badge — right corner so it can coexist with the
+   equipped badge on the left. */
+.voice-card-badge.builtin {
+  left: auto;
+  right: 8px;
+  background: rgba(18, 26, 40, 0.9);
+  color: #9fd8ff;
+  border: 1px solid rgba(100, 199, 255, 0.45);
+}
+.voice-detail-chip.builtin {
+  color: #9fd8ff;
+  border-color: rgba(100, 199, 255, 0.45);
+}
 .voice-card-meta {
   padding: 10px 12px 12px;
   display: flex;
@@ -4145,6 +4158,10 @@ body {
 .voice-event-status.clip { background: rgba(49, 208, 160, 0.15); color: var(--ok); }
 .voice-event-status.fallback { background: rgba(255, 184, 107, 0.15); color: var(--warn); }
 .voice-event-status.empty { background: rgba(143, 166, 192, 0.1); color: var(--muted); }
+/* Real fallback chain chips: "เสียงกลาง" = bundled default clip will voice this
+   event; "TTS" = nothing on disk, system speech is the last resort. */
+.voice-event-status.default { background: rgba(100, 199, 255, 0.14); color: var(--blue, #64c7ff); }
+.voice-event-status.tts { background: rgba(143, 166, 192, 0.1); color: var(--muted); }
 
 /* Action row — Equip + Preview */
 .voice-detail-actions {
