@@ -161,8 +161,14 @@ Specified but **not shipped** — the "Companion Experience Extensions" layered 
 6. **`damage.rs` half-wired (blocked-by-data)** — only `self_burst` feeds G-Master; the enemy-burst /
    lethal-HP warning stays unwired because GSI is local-only and CV gives enemies identity+position
    only (no enemy level/items/HP). **Groundwork done (2026-07-18):** `GameTick` now carries absolute
-   `hp`/`max_hp` (the defender-side input `is_lethal` needs). Still needed to actually fire: an enemy
-   hero-level source (scoreboard-CV, deferred) and player armor/MR derived from the local loadout.
+   `hp`/`max_hp` (the defender-side input `is_lethal` needs). Two remaining blockers, both held: (a)
+   **player armor/MR from loadout is also blocked-by-data** — `LoadoutItem`/`data/items.json` is a
+   curated 12-item *offensive-burst* set with NO armor/magic-resistance fields, so deriving item armor
+   needs a new defensive-item dataset authored first (hero-base armor/MR alone is computable via the
+   currently-dead `HeroData::armor_at_level`, but ignoring items under-estimates effective HP); (b)
+   **enemy hero-level/items/HP** needs scoreboard-CV (deferred, no OCR models bundled). Since the
+   enemy side is hard-blocked, even a full player-side derivation has no consumer — held rather than
+   build speculative dead code.
 7. **Own-game data honesty limit** (GSI design, not a bug) — the CV chain only sees the other
    9 heroes as identity + position + missing-state; their KDA/items are unavailable.
 8. **Live objective board / Insights metrics** collapse to honest `"—"` without a data source
