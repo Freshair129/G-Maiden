@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.11.1] — 2026-07-18
+### Fixed
+- **ชิป "G-Maiden / GSI Signal" ลอยค้างบน desktop** — overlay เป็นเลเยอร์เต็มจอ
+  always-on-top และวาด standby chip ตลอดเวลาแม้ไม่ได้เปิดเกม ตอนนี้ชิปโชว์เฉพาะตอนมี
+  GSI feed จริง (ในเมนู/เกม Dota) หรือตอนกด "ทดสอบ overlay" — บน desktop เปล่า
+  overlay ไม่วาดอะไรอีกแล้ว (แจ้งเตือนในเกมทำงานเหมือนเดิม)
+
 ## [0.11.0] — 2026-07-18
 ### Added
 - **G-Store มีของจริงแล้ว** — economy backend (CR-003 schema) ขึ้น live: แพ็กฟรี
