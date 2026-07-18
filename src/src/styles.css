@@ -6509,12 +6509,17 @@ body {
 /* R1 (no page-level scroll): the split's outer surface stays clipped — only
    the detail BODY (below) scrolls internally, same interim shape as
    .deck-tabbed-body above. `.settings-split-mode` is added on `.surface` only
-   when tab==="settings" (CommandDeck.tsx), so this 3-class selector (more
-   specific than the shared 2-class `.surface.page-settings`/`.page-settings`
-   rules elsewhere in this file) overrides ONLY the settings split view —
-   those other rules are left untouched for any other code path. */
+   when tab==="settings" (CommandDeck.tsx).
+   `!important` is REQUIRED here, not optional: the shared flow-page rule
+   `.g-deck-panel .surface.page-settings { overflow-y: auto !important }` wins
+   on importance no matter how specific this selector is (verified by computed
+   style 2026-07-18 — without it the surface resolved to `auto`, i.e. the exact
+   pre-CR-013 page-scroll that let rows slide under the subtract frame's notch
+   and bottom rim, Boss's "เข้า settings แล้วกรอบทะลุ" report). It was benign
+   only because the split layout happens never to overflow the surface — this
+   makes R1 structural instead of lucky. */
 .surface.page-settings.settings-split-mode {
-  overflow: hidden;
+  overflow: hidden !important;
 }
 .settings-detail-body {
   flex: 1;
