@@ -115,6 +115,11 @@ export interface ResourceStats {
   ram_mb: number;
   cpu_pct: number;
   over_budget: boolean;
+  /** Session peaks (max since launch) from the governor — prove the SRS §5.1
+   *  budgets held over a match. Own-process, core-normalized (deck WebView2 is a
+   *  separate process, not counted). Optional: absent on older ticks. */
+  peak_cpu_pct?: number;
+  peak_ram_mb?: number;
   gpu_pct: number;        // -1 when the active telemetry source is absent/stale
   gpu_temp_c: number;     // -1 = unavailable
   vram_used_mb: number;   // -1 = unavailable

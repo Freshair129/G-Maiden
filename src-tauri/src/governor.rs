@@ -75,7 +75,10 @@ struct CpuSample {
     wall: Instant,
 }
 
-#[allow(dead_code)] // read by the capture loop once throttling is wired
+/// Read by the capture loop every tick (`capture.rs`) — when true it drops
+/// capture cadence to ~2 Hz. Driven by CPU **or** RAM over-budget (see
+/// `poll_loop` / `over_budget`), so the name is historical: a RAM breach
+/// throttles capture too.
 pub fn cpu_throttle() -> bool {
     CPU_THROTTLE.load(Ordering::Relaxed)
 }
@@ -86,6 +89,15 @@ pub struct ResourceStats {
     pub cpu_pct: f64,
     /// True when one or more NFRs are over budget.
     pub over_budget: bool,
+    /// Session peaks (max seen since launch) — lets the deck footer prove the
+    /// SRS §5.1 budgets held over a whole match without an external harness.
+    /// `cpu_pct` here is the governor's own-process, core-normalized reading
+    /// (≤2.5% background); visible-deck WebView2 render is a separate process
+    /// and is NOT counted (measured 2026-07-18: core 0.12% CPU / 66 MB RAM).
+    #[serde(default)]
+    pub peak_cpu_pct: f64,
+    #[serde(default)]
+    pub peak_ram_mb: f64,
     /// GPU/CPU-temp metrics from the active telemetry source. `-1` = unavailable
     /// (source off / stale / no sensor) so the footer shows "—" instead of a 0.
     /// `cpu_temp_c` is only populated by the rich G-Telemetry source (the light
@@ -107,8 +119,14 @@ pub fn start(app: AppHandle) {
 }
 
 fn poll_loop(app: AppHandle) {
+    let mut peak_cpu = 0.0f64;
+    let mut peak_ram = 0.0f64;
     loop {
-        let stats = measure();
+        let mut stats = measure();
+        peak_cpu = peak_cpu.max(stats.cpu_pct);
+        peak_ram = peak_ram.max(stats.ram_mb);
+        stats.peak_cpu_pct = peak_cpu;
+        stats.peak_ram_mb = peak_ram;
         let over = stats.over_budget;
         CPU_THROTTLE.store(over, Ordering::Relaxed);
         if over {
@@ -143,6 +161,10 @@ fn measure() -> ResourceStats {
         ram_mb,
         cpu_pct,
         over_budget,
+        // Filled by poll_loop (which holds the running peaks across ticks); a
+        // one-off measure() outside the loop reports 0.
+        peak_cpu_pct: 0.0,
+        peak_ram_mb: 0.0,
         gpu_pct: g.0,
         gpu_temp_c: g.1,
         vram_used_mb: g.2,
@@ -397,6 +419,8 @@ mod tests {
             ram_mb: 450.0,
             cpu_pct: 1.0,
             over_budget: false,
+            peak_cpu_pct: 0.0,
+            peak_ram_mb: 0.0,
             gpu_pct: NO_READING,
             gpu_temp_c: NO_READING,
             vram_used_mb: NO_READING,
