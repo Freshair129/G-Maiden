@@ -1,5 +1,22 @@
 # Changelog
 
+## [0.11.0] — 2026-07-18
+### Added
+- **G-Store มีของจริงแล้ว** — economy backend (CR-003 schema) ขึ้น live: แพ็กฟรี
+  "Maiden — Community Pack" (claim ได้ทันที), โค้ด redeem `MAIDENFREE` (รับแพ็กฟรี) และ
+  `WELCOME250` (รับ 250 coins), พร้อมแพ็กเสียงชุดใหม่ (Frost / Meme) แบบ coming-soon.
+  การเติมเงิน/ shard faucet ยังไม่เปิด (รอ legal/payment ตามแผน)
+- **G-Motion ฉลาดขึ้น** — คำนวณทิศทางศัตรูก่อนหายจากแมป (มุ่งเข้ากลาง = เสี่ยงแก๊งค์สูงขึ้น,
+  เดินออก = ฟาร์ม) จากประวัติ 5 นาทีที่เก็บอยู่แล้ว — แจ้งเตือนแม่นขึ้นโดยไม่กระทบ latency
+- **Resource stats แสดง session peak** — CPU/RAM สูงสุดตั้งแต่เปิดแอป โชว์ได้ใน deck
+  (พิสูจน์ budget ≤2.5% CPU / ≤400MB ได้ทั้งแมตช์); วัดจริงบน release: core 0.12% CPU / 66MB RAM
+- `GameTick` เก็บ HP จริง (`hp`/`max_hp`) เพิ่มจากเปอร์เซ็นต์ — groundwork ระบบเตือน lethal-HP
+
+### Fixed
+- **Settings "กรอบทะลุ"** — กฎ R1 (ห้าม scroll ระดับหน้า) ของ settings split view แพ้กฎเก่า
+  `!important` เงียบๆ มาตลอด; บังคับให้ชนะจริงแล้ว content ไม่ไหลลอดใต้ notch/ขอบกรอบอีก
+  (ผู้ใช้ v0.9.1 ที่เจอหน้า settings แบบเก่าทะลุกรอบ — อัปเดตรุ่นนี้แล้วหาย)
+
 ## [0.10.0] — 2026-07-17
 ### Changed
 - **ONE CANVAS sitemap (CR-013)** — the deck consolidates to 7 nav pages (`Ctrl+1..7`):
