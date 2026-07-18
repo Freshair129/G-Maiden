@@ -158,7 +158,11 @@ Specified but **not shipped** — the "Companion Experience Extensions" layered 
 4. **Draft-CV is inert** — the recognizer ships but has no portrait templates on disk, so it
    never auto-reads a roster (only the manual `set_draft_roster` dev cmd). Matches "IDLE until assets".
 5. **`ocr.rs` is fully dead code** — compiled but unreferenced; enemy-NW OCR not wired, models unbundled.
-6. **`damage.rs` half-wired** — only `self_burst` feeds G-Master; enemy-burst / dynamic lethal-HP warning unconnected.
+6. **`damage.rs` half-wired (blocked-by-data)** — only `self_burst` feeds G-Master; the enemy-burst /
+   lethal-HP warning stays unwired because GSI is local-only and CV gives enemies identity+position
+   only (no enemy level/items/HP). **Groundwork done (2026-07-18):** `GameTick` now carries absolute
+   `hp`/`max_hp` (the defender-side input `is_lethal` needs). Still needed to actually fire: an enemy
+   hero-level source (scoreboard-CV, deferred) and player armor/MR derived from the local loadout.
 7. **Own-game data honesty limit** (GSI design, not a bug) — the CV chain only sees the other
    9 heroes as identity + position + missing-state; their KDA/items are unavailable.
 8. **Live objective board / Insights metrics** collapse to honest `"—"` without a data source
