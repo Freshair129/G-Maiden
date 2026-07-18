@@ -29,7 +29,7 @@ authoritative in-repo mirror is `src-tauri/src/voice_api.rs` (`EVENTS`).
 | Module | Responsibility | File(s) | Status | Evidence / caveat |
 | --- | --- | --- | --- | --- |
 | **G-Sentry** | Fog-of-war monitor (enemies missing from vision) | `sentry.rs` | 🟢 SHIPPED | Driven every frame (`capture.rs:486`); edge-triggered `enemy-missing`; confirm-hits/stale gates vs phantoms. **Dies in Lite mode** (needs DXGI). Own-game = other 9 heroes only. |
-| **G-Motion** | Heatmap / last-seen positions / gank-route prediction | `motion.rs` | 🟡 PARTIAL | Time-off-map **risk heuristic** feeds G-Signal and works; but the 5-min position history (`Sample.hero/pos`) is `#[allow(dead_code)]` — **no heatmap / path prediction** (SRS §3.2) is actually built. |
+| **G-Motion** | Heatmap / last-seen positions / gank-route prediction | `motion.rs` | 🟡 PARTIAL | Time-off-map risk heuristic feeds G-Signal, now **heading-aware** (2026-07-18): the 5-min history drives a pre-vanish direction multiplier (rotating inward = gank ↑, walking out = farm ↓). No full heatmap / through-fog route prediction yet (SRS §3.2 — inherently fog-bounded). |
 | **G-Signal** | Real-time gank warning, voice interrupt (hard-latency path) | `signal.rs`, `capture.rs::voice_interrupt` | 🟢 SHIPPED | Edge-triggered `Alert`/`Revision` state machine; interrupt semantics (`audio::cancel`+`tts`); runtime-tunable sensitivity; latency harness asserts p99 in budget. **Needs CV capture** (silent in Lite / exclusive-fullscreen). |
 | **G-Master** | Strategic/financial advisor (skill/item build vs enemy) | `master.rs`, `counter_advice.rs` | 🟢 SHIPPED | `request_advice` cmd (`main.rs:243`); prompt grounded on `runtime::known_enemies()` + `data/item_counters.json` + self-burst. |
 | **G-Sensory** | Overlay render + capture + hardware optimization | see §1.2 capture/CV + §2 overlay | 🟢 SHIPPED | Split across the CV/capture stack (below) and the frontend Overlay window. |
@@ -150,8 +150,11 @@ Specified but **not shipped** — the "Companion Experience Extensions" layered 
 2. **G-Signal/G-Sentry depend on DXGI** — in Dota exclusive-fullscreen (or any DXGI-start
    failure) the app drops to **Lite mode** and the whole minimap-CV → Sentry → Motion → Signal
    chain goes silent; gank warnings are not GSI-derivable. A real functional cliff, not just degraded quality.
-3. **G-Motion has no prediction** — only a time-off-map risk heuristic; the 5-min history is
-   retained but unused. No heatmap / gank-route prediction (vs SRS §3.2).
+3. **G-Motion prediction — partially addressed (2026-07-18):** `assess()` now reads the 5-min
+   history for a pre-vanish heading multiplier (inward = gank ↑, outward = farm ↓). Still no full
+   heatmap or through-fog route tracking — inherently fog-bounded (the trail ends at the vanish
+   point), and "is this gank heading toward *me*" needs the player's own minimap position plumbed
+   from GSI (a small future wiring task).
 4. **Draft-CV is inert** — the recognizer ships but has no portrait templates on disk, so it
    never auto-reads a roster (only the manual `set_draft_roster` dev cmd). Matches "IDLE until assets".
 5. **`ocr.rs` is fully dead code** — compiled but unreferenced; enemy-NW OCR not wired, models unbundled.
