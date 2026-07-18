@@ -906,6 +906,13 @@ const Overlay: React.FC = () => {
   }
 
   if (!seen || !tick || !tick.in_game || (!gsiActive && !previewMode)) {
+    // Boss 2026-07-18 "กรอบทะลุตลอด": the standby chip used to render
+    // UNCONDITIONALLY here, so with no game running the always-on-top overlay
+    // window painted a floating "G-Maiden / GSI Signal" pill on the bare
+    // desktop, permanently. Only show it when there's a live GSI feed (Dota
+    // menus — useful "I'm alive" feedback over the game) or during the
+    // settings overlay-preview; on a plain desktop the overlay draws nothing.
+    const showStandbyChip = gsiActive || previewMode
     return (
       <>
         {cvDebug}
@@ -914,13 +921,15 @@ const Overlay: React.FC = () => {
             {gankBanner}
             {missingBadge}
             {eventToast}
-            <div style={{ ...overlayPanel(s.opacity), padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ width: 8, height: 8, borderRadius: 99, background: gsiActive ? C.ok : C.bad }} />
-              <div>
-                <div style={{ fontWeight: 600, fontSize: 13 }}>G-Maiden</div>
-                <div style={{ fontSize: 11, color: C.mut }}>GSI Signal</div>
+            {showStandbyChip && (
+              <div style={{ ...overlayPanel(s.opacity), padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span style={{ width: 8, height: 8, borderRadius: 99, background: gsiActive ? C.ok : C.bad }} />
+                <div>
+                  <div style={{ fontWeight: 600, fontSize: 13 }}>G-Maiden</div>
+                  <div style={{ fontSize: 11, color: C.mut }}>GSI Signal</div>
+                </div>
               </div>
-            </div>
+            )}
           </div>
         </div>
         {volToast !== null && (
