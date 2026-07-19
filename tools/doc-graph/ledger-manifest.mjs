@@ -276,7 +276,7 @@ export function resolveRefs(manifest, repoRoot) {
       docs: checkRefExists(entry.refs.docs, repoRoot),
       srs: checkRefExists(entry.refs.srs, repoRoot),
       code: checkRefExists(entry.refs.code, repoRoot),
-      tests: checkRefExists(entry.refs.tests, repoRoot),
+      tests: checkTestRefExists(entry.refs.tests, repoRoot),
       review: checkRefExists(entry.refs.review, repoRoot),
     };
 
@@ -313,6 +313,24 @@ function danglingRefs(entry, repoRoot) {
     }
   }
   return out;
+}
+
+/**
+ * Tests-kind existence: like checkRefExists, but a `cargo:<test-name>` entry
+ * is a COMMAND ref (G3-T4's format), not a path — its presence in the
+ * manifest means a test is mapped, which is exactly what the pinned rule
+ * "in-code = tests refs missing/empty" distinguishes. Whether the command
+ * actually passes is --run-tests territory (ledger-runtests.mjs), never
+ * existence territory. Mirrors danglingRefs()'s cargo: exemption.
+ */
+function checkTestRefExists(refValue, repoRoot) {
+  if (!refValue) return false;
+  const refs = Array.isArray(refValue) ? refValue : [refValue];
+  for (const ref of refs) {
+    if (String(ref).startsWith('cargo:')) return true;
+    if (existsSync(resolve(repoRoot, ref))) return true;
+  }
+  return false;
 }
 
 function checkRefExists(refValue, repoRoot) {

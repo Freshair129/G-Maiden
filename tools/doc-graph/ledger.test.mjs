@@ -373,6 +373,34 @@ test('fixture: a SCALAR review ref counts like a 1-element array for verified', 
   }
 });
 
+test('fixture: a cargo: test ref counts as tests evidence (existence level)', async () => {
+  // G3-T4 defines `cargo:<name>` command refs; a mapped cargo test means the
+  // row's tests refs are NOT "missing/empty" (pinned in-code rule), even
+  // though there is no file to existsSync. It still cannot reach verified
+  // without --run-tests actually running it.
+  const root = makeFixtureRepo();
+  try {
+    writeManifest(root, [
+      { id: 'F-CARGO', refs: { code: ['src/thing.js'], tests: ['cargo:thing::tests::'] } },
+      {
+        id: 'F-CARGO-FULL',
+        refs: {
+          code: ['src/thing.js'],
+          tests: ['cargo:thing::tests::'],
+          review: ['docs/review-record.md'],
+        },
+      },
+    ]);
+    const result = await run(root);
+    assert.equal(rowById(result, 'F-CARGO').computed, 'code+needs-test-or-review');
+    // full evidence but unrun -> the honest downgrade, never verified
+    assert.equal(rowById(result, 'F-CARGO-FULL').computed, 'code+tests-present (unrun)');
+    assert.equal(result.exitCode, 0);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('fixture: duplicate manifest ids are rejected', async () => {
   // G3-R-adv finding 3.
   const root = makeFixtureRepo();

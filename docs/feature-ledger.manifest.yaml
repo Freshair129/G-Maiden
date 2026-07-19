@@ -20,6 +20,16 @@
 #   SHIPPED -> code+tests-present   PARTIAL -> in-code
 #   STUB    -> in-code              PLANNED -> doc-only
 #
+# PRUNE PASS (2026-07-20, Boss-delegated): every row now carries
+# `source: bootstrap-extraction, pruned 2026-07-20`. Real test evidence was
+# inventoried (cargo `#[cfg(test)]` mods grep-verified per module; frontend
+# vitest files read for actual imports) and mapped into refs.tests
+# (`cargo:<module>::tests::` command refs / test file paths); refs.review maps
+# only documents that genuinely review that feature (audits/SEC-001/RCAs/
+# CR-001-REVIEW). Where no honest evidence exists the CLAIM was lowered to
+# match reality (never padded) — so the ledger now runs with 0 violations and
+# any future drift is a real regression signal, not bootstrap noise.
+#
 # phase_target derivation:
 #   - Where the row has a matching docs/features/FEAT-G-*.md doc with an
 #     explicit `**Phase:** N` (or `N-M`) header line, that number is used
@@ -48,13 +58,13 @@ entries:
     title: "G-Sentry — fog-of-war monitor (enemies missing from vision)"
     kind: feature
     phase_target: P2
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: [docs/features/FEAT-G-SENTRY.md]
       srs: []
       code: [src-tauri/src/sentry.rs]
-      tests: []
+      tests: [cargo:sentry::tests::]
       review: []
 
   - id: 1.1-g-motion
@@ -62,7 +72,7 @@ entries:
     kind: feature
     phase_target: P3
     claimed_status: in-code
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: [docs/features/FEAT-G-MOTION.md]
       srs: []
@@ -75,33 +85,33 @@ entries:
     kind: feature
     phase_target: P3
     claimed_status: code+tests-present
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: [docs/features/FEAT-G-SIGNAL.md]
       srs: []
       code: [src-tauri/src/signal.rs, src-tauri/src/capture.rs]
-      tests: []
-      review: []
+      tests: [cargo:signal::tests::, cargo:capture::backend::tests::]
+      review: [docs/audits/2026-07-07-independent-full-audit.md, docs/change request/CR-001-REVIEW-and-execution-plan.md]
 
   - id: 1.1-g-master
     title: "G-Master — strategic/financial advisor (skill/item build vs enemy)"
     kind: feature
     phase_target: P5
     claimed_status: code+tests-present
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: [docs/features/FEAT-G-MASTER.md]
       srs: []
       code: [src-tauri/src/master.rs, src-tauri/src/counter_advice.rs]
-      tests: []
-      review: []
+      tests: [cargo:master::tests::, cargo:counter_advice::tests::]
+      review: [docs/audits/2026-07-07-independent-full-audit.md]
 
   - id: 1.1-g-sensory
     title: "G-Sensory — overlay render + capture + hardware optimization"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: doc-only
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: [docs/features/FEAT-G-SENSORY.md]
       srs: []
@@ -113,13 +123,13 @@ entries:
     title: "G-Log — feedback loop, local decision/outcome logging"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: [docs/features/FEAT-G-LOG.md]
       srs: []
       code: [src-tauri/src/log.rs]
-      tests: []
+      tests: [cargo:log::tests::]
       review: []
 
   # --- 1.2 Capture, CV & vision ---
@@ -128,20 +138,20 @@ entries:
     kind: feature
     phase_target: P6
     claimed_status: code+tests-present
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src-tauri/src/capture.rs, src-tauri/src/dxgi.rs]
-      tests: []
-      review: []
+      tests: [cargo:capture::backend::tests::, cargo:dxgi::tests::]
+      review: [docs/change request/CR-001-REVIEW-and-execution-plan.md, docs/audits/2026-07-07-independent-full-audit.md]
 
   - id: 1.2-wgc-capture
     title: "WGC capture (rollback path, --features wgc only)"
     kind: feature
     phase_target: P5
     claimed_status: in-code
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
@@ -154,20 +164,20 @@ entries:
     kind: feature
     phase_target: P6
     claimed_status: code+tests-present
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src-tauri/src/cv/detector.rs, src-tauri/src/cv/prefilter.rs, src-tauri/src/cv/region.rs]
-      tests: []
-      review: []
+      tests: [cargo:cv::detector::tests::, cargo:cv::prefilter::tests::, cargo:cv::region::tests::]
+      review: [docs/change request/CR-001-REVIEW-and-execution-plan.md, docs/audits/2026-07-07-independent-full-audit.md]
 
   - id: 1.2-draft-cv
     title: "Draft-CV (pick-screen roster reader)"
     kind: feature
     phase_target: P3
     claimed_status: in-code
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
@@ -180,7 +190,7 @@ entries:
     kind: feature
     phase_target: P3
     claimed_status: in-code
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
@@ -194,20 +204,20 @@ entries:
     kind: feature
     phase_target: P6
     claimed_status: code+tests-present
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src-tauri/src/announcer.rs, src-tauri/src/voice_api/mod.rs, src-tauri/src/audio.rs, src-tauri/src/tts.rs]
-      tests: []
-      review: []
+      tests: [cargo:announcer::tests::, cargo:voice_api::tests::, cargo:audio::tests::, cargo:tts::tests::]
+      review: [docs/rca/2026-07-10-voice-pack-path-traversal.md, docs/audits/2026-07-07-independent-full-audit.md]
 
   - id: 1.3-damage-model
     title: "G-Master self-burst / damage model"
     kind: feature
     phase_target: P3
     claimed_status: in-code
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: [docs/features/FEAT-G-DAMAGE.md]
       srs: []
@@ -220,25 +230,25 @@ entries:
     kind: feature
     phase_target: P6
     claimed_status: code+tests-present
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src-tauri/src/master.rs, src-tauri/src/slm.rs]
-      tests: []
-      review: []
+      tests: [cargo:master::tests::]
+      review: [docs/audits/2026-07-07-independent-full-audit.md]
 
   - id: 1.3-g-revive
     title: "G-Revive (buyback advice)"
     kind: feature
     phase_target: P5
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: [docs/features/FEAT-G-REVIVE.md]
       srs: []
       code: [src-tauri/src/revive.rs, src-tauri/src/respawn.rs]
-      tests: []
+      tests: [cargo:revive::tests::, cargo:respawn::tests::]
       review: []
 
   # --- 1.4 Server, identity & infra ---
@@ -247,25 +257,25 @@ entries:
     kind: feature
     phase_target: P6
     claimed_status: code+tests-present
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src-tauri/src/gsi.rs]
-      tests: []
-      review: []
+      tests: [cargo:gsi::tests::]
+      review: [docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md]
 
   - id: 1.4-item-networth
     title: "Item / net-worth derivation"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src-tauri/src/items.rs]
-      tests: []
+      tests: [cargo:items::tests::]
       review: []
 
   - id: 1.4-gsi-config
@@ -273,125 +283,125 @@ entries:
     kind: feature
     phase_target: P6
     claimed_status: code+tests-present
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src-tauri/src/setup.rs]
-      tests: []
-      review: []
+      tests: [cargo:setup::tests::]
+      review: [docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md]
 
   - id: 1.4-identity-steam
     title: "Identity / Steam link"
     kind: feature
     phase_target: P6
     claimed_status: code+tests-present
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src-tauri/src/identity.rs]
-      tests: []
-      review: []
+      tests: [cargo:identity::tests::]
+      review: [docs/audits/SEC-001-auth-identity-hardening.md, docs/audits/2026-07-07-independent-full-audit.md]
 
   - id: 1.4-oauth-callback
     title: "OAuth callback (login)"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src-tauri/src/gsi.rs, src-tauri/src/main.rs]
       tests: []
-      review: []
+      review: [docs/audits/SEC-001-auth-identity-hardening.md, docs/audits/2026-07-07-independent-full-audit.md]
 
   - id: 1.4-secret-store
     title: "Secret store (DPAPI)"
     kind: feature
     phase_target: P6
     claimed_status: code+tests-present
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src-tauri/src/secret.rs]
-      tests: []
-      review: []
+      tests: [cargo:secret::tests::]
+      review: [docs/audits/SEC-001-auth-identity-hardening.md, docs/audits/2026-07-07-independent-full-audit.md]
 
   - id: 1.4-gpu-telemetry
     title: "GPU telemetry governor"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src-tauri/src/governor.rs, gpu-feeder/src/main.rs]
-      tests: []
+      tests: [cargo:governor::tests::]
       review: []
 
   - id: 1.4-claude-quota
     title: "Claude quota stats"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src-tauri/src/usage.rs]
-      tests: []
+      tests: [cargo:usage::tests::]
       review: []
 
   - id: 1.4-calibration
     title: "Calibration (QA evidence)"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src-tauri/src/calibration.rs]
-      tests: []
+      tests: [cargo:calibration::tests::]
       review: []
 
   - id: 1.4-utterance-ledger
     title: "Utterance ledger emit (CR-011)"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src-tauri/src/utterance.rs]
-      tests: []
+      tests: [cargo:utterance::tests::]
       review: []
 
   - id: 1.4-hotkeys-updater
     title: "Global hotkeys / updater / window routing"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src-tauri/src/main.rs]
       tests: []
-      review: []
+      review: [docs/rca/2026-07-10-release-gate-drift-v0.9.0.md, docs/audits/2026-07-07-independent-full-audit.md]
 
   # --- 2.1 The 7 nav pages (Command Deck) ---
   - id: 2.1-dashboard
     title: "Dashboard (nav page)"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: in-code
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
@@ -404,7 +414,7 @@ entries:
     kind: feature
     phase_target: P5
     claimed_status: in-code
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
@@ -416,8 +426,8 @@ entries:
     title: "Voice (nav page: คลังของฉัน / ไอเทม / ตัวแก้ไข)"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: in-code
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
@@ -430,7 +440,7 @@ entries:
     kind: feature
     phase_target: P5
     claimed_status: in-code
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
@@ -443,7 +453,7 @@ entries:
     kind: feature
     phase_target: P5
     claimed_status: in-code
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
@@ -456,39 +466,39 @@ entries:
     kind: feature
     phase_target: P6
     claimed_status: code+tests-present
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src/src/AccountPage.tsx, src/src/AuthPanel.tsx, src/src/SteamLink.tsx, src/src/auth.ts, src/src/profile.ts, src/src/gid.ts]
-      tests: []
-      review: []
+      tests: [src/src/__tests__/gid.test.ts, src/src/__tests__/secureStorage.test.ts]
+      review: [docs/audits/SEC-001-auth-identity-hardening.md]
 
   - id: 2.1-settings
     title: "Settings (nav page: iOS split view)"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src/src/CommandDeck.tsx, src/src/App.tsx, src/src/useAppUpdate.ts]
       tests: []
-      review: []
+      review: [docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md]
 
   # --- 2.2 Cross-cutting frontend features ---
   - id: 2.2-live-wiring
     title: "Live wiring -> Tauri events"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src/src/companion.ts, src/src/live/events.ts, src/src/live/phase.ts, src/src/live/utterances.ts]
-      tests: []
+      tests: [src/src/live/__tests__/buildActivity.test.ts, src/src/live/__tests__/buildBaselines.test.ts, src/src/live/__tests__/buildHeroes.test.ts, src/src/live/__tests__/buildHistory.test.ts, src/src/live/__tests__/buildInsights.test.ts, src/src/live/__tests__/buildMarkers.test.ts, src/src/live/__tests__/buildMatch.test.ts, src/src/live/__tests__/buildMomentum.test.ts, src/src/live/__tests__/buildProfile.test.ts, src/src/live/__tests__/buildSignals.test.ts, src/src/live/__tests__/buildTelemetry.test.ts, src/src/live/__tests__/buildWeekly.test.ts, src/src/live/__tests__/opendota.test.ts, src/src/live/__tests__/utterances.test.ts, src/src/__tests__/heroKdaFormat.test.ts]
       review: []
 
   - id: 2.2-accounts-gid
@@ -496,20 +506,20 @@ entries:
     kind: feature
     phase_target: P6
     claimed_status: code+tests-present
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src/src/auth.ts, src/src/profile.ts, src/src/supabase.ts, src/src/gid.ts, src/src/AccountPage.tsx, src/src/AuthPanel.tsx, src/src/SteamLink.tsx]
-      tests: []
-      review: []
+      tests: [src/src/__tests__/gid.test.ts, src/src/__tests__/secureStorage.test.ts]
+      review: [docs/audits/SEC-001-auth-identity-hardening.md]
 
   - id: 2.2-economy-gstore
     title: "Economy / G-Store"
     kind: feature
     phase_target: P5
     claimed_status: in-code
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
@@ -521,66 +531,66 @@ entries:
     title: "Maiden Line command palette (Ctrl+K)"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src/src/MaidenLine.tsx, src/src/shortcuts.ts]
-      tests: []
+      tests: [src/src/__tests__/shortcuts.test.ts]
       review: []
 
   - id: 2.2-onair-console
     title: "ON AIR utterance console"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src/src/CommandDeck.tsx, src/src/live/utterances.ts]
-      tests: []
+      tests: [src/src/live/__tests__/utterances.test.ts]
       review: []
 
   - id: 2.2-phase-axis
     title: "Phase axis (standby -> prep -> live -> debrief)"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src/src/live/phase.ts]
-      tests: []
+      tests: [src/src/live/__tests__/phase.test.ts]
       review: []
 
   - id: 2.2-inapp-updater
     title: "In-app updater"
     kind: feature
     phase_target: P6
-    claimed_status: code+tests-present
-    source: bootstrap-extraction
+    claimed_status: code+needs-test-or-review
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
       code: [src/src/useAppUpdate.ts]
       tests: []
-      review: []
+      review: [docs/rca/2026-07-10-release-gate-drift-v0.9.0.md]
 
   - id: 2.2-overlay-hud
     title: "Overlay Combat HUD + announcer banner"
     kind: feature
     phase_target: P6
     claimed_status: code+tests-present
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
-      code: [src/src/App.tsx, src/src/overlay/FullOverlay.tsx, src/src/overlay/modules.ts, src/src/overlay/LayoutEditor.tsx]
-      tests: []
-      review: []
+      code: [src/src/App.tsx, src/src/overlay/FullOverlay.tsx, src/src/overlay/modules.ts, src/src/overlay/LayoutEditor.tsx, src/src/overlay/streaks.ts, src/src/personaMilestones.ts]
+      tests: [src/src/__tests__/eventContract.test.ts, src/src/__tests__/personaMilestones.test.ts]
+      review: [docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md]
 
   # --- 3. Product-level / planned features ---
   - id: 3-g-voice
@@ -588,7 +598,7 @@ entries:
     kind: feature
     phase_target: P4
     claimed_status: doc-only
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: [docs/features/FEAT-G-VOICE.md]
       srs: []
@@ -601,7 +611,7 @@ entries:
     kind: feature
     phase_target: P6
     claimed_status: doc-only
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: [docs/features/FEAT-G-MEMORY.md]
       srs: []
@@ -614,7 +624,7 @@ entries:
     kind: feature
     phase_target: P6
     claimed_status: doc-only
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: [docs/features/FEAT-G-COACH.md]
       srs: []
@@ -627,7 +637,7 @@ entries:
     kind: feature
     phase_target: P4
     claimed_status: in-code
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: [docs/features/FEAT-G-MIND.md]
       srs: []
@@ -640,7 +650,7 @@ entries:
     kind: feature
     phase_target: P6
     claimed_status: doc-only
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: [docs/features/FEAT-G-PERSONA.md]
       srs: []
@@ -653,7 +663,7 @@ entries:
     kind: feature
     phase_target: P6
     claimed_status: doc-only
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: [docs/features/FEAT-G-STREAM.md]
       srs: []
@@ -666,7 +676,7 @@ entries:
     kind: feature
     phase_target: P1
     claimed_status: doc-only
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: []
@@ -679,7 +689,7 @@ entries:
     title: "G-Signal end-to-end latency (target 250ms, never exceed 300ms)"
     kind: nfr
     phase_target: P6
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: [docs/product/software-requirements-specification.md]
@@ -691,7 +701,7 @@ entries:
     title: "Background CPU usage <= 2.5% on a mid-range chipset"
     kind: nfr
     phase_target: P6
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: [docs/product/software-requirements-specification.md]
@@ -703,7 +713,7 @@ entries:
     title: "RAM budget <= 400MB with all modules active"
     kind: nfr
     phase_target: P6
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: [docs/product/software-requirements-specification.md]
@@ -715,7 +725,7 @@ entries:
     title: "Overlay FPS impact <= 3% drop; must not obscure minimap/skill bar/stats"
     kind: nfr
     phase_target: P6
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: [docs/product/software-requirements-specification.md]
@@ -727,7 +737,7 @@ entries:
     title: "Resilience — G-Sentry + G-Signal keep running on local SLM on cloud/network loss"
     kind: nfr
     phase_target: P6
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: [docs/product/software-requirements-specification.md]
@@ -739,7 +749,7 @@ entries:
     title: "Privacy — G-Log/live match state/CV detections stay local-only, CV never leaves the machine"
     kind: nfr
     phase_target: P6
-    source: bootstrap-extraction
+    source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: [docs/product/software-requirements-specification.md]
