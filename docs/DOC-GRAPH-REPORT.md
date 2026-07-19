@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-07-19T20:01:32.216Z
+สร้างเมื่อ / Generated at: 2026-07-19T22:59:03.243Z
 
-สแกน 88 ไฟล์เอกสาร, 204 nodes, 1194 edges, 64 รายการปัญหา (14 ตัวบล็อก exit code) / scanned 88 doc files, 204 nodes, 1194 edges, 64 violations (14 blocking exit code).
+สแกน 89 ไฟล์เอกสาร, 205 nodes, 1194 edges, 65 รายการปัญหา (14 ตัวบล็อก exit code) / scanned 89 doc files, 205 nodes, 1194 edges, 65 violations (14 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -13,7 +13,7 @@
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 3 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
-| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 47 | no (informational) |
+| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 48 | no (informational) |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -29,6 +29,10 @@
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/DOCS-IA-REORG-PROPOSAL.md
+
+- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/FEATURE-LEDGER.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 

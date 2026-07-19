@@ -485,7 +485,19 @@ function main() {
 
   const { graph, report, exitCode } = runScan({ repoRoot, docsDir, now, strict });
 
+  // Preserve the G3 ledger block: ledger.mjs MERGES {ledger} into this file
+  // additively, but a wholesale scan rewrite used to drop it (found 2026-07-20
+  // — scan after ledger erased 699 lines). Scan owns generatedAt/nodes/edges/
+  // violations; the ledger key is foreign and must survive a rescan.
   mkdirSync(dirname(outJson), { recursive: true });
+  try {
+    const prev = JSON.parse(readFileSync(outJson, 'utf8'));
+    if (prev && typeof prev === 'object' && prev.ledger !== undefined) {
+      graph.ledger = prev.ledger;
+    }
+  } catch {
+    // no previous file / unparseable — nothing to preserve
+  }
   writeFileSync(outJson, JSON.stringify(graph, null, 2) + '\n', 'utf8');
   mkdirSync(dirname(outReport), { recursive: true });
   writeFileSync(outReport, report, 'utf8');

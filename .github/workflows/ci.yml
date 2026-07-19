@@ -34,6 +34,13 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm -C src install --frozen-lockfile
 
+      # Doc-graph gate (G1-G3 tooling), one entry point: unit suite +
+      # strict scan + G2.5 checklist-exception rule + feature-ledger clean.
+      # Runs first: pure node, <30s, catches doc/claim drift before any
+      # cargo work.
+      - name: Doc-graph gate (tests + strict scan + checklist + ledger)
+        run: node tools/doc-graph/ci-gate.mjs
+
       # The gpu-feeder sidecar is bundled via tauri.conf externalBin, which
       # tauri-build validates at *any* cargo invocation (clippy included). The
       # built binary is gitignored, so stage it before cargo runs.

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-19T20:01:32.216Z",
+  "generatedAt": "2026-07-19T22:59:03.243Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -15,6 +15,11 @@
       "id": "docs/DOCS-IA-REORG-PROPOSAL.md",
       "type": "doc",
       "path": "docs/DOCS-IA-REORG-PROPOSAL.md"
+    },
+    {
+      "id": "docs/FEATURE-LEDGER.md",
+      "type": "doc",
+      "path": "docs/FEATURE-LEDGER.md"
     },
     {
       "id": "docs/README.md",
@@ -8223,6 +8228,11 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/FEATURE-LEDGER.md",
+      "line": null,
+      "reason": "no-metadata"
+    },
+    {
       "file": "docs/README.md",
       "line": null,
       "reason": "no-metadata"
@@ -8543,7 +8553,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-07-19T22:52:46.220Z",
+    "generatedAt": "2026-07-19T23:00:15.313Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 54,
