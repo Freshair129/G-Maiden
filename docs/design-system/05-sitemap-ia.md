@@ -1,7 +1,7 @@
 ---
-version: "2.3.0-draft"
+version: "2.3.1-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-16T00:00:00+07:00,Fable (CR-013 ONE CANVAS)"
+last_update: "2026-07-19T00:00:00+07:00,Claude"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -9,6 +9,9 @@ attributes:
   language: "th/en"
 ---
 
+> **Geometry clarification (2026-07-19):** คำว่า "panel world (1280×720)" ในเอกสารนี้หมายถึง
+> **panel-local clip world เท่านั้น** — Deck stage จริงที่ authored คือ **1420×760** (scaled-to-fit;
+> ส่วนต่างเป็น effects expansion zone) ยึด [[03-layout]] STAGE-LOCK invariant + `CommandDeck.tsx` เป็นหลัก.
 # 05 — Sitemap & Information Architecture
 
 > ระดับ product-boundary/flow เดิมอยู่ที่ [[g-maiden-ui-sitemap-flow-board|docs/architecture/g-maiden-ui-sitemap-flow-board.md]]
@@ -168,3 +171,8 @@ Voice Packs → เลือก pack → active → POST /announcer/install (:30
 | Alt+M | mute toggle |
 
 (นิยามใน [`src-tauri/src/main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs) — ดู [`CLAUDE.md`](file:///g:/G-Maiden/CLAUDE.md); CR-004 เสนอเพิ่ม Alt+V/G/N/P สำหรับ voice command)
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 2.3.1-draft | 2026-07-19 | + geometry clarification banner (1280×720 = panel-local เท่านั้น, stage จริง 1420×760) — จากผล design-doc audit |

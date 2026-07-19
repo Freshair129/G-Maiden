@@ -1,7 +1,7 @@
 ---
 version: "0.1.0b"
 created_at: "2026-06-23T22:51:10+07:00,ATHER,pending"
-last_update: "2026-06-23T22:51:10+07:00,ATHER"
+last_update: "2026-07-19T00:00:00+07:00,Claude"
 status: "candidate"
 superseded_by: null
 attributes:
@@ -10,6 +10,10 @@ attributes:
   language: "th"
 ---
 
+> **Superseded for current Command Deck implementation (2026-07-19).** สำหรับ tokens อ่าน
+> [[02-tokens]] · geometry อ่าน [[03-layout]] · Deck components อ่าน [[04-components]] · IA อ่าน
+> [[05-sitemap-ia]]. เอกสารนี้เก็บไว้เพื่อ provenance ของ Iceglass และหลักคิดยุค Overlay เท่านั้น
+> — โดยเฉพาะ **ห้าม**ใช้ inline `C` palette เป็นจุดตั้งต้นของ Deck (R3: `C` เป็น Overlay-only).
 # G-Maiden Iceglass Design System
 
 > **⚠️ ต่อยอดแล้วที่ `docs/design-system/` (SSOT v2 "Command Deck HUD").** ไฟล์นี้เป็นต้นทาง Iceglass
@@ -510,3 +514,8 @@ Use only these docs unless a worker reports `BLOCKED:`:
 | Version | Date | Status | Summary | Commit Hash | Agent |
 |---------|------|--------|---------|-------------|-------|
 | 0.1.0b | 2026-06-23 | candidate | Initial Iceglass design system based on PRD/SRS, current App.tsx tokens, G-Sensory constraints, and user-supplied dashboard reference. | pending | ATHER |
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| +banner | 2026-07-19 | superseded banner สำหรับงาน Deck (tokens/layout/components/IA → design-system hub) — audit 2026-07-19 |

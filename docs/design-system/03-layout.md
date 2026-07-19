@@ -1,7 +1,7 @@
 ---
-version: "2.2.4-draft"
+version: "2.3.0-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-10T00:00:00+07:00,Claude"
+last_update: "2026-07-19T00:00:00+07:00,Claude"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -9,6 +9,11 @@ attributes:
   language: "th/en"
 ---
 
+> **STAGE-LOCK invariant (2026-07-19, Boss):** outer stage = **1420×760** (authored, scaled-to-fit)
+> · panel world = **1280×720** (มาตรฐาน 720p) — **ห้ามตีความสลับกัน**. ขอบส่วนต่าง (140px lateral /
+> 40px vertical) **ไม่ใช่ chrome เฉย ๆ — เป็น effects expansion zone ที่จองไว้โดยเจตนา** สำหรับ
+> motion effects ที่ต้องล้นขอบ panel (เช่น ice-mist กระจายออก, radial menu ของปุ่ม power ขยายพ้น rim)
+> — effects ใหม่ต้อง budget พื้นที่ในโซนนี้ ห้ามขยาย stage และห้ามวาง element ถาวรอุดโซนนี้.
 # 03 - Layout
 
 > Current implementation source of truth:
@@ -343,3 +348,8 @@ When shell geometry changes, update these three artifacts together:
 1. `src/src/CommandDeck.tsx`
 2. `src/src/styles.css`
 3. this file plus `assets/cr006-layer-dev-overlay.svg`
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 2.3.0-draft | 2026-07-19 | + STAGE-LOCK invariant: 1420×760 outer / 1280×720 panel world + เหตุผล effects expansion zone (ice-mist, power radial) — จากผล design-doc audit + Boss ชี้แจง intent |

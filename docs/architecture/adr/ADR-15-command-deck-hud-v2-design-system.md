@@ -9,6 +9,10 @@ relates_to: ["ADR-14 (GID/account)", "CR-004 (voice+browser)", "CR-005 (landing/
 language: "th/en"
 ---
 
+> **Historical decision record — not implementation truth (2026-07-19):** ข้อความ "canvas 1280×720"
+> และสถานะ "ยังไม่ migrate token" ในเอกสารนี้ถูก supersede แล้ว — ของจริงที่ ship: outer stage
+> **1420×760** + `--g-*` tokens ใน `src/src/CommandDeck.tsx`/`styles.css`. งาน UI ปัจจุบันใช้
+> [[03-layout]] + [[02-tokens]] เป็น SSOT.
 # ADR-15 — Command Deck HUD v2 (Subtract-glass shell) + design-system SSOT
 
 ## Context
@@ -59,3 +63,8 @@ Boss ขับการ redesign ผ่าน Figma reference (Urban District Pl
 - Migrate `styles.css` → `--g-*` tokens ทีละ component (topbar → sidebar → dashboard → pages)
 - Regenerate `assets/*.svg` เมื่อ geometry เปลี่ยน
 - ตัดสิน [[CR-005-landing-auth-social|CR-005]] open questions (auth provider, landing location) ก่อน implement
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| +banner | 2026-07-19 | historical-status banner: geometry/migration statements superseded โดยโค้ดจริง (audit 2026-07-19) |

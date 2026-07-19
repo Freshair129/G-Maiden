@@ -1,7 +1,7 @@
 ---
 version: "0.5.0b"
 created_at: "2026-06-24T00:00:00+07:00,ATHER,pending"
-last_update: "2026-06-24T05:20:00+07:00,ATHER"
+last_update: "2026-07-19T00:00:00+07:00,Claude"
 status: "candidate"
 superseded_by: null
 attributes:
@@ -10,6 +10,8 @@ attributes:
   language: "th"
 ---
 
+> **Presentation reference only — not a UI implementation specification (2026-07-19).** สำหรับ
+> พฤติกรรมจอ/tokens/geometry/components/navigation ของ G-Maiden ใช้ `docs/design-system/` + โค้ดจริง.
 # G-Maiden + G-Orchestra Product Family Design Map
 
 > Shared visual overview for the G-Maiden product and the G-Orchestra multi-agent dev tool:
@@ -117,3 +119,8 @@ Use these child documents for product-specific sitemap, user flow, screen direct
 | 0.3.0b | 2026-06-24 | candidate | Reframed G-Orchestra as a standalone internal dev tool rather than a product surface. | pending | ATHER |
 | 0.2.0b | 2026-06-24 | candidate | Split product-specific sitemap and user-flow content into separate G-Maiden and G-Orchestra child docs; kept this file as family overview. | pending | ATHER |
 | 0.1.0b | 2026-06-24 | candidate | Initial product-family sitemap, user flow, and shared presentation board for separate G-Maiden and G-Orchestra systems. | pending | ATHER |
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| +banner | 2026-07-19 | reference-only banner — ไม่ใช่ spec สำหรับ implement (audit 2026-07-19) |
