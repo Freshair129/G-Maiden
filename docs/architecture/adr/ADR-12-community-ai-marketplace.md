@@ -1,7 +1,7 @@
-﻿---
+---
 title: "ADR: Community AI Marketplace"
 doc_id: "ADR-12-community-ai-marketplace"
-status: "Accepted"
+status: "accepted"
 version: "1.0.0"
 updated: "2026-06-23"
 owner: "Boss"

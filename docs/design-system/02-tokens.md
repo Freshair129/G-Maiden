@@ -7,6 +7,10 @@ attributes:
   domain: "ui-ux"
   scope: "design tokens"
   language: "th/en"
+title: "02 — Design Tokens"
+doc_id: "02-tokens"
+updated: "2026-07-19"
+owner: "Boss"
 ---
 
 # 02 — Design Tokens
@@ -200,7 +204,7 @@ scale ฐาน 2 (px): **2 · 4 · 6 · 8 · 10 · 12 · 14 · 16**
 | [`--g-blur-panel`](file:///g:/G-Maiden/src/src/styles.css#L34) | `blur(30px) saturate(150%)` | main glass panel (legacy v2 token — interior sectors no longer consume this, ดู §1.3b two-material rule) |
 | [`--g-blur-fab`](file:///g:/G-Maiden/src/src/styles.css#L34) | `blur(24px) saturate(160%)` | FAB, signal card |
 | [`--g-blur-tile`](file:///g:/G-Maiden/src/src/styles.css#L34) | `blur(6px)` | agent card, chip บนภาพ (legacy) |
-| [`--g-blur-console`](file:///g:/G-Maiden/src/src/styles.css#L39) | `blur(30px) saturate(150%)` | v3 (CR-011 §B) — **the only** blur token interior/pop layers should reference: [`.g-deck-panel`](file:///g:/G-Maiden/src/src/styles.css#L4448) shell + Maiden Line palette (`.gm-palette`) + shortcut sheet (`.gm-sheet`) |
+| [`--g-blur-console`](file:///g:/G-Maiden/src/src/styles.css#L39) | `blur(30px) saturate(150%)` | v3 (CR-011 §B) — **the only** blur token interior/pop layers should reference: [`.g-deck-panel`](file:///g:/G-Maiden/src/src/styles.css#L2227) shell + Maiden Line palette (`.gm-palette`) + shortcut sheet (`.gm-sheet`) |
 
 ### 6.1 Quality tiers (v3, CR-011 §H — `html.gq-*` class)
 

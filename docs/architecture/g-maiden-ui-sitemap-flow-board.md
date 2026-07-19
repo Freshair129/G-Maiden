@@ -8,6 +8,10 @@ attributes:
   domain: "ui-ux"
   scope: "G-Maiden player-facing UI sitemap, flow, and board"
   language: "th"
+title: "G-Maiden UI Sitemap / User Flow / Design Board"
+doc_id: "g-maiden-ui-sitemap-flow-board"
+updated: "2026-07-20"
+owner: "Boss"
 ---
 
 > **Geometry clarification (2026-07-19):** "fixed 1280×720 panel-world canvas" ในเอกสารนี้หมายถึง

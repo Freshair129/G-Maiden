@@ -7,6 +7,10 @@ deciders: ["Boss (approver)", "Opus (design lead)"]
 supersedes_partial: "docs/architecture/design-system.md (Iceglass 0.1.0b — shell layout only)"
 relates_to: ["ADR-14 (GID/account)", "CR-004 (voice+browser)", "CR-005 (landing/auth/social)"]
 language: "th/en"
+doc_id: "ADR-15-command-deck-hud-v2-design-system"
+version: "+link-fix"
+updated: "2026-07-19"
+owner: "Boss"
 ---
 
 > **Historical decision record — not implementation truth (2026-07-19):** ข้อความ "canvas 1280×720"

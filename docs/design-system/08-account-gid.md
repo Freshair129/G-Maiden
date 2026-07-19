@@ -7,6 +7,10 @@ attributes:
   domain: "ui-ux"
   scope: "Login (Google OAuth) + GID + Steam link — UX design"
   language: "th/en"
+title: "08 — Account, Login & GID"
+doc_id: "08-account-gid"
+updated: "2026-07-19"
+owner: "Boss"
 ---
 
 # 08 — Account, Login & GID

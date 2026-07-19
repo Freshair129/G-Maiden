@@ -1,0 +1,30 @@
+[
+  {
+    "file": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md",
+    "status": "accepted (design) · pending implementation"
+  },
+  {
+    "file": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
+    "status": "Wave A+B code-complete & gate-green (2026-06-29); Wave C in-game test pending Boss"
+  },
+  {
+    "file": "docs/change request/CR-001-Wave-C-test-plan.md",
+    "status": "ready to execute"
+  },
+  {
+    "file": "docs/change request/CR-002-Phase2-wire-backend.md",
+    "status": "IMPLEMENTED — merged to main 170805b8 (2026-07-02)"
+  },
+  {
+    "file": "docs/change request/CR-003-account-phase1-wallet-billing.md",
+    "status": "Approved"
+  },
+  {
+    "file": "docs/change request/CR-003-payment-golive-checklist.md",
+    "status": "Open — blocked on Phase 0 (legal/terms) + Phase 1 (Omise)"
+  },
+  {
+    "file": "docs/change request/CR-005-landing-auth-social.md",
+    "status": "DRAFT — awaiting approval"
+  }
+]

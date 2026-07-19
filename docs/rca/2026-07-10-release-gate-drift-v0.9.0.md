@@ -9,8 +9,8 @@
 
 - **Evidence:**
   - Run `29113330479` (release) + `29113332433` (CI) — **clippy**:
-    `redundant reference in format! argument` at [`master.rs:196`](file:///g:/G-Maiden/src-tauri/src/master.rs#L196)
-    and [`slm.rs:83`](file:///g:/G-Maiden/src-tauri/src/slm.rs#L83) (`&raw.chars().take(N).collect::<String>()`),
+    `redundant reference in format! argument` at [`master.rs:196`](file:///g:/G-Maiden/src-tauri/src/master.rs)
+    and [`slm.rs:83`](file:///g:/G-Maiden/src-tauri/src/slm.rs) (`&raw.chars().take(N).collect::<String>()`),
     `error: could not compile g-maiden due to 2 previous errors`. The same
     docs-only commit [[ADR-16-credit-economy-and-mint-oracle|ADR-16]] (`29072770636`) had already failed CI for this,
     proving it predated the release.

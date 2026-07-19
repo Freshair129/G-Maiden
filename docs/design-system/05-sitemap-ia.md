@@ -7,6 +7,10 @@ attributes:
   domain: "ui-ux"
   scope: "information architecture, navigation, flows"
   language: "th/en"
+title: "05 — Sitemap & Information Architecture"
+doc_id: "05-sitemap-ia"
+updated: "2026-07-19"
+owner: "Boss"
 ---
 
 > **Geometry clarification (2026-07-19):** คำว่า "panel world (1280×720)" ในเอกสารนี้หมายถึง
@@ -67,7 +71,7 @@ nav ของตัวเอง (economy 4 tab). Settings รื้อใหม�
 ### 2.1 Phase axis (CR-011 §D/§E — [`src/src/live/phase.ts`](file:///g:/G-Maiden/src/src/live/phase.ts))
 
 Match phase คือ derived state จาก GSI signal ที่มีอยู่แล้ว (ไม่มี concept ใหม่ฝั่ง
-backend) — คำนวณด้วย [`stepPhase(prev, input)`](file:///g:/G-Maiden/src/src/live/phase.ts#L71) ทุกครั้งที่มี GSI tick ใหม่ ผลลัพธ์คือ
+backend) — คำนวณด้วย [`stepPhase()`](file:///g:/G-Maiden/src/src/live/phase.ts#L71) ทุกครั้งที่มี GSI tick ใหม่ ผลลัพธ์คือ
 `MatchPhase = "standby" | "prep" | "live" | "debrief"`:
 
 ```
@@ -93,7 +97,7 @@ never move or resize; only what renders *inside* the frozen box changes:
 | `live` | hero columns + minimap (unchanged, pre-CR-011 content) | ON AIR console |
 | `debrief` | **Debrief timeline** ([`DebriefTimeline`](file:///g:/G-Maiden/src/src/CommandDeck.tsx), [[04-components|04-components]] §9e) — most-recently-archived match's event log, sticky (survives GSI dropping) until the user goes "back to live" or a new prep/live tick arrives | ON AIR console |
 
-The score header's **phase chip** ([`.gm-phase-chip`](file:///g:/G-Maiden/src/src/styles.css#L5315), [[04-components|04-components]] §6b) is the one
+The score header's **phase chip** ([`.gm-phase-chip`](file:///g:/G-Maiden/src/src/styles.css#L3078), [[04-components|04-components]] §6b) is the one
 persistent on-screen indicator of the current phase across all four states —
 absolutely positioned at the header's right edge, never shifting the centered
 clock/score.

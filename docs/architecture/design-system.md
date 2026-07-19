@@ -2,12 +2,16 @@
 version: "0.1.1b"
 created_at: "2026-06-23T22:51:10+07:00,ATHER,pending"
 last_update: "2026-07-19,Claude"
-status: "candidate"
+status: "draft"
 superseded_by: null
 attributes:
   domain: "ui-ux"
   scope: "G-Maiden Control Dashboard + Overlay"
   language: "th"
+title: "G-Maiden Iceglass Design System"
+doc_id: "design-system"
+updated: "2026-07-19"
+owner: "Boss"
 ---
 
 > **Superseded for current Command Deck implementation (2026-07-19).** สำหรับ tokens อ่าน

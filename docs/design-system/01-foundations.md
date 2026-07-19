@@ -7,6 +7,10 @@ attributes:
   domain: "ui-ux"
   scope: "principles, visual language, surfaces"
   language: "th/en"
+title: "01 — Foundations"
+doc_id: "01-foundations"
+updated: "2026-07-19"
+owner: "Boss"
 ---
 
 # 01 — Foundations
@@ -41,11 +45,11 @@ Maiden ไม่ใช่แค่ dashboard — เป็น **companion** ท�
 
 - **Console glass** (the ONLY blur in the deck): the Subtract shell panel, FABs, และ
   pop layers เท่านั้น — Maiden Line palette (`.gm-palette`), shortcut sheet (`.gm-sheet`).
-  ใช้ [`var(--g-blur-console)`](file:///g:/G-Maiden/src/src/styles.css#L39) เสมอ (ไม่ hardcode `blur()`) เพื่อให้ quality tier
+  ใช้ [`var(--g-blur-console)`](file:///g:/G-Maiden/src/src/styles.css) เสมอ (ไม่ hardcode `blur()`) เพื่อให้ quality tier
   (`html.gq-cinematic/balanced/eco`, §02 tokens) คุมได้จุดเดียว.
 - **Instrument matte**: ทุก interior sector/card (score header, mini stat, hero slot,
   battle grid, sector log, agent/on-air card, momentum, minimap frame ฯลฯ) — พื้นทึบ
-  [`var(--g-instrument)`](file:///g:/G-Maiden/src/src/styles.css#L36) / `var(--g-instrument-2)`, ขอบ [`var(--g-hairline)`](file:///g:/G-Maiden/src/src/styles.css#L37) /
+  [`var(--g-instrument)`](file:///g:/G-Maiden/src/src/styles.css) / `var(--g-instrument-2)`, ขอบ [`var(--g-hairline)`](file:///g:/G-Maiden/src/src/styles.css) /
   `var(--g-hairline-2)` **1px เท่านั้น ห้ามมี blur/shadow**. เหตุผล: interior เลิกแย่งซีน
   กับ shell, GPU cost ลด, glass กลับมามีความหมาย (shell ลอย, instrument ถูก "ฝัง" อยู่ในนั้น).
 

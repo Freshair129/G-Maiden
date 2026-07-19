@@ -8,6 +8,10 @@ attributes:
   domain: "ui-ux"
   scope: "G-Maiden Command Deck (control window) + Combat HUD (overlay)"
   language: "th/en"
+title: "G-Maiden Design System — SSOT"
+doc_id: "design-system/README"
+updated: "2026-07-19"
+owner: "Boss"
 ---
 
 # G-Maiden Design System — SSOT

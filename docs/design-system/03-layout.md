@@ -7,6 +7,10 @@ attributes:
   domain: "ui-ux"
   scope: "layout geometry, dimensions, responsive"
   language: "th/en"
+title: "03 - Layout"
+doc_id: "03-layout"
+updated: "2026-07-19"
+owner: "Boss"
 ---
 
 > **STAGE-LOCK invariant (2026-07-19, Boss):** outer stage = **1420×760** (authored, scaled-to-fit)
@@ -63,11 +67,11 @@ This means shell polish must be done in stage coordinates first, not screenshot 
 | Layer | Element | Current role |
 | --- | --- | --- |
 | L0 | Window canvas | transparent desktop window owned by Tauri |
-| L1 | [`.g-l1-white-glass`](file:///g:/G-Maiden/src/src/styles.css#L4667) | low-alpha support plate under the app mass, clamped to the panel envelope; no backdrop blur |
-| L2 | [`.g-deck-panel`](file:///g:/G-Maiden/src/src/styles.css#L4448) | clipped subtract-shell body |
-| L2r | [`.g-panel-rim`](file:///g:/G-Maiden/src/src/styles.css#L4759) | stage-sibling rim overlay (not a panel child — the panel's clip/overflow/contain would eat its drop-shadow); overlays the panel box, `z-index:11` |
-| L3 | [`.g-sidebar-fab`](file:///g:/G-Maiden/src/src/styles.css#L4406), [`.g-topbar-fab`](file:///g:/G-Maiden/src/src/styles.css#L4432), [`.g-audio-rail`](file:///g:/G-Maiden/src/src/styles.css#L5121) | floating shell attachments |
-| L4 | [`.g-power-radial`](file:///g:/G-Maiden/src/src/styles.css#L4840), [`.g-signals-fab`](file:///g:/G-Maiden/src/src/styles.css#L4490) | interaction overlays and status cards |
+| L1 | [`.g-l1-white-glass`](file:///g:/G-Maiden/src/src/styles.css#L2438) | low-alpha support plate under the app mass, clamped to the panel envelope; no backdrop blur |
+| L2 | [`.g-deck-panel`](file:///g:/G-Maiden/src/src/styles.css#L2227) | clipped subtract-shell body |
+| L2r | [`.g-panel-rim`](file:///g:/G-Maiden/src/src/styles.css#L2530) | stage-sibling rim overlay (not a panel child — the panel's clip/overflow/contain would eat its drop-shadow); overlays the panel box, `z-index:11` |
+| L3 | [`.g-sidebar-fab`](file:///g:/G-Maiden/src/src/styles.css#L2186), [`.g-topbar-fab`](file:///g:/G-Maiden/src/src/styles.css#L2212), [`.g-audio-rail`](file:///g:/G-Maiden/src/src/styles.css#L2892) | floating shell attachments |
+| L4 | [`.g-power-radial`](file:///g:/G-Maiden/src/src/styles.css#L2611), [`.g-signals-fab`](file:///g:/G-Maiden/src/src/styles.css#L2261) | interaction overlays and status cards |
 
 ## 4. Subtract panel path
 
@@ -78,7 +82,7 @@ notch — every other tab keeps the plain (no-notch) path, avoiding a stray hole
 fills it. Both constants feed the same `<path id="gSubtractPanelPath">`, so the `clipPath` and
 the `.g-panel-rim` `<use>` always stay in sync automatically.
 
-Base path ([`FUNG_PANEL_PATH`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L136), all non-dashboard tabs):
+Base path ([`FUNG_PANEL_PATH`](file:///g:/G-Maiden/src/src/deck/prefs.ts#L93), all non-dashboard tabs):
 
 ```svg
 M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74
@@ -87,7 +91,7 @@ H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330
 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z
 ```
 
-Dashboard path ([`FUNG_PANEL_PATH_SIGNALS`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L144), CR-007 WP-1 — adds the bottom-right notch):
+Dashboard path ([`FUNG_PANEL_PATH_SIGNALS`](file:///g:/G-Maiden/src/src/deck/prefs.ts#L101), CR-007 WP-1 — adds the bottom-right notch):
 
 ```svg
 M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74
@@ -128,19 +132,19 @@ From `src/src/styles.css`:
 
 | Token | Value |
 | --- | --- |
-| [`--cr6-panel-left`](file:///g:/G-Maiden/src/src/styles.css#L4629) | `12px` |
-| [`--cr6-panel-top`](file:///g:/G-Maiden/src/src/styles.css#L4630) | `12px` |
-| [`--cr6-panel-width`](file:///g:/G-Maiden/src/src/styles.css#L4631) | `1280px` |
-| [`--cr6-panel-height`](file:///g:/G-Maiden/src/src/styles.css#L4632) | `720px` |
-| [`--cr6-topbar-left`](file:///g:/G-Maiden/src/src/styles.css#L4633) | `834px` |
-| [`--cr6-topbar-top`](file:///g:/G-Maiden/src/src/styles.css#L4634) | `24px` |
-| [`--cr6-topbar-width`](file:///g:/G-Maiden/src/src/styles.css#L4635) | `446px` |
-| [`--cr6-sidebar-left`](file:///g:/G-Maiden/src/src/styles.css#L4636) | `26px` |
-| [`--cr6-sidebar-top`](file:///g:/G-Maiden/src/src/styles.css#L4637) | `354px` |
-| [`--cr6-power-left`](file:///g:/G-Maiden/src/src/styles.css#L4648) | `35px` |
-| [`--cr6-power-top`](file:///g:/G-Maiden/src/src/styles.css#L4649) | `672px` |
-| [`--cr6-power-main-left`](file:///g:/G-Maiden/src/src/styles.css#L4650) | `0px` |
-| [`--cr6-power-main-top`](file:///g:/G-Maiden/src/src/styles.css#L4651) | `0px` |
+| [`--cr6-panel-left`](file:///g:/G-Maiden/src/src/styles.css#L2400) | `12px` |
+| [`--cr6-panel-top`](file:///g:/G-Maiden/src/src/styles.css#L2401) | `12px` |
+| [`--cr6-panel-width`](file:///g:/G-Maiden/src/src/styles.css#L2402) | `1280px` |
+| [`--cr6-panel-height`](file:///g:/G-Maiden/src/src/styles.css#L2403) | `720px` |
+| [`--cr6-topbar-left`](file:///g:/G-Maiden/src/src/styles.css#L2404) | `834px` |
+| [`--cr6-topbar-top`](file:///g:/G-Maiden/src/src/styles.css#L2405) | `24px` |
+| [`--cr6-topbar-width`](file:///g:/G-Maiden/src/src/styles.css#L2406) | `446px` |
+| [`--cr6-sidebar-left`](file:///g:/G-Maiden/src/src/styles.css#L2407) | `26px` |
+| [`--cr6-sidebar-top`](file:///g:/G-Maiden/src/src/styles.css#L2408) | `354px` |
+| [`--cr6-power-left`](file:///g:/G-Maiden/src/src/styles.css#L2419) | `35px` |
+| [`--cr6-power-top`](file:///g:/G-Maiden/src/src/styles.css#L2420) | `672px` |
+| [`--cr6-power-main-left`](file:///g:/G-Maiden/src/src/styles.css#L2421) | `0px` |
+| [`--cr6-power-main-top`](file:///g:/G-Maiden/src/src/styles.css#L2422) | `0px` |
 
 ### 5.2 L1 white-glass underlay
 
@@ -309,7 +313,7 @@ Cards:
 
 ## 6. Dashboard sector geometry
 
-Current dashboard sectors inside [`.gm-fung-layout`](file:///g:/G-Maiden/src/src/styles.css#L5236):
+Current dashboard sectors inside [`.gm-fung-layout`](file:///g:/G-Maiden/src/src/styles.css#L3007):
 
 | Sector | x | y | w | h |
 | --- | --- | --- | --- | --- |

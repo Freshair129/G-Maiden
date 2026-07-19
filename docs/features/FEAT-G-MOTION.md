@@ -14,10 +14,10 @@
 > **สถานะ (2026-07-18): โค้ดจริงเป็น heuristic ตามเวลาที่ฮีโร่หายจากแมพ + heading-aware
 > ปรับตามทิศก่อนหาย — ยังไม่ใช่ heatmap/path prediction เต็มรูปแบบ.** `Motion::assess` รวม
 > per-hero risk แบบ "อย่างน้อย 1 ตัวกำลังแก๊ง" (1 − ∏(1−rᵢ)) แล้วคูณ boost ×1.15 เมื่อหาย
-> ≥2 ตัวพร้อมกัน. ring buffer 5 นาที**ถูกใช้แล้ว**สำหรับ [`heading_multiplier()`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L126) — อ่าน 2 sample
+> ≥2 ตัวพร้อมกัน. ring buffer 5 นาที**ถูกใช้แล้ว**สำหรับ [`heading_multiplier()`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L192) — อ่าน 2 sample
 > ล่าสุดของฮีโร่ก่อนหายเพื่อเทียบทิศเดินกับทิศเข้ากลางแมพ (มุ่งเข้า = เสี่ยงแก๊งค์สูงขึ้น
 > ×1.22 สูงสุด, เดินออก = ฟาร์ม/ถอย ×0.78 ต่ำสุด, ไม่มี trail = neutral ×1.0) ก่อนคูณเข้ากับ
-> [`missing_risk(ms)`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L168). ยังไม่มี full heatmap หรือ through-fog path/lane prediction — trail จบที่
+> [`missing_risk()`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L234). ยังไม่มี full heatmap หรือ through-fog path/lane prediction — trail จบที่
 > จุดหายจากแมพเท่านั้น (เก็บไว้สำหรับ G-Log tuning ในอนาคต). probability เป็น `f32` 0..1
 > (ไม่ใช่ u8 0–100).
 
@@ -37,7 +37,7 @@ struct Motion {
 ```
 
 > **สถานะ (2026-07-18): ไม่มี `heatmap: Grid<f32>`** — state จริงมีแค่ ring buffer
-> ของ sightings, แต่ hero/pos ในนั้น**ถูกอ่านแล้ว** โดย [`heading_multiplier()`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L126) เพื่อประเมิน
+> ของ sightings, แต่ hero/pos ในนั้น**ถูกอ่านแล้ว** โดย [`heading_multiplier()`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L192) เพื่อประเมิน
 > ทิศก่อนหาย (ดูหัวข้อ 1) — ยังไม่ใช่ full path/lane prediction.
 
 ## 4. Logic
@@ -55,15 +55,15 @@ assess(missing):                         // missing = [(hero, missing_ms, last_p
   emit GankRisk { probability, missing_heroes: names, eta_ms }
 ```
 
-- **Per-hero risk:** ฟังก์ชันของเวลาหายจากแมพ ([`missing_risk`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L168)) — 0 ก่อน 5s, ramp
+- **Per-hero risk:** ฟังก์ชันของเวลาหายจากแมพ ([`missing_risk`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L234)) — 0 ก่อน 5s, ramp
   ถึง ~0.7 ราว 12s, แล้ว decay (floor 0.1) เพราะหายนานมักหมายถึง farm/TP ไม่ใช่แก๊ง
-- **Heading multiplier (shipped 2026-07-18):** [`heading_multiplier(hero)`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L126) อ่าน 2 sample
+- **Heading multiplier (shipped 2026-07-18):** [`heading_multiplier()`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L192) อ่าน 2 sample
   ล่าสุดของฮีโร่นั้นใน ring buffer (trail ก่อนหายจากแมพ) เทียบทิศเดินกับทิศเข้ากลางแมพ —
   มุ่งเข้า (เตรียมแก๊ง) ยก risk สูงสุด ×1.22, เดินออก (ฟาร์ม/ถอย) ลด risk เหลือต่ำสุด ×0.78,
   ไม่มี trail ที่ใช้ได้ (sample เดียว/หยุดนิ่ง/อยู่กลางแมพอยู่แล้ว) → neutral ×1.0 (พฤติกรรมเดิม)
-- **ETA estimate:** [`eta_estimate(ms)`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L181) — ยิ่งหายนานยิ่งใกล้มาถึง (floor 1s); ไม่มีการ
+- **ETA estimate:** [`eta_estimate()`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L248) — ยิ่งหายนานยิ่งใกล้มาถึง (floor 1s); ไม่มีการ
   คำนวณระยะทางจริงหรือ lane
-- **Ring buffer cleanup:** evict entries >5 min ทุกครั้งที่ [`record`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L55)
+- **Ring buffer cleanup:** evict entries >5 min ทุกครั้งที่ [`record`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L121)
 
 ## 5. Output Event
 

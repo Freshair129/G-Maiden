@@ -37,6 +37,10 @@ attributes:
   secret_type: aws_secret
   leak_risk: high
   encryption_level: none
+doc_id: "subagent-context-scoping"
+version: "0.1.0"
+updated: "2026-07-20"
+owner: "Boss"
 ---
 
 # CONCEPT — Subagent context scoping
@@ -168,3 +172,8 @@ A Resource that fails the scope filter has no tier; it does not appear in the su
 - `[[CONCEPT--SUBJECT-RESOURCE-ACTION-CONTEXT]]` — Subject.kind = 'subagent' carries scope in attributes.
 - `[[CONCEPT--RESOLUTION-GRADIENT]]` — composes after scope filter.
 - Saltzer & Schroeder (1975) "The Protection of Information in Computer Systems" — POLA origin.
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | 2026-07-20 | changelog table added per Step-5 SOP (G2.5) — baseline row matching frontmatter version |

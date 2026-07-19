@@ -1,7 +1,7 @@
 ---
 title: "ADR: GID — G-Series Account & Identity Layer"
 doc_id: "ADR-14-gid-account-identity"
-status: "Accepted"
+status: "accepted"
 version: "1.0.2"
 updated: "2026-07-19"
 owner: "Boss"

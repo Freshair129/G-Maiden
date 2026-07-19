@@ -8,6 +8,10 @@ depends_on: ["ADR-14 (GID/account)", "CR-003 (account phase-1)", "SEC-001 (ident
 requires_adr: "ADR-14 amendment (auth providers) — email/OTP was cut, re-opening for multi-provider"
 scope: "additive — existing Command Deck layout MUST NOT change"
 language: "th/en"
+doc_id: "CR-005-landing-auth-social"
+version: "0.1.0"
+updated: "2026-07-20"
+owner: "Boss"
 ---
 
 # CR-005 — Landing + Auth + G-Social
@@ -177,3 +181,8 @@ W1–W3 เริ่มได้เร็ว/เสี่ยงต่ำ; W4–W
 - [ ] Boss approve scope + decisions (§1) → เริ่ม W1
 - [ ] ADR-14 amendment approve → เริ่ม W2
 - [ ] Schema + RLS review approve → เริ่ม W4–W5
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | 2026-07-20 | changelog table added per Step-5 SOP (G2.5) — baseline row matching frontmatter version |

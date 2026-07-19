@@ -33,14 +33,14 @@ on advise(tick) request:
   emit Advice { text, cached }
 ```
 
-- **Throttle:** flat 30s ต่อ request พร้อม cache คำตอบล่าสุด ([`THROTTLE = 30s`](file:///g:/G-Maiden/src-tauri/src/master.rs#L23), [`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs)).
+- **Throttle:** flat 30s ต่อ request พร้อม cache คำตอบล่าสุด ([`THROTTLE`](file:///g:/G-Maiden/src-tauri/src/master.rs#L23), [`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs)).
   *(planned: trigger ตาม gold change ±500 และ cap ≤2/min ยังไม่ได้ทำ)*
 - **Cloud backend:** `claude` CLI (Plan quota) หรือ Anthropic Messages API (`claude-haiku-4-5`)
   เมื่อผู้ใช้ตั้ง API key; ไม่มี Gemini และไม่มี "Template" tier.
 - **Meta dataset:** static dataset ของ counter-item builds ([`counter_advice.rs`](file:///g:/G-Maiden/src-tauri/src/counter_advice.rs)).
 - **Counter-item logic:** [`counter_advice.rs`](file:///g:/G-Maiden/src-tauri/src/counter_advice.rs) ต่อสายจริงแล้ว — [`request_advice`](file:///g:/G-Maiden/src-tauri/src/main.rs) (`main.rs:251`)
   ป้อน [`runtime::known_enemies()`](file:///g:/G-Maiden/src-tauri/src/runtime.rs#L327) (รายชื่อฮีโร่ศัตรูที่ CV เห็นซ้ำจนข้ามเกณฑ์ confirm) เข้า
-  [`counter_advice_text(enemies)`](file:///g:/G-Maiden/src-tauri/src/counter_advice.rs#L11); ว่างเฉพาะตอนยังไม่มีศัตรูที่ CV ยืนยันแล้ว ไม่ใช่ hardcode ว่างตลอด.
+  [`counter_advice_text()`](file:///g:/G-Maiden/src-tauri/src/counter_advice.rs#L11); ว่างเฉพาะตอนยังไม่มีศัตรูที่ CV ยืนยันแล้ว ไม่ใช่ hardcode ว่างตลอด.
 
 ## 4. Output
 

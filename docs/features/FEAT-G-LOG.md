@@ -64,8 +64,8 @@ during match:
   in_game flips false → close match file
 ```
 
-**การลบ/ความเป็นส่วนตัว:** [`delete_match`](file:///g:/G-Maiden/src-tauri/src/log.rs#L310) / [`delete_all`](file:///g:/G-Maiden/src-tauri/src/log.rs#L327) ลบไฟล์ที่ archive แล้ว แต่
-**กันไฟล์ที่กำลังบันทึกอยู่** (active match) ไว้เสมอ; [`open_log_dir`](file:///g:/G-Maiden/src-tauri/src/log.rs#L533) เปิดโฟลเดอร์ให้ผู้ใช้
+**การลบ/ความเป็นส่วนตัว:** [`delete_match`](file:///g:/G-Maiden/src-tauri/src/log.rs#L359) / [`delete_all`](file:///g:/G-Maiden/src-tauri/src/log.rs#L376) ลบไฟล์ที่ archive แล้ว แต่
+**กันไฟล์ที่กำลังบันทึกอยู่** (active match) ไว้เสมอ; [`open_log_dir`](file:///g:/G-Maiden/src-tauri/src/log.rs#L582) เปิดโฟลเดอร์ให้ผู้ใช้
 ตรวจสอบเองได้.
 
 ## 5. Output + Planned tuning loop

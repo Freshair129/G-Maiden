@@ -1,7 +1,7 @@
-﻿---
+---
 title: "ADR: Opt-in Data Contribution + match_id Flywheel"
 doc_id: "ADR-11-optin-data-contribution-flywheel"
-status: "Accepted"
+status: "accepted"
 version: "1.0.0"
 updated: "2026-06-23"
 owner: "Boss"

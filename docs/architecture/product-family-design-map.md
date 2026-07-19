@@ -2,12 +2,16 @@
 version: "0.5.0b"
 created_at: "2026-06-24T00:00:00+07:00,ATHER,pending"
 last_update: "2026-07-19T00:00:00+07:00,Claude"
-status: "candidate"
+status: "draft"
 superseded_by: null
 attributes:
   domain: "ui-ux"
   scope: "G-Maiden product + G-Orchestra multi-agent dev tool shared visual overview"
   language: "th"
+title: "G-Maiden + G-Orchestra Product Family Design Map"
+doc_id: "product-family-design-map"
+updated: "2026-07-19"
+owner: "Boss"
 ---
 
 > **Presentation reference only — not a UI implementation specification (2026-07-19).** สำหรับ

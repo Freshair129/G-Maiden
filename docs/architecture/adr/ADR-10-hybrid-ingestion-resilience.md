@@ -1,7 +1,7 @@
-﻿---
+---
 title: "ADR: Hybrid Ingestion Resilience"
 doc_id: "ADR-10-hybrid-ingestion-resilience"
-status: "Accepted"
+status: "accepted"
 version: "1.0.0"
 updated: "2026-06-23"
 owner: "Boss"

@@ -1,8 +1,8 @@
 ---
 title: "CR-003: Account Phase 1 — Wallet · Inventory · History · Billing (PromptPay/TrueMoney)"
 doc_id: "CR-003-account-phase1-wallet-billing"
-status: "Approved"
-approved_at: "2026-07-11"
+status: "accepted"
+approved_date: "2026-07-11"
 approved_by: "Boss"
 version: "0.3.2"
 updated: "2026-07-19"

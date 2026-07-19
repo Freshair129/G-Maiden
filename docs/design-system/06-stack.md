@@ -7,6 +7,10 @@ attributes:
   domain: "ui-ux"
   scope: "tech stack + code map"
   language: "th/en"
+title: "06 — Stack & Code Map"
+doc_id: "06-stack"
+updated: "2026-07-19"
+owner: "Boss"
 ---
 
 # 06 — Stack & Code Map

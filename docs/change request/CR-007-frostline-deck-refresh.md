@@ -79,7 +79,7 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
 - Minimap: มี CV data → marker จริง; ไม่มี → แผนที่นิ่ง + label "CV standby" (Lite mode)
 - **Audio-flag boundary (gate follow-up, 2026-07-10):** the deck's ANN toggle
   ([`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) audio rail) only gates G-AnnStudio announcer-pack events
-  ([`set_announcer_enabled`](file:///g:/G-Maiden/src-tauri/src/main.rs) → [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) → [`announcer::most_important`](file:///g:/G-Maiden/src-tauri/src/announcer.rs#L79)) — kill/
+  ([`set_announcer_enabled`](file:///g:/G-Maiden/src-tauri/src/main.rs) → [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) → [`announcer::most_important`](file:///g:/G-Maiden/src-tauri/src/announcer.rs#L84)) — kill/
   streak/death lines. It is **independent** of Maiden's persona voice
   (`s.voiceEnabled` in [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx), persona TTS only) and of G-Signal's gank
   voice (now gated solely by the deck's SIGNAL toggle, [`set_cv_signal_enabled`](file:///g:/G-Maiden/src-tauri/src/main.rs)).

@@ -1,6 +1,6 @@
 ---
 title: "CR-001 Review & Corrected Multi-Agent Execution Plan (DXGI Migration)"
-doc_id: "CR-001-REVIEW-execution-plan"
+doc_id: "CR-001-REVIEW-and-execution-plan"
 status: "Wave A+B code-complete & gate-green (2026-06-29); Wave C in-game test pending Boss"
 version: "0.1.0"
 updated: "2026-06-29"

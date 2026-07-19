@@ -7,6 +7,10 @@ attributes:
   domain: "ui-ux"
   scope: "Combat HUD (in-game overlay) — design contract อิง implementation จริง"
   language: "th/en"
+title: "07 — Combat HUD (In-game Overlay)"
+doc_id: "07-combat-hud"
+updated: "2026-07-19"
+owner: "Boss"
 ---
 
 # 07 — Combat HUD (In-game Overlay)

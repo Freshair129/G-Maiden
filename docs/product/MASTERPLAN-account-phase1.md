@@ -1,7 +1,7 @@
 ---
 title: "MASTERPLAN: Account Phase 1 (CR-003) — orchestrated build via G-Orchestra"
 doc_id: "MASTERPLAN-account-phase1"
-status: "Active"
+status: "active"
 version: "1.0.0"
 updated: "2026-07-04"
 owner: "Boss"

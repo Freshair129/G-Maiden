@@ -1,7 +1,7 @@
 ---
 title: "ADR: Migrate Screen Capture from WGC to DXGI Desktop Duplication"
 doc_id: "ADR-13-dxgi-capture-migration"
-status: "Accepted"
+status: "accepted"
 version: "0.1.1"
 updated: "2026-06-28"
 owner: "Boss"

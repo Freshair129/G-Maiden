@@ -14,6 +14,8 @@ related_docs:
   - "ADR-13-dxgi-capture-migration"
   - "IMPL-PLAN-DXGI-migration"
   - "DXGI-task-assignment"
+updated: "2026-06-28"
+owner: "Boss"
 ---
 
 # CR-001: Migrate Screen Capture from WGC to DXGI Desktop Duplication
