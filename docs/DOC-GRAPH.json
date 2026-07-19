@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-19T13:33:38.937Z",
+  "generatedAt": "2026-07-19T15:15:08.369Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -4631,49 +4631,7 @@
       "from": "docs/design-system/03-layout.md",
       "to": "src/src/styles.css",
       "type": "symbol",
-      "line": 66
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
       "line": 67
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 68
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 69
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 69
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 69
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 70
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 70
     },
     {
       "from": "docs/design-system/03-layout.md",
@@ -4698,90 +4656,6 @@
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
       "line": 90
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 131
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 132
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 133
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 134
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 135
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 136
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 137
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 138
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 139
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 140
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 141
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 142
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 143
-    },
-    {
-      "from": "docs/design-system/03-layout.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 312
     },
     {
       "from": "docs/design-system/03-layout.md",
@@ -4857,54 +4731,12 @@
     },
     {
       "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 124
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 125
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 126
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 127
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 151
-    },
-    {
-      "from": "docs/design-system/04-components.md",
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
       "line": 152
     },
     {
       "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 176
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 194
-    },
-    {
-      "from": "docs/design-system/04-components.md",
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
       "line": 195
@@ -4926,12 +4758,6 @@
       "to": "src/src/live/phase.ts",
       "type": "symbol",
       "line": 196
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 236
     },
     {
       "from": "docs/design-system/04-components.md",
@@ -4941,60 +4767,12 @@
     },
     {
       "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 253
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 269
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 270
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 270
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 290
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 290
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 291
-    },
-    {
-      "from": "docs/design-system/04-components.md",
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
       "line": 310
     },
     {
       "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 311
-    },
-    {
-      "from": "docs/design-system/04-components.md",
       "to": "src/src/live/utterances.ts",
       "type": "symbol",
       "line": 315
@@ -5019,12 +4797,6 @@
     },
     {
       "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 346
-    },
-    {
-      "from": "docs/design-system/04-components.md",
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
       "line": 369
@@ -5034,12 +4806,6 @@
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
       "line": 369
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 370
     },
     {
       "from": "docs/design-system/04-components.md",
@@ -5075,12 +4841,6 @@
       "from": "docs/design-system/04-components.md",
       "to": "src/src/styles.css",
       "type": "symbol",
-      "line": 393
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
       "line": 409
     },
     {
@@ -5094,18 +4854,6 @@
       "to": "src/src/MaidenLine.tsx",
       "type": "symbol",
       "line": 434
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 435
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 435
     },
     {
       "from": "docs/design-system/04-components.md",
@@ -5142,12 +4890,6 @@
       "to": "src/src/shortcuts.ts",
       "type": "symbol",
       "line": 473
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 474
     },
     {
       "from": "docs/design-system/04-components.md",
@@ -5193,21 +4935,9 @@
     },
     {
       "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 497
-    },
-    {
-      "from": "docs/design-system/04-components.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
       "line": 514
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 520
     },
     {
       "from": "docs/design-system/04-components.md",
@@ -5229,27 +4959,9 @@
     },
     {
       "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 571
-    },
-    {
-      "from": "docs/design-system/04-components.md",
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
       "line": 573
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 587
-    },
-    {
-      "from": "docs/design-system/04-components.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 593
     },
     {
       "from": "docs/design-system/04-components.md",
@@ -5382,12 +5094,6 @@
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
       "line": 94
-    },
-    {
-      "from": "docs/design-system/05-sitemap-ia.md",
-      "to": "src/src/styles.css",
-      "type": "symbol",
-      "line": 96
     },
     {
       "from": "docs/design-system/05-sitemap-ia.md",
@@ -8208,9 +7914,184 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/architecture/CR-001-dxgi-capture-migration.md",
+      "line": null,
+      "reason": "invalid-status",
+      "severity": "error",
+      "status": "Submitted"
+    },
+    {
+      "file": "docs/architecture/CR-001-dxgi-capture-migration.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/architecture/CR-001-dxgi-capture-migration.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
+      "line": null,
+      "reason": "legacy-status-case",
+      "severity": "warning",
+      "status": "Accepted"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
+      "line": null,
+      "reason": "missing-approval",
+      "severity": "error",
+      "status": "Accepted"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
+      "line": null,
+      "reason": "legacy-status-case",
+      "severity": "warning",
+      "status": "Accepted"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
+      "line": null,
+      "reason": "missing-approval",
+      "severity": "error",
+      "status": "Accepted"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
+      "line": null,
+      "reason": "legacy-status-case",
+      "severity": "warning",
+      "status": "Accepted"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
+      "line": null,
+      "reason": "missing-approval",
+      "severity": "error",
+      "status": "Accepted"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "line": null,
+      "reason": "legacy-status-case",
+      "severity": "warning",
+      "status": "Accepted"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "line": null,
+      "reason": "missing-approval",
+      "severity": "error",
+      "status": "Accepted"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md",
+      "line": null,
+      "reason": "invalid-status",
+      "severity": "error",
+      "status": "accepted (design) · pending implementation"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "doc_id"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "version"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md",
+      "line": null,
+      "reason": "legacy-status-case",
+      "severity": "warning",
+      "status": "Accepted"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md",
+      "line": null,
+      "reason": "missing-approval",
+      "severity": "error",
+      "status": "Accepted"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-17-dev-runtime-governance-split.md",
+      "line": null,
+      "reason": "legacy-status-case",
+      "severity": "warning",
+      "status": "Accepted"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-17-dev-runtime-governance-split.md",
+      "line": null,
+      "reason": "missing-approval",
+      "severity": "error",
+      "status": "Accepted"
+    },
+    {
       "file": "docs/architecture/assets/design-references/README.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/architecture/design-system.md",
+      "line": null,
+      "reason": "invalid-status",
+      "severity": "error",
+      "status": "candidate"
+    },
+    {
+      "file": "docs/architecture/design-system.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "title"
+    },
+    {
+      "file": "docs/architecture/design-system.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "doc_id"
+    },
+    {
+      "file": "docs/architecture/design-system.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/architecture/design-system.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
     },
     {
       "file": "docs/architecture/engineering-spec.md",
@@ -8218,9 +8099,79 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "line": null,
+      "reason": "missing-approval",
+      "severity": "error",
+      "status": "accepted"
+    },
+    {
+      "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "title"
+    },
+    {
+      "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "doc_id"
+    },
+    {
+      "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
+    },
+    {
       "file": "docs/architecture/implementation-plan.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/architecture/product-family-design-map.md",
+      "line": null,
+      "reason": "invalid-status",
+      "severity": "error",
+      "status": "candidate"
+    },
+    {
+      "file": "docs/architecture/product-family-design-map.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "title"
+    },
+    {
+      "file": "docs/architecture/product-family-design-map.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "doc_id"
+    },
+    {
+      "file": "docs/architecture/product-family-design-map.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/architecture/product-family-design-map.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
     },
     {
       "file": "docs/architecture/spec-orchestra-codedoc-agent.md",
@@ -8243,9 +8194,133 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/audits/2026-07-07-independent-full-audit.md",
+      "line": 16,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/cv/mod.rs",
+      "anchor": 16,
+      "symbol": "rs"
+    },
+    {
+      "file": "docs/audits/2026-07-07-independent-full-audit.md",
+      "line": 138,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 3,
+      "symbol": "rs:437, 571-577, 379, 456"
+    },
+    {
+      "file": "docs/audits/2026-07-07-independent-full-audit.md",
+      "line": 144,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/gsi.rs",
+      "anchor": 189,
+      "symbol": "rs:189-199"
+    },
+    {
+      "file": "docs/change request/ADR-13-dxgi-capture-migration.md",
+      "line": null,
+      "reason": "legacy-status-case",
+      "severity": "warning",
+      "status": "Accepted"
+    },
+    {
+      "file": "docs/change request/ADR-13-dxgi-capture-migration.md",
+      "line": null,
+      "reason": "missing-approval",
+      "severity": "error",
+      "status": "Accepted"
+    },
+    {
+      "file": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
+      "line": null,
+      "reason": "doc-id-slug-mismatch",
+      "severity": "error",
+      "docId": "CR-001-REVIEW-execution-plan",
+      "expectedSlug": "CR-001-REVIEW-and-execution-plan"
+    },
+    {
+      "file": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
+      "line": null,
+      "reason": "invalid-status",
+      "severity": "error",
+      "status": "Wave A+B code-complete & gate-green (2026-06-29); Wave C in-game test pending Boss"
+    },
+    {
+      "file": "docs/change request/CR-001-Wave-C-test-plan.md",
+      "line": null,
+      "reason": "invalid-status",
+      "severity": "error",
+      "status": "ready to execute"
+    },
+    {
+      "file": "docs/change request/CR-002-Phase2-wire-backend.md",
+      "line": null,
+      "reason": "invalid-status",
+      "severity": "error",
+      "status": "IMPLEMENTED — merged to main 170805b8 (2026-07-02)"
+    },
+    {
+      "file": "docs/change request/CR-003-account-phase1-wallet-billing.md",
+      "line": null,
+      "reason": "invalid-status",
+      "severity": "error",
+      "status": "Approved"
+    },
+    {
+      "file": "docs/change request/CR-003-payment-golive-checklist.md",
+      "line": null,
+      "reason": "invalid-status",
+      "severity": "error",
+      "status": "Open — blocked on Phase 0 (legal/terms) + Phase 1 (Omise)"
+    },
+    {
       "file": "docs/change request/CR-004-voice-command-browser.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/change request/CR-005-landing-auth-social.md",
+      "line": null,
+      "reason": "invalid-status",
+      "severity": "error",
+      "status": "DRAFT — awaiting approval"
+    },
+    {
+      "file": "docs/change request/CR-005-landing-auth-social.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "doc_id"
+    },
+    {
+      "file": "docs/change request/CR-005-landing-auth-social.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "version"
+    },
+    {
+      "file": "docs/change request/CR-005-landing-auth-social.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/change request/CR-005-landing-auth-social.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 82,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/announcer.rs",
+      "anchor": 79,
+      "symbol": "most_important"
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
@@ -8278,14 +8353,1150 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/design-system/01-foundations.md",
+      "line": 44,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 39,
+      "symbol": "var(--g-blur-console)"
+    },
+    {
+      "file": "docs/design-system/01-foundations.md",
+      "line": 48,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 36,
+      "symbol": "var(--g-instrument)"
+    },
+    {
+      "file": "docs/design-system/01-foundations.md",
+      "line": 48,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 37,
+      "symbol": "var(--g-hairline)"
+    },
+    {
+      "file": "docs/design-system/01-foundations.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "title"
+    },
+    {
+      "file": "docs/design-system/01-foundations.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "doc_id"
+    },
+    {
+      "file": "docs/design-system/01-foundations.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/design-system/01-foundations.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
+    },
+    {
+      "file": "docs/design-system/02-tokens.md",
+      "line": 203,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4448,
+      "symbol": "g-deck-panel"
+    },
+    {
+      "file": "docs/design-system/02-tokens.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "title"
+    },
+    {
+      "file": "docs/design-system/02-tokens.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "doc_id"
+    },
+    {
+      "file": "docs/design-system/02-tokens.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/design-system/02-tokens.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 66,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4667,
+      "symbol": "g-l1-white-glass"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 66,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 67,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4448,
+      "symbol": "g-deck-panel"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 68,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4759,
+      "symbol": "g-panel-rim"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 68,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 69,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4406,
+      "symbol": "g-sidebar-fab"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 69,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4432,
+      "symbol": "g-topbar-fab"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 69,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5121,
+      "symbol": "g-audio-rail"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 69,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 70,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4840,
+      "symbol": "g-power-radial"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 70,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4490,
+      "symbol": "g-signals-fab"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 70,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 81,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/CommandDeck.tsx",
+      "anchor": 136,
+      "symbol": "FUNG_PANEL_PATH"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 90,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/CommandDeck.tsx",
+      "anchor": 144,
+      "symbol": "FUNG_PANEL_PATH_SIGNALS"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 131,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4629,
+      "symbol": "--cr6-panel-left"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 131,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 132,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4630,
+      "symbol": "--cr6-panel-top"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 132,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 133,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4631,
+      "symbol": "--cr6-panel-width"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 133,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 134,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4632,
+      "symbol": "--cr6-panel-height"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 134,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 135,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4633,
+      "symbol": "--cr6-topbar-left"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 135,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 136,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4634,
+      "symbol": "--cr6-topbar-top"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 136,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 137,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4635,
+      "symbol": "--cr6-topbar-width"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 137,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 138,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4636,
+      "symbol": "--cr6-sidebar-left"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 138,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 139,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4637,
+      "symbol": "--cr6-sidebar-top"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 139,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 140,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4648,
+      "symbol": "--cr6-power-left"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 140,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 141,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4649,
+      "symbol": "--cr6-power-top"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 141,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 142,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4650,
+      "symbol": "--cr6-power-main-left"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 142,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 143,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4651,
+      "symbol": "--cr6-power-main-top"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 143,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 312,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5236,
+      "symbol": "gm-fung-layout"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 312,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "title"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "doc_id"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 55,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4432,
+      "symbol": "g-topbar-fab"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 79,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 1958,
+      "symbol": "profile-wrap"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 80,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 1963,
+      "symbol": "profile-trigger"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 81,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2026,
+      "symbol": "profile-dropdown"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 103,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4406,
+      "symbol": "g-sidebar-fab"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 104,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4422,
+      "symbol": "g-nav-item"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 124,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4840,
+      "symbol": "g-power-radial"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 124,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 125,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4850,
+      "symbol": "g-power-main"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 125,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 126,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4874,
+      "symbol": "g-power-menu"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 126,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 127,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4893,
+      "symbol": "*"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 127,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 151,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5121,
+      "symbol": "g-audio-rail"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 151,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 152,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/CommandDeck.tsx",
+      "anchor": 43,
+      "symbol": ")"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 176,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5251,
+      "symbol": "gm-score-header"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 176,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 194,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5315,
+      "symbol": "gm-phase-chip"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 194,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 195,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/CommandDeck.tsx",
+      "anchor": 42,
+      "symbol": ")"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 236,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5362,
+      "symbol": "gm-mini-stat"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 236,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 253,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5424,
+      "symbol": "gm-hero-slot"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 253,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 269,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5761,
+      "symbol": "gm-agent-card"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 269,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 270,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5784,
+      "symbol": "gm-card-head"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 270,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5804,
+      "symbol": "gm-agent-art"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 270,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 270,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 290,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5970,
+      "symbol": "gm-tally"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 290,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5980,
+      "symbol": "gm-tally-onair"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 290,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 290,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 291,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5819,
+      "symbol": "gm-sector-log"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 291,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 311,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5993,
+      "symbol": "gm-onair"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 311,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 346,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5011,
+      "symbol": "g-ping-pill"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 346,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 370,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5488,
+      "symbol": "gm-rundown"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 370,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 393,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5555,
+      "symbol": "gm-debrief"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 393,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 409,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4490,
+      "symbol": "g-signals-fab"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 410,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4495,
+      "symbol": "g-sig"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 434,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/MaidenLine.tsx",
+      "anchor": 62,
+      "symbol": "tsx"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 435,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 6115,
+      "symbol": "gm-palette-backdrop"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 435,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 6157,
+      "symbol": "gm-palette"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 435,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 435,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 474,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 6116,
+      "symbol": "gm-sheet-backdrop"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 474,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 484,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/CommandDeck.tsx",
+      "anchor": 52,
+      "symbol": "GLOBAL_HOTKEYS"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 497,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 6299,
+      "symbol": "gm-menu-*"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 497,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 520,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5011,
+      "symbol": "g-status-pill"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 520,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 569,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4448,
+      "symbol": "g-deck-panel"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 571,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4759,
+      "symbol": "g-panel-rim"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 571,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 587,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5135,
+      "symbol": "g-volume-rail"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 587,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 593,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 4701,
+      "symbol": "is-dragging"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 593,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/CommandDeck.tsx",
+      "anchor": 582,
+      "symbol": "startWindowDrag"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 593,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "title"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "doc_id"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": 70,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/live/phase.ts",
+      "anchor": 71,
+      "symbol": "stepPhase(prev, input)"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": 96,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 5315,
+      "symbol": "gm-phase-chip"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": 96,
+      "reason": "bad-anchor",
+      "target": "src/src/styles.css"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "title"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "doc_id"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
+    },
+    {
+      "file": "docs/design-system/06-stack.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "title"
+    },
+    {
+      "file": "docs/design-system/06-stack.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "doc_id"
+    },
+    {
+      "file": "docs/design-system/06-stack.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/design-system/06-stack.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
+    },
+    {
+      "file": "docs/design-system/07-combat-hud.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "title"
+    },
+    {
+      "file": "docs/design-system/07-combat-hud.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "doc_id"
+    },
+    {
+      "file": "docs/design-system/07-combat-hud.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/design-system/07-combat-hud.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
+    },
+    {
+      "file": "docs/design-system/08-account-gid.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "title"
+    },
+    {
+      "file": "docs/design-system/08-account-gid.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "doc_id"
+    },
+    {
+      "file": "docs/design-system/08-account-gid.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/design-system/08-account-gid.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
+    },
+    {
+      "file": "docs/design-system/README.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "title"
+    },
+    {
+      "file": "docs/design-system/README.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "doc_id"
+    },
+    {
+      "file": "docs/design-system/README.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/design-system/README.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
+    },
+    {
       "file": "docs/features/FEAT-G-COACH.md",
       "line": null,
       "reason": "no-metadata"
     },
     {
       "file": "docs/features/FEAT-G-LOG.md",
+      "line": 67,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/log.rs",
+      "anchor": 310,
+      "symbol": "delete_match"
+    },
+    {
+      "file": "docs/features/FEAT-G-LOG.md",
+      "line": 67,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/log.rs",
+      "anchor": 327,
+      "symbol": "delete_all"
+    },
+    {
+      "file": "docs/features/FEAT-G-LOG.md",
+      "line": 68,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/log.rs",
+      "anchor": 533,
+      "symbol": "open_log_dir"
+    },
+    {
+      "file": "docs/features/FEAT-G-LOG.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/features/FEAT-G-MASTER.md",
+      "line": 36,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/master.rs",
+      "anchor": 23,
+      "symbol": "THROTTLE = 30s"
+    },
+    {
+      "file": "docs/features/FEAT-G-MASTER.md",
+      "line": 43,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/counter_advice.rs",
+      "anchor": 11,
+      "symbol": "counter_advice_text(enemies)"
     },
     {
       "file": "docs/features/FEAT-G-MASTER.md",
@@ -8301,6 +9512,62 @@
       "file": "docs/features/FEAT-G-MIND.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 17,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/motion.rs",
+      "anchor": 126,
+      "symbol": "heading_multiplier"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 20,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/motion.rs",
+      "anchor": 168,
+      "symbol": "missing_risk(ms)"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 40,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/motion.rs",
+      "anchor": 126,
+      "symbol": "heading_multiplier"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 58,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/motion.rs",
+      "anchor": 168,
+      "symbol": "missing_risk"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 60,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/motion.rs",
+      "anchor": 126,
+      "symbol": "heading_multiplier(hero)"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 64,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/motion.rs",
+      "anchor": 181,
+      "symbol": "eta_estimate(ms)"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 66,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/motion.rs",
+      "anchor": 55,
+      "symbol": "record"
     },
     {
       "file": "docs/features/FEAT-G-MOTION.md",
@@ -8321,6 +9588,14 @@
       "file": "docs/features/FEAT-G-SCORE.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/features/FEAT-G-SENSORY.md",
+      "line": 71,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/governor.rs",
+      "anchor": 87,
+      "symbol": "ResourceStats { ram_mb, cpu_pct, over_budget, gpu_pct, gpu_temp_c, vram_used_mb, vram_total_mb }"
     },
     {
       "file": "docs/features/FEAT-G-SENSORY.md",
@@ -8368,6 +9643,13 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/product/MASTERPLAN-account-phase1.md",
+      "line": null,
+      "reason": "legacy-status-case",
+      "severity": "warning",
+      "status": "Active"
+    },
+    {
       "file": "docs/product/business-validation-plan.md",
       "line": null,
       "reason": "no-metadata"
@@ -8403,6 +9685,22 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/rca/2026-07-10-release-gate-drift-v0.9.0.md",
+      "line": 12,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/master.rs",
+      "anchor": 196,
+      "symbol": "rs:196"
+    },
+    {
+      "file": "docs/rca/2026-07-10-release-gate-drift-v0.9.0.md",
+      "line": 13,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/slm.rs",
+      "anchor": 83,
+      "symbol": "rs:83"
+    },
+    {
       "file": "docs/reference/dota-ui/README.md",
       "line": null,
       "reason": "no-metadata"
@@ -8416,6 +9714,41 @@
       "file": "docs/research/competitor-brightgir-opendota-analysis.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/research/concepts/subagent-context-scoping.md",
+      "line": null,
+      "reason": "missing-approval",
+      "severity": "error",
+      "status": "stable"
+    },
+    {
+      "file": "docs/research/concepts/subagent-context-scoping.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "doc_id"
+    },
+    {
+      "file": "docs/research/concepts/subagent-context-scoping.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "version"
+    },
+    {
+      "file": "docs/research/concepts/subagent-context-scoping.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "updated"
+    },
+    {
+      "file": "docs/research/concepts/subagent-context-scoping.md",
+      "line": null,
+      "reason": "missing-required-field",
+      "severity": "error",
+      "field": "owner"
     },
     {
       "file": "docs/research/huggingface-dota2-resources.md",

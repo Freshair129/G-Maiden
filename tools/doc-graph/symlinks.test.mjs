@@ -9,7 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import path from 'node:path';
 import fs from 'node:fs';
-import { extractSymbolLinks, validateSymbolLinks } from './symlinks.mjs';
+import { extractSymbolLinks, validateSymbolLinks, validateAnchorIntegrity } from './symlinks.mjs';
 import { fileURLToPath } from 'node:url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -246,4 +246,144 @@ Some paragraph text without any links.`;
 test('validateSymbolLinks - empty array', () => {
   const violations = validateSymbolLinks([], repoRoot);
   assert.equal(violations.length, 0);
+});
+
+// --- validateAnchorIntegrity (G2-T7, anchor-integrity checker) -------------
+//
+// Born from the G1.5 T7 incident: a repair script pinned anchors to
+// plausible in-bounds lines whose symbols had moved out of the facade --
+// the bounds-only rule (validateSymbolLinks above) passed them, only a T3
+// adversarial review caught it. These tests exercise the ±2-line
+// symbol-presence check that closes that gap.
+
+function writeAnchorIntTempFile(name, content) {
+  const testDir = path.join(repoRoot, 'tools/doc-graph/.test-temp');
+  const testFile = path.join(testDir, name);
+  if (!fs.existsSync(testDir)) {
+    fs.mkdirSync(testDir, { recursive: true });
+  }
+  fs.writeFileSync(testFile, content, 'utf-8');
+  return { testDir, testFile, relTarget: `tools/doc-graph/.test-temp/${name}` };
+}
+
+function cleanupAnchorIntTempFile(testDir, testFile) {
+  if (fs.existsSync(testFile)) fs.unlinkSync(testFile);
+  if (fs.existsSync(testDir) && fs.readdirSync(testDir).length === 0) fs.rmdirSync(testDir);
+}
+
+test('validateAnchorIntegrity - symbol on the exact anchored line (pass)', () => {
+  const { testDir, testFile, relTarget } = writeAnchorIntTempFile(
+    'anchor-int-exact.js',
+    'line1\nline2\nexport function fooBar() {}\nline4\nline5'
+  );
+  try {
+    const links = [{ target: relTarget, anchorLine: 3, line: 1, label: '`fooBar()`' }];
+    const violations = validateAnchorIntegrity(links, repoRoot);
+    assert.equal(violations.length, 0);
+  } finally {
+    cleanupAnchorIntTempFile(testDir, testFile);
+  }
+});
+
+test('validateAnchorIntegrity - symbol within the ±2 window (pass)', () => {
+  const { testDir, testFile, relTarget } = writeAnchorIntTempFile(
+    'anchor-int-window.js',
+    'line1\nline2\nexport function fooBar() {}\nline4\nline5\nline6\nline7'
+  );
+  try {
+    // anchor at line 5, symbol sits at line 3 -- within window [3,7]
+    const links = [{ target: relTarget, anchorLine: 5, line: 1, label: '`fooBar()`' }];
+    const violations = validateAnchorIntegrity(links, repoRoot);
+    assert.equal(violations.length, 0);
+  } finally {
+    cleanupAnchorIntTempFile(testDir, testFile);
+  }
+});
+
+test('validateAnchorIntegrity - symbol absent from window but present elsewhere (violation)', () => {
+  const { testDir, testFile, relTarget } = writeAnchorIntTempFile(
+    'anchor-int-elsewhere.js',
+    'line1\nline2\nline3\nline4\nline5\nline6\nline7\nline8\nline9\nexport function fooBar() {}'
+  );
+  try {
+    // anchor at line 2 -> window [1,4]; fooBar lives at line 10, outside it
+    const links = [{ target: relTarget, anchorLine: 2, line: 1, label: '`fooBar()`' }];
+    const violations = validateAnchorIntegrity(links, repoRoot);
+    assert.equal(violations.length, 1);
+    assert.equal(violations[0].reason, 'anchor-symbol-mismatch');
+    assert.equal(violations[0].target, relTarget);
+    assert.equal(violations[0].anchor, 2);
+    assert.equal(violations[0].symbol, 'fooBar');
+    assert.equal(violations[0].line, 1);
+  } finally {
+    cleanupAnchorIntTempFile(testDir, testFile);
+  }
+});
+
+test('validateAnchorIntegrity - symbol absent entirely (violation)', () => {
+  const { testDir, testFile, relTarget } = writeAnchorIntTempFile(
+    'anchor-int-absent.js',
+    'line1\nline2\nline3\nline4\nline5'
+  );
+  try {
+    const links = [{ target: relTarget, anchorLine: 3, line: 1, label: '`neverThere()`' }];
+    const violations = validateAnchorIntegrity(links, repoRoot);
+    assert.equal(violations.length, 1);
+    assert.equal(violations[0].reason, 'anchor-symbol-mismatch');
+    assert.equal(violations[0].symbol, 'neverThere');
+  } finally {
+    cleanupAnchorIntTempFile(testDir, testFile);
+  }
+});
+
+test('validateAnchorIntegrity - filename-labeled link is exempt', () => {
+  const { testDir, testFile, relTarget } = writeAnchorIntTempFile(
+    'anchor-int-filename.js',
+    'line1\nline2\nline3\nline4\nline5'
+  );
+  try {
+    // label === basename(target) -> names the file, not a symbol -> exempt
+    const links = [{ target: relTarget, anchorLine: 3, line: 1, label: '`anchor-int-filename.js`' }];
+    const violations = validateAnchorIntegrity(links, repoRoot);
+    assert.equal(violations.length, 0);
+  } finally {
+    cleanupAnchorIntTempFile(testDir, testFile);
+  }
+});
+
+test('validateAnchorIntegrity - anchorless link is exempt', () => {
+  const { testDir, testFile, relTarget } = writeAnchorIntTempFile('anchor-int-anchorless.js', 'line1\nline2\nline3');
+  try {
+    const links = [{ target: relTarget, anchorLine: null, line: 1, label: '`neverThere()`' }];
+    const violations = validateAnchorIntegrity(links, repoRoot);
+    assert.equal(violations.length, 0);
+  } finally {
+    cleanupAnchorIntTempFile(testDir, testFile);
+  }
+});
+
+test('validateAnchorIntegrity - plain (non-backticked) label is exempt', () => {
+  const { testDir, testFile, relTarget } = writeAnchorIntTempFile('anchor-int-plain.js', 'line1\nline2\nline3');
+  try {
+    const links = [{ target: relTarget, anchorLine: 2, line: 1, label: 'this section' }];
+    const violations = validateAnchorIntegrity(links, repoRoot);
+    assert.equal(violations.length, 0);
+  } finally {
+    cleanupAnchorIntTempFile(testDir, testFile);
+  }
+});
+
+test('validateAnchorIntegrity - dotted/scoped label resolves to last segment', () => {
+  const { testDir, testFile, relTarget } = writeAnchorIntTempFile(
+    'anchor-int-scoped.js',
+    'line1\nexport const Foo = { bar() {} };\nline3'
+  );
+  try {
+    // `Foo.bar()` -> symbol token is 'bar', found on line 2
+    const links = [{ target: relTarget, anchorLine: 2, line: 1, label: '`Foo.bar()`' }];
+    const violations = validateAnchorIntegrity(links, repoRoot);
+    assert.equal(violations.length, 0);
+  } finally {
+    cleanupAnchorIntTempFile(testDir, testFile);
+  }
 });

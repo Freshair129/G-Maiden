@@ -19,7 +19,7 @@ import { join, dirname } from 'node:path';
 import { tmpdir } from 'node:os';
 import { fileURLToPath } from 'node:url';
 
-import { computeGeneratedAt, runScan, INFORMATIONAL_REASONS } from './scan.mjs';
+import { computeGeneratedAt, runScan, INFORMATIONAL_REASONS, STRICT_INFORMATIONAL_REASONS } from './scan.mjs';
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCAN_CLI = join(__dirname, 'scan.mjs');
@@ -184,6 +184,84 @@ And a [source link](file:///g:/G-Maiden/real-target.txt).
   return root;
 }
 
+// G2-T2: fixtures for the pinned v0.4.0 frontmatter rulebook, only enforced
+// under --strict. Every file here passes T1-T3 (no wikilinks/symbol links)
+// and T4's version<->changelog check, so under non-strict the fixture is
+// entirely clean -- any new-reason violation appearing without --strict would
+// mean the flag leaked, which the isolation test below asserts against.
+function changelogFor(version) {
+  return `\n## Changelog\n| Version | Date | Summary |\n| --- | --- | --- |\n| ${version} | 2026-07-19 | initial |\n`;
+}
+
+function makeStrictFrontmatterFixture() {
+  const root = mkdtempSync(join(tmpdir(), 'doc-graph-strict-'));
+
+  // Fully compliant -- must never produce any violation, strict or not.
+  write(
+    root,
+    'docs/strict-clean.md',
+    `---\ntitle: "Strict Clean"\ndoc_id: "strict-clean"\nstatus: "draft"\nversion: "0.1.0"\nupdated: "2026-07-19"\nowner: "Boss"\n---\n\n# Strict Clean\n${changelogFor('0.1.0')}`
+  );
+
+  // missing-required-field x2 ('updated', 'owner' both absent)
+  write(
+    root,
+    'docs/strict-missing-field.md',
+    `---\ntitle: "Strict Missing Field"\ndoc_id: "strict-missing-field"\nstatus: "draft"\nversion: "0.1.0"\n---\n\n# Strict Missing Field\n${changelogFor('0.1.0')}`
+  );
+
+  // invalid-status
+  write(
+    root,
+    'docs/strict-invalid-status.md',
+    `---\ntitle: "Strict Invalid Status"\ndoc_id: "strict-invalid-status"\nstatus: "banana"\nversion: "0.1.0"\nupdated: "2026-07-19"\nowner: "Boss"\n---\n\n# Strict Invalid Status\n${changelogFor('0.1.0')}`
+  );
+
+  // missing-approval (status accepted, no approved_by/approved_date)
+  write(
+    root,
+    'docs/strict-missing-approval.md',
+    `---\ntitle: "Strict Missing Approval"\ndoc_id: "strict-missing-approval"\nstatus: "accepted"\nversion: "0.1.0"\nupdated: "2026-07-19"\nowner: "Boss"\n---\n\n# Strict Missing Approval\n${changelogFor('0.1.0')}`
+  );
+
+  // doc-id-slug-mismatch
+  write(
+    root,
+    'docs/strict-docid-mismatch.md',
+    `---\ntitle: "Strict Docid Mismatch"\ndoc_id: "totally-wrong-slug"\nstatus: "draft"\nversion: "0.1.0"\nupdated: "2026-07-19"\nowner: "Boss"\n---\n\n# Strict Docid Mismatch\n${changelogFor('0.1.0')}`
+  );
+
+  // legacy-status-case (warning only -- approved_by/date present so it does
+  // NOT also trip missing-approval; isolates the warning from any error).
+  write(
+    root,
+    'docs/strict-legacy-case.md',
+    `---\ntitle: "Strict Legacy Case"\ndoc_id: "strict-legacy-case"\nstatus: "Accepted"\nversion: "0.1.0"\nupdated: "2026-07-19"\nowner: "Boss"\napproved_by: "Boss"\napproved_date: "2026-07-19"\n---\n\n# Strict Legacy Case\n${changelogFor('0.1.0')}`
+  );
+
+  return root;
+}
+
+// Only the always-clean doc + the warning-only doc -- proves a lone
+// 'legacy-status-case' never gates the exit code even under --strict.
+function makeStrictWarnOnlyFixture() {
+  const root = mkdtempSync(join(tmpdir(), 'doc-graph-strict-warn-'));
+
+  write(
+    root,
+    'docs/strict-clean.md',
+    `---\ntitle: "Strict Clean"\ndoc_id: "strict-clean"\nstatus: "draft"\nversion: "0.1.0"\nupdated: "2026-07-19"\nowner: "Boss"\n---\n\n# Strict Clean\n${changelogFor('0.1.0')}`
+  );
+
+  write(
+    root,
+    'docs/strict-legacy-case.md',
+    `---\ntitle: "Strict Legacy Case"\ndoc_id: "strict-legacy-case"\nstatus: "Accepted"\nversion: "0.1.0"\nupdated: "2026-07-19"\nowner: "Boss"\napproved_by: "Boss"\napproved_date: "2026-07-19"\n---\n\n# Strict Legacy Case\n${changelogFor('0.1.0')}`
+  );
+
+  return root;
+}
+
 function runCli(root, extraArgs = []) {
   const result = spawnSync(
     process.execPath,
@@ -277,6 +355,120 @@ test('clean fixture: CLI exits 0 with no violations', () => {
     assert.ok(graph.nodes.length >= 2);
     assert.ok(graph.edges.some((e) => e.type === 'wikilink'));
     assert.ok(graph.edges.some((e) => e.type === 'symbol'));
+
+    const report = readFileSync(join(root, 'docs/DOC-GRAPH-REPORT.md'), 'utf8');
+    assert.ok(report.includes('PASS (exit 0)'));
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+// ---------------------------------------------------------------------------
+// G2-T2: --strict wiring of frontmatter-rules.mjs (pinned v0.4.0 rulebook).
+
+const STRICT_NEW_REASONS = [
+  'missing-required-field',
+  'invalid-status',
+  'legacy-status-case',
+  'missing-approval',
+  'doc-id-slug-mismatch',
+];
+
+test('strict frontmatter fixture WITHOUT --strict: flag is fully inert (isolation)', () => {
+  const root = makeStrictFrontmatterFixture();
+  try {
+    const result = runCli(root); // no --strict
+    assert.equal(result.status, 0, `expected exit 0 without --strict, got ${result.status}\nstderr:\n${result.stderr}`);
+
+    const graph = JSON.parse(readFileSync(join(root, 'docs/DOC-GRAPH.json'), 'utf8'));
+    assert.deepEqual(graph.violations, [], 'no violations at all without --strict (fixture is clean per T1-T4)');
+
+    const report = readFileSync(join(root, 'docs/DOC-GRAPH-REPORT.md'), 'utf8');
+    for (const reason of STRICT_NEW_REASONS) {
+      assert.ok(!report.includes(reason), `report must not mention strict-only reason "${reason}" without --strict`);
+    }
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+
+  // Same assertion via the pure runScan() API (no --strict key at all), on a
+  // fresh un-scanned copy of the fixture (the CLI run above wrote
+  // DOC-GRAPH.json/-REPORT.md into the first root's docs/, which would itself
+  // surface as a new 'no-metadata' doc node if reused).
+  const freshRoot = makeStrictFrontmatterFixture();
+  try {
+    const pure = runScan({ repoRoot: freshRoot, now: '2026-07-19T12:00:00.000Z' });
+    assert.equal(pure.exitCode, 0);
+    assert.deepEqual(pure.graph.violations, []);
+  } finally {
+    rmSync(freshRoot, { recursive: true, force: true });
+  }
+});
+
+test('strict frontmatter fixture WITH --strict: new violations appear and gate the exit code', () => {
+  const root = makeStrictFrontmatterFixture();
+  try {
+    const result = runCli(root, ['--strict']);
+    assert.equal(result.status, 1, `expected exit 1 with --strict, got ${result.status}\nstderr:\n${result.stderr}`);
+
+    const graph = JSON.parse(readFileSync(join(root, 'docs/DOC-GRAPH.json'), 'utf8'));
+    const reasons = new Set(graph.violations.map((v) => v.reason));
+    for (const reason of STRICT_NEW_REASONS) {
+      assert.ok(reasons.has(reason), `expected strict violation reason "${reason}" to be present`);
+    }
+
+    // missing-required-field fired once per missing field (updated, owner)
+    const missingFields = graph.violations
+      .filter((v) => v.file === 'docs/strict-missing-field.md' && v.reason === 'missing-required-field')
+      .map((v) => v.field)
+      .sort();
+    assert.deepEqual(missingFields, ['owner', 'updated']);
+
+    // doc-id-slug-mismatch carries the offending id + expected slug
+    const docIdViolation = graph.violations.find(
+      (v) => v.file === 'docs/strict-docid-mismatch.md' && v.reason === 'doc-id-slug-mismatch'
+    );
+    assert.ok(docIdViolation, 'doc-id-slug-mismatch violation present');
+    assert.equal(docIdViolation.docId, 'totally-wrong-slug');
+    assert.equal(docIdViolation.expectedSlug, 'strict-docid-mismatch');
+
+    // the always-clean fixture doc contributes zero violations even under --strict
+    assert.ok(
+      !graph.violations.some((v) => v.file === 'docs/strict-clean.md'),
+      'fully-compliant doc must stay violation-free under --strict'
+    );
+
+    const blocking = graph.violations.filter((v) => !STRICT_INFORMATIONAL_REASONS.has(v.reason) && !INFORMATIONAL_REASONS.has(v.reason));
+    assert.ok(blocking.length > 0, 'at least one blocking strict violation');
+    assert.ok(
+      !blocking.some((v) => v.reason === 'legacy-status-case'),
+      'legacy-status-case must never be classified as blocking'
+    );
+
+    const report = readFileSync(join(root, 'docs/DOC-GRAPH-REPORT.md'), 'utf8');
+    assert.ok(report.includes('FAIL (exit 1)'));
+    for (const reason of STRICT_NEW_REASONS) {
+      assert.ok(report.includes(reason), `report should mention strict reason "${reason}"`);
+    }
+    assert.match(report, /legacy-status-case[^\n]*\|\s*\d+\s*\|\s*no \(informational\)\s*\|/, 'legacy-status-case row marked non-blocking in the report table');
+
+    // Same assertion via the pure runScan({ strict: true }) API.
+    const pure = runScan({ repoRoot: root, now: '2026-07-19T12:00:00.000Z', strict: true });
+    assert.equal(pure.exitCode, 1);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('strict warning-only fixture: a lone legacy-status-case never gates the exit code', () => {
+  const root = makeStrictWarnOnlyFixture();
+  try {
+    const result = runCli(root, ['--strict']);
+    assert.equal(result.status, 0, `expected exit 0 (warning-only), got ${result.status}\nstderr:\n${result.stderr}`);
+
+    const graph = JSON.parse(readFileSync(join(root, 'docs/DOC-GRAPH.json'), 'utf8'));
+    const reasons = graph.violations.map((v) => v.reason);
+    assert.deepEqual(reasons, ['legacy-status-case']);
 
     const report = readFileSync(join(root, 'docs/DOC-GRAPH-REPORT.md'), 'utf8');
     assert.ok(report.includes('PASS (exit 0)'));

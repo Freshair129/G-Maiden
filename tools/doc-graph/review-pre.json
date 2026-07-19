@@ -1,0 +1,21 @@
+{
+  "vetoes": [],
+  "annotations": [
+    {
+      "checker": "strict-isolation",
+      "detail": "scan.mjs line 17: validateAnchorIntegrity call may not be properly gated by opts.strict"
+    },
+    {
+      "checker": "strict-isolation",
+      "detail": "scan.mjs line 31: validateAnchorIntegrity call may not be properly gated by opts.strict"
+    },
+    {
+      "checker": "strict-isolation",
+      "detail": "scan.mjs line 136: validateAnchorIntegrity call may not be properly gated by opts.strict"
+    },
+    {
+      "checker": "strict-isolation",
+      "detail": "scan.mjs line 286: validateAnchorIntegrity call may not be properly gated by opts.strict"
+    }
+  ]
+}

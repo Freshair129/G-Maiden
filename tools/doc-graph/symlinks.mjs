@@ -13,10 +13,10 @@ import { fileURLToPath } from 'node:url';
 /**
  * Extract symbol links from markdown text.
  * Finds markdown links [text](url) where url starts with file:///g:/G-Maiden/ or file:///G:/
- * Returns array of {target, anchorLine|null, line}
+ * Returns array of {target, anchorLine|null, line, label}
  *
  * @param {string} mdText - The markdown content to search
- * @returns {Array<{target: string, anchorLine: number|null, line: number}>}
+ * @returns {Array<{target: string, anchorLine: number|null, line: number, label: string}>}
  */
 export function extractSymbolLinks(mdText) {
   const links = [];
@@ -33,6 +33,7 @@ export function extractSymbolLinks(mdText) {
     linkRegex.lastIndex = 0;
 
     while ((match = linkRegex.exec(lineText)) !== null) {
+      const label = match[1];
       const url = match[2];
 
       // Check if URL starts with file:///g:/G-Maiden/ or file:///G:/
@@ -60,6 +61,7 @@ export function extractSymbolLinks(mdText) {
         target: filePath,
         anchorLine,
         line: lineIdx + 1, // Line numbers are 1-based
+        label,
       });
     }
   }
@@ -122,6 +124,97 @@ export function validateSymbolLinks(links, repoRoot) {
         // If we can't read the file to check line count, treat as missing-file
         // (already added above if file doesn't exist, so skip)
       }
+    }
+  }
+
+  return violations;
+}
+
+/**
+ * Anchor-integrity checker (G2-T7, born from the G1.5 T7 incident: a repair
+ * script pinned App.tsx anchors to plausible in-bounds lines whose symbols
+ * had moved out of the facade -- the bounds-only rule in validateSymbolLinks
+ * above passed them; only a T3 adversarial review caught it). This closes
+ * that gap: bounds-in-range is not enough, the anchored line must actually
+ * still contain the symbol the link claims to point at.
+ *
+ * Only checks links that (a) carry a #L<n> anchor and (b) have a backticked
+ * label naming a symbol, not just the file -- i.e. the label, once stripped
+ * of its surrounding backticks, is not simply the target's basename.
+ * Filename-labeled links (backticked label === basename, e.g. `` `scan.mjs` ``)
+ * and anchorless links are exempt, as is any link whose label isn't
+ * backtick-quoted at all (plain prose text never names a symbol).
+ *
+ * The symbol token is derived from the label: strip a trailing '()' (method/
+ * function call syntax), then take the last '::' or '.' segment (so
+ * `Foo::bar()` -> 'bar', `obj.method()` -> 'method', `plainName` -> 'plainName').
+ * That token must appear as a substring somewhere in lines [n-2, n+2]
+ * (1-based, clamped to the file's actual line range) of the target file, else
+ * a 'anchor-symbol-mismatch' violation is emitted.
+ *
+ * Mirrors validateSymbolLinks' shape: no `file` field here (the caller,
+ * scan.mjs, already knows repoRel and attaches `file` when merging into the
+ * aggregate violations list).
+ *
+ * @param {Array<{target: string, anchorLine: number|null, line: number, label?: string}>} links
+ * @param {string} repoRoot - Root path of the repository (G:/G-Maiden)
+ * @returns {Array<{line: number, reason: 'anchor-symbol-mismatch', target: string, anchor: number, symbol: string}>}
+ */
+export function validateAnchorIntegrity(links, repoRoot) {
+  const violations = [];
+
+  for (const link of links) {
+    // Anchorless links are exempt -- nothing to verify.
+    if (link.anchorLine === null || link.anchorLine === undefined) continue;
+
+    const label = typeof link.label === 'string' ? link.label : '';
+    const backtickMatch = label.match(/^`(.+)`$/);
+    // Not a backticked symbol label (plain prose, or no label) -- exempt.
+    if (!backtickMatch) continue;
+
+    const inner = backtickMatch[1];
+    const targetBasename = path.basename(link.target);
+    // Filename-labeled link (names the file, not a symbol) -- exempt.
+    if (inner === targetBasename) continue;
+
+    const symbolBody = inner.replace(/\(\)$/, '');
+    const segments = symbolBody.split(/::|\./);
+    const symbol = segments[segments.length - 1];
+    if (!symbol) continue;
+
+    const fullPath = path.join(repoRoot, link.target);
+    let fileLines;
+    try {
+      const content = fs.readFileSync(fullPath, 'utf-8');
+      const text = content.replace(/^﻿/, ''); // strip BOM if present
+      fileLines = text.split('\n');
+    } catch (e) {
+      // Unreadable/missing target -- already reported as 'missing-file' by
+      // validateSymbolLinks; nothing more to check here.
+      continue;
+    }
+
+    const anchor = link.anchorLine;
+    const start = Math.max(1, anchor - 2);
+    const end = Math.min(fileLines.length, anchor + 2);
+
+    let found = false;
+    for (let ln = start; ln <= end; ln++) {
+      const lineText = fileLines[ln - 1];
+      if (lineText !== undefined && lineText.includes(symbol)) {
+        found = true;
+        break;
+      }
+    }
+
+    if (!found) {
+      violations.push({
+        line: link.line,
+        reason: 'anchor-symbol-mismatch',
+        target: link.target,
+        anchor,
+        symbol,
+      });
     }
   }
 

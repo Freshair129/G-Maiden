@@ -12,7 +12,10 @@
  *
  * Usage:
  *   node tools/doc-graph/scan.mjs [--repo-root <dir>] [--docs-dir <dir>]
- *     [--out-json <file>] [--out-report <file>] [--now <iso-timestamp>]
+ *     [--out-json <file>] [--out-report <file>] [--now <iso-timestamp>] [--strict]
+ *
+ * --strict additionally runs symlinks.mjs's validateAnchorIntegrity (G2-T7)
+ * and blocks the exit code on 'anchor-symbol-mismatch' findings.
  *
  * Library entry point `runScan()` is pure w.r.t. the filesystem it is pointed at
  * (only reads) and never calls Date.now() — generatedAt comes from --now or the
@@ -25,11 +28,27 @@ import { fileURLToPath } from 'node:url';
 
 import { buildSlugMap, collisions } from './slugmap.mjs';
 import { extractWikilinks, validateWikilinks } from './wikilinks.mjs';
-import { extractSymbolLinks, validateSymbolLinks } from './symlinks.mjs';
+import { extractSymbolLinks, validateSymbolLinks, validateAnchorIntegrity } from './symlinks.mjs';
 import { checkMetadata } from './metadata.mjs';
+import { validateFrontmatter } from './frontmatter-rules.mjs';
+import { buildIndex } from './atomic-index.mjs';
 
 /** Violation reasons that are informational-only and never fail the exit code. */
 export const INFORMATIONAL_REASONS = new Set(['no-metadata', 'glob-slug']);
+
+/**
+ * Violation reasons emitted only under --strict that are informational-only
+ * (severity 'warning' in frontmatter-rules.mjs) and never fail the exit code.
+ * Kept separate from INFORMATIONAL_REASONS (rather than merged into it) so the
+ * non-strict export/behavior of INFORMATIONAL_REASONS stays byte-identical —
+ * these reasons can only ever be pushed when strict is true (G2-T2).
+ */
+export const STRICT_INFORMATIONAL_REASONS = new Set(['legacy-status-case']);
+
+/** True iff `reason` should NOT gate the exit code, given whether --strict is on. */
+function isInformational(reason, strict) {
+  return INFORMATIONAL_REASONS.has(reason) || (strict && STRICT_INFORMATIONAL_REASONS.has(reason));
+}
 
 function toPosix(p) {
   return String(p).replace(/\\/g, '/');
@@ -113,9 +132,19 @@ function findDuplicateSlugGroups(files, docsDir) {
  * @param {string} opts.repoRoot - absolute path to the repository root
  * @param {string} [opts.docsDir] - absolute path to the docs root (default <repoRoot>/docs)
  * @param {string} [opts.now] - ISO timestamp to use verbatim for generatedAt
+ * @param {boolean} [opts.strict] - when true, also runs (a) T3's anchor-integrity
+ *   check (symlinks.mjs validateAnchorIntegrity), treating its
+ *   'anchor-symbol-mismatch' findings as blocking, and (b) the pinned v0.4.0
+ *   frontmatter rulebook (frontmatter-rules.mjs validateFrontmatter) over every
+ *   frontmatter doc, treating its error-severity reasons (missing-required-field,
+ *   invalid-status, missing-approval, doc-id-slug-mismatch) as blocking and its
+ *   sole warning-severity reason (legacy-status-case) as informational (see
+ *   STRICT_INFORMATIONAL_REASONS). Off by default so existing exit-code
+ *   semantics are unchanged for non-strict callers (both checks are opt-in,
+ *   not retroactively enforced repo-wide).
  * @returns {{ graph: object, report: string, exitCode: number }}
  */
-export function runScan({ repoRoot, docsDir, now } = {}) {
+export function runScan({ repoRoot, docsDir, now, strict } = {}) {
   const root = resolve(repoRoot);
   const docs = resolve(docsDir || join(root, 'docs'));
 
@@ -248,6 +277,25 @@ export function runScan({ repoRoot, docsDir, now } = {}) {
       edges.push({ from: repoRel, to: targetRepoRel, type: 'symbol', line: link.line });
     }
 
+    // --- T3b: anchor integrity (--strict only, G2-T7) -----------------------
+    // Bounds-only anchor validation (above) passes an anchor pinned to any
+    // in-bounds line even if the symbol it names has since moved elsewhere in
+    // the file (the G1.5 T7 incident). Only run under --strict so default
+    // scan.mjs behavior/exit-code semantics are unchanged.
+    if (strict) {
+      const anchorViolations = validateAnchorIntegrity(symLinks, root);
+      for (const v of anchorViolations) {
+        violations.push({
+          file: repoRel,
+          line: v.line,
+          reason: v.reason, // 'anchor-symbol-mismatch'
+          target: toPosix(v.target),
+          anchor: v.anchor,
+          symbol: v.symbol,
+        });
+      }
+    }
+
     // --- T4: frontmatter/version-changelog ----------------------------------
     const meta = checkMetadata(text, repoRel);
     if (meta.kind === 'none') {
@@ -262,6 +310,22 @@ export function runScan({ repoRoot, docsDir, now } = {}) {
         ...(v.changelog !== undefined ? { changelog: v.changelog } : {}),
       });
     }
+
+    // --- T4b: frontmatter rulebook (--strict only, G2-T2) -------------------
+    // Pinned v0.4.0 rulebook (required fields, status enum, approved_by/date,
+    // doc_id<->slug) from frontmatter-rules.mjs. Only invoked under --strict so
+    // default scan.mjs behavior/exit-code semantics are unchanged; its
+    // 'missing-changelog' / 'version-changelog-mismatch' pass-through is
+    // dropped here since the T4 block above already emitted those (avoids
+    // double-counting the same violation).
+    if (strict) {
+      const fm = validateFrontmatter(text, repoRel);
+      for (const v of fm.violations) {
+        if (v.reason === 'missing-changelog' || v.reason === 'version-changelog-mismatch') continue;
+        const { reason, severity, ...extra } = v;
+        violations.push({ file: repoRel, line: null, reason, severity, ...extra });
+      }
+    }
   }
 
   violations.sort((a, b) => {
@@ -275,9 +339,9 @@ export function runScan({ repoRoot, docsDir, now } = {}) {
   const generatedAt = computeGeneratedAt({ now, files });
 
   const graph = { generatedAt, nodes, edges, violations };
-  const report = renderReport({ graph, filesScanned: files.length });
+  const report = renderReport({ graph, filesScanned: files.length, strict });
 
-  const blocking = violations.filter((v) => !INFORMATIONAL_REASONS.has(v.reason));
+  const blocking = violations.filter((v) => !isInformational(v.reason, strict));
   const exitCode = blocking.length === 0 ? 0 : 1;
 
   return { graph, report, exitCode };
@@ -310,22 +374,33 @@ function reasonLabel(reason) {
     'glob-slug': 'สแลกแบบ wildcard (informational) / glob slug (informational)',
     'missing-file': 'symbol link ไปยังไฟล์ที่ไม่มีจริง / symbol link to a missing file',
     'bad-anchor': 'เลขบรรทัด anchor ผิดช่วง / symbol link anchor out of range',
+    'anchor-symbol-mismatch':
+      'anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict)',
     'missing-changelog': 'มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table',
     'version-changelog-mismatch':
       'version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row',
     'no-metadata': 'ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)',
     'read-error': 'อ่านไฟล์ไม่สำเร็จ / failed to read file',
+    'missing-required-field':
+      'ขาดฟิลด์ที่จำเป็นใน frontmatter (--strict) / missing a required frontmatter field (--strict)',
+    'invalid-status': 'ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict)',
+    'legacy-status-case':
+      'status เป็นตัวพิมพ์ใหญ่แบบเก่า (informational, --strict) / legacy capitalized status (informational, --strict)',
+    'missing-approval':
+      'status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict)',
+    'doc-id-slug-mismatch':
+      'doc_id ไม่ตรงกับ slug ของไฟล์ (--strict) / doc_id does not match the file\'s slug (--strict)',
   };
   return labels[reason] || reason;
 }
 
-function renderReport({ graph, filesScanned }) {
+function renderReport({ graph, filesScanned, strict }) {
   const { generatedAt, nodes, edges, violations } = graph;
   const counts = new Map();
   for (const v of violations) {
     counts.set(v.reason, (counts.get(v.reason) || 0) + 1);
   }
-  const blocking = violations.filter((v) => !INFORMATIONAL_REASONS.has(v.reason));
+  const blocking = violations.filter((v) => !isInformational(v.reason, strict));
   const exitCode = blocking.length === 0 ? 0 : 1;
 
   const lines = [];
@@ -350,7 +425,7 @@ function renderReport({ graph, filesScanned }) {
   } else {
     const reasons = [...counts.keys()].sort();
     for (const reason of reasons) {
-      const blockingFlag = INFORMATIONAL_REASONS.has(reason) ? 'no (informational)' : 'yes';
+      const blockingFlag = isInformational(reason, strict) ? 'no (informational)' : 'yes';
       lines.push(`| ${reason} | ${reasonLabel(reason)} | ${counts.get(reason)} | ${blockingFlag} |`);
     }
   }
@@ -404,21 +479,42 @@ function main() {
   const docsDir = args['docs-dir'] ? resolve(args['docs-dir']) : join(repoRoot, 'docs');
   const outJson = args['out-json'] ? resolve(args['out-json']) : join(docsDir, 'DOC-GRAPH.json');
   const outReport = args['out-report'] ? resolve(args['out-report']) : join(docsDir, 'DOC-GRAPH-REPORT.md');
+  const outIndex = args['out-index'] ? resolve(args['out-index']) : join(docsDir, 'atomic_index.jsonl');
   const now = typeof args.now === 'string' ? args.now : undefined;
+  const strict = Boolean(args.strict);
 
-  const { graph, report, exitCode } = runScan({ repoRoot, docsDir, now });
+  const { graph, report, exitCode } = runScan({ repoRoot, docsDir, now, strict });
 
   mkdirSync(dirname(outJson), { recursive: true });
   writeFileSync(outJson, JSON.stringify(graph, null, 2) + '\n', 'utf8');
   mkdirSync(dirname(outReport), { recursive: true });
   writeFileSync(outReport, report, 'utf8');
 
-  const blocking = graph.violations.filter((v) => !INFORMATIONAL_REASONS.has(v.reason));
+  // Build and write atomic index (one JSON line per file, stable key order, LF endings)
+  const index = buildIndex([docsDir]);
+  mkdirSync(dirname(outIndex), { recursive: true });
+  const indexLines = index.map((entry) => {
+    // Ensure stable key order: path, slug, title, status, version, headings, outbound
+    const ordered = {
+      path: entry.path,
+      slug: entry.slug,
+      title: entry.title,
+      status: entry.status,
+      version: entry.version,
+      headings: entry.headings,
+      outbound: entry.outbound,
+    };
+    return JSON.stringify(ordered);
+  });
+  writeFileSync(outIndex, indexLines.join('\n') + '\n', 'utf8');
+
+  const blocking = graph.violations.filter((v) => !isInformational(v.reason, strict));
   console.log(
     `[doc-graph] ${graph.nodes.length} nodes, ${graph.edges.length} edges, ${graph.violations.length} violations (${blocking.length} blocking).`
   );
   console.log(`[doc-graph] wrote ${outJson}`);
   console.log(`[doc-graph] wrote ${outReport}`);
+  console.log(`[doc-graph] wrote ${outIndex}`);
 
   process.exitCode = exitCode;
 }
