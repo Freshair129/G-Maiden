@@ -173,7 +173,7 @@ pub(crate) fn parse_tick_from_value(v: &Value) -> GameTick {
     }
 }
 
-pub(crate) fn parse_tick_from_json(body: &str) -> GameTick {
+pub fn parse_tick_from_json(body: &str) -> GameTick {
     let v: Value = serde_json::from_str(body).unwrap_or(Value::Null);
     parse_tick_from_value(&v)
 }

@@ -813,7 +813,7 @@ mod tests {
     // These need a real display + GPU, so they are #[ignore] by default. DXGI
     // allows only ONE duplication per output, so they must run serially. Run on a
     // desktop session with:
-    //   cargo test --bin g-maiden dxgi -- --ignored --test-threads=1
+    //   cargo test --lib dxgi -- --ignored --test-threads=1
 
     #[test]
     #[ignore = "requires a real display/GPU"]

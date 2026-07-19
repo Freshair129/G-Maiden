@@ -4,6 +4,10 @@ version = "0.13.0"
 edition = "2021"
 description = "G-Maiden Rust core — Dota 2 AI companion (latency-critical path)"
 
+[lib]
+name = "g_maiden"
+path = "src/lib.rs"
+
 [[bin]]
 name = "g-maiden"
 path = "src/main.rs"

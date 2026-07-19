@@ -468,7 +468,7 @@ mod tests {
     fn pipeline_latency_within_budget() {
         // Latency is only meaningful in release — tract inference in a debug build
         // is ~100× slower (the spike's 0.85 ms was release). Run this gate with
-        //   cargo test --release --bin g-maiden pipeline_latency
+        //   cargo test --release --lib pipeline_latency
         // In debug we skip so the normal test suite stays fast.
         if cfg!(debug_assertions) {
             eprintln!("skip latency harness in debug; run with --release");
