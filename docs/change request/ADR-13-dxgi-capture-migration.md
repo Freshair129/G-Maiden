@@ -13,7 +13,7 @@ related_docs: ["ADR-05", "ADR-10-hybrid-ingestion-resilience", "src-tauri/src/ca
 
 ## Status
 Accepted · 2026-06-28 (DXGI migration implemented, CR-001 Wave A/B complete; see
-[CR-001-REVIEW-and-execution-plan.md](CR-001-REVIEW-and-execution-plan.md))
+[[CR-001-REVIEW-and-execution-plan|CR-001-REVIEW-and-execution-plan.md]])
 
 ## Context
 
@@ -66,7 +66,7 @@ capture::start()
   └─ fallback: GSI-only mode (no CV thread)
 ```
 
-- `DxgiCapture` struct: holds `IDXGIOutputDuplication` + staging texture
+- [`DxgiCapture`](file:///g:/G-Maiden/src-tauri/src/dxgi.rs) struct: holds `IDXGIOutputDuplication` + staging texture
 - `acquire_frame()` → returns `Option<Vec<u8>>` (BGRA) — same format as WGC
 - Downstream pipeline (prefilter → detector → sentry → motion → signal) ไม่ต้องเปลี่ยนเลย — รับ `&[u8]` BGRA เหมือนเดิม
 
@@ -108,12 +108,12 @@ capture::start()
 ## Implementation Plan
 
 ### Phase 1: DXGI wrapper (1–2 days)
-- เขียน `src-tauri/src/dxgi.rs` — `DxgiCapture::new()`, `acquire_frame()`, `release_frame()`
+- เขียน [`src-tauri/src/dxgi.rs`](file:///g:/G-Maiden/src-tauri/src/dxgi.rs) — `DxgiCapture::new()`, `acquire_frame()`, `release_frame()`
 - ใช้ `windows` crate (`IDXGIFactory1`, `IDXGIOutput1`, `IDXGIOutputDuplication`)
 - Unit test: capture 10 frames, assert BGRA format + dimensions
 
 ### Phase 2: Integration (1 day)
-- แก้ `capture.rs` — try DXGI first, fallback GSI-only
+- แก้ [`capture.rs`](file:///g:/G-Maiden/src-tauri/src/capture.rs) — try DXGI first, fallback GSI-only
 - ปรับ cadence constants: NORMAL 250ms, ALERT 125ms, THROTTLE 500ms
 - Emit `capture-mode` event ให้ frontend แสดง mode badge
 
@@ -125,14 +125,14 @@ capture::start()
 
 ### Phase 4: Cleanup
 - Remove `windows-capture` crate dependency
-- Update CLAUDE.md gotcha #2 (WGC → DXGI)
+- Update [[CLAUDE.md]] gotcha #2 (WGC → DXGI)
 - Update user docs: recommend borderless fullscreen
 
 ## Related Documents
 - ADR-05: Minimap CV pipeline
-- ADR-10: Hybrid Ingestion Resilience (GSI + CV dual path)
-- `src-tauri/src/capture.rs`: current WGC implementation
-- `src-tauri/src/governor.rs`: resource budget enforcement
+- [[ADR-10-hybrid-ingestion-resilience|ADR-10]]: Hybrid Ingestion Resilience (GSI + CV dual path)
+- [`src-tauri/src/capture.rs`](file:///g:/G-Maiden/src-tauri/src/capture.rs): current WGC implementation
+- [`src-tauri/src/governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs): resource budget enforcement
 - `error.log` 2026-06-28: evidence of WGC frame stalls
 
 ## Changelog

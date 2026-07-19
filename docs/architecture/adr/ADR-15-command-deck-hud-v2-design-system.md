@@ -14,7 +14,7 @@ language: "th/en"
 ## Context
 
 หน้า control ของ G-Maiden (Command Deck) เดิมเป็น shell "สี่เหลี่ยมเต็ม + nav rail ตัน"
-ตาม Iceglass candidate (`docs/architecture/design-system.md`, 0.1.0b) ระหว่าง session 2026-07-05
+ตาม Iceglass candidate ([[architecture/design-system|docs/architecture/design-system.md]], 0.1.0b) ระหว่าง session 2026-07-05
 Boss ขับการ redesign ผ่าน Figma reference (Urban District Planner wireframe) จนได้ทิศทางใหม่:
 
 - Shell เป็น **glass panel แผ่นเดียวที่ถูก Boolean-Subtract** ให้เว้า 3 จุด (topbar / sidebar / signal cards)
@@ -35,7 +35,7 @@ Boss ขับการ redesign ผ่าน Figma reference (Urban District Pl
 3. **Token = ice (primary) + lime (signal accent)**; นิยาม `--g-*` namespace + migration map จากค่าเดิม
 4. **Geometry เป็น px บน canvas 1280×720** + Subtract path เดียว (ใช้ทั้ง clip-path และ stroke);
    window ไม่ resize อิสระ → preset ใน Settings, ไม่มี scrollbar (fit-to-grid)
-5. **New surfaces ต้อง additive** — CR-004/CR-005 ห้ามเปลี่ยน deck layout; ถ้าจำเป็นต้องขอ approve เป็นราย ๆ
+5. **New surfaces ต้อง additive** — [[CR-004-voice-command-browser|CR-004]]/[[CR-005-landing-auth-social|CR-005]] ห้ามเปลี่ยน deck layout; ถ้าจำเป็นต้องขอ approve เป็นราย ๆ
 
 ## Consequences
 
@@ -58,4 +58,4 @@ Boss ขับการ redesign ผ่าน Figma reference (Urban District Pl
 
 - Migrate `styles.css` → `--g-*` tokens ทีละ component (topbar → sidebar → dashboard → pages)
 - Regenerate `assets/*.svg` เมื่อ geometry เปลี่ยน
-- ตัดสิน CR-005 open questions (auth provider, landing location) ก่อน implement
+- ตัดสิน [[CR-005-landing-auth-social|CR-005]] open questions (auth provider, landing location) ก่อน implement

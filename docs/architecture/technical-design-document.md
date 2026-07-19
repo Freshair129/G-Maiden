@@ -2,7 +2,7 @@
 
 > à¸ªà¸–à¸²à¸›à¸±à¸•à¸¢à¸à¸£à¸£à¸¡à¸£à¸°à¸”à¸±à¸š implementation: component, à¸à¸²à¸£à¹„à¸«à¸¥à¸‚à¸­à¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥, à¹‚à¸¡à¹€à¸”à¸¥ concurrency, à¸à¸²à¸£à¸­à¸­à¸à¹à¸šà¸š
 > à¹€à¸ªà¹‰à¸™à¸—à¸²à¸‡à¸§à¸´à¸à¸¤à¸•, resilience, à¸à¸²à¸£à¸à¸³à¸à¸±à¸šà¸—à¸£à¸±à¸žà¸¢à¸²à¸à¸£, ADR à¹à¸¥à¸° Risk register.
-> Source of truth à¸‚à¸­à¸‡ "à¸ˆà¸°à¸ªà¸£à¹‰à¸²à¸‡à¸¢à¸±à¸‡à¹„à¸‡". à¸­à¹ˆà¸²à¸™à¸„à¸¹à¹ˆà¸à¸±à¸š `engineering-spec.md` (contracts).
+> Source of truth à¸‚à¸­à¸‡ "à¸ˆà¸°à¸ªà¸£à¹‰à¸²à¸‡à¸¢à¸±à¸‡à¹„à¸‡". à¸­à¹ˆà¸²à¸™à¸„à¸¹à¹ˆà¸à¸±à¸š [[engineering-spec]] (contracts).
 
 ---
 
@@ -161,7 +161,7 @@ G-Maiden/
 | **ADR-05** | à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸¨à¸±à¸•à¸£à¸¹à¸ˆà¸²à¸ **minimap CV** (GSI à¹„à¸¡à¹ˆà¹ƒà¸«à¹‰) | functional necessity |
 | **ADR-06** | G-Log = **JSONL match logs** (`match-*.jsonl`) local-only, no egress | privacy-first |
 | **ADR-07** | Local SLM = **Ollama** (ไม่ pin โมเดล), เรียกเฉพาะ fallback; ปกติใช้ cloud/template | RAM budget |
-| **ADR-14** | Accounts/GID — additive Google-OAuth identity on shared Supabase gstore; match/CV data stays local, account stores public data only | privacy-first + opt-in cross-G-series identity |
+| **[[ADR-14-gid-account-identity|ADR-14]]** | Accounts/GID — additive Google-OAuth identity on shared Supabase gstore; match/CV data stays local, account stores public data only | privacy-first + opt-in cross-G-series identity |
 
 ---
 

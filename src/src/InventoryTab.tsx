@@ -198,6 +198,16 @@ export default function InventoryTab({ onActivated }: InventoryTabProps = {}) {
         setLoading(false);
       }
     },
+    // Deliberately `[user?.id]`, NOT `[user, rows]`: this callback is called
+    // repeatedly across the account's lifetime (mount, every redeem) and must
+    // keep a STABLE identity between those calls so it isn't recreated per
+    // load — `rows` is read only to diff against the freshly-fetched `next`
+    // for the highlight-new-items effect, not to gate re-creation. Adding
+    // `rows` would make this recreate on every successful load (it calls
+    // `setRows` itself), and since the mount effect below now also lists this
+    // callback in its deps, that would turn into a self-sustaining
+    // refetch loop against Supabase. `user` (whole object) is likewise
+    // represented by its `.id` only, on purpose, for the same reason.
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [user?.id]
   );
@@ -205,7 +215,11 @@ export default function InventoryTab({ onActivated }: InventoryTabProps = {}) {
   useEffect(() => {
     void refreshInventory(false);
     void refreshVoiceState();
-  }, [user?.id]); // eslint-disable-line react-hooks/exhaustive-deps
+    // refreshInventory/refreshVoiceState are safe to include: their own
+    // deps are `[user?.id]` and `[]` respectively (see above), so they only
+    // ever change reference in lockstep with `user?.id` already firing this
+    // effect — no additional re-fires are introduced.
+  }, [user?.id, refreshInventory, refreshVoiceState]);
 
   async function onRedeem() {
     const trimmed = code.trim();

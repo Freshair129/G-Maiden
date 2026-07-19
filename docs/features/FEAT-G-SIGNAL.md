@@ -1,7 +1,7 @@
 # FEAT-G-SIGNAL — Real-time Gank Warning (Critical Path)
 
 > **Module:** G-Signal · **Priority:** Core · **Phase:** 3
-> **SRS:** §3.3 · **Eng Spec:** §2.3, §3 · **TDD:** §3
+> **SRS:** [[software-requirements-specification|SRS]] §3.3 · [[engineering-spec|Eng Spec]] §2.3, §3 · [[technical-design-document|TDD]] §3
 > **GATE:** P3 — p99 ≤300ms, p50 ≤250ms
 
 ---
@@ -13,7 +13,7 @@
 **Belief Revision** — เปลี่ยนคำพูดกลางประโยคเมื่อข้อมูลเปลี่ยน.
 
 > **สถานะ (2026-07): threshold ที่ ship จริงเป็น runtime `Sensitivity` enum**
-> (`signal.rs`), ตั้งผ่าน `set_cv_signal_sensitivity`. default = `Med`
+> ([`signal.rs`](file:///g:/G-Maiden/src-tauri/src/signal.rs)), ตั้งผ่าน [`set_cv_signal_sensitivity`](file:///g:/G-Maiden/src-tauri/src/main.rs#L359). default = `Med`
 > (`#[default]`) = **0.65 danger / 0.40 clear**. 0.85 เป็นแค่ระดับ `Low` / SRS
 > baseline — เพิ่ม Sensitivity มาเพราะ bar 85% แทบไม่เคย fire ในเกมจริง. ระดับ:
 > Low `(0.85, 0.50)`, Med `(0.65, 0.40)`, High `(0.50, 0.30)`.
@@ -75,7 +75,7 @@ struct SignalAlert {
 > **สถานะ (2026-07): ไม่มีฟิลด์ `severity` / `voice_clip_key` / `interrupt`** —
 > output จริงคือ `SignalEvent` (Alert/Revision/None) + `SignalAlert` ข้างบน.
 
-## 6. Belief Revision (SRS §3.3, บังคับ)
+## 6. Belief Revision ([[software-requirements-specification|SRS]] §3.3, บังคับ)
 
 เมื่อ Maiden กำลังพูดบทหนึ่งแล้วเงื่อนไขเปลี่ยน:
 
@@ -106,7 +106,7 @@ struct SignalAlert {
 ## 9. Audio Cache Contract
 
 คลิปเป็นไฟล์ `.wav` ของ **announcer pack** ใต้ `assets/voice-cache/{event}/*.wav`
-เลือกแบบสุ่มต่อ event ด้วย `audio::play_random` (`speak_event` fallback เป็น SAPI
+เลือกแบบสุ่มต่อ event ด้วย [`audio::play_random`](file:///g:/G-Maiden/src-tauri/src/audio.rs#L341) ([`speak_event`](file:///g:/G-Maiden/src-tauri/src/main.rs#L76) fallback เป็น SAPI
 TTS เมื่อ event ไม่มีคลิป). ไม่ใช่ key `.ogg` ตายตัว.
 
 ```

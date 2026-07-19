@@ -14,7 +14,7 @@ attributes:
 
 > **⚠️ ต่อยอดแล้วที่ `docs/design-system/` (SSOT v2 "Command Deck HUD").** ไฟล์นี้เป็นต้นทาง Iceglass
 > (palette/persona/principles ยังใช้ได้) แต่ shell layout ถูก supersede ด้วย Subtract-glass shell —
-> token/layout/component ล่าสุดยึด `docs/design-system/README.md`
+> token/layout/component ล่าสุดยึด [[design-system/README|docs/design-system/README.md]]
 
 > Candidate design system for the G-Maiden control dashboard and in-game overlay.
 > Source intent: PRD/SRS require a premium dark dashboard and transparent ice-glass overlay.
@@ -28,24 +28,24 @@ attributes:
 
 - Control dashboard = **Maiden Command Deck**: หนักแน่น, premium, card-based, เหมือน game companion hub
 - In-game overlay = **Maiden Combat HUD**: เบา, โปร่ง, peripheral-first, ไม่แย่งสมาธิจาก Dota 2
-- Design tokens ต้องต่อยอดจาก implementation ปัจจุบันใน `src/src/App.tsx` (`C`, `panel(op)`, glassmorphism)
+- Design tokens ต้องต่อยอดจาก implementation ปัจจุบันใน [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) ([`C`](file:///g:/G-Maiden/src/src/App.tsx#L187), [`panel(op)`](file:///g:/G-Maiden/src/src/App.tsx#L276), glassmorphism)
 - ทุก UI decision ต้องไม่ละเมิด NFR: FPS drop <=3%, CPU <=2.5%, RAM <=400MB, และไม่บัง minimap/skill bar/stats panel
 
 ## 2. Source References
 
 ### Parent docs
 
-- `docs/product/product-requirements.md`
-- `docs/product/software-requirements-specification.md` โดยเฉพาะ SRS §3.5 และ §4.1
-- `docs/architecture/engineering-spec.md` §2.5 และ §7
-- `docs/architecture/technical-design-document.md` §7
+- [[product-requirements|docs/product/product-requirements.md]]
+- [[software-requirements-specification|docs/product/software-requirements-specification.md]] โดยเฉพาะ SRS §3.5 และ §4.1
+- [[engineering-spec|docs/architecture/engineering-spec.md]] §2.5 และ §7
+- [[technical-design-document|docs/architecture/technical-design-document.md]] §7
 
 ### Peer docs
 
-- `docs/features/FEAT-G-SENSORY.md`
-- `docs/features/FEAT-G-SIGNAL.md`
-- `docs/features/FEAT-G-PERSONA.md`
-- `docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md`
+- [[FEAT-G-SENSORY|docs/features/FEAT-G-SENSORY.md]]
+- [[FEAT-G-SIGNAL|docs/features/FEAT-G-SIGNAL.md]]
+- [[FEAT-G-PERSONA|docs/features/FEAT-G-PERSONA.md]]
+- [[2026-06-23-audit-gsi-setup-overlay-settings-th|docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md]]
 
 ### Visual reference interpretation
 
@@ -438,9 +438,9 @@ An optional, additive Google OAuth sign-in surface now exists in the control
 window per **ADR-14**: a sign-in card, a GID display (cross-G-series identity,
 format `G-[Gen][Payload][Checksum]`), and a linked-Steam/OpenDota profile chip
 showing the player's public OpenDota profile + baselines. It is opt-in per
-ADR-11; match/CV/G-Log data stays local, and the account layer stores only
+[[ADR-11-optin-data-contribution-flywheel|ADR-11]]; match/CV/G-Log data stays local, and the account layer stores only
 identity + public data (email, public Steam ids, display name, GID). See
-`docs/architecture/adr/ADR-14-gid-account-identity.md`.
+[[ADR-14-gid-account-identity|docs/architecture/adr/ADR-14-gid-account-identity.md]].
 
 ## 11. G-Orch Execution Plan
 
@@ -468,11 +468,11 @@ These tasks are proposed only; add to `orchestration/backlog.json` after approva
 Use only these docs unless a worker reports `BLOCKED:`:
 
 - `docs/architecture/design-system.md`
-- `docs/features/FEAT-G-SENSORY.md`
-- `docs/product/software-requirements-specification.md`
-- `docs/architecture/engineering-spec.md`
-- `docs/architecture/technical-design-document.md`
-- `docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md`
+- [[FEAT-G-SENSORY|docs/features/FEAT-G-SENSORY.md]]
+- [[software-requirements-specification|docs/product/software-requirements-specification.md]]
+- [[engineering-spec|docs/architecture/engineering-spec.md]]
+- [[technical-design-document|docs/architecture/technical-design-document.md]]
+- [[2026-06-23-audit-gsi-setup-overlay-settings-th|docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md]]
 
 ### Scope excludes
 

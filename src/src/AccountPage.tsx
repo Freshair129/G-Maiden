@@ -38,8 +38,12 @@ export default function AccountPage({ entryMode, entryNonce }: { entryMode?: Acc
   const [mode, setMode] = useState<AccountMode>(entryMode ?? "account");
   useEffect(() => {
     if (entryMode) setMode(entryMode);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [entryNonce]);
+    // entryMode is included alongside entryNonce: CommandDeck's
+    // `setAccountEntry` always updates { mode, n } together in one atomic
+    // setState (see navigateTo in CommandDeck.tsx), so entryMode never
+    // changes independently of entryNonce — adding it here satisfies the
+    // rule without changing when this effect fires.
+  }, [entryMode, entryNonce]);
 
   // Keep the editable field in sync with the loaded/persisted name.
   useEffect(() => { setName(displayName); }, [displayName]);

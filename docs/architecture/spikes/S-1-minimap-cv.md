@@ -1,8 +1,8 @@
 ﻿# Spike S-1 â€” Minimap CV feasibility (detect enemy hero icons)
 
 > à¸›à¸£à¸°à¹€à¸ à¸—: spike | phase: spike | model: opus
-> Source-of-truth à¸—à¸µà¹ˆà¸­à¹ˆà¸²à¸™ (scope à¸—à¸µà¹ˆ parent à¸­à¸™à¸¸à¸à¸²à¸•): `docs/architecture/engineering-spec.md` Â§1, `docs/architecture/technical-design-document.md` Â§5 + Risk R-02.
-> Artifact à¸—à¸µà¹ˆà¸£à¸±à¸™à¹„à¸”à¹‰: `spikes/s1-minimap-cv/` (Rust = production-representative; `node-equiv.mjs` = executable equivalent).
+> Source-of-truth à¸—à¸µà¹ˆà¸­à¹ˆà¸²à¸™ (scope à¸—à¸µà¹ˆ parent à¸­à¸™à¸¸à¸à¸²à¸•): [[engineering-spec]] Â§1, [[technical-design-document]] Â§5 + Risk R-02.
+> Artifact à¸—à¸µà¹ˆà¸£à¸±à¸™à¹„à¸”à¹‰: [`spikes/s1-minimap-cv/`](file:///g:/G-Maiden/spikes/s1-minimap-cv/src/main.rs) (Rust = production-representative; [`node-equiv.mjs`](file:///g:/G-Maiden/spikes/s1-minimap-cv/node-equiv.mjs) = executable equivalent).
 
 ## 1. à¸„à¸³à¸–à¸²à¸¡à¸‚à¸­à¸‡ spike (acceptance gates)
 

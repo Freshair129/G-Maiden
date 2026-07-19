@@ -136,10 +136,10 @@ framer-motion      (micro-interactions, ใช้แบบประหยัด)
 
 ### Phase 0 — Foundation (Track E)
 - **G0.1** Scaffold Tauri v2 + React/Vite/Tailwind monorepo.
-  Files: `src-tauri/`, `src/`, `tauri.conf.json`, `package.json`. Accept: `pnpm tauri dev` เปิดหน้าต่างได้. Est 1d
+  Files: `src-tauri/`, `src/`, [`tauri.conf.json`](file:///g:/G-Maiden/src-tauri/tauri.conf.json), [`package.json`](file:///g:/G-Maiden/package.json). Accept: `pnpm tauri dev` เปิดหน้าต่างได้. Est 1d
 - **G0.2** ตั้ง overlay window: transparent, undecorated, always-on-top, click-through, skip-taskbar.
   Files: `tauri.conf.json`, `src-tauri/src/window.rs`. Accept: หน้าต่างใสมองทะลุ คลิกทะลุไปเกมได้. Deps G0.1. Est 1d
-- **G0.3** CI: clippy + eslint + `tauri build`. Files: `.github/workflows/ci.yml`. Accept: PR เขียว, ได้ artifact MSI. Est 1d
+- **G0.3** CI: clippy + eslint + `tauri build`. Files: [`.github/workflows/ci.yml`](file:///g:/G-Maiden/.github/workflows/ci.yml). Accept: PR เขียว, ได้ artifact MSI. Est 1d
 - **G0.4** Logging/tracing base + `timestamp_ms` helper. Files: `src-tauri/src/trace.rs`. Accept: log มี monotonic ts. Est 0.5d
 
 ### Phase 1 — GSI ingestion + Overlay skeleton (Track A+C)

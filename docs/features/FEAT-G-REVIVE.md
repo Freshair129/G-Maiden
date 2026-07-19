@@ -1,7 +1,7 @@
 # FEAT-G-REVIVE — Death Analysis & Buyback Advisor
 
 > **Module:** G-Revive · **Priority:** P1 · **Phase:** 5–6
-> **SRS:** §3.4 (advisor family) · related: [FEAT-G-MASTER](FEAT-G-MASTER.md), [FEAT-G-SIGNAL](FEAT-G-SIGNAL.md)
+> **SRS:** [[software-requirements-specification|SRS]] §3.4 (advisor family) · related: [[FEAT-G-MASTER]], [[FEAT-G-SIGNAL]]
 
 ---
 
@@ -22,11 +22,11 @@
 | --- | --- |
 | GSI tick | `hero.alive`, `hero.level`, `player.gold`, `hero.buyback_cost`, `hero.respawn_seconds` |
 | CV | enemies pushing high-ground, building HP, allies-alive count |
-| respawn config | `data/respawn.json` → respawn table + buyback penalty (via `src/respawn.rs`) |
+| respawn config | [`data/respawn.json`](file:///g:/G-Maiden/src-tauri/data/respawn.json) → respawn table + buyback penalty (via [`src/respawn.rs`](file:///g:/G-Maiden/src-tauri/src/respawn.rs)) |
 | Combat log (CV) | last ~10s before death (root-cause narrative — SLM layer) |
 
 > GSI ให้ `hero.respawn_seconds` (live countdown) และ `hero.buyback_cost` ตรงเมื่อ subscribe hero details —
-> ใช้ค่านี้ก่อน; `respawn.rs` (table) เป็น fallback/predictor เมื่อ field หาย หรือเพื่อทำนาย "ถ้าตายตอนนี้".
+> ใช้ค่านี้ก่อน; [`respawn.rs`](file:///g:/G-Maiden/src-tauri/src/respawn.rs) (table) เป็น fallback/predictor เมื่อ field หาย หรือเพื่อทำนาย "ถ้าตายตอนนี้".
 
 ## 3. Logic
 
@@ -88,18 +88,18 @@ ReviveAdvice {
 | --- | --- |
 | Game state (alive/level/gold/buyback_cost) | GSI Server |
 | Threat (base push, allies-alive, building HP) | G-Sentry / CV |
-| Respawn timing + buyback penalty | **`src/respawn.rs`** (config: `data/respawn.json`) |
+| Respawn timing + buyback penalty | **[`src/respawn.rs`](file:///g:/G-Maiden/src-tauri/src/respawn.rs)** (config: [`data/respawn.json`](file:///g:/G-Maiden/src-tauri/data/respawn.json)) |
 | Root-cause narrative + voice | Local SLM (Brain Router) |
 | → แสดงผล | **G-Sensory** (overlay) |
 | → เสียง | Audio Engine |
 
 ## 8. Acceptance Criteria
 
-- [x] buyback verdict เป็น pure function ทดสอบได้ (`revive::advise_buyback`)
-- [x] ใช้ `respawn.rs` config จริง (respawn table + +25 penalty + WK aura)
-- [x] parse `hero.buyback_cost` + `hero.respawn_seconds` จาก GSI (`DeathContext::from_tick`)
-- [x] live wiring: `request_buyback_advice` command → emit `buyback-advice` + SLM `buyback-narrative`
-- [x] SLM narrative: persona voice (`narrate_prompt` → `slm::advise_offline`, async best-effort)
+- [x] buyback verdict เป็น pure function ทดสอบได้ ([`revive::advise_buyback`](file:///g:/G-Maiden/src-tauri/src/revive.rs#L105))
+- [x] ใช้ [`respawn.rs`](file:///g:/G-Maiden/src-tauri/src/respawn.rs) config จริง (respawn table + +25 penalty + WK aura)
+- [x] parse `hero.buyback_cost` + `hero.respawn_seconds` จาก GSI ([`DeathContext::from_tick`](file:///g:/G-Maiden/src-tauri/src/revive.rs#L50))
+- [x] live wiring: [`request_buyback_advice`](file:///g:/G-Maiden/src-tauri/src/main.rs#L278) command → emit `buyback-advice` + SLM `buyback-narrative`
+- [x] SLM narrative: persona voice ([`narrate_prompt`](file:///g:/G-Maiden/src-tauri/src/revive.rs#L170) → [`slm::advise_offline`](file:///g:/G-Maiden/src-tauri/src/slm.rs#L22), async best-effort)
 - [ ] threat estimate (base-fall time, allies-alive) จาก CV — verdict ยัง conservative จนกว่าจะ wire
 - [ ] root-cause "ทำไมตาย" จาก combat-log CV (ตอนนี้ narrate ห้ามแต่งเหตุการณ์)
 - [ ] verdict ถูกต้อง ≥90% เทียบ scenario เดิมพันบ้าน (manual eval)

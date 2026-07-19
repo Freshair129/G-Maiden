@@ -14,7 +14,7 @@ attributes:
 ## 1. Design principles (persona-driven)
 
 Maiden ไม่ใช่แค่ dashboard — เป็น **companion** ที่มีบุคลิก ดังนั้น UI ต้องสะท้อน persona
-(ดู `CLAUDE.md` → Persona rules) ไม่ใช่แค่สวย:
+(ดู [`CLAUDE.md`](file:///g:/G-Maiden/CLAUDE.md) → Persona rules) ไม่ใช่แค่สวย:
 
 1. **Peripheral-first** — ระหว่างเล่นจริง ผู้เล่นมองจอเกม ไม่ใช่ deck; ข้อมูลสำคัญต้องอ่านได้ด้วย
    หางตา (สี + รูปทรง + ตำแหน่งคงที่) ไม่ต้องอ่านตัวหนังสือ
@@ -41,18 +41,18 @@ Maiden ไม่ใช่แค่ dashboard — เป็น **companion** ท�
 
 - **Console glass** (the ONLY blur in the deck): the Subtract shell panel, FABs, และ
   pop layers เท่านั้น — Maiden Line palette (`.gm-palette`), shortcut sheet (`.gm-sheet`).
-  ใช้ `var(--g-blur-console)` เสมอ (ไม่ hardcode `blur()`) เพื่อให้ quality tier
+  ใช้ [`var(--g-blur-console)`](file:///g:/G-Maiden/src/src/styles.css#L39) เสมอ (ไม่ hardcode `blur()`) เพื่อให้ quality tier
   (`html.gq-cinematic/balanced/eco`, §02 tokens) คุมได้จุดเดียว.
 - **Instrument matte**: ทุก interior sector/card (score header, mini stat, hero slot,
   battle grid, sector log, agent/on-air card, momentum, minimap frame ฯลฯ) — พื้นทึบ
-  `var(--g-instrument)` / `var(--g-instrument-2)`, ขอบ `var(--g-hairline)` /
+  [`var(--g-instrument)`](file:///g:/G-Maiden/src/src/styles.css#L36) / `var(--g-instrument-2)`, ขอบ [`var(--g-hairline)`](file:///g:/G-Maiden/src/src/styles.css#L37) /
   `var(--g-hairline-2)` **1px เท่านั้น ห้ามมี blur/shadow**. เหตุผล: interior เลิกแย่งซีน
   กับ shell, GPU cost ลด, glass กลับมามีความหมาย (shell ลอย, instrument ถูก "ฝัง" อยู่ในนั้น).
 
 ผลคือ blur ในดeck เหลือ "ที่เดียว" (shell) แทนที่จะกระจายไปทุก panel เหมือน v2 เดิม
-(`--g-blur-panel`/`--g-blur-tile` ที่เคยใช้กับ interior — ค่านั้นยังอยู่ในโค้ดเป็น legacy
+([`--g-blur-panel`](file:///g:/G-Maiden/src/src/styles.css#L34)/`--g-blur-tile` ที่เคยใช้กับ interior — ค่านั้นยังอยู่ในโค้ดเป็น legacy
 แต่ interior sector ใหม่ทั้งหมดต้อง reference `--g-instrument*`/`--g-hairline*` ไม่ใช่
-blur token). Overlay (Combat HUD) ไม่แตะกติกานี้ — ดู `07-combat-hud.md`.
+blur token). Overlay (Combat HUD) ไม่แตะกติกานี้ — ดู [[07-combat-hud|07-combat-hud.md]].
 
 ### Do / Don't
 
@@ -93,8 +93,8 @@ Privacy: match data / CV / G-Log = local only; deck แสดง identity + publ
 
 ## 5. Accessibility
 
-- Focus ต้องมี ring มองเห็นได้ (`--g-ice-500`, outline 2px) — ทุก control ที่ tab ถึง
-- Contrast: ข้อความหลักบน glass ต้อง ≥ 4.5:1 (ใช้ `--g-text` บนพื้นเข้มพอ; อย่าวางบน glass ที่ BG สว่างจนอ่านไม่ออก)
+- Focus ต้องมี ring มองเห็นได้ ([`--g-ice-500`](file:///g:/G-Maiden/src/src/styles.css#L18), outline 2px) — ทุก control ที่ tab ถึง
+- Contrast: ข้อความหลักบน glass ต้อง ≥ 4.5:1 (ใช้ [`--g-text`](file:///g:/G-Maiden/src/src/styles.css#L21) บนพื้นเข้มพอ; อย่าวางบน glass ที่ BG สว่างจนอ่านไม่ออก)
 - ห้ามสื่อความหมายด้วย "สีอย่างเดียว" — G-Signal ใช้สี + label + ระดับ bar ประกอบกัน
 - `prefers-reduced-motion`: ปิด ambient drift, dropdown slide, bar transition
 - เป้าคลิกขั้นต่ำ ~28–32px (win-btn, nav item ทำได้ตามนี้)

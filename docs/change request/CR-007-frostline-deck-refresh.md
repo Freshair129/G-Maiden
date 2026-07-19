@@ -3,7 +3,7 @@
 **Status:** DESIGN
 **Author:** Boss (direction) + Claude (spec)
 **Date:** 2026-07-09
-**Predecessor:** CR-006 shell (merged `17214968`, `189de2e5`), CR-002 (live-wire), ADR-14 (accounts/GID)
+**Predecessor:** CR-006 shell (merged `17214968`, `189de2e5`), [[CR-002-Phase2-wire-backend|CR-002]] (live-wire), [[ADR-14-gid-account-identity|ADR-14]] (accounts/GID)
 
 ---
 
@@ -37,17 +37,17 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
 | L1 Liquid Glass ชั้นล่างสุด | **ล็อก** (แต่มี quality tier — §4) |
 | Power radial ซ้ายล่าง | คงอยู่ — ทำ surgical fix ตำแหน่ง (defect ค้างจาก CR-006) |
 | Sector geometry ใน dashboard (5 ช่อง) | **ล็อก** — ตำแหน่งคงที่คือหัวใจ peripheral scan |
-| Combat HUD (overlay window) | **ไม่แตะ** — ออกแบบ/บันทึกแยกใน `docs/design-system/07-combat-hud.md` |
+| Combat HUD (overlay window) | **ไม่แตะ** — ออกแบบ/บันทึกแยกใน [[07-combat-hud|docs/design-system/07-combat-hud.md]] |
 
 ---
 
 ## 3. Work packages
 
 ### WP-1 — Geometry completion (ปิดหนี้ CR-006)
-- แก้ `FUNG_PANEL_PATH` ใน `src/src/CommandDeck.tsx` เพิ่ม notch ขวาล่างให้ signal cluster
+- แก้ `FUNG_PANEL_PATH` ใน [`src/src/CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) เพิ่ม notch ขวาล่างให้ signal cluster
   ฝังในรอยเว้าจริง (ตาม wireframe `assets/wireframe-annotated.svg`)
-- Surgical fix ตำแหน่ง power radial เทียบมุมซ้ายล่างของ shell (defect เปิดอยู่ใน 03-layout §8.4)
-- อัปเดต `03-layout.md` + regenerate overlay SVG ตาม governance
+- Surgical fix ตำแหน่ง power radial เทียบมุมซ้ายล่างของ shell (defect เปิดอยู่ใน [[03-layout|03-layout]] §8.4)
+- อัปเดต [[03-layout|03-layout.md]] + regenerate overlay SVG ตาม governance
 
 ### WP-2 — Token layer v3 (OKLCH + quality tiers)
 - เขียน `:root` ใหม่เป็น OKLCH โดย**คง hue เดิมทุกตัว** (void/ice/lime ไม่เพี้ยนจากตา)
@@ -67,22 +67,22 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
 - Bundle **IBM Plex Sans Thai Looped** (UI) + **IBM Plex Mono** (ตัวเลข/clock/ping) แบบ local
   — ห้ามพึ่ง CDN (desktop app, CSP)
 - ยก floor ของ type scale: micro 8.5→10px, caption 9→11px (ที่ scale 1.0) ขั้นอื่นคงเดิม
-- ล้าง icon: dropdown อีโมจิ (👤🎙⚙) → stroke set เดียวกับ `DeckIcons.tsx`
+- ล้าง icon: dropdown อีโมจิ (👤🎙⚙) → stroke set เดียวกับ [`DeckIcons.tsx`](file:///g:/G-Maiden/src/src/DeckIcons.tsx)
 - แก้ typo `VOLUM` → `VOLUME`
 
 ### WP-4 — Honest content (ตามหลัก Honest state ของ 01-foundations)
-- Hero slot: ชื่อฮีโร่จริงจาก `live/heroNames.ts` แทน "Slot ID n"; ไม่รู้ = `—` ไม่ใช่ 0/0/0
+- Hero slot: ชื่อฮีโร่จริงจาก [`live/heroNames.ts`](file:///g:/G-Maiden/src/src/live/heroNames.ts) แทน "Slot ID n"; ไม่รู้ = `—` ไม่ใช่ 0/0/0
 - "Alert Deck / Threat tabs" stub → event feed จริงจาก events ที่มีแล้ว
-- ย้ายสูตร gank risk / safe push จาก `CommandDeck.tsx` ไป `src/src/live/buildSignals.ts`
+- ย้ายสูตร gank risk / safe push จาก [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) ไป [`src/src/live/buildSignals.ts`](file:///g:/G-Maiden/src/src/live/buildSignals.ts)
   (pure builder, มี test เหมือน builder อื่น)
 - Vision card ใช้ค่าจริงจาก signals; ไม่มีข้อมูล = `—` + bar ว่าง
 - Minimap: มี CV data → marker จริง; ไม่มี → แผนที่นิ่ง + label "CV standby" (Lite mode)
 - **Audio-flag boundary (gate follow-up, 2026-07-10):** the deck's ANN toggle
-  (`CommandDeck.tsx` audio rail) only gates G-AnnStudio announcer-pack events
-  (`set_announcer_enabled` → `gsi.rs` → `announcer::most_important`) — kill/
+  ([`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) audio rail) only gates G-AnnStudio announcer-pack events
+  ([`set_announcer_enabled`](file:///g:/G-Maiden/src-tauri/src/main.rs#L351) → [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) → [`announcer::most_important`](file:///g:/G-Maiden/src-tauri/src/announcer.rs#L79)) — kill/
   streak/death lines. It is **independent** of Maiden's persona voice
-  (`s.voiceEnabled` in `App.tsx`, persona TTS only) and of G-Signal's gank
-  voice (now gated solely by the deck's SIGNAL toggle, `set_cv_signal_enabled`).
+  (`s.voiceEnabled` in [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx), persona TTS only) and of G-Signal's gank
+  voice (now gated solely by the deck's SIGNAL toggle, [`set_cv_signal_enabled`](file:///g:/G-Maiden/src-tauri/src/main.rs#L341)).
   This is intentional, not a gap: muting the announcer pack must not silence
   Maiden or gank warnings. The deck's audio rail is also the single owner of
   `volume` / `signalEnabled` / `announcerEnabled` — it persists all three in
@@ -91,15 +91,15 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
   so any other surface (e.g. the legacy Control panel under Settings) stays in
   sync instead of silently overwriting the rail's state.
 - **G-AnnStudio install endpoint fix (2026-07-10):** `POST /announcer/install`
-  (`src-tauri/src/gsi.rs` `announcer_install`) was a near no-op — it logged the
+  ([`src-tauri/src/gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) `announcer_install`) was a near no-op — it logged the
   pack name and returned `audio::all_counts()`, which counts subfolders of the
   legacy flat `voice-cache/` tree (including non-event dirs like `packs/` and
   `imports/`) and never activated the pack, so CLAUDE.md's "picked up live"
   claim was false. Fixed: the handler now reads `packId` (falls back to legacy
-  `pack`), auto-activates via `voice_api::activate_if_exists` (default
+  `pack`), auto-activates via [`voice_api::activate_if_exists`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs#L979) (default
   `activate: true`, opt out with `"activate": false`), and returns real
   per-event counts + `unmappedEvents` + `missingClips` from
-  `voice_api::install_report`, which resolves the pack's manifest against disk
+  [`voice_api::install_report`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs#L925), which resolves the pack's manifest against disk
   the same way live playback does. **Constraint that shaped the design:** :3000
   has no auth, so any local process can POST here — activation only ever
   targets a pack that already has a readable `manifest.json` on disk, and the
@@ -115,26 +115,26 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
   any file on disk (played via `audio::play_file`) or point a banner/cover at
   any file (base64-inlined onto the Tauri event bus, reachable just by opening
   Audio Settings, not only on a fired event). Fixed via one shared helper,
-  `voice_api::safe_pack_path(pack_dir, rel) -> Option<PathBuf>`: rejects
+  [`voice_api::safe_pack_path(pack_dir, rel) -> Option<PathBuf>`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs#L726): rejects
   drive/UNC/verbatim prefixes, leading `/`/`\`, and any `..` component via
   parsed `Path::components()` (not substring matching), and — only when the
   target exists as a file — canonicalizes both the pack dir and the candidate
   and requires containment, which is what catches a symlink planted inside a
-  pack whose target escapes it. Every manifest-string join in `voice_api.rs`
+  pack whose target escapes it. Every manifest-string join in [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs)
   (`resolve_existing_clips`/`active_event_clips`, `fired_banner_from`,
   `preview_clip`, `install_report`, and `build_pack`'s `cover_image`/
   `clip_options`/`banner_url` — i.e. the pack-listing path `state()` hits too,
-  not just the fire path) now goes through it. Separately, `import_archive`'s
+  not just the fire path) now goes through it. Separately, [`import_archive`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs#L510)'s
   `Expand-Archive` PowerShell shell-out (whose safety depended entirely on the
   .NET implementation) was replaced with in-process extraction using the `zip`
   crate (already pulled in transitively via `tauri-plugin-updater`, now an
   explicit `default-features = false, features = ["deflate"]` dependency):
   every entry is validated via `ZipFile::enclosed_name()` + `is_symlink()`
   BEFORE any entry is written, and the whole import is refused (nothing
-  written) if any entry is unsafe. See `docs/rca/2026-07-10-voice-pack-path-traversal.md`.
+  written) if any entry is unsafe. See [[2026-07-10-voice-pack-path-traversal|docs/rca/2026-07-10-voice-pack-path-traversal.md]].
 
 ### WP-5 — Phase-aware content (เนื้อหารู้เฟส, ช่องอยู่ที่เดิม)
-- `src/src/live/phase.ts`: state machine `standby → prep → live → debrief`
+- [`src/src/live/phase.ts`](file:///g:/G-Maiden/src/src/live/phase.ts): state machine `standby → prep → live → debrief`
   อ่านจาก events เดิม (`gsi-status`, `game-tick`, map game_state) — override มือได้, badge บอกโหมด
 - เนื้อหาต่อ sector (ตำแหน่ง**ไม่ขยับ**):
 
@@ -157,10 +157,10 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
   (global hotkeys เดิมไม่แตะ)
 
 ### WP-7 — Docs sync (governance ข้อ 5 ของ SSOT)
-- `02-tokens.md`: OKLCH block + quality tiers + type floor ใหม่
-- `03-layout.md`: path ใหม่ (notch 3 จุด) + power radial final
-- `05-sitemap-ia.md`: phase model + palette + ลิงก์ 07/08
-- ใหม่: `07-combat-hud.md` (overlay design จากของจริง), `08-account-gid.md` (login+GID UX)
+- [[02-tokens|02-tokens.md]]: OKLCH block + quality tiers + type floor ใหม่
+- [[03-layout|03-layout.md]]: path ใหม่ (notch 3 จุด) + power radial final
+- [[05-sitemap-ia|05-sitemap-ia.md]]: phase model + palette + ลิงก์ 07/08
+- ใหม่: [[07-combat-hud|07-combat-hud.md]] (overlay design จากของจริง), [[08-account-gid|08-account-gid.md]] (login+GID UX)
 - bump design-system README เป็น v3.0.0-draft
 
 ---
@@ -169,15 +169,15 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
 
 - **Shell rewrite ทุกรูปแบบ** (resizable grid, inspector panel ฯลฯ จากข้อเสนอ FROSTLINE เดิม) — Boss ปฏิเสธแล้ว
 - **Gadget mode** (หน้าต่างเล็ก always-on-top ~420×180: annunciator + volume + GSI) — จดเป็นแนวคิดสำหรับ CR ถัดไป
-- Wallet/billing/store — CR-003
-- การเปลี่ยนพฤติกรรม overlay/critical path ใด ๆ (gsi.rs, announcer.rs, DXGI)
+- Wallet/billing/store — [[CR-003-account-phase1-wallet-billing|CR-003]]
+- การเปลี่ยนพฤติกรรม overlay/critical path ใด ๆ ([`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs), [`announcer.rs`](file:///g:/G-Maiden/src-tauri/src/announcer.rs), DXGI)
 
 ---
 
 ## 5. Acceptance criteria
 
 1. Geometry: notch ขวาล่างเว้าจริง, power radial ตรง mock, sector ทั้ง 5 พิกัดเดิมเป๊ะ
-2. NFR gate: รัน `tests/perf/src/bin/perf_cpu_tree.rs` ก่อน/หลัง — tier `gq-eco` ต้อง**ลด** CPU
+2. NFR gate: รัน [`tests/perf/src/bin/perf_cpu_tree.rs`](file:///g:/G-Maiden/tests/perf/src/bin/perf_cpu_tree.rs) ก่อน/หลัง — tier `gq-eco` ต้อง**ลด** CPU
    ของ visible deck เทียบ baseline; `gq-cinematic` ต้องไม่แย่ลง
 3. Contrast: ข้อความหลัก/รองบน glass ผ่าน 4.5:1 (วัดจริงบน tier ทุกระดับ)
 4. ไม่มี fake data เหลือ: grep แล้วต้องไม่พบ "Slot ID", "Threat tabs", `width: "40%"` (Vision)

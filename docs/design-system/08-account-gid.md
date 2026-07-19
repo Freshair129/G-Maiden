@@ -13,7 +13,7 @@ attributes:
 
 > UX design ของระบบบัญชี อิงสถาปัตยกรรมจริง (ADR-14 + SEC-001):
 > Google OAuth (PKCE) → Supabase `gstore` → mint GID (Edge Fn) → link Steam → public OpenDota
-> ไฟล์โค้ด: `auth.ts`, `profile.ts`, `supabase.ts`, `gid.ts`, `AccountPage/AuthPanel/SteamLink.tsx`
+> ไฟล์โค้ด: [`auth.ts`](file:///g:/G-Maiden/src/src/auth.ts), [`profile.ts`](file:///g:/G-Maiden/src/src/profile.ts), [`supabase.ts`](file:///g:/G-Maiden/src/src/supabase.ts), [`gid.ts`](file:///g:/G-Maiden/src/src/gid.ts), [`AccountPage`](file:///g:/G-Maiden/src/src/AccountPage.tsx)/[`AuthPanel`](file:///g:/G-Maiden/src/src/AuthPanel.tsx)/[`SteamLink.tsx`](file:///g:/G-Maiden/src/src/SteamLink.tsx)
 
 ## 1. หลักการ UX (product-critical)
 
@@ -51,7 +51,7 @@ attributes:
 | `OFFLINE` (เคยล็อกอิน) | ใช้ชื่อ/GID จาก cache + badge "offline" — ฟีเจอร์ local ทำงานปกติ |
 
 ⚠️ **Known issue จาก audit 2026-07-07:** CSP ปัจจุบันขวาง sign-in flow (verified critical —
-ดู `docs/audits/2026-07-07-independent-full-audit.md`) — การ implement design นี้ต้องแก้ CSP
+ดู [[2026-07-07-independent-full-audit|docs/audits/2026-07-07-independent-full-audit.md]]) — การ implement design นี้ต้องแก้ CSP
 ให้ผ่านก่อน ถือเป็น blocker ทางเทคนิค ไม่ใช่ปัญหา design
 
 ### 3.2 GID (มาตรฐานการแสดงผล)
@@ -66,7 +66,7 @@ attributes:
 
 ```
 SIGNED-IN → ใส่ vanity URL / profile URL / SteamID64 (ช่องเดียว รับทั้ง 3 แบบ —
-resolve_steam_id ใน identity.rs จัดการ) → ยืนยัน → ดึง public OpenDota profile + baselines
+[`resolve_steam_id`](file:///g:/G-Maiden/src-tauri/src/identity.rs#L120) ใน [`identity.rs`](file:///g:/G-Maiden/src-tauri/src/identity.rs) จัดการ) → ยืนยัน → ดึง public OpenDota profile + baselines
 → การ์ด Insights/trend เริ่มมีข้อมูล
 ```
 
@@ -90,7 +90,7 @@ resolve_steam_id ใน identity.rs จัดการ) → ยืนยัน �
 
 ## 5. Integration กับ sitemap
 
-- หน้า Account = surface เดียวที่มี auth flow เต็ม (ดู 05 §3–4)
+- หน้า Account = surface เดียวที่มี auth flow เต็ม (ดู [[05-sitemap-ia|05]] §3–4)
 - Palette entries (WP-6): Sign in / Copy GID / Link Steam / Sign out (destructive → confirm)
 - CR-003 (wallet/billing/role) จะต่อยอดจากหน้านี้ — โครง AccountPage ควรเผื่อ section ว่าง
-  ไว้ในเชิง*โครงสร้างไฟล์* แต่**ไม่ render UI ว่าง** ให้ผู้ใช้เห็น
+  ไว้ในเชิง*โครงสร้างไฟล์* แต่**ไม่ render UI ว่าง** ให้ผู้ใ�

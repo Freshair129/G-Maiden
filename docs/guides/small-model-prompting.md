@@ -69,7 +69,7 @@
 
 ## 3.7 Ollama thinking models & การเลือกโมเดล (บทเรียนจาก orchestrator)
 
-ภาคสนามจากการรัน local worker จริงผ่าน orchestrator (`orchestration/`):
+ภาคสนามจากการรัน local worker จริงผ่าน orchestrator ([`orchestration/`](file:///g:/G-Maiden/orchestration)):
 
 ### Thinking model เผา token budget
 - โมเดลตระกูล **reasoning/thinking** (เช่น `qwen3.5:4b`) จะส่งเอาต์พุตทาง `message.thinking`

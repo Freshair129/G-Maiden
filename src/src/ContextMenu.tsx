@@ -107,37 +107,42 @@ export function ContextMenu({ state, onClose }: { state: ContextMenuState; onClo
   const actionable = state ? state.items.filter(isAction) : [];
 
   // Reset selection + remember the invoker every time a NEW menu opens.
+  // Deliberately keyed on `state` alone, not the outer `actionable` (it's
+  // recomputed fresh below from `state.items` so the effect never closes
+  // over a value outside its own deps — no suppression needed).
   useEffect(() => {
     if (!state) return;
     invokerRef.current = state.invoker;
-    const firstEnabled = actionable.findIndex((a) => !a.disabled);
+    const currentActionable = state.items.filter(isAction);
+    const firstEnabled = currentActionable.findIndex((a) => !a.disabled);
     setActiveIndex(firstEnabled === -1 ? 0 : firstEnabled);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   // Focus moves INTO the menu on open, and back to the invoker on close
   // (spec requirement) — mirrors MaidenLine's filter-input autofocus and the
-  // shortcut sheet's dialog-focus-on-open pattern.
+  // shortcut sheet's dialog-focus-on-open pattern. Same `state`-derived
+  // `actionable` as above, computed locally so the effect's own deps stay
+  // complete.
   useEffect(() => {
     if (!state) {
       invokerRef.current?.focus();
       return;
     }
+    const currentActionable = state.items.filter(isAction);
     const raf = window.requestAnimationFrame(() => {
-      const first = actionable.find((a) => !a.disabled);
+      const first = currentActionable.find((a) => !a.disabled);
       const el = first ? itemRefs.current.get(first.id) : undefined;
       (el ?? menuRef.current)?.focus();
     });
     return () => window.cancelAnimationFrame(raf);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [state]);
 
   // Move real DOM focus (roving tabindex) whenever the active row changes.
   useEffect(() => {
     if (!state) return;
-    const item = actionable[activeIndex];
+    const currentActionable = state.items.filter(isAction);
+    const item = currentActionable[activeIndex];
     if (item) itemRefs.current.get(item.id)?.focus();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeIndex, state]);
 
   // Clamp to the viewport edges once the real size is known (measure-then-

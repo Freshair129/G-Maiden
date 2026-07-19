@@ -3,7 +3,7 @@
 > **สถานะ (2026-07): ยังไม่ได้ทำ (spec ล่วงหน้า) — ยังไม่มีโมดูลนี้ในโค้ด (`src-tauri/src/`)**
 
 > **Module:** G-Memory · **Priority:** Companion P0 · **Phase:** 6
-> **PRD:** §3A G-Memory · **SRS:** §3.8
+> **PRD:** [[product-requirements|PRD]] §3A G-Memory · **SRS:** [[software-requirements-specification|SRS]] §3.8
 
 ---
 

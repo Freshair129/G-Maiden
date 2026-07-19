@@ -46,7 +46,7 @@ related_docs: ["CR-001-REVIEW-execution-plan", "ADR-13-dxgi-capture-migration", 
 ■ AC
   [_] CPU เฉลี่ย ≤ 2.5% ต่อเนื่อง (SRS hard limit; เดิม ~8%)
 ■ SC
-  [_] CPU ≤ 1.5% (เป้า ADR-13)
+  [_] CPU ≤ 1.5% (เป้า [[ADR-13-dxgi-capture-migration|ADR-13]])
   [_] CPU ไม่พุ่งตอน Sentry suspicious (8 Hz) เกิน budget
 ```
 

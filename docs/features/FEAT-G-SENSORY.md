@@ -1,7 +1,7 @@
 # FEAT-G-SENSORY — Overlay & Hardware Optimization
 
 > **Module:** G-Sensory · **Priority:** Core · **Phase:** 0–1 (scaffold), 7 (hardened)
-> **SRS:** §3.5 · **Eng Spec:** §2.5, §7 · **TDD:** §2, §7
+> **SRS:** [[software-requirements-specification|SRS]] §3.5 · [[engineering-spec|Eng Spec]] §2.5, §7 · [[technical-design-document|TDD]] §2, §7
 
 ---
 
@@ -22,7 +22,7 @@
 
 ### 2b. Resource Governor (TDD §7)
 
-วัดทุก **10 วินาที** (`governor.rs` `POLL_INTERVAL_S = 10`) → emit `resource-stats`
+วัดทุก **10 วินาที** ([`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs) [`POLL_INTERVAL_S`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L27) `= 10`) → emit `resource-stats`
 event ไปยัง control window แล้วเช็ค budget:
 
 | Resource | Limit | Mitigation |
@@ -32,8 +32,8 @@ event ไปยัง control window แล้วเช็ค budget:
 | FPS impact | ≤3% | budget TARGET เท่านั้น — ยังไม่ instrument |
 
 > **สถานะ (2026-07): mitigation ที่ทำจริงคือ CPU-throttle flag ตัวเดียว** —
-> `measure()` ตั้ง `over_budget = ram_mb > 400 || cpu_pct > 2.5` แล้ว
-> `poll_loop` เก็บลง `CPU_THROTTLE` (atomic) ให้ capture loop อ่านเพื่อ drop
+> [`measure()`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L143) ตั้ง `over_budget = ram_mb > 400 || cpu_pct > 2.5` แล้ว
+> [`poll_loop`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L121) เก็บลง [`CPU_THROTTLE`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L67) (atomic) ให้ capture loop อ่านเพื่อ drop
 > ~ครึ่งหนึ่งของ tick. ตาราง "unload SLM / ปิด blur / static HUD" ยังเป็น
 > aspirational (ยังไม่ได้ทำ). FPS-impact ไม่ถูกวัดที่ใดเลย (ไม่มี `est_fps`).
 >
@@ -45,7 +45,7 @@ event ไปยัง control window แล้วเช็ค budget:
 
 ### 2c. Global Hotkeys
 
-Global shortcuts จริงจาก `src-tauri/src/main.rs` (ทำงานแม้ Dota 2 โฟกัสอยู่):
+Global shortcuts จริงจาก [`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs#L547) (ทำงานแม้ Dota 2 โฟกัสอยู่):
 
 | Hotkey | Action |
 | --- | --- |
@@ -66,19 +66,19 @@ Global shortcuts จริงจาก `src-tauri/src/main.rs` (ทำงาน�
 
 - UI state → React overlay (Tauri events: `listen('core-event', ...)`)
 - Render commands → GPU-composited transparent window
-- Announcer pack banner → overlay (`packBanner` ใน `App.tsx`, driven โดย
+- Announcer pack banner → overlay ([`packBanner`](file:///g:/G-Maiden/src/src/App.tsx#L393) ใน [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx), driven โดย
   `announcer-banner` event; รูปของ pack แทน built-in kill card เมื่อ event fire)
-- `ResourceStats { ram_mb, cpu_pct, over_budget, gpu_pct, gpu_temp_c, vram_used_mb, vram_total_mb }`
-  (ทั้งหมด `f64`, `governor.rs`) → emit `resource-stats` ไปยัง control window
+- [`ResourceStats { ram_mb, cpu_pct, over_budget, gpu_pct, gpu_temp_c, vram_used_mb, vram_total_mb }`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L87)
+  (ทั้งหมด `f64`, [`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs)) → emit `resource-stats` ไปยัง control window
 
 > **สถานะ (2026-07): ไม่มีฟิลด์ `est_fps_impact_pct`** — struct จริงคือ
 > `ResourceStats` ข้างบน. GPU load/temp + VRAM เป็นฟิลด์จริงที่ป้อนโดย
-> `gpu-feeder` sidecar (nvidia-smi → `POST /telemetry` → `governor::ingest_gpu`,
+> [`gpu-feeder`](file:///g:/G-Maiden/gpu-feeder/) sidecar (nvidia-smi → `POST /telemetry` → [`governor::ingest_gpu`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L193),
 > staleness 30s; main app ไม่รัน nvidia-smi เอง). `-1` = ไม่มีค่า → footer แสดง "—".
 
 ## 5. Visual Design
 
-Canonical UI/UX contract: `docs/architecture/design-system.md`.
+Canonical UI/UX contract: [[architecture/design-system]] (`docs/architecture/design-system.md`).
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -104,10 +104,10 @@ Canonical UI/UX contract: `docs/architecture/design-system.md`.
 | Data Fetching | React Query |
 | IPC | Tauri events (`listen`/`emit`) |
 
-> **Note (CR-002 Phase 2a/2b):** `App.tsx` = the overlay window + window routing;
-> `CommandDeck.tsx` = the control window. The control dashboard is **live-wired**
+> **Note ([[CR-002-Phase2-wire-backend|CR-002]] Phase 2a/2b):** [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) = the overlay window + window routing;
+> [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) = the control window. The control dashboard is **live-wired**
 > via Tauri events (`game-tick`, `gsi-status`, `minimap-cv`, `enemy-missing`,
-> `gank-alert`) into pure builders under `src/src/live/`, merged over a MOCK
+> `gank-alert`) into pure builders under [`src/src/live/`](file:///g:/G-Maiden/src/src/live/), merged over a MOCK
 > fallback (renders signed-out/offline) — not mock-only.
 
 ## 7. Persona Behavior
@@ -128,7 +128,7 @@ Canonical UI/UX contract: `docs/architecture/design-system.md`.
 | ต้องการจาก | Module |
 | --- | --- |
 | Events | ทุก G-Series module |
-| DXGI capture | `capture` component (TDD §2) |
+| DXGI capture | [`capture`](file:///g:/G-Maiden/src-tauri/src/capture.rs) component ([[technical-design-document|TDD]] §2) |
 | → Governor สั่ง | ทุก module (throttle/reduce) |
 
 ## 10. Acceptance Criteria
@@ -142,7 +142,7 @@ Canonical UI/UX contract: `docs/architecture/design-system.md`.
 - [ ] global hotkeys ทำงาน: `Ctrl+Alt+S` (toggle overlay), `Alt+↑/↓` (vol ±10%), `Alt+M` (mute toggle)
 - [ ] governor auto-throttle เมื่อ resource เกิน budget
 - [ ] glassmorphism visual ตรง design spec
-- [ ] Control Dashboard และ Overlay ใช้ token/component contract จาก `docs/architecture/design-system.md`
+- [ ] Control Dashboard และ Overlay ใช้ token/component contract จาก [[architecture/design-system]] (`docs/architecture/design-system.md`)
 
 ## 11. Current Issue
 
@@ -151,6 +151,6 @@ Canonical UI/UX contract: `docs/architecture/design-system.md`.
   governor ตรวจซ้ำทุก `10s`, และ throttle แค่ minimap capture cadence.
 - สถานะนี้ยังไม่ถือว่าผ่าน gate จนกว่าจะมี sustained harness บนเส้นทางจริงของ app
   ที่พิสูจน์ได้ว่า CPU steady-state อยู่ใน budget.
-- Harness ที่ควรใช้ไล่เรื่องนี้คือ `tests/perf/src/bin/perf_cpu_tree.rs` ซึ่งรวม root
+- Harness ที่ควรใช้ไล่เรื่องนี้คือ [`tests/perf/src/bin/perf_cpu_tree.rs`](file:///g:/G-Maiden/tests/perf/src/bin/perf_cpu_tree.rs) ซึ่งรวม root
   host + child WebView2/utility/sidecar แบบใกล้เคียง Task Manager มากกว่า
-  `governor.rs` ที่วัดแค่ current process.
+  [`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs) ที่วัดแค่ current process.

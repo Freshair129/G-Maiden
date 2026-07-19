@@ -1,7 +1,7 @@
 # FEAT-G-SENTRY — Fog of War Monitor
 
 > **Module:** G-Sentry · **Priority:** Core · **Phase:** 2
-> **SRS:** §3.1 · **Eng Spec:** §2.1 · **TDD:** §2 `sentry`
+> **SRS:** [[software-requirements-specification|SRS]] §3.1 · [[engineering-spec|Eng Spec]] §2.1 · [[technical-design-document|TDD]] §2 `sentry`
 
 ---
 
@@ -10,7 +10,7 @@
 ตรวจจับฮีโร่ศัตรู **ทุกตัว** ที่หายจากวิสัยทัศน์เกิน 5 วินาที แล้วส่ง event ให้
 G-Motion ประเมินความเสี่ยง. เป็น **ต้นทางของ critical path** ทั้งหมด.
 
-> **สถานะ (2026-07): `sentry.rs` ไม่มี concept ของ role** — flag ศัตรูทุกตัวที่หาย
+> **สถานะ (2026-07): [`sentry.rs`](file:///g:/G-Maiden/src-tauri/src/sentry.rs) ไม่มี concept ของ role** — flag ศัตรูทุกตัวที่หาย
 > >5s เท่ากันหมด (ไม่กรอง Mid/Pos4/Pos5). การกรองตามตำแหน่งแก๊งยังไม่ได้ทำ.
 
 ## 2. Input
@@ -19,7 +19,7 @@ G-Motion ประเมินความเสี่ยง. เป็น **ต
 | --- | --- | --- |
 | Minimap CV | `Detection { name, x, y }` (per-frame) | 5–15 Hz (adaptive, TDD §5) |
 
-> **หมายเหตุ:** input จริงของ `Sentry::update` คือ `&[Detection]` จาก minimap CV
+> **หมายเหตุ:** input จริงของ [`Sentry::update`](file:///g:/G-Maiden/src-tauri/src/sentry.rs#L96) คือ `&[Detection]` จาก minimap CV
 > (ไม่ใช่ `hero.role` จาก GSI — sentry ไม่มี role). last_pos ถูก normalise 0..1.
 
 ## 3. Internal State
@@ -77,7 +77,7 @@ EnemyMissing {
 ## 7. Constraints
 
 - **Latency:** sentry logic ≤10ms (Eng Spec §1 ขั้น 4)
-- **CPU:** ตัว sentry เองเบา; bottleneck อยู่ที่ CV (ดู FEAT-G-SENSORY)
+- **CPU:** ตัว sentry เองเบา; bottleneck อยู่ที่ CV (ดู [[FEAT-G-SENSORY]])
 - **GSI limitation:** GSI ไม่ส่งตำแหน่งศัตรู → ต้องพึ่ง minimap CV (TDD §5, Risk R-02)
 - **Channel:** bounded; ถ้า G-Motion ไม่ทัน consume → drop event เก่า
 
@@ -85,7 +85,7 @@ EnemyMissing {
 
 | ต้องการจาก | Module/Component |
 | --- | --- |
-| GSI tick stream | `gsi_server` (TDD §2) |
+| GSI tick stream | [`gsi_server`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) ([[technical-design-document|TDD]] §2) |
 | Enemy positions | `vision` (minimap CV) |
 | → ส่งออกไป | **G-Motion** |
 

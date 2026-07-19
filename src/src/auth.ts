@@ -14,7 +14,7 @@ import { loadIdentity } from "./live/identity";
 const OAUTH_REDIRECT = "http://127.0.0.1:3000/auth/callback";
 
 function msg(e: unknown): string {
-  return (e as { message?: string })?.message ?? String(e) ?? "something went wrong";
+  return (e as { message?: string })?.message ?? String(e);
 }
 
 /** Link the stored Steam identity onto the GID's profile row (best-effort).

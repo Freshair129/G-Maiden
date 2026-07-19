@@ -183,7 +183,7 @@ G-Maiden ทำงานในฐานะแอปพลิเคชันป�
 * **Cloud Cognitive Engine:** เชื่อมต่อ API ของ Gemini (ผ่านช่องทางส่งข้อความสตรีมมิ่งที่ระบุ)  
   > **สถานะ (2026-07): ยังไม่ได้ wire — เป็น Phase-4 target.** ปัจจุบันยังไม่มี Gemini client;
   > เส้นทาง cloud advice ที่ ship แล้วใช้ **Claude CLI / Anthropic API** + **Ollama SLM (offline)**
-  > ผ่าน G-Master backend picker (`slm.rs`). requirement นี้คงไว้เป็นเป้าหมาย โดย ADR-14/G-Mind
+  > ผ่าน G-Master backend picker ([`slm.rs`](file:///g:/G-Maiden/src-tauri/src/slm.rs)). requirement นี้คงไว้เป็นเป้าหมาย โดย [[ADR-14-gid-account-identity|ADR-14]]/G-Mind
   > (§3.10) รองรับสลับ LLM ได้ในภายหลัง
 * **TTS Module (Text-to-Speech):** เชื่อมโยงโมดูลการถอดเสียงเป็นข้อความพูดที่ตอบสนองความถี่สูง โดยมีสไตล์น้ำเสียงที่ใกล้เคียงกับอารมณ์นักพากย์มากที่สุด  
 * **STT Module (Speech-to-Text):** สำหรับ G-Voice — แปลงเสียงพูดของผู้เล่น (Push-to-Talk) เป็นข้อความเพื่อส่งให้ Cloud Brain รองรับทั้งภาษาไทยและอังกฤษ

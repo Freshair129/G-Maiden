@@ -1,12 +1,12 @@
 # FEAT-G-VOICE — Two-Way Voice Conversation
 
 > **Module:** G-Voice · **Priority:** Companion P0 · **Phase:** 4
-> **PRD:** §3A G-Voice · **SRS:** §3.7
+> **PRD:** [[product-requirements|PRD]] §3A G-Voice · **SRS:** [[software-requirements-specification|SRS]] §3.7
 
 > **สถานะ (2026-07): ยังไม่ได้ทำ (spec ล่วงหน้า — Phase 4).** โค้ดจริงยัง**ไม่มี** mic
 > capture / STT / Whisper / cpal เลย (grep ยืนยัน) และยังไม่มี Piper — TTS ปัจจุบันเป็น
-> **Windows SAPI อย่างเดียว** (`tts.rs`, ยืนอยู่แทน Piper ที่วางแผนไว้ใน TDD). Hotkey
-> `Alt+M` **ไม่ใช่** trigger ของ G-Voice — มันคือ **mute toggle** (`main.rs`). เอกสารด้านล่าง
+> **Windows SAPI อย่างเดียว** ([`tts.rs`](file:///g:/G-Maiden/src-tauri/src/tts.rs), ยืนอยู่แทน Piper ที่วางแผนไว้ใน TDD). Hotkey
+> `Alt+M` **ไม่ใช่** trigger ของ G-Voice — มันคือ **mute toggle** ([`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs#L551)). เอกสารด้านล่าง
 > เป็นดีไซน์อนาคต ไม่ใช่พฤติกรรมปัจจุบัน; เขียนเป็นแบบวางแผน (planned).
 
 ---
@@ -47,7 +47,7 @@ Player holds <push-to-talk key, TBD> → mic capture (STT) [ยังไม่�
 ## 5. STT/TTS Contract (planned)
 
 STT ทั้งหมดในตารางนี้ยัง**ไม่ได้ทำ** (ไม่มีโค้ด mic/STT). TTS ปัจจุบันคือ SAPI
-อย่างเดียว — Piper เป็นแผน (ดู `tts.rs`).
+อย่างเดียว — Piper เป็นแผน (ดู [`tts.rs`](file:///g:/G-Maiden/src-tauri/src/tts.rs)).
 
 | Component | Technology | Latency |
 | --- | --- | --- |

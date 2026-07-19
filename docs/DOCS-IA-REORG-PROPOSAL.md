@@ -13,12 +13,18 @@
 
 ## Information Architecture
 
-- `docs/product/` — product, business, requirements, roadmap
-- `docs/architecture/` — stack, specs, TDD, ADR, spike
-- `docs/features/` — feature/module specs
-- `docs/operations/` — validation, audits, operational artifacts
-- `docs/guides/` — reusable guides
-- `docs/research/` — concepts และ supporting research
+- [[docs/product/]]
+  - `docs/product/` — product, business, requirements, roadmap
+- [[docs/architecture/]]
+  - `docs/architecture/` — stack, specs, TDD, ADR, spike
+- [[docs/features/]]
+  - `docs/features/` — feature/module specs
+- [[docs/operations/]]
+  - `docs/operations/` — validation, audits, operational artifacts
+- [[docs/guides/]]
+  - `docs/guides/` — reusable guides
+- [[docs/research/]]
+  - `docs/research/` — concepts และ supporting research
 
 ## Migration Rules
 

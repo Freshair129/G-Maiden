@@ -58,8 +58,7 @@ impl Frame {
     }
 
     /// Rec.601 luma at (x, y), matching the spike's grayscale convention.
-    /// Used by the NCC fallback detector (P2.2); kept here as a Frame primitive.
-    #[allow(dead_code)]
+    /// Used by the Draft-CV NCC recognizer (`cv::draft_detector::frame_feature`).
     #[inline]
     pub fn gray(&self, x: usize, y: usize) -> f32 {
         let c = self.at(x, y);

@@ -9,31 +9,31 @@
 
 | Module | Phase | GATE | Doc |
 | --- | --- | --- | --- |
-| **G-Sentry** — Fog of War Monitor | 2 | CPU ≤2.5% | [FEAT-G-SENTRY](FEAT-G-SENTRY.md) |
-| **G-Motion** — Heatmap & Path Prediction | 3 | — | [FEAT-G-MOTION](FEAT-G-MOTION.md) |
-| **G-Signal** — Real-time Gank Warning | 3 | **p99 ≤300ms** | [FEAT-G-SIGNAL](FEAT-G-SIGNAL.md) |
-| **G-Damage** — Real-time Lethality Engine | 3 | <1ms calc (feeds G-Signal) | [FEAT-G-DAMAGE](FEAT-G-DAMAGE.md) |
-| **G-Master** — Strategic Advisor | 5 | — | [FEAT-G-MASTER](FEAT-G-MASTER.md) |
-| **G-Sensory** — Overlay & Hardware | 0–1, 7 | FPS ≤3%, CPU ≤2.5%, RAM ≤400MB | [FEAT-G-SENSORY](FEAT-G-SENSORY.md) |
-| **G-Log** — Feedback Loop | 6 | **no-egress** | [FEAT-G-LOG](FEAT-G-LOG.md) |
+| **G-Sentry** — Fog of War Monitor | 2 | CPU ≤2.5% | [[FEAT-G-SENTRY]] |
+| **G-Motion** — Heatmap & Path Prediction | 3 | — | [[FEAT-G-MOTION]] |
+| **G-Signal** — Real-time Gank Warning | 3 | **p99 ≤300ms** | [[FEAT-G-SIGNAL]] |
+| **G-Damage** — Real-time Lethality Engine | 3 | <1ms calc (feeds G-Signal) | [[FEAT-G-DAMAGE]] |
+| **G-Master** — Strategic Advisor | 5 | — | [[FEAT-G-MASTER]] |
+| **G-Sensory** — Overlay & Hardware | 0–1, 7 | FPS ≤3%, CPU ≤2.5%, RAM ≤400MB | [[FEAT-G-SENSORY]] |
+| **G-Log** — Feedback Loop | 6 | **no-egress** | [[FEAT-G-LOG]] |
 
 ## Companion Experience Extensions
 
 | Module | Priority | Phase | Doc |
 | --- | --- | --- | --- |
-| **G-Voice** — Two-Way Voice | P0 | 4 | [FEAT-G-VOICE](FEAT-G-VOICE.md) |
-| **G-Memory** — Persistent Memory | P0 | 6 | [FEAT-G-MEMORY](FEAT-G-MEMORY.md) |
-| **G-Coach** — Post-Match Review | P1 | 6–7 | [FEAT-G-COACH](FEAT-G-COACH.md) |
-| **G-Revive** — Death Analysis & Buyback Advisor | P1 | 5–6 | [FEAT-G-REVIVE](FEAT-G-REVIVE.md) |
-| **G-Mind** — Cognitive Router | P1 | 4 | [FEAT-G-MIND](FEAT-G-MIND.md) |
-| **G-Persona** — Tone Presets | P2 | 7–8 | [FEAT-G-PERSONA](FEAT-G-PERSONA.md) |
-| **G-Stream** — Streamer Co-host | P2 | 8 | [FEAT-G-STREAM](FEAT-G-STREAM.md) |
+| **G-Voice** — Two-Way Voice | P0 | 4 | [[FEAT-G-VOICE]] |
+| **G-Memory** — Persistent Memory | P0 | 6 | [[FEAT-G-MEMORY]] |
+| **G-Coach** — Post-Match Review | P1 | 6–7 | [[FEAT-G-COACH]] |
+| **G-Revive** — Death Analysis & Buyback Advisor | P1 | 5–6 | [[FEAT-G-REVIVE]] |
+| **G-Mind** — Cognitive Router | P1 | 4 | [[FEAT-G-MIND]] |
+| **G-Persona** — Tone Presets | P2 | 7–8 | [[FEAT-G-PERSONA]] |
+| **G-Stream** — Streamer Co-host | P2 | 8 | [[FEAT-G-STREAM]] |
 
 ## Future / Proposed (post-v1.0)
 
 | Module | Priority | Phase | Doc |
 | --- | --- | --- | --- |
-| **G-Score** — Dynamic GSI-driven Soundtrack | Delighter | 9 (post-v1.0) | [FEAT-G-SCORE](FEAT-G-SCORE.md) |
+| **G-Score** — Dynamic GSI-driven Soundtrack | Delighter | 9 (post-v1.0) | [[FEAT-G-SCORE]] |
 
 ## Module Dependency Graph
 

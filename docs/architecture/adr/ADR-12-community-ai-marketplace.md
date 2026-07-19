@@ -50,7 +50,7 @@ Accepted *(new product surface â€” post-v1.0)* Â· 2026-06-23
 | Centralized model à¹€à¸”à¸µà¸¢à¸§ (à¹„à¸¡à¹ˆà¸¡à¸µ UGC) | à¸Šà¸°à¸•à¸²à¹€à¸”à¸µà¸¢à¸§à¸à¸±à¸š GOSU/Backseat â€” à¹„à¸¡à¹ˆà¸¡à¸µ moat/engagement |
 
 ## Related Documents
-- ADR-11 (opt-in data) Â· Competitive Brief Â§10.4 Â· BRD BR-05/07/10 Â· Pillar C
+- [[ADR-11-optin-data-contribution-flywheel|ADR-11]] (opt-in data) Â· [[competitive-brief|Competitive Brief]] Â§10.4 Â· [[business-requirements|BRD]] BR-05/07/10 Â· Pillar C
 
 ## Changelog
 | Version | Date | Summary |

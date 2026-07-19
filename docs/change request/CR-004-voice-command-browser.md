@@ -23,13 +23,13 @@
 
 | Module | Placement | Rationale |
 |--------|-----------|-----------|
-| **G-Browser** | **Sidecar** (`browser-sidecar/`) | Chromium ~200MB, heavy process — ต้องแยก process เหมือน `gpu-feeder/`. สื่อสารผ่าน HTTP `POST /browser` บน GSI :3000 server |
+| **G-Browser** | **Sidecar** (`browser-sidecar/`) | Chromium ~200MB, heavy process — ต้องแยก process เหมือน [`gpu-feeder/`](file:///g:/G-Maiden/gpu-feeder/). สื่อสารผ่าน HTTP `POST /browser` บน GSI :3000 server |
 | **G-Ear** | **Core** (`src-tauri/src/ear.rs`) | Lightweight mic capture ผ่าน `cpal` crate, ต้องเข้าถึง Tauri event bus โดยตรงสำหรับ push-to-talk state |
 | **G-Intent** | **Core** (`src-tauri/src/intent.rs`) | Command parser + NLU, ต้อง dispatch ไป TTS/overlay/browser ทันที — latency-critical |
 
 ### Why NOT separate system?
 
-- G-Ear ต้อง global hotkey infrastructure ของ Tauri (มีอยู่แล้วใน `main.rs`)
+- G-Ear ต้อง global hotkey infrastructure ของ Tauri (มีอยู่แล้วใน [`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs))
 - G-Intent ต้อง emit Tauri events ตรงไป overlay + TTS — ถ้าแยก system ต้องเพิ่ม IPC layer โดยไม่จำเป็น
 - G-Browser เท่านั้นที่ต้องแยก process เพราะ Chromium ทำ main process หนัก
 
@@ -123,7 +123,7 @@ match text.to_lowercase() {
 - Fork of `stealth-browser-mcp` (MIT license)
 - **Rewrite from Python → Rust** (`chromiumoxide` crate) เพื่อ:
   - ลด dependency footprint (ไม่ต้อง Python runtime)
-  - ใช้ pattern เดียวกับ `gpu-feeder/` (zero-dep Rust sidecar)
+  - ใช้ pattern เดียวกับ [`gpu-feeder/`](file:///g:/G-Maiden/gpu-feeder/) (zero-dep Rust sidecar)
   - Startup เร็วกว่า (cold start < 2s vs Python ~5s)
 - ใช้ system Chrome/Edge ที่มีอยู่แล้ว (ไม่ download Chromium 200MB)
 - CDP (Chrome DevTools Protocol) สำหรับ stealth automation
@@ -336,8 +336,8 @@ serde_json = "1"
 
 ### Phase 1: Hotkey + Browser (no voice)
 - [ ] Create `browser-sidecar/` (Rust, `headless_chrome`)
-- [ ] Add `/browser` + `/browser-result` endpoints to `gsi.rs`
-- [ ] Register Alt+G, Alt+N, Alt+P hotkeys in `main.rs`
+- [ ] Add `/browser` + `/browser-result` endpoints to [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs)
+- [ ] Register Alt+G, Alt+N, Alt+P hotkeys in [`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs)
 - [ ] YouTube control: play/pause/next via CDP
 - [ ] Google search: navigate + scrape top 3
 - [ ] TTS feedback for each action
@@ -346,7 +346,7 @@ serde_json = "1"
 
 ### Phase 2: Voice input
 - [ ] Add `cpal` mic capture in `ear.rs`
-- [ ] Alt+V push-to-talk in `main.rs`
+- [ ] Alt+V push-to-talk in [`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs)
 - [ ] "Listening..." overlay indicator
 - [ ] Integrate `whisper-tiny.onnx` via `ort`
 - [ ] Wire STT output → G-Intent

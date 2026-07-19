@@ -10,13 +10,13 @@
 
 à¸£à¸²à¸¢à¸‡à¸²à¸™à¸™à¸µà¹‰à¹€à¸›à¹‡à¸™ `repo-based audit` à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆà¸à¸²à¸£à¸à¸”à¹ƒà¸Šà¹‰à¸‡à¸²à¸™à¸ˆà¸£à¸´à¸‡à¸šà¸™à¹à¸­à¸›à¸—à¸µà¹ˆà¸£à¸±à¸™à¸­à¸¢à¸¹à¹ˆ à¸”à¸±à¸‡à¸™à¸±à¹‰à¸™à¸«à¸¥à¸±à¸à¸à¸²à¸™à¸«à¸¥à¸±à¸à¸¡à¸²à¸ˆà¸²à¸ flow à¹ƒà¸™à¹‚à¸„à¹‰à¸”à¹à¸¥à¸°à¹€à¸­à¸à¸ªà¸²à¸£à¸­à¹‰à¸²à¸‡à¸­à¸´à¸‡ à¹‚à¸”à¸¢à¹€à¸‰à¸žà¸²à¸°:
 
-- `src/src/App.tsx`
-- `src-tauri/src/main.rs`
-- `src-tauri/src/setup.rs`
-- `src-tauri/src/gsi.rs`
-- `docs/architecture/engineering-spec.md`
-- `docs/architecture/technical-design-document.md`
-- `docs/product/software-requirements-specification.md`
+- [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
+- [`src-tauri/src/main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs)
+- [`src-tauri/src/setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs)
+- [`src-tauri/src/gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs)
+- [[engineering-spec]] (`docs/architecture/engineering-spec.md`)
+- [[technical-design-document]] (`docs/architecture/technical-design-document.md`)
+- [[software-requirements-specification]] (`docs/product/software-requirements-specification.md`)
 
 à¸ˆà¸¸à¸”à¸—à¸µà¹ˆà¸•à¹‰à¸­à¸‡à¸­à¸²à¸¨à¸±à¸¢ runtime, screenshot, à¸«à¸£à¸·à¸­ interaction à¸ˆà¸£à¸´à¸‡ à¸ˆà¸°à¸–à¸¹à¸à¸£à¸°à¸šà¸¸à¹€à¸›à¹‡à¸™ `à¸‚à¹‰à¸­à¸ˆà¸³à¸à¸±à¸”à¸‚à¸­à¸‡à¸«à¸¥à¸±à¸à¸à¸²à¸™`
 
@@ -44,23 +44,23 @@
 
 1. à¹à¸­à¸›à¹€à¸›à¸´à¸”à¸‚à¸¶à¹‰à¸™à¸¡à¸²à¹à¸¥à¸°à¸•à¸£à¸§à¸ˆà¸ªà¸–à¸²à¸™à¸° GSI setup à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´
    - Health: à¸”à¸µ
-   - Evidence: `invoke('detect_gsi_setup')` à¸–à¸¹à¸à¹€à¸£à¸µà¸¢à¸à¸—à¸±à¹‰à¸‡à¹ƒà¸™ `SetupCard` à¹à¸¥à¸° welcome flow à¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:648) à¹à¸¥à¸° [App.tsx](/G:/G-Maiden/src/src/App.tsx:863)
+   - Evidence: `invoke('detect_gsi_setup')` à¸–à¸¹à¸à¹€à¸£à¸µà¸¢à¸à¸—à¸±à¹‰à¸‡à¹ƒà¸™ `SetupCard` à¹à¸¥à¸° welcome flow à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L648) à¹à¸¥à¸° [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L863)
 
 2. à¸–à¹‰à¸²à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸žà¸£à¹‰à¸­à¸¡ à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¹€à¸«à¹‡à¸™à¸›à¸¸à¹ˆà¸¡ `à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡ GSI config`
    - Health: à¸”à¸µ
-   - Evidence: à¸›à¸¸à¹ˆà¸¡à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¸–à¸¹à¸à¹à¸ªà¸”à¸‡à¹€à¸¡à¸·à¹ˆà¸­à¸žà¸š `dota_cfg_dir` à¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:664) à¹à¸¥à¸° [App.tsx](/G:/G-Maiden/src/src/App.tsx:890)
+   - Evidence: à¸›à¸¸à¹ˆà¸¡à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¸–à¸¹à¸à¹à¸ªà¸”à¸‡à¹€à¸¡à¸·à¹ˆà¸­à¸žà¸š `dota_cfg_dir` à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L664) à¹à¸¥à¸° [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L890)
 
 3. à¸£à¸°à¸šà¸šà¹€à¸‚à¸µà¸¢à¸™à¹„à¸Ÿà¸¥à¹Œ `gamestate_integration_gmaiden.cfg` à¸¥à¸‡à¹ƒà¸™à¹‚à¸Ÿà¸¥à¹€à¸”à¸­à¸£à¹Œ Dota
    - Health: à¸”à¸µ
-   - Evidence: `setup::install()` à¸ªà¸£à¹‰à¸²à¸‡à¹‚à¸Ÿà¸¥à¹€à¸”à¸­à¸£à¹Œà¹à¸¥à¸°à¹€à¸‚à¸µà¸¢à¸™à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆ [setup.rs](/G:/G-Maiden/src-tauri/src/setup.rs:178)
+   - Evidence: `setup::install()` à¸ªà¸£à¹‰à¸²à¸‡à¹‚à¸Ÿà¸¥à¹€à¸”à¸­à¸£à¹Œà¹à¸¥à¸°à¹€à¸‚à¸µà¸¢à¸™à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆ [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L178)
 
 4. à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸–à¸¹à¸à¸šà¸­à¸à¹ƒà¸«à¹‰à¹€à¸›à¸´à¸”à¸«à¸£à¸·à¸­à¸£à¸µà¸ªà¸•à¸²à¸£à¹Œà¸— Dota 2 à¹€à¸žà¸·à¹ˆà¸­à¹ƒà¸«à¹‰ GSI à¹‚à¸«à¸¥à¸”
    - Health: à¸žà¸­à¹ƒà¸Šà¹‰
-   - Evidence: copy à¹ƒà¸™ welcome flow à¸£à¸°à¸šà¸¸à¸Šà¸±à¸”à¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:901) à¹à¸¥à¸° setup card à¸£à¸°à¸šà¸¸à¸„à¸³à¹ƒà¸šà¹‰à¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:673)
+   - Evidence: copy à¹ƒà¸™ welcome flow à¸£à¸°à¸šà¸¸à¸Šà¸±à¸”à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L901) à¹à¸¥à¸° setup card à¸£à¸°à¸šà¸¸à¸„à¸³à¹ƒà¸šà¹‰à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L673)
 
 5. à¹€à¸¡à¸·à¹ˆà¸­ Dota à¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ˆà¸£à¸´à¸‡ UI header à¹à¸¥à¸° live panel à¸ˆà¸¶à¸‡à¸ªà¸°à¸—à¹‰à¸­à¸™à¸ªà¸–à¸²à¸™à¸° runtime
    - Health: à¸”à¸µ
-   - Evidence: `gsi-status` à¸–à¸¹à¸ emit à¸ˆà¸²à¸ watchdog à¸—à¸µà¹ˆ [gsi.rs](/G:/G-Maiden/src-tauri/src/gsi.rs:119) à¹à¸¥à¸°à¸–à¸¹à¸à¹ƒà¸Šà¹‰à¹ƒà¸™ chip à¸ªà¸–à¸²à¸™à¸°à¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:1086)
+   - Evidence: `gsi-status` à¸–à¸¹à¸ emit à¸ˆà¸²à¸ watchdog à¸—à¸µà¹ˆ [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L119) à¹à¸¥à¸°à¸–à¸¹à¸à¹ƒà¸Šà¹‰à¹ƒà¸™ chip à¸ªà¸–à¸²à¸™à¸°à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L1086)
 
 #### Strengths
 
@@ -72,26 +72,26 @@
 
 1. à¸ªà¸–à¸²à¸™à¸° `à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¹à¸¥à¹‰à¸§` à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹€à¸—à¹ˆà¸²à¸à¸±à¸š `à¹ƒà¸Šà¹‰à¸‡à¸²à¸™à¹„à¸”à¹‰à¸ˆà¸£à¸´à¸‡`
    - Severity: à¸ªà¸¹à¸‡
-   - Evidence: `detect()` à¸–à¸·à¸­à¸§à¹ˆà¸² `installed = present` à¸—à¸±à¸™à¸—à¸µà¸–à¹‰à¸²à¸¡à¸µà¹„à¸Ÿà¸¥à¹Œ cfg à¸­à¸¢à¸¹à¹ˆà¸—à¸µà¹ˆ [setup.rs](/G:/G-Maiden/src-tauri/src/setup.rs:159), à¹à¸•à¹ˆà¸ªà¸–à¸²à¸™à¸°à¸£à¸±à¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ˆà¸£à¸´à¸‡à¸ˆà¸°à¹€à¸à¸´à¸”à¸ à¸²à¸¢à¸«à¸¥à¸±à¸‡à¸œà¹ˆà¸²à¸™ watchdog à¹à¸¥à¸° `last_post_ms` à¸—à¸µà¹ˆ [gsi.rs](/G:/G-Maiden/src-tauri/src/gsi.rs:128)
+   - Evidence: `detect()` à¸–à¸·à¸­à¸§à¹ˆà¸² `installed = present` à¸—à¸±à¸™à¸—à¸µà¸–à¹‰à¸²à¸¡à¸µà¹„à¸Ÿà¸¥à¹Œ cfg à¸­à¸¢à¸¹à¹ˆà¸—à¸µà¹ˆ [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L159), à¹à¸•à¹ˆà¸ªà¸–à¸²à¸™à¸°à¸£à¸±à¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ˆà¸£à¸´à¸‡à¸ˆà¸°à¹€à¸à¸´à¸”à¸ à¸²à¸¢à¸«à¸¥à¸±à¸‡à¸œà¹ˆà¸²à¸™ watchdog à¹à¸¥à¸° `last_post_ms` à¸—à¸µà¹ˆ [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L128)
    - Impact: à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸­à¸²à¸ˆà¸à¸” `à¸žà¸£à¹‰à¸­à¸¡à¹à¸¥à¹‰à¸§!` à¹à¸¥à¹‰à¸§à¹€à¸‚à¹‰à¸²à¹ƒà¸ˆà¸§à¹ˆà¸² setup à¸ˆà¸š à¸—à¸±à¹‰à¸‡à¸—à¸µà¹ˆà¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¹€à¸›à¸´à¸”à¸«à¸£à¸·à¸­à¸£à¸µà¸ªà¸•à¸²à¸£à¹Œà¸— Dota à¹€à¸¥à¸¢
    - Recommendation: à¹à¸¢à¸à¸ªà¸–à¸²à¸™à¸°à¹ƒà¸™ UI à¹ƒà¸«à¹‰à¸Šà¸±à¸”à¹€à¸›à¹‡à¸™ `à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡ config à¹à¸¥à¹‰à¸§` à¸à¸±à¸š `à¸£à¸±à¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ˆà¸²à¸à¹€à¸à¸¡à¹à¸¥à¹‰à¸§`
 
 2. flow welcome à¸›à¸¥à¹ˆà¸­à¸¢à¹ƒà¸«à¹‰à¸‚à¹‰à¸²à¸¡à¹„à¸”à¹‰ à¹à¸¡à¹‰à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸•à¸´à¸”à¸•à¸±à¹‰à¸‡ GSI
    - Severity: à¸à¸¥à¸²à¸‡
-   - Evidence: à¸¡à¸µà¸›à¸¸à¹ˆà¸¡ `à¸‚à¹‰à¸²à¸¡ (à¸•à¸±à¹‰à¸‡à¸„à¹ˆà¸²à¹€à¸­à¸‡à¸ à¸²à¸¢à¸«à¸¥à¸±à¸‡)` à¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:910)
+   - Evidence: à¸¡à¸µà¸›à¸¸à¹ˆà¸¡ `à¸‚à¹‰à¸²à¸¡ (à¸•à¸±à¹‰à¸‡à¸„à¹ˆà¸²à¹€à¸­à¸‡à¸ à¸²à¸¢à¸«à¸¥à¸±à¸‡)` à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L910)
    - Impact: à¸¥à¸”à¹à¸£à¸‡à¹€à¸ªà¸µà¸¢à¸”à¸—à¸²à¸™à¸£à¸°à¸¢à¸°à¸ªà¸±à¹‰à¸™ à¹à¸•à¹ˆà¹€à¸žà¸´à¹ˆà¸¡à¹‚à¸­à¸à¸²à¸ªà¸—à¸µà¹ˆà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¹„à¸›à¸–à¸¶à¸‡à¸«à¸™à¹‰à¸²à¸«à¸¥à¸±à¸à¹à¸¥à¹‰à¸§à¸‡à¸‡à¸§à¹ˆà¸²à¸—à¸³à¹„à¸¡à¹„à¸¡à¹ˆà¸¡à¸µà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ªà¸”
    - Recommendation: à¸–à¹‰à¸²à¸‚à¹‰à¸²à¸¡ à¸„à¸§à¸£à¸¡à¸µ banner à¸«à¸£à¸·à¸­ checklist à¸„à¹‰à¸²à¸‡à¹„à¸§à¹‰à¹ƒà¸™à¸«à¸™à¹‰à¸²à¸«à¸¥à¸±à¸à¸ˆà¸™à¸à¸§à¹ˆà¸²à¸ˆà¸°à¸£à¸±à¸š GSI à¹„à¸”à¹‰à¸ˆà¸£à¸´à¸‡
 
 3. à¹€à¸¡à¸·à¹ˆà¸­à¸«à¸² Dota path à¹„à¸¡à¹ˆà¹€à¸ˆà¸­ à¸£à¸°à¸šà¸šà¸¡à¸µà¸‚à¹‰à¸­à¸„à¸§à¸²à¸¡ error à¹à¸•à¹ˆà¹„à¸¡à¹ˆà¸¡à¸µ next action à¸—à¸µà¹ˆà¹€à¸›à¹‡à¸™à¸‚à¸±à¹‰à¸™à¸•à¸­à¸™
    - Severity: à¸à¸¥à¸²à¸‡
-   - Evidence: `detect()` à¸ªà¹ˆà¸‡à¸à¸¥à¸±à¸šà¸‚à¹‰à¸­à¸„à¸§à¸²à¸¡à¹à¸šà¸š state-based à¹€à¸Šà¹ˆà¸™à¹„à¸¡à¹ˆà¸žà¸š Steam à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆà¸žà¸š Dota à¸—à¸µà¹ˆ [setup.rs](/G:/G-Maiden/src-tauri/src/setup.rs:136) à¹à¸¥à¸° [setup.rs](/G:/G-Maiden/src-tauri/src/setup.rs:148)
+   - Evidence: `detect()` à¸ªà¹ˆà¸‡à¸à¸¥à¸±à¸šà¸‚à¹‰à¸­à¸„à¸§à¸²à¸¡à¹à¸šà¸š state-based à¹€à¸Šà¹ˆà¸™à¹„à¸¡à¹ˆà¸žà¸š Steam à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆà¸žà¸š Dota à¸—à¸µà¹ˆ [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L136) à¹à¸¥à¸° [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L148)
    - Impact: à¸„à¸™à¸—à¸µà¹ˆà¸•à¸´à¸”à¸•à¸±à¹‰à¸‡ Steam à¸«à¸¥à¸²à¸¢ library à¸«à¸£à¸·à¸­ registry à¹à¸›à¸¥à¸à¸­à¸²à¸ˆà¸£à¸¹à¹‰à¸§à¹ˆà¸² fail à¹à¸•à¹ˆà¹„à¸¡à¹ˆà¸£à¸¹à¹‰à¸„à¸§à¸£à¸—à¸³à¸­à¸°à¹„à¸£à¸•à¹ˆà¸­
    - Recommendation: à¹€à¸žà¸´à¹ˆà¸¡ recovery copy à¹à¸šà¸šà¸ªà¸±à¹‰à¸™ à¹€à¸Šà¹ˆà¸™ `à¹€à¸›à¸´à¸” Steam à¸«à¸™à¸¶à¹ˆà¸‡à¸„à¸£à¸±à¹‰à¸‡`, `à¸•à¸£à¸§à¸ˆà¸§à¹ˆà¸² Dota 2 à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™ library à¸™à¸µà¹‰`, `à¸à¸”à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¸‹à¹‰à¸³`
 
 #### Accessibility / usability risks
 
 - onboarding à¹ƒà¸Šà¹‰à¸à¸²à¸£à¸žà¸¶à¹ˆà¸‡à¸žà¸² color + status dot à¸„à¹ˆà¸­à¸™à¸‚à¹‰à¸²à¸‡à¸¡à¸²à¸ à¸–à¹‰à¸²à¸„à¸­à¸™à¸—à¸£à¸²à¸ªà¸•à¹Œà¸•à¹ˆà¸³à¸«à¸£à¸·à¸­à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸£à¸µà¸šà¸”à¸¹ à¸­à¸²à¸ˆà¹à¸¢à¸ `à¸žà¸£à¹‰à¸­à¸¡` à¸à¸±à¸š `à¹„à¸¡à¹ˆà¸žà¸£à¹‰à¸­à¸¡` à¹„à¸”à¹‰à¸¢à¸²à¸
-- step 2 à¸–à¸¹à¸à¸¥à¸” opacity à¹€à¸¡à¸·à¹ˆà¸­ step 1 à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹€à¸ªà¸£à¹‡à¸ˆà¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:898) à¸‹à¸¶à¹ˆà¸‡à¸ªà¸·à¹ˆà¸­ hierarchy à¸”à¸µ à¹à¸•à¹ˆà¸à¹‡à¸—à¸³à¹ƒà¸«à¹‰à¸‚à¹‰à¸­à¸„à¸§à¸²à¸¡à¸ªà¸³à¸„à¸±à¸à¹€à¸£à¸·à¹ˆà¸­à¸‡ restart à¹€à¸à¸¡à¸”à¸¹à¸”à¹‰à¸­à¸¢à¸¥à¸‡
+- step 2 à¸–à¸¹à¸à¸¥à¸” opacity à¹€à¸¡à¸·à¹ˆà¸­ step 1 à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹€à¸ªà¸£à¹‡à¸ˆà¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L898) à¸‹à¸¶à¹ˆà¸‡à¸ªà¸·à¹ˆà¸­ hierarchy à¸”à¸µ à¹à¸•à¹ˆà¸à¹‡à¸—à¸³à¹ƒà¸«à¹‰à¸‚à¹‰à¸­à¸„à¸§à¸²à¸¡à¸ªà¸³à¸„à¸±à¸à¹€à¸£à¸·à¹ˆà¸­à¸‡ restart à¹€à¸à¸¡à¸”à¸¹à¸”à¹‰à¸­à¸¢à¸¥à¸‡
 
 ---
 
@@ -101,23 +101,23 @@
 
 1. à¹‚à¸«à¸¥à¸”à¸„à¹ˆà¸²à¹€à¸£à¸´à¹ˆà¸¡à¸•à¹‰à¸™à¸ˆà¸²à¸ `gm-settings`
    - Health: à¸”à¸µ
-   - Evidence: `loadSettings()` à¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:124)
+   - Evidence: `loadSettings()` à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L124)
 
 2. à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¹à¸à¹‰à¸„à¹ˆà¸²à¸à¸²à¸£à¹à¸ªà¸”à¸‡ overlay à¹€à¸Šà¹ˆà¸™ visibility, position, opacity, stats panel
    - Health: à¸”à¸µà¸¡à¸²à¸
-   - Evidence: settings controls à¸­à¸¢à¸¹à¹ˆà¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:1128)
+   - Evidence: settings controls à¸­à¸¢à¸¹à¹ˆà¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L1128)
 
 3. à¸—à¸¸à¸à¸„à¸£à¸±à¹‰à¸‡à¸—à¸µà¹ˆà¸„à¹ˆà¸²à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ à¸£à¸°à¸šà¸š persist à¸¥à¸‡ localStorage, broadcast à¹„à¸› overlay, à¹à¸¥à¸° sync visibility à¹„à¸› Rust
    - Health: à¸”à¸µà¸¡à¸²à¸
-   - Evidence: effect à¸à¸¥à¸²à¸‡à¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:1056)
+   - Evidence: effect à¸à¸¥à¸²à¸‡à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L1056)
 
 4. overlay window à¸£à¸±à¸šà¸„à¹ˆà¸² settings à¸¥à¹ˆà¸²à¸ªà¸¸à¸”à¹€à¸¡à¸·à¹ˆà¸­à¸žà¸£à¹‰à¸­à¸¡à¹ƒà¸Šà¹‰à¸‡à¸²à¸™
    - Health: à¸”à¸µ
-   - Evidence: handshake `overlay-ready -> emit('settings', current)` à¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:1049)
+   - Evidence: handshake `overlay-ready -> emit('settings', current)` à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L1049)
 
 5. à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸ªà¸²à¸¡à¸²à¸£à¸– preview overlay à¹‚à¸”à¸¢à¹„à¸¡à¹ˆà¸—à¸³à¹ƒà¸«à¹‰ GSI status à¹€à¸žà¸µà¹‰à¸¢à¸™
    - Health: à¸”à¸µà¸¡à¸²à¸
-   - Evidence: preview à¸ªà¹ˆà¸‡ fake `game-tick` à¹à¸•à¹ˆà¹„à¸¡à¹ˆà¸ªà¹ˆà¸‡ fake `gsi-status` à¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:970)
+   - Evidence: preview à¸ªà¹ˆà¸‡ fake `game-tick` à¹à¸•à¹ˆà¹„à¸¡à¹ˆà¸ªà¹ˆà¸‡ fake `gsi-status` à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L970)
 
 #### Strengths
 
@@ -129,19 +129,19 @@
 
 1. à¸à¸²à¸£à¸šà¸±à¸™à¸—à¸¶à¸ profile à¹ƒà¸Šà¹‰ `prompt()` à¹à¸šà¸šà¸”à¸´à¸š
    - Severity: à¸à¸¥à¸²à¸‡
-   - Evidence: `prompt('à¸Šà¸·à¹ˆà¸­à¹‚à¸›à¸£à¹„à¸Ÿà¸¥à¹Œ:')` à¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:1172)
+   - Evidence: `prompt('à¸Šà¸·à¹ˆà¸­à¹‚à¸›à¸£à¹„à¸Ÿà¸¥à¹Œ:')` à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L1172)
    - Impact: UX à¸ªà¸°à¸”à¸¸à¸”à¸ˆà¸²à¸ visual language à¸«à¸¥à¸±à¸à¸‚à¸­à¸‡à¹à¸­à¸›, à¹„à¸¡à¹ˆà¸¡à¸µ validation, à¹à¸¥à¸°à¸”à¸¹à¹„à¸¡à¹ˆ premium à¹€à¸—à¹ˆà¸²à¸žà¸·à¹‰à¸™à¸—à¸µà¹ˆà¸­à¸·à¹ˆà¸™
    - Recommendation: à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¹€à¸›à¹‡à¸™ inline input à¸«à¸£à¸·à¸­ modal à¹€à¸¥à¹‡à¸à¹ƒà¸™à¸ªà¹„à¸•à¸¥à¹Œà¹€à¸”à¸µà¸¢à¸§à¸à¸±à¸šà¹à¸­à¸›
 
 2. à¸à¸²à¸£ overwrite profile à¸Šà¸·à¹ˆà¸­à¸‹à¹‰à¸³à¹€à¸à¸´à¸”à¹à¸šà¸šà¹€à¸‡à¸µà¸¢à¸š
    - Severity: à¸à¸¥à¸²à¸‡
-   - Evidence: `saveProfile()` à¸à¸£à¸­à¸‡à¸Šà¸·à¹ˆà¸­à¹€à¸”à¸´à¸¡à¸­à¸­à¸à¹à¸¥à¹‰à¸§à¹à¸—à¸™à¸—à¸µà¹ˆà¸—à¸±à¸™à¸—à¸µà¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:955)
+   - Evidence: `saveProfile()` à¸à¸£à¸­à¸‡à¸Šà¸·à¹ˆà¸­à¹€à¸”à¸´à¸¡à¸­à¸­à¸à¹à¸¥à¹‰à¸§à¹à¸—à¸™à¸—à¸µà¹ˆà¸—à¸±à¸™à¸—à¸µà¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L955)
    - Impact: à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸­à¸²à¸ˆà¹€à¸œà¸¥à¸­à¸—à¸±à¸š preset à¹€à¸”à¸´à¸¡à¹‚à¸”à¸¢à¹„à¸¡à¹ˆà¸£à¸¹à¹‰à¸•à¸±à¸§
    - Recommendation: à¸–à¹‰à¸²à¸Šà¸·à¹ˆà¸­à¸‹à¹‰à¸³ à¸„à¸§à¸£à¸–à¸²à¸¡à¸¢à¸·à¸™à¸¢à¸±à¸™à¸«à¸£à¸·à¸­à¹à¸ªà¸”à¸‡à¸„à¸³à¸§à¹ˆà¸² `à¸­à¸±à¸›à¹€à¸”à¸•à¹‚à¸›à¸£à¹„à¸Ÿà¸¥à¹Œà¹€à¸”à¸´à¸¡`
 
 3. settings à¹„à¸¡à¹ˆà¸¡à¸µ schema version à¸Šà¸±à¸”à¹€à¸ˆà¸™
    - Severity: à¸•à¹ˆà¸³
-   - Evidence: à¸¡à¸µ migration à¹€à¸‰à¸žà¸²à¸° `showStats` à¹€à¸à¹ˆà¸²à¹ƒà¸™ `loadSettings()` à¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:126)
+   - Evidence: à¸¡à¸µ migration à¹€à¸‰à¸žà¸²à¸° `showStats` à¹€à¸à¹ˆà¸²à¹ƒà¸™ `loadSettings()` à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L126)
    - Impact: à¸•à¸­à¸™à¸™à¸µà¹‰à¸¢à¸±à¸‡à¹‚à¸­à¹€à¸„ à¹à¸•à¹ˆà¸–à¹‰à¸² settings à¹‚à¸•à¸‚à¸¶à¹‰à¸™ risk à¹€à¸£à¸·à¹ˆà¸­à¸‡ backward cleanup à¸ˆà¸°à¹€à¸£à¸´à¹ˆà¸¡à¸ªà¸¹à¸‡
    - Recommendation: à¹€à¸žà¸´à¹ˆà¸¡ `settingsVersion` à¹€à¸¡à¸·à¹ˆà¸­à¹‚à¸„à¸£à¸‡à¸ªà¸£à¹‰à¸²à¸‡à¹€à¸£à¸´à¹ˆà¸¡à¸‹à¸±à¸šà¸‹à¹‰à¸­à¸™à¸à¸§à¹ˆà¸²à¸™à¸µà¹‰
 
@@ -162,23 +162,23 @@
 
 2. Rust à¸­à¹ˆà¸²à¸™ Steam path à¸ˆà¸²à¸ registry à¹à¸¥à¸°à¸«à¸² Dota library à¸ˆà¸²à¸ `libraryfolders.vdf`
    - Health: à¸”à¸µ
-   - Evidence: [setup.rs](/G:/G-Maiden/src-tauri/src/setup.rs:65), [setup.rs](/G:/G-Maiden/src-tauri/src/setup.rs:117)
+   - Evidence: [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L65), [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L117)
 
 3. à¸–à¹‰à¸²à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸à¸”à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡ à¸£à¸°à¸šà¸šà¹€à¸‚à¸µà¸¢à¸™ `gamestate_integration_gmaiden.cfg`
    - Health: à¸”à¸µ
-   - Evidence: [setup.rs](/G:/G-Maiden/src-tauri/src/setup.rs:178)
+   - Evidence: [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L178)
 
 4. Dota à¸ªà¹ˆà¸‡ JSON à¸¡à¸²à¸—à¸µà¹ˆ `http://127.0.0.1:3000/gsi`
    - Health: à¸”à¸µ
-   - Evidence: cfg body à¸—à¸µà¹ˆ [setup.rs](/G:/G-Maiden/src-tauri/src/setup.rs:19) à¹à¸¥à¸° spec à¸—à¸µà¹ˆ [engineering-spec.md](/G:/G-Maiden/docs/architecture/engineering-spec.md:82)
+   - Evidence: cfg body à¸—à¸µà¹ˆ [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L19) à¹à¸¥à¸° spec à¸—à¸µà¹ˆ [[engineering-spec|engineering-spec.md:82]]
 
 5. `gsi.rs` parse body à¹€à¸›à¹‡à¸™ `GameTick`, mark post time, set in-game, log tick, emit `game-tick`
    - Health: à¸”à¸µà¸¡à¸²à¸
-   - Evidence: [gsi.rs](/G:/G-Maiden/src-tauri/src/gsi.rs:64), [gsi.rs](/G:/G-Maiden/src-tauri/src/gsi.rs:89)
+   - Evidence: [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L64), [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L89)
 
 6. watchdog à¸„à¸³à¸™à¸§à¸“ `gsi_active` à¸ˆà¸²à¸ `last_post_ms` à¹à¸¥à¸° emit `gsi-status`
    - Health: à¸”à¸µà¸¡à¸²à¸
-   - Evidence: [gsi.rs](/G:/G-Maiden/src-tauri/src/gsi.rs:119)
+   - Evidence: [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L119)
 
 #### Data findings
 
@@ -197,26 +197,26 @@
 
 1. à¹‚à¸«à¸¥à¸”à¸„à¹ˆà¸² persisted à¸ˆà¸²à¸ `gm-settings`
    - Health: à¸”à¸µ
-   - Evidence: [App.tsx](/G:/G-Maiden/src/src/App.tsx:124)
+   - Evidence: [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L124)
 
 2. UI à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ state `s`
    - Health: à¸”à¸µ
-   - Evidence: setter à¸à¸¥à¸²à¸‡à¸—à¸µà¹ˆ [App.tsx](/G:/G-Maiden/src/src/App.tsx:1075)
+   - Evidence: setter à¸à¸¥à¸²à¸‡à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L1075)
 
 3. effect à¹€à¸”à¸µà¸¢à¸§à¸—à¸³ 3 à¸­à¸¢à¹ˆà¸²à¸‡à¸žà¸£à¹‰à¸­à¸¡à¸à¸±à¸™
    - persist -> `localStorage.setItem`
    - broadcast -> `emit('settings', s)`
    - visibility sync -> `invoke('set_overlay_visible', { visible })`
    - Health: à¸”à¸µà¸¡à¸²à¸
-   - Evidence: [App.tsx](/G:/G-Maiden/src/src/App.tsx:1056)
+   - Evidence: [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L1056)
 
 4. overlay window à¸£à¸±à¸šà¸„à¹ˆà¸²à¸•à¸±à¹‰à¸‡à¸•à¹‰à¸™à¸œà¹ˆà¸²à¸™ `overlay-ready`
    - Health: à¸”à¸µ
-   - Evidence: [App.tsx](/G:/G-Maiden/src/src/App.tsx:1049)
+   - Evidence: [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx#L1049)
 
 5. Rust à¸„à¸¸à¸¡à¹€à¸‰à¸žà¸²à¸° visibility à¸‚à¸­à¸‡ native window à¸ªà¹ˆà¸§à¸™à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸” layout à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™ React
    - Health: à¸”à¸µà¸¡à¸²à¸
-   - Evidence: [main.rs](/G:/G-Maiden/src-tauri/src/main.rs:30)
+   - Evidence: [`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs#L30)
 
 #### Data findings
 

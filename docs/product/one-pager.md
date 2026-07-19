@@ -38,7 +38,7 @@ AI companion **à¹€à¸ªà¸µà¸¢à¸‡à¸ªà¸” + overlay à¹‚à
 **à¸–à¸±à¸”à¹„à¸›** â€” à¸¡à¸¸à¹ˆà¸‡ v1.0 (à¸„à¸£à¸š 12 à¹‚à¸¡à¸”à¸¹à¸¥) â†’ à¹€à¸›à¸´à¸” marketplace (post-v1.0) Â· validate à¸£à¸²à¸„à¸² + distribution (web/Vercel + à¸žà¸´à¸ˆà¸²à¸£à¸“à¸² Overwolf)
 
 ---
-*à¸­à¹‰à¸²à¸‡à¸­à¸´à¸‡: [BRD](business-requirements.md) Â· [Competitive Brief](competitive-brief.md) Â· [PRD](product-requirements.md) Â· [ROADMAP](roadmap.md)*
+*à¸­à¹‰à¸²à¸‡à¸­à¸´à¸‡: [[business-requirements|BRD]] Â· [[competitive-brief|Competitive Brief]] Â· [[product-requirements|PRD]] Â· [[roadmap|ROADMAP]]*
 
 
 

@@ -5,7 +5,7 @@
 > หมายเหตุ dependency: `G-Memory` และ `G-Persona` ที่อ้างถึงด้านล่างก็ยังไม่มีเป็นโมดูลจริงในโค้ดเช่นกัน.
 
 > **Module:** G-Stream · **Priority:** Companion P2 · **Phase:** 8
-> **PRD:** §3A G-Stream · **SRS:** §3.12
+> **PRD:** [[product-requirements|PRD]] §3A G-Stream · **SRS:** [[software-requirements-specification|SRS]] §3.12
 
 ---
 

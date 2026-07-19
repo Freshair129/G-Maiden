@@ -11,7 +11,7 @@ import { useWallet, type LedgerEntry } from "./wallet";
 import TopupModal from "./TopupModal";
 
 function errText(e: unknown): string {
-  return (e as { message?: string })?.message ?? String(e) ?? "เกิดข้อผิดพลาด";
+  return (e as { message?: string })?.message ?? String(e);
 }
 
 function daysUntil(iso: string | null): number | null {
@@ -100,6 +100,14 @@ export default function WalletTab({ onViewAllTransactions }: WalletTabProps) {
     return () => { cancelled = true; };
     // Re-pull the preview whenever a balance moves (topup/purchase/tip/share)
     // so the "recent" list stays in sync without polling the ledger itself.
+    // `ledger` is deliberately excluded: it comes from this file's own
+    // `useWallet()` call, whose `ledger` identity is gated on THAT hook's
+    // internal `useAuth()` instance (deps `[user?.id]` in wallet.ts) — a
+    // separate listener from the top-level `user` read here. The two settle
+    // in independent renders, so depending on `ledger`'s identity risks an
+    // extra desynced re-fetch rather than the intended trigger set
+    // (this component's own account switch, or a balance-moving ledger
+    // event already covered by shardBalance/walletBalance).
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id, shardBalance, walletBalance]);
 

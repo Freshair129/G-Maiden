@@ -1,19 +1,19 @@
 # CR-011: COLD BOOTH — Desktop UX/UI direction for the Command Deck
 
-**Status:** ACCEPTED (owner "อนุมัติทั้งหมด" 2026-07-14 — absorbs and extends CR-007 FROSTLINE WP-2..6; owner amendment: panel blur returns as the cinematic DEFAULT tier, overriding §H's shipped-parity default)
-**Amended by [CR-013 ONE CANVAS](CR-013-one-canvas-sitemap-gstore-ios-settings.md)** (2026-07-16): §C information-architecture + §E core-screens are superseded — nav 8→7 (Build→Live tab, History→Insights tab, +G-Store seat), Settings rebuilt as an iOS split view, and the R1/R2/R3 ONE CANVAS laws added. CR-011's §B direction + §F–§I component/type/color/motion systems stand unchanged.
+**Status:** ACCEPTED (owner "อนุมัติทั้งหมด" 2026-07-14 — absorbs and extends [[CR-007-frostline-deck-refresh|CR-007]] FROSTLINE WP-2..6; owner amendment: panel blur returns as the cinematic DEFAULT tier, overriding §H's shipped-parity default)
+**Amended by [[CR-013-one-canvas-sitemap-gstore-ios-settings|CR-013 ONE CANVAS]]** (2026-07-16): §C information-architecture + §E core-screens are superseded — nav 8→7 (Build→Live tab, History→Insights tab, +G-Store seat), Settings rebuilt as an iOS split view, and the R1/R2/R3 ONE CANVAS laws added. CR-011's §B direction + §F–§I component/type/color/motion systems stand unchanged.
 **Author:** Claude (direction study) for Boss
 **Date:** 2026-07-14
-**Inputs read:** PRD + SRS (`docs/product/`), design-system SSOT v2.1 (`docs/design-system/00–08`), CR-006 lock + CR-007 design package, `CommandDeck.tsx` / `CompanionPages.tsx` / `App.tsx` / `styles.css` / `companion.ts` + `live/*`, CR-003 orphan surfaces (Store/Wallet/Ledger/Inventory), sitemap flow board, screen-direction boards, live dev-server DOM.
+**Inputs read:** PRD + SRS (`docs/product/`), design-system SSOT v2.1 (`docs/design-system/00–08`), CR-006 lock + [[CR-007-frostline-deck-refresh|CR-007]] design package, [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) / [`CompanionPages.tsx`](file:///g:/G-Maiden/src/src/CompanionPages.tsx) / [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) / [`styles.css`](file:///g:/G-Maiden/src/src/styles.css) / [`companion.ts`](file:///g:/G-Maiden/src/src/companion.ts) + `live/*`, [[CR-003-account-phase1-wallet-billing|CR-003]] orphan surfaces (Store/Wallet/Ledger/Inventory), sitemap flow board, screen-direction boards, live dev-server DOM.
 
 ---
 
 ## 0. Ground rules this direction accepts as law
 
 1. **CR-006 shell is locked** (Boss, 2026-07-09): fixed stage `1420×760`, Subtract panel `1280×720` with 3 notches, fillet 28/20, L1 liquid glass, 5 dashboard sectors at fixed coordinates, sidebar/topbar/power/audio-rail geometry. This direction moves **zero px** of shell geometry.
-2. **Combat HUD (overlay window) is out of scope** — its contract is `07-combat-hud.md`. Only shared tokens flow to it, never visible-value changes.
+2. **Combat HUD (overlay window) is out of scope** — its contract is [[07-combat-hud|07-combat-hud.md]]. Only shared tokens flow to it, never visible-value changes.
 3. **NFR gate:** CPU ≤2.5%, RAM ≤400MB, overlay FPS ≤3%, G-Signal ≤300ms. Every visual decision below is written against it.
-4. **Boss already rejected** freeform resizable grids and a bolt-on inspector shell (CR-007 §4). The desktop requirements (resizable panels, inspector, density) are satisfied *inside* this ruling — see §J/§N.
+4. **Boss already rejected** freeform resizable grids and a bolt-on inspector shell ([[CR-007-frostline-deck-refresh|CR-007]] §4). The desktop requirements (resizable panels, inspector, density) are satisfied *inside* this ruling — see §J/§N.
 
 ---
 
@@ -62,8 +62,8 @@ flow that isn't a settings card.
 - **Type is OS-default**: Segoe UI everywhere, 800-weight on everything, 8.5px micro
   that dies below scale 1.0. No luxury, no voice.
 - **Glass without meaning**: blur on shell *and* interior cards; a fixed compositing tax
-  (the CR-007 quality-tier problem) and, honestly, decorative glassmorphism.
-- **The deck doesn't know time**: same UI before/during/after a match (CR-007 #4).
+  (the [[CR-007-frostline-deck-refresh|CR-007]] quality-tier problem) and, honestly, decorative glassmorphism.
+- **The deck doesn't know time**: same UI before/during/after a match ([[CR-007-frostline-deck-refresh|CR-007]] #4).
 - **No keyboard layer, no context menus, no density modes, no long-task states.**
 - The old screen-direction board (sidebar + card grid + oversized character hero) is the
   generic ghost that still haunts secondary pages. It should be formally retired.
@@ -247,7 +247,7 @@ same destinations, no third axis. Overlay window IA untouched.
 
 ## D. Main window layout
 
-Geometry = CR-006, verbatim (03-layout.md §5–6). What changes is *rolecast*:
+Geometry = CR-006, verbatim ([[03-layout|03-layout.md]] §5–6). What changes is *rolecast*:
 
 | Zone (locked geometry) | Booth role | Tally |
 | --- | --- | --- |
@@ -341,13 +341,13 @@ Numbers always mono tabular.
 | signal | 32 | Mono 500 | annunciator value |
 
 Thai body line-height 1.6 (loops need air), labels 1.2. `text-wrap: balance` on headings.
-Floors match CR-007 WP-3 (micro 8.5→10, caption 9→11). Hierarchy comes from
+Floors match [[CR-007-frostline-deck-refresh|CR-007]] WP-3 (micro 8.5→10, caption 9→11). Hierarchy comes from
 size+weight steps ≥1.2 ratio, not from color.
 
 ## H. Color / token system (v3, OKLCH)
 
 Keep every hue identity (void/ice/lime unchanged to the eye); re-express in OKLCH with
-`--g-*` aliases so no component breaks (CR-007 WP-2). New/changed roles only:
+`--g-*` aliases so no component breaks ([[CR-007-frostline-deck-refresh|CR-007]] WP-2). New/changed roles only:
 
 ```css
 :root {
@@ -376,9 +376,9 @@ Keep every hue identity (void/ice/lime unchanged to the eye); re-express in OKLC
 ```
 
 Rules: lime appears only as tally-on-air, annunciator alarm, and LIVE badge. Ice carries
-brand/interaction. Semantics never used decoratively. One blue — the CR-003 navy/cyan
+brand/interaction. Semantics never used decoratively. One blue — the [[CR-003-account-phase1-wallet-billing|CR-003]] navy/cyan
 inline palette is migrated to these tokens and deleted. Contrast measured per tier before
-merge (CR-007 acceptance #3 stands).
+merge ([[CR-007-frostline-deck-refresh|CR-007]] acceptance #3 stands).
 
 ## I. Motion / interaction system
 
@@ -410,7 +410,7 @@ the existing `.is-dragging` shadow/filter kill stays law.
 - **Resizable panels — the honest version**: the shell is a fixed instrument (Boss ruling);
   what resizes is (a) the window (stage scale-to-fit), (b) density mode, (c) the future
   **Gadget window** (separate always-on-top `420×180` mini-annunciator: D–G + volume +
-  GSI, from CR-007 §4's noted idea) — that is the piece users actually want to keep small
+  GSI, from [[CR-007-frostline-deck-refresh|CR-007]] §4's noted idea) — that is the piece users actually want to keep small
   on top of other work.
 - **Context menus** everywhere data lives (§F list); Shift+F10 / Menu key opens them from
   keyboard focus.
@@ -485,8 +485,8 @@ Every palette entry displays its binding; the sheet is generated from one regist
 
 Phases are independently shippable, batch to `main` untagged (release policy stands).
 Every phase gates on: `tsc --noEmit`, eslint, vitest, contrast check, and
-`tests/perf/src/bin/perf_cpu_tree.rs` before/after (eco must *reduce*, cinematic must not
-regress — CR-007 acceptance #2).
+[`tests/perf/src/bin/perf_cpu_tree.rs`](file:///g:/G-Maiden/tests/perf/src/bin/perf_cpu_tree.rs) before/after (eco must *reduce*, cinematic must not
+regress — [[CR-007-frostline-deck-refresh|CR-007]] acceptance #2).
 
 1. **P1 Materials & tokens** (~2–3 d): OKLCH `:root` v3 + aliases in `styles.css`; interior
    de-glass (sector styles → `--g-instrument` matte); Plex bundling + type floors; icon
@@ -509,17 +509,17 @@ regress — CR-007 acceptance #2).
 
 ## P. Files/components to change first
 
-1. `src/src/styles.css` — token block v3, materials split, kill duplicate palettes (§H).
-2. `src/src/CommandDeck.tsx` — seat headers + tally, on-air console mount, feed-age pill.
-3. `src/src/companion.ts` + `src/src/live/` — `phase.ts`, `utterances.ts`, whisker fields
-   in `buildSignals`/`buildBaselines` (pure builders + vitest, matching house pattern).
-4. `src/src/CompanionPages.tsx` — de-bento to seat/rundown grammar; Companion page dissolves.
-5. `src/src/DeckIcons.tsx` — complete the stroke set (companion/history/account glyphs).
-6. New: `src/src/MaidenLine.tsx`, `src/src/ContextMenu.tsx`, `src/src/shortcuts.ts`.
-7. `src/src/VoicePacksPage.tsx` + `StorePage.tsx` + `InventoryTab.tsx` — Packs merge.
-8. `src/src/AccountPage.tsx` + `WalletTab.tsx` + `LedgerTab.tsx` — economy home + re-token.
+1. [`src/src/styles.css`](file:///g:/G-Maiden/src/src/styles.css) — token block v3, materials split, kill duplicate palettes (§H).
+2. [`src/src/CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) — seat headers + tally, on-air console mount, feed-age pill.
+3. [`src/src/companion.ts`](file:///g:/G-Maiden/src/src/companion.ts) + [`src/src/live/`](file:///g:/G-Maiden/src/src/live/) — [`phase.ts`](file:///g:/G-Maiden/src/src/live/phase.ts), [`utterances.ts`](file:///g:/G-Maiden/src/src/live/utterances.ts), whisker fields
+   in [`buildSignals`](file:///g:/G-Maiden/src/src/live/buildSignals.ts)/[`buildBaselines`](file:///g:/G-Maiden/src/src/live/buildBaselines.ts) (pure builders + vitest, matching house pattern).
+4. [`src/src/CompanionPages.tsx`](file:///g:/G-Maiden/src/src/CompanionPages.tsx) — de-bento to seat/rundown grammar; Companion page dissolves.
+5. [`src/src/DeckIcons.tsx`](file:///g:/G-Maiden/src/src/DeckIcons.tsx) — complete the stroke set (companion/history/account glyphs).
+6. New: [`src/src/MaidenLine.tsx`](file:///g:/G-Maiden/src/src/MaidenLine.tsx), [`src/src/ContextMenu.tsx`](file:///g:/G-Maiden/src/src/ContextMenu.tsx), [`src/src/shortcuts.ts`](file:///g:/G-Maiden/src/src/shortcuts.ts).
+7. [`src/src/VoicePacksPage.tsx`](file:///g:/G-Maiden/src/src/VoicePacksPage.tsx) + [`StorePage.tsx`](file:///g:/G-Maiden/src/src/StorePage.tsx) + [`InventoryTab.tsx`](file:///g:/G-Maiden/src/src/InventoryTab.tsx) — Packs merge.
+8. [`src/src/AccountPage.tsx`](file:///g:/G-Maiden/src/src/AccountPage.tsx) + [`WalletTab.tsx`](file:///g:/G-Maiden/src/src/WalletTab.tsx) + [`LedgerTab.tsx`](file:///g:/G-Maiden/src/src/LedgerTab.tsx) — economy home + re-token.
 9. `docs/design-system/*` — sync per governance.
-Untouched: overlay window (`App.tsx` overlay tree, `FullOverlay.tsx`), Rust critical path,
+Untouched: overlay window ([`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) overlay tree, `FullOverlay.tsx`), Rust critical path,
 shell geometry constants.
 
 ## Q. Final anti-generic audit (brutal pass)
@@ -539,6 +539,6 @@ shell geometry constants.
 
 ---
 
-*Relationship to CR-007: this direction adopts WP-1 (done), WP-2/3/4 as Phases 1–2,
+*Relationship to [[CR-007-frostline-deck-refresh|CR-007]]: this direction adopts WP-1 (done), WP-2/3/4 as Phases 1–2,
 extends WP-5 as Phase 3, WP-6 as Phase 4, and adds Phases 5–6 (IA/economy + comfort)
 that CR-007 scoped out. If accepted, CR-007's open WPs close into this document.*

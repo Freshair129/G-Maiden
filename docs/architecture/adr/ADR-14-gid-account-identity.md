@@ -49,7 +49,7 @@ Sign-in is **Google OAuth** via the system browser, PKCE flow. The redirect land
 listener/port) — which emits `oauth-callback`; the webview completes `exchangeCodeForSession`.
 Email + phone OTP were built and then **cut** (adoption friction + SMS cost + PII surface).
 
-**4. GID codec (`src/src/gid.ts`) — single-sourced in TypeScript.**
+**4. GID codec ([`src/src/gid.ts`](file:///g:/G-Maiden/src/src/gid.ts)) — single-sourced in TypeScript.**
 Format `G-[Generation][Payload][Checksum]`:
 - 31-char base31 alphabet, excludes ambiguous `0 1 O I L`.
 - `Generation` ∈ {F Founder, B Close Beta, P Public} — permanent cohort; **Founders are
@@ -59,11 +59,11 @@ Format `G-[Generation][Payload][Checksum]`:
 - 1-char weighted mod-31 `Checksum` (catches substitution + adjacent transposition).
 - Total 8–12 chars; deterministic + reproducible from source, so **any G-app derives the same
   GID** from the same fields; globally unique while `cohort_seq < 10⁷`/generation; immutable.
-- The app mints `gid_code` on first sign-in (`profile.ts`, `.is('gid_code',null)` guard) so
+- The app mints `gid_code` on first sign-in ([`profile.ts`](file:///g:/G-Maiden/src/src/profile.ts), `.is('gid_code',null)` guard) so
   the algorithm lives in **one** place (TS), never duplicated in plpgsql.
 
 **5. Steam identity linking.**
-`resolve_steam_id` (Rust `identity.rs`) turns a raw account_id / SteamID64 / `/profiles/` URL
+[`resolve_steam_id`](file:///g:/G-Maiden/src-tauri/src/identity.rs#L120) (Rust [`identity.rs`](file:///g:/G-Maiden/src-tauri/src/identity.rs)) turns a raw account_id / SteamID64 / `/profiles/` URL
 / `/id/` vanity (via steamcommunity `?xml=1`, no API key — resolved server-side because
 steamcommunity sends no CORS) into `{steamid64, account_id}`. In-game, GSI `player.steamid`
 auto-identifies the local player. The 32-bit `account_id` drives the OpenDota enrichment.
@@ -109,9 +109,10 @@ data is uploaded. Account creation is **opt-in** (additive sign-in), consistent 
 | Per-app databases | No shared identity; defeats the cross-ecosystem goal |
 
 ## Related Documents
-- ADR-10 (hybrid ingestion) · ADR-11 (opt-in data flywheel) · ADR-12 (community marketplace)
-- CR-002 Phase 2 (wire-backend) · `src/src/gid.ts` · `src/src/{auth,profile,supabase}.ts` ·
-  `src-tauri/src/identity.rs`
+- [[ADR-10-hybrid-ingestion-resilience|ADR-10]] (hybrid ingestion) · [[ADR-11-optin-data-contribution-flywheel|ADR-11]] (opt-in data flywheel) · [[ADR-12-community-ai-marketplace|ADR-12]] (community marketplace)
+- [[CR-002-Phase2-wire-backend|CR-002 Phase 2]] (wire-backend) · [`src/src/gid.ts`](file:///g:/G-Maiden/src/src/gid.ts) ·
+  [`src/src/auth.ts`](file:///g:/G-Maiden/src/src/auth.ts), [`profile.ts`](file:///g:/G-Maiden/src/src/profile.ts), [`supabase.ts`](file:///g:/G-Maiden/src/src/supabase.ts) ·
+  [`src-tauri/src/identity.rs`](file:///g:/G-Maiden/src-tauri/src/identity.rs)
 
 ## Changelog
 | Version | Date | Summary |

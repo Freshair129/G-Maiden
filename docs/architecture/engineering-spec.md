@@ -2,7 +2,7 @@
 
 > à¹€à¸­à¸à¸ªà¸²à¸£à¸™à¸µà¹‰à¹à¸›à¸¥à¸‡ requirement à¸ˆà¸²à¸ PRD/SRS à¹ƒà¸«à¹‰à¹€à¸›à¹‡à¸™ **à¸ªà¸±à¸à¸à¸²à¸—à¸²à¸‡à¸§à¸´à¸¨à¸§à¸à¸£à¸£à¸¡ (contracts)** à¸—à¸µà¹ˆ implement à¹„à¸”à¹‰:
 > input/output à¸‚à¸­à¸‡à¹à¸•à¹ˆà¸¥à¸°à¹‚à¸¡à¸”à¸¹à¸¥, schema à¹€à¸«à¸•à¸¸à¸à¸²à¸£à¸“à¹Œà¸ à¸²à¸¢à¹ƒà¸™, budget latency à¸£à¸²à¸¢à¸‚à¸±à¹‰à¸™, à¸ªà¸±à¸à¸à¸² API à¹à¸¥à¸°à¹‚à¸„à¸£à¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥.
-> à¹ƒà¸Šà¹‰à¸„à¸¹à¹ˆà¸à¸±à¸š `technical-design-document.md` (à¸ªà¸–à¸²à¸›à¸±à¸•à¸¢à¸à¸£à¸£à¸¡) à¹à¸¥à¸° `tech-stack.md`.
+> à¹ƒà¸Šà¹‰à¸„à¸¹à¹ˆà¸à¸±à¸š [[technical-design-document]] (à¸ªà¸–à¸²à¸›à¸±à¸•à¸¢à¸à¸£à¸£à¸¡) à¹à¸¥à¸° [[tech-stack]].
 
 ---
 
@@ -63,7 +63,7 @@
 ### 2.6 G-Log (Feedback Loop) â€” local only
 - **Input:** decisions à¸—à¸µà¹ˆ Maiden à¸ªà¹ˆà¸‡ + à¸œà¸¥à¸¥à¸±à¸žà¸˜à¹Œ (death/teamfight/win)
 - **Logic:** à¹€à¸—à¸µà¸¢à¸šà¸„à¸³à¹à¸™à¸°à¸™à¸³ vs à¸œà¸¥ â†’ à¸›à¸£à¸±à¸š tuning params à¸‚à¸­à¸‡ G-Sentry/G-Signal à¹€à¸à¸¡à¸«à¸™à¹‰à¸²
-- **Output:** เขียน G-Log เป็น JSONL local (`match-*.jsonl` ใน `%LOCALAPPDATA%\G-Maiden\logs\`, `log.rs`); ส่ง `TuningDelta` กลับเข้า config (ดู §6)
+- **Output:** เขียน G-Log เป็น JSONL local (`match-*.jsonl` ใน `%LOCALAPPDATA%\G-Maiden\logs\`, [`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs)); ส่ง `TuningDelta` กลับเข้า config (ดู §6)
 
 ---
 
@@ -91,7 +91,7 @@
 - **à¸‚à¹‰à¸­à¸ˆà¸³à¸à¸±à¸”à¸ªà¸³à¸„à¸±à¸:** GSI **à¹„à¸¡à¹ˆà¸ªà¹ˆà¸‡à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸®à¸µà¹‚à¸£à¹ˆà¸¨à¸±à¸•à¸£à¸¹** â†’ à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸¨à¸±à¸•à¸£à¸¹à¸¡à¸²à¸ˆà¸²à¸ minimap CV (à¸”à¸¹ TDD R-02)
 
 ### 4.2 Cloud Cognitive Engine — Claude CLI / Anthropic API (SRS §4.2)
-- โค้ดจริง: **Claude CLI** (subprocess) หรือ **Anthropic Messages API** `POST https://api.anthropic.com/v1/messages` (`model: claude-haiku-4-5`, `master.rs`)
+- โค้ดจริง: **Claude CLI** (subprocess) หรือ **Anthropic Messages API** `POST https://api.anthropic.com/v1/messages` (`model: claude-haiku-4-5`, [`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs))
 - streaming (SSE-style chunks) â†’ feed à¹€à¸‚à¹‰à¸² narration queue (preemptible)
 - timeout สั้น; ถ้า fail → fallback local SLM ผ่าน **Ollama** (resilience)
 - à¸ªà¹ˆà¸‡à¹€à¸‰à¸žà¸²à¸° context à¸—à¸µà¹ˆà¸œà¹ˆà¸²à¸™ redaction â€” **à¹„à¸¡à¹ˆà¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸£à¸°à¸šà¸¸à¸•à¸±à¸§à¸•à¸™/à¹„à¸Ÿà¸¥à¹Œ G-Log à¸”à¸´à¸š**
@@ -135,7 +135,7 @@ UI subscribe ผ่าน event แยกชื่อ (ไม่มี channel �
 
 ## 6. โครงข้อมูล G-Log (JSONL flat files, local-only)
 
-> **สถานะ (2026-07): ไม่ใช่ SQLite/`rusqlite` — G-Log เก็บเป็น JSONL flat files (`log.rs`)**
+> **สถานะ (2026-07): ไม่ใช่ SQLite/`rusqlite` — G-Log เก็บเป็น JSONL flat files ([`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs))**
 
 หนึ่งไฟล์ `match-*.jsonl` ต่อแมตช์ใน `%LOCALAPPDATA%\G-Maiden\logs\` — append หนึ่ง JSON object ต่อ tick/เหตุการณ์ (match-start/decision/signal/outcome) ไม่มีสคีมา SQL, ไม่มี network egress. tuning params ที่ G-Log จูนกลับถูกเขียนแยกเป็น config ในโฟลเดอร์เดียวกัน (ป้อน feedback loop, SRS §3.6).
 
@@ -199,24 +199,24 @@ Role à¸›à¸£à¸°à¸à¸²à¸¨ `requires`; Provider à¸›à¸£à�
 | Full-agent | claude, codex, antigravity | à¸Šà¸µà¹‰ doc paths à¹ƒà¸«à¹‰ agent à¸­à¹ˆà¸²à¸™à¹€à¸­à¸‡ |
 | Text-only | ollama, openrouter | Inline scaffold + small-model rules |
 
-**Implementation:** `orchestration/providers.mjs`, `orchestration/config.json`, `orchestration/engine.mjs`
+**Implementation:** [`orchestration/providers.mjs`](file:///g:/G-Maiden/orchestration/providers.mjs), [`orchestration/config.json`](file:///g:/G-Maiden/orchestration/config.json), [`orchestration/engine.mjs`](file:///g:/G-Maiden/orchestration/engine.mjs)
 
 ### 7.6 Live Tauri events (command deck) & GID/account contract
 
 Command deck (CR-002 Phase 2a/2b, merged `170805b8`) subscribes to live Tauri events via
-`useCompanionData`, feeding pure builders in `src/src/live/` that are merged over a MOCK
+[`useCompanionData`](file:///g:/G-Maiden/src/src/companion.ts#L927), feeding pure builders in `src/src/live/` that are merged over a MOCK
 fallback (renders signed-out/offline). Events actually emitted: `game-tick`, `gsi-status`,
-`minimap-cv`, `enemy-missing`, `gank-alert`, `gank-clear`, `resource-stats`. Live builders อยู่ใน `src/src/live/` (เช่น `buildTelemetry`/`buildWeekly`/`buildInsights`/`buildHistory`).
+`minimap-cv`, `enemy-missing`, `gank-alert`, `gank-clear`, `resource-stats`. Live builders อยู่ใน `src/src/live/` (เช่น [`buildTelemetry`](file:///g:/G-Maiden/src/src/live/buildTelemetry.ts)/[`buildWeekly`](file:///g:/G-Maiden/src/src/live/buildWeekly.ts)/[`buildInsights`](file:///g:/G-Maiden/src/src/live/buildInsights.ts)/[`buildHistory`](file:///g:/G-Maiden/src/src/live/buildHistory.ts)).
 
 Accounts/GID (ADR-14): optional, additive Google-OAuth sign-in producing a GID
-(cross-G-series identity; codec `src/src/gid.ts`, format `G-[Gen][Payload][Checksum]`).
+(cross-G-series identity; codec [`src/src/gid.ts`](file:///g:/G-Maiden/src/src/gid.ts), format `G-[Gen][Payload][Checksum]`).
 Backend is the shared Supabase project `gstore` (`profiles` table + RLS). Steam identity
-links via `src-tauri/src/identity.rs` (`resolve_steam_id`) and loads the player's public
+links via [`src-tauri/src/identity.rs`](file:///g:/G-Maiden/src-tauri/src/identity.rs) ([`resolve_steam_id`](file:///g:/G-Maiden/src-tauri/src/identity.rs#L120)) and loads the player's public
 OpenDota profile + baselines. Match/CV/G-Log data stays local; the account stores identity
 + public data only (opt-in per ADR-11).
 
-> See [ADR-14-gid-account-identity](adr/ADR-14-gid-account-identity.md) and
-> [CR-002-Phase2-wire-backend](../change%20request/CR-002-Phase2-wire-backend.md).
+> See [[ADR-14-gid-account-identity]] and
+> [[CR-002-Phase2-wire-backend]].
 
 ---
 

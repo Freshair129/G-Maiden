@@ -11,7 +11,7 @@ related_docs: ["CR-003-account-phase1-wallet-billing", "ADR-14-gid-account-ident
 
 # MASTERPLAN: Account Phase 1 — Wallet · Billing · Store · Inventory · History
 
-**Spec:** `docs/change request/CR-003-account-phase1-wallet-billing.md` (v0.2.0 — รวมนโยบาย no-scroll §3.0)
+**Spec:** [[CR-003-account-phase1-wallet-billing]] (`docs/change request/CR-003-account-phase1-wallet-billing.md`) (v0.2.0 — รวมนโยบาย no-scroll §3.0)
 **Backlog (source of truth):** `orchestration/gks/atoms.cr003.json` → compile → `backlog.cr003.json` + `gks/atoms-cr003/*.md`
 **หลักการ:** ทุก task คือ Genesis atom ที่มี AC (`accept`) วัดผลได้ + Doc:/Code: link เสมอ; แตกถึงระดับ pure function เพื่อให้ local LLM claim ได้โดยไม่หลอน
 

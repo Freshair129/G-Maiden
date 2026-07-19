@@ -27,14 +27,14 @@ attributes:
 | # | ไฟล์ | เนื้อหา |
 | --- | --- | --- |
 | 00 | **README.md** (ไฟล์นี้) | SSOT hub, versioning, quick-ref, changelog |
-| 01 | [`01-foundations.md`](01-foundations.md) | หลักการออกแบบ, persona-driven rules, visual language, product surfaces |
-| 02 | [`02-tokens.md`](02-tokens.md) | design tokens ทั้งหมด — color / type / space / radius / elevation / blur / motion / z-index + `:root` block |
-| 03 | [`03-layout.md`](03-layout.md) | layout concept, Subtract-shape geometry, SVG path, dimension ของทุก zone, responsive scaling |
-| 04 | [`04-components.md`](04-components.md) | component catalog — anatomy, dimension, states, variants |
-| 05 | [`05-sitemap-ia.md`](05-sitemap-ia.md) | information architecture, navigation model, page inventory, window model, user flow |
-| 06 | [`06-stack.md`](06-stack.md) | tech stack + code map (token/component อยู่ไฟล์ไหนในโค้ดจริง) |
-| 07 | [`07-combat-hud.md`](07-combat-hud.md) | Combat HUD (overlay) design contract — อิง implementation จริง |
-| 08 | [`08-account-gid.md`](08-account-gid.md) | Login (Google OAuth) + GID + Steam link — UX design |
+| 01 | [[01-foundations|01-foundations.md]] | หลักการออกแบบ, persona-driven rules, visual language, product surfaces |
+| 02 | [[02-tokens|02-tokens.md]] | design tokens ทั้งหมด — color / type / space / radius / elevation / blur / motion / z-index + `:root` block |
+| 03 | [[03-layout|03-layout.md]] | layout concept, Subtract-shape geometry, SVG path, dimension ของทุก zone, responsive scaling |
+| 04 | [[04-components|04-components.md]] | component catalog — anatomy, dimension, states, variants |
+| 05 | [[05-sitemap-ia|05-sitemap-ia.md]] | information architecture, navigation model, page inventory, window model, user flow |
+| 06 | [[06-stack|06-stack.md]] | tech stack + code map (token/component อยู่ไฟล์ไหนในโค้ดจริง) |
+| 07 | [[07-combat-hud|07-combat-hud.md]] | Combat HUD (overlay) design contract — อิง implementation จริง |
+| 08 | [[08-account-gid|08-account-gid.md]] | Login (Google OAuth) + GID + Steam link — UX design |
 | — | [`assets/`](assets/) | wireframe/mockup ที่ระบุ dimension (SVG) + swatches |
 
 ### Mockup / snapshot (ระบุ dimension)
@@ -44,7 +44,7 @@ attributes:
 | [`assets/wireframe-annotated.svg`](assets/wireframe-annotated.svg) | layout เต็มพร้อมพิกัด/ขนาดทุก zone (บน canvas 1280×720) |
 | [`assets/subtract-shape.svg`](assets/subtract-shape.svg) | รูปทรง panel เว้าแหว่ง + จุด notch (topbar / sidebar / signals) |
 | [`assets/token-swatches.svg`](assets/token-swatches.svg) | color ramp + semantic swatches |
-| **Live prototype** | HTML prototype (frosted-glass) — build จาก tokens ในไฟล์นี้ 1:1 (ดู [§6 stack](06-stack.md)) |
+| **Live prototype** | HTML prototype (frosted-glass) — build จาก tokens ในไฟล์นี้ 1:1 (ดู [[06-stack|§6 stack]]) |
 
 ---
 
@@ -59,9 +59,9 @@ attributes:
 
 | เอกสาร | สถานะ | ความสัมพันธ์ |
 | --- | --- | --- |
-| `docs/architecture/design-system.md` (Iceglass 0.1.0b) | candidate | **ต้นทาง** — v2 ต่อยอด palette/persona; principles ยังใช้ได้ ส่วน shell layout ถูก supersede |
-| `docs/architecture/g-maiden-ui-sitemap-flow-board.md` | accepted | sitemap/flow ระดับ product — ไฟล์ 05 ในชุดนี้ลงรายละเอียด UI จริง ไม่ขัดกัน |
-| PRD / SRS (`docs/product/`) | source of truth (requirements) | NFR (FPS≤3%, CPU≤2.5%, RAM≤400MB) เป็น hard constraint ที่ทุก design ต้องผ่าน |
+| [[design-system|docs/architecture/design-system.md]] (Iceglass 0.1.0b) | candidate | **ต้นทาง** — v2 ต่อยอด palette/persona; principles ยังใช้ได้ ส่วน shell layout ถูก supersede |
+| [[g-maiden-ui-sitemap-flow-board|docs/architecture/g-maiden-ui-sitemap-flow-board.md]] | accepted | sitemap/flow ระดับ product — ไฟล์ 05 ในชุดนี้ลงรายละเอียด UI จริง ไม่ขัดกัน |
+| [[product-requirements|PRD]] / [[software-requirements-specification|SRS]] (`docs/product/`) | source of truth (requirements) | NFR (FPS≤3%, CPU≤2.5%, RAM≤400MB) เป็น hard constraint ที่ทุก design ต้องผ่าน |
 | `CLAUDE.md` → Visual language | in-repo rule | v2 ยึด ice palette เดิม + เพิ่ม lime signal accent (ดู tokens §reconcile) |
 
 ## 4. Token quick-reference

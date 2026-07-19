@@ -11,12 +11,12 @@ attributes:
 
 # 05 — Sitemap & Information Architecture
 
-> ระดับ product-boundary/flow เดิมอยู่ที่ `docs/architecture/g-maiden-ui-sitemap-flow-board.md`
+> ระดับ product-boundary/flow เดิมอยู่ที่ [[g-maiden-ui-sitemap-flow-board|docs/architecture/g-maiden-ui-sitemap-flow-board.md]]
 > ไฟล์นี้ลง IA ของ **UI จริง** (Command Deck v2) ให้ตรงกับ layout ไฟล์ 03
 
 ## 1. Window model
 
-G-Maiden มี **2 หน้าต่าง** (routing ใน `src/src/App.tsx`):
+G-Maiden มี **2 หน้าต่าง** (routing ใน [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)):
 
 | window | คือ | design surface |
 | --- | --- | --- |
@@ -24,14 +24,14 @@ G-Maiden มี **2 หน้าต่าง** (routing ใน `src/src/App.tsx`
 | **Overlay** | Combat HUD (โปร่ง, click-through, บนเกม) | widget เบา เฉพาะที่จำเป็น |
 
 Overlay ไม่ใช้ chrome ของ Deck — แชร์แค่ token (สี/type/สถานะ) เพื่อความต่อเนื่องทางสายตา
-Design contract ของ overlay อยู่ที่ [`07-combat-hud.md`](07-combat-hud.md)
+Design contract ของ overlay อยู่ที่ [[07-combat-hud|07-combat-hud.md]]
 
 ## 2. Navigation model
 
 **สามแกน อย่าปนกัน:**
 
 1. **Sidebar FAB (I)** = navigation จริง → สลับ *page* ใน Command Deck
-2. **Audio rail** (แทน P1–P5 anchor rail เดิม — ดู 03-layout §5.6) = ไม่ใช่ nav →
+2. **Audio rail** (แทน P1–P5 anchor rail เดิม — ดู [[03-layout|03-layout §5.6]]) = ไม่ใช่ nav →
    master volume + ANN/SIGNAL toggle บนหน้า dashboard
 3. **แกนเฟส (CR-011 §D/§E, shipped waves P1–P3)** = ไม่ใช่ nav และไม่ขยับ layout —
    เนื้อหาใน sector เดิมของ dashboard สลับตามสถานะแมตช์
@@ -40,7 +40,7 @@ Design contract ของ overlay อยู่ที่ [`07-combat-hud.md`](07-
 **Command palette ("Maiden Line", CR-011 §L/§M, shipped CR011-P4a):** `Ctrl+K`
 ลอยเหนือ stage (window space, ไม่ใช่ scaled stage) — ทางลัดครอบทุกแกนโดยไม่แตะ
 geometry; `Ctrl+/` หรือ `?` เปิด shortcut sheet คู่กัน (รายละเอียด anatomy:
-`04-components.md` §10a/§10b)
+[[04-components|04-components.md]] §10a/§10b)
 
 ### 2.2 ONE CANVAS laws (CR-013 — accepted 2026-07-16, shipped W1–W5)
 
@@ -51,8 +51,8 @@ geometry; `Ctrl+/` หรือ `?` เปิด shortcut sheet คู่กั�
   (`.g-deck-panel .surface` = `overflow:hidden`). scroll ที่ยอมได้คือ region
   ย่อยที่มีขอบเขต (feed list, tab body) เท่านั้น ไม่ใช่ทั้งหน้า
 - **R2 — Overflow → Tab / Paginate:** เนื้อหาเกิน canvas → แตกเป็น segmented tab
-  (`DeckTabs`) หรือ paginate ในกรอบสูงคงที่ผ่าน helper แบบ `rowsThatFit()`
-  (`StorePage.tsx`, `HistoryPage`) — ห้ามยืดหน้า/ย่อ font หนี
+  ([`DeckTabs`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L1354)) หรือ paginate ในกรอบสูงคงที่ผ่าน helper แบบ [`rowsThatFit()`](file:///g:/G-Maiden/src/src/StorePage.tsx#L80)
+  ([`StorePage.tsx`](file:///g:/G-Maiden/src/src/StorePage.tsx), [`HistoryPage`](file:///g:/G-Maiden/src/src/CompanionPages.tsx#L196)) — ห้ามยืดหน้า/ย่อ font หนี
 - **R3 — One Language:** ทุกหน้าใช้ภาษา COLD BOOTH (sector frame, instrument
   matte, `--g-*` token) — legacy inline-hex `C` palette / CR-003 navy-cyan
   "second blue" ห้ามโผล่ใน deck surface (Overlay window แยกต่างหาก, ใช้ `C` ได้)
@@ -61,10 +61,10 @@ CR-013 ยังยุบ nav 8→7: **Build พับเข้า Live เป�
 **History พับเข้า Insights** (`[ภาพรวม | ประวัติ]`), และ **G-Store** ได้ที่นั่ง
 nav ของตัวเอง (economy 4 tab). Settings รื้อใหม่เป็น iOS split view (7 หมวด).
 
-### 2.1 Phase axis (CR-011 §D/§E — `src/src/live/phase.ts`)
+### 2.1 Phase axis (CR-011 §D/§E — [`src/src/live/phase.ts`](file:///g:/G-Maiden/src/src/live/phase.ts))
 
 Match phase คือ derived state จาก GSI signal ที่มีอยู่แล้ว (ไม่มี concept ใหม่ฝั่ง
-backend) — คำนวณด้วย `stepPhase(prev, input)` ทุกครั้งที่มี GSI tick ใหม่ ผลลัพธ์คือ
+backend) — คำนวณด้วย [`stepPhase(prev, input)`](file:///g:/G-Maiden/src/src/live/phase.ts#L71) ทุกครั้งที่มี GSI tick ใหม่ ผลลัพธ์คือ
 `MatchPhase = "standby" | "prep" | "live" | "debrief"`:
 
 ```
@@ -86,11 +86,11 @@ never move or resize; only what renders *inside* the frozen box changes:
 
 | phase | `.gm-battle-grid` content (was: hero columns + minimap) | `.gm-agent-card` content |
 | --- | --- | --- |
-| `standby` / `prep` | **Readiness rundown** (`ReadinessRundown`, 04-components §9d) — honest checklist of what's actually ready (GSI, voice pack, G-Signal, ANN, volume); optional "กำลังดราฟต์" note during `prep` | ON AIR console (04-components §9b) — unaffected by phase, always the utterance ledger |
+| `standby` / `prep` | **Readiness rundown** ([`ReadinessRundown`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L1384), [[04-components|04-components]] §9d) — honest checklist of what's actually ready (GSI, voice pack, G-Signal, ANN, volume); optional "กำลังดราฟต์" note during `prep` | ON AIR console ([[04-components|04-components]] §9b) — unaffected by phase, always the utterance ledger |
 | `live` | hero columns + minimap (unchanged, pre-CR-011 content) | ON AIR console |
-| `debrief` | **Debrief timeline** (`DebriefTimeline`, 04-components §9e) — most-recently-archived match's event log, sticky (survives GSI dropping) until the user goes "back to live" or a new prep/live tick arrives | ON AIR console |
+| `debrief` | **Debrief timeline** ([`DebriefTimeline`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L1488), [[04-components|04-components]] §9e) — most-recently-archived match's event log, sticky (survives GSI dropping) until the user goes "back to live" or a new prep/live tick arrives | ON AIR console |
 
-The score header's **phase chip** (`.gm-phase-chip`, 04-components §6b) is the one
+The score header's **phase chip** ([`.gm-phase-chip`](file:///g:/G-Maiden/src/src/styles.css#L5315), [[04-components|04-components]] §6b) is the one
 persistent on-screen indicator of the current phase across all four states —
 absolutely positioned at the header's right edge, never shifting the centered
 clock/score.
@@ -118,19 +118,19 @@ flowchart TD
 ## 4. Page inventory
 
 7 nav pages (CR-013). Build/History are no longer standalone pages — they are
-in-page tabs; `SettingsPage`/`CompanionPage` from `CompanionPages.tsx` were
+in-page tabs; `SettingsPage`/`CompanionPage` from [`CompanionPages.tsx`](file:///g:/G-Maiden/src/src/CompanionPages.tsx) were
 deleted (Settings is now Control's category render; Companion was dissolved in
 CR-011 §C).
 
 | page | โมดูล/ไฟล์ | เนื้อหาหลัก | สถานะ |
 | --- | --- | --- | --- |
 | **Dashboard** | `Dashboard.tsx` | scoreboard, G-Signal pulse, companion state, 5 bento | live-wired |
-| **Live** | `CompanionPages.tsx` `LiveMatchPage` + `BuildAdvisorPage` | tab `[สด | บิลด์]` — objective board, enemy visibility, feeds / build path | live + scaffold |
-| **Voice Packs** | `VoicePacksPage.tsx` / `VoiceInventory.tsx` | announcer pack inventory + active; "หาแพ็กเพิ่ม →" cross-links G-Store | live |
-| **G-Store** | `CommandDeck` store tab → `StorePage` / `WalletTab` / `InventoryTab` / `LedgerTab` | tab `[ร้านค้า | กระเป๋า | คลัง | บันทึก]` (CR-003 economy) | catalog degrades until `catalog_items` deploys |
-| **Insights** | `CompanionPages.tsx` `InsightsPage` + `HistoryPage` | tab `[ภาพรวม | ประวัติ]` — power/win/ward + weekly / paginated G-Log history | scaffold (OpenDota) |
-| **Account** | `AccountPage.tsx` / `AuthPanel.tsx` / `SteamLink.tsx` | GID, Google OAuth, Steam link — UX spec: [`08-account-gid.md`](08-account-gid.md) | live (ADR-14) |
-| **Settings** | `App.tsx` `Control` (category render) + `CommandDeck` split shell | iOS split view, 7 หมวด: ทั่วไป / Overlay / เสียง & เตือน / AI / โมดูล & CV / ความเป็นส่วนตัว / ระบบ | live |
+| **Live** | `CompanionPages.tsx` [`LiveMatchPage`](file:///g:/G-Maiden/src/src/CompanionPages.tsx#L17) + [`BuildAdvisorPage`](file:///g:/G-Maiden/src/src/CompanionPages.tsx#L126) | tab `[สด | บิลด์]` — objective board, enemy visibility, feeds / build path | live + scaffold |
+| **Voice Packs** | [`VoicePacksPage.tsx`](file:///g:/G-Maiden/src/src/VoicePacksPage.tsx) / [`VoiceInventory.tsx`](file:///g:/G-Maiden/src/src/VoiceInventory.tsx) | announcer pack inventory + active; "หาแพ็กเพิ่ม →" cross-links G-Store | live |
+| **G-Store** | `CommandDeck` store tab → [`StorePage`](file:///g:/G-Maiden/src/src/StorePage.tsx) / [`WalletTab`](file:///g:/G-Maiden/src/src/WalletTab.tsx) / [`InventoryTab`](file:///g:/G-Maiden/src/src/InventoryTab.tsx) / [`LedgerTab`](file:///g:/G-Maiden/src/src/LedgerTab.tsx) | tab `[ร้านค้า | กระเป๋า | คลัง | บันทึก]` (CR-003 economy) | catalog degrades until `catalog_items` deploys |
+| **Insights** | `CompanionPages.tsx` [`InsightsPage`](file:///g:/G-Maiden/src/src/CompanionPages.tsx#L153) + [`HistoryPage`](file:///g:/G-Maiden/src/src/CompanionPages.tsx#L196) | tab `[ภาพรวม | ประวัติ]` — power/win/ward + weekly / paginated G-Log history | scaffold (OpenDota) |
+| **Account** | [`AccountPage.tsx`](file:///g:/G-Maiden/src/src/AccountPage.tsx) / [`AuthPanel.tsx`](file:///g:/G-Maiden/src/src/AuthPanel.tsx) / [`SteamLink.tsx`](file:///g:/G-Maiden/src/src/SteamLink.tsx) | GID, Google OAuth, Steam link — UX spec: [[08-account-gid|08-account-gid.md]] | live (ADR-14) |
+| **Settings** | `App.tsx` [`Control`](file:///g:/G-Maiden/src/src/App.tsx#L1620) (category render) + `CommandDeck` split shell | iOS split view, 7 หมวด: ทั่วไป / Overlay / เสียง & เตือน / AI / โมดูล & CV / ความเป็นส่วนตัว / ระบบ | live |
 
 ## 5. Core flows
 
@@ -167,4 +167,4 @@ Voice Packs → เลือก pack → active → POST /announcer/install (:30
 | Alt+↑ / Alt+↓ | เสียง +10% / −10% |
 | Alt+M | mute toggle |
 
-(นิยามใน `src-tauri/src/main.rs` — ดู CLAUDE.md; CR-004 เสนอเพิ่ม Alt+V/G/N/P สำหรับ voice command)
+(นิยามใน [`src-tauri/src/main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs) — ดู [`CLAUDE.md`](file:///g:/G-Maiden/CLAUDE.md); CR-004 เสนอเพิ่ม Alt+V/G/N/P สำหรับ voice command)

@@ -36,7 +36,7 @@ type OrderStatus = "pending" | "paid" | "expired" | "failed";
 type Provider = "promptpay" | "truemoney";
 
 function errText(e: unknown): string {
-  return (e as { message?: string })?.message ?? String(e) ?? "เกิดข้อผิดพลาด";
+  return (e as { message?: string })?.message ?? String(e);
 }
 
 function num(v: number | string): number {
@@ -122,8 +122,12 @@ export default function TopupModal({ open, onClose, onPendingChange }: TopupModa
       }
     }
     wasOpen.current = open;
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [open]);
+    // orderStatus is included per the rule: it's read inside, and it's safe
+    // to add because the `wasOpen` ref guard makes any extra fire (e.g. the
+    // order going pending -> paid while the modal is still open) a pure
+    // no-op — `open` hasn't changed, so `!wasOpen.current` is already false
+    // and the if-block simply doesn't run again.
+  }, [open, orderStatus]);
 
   // Countdown for the PromptPay QR (~15 min per §2.6).
   useEffect(() => {

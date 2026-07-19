@@ -215,6 +215,15 @@ export default function MaidenLine({ open, onClose, onOpenSheet, actions, matchP
 
   // Disarm when the selection leaves the armed row (covers arrow-move and
   // mixed mouse/keyboard paths — every miss direction stays fail-safe).
+  // Deliberately `[selected]` only, NOT `[armedId, activeEntry]`: `entries`
+  // (and everything derived from it — `groups`/`flat`/`activeEntry`) is
+  // rebuilt as fresh object literals every render (see the NOTE above), so
+  // `activeEntry` never has a stable identity — depending on it would fire
+  // this effect on every render of the whole component (any query keystroke,
+  // any parent re-render), not just on an actual arrow-key/hover move. The
+  // guard body is keyed by VALUE (`armedId`, `activeEntry?.id`) read fresh
+  // each run, so the check is still always correct at the one moment that
+  // matters — when `selected` itself changes.
   useEffect(() => {
     if (armedId !== null && activeEntry?.id !== armedId) setArmedId(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps

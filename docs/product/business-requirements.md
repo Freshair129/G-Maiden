@@ -1,19 +1,19 @@
-﻿# Business Requirements Document (BRD) â€” G-Maiden
+# Business Requirements Document (BRD) — G-Maiden
 
-> **à¹€à¸­à¸à¸ªà¸²à¸£à¸£à¸°à¸”à¸±à¸š:** Business (à¸­à¸¢à¸¹à¹ˆà¹€à¸«à¸™à¸·à¸­ PRD/SRS) â€” *à¸—à¸³à¹„à¸¡*à¸•à¹‰à¸­à¸‡à¸—à¸³à¹à¸¥à¸°*à¸•à¹‰à¸­à¸‡à¹„à¸”à¹‰à¸­à¸°à¹„à¸£à¹€à¸Šà¸´à¸‡à¸˜à¸¸à¸£à¸à¸´à¸ˆ* à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆ*à¸—à¸³à¸­à¸¢à¹ˆà¸²à¸‡à¹„à¸£*
-> **à¸§à¸±à¸™à¸—à¸µà¹ˆ:** 2026-06-23 Â· **à¹€à¸§à¸­à¸£à¹Œà¸Šà¸±à¸™:** 0.2.0 (draft) Â· **à¹€à¸ˆà¹‰à¸²à¸‚à¸­à¸‡:** Boss (solo founder)
-> **à¸­à¹‰à¸²à¸‡à¸­à¸´à¸‡:** [PRD](product-requirements.md) Â· [SRS](software-requirements-specification.md) Â· [Competitive Brief](competitive-brief.md) Â· [ROADMAP](roadmap.md)
-> **à¸ªà¸–à¸²à¸™à¸°à¹‚à¸›à¸£à¹€à¸ˆà¸à¸•à¹Œ:** shipping v0.7.x Â· Phase 0â€“2 (GSI + CV gank detection + voice) âœ… Â· à¸¡à¸¸à¹ˆà¸‡ v1.0
+> **เอกสารระดับ:** Business (อยู่เหนือ [[product-requirements|PRD]]/[[software-requirements-specification|SRS]]) — *ทำไม*ต้องทำและ*ต้องได้อะไรเชิงธุรกิจ* ไม่ใช่*ทำอย่างไร*
+> **วันที่:** 2026-06-23 · **เวอร์ชัน:** 0.2.0 (draft) · **เจ้าของ:** Boss (solo founder)
+> **อ้างอิง:** [[product-requirements|PRD]] · [[software-requirements-specification|SRS]] · [[competitive-brief|Competitive Brief]] · [[roadmap|ROADMAP]]
+> **สถานะโปรเจกต์:** shipping v0.7.x · Phase 0–2 (GSI + CV gank detection + voice) ✅ · มุ่ง v1.0
 
 ---
 
 ## 1. Executive Summary
 
-**G-Maiden** à¸„à¸·à¸­ AI companion à¹€à¸ªà¸µà¸¢à¸‡à¸ªà¸” + overlay à¹‚à¸›à¸£à¹ˆà¸‡à¹ƒà¸ªà¸ªà¸³à¸«à¸£à¸±à¸š Dota 2 à¸—à¸µà¹ˆ "à¹€à¸«à¹‡à¸™à¸­à¸±à¸™à¸•à¸£à¸²à¸¢à¸à¹ˆà¸­à¸™à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™à¹à¸¥à¸°à¸žà¸¹à¸”à¹€à¸•à¸·à¸­à¸™à¸—à¸±à¸™à¸à¹ˆà¸­à¸™à¸•à¸²à¸¢" à¸œà¹ˆà¸²à¸™ persona "Maiden" (à¸ªà¹„à¸•à¸¥à¹Œà¸™à¸±à¸à¸žà¸²à¸à¸¢à¹Œà¹„à¸—à¸¢ à¹à¸£à¸‡à¸šà¸±à¸™à¸”à¸²à¸¥à¹ƒà¸ˆà¸ˆà¸²à¸ Crystal Maiden)
+**G-Maiden** คือ AI companion เสียงสด + overlay โปร่งใสสำหรับ Dota 2 ที่ "เห็นอันตรายก่อนผู้เล่นและพูดเตือนทันก่อนตาย" ผ่าน persona "Maiden" (สไตล์นักพากย์ไทย แรงบันดาลใจจาก Crystal Maiden)
 
-à¹€à¸­à¸à¸ªà¸²à¸£à¸™à¸µà¹‰à¸™à¸´à¸¢à¸²à¸¡**à¸„à¸§à¸²à¸¡à¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¹€à¸Šà¸´à¸‡à¸˜à¸¸à¸£à¸à¸´à¸ˆ**à¸—à¸µà¹ˆà¸œà¸¥à¸´à¸•à¸ à¸±à¸“à¸‘à¹Œà¸•à¹‰à¸­à¸‡à¸•à¸­à¸šà¹ƒà¸«à¹‰à¹„à¸”à¹‰à¹€à¸žà¸·à¹ˆà¸­à¸ªà¸£à¹‰à¸²à¸‡à¸„à¸¸à¸“à¸„à¹ˆà¸²à¹à¸¥à¸°à¸„à¸§à¸²à¸¡à¹„à¸”à¹‰à¹€à¸›à¸£à¸µà¸¢à¸šà¸—à¸µà¹ˆà¸¢à¸±à¹ˆà¸‡à¸¢à¸·à¸™ à¸ à¸²à¸¢à¹ƒà¸•à¹‰à¸‚à¹‰à¸­à¸ˆà¸³à¸à¸±à¸”à¸ˆà¸£à¸´à¸‡: **solo dev, à¹„à¸¡à¹ˆà¸¡à¸µà¸—à¸¸à¸™, à¹„à¸¡à¹ˆà¸¡à¸µà¸—à¸µà¸¡** à¸à¸¥à¸¢à¸¸à¸—à¸˜à¹Œà¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”à¸ˆà¸¶à¸‡à¸–à¸¹à¸à¸­à¸­à¸à¹à¸šà¸šà¹ƒà¸«à¹‰ *lean* â€” à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¸‚à¹‰à¸­à¸ˆà¸³à¸à¸±à¸”à¹€à¸›à¹‡à¸™à¸ˆà¸¸à¸”à¹à¸‚à¹‡à¸‡ (crowdsource à¸‚à¹‰à¸­à¸¡à¸¹à¸¥, self-fund à¸£à¸²à¸¢à¸ˆà¹ˆà¸²à¸¢, à¸¢à¸¶à¸” niche à¹„à¸—à¸¢à¸à¹ˆà¸­à¸™à¸‚à¸¢à¸²à¸¢à¸ªà¸²à¸à¸¥)
+เอกสารนี้นิยาม**ความต้องการเชิงธุรกิจ**ที่ผลิตภัณฑ์ต้องตอบให้ได้เพื่อสร้างคุณค่าและความได้เปรียบที่ยั่งยืน ภายใต้ข้อจำกัดจริง: **solo dev, ไม่มีทุน, ไม่มีทีม** กลยุทธ์ทั้งหมดจึงถูกออกแบบให้ *lean* — เปลี่ยนข้อจำกัดเป็นจุดแข็ง (crowdsource ข้อมูล, self-fund รายจ่าย, ยึด niche ไทยก่อนขยายสากล)
 
-**à¹‚à¸­à¸à¸²à¸ª:** à¸Šà¹ˆà¸­à¸‡ "voice + real-time + Dota 2" à¸§à¹ˆà¸²à¸‡à¸—à¸±à¹‰à¸‡à¸•à¸¥à¸²à¸” à¸„à¸¹à¹ˆà¹à¸‚à¹ˆà¸‡à¸—à¸µà¹ˆà¸•à¸²à¸¢à¹„à¸› (GOSU.AI ~$5.12M, Backseat AI) à¸žà¸´à¸ªà¸¹à¸ˆà¸™à¹Œà¸§à¹ˆà¸² "AI tips à¸šà¸™à¸ˆà¸­" à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆ moat â€” à¸ªà¸´à¹ˆà¸‡à¸—à¸µà¹ˆà¸‚à¸²à¸”à¸„à¸·à¸­ **à¸„à¸§à¸²à¸¡à¹„à¸”à¹‰à¹€à¸›à¸£à¸µà¸¢à¸šà¸—à¸µà¹ˆà¸¥à¸­à¸à¸¢à¸²à¸ + engagement**
+**โอกาส:** ช่อง "voice + real-time + Dota 2" ว่างทั้งตลาด คู่แข่งที่ตายไป (GOSU.AI ~$5.12M, Backseat AI) พิสูจน์ว่า "AI tips บนจอ" ไม่ใช่ moat — สิ่งที่ขาดคือ **ความได้เปรียบที่ลอกยาก + engagement**
 
 ---
 
@@ -21,204 +21,199 @@
 
 | | |
 | --- | --- |
-| **à¸›à¸±à¸à¸«à¸²à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™** | à¸•à¸±à¸”à¸ªà¸´à¸™à¹ƒà¸ˆà¸Šà¹‰à¸²/à¹‚à¸”à¸™à¹à¸à¸‡à¸„à¹Œà¸•à¸²à¸¢; à¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡à¸¡à¸·à¸­à¸—à¸µà¹ˆà¸¡à¸µà¸¥à¹‰à¸§à¸™à¹€à¸›à¹‡à¸™ "à¸‚à¹‰à¸­à¸„à¸§à¸²à¸¡à¸šà¸™à¸ˆà¸­" à¸—à¸µà¹ˆà¸”à¸¶à¸‡à¸ªà¸²à¸¢à¸•à¸²à¸­à¸­à¸à¸ˆà¸²à¸à¹€à¸à¸¡ à¹à¸¥à¸°à¹„à¸¡à¹ˆà¸¡à¸µà¸•à¸±à¸§à¹„à¸«à¸™à¹€à¸•à¸·à¸­à¸™à¸­à¸±à¸™à¸•à¸£à¸²à¸¢*à¹€à¸Šà¸´à¸‡à¸£à¸¸à¸*à¸—à¸±à¸™à¹€à¸§à¸¥à¸² |
-| **à¸Šà¹ˆà¸­à¸‡à¸§à¹ˆà¸²à¸‡à¸•à¸¥à¸²à¸”** | à¹„à¸¡à¹ˆà¸¡à¸µ real-time voice companion à¸—à¸µà¹ˆà¹€à¸•à¸·à¸­à¸™ gank à¹à¸šà¸š interrupt + à¸—à¸³à¸™à¸²à¸¢à¹€à¸ªà¹‰à¸™à¸—à¸²à¸‡à¸ˆà¸²à¸ heatmap (à¸”à¸¹ Competitive Brief Â§1, Â§5) |
-| **à¸›à¸±à¸à¸«à¸²à¹€à¸Šà¸´à¸‡à¸˜à¸¸à¸£à¸à¸´à¸ˆ** | à¸„à¸¹à¹ˆà¹à¸‚à¹ˆà¸‡à¸£à¸¸à¹ˆà¸™à¸à¹ˆà¸­à¸™à¸•à¸²à¸¢à¹€à¸žà¸£à¸²à¸° (à¸) à¹„à¸¡à¹ˆà¸¡à¸µ moat, (à¸‚) adoption/engagement à¸žà¸±à¸‡, (à¸„) à¸•à¹‰à¸™à¸—à¸¸à¸™/à¸„à¸§à¸²à¸¡à¹à¸¡à¹ˆà¸™ â€” à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆà¹€à¸žà¸£à¸²à¸°à¹€à¸—à¸„à¹‚à¸™à¹‚à¸¥à¸¢à¸µ |
-| **à¸‚à¹‰à¸­à¸ˆà¸³à¸à¸±à¸”à¸œà¸¹à¹‰à¸à¹ˆà¸­à¸•à¸±à¹‰à¸‡** | solo dev / no funding / no team â†’ à¸•à¹‰à¸­à¸‡à¹„à¸¡à¹ˆà¸žà¸¶à¹ˆà¸‡à¸à¸²à¸£à¹€à¸—à¸£à¸™à¹‚à¸¡à¹€à¸”à¸¥à¹à¸žà¸‡à¸«à¸£à¸·à¸­à¸‹à¸·à¹‰à¸­ dataset |
+| **ปัญหาผู้เล่น** | ตัดสินใจช้า/โดนแกงค์ตาย; เครื่องมือที่มีล้วนเป็น "ข้อความบนจอ" ที่ดึงสายตาออกจากเกม และไม่มีตัวไหนเตือนอันตราย*เชิงรุก*ทันเวลา |
+| **ช่องว่างตลาด** | ไม่มี real-time voice companion ที่เตือน gank แบบ interrupt + ทำนายเส้นทางจาก heatmap (ดู [[competitive-brief|Competitive Brief]] §1, §5) |
+| **ปัญหาเชิงธุรกิจ** | คู่แข่งรุ่นก่อนตายเพราะ (ก) ไม่มี moat, (ข) adoption/engagement พัง, (ค) ต้นทุน/ความแม่น — ไม่ใช่เพราะเทคโนโลยี |
+| **ข้อจำกัดผู้ก่อตั้ง** | solo dev / no funding / no team → ต้องไม่พึ่งการเทรนโมเดลแพงหรือซื้อ dataset |
 
 ---
 
 ## 3. Vision & Business Objectives
 
-**Vision:** à¹€à¸›à¹‡à¸™ co-pilot à¹€à¸ªà¸µà¸¢à¸‡à¸­à¸±à¸™à¸”à¸±à¸šà¸«à¸™à¸¶à¹ˆà¸‡à¸‚à¸­à¸‡à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™ Dota 2 â€” à¹€à¸£à¸´à¹ˆà¸¡à¸ˆà¸²à¸à¸•à¸¥à¸²à¸”à¹„à¸—à¸¢ à¹à¸¥à¹‰à¸§à¸‚à¸¢à¸²à¸¢à¸ªà¸²à¸à¸¥ à¹‚à¸”à¸¢à¸¡à¸µ moat à¸ˆà¸²à¸ persona + à¸‚à¹‰à¸­à¸¡à¸¹à¸¥ community à¸—à¸µà¹ˆà¸¥à¸­à¸à¹„à¸¡à¹ˆà¹„à¸”à¹‰
+**Vision:** เป็น co-pilot เสียงอันดับหนึ่งของผู้เล่น Dota 2 — เริ่มจากตลาดไทย แล้วขยายสากล โดยมี moat จาก persona + ข้อมูล community ที่ลอกไม่ได้
 
-**Business Objectives (à¹€à¸›à¹‡à¸™à¸ªà¸¡à¸¡à¸•à¸´à¸à¸²à¸™ pre-launch à¸•à¹‰à¸­à¸‡ validate):**
+**Business Objectives (เป็นสมมติฐาน pre-launch ต้อง validate):**
 
-| # | à¸§à¸±à¸•à¸–à¸¸à¸›à¸£à¸°à¸ªà¸‡à¸„à¹Œ | à¸•à¸±à¸§à¸Šà¸µà¹‰à¸§à¸±à¸” (à¸”à¸¹ Â§9) |
+| # | วัตถุประสงค์ | ตัวชี้วัด (ดู §9) |
 | --- | --- | --- |
-| BO-1 | à¸¢à¸¶à¸”à¸Šà¹ˆà¸­à¸‡ "voice + real-time Dota 2" à¹€à¸›à¹‡à¸™à¹€à¸ˆà¹‰à¸²à¹à¸£à¸à¹ƒà¸™à¹„à¸—à¸¢ | mindshare à¹ƒà¸™à¸Šà¸¸à¸¡à¸Šà¸™ Dota à¹„à¸—à¸¢, à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰ active |
-| BO-2 | à¸žà¸´à¸ªà¸¹à¸ˆà¸™à¹Œà¸„à¸¸à¸“à¸„à¹ˆà¸²à¸«à¸¥à¸±à¸ (G-Signal à¹€à¸Šà¸·à¹ˆà¸­à¸–à¸·à¸­à¹„à¸”à¹‰) à¸ˆà¸™ "à¸‚à¸²à¸”à¹„à¸¡à¹ˆà¹„à¸”à¹‰" | retention D30, false-positive rate à¸•à¹ˆà¸³ |
-| BO-3 | à¸ªà¸£à¹‰à¸²à¸‡ moat à¸—à¸µà¹ˆà¸¥à¸­à¸à¸¢à¸²à¸ (persona + data flywheel + marketplace) | flywheel coverage, à¸ˆà¸³à¸™à¸§à¸™ trainer/style |
-| BO-4 | à¹‚à¸¡à¹€à¸”à¸¥à¸£à¸²à¸¢à¹„à¸”à¹‰à¸—à¸µà¹ˆà¸¢à¸±à¹ˆà¸‡à¸¢à¸·à¸™ à¹€à¸«à¸¡à¸²à¸°à¸•à¸¥à¸²à¸”à¹„à¸—à¸¢ à¹à¸¥à¹‰à¸§à¸•à¹ˆà¸­à¸¢à¸­à¸”à¸ªà¸²à¸à¸¥ | conversion freeâ†’paid, ARPU, marketplace GMV |
-| BO-5 | à¸­à¸¢à¸¹à¹ˆà¸£à¸­à¸”à¸ à¸²à¸¢à¹ƒà¸•à¹‰à¸„à¸§à¸²à¸¡à¹€à¸ªà¸µà¹ˆà¸¢à¸‡à¹€à¸Šà¸´à¸‡à¸™à¹‚à¸¢à¸šà¸²à¸¢ (Valve/GSI) | survive GSI-block test (hybrid ingestion) |
+| BO-1 | ยึดช่อง "voice + real-time Dota 2" เป็นเจ้าแรกในไทย | mindshare ในชุมชน Dota ไทย, ผู้ใช้ active |
+| BO-2 | พิสูจน์คุณค่าหลัก (G-Signal เชื่อถือได้) จน "ขาดไม่ได้" | retention D30, false-positive rate ต่ำ |
+| BO-3 | สร้าง moat ที่ลอกยาก (persona + data flywheel + marketplace) | flywheel coverage, จำนวน trainer/style |
+| BO-4 | โมเดลรายได้ที่ยั่งยืน เหมาะตลาดไทย แล้วต่อยอดสากล | conversion free→paid, ARPU, marketplace GMV |
+| BO-5 | อยู่รอดภายใต้ความเสี่ยงเชิงนโยบาย (Valve/GSI) | survive GSI-block test (hybrid ingestion) |
 
 ---
 
 ## 4. Stakeholders & Users
 
-| à¸à¸¥à¸¸à¹ˆà¸¡ | à¸šà¸—à¸šà¸²à¸— | à¸„à¸§à¸²à¸¡à¸ªà¸™à¹ƒà¸ˆ |
+| กลุ่ม | บทบาท | ความสนใจ |
 | --- | --- | --- |
-| **à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™ Dota 2 (à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸«à¸¥à¸±à¸)** | à¸¥à¸¹à¸à¸„à¹‰à¸² | à¹€à¸¥à¹ˆà¸™à¸”à¸µà¸‚à¸¶à¹‰à¸™/à¹„à¸¡à¹ˆà¸•à¸²à¸¢à¹‚à¸‡à¹ˆ, à¹„à¸¡à¹ˆà¹‚à¸”à¸™à¹à¸šà¸™, à¹„à¸¡à¹ˆà¸à¸´à¸™à¸—à¸£à¸±à¸žà¸¢à¸²à¸à¸£, à¸£à¸²à¸„à¸²à¹€à¸«à¸¡à¸²à¸° |
-| **Trainers (creator)** | à¸œà¸¹à¹‰à¸ªà¸£à¹‰à¸²à¸‡à¸ªà¹„à¸•à¸¥à¹Œ AI à¹ƒà¸™ marketplace | à¸£à¸²à¸¢à¹„à¸”à¹‰/à¸Šà¸·à¹ˆà¸­à¹€à¸ªà¸µà¸¢à¸‡, à¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡à¸¡à¸·à¸­à¹€à¸—à¸£à¸™à¸—à¸µà¹ˆà¹ƒà¸Šà¹‰à¸‡à¹ˆà¸²à¸¢ |
-| **à¸œà¸¹à¹‰à¸à¹ˆà¸­à¸•à¸±à¹‰à¸‡ (solo)** | dev + business owner | lean, à¸¢à¸±à¹ˆà¸‡à¸¢à¸·à¸™, à¹„à¸¡à¹ˆà¹€à¸œà¸²à¸—à¸¸à¸™ |
-| **à¹à¸„à¸ªà¹€à¸•à¸­à¸£à¹Œ/à¸„à¸­à¸¡à¸¡à¸¹à¸™à¸´à¸•à¸µà¹‰à¹„à¸—à¸¢** | à¸Šà¹ˆà¸­à¸‡à¸ˆà¸±à¸”à¸ˆà¸³à¸«à¸™à¹ˆà¸²à¸¢/seed trainer | à¸„à¸­à¸™à¹€à¸—à¸™à¸•à¹Œ, à¸à¸²à¸£à¸¡à¸µà¸ªà¹ˆà¸§à¸™à¸£à¹ˆà¸§à¸¡ |
-| **Valve** | platform owner (+à¸„à¸¹à¹ˆà¹à¸‚à¹ˆà¸‡à¸—à¸²à¸‡à¸­à¹‰à¸­à¸¡) | competitive integrity, à¸™à¹‚à¸¢à¸šà¸²à¸¢ GSI/overlay |
-| **Overwolf** | à¸Šà¹ˆà¸­à¸‡à¸ˆà¸±à¸”à¸ˆà¸³à¸«à¸™à¹ˆà¸²à¸¢à¸—à¸²à¸‡à¹€à¸¥à¸·à¸­à¸ | à¸à¸²à¸™à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰ Dota |
+| **ผู้เล่น Dota 2 (ผู้ใช้หลัก)** | ลูกค้า | เล่นดีขึ้น/ไม่ตายโง่, ไม่โดนแบน, ไม่กินทรัพยากร, ราคาเหมาะ |
+| **Trainers (creator)** | ผู้สร้างสไตล์ AI ใน marketplace | รายได้/ชื่อเสียง, เครื่องมือเทรนที่ใช้ง่าย |
+| **ผู้ก่อตั้ง (solo)** | dev + business owner | lean, ยั่งยืน, ไม่เผาทุน |
+| **แคสเตอร์/คอมมูนิตี้ไทย** | ช่องจัดจำหน่าย/seed trainer | คอนเทนต์, การมีส่วนร่วม |
+| **Valve** | platform owner (+คู่แข่งทางอ้อม) | competitive integrity, นโยบาย GSI/overlay |
+| **Overwolf** | ช่องจัดจำหน่ายทางเลือก | ฐานผู้ใช้ Dota |
 
-### 4.1 User Personas (à¸¢à¹ˆà¸­)
-- **1. "à¹à¸¡à¸§" â€” Ladder grinder (core / à¸œà¸¹à¹‰à¸ˆà¹ˆà¸²à¸¢à¹€à¸‡à¸´à¸™)** Â· 18â€“28, Archonâ€“Ancient, à¸­à¸¢à¸²à¸à¸‚à¸¶à¹‰à¸™ MMR, à¸à¸¥à¸±à¸§à¹‚à¸”à¸™à¹à¸à¸‡à¸„à¹Œà¹€à¸ªà¸µà¸¢à¹€à¸à¸¡, à¹€à¸¥à¹ˆà¸™à¸ˆà¸£à¸´à¸‡à¸ˆà¸±à¸‡à¸«à¸¥à¸±à¸‡à¹€à¸£à¸µà¸¢à¸™/à¸‡à¸²à¸™ Â· *à¸•à¹‰à¸­à¸‡à¸à¸²à¸£:* à¹€à¸•à¸·à¸­à¸™ gank à¸—à¸±à¸™à¹€à¸§à¸¥à¸² + à¸£à¸¹à¹‰à¸§à¹ˆà¸² "à¸†à¹ˆà¸²à¹„à¸”à¹‰à¹„à¸«à¸¡" Â· *à¸ˆà¹ˆà¸²à¸¢:* à¸¿99â€“199 à¸œà¹ˆà¸²à¸™ TrueMoney à¸–à¹‰à¸²à¸Šà¹ˆà¸§à¸¢à¸£à¸­à¸”/à¸Šà¸™à¸°à¸ˆà¸£à¸´à¸‡
-- **2. "à¹‚à¸„à¹‰à¸Šà¹€à¸‡à¸²" â€” Trainer / creator** Â· à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™à¹€à¸à¹ˆà¸‡/à¹à¸„à¸ªà¹€à¸•à¸­à¸£à¹Œ/à¸ªà¸²à¸¢à¸„à¸­à¸™à¹€à¸—à¸™à¸•à¹Œ Â· *à¸•à¹‰à¸­à¸‡à¸à¸²à¸£:* à¹à¸šà¹ˆà¸‡à¸›à¸±à¸™à¸ªà¹„à¸•à¸¥à¹Œ + à¸£à¸²à¸¢à¹„à¸”à¹‰à¹€à¸ªà¸£à¸´à¸¡ + à¸Šà¸·à¹ˆà¸­à¹€à¸ªà¸µà¸¢à¸‡ Â· *à¸„à¸¸à¸“à¸„à¹ˆà¸²à¸•à¹ˆà¸­à¸˜à¸¸à¸£à¸à¸´à¸ˆ:* à¸Ÿà¸±à¸™à¹€à¸Ÿà¸·à¸­à¸‡à¸‚à¸­à¸‡ marketplace + flywheel (seed à¸”à¹‰à¸§à¸¢à¸à¸¥à¸¸à¹ˆà¸¡à¸™à¸µà¹‰)
-- **3. "à¸ªà¸²à¸¢à¸ªà¸™à¸¸à¸" â€” Casual / returning** Â· à¹€à¸¥à¹ˆà¸™à¹€à¸­à¸²à¸¡à¸±à¸™ à¸Šà¸­à¸š persona/à¸¡à¸µà¸¡ CM Â· *à¸•à¹‰à¸­à¸‡à¸à¸²à¸£:* à¹€à¸žà¸·à¹ˆà¸­à¸™à¹€à¸¥à¹ˆà¸™à¸—à¸µà¹ˆà¸®à¸² à¹„à¸¡à¹ˆà¸à¸”à¸”à¸±à¸™ Â· *à¸„à¸¸à¸“à¸„à¹ˆà¸²à¸•à¹ˆà¸­à¸˜à¸¸à¸£à¸à¸´à¸ˆ:* word-of-mouth/viral + free-tier data contributor (opt-in) à¹à¸¡à¹‰à¹„à¸¡à¹ˆà¸ˆà¹ˆà¸²à¸¢
+### 4.1 User Personas (ย่อ)
+- **1. "แมว" — Ladder grinder (core / ผู้จ่ายเงิน)** · 18–28, Archon–Ancient, อยากขึ้น MMR, กลัวโดนแกงค์เสียเกม, เล่นจริงจังหลังเรียน/งาน · *ต้องการ:* เตือน gank ทันเวลา + รู้ว่า "ฆ่าได้ไหม" · *จ่าย:* ฿99–199 ผ่าน TrueMoney ถ้าช่วยรอด/ชนะจริง
+- **2. "โค้ชเงา" — Trainer / creator** · ผู้เล่นเก่ง/แคสเตอร์/สายคอนเทนต์ · *ต้องการ:* แบ่งปันสไตล์ + รายได้เสริม + ชื่อเสียง · *คุณค่าต่อธุรกิจ:* ฟันเฟืองของ marketplace + flywheel (seed ด้วยกลุ่มนี้)
+- **3. "สายสนุก" — Casual / returning** · เล่นเอามัน ชอบ persona/มีม CM · *ต้องการ:* เพื่อนเล่นที่ฮา ไม่กดดัน · *คุณค่าต่อธุรกิจ:* word-of-mouth/viral + free-tier data contributor (opt-in) แม้ไม่จ่าย
 
 ---
 
 ## 5. Scope
 
-### 5.1 In-scope (à¸–à¸¶à¸‡ v1.0)
-G-Series 12 à¹‚à¸¡à¸”à¸¹à¸¥ (G-Sentry/Motion/Signal/Master/Sensory/Log + G-Voice/Memory/Coach/Mind/Persona/Stream) Â· gank warning à¹€à¸ªà¸µà¸¢à¸‡ Â· damage-calc/lethality (G-Damage) Â· overlay Â· GSI + minimap CV Â· local SLM fallback Â· privacy-first (local-only)
+### 5.1 In-scope (ถึง v1.0)
+G-Series 12 โมดูล (G-Sentry/Motion/Signal/Master/Sensory/Log + G-Voice/Memory/Coach/Mind/Persona/Stream) · gank warning เสียง · damage-calc/lethality (G-Damage) · overlay · GSI + minimap CV · local SLM fallback · privacy-first (local-only)
 
-### 5.2 Out-of-scope (à¸•à¸­à¸™à¸™à¸µà¹‰)
-Post-game analytics à¹€à¸Šà¸´à¸‡à¸¥à¸¶à¸ (Stratz/OpenDota à¸„à¸£à¸­à¸‡à¸‚à¸²à¸”) Â· draft/hero-pick suggestion à¹€à¸›à¹‡à¸™à¸«à¸±à¸§à¸«à¸­à¸ (Valve/DotaPlus à¸„à¸£à¸­à¸‡) Â· à¸£à¸­à¸‡à¸£à¸±à¸šà¸«à¸¥à¸²à¸¢à¹€à¸à¸¡ (à¸¢à¸¶à¸” "à¹à¸„à¸šà¹à¸•à¹ˆà¸¥à¸¶à¸à¹ƒà¸™ Dota")
+### 5.2 Out-of-scope (ตอนนี้)
+Post-game analytics เชิงลึก (Stratz/OpenDota ครองขาด) · draft/hero-pick suggestion เป็นหัวหอก (Valve/DotaPlus ครอง) · รองรับหลายเกม (ยึด "แคบแต่ลึกใน Dota")
 
 ### 5.3 Future (post-v1.0)
-**Community AI marketplace** + data flywheel + creator economy Â· à¸‚à¸¢à¸²à¸¢ persona à¸«à¸¥à¸²à¸¢à¸ à¸²à¸©à¸²/à¸•à¸¥à¸²à¸”à¸ªà¸²à¸à¸¥
+**Community AI marketplace** + data flywheel + creator economy · ขยาย persona หลายภาษา/ตลาดสากล
 
 ---
 
-## 6. Market & Competitive Context (à¸ªà¸£à¸¸à¸› â€” à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸”à¹ƒà¸™ Competitive Brief)
+## 6. Market & Competitive Context (สรุป — รายละเอียดใน [[competitive-brief|Competitive Brief]])
 
-- 3 à¸„à¹ˆà¸²à¸¢à¸„à¸¹à¹ˆà¹à¸‚à¹ˆà¸‡: à¸„à¸£à¸¹/à¸„à¸³à¹à¸™à¸°à¸™à¸³ (Dota Coach), à¸‚à¹‰à¸­à¸¡à¸¹à¸¥/à¸”à¸£à¸²à¸Ÿà¸•à¹Œ (DotaPlus, Dota Plus), à¸ªà¸•à¸£à¸µà¸¡à¹€à¸¡à¸­à¸£à¹Œ (Dotabod) â€” **à¸¡à¸¸à¸¡ voice+real-time à¸§à¹ˆà¸²à¸‡**
-- Incumbent risk: **Valve = platform + à¸„à¸¹à¹ˆà¹à¸‚à¹ˆà¸‡** (Dota Plus Assistant à¹ƒà¸™à¸•à¸±à¸§à¹€à¸à¸¡)
-- à¸šà¸—à¹€à¸£à¸µà¸¢à¸™: GOSU.AI/Backseat à¸•à¸²à¸¢ â†’ moat + engagement à¸ªà¸³à¸„à¸±à¸à¸à¸§à¹ˆà¸²à¸Ÿà¸µà¹€à¸ˆà¸­à¸£à¹Œ
-- à¸•à¸¥à¸²à¸”à¹„à¸—à¸¢: niche à¹€à¸«à¸™à¸µà¸¢à¸§à¹à¸•à¹ˆà¸ˆà¸³à¸à¸±à¸” (à¸«à¸¥à¸±à¸à¸«à¸¡à¸·à¹ˆà¸™ active), à¸ˆà¹ˆà¸²à¸¢à¹€à¸‡à¸´à¸™à¹ƒà¸™à¹€à¸à¸¡à¹€à¸à¹ˆà¸‡à¹à¸•à¹ˆà¸œà¹ˆà¸²à¸™ wallet/QR, à¸§à¸±à¸’à¸™à¸˜à¸£à¸£à¸¡à¹€à¸£à¸µà¸¢à¸™à¸Ÿà¸£à¸µ â†’ à¸£à¸²à¸„à¸²à¸•à¹‰à¸­à¸‡à¸•à¹ˆà¸³ (à¸¿99â€“199) + micro-payment
+- 3 ค่ายคู่แข่ง: ครู/คำแนะนำ (Dota Coach), ข้อมูล/ดราฟต์ (DotaPlus, Dota Plus), สตรีมเมอร์ (Dotabod) — **มุม voice+real-time ว่าง**
+- Incumbent risk: **Valve = platform + คู่แข่ง** (Dota Plus Assistant ในตัวเกม)
+- บทเรียน: GOSU.AI/Backseat ตาย → moat + engagement สำคัญกว่าฟีเจอร์
+- ตลาดไทย: niche เหนียวแต่จำกัด (หลักหมื่น active), จ่ายเงินในเกมเก่งแต่ผ่าน wallet/QR, วัฒนธรรมเรียนฟรี → ราคาต้องต่ำ (฿99–199) + micro-payment
 
 ---
 
 ## 7. Business Requirements (BR)
 
-à¸£à¸°à¸”à¸±à¸šà¸˜à¸¸à¸£à¸à¸´à¸ˆ (à¸­à¹‰à¸²à¸‡ SRS/PRD à¸ªà¸³à¸«à¸£à¸±à¸š how) â€” à¹€à¸£à¸µà¸¢à¸‡à¸•à¸²à¸¡à¸„à¸§à¸²à¸¡à¸ªà¸³à¸„à¸±à¸:
+ระดับธุรกิจ (อ้าง [[software-requirements-specification|SRS]]/[[product-requirements|PRD]] สำหรับ how) — เรียงตามความสำคัญ:
 
-| ID | à¸„à¸§à¸²à¸¡à¸•à¹‰à¸­à¸‡à¸à¸²à¸£à¹€à¸Šà¸´à¸‡à¸˜à¸¸à¸£à¸à¸´à¸ˆ | à¹€à¸«à¸•à¸¸à¸œà¸¥ | à¹‚à¸¢à¸‡à¹‚à¸¡à¸”à¸¹à¸¥/ADR |
+| ID | ความต้องการเชิงธุรกิจ | เหตุผล | โยงโมดูล/ADR |
 | --- | --- | --- | --- |
-| **BR-01** | à¹€à¸•à¸·à¸­à¸™à¸ à¸±à¸¢ gank à¸—à¸±à¸™à¹€à¸§à¸¥à¸² (à¸à¹ˆà¸­à¸™à¸•à¸²à¸¢) à¸”à¹‰à¸§à¸¢**à¹€à¸ªà¸µà¸¢à¸‡** + à¸„à¸§à¸²à¸¡à¹à¸¡à¹ˆà¸™à¸—à¸µà¹ˆà¹€à¸Šà¸·à¹ˆà¸­à¸–à¸·à¸­à¹„à¸”à¹‰ | à¸„à¸¸à¸“à¸„à¹ˆà¸²à¸«à¸¥à¸±à¸à¸—à¸µà¹ˆà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸¢à¸­à¸¡à¸ˆà¹ˆà¸²à¸¢; à¹€à¸‡à¸·à¹ˆà¸­à¸™à¹„à¸‚à¹à¸žà¹‰/à¸Šà¸™à¸° | G-Signal/Motion/Sentry Â· NFR â‰¤300ms |
-| **BR-02** | à¹„à¸¡à¹ˆà¸—à¸³à¸¥à¸²à¸¢à¸›à¸£à¸°à¸ªà¸šà¸à¸²à¸£à¸“à¹Œà¹€à¸à¸¡: à¹„à¸¡à¹ˆà¸šà¸±à¸‡à¸ˆà¸­, à¹„à¸¡à¹ˆà¸à¸´à¸™ FPS à¹€à¸à¸´à¸™, **à¹„à¸¡à¹ˆà¸—à¸³à¹ƒà¸«à¹‰à¹‚à¸”à¸™à¹à¸šà¸™** | ban-safety à¹€à¸›à¹‡à¸™ blocker à¸à¸²à¸£à¸‹à¸·à¹‰à¸­ | G-Sensory Â· ADR-03 Â· governor |
-| **BR-03** | à¸­à¸¢à¸¹à¹ˆà¸£à¸­à¸”à¹€à¸¡à¸·à¹ˆà¸­ Valve à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™/à¸šà¸¥à¹‡à¸­à¸ GSI | à¸„à¸§à¸²à¸¡à¹€à¸ªà¸µà¹ˆà¸¢à¸‡à¹€à¸Šà¸´à¸‡à¸”à¸³à¸£à¸‡à¸­à¸¢à¸¹à¹ˆ â†’ hybrid | Pillar A Â· **ADR-10** |
-| **BR-04** | à¸„à¸§à¸²à¸¡à¹€à¸›à¹‡à¸™à¸ªà¹ˆà¸§à¸™à¸•à¸±à¸§ = **local-first by default** | à¸ˆà¸¸à¸”à¸‚à¸²à¸¢ + à¸‚à¹‰à¸­à¸šà¸±à¸‡à¸„à¸±à¸š; à¹à¸Šà¸£à¹Œ = opt-in + credit | ADR-06 Â· **ADR-11** Â· no-egress test |
-| **BR-05** | à¸ªà¸£à¹‰à¸²à¸‡ moat à¸—à¸µà¹ˆà¸¥à¸­à¸à¸¢à¸²à¸ | à¸«à¸™à¸µà¸Šà¸°à¸•à¸² GOSU/Backseat | persona + flywheel + marketplace |
-| **BR-06** | à¹‚à¸¡à¹€à¸”à¸¥à¸£à¸²à¸¢à¹„à¸”à¹‰à¸—à¸µà¹ˆà¹€à¸«à¸¡à¸²à¸°à¸•à¸¥à¸²à¸”à¹„à¸—à¸¢à¹à¸¥à¹‰à¸§à¸•à¹ˆà¸­à¸¢à¸­à¸”à¸ªà¸²à¸à¸¥ | WTP à¸•à¹ˆà¸³ + wallet/QR | Â§8 |
-| **BR-07** | à¸ªà¸£à¹‰à¸²à¸‡ engagement/retention à¸£à¸°à¸¢à¸°à¸¢à¸²à¸§ | adoption à¸„à¸·à¸­à¸„à¸§à¸²à¸¡à¹€à¸ªà¸µà¹ˆà¸¢à¸‡à¸ªà¸¹à¸‡à¸ªà¸¸à¸” | G-Persona/Memory + creator economy |
-| **BR-08** | à¸—à¸³à¸‡à¸²à¸™à¸šà¸™à¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡ mid-range à¸ à¸²à¸¢à¹ƒà¸™ resource budget | à¸à¸¥à¸¸à¹ˆà¸¡à¹€à¸›à¹‰à¸²à¸«à¸¡à¸²à¸¢à¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡à¹„à¸¡à¹ˆà¹à¸£à¸‡à¸—à¸¸à¸à¸„à¸™ | SRS NFR |
-| **BR-09** | à¸£à¸­à¸‡à¸£à¸±à¸šà¸à¸²à¸£à¹€à¸•à¸´à¸šà¹‚à¸• niche à¹„à¸—à¸¢ â†’ à¸ªà¸²à¸à¸¥ | scalability | i18n persona, TTS à¸«à¸¥à¸²à¸¢à¸ à¸²à¸©à¸² |
-| **BR-10** | marketplace à¸•à¹‰à¸­à¸‡à¸¡à¸µ quality control + anti-gaming + bot guardrail | à¹€à¸‡à¸´à¸™à¸ªà¸” + UGC à¸¥à¹ˆà¸­à¹ƒà¸«à¹‰à¹‚à¸à¸‡/à¸œà¸´à¸”à¸à¸Ž | Pillar C Â· **ADR-12** |
+| **BR-01** | เตือนภัย gank ทันเวลา (ก่อนตาย) ด้วย**เสียง** + ความแม่นที่เชื่อถือได้ | คุณค่าหลักที่ผู้ใช้ยอมจ่าย; เงื่อนไขแพ้/ชนะ | G-Signal/Motion/Sentry · NFR ≤300ms |
+| **BR-02** | ไม่ทำลายประสบการณ์เกม: ไม่บังจอ, ไม่กิน FPS เกิน, **ไม่ทำให้โดนแบน** | ban-safety เป็น blocker การซื้อ | G-Sensory · ADR-03 · governor |
+| **BR-03** | อยู่รอดเมื่อ Valve เปลี่ยน/บล็อก GSI | ความเสี่ยงเชิงดำรงอยู่ → hybrid | Pillar A · [[ADR-10-hybrid-ingestion-resilience|ADR-10]] |
+| **BR-04** | ความเป็นส่วนตัว = **local-first by default** | จุดขาย + ข้อบังคับ; แชร์ = opt-in + credit | ADR-06 · [[ADR-11-optin-data-contribution-flywheel|ADR-11]] · no-egress test |
+| **BR-05** | สร้าง moat ที่ลอกยาก | หนีชะตา GOSU/Backseat | persona + flywheel + marketplace |
+| **BR-06** | โมเดลรายได้ที่เหมาะตลาดไทยแล้วต่อยอดสากล | WTP ต่ำ + wallet/QR | §8 |
+| **BR-07** | สร้าง engagement/retention ระยะยาว | adoption คือความเสี่ยงสูงสุด | G-Persona/Memory + creator economy |
+| **BR-08** | ทำงานบนเครื่อง mid-range ภายใน resource budget | กลุ่มเป้าหมายเครื่องไม่แรงทุกคน | SRS NFR |
+| **BR-09** | รองรับการเติบโต niche ไทย → สากล | scalability | i18n persona, TTS หลายภาษา |
+| **BR-10** | marketplace ต้องมี quality control + anti-gaming + bot guardrail | เงินสด + UGC ล่อให้โกง/ผิดกฎ | Pillar C · [[ADR-12-community-ai-marketplace|ADR-12]] |
 
 ---
 
 ## 8. Business Model & Monetization
 
-**à¸«à¸¥à¸±à¸à¸à¸²à¸£:** lean + à¹€à¸«à¸¡à¸²à¸°à¸•à¸¥à¸²à¸”à¹„à¸—à¸¢ + à¸«à¸¥à¸²à¸¢à¸ªà¸²à¸¢à¸£à¸²à¸¢à¹„à¸”à¹‰ à¹„à¸¡à¹ˆà¸žà¸¶à¹ˆà¸‡ subscription à¸­à¸¢à¹ˆà¸²à¸‡à¹€à¸”à¸µà¸¢à¸§
+**หลักการ:** lean + เหมาะตลาดไทย + หลายสายรายได้ ไม่พึ่ง subscription อย่างเดียว
 
-| à¸ªà¸²à¸¢ | à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸” | à¸«à¸¡à¸²à¸¢à¹€à¸«à¸•à¸¸ |
+| สาย | รายละเอียด | หมายเหตุ |
 | --- | --- | --- |
-| **Subscription / unlock** | freemium; tier à¸ˆà¹ˆà¸²à¸¢ **à¸¿99â€“199/à¹€à¸”à¸·à¸­à¸™** + **one-time/top-up** | price band à¸•à¸¥à¸²à¸” = $2â€“6/mo |
-| **à¸Šà¹ˆà¸­à¸‡à¸ˆà¹ˆà¸²à¸¢à¹€à¸‡à¸´à¸™** | TrueMoney, PromptPay, ShopeePay, 7-Eleven, top-up (Codashop/UniPin) | à¸šà¸±à¸•à¸£à¹€à¸„à¸£à¸”à¸´à¸•à¹€à¸ˆà¸²à¸°à¸•à¸¥à¸²à¸”à¸•à¹ˆà¸³ |
-| **Marketplace take-rate** | à¹à¸žà¸¥à¸•à¸Ÿà¸­à¸£à¹Œà¸¡à¸«à¸±à¸ % à¸ˆà¸²à¸à¸à¸²à¸£à¹ƒà¸Šà¹‰à¸ªà¹„à¸•à¸¥à¹Œà¸‚à¸­à¸‡ trainer | à¸ªà¸²à¸¢à¸£à¸²à¸¢à¹„à¸”à¹‰à¹ƒà¸«à¸¡à¹ˆ (post-v1.0) |
-| **Seasonal payout** | **à¹€à¸‡à¸´à¸™à¸ªà¸”à¸£à¸²à¸¢ season à¹€à¸‰à¸žà¸²à¸° top-rank**; à¸—à¸µà¹ˆà¹€à¸«à¸¥à¸·à¸­ credit/privilege | pool **self-fund à¸ˆà¸²à¸ take-rate** |
+| **Subscription / unlock** | freemium; tier จ่าย **฿99–199/เดือน** + **one-time/top-up** | price band ตลาด = $2–6/mo |
+| **ช่องจ่ายเงิน** | TrueMoney, PromptPay, ShopeePay, 7-Eleven, top-up (Codashop/UniPin) | บัตรเครดิตเจาะตลาดต่ำ |
+| **Marketplace take-rate** | แพลตฟอร์มหัก % จากการใช้สไตล์ของ trainer | สายรายได้ใหม่ (post-v1.0) |
+| **Seasonal payout** | **เงินสดราย season เฉพาะ top-rank**; ที่เหลือ credit/privilege | pool **self-fund จาก take-rate** |
 
-**à¸à¸¥à¹„à¸à¸›à¹‰à¸­à¸‡à¸à¸±à¸™:** ranking à¸•à¹‰à¸­à¸‡à¸§à¸±à¸” **distinct active-users + retention** (à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆà¹‚à¸«à¸§à¸•/à¸”à¸²à¸§à¸™à¹Œà¹‚à¸«à¸¥à¸”à¸”à¸´à¸š) à¹€à¸žà¸·à¹ˆà¸­à¸à¸±à¸™ manipulation (à¹€à¸‡à¸´à¸™à¸ªà¸”à¸¥à¹ˆà¸­à¹ƒà¸«à¹‰à¹‚à¸à¸‡)
+**กลไกป้องกัน:** ranking ต้องวัด **distinct active-users + retention** (ไม่ใช่โหวต/ดาวน์โหลดดิบ) เพื่อกัน manipulation (เงินสดล่อให้โกง)
 
-### 8.1 Unit Economics & Financial Model (à¸ªà¸¡à¸¡à¸•à¸´à¸à¸²à¸™ â€” pre-launch, à¸•à¹‰à¸­à¸‡ validate)
-> à¸•à¸±à¸§à¹€à¸¥à¸‚à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”à¹€à¸›à¹‡à¸™**à¸ªà¸¡à¸¡à¸•à¸´à¸à¸²à¸™à¹€à¸žà¸·à¹ˆà¸­à¸§à¸²à¸‡à¹à¸œà¸™** à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆà¸„à¹ˆà¸²à¸ˆà¸£à¸´à¸‡ Â· à¸à¸²à¸™à¸•à¸¥à¸²à¸”: Dota PC à¹„à¸—à¸¢ active core ~30,000â€“80,000 (Competitive Brief)
+### 8.1 Unit Economics & Financial Model (สมมติฐาน — pre-launch, ต้อง validate)
+> ตัวเลขทั้งหมดเป็น**สมมติฐานเพื่อวางแผน** ไม่ใช่ค่าจริง · ฐานตลาด: Dota PC ไทย active core ~30,000–80,000 ([[competitive-brief|Competitive Brief]])
 
-**à¸ªà¸¡à¸¡à¸•à¸´à¸à¸²à¸™à¸«à¸¥à¸±à¸:** ARPU à¸œà¸¹à¹‰à¸ˆà¹ˆà¸²à¸¢à¹€à¸‡à¸´à¸™ (à¹€à¸‰à¸¥à¸µà¹ˆà¸¢ à¸¿99 basic / à¸¿199 pro + one-time) â‰ˆ **à¸¿120/à¹€à¸”à¸·à¸­à¸™** Â· activation ~60% Â· freeâ†’paid: cons 3% / base 5% / opt 8% Â· opex (solo, à¹„à¸¡à¹ˆà¸¡à¸µà¹€à¸‡à¸´à¸™à¹€à¸”à¸·à¸­à¸™): cloud Gemini (throttled+redacted) + collector + TTS + hosting â‰ˆ **à¸¿10â€“40k/à¹€à¸”à¸·à¸­à¸™** (local SLM à¸Šà¹ˆà¸§à¸¢à¸à¸”à¸•à¹ˆà¸³)
+**สมมติฐานหลัก:** ARPU ผู้จ่ายเงิน (เฉลี่ย ฿99 basic / ฿199 pro + one-time) ≈ **฿120/เดือน** · activation ~60% · free→paid: cons 3% / base 5% / opt 8% · opex (solo, ไม่มีเงินเดือน): cloud Gemini (throttled+redacted) + collector + TTS + hosting ≈ **฿10–40k/เดือน** (local SLM ช่วยกดต่ำ)
 
-**à¸ªà¸–à¸²à¸™à¸à¸²à¸£à¸“à¹Œà¸›à¸µà¸—à¸µà¹ˆ 1:**
+**สถานการณ์ปีที่ 1:**
 
 | | Conservative | Base | Optimistic |
 | --- | --- | --- | --- |
-| installs (à¸›à¸µ 1) | 2,000 | 5,000 | 12,000 |
+| installs (ปี 1) | 2,000 | 5,000 | 12,000 |
 | paid users | 60 (3%) | 250 (5%) | 960 (8%) |
-| ARPU/à¹€à¸”à¸·à¸­à¸™ | à¸¿120 | à¸¿120 | à¸¿120 |
-| **MRR** | **~à¸¿7,200** | **~à¸¿30,000** | **~à¸¿115,000** |
-| annualized | ~à¸¿86k | ~à¸¿360k | ~à¸¿1.38M |
+| ARPU/เดือน | ฿120 | ฿120 | ฿120 |
+| **MRR** | **~฿7,200** | **~฿30,000** | **~฿115,000** |
+| annualized | ~฿86k | ~฿360k | ~฿1.38M |
 
-**Break-even:** à¸—à¸µà¹ˆ opex ~à¸¿15k/à¹€à¸”à¸·à¸­à¸™ â†’ à¸•à¹‰à¸­à¸‡à¸à¸²à¸£ **~125 paid users** (â‰ˆ base) Â· **local SLM + privacy-first = opex à¸•à¹ˆà¸³ = break-even à¸•à¹ˆà¸³** (à¸‚à¹‰à¸­à¹„à¸”à¹‰à¹€à¸›à¸£à¸µà¸¢à¸šà¹€à¸Šà¸´à¸‡à¹‚à¸„à¸£à¸‡à¸ªà¸£à¹‰à¸²à¸‡)
+**Break-even:** ที่ opex ~฿15k/เดือน → ต้องการ **~125 paid users** (≈ base) · **local SLM + privacy-first = opex ต่ำ = break-even ต่ำ** (ข้อได้เปรียบเชิงโครงสร้าง)
 
-**Marketplace (post-v1.0, à¸ªà¸²à¸¢à¸£à¸²à¸¢à¹„à¸”à¹‰à¸—à¸µà¹ˆ 2):** take-rate ~25% à¸‚à¸­à¸‡ GMV Â· seasonal pool ~30â€“50% à¸‚à¸­à¸‡ take-rate â†’ top-rank (self-fund à¹„à¸¡à¹ˆà¸à¸£à¸°à¸—à¸š runway) Â· à¸Šà¹ˆà¸§à¸‡à¹à¸£à¸à¸„à¸¸à¸“à¸„à¹ˆà¸²à¸«à¸¥à¸±à¸ = engagement à¸¡à¸²à¸à¸à¸§à¹ˆà¸²à¸£à¸²à¸¢à¹„à¸”à¹‰à¸•à¸£à¸‡
+**Marketplace (post-v1.0, สายรายได้ที่ 2):** take-rate ~25% ของ GMV · seasonal pool ~30–50% ของ take-rate → top-rank (self-fund ไม่กระทบ runway) · ช่วงแรกคุณค่าหลัก = engagement มากกว่ารายได้ตรง
 
-**à¸™à¸±à¸¢à¹€à¸Šà¸´à¸‡à¸à¸¥à¸¢à¸¸à¸—à¸˜à¹Œ:** opex à¸•à¹ˆà¸³ (no salary + local processing) â†’ break-even à¸•à¹ˆà¸³à¸¡à¸²à¸ (~à¸£à¹‰à¸­à¸¢à¸„à¸™) â†’ solo dev à¸­à¸¢à¸¹à¹ˆà¸£à¸­à¸”à¸”à¹‰à¸§à¸¢ niche à¹„à¸—à¸¢à¸à¹ˆà¸­à¸™à¸‚à¸¢à¸²à¸¢à¸ªà¸²à¸à¸¥ Â· **à¸„à¸§à¸²à¸¡à¹€à¸ªà¸µà¹ˆà¸¢à¸‡à¸ˆà¸£à¸´à¸‡à¸„à¸·à¸­ conversion/retention à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆ scale**
+**นัยเชิงกลยุทธ์:** opex ต่ำ (no salary + local processing) → break-even ต่ำมาก (~ร้อยคน) → solo dev อยู่รอดด้วย niche ไทยก่อนขยายสากล · **ความเสี่ยงจริงคือ conversion/retention ไม่ใช่ scale**
 
 ---
 
 ## 9. Success Metrics / KPIs
 
-| à¸«à¸¡à¸§à¸” | à¸•à¸±à¸§à¸Šà¸µà¹‰à¸§à¸±à¸” | à¹€à¸›à¹‰à¸² (à¸ªà¸¡à¸¡à¸•à¸´à¸à¸²à¸™ â€” à¸•à¹‰à¸­à¸‡ validate) |
+| หมวด | ตัวชี้วัด | เป้า (สมมติฐาน — ต้อง validate) |
 | --- | --- | --- |
-| **Activation** | % à¸œà¸¹à¹‰à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¸—à¸µà¹ˆà¹ƒà¸Šà¹‰à¸ˆà¸£à¸´à¸‡ â‰¥1 à¹à¸¡à¸•à¸Šà¹Œ | à¸ªà¸¹à¸‡ |
-| **Core value** | G-Signal false-positive rate (à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¹„à¸¡à¹ˆà¸›à¸´à¸”à¹€à¸ªà¸µà¸¢à¸‡) | à¸•à¹ˆà¸³à¸¡à¸²à¸ = à¸•à¸±à¸§à¸Šà¸µà¹‰à¸‚à¸²à¸” |
-| **Retention** | D7 / D30 | D30 à¸„à¸·à¸­ moat à¸‚à¸­à¸‡ persona/memory |
-| **Monetization** | conversion freeâ†’paid, ARPU | à¸ à¸²à¸¢à¹ƒà¸•à¹‰ à¸¿99â€“199 |
-| **Flywheel health** | % à¹à¸¡à¸•à¸Šà¹Œà¸—à¸µà¹ˆà¸¡à¸µ coverage 2 à¸à¸±à¹ˆà¸‡ (match_id) | à¹‚à¸•à¸•à¸²à¸¡à¸à¸²à¸™à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰ |
-| **Marketplace** | # trainers, # styles, GMV, % rev à¸ˆà¸²à¸ marketplace | post-v1.0 |
-| **Persona affinity** | NPS / à¸à¸²à¸£à¸–à¸¹à¸à¸žà¸¹à¸”à¸–à¸¶à¸‡-à¹à¸Šà¸£à¹Œ | à¸ªà¸¹à¸‡ = viral loop |
-| **Resilience** | à¸œà¹ˆà¸²à¸™ GSI-block test | à¸•à¹‰à¸­à¸‡à¸œà¹ˆà¸²à¸™ |
+| **Activation** | % ผู้ติดตั้งที่ใช้จริง ≥1 แมตช์ | สูง |
+| **Core value** | G-Signal false-positive rate (ผู้ใช้ไม่ปิดเสียง) | ต่ำมาก = ตัวชี้ขาด |
+| **Retention** | D7 / D30 | D30 คือ moat ของ persona/memory |
+| **Monetization** | conversion free→paid, ARPU | ภายใต้ ฿99–199 |
+| **Flywheel health** | % แมตช์ที่มี coverage 2 ฝั่ง (match_id) | โตตามฐานผู้ใช้ |
+| **Marketplace** | # trainers, # styles, GMV, % rev จาก marketplace | post-v1.0 |
+| **Persona affinity** | NPS / การถูกพูดถึง-แชร์ | สูง = viral loop |
+| **Resilience** | ผ่าน GSI-block test | ต้องผ่าน |
 
 ---
 
-## 10. Strategic Pillars (à¸”à¸¹ Competitive Brief Â§10)
+## 10. Strategic Pillars (ดู [[competitive-brief|Competitive Brief]] §10)
 
-1. **Pillar A â€” Hybrid ingestion:** GSI + vision (CV own-state fallback) + pro-replay priors â†’ resilience à¹€à¸›à¹‡à¸™à¸ˆà¸¸à¸”à¸‚à¸²à¸¢ (ADR-10)
-2. **Pillar B â€” Data flywheel (match_id):** à¹€à¸¢à¹‡à¸š GSI 2 à¸à¸±à¹ˆà¸‡ â†’ ground-truth dataset = network-effect moat Â· ðŸ”´ post-match/aggregate à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™ (ADR-11)
-3. **Pillar C â€” Community AI marketplace:** UGC (persona + advice-logic + bot practice-only) + creator economy = moat + engagement (ADR-12)
+1. **Pillar A — Hybrid ingestion:** GSI + vision (CV own-state fallback) + pro-replay priors → resilience เป็นจุดขาย ([[ADR-10-hybrid-ingestion-resilience|ADR-10]])
+2. **Pillar B — Data flywheel (match_id):** เย็บ GSI 2 ฝั่ง → ground-truth dataset = network-effect moat · 🔴 post-match/aggregate เท่านั้น ([[ADR-11-optin-data-contribution-flywheel|ADR-11]])
+3. **Pillar C — Community AI marketplace:** UGC (persona + advice-logic + bot practice-only) + creator economy = moat + engagement ([[ADR-12-community-ai-marketplace|ADR-12]])
 
 ---
 
 ## 11. Constraints & Assumptions
 
-**Constraints:** solo dev/no funding/no team â†’ à¸«à¹‰à¸²à¸¡à¸žà¸¶à¹ˆà¸‡à¹‚à¸¡à¹€à¸”à¸¥à¹à¸žà¸‡/à¸‹à¸·à¹‰à¸­ dataset Â· resource budget à¹€à¸‚à¹‰à¸¡ (CPU â‰¤2.5%, RAM â‰¤400MB, FPS â‰¤3%, G-Signal â‰¤300ms) Â· privacy NFR (local-only default, ADR-06 + no-egress) Â· à¸žà¸¶à¹ˆà¸‡ Valve platform Â· à¸„à¸¸à¸“à¸ à¸²à¸ž Thai TTS
+**Constraints:** solo dev/no funding/no team → ห้ามพึ่งโมเดลแพง/ซื้อ dataset · resource budget เข้ม (CPU ≤2.5%, RAM ≤400MB, FPS ≤3%, G-Signal ≤300ms) · privacy NFR (local-only default, ADR-06 + no-egress) · พึ่ง Valve platform · คุณภาพ Thai TTS
 
-**Assumptions:** à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™à¹„à¸—à¸¢à¸¢à¸­à¸¡à¸ˆà¹ˆà¸²à¸¢ à¸¿99â€“199 à¸–à¹‰à¸² "à¸Šà¹ˆà¸§à¸¢à¸£à¸­à¸”/à¸†à¹ˆà¸²à¹„à¸”à¹‰à¸ˆà¸£à¸´à¸‡" Â· à¸¡à¸µ community à¸¢à¸­à¸¡à¹€à¸›à¹‡à¸™ trainer (seed à¸”à¹‰à¸§à¸¢à¹à¸„à¸ªà¹€à¸•à¸­à¸£à¹Œà¹„à¸—à¸¢) Â· GSI+vision+overlay external = à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™à¹‚à¸‹à¸™à¸—à¸µà¹ˆ Valve à¸¢à¸­à¸¡à¸£à¸±à¸š
+**Assumptions:** ผู้เล่นไทยยอมจ่าย ฿99–199 ถ้า "ช่วยรอด/ฆ่าได้จริง" · มี community ยอมเป็น trainer (seed ด้วยแคสเตอร์ไทย) · GSI+vision+overlay external = อยู่ในโซนที่ Valve ยอมรับ
 
 ---
 
 ## 12. Risks & Mitigations
 
-| à¸„à¸§à¸²à¸¡à¹€à¸ªà¸µà¹ˆà¸¢à¸‡ | à¸£à¸°à¸”à¸±à¸š | à¸à¸²à¸£à¸£à¸±à¸šà¸¡à¸·à¸­ |
+| ความเสี่ยง | ระดับ | การรับมือ |
 | --- | --- | --- |
-| Valve à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™/à¸šà¸¥à¹‡à¸­à¸ GSI | à¸ªà¸¹à¸‡ | Pillar A hybrid + read-only/no-inject/à¹„à¸¡à¹ˆà¹‚à¸Šà¸§à¹Œà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸—à¸µà¹ˆà¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™à¹„à¸¡à¹ˆà¹€à¸«à¹‡à¸™ |
-| Adoption/engagement à¸žà¸±à¸‡ | à¸ªà¸¹à¸‡ | wedge à¹à¸„à¸š + persona/memory + creator economy |
-| G-Signal latency/false-positive | à¸ªà¸¹à¸‡ | latency à¸žà¸´à¸ªà¸¹à¸ˆà¸™à¹Œà¹à¸¥à¹‰à¸§ (p50=21.6ms) + à¸ˆà¸¹à¸™ "à¹€à¸Šà¸·à¹ˆà¸­à¸–à¸·à¸­à¹„à¸”à¹‰à¸à¹ˆà¸­à¸™à¸‰à¸¥à¸²à¸”" |
-| à¹€à¸ªà¸µà¸¢à¸‡ interrupt à¸™à¹ˆà¸²à¸£à¸³à¸„à¸²à¸ | à¸à¸¥à¸²à¸‡ | à¸„à¸¸à¸¡ false-positive + verbosity presets |
-| Distribution (Overwolf à¹„à¸”à¹‰à¹€à¸›à¸£à¸µà¸¢à¸š) | à¸à¸¥à¸²à¸‡ | à¸žà¸´à¸ˆà¸²à¸£à¸“à¸² publish Overwolf + leverage à¹à¸„à¸ªà¹€à¸•à¸­à¸£à¹Œà¹„à¸—à¸¢ |
-| Free-rider/piracy (PC TH) | à¸à¸¥à¸²à¸‡ | tier à¸Ÿà¸£à¸µà¸„à¸¸à¹‰à¸¡ + à¸„à¸¸à¸“à¸„à¹ˆà¸²à¸œà¸¹à¸ cloud/community account |
-| Marketplace cold-start | à¸à¸¥à¸²à¸‡ | seed à¸”à¹‰à¸§à¸¢ style à¸œà¸¹à¹‰à¸à¹ˆà¸­à¸•à¸±à¹‰à¸‡ + à¹à¸„à¸ªà¹€à¸•à¸­à¸£à¹Œà¹„à¸—à¸¢ |
-| Ranking manipulation | à¸à¸¥à¸²à¸‡ | anti-gaming ranking (active-users+retention) |
-| Privacy promise vs data moat | à¸à¸¥à¸²à¸‡ | local-first default + opt-in/credit (ADR-11) |
+| Valve เปลี่ยน/บล็อก GSI | สูง | Pillar A hybrid + read-only/no-inject/ไม่โชว์ข้อมูลที่ผู้เล่นไม่เห็น |
+| Adoption/engagement พัง | สูง | wedge แคบ + persona/memory + creator economy |
+| G-Signal latency/false-positive | สูง | latency พิสูจน์แล้ว (p50=21.6ms) + จูน "เชื่อถือได้ก่อนฉลาด" |
+| เสียง interrupt น่ารำคาญ | กลาง | คุม false-positive + verbosity presets |
+| Distribution (Overwolf ได้เปรียบ) | กลาง | พิจารณา publish Overwolf + leverage แคสเตอร์ไทย |
+| Free-rider/piracy (PC TH) | กลาง | tier ฟรีคุ้ม + คุณค่าผูก cloud/community account |
+| Marketplace cold-start | กลาง | seed ด้วย style ผู้ก่อตั้ง + แคสเตอร์ไทย |
+| Ranking manipulation | กลาง | anti-gaming ranking (active-users+retention) |
+| Privacy promise vs data moat | กลาง | local-first default + opt-in/credit ([[ADR-11-optin-data-contribution-flywheel|ADR-11]]) |
 
 ---
 
 ## 13. High-level Roadmap / Phasing
 
-| à¹€à¸Ÿà¸ª | à¸‚à¸­à¸šà¹€à¸‚à¸•à¸˜à¸¸à¸£à¸à¸´à¸ˆ | à¸ªà¸–à¸²à¸™à¸° |
+| เฟส | ขอบเขตธุรกิจ | สถานะ |
 | --- | --- | --- |
-| **v0.5** | core loop: GSI + CV gank detection + voice | âœ… done |
-| **v0.6â€“0.9** | persona/voice, cloud brain, offline SLM, feedback/memory | à¸à¸³à¸¥à¸±à¸‡à¸—à¸³ (v0.7.x) |
-| **v1.0** | à¸„à¸£à¸š 12 à¹‚à¸¡à¸”à¸¹à¸¥, à¸œà¹ˆà¸²à¸™ NFR, à¸žà¸£à¹‰à¸­à¸¡à¸‚à¸²à¸¢ | à¹€à¸›à¹‰à¸²à¸«à¸¡à¸²à¸¢ |
+| **v0.5** | core loop: GSI + CV gank detection + voice | ✅ done |
+| **v0.6–0.9** | persona/voice, cloud brain, offline SLM, feedback/memory | กำลังทำ (v0.7.x) |
+| **v1.0** | ครบ 12 โมดูล, ผ่าน NFR, พร้อมขาย | เป้าหมาย |
 | **post-v1.0** | Community marketplace + data flywheel + seasonal payout | future (Pillar C) |
-| **à¸‚à¸¢à¸²à¸¢** | à¸ªà¸²à¸à¸¥ (persona à¸«à¸¥à¸²à¸¢à¸ à¸²à¸©à¸²) | à¸«à¸¥à¸±à¸‡ PMF à¹ƒà¸™à¹„à¸—à¸¢ |
+| **ขยาย** | สากล (persona หลายภาษา) | หลัง PMF ในไทย |
 
 ---
 
-## 14. Open Decisions (à¸£à¸­à¹€à¸„à¸²à¸°)
+## 14. Open Decisions (รอเคาะ)
 
-1. ~~à¹€à¸‚à¸µà¸¢à¸™ ADR-10/11/12 à¸—à¸µà¹ˆà¹„à¸«à¸™~~ â†’ à¸—à¸³à¹à¸¥à¹‰à¸§: `docs/ADR-10..12-*.md` (status Proposed) + à¹à¸–à¸§à¹ƒà¸™ ROADMAP
-2. **amend ADR-06** â€” re-scope no-egress à¹€à¸›à¹‡à¸™ "à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸—à¸µà¹ˆà¹„à¸¡à¹ˆ opt-in à¸«à¹‰à¸²à¸¡à¸£à¸±à¹ˆà¸§" (ADR-11 à¹€à¸ªà¸™à¸­à¹„à¸§à¹‰ â€” à¸£à¸­ accept)
-3. **à¸£à¸²à¸„à¸²à¸ˆà¸£à¸´à¸‡ + tier structure** (validate à¸¿99â€“199 à¸à¸±à¸šà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¹„à¸—à¸¢)
-4. **Distribution**: web/Vercel à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™ à¸«à¸£à¸·à¸­ publish Overwolf à¸”à¹‰à¸§à¸¢
+1. ~~เขียน ADR-10/11/12 ที่ไหน~~ → ทำแล้ว: `docs/ADR-10..12-*.md` (status Proposed) + แถวใน ROADMAP
+2. **amend ADR-06** — re-scope no-egress เป็น "ข้อมูลที่ไม่ opt-in ห้ามรั่ว" ([[ADR-11-optin-data-contribution-flywheel|ADR-11]] เสนอไว้ — รอ accept)
+3. **ราคาจริง + tier structure** (validate ฿99–199 กับผู้ใช้ไทย)
+4. **Distribution**: web/Vercel เท่านั้น หรือ publish Overwolf ด้วย
 
 ---
 
 ## 15. Related Documents
-- [PRD](product-requirements.md) Â· [SRS](software-requirements-specification.md)
-- [Competitive Brief](competitive-brief.md) (Â§10 = strategic pillars)
-- [ROADMAP](roadmap.md) Â· ADR-10/11/12 à¹ƒà¸™ `docs/`
+- [[product-requirements|PRD]] · [[software-requirements-specification|SRS]]
+- [[competitive-brief|Competitive Brief]] (§10 = strategic pillars)
+- [[roadmap|ROADMAP]] · ADR-10/11/12 ใน `docs/`
 
 ## Changelog
 | Version | Date | Summary |
 | --- | --- | --- |
-| 0.1.0 | 2026-06-23 | BRD à¸‰à¸šà¸±à¸šà¹à¸£à¸ |
-| 0.2.0 | 2026-06-23 | + Â§4.1 User Personas, + Â§8.1 Financial Model; à¸œà¸¹à¸ ADR-10/11/12 |
-
-
-
-
-
+| 0.1.0 | 2026-06-23 | BRD ฉบับแรก |
+| 0.2.0 | 2026-06-23 | + §4.1 User Personas, + §8.1 Financial Model; ผูก ADR-10/11/12 |

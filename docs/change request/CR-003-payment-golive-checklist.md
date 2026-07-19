@@ -16,7 +16,7 @@ and the shard faucet (`match-share-submit`) may be deployed and money may flow.
 
 **Why this exists:** the wallet/billing SCHEMA is live on gstore (2026-07-17) and every
 economy RPC + the webhook DB-flow is verified. What is deliberately NOT deployed is the
-real-money path — ADR-16 §Prerequisites gate it on legal/terms/consent, and the Omise
+real-money path — [[ADR-16-credit-economy-and-mint-oracle|ADR-16]] §Prerequisites gate it on legal/terms/consent, and the Omise
 integration is sandbox-unverified. This doc is the sequence to clear those gates.
 
 **Legend:** 🔴 business/legal (Boss) · 🔑 requires Omise secret (Boss sets it — an assistant
@@ -24,16 +24,16 @@ must never enter financial API keys) · 🤖 assistant-doable once earlier phase
 
 ---
 
-## Phase 0 — Business / Legal (ADR-16 §Prerequisites)  🔴
+## Phase 0 — Business / Legal ([[ADR-16-credit-economy-and-mint-oracle|ADR-16]] §Prerequisites)  🔴
 
-- [ ] Clear the **legal status with Valve** re CV minimap reading (ADR-11 §5: Valve banned
+- [ ] Clear the **legal status with Valve** re CV minimap reading ([[ADR-11-optin-data-contribution-flywheel|ADR-11]] §5: Valve banned
       ~40k accounts + killed Overwolf for live position feeding). "ต้องเคลียร์ก่อนเปิด
       ingestion เชิงพาณิชย์" — before, not after, holding user data.
 - [ ] Write **Terms**: shard is non-transferable · non-withdrawable · non-refundable · has an
       expiry · redeemable only for first-party digital goods (ADR-16 §Prereq 2).
-- [ ] Write **PDPA consent** for payment/data-ingestion — **separate from sign-in** (ADR-14 is
+- [ ] Write **PDPA consent** for payment/data-ingestion — **separate from sign-in** ([[ADR-14-gid-account-identity|ADR-14]] is
       additive) and revocable/deletable retroactively (ADR-16 §Prereq 3).
-- [ ] Update **`CLAUDE.md`** to cite ADR-11/12/16 so the absolute privacy rule stops silently
+- [ ] Update **[[CLAUDE.md]]** to cite ADR-11/12/16 so the absolute privacy rule stops silently
       dropping the flywheel strategy (ADR-16 §Prereq 4).
 - [ ] Respect ADR-16's order-of-operations: silent-arm efficacy study → ingestion → shard →
       **payment/payout is last**.
@@ -41,7 +41,7 @@ must never enter financial API keys) · 🤖 assistant-doable once earlier phase
 ## Phase 1 — Omise account  🔑
 
 - [ ] Open an Omise/Opn merchant account; enable **PromptPay** + **TrueMoney**.
-- [ ] **Verify the sandbox assumptions** the code flags as unconfirmed (CR-003 §7):
+- [ ] **Verify the sandbox assumptions** the code flags as unconfirmed ([[CR-003-account-phase1-wallet-billing|CR-003]] §7):
   - webhook event envelope shape `{ id, key, data: { object, id } }` (`webhook.ts` parseWebhookEvent)
   - charge `status` enum `successful | failed | expired` mapping (`webhook.ts` decideOrderOutcome)
   - the charge-create field names `topup-create` sends to `POST /charges`
@@ -55,13 +55,13 @@ must never enter financial API keys) · 🤖 assistant-doable once earlier phase
 - [ ] Deploy `payment-webhook` with **`verify_jwt = false`** (Omise posts no JWT; authenticity
       comes from re-fetching the charge from Omise with the secret key — `index.ts` header).
 - [ ] (Faucet, separate track) `match-share-submit` also stays gated: needs Phase 0 legal +
-      real shard-scoring (currently a placeholder) + a `match_id` source in `MatchShareCard`.
+      real shard-scoring (currently a placeholder) + a `match_id` source in [`MatchShareCard`](file:///g:/G-Maiden/src/src/MatchShareCard.tsx).
 
 ## Phase 3 — Verify sandbox → go-live  🤖 / 🔑
 
 - [ ] End-to-end test on Omise **sandbox**: create charge → pay test PromptPay/TrueMoney →
       Omise webhook → `payment-webhook` → `credit_topup` credits the wallet.
-- [ ] `update coin_packages set active = true;` → the 3 tiers surface in `TopupModal`
+- [ ] `update coin_packages set active = true;` → the 3 tiers surface in [`TopupModal`](file:///g:/G-Maiden/src/src/TopupModal.tsx)
       (currently hidden by the `for select using (active)` RLS while inactive).
 - [ ] Swap Omise to **live keys**; run one real low-value transaction end-to-end before opening.
 
@@ -78,7 +78,7 @@ must never enter financial API keys) · 🤖 assistant-doable once earlier phase
 | Economy RPCs (redeem / purchase_item / tip / topup) | 🟢 behaviorally verified (local sim) |
 | payment-webhook flow (parse/decide + DB dedup/credit) | 🟢 verified (Deno 8/8 + DB sim); Omise re-fetch unverified |
 | Payment Edge Functions (`topup-create` / `payment-webhook`) | 🔴 NOT deployed — this checklist |
-| Faucet (`match-share-submit` / `mint_shard_from_match`) | 🔴 NOT deployed — ADR-16 gated |
+| Faucet (`match-share-submit` / `mint_shard_from_match`) | 🔴 NOT deployed — [[ADR-16-credit-economy-and-mint-oracle|ADR-16]] gated |
 
 Technically ready; blocked on Phase 0 (legal/terms/consent) + Phase 1 (Omise account + secret),
 both of which are Boss's to complete.

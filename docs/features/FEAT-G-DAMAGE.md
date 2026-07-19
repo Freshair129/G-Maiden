@@ -16,8 +16,8 @@ related_docs: ["FEAT-G-SIGNAL", "FEAT-G-MASTER", "FEAT-G-MOTION", "FEAT-G-SENSOR
 # FEAT-G-DAMAGE — Real-time Lethality Engine
 
 > **Module:** G-Damage · **Priority:** Core · **Phase:** 3 (feeds G-Signal)
-> **SRS:** §3.3, §3.4 · **Eng Spec:** §2.3 · **TDD:** §3
-> **สถานะโค้ดปัจจุบัน:** `src-tauri/src/damage.rs` — defensive (`is_lethal`) + offensive (`can_i_kill`, P-D1) + item/ability-level engine (`burst_damage_with`, P-D2a) + JSON hero/item DB (P-D3) พร้อม 23 unit tests. **ยังขาด:** GSI wiring จริง (P-D2b), CV HP-bar (P-D4), belief-revision wiring (P-D5) — โมดูลยัง `#![allow(dead_code)]` (ยังไม่ต่อเข้า Tauri command / G-Signal)
+> **SRS:** [[software-requirements-specification|SRS]] §3.3, §3.4 · [[engineering-spec|Eng Spec]] §2.3 · [[technical-design-document|TDD]] §3
+> **สถานะโค้ดปัจจุบัน:** [`src-tauri/src/damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs) — defensive ([`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)) + offensive ([`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334), P-D1) + item/ability-level engine ([`burst_damage_with`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136), P-D2a) + JSON hero/item DB (P-D3) พร้อม 23 unit tests. **ต่อสายจริงแล้ว (บางส่วน):** [`self_burst()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L465) ใช้ hero/level/item_names จริงจาก GSI ป้อน [`burst_damage_with()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136) แล้วถูกเรียกจาก [`master::build_prompt`](file:///g:/G-Maiden/src-tauri/src/master.rs#L51) (`master.rs:72`) — โผล่เป็นบรรทัด "พลังคอมโบโดยประมาณ ~X dmg" ใน advice ของ **G-Master** จริงในเกม. **ยังขาด:** ฝั่ง target-side ทั้งหมด — [`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)/[`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334)/[`KillWindow`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L309) ยังไม่ต่อเข้า G-Signal หรือ Tauri command ใด ๆ, ability-level array จาก GSI (P-D2b), CV HP-bar (P-D4), belief-revision wiring (P-D5) — โมดูลยังมี `#![allow(dead_code)]` ครอบส่วนที่ยังไม่ถูกเรียก
 
 ---
 
@@ -38,7 +38,7 @@ related_docs: ["FEAT-G-SIGNAL", "FEAT-G-MASTER", "FEAT-G-MOTION", "FEAT-G-SENSOR
 | --- | --- | --- |
 | GSI (ฝั่งเรา) | hero, level, abilities, items, talents, hp, mana | ✅ แม่น 100% |
 | G-Master | ไอเทม/Net Worth ศัตรูที่สอดแนมได้ | ✅ มี (ต่อท่อ) |
-| CV (`src-tauri/src/cv/`) | แถบเลือดศัตรู (current HP %) | ⚠️ ต้องเพิ่ม HP-bar detector |
+| CV ([`src-tauri/src/cv/`](file:///g:/G-Maiden/src-tauri/src/cv/)) | แถบเลือดศัตรู (current HP %) | ⚠️ ต้องเพิ่ม HP-bar detector |
 | Hero DB | base stats + ability damage tables ทุกฮีโร่ | ⚠️ base stats ครบ 127 ตัว, ability tables curate แล้ว 8/127 |
 
 ## 3. The Two-Sided Problem (หลักการสำคัญที่สุด)
@@ -109,7 +109,7 @@ pub fn can_i_kill_with(attacker, attacker_level, ability_levels, items,
 
 ## 6. Belief Revision Integration (จุดที่เปลี่ยนจุดอ่อนเป็นจุดเด่น)
 
-ฝั่ง target ไม่มีวันแม่น 100% → ใช้พฤติกรรมที่ FEAT-G-SIGNAL §6 บังคับไว้แล้ว:
+ฝั่ง target ไม่มีวันแม่น 100% → ใช้พฤติกรรมที่ [[FEAT-G-SIGNAL]] §6 บังคับไว้แล้ว:
 
 1. `confidence ≥ 0.7` → *"กดได้! เลือดมันเหลือนิดเดียว!"*
 2. ถ้าเฟรมถัดมาเจอบัฟ/เลือดเด้ง (เช่น CV เห็น shield, หรือ HP เพิ่มผิดคาด):
@@ -128,23 +128,23 @@ pub fn can_i_kill_with(attacker, attacker_level, ability_levels, items,
 | ไม่มี LLM/network | ทั้ง path | rule-based เท่านั้น (เหมือน G-Signal) |
 | Confidence floor | KILL_CONFIDENCE = 0.7 | ปรับได้ผ่าน G-Log calibration |
 
-## 8. รายการช่องโหว่ในโค้ดปัจจุบันที่ต้องอุด (จาก `damage.rs` v0.6.0)
+## 8. รายการช่องโหว่ในโค้ดปัจจุบันที่ต้องอุด (จาก [`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs) v0.6.0)
 
 | # | ช่องโหว่ | สถานะ | หมายเหตุ |
 | --- | --- | --- | --- |
-| 1 | `burst_damage` ไม่นับไอเทม | ✅ **P-D2a** | `burst_damage_with()` + item DB (Dagon/แดเมจไอเทม); Aghs ยังไม่ครอบ |
-| 2 | `estimate_ability_level` เดาเลเวลสกิล | ✅ **P-D2a** | รับ `ability_levels` จริงได้แล้ว, estimate เป็น fallback |
+| 1 | `burst_damage` ไม่นับไอเทม | ✅ **P-D2a** | [`burst_damage_with()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136) + item DB (Dagon/แดเมจไอเทม); Aghs ยังไม่ครอบ |
+| 2 | [`estimate_ability_level`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L217) เดาเลเวลสกิล | ✅ **P-D2a** | รับ `ability_levels` จริงได้แล้ว, estimate เป็น fallback |
 | 3 | ฮาร์ดโค้ด "ตี 2 ที" | ⏳ P-D4 | ต้องมี attack-speed timing |
 | 4 | Hero DB มีแค่ 8 ฮีโร่ | 🟡 **P-D3** | base stats ครบ 127 ตัว (JSON); ability tables curate แล้ว 8/127 |
-| 5 | ฝั่ง offensive (`can_i_kill`) | ✅ **P-D1** | + confidence model |
-| 6 | อ่าน current HP ศัตรู | ⏳ P-D4 | HP-bar detector ใน `cv/` |
+| 5 | ฝั่ง offensive ([`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334)) | ✅ **P-D1** | + confidence model |
+| 6 | อ่าน current HP ศัตรู | ⏳ P-D4 | HP-bar detector ใน [`cv/`](file:///g:/G-Maiden/src-tauri/src/cv/) |
 
 ## 9. Implementation Plan (phased)
 
-- ✅ **P-D1 — Offensive core:** `can_i_kill()` + `KillWindow` + `kill_confidence()` (23 tests). DONE `b7ed1c6`.
-- ✅ **P-D2a — Item/ability engine:** `burst_damage_with()` รับ items + ability levels จริง; item DB + `loadout_from_names()`. DONE.
-- ⏳ **P-D2b — GSI wiring:** พาร์ส `items`/`abilities` arrays ใน `gsi.rs` (ตอนนี้ดึงแค่ summary) → ป้อนเข้า `*_with()`; เกราะศัตรูจาก G-Master.
-- 🟡 **P-D3 — JSON-backed DB:** DB ย้ายออกจาก Rust ไป `data/heroes.json` + `data/items.json` (โหลดผ่าน `include_str!`); generator `tools/gen-herodb/` ดึง base stats ครบ 127 จาก dotaconstants. เหลือ curate ability tables (8/127) — งานข้อมูลล้วน ไม่ต้องแก้ logic.
+- ✅ **P-D1 — Offensive core:** [`can_i_kill()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334) + [`KillWindow`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L309) + [`kill_confidence()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L291) (23 tests). DONE `b7ed1c6`.
+- ✅ **P-D2a — Item/ability engine:** [`burst_damage_with()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136) รับ items + ability levels จริง; item DB + [`loadout_from_names()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L444). DONE.
+- ⏳ **P-D2b — GSI wiring:** พาร์ส `items`/`abilities` arrays ใน [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) (ตอนนี้ดึงแค่ summary) → ป้อนเข้า `*_with()`; เกราะศัตรูจาก G-Master.
+- 🟡 **P-D3 — JSON-backed DB:** DB ย้ายออกจาก Rust ไป [`data/heroes.json`](file:///g:/G-Maiden/src-tauri/data/heroes.json) + [`data/items.json`](file:///g:/G-Maiden/src-tauri/data/items.json) (โหลดผ่าน `include_str!`); generator [`tools/gen-herodb/`](file:///g:/G-Maiden/tools/gen-herodb/) ดึง base stats ครบ 127 จาก dotaconstants. เหลือ curate ability tables (8/127) — งานข้อมูลล้วน ไม่ต้องแก้ logic.
 - ⏳ **P-D4 — CV HP-bar + attack timing:** enemy HP-bar detector → current HP %; attack-speed → จำนวนตีจริง.
 - ⏳ **P-D5 — Belief revision wiring:** ต่อ confidence → G-Signal interrupt + G-Log calibration loop.
 

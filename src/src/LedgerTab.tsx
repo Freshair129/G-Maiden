@@ -132,6 +132,13 @@ export default function LedgerTab() {
     setCursorStack([undefined]);
     setPageIndex(0);
     void loadPage(undefined);
+    // Deliberately `[user?.id]` only, NOT `[user, loadPage]`: this must reset
+    // to page 0 exactly on THIS component's own account transition. `loadPage`
+    // comes from `useWallet().ledger` (deps `[user?.id]` inside wallet.ts),
+    // but that's a SEPARATE `useAuth()` instance (its own listener) from the
+    // `user` used here — the two settle in independent renders, so keying off
+    // `loadPage`'s identity risks an extra desynced reset+refetch instead of
+    // exactly one per real sign-in/out here.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 

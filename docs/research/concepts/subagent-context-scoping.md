@@ -162,7 +162,7 @@ A Resource that fails the scope filter has no tier; it does not appear in the su
 
 ## Source
 
-- `packages/msp/docs/UNIVERSAL-CONTEXT-FRAMEWORK_spec.md` §9 — task descriptor, escalation flow, effective-context formula.
+- `[[UNIVERSAL-CONTEXT-FRAMEWORK_spec]]` (`packages/msp/docs/UNIVERSAL-CONTEXT-FRAMEWORK_spec.md`) §9 — task descriptor, escalation flow, effective-context formula.
 - `[[FRAMEWORK--UNIVERSAL-CONTEXT-FRAMEWORK]]` §10 Layer 2 — where task scope fits in the pipeline.
 - `[[CONCEPT--ABAC-POLICY-ENGINE]]` — same PDP enforces both user-ABAC and task-scope.
 - `[[CONCEPT--SUBJECT-RESOURCE-ACTION-CONTEXT]]` — Subject.kind = 'subagent' carries scope in attributes.

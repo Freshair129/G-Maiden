@@ -10,7 +10,7 @@ related_docs: ["CR-002-command-deck-ui-port", "ADR-13-dxgi-capture-migration"]
 
 # CR-002 Phase 2 — Wire command deck to live data + run in real Tauri
 
-> Phase 1 landed the command-deck UI on **mock data** (`companion.ts` -> baked `MOCK`).
+> Phase 1 landed the command-deck UI on **mock data** ([`companion.ts`](file:///g:/G-Maiden/src/src/companion.ts) -> baked `MOCK`).
 > Phase 2 replaces the mock with **live G-Maiden state** (GSI + CV/DXGI) and verifies it
 > in the real Tauri window. Do this in the **next session**.
 
@@ -27,22 +27,22 @@ Control window -> command deck (mock). Overlay window -> unchanged CV overlay.
 capture-mode badge will show **DXGI/Lite live** (Tauri event already wired).
 
 ## 1. Data-source rewire (the core work)
-`companion.ts::useCompanionData()` currently `fetch("/api/companion")`. Rewire to **Tauri
-events/commands** (consistent with `App.tsx` overlay which uses `listen('game-tick')` etc.).
+[`companion.ts::useCompanionData()`](file:///g:/G-Maiden/src/src/companion.ts) currently `fetch("/api/companion")`. Rewire to **Tauri
+events/commands** (consistent with [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) overlay which uses `listen('game-tick')` etc.).
 Recommended: a small adapter that builds a `CompanionData` object from the live streams the
 Rust backend already emits, and feeds it to the deck.
 
 **Source map (CompanionData <- live):**
 | CompanionData field | Live source (Rust) |
 |---|---|
-| `match.clock / scores / mode / gsiOnline` | `game-tick` (GameTick, gsi.rs) + `gsi-status` |
+| `match.clock / scores / mode / gsiOnline` | `game-tick` (GameTick, [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs)) + `gsi-status` |
 | `match.player.{nw,gpm,xpm,k,d,a,cs,denies,ping}` | GameTick (GSI player block) |
 | `match.player.*Avg` (trend baselines) | **needs history** -> Phase 2b (per-hero/time avg from local match log / DB) |
 | `heroes[]` allies/enemies (kda, level, items, state, hpPercent) | GSI players + CV: `minimap-cv` detections + `enemy-missing` -> state visible/missing/dead; hp from GSI |
 | `markers[]` (minimap positions) | `minimap-cv` detections (x/y normalised) |
 | capture-mode badge | `capture-mode` event (already wired, works in Tauri) |
 | `profile.{rank,mmr,winRate,games,kda,mainHero,behavior,role,hours}` | **external** (OpenDota / Steam) -> Phase 2b; respect privacy (public flag) |
-| signals / gankRisk / safePush / warningTabs | G-Signal / G-Motion outputs (signal.rs / motion.rs) |
+| signals / gankRisk / safePush / warningTabs | G-Signal / G-Motion outputs ([`signal.rs`](file:///g:/G-Maiden/src-tauri/src/signal.rs) / [`motion.rs`](file:///g:/G-Maiden/src-tauri/src/motion.rs)) |
 
 ## 2. Phasing
 - **2a (live match essentials):** clock/scores/gsiOnline, player stat bar (no baselines yet -> hide arrows or use flat), heroes visible/missing/dead + timers, markers, gank/threat from G-Signal. Keep `MOCK` as dev fallback.

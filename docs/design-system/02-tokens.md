@@ -11,7 +11,7 @@ attributes:
 
 # 02 — Design Tokens
 
-> SSOT ของ **ค่า** ทั้งหมด แก้ที่นี่ที่เดียว แล้ว sync ไป `src/src/styles.css` `:root`
+> SSOT ของ **ค่า** ทั้งหมด แก้ที่นี่ที่เดียว แล้ว sync ไป [`src/src/styles.css`](file:///g:/G-Maiden/src/src/styles.css) `:root`
 > Naming: `--g-<group>-<role>` (prefix `g` = G-Maiden namespace, กัน collision กับ lib)
 
 ---
@@ -22,51 +22,51 @@ attributes:
 
 | token | hex / rgba | ใช้ที่ |
 | --- | --- | --- |
-| `--g-void` | `#06070A` | พื้นหลังสุด (นอก glass panel), overlay = โปร่งใส |
-| `--g-ink` | `#0B0E16` | solid fallback เมื่อ backdrop-filter ไม่รองรับ |
-| `--g-glass-a` | `rgba(34, 46, 74, 0.30)` | glass gradient stop บน |
-| `--g-glass-b` | `rgba(10, 13, 22, 0.42)` | glass gradient stop ล่าง |
-| `--g-glass-rim` | `rgba(160, 200, 255, 0.16)` | เส้นขอบ panel (บาง, จับแสง) |
-| `--g-card` | `rgba(150, 200, 255, 0.05)` | พื้น card ใน panel |
-| `--g-card-line` | `rgba(150, 200, 255, 0.08)` | เส้น card |
-| `--g-fab` | `rgba(14, 18, 28, 0.45)` | พื้น FAB (โปร่ง + blur) |
-| `--g-fab-rim` | `rgba(160, 200, 255, 0.14)` | เส้น FAB |
+| [`--g-void`](file:///g:/G-Maiden/src/src/styles.css#L13) | `#06070A` | พื้นหลังสุด (นอก glass panel), overlay = โปร่งใส |
+| [`--g-ink`](file:///g:/G-Maiden/src/src/styles.css#L13) | `#0B0E16` | solid fallback เมื่อ backdrop-filter ไม่รองรับ |
+| [`--g-glass-a`](file:///g:/G-Maiden/src/src/styles.css#L14) | `rgba(34, 46, 74, 0.30)` | glass gradient stop บน |
+| [`--g-glass-b`](file:///g:/G-Maiden/src/src/styles.css#L14) | `rgba(10, 13, 22, 0.42)` | glass gradient stop ล่าง |
+| [`--g-glass-rim`](file:///g:/G-Maiden/src/src/styles.css#L15) | `rgba(160, 200, 255, 0.16)` | เส้นขอบ panel (บาง, จับแสง) |
+| [`--g-card`](file:///g:/G-Maiden/src/src/styles.css#L16) | `rgba(150, 200, 255, 0.05)` | พื้น card ใน panel |
+| [`--g-card-line`](file:///g:/G-Maiden/src/src/styles.css#L16) | `rgba(150, 200, 255, 0.08)` | เส้น card |
+| [`--g-fab`](file:///g:/G-Maiden/src/src/styles.css#L17) | `rgba(14, 18, 28, 0.45)` | พื้น FAB (โปร่ง + blur) |
+| [`--g-fab-rim`](file:///g:/G-Maiden/src/src/styles.css#L17) | `rgba(160, 200, 255, 0.14)` | เส้น FAB |
 
 ### 1.2 Ice — primary brand ramp
 
 | token | hex | ใช้ที่ |
 | --- | --- | --- |
-| `--g-ice-100` | `#CFECFF` | text บนพื้น ice เข้ม |
-| `--g-ice-300` | `#9BE7FF` | highlight, glow |
-| `--g-ice-500` | `#8FD4FF` | **primary** — link, active, focus ring, brand text |
-| `--g-ice-600` | `#64C7FF` | hover เข้ม, icon |
-| `--g-ice-700` | `#226CFF` | deep action / primary button fill |
-| `--g-ice-dim` | `#6B8BB5` | ข้อความรอง sub-label บนพื้น ice |
+| [`--g-ice-100`](file:///g:/G-Maiden/src/src/styles.css#L18) | `#CFECFF` | text บนพื้น ice เข้ม |
+| [`--g-ice-300`](file:///g:/G-Maiden/src/src/styles.css#L18) | `#9BE7FF` | highlight, glow |
+| [`--g-ice-500`](file:///g:/G-Maiden/src/src/styles.css#L18) | `#8FD4FF` | **primary** — link, active, focus ring, brand text |
+| [`--g-ice-600`](file:///g:/G-Maiden/src/src/styles.css#L19) | `#64C7FF` | hover เข้ม, icon |
+| [`--g-ice-700`](file:///g:/G-Maiden/src/src/styles.css#L19) | `#226CFF` | deep action / primary button fill |
+| [`--g-ice-dim`](file:///g:/G-Maiden/src/src/styles.css#L19) | `#6B8BB5` | ข้อความรอง sub-label บนพื้น ice |
 
 ### 1.3 Lime — signal / tactical accent
 
 | token | hex | ใช้ที่ |
 | --- | --- | --- |
-| `--g-lime-500` | `#A3E635` | **accent** — index chip (1–6), tactical badge, G-Signal hero card, anchor active |
-| `--g-lime-soft` | `rgba(163, 230, 53, 0.16)` | พื้น chip/badge |
-| `--g-lime-line` | `rgba(163, 230, 53, 0.34)` | เส้น chip/badge |
+| [`--g-lime-500`](file:///g:/G-Maiden/src/src/styles.css#L20) | `#A3E635` | **accent** — index chip (1–6), tactical badge, G-Signal hero card, anchor active |
+| [`--g-lime-soft`](file:///g:/G-Maiden/src/src/styles.css#L20) | `rgba(163, 230, 53, 0.16)` | พื้น chip/badge |
+| [`--g-lime-line`](file:///g:/G-Maiden/src/src/styles.css#L20) | `rgba(163, 230, 53, 0.34)` | เส้น chip/badge |
 
 > **ทำไมมี 2 accent:** ice = แบรนด์/navigation (เย็น, นิ่ง); lime = "มีอะไรต้องสนใจ" (G-Signal, live).
 > อย่าใช้สลับกัน — lime สงวนไว้สำหรับ tactical/attention เท่านั้น กันไม่ให้ทั้งจอเขียว
 
 ### 1.3b Materials — instrument matte (CR-011 §B, v3, shipped waves P1–P3)
 
-> Two-material rule เต็ม ๆ อยู่ที่ `01-foundations.md` §2.1 — ตารางนี้คือค่าจริงในโค้ด
-> (`src/src/styles.css` `:root`). Interior sector/card ทุกอันใช้กลุ่มนี้ **แทน**
+> Two-material rule เต็ม ๆ อยู่ที่ [[01-foundations|01-foundations.md]] §2.1 — ตารางนี้คือค่าจริงในโค้ด
+> ([`src/src/styles.css`](file:///g:/G-Maiden/src/src/styles.css) `:root`). Interior sector/card ทุกอันใช้กลุ่มนี้ **แทน**
 > `--g-glass-*`/`--g-blur-*` — ห้ามมี blur/shadow บน instrument.
 
 | token | hex / rgba | ใช้ที่ |
 | --- | --- | --- |
-| `--g-instrument` | `#0B0E16` | พื้น interior sector หลัก (score header, hero slot, battle grid, sector log, agent/on-air card, momentum, ฯลฯ) |
-| `--g-instrument-2` | `#0D1119` | พื้นชั้นยกอีกนิด (phase chip fill, rundown row, minimap ground) |
-| `--g-hairline` | `rgba(150, 185, 230, 0.10)` | เส้นขอบ 1px มาตรฐานของ instrument |
-| `--g-hairline-2` | `rgba(150, 185, 230, 0.16)` | เส้นขอบเข้มขึ้น (phase chip, onair chip, palette hairline) |
-| `--g-coin` | `#E4C36B` | economy gold — **ห้ามใช้เป็น status color** (แยกจาก safe/warn/danger) |
+| [`--g-instrument`](file:///g:/G-Maiden/src/src/styles.css#L36) | `#0B0E16` | พื้น interior sector หลัก (score header, hero slot, battle grid, sector log, agent/on-air card, momentum, ฯลฯ) |
+| [`--g-instrument-2`](file:///g:/G-Maiden/src/src/styles.css#L36) | `#0D1119` | พื้นชั้นยกอีกนิด (phase chip fill, rundown row, minimap ground) |
+| [`--g-hairline`](file:///g:/G-Maiden/src/src/styles.css#L37) | `rgba(150, 185, 230, 0.10)` | เส้นขอบ 1px มาตรฐานของ instrument |
+| [`--g-hairline-2`](file:///g:/G-Maiden/src/src/styles.css#L37) | `rgba(150, 185, 230, 0.16)` | เส้นขอบเข้มขึ้น (phase chip, onair chip, palette hairline) |
+| [`--g-coin`](file:///g:/G-Maiden/src/src/styles.css#L38) | `#E4C36B` | economy gold — **ห้ามใช้เป็น status color** (แยกจาก safe/warn/danger) |
 
 > โค้ดปัจจุบันยังเก็บค่าเป็น hex ตรง ๆ (ไม่ใช่ OKLCH ตามที่ CR-011 §H ร่างไว้) — คอมเมนต์ใน
 > `styles.css` ระบุชัดว่า "hex today, OKLCH literal migration is a later mechanical pass";
@@ -76,18 +76,18 @@ attributes:
 
 | token | hex | ใช้ที่ |
 | --- | --- | --- |
-| `--g-text` | `#EEF4FB` | ข้อความหลัก |
-| `--g-text-dim` | `#A9BEDB` | label, caption, meta (v3: ยกจาก `#8BA4C6` เดิม — contrast บนพื้น `--g-instrument` ทึบ, CR-011 §H "raised until ≥4.5:1") |
-| `--g-text-mute` | `#5E7699` | disabled / placeholder |
+| [`--g-text`](file:///g:/G-Maiden/src/src/styles.css#L21) | `#EEF4FB` | ข้อความหลัก |
+| [`--g-text-dim`](file:///g:/G-Maiden/src/src/styles.css#L21) | `#A9BEDB` | label, caption, meta (v3: ยกจาก `#8BA4C6` เดิม — contrast บนพื้น `--g-instrument` ทึบ, CR-011 §H "raised until ≥4.5:1") |
+| [`--g-text-mute`](file:///g:/G-Maiden/src/src/styles.css#L21) | `#5E7699` | disabled / placeholder |
 
 ### 1.5 Semantic (แยกจาก accent — ห้ามนับเป็นสีแบรนด์)
 
 | token | hex | ความหมาย |
 | --- | --- | --- |
-| `--g-safe` | `#22C55E` | ปลอดภัย / safe push / positive G-Signal |
-| `--g-ok` | `#31D0A0` | mint — เศรษฐกิจ/ทรัพยากรดี (แยกจาก safe) |
-| `--g-warn` | `#F59E0B` | เตือน / gank risk ปานกลาง |
-| `--g-danger` | `#F43F5E` | อันตราย / gank สูง / close action |
+| [`--g-safe`](file:///g:/G-Maiden/src/src/styles.css#L22) | `#22C55E` | ปลอดภัย / safe push / positive G-Signal |
+| [`--g-ok`](file:///g:/G-Maiden/src/src/styles.css#L22) | `#31D0A0` | mint — เศรษฐกิจ/ทรัพยากรดี (แยกจาก safe) |
+| [`--g-warn`](file:///g:/G-Maiden/src/src/styles.css#L22) | `#F59E0B` | เตือน / gank risk ปานกลาง |
+| [`--g-danger`](file:///g:/G-Maiden/src/src/styles.css#L22) | `#F43F5E` | อันตราย / gank สูง / close action |
 
 ### 1.6 Reconcile กับโค้ดปัจจุบัน (migration map)
 
@@ -118,12 +118,12 @@ attributes:
 
 | token | ค่า | ใช้ที่ |
 | --- | --- | --- |
-| `--g-font-ui` | `"IBM Plex Sans Thai Looped","IBM Plex Sans","Segoe UI",system-ui,sans-serif` | UI ทั้งหมด (v3, CR-011 §G/WP-3 — was `"Segoe UI", system-ui, sans-serif`) |
-| `--g-font-mono` | `"IBM Plex Mono",Consolas,ui-monospace,monospace` | clock, feed-age, ตัวเลขจัดคอลัมน์ (v3, was `Consolas, ui-monospace, monospace`) |
+| [`--g-font-ui`](file:///g:/G-Maiden/src/src/styles.css#L23) | `"IBM Plex Sans Thai Looped","IBM Plex Sans","Segoe UI",system-ui,sans-serif` | UI ทั้งหมด (v3, CR-011 §G/WP-3 — was `"Segoe UI", system-ui, sans-serif`) |
+| [`--g-font-mono`](file:///g:/G-Maiden/src/src/styles.css#L24) | `"IBM Plex Mono",Consolas,ui-monospace,monospace` | clock, feed-age, ตัวเลขจัดคอลัมน์ (v3, was `Consolas, ui-monospace, monospace`) |
 
 ### 2.1 Bundled font files (v3 — no CDN, CSP `default-src 'self'`)
 
-`src/src/index.css` `@font-face` loads from `src/public/fonts/` (local woff2, `font-display: swap`) —
+[`src/src/index.css`](file:///g:/G-Maiden/src/src/index.css) `@font-face` loads from `src/public/fonts/` (local woff2, `font-display: swap`) —
 6 files, matching the weights actually declared:
 
 | file | family | weight |
@@ -135,7 +135,7 @@ attributes:
 | `IBMPlexMono-Regular.woff2` | IBM Plex Mono | 400 |
 | `IBMPlexMono-Medium.woff2` | IBM Plex Mono | 500–700 |
 
-> Overlay (Combat HUD) keeps its own inline font stack per `07-combat-hud.md` (FPS-measure
+> Overlay (Combat HUD) keeps its own inline font stack per [[07-combat-hud|07-combat-hud.md]] (FPS-measure
 > first before bundling Plex into the overlay window too) — this bundle is Command-Deck-only.
 
 **Type scale (px)** — ยึด scale นี้ อย่าใช้ค่านอกลิสต์:
@@ -171,13 +171,13 @@ scale ฐาน 2 (px): **2 · 4 · 6 · 8 · 10 · 12 · 14 · 16**
 
 | token | px | ใช้ที่ |
 | --- | --- | --- |
-| `--g-r-sm` | 8 | ปุ่มเล็ก, chip, win-btn |
-| `--g-r-card` | 11 | card, log panel, stat cell (9–11) |
-| `--g-r-panel` | 14 | agent tile, topbar FAB |
-| `--g-r-fab` | 16 | sidebar FAB, signal card |
-| `--g-r-pill` | 999 | badge, gsi-badge, status |
-| `--g-r-frame-outer` | 28 | มุมนอกสุดของ Subtract panel |
-| `--g-r-frame-notch` | 20 | มุมเว้า (fillet) ของทุก notch |
+| [`--g-r-sm`](file:///g:/G-Maiden/src/src/styles.css#L25) | 8 | ปุ่มเล็ก, chip, win-btn |
+| [`--g-r-card`](file:///g:/G-Maiden/src/src/styles.css#L25) | 11 | card, log panel, stat cell (9–11) |
+| [`--g-r-panel`](file:///g:/G-Maiden/src/src/styles.css#L25) | 14 | agent tile, topbar FAB |
+| [`--g-r-fab`](file:///g:/G-Maiden/src/src/styles.css#L25) | 16 | sidebar FAB, signal card |
+| [`--g-r-pill`](file:///g:/G-Maiden/src/src/styles.css#L25) | 999 | badge, gsi-badge, status |
+| [`--g-r-frame-outer`](file:///g:/G-Maiden/src/src/styles.css#L26) | 28 | มุมนอกสุดของ Subtract panel |
+| [`--g-r-frame-notch`](file:///g:/G-Maiden/src/src/styles.css#L26) | 20 | มุมเว้า (fillet) ของทุก notch |
 
 ---
 
@@ -185,9 +185,9 @@ scale ฐาน 2 (px): **2 · 4 · 6 · 8 · 10 · 12 · 14 · 16**
 
 | token | ค่า | ใช้ที่ |
 | --- | --- | --- |
-| `--g-shadow-fab` | `0 12px 34px rgba(0,0,0,0.42)` | FAB ทุกตัวที่ลอยบน void |
-| `--g-shadow-panel` | `0 18px 50px rgba(0,0,0,0.55)` | drop-shadow ของ glass panel |
-| `--g-rim-top` | `inset 0 1px 0 rgba(255,255,255,0.06)` | ขอบบน glass จับแสง (borderless) |
+| [`--g-shadow-fab`](file:///g:/G-Maiden/src/src/styles.css#L30) | `0 12px 34px rgba(0,0,0,0.42)` | FAB ทุกตัวที่ลอยบน void |
+| [`--g-shadow-panel`](file:///g:/G-Maiden/src/src/styles.css#L32) | `0 18px 50px rgba(0,0,0,0.55)` | drop-shadow ของ glass panel |
+| [`--g-rim-top`](file:///g:/G-Maiden/src/src/styles.css#L33) | `inset 0 1px 0 rgba(255,255,255,0.06)` | ขอบบน glass จับแสง (borderless) |
 
 หลักการ: **glass = blur + rim บาง + shadow**, ไม่ใช้เส้นขอบทึบ (นั่นคือความรู้สึก borderless)
 
@@ -197,10 +197,10 @@ scale ฐาน 2 (px): **2 · 4 · 6 · 8 · 10 · 12 · 14 · 16**
 
 | token | ค่า | ใช้ที่ |
 | --- | --- | --- |
-| `--g-blur-panel` | `blur(30px) saturate(150%)` | main glass panel (legacy v2 token — interior sectors no longer consume this, ดู §1.3b two-material rule) |
-| `--g-blur-fab` | `blur(24px) saturate(160%)` | FAB, signal card |
-| `--g-blur-tile` | `blur(6px)` | agent card, chip บนภาพ (legacy) |
-| `--g-blur-console` | `blur(30px) saturate(150%)` | v3 (CR-011 §B) — **the only** blur token interior/pop layers should reference: `.g-deck-panel` shell + Maiden Line palette (`.gm-palette`) + shortcut sheet (`.gm-sheet`) |
+| [`--g-blur-panel`](file:///g:/G-Maiden/src/src/styles.css#L34) | `blur(30px) saturate(150%)` | main glass panel (legacy v2 token — interior sectors no longer consume this, ดู §1.3b two-material rule) |
+| [`--g-blur-fab`](file:///g:/G-Maiden/src/src/styles.css#L34) | `blur(24px) saturate(160%)` | FAB, signal card |
+| [`--g-blur-tile`](file:///g:/G-Maiden/src/src/styles.css#L34) | `blur(6px)` | agent card, chip บนภาพ (legacy) |
+| [`--g-blur-console`](file:///g:/G-Maiden/src/src/styles.css#L39) | `blur(30px) saturate(150%)` | v3 (CR-011 §B) — **the only** blur token interior/pop layers should reference: [`.g-deck-panel`](file:///g:/G-Maiden/src/src/styles.css#L4448) shell + Maiden Line palette (`.gm-palette`) + shortcut sheet (`.gm-sheet`) |
 
 ### 6.1 Quality tiers (v3, CR-011 §H — `html.gq-*` class)
 
@@ -225,12 +225,12 @@ document reflects the CSS contract, wiring is a later wave).
 
 | token | ค่า | ใช้ที่ |
 | --- | --- | --- |
-| `--g-t-micro` | `0.12s` | hover ปุ่ม, background/color |
-| `--g-t-hover` | `0.15s` | badge, card hover |
-| `--g-t-state` | `0.2s` | caret rotate, open/close |
-| `--g-t-bar` | `0.3s` | signal bar fill |
-| `--g-t-ambient` | `14s ease-in-out infinite` | light streak บน BG (decorative) |
-| `--g-ease` | `ease-out` | default |
+| [`--g-t-micro`](file:///g:/G-Maiden/src/src/styles.css#L43) | `0.12s` | hover ปุ่ม, background/color |
+| [`--g-t-hover`](file:///g:/G-Maiden/src/src/styles.css#L43) | `0.15s` | badge, card hover |
+| [`--g-t-state`](file:///g:/G-Maiden/src/src/styles.css#L43) | `0.2s` | caret rotate, open/close |
+| [`--g-t-bar`](file:///g:/G-Maiden/src/src/styles.css#L43) | `0.3s` | signal bar fill |
+| [`--g-t-ambient`](file:///g:/G-Maiden/src/src/styles.css#L44) | `14s ease-in-out infinite` | light streak บน BG (decorative) |
+| [`--g-ease`](file:///g:/G-Maiden/src/src/styles.css#L44) | `ease-out` | default |
 
 ทุก animation ต้องเคารพ `@media (prefers-reduced-motion: reduce)` — ปิด ambient/แต่งเติมทั้งหมด
 
@@ -240,11 +240,11 @@ document reflects the CSS contract, wiring is a later wave).
 
 | token | ค่า | layer |
 | --- | --- | --- |
-| `--g-z-bg` | 0 | ambient background |
-| `--g-z-panel` | 1 | glass panel + stroke |
-| `--g-z-content` | 10 | zone ต่าง ๆ ใน panel |
-| `--g-z-fab` | 100 | FAB, signal cards |
-| `--g-z-pop` | 200 | dropdown, tooltip, modal |
+| [`--g-z-bg`](file:///g:/G-Maiden/src/src/styles.css#L45) | 0 | ambient background |
+| [`--g-z-panel`](file:///g:/G-Maiden/src/src/styles.css#L45) | 1 | glass panel + stroke |
+| [`--g-z-content`](file:///g:/G-Maiden/src/src/styles.css#L45) | 10 | zone ต่าง ๆ ใน panel |
+| [`--g-z-fab`](file:///g:/G-Maiden/src/src/styles.css#L45) | 100 | FAB, signal cards |
+| [`--g-z-pop`](file:///g:/G-Maiden/src/src/styles.css#L45) | 200 | dropdown, tooltip, modal |
 
 ---
 

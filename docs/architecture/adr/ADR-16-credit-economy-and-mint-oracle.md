@@ -21,14 +21,14 @@ Accepted · 2026-07-10 · **amends ADR-11 §2/§3** · **constrains CR-003 (wall
 
 ## Context
 
-**ADR-11** (opt-in data contribution → credit) และ **ADR-12** (community AI marketplace,
+**[[ADR-11-optin-data-contribution-flywheel|ADR-11]]** (opt-in data contribution → credit) และ **[[ADR-12-community-ai-marketplace|ADR-12]]** (community AI marketplace,
 revenue share) ถูก accept ไปแล้วตั้งแต่ 2026-06-23 แต่:
 
 1. **ไม่มีที่ไหนนิยาม "credit" ว่าคืออะไร** — มีกี่สกุล, mint จากไหน, ใช้ซื้ออะไรได้,
    โอนกันได้ไหม, แปลงเป็นเงินได้ไหม CR-003 (wallet/billing, 51 atoms, ยังไม่ implement)
    กำลังจะเขียน schema โดยไม่มีคำตอบเหล่านี้
 2. **`CLAUDE.md` ขัดกับ ADR-11 โดยตรง** — เขียนว่า match data "local only, never upload"
-   และ "the opt-in account layer (ADR-14) is the **only** exception" โดยไม่เคยอ้าง ADR-11 เลย
+   และ "the opt-in account layer ([[ADR-14-gid-account-identity|ADR-14]]) is the **only** exception" โดยไม่เคยอ้าง ADR-11 เลย
    ผลคือทุก agent/ทุกคนที่อ่าน repo จะบังคับใช้กฎ absolute แล้วกลยุทธ์ flywheel ก็ถูกลืมซ้ำ ๆ
    **นี่คือสาเหตุที่ไอเดียนี้ "หายไป" หลายรอบ — เป็น doc-consistency bug ไม่ใช่ไอเดียที่หาย**
 3. **ADR-11 §2 ขัดแย้งในตัวเอง** — สั่ง "anonymize, ไม่เก็บ account id" แต่ §2 เองก็บอกให้
@@ -141,7 +141,7 @@ match_ref = HMAC(server_key, match_id)
 - **Burn event** เมื่อเฟ้อ — ต้องมี **มิเตอร์วัด shard supply รวม** ตั้งแต่วันแรก
   ไม่งั้นจะไม่รู้ว่าเมื่อไหร่ควรจุด
 
-### 7. Schema constraint (บังคับ CR-003)
+### 7. Schema constraint (บังคับ [[CR-003-account-phase1-wallet-billing|CR-003]])
 
 > **`provenance` แยก `earned | purchased` ต้องมีตั้งแต่ migration แรก**
 
@@ -154,7 +154,7 @@ match_ref = HMAC(server_key, match_id)
 
 ---
 
-## Amendments to ADR-11
+## Amendments to [[ADR-11-optin-data-contribution-flywheel|ADR-11]]
 
 | ข้อ | เดิม | แก้เป็น |
 | --- | --- | --- |
@@ -229,8 +229,8 @@ match_ref = HMAC(server_key, match_id)
 
 ## Related Documents
 
-ADR-11 (opt-in contribution) · ADR-12 (marketplace) · ADR-14 (GID identity) ·
-CR-003 (wallet/billing — schema ถูกบังคับโดย §7)
+[[ADR-11-optin-data-contribution-flywheel|ADR-11]] (opt-in contribution) · [[ADR-12-community-ai-marketplace|ADR-12]] (marketplace) · [[ADR-14-gid-account-identity|ADR-14]] (GID identity) ·
+[[CR-003-account-phase1-wallet-billing|CR-003]] (wallet/billing — schema ถูกบังคับโดย §7)
 
 ## Changelog
 

@@ -38,10 +38,12 @@ pub struct OcrHit {
 /// What went wrong. Most callers only care about `Unavailable` vs everything
 /// else, so they can fall back to a "scoreboard OCR off" UX without unwrapping.
 #[derive(Debug)]
-#[allow(dead_code)] // Decode will be constructed in Phase B (crop preprocessing)
 pub enum OcrError {
     /// Model files not present yet — run `tools/ocr-download/`.
     Unavailable,
+    /// Never constructed yet — Phase B's crop preprocessing (region-detector
+    /// crop before OCR) will be the first path that can fail to decode.
+    #[allow(dead_code)]
     Decode(String),
     Inference(String),
 }
@@ -110,7 +112,9 @@ fn engine() -> Result<&'static Mutex<Option<pure_onnx_ocr_sync::OcrEngine>>, Ocr
 
 /// True when the engine is wired and the model files are on disk. Cheap; safe
 /// to poll from the UI to gray out OCR-dependent panels.
-#[allow(dead_code)] // wired in Phase B/C
+// Built-ahead scaffold: no caller yet — awaits Phase B (scoreboard region
+// detector) / Phase C (`team-stats` event + Team NW Full module) wiring.
+#[allow(dead_code)]
 pub fn available() -> bool {
     models_dir().is_some()
 }
@@ -118,7 +122,9 @@ pub fn available() -> bool {
 /// Run OCR over an in-memory image. Returns a list of hits, ordered top-to-
 /// bottom by the bbox y-min (so a per-row crop reads naturally for the
 /// scoreboard layout).
-#[allow(dead_code)] // wired in Phase B/C
+// Built-ahead scaffold: no caller yet — awaits Phase B (scoreboard region
+// detector) / Phase C (`team-stats` event + Team NW Full module) wiring.
+#[allow(dead_code)]
 pub fn recognize(img: &DynamicImage) -> Result<Vec<OcrHit>, OcrError> {
     let m = engine()?;
     let g = m

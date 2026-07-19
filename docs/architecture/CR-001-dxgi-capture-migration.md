@@ -26,7 +26,7 @@ related_docs:
 |---|---|
 | **Request ID** | CR-001 |
 | **System** | G-Maiden (Dota 2 AI Companion) |
-| **Module** | Capture Pipeline (`src-tauri/src/capture.rs`) |
+| **Module** | Capture Pipeline ([`src-tauri/src/capture.rs`](file:///g:/G-Maiden/src-tauri/src/capture.rs)) |
 | **Current Version** | v0.1.0 |
 | **Target Version** | v0.2.0 |
 | **Type** | Performance Fix / Architecture Change |
@@ -68,13 +68,13 @@ G-Maiden ใช้ **Windows Graphics Capture (WGC)** จับภาพ minimap
 
 | Component | Change Type | Description |
 |---|---|---|
-| `src-tauri/src/dxgi.rs` | **New** | DXGI Desktop Duplication wrapper (~250 LOC) |
-| `src-tauri/src/capture.rs` | **Major Refactor** | WGC callback → DXGI explicit loop + Lite mode fallback |
-| `src-tauri/src/capture_wgc.rs` | **Rename** | เก็บ WGC code เดิมไว้ behind feature flag |
-| `src-tauri/Cargo.toml` | **Modify** | เพิ่ม `windows` crate features, ย้าย `windows-capture` เป็น optional |
-| `src/src/App.tsx` | **Minor** | เพิ่ม capture mode badge (DXGI/Lite) |
+| [`src-tauri/src/dxgi.rs`](file:///g:/G-Maiden/src-tauri/src/dxgi.rs) | **New** | DXGI Desktop Duplication wrapper (~250 LOC) |
+| [`src-tauri/src/capture.rs`](file:///g:/G-Maiden/src-tauri/src/capture.rs) | **Major Refactor** | WGC callback → DXGI explicit loop + Lite mode fallback |
+| [`src-tauri/src/capture_wgc.rs`](file:///g:/G-Maiden/src-tauri/src/capture_wgc.rs) | **Rename** | เก็บ WGC code เดิมไว้ behind feature flag |
+| [`src-tauri/Cargo.toml`](file:///g:/G-Maiden/src-tauri/Cargo.toml) | **Modify** | เพิ่ม `windows` crate features, ย้าย `windows-capture` เป็น optional |
+| [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) | **Minor** | เพิ่ม capture mode badge (DXGI/Lite) |
 | `CLAUDE.md` | **Minor** | อัปเดต gotcha #5 |
-| `modules.json` | **Minor** | Version bump |
+| [`modules.json`](file:///g:/G-Maiden/modules.json) | **Minor** | Version bump |
 
 ### 3.2 What Does NOT Change
 
@@ -218,7 +218,7 @@ Total: 33pt on critical path │ Bottleneck: Opus (18pt) │ ~3 days minimum
 
 ### 7.4 Parallel Opportunities
 
-5 parallel slots identified — see [DXGI-task-assignment.md](DXGI-task-assignment.md) DAG section
+5 parallel slots identified — see [[DXGI-task-assignment]] DAG section
 
 ---
 
@@ -325,12 +325,12 @@ Total: 33pt on critical path │ Bottleneck: Opus (18pt) │ ~3 days minimum
 
 | Document | Location |
 |---|---|
-| ADR-13: DXGI Capture Migration | [ADR-13](adr/ADR-13-dxgi-capture-migration.md) |
-| Implementation Plan | [IMPL-PLAN-DXGI-migration](IMPL-PLAN-DXGI-migration.md) |
-| Task Assignment + DAG | [DXGI-task-assignment](DXGI-task-assignment.md) |
+| ADR-13: DXGI Capture Migration | [[ADR-13-dxgi-capture-migration]] |
+| Implementation Plan | [[IMPL-PLAN-DXGI-migration]] |
+| Task Assignment + DAG | [[DXGI-task-assignment]] |
 | Error Log Evidence | `%LOCALAPPDATA%\G-Maiden\logs\error.log` (2026-06-28) |
-| Resource Governor | `src-tauri/src/governor.rs` |
-| Current Capture Code | `src-tauri/src/capture.rs` |
+| Resource Governor | [`src-tauri/src/governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs) |
+| Current Capture Code | [`src-tauri/src/capture.rs`](file:///g:/G-Maiden/src-tauri/src/capture.rs) |
 
 ---
 

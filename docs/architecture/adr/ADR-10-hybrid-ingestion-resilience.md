@@ -49,7 +49,7 @@ Accepted *(extends ADR-05)* Â· 2026-06-23
 
 ## Related Documents
 - ADR-05 (enemy positions from minimap CV) Â· ADR-03 (critical path Rust-only)
-- `docs/architecture/spikes/S-1-minimap-cv.md` Â· Competitive Brief Â§10.2 Â· BRD BR-03
+- [[S-1-minimap-cv]] Â· [[competitive-brief|Competitive Brief]] Â§10.2 Â· [[business-requirements|BRD]] BR-03
 
 ## Changelog
 | Version | Date | Summary |

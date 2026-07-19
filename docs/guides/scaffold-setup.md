@@ -8,31 +8,31 @@
 This document verifies the completion of task **G0.1: Scaffold Tauri v2 + React/Vite/Tailwind monorepo**.
 
 ### Root Structure
-- `package.json` — pnpm workspace root with monorepo config
+- [`package.json`](file:///g:/G-Maiden/package.json) — pnpm workspace root with monorepo config
 - `src-tauri/` — Rust core (Tauri v2 + tokio + axum ready)
 - `src/` — React + Vite + TypeScript + TailwindCSS frontend
 - `assets/voice-cache/` — Audio cache directory (for critical alerts)
 - `models/` — SLM + Piper voice models (lazy-load, not committed)
-- `tests/perf/` — Performance test harness placeholder
+- [`tests/perf/`](file:///g:/G-Maiden/tests/perf) — Performance test harness placeholder
 
 ### Tauri v2 Setup (src-tauri/)
-- ✅ `Cargo.toml` — Updated with tauri v2, tokio, serde, rusqlite, crossbeam
-- ✅ `tauri.conf.json` — Dev/build paths, window config, CSP, bundle targets (MSI/NSIS)
-- ✅ `build.rs` — Tauri build script
-- ✅ `src/main.rs` — Tauri app builder scaffolded (ready to receive modules)
+- ✅ [`Cargo.toml`](file:///g:/G-Maiden/src-tauri/Cargo.toml) — Updated with tauri v2, tokio, serde, rusqlite, crossbeam
+- ✅ [`tauri.conf.json`](file:///g:/G-Maiden/src-tauri/tauri.conf.json) — Dev/build paths, window config, CSP, bundle targets (MSI/NSIS)
+- ✅ [`build.rs`](file:///g:/G-Maiden/src-tauri/build.rs) — Tauri build script
+- ✅ [`src/main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs) — Tauri app builder scaffolded (ready to receive modules)
 - ✅ `src/audio/` — Placeholder for G4.6 narration queue
 - ✅ `src/glog/` — Placeholder for G-Log SQLite layer
 
 ### React Frontend (src/)
-- ✅ `package.json` — React 18, Vite, TypeScript, TailwindCSS, React Query, Zustand
-- ✅ `vite.config.ts` — Configured to build into `src-tauri/gen/web`
-- ✅ `tsconfig.json` + `tsconfig.node.json` — TypeScript strict mode
-- ✅ `tailwind.config.js` — Ice-glass theme colors (`ice-dark`, `ice-panel`)
-- ✅ `postcss.config.js` — Autoprefixer + TailwindCSS
+- ✅ [`package.json`](file:///g:/G-Maiden/src/package.json) — React 18, Vite, TypeScript, TailwindCSS, React Query, Zustand
+- ✅ [`vite.config.ts`](file:///g:/G-Maiden/src/vite.config.ts) — Configured to build into `src-tauri/gen/web`
+- ✅ [`tsconfig.json`](file:///g:/G-Maiden/src/tsconfig.json) + [`tsconfig.node.json`](file:///g:/G-Maiden/src/tsconfig.node.json) — TypeScript strict mode
+- ✅ [`tailwind.config.js`](file:///g:/G-Maiden/src/tailwind.config.js) — Ice-glass theme colors (`ice-dark`, `ice-panel`)
+- ✅ [`postcss.config.js`](file:///g:/G-Maiden/src/postcss.config.js) — Autoprefixer + TailwindCSS
 - ✅ `index.html` — Vite entry (loads React at #root)
-- ✅ `src/main.tsx` — React DOM mount point
-- ✅ `src/App.tsx` — Glassmorphism welcome component
-- ✅ `src/index.css` — Tailwind directives + dark theme base
+- ✅ [`src/main.tsx`](file:///g:/G-Maiden/src/src/main.tsx) — React DOM mount point
+- ✅ [`src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) — Glassmorphism welcome component
+- ✅ [`src/index.css`](file:///g:/G-Maiden/src/src/index.css) — Tailwind directives + dark theme base
 - ✅ Directory stubs:
   - `src/overlay/` — Overlay components (G-Sensory HUD layer)
   - `src/dashboard/` — Dashboard components (control/stats)

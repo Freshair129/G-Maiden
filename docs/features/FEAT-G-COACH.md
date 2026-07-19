@@ -3,7 +3,7 @@
 > **สถานะ (2026-07): ยังไม่ได้ทำ (spec ล่วงหน้า) — ยังไม่มีโมดูลนี้ในโค้ด (`src-tauri/src/`)**
 
 > **Module:** G-Coach · **Priority:** Companion P1 · **Phase:** 6–7
-> **PRD:** §3A G-Coach · **SRS:** §3.9
+> **PRD:** [[product-requirements|PRD]] §3A G-Coach · **SRS:** [[software-requirements-specification|SRS]] §3.9
 
 ---
 

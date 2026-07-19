@@ -4,11 +4,11 @@
 > **ที่มา:** Reference screenshots ที่ผู้ใช้แนบ (5 ภาพ)  
 > **จุดประสงค์:** map HUD element → GSI field → G-module เพื่อใช้กับ G-Sensory (overlay non-obstruction), G-Signal/G-Sentry (state), G-Master (net worth), G-Damage (hero DB)
 
-> 📁 **ไฟล์ภาพดิบ:** เก็บไว้ที่ [`docs/reference/dota-ui/`](../../reference/dota-ui/) แล้ว 4 ภาพหลัก:
+> 📁 **ไฟล์ภาพดิบ:** เก็บไว้ที่ [[reference/dota-ui/README|docs/reference/dota-ui/]] แล้ว 4 ภาพหลัก:
 > `hud-layout-annotated.webp` (ภาพ 1), `status-stunned.png` (ภาพ 2),
 > `combat-log-panel.png` (ภาพ 4), `hero-grid-strength.webp` (ภาพ 5).
 > ภาพที่เหลือ (scoreboard-buyback, agility/intelligence grids, announcer, respawn-table)
-> เป็น documented-only ในไฟล์นี้ — drop เพิ่มที่ `docs/reference/dota-ui/` ได้ถ้าต้องการ visual ref.
+> เป็น documented-only ในไฟล์นี้ — drop เพิ่มที่ [[reference/dota-ui/README|docs/reference/dota-ui/]] ได้ถ้าต้องการ visual ref.
 
 ---
 
@@ -187,7 +187,7 @@ Hero grid หมวด Intelligence (~32 heroes): Ancient Apparition, Bane, **Cr
 - **G-Motion:** enemy ตาย = หายจากแผนที่แน่นอน X วินาที → ปรับ gank prediction (ศัตรูที่ตายไม่ใช่ภัยคุกคาม จนกว่า respawn)
 - **G-Log:** บันทึก death timing + buyback decision เพื่อ post-match review (G-Coach)
 
-> 💡 ตารางนี้ควร hardcode เป็น lookup table ใน Rust (`respawn.rs` หรือใน `signal.rs`/`master.rs`) — เป็น static game constant ที่ deterministic ไม่ต้อง LLM
+> 💡 ตารางนี้ควร hardcode เป็น lookup table ใน Rust ([`respawn.rs`](file:///g:/G-Maiden/src-tauri/src/respawn.rs) หรือใน [`signal.rs`](file:///g:/G-Maiden/src-tauri/src/signal.rs)/[`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs)) — เป็น static game constant ที่ deterministic ไม่ต้อง LLM
 
 ---
 
@@ -207,4 +207,4 @@ Hero grid หมวด Intelligence (~32 heroes): Ancient Apparition, Bane, **Cr
 
 ---
 
-*Catalog generated 2026-06-24 — ภาพดิบเก็บที่ `docs/reference/dota-ui/` (4 ภาพหลัก); ที่เหลือ documented-only*
+*Catalog generated 2026-06-24 — ภาพดิบเก็บที่ [[reference/dota-ui/README|docs/reference/dota-ui/]] (4 ภาพหลัก); ที่เหลือ documented-only*

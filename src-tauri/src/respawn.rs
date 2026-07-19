@@ -6,12 +6,10 @@
 //!
 //! See `docs/research/assets/dota2-hud-reference.md` (image 9) for the source table.
 //!
-//! Core API (respawn_seconds, next_respawn_after_buyback, respawn_with_wk_aura,
-//! modifiers) is consumed live by `crate::revive`. The allow stays for the
-//! forward-looking config fields/helpers (neutral_*, courier_*, patch) that are
-//! parsed from JSON but have no consumer yet — same convention as damage.rs.
-
-#![allow(dead_code)]
+//! Core API (respawn_seconds, next_respawn_after_buyback, respawn_with_wk_aura)
+//! is consumed live by `crate::revive`. Per-item `#[allow(dead_code)]` stays on
+//! the forward-looking config fields/helpers (neutral_*, courier_*, patch) that
+//! are parsed from JSON but have no consumer yet — same convention as damage.rs.
 
 use serde::Deserialize;
 use std::sync::OnceLock;
@@ -31,8 +29,12 @@ pub struct RespawnModifiers {
     /// Seconds added to your NEXT respawn after using buyback.
     pub buyback_respawn_increase: f64,
     /// Respawn set to this value when dying to neutral creeps.
+    // Parsed from JSON but no consumer reads it yet — no dedicated
+    // "died to neutrals" path is wired (see module-top note).
+    #[allow(dead_code)]
     pub neutral_set_respawn: f64,
     /// Minimum respawn floor when dying to neutral creeps.
+    #[allow(dead_code)]
     pub neutral_min_respawn: f64,
     pub courier_base_respawn: f64,
     pub courier_respawn_per_level: f64,
@@ -77,17 +79,23 @@ pub fn respawn_with_wk_aura(level: u32, turbo: bool) -> f64 {
 }
 
 /// Courier respawn time in seconds at a given courier level.
+// Forward-looking config helper (see module-top note) — no caller yet.
+#[allow(dead_code)]
 pub fn courier_respawn_seconds(courier_level: u32) -> f64 {
     let m = &config().modifiers;
     m.courier_base_respawn + m.courier_respawn_per_level * f64::from(courier_level)
 }
 
 /// Read-only access to the loaded modifier constants.
+// Forward-looking config helper (see module-top note) — no caller yet.
+#[allow(dead_code)]
 pub fn modifiers() -> &'static RespawnModifiers {
     &config().modifiers
 }
 
 /// The game patch the loaded respawn table is calibrated for.
+// Forward-looking config helper (see module-top note) — no caller yet.
+#[allow(dead_code)]
 pub fn patch() -> &'static str {
     &config().patch
 }

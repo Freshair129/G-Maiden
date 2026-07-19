@@ -24,21 +24,21 @@ attributes:
 | Glass | native CSS `backdrop-filter` + `clip-path: url()` | ดู layout §3 |
 | Charts/vis | (ยังไม่มี lib) | sparkline/bar ทำด้วย CSS/SVG มือ |
 
-รายละเอียดสถาปัตยกรรมเต็ม: `docs/architecture/tech-stack.md`
+รายละเอียดสถาปัตยกรรมเต็ม: [[tech-stack|docs/architecture/tech-stack.md]]
 
 ## 2. Where things live (code map)
 
 | design concept | ไฟล์ในโค้ด |
 | --- | --- |
-| **Tokens** (`:root`) | `src/src/styles.css` — SSOT ค่าอยู่ไฟล์ 02, sync มาที่นี่ |
-| **Window routing** (Control/Overlay) | `src/src/App.tsx` |
-| **Command Deck shell** (topbar, sidebar, tabs) | `src/src/CommandDeck.tsx` |
-| **Dashboard** (bento, scoreboard, G-Signal) | `src/src/Dashboard.tsx` + `companion.ts` |
-| **Pages** (Live/Companion/Build/Insights/History/Settings) | `src/src/CompanionPages.tsx` |
-| **Account** (GID, OAuth, Steam) | `AccountPage.tsx` `AuthPanel.tsx` `SteamLink.tsx` + `auth.ts` `profile.ts` `gid.ts` |
-| **Voice packs** | `VoicePacksPage.tsx` `VoiceInventory.tsx` `AudioSettings.tsx` |
-| **Live data builders** | `src/src/live/` (merge Tauri events over MOCK/FALLBACK) |
-| **Overlay + capture backend** | `src-tauri/src/` (DXGI, `gsi.rs`, `announcer.rs`, `master.rs`) |
+| **Tokens** (`:root`) | [`src/src/styles.css`](file:///g:/G-Maiden/src/src/styles.css) — SSOT ค่าอยู่ไฟล์ 02, sync มาที่นี่ |
+| **Window routing** (Control/Overlay) | [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) |
+| **Command Deck shell** (topbar, sidebar, tabs) | [`src/src/CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) |
+| **Dashboard** (bento, scoreboard, G-Signal) | `src/src/Dashboard.tsx` + [`companion.ts`](file:///g:/G-Maiden/src/src/companion.ts) |
+| **Pages** (Live/Companion/Build/Insights/History/Settings) | [`src/src/CompanionPages.tsx`](file:///g:/G-Maiden/src/src/CompanionPages.tsx) |
+| **Account** (GID, OAuth, Steam) | [`AccountPage.tsx`](file:///g:/G-Maiden/src/src/AccountPage.tsx) [`AuthPanel.tsx`](file:///g:/G-Maiden/src/src/AuthPanel.tsx) [`SteamLink.tsx`](file:///g:/G-Maiden/src/src/SteamLink.tsx) + [`auth.ts`](file:///g:/G-Maiden/src/src/auth.ts) [`profile.ts`](file:///g:/G-Maiden/src/src/profile.ts) [`gid.ts`](file:///g:/G-Maiden/src/src/gid.ts) |
+| **Voice packs** | [`VoicePacksPage.tsx`](file:///g:/G-Maiden/src/src/VoicePacksPage.tsx) [`VoiceInventory.tsx`](file:///g:/G-Maiden/src/src/VoiceInventory.tsx) [`AudioSettings.tsx`](file:///g:/G-Maiden/src/src/AudioSettings.tsx) |
+| **Live data builders** | [`src/src/live/`](file:///g:/G-Maiden/src/src/live/) (merge Tauri events over MOCK/FALLBACK) |
+| **Overlay + capture backend** | [`src-tauri/src/`](file:///g:/G-Maiden/src-tauri/src/) (DXGI, [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs), [`announcer.rs`](file:///g:/G-Maiden/src-tauri/src/announcer.rs), [`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs)) |
 
 ## 3. Prototype ↔ production
 
@@ -57,7 +57,7 @@ attributes:
 | Full build (smoke) | `pnpm tauri build` | root (จาก root — CLI อยู่ root `node_modules/.bin`) |
 | CI gate | clippy `-D warnings` (ไม่ใช่แค่ test) | — |
 
-Release ผ่าน tag `vX.Y.Z` → CI เท่านั้น (ดู CLAUDE.md → Release workflow); commit บน main ไม่ถึง user จนกว่าจะ tag
+Release ผ่าน tag `vX.Y.Z` → CI เท่านั้น (ดู [`CLAUDE.md`](file:///g:/G-Maiden/CLAUDE.md) → Release workflow); commit บน main ไม่ถึง user จนกว่าจะ tag
 
 ## 5. Design→code checklist (ก่อน merge UI PR)
 

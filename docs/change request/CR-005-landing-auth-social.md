@@ -33,7 +33,7 @@ activity/stats) แต่ **คงธีม ice/lime** ของ G-Maiden ไม
 | --- | --- |
 | Landing | ทั้งสอง — public web (Vercel) **และ** in-app welcome |
 | Community placement | **หน้า Community เต็ม** ผ่าน sidebar nav (ปลอดภัยสุด, ไม่แตะ layout) |
-| Auth scope | **เพิ่ม provider** (นอกจาก Google) → ต้องแก้ ADR-14 ก่อน |
+| Auth scope | **เพิ่ม provider** (นอกจาก Google) → ต้องแก้ [[ADR-14-gid-account-identity|ADR-14]] ก่อน |
 
 ---
 
@@ -58,23 +58,23 @@ activity/stats) แต่ **คงธีม ice/lime** ของ G-Maiden ไม
 
 - **ที่อยู่:** static/Vite site แยก (เสนอ `web/landing/`) deploy ด้วย vercel cli — **แยกจาก Tauri app** ไม่กระทบ build เดิม
 - **เนื้อหา:** hero (persona Maiden), ฟีเจอร์ G-series, NFR/privacy pitch, CTA "ดาวน์โหลด" + "เข้าสู่ระบบ"
-- **ธีม:** design-system tokens (ice/lime) — reuse `docs/design-system/02-tokens.md`
+- **ธีม:** design-system tokens (ice/lime) — reuse [[02-tokens|docs/design-system/02-tokens.md]]
 - **ไม่แตะ:** โค้ด deck/overlay ใด ๆ
 
 ### 3.2 Landing (in-app welcome screen)
 
-- **ที่อยู่:** route ใหม่ใน `src/src/App.tsx` (window routing มีอยู่แล้ว) — แสดง **ก่อน** Command Deck
+- **ที่อยู่:** route ใหม่ใน [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) (window routing มีอยู่แล้ว) — แสดง **ก่อน** Command Deck
   ตอน first-run หรือ signed-out (ถ้าเลือกได้)
 - **เนื้อหา:** โลโก้ + สั้น ๆ ว่า Maiden คืออะไร + ปุ่ม "เริ่มใช้งาน" (เข้า Deck แบบ guest) / "เข้าสู่ระบบ"
 - **additive:** เป็น screen แยก — Command Deck component + layout **ไม่ถูกแก้** (แค่มี route หุ้มก่อน)
 
 ### 3.3 Auth (full-screen, multi-provider)
 
-- **ที่อยู่:** หน้า auth เต็มจอใหม่ (แยกจาก `AuthPanel` card เดิมที่ยังคงไว้ใน Account page)
+- **ที่อยู่:** หน้า auth เต็มจอใหม่ (แยกจาก [`AuthPanel`](file:///g:/G-Maiden/src/src/AuthPanel.tsx) card เดิมที่ยังคงไว้ใน Account page)
 - **Providers:** Google (เดิม) + เสนอเพิ่ม **Discord** (เข้ากับชุมชนเกม) และ/หรือ **email/password**
-- **⚠️ ADR dependency:** ADR-14 ตัด email/phone OTP ทิ้ง (Google-only) → การเพิ่ม provider **ต้องแก้ ADR-14**
+- **⚠️ ADR dependency:** [[ADR-14-gid-account-identity|ADR-14]] ตัด email/phone OTP ทิ้ง (Google-only) → การเพิ่ม provider **ต้องแก้ ADR-14**
   (เสนอ **ADR-14a** หรือ ADR ใหม่) — ระบุเหตุผล, ผลต่อ GID codec, privacy, RLS ก่อน implement
-- **GID:** ยังออกอัตโนมัติตอน sign-in (codec เดิม `gid.ts`) — provider ใหม่ผูก GID เดียวกันได้ (account linking)
+- **GID:** ยังออกอัตโนมัติตอน sign-in (codec เดิม [`gid.ts`](file:///g:/G-Maiden/src/src/gid.ts)) — provider ใหม่ผูก GID เดียวกันได้ (account linking)
 - **Backend:** Supabase Auth (`gstore`) เปิด provider เพิ่ม; ต้องเช็ค RLS ของ `profiles` หลัง SEC-001
 
 ### 3.4 G-Social (Community page)
@@ -111,7 +111,7 @@ activity/stats) แต่ **คงธีม ice/lime** ของ G-Maiden ไม
 - **Presence = ข้อมูลใหม่** ที่ออกนอกเครื่อง → ต้อง **opt-in ชัดเจน** (toggle ใน Settings/Community)
   - default = ปิด presence broadcast? หรือเปิดเฉพาะกับเพื่อน — เสนอ **opt-in ตอนเข้า Community ครั้งแรก**
 - "current activity" เปิดเผยแค่ระดับ `in-match` (ไม่บอก hero/score/รายละเอียดแมตช์)
-- ต้องอัปเดต ADR-14 privacy reconcile section ว่า presence = identity-adjacent, opt-in, เพื่อนเท่านั้น
+- ต้องอัปเดต [[ADR-14-gid-account-identity|ADR-14]] privacy reconcile section ว่า presence = identity-adjacent, opt-in, เพื่อนเท่านั้น
 
 ---
 
@@ -131,7 +131,7 @@ activity/stats) แต่ **คงธีม ice/lime** ของ G-Maiden ไม
 | wave | ขอบเขต | แตะ backend? | แตะ deck layout? |
 | --- | --- | --- | --- |
 | **W1** | Public web landing (Vercel) | ไม่ | ไม่ (แยก repo/dir) |
-| **W2** | ADR-14 amendment + Auth full-screen multi-provider | Supabase Auth config | ไม่ (route ใหม่) |
+| **W2** | [[ADR-14-gid-account-identity|ADR-14]] amendment + Auth full-screen multi-provider | Supabase Auth config | ไม่ (route ใหม่) |
 | **W3** | In-app welcome screen | ไม่ | ไม่ (route หุ้ม) |
 | **W4** | gstore schema (`friendships`/`presence`) + RLS + migration | **ใช่ (หนัก)** | ไม่ |
 | **W5** | Community page UI + realtime + presence opt-in | wire | ไม่ (page ใหม่) |
@@ -147,7 +147,7 @@ W1–W3 เริ่มได้เร็ว/เสี่ยงต่ำ; W4–W
 3. In-app welcome: แสดงทุก signed-out หรือแค่ first-run?
 4. Presence backend: Supabase Realtime presence (ephemeral) vs table+heartbeat (persistent last-seen)?
 5. Presence default: opt-in ตอนแรก vs เปิดอัตโนมัติเฉพาะกับเพื่อน?
-6. Community ผูกกับ CR-003 wallet/store ไหม (เช่น gift/share pack กับเพื่อน)?
+6. Community ผูกกับ [[CR-003-account-phase1-wallet-billing|CR-003]] wallet/store ไหม (เช่น gift/share pack กับเพื่อน)?
 
 ---
 
@@ -158,7 +158,7 @@ W1–W3 เริ่มได้เร็ว/เสี่ยงต่ำ; W4–W
 | แตะ deck layout โดยไม่ตั้งใจ | 🔴 | W ทั้งหมดเป็น route/page ใหม่; review diff ให้ deck component ไม่เปลี่ยน |
 | friend graph RLS รั่ว (อ่าน/แก้ข้ามคน) | 🔴 | RLS review + test เฉพาะ ก่อน W5 ship |
 | presence ละเมิด privacy-first | 🔴 | opt-in บังคับ + เปิดเฉพาะเพื่อน + ไม่มี match detail |
-| ADR-14 conflict (email/OTP เคยถูกตัด) | 🟠 | แก้ ADR ก่อน W2 — ไม่ implement ก่อน ADR ผ่าน |
+| [[ADR-14-gid-account-identity|ADR-14]] conflict (email/OTP เคยถูกตัด) | 🟠 | แก้ ADR ก่อน W2 — ไม่ implement ก่อน ADR ผ่าน |
 | GID enumeration ผ่าน friend search | 🟠 | rate-limit + จำกัดผลลัพธ์ + ไม่เปิด field เกิน identity |
 
 ---

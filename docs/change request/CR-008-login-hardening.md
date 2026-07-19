@@ -3,9 +3,9 @@
 **Status:** PLAN — รอ Boss approve ก่อนลงมือ (R4: C-2, risk HIGH เพราะแตะ auth + secret storage)
 **Author:** Claude (spec) — Boss (approver)
 **Date:** 2026-07-10
-**Predecessor:** ADR-14 (GID/account), SEC-001 (identity hardening, merged `00f2fc11`),
-`docs/design-system/08-account-gid.md` (UX spec), audit `2026-07-07-independent-full-audit.md`
-**Related:** CR-005 (landing + multi-provider auth + G-Social) — ยัง DRAFT, ทับซ้อนบางส่วน (ดู §6)
+**Predecessor:** [[ADR-14-gid-account-identity|ADR-14]] (GID/account), [[SEC-001-auth-identity-hardening|SEC-001]] (identity hardening, merged `00f2fc11`),
+[[08-account-gid|docs/design-system/08-account-gid.md]] (UX spec), audit [[2026-07-07-independent-full-audit|2026-07-07-independent-full-audit.md]]
+**Related:** [[CR-005-landing-auth-social|CR-005]] (landing + multi-provider auth + G-Social) — ยัง DRAFT, ทับซ้อนบางส่วน (ดู §6)
 
 ---
 
@@ -16,14 +16,14 @@
 
 | ชิ้น | สถานะ | หลักฐาน |
 | --- | --- | --- |
-| Google OAuth PKCE flow | โค้ดครบ | `src/src/auth.ts` `signInWithGoogle` → `open_url` → browser |
-| Loopback callback | ทำงาน | `gsi.rs:358` `.route("/auth/callback", get(oauth_callback))` → emit `oauth-callback` |
-| Supabase client | ตั้งค่าถูก (`flowType: "pkce"`, `detectSessionInUrl: false`) | `src/src/supabase.ts` |
-| `profiles` RLS + GID mint | **ปิดสนิทแล้ว** (verified live) | SEC-001 §2 Phase B |
-| **CSP** | 🔴 **บล็อก Supabase ทั้งหมด** | `tauri.conf.json:46` `connect-src 'self' http://localhost:* ws://localhost:* https://api.opendota.com` — ไม่มี `https://wsseitulmcgnolgsrxgh.supabase.co` |
+| Google OAuth PKCE flow | โค้ดครบ | [`src/src/auth.ts`](file:///g:/G-Maiden/src/src/auth.ts) `signInWithGoogle` → `open_url` → browser |
+| Loopback callback | ทำงาน | [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs)`:358` `.route("/auth/callback", get(oauth_callback))` → emit `oauth-callback` |
+| Supabase client | ตั้งค่าถูก (`flowType: "pkce"`, `detectSessionInUrl: false`) | [`src/src/supabase.ts`](file:///g:/G-Maiden/src/src/supabase.ts) |
+| `profiles` RLS + GID mint | **ปิดสนิทแล้ว** (verified live) | [[SEC-001-auth-identity-hardening|SEC-001]] §2 Phase B |
+| **CSP** | 🔴 **บล็อก Supabase ทั้งหมด** | [`tauri.conf.json`](file:///g:/G-Maiden/src-tauri/tauri.conf.json)`:46` `connect-src 'self' http://localhost:* ws://localhost:* https://api.opendota.com` — ไม่มี `https://wsseitulmcgnolgsrxgh.supabase.co` |
 | **Refresh token** | 🔴 เก็บ plaintext ใน WebView2 localStorage | `persistSession: true` ไม่มี encrypted storage adapter |
-| **Anthropic API key** | 🔴 อยู่ใน settings blob ใน localStorage | `App.tsx` (audit §Secrets) |
-| **`/auth/callback` state** | 🟠 ไม่ verify `state` | `gsi.rs:287-297` รับ `code` อะไรก็ได้แล้ว exchange ทันที |
+| **Anthropic API key** | 🔴 อยู่ใน settings blob ใน localStorage | [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) (audit §Secrets) |
+| **`/auth/callback` state** | 🟠 ไม่ verify `state` | [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs)`:287-297` รับ `code` อะไรก็ได้แล้ว exchange ทันที |
 
 ### 1.1 ทำไม sign-in พังทั้งที่โค้ดถูก
 
@@ -39,7 +39,7 @@ packaged build ไม่ใช่ dev (Tauri inject CSP ต่างกัน)
 ## 2. Work packages
 
 ### WP-1 — ปลดล็อก sign-in (blocker, เล็ก)
-- `tauri.conf.json` `security.csp` → เพิ่ม `https://wsseitulmcgnolgsrxgh.supabase.co` ใน `connect-src`
+- [`tauri.conf.json`](file:///g:/G-Maiden/src-tauri/tauri.conf.json) `security.csp` → เพิ่ม `https://wsseitulmcgnolgsrxgh.supabase.co` ใน `connect-src`
   (และ `wss://` ถ้าจะใช้ realtime ในอนาคต — **ยังไม่ใส่จนกว่าจะใช้จริง**)
 - ตรวจว่าต้องเพิ่ม Steam/OpenDota origin เพิ่มไหม (`api.opendota.com` มีแล้ว; audit ระบุ "Steam origins" ด้วย
   — ยืนยันว่า `resolve_steam_id` ยิงจาก **Rust** ไม่ใช่ webview → ไม่ต้องแตะ CSP)
@@ -67,17 +67,17 @@ API key ของ Anthropic = ขโมยเครดิตได้
 
 - **WP-1 (CSP unblock sign-in)** — ✅ DONE (session 2026-07-10; Supabase origin ใน `connect-src`, login เปิดใช้จริง).
 - **WP-2 (secret encryption / DPAPI)** — ✅ IMPLEMENTED 2026-07-11, **Opus adversarial gate PASS** (design-review + final code-gate). CI-parity ครบเขียว (cargo test 169/0 · clippy `-D warnings` · tsc · eslint · vitest 148/148).
-  - Rust: `src-tauri/src/secret.rs` (DPAPI per-file store `app_local_data_dir()/secrets/<name>.bin`, `WRITE_LOCK` + atomic same-dir temp-rename, `validate_name`, `secret_set/get/delete` + `load_secret`); `runtime.rs` แยก mode/secret (`set_master_mode` / `set_master_api_key` / `master_api_key_present`); startup โหลด `anthropic_api_key` จาก DPAPI. Cargo features `Win32_Security_Cryptography` + `Win32_System_Memory`.
-  - Frontend: `src/src/secureStorage.ts` (supabase-js `auth.storage` adapter — DPAPI ใต้ Tauri, localStorage fallback ใน browser dev); `App.tsx` ลบ `masterApiKey` ออกจาก settings blob + UI "key saved / พิมพ์เพื่อแทนที่" (คีย์ไม่กลับเข้า webview) + one-time migration ที่ scrub plaintext เฉพาะหลังยืนยัน DPAPI write (no silent loss).
+  - Rust: [`src-tauri/src/secret.rs`](file:///g:/G-Maiden/src-tauri/src/secret.rs) (DPAPI per-file store `app_local_data_dir()/secrets/<name>.bin`, `WRITE_LOCK` + atomic same-dir temp-rename, `validate_name`, `secret_set/get/delete` + `load_secret`); [`runtime.rs`](file:///g:/G-Maiden/src-tauri/src/runtime.rs) แยก mode/secret (`set_master_mode` / `set_master_api_key` / `master_api_key_present`); startup โหลด `anthropic_api_key` จาก DPAPI. Cargo features `Win32_Security_Cryptography` + `Win32_System_Memory`.
+  - Frontend: [`src/src/secureStorage.ts`](file:///g:/G-Maiden/src/src/secureStorage.ts) (supabase-js `auth.storage` adapter — DPAPI ใต้ Tauri, localStorage fallback ใน browser dev); [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) ลบ `masterApiKey` ออกจาก settings blob + UI "key saved / พิมพ์เพื่อแทนที่" (คีย์ไม่กลับเข้า webview) + one-time migration ที่ scrub plaintext เฉพาะหลังยืนยัน DPAPI write (no silent loss).
   - **DoD reconciliation (gate WARN):** "grep leveldb ไม่พบ token/key" เป็นจริงสำหรับ *live* localStorage entry และ fresh installs ทันที. WebView2 localStorage เป็น log-structured leveldb → **หลัง upgrade-migration ค่า plaintext เก่าอาจค้างใน `.log`/`.ldb` segment จนกว่า Chromium จะ compact** (เป็นข้อจำกัดโดยธรรมชาติของการ migrate ออกจาก localStorage, แก้จาก JS ไม่ได้). ความลับใหม่ไม่แตะ localStorage เลย. ถือ DoD = "ไม่มี live localStorage entry" แทน raw-disk grep.
 - **WP-3 (`/auth/callback` hardening, MEDIUM)** — ✅ IMPLEMENTED 2026-07-11, **Opus security gate PASS**.
   `:3000/auth/callback` ไม่มี auth → เดิมแลก `?code=` อะไรก็ได้ทันที (drive-by page ยิง
   `<img src=".../auth/callback?code=ATTACKER">` → session fixation). แก้ด้วย **pending-gate**: แอปเรียก
-  `oauth_begin` ตั้งธง (single-use + timeout 10 นาที, `runtime::set_oauth_pending`) ก่อนเปิด browser เท่านั้น;
-  callback จะ emit `oauth-callback` ต่อเมื่อ `take_oauth_pending()` จริงเท่านั้น มิฉะนั้น emit `oauth-error`.
+  `oauth_begin` ตั้งธง (single-use + timeout 10 นาที, [`runtime::set_oauth_pending`](file:///g:/G-Maiden/src-tauri/src/runtime.rs#L424)) ก่อนเปิด browser เท่านั้น;
+  callback จะ emit `oauth-callback` ต่อเมื่อ [`take_oauth_pending()`](file:///g:/G-Maiden/src-tauri/src/runtime.rs#L439) จริงเท่านั้น มิฉะนั้น emit `oauth-error`.
   **ไม่แตะ OAuth redirect URL** (คงตรงกับ Supabase allowlist — ไม่เสี่ยงพัง login ที่เพิ่งใช้ได้). residual
   window ที่เหลือถูก PKCE (`exchangeCodeForSession` bind กับ local `code_verifier`) กันอีกชั้น. ไฟล์:
-  `runtime.rs` (gate + Release/Acquire), `gsi.rs oauth_callback`, `main.rs oauth_begin`, `auth.ts`.
+  [`runtime.rs`](file:///g:/G-Maiden/src-tauri/src/runtime.rs) (gate + Release/Acquire), [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) `oauth_callback`, [`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs) `oauth_begin`, [`auth.ts`](file:///g:/G-Maiden/src/src/auth.ts).
 
 ### WP-3 optional hardening — per-flow nonce (design only, NOT implemented — 2026-07-11)
 

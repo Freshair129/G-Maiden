@@ -12,15 +12,15 @@ related_docs: ["ADR-14-gid-account-identity", "ADR-12-community-ai-marketplace",
 blocked_by: "RESOLVED 2026-07-11 (schema §7) — reconciled with ADR-16 two-currency model, see §0. Only the wallet/purchased half remains blocked (Omise live-mode business registration, §7 risks table). The shard/earned half has no external blocker."
 ---
 
-> ✅ **ADR-16 reconciliation applied 2026-07-11 (v0.3.0)** — this revision replaces the single
+> ✅ **[[ADR-16-credit-economy-and-mint-oracle|ADR-16]] reconciliation applied 2026-07-11 (v0.3.0)** — this revision replaces the single
 > `wallets.balance` design with the `shard`/`wallet` split ADR-16 §1/§7 requires. See §0 for what
 > changed and why. Everything under §2 (schema/RLS/RPC/Edge Functions) supersedes the v0.1.0/0.2.0
 > single-currency design below it in the changelog history.
 
 # CR-003: ระบบ Account (GID) เฟสแรก — Wallet · Inventory · History · Billing
 
-ต่อยอด **ADR-14** (GID + Supabase `gstore` + Google OAuth ที่ ship แล้ว) ให้บัญชี GID มี
-"เศรษฐกิจ" ขั้นต่ำที่พร้อมรองรับ **ADR-12 marketplace**: กระเป๋าเหรียญ (G-Coins),
+ต่อยอด **[[ADR-14-gid-account-identity|ADR-14]]** (GID + Supabase `gstore` + Google OAuth ที่ ship แล้ว) ให้บัญชี GID มี
+"เศรษฐกิจ" ขั้นต่ำที่พร้อมรองรับ **[[ADR-12-community-ai-marketplace|ADR-12]] marketplace**: กระเป๋าเหรียญ (G-Coins),
 คลังไอเทม (announcer packs เป็นสินค้าแรก), ประวัติธุรกรรม, และการเติมเงินผ่าน
 **PromptPay QR / TrueMoney Wallet**
 
@@ -33,7 +33,7 @@ blocked_by: "RESOLVED 2026-07-11 (schema §7) — reconciled with ADR-16 two-cur
 ## 0. ADR-16 reconciliation (v0.3.0 — สิ่งที่เปลี่ยนจาก v0.2.0)
 
 v0.1.0/0.2.0 (2026-07-04) ออกแบบ **สกุลเดียว** ("G-Coins," purchase-only, closed-loop) — ก่อน
-ADR-16 (Accepted 2026-07-10) จะนิยาม **สองสกุลแยกขาด**. ผลคือ schema เดิม**ขัด**กับ ADR-16 §7
+[[ADR-16-credit-economy-and-mint-oracle|ADR-16]] (Accepted 2026-07-10) จะนิยาม **สองสกุลแยกขาด**. ผลคือ schema เดิม**ขัด**กับ ADR-16 §7
 ตรง ๆ: ไม่มีคอลัมน์ `provenance`, ไม่มีทางแยก earned จาก purchased, และไม่มี faucet สำหรับ shard เลย
 
 **สิ่งที่เปลี่ยนใน v0.3.0:**
@@ -653,7 +653,7 @@ Deck nav    ─ Voice Packs ───────► Store (catalog จาก Su
 ```
 
 ภาษา UI: ไทยเป็นหลัก (ตาม persona Maiden) · design tokens ตามระบบเดิม — พื้น `#08090c`,
-การ์ด frosted `rgba(18,20,28,0.72)`, accent ice-blue, ฟอนต์/ระยะตาม `design-system.md`
+การ์ด frosted `rgba(18,20,28,0.72)`, accent ice-blue, ฟอนต์/ระยะตาม [[architecture/design-system|design-system.md]]
 
 ### 3.2 Wallet (รวม Billing) — v0.3.0: สองยอดแยกกัน
 
@@ -709,7 +709,7 @@ Deck nav    ─ Voice Packs ───────► Store (catalog จาก Su
 - Grid ของที่เป็นเจ้าของ; แต่ละใบ: banner, ชื่อ, source badge (ซื้อ/ของขวัญ/starter), วันที่ได้
 - ปุ่มตามสถานะ local: `ติดตั้ง` (เรียก `pack-download` → ดาวน์โหลด → `POST /announcer/install`
   ที่ **:3000 endpoint เดิม** — ใช้ pipeline ติดตั้งเดียวกับ G-AnnStudio ทุกอย่าง) →
-  `ใช้งาน` (activate ผ่านกลไก active pack ใน `voice_api.rs` เดิม) → `✓ กำลังใช้งาน`
+  `ใช้งาน` (activate ผ่านกลไก active pack ใน [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs) เดิม) → `✓ กำลังใช้งาน`
 - แถวบน: ช่อง **แลกโค้ด** (input + ปุ่มแลก) — ผลสำเร็จเด้งการ์ดใหม่เข้า grid ทันที
 
 ### 3.5 History (ประวัติธุรกรรม)
@@ -734,12 +734,12 @@ Deck nav    ─ Voice Packs ───────► Store (catalog จาก Su
 
 | ไฟล์ | ทำอะไร |
 | --- | --- |
-| `src/src/wallet.ts` | `useWallet()` — **shard_balance + wallet_balance แยกกัน**, Realtime subscribe, `topup()`, `purchase()`, `redeem()`, `tip()` (เรียก RPC/Edge Fn) |
-| `src/src/StorePage.tsx` | catalog grid + currency badge (§3.3) + confirm ซื้อ + preview เสียง |
-| `src/src/WalletTab.tsx` / `TopupModal.tsx` | ตาม §3.2 — สองยอด + shard daily-cap/expiry display |
-| `src/src/InventoryTab.tsx` | ตาม §3.4 — ต่อ `pack-download` → `/announcer/install` |
-| `src/src/LedgerTab.tsx` | ตาม §3.5 |
-| `src/src/MatchShareCard.tsx` (ใหม่ v0.3.0) | ปุ่ม "แชร์แมตช์ล่าสุด" → `match-share-submit` → honest-state toast (verify ผ่าน/ไม่ผ่าน) |
+| [`src/src/wallet.ts`](file:///g:/G-Maiden/src/src/wallet.ts) | `useWallet()` — **shard_balance + wallet_balance แยกกัน**, Realtime subscribe, `topup()`, `purchase()`, `redeem()`, `tip()` (เรียก RPC/Edge Fn) |
+| [`src/src/StorePage.tsx`](file:///g:/G-Maiden/src/src/StorePage.tsx) | catalog grid + currency badge (§3.3) + confirm ซื้อ + preview เสียง |
+| [`src/src/WalletTab.tsx`](file:///g:/G-Maiden/src/src/WalletTab.tsx) / [`TopupModal.tsx`](file:///g:/G-Maiden/src/src/TopupModal.tsx) | ตาม §3.2 — สองยอด + shard daily-cap/expiry display |
+| [`src/src/InventoryTab.tsx`](file:///g:/G-Maiden/src/src/InventoryTab.tsx) | ตาม §3.4 — ต่อ `pack-download` → `/announcer/install` |
+| [`src/src/LedgerTab.tsx`](file:///g:/G-Maiden/src/src/LedgerTab.tsx) | ตาม §3.5 |
+| [`src/src/MatchShareCard.tsx`](file:///g:/G-Maiden/src/src/MatchShareCard.tsx) (ใหม่ v0.3.0) | ปุ่ม "แชร์แมตช์ล่าสุด" → `match-share-submit` → honest-state toast (verify ผ่าน/ไม่ผ่าน) |
 
 ---
 
@@ -851,9 +851,9 @@ invariant DB-08 รันเป็น nightly กับข้อมูลจร�
 | **e-money license (ธปท.)** | D1 closed-loop: เหรียญไม่คืน/ไม่ถอน/ไม่โอน — โมเดลเดียวกับ game credits ทั่วไป; เขียนใน ToS ชัด ๆ ก่อนเปิดเติมเงินจริง |
 | **Omise live mode** | ต้องมีนิติบุคคล/ทะเบียนพาณิชย์ + ขออนุมัติช่องทาง TrueMoney แยก — **เริ่มยื่นทันทีคู่ขนานกับ dev** (คือ critical path ที่ไม่ใช่โค้ด). **บล็อกเฉพาะ wallet (purchased) — shard ไม่เกี่ยวเลย** เพราะ mint จาก OpenDota ไม่ต้องมี payment gateway (ดู §0/§8) |
 | **VAT** | เกณฑ์จด VAT 1.8 ล้านบาท/ปี — เฟสแรกยังไม่ถึง แต่เก็บ `price_satang` + order ครบพอทำบัญชีย้อนหลัง |
-| **PDPA** | เก็บเพิ่มจาก ADR-14 แค่ธุรกรรม (ไม่มีบัตร/ไม่มีเลขบัญชี — provider ถือเอง); มี deletion flow. `match_submissions` เก็บ `match_ref` (HMAC) ไม่ใช่ match_id ดิบ ตาม ADR-16 §5 |
+| **PDPA** | เก็บเพิ่มจาก [[ADR-14-gid-account-identity|ADR-14]] แค่ธุรกรรม (ไม่มีบัตร/ไม่มีเลขบัญชี — provider ถือเอง); มี deletion flow. `match_submissions` เก็บ `match_ref` (HMAC) ไม่ใช่ match_id ดิบ ตาม [[ADR-16-credit-economy-and-mint-oracle|ADR-16]] §5 |
 | **Refund dispute** | เฟสแรก: manual `adjust` โดย admin ผ่าน service_role + บันทึก ledger `refund` — นโยบาย "เหรียญไม่คืน แต่กรณีระบบผิดพลาดชดเชยเป็นเหรียญ" (ใช้ได้เฉพาะ wallet — shard ไม่มี "คืนเงิน" เพราะไม่มีเงินให้คืนตั้งแต่แรก) |
-| **Valve ToS / maphack risk** (ADR-16 Prerequisite #1, ใหม่ v0.3.0) | 🔴 **ยังไม่เคลียร์** — สถานะทางกฎหมายกับ Valve เรื่องอ่าน minimap ด้วย CV ยังไม่ชัด (Valve เคยแบน 40k บัญชี + ฆ่า Overwolf). shard faucet (`match-share-submit`) ใช้ **GSI ของผู้เล่นเอง + OpenDota เท่านั้น ไม่แตะ CV** จึงไม่ชนความเสี่ยงนี้โดยตรง — แต่ **ต้องเคลียร์สถานะรวมของโปรเจกต์ก่อนเปิด ingestion เชิงพาณิชย์เต็มรูป** (ADR-11 §5) ไม่ใช่แค่ก่อนเปิด CR-003 |
+| **Valve ToS / maphack risk** ([[ADR-16-credit-economy-and-mint-oracle|ADR-16]] Prerequisite #1, ใหม่ v0.3.0) | 🔴 **ยังไม่เคลียร์** — สถานะทางกฎหมายกับ Valve เรื่องอ่าน minimap ด้วย CV ยังไม่ชัด (Valve เคยแบน 40k บัญชี + ฆ่า Overwolf). shard faucet (`match-share-submit`) ใช้ **GSI ของผู้เล่นเอง + OpenDota เท่านั้น ไม่แตะ CV** จึงไม่ชนความเสี่ยงนี้โดยตรง — แต่ **ต้องเคลียร์สถานะรวมของโปรเจกต์ก่อนเปิด ingestion เชิงพาณิชย์เต็มรูป** ([[ADR-11-optin-data-contribution-flywheel|ADR-11]] §5) ไม่ใช่แค่ก่อนเปิด CR-003 |
 
 ## 8. ลำดับการลงมือ (แนะนำ)
 
@@ -876,5 +876,5 @@ invariant DB-08 รันเป็น nightly กับข้อมูลจร�
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-07-04 | Proposed — schema 10 ตาราง + RLS + RPC atomic, Opn/Omise (PromptPay+TrueMoney), UX 4 แท็บ + Store, 15 user stories, E2E 3 ชั้น |
-| 0.2.0 | 2026-07-04 | เพิ่ม §3.0 นโยบาย desktop-first no-scroll (fit-budget + e2e gate) · แตกงานเป็น Genesis block `orchestration/gks/atoms.cr003.json` (51 atoms, 8 waves) + MASTERPLAN (`docs/product/MASTERPLAN-account-phase1.md`) |
+| 0.2.0 | 2026-07-04 | เพิ่ม §3.0 นโยบาย desktop-first no-scroll (fit-budget + e2e gate) · แตกงานเป็น Genesis block `orchestration/gks/atoms.cr003.json` (51 atoms, 8 waves) + MASTERPLAN ([[MASTERPLAN-account-phase1|docs/product/MASTERPLAN-account-phase1.md]]) |
 | 0.3.0 | 2026-07-11 | **ADR-16 reconciliation** — แยก `wallets` เป็น shard_balance/wallet_balance, `wallet_ledger`/`purchases`/`catalog_items` เพิ่ม `currency`, ตารางใหม่ `match_submissions`/`tips`/`economy_config`, RPC ใหม่ `mint_shard_from_match`/`tip`, Edge Fn ใหม่ `match-share-submit`, catalog separation constraint (shard→creator_id null), 6 user stories ใหม่ (US-16–21), 5 DB test ใหม่ (DB-09–13), sequencing แยก shard (ไม่ติด Omise) จาก wallet (ติด Omise business registration) — `blocked_by` เปลี่ยนจาก "ADR-16 §7 unresolved" เป็น "resolved; เหลือแค่ Omise business registration บล็อกครึ่ง wallet เท่านั้น" |

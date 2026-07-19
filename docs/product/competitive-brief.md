@@ -223,7 +223,7 @@
 
 ## 9.5 G-Damage: Offensive Lethality — moat ที่อาจแข็งที่สุด
 
-> เพิ่มหลังวิเคราะห์เชิงลึก · spec เต็ม: [FEAT-G-DAMAGE](docs/features/FEAT-G-DAMAGE.md)
+> เพิ่มหลังวิเคราะห์เชิงลึก · spec เต็ม: [[FEAT-G-DAMAGE]] (`docs/features/FEAT-G-DAMAGE.md`)
 
 **ปัญหาที่คู่แข่งแก้ไม่ได้:** สมองคนคำนวณไม่ทันในเสี้ยววินาทีว่า "คอมโบนี้ฆ่ามันได้ไหม"
 (armor reduction × magic resist × เลือดปัจจุบัน × บัฟ) — แต่ CPU ทำได้ <1ms

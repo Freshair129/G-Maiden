@@ -1,7 +1,7 @@
 # FEAT-G-MASTER — Strategic & Financial Advisor
 
 > **Module:** G-Master · **Priority:** Core · **Phase:** 5
-> **SRS:** §3.4 · **Eng Spec:** §2.4
+> **SRS:** [[software-requirements-specification|SRS]] §3.4 · [[engineering-spec|Eng Spec]] §2.4
 
 ---
 
@@ -33,17 +33,18 @@ on advise(tick) request:
   emit Advice { text, cached }
 ```
 
-- **Throttle:** flat 30s ต่อ request พร้อม cache คำตอบล่าสุด (`THROTTLE = 30s`, `master.rs`).
+- **Throttle:** flat 30s ต่อ request พร้อม cache คำตอบล่าสุด ([`THROTTLE = 30s`](file:///g:/G-Maiden/src-tauri/src/master.rs#L23), [`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs)).
   *(planned: trigger ตาม gold change ±500 และ cap ≤2/min ยังไม่ได้ทำ)*
 - **Cloud backend:** `claude` CLI (Plan quota) หรือ Anthropic Messages API (`claude-haiku-4-5`)
   เมื่อผู้ใช้ตั้ง API key; ไม่มี Gemini และไม่มี "Template" tier.
-- **Meta dataset:** static dataset ของ counter-item builds (`counter_advice.rs`).
-- **Counter-item logic:** `counter_advice.rs` มีจริง แต่ตอนนี้ถูกป้อน enemies เป็น list ว่าง
-  (`counter_advice_text(&[])`) — จะได้ enemies จริงเมื่อ G-Sentry ต่อสายเข้ามา.
+- **Meta dataset:** static dataset ของ counter-item builds ([`counter_advice.rs`](file:///g:/G-Maiden/src-tauri/src/counter_advice.rs)).
+- **Counter-item logic:** [`counter_advice.rs`](file:///g:/G-Maiden/src-tauri/src/counter_advice.rs) ต่อสายจริงแล้ว — [`request_advice`](file:///g:/G-Maiden/src-tauri/src/main.rs#L243) (`main.rs:251`)
+  ป้อน [`runtime::known_enemies()`](file:///g:/G-Maiden/src-tauri/src/runtime.rs#L327) (รายชื่อฮีโร่ศัตรูที่ CV เห็นซ้ำจนข้ามเกณฑ์ confirm) เข้า
+  [`counter_advice_text(enemies)`](file:///g:/G-Maiden/src-tauri/src/counter_advice.rs#L11); ว่างเฉพาะตอนยังไม่มีศัตรูที่ CV ยืนยันแล้ว ไม่ใช่ hardcode ว่างตลอด.
 
 ## 4. Output
 
-โค้ดจริง (`master.rs`) — struct แบบเรียบ:
+โค้ดจริง ([`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs)) — struct แบบเรียบ:
 
 ```rust
 Advice {
@@ -82,7 +83,7 @@ Advice {
 
 ## 8. Acceptance Criteria
 
-- [ ] แนะนำ counter-item ได้ถูกต้องเทียบกับ meta (≥70% match rate) *(counter_advice.rs พร้อม แต่ยังป้อน enemies ว่าง)*
+- [ ] แนะนำ counter-item ได้ถูกต้องเทียบกับ meta (≥70% match rate) *(counter_advice.rs ต่อสายเข้า `runtime::known_enemies()` แล้ว; ยังไม่มี accuracy eval)*
 - [x] throttle: 30s ต่อ request + cache *(planned: cap 2/min)*
 - [x] Claude fail → fallback local SLM (ไม่ crash)
 - [x] G-Signal interrupt ตัด advice narration ได้ทันที

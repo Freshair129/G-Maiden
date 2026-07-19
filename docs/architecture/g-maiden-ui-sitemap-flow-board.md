@@ -1,7 +1,7 @@
 ---
-version: "0.3.0"
+version: "0.3.1"
 created_at: "2026-06-24T03:10:00+07:00,ATHER,pending"
-last_update: "2026-07-17T00:00:00+07:00,Opus (CR-013 ONE CANVAS refresh)"
+last_update: "2026-07-19T00:00:00+07:00,docs-accuracy-pass (v0.13.0 overlay merge)"
 status: "accepted"
 superseded_by: null
 attributes:
@@ -13,10 +13,10 @@ attributes:
 # G-Maiden UI Sitemap / User Flow / Design Board
 
 > Product-specific design map for `G-Maiden`, the player-facing AI companion.
-> Family overview: [product-family-design-map.md](product-family-design-map.md)
+> Family overview: [[product-family-design-map]]
 >
 > **Layering (read this first):** the **Deck / navigation** layer's authoritative SSOT is
-> [`docs/design-system/05-sitemap-ia.md`](../design-system/05-sitemap-ia.md) (CR-013 ONE CANVAS).
+> [[05-sitemap-ia|docs/design-system/05-sitemap-ia.md]] (CR-013 ONE CANVAS).
 > This board is the higher-level **product-boundary + user-flow + Overlay** map; it stays
 > authoritative for the **Overlay (Combat HUD)** layer (§5) and the presentation direction.
 > Feature → file → status lives in [`PROJECT_FEATURE_MAP.md`](../../PROJECT_FEATURE_MAP.md).
@@ -38,11 +38,11 @@ attributes:
 | Character role | Core companion presence |
 | Not this | Operator graph builder, approval system, agent workflow admin |
 
-## 2. Sitemap (ONE CANVAS, CR-013)
+## 2. Sitemap (ONE CANVAS, [[CR-013-one-canvas-sitemap-gstore-ios-settings|CR-013]])
 
-G-Maiden มี **สองหน้าต่าง** (routing ใน `src/src/App.tsx`): **Control** (Command Deck — หน้าต่างหลัก)
+G-Maiden มี **สองหน้าต่าง** (routing ใน [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)): **Control** (Command Deck — หน้าต่างหลัก)
 และ **Overlay** (Combat HUD — โปร่ง click-through บนเกม). Deck คือ **ONE CANVAS 7 หน้า**
-(single source `src/src/shortcuts.ts` `PAGES`, `Ctrl+1..7`); Build ยุบเข้า Live, History ยุบเข้า Insights.
+(single source [`src/src/shortcuts.ts`](file:///g:/G-Maiden/src/src/shortcuts.ts) [`PAGES`](file:///g:/G-Maiden/src/src/shortcuts.ts#L72), `Ctrl+1..7`); Build ยุบเข้า Live, History ยุบเข้า Insights.
 
 ```mermaid
 flowchart TD
@@ -70,19 +70,22 @@ flowchart TD
   OV --> B5["Companion Stage"]
   OV --> B6["Enemy Missing Tracker"]
   OV --> B7["Buyback / G-Revive verdict"]
-  OV --> B8["Stat Modules — Full tier only (clock/KDA/gold/GPM/XPM/NW/score/HP-mana)"]
+  OV --> B8["Stat Modules — toggleable (clock/KDA/gold/GPM/XPM/NW/score/HP-mana)"]
   OV --> B9["Belief Revision"]
 
   CROSS["Maiden Line — command palette Ctrl+K (cross-cuts all axes)"]
 ```
 
-**Three axes, never mix** (05-sitemap-ia §2):
+**Three axes, never mix** ([[05-sitemap-ia]] §2):
 1. **Sidebar FAB** = the only real nav → switches page (`PAGES`, `Ctrl+1..7`).
 2. **Audio rail** (replaces old P1–P5 anchor rail) = **not nav** → master volume + ANN/SIGNAL on Dashboard.
 3. **Phase axis** = **not nav, does not move layout** → Dashboard sector content swaps by match state.
 
-> Overlay (B) Full tier = 12 modules ที่วาง/สเกลแยกอิสระจาก saved layout (peripheral-first;
-> default แสดงเฉพาะ core — stat chips ปิดไว้เพราะ Dota แสดงอยู่แล้ว). Lite tier (default) = single-stack.
+> **สถานะ (v0.13.0, 2026-07-19): Lite/Full ถูกยุบรวมเป็น overlay เดียว** — สวิตช์ Lite/Full ถูกเอาออก,
+> `uiMode` ถูกบังคับเป็น `'full'` เสมอ. ทุกโมดูล (kill card, banner, low-HP warning, volume rail,
+> standby chip, stats) เป็น**โมดูลอิสระ**ที่เปิด/ปิด, ย่อ-ขยาย, และวาง/สเกลแยกอิสระจาก saved layout
+> ผ่าน Layout Editor ได้เหมือนกันหมด (peripheral-first; default แสดงเฉพาะ core — stat chips ปิดไว้
+> เพราะ Dota แสดงอยู่แล้ว).
 
 ## 3. User Flow
 
@@ -126,7 +129,7 @@ Global hotkeys (unchanged): **Ctrl+Alt+S** (hide/show overlay), **Alt+↑/↓** 
 
 ### Direction
 
-`Maiden Blue Quiet Luxury Gaming / Esport` — COLD BOOTH broadcast language (CR-011).
+`Maiden Blue Quiet Luxury Gaming / Esport` — COLD BOOTH broadcast language ([[CR-011-cold-booth-ux-direction|CR-011]]).
 
 ### Visual Priorities
 
@@ -149,44 +152,45 @@ is phase-aware; setup/health/privacy/updates live under Settings' iOS split view
 
 #### Live Overlay
 
-In-game, peripheral-first HUD direction. Lite tier (default) ใช้ single-stack panel ที่ stable;
-Full tier (opt-in) เปิด 12 modules ที่วางอิสระตาม saved layout.
+In-game, peripheral-first HUD direction. **v0.13.0: merged into one positionable overlay** — no
+more Lite/Full switch; every module is independently toggle/resize/drag-positioned via the
+Layout Editor.
 
 ![G-Maiden live overlay](assets/screen-directions/g-maiden-live-overlay.png)
 
 ## 5. Overlay Component Notes (Combat HUD — authoritative here)
 
-> Contract: [`docs/design-system/07-combat-hud.md`](../design-system/07-combat-hud.md).
+> Contract: [[07-combat-hud|docs/design-system/07-combat-hud.md]].
 > The Overlay window is separate from the Deck and may use the legacy `C` inline palette.
 
 | Component | Purpose | UI notes |
 | --- | --- | --- |
-| `OverlayAlertBanner` | Critical danger / gank warnings | Top-center, short pulse, strong contrast. **Announcer pack banner layer:** เมื่อ event ยิงและ pack ที่ active map รูปไว้ → render banner image ของ pack (`packBanner` ใน `App.tsx` ผ่าน event `announcer-banner`) — priority เหนือ lettered kill-banner (แทน card เดิม) |
+| `OverlayAlertBanner` | Critical danger / gank warnings | Top-center, short pulse, strong contrast. **Announcer pack banner layer:** เมื่อ event ยิงและ pack ที่ active map รูปไว้ → render banner image ของ pack ([`packBanner`](file:///g:/G-Maiden/src/src/App.tsx#L393) ใน [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) ผ่าน event `announcer-banner`) — priority เหนือ lettered kill-banner (แทน card เดิม) |
 | `AdvicePanel` | Maiden guidance (G-Master) | Small portrait, waveform, confidence, dismiss state; 20s auto-dismiss |
 | `GMeter` | Continuous risk gauge (G-Sentry missing + G-Signal alert) | 4-segment LED (ปลอดภัย/ระวัง/เสี่ยง/อันตราย); ไม่แสดง % — gradient only |
 | `VoiceToast` | On-screen mirror of last voice event | Silent fallback when voice pack ยังไม่มา; auto-dismiss |
 | `BuybackVerdict` | G-Revive buyback advice | Verdict + narrative on death |
 | `CompanionStage` | Character presence module | Crystal Maiden stylized SVG กำลังมา; ตอนนี้ badge placeholder |
-| `VoicePackCard` | จัดการ voice pack แบบ **bundle** (AudioSettings.tsx) | upload clip/banner → active pack; activate → resolve เสียงในเกม; "Play preview" + "Show on overlay" (`preview_announcer_event` → `announcer-banner`) |
-| `LayoutEditor` | Drag editor สำหรับ Full tier | 16:9 preview, magnet grid SNAP=5, HUD reference bg, per-module scale, hover-solo focus |
-| `SensitivityPicker` | G-Signal danger threshold | Mirror → `set_cv_signal_sensitivity`; thresholds 0.85 / 0.65 / 0.50 |
+| `VoicePackCard` | จัดการ voice pack แบบ **bundle** ([`AudioSettings.tsx`](file:///g:/G-Maiden/src/src/AudioSettings.tsx)) | upload clip/banner → active pack; activate → resolve เสียงในเกม; "Play preview" + "Show on overlay" ([`preview_announcer_event`](file:///g:/G-Maiden/src-tauri/src/main.rs#L201) → `announcer-banner`) |
+| [`LayoutEditor`](file:///g:/G-Maiden/src/src/overlay/LayoutEditor.tsx) | Drag editor for the merged overlay (all modules, no Lite/Full tier) | 16:9 preview, magnet grid SNAP=5, HUD reference bg, per-module scale, hover-solo focus |
+| `SensitivityPicker` | G-Signal danger threshold | Mirror → [`set_cv_signal_sensitivity`](file:///g:/G-Maiden/src-tauri/src/main.rs#L359); thresholds 0.85 / 0.65 / 0.50 |
 | `MotionIntensity` | Motion control | Low / Medium / High + reduced-motion fallback |
 | `PerformanceGovernor` | Protect FPS/CPU/RAM | Degrades blur / particles / animation; quality tiers cinematic/balanced/eco |
-| `ExclusiveFullscreenWarning` | Detect + warn เมื่อ Dota อยู่ใน Exclusive | จาก `exclusive_fullscreen_active()`; แนะนำ Borderless (else Lite mode = ไม่มี CV) |
+| `ExclusiveFullscreenWarning` | Detect + warn เมื่อ Dota อยู่ใน Exclusive | จาก [`exclusive_fullscreen_active()`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L72); แนะนำ Borderless (else Lite mode = ไม่มี CV) |
 | `CalibrationToggle` | QA audit mode | Off by default; screenshot + GIF + `audit.jsonl` local only |
 
 > **Deck components** (nav rail, ON AIR utterance console, phase chip, DeckTabs, Maiden Line,
-> Settings split view, G-Store tabs) are documented in `05-sitemap-ia.md` + `04-components.md`
+> Settings split view, G-Store tabs) are documented in [[05-sitemap-ia|05-sitemap-ia.md]] + [[04-components|04-components.md]]
 > and mapped in `PROJECT_FEATURE_MAP.md` — they are not re-listed here to keep one SSOT each.
 
 ## 6. Acceptance Criteria
 
 - [ ] G-Maiden remains player-facing and does not include operator/admin graph workflows.
 - [ ] Deck is ONE CANVAS: **R1** no page-level scrollbar (only bounded sub-regions scroll); **R2** overflow → `DeckTabs` tab or `rowsThatFit()` pagination (never stretch/shrink font); **R3** COLD BOOTH `--g-*` tokens only on Deck surfaces (legacy `C` hex = Overlay only).
-- [ ] Nav is a single source: `PAGES` (`shortcuts.ts`) drives rail + `Ctrl+1..7` + Maiden Line + sheet — no drift.
+- [ ] Nav is a single source: [`PAGES`](file:///g:/G-Maiden/src/src/shortcuts.ts#L72) ([`shortcuts.ts`](file:///g:/G-Maiden/src/src/shortcuts.ts)) drives rail + `Ctrl+1..7` + Maiden Line + sheet — no drift.
 - [ ] Phase axis (standby→prep→live→debrief) swaps Dashboard content **without moving geometry**.
-- [ ] Live overlay is peripheral-first and low-noise; Lite tier is the stable default, Full tier opt-in.
-- [ ] Each Full module is independently positionable + scalable from a saved layout.
+- [ ] Live overlay is peripheral-first and low-noise; one merged overlay (no Lite/Full tier as of v0.13.0).
+- [ ] Every module is independently positionable + scalable from a saved layout.
 - [ ] G-Meter shows a continuous risk gradient (no % numbers).
 - [ ] Voice events have an on-screen toast fallback when no clip plays.
 - [ ] Calibration mode is off by default and writes evidence only locally.
@@ -202,3 +206,4 @@ Full tier (opt-in) เปิด 12 modules ที่วางอิสระต�
 | 0.1.0b | 2026-06-24 | candidate | Initial G-Maiden-specific sitemap, user flow, presentation board, screen directions, component notes. | pending | ATHER |
 | 0.2.0 | 2026-06-26 | accepted | Reflect shipped Full overlay (12 modules), LayoutEditor, G-Meter, Voice Packs (Thai default), Calibration, Sensitivity picker, NW item derivation, Exclusive Fullscreen guard. | pending | Opus |
 | 0.3.0 | 2026-07-17 | accepted | **CR-013 ONE CANVAS refresh.** Rebuild sitemap to 7-page deck (Build→Live tab, History→Insights tab, new G-Store, Account as page, Settings iOS split view); add phase axis + Maiden Line + 3 axes + R1/R2/R3 laws; add sign-in flow; scope this board to Overlay + product-boundary and cross-ref `05-sitemap-ia.md` (Deck SSOT) + `PROJECT_FEATURE_MAP.md`. | pending | Opus |
+| 0.3.1 | 2026-07-19 | accepted | **v0.13.0 overlay merge.** Lite/Full tier split removed (Lite/Full switch gone, `uiMode` forced `'full'`); every overlay module (kill card, banner, low-HP warning, volume rail, standby chip, stats) is now independently positionable via Layout Editor — updated §2 sitemap note, §4 Live Overlay direction, §5 `LayoutEditor` row, and acceptance criteria accordingly. | pending | docs-accuracy-pass |

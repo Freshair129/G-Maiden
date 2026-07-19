@@ -5,11 +5,14 @@
 //! resistance. When the player's current HP falls below the calculated
 //! lethal threshold, G-Signal fires a voice warning.
 
-// Complete, unit-tested damage model not yet wired into a Tauri command
-// (G-Signal integration pending) — its public API is unused in the binary build.
-// Allow dead_code until consumed; the test suite already exercises every path.
-#![allow(dead_code)]
-
+// `self_burst` (own-hero burst estimate) IS wired live into G-Master
+// (`master::advise` -> `damage::self_burst`, July 2026). The offensive-lethality
+// direction below it — `is_lethal`/`can_i_kill(_with)`/`kill_confidence`/
+// `KillWindow`/`all_heroes`/`HeroData::{burst_damage,armor_at_level}` — is still
+// unwired scaffold: it answers "can MY combo kill THAT enemy", which needs a
+// live read of the *enemy's* current HP/armor (CV HP-bar or OCR scoreboard,
+// still BLOCKED-BY-DATA per the 2026-07 audit). Per-item `#[allow(dead_code)]`
+// stays on just that unreached half; the test suite exercises every path.
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -102,6 +105,8 @@ impl HeroData {
     }
 
     /// Armor at a given level (base + agi gain).
+    // Offensive-lethality scaffold (see module-top note) — no caller yet.
+    #[allow(dead_code)]
     pub fn armor_at_level(&self, level: u32) -> f64 {
         let levels_gained = (level.saturating_sub(1)) as f64;
         self.base_armor + (self.base_agi + self.agi_gain * levels_gained) / 6.0
@@ -109,6 +114,8 @@ impl HeroData {
 
     /// Maximum single-rotation burst damage at given hero level vs target's defenses.
     /// Convenience wrapper: estimates ability levels and carries no items.
+    // Offensive-lethality scaffold (see module-top note) — no caller yet.
+    #[allow(dead_code)]
     pub fn burst_damage(
         &self,
         hero_level: u32,
@@ -244,6 +251,8 @@ pub struct BurstResult {
 }
 
 /// Compute whether the enemy can kill the player in one burst.
+// Offensive-lethality scaffold (see module-top note) — no caller yet.
+#[allow(dead_code)]
 pub fn is_lethal(
     enemy: &HeroData,
     enemy_level: u32,
@@ -263,10 +272,13 @@ pub fn is_lethal(
 // boolean alone — we emit a `confidence` that feeds Belief Revision (see FEAT-G-DAMAGE §6).
 
 /// Confidence floor at which G-Signal is allowed to say "press it!".
+// Offensive-lethality scaffold (see module-top note) — no caller yet.
+#[allow(dead_code)]
 pub const KILL_CONFIDENCE: f64 = 0.7;
 
 /// Default fractional uncertainty on the target's effective HP when we have no
 /// better signal (hidden buffs/regen, stale item scout, no CV HP-bar read yet).
+#[allow(dead_code)]
 pub const DEFAULT_EHP_UNCERTAINTY: f64 = 0.15;
 
 /// Probability that `burst` actually exceeds the target's true effective HP, given
@@ -275,6 +287,7 @@ pub const DEFAULT_EHP_UNCERTAINTY: f64 = 0.15;
 /// Models the unknown true EHP as uniform over `[ehp*(1-u), ehp*(1+u)]` and returns
 /// `P(burst >= true_ehp)`. This is deliberately simple and unit-testable; later phases
 /// can replace the uniform prior with a CV-quality / buff-detection informed one.
+#[allow(dead_code)]
 pub fn kill_confidence(burst: f64, ehp: f64, uncertainty: f64) -> f64 {
     let u = uncertainty.clamp(0.0, 1.0);
     let lo = ehp * (1.0 - u);
@@ -290,6 +303,8 @@ pub fn kill_confidence(burst: f64, ehp: f64, uncertainty: f64) -> f64 {
 }
 
 /// Result of an offensive lethality query: can my combo kill this target now?
+// Offensive-lethality scaffold (see module-top note) — no caller yet.
+#[allow(dead_code)]
 #[derive(Debug, Clone, Serialize)]
 pub struct KillWindow {
     /// True when `confidence >= KILL_CONFIDENCE`.
@@ -314,6 +329,8 @@ pub struct KillWindow {
 /// [`DEFAULT_EHP_UNCERTAINTY`] when there is no better signal. Damage type reductions
 /// (armor / magic resist) are applied inside [`HeroData::burst_damage`], so the burst
 /// total is already the *effective* damage landed on this target.
+// Offensive-lethality scaffold (see module-top note) — no caller yet.
+#[allow(dead_code)]
 pub fn can_i_kill(
     attacker: &HeroData,
     attacker_level: u32,
@@ -336,6 +353,8 @@ pub fn can_i_kill(
 
 /// Item- and ability-level-aware offensive lethality (P-D2). See [`can_i_kill`].
 /// `ability_levels` and `items` are fed from live GSI; the rest matches `can_i_kill`.
+// Offensive-lethality scaffold (see module-top note) — no caller yet.
+#[allow(dead_code)]
 #[allow(clippy::too_many_arguments)]
 pub fn can_i_kill_with(
     attacker: &HeroData,
@@ -394,6 +413,8 @@ pub fn lookup_hero(internal_name: &str) -> Option<&'static HeroData> {
     hero_db().get(internal_name)
 }
 
+// Offensive-lethality scaffold (see module-top note) — no caller yet.
+#[allow(dead_code)]
 pub fn all_heroes() -> Vec<&'static HeroData> {
     hero_db().values().collect()
 }

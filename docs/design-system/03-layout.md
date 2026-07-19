@@ -12,8 +12,8 @@ attributes:
 # 03 - Layout
 
 > Current implementation source of truth:
-> [src/src/CommandDeck.tsx](../../src/src/CommandDeck.tsx) and
-> [src/src/styles.css](../../src/src/styles.css)
+> [`src/src/CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) and
+> [`src/src/styles.css`](file:///g:/G-Maiden/src/src/styles.css)
 
 ## 1. Current layout contract
 
@@ -58,22 +58,22 @@ This means shell polish must be done in stage coordinates first, not screenshot 
 | Layer | Element | Current role |
 | --- | --- | --- |
 | L0 | Window canvas | transparent desktop window owned by Tauri |
-| L1 | `.g-l1-white-glass` | low-alpha support plate under the app mass, clamped to the panel envelope; no backdrop blur |
-| L2 | `.g-deck-panel` | clipped subtract-shell body |
-| L2r | `.g-panel-rim` | stage-sibling rim overlay (not a panel child — the panel's clip/overflow/contain would eat its drop-shadow); overlays the panel box, `z-index:11` |
-| L3 | `.g-sidebar-fab`, `.g-topbar-fab`, `.g-audio-rail` | floating shell attachments |
-| L4 | `.g-power-radial`, `.g-signals-fab` | interaction overlays and status cards |
+| L1 | [`.g-l1-white-glass`](file:///g:/G-Maiden/src/src/styles.css#L4667) | low-alpha support plate under the app mass, clamped to the panel envelope; no backdrop blur |
+| L2 | [`.g-deck-panel`](file:///g:/G-Maiden/src/src/styles.css#L4448) | clipped subtract-shell body |
+| L2r | [`.g-panel-rim`](file:///g:/G-Maiden/src/src/styles.css#L4759) | stage-sibling rim overlay (not a panel child — the panel's clip/overflow/contain would eat its drop-shadow); overlays the panel box, `z-index:11` |
+| L3 | [`.g-sidebar-fab`](file:///g:/G-Maiden/src/src/styles.css#L4406), [`.g-topbar-fab`](file:///g:/G-Maiden/src/src/styles.css#L4432), [`.g-audio-rail`](file:///g:/G-Maiden/src/src/styles.css#L5121) | floating shell attachments |
+| L4 | [`.g-power-radial`](file:///g:/G-Maiden/src/src/styles.css#L4840), [`.g-signals-fab`](file:///g:/G-Maiden/src/src/styles.css#L4490) | interaction overlays and status cards |
 
 ## 4. Subtract panel path
 
 The panel shape is driven by two constants in `src/src/CommandDeck.tsx`, selected per tab:
 `d={tab === "dashboard" ? FUNG_PANEL_PATH_SIGNALS : FUNG_PANEL_PATH}`. Only the dashboard tab
-renders the G-Signal cluster (`SignalGrid`), so only the dashboard tab gets the bottom-right
+renders the G-Signal cluster ([`SignalGrid`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L1861)), so only the dashboard tab gets the bottom-right
 notch — every other tab keeps the plain (no-notch) path, avoiding a stray hole where nothing
 fills it. Both constants feed the same `<path id="gSubtractPanelPath">`, so the `clipPath` and
 the `.g-panel-rim` `<use>` always stay in sync automatically.
 
-Base path (`FUNG_PANEL_PATH`, all non-dashboard tabs):
+Base path ([`FUNG_PANEL_PATH`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L136), all non-dashboard tabs):
 
 ```svg
 M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74
@@ -82,7 +82,7 @@ H 112 A 20 20 0 0 1 92,688 V 350 A 20 20 0 0 0 72,330
 H 32 A 20 20 0 0 1 12,310 V 40 A 28 28 0 0 1 40,12 Z
 ```
 
-Dashboard path (`FUNG_PANEL_PATH_SIGNALS`, CR-007 WP-1 — adds the bottom-right notch):
+Dashboard path ([`FUNG_PANEL_PATH_SIGNALS`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L144), CR-007 WP-1 — adds the bottom-right notch):
 
 ```svg
 M 40,12 H 800 A 20 20 0 0 1 820,32 V 54 A 20 20 0 0 0 840,74
@@ -123,19 +123,19 @@ From `src/src/styles.css`:
 
 | Token | Value |
 | --- | --- |
-| `--cr6-panel-left` | `12px` |
-| `--cr6-panel-top` | `12px` |
-| `--cr6-panel-width` | `1280px` |
-| `--cr6-panel-height` | `720px` |
-| `--cr6-topbar-left` | `834px` |
-| `--cr6-topbar-top` | `24px` |
-| `--cr6-topbar-width` | `446px` |
-| `--cr6-sidebar-left` | `26px` |
-| `--cr6-sidebar-top` | `354px` |
-| `--cr6-power-left` | `35px` |
-| `--cr6-power-top` | `672px` |
-| `--cr6-power-main-left` | `0px` |
-| `--cr6-power-main-top` | `0px` |
+| [`--cr6-panel-left`](file:///g:/G-Maiden/src/src/styles.css#L4629) | `12px` |
+| [`--cr6-panel-top`](file:///g:/G-Maiden/src/src/styles.css#L4630) | `12px` |
+| [`--cr6-panel-width`](file:///g:/G-Maiden/src/src/styles.css#L4631) | `1280px` |
+| [`--cr6-panel-height`](file:///g:/G-Maiden/src/src/styles.css#L4632) | `720px` |
+| [`--cr6-topbar-left`](file:///g:/G-Maiden/src/src/styles.css#L4633) | `834px` |
+| [`--cr6-topbar-top`](file:///g:/G-Maiden/src/src/styles.css#L4634) | `24px` |
+| [`--cr6-topbar-width`](file:///g:/G-Maiden/src/src/styles.css#L4635) | `446px` |
+| [`--cr6-sidebar-left`](file:///g:/G-Maiden/src/src/styles.css#L4636) | `26px` |
+| [`--cr6-sidebar-top`](file:///g:/G-Maiden/src/src/styles.css#L4637) | `354px` |
+| [`--cr6-power-left`](file:///g:/G-Maiden/src/src/styles.css#L4648) | `35px` |
+| [`--cr6-power-top`](file:///g:/G-Maiden/src/src/styles.css#L4649) | `672px` |
+| [`--cr6-power-main-left`](file:///g:/G-Maiden/src/src/styles.css#L4650) | `0px` |
+| [`--cr6-power-main-top`](file:///g:/G-Maiden/src/src/styles.css#L4651) | `0px` |
 
 ### 5.2 L1 white-glass underlay
 
@@ -304,7 +304,7 @@ Cards:
 
 ## 6. Dashboard sector geometry
 
-Current dashboard sectors inside `.gm-fung-layout`:
+Current dashboard sectors inside [`.gm-fung-layout`](file:///g:/G-Maiden/src/src/styles.css#L5236):
 
 | Sector | x | y | w | h |
 | --- | --- | --- | --- | --- |

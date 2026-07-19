@@ -42,7 +42,7 @@ related_docs: ["ADR-13-dxgi-capture-migration", "IMPL-PLAN-DXGI-migration", "DXG
 | **B2** | SPR04-01: "perf_p7 assert **CPU ≤ 2.5%**, RAM ≤ 400 MB" | `perf_p7.rs` วัด **RAM 400MB** (`:54`) + **FPS-drop 3%** (`:57`) ผ่าน PresentMon ETW — **ไม่มี** assert CPU% ตรงๆ. แก้ task ให้ตรง: gate จริงคือ RAM+FPS; CPU% ดูจาก `resource-stats`/Task Manager แยก. |
 | **B3** | SPR04-05: แก้ "CLAUDE.md gotcha #2 / Tauri v2 gotchas" | `CLAUDE.md` **ไม่มี** section "gotchas" — น่าจะอยู่ใน **AGENTS.md**. ต้องยืนยัน target ไฟล์ก่อนแก้ (ดู Open Question OQ-1). |
 | **B4** | cadence 8/15Hz → **4/8/2Hz** + อ่าน `cpu_throttle()` เลือก interval | ของเดิม (`capture.rs:43–57`, `:156–163`) ใช้ `sentry.missing` อย่างเดียว, **ไม่อ่าน** `cpu_throttle` ในลูป. การลด detection rate + wire throttle = behavior **ใหม่** (ตั้งใจ, รับได้เพราะ gank window 10–12s) แต่ต้องบันทึกว่าเป็น product-behavior change. |
-| **B5** | Model tier = Ollama (gemma4:12b / Aroow-Rust / gemma-e2e) + Opus/Sonnet | ใน harness นี้ **ไม่มี Ollama** — มีแต่ Claude subagents. Tier mapping ทั้งหมดใน DXGI-task-assignment ใช้ไม่ได้ → remap ตาม §C. |
+| **B5** | Model tier = Ollama (gemma4:12b / Aroow-Rust / gemma-e2e) + Opus/Sonnet | ใน harness นี้ **ไม่มี Ollama** — มีแต่ Claude subagents. Tier mapping ทั้งหมดใน [[DXGI-task-assignment]] ใช้ไม่ได้ → remap ตาม §C. |
 
 ---
 
@@ -84,12 +84,12 @@ related_docs: ["ADR-13-dxgi-capture-migration", "IMPL-PLAN-DXGI-migration", "DXG
 
 ## D. Verified Interface Appendix (ใช้ตอน execute — ไม่ต้องค้นใหม่)
 
-> **Note (post CR-002):** the `src/src/App.tsx` line anchors below predate the
-> App.tsx/CommandDeck.tsx split — they now point to `CommandDeck.tsx` /
-> `src/src/live/` instead.
+> **Note (post [[CR-002-Phase2-wire-backend|CR-002]]):** the [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) line anchors below predate the
+> App.tsx/CommandDeck.tsx split — they now point to [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) /
+> [`src/src/live/`](file:///g:/G-Maiden/src/src/live/) instead.
 
-**capture.rs (เดิม, จะกลายเป็น `capture_wgc.rs`)**
-- `pub fn start(app: AppHandle)` `:276`; invoked `main.rs:421`
+**capture.rs (เดิม, จะกลายเป็น [`capture_wgc.rs`](file:///g:/G-Maiden/src-tauri/src/capture_wgc.rs))**
+- `pub fn start(app: AppHandle)` `:276`; invoked [`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs)`:421`
 - `struct MinimapCapture` `:87–105` fields: `app, region, icon, detector, sentry, motion, signal, start, last_processed, last_emit, last_calib`
 - `on_frame_arrived` `:135–266`: gate `runtime::in_game()` → calib `:147` (`calibration::push_full_bgra`, ~9Hz) → adaptive throttle `:156–163` (`suspicious = !sentry.missing(now).is_empty()`) → crop `frame.buffer_crop(x,y,end_x,end_y)` `:175` → `as_nopadding_buffer` `:181` → `Frame::from_bgra(w,h,packed)` `:183` → prefilter/detect → sentry/motion/signal → emit `minimap-cv`/`gank-alert`/`gank-clear`/`enemy-missing` → SLOW watchdog `:259`
 - consts `:43–57`: `CAPTURE_HZ=15, NORMAL_INTERVAL_MS=125, DEBUG_EMIT_INTERVAL_MS=200, SLOW_FRAME_MS=250`
@@ -97,14 +97,14 @@ related_docs: ["ADR-13-dxgi-capture-migration", "IMPL-PLAN-DXGI-migration", "DXG
 - WGC settings `modern_settings` `:320` / `compat_settings` fallback `:301–316` (DrawBorderSettings::WithoutBorder = Win10 crash source)
 
 **Downstream (ต้องคงเดิม)** — all lock-free reads / pure methods:
-- `cv::Frame{width,height,bgra}` `cv/mod.rs:22`; `from_bgra(usize,usize,Vec<u8>)->Option<Frame>` `:29`
-- `prefilter_candidates(&Frame, icon:usize, frac:f32)->Vec<(i32,i32)>` `prefilter.rs:29` (`DEFAULT_THRESHOLD_FRAC=0.18`)
-- `Detector::detect(&self,&Frame,&[(i32,i32)],icon)->Vec<Detection>` `detector.rs:109`; `Detection{label,name,x,y,score}` `:42`
-- `Sentry::update(&mut,&[Detection],&MinimapRegion,now_ms)->Vec<EnemyMissing>` `sentry.rs:50`; `missing(now_ms)->Vec<(String,u64,(f32,f32))>` `:87` (threshold 5000ms)
-- `Motion::record(...)` `motion.rs:54`; `assess(&missing,now_ms)->GankRisk{probability,missing_heroes,eta_ms}` `:80` (window 300000ms)
-- `Signal::evaluate(&GankRisk)->SignalEvent{Alert(SignalAlert),Revision,None}` `signal.rs:98`; `set_sensitivity(Sensitivity{Low,Med,High})` `:92`
-- `MinimapRegion{x,y,side}` `region.rs:22`; `for_resolution(w,h)` `:34`; `icon_size()`; `pixel_to_normalised()`
-- `governor::cpu_throttle()->bool` `:28`; `runtime::in_game()->bool` `:62`
+- `cv::Frame{width,height,bgra}` [`cv/mod.rs`](file:///g:/G-Maiden/src-tauri/src/cv/mod.rs)`:22`; `from_bgra(usize,usize,Vec<u8>)->Option<Frame>` `:29`
+- `prefilter_candidates(&Frame, icon:usize, frac:f32)->Vec<(i32,i32)>` [`prefilter.rs`](file:///g:/G-Maiden/src-tauri/src/cv/prefilter.rs)`:29` (`DEFAULT_THRESHOLD_FRAC=0.18`)
+- `Detector::detect(&self,&Frame,&[(i32,i32)],icon)->Vec<Detection>` [`detector.rs`](file:///g:/G-Maiden/src-tauri/src/cv/detector.rs)`:109`; `Detection{label,name,x,y,score}` `:42`
+- `Sentry::update(&mut,&[Detection],&MinimapRegion,now_ms)->Vec<EnemyMissing>` [`sentry.rs`](file:///g:/G-Maiden/src-tauri/src/sentry.rs)`:50`; `missing(now_ms)->Vec<(String,u64,(f32,f32))>` `:87` (threshold 5000ms)
+- `Motion::record(...)` [`motion.rs`](file:///g:/G-Maiden/src-tauri/src/motion.rs)`:54`; `assess(&missing,now_ms)->GankRisk{probability,missing_heroes,eta_ms}` `:80` (window 300000ms)
+- `Signal::evaluate(&GankRisk)->SignalEvent{Alert(SignalAlert),Revision,None}` [`signal.rs`](file:///g:/G-Maiden/src-tauri/src/signal.rs)`:98`; `set_sensitivity(Sensitivity{Low,Med,High})` `:92`
+- `MinimapRegion{x,y,side}` [`region.rs`](file:///g:/G-Maiden/src-tauri/src/cv/region.rs)`:22`; `for_resolution(w,h)` `:34`; `icon_size()`; `pixel_to_normalised()`
+- [`governor::cpu_throttle()`](file:///g:/G-Maiden/src-tauri/src/governor.rs)`->bool` `:28`; [`runtime::in_game()`](file:///g:/G-Maiden/src-tauri/src/runtime.rs)`->bool` `:62`
 
 **Frontend `src/src/App.tsx`**
 - control listeners useEffect `:1466–1478` (game-tick, overlay-ready, gsi-status, resource-stats) — เพิ่ม `capture-mode` ที่นี่
@@ -112,8 +112,8 @@ related_docs: ["ADR-13-dxgi-capture-migration", "IMPL-PLAN-DXGI-migration", "DXG
 - useState pattern `:1350–1356`; palette `C` `:158` (`ice#8fd4ff, ok#5be3a7, warn#ffcf6b, bad#ff7b85, line rgba(143,212,255,0.16)`); glass `panel(op)` `:247`
 
 **Tooling**
-- `tests/perf/src/bin/perf_p7.rs`: `RAM_BUDGET_MB=400` `:54`, `FPS_DROP_MAX_PCT=3.0` `:57` (ไม่มี CPU const)
-- `modules.json`: `g-sensory` `:12–22` ver `1.0.0` (source รวม capture.rs); app `0.7.2` `:4`
+- [`tests/perf/src/bin/perf_p7.rs`](file:///g:/G-Maiden/tests/perf/src/bin/perf_p7.rs): `RAM_BUDGET_MB=400` `:54`, `FPS_DROP_MAX_PCT=3.0` `:57` (ไม่มี CPU const)
+- [`modules.json`](file:///g:/G-Maiden/modules.json): `g-sensory` `:12–22` ver `1.0.0` (source รวม capture.rs); app `0.7.2` `:4`
 
 ---
 

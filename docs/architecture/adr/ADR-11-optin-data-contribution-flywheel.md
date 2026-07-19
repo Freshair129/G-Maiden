@@ -49,8 +49,8 @@ ADR-06 + no-egress test (P8.2) + G-Memory `local_only` à¸à¸³à¸«à¸™
 | Live cross-feed (à¸›à¹‰à¸­à¸™à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸ªà¸”) | maphack = à¹à¸šà¸™à¸—à¸±à¸™à¸—à¸µ |
 
 ## Related Documents
-- ADR-06 (local-only) Â· ADR-10 (hybrid ingestion) Â· ADR-12 (marketplace)
-- Competitive Brief Â§10.3 Â· BRD BR-04 Â· Pillar B
+- ADR-06 (local-only) Â· [[ADR-10-hybrid-ingestion-resilience|ADR-10]] (hybrid ingestion) Â· [[ADR-12-community-ai-marketplace|ADR-12]] (marketplace)
+- [[competitive-brief|Competitive Brief]] Â§10.3 Â· [[business-requirements|BRD]] BR-04 Â· Pillar B
 
 ## Changelog
 | Version | Date | Summary |

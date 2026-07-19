@@ -4,7 +4,7 @@
 > ไม่มี `mod score` ใน `main.rs` และไม่มีไฟล์ `score.rs` — เอกสารนี้เป็น design vision ล่วงหน้า ยังไม่ได้ implement.
 
 > **Module:** G-Score (โมดูลที่ 13, proposed) · **Priority:** Delighter / Differentiator · **Phase:** post-v1.0
-> **PRD/SRS:** new (proposed) · **Synergy:** G-Motion, G-Stream, G-Persona, Marketplace (ADR-12)
+> **PRD/SRS:** new (proposed) · **Synergy:** G-Motion, G-Stream, G-Persona, Marketplace ([[ADR-12-community-ai-marketplace|ADR-12]])
 
 ---
 
@@ -51,7 +51,7 @@ Tier 3 (ล่างสุด): G-Score soundtrack → แทนเพลงเ�
 | Synergy | คุณค่า |
 | --- | --- |
 | **G-Stream** | เพลง AI ปลอดลิขสิทธิ์ + reactive = สิ่งที่สตรีมเมอร์อยากได้ (หนี DMCA strike) |
-| **Marketplace (ADR-12)** | community "soundtrack pack" / boss-music style = หมวด UGC ใหม่ + AI-music collab |
+| **Marketplace ([[ADR-12-community-ai-marketplace|ADR-12]])** | community "soundtrack pack" / boss-music style = หมวด UGC ใหม่ + AI-music collab |
 | **G-Motion (reuse)** | ใช้ gank probability / teamfight signal ที่มีอยู่แล้วขับเพลง — ต้นทุนเพิ่มต่ำ |
 | **Persona** | Maiden เป็น DJ/co-host → engagement/viral (โมเมนต์ Roshan boss music แคปไปแชร์) |
 
@@ -91,7 +91,7 @@ on event(rampage|clutch): play one_shot_sting (ทับ current)
 | Audio output | Audio Engine (rodio) — reuse |
 | Persona DJ cues | **G-Persona** |
 | Stream redaction (เมื่อสตรีม) | **G-Stream** |
-| Community packs | **Marketplace** (ADR-12) |
+| Community packs | **Marketplace** ([[ADR-12-community-ai-marketplace|ADR-12]]) |
 
 ## 7. Constraints
 - เล่นเฉพาะ **stem ที่ pre-generated** (ไม่ generate สด) → เบา, ภายใน budget (CPU ≤2.5%, RAM ≤400MB)

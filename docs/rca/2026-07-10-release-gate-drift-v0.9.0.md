@@ -9,10 +9,10 @@
 
 - **Evidence:**
   - Run `29113330479` (release) + `29113332433` (CI) — **clippy**:
-    `redundant reference in format! argument` at `src-tauri/src/master.rs:196`
-    and `src-tauri/src/slm.rs:83` (`&raw.chars().take(N).collect::<String>()`),
+    `redundant reference in format! argument` at [`master.rs:196`](file:///g:/G-Maiden/src-tauri/src/master.rs#L196)
+    and [`slm.rs:83`](file:///g:/G-Maiden/src-tauri/src/slm.rs#L83) (`&raw.chars().take(N).collect::<String>()`),
     `error: could not compile g-maiden due to 2 previous errors`. The same
-    docs-only commit `ADR-16` (`29072770636`) had already failed CI for this,
+    docs-only commit [[ADR-16-credit-economy-and-mint-oracle|ADR-16]] (`29072770636`) had already failed CI for this,
     proving it predated the release.
   - Run `29113982663` (CI on main) — **eslint**:
     `CommandDeck.tsx:229:9 'safetyTimer' is never reassigned. Use 'const' — prefer-const`
@@ -33,7 +33,7 @@
      to fire under `-D warnings`. The local machine's older clippy never flagged
      it, so code that compiled clean at v0.8.0 silently became a CI error.
   2. **eslint never ran locally or at the review gate** — the Opus review gate for
-     CR-007 WP-4 ran `tsc` + `vitest` only. `pnpm -C src exec eslint .` (a CI step)
+     [[CR-007-frostline-deck-refresh|CR-007]] WP-4 ran `tsc` + `vitest` only. `pnpm -C src exec eslint .` (a CI step)
      was not part of the gate, so a trivial `prefer-const` shipped to `main`.
   3. **First release through a newer `verify` gate** — the `verify` job (with a
      full `Tauri smoke build`) was added 2026-07-08, *after* the v0.8.0 release.
@@ -55,8 +55,8 @@
     locally" gave false confidence (#1).
 
 - **Prevention:**
-  1. **Fixed (this release):** removed the redundant `&` (master.rs/slm.rs);
-     `let safetyTimer` → `const` (CommandDeck.tsx); release `verify` smoke build now
+  1. **Fixed (this release):** removed the redundant `&` ([`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs)/[`slm.rs`](file:///g:/G-Maiden/src-tauri/src/slm.rs));
+     `let safetyTimer` → `const` ([`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx)); release `verify` smoke build now
      runs `args: --no-bundle` so it compiles Rust + builds the frontend without
      needing signing secrets. All three committed to `main` and confirmed green on
      the CI-on-main run before re-tagging.

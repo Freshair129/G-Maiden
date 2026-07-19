@@ -1,7 +1,7 @@
 # FEAT-G-PERSONA — Tone & Verbosity Presets
 
 > **Module:** G-Persona · **Priority:** Companion P2 · **Phase:** 7–8
-> **PRD:** §3A G-Persona · **SRS:** §3.11
+> **PRD:** [[product-requirements|PRD]] §3A G-Persona · **SRS:** [[software-requirements-specification|SRS]] §3.11
 
 ---
 
@@ -35,8 +35,8 @@
 
 ## 3. Immutable Behaviors (ลบไม่ได้ไม่ว่า preset ใด) — **ทำแล้ว**
 
-Belief Revision + G-Signal interrupt เป็นของจริงในโค้ด (`signal.rs` `SignalEvent::Revision`,
-`capture.rs` `REVISION_LINE` + `voice_interrupt`, `tts.rs::cancel` ตัดเสียงกลางประโยค).
+Belief Revision + G-Signal interrupt เป็นของจริงในโค้ด ([`signal.rs`](file:///g:/G-Maiden/src-tauri/src/signal.rs) `SignalEvent::Revision`,
+[`capture.rs`](file:///g:/G-Maiden/src-tauri/src/capture.rs) `REVISION_LINE` + `voice_interrupt`, [`tts.rs::cancel`](file:///g:/G-Maiden/src-tauri/src/tts.rs) ตัดเสียงกลางประโยค).
 
 | Behavior | เหตุผล |
 | --- | --- |

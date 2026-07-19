@@ -13,10 +13,10 @@ attributes:
 
 > เอกสารนี้บันทึก **design contract ของ overlay ตามของจริงในโค้ด** (CR-007 กำหนดว่า overlay
 > *ไม่ถูกแตะ* — เอกสารนี้คือ baseline ให้การออกแบบรอบถัดไปอ้าง)
-> Source of truth ของพฤติกรรม: `src/src/App.tsx` (lite tier), `src/src/overlay/FullOverlay.tsx`,
-> `src/src/overlay/modules.ts`, `src/src/overlay/LayoutEditor.tsx`
+> Source of truth ของพฤติกรรม: [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) (lite tier), [`src/src/overlay/FullOverlay.tsx`](file:///g:/G-Maiden/src/src/overlay/FullOverlay.tsx),
+> [`src/src/overlay/modules.ts`](file:///g:/G-Maiden/src/src/overlay/modules.ts), [`src/src/overlay/LayoutEditor.tsx`](file:///g:/G-Maiden/src/src/overlay/LayoutEditor.tsx)
 
-## 1. หลักการ (สืบจาก 01-foundations §3)
+## 1. หลักการ (สืบจาก [[01-foundations|01-foundations]] §3)
 
 1. **Passive + click-through เสมอ** — ผู้เล่นห้ามรู้สึกว่ามี "หน้าต่าง" อยู่บนเกม
 2. **ห้ามบัง** minimap / skill bar / stats panel (NFR) — gank banner ยึด top-center,
@@ -88,8 +88,8 @@ Backend เดียวกันทั้งคู่ (game-tick / gank events) 
 ## 8. Alignment กับ CR-007 (ไม่แตะโค้ด overlay ในรอบนี้)
 
 - Token: เมื่อ WP-2 (OKLCH) ลง ให้ overlay ใช้ผ่าน **alias `--g-*` เดิม** — ห้ามเปลี่ยนค่า
-  ที่ตามองเห็น; ค่าคงที่ฝังใน `FullOverlay.tsx` (`C = {...}`) ให้คงไว้ก่อน จน CR รอบถัดไป
+  ที่ตามองเห็น; ค่าคงที่ฝังใน `FullOverlay.tsx` ([`C = {...}`](file:///g:/G-Maiden/src/src/overlay/FullOverlay.tsx#L24)) ให้คงไว้ก่อน จน CR รอบถัดไป
 - จุดที่*ควร*ตามใน CR ถัดไป (จดไว้ ไม่ทำตอนนี้): อีโมจิ ⚠️/👁️/🔔/💀 → stroke icon ชุดเดียว
-  กับ `DeckIcons.tsx`; ฟอนต์ Segoe UI → Plex (ตาม WP-3) โดยต้องวัด FPS ก่อน/หลัง
+  กับ [`DeckIcons.tsx`](file:///g:/G-Maiden/src/src/DeckIcons.tsx); ฟอนต์ Segoe UI → Plex (ตาม WP-3) โดยต้องวัด FPS ก่อน/หลัง
 - Quality tier ของ deck (**ไม่**ใช้กับ overlay) — overlay มีงบ FPS ของตัวเองและ blur 16px
   คือเพดานเดิมที่ผ่านการวัดแล้ว

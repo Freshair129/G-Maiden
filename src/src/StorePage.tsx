@@ -33,7 +33,7 @@ type CatalogRow = {
 };
 
 function errText(e: unknown): string {
-  return (e as { message?: string })?.message ?? String(e) ?? "เกิดข้อผิดพลาด";
+  return (e as { message?: string })?.message ?? String(e);
 }
 
 // CR-013 W5-01: CR-003 wallet/store isn't deployed live yet (§5.4 degrade
