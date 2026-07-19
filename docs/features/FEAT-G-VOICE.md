@@ -91,3 +91,8 @@ STT ทั้งหมดในตารางนี้ยัง**ไม่ไ�
 - [ ] offline fallback: local STT + local SLM works
 - [ ] audio not persisted after processing (privacy)
 - [ ] response contextually relevant (uses GSI + G-Memory)
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| — | 2026-07-19 | link/metadata sweep (G1.5): wikilink/symbol-link fixes only — no content change |

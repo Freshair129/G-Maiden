@@ -103,3 +103,8 @@ ReviveAdvice {
 - [ ] threat estimate (base-fall time, allies-alive) จาก CV — verdict ยัง conservative จนกว่าจะ wire
 - [ ] root-cause "ทำไมตาย" จาก combat-log CV (ตอนนี้ narrate ห้ามแต่งเหตุการณ์)
 - [ ] verdict ถูกต้อง ≥90% เทียบ scenario เดิมพันบ้าน (manual eval)
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| — | 2026-07-19 | link/metadata sweep (G1.5): wikilink/symbol-link fixes only — no content change |

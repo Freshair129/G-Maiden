@@ -97,3 +97,8 @@
 - G-Ann code: `G-Suite/packages/ann-studio` (repo `github.com/Freshair129/G-Suite`), `main` `be37053..cfeff6c`.
 - G-Maiden endpoint: [`src-tauri/src/gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) `announcer_install`; pack reader: [`src-tauri/src/voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/mod.rs); cache path: [`src-tauri/src/audio.rs`](file:///g:/G-Maiden/src-tauri/src/audio.rs) `voice_cache_dir`.
 - Session log: `.govibe/.brain/session/2026-07-13-B-gann-event-mapping-banner.md`.
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| — | 2026-07-19 | link/metadata sweep (G1.5): wikilink/symbol-link fixes only — no content change |

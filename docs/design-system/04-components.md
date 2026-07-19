@@ -1,5 +1,5 @@
 ---
-version: "2.2.1-draft"
+version: "2.2.2-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
 last_update: "2026-07-19,Claude"
 status: "draft"
@@ -448,7 +448,7 @@ Current anatomy (CR-011 §L/§M, CR011-P4a-01):
   fixed order: **Actions**, **Pages**, **Settings**
 - each row: Thai label (primary display text) + optional mono hotkey chip
   (`Ctrl+1`..`Ctrl+8` for page entries)
-- page-list entries are generated FROM [`shortcuts.ts`](file:///g:/G-Maiden/src/src/shortcuts.ts) `PAGES` (single source —
+- page-list entries are generated FROM [`shortcuts.ts`](file:///g:/G-Maiden/src/src/shortcuts.ts) [`PAGES`](file:///g:/G-Maiden/src/src/shortcuts.ts#L72) (single source —
   the page list + Thai labels used to be hand-copied in three places and had
   already drifted before this fix)
 
@@ -618,3 +618,4 @@ If any of these return, add them back only after implementation and screenshot r
 | --- | --- | --- |
 | 2.2.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
 | 2.2.1-draft | 2026-07-19 | symbol-link coverage extension (G1.5) |
+| 2.2.2-draft | 2026-07-19 | link/metadata sweep (G1.5) — link `PAGES` def |

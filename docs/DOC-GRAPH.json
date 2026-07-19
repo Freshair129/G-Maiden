@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-19T13:05:35.091Z",
+  "generatedAt": "2026-07-19T13:23:54.243Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -1399,6 +1399,12 @@
       "to": "src/src/gid.ts",
       "type": "symbol",
       "line": 52
+    },
+    {
+      "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "to": "src/src/gid.ts",
+      "type": "symbol",
+      "line": 55
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
@@ -3250,6 +3256,12 @@
     },
     {
       "from": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "to": "src-tauri/src/gsi.rs",
+      "type": "symbol",
+      "line": 94
+    },
+    {
+      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
       "line": 99
@@ -3271,6 +3283,24 @@
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
       "line": 123
+    },
+    {
+      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 124
+    },
+    {
+      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 125
+    },
+    {
+      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 126
     },
     {
       "from": "docs/change request/CR-007-frostline-deck-refresh.md",
@@ -3346,6 +3376,12 @@
     },
     {
       "from": "docs/change request/CR-008-login-hardening.md",
+      "to": "src/src/auth.ts",
+      "type": "symbol",
+      "line": 19
+    },
+    {
+      "from": "docs/change request/CR-008-login-hardening.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
       "line": 20
@@ -3388,6 +3424,42 @@
     },
     {
       "from": "docs/change request/CR-008-login-hardening.md",
+      "to": "src-tauri/src/secret.rs",
+      "type": "symbol",
+      "line": 70
+    },
+    {
+      "from": "docs/change request/CR-008-login-hardening.md",
+      "to": "src-tauri/src/secret.rs",
+      "type": "symbol",
+      "line": 70
+    },
+    {
+      "from": "docs/change request/CR-008-login-hardening.md",
+      "to": "src-tauri/src/secret.rs",
+      "type": "symbol",
+      "line": 70
+    },
+    {
+      "from": "docs/change request/CR-008-login-hardening.md",
+      "to": "src-tauri/src/runtime.rs",
+      "type": "symbol",
+      "line": 70
+    },
+    {
+      "from": "docs/change request/CR-008-login-hardening.md",
+      "to": "src-tauri/src/runtime.rs",
+      "type": "symbol",
+      "line": 70
+    },
+    {
+      "from": "docs/change request/CR-008-login-hardening.md",
+      "to": "src-tauri/src/runtime.rs",
+      "type": "symbol",
+      "line": 70
+    },
+    {
+      "from": "docs/change request/CR-008-login-hardening.md",
       "to": "src-tauri/src/runtime.rs",
       "type": "symbol",
       "line": 70
@@ -3419,6 +3491,12 @@
     {
       "from": "docs/change request/CR-008-login-hardening.md",
       "to": "src-tauri/src/runtime.rs",
+      "type": "symbol",
+      "line": 80
+    },
+    {
+      "from": "docs/change request/CR-008-login-hardening.md",
+      "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
       "line": 80
     },
@@ -3997,6 +4075,12 @@
       "to": "src/src/CompanionPages.tsx",
       "type": "symbol",
       "line": 27
+    },
+    {
+      "from": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
+      "to": "src/src/StorePage.tsx",
+      "type": "symbol",
+      "line": 38
     },
     {
       "from": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
@@ -5023,6 +5107,12 @@
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
       "line": 442
+    },
+    {
+      "from": "docs/design-system/04-components.md",
+      "to": "src/src/shortcuts.ts",
+      "type": "symbol",
+      "line": 451
     },
     {
       "from": "docs/design-system/04-components.md",
@@ -7333,6 +7423,12 @@
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
       "line": 76
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/setup.rs",
+      "type": "symbol",
+      "line": 79
     },
     {
       "from": "docs/product/roadmap.md",

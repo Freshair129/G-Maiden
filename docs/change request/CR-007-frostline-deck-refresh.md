@@ -91,7 +91,7 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
   so any other surface (e.g. the legacy Control panel under Settings) stays in
   sync instead of silently overwriting the rail's state.
 - **G-AnnStudio install endpoint fix (2026-07-10):** `POST /announcer/install`
-  ([`src-tauri/src/gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) `announcer_install`) was a near no-op — it logged the
+  ([`src-tauri/src/gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) [`announcer_install`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L268)) was a near no-op — it logged the
   pack name and returned `audio::all_counts()`, which counts subfolders of the
   legacy flat `voice-cache/` tree (including non-event dirs like `packs/` and
   `imports/`) and never activated the pack, so CLAUDE.md's "picked up live"
@@ -121,9 +121,9 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
   target exists as a file — canonicalizes both the pack dir and the candidate
   and requires containment, which is what catches a symlink planted inside a
   pack whose target escapes it. Every manifest-string join in [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L3)
-  (`resolve_existing_clips`/`active_event_clips`, `fired_banner_from`,
-  `preview_clip`, `install_report`, and `build_pack`'s `cover_image`/
-  `clip_options`/`banner_url` — i.e. the pack-listing path `state()` hits too,
+  (`resolve_existing_clips`/`active_event_clips`, [`fired_banner_from`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L60),
+  [`preview_clip`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L100), `install_report`, and `build_pack`'s `cover_image`/
+  `clip_options`/`banner_url` — i.e. the pack-listing path [`state()`](file:///g:/G-Maiden/src-tauri/src/voice_api/commands.rs#L23) hits too,
   not just the fire path) now goes through it. Separately, [`import_archive`](file:///g:/G-Maiden/src-tauri/src/voice_api/commands.rs#L139)'s
   `Expand-Archive` PowerShell shell-out (whose safety depended entirely on the
   .NET implementation) was replaced with in-process extraction using the `zip`
@@ -187,3 +187,9 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
 ## 6. Release policy
 
 Batch ลง `main` โดย**ไม่ tag** ตาม batching policy — bump version + tag เฉพาะเมื่อ Boss สั่ง release
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| — | 2026-07-19 | link/metadata sweep (G15-T5): symbol-link `announcer_install`, `fired_banner_from`, `preview_clip`, `state()` to their definitions |
+| — | 2026-07-19 | link/metadata sweep (G1.5): wikilink/symbol-link fixes only — no content change |

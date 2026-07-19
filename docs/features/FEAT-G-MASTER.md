@@ -89,3 +89,8 @@ Advice {
 - [x] G-Signal interrupt ตัด advice narration ได้ทันที
 - [x] persona text สอดคล้องกับ Maiden character
 - [x] prompt ไม่มี G-Log/PII by construction *(planned: explicit redaction gate)*
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| — | 2026-07-19 | link/metadata sweep (G1.5): wikilink/symbol-link fixes only — no content change |

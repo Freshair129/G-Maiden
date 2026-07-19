@@ -76,7 +76,7 @@
 - [x] System tray + hide-to-tray — [`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs)
 
 ### P1 — GSI + Basic UI
-- [x] GSI auto-install + Dota watchdog (`CREATE_NO_WINDOW`) — [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs)
+- [x] GSI auto-install + Dota watchdog ([`CREATE_NO_WINDOW`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L15)) — [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs)
 - [x] HP/mana danger alerts (voice + banner) — [`signal.rs`](file:///g:/G-Maiden/src-tauri/src/signal.rs)
 - [x] SAPI TTS via PowerShell (base64 Thai round-trip) — [`tts.rs`](file:///g:/G-Maiden/src-tauri/src/tts.rs)
 - [x] Settings persistence (localStorage + IPC sync)
@@ -379,3 +379,4 @@
 | --- | --- | --- |
 | 0.1.0 | — | roadmap ฉบับปัจจุบัน (untracked) |
 | 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): `[[PROJECT_FEATURE_MAP]]` converted to plain backtick path text (PROJECT_FEATURE_MAP.md is outside docs/, not a doc-graph slug) |
+| 0.1.2 | 2026-07-19 | link/metadata sweep (G15-T5): symbol-link `CREATE_NO_WINDOW` to its `setup.rs` definition |

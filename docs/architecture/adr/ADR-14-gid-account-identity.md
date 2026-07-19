@@ -2,7 +2,7 @@
 title: "ADR: GID — G-Series Account & Identity Layer"
 doc_id: "ADR-14-gid-account-identity"
 status: "Accepted"
-version: "1.0.1"
+version: "1.0.2"
 updated: "2026-07-19"
 owner: "Boss"
 source_of_truth: true
@@ -52,7 +52,7 @@ Email + phone OTP were built and then **cut** (adoption friction + SMS cost + PI
 **4. GID codec ([`src/src/gid.ts`](file:///g:/G-Maiden/src/src/gid.ts)) — single-sourced in TypeScript.**
 Format `G-[Generation][Payload][Checksum]`:
 - 31-char base31 alphabet, excludes ambiguous `0 1 O I L`.
-- `Generation` ∈ {F Founder, B Close Beta, P Public} — permanent cohort; **Founders are
+- [`Generation`](file:///g:/G-Maiden/src/src/gid.ts#L22) ∈ {F Founder, B Close Beta, P Public} — permanent cohort; **Founders are
   identifiable at a glance** as `G-F…` (prestige, per ADR-12 community status).
 - `Payload` = base31 of `(registration-day since 2026-01-01)·10⁷ + cohort-sequence`, padded
   ≥5 — encodes only **immutable** data (date + seq), never account state/tier/payment.
@@ -119,3 +119,4 @@ data is uploaded. Account creation is **opt-in** (additive sign-in), consistent 
 | --- | --- | --- |
 | 1.0.0 | 2026-07-02 | Accepted — GID cross-ecosystem identity, Supabase `gstore`, Google-OAuth, GID codec, Steam linking, privacy reconciliation |
 | 1.0.1 | 2026-07-19 | symbol-link coverage extension (G1.5) |
+| 1.0.2 | 2026-07-19 | link/metadata sweep (G1.5) — link `Generation` type |

@@ -137,3 +137,8 @@ assets/voice-cache/
 - [ ] hysteresis ป้องกัน chatter (alert ไม่ fire ซ้ำจนกว่าจะ clear แล้วข้าม danger ใหม่)
 - [ ] ทำงานได้ offline (ไม่พึ่ง cloud/network)
 - [ ] ไม่ crash เมื่อ audio engine ไม่พร้อม (graceful skip)
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| — | 2026-07-19 | link/metadata sweep (G1.5): wikilink/symbol-link fixes only — no content change |

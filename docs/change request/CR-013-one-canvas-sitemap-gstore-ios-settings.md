@@ -35,7 +35,7 @@
 >
 > **R2 — Overflow → Tab:** เนื้อหาเกิน canvas → แตกเป็น segmented tab ในหน้าเดิม
 > ห้ามยืดหน้า ห้ามย่อ font หนี list ที่โตได้ต้อง paginate ในกรอบสูงคงที่ผ่าน helper
-> pure แบบ `rowsThatFit()` ([`StorePage.tsx`](file:///g:/G-Maiden/src/src/StorePage.tsx) — pattern อ้างอิง, [[CR-003-account-phase1-wallet-billing|CR-003]] §3.0) เท่านั้น
+> pure แบบ [`rowsThatFit()`](file:///g:/G-Maiden/src/src/StorePage.tsx#L80) ([`StorePage.tsx`](file:///g:/G-Maiden/src/src/StorePage.tsx) — pattern อ้างอิง, [[CR-003-account-phase1-wallet-billing|CR-003]] §3.0) เท่านั้น
 >
 > **R3 — One Language:** ทุกหน้าใน deck ใช้ภาษา COLD BOOTH (sector frame,
 > instrument matte, eyebrow, IBM Plex) — legacy `Card`/inline-style จาก [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
@@ -198,3 +198,4 @@ Verify ต่อ wave: `tsc --noEmit`, eslint, vitest, browser geometry check �
 | --- | --- | --- |
 | — | 2026-07-19 | symbol-link coverage extension (G1.5) |
 | — | 2026-07-19 | link/metadata sweep (G15-T2): `[[CLAUDE.md]]` converted to plain backtick path text (CLAUDE.md is outside docs/, not a doc-graph slug) |
+| — | 2026-07-19 | link/metadata sweep (G15-T5): symbol-link `rowsThatFit()` to its `StorePage.tsx` definition |
