@@ -63,10 +63,15 @@ python .agents/skills/codedoc-aligner/scripts/chunk_and_align.py \
 ]
 ```
 
-**ปิดงานตาม Symbol Graph SOP (SKILL.md Step 4):** ตอนแก้เอกสารตามรายงาน
-เอเจนต์ต้องแนบ evidence link ชี้สัญลักษณ์จริง เช่น
-[`heading_multiplier`](file:///g:/G-Maiden/src-tauri/src/motion.rs) — ไม่ใช่เขียนชื่อฟังก์ชันลอย ๆ
-เพื่อให้ผู้ใช้กดตรวจได้ทันทีและลิงก์ไม่เน่าเมื่อโครงสร้างขยับ
+**ปิดงานตาม SOP (SKILL.md Step 4 + 5):** ตอนแก้เอกสารตามรายงาน เอเจนต์ต้อง
+1. แนบ evidence link ชี้สัญลักษณ์จริง เช่น
+   [`heading_multiplier`](file:///g:/G-Maiden/src-tauri/src/motion.rs) — ไม่ใช่เขียนชื่อฟังก์ชันลอย ๆ
+   เพื่อให้ผู้ใช้กดตรวจได้ทันทีและลิงก์ไม่เน่าเมื่อโครงสร้างขยับ (Step 4)
+2. bump เวอร์ชันเอกสาร + เพิ่มแถวในตาราง `## Changelog` ท้ายเอกสาร (Step 5) เช่น:
+   ```markdown
+   | 0.3.1 | 2026-07-19 | sync §1/§4 ให้ตรง heading_multiplier() ตามผล codedoc-aligner |
+   ```
+   และถ้า header มีบรรทัดเวอร์ชัน ต้องอัปเดตให้ตรงแถวล่าสุดเสมอ
 
 ---
 

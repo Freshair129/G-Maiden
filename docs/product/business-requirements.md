@@ -1,7 +1,7 @@
 # Business Requirements Document (BRD) — G-Maiden
 
 > **เอกสารระดับ:** Business (อยู่เหนือ [[product-requirements|PRD]]/[[software-requirements-specification|SRS]]) — *ทำไม*ต้องทำและ*ต้องได้อะไรเชิงธุรกิจ* ไม่ใช่*ทำอย่างไร*
-> **วันที่:** 2026-06-23 · **เวอร์ชัน:** 0.2.0 (draft) · **เจ้าของ:** Boss (solo founder)
+> **วันที่:** 2026-06-23 · **เวอร์ชัน:** 0.2.1 (draft) · **เจ้าของ:** Boss (solo founder)
 > **อ้างอิง:** [[product-requirements|PRD]] · [[software-requirements-specification|SRS]] · [[competitive-brief|Competitive Brief]] · [[roadmap|ROADMAP]]
 > **สถานะโปรเจกต์:** shipping v0.7.x · Phase 0–2 (GSI + CV gank detection + voice) ✅ · มุ่ง v1.0
 
@@ -217,3 +217,4 @@ Post-game analytics เชิงลึก (Stratz/OpenDota ครองขาด
 | --- | --- | --- |
 | 0.1.0 | 2026-06-23 | BRD ฉบับแรก |
 | 0.2.0 | 2026-06-23 | + §4.1 User Personas, + §8.1 Financial Model; ผูก ADR-10/11/12 |
+| 0.2.1 | 2026-07-19 | fix mojibake encoding + แปลง cross-reference เป็น wikilink (format-only, เนื้อหาไม่เปลี่ยน) |

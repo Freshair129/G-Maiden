@@ -66,6 +66,23 @@ python .agents/skills/codedoc-aligner/scripts/chunk_and_align.py --code-file <pa
 ### Step 4: ตรวจสอบความถูกต้องผ่านสัญนิยม Symbol Graph (SOP)
 * **SOP:** เมื่อตรวจพบจุดบกพร่องหรือความไม่สอดคล้อง เอเจนต์**ต้อง**จัดทำลิงก์อ้างอิงหลักฐาน (Evidence Links) ตามสัญนิยม Symbol Graph ชี้ตรงไปยังสัญลักษณ์โค้ดหรือบรรทัดที่เกิดปัญหาโดยตรง เช่น ชี้ไปยังฟังก์ชัน [`safe_pack_path`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs) หรือ [`gsi.rs:L171`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L171) เพื่อช่วยให้ผู้ใช้กดตรวจสอบได้ทันทีและป้องกันปัญหารายงานคลาดเคลื่อนเมื่อโครงสร้างเอกสาร/โค้ดขยับตัวในอนาคต
 
+### Step 5: อัปเดต Version + Changelog ท้ายเอกสาร (SOP)
+* **SOP:** ทุกครั้งที่เอเจนต์แก้เอกสารตามผลตรวจ (exit 1 → remediation) **ต้อง**ปิดงานด้วยการ bump เวอร์ชันของเอกสารและบันทึกรายการที่ตาราง `## Changelog` ท้ายเอกสารนั้น — ตามแบบแผนเดียวกับ [`business-requirements.md`](file:///g:/G-Maiden/docs/product/business-requirements.md) ซึ่งใช้กันอยู่แล้วในเอกสารส่วนใหญ่ของ repo:
+
+  ```markdown
+  ## Changelog
+  | Version | Date | Summary |
+  | --- | --- | --- |
+  | 0.2.0 | 2026-06-23 | + §4.1 User Personas, + §8.1 Financial Model |
+  | 0.2.1 | 2026-07-19 | sync §3 ให้ตรง heading_multiplier() ตามผล codedoc-aligner |
+  ```
+
+  กติกา:
+  1. **SemVer ของเอกสาร:** แก้ถ้อยคำ/ลิงก์/format = bump **patch**; เนื้อหาเปลี่ยนความหมาย (spec เปลี่ยน) = bump **minor**; รื้อโครงสร้าง/เปลี่ยนขอบเขตเอกสาร = bump **major**
+  2. ถ้าเอกสารมีบรรทัดเวอร์ชันใน header (เช่น `**เวอร์ชัน:** 0.2.0` หรือ frontmatter `version:`) ต้องอัปเดตให้**ตรงกับแถวล่าสุดของ Changelog เสมอ** — สองที่นี้ห้าม drift กันเอง
+  3. เอกสารที่ยังไม่มีตาราง `## Changelog` ให้สร้างต่อท้ายเอกสาร (หลังหัวข้อสุดท้าย) แล้วใส่แถวแรกเป็นเวอร์ชันปัจจุบัน + แถวใหม่ของการแก้ครั้งนี้
+  4. คอลัมน์ Summary ให้อ้างเหตุจากผลตรวจ (เช่น "ตามผล codedoc-aligner") และแนบ Symbol Graph link ของสัญลักษณ์ที่เกี่ยว เมื่อชี้ได้
+
 ---
 
 ## 3. สคริปต์ควบคุมและประมวลผล (Reference Script)
