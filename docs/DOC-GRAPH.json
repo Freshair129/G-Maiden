@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-19T13:23:54.243Z",
+  "generatedAt": "2026-07-19T13:33:38.937Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -990,6 +990,11 @@
       "id": "src-tauri/src/voice_api/path_safety.rs",
       "type": "code",
       "path": "src-tauri/src/voice_api/path_safety.rs"
+    },
+    {
+      "id": "src-tauri/src/voice_api/pack_io.rs",
+      "type": "code",
+      "path": "src-tauri/src/voice_api/pack_io.rs"
     },
     {
       "id": "tools/telemetry/ocr-test",
@@ -7930,13 +7935,13 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
+      "to": "src-tauri/src/voice_api/commands.rs",
       "type": "symbol",
       "line": 6
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
+      "to": "src-tauri/src/voice_api/path_safety.rs",
       "type": "symbol",
       "line": 7
     },
@@ -7948,7 +7953,7 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/commands.rs",
+      "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 10
     },
@@ -7966,7 +7971,7 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
+      "to": "src-tauri/src/voice_api/path_safety.rs",
       "type": "symbol",
       "line": 16
     },
@@ -7990,7 +7995,7 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/commands.rs",
+      "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 23
     },
@@ -8008,7 +8013,7 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/commands.rs",
+      "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 25
     },
@@ -8038,25 +8043,25 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
+      "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 41
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/commands.rs",
+      "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 42
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
+      "to": "src-tauri/src/voice_api/mod.rs",
       "type": "symbol",
       "line": 51
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/commands.rs",
+      "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 55
     },
@@ -8068,49 +8073,49 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/path_safety.rs",
+      "to": "src-tauri/src/voice_api/mod.rs",
       "type": "symbol",
       "line": 58
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
+      "to": "src-tauri/src/voice_api/mod.rs",
       "type": "symbol",
       "line": 60
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
+      "to": "src-tauri/src/voice_api/path_safety.rs",
       "type": "symbol",
       "line": 60
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 60
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 61
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 61
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 61
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 60
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 61
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 61
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 61
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 61
     },

@@ -1,5 +1,5 @@
 ---
-version: "0.3.2"
+version: "0.3.3"
 created_at: "2026-06-24T03:10:00+07:00,ATHER,pending"
 last_update: "2026-07-19T00:00:00+07:00,docs-accuracy-pass (v0.13.0 overlay merge)"
 status: "accepted"
@@ -212,3 +212,4 @@ Layout Editor.
 | 0.3.0 | 2026-07-17 | accepted | **CR-013 ONE CANVAS refresh.** Rebuild sitemap to 7-page deck (Build→Live tab, History→Insights tab, new G-Store, Account as page, Settings iOS split view); add phase axis + Maiden Line + 3 axes + R1/R2/R3 laws; add sign-in flow; scope this board to Overlay + product-boundary and cross-ref `05-sitemap-ia.md` (Deck SSOT) + `PROJECT_FEATURE_MAP.md`. | pending | Opus |
 | 0.3.1 | 2026-07-19 | accepted | **v0.13.0 overlay merge.** Lite/Full tier split removed (Lite/Full switch gone, `uiMode` forced `'full'`); every overlay module (kill card, banner, low-HP warning, volume rail, standby chip, stats) is now independently positionable via Layout Editor — updated §2 sitemap note, §4 Live Overlay direction, §5 `LayoutEditor` row, and acceptance criteria accordingly. | pending | docs-accuracy-pass |
 | 0.3.2 | 2026-07-19 | + geometry clarification banner (panel-world ≠ stage; stage = 1420×760) — design-doc audit |
+| 0.3.3 | 2026-07-19 | link/metadata sweep (G1.5) — wikilink/symbol-link fixes only, no content change |
