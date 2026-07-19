@@ -1,0 +1,44 @@
+name: GATE P3 — Latency
+
+on:
+  workflow_dispatch
+
+jobs:
+  latency-gate:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@1.96.0
+
+      # rust-cache must scope to src-tauri where Cargo.toml lives
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # gpu-feeder sidecar is bundled via tauri.conf externalBin, which
+      # tauri-build validates at any cargo invocation. Stage it before cargo runs.
+      - name: Stage gpu-feeder sidecar
+        run: node src-tauri/scripts/stage-gpu-feeder.mjs
+
+      # Headless latency_harness: measures hops 2-5 (vision, motion, signal, interrupt).
+      # Hops 1 (DXGI capture) and 6 (audio output) report SKIP and their budgets (70ms)
+      # are factored into the gate math: measured(2-5) + 70ms <= 300ms.
+      # Exit codes: 0 PASS, 1 FAIL, 77 SKIP (model missing).
+      # No --locked: tests/perf/Cargo.lock is deliberately gitignored, so a fresh
+      # checkout has no lockfile for --locked to hold against.
+      # Single step: $LASTEXITCODE does not survive across GitHub Actions steps.
+      - name: GATE P3 — latency_harness (headless, advisory on shared runner)
+        run: |
+          cargo run --release --manifest-path tests/perf/Cargo.toml --bin latency_harness
+          $code = $LASTEXITCODE
+          if ($code -eq 77) {
+            Write-Host "GATE P3 SKIPPED — prerequisites missing (unexpected on CI where models/ is committed)"
+            exit 0
+          } elseif ($code -eq 0) {
+            Write-Host "GATE P3 PASSED"
+            exit 0
+          } else {
+            Write-Host "GATE P3 FAILED — measured latency exceeded budget (advisory: shared-runner numbers are noisy; the binding gate is the local release run)"
+            exit 1
+          }
