@@ -19,7 +19,11 @@ yarn-error.log*
 /src-tauri/binaries/
 **/src-tauri/gen/
 *.rs.bk
-Cargo.lock
+
+# Nested Cargo.lock files for standalone/nested crates (src-tauri/Cargo.lock is tracked, not ignored)
+gpu-feeder/Cargo.lock
+orchestration/src-tauri/Cargo.lock
+tests/perf/Cargo.lock
 
 # Tauri build output (vite -> gen/web) + icon source scratch
 /src-tauri/gen/
@@ -45,9 +49,6 @@ _ds/
 # OS
 .DS_Store
 Thumbs.db
-
-# pnpm
-pnpm-lock.yaml
 
 # Tauri updater signing keys (NEVER commit the private key)
 .tauri/

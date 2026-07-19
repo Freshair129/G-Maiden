@@ -34,8 +34,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pnpm install
-          pnpm -C src install
+          pnpm install --frozen-lockfile
+          pnpm -C src install --frozen-lockfile
 
       - name: Stage GPU feeder
         run: node src-tauri/scripts/stage-gpu-feeder.mjs
@@ -53,10 +53,10 @@ jobs:
           }
 
       - name: Rust lint
-        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D warnings
 
       - name: Rust tests
-        run: cargo test --manifest-path src-tauri/Cargo.toml
+        run: cargo test --manifest-path src-tauri/Cargo.toml --locked
 
       - name: Frontend lint
         run: pnpm -C src exec eslint .
@@ -76,7 +76,9 @@ jobs:
           # bundling the installers/updater — that step signs the updater
           # artifact and needs TAURI_SIGNING_PRIVATE_KEY, which only the
           # publishing `release` job below carries. A sign-less smoke build.
-          args: --no-bundle
+          # `-- --locked` forwards to the underlying cargo invocation (see
+          # `tauri build --help`: ARGS after `--` pass through to the runner).
+          args: --no-bundle -- --locked
 
   release:
     needs: verify
@@ -103,8 +105,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pnpm install
-          pnpm -C src install
+          pnpm install --frozen-lockfile
+          pnpm -C src install --frozen-lockfile
 
       - name: Stage GPU feeder
         run: node src-tauri/scripts/stage-gpu-feeder.mjs
@@ -133,3 +135,4 @@ jobs:
           releaseBody: "See the assets below to download and install."
           releaseDraft: false
           prerelease: false
+          args: -- --locked

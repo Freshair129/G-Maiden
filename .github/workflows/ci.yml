@@ -31,8 +31,8 @@ jobs:
 
       - name: Install dependencies
         run: |
-          pnpm install
-          pnpm -C src install
+          pnpm install --frozen-lockfile
+          pnpm -C src install --frozen-lockfile
 
       # The gpu-feeder sidecar is bundled via tauri.conf externalBin, which
       # tauri-build validates at *any* cargo invocation (clippy included). The
@@ -42,10 +42,16 @@ jobs:
 
       # Fix: cargo clippy directly — not via pnpm exec (clippy is not a Node package)
       - name: Clippy
-        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets -- -D warnings
+        run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D warnings
 
       - name: ESLint
         run: pnpm -C src lint
+
+      - name: Rust tests
+        run: cargo test --manifest-path src-tauri/Cargo.toml --locked
+
+      - name: Frontend tests
+        run: pnpm -C src test
 
       - name: Tauri build (smoke check)
         uses: tauri-apps/tauri-action@v0
@@ -59,3 +65,4 @@ jobs:
           releaseName: ''
           releaseDraft: true
           prerelease: true
+          args: -- --locked
