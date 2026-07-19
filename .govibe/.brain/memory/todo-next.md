@@ -1,6 +1,38 @@
 # TODO / self-note - next session
 
-อัปเดตล่าสุด: **2026-07-13 B** · **side-track ใน G-Ann (repo พี่น้อง G-Suite): 25 commit + PUSHED ถึง `809e717`** (banner suite + vision W1→whisper→W4 + authoring/library + install channel 3-target + open-pack-on-canvas + voice-library data-model + Phase 2 AI name_en/backlink/impact-radar + **bugfix: drag pack + per-clip source + file-clip copy-on-save**). ดูบล็อก 🎨 ด้านล่าง. — banner ×6 (override/animated-WebP/voice-caption/audio-reactive/AI-SD) + W4 label resolver + **W4 button-OCR `detect_buttons.py`** (e2e KOM 11/11) + **`analyze_video` wrapper W1→whisper→W4** (e2e KOM 11 windows fused) + **authoring/library UX**: Save-to-Library แยกเจ้าของเสียง + import guard + **หน้าทดสอบ = library pack builder** + **build/run test** (vite+tauri dev ✅, UI verify via read_page) + **`.taurignore`** (venv watcher) + 🔴 **install เข้า built/installed G-Maiden** (`voice_cache_root` mirror + auto-detect probe release/debug/installed + Settings path field — เดิมเขียน `assets/voice-cache` แต่ built/installed อ่าน `voice-cache`; Boss เทสผ่าน release build). **pushed G-Suite `origin/main` `be37053..cfeff6c` (16 commit)**. ไม่แตะ G-Maiden code. G-Maiden priorities ด้านล่างเหมือนเดิม (CR-003 ยังไม่ push).
+อัปเดตล่าสุด: **2026-07-19** · docs sync v0.13.0 + wikilink/symbol graph ทั้ง repo + codedoc-aligner hardened + **ADR-17 governance split** (RWANG=builder / G-Orchestra=runtime governor) — รายงานเต็ม → `.govibe/.brain/session/2026-07-19-docs-governance-rwang-gorch.md`
+
+## 🔴 งานถัดไปเรียงตาม leverage (2026-07-19)
+
+1. **เทียบกับ `G:\govibe`** — Boss สั่งไว้ท้าย session, **จงใจยังไม่เริ่ม** (กัน context บวม) —
+   อ่าน session file 2026-07-19 + ADR-17 ก่อน แล้วค่อยเปิด GoVibe
+2. **ติดตั้ง RWANG PROMAX** (`D:\rwang\RWANG-PROMAX-skills\skills\rwang`) → `~/.claude/skills/`
+   + retire legacy 6 ตัว · แล้วรัน `RWANG:scan` L1 กับ G-Maiden (ยังไม่มี `docs/discovery/` +
+   `.rwang/evidence/`) · reconcile VERSION-GOVERNANCE.md ↔ in-doc standard (`docs/README.md` §metadata)
+3. **commit ไฟล์ค้างของ session 2026-07-19** (SKILL.md, USECASE.md, docs/README.md,
+   business-requirements.md, ADR-17, SPEC--RUNTIME-REPAIR-GOVERNANCE, .govibe/.brain) —
+   ⚠️ tree มีของ session ขนานปน **ห้าม `git add -A`** ระบุไฟล์เสมอ
+4. **แก้ drift shared context เมื่อ Boss สั่ง**: `CLAUDE.md:5` ยัง v0.9.0 (จริง 0.13.0) ·
+   `AGENTS.md:179` ยัง "3 places" (จริง 5)
+5. Archive `Rwang_remote` (เช็ค VRAM guard migrate เข้า `G:\Rwang` ก่อน)
+6. **PILOT-1 spec เขียนแล้ว (2026-07-19): `G:\Rwang\specs\G1-doc-graph-maintenance.yaml`** —
+   doc-graph scanner (slugmap/wikilink/symbol-link/metadata validators → DOC-GRAPH.json+REPORT),
+   7 tasks T1-local-first→T3-review, target G-Maiden, read-only over docs/, supervised autonomy.
+   ยังไม่ได้ยิงรัน — Boss เป็นคน launch จาก `G:\Rwang` (orchestrator/run.js ผ่าน Workflow tool
+   ใน session ของ repo นั้น). Topology ตกลงแล้ว: RWANG harness = orchestrator เดียว, Sol/codex =
+   tier (enabled ใน config อยู่แล้ว), ollama local = tier ถูกสุด, ห้ามให้ Sol swarm เองใน desktop
+
+## กติกาใหม่ที่ต้องถือ (2026-07-19 — อย่าทำผิดซ้ำ)
+
+- **Step 5 SOP**: แก้เอกสารไหน → bump version + แถว `## Changelog` ท้ายไฟล์ + frontmatter ตรงกัน
+- **SSOT boundary**: `orchestration/` .md หลายตัว derive จาก `gks/atoms*.json` — ห้ามแก้ .md ตรง
+- **codedoc-aligner**: อ่าน exit code ไม่ใช่ stdout (0=aligned / 1=conflict / 2=fail ห้ามตีความว่าผ่าน)
+- **RWANG สอง repo**: ตัว active คือ `G:\Rwang` ไม่ใช่ `Rwang_remote`
+- session ขนานทำงานพร้อมกันบ่อย — เช็ค `git log`/`git status` ก่อนเชื่อ state ในหัว
+
+---
+
+*(บล็อกเดิม 2026-07-13 ด้านล่าง — G-Ann thread ยังรอ live-test โดย Boss, CR-003 priorities คงเดิม)* · **side-track ใน G-Ann (repo พี่น้อง G-Suite): 25 commit + PUSHED ถึง `809e717`** (banner suite + vision W1→whisper→W4 + authoring/library + install channel 3-target + open-pack-on-canvas + voice-library data-model + Phase 2 AI name_en/backlink/impact-radar + **bugfix: drag pack + per-clip source + file-clip copy-on-save**). ดูบล็อก 🎨 ด้านล่าง. — banner ×6 (override/animated-WebP/voice-caption/audio-reactive/AI-SD) + W4 label resolver + **W4 button-OCR `detect_buttons.py`** (e2e KOM 11/11) + **`analyze_video` wrapper W1→whisper→W4** (e2e KOM 11 windows fused) + **authoring/library UX**: Save-to-Library แยกเจ้าของเสียง + import guard + **หน้าทดสอบ = library pack builder** + **build/run test** (vite+tauri dev ✅, UI verify via read_page) + **`.taurignore`** (venv watcher) + 🔴 **install เข้า built/installed G-Maiden** (`voice_cache_root` mirror + auto-detect probe release/debug/installed + Settings path field — เดิมเขียน `assets/voice-cache` แต่ built/installed อ่าน `voice-cache`; Boss เทสผ่าน release build). **pushed G-Suite `origin/main` `be37053..cfeff6c` (16 commit)**. ไม่แตะ G-Maiden code. G-Maiden priorities ด้านล่างเหมือนเดิม (CR-003 ยังไม่ push).
 รายงาน session ล่าสุด → `.govibe/.brain/session/2026-07-13-B-gann-event-mapping-banner.md` (ก่อนหน้า: `2026-07-13-gann-mastering-deck-complete.md`, `2026-07-12-cr003-impl-verify-supabase-local.md`)
 
 ## 🎨 G-Ann thread — งานต่อ (side-repo G-Suite, 2026-07-13 B) · pushed ถึง `1ba8d9a` (19 commit)
