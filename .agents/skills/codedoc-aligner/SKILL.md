@@ -40,8 +40,28 @@ git diff --cached --name-only
 เรียกใช้งานตัวช่วยในการแบ่ง Chunk และยิงคำวิเคราะห์ผ่าน Mellum2 (Ollama/Llama.cpp):
 ```bash
 python .agents/skills/codedoc-aligner/scripts/chunk_and_align.py <path_to_code> <path_to_doc>
+# หรือแบบ flag:
+python .agents/skills/codedoc-aligner/scripts/chunk_and_align.py --code-file <path_to_code> --doc-file <path_to_doc>
 ```
 *หากรันครั้งแรก ให้ตรวจสถานะของ Ollama ก่อน (`curl http://localhost:11434/api/tags`)*
+
+**โมเดล / env config:**
+| Env | Default | ความหมาย |
+| --- | --- | --- |
+| `CODEDOC_MODEL` | `hf.co/yuxinlu1/Mellum2-12B-A2.5B-Claude-4.6-4.8-Opus-Thinking-GGUF:Q4_K_M` | ชื่อโมเดลบน Ollama (preflight เช็คว่ามีจริงก่อนเริ่ม) |
+| `CODEDOC_OLLAMA_URL` | `http://localhost:11434/api/generate` | endpoint Ollama |
+| `CODEDOC_TIMEOUT` | `600` | timeout ต่อ request (วินาที) |
+
+**Exit codes (ใช้เป็น gate ได้ — เอเจนต์ต้องอ่าน exit code ไม่ใช่แค่ stdout):**
+| Code | ความหมาย |
+| --- | --- |
+| `0` | วิเคราะห์สำเร็จครบทุก chunk ไม่พบ conflict — aligned จริง |
+| `1` | วิเคราะห์สำเร็จ **พบ conflict** (รายงานอยู่ใน stdout) |
+| `2` | **fail หรือสรุปไม่ได้** (Ollama ล่ม/ไม่มีโมเดล/timeout/โมเดลตอบไม่เป็น format จนไม่มีผล) — **ห้าม**ตีความว่า aligned |
+
+**ข้อจำกัดที่เอเจนต์ต้องรู้:**
+- งานเป็น O(code_chunks × doc_chunks) LLM calls — ไฟล์ใหญ่คู่เอกสารใหญ่จะช้ามาก ควรส่ง **git diff** แทนไฟล์เต็มเมื่อทำได้
+- เนื้อหาโค้ด/เอกสารเป็น untrusted input ที่ฝังใน prompt — สคริปต์มี instruction hardening กัน prompt-injection ระดับหนึ่ง แต่ผลจาก local LLM ยังเป็น advisory ไม่ใช่ proof; ประเด็น HIGH ควรมีคน (หรือเอเจนต์หลัก) ตรวจซ้ำก่อนถือเป็นข้อสรุป
 
 ### Step 4: ตรวจสอบความถูกต้องผ่านสัญนิยม Symbol Graph (SOP)
 * **SOP:** เมื่อตรวจพบจุดบกพร่องหรือความไม่สอดคล้อง เอเจนต์**ต้อง**จัดทำลิงก์อ้างอิงหลักฐาน (Evidence Links) ตามสัญนิยม Symbol Graph ชี้ตรงไปยังสัญลักษณ์โค้ดหรือบรรทัดที่เกิดปัญหาโดยตรง เช่น ชี้ไปยังฟังก์ชัน [`safe_pack_path`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs) หรือ [`gsi.rs:L171`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L171) เพื่อช่วยให้ผู้ใช้กดตรวจสอบได้ทันทีและป้องกันปัญหารายงานคลาดเคลื่อนเมื่อโครงสร้างเอกสาร/โค้ดขยับตัวในอนาคต
