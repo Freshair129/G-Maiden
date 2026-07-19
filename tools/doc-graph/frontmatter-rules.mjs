@@ -82,8 +82,12 @@ function unquote(v) {
  *
  * @returns {Record<string,string>|null} null when there is no closed
  *   frontmatter fence at byte 0.
+ *
+ * Exported for reuse by ledger.mjs (G3): the 'designed' rung of the status
+ * ladder reads the primary doc's frontmatter `status` — same parser, no
+ * duplicate frontmatter parsing.
  */
-function parseFrontmatterFields(text) {
+export function parseFrontmatterFields(text) {
   const lines = text.split(/\r?\n/);
   if (!/^---[ \t]*$/.test(lines[0])) return null;
   let end = -1;

@@ -8540,5 +8540,923 @@
       "line": null,
       "reason": "no-metadata"
     }
-  ]
+  ],
+  "ledger": {
+    "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
+    "generatedAt": "2026-07-19T22:37:29.265Z",
+    "manifest": "docs/feature-ledger.manifest.yaml",
+    "runTests": false,
+    "rowCount": 54,
+    "byKind": {
+      "feature": 48,
+      "nfr": 6
+    },
+    "byStatus": {
+      "in-code": 41,
+      "doc-only": 13
+    },
+    "byDrift": {
+      "status-inflation": 32,
+      "aligned": 16,
+      "unclaimed": 6
+    },
+    "rows": [
+      {
+        "id": "1.1-g-sentry",
+        "kind": "feature",
+        "phase_target": "P2",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.1-g-motion",
+        "kind": "feature",
+        "phase_target": "P3",
+        "computed": "in-code",
+        "claimed": "in-code",
+        "drift": "aligned",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.1-g-signal",
+        "kind": "feature",
+        "phase_target": "P3",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.1-g-master",
+        "kind": "feature",
+        "phase_target": "P5",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.1-g-sensory",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "doc-only",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "primary doc status not accepted/stable",
+          "no code mapped"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.1-g-log",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.2-dxgi-capture",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.2-wgc-capture",
+        "kind": "feature",
+        "phase_target": "P5",
+        "computed": "in-code",
+        "claimed": "in-code",
+        "drift": "aligned",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.2-minimap-cv",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.2-draft-cv",
+        "kind": "feature",
+        "phase_target": "P3",
+        "computed": "in-code",
+        "claimed": "in-code",
+        "drift": "aligned",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.2-scoreboard-ocr",
+        "kind": "feature",
+        "phase_target": "P3",
+        "computed": "in-code",
+        "claimed": "in-code",
+        "drift": "aligned",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.3-announcer-packs",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.3-damage-model",
+        "kind": "feature",
+        "phase_target": "P3",
+        "computed": "in-code",
+        "claimed": "in-code",
+        "drift": "aligned",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.3-cognitive-backends",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.3-g-revive",
+        "kind": "feature",
+        "phase_target": "P5",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.4-gsi-server",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.4-item-networth",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.4-gsi-config",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.4-identity-steam",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.4-oauth-callback",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.4-secret-store",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.4-gpu-telemetry",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.4-claude-quota",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.4-calibration",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.4-utterance-ledger",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "1.4-hotkeys-updater",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "2.1-dashboard",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "2.1-live",
+        "kind": "feature",
+        "phase_target": "P5",
+        "computed": "in-code",
+        "claimed": "in-code",
+        "drift": "aligned",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "2.1-voice",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "2.1-gstore",
+        "kind": "feature",
+        "phase_target": "P5",
+        "computed": "in-code",
+        "claimed": "in-code",
+        "drift": "aligned",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "2.1-insights",
+        "kind": "feature",
+        "phase_target": "P5",
+        "computed": "in-code",
+        "claimed": "in-code",
+        "drift": "aligned",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "2.1-account",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "2.1-settings",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "2.2-live-wiring",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "2.2-accounts-gid",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "2.2-economy-gstore",
+        "kind": "feature",
+        "phase_target": "P5",
+        "computed": "in-code",
+        "claimed": "in-code",
+        "drift": "aligned",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "2.2-maiden-line",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "2.2-onair-console",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "2.2-phase-axis",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "2.2-inapp-updater",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "2.2-overlay-hud",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "in-code",
+        "claimed": "code+tests-present",
+        "drift": "status-inflation",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "3-g-voice",
+        "kind": "feature",
+        "phase_target": "P4",
+        "computed": "doc-only",
+        "claimed": "doc-only",
+        "drift": "aligned",
+        "gaps": [
+          "primary doc status not accepted/stable",
+          "no code mapped"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "3-g-memory",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "doc-only",
+        "claimed": "doc-only",
+        "drift": "aligned",
+        "gaps": [
+          "primary doc status not accepted/stable",
+          "no code mapped"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "3-g-coach",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "doc-only",
+        "claimed": "doc-only",
+        "drift": "aligned",
+        "gaps": [
+          "primary doc status not accepted/stable",
+          "no code mapped"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "3-g-mind",
+        "kind": "feature",
+        "phase_target": "P4",
+        "computed": "in-code",
+        "claimed": "in-code",
+        "drift": "aligned",
+        "gaps": [
+          "no tests mapped",
+          "review record missing"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "3-g-persona",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "doc-only",
+        "claimed": "doc-only",
+        "drift": "aligned",
+        "gaps": [
+          "primary doc status not accepted/stable",
+          "no code mapped"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "3-g-stream",
+        "kind": "feature",
+        "phase_target": "P6",
+        "computed": "doc-only",
+        "claimed": "doc-only",
+        "drift": "aligned",
+        "gaps": [
+          "primary doc status not accepted/stable",
+          "no code mapped"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "3-gemini-engine",
+        "kind": "feature",
+        "phase_target": "P1",
+        "computed": "doc-only",
+        "claimed": "doc-only",
+        "drift": "aligned",
+        "gaps": [
+          "no doc mapped",
+          "no code mapped"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "4-g-signal-latency",
+        "kind": "nfr",
+        "phase_target": "P6",
+        "computed": "doc-only",
+        "claimed": null,
+        "drift": "unclaimed",
+        "gaps": [
+          "no doc mapped",
+          "no code mapped"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "4-background-cpu",
+        "kind": "nfr",
+        "phase_target": "P6",
+        "computed": "doc-only",
+        "claimed": null,
+        "drift": "unclaimed",
+        "gaps": [
+          "no doc mapped",
+          "no code mapped"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "4-ram-budget",
+        "kind": "nfr",
+        "phase_target": "P6",
+        "computed": "doc-only",
+        "claimed": null,
+        "drift": "unclaimed",
+        "gaps": [
+          "no doc mapped",
+          "no code mapped"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "4-overlay-fps",
+        "kind": "nfr",
+        "phase_target": "P6",
+        "computed": "doc-only",
+        "claimed": null,
+        "drift": "unclaimed",
+        "gaps": [
+          "no doc mapped",
+          "no code mapped"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "4-resilience",
+        "kind": "nfr",
+        "phase_target": "P6",
+        "computed": "doc-only",
+        "claimed": null,
+        "drift": "unclaimed",
+        "gaps": [
+          "no doc mapped",
+          "no code mapped"
+        ],
+        "source": "bootstrap-extraction"
+      },
+      {
+        "id": "4-privacy",
+        "kind": "nfr",
+        "phase_target": "P6",
+        "computed": "doc-only",
+        "claimed": null,
+        "drift": "unclaimed",
+        "gaps": [
+          "no doc mapped",
+          "no code mapped"
+        ],
+        "source": "bootstrap-extraction"
+      }
+    ],
+    "violations": [
+      {
+        "id": "1.1-g-sentry",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.1-g-signal",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.1-g-master",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.1-g-sensory",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=doc-only"
+      },
+      {
+        "id": "1.1-g-log",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.2-dxgi-capture",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.2-minimap-cv",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.3-announcer-packs",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.3-cognitive-backends",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.3-g-revive",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.4-gsi-server",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.4-item-networth",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.4-gsi-config",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.4-identity-steam",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.4-oauth-callback",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.4-secret-store",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.4-gpu-telemetry",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.4-claude-quota",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.4-calibration",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.4-utterance-ledger",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "1.4-hotkeys-updater",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "2.1-dashboard",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "2.1-voice",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "2.1-account",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "2.1-settings",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "2.2-live-wiring",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "2.2-accounts-gid",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "2.2-maiden-line",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "2.2-onair-console",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "2.2-phase-axis",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "2.2-inapp-updater",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      },
+      {
+        "id": "2.2-overlay-hud",
+        "type": "status-inflation",
+        "blocking": true,
+        "detail": "claimed=code+tests-present exceeds computed=in-code"
+      }
+    ]
+  }
 }

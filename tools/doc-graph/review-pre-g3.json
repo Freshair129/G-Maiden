@@ -1,0 +1,56 @@
+{
+  "vetoes": [],
+  "annotations": [
+    {
+      "checker": "status-rederive",
+      "detail": "Ledger only ever computes 'in-code' (41 rows) or 'doc-only' (13 rows) - no 'designed', 'code+needs-test-or-review', 'code+tests-present (unrun)', or 'verified' rows exist. Consistent with raw data: every manifest entry has refs.tests=[] and refs.review=[] (no cargo: entries, so the cargo: ambiguity never arises), and of the docs referenced in refs.docs only docs/features/FEAT-G-DAMAGE.md has YAML frontmatter with a status field at all (status: draft) - every other FEAT-G-*.md has no frontmatter block, so 'designed' (refs.code empty + docs ref with status accepted/stable) is unreachable given the current source docs. Re-derived by hand for all 8 sampled rows; all matched the ledger's computed value."
+    }
+  ],
+  "checkers": [
+    {
+      "checker": "verify-rerun",
+      "vetoes": 0,
+      "annotations": 0
+    },
+    {
+      "checker": "scope-diff",
+      "vetoes": 0,
+      "annotations": 0
+    },
+    {
+      "checker": "header-gates",
+      "vetoes": 0,
+      "annotations": 0
+    },
+    {
+      "checker": "extraction-fidelity",
+      "vetoes": 0,
+      "annotations": 0,
+      "sampled": [
+        "1.1-g-sentry",
+        "1.1-g-signal",
+        "1.1-g-motion",
+        "1.2-scoreboard-ocr",
+        "3-g-voice",
+        "3-gemini-engine",
+        "4-g-signal-latency",
+        "4-privacy"
+      ]
+    },
+    {
+      "checker": "status-rederive",
+      "vetoes": 0,
+      "annotations": 1,
+      "sampled": [
+        "1.1-g-sentry",
+        "1.1-g-sensory",
+        "3-g-voice",
+        "3-g-mind",
+        "1.2-dxgi-capture",
+        "4-g-signal-latency",
+        "2.1-dashboard",
+        "3-gemini-engine"
+      ]
+    }
+  ]
+}

@@ -1,0 +1,748 @@
+# docs/feature-ledger.manifest.yaml
+#
+# Hand-editable feature ledger manifest (G3 epic). This is the ONE
+# hand-editable artifact in the pipeline — docs/FEATURE-LEDGER.md and the
+# `ledger` block inside docs/DOC-GRAPH.json are GENERATED from this file by
+# tools/doc-graph/ledger.mjs (G3-T3) and must never be hand-edited.
+#
+# Bootstrap-extraction (G3-T2, 2026-07-20): every entry below was extracted
+# mechanically from PROJECT_FEATURE_MAP.md (sections 1-3: backend modules,
+# frontend pages/features, product-level planned) and docs/features/FEAT-G-*.md
+# headers, exactly as those two source docs stood at the time of extraction
+# (PROJECT_FEATURE_MAP.md snapshot v0.13.0, 2026-07-19). Every entry carries
+# `source: bootstrap-extraction` so a human can find and prune/refine these
+# rows before the ledger is treated as authoritative. No test/review refs were
+# invented — `refs.tests`/`refs.review` are left as empty arrays throughout;
+# populate them by hand once real test/review evidence is identified.
+#
+# claimed_status derivation (PROJECT_FEATURE_MAP badge -> claimed_status),
+# per the G3-T2 task spec:
+#   SHIPPED -> code+tests-present   PARTIAL -> in-code
+#   STUB    -> in-code              PLANNED -> doc-only
+#
+# phase_target derivation:
+#   - Where the row has a matching docs/features/FEAT-G-*.md doc with an
+#     explicit `**Phase:** N` (or `N-M`) header line, that number is used
+#     (first number of a range), clamped into the P0-P6 schema range (a doc
+#     phase of 7 or 8 clamps to P6 — the schema's ceiling, not a claim that
+#     the roadmap itself stops at 6).
+#   - Where no FEAT doc / no explicit phase exists (most of PROJECT_FEATURE_MAP
+#     §1.2/§1.4/§2.1/§2.2, which are status-badged but not phase-numbered),
+#     phase_target is a bootstrap heuristic derived from the same badge:
+#     SHIPPED -> P6, PARTIAL -> P5, STUB -> P3, PLANNED -> P1. This is an
+#     assumption, not a sourced fact — a human should replace it with the
+#     real roadmap phase during pruning.
+#   - The 6 NFR rows (section 4) are ongoing enforced constraints rather than
+#     a single dev-phase deliverable; phase_target: P6 there means "already
+#     in force for the shipped product", not "planned for phase 6".
+#
+# refs.docs entries point at the FEAT doc's real repo path (not a bare slug)
+# so they are directly resolvable by resolveRefs()'s existsSync check.
+# refs.code entries are plain repo-relative file paths (no #Lxx line anchor —
+# ledger-manifest.mjs's resolveRefs() does not strip anchors before checking
+# existence, so a path+anchor would falsely resolve as "missing").
+
+entries:
+  # --- 1.1 The six canonical G-series modules ---
+  - id: 1.1-g-sentry
+    title: "G-Sentry — fog-of-war monitor (enemies missing from vision)"
+    kind: feature
+    phase_target: P2
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/features/FEAT-G-SENTRY.md]
+      srs: []
+      code: [src-tauri/src/sentry.rs]
+      tests: []
+      review: []
+
+  - id: 1.1-g-motion
+    title: "G-Motion — heatmap / last-seen positions / gank-route prediction"
+    kind: feature
+    phase_target: P3
+    claimed_status: in-code
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/features/FEAT-G-MOTION.md]
+      srs: []
+      code: [src-tauri/src/motion.rs]
+      tests: []
+      review: []
+
+  - id: 1.1-g-signal
+    title: "G-Signal — real-time gank warning, voice interrupt (hard-latency path)"
+    kind: feature
+    phase_target: P3
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/features/FEAT-G-SIGNAL.md]
+      srs: []
+      code: [src-tauri/src/signal.rs, src-tauri/src/capture.rs]
+      tests: []
+      review: []
+
+  - id: 1.1-g-master
+    title: "G-Master — strategic/financial advisor (skill/item build vs enemy)"
+    kind: feature
+    phase_target: P5
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/features/FEAT-G-MASTER.md]
+      srs: []
+      code: [src-tauri/src/master.rs, src-tauri/src/counter_advice.rs]
+      tests: []
+      review: []
+
+  - id: 1.1-g-sensory
+    title: "G-Sensory — overlay render + capture + hardware optimization"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/features/FEAT-G-SENSORY.md]
+      srs: []
+      code: []
+      tests: []
+      review: []
+
+  - id: 1.1-g-log
+    title: "G-Log — feedback loop, local decision/outcome logging"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/features/FEAT-G-LOG.md]
+      srs: []
+      code: [src-tauri/src/log.rs]
+      tests: []
+      review: []
+
+  # --- 1.2 Capture, CV & vision ---
+  - id: 1.2-dxgi-capture
+    title: "DXGI desktop-duplication capture"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/capture.rs, src-tauri/src/dxgi.rs]
+      tests: []
+      review: []
+
+  - id: 1.2-wgc-capture
+    title: "WGC capture (rollback path, --features wgc only)"
+    kind: feature
+    phase_target: P5
+    claimed_status: in-code
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/capture_wgc.rs]
+      tests: []
+      review: []
+
+  - id: 1.2-minimap-cv
+    title: "Minimap CV detector (ONNX)"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/cv/detector.rs, src-tauri/src/cv/prefilter.rs, src-tauri/src/cv/region.rs]
+      tests: []
+      review: []
+
+  - id: 1.2-draft-cv
+    title: "Draft-CV (pick-screen roster reader)"
+    kind: feature
+    phase_target: P3
+    claimed_status: in-code
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/cv/draft_detector.rs, src-tauri/src/cv/draft_region.rs]
+      tests: []
+      review: []
+
+  - id: 1.2-scoreboard-ocr
+    title: "Scoreboard OCR (enemy Net Worth)"
+    kind: feature
+    phase_target: P3
+    claimed_status: in-code
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/ocr.rs]
+      tests: []
+      review: []
+
+  # --- 1.3 Voice, advice & cognition ---
+  - id: 1.3-announcer-packs
+    title: "Announcer packs (fire -> banner -> resolve -> TTS)"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/announcer.rs, src-tauri/src/voice_api/mod.rs, src-tauri/src/audio.rs, src-tauri/src/tts.rs]
+      tests: []
+      review: []
+
+  - id: 1.3-damage-model
+    title: "G-Master self-burst / damage model"
+    kind: feature
+    phase_target: P3
+    claimed_status: in-code
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/features/FEAT-G-DAMAGE.md]
+      srs: []
+      code: [src-tauri/src/damage.rs]
+      tests: []
+      review: []
+
+  - id: 1.3-cognitive-backends
+    title: "Cognitive backends (cloud / local)"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/master.rs, src-tauri/src/slm.rs]
+      tests: []
+      review: []
+
+  - id: 1.3-g-revive
+    title: "G-Revive (buyback advice)"
+    kind: feature
+    phase_target: P5
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/features/FEAT-G-REVIVE.md]
+      srs: []
+      code: [src-tauri/src/revive.rs, src-tauri/src/respawn.rs]
+      tests: []
+      review: []
+
+  # --- 1.4 Server, identity & infra ---
+  - id: 1.4-gsi-server
+    title: "GSI server (:3000)"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/gsi.rs]
+      tests: []
+      review: []
+
+  - id: 1.4-item-networth
+    title: "Item / net-worth derivation"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/items.rs]
+      tests: []
+      review: []
+
+  - id: 1.4-gsi-config
+    title: "GSI config detect/install"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/setup.rs]
+      tests: []
+      review: []
+
+  - id: 1.4-identity-steam
+    title: "Identity / Steam link"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/identity.rs]
+      tests: []
+      review: []
+
+  - id: 1.4-oauth-callback
+    title: "OAuth callback (login)"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/gsi.rs, src-tauri/src/main.rs]
+      tests: []
+      review: []
+
+  - id: 1.4-secret-store
+    title: "Secret store (DPAPI)"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/secret.rs]
+      tests: []
+      review: []
+
+  - id: 1.4-gpu-telemetry
+    title: "GPU telemetry governor"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/governor.rs, gpu-feeder/src/main.rs]
+      tests: []
+      review: []
+
+  - id: 1.4-claude-quota
+    title: "Claude quota stats"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/usage.rs]
+      tests: []
+      review: []
+
+  - id: 1.4-calibration
+    title: "Calibration (QA evidence)"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/calibration.rs]
+      tests: []
+      review: []
+
+  - id: 1.4-utterance-ledger
+    title: "Utterance ledger emit (CR-011)"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/utterance.rs]
+      tests: []
+      review: []
+
+  - id: 1.4-hotkeys-updater
+    title: "Global hotkeys / updater / window routing"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src-tauri/src/main.rs]
+      tests: []
+      review: []
+
+  # --- 2.1 The 7 nav pages (Command Deck) ---
+  - id: 2.1-dashboard
+    title: "Dashboard (nav page)"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src/src/CommandDeck.tsx]
+      tests: []
+      review: []
+
+  - id: 2.1-live
+    title: "Live (nav page: [สด | บิลด์])"
+    kind: feature
+    phase_target: P5
+    claimed_status: in-code
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src/src/CompanionPages.tsx]
+      tests: []
+      review: []
+
+  - id: 2.1-voice
+    title: "Voice (nav page: คลังของฉัน / ไอเทม / ตัวแก้ไข)"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src/src/VoicePacksPage.tsx, src/src/VoiceInventory.tsx, src/src/AudioSettings.tsx]
+      tests: []
+      review: []
+
+  - id: 2.1-gstore
+    title: "G-Store (nav page: [ร้านค้า | กระเป๋า | คลัง | บันทึก])"
+    kind: feature
+    phase_target: P5
+    claimed_status: in-code
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src/src/StorePage.tsx, src/src/WalletTab.tsx, src/src/InventoryTab.tsx, src/src/LedgerTab.tsx, src/src/wallet.ts]
+      tests: []
+      review: []
+
+  - id: 2.1-insights
+    title: "Insights (nav page: [ภาพรวม | ประวัติ])"
+    kind: feature
+    phase_target: P5
+    claimed_status: in-code
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src/src/CompanionPages.tsx, src/src/live/buildInsights.ts, src/src/live/buildHistory.ts]
+      tests: []
+      review: []
+
+  - id: 2.1-account
+    title: "Account (nav page: บัญชี / กระเป๋า / ประวัติธุรกรรม)"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src/src/AccountPage.tsx, src/src/AuthPanel.tsx, src/src/SteamLink.tsx, src/src/auth.ts, src/src/profile.ts, src/src/gid.ts]
+      tests: []
+      review: []
+
+  - id: 2.1-settings
+    title: "Settings (nav page: iOS split view)"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src/src/CommandDeck.tsx, src/src/App.tsx, src/src/useAppUpdate.ts]
+      tests: []
+      review: []
+
+  # --- 2.2 Cross-cutting frontend features ---
+  - id: 2.2-live-wiring
+    title: "Live wiring -> Tauri events"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src/src/companion.ts, src/src/live/events.ts, src/src/live/phase.ts, src/src/live/utterances.ts]
+      tests: []
+      review: []
+
+  - id: 2.2-accounts-gid
+    title: "Accounts / GID"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src/src/auth.ts, src/src/profile.ts, src/src/supabase.ts, src/src/gid.ts, src/src/AccountPage.tsx, src/src/AuthPanel.tsx, src/src/SteamLink.tsx]
+      tests: []
+      review: []
+
+  - id: 2.2-economy-gstore
+    title: "Economy / G-Store"
+    kind: feature
+    phase_target: P5
+    claimed_status: in-code
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src/src/StorePage.tsx, src/src/WalletTab.tsx, src/src/InventoryTab.tsx, src/src/LedgerTab.tsx, src/src/wallet.ts, supabase/migrations/20260711120000_cr003_wallet_billing.sql]
+      tests: []
+      review: []
+
+  - id: 2.2-maiden-line
+    title: "Maiden Line command palette (Ctrl+K)"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src/src/MaidenLine.tsx, src/src/shortcuts.ts]
+      tests: []
+      review: []
+
+  - id: 2.2-onair-console
+    title: "ON AIR utterance console"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src/src/CommandDeck.tsx, src/src/live/utterances.ts]
+      tests: []
+      review: []
+
+  - id: 2.2-phase-axis
+    title: "Phase axis (standby -> prep -> live -> debrief)"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src/src/live/phase.ts]
+      tests: []
+      review: []
+
+  - id: 2.2-inapp-updater
+    title: "In-app updater"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src/src/useAppUpdate.ts]
+      tests: []
+      review: []
+
+  - id: 2.2-overlay-hud
+    title: "Overlay Combat HUD + announcer banner"
+    kind: feature
+    phase_target: P6
+    claimed_status: code+tests-present
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: [src/src/App.tsx, src/src/overlay/FullOverlay.tsx, src/src/overlay/modules.ts, src/src/overlay/LayoutEditor.tsx]
+      tests: []
+      review: []
+
+  # --- 3. Product-level / planned features ---
+  - id: 3-g-voice
+    title: "G-Voice — two-way voice (PTT -> STT -> Cloud Brain -> TTS)"
+    kind: feature
+    phase_target: P4
+    claimed_status: doc-only
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/features/FEAT-G-VOICE.md]
+      srs: []
+      code: []
+      tests: []
+      review: []
+
+  - id: 3-g-memory
+    title: "G-Memory — persistent cross-match player memory"
+    kind: feature
+    phase_target: P6
+    claimed_status: doc-only
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/features/FEAT-G-MEMORY.md]
+      srs: []
+      code: []
+      tests: []
+      review: []
+
+  - id: 3-g-coach
+    title: "G-Coach — post-match deep review, top-3 improvement points"
+    kind: feature
+    phase_target: P6
+    claimed_status: doc-only
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/features/FEAT-G-COACH.md]
+      srs: []
+      code: []
+      tests: []
+      review: []
+
+  - id: 3-g-mind
+    title: "G-Mind — cognitive model router / LLM switcher"
+    kind: feature
+    phase_target: P4
+    claimed_status: in-code
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/features/FEAT-G-MIND.md]
+      srs: []
+      code: [src-tauri/src/master.rs]
+      tests: []
+      review: []
+
+  - id: 3-g-persona
+    title: "G-Persona — tone & verbosity presets"
+    kind: feature
+    phase_target: P6
+    claimed_status: doc-only
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/features/FEAT-G-PERSONA.md]
+      srs: []
+      code: []
+      tests: []
+      review: []
+
+  - id: 3-g-stream
+    title: "G-Stream — streamer co-host mode"
+    kind: feature
+    phase_target: P6
+    claimed_status: doc-only
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/features/FEAT-G-STREAM.md]
+      srs: []
+      code: []
+      tests: []
+      review: []
+
+  - id: 3-gemini-engine
+    title: "Gemini cloud engine (original design target, superseded)"
+    kind: feature
+    phase_target: P1
+    claimed_status: doc-only
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: []
+      code: []
+      tests: []
+      review: []
+
+  # --- 4. Hard non-functional constraints ---
+  - id: 4-g-signal-latency
+    title: "G-Signal end-to-end latency (target 250ms, never exceed 300ms)"
+    kind: nfr
+    phase_target: P6
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: [docs/product/software-requirements-specification.md]
+      code: []
+      tests: []
+      review: []
+
+  - id: 4-background-cpu
+    title: "Background CPU usage <= 2.5% on a mid-range chipset"
+    kind: nfr
+    phase_target: P6
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: [docs/product/software-requirements-specification.md]
+      code: []
+      tests: []
+      review: []
+
+  - id: 4-ram-budget
+    title: "RAM budget <= 400MB with all modules active"
+    kind: nfr
+    phase_target: P6
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: [docs/product/software-requirements-specification.md]
+      code: []
+      tests: []
+      review: []
+
+  - id: 4-overlay-fps
+    title: "Overlay FPS impact <= 3% drop; must not obscure minimap/skill bar/stats"
+    kind: nfr
+    phase_target: P6
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: [docs/product/software-requirements-specification.md]
+      code: []
+      tests: []
+      review: []
+
+  - id: 4-resilience
+    title: "Resilience — G-Sentry + G-Signal keep running on local SLM on cloud/network loss"
+    kind: nfr
+    phase_target: P6
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: [docs/product/software-requirements-specification.md]
+      code: []
+      tests: []
+      review: []
+
+  - id: 4-privacy
+    title: "Privacy — G-Log/live match state/CV detections stay local-only, CV never leaves the machine"
+    kind: nfr
+    phase_target: P6
+    source: bootstrap-extraction
+    refs:
+      docs: []
+      srs: [docs/product/software-requirements-specification.md]
+      code: []
+      tests: []
+      review: []
