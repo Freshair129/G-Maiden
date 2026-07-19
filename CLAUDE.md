@@ -216,7 +216,7 @@ Users receive updates through an **in-app updater** (Tauri updater plugin), and 
   signature, installs, and relaunches.
 - **Cutting a release:** push a tag `vX.Y.Z` â†’ `.github/workflows/release.yml` builds, signs (key
   from GitHub Secrets, *not* local), and publishes the GitHub Release + `latest.json`. Steps: bump
-  version in `src-tauri/tauri.conf.json` + `src/package.json` + `App.tsx` `APP_VERSION`, add a
+  version in `src-tauri/tauri.conf.json` + `src/package.json` + `package.json` (root) + `src-tauri/Cargo.toml` + `App.tsx` `APP_VERSION`, add a
   CHANGELOG entry, commit, then `git tag -a vX.Y.Z && git push origin vX.Y.Z`. CI â‰ˆ 13 min.
 - **A commit on `main` does NOT reach users** until a tag is pushed. Local `pnpm tauri build` can't
   sign â€” it's for smoke-testing only.
