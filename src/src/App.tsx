@@ -1118,7 +1118,6 @@ const SetupCard: React.FC = () => {
 // ─────────────────────────────── AUDIO SETTINGS (unified voice pack + event manager) ───────────────────────────────
 interface VoiceCacheStatus { dir: string; counts: Record<string, number>; total: number }
 interface EventClip { name: string; path: string; source: string }
-const VOICE_STORE_URL = 'https://g-maiden.app/voicepacks' // TODO: real store URL
 const PREVIEW_LINES: Record<string, string> = {
   match_start: 'เริ่มเกมแล้ว ลุยกันเลยค่ะ!',
   danger: 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว',
@@ -1282,10 +1281,6 @@ const AudioSettingsCard: React.FC = () => {
 
       {/* ── Bottom actions ── */}
       <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', borderTop: `1px solid ${C.line}`, paddingTop: 10 }}>
-        <button onClick={() => void invoke('open_url', { url: VOICE_STORE_URL }).catch(() => {})}
-          style={{ background: 'rgba(143,212,255,0.12)', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 9, padding: '7px 14px', fontSize: 12, fontWeight: 600, cursor: 'pointer' }}>
-          🛒 ดู Voice Pack เพิ่ม
-        </button>
         <button onClick={() => void invoke('open_voice_cache_dir').catch(() => {})}
           style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 9, padding: '7px 12px', fontSize: 12, cursor: 'pointer' }}>
           📂 เปิดโฟลเดอร์เสียง

@@ -55,10 +55,10 @@ function formatDate(iso: string): string {
 }
 
 export interface WalletTabProps {
-  /** Stub — no History/LedgerTab.tsx exists yet (CR-003 §3.7 lists it as a
-   *  separate not-yet-built file), and this page isn't handed CommandDeck's
-   *  `tab` state, so there's no established way to switch tabs from here.
-   *  Wire this to whatever tab-switch mechanism lands with LedgerTab.tsx. */
+  /** Switches the G-Store shell's sub-tab to "บันทึก" (LedgerTab.tsx) — wired
+   *  by CommandDeck.tsx (`onViewAllTransactions={() => setStoreTab("ledger")}`).
+   *  Optional so this component still degrades gracefully (inline message
+   *  instead of a crash) if ever rendered standalone without that shell. */
   onViewAllTransactions?: () => void;
 }
 
@@ -105,7 +105,7 @@ export default function WalletTab({ onViewAllTransactions }: WalletTabProps) {
 
   function handleViewAll() {
     if (onViewAllTransactions) { onViewAllTransactions(); return; }
-    setMsg("ดูทั้งหมด — ยังไม่ได้ต่อแท็บ History (TODO)");
+    setMsg("ดูทั้งหมด — ไม่พบการเชื่อมต่อแท็บบันทึก");
   }
 
   const expiresInDays = daysUntil(shardExpiresAt);
