@@ -21,8 +21,14 @@
  *   2. Parse docs/DOC-GRAPH.json and print the per-reason violation counts
  *      verbatim (JSON), then ASSERT the epic_dod class-zero conditions:
  *      anchor-symbol-mismatch, bad-anchor, missing-required-field,
- *      invalid-status, legacy-status-case, doc-id-slug-mismatch must all be
- *      0. informational reasons are not asserted on (allowed to remain).
+ *      legacy-status-case, doc-id-slug-mismatch must all be 0. informational
+ *      reasons are not asserted on (allowed to remain). invalid-status is NOT
+ *      a hard-zero class (see 2b) — the epic_dod allows unmappable ones to
+ *      remain if listed in the checklist.
+ *   2b. ASSERT the invalid-status carve-out: every remaining invalid-status
+ *      violation's doc must be listed in docs/approval-backfill-checklist.md
+ *      (mappable legacies were fixed by G25-T2; free-text/unmappable statuses
+ *      are deferred to Boss via the checklist under the no-guess rule).
  *   3. ASSERT the missing-approval carve-out: missing-approval violation
  *      count must equal the number of data rows in
  *      docs/approval-backfill-checklist.md (same table-row-counting rule as
@@ -63,17 +69,36 @@ const STEP_TIMEOUT_MS = 40_000; // individual step cap, still inside the 45s wal
 const DIFF_GATE_RANGE = "HEAD~1...HEAD";
 
 // epic_dod (tasks.json): these classes must be exactly zero.
+// NOTE: invalid-status is deliberately NOT here. The epic_dod carves it out:
+// "missing-approval AND unmappable invalid-status MAY remain only for rows
+// listed in docs/approval-backfill-checklist.md". Mappable legacy statuses
+// were fixed by G25-T2; the free-text/unmappable ones are deferred to the
+// checklist for a Boss decision (no-guess rule), so a blanket
+// invalid-status===0 assertion would contradict the epic's own charter.
+// invalid-status is therefore asserted separately (step 2b): every remaining
+// one must be listed in the checklist.
 const ZERO_CLASSES = [
   "anchor-symbol-mismatch",
   "bad-anchor",
   "missing-required-field",
-  "invalid-status",
   "legacy-status-case",
   "doc-id-slug-mismatch",
 ];
 // missing-approval is exempt from the zero rule — it may remain, but only
 // 1:1 with rows in the Boss sign-off checklist (script-verified equality).
 const CHECKLIST_CLASS = "missing-approval";
+// invalid-status: any remaining violation is allowed ONLY if its doc is listed
+// in the checklist (unmappable/free-text status deferred to Boss). Not counted
+// in the missing-approval row-count equality — the checklist's approval table
+// is the only regex-counted table (its "Unmappable statuses" table is
+// intentionally formatted to not match the row-count regex).
+const CHECKLIST_DEFERRED_CLASS = "invalid-status";
+
+function docIdFromViolation(v) {
+  const file = (v.file ?? v.node ?? v.id ?? "").replace(/\\/g, "/");
+  const base = file.split("/").pop() ?? file;
+  return base.replace(/\.md$/i, "");
+}
 
 const IN_SCOPE_TOOLS_EXACT = [
   // this task's own deliverable
@@ -271,6 +296,29 @@ async function main() {
       ok = false;
     } else {
       console.log(`[e2e-check-g25] OK: missing-approval count equals checklist row count.`);
+    }
+
+    // --- Step 2b: unmappable invalid-status carve-out ---------------------
+    // epic_dod: unmappable invalid-status MAY remain ONLY for docs listed in
+    // the checklist. Every remaining invalid-status violation's doc must
+    // appear (by doc_id = filename slug) in approval-backfill-checklist.md;
+    // otherwise it should have been mapped-and-fixed (G25-T2) or listed, so an
+    // unlisted one is a genuine FAIL.
+    const invalidStatusViolations = violations.filter((v) => v.reason === CHECKLIST_DEFERRED_CLASS);
+    const checklistText = existsSync(CHECKLIST) ? readFileSync(CHECKLIST, "utf8") : "";
+    console.log(
+      `[e2e-check-g25] invalid-status carve-out: ${invalidStatusViolations.length} remaining, each must be listed in the checklist (unmappable/free-text deferred to Boss).`
+    );
+    for (const v of invalidStatusViolations) {
+      const docId = docIdFromViolation(v);
+      if (!docId || !checklistText.includes(docId)) {
+        console.error(
+          `[e2e-check-g25] FAIL: invalid-status doc "${docId}" (${v.file ?? v.node ?? "?"}, status=${JSON.stringify(v.status)}) is not listed in docs/approval-backfill-checklist.md — it must be mapped-and-fixed or deferred there.`
+        );
+        ok = false;
+      } else {
+        console.log(`[e2e-check-g25] OK: invalid-status "${docId}" is listed in the checklist.`);
+      }
     }
   } else {
     console.error(`[e2e-check-g25] FAIL: no parsed DOC-GRAPH.json — cannot assert epic_dod class counts or checklist equality.`);
