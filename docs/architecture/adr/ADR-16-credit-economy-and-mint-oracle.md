@@ -1,14 +1,16 @@
 ---
 title: "ADR: Credit Economy (shard/wallet) + Mint Oracle + match_ref Storage"
-doc_id: "ADR-16-credit-economy-and-mint-oracle"
-status: "Accepted"
-version: "1.0.0"
-updated: "2026-07-10"
-owner: "Boss"
+doc_id: ADR-16-credit-economy-and-mint-oracle
+status: accepted
+version: 1.0.1
+updated: 2026-07-20
+owner: Boss
 source_of_truth: true
-amends: ["ADR-11 §2 (anonymize → pseudonymous)", "ADR-11 §3 (match_id → match_ref)"]
-related_docs: ["ADR-11", "ADR-12", "ADR-14", "CR-003"]
-language: "th/en"
+amends: "[\"ADR-11 §2 (anonymize → pseudonymous)\", \"ADR-11 §3 (match_id → match_ref)\"]"
+related_docs: "[\"ADR-11\", \"ADR-12\", \"ADR-14\", \"CR-003\"]"
+language: th/en
+approved_by: Boss
+approved_date: 2026-07-10
 ---
 
 # ADR-16 — Credit Economy, Mint Oracle, and match_ref Storage
@@ -237,3 +239,4 @@ match_ref = HMAC(server_key, match_id)
 | Version | Date | Summary |
 | --- | --- | --- |
 | 1.0.0 | 2026-07-10 | Accepted — two-currency (shard/wallet), no-money-exit invariant, OpenDota mint oracle, match_ref HMAC + signed receipt, catalog separation, `provenance` schema constraint; amends ADR-11 §2/§3 |
+| 1.0.1 | 2026-07-20 | approval evidence backfill (G25-T3) — `approved_by`/`approved_date` set from in-body sign-off evidence: "Boss กำหนดทิศทางไว้ (session 2026-07-10)" (line 40) |

@@ -1,12 +1,14 @@
 ---
 title: "ADR: Dev & Runtime Governance Split — RWANG builder · G-Orchestra governor · skill→harness release"
-doc_id: "ADR-17-dev-runtime-governance-split"
-status: "Accepted"
-version: "1.0.0"
-updated: "2026-07-19"
-owner: "Boss"
+doc_id: ADR-17-dev-runtime-governance-split
+status: accepted
+version: 1.0.1
+updated: 2026-07-20
+owner: Boss
 source_of_truth: true
-related_docs: ["ADR-11-optin-data-contribution-flywheel", "ADR-12-community-ai-marketplace", "SPEC--RUNTIME-REPAIR-GOVERNANCE", "PROJECT_FEATURE_MAP"]
+related_docs: "[\"ADR-11-optin-data-contribution-flywheel\", \"ADR-12-community-ai-marketplace\", \"SPEC--RUNTIME-REPAIR-GOVERNANCE\", \"PROJECT_FEATURE_MAP\"]"
+approved_by: Boss
+approved_date: 2026-07-19
 ---
 
 # ADR-17: Dev & Runtime Governance Split
@@ -100,3 +102,4 @@ release จริงผ่าน harness เท่านั้น. พิสู�
 | Version | Date | Summary |
 | --- | --- | --- |
 | 1.0.0 | 2026-07-19 | บันทึก 8 decisions จาก working session (two-plane, Narrow Rails, executor-agnostic, RWANG consolidation, business model, skill→harness pipeline, Genesis Block Cycle mapping, doc governance) |
+| 1.0.1 | 2026-07-20 | approval evidence backfill (G25-T3) — `approved_by`/`approved_date` set from in-body sign-off evidence: "ตัดสินใจโดย Boss ใน working session 2026-07-19" (line 14) |
