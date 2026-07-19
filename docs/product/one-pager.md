@@ -1,45 +1,41 @@
-﻿# G-Maiden â€” One-Pager
+# G-Maiden — One-Pager
 
-> **à¹€à¸žà¸·à¹ˆà¸­à¸™à¹à¸„à¸ªà¹€à¸•à¸­à¸£à¹Œ AI à¸—à¸µà¹ˆà¹€à¸«à¹‡à¸™à¸­à¸±à¸™à¸•à¸£à¸²à¸¢à¸à¹ˆà¸­à¸™à¸„à¸¸à¸“ à¹à¸¥à¸°à¸žà¸¹à¸”à¹€à¸•à¸·à¸­à¸™à¸—à¸±à¸™à¸à¹ˆà¸­à¸™à¸•à¸²à¸¢**
-> AI voice co-pilot à¸ªà¸³à¸«à¸£à¸±à¸š Dota 2 Â· 2026-06-23 Â· solo-founded, shipping v0.7.x
-
----
-
-**à¸›à¸±à¸à¸«à¸²**
-à¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™ Dota 2 à¸•à¸±à¸”à¸ªà¸´à¸™à¹ƒà¸ˆà¸Šà¹‰à¸²/à¹‚à¸”à¸™à¹à¸à¸‡à¸„à¹Œà¸•à¸²à¸¢à¹€à¸žà¸£à¸²à¸°à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸¥à¹‰à¸™à¹à¸¥à¸°à¸ªà¸²à¸¢à¸•à¸²à¹„à¸¡à¹ˆà¸—à¸±à¸™ à¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡à¸¡à¸·à¸­à¸—à¸µà¹ˆà¸¡à¸µà¸¥à¹‰à¸§à¸™à¹€à¸›à¹‡à¸™ *à¸‚à¹‰à¸­à¸„à¸§à¸²à¸¡à¸šà¸™à¸ˆà¸­* à¸—à¸µà¹ˆà¸”à¸¶à¸‡à¸ªà¸²à¸¢à¸•à¸²à¸­à¸­à¸à¸ˆà¸²à¸à¹€à¸à¸¡ â€” à¹„à¸¡à¹ˆà¸¡à¸µà¸•à¸±à¸§à¹„à¸«à¸™à¹€à¸•à¸·à¸­à¸™à¸­à¸±à¸™à¸•à¸£à¸²à¸¢ *à¹€à¸Šà¸´à¸‡à¸£à¸¸à¸* à¸—à¸±à¸™à¹€à¸§à¸¥à¸²
-
-**à¸—à¸²à¸‡à¸­à¸­à¸ â€” G-Maiden**
-AI companion **à¹€à¸ªà¸µà¸¢à¸‡à¸ªà¸” + overlay à¹‚à¸›à¸£à¹ˆà¸‡à¹ƒà¸ª** à¸­à¹ˆà¸²à¸™à¹€à¸à¸¡à¸œà¹ˆà¸²à¸™ GSI:
-- ðŸ”” **à¹€à¸•à¸·à¸­à¸™ gank à¸”à¹‰à¸§à¸¢à¹€à¸ªà¸µà¸¢à¸‡** à¸ à¸²à¸¢à¹ƒà¸™ <300ms (à¸—à¸³à¸™à¸²à¸¢à¹€à¸ªà¹‰à¸™à¸—à¸²à¸‡à¸ˆà¸²à¸ heatmap)
-- âš”ï¸ **à¸„à¸³à¸™à¸§à¸“ "à¸†à¹ˆà¸²à¹„à¸”à¹‰à¹„à¸«à¸¡"** à¸ªà¸” (G-Damage lethality) â€” à¹„à¸¡à¹ˆà¸¡à¸µà¹ƒà¸„à¸£à¸—à¸³
-- ðŸŽ™ï¸ **persona "Maiden"** à¸™à¸±à¸à¸žà¸²à¸à¸¢à¹Œà¹„à¸—à¸¢ à¸£à¸¹à¹‰à¸¡à¸µà¸¡ "Nerf CM" + à¹à¸à¹‰à¸„à¸³à¸à¸¥à¸²à¸‡à¸›à¸£à¸°à¹‚à¸¢à¸„à¹€à¸¡à¸·à¹ˆà¸­à¸—à¸³à¸™à¸²à¸¢à¸žà¸¥à¸²à¸” (belief revision)
-
-**à¸—à¸³à¹„à¸¡à¸•à¸­à¸™à¸™à¸µà¹‰ / à¸—à¸³à¹„à¸¡à¹€à¸£à¸²**
-à¸¡à¸¸à¸¡ **voice + real-time + Dota 2 à¸§à¹ˆà¸²à¸‡à¸—à¸±à¹‰à¸‡à¸•à¸¥à¸²à¸”** Â· à¸„à¸¹à¹ˆà¹à¸‚à¹ˆà¸‡à¸—à¸¸à¸™à¸«à¸™à¸² (Blitz/Mobalytics) à¸—à¸´à¹‰à¸‡ Dota 2 Â· à¹€à¸ˆà¹‰à¸²à¸—à¸µà¹ˆà¸•à¸²à¸¢ (GOSU.AI ~$5.12M, Backseat AI) à¸žà¸´à¸ªà¸¹à¸ˆà¸™à¹Œà¸§à¹ˆà¸² "AI tips à¸šà¸™à¸ˆà¸­" à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆ moat â€” à¹€à¸£à¸²à¸•à¹ˆà¸²à¸‡à¸•à¸£à¸‡à¸™à¸±à¹‰à¸™
-
-**à¸•à¸¥à¸²à¸”** â€” à¹€à¸£à¸´à¹ˆà¸¡ niche Dota PC à¹„à¸—à¸¢ (active core ~30â€“80k) à¹à¸¥à¹‰à¸§à¸‚à¸¢à¸²à¸¢à¸ªà¸²à¸à¸¥ Â· ESL One Bangkok 2024 = à¸ªà¸±à¸à¸à¸²à¸“à¸•à¸¥à¸²à¸”à¸Ÿà¸·à¹‰à¸™
-
-**Moat (à¸¥à¸­à¸à¸¢à¸²à¸ 4 à¸Šà¸±à¹‰à¸™)**
-1. **Persona à¹„à¸—à¸¢ + belief revision** â€” emotional hook à¸—à¸µà¹ˆ analytics à¹ƒà¸«à¹‰à¹„à¸¡à¹ˆà¹„à¸”à¹‰
-2. **Hybrid ingestion** (GSI + vision + replay) â€” à¸£à¸­à¸”à¹à¸¡à¹‰ Valve à¸•à¸±à¸” GSI
-3. **Data flywheel** â€” match_id à¹€à¸¢à¹‡à¸š GSI 2 à¸à¸±à¹ˆà¸‡ = ground-truth dataset à¸—à¸µà¹ˆà¹‚à¸•à¸•à¸²à¸¡à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰
-4. **Community marketplace** â€” UGC AI styles + creator economy = network effect
-
-**à¹‚à¸¡à¹€à¸”à¸¥à¸£à¸²à¸¢à¹„à¸”à¹‰** â€” freemium **à¸¿99â€“199/à¹€à¸”à¸·à¸­à¸™** (TrueMoney/PromptPay) + marketplace take-rate + seasonal payout Â· opex à¸•à¹ˆà¸³ (local SLM, no salary) â†’ **break-even ~125 paid users**
-
-**Traction / à¸ªà¸–à¸²à¸™à¸°**
-- âœ… shipping **v0.7.x** Â· Phase 0â€“2 à¹€à¸ªà¸£à¹‡à¸ˆ (GSI + CV gank detection + voice à¸„à¸£à¸š loop)
-- âœ… **latency à¸žà¸´à¸ªà¸¹à¸ˆà¸™à¹Œà¹à¸¥à¹‰à¸§** G-Signal p50=21.6ms / p99=67.4ms (budget 300ms)
-- âœ… ONNX minimap detector (128 à¸®à¸µà¹‚à¸£à¹ˆ), local SLM fallback, in-app updater
-- âœ… **ban-safe + privacy-first** (read-only GSI/CV, no memory inject, local-only by default)
-
-**à¸„à¸¹à¹ˆà¹à¸‚à¹ˆà¸‡** â€” Dota Plus (Valve, à¹„à¸¡à¹ˆà¸¡à¸µà¹€à¸ªà¸µà¸¢à¸‡/à¹€à¸•à¸·à¸­à¸™à¹€à¸Šà¸´à¸‡à¸£à¸¸à¸) Â· Dota Coach (à¹€à¸ªà¸µà¸¢à¸‡+timer à¹à¸•à¹ˆ reactive, EN) Â· Questie (generic, vision à¸Šà¹‰à¸² 3â€“4s) â†’ **G-Maiden = Dota-native + voice + predictive + à¹„à¸—à¸¢**
-
-**à¸–à¸±à¸”à¹„à¸›** â€” à¸¡à¸¸à¹ˆà¸‡ v1.0 (à¸„à¸£à¸š 12 à¹‚à¸¡à¸”à¸¹à¸¥) â†’ à¹€à¸›à¸´à¸” marketplace (post-v1.0) Â· validate à¸£à¸²à¸„à¸² + distribution (web/Vercel + à¸žà¸´à¸ˆà¸²à¸£à¸“à¸² Overwolf)
+> **เพื่อนแคสเตอร์ AI ที่เห็นอันตรายก่อนคุณ และพูดเตือนทันก่อนตาย**
+> AI voice co-pilot สำหรับ Dota 2 · 2026-06-23 · solo-founded, shipping v0.7.x
 
 ---
-*à¸­à¹‰à¸²à¸‡à¸­à¸´à¸‡: [[business-requirements|BRD]] Â· [[competitive-brief|Competitive Brief]] Â· [[product-requirements|PRD]] Â· [[roadmap|ROADMAP]]*
 
+**ปัญหา**
+ผู้เล่น Dota 2 ตัดสินใจช้า/โดนแกงค์ตายเพราะข้อมูลล้นและสายตาไม่ทัน เครื่องมือที่มีล้วนเป็น *ข้อความบนจอ* ที่ดึงสายตาออกจากเกม — ไม่มีตัวไหนเตือนอันตราย *เชิงรุก* ทันเวลา
 
+**ทางออก — G-Maiden**
+AI companion **เสียงสด + overlay โปร่งใส** อ่านเกมผ่าน GSI:
+- 🔔 **เตือน gank ด้วยเสียง** ภายใน <300ms (ทำนายเส้นทางจาก heatmap)
+- ⚔️ **คำนวณ "ฆ่าได้ไหม"** สด (G-Damage lethality) — ไม่มีใครทำ
+- 🎙️ **persona "Maiden"** นักพากย์ไทย รู้มีม "Nerf CM" + แก้คำกลางประโยคเมื่อทำนายพลาด (belief revision)
 
+**ทำไมตอนนี้ / ทำไมเรา**
+มุม **voice + real-time + Dota 2 ว่างทั้งตลาด** · คู่แข่งทุนหนา (Blitz/Mobalytics) ทิ้ง Dota 2 · เจ้าที่ตาย (GOSU.AI ~$5.12M, Backseat AI) พิสูจน์ว่า "AI tips บนจอ" ไม่ใช่ moat — เราต่างตรงนั้น
 
+**ตลาด** — เริ่ม niche Dota PC ไทย (active core ~30–80k) แล้วขยายสากล · ESL One Bangkok 2024 = สัญญาณตลาดฟื้น
+
+**Moat (ลอกยาก 4 ชั้น)**
+1. **Persona ไทย + belief revision** — emotional hook ที่ analytics ให้ไม่ได้
+2. **Hybrid ingestion** (GSI + vision + replay) — รอดแม้ Valve ตัด GSI
+3. **Data flywheel** — match_id เย็บ GSI 2 ฝั่ง = ground-truth dataset ที่โตตามผู้ใช้
+4. **Community marketplace** — UGC AI styles + creator economy = network effect
+
+**โมเดลรายได้** — freemium **฿99–199/เดือน** (TrueMoney/PromptPay) + marketplace take-rate + seasonal payout · opex ต่ำ (local SLM, no salary) → **break-even ~125 paid users**
+
+**Traction / สถานะ**
+- ✅ shipping **v0.7.x** · Phase 0–2 เสร็จ (GSI + CV gank detection + voice ครบ loop)
+- ✅ **latency พิสูจน์แล้ว** G-Signal p50=21.6ms / p99=67.4ms (budget 300ms)
+- ✅ ONNX minimap detector (128 ฮีโร่), local SLM fallback, in-app updater
+- ✅ **ban-safe + privacy-first** (read-only GSI/CV, no memory inject, local-only by default)
+
+**คู่แข่ง** — Dota Plus (Valve, ไม่มีเสียง/เตือนเชิงรุก) · Dota Coach (เสียง+timer แต่ reactive, EN) · Questie (generic, vision ช้า 3–4s) → **G-Maiden = Dota-native + voice + predictive + ไทย**
+
+**ถัดไป** — มุ่ง v1.0 (ครบ 12 โมดูล) → เปิด marketplace (post-v1.0) · validate ราคา + distribution (web/Vercel + พิจารณา Overwolf)
+
+---
+*อ้างอิง: [[business-requirements|BRD]] · [[competitive-brief|Competitive Brief]] · [[product-requirements|PRD]] · [[roadmap|ROADMAP]]*
