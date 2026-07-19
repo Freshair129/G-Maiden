@@ -23,6 +23,60 @@ use crate::cv::region::MinimapRegion;
 /// Position history window (SRS §3.2: 5 minutes).
 pub const WINDOW_MS: u64 = 300_000;
 
+/// Tunable knobs behind the gank-risk heuristic ([`Motion::assess`]).
+///
+/// [`Default`] reproduces today's hardcoded literals exactly — constructing a
+/// `Motion` via [`Motion::new`] is behaviorally identical to before this
+/// struct existed. G-Log's offline replay/fit harness is the intended way to
+/// discover better values from real match outcomes; nothing in the live path
+/// changes just by this struct existing.
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct MotionParams {
+    /// Seconds a hero must be missing before any risk accrues (below this,
+    /// `missing_risk` is exactly 0.0). Today's literal: `5.0` — matches
+    /// G-Sentry's `MISSING_THRESHOLD_MS` (SRS §3.2 fog-of-war confirmation
+    /// window), i.e. risk only starts once G-Sentry itself would flag the
+    /// hero missing.
+    pub ramp_start_s: f32,
+    /// Seconds off-map at which per-hero risk peaks (the classic gank
+    /// rotation window) before decaying. Today's literal: `12.0`.
+    pub peak_s: f32,
+    /// The per-hero risk value reached at `peak_s`. Today's literal: `0.7`
+    /// (never certainty — a single missing hero is elevated, not proof of
+    /// an incoming gank).
+    pub peak_risk: f32,
+    /// Linear decay rate (risk lost per second) applied after `peak_s` — a
+    /// hero missing far longer than the gank window has likely TP'd or is
+    /// farming elsewhere. Today's literal: `0.03`.
+    pub decay_per_s: f32,
+    /// Lower bound the decay never crosses — a long-missing hero always
+    /// retains some residual risk. Today's literal: `0.1`.
+    pub floor: f32,
+    /// Multiplier applied to the combined probability when 2+ heroes are
+    /// missing at once (coordinated gank is more dangerous than the
+    /// independent-risk product implies). Today's literal: `1.15`.
+    pub multi_boost: f32,
+    /// Amplitude of the pre-vanish heading adjustment — the per-hero risk is
+    /// scaled by `1.0 + cos(heading, toward-centre) * heading_amp`, bounding
+    /// the multiplier to `[1.0 - heading_amp, 1.0 + heading_amp]`. Today's
+    /// literal: `0.22` (bounds `[0.78, 1.22]`).
+    pub heading_amp: f32,
+}
+
+impl Default for MotionParams {
+    fn default() -> Self {
+        MotionParams {
+            ramp_start_s: 5.0,
+            peak_s: 12.0,
+            peak_risk: 0.7,
+            decay_per_s: 0.03,
+            floor: 0.1,
+            multi_boost: 1.15,
+            heading_amp: 0.22,
+        }
+    }
+}
+
 /// Gank-risk verdict for the current tick.
 #[derive(Clone, Debug, Default, serde::Serialize)]
 pub struct GankRisk {
@@ -44,11 +98,23 @@ struct Sample {
 #[derive(Default)]
 pub struct Motion {
     history: VecDeque<Sample>,
+    params: MotionParams,
 }
 
 impl Motion {
     pub fn new() -> Self {
         Motion::default()
+    }
+
+    /// Construct with explicit tunables (see [`MotionParams`]) instead of the
+    /// legacy-reproducing [`Default`]. Used by the offline fit/replay harness
+    /// (G-Log) to evaluate alternative parameter sets against real outcomes;
+    /// the live app still calls [`Motion::new`].
+    pub fn with_params(params: MotionParams) -> Self {
+        Motion {
+            history: VecDeque::new(),
+            params,
+        }
     }
 
     /// Append this frame's sightings and evict anything older than the window.
@@ -83,7 +149,7 @@ impl Motion {
         let mut p_safe = 1.0f32; // P(no one is ganking)
         let mut min_eta = u64::MAX;
         for (hero, ms, _pos) in missing {
-            let base = missing_risk(*ms);
+            let base = self.missing_risk(*ms);
             if base <= 0.0 {
                 continue;
             }
@@ -94,13 +160,13 @@ impl Motion {
             let r = (base * self.heading_multiplier(hero)).clamp(0.0, 1.0);
             names.push(hero.clone());
             p_safe *= 1.0 - r;
-            min_eta = min_eta.min(eta_estimate(*ms));
+            min_eta = min_eta.min(self.eta_estimate(*ms));
         }
         let mut probability = 1.0 - p_safe;
         // coordinated-gank boost: 2+ heroes off-map together is more dangerous
         // than the independent-risk product implies.
         if names.len() >= 2 {
-            probability = (probability * 1.15).min(1.0);
+            probability = (probability * self.params.multi_boost).min(1.0);
         }
         GankRisk {
             probability,
@@ -158,29 +224,31 @@ impl Motion {
         // cos angle between heading and centre-ward direction: +1 straight in,
         // -1 straight out. Map to a bounded multiplier around 1.0.
         let cos = (vx * cx + vy * cy) / (speed * cmag);
-        1.0 + cos.clamp(-1.0, 1.0) * 0.22
+        1.0 + cos.clamp(-1.0, 1.0) * self.params.heading_amp
     }
-}
 
-/// Per-hero gank risk as a function of time off-map (ms).
-/// 0 below the 5 s missing threshold; ramps to a ~0.7 peak around 12 s; decays
-/// afterwards (floor 0.1) since a long absence usually means farm/TP, not gank.
-fn missing_risk(ms: u64) -> f32 {
-    let s = ms as f32 / 1000.0;
-    if s < 5.0 {
-        0.0
-    } else if s <= 12.0 {
-        (s - 5.0) / 7.0 * 0.7
-    } else {
-        (0.7 - (s - 12.0) * 0.03).max(0.1)
+    /// Per-hero gank risk as a function of time off-map (ms), per `self.params`.
+    /// 0 below `ramp_start_s`; ramps to `peak_risk` at `peak_s`; decays
+    /// afterwards (floored at `floor`) since a long absence usually means
+    /// farm/TP, not gank.
+    fn missing_risk(&self, ms: u64) -> f32 {
+        let p = &self.params;
+        let s = ms as f32 / 1000.0;
+        if s < p.ramp_start_s {
+            0.0
+        } else if s <= p.peak_s {
+            (s - p.ramp_start_s) / (p.peak_s - p.ramp_start_s) * p.peak_risk
+        } else {
+            (p.peak_risk - (s - p.peak_s) * p.decay_per_s).max(p.floor)
+        }
     }
-}
 
-/// Crude ETA: the longer a hero has been gone (up to the gank window), the
-/// sooner they likely arrive. Floored at 1 s.
-fn eta_estimate(ms: u64) -> u64 {
-    let s = ms as f32 / 1000.0;
-    ((12.0 - s).max(1.0) * 1000.0) as u64
+    /// Crude ETA: the longer a hero has been gone (up to `peak_s`), the sooner
+    /// they likely arrive. Floored at 1 s.
+    fn eta_estimate(&self, ms: u64) -> u64 {
+        let s = ms as f32 / 1000.0;
+        ((self.params.peak_s - s).max(1.0) * 1000.0) as u64
+    }
 }
 
 #[cfg(test)]
@@ -277,12 +345,60 @@ mod tests {
         // probability equals the pure time-off-map heuristic (backward compatible).
         let m = Motion::new();
         let risk = m.assess(&[("CM".into(), 11_000, (0.5, 0.5))], 12_000);
-        let base = missing_risk(11_000);
+        let base = m.missing_risk(11_000);
         assert!(
             (risk.probability - base).abs() < 1e-6,
             "prob {} should equal base {}",
             risk.probability,
             base
+        );
+    }
+
+    #[test]
+    fn default_params_reproduce_legacy_constants() {
+        let p = MotionParams::default();
+        assert_eq!(p.ramp_start_s, 5.0);
+        assert_eq!(p.peak_s, 12.0);
+        assert_eq!(p.peak_risk, 0.7);
+        assert_eq!(p.decay_per_s, 0.03);
+        assert_eq!(p.floor, 0.1);
+        assert_eq!(p.multi_boost, 1.15);
+        assert_eq!(p.heading_amp, 0.22);
+    }
+
+    #[test]
+    fn with_params_actually_changes_output() {
+        // Two heroes missing together normally gets the coordinated-gank
+        // `multi_boost` (1.15). Setting it to 1.0 must remove that boost,
+        // proving `with_params` threads through to `assess` rather than the
+        // params being stored but unused.
+        let missing = [
+            ("CM".into(), 11_000, (0.4, 0.4)),
+            ("SF".into(), 11_000, (0.6, 0.6)),
+        ];
+
+        let default_m = Motion::new();
+        let boosted = default_m.assess(&missing, 11_000);
+
+        let no_boost_params = MotionParams {
+            multi_boost: 1.0,
+            ..MotionParams::default()
+        };
+        let no_boost_m = Motion::with_params(no_boost_params);
+        let unboosted = no_boost_m.assess(&missing, 11_000);
+
+        assert!(
+            boosted.probability > unboosted.probability,
+            "boosted {} should exceed unboosted {}",
+            boosted.probability,
+            unboosted.probability
+        );
+        // sanity: unboosted should equal the raw combined-probability product
+        // (no *1.15 applied), i.e. exactly 1 - 0.4*0.4 = 0.84.
+        assert!(
+            (unboosted.probability - 0.84).abs() < 1e-4,
+            "unboosted {} should equal the unscaled product 0.84",
+            unboosted.probability
         );
     }
 }

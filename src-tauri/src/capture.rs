@@ -89,6 +89,13 @@ mod backend {
     /// stall shows up as frames creeping over budget before anything locks up.
     const SLOW_FRAME_MS: u128 = 100;
 
+    /// Minimum gap (ms) between recorded `risk_trace` log lines ≈ 1 Hz — this is
+    /// the offline re-fit input for G-Motion/G-Signal (audit item: thresholds
+    /// unmeasured because inputs were never recorded), sampled far below the CV
+    /// cadence since it only needs to capture the shape of a gank window, not
+    /// every frame. See `log::should_record_risk_trace`.
+    const RISK_TRACE_INTERVAL_MS: u64 = 1000;
+
     /// Maiden's spoken gank warning (TTS fallback when no `danger` clip is cached).
     const GANK_LINE: &str = "ระวังนะคะ ศัตรูหายไปจากแมพหลายตัว อาจมีแก๊งค์!";
     /// Belief-revision retraction line (TTS fallback when no `revision` clip cached).
@@ -137,6 +144,9 @@ mod backend {
         last_frame_emit: Instant,
         /// last calibration-buffer feed (≈9 Hz when QA mode on).
         last_calib: Instant,
+        /// last recorded `risk_trace` log line (throttled ≈1 Hz — see
+        /// `RISK_TRACE_INTERVAL_MS`).
+        last_risk_trace: Instant,
         /// Draft-CV: pick-screen portrait recognizer + the 10 portrait boxes.
         draft: DraftRecognizer,
         draft_region: DraftRegion,
@@ -163,6 +173,7 @@ mod backend {
                 last_emit: now,
                 last_frame_emit: now,
                 last_calib: now,
+                last_risk_trace: now,
                 draft,
                 draft_region,
             }
@@ -592,6 +603,23 @@ mod backend {
             state.motion.record(&detections, &r, now_ms);
             let missing = state.sentry.missing(now_ms);
             let risk = state.motion.assess(&missing, now_ms);
+
+            // Offline re-fit input (audit item: G-Motion/G-Signal thresholds are
+            // unmeasured magic numbers because the model's own inputs were never
+            // recorded — only its edge-triggered decisions). Sampled ≈1 Hz and
+            // only while there's something to see, so a 40-min match stays well
+            // under this module's 2MB promise (see `log::should_record_risk_trace`
+            // doc comment for the size math). Unconditional on G-Signal being
+            // enabled — this is a measurement tap, not a user-facing alert.
+            if crate::log::should_record_risk_trace(
+                state.last_risk_trace.elapsed().as_millis() as u64,
+                RISK_TRACE_INTERVAL_MS,
+                missing.is_empty(),
+                risk.probability,
+            ) {
+                state.last_risk_trace = Instant::now();
+                crate::log::note_event(crate::log::risk_trace_record(risk.probability, &missing));
+            }
 
             // G-Signal: edge-triggered warning + Belief Revision, voiced now (only
             // when the user has G-Signal enabled).

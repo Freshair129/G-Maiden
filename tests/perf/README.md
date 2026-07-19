@@ -94,6 +94,41 @@ hit its 20s wall-clock cap.
 - Provides full end-to-end visibility: headless wired p99 + live hop 1b/6 p99 = true E2E estimate.
 - Catches regressions in display capture or audio playback latency that CI cannot see.
 
+## replay_fit — offline G-Log replay/fit harness
+
+**What it does.** `replay_fit` closes the loop G-Log was built for: it reads archived
+match logs (`%LOCALAPPDATA%\G-Maiden\logs\match-*.jsonl` by default, or a directory
+passed as the first argument), reconstructs each match's missing-hero timeline and
+death timestamps, then replays that timeline through the **real**
+`g_maiden::motion::Motion` / `g_maiden::signal::Signal` state machines for a grid of
+candidate `MotionParams` (`peak_s`, `peak_risk`, `multi_boost`) × `Sensitivity`
+(Low/Med/High) combinations. Each candidate is scored by precision/recall/F1 against
+real deaths (rising `tick.deaths`, same semantics as `log.rs`/`tools/analyze-log/analyze.py`),
+and the top 10 by F1 are printed per mode, plus the row matching today's shipped
+defaults (`MotionParams::default()` + `Sensitivity::Med`) shown explicitly for
+comparison.
+
+```bash
+# against the real local log dir
+cargo run --release --manifest-path tests/perf/Cargo.toml --bin replay_fit
+
+# against a specific directory, with a custom death-attribution window
+cargo run --release --manifest-path tests/perf/Cargo.toml --bin replay_fit -- \
+  C:\path\to\logs --window-ms 8000
+```
+
+**Two reconstruction modes** (every output row is labeled so one is never mistaken
+for the other):
+- **FULL** — logs that carry `risk_trace` samples (the measured G-Motion input at
+  each throttled ~1 Hz tick). Replay is exact.
+- **APPROX** — legacy logs with only edge-triggered `enemy_missing` events. The
+  missing-hero timeline is reconstructed by extrapolating `missing_for_ms` linearly
+  forward from the event, capped at 30s — a bounded guess, not a measurement.
+
+**Privacy.** Read-only, zero network. It only reads the JSONL files `log.rs` already
+wrote to the local machine (CLAUDE.md: G-Log raw data is local-only) and never writes
+back to them or sends anything anywhere.
+
 ## Exit code conventions
 
 Both binaries follow the POSIX `automake` convention:

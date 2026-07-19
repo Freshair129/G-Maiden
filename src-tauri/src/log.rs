@@ -258,6 +258,55 @@ pub fn enemy_missing_record(
     })
 }
 
+/// Record: a sampled snapshot of G-Motion's gank-risk assessment — the
+/// missing offline-refit input (audit finding: G-Signal's thresholds are
+/// unmeasured magic numbers because the model's own inputs were never
+/// recorded, only its edge-triggered decisions). Written by the DXGI capture
+/// loop (`capture.rs`), throttled at the call site via
+/// [`should_record_risk_trace`]. The legacy `capture_wgc.rs` backend (frozen)
+/// does NOT call this — WGC matches never contribute risk_trace samples.
+pub fn risk_trace_record(
+    probability: f32,
+    missing: &[(String, u64, (f32, f32))],
+) -> serde_json::Value {
+    let missing: Vec<serde_json::Value> = missing
+        .iter()
+        .map(|(hero, missing_for_ms, last_pos)| {
+            serde_json::json!({
+                "hero": hero,
+                "missing_for_ms": missing_for_ms,
+                "last_pos": [last_pos.0, last_pos.1],
+            })
+        })
+        .collect();
+    serde_json::json!({
+        "type": "risk_trace",
+        "probability": probability,
+        "missing": missing,
+    })
+}
+
+/// Throttle decision for `risk_trace` sampling, extracted as a pure function
+/// so it's unit-testable without a real `Instant`/thread. A trace is worth
+/// recording only when there's something to see (a missing hero, or non-zero
+/// risk) — a quiet tick with nothing missing would just be dead weight in the
+/// log — AND only at most once per `min_interval_ms` (≈1 Hz), so an active-
+/// missing window (the common case this exists to capture) can't write a line
+/// per frame. A `risk_trace` line runs ~100-200 bytes; at 1 Hz during
+/// active-missing windows a 40-min match stays well under this module's 2MB
+/// promise (see module header).
+pub fn should_record_risk_trace(
+    elapsed_ms: u64,
+    min_interval_ms: u64,
+    missing_is_empty: bool,
+    probability: f32,
+) -> bool {
+    if missing_is_empty && probability <= 0.0 {
+        return false;
+    }
+    elapsed_ms >= min_interval_ms
+}
+
 /// A single archived match log.
 #[derive(serde::Serialize, Clone)]
 pub struct MatchLog {
@@ -750,6 +799,62 @@ mod tests {
     #[test]
     fn revision_record_shape() {
         assert_eq!(gank_revision_record()["type"], "gank_revision");
+    }
+
+    #[test]
+    fn risk_trace_record_shape_round_trips() {
+        let missing = vec![
+            ("CM".to_string(), 6000u64, (0.25f32, 0.5f32)),
+            ("SF".to_string(), 9000u64, (0.75f32, 0.1f32)),
+        ];
+        let r = risk_trace_record(0.42, &missing);
+        assert_eq!(r["type"], "risk_trace");
+        assert!((r["probability"].as_f64().unwrap() - 0.42).abs() < 1e-6);
+        let arr = r["missing"].as_array().unwrap();
+        assert_eq!(arr.len(), 2);
+        assert_eq!(arr[0]["hero"], "CM");
+        assert_eq!(arr[0]["missing_for_ms"], 6000);
+        let pos = arr[0]["last_pos"].as_array().unwrap();
+        assert!((pos[0].as_f64().unwrap() - 0.25).abs() < 1e-6);
+        assert!((pos[1].as_f64().unwrap() - 0.5).abs() < 1e-6);
+        assert_eq!(arr[1]["hero"], "SF");
+
+        // Round-trips through serde_json (de)serialization too.
+        let s = serde_json::to_string(&r).unwrap();
+        let back: serde_json::Value = serde_json::from_str(&s).unwrap();
+        assert_eq!(back, r);
+    }
+
+    #[test]
+    fn risk_trace_record_empty_missing_is_a_valid_empty_array() {
+        let r = risk_trace_record(0.0, &[]);
+        assert_eq!(r["type"], "risk_trace");
+        assert!(r["missing"].as_array().unwrap().is_empty());
+    }
+
+    #[test]
+    fn should_record_risk_trace_skips_when_nothing_missing_and_no_risk() {
+        assert!(!should_record_risk_trace(5000, 1000, true, 0.0));
+    }
+
+    #[test]
+    fn should_record_risk_trace_allows_when_probability_positive_even_if_missing_empty() {
+        // Motion can carry residual probability momentarily even with an empty
+        // missing list at the instant sampled; treat any positive risk as
+        // worth recording.
+        assert!(should_record_risk_trace(5000, 1000, true, 0.05));
+    }
+
+    #[test]
+    fn should_record_risk_trace_allows_when_missing_nonempty_even_if_probability_zero() {
+        assert!(should_record_risk_trace(5000, 1000, false, 0.0));
+    }
+
+    #[test]
+    fn should_record_risk_trace_throttles_below_interval() {
+        assert!(!should_record_risk_trace(500, 1000, false, 0.5));
+        assert!(should_record_risk_trace(1000, 1000, false, 0.5));
+        assert!(should_record_risk_trace(1500, 1000, false, 0.5));
     }
 
     #[test]

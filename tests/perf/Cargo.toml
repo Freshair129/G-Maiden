@@ -30,8 +30,19 @@ path = "src/bin/perf_cpu_tree.rs"
 name = "latency_live"
 path = "src/bin/latency_live.rs"
 
+# G-Log #7: offline replay/fit harness — read-only, zero network. Replays
+# archived match logs (missing-hero timeline + death labels) through the
+# REAL Motion/Signal machinery for a param grid, scoring precision/recall/F1
+# against measured (risk_trace) or reconstructed (legacy enemy_missing)
+# inputs. See tests/perf/README.md "replay_fit" section.
+[[bin]]
+name = "replay_fit"
+path = "src/bin/replay_fit.rs"
+
 [dependencies]
 sysinfo = "0.30"
+# replay_fit parses match-log JSONL directly (same version as src-tauri).
+serde_json = "1"
 # Hop 6 probe: same version as src-tauri (`src-tauri/Cargo.toml`) so the
 # decode path (mp3 via symphonia, default features) matches production.
 rodio = "0.19"
