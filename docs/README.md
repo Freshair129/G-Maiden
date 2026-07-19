@@ -63,13 +63,29 @@ repo นี้มี**สองโปรดักต์**ที่มีเอ�
 ---
 title: "ชื่อเอกสารเต็ม"
 doc_id: "SLUG-ตรงกับชื่อไฟล์"        # ใช้เป็น wikilink target
-status: "draft | active | Accepted | superseded | historical"
+status: "draft"                      # enum ด้านล่าง — lowercase เสมอ
 version: "0.1.0"                     # ต้องตรงกับแถวล่าสุดของ ## Changelog ท้ายเอกสารเสมอ
 updated: "YYYY-MM-DD"
 owner: "Boss"
 related_docs: ["SLUG-A", "SLUG-B"]   # slug ของเอกสารที่เกี่ยว (ไม่ใส่ [[ ]])
+approved_by: "Boss"                  # เฉพาะเมื่อ status พ้น draft — ใครอนุมัติ
+approved_date: "YYYY-MM-DD"          # คู่กับ approved_by เสมอ
 ---
 ```
+
+**Status enum (นิยามครบ + lowercase เดียว — รับมาจาก GoVibe STD §13 ตาม unification Mechanical #2):**
+
+| Status | ความหมาย | เงื่อนไขเข้า |
+| --- | --- | --- |
+| `draft` | กำลังเขียน/แก้ ยังไม่ผูกพัน | default ของเอกสารใหม่ |
+| `active` | ใช้งานจริงเป็น living doc (guide/index/map) | ไม่ต้องมี approval พิธีการ แต่ต้องตาม Step-5 SOP |
+| `accepted` | ตัดสินใจแล้วผูกพัน (ADR/SPEC) | ต้องมี `approved_by` + `approved_date` |
+| `stable` | มาตรฐานที่ freeze แล้ว แก้ได้เฉพาะ patch | ต้องผ่าน `accepted` ก่อน |
+| `superseded` | ถูกแทนโดยเอกสารอื่น | ระบุตัวแทนใน body + `related_docs` |
+| `historical` | บันทึก point-in-time (audits/rca/แผนเก่า) | ห้ามแก้เนื้อหาย้อนหลัง |
+
+- เอกสารเดิมที่ใช้ `Accepted` (ตัวใหญ่) ให้ normalize เป็น `accepted` เมื่อแตะครั้งถัดไป (lazy)
+- การเปลี่ยน status ต้องมีแถว changelog กำกับเสมอ (นับเป็น patch ขั้นต่ำ)
 
 - field เสริมตามชนิดเอกสาร: `source_of_truth: true` (SSOT docs), `amends:` (ADR), `prd_system:`/`risk:` (FEAT)
 - **เอกสารเก่าที่ยังไม่มี frontmatter:** เติมเมื่อมีการแก้เนื้อหาครั้งถัดไป (ไม่ต้องกวาดทั้ง repo เพื่อเติมอย่างเดียว) — ยกเว้นเอกสาร point-in-time (audits/, rca/) ให้คงรูปเดิมได้ เพราะเป็นบันทึกประวัติศาสตร์ไม่ใช่ living doc
@@ -82,3 +98,4 @@ related_docs: ["SLUG-A", "SLUG-B"]   # slug ของเอกสารที่
 | 0.1.0 | — | สารบัญ docs ฉบับแรก |
 | 0.2.0 | 2026-07-19 | + section "ขอบเขต SSOT: สองโปรดักต์ในหนึ่ง repo" (G-Maiden vs G-Orchestra, atoms-derived docs rule); แปลง cross-reference เป็น wikilink |
 | 0.3.0 | 2026-07-19 | + section "มาตรฐาน metadata หัวเอกสาร" — ประกาศ schema กลาง (ยึดแบบ FEAT/ADR/CR) + กติกา migration สำหรับเอกสารเก่า |
+| 0.4.0 | 2026-07-19 | + status enum นิยามครบ (lowercase, รับจาก GoVibe STD §13) + sign-off fields `approved_by`/`approved_date` — unification Mechanical #2 ตาม [[2026-07-19-govibe-gmaiden-governance-comparison]] |
