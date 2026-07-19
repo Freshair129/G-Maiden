@@ -21,7 +21,7 @@ description: Run the G-Orchestra review gate tool using Mellum2 local LLM to che
 
 ---
 
-## 2. ขั้นตอนการทำงานสำหรับ Agent (Execution Pipeline)
+## 2. ขั้นตอนการทำงานสำหรับ Agent (Execution Pipeline & SOP)
 
 ### Step 1: สแกนข้อมูลใน Git Worktree
 ระบุไฟล์ที่มีการเปลี่ยนแปลงล่าสุดด้วยคำสั่ง git:
@@ -39,21 +39,12 @@ git diff --cached --name-only
 ### Step 3: รันการแบ่ง Batch ด้วย Python Script
 เรียกใช้งานตัวช่วยในการแบ่ง Chunk และยิงคำวิเคราะห์ผ่าน Mellum2 (Ollama/Llama.cpp):
 ```bash
-python .agents/skills/codedoc-aligner/scripts/chunk_and_align.py --code-file <path_to_code> --doc-file <path_to_doc>
-# หรือแบบ positional:
 python .agents/skills/codedoc-aligner/scripts/chunk_and_align.py <path_to_code> <path_to_doc>
 ```
 *หากรันครั้งแรก ให้ตรวจสถานะของ Ollama ก่อน (`curl http://localhost:11434/api/tags`)*
 
-**โมเดล:** ค่า default คือ `hf.co/yuxinlu1/Mellum2-12B-A2.5B-Claude-4.6-4.8-Opus-Thinking-GGUF:Q4_K_M`
-(ชื่อ Mellum2 จริงบนเครื่อง) — override ได้ด้วย env `CODEDOC_MODEL`; endpoint override ด้วย `CODEDOC_OLLAMA_URL`
-
-**Exit codes (ใช้เป็น gate ได้):**
-| Code | ความหมาย |
-| --- | --- |
-| `0` | วิเคราะห์สำเร็จ ไม่พบ conflict — aligned จริง |
-| `1` | วิเคราะห์สำเร็จ **พบ conflict** (รายงานอยู่ใน stdout) |
-| `2` | **infrastructure fail** (Ollama ล่ม/ไม่มีโมเดล) — ห้ามตีความว่า aligned |
+### Step 4: ตรวจสอบความถูกต้องผ่านสัญนิยม Symbol Graph (SOP)
+* **SOP:** เมื่อตรวจพบจุดบกพร่องหรือความไม่สอดคล้อง เอเจนต์**ต้อง**จัดทำลิงก์อ้างอิงหลักฐาน (Evidence Links) ตามสัญนิยม Symbol Graph ชี้ตรงไปยังสัญลักษณ์โค้ดหรือบรรทัดที่เกิดปัญหาโดยตรง เช่น ชี้ไปยังฟังก์ชัน [`safe_pack_path`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs) หรือ [`gsi.rs:L171`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L171) เพื่อช่วยให้ผู้ใช้กดตรวจสอบได้ทันทีและป้องกันปัญหารายงานคลาดเคลื่อนเมื่อโครงสร้างเอกสาร/โค้ดขยับตัวในอนาคต
 
 ---
 

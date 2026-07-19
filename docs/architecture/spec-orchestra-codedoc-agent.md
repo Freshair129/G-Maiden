@@ -112,9 +112,9 @@ System: คุณคือระบบจัดการข้อมูลคว
 3. **Execution Guard (ความปลอดภัยของทรัพยากรเครื่อง):**
    * โมดูลนี้จะสั่งรันผ่าน G-Orchestra ในระหว่างที่ไม่ได้รันเกม Dota 2 เท่านั้น (ตรวจสถานะ `dota_running` จาก backend ของ GSI)
    * เมื่อรัน LLM ประมวลผลเสร็จสิ้น ระบบจะยิงคำสั่ง `Ollama API (unload/free)` เพื่อคืนหน่วยความจำ RAM/VRAM ของการ์ดจอทันที ป้องกัน Memory leak ตกค้าง
-4. **Agent Skill Binding:**
+4. **Agent Skill Binding & Symbol Graph Protocol:**
    * ระบบรองรับการทำงานในรูปของ **Custom Agent Skill** ตั้งค่าไว้ที่ `g:\G-Maiden\.agents\skills\codedoc-aligner/`
-   * ช่วยให้ AI Coding Assistant เข้าใจคู่มือคำสั่ง และสามารถรันสคริปต์ตรวจความถูกต้องของงานพัฒนาได้โดยอัตโนมัติ
+   * **Symbol Graph Link Protocol:** ในการรายงานความต่างหรือความบกพร่อง เอเจนต์จะอิงตามสัญนิยม Symbol Graph โดยการสร้าง Evidence Link ชี้ตรงไปยังโค้ดหรือสัญลักษณ์เฉพาะเจาะจง (เช่น ฟังก์ชัน `resolve_steam_id` หรือ `gsi.rs:L171`) เพื่อให้ผลลัพธ์ไม่คลาดเคลื่อนง่ายเมื่อบรรทัดเปลี่ยน
 
 ---
 
