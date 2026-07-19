@@ -1,6 +1,6 @@
 # TODO / self-note - next session
 
-อัปเดตล่าสุด: **2026-07-19** · docs sync v0.13.0 + wikilink/symbol graph ทั้ง repo + codedoc-aligner hardened + **ADR-17 governance split** (RWANG=builder / G-Orchestra=runtime governor) — รายงานเต็ม → `.govibe/.brain/session/2026-07-19-docs-governance-rwang-gorch.md`
+อัปเดตล่าสุด: **2026-07-20** · **tech-debt batch Phases 1→3f จบทั้ง register + push `origin/main` ถึง `a6a70394`** (multi-agent tiered gates: CI test gates ทุก PR, lockfiles, LICENSE/README, ESLint 9, lib+bin split, latency harness จริง E2E ~178ms p99, event-contract machine-checked, GPU copy 24×, god-file splits ×3, G-Log feedback loop + replay_fit, dead-CSS −33%) — รายงานเต็ม → `.govibe/.brain/session/2026-07-19-B-tech-debt-batch-phases1-3f.md` · ก่อนหน้า (session ขนานวันเดียวกัน): docs sync + ADR-17 → `2026-07-19-docs-governance-rwang-gorch.md`
 
 ## 🔴 งานถัดไปเรียงตาม leverage (2026-07-19)
 
@@ -12,8 +12,12 @@
 3. **commit ไฟล์ค้างของ session 2026-07-19** (SKILL.md, USECASE.md, docs/README.md,
    business-requirements.md, ADR-17, SPEC--RUNTIME-REPAIR-GOVERNANCE, .govibe/.brain) —
    ⚠️ tree มีของ session ขนานปน **ห้าม `git add -A`** ระบุไฟล์เสมอ
-4. **แก้ drift shared context เมื่อ Boss สั่ง**: `CLAUDE.md:5` ยัง v0.9.0 (จริง 0.13.0) ·
-   `AGENTS.md:179` ยัง "3 places" (จริง 5)
+4. **แก้ drift shared context เมื่อ Boss สั่ง** (audit ซ้ำ 2026-07-20): `CLAUDE.md:5` ยัง
+   v0.9.0 (จริง 0.13.0) · `AGENTS.md` version heading · เพิ่มจาก batch 3d: CLAUDE.md ยังอ้าง
+   `App.tsx APP_VERSION` (ย้ายไป `src/src/app/theme.ts` แล้ว — checklist ควรชี้ theme.ts),
+   อ้าง `voice_api.rs` เป็นไฟล์ (ตอนนี้เป็น dir `voice_api/` — module path เดิมใช้ได้),
+   ยังไม่พูดถึง lib+bin split (`src-tauri/src/lib.rs`), `schemas/gmaiden-events.json` vendored
+   contract, root README/LICENSE, tests/perf harness ชุดใหม่ (latency_live/replay_fit)
 5. Archive `Rwang_remote` (เช็ค VRAM guard migrate เข้า `G:\Rwang` ก่อน)
 6. **PILOT-1 spec เขียนแล้ว (2026-07-19): `G:\Rwang\specs\G1-doc-graph-maintenance.yaml`** —
    doc-graph scanner (slugmap/wikilink/symbol-link/metadata validators → DOC-GRAPH.json+REPORT),
@@ -21,6 +25,49 @@
    ยังไม่ได้ยิงรัน — Boss เป็นคน launch จาก `G:\Rwang` (orchestrator/run.js ผ่าน Workflow tool
    ใน session ของ repo นั้น). Topology ตกลงแล้ว: RWANG harness = orchestrator เดียว, Sol/codex =
    tier (enabled ใน config อยู่แล้ว), ollama local = tier ถูกสุด, ห้ามให้ Sol swarm เองใน desktop
+
+## DONE ใน session 2026-07-19-B (tech-debt batch — ทั้งหมด pushed `origin/main`)
+
+- [DONE] **Phase 1** `4a187752..8db61c01`: CI รัน cargo test+vitest ทุก PR · lockfiles เข้า git +
+  `--locked`/`--frozen-lockfile` ทุกจุด · root README + LICENSE (proprietary — เปลี่ยนเป็น OSS
+  = การตัดสินใจแยก) · version sync 0.13.0 · ลบปุ่ม store URL ปลอม
+- [DONE] **Phase 2** (ใน `cff3e11d`+`4d5117f1`): exhaustive-deps 6 แก้/4 เก็บมีเหตุผล ·
+  dead_code narrowing (damage.rs/respawn.rs whole-file → per-item) · **ESLint 9 flat config**
+- [DONE] **Phase 3a** `9c28e849..dd30827b`: **src-tauri = lib+bin แล้ว (lib `g_maiden`)** ·
+  latency harness วัดจริง (gate = measured p99 + SKIP budgets ≤ 300ms) + `latency_live` —
+  **E2E ~178ms p99 worst-case, SLA 300ms ยืน headroom ~120ms**
+- [DONE] **Phase 3b** `45b642c3`: event contract machine-checked ทุก mirror + vendored
+  `schemas/gmaiden-events.json` · **แก้ canonical G-Suite v1.1 เพิ่ม `gank` ที่หายจริง + push แล้ว (`abe8948`)**
+- [DONE] **Phase 3c** `8db4f939`: `acquire_rect` (CopySubresourceRegion) — minimap 333KB แทน
+  8MB (**24×**), copy avg 3.23ms, FrameDiag มี copy timing ครั้งแรก
+- [DONE] **Phase 3d** `cfa74698..67362a09`: god-file splits façade — App.tsx→`app/`,
+  CommandDeck→`deck/`, voice_api.rs→`voice_api/` · 0 บรรทัดหาย, consumers ไม่แตะ
+- [DONE] **Phase 3e** `817fabb0`: **G-Log feedback loop ปิดแล้ว** — `MotionParams` +
+  `risk_trace` (1Hz) + `replay_fit` bin · **78 แมตช์จริง: default F1=0.015 แพ้ simpler 3× —
+  แต่ APPROX mode อย่าเพิ่งเปลี่ยนค่า รอ FULL-mode จากแมตช์ใหม่**
+- [DONE] **Phase 3f** `a6a70394`: dead-CSS purge −33%/−69KB — gates จับ 19 regressions จริง
+  (keyframes 8 + dynamic chip rules 11) ก่อนถึง main
+
+## งานที่ batch นี้ส่งต่อ (Boss เท่านั้นทำได้)
+
+- **เล่นแมตช์สะสม `risk_trace`** → รัน `cargo run --release --manifest-path tests/perf/Cargo.toml
+  --bin replay_fit` ใหม่ (FULL mode) → ค่อยตัดสิน MotionParams defaults
+- **รัน `latency_live` ระหว่างเกมจริง** — เลข hop-1b บน desktop ว่างโดน repaint-wait บัง
+- Trivia: eslint-plugin-react devDep ไม่ใช้ · replay_fit ไม่ parse gank_signal lines (no-op) ·
+  perf_p7/perf_cpu_tree fail clippy crate-local (pre-existing ไม่ใช่ shipping gate)
+
+## กติกาใหม่จาก batch 2026-07-19-B (อย่าทำผิดซ้ำ)
+
+- **Multi-agent ในทรีเดียว**: ทุก worker/reviewer ต้องได้ SCOPE MAP ของทั้ง batch + ห้าม
+  `git checkout/restore` ไฟล์นอก scope ตัวเอง (Phase 1 เคยเสียงานเพราะ reviewer ตีความงาน
+  เพื่อนเป็น violation แล้ว fixer revert ทับ)
+- **Session ขนานของ Boss สลับ branch ของ checkout กลางคันได้** — commit ด้วย pathspec เสมอ
+  (index อาจมีของ staged ของ session อื่น) + push ด้วย refspec `git push origin <sha>:main`
+- **Purge CSS ต้องมี runtime evidence**: live-DOM keep-list (คลิกครบทุกหน้าใน vite dev) +
+  dash-prefix guard — class แบบ `x-${y}` grep ไม่เห็น (เจอจริง: sg-fill-*, gm-*-chip-*)
+- **`$LASTEXITCODE` ไม่ข้าม step ใน GitHub Actions** — เช็ค exit code ใน step เดียวกับคำสั่ง
+- **G-Suite push ต้อง `gh auth setup-git` ก่อน** (repo นั้นไม่มี credential helper)
+- **tests/perf มี 5 bins แล้ว** — `default-run = "latency_harness"` ตั้งไว้ให้ `cargo run` เฉยๆ ทำงาน
 
 ## กติกาใหม่ที่ต้องถือ (2026-07-19 — อย่าทำผิดซ้ำ)
 
