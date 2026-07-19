@@ -40,8 +40,20 @@ git diff --cached --name-only
 เรียกใช้งานตัวช่วยในการแบ่ง Chunk และยิงคำวิเคราะห์ผ่าน Mellum2 (Ollama/Llama.cpp):
 ```bash
 python .agents/skills/codedoc-aligner/scripts/chunk_and_align.py --code-file <path_to_code> --doc-file <path_to_doc>
+# หรือแบบ positional:
+python .agents/skills/codedoc-aligner/scripts/chunk_and_align.py <path_to_code> <path_to_doc>
 ```
-*หากรันครั้งแรก ให้ข้ามไปตรวจสถานะของ Ollama ก่อน*
+*หากรันครั้งแรก ให้ตรวจสถานะของ Ollama ก่อน (`curl http://localhost:11434/api/tags`)*
+
+**โมเดล:** ค่า default คือ `hf.co/yuxinlu1/Mellum2-12B-A2.5B-Claude-4.6-4.8-Opus-Thinking-GGUF:Q4_K_M`
+(ชื่อ Mellum2 จริงบนเครื่อง) — override ได้ด้วย env `CODEDOC_MODEL`; endpoint override ด้วย `CODEDOC_OLLAMA_URL`
+
+**Exit codes (ใช้เป็น gate ได้):**
+| Code | ความหมาย |
+| --- | --- |
+| `0` | วิเคราะห์สำเร็จ ไม่พบ conflict — aligned จริง |
+| `1` | วิเคราะห์สำเร็จ **พบ conflict** (รายงานอยู่ใน stdout) |
+| `2` | **infrastructure fail** (Ollama ล่ม/ไม่มีโมเดล) — ห้ามตีความว่า aligned |
 
 ---
 

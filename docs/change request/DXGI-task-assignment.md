@@ -600,7 +600,7 @@ TSK-GMMP01P04EP04SPR04-01
 ## Context
 - perf_p7 วัด RAM (≤400 MB) และ CPU ของ G-Maiden process
 - ไม่ได้ depend on capture implementation โดยตรง — วัดจาก process-level metrics
-- แต่ต้องตรวจว่า assertions/thresholds ยัง align กับ ADR-13
+- แต่ต้องตรวจว่า assertions/thresholds ยัง align กับ [[ADR-13-dxgi-capture-migration|ADR-13]]
 
 ## Action
 1. อ่านไฟล์ `tests/perf/src/bin/perf_p7.rs`

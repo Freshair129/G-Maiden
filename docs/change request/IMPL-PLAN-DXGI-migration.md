@@ -15,19 +15,19 @@ related_docs: ["ADR-13-dxgi-capture-migration", "ADR-10-hybrid-ingestion-resilie
 
 เปลี่ยน screen capture backend ของ G-Maiden จาก **WGC (Windows Graphics Capture)** เป็น **DXGI Desktop Duplication** เพื่อแก้ปัญหา CPU 8% + frame time 1,300–2,300ms ที่พบจาก in-game test (evidence: `error.log` 2026-06-28, 1,294 SLOW frame entries)
 
-ดู rationale เต็มที่ [ADR-13](adr/ADR-13-dxgi-capture-migration.md)
+ดู rationale เต็มที่ [[ADR-13-dxgi-capture-migration|ADR-13]]
 
 ## 2. Source and Target
 
 | Source | Target | Scope |
 |---|---|---|
-| `src-tauri/src/capture.rs` (WGC via `windows-capture` crate) | `src-tauri/src/dxgi.rs` (new) + `capture.rs` (refactored) | 1 new file (~250 LOC), 1 major refactor, 3 minor edits |
+| [`src-tauri/src/capture.rs`](file:///g:/G-Maiden/src-tauri/src/capture.rs) (WGC via `windows-capture` crate) | [`src-tauri/src/dxgi.rs`](file:///g:/G-Maiden/src-tauri/src/dxgi.rs) (new) + `capture.rs` (refactored) | 1 new file (~250 LOC), 1 major refactor, 3 minor edits |
 | `windows-capture` dependency in `Cargo.toml` | `windows` crate (DXGI + D3D11 features) | dependency swap |
 | WGC `GraphicsCaptureApiHandler` trait | Custom `DxgiCapture` struct with `acquire_frame()` | API change |
 
 ## 3. Rollback Plan
 
-- `capture.rs` เก่าถูก rename เป็น `capture_wgc.rs` (ไม่ลบ)
+- `capture.rs` เก่าถูก rename เป็น [`capture_wgc.rs`](file:///g:/G-Maiden/src-tauri/src/capture_wgc.rs) (ไม่ลบ)
 - Feature flag `--features wgc` สลับกลับได้ถ้า DXGI มีปัญหา
 - `windows-capture` crate ยังอยู่ใน `Cargo.toml` ใน `[features]` จนกว่า DXGI ผ่าน validation
 

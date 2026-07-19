@@ -5,8 +5,8 @@
 **Deferred follow-ups (not blockers — logged for a later CR):** (1) economy DEDUP — Wallet/Ledger still also live in Account and Inventory in Voice (temporary non-breaking duplication; needs the `entryMode`/`accountEntry` deep-link rework to fully move them into G-Store); (2) `LedgerTab` fixed `height:400` → `rowsThatFit`; (3) the heavy settings sub-cards (MasterCard/SetupCard/LogCard/AudioSettingsCard/LayoutEditor) still carry bespoke inline `C.ice` selects/buttons/bars — they read ice-dark already, so this is pixel-polish, not an R3 break in the shared primitives.
 **Author:** Claude (architect) for Boss
 **Date:** 2026-07-16
-**Amends:** CR-011 COLD BOOTH (§C Information architecture, §E Core screens) — ไม่แตะ §B direction, §F–§I ระบบ component/type/color/motion
-**Inputs read:** `shortcuts.ts` PAGES, `CommandDeck.tsx` routing, `App.tsx` `<Control embedded />` (settings เก่าทั้งดุ้น ~1,100 บรรทัด), `CompanionPages.tsx` (SettingsPage mock ซ้ำ), CR-003 orphan surfaces (`StorePage/WalletTab/InventoryTab/LedgerTab/TopupModal` — สร้างเสร็จ, ไม่มีทางเข้า), ADR-14, ADR-16, design-system SSOT `05-sitemap-ia.md`, screenshot จริงของ Boss (settings หลัง CR-011)
+**Amends:** [[CR-011-cold-booth-ux-direction|CR-011 COLD BOOTH]] (§C Information architecture, §E Core screens) — ไม่แตะ §B direction, §F–§I ระบบ component/type/color/motion
+**Inputs read:** [`shortcuts.ts`](file:///g:/G-Maiden/src/src/shortcuts.ts) PAGES, [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) routing, [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) `<Control embedded />` (settings เก่าทั้งดุ้น ~1,100 บรรทัด), [`CompanionPages.tsx`](file:///g:/G-Maiden/src/src/CompanionPages.tsx) (SettingsPage mock ซ้ำ), [[CR-003-account-phase1-wallet-billing|CR-003]] orphan surfaces ([`StorePage`](file:///g:/G-Maiden/src/src/StorePage.tsx)/[`WalletTab`](file:///g:/G-Maiden/src/src/WalletTab.tsx)/[`InventoryTab`](file:///g:/G-Maiden/src/src/InventoryTab.tsx)/[`LedgerTab`](file:///g:/G-Maiden/src/src/LedgerTab.tsx)/[`TopupModal`](file:///g:/G-Maiden/src/src/TopupModal.tsx) — สร้างเสร็จ, ไม่มีทางเข้า), [[ADR-14-gid-account-identity|ADR-14]], [[ADR-16-credit-economy-and-mint-oracle|ADR-16]], design-system SSOT [[05-sitemap-ia|05-sitemap-ia.md]], screenshot จริงของ Boss (settings หลัง CR-011)
 
 ---
 
@@ -14,7 +14,7 @@
 
 1. **CR-006 shell ล็อก** — stage 1420×760, Subtract panel 1280×720 + 3 notches ไม่ขยับแม้แต่ px เดียว
 2. **CR-011 ACCEPTED ทั้งฉบับ** — two-material rule, phase axis, Maiden Line, quality tiers, PAGES-derived NAV ยังศักดิ์สิทธิ์ CR นี้เปลี่ยนเฉพาะ *รายชื่อหน้า + เนื้อในหน้า*
-3. **Overlay window อยู่นอกขอบเขต** (สัญญา `07-combat-hud.md`)
+3. **Overlay window อยู่นอกขอบเขต** (สัญญา [[07-combat-hud|07-combat-hud.md]])
 4. **NFR gate เดิม:** CPU ≤2.5%, RAM ≤400MB — Settings ใหม่ต้องไม่เพิ่ม render fan-out (แถวตั้งค่าเป็น instrument matte ธรรมดา ไม่มี blur ตาม two-material rule)
 5. **CR-003 wallet ยังไม่ deploy live** (pgTAP ผ่าน local เท่านั้น, 2026-07-12) — G-Store ต้อง degrade อย่างสุภาพ (§5.4)
 
@@ -22,9 +22,9 @@
 
 ## 1. ปัญหา (จาก critique 2026-07-16)
 
-1. 🔴 **สองภาษาดีไซน์** — `App.tsx:2286` inject `<Control embedded />` เป็น settings panel: 11 การ์ด legacy inline-style อยู่ในเปลือก COLD BOOTH ผู้ใช้กด Settings แล้ว "เทเลพอร์ตกลับแอปเก่า"
+1. 🔴 **สองภาษาดีไซน์** — [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)`:2286` inject `<Control embedded />` เป็น settings panel: 11 การ์ด legacy inline-style อยู่ในเปลือก COLD BOOTH ผู้ใช้กด Settings แล้ว "เทเลพอร์ตกลับแอปเก่า"
 2. 🔴 **Scroll ยาว 3 จอไร้โครงสร้าง** — Overlay/Alerts/CV/Live/Setup/Log/Announcer/G-Master/Quota/Modules ปนอยู่ในม้วนเดียว
-3. 🟡 **ซ้ำซ้อน** — การ์ด "Live (จาก GSI)" ใน settings ซ้ำหน้า Live; `AudioSettingsCard` ซ้ำหน้าที่หน้า Voice; `SettingsPage` (CompanionPages, การ์ด mock Privacy/System/Window) กับ `Control embedded` เป็น settings สองชุดที่ไม่รู้จักกัน
+3. 🟡 **ซ้ำซ้อน** — การ์ด "Live (จาก GSI)" ใน settings ซ้ำหน้า Live; `AudioSettingsCard` ซ้ำหน้าที่หน้า Voice; `SettingsPage` ([`CompanionPages`](file:///g:/G-Maiden/src/src/CompanionPages.tsx), การ์ด mock Privacy/System/Window) กับ `Control embedded` เป็น settings สองชุดที่ไม่รู้จักกัน
 4. 🟡 **Store ไม่มีทางเข้า** — เศรษฐกิจ shard (CR-003/ADR-16) สร้างเสร็จแต่ผู้ใช้ไปไม่ถึง
 5. 🟢 Build/Insights/History บาง (2–3 การ์ด/หน้า) แต่กิน nav 3 ที่นั่ง
 
@@ -35,10 +35,10 @@
 >
 > **R2 — Overflow → Tab:** เนื้อหาเกิน canvas → แตกเป็น segmented tab ในหน้าเดิม
 > ห้ามยืดหน้า ห้ามย่อ font หนี list ที่โตได้ต้อง paginate ในกรอบสูงคงที่ผ่าน helper
-> pure แบบ `rowsThatFit()` (`StorePage.tsx` — pattern อ้างอิง, CR-003 §3.0) เท่านั้น
+> pure แบบ `rowsThatFit()` ([`StorePage.tsx`](file:///g:/G-Maiden/src/src/StorePage.tsx) — pattern อ้างอิง, [[CR-003-account-phase1-wallet-billing|CR-003]] §3.0) เท่านั้น
 >
 > **R3 — One Language:** ทุกหน้าใน deck ใช้ภาษา COLD BOOTH (sector frame,
-> instrument matte, eyebrow, IBM Plex) — legacy `Card`/inline-style จาก `App.tsx`
+> instrument matte, eyebrow, IBM Plex) — legacy `Card`/inline-style จาก [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
 > ห้ามโผล่ใน deck อีก คอมโพเนนต์เก่าที่จะใช้ต่อ ต้องถูก re-skin ก่อนเข้า
 
 การบังคับใช้เชิงกลไก: `.g-deck-panel .surface { overflow: hidden }` สำหรับทุกหน้า (แทน
@@ -98,7 +98,7 @@
 
 ### 4.2 หมวด × เนื้อหา (mapping จากของเดิมครบทุกตัว — ห้ามทำ behavior หาย)
 
-| หมวด | ย้ายมาจาก (`App.tsx` Control) | แถว |
+| หมวด | ย้ายมาจาก ([`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) Control) | แถว |
 |------|------------------------------|-----|
 | **ทั่วไป** | window presets (CompanionPages) + DeckPrefsCard (quality/density/crisp/big mode) | ~8 ✓ |
 | **Overlay** | การ์ด OVERLAY (OSD): แสดง/ซ่อน, ตำแหน่ง, ความทึบ, แผงสถิติ, ทดสอบ, hotkey hint | ~7 ✓ |
@@ -125,10 +125,10 @@
 
 | Tab | Component เดิม | หมายเหตุ |
 |-----|----------------|----------|
-| ร้านค้า | `StorePage` | catalog 2 คอลัมน์ + pagination `rowsThatFit()` — no-scroll ในตัวแล้ว |
-| กระเป๋า | `WalletTab` + `TopupModal` | shard/wallet สองสกุล (ADR-16) |
-| คลัง | `InventoryTab` | ของที่ซื้อแล้ว → ปุ่ม "ติดตั้ง/เปิดใช้" ข้ามไป Voice |
-| บันทึก | `LedgerTab` | ประวัติธุรกรรม paginate ในกรอบ |
+| ร้านค้า | [`StorePage`](file:///g:/G-Maiden/src/src/StorePage.tsx) | catalog 2 คอลัมน์ + pagination `rowsThatFit()` — no-scroll ในตัวแล้ว |
+| กระเป๋า | [`WalletTab`](file:///g:/G-Maiden/src/src/WalletTab.tsx) + [`TopupModal`](file:///g:/G-Maiden/src/src/TopupModal.tsx) | shard/wallet สองสกุล ([[ADR-16-credit-economy-and-mint-oracle|ADR-16]]) |
+| คลัง | [`InventoryTab`](file:///g:/G-Maiden/src/src/InventoryTab.tsx) | ของที่ซื้อแล้ว → ปุ่ม "ติดตั้ง/เปิดใช้" ข้ามไป Voice |
+| บันทึก | [`LedgerTab`](file:///g:/G-Maiden/src/src/LedgerTab.tsx) | ประวัติธุรกรรม paginate ในกรอบ |
 
 ### 5.2 งานที่ต้องทำจริง
 
@@ -151,10 +151,10 @@ Voice "หาแพ็กเพิ่ม →" → Store; Inventory "เปิด
 
 | ของ | ชะตากรรม |
 |-----|----------|
-| `<Control embedded />` injection (`App.tsx:2286`) | ค่อยๆ ว่างลงตาม §4 จน**ลบ prop `settingsPanel` ทิ้ง** |
-| `SettingsPage` ใน `CompanionPages.tsx` | ลบ (ถูกแทนทั้งตัว) |
-| `CompanionPages.tsx` `BuildAdvisorPage`/`HistoryPage`/`InsightsPage` | re-seat เป็น tab ตาม §3.2 |
-| `overflow-y: auto` per-page (`styles.css` ~4602) | แทนด้วย `overflow: hidden` (R1) |
+| `<Control embedded />` injection ([`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)`:2286`) | ค่อยๆ ว่างลงตาม §4 จน**ลบ prop `settingsPanel` ทิ้ง** |
+| `SettingsPage` ใน [`CompanionPages.tsx`](file:///g:/G-Maiden/src/src/CompanionPages.tsx) | ลบ (ถูกแทนทั้งตัว) |
+| [`CompanionPages.tsx`](file:///g:/G-Maiden/src/src/CompanionPages.tsx) `BuildAdvisorPage`/`HistoryPage`/`InsightsPage` | re-seat เป็น tab ตาม §3.2 |
+| `overflow-y: auto` per-page ([`styles.css`](file:///g:/G-Maiden/src/src/styles.css) ~4602) | แทนด้วย `overflow: hidden` (R1) |
 | flow-page padding 74/28/24/104 (แก้เมื่อ 2026-07-16) | คงไว้ — เป็น interior inset ของ canvas |
 
 ## 7. แผนงาน (RWANG waves — Sonnet worker / Opus gate ตาม roster เดิม)
@@ -187,8 +187,8 @@ Verify ต่อ wave: `tsc --noEmit`, eslint, vitest, browser geometry check �
 
 ## 10. เอกสารที่ต้องอัปเดตพร้อมกัน (W5)
 
-1. `docs/design-system/05-sitemap-ia.md` — sitemap ใหม่ + กฎ R1/R2/R3 (SSOT bump)
-2. `CLAUDE.md` — 2 บรรทัด: nav 7 หน้า + กฎ One-Canvas ชี้ไป SSOT
-3. CR-011 §C — หมายเหตุ "amended by CR-013"
+1. [[05-sitemap-ia|docs/design-system/05-sitemap-ia.md]] — sitemap ใหม่ + กฎ R1/R2/R3 (SSOT bump)
+2. [[CLAUDE.md]] — 2 บรรทัด: nav 7 หน้า + กฎ One-Canvas ชี้ไป SSOT
+3. [[CR-011-cold-booth-ux-direction|CR-011]] §C — หมายเหตุ "amended by CR-013"
 
 **Mock:** `assets/cr013-one-canvas-mock.html` — 3 มุมมอง (Settings iOS / G-Store / sitemap)

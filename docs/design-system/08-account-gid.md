@@ -93,4 +93,4 @@ SIGNED-IN → ใส่ vanity URL / profile URL / SteamID64 (ช่องเด
 - หน้า Account = surface เดียวที่มี auth flow เต็ม (ดู [[05-sitemap-ia|05]] §3–4)
 - Palette entries (WP-6): Sign in / Copy GID / Link Steam / Sign out (destructive → confirm)
 - CR-003 (wallet/billing/role) จะต่อยอดจากหน้านี้ — โครง AccountPage ควรเผื่อ section ว่าง
-  ไว้ในเชิง*โครงสร้างไฟล์* แต่**ไม่ render UI ว่าง** ให้ผู้ใ�
+  ไว้ในเชิง*โครงสร้างไฟล์* แต่**ไม่ render UI ว่าง** ให้ผู้ใช้เห็น

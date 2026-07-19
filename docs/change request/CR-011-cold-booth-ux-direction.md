@@ -519,7 +519,7 @@ regress — [[CR-007-frostline-deck-refresh|CR-007]] acceptance #2).
 7. [`src/src/VoicePacksPage.tsx`](file:///g:/G-Maiden/src/src/VoicePacksPage.tsx) + [`StorePage.tsx`](file:///g:/G-Maiden/src/src/StorePage.tsx) + [`InventoryTab.tsx`](file:///g:/G-Maiden/src/src/InventoryTab.tsx) — Packs merge.
 8. [`src/src/AccountPage.tsx`](file:///g:/G-Maiden/src/src/AccountPage.tsx) + [`WalletTab.tsx`](file:///g:/G-Maiden/src/src/WalletTab.tsx) + [`LedgerTab.tsx`](file:///g:/G-Maiden/src/src/LedgerTab.tsx) — economy home + re-token.
 9. `docs/design-system/*` — sync per governance.
-Untouched: overlay window ([`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) overlay tree, `FullOverlay.tsx`), Rust critical path,
+Untouched: overlay window ([`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) overlay tree, [`FullOverlay.tsx`](file:///g:/G-Maiden/src/src/overlay/FullOverlay.tsx)), Rust critical path,
 shell geometry constants.
 
 ## Q. Final anti-generic audit (brutal pass)
