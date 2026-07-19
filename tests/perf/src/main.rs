@@ -4,76 +4,108 @@
 //! Engineering Spec §1 budget: p50 ≤ 250 ms (target), p99 ≤ 300 ms (hard max).
 //! TDD §3 / Definition of Done §7.
 //!
-//! # Wiring status: PRE-WIRING (stub mode)
+//! # Wiring status: REAL (headless mode)
 //!
-//! Each hop spins for its Engineering Spec budget (± a deterministic jitter
-//! model that mimics OS scheduler variance with a positive-skew tail).
-//! Gate P3 evaluates **MEASURED elapsed times only** — no proportional
-//! scaling, no retrospective multiplication, no hand-typed estimates.
+//! This used to spin-wait at the spec budget (± a jitter model) — a gate that
+//! PASSED by construction, no matter what the code actually did. It now calls
+//! the real `g_maiden` crate functions (the same lib the app + `src-tauri`'s
+//! own in-crate tests use — see the lib-split, `src-tauri/Cargo.toml` `[lib]`)
+//! for every hop that can run headless:
 //!
-//! To graduate to a definitive production gate: replace the body of each
-//! `hop_N_*()` function with the real module call (see WIRE comments).
-//! The `Instant` wrapper stays; only the inner work changes.
+//!   - **hop 2 vision**   — `cv::prefilter::prefilter_candidates` +
+//!     `cv::detector::Detector::{load,detect}` on a synthetic minimap frame
+//!     (same pixel pattern as `capture.rs`'s `synthetic_frame`, copied below
+//!     because that helper is `#[cfg(test)]`-private to the app crate).
+//!   - **hop 3 motion**   — `motion::Motion::{record,assess}`, clock-injected
+//!     (`now_ms` advances one tick per iteration; no wall-clock sleep).
+//!   - **hop 4 signal**   — `signal::Signal::evaluate` on the assessed risk.
+//!     A deterministic missing-heroes schedule (see `missing_for_iteration`,
+//!     lifted from `motion.rs`'s own
+//!     `two_heroes_missing_crosses_danger_threshold` unit-test fixture) drives
+//!     the risk across the danger threshold at a KNOWN iteration
+//!     ([`ALERT_ARM_ITER`]) and back below it at another
+//!     ([`REVISION_ITER`]), so both the `Alert` and `Revision` branches are
+//!     actually executed, not just theoretically reachable.
+//!   - **hop 5 interrupt** — audio admission + clip resolution, NOT playback:
+//!     `audio::active_priority()` + `audio::priority_for_event("gank")` +
+//!     `audio::pick_clip("gank")`. `audio::should_accept_incoming` itself is
+//!     `pub(crate)` (visibility is the lib-split task's territory, out of
+//!     scope here), so the admission check mirrors its one-line body
+//!     (`incoming >= current`, `audio.rs:44`) using the `pub` `Priority` type
+//!     — a real comparison over real data, not a stand-in number.
+//!   - **hop-gsi** (new, reported alongside, NOT part of the 6-hop gate math
+//!     below — the Engineering Spec's per-hop budget table has no slot for
+//!     it, and in production it runs on the GSI web-server task, not
+//!     serialized into this critical path) — `gsi::parse_tick_from_json` on
+//!     three recorded tick fixtures (`tests/perf/fixtures/*.json`, lifted
+//!     verbatim from the payloads `src-tauri/src/gsi.rs`'s
+//!     `happy_path_in_match` / `parses_buyback_and_respawn_when_dead` tests
+//!     and `src-tauri/src/capture.rs`'s
+//!     `gsi_to_signal_audio_enqueue_latency_within_budget` test already use).
 //!
-//! # Real-path coverage already exists (do not duplicate here)
-//! This file is the synthetic budget-envelope shape-check only. The actual
-//! compute path is exercised, with real functions (no spins), by two
-//! `#[cfg(test)]` harnesses in the main crate's `src-tauri/src/capture.rs`
-//! (`capture::backend::tests` module):
-//!   - `pipeline_latency_within_budget` — real ONNX detector + prefilter →
-//!     `Sentry` → `Motion` → `Signal` over synthetic frames (asserts p99 <
-//!     80 ms; release-only, needs `models/minimap-detector.onnx`).
-//!   - `gsi_to_signal_audio_enqueue_latency_within_budget` — real
-//!     `gsi::parse_tick_from_json` → `runtime::set_player_team_name`/
-//!     `enemy_team_ring` → `Signal::evaluate` → `audio::should_accept_incoming`
-//!     admission check (asserts p99 < 10 ms).
-//! Together they cover hops 2-5 (vision/motion/signal/interrupt-admission)
-//! end to end with production code. Hop 1 (DXGI capture) and the tail of hop 6
-//! (real audio device output buffer) are still not covered by an in-process
-//! test — they need a running capture loop / audio device and are budgeted
-//! separately. Run: `cargo test --release --bin g-maiden latency -- --nocapture`.
+//! **hop 1 (DXGI capture)** and **hop 6 (audio output buffer)** still can't
+//! run headless — they need a live display / audio device. They report as
+//! `SKIP` with their Engineering Spec budget shown, not a spun number. See
+//! `latency_live` (the live-probes bin, `tests/perf/src/bin/latency_live.rs`)
+//! for those two hops with a real display/device attached.
 //!
-//! # Runtime
-//! ITERATIONS (100) × ~180 ms/iter ≈ 18 s total.  Use `cargo run --release`
-//! (debug mode adds optimizer overhead that inflates timings).
+//! # Honest gate
+//!
+//! The gate no longer asserts against a number this file invented. It sums
+//! the MEASURED wall-clock p50/p99 across the four wired hops (2-5) and adds
+//! the *budget* (not a measurement) for the two SKIP hops, then checks that
+//! total against the Engineering Spec ceiling. If a SKIP hop turns out to
+//! blow its budget in real play, `latency_live` — not this file — is what
+//! catches it.
 //!
 //! # Exit codes
-//! 0 = GATE P3 PASS   1 = GATE P3 FAIL
+//! 0 = GATE P3 PASS   1 = GATE P3 FAIL   77 = SKIP (ONNX model not found —
+//! hop 2 is unmeasurable, so no gate verdict would mean anything)
+//!
+//! # Runtime
+//! ITERATIONS (300) of real (sub-millisecond to low-millisecond) work — a few
+//! seconds total in `--release`. Debug adds significant `tract-onnx` /
+//! optimizer overhead; use `cargo run --release`.
 
+use std::path::{Path, PathBuf};
 use std::time::Instant;
+
+use g_maiden::audio::{self, Priority};
+use g_maiden::cv::detector::Detector;
+use g_maiden::cv::prefilter::{prefilter_candidates, DEFAULT_THRESHOLD_FRAC};
+use g_maiden::cv::region::MinimapRegion;
+use g_maiden::cv::{Frame, DIRE_RING};
+use g_maiden::gsi;
+use g_maiden::motion::Motion;
+use g_maiden::signal::{Signal, SignalEvent};
 
 // ---------------------------------------------------------------------------
 // Configuration
 // ---------------------------------------------------------------------------
 
-/// Iteration count. 100 → ~18 s run time; gives 1-2 tail samples for p99.
-/// Increase when real modules are wired and per-iteration cost may be lower.
-const ITERATIONS: usize = 100;
+/// Matches the sample size of the in-crate `pipeline_latency_within_budget`
+/// test (`src-tauri/src/capture.rs`) that this harness composes from the same
+/// public building blocks.
+const ITERATIONS: usize = 300;
+
+/// POSIX skip convention (matches `perf_p7`'s `EXIT_SKIP` / automake /
+/// cargo-nextest semantics) — not a pass, not a fail, prerequisites missing.
+const EXIT_SKIP: i32 = 77;
 
 // ---------------------------------------------------------------------------
 // Engineering Spec §1 — per-hop latency budgets (ms)
 // ---------------------------------------------------------------------------
 
-const BUDGET_CAPTURE_MS:   f64 = 30.0; // Hop 1: DXGI minimap frame ready
-const BUDGET_VISION_MS:    f64 = 50.0; // Hop 2: CV enemy icon detection
-const BUDGET_MOTION_MS:    f64 = 20.0; // Hop 3: G-Motion gank probability
-const BUDGET_SIGNAL_MS:    f64 = 10.0; // Hop 4: G-Signal threshold + clip key
+const BUDGET_CAPTURE_MS: f64 = 30.0; // Hop 1: DXGI minimap frame ready
+const BUDGET_VISION_MS: f64 = 50.0; // Hop 2: CV enemy icon detection
+const BUDGET_MOTION_MS: f64 = 20.0; // Hop 3: G-Motion gank probability
+const BUDGET_SIGNAL_MS: f64 = 10.0; // Hop 4: G-Signal threshold + clip key
 const BUDGET_INTERRUPT_MS: f64 = 30.0; // Hop 5: audio interrupt + playback start
-const BUDGET_AUDIO_MS:     f64 = 40.0; // Hop 6: audio output buffer
+const BUDGET_AUDIO_MS: f64 = 40.0; // Hop 6: audio output buffer
 
-const BUDGETS_MS: [f64; 6] = [
-    BUDGET_CAPTURE_MS, BUDGET_VISION_MS, BUDGET_MOTION_MS,
-    BUDGET_SIGNAL_MS, BUDGET_INTERRUPT_MS, BUDGET_AUDIO_MS,
-];
-
-const HOP_NAMES: [&str; 6] = [
-    "Hop 1  minimap capture  ",
-    "Hop 2  CV detection     ",
-    "Hop 3  G-Motion prob    ",
-    "Hop 4  G-Signal thresh  ",
-    "Hop 5  audio interrupt  ",
-    "Hop 6  audio output buf ",
-];
+/// Hops 1 and 6 can't run headless; their budget is added to the measured
+/// wired total as a flat offset (see the HONEST GATE section of `main`).
+const SKIP_BUDGET_MS: f64 = BUDGET_CAPTURE_MS + BUDGET_AUDIO_MS;
 
 // ---------------------------------------------------------------------------
 // GATE P3 thresholds (Engineering Spec §1 / Definition of Done §7)
@@ -83,122 +115,144 @@ const P50_GATE_MS: f64 = 250.0;
 const P99_GATE_MS: f64 = 300.0;
 
 // ---------------------------------------------------------------------------
-// Deterministic jitter model — splitmix64 variant (no external crates)
+// Deterministic missing-heroes schedule — drives G-Signal's Alert AND
+// Revision branches at known iterations (real Motion::assess + Signal::
+// evaluate calls, not hand-typed SignalEvent values).
 //
-// Maps (iteration_seed, hop_index) → jitter factor in [-0.10, +0.15].
-// Positive skew models OS scheduler preemption on the high tail.
-// Deterministic across runs for reproducibility; hop-independent.
+// The "armed" numbers (2 heroes, each missing 11_000 ms, at (0.4,0.4) and
+// (0.6,0.6)) are lifted verbatim from `src-tauri/src/motion.rs`'s own
+// `two_heroes_missing_crosses_danger_threshold` unit test, which already
+// proves this exact input crosses the danger threshold (probability >= 0.85
+// — clears even the strictest Sensitivity::Low bar, so it's independent of
+// whichever Sensitivity `Signal::new()`'s default happens to be).
 // ---------------------------------------------------------------------------
 
-fn pseudo_uniform(seed: u64, hop: u8) -> f64 {
-    let mut z = seed.wrapping_add(0x9e3779b97f4a7c15)
-        ^ (hop as u64).wrapping_mul(0x517cc1b727220a95);
-    z = z.wrapping_mul(0xbf58476d1ce4e5b9);
-    z ^= z >> 31;
-    z = z.wrapping_mul(0x94d049bb133111eb);
-    z ^= z >> 32;
-    (z >> 11) as f64 / (1u64 << 53) as f64
-}
+/// Iteration the two heroes start being reported "missing" — G-Signal's
+/// `Alert` branch fires here.
+const ALERT_ARM_ITER: usize = 120;
+/// Iteration they reappear (missing list goes empty again) — G-Signal's
+/// `Revision` branch fires here.
+const REVISION_ITER: usize = 280;
 
-/// Returns a jitter factor in [-0.10, +0.15].
-fn timing_jitter(seed: u64, hop: u8) -> f64 {
-    pseudo_uniform(seed, hop) * 0.25 - 0.10
-}
-
-// ---------------------------------------------------------------------------
-// Core spin primitive
-// ---------------------------------------------------------------------------
-
-/// Spin-wait for `target_ms` milliseconds. Returns actual elapsed time (ms).
-/// Avoids Windows sleep granularity (~15 ms floor) that would corrupt short hops.
-fn spin_ms(target_ms: f64) -> f64 {
-    let target_ns = (target_ms * 1_000_000.0) as u128;
-    let t0 = Instant::now();
-    while t0.elapsed().as_nanos() < target_ns {}
-    t0.elapsed().as_secs_f64() * 1000.0
+fn missing_for_iteration(i: usize) -> Vec<(String, u64, (f32, f32))> {
+    if !(ALERT_ARM_ITER..REVISION_ITER).contains(&i) {
+        return Vec::new();
+    }
+    // Elapsed grows slightly each armed iteration (mimics a hero staying gone)
+    // — starts at exactly the proven-crossing fixture value.
+    let elapsed_ms = 11_000u64 + ((i - ALERT_ARM_ITER) as u64) * 40;
+    vec![
+        ("npc_dota_hero_axe".to_string(), elapsed_ms, (0.4, 0.4)),
+        ("npc_dota_hero_lina".to_string(), elapsed_ms, (0.6, 0.6)),
+    ]
 }
 
 // ---------------------------------------------------------------------------
-// Stub hops
-//
-// Each function wraps an Instant and either spins (stub) or calls the real
-// module. Gate measures the returned elapsed ms directly — no post-processing.
-//
-// Replacement pattern:
-//   let t0 = Instant::now();
-//   real_module_call(inputs);          // ← replace spin_ms() with this
-//   t0.elapsed().as_secs_f64() * 1000.0
+// Synthetic minimap frame — copied from `src-tauri/src/capture.rs`
+// (`backend::tests::synthetic_frame`, the same helper
+// `pipeline_latency_within_budget` uses). That helper is `#[cfg(test)]`-
+// private to the app crate, so it can't be imported across the crate
+// boundary; this reproduces the exact pixel pattern instead. Keep in sync if
+// the spike's blip colour/geometry ever changes.
 // ---------------------------------------------------------------------------
 
-/// Hop 1: DXGI minimap capture — frame ready from running capture loop (~30 ms).
-/// WIRE TO REAL MODULE: capture::get_latest_frame()
-fn hop1_capture(seed: u64) -> f64 {
-    spin_ms(BUDGET_CAPTURE_MS * (1.0 + timing_jitter(seed, 0)))
-}
-
-/// Hop 2: CV detection — ONNX/template match on minimap region (~50 ms).
-/// WIRE TO REAL MODULE: vision::detect_enemies(&frame)
-fn hop2_vision(seed: u64) -> f64 {
-    spin_ms(BUDGET_VISION_MS * (1.0 + timing_jitter(seed, 1)))
-}
-
-/// Hop 3: G-Motion — gank probability on in-memory ring buffer (~20 ms).
-/// WIRE TO REAL MODULE: motion::evaluate_gank_risk(&positions)
-fn hop3_motion(seed: u64) -> f64 {
-    spin_ms(BUDGET_MOTION_MS * (1.0 + timing_jitter(seed, 2)))
-}
-
-/// Hop 4: G-Signal — threshold check (>85 %) + audio cache key selection (~10 ms).
-/// WIRE TO REAL MODULE: signal::evaluate_threshold(probability)
-fn hop4_signal(seed: u64) -> f64 {
-    spin_ms(BUDGET_SIGNAL_MS * (1.0 + timing_jitter(seed, 3)))
-}
-
-/// Hop 5: Audio interrupt — non-blocking channel send + playback switch (~30 ms).
-/// WIRE TO REAL MODULE: audio::interrupt_and_play(clip_key)
-fn hop5_interrupt(seed: u64) -> f64 {
-    spin_ms(BUDGET_INTERRUPT_MS * (1.0 + timing_jitter(seed, 4)))
-}
-
-/// Hop 6: Audio output buffer — cpal/rodio PCM buffer latency (~40 ms).
-/// WIRE TO REAL MODULE: audio::wait_for_output_buffer()
-fn hop6_audio_buf(seed: u64) -> f64 {
-    spin_ms(BUDGET_AUDIO_MS * (1.0 + timing_jitter(seed, 5)))
+fn synthetic_frame(n: usize) -> Frame {
+    let (w, h, icon) = (256usize, 256usize, 20usize);
+    let mut bgra = vec![0u8; w * h * 4];
+    for (i, px) in bgra.chunks_mut(4).enumerate() {
+        let (x, _y) = (i % w, i / w);
+        px[0] = 18;
+        px[1] = 36 + (x % 7) as u8;
+        px[2] = 14;
+        px[3] = 255;
+    }
+    for k in 0..n {
+        let bx = (k * 37) % (w - icon);
+        let by = (k * 53) % (h - icon);
+        for yy in by..by + icon {
+            for xx in bx..bx + icon {
+                let p = (yy * w + xx) * 4;
+                bgra[p] = 41;
+                bgra[p + 1] = 41;
+                bgra[p + 2] = 219;
+            }
+        }
+    }
+    Frame::from_bgra(w, h, bgra).unwrap()
 }
 
 // ---------------------------------------------------------------------------
-// Pipeline runner
+// Recorded GSI ticks — embedded at compile time (deterministic regardless of
+// the process's runtime cwd; see the model/voice-cache path notes in
+// `main()` for why runtime cwd matters for the OTHER hops but not this one).
+// Lifted verbatim from `src-tauri/src/gsi.rs` (`happy_path_in_match`,
+// `parses_buyback_and_respawn_when_dead`) and `src-tauri/src/capture.rs`
+// (`gsi_to_signal_audio_enqueue_latency_within_budget`).
 // ---------------------------------------------------------------------------
 
-struct Sample {
-    hops:  [f64; 6],
-    total: f64,
+struct Fixture {
+    name: &'static str,
+    body: &'static str,
 }
 
-fn run_pipeline(seed: u64) -> Sample {
-    // t_start wraps the whole pipeline — total is wall-clock, not sum(hops),
-    // so channel/scheduling gaps between hops are captured in total too.
-    let t_start = Instant::now();
-    let hops = [
-        hop1_capture(seed),
-        hop2_vision(seed),
-        hop3_motion(seed),
-        hop4_signal(seed),
-        hop5_interrupt(seed),
-        hop6_audio_buf(seed),
-    ];
-    Sample { hops, total: t_start.elapsed().as_secs_f64() * 1000.0 }
+const FIXTURES: [Fixture; 3] = [
+    Fixture {
+        name: "radiant_midgame",
+        body: include_str!("../fixtures/tick_radiant_midgame.json"),
+    },
+    Fixture {
+        name: "dire_midgame",
+        body: include_str!("../fixtures/tick_dire_midgame.json"),
+    },
+    Fixture {
+        name: "dead_buyback",
+        body: include_str!("../fixtures/tick_dead_buyback.json"),
+    },
+];
+
+// ---------------------------------------------------------------------------
+// Path resolution — absolute, independent of the process's runtime cwd.
+// ---------------------------------------------------------------------------
+
+/// `models/minimap-detector.onnx` + `models/labels.json` live at the repo
+/// root (ground-truth map); `tests/perf` is two levels under it.
+fn model_paths() -> (PathBuf, PathBuf) {
+    let repo_root = Path::new(env!("CARGO_MANIFEST_DIR")).join("..").join("..");
+    (
+        repo_root.join("models").join("minimap-detector.onnx"),
+        repo_root.join("models").join("labels.json"),
+    )
+}
+
+/// `src-tauri/voice-pack-default/` is where `audio::pick_clip`'s dev-mode
+/// fallback finds bundled clips when there's no user pack — but that lookup
+/// is relative to the process's *working directory*, and it's the app's,
+/// not ours. We chdir the harness process there (see `main`) so hop 5
+/// measures a real resolved clip, not the fast "not found" path.
+fn src_tauri_dir() -> PathBuf {
+    Path::new(env!("CARGO_MANIFEST_DIR"))
+        .join("..")
+        .join("..")
+        .join("src-tauri")
 }
 
 // ---------------------------------------------------------------------------
-// Statistics
+// Statistics (unchanged from the stub — still the right tool for real data)
 // ---------------------------------------------------------------------------
 
-struct Stat { mean: f64, p50: f64, p99: f64 }
+struct Stat {
+    mean: f64,
+    p50: f64,
+    p99: f64,
+}
 
 fn compute_stat(mut v: Vec<f64>) -> Stat {
     if v.is_empty() {
-        return Stat { mean: 0.0, p50: 0.0, p99: 0.0 };
+        return Stat {
+            mean: 0.0,
+            p50: 0.0,
+            p99: 0.0,
+        };
     }
     v.sort_by(|a, b| a.partial_cmp(b).unwrap_or(std::cmp::Ordering::Equal));
     let n = v.len();
@@ -207,112 +261,328 @@ fn compute_stat(mut v: Vec<f64>) -> Stat {
         let idx = ((p / 100.0) * (n - 1) as f64).round() as usize;
         v[idx.min(n - 1)]
     };
-    Stat { mean, p50: pct(50.0), p99: pct(99.0) }
+    Stat {
+        mean,
+        p50: pct(50.0),
+        p99: pct(99.0),
+    }
+}
+
+// ---------------------------------------------------------------------------
+// Per-iteration sample — one entry per wired hop, plus the wall-clock total
+// across hops 2-5 (captures inter-hop gaps too), plus the separate hop-gsi
+// diagnostic timing.
+// ---------------------------------------------------------------------------
+
+struct Sample {
+    vision_ms: f64,
+    motion_ms: f64,
+    signal_ms: f64,
+    interrupt_ms: f64,
+    wired_total_ms: f64,
+    gsi_ms: f64,
 }
 
 // ---------------------------------------------------------------------------
 // Report helpers
 // ---------------------------------------------------------------------------
 
-fn sep(n: usize) { println!("{}", "-".repeat(n)); }
+fn sep(n: usize) {
+    println!("{}", "-".repeat(n));
+}
+
+fn fmt_ms(v: f64) -> String {
+    format!("{v:.3}ms")
+}
+
+fn fmt_budget(v: f64) -> String {
+    format!("{v:.2}ms")
+}
 
 // ---------------------------------------------------------------------------
 // main
 // ---------------------------------------------------------------------------
 
 fn main() {
-    let spec_total_ms: f64 = BUDGETS_MS.iter().sum();
-    let est_secs = (ITERATIONS as f64 * spec_total_ms) / 1000.0;
-
     println!("=================================================================");
     println!(" G-Signal Latency Harness   GATE P3");
     println!(" Engineering Spec §1  |  {} iterations", ITERATIONS);
-    println!(" WIRING: STUB MODE — stubs spin at spec budget ± jitter model.");
-    println!("         Replace hop bodies with real module calls for definitive");
-    println!("         production measurement (see WIRE comments in source).");
-    println!(" Gate evaluates MEASURED elapsed times — no scaling, no estimates.");
+    println!(" WIRING: REAL (headless mode) — hops call the actual g_maiden");
+    println!("         crate (gsi/cv/motion/signal/audio), not spin-wait stubs.");
     println!("=================================================================");
     println!();
-    println!("Collecting {} samples (~{:.0}s expected) ...", ITERATIONS, est_secs);
 
-    let mut hop_data: Vec<Vec<f64>> = (0..6)
-        .map(|_| Vec::with_capacity(ITERATIONS))
-        .collect();
-    let mut total_data: Vec<f64> = Vec::with_capacity(ITERATIONS);
+    // --- hop 2 prerequisite: the ONNX model must exist, or nothing about
+    //     the vision hop (and therefore the gate) means anything. ---------
+    let (model_path, labels_path) = model_paths();
+    if !model_path.exists() || !labels_path.exists() {
+        println!("Hop 2  CV detection      SKIP  — model not found:");
+        println!("  {}", model_path.display());
+        println!("  {}", labels_path.display());
+        println!();
+        println!("GATE P3 SKIPPED — vision hop unmeasurable, nothing meaningful to gate.");
+        std::process::exit(EXIT_SKIP);
+    }
+    let detector = Detector::load(&model_path, &labels_path);
+
+    // --- chdir so hop 5's audio::pick_clip resolves a REAL clip from the
+    //     bundled default pack (src-tauri/voice-pack-default/), instead of
+    //     measuring the fast "nothing found" path from an unrelated cwd. ---
+    let src_tauri = src_tauri_dir();
+    if let Err(e) = std::env::set_current_dir(&src_tauri) {
+        eprintln!(
+            "[warn] could not chdir to {}: {e} — hop 5 clip resolution may \
+             report no clips found (still a real call, just resolved from \
+             the wrong base directory)",
+            src_tauri.display()
+        );
+    }
+
+    println!("Collecting {ITERATIONS} samples ...");
+
+    let region = MinimapRegion {
+        x: 0,
+        y: 0,
+        side: 256,
+    };
+    let icon = 20usize;
+    // One reused frame across every iteration — matches
+    // `pipeline_latency_within_budget`'s `synthetic_frame(5)` exactly.
+    let frame = synthetic_frame(5);
+
+    let mut motion = Motion::new();
+    let mut signal = Signal::new();
+
+    let mut samples: Vec<Sample> = Vec::with_capacity(ITERATIONS);
+    let mut alert_iter: Option<usize> = None;
+    let mut revision_iter: Option<usize> = None;
+    let mut clip_found_count: usize = 0;
 
     for i in 0..ITERATIONS {
-        let s = run_pipeline(i as u64);
-        for (j, &v) in s.hops.iter().enumerate() {
-            hop_data[j].push(v);
+        let now_ms = (i as u64) * 100;
+
+        let t_wired_start = Instant::now();
+
+        // Hop 2: vision — prefilter + ONNX classify.
+        let t0 = Instant::now();
+        let cands = prefilter_candidates(&frame, icon, DEFAULT_THRESHOLD_FRAC, DIRE_RING);
+        let dets = detector.detect(&frame, &cands, icon);
+        let vision_ms = t0.elapsed().as_secs_f64() * 1000.0;
+
+        // Hop 3: motion — real history ring-buffer + gank-risk assessment.
+        let t0 = Instant::now();
+        motion.record(&dets, &region, now_ms);
+        let missing = missing_for_iteration(i);
+        let risk = motion.assess(&missing, now_ms);
+        let motion_ms = t0.elapsed().as_secs_f64() * 1000.0;
+
+        // Hop 4: signal — edge-triggered threshold state machine.
+        let t0 = Instant::now();
+        let event = signal.evaluate(&risk);
+        let signal_ms = t0.elapsed().as_secs_f64() * 1000.0;
+        match event {
+            SignalEvent::Alert(_) => {
+                alert_iter.get_or_insert(i);
+            }
+            SignalEvent::Revision => {
+                revision_iter.get_or_insert(i);
+            }
+            SignalEvent::None => {}
         }
-        total_data.push(s.total);
+
+        // Hop 5: interrupt — admission check + clip resolution, NO playback.
+        let t0 = Instant::now();
+        let current: Priority = audio::active_priority();
+        let incoming: Priority = audio::priority_for_event("gank");
+        let _accepted = incoming >= current; // mirrors should_accept_incoming (audio.rs:44)
+        let clip = audio::pick_clip("gank");
+        let interrupt_ms = t0.elapsed().as_secs_f64() * 1000.0;
+        if clip.is_some() {
+            clip_found_count += 1;
+        }
+
+        let wired_total_ms = t_wired_start.elapsed().as_secs_f64() * 1000.0;
+
+        // hop-gsi: separate diagnostic timing, NOT part of wired_total_ms.
+        let fx = &FIXTURES[i % FIXTURES.len()];
+        let t0 = Instant::now();
+        let tick = gsi::parse_tick_from_json(fx.body);
+        let gsi_ms = t0.elapsed().as_secs_f64() * 1000.0;
+        debug_assert!(!fx.name.is_empty());
+        let _ = tick.in_game; // touch the result — this is a real parse, not a no-op
+
+        samples.push(Sample {
+            vision_ms,
+            motion_ms,
+            signal_ms,
+            interrupt_ms,
+            wired_total_ms,
+            gsi_ms,
+        });
     }
 
     println!("Done.\n");
 
-    // ------------------------------------------------------------------
-    // Per-hop table (measured ms — no scaling)
-    // ------------------------------------------------------------------
-    println!(
-        "{:<28}  {:>9}  {:>9}  {:>9}  {:>8}",
-        "Hop", "mean", "p50", "p99", "budget"
+    // Harness self-check: if the deterministic schedule never crossed either
+    // threshold, the SCHEDULE is broken, not the app — fail loudly rather
+    // than silently print a gate verdict that didn't actually exercise both
+    // SignalEvent branches.
+    assert!(
+        alert_iter.is_some(),
+        "harness bug: missing_for_iteration schedule never crossed the \
+         Alert threshold — hop 4's Alert branch was not exercised"
     );
-    sep(72);
-
-    for (i, name) in HOP_NAMES.iter().enumerate() {
-        let s = compute_stat(hop_data[i].clone());
-        println!(
-            "{:<28}  {:>7.2}ms  {:>7.2}ms  {:>7.2}ms  {:>6.2}ms",
-            name, s.mean, s.p50, s.p99, BUDGETS_MS[i]
-        );
-    }
-
-    sep(72);
-
-    // ------------------------------------------------------------------
-    // End-to-end row (wall-clock, includes inter-hop gaps)
-    // ------------------------------------------------------------------
-    let e2e = compute_stat(total_data);
-    println!(
-        "{:<28}  {:>7.2}ms  {:>7.2}ms  {:>7.2}ms  {:>6.2}ms",
-        "END-TO-END (wall-clock)",
-        e2e.mean, e2e.p50, e2e.p99, spec_total_ms
+    assert!(
+        revision_iter.is_some(),
+        "harness bug: missing_for_iteration schedule never cleared back \
+         below the clear threshold — hop 4's Revision branch was not \
+         exercised"
     );
 
+    // ------------------------------------------------------------------
+    // Per-hop table
+    // ------------------------------------------------------------------
+    let vision_stat = compute_stat(samples.iter().map(|s| s.vision_ms).collect());
+    let motion_stat = compute_stat(samples.iter().map(|s| s.motion_ms).collect());
+    let signal_stat = compute_stat(samples.iter().map(|s| s.signal_ms).collect());
+    let interrupt_stat = compute_stat(samples.iter().map(|s| s.interrupt_ms).collect());
+    let wired_total_stat = compute_stat(samples.iter().map(|s| s.wired_total_ms).collect());
+    let gsi_stat = compute_stat(samples.iter().map(|s| s.gsi_ms).collect());
+
+    println!(
+        "{:<26} {:<6} {:>12} {:>12} {:>12} {:>10}",
+        "Hop", "status", "mean", "p50", "p99", "budget"
+    );
+    sep(84);
+    println!(
+        "{:<26} {:<6} {:>12} {:>12} {:>12} {:>10}",
+        "Hop 1  minimap capture", "SKIP", "--", "--", "--", fmt_budget(BUDGET_CAPTURE_MS)
+    );
+    println!(
+        "{:<26} {:<6} {:>12} {:>12} {:>12} {:>10}",
+        "Hop 2  CV detection",
+        "WIRED",
+        fmt_ms(vision_stat.mean),
+        fmt_ms(vision_stat.p50),
+        fmt_ms(vision_stat.p99),
+        fmt_budget(BUDGET_VISION_MS)
+    );
+    println!(
+        "{:<26} {:<6} {:>12} {:>12} {:>12} {:>10}",
+        "Hop 3  G-Motion prob",
+        "WIRED",
+        fmt_ms(motion_stat.mean),
+        fmt_ms(motion_stat.p50),
+        fmt_ms(motion_stat.p99),
+        fmt_budget(BUDGET_MOTION_MS)
+    );
+    println!(
+        "{:<26} {:<6} {:>12} {:>12} {:>12} {:>10}",
+        "Hop 4  G-Signal thresh",
+        "WIRED",
+        fmt_ms(signal_stat.mean),
+        fmt_ms(signal_stat.p50),
+        fmt_ms(signal_stat.p99),
+        fmt_budget(BUDGET_SIGNAL_MS)
+    );
+    println!(
+        "{:<26} {:<6} {:>12} {:>12} {:>12} {:>10}",
+        "Hop 5  audio interrupt",
+        "WIRED",
+        fmt_ms(interrupt_stat.mean),
+        fmt_ms(interrupt_stat.p50),
+        fmt_ms(interrupt_stat.p99),
+        fmt_budget(BUDGET_INTERRUPT_MS)
+    );
+    println!(
+        "{:<26} {:<6} {:>12} {:>12} {:>12} {:>10}",
+        "Hop 6  audio output buf", "SKIP", "--", "--", "--", fmt_budget(BUDGET_AUDIO_MS)
+    );
+    sep(84);
+    println!(
+        "{:<26} {:<6} {:>12} {:>12} {:>12} {:>10}",
+        "GSI parse (diagnostic)*",
+        "WIRED",
+        fmt_ms(gsi_stat.mean),
+        fmt_ms(gsi_stat.p50),
+        fmt_ms(gsi_stat.p99),
+        "ref <10ms"
+    );
+    println!(
+        "  * not part of the 6-hop Engineering Spec budget model — reported \
+         alongside for visibility, excluded from the gate math below."
+    );
+    sep(84);
+    println!(
+        "{:<26} {:<6} {:>12} {:>12} {:>12}",
+        "WIRED TOTAL (2-5, wall-clock)",
+        "WIRED",
+        fmt_ms(wired_total_stat.mean),
+        fmt_ms(wired_total_stat.p50),
+        fmt_ms(wired_total_stat.p99)
+    );
     println!();
     println!(
-        "Spec nominal total:  {spec_total_ms:.0} ms   \
-         headroom to p99 gate: {:.0} ms",
-        P99_GATE_MS - spec_total_ms
+        "  Alert branch exercised at iteration {} (2 heroes missing >=11000ms; \
+         probability crossed the danger threshold)",
+        alert_iter.unwrap()
+    );
+    println!(
+        "  Revision branch exercised at iteration {} (heroes reappear; \
+         probability dropped back to 0)",
+        revision_iter.unwrap()
+    );
+    println!(
+        "  Clip resolution (pick_clip(\"gank\")): found on {clip_found_count}/{ITERATIONS} \
+         iterations (cwd: {})",
+        std::env::current_dir()
+            .map(|p| p.display().to_string())
+            .unwrap_or_else(|_| "?".into())
     );
 
     // ------------------------------------------------------------------
-    // GATE P3 — evaluated on MEASURED p50/p99 (wall-clock end-to-end)
+    // GATE P3 — measured wired total (hops 2-5) + SKIP hop budgets (1, 6)
     // ------------------------------------------------------------------
     println!();
     println!("GATE P3  (Engineering Spec §1 / Definition of Done §7)");
-    sep(72);
+    sep(84);
+    println!(
+        "  formula: measured(hops 2-5) + Σ SKIP budgets (hop1 {BUDGET_CAPTURE_MS:.0}ms + \
+         hop6 {BUDGET_AUDIO_MS:.0}ms = {SKIP_BUDGET_MS:.0}ms) <= gate"
+    );
 
-    let p50_pass = e2e.p50 <= P50_GATE_MS;
-    let p99_pass = e2e.p99 <= P99_GATE_MS;
+    let p50_with_skip = wired_total_stat.p50 + SKIP_BUDGET_MS;
+    let p99_with_skip = wired_total_stat.p99 + SKIP_BUDGET_MS;
+    let p50_pass = p50_with_skip <= P50_GATE_MS;
+    let p99_pass = p99_with_skip <= P99_GATE_MS;
 
     println!(
-        "  MEASURED  p50  {:>6.1} ms  <=  {} ms   [{}]",
-        e2e.p50, P50_GATE_MS as u32,
+        "  MEASURED  p50  {:.3} + {:.0} = {:.3} ms  <=  {} ms   [{}]",
+        wired_total_stat.p50,
+        SKIP_BUDGET_MS,
+        p50_with_skip,
+        P50_GATE_MS as u32,
         if p50_pass { "PASS" } else { "FAIL" }
     );
     println!(
-        "  MEASURED  p99  {:>6.1} ms  <=  {} ms   [{}]",
-        e2e.p99, P99_GATE_MS as u32,
+        "  MEASURED  p99  {:.3} + {:.0} = {:.3} ms  <=  {} ms   [{}]",
+        wired_total_stat.p99,
+        SKIP_BUDGET_MS,
+        p99_with_skip,
+        P99_GATE_MS as u32,
         if p99_pass { "PASS" } else { "FAIL" }
     );
 
     println!();
-    println!("  WIRING STATUS: STUB — above values measure spin-wait stubs,");
-    println!("  not real modules. Wire each hop to replace spin_ms() before");
-    println!("  treating this gate as a production latency guarantee.");
+    println!("  WIRING STATUS: REAL (headless mode).");
+    println!("    Hop 1  minimap capture   SKIP  (needs live display/audio — run latency_live)");
+    println!("    Hop 2  CV detection      WIRED");
+    println!("    Hop 3  G-Motion prob     WIRED");
+    println!("    Hop 4  G-Signal thresh   WIRED");
+    println!("    Hop 5  audio interrupt   WIRED");
+    println!("    Hop 6  audio output buf  SKIP  (needs live display/audio — run latency_live)");
 
-    sep(72);
+    sep(84);
 
     if !p50_pass || !p99_pass {
         eprintln!("GATE P3 FAILED  --  pipeline exceeds latency budget");
@@ -322,7 +592,7 @@ fn main() {
 }
 
 // ---------------------------------------------------------------------------
-// Unit tests — verify measurement framework independent of real implementations
+// Unit tests
 // ---------------------------------------------------------------------------
 
 #[cfg(test)]
@@ -333,8 +603,8 @@ mod tests {
     fn percentile_empty_does_not_panic() {
         let s = compute_stat(vec![]);
         assert_eq!(s.mean, 0.0);
-        assert_eq!(s.p50,  0.0);
-        assert_eq!(s.p99,  0.0);
+        assert_eq!(s.p50, 0.0);
+        assert_eq!(s.p99, 0.0);
     }
 
     #[test]
@@ -355,7 +625,12 @@ mod tests {
 
     #[test]
     fn spec_budget_within_gate() {
-        let total: f64 = BUDGETS_MS.iter().sum();
+        let total = BUDGET_CAPTURE_MS
+            + BUDGET_VISION_MS
+            + BUDGET_MOTION_MS
+            + BUDGET_SIGNAL_MS
+            + BUDGET_INTERRUPT_MS
+            + BUDGET_AUDIO_MS;
         assert!(
             total <= P99_GATE_MS,
             "Spec budget ({total} ms) exceeds p99 gate ({P99_GATE_MS} ms)"
@@ -367,37 +642,11 @@ mod tests {
     }
 
     #[test]
-    fn pseudo_uniform_in_range() {
-        for seed in 0u64..200 {
-            for hop in 0u8..6 {
-                let v = pseudo_uniform(seed, hop);
-                assert!(v >= 0.0 && v < 1.0, "out of range: {v}");
-            }
-        }
-    }
-
-    #[test]
-    fn timing_jitter_in_range() {
-        for seed in 0u64..200 {
-            for hop in 0u8..6 {
-                let j = timing_jitter(seed, hop);
-                assert!(j >= -0.10 && j <= 0.15, "jitter out of range: {j}");
-            }
-        }
-    }
-
-    #[test]
-    fn spin_ms_measured_close_to_target() {
-        // Spin for 5 ms; verify actual elapsed is within 3x (generous for CI).
-        let elapsed = spin_ms(5.0);
-        assert!(elapsed >= 4.0, "spin_ms completed too fast: {elapsed:.2}ms");
-        assert!(elapsed <= 15.0, "spin_ms ran too long: {elapsed:.2}ms");
-    }
-
-    #[test]
     fn gate_p3_with_spec_nominal_values() {
         // A set of samples exactly at spec nominal must pass both gates.
-        let nominal_total: f64 = BUDGETS_MS.iter().sum(); // 180 ms
+        let nominal_total: f64 = BUDGET_VISION_MS + BUDGET_MOTION_MS + BUDGET_SIGNAL_MS
+            + BUDGET_INTERRUPT_MS
+            + SKIP_BUDGET_MS; // 180 ms
         let samples: Vec<f64> = vec![nominal_total; 200];
         let s = compute_stat(samples);
         assert!(s.p50 <= P50_GATE_MS, "nominal p50 {} > gate {}", s.p50, P50_GATE_MS);
@@ -414,25 +663,65 @@ mod tests {
     }
 
     #[test]
-    fn hop_stubs_return_positive_elapsed() {
-        // Stubs must return a positive measured time (not zero).
-        assert!(hop1_capture(0) > 0.0);
-        assert!(hop2_vision(0) > 0.0);
-        assert!(hop3_motion(0) > 0.0);
-        assert!(hop4_signal(0) > 0.0);
-        // hop5 and hop6 skipped in unit tests to keep test suite fast;
-        // they share the same spin_ms() path verified by spin_ms_measured_close_to_target.
+    fn missing_schedule_arms_and_clears_at_known_iterations() {
+        // Before ALERT_ARM_ITER: nothing missing yet.
+        assert!(missing_for_iteration(ALERT_ARM_ITER - 1).is_empty());
+
+        // At ALERT_ARM_ITER: the proven-crossing fixture (two heroes, each
+        // missing 11_000 ms) — real Motion::assess call, not a hand-typed risk.
+        let armed = missing_for_iteration(ALERT_ARM_ITER);
+        assert_eq!(armed.len(), 2);
+        let m = Motion::new();
+        let risk = m.assess(&armed, (ALERT_ARM_ITER as u64) * 100);
+        assert!(
+            risk.probability >= 0.85,
+            "expected a clear danger-threshold crossing, got {}",
+            risk.probability
+        );
+
+        // At REVISION_ITER: heroes reappear, missing list empties out again.
+        assert!(missing_for_iteration(REVISION_ITER).is_empty());
+        let cleared = m.assess(&[], (REVISION_ITER as u64) * 100);
+        assert_eq!(cleared.probability, 0.0);
     }
 
     #[test]
-    fn run_pipeline_total_gte_sum_of_hops() {
-        // Wall-clock total must be >= sum of measured hop times (Instant wrap).
-        let s = run_pipeline(99);
-        let hops_sum: f64 = s.hops.iter().sum();
-        assert!(
-            s.total >= hops_sum - 0.5, // allow 0.5ms floating-point tolerance
-            "total {:.2}ms < hops_sum {:.2}ms",
-            s.total, hops_sum
-        );
+    fn gsi_fixtures_round_trip_via_parse_tick_from_json() {
+        let radiant = gsi::parse_tick_from_json(FIXTURES[0].body);
+        assert!(radiant.in_game);
+        assert_eq!(radiant.team_name, "radiant");
+        assert_eq!(radiant.hero, "npc_dota_hero_crystal_maiden");
+
+        let dire = gsi::parse_tick_from_json(FIXTURES[1].body);
+        assert!(dire.in_game);
+        assert_eq!(dire.team_name, "dire");
+
+        let dead = gsi::parse_tick_from_json(FIXTURES[2].body);
+        assert!(!dead.alive);
+        assert_eq!(dead.buyback_cost, 1500);
+        assert_eq!(dead.respawn_seconds, 30);
+    }
+
+    #[test]
+    fn audio_priority_ordering_supports_the_hop5_admission_mirror() {
+        // `audio::should_accept_incoming` is `pub(crate)` (visibility is the
+        // lib-split task's territory), so hop 5 mirrors its one-line body
+        // (`incoming >= current`, audio.rs:44) directly via the `pub`
+        // `Priority` type's `Ord` impl. Pin that relationship here so a
+        // future reordering of the enum can't silently break the mirror.
+        assert!(Priority::Critical >= Priority::Cosmetic);
+        assert!(Priority::Critical >= Priority::Normal);
+        assert!(Priority::Cosmetic < Priority::Critical);
+    }
+
+    #[test]
+    fn model_paths_resolve_and_exist_in_this_repo() {
+        // models/*.onnx + labels.json are committed to the repo (not
+        // gitignored) — if this ever fails, the model went missing, which
+        // is exactly the condition `main()` treats as EXIT_SKIP (77).
+        let (model, labels) = model_paths();
+        assert!(model.ends_with("models/minimap-detector.onnx") || model.ends_with("models\\minimap-detector.onnx"));
+        assert!(model.exists(), "expected {} to exist", model.display());
+        assert!(labels.exists(), "expected {} to exist", labels.display());
     }
 }

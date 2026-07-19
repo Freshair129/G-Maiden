@@ -1,0 +1,5 @@
+{
+  "map":  { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS" },
+  "hero": { "name": "npc_dota_hero_crystal_maiden", "level": 16,
+            "alive": false, "buyback_cost": 1500, "respawn_seconds": 30 }
+}

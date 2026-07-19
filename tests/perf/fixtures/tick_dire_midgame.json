@@ -1,0 +1,5 @@
+{
+  "map": { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS", "clock_time": 612, "daytime": true, "radiant_score": 14, "dire_score": 9 },
+  "player": { "gold": 2300, "net_worth": 14500, "gpm": 520, "xpm": 610, "kills": 7, "deaths": 2, "assists": 10, "last_hits": 145, "denies": 8, "team_name": "dire" },
+  "hero": { "name": "npc_dota_hero_crystal_maiden", "level": 14, "alive": true, "health_percent": 78, "mana_percent": 65 }
+}

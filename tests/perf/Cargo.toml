@@ -3,6 +3,8 @@ name = "g-maiden-perf-suite"
 version = "0.1.0"
 edition = "2021"
 description = "Performance test harnesses — GATE P3 latency + GATE P7 RAM/FPS"
+# `cargo run` without --bin means the headless latency gate (4 bins exist).
+default-run = "latency_harness"
 
 # GATE P3: G-Signal p50/p99 latency (Engineering Spec §1)
 [[bin]]
@@ -21,8 +23,27 @@ path = "src/bin/perf_p7.rs"
 name = "perf_cpu_tree"
 path = "src/bin/perf_cpu_tree.rs"
 
+# Live-environment probes for the two hops the headless latency_harness must
+# SKIP (needs a real display + audio device — CI has neither, this machine
+# does). Self-detects and exits 77 SKIP per-probe when its device is absent.
+[[bin]]
+name = "latency_live"
+path = "src/bin/latency_live.rs"
+
 [dependencies]
 sysinfo = "0.30"
+# Hop 6 probe: same version as src-tauri (`src-tauri/Cargo.toml`) so the
+# decode path (mp3 via symphonia, default features) matches production.
+rodio = "0.19"
+# Real critical-path modules (gsi/sentry/motion/signal/cv/audio) for the
+# latency_harness rewrite (GATE P3 real-wiring). Package name has a hyphen but
+# the library crate itself is named `g_maiden` (see src-tauri/Cargo.toml
+# `[lib] name`), so it's imported as `use g_maiden::...`. First build compiles
+# the whole app crate (tauri, tract-onnx, rodio, ...) — takes minutes. Also
+# runs src-tauri's `build.rs` (tauri-build), which validates the gpu-feeder
+# externalBin; if that fails on a fresh checkout, run
+# `node ../../src-tauri/scripts/stage-gpu-feeder.mjs` first (from repo root).
+g-maiden = { path = "../../src-tauri" }
 
 [profile.release]
 opt-level = 3
