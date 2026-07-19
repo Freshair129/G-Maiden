@@ -105,7 +105,7 @@
 - [x] Stat toggles รายตัว + custom overlay positioning + saved profiles (v0.6.0)
 - [x] **G-Damage** burst-damage calculator (v0.6.0) — [`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs)
 - [x] **Announcer event pack system** — full GSI event taxonomy (kill / multi-kill / streak
-      ladder sync กับ kill banner) + `POST /announcer/install` สำหรับ **G-AnnStudio** (v0.7.5) — [`announcer.rs`](file:///g:/G-Maiden/src-tauri/src/announcer.rs), [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs)
+      ladder sync กับ kill banner) + `POST /announcer/install` สำหรับ **G-AnnStudio** (v0.7.5) — [`announcer.rs`](file:///g:/G-Maiden/src-tauri/src/announcer.rs), [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L3)
 - [x] Master volume + global hotkeys (Ctrl+Alt+S, Alt+↑/↓, Alt+M) (v0.7.5) — [`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs)
 - [x] G-Master backend picker: auto / Claude / **Ollama offline** ([`slm.rs`](file:///g:/G-Maiden/src-tauri/src/slm.rs)) (v0.7.5)
 - [x] Capture switch WGC → **DXGI Desktop Duplication** ([[ADR-13-dxgi-capture-migration|ADR-13]] / [[CR-001-REVIEW-and-execution-plan|CR-001]]; WGC เก็บหลัง

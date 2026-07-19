@@ -709,7 +709,7 @@ Deck nav    ─ Voice Packs ───────► Store (catalog จาก Su
 - Grid ของที่เป็นเจ้าของ; แต่ละใบ: banner, ชื่อ, source badge (ซื้อ/ของขวัญ/starter), วันที่ได้
 - ปุ่มตามสถานะ local: `ติดตั้ง` (เรียก `pack-download` → ดาวน์โหลด → `POST /announcer/install`
   ที่ **:3000 endpoint เดิม** — ใช้ pipeline ติดตั้งเดียวกับ G-AnnStudio ทุกอย่าง) →
-  `ใช้งาน` (activate ผ่านกลไก active pack ใน [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs) เดิม) → `✓ กำลังใช้งาน`
+  `ใช้งาน` (activate ผ่านกลไก active pack ใน [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L3) เดิม) → `✓ กำลังใช้งาน`
 - แถวบน: ช่อง **แลกโค้ด** (input + ปุ่มแลก) — ผลสำเร็จเด้งการ์ดใหม่เข้า grid ทันที
 
 ### 3.5 History (ประวัติธุรกรรม)

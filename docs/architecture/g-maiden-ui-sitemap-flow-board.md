@@ -169,7 +169,7 @@ Layout Editor.
 
 | Component | Purpose | UI notes |
 | --- | --- | --- |
-| `OverlayAlertBanner` | Critical danger / gank warnings | Top-center, short pulse, strong contrast. **Announcer pack banner layer:** เมื่อ event ยิงและ pack ที่ active map รูปไว้ → render banner image ของ pack ([`packBanner`](file:///g:/G-Maiden/src/src/App.tsx#L393) ใน [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) ผ่าน event `announcer-banner`) — priority เหนือ lettered kill-banner (แทน card เดิม) |
+| `OverlayAlertBanner` | Critical danger / gank warnings | Top-center, short pulse, strong contrast. **Announcer pack banner layer:** เมื่อ event ยิงและ pack ที่ active map รูปไว้ → render banner image ของ pack ([`packBanner`](file:///g:/G-Maiden/src/src/App.tsx) ใน [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) ผ่าน event `announcer-banner`) — priority เหนือ lettered kill-banner (แทน card เดิม) |
 | `AdvicePanel` | Maiden guidance (G-Master) | Small portrait, waveform, confidence, dismiss state; 20s auto-dismiss |
 | `GMeter` | Continuous risk gauge (G-Sentry missing + G-Signal alert) | 4-segment LED (ปลอดภัย/ระวัง/เสี่ยง/อันตราย); ไม่แสดง % — gradient only |
 | `VoiceToast` | On-screen mirror of last voice event | Silent fallback when voice pack ยังไม่มา; auto-dismiss |

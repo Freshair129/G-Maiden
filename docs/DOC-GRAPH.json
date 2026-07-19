@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-19T12:15:20.333Z",
+  "generatedAt": "2026-07-19T13:05:35.091Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -652,6 +652,16 @@
       "path": "src-tauri/src/revive.rs"
     },
     {
+      "id": "src-tauri/src/voice_api/banner.rs",
+      "type": "code",
+      "path": "src-tauri/src/voice_api/banner.rs"
+    },
+    {
+      "id": "src-tauri/src/voice_api/commands.rs",
+      "type": "code",
+      "path": "src-tauri/src/voice_api/commands.rs"
+    },
+    {
       "id": "src/src/live/",
       "type": "code",
       "path": "src/src/live/"
@@ -757,6 +767,11 @@
       "path": "src-tauri/src/announcer.rs"
     },
     {
+      "id": "src-tauri/src/voice_api/mod.rs",
+      "type": "code",
+      "path": "src-tauri/src/voice_api/mod.rs"
+    },
+    {
       "id": "src/src/live/phase.ts",
       "type": "code",
       "path": "src/src/live/phase.ts"
@@ -775,6 +790,11 @@
       "id": "src/src/secureStorage.ts",
       "type": "code",
       "path": "src/src/secureStorage.ts"
+    },
+    {
+      "id": "src-tauri/src/voice_api/tests.rs",
+      "type": "code",
+      "path": "src-tauri/src/voice_api/tests.rs"
     },
     {
       "id": "src-tauri/src/audio.rs",
@@ -965,6 +985,11 @@
       "id": "tools/analyze-log/analyze.py",
       "type": "code",
       "path": "tools/analyze-log/analyze.py"
+    },
+    {
+      "id": "src-tauri/src/voice_api/path_safety.rs",
+      "type": "code",
+      "path": "src-tauri/src/voice_api/path_safety.rs"
     },
     {
       "id": "tools/telemetry/ocr-test",
@@ -1647,6 +1672,24 @@
     },
     {
       "from": "docs/architecture/design-system.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 35
+    },
+    {
+      "from": "docs/architecture/design-system.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 35
+    },
+    {
+      "from": "docs/architecture/design-system.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 35
+    },
+    {
+      "from": "docs/architecture/design-system.md",
       "to": "src/src/companion.ts",
       "type": "symbol",
       "line": 306
@@ -1854,6 +1897,18 @@
       "to": "src/src/shortcuts.ts",
       "type": "symbol",
       "line": 49
+    },
+    {
+      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 172
+    },
+    {
+      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 172
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -2079,13 +2134,55 @@
     },
     {
       "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 47
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 47
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 51
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 51
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
       "to": "src-tauri/src/setup.rs",
       "type": "symbol",
       "line": 55
     },
     {
       "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 59
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 59
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
       "to": "src-tauri/src/gsi.rs",
+      "type": "symbol",
+      "line": 63
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
       "type": "symbol",
       "line": 63
     },
@@ -2103,6 +2200,12 @@
     },
     {
       "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 81
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
       "to": "src-tauri/src/setup.rs",
       "type": "symbol",
       "line": 87
@@ -2112,6 +2215,60 @@
       "to": "src-tauri/src/setup.rs",
       "type": "symbol",
       "line": 87
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 94
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 104
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 108
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 112
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 116
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 120
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 132
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 138
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 144
     },
     {
       "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
@@ -2154,6 +2311,30 @@
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
       "line": 181
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 200
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 204
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 211
+    },
+    {
+      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 215
     },
     {
       "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
@@ -2286,6 +2467,30 @@
       "to": "src/src/App.tsx",
       "type": "symbol",
       "line": 124
+    },
+    {
+      "from": "docs/audits/2026-07-07-independent-full-audit.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 138
+    },
+    {
+      "from": "docs/audits/2026-07-07-independent-full-audit.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 138
+    },
+    {
+      "from": "docs/audits/2026-07-07-independent-full-audit.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 138
+    },
+    {
+      "from": "docs/audits/2026-07-07-independent-full-audit.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 140
     },
     {
       "from": "docs/audits/2026-07-07-independent-full-audit.md",
@@ -2697,6 +2902,12 @@
     },
     {
       "from": "docs/change request/CR-003-account-phase1-wallet-billing.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 712
+    },
+    {
+      "from": "docs/change request/CR-003-account-phase1-wallet-billing.md",
       "to": "src/src/wallet.ts",
       "type": "symbol",
       "line": 737
@@ -3039,6 +3250,36 @@
     },
     {
       "from": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 99
+    },
+    {
+      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 102
+    },
+    {
+      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "to": "src-tauri/src/voice_api/mod.rs",
+      "type": "symbol",
+      "line": 118
+    },
+    {
+      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 123
+    },
+    {
+      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 127
+    },
+    {
+      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
       "to": "src/src/live/phase.ts",
       "type": "symbol",
       "line": 137
@@ -3225,13 +3466,73 @@
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 9
+    },
+    {
+      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
       "line": 36
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "to": "src-tauri/src/voice_api/mod.rs",
+      "type": "symbol",
+      "line": 36
+    },
+    {
+      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 36
+    },
+    {
+      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 40
+    },
+    {
+      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 61
+    },
+    {
+      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 70
+    },
+    {
+      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 71
+    },
+    {
+      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 72
+    },
+    {
+      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "to": "src-tauri/src/voice_api/tests.rs",
+      "type": "symbol",
+      "line": 77
+    },
+    {
+      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/gsi.rs",
+      "type": "symbol",
+      "line": 98
+    },
+    {
+      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "to": "src-tauri/src/voice_api/mod.rs",
       "type": "symbol",
       "line": 98
     },
@@ -5091,6 +5392,12 @@
     },
     {
       "from": "docs/design-system/05-sitemap-ia.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 136
+    },
+    {
+      "from": "docs/design-system/05-sitemap-ia.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
       "line": 173
@@ -6036,6 +6343,18 @@
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
       "line": 48
+    },
+    {
+      "from": "docs/features/FEAT-G-SENSORY.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 69
+    },
+    {
+      "from": "docs/features/FEAT-G-SENSORY.md",
+      "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 69
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
@@ -7119,6 +7438,12 @@
     },
     {
       "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 108
+    },
+    {
+      "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
       "line": 109
@@ -7497,9 +7822,57 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/mod.rs",
+      "type": "symbol",
+      "line": 3
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/audio.rs",
       "type": "symbol",
       "line": 6
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 6
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 7
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 9
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 10
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 10
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 12
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 16
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -7509,9 +7882,141 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 20
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 21
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 23
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 24
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 25
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 25
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 26
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
       "line": 28
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/mod.rs",
+      "type": "symbol",
+      "line": 32
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 37
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 41
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 42
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 51
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 55
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 55
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/path_safety.rs",
+      "type": "symbol",
+      "line": 58
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 60
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 60
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 60
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 61
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 61
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 61
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 61
     },
     {
       "from": "docs/reference/dota-ui/README.md",
@@ -7607,27 +8112,9 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/architecture/design-system.md",
-      "line": 35,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/architecture/design-system.md",
-      "line": 35,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
       "file": "docs/architecture/engineering-spec.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "line": 172,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
     },
     {
       "file": "docs/architecture/implementation-plan.md",
@@ -7655,195 +8142,9 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 47,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 47,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 51,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 51,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 59,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 59,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 63,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 81,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 94,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 104,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 108,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 112,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 116,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 120,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 132,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 138,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 144,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 200,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 204,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 211,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 215,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/audits/2026-07-07-independent-full-audit.md",
-      "line": 138,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/audits/2026-07-07-independent-full-audit.md",
-      "line": 138,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/audits/2026-07-07-independent-full-audit.md",
-      "line": 138,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/audits/2026-07-07-independent-full-audit.md",
-      "line": 140,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
-    },
-    {
-      "file": "docs/change request/CR-003-account-phase1-wallet-billing.md",
-      "line": 712,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
       "file": "docs/change request/CR-004-voice-command-browser.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": 99,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": 102,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": 118,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": 123,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": 127,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
@@ -7854,66 +8155,6 @@
       "file": "docs/change request/CR-008-login-hardening.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 9,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 36,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 36,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 40,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 61,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 70,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 71,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 72,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 77,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 98,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
     },
     {
       "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
@@ -7934,12 +8175,6 @@
       "file": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/design-system/05-sitemap-ia.md",
-      "line": 136,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
     },
     {
       "file": "docs/features/FEAT-G-COACH.md",
@@ -7985,12 +8220,6 @@
       "file": "docs/features/FEAT-G-SCORE.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/features/FEAT-G-SENSORY.md",
-      "line": 69,
-      "reason": "bad-anchor",
-      "target": "src/src/App.tsx"
     },
     {
       "file": "docs/features/FEAT-G-SENSORY.md",
@@ -8064,12 +8293,6 @@
     },
     {
       "file": "docs/product/roadmap.md",
-      "line": 108,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/product/roadmap.md",
       "line": null,
       "reason": "no-metadata"
     },
@@ -8077,186 +8300,6 @@
       "file": "docs/product/software-requirements-specification.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 3,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 6,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 7,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 9,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 10,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 10,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 12,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 16,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 20,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 21,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 23,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 24,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 25,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 25,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 26,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 32,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 37,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 41,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 42,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 51,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 55,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 55,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 58,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 60,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 60,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 60,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 61,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 61,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 61,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 61,
-      "reason": "missing-file",
-      "target": "src-tauri/src/voice_api.rs"
     },
     {
       "file": "docs/reference/dota-ui/README.md",

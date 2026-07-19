@@ -32,7 +32,7 @@ attributes:
 
 - Control dashboard = **Maiden Command Deck**: หนักแน่น, premium, card-based, เหมือน game companion hub
 - In-game overlay = **Maiden Combat HUD**: เบา, โปร่ง, peripheral-first, ไม่แย่งสมาธิจาก Dota 2
-- Design tokens ต้องต่อยอดจาก implementation ปัจจุบันใน [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) ([`C`](file:///g:/G-Maiden/src/src/App.tsx#L187), [`panel(op)`](file:///g:/G-Maiden/src/src/App.tsx#L276), glassmorphism)
+- Design tokens ต้องต่อยอดจาก implementation ปัจจุบันใน [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) ([`C`](file:///g:/G-Maiden/src/src/App.tsx#L2), [`panel(op)`](file:///g:/G-Maiden/src/src/App.tsx), glassmorphism)
 - ทุก UI decision ต้องไม่ละเมิด NFR: FPS drop <=3%, CPU <=2.5%, RAM <=400MB, และไม่บัง minimap/skill bar/stats panel
 
 ## 2. Source References

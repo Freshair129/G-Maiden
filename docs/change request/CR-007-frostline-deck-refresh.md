@@ -96,10 +96,10 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
   legacy flat `voice-cache/` tree (including non-event dirs like `packs/` and
   `imports/`) and never activated the pack, so CLAUDE.md's "picked up live"
   claim was false. Fixed: the handler now reads `packId` (falls back to legacy
-  `pack`), auto-activates via [`voice_api::activate_if_exists`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs#L979) (default
+  `pack`), auto-activates via [`voice_api::activate_if_exists`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L182) (default
   `activate: true`, opt out with `"activate": false`), and returns real
   per-event counts + `unmappedEvents` + `missingClips` from
-  [`voice_api::install_report`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs#L925), which resolves the pack's manifest against disk
+  [`voice_api::install_report`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L128), which resolves the pack's manifest against disk
   the same way live playback does. **Constraint that shaped the design:** :3000
   has no auth, so any local process can POST here — activation only ever
   targets a pack that already has a readable `manifest.json` on disk, and the
@@ -115,16 +115,16 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
   any file on disk (played via `audio::play_file`) or point a banner/cover at
   any file (base64-inlined onto the Tauri event bus, reachable just by opening
   Audio Settings, not only on a fired event). Fixed via one shared helper,
-  [`voice_api::safe_pack_path(pack_dir, rel) -> Option<PathBuf>`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs#L726): rejects
+  [`voice_api::safe_pack_path(pack_dir, rel) -> Option<PathBuf>`](file:///g:/G-Maiden/src-tauri/src/voice_api/mod.rs): rejects
   drive/UNC/verbatim prefixes, leading `/`/`\`, and any `..` component via
   parsed `Path::components()` (not substring matching), and — only when the
   target exists as a file — canonicalizes both the pack dir and the candidate
   and requires containment, which is what catches a symlink planted inside a
-  pack whose target escapes it. Every manifest-string join in [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs)
+  pack whose target escapes it. Every manifest-string join in [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L3)
   (`resolve_existing_clips`/`active_event_clips`, `fired_banner_from`,
   `preview_clip`, `install_report`, and `build_pack`'s `cover_image`/
   `clip_options`/`banner_url` — i.e. the pack-listing path `state()` hits too,
-  not just the fire path) now goes through it. Separately, [`import_archive`](file:///g:/G-Maiden/src-tauri/src/voice_api.rs#L510)'s
+  not just the fire path) now goes through it. Separately, [`import_archive`](file:///g:/G-Maiden/src-tauri/src/voice_api/commands.rs#L139)'s
   `Expand-Archive` PowerShell shell-out (whose safety depended entirely on the
   .NET implementation) was replaced with in-process extraction using the `zip`
   crate (already pulled in transitively via `tauri-plugin-updater`, now an

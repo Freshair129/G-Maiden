@@ -66,7 +66,7 @@ Global shortcuts จริงจาก [`main.rs`](file:///g:/G-Maiden/src-tauri
 
 - UI state → React overlay (Tauri events: `listen('core-event', ...)`)
 - Render commands → GPU-composited transparent window
-- Announcer pack banner → overlay ([`packBanner`](file:///g:/G-Maiden/src/src/App.tsx#L393) ใน [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx), driven โดย
+- Announcer pack banner → overlay ([`packBanner`](file:///g:/G-Maiden/src/src/App.tsx) ใน [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx), driven โดย
   `announcer-banner` event; รูปของ pack แทน built-in kill card เมื่อ event fire)
 - [`ResourceStats { ram_mb, cpu_pct, over_budget, gpu_pct, gpu_temp_c, vram_used_mb, vram_total_mb }`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L87)
   (ทั้งหมด `f64`, [`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs)) → emit `resource-stats` ไปยัง control window
