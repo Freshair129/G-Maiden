@@ -15,9 +15,9 @@ use windows::core::{Interface, BOOL};
 use windows::Win32::Foundation::{CloseHandle, HMODULE, HWND, LPARAM, RECT};
 use windows::Win32::Graphics::Direct3D::{D3D_DRIVER_TYPE_HARDWARE, D3D_FEATURE_LEVEL_11_0};
 use windows::Win32::Graphics::Direct3D11::{
-    D3D11CreateDevice, ID3D11Device, ID3D11DeviceContext, ID3D11Texture2D, D3D11_CPU_ACCESS_READ,
-    D3D11_CREATE_DEVICE_BGRA_SUPPORT, D3D11_MAPPED_SUBRESOURCE, D3D11_MAP_READ, D3D11_SDK_VERSION,
-    D3D11_TEXTURE2D_DESC, D3D11_USAGE_STAGING,
+    D3D11CreateDevice, ID3D11Device, ID3D11DeviceContext, ID3D11Texture2D, D3D11_BOX,
+    D3D11_CPU_ACCESS_READ, D3D11_CREATE_DEVICE_BGRA_SUPPORT, D3D11_MAPPED_SUBRESOURCE,
+    D3D11_MAP_READ, D3D11_SDK_VERSION, D3D11_TEXTURE2D_DESC, D3D11_USAGE_STAGING,
 };
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_SAMPLE_DESC};
 use windows::Win32::Graphics::Dxgi::{
@@ -64,6 +64,12 @@ pub struct DxgiCapture {
     device: ID3D11Device,
     context: ID3D11DeviceContext,
     staging: ID3D11Texture2D,
+    /// Rect-local staging textures for [`Self::acquire_rect`], cached by
+    /// `(w, h)` — at most a couple of distinct sizes are ever requested
+    /// (minimap square, draft-pick strip), so each is created once on first
+    /// use in [`Self::copy_rect`] and reused after, same as `staging` above
+    /// is for the full-desktop path.
+    rect_staging: std::collections::HashMap<(u32, u32), ID3D11Texture2D>,
     /// Kept so the duplication can be rebuilt after `DXGI_ERROR_ACCESS_LOST`.
     output1: IDXGIOutput1,
     width: u32,
@@ -110,6 +116,20 @@ struct FrameDiag {
     copied: u32,
     /// CR012-P2-01: frames served via the GDI `BitBlt` fallback this window.
     gdi_copied: u32,
+    /// Successful [`DxgiCapture::acquire_rect`] rect copies this window
+    /// (the rect-path counterpart of `copied` above).
+    copied_rect: u32,
+    /// Accumulated wall-clock time (ms) spent inside `copy_frame` — the GPU
+    /// `CopyResource` + `Map`/row-copy/`Unmap` of the FULL desktop — plus how
+    /// many times it ran this window, so `maybe_log` can print an average.
+    /// Nothing timed this before (CR-live-probe-rect gap); acquire_frame's
+    /// behavior/return value is unchanged, only this bookkeeping is new.
+    copy_full_ms_total: f64,
+    copy_full_count: u32,
+    /// Same as above but for `copy_rect` — the `CopySubresourceRegion`-based
+    /// RECT copy used by `acquire_rect`.
+    copy_rect_ms_total: f64,
+    copy_rect_count: u32,
     last_err: String,
     last_log: std::time::Instant,
 }
@@ -124,16 +144,32 @@ impl FrameDiag {
             present0: 0,
             copied: 0,
             gdi_copied: 0,
+            copied_rect: 0,
+            copy_full_ms_total: 0.0,
+            copy_full_count: 0,
+            copy_rect_ms_total: 0.0,
+            copy_rect_count: 0,
             last_err: String::new(),
             last_log: std::time::Instant::now(),
         }
     }
     fn maybe_log(&mut self) {
         if self.last_log.elapsed().as_millis() >= 5000 {
+            let full_avg_ms = if self.copy_full_count > 0 {
+                self.copy_full_ms_total / self.copy_full_count as f64
+            } else {
+                0.0
+            };
+            let rect_avg_ms = if self.copy_rect_count > 0 {
+                self.copy_rect_ms_total / self.copy_rect_count as f64
+            } else {
+                0.0
+            };
             crate::log::error(&format!(
-                "[dxgi] frames/5s: calls={} acquired={} timeout={} access_lost={} other_err={} present0={} copied={} gdi_copied={} last_err='{}'",
+                "[dxgi] frames/5s: calls={} acquired={} timeout={} access_lost={} other_err={} present0={} copied={} copied_rect={} gdi_copied={} copy_full_avg_ms={:.2} copy_rect_avg_ms={:.2} last_err='{}'",
                 self.calls, self.acquired, self.timeout, self.access_lost,
-                self.other_err, self.present0, self.copied, self.gdi_copied, self.last_err
+                self.other_err, self.present0, self.copied, self.copied_rect, self.gdi_copied,
+                full_avg_ms, rect_avg_ms, self.last_err
             ));
             self.calls = 0;
             self.acquired = 0;
@@ -143,10 +179,46 @@ impl FrameDiag {
             self.present0 = 0;
             self.copied = 0;
             self.gdi_copied = 0;
+            self.copied_rect = 0;
+            self.copy_full_ms_total = 0.0;
+            self.copy_full_count = 0;
+            self.copy_rect_ms_total = 0.0;
+            self.copy_rect_count = 0;
             self.last_err.clear();
             self.last_log = std::time::Instant::now();
         }
     }
+}
+
+/// Outcome of the shared `AcquireNextFrame` plumbing in
+/// [`DxgiCapture::acquire_next_frame`]. Every variant other than `Resource`
+/// has already had its matching `ReleaseFrame` (if any) called internally —
+/// callers only own releasing the `Resource` case, after they've copied it.
+enum AcquireOutcome {
+    /// A fresh frame is ready to copy; the caller must call
+    /// `DxgiCapture::release_frame` afterward, whether or not the copy
+    /// itself succeeds.
+    Resource(IDXGIResource),
+    /// No frame to copy this tick — already fully handled.
+    None,
+}
+
+/// Clamp a requested rect `(x, y, w, h)` to `(screen_w, screen_h)` bounds.
+/// Returns `None` when the rect has zero area after clamping — either it was
+/// requested with `w == 0`/`h == 0`, or its origin already sits at/past the
+/// screen edge. Otherwise returns the (possibly shrunk) `(x, y, w, h)` that
+/// is guaranteed to fit entirely within the screen. Kept free of any Windows
+/// types so it's unit-testable without a real display/GPU.
+fn clamp_rect(x: u32, y: u32, w: u32, h: u32, screen_w: u32, screen_h: u32) -> Option<(u32, u32, u32, u32)> {
+    if w == 0 || h == 0 || x >= screen_w || y >= screen_h {
+        return None;
+    }
+    let cw = w.min(screen_w - x);
+    let ch = h.min(screen_h - y);
+    if cw == 0 || ch == 0 {
+        return None;
+    }
+    Some((x, y, cw, ch))
 }
 
 impl DxgiCapture {
@@ -207,6 +279,7 @@ impl DxgiCapture {
                 device,
                 context,
                 staging,
+                rect_staging: std::collections::HashMap::new(),
                 output1,
                 width,
                 height,
@@ -269,11 +342,109 @@ impl DxgiCapture {
         self.try_dxgi_acquire_once()
     }
 
-    /// One DXGI `AcquireNextFrame` + copy — the exact pre-GDI-fallback path.
-    /// Also drives `consecutive_access_lost` and flips `gdi_mode` on once the
-    /// threshold is hit. Used both for the normal (non-fallback) capture path
-    /// and for the periodic recovery probe while already in GDI mode.
+    /// Grab a rect-local subregion of the desktop as tightly-packed BGRA8
+    /// `(bytes, w, h)` — the clamped rect size, NOT necessarily the requested
+    /// one. `None` on: zero area after clamping the requested rect to screen
+    /// bounds, no new frame within the timeout, or a recoverable error —
+    /// exactly the same "try again next tick" contract as [`Self::acquire_frame`].
+    ///
+    /// Shares the AcquireNextFrame/first-frame-skip/ReleaseFrame plumbing and
+    /// the GDI-fallback routing with `acquire_frame` (see [`Self::acquire_next_frame`]),
+    /// so a rect caller gets the same access-lost resilience for free. The
+    /// copy itself is a GPU `CopySubresourceRegion` into a small staging
+    /// texture cached by `(w, h)` (see [`Self::copy_rect`]) — far cheaper
+    /// than the full-desktop path for a small rect like the minimap.
+    pub fn acquire_rect(&mut self, x: u32, y: u32, w: u32, h: u32) -> Option<(Vec<u8>, u32, u32)> {
+        let (cx, cy, cw, ch) = clamp_rect(x, y, w, h, self.width, self.height)?;
+
+        if self.gdi_mode {
+            self.gdi_probe_tick = self.gdi_probe_tick.wrapping_add(1);
+            if self.gdi_probe_tick.is_multiple_of(GDI_RETRY_INTERVAL) {
+                if let Some(frame) = self.try_dxgi_acquire_rect_once(cx, cy, cw, ch) {
+                    self.gdi_mode = false;
+                    crate::log::error(
+                        "[dxgi] Desktop Duplication recovered — leaving GDI fallback (rect)",
+                    );
+                    return Some(frame);
+                }
+                // Still access-lost (or another transient error) — fall
+                // through to the GDI rect capture below so this tick still
+                // yields a frame instead of a dropped one.
+            }
+            let frame = self.gdi_capture_rect(cx, cy, cw, ch);
+            if frame.is_some() {
+                self.diag.gdi_copied += 1;
+            }
+            self.diag.maybe_log();
+            return frame;
+        }
+
+        self.try_dxgi_acquire_rect_once(cx, cy, cw, ch)
+    }
+
+    /// One DXGI `AcquireNextFrame` + full-desktop copy — the exact
+    /// pre-GDI-fallback path. Used both for the normal (non-fallback) capture
+    /// path and for the periodic recovery probe while already in GDI mode.
     fn try_dxgi_acquire_once(&mut self) -> Option<(Vec<u8>, u32, u32)> {
+        let resource = match self.acquire_next_frame() {
+            AcquireOutcome::Resource(r) => r,
+            AcquireOutcome::None => return None,
+        };
+
+        let t0 = std::time::Instant::now();
+        let result = self.copy_frame(Some(resource));
+        self.diag.copy_full_ms_total += t0.elapsed().as_secs_f64() * 1000.0;
+        self.diag.copy_full_count += 1;
+        // Always release the frame, even if the copy failed, or the next
+        // AcquireNextFrame will deadlock.
+        self.release_frame();
+        if result.is_some() {
+            self.first_frame = false;
+            self.diag.copied += 1;
+        }
+        self.diag.maybe_log();
+        result
+    }
+
+    /// Rect counterpart of `try_dxgi_acquire_once` — same `AcquireNextFrame`
+    /// plumbing via `acquire_next_frame`, but copies only `(x, y, w, h)` via
+    /// `copy_rect`. `x`/`y`/`w`/`h` are assumed already clamped to screen
+    /// bounds by the caller ([`Self::acquire_rect`]).
+    fn try_dxgi_acquire_rect_once(
+        &mut self,
+        x: u32,
+        y: u32,
+        w: u32,
+        h: u32,
+    ) -> Option<(Vec<u8>, u32, u32)> {
+        let resource = match self.acquire_next_frame() {
+            AcquireOutcome::Resource(r) => r,
+            AcquireOutcome::None => return None,
+        };
+
+        let t0 = std::time::Instant::now();
+        let result = self.copy_rect(resource, x, y, w, h);
+        self.diag.copy_rect_ms_total += t0.elapsed().as_secs_f64() * 1000.0;
+        self.diag.copy_rect_count += 1;
+        // Always release the frame, even if the copy failed, or the next
+        // AcquireNextFrame will deadlock.
+        self.release_frame();
+        if result.is_some() {
+            self.first_frame = false;
+            self.diag.copied_rect += 1;
+        }
+        self.diag.maybe_log();
+        result
+    }
+
+    /// Shared `AcquireNextFrame` plumbing — timeout/error handling, the
+    /// GDI-fallback bookkeeping (consecutive access-lost counting + threshold
+    /// flip), and the first-frame skip. This is the ONE place a `ReleaseFrame`
+    /// is paired with every early-out that does NOT return `Resource` below;
+    /// callers only need to release once more, after copying, when they get
+    /// `Resource` back (via [`Self::release_frame`]) — used by both the
+    /// full-frame and rect acquire paths so the 1:1 pairing lives in one spot.
+    fn acquire_next_frame(&mut self) -> AcquireOutcome {
         let mut info = DXGI_OUTDUPL_FRAME_INFO::default();
         let mut resource: Option<IDXGIResource> = None;
 
@@ -306,7 +477,7 @@ impl DxgiCapture {
                 }
             }
             self.diag.maybe_log();
-            return None;
+            return AcquireOutcome::None;
         }
         self.diag.acquired += 1;
         self.consecutive_access_lost = 0;
@@ -322,29 +493,35 @@ impl DxgiCapture {
         if info.LastPresentTime == 0 {
             self.diag.present0 += 1;
             if self.first_frame {
-                // SAFETY: matched 1:1 with the successful AcquireNextFrame above.
-                unsafe {
-                    let _ = self.duplication.ReleaseFrame();
-                }
+                self.release_frame();
                 self.first_frame = false;
                 self.diag.maybe_log();
-                return None;
+                return AcquireOutcome::None;
             }
         }
 
-        let result = self.copy_frame(resource);
-        // Always release the frame, even if the copy failed, or the next
-        // AcquireNextFrame will deadlock.
-        // SAFETY: matched 1:1 with the successful AcquireNextFrame above.
+        match resource {
+            Some(r) => AcquireOutcome::Resource(r),
+            None => {
+                // Contractually AcquireNextFrame's Ok path always yields a
+                // resource, but stay defensive and keep ReleaseFrame 1:1
+                // even if that ever changes.
+                self.release_frame();
+                AcquireOutcome::None
+            }
+        }
+    }
+
+    /// Release the frame most recently returned by a successful
+    /// `AcquireNextFrame` — the ONE place `ReleaseFrame` is called, kept
+    /// 1:1 with every acquire by [`Self::acquire_next_frame`]'s early-outs
+    /// and by both `try_dxgi_acquire_*_once` callers after copying.
+    fn release_frame(&mut self) {
+        // SAFETY: only ever called after a successful AcquireNextFrame whose
+        // frame hasn't yet been released this tick.
         unsafe {
             let _ = self.duplication.ReleaseFrame();
         }
-        if result.is_some() {
-            self.first_frame = false;
-            self.diag.copied += 1;
-        }
-        self.diag.maybe_log();
-        result
     }
 
     /// GDI `BitBlt` fallback capture of the monitor this instance was opened
@@ -442,6 +619,92 @@ impl DxgiCapture {
         }
     }
 
+    /// GDI `BitBlt` fallback capture of just `(x, y, w, h)` (already
+    /// screen-clamped by the caller), used by [`Self::acquire_rect`] when
+    /// Desktop Duplication is in the same give-up state that routes
+    /// `acquire_frame` to [`Self::gdi_capture`]. Without this the rect path
+    /// would silently fall through to a full-desktop-cost capture whenever
+    /// DXGI is unavailable — this keeps the rect path's fallback cost
+    /// proportional to the rect, same as the DXGI path is.
+    fn gdi_capture_rect(&self, x: u32, y: u32, w: u32, h: u32) -> Option<(Vec<u8>, u32, u32)> {
+        let bw = w as i32;
+        let bh = h as i32;
+
+        // SAFETY: same create/select/restore/delete/release protocol as
+        // `gdi_capture` above, just BitBlt-ing a sub-rect instead of the
+        // full monitor; every handle created below is released on every
+        // exit path via the tail cleanup block.
+        unsafe {
+            let screen_dc = GetDC(None);
+            if screen_dc.is_invalid() {
+                return None;
+            }
+            let mem_dc = CreateCompatibleDC(Some(screen_dc));
+            if mem_dc.is_invalid() {
+                let _ = ReleaseDC(None, screen_dc);
+                return None;
+            }
+            let bitmap = CreateCompatibleBitmap(screen_dc, bw, bh);
+            if bitmap.is_invalid() {
+                let _ = DeleteDC(mem_dc);
+                let _ = ReleaseDC(None, screen_dc);
+                return None;
+            }
+
+            let old_obj = SelectObject(mem_dc, bitmap.into());
+
+            let blt_ok = BitBlt(
+                mem_dc,
+                0,
+                0,
+                bw,
+                bh,
+                Some(screen_dc),
+                self.desktop_left + x as i32,
+                self.desktop_top + y as i32,
+                SRCCOPY,
+            )
+            .is_ok();
+
+            let result = if blt_ok {
+                let mut bmi = BITMAPINFO::default();
+                bmi.bmiHeader.biSize = std::mem::size_of::<BITMAPINFOHEADER>() as u32;
+                bmi.bmiHeader.biWidth = bw;
+                bmi.bmiHeader.biHeight = -bh; // negative = top-down, matches DXGI layout
+                bmi.bmiHeader.biPlanes = 1;
+                bmi.bmiHeader.biBitCount = 32;
+                bmi.bmiHeader.biCompression = BI_RGB.0;
+
+                let mut out = vec![0u8; w as usize * h as usize * 4];
+                let lines = GetDIBits(
+                    mem_dc,
+                    bitmap,
+                    0,
+                    bh as u32,
+                    Some(out.as_mut_ptr() as *mut core::ffi::c_void),
+                    &mut bmi,
+                    DIB_RGB_COLORS,
+                );
+                if lines > 0 {
+                    Some((out, w, h))
+                } else {
+                    None
+                }
+            } else {
+                None
+            };
+
+            // Tail cleanup — reached on every path that got this far
+            // (success or `BitBlt`/`GetDIBits` failure alike).
+            SelectObject(mem_dc, old_obj);
+            let _ = DeleteObject(bitmap.into());
+            let _ = DeleteDC(mem_dc);
+            let _ = ReleaseDC(None, screen_dc);
+
+            result
+        }
+    }
+
     /// Copy the acquired desktop texture into our CPU-readable staging texture and
     /// read it out as tightly-packed BGRA8.
     fn copy_frame(&mut self, resource: Option<IDXGIResource>) -> Option<(Vec<u8>, u32, u32)> {
@@ -478,6 +741,90 @@ impl DxgiCapture {
 
             self.context.Unmap(&self.staging, 0);
             Some((out, self.width, self.height))
+        }
+    }
+
+    /// Copy just `(x, y, w, h)` of the acquired desktop texture via GPU
+    /// `CopySubresourceRegion` into a small staging texture cached by
+    /// `(w, h)` — created on first use, reused after (at most a couple of
+    /// distinct sizes ever occur: minimap square, draft-pick strip) — then
+    /// read it out as tightly-packed BGRA8, rect-sized. `x`/`y`/`w`/`h` are
+    /// assumed already clamped to screen bounds by the caller.
+    fn copy_rect(
+        &mut self,
+        resource: IDXGIResource,
+        x: u32,
+        y: u32,
+        w: u32,
+        h: u32,
+    ) -> Option<(Vec<u8>, u32, u32)> {
+        let desktop: ID3D11Texture2D = resource.cast().ok()?;
+
+        if !self.rect_staging.contains_key(&(w, h)) {
+            // SAFETY: `device` outlives the texture; the Result is checked
+            // before it's ever inserted/used.
+            match unsafe { create_staging_texture(&self.device, w, h) } {
+                Ok(tex) => {
+                    self.rect_staging.insert((w, h), tex);
+                }
+                Err(e) => {
+                    crate::log::error(&format!(
+                        "[dxgi] create_staging_texture rect {w}x{h} failed: {e}"
+                    ));
+                    return None;
+                }
+            }
+        }
+        // Just inserted above if missing, so this is always present.
+        let staging = self.rect_staging.get(&(w, h))?;
+
+        let region = D3D11_BOX {
+            left: x,
+            top: y,
+            front: 0,
+            right: x + w,
+            bottom: y + h,
+            back: 1,
+        };
+
+        // SAFETY: `staging` is a same-format ((w,h)-sized) texture cached
+        // above; `desktop` is the live desktop texture for this tick. Map
+        // yields a CPU pointer valid until Unmap, which we always pair below.
+        unsafe {
+            self.context.CopySubresourceRegion(
+                staging,
+                0,
+                0,
+                0,
+                0,
+                &desktop,
+                0,
+                Some(&region as *const _),
+            );
+
+            let mut mapped = D3D11_MAPPED_SUBRESOURCE::default();
+            self.context
+                .Map(staging, 0, D3D11_MAP_READ, 0, Some(&mut mapped))
+                .ok()?;
+
+            let tight = w as usize * 4;
+            let row_pitch = mapped.RowPitch as usize;
+            let src = mapped.pData as *const u8;
+            let mut out = vec![0u8; tight * h as usize];
+
+            if row_pitch == tight {
+                std::ptr::copy_nonoverlapping(src, out.as_mut_ptr(), tight * h as usize);
+            } else {
+                // GPU rows are padded to a stride; copy each row without its padding.
+                for row in 0..h as usize {
+                    let s = src.add(row * row_pitch);
+                    let d = out.as_mut_ptr().add(row * tight);
+                    std::ptr::copy_nonoverlapping(s, d, tight);
+                }
+            }
+
+            self.context.Unmap(staging, 0);
+            Some((out, w, h))
         }
     }
 
@@ -810,6 +1157,36 @@ mod tests {
         assert!(point_in_rect(cx, cy, secondary));
     }
 
+    #[test]
+    fn clamp_rect_fits_within_bounds() {
+        // Fully inside — unchanged.
+        assert_eq!(clamp_rect(0, 788, 292, 292, 1920, 1080), Some((0, 788, 292, 292)));
+    }
+
+    #[test]
+    fn clamp_rect_shrinks_when_overhanging() {
+        // Requested rect runs past the right/bottom edge — shrunk to fit.
+        assert_eq!(
+            clamp_rect(1900, 1060, 292, 292, 1920, 1080),
+            Some((1900, 1060, 20, 20))
+        );
+    }
+
+    #[test]
+    fn clamp_rect_zero_area_after_clamp_is_none() {
+        // Requested size is zero outright.
+        assert_eq!(clamp_rect(0, 0, 0, 292, 1920, 1080), None);
+        assert_eq!(clamp_rect(0, 0, 292, 0, 1920, 1080), None);
+    }
+
+    #[test]
+    fn clamp_rect_origin_off_screen_is_none() {
+        // Origin already at/past the screen edge — nothing to clamp into.
+        assert_eq!(clamp_rect(1920, 0, 10, 10, 1920, 1080), None);
+        assert_eq!(clamp_rect(0, 1080, 10, 10, 1920, 1080), None);
+        assert_eq!(clamp_rect(5000, 5000, 10, 10, 1920, 1080), None);
+    }
+
     // These need a real display + GPU, so they are #[ignore] by default. DXGI
     // allows only ONE duplication per output, so they must run serially. Run on a
     // desktop session with:
@@ -855,5 +1232,25 @@ mod tests {
             std::thread::sleep(std::time::Duration::from_millis(16));
         }
         panic!("no frame captured");
+    }
+
+    #[test]
+    #[ignore = "requires a real display/GPU"]
+    fn acquire_rect_returns_rect_sized_buffer() {
+        let mut cap = DxgiCapture::new(0).expect("init primary monitor");
+        let side = 292u32;
+        let y = cap.height() - side;
+        for _ in 0..30 {
+            if let Some((buf, w, h)) = cap.acquire_rect(0, y, side, side) {
+                assert_eq!(w, side);
+                assert_eq!(h, side);
+                assert_eq!(buf.len(), side as usize * side as usize * 4);
+                if buf.iter().any(|&b| b != 0) {
+                    return;
+                }
+            }
+            std::thread::sleep(std::time::Duration::from_millis(16));
+        }
+        panic!("no non-blank rect frame captured");
     }
 }

@@ -11,7 +11,7 @@ The path spans 6 hops from raw GSI JSON to audio playback:
 
 | Hop | Module | Measurement | Wiring |
 |-----|--------|-------------|--------|
-| 1 | **G-Sensory** (DXGI) | minimap frame ready from GPU capture | SKIP (headless) |
+| 1b | **G-Sensory** (DXGI) | minimap-**rect** frame ready from GPU capture (production path — `acquire_rect` over the `MinimapRegion`, since the capture-switch task) | SKIP (headless) |
 | 2 | **G-Vision** (CV) | enemy icon detection via ONNX minimap classifier | WIRED |
 | 3 | **G-Motion** | gank-probability assessment from 5-min enemy history | WIRED |
 | 4 | **G-Signal** | threshold check + Belief Revision state machine | WIRED |
@@ -19,9 +19,16 @@ The path spans 6 hops from raw GSI JSON to audio playback:
 | 6 | **audio output** | device callback pulls first sample ("first audible") | SKIP (headless) |
 
 **Hops 2-5** run headless in `latency_harness` and measure real wall-clock time.
-**Hops 1 and 6** require a live display and audio device, so they report SKIP on CI but are measured by `latency_live` on a developer machine.
+**Hop 1b and hop 6** require a live display and audio device, so they report SKIP on CI but are measured by `latency_live` on a developer machine.
 
-The gate sums measured hops (2-5) + budget for SKIP hops (1, 6) and checks against the p99 ceiling. If a SKIP hop later blows its budget in real play, `latency_live` is what catches it.
+The gate sums measured hops (2-5) + budget for SKIP hops (1b, 6) and checks against the p99 ceiling. If a SKIP hop later blows its budget in real play, `latency_live` is what catches it.
+
+> **1a vs 1b.** `latency_live` actually measures *two* hop-1 series: **1a** is the
+> old full-desktop `acquire_frame()` copy (legacy path, now **informational only** —
+> status `INFO`, no budget/verdict, since production no longer full-copies outside
+> calibration mode) and **1b** is `acquire_rect()` over the exact `MinimapRegion` the
+> CV pipeline crops in production. The 30ms Engineering Spec §1 budget — and the
+> gate's exit verdict — apply to **1b**, not 1a.
 
 ## Running the gate
 
@@ -52,14 +59,17 @@ cargo run --release --manifest-path tests/perf/Cargo.toml
 cargo run --release --manifest-path tests/perf/Cargo.toml --bin latency_live
 ```
 
-Probes hops 1 and 6 independently. Each hop self-detects whether its device exists and reports SKIP if not.
+Probes hop 1 (as **1a** full-frame legacy + **1b** minimap-rect production, both off one
+`DxgiCapture` instance) and hop 6 independently. Each series self-detects whether its device
+exists and reports SKIP if not.
 
 > **Hop 1 caveat — run it with screen content changing.** DXGI Desktop Duplication only
 > delivers a frame when the screen actually repaints. On an idle desktop the acquire loop is
 > dominated by waiting for the next repaint (timeouts, `present0` frames), which inflates
 > hop-1 p99 far beyond real capture cost — a FAIL on an idle desktop is expected and is *not*
-> a capture regression. The meaningful hop-1 number comes from running the probe while
-> content updates continuously (a game, a video, or a fullscreen animation). In-game, Dota
+> a capture regression. This applies to **both 1a and 1b** — they share the same repaint-wait
+> reality, only the copy size differs. The meaningful hop-1 number comes from running the probe
+> while content updates continuously (a game, a video, or a fullscreen animation). In-game, Dota
 > presents at 60–144 fps, so a new frame is available every ~7–16 ms.
 
 **Exit codes:**
@@ -67,19 +77,21 @@ Probes hops 1 and 6 independently. Each hop self-detects whether its device exis
 - `1` – LATENCY_LIVE FAIL: at least one live hop exceeded its budget
 - `77` – LATENCY_LIVE SKIP/PARTIAL: at least one probe could not measure (missing display or audio device) and none failed — a partially-measured run never reads as a full pass
 
-**Runtime:** ~25–30 seconds (100 DXGI frame acquisitions + 30 audio plays).
+**Runtime:** ~25–30 seconds with active screen content (100 DXGI frame acquisitions each for 1a
+and 1b, + 30 audio plays); up to ~70s if the desktop is idle enough for either capture series to
+hit its 20s wall-clock cap.
 
 ## The two-machine story
 
 **Headless CI** (e.g., GitHub Actions runner):
 - Runs `latency_harness` only (hops 2-5 wired).
-- Reports hops 1 and 6 as SKIP with their budgets (30 ms + 40 ms = 70 ms) factored into the gate math.
+- Reports hops 1b and 6 as SKIP with their budgets (30 ms + 40 ms = 70 ms) factored into the gate math.
 - If the critical path (hops 2-5) stays within (300 ms – 70 ms = 230 ms), the gate passes.
 
 **Local with display/audio** (developer machine):
 - Runs both `latency_harness` and `latency_live` via `run_gate_p3.bat`.
-- `latency_live` measures the two SKIPped hops (1 and 6) with real hardware.
-- Provides full end-to-end visibility: headless wired p99 + live hop 1/6 p99 = true E2E estimate.
+- `latency_live` measures the two SKIPped hops (1b and 6) with real hardware (plus informational 1a).
+- Provides full end-to-end visibility: headless wired p99 + live hop 1b/6 p99 = true E2E estimate.
 - Catches regressions in display capture or audio playback latency that CI cannot see.
 
 ## Exit code conventions

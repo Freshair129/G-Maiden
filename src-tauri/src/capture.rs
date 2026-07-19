@@ -37,7 +37,7 @@ mod backend {
 
     use crate::cv::detector::{Detection, Detector};
     use crate::cv::draft_detector::DraftRecognizer;
-    use crate::cv::draft_region::DraftRegion;
+    use crate::cv::draft_region::{DraftRegion, PortraitBox};
     use crate::cv::prefilter::{prefilter_candidates, DEFAULT_THRESHOLD_FRAC};
     use crate::cv::region::MinimapRegion;
     use crate::cv::Frame;
@@ -231,6 +231,12 @@ mod backend {
         let (screen_w, screen_h) = (dxgi.width(), dxgi.height());
         let mut state = CaptureState::new(app, region, screen_w, screen_h);
         let mut last_monitor_check = Instant::now();
+        // CR-live-probe-rect: fires at most once — logs the ONE legitimate case
+        // an `acquire_rect` can fail where `acquire_frame` would not (the
+        // region's geometry is off-screen for the current resolution; a plain
+        // capture timeout/access-lost affects both accessors identically and
+        // needs no fallback, see `rect_is_on_screen`'s doc comment below).
+        let mut warned_rect_geometry = false;
 
         loop {
             // CR012-P1-01: periodically re-detect which monitor Dota 2 is on
@@ -281,8 +287,13 @@ mod backend {
             // this is the only place the loop wakes during the draft.
             if crate::runtime::in_draft() {
                 if crate::runtime::roster().is_none() {
-                    if let Some((full, fw, fh)) = dxgi.acquire_frame() {
-                        process_draft_frame(&mut state, &full, fw, fh);
+                    // CR-live-probe-rect: acquire only the bounding strip of the
+                    // 10 portrait boxes instead of the full desktop — `DraftRegion`
+                    // guarantees every box (and therefore the strip bounding them)
+                    // sits on-screen, so no geometry fallback is needed here.
+                    let (bx, by, bw, bh) = draft_bounding_rect(&state.draft_region.boxes);
+                    if let Some((strip, sw, sh)) = dxgi.acquire_rect(bx, by, bw, bh) {
+                        process_draft_frame(&mut state, &strip, sw, sh, bx, by);
                     }
                 }
                 std::thread::sleep(Duration::from_millis(DRAFT_INTERVAL_MS));
@@ -293,8 +304,53 @@ mod backend {
                 std::thread::sleep(Duration::from_millis(500));
                 continue;
             }
-            if let Some((full, fw, fh)) = dxgi.acquire_frame() {
-                process_frame(&mut state, &full, fw, fh);
+
+            // CR-live-probe-rect: calibration/QA mode still needs the WHOLE
+            // desktop (`calibration::push_full_bgra` feeds the calibration
+            // overlay evidence buffer with full-screen frames), so that path
+            // keeps today's full acquire_frame + software crop exactly. Every
+            // other tick switches to a GPU subrect acquire of just the minimap
+            // square — far cheaper than copying and cropping the full desktop.
+            if crate::calibration::is_enabled() {
+                if let Some((full, fw, fh)) = dxgi.acquire_frame() {
+                    if state.last_calib.elapsed().as_millis() >= 110 {
+                        state.last_calib = Instant::now();
+                        crate::calibration::push_full_bgra(&full, fw, fh);
+                    }
+                    if let Some((cropped, w, h)) = crop_bgra(&full, fw, fh, &state.region) {
+                        process_frame(&mut state, cropped, w, h);
+                    }
+                }
+            } else {
+                let r = state.region;
+                let (sw, sh) = (dxgi.width(), dxgi.height());
+                let cropped_frame = if rect_is_on_screen(r.x, r.y, r.side, r.side, sw, sh) {
+                    dxgi.acquire_rect(r.x, r.y, r.side, r.side)
+                        .map(|(bytes, w, h)| (bytes, w as usize, h as usize))
+                } else {
+                    // Defensive fallback (should not happen in practice —
+                    // `MinimapRegion` is always constructed to fit on screen —
+                    // but a user-calibrated region could in principle be bad).
+                    // Unlike a plain capture timeout/access-lost (which affects
+                    // `acquire_frame` and `acquire_rect` identically, so needs
+                    // no fallback), a geometrically off-screen rect is a case
+                    // `acquire_rect` can never satisfy while `acquire_frame` +
+                    // crop still could — so fall back rather than silently
+                    // starving the pipeline every tick.
+                    if !warned_rect_geometry {
+                        warned_rect_geometry = true;
+                        crate::log::error(&format!(
+                            "[capture] minimap region {r:?} is off-screen for {sw}x{sh} — \
+                             acquire_rect can't serve it; falling back to full-frame \
+                             acquire+crop for this and future ticks"
+                        ));
+                    }
+                    dxgi.acquire_frame()
+                        .and_then(|(full, fw, fh)| crop_bgra(&full, fw, fh, &r))
+                };
+                if let Some((cropped, w, h)) = cropped_frame {
+                    process_frame(&mut state, cropped, w, h);
+                }
             }
             std::thread::sleep(Duration::from_millis(select_interval(&state)));
         }
@@ -312,6 +368,33 @@ mod backend {
         } else {
             ALERT_INTERVAL_MS
         }
+    }
+
+    /// Geometry-only check mirroring `dxgi::clamp_rect`'s reject conditions
+    /// (that fn is private to `dxgi.rs`, so this is a small, deliberately
+    /// duplicated, pure predicate) — used only to tell apart the ONE case an
+    /// `acquire_rect` can fail where `acquire_frame` would still have
+    /// succeeded (the rect's origin/size doesn't fit the current screen at
+    /// all) from an ordinary "no new frame this tick" (capture timeout /
+    /// access-lost), which both accessors are equally subject to since they
+    /// share the same underlying `AcquireNextFrame` call — that case needs no
+    /// fallback and must stay silent, exactly like `acquire_frame` did before
+    /// this refactor.
+    fn rect_is_on_screen(x: u32, y: u32, w: u32, h: u32, screen_w: u32, screen_h: u32) -> bool {
+        w > 0 && h > 0 && x < screen_w && y < screen_h
+    }
+
+    /// Smallest rect that bounds every Draft-CV portrait box, so the loop can
+    /// `acquire_rect` just that strip instead of the full desktop.
+    /// `DraftRegion::for_resolution` always produces boxes that fit on screen
+    /// (see its `boxes_are_on_screen_and_square_sized` test), so the bounding
+    /// strip is guaranteed on-screen too — no geometry fallback needed here.
+    fn draft_bounding_rect(boxes: &[PortraitBox]) -> (u32, u32, u32, u32) {
+        let min_x = boxes.iter().map(|b| b.x).min().unwrap_or(0);
+        let min_y = boxes.iter().map(|b| b.y).min().unwrap_or(0);
+        let max_x = boxes.iter().map(|b| b.x + b.side).max().unwrap_or(0);
+        let max_y = boxes.iter().map(|b| b.y + b.side).max().unwrap_or(0);
+        (min_x, min_y, max_x.saturating_sub(min_x), max_y.saturating_sub(min_y))
     }
 
     /// Crop the minimap square out of a full-screen tightly-packed BGRA8 buffer.
@@ -358,19 +441,32 @@ mod backend {
         Some((out, w, h))
     }
 
-    /// Draft-CV: crop the 10 pick-screen portrait boxes, recognize each, and —
-    /// once ALL 10 read confidently (i.e. the draft is complete) — commit the
-    /// roster to `runtime` and emit `draft-roster`. A partial pick screen (picks
-    /// still coming in) recognizes fewer than 10 and simply retries next poll.
-    /// No-op when the recognizer has no templates (asset pack not shipped yet).
-    fn process_draft_frame(state: &mut CaptureState, full: &[u8], fw: u32, fh: u32) {
+    /// Draft-CV: crop the 10 pick-screen portrait boxes out of `strip` — a
+    /// pre-acquired subrect (`sw`×`sh`) that bounds all 10 boxes, acquired at
+    /// `(strip_x, strip_y)` in screen space (see `draft_bounding_rect`) —
+    /// recognize each, and once ALL 10 read confidently (i.e. the draft is
+    /// complete) commit the roster to `runtime` and emit `draft-roster`. A
+    /// partial pick screen (picks still coming in) recognizes fewer than 10
+    /// and simply retries next poll. No-op when the recognizer has no
+    /// templates (asset pack not shipped yet).
+    fn process_draft_frame(
+        state: &mut CaptureState,
+        strip: &[u8],
+        sw: u32,
+        sh: u32,
+        strip_x: u32,
+        strip_y: u32,
+    ) {
         if !state.draft.is_active() {
             return;
         }
         let mut radiant = Vec::with_capacity(5);
         let mut dire = Vec::with_capacity(5);
         for (i, b) in state.draft_region.boxes.iter().enumerate() {
-            let name = crop_square(full, fw, fh, b.x, b.y, b.side)
+            // Boxes are in screen-space; `strip` is local to `(strip_x, strip_y)`.
+            let local_x = b.x.saturating_sub(strip_x);
+            let local_y = b.y.saturating_sub(strip_y);
+            let name = crop_square(strip, sw, sh, local_x, local_y, b.side)
                 .and_then(|(bytes, w, h)| Frame::from_bgra(w, h, bytes))
                 .and_then(|f| state.draft.recognize(&f))
                 .map(|(name, _score)| name);
@@ -434,27 +530,19 @@ mod backend {
         ))
     }
 
-    /// Run the full CV → game-knowledge pipeline on one captured full-screen
-    /// frame. Logic is identical to the old WGC `on_frame_arrived`; only the frame
-    /// source (DXGI full-screen + software crop) differs.
-    fn process_frame(state: &mut CaptureState, full: &[u8], fw: u32, fh: u32) {
+    /// Run the full CV → game-knowledge pipeline on one already-cropped minimap
+    /// frame (`cropped`, sized `w`×`h`) — a pre-cropped rect-local BGRA8 buffer.
+    /// The caller does the acquisition/crop: a GPU subrect `acquire_rect` of just
+    /// the minimap square on the normal path, or a software crop of a full-desktop
+    /// `acquire_frame` in calibration/QA mode (which separately feeds
+    /// `calibration::push_full_bgra` from the full buffer it already has).
+    /// Downstream logic is otherwise identical to the old WGC `on_frame_arrived`.
+    fn process_frame(state: &mut CaptureState, cropped: Vec<u8>, w: usize, h: usize) {
         let work_start = Instant::now();
-
-        // Calibration evidence feed (≈9 fps; QA mode only). DXGI already hands us
-        // the full screen, so no extra capture is needed.
-        if crate::calibration::is_enabled() && state.last_calib.elapsed().as_millis() >= 110 {
-            state.last_calib = Instant::now();
-            crate::calibration::push_full_bgra(full, fw, fh);
-        }
 
         let r = state.region;
         let now_ms = state.start.elapsed().as_millis() as u64;
         let suspicious = !state.sentry.missing(now_ms).is_empty();
-
-        let (cropped, w, h) = match crop_bgra(full, fw, fh, &r) {
-            Some(v) => v,
-            None => return, // region off-screen — skip safely
-        };
 
         if let Some(f) = Frame::from_bgra(w, h, cropped) {
             let candidates = prefilter_candidates(

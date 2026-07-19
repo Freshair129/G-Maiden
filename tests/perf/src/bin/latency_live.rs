@@ -13,10 +13,20 @@
 //!     capture backend `capture.rs` drives in production, ADR-13/CR-001) is
 //!     opened on the primary output (monitor 0) and driven the same way the
 //!     in-crate `#[ignore]`d tests around `dxgi.rs:820` do — repeated
-//!     `acquire_frame()` calls, timing only the calls that return a frame.
-//!     `DxgiCapture::new`/`acquire_frame` take no Tauri handle and no lock,
-//!     so the public surface really is usable standalone (see `dxgi.rs`
-//!     doc comment: "not `Send`/`Sync`... holds no locks").
+//!     acquire calls, timing only the calls that return a frame.
+//!     `DxgiCapture::new`/`acquire_frame`/`acquire_rect` take no Tauri handle
+//!     and no lock, so the public surface really is usable standalone (see
+//!     `dxgi.rs` doc comment: "not `Send`/`Sync`... holds no locks"). Two
+//!     series are measured off the same `DxgiCapture` instance:
+//!       - **1a full-frame (legacy)** — `acquire_frame()`, the old
+//!         whole-desktop copy path. Since the capture-switch task, production
+//!         no longer takes this path outside calibration mode, so 1a is
+//!         **informational only** (status `INFO`, no PASS/FAIL verdict).
+//!       - **1b minimap-rect (production)** — `acquire_rect(x, y, side,
+//!         side)` with the rect derived exactly like `capture.rs` does:
+//!         `g_maiden::cv::region::MinimapRegion::for_resolution(w, h)`. This
+//!         is the real hop-1 cost after the capture-switch and is the one the
+//!         30ms Engineering Spec §1 budget applies to.
 //!   - **Hop 6 — audio output buffer**: independent of the app's audio
 //!     thread (`audio.rs` owns its own dedicated thread + channel — this
 //!     probe does NOT touch that code path). It opens its own
@@ -32,20 +42,24 @@
 //!
 //! Each probe independently detects whether its device exists and reports
 //! `SKIP` with a one-line reason instead of panicking or spinning forever:
-//!   - Hop 1: `DxgiCapture::new(0)` returning `Err` (no GPU/output — e.g. a
-//!     display-less RDP session), OR zero frames arriving within the
+//!   - Hop 1 (1a/1b): `DxgiCapture::new(0)` returning `Err` (no GPU/output —
+//!     e.g. a display-less RDP session), OR zero frames arriving within the
 //!     wall-clock budget (desktop is fully idle / duplication unavailable).
+//!     Each series self-detects independently — 1a can SKIP (idle desktop)
+//!     while 1b still measures, or vice versa.
 //!   - Hop 6: `OutputStream::try_default()` returning `Err` (no audio
 //!     device), the bundled clip missing, or every play timing out waiting
 //!     for a first sample pull (device stalled).
 //!
-//! Both probes always run — one failing to detect its device does not skip
-//! the other (see `main`).
+//! All probes always run — one failing to detect its device does not skip
+//! the others (see `main`).
 //!
-//! # Exit codes (worst-probe-wins, matches `latency_harness`/`perf_p7`)
+//! # Exit codes (worst-probe-wins, matches `latency_harness`/`perf_p7`;
+//! computed from **1b + hop 6 only** — 1a is informational and never
+//! contributes a verdict)
 //!   0  = every probe that RAN is within its Engineering Spec §1 hop budget
 //!   1  = at least one probe that ran exceeded its budget (FAIL dominates)
-//!   77 = both probes SKIPped (no display AND no audio device found)
+//!   77 = both 1b and hop 6 SKIPped (no display AND no audio device found)
 //!
 //! # Usage
 //!   cargo run --release --manifest-path tests/perf/Cargo.toml --bin latency_live
@@ -58,14 +72,19 @@ use std::time::{Duration, Instant};
 
 use rodio::{Decoder, OutputStream, Sink, Source};
 
+use g_maiden::cv::region::MinimapRegion;
 use g_maiden::dxgi::DxgiCapture;
 
 // ---------------------------------------------------------------------------
-// Engineering Spec §1 — the two budgets this binary can actually measure.
+// Engineering Spec §1 — the budgets this binary can actually measure.
 // Names match `latency_harness`'s `BUDGET_CAPTURE_MS`/`BUDGET_AUDIO_MS`.
 // ---------------------------------------------------------------------------
 
-const BUDGET_CAPTURE_MS: f64 = 30.0; // Hop 1: DXGI minimap frame ready
+/// Hop 1b: DXGI minimap-rect frame ready — the production path after the
+/// capture-switch task (production no longer full-copies outside
+/// calibration mode). Hop 1a (full-frame, legacy) has no budget — see
+/// `probe_capture`.
+const BUDGET_CAPTURE_MS: f64 = 30.0;
 const BUDGET_AUDIO_MS: f64 = 40.0; // Hop 6: audio output buffer
 
 /// POSIX skip convention — matches `latency_harness`/`perf_p7`/`perf_cpu_tree`.
@@ -75,11 +94,14 @@ const EXIT_SKIP: i32 = 77;
 // Hop 1 probe parameters
 // ---------------------------------------------------------------------------
 
-/// How many successful frame acquisitions we'd like before stopping.
+/// How many successful frame acquisitions we'd like before stopping — per
+/// series (both 1a and 1b target this many independently).
 const CAPTURE_TARGET_SAMPLES: usize = 100;
-/// Wall-clock ceiling for the whole hop-1 probe — a fully idle desktop (no
-/// window repainting) may never present a new frame; give up rather than
-/// hang forever, and report whatever we did collect (or SKIP on zero).
+/// Wall-clock ceiling for EACH hop-1 series (1a and 1b each get up to this
+/// long, so the hop-1 stage as a whole can take up to ~2x this) — a fully
+/// idle desktop (no window repainting) may never present a new frame; give
+/// up rather than hang forever, and report whatever we did collect (or SKIP
+/// on zero).
 const CAPTURE_MAX_WALL: Duration = Duration::from_secs(20);
 
 // ---------------------------------------------------------------------------
@@ -137,6 +159,10 @@ enum Status {
     Pass,
     Fail,
     Skip,
+    /// Measured, but no budget applies — informational only (hop 1a,
+    /// full-frame legacy path). Never contributes to `combine_exit`'s
+    /// verdict; treat it like Pass for exit-code purposes.
+    Info,
 }
 
 impl Status {
@@ -145,6 +171,7 @@ impl Status {
             Status::Pass => "PASS",
             Status::Fail => "FAIL",
             Status::Skip => "SKIP",
+            Status::Info => "INFO",
         }
     }
 }
@@ -157,6 +184,9 @@ struct HopResult {
     p50_ms: f64,
     p99_ms: f64,
     budget_ms: f64,
+    /// Whether `budget_ms` means anything. `false` for hop 1a (informational
+    /// — no budget was ever assigned to the legacy full-frame path).
+    has_budget: bool,
     note: String,
 }
 
@@ -170,6 +200,23 @@ impl HopResult {
             p50_ms: 0.0,
             p99_ms: 0.0,
             budget_ms,
+            has_budget: true,
+            note: reason,
+        }
+    }
+
+    /// A `SKIP` with no budget to report — hop 1a's "no frames captured"
+    /// path (informational series, so there's nothing to have blown).
+    fn skip_no_budget(label: &'static str, reason: String) -> Self {
+        Self {
+            label,
+            status: Status::Skip,
+            n: 0,
+            mean_ms: 0.0,
+            p50_ms: 0.0,
+            p99_ms: 0.0,
+            budget_ms: 0.0,
+            has_budget: false,
             note: reason,
         }
     }
@@ -189,6 +236,26 @@ impl HopResult {
             p50_ms: stat.p50,
             p99_ms: stat.p99,
             budget_ms,
+            has_budget: true,
+            note,
+        }
+    }
+
+    /// Same shape as `measured`, but with no budget to check against —
+    /// always `Status::Info`, never `Pass`/`Fail`. Used for hop 1a
+    /// (full-frame legacy), which production no longer takes outside
+    /// calibration mode, so there's no verdict to render.
+    fn measured_info(label: &'static str, samples: Vec<f64>, note: String) -> Self {
+        let stat = compute_stat(samples.clone());
+        Self {
+            label,
+            status: Status::Info,
+            n: samples.len(),
+            mean_ms: stat.mean,
+            p50_ms: stat.p50,
+            p99_ms: stat.p99,
+            budget_ms: 0.0,
+            has_budget: false,
             note,
         }
     }
@@ -196,7 +263,9 @@ impl HopResult {
     /// p99 to feed into the full-E2E estimate line — the real measurement
     /// when we have one, else the Engineering Spec budget (clearly labeled
     /// as such), exactly like `latency_harness`'s `SKIP_BUDGET_MS` treats
-    /// its own two un-wirable hops.
+    /// its own two un-wirable hops. Only ever called on hops that carry a
+    /// budget (1b, hop 6) — hop 1a is informational and excluded from the
+    /// full-E2E estimate.
     fn p99_or_budget(&self) -> (f64, &'static str) {
         if self.status == Status::Skip {
             (self.budget_ms, "budget, SKIPPED")
@@ -207,64 +276,109 @@ impl HopResult {
 }
 
 // ---------------------------------------------------------------------------
-// Hop 1 — DXGI capture probe
+// Hop 1 — DXGI capture probes (1a full-frame legacy, 1b minimap-rect prod)
 // ---------------------------------------------------------------------------
 
-fn probe_capture() -> HopResult {
-    let label = "Hop 1  DXGI capture";
+const LABEL_CAPTURE_A: &str = "Hop 1a DXGI full-frame (legacy)";
+const LABEL_CAPTURE_B: &str = "Hop 1b DXGI minimap-rect (prod)";
 
-    let mut cap = match DxgiCapture::new(0) {
-        Ok(c) => c,
-        Err(e) => {
-            return HopResult::skip(
-                label,
-                BUDGET_CAPTURE_MS,
-                format!("DxgiCapture::new(0) failed — no display/GPU output: {e}"),
-            );
-        }
-    };
-
-    let mut samples: Vec<f64> = Vec::with_capacity(CAPTURE_TARGET_SAMPLES);
+/// Drive one capture series to `target` successful acquisitions or
+/// `max_wall`, whichever comes first, timing only the calls that return a
+/// frame. Shared by both the full-frame (1a) and minimap-rect (1b) series —
+/// same sample count / wall-clock cap for both, per the task brief.
+///
+/// No manual sleep between calls: both `acquire_frame`/`acquire_rect` already
+/// block inside DXGI's `AcquireNextFrame` (up to 100ms, a kernel wait, not a
+/// spin) when no new frame has presented, so this loop can't busy-spin the
+/// CPU.
+fn run_capture_series<F>(target: usize, max_wall: Duration, mut acquire: F) -> (Vec<f64>, u64)
+where
+    F: FnMut() -> Option<(Vec<u8>, u32, u32)>,
+{
+    let mut samples: Vec<f64> = Vec::with_capacity(target);
     let mut attempts: u64 = 0;
     let wall_start = Instant::now();
 
-    // No manual sleep between calls: `acquire_frame` already blocks inside
-    // DXGI's `AcquireNextFrame` (up to 100ms, a kernel wait, not a spin) when
-    // no new frame has presented, so this loop can't busy-spin the CPU.
-    while samples.len() < CAPTURE_TARGET_SAMPLES && wall_start.elapsed() < CAPTURE_MAX_WALL {
+    while samples.len() < target && wall_start.elapsed() < max_wall {
         attempts += 1;
         let t0 = Instant::now();
-        if let Some((_buf, _w, _h)) = cap.acquire_frame() {
+        if acquire().is_some() {
             samples.push(t0.elapsed().as_secs_f64() * 1000.0);
         }
     }
 
-    if samples.is_empty() {
-        return HopResult::skip(
-            label,
-            BUDGET_CAPTURE_MS,
-            format!(
-                "no frames captured in {:?} ({attempts} acquire_frame calls) — desktop fully \
-                 idle, or Desktop Duplication unavailable on this session (RDP / exclusive-\
-                 fullscreen owner)",
-                CAPTURE_MAX_WALL
-            ),
-        );
-    }
+    (samples, attempts)
+}
 
-    let note = if samples.len() < CAPTURE_TARGET_SAMPLES {
+fn zero_frames_note(attempts: u64, call_name: &str) -> String {
+    format!(
+        "no frames captured in {:?} ({attempts} {call_name} calls) — desktop fully idle, or \
+         Desktop Duplication unavailable on this session (RDP / exclusive-fullscreen owner)",
+        CAPTURE_MAX_WALL
+    )
+}
+
+fn capture_note(n: usize, attempts: u64, call_name: &str) -> String {
+    if n < CAPTURE_TARGET_SAMPLES {
         format!(
-            "only {}/{} frames captured within {:?} wall-clock ({attempts} attempts) — desktop \
-             activity was sparse; numbers below are still real measurements, just fewer of them",
-            samples.len(),
-            CAPTURE_TARGET_SAMPLES,
+            "only {n}/{CAPTURE_TARGET_SAMPLES} frames captured within {:?} wall-clock \
+             ({attempts} attempts) — desktop activity was sparse; numbers below are still real \
+             measurements, just fewer of them",
             CAPTURE_MAX_WALL
         )
     } else {
-        format!("{attempts} acquire_frame calls to collect {CAPTURE_TARGET_SAMPLES} frames")
+        format!("{attempts} {call_name} calls to collect {CAPTURE_TARGET_SAMPLES} frames")
+    }
+}
+
+/// Run both hop-1 series off one `DxgiCapture` instance. Returns `(1a, 1b)`.
+/// If the device can't be opened at all, both series SKIP with the same
+/// reason. Each series otherwise self-detects independently (e.g. 1a could
+/// SKIP on zero frames while 1b still measures, or vice versa) since a rect
+/// grab and a full-desktop grab don't necessarily fail together.
+fn probe_capture() -> (HopResult, HopResult) {
+    let mut cap = match DxgiCapture::new(0) {
+        Ok(c) => c,
+        Err(e) => {
+            let reason = format!("DxgiCapture::new(0) failed — no display/GPU output: {e}");
+            return (
+                HopResult::skip_no_budget(LABEL_CAPTURE_A, reason.clone()),
+                HopResult::skip(LABEL_CAPTURE_B, BUDGET_CAPTURE_MS, reason),
+            );
+        }
     };
 
-    HopResult::measured(label, BUDGET_CAPTURE_MS, samples, note)
+    // 1a — full-frame (legacy). Informational: production no longer takes
+    // this path outside calibration mode (capture-switch task), so there's
+    // no budget to check it against.
+    let (samples_a, attempts_a) =
+        run_capture_series(CAPTURE_TARGET_SAMPLES, CAPTURE_MAX_WALL, || cap.acquire_frame());
+    let hop_a = if samples_a.is_empty() {
+        HopResult::skip_no_budget(LABEL_CAPTURE_A, zero_frames_note(attempts_a, "acquire_frame"))
+    } else {
+        let note = capture_note(samples_a.len(), attempts_a, "acquire_frame");
+        HopResult::measured_info(LABEL_CAPTURE_A, samples_a, note)
+    };
+
+    // 1b — minimap-rect (production path). Rect derived exactly like
+    // `capture.rs` does: `state.region = MinimapRegion::for_resolution(w, h)`
+    // (capture.rs:221), which is resolution-derived (region.rs).
+    let region = MinimapRegion::for_resolution(cap.width(), cap.height());
+    let (samples_b, attempts_b) = run_capture_series(CAPTURE_TARGET_SAMPLES, CAPTURE_MAX_WALL, || {
+        cap.acquire_rect(region.x, region.y, region.side, region.side)
+    });
+    let hop_b = if samples_b.is_empty() {
+        HopResult::skip(
+            LABEL_CAPTURE_B,
+            BUDGET_CAPTURE_MS,
+            zero_frames_note(attempts_b, "acquire_rect"),
+        )
+    } else {
+        let note = capture_note(samples_b.len(), attempts_b, "acquire_rect");
+        HopResult::measured(LABEL_CAPTURE_B, BUDGET_CAPTURE_MS, samples_b, note)
+    };
+
+    (hop_a, hop_b)
 }
 
 // ---------------------------------------------------------------------------
@@ -458,9 +572,10 @@ fn probe_audio() -> HopResult {
 }
 
 // ---------------------------------------------------------------------------
-// Report helpers — column layout matches `latency_harness`'s table exactly
-// (Hop / status / mean / p50 / p99 / budget) so the two binaries' output
-// reads as one system.
+// Report helpers — same column set as `latency_harness`'s table (Hop /
+// status / mean / p50 / p99 / budget), just a wider label column (32 vs 26)
+// to fit the longer "Hop 1a DXGI full-frame (legacy)" / "Hop 1b DXGI
+// minimap-rect (prod)" labels without truncation.
 // ---------------------------------------------------------------------------
 
 fn sep(n: usize) {
@@ -477,15 +592,22 @@ fn fmt_budget(v: f64) -> String {
 
 fn print_row(label: &str, status: &str, n: &str, mean: &str, p50: &str, p99: &str, budget: &str) {
     println!(
-        "{:<26} {:<6} {:>5} {:>12} {:>12} {:>12} {:>10}",
+        "{:<32} {:<6} {:>5} {:>12} {:>12} {:>12} {:>10}",
         label, status, n, mean, p50, p99, budget
     );
 }
 
 fn print_hop_row(r: &HopResult) {
-    if r.status == Status::Skip {
-        print_row(r.label, r.status.label(), "--", "--", "--", "--", &fmt_budget(r.budget_ms));
+    let budget_str = if r.has_budget {
+        fmt_budget(r.budget_ms)
     } else {
+        "--".to_string()
+    };
+    if r.status == Status::Skip {
+        print_row(r.label, r.status.label(), "--", "--", "--", "--", &budget_str);
+    } else {
+        // Pass / Fail / Info all carry real measured stats — only the
+        // budget column differs (Info has none).
         print_row(
             r.label,
             r.status.label(),
@@ -493,7 +615,7 @@ fn print_hop_row(r: &HopResult) {
             &fmt_ms(r.mean_ms),
             &fmt_ms(r.p50_ms),
             &fmt_ms(r.p99_ms),
-            &fmt_budget(r.budget_ms),
+            &budget_str,
         );
     }
 }
@@ -501,7 +623,11 @@ fn print_hop_row(r: &HopResult) {
 /// Combine probe verdicts: FAIL dominates (any budget blown is a real
 /// problem), else ANY skip → 77 (a partially-unmeasured run must not read as
 /// a full pass to exit-code consumers — matches run_gate_p3.bat's convention
-/// "at least one SKIP and no FAIL → 77"), else PASS.
+/// "at least one SKIP and no FAIL → 77"), else PASS. `Status::Info` (hop 1a,
+/// informational) never appears in the exit-verdict inputs by construction
+/// (`main` only feeds this hop 1b + hop 6) — but if it ever did, it matches
+/// neither the FAIL nor the SKIP arm, so it's silently treated like PASS,
+/// consistent with "no budget verdict".
 fn combine_exit(results: &[&HopResult]) -> i32 {
     if results.iter().any(|r| r.status == Status::Fail) {
         1
@@ -521,18 +647,26 @@ fn main() {
     println!(" G-Signal Latency LIVE Probes   (Hop 1 + Hop 6)");
     println!(" Engineering Spec §1  |  the two device-dependent hops");
     println!(" latency_harness (GATE P3, headless) reports as SKIP.");
-    println!(" WIRING: LIVE — real g_maiden::dxgi::DxgiCapture acquire_frame()");
-    println!("         calls and a real rodio OutputStream + Sink, not");
-    println!("         headless stand-ins.");
+    println!(" WIRING: LIVE — real g_maiden::dxgi::DxgiCapture acquire_frame()/");
+    println!("         acquire_rect() calls and a real rodio OutputStream + Sink,");
+    println!("         not headless stand-ins.");
     println!("=================================================================");
     println!();
 
     println!(
-        "Hop 1  probing primary output (monitor 0): target {CAPTURE_TARGET_SAMPLES} frames, \
-         <= {:?} wall-clock ..."
-    , CAPTURE_MAX_WALL);
-    let capture = probe_capture();
-    println!("  [{}] {}", capture.status.label(), capture.note);
+        "Hop 1  probing primary output (monitor 0): 1a full-frame (legacy) + 1b minimap-rect \
+         (production), target {CAPTURE_TARGET_SAMPLES} frames each, <= {:?} wall-clock each ...",
+        CAPTURE_MAX_WALL
+    );
+    println!(
+        "       caveat: both series share the same repaint-wait reality — DXGI Desktop \
+         Duplication only delivers a frame when the screen actually repaints, so on an idle \
+         desktop both are dominated by waiting for the next repaint, not by copy cost. Run \
+         with screen content changing (game/video/animation) for a meaningful number."
+    );
+    let (capture_a, capture_b) = probe_capture();
+    println!("  1a [{}] {}", capture_a.status.label(), capture_a.note);
+    println!("  1b [{}] {}", capture_b.status.label(), capture_b.note);
     println!();
 
     println!("Hop 6  probing default audio output device: {AUDIO_PLAYS} plays ...");
@@ -541,39 +675,51 @@ fn main() {
     println!();
 
     println!(
-        "{:<26} {:<6} {:>5} {:>12} {:>12} {:>12} {:>10}",
+        "{:<32} {:<6} {:>5} {:>12} {:>12} {:>12} {:>10}",
         "Hop", "status", "n", "mean", "p50", "p99", "budget"
     );
     sep(90);
-    print_hop_row(&capture);
+    print_hop_row(&capture_a);
+    print_hop_row(&capture_b);
     print_hop_row(&audio);
     sep(90);
+    println!(
+        "  (1a is informational only — no budget, no PASS/FAIL verdict; production takes 1b's \
+         path since the capture-switch task, which the 30ms budget applies to.)"
+    );
     println!();
 
     println!("WIRING STATUS: LIVE.");
     println!(
-        "    {:<24} {}  (needs a real display/GPU output)",
-        capture.label,
-        capture.status.label()
+        "    {:<28} {}  (needs a real display/GPU output)",
+        capture_a.label,
+        capture_a.status.label()
     );
     println!(
-        "    {:<24} {}  (needs a real audio output device)",
+        "    {:<28} {}  (needs a real display/GPU output)",
+        capture_b.label,
+        capture_b.status.label()
+    );
+    println!(
+        "    {:<28} {}  (needs a real audio output device)",
         audio.label,
         audio.status.label()
     );
     println!();
 
     // ------------------------------------------------------------------
-    // full-E2E estimate = headless wired p99 (run latency_harness) + these
-    // two measured hops
+    // full-E2E estimate = headless wired p99 (run latency_harness) + hop 1b
+    // (production capture path) + hop 6. Hop 1a is informational and
+    // deliberately excluded — it's not what production pays anymore.
     // ------------------------------------------------------------------
-    let (cap_p99, cap_src) = capture.p99_or_budget();
+    let (cap_p99, cap_src) = capture_b.p99_or_budget();
     let (aud_p99, aud_src) = audio.p99_or_budget();
     println!(
-        "full-E2E estimate = headless wired p99 (run latency_harness) + these two measured hops"
+        "full-E2E estimate = headless wired p99 (run latency_harness) + hop 1b + hop 6 \
+         (measured live hops)"
     );
     println!(
-        "  hop1 p99 = {:.3}ms ({cap_src})  +  hop6 p99 = {:.3}ms ({aud_src})  =  {:.3}ms",
+        "  hop1b p99 = {:.3}ms ({cap_src})  +  hop6 p99 = {:.3}ms ({aud_src})  =  {:.3}ms",
         cap_p99,
         aud_p99,
         cap_p99 + aud_p99
@@ -586,11 +732,13 @@ fn main() {
     println!();
 
     sep(90);
-    let results = [&capture, &audio];
+    // Exit verdict uses 1b + hop 6 only — 1a is informational and never
+    // contributes (see `combine_exit` doc comment).
+    let results = [&capture_b, &audio];
     let exit_code = combine_exit(&results);
     let skipped = results.iter().filter(|r| r.status == Status::Skip).count();
     match exit_code {
-        0 => println!("LATENCY_LIVE PASSED -- both probes measured within budget"),
+        0 => println!("LATENCY_LIVE PASSED -- hop 1b + hop 6 measured within budget"),
         1 => eprintln!("LATENCY_LIVE FAILED -- a live-probed hop exceeded its Engineering Spec budget"),
         _ if skipped == results.len() => {
             println!("LATENCY_LIVE SKIPPED -- neither probe found its device (no display, no audio)")
@@ -686,5 +834,46 @@ mod tests {
         // Partial skip must NOT read as a full pass (matches run_gate_p3.bat).
         assert_eq!(combine_exit(&[&pass, &skip]), EXIT_SKIP);
         assert_eq!(combine_exit(&[&pass, &pass]), 0);
+    }
+
+    #[test]
+    fn measured_info_is_never_pass_or_fail_regardless_of_samples() {
+        // Hop 1a (full-frame, legacy): informational only. Even wildly
+        // over what would be a budget elsewhere, `measured_info` must never
+        // render a Pass/Fail verdict — that's the whole point of dropping
+        // the budget for this series.
+        let fast = HopResult::measured_info("Hop 1a", vec![1.0; 20], String::new());
+        assert_eq!(fast.status, Status::Info);
+        assert!(!fast.has_budget);
+
+        let slow = HopResult::measured_info("Hop 1a", vec![500.0; 20], String::new());
+        assert_eq!(slow.status, Status::Info);
+        assert!(!slow.has_budget);
+        assert_eq!(slow.status.label(), "INFO");
+    }
+
+    #[test]
+    fn skip_no_budget_has_zeroed_stats_and_no_budget() {
+        let r = HopResult::skip_no_budget("Hop 1a", "no frames".to_string());
+        assert_eq!(r.status, Status::Skip);
+        assert_eq!(r.n, 0);
+        assert!(!r.has_budget);
+        assert_eq!(r.note, "no frames");
+    }
+
+    #[test]
+    fn combine_exit_ignores_info_status() {
+        // An Info-status hop must never flip the verdict either way — not a
+        // FAIL trigger, not a SKIP trigger. (Hop 1a is excluded from the
+        // exit-verdict inputs by construction in `main`, but the combinator
+        // itself should still be safe if ever handed one.)
+        let info = HopResult::measured_info("A", vec![500.0; 10], String::new());
+        let pass = HopResult::measured("B", 30.0, vec![1.0; 10], String::new());
+        let fail = HopResult::measured("C", 30.0, vec![100.0; 10], String::new());
+        let skip = HopResult::skip("D", 30.0, "no device".to_string());
+
+        assert_eq!(combine_exit(&[&info, &pass]), 0);
+        assert_eq!(combine_exit(&[&info, &fail]), 1);
+        assert_eq!(combine_exit(&[&info, &skip]), EXIT_SKIP);
     }
 }
