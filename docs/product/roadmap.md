@@ -15,7 +15,7 @@
 
 > **Milestone = feature-gated** (ไม่ผูกเลขเวอร์ชันตายตัว). เลขเวอร์ชันจริง (v0.13.0) วิ่งเลย phase
 > labels ด้านล่างไปแล้ว — label คงไว้เป็น historical reference เท่านั้น. สถานะจริงรายฟีเจอร์อยู่ที่
-> **[[PROJECT_FEATURE_MAP]]** (`PROJECT_FEATURE_MAP.md` — feature → file → status).
+> **`PROJECT_FEATURE_MAP.md`** (`PROJECT_FEATURE_MAP.md` — feature → file → status).
 
 ### Shipped v0.10.0 → v0.13.0 (ก.ค. 2026) — ดู `CHANGELOG.md` สำหรับรายละเอียดทุก patch
 - [x] **v0.11.0** — G-Store เปิดของจริง: แพ็กฟรี "Maiden — Community Pack" claim ได้ทันที + redeem
@@ -373,3 +373,9 @@
 | [[ADR-10-hybrid-ingestion-resilience|ADR-10]] | Hybrid ingestion: GSI + CV own-state fallback + replay priors | Resilience vs GSI block · *Accepted* |
 | [[ADR-11-optin-data-contribution-flywheel|ADR-11]] | Opt-in data contribution + match_id flywheel (amends ADR-06) | Data moat without breaking privacy · *Accepted* |
 | [[ADR-12-community-ai-marketplace|ADR-12]] | Community AI marketplace (trainable + seasonal top-rank payout) | Network-effect moat + engagement · *Accepted, post-v1.0* |
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | — | roadmap ฉบับปัจจุบัน (untracked) |
+| 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): `[[PROJECT_FEATURE_MAP]]` converted to plain backtick path text (PROJECT_FEATURE_MAP.md is outside docs/, not a doc-graph slug) |

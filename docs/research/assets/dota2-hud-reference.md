@@ -4,11 +4,11 @@
 > **ที่มา:** Reference screenshots ที่ผู้ใช้แนบ (5 ภาพ)  
 > **จุดประสงค์:** map HUD element → GSI field → G-module เพื่อใช้กับ G-Sensory (overlay non-obstruction), G-Signal/G-Sentry (state), G-Master (net worth), G-Damage (hero DB)
 
-> 📁 **ไฟล์ภาพดิบ:** เก็บไว้ที่ [[reference/dota-ui/README|docs/reference/dota-ui/]] แล้ว 4 ภาพหลัก:
+> 📁 **ไฟล์ภาพดิบ:** เก็บไว้ที่ [[dota-ui/README|docs/reference/dota-ui/]] แล้ว 4 ภาพหลัก:
 > `hud-layout-annotated.webp` (ภาพ 1), `status-stunned.png` (ภาพ 2),
 > `combat-log-panel.png` (ภาพ 4), `hero-grid-strength.webp` (ภาพ 5).
 > ภาพที่เหลือ (scoreboard-buyback, agility/intelligence grids, announcer, respawn-table)
-> เป็น documented-only ในไฟล์นี้ — drop เพิ่มที่ [[reference/dota-ui/README|docs/reference/dota-ui/]] ได้ถ้าต้องการ visual ref.
+> เป็น documented-only ในไฟล์นี้ — drop เพิ่มที่ [[dota-ui/README|docs/reference/dota-ui/]] ได้ถ้าต้องการ visual ref.
 
 ---
 
@@ -207,4 +207,10 @@ Hero grid หมวด Intelligence (~32 heroes): Ancient Apparition, Bane, **Cr
 
 ---
 
-*Catalog generated 2026-06-24 — ภาพดิบเก็บที่ [[reference/dota-ui/README|docs/reference/dota-ui/]] (4 ภาพหลัก); ที่เหลือ documented-only*
+*Catalog generated 2026-06-24 — ภาพดิบเก็บที่ [[dota-ui/README|docs/reference/dota-ui/]] (4 ภาพหลัก); ที่เหลือ documented-only*
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | 2026-06-24 | Dota 2 HUD/GSI reference catalog ฉบับแรก (untracked) |
+| 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): fixed unresolved wikilink slug `[[reference/dota-ui/README]]` → `[[dota-ui/README]]` (×3) |

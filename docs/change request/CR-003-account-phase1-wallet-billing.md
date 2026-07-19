@@ -4,8 +4,8 @@ doc_id: "CR-003-account-phase1-wallet-billing"
 status: "Approved"
 approved_at: "2026-07-11"
 approved_by: "Boss"
-version: "0.3.0"
-updated: "2026-07-11"
+version: "0.3.2"
+updated: "2026-07-19"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["ADR-14-gid-account-identity", "ADR-12-community-ai-marketplace", "ADR-11-optin-data-contribution-flywheel", "ADR-16-credit-economy-and-mint-oracle", "CR-002-Phase2-wire-backend"]
@@ -653,7 +653,7 @@ Deck nav    ─ Voice Packs ───────► Store (catalog จาก Su
 ```
 
 ภาษา UI: ไทยเป็นหลัก (ตาม persona Maiden) · design tokens ตามระบบเดิม — พื้น `#08090c`,
-การ์ด frosted `rgba(18,20,28,0.72)`, accent ice-blue, ฟอนต์/ระยะตาม [[architecture/design-system|design-system.md]]
+การ์ด frosted `rgba(18,20,28,0.72)`, accent ice-blue, ฟอนต์/ระยะตาม [[design-system|design-system.md]]
 
 ### 3.2 Wallet (รวม Billing) — v0.3.0: สองยอดแยกกัน
 
@@ -861,10 +861,10 @@ invariant DB-08 รันเป็น nightly กับข้อมูลจร�
 
 1. Migration + RLS + pgTAP (Layer 1 เขียวก่อนมี UI) — **รวม shard tables ตั้งแต่รอบแรก** (ADR-16 §7 ใส่ทีหลังไม่ได้)
 2. **Shard path ก่อน (ไม่ต้องรอ Omise):** Edge Fn `match-share-submit` + `mint_shard_from_match` +
-   `MatchShareCard.tsx` → ทดสอบ US-16/17/18 จบได้ทั้งชุดโดยไม่มี payment gateway
+   [`MatchShareCard.tsx`](file:///g:/G-Maiden/src/src/MatchShareCard.tsx) → ทดสอบ US-16/17/18 จบได้ทั้งชุดโดยไม่มี payment gateway
 3. Edge Functions ฝั่ง wallet (`topup-create`/`payment-webhook`) + Omise sandbox + Layer 2
    — **ขนานกับ #2 ได้ ไม่ต้องรอกัน** (คนละตารางคนละ RPC)
-4. `wallet.ts` (สองยอด) + Wallet/History tabs (อ่านอย่างเดียวก่อน → เห็นข้อมูลจริงเร็ว)
+4. [`wallet.ts`](file:///g:/G-Maiden/src/src/wallet.ts) (สองยอด) + Wallet/History tabs (อ่านอย่างเดียวก่อน → เห็นข้อมูลจริงเร็ว)
 5. Top-up modal + Realtime → Store/ซื้อ (ทั้ง shard-item และ wallet-item) → Inventory/ติดตั้ง
    (ต่อ `/announcer/install` เดิม)
 6. Redeem + deletion + `tip()` + Layer 3 E2E → ship **shard MVP ก่อน** หลัง flag ปิดปุ่มเติมเงิน
@@ -878,3 +878,5 @@ invariant DB-08 รันเป็น nightly กับข้อมูลจร�
 | 0.1.0 | 2026-07-04 | Proposed — schema 10 ตาราง + RLS + RPC atomic, Opn/Omise (PromptPay+TrueMoney), UX 4 แท็บ + Store, 15 user stories, E2E 3 ชั้น |
 | 0.2.0 | 2026-07-04 | เพิ่ม §3.0 นโยบาย desktop-first no-scroll (fit-budget + e2e gate) · แตกงานเป็น Genesis block `orchestration/gks/atoms.cr003.json` (51 atoms, 8 waves) + MASTERPLAN ([[MASTERPLAN-account-phase1|docs/product/MASTERPLAN-account-phase1.md]]) |
 | 0.3.0 | 2026-07-11 | **ADR-16 reconciliation** — แยก `wallets` เป็น shard_balance/wallet_balance, `wallet_ledger`/`purchases`/`catalog_items` เพิ่ม `currency`, ตารางใหม่ `match_submissions`/`tips`/`economy_config`, RPC ใหม่ `mint_shard_from_match`/`tip`, Edge Fn ใหม่ `match-share-submit`, catalog separation constraint (shard→creator_id null), 6 user stories ใหม่ (US-16–21), 5 DB test ใหม่ (DB-09–13), sequencing แยก shard (ไม่ติด Omise) จาก wallet (ติด Omise business registration) — `blocked_by` เปลี่ยนจาก "ADR-16 §7 unresolved" เป็น "resolved; เหลือแค่ Omise business registration บล็อกครึ่ง wallet เท่านั้น" |
+| 0.3.1 | 2026-07-19 | symbol-link coverage extension (G1.5) |
+| 0.3.2 | 2026-07-19 | link/metadata sweep (G15-T2): fixed unresolved wikilink slug `[[architecture/design-system]]` → `[[design-system]]` |

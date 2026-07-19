@@ -51,7 +51,10 @@ version: "0.1.0"
 `
   );
 
-  // unresolved + collision (blocking) + glob-slug (informational)
+  // unresolved (blocking) + glob-slug (informational). [[docs/README]] is
+  // deliberately cited twice below — a valid, resolved slug repeated across
+  // two lines — to prove this is NOT flagged (false-positive regression,
+  // G15-T1): repeated citation of a real doc is normal prose, not collision.
   write(
     root,
     'docs/links.md',
@@ -207,7 +210,6 @@ test('dirty fixture: CLI exits 1 and seeds every violation reason', () => {
     const expectedReasons = [
       'duplicate-slug',
       'unresolved',
-      'collision',
       'glob-slug',
       'missing-file',
       'bad-anchor',
@@ -218,6 +220,11 @@ test('dirty fixture: CLI exits 1 and seeds every violation reason', () => {
     for (const reason of expectedReasons) {
       assert.ok(reasons.has(reason), `expected violation reason "${reason}" to be present`);
     }
+
+    // 'collision' is a retired false-positive reason (G15-T1, 2026-07-19):
+    // repeated valid wikilinks (docs/links.md cites [[docs/README]] twice)
+    // must never surface it. True slug ambiguity is 'duplicate-slug' only.
+    assert.ok(!reasons.has('collision'), 'collision must never be emitted (retired false-positive rule)');
 
     // duplicate-slug seeded for both colliding files
     const dupFiles = graph.violations

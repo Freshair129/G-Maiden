@@ -2,7 +2,7 @@
 title: "CR-003 Payment Path — Go-Live Checklist"
 doc_id: "CR-003-payment-golive-checklist"
 status: "Open — blocked on Phase 0 (legal/terms) + Phase 1 (Omise)"
-version: "1.0.0"
+version: "1.0.1"
 updated: "2026-07-18"
 owner: "Boss"
 related_docs: ["ADR-16", "ADR-11", "ADR-12", "CR-003"]
@@ -33,7 +33,7 @@ must never enter financial API keys) · 🤖 assistant-doable once earlier phase
       expiry · redeemable only for first-party digital goods (ADR-16 §Prereq 2).
 - [ ] Write **PDPA consent** for payment/data-ingestion — **separate from sign-in** ([[ADR-14-gid-account-identity|ADR-14]] is
       additive) and revocable/deletable retroactively (ADR-16 §Prereq 3).
-- [ ] Update **[[CLAUDE.md]]** to cite ADR-11/12/16 so the absolute privacy rule stops silently
+- [ ] Update **`CLAUDE.md`** to cite ADR-11/12/16 so the absolute privacy rule stops silently
       dropping the flywheel strategy (ADR-16 §Prereq 4).
 - [ ] Respect ADR-16's order-of-operations: silent-arm efficacy study → ingestion → shard →
       **payment/payout is last**.
@@ -82,3 +82,10 @@ must never enter financial API keys) · 🤖 assistant-doable once earlier phase
 
 Technically ready; blocked on Phase 0 (legal/terms/consent) + Phase 1 (Omise account + secret),
 both of which are Boss's to complete.
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 1.0.0 | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
+| 1.0.1 | 2026-07-19 | link/metadata sweep (G15-T2): `[[CLAUDE.md]]` converted to plain backtick path text (CLAUDE.md is outside docs/, not a doc-graph slug) |

@@ -45,7 +45,7 @@ event ไปยัง control window แล้วเช็ค budget:
 
 ### 2c. Global Hotkeys
 
-Global shortcuts จริงจาก [`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs#L547) (ทำงานแม้ Dota 2 โฟกัสอยู่):
+Global shortcuts จริงจาก [`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs) (ทำงานแม้ Dota 2 โฟกัสอยู่):
 
 | Hotkey | Action |
 | --- | --- |
@@ -78,7 +78,7 @@ Global shortcuts จริงจาก [`main.rs`](file:///g:/G-Maiden/src-tauri
 
 ## 5. Visual Design
 
-Canonical UI/UX contract: [[architecture/design-system]] (`docs/architecture/design-system.md`).
+Canonical UI/UX contract: [[design-system]] (`docs/architecture/design-system.md`).
 
 ```
 ┌─────────────────────────────────────────────────────┐
@@ -142,7 +142,7 @@ Canonical UI/UX contract: [[architecture/design-system]] (`docs/architecture/des
 - [ ] global hotkeys ทำงาน: `Ctrl+Alt+S` (toggle overlay), `Alt+↑/↓` (vol ±10%), `Alt+M` (mute toggle)
 - [ ] governor auto-throttle เมื่อ resource เกิน budget
 - [ ] glassmorphism visual ตรง design spec
-- [ ] Control Dashboard และ Overlay ใช้ token/component contract จาก [[architecture/design-system]] (`docs/architecture/design-system.md`)
+- [ ] Control Dashboard และ Overlay ใช้ token/component contract จาก [[design-system]] (`docs/architecture/design-system.md`)
 
 ## 11. Current Issue
 
@@ -154,3 +154,9 @@ Canonical UI/UX contract: [[architecture/design-system]] (`docs/architecture/des
 - Harness ที่ควรใช้ไล่เรื่องนี้คือ [`tests/perf/src/bin/perf_cpu_tree.rs`](file:///g:/G-Maiden/tests/perf/src/bin/perf_cpu_tree.rs) ซึ่งรวม root
   host + child WebView2/utility/sidecar แบบใกล้เคียง Task Manager มากกว่า
   [`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs) ที่วัดแค่ current process.
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | — | FEAT-G-SENSORY ฉบับแรก (untracked) |
+| 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): fixed unresolved wikilink slug `[[architecture/design-system]]` → `[[design-system]]` (×2) |

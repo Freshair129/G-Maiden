@@ -216,7 +216,7 @@
 
 5. Rust à¸„à¸¸à¸¡à¹€à¸‰à¸žà¸²à¸° visibility à¸‚à¸­à¸‡ native window à¸ªà¹ˆà¸§à¸™à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸” layout à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™ React
    - Health: à¸”à¸µà¸¡à¸²à¸
-   - Evidence: [`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs#L30)
+   - Evidence: [`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs)
 
 #### Data findings
 

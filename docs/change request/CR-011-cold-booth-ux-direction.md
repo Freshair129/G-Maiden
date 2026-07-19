@@ -53,7 +53,7 @@ flow that isn't a settings card.
 - **Four styling systems**: deck CSS classes (ice), account/store classes, CR-003 inline
   navy/cyan (`#64c7ff/#31d0a0/#24344e` — a *second* blue), App/overlay inline ice. Two blues,
   two green/red pairs, class-vs-inline split, no TH/EN copy rule.
-- **Domain pages are SaaS bento**: `CompanionPages.tsx` is eyebrow + card-shell + stat-box
+- **Domain pages are SaaS bento**: [`CompanionPages.tsx`](file:///g:/G-Maiden/src/src/CompanionPages.tsx) is eyebrow + card-shell + stat-box
   grids — the exact card-grid grammar the shell was built to escape.
 - **The agent card is an empty marketing block**: a big art void labeled "Tactical AI".
   The persona — the product's core — has zero UI evidence beyond it.
@@ -491,13 +491,13 @@ regress — [[CR-007-frostline-deck-refresh|CR-007]] acceptance #2).
 1. **P1 Materials & tokens** (~2–3 d): OKLCH `:root` v3 + aliases in `styles.css`; interior
    de-glass (sector styles → `--g-instrument` matte); Plex bundling + type floors; icon
    cleanup (emoji → `DeckIcons` strokes); "VOLUM"→"VOLUME"; ping pill → feed-age readout.
-2. **P2 Honest booth** (~3–5 d): agent card → on-air console (new `live/utterances.ts`
+2. **P2 Honest booth** (~3–5 d): agent card → on-air console (new [`live/utterances.ts`](file:///g:/G-Maiden/src/src/live/utterances.ts)
    builder + tests, fed by existing advice/gank/announcer events); threshold ticks +
    baseline whiskers in stats/annunciators (extend `buildSignals`/`buildBaselines`);
    tally dots; Alert Deck real feed polish.
-3. **P3 Time** (~3–4 d): `live/phase.ts` state machine + per-seat phase content + debrief
+3. **P3 Time** (~3–4 d): [`live/phase.ts`](file:///g:/G-Maiden/src/src/live/phase.ts) state machine + per-seat phase content + debrief
    composition; phase chip + tray tally.
-4. **P4 Hands** (~3–4 d): `MaidenLine.tsx`, shortcut registry + sheet, `ContextMenu.tsx`,
+4. **P4 Hands** (~3–4 d): [`MaidenLine.tsx`](file:///g:/G-Maiden/src/src/MaidenLine.tsx), shortcut registry + sheet, [`ContextMenu.tsx`](file:///g:/G-Maiden/src/src/ContextMenu.tsx),
    F6 seat focus, inspector slide-over primitive.
 5. **P5 Economy & IA** (~2–3 d): rail swap (Companion→Account), Packs page merge
    (VoiceInventory + StorePage + InventoryTab), Account hosts WalletTab/LedgerTab;
@@ -542,3 +542,8 @@ shell geometry constants.
 *Relationship to [[CR-007-frostline-deck-refresh|CR-007]]: this direction adopts WP-1 (done), WP-2/3/4 as Phases 1–2,
 extends WP-5 as Phase 3, WP-6 as Phase 4, and adds Phases 5–6 (IA/economy + comfort)
 that CR-007 scoped out. If accepted, CR-007's open WPs close into this document.*
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| — | 2026-07-19 | symbol-link coverage extension (G1.5) |

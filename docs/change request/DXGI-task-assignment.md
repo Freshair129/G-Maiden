@@ -815,3 +815,4 @@ SPR01-01 → SPR01-02+03 → SPR01-04 → SPR01-05 → SPR02-01 → SPR02-02 →
 |---|---|---|
 | 0.1.0 | 2026-06-28 | Initial assignment — 5 waves, 6 models, 18 tasks |
 | 0.2.0 | 2026-06-28 | Added DAG dependency map, critical path, parallel slots, adjacency list |
+| 0.1.0 | 2026-07-19 | link/metadata sweep (G1.5) — reconcile frontmatter version with changelog |

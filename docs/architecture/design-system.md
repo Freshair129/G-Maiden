@@ -1,7 +1,7 @@
 ---
-version: "0.1.0b"
+version: "0.1.1b"
 created_at: "2026-06-23T22:51:10+07:00,ATHER,pending"
-last_update: "2026-07-19T00:00:00+07:00,Claude"
+last_update: "2026-07-19,Claude"
 status: "candidate"
 superseded_by: null
 attributes:
@@ -303,7 +303,7 @@ Each G-Series module gets a compact card:
 Do not introduce fake module data. Use "waiting" or "not connected" states when runtime data is absent.
 
 > **Known exception (shipped):** the deck intentionally keeps a rich `MOCK` fallback
-> (documented in `src/src/companion.ts`) so the command deck renders a full demo
+> (documented in [`src/src/companion.ts`](file:///g:/G-Maiden/src/src/companion.ts)) so the command deck renders a full demo
 > when there is no live source — e.g. plain browser / no Tauri, or panels with no
 > live path yet. Live builders (`live/build*.ts`) merge over MOCK per-field; any
 > field with no live source stays on MOCK rather than showing a waiting state.
@@ -407,9 +407,9 @@ Governor visual degradation levels:
 ## 10. Implementation Boundaries
 
 > **SHIPPED (2026-07-02):** The command-deck dashboard shell, the live-wire data
-> path (CR-002 Phase 2a/2b), and the `App.tsx` / `CommandDeck.tsx` split have
+> path (CR-002 Phase 2a/2b), and the `App.tsx` / [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) split have
 > already shipped, merged at `170805b8`. `App.tsx` now owns the overlay window
-> + window routing, and `CommandDeck.tsx` owns the control window. The
+> + window routing, and [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) owns the control window. The
 > "Not allowed until approval" list below and the task packet in Section 11
 > are historical — treat `UI-1` through `UI-4` as done, not pending.
 >
@@ -429,7 +429,7 @@ Governor visual degradation levels:
 
 ### Not allowed until approval
 
-- Refactor `src/src/App.tsx`.
+- Refactor [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx).
 - Move inline styles into new files.
 - Add UI dependencies.
 - Change app version.
@@ -519,3 +519,5 @@ Use only these docs unless a worker reports `BLOCKED:`:
 | Version | Date | Summary |
 | --- | --- | --- |
 | +banner | 2026-07-19 | superseded banner สำหรับงาน Deck (tokens/layout/components/IA → design-system hub) — audit 2026-07-19 |
+| 0.1.0b | 2026-07-19 | link/metadata sweep (G1.5) — reconcile frontmatter version with changelog |
+| 0.1.1b | 2026-07-19 | symbol-link coverage extension (G1.5) |

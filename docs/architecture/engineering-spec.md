@@ -129,7 +129,7 @@ enum CoreEvent {
 
 UI subscribe ผ่าน event แยกชื่อ (ไม่มี channel รวม `core-event`): `game-tick`, `gsi-status`, `resource-stats`, `minimap-cv`, `gank-alert`, `gank-clear`, `enemy-missing`, `announcer-banner`, `advice-update`, `buyback-advice`, `buyback-narrative`, `capture-mode`, `volume-change`, `oauth-callback`, `oauth-error`, `preview-kill`. commands ที่สั่งจาก UI เช่น `set_cv_signal_sensitivity`, `set_cv_signal_enabled` (ไม่มี `set_sensitivity`/`toggle_module`).
 
-> **สถานะ (2026-07): `enum CoreEvent` ด้านบนเป็นแบบจำลอง — โค้ดจริง emit แต่ละ event แยกชื่อตามรายการนี้ และ `ResourceStats` มาจาก `governor.rs`.**
+> **สถานะ (2026-07): `enum CoreEvent` ด้านบนเป็นแบบจำลอง — โค้ดจริง emit แต่ละ event แยกชื่อตามรายการนี้ และ `ResourceStats` มาจาก [`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs).**
 
 ---
 
@@ -236,3 +236,8 @@ OpenDota profile + baselines. Match/CV/G-Log data stays local; the account store
 - [ ] orchestrator: à¹€à¸žà¸´à¹ˆà¸¡ provider à¹ƒà¸«à¸¡à¹ˆà¹à¸à¹‰ â‰¤2 à¹„à¸Ÿà¸¥à¹Œ (config.json + providers.mjs)
 
 
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| — | 2026-07-19 | symbol-link coverage extension (G1.5) |

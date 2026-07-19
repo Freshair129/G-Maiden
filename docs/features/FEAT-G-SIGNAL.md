@@ -13,7 +13,7 @@
 **Belief Revision** — เปลี่ยนคำพูดกลางประโยคเมื่อข้อมูลเปลี่ยน.
 
 > **สถานะ (2026-07): threshold ที่ ship จริงเป็น runtime `Sensitivity` enum**
-> ([`signal.rs`](file:///g:/G-Maiden/src-tauri/src/signal.rs)), ตั้งผ่าน [`set_cv_signal_sensitivity`](file:///g:/G-Maiden/src-tauri/src/main.rs#L359). default = `Med`
+> ([`signal.rs`](file:///g:/G-Maiden/src-tauri/src/signal.rs)), ตั้งผ่าน [`set_cv_signal_sensitivity`](file:///g:/G-Maiden/src-tauri/src/main.rs). default = `Med`
 > (`#[default]`) = **0.65 danger / 0.40 clear**. 0.85 เป็นแค่ระดับ `Low` / SRS
 > baseline — เพิ่ม Sensitivity มาเพราะ bar 85% แทบไม่เคย fire ในเกมจริง. ระดับ:
 > Low `(0.85, 0.50)`, Med `(0.65, 0.40)`, High `(0.50, 0.30)`.
@@ -106,7 +106,7 @@ struct SignalAlert {
 ## 9. Audio Cache Contract
 
 คลิปเป็นไฟล์ `.wav` ของ **announcer pack** ใต้ `assets/voice-cache/{event}/*.wav`
-เลือกแบบสุ่มต่อ event ด้วย [`audio::play_random`](file:///g:/G-Maiden/src-tauri/src/audio.rs#L341) ([`speak_event`](file:///g:/G-Maiden/src-tauri/src/main.rs#L76) fallback เป็น SAPI
+เลือกแบบสุ่มต่อ event ด้วย [`audio::play_random`](file:///g:/G-Maiden/src-tauri/src/audio.rs) ([`speak_event`](file:///g:/G-Maiden/src-tauri/src/main.rs) fallback เป็น SAPI
 TTS เมื่อ event ไม่มีคลิป). ไม่ใช่ key `.ogg` ตายตัว.
 
 ```

@@ -124,3 +124,4 @@ Use these child documents for product-specific sitemap, user flow, screen direct
 | Version | Date | Summary |
 | --- | --- | --- |
 | +banner | 2026-07-19 | reference-only banner — ไม่ใช่ spec สำหรับ implement (audit 2026-07-19) |
+| 0.5.0b | 2026-07-19 | link/metadata sweep (G1.5) — reconcile frontmatter version with changelog |

@@ -98,7 +98,7 @@ ReviveAdvice {
 - [x] buyback verdict เป็น pure function ทดสอบได้ ([`revive::advise_buyback`](file:///g:/G-Maiden/src-tauri/src/revive.rs#L105))
 - [x] ใช้ [`respawn.rs`](file:///g:/G-Maiden/src-tauri/src/respawn.rs) config จริง (respawn table + +25 penalty + WK aura)
 - [x] parse `hero.buyback_cost` + `hero.respawn_seconds` จาก GSI ([`DeathContext::from_tick`](file:///g:/G-Maiden/src-tauri/src/revive.rs#L50))
-- [x] live wiring: [`request_buyback_advice`](file:///g:/G-Maiden/src-tauri/src/main.rs#L278) command → emit `buyback-advice` + SLM `buyback-narrative`
+- [x] live wiring: [`request_buyback_advice`](file:///g:/G-Maiden/src-tauri/src/main.rs) command → emit `buyback-advice` + SLM `buyback-narrative`
 - [x] SLM narrative: persona voice ([`narrate_prompt`](file:///g:/G-Maiden/src-tauri/src/revive.rs#L170) → [`slm::advise_offline`](file:///g:/G-Maiden/src-tauri/src/slm.rs#L22), async best-effort)
 - [ ] threat estimate (base-fall time, allies-alive) จาก CV — verdict ยัง conservative จนกว่าจะ wire
 - [ ] root-cause "ทำไมตาย" จาก combat-log CV (ตอนนี้ narrate ห้ามแต่งเหตุการณ์)

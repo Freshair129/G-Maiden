@@ -6,7 +6,7 @@
 > **สถานะ (2026-07): ยังไม่ได้ทำ (spec ล่วงหน้า — Phase 4).** โค้ดจริงยัง**ไม่มี** mic
 > capture / STT / Whisper / cpal เลย (grep ยืนยัน) และยังไม่มี Piper — TTS ปัจจุบันเป็น
 > **Windows SAPI อย่างเดียว** ([`tts.rs`](file:///g:/G-Maiden/src-tauri/src/tts.rs), ยืนอยู่แทน Piper ที่วางแผนไว้ใน TDD). Hotkey
-> `Alt+M` **ไม่ใช่** trigger ของ G-Voice — มันคือ **mute toggle** ([`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs#L551)). เอกสารด้านล่าง
+> `Alt+M` **ไม่ใช่** trigger ของ G-Voice — มันคือ **mute toggle** ([`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs)). เอกสารด้านล่าง
 > เป็นดีไซน์อนาคต ไม่ใช่พฤติกรรมปัจจุบัน; เขียนเป็นแบบวางแผน (planned).
 
 ---

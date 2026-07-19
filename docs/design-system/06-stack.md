@@ -67,3 +67,9 @@ Release ผ่าน tag `vX.Y.Z` → CI เท่านั้น (ดู [`CLAU
 - [ ] `—` เมื่อไม่มี data (ไม่ใช่ 0 ปลอม)
 - [ ] overlay: วัด FPS drop ≤3%, ไม่บัง minimap/skillbar/stats
 - [ ] component ใหม่ลงทะเบียนในไฟล์ 04 แล้ว
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 2.0.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |

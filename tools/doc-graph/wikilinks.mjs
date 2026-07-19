@@ -99,7 +99,23 @@ export function extractWikilinks(mdText) {
  *
  * Checks for:
  * - 'unresolved': slug not found in slugMap
- * - 'collision': slug appears multiple times in links array
+ *
+ * CORRECTED RULE (G15-T1, 2026-07-19): this function used to also emit a
+ * 'collision' violation whenever the *same valid slug* appeared more than
+ * once in a single document's `links` array (e.g. `[[docs/README]]` cited
+ * from two different paragraphs). That is a false-positive class, not a
+ * defect: linking to the same doc twice is normal prose, not ambiguity. It
+ * was flagging 58/58 of the repo's real 'collision' violations with zero
+ * true duplicates among them (see docs/rca or G15-T1 task notes).
+ *
+ * True slug *ambiguity* — two distinct non-README files claiming the same
+ * basename slug — is a structurally different question ("does this slug
+ * resolve to more than one file on disk?") that this function cannot answer
+ * from a single document's links array; it is answered once, correctly, by
+ * walking the whole docs/ tree (see `findDuplicateSlugGroups` in scan.mjs,
+ * which emits the 'duplicate-slug' reason, and `collisions()` in
+ * slugmap.mjs, which composes the same claims-table check). Do not
+ * reintroduce a per-document repeated-link check as a violation here.
  *
  * @param {Array<{slug, label, line}>} links - Extracted links from extractWikilinks
  * @param {Object} slugMap - Map of valid slugs (keys are slug strings)
@@ -107,16 +123,6 @@ export function extractWikilinks(mdText) {
  */
 export function validateWikilinks(links, slugMap) {
   const violations = [];
-  const slugCounts = new Map();
-
-  // Count occurrences of each slug
-  for (const link of links) {
-    const count = slugCounts.get(link.slug) || 0;
-    slugCounts.set(link.slug, count + 1);
-  }
-
-  // Check each link
-  const seenForCollision = new Set();
 
   for (const link of links) {
     // Check for unresolved
@@ -126,16 +132,6 @@ export function validateWikilinks(links, slugMap) {
         line: link.line,
         reason: 'unresolved'
       });
-    }
-
-    // Check for collisions (multiple occurrences of same slug)
-    if (slugCounts.get(link.slug) > 1 && !seenForCollision.has(link.slug)) {
-      violations.push({
-        slug: link.slug,
-        line: link.line,
-        reason: 'collision'
-      });
-      seenForCollision.add(link.slug);
     }
   }
 

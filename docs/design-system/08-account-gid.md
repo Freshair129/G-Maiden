@@ -94,3 +94,9 @@ SIGNED-IN → ใส่ vanity URL / profile URL / SteamID64 (ช่องเด
 - Palette entries (WP-6): Sign in / Copy GID / Link Steam / Sign out (destructive → confirm)
 - CR-003 (wallet/billing/role) จะต่อยอดจากหน้านี้ — โครง AccountPage ควรเผื่อ section ว่าง
   ไว้ในเชิง*โครงสร้างไฟล์* แต่**ไม่ render UI ว่าง** ให้ผู้ใช้เห็น
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 1.0.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |

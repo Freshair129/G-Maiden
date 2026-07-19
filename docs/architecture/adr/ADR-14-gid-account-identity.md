@@ -2,8 +2,8 @@
 title: "ADR: GID — G-Series Account & Identity Layer"
 doc_id: "ADR-14-gid-account-identity"
 status: "Accepted"
-version: "1.0.0"
-updated: "2026-07-02"
+version: "1.0.1"
+updated: "2026-07-19"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["ADR-10-hybrid-ingestion-resilience", "ADR-11-optin-data-contribution-flywheel", "ADR-12-community-ai-marketplace", "CR-002-Phase2-wire-backend"]
@@ -80,7 +80,7 @@ explicit opt-in (see Privacy).
   ADR-12 marketplace / creator revenue share.
 - Memorable, brandable GID with visible Founder status (community prestige).
 - Reuses the GSI axum server for the OAuth callback (no new port/dependency on the desktop).
-- Codec is deterministic + tested (`gid.ts`, 20 vitest) and portable to other G-apps.
+- Codec is deterministic + tested ([`gid.ts`](file:///g:/G-Maiden/src/src/gid.ts), 20 vitest) and portable to other G-apps.
 
 ### Negative / Risks
 - **PII is now stored** (email from Google; Steam identifiers) in Supabase → PDPA/GDPR-class
@@ -105,7 +105,7 @@ data is uploaded. Account creation is **opt-in** (additive sign-in), consistent 
 | Local-only UUID as GID | Ugly, not human-facing; no cross-product story |
 | Email / phone OTP sign-in | Built then cut — friction, SMS cost, larger PII surface; Google is one-click |
 | Steam "Sign in through Steam" (OpenID) | Deferred — heavier Rust callback work; Google covers login now, Steam is linked separately |
-| GID generated in plpgsql | Would duplicate the algorithm; kept single-sourced in `gid.ts` |
+| GID generated in plpgsql | Would duplicate the algorithm; kept single-sourced in [`gid.ts`](file:///g:/G-Maiden/src/src/gid.ts) |
 | Per-app databases | No shared identity; defeats the cross-ecosystem goal |
 
 ## Related Documents
@@ -118,3 +118,4 @@ data is uploaded. Account creation is **opt-in** (additive sign-in), consistent 
 | Version | Date | Summary |
 | --- | --- | --- |
 | 1.0.0 | 2026-07-02 | Accepted — GID cross-ecosystem identity, Supabase `gstore`, Google-OAuth, GID codec, Steam linking, privacy reconciliation |
+| 1.0.1 | 2026-07-19 | symbol-link coverage extension (G1.5) |

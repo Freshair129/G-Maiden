@@ -150,3 +150,9 @@ gate: RAM ≤ 400 MB + FPS-drop ≤ 3% (CPU% ดูแยกจาก resource c
 | T9 regression | ☐ | ☐ | |
 
 **Verdict:** ☐ ผ่าน → cut release (bump version + CHANGELOG + tag) ☐ ต้องแก้: …
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 1.0.0 | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |

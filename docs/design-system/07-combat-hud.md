@@ -93,3 +93,9 @@ Backend เดียวกันทั้งคู่ (game-tick / gank events) 
   กับ [`DeckIcons.tsx`](file:///g:/G-Maiden/src/src/DeckIcons.tsx); ฟอนต์ Segoe UI → Plex (ตาม WP-3) โดยต้องวัด FPS ก่อน/หลัง
 - Quality tier ของ deck (**ไม่**ใช้กับ overlay) — overlay มีงบ FPS ของตัวเองและ blur 16px
   คือเพดานเดิมที่ผ่านการวัดแล้ว
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 1.0.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |

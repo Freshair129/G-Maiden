@@ -139,3 +139,4 @@ related_docs: ["ADR-13-dxgi-capture-migration", "IMPL-PLAN-DXGI-migration", "DXG
 | 0.1.0 | 2026-06-29 | Review CR-001 vs codebase: greenfield confirmed, 5 corrections (windows 0.61, perf_p7 gate, doc target, cadence, model tier), corrected Wave A/B/C orchestration + verified interface appendix |
 | 0.2.0 | 2026-06-29 | Boss resolved OQ-1/2/3 (both docs / 4-8-2 Hz / wgc feature-flag) → approved; Wave A execution started |
 | 0.3.0 | 2026-06-29 | **Wave A done**: dxgi.rs (windows 0.61, 1 fix: GetDesc by-value) + capture.rs DXGI refactor + capture_wgc.rs frozen rollback; gates green (cargo check default, clippy -D warnings default, cargo check --features wgc). **Wave B done** (parallel agents): App.tsx capture-mode badge+tooltip (tsc PASS), AGENTS.md+CLAUDE.md gotcha, modules.json g-sensory 1.1.0, perf_p7 comment. **Wave C (in-game) pending Boss.** |
+| 0.1.0 | 2026-07-19 | link/metadata sweep (G1.5) — reconcile frontmatter version with changelog |

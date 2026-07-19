@@ -159,7 +159,12 @@ test('validateWikilinks: unresolved link', () => {
   assert.equal(violations[0].reason, 'unresolved');
 });
 
-test('validateWikilinks: collision detection', () => {
+// Regression (G15-T1, 2026-07-19): validateWikilinks previously flagged a
+// 'collision' violation whenever a valid slug was linked more than once in
+// the same document — a false positive, since re-citing a real doc from
+// multiple paragraphs is normal prose, not slug ambiguity. It must now
+// resolve cleanly with zero violations regardless of repeat count.
+test('validateWikilinks: repeated valid slug is NOT a collision (false-positive regression)', () => {
   const links = [
     { slug: 'doc1', label: null, line: 1 },
     { slug: 'doc1', label: null, line: 3 },
@@ -170,12 +175,11 @@ test('validateWikilinks: collision detection', () => {
   };
 
   const violations = validateWikilinks(links, slugMap);
-  assert.equal(violations.length, 1);
-  assert.equal(violations[0].reason, 'collision');
-  assert.equal(violations[0].slug, 'doc1');
+  assert.equal(violations.length, 0);
+  assert.ok(!violations.some(v => v.reason === 'collision'), 'must never emit reason=collision');
 });
 
-test('validateWikilinks: mixed unresolved and collision', () => {
+test('validateWikilinks: repeated valid slug alongside an unresolved one only reports the unresolved link', () => {
   const links = [
     { slug: 'valid', label: null, line: 1 },
     { slug: 'valid', label: null, line: 2 },
@@ -186,12 +190,12 @@ test('validateWikilinks: mixed unresolved and collision', () => {
   };
 
   const violations = validateWikilinks(links, slugMap);
-  assert.equal(violations.length, 2);
+  assert.equal(violations.length, 1);
 
   const collisions = violations.filter(v => v.reason === 'collision');
   const unresolved = violations.filter(v => v.reason === 'unresolved');
 
-  assert.equal(collisions.length, 1);
+  assert.equal(collisions.length, 0);
   assert.equal(unresolved.length, 1);
   assert.equal(unresolved[0].slug, 'missing');
 });
@@ -261,8 +265,9 @@ End.`;
 
   const violations = validateWikilinks(links, slugMap);
 
-  // Should have: collision for s1, unresolved for broken-link
-  assert.equal(violations.length, 2);
+  // Repeated valid [[s1]] citations are not violations (false-positive
+  // regression, G15-T1) — only the genuinely broken link should surface.
+  assert.equal(violations.length, 1);
   const reasons = violations.map(v => v.reason).sort();
-  assert.deepEqual(reasons, ['collision', 'unresolved']);
+  assert.deepEqual(reasons, ['unresolved']);
 });

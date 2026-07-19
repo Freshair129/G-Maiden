@@ -18,7 +18,7 @@ language: "th/en"
 ## Context
 
 หน้า control ของ G-Maiden (Command Deck) เดิมเป็น shell "สี่เหลี่ยมเต็ม + nav rail ตัน"
-ตาม Iceglass candidate ([[architecture/design-system|docs/architecture/design-system.md]], 0.1.0b) ระหว่าง session 2026-07-05
+ตาม Iceglass candidate ([[design-system|docs/architecture/design-system.md]], 0.1.0b) ระหว่าง session 2026-07-05
 Boss ขับการ redesign ผ่าน Figma reference (Urban District Planner wireframe) จนได้ทิศทางใหม่:
 
 - Shell เป็น **glass panel แผ่นเดียวที่ถูก Boolean-Subtract** ให้เว้า 3 จุด (topbar / sidebar / signal cards)
@@ -68,3 +68,4 @@ Boss ขับการ redesign ผ่าน Figma reference (Urban District Pl
 | Version | Date | Summary |
 | --- | --- | --- |
 | +banner | 2026-07-19 | historical-status banner: geometry/migration statements superseded โดยโค้ดจริง (audit 2026-07-19) |
+| +link-fix | 2026-07-19 | link/metadata sweep (G15-T2): fixed unresolved wikilink slug `[[architecture/design-system]]` → `[[design-system]]` |

@@ -13,17 +13,17 @@
 
 ## Information Architecture
 
-- [[docs/product/]]
+- `docs/product/`
   - `docs/product/` — product, business, requirements, roadmap
-- [[docs/architecture/]]
+- `docs/architecture/`
   - `docs/architecture/` — stack, specs, TDD, ADR, spike
-- [[docs/features/]]
+- `docs/features/`
   - `docs/features/` — feature/module specs
-- [[docs/operations/]]
+- `docs/operations/`
   - `docs/operations/` — validation, audits, operational artifacts
-- [[docs/guides/]]
+- `docs/guides/`
   - `docs/guides/` — reusable guides
-- [[docs/research/]]
+- `docs/research/`
   - `docs/research/` — concepts และ supporting research
 
 ## Migration Rules
@@ -37,3 +37,9 @@
 
 - รอบนี้เน้น structure และ discoverability ก่อน
 - การ merge เนื้อหา duplicate ควรทำในรอบถัดไปหลังทีมยืนยัน source of truth
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | — | IA reorg proposal ฉบับแรก (untracked) |
+| 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): converted directory wikilinks (`docs/product/` etc.) to plain backtick path text — they are directories, not resolvable docs |

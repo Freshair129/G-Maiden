@@ -4,17 +4,17 @@
 
 ## เริ่มจากตรงนี้
 
-- [[docs/product/]]
+- `docs/product/`
   - ถ้าอยากเข้าใจภาพรวม product: ไปที่ `docs/product/`
-- [[docs/architecture/]]
+- `docs/architecture/`
   - ถ้าอยากเข้าใจสถาปัตยกรรมและการออกแบบระบบ: ไปที่ `docs/architecture/`
-- [[docs/features/]]
+- `docs/features/`
   - ถ้าอยากดูสเปกเชิงโมดูล: ไปที่ `docs/features/`
-- [[docs/operations/]]
+- `docs/operations/`
   - ถ้าอยากดู validation, audit, หรือเครื่องมือภาคสนาม: ไปที่ `docs/operations/`
-- [[docs/guides/]]
+- `docs/guides/`
   - ถ้าอยากดูคู่มือหรือแนวปฏิบัติ: ไปที่ `docs/guides/`
-- [[docs/research/]]
+- `docs/research/`
   - ถ้าอยากดู concept/research รอง: ไปที่ `docs/research/`
 
 ## Canonical Starting Points
@@ -51,7 +51,7 @@ repo นี้มี**สองโปรดักต์**ที่มีเอ�
 
 กติกา:
 1. เรื่องของ player-facing app แก้ที่ `docs/`; เรื่องของ orchestrator แก้ที่ `orchestration/`
-2. จุดเชื่อมสองฝั่ง (เช่น [[SPEC--GOVIBE-INTEGRATION]]) — spec อยู่ฝั่งที่ own พฤติกรรมนั้น อีกฝั่ง**ลิงก์ไป ห้าม copy** (สำเนา = SSOT drift ทันที)
+2. จุดเชื่อมสองฝั่ง (เช่น `orchestration/docs/SPEC--GOVIBE-INTEGRATION.md`) — spec อยู่ฝั่งที่ own พฤติกรรมนั้น อีกฝั่ง**ลิงก์ไป ห้าม copy** (สำเนา = SSOT drift ทันที)
 3. **ห้ามแก้ `.md` ฝั่ง orchestration ที่ derive จาก atoms โดยตรง** — แก้ `gks/atoms*.json` แล้ว compile ใหม่ ไม่งั้นงานถูกเขียนทับ
 
 ## มาตรฐาน metadata หัวเอกสาร (frontmatter)
@@ -99,3 +99,4 @@ approved_date: "YYYY-MM-DD"          # คู่กับ approved_by เสม�
 | 0.2.0 | 2026-07-19 | + section "ขอบเขต SSOT: สองโปรดักต์ในหนึ่ง repo" (G-Maiden vs G-Orchestra, atoms-derived docs rule); แปลง cross-reference เป็น wikilink |
 | 0.3.0 | 2026-07-19 | + section "มาตรฐาน metadata หัวเอกสาร" — ประกาศ schema กลาง (ยึดแบบ FEAT/ADR/CR) + กติกา migration สำหรับเอกสารเก่า |
 | 0.4.0 | 2026-07-19 | + status enum นิยามครบ (lowercase, รับจาก GoVibe STD §13) + sign-off fields `approved_by`/`approved_date` — unification Mechanical #2 ตาม [[2026-07-19-govibe-gmaiden-governance-comparison]] |
+| 0.4.1 | 2026-07-19 | link/metadata sweep (G15-T2): directory wikilinks (`docs/product/` etc.) and the cross-repo `SPEC--GOVIBE-INTEGRATION` link converted to plain backtick path text (non-doc-graph targets) |

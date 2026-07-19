@@ -206,12 +206,17 @@ export function runScan({ repoRoot, docsDir, now } = {}) {
       });
     }
 
+    // validateWikilinks only ever emits 'unresolved' now (G15-T1, 2026-07-19):
+    // it used to also emit 'collision' for a slug repeated within one doc's
+    // links, which was a false positive (58/58 real occurrences were valid
+    // slugs cited more than once, zero were true ambiguity). True slug
+    // ambiguity across the whole docs/ tree is 'duplicate-slug' below.
     const wikiViolations = validateWikilinks(links, slugMapObj);
     for (const v of wikiViolations) {
       violations.push({
         file: repoRel,
         line: v.line,
-        reason: v.reason, // 'unresolved' | 'collision'
+        reason: v.reason, // 'unresolved'
         slug: v.slug,
       });
     }
@@ -300,9 +305,8 @@ export function computeGeneratedAt({ now, files }) {
 
 function reasonLabel(reason) {
   const labels = {
-    'duplicate-slug': 'สแลกซ้ำ / duplicate slug',
+    'duplicate-slug': 'สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug)',
     unresolved: 'wikilink หาไม่เจอ / unresolved wikilink',
-    collision: 'wikilink ชนกัน / repeated wikilink target',
     'glob-slug': 'สแลกแบบ wildcard (informational) / glob slug (informational)',
     'missing-file': 'symbol link ไปยังไฟล์ที่ไม่มีจริง / symbol link to a missing file',
     'bad-anchor': 'เลขบรรทัด anchor ผิดช่วง / symbol link anchor out of range',

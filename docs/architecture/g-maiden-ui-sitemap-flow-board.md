@@ -175,9 +175,9 @@ Layout Editor.
 | `VoiceToast` | On-screen mirror of last voice event | Silent fallback when voice pack ยังไม่มา; auto-dismiss |
 | `BuybackVerdict` | G-Revive buyback advice | Verdict + narrative on death |
 | `CompanionStage` | Character presence module | Crystal Maiden stylized SVG กำลังมา; ตอนนี้ badge placeholder |
-| `VoicePackCard` | จัดการ voice pack แบบ **bundle** ([`AudioSettings.tsx`](file:///g:/G-Maiden/src/src/AudioSettings.tsx)) | upload clip/banner → active pack; activate → resolve เสียงในเกม; "Play preview" + "Show on overlay" ([`preview_announcer_event`](file:///g:/G-Maiden/src-tauri/src/main.rs#L201) → `announcer-banner`) |
+| `VoicePackCard` | จัดการ voice pack แบบ **bundle** ([`AudioSettings.tsx`](file:///g:/G-Maiden/src/src/AudioSettings.tsx)) | upload clip/banner → active pack; activate → resolve เสียงในเกม; "Play preview" + "Show on overlay" ([`preview_announcer_event`](file:///g:/G-Maiden/src-tauri/src/main.rs) → `announcer-banner`) |
 | [`LayoutEditor`](file:///g:/G-Maiden/src/src/overlay/LayoutEditor.tsx) | Drag editor for the merged overlay (all modules, no Lite/Full tier) | 16:9 preview, magnet grid SNAP=5, HUD reference bg, per-module scale, hover-solo focus |
-| `SensitivityPicker` | G-Signal danger threshold | Mirror → [`set_cv_signal_sensitivity`](file:///g:/G-Maiden/src-tauri/src/main.rs#L359); thresholds 0.85 / 0.65 / 0.50 |
+| `SensitivityPicker` | G-Signal danger threshold | Mirror → [`set_cv_signal_sensitivity`](file:///g:/G-Maiden/src-tauri/src/main.rs); thresholds 0.85 / 0.65 / 0.50 |
 | `MotionIntensity` | Motion control | Low / Medium / High + reduced-motion fallback |
 | `PerformanceGovernor` | Protect FPS/CPU/RAM | Degrades blur / particles / animation; quality tiers cinematic/balanced/eco |
 | `ExclusiveFullscreenWarning` | Detect + warn เมื่อ Dota อยู่ใน Exclusive | จาก [`exclusive_fullscreen_active()`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L72); แนะนำ Borderless (else Lite mode = ไม่มี CV) |

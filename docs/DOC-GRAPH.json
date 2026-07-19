@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-19T11:15:40.662Z",
+  "generatedAt": "2026-07-19T12:15:20.333Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -497,6 +497,16 @@
       "path": "src/src/supabase.ts"
     },
     {
+      "id": "src/src/companion.ts",
+      "type": "code",
+      "path": "src/src/companion.ts"
+    },
+    {
+      "id": "src/src/CommandDeck.tsx",
+      "type": "code",
+      "path": "src/src/CommandDeck.tsx"
+    },
+    {
       "id": "src-tauri/src/log.rs",
       "type": "code",
       "path": "src-tauri/src/log.rs"
@@ -520,11 +530,6 @@
       "id": "orchestration/engine.mjs",
       "type": "code",
       "path": "orchestration/engine.mjs"
-    },
-    {
-      "id": "src/src/companion.ts",
-      "type": "code",
-      "path": "src/src/companion.ts"
     },
     {
       "id": "src/src/live/buildTelemetry.ts",
@@ -555,6 +560,11 @@
       "id": "src/src/AudioSettings.tsx",
       "type": "code",
       "path": "src/src/AudioSettings.tsx"
+    },
+    {
+      "id": "src-tauri/src/main.rs",
+      "type": "code",
+      "path": "src-tauri/src/main.rs"
     },
     {
       "id": "src/src/overlay/LayoutEditor.tsx",
@@ -612,11 +622,6 @@
       "path": "gpu-feeder/src/main.rs"
     },
     {
-      "id": "src-tauri/src/main.rs",
-      "type": "code",
-      "path": "src-tauri/src/main.rs"
-    },
-    {
       "id": "src-tauri/src/gsi.rs",
       "type": "code",
       "path": "src-tauri/src/gsi.rs"
@@ -645,16 +650,6 @@
       "id": "src-tauri/src/revive.rs",
       "type": "code",
       "path": "src-tauri/src/revive.rs"
-    },
-    {
-      "id": "src-tauri/src/voice_api.rs",
-      "type": "code",
-      "path": "src-tauri/src/voice_api.rs"
-    },
-    {
-      "id": "src/src/CommandDeck.tsx",
-      "type": "code",
-      "path": "src/src/CommandDeck.tsx"
     },
     {
       "id": "src/src/live/",
@@ -817,11 +812,6 @@
       "path": "src/src/live/utterances.ts"
     },
     {
-      "id": "src/src/live/buildBaselines.ts",
-      "type": "code",
-      "path": "src/src/live/buildBaselines.ts"
-    },
-    {
       "id": "src/src/MaidenLine.tsx",
       "type": "code",
       "path": "src/src/MaidenLine.tsx"
@@ -830,6 +820,11 @@
       "id": "src/src/ContextMenu.tsx",
       "type": "code",
       "path": "src/src/ContextMenu.tsx"
+    },
+    {
+      "id": "src/src/live/buildBaselines.ts",
+      "type": "code",
+      "path": "src/src/live/buildBaselines.ts"
     },
     {
       "id": "src/src/VoicePacksPage.tsx",
@@ -1085,6 +1080,12 @@
       "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
       "line": 47
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/architecture/design-system.md",
+      "type": "wikilink",
+      "line": 49
     },
     {
       "from": "docs/DOC-INDEX.md",
@@ -1396,6 +1397,18 @@
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
+      "line": 83
+    },
+    {
+      "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "to": "src/src/gid.ts",
+      "type": "symbol",
+      "line": 108
+    },
+    {
+      "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "to": "src/src/gid.ts",
+      "type": "symbol",
       "line": 113
     },
     {
@@ -1433,6 +1446,12 @@
       "to": "docs/design-system/02-tokens.md",
       "type": "wikilink",
       "line": 15
+    },
+    {
+      "from": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md",
+      "to": "docs/architecture/design-system.md",
+      "type": "wikilink",
+      "line": 21
     },
     {
       "from": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md",
@@ -1628,21 +1647,27 @@
     },
     {
       "from": "docs/architecture/design-system.md",
-      "to": "src/src/App.tsx",
+      "to": "src/src/companion.ts",
       "type": "symbol",
-      "line": 35
+      "line": 306
+    },
+    {
+      "from": "docs/architecture/design-system.md",
+      "to": "src/src/CommandDeck.tsx",
+      "type": "symbol",
+      "line": 410
+    },
+    {
+      "from": "docs/architecture/design-system.md",
+      "to": "src/src/CommandDeck.tsx",
+      "type": "symbol",
+      "line": 412
     },
     {
       "from": "docs/architecture/design-system.md",
       "to": "src/src/App.tsx",
       "type": "symbol",
-      "line": 35
-    },
-    {
-      "from": "docs/architecture/design-system.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 35
+      "line": 432
     },
     {
       "from": "docs/architecture/engineering-spec.md",
@@ -1679,6 +1704,12 @@
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
       "line": 94
+    },
+    {
+      "from": "docs/architecture/engineering-spec.md",
+      "to": "src-tauri/src/governor.rs",
+      "type": "symbol",
+      "line": 132
     },
     {
       "from": "docs/architecture/engineering-spec.md",
@@ -1826,19 +1857,13 @@
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 172
-    },
-    {
-      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 172
-    },
-    {
-      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "src/src/AudioSettings.tsx",
+      "type": "symbol",
+      "line": 178
+    },
+    {
+      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "to": "src-tauri/src/main.rs",
       "type": "symbol",
       "line": 178
     },
@@ -1847,6 +1872,12 @@
       "to": "src/src/overlay/LayoutEditor.tsx",
       "type": "symbol",
       "line": 179
+    },
+    {
+      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "to": "src-tauri/src/main.rs",
+      "type": "symbol",
+      "line": 180
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -2048,55 +2079,13 @@
     },
     {
       "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 47
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 47
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 51
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 51
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
       "to": "src-tauri/src/setup.rs",
       "type": "symbol",
       "line": 55
     },
     {
       "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 59
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 59
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
       "to": "src-tauri/src/gsi.rs",
-      "type": "symbol",
-      "line": 63
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
       "type": "symbol",
       "line": 63
     },
@@ -2114,12 +2103,6 @@
     },
     {
       "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 81
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
       "to": "src-tauri/src/setup.rs",
       "type": "symbol",
       "line": 87
@@ -2129,60 +2112,6 @@
       "to": "src-tauri/src/setup.rs",
       "type": "symbol",
       "line": 87
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 94
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 104
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 108
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 112
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 116
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 120
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 132
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 138
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 144
     },
     {
       "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
@@ -2228,27 +2157,9 @@
     },
     {
       "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
+      "to": "src-tauri/src/main.rs",
       "type": "symbol",
-      "line": 200
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 204
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 211
-    },
-    {
-      "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 215
+      "line": 219
     },
     {
       "from": "docs/audits/2026-07-07-independent-full-audit.md",
@@ -2375,30 +2286,6 @@
       "to": "src/src/App.tsx",
       "type": "symbol",
       "line": 124
-    },
-    {
-      "from": "docs/audits/2026-07-07-independent-full-audit.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 138
-    },
-    {
-      "from": "docs/audits/2026-07-07-independent-full-audit.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 138
-    },
-    {
-      "from": "docs/audits/2026-07-07-independent-full-audit.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 138
-    },
-    {
-      "from": "docs/audits/2026-07-07-independent-full-audit.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 140
     },
     {
       "from": "docs/audits/2026-07-07-independent-full-audit.md",
@@ -2774,6 +2661,12 @@
     },
     {
       "from": "docs/change request/CR-003-account-phase1-wallet-billing.md",
+      "to": "docs/architecture/design-system.md",
+      "type": "wikilink",
+      "line": 656
+    },
+    {
+      "from": "docs/change request/CR-003-account-phase1-wallet-billing.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
       "line": 854
@@ -2801,12 +2694,6 @@
       "to": "docs/product/MASTERPLAN-account-phase1.md",
       "type": "wikilink",
       "line": 879
-    },
-    {
-      "from": "docs/change request/CR-003-account-phase1-wallet-billing.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 712
     },
     {
       "from": "docs/change request/CR-003-account-phase1-wallet-billing.md",
@@ -2849,6 +2736,18 @@
       "to": "src/src/MatchShareCard.tsx",
       "type": "symbol",
       "line": 742
+    },
+    {
+      "from": "docs/change request/CR-003-account-phase1-wallet-billing.md",
+      "to": "src/src/MatchShareCard.tsx",
+      "type": "symbol",
+      "line": 864
+    },
+    {
+      "from": "docs/change request/CR-003-account-phase1-wallet-billing.md",
+      "to": "src/src/wallet.ts",
+      "type": "symbol",
+      "line": 867
     },
     {
       "from": "docs/change request/CR-003-payment-golive-checklist.md",
@@ -3104,6 +3003,12 @@
     },
     {
       "from": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "to": "src-tauri/src/main.rs",
+      "type": "symbol",
+      "line": 82
+    },
+    {
+      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
       "line": 82
@@ -3122,39 +3027,15 @@
     },
     {
       "from": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "to": "src-tauri/src/main.rs",
+      "type": "symbol",
+      "line": 85
+    },
+    {
+      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
       "line": 94
-    },
-    {
-      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 99
-    },
-    {
-      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 102
-    },
-    {
-      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 118
-    },
-    {
-      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 123
-    },
-    {
-      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 127
     },
     {
       "from": "docs/change request/CR-007-frostline-deck-refresh.md",
@@ -3344,73 +3225,13 @@
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 9
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
       "line": 36
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 36
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 36
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 40
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 61
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 70
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 71
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 72
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 77
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/gsi.rs",
-      "type": "symbol",
-      "line": 98
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api.rs",
       "type": "symbol",
       "line": 98
     },
@@ -3590,9 +3411,39 @@
     },
     {
       "from": "docs/change request/CR-011-cold-booth-ux-direction.md",
+      "to": "src/src/CompanionPages.tsx",
+      "type": "symbol",
+      "line": 56
+    },
+    {
+      "from": "docs/change request/CR-011-cold-booth-ux-direction.md",
       "to": "tests/perf/src/bin/perf_cpu_tree.rs",
       "type": "symbol",
       "line": 488
+    },
+    {
+      "from": "docs/change request/CR-011-cold-booth-ux-direction.md",
+      "to": "src/src/live/utterances.ts",
+      "type": "symbol",
+      "line": 494
+    },
+    {
+      "from": "docs/change request/CR-011-cold-booth-ux-direction.md",
+      "to": "src/src/live/phase.ts",
+      "type": "symbol",
+      "line": 498
+    },
+    {
+      "from": "docs/change request/CR-011-cold-booth-ux-direction.md",
+      "to": "src/src/MaidenLine.tsx",
+      "type": "symbol",
+      "line": 500
+    },
+    {
+      "from": "docs/change request/CR-011-cold-booth-ux-direction.md",
+      "to": "src/src/ContextMenu.tsx",
+      "type": "symbol",
+      "line": 500
     },
     {
       "from": "docs/change request/CR-011-cold-booth-ux-direction.md",
@@ -3857,6 +3708,12 @@
       "to": "src/src/App.tsx",
       "type": "symbol",
       "line": 41
+    },
+    {
+      "from": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
+      "to": "src/src/shortcuts.ts",
+      "type": "symbol",
+      "line": 50
     },
     {
       "from": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
@@ -4432,6 +4289,12 @@
       "from": "docs/design-system/03-layout.md",
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
+      "line": 74
+    },
+    {
+      "from": "docs/design-system/03-layout.md",
+      "to": "src/src/CommandDeck.tsx",
+      "type": "symbol",
       "line": 76
     },
     {
@@ -4531,6 +4394,12 @@
       "line": 312
     },
     {
+      "from": "docs/design-system/03-layout.md",
+      "to": "src/src/CommandDeck.tsx",
+      "type": "symbol",
+      "line": 348
+    },
+    {
       "from": "docs/design-system/04-components.md",
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
@@ -4553,6 +4422,12 @@
       "to": "src/src/styles.css",
       "type": "symbol",
       "line": 18
+    },
+    {
+      "from": "docs/design-system/04-components.md",
+      "to": "src/src/CommandDeck.tsx",
+      "type": "symbol",
+      "line": 54
     },
     {
       "from": "docs/design-system/04-components.md",
@@ -4637,6 +4512,12 @@
       "to": "src/src/styles.css",
       "type": "symbol",
       "line": 194
+    },
+    {
+      "from": "docs/design-system/04-components.md",
+      "to": "src/src/CommandDeck.tsx",
+      "type": "symbol",
+      "line": 195
     },
     {
       "from": "docs/design-system/04-components.md",
@@ -4742,9 +4623,21 @@
     },
     {
       "from": "docs/design-system/04-components.md",
+      "to": "src/src/CommandDeck.tsx",
+      "type": "symbol",
+      "line": 345
+    },
+    {
+      "from": "docs/design-system/04-components.md",
       "to": "src/src/styles.css",
       "type": "symbol",
       "line": 346
+    },
+    {
+      "from": "docs/design-system/04-components.md",
+      "to": "src/src/CommandDeck.tsx",
+      "type": "symbol",
+      "line": 369
     },
     {
       "from": "docs/design-system/04-components.md",
@@ -4763,6 +4656,24 @@
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
       "line": 391
+    },
+    {
+      "from": "docs/design-system/04-components.md",
+      "to": "src/src/CommandDeck.tsx",
+      "type": "symbol",
+      "line": 391
+    },
+    {
+      "from": "docs/design-system/04-components.md",
+      "to": "src-tauri/src/main.rs",
+      "type": "symbol",
+      "line": 391
+    },
+    {
+      "from": "docs/design-system/04-components.md",
+      "to": "src-tauri/src/main.rs",
+      "type": "symbol",
+      "line": 392
     },
     {
       "from": "docs/design-system/04-components.md",
@@ -4808,6 +4719,30 @@
     },
     {
       "from": "docs/design-system/04-components.md",
+      "to": "src/src/CommandDeck.tsx",
+      "type": "symbol",
+      "line": 442
+    },
+    {
+      "from": "docs/design-system/04-components.md",
+      "to": "src/src/shortcuts.ts",
+      "type": "symbol",
+      "line": 451
+    },
+    {
+      "from": "docs/design-system/04-components.md",
+      "to": "src/src/CommandDeck.tsx",
+      "type": "symbol",
+      "line": 472
+    },
+    {
+      "from": "docs/design-system/04-components.md",
+      "to": "src/src/shortcuts.ts",
+      "type": "symbol",
+      "line": 473
+    },
+    {
+      "from": "docs/design-system/04-components.md",
       "to": "src/src/shortcuts.ts",
       "type": "symbol",
       "line": 473
@@ -4832,6 +4767,18 @@
     },
     {
       "from": "docs/design-system/04-components.md",
+      "to": "src/src/CommandDeck.tsx",
+      "type": "symbol",
+      "line": 484
+    },
+    {
+      "from": "docs/design-system/04-components.md",
+      "to": "src/src/shortcuts.ts",
+      "type": "symbol",
+      "line": 487
+    },
+    {
+      "from": "docs/design-system/04-components.md",
       "to": "src/src/ContextMenu.tsx",
       "type": "symbol",
       "line": 496
@@ -4853,6 +4800,12 @@
       "to": "src/src/styles.css",
       "type": "symbol",
       "line": 497
+    },
+    {
+      "from": "docs/design-system/04-components.md",
+      "to": "src-tauri/src/main.rs",
+      "type": "symbol",
+      "line": 514
     },
     {
       "from": "docs/design-system/04-components.md",
@@ -4886,6 +4839,12 @@
     },
     {
       "from": "docs/design-system/04-components.md",
+      "to": "src/src/CommandDeck.tsx",
+      "type": "symbol",
+      "line": 573
+    },
+    {
+      "from": "docs/design-system/04-components.md",
       "to": "src/src/styles.css",
       "type": "symbol",
       "line": 587
@@ -4893,6 +4852,12 @@
     {
       "from": "docs/design-system/04-components.md",
       "to": "src/src/styles.css",
+      "type": "symbol",
+      "line": 593
+    },
+    {
+      "from": "docs/design-system/04-components.md",
+      "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
       "line": 593
     },
@@ -4961,6 +4926,12 @@
       "to": "docs/design-system/08-account-gid.md",
       "type": "wikilink",
       "line": 135
+    },
+    {
+      "from": "docs/design-system/05-sitemap-ia.md",
+      "to": "src/src/CommandDeck.tsx",
+      "type": "symbol",
+      "line": 14
     },
     {
       "from": "docs/design-system/05-sitemap-ia.md",
@@ -5042,6 +5013,12 @@
     },
     {
       "from": "docs/design-system/05-sitemap-ia.md",
+      "to": "src/src/CompanionPages.tsx",
+      "type": "symbol",
+      "line": 131
+    },
+    {
+      "from": "docs/design-system/05-sitemap-ia.md",
       "to": "src/src/VoicePacksPage.tsx",
       "type": "symbol",
       "line": 132
@@ -5090,6 +5067,12 @@
     },
     {
       "from": "docs/design-system/05-sitemap-ia.md",
+      "to": "src/src/CompanionPages.tsx",
+      "type": "symbol",
+      "line": 134
+    },
+    {
+      "from": "docs/design-system/05-sitemap-ia.md",
       "to": "src/src/AccountPage.tsx",
       "type": "symbol",
       "line": 135
@@ -5105,12 +5088,6 @@
       "to": "src/src/SteamLink.tsx",
       "type": "symbol",
       "line": 135
-    },
-    {
-      "from": "docs/design-system/05-sitemap-ia.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 136
     },
     {
       "from": "docs/design-system/05-sitemap-ia.md",
@@ -5623,6 +5600,12 @@
       "line": 147
     },
     {
+      "from": "docs/features/FEAT-G-DAMAGE.md",
+      "to": "src-tauri/src/damage.rs",
+      "type": "symbol",
+      "line": 184
+    },
+    {
       "from": "docs/features/FEAT-G-LOG.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
@@ -5715,6 +5698,12 @@
     {
       "from": "docs/features/FEAT-G-MASTER.md",
       "to": "src-tauri/src/counter_advice.rs",
+      "type": "symbol",
+      "line": 41
+    },
+    {
+      "from": "docs/features/FEAT-G-MASTER.md",
+      "to": "src-tauri/src/main.rs",
       "type": "symbol",
       "line": 41
     },
@@ -5936,6 +5925,12 @@
     },
     {
       "from": "docs/features/FEAT-G-REVIVE.md",
+      "to": "src-tauri/src/main.rs",
+      "type": "symbol",
+      "line": 101
+    },
+    {
+      "from": "docs/features/FEAT-G-REVIVE.md",
       "to": "src-tauri/src/revive.rs",
       "type": "symbol",
       "line": 102
@@ -5984,6 +5979,12 @@
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
+      "to": "docs/architecture/design-system.md",
+      "type": "wikilink",
+      "line": 81
+    },
+    {
+      "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
       "line": 107
@@ -5993,6 +5994,12 @@
       "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
       "line": 131
+    },
+    {
+      "from": "docs/features/FEAT-G-SENSORY.md",
+      "to": "docs/architecture/design-system.md",
+      "type": "wikilink",
+      "line": 145
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
@@ -6026,15 +6033,9 @@
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
-      "to": "src/src/App.tsx",
+      "to": "src-tauri/src/main.rs",
       "type": "symbol",
-      "line": 69
-    },
-    {
-      "from": "docs/features/FEAT-G-SENSORY.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 69
+      "line": 48
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
@@ -6176,7 +6177,19 @@
     },
     {
       "from": "docs/features/FEAT-G-SIGNAL.md",
+      "to": "src-tauri/src/main.rs",
+      "type": "symbol",
+      "line": 16
+    },
+    {
+      "from": "docs/features/FEAT-G-SIGNAL.md",
       "to": "src-tauri/src/audio.rs",
+      "type": "symbol",
+      "line": 109
+    },
+    {
+      "from": "docs/features/FEAT-G-SIGNAL.md",
+      "to": "src-tauri/src/main.rs",
       "type": "symbol",
       "line": 109
     },
@@ -6209,6 +6222,12 @@
       "to": "src-tauri/src/tts.rs",
       "type": "symbol",
       "line": 8
+    },
+    {
+      "from": "docs/features/FEAT-G-VOICE.md",
+      "to": "src-tauri/src/main.rs",
+      "type": "symbol",
+      "line": 9
     },
     {
       "from": "docs/features/FEAT-G-VOICE.md",
@@ -7100,12 +7119,6 @@
     },
     {
       "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 108
-    },
-    {
-      "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
       "line": 109
@@ -7484,105 +7497,15 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 3
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/audio.rs",
       "type": "symbol",
       "line": 6
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 6
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 7
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 9
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 10
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 10
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 12
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 16
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/audio.rs",
       "type": "symbol",
       "line": 19
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 20
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 21
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 23
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 24
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 25
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 25
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 26
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -7591,100 +7514,34 @@
       "line": 28
     },
     {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 32
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 37
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 41
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 42
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 51
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 55
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 55
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 58
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 60
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 60
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 60
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 61
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 61
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 61
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api.rs",
-      "type": "symbol",
-      "line": 61
+      "from": "docs/reference/dota-ui/README.md",
+      "to": "docs/architecture/assets/design-references/README.md",
+      "type": "wikilink",
+      "line": 9
     },
     {
       "from": "docs/reference/dota-ui/README.md",
       "to": "tools/telemetry/ocr-test",
       "type": "symbol",
       "line": 19
+    },
+    {
+      "from": "docs/research/assets/dota2-hud-reference.md",
+      "to": "docs/reference/dota-ui/README.md",
+      "type": "wikilink",
+      "line": 7
+    },
+    {
+      "from": "docs/research/assets/dota2-hud-reference.md",
+      "to": "docs/reference/dota-ui/README.md",
+      "type": "wikilink",
+      "line": 11
+    },
+    {
+      "from": "docs/research/assets/dota2-hud-reference.md",
+      "to": "docs/reference/dota-ui/README.md",
+      "type": "wikilink",
+      "line": 210
     },
     {
       "from": "docs/research/assets/dota2-hud-reference.md",
@@ -7713,48 +7570,6 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 38,
-      "reason": "unresolved",
-      "slug": "design-system/assets"
-    },
-    {
-      "file": "docs/DOC-INDEX.md",
-      "line": 49,
-      "reason": "unresolved",
-      "slug": "architecture/design-system"
-    },
-    {
-      "file": "docs/DOC-INDEX.md",
-      "line": 57,
-      "reason": "unresolved",
-      "slug": "architecture/adr"
-    },
-    {
-      "file": "docs/DOC-INDEX.md",
-      "line": 59,
-      "reason": "unresolved",
-      "slug": "architecture/spikes"
-    },
-    {
-      "file": "docs/DOC-INDEX.md",
-      "line": 64,
-      "reason": "unresolved",
-      "slug": "SRS--G-ORCHESTRA"
-    },
-    {
-      "file": "docs/DOC-INDEX.md",
-      "line": 66,
-      "reason": "unresolved",
-      "slug": "FEAT--MULTI-AGENT-ORCHESTRATOR"
-    },
-    {
-      "file": "docs/DOC-INDEX.md",
-      "line": 68,
-      "reason": "unresolved",
-      "slug": "g-orchestra-ui-sitemap-flow-board"
-    },
-    {
-      "file": "docs/DOC-INDEX.md",
       "line": 70,
       "reason": "glob-slug",
       "slug": "SPEC--*"
@@ -7773,56 +7588,8 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 84,
-      "reason": "unresolved",
-      "slug": "operations/validation"
-    },
-    {
-      "file": "docs/DOC-INDEX.md",
-      "line": 86,
-      "reason": "unresolved",
-      "slug": "operations/audits"
-    },
-    {
-      "file": "docs/DOC-INDEX.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/DOCS-IA-REORG-PROPOSAL.md",
-      "line": 16,
-      "reason": "unresolved",
-      "slug": "docs/product/"
-    },
-    {
-      "file": "docs/DOCS-IA-REORG-PROPOSAL.md",
-      "line": 18,
-      "reason": "unresolved",
-      "slug": "docs/architecture/"
-    },
-    {
-      "file": "docs/DOCS-IA-REORG-PROPOSAL.md",
-      "line": 20,
-      "reason": "unresolved",
-      "slug": "docs/features/"
-    },
-    {
-      "file": "docs/DOCS-IA-REORG-PROPOSAL.md",
-      "line": 22,
-      "reason": "unresolved",
-      "slug": "docs/operations/"
-    },
-    {
-      "file": "docs/DOCS-IA-REORG-PROPOSAL.md",
-      "line": 24,
-      "reason": "unresolved",
-      "slug": "docs/guides/"
-    },
-    {
-      "file": "docs/DOCS-IA-REORG-PROPOSAL.md",
-      "line": 26,
-      "reason": "unresolved",
-      "slug": "docs/research/"
     },
     {
       "file": "docs/DOCS-IA-REORG-PROPOSAL.md",
@@ -7831,98 +7598,8 @@
     },
     {
       "file": "docs/README.md",
-      "line": 7,
-      "reason": "unresolved",
-      "slug": "docs/product/"
-    },
-    {
-      "file": "docs/README.md",
-      "line": 9,
-      "reason": "unresolved",
-      "slug": "docs/architecture/"
-    },
-    {
-      "file": "docs/README.md",
-      "line": 11,
-      "reason": "unresolved",
-      "slug": "docs/features/"
-    },
-    {
-      "file": "docs/README.md",
-      "line": 13,
-      "reason": "unresolved",
-      "slug": "docs/operations/"
-    },
-    {
-      "file": "docs/README.md",
-      "line": 15,
-      "reason": "unresolved",
-      "slug": "docs/guides/"
-    },
-    {
-      "file": "docs/README.md",
-      "line": 17,
-      "reason": "unresolved",
-      "slug": "docs/research/"
-    },
-    {
-      "file": "docs/README.md",
-      "line": 39,
-      "reason": "collision",
-      "slug": "DOC-INDEX"
-    },
-    {
-      "file": "docs/README.md",
-      "line": 54,
-      "reason": "unresolved",
-      "slug": "SPEC--GOVIBE-INTEGRATION"
-    },
-    {
-      "file": "docs/README.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/architecture/CR-001-dxgi-capture-migration.md",
-      "line": 221,
-      "reason": "collision",
-      "slug": "DXGI-task-assignment"
-    },
-    {
-      "file": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md",
-      "line": 21,
-      "reason": "unresolved",
-      "slug": "architecture/design-system"
-    },
-    {
-      "file": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md",
-      "line": 42,
-      "reason": "collision",
-      "slug": "CR-005-landing-auth-social"
-    },
-    {
-      "file": "docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md",
-      "line": 24,
-      "reason": "collision",
-      "slug": "ADR-11-optin-data-contribution-flywheel"
-    },
-    {
-      "file": "docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md",
-      "line": 24,
-      "reason": "collision",
-      "slug": "ADR-12-community-ai-marketplace"
-    },
-    {
-      "file": "docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md",
-      "line": 31,
-      "reason": "collision",
-      "slug": "ADR-14-gid-account-identity"
-    },
-    {
-      "file": "docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md",
-      "line": 144,
-      "reason": "collision",
-      "slug": "CR-003-account-phase1-wallet-billing"
     },
     {
       "file": "docs/architecture/assets/design-references/README.md",
@@ -7931,40 +7608,15 @@
     },
     {
       "file": "docs/architecture/design-system.md",
-      "line": 43,
-      "reason": "collision",
-      "slug": "software-requirements-specification"
+      "line": 35,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
     },
     {
       "file": "docs/architecture/design-system.md",
-      "line": 44,
-      "reason": "collision",
-      "slug": "engineering-spec"
-    },
-    {
-      "file": "docs/architecture/design-system.md",
-      "line": 45,
-      "reason": "collision",
-      "slug": "technical-design-document"
-    },
-    {
-      "file": "docs/architecture/design-system.md",
-      "line": 49,
-      "reason": "collision",
-      "slug": "FEAT-G-SENSORY"
-    },
-    {
-      "file": "docs/architecture/design-system.md",
-      "line": 52,
-      "reason": "collision",
-      "slug": "2026-06-23-audit-gsi-setup-overlay-settings-th"
-    },
-    {
-      "file": "docs/architecture/design-system.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.1.0b",
-      "changelog": "+banner"
+      "line": 35,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
     },
     {
       "file": "docs/architecture/engineering-spec.md",
@@ -7973,33 +7625,14 @@
     },
     {
       "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "line": 23,
-      "reason": "collision",
-      "slug": "05-sitemap-ia"
-    },
-    {
-      "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "line": 178,
+      "line": 172,
       "reason": "bad-anchor",
-      "target": "src-tauri/src/main.rs"
-    },
-    {
-      "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "line": 180,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/main.rs"
+      "target": "src/src/App.tsx"
     },
     {
       "file": "docs/architecture/implementation-plan.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/architecture/product-family-design-map.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.5.0b",
-      "changelog": "+banner"
     },
     {
       "file": "docs/architecture/spec-orchestra-codedoc-agent.md",
@@ -8023,92 +7656,159 @@
     },
     {
       "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 17,
-      "reason": "collision",
-      "slug": "engineering-spec"
+      "line": 47,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
     },
     {
       "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-      "line": 219,
+      "line": 47,
       "reason": "bad-anchor",
-      "target": "src-tauri/src/main.rs"
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 51,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 51,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 59,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 59,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 63,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 81,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 94,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 104,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 108,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 112,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 116,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 120,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 132,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 138,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 144,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 200,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 204,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 211,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
+    },
+    {
+      "file": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "line": 215,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
     },
     {
       "file": "docs/audits/2026-07-07-independent-full-audit.md",
-      "line": 4,
-      "reason": "collision",
-      "slug": "SEC-001-auth-identity-hardening"
+      "line": 138,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
     },
     {
       "file": "docs/audits/2026-07-07-independent-full-audit.md",
-      "line": 40,
-      "reason": "collision",
-      "slug": "CR-003-account-phase1-wallet-billing"
+      "line": 138,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
     },
     {
-      "file": "docs/audits/SEC-001-auth-identity-hardening.md",
-      "line": 16,
-      "reason": "collision",
-      "slug": "CR-003-account-phase1-wallet-billing"
+      "file": "docs/audits/2026-07-07-independent-full-audit.md",
+      "line": 138,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
     },
     {
-      "file": "docs/audits/SEC-001-auth-identity-hardening.md",
-      "line": 87,
-      "reason": "collision",
-      "slug": "ADR-14-gid-account-identity"
-    },
-    {
-      "file": "docs/change request/ADR-13-dxgi-capture-migration.md",
-      "line": 128,
-      "reason": "unresolved",
-      "slug": "CLAUDE.md"
-    },
-    {
-      "file": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.1.0",
-      "changelog": "0.3.0"
-    },
-    {
-      "file": "docs/change request/CR-001-Wave-C-test-plan.md",
-      "line": null,
-      "reason": "missing-changelog"
+      "file": "docs/audits/2026-07-07-independent-full-audit.md",
+      "line": 140,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
     },
     {
       "file": "docs/change request/CR-003-account-phase1-wallet-billing.md",
-      "line": 15,
-      "reason": "collision",
-      "slug": "ADR-16-credit-economy-and-mint-oracle"
-    },
-    {
-      "file": "docs/change request/CR-003-account-phase1-wallet-billing.md",
-      "line": 22,
-      "reason": "collision",
-      "slug": "ADR-14-gid-account-identity"
-    },
-    {
-      "file": "docs/change request/CR-003-account-phase1-wallet-billing.md",
-      "line": 656,
-      "reason": "unresolved",
-      "slug": "architecture/design-system"
-    },
-    {
-      "file": "docs/change request/CR-003-payment-golive-checklist.md",
-      "line": 19,
-      "reason": "collision",
-      "slug": "ADR-16-credit-economy-and-mint-oracle"
-    },
-    {
-      "file": "docs/change request/CR-003-payment-golive-checklist.md",
-      "line": 36,
-      "reason": "unresolved",
-      "slug": "CLAUDE.md"
-    },
-    {
-      "file": "docs/change request/CR-003-payment-golive-checklist.md",
-      "line": null,
-      "reason": "missing-changelog"
+      "line": 712,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
     },
     {
       "file": "docs/change request/CR-004-voice-command-browser.md",
@@ -8116,50 +7816,104 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/change request/CR-005-landing-auth-social.md",
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 99,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 102,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 118,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 123,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 127,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": null,
+      "reason": "no-metadata"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
+      "line": null,
+      "reason": "no-metadata"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 9,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "line": 36,
-      "reason": "collision",
-      "slug": "ADR-14-gid-account-identity"
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
     },
     {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 36,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "line": 40,
-      "reason": "collision",
-      "slug": "07-combat-hud"
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
     },
     {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": 49,
-      "reason": "collision",
-      "slug": "03-layout"
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 61,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
     },
     {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": 82,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/main.rs"
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 70,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
     },
     {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": 85,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/main.rs"
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 71,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
     },
     {
-      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "line": null,
-      "reason": "no-metadata"
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 72,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
     },
     {
-      "file": "docs/change request/CR-008-login-hardening.md",
-      "line": 6,
-      "reason": "collision",
-      "slug": "SEC-001-auth-identity-hardening"
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 77,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
     },
     {
-      "file": "docs/change request/CR-008-login-hardening.md",
-      "line": null,
-      "reason": "no-metadata"
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 98,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
     },
     {
       "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
@@ -8173,50 +7927,8 @@
     },
     {
       "file": "docs/change request/CR-011-cold-booth-ux-direction.md",
-      "line": 3,
-      "reason": "collision",
-      "slug": "CR-007-frostline-deck-refresh"
-    },
-    {
-      "file": "docs/change request/CR-011-cold-booth-ux-direction.md",
-      "line": 7,
-      "reason": "collision",
-      "slug": "CR-003-account-phase1-wallet-billing"
-    },
-    {
-      "file": "docs/change request/CR-011-cold-booth-ux-direction.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
-      "line": 8,
-      "reason": "collision",
-      "slug": "CR-011-cold-booth-ux-direction"
-    },
-    {
-      "file": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
-      "line": 9,
-      "reason": "collision",
-      "slug": "CR-003-account-phase1-wallet-billing"
-    },
-    {
-      "file": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
-      "line": 9,
-      "reason": "collision",
-      "slug": "ADR-16-credit-economy-and-mint-oracle"
-    },
-    {
-      "file": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
-      "line": 9,
-      "reason": "collision",
-      "slug": "05-sitemap-ia"
-    },
-    {
-      "file": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
-      "line": 191,
-      "reason": "unresolved",
-      "slug": "CLAUDE.md"
     },
     {
       "file": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
@@ -8224,82 +7936,10 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/change request/DXGI-task-assignment.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.1.0",
-      "changelog": "0.2.0"
-    },
-    {
-      "file": "docs/design-system/01-foundations.md",
-      "line": null,
-      "reason": "missing-changelog"
-    },
-    {
-      "file": "docs/design-system/02-tokens.md",
-      "line": null,
-      "reason": "missing-changelog"
-    },
-    {
-      "file": "docs/design-system/04-components.md",
-      "line": 391,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/main.rs"
-    },
-    {
-      "file": "docs/design-system/04-components.md",
-      "line": 392,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/main.rs"
-    },
-    {
-      "file": "docs/design-system/04-components.md",
-      "line": 514,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/main.rs"
-    },
-    {
-      "file": "docs/design-system/04-components.md",
-      "line": null,
-      "reason": "missing-changelog"
-    },
-    {
       "file": "docs/design-system/05-sitemap-ia.md",
-      "line": 14,
-      "reason": "collision",
-      "slug": "03-layout"
-    },
-    {
-      "file": "docs/design-system/05-sitemap-ia.md",
-      "line": 46,
-      "reason": "collision",
-      "slug": "04-components"
-    },
-    {
-      "file": "docs/design-system/06-stack.md",
-      "line": null,
-      "reason": "missing-changelog"
-    },
-    {
-      "file": "docs/design-system/07-combat-hud.md",
-      "line": null,
-      "reason": "missing-changelog"
-    },
-    {
-      "file": "docs/design-system/08-account-gid.md",
-      "line": null,
-      "reason": "missing-changelog"
-    },
-    {
-      "file": "docs/design-system/README.md",
-      "line": 35,
-      "reason": "collision",
-      "slug": "06-stack"
-    },
-    {
-      "file": "docs/design-system/README.md",
-      "line": null,
-      "reason": "missing-changelog"
+      "line": 136,
+      "reason": "bad-anchor",
+      "target": "src/src/App.tsx"
     },
     {
       "file": "docs/features/FEAT-G-COACH.md",
@@ -8310,12 +7950,6 @@
       "file": "docs/features/FEAT-G-LOG.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/features/FEAT-G-MASTER.md",
-      "line": 41,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/main.rs"
     },
     {
       "file": "docs/features/FEAT-G-MASTER.md",
@@ -8344,20 +7978,8 @@
     },
     {
       "file": "docs/features/FEAT-G-REVIVE.md",
-      "line": 101,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/main.rs"
-    },
-    {
-      "file": "docs/features/FEAT-G-REVIVE.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/features/FEAT-G-SCORE.md",
-      "line": 7,
-      "reason": "collision",
-      "slug": "ADR-12-community-ai-marketplace"
     },
     {
       "file": "docs/features/FEAT-G-SCORE.md",
@@ -8366,33 +7988,9 @@
     },
     {
       "file": "docs/features/FEAT-G-SENSORY.md",
-      "line": 4,
-      "reason": "collision",
-      "slug": "technical-design-document"
-    },
-    {
-      "file": "docs/features/FEAT-G-SENSORY.md",
-      "line": 48,
+      "line": 69,
       "reason": "bad-anchor",
-      "target": "src-tauri/src/main.rs"
-    },
-    {
-      "file": "docs/features/FEAT-G-SENSORY.md",
-      "line": 81,
-      "reason": "collision",
-      "slug": "architecture/design-system"
-    },
-    {
-      "file": "docs/features/FEAT-G-SENSORY.md",
-      "line": 81,
-      "reason": "unresolved",
-      "slug": "architecture/design-system"
-    },
-    {
-      "file": "docs/features/FEAT-G-SENSORY.md",
-      "line": 145,
-      "reason": "unresolved",
-      "slug": "architecture/design-system"
+      "target": "src/src/App.tsx"
     },
     {
       "file": "docs/features/FEAT-G-SENSORY.md",
@@ -8401,32 +7999,8 @@
     },
     {
       "file": "docs/features/FEAT-G-SENTRY.md",
-      "line": 4,
-      "reason": "collision",
-      "slug": "technical-design-document"
-    },
-    {
-      "file": "docs/features/FEAT-G-SENTRY.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/features/FEAT-G-SIGNAL.md",
-      "line": 4,
-      "reason": "collision",
-      "slug": "software-requirements-specification"
-    },
-    {
-      "file": "docs/features/FEAT-G-SIGNAL.md",
-      "line": 16,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/main.rs"
-    },
-    {
-      "file": "docs/features/FEAT-G-SIGNAL.md",
-      "line": 109,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/main.rs"
     },
     {
       "file": "docs/features/FEAT-G-SIGNAL.md",
@@ -8437,12 +8011,6 @@
       "file": "docs/features/FEAT-G-STREAM.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/features/FEAT-G-VOICE.md",
-      "line": 9,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/main.rs"
     },
     {
       "file": "docs/features/FEAT-G-VOICE.md",
@@ -8468,54 +8036,6 @@
       "file": "docs/operations/validation/forms-and-social.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/product/business-requirements.md",
-      "line": 3,
-      "reason": "collision",
-      "slug": "product-requirements"
-    },
-    {
-      "file": "docs/product/business-requirements.md",
-      "line": 3,
-      "reason": "collision",
-      "slug": "software-requirements-specification"
-    },
-    {
-      "file": "docs/product/business-requirements.md",
-      "line": 5,
-      "reason": "collision",
-      "slug": "competitive-brief"
-    },
-    {
-      "file": "docs/product/business-requirements.md",
-      "line": 5,
-      "reason": "collision",
-      "slug": "roadmap"
-    },
-    {
-      "file": "docs/product/business-requirements.md",
-      "line": 95,
-      "reason": "collision",
-      "slug": "ADR-10-hybrid-ingestion-resilience"
-    },
-    {
-      "file": "docs/product/business-requirements.md",
-      "line": 96,
-      "reason": "collision",
-      "slug": "ADR-11-optin-data-contribution-flywheel"
-    },
-    {
-      "file": "docs/product/business-requirements.md",
-      "line": 102,
-      "reason": "collision",
-      "slug": "ADR-12-community-ai-marketplace"
-    },
-    {
-      "file": "docs/product/business-validation-plan.md",
-      "line": 26,
-      "reason": "collision",
-      "slug": "ADR-11-optin-data-contribution-flywheel"
     },
     {
       "file": "docs/product/business-validation-plan.md",
@@ -8544,69 +8064,9 @@
     },
     {
       "file": "docs/product/roadmap.md",
-      "line": 3,
-      "reason": "collision",
-      "slug": "product-requirements"
-    },
-    {
-      "file": "docs/product/roadmap.md",
-      "line": 3,
-      "reason": "collision",
-      "slug": "software-requirements-specification"
-    },
-    {
-      "file": "docs/product/roadmap.md",
-      "line": 3,
-      "reason": "collision",
-      "slug": "engineering-spec"
-    },
-    {
-      "file": "docs/product/roadmap.md",
-      "line": 3,
-      "reason": "collision",
-      "slug": "technical-design-document"
-    },
-    {
-      "file": "docs/product/roadmap.md",
-      "line": 12,
-      "reason": "collision",
-      "slug": "CR-003-account-phase1-wallet-billing"
-    },
-    {
-      "file": "docs/product/roadmap.md",
-      "line": 18,
-      "reason": "unresolved",
-      "slug": "PROJECT_FEATURE_MAP"
-    },
-    {
-      "file": "docs/product/roadmap.md",
-      "line": 48,
-      "reason": "collision",
-      "slug": "CR-003-payment-golive-checklist"
-    },
-    {
-      "file": "docs/product/roadmap.md",
-      "line": 66,
-      "reason": "collision",
-      "slug": "ADR-12-community-ai-marketplace"
-    },
-    {
-      "file": "docs/product/roadmap.md",
-      "line": 114,
-      "reason": "collision",
-      "slug": "CR-002-Phase2-wire-backend"
-    },
-    {
-      "file": "docs/product/roadmap.md",
-      "line": 149,
-      "reason": "collision",
-      "slug": "ADR-14-gid-account-identity"
-    },
-    {
-      "file": "docs/product/roadmap.md",
-      "line": 154,
-      "reason": "collision",
-      "slug": "ADR-11-optin-data-contribution-flywheel"
+      "line": 108,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
     },
     {
       "file": "docs/product/roadmap.md",
@@ -8619,39 +8079,189 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/reference/dota-ui/README.md",
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 3,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 6,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 7,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 9,
-      "reason": "unresolved",
-      "slug": "architecture/assets/design-references/README"
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 10,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 10,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 12,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 16,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 20,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 21,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 23,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 24,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 25,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 25,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 26,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 32,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 37,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 41,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 42,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 51,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 55,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 55,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 58,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 60,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 60,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 60,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 61,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 61,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 61,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 61,
+      "reason": "missing-file",
+      "target": "src-tauri/src/voice_api.rs"
     },
     {
       "file": "docs/reference/dota-ui/README.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/research/assets/dota2-hud-reference.md",
-      "line": 7,
-      "reason": "collision",
-      "slug": "reference/dota-ui/README"
-    },
-    {
-      "file": "docs/research/assets/dota2-hud-reference.md",
-      "line": 7,
-      "reason": "unresolved",
-      "slug": "reference/dota-ui/README"
-    },
-    {
-      "file": "docs/research/assets/dota2-hud-reference.md",
-      "line": 11,
-      "reason": "unresolved",
-      "slug": "reference/dota-ui/README"
-    },
-    {
-      "file": "docs/research/assets/dota2-hud-reference.md",
-      "line": 210,
-      "reason": "unresolved",
-      "slug": "reference/dota-ui/README"
     },
     {
       "file": "docs/research/assets/dota2-hud-reference.md",

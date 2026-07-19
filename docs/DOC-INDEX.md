@@ -35,7 +35,7 @@
   - `docs/design-system/05-sitemap-ia.md` — IA, navigation, page inventory, flows
 - [[06-stack]]
   - `docs/design-system/06-stack.md` — tech stack + code map + migration checklist
-- [[design-system/assets]]
+- `docs/design-system/assets/`
   - `docs/design-system/assets/` — annotated wireframe/subtract-shape/swatches (SVG) + glass prototype (HTML)
 
 ## Architecture
@@ -46,7 +46,7 @@
   - `docs/architecture/engineering-spec.md` — contracts และ engineering rules
 - [[technical-design-document]]
   - `docs/architecture/technical-design-document.md` — system design หลัก
-- [[architecture/design-system]]
+- [[design-system]]
   - `docs/architecture/design-system.md` — Iceglass UX/UI design system สำหรับ Control Dashboard และ Overlay
 - [[product-family-design-map]]
   - `docs/architecture/product-family-design-map.md` — shared visual overview for G-Maiden and the `orchestration/` G-Orchestra multi-agent dev tool
@@ -54,18 +54,18 @@
   - `docs/architecture/g-maiden-ui-sitemap-flow-board.md` — G-Maiden player-facing UI sitemap, user flow, and board
 - [[implementation-plan]]
   - `docs/architecture/implementation-plan.md` — implementation plan / ultraplan
-- [[architecture/adr]]
+- `docs/architecture/adr/`
   - `docs/architecture/adr/` — architecture decisions (ADR-10/11/12 strategy, ADR-13 DXGI, **ADR-14 GID account & identity layer** — Supabase `gstore`, Google OAuth, GID codec, privacy reconcile)
-- [[architecture/spikes]]
+- `docs/architecture/spikes/`
   - `docs/architecture/spikes/` — spike และ technical proof
 
 ## Orchestration
 
-- [[SRS--G-ORCHESTRA]]
+- `orchestration/docs/SRS--G-ORCHESTRA.md`
   - `orchestration/docs/SRS--G-ORCHESTRA.md` — SRS สำหรับ G-Orchestra multi-agent orchestrator
-- [[FEAT--MULTI-AGENT-ORCHESTRATOR]]
+- `orchestration/docs/FEAT--MULTI-AGENT-ORCHESTRATOR.md`
   - `orchestration/docs/FEAT--MULTI-AGENT-ORCHESTRATOR.md` — feature spec สำหรับ G-Orchestra multi-agent workflow
-- [[g-orchestra-ui-sitemap-flow-board]]
+- `orchestration/docs/g-orchestra-ui-sitemap-flow-board.md`
   - `orchestration/docs/g-orchestra-ui-sitemap-flow-board.md` — G-Orchestra UI sitemap, user flow, and design board
 - [[SPEC--*]]
   - `orchestration/docs/SPEC--*.md` — specs เฉพาะระบบ orchestration เช่น verify gate, provider registry, local model anti-error loop
@@ -81,9 +81,9 @@
 
 ## Operations
 
-- [[operations/validation]]
+- `docs/operations/validation/`
   - `docs/operations/validation/` — toolkit, forms, social validation assets
-- [[operations/audits]]
+- `docs/operations/audits/`
   - `docs/operations/audits/` — audit reports
 
 ## Guides
@@ -97,3 +97,9 @@
 
 - [[subagent-context-scoping]]
   - `docs/research/concepts/subagent-context-scoping.md` — concept note เรื่อง subagent context scoping
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | — | สารบัญ docs ฉบับแรก (untracked) |
+| 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): fixed unresolved wikilinks — `[[architecture/design-system]]` → `[[design-system]]`; directory/non-doc-graph targets (`architecture/adr`, `architecture/spikes`, `design-system/assets`, `operations/validation`, `operations/audits`, `orchestration/docs/*`) converted to plain backtick path text. `docs/operations/audits/` does not exist on disk (dangling; real audits live at `docs/audits/`) |

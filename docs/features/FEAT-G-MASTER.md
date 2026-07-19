@@ -38,7 +38,7 @@ on advise(tick) request:
 - **Cloud backend:** `claude` CLI (Plan quota) หรือ Anthropic Messages API (`claude-haiku-4-5`)
   เมื่อผู้ใช้ตั้ง API key; ไม่มี Gemini และไม่มี "Template" tier.
 - **Meta dataset:** static dataset ของ counter-item builds ([`counter_advice.rs`](file:///g:/G-Maiden/src-tauri/src/counter_advice.rs)).
-- **Counter-item logic:** [`counter_advice.rs`](file:///g:/G-Maiden/src-tauri/src/counter_advice.rs) ต่อสายจริงแล้ว — [`request_advice`](file:///g:/G-Maiden/src-tauri/src/main.rs#L243) (`main.rs:251`)
+- **Counter-item logic:** [`counter_advice.rs`](file:///g:/G-Maiden/src-tauri/src/counter_advice.rs) ต่อสายจริงแล้ว — [`request_advice`](file:///g:/G-Maiden/src-tauri/src/main.rs) (`main.rs:251`)
   ป้อน [`runtime::known_enemies()`](file:///g:/G-Maiden/src-tauri/src/runtime.rs#L327) (รายชื่อฮีโร่ศัตรูที่ CV เห็นซ้ำจนข้ามเกณฑ์ confirm) เข้า
   [`counter_advice_text(enemies)`](file:///g:/G-Maiden/src-tauri/src/counter_advice.rs#L11); ว่างเฉพาะตอนยังไม่มีศัตรูที่ CV ยืนยันแล้ว ไม่ใช่ hardcode ว่างตลอด.
 

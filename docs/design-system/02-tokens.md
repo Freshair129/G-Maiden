@@ -331,3 +331,9 @@ html.gq-eco { --g-blur-console: none; }
 ```
 
 > เมื่อ migrate: เพิ่ม block นี้ก่อน แล้วค่อยแทนที่ `var(--bg)` ฯลฯ ทีละ component — อย่า big-bang
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 2.1.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |

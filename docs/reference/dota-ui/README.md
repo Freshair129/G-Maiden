@@ -6,7 +6,7 @@ overlay never blocks it and the capture/OCR pipelines crop the right regions.
 
 > These are reference of Valve's Dota 2 client UI (third-party screenshots), used
 > only as a development reference. Not G-Maiden's own design — for that see
-> [[architecture/assets/design-references/README|docs/architecture/assets/design-references/]].
+> [[design-references/README|docs/architecture/assets/design-references/]].
 
 | File | What it shows | Used for |
 | --- | --- | --- |
@@ -18,3 +18,9 @@ overlay never blocks it and the capture/OCR pipelines crop the right regions.
 Related: scoreboard / net-worth notes live with the OCR work in
 [`tools/telemetry/ocr-test/`](file:///g:/G-Maiden/tools/telemetry/ocr-test) (run artifacts are gitignored as they may contain
 player names).
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | — | Dota 2 UI reference index ฉบับแรก (untracked) |
+| 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): fixed unresolved wikilink slug `[[architecture/assets/design-references/README]]` → `[[design-references/README]]` |

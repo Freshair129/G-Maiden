@@ -1,7 +1,7 @@
 ---
-version: "2.3.0-draft"
+version: "2.3.1-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-19T00:00:00+07:00,Claude"
+last_update: "2026-07-19,Claude"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -71,9 +71,9 @@ This means shell polish must be done in stage coordinates first, not screenshot 
 
 ## 4. Subtract panel path
 
-The panel shape is driven by two constants in `src/src/CommandDeck.tsx`, selected per tab:
+The panel shape is driven by two constants in [`src/src/CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx), selected per tab:
 `d={tab === "dashboard" ? FUNG_PANEL_PATH_SIGNALS : FUNG_PANEL_PATH}`. Only the dashboard tab
-renders the G-Signal cluster ([`SignalGrid`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L1861)), so only the dashboard tab gets the bottom-right
+renders the G-Signal cluster ([`SignalGrid`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L44)), so only the dashboard tab gets the bottom-right
 notch — every other tab keeps the plain (no-notch) path, avoiding a stray hole where nothing
 fills it. Both constants feed the same `<path id="gSubtractPanelPath">`, so the `clipPath` and
 the `.g-panel-rim` `<use>` always stay in sync automatically.
@@ -345,7 +345,7 @@ These are intentionally documented so design review uses repo truth:
 
 When shell geometry changes, update these three artifacts together:
 
-1. `src/src/CommandDeck.tsx`
+1. [`src/src/CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx)
 2. `src/src/styles.css`
 3. this file plus `assets/cr006-layer-dev-overlay.svg`
 
@@ -353,3 +353,4 @@ When shell geometry changes, update these three artifacts together:
 | Version | Date | Summary |
 | --- | --- | --- |
 | 2.3.0-draft | 2026-07-19 | + STAGE-LOCK invariant: 1420×760 outer / 1280×720 panel world + เหตุผล effects expansion zone (ice-mist, power radial) — จากผล design-doc audit + Boss ชี้แจง intent |
+| 2.3.1-draft | 2026-07-19 | symbol-link coverage extension (G1.5) |

@@ -2,7 +2,7 @@
 title: "ADR: Migrate Screen Capture from WGC to DXGI Desktop Duplication"
 doc_id: "ADR-13-dxgi-capture-migration"
 status: "Accepted"
-version: "0.1.0"
+version: "0.1.1"
 updated: "2026-06-28"
 owner: "Boss"
 source_of_truth: true
@@ -125,7 +125,7 @@ capture::start()
 
 ### Phase 4: Cleanup
 - Remove `windows-capture` crate dependency
-- Update [[CLAUDE.md]] gotcha #2 (WGC → DXGI)
+- Update `CLAUDE.md` gotcha #2 (WGC → DXGI)
 - Update user docs: recommend borderless fullscreen
 
 ## Related Documents
@@ -139,3 +139,4 @@ capture::start()
 | Version | Date | Summary |
 |---|---|---|
 | 0.1.0 | 2026-06-28 | Initial proposal based on in-game performance evidence (CPU 8%, frame time 1.3–2.3s) |
+| 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): `[[CLAUDE.md]]` converted to plain backtick path text (CLAUDE.md is outside docs/, not a doc-graph slug) |

@@ -2,8 +2,8 @@
 title: "FEAT: G-Damage — Real-time Lethality Engine"
 doc_id: "FEAT-G-DAMAGE"
 status: "draft"
-version: "0.2.0"
-updated: "2026-06-23"
+version: "0.2.1"
+updated: "2026-07-19"
 owner: "Boss"
 source_of_truth: true
 prd_system: "SYSTEM-03::G-Signal"
@@ -181,5 +181,6 @@ pub fn can_i_kill_with(attacker, attacker_level, ability_levels, items,
 ## Changelog
 | Version | Date | Summary |
 |---|---|---|
-| 0.1.0 | 2026-06-XX | G-Damage defensive engine (`damage.rs`) ใน v0.6.0 |
+| 0.1.0 | 2026-06-XX | G-Damage defensive engine ([`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs)) ใน v0.6.0 |
 | 0.2.0 | 2026-06-23 | เพิ่ม spec ฝั่ง offensive lethality + two-sided problem + belief-revision wiring + ช่องโหว่ที่ต้องอุด |
+| 0.2.1 | 2026-07-19 | symbol-link coverage extension (G1.5) |

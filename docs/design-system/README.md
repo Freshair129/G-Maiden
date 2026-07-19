@@ -99,3 +99,9 @@ attributes:
 | 2.1.0-draft | 2026-07-09 | CR-007 design package: layout freeze บันทึกเป็นกติกา; เพิ่มไฟล์ 07 (Combat HUD contract) + 08 (Account/GID UX); 05 sync กับ shell จริง (audio rail แทน P1–P5, แกนเฟส pending) |
 | 2.0.0-draft | 2026-07-05 | ตั้งชุดเอกสาร SSOT ใหม่; Command Deck HUD (Subtract glass shell); reconcile ice+lime tokens; FAB cutout system |
 | 0.1.0b | 2026-06-23 | Iceglass candidate เดิม (`docs/architecture/design-system.md`) |
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 3.0.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |

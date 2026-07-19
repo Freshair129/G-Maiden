@@ -98,3 +98,9 @@ Privacy: match data / CV / G-Log = local only; deck แสดง identity + publ
 - ห้ามสื่อความหมายด้วย "สีอย่างเดียว" — G-Signal ใช้สี + label + ระดับ bar ประกอบกัน
 - `prefers-reduced-motion`: ปิด ambient drift, dropdown slide, bar transition
 - เป้าคลิกขั้นต่ำ ~28–32px (win-btn, nav item ทำได้ตามนี้)
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 2.0.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |

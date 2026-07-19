@@ -1,7 +1,7 @@
 ---
-version: "2.2.0-draft"
+version: "2.2.1-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-15T00:00:00+07:00,Claude"
+last_update: "2026-07-19,Claude"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -51,7 +51,7 @@ Primitives:
 ## 1. Topbar FAB
 
 Code:
-- `src/src/CommandDeck.tsx`
+- [`src/src/CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx)
 - [`.g-topbar-fab`](file:///g:/G-Maiden/src/src/styles.css#L4432) in `src/src/styles.css`
 
 Current anatomy:
@@ -149,7 +149,7 @@ Known issue:
 
 Code:
 - [`.g-audio-rail`](file:///g:/G-Maiden/src/src/styles.css#L5121)
-- [`VolumeRail(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L1676)
+- [`VolumeRail(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L43)
 
 Current anatomy:
 
@@ -192,7 +192,7 @@ Current note:
 
 Code:
 - [`.gm-phase-chip`](file:///g:/G-Maiden/src/src/styles.css#L5315) + 4 state modifiers `.gm-phase-chip-standby/prep/live/debrief`
-- [`PhaseChip(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L1346) in `CommandDeck.tsx`
+- [`PhaseChip(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L42) in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx)
 - phase state machine: [`src/src/live/phase.ts`](file:///g:/G-Maiden/src/src/live/phase.ts) [`stepPhase()`](file:///g:/G-Maiden/src/src/live/phase.ts#L71)
 
 Current anatomy:
@@ -234,7 +234,7 @@ Phase machine rules (order of precedence, `stepPhase()`):
 
 Code:
 - [`.gm-mini-stat`](file:///g:/G-Maiden/src/src/styles.css#L5362)
-- [`MiniStat(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L1666)
+- [`MiniStat(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx)
 
 Current set in dashboard:
 
@@ -307,7 +307,7 @@ Current logic:
 ## 9b. ON AIR console
 
 Code:
-- [`OnAirConsole(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L1249) in `CommandDeck.tsx`
+- [`OnAirConsole(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) in `CommandDeck.tsx`
 - [`.gm-onair`](file:///g:/G-Maiden/src/src/styles.css#L5993), `.gm-onair-head`, `.gm-onair-title`, `.gm-onair-end`,
   `.gm-onair-chip` (+ `-cloud`/`-local`), `.gm-onair-agent`, `.gm-onair-now`
   (+ `-meta`/`-text`), `.gm-onair-empty`, `.gm-onair-log`, `.gm-onair-row`
@@ -342,7 +342,7 @@ Current states:
 ## 9c. Feed-age pill
 
 Code:
-- [`FeedAgePill(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L1141) in `CommandDeck.tsx` (function name is new; the DOM class is
+- [`FeedAgePill(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) (function name is new; the DOM class is
   the pre-existing [`.g-ping-pill`](file:///g:/G-Maiden/src/src/styles.css#L5011) — reused, not renamed)
 - lives in the topbar FAB (see §1 Topbar FAB)
 
@@ -366,7 +366,7 @@ no real ping field at all):
 ## 9d. Readiness rundown
 
 Code:
-- [`ReadinessRundown(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L1384) in `CommandDeck.tsx`
+- [`ReadinessRundown(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx)
 - `.gm-battle-alt`[`.gm-rundown`](file:///g:/G-Maiden/src/src/styles.css#L5488), `.gm-rundown-note`, `.gm-rundown-list`,
   `.gm-rundown-row` (+ `.ready` modifier), `.gm-rundown-glyph`, `.gm-rundown-label`,
   `.gm-rundown-value`
@@ -388,8 +388,8 @@ Current anatomy — phase-axis content swap (CR-011 §E, CR011-P3):
 ## 9e. Debrief timeline
 
 Code:
-- [`DebriefTimeline`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L1488) render block in `CommandDeck.tsx` (reads [`list_match_logs`](file:///g:/G-Maiden/src-tauri/src/main.rs#L515) /
-  [`read_match_log`](file:///g:/G-Maiden/src-tauri/src/main.rs#L529) Tauri commands — [`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs))
+- [`DebriefTimeline`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) render block in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) (reads [`list_match_logs`](file:///g:/G-Maiden/src-tauri/src/main.rs) /
+  [`read_match_log`](file:///g:/G-Maiden/src-tauri/src/main.rs) Tauri commands — [`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs))
 - [`.gm-debrief`](file:///g:/G-Maiden/src/src/styles.css#L5555), `.gm-debrief-head`, `.gm-debrief-title`, `.gm-debrief-back`,
   `.gm-debrief-empty`, `.gm-debrief-list`, `.gm-debrief-row` (+ `-time`/`-chip`/
   `-text`), `.gm-debrief-row-chip-{gank,revision,missing,start,other}`
@@ -439,7 +439,7 @@ Code:
 Current anatomy (CR-011 §L/§M, CR011-P4a-01):
 
 - floats in **window space** — `position: fixed`, mounted as a sibling of
-  `.g-deck-stage` in `CommandDeck.tsx`, never inside the scaled/clipped stage;
+  `.g-deck-stage` in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx), never inside the scaled/clipped stage;
   z `--g-z-pop`
 - console-glass material (`var(--g-blur-console)`) — one of only two surfaces
   (with the shortcut sheet) permitted to blur outside the shell
@@ -448,7 +448,7 @@ Current anatomy (CR-011 §L/§M, CR011-P4a-01):
   fixed order: **Actions**, **Pages**, **Settings**
 - each row: Thai label (primary display text) + optional mono hotkey chip
   (`Ctrl+1`..`Ctrl+8` for page entries)
-- page-list entries are generated FROM `shortcuts.ts` `PAGES` (single source —
+- page-list entries are generated FROM [`shortcuts.ts`](file:///g:/G-Maiden/src/src/shortcuts.ts) `PAGES` (single source —
   the page list + Thai labels used to be hand-copied in three places and had
   already drifted before this fix)
 
@@ -469,8 +469,8 @@ disarms-then-closes (never both in one press).
 ## 10b. Shortcut sheet
 
 Code:
-- shortcut-sheet render block in `CommandDeck.tsx` (registry from
-  `src/src/shortcuts.ts` [`buildRegistry()`](file:///g:/G-Maiden/src/src/shortcuts.ts#L137))
+- shortcut-sheet render block in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) (registry from
+  [`src/src/shortcuts.ts`](file:///g:/G-Maiden/src/src/shortcuts.ts) [`buildRegistry()`](file:///g:/G-Maiden/src/src/shortcuts.ts#L137))
 - [`.gm-sheet-backdrop`](file:///g:/G-Maiden/src/src/styles.css#L6116), `.gm-sheet`, `.gm-sheet-head`, `.gm-sheet-close`,
   `.gm-sheet-section-label`, `.gm-sheet-row`, `.gm-sheet-row-combo`
 
@@ -481,10 +481,10 @@ Current anatomy:
 - two sections: **"In-app"** (rows generated from `buildRegistry()` — single
   source, never hand-copied) and **"Global (ทำงานแม้อยู่ในเกม)"** (the
   `tauri_plugin_global_shortcut` hotkeys from [`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs), listed as
-  [`GLOBAL_HOTKEYS`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L52) in `CommandDeck.tsx`)
+  [`GLOBAL_HOTKEYS`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L52) in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx))
 - each row: Thai label + mono combo chip (e.g. `Ctrl+K`, `Ctrl+Alt+S`)
 
-Registry scope note (honesty rule): `shortcuts.ts`'s `buildRegistry()` only
+Registry scope note (honesty rule): [`shortcuts.ts`](file:///g:/G-Maiden/src/src/shortcuts.ts)'s `buildRegistry()` only
 carries bindings actually wired (as of CR011-P4b-01: `Ctrl+K`, `Ctrl+1`..`8`,
 `Ctrl+/` + `?`, `F6`/`Shift+F6` seat-focus cycling, `Shift+F10` context menu,
 `Esc`) — it must never list a binding the build doesn't honor yet
@@ -511,7 +511,7 @@ Current targets (all read/act honestly — no item that cannot truly act):
   npc-short→id mapping exists; a sometimes-wrong link violates honest state)
 - utterance row: copy text (revision rows prefix the retracted claim)
 - annunciator card: G-Signal sensitivity Low/Med/High (invokes
-  [`set_cv_signal_sensitivity`](file:///g:/G-Maiden/src-tauri/src/main.rs#L359), syncs `gm-settings.signalSensitivity` so the
+  [`set_cv_signal_sensitivity`](file:///g:/G-Maiden/src-tauri/src/main.rs), syncs `gm-settings.signalSensitivity` so the
   legacy Settings panel never disagrees; active level disabled) + test alert
 
 ## 11. Status pill
@@ -570,7 +570,7 @@ Panel edge: [`.g-deck-panel`](file:///g:/G-Maiden/src/src/styles.css#L4448) is c
 `overflow:hidden` + `contain:paint`), so a `box-shadow` — or a `filter` on a
 child of the panel — never draws outside the notches. [`.g-panel-rim`](file:///g:/G-Maiden/src/src/styles.css#L4759) fixes this
 by living as a **`.g-deck-stage` sibling** of `.g-deck-panel` (rendered right
-after `</main>` in `CommandDeck.tsx`, same escape pattern as `SignalGrid`),
+after `</main>` in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx), same escape pattern as `SignalGrid`),
 positioned in stage coordinates to exactly overlay the panel box while reusing
 the same `#gSubtractPanelPath` def. As a sibling it sits outside the panel's
 clip/overflow/contain, so its 3-layer `filter: drop-shadow(...)` (two dark
@@ -590,7 +590,7 @@ plate, and a shadow on a fill-less box would reintroduce a hazy floating-rectang
 artifact with nothing backing it. Revisit only if the audio rail gets a real plate
 again.
 
-Drag-lag guard: [`.is-dragging`](file:///g:/G-Maiden/src/src/styles.css#L4701) (see [`startWindowDrag()`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L582) in `CommandDeck.tsx`) forces
+Drag-lag guard: [`.is-dragging`](file:///g:/G-Maiden/src/src/styles.css#L4701) (see [`startWindowDrag()`](file:///g:/G-Maiden/src/src/CommandDeck.tsx#L582) in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx)) forces
 `box-shadow: none !important` and `filter: none !important` on every element above
 (plus `.g-panel-rim use` specifically for the filter) during a native window drag —
 WebView2 recomposites these layers on every window-move tick otherwise.
@@ -611,3 +611,10 @@ These appear in older mock/design notes but are not the current active shell:
   `styles.css` but no component renders them anymore.
 
 If any of these return, add them back only after implementation and screenshot review.
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 2.2.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
+| 2.2.1-draft | 2026-07-19 | symbol-link coverage extension (G1.5) |

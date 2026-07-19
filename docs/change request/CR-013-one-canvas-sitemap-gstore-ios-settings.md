@@ -47,7 +47,7 @@
 
 ## 3. Sitemap ใหม่
 
-### 3.1 PAGES (แก้ `shortcuts.ts` — NAV/shortcut/Maiden Line ตามอัตโนมัติ)
+### 3.1 PAGES (แก้ [`shortcuts.ts`](file:///g:/G-Maiden/src/src/shortcuts.ts) — NAV/shortcut/Maiden Line ตามอัตโนมัติ)
 
 | # | key | label TH | เดิม | การเปลี่ยนแปลง |
 |---|-----|----------|------|----------------|
@@ -188,7 +188,13 @@ Verify ต่อ wave: `tsc --noEmit`, eslint, vitest, browser geometry check �
 ## 10. เอกสารที่ต้องอัปเดตพร้อมกัน (W5)
 
 1. [[05-sitemap-ia|docs/design-system/05-sitemap-ia.md]] — sitemap ใหม่ + กฎ R1/R2/R3 (SSOT bump)
-2. [[CLAUDE.md]] — 2 บรรทัด: nav 7 หน้า + กฎ One-Canvas ชี้ไป SSOT
+2. `CLAUDE.md` — 2 บรรทัด: nav 7 หน้า + กฎ One-Canvas ชี้ไป SSOT
 3. [[CR-011-cold-booth-ux-direction|CR-011]] §C — หมายเหตุ "amended by CR-013"
 
 **Mock:** `assets/cr013-one-canvas-mock.html` — 3 มุมมอง (Settings iOS / G-Store / sitemap)
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| — | 2026-07-19 | symbol-link coverage extension (G1.5) |
+| — | 2026-07-19 | link/metadata sweep (G15-T2): `[[CLAUDE.md]]` converted to plain backtick path text (CLAUDE.md is outside docs/, not a doc-graph slug) |
