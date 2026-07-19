@@ -61,7 +61,12 @@ const GLOBAL_HOTKEYS: Array<{ combo: string; labelTh: string }> = [
 type DeckDensity = "comfortable" | "compact";
 type DeckPrefs = { quality: DeckQuality; density: DeckDensity; crisp: boolean; bigMode: boolean };
 const DECK_PREFS_KEY = "gm-deck-prefs";
-const DEFAULT_DECK_PREFS: DeckPrefs = { quality: "cinematic", density: "comfortable", crisp: false, bigMode: false };
+// bigMode defaults ON (Boss 2026-07-19): with it OFF a window larger than the
+// authored 1420×760 stage left a big black letterbox frame around the deck (the
+// "never upscale past 1.0" lock). On, the stage snaps UP to a crisp step to fill
+// the window (1.35 == edge-to-edge on 1920×1080). Users who want the locked
+// native size can still turn it off in Settings → ทั่วไป.
+const DEFAULT_DECK_PREFS: DeckPrefs = { quality: "cinematic", density: "comfortable", crisp: false, bigMode: true };
 
 function loadDeckPrefs(): DeckPrefs {
   try {
@@ -72,7 +77,9 @@ function loadDeckPrefs(): DeckPrefs {
         quality: p.quality === "balanced" || p.quality === "eco" ? p.quality : "cinematic",
         density: p.density === "compact" ? "compact" : "comfortable",
         crisp: p.crisp === true,
-        bigMode: p.bigMode === true
+        // Default-on: only an EXPLICIT false disables it, so users on an older
+        // saved-prefs blob (no bigMode key) also get the window-filling default.
+        bigMode: p.bigMode !== false
       };
     }
   } catch {
@@ -99,8 +106,9 @@ function snapScaleDown(s: number): number {
  *  upscale past 1.0" lock. The lock exists because a FREE/continuous scale
  *  factor above 1.0 softens 1px hairlines/rims (non-integer device-pixel
  *  hairlines anti-alias into a "chunky" line). Big mode does not remove that
- *  lock for everyone — it stays OFF by default — it adds a small set of
- *  fixed, deliberately-chosen upscale steps (same "snap to a named step"
+ *  lock outright — it's an opt-OUT (default ON as of 2026-07-19, since a large
+ *  window otherwise letterboxed the deck in a big black frame) — it adds a
+ *  small set of fixed, deliberately-chosen upscale steps (same "snap to a named step"
  *  shape as CRISP_SCALE_STEPS below 1.0), so scaling up is still to a crisp
  *  ratio, never a random fractional one. 1.35 is the largest step that fits
  *  a 1920×1080 monitor edge-to-edge (measured: min(1920/1420,1080/760)
