@@ -498,13 +498,14 @@ fn print_hop_row(r: &HopResult) {
     }
 }
 
-/// Combine two probe verdicts: FAIL dominates (any budget blown is a real
-/// problem), else SKIP only if BOTH probes skipped (no device at all found),
-/// else PASS (at least one probe ran and stayed within budget).
+/// Combine probe verdicts: FAIL dominates (any budget blown is a real
+/// problem), else ANY skip → 77 (a partially-unmeasured run must not read as
+/// a full pass to exit-code consumers — matches run_gate_p3.bat's convention
+/// "at least one SKIP and no FAIL → 77"), else PASS.
 fn combine_exit(results: &[&HopResult]) -> i32 {
     if results.iter().any(|r| r.status == Status::Fail) {
         1
-    } else if results.iter().all(|r| r.status == Status::Skip) {
+    } else if results.iter().any(|r| r.status == Status::Skip) {
         EXIT_SKIP
     } else {
         0
@@ -587,10 +588,17 @@ fn main() {
     sep(90);
     let results = [&capture, &audio];
     let exit_code = combine_exit(&results);
+    let skipped = results.iter().filter(|r| r.status == Status::Skip).count();
     match exit_code {
-        0 => println!("LATENCY_LIVE PASSED"),
+        0 => println!("LATENCY_LIVE PASSED -- both probes measured within budget"),
         1 => eprintln!("LATENCY_LIVE FAILED -- a live-probed hop exceeded its Engineering Spec budget"),
-        _ => println!("LATENCY_LIVE SKIPPED -- neither probe found its device (no display, no audio)"),
+        _ if skipped == results.len() => {
+            println!("LATENCY_LIVE SKIPPED -- neither probe found its device (no display, no audio)")
+        }
+        _ => println!(
+            "LATENCY_LIVE PARTIAL ({skipped}/{} probes skipped, rest within budget) -- exit 77",
+            results.len()
+        ),
     }
     std::process::exit(exit_code);
 }
@@ -675,7 +683,8 @@ mod tests {
         assert_eq!(combine_exit(&[&pass, &fail]), 1);
         assert_eq!(combine_exit(&[&fail, &skip]), 1);
         assert_eq!(combine_exit(&[&skip, &skip]), EXIT_SKIP);
-        assert_eq!(combine_exit(&[&pass, &skip]), 0);
+        // Partial skip must NOT read as a full pass (matches run_gate_p3.bat).
+        assert_eq!(combine_exit(&[&pass, &skip]), EXIT_SKIP);
         assert_eq!(combine_exit(&[&pass, &pass]), 0);
     }
 }

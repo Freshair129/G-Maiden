@@ -65,7 +65,7 @@ Probes hops 1 and 6 independently. Each hop self-detects whether its device exis
 **Exit codes:**
 - `0` – LATENCY_LIVE PASS: all measured probes met their budgets
 - `1` – LATENCY_LIVE FAIL: at least one live hop exceeded its budget
-- `77` – LATENCY_LIVE SKIP: both hop 1 (no GPU/display) and hop 6 (no audio device) were unavailable
+- `77` – LATENCY_LIVE SKIP/PARTIAL: at least one probe could not measure (missing display or audio device) and none failed — a partially-measured run never reads as a full pass
 
 **Runtime:** ~25–30 seconds (100 DXGI frame acquisitions + 30 audio plays).
 

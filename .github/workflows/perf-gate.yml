@@ -11,10 +11,16 @@ jobs:
 
       - uses: dtolnay/rust-toolchain@1.96.0
 
-      # rust-cache must scope to src-tauri where Cargo.toml lives
+      # rust-cache scoped to tests/perf: this job's only cargo invocation is
+      # `--manifest-path tests/perf/Cargo.toml`. tests/perf is a standalone
+      # crate (no root workspace ties it to src-tauri), so its build --
+      # including the vendored g-maiden path-dependency compile that the
+      # tests/perf/Cargo.toml comment warns "takes minutes" -- lands entirely
+      # under tests/perf/target/, not src-tauri/target/. Scoping the cache to
+      # src-tauri would cache a directory this job never populates.
       - uses: Swatinem/rust-cache@v2
         with:
-          workspaces: src-tauri
+          workspaces: tests/perf
 
       # gpu-feeder sidecar is bundled via tauri.conf externalBin, which
       # tauri-build validates at any cargo invocation. Stage it before cargo runs.
