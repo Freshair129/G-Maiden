@@ -2,10 +2,13 @@
 REM G-Signal Latency GATE P3 — run both latency_harness (headless) and latency_live
 REM (on-device probes) in sequence, with clear exit-code handling.
 REM
-REM Exit codes:
-REM   0 = PASS (both measured hops met latency budgets, SKIPs count as success)
-REM   1 = FAIL (at least one measured hop exceeded its budget)
-REM   77 = SKIP (prerequisites missing; the gate meaningfully cannot run)
+REM Exit codes (overall, combining both sub-runs — see "Determine overall
+REM exit code" below for the exact precedence):
+REM   0 = PASS (both latency_harness and latency_live passed cleanly)
+REM   1 = FAIL (at least one measured hop exceeded its budget — dominates)
+REM   77 = SKIP (no FAIL, but at least one phase could not meaningfully run:
+REM        prerequisites missing for latency_harness, or no display/audio
+REM        device for latency_live)
 
 setlocal enabledelayedexpansion
 
@@ -68,10 +71,13 @@ echo  GATE P3 Summary
 echo =================================================================
 echo.
 
-REM Determine overall exit code:
-REM   - FAIL dominates (1 > 0 > 77)
-REM   - At least one SKIP and no FAIL → exit 77
-REM   - All PASS or mix of PASS+SKIP → exit 0
+REM Determine overall exit code (precedence, highest first):
+REM   1. FAIL dominates — if either sub-run exited 1, overall = 1 (FAIL).
+REM   2. Otherwise, SKIP dominates over PASS — if either sub-run exited 77,
+REM      overall = 77 (SKIP). A SKIP means that phase couldn't meaningfully
+REM      verify its hops, so the combined gate is inconclusive, not a clean
+REM      PASS, even if the other phase fully passed.
+REM   3. Only when BOTH sub-runs exited 0 does the overall exit = 0 (PASS).
 
 set /a OVERALL_EXIT=0
 
