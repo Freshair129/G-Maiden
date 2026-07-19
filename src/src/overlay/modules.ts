@@ -15,6 +15,10 @@ export type ModuleId =
   | 'advice'
   | 'buyback'
   | 'missing'
+  | 'banner'
+  | 'lowhp'
+  | 'vol'
+  | 'standby'
   | 'clock'
   | 'kda'
   | 'gold'
@@ -43,6 +47,10 @@ export const MODULE_META: { id: ModuleId; label: string }[] = [
   { id: 'advice', label: 'Advice' },
   { id: 'buyback', label: 'Buyback (G-Revive)' },
   { id: 'missing', label: 'Enemy Missing' },
+  { id: 'banner', label: 'Kill / Announcer Banner' },
+  { id: 'lowhp', label: 'Low HP Warning' },
+  { id: 'vol', label: 'Volume Toast' },
+  { id: 'standby', label: 'Standby Chip (pre-game)' },
   { id: 'clock', label: 'Clock' },
   { id: 'kda', label: 'K / D / A' },
   { id: 'gold', label: 'Gold' },
@@ -66,6 +74,13 @@ export const DEFAULT_LAYOUT: Layout = {
   advice: { x: 50, y: 88, scale: 1, enabled: true },
   buyback: { x: 50, y: 78, scale: 1, enabled: true },
   missing: { x: 88, y: 8, scale: 1, enabled: true },
+  // Ported from the lite overlay — the announcer/persona visuals. Kill &
+  // pack banners share one slot (mutually exclusive), upper-centre where the
+  // in-game kill feed reads. lowhp/vol/standby are transient system cues.
+  banner: { x: 50, y: 30, scale: 1, enabled: true },
+  lowhp: { x: 50, y: 46, scale: 1, enabled: true },
+  vol: { x: 50, y: 92, scale: 1, enabled: true },
+  standby: { x: 50, y: 50, scale: 1, enabled: true },
   clock: { x: 50, y: 4, scale: 1, enabled: false },
   kda: { x: 20, y: 24, scale: 1, enabled: true },
   gold: { x: 30, y: 24, scale: 1, enabled: false },

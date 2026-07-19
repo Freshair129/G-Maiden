@@ -5,6 +5,8 @@ import { invoke } from '@tauri-apps/api/core'
 import { FullOverlay } from './overlay/FullOverlay'
 import { LayoutEditor } from './overlay/LayoutEditor'
 import { DEFAULT_LAYOUT, type Layout } from './overlay/modules'
+import { VoiceWave } from './overlay/VoiceWave'
+import { STREAK_LABELS } from './overlay/streaks'
 import CommandDeck from './CommandDeck'
 import QuotaCard from './QuotaCard'
 import { crossedAnyLevelUpMilestone, crossedLevelUpMilestones } from './personaMilestones'
@@ -110,7 +112,7 @@ export interface Settings {
   showKda: boolean
   showGold: boolean
 }
-const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, personaLines: true, autoAdvice: false, gankVisuals: true, killVisuals: true, signalSensitivity: 'med', masterEnabled: true, masterBackend: 'auto', masterAuth: 'plan', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, efficacyStudy: false, telemetrySource: 'auto', uiMode: 'lite', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
+const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, personaLines: true, autoAdvice: false, gankVisuals: true, killVisuals: true, signalSensitivity: 'med', masterEnabled: true, masterBackend: 'auto', masterAuth: 'plan', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, efficacyStudy: false, telemetrySource: 'auto', uiMode: 'full', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false }
 interface OverlayProfile { name: string; position: Pos; customX: number; customY: number; opacity: number; showTimer: boolean; showScore: boolean; showHeroBar: boolean; showKda: boolean; showGold: boolean }
 const DANGER_LINE = 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว'
 
@@ -170,7 +172,10 @@ const loadSettings = (): Settings => {
       raw.showTimer = raw.showScore = raw.showHeroBar = raw.showKda = raw.showGold = true
     }
     delete raw.showStats
-    return { ...DEFAULTS, ...(raw as Partial<Settings>) }
+    // Overlay merge: lite retired into the single Full overlay — coerce any
+    // persisted 'lite' so returning users get the merged overlay, not the
+    // dormant fallback.
+    return { ...DEFAULTS, ...(raw as Partial<Settings>), uiMode: 'full' }
   } catch {
     return DEFAULTS
   }
@@ -348,74 +353,6 @@ const packBannerStyle: React.CSSProperties = {
   borderRadius: 16, overflow: 'hidden',
   boxShadow: '0 0 24px rgba(91,227,167,0.25)',
 }
-const STREAK_LABELS: Record<number, string> = {
-  3: 'KILLING SPREE', 4: 'DOMINATING', 5: 'MEGA KILL',
-  6: 'UNSTOPPABLE', 7: 'WICKED SICK', 8: 'MONSTER KILL',
-  9: 'GODLIKE', 10: 'BEYOND GODLIKE',
-}
-
-// Reactive waveform for a fired announcer clip. The BACKEND plays the audible
-// copy; here we decode the SAME clip and run it through an AnalyserNode at gain 0
-// (silent) purely to drive the bars — so the waveform moves with the real sound,
-// not a synthetic playhead. Cosmetic: any failure is swallowed and it renders
-// nothing. Cleans up its AudioContext + rAF on unmount (single-slot banner, so a
-// new event unmounts the old wave and stops its silent source).
-const VoiceWave: React.FC<{ clip: string }> = ({ clip }) => {
-  const canvasRef = useRef<HTMLCanvasElement | null>(null)
-  useEffect(() => {
-    let ctx: AudioContext | null = null
-    let src: AudioBufferSourceNode | null = null
-    let raf = 0
-    let cancelled = false
-    ;(async () => {
-      try {
-        const bytes = await invoke<number[]>('read_audio_bytes', { path: clip })
-        if (cancelled) return
-        const buf = new Uint8Array(bytes).buffer
-        ctx = new AudioContext()
-        await ctx.resume().catch(() => {})
-        const audio = await ctx.decodeAudioData(buf)
-        if (cancelled) { void ctx.close(); return }
-        const analyser = ctx.createAnalyser()
-        analyser.fftSize = 128
-        analyser.smoothingTimeConstant = 0.75
-        const gain = ctx.createGain()
-        gain.gain.value = 0 // silent — the backend owns the audible playback
-        src = ctx.createBufferSource()
-        src.buffer = audio
-        src.connect(analyser); analyser.connect(gain); gain.connect(ctx.destination)
-        src.start()
-        const bins = new Uint8Array(analyser.frequencyBinCount)
-        const draw = () => {
-          const cvs = canvasRef.current
-          if (cvs) {
-            const c = cvs.getContext('2d')
-            if (c) {
-              analyser.getByteFrequencyData(bins)
-              const W = cvs.width, H = cvs.height, n = bins.length, bw = W / n
-              c.clearRect(0, 0, W, H)
-              for (let i = 0; i < n; i++) {
-                const v = bins[i] / 255
-                const bh = Math.max(2, v * H)
-                c.fillStyle = `rgba(91,227,167,${0.3 + 0.65 * v})`
-                c.fillRect(i * bw + bw * 0.15, (H - bh) / 2, bw * 0.7, bh)
-              }
-            }
-          }
-          raf = requestAnimationFrame(draw)
-        }
-        draw()
-      } catch { /* cosmetic — ignore */ }
-    })()
-    return () => {
-      cancelled = true
-      if (raf) cancelAnimationFrame(raf)
-      try { src?.stop() } catch { /* already stopped */ }
-      void ctx?.close()
-    }
-  }, [clip])
-  return <canvas ref={canvasRef} width={280} height={38} style={{ display: 'block', width: 280, height: 38 }} />
-}
 export type GankState = { phase: 'alert'; heroes: string[]; probability: number } | { phase: 'clear' } | null
 
 const Overlay: React.FC = () => {
@@ -482,7 +419,7 @@ const Overlay: React.FC = () => {
   sRef.current = s
   useEffect(() => {
     const u1 = listen<GameTick>('game-tick', (e) => { setTick(e.payload); setSeen(true) })
-    const u2 = listen<Settings>('settings', (e) => setS({ ...DEFAULTS, ...e.payload }))
+    const u2 = listen<Settings>('settings', (e) => setS({ ...DEFAULTS, ...e.payload, uiMode: 'full' }))
     // CV debug feed — fires 8–15 Hz. Cheap setState; only rendered when cvDebug is on.
     const u3 = listen<MinimapCv>('minimap-cv', (e) => {
       if (!sRef.current.cvDebug) return
@@ -900,9 +837,19 @@ const Overlay: React.FC = () => {
     </div>
   ) : null
 
-  // Redesign tier — isolated render path; lite (below) stays the stable default.
+  // Single overlay: the merged Full tier (positionable modules + all the
+  // announcer/persona visuals ported from lite). uiMode is coerced to 'full'
+  // everywhere (loadSettings / settings broadcast), so the lite render below is
+  // dormant — kept one release as a fallback, not user-reachable.
   if (s.uiMode === 'full') {
-    return <FullOverlay tick={tick} s={s} gank={gank} missingHeroes={missingHeroes} overlayAdvice={overlayAdvice} buyback={buyback} toast={toast} />
+    return (
+      <FullOverlay
+        tick={tick} s={s} gank={gank} missingHeroes={missingHeroes}
+        overlayAdvice={overlayAdvice} buyback={buyback} toast={toast}
+        killBanner={killBanner} packBanner={packBanner} lowHp={lowHp}
+        volToast={volToast} gsiActive={gsiActive} previewMode={previewMode}
+      />
+    )
   }
 
   if (!seen || !tick || !tick.in_game || (!gsiActive && !previewMode)) {
@@ -1984,20 +1931,10 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
             </Card>
 
             <Card title="Overlay UI">
-              <Row label="โหมดหน้าตา overlay">
-                <div style={{ display: 'inline-flex', border: `1px solid ${C.line}`, borderRadius: 9, overflow: 'hidden' }}>
-                  {(['lite', 'full'] as const).map((m) => (
-                    <button key={m} onClick={() => set('uiMode', m)}
-                      style={{ background: s.uiMode === m ? 'rgba(143,212,255,0.16)' : 'transparent', color: s.uiMode === m ? C.ice : C.mut, border: 'none', padding: '6px 16px', cursor: 'pointer', fontSize: 12 }}>
-                      {m === 'lite' ? 'Lite (เดิม)' : 'Full (redesign)'}
-                    </button>
-                  ))}
-                </div>
-              </Row>
-              <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
-                <b style={{ color: C.txt }}>Lite</b> = overlay เดิม เบา เสถียร · <b style={{ color: C.txt }}>Full</b> = ดีไซน์ใหม่ (โมดูลแยกชิ้น, glass) — กำลังพัฒนา
+              <div style={{ fontSize: 11.5, color: C.mut, marginBottom: 4, lineHeight: 1.55 }}>
+                ทุกชิ้นของ overlay เป็น <b style={{ color: C.txt }}>โมดูลอิสระ</b> — เปิด/ปิด, ย่อ-ขยาย และลากวางตำแหน่งเองได้ (glass ดีไซน์ Maiden Blue). ลากบนพรีวิว 16:9 ด้านล่าง แล้ว overlay จริงจะขยับตามทันที.
               </div>
-              {s.uiMode === 'full' && <LayoutEditor value={s.layout} onChange={(l) => set('layout', l)} />}
+              <LayoutEditor value={s.layout} onChange={(l) => set('layout', l)} />
             </Card>
           </>
         )}
