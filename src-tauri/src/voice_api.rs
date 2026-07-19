@@ -51,6 +51,12 @@ const GROUPS: &[GroupDef] = &[
     },
 ];
 
+/// Mirrors the canonical event contract vendored at `schemas/gmaiden-events.json`
+/// (originally authored in the sibling `G-Suite` repo) — every non-`"none"`
+/// entry in that schema's `x-events` must have a matching id here, and vice
+/// versa. `mod tests::events_match_schema_contract` enforces this both ways so
+/// drift between the schema and this list fails `cargo test` instead of
+/// shipping a silently-uncovered event.
 const EVENTS: &[EventDef] = &[
     EventDef {
         id: "danger",
@@ -1998,5 +2004,85 @@ mod tests {
         }
         let clip = preview_clip(DEFAULT_PACK_ID, "kill");
         assert!(clip.is_some_and(|p| p.is_file()));
+    }
+
+    // --- event-contract sync vs schemas/gmaiden-events.json -----------------
+
+    #[derive(Deserialize)]
+    struct SchemaEvent {
+        id: String,
+        category: String,
+    }
+
+    #[derive(Deserialize)]
+    struct EventSchema {
+        #[serde(rename = "x-events")]
+        x_events: Vec<SchemaEvent>,
+    }
+
+    /// Loads the vendored copy of the canonical event contract
+    /// (`schemas/gmaiden-events.json`, byte-identical to the sibling
+    /// `G-Suite/schemas/gmaiden-events.json`).
+    fn load_vendored_schema() -> EventSchema {
+        let path = format!("{}/../schemas/gmaiden-events.json", env!("CARGO_MANIFEST_DIR"));
+        let raw = fs::read_to_string(&path).unwrap_or_else(|e| panic!("failed to read {path}: {e}"));
+        serde_json::from_str(&raw).unwrap_or_else(|e| panic!("failed to parse {path}: {e}"))
+    }
+
+    /// Two-way sync check against the vendored schema. The `"none"` category
+    /// (currently just `"unused"`) is a G-AnnStudio authoring-only concept and
+    /// is deliberately exempt — everything else must appear on both sides.
+    #[test]
+    fn events_match_schema_contract() {
+        let schema = load_vendored_schema();
+        let schema_ids: Vec<&str> = schema.x_events.iter().map(|e| e.id.as_str()).collect();
+        let rust_ids: Vec<&str> = EVENTS.iter().map(|e| e.id).collect();
+
+        let missing_from_schema: Vec<&str> = rust_ids
+            .iter()
+            .filter(|id| !schema_ids.contains(id))
+            .copied()
+            .collect();
+        let missing_from_rust: Vec<&str> = schema
+            .x_events
+            .iter()
+            .filter(|e| e.category != "none" && !rust_ids.contains(&e.id.as_str()))
+            .map(|e| e.id.as_str())
+            .collect();
+
+        assert!(
+            missing_from_schema.is_empty() && missing_from_rust.is_empty(),
+            "event contract drift — in voice_api::EVENTS but missing from schema x-events: {missing_from_schema:?}; \
+             in schema x-events (category != \"none\") but missing from voice_api::EVENTS: {missing_from_rust:?}. \
+             update schemas/gmaiden-events.json + G-Suite/schemas/gmaiden-events.json + voice_api.rs EVENTS together"
+        );
+    }
+
+    /// Drift guard against the sibling repo's canonical copy. Skips (passes)
+    /// when the sibling checkout isn't present — CI only has this repo.
+    #[test]
+    fn vendored_schema_matches_g_suite_sibling() {
+        let g_suite_dir = std::env::var("G_SUITE_DIR").unwrap_or_else(|_| {
+            format!("{}/../../G-Suite", env!("CARGO_MANIFEST_DIR"))
+        });
+        let sibling_path = format!("{g_suite_dir}/schemas/gmaiden-events.json");
+        let Ok(sibling_raw) = fs::read_to_string(&sibling_path) else {
+            eprintln!("skip: sibling G-Suite checkout not found at {sibling_path}");
+            return;
+        };
+
+        let vendored_path = format!("{}/../schemas/gmaiden-events.json", env!("CARGO_MANIFEST_DIR"));
+        let vendored_raw = fs::read_to_string(&vendored_path)
+            .unwrap_or_else(|e| panic!("failed to read {vendored_path}: {e}"));
+
+        let sibling_value: serde_json::Value = serde_json::from_str(&sibling_raw)
+            .unwrap_or_else(|e| panic!("failed to parse {sibling_path}: {e}"));
+        let vendored_value: serde_json::Value = serde_json::from_str(&vendored_raw)
+            .unwrap_or_else(|e| panic!("failed to parse {vendored_path}: {e}"));
+
+        assert_eq!(
+            vendored_value, sibling_value,
+            "vendored schemas/gmaiden-events.json is stale vs G-Suite — re-copy and review the diff"
+        );
     }
 }

@@ -6,6 +6,12 @@
  * the on-screen banner always agree. If you add/rename a tier, change it here,
  * in announcer.rs, and in G-Suite/schemas/gmaiden-events.json.
  *
+ * Machine-checked: this 3-way contract is no longer honor-system only —
+ * `src/src/__tests__/eventContract.test.ts` diffs this map against the vendored
+ * `schemas/gmaiden-events.json` (repo root), and an analogous `cargo test` in
+ * `src-tauri/src/announcer.rs`/`voice_api.rs` diffs the Rust mirrors against the
+ * same schema. Drift in any one file now fails a build instead of failing silently.
+ *
  * Extracted from App.tsx so both the (dormant) lite overlay and the Full overlay
  * render the same labels.
  */

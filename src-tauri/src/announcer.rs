@@ -1,12 +1,17 @@
 //! Announcer event detection (G-AnnStudio pack contract).
 //!
 //! Fed every `game-tick`, this watches deltas and emits the announcer event
-//! ids that a pack can voice (see G-Suite/schemas/gmaiden-events.json):
+//! ids that a pack can voice — see the vendored `schemas/gmaiden-events.json`
+//! (byte-identical copy of G-Suite/schemas/gmaiden-events.json):
 //! kill / first_blood / double_kill … rampage, killing_spree / unstoppable /
 //! godlike, death / respawn / levelUp / manaLow / hpLow, match_start.
 //!
 //! Pure integer/timing logic — cheap enough to run on the GSI POST path. The
 //! caller plays a random clip per returned id (no clip → silent).
+//!
+//! `mod tests` enforces the streak-ladder + multi-kill ids against that
+//! vendored schema, so a mirror renamed/reordered in only one place fails
+//! `cargo test` instead of drifting silently.
 
 use crate::gsi::GameTick;
 use std::sync::{Mutex, OnceLock};
@@ -337,5 +342,74 @@ mod tests {
             !e.contains(&"levelUp".to_string()),
             "13 -> 17 should stay silent because no milestone was crossed"
         );
+    }
+
+    // --- schema sync (schemas/gmaiden-events.json) --------------------------
+
+    #[derive(serde::Deserialize)]
+    struct SchemaEvent {
+        id: String,
+        category: String,
+    }
+
+    #[derive(serde::Deserialize)]
+    struct EventSchema {
+        #[serde(rename = "x-events")]
+        x_events: Vec<SchemaEvent>,
+    }
+
+    /// Loads the vendored copy of the canonical event contract
+    /// (`schemas/gmaiden-events.json`, byte-identical to the sibling
+    /// `G-Suite/schemas/gmaiden-events.json`).
+    fn load_vendored_schema() -> EventSchema {
+        let path = format!("{}/../schemas/gmaiden-events.json", env!("CARGO_MANIFEST_DIR"));
+        let raw = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("failed to read {path}: {e}"));
+        serde_json::from_str(&raw).unwrap_or_else(|e| panic!("failed to parse {path}: {e}"))
+    }
+
+    /// The streak ladder (3..=10 consecutive kills without dying) must fire the
+    /// same ids, in the same order, as the schema's `category == "streak"`
+    /// entries — the production mirror of `App.tsx` STREAK_LABELS, checked
+    /// against the schema instead of a hardcoded copy.
+    #[test]
+    fn streak_ladder_matches_schema_contract() {
+        let schema = load_vendored_schema();
+        let expected_streak_ids: Vec<&str> = schema
+            .x_events
+            .iter()
+            .filter(|e| e.category == "streak")
+            .map(|e| e.id.as_str())
+            .collect();
+        assert_eq!(
+            expected_streak_ids.len(),
+            8,
+            "expected 8 streak rungs (3..=10) in the schema, got {expected_streak_ids:?}"
+        );
+
+        let mut s = State::default();
+        step(&mut s, &tick(true, 0, 0, true)); // start, baseline kills=0
+        // space kills > 18s apart so multikill chaining never masks the streak rung
+        for (i, expected_id) in expected_streak_ids.iter().enumerate() {
+            let k = i as i64 + 3;
+            let e = step(&mut s, &tick(true, k * 30, k, true));
+            assert!(
+                e.contains(&expected_id.to_string()),
+                "kill {k} should fire schema streak id {expected_id}, got {e:?}"
+            );
+        }
+    }
+
+    /// The multi-kill chain ids the announcer fires (`priority()` /
+    /// `step()`'s `window_kills` match) must all exist in the schema.
+    #[test]
+    fn multikill_ids_are_present_in_schema_contract() {
+        let schema = load_vendored_schema();
+        let schema_ids: Vec<&str> = schema.x_events.iter().map(|e| e.id.as_str()).collect();
+        for id in ["double_kill", "triple_kill", "ultra_kill", "rampage"] {
+            assert!(
+                schema_ids.contains(&id),
+                "multi-kill id {id} fired by announcer.rs is missing from schemas/gmaiden-events.json"
+            );
+        }
     }
 }
