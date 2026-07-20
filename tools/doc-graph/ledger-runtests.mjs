@@ -25,6 +25,53 @@
  * Results are cached per ref within a caller-supplied Map so a test file
  * shared by multiple ledger rows only runs once per `node ledger.mjs
  * --run-tests` invocation.
+ *
+ * ---------------------------------------------------------------------------
+ * RCA — the load-sensitive `verified`-rung flake (G3.5 review finding 2)
+ * ---------------------------------------------------------------------------
+ * SYMPTOM
+ *   The two ledger.test.mjs cases that exercise the REAL spawner and assert a
+ *   row reaches 'verified' — "verified requires --run-tests AND green tests
+ *   AND a review ref" and "a SCALAR review ref counts like a 1-element array
+ *   for verified" — failed 2 of 3 consecutive runs, then passed 10+ in a row.
+ *   Nothing else in the file flaked. Both failures were the SAFE direction: a
+ *   genuinely green row computed one rung BELOW verified.
+ *
+ * ROOT CAUSE — a split-multibyte decode bug in defaultSpawn, not a race.
+ *   defaultSpawn accumulated child output with `stdout += d`, where `d` is a
+ *   raw Buffer. `string += Buffer` coerces via Buffer#toString(), which
+ *   decodes THAT CHUNK IN ISOLATION. A UTF-8 sequence straddling a chunk
+ *   boundary therefore decodes to U+FFFD on both sides and is unrecoverable.
+ *   countPasses() identifies passing tests by node's spec-reporter marker
+ *   `✔` (U+2714 — THREE bytes, e2 9c 94). When the pipe happened to break
+ *   between those bytes, every `✔` on the affected line was corrupted,
+ *   countPasses() returned 0, `ok` went false, and the row lost 'verified'.
+ *   Chunk boundaries are decided by pipe/OS scheduling, so the failure rate
+ *   tracks machine load — hence "flaky", and hence only the two tests whose
+ *   assertions depend on PARSED stdout. Demonstrated deterministically:
+ *     const b = Buffer.from('✔ ok (0.65ms)\n');
+ *     ('' + b.subarray(0,1) + b.subarray(1)).includes('✔')  // => false
+ *
+ * RULED OUT (each checked, none is the cause)
+ *   - Unawaited spawn: the promise resolves on 'close' (not 'exit'), which
+ *     fires only after both stdio streams are closed, and ledger.mjs awaits
+ *     runTestRefs in a sequential for-loop.
+ *   - Fixed timeout: there is no timeout anywhere on this path.
+ *   - Shared temp path: each test builds its own mkdtempSync() fixture root
+ *     and removes only that root.
+ *   - cwd contention: every spawn gets its own fixture root as cwd.
+ *
+ * FIX
+ *   child.stdout/stderr.setEncoding('utf8') installs a StringDecoder that
+ *   buffers an incomplete trailing sequence until its continuation bytes
+ *   arrive, so the accumulated text is byte-exact regardless of how the
+ *   stream is chunked. This removes the load sensitivity at its source; it
+ *   is NOT a retry, a sleep, or a weakened assertion — the no-false-verified
+ *   rule and both assertions are untouched.
+ *
+ * NOTE — the parse remains fail-safe by construction: any output countPasses()
+ *   cannot read counts as 0 passes, so a decode problem can only ever cost a
+ *   row its 'verified', never manufacture one.
  */
 
 import { spawn } from 'node:child_process';
@@ -146,6 +193,17 @@ function defaultSpawn(command, args, spawnOpts) {
       resolvePromise({ code: -1, stdout, stderr, error: String(err) });
       return;
     }
+    // ROOT-CAUSE FIX (see the RCA in this file's header block): decode the
+    // pipes as UTF-8 with a streaming decoder instead of concatenating raw
+    // Buffers. `stdout += chunk` coerces EACH chunk independently via
+    // Buffer#toString(), so a multi-byte character straddling a chunk
+    // boundary is decoded as U+FFFD on both sides and is destroyed. The
+    // spec reporter's pass marker `✔` (U+2714) is 3 bytes in UTF-8, so a
+    // boundary landing inside it silently zeroes countPasses(). setEncoding
+    // installs a StringDecoder that holds the partial sequence until the
+    // continuation bytes arrive.
+    child.stdout?.setEncoding('utf8');
+    child.stderr?.setEncoding('utf8');
     child.stdout?.on('data', (d) => {
       stdout += d;
     });

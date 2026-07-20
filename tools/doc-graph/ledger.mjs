@@ -8,7 +8,7 @@
  * structural lifecycle status on the P0-P6 axis, detects drift where a row's
  * claimed_status exceeds what the on-disk evidence supports, and writes two
  * GENERATED artifacts:
- *   - docs/FEATURE-LEDGER.md            (human-readable table + summary)
+ *   - docs/FEATURE-LEDGER.md            (summary + three grouped tables)
  *   - a `ledger` block inside docs/DOC-GRAPH.json (machine-readable, merged
  *     without disturbing generatedAt/nodes/edges/violations)
  *
@@ -31,6 +31,43 @@
  * and every mapped test to exit 0. Without --run-tests, the highest reachable
  * rung is the honest "code+tests-present (unrun)" downgrade.
  *
+ * PHASE PROVENANCE (G3.5 review finding 3): a row's `phase_target` is either
+ * SOURCED (an explicit phase stated in a source document — manifest
+ * `phase_source: doc`) or DERIVED (a bootstrap badge-heuristic guess, or no
+ * `phase_source` recorded at all — anything that is not `doc` defaults to
+ * derived, never silently to clean/sourced, per the honesty rule: a
+ * disclosure that only lives in the manifest header does not count). Every
+ * row carries a computed `phase_target_source` ('sourced'|'derived'); the
+ * renderer marks every derived Phase cell inline (`P6 *(derived)*`) and
+ * prints a short legend under EVERY rendered group (G3.5-T7 — the epic DoD
+ * says "under each group", so the legend is unconditional, not contingent on
+ * that group happening to hold a derived cell). Sourced values render as the
+ * bare phase, no marker.
+ *
+ * A SOURCED CLAIM MUST PROVE ITSELF (G3.5-T6). Defaulting the ABSENT
+ * phase_source to derived does not close the hole, because an explicit wrong
+ * value bypasses the default: a row could declare `phase_source: doc` while
+ * carrying no document at all and still render clean, exactly as if a source
+ * document had stated the phase. So the label alone is not trusted. A row is
+ * `sourced` iff BOTH hold:
+ *   (a) `phase_source: doc`, AND
+ *   (b) the row has >=1 `refs.docs` entry that RESOLVES ON DISK **and whose
+ *       content actually STATES a phase** (a `**Phase:**` header line, the
+ *       FEAT-doc convention) — existence alone proved nothing: a row citing a
+ *       real document that never states any phase (e.g. the SRS) rendered
+ *       clean, the exact explicit-but-false hole the adversarial review
+ *       caught (G35-R-adv finding 1, 2026-07-20).
+ * `refs.srs` does not count: SRS refs are section labels ('§3.1'), not paths,
+ * so they are unresolvable by construction and can never be checked.
+ * CHOSEN REMEDY (of the two available — mark derived, or block): an unbacked
+ * `doc` claim is MARKED DERIVED ANYWAY. The generated document degrades to the
+ * honest reading rather than the flattering one, and generation is NOT failed,
+ * because a wrong label is a manifest-quality problem, not evidence that the
+ * pipeline is broken. The downgrade is additionally recorded as a
+ * NON-BLOCKING `unbacked-phase-source` violation so it is machine-visible in
+ * the Violations table and the DOC-GRAPH ledger block instead of being a
+ * silent rewrite. Exit code is unaffected — see VIOLATIONS below.
+ *
  * DRIFT: a row may carry claimed_status. Comparing its rank to the computed
  * rank:
  *   - claimed rank > computed rank  ->  status-inflation   (BLOCKING; exit 1)
@@ -43,6 +80,9 @@
  *                        disk (per-ref, from resolveRefs()'s dangling list).
  *   - status-inflation   (BLOCKING): as above.
  *   - status-understated (informational): as above.
+ *   - unbacked-phase-source (informational): a row declared `phase_source:
+ *                        doc` with no docs ref that resolves on disk; the
+ *                        Phase cell was downgraded to derived.
  * The process exits 1 iff there is >=1 BLOCKING violation (status-inflation
  * or dangling-ref), 0 otherwise, 2 on fatal errors.
  *
@@ -75,9 +115,97 @@ export const STATUS_LADDER = [
   'verified',
 ];
 
+// The three ledger groups, in the fixed render order the epic DoD pins.
+// `kind` is schema-validated by ledger-manifest.mjs to exactly these three
+// values, so this partition is total — no row can fall outside a group.
+export const LEDGER_GROUPS = [
+  ['feature', 'Features'],
+  ['fr', 'Functional Requirements'],
+  ['nfr', 'Non-Functional Requirements'],
+];
+
+// Printed under a group heading that has zero rows, so "no FRs recorded" is
+// stated out loud instead of being inferred from a missing section.
+export const EMPTY_GROUP_LINE = '_none recorded_';
+
 // Frontmatter status values that lift a doc-only row to 'designed' (pinned
 // spec rule: "the primary doc's frontmatter status is accepted/stable").
 const DESIGNED_FM_STATUSES = new Set(['accepted', 'stable']);
+
+// The marker text stamped on every derived-phase cell, and the legend
+// explaining it (G3.5 review finding 3: a heuristic phase must be visibly
+// marked in the generated document itself, not just disclosed in the
+// manifest header).
+export const DERIVED_PHASE_MARKER = '*(derived)*';
+export const DERIVED_PHASE_LEGEND =
+  `Legend: ${DERIVED_PHASE_MARKER} — Phase is a bootstrap badge-heuristic guess, not a ` +
+  'phase stated in a source document (`phase_source` is not `doc` in ' +
+  '`docs/feature-ledger.manifest.yaml`, or is unset, or claims `doc` without a ' +
+  'resolvable `refs.docs` document to back it). Treat as provisional until a ' +
+  'human confirms the real roadmap phase.';
+
+/**
+ * Provenance of a row's phase_target: 'sourced' iff the manifest recorded an
+ * explicit `phase_source: doc` AND that claim is BACKED — i.e. the row has at
+ * least one `refs.docs` entry that resolves on disk and could therefore carry
+ * the phase statement. 'derived' otherwise, INCLUDING when `phase_source` is
+ * missing entirely (silence is not evidence of a sourced phase, G3.5 finding
+ * 3) and INCLUDING an explicit-but-unbacked `doc` (an explicit wrong value
+ * would otherwise bypass the default outright, G3.5-T6).
+ *
+ * @param {string|null|undefined} phase_source manifest value.
+ * @param {boolean} [backed=true] whether >=1 docs ref resolves on disk. The
+ *   default is `true` so that this stays a pure predicate over the LABEL for
+ *   callers testing label semantics; runLedger always passes the real value
+ *   from resolveRefs()'s `exists.docs`, so no production path relies on it.
+ * @returns {'sourced'|'derived'}
+ */
+export function phaseTargetSource(phase_source, backed = true) {
+  return phase_source === 'doc' && backed ? 'sourced' : 'derived';
+}
+
+// Matches an explicit phase statement in a source document: the FEAT-doc
+// convention `**Phase:** N` (bold header field), a bare `Phase: N` line, or
+// the hyphenated compound `Phase-N` (the SRS §4.2.2 form, "เป็น Phase-4
+// target" — its only phase statement). The spaced prose form "Phase 4" is
+// deliberately NOT matched: too common in incidental text to count as an
+// explicit statement. Known limit: the check is doc-granular, not
+// section-granular — one statement backs any row citing that document.
+const PHASE_STATEMENT_RE = /\*\*Phase:?\*\*|^Phase\s*:|\bPhase-\d\b/im;
+
+/**
+ * Does any of the row's resolving docs refs actually STATE a phase?
+ * Content-level backing for a `phase_source: doc` claim (G35-R-adv finding 1:
+ * existence-level backing let a phaseless document render a clean phase).
+ * @param {{refs: {docs?: string|string[]}}} entry
+ * @param {string} repoRoot
+ * @param {Map<string, boolean>} cache per-invocation, keyed by abs path
+ */
+export function docStatesPhase(entry, repoRoot, cache = new Map()) {
+  const docs = Array.isArray(entry.refs?.docs)
+    ? entry.refs.docs
+    : entry.refs?.docs
+      ? [entry.refs.docs]
+      : [];
+  for (const ref of docs) {
+    const abs = resolve(repoRoot, ref);
+    if (cache.has(abs)) {
+      if (cache.get(abs)) return true;
+      continue;
+    }
+    let states = false;
+    if (existsSync(abs)) {
+      try {
+        states = PHASE_STATEMENT_RE.test(readFileSync(abs, 'utf8'));
+      } catch {
+        states = false;
+      }
+    }
+    cache.set(abs, states);
+    if (states) return true;
+  }
+  return false;
+}
 
 export function baseStatus(status) {
   // strip a trailing " (...)" annotation so "code+tests-present (unrun)"
@@ -268,35 +396,48 @@ function renderLedgerMd(rows, summary, violations, meta) {
     lines.push('');
   }
 
-  // --- Full tables, grouped by kind (epic DoD: features, FRs, NFRs) ----
-  lines.push('## Ledger');
-  lines.push('');
-  lines.push(
-    '> † = `phase_target` is a bootstrap badge-heuristic (`phase_source: heuristic` in the ' +
-      'manifest), not a sourced roadmap phase — treat as provisional until confirmed.'
-  );
-  lines.push('');
-  const GROUPS = [
-    ['feature', 'Features'],
-    ['fr', 'Functional requirements (FR)'],
-    ['nfr', 'Non-functional requirements (NFR)'],
-  ];
-  for (const [kind, heading] of GROUPS) {
+  // --- Full tables, one explicitly-headed group per kind ---------------
+  // Epic DoD: the three groups ALWAYS print, in this fixed order, each with
+  // its own heading. A group with zero rows prints its heading followed by
+  // an explicit "_none recorded_" line, so an absent group can never be
+  // mistaken for a deliberate design choice.
+  for (const [kind, heading] of LEDGER_GROUPS) {
     const group = rows.filter((r) => r.kind === kind);
-    if (group.length === 0) continue;
-    lines.push(`### ${heading}`);
+    lines.push(`## ${heading}`);
     lines.push('');
-    lines.push('| ID | Title | Kind | Phase | Computed | Claimed | Drift | Evidence gaps | Source |');
-    lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+    if (group.length === 0) {
+      lines.push(EMPTY_GROUP_LINE);
+      lines.push('');
+      // The legend prints under EVERY group, empty ones included — see the
+      // note below; a reader must never have to infer the marker's meaning
+      // from a neighbouring group.
+      lines.push(`_${DERIVED_PHASE_LEGEND}_`);
+      lines.push('');
+      continue;
+    }
+    lines.push('| ID | Title | Phase | Computed | Claimed | Drift | Evidence gaps | Source |');
+    lines.push('| --- | --- | --- | --- | --- | --- | --- | --- |');
     for (const r of group) {
       const gaps = r.gaps.length ? r.gaps.join(', ') : '—';
       const claimed = r.claimed ?? '—';
-      const phase = r.phase_source === 'heuristic' ? `${r.phase_target}†` : r.phase_target;
+      const derived = r.phase_target_source === 'derived';
+      // Sourced values render clean; every derived cell is marked inline —
+      // not a footnote symbol, not a disclosure buried in the manifest.
+      const phase = derived ? `${r.phase_target} ${DERIVED_PHASE_MARKER}` : r.phase_target;
       lines.push(
-        `| ${mdEscape(r.id)} | ${mdEscape(r.title)} | ${r.kind} | ${phase} | ${r.computed} | ` +
+        `| ${mdEscape(r.id)} | ${mdEscape(r.title)} | ${phase} | ${r.computed} | ` +
           `${mdEscape(claimed)} | ${r.drift} | ${gaps} | ${mdEscape(r.source ?? '—')} |`
       );
     }
+    lines.push('');
+    // Legend lives under THIS group, right where its derived cells are —
+    // never a single note at the top of the document that a reader scrolling
+    // straight to a table would miss. It prints under EVERY group, not only
+    // groups that currently contain a derived cell: the epic DoD says "a
+    // short legend under each group", and a conditional legend also makes
+    // the document's shape depend on manifest data, so a group acquiring its
+    // first derived row would silently change the surrounding prose.
+    lines.push(`_${DERIVED_PHASE_LEGEND}_`);
     lines.push('');
   }
   return lines.join('\n');
@@ -340,6 +481,8 @@ export async function runLedger(opts = {}) {
 
   // Shared cache so a test file referenced by multiple rows runs once.
   const testCache = new Map();
+  // Per-invocation cache for phase-statement content checks (docStatesPhase).
+  const phaseDocCache = new Map();
 
   const rows = [];
   const violations = [];
@@ -393,12 +536,31 @@ export async function runLedger(opts = {}) {
         detail: `claimed=${entry.claimed_status} below computed=${computed}`,
       });
     }
+    // A `doc` phase claim is honoured only if some docs ref resolves on disk
+    // AND its content actually states a phase (`**Phase:**` line) — existence
+    // alone let a row cite a real-but-phaseless document (the SRS) and render
+    // clean (G35-R-adv finding 1). Otherwise the cell is downgraded to
+    // derived and the downgrade is recorded (non-blocking) so the rewrite is
+    // auditable, not silent.
+    const phaseBacked = docStatesPhase(entry, repoRoot, phaseDocCache);
+    const phase_target_source = phaseTargetSource(entry.phase_source, phaseBacked);
+    if (entry.phase_source === 'doc' && !phaseBacked) {
+      violations.push({
+        id: entry.id,
+        type: 'unbacked-phase-source',
+        blocking: false,
+        detail:
+          'phase_source: doc but no refs.docs entry both resolves on disk and ' +
+          'states a phase (**Phase:** line) — phase_target rendered as derived',
+      });
+    }
     rows.push({
       id: entry.id,
       title: entry.title,
       kind: entry.kind,
       phase_target: entry.phase_target,
       phase_source: entry.phase_source ?? null,
+      phase_target_source,
       computed,
       claimed: entry.claimed_status ?? null,
       drift,
@@ -440,6 +602,7 @@ export async function runLedger(opts = {}) {
       kind: r.kind,
       phase_target: r.phase_target,
       phase_source: r.phase_source,
+      phase_target_source: r.phase_target_source,
       computed: r.computed,
       claimed: r.claimed,
       drift: r.drift,
