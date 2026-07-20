@@ -502,11 +502,24 @@ mod backend {
         }
     }
 
-    /// Downscale a cropped BGRA minimap to [`MINIMAP_FRAME_WIDTH`] and PNG-encode
-    /// it into a base64 `data:image/png` URL for the Command Deck mirror. Nearest-
-    /// neighbour resize (same cheap kernel `calibration.rs` uses) so it stays well
-    /// inside budget at the ≈3 Hz call rate. Returns `None` on a degenerate size
-    /// or an encode failure — the caller then simply skips this frame.
+    /// Inner crop applied to the CV region before the mirror encode, as
+    /// fractions of the region's side. The CV region deliberately over-grabs
+    /// ("a sliver of HUD, never clip the map" — `region.rs`), which is right
+    /// for the detector but made the deck mirror show the map off-centre with
+    /// HUD junk on the edges (Boss 2026-07-20 "minimap ไม่พอดีกรอบ"). Measured
+    /// from Boss's 1080p screenshot: map square ≈ (9, 807)–(272, 1068) inside
+    /// region (0, 788, 292).
+    const MIRROR_CROP_L: f32 = 0.031;
+    const MIRROR_CROP_T: f32 = 0.064;
+    const MIRROR_CROP_R: f32 = 0.932;
+    const MIRROR_CROP_B: f32 = 0.961;
+
+    /// Crop the over-grabbed CV region down to the actual map square, downscale
+    /// to [`MINIMAP_FRAME_WIDTH`] and PNG-encode into a base64 `data:image/png`
+    /// URL for the Command Deck mirror. Nearest-neighbour resize (same cheap
+    /// kernel `calibration.rs` uses) so it stays well inside budget at the
+    /// ≈6.7 Hz call rate. Returns `None` on a degenerate size or an encode
+    /// failure — the caller then simply skips this frame.
     fn encode_minimap_dataurl(bgra: &[u8], w: usize, h: usize) -> Option<String> {
         use image::codecs::png::PngEncoder;
         use image::{ExtendedColorType, ImageEncoder};
@@ -514,14 +527,19 @@ mod backend {
         if w == 0 || h == 0 {
             return None;
         }
-        let (sw, sh) = (w as u32, h as u32);
+        // Source window = the measured map square inside the region.
+        let cx0 = ((w as f32) * MIRROR_CROP_L) as usize;
+        let cy0 = ((h as f32) * MIRROR_CROP_T) as usize;
+        let cw = (((w as f32) * (MIRROR_CROP_R - MIRROR_CROP_L)) as usize).max(1);
+        let ch = (((h as f32) * (MIRROR_CROP_B - MIRROR_CROP_T)) as usize).max(1);
+        let (sw, sh) = (cw as u32, ch as u32);
         let tw = MINIMAP_FRAME_WIDTH.min(sw);
         let th = ((tw as u64 * sh as u64) / sw as u64).max(1) as u32;
         let mut rgba = vec![0u8; (tw as usize) * (th as usize) * 4];
         for y in 0..th {
-            let sy = (y as u64 * sh as u64 / th as u64) as usize;
+            let sy = cy0 + (y as u64 * sh as u64 / th as u64) as usize;
             for x in 0..tw {
-                let sx = (x as u64 * sw as u64 / tw as u64) as usize;
+                let sx = cx0 + (x as u64 * sw as u64 / tw as u64) as usize;
                 let si = (sy * w + sx) * 4;
                 let di = ((y * tw + x) * 4) as usize;
                 if si + 3 < bgra.len() {
