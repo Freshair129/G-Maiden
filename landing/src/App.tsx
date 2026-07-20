@@ -1,0 +1,387 @@
+import { useEffect, useId, useRef, useState } from 'react'
+import {
+  ArrowUpRight,
+  BrainCircuit,
+  Crown,
+  Fingerprint,
+  HardDrive,
+  LoaderCircle,
+  LogOut,
+  Radio,
+  ScanLine,
+  ShieldCheck,
+  X,
+} from 'lucide-react'
+import heroArt from '../assets/hero/g-maiden-sea-captain-stone-titan-v1.webp'
+import { useBetaEnrollment } from './beta'
+
+const NAV_ITEMS = [
+  { label: 'ฟีเจอร์', href: '#features' },
+  {
+    label: 'วิธีทำงาน',
+    href: 'https://github.com/Freshair129/G-Maiden/blob/main/docs/architecture/technical-design-document.md',
+    external: true,
+  },
+  {
+    label: 'ความเป็นส่วนตัว',
+    href: 'https://github.com/Freshair129/G-Maiden/blob/main/docs/product/software-requirements-specification.md',
+    external: true,
+  },
+  { label: 'คำถามที่พบบ่อย', href: 'https://github.com/Freshair129/G-Maiden/issues', external: true },
+]
+
+const METRICS = [
+  { value: '≤300MS', label: 'เป้าหมายสัญญาณ', signal: true },
+  { value: '≤2.5%', label: 'งบ CPU เบื้องหลัง' },
+  { value: 'LOCAL', label: 'ข้อมูลดิบของแมตช์' },
+]
+
+const FEATURES = [
+  {
+    number: '01',
+    name: 'G-SENTRY + G-MOTION',
+    icon: ScanLine,
+    description: 'ติดตามฮีโร่ศัตรูที่หายจากวิสัยทัศน์ และเตือนเมื่อหายจากตำแหน่งล่าสุดนานผิดปกติ',
+    proof: 'อิง last-seen และสัญญาณที่ตรวจพบในเครื่อง',
+    diagnostic: (
+      <div className="diagnostic-list" aria-label="ตัวอย่างเวลาที่ศัตรูหายจากวิสัยทัศน์">
+        <div><span>ศัตรูหายจากจอ</span><strong>00:08</strong></div>
+        <div><span>ตำแหน่งล่าสุด</span><strong>เลนกลาง</strong></div>
+        <div><span>สถานะ</span><strong className="text-signal">กำลังติดตาม</strong></div>
+      </div>
+    ),
+  },
+  {
+    number: '02',
+    name: 'G-SIGNAL',
+    icon: Radio,
+    description: 'เตือนด้วยเสียงเมื่อสัญญาณความเสี่ยงถึงระดับที่ตั้งไว้ พร้อมแก้คำแนะนำเมื่อสถานการณ์เปลี่ยน',
+    proof: 'เป้าหมาย p50 ≤250ms · เพดาน 300ms',
+    diagnostic: (
+      <div className="signal-threshold" aria-label="ตัวอย่างระดับการแจ้งเตือน">
+        <div className="diagnostic-kicker">ระดับแจ้งเตือน · ปรับได้</div>
+        <div className="threshold-track"><span /></div>
+        <div className="threshold-labels"><span>LOW</span><strong>MED</strong><span>HIGH</span></div>
+      </div>
+    ),
+  },
+  {
+    number: '03',
+    name: 'G-MASTER',
+    icon: BrainCircuit,
+    description: 'ช่วยทบทวนจังหวะเล่นและไอเทมจากบริบทของแมตช์ โดยไม่ตัดสินใจหรือเล่นแทนคุณ',
+    proof: 'Claude / Anthropic · Ollama สำรองเมื่อออฟไลน์',
+    diagnostic: (
+      <div className="advice-context" aria-label="ตัวอย่างบริบทคำแนะนำ">
+        <span>บริบทล่าสุด</span>
+        <strong>ศัตรูหลักมีเวทระเบิดสูง</strong>
+        <p>ลองตรวจไอเทมป้องกันก่อนเข้าทีมไฟต์</p>
+      </div>
+    ),
+  },
+  {
+    number: '04',
+    name: 'G-SENSORY + G-LOG',
+    icon: HardDrive,
+    description: 'Overlay โปร่งใสช่วยเก็บรายละเอียดสำคัญ โดยบันทึกข้อมูลดิบของแมตช์ไว้ในเครื่องเป็นหลัก',
+    proof: 'งบ CPU ≤2.5% · RAM ≤400MB · raw match/CV local-only',
+    diagnostic: (
+      <div className="local-diagnostic" aria-label="สถานะข้อมูลภายในเครื่อง">
+        <div><span className="status-dot" />LOCAL SESSION</div>
+        <div className="local-bars"><span /><span /><span /><span /><span /><span /><span /></div>
+        <strong>ไม่มี raw match data ออกจากเครื่อง</strong>
+      </div>
+    ),
+  },
+]
+
+const PRIMARY_URL =
+  'https://github.com/Freshair129/G-Maiden/blob/main/docs/architecture/technical-design-document.md'
+function App() {
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuId = useId()
+  const menuButtonRef = useRef<HTMLButtonElement>(null)
+  const beta = useBetaEnrollment()
+
+  const betaBusy = beta.status === 'loading' || beta.status === 'enrolling'
+  const betaLabel = beta.gid
+    ? beta.gid
+    : betaBusy
+      ? 'กำลังเชื่อมต่อ'
+      : 'ลงทะเบียน Closed Beta'
+
+  useEffect(() => {
+    if (!menuOpen) return
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+
+    const closeOnEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMenuOpen(false)
+        menuButtonRef.current?.focus()
+      }
+    }
+
+    window.addEventListener('keydown', closeOnEscape)
+
+    return () => {
+      document.body.style.overflow = previousOverflow
+      window.removeEventListener('keydown', closeOnEscape)
+    }
+  }, [menuOpen])
+
+  const closeMenu = () => setMenuOpen(false)
+
+  return (
+    <main className="bg-void text-white">
+      <div id="hero" className="relative min-h-[100svh] overflow-hidden">
+      <div className="hero-art-stage absolute inset-0" aria-hidden="true">
+        <img className="hero-art h-full w-full object-cover" src={heroArt} alt="" fetchPriority="high" />
+        <div className="hero-depth-haze absolute inset-0" />
+        <div className="hero-particles absolute inset-0" />
+      </div>
+
+      <div className="hero-scrim absolute inset-0" aria-hidden="true" />
+
+      <header className="absolute inset-x-0 top-0 z-40 flex items-center justify-between px-6 py-5 sm:px-10 lg:px-16 lg:py-7">
+        <a
+          href="#hero"
+          className="font-podium text-2xl font-bold uppercase tracking-wider text-white transition-colors hover:text-ice focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:text-3xl"
+        >
+          G-Maiden
+        </a>
+
+        <nav className="hidden items-center gap-8 md:flex lg:gap-12" aria-label="เมนูหลัก">
+          {NAV_ITEMS.map((item) => (
+            <a
+              key={item.label}
+              href={item.href}
+              target={item.external ? '_blank' : undefined}
+              rel={item.external ? 'noreferrer' : undefined}
+              className="font-inter text-sm uppercase tracking-widest text-white/80 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+            >
+              {item.label}
+            </a>
+          ))}
+        </nav>
+
+        <button
+          type="button"
+          disabled={betaBusy}
+          onClick={() => void beta.register()}
+          className="group hidden min-h-11 items-center gap-3 border border-white/30 px-6 py-3 font-inter text-xs uppercase tracking-widest transition-colors hover:border-white/60 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:cursor-wait disabled:opacity-60 md:flex"
+        >
+          {betaLabel}
+          {betaBusy ? (
+            <LoaderCircle className="h-4 w-4 animate-spin" />
+          ) : (
+            <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+          )}
+        </button>
+
+        <button
+          ref={menuButtonRef}
+          type="button"
+          className="flex min-h-11 min-w-11 flex-col items-end justify-center space-y-1.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice md:hidden"
+          aria-label="เปิดเมนูนำทาง"
+          aria-expanded={menuOpen}
+          aria-controls={menuId}
+          onClick={() => setMenuOpen(true)}
+        >
+          <span className="h-0.5 w-6 bg-white" />
+          <span className="h-0.5 w-6 bg-white" />
+          <span className="h-0.5 w-4 bg-white" />
+        </button>
+      </header>
+
+      <div
+        id={menuId}
+        className={`fixed inset-0 z-50 bg-black/95 backdrop-blur-sm transition-all duration-500 md:hidden ${
+          menuOpen ? 'visible opacity-100' : 'invisible opacity-0'
+        }`}
+        aria-hidden={!menuOpen}
+      >
+        <div className="flex items-center justify-between px-6 py-5 sm:px-10">
+          <a
+            href="#hero"
+            className="font-podium text-2xl font-bold uppercase tracking-wider text-white sm:text-3xl"
+            onClick={closeMenu}
+          >
+            G-Maiden
+          </a>
+          <button
+            type="button"
+            className="flex min-h-11 min-w-11 items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+            aria-label="ปิดเมนูนำทาง"
+            onClick={() => {
+              closeMenu()
+              menuButtonRef.current?.focus()
+            }}
+          >
+            <X className="h-6 w-6" />
+          </button>
+        </div>
+
+        <nav className="flex h-[calc(100svh-84px)] flex-col items-center justify-center gap-5 px-6" aria-label="เมนูบนมือถือ">
+          {NAV_ITEMS.map((item, index) => (
+            <a
+              key={item.label}
+              href={item.href}
+              target={item.external ? '_blank' : undefined}
+              rel={item.external ? 'noreferrer' : undefined}
+              className={`thai-display text-4xl tracking-tight text-white transition-all duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:text-5xl ${
+                menuOpen ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0'
+              }`}
+              style={{ transitionDelay: `${index * 80 + 100}ms` }}
+              onClick={closeMenu}
+            >
+              {item.label}
+            </a>
+          ))}
+
+          <button
+            type="button"
+            disabled={betaBusy}
+            className={`group mt-5 flex min-h-12 items-center gap-3 border border-white/30 px-7 py-3 font-inter text-xs uppercase tracking-widest transition-all duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:cursor-wait disabled:opacity-60 ${
+              menuOpen ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0'
+            }`}
+            style={{ transitionDelay: `${NAV_ITEMS.length * 80 + 100}ms` }}
+            onClick={() => {
+              closeMenu()
+              void beta.register()
+            }}
+          >
+            {betaLabel}
+            {betaBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ArrowUpRight className="h-4 w-4" />}
+          </button>
+        </nav>
+      </div>
+
+      <section className="hero-section relative z-20 flex min-h-[100svh] items-center px-6 pb-5 pt-24 sm:px-10 sm:pb-8 lg:px-16 lg:pb-10 lg:pt-28">
+        <div className="hero-content w-full max-w-[46rem]">
+          <div className="animate-fade-up mb-5 flex items-center gap-3 sm:mb-6 lg:mb-7">
+            <Crown className="h-4 w-4 shrink-0 text-ice-bright/80" strokeWidth={1.75} />
+            <p className="font-inter text-[10px] font-medium uppercase tracking-[0.23em] text-white/70 sm:text-sm sm:tracking-[0.3em]">
+              AI Companion แบบเรียลไทม์สำหรับ Dota 2
+            </p>
+          </div>
+
+          <h1 className="animate-fade-up-delay-1 thai-display tracking-tight text-white">
+            <span className="block">โฟกัสกับเกม</span>
+            <span className="block">ให้ Maiden</span>
+            <span className="block">คอยระวังหลัง</span>
+          </h1>
+
+          <p className="animate-fade-up-delay-2 mt-5 max-w-md font-inter text-sm leading-relaxed text-white/70 sm:mt-6 sm:text-base lg:mt-7">
+            Maiden คอยเก็บสัญญาณที่อาจหลุดสายตาระหว่างไฟต์ แจ้งเตือนด้วยเสียง
+            <br className="hidden sm:block" /> และช่วยให้คุณจดจ่อกับ{' '}
+            <strong className="font-semibold text-white">การเล่นตรงหน้า</strong>
+          </p>
+
+          <div className="animate-fade-up-delay-3 mt-6 flex flex-wrap items-center gap-3 sm:mt-8 sm:gap-4">
+            <button
+              type="button"
+              disabled={betaBusy}
+              onClick={() => void beta.register()}
+              className="group flex min-h-11 items-center gap-3 bg-action px-5 py-3 font-inter text-[11px] font-semibold uppercase tracking-widest text-white transition-colors hover:bg-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice focus-visible:ring-offset-2 focus-visible:ring-offset-void disabled:cursor-wait disabled:opacity-70 sm:min-h-12 sm:px-7 sm:py-4 sm:text-xs"
+            >
+              {beta.gid ? `ลงทะเบียนแล้ว · ${beta.gid}` : betaBusy ? 'กำลังออก GID' : 'รับ GID สำหรับ Closed Beta'}
+              {betaBusy ? (
+                <LoaderCircle className="h-4 w-4 animate-spin" />
+              ) : (
+                <Fingerprint className="h-4 w-4 transition-transform group-hover:scale-110" />
+              )}
+            </button>
+
+            <a
+              href={PRIMARY_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="secondary-cta group flex min-h-11 items-center gap-3 border border-white/25 px-5 py-3 font-inter text-[11px] font-semibold uppercase tracking-widest text-white/80 transition-colors hover:border-white/50 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:min-h-12 sm:px-6 sm:py-4 sm:text-xs"
+            >
+              ดูการทำงาน
+              <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+            </a>
+          </div>
+
+          <div className="animate-fade-up-delay-4 mt-4 min-h-5" aria-live="polite">
+            {beta.gid && (
+              <div className="beta-confirmation flex max-w-md items-center gap-3 border-l-2 border-signal bg-black/35 px-3 py-2.5 backdrop-blur-sm">
+                <ShieldCheck className="h-5 w-5 shrink-0 text-signal" />
+                <p className="font-inter text-[10px] uppercase leading-relaxed tracking-wider text-white/75 sm:text-xs">
+                  GID เดียวกับ G-Maiden · {beta.email}
+                  <span className="block text-white/45">เข้าสู่ระบบในแอปด้วย Google บัญชีเดียวกัน</span>
+                </p>
+                <button
+                  type="button"
+                  onClick={() => void beta.signOut()}
+                  className="ml-auto flex min-h-11 min-w-11 items-center justify-center text-white/45 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
+                  aria-label="ออกจากระบบ"
+                >
+                  <LogOut className="h-4 w-4" />
+                </button>
+              </div>
+            )}
+            {beta.error && <p className="max-w-md font-inter text-xs text-red-300" role="alert">{beta.error}</p>}
+          </div>
+
+          <dl className="animate-fade-up-delay-4 mt-5 flex flex-wrap gap-x-5 gap-y-4 sm:mt-7 sm:gap-x-10 lg:mt-8 lg:gap-x-14">
+            {METRICS.map((metric) => (
+              <div key={metric.label} className="relative min-w-[5.75rem] sm:min-w-[7.5rem]">
+                <dt className="flex items-center gap-2 font-inter text-2xl font-bold tracking-tight text-white sm:text-3xl lg:text-4xl">
+                  {metric.signal && <span className="h-2.5 w-2.5 rounded-full bg-signal" aria-hidden="true" />}
+                  {metric.value}
+                </dt>
+                <dd className="mt-1 font-inter text-[9px] font-medium uppercase tracking-widest text-white/50 sm:text-[11px]">
+                  {metric.label}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </div>
+      </section>
+      </div>
+
+      <section id="features" className="features-section" aria-labelledby="features-title">
+        <div className="features-shell">
+          <div className="features-intro">
+            <p className="features-kicker"><span aria-hidden="true">//</span> WATCH YOUR BACK</p>
+            <h2 id="features-title" className="thai-display">บัดดี้ที่คอยระวังหลังให้คุณ</h2>
+            <p>
+              ระหว่างที่คุณโฟกัสกับไฟต์ Maiden ช่วยติดตามสัญญาณจากเกมและเตือนสิ่งที่อาจพลาดไป
+              <strong> โดยไม่เล่นแทนคุณ</strong>
+            </p>
+          </div>
+
+          <div className="feature-rails">
+            {FEATURES.map((feature) => {
+              const Icon = feature.icon
+              return (
+                <article key={feature.number} className="feature-rail">
+                  <div className="feature-index" aria-hidden="true">
+                    <span>{feature.number}</span><i />
+                  </div>
+                  <div className="feature-copy">
+                    <div className="feature-name"><Icon aria-hidden="true" /><h3>{feature.name}</h3></div>
+                    <p>{feature.description}</p>
+                    <small>{feature.proof}</small>
+                  </div>
+                  <div className="feature-diagnostic">{feature.diagnostic}</div>
+                  <span className="feature-online"><i /> พร้อมทำงาน</span>
+                </article>
+              )
+            })}
+          </div>
+
+          <div className="privacy-rail">
+            <ShieldCheck aria-hidden="true" />
+            <p><strong>ข้อมูลดิบอยู่กับคุณ</strong> — Landing เก็บเฉพาะสถานะบัญชี Closed Beta และ GID ส่วนข้อมูลแมตช์, CV และ G-Log ยังคงอยู่ในเครื่อง</p>
+          </div>
+        </div>
+      </section>
+    </main>
+  )
+}
+
+export default App

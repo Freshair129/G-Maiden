@@ -1,14 +1,14 @@
-﻿# Audit: GSI Setup + Overlay Settings
+# Audit: GSI Setup + Overlay Settings
 
 - Date: 2026-06-23
-- Scope: `GSI setup` à¹à¸¥à¸° `overlay settings`
-- Source of evidence: à¹€à¸­à¸à¸ªà¸²à¸£à¹à¸¥à¸°à¹‚à¸„à¹‰à¸”à¹ƒà¸™ repo à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™
+- Scope: `GSI setup` และ `overlay settings`
+- Source of evidence: เอกสารและโค้ดใน repo เท่านั้น
 - Save target: local
 - Language: Thai
 
-## à¸§à¸´à¸˜à¸µà¸­à¹ˆà¸²à¸™à¸£à¸²à¸¢à¸‡à¸²à¸™à¸™à¸µà¹‰
+## วิธีอ่านรายงานนี้
 
-à¸£à¸²à¸¢à¸‡à¸²à¸™à¸™à¸µà¹‰à¹€à¸›à¹‡à¸™ `repo-based audit` à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆà¸à¸²à¸£à¸à¸”à¹ƒà¸Šà¹‰à¸‡à¸²à¸™à¸ˆà¸£à¸´à¸‡à¸šà¸™à¹à¸­à¸›à¸—à¸µà¹ˆà¸£à¸±à¸™à¸­à¸¢à¸¹à¹ˆ à¸”à¸±à¸‡à¸™à¸±à¹‰à¸™à¸«à¸¥à¸±à¸à¸à¸²à¸™à¸«à¸¥à¸±à¸à¸¡à¸²à¸ˆà¸²à¸ flow à¹ƒà¸™à¹‚à¸„à¹‰à¸”à¹à¸¥à¸°à¹€à¸­à¸à¸ªà¸²à¸£à¸­à¹‰à¸²à¸‡à¸­à¸´à¸‡ à¹‚à¸”à¸¢à¹€à¸‰à¸žà¸²à¸°:
+รายงานนี้เป็น `repo-based audit` ไม่ใช่การกดใช้งานจริงบนแอปที่รันอยู่ ดังนั้นหลักฐานหลักมาจาก flow ในโค้ดและเอกสารอ้างอิง โดยเฉพาะ:
 
 - [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
 - [`src-tauri/src/main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs)
@@ -18,21 +18,21 @@
 - [[technical-design-document]] (`docs/architecture/technical-design-document.md`)
 - [[software-requirements-specification]] (`docs/product/software-requirements-specification.md`)
 
-à¸ˆà¸¸à¸”à¸—à¸µà¹ˆà¸•à¹‰à¸­à¸‡à¸­à¸²à¸¨à¸±à¸¢ runtime, screenshot, à¸«à¸£à¸·à¸­ interaction à¸ˆà¸£à¸´à¸‡ à¸ˆà¸°à¸–à¸¹à¸à¸£à¸°à¸šà¸¸à¹€à¸›à¹‡à¸™ `à¸‚à¹‰à¸­à¸ˆà¸³à¸à¸±à¸”à¸‚à¸­à¸‡à¸«à¸¥à¸±à¸à¸à¸²à¸™`
+จุดที่ต้องอาศัย runtime, screenshot, หรือ interaction จริง จะถูกระบุเป็น `ข้อจำกัดของหลักฐาน`
 
 ---
 
-## à¸ªà¸£à¸¸à¸›à¸ªà¸±à¹‰à¸™
+## สรุปสั้น
 
-à¸ à¸²à¸žà¸£à¸§à¸¡à¸‚à¸­à¸‡à¸ªà¸­à¸‡ flow à¸™à¸µà¹‰à¸–à¸·à¸­à¸§à¹ˆà¸² `à¹‚à¸„à¸£à¸‡à¸ªà¸£à¹‰à¸²à¸‡à¸”à¸µà¹à¸¥à¸°à¹à¸¢à¸à¸«à¸™à¹‰à¸²à¸—à¸µà¹ˆà¸Šà¸±à¸”`
+ภาพรวมของสอง flow นี้ถือว่า `โครงสร้างดีและแยกหน้าที่ชัด`
 
-- `GSI setup` à¹à¸‚à¹‡à¸‡à¹à¸£à¸‡à¹ƒà¸™à¹€à¸Šà¸´à¸‡à¹€à¸—à¸„à¸™à¸´à¸„ à¹€à¸žà¸£à¸²à¸°à¹ƒà¸Šà¹‰ Rust à¹€à¸›à¹‡à¸™à¸•à¸±à¸§à¸•à¸£à¸§à¸ˆ Steam, à¸«à¸² Dota library, à¹€à¸‚à¸µà¸¢à¸™ config, à¹à¸¥à¸°à¸£à¸±à¸š GSI à¸œà¹ˆà¸²à¸™ `127.0.0.1:3000/gsi`
-- `overlay settings` à¸­à¸­à¸à¹à¸šà¸š data flow à¸”à¸µà¸¡à¸²à¸ à¹€à¸žà¸£à¸²à¸° control state, persistence, à¹à¸¥à¸° overlay sync à¹€à¸”à¸´à¸™à¹€à¸›à¹‡à¸™à¹€à¸ªà¹‰à¸™à¸•à¸£à¸‡ `localStorage -> React state -> emit('settings') -> overlay`
+- `GSI setup` แข็งแรงในเชิงเทคนิค เพราะใช้ Rust เป็นตัวตรวจ Steam, หา Dota library, เขียน config, และรับ GSI ผ่าน `127.0.0.1:3000/gsi`
+- `overlay settings` ออกแบบ data flow ดีมาก เพราะ control state, persistence, และ overlay sync เดินเป็นเส้นตรง `localStorage -> React state -> emit('settings') -> overlay`
 
-à¹à¸•à¹ˆà¸¡à¸µ 2 à¸ˆà¸¸à¸”à¹€à¸ªà¸µà¹ˆà¸¢à¸‡à¸ªà¸³à¸„à¸±à¸à¹ƒà¸™à¸¡à¸¸à¸¡ UX:
+แต่มี 2 จุดเสี่ยงสำคัญในมุม UX:
 
-1. à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸ªà¸²à¸¡à¸²à¸£à¸–à¹€à¸«à¹‡à¸™à¸ªà¸–à¸²à¸™à¸°à¸§à¹ˆà¸² `à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¹à¸¥à¹‰à¸§` à¸—à¸±à¹‰à¸‡à¸—à¸µà¹ˆà¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸¢à¸·à¸™à¸¢à¸±à¸™à¸§à¹ˆà¸² Dota à¸ªà¹ˆà¸‡ GSI à¸ˆà¸£à¸´à¸‡
-2. à¸£à¸°à¸šà¸šà¸•à¸£à¸§à¸ˆ GSI config à¹€à¸Šà¹‡à¸à¹à¸„à¹ˆ `à¸¡à¸µà¹„à¸Ÿà¸¥à¹Œà¸­à¸¢à¸¹à¹ˆ` à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¸¢à¸·à¸™à¸¢à¸±à¸™à¸§à¹ˆà¸²à¹€à¸™à¸·à¹‰à¸­à¹„à¸Ÿà¸¥à¹Œà¸¢à¸±à¸‡à¸–à¸¹à¸à¸•à¹‰à¸­à¸‡
+1. ผู้ใช้สามารถเห็นสถานะว่า `ติดตั้งแล้ว` ทั้งที่ยังไม่ยืนยันว่า Dota ส่ง GSI จริง
+2. ระบบตรวจ GSI config เช็กแค่ `มีไฟล์อยู่` ไม่ได้ยืนยันว่าเนื้อไฟล์ยังถูกต้อง
 
 ---
 
@@ -42,56 +42,56 @@
 
 #### Step list
 
-1. à¹à¸­à¸›à¹€à¸›à¸´à¸”à¸‚à¸¶à¹‰à¸™à¸¡à¸²à¹à¸¥à¸°à¸•à¸£à¸§à¸ˆà¸ªà¸–à¸²à¸™à¸° GSI setup à¸­à¸±à¸•à¹‚à¸™à¸¡à¸±à¸•à¸´
-   - Health: à¸”à¸µ
-   - Evidence: `invoke('detect_gsi_setup')` à¸–à¸¹à¸à¹€à¸£à¸µà¸¢à¸à¸—à¸±à¹‰à¸‡à¹ƒà¸™ `SetupCard` à¹à¸¥à¸° welcome flow à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) à¹à¸¥à¸° [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
+1. แอปเปิดขึ้นมาและตรวจสถานะ GSI setup อัตโนมัติ
+   - Health: ดี
+   - Evidence: `invoke('detect_gsi_setup')` ถูกเรียกทั้งใน `SetupCard` และ welcome flow ที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) และ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
 
-2. à¸–à¹‰à¸²à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸žà¸£à¹‰à¸­à¸¡ à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¹€à¸«à¹‡à¸™à¸›à¸¸à¹ˆà¸¡ `à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡ GSI config`
-   - Health: à¸”à¸µ
-   - Evidence: à¸›à¸¸à¹ˆà¸¡à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¸–à¸¹à¸à¹à¸ªà¸”à¸‡à¹€à¸¡à¸·à¹ˆà¸­à¸žà¸š `dota_cfg_dir` à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) à¹à¸¥à¸° [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
+2. ถ้ายังไม่พร้อม ผู้ใช้เห็นปุ่ม `ติดตั้ง GSI config`
+   - Health: ดี
+   - Evidence: ปุ่มติดตั้งถูกแสดงเมื่อพบ `dota_cfg_dir` ที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) และ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
 
-3. à¸£à¸°à¸šà¸šà¹€à¸‚à¸µà¸¢à¸™à¹„à¸Ÿà¸¥à¹Œ `gamestate_integration_gmaiden.cfg` à¸¥à¸‡à¹ƒà¸™à¹‚à¸Ÿà¸¥à¹€à¸”à¸­à¸£à¹Œ Dota
-   - Health: à¸”à¸µ
-   - Evidence: `setup::install()` à¸ªà¸£à¹‰à¸²à¸‡à¹‚à¸Ÿà¸¥à¹€à¸”à¸­à¸£à¹Œà¹à¸¥à¸°à¹€à¸‚à¸µà¸¢à¸™à¹„à¸Ÿà¸¥à¹Œà¸—à¸µà¹ˆ [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L178)
+3. ระบบเขียนไฟล์ `gamestate_integration_gmaiden.cfg` ลงในโฟลเดอร์ Dota
+   - Health: ดี
+   - Evidence: `setup::install()` สร้างโฟลเดอร์และเขียนไฟล์ที่ [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L178)
 
-4. à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸–à¸¹à¸à¸šà¸­à¸à¹ƒà¸«à¹‰à¹€à¸›à¸´à¸”à¸«à¸£à¸·à¸­à¸£à¸µà¸ªà¸•à¸²à¸£à¹Œà¸— Dota 2 à¹€à¸žà¸·à¹ˆà¸­à¹ƒà¸«à¹‰ GSI à¹‚à¸«à¸¥à¸”
-   - Health: à¸žà¸­à¹ƒà¸Šà¹‰
-   - Evidence: copy à¹ƒà¸™ welcome flow à¸£à¸°à¸šà¸¸à¸Šà¸±à¸”à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) à¹à¸¥à¸° setup card à¸£à¸°à¸šà¸¸à¸„à¸³à¹ƒà¸šà¹‰à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
+4. ผู้ใช้ถูกบอกให้เปิดหรือรีสตาร์ท Dota 2 เพื่อให้ GSI โหลด
+   - Health: พอใช้
+   - Evidence: copy ใน welcome flow ระบุชัดที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) และ setup card ระบุคำใบ้ที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
 
-5. à¹€à¸¡à¸·à¹ˆà¸­ Dota à¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ˆà¸£à¸´à¸‡ UI header à¹à¸¥à¸° live panel à¸ˆà¸¶à¸‡à¸ªà¸°à¸—à¹‰à¸­à¸™à¸ªà¸–à¸²à¸™à¸° runtime
-   - Health: à¸”à¸µ
-   - Evidence: `gsi-status` à¸–à¸¹à¸ emit à¸ˆà¸²à¸ watchdog à¸—à¸µà¹ˆ [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L119) à¹à¸¥à¸°à¸–à¸¹à¸à¹ƒà¸Šà¹‰à¹ƒà¸™ chip à¸ªà¸–à¸²à¸™à¸°à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
+5. เมื่อ Dota ส่งข้อมูลจริง UI header และ live panel จึงสะท้อนสถานะ runtime
+   - Health: ดี
+   - Evidence: `gsi-status` ถูก emit จาก watchdog ที่ [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L119) และถูกใช้ใน chip สถานะที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
 
 #### Strengths
 
-- onboarding à¸ªà¸±à¹‰à¸™à¹à¸¥à¸°à¸•à¸£à¸‡à¸›à¸£à¸°à¹€à¸”à¹‡à¸™ à¹„à¸¡à¹ˆà¸¢à¸±à¸”à¸•à¸±à¸§à¹€à¸¥à¸·à¸­à¸à¹€à¸¢à¸­à¸°à¹€à¸à¸´à¸™à¸ˆà¸³à¹€à¸›à¹‡à¸™
-- à¸›à¸¸à¹ˆà¸¡à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¹€à¸›à¹‡à¸™ action à¹€à¸”à¸µà¸¢à¸§à¸—à¸µà¹ˆà¸Šà¸±à¸”à¹€à¸ˆà¸™ à¹„à¸¡à¹ˆà¸—à¸³à¹ƒà¸«à¹‰à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸•à¹‰à¸­à¸‡à¸«à¸² path à¹€à¸­à¸‡
-- à¸ªà¸–à¸²à¸™à¸° runtime à¹à¸¢à¸à¹€à¸›à¹‡à¸™ `Dota running` à¸à¸±à¸š `GSI active` à¸—à¸³à¹ƒà¸«à¹‰ UI à¹„à¸¡à¹ˆà¹‚à¸à¸«à¸à¹€à¸¡à¸·à¹ˆà¸­à¹€à¸à¸¡à¸›à¸´à¸”à¸«à¸£à¸·à¸­ GSI à¹€à¸‡à¸µà¸¢à¸š
+- onboarding สั้นและตรงประเด็น ไม่ยัดตัวเลือกเยอะเกินจำเป็น
+- ปุ่มติดตั้งเป็น action เดียวที่ชัดเจน ไม่ทำให้ผู้ใช้ต้องหา path เอง
+- สถานะ runtime แยกเป็น `Dota running` กับ `GSI active` ทำให้ UI ไม่โกหกเมื่อเกมปิดหรือ GSI เงียบ
 
 #### UX findings
 
-1. à¸ªà¸–à¸²à¸™à¸° `à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¹à¸¥à¹‰à¸§` à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹€à¸—à¹ˆà¸²à¸à¸±à¸š `à¹ƒà¸Šà¹‰à¸‡à¸²à¸™à¹„à¸”à¹‰à¸ˆà¸£à¸´à¸‡`
-   - Severity: à¸ªà¸¹à¸‡
-   - Evidence: `detect()` à¸–à¸·à¸­à¸§à¹ˆà¸² `installed = present` à¸—à¸±à¸™à¸—à¸µà¸–à¹‰à¸²à¸¡à¸µà¹„à¸Ÿà¸¥à¹Œ cfg à¸­à¸¢à¸¹à¹ˆà¸—à¸µà¹ˆ [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L159), à¹à¸•à¹ˆà¸ªà¸–à¸²à¸™à¸°à¸£à¸±à¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ˆà¸£à¸´à¸‡à¸ˆà¸°à¹€à¸à¸´à¸”à¸ à¸²à¸¢à¸«à¸¥à¸±à¸‡à¸œà¹ˆà¸²à¸™ watchdog à¹à¸¥à¸° `last_post_ms` à¸—à¸µà¹ˆ [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L128)
-   - Impact: à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸­à¸²à¸ˆà¸à¸” `à¸žà¸£à¹‰à¸­à¸¡à¹à¸¥à¹‰à¸§!` à¹à¸¥à¹‰à¸§à¹€à¸‚à¹‰à¸²à¹ƒà¸ˆà¸§à¹ˆà¸² setup à¸ˆà¸š à¸—à¸±à¹‰à¸‡à¸—à¸µà¹ˆà¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹„à¸”à¹‰à¹€à¸›à¸´à¸”à¸«à¸£à¸·à¸­à¸£à¸µà¸ªà¸•à¸²à¸£à¹Œà¸— Dota à¹€à¸¥à¸¢
-   - Recommendation: à¹à¸¢à¸à¸ªà¸–à¸²à¸™à¸°à¹ƒà¸™ UI à¹ƒà¸«à¹‰à¸Šà¸±à¸”à¹€à¸›à¹‡à¸™ `à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡ config à¹à¸¥à¹‰à¸§` à¸à¸±à¸š `à¸£à¸±à¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ˆà¸²à¸à¹€à¸à¸¡à¹à¸¥à¹‰à¸§`
+1. สถานะ `ติดตั้งแล้ว` ยังไม่เท่ากับ `ใช้งานได้จริง`
+   - Severity: สูง
+   - Evidence: `detect()` ถือว่า `installed = present` ทันทีถ้ามีไฟล์ cfg อยู่ที่ [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L159), แต่สถานะรับข้อมูลจริงจะเกิดภายหลังผ่าน watchdog และ `last_post_ms` ที่ [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L128)
+   - Impact: ผู้ใช้อาจกด `พร้อมแล้ว!` แล้วเข้าใจว่า setup จบ ทั้งที่ยังไม่ได้เปิดหรือรีสตาร์ท Dota เลย
+   - Recommendation: แยกสถานะใน UI ให้ชัดเป็น `ติดตั้ง config แล้ว` กับ `รับข้อมูลจากเกมแล้ว`
 
-2. flow welcome à¸›à¸¥à¹ˆà¸­à¸¢à¹ƒà¸«à¹‰à¸‚à¹‰à¸²à¸¡à¹„à¸”à¹‰ à¹à¸¡à¹‰à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸•à¸´à¸”à¸•à¸±à¹‰à¸‡ GSI
-   - Severity: à¸à¸¥à¸²à¸‡
-   - Evidence: à¸¡à¸µà¸›à¸¸à¹ˆà¸¡ `à¸‚à¹‰à¸²à¸¡ (à¸•à¸±à¹‰à¸‡à¸„à¹ˆà¸²à¹€à¸­à¸‡à¸ à¸²à¸¢à¸«à¸¥à¸±à¸‡)` à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
-   - Impact: à¸¥à¸”à¹à¸£à¸‡à¹€à¸ªà¸µà¸¢à¸”à¸—à¸²à¸™à¸£à¸°à¸¢à¸°à¸ªà¸±à¹‰à¸™ à¹à¸•à¹ˆà¹€à¸žà¸´à¹ˆà¸¡à¹‚à¸­à¸à¸²à¸ªà¸—à¸µà¹ˆà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¹„à¸›à¸–à¸¶à¸‡à¸«à¸™à¹‰à¸²à¸«à¸¥à¸±à¸à¹à¸¥à¹‰à¸§à¸‡à¸‡à¸§à¹ˆà¸²à¸—à¸³à¹„à¸¡à¹„à¸¡à¹ˆà¸¡à¸µà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸ªà¸”
-   - Recommendation: à¸–à¹‰à¸²à¸‚à¹‰à¸²à¸¡ à¸„à¸§à¸£à¸¡à¸µ banner à¸«à¸£à¸·à¸­ checklist à¸„à¹‰à¸²à¸‡à¹„à¸§à¹‰à¹ƒà¸™à¸«à¸™à¹‰à¸²à¸«à¸¥à¸±à¸à¸ˆà¸™à¸à¸§à¹ˆà¸²à¸ˆà¸°à¸£à¸±à¸š GSI à¹„à¸”à¹‰à¸ˆà¸£à¸´à¸‡
+2. flow welcome ปล่อยให้ข้ามได้ แม้ยังไม่ติดตั้ง GSI
+   - Severity: กลาง
+   - Evidence: มีปุ่ม `ข้าม (ตั้งค่าเองภายหลัง)` ที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
+   - Impact: ลดแรงเสียดทานระยะสั้น แต่เพิ่มโอกาสที่ผู้ใช้ไปถึงหน้าหลักแล้วงงว่าทำไมไม่มีข้อมูลสด
+   - Recommendation: ถ้าข้าม ควรมี banner หรือ checklist ค้างไว้ในหน้าหลักจนกว่าจะรับ GSI ได้จริง
 
-3. à¹€à¸¡à¸·à¹ˆà¸­à¸«à¸² Dota path à¹„à¸¡à¹ˆà¹€à¸ˆà¸­ à¸£à¸°à¸šà¸šà¸¡à¸µà¸‚à¹‰à¸­à¸„à¸§à¸²à¸¡ error à¹à¸•à¹ˆà¹„à¸¡à¹ˆà¸¡à¸µ next action à¸—à¸µà¹ˆà¹€à¸›à¹‡à¸™à¸‚à¸±à¹‰à¸™à¸•à¸­à¸™
-   - Severity: à¸à¸¥à¸²à¸‡
-   - Evidence: `detect()` à¸ªà¹ˆà¸‡à¸à¸¥à¸±à¸šà¸‚à¹‰à¸­à¸„à¸§à¸²à¸¡à¹à¸šà¸š state-based à¹€à¸Šà¹ˆà¸™à¹„à¸¡à¹ˆà¸žà¸š Steam à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆà¸žà¸š Dota à¸—à¸µà¹ˆ [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L136) à¹à¸¥à¸° [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L148)
-   - Impact: à¸„à¸™à¸—à¸µà¹ˆà¸•à¸´à¸”à¸•à¸±à¹‰à¸‡ Steam à¸«à¸¥à¸²à¸¢ library à¸«à¸£à¸·à¸­ registry à¹à¸›à¸¥à¸à¸­à¸²à¸ˆà¸£à¸¹à¹‰à¸§à¹ˆà¸² fail à¹à¸•à¹ˆà¹„à¸¡à¹ˆà¸£à¸¹à¹‰à¸„à¸§à¸£à¸—à¸³à¸­à¸°à¹„à¸£à¸•à¹ˆà¸­
-   - Recommendation: à¹€à¸žà¸´à¹ˆà¸¡ recovery copy à¹à¸šà¸šà¸ªà¸±à¹‰à¸™ à¹€à¸Šà¹ˆà¸™ `à¹€à¸›à¸´à¸” Steam à¸«à¸™à¸¶à¹ˆà¸‡à¸„à¸£à¸±à¹‰à¸‡`, `à¸•à¸£à¸§à¸ˆà¸§à¹ˆà¸² Dota 2 à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™ library à¸™à¸µà¹‰`, `à¸à¸”à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¸‹à¹‰à¸³`
+3. เมื่อหา Dota path ไม่เจอ ระบบมีข้อความ error แต่ไม่มี next action ที่เป็นขั้นตอน
+   - Severity: กลาง
+   - Evidence: `detect()` ส่งกลับข้อความแบบ state-based เช่นไม่พบ Steam หรือไม่พบ Dota ที่ [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L136) และ [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L148)
+   - Impact: คนที่ติดตั้ง Steam หลาย library หรือ registry แปลกอาจรู้ว่า fail แต่ไม่รู้ควรทำอะไรต่อ
+   - Recommendation: เพิ่ม recovery copy แบบสั้น เช่น `เปิด Steam หนึ่งครั้ง`, `ตรวจว่า Dota 2 อยู่ใน library นี้`, `กดติดตั้งซ้ำ`
 
 #### Accessibility / usability risks
 
-- onboarding à¹ƒà¸Šà¹‰à¸à¸²à¸£à¸žà¸¶à¹ˆà¸‡à¸žà¸² color + status dot à¸„à¹ˆà¸­à¸™à¸‚à¹‰à¸²à¸‡à¸¡à¸²à¸ à¸–à¹‰à¸²à¸„à¸­à¸™à¸—à¸£à¸²à¸ªà¸•à¹Œà¸•à¹ˆà¸³à¸«à¸£à¸·à¸­à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸£à¸µà¸šà¸”à¸¹ à¸­à¸²à¸ˆà¹à¸¢à¸ `à¸žà¸£à¹‰à¸­à¸¡` à¸à¸±à¸š `à¹„à¸¡à¹ˆà¸žà¸£à¹‰à¸­à¸¡` à¹„à¸”à¹‰à¸¢à¸²à¸
-- step 2 à¸–à¸¹à¸à¸¥à¸” opacity à¹€à¸¡à¸·à¹ˆà¸­ step 1 à¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¹€à¸ªà¸£à¹‡à¸ˆà¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) à¸‹à¸¶à¹ˆà¸‡à¸ªà¸·à¹ˆà¸­ hierarchy à¸”à¸µ à¹à¸•à¹ˆà¸à¹‡à¸—à¸³à¹ƒà¸«à¹‰à¸‚à¹‰à¸­à¸„à¸§à¸²à¸¡à¸ªà¸³à¸„à¸±à¸à¹€à¸£à¸·à¹ˆà¸­à¸‡ restart à¹€à¸à¸¡à¸”à¸¹à¸”à¹‰à¸­à¸¢à¸¥à¸‡
+- onboarding ใช้การพึ่งพา color + status dot ค่อนข้างมาก ถ้าคอนทราสต์ต่ำหรือผู้ใช้รีบดู อาจแยก `พร้อม` กับ `ไม่พร้อม` ได้ยาก
+- step 2 ถูกลด opacity เมื่อ step 1 ยังไม่เสร็จที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) ซึ่งสื่อ hierarchy ดี แต่ก็ทำให้ข้อความสำคัญเรื่อง restart เกมดูด้อยลง
 
 ---
 
@@ -99,56 +99,56 @@
 
 #### Step list
 
-1. à¹‚à¸«à¸¥à¸”à¸„à¹ˆà¸²à¹€à¸£à¸´à¹ˆà¸¡à¸•à¹‰à¸™à¸ˆà¸²à¸ `gm-settings`
-   - Health: à¸”à¸µ
-   - Evidence: `loadSettings()` à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
+1. โหลดค่าเริ่มต้นจาก `gm-settings`
+   - Health: ดี
+   - Evidence: `loadSettings()` ที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
 
-2. à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¹à¸à¹‰à¸„à¹ˆà¸²à¸à¸²à¸£à¹à¸ªà¸”à¸‡ overlay à¹€à¸Šà¹ˆà¸™ visibility, position, opacity, stats panel
-   - Health: à¸”à¸µà¸¡à¸²à¸
-   - Evidence: settings controls à¸­à¸¢à¸¹à¹ˆà¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
+2. ผู้ใช้แก้ค่าการแสดง overlay เช่น visibility, position, opacity, stats panel
+   - Health: ดีมาก
+   - Evidence: settings controls อยู่ที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
 
-3. à¸—à¸¸à¸à¸„à¸£à¸±à¹‰à¸‡à¸—à¸µà¹ˆà¸„à¹ˆà¸²à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ à¸£à¸°à¸šà¸š persist à¸¥à¸‡ localStorage, broadcast à¹„à¸› overlay, à¹à¸¥à¸° sync visibility à¹„à¸› Rust
-   - Health: à¸”à¸µà¸¡à¸²à¸
-   - Evidence: effect à¸à¸¥à¸²à¸‡à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
+3. ทุกครั้งที่ค่าเปลี่ยน ระบบ persist ลง localStorage, broadcast ไป overlay, และ sync visibility ไป Rust
+   - Health: ดีมาก
+   - Evidence: effect กลางที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
 
-4. overlay window à¸£à¸±à¸šà¸„à¹ˆà¸² settings à¸¥à¹ˆà¸²à¸ªà¸¸à¸”à¹€à¸¡à¸·à¹ˆà¸­à¸žà¸£à¹‰à¸­à¸¡à¹ƒà¸Šà¹‰à¸‡à¸²à¸™
-   - Health: à¸”à¸µ
-   - Evidence: handshake `overlay-ready -> emit('settings', current)` à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
+4. overlay window รับค่า settings ล่าสุดเมื่อพร้อมใช้งาน
+   - Health: ดี
+   - Evidence: handshake `overlay-ready -> emit('settings', current)` ที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
 
-5. à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸ªà¸²à¸¡à¸²à¸£à¸– preview overlay à¹‚à¸”à¸¢à¹„à¸¡à¹ˆà¸—à¸³à¹ƒà¸«à¹‰ GSI status à¹€à¸žà¸µà¹‰à¸¢à¸™
-   - Health: à¸”à¸µà¸¡à¸²à¸
-   - Evidence: preview à¸ªà¹ˆà¸‡ fake `game-tick` à¹à¸•à¹ˆà¹„à¸¡à¹ˆà¸ªà¹ˆà¸‡ fake `gsi-status` à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
+5. ผู้ใช้สามารถ preview overlay โดยไม่ทำให้ GSI status เพี้ยน
+   - Health: ดีมาก
+   - Evidence: preview ส่ง fake `game-tick` แต่ไม่ส่ง fake `gsi-status` ที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
 
 #### Strengths
 
-- data flow à¸ªà¸°à¸­à¸²à¸”à¹à¸¥à¸°à¸­à¹ˆà¸²à¸™à¸‡à¹ˆà¸²à¸¢à¸¡à¸²à¸ à¹„à¸¡à¹ˆà¸¡à¸µ state management à¸‹à¹‰à¸­à¸™à¸«à¸¥à¸²à¸¢à¸Šà¸±à¹‰à¸™
-- à¸à¸²à¸£à¹à¸¢à¸ `preview-mode` à¸­à¸­à¸à¸ˆà¸²à¸ `gsi-status` à¹€à¸›à¹‡à¸™à¸à¸²à¸£à¸­à¸­à¸à¹à¸šà¸šà¸—à¸µà¹ˆà¸¥à¸°à¹€à¸­à¸µà¸¢à¸”à¹à¸¥à¸°à¸–à¸¹à¸à¸•à¹‰à¸­à¸‡
-- profile save/load à¸Šà¹ˆà¸§à¸¢à¹ƒà¸«à¹‰ overlay tuning à¹ƒà¸Šà¹‰à¸‡à¸²à¸™à¸ˆà¸£à¸´à¸‡à¸£à¸°à¸«à¸§à¹ˆà¸²à¸‡ role à¸«à¸£à¸·à¸­à¸ˆà¸­à¸«à¸¥à¸²à¸¢à¹à¸šà¸šà¹„à¸”à¹‰
+- data flow สะอาดและอ่านง่ายมาก ไม่มี state management ซ้อนหลายชั้น
+- การแยก `preview-mode` ออกจาก `gsi-status` เป็นการออกแบบที่ละเอียดและถูกต้อง
+- profile save/load ช่วยให้ overlay tuning ใช้งานจริงระหว่าง role หรือจอหลายแบบได้
 
 #### UX findings
 
-1. à¸à¸²à¸£à¸šà¸±à¸™à¸—à¸¶à¸ profile à¹ƒà¸Šà¹‰ `prompt()` à¹à¸šà¸šà¸”à¸´à¸š
-   - Severity: à¸à¸¥à¸²à¸‡
-   - Evidence: `prompt('à¸Šà¸·à¹ˆà¸­à¹‚à¸›à¸£à¹„à¸Ÿà¸¥à¹Œ:')` à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
-   - Impact: UX à¸ªà¸°à¸”à¸¸à¸”à¸ˆà¸²à¸ visual language à¸«à¸¥à¸±à¸à¸‚à¸­à¸‡à¹à¸­à¸›, à¹„à¸¡à¹ˆà¸¡à¸µ validation, à¹à¸¥à¸°à¸”à¸¹à¹„à¸¡à¹ˆ premium à¹€à¸—à¹ˆà¸²à¸žà¸·à¹‰à¸™à¸—à¸µà¹ˆà¸­à¸·à¹ˆà¸™
-   - Recommendation: à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¹€à¸›à¹‡à¸™ inline input à¸«à¸£à¸·à¸­ modal à¹€à¸¥à¹‡à¸à¹ƒà¸™à¸ªà¹„à¸•à¸¥à¹Œà¹€à¸”à¸µà¸¢à¸§à¸à¸±à¸šà¹à¸­à¸›
+1. การบันทึก profile ใช้ `prompt()` แบบดิบ
+   - Severity: กลาง
+   - Evidence: `prompt('ชื่อโปรไฟล์:')` ที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
+   - Impact: UX สะดุดจาก visual language หลักของแอป, ไม่มี validation, และดูไม่ premium เท่าพื้นที่อื่น
+   - Recommendation: เปลี่ยนเป็น inline input หรือ modal เล็กในสไตล์เดียวกับแอป
 
-2. à¸à¸²à¸£ overwrite profile à¸Šà¸·à¹ˆà¸­à¸‹à¹‰à¸³à¹€à¸à¸´à¸”à¹à¸šà¸šà¹€à¸‡à¸µà¸¢à¸š
-   - Severity: à¸à¸¥à¸²à¸‡
-   - Evidence: `saveProfile()` à¸à¸£à¸­à¸‡à¸Šà¸·à¹ˆà¸­à¹€à¸”à¸´à¸¡à¸­à¸­à¸à¹à¸¥à¹‰à¸§à¹à¸—à¸™à¸—à¸µà¹ˆà¸—à¸±à¸™à¸—à¸µà¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
-   - Impact: à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸­à¸²à¸ˆà¹€à¸œà¸¥à¸­à¸—à¸±à¸š preset à¹€à¸”à¸´à¸¡à¹‚à¸”à¸¢à¹„à¸¡à¹ˆà¸£à¸¹à¹‰à¸•à¸±à¸§
-   - Recommendation: à¸–à¹‰à¸²à¸Šà¸·à¹ˆà¸­à¸‹à¹‰à¸³ à¸„à¸§à¸£à¸–à¸²à¸¡à¸¢à¸·à¸™à¸¢à¸±à¸™à¸«à¸£à¸·à¸­à¹à¸ªà¸”à¸‡à¸„à¸³à¸§à¹ˆà¸² `à¸­à¸±à¸›à¹€à¸”à¸•à¹‚à¸›à¸£à¹„à¸Ÿà¸¥à¹Œà¹€à¸”à¸´à¸¡`
+2. การ overwrite profile ชื่อซ้ำเกิดแบบเงียบ
+   - Severity: กลาง
+   - Evidence: `saveProfile()` กรองชื่อเดิมออกแล้วแทนที่ทันทีที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
+   - Impact: ผู้ใช้อาจเผลอทับ preset เดิมโดยไม่รู้ตัว
+   - Recommendation: ถ้าชื่อซ้ำ ควรถามยืนยันหรือแสดงคำว่า `อัปเดตโปรไฟล์เดิม`
 
-3. settings à¹„à¸¡à¹ˆà¸¡à¸µ schema version à¸Šà¸±à¸”à¹€à¸ˆà¸™
-   - Severity: à¸•à¹ˆà¸³
-   - Evidence: à¸¡à¸µ migration à¹€à¸‰à¸žà¸²à¸° `showStats` à¹€à¸à¹ˆà¸²à¹ƒà¸™ `loadSettings()` à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
-   - Impact: à¸•à¸­à¸™à¸™à¸µà¹‰à¸¢à¸±à¸‡à¹‚à¸­à¹€à¸„ à¹à¸•à¹ˆà¸–à¹‰à¸² settings à¹‚à¸•à¸‚à¸¶à¹‰à¸™ risk à¹€à¸£à¸·à¹ˆà¸­à¸‡ backward cleanup à¸ˆà¸°à¹€à¸£à¸´à¹ˆà¸¡à¸ªà¸¹à¸‡
-   - Recommendation: à¹€à¸žà¸´à¹ˆà¸¡ `settingsVersion` à¹€à¸¡à¸·à¹ˆà¸­à¹‚à¸„à¸£à¸‡à¸ªà¸£à¹‰à¸²à¸‡à¹€à¸£à¸´à¹ˆà¸¡à¸‹à¸±à¸šà¸‹à¹‰à¸­à¸™à¸à¸§à¹ˆà¸²à¸™à¸µà¹‰
+3. settings ไม่มี schema version ชัดเจน
+   - Severity: ต่ำ
+   - Evidence: มี migration เฉพาะ `showStats` เก่าใน `loadSettings()` ที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
+   - Impact: ตอนนี้ยังโอเค แต่ถ้า settings โตขึ้น risk เรื่อง backward cleanup จะเริ่มสูง
+   - Recommendation: เพิ่ม `settingsVersion` เมื่อโครงสร้างเริ่มซับซ้อนกว่านี้
 
 #### Accessibility / usability risks
 
-- checkbox stats à¸«à¸¥à¸²à¸¢à¸•à¸±à¸§à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™à¹à¸–à¸§à¹€à¸”à¸µà¸¢à¸§à¸à¸±à¸™ à¸–à¹‰à¸²à¸«à¸™à¹‰à¸²à¸ˆà¸­à¹à¸„à¸šà¸«à¸£à¸·à¸­ localization à¸¢à¸²à¸§à¸‚à¸¶à¹‰à¸™ readability à¸ˆà¸°à¸¥à¸”à¸¥à¸‡
-- slider `X/Y` à¹à¸¥à¸° `opacity` à¹à¸ªà¸”à¸‡à¸„à¹ˆà¸²à¹€à¸›à¹‡à¸™à¸•à¸±à¸§à¹€à¸¥à¸‚à¸”à¸µà¹à¸¥à¹‰à¸§ à¹à¸•à¹ˆà¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸¡à¸µ live hint à¸§à¹ˆà¸² overlay à¸ˆà¸°à¹„à¸›à¸‹à¹‰à¸­à¸™à¸à¸±à¸š UI à¹€à¸à¸¡à¸ªà¹ˆà¸§à¸™à¹„à¸«à¸™
+- checkbox stats หลายตัวอยู่ในแถวเดียวกัน ถ้าหน้าจอแคบหรือ localization ยาวขึ้น readability จะลดลง
+- slider `X/Y` และ `opacity` แสดงค่าเป็นตัวเลขดีแล้ว แต่ยังไม่มี live hint ว่า overlay จะไปซ้อนกับ UI เกมส่วนไหน
 
 ---
 
@@ -156,115 +156,115 @@
 
 ### Data flow A: GSI setup -> live GSI ingestion
 
-1. Control UI à¹€à¸£à¸µà¸¢à¸ `detect_gsi_setup`
-   - Health: à¸”à¸µ
+1. Control UI เรียก `detect_gsi_setup`
+   - Health: ดี
    - Path: `App.tsx -> invoke('detect_gsi_setup') -> main.rs -> setup::detect()`
 
-2. Rust à¸­à¹ˆà¸²à¸™ Steam path à¸ˆà¸²à¸ registry à¹à¸¥à¸°à¸«à¸² Dota library à¸ˆà¸²à¸ `libraryfolders.vdf`
-   - Health: à¸”à¸µ
+2. Rust อ่าน Steam path จาก registry และหา Dota library จาก `libraryfolders.vdf`
+   - Health: ดี
    - Evidence: [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L65), [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L117)
 
-3. à¸–à¹‰à¸²à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸à¸”à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡ à¸£à¸°à¸šà¸šà¹€à¸‚à¸µà¸¢à¸™ `gamestate_integration_gmaiden.cfg`
-   - Health: à¸”à¸µ
+3. ถ้าผู้ใช้กดติดตั้ง ระบบเขียน `gamestate_integration_gmaiden.cfg`
+   - Health: ดี
    - Evidence: [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L178)
 
-4. Dota à¸ªà¹ˆà¸‡ JSON à¸¡à¸²à¸—à¸µà¹ˆ `http://127.0.0.1:3000/gsi`
-   - Health: à¸”à¸µ
-   - Evidence: cfg body à¸—à¸µà¹ˆ [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L19) à¹à¸¥à¸° spec à¸—à¸µà¹ˆ [[engineering-spec|engineering-spec.md:82]]
+4. Dota ส่ง JSON มาที่ `http://127.0.0.1:3000/gsi`
+   - Health: ดี
+   - Evidence: cfg body ที่ [`setup.rs`](file:///g:/G-Maiden/src-tauri/src/setup.rs#L19) และ spec ที่ [[engineering-spec|engineering-spec.md:82]]
 
-5. `gsi.rs` parse body à¹€à¸›à¹‡à¸™ `GameTick`, mark post time, set in-game, log tick, emit `game-tick`
-   - Health: à¸”à¸µà¸¡à¸²à¸
+5. `gsi.rs` parse body เป็น `GameTick`, mark post time, set in-game, log tick, emit `game-tick`
+   - Health: ดีมาก
    - Evidence: [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L64), [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L89)
 
-6. watchdog à¸„à¸³à¸™à¸§à¸“ `gsi_active` à¸ˆà¸²à¸ `last_post_ms` à¹à¸¥à¸° emit `gsi-status`
-   - Health: à¸”à¸µà¸¡à¸²à¸
+6. watchdog คำนวณ `gsi_active` จาก `last_post_ms` และ emit `gsi-status`
+   - Health: ดีมาก
    - Evidence: [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L119)
 
 #### Data findings
 
-1. à¸à¸²à¸£ detect config à¸¢à¸±à¸‡à¹€à¸›à¹‡à¸™ `existence check` à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆ `integrity check`
-   - Severity: à¸ªà¸¹à¸‡
-   - Impact: à¸–à¹‰à¸²à¹„à¸Ÿà¸¥à¹Œà¸¡à¸µà¸­à¸¢à¸¹à¹ˆà¹à¸•à¹ˆ uri à¸œà¸´à¸”, content à¹€à¸à¹ˆà¸², à¸«à¸£à¸·à¸­à¸–à¸¹à¸à¹à¸à¹‰à¸¡à¸·à¸­ à¸£à¸°à¸šà¸šà¸¢à¸±à¸‡à¸£à¸²à¸¢à¸‡à¸²à¸™à¸§à¹ˆà¸² installed
-   - Recommendation: à¸­à¹ˆà¸²à¸™à¹„à¸Ÿà¸¥à¹Œà¸à¸¥à¸±à¸šà¹à¸¥à¸° validate à¸­à¸¢à¹ˆà¸²à¸‡à¸™à¹‰à¸­à¸¢ `uri`, `heartbeat`, `data fields`
+1. การ detect config ยังเป็น `existence check` ไม่ใช่ `integrity check`
+   - Severity: สูง
+   - Impact: ถ้าไฟล์มีอยู่แต่ uri ผิด, content เก่า, หรือถูกแก้มือ ระบบยังรายงานว่า installed
+   - Recommendation: อ่านไฟล์กลับและ validate อย่างน้อย `uri`, `heartbeat`, `data fields`
 
-2. separation à¸£à¸°à¸«à¸§à¹ˆà¸²à¸‡ `setup status` à¸à¸±à¸š `runtime status` à¸—à¸³à¸–à¸¹à¸à¹à¸¥à¹‰à¸§ à¹à¸•à¹ˆà¸¢à¸±à¸‡à¹„à¸¡à¹ˆà¸–à¸¹à¸à¸­à¸˜à¸´à¸šà¸²à¸¢à¹ƒà¸™à¸ à¸²à¸©à¸²à¸—à¸µà¹ˆà¹€à¸‚à¹‰à¸²à¹ƒà¸ˆà¸‡à¹ˆà¸²à¸¢à¸žà¸­
-   - Severity: à¸à¸¥à¸²à¸‡
-   - Impact: logic à¸ à¸²à¸¢à¹ƒà¸™à¸”à¸µ à¹à¸•à¹ˆ perception à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸­à¸²à¸ˆà¸¢à¸±à¸‡à¸ªà¸±à¸šà¸ªà¸™
+2. separation ระหว่าง `setup status` กับ `runtime status` ทำถูกแล้ว แต่ยังไม่ถูกอธิบายในภาษาที่เข้าใจง่ายพอ
+   - Severity: กลาง
+   - Impact: logic ภายในดี แต่ perception ผู้ใช้อาจยังสับสน
 
 ---
 
 ### Data flow B: Overlay settings -> overlay runtime
 
-1. à¹‚à¸«à¸¥à¸”à¸„à¹ˆà¸² persisted à¸ˆà¸²à¸ `gm-settings`
-   - Health: à¸”à¸µ
+1. โหลดค่า persisted จาก `gm-settings`
+   - Health: ดี
    - Evidence: [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
 
-2. UI à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ state `s`
-   - Health: à¸”à¸µ
-   - Evidence: setter à¸à¸¥à¸²à¸‡à¸—à¸µà¹ˆ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
+2. UI เปลี่ยน state `s`
+   - Health: ดี
+   - Evidence: setter กลางที่ [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
 
-3. effect à¹€à¸”à¸µà¸¢à¸§à¸—à¸³ 3 à¸­à¸¢à¹ˆà¸²à¸‡à¸žà¸£à¹‰à¸­à¸¡à¸à¸±à¸™
+3. effect เดียวทำ 3 อย่างพร้อมกัน
    - persist -> `localStorage.setItem`
    - broadcast -> `emit('settings', s)`
    - visibility sync -> `invoke('set_overlay_visible', { visible })`
-   - Health: à¸”à¸µà¸¡à¸²à¸
+   - Health: ดีมาก
    - Evidence: [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
 
-4. overlay window à¸£à¸±à¸šà¸„à¹ˆà¸²à¸•à¸±à¹‰à¸‡à¸•à¹‰à¸™à¸œà¹ˆà¸²à¸™ `overlay-ready`
-   - Health: à¸”à¸µ
+4. overlay window รับค่าตั้งต้นผ่าน `overlay-ready`
+   - Health: ดี
    - Evidence: [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx)
 
-5. Rust à¸„à¸¸à¸¡à¹€à¸‰à¸žà¸²à¸° visibility à¸‚à¸­à¸‡ native window à¸ªà¹ˆà¸§à¸™à¸£à¸²à¸¢à¸¥à¸°à¹€à¸­à¸µà¸¢à¸” layout à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™ React
-   - Health: à¸”à¸µà¸¡à¸²à¸
+5. Rust คุมเฉพาะ visibility ของ native window ส่วนรายละเอียด layout อยู่ใน React
+   - Health: ดีมาก
    - Evidence: [`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs)
 
 #### Data findings
 
-1. flow à¸™à¸µà¹‰à¸¡à¸µ coupling à¸•à¹ˆà¸³à¹à¸¥à¸° traceable à¸ªà¸¹à¸‡
-   - Severity: à¸šà¸§à¸
-   - Why it matters: debug à¸‡à¹ˆà¸²à¸¢, regression surface à¹€à¸¥à¹‡à¸, à¹à¸¥à¸°à¹„à¸¡à¹ˆà¹€à¸­à¸² WebView logic à¹„à¸›à¸›à¸™ hot path à¸à¸±à¹ˆà¸‡ GSI
+1. flow นี้มี coupling ต่ำและ traceable สูง
+   - Severity: บวก
+   - Why it matters: debug ง่าย, regression surface เล็ก, และไม่เอา WebView logic ไปปน hot path ฝั่ง GSI
 
-2. preview mode à¹à¸¢à¸à¸ˆà¸²à¸à¸ªà¸–à¸²à¸™à¸°à¸ˆà¸£à¸´à¸‡à¹„à¸”à¹‰à¸”à¸µ
-   - Severity: à¸šà¸§à¸
-   - Why it matters: à¸›à¹‰à¸­à¸‡à¸à¸±à¸™à¸à¸²à¸£ audit à¸«à¸£à¸·à¸­ debug à¸œà¸´à¸”à¸ˆà¸²à¸ synthetic state
+2. preview mode แยกจากสถานะจริงได้ดี
+   - Severity: บวก
+   - Why it matters: ป้องกันการ audit หรือ debug ผิดจาก synthetic state
 
 ---
 
-## à¸‚à¹‰à¸­à¸ˆà¸³à¸à¸±à¸”à¸‚à¸­à¸‡à¸«à¸¥à¸±à¸à¸à¸²à¸™
+## ข้อจำกัดของหลักฐาน
 
-à¸ªà¸´à¹ˆà¸‡à¸—à¸µà¹ˆà¸£à¸²à¸¢à¸‡à¸²à¸™à¸™à¸µà¹‰ `à¸¢à¸±à¸‡à¸¢à¸·à¸™à¸¢à¸±à¸™à¹„à¸¡à¹ˆà¹„à¸”à¹‰` à¸ˆà¸²à¸ repo à¸­à¸¢à¹ˆà¸²à¸‡à¹€à¸”à¸µà¸¢à¸§:
+สิ่งที่รายงานนี้ `ยังยืนยันไม่ได้` จาก repo อย่างเดียว:
 
-- visual polish à¸ˆà¸£à¸´à¸‡à¸‚à¸­à¸‡ onboarding à¹à¸¥à¸° settings panel à¸£à¸°à¸«à¸§à¹ˆà¸²à¸‡à¹ƒà¸Šà¹‰à¸‡à¸²à¸™
+- visual polish จริงของ onboarding และ settings panel ระหว่างใช้งาน
 - keyboard accessibility, focus order, screen-reader semantics
-- runtime behavior à¸šà¸™à¸«à¸¥à¸²à¸¢ resolution / multi-monitor
-- à¸§à¹ˆà¸²à¸à¸²à¸£ restart Dota à¸«à¸¥à¸±à¸‡à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡ GSI à¸–à¸¹à¸à¹€à¸‚à¹‰à¸²à¹ƒà¸ˆà¸‡à¹ˆà¸²à¸¢à¹à¸„à¹ˆà¹„à¸«à¸™à¸ªà¸³à¸«à¸£à¸±à¸šà¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¹ƒà¸«à¸¡à¹ˆ
-- à¸§à¹ˆà¸² overlay à¹„à¸›à¸šà¸±à¸‡ minimap, skill bar, à¸«à¸£à¸·à¸­ panel à¹€à¸à¸¡à¸ˆà¸£à¸´à¸‡à¸«à¸£à¸·à¸­à¹„à¸¡à¹ˆ
+- runtime behavior บนหลาย resolution / multi-monitor
+- ว่าการ restart Dota หลังติดตั้ง GSI ถูกเข้าใจง่ายแค่ไหนสำหรับผู้ใช้ใหม่
+- ว่า overlay ไปบัง minimap, skill bar, หรือ panel เกมจริงหรือไม่
 
-à¸–à¹‰à¸²à¸ˆà¸° audit à¸£à¸­à¸šà¸–à¸±à¸”à¹„à¸›à¹ƒà¸«à¹‰à¹à¸™à¹ˆà¸™à¸‚à¸¶à¹‰à¸™ à¸„à¸§à¸£à¹€à¸žà¸´à¹ˆà¸¡:
+ถ้าจะ audit รอบถัดไปให้แน่นขึ้น ควรเพิ่ม:
 
-- screenshot run à¸ˆà¸£à¸´à¸‡à¸‚à¸­à¸‡ welcome flow à¹à¸¥à¸° settings panel
-- capture à¸à¹ˆà¸­à¸™/à¸«à¸¥à¸±à¸‡à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡ GSI
-- interaction audit à¸•à¸­à¸™à¹€à¸›à¸´à¸” preview, save profile, apply profile, Alt+S
-
----
-
-## à¸‚à¹‰à¸­à¹€à¸ªà¸™à¸­à¹à¸™à¸°à¸—à¸µà¹ˆà¸„à¸¸à¹‰à¸¡à¸—à¸µà¹ˆà¸ªà¸¸à¸”à¸–à¹‰à¸²à¸ˆà¸°à¸›à¸£à¸±à¸šà¸•à¹ˆà¸­
-
-1. à¹à¸¢à¸ label à¹ƒà¸«à¹‰à¸Šà¸±à¸”: `Config installed` à¸à¸±à¸š `Live data connected`
-2. à¹€à¸žà¸´à¹ˆà¸¡ validation à¸‚à¸­à¸‡à¹€à¸™à¸·à¹‰à¸­à¹„à¸Ÿà¸¥à¹Œ cfg à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆà¹€à¸Šà¹‡à¸à¹à¸„à¹ˆà¹„à¸Ÿà¸¥à¹Œà¸¡à¸µà¸­à¸¢à¸¹à¹ˆ
-3. à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ save profile à¸ˆà¸²à¸ `prompt()` à¹€à¸›à¹‡à¸™ UI à¹ƒà¸™à¸˜à¸µà¸¡à¹€à¸”à¸µà¸¢à¸§à¸à¸±à¸šà¹à¸­à¸›
-4. à¸–à¹‰à¸²à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¸à¸”à¸‚à¹‰à¸²à¸¡ onboarding à¹ƒà¸«à¹‰à¸¡à¸µ reminder à¸–à¸²à¸§à¸£à¸ˆà¸™à¸à¸§à¹ˆà¸² GSI à¸ˆà¸° active à¸ˆà¸£à¸´à¸‡
+- screenshot run จริงของ welcome flow และ settings panel
+- capture ก่อน/หลังติดตั้ง GSI
+- interaction audit ตอนเปิด preview, save profile, apply profile, Alt+S
 
 ---
 
-## à¸šà¸—à¸ªà¸£à¸¸à¸›
+## ข้อเสนอแนะที่คุ้มที่สุดถ้าจะปรับต่อ
 
-à¸–à¹‰à¸²à¸¡à¸­à¸‡à¸ˆà¸²à¸ repo à¸­à¸¢à¹ˆà¸²à¸‡à¹€à¸”à¸µà¸¢à¸§:
+1. แยก label ให้ชัด: `Config installed` กับ `Live data connected`
+2. เพิ่ม validation ของเนื้อไฟล์ cfg ไม่ใช่เช็กแค่ไฟล์มีอยู่
+3. เปลี่ยน save profile จาก `prompt()` เป็น UI ในธีมเดียวกับแอป
+4. ถ้าผู้ใช้กดข้าม onboarding ให้มี reminder ถาวรจนกว่า GSI จะ active จริง
 
-- `GSI setup` = à¹‚à¸„à¸£à¸‡à¸ªà¸£à¹‰à¸²à¸‡à¹€à¸—à¸„à¸™à¸´à¸„à¸”à¸µ à¹à¸•à¹ˆ UX messaging à¸¢à¸±à¸‡à¸¡à¸µà¸Šà¹ˆà¸­à¸‡à¸§à¹ˆà¸²à¸‡à¸£à¸°à¸«à¸§à¹ˆà¸²à¸‡ `à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¹à¸¥à¹‰à¸§` à¸à¸±à¸š `à¹ƒà¸Šà¹‰à¸‡à¸²à¸™à¸ˆà¸£à¸´à¸‡à¹à¸¥à¹‰à¸§`
-- `overlay settings` = à¹€à¸›à¹‡à¸™ flow à¸—à¸µà¹ˆà¹à¸‚à¹‡à¸‡à¹à¸£à¸‡à¸à¸§à¹ˆà¸² à¸Šà¸±à¸”à¸à¸§à¹ˆà¸² à¹à¸¥à¸°à¸­à¸­à¸à¹à¸šà¸š data flow à¹„à¸”à¹‰à¸ªà¸°à¸­à¸²à¸”à¸¡à¸²à¸
+---
 
-à¸”à¸±à¸‡à¸™à¸±à¹‰à¸™à¸–à¹‰à¸²à¸•à¹‰à¸­à¸‡à¹€à¸¥à¸·à¸­à¸à¹à¸à¹‰à¸­à¸¢à¹ˆà¸²à¸‡à¹€à¸”à¸µà¸¢à¸§à¸à¹ˆà¸­à¸™ à¸œà¸¡à¹à¸™à¸°à¸™à¸³à¹ƒà¸«à¹‰à¹à¸à¹‰ `GSI setup state model à¹à¸¥à¸° copy` à¸à¹ˆà¸­à¸™ à¹€à¸žà¸£à¸²à¸°à¸™à¸µà¹ˆà¸„à¸·à¸­à¸ˆà¸¸à¸”à¸—à¸µà¹ˆà¸à¸£à¸°à¸—à¸š activation à¸‚à¸­à¸‡à¸œà¸¹à¹‰à¹ƒà¸Šà¹‰à¹ƒà¸«à¸¡à¹ˆà¹‚à¸”à¸¢à¸•à¸£à¸‡
+## บทสรุป
+
+ถ้ามองจาก repo อย่างเดียว:
+
+- `GSI setup` = โครงสร้างเทคนิคดี แต่ UX messaging ยังมีช่องว่างระหว่าง `ติดตั้งแล้ว` กับ `ใช้งานจริงแล้ว`
+- `overlay settings` = เป็น flow ที่แข็งแรงกว่า ชัดกว่า และออกแบบ data flow ได้สะอาดมาก
+
+ดังนั้นถ้าต้องเลือกแก้อย่างเดียวก่อน ผมแนะนำให้แก้ `GSI setup state model และ copy` ก่อน เพราะนี่คือจุดที่กระทบ activation ของผู้ใช้ใหม่โดยตรง
 
 
 

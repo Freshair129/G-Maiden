@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-07-20T07:31:33.705Z
+สร้างเมื่อ / Generated at: 2026-07-20T14:20:59.985Z
 
-สแกน 89 ไฟล์เอกสาร, 205 nodes, 1194 edges, 65 รายการปัญหา (14 ตัวบล็อก exit code) / scanned 89 doc files, 205 nodes, 1194 edges, 65 violations (14 blocking exit code).
+สแกน 91 ไฟล์เอกสาร, 213 nodes, 1200 edges, 66 รายการปัญหา (15 ตัวบล็อก exit code) / scanned 91 doc files, 213 nodes, 1200 edges, 66 violations (15 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -13,6 +13,7 @@
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 3 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
+| missing-file | symbol link ไปยังไฟล์ที่ไม่มีจริง / symbol link to a missing file | 1 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 48 | no (informational) |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
@@ -119,6 +120,10 @@
 ### docs/change request/CR-004-voice-command-browser.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md
+
+- [L250] **missing-file** — symbol link ไปยังไฟล์ที่ไม่มีจริง / symbol link to a missing file (target="landing/assets/concepts/g-maiden-sea-captain-stone-titan-v1.webp")
 
 ### docs/change request/CR-005-landing-auth-social.md
 

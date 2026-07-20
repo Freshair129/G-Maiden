@@ -1,120 +1,120 @@
-﻿# G-Maiden â€” Engineering Spec
+# G-Maiden — Engineering Spec
 
-> à¹€à¸­à¸à¸ªà¸²à¸£à¸™à¸µà¹‰à¹à¸›à¸¥à¸‡ requirement à¸ˆà¸²à¸ PRD/SRS à¹ƒà¸«à¹‰à¹€à¸›à¹‡à¸™ **à¸ªà¸±à¸à¸à¸²à¸—à¸²à¸‡à¸§à¸´à¸¨à¸§à¸à¸£à¸£à¸¡ (contracts)** à¸—à¸µà¹ˆ implement à¹„à¸”à¹‰:
-> input/output à¸‚à¸­à¸‡à¹à¸•à¹ˆà¸¥à¸°à¹‚à¸¡à¸”à¸¹à¸¥, schema à¹€à¸«à¸•à¸¸à¸à¸²à¸£à¸“à¹Œà¸ à¸²à¸¢à¹ƒà¸™, budget latency à¸£à¸²à¸¢à¸‚à¸±à¹‰à¸™, à¸ªà¸±à¸à¸à¸² API à¹à¸¥à¸°à¹‚à¸„à¸£à¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥.
-> à¹ƒà¸Šà¹‰à¸„à¸¹à¹ˆà¸à¸±à¸š [[technical-design-document]] (à¸ªà¸–à¸²à¸›à¸±à¸•à¸¢à¸à¸£à¸£à¸¡) à¹à¸¥à¸° [[tech-stack]].
+> เอกสารนี้แปลง requirement จาก PRD/SRS ให้เป็น **สัญญาทางวิศวกรรม (contracts)** ที่ implement ได้:
+> input/output ของแต่ละโมดูล, schema เหตุการณ์ภายใน, budget latency รายขั้น, สัญญา API และโครงข้อมูล.
+> ใช้คู่กับ [[technical-design-document]] (สถาปัตยกรรม) และ [[tech-stack]].
 
 ---
 
-## 1. Latency Budget â€” G-Signal (SRS Â§5.1: target 250ms / max 300ms)
+## 1. Latency Budget — G-Signal (SRS §5.1: target 250ms / max 300ms)
 
-à¸§à¸±à¸”à¸ˆà¸²à¸ "à¹€à¸‡à¸·à¹ˆà¸­à¸™à¹„à¸‚à¸­à¸±à¸™à¸•à¸£à¸²à¸¢à¹€à¸›à¹‡à¸™à¸ˆà¸£à¸´à¸‡" â†’ "à¹„à¸”à¹‰à¸¢à¸´à¸™à¹€à¸ªà¸µà¸¢à¸‡à¹€à¸•à¸·à¸­à¸™". à¸—à¸¸à¸à¸‚à¸±à¹‰à¸™à¹€à¸›à¹‡à¸™ Rust, **à¹„à¸¡à¹ˆà¹à¸•à¸° cloud/webview**.
+วัดจาก "เงื่อนไขอันตรายเป็นจริง" → "ได้ยินเสียงเตือน". ทุกขั้นเป็น Rust, **ไม่แตะ cloud/webview**.
 
-| à¸‚à¸±à¹‰à¸™ | à¸‡à¸²à¸™ | à¸‡à¸š (ms) | à¸«à¸¡à¸²à¸¢à¹€à¸«à¸•à¸¸ |
+| ขั้น | งาน | งบ (ms) | หมายเหตุ |
 | --- | --- | --- | --- |
-| 1 | Minimap capture frame à¸¥à¹ˆà¸²à¸ªà¸¸à¸”à¸žà¸£à¹‰à¸­à¸¡ | ~30 | DXGI duplication, capture loop à¸§à¸´à¹ˆà¸‡à¸­à¸¢à¸¹à¹ˆà¹à¸¥à¹‰à¸§ |
-| 2 | CV à¸•à¸£à¸§à¸ˆà¹„à¸­à¸„à¸­à¸™à¸¨à¸±à¸•à¸£à¸¹ + à¸­à¸±à¸›à¹€à¸”à¸•à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡ | ~50 | ONNX detector à¹€à¸¥à¹‡à¸ / template match à¸šà¸™à¸žà¸·à¹‰à¸™à¸—à¸µà¹ˆ minimap à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™ |
-| 3 | G-Motion à¸›à¸£à¸°à¹€à¸¡à¸´à¸™à¸„à¸§à¸²à¸¡à¸™à¹ˆà¸²à¸ˆà¸°à¹€à¸›à¹‡à¸™ gank | ~20 | à¸„à¸³à¸™à¸§à¸“à¸šà¸™ ring buffer à¹ƒà¸™à¸«à¸™à¹ˆà¸§à¸¢à¸„à¸§à¸²à¸¡à¸ˆà¸³ |
-| 4 | G-Signal à¹€à¸Šà¹‡à¸„ threshold (>85%) + à¹€à¸¥à¸·à¸­à¸à¸šà¸—à¸žà¸¹à¸” | ~10 | rule eval + à¹€à¸¥à¸·à¸­à¸ audio cache key |
-| 5 | Interrupt à¹€à¸ªà¸µà¸¢à¸‡à¸—à¸µà¹ˆà¸à¸³à¸¥à¸±à¸‡à¹€à¸¥à¹ˆà¸™ + à¹€à¸£à¸´à¹ˆà¸¡à¹€à¸ªà¸µà¸¢à¸‡à¹ƒà¸«à¸¡à¹ˆ | ~30 | à¸ªà¹ˆà¸‡à¸ªà¸±à¸à¸à¸²à¸“à¸œà¹ˆà¸²à¸™ channel à¹„à¸› audio thread |
+| 1 | Minimap capture frame ล่าสุดพร้อม | ~30 | DXGI duplication, capture loop วิ่งอยู่แล้ว |
+| 2 | CV ตรวจไอคอนศัตรู + อัปเดตตำแหน่ง | ~50 | ONNX detector เล็ก / template match บนพื้นที่ minimap เท่านั้น |
+| 3 | G-Motion ประเมินความน่าจะเป็น gank | ~20 | คำนวณบน ring buffer ในหน่วยความจำ |
+| 4 | G-Signal เช็ค threshold (>85%) + เลือกบทพูด | ~10 | rule eval + เลือก audio cache key |
+| 5 | Interrupt เสียงที่กำลังเล่น + เริ่มเสียงใหม่ | ~30 | ส่งสัญญาณผ่าน channel ไป audio thread |
 | 6 | Audio output buffer latency | ~40 | cpal/rodio output buffer |
-| **à¸£à¸§à¸¡** | | **~180ms** | à¹€à¸«à¸¥à¸·à¸­ headroom ~70â€“120ms à¸à¹ˆà¸­à¸™à¸Šà¸™ 300 |
+| **รวม** | | **~180ms** | เหลือ headroom ~70–120ms ก่อนชน 300 |
 
-**à¸‚à¹‰à¸­à¸šà¸±à¸‡à¸„à¸±à¸šà¸­à¸­à¸à¹à¸šà¸š:** à¹€à¸ªà¸µà¸¢à¸‡à¹€à¸•à¸·à¸­à¸™à¸§à¸´à¸à¸¤à¸•à¸‚à¸­à¸‡ G-Signal **à¸•à¹‰à¸­à¸‡à¹€à¸›à¹‡à¸™ audio à¸—à¸µà¹ˆ render à¹„à¸§à¹‰à¸¥à¹ˆà¸§à¸‡à¸«à¸™à¹‰à¸²**
-(à¸ªà¸±à¸‡à¹€à¸„à¸£à¸²à¸°à¸«à¹Œà¸ªà¸”à¸”à¹‰à¸§à¸¢ Piper ~80â€“150ms à¸­à¸²à¸ˆà¸—à¸³à¹ƒà¸«à¹‰à¹€à¸à¸´à¸™ budget). à¸šà¸—à¸žà¸¹à¸”à¸œà¸±à¸™à¹à¸›à¸£ (à¸Šà¸·à¹ˆà¸­à¹„à¸­à¹€à¸—à¸¡/à¸®à¸µà¹‚à¸£à¹ˆ) à¹ƒà¸Šà¹‰à¸§à¸´à¸˜à¸µ
-**slot-splicing** â€” à¸•à¹ˆà¸­à¸„à¸¥à¸´à¸›à¸›à¸£à¸°à¹‚à¸¢à¸„à¸«à¸¥à¸±à¸ + à¸„à¸¥à¸´à¸›à¸„à¸³à¹€à¸‰à¸žà¸²à¸°à¸—à¸µà¹ˆ cache à¹„à¸§à¹‰.
+**ข้อบังคับออกแบบ:** เสียงเตือนวิกฤตของ G-Signal **ต้องเป็น audio ที่ render ไว้ล่วงหน้า**
+(สังเคราะห์สดด้วย Piper ~80–150ms อาจทำให้เกิน budget). บทพูดผันแปร (ชื่อไอเทม/ฮีโร่) ใช้วิธี
+**slot-splicing** — ต่อคลิปประโยคหลัก + คลิปคำเฉพาะที่ cache ไว้.
 
 ---
 
-## 2. à¹‚à¸¡à¸”à¸¹à¸¥ G-Series â€” à¸ªà¸±à¸à¸à¸² Input/Output
+## 2. โมดูล G-Series — สัญญา Input/Output
 
 ### 2.1 G-Sentry (Fog of War Monitor)
-- **Input:** GSI tick (500ms poll à¸•à¸²à¸¡ SRS Â§3.1) + minimap enemy positions
-- **State:** à¸•à¹ˆà¸­à¸®à¸µà¹‚à¸£à¹ˆà¸¨à¸±à¸•à¸£à¸¹ â€” `last_seen_at`, `last_seen_pos`, `is_visible`
-- **Logic:** à¸–à¹‰à¸²à¸®à¸µà¹‚à¸£à¹ˆà¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¹à¸à¹Šà¸‡ (mid/pos4/pos5) `is_visible=false` à¸™à¸²à¸™à¹€à¸à¸´à¸™ **5s** â†’ à¸­à¸­à¸à¹€à¸«à¸•à¸¸à¸à¸²à¸£à¸“à¹Œ
+- **Input:** GSI tick (500ms poll ตาม SRS §3.1) + minimap enemy positions
+- **State:** ต่อฮีโร่ศัตรู — `last_seen_at`, `last_seen_pos`, `is_visible`
+- **Logic:** ถ้าฮีโร่ตำแหน่งแก๊ง (mid/pos4/pos5) `is_visible=false` นานเกิน **5s** → ออกเหตุการณ์
 - **Output event:** `EnemyMissing { hero, missing_for_ms, last_pos, role }`
 
 ### 2.2 G-Motion (Heatmap / Path Prediction)
-- **Input:** stream à¸‚à¸­à¸‡ `EnemyMissing` + ring buffer à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸¢à¹‰à¸­à¸™à¸«à¸¥à¸±à¸‡ **5 à¸™à¸²à¸—à¸µ** (SRS Â§3.2)
-- **Logic:** à¸›à¸£à¸°à¹€à¸¡à¸´à¸™à¹€à¸ªà¹‰à¸™à¸—à¸²à¸‡à¸«à¸¥à¸šà¸‹à¹ˆà¸­à¸™/à¹€à¸ªà¹‰à¸™ gank à¸—à¸µà¹ˆà¸™à¹ˆà¸²à¸ˆà¸°à¹€à¸›à¹‡à¸™ â†’ à¸„à¹ˆà¸²à¸„à¸§à¸²à¸¡à¸™à¹ˆà¸²à¸ˆà¸°à¹€à¸›à¹‡à¸™ 0â€“100%
+- **Input:** stream ของ `EnemyMissing` + ring buffer ตำแหน่งย้อนหลัง **5 นาที** (SRS §3.2)
+- **Logic:** ประเมินเส้นทางหลบซ่อน/เส้น gank ที่น่าจะเป็น → ค่าความน่าจะเป็น 0–100%
 - **Output event:** `GankRisk { lane, probability, predicted_paths[], eta_estimate }`
 
-### 2.3 G-Signal (Real-time Gank Warning) â€” critical path
+### 2.3 G-Signal (Real-time Gank Warning) — critical path
 - **Input:** `GankRisk`
-- **Logic:** à¸–à¹‰à¸² `probability > 85%` (Danger Threshold) â†’ **interrupt** à¹€à¸ªà¸µà¸¢à¸‡à¸—à¸µà¹ˆà¹€à¸¥à¹ˆà¸™à¸­à¸¢à¸¹à¹ˆà¸—à¸±à¸™à¸—à¸µ;
-  à¸–à¹‰à¸²à¸¡à¸µ alert à¹€à¸à¹ˆà¸²à¸à¸³à¸¥à¸±à¸‡à¸žà¸¹à¸”à¹à¸¥à¸° confidence à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ â†’ trigger **Belief Revision** (à¸”à¸¹ Â§3)
-- **Output:** `SignalAlert { severity, voice_clip_key, interrupt: true }` â†’ audio engine
-- **Constraint:** à¸•à¹‰à¸­à¸‡à¸ˆà¸šà¹ƒà¸™ budget Â§1
-- **Speech priority contract:** `Critical = danger | gank | revision`, `Normal = manual/advice speech`, `Cosmetic = announcer events`; cosmetic à¸«à¹‰à¸²à¸¡à¸—à¸±à¸š critical
-- **Level-up milestone contract:** announcer/persona path à¹ƒà¸Šà¹‰à¸ˆà¸¸à¸” `6, 12, 18, 25` à¹à¸¥à¸°à¸–à¸·à¸­à¸§à¹ˆà¸² "triggered" à¹€à¸¡à¸·à¹ˆà¸­à¸‚à¹‰à¸²à¸¡ milestone à¹à¸¡à¹‰à¸›à¸¥à¸²à¸¢à¸—à¸²à¸‡à¸ˆà¸°à¹„à¸¡à¹ˆà¸•à¸£à¸‡ milestone à¸žà¸­à¸”à¸µ (`11 -> 13` à¸•à¹‰à¸­à¸‡à¸¢à¸±à¸‡ fire)
-- **Latency harness contract:** à¸•à¹‰à¸­à¸‡à¸¡à¸µ harness à¸—à¸µà¹ˆà¸§à¸±à¸”à¹€à¸ªà¹‰à¸™à¸—à¸²à¸‡ in-process `GSI JSON parse -> team-side routing -> signal evaluate -> audio enqueue intent` à¹€à¸žà¸´à¹ˆà¸¡à¸ˆà¸²à¸ compute-only harness
+- **Logic:** ถ้า `probability > 85%` (Danger Threshold) → **interrupt** เสียงที่เล่นอยู่ทันที;
+  ถ้ามี alert เก่ากำลังพูดและ confidence เปลี่ยน → trigger **Belief Revision** (ดู §3)
+- **Output:** `SignalAlert { severity, voice_clip_key, interrupt: true }` → audio engine
+- **Constraint:** ต้องจบใน budget §1
+- **Speech priority contract:** `Critical = danger | gank | revision`, `Normal = manual/advice speech`, `Cosmetic = announcer events`; cosmetic ห้ามทับ critical
+- **Level-up milestone contract:** announcer/persona path ใช้จุด `6, 12, 18, 25` และถือว่า "triggered" เมื่อข้าม milestone แม้ปลายทางจะไม่ตรง milestone พอดี (`11 -> 13` ต้องยัง fire)
+- **Latency harness contract:** ต้องมี harness ที่วัดเส้นทาง in-process `GSI JSON parse -> team-side routing -> signal evaluate -> audio enqueue intent` เพิ่มจาก compute-only harness
 
-### 2.4 G-Master (Strategic & Financial Advisor) â€” non-critical
-- **Input:** GSI (net worth, items, abilities à¸‚à¸­à¸‡à¹€à¸£à¸² + à¸—à¸µà¹ˆà¸¡à¸­à¸‡à¹€à¸«à¹‡à¸™à¸‚à¸­à¸‡à¸¨à¸±à¸•à¸£à¸¹) + meta dataset
-- **Logic:** à¹€à¸—à¸µà¸¢à¸š net worth/à¹„à¸­à¹€à¸—à¸¡ â†’ à¹à¸™à¸°à¸™à¸³ skill/item à¹à¸à¹‰à¸—à¸²à¸‡ (à¸­à¹‰à¸²à¸‡ meta à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™)
-- **Output:** `AdvicePayload { topic, recommendation, rationale, persona_text }` (à¸œà¹ˆà¸²à¸™ cloud à¸«à¸£à¸·à¸­ SLM)
+### 2.4 G-Master (Strategic & Financial Advisor) — non-critical
+- **Input:** GSI (net worth, items, abilities ของเรา + ที่มองเห็นของศัตรู) + meta dataset
+- **Logic:** เทียบ net worth/ไอเทม → แนะนำ skill/item แก้ทาง (อ้าง meta ปัจจุบัน)
+- **Output:** `AdvicePayload { topic, recommendation, rationale, persona_text }` (ผ่าน cloud หรือ SLM)
 
 ### 2.5 G-Sensory (Overlay & Hardware Optimization)
-- **Input:** à¸—à¸¸à¸ event à¸‚à¹‰à¸²à¸‡à¸šà¸™ + resource telemetry
-- **Logic:** à¹€à¸£à¸™à¹€à¸”à¸­à¸£à¹Œ glassmorphism HUD; **throttle à¸•à¸±à¸§à¹€à¸­à¸‡à¹€à¸¡à¸·à¹ˆà¸­ FPS à¹€à¸à¸¡ drop à¹€à¸‚à¹‰à¸²à¹ƒà¸à¸¥à¹‰ 3%**;
-  à¸›à¸£à¸±à¸šà¹‚à¸—à¸™à¸ªà¸µ overlay à¸•à¸²à¸¡ element à¸®à¸µà¹‚à¸£à¹ˆà¸—à¸µà¹ˆà¹€à¸¥à¹ˆà¸™ (PRD)
-- **Output:** UI state + render commands; à¹„à¸¡à¹ˆà¸šà¸±à¸‡ minimap/skill bar/stats panel
+- **Input:** ทุก event ข้างบน + resource telemetry
+- **Logic:** เรนเดอร์ glassmorphism HUD; **throttle ตัวเองเมื่อ FPS เกม drop เข้าใกล้ 3%**;
+  ปรับโทนสี overlay ตาม element ฮีโร่ที่เล่น (PRD)
+- **Output:** UI state + render commands; ไม่บัง minimap/skill bar/stats panel
 
-### 2.6 G-Log (Feedback Loop) â€” local only
-- **Input:** decisions à¸—à¸µà¹ˆ Maiden à¸ªà¹ˆà¸‡ + à¸œà¸¥à¸¥à¸±à¸žà¸˜à¹Œ (death/teamfight/win)
-- **Logic:** à¹€à¸—à¸µà¸¢à¸šà¸„à¸³à¹à¸™à¸°à¸™à¸³ vs à¸œà¸¥ â†’ à¸›à¸£à¸±à¸š tuning params à¸‚à¸­à¸‡ G-Sentry/G-Signal à¹€à¸à¸¡à¸«à¸™à¹‰à¸²
+### 2.6 G-Log (Feedback Loop) — local only
+- **Input:** decisions ที่ Maiden ส่ง + ผลลัพธ์ (death/teamfight/win)
+- **Logic:** เทียบคำแนะนำ vs ผล → ปรับ tuning params ของ G-Sentry/G-Signal เกมหน้า
 - **Output:** เขียน G-Log เป็น JSONL local (`match-*.jsonl` ใน `%LOCALAPPDATA%\G-Maiden\logs\`, [`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs)); ส่ง `TuningDelta` กลับเข้า config (ดู §6)
 
 ---
 
-## 3. Belief Revision â€” à¸ªà¸±à¸à¸à¸²à¸žà¸¤à¸•à¸´à¸à¸£à¸£à¸¡ (SRS Â§3.3, à¸šà¸±à¸‡à¸„à¸±à¸š à¹„à¸¡à¹ˆà¹ƒà¸Šà¹ˆ polish)
+## 3. Belief Revision — สัญญาพฤติกรรม (SRS §3.3, บังคับ ไม่ใช่ polish)
 
-à¹€à¸¡à¸·à¹ˆà¸­ Maiden à¸à¸³à¸¥à¸±à¸‡à¸žà¸¹à¸”à¸šà¸—à¸«à¸™à¸¶à¹ˆà¸‡à¸­à¸¢à¸¹à¹ˆ à¹à¸¥à¹‰à¸§à¹€à¸‡à¸·à¹ˆà¸­à¸™à¹„à¸‚à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™ (à¹€à¸Šà¹ˆà¸™ threshold à¸žà¸¸à¹ˆà¸‡à¸‚à¹‰à¸²à¸¡ 85% à¸à¸¥à¸²à¸‡à¸›à¸£à¸°à¹‚à¸¢à¸„):
+เมื่อ Maiden กำลังพูดบทหนึ่งอยู่ แล้วเงื่อนไขเปลี่ยน (เช่น threshold พุ่งข้าม 85% กลางประโยค):
 
-1. audio engine à¹„à¸”à¹‰à¸£à¸±à¸š `Interrupt(reason)` à¸œà¹ˆà¸²à¸™ channel à¸—à¸µà¹ˆ priority à¸ªà¸¹à¸‡à¸ªà¸¸à¸”
-2. à¸«à¸¢à¸¸à¸”à¸„à¸¥à¸´à¸›à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™à¸—à¸µà¹ˆà¸‚à¸­à¸šà¸„à¸³à¸–à¸±à¸”à¹„à¸› (word-boundary, à¹„à¸¡à¹ˆà¸•à¸±à¸”à¸”à¸´à¸š)
-3. à¹€à¸¥à¹ˆà¸™à¸„à¸¥à¸´à¸›à¸ªà¸°à¸”à¸¸à¸” **"à¹€à¸­à¹Šà¸°! à¹€à¸”à¸µà¹‹à¸¢à¸§à¸à¹ˆà¸­à¸™!"** (cache) à¹à¸¥à¹‰à¸§à¸•à¹ˆà¸­à¸”à¹‰à¸§à¸¢à¸šà¸—à¹€à¸•à¸·à¸­à¸™à¹ƒà¸«à¸¡à¹ˆ
-4. log à¸à¸²à¸£ revision à¸¥à¸‡ G-Log à¹€à¸žà¸·à¹ˆà¸­à¸§à¸±à¸”à¸§à¹ˆà¸²à¸à¸²à¸£à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™à¹ƒà¸ˆà¹€à¸£à¹‡à¸§/à¸Šà¹‰à¸²à¸ªà¹ˆà¸‡à¸œà¸¥à¸•à¹ˆà¸­à¸à¸²à¸£à¸£à¸­à¸”à¸­à¸¢à¹ˆà¸²à¸‡à¹„à¸£
+1. audio engine ได้รับ `Interrupt(reason)` ผ่าน channel ที่ priority สูงสุด
+2. หยุดคลิปปัจจุบันที่ขอบคำถัดไป (word-boundary, ไม่ตัดดิบ)
+3. เล่นคลิปสะดุด **"เอ๊ะ! เดี๋ยวก่อน!"** (cache) แล้วต่อด้วยบทเตือนใหม่
+4. log การ revision ลง G-Log เพื่อวัดว่าการเปลี่ยนใจเร็ว/ช้าส่งผลต่อการรอดอย่างไร
 
-**à¸ªà¸–à¸²à¸™à¸°à¸ à¸²à¸¢à¹ƒà¸™à¸•à¹‰à¸­à¸‡à¸£à¸­à¸‡à¸£à¸±à¸š:** `currently_speaking`, `interruptible`, `revision_in_flight`.
+**สถานะภายในต้องรองรับ:** `currently_speaking`, `interruptible`, `revision_in_flight`.
 
 ---
 
 ## 4. External Interface Contracts
 
-### 4.1 Dota 2 GSI (SRS Â§4.2)
-- à¸£à¸±à¸šà¸œà¹ˆà¸²à¸™ **HTTP POST â†’ `http://127.0.0.1:3000/gsi`**, body à¹€à¸›à¹‡à¸™ JSON à¸‚à¸­à¸‡ Valve
-- à¸•à¸´à¸”à¸•à¸±à¹‰à¸‡à¹„à¸Ÿà¸¥à¹Œ `gamestate_integration_gmaiden.cfg` à¹ƒà¸™ `.../dota 2 beta/game/dota/cfg/gamestate_integration/`
-- à¸•à¸±à¹‰à¸‡ `buffer 0.1`, `throttle 0.1`, `heartbeat 30.0` à¹€à¸žà¸·à¹ˆà¸­à¹ƒà¸«à¹‰ tick à¸–à¸µà¹ˆà¸žà¸­
-- à¸Ÿà¸´à¸¥à¸”à¹Œà¸—à¸µà¹ˆà¸šà¸£à¸´à¹‚à¸ à¸„: `map` (clock_time, game_state), `player` (net worth, gold), `hero` (xpos/ypos/level/hp),
+### 4.1 Dota 2 GSI (SRS §4.2)
+- รับผ่าน **HTTP POST → `http://127.0.0.1:3000/gsi`**, body เป็น JSON ของ Valve
+- ติดตั้งไฟล์ `gamestate_integration_gmaiden.cfg` ใน `.../dota 2 beta/game/dota/cfg/gamestate_integration/`
+- ตั้ง `buffer 0.1`, `throttle 0.1`, `heartbeat 30.0` เพื่อให้ tick ถี่พอ
+- ฟิลด์ที่บริโภค: `map` (clock_time, game_state), `player` (net worth, gold), `hero` (xpos/ypos/level/hp),
   `abilities`, `items`, `provider`
-- **à¸‚à¹‰à¸­à¸ˆà¸³à¸à¸±à¸”à¸ªà¸³à¸„à¸±à¸:** GSI **à¹„à¸¡à¹ˆà¸ªà¹ˆà¸‡à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸®à¸µà¹‚à¸£à¹ˆà¸¨à¸±à¸•à¸£à¸¹** â†’ à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸¨à¸±à¸•à¸£à¸¹à¸¡à¸²à¸ˆà¸²à¸ minimap CV (à¸”à¸¹ TDD R-02)
+- **ข้อจำกัดสำคัญ:** GSI **ไม่ส่งตำแหน่งฮีโร่ศัตรู** → ตำแหน่งศัตรูมาจาก minimap CV (ดู TDD R-02)
 
 ### 4.2 Cloud Cognitive Engine — Claude CLI / Anthropic API (SRS §4.2)
 - โค้ดจริง: **Claude CLI** (subprocess) หรือ **Anthropic Messages API** `POST https://api.anthropic.com/v1/messages` (`model: claude-haiku-4-5`, [`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs))
-- streaming (SSE-style chunks) â†’ feed à¹€à¸‚à¹‰à¸² narration queue (preemptible)
+- streaming (SSE-style chunks) → feed เข้า narration queue (preemptible)
 - timeout สั้น; ถ้า fail → fallback local SLM ผ่าน **Ollama** (resilience)
-- à¸ªà¹ˆà¸‡à¹€à¸‰à¸žà¸²à¸° context à¸—à¸µà¹ˆà¸œà¹ˆà¸²à¸™ redaction â€” **à¹„à¸¡à¹ˆà¸ªà¹ˆà¸‡à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¸£à¸°à¸šà¸¸à¸•à¸±à¸§à¸•à¸™/à¹„à¸Ÿà¸¥à¹Œ G-Log à¸”à¸´à¸š**
+- ส่งเฉพาะ context ที่ผ่าน redaction — **ไม่ส่งข้อมูลระบุตัวตน/ไฟล์ G-Log ดิบ**
 
 > **สถานะ (2026-07): Gemini เป็นเป้า Phase-4 — ยังไม่ wired. Cloud brain ปัจจุบันคือ Claude CLI / Anthropic Messages API (`claude-haiku-4-5`) แล้ว fallback เป็น Ollama SLM.**
 
 ### 4.3 TTS Module
-- **Critical:** à¸­à¹ˆà¸²à¸™à¸ˆà¸²à¸ audio cache (key â†’ PCM/Ogg à¸—à¸µà¹ˆ render à¹„à¸§à¹‰)
+- **Critical:** อ่านจาก audio cache (key → PCM/Ogg ที่ render ไว้)
 - **Persona ทั่วไป (planned/opportunistic):** Piper (ONNX voice model) สังเคราะห์สด — ใช้เฉพาะเมื่อพบ `piper.exe` + โมเดลข้าง binary; ไม่งั้น default = Windows SAPI
 - **Fallback:** Windows SAPI
-- à¸ªà¸±à¸à¸à¸²: `synthesize(text, voice_profile) -> AudioHandle` ; `play(handle, {interrupt})`
+- สัญญา: `synthesize(text, voice_profile) -> AudioHandle` ; `play(handle, {interrupt})`
 
-### 4.4 Global Hotkeys (SRS Â§4.1)
+### 4.4 Global Hotkeys (SRS §4.1)
 - `Alt + M` → **สลับ mute/unmute เสียง Maiden** (main.rs; unmute กลับเป็นระดับเดิม). > **สถานะ (2026-07): ไม่มี `request_situation_summary` — `Alt+M` คือ mute toggle**
-- à¸¥à¸‡à¸—à¸°à¹€à¸šà¸µà¸¢à¸™à¸œà¹ˆà¸²à¸™ Tauri global-shortcut plugin
-- (à¸‚à¸¢à¸²à¸¢à¸ à¸²à¸¢à¸«à¸¥à¸±à¸‡: toggle overlay, mute, sensitivity +/-)
+- ลงทะเบียนผ่าน Tauri global-shortcut plugin
+- (ขยายภายหลัง: toggle overlay, mute, sensitivity +/-)
 
 ---
 
-## 5. Internal Event Schema (Rust core â†” UI à¸œà¹ˆà¸²à¸™ Tauri events)
+## 5. Internal Event Schema (Rust core ↔ UI ผ่าน Tauri events)
 
 ```rust
-// à¸—à¸¸à¸ event à¸¡à¸µ timestamp_ms (monotonic) à¹€à¸žà¸·à¹ˆà¸­à¸§à¸±à¸” latency à¸ˆà¸£à¸´à¸‡
+// ทุก event มี timestamp_ms (monotonic) เพื่อวัด latency จริง
 enum CoreEvent {
     GameTick      { clock: i32, state: GameState },
     EnemyMissing  { hero: HeroId, missing_for_ms: u32, last_pos: Vec2, role: Role },
@@ -140,33 +140,33 @@ UI subscribe ผ่าน event แยกชื่อ (ไม่มี channel �
 หนึ่งไฟล์ `match-*.jsonl` ต่อแมตช์ใน `%LOCALAPPDATA%\G-Maiden\logs\` — append หนึ่ง JSON object ต่อ tick/เหตุการณ์ (match-start/decision/signal/outcome) ไม่มีสคีมา SQL, ไม่มี network egress. tuning params ที่ G-Log จูนกลับถูกเขียนแยกเป็น config ในโฟลเดอร์เดียวกัน (ป้อน feedback loop, SRS §3.6).
 
 tuning params ที่ G-Log จูนถูกป้อนกลับเข้า G-Sentry/G-Signal ตอนเริ่มแมตช์ถัดไป (ปิด feedback loop, SRS §3.6).
-**à¹„à¸¡à¹ˆà¸¡à¸µ network egress à¸ˆà¸²à¸à¸•à¸²à¸£à¸²à¸‡à¹€à¸«à¸¥à¹ˆà¸²à¸™à¸µà¹‰.**
+**ไม่มี network egress จากตารางเหล่านี้.**
 
 ---
 
-## 7. Orchestrator â€” Role-based Multi-Platform Agent Dispatch
+## 7. Orchestrator — Role-based Multi-Platform Agent Dispatch
 
-> ADR: [ADR-O-005](../orchestration/docs/ADR-O-005--provider-registry.md) Â·
-> Spec: [SPEC--PROVIDER-REGISTRY](../orchestration/docs/SPEC--PROVIDER-REGISTRY.md) Â·
+> ADR: [ADR-O-005](../orchestration/docs/ADR-O-005--provider-registry.md) ·
+> Spec: [SPEC--PROVIDER-REGISTRY](../orchestration/docs/SPEC--PROVIDER-REGISTRY.md) ·
 > Guide: [GUIDE--ADDING-PROVIDER](../orchestration/docs/GUIDE--ADDING-PROVIDER.md)
 
-G-Maiden à¹ƒà¸Šà¹‰ **G-Orch** orchestrator à¸ªà¸³à¸«à¸£à¸±à¸šà¸ˆà¸±à¸”à¸à¸²à¸£ development agents (AI à¸—à¸µà¹ˆà¹€à¸‚à¸µà¸¢à¸™ code,
-review, à¹à¸¥à¸° plan). G-Orch dispatch task à¸œà¹ˆà¸²à¸™ **role-based provider registry** â€”
-à¹à¸¢à¸à¸Šà¸±à¸”à¹€à¸ˆà¸™à¸£à¸°à¸«à¸§à¹ˆà¸²à¸‡ "à¸•à¹‰à¸­à¸‡à¸—à¸³à¸­à¸°à¹„à¸£" (Role) à¸à¸±à¸š "à¹ƒà¸„à¸£à¸—à¸³" (Provider):
+G-Maiden ใช้ **G-Orch** orchestrator สำหรับจัดการ development agents (AI ที่เขียน code,
+review, และ plan). G-Orch dispatch task ผ่าน **role-based provider registry** —
+แยกชัดเจนระหว่าง "ต้องทำอะไร" (Role) กับ "ใครทำ" (Provider):
 
 ```
-Task Type  â†’  Role  â†’  Provider (fallback chain + capability matching)
+Task Type  →  Role  →  Provider (fallback chain + capability matching)
 ```
 
 ### 7.1 Roles (5 roles)
 
-| Role | requires | à¹ƒà¸Šà¹‰à¸à¸±à¸š | fallback chain |
+| Role | requires | ใช้กับ | fallback chain |
 | --- | --- | --- | --- |
-| architect | `long_context` | spike, plan, architecture | claude:opus â†’ openrouter â†’ ollama |
-| coder | `file_edit` | code, test, integration | claude:sonnet â†’ codex â†’ antigravity â†’ ollama |
-| worker | `text_gen` | scaffold, config, docs | claude:haiku â†’ ollama â†’ openrouter |
-| reviewer | `code_review` | Verify Gate | claude:opus â†’ claude:sonnet |
-| scout | `text_gen` | research, draft | ollama â†’ claude:haiku â†’ openrouter |
+| architect | `long_context` | spike, plan, architecture | claude:opus → openrouter → ollama |
+| coder | `file_edit` | code, test, integration | claude:sonnet → codex → antigravity → ollama |
+| worker | `text_gen` | scaffold, config, docs | claude:haiku → ollama → openrouter |
+| reviewer | `code_review` | Verify Gate | claude:opus → claude:sonnet |
+| scout | `text_gen` | research, draft | ollama → claude:haiku → openrouter |
 
 ### 7.2 Providers (5 platforms)
 
@@ -180,23 +180,23 @@ Task Type  â†’  Role  â†’  Provider (fallback chain + capability match
 
 ### 7.3 Capability tags
 
-`file_edit` Â· `shell_exec` Â· `code_review` Â· `text_gen` Â· `streaming` Â· `vision` Â· `long_context` Â· `sandbox`
+`file_edit` · `shell_exec` · `code_review` · `text_gen` · `streaming` · `vision` · `long_context` · `sandbox`
 
-Role à¸›à¸£à¸°à¸à¸²à¸¨ `requires`; Provider à¸›à¸£à¸°à¸à¸²à¸¨ `capabilities`.
-`resolveForRole()` à¹€à¸”à¸´à¸™ fallback chain â†’ skip provider à¸—à¸µà¹ˆà¹„à¸¡à¹ˆà¸„à¸£à¸š capability â†’ **first match wins**.
+Role ประกาศ `requires`; Provider ประกาศ `capabilities`.
+`resolveForRole()` เดิน fallback chain → skip provider ที่ไม่ครบ capability → **first match wins**.
 
 ### 7.4 SRS resilience compliance
 
-- Cloud provider à¸¥à¹ˆà¸¡ â†’ coder role automatic fallback à¹„à¸› codex â†’ ollama
-- Reviewer à¹ƒà¸Šà¹‰ role-based resolution à¹à¸—à¸™ hardcoded tier map (ADR-O-001)
-- Scout/worker à¹€à¸£à¸´à¹ˆà¸¡à¸ˆà¸²à¸ ollama (local) â†’ à¸—à¸³à¸‡à¸²à¸™à¹„à¸”à¹‰ offline
-- à¹€à¸žà¸´à¹ˆà¸¡ provider à¹ƒà¸«à¸¡à¹ˆà¹‚à¸”à¸¢à¹„à¸¡à¹ˆà¹à¸à¹‰ engine core (à¹à¸à¹‰ 2 à¹„à¸Ÿà¸¥à¹Œ: config.json + providers.mjs)
+- Cloud provider ล่ม → coder role automatic fallback ไป codex → ollama
+- Reviewer ใช้ role-based resolution แทน hardcoded tier map (ADR-O-001)
+- Scout/worker เริ่มจาก ollama (local) → ทำงานได้ offline
+- เพิ่ม provider ใหม่โดยไม่แก้ engine core (แก้ 2 ไฟล์: config.json + providers.mjs)
 
 ### 7.5 Prompt routing
 
-| à¸à¸¥à¸¸à¹ˆà¸¡ | Providers | Prompt style |
+| กลุ่ม | Providers | Prompt style |
 | --- | --- | --- |
-| Full-agent | claude, codex, antigravity | à¸Šà¸µà¹‰ doc paths à¹ƒà¸«à¹‰ agent à¸­à¹ˆà¸²à¸™à¹€à¸­à¸‡ |
+| Full-agent | claude, codex, antigravity | ชี้ doc paths ให้ agent อ่านเอง |
 | Text-only | ollama, openrouter | Inline scaffold + small-model rules |
 
 **Implementation:** [`orchestration/providers.mjs`](file:///g:/G-Maiden/orchestration/providers.mjs), [`orchestration/config.json`](file:///g:/G-Maiden/orchestration/config.json), [`orchestration/engine.mjs`](file:///g:/G-Maiden/orchestration/engine.mjs)
@@ -220,20 +220,20 @@ OpenDota profile + baselines. Match/CV/G-Log data stays local; the account store
 
 ---
 
-## 8. Definition of Done (à¸§à¸±à¸” constraint à¸ˆà¸£à¸´à¸‡)
+## 8. Definition of Done (วัด constraint จริง)
 
-à¸—à¸¸à¸à¸Ÿà¸µà¹€à¸ˆà¸­à¸£à¹Œà¸•à¹‰à¸­à¸‡à¸œà¹ˆà¸²à¸™ gate à¸à¹ˆà¸­à¸™à¸–à¸·à¸­à¸§à¹ˆà¸²à¹€à¸ªà¸£à¹‡à¸ˆ:
-- [ ] G-Signal p99 end-to-end â‰¤300ms, p50 â‰¤250ms (à¸§à¸±à¸”à¸ˆà¸²à¸ `timestamp_ms`)
-- [ ] background CPU â‰¤2.5% à¸šà¸™à¸Šà¸´à¸›à¹€à¸‹à¹‡à¸•à¸£à¸°à¸”à¸±à¸šà¸à¸¥à¸²à¸‡ (à¸§à¸±à¸”à¸”à¹‰à¸§à¸¢ harness 10 à¸™à¸²à¸—à¸µ)
-- [ ] CPU gate à¸•à¹‰à¸­à¸‡à¸žà¸´à¸ªà¸¹à¸ˆà¸™à¹Œà¸ˆà¸²à¸ sustained app-path harness; Windows Task Manager peak `20%+` ณ 2026-07-08 à¸¢à¸±à¸‡à¸–à¸·à¸­à¸§à¹ˆà¸² fail spec à¸ˆà¸™à¸à¸§à¹ˆà¸²à¸ˆà¸°à¸¢à¸·à¸™à¸¢à¸±à¸™ steady-state à¸­à¸¢à¸¹à¹ˆà¹ƒà¸™ budget
-- [ ] CPU investigation à¸•à¹‰à¸­à¸‡à¹à¸¢à¸ `Rust host` vs `WebView2 child processes` vs `sidecars/subprocesses`; harness à¸«à¸¥à¸±à¸à¸„à¸·à¸­ `tests/perf/src/bin/perf_cpu_tree.rs`
-- [ ] RAM â‰¤400MB (à¸ªà¸–à¸²à¸™à¸° cloud-online, SLM à¹„à¸¡à¹ˆà¹‚à¸«à¸¥à¸”)
-- [ ] FPS drop â‰¤3% (à¸§à¸±à¸”à¹€à¸—à¸µà¸¢à¸š baseline à¹€à¸à¸¡à¸ˆà¸£à¸´à¸‡)
-- [ ] cloud-loss test: à¸›à¸´à¸”à¹€à¸™à¹‡à¸• â†’ G-Sentry/G-Signal à¸¢à¸±à¸‡à¸—à¸³à¸‡à¸²à¸™à¸„à¸£à¸š
-- [ ] no-egress test: à¸•à¸£à¸§à¸ˆà¸§à¹ˆà¸²à¹„à¸¡à¹ˆà¸¡à¸µ request à¸žà¸² G-Log/à¸ªà¸–à¸´à¸•à¸´à¸­à¸­à¸à¸™à¸­à¸à¹€à¸„à¸£à¸·à¹ˆà¸­à¸‡
-- [ ] orchestrator: `resolveForRole()` resolves à¸—à¸±à¹‰à¸‡ 5 roles (parseModel â†’ capability check â†’ return)
-- [ ] orchestrator: cloud-loss â†’ coder/scout fallback chain à¸¥à¸‡à¸–à¸¶à¸‡ ollama
-- [ ] orchestrator: à¹€à¸žà¸´à¹ˆà¸¡ provider à¹ƒà¸«à¸¡à¹ˆà¹à¸à¹‰ â‰¤2 à¹„à¸Ÿà¸¥à¹Œ (config.json + providers.mjs)
+ทุกฟีเจอร์ต้องผ่าน gate ก่อนถือว่าเสร็จ:
+- [ ] G-Signal p99 end-to-end ≤300ms, p50 ≤250ms (วัดจาก `timestamp_ms`)
+- [ ] background CPU ≤2.5% บนชิปเซ็ตระดับกลาง (วัดด้วย harness 10 นาที)
+- [ ] CPU gate ต้องพิสูจน์จาก sustained app-path harness; Windows Task Manager peak `20%+` ณ 2026-07-08 ยังถือว่า fail spec จนกว่าจะยืนยัน steady-state อยู่ใน budget
+- [ ] CPU investigation ต้องแยก `Rust host` vs `WebView2 child processes` vs `sidecars/subprocesses`; harness หลักคือ `tests/perf/src/bin/perf_cpu_tree.rs`
+- [ ] RAM ≤400MB (สถานะ cloud-online, SLM ไม่โหลด)
+- [ ] FPS drop ≤3% (วัดเทียบ baseline เกมจริง)
+- [ ] cloud-loss test: ปิดเน็ต → G-Sentry/G-Signal ยังทำงานครบ
+- [ ] no-egress test: ตรวจว่าไม่มี request พา G-Log/สถิติออกนอกเครื่อง
+- [ ] orchestrator: `resolveForRole()` resolves ทั้ง 5 roles (parseModel → capability check → return)
+- [ ] orchestrator: cloud-loss → coder/scout fallback chain ลงถึง ollama
+- [ ] orchestrator: เพิ่ม provider ใหม่แก้ ≤2 ไฟล์ (config.json + providers.mjs)
 
 
 

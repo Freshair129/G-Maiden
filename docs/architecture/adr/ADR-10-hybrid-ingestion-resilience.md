@@ -2,8 +2,8 @@
 title: "ADR: Hybrid Ingestion Resilience"
 doc_id: "ADR-10-hybrid-ingestion-resilience"
 status: "accepted"
-version: "1.0.0"
-updated: "2026-06-23"
+version: "1.0.1"
+updated: "2026-07-20"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["ADR-05", "ADR-03", "docs/product/competitive-brief.md", "docs/product/business-requirements.md"]
@@ -12,50 +12,50 @@ related_docs: ["ADR-05", "ADR-03", "docs/product/competitive-brief.md", "docs/pr
 # ADR: Hybrid Ingestion Resilience
 
 ## Status
-Accepted *(extends ADR-05)* Â· 2026-06-23
+Accepted *(extends ADR-05)* · 2026-06-23
 
 ## Context
-à¸›à¸±à¸ˆà¸ˆà¸¸à¸šà¸±à¸™ G-Maiden à¸£à¸±à¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥ 2 à¸—à¸²à¸‡: **GSI** (own player state â€” HP/mana/gold/items) à¹à¸¥à¸° **minimap CV** (à¸•à¸³à¹à¸«à¸™à¹ˆà¸‡à¸¨à¸±à¸•à¸£à¸¹ â€” ADR-05, ONNX detector 128 à¸®à¸µà¹‚à¸£à¹ˆ shipped à¹à¸¥à¹‰à¸§). own-state à¸—à¸±à¹‰à¸‡à¸«à¸¡à¸”à¸¡à¸²à¸ˆà¸²à¸ GSI à¸¥à¹‰à¸§à¸™
+ปัจจุบัน G-Maiden รับข้อมูล 2 ทาง: **GSI** (own player state — HP/mana/gold/items) และ **minimap CV** (ตำแหน่งศัตรู — ADR-05, ONNX detector 128 ฮีโร่ shipped แล้ว). own-state ทั้งหมดมาจาก GSI ล้วน
 
-**à¸„à¸§à¸²à¸¡à¹€à¸ªà¸µà¹ˆà¸¢à¸‡à¹€à¸Šà¸´à¸‡à¸”à¸³à¸£à¸‡à¸­à¸¢à¸¹à¹ˆ:** Valve à¹€à¸›à¹‡à¸™à¹€à¸ˆà¹‰à¸²à¸‚à¸­à¸‡ GSI à¹à¸¥à¸°à¹€à¸›à¸¥à¸µà¹ˆà¸¢à¸™/à¸ˆà¸³à¸à¸±à¸”/à¸šà¸¥à¹‡à¸­à¸à¹„à¸”à¹‰à¸à¹ˆà¸²à¸¢à¹€à¸”à¸µà¸¢à¸§ (à¸›à¸£à¸°à¸§à¸±à¸•à¸´: ban wave 40k à¸šà¸±à¸à¸Šà¸µ à¸.à¸ž. 2023 à¸—à¸µà¹ˆà¸­à¹ˆà¸²à¸™à¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹„à¸„à¸¥à¹€à¸­à¸™à¸•à¹Œ, à¸—à¸¸à¸šà¸Ÿà¸µà¹€à¸ˆà¸­à¸£à¹Œ Overwolf à¹€à¸‡à¸µà¸¢à¸šà¹† à¸.à¸ž. 2021). à¸–à¹‰à¸²à¹€à¸›à¹‡à¸™ **GSI-only = single point of failure** â€” à¸šà¸¥à¹‡à¸­à¸à¹€à¸¡à¸·à¹ˆà¸­à¹„à¸«à¸£à¹ˆà¸œà¸¥à¸´à¸•à¸ à¸±à¸“à¸‘à¹Œà¸ˆà¸š
+**ความเสี่ยงเชิงดำรงอยู่:** Valve เป็นเจ้าของ GSI และเปลี่ยน/จำกัด/บล็อกได้ฝ่ายเดียว (ประวัติ: ban wave 40k บัญชี ก.พ. 2023 ที่อ่านข้อมูลไคลเอนต์, ทุบฟีเจอร์ Overwolf เงียบๆ ก.พ. 2021). ถ้าเป็น **GSI-only = single point of failure** — บล็อกเมื่อไหร่ผลิตภัณฑ์จบ
 
 ## Decision
-à¸£à¸±à¸šà¸‚à¹‰à¸­à¸¡à¸¹à¸¥à¹à¸šà¸š **hybrid à¸«à¸¥à¸²à¸¢à¸Šà¸±à¹‰à¸™**:
-1. **GSI = primary fast path** (à¹€à¸«à¸¡à¸·à¸­à¸™à¹€à¸”à¸´à¸¡)
-2. **Extend minimap-CV pipeline à¹ƒà¸«à¹‰à¸­à¹ˆà¸²à¸™ own-state** (HP/mana/gold/clock à¸ˆà¸²à¸à¹à¸–à¸šà¸šà¸™à¸ˆà¸­) à¹€à¸›à¹‡à¸™ **fallback à¹€à¸¡à¸·à¹ˆà¸­ GSI à¹„à¸¡à¹ˆà¸žà¸£à¹‰à¸­à¸¡** â€” fallback path à¹€à¸—à¹ˆà¸²à¸™à¸±à¹‰à¸™ à¹„à¸¡à¹ˆà¸­à¸¢à¸¹à¹ˆà¸šà¸™ hot path à¸›à¸à¸•à¸´ (à¸à¸±à¸™ resource budget); à¹ƒà¸Šà¹‰ headroom ~100x à¸—à¸µà¹ˆ spike S-1 à¸žà¸´à¸ªà¸¹à¸ˆà¸™à¹Œà¹à¸¥à¹‰à¸§
-3. **Pro-replay statistical priors** â€” à¸”à¸¶à¸‡ replay à¸ªà¸²à¸˜à¸²à¸£à¸“à¸° (OpenDota/STRATZ) à¸¡à¸²à¸—à¸³ heatmap/gank-prediction prior à¹‚à¸”à¸¢à¹„à¸¡à¹ˆà¸•à¹‰à¸­à¸‡à¹€à¸—à¸£à¸™à¹‚à¸¡à¹€à¸”à¸¥à¹ƒà¸«à¸à¹ˆ (ref: "Time to Die" â€” features observable, ~10k replay)
+รับข้อมูลแบบ **hybrid หลายชั้น**:
+1. **GSI = primary fast path** (เหมือนเดิม)
+2. **Extend minimap-CV pipeline ให้อ่าน own-state** (HP/mana/gold/clock จากแถบบนจอ) เป็น **fallback เมื่อ GSI ไม่พร้อม** — fallback path เท่านั้น ไม่อยู่บน hot path ปกติ (กัน resource budget); ใช้ headroom ~100x ที่ spike S-1 พิสูจน์แล้ว
+3. **Pro-replay statistical priors** — ดึง replay สาธารณะ (OpenDota/STRATZ) มาทำ heatmap/gank-prediction prior โดยไม่ต้องเทรนโมเดลใหญ่ (ref: "Time to Die" — features observable, ~10k replay)
 
-à¸­à¸­à¸à¹à¸šà¸šà¹ƒà¸«à¹‰ vision à¸­à¹ˆà¸²à¸™à¹€à¸‰à¸žà¸²à¸°à¸ªà¸´à¹ˆà¸‡à¸—à¸µà¹ˆà¸œà¸¹à¹‰à¹€à¸¥à¹ˆà¸™à¹€à¸«à¹‡à¸™à¸šà¸™à¸ˆà¸­ (ban-safe, VAC à¹„à¸¡à¹ˆà¸ˆà¸±à¸š); à¸«à¹‰à¸²à¸¡ inject/à¸­à¹ˆà¸²à¸™ memory
+ออกแบบให้ vision อ่านเฉพาะสิ่งที่ผู้เล่นเห็นบนจอ (ban-safe, VAC ไม่จับ); ห้าม inject/อ่าน memory
 
 ## Consequences
 ### Positive
-- **Resilience à¸à¸¥à¸²à¸¢à¹€à¸›à¹‡à¸™à¸ˆà¸¸à¸”à¸‚à¸²à¸¢** â€” à¸£à¸­à¸”à¸—à¸±à¹‰à¸‡à¸•à¸­à¸™ GSI à¸–à¸¹à¸à¸•à¸±à¸”à¹à¸¥à¸°à¸•à¸­à¸™ vision à¸Šà¹‰à¸² (à¹„à¸¡à¹ˆà¸¡à¸µà¸„à¸¹à¹ˆà¹à¸‚à¹ˆà¸‡à¸¡à¸µà¸ªà¸­à¸‡à¹à¸«à¸¥à¹ˆà¸‡)
-- à¹ƒà¸Šà¹‰ CV pipeline + latency headroom à¸—à¸µà¹ˆà¸¡à¸µà¸­à¸¢à¸¹à¹ˆà¹à¸¥à¹‰à¸§ â†’ à¸‡à¸²à¸™à¸ªà¹ˆà¸§à¸™à¹€à¸žà¸´à¹ˆà¸¡à¹€à¸¥à¹‡à¸
-- pro-replay priors à¸¢à¸à¸£à¸°à¸”à¸±à¸š prediction à¹‚à¸”à¸¢à¹„à¸¡à¹ˆà¸•à¹‰à¸­à¸‡à¸¡à¸µà¸—à¸¸à¸™/dataset
+- **Resilience กลายเป็นจุดขาย** — รอดทั้งตอน GSI ถูกตัดและตอน vision ช้า (ไม่มีคู่แข่งมีสองแหล่ง)
+- ใช้ CV pipeline + latency headroom ที่มีอยู่แล้ว → งานส่วนเพิ่มเล็ก
+- pro-replay priors ยกระดับ prediction โดยไม่ต้องมีทุน/dataset
 
 ### Negative
-- à¹€à¸žà¸´à¹ˆà¸¡à¸‡à¸²à¸™ CV (own-state reader) + à¸•à¹‰à¸­à¸‡ maintain 2 paths
-- à¸•à¸­à¸™ fallback: latency/accuracy à¹à¸¢à¹ˆà¸¥à¸‡à¸à¸§à¹ˆà¸² GSI (à¸¢à¸­à¸¡à¸£à¸±à¸šà¹„à¸”à¹‰à¹€à¸žà¸£à¸²à¸° "à¸—à¸³à¸‡à¸²à¸™à¸•à¹ˆà¸­à¹„à¸”à¹‰" > "à¸•à¸²à¸¢")
+- เพิ่มงาน CV (own-state reader) + ต้อง maintain 2 paths
+- ตอน fallback: latency/accuracy แย่ลงกว่า GSI (ยอมรับได้เพราะ "ทำงานต่อได้" > "ตาย")
 
 ### Neutral / Trade-offs
-- à¸•à¹‰à¸­à¸‡à¸¡à¸µ logic à¸ªà¸¥à¸±à¸š path + à¸—à¸”à¸ªà¸­à¸š GSI-block scenario à¹€à¸›à¹‡à¸™ acceptance
+- ต้องมี logic สลับ path + ทดสอบ GSI-block scenario เป็น acceptance
 
 ## Alternatives Considered
 | Alternative | Reason Rejected |
 | --- | --- |
-| GSI-only | single point of failure â€” Valve à¸šà¸¥à¹‡à¸­à¸ = à¸ˆà¸š |
-| Full-screen VLM à¸­à¹ˆà¸²à¸™à¸—à¸±à¹‰à¸‡à¸ˆà¸­ | à¸Šà¹‰à¸² 3â€“4s + à¸à¸´à¸™ CPU/FPS à¹€à¸à¸´à¸™ budget |
-| à¸­à¹ˆà¸²à¸™ game memory | à¹‚à¸”à¸™à¹à¸šà¸™ (ban wave 2023) |
+| GSI-only | single point of failure — Valve บล็อก = จบ |
+| Full-screen VLM อ่านทั้งจอ | ช้า 3–4s + กิน CPU/FPS เกิน budget |
+| อ่าน game memory | โดนแบน (ban wave 2023) |
 
 ## Related Documents
-- ADR-05 (enemy positions from minimap CV) Â· ADR-03 (critical path Rust-only)
-- [[S-1-minimap-cv]] Â· [[competitive-brief|Competitive Brief]] Â§10.2 Â· [[business-requirements|BRD]] BR-03
+- ADR-05 (enemy positions from minimap CV) · ADR-03 (critical path Rust-only)
+- [[S-1-minimap-cv]] · [[competitive-brief|Competitive Brief]] §10.2 · [[business-requirements|BRD]] BR-03
 
 ## Changelog
 | Version | Date | Summary |
 | --- | --- | --- |
-| 0.1.0 | 2026-06-23 | Proposed â€” hybrid GSI + CV own-state fallback + pro-replay priors |
+| 0.1.0 | 2026-06-23 | Proposed — hybrid GSI + CV own-state fallback + pro-replay priors |
 | 1.0.0 | 2026-06-23 | Accepted |
-
+| 1.0.1 | 2026-07-20 | Repair UTF-8 mojibake; no semantic change |
 
 

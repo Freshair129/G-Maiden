@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-20T07:31:33.705Z",
+  "generatedAt": "2026-07-20T14:20:59.985Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -170,6 +170,16 @@
       "id": "docs/change request/CR-004-voice-command-browser.md",
       "type": "doc",
       "path": "docs/change request/CR-004-voice-command-browser.md"
+    },
+    {
+      "id": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
+      "type": "doc",
+      "path": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md"
+    },
+    {
+      "id": "docs/change request/CR-005-W1B-thai-features-and-doc-encoding.md",
+      "type": "doc",
+      "path": "docs/change request/CR-005-W1B-thai-features-and-doc-encoding.md"
     },
     {
       "id": "docs/change request/CR-005-landing-auth-social.md",
@@ -750,6 +760,36 @@
       "id": "gpu-feeder/",
       "type": "code",
       "path": "gpu-feeder/"
+    },
+    {
+      "id": "landing/src/App.tsx",
+      "type": "code",
+      "path": "landing/src/App.tsx"
+    },
+    {
+      "id": "landing/src/beta.ts",
+      "type": "code",
+      "path": "landing/src/beta.ts"
+    },
+    {
+      "id": "landing/src/index.css",
+      "type": "code",
+      "path": "landing/src/index.css"
+    },
+    {
+      "id": "supabase/migrations/20260720183000_cr005_closed_beta_registration.sql",
+      "type": "code",
+      "path": "supabase/migrations/20260720183000_cr005_closed_beta_registration.sql"
+    },
+    {
+      "id": "supabase/migrations/20260720184500_cr005_beta_rls_initplan.sql",
+      "type": "code",
+      "path": "supabase/migrations/20260720184500_cr005_beta_rls_initplan.sql"
+    },
+    {
+      "id": "supabase/tests/cr005_closed_beta_registration.sql",
+      "type": "code",
+      "path": "supabase/tests/cr005_closed_beta_registration.sql"
     },
     {
       "id": "src/src/AuthPanel.tsx",
@@ -3079,6 +3119,42 @@
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
       "line": 349
+    },
+    {
+      "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
+      "to": "landing/src/App.tsx",
+      "type": "symbol",
+      "line": 248
+    },
+    {
+      "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
+      "to": "landing/src/beta.ts",
+      "type": "symbol",
+      "line": 249
+    },
+    {
+      "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
+      "to": "landing/src/index.css",
+      "type": "symbol",
+      "line": 249
+    },
+    {
+      "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
+      "to": "supabase/migrations/20260720183000_cr005_closed_beta_registration.sql",
+      "type": "symbol",
+      "line": 252
+    },
+    {
+      "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
+      "to": "supabase/migrations/20260720184500_cr005_beta_rls_initplan.sql",
+      "type": "symbol",
+      "line": 253
+    },
+    {
+      "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
+      "to": "supabase/tests/cr005_closed_beta_registration.sql",
+      "type": "symbol",
+      "line": 254
     },
     {
       "from": "docs/change request/CR-005-landing-auth-social.md",
@@ -8362,6 +8438,12 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
+      "line": 250,
+      "reason": "missing-file",
+      "target": "landing/assets/concepts/g-maiden-sea-captain-stone-titan-v1.webp"
+    },
+    {
       "file": "docs/change request/CR-005-landing-auth-social.md",
       "line": null,
       "reason": "invalid-status",
@@ -8553,7 +8635,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-07-20T07:31:41.742Z",
+    "generatedAt": "2026-07-20T14:21:12.207Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 73,

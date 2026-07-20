@@ -2,22 +2,23 @@
 /**
  * tools/doc-graph/ci-gate.mjs — the CI entry point for the doc-graph gates.
  *
- * One command, four gates, CI-safe (no git-history or dirty-tree
+ * One command, five gates, CI-safe (no git-history or dirty-tree
  * assumptions — those live in the per-epic e2e-check-g*.mjs scripts, which
  * run in the RWANG run context, not here):
  *
  *   0. The doc-graph unit suite (every *.test.mjs in this dir) is green.
  *      Spawned with an explicit file list — `node --test <dir>` and glob
  *      args are version/platform-dependent, a readdir'd list is not.
- *   1. scan --strict runs and does not crash (exit 0 or 1; >1 = FAIL).
- *   2. The G2.5 checklist-exception rule: every severity="error" violation
+ *   1. encoding-check rejects common UTF-8 mojibake markers.
+ *   2. scan --strict runs and does not crash (exit 0 or 1; >1 = FAIL).
+ *   3. The G2.5 checklist-exception rule: every severity="error" violation
  *      the strict scan reports must be covered by a row in
  *      docs/approval-backfill-checklist.md (matched by the doc's slug in
  *      backticks, the checklist's table format). Errors NOT in the
  *      checklist = FAIL. This is how "strict is green" is defined since
  *      G2.5: sign-offs only Boss can give are deferred, never fabricated,
  *      and anything else must be fixed, not deferred.
- *   3. ledger.mjs exits 0 (the manifest was pruned to authoritative on
+ *   4. ledger.mjs exits 0 (the manifest was pruned to authoritative on
  *      2026-07-20 — any status-inflation or dangling ref from here on is a
  *      real regression, so it blocks).
  *
@@ -65,7 +66,15 @@ if ((suite.status ?? -1) !== 0) {
   console.log(`[ci-gate] unit suite green (${testFiles.length} files, ${m ? m[1] : '?'} tests).`);
 }
 
-// --- Gate 1: strict scan runs ---------------------------------------------
+// --- Gate 1: documentation encoding is clean ------------------------------
+const encoding = runNode('encoding-check.mjs');
+if (encoding.code !== 0) {
+  fail(`encoding-check.mjs exit ${encoding.code}.\n${encoding.stderr.slice(0, 4000)}`);
+} else {
+  console.log('[ci-gate] encoding check exit 0 (UTF-8 mojibake markers absent).');
+}
+
+// --- Gate 2: strict scan runs ---------------------------------------------
 const scan = runNode('scan.mjs', ['--strict']);
 if (scan.code !== 0 && scan.code !== 1) {
   fail(`scan.mjs --strict crashed (exit ${scan.code}).\n${scan.stderr.slice(0, 2000)}`);
@@ -73,7 +82,7 @@ if (scan.code !== 0 && scan.code !== 1) {
   console.log(`[ci-gate] scan --strict exit ${scan.code} (0|1 accepted; coverage checked next).`);
 }
 
-// --- Gate 2: every error-severity violation is checklist-covered ----------
+// --- Gate 3: every error-severity violation is checklist-covered ----------
 if (existsSync(DOC_GRAPH_JSON)) {
   const graph = JSON.parse(readFileSync(DOC_GRAPH_JSON, 'utf8'));
   const errors = (graph.violations ?? []).filter((v) => v.severity === 'error');
@@ -103,7 +112,7 @@ if (existsSync(DOC_GRAPH_JSON)) {
   fail('docs/DOC-GRAPH.json missing after scan.');
 }
 
-// --- Gate 3: the feature ledger is clean -----------------------------------
+// --- Gate 4: the feature ledger is clean -----------------------------------
 const ledger = runNode('ledger.mjs', ['--quiet']);
 if (ledger.code !== 0) {
   fail(`ledger.mjs exit ${ledger.code} — status-inflation or dangling refs regressed.\n${ledger.stderr.slice(0, 2000)}`);
