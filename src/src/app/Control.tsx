@@ -110,12 +110,13 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
 
   // bind once; use ref so the overlay-ready handler always emits current settings
   useEffect(() => {
-    document.body.style.background = C.bg
-    // index.css sets html,body { overflow:hidden } for the transparent click-through
-    // overlay window. The control window has more content than fits, so re-enable
-    // vertical scroll here (this effect never runs in the overlay window).
-    document.documentElement.style.overflowY = 'auto'
-    document.documentElement.style.overflowX = 'hidden'
+    // NOTE — no document-level styling here. The old standalone-window version
+    // painted document.body black (C.bg) and force-enabled page scroll; since
+    // CR-013 Control only ever mounts INSIDE the CommandDeck (App.tsx render
+    // prop), where those globals bled a black edge around the stage and a
+    // scrollbar gutter that survived tab switches (Boss 2026-07-20 "ขอบดำทะลุ
+    // หน้า setting"). The deck owns the page background; R1 says only bounded
+    // regions scroll.
     const syncControlActive = (focused?: boolean) => {
       const docVisible = document.visibilityState !== 'hidden'
       controlActiveRef.current = focused == null ? docVisible : (docVisible && focused)
