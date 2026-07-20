@@ -1,7 +1,7 @@
 ---
-version: "0.4.1b"
+version: "0.5.0b"
 created_at: "2026-07-20T00:00:00+07:00,ATHER"
-last_update: "2026-07-20T21:20:00+07:00,ATHER"
+last_update: "2026-07-20T22:05:00+07:00,ATHER"
 status: "beta"
 attributes:
   domain: "public-landing"
@@ -30,8 +30,9 @@ display headline 3 บรรทัด, CTA, proof row และ mobile menu over
   `docs/product/software-requirements-specification.md`
 - **Peer alignment:** ใช้ COLD BOOTH palette จาก `docs/design-system/02-tokens.md` แต่แยก namespace
   ของ landing เพื่อไม่ชนกับ Command Deck
-- **Known impact:** pricing/waitlist fake-door UI และ `tier_click` analytics ใน landing เดิมจะถูกถอดออก
-  จาก surface นี้; ไม่มีการแตะ Tauri app, overlay, GSI, auth หรือ release version
+- **Known impact:** pricing/waitlist fake-door UI และ `tier_click` analytics ใน landing เดิมถูกถอดออก;
+  อนุญาตเฉพาะ Vercel Web Analytics แบบ aggregate page view ตาม §11.1 โดยไม่มี custom event และไม่แตะ
+  Tauri app, overlay, GSI, auth หรือ release version
 
 ## 3. Accepted concept
 
@@ -156,7 +157,7 @@ another condensed display face.
 - Secondary CTA: `ดูการทำงาน` → technical design document
 - Signed-in state: แสดง immutable GID + account email และข้อความให้ใช้ Google account เดียวกันใน desktop app
 - Loading/error/signed-out/registered เป็น honest states; control ที่กำลังทำงานถูก disable
-- ไม่มี analytics หรือ player-data egress; enrollment เก็บ identity status เท่านั้น
+- Vercel Web Analytics เก็บเฉพาะ aggregate page view ตาม §11.1; enrollment เก็บ identity status เท่านั้น
 
 ### Closed Beta identity
 
@@ -223,7 +224,17 @@ Landing ใช้ React + Vite + TypeScript + Tailwind แยกจาก app �
 - `supabase/tests/cr005_closed_beta_registration.sql`
 
 Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind/PostCSS/Autoprefixer, `lucide-react` และ
-`@supabase/supabase-js` แบบ pinned. ไม่เพิ่ม router, analytics หรือ state library
+`@supabase/supabase-js` กับ `@vercel/analytics` แบบ pinned. ไม่เพิ่ม router หรือ state library
+
+### 11.1 Web Analytics privacy boundary
+
+- ใช้ `@vercel/analytics/react` สำหรับ React + Vite; ห้ามใช้ entrypoint `/next`
+- เก็บเฉพาะ page view แบบ aggregate และไม่สร้าง custom event
+- `beforeSend` ต้องตัด query string และ fragment ออกจาก URL ก่อนส่งทุกครั้ง
+- ห้ามส่ง email, GID, OAuth code/token, Supabase session, account state, match state, CV detection หรือ G-Log
+- Analytics เป็นของ public landing เท่านั้นและไม่ถูกนำเข้า desktop application
+- Production source คือ private repository `Freshair129/g-maiden-landing`; branch `main` deploy production
+  ผ่าน Vercel Git integration และ branch อื่นใช้ preview deployment
 
 ## 12. Acceptance, success, and exit criteria
 
@@ -235,6 +246,7 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 - Color/type/icon/motion ใช้ tokens และ component rules ในเอกสารนี้
 - Keyboard navigation, `Escape`, focus return และ reduced-motion ทำงาน
 - CTA Google OAuth ทำงานจริง; successful signup แสดง GID และลง enrollment แบบ idempotent
+- Analytics ส่งเฉพาะ redacted page view และไม่ส่ง query/fragment หรือข้อมูล account/game
 - signup ใหม่เป็น generation `B`; existing GID ไม่ถูกเปลี่ยน
 - anon/cross-user/self-approve ถูก RLS/grants ปฏิเสธ
 
@@ -269,7 +281,7 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 ## 14. Out of scope
 
 - การเปลี่ยน Command Deck, overlay หรือ Rust backend
-- pricing, analytics, social graph, invite admin dashboard และ email campaign
+- pricing, custom-event analytics, social graph, invite admin dashboard และ email campaign
 - Version bump, release, tag หรือ deploy
 - การใช้ concept image เป็น production background
 - prediction percentage, hidden-information claim และ future path projection
@@ -283,3 +295,4 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 | 0.3.0b | 2026-07-20 | beta | Original cinematic hero, Closed Beta Google OAuth/GID enrollment, RLS contract and production verification gates | — | ATHER |
 | 0.4.0b | 2026-07-20 | beta | Thai-first hero and open feature rails; watch-your-back positioning without prediction overclaims | — | ATHER |
 | 0.4.1b | 2026-07-20 | beta | Production asset isolation and verified Vercel deployment | — | ATHER |
+| 0.5.0b | 2026-07-20 | beta | Approved aggregate Vercel page-view analytics with URL redaction and standalone Git deployment contract | — | ATHER |

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-20T14:20:59.985Z",
+  "generatedAt": "2026-07-20T15:32:16.704Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -180,6 +180,11 @@
       "id": "docs/change request/CR-005-W1B-thai-features-and-doc-encoding.md",
       "type": "doc",
       "path": "docs/change request/CR-005-W1B-thai-features-and-doc-encoding.md"
+    },
+    {
+      "id": "docs/change request/CR-005-W1C-landing-analytics-git-integration.md",
+      "type": "doc",
+      "path": "docs/change request/CR-005-W1C-landing-analytics-git-integration.md"
     },
     {
       "id": "docs/change request/CR-005-landing-auth-social.md",
@@ -8635,7 +8640,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-07-20T14:21:12.207Z",
+    "generatedAt": "2026-07-20T15:25:52.357Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 73,
