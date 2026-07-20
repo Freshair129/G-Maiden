@@ -30,6 +30,13 @@
 # match reality (never padded) — so the ledger now runs with 0 violations and
 # any future drift is a real regression signal, not bootstrap noise.
 #
+# FR EXTRACTION PASS (G3.5-T2, 2026-07-20): reviewed G3.5 finding 1b ("zero fr
+# rows") against this file and found it FALSE — 12 `fr` rows for SRS §3.1-§3.12
+# already existed from the fr-backfill pass, so the FR group was present, not
+# absent. The genuine remaining gap was SRS §4 (External Interface
+# Requirements), which had no fr row at all; 7 rows for §4.1/§4.2 were added
+# and no §3 row was duplicated. See the FR (§4) block comment below.
+#
 # phase_target derivation:
 #   - Where the row has a matching docs/features/FEAT-G-*.md doc with an
 #     explicit `**Phase:** N` (or `N-M`) header line, that number is used
@@ -45,6 +52,19 @@
 #   - The 6 NFR rows (section 4) are ongoing enforced constraints rather than
 #     a single dev-phase deliverable; phase_target: P6 there means "already
 #     in force for the shipped product", not "planned for phase 6".
+#
+# phase_source values (G3.5-T6): `doc` means a SOURCE DOCUMENT states the
+# phase, and the row MUST carry a refs.docs entry that resolves on disk to
+# back that claim — ledger.mjs re-checks this and renders the Phase cell as
+# derived anyway (plus a non-blocking `unbacked-phase-source` violation) if
+# the backing document is missing, so the label cannot be trusted into
+# silence. `derived` means the phase is a guess (the badge heuristic above, or
+# the P6 NFR convention) and always renders marked `*(derived)*`. The older
+# `heuristic` spelling is still accepted and means the same as `derived`; the
+# 34 badge-heuristic rows and the 6 NFR rows were relabelled to `derived` on
+# 2026-07-20 because neither had a doc that could state a phase — the NFR rows
+# previously said `doc` while their refs.docs were empty, which is exactly the
+# unbacked claim this rule closes.
 #
 # refs.docs entries point at the FEAT doc's real repo path (not a bare slug)
 # so they are directly resolvable by resolveRefs()'s existsSync check.
@@ -143,7 +163,7 @@ entries:
     title: "DXGI desktop-duplication capture"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -157,7 +177,7 @@ entries:
     title: "WGC capture (rollback path, --features wgc only)"
     kind: feature
     phase_target: P5
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -171,7 +191,7 @@ entries:
     title: "Minimap CV detector (ONNX)"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -185,7 +205,7 @@ entries:
     title: "Draft-CV (pick-screen roster reader)"
     kind: feature
     phase_target: P3
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -199,7 +219,7 @@ entries:
     title: "Scoreboard OCR (enemy Net Worth)"
     kind: feature
     phase_target: P3
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -214,7 +234,7 @@ entries:
     title: "Announcer packs (fire -> banner -> resolve -> TTS)"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -242,7 +262,7 @@ entries:
     title: "Cognitive backends (cloud / local)"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -271,7 +291,7 @@ entries:
     title: "GSI server (:3000)"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -285,7 +305,7 @@ entries:
     title: "Item / net-worth derivation"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -299,7 +319,7 @@ entries:
     title: "GSI config detect/install"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -313,7 +333,7 @@ entries:
     title: "Identity / Steam link"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -327,7 +347,7 @@ entries:
     title: "OAuth callback (login)"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -341,7 +361,7 @@ entries:
     title: "Secret store (DPAPI)"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -355,7 +375,7 @@ entries:
     title: "GPU telemetry governor"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -369,7 +389,7 @@ entries:
     title: "Claude quota stats"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -383,7 +403,7 @@ entries:
     title: "Calibration (QA evidence)"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -397,7 +417,7 @@ entries:
     title: "Utterance ledger emit (CR-011)"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -411,7 +431,7 @@ entries:
     title: "Global hotkeys / updater / window routing"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -426,7 +446,7 @@ entries:
     title: "Dashboard (nav page)"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -440,7 +460,7 @@ entries:
     title: "Live (nav page: [สด | บิลด์])"
     kind: feature
     phase_target: P5
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -454,7 +474,7 @@ entries:
     title: "Voice (nav page: คลังของฉัน / ไอเทม / ตัวแก้ไข)"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -468,7 +488,7 @@ entries:
     title: "G-Store (nav page: [ร้านค้า | กระเป๋า | คลัง | บันทึก])"
     kind: feature
     phase_target: P5
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -482,7 +502,7 @@ entries:
     title: "Insights (nav page: [ภาพรวม | ประวัติ])"
     kind: feature
     phase_target: P5
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -496,7 +516,7 @@ entries:
     title: "Account (nav page: บัญชี / กระเป๋า / ประวัติธุรกรรม)"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -510,7 +530,7 @@ entries:
     title: "Settings (nav page: iOS split view)"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -525,7 +545,7 @@ entries:
     title: "Live wiring -> Tauri events"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -539,7 +559,7 @@ entries:
     title: "Accounts / GID"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -553,7 +573,7 @@ entries:
     title: "Economy / G-Store"
     kind: feature
     phase_target: P5
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -567,7 +587,7 @@ entries:
     title: "Maiden Line command palette (Ctrl+K)"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -581,7 +601,7 @@ entries:
     title: "ON AIR utterance console"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -595,7 +615,7 @@ entries:
     title: "Phase axis (standby -> prep -> live -> debrief)"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -609,7 +629,7 @@ entries:
     title: "In-app updater"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -623,7 +643,7 @@ entries:
     title: "Overlay Combat HUD + announcer banner"
     kind: feature
     phase_target: P6
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -722,7 +742,7 @@ entries:
     title: "Gemini cloud engine (original design target, superseded)"
     kind: feature
     phase_target: P1
-    phase_source: heuristic
+    phase_source: derived
     claimed_status: doc-only
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -737,7 +757,7 @@ entries:
     title: "G-Signal end-to-end latency (target 250ms, never exceed 300ms)"
     kind: nfr
     phase_target: P6
-    phase_source: doc
+    phase_source: derived
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
@@ -750,7 +770,7 @@ entries:
     title: "Background CPU usage <= 2.5% on a mid-range chipset"
     kind: nfr
     phase_target: P6
-    phase_source: doc
+    phase_source: derived
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
@@ -763,7 +783,7 @@ entries:
     title: "RAM budget <= 400MB with all modules active"
     kind: nfr
     phase_target: P6
-    phase_source: doc
+    phase_source: derived
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
@@ -776,7 +796,7 @@ entries:
     title: "Overlay FPS impact <= 3% drop; must not obscure minimap/skill bar/stats"
     kind: nfr
     phase_target: P6
-    phase_source: doc
+    phase_source: derived
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
@@ -789,7 +809,7 @@ entries:
     title: "Resilience — G-Sentry + G-Signal keep running on local SLM on cloud/network loss"
     kind: nfr
     phase_target: P6
-    phase_source: doc
+    phase_source: derived
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
@@ -802,7 +822,7 @@ entries:
     title: "Privacy — G-Log/live match state/CV detections stay local-only, CV never leaves the machine"
     kind: nfr
     phase_target: P6
-    phase_source: doc
+    phase_source: derived
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
@@ -811,68 +831,81 @@ entries:
       tests: []
       review: []
 
-  # --- Functional requirements (G3.5 backfill): one row per SRS §3.x,
-  # evidence mirrored from the implementing feature row above — an FR is
-  # satisfied exactly as far as its implementation's evidence goes. ---
+  # --- Functional requirements: one row per SRS §3.x ---
+  #
+  # LETTER-COMPLIANCE SWEEP (G3.5-T7, 2026-07-20). These rows previously
+  # carried `source: fr-backfill 2026-07-20 (mirrors <feature-row> evidence)`
+  # and refs.code/tests/review COPIED from the feature row believed to
+  # implement each §3.x section. That mirroring is exactly the invention the
+  # extraction rule forbids: no one verified against disk that (say)
+  # src-tauri/src/sentry.rs and cargo:sentry::tests:: are evidence *for SRS
+  # §3.1* as opposed to evidence for the feature row they were copied from —
+  # the FR->implementation mapping is a judgement call, not an extraction.
+  # So every §3.x row is restored to `source: bootstrap-extraction` with
+  # empty refs.code/tests/review and claimed_status `doc-only`, matching the
+  # §4 rows below and what these rows structurally compute to. refs.docs/srs
+  # stay: those cite the SRS itself, which IS the extraction source.
+  # Re-map evidence by hand, per row, once someone verifies it on disk.
+  # ---
   - id: fr-3.1
     title: "SRS §3.1 G-Sentry (Fog of War Monitor)"
     kind: fr
     phase_target: P2
-    phase_source: doc
-    claimed_status: code+needs-test-or-review
-    source: fr-backfill 2026-07-20 (mirrors 1.1-g-sentry evidence)
+    phase_source: derived
+    claimed_status: doc-only
+    source: bootstrap-extraction
     refs:
       docs: [docs/product/software-requirements-specification.md]
       srs: ['§3.1']
-      code: [src-tauri/src/sentry.rs]
-      tests: [cargo:sentry::tests::]
+      code: []
+      tests: []
       review: []
   - id: fr-3.2
     title: "SRS §3.2 G-Motion (Strategy & Heatmap Prediction)"
     kind: fr
     phase_target: P3
-    phase_source: doc
-    claimed_status: in-code
-    source: fr-backfill 2026-07-20 (mirrors 1.1-g-motion evidence)
+    phase_source: derived
+    claimed_status: doc-only
+    source: bootstrap-extraction
     refs:
       docs: [docs/product/software-requirements-specification.md]
       srs: ['§3.2']
-      code: [src-tauri/src/motion.rs]
+      code: []
       tests: []
       review: []
   - id: fr-3.3
     title: "SRS §3.3 G-Signal (Real-time Gank Warning with Voice Interrupt)"
     kind: fr
     phase_target: P3
-    phase_source: doc
-    claimed_status: code+tests-present
-    source: fr-backfill 2026-07-20 (mirrors 1.1-g-signal evidence)
+    phase_source: derived
+    claimed_status: doc-only
+    source: bootstrap-extraction
     refs:
       docs: [docs/product/software-requirements-specification.md]
       srs: ['§3.3']
-      code: [src-tauri/src/signal.rs, src-tauri/src/capture.rs]
-      tests: [cargo:signal::tests::, cargo:capture::backend::tests::]
-      review: [docs/audits/2026-07-07-independent-full-audit.md, docs/change request/CR-001-REVIEW-and-execution-plan.md]
+      code: []
+      tests: []
+      review: []
   - id: fr-3.4
     title: "SRS §3.4 G-Master (Strategic & Financial Advisor)"
     kind: fr
     phase_target: P5
-    phase_source: doc
-    claimed_status: code+tests-present
-    source: fr-backfill 2026-07-20 (mirrors 1.1-g-master evidence)
+    phase_source: derived
+    claimed_status: doc-only
+    source: bootstrap-extraction
     refs:
       docs: [docs/product/software-requirements-specification.md]
       srs: ['§3.4']
-      code: [src-tauri/src/master.rs, src-tauri/src/counter_advice.rs]
-      tests: [cargo:master::tests::, cargo:counter_advice::tests::]
-      review: [docs/audits/2026-07-07-independent-full-audit.md]
+      code: []
+      tests: []
+      review: []
   - id: fr-3.5
     title: "SRS §3.5 G-Sensory (Overlay & Hardware Optimization)"
     kind: fr
     phase_target: P6
-    phase_source: doc
+    phase_source: derived
     claimed_status: doc-only
-    source: fr-backfill 2026-07-20 (mirrors 1.1-g-sensory evidence)
+    source: bootstrap-extraction
     refs:
       docs: [docs/product/software-requirements-specification.md]
       srs: ['§3.5']
@@ -883,22 +916,22 @@ entries:
     title: "SRS §3.6 G-Log (Feedback Loop Analysis)"
     kind: fr
     phase_target: P6
-    phase_source: doc
-    claimed_status: code+needs-test-or-review
-    source: fr-backfill 2026-07-20 (mirrors 1.1-g-log evidence)
+    phase_source: derived
+    claimed_status: doc-only
+    source: bootstrap-extraction
     refs:
       docs: [docs/product/software-requirements-specification.md]
       srs: ['§3.6']
-      code: [src-tauri/src/log.rs]
-      tests: [cargo:log::tests::]
+      code: []
+      tests: []
       review: []
   - id: fr-3.7
     title: "SRS §3.7 G-Voice (Two-Way Voice Conversation) — Priority: P0"
     kind: fr
     phase_target: P4
-    phase_source: doc
+    phase_source: derived
     claimed_status: doc-only
-    source: fr-backfill 2026-07-20 (mirrors 3-g-voice evidence)
+    source: bootstrap-extraction
     refs:
       docs: [docs/product/software-requirements-specification.md]
       srs: ['§3.7']
@@ -909,9 +942,9 @@ entries:
     title: "SRS §3.8 G-Memory (Persistent Player Memory) — Priority: P0"
     kind: fr
     phase_target: P6
-    phase_source: doc
+    phase_source: derived
     claimed_status: doc-only
-    source: fr-backfill 2026-07-20 (mirrors 3-g-memory evidence)
+    source: bootstrap-extraction
     refs:
       docs: [docs/product/software-requirements-specification.md]
       srs: ['§3.8']
@@ -922,9 +955,9 @@ entries:
     title: "SRS §3.9 G-Coach (Post-Match Deep Review) — Priority: P1"
     kind: fr
     phase_target: P6
-    phase_source: doc
+    phase_source: derived
     claimed_status: doc-only
-    source: fr-backfill 2026-07-20 (mirrors 3-g-coach evidence)
+    source: bootstrap-extraction
     refs:
       docs: [docs/product/software-requirements-specification.md]
       srs: ['§3.9']
@@ -935,22 +968,22 @@ entries:
     title: "SRS §3.10 G-Mind (Cognitive Model Router) — Priority: P1"
     kind: fr
     phase_target: P4
-    phase_source: doc
-    claimed_status: in-code
-    source: fr-backfill 2026-07-20 (mirrors 3-g-mind evidence)
+    phase_source: derived
+    claimed_status: doc-only
+    source: bootstrap-extraction
     refs:
       docs: [docs/product/software-requirements-specification.md]
       srs: ['§3.10']
-      code: [src-tauri/src/master.rs]
+      code: []
       tests: []
       review: []
   - id: fr-3.11
     title: "SRS §3.11 G-Persona (Tone & Verbosity Presets) — Priority: P2"
     kind: fr
     phase_target: P6
-    phase_source: doc
+    phase_source: derived
     claimed_status: doc-only
-    source: fr-backfill 2026-07-20 (mirrors 3-g-persona evidence)
+    source: bootstrap-extraction
     refs:
       docs: [docs/product/software-requirements-specification.md]
       srs: ['§3.11']
@@ -961,12 +994,145 @@ entries:
     title: "SRS §3.12 G-Stream (Streamer Co-host Mode) — Priority: P2"
     kind: fr
     phase_target: P6
-    phase_source: doc
+    phase_source: derived
     claimed_status: doc-only
-    source: fr-backfill 2026-07-20 (mirrors 3-g-stream evidence)
+    source: bootstrap-extraction
     refs:
       docs: [docs/product/software-requirements-specification.md]
       srs: ['§3.12']
+      code: []
+      tests: []
+      review: []
+
+  # --- FR (§4). External-interface requirements extracted from the SRS ---
+  #
+  # G3.5-T2 (2026-07-20). NOTE ON REVIEW FINDING 1b: that finding states the
+  # bootstrap produced "48 feature + 6 nfr rows and zero fr rows". That premise
+  # is FALSE against this file. At the time of this task the manifest already
+  # carried 12 `fr` rows (fr-3.1 .. fr-3.12, `source: fr-backfill 2026-07-20`),
+  # one per SRS §3.x — verified with
+  #   git show HEAD:docs/feature-ledger.manifest.yaml | grep -c 'kind: fr'  -> 12
+  # So the FR group was NOT absent; finding 1b was written against an older
+  # state and is already closed for §3. No §3 rows were added or duplicated
+  # here: adding clause-level rows beside the existing section-level ones would
+  # double-count the same requirement in every by-kind and drift total, which
+  # is exactly the integrity property this ledger exists to protect.
+  #
+  # What WAS a real gap: SRS §4 (External Interface Requirements) had no `fr`
+  # row at all, despite §4.1/§4.2 being genuine functional requirements — only
+  # §5 is non-functional. The 7 rows below close that gap. Each is a literal
+  # bullet from §4.1 / §4.2 of
+  # docs/product/software-requirements-specification.md; `refs.srs` cites the
+  # section and the id mirrors the SRS numbering.
+  #
+  # GRANULARITY (deliberate, not accidental): §3 is recorded per-section by the
+  # earlier backfill; §4 is recorded per-clause because its bullets genuinely
+  # diverge — §4.2's GSI interface ships today while its Gemini interface is
+  # explicitly unwired, and a single rolled-up §4.2 row would hide that.
+  #
+  # refs.code/tests/review are EMPTY on every row: mapping an SRS interface
+  # clause onto implementing code is a judgement call, not an extraction, so
+  # per the task rule no evidence was invented. claimed_status is `doc-only`
+  # throughout, which is what these rows structurally compute to.
+  #
+  # phase_target is DERIVED, not sourced (`phase_source: heuristic`) so the
+  # ledger renders it as an assumption — with ONE exception: fr-4.2.2, where
+  # the SRS itself says "ยังไม่ได้ wire — เป็น Phase-4 target" -> phase_source: derived.
+
+  - id: fr-4.1.1
+    title: "Dashboard uses premium-dark #08090c with an ice aluminium translucent frame"
+    kind: fr
+    phase_target: P6
+    phase_source: heuristic
+    claimed_status: doc-only
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ["§4.1.1"]
+      code: []
+      tests: []
+      review: []
+
+  - id: fr-4.1.2
+    title: "Every module is controlled through discrete modular panels"
+    kind: fr
+    phase_target: P6
+    phase_source: heuristic
+    claimed_status: doc-only
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ["§4.1.2"]
+      code: []
+      tests: []
+      review: []
+
+  - id: fr-4.1.3
+    title: "Global hotkeys for quick commands (e.g. Alt+M for an instant situation summary)"
+    kind: fr
+    phase_target: P6
+    phase_source: heuristic
+    claimed_status: doc-only
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ["§4.1.3"]
+      code: []
+      tests: []
+      review: []
+
+  - id: fr-4.2.1
+    title: "Dota 2 GSI engine connected via local HTTP POST on port 3000"
+    kind: fr
+    phase_target: P6
+    phase_source: heuristic
+    claimed_status: doc-only
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ["§4.2.1"]
+      code: []
+      tests: []
+      review: []
+
+  - id: fr-4.2.2
+    title: "Cloud cognitive engine via Gemini API — SRS marks this explicitly as a Phase-4 target, not yet wired"
+    kind: fr
+    phase_target: P4
+    phase_source: doc
+    claimed_status: doc-only
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ["§4.2.2"]
+      code: []
+      tests: []
+      review: []
+
+  - id: fr-4.2.3
+    title: "TTS module: high-frequency responsive speech with a voice-actor-like tone"
+    kind: fr
+    phase_target: P6
+    phase_source: heuristic
+    claimed_status: doc-only
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ["§4.2.3"]
+      code: []
+      tests: []
+      review: []
+
+  - id: fr-4.2.4
+    title: "STT module for G-Voice push-to-talk, supporting Thai and English"
+    kind: fr
+    phase_target: P4
+    phase_source: heuristic
+    claimed_status: doc-only
+    source: bootstrap-extraction
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ["§4.2.4"]
       code: []
       tests: []
       review: []

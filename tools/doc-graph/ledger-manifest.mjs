@@ -243,11 +243,15 @@ export function loadManifest(path) {
 
     // phase_source (optional): where phase_target came from. 'doc' = an
     // explicit **Phase:** line in the row's FEAT doc / a documented meaning;
-    // 'heuristic' = the bootstrap badge->phase guess (G3.5 review finding 3:
-    // heuristics must render marked, never as fact).
-    if ('phase_source' in entry && !['doc', 'heuristic'].includes(entry.phase_source)) {
+    // 'heuristic' and 'derived' both = a guess (the bootstrap badge->phase
+    // heuristic, or any other non-sourced value). G3.5 review finding 3:
+    // guesses must render marked, never as fact. G3.5-T6: a `doc` claim is
+    // only HONOURED when the row has a resolvable docs ref that could carry
+    // the phase statement — ledger.mjs downgrades an unbacked claim to
+    // derived rather than trusting the label.
+    if ('phase_source' in entry && !['doc', 'heuristic', 'derived'].includes(entry.phase_source)) {
       throw new Error(
-        `Entry #${idx} (${entry.id}): invalid phase_source "${entry.phase_source}", must be doc|heuristic`
+        `Entry #${idx} (${entry.id}): invalid phase_source "${entry.phase_source}", must be doc|heuristic|derived`
       );
     }
 
