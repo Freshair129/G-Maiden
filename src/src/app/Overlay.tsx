@@ -150,6 +150,10 @@ export const Overlay: React.FC = () => {
       if ((!e.payload.bannerData && !e.payload.clip) || !sRef.current.killVisuals) return
       if (killTimer.current) { clearTimeout(killTimer.current); killTimer.current = null }
       setKillBanner(null)
+      // Consolidation (Boss 2026-07-20): the banner carries the transcript +
+      // waveform for this same event — drop the voice toast so the player never
+      // reads the same line twice on screen.
+      setToast(null)
       if (packBannerTimer.current) clearTimeout(packBannerTimer.current)
       setPackBanner({ phase: 'show', url: e.payload.bannerData, text: e.payload.bannerText, thai: e.payload.thai, clip: e.payload.clip })
       packBannerTimer.current = setTimeout(() => {
@@ -319,6 +323,29 @@ export const Overlay: React.FC = () => {
     }
   }, [tick?.alive])
 
+  // Post-match reset (Boss 2026-07-20: "จบแมตช์แล้ว overlay ไม่ reset, buyback ค้าง").
+  // A match that ends while the player is dead never produces the respawn edge
+  // above, so every transient panel would linger over the post-game screen (and
+  // the next match's pre-game). Clear them all on the in_game falling edge.
+  const prevInGame = useRef(false)
+  useEffect(() => {
+    // gsiActive matters too: if Dota is killed mid-match the last tick stays
+    // frozen at in_game=true and only the watchdog notices.
+    const now = !!tick && tick.in_game && gsiActive
+    if (prevInGame.current && !now) {
+      setBuyback(null)
+      setOverlayAdvice(null)
+      setGank(null)
+      setMissingHeroes(new Set())
+      setToast(null)
+      setKillBanner(null)
+      setPackBanner(null)
+      killStreak.current = 0
+      lastKillHeroes.current.clear()
+    }
+    prevInGame.current = now
+  }, [tick?.in_game, gsiActive])
+
   // Auto-advice (G-Master proactive). Fires Claude Plan request + speaks the
   // result on key moments: ult level milestones and a death-streak (2 deaths
   // within 5 clock-min). Per-trigger cooldown 10 clock-min; server-side
@@ -452,7 +479,10 @@ export const Overlay: React.FC = () => {
     const a = buyback.advice
     const accent = a.urgency === 'Strong' ? C.bad : a.urgency === 'Consider' ? C.warn : C.ice
     const verdict = a.recommend_buyback ? (a.urgency === 'Strong' ? 'ซื้อเกิดเลย!' : 'ควรซื้อเกิด') : 'รอเกิด'
-    const secs = Math.max(0, Math.round(a.natural_respawn_remaining))
+    // Live GSI countdown over the frozen at-death snapshot (parity with FullOverlay).
+    const secs = tick && !tick.alive && tick.respawn_seconds > 0
+      ? tick.respawn_seconds
+      : Math.max(0, Math.round(a.natural_respawn_remaining))
     return (
       <div style={{
         ...overlayPanel(s.opacity), padding: '10px 16px', maxWidth: 380, fontSize: 13,

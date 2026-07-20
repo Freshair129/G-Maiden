@@ -153,9 +153,33 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
     }
   }, [])
 
+  // Hydrate from the backend settings file once on boot (Boss 2026-07-20:
+  // layout "ปิดเปิดเกมมาก็หาย"). localStorage is per-webview-ORIGIN, so dev
+  // (:5173) and production (tauri://localhost) each kept their own copy and
+  // switching builds looked like the layout vanished. The Rust-side file at
+  // %LOCALAPPDATA%\G-Maiden\settings.json is origin-independent and wins when
+  // present; the persist effect below then keeps both stores in sync (first
+  // run with no file yet = seeded from whatever localStorage had).
+  const hydrated = useRef(false)
+  useEffect(() => {
+    void (async () => {
+      try {
+        const raw = await invoke<string | null>('load_settings_file')
+        if (raw) {
+          const parsed = JSON.parse(raw) as Partial<Settings>
+          setS((prev) => ({ ...prev, ...parsed, uiMode: 'full' }))
+        }
+      } catch { /* plain-browser dev / command unavailable — localStorage seed stands */ }
+      hydrated.current = true
+    })()
+  }, [])
+
   // persist + broadcast + apply overlay visibility on any change
   useEffect(() => {
     localStorage.setItem('gm-settings', JSON.stringify(s))
+    // Mirror to the origin-independent backend file — but not before hydration
+    // resolves, or the localStorage seed would clobber the file's newer copy.
+    if (hydrated.current) void invoke('save_settings_file', { json: JSON.stringify(s) }).catch(() => {})
     void emit('settings', s)
     void invoke('set_overlay_visible', { visible: s.overlayVisible }).catch(() => {})
   }, [s])

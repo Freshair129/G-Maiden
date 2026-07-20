@@ -21,6 +21,10 @@ export interface GameTick {
   hero: string
   level: number
   alive: boolean
+  /** GSI `hero.respawn_seconds` — live respawn countdown, 0 while alive.
+   *  Rust has carried this since G-Revive; declared here so the buyback card
+   *  can count down with the real timer instead of a frozen snapshot. */
+  respawn_seconds: number
   hp_percent: number
   mana_percent: number
   kill_list_len: number

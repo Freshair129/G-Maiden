@@ -62,32 +62,36 @@ export const MODULE_META: { id: ModuleId; label: string }[] = [
 ]
 
 /**
- * Peripheral-first defaults — corners/edges, never over the play area. Stat
- * chips are positioned in a row but OFF by default (Dota already shows them;
- * the user enables + places what they want).
+ * Defaults follow Boss's in-game guide (2026-07-20 screenshot): a stat strip
+ * along the TOP-LEFT edge (the one area Dota leaves empty — its own top bar
+ * of hero portraits starts ≈x35), Maiden presence on the left edge at mid
+ * height, alerts centre but BELOW the portrait bar, verdict cards centre-low
+ * above Dota's bottom HUD. Nothing may sit over the minimap (bottom-left),
+ * the bottom-centre HUD, the item/shop cluster (bottom-right), or the
+ * scoreboard/FPS corner (top-right).
  */
 export const DEFAULT_LAYOUT: Layout = {
-  alert: { x: 50, y: 6, scale: 1, enabled: true },
-  gmeter: { x: 50, y: 14, scale: 1, enabled: true },
-  toast: { x: 50, y: 22, scale: 1, enabled: true },
-  companion: { x: 9, y: 11, scale: 1, enabled: true },
-  advice: { x: 50, y: 88, scale: 1, enabled: true },
-  buyback: { x: 50, y: 78, scale: 1, enabled: true },
-  missing: { x: 88, y: 8, scale: 1, enabled: true },
-  // Ported from the lite overlay — the announcer/persona visuals. Kill &
-  // pack banners share one slot (mutually exclusive), upper-centre where the
-  // in-game kill feed reads. lowhp/vol/standby are transient system cues.
-  banner: { x: 50, y: 30, scale: 1, enabled: true },
-  lowhp: { x: 50, y: 46, scale: 1, enabled: true },
+  alert: { x: 50, y: 12, scale: 1, enabled: true },
+  gmeter: { x: 7, y: 47, scale: 1, enabled: true },
+  toast: { x: 50, y: 19, scale: 1, enabled: true },
+  companion: { x: 7, y: 39, scale: 1, enabled: true },
+  advice: { x: 50, y: 72, scale: 1, enabled: true },
+  buyback: { x: 50, y: 63, scale: 1, enabled: true },
+  missing: { x: 88, y: 12, scale: 1, enabled: true },
+  // Kill & pack banners share one slot (mutually exclusive), upper-centre
+  // where the in-game kill feed reads. lowhp/vol/standby are transient cues.
+  banner: { x: 50, y: 27, scale: 1, enabled: true },
+  lowhp: { x: 50, y: 44, scale: 1, enabled: true },
   vol: { x: 50, y: 92, scale: 1, enabled: true },
   standby: { x: 50, y: 50, scale: 1, enabled: true },
-  clock: { x: 50, y: 4, scale: 1, enabled: false },
-  kda: { x: 20, y: 24, scale: 1, enabled: true },
-  gold: { x: 30, y: 24, scale: 1, enabled: false },
-  gpm: { x: 39, y: 24, scale: 1, enabled: false },
-  xpm: { x: 47, y: 24, scale: 1, enabled: false },
-  nw: { x: 56, y: 24, scale: 1, enabled: false },
-  score: { x: 50, y: 11, scale: 1, enabled: false },
+  // Top-left stat strip per the guide: clock → KDA → gold → GPM → NW, y=4.
+  clock: { x: 5, y: 4, scale: 1, enabled: true },
+  kda: { x: 12, y: 4, scale: 1, enabled: true },
+  gold: { x: 19, y: 4, scale: 1, enabled: true },
+  gpm: { x: 26, y: 4, scale: 1, enabled: true },
+  xpm: { x: 26, y: 10, scale: 1, enabled: false },
+  nw: { x: 32, y: 4, scale: 1, enabled: true },
+  score: { x: 58, y: 4, scale: 1, enabled: false },
   hero: { x: 14, y: 33, scale: 1, enabled: false },
 }
 

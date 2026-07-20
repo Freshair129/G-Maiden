@@ -76,10 +76,11 @@ mod backend {
     const DEBUG_EMIT_INTERVAL_MS: u128 = 200;
 
     /// Cap the rate of the live minimap mirror (`minimap-frame`) — a downscaled
-    /// PNG of the captured minimap sent to the Command Deck (ms) ≈ 3 Hz. The
-    /// mirror only needs to be glanceable, so we keep the encode + base64 + IPC
-    /// cost low against the CPU/RAM budget rather than matching capture cadence.
-    const MINIMAP_FRAME_INTERVAL_MS: u128 = 300;
+    /// PNG of the captured minimap sent to the Command Deck (ms) ≈ 6.7 Hz.
+    /// Raised from 300ms after Boss's in-game feedback (2026-07-20) that 3 Hz
+    /// reads as laggy; the encode + base64 + IPC cost still has to respect the
+    /// CPU/RAM budget, so we don't chase full capture cadence.
+    const MINIMAP_FRAME_INTERVAL_MS: u128 = 150;
     /// Target width (px) the mirrored minimap is downscaled to before PNG-encode.
     /// The real region is ≈15.6% of screen height (≈220–320 px), so this is a
     /// mild shrink that keeps the base64 payload to a few KB.
@@ -140,7 +141,7 @@ mod backend {
         start: Instant,
         /// last debug `minimap-cv` emit (throttled ≈5 Hz).
         last_emit: Instant,
-        /// last live minimap-mirror `minimap-frame` emit (throttled ≈3 Hz).
+        /// last live minimap-mirror `minimap-frame` emit (throttled ≈6.7 Hz).
         last_frame_emit: Instant,
         /// last calibration-buffer feed (≈9 Hz when QA mode on).
         last_calib: Instant,
@@ -716,7 +717,7 @@ mod backend {
                 let _ = state.app.emit("minimap-cv", payload);
             }
 
-            // Live minimap mirror for the Command Deck (throttled ≈3 Hz). Encodes
+            // Live minimap mirror for the Command Deck (throttled ≈6.7 Hz). Encodes
             // the same cropped pixels we just ran CV over — no extra capture. Kept
             // at the tail so it never delays the G-Signal latency path above.
             if state.last_frame_emit.elapsed().as_millis() >= MINIMAP_FRAME_INTERVAL_MS {

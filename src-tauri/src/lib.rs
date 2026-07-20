@@ -496,6 +496,37 @@ fn get_log_dir() -> String {
     log::log_dir().to_string_lossy().to_string()
 }
 
+/// Settings persistence — `%LOCALAPPDATA%\G-Maiden\settings.json`.
+///
+/// localStorage alone loses the overlay layout whenever the webview origin
+/// changes (dev :5173 vs production tauri://localhost are separate stores), so
+/// the Control window mirrors every settings write here and hydrates from this
+/// file on boot. The payload is the frontend's `Settings` JSON, opaque to Rust.
+fn settings_file_path() -> std::path::PathBuf {
+    log::log_dir()
+        .parent()
+        .map(|p| p.to_path_buf())
+        .unwrap_or_else(|| std::path::PathBuf::from("."))
+        .join("settings.json")
+}
+
+#[tauri::command]
+fn save_settings_file(json: String) -> Result<(), String> {
+    let path = settings_file_path();
+    if let Some(dir) = path.parent() {
+        std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
+    }
+    // Write-then-rename so a crash mid-write can't truncate the only copy.
+    let tmp = path.with_extension("json.tmp");
+    std::fs::write(&tmp, json).map_err(|e| e.to_string())?;
+    std::fs::rename(&tmp, &path).map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+fn load_settings_file() -> Option<String> {
+    std::fs::read_to_string(settings_file_path()).ok()
+}
+
 /// Path of the currently-recording match log, or null if no match is active.
 #[tauri::command]
 fn current_match_path() -> Option<String> {
@@ -645,6 +676,8 @@ pub fn run() {
             detect_gsi_setup,
             install_gsi_config,
             get_log_dir,
+            save_settings_file,
+            load_settings_file,
             current_match_path,
             open_log_dir,
             list_match_logs,

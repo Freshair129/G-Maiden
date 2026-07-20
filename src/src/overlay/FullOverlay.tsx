@@ -102,7 +102,9 @@ const G_LEVELS = [
 
 export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, overlayAdvice, buyback, toast, killBanner, packBanner, lowHp, volToast, gsiActive, previewMode }) => {
   const op = s.opacity
-  const inGame = !!tick && tick.in_game
+  // gsiActive guards the stale-tick case: Dota killed mid-match leaves the last
+  // tick frozen at in_game=true — only the watchdog notices the feed died.
+  const inGame = !!tick && tick.in_game && gsiActive
   const t = tick
   const L = s.layout
 
@@ -282,7 +284,10 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
     <div style={{ position: 'fixed', inset: 0, background: 'transparent', pointerEvents: 'none' }}>
       {alert}
       {inGame && M('gmeter', gMeter)}
-      {toastUi && M('toast', toastUi)}
+      {/* Consolidation (Boss 2026-07-20): the announcer banner already carries
+          the transcript + waveform for the same event, so while it's up the
+          voice toast would be a duplicate — banner wins, toast stays hidden. */}
+      {toastUi && !packBanner && M('toast', toastUi)}
       {inGame && M('companion', companion)}
 
       {/* Ported announcer/persona visuals — each now positionable via LayoutEditor */}
@@ -291,7 +296,7 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
       {volUi && M('vol', volUi)}
       {showStandby && M('standby', standbyUi)}
 
-      {overlayAdvice && s.gankVisuals
+      {inGame && overlayAdvice && s.gankVisuals
         ? M('advice', (
             <div style={{ ...glass(op), padding: '12px 18px', maxWidth: 420, fontSize: 13, lineHeight: 1.5 }}>
               <div style={{ fontSize: 10, color: C.ice, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Maiden แนะนำ</div>
@@ -300,12 +305,17 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
           ))
         : null}
 
-      {buyback && s.gankVisuals
+      {inGame && buyback && s.gankVisuals
         ? M('buyback', (() => {
             const a = buyback.advice
             const accent = a.urgency === 'Strong' ? C.bad : a.urgency === 'Consider' ? C.warn : C.ice
             const verdict = a.recommend_buyback ? (a.urgency === 'Strong' ? 'ซื้อเกิดเลย!' : 'ควรซื้อเกิด') : 'รอเกิด'
-            const secs = Math.max(0, Math.round(a.natural_respawn_remaining))
+            // Live countdown: GSI streams hero.respawn_seconds every tick, so
+            // prefer it over the advice's frozen at-death snapshot (Boss
+            // 2026-07-20: "เวลาไม่นับถอยหลัง").
+            const secs = t && !t.alive && t.respawn_seconds > 0
+              ? t.respawn_seconds
+              : Math.max(0, Math.round(a.natural_respawn_remaining))
             return (
               <div style={{ ...glass(op), padding: '12px 18px', maxWidth: 420, fontSize: 13, lineHeight: 1.5, border: `1px solid ${accent}` }}>
                 <div style={{ fontSize: 10, color: accent, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5, display: 'flex', alignItems: 'center', gap: 8 }}>
