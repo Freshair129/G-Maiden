@@ -1,0 +1,66 @@
+name: Ledger verify (--run-tests)
+
+# The FEATURE-LEDGER's 'verified' rung requires actually running the mapped
+# test evidence (tools/doc-graph/ledger-runtests.mjs). The per-PR ci.yml gate
+# deliberately runs WITHOUT --run-tests (cheap, exit contract on structure
+# only); this job runs the full evidence pass on a schedule / on demand.
+#
+# Failure semantics: ledger.mjs exits 1 iff a BLOCKING violation exists.
+# Under --run-tests a mapped cargo/node test that runs RED demotes its row to
+# code+needs-test-or-review, which inflates against the row's claimed
+# code+tests-present -> blocking -> this job fails. So a red run here means
+# real test evidence regressed for a claimed feature, at feature granularity.
+# (Vitest .test.ts refs are evidence-only — not runnable by the runner — and
+# honestly stay "(unrun)"; they can never fail this job.)
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Sunday 20:00 UTC = Monday 03:00 ICT — weekly evidence pass.
+    - cron: '0 20 * * 0'
+
+jobs:
+  ledger-verify:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - uses: dtolnay/rust-toolchain@1.96.0
+
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+
+      # cargo test on src-tauri needs the bundled sidecar staged (tauri-build
+      # validates externalBin on any cargo invocation) — same as ci.yml.
+      - name: Stage gpu-feeder sidecar
+        run: node src-tauri/scripts/stage-gpu-feeder.mjs
+
+      - name: Ledger with real test evidence
+        shell: bash
+        run: |
+          node tools/doc-graph/ledger.mjs --run-tests | tee ledger-run.log
+          status=${PIPESTATUS[0]}
+          {
+            echo '## FEATURE-LEDGER --run-tests'
+            echo '```'
+            grep -E "by computed|by drift|violations:|status-inflation|EXIT" ledger-run.log
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"
+
+      # The runTests=true artifacts are for inspection only — the committed
+      # canonical artifacts stay in no-flag mode (what ci.yml regenerates).
+      - name: Upload verified ledger artifact
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: feature-ledger-run-tests
+          path: |
+            docs/FEATURE-LEDGER.md
+            ledger-run.log
+          retention-days: 30
