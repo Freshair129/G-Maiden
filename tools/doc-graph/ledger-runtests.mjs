@@ -89,7 +89,7 @@ export function mapTestRefToCommand(ref, opts = {}) {
  */
 export function countPasses(kind, stdout) {
   const text = String(stdout ?? '');
-  if (kind === 'cargo') {
+  if (kind === 'cargo-test') {
     // cargo has no implicit file-level test; the summary is trustworthy.
     let total = 0;
     for (const m of text.matchAll(/(\d+) passed/g)) total += Number(m[1]);

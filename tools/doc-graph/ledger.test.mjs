@@ -30,6 +30,7 @@ import {
   STATUS_LADDER,
   GENERATED_MARKER,
 } from './ledger.mjs';
+import { countPasses } from './ledger-runtests.mjs';
 
 // ---------------------------------------------------------------------------
 // Fixture builder
@@ -475,6 +476,44 @@ test('fixture: an invalid phase_source value is rejected', async () => {
     ].join('\n');
     writeFileSync(join(root, 'docs', 'feature-ledger.manifest.yaml'), yaml, 'utf8');
     await assert.rejects(() => run(root), /invalid phase_source "guessed"/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('countPasses parses the REAL runner kinds (cargo-test / node-test)', () => {
+  // Regression: countPasses once matched kind 'cargo' while the mapper emits
+  // 'cargo-test' — every cargo row counted 0 passes and --run-tests demoted
+  // all 15 evidence-complete rows on the real tree.
+  assert.equal(countPasses('cargo-test', 'test result: ok. 3 passed; 0 failed'), 3);
+  assert.equal(
+    countPasses('cargo-test', 'test result: ok. 0 passed\ntest result: ok. 7 passed'),
+    7
+  );
+  assert.equal(countPasses('node-test', '✔ my case (1.23ms)\nℹ pass 1'), 1);
+  assert.equal(countPasses('node-test', 'ok 1 - my case\n# pass 1'), 1);
+  // implicit file-level point only -> hollow
+  assert.equal(countPasses('node-test', 'ok 1 - C:\\x\\hollow.test.mjs\n# pass 1'), 0);
+});
+
+test('fixture: unmappable test refs (vitest .ts) stay "(unrun)" under --run-tests', async () => {
+  // Evidence exists but no ref maps to a runnable command — that is not
+  // "a test failed", so the row must not demote to code+needs-test-or-review.
+  const root = makeFixtureRepo();
+  try {
+    writeFileSync(join(root, 'tests', 'thing.test.ts'), 'export {};\n', 'utf8');
+    writeManifest(root, [
+      {
+        id: 'F-VITEST',
+        refs: {
+          code: ['src/thing.js'],
+          tests: ['tests/thing.test.ts'],
+          review: ['docs/review-record.md'],
+        },
+      },
+    ]);
+    const result = await run(root, { runTests: true });
+    assert.equal(rowById(result, 'F-VITEST').computed, 'code+tests-present (unrun)');
   } finally {
     rmSync(root, { recursive: true, force: true });
   }

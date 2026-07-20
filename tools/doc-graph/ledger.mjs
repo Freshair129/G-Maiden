@@ -355,6 +355,7 @@ export async function runLedger(opts = {}) {
     }
 
     let testPassed = false;
+    let testsRunnable = true;
     if (runTests && entry.exists.code && entry.exists.tests && entry.exists.review) {
       const testRefs = Array.isArray(entry.refs.tests)
         ? entry.refs.tests
@@ -362,10 +363,20 @@ export async function runLedger(opts = {}) {
           ? [entry.refs.tests]
           : [];
       const results = await runTestRefs(testRefs, { cache: testCache, repoRoot });
+      // If NONE of the row's refs are runnable by this runner (e.g. vitest
+      // .test.ts files — real evidence, but only .test.mjs/cargo: map to
+      // commands), the truthful status is still "(unrun)", not the
+      // ran-and-failed demotion. Only rows whose mapped tests actually ran
+      // red drop to code+needs-test-or-review.
+      testsRunnable = results.some((r) => r.mapped);
       testPassed = reachesVerified(entry, results);
     }
     const primaryDocStatus = entry.exists.code ? null : primaryDocStatusFor(entry, repoRoot);
-    const computed = computeStatus(entry.exists, { runTests, testPassed, primaryDocStatus });
+    const computed = computeStatus(entry.exists, {
+      runTests: runTests && testsRunnable,
+      testPassed,
+      primaryDocStatus,
+    });
     const drift = classifyDrift(entry.claimed_status, computed);
     if (drift === 'status-inflation') {
       violations.push({
