@@ -1,6 +1,16 @@
 # TODO / self-note - next session
 
-อัปเดตล่าสุด: **2026-07-20** · **tech-debt batch Phases 1→3f จบทั้ง register + push `origin/main` ถึง `a6a70394`** (multi-agent tiered gates: CI test gates ทุก PR, lockfiles, LICENSE/README, ESLint 9, lib+bin split, latency harness จริง E2E ~178ms p99, event-contract machine-checked, GPU copy 24×, god-file splits ×3, G-Log feedback loop + replay_fit, dead-CSS −33%) — รายงานเต็ม → `.govibe/.brain/session/2026-07-19-B-tech-debt-batch-phases1-3f.md` · ก่อนหน้า (session ขนานวันเดียวกัน): docs sync + ADR-17 → `2026-07-19-docs-governance-rwang-gorch.md`
+อัปเดตล่าสุด: **2026-07-20 (บ่าย) — G-pipeline จบทั้งสาย G1→G3.5**: G3 feature-ledger รันครบ
+cascade (7/7, R-adv PASS) + prune manifest จน authoritative (0 violations) + CI gate
+(`tools/doc-graph/ci-gate.mjs` 4 gates เป็น step แรกใน ci.yml) — **pushed ถึง `6f2d1af0`**.
+G3.5 ปิด 4 findings ของ parallel-review session (grouped MD / 12 fr rows จาก SRS §3 /
+`phase_source`+`P†` / flake=pre-fix NODE_TEST_CONTEXT) — **ค้าง local `7cfc209e`+`12bf96ea`
+ยังไม่ push**. ⚠️ กติกาใหม่: **Rwang tool_guard hook block `git push` จาก agent shell** —
+Boss ต้อง mint: `py "G:/Rwang/orchestrator/governance/tool_guard.py" --mint "git push origin main" --by Boss --ttl 15`
+(หมายเหตุ: `python` ไม่อยู่ใน PATH ของ cmd เปล่า ใช้ `py`). ⚠️ ค้างชี้ขาด: verdict
+"R-adv NEEDS-WORK" ของ session ขนาน vs "R-adv PASS" ที่บันทึกใน run
+`G:/Rwang/runs/g3-feature-ledger-20260720` — Boss ยังไม่ได้เลือก canonical.
+เดิม (เช้า): · **tech-debt batch Phases 1→3f จบทั้ง register + push `origin/main` ถึง `a6a70394`** (multi-agent tiered gates: CI test gates ทุก PR, lockfiles, LICENSE/README, ESLint 9, lib+bin split, latency harness จริง E2E ~178ms p99, event-contract machine-checked, GPU copy 24×, god-file splits ×3, G-Log feedback loop + replay_fit, dead-CSS −33%) — รายงานเต็ม → `.govibe/.brain/session/2026-07-19-B-tech-debt-batch-phases1-3f.md` · ก่อนหน้า (session ขนานวันเดียวกัน): docs sync + ADR-17 → `2026-07-19-docs-governance-rwang-gorch.md`
 
 ## 🔴 งานถัดไปเรียงตาม leverage (2026-07-19)
 
