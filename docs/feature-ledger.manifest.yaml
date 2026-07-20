@@ -58,6 +58,7 @@ entries:
     title: "G-Sentry — fog-of-war monitor (enemies missing from vision)"
     kind: feature
     phase_target: P2
+    phase_source: doc
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -71,6 +72,7 @@ entries:
     title: "G-Motion — heatmap / last-seen positions / gank-route prediction"
     kind: feature
     phase_target: P3
+    phase_source: doc
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -84,6 +86,7 @@ entries:
     title: "G-Signal — real-time gank warning, voice interrupt (hard-latency path)"
     kind: feature
     phase_target: P3
+    phase_source: doc
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -97,6 +100,7 @@ entries:
     title: "G-Master — strategic/financial advisor (skill/item build vs enemy)"
     kind: feature
     phase_target: P5
+    phase_source: doc
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -110,6 +114,7 @@ entries:
     title: "G-Sensory — overlay render + capture + hardware optimization"
     kind: feature
     phase_target: P6
+    phase_source: doc
     claimed_status: doc-only
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -123,6 +128,7 @@ entries:
     title: "G-Log — feedback loop, local decision/outcome logging"
     kind: feature
     phase_target: P6
+    phase_source: doc
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -137,6 +143,7 @@ entries:
     title: "DXGI desktop-duplication capture"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -150,6 +157,7 @@ entries:
     title: "WGC capture (rollback path, --features wgc only)"
     kind: feature
     phase_target: P5
+    phase_source: heuristic
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -163,6 +171,7 @@ entries:
     title: "Minimap CV detector (ONNX)"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -176,6 +185,7 @@ entries:
     title: "Draft-CV (pick-screen roster reader)"
     kind: feature
     phase_target: P3
+    phase_source: heuristic
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -189,6 +199,7 @@ entries:
     title: "Scoreboard OCR (enemy Net Worth)"
     kind: feature
     phase_target: P3
+    phase_source: heuristic
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -203,6 +214,7 @@ entries:
     title: "Announcer packs (fire -> banner -> resolve -> TTS)"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -216,6 +228,7 @@ entries:
     title: "G-Master self-burst / damage model"
     kind: feature
     phase_target: P3
+    phase_source: doc
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -229,6 +242,7 @@ entries:
     title: "Cognitive backends (cloud / local)"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -242,6 +256,7 @@ entries:
     title: "G-Revive (buyback advice)"
     kind: feature
     phase_target: P5
+    phase_source: doc
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -256,6 +271,7 @@ entries:
     title: "GSI server (:3000)"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -269,6 +285,7 @@ entries:
     title: "Item / net-worth derivation"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -282,6 +299,7 @@ entries:
     title: "GSI config detect/install"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -295,6 +313,7 @@ entries:
     title: "Identity / Steam link"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -308,6 +327,7 @@ entries:
     title: "OAuth callback (login)"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -321,6 +341,7 @@ entries:
     title: "Secret store (DPAPI)"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -334,6 +355,7 @@ entries:
     title: "GPU telemetry governor"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -347,6 +369,7 @@ entries:
     title: "Claude quota stats"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -360,6 +383,7 @@ entries:
     title: "Calibration (QA evidence)"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -373,6 +397,7 @@ entries:
     title: "Utterance ledger emit (CR-011)"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -386,6 +411,7 @@ entries:
     title: "Global hotkeys / updater / window routing"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -400,6 +426,7 @@ entries:
     title: "Dashboard (nav page)"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -413,6 +440,7 @@ entries:
     title: "Live (nav page: [สด | บิลด์])"
     kind: feature
     phase_target: P5
+    phase_source: heuristic
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -426,6 +454,7 @@ entries:
     title: "Voice (nav page: คลังของฉัน / ไอเทม / ตัวแก้ไข)"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -439,6 +468,7 @@ entries:
     title: "G-Store (nav page: [ร้านค้า | กระเป๋า | คลัง | บันทึก])"
     kind: feature
     phase_target: P5
+    phase_source: heuristic
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -452,6 +482,7 @@ entries:
     title: "Insights (nav page: [ภาพรวม | ประวัติ])"
     kind: feature
     phase_target: P5
+    phase_source: heuristic
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -465,6 +496,7 @@ entries:
     title: "Account (nav page: บัญชี / กระเป๋า / ประวัติธุรกรรม)"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -478,6 +510,7 @@ entries:
     title: "Settings (nav page: iOS split view)"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -492,6 +525,7 @@ entries:
     title: "Live wiring -> Tauri events"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -505,6 +539,7 @@ entries:
     title: "Accounts / GID"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -518,6 +553,7 @@ entries:
     title: "Economy / G-Store"
     kind: feature
     phase_target: P5
+    phase_source: heuristic
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -531,6 +567,7 @@ entries:
     title: "Maiden Line command palette (Ctrl+K)"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -544,6 +581,7 @@ entries:
     title: "ON AIR utterance console"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -557,6 +595,7 @@ entries:
     title: "Phase axis (standby -> prep -> live -> debrief)"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -570,6 +609,7 @@ entries:
     title: "In-app updater"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -583,6 +623,7 @@ entries:
     title: "Overlay Combat HUD + announcer banner"
     kind: feature
     phase_target: P6
+    phase_source: heuristic
     claimed_status: code+tests-present
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -597,6 +638,7 @@ entries:
     title: "G-Voice — two-way voice (PTT -> STT -> Cloud Brain -> TTS)"
     kind: feature
     phase_target: P4
+    phase_source: doc
     claimed_status: doc-only
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -610,6 +652,7 @@ entries:
     title: "G-Memory — persistent cross-match player memory"
     kind: feature
     phase_target: P6
+    phase_source: doc
     claimed_status: doc-only
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -623,6 +666,7 @@ entries:
     title: "G-Coach — post-match deep review, top-3 improvement points"
     kind: feature
     phase_target: P6
+    phase_source: doc
     claimed_status: doc-only
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -636,6 +680,7 @@ entries:
     title: "G-Mind — cognitive model router / LLM switcher"
     kind: feature
     phase_target: P4
+    phase_source: doc
     claimed_status: in-code
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -649,6 +694,7 @@ entries:
     title: "G-Persona — tone & verbosity presets"
     kind: feature
     phase_target: P6
+    phase_source: doc
     claimed_status: doc-only
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -662,6 +708,7 @@ entries:
     title: "G-Stream — streamer co-host mode"
     kind: feature
     phase_target: P6
+    phase_source: doc
     claimed_status: doc-only
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -675,6 +722,7 @@ entries:
     title: "Gemini cloud engine (original design target, superseded)"
     kind: feature
     phase_target: P1
+    phase_source: heuristic
     claimed_status: doc-only
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
@@ -689,6 +737,7 @@ entries:
     title: "G-Signal end-to-end latency (target 250ms, never exceed 300ms)"
     kind: nfr
     phase_target: P6
+    phase_source: doc
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
@@ -701,6 +750,7 @@ entries:
     title: "Background CPU usage <= 2.5% on a mid-range chipset"
     kind: nfr
     phase_target: P6
+    phase_source: doc
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
@@ -713,6 +763,7 @@ entries:
     title: "RAM budget <= 400MB with all modules active"
     kind: nfr
     phase_target: P6
+    phase_source: doc
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
@@ -725,6 +776,7 @@ entries:
     title: "Overlay FPS impact <= 3% drop; must not obscure minimap/skill bar/stats"
     kind: nfr
     phase_target: P6
+    phase_source: doc
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
@@ -737,6 +789,7 @@ entries:
     title: "Resilience — G-Sentry + G-Signal keep running on local SLM on cloud/network loss"
     kind: nfr
     phase_target: P6
+    phase_source: doc
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
@@ -749,10 +802,171 @@ entries:
     title: "Privacy — G-Log/live match state/CV detections stay local-only, CV never leaves the machine"
     kind: nfr
     phase_target: P6
+    phase_source: doc
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: []
       srs: [docs/product/software-requirements-specification.md]
+      code: []
+      tests: []
+      review: []
+
+  # --- Functional requirements (G3.5 backfill): one row per SRS §3.x,
+  # evidence mirrored from the implementing feature row above — an FR is
+  # satisfied exactly as far as its implementation's evidence goes. ---
+  - id: fr-3.1
+    title: "SRS §3.1 G-Sentry (Fog of War Monitor)"
+    kind: fr
+    phase_target: P2
+    phase_source: doc
+    claimed_status: code+needs-test-or-review
+    source: fr-backfill 2026-07-20 (mirrors 1.1-g-sentry evidence)
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ['§3.1']
+      code: [src-tauri/src/sentry.rs]
+      tests: [cargo:sentry::tests::]
+      review: []
+  - id: fr-3.2
+    title: "SRS §3.2 G-Motion (Strategy & Heatmap Prediction)"
+    kind: fr
+    phase_target: P3
+    phase_source: doc
+    claimed_status: in-code
+    source: fr-backfill 2026-07-20 (mirrors 1.1-g-motion evidence)
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ['§3.2']
+      code: [src-tauri/src/motion.rs]
+      tests: []
+      review: []
+  - id: fr-3.3
+    title: "SRS §3.3 G-Signal (Real-time Gank Warning with Voice Interrupt)"
+    kind: fr
+    phase_target: P3
+    phase_source: doc
+    claimed_status: code+tests-present
+    source: fr-backfill 2026-07-20 (mirrors 1.1-g-signal evidence)
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ['§3.3']
+      code: [src-tauri/src/signal.rs, src-tauri/src/capture.rs]
+      tests: [cargo:signal::tests::, cargo:capture::backend::tests::]
+      review: [docs/audits/2026-07-07-independent-full-audit.md, docs/change request/CR-001-REVIEW-and-execution-plan.md]
+  - id: fr-3.4
+    title: "SRS §3.4 G-Master (Strategic & Financial Advisor)"
+    kind: fr
+    phase_target: P5
+    phase_source: doc
+    claimed_status: code+tests-present
+    source: fr-backfill 2026-07-20 (mirrors 1.1-g-master evidence)
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ['§3.4']
+      code: [src-tauri/src/master.rs, src-tauri/src/counter_advice.rs]
+      tests: [cargo:master::tests::, cargo:counter_advice::tests::]
+      review: [docs/audits/2026-07-07-independent-full-audit.md]
+  - id: fr-3.5
+    title: "SRS §3.5 G-Sensory (Overlay & Hardware Optimization)"
+    kind: fr
+    phase_target: P6
+    phase_source: doc
+    claimed_status: doc-only
+    source: fr-backfill 2026-07-20 (mirrors 1.1-g-sensory evidence)
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ['§3.5']
+      code: []
+      tests: []
+      review: []
+  - id: fr-3.6
+    title: "SRS §3.6 G-Log (Feedback Loop Analysis)"
+    kind: fr
+    phase_target: P6
+    phase_source: doc
+    claimed_status: code+needs-test-or-review
+    source: fr-backfill 2026-07-20 (mirrors 1.1-g-log evidence)
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ['§3.6']
+      code: [src-tauri/src/log.rs]
+      tests: [cargo:log::tests::]
+      review: []
+  - id: fr-3.7
+    title: "SRS §3.7 G-Voice (Two-Way Voice Conversation) — Priority: P0"
+    kind: fr
+    phase_target: P4
+    phase_source: doc
+    claimed_status: doc-only
+    source: fr-backfill 2026-07-20 (mirrors 3-g-voice evidence)
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ['§3.7']
+      code: []
+      tests: []
+      review: []
+  - id: fr-3.8
+    title: "SRS §3.8 G-Memory (Persistent Player Memory) — Priority: P0"
+    kind: fr
+    phase_target: P6
+    phase_source: doc
+    claimed_status: doc-only
+    source: fr-backfill 2026-07-20 (mirrors 3-g-memory evidence)
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ['§3.8']
+      code: []
+      tests: []
+      review: []
+  - id: fr-3.9
+    title: "SRS §3.9 G-Coach (Post-Match Deep Review) — Priority: P1"
+    kind: fr
+    phase_target: P6
+    phase_source: doc
+    claimed_status: doc-only
+    source: fr-backfill 2026-07-20 (mirrors 3-g-coach evidence)
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ['§3.9']
+      code: []
+      tests: []
+      review: []
+  - id: fr-3.10
+    title: "SRS §3.10 G-Mind (Cognitive Model Router) — Priority: P1"
+    kind: fr
+    phase_target: P4
+    phase_source: doc
+    claimed_status: in-code
+    source: fr-backfill 2026-07-20 (mirrors 3-g-mind evidence)
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ['§3.10']
+      code: [src-tauri/src/master.rs]
+      tests: []
+      review: []
+  - id: fr-3.11
+    title: "SRS §3.11 G-Persona (Tone & Verbosity Presets) — Priority: P2"
+    kind: fr
+    phase_target: P6
+    phase_source: doc
+    claimed_status: doc-only
+    source: fr-backfill 2026-07-20 (mirrors 3-g-persona evidence)
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ['§3.11']
+      code: []
+      tests: []
+      review: []
+  - id: fr-3.12
+    title: "SRS §3.12 G-Stream (Streamer Co-host Mode) — Priority: P2"
+    kind: fr
+    phase_target: P6
+    phase_source: doc
+    claimed_status: doc-only
+    source: fr-backfill 2026-07-20 (mirrors 3-g-stream evidence)
+    refs:
+      docs: [docs/product/software-requirements-specification.md]
+      srs: ['§3.12']
       code: []
       tests: []
       review: []

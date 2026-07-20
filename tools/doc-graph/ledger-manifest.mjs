@@ -234,11 +234,21 @@ export function loadManifest(path) {
     seenIds.add(entry.id);
 
     // Check for unknown keys at entry level
-    const KNOWN_ENTRY_KEYS = new Set([...REQUIRED_FIELDS, 'claimed_status', 'source']);
+    const KNOWN_ENTRY_KEYS = new Set([...REQUIRED_FIELDS, 'claimed_status', 'source', 'phase_source']);
     for (const key in entry) {
       if (!KNOWN_ENTRY_KEYS.has(key)) {
         throw new Error(`Entry #${idx}: unknown key "${key}"`);
       }
+    }
+
+    // phase_source (optional): where phase_target came from. 'doc' = an
+    // explicit **Phase:** line in the row's FEAT doc / a documented meaning;
+    // 'heuristic' = the bootstrap badge->phase guess (G3.5 review finding 3:
+    // heuristics must render marked, never as fact).
+    if ('phase_source' in entry && !['doc', 'heuristic'].includes(entry.phase_source)) {
+      throw new Error(
+        `Entry #${idx} (${entry.id}): invalid phase_source "${entry.phase_source}", must be doc|heuristic`
+      );
     }
 
     // Validate kind

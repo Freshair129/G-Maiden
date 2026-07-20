@@ -268,20 +268,37 @@ function renderLedgerMd(rows, summary, violations, meta) {
     lines.push('');
   }
 
-  // --- Full table ------------------------------------------------------
+  // --- Full tables, grouped by kind (epic DoD: features, FRs, NFRs) ----
   lines.push('## Ledger');
   lines.push('');
-  lines.push('| ID | Title | Kind | Phase | Computed | Claimed | Drift | Evidence gaps | Source |');
-  lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
-  for (const r of rows) {
-    const gaps = r.gaps.length ? r.gaps.join(', ') : '—';
-    const claimed = r.claimed ?? '—';
-    lines.push(
-      `| ${mdEscape(r.id)} | ${mdEscape(r.title)} | ${r.kind} | ${r.phase_target} | ${r.computed} | ` +
-        `${mdEscape(claimed)} | ${r.drift} | ${gaps} | ${mdEscape(r.source ?? '—')} |`
-    );
-  }
+  lines.push(
+    '> † = `phase_target` is a bootstrap badge-heuristic (`phase_source: heuristic` in the ' +
+      'manifest), not a sourced roadmap phase — treat as provisional until confirmed.'
+  );
   lines.push('');
+  const GROUPS = [
+    ['feature', 'Features'],
+    ['fr', 'Functional requirements (FR)'],
+    ['nfr', 'Non-functional requirements (NFR)'],
+  ];
+  for (const [kind, heading] of GROUPS) {
+    const group = rows.filter((r) => r.kind === kind);
+    if (group.length === 0) continue;
+    lines.push(`### ${heading}`);
+    lines.push('');
+    lines.push('| ID | Title | Kind | Phase | Computed | Claimed | Drift | Evidence gaps | Source |');
+    lines.push('| --- | --- | --- | --- | --- | --- | --- | --- | --- |');
+    for (const r of group) {
+      const gaps = r.gaps.length ? r.gaps.join(', ') : '—';
+      const claimed = r.claimed ?? '—';
+      const phase = r.phase_source === 'heuristic' ? `${r.phase_target}†` : r.phase_target;
+      lines.push(
+        `| ${mdEscape(r.id)} | ${mdEscape(r.title)} | ${r.kind} | ${phase} | ${r.computed} | ` +
+          `${mdEscape(claimed)} | ${r.drift} | ${gaps} | ${mdEscape(r.source ?? '—')} |`
+      );
+    }
+    lines.push('');
+  }
   return lines.join('\n');
 }
 
@@ -370,6 +387,7 @@ export async function runLedger(opts = {}) {
       title: entry.title,
       kind: entry.kind,
       phase_target: entry.phase_target,
+      phase_source: entry.phase_source ?? null,
       computed,
       claimed: entry.claimed_status ?? null,
       drift,
@@ -410,6 +428,7 @@ export async function runLedger(opts = {}) {
       id: r.id,
       kind: r.kind,
       phase_target: r.phase_target,
+      phase_source: r.phase_source,
       computed: r.computed,
       claimed: r.claimed,
       drift: r.drift,

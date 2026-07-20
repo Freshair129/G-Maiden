@@ -415,6 +415,71 @@ test('fixture: duplicate manifest ids are rejected', async () => {
   }
 });
 
+test('fixture: MD groups rows into per-kind sections; heuristic phases render †', async () => {
+  // G3.5 review findings 1+3: DoD says grouped (features, FRs, NFRs), and a
+  // badge-heuristic phase_target must render marked, never as fact.
+  const root = makeFixtureRepo();
+  try {
+    const yaml = [
+      'entries:',
+      '  - id: F-FEAT',
+      '    title: A feature',
+      '    kind: feature',
+      '    phase_target: P5',
+      '    phase_source: heuristic',
+      '    refs:',
+      '      code: [src/thing.js]',
+      '  - id: FR-ONE',
+      '    title: An FR',
+      '    kind: fr',
+      '    phase_target: P3',
+      '    phase_source: doc',
+      '    refs:',
+      '      code: [src/thing.js]',
+      '  - id: N-ONE',
+      '    title: An NFR',
+      '    kind: nfr',
+      '    phase_target: P6',
+      '    refs:',
+      '      docs: [docs/draft-doc.md]',
+      '',
+    ].join('\n');
+    writeFileSync(join(root, 'docs', 'feature-ledger.manifest.yaml'), yaml, 'utf8');
+    const result = await run(root);
+    assert.equal(result.exitCode, 0);
+    const md = readFileSync(join(root, 'docs', 'FEATURE-LEDGER.md'), 'utf8');
+    const fi = md.indexOf('### Features');
+    const ri = md.indexOf('### Functional requirements (FR)');
+    const ni = md.indexOf('### Non-functional requirements (NFR)');
+    assert.ok(fi > -1 && ri > fi && ni > ri, 'three kind sections in order');
+    assert.match(md, /\| F-FEAT \|.*\| P5† \|/); // heuristic -> marked
+    assert.match(md, /\| FR-ONE \|.*\| P3 \|/); // doc-sourced -> plain
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
+test('fixture: an invalid phase_source value is rejected', async () => {
+  const root = makeFixtureRepo();
+  try {
+    const yaml = [
+      'entries:',
+      '  - id: F-BAD',
+      '    title: Bad phase source',
+      '    kind: feature',
+      '    phase_target: P5',
+      '    phase_source: guessed',
+      '    refs:',
+      '      code: [src/thing.js]',
+      '',
+    ].join('\n');
+    writeFileSync(join(root, 'docs', 'feature-ledger.manifest.yaml'), yaml, 'utf8');
+    await assert.rejects(() => run(root), /invalid phase_source "guessed"/);
+  } finally {
+    rmSync(root, { recursive: true, force: true });
+  }
+});
+
 test('fixture: missing manifest throws (CLI maps this to fatal exit 2)', async () => {
   const root = mkdtempSync(join(tmpdir(), 'g3-ledger-'));
   try {
