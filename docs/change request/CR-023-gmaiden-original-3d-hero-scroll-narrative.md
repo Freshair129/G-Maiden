@@ -1,11 +1,14 @@
 ---
-version: "0.7.0b"
+version: "0.7.1b"
 title: "CR-023: G-Maiden Original 3D Hero and Scroll Narrative"
 doc_id: "CR-023-gmaiden-original-3d-hero-scroll-narrative"
 created_at: "2026-07-21T18:20:00+07:00,ATHER"
 last_update: "2026-07-21T19:50:00+07:00,ATHER"
+updated: "2026-07-21"
 owner: "Boss"
-status: "beta"
+approved_by: "Boss"
+approved_date: "2026-07-21"
+status: "accepted"
 superseded_by: null
 attributes:
   doc_type: "change-request"
@@ -160,6 +163,7 @@ existing 3 MB GLB / 2 MB texture transfer limits through baked maps and restrain
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
+| 0.7.1b | 2026-07-21 | accepted | Added the pinned doc-graph `updated` and approval metadata and mapped the approved beta lifecycle to canonical `accepted`; no requirement changed. | null | ATHER |
 | 0.7.0b | 2026-07-21 | beta | Recorded that the first cinematic base assembly is an editable technical study but does not meet the semi-realistic quality gate; blocked export and landing use pending an approved character-authoring route. | null | ATHER |
 | 0.6.0b | 2026-07-21 | beta | Created and stored a semi-realistic cinematic concept reference for the approved original direction; explicitly kept it as non-shipping 2D reference material. | null | ATHER |
 | 0.5.0b | 2026-07-21 | beta | Approved semi-realistic cinematic art direction for a new review-pending prototype while preserving original-asset, performance, and export gates. | null | ATHER |

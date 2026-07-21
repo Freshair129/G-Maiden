@@ -1,11 +1,14 @@
 ---
-version: "0.8.0b"
+version: "0.8.1b"
 title: "CR-024: G-Maiden 3D Studio and Portable Blender Toolchain"
 doc_id: "CR-024-gmaiden-3d-studio-and-portable-blender"
 created_at: "2026-07-21T19:30:00+07:00,ATHER"
 last_update: "2026-07-21T19:40:00+07:00,ATHER"
+updated: "2026-07-21"
 owner: "Boss"
-status: "beta"
+approved_by: "Boss"
+approved_date: "2026-07-21"
+status: "accepted"
 superseded_by: null
 attributes:
   doc_type: "change-request"
@@ -164,6 +167,7 @@ publish/deploy tool is permitted.
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
+| 0.8.1b | 2026-07-21 | accepted | Added the pinned doc-graph `updated` and approval metadata and mapped the approved beta lifecycle to canonical `accepted`; no requirement changed. | null | ATHER |
 | 0.8.0b | 2026-07-21 | beta | Stored a generated semi-realistic concept reference under the G: Studio source-reference boundary; it has no export, deployment, or production approval. | null | ATHER |
 | 0.7.0b | 2026-07-21 | beta | Approved the semi-realistic cinematic source-prototype iteration while retaining all review, export, and deployment controls. | null | ATHER |
 | 0.6.0b | 2026-07-21 | beta | Generated and visually inspected the first review-pending original character prototype and preview in the G: Studio workspace; export and publish remain disabled. | null | ATHER |

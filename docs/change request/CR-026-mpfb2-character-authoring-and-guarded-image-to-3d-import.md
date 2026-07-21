@@ -1,11 +1,14 @@
 ---
-version: "0.3.0b"
+version: "0.3.1b"
 title: "CR-026: MPFB2 Character Authoring and Guarded Image-to-3D Import"
 doc_id: "CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import"
 created_at: "2026-07-21T20:35:00+07:00,ATHER"
 last_update: "2026-07-21T22:58:00+07:00,ATHER"
+updated: "2026-07-21"
 owner: "Boss"
-status: "beta"
+approved_by: "Boss"
+approved_date: "2026-07-21"
+status: "accepted"
 superseded_by: null
 attributes:
   doc_type: "change-request"
@@ -144,6 +147,7 @@ archive, checksum, licence and audit record. Do not delete source projects or pr
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
+| 0.3.1b | 2026-07-21 | accepted | Added the pinned doc-graph `updated` and approval metadata and mapped the approved beta lifecycle to canonical `accepted`; no requirement changed. | null | ATHER |
 | 0.3.0b | 2026-07-21 | beta | Recorded the verified G:-only MPFB2/system-assets installation, hashes, licence provenance, portable enablement, and handoff into the separately approved CR-028 review gate. | null | ATHER |
 | 0.2.0b | 2026-07-21 | beta | Owner approved the MPFB2 2.0.16 install/provenance boundary and autonomous execution through the downstream CR-028 landing handoff. | null | ATHER |
 | 0.1.1b | 2026-07-21 | candidate | Explicitly preserved the existing Studio review-pending and disabled-export contract. | null | ATHER |
