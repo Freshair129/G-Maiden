@@ -4,6 +4,13 @@ import { Analytics, type BeforeSendEvent } from '@vercel/analytics/react'
 import App from './App'
 import './index.css'
 
+function shouldEnableAnalytics() {
+  if (!import.meta.env.PROD) return false
+
+  const hostname = window.location.hostname
+  return hostname !== 'localhost' && hostname !== '127.0.0.1'
+}
+
 function redactAnalyticsEvent(event: BeforeSendEvent): BeforeSendEvent | null {
   if (event.type !== 'pageview') return null
 
@@ -14,6 +21,6 @@ function redactAnalyticsEvent(event: BeforeSendEvent): BeforeSendEvent | null {
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <App />
-    <Analytics beforeSend={redactAnalyticsEvent} />
+    {shouldEnableAnalytics() ? <Analytics beforeSend={redactAnalyticsEvent} /> : null}
   </React.StrictMode>,
 )

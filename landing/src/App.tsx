@@ -14,8 +14,12 @@ import {
 } from 'lucide-react'
 import { useBetaEnrollment } from './beta'
 import { useGmadAccess } from './gmad'
-import HeroCharacter3D from './HeroCharacter3D'
+import HeroMedia25D from './HeroMedia25D'
 import OpsPage from './OpsPage'
+import privacyNotice from './legal/closed-beta-privacy-notice.md?raw'
+import termsOfUse from './legal/closed-beta-terms-of-use.md?raw'
+import { legalBody } from './legalContent'
+import { useScrollNarrative } from './scrollNarrative'
 
 const NAV_ITEMS = [
   { label: 'ฟีเจอร์', href: '#features' },
@@ -115,12 +119,12 @@ function getOpenBetaCountdown(now: number) {
 }
 
 function LandingPage() {
+  const landingRootRef = useScrollNarrative()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuId = useId()
   const menuButtonRef = useRef<HTMLButtonElement>(null)
   const beta = useBetaEnrollment()
   const gmad = useGmadAccess()
-  const [queueGid, setQueueGid] = useState('')
   const [openBetaCountdown, setOpenBetaCountdown] = useState(() => getOpenBetaCountdown(Date.now()))
 
   const betaBusy = beta.status === 'loading' || beta.status === 'enrolling'
@@ -159,12 +163,10 @@ function LandingPage() {
   const closeMenu = () => setMenuOpen(false)
 
   return (
-    <main className="bg-void text-white">
+    <main ref={landingRootRef} className="scroll-narrative bg-void text-white">
       <div id="hero" className="relative min-h-[100svh] overflow-hidden">
       <div className="hero-art-stage absolute inset-0" aria-hidden="true">
-        <HeroCharacter3D />
-        <div className="hero-depth-haze absolute inset-0" />
-        <div className="hero-particles absolute inset-0" />
+        <HeroMedia25D />
       </div>
 
       <div className="hero-scrim absolute inset-0" aria-hidden="true" />
@@ -366,7 +368,7 @@ function LandingPage() {
           </dl>
         </div>
       </section>
-      <aside className="open-beta-countdown animate-fade-up-delay-3 absolute bottom-8 left-6 right-6 z-30 overflow-hidden bg-[radial-gradient(ellipse_at_center,rgba(65,160,255,0.22),rgba(3,6,11,0.1)_68%)] px-6 py-6 sm:bottom-10 sm:left-10 sm:right-10 lg:bottom-auto lg:left-auto lg:right-12 lg:top-1/2 lg:w-[min(38vw,36rem)] lg:-translate-y-1/2 lg:px-9 lg:py-9" aria-live="polite">
+      <aside className="launch-beacon open-beta-countdown animate-fade-up-delay-3" aria-live="polite">
         <i className="absolute left-0 top-0 h-14 w-14 border-l-2 border-t-2 border-ice-bright shadow-[-0.4rem_-0.4rem_1.5rem_rgba(143,212,255,0.4)]" aria-hidden="true" />
         <i className="absolute right-0 top-0 h-14 w-14 border-r-2 border-t-2 border-ice-bright shadow-[0.4rem_-0.4rem_1.5rem_rgba(143,212,255,0.4)]" aria-hidden="true" />
         <i className="absolute bottom-0 left-0 h-14 w-14 border-b-2 border-l-2 border-ice-bright" aria-hidden="true" />
@@ -379,7 +381,7 @@ function LandingPage() {
           ) : (
             <>
               <p className="font-inter text-xs font-bold uppercase tracking-[0.25em] text-ice-bright">Open Beta // 24 กรกฎาคม · 18:00 น.</p>
-              <p className="mt-3 flex items-baseline justify-between font-inter text-5xl font-black leading-none tracking-[0.04em] text-white [text-shadow:0_0_1.5rem_rgba(143,212,255,0.85)] sm:text-6xl lg:text-7xl">
+              <p className="launch-clock mt-3 flex items-baseline justify-between font-inter font-black leading-none text-white [text-shadow:0_0_1.5rem_rgba(143,212,255,0.85)]">
                 <span>{String(openBetaCountdown.totalHours).padStart(3, '0')}</span><span className="animate-pulse text-ice-bright">:</span><span>{String(openBetaCountdown.minutes).padStart(2, '0')}</span><span className="animate-pulse text-ice-bright">:</span><span>{String(openBetaCountdown.seconds).padStart(2, '0')}</span>
               </p>
               <div className="mt-4 flex items-center justify-between border-t border-ice-bright/60 pt-3 font-inter text-[9px] font-semibold uppercase tracking-[0.22em] text-white/70">
@@ -388,21 +390,31 @@ function LandingPage() {
             </>
           )}
         </div>
+        <a className="launch-beacon-cta" href="#gmad">
+          <span>รับ GID และเช็กคิว Closed Beta</span>
+          <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
+        </a>
       </aside>
       </div>
 
-      <section id="gmad" className="gmad-section" aria-labelledby="gmad-title">
+      <section id="gmad" className="gmad-section" aria-labelledby="gmad-title" data-scroll-reveal>
         <div className="gmad-shell">
           <div>
             <p className="features-kicker"><span aria-hidden="true">//</span> GMAD BETA ACCESS</p>
             <h2 id="gmad-title" className="thai-display">เช็กคิวดาวน์โหลด G‑Maiden Closed Beta</h2>
-            <p>กรอก GID ของคุณเพื่อตรวจสถานะคิว เมื่อถึงรอบ ระบบจะยืนยัน Google account เดียวกันอีกครั้งก่อนออกลิงก์ดาวน์โหลดชั่วคราว</p>
+            <p>เข้าสู่ระบบด้วยบัญชี Google เดิม ระบบจะแสดง GID จากบัญชีและตรวจสิทธิ์จากเซิร์ฟเวอร์โดยอัตโนมัติ</p>
           </div>
-          <form className="gmad-card" onSubmit={(event) => { event.preventDefault(); void gmad.check(queueGid) }}>
-            <label htmlFor="gmad-gid">GID</label>
-            <div className="gmad-input-row"><input id="gmad-gid" value={queueGid} onChange={(event) => setQueueGid(event.target.value)} placeholder={beta.gid || 'G-B…'} autoCapitalize="characters" /><button type="submit" disabled={gmad.state === 'checking'}>{gmad.state === 'checking' ? 'กำลังเช็ก' : 'เช็กคิว'}</button></div>
-            {beta.gid && <button className="gmad-use-own" type="button" onClick={() => setQueueGid(beta.gid)}>ใช้ GID ของฉัน · {beta.gid}</button>}
-            {gmad.state === 'available' && <div className="gmad-result available"><strong>ถึงคิวดาวน์โหลดแล้ว</strong><span>{gmad.batchLabel}</span><label><input type="checkbox" checked={gmad.termsAccepted} onChange={(event) => gmad.setTermsAccepted(event.target.checked)} /> ฉันยอมรับ Closed Beta Terms of Use และรับทราบ Privacy Notice</label><a href="/terms" target="_blank" rel="noreferrer">อ่าน Closed Beta Terms</a><a href="/privacy" target="_blank" rel="noreferrer">อ่าน Privacy Notice</a><button type="button" onClick={() => void gmad.download(queueGid)}>ดาวน์โหลด GMAD</button></div>}
+          <form className="gmad-card" onSubmit={(event) => { event.preventDefault(); void gmad.check() }}>
+            <div className="gmad-input-row"><span>{beta.gid || 'ยังไม่ได้เข้าสู่ระบบ'}</span><button type="submit" disabled={gmad.state === 'checking'}>{gmad.state === 'checking' ? 'กำลังเช็ก' : 'เช็กสิทธิ์ของฉัน'}</button></div>
+            {gmad.state === 'available' && <div className="gmad-result available"><strong>ถึงคิวดาวน์โหลดแล้ว</strong><span>{gmad.batchLabel}</span>
+              <label><input type="checkbox" checked={gmad.termsAccepted} onChange={(event) => gmad.setTermsAccepted(event.target.checked)} /> ฉันยอมรับ Closed Beta Terms of Use และรับทราบ Privacy Notice</label>
+              <label><input type="checkbox" checked={gmad.ageConfirmed} onChange={(event) => gmad.setAgeConfirmed(event.target.checked)} /> ฉันยืนยันว่ามีอายุอย่างน้อย 20 ปี</label>
+              <a href="/terms" target="_blank" rel="noreferrer">อ่าน Closed Beta Terms</a><a href="/privacy" target="_blank" rel="noreferrer">อ่าน Privacy Notice</a>
+              <small>ตัวเลือกต่อไปนี้ไม่บังคับและไม่กระทบสิทธิ์ดาวน์โหลด</small>
+              <label><input type="checkbox" checked={gmad.diagnosticsOptIn} onChange={(event) => gmad.setDiagnosticsOptIn(event.target.checked)} /> อนุญาต diagnostic ที่ไม่รวม raw match/CV/G-Log</label>
+              <label><input type="checkbox" checked={gmad.marketingOptIn} onChange={(event) => gmad.setMarketingOptIn(event.target.checked)} /> รับข่าวสารผลิตภัณฑ์</label>
+              <label><input type="checkbox" checked={gmad.postMatchOptIn} onChange={(event) => gmad.setPostMatchOptIn(event.target.checked)} /> อนุญาตการส่งข้อมูลหลังจบแมตช์เฉพาะเมื่อฉันสั่งส่ง</label>
+              <button type="button" onClick={() => void gmad.download()}>ดาวน์โหลด GMAD</button></div>}
             {gmad.state === 'waiting' && <div className="gmad-result"><strong>ยังไม่ถึงคิวดาวน์โหลด</strong><span>GID ของคุณลงทะเบียนเรียบร้อยแล้ว เราจะแจ้งเมื่อ batch เปิด</span></div>}
             {gmad.state === 'paused' && <div className="gmad-result"><strong>Batch ถูกพักชั่วคราว</strong><span>{gmad.batchLabel}</span></div>}
             {gmad.state === 'signed_out' && <div className="gmad-result"><strong>กรุณาเข้าสู่ระบบ Google ก่อน</strong><button type="button" onClick={() => void beta.register()}>เข้าสู่ระบบ</button></div>}
@@ -412,7 +424,7 @@ function LandingPage() {
         </div>
       </section>
 
-      <section id="features" className="features-section" aria-labelledby="features-title">
+      <section id="features" className="features-section" aria-labelledby="features-title" data-scroll-reveal>
         <div className="features-shell">
           <div className="features-intro">
             <p className="features-kicker"><span aria-hidden="true">//</span> WATCH YOUR BACK</p>
@@ -427,7 +439,7 @@ function LandingPage() {
             {FEATURES.map((feature) => {
               const Icon = feature.icon
               return (
-                <article key={feature.number} className="feature-rail">
+                <article key={feature.number} className="feature-rail" data-scroll-reveal>
                   <div className="feature-index" aria-hidden="true">
                     <span>{feature.number}</span><i />
                   </div>
@@ -455,14 +467,13 @@ function LandingPage() {
 
 function App() {
   if (window.location.pathname === '/ops') return <OpsPage />
-  if (window.location.pathname === '/terms') return <LegalPage title="G-Maiden Closed Beta Terms of Use" document="closed-beta-terms-of-use-draft.md" />
-  if (window.location.pathname === '/privacy') return <LegalPage title="G-Maiden Closed Beta Privacy Notice" document="closed-beta-privacy-notice-draft.md" />
+  if (window.location.pathname === '/terms') return <LegalPage title="G-Maiden Closed Beta Terms of Use" content={termsOfUse} />
+  if (window.location.pathname === '/privacy') return <LegalPage title="G-Maiden Closed Beta Privacy Notice" content={privacyNotice} />
   return <LandingPage />
 }
 
-function LegalPage({ title, document }: { title: string; document: string }) {
-  const url = `https://github.com/Freshair129/G-Maiden/blob/main/docs/product/${document}`
-  return <main className="ops-page"><section className="ops-shell"><p className="ops-kicker">G-MAIDEN CLOSED BETA</p><h1 className="thai-display">{title}</h1><p>Version 0.2.0-beta · Effective 2026-07-21 18:30:56 ICT</p><p>Data controller: G-Maiden · Contact: gmad.support01@gmail.com</p><p>Terms acceptance is required for GMAD download. Optional product, marketing, and post-match consents remain separate and are not required for access.</p><a className="ops-primary" href={url} target="_blank" rel="noreferrer">Read the approved document on GitHub</a><p><a href="/">Return to G-Maiden landing</a></p></section></main>
+function LegalPage({ title, content }: { title: string; content: string }) {
+  return <main className="ops-page"><section className="ops-shell legal-shell"><p className="ops-kicker">G-MAIDEN CLOSED BETA</p><h1 className="thai-display">{title}</h1><p>Version 1.0.0-beta · Effective 2026-07-21 23:05:06 ICT</p><p>Data controller: G-Maiden · Contact: gmad.support01@gmail.com</p><p>Terms acceptance is required for GMAD download. Optional diagnostic, marketing, and post-match consents remain separate and are not required for access.</p><pre className="legal-document">{legalBody(content)}</pre><p><a href="/">Return to G-Maiden landing</a></p></section></main>
 }
 
 export default App

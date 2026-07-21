@@ -1,7 +1,7 @@
 ---
-version: "0.7.0b"
+version: "0.12.1b"
 created_at: "2026-07-20T00:00:00+07:00,ATHER"
-last_update: "2026-07-21T22:42:00+07:00,ATHER"
+last_update: "2026-07-21T06:29:00+07:00,ATHER"
 status: "beta"
 attributes:
   domain: "public-landing"
@@ -11,7 +11,7 @@ attributes:
 
 # G-Maiden Thai-first Landing — Design System
 
-> **Implementation status:** approved and deployed to production for beta validation on 2026-07-20
+> **Implementation status:** CR-029 art-first 2.5D Hero, CR-030 scroll-driven cinematic narrative, CR-031 localized layer motion, and CR-032 scene-depth plus character-rig decomposition scaffold are approved; production deployment requires the recorded visual-QA gate in `landing/design-qa.md`.
 
 ## 1. Objective
 
@@ -25,7 +25,7 @@ display headline 3 บรรทัด, CTA, proof row และ mobile menu over
 ## 2. Complexity and risk
 
 - **Complexity:** C-3 — Architecture-Driven Implementation (`Text → Doc → Diagram → Code`)
-- **Risk:** HIGH — Hero ใช้ reviewed GLB, lazy WebGL runtime, accessibility fallback และ production asset provenance
+- **Risk:** HIGH — Hero ใช้ responsive cinematic key art, provenance manifest, bounded pointer/scroll motion และ production visual-QA gate
 - **Parent alignment:** ใช้ product truth จาก `docs/product/product-requirements.md` และ
   `docs/product/software-requirements-specification.md`
 - **Peer alignment:** ใช้ COLD BOOTH palette จาก `docs/design-system/02-tokens.md` แต่แยก namespace
@@ -47,7 +47,7 @@ display headline 3 บรรทัด, CTA, proof row และ mobile menu over
 
 หน้าเดียวสูง `100svh`/`100dvh` โดยไม่เกิด page scroll ใน viewport ปกติ:
 
-1. Fullscreen looping background video
+1. Fullscreen responsive `<picture>` media with separate desktop/mobile key art
 2. Readability layer แบบ neutral black เฉพาะบริเวณที่จำเป็น ห้าม tint วิดีโอเป็นสีน้ำเงิน
 3. Navbar ด้านบน
 4. Hero content ชิดซ้ายและกึ่งกลางแนวตั้ง
@@ -126,14 +126,73 @@ another condensed display face.
 
 ## 7. Media treatment
 
-- Source: original G-Maiden Ice Mage จาก MPFB2 2.0.16 base และ MakeHuman system assets ที่เป็น CC0; ไม่มี Valve/Dota model, costume, logo หรือ asset
-- Production delivery: GLB `1,625,728 bytes` + transparent WebP fallback `34,400 bytes` ภายใต้ CR-026/CR-028 provenance gate
-- Motion: Three.js lazy-load, baked guardian idle 1 clip, bounded cursor parallax และ passive scroll response
-- Runtime gate: เปิด WebGL เฉพาะ `pointer: fine`, ไม่เปิดเมื่อ `prefers-reduced-motion: reduce` และ fallback อัตโนมัติเมื่อโหลดไม่ได้
-- Fit: character อยู่ฝั่งขวาและไม่รับ pointer event; headline, Countdown และ CTA เป็น semantic HTML นอก canvas
-- Background: CSS-only cold-stage gradient, particle layer และ perspective floor grid; ไม่ใช้ภาพตัวละครเก่าใน production runtime
-- Readability: neutral black left-edge scrim รักษา text-safe zone และ contrast ของ CTA
-- Prohibited: external copyrighted character media, runtime physics, audio, gameplay animation หรือ canvas ที่บัง interaction
+- Source: original G-Maiden cinematic key art generated from the approved internal character target; no Valve/Dota/Crystal Maiden model, costume, logo, footage, or `D:\dota` media is shipped.
+- Production delivery: desktop WebP `81,068 bytes` (`1672 × 941`) and mobile WebP `87,836 bytes` (`941 × 1672`), selected through semantic `<picture>` media under CR-029.
+- Provenance: generation prompt summary, tool, reference hash, output hashes, rights boundary, and production review state live in `G:\G-Maiden-3D-Studio\workspace\gmaiden-ice-mage\source\production-art\gmaiden-2-5d-hero-v1.provenance.json`.
+- Motion: slow ambient media scale plus bounded `requestAnimationFrame` pointer parallax (`≤18px`, `≤0.7deg`) and passive scroll exit (`≤18px`). No character-body deformation claim.
+- Runtime gate: pointer motion runs only for `pointer: fine`; touch and `prefers-reduced-motion: reduce` receive the static responsive image with all decorative transforms disabled.
+- Fit: cinematic subject stays in the media plane and does not receive pointer events; headline, countdown, navigation, and CTA remain semantic HTML above the image.
+- Readability: neutral black directional scrims preserve the left text-safe zone and the dedicated lower-right countdown zone without covering the subject's face or torso.
+- Prohibited: Three.js/WebGL in the Hero, external copyrighted character media, runtime image generation, audio, scroll pinning, or interaction-capturing media.
+
+### 7.1 Scroll-driven cinematic narrative
+
+- CR-030 adds one passive scroll controller for the landing root. It writes bounded progress values
+  only to CSS custom properties and never pins, captures, or changes native browser scrolling.
+- Hero art, scrim, and copy use a short composited exit depth. The Open Beta beacon receives an
+  ice-signal sweep tied to that same bounded progress.
+- GMAD and feature rails are visible by default. `IntersectionObserver` adds a one-time enhancement
+  state for diagnostic line, brightness, and focus treatment after the content is already visible.
+- Touch and `prefers-reduced-motion: reduce` disable decorative scroll transforms and preserve the
+  same content, anchor links, CTA behavior, and reading order.
+- No GSAP, Lenis, ScrollTrigger, WebGL, remote media, or new runtime dependency is permitted.
+
+### 7.2 Layer-separated Hero wind motion
+
+- CR-031 upgrades the Hero from one flat media plane into a layered render stack: base silhouette,
+  localized hair edge pass, localized cloth edge pass, and frost atmosphere.
+- The layered stack reuses the approved original Hero art source and separates motion through
+  localized masked DOM layers instead of shifting multiple full-frame duplicates. This avoids face
+  skew, body ghosting, and the “one warped slab” failure seen in owner UAT.
+- Hair moves with the highest wind amplitude, cloth follows with a slightly heavier lag, and frost
+  stays in a lighter foreground screen-blend pass so the scene reads as wind instead of a rigid
+  poster translation.
+- One Hero animation loop owns pointer drift and wind-phase variables. The countdown, navigation,
+  and copy stay outside the media stack.
+- Touch and `prefers-reduced-motion: reduce` collapse the layered stack to the static base Hero
+  image so the mobile and accessible paths avoid duplicate-layer ghosting.
+
+### 7.3 Scene-depth and character-rig decomposition scaffold
+
+- CR-032 restructures the Hero into a full scene stack before deeper animation work:
+  background backdrop, mid-depth B, mid-depth A, cave wall left, cave wall right, character layer,
+  and atmosphere overlay.
+- The figure remains one scene layer, but inside that character layer the DOM must expose separate
+  groups for core, hair, left arm, right arm, cloth, and held object.
+- This scaffold is an authoring boundary, not a claim that full skeletal animation is already done.
+  The immediate goal is correct component ownership, layer order, and pivot targeting.
+- Named pivots such as `head`, `shoulder_left`, `elbow_left`, `wrist_left`, `pelvis`,
+  `hair_root_front`, and `object_anchor` are required so later motion can animate the right piece
+  without re-authoring the full Hero structure again.
+- Inside those approved groups, production DOM should expose named subnodes (for example hair
+  strands, arm segments, cloth panels, and held-object parts) through stable targeting hooks so a
+  later motion pass can address one piece without guessing selectors from visual classes alone.
+- This pass may still reuse the approved Hero art through masked DOM slices while the team prepares
+  a more complete asset-separation workflow.
+
+### 7.4 Phase-2 localized motion authoring
+
+- Phase 2 starts after the scene-depth scaffold is in place. It does not claim full skeletal
+  animation; instead it adds separate motion channels for the already-approved subnodes.
+- Head, face, and upper torso stay comparatively stable so the Hero keeps a premium portrait read,
+  while the stronger motion energy belongs to front hair, hair tails, cloth panels, hem, and the
+  held crystal.
+- One animation loop may author stable CSS custom properties for these localized channels. The DOM
+  ownership from CR-032 must remain unchanged; Phase 2 is about motion targeting, not a new layer map.
+- Object glow and aura may pulse independently from cloth and hair motion so the crystal reads as a
+  separate magical element rather than a rigid extension of the hand.
+- Touch and `prefers-reduced-motion: reduce` still collapse the Hero to the static approved image
+  path. Decorative motion channels must fully zero out in that fallback.
 
 ## 8. Components and states
 
@@ -281,9 +340,11 @@ Landing ใช้ React + Vite + TypeScript + Tailwind แยกจาก app �
 - `landing/tsconfig*.json`
 - `landing/src/main.tsx`
 - `landing/src/App.tsx` — component เดียวตาม brief, `useState` สำหรับ mobile menu
+- `landing/src/HeroMedia25D.tsx` — semantic responsive Hero art with bounded decorative motion plus the scene-depth and character-rig scaffold
 - `landing/src/beta.ts` — Google OAuth PKCE + server-authoritative GID/enrollment state
 - `landing/src/index.css`
-- `landing/assets/hero/g-maiden-sea-captain-stone-titan-v1.webp` — optimized production hero art
+- `landing/public/assets/hero/gmaiden-2-5d-hero-desktop-v1.webp` — desktop production key art
+- `landing/public/assets/hero/gmaiden-2-5d-hero-mobile-v1.webp` — mobile production key art
 - `landing/README.md` — local dev/build/deploy instructions
 - `supabase/migrations/20260720183000_cr005_closed_beta_registration.sql`
 - `supabase/migrations/20260720184500_cr005_beta_rls_initplan.sql`
@@ -299,6 +360,8 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 - `beforeSend` ต้องตัด query string และ fragment ออกจาก URL ก่อนส่งทุกครั้ง
 - ห้ามส่ง email, GID, OAuth code/token, Supabase session, account state, match state, CV detection หรือ G-Log
 - Analytics เป็นของ public landing เท่านั้นและไม่ถูกนำเข้า desktop application
+- Local preview บน `localhost` และ `127.0.0.1` ต้องไม่ mount analytics script เพื่อไม่ให้เกิด console noise
+  หรือหลอกว่า local QA เป็น production page view
 - Production source คือ private repository `Freshair129/g-maiden-landing`; branch `main` deploy production
   ผ่าน Vercel Git integration และ branch อื่นใช้ preview deployment
 
@@ -335,6 +398,7 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 - จับ screenshot ที่ native concept ratio เมื่อทำได้
 - เปรียบเทียบ concept กับ render อย่างน้อย 5 จุด: copy, composition, typography, palette,
   media treatment, spacing, responsive behavior และ motion
+- `landing/design-qa.md` ต้องบันทึก source/render comparison ใน artifact เดียวกันทั้ง `1440×900` และ `390×844` พร้อม `final result: passed` ก่อน deploy
 - ทำ above-the-fold copy diff ได้ผลตรงกับ §5
 - รัน `codedoc-aligner`; exit `2` ถือว่า gate ไม่ผ่าน ไม่ใช่ aligned
 - ไม่แตะ/รวมไฟล์ dirty เดิมที่อยู่นอก `landing/`
@@ -352,7 +416,7 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 
 - การเปลี่ยน Command Deck, overlay หรือ Rust backend
 - pricing, custom-event analytics, social graph, invite admin dashboard และ email campaign
-- Desktop app version bump, GitHub release และ tag; Landing production deploy อยู่ภายใต้ CR-028 เท่านั้น
+- Desktop app version bump, GitHub release และ tag; Landing production deploy อยู่ภายใต้ CR-029 เท่านั้น
 - การใช้ concept image เป็น production background
 - prediction percentage, hidden-information claim และ future path projection
 - การ implement MFA, SMS provider, schema migration, recovery workflow หรือ public-profile routes ก่อนผ่าน
@@ -371,3 +435,12 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 | 0.5.1b | 2026-07-21 | beta | Added Closed Beta signup and login user-flow diagram, including callback, GID, registration, and recoverable failure states | - | ATHER |
 | 0.6.0b | 2026-07-21 | beta | Added proposed GID Shield, 2FA, phone/recovery, security notification, and privacy-safe web-profile contract | - | ATHER |
 | 0.7.0b | 2026-07-21 | beta | Replaced the static two-character Hero with the reviewed MPFB2 G-Maiden GLB, accessible fallback, bounded cursor/scroll motion, and CR-028 production handoff | - | ATHER |
+| 0.8.0b | 2026-07-21 | beta | Superseded the rejected MPFB/WebGL Hero with CR-029 responsive cinematic 2.5D media, provenance, bounded passive motion, and mandatory source/render visual QA | - | ATHER |
+| 0.9.0b | 2026-07-21 | beta | Added CR-030 bounded scroll-driven cinematic narrative: one passive progress controller, signal beacon, and observer-enhanced GMAD and feature rails without scroll hijacking | - | ATHER |
+| 0.9.1b | 2026-07-21 | beta | Clarified the implementation status header and normalized document timestamps for the approved CR-030 landing narrative. | - | ATHER |
+| 0.12.1b | 2026-07-21 | beta | Clarified and aligned analytics behavior so local preview on localhost does not mount Vercel Analytics while production privacy rules stay unchanged. | - | ATHER |
+| 0.12.0b | 2026-07-21 | beta | Added Phase-2 localized motion-authoring guidance for head stability, hair tails, cloth channels, and held-crystal pulse on top of the CR-032 rig scaffold. | - | ATHER |
+| 0.11.1b | 2026-07-21 | beta | Clarified CR-032 implementation detail: Hero subcomponents now require stable named node targeting inside each approved rig group for later motion authoring. | - | ATHER |
+| 0.11.0b | 2026-07-21 | beta | Added CR-032 scene-depth and character-rig scaffold requirements so the Hero exposes cave layers, character subcomponents, and pivot ownership before deeper animation work. | - | ATHER |
+| 0.10.1b | 2026-07-21 | beta | Clarified CR-031 to use localized hair and cloth edge masks instead of whole-frame duplicate planes after owner UAT found skewed facial proportions. | - | ATHER |
+| 0.10.0b | 2026-07-21 | beta | Added CR-031 layer-separated Hero wind motion contract with base, hair, cloth, and frost layers plus static fallback rules. | - | ATHER |
