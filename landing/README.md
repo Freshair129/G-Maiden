@@ -49,7 +49,7 @@ Vercel project metadata ใน `.vercel/` ถูก ignore และไม่ค
 ## Scope
 
 - Thai-first fullscreen hero (`100svh`) + shipped-feature signal rails
-- Original sea-captain + stone-titan hero artwork พร้อม cinematic 2.5D motion
+- Original MPFB2-based G-Maiden Ice Mage GLB พร้อม baked idle, bounded cursor/scroll motion และ static fallback
 - Watch-your-back positioning โดยไม่อ้างการเห็นข้อมูลลับหรือทำนายอนาคต
 - Responsive desktop/mobile navigation
 - Keyboard-accessible fullscreen mobile menu

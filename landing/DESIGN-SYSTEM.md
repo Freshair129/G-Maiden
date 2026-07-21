@@ -1,7 +1,7 @@
 ---
-version: "0.5.0b"
+version: "0.7.0b"
 created_at: "2026-07-20T00:00:00+07:00,ATHER"
-last_update: "2026-07-20T22:05:00+07:00,ATHER"
+last_update: "2026-07-21T22:42:00+07:00,ATHER"
 status: "beta"
 attributes:
   domain: "public-landing"
@@ -24,8 +24,8 @@ display headline 3 บรรทัด, CTA, proof row และ mobile menu over
 
 ## 2. Complexity and risk
 
-- **Complexity:** C-2 — Documentation-Driven Implementation (`Text → Doc → Code`)
-- **Risk:** MEDIUM — เป็นการเปลี่ยน microsite ทั้งชุดจาก static HTML เป็น React + Vite + Tailwind
+- **Complexity:** C-3 — Architecture-Driven Implementation (`Text → Doc → Diagram → Code`)
+- **Risk:** HIGH — Hero ใช้ reviewed GLB, lazy WebGL runtime, accessibility fallback และ production asset provenance
 - **Parent alignment:** ใช้ product truth จาก `docs/product/product-requirements.md` และ
   `docs/product/software-requirements-specification.md`
 - **Peer alignment:** ใช้ COLD BOOTH palette จาก `docs/design-system/02-tokens.md` แต่แยก namespace
@@ -126,14 +126,14 @@ another condensed display face.
 
 ## 7. Media treatment
 
-- Source: original G-Maiden sea-captain + stone-titan artwork; ไม่มี Valve/Dota model, costume, logo หรือ asset
-- Production delivery: optimized WebP `206 KB` loaded as the hero background
-- Motion: cinematic 2.5D camera drift + independent particle layer; ไม่มี WebGL/runtime 3D dependency
-- Fit: absolute full-viewport image, `object-fit: cover`, desktop position `62%`, mobile `69%`
-- Background fallback: `--landing-void`
-- Readability: neutral black left-edge/vertical scrim only when required for contrast
-- Prohibited: external copyrighted character video, heavy blur, decorative bloom หรือ character overlap ใน text-safe zone
-- Reduced motion: `prefers-reduced-motion: reduce` หยุด camera/particle animation และแสดง static approved frame
+- Source: original G-Maiden Ice Mage จาก MPFB2 2.0.16 base และ MakeHuman system assets ที่เป็น CC0; ไม่มี Valve/Dota model, costume, logo หรือ asset
+- Production delivery: GLB `1,625,728 bytes` + transparent WebP fallback `34,400 bytes` ภายใต้ CR-026/CR-028 provenance gate
+- Motion: Three.js lazy-load, baked guardian idle 1 clip, bounded cursor parallax และ passive scroll response
+- Runtime gate: เปิด WebGL เฉพาะ `pointer: fine`, ไม่เปิดเมื่อ `prefers-reduced-motion: reduce` และ fallback อัตโนมัติเมื่อโหลดไม่ได้
+- Fit: character อยู่ฝั่งขวาและไม่รับ pointer event; headline, Countdown และ CTA เป็น semantic HTML นอก canvas
+- Background: CSS-only cold-stage gradient, particle layer และ perspective floor grid; ไม่ใช้ภาพตัวละครเก่าใน production runtime
+- Readability: neutral black left-edge scrim รักษา text-safe zone และ contrast ของ CTA
+- Prohibited: external copyrighted character media, runtime physics, audio, gameplay animation หรือ canvas ที่บัง interaction
 
 ## 8. Components and states
 
@@ -167,6 +167,72 @@ another condensed display face.
 - `closed_beta_enrollments` เปิด RLS: anon ไม่มีสิทธิ์, authenticated select/insert เฉพาะ row ตัวเอง,
   ไม่มี update grant จึง self-approve เป็น `invited` ไม่ได้
 - web session ไม่ถูกส่งเข้า desktop ผ่าน URL; desktop login ด้วย Google account เดิมแล้ว resolve UUID/GID เดิม
+
+### User journey: สมัครและเข้าสู่ระบบ Closed Beta
+
+```mermaid
+flowchart TD
+  A[ผู้ใช้เปิด G-Maiden Landing] --> B{มี session อยู่แล้วหรือไม่}
+  B -- ไม่มี --> C[กด รับ GID สำหรับ Closed Beta]
+  C --> D[ไปยัง Google Sign-in ผ่าน Supabase Auth]
+  D --> E{ยืนยันตัวตนสำเร็จหรือไม่}
+  E -- ไม่สำเร็จ/ยกเลิก --> F[กลับ Landing พร้อมข้อความให้ลองใหม่]
+  E -- สำเร็จ --> G[Supabase callback กลับโดเมน Landing]
+  G --> H[Landing ขอออกหรืออ่าน GID ผ่าน mint-gid]
+  B -- มี --> H
+  H --> I{ออก/อ่าน GID สำเร็จหรือไม่}
+  I -- ไม่สำเร็จ --> J[แสดงข้อความผิดพลาดและปุ่มลองอีกครั้ง]
+  I -- สำเร็จ --> K[บันทึกหรืออ่านสถานะ Closed Beta]
+  K --> L{สถานะ registered หรือ invited}
+  L -- ใช่ --> M[แสดง GID, อีเมล และสถานะลงทะเบียนแล้ว]
+  L -- ไม่ใช่ --> J
+```
+
+### GID Security และ Web Profile (ข้อกำหนดที่เสนอ — ยังไม่พัฒนา)
+
+- Google OAuth ยังคงเป็นวิธี sign-in หลักเพียงวิธีเดียว; ไม่มี username/password สำหรับ login และ GID
+  เป็นรหัสระบุตัวตนถาวร ไม่ใช่ credential หรือ recovery factor
+- Landing มีสองพื้นที่ที่แยกหน้าที่ชัดเจน: public profile (`/u/<handle-or-gid>`) แสดงเฉพาะข้อมูลที่เจ้าของ
+  เลือกเผยแพร่ และ account center (`/account`) สำหรับเจ้าของที่ sign-in แล้ว เพื่อจัดการ display name,
+  avatar, Steam link, การแจ้งเตือน และความปลอดภัย. Display name แก้ได้จาก Desktop หรือ account center;
+  การเปลี่ยนต้องสะท้อน identity เดียวกัน
+- Public profile ห้ามแสดง email, เบอร์โทร, recovery email, ประวัติ security activity, session, GID secret
+  material หรือข้อมูล match/CV/G-Log. การมีหน้า profile ไม่เปลี่ยนหลักการ local-first ของข้อมูลเกม
+- `GID Shield` เป็น badge ที่ผู้ใช้เลือกแสดงบน public profile ได้. Badge หมายถึงเปิด Google primary,
+  TOTP 2FA, recovery email ที่ยืนยันแล้ว และ phone OTP ที่ยืนยันแล้วเท่านั้น; ไม่ใช่การยืนยันตัวตนทางกฎหมาย
+  หรือการรับรองระดับฝีมือ. สถานะ security เริ่มต้นเป็น private
+- TOTP เป็น second factor หลัก. Phone OTP ใช้เป็น recovery/contact factor เท่านั้น และต้องมี rate limit,
+  consent, E.164 normalization และ SMS provider ที่ได้รับอนุมัติก่อนทำจริง; ห้ามใช้เบอร์โทรเพียงอย่างเดียว
+  เพื่อย้ายบัญชีหรือเปลี่ยน Google identity
+- Recovery email ใช้ passwordless magic link. เมื่อเข้า Google เดิมไม่ได้ ต้องผ่าน recovery email และ
+  TOTP หรือ phone OTP เพื่อออก recovery session ชั่วคราว; การผูก Google account ใหม่มี hold 24 ชั่วโมง
+  และส่ง security alert ไปยังช่องทางเดิม/สำรอง. หากหายทุก factor ต้องเข้าสู่ manual support review;
+  Steam หรือ GID อย่างเดียวไม่พอสำหรับ recovery
+- Security activity ที่ต้องแจ้งทันที: login/new device, เริ่มหรือจบ recovery, เปลี่ยน Google identity,
+  TOTP, phone หรือ recovery email. ข่าวสารผลิตภัณฑ์เป็น opt-in แยกต่างหากและยกเลิกได้. ห้ามส่ง raw match,
+  CV หรือ G-Log ออกนอกเครื่องในทุกกรณี
+- ข้อมูล phone/recovery/security ต้องแยกจาก public `profiles`, จำกัดด้วย RLS และไม่เก็บ secret หรือ
+  authorization state ใน client-accessible user metadata. ต้องมี threat model และ schema/migration review
+  ก่อน implementation เพราะเป็นการเปลี่ยนระดับ C-3 / HIGH
+
+```mermaid
+flowchart TD
+  A[Google OAuth primary] --> B[Account center]
+  B --> C[ตั้งค่า TOTP 2FA]
+  C --> D[ยืนยัน recovery email]
+  D --> E[ยืนยัน phone OTP]
+  E --> F[GID Shield พร้อมเปิด badge แบบ opt-in]
+  X[เข้า Google เดิมไม่ได้] --> Y[Recovery email magic link]
+  Y --> Z{ผ่าน TOTP หรือ phone OTP}
+  Z -->|ผ่าน| R[Temporary recovery session]
+  R --> S[ผูก Google account ใหม่]
+  S --> T[Hold 24 ชั่วโมง + security alerts]
+  Z -->|ไม่ผ่าน| U[Manual support review]
+```
+
+- Google เป็นช่องทางยืนยันตัวตนช่องทางเดียวของ Landing และไม่ส่ง session/token เข้า desktop ผ่าน URL
+- `mint-gid` ต้องรับ browser preflight และตอบ CORS headers ทุกสถานะ ก่อนตรวจ JWT และออก GID
+- ผู้ใช้ที่กลับมาอีกครั้งใช้ flow เดิมเพื่ออ่าน GID และสถานะเดิม ไม่ออก GID ซ้ำ
 
 ### Icons
 
@@ -249,6 +315,10 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 - Analytics ส่งเฉพาะ redacted page view และไม่ส่ง query/fragment หรือข้อมูล account/game
 - signup ใหม่เป็น generation `B`; existing GID ไม่ถูกเปลี่ยน
 - anon/cross-user/self-approve ถูก RLS/grants ปฏิเสธ
+- public profile ไม่เผยข้อมูลติดต่อหรือข้อมูลเกมภายในเครื่อง และ public badge ต้อง opt-in
+- ไม่มี password login; GID/Steam เพียงอย่างเดียวใช้ recovery หรือเปลี่ยน Google identity ไม่ได้
+- recovery ต้องบังคับ recovery email ร่วมกับ TOTP หรือ phone OTP, ทำ hold 24 ชั่วโมงก่อน rebind identity
+  และบันทึก/แจ้ง security activity
 
 ### Success criteria
 
@@ -282,9 +352,11 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 
 - การเปลี่ยน Command Deck, overlay หรือ Rust backend
 - pricing, custom-event analytics, social graph, invite admin dashboard และ email campaign
-- Version bump, release, tag หรือ deploy
+- Desktop app version bump, GitHub release และ tag; Landing production deploy อยู่ภายใต้ CR-028 เท่านั้น
 - การใช้ concept image เป็น production background
 - prediction percentage, hidden-information claim และ future path projection
+- การ implement MFA, SMS provider, schema migration, recovery workflow หรือ public-profile routes ก่อนผ่าน
+  threat-model และ approval gate
 
 ## CHANGELOG
 
@@ -296,3 +368,6 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 | 0.4.0b | 2026-07-20 | beta | Thai-first hero and open feature rails; watch-your-back positioning without prediction overclaims | — | ATHER |
 | 0.4.1b | 2026-07-20 | beta | Production asset isolation and verified Vercel deployment | — | ATHER |
 | 0.5.0b | 2026-07-20 | beta | Approved aggregate Vercel page-view analytics with URL redaction and standalone Git deployment contract | — | ATHER |
+| 0.5.1b | 2026-07-21 | beta | Added Closed Beta signup and login user-flow diagram, including callback, GID, registration, and recoverable failure states | - | ATHER |
+| 0.6.0b | 2026-07-21 | beta | Added proposed GID Shield, 2FA, phone/recovery, security notification, and privacy-safe web-profile contract | - | ATHER |
+| 0.7.0b | 2026-07-21 | beta | Replaced the static two-character Hero with the reviewed MPFB2 G-Maiden GLB, accessible fallback, bounded cursor/scroll motion, and CR-028 production handoff | - | ATHER |
