@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-07-23T18:08:05.852Z
+สร้างเมื่อ / Generated at: 2026-07-23T20:21:33.251Z
 
-สแกน 127 ไฟล์เอกสาร, 251 nodes, 1208 edges, 114 รายการปัญหา (63 ตัวบล็อก exit code) / scanned 127 doc files, 251 nodes, 1208 edges, 114 violations (63 blocking exit code).
+สแกน 128 ไฟล์เอกสาร, 252 nodes, 1208 edges, 115 รายการปัญหา (64 ตัวบล็อก exit code) / scanned 128 doc files, 252 nodes, 1208 edges, 115 violations (64 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -18,7 +18,7 @@
 | missing-file | symbol link ไปยังไฟล์ที่ไม่มีจริง / symbol link to a missing file | 1 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 48 | no (informational) |
 | unresolved | wikilink หาไม่เจอ / unresolved wikilink | 7 | yes |
-| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 25 | yes |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 26 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -244,6 +244,10 @@
 ### docs/change request/CR-032-landing-hero-scene-depth-and-character-rig-decomposition.md
 
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.0.1b", changelog="1.0.0b")
+
+### docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.0b", changelog="0.1.0b")
 
 ### docs/design-system/05-sitemap-ia.md
 
