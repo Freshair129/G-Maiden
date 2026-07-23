@@ -1,6 +1,6 @@
 ---
 title: "G-Maiden Release Governance"
-doc_id: "RELEASE-GOVERNANCE"
+doc_id: "releases/README"
 status: "draft"
 version: "0.1.0"
 updated: "2026-07-23"

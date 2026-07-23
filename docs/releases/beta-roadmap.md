@@ -1,6 +1,6 @@
 ---
 title: "G-Maiden Beta and Release Roadmap"
-doc_id: "BETA-ROADMAP"
+doc_id: "beta-roadmap"
 status: "draft"
 version: "0.1.0"
 updated: "2026-07-23"

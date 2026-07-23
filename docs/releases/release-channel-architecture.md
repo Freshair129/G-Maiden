@@ -1,6 +1,6 @@
 ---
 title: "G-Maiden Release Channel Architecture"
-doc_id: "RELEASE-CHANNEL-ARCHITECTURE"
+doc_id: "release-channel-architecture"
 status: "draft"
 version: "0.1.0"
 updated: "2026-07-23"

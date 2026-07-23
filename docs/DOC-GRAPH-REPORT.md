@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-07-20T14:20:59.985Z
+สร้างเมื่อ / Generated at: 2026-07-23T18:03:11.623Z
 
-สแกน 91 ไฟล์เอกสาร, 213 nodes, 1200 edges, 66 รายการปัญหา (15 ตัวบล็อก exit code) / scanned 91 doc files, 213 nodes, 1200 edges, 66 violations (15 blocking exit code).
+สแกน 99 ไฟล์เอกสาร, 221 nodes, 1200 edges, 78 รายการปัญหา (27 ตัวบล็อก exit code) / scanned 99 doc files, 221 nodes, 1200 edges, 78 violations (27 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -10,11 +10,13 @@
 
 | Reason | คำอธิบาย / Description | Count | Blocking? |
 | --- | --- | --- | --- |
+| duplicate-slug | สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) | 5 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 3 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
 | missing-file | symbol link ไปยังไฟล์ที่ไม่มีจริง / symbol link to a missing file | 1 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 48 | no (informational) |
+| unresolved | wikilink หาไม่เจอ / unresolved wikilink | 7 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -256,6 +258,36 @@
 ### docs/reference/dota-ui/README.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/releases/README.md
+
+- [L25] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="RELEASE-CHANNEL-ARCHITECTURE")
+- [L26] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="BETA-ROADMAP")
+- [L27] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="PUBLIC-DEMO-SPEC")
+- [L28] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CLOSED-BETA-WAVE-0-SPEC")
+- [L29] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CLOSED-BETA-WAVE-0-DOD")
+- [L30] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="OPEN-BETA-SPEC")
+- [L31] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="OPEN-BETA-DOD")
+
+### docs/releases/closed-beta/wave-0/definition-of-done.md
+
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="definition-of-done", siblings=["docs/releases/open-beta/definition-of-done.md"])
+
+### docs/releases/closed-beta/wave-0/specification.md
+
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/open-beta/specification.md","docs/releases/public-demo/specification.md"])
+
+### docs/releases/open-beta/definition-of-done.md
+
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="definition-of-done", siblings=["docs/releases/closed-beta/wave-0/definition-of-done.md"])
+
+### docs/releases/open-beta/specification.md
+
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/closed-beta/wave-0/specification.md","docs/releases/public-demo/specification.md"])
+
+### docs/releases/public-demo/specification.md
+
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/closed-beta/wave-0/specification.md","docs/releases/open-beta/specification.md"])
 
 ### docs/research/assets/dota2-hud-reference.md
 

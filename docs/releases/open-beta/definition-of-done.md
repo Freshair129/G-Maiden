@@ -1,6 +1,6 @@
 ---
 title: "Open Beta Definition of Done"
-doc_id: "OPEN-BETA-DOD"
+doc_id: "definition-of-done"
 status: "draft"
 version: "0.1.0"
 updated: "2026-07-23"

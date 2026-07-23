@@ -1,6 +1,6 @@
 ---
 title: "G-Maiden Public Demo Specification"
-doc_id: "PUBLIC-DEMO-SPEC"
+doc_id: "specification"
 status: "draft"
 version: "0.1.0"
 updated: "2026-07-23"

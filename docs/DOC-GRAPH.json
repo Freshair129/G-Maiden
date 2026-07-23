@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-20T14:20:59.985Z",
+  "generatedAt": "2026-07-23T18:03:11.623Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -430,6 +430,46 @@
       "id": "docs/reference/dota-ui/README.md",
       "type": "doc",
       "path": "docs/reference/dota-ui/README.md"
+    },
+    {
+      "id": "docs/releases/README.md",
+      "type": "doc",
+      "path": "docs/releases/README.md"
+    },
+    {
+      "id": "docs/releases/beta-roadmap.md",
+      "type": "doc",
+      "path": "docs/releases/beta-roadmap.md"
+    },
+    {
+      "id": "docs/releases/closed-beta/wave-0/definition-of-done.md",
+      "type": "doc",
+      "path": "docs/releases/closed-beta/wave-0/definition-of-done.md"
+    },
+    {
+      "id": "docs/releases/closed-beta/wave-0/specification.md",
+      "type": "doc",
+      "path": "docs/releases/closed-beta/wave-0/specification.md"
+    },
+    {
+      "id": "docs/releases/open-beta/definition-of-done.md",
+      "type": "doc",
+      "path": "docs/releases/open-beta/definition-of-done.md"
+    },
+    {
+      "id": "docs/releases/open-beta/specification.md",
+      "type": "doc",
+      "path": "docs/releases/open-beta/specification.md"
+    },
+    {
+      "id": "docs/releases/public-demo/specification.md",
+      "type": "doc",
+      "path": "docs/releases/public-demo/specification.md"
+    },
+    {
+      "id": "docs/releases/release-channel-architecture.md",
+      "type": "doc",
+      "path": "docs/releases/release-channel-architecture.md"
     },
     {
       "id": "docs/research/2026-07-19-govibe-gmaiden-governance-comparison.md",
@@ -8611,6 +8651,96 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/releases/README.md",
+      "line": 25,
+      "reason": "unresolved",
+      "slug": "RELEASE-CHANNEL-ARCHITECTURE"
+    },
+    {
+      "file": "docs/releases/README.md",
+      "line": 26,
+      "reason": "unresolved",
+      "slug": "BETA-ROADMAP"
+    },
+    {
+      "file": "docs/releases/README.md",
+      "line": 27,
+      "reason": "unresolved",
+      "slug": "PUBLIC-DEMO-SPEC"
+    },
+    {
+      "file": "docs/releases/README.md",
+      "line": 28,
+      "reason": "unresolved",
+      "slug": "CLOSED-BETA-WAVE-0-SPEC"
+    },
+    {
+      "file": "docs/releases/README.md",
+      "line": 29,
+      "reason": "unresolved",
+      "slug": "CLOSED-BETA-WAVE-0-DOD"
+    },
+    {
+      "file": "docs/releases/README.md",
+      "line": 30,
+      "reason": "unresolved",
+      "slug": "OPEN-BETA-SPEC"
+    },
+    {
+      "file": "docs/releases/README.md",
+      "line": 31,
+      "reason": "unresolved",
+      "slug": "OPEN-BETA-DOD"
+    },
+    {
+      "file": "docs/releases/closed-beta/wave-0/definition-of-done.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "definition-of-done",
+      "siblings": [
+        "docs/releases/open-beta/definition-of-done.md"
+      ]
+    },
+    {
+      "file": "docs/releases/closed-beta/wave-0/specification.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "specification",
+      "siblings": [
+        "docs/releases/open-beta/specification.md",
+        "docs/releases/public-demo/specification.md"
+      ]
+    },
+    {
+      "file": "docs/releases/open-beta/definition-of-done.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "definition-of-done",
+      "siblings": [
+        "docs/releases/closed-beta/wave-0/definition-of-done.md"
+      ]
+    },
+    {
+      "file": "docs/releases/open-beta/specification.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "specification",
+      "siblings": [
+        "docs/releases/closed-beta/wave-0/specification.md",
+        "docs/releases/public-demo/specification.md"
+      ]
+    },
+    {
+      "file": "docs/releases/public-demo/specification.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "specification",
+      "siblings": [
+        "docs/releases/closed-beta/wave-0/specification.md",
+        "docs/releases/open-beta/specification.md"
+      ]
+    },
+    {
       "file": "docs/research/assets/dota2-hud-reference.md",
       "line": null,
       "reason": "no-metadata"
@@ -8635,7 +8765,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-07-20T14:21:12.207Z",
+    "generatedAt": "2026-07-23T18:03:18.789Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 73,

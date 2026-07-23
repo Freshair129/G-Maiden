@@ -1,6 +1,6 @@
 ---
 title: "G-Maiden Open Beta Specification"
-doc_id: "OPEN-BETA-SPEC"
+doc_id: "specification"
 status: "draft"
 version: "0.1.0"
 updated: "2026-07-23"

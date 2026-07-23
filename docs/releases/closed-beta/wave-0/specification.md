@@ -1,6 +1,6 @@
 ---
 title: "G-Maiden Closed Beta Wave 0 Specification"
-doc_id: "CLOSED-BETA-WAVE-0-SPEC"
+doc_id: "specification"
 status: "draft"
 version: "0.1.0"
 updated: "2026-07-23"
