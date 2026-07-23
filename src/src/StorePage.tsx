@@ -6,7 +6,7 @@
 // fixed-height frame and paginates via the pure `rowsThatFit` helper instead
 // of a hardcoded row count.
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { supabase } from "./supabase";
 import { useAuth } from "./auth";
 import { useWallet } from "./wallet";
@@ -113,6 +113,7 @@ export interface StorePageProps {
 
 export default function StorePage({ onNavigateToWallet, onRequestSignIn }: StorePageProps) {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const { shardBalance, walletBalance, purchase } = useWallet();
 
   const [items, setItems] = useState<CatalogItem[]>([]);
@@ -154,14 +155,11 @@ export default function StorePage({ onNavigateToWallet, onRequestSignIn }: Store
     return () => { cancelled = true; };
   }, []);
 
-  const loadOwned = useMemo(
-    () => async () => {
-      if (!user) { setOwnedIds(new Set()); return; }
-      const { data } = await supabase.from("inventory").select("item_id").eq("user_id", user.id);
-      setOwnedIds(new Set(((data as { item_id: string }[] | null) ?? []).map((r) => r.item_id)));
-    },
-    [user?.id],
-  );
+  const loadOwned = useCallback(async () => {
+    if (!userId) { setOwnedIds(new Set()); return; }
+    const { data } = await supabase.from("inventory").select("item_id").eq("user_id", userId);
+    setOwnedIds(new Set(((data as { item_id: string }[] | null) ?? []).map((r) => r.item_id)));
+  }, [userId]);
 
   useEffect(() => { void loadOwned(); }, [loadOwned]);
 

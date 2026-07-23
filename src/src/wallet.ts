@@ -123,11 +123,12 @@ export function useWallet(): WalletSnapshot & {
   refresh: () => Promise<void>;
 } {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [snapshot, setSnapshot] = useState<WalletSnapshot>(EMPTY_SNAPSHOT);
   const channelRef = useRef<RealtimeChannel | null>(null);
 
   const load = useCallback(async () => {
-    if (!user) {
+    if (!userId) {
       setSnapshot(EMPTY_SNAPSHOT);
       return;
     }
@@ -139,13 +140,13 @@ export function useWallet(): WalletSnapshot & {
         .select(
           "shard_balance, lifetime_shard_earned, lifetime_shard_spent, lifetime_topup, lifetime_spend, shard_expires_at, wallet_balance",
         )
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .maybeSingle(),
       supabase.from("economy_config").select("value").eq("key", "shard_daily_earn_cap").maybeSingle(),
       supabase
         .from("wallet_ledger")
         .select("amount")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .eq("currency", "shard")
         .eq("entry_type", "earn_share")
         .gte("created_at", startOfTodayIso()),
@@ -170,7 +171,7 @@ export function useWallet(): WalletSnapshot & {
       shardEarnedToday: earnedToday,
       loading: false,
     });
-  }, [user?.id]);
+  }, [userId]);
 
   useEffect(() => {
     void load();
@@ -183,13 +184,13 @@ export function useWallet(): WalletSnapshot & {
       void supabase.removeChannel(channelRef.current);
       channelRef.current = null;
     }
-    if (!user) return;
+    if (!userId) return;
 
     const channel = supabase
-      .channel(`wallet-${user.id}`)
+      .channel(`wallet-${userId}`)
       .on(
         "postgres_changes",
-        { event: "*", schema: "public", table: "wallets", filter: `user_id=eq.${user.id}` },
+        { event: "*", schema: "public", table: "wallets", filter: `user_id=eq.${userId}` },
         () => void load(),
       )
       .subscribe();
@@ -199,21 +200,21 @@ export function useWallet(): WalletSnapshot & {
       void supabase.removeChannel(channel);
       channelRef.current = null;
     };
-  }, [user?.id, load]);
+  }, [userId, load]);
 
   const purchase = useCallback(
     async (itemId: string): Promise<void> => {
-      if (!user) throw new Error("not signed in");
+      if (!userId) throw new Error("not signed in");
       const { error } = await supabase.rpc("purchase_item", { p_item_id: itemId });
       if (error) throw error;
       await load();
     },
-    [user?.id, load],
+    [userId, load],
   );
 
   const topup = useCallback(
     async (packageId: string, provider: "promptpay" | "truemoney"): Promise<TopupResult> => {
-      if (!user) throw new Error("not signed in");
+      if (!userId) throw new Error("not signed in");
       const { data, error } = await supabase.functions.invoke<{
         order_id: string;
         qr_image_uri?: string;
@@ -229,22 +230,22 @@ export function useWallet(): WalletSnapshot & {
         expiresAt: data.expires_at,
       };
     },
-    [user?.id],
+    [userId],
   );
 
   const redeem = useCallback(
     async (code: string): Promise<void> => {
-      if (!user) throw new Error("not signed in");
+      if (!userId) throw new Error("not signed in");
       const { error } = await supabase.rpc("redeem_code", { p_code: code });
       if (error) throw error;
       await load();
     },
-    [user?.id, load],
+    [userId, load],
   );
 
   const tip = useCallback(
     async (toUserId: string, amount: number, currency: "shard" | "wallet"): Promise<void> => {
-      if (!user) throw new Error("not signed in");
+      if (!userId) throw new Error("not signed in");
       const { error } = await supabase.rpc("tip", {
         p_to_user: toUserId,
         p_amount: amount,
@@ -253,12 +254,12 @@ export function useWallet(): WalletSnapshot & {
       if (error) throw error;
       await load();
     },
-    [user?.id, load],
+    [userId, load],
   );
 
   const shareMatch = useCallback(
     async (matchId: string): Promise<ShareMatchResult> => {
-      if (!user) throw new Error("not signed in");
+      if (!userId) throw new Error("not signed in");
       const { data, error } = await supabase.functions.invoke<{ shard_minted: number; reason?: string }>(
         "match-share-submit",
         { body: { match_id: matchId } },
@@ -268,16 +269,16 @@ export function useWallet(): WalletSnapshot & {
       await load();
       return { shardMinted: data.shard_minted, reason: data.reason };
     },
-    [user?.id, load],
+    [userId, load],
   );
 
   const ledger = useCallback(
     async (opts?: { currency?: "shard" | "wallet"; limit?: number; before?: string }): Promise<LedgerEntry[]> => {
-      if (!user) return [];
+      if (!userId) return [];
       let query = supabase
         .from("wallet_ledger")
         .select("id, currency, entry_type, amount, balance_after, ref_type, ref_id, note, created_at")
-        .eq("user_id", user.id)
+        .eq("user_id", userId)
         .order("created_at", { ascending: false })
         .limit(opts?.limit ?? 20);
       if (opts?.currency) query = query.eq("currency", opts.currency);
@@ -286,7 +287,7 @@ export function useWallet(): WalletSnapshot & {
       if (error) throw error;
       return ((data as LedgerRow[] | null) ?? []).map(toLedgerEntry);
     },
-    [user?.id],
+    [userId],
   );
 
   return { ...snapshot, purchase, topup, redeem, tip, shareMatch, ledger, refresh: load };

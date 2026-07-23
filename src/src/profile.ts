@@ -11,17 +11,18 @@ const PROFILE_EVENT = "gmaiden:profile";
 
 export function useProfile() {
   const { user } = useAuth();
+  const userId = user?.id ?? null;
   const [displayName, setDisplayName] = useState("");
   const [gidCode, setGidCode] = useState("");
   const [generation, setGeneration] = useState<Generation | null>(null);
   const [loaded, setLoaded] = useState(false);
 
   const load = useCallback(async () => {
-    if (!user) { setDisplayName(""); setGidCode(""); setGeneration(null); setLoaded(true); return; }
+    if (!userId) { setDisplayName(""); setGidCode(""); setGeneration(null); setLoaded(true); return; }
     const { data } = await supabase
       .from("profiles")
       .select("display_name, gid_code, generation")
-      .eq("id", user.id)
+      .eq("id", userId)
       .maybeSingle();
 
     const gen = (data?.generation as Generation | null) ?? null;
@@ -42,7 +43,7 @@ export function useProfile() {
     }
     setGidCode(code);
     setLoaded(true);
-  }, [user?.id]);
+  }, [userId]);
 
   useEffect(() => {
     void load();
@@ -52,15 +53,15 @@ export function useProfile() {
   }, [load]);
 
   const save = useCallback(async (name: string): Promise<string | null> => {
-    if (!user) return "not signed in";
+    if (!userId) return "not signed in";
     const { error } = await supabase
       .from("profiles")
-      .upsert({ id: user.id, display_name: name.trim() }, { onConflict: "id" });
+      .upsert({ id: userId, display_name: name.trim() }, { onConflict: "id" });
     if (error) return error.message;
     setDisplayName(name.trim());
     window.dispatchEvent(new CustomEvent(PROFILE_EVENT));
     return null;
-  }, [user?.id]);
+  }, [userId]);
 
   const generationName = generation ? GENERATIONS[generation] : "";
   return { user, email: user?.email ?? "", displayName, gidCode, generation, generationName, loaded, save };
