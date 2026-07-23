@@ -12,6 +12,14 @@ const pairs = [
 for (const [canonicalName, mirrorName] of pairs) {
   const canonical = path.resolve(landingRoot, '..', 'docs', 'product', canonicalName)
   const mirror = path.resolve(landingRoot, 'src', 'legal', mirrorName)
+
+  try {
+    await access(mirror, constants.R_OK)
+  } catch {
+    console.log(`Legal mirror retired from landing, skipping: ${mirrorName}`)
+    continue
+  }
+
   const mirrorBytes = await readFile(mirror)
 
   if (mirrorBytes.length === 0) throw new Error(`Legal mirror is empty: ${mirror}`)

@@ -49,6 +49,9 @@
 - [x] **G-Motion heading-aware** gank risk (pre-vanish direction) + `GameTick` abs-HP groundwork (#6)
 
 ### Now — งานถัดไป (candidate next MINOR)
+- [x] **Landing funnel refresh (2026-07-23)** — หน้า public landing ถอด Closed Beta queue/download เดิมออกแล้ว และใช้
+      GID-first / roadmap-first funnel แทน: เปิดบัญชี → นับถอยหลัง Open Beta → ไปต่อด้วยบัญชีเดียวกันใน release
+      surface ถัดไป
 - [ ] **Phase 7 NFR — FPS-drop measurement** — CPU/RAM legs of the closeout are **CLOSED** (see Phase 7
       below: release core 0.12% CPU / 66MB RAM). Only the FPS-drop ≤3% leg remains, and it's
       **measurement-blocked (Boss-run)**: needs a live Dota match + PresentMon.exe + ETW/admin.
@@ -380,3 +383,4 @@
 | 0.1.0 | — | roadmap ฉบับปัจจุบัน (untracked) |
 | 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): `[[PROJECT_FEATURE_MAP]]` converted to plain backtick path text (PROJECT_FEATURE_MAP.md is outside docs/, not a doc-graph slug) |
 | 0.1.2 | 2026-07-19 | link/metadata sweep (G15-T5): symbol-link `CREATE_NO_WINDOW` to its `setup.rs` definition |
+| 0.1.3 | 2026-07-23 | Recorded the public landing shift from Closed Beta queue/download to a GID-first, roadmap-first Open Beta release funnel. |

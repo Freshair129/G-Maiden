@@ -61,23 +61,6 @@ export function useBetaEnrollment() {
 
     try {
       const profile = await loadGid(user)
-      const { error: insertError } = await landingSupabase
-        .from('closed_beta_enrollments')
-        .insert({ user_id: user.id, source: 'landing' })
-
-      if (insertError && insertError.code !== '23505') throw insertError
-
-      const { data: enrollment, error: enrollmentError } = await landingSupabase
-        .from('closed_beta_enrollments')
-        .select('status')
-        .eq('user_id', user.id)
-        .single<{ status: string }>()
-
-      if (enrollmentError) throw enrollmentError
-      if (!['registered', 'invited'].includes(enrollment.status)) {
-        throw new Error('บัญชีนี้ไม่อยู่ในสถานะลงทะเบียน Closed Beta')
-      }
-
       setGid(profile.gid_code ?? '')
       setGeneration(profile.generation)
       setStatus('registered')
