@@ -17,6 +17,7 @@ import { useIdentity } from "./live/identity";
 import { useProfile } from "./profile";
 import WalletTab from "./WalletTab";
 import LedgerTab from "./LedgerTab";
+import GmadEntitlementPanel from "./GmadEntitlementPanel";
 
 type AccountMode = "account" | "wallet" | "ledger";
 
@@ -63,6 +64,7 @@ export default function AccountPage({ entryMode, entryNonce }: { entryMode?: Acc
         Sign in to a G-Maiden account (GID) — one identity across the G-series — link your
         Steam, and set up your profile. The deck works without an account; this adds sync and linking.
       </p>
+      <GmadEntitlementPanel />
 
       <div className="gm-account-tabs" role="tablist" aria-label="Account sections">
         {ACCOUNT_TABS.map((t) => (

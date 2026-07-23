@@ -23,6 +23,7 @@ export const Overlay: React.FC = () => {
   const [cv, setCv] = useState<MinimapCv | null>(null)
   // G2.6: set of hero names currently flagged as missing by G-Sentry.
   const [missingHeroes, setMissingHeroes] = useState<Set<string>>(new Set())
+  const missingHeroesRef = useRef(missingHeroes)
   // G5.4: latest advice from G-Master, shown as an in-overlay panel.
   const [overlayAdvice, setOverlayAdvice] = useState<string | null>(null)
   const adviceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -70,12 +71,17 @@ export const Overlay: React.FC = () => {
   // We don't snapshot the whole tick — only the fields that drive a persona line.
   const prev = useRef<{ level: number; kills: number; deaths: number; alive: boolean; mana: number; hp: number } | null>(null)
   const manaActive = useRef(false)
+  const tickRef = useRef<GameTick | null>(null)
   // Auto-advice trigger memory (in clock_time seconds; -Infinity = never fired).
   // Per-key cooldown keeps the Plan quota honest even if multiple triggers fire close together.
   const recentDeathClock = useRef<number | null>(null)
   const advisedAt = useRef<Record<string, number>>({})
   const sRef = useRef(s)
   sRef.current = s
+  useEffect(() => {
+    missingHeroesRef.current = missingHeroes
+  }, [missingHeroes])
+  tickRef.current = tick
   useEffect(() => {
     const u1 = listen<GameTick>('game-tick', (e) => { setTick(e.payload); setSeen(true) })
     const u2 = listen<Settings>('settings', (e) => setS({ ...DEFAULTS, ...e.payload, uiMode: 'full' }))
@@ -282,46 +288,47 @@ export const Overlay: React.FC = () => {
   // Guess victim from the set of heroes G-Sentry flagged missing (best we can do
   // without a dedicated kill-feed in GSI). Track consecutive kills for streak badge.
   useEffect(() => {
-    if (!tick || !tick.in_game) return
+    if (!tick?.in_game) return
     const p = prev.current
-    if (!p || tick.kills <= p.kills) return
+    if (!p || (tick?.kills ?? 0) <= p.kills) return
     if (killTimer.current) clearTimeout(killTimer.current)
     killStreak.current += 1
-    const missing = [...missingHeroes]
+    const missing = [...missingHeroesRef.current]
     const seen = lastKillHeroes.current
     // exact victim from the backend (CR-010) if resolved, else guess from the
     // G-Sentry missing set (best we can do without a dedicated GSI kill feed).
-    const victim = tick.last_victim_hero || missing.find((h) => !seen.has(h)) || missing[0] || null
+    const victim = tick?.last_victim_hero || missing.find((h) => !seen.has(h)) || missing[0] || null
     if (victim) seen.add(victim)
-    setKillBanner({ phase: 'show', kills: tick.kills, streak: killStreak.current, victim })
+    setKillBanner({ phase: 'show', kills: tick?.kills ?? 0, streak: killStreak.current, victim })
     killTimer.current = setTimeout(() => {
       setKillBanner((kb) => kb ? { ...kb, phase: 'exit' } : null)
       killTimer.current = setTimeout(() => setKillBanner(null), 800)
     }, 4000)
-  }, [tick?.in_game, tick?.kills])
+  }, [tick?.in_game, tick?.kills, tick?.last_victim_hero])
   // Reset streak on death + fire the G-Revive buyback verdict; clear on respawn.
   // Uses its OWN prev-alive ref rather than the shared `prev.current`: the persona
   // effect above overwrites `prev.current` at the top of its body (and runs first,
   // every tick), so reading it here would always miss the alive→dead edge.
   const prevAlive = useRef<boolean | null>(null)
   useEffect(() => {
-    if (!tick) return
+    const currentTick = tickRef.current
+    if (!currentTick) return
     const was = prevAlive.current
-    prevAlive.current = tick.alive
+    prevAlive.current = currentTick.alive
     if (was === null) return
-    if (was && !tick.alive) {
+    if (was && !currentTick.alive) {
       killStreak.current = 0
       lastKillHeroes.current.clear()
       // G-Revive: ask the backend for this death's buyback verdict. The verdict
       // returns immediately (deterministic) and is broadcast on `buyback-advice`
       // — the listener above owns display; the voiced narrative follows on
       // `buyback-narrative`. Fire-and-forget; ignore errors (SLM/CLI absent).
-      if (tick.in_game) void invoke('request_buyback_advice', { tick }).catch(() => {})
+      if (currentTick.in_game) void invoke('request_buyback_advice', { tick: currentTick }).catch(() => {})
     }
-    if (!was && tick.alive) {
+    if (!was && currentTick.alive) {
       setBuyback(null) // respawned — dismiss the card
     }
-  }, [tick?.alive])
+  }, [tick?.alive, tick?.in_game])
 
   // Post-match reset (Boss 2026-07-20: "จบแมตช์แล้ว overlay ไม่ reset, buyback ค้าง").
   // A match that ends while the player is dead never produces the respawn edge
@@ -331,7 +338,7 @@ export const Overlay: React.FC = () => {
   useEffect(() => {
     // gsiActive matters too: if Dota is killed mid-match the last tick stays
     // frozen at in_game=true and only the watchdog notices.
-    const now = !!tick && tick.in_game && gsiActive
+    const now = !!tick?.in_game && gsiActive
     if (prevInGame.current && !now) {
       setBuyback(null)
       setOverlayAdvice(null)
@@ -351,28 +358,29 @@ export const Overlay: React.FC = () => {
   // within 5 clock-min). Per-trigger cooldown 10 clock-min; server-side
   // throttle (30s wallclock) also caps quota use.
   useEffect(() => {
-    if (!tick || !tick.in_game) return
+    const currentTick = tickRef.current
+    if (!currentTick || !tick?.in_game) return
     const p = prev.current
     if (!p || !sRef.current.masterEnabled || !sRef.current.autoAdvice || !sRef.current.voiceEnabled) return
 
     type Trigger = { key: string }
     const triggers: Trigger[] = []
 
-    for (const milestone of crossedLevelUpMilestones(p.level, tick.level)) {
+    for (const milestone of crossedLevelUpMilestones(p.level, currentTick.level)) {
       triggers.push({ key: `lvl${milestone}` })
     }
-    if (tick.deaths > p.deaths) {
+    if (currentTick.deaths > p.deaths) {
       const last = recentDeathClock.current
-      if (last !== null && tick.clock_time - last > 0 && tick.clock_time - last < 300) {
+      if (last !== null && currentTick.clock_time - last > 0 && currentTick.clock_time - last < 300) {
         triggers.push({ key: 'deathStreak' })
       }
-      recentDeathClock.current = tick.clock_time
+      recentDeathClock.current = currentTick.clock_time
     }
 
     for (const trig of triggers) {
       const last = advisedAt.current[trig.key] ?? -Infinity
-      if (tick.clock_time - last < 600) continue
-      advisedAt.current[trig.key] = tick.clock_time
+      if (currentTick.clock_time - last < 600) continue
+      advisedAt.current[trig.key] = currentTick.clock_time
       void (async () => {
         // Budget gate — silent throttle when the user set a USD ceiling in the
         // QuotaCard and we've blown past it. Only auto-triggers are gated;
@@ -392,11 +400,11 @@ export const Overlay: React.FC = () => {
             }
           }
         } catch { /* budget parse failure -> let the request through */ }
-        return invoke<{ text: string; cached: boolean }>('request_advice', { tick })
+        return invoke<{ text: string; cached: boolean }>('request_advice', { tick: currentTick })
         .then((a) => {
           if (!a?.text) return
           setToast({ event: 'advice', text: a.text })
-          if (sRef.current.calibration) void invoke('capture_calibration_clip', { event: 'advice', line: a.text, context: { clock: tick.clock_time, level: tick.level } }).catch(() => {})
+          if (sRef.current.calibration) void invoke('capture_calibration_clip', { event: 'advice', line: a.text, context: { clock: currentTick.clock_time, level: currentTick.level } }).catch(() => {})
           void invoke('speak_event', {
             event: 'advice',
             fallback: a.text,

@@ -1,10 +1,10 @@
 ---
-version: "0.2.0b"
+version: "0.2.1b"
 title: "CR-005 W1A — Dota hero motion + Closed Beta GID registration"
 doc_id: "CR-005-W1A-landing-hero-gid-closed-beta"
 created_at: "2026-07-20T17:46:14+07:00,ATHER"
-last_update: "2026-07-20T18:16:25+07:00,ATHER"
-updated: "2026-07-20"
+last_update: "2026-07-21T10:35:00+07:00,ATHER"
+updated: "2026-07-21"
 owner: "Boss"
 status: "active"
 superseded_by: null
@@ -252,6 +252,8 @@ Boss อนุมัติให้ “ลุยให้จบ” เมื่�
 - Schema/RLS: [`20260720183000_cr005_closed_beta_registration.sql`](file:///g:/G-Maiden/supabase/migrations/20260720183000_cr005_closed_beta_registration.sql)
   + [`20260720184500_cr005_beta_rls_initplan.sql`](file:///g:/G-Maiden/supabase/migrations/20260720184500_cr005_beta_rls_initplan.sql)
 - Test contract: [`cr005_closed_beta_registration.sql`](file:///g:/G-Maiden/supabase/tests/cr005_closed_beta_registration.sql)
+- Browser Edge Function regression: [`cors.test.ts`](file:///g:/G-Maiden/supabase/functions/mint-gid/cors.test.ts)
+  verifies that preflight and JSON error responses retain the headers required by browser callers.
 - Live `gstore`: migrations `cr005_closed_beta_registration` + `cr005_beta_rls_initplan` applied;
   behavior probe passed for own-row insert/select, cross-user denial and self-approval denial
 
@@ -261,3 +263,4 @@ Boss อนุมัติให้ “ลุยให้จบ” เมื่�
 | --- | --- | --- | --- | --- | --- |
 | 0.1.0b | 2026-07-20 | candidate | Initial W1A proposal for 3D hero replacement and shared-GID Closed Beta registration | — | ATHER |
 | 0.2.0b | 2026-07-20 | beta | Boss approved recommended path; recorded implemented hero, OAuth/GID, live migration and RLS evidence | — | ATHER |
+| 0.2.1b | 2026-07-21 | beta | Added CORS regression coverage for the server-authoritative GID mint path after the post-OAuth browser failure | — | ATHER |

@@ -39,7 +39,7 @@
         "focus": false,
         "resizable": false,
         "fullscreen": false,
-        "visible": true
+        "visible": false
       }
     ],
     "security": {

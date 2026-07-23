@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-07-20T14:20:59.985Z
+สร้างเมื่อ / Generated at: 2026-07-23T13:27:44.075Z
 
-สแกน 91 ไฟล์เอกสาร, 213 nodes, 1200 edges, 66 รายการปัญหา (15 ตัวบล็อก exit code) / scanned 91 doc files, 213 nodes, 1200 edges, 66 violations (15 blocking exit code).
+สแกน 119 ไฟล์เอกสาร, 243 nodes, 1208 edges, 102 รายการปัญหา (51 ตัวบล็อก exit code) / scanned 119 doc files, 243 nodes, 1208 edges, 102 violations (51 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -10,11 +10,13 @@
 
 | Reason | คำอธิบาย / Description | Count | Blocking? |
 | --- | --- | --- | --- |
+| anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 11 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 3 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
 | missing-file | symbol link ไปยังไฟล์ที่ไม่มีจริง / symbol link to a missing file | 1 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 48 | no (informational) |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 25 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -24,10 +26,9 @@
 
 ### docs/DOC-INDEX.md
 
-- [L70] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="SPEC--*")
-- [L72] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="ADR-O-*")
-- [L79] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
-- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+- [L88] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="SPEC--*")
+- [L90] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="ADR-O-*")
+- [L97] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
 
 ### docs/DOCS-IA-REORG-PROPOSAL.md
 
@@ -65,6 +66,11 @@
 
 - [-] **invalid-status** — ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) (severity="error", status="accepted (design) · pending implementation")
 
+### docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md
+
+- [L134] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=422, symbol="rs:L422")
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.3b", changelog="0.4.2b")
+
 ### docs/architecture/assets/design-references/README.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
@@ -77,9 +83,17 @@
 
 - [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="accepted")
 
+### docs/architecture/gmad-current-first-run-user-flow-walkthrough.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.0b", changelog="0.1.0b")
+
 ### docs/architecture/implementation-plan.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/architecture/oauth-jwt-client-authorization-flows.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.3b", changelog="0.3.2b")
 
 ### docs/architecture/spec-orchestra-codedoc-agent.md
 
@@ -131,14 +145,22 @@
 
 ### docs/change request/CR-007-frostline-deck-refresh.md
 
+- [L94] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=268, symbol="announcer_install")
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/change request/CR-008-login-hardening.md
 
+- [L70] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/runtime.rs", anchor=199, symbol="set_master_mode")
+- [L70] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/runtime.rs", anchor=206, symbol="set_master_api_key")
+- [L70] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/runtime.rs", anchor=215, symbol="master_api_key_present")
+- [L76] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/runtime.rs", anchor=424, symbol="set_oauth_pending")
+- [L77] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/runtime.rs", anchor=439, symbol="take_oauth_pending")
+- [L80] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=337, symbol="oauth_callback")
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/change request/CR-009-gannstudio-authoring-install-contract.md
 
+- [L36] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=268, symbol="announcer_install")
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/change request/CR-010-overlay-exact-kill-victim.md
@@ -153,6 +175,86 @@
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
+### docs/change request/CR-014-document-impact-map-gmaiden-adapter.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.0b", changelog="0.1.0b")
+
+### docs/change request/CR-016-gmad-beta-download-admin-controller.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.2b", changelog="0.1.0")
+
+### docs/change request/CR-017-gstore-migration-history-reconciliation.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.0b", changelog="0.1.0b")
+
+### docs/change request/CR-018-ops-route-spa-rewrite.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.0b", changelog="0.1.0b")
+
+### docs/change request/CR-019-owner-role-and-operator-delegation.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.1b", changelog="0.1.0b")
+
+### docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.0b", changelog="0.1.0b")
+
+### docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.0b", changelog="0.1.0b")
+
+### docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.8.2b", changelog="0.1.0b")
+
+### docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.7.1b", changelog="0.1.0b")
+
+### docs/change request/CR-024-gmaiden-3d-studio-and-portable-blender.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.8.1b", changelog="0.1.0b")
+
+### docs/change request/CR-025-codedoc-aligner-structured-output-reliability.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.0b", changelog="0.1.0b")
+
+### docs/change request/CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.1b", changelog="0.1.0b")
+
+### docs/change request/CR-028-gmaiden-3d-hero-production-handoff.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="2.0.0b", changelog="0.1.0b")
+
+### docs/change request/CR-029-gmaiden-art-first-2-5d-hero-replacement.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.1.0b", changelog="1.0.0b")
+
+### docs/change request/CR-030-landing-scroll-driven-cinematic-narrative.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.1.1b", changelog="1.0.0b")
+
+### docs/change request/CR-031-landing-hero-layer-separated-wind-motion.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.1.2b", changelog="1.0.0b")
+
+### docs/change request/CR-032-landing-hero-scene-depth-and-character-rig-decomposition.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.0.1b", changelog="1.0.0b")
+
+### docs/design-system/05-sitemap-ia.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="2.4.1-draft", changelog="2.4.0-draft")
+
+### docs/design-system/08-account-gid.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.1.1-draft", changelog="1.1.0-draft")
+
+### docs/design-system/landing_page_prompt.md
+
+- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
 ### docs/features/FEAT-G-COACH.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
@@ -163,6 +265,7 @@
 
 ### docs/features/FEAT-G-MASTER.md
 
+- [L42] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/runtime.rs", anchor=327, symbol="known_enemies")
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/features/FEAT-G-MEMORY.md
@@ -221,6 +324,10 @@
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
+### docs/operations/gmaiden-closed-beta-release-playbook.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.2", changelog="0.1.0")
+
 ### docs/operations/validation/forms-and-social.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
@@ -228,6 +335,14 @@
 ### docs/product/business-validation-plan.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/product/closed-beta-privacy-notice-draft.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.0.1b", changelog="0.1.0b")
+
+### docs/product/closed-beta-terms-of-use-draft.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.0.0b", changelog="0.1.0b")
 
 ### docs/product/competitive-brief.md
 
@@ -252,6 +367,10 @@
 ### docs/product/software-requirements-specification.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/rca/2026-07-10-voice-pack-path-traversal.md
+
+- [L28] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=268, symbol="announcer_install")
 
 ### docs/reference/dota-ui/README.md
 

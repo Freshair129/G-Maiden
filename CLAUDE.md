@@ -82,6 +82,32 @@ Supabase UUID. Backend is the shared `gstore` Supabase project (`profiles` + RLS
 **public OpenDota** profile + trend baselines. Files: `auth.ts`, `profile.ts`, `supabase.ts`,
 `AccountPage/AuthPanel/SteamLink.tsx`. See ADR-14 + `docs/change request/CR-002-*`.
 
+**Planned GID security + web profile contract (not shipped).** Google stays the primary sign-in;
+there is no GID/password login, and a GID or Steam link is never an account-recovery credential.
+The web landing will distinguish a public, opt-in profile from the signed-in account center. A
+public profile may expose only owner-selected display fields and an opt-in `GID Shield` badge;
+email, phone, recovery contacts, security activity, sessions, and every match/CV/G-Log datum stay
+private. `GID Shield` will mean Google primary + TOTP MFA + verified recovery email + verified
+phone OTP; it is not legal identity or skill verification. Recovery is passwordless: recovery-email
+magic link plus TOTP or phone OTP issues a short recovery session; rebinding Google identity has a
+24-hour hold and sends security alerts. Losing every factor routes to manual support review.
+Phone and recovery data require a separate, RLS-protected private data model (not public `profiles`
+or client-readable auth metadata), explicit SMS consent/rate limiting, and a C-3/HIGH threat-model
+and approval gate before any schema, provider, or route is implemented.
+
+**G-Maiden Closed Beta handoff (landing implemented; legal/desktop gate pending).** The landing at
+`https://g-maiden-landing.vercel.app/` has a production G-Maiden queue sector and the owner/admin
+controller at `/ops`. G-Maiden artifacts live only in the private Supabase Storage bucket
+`gmad-releases`; `request-gmad-download` rechecks the Google-authenticated user, owned GID, and
+active grant before minting a five-minute signed URL. Never put the artifact URL in email, treat an
+email link as an authorization credential, or allow a typed GID to establish entitlement. CR-020
+defines the landing countdown and notification route. CR-021 is a **candidate legal/consent design**:
+before it ships, counsel must approve final Terms/Privacy language and the implementation must add
+server-written, private, versioned acceptance receipts plus optional-consent withdrawal. The next
+planned design task is CR-022: desktop first-run handoff from installed G-Maiden to Google sign-in with
+the same GID, current Terms acceptance and active entitlement; it is C-3/HIGH and must be documented
+and approved before code. Keep raw match, CV, and G-Log data local even in this flow.
+
 When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scalability unity.
 
 ### Hard constraints (non-functional — enforce these)
@@ -204,8 +230,8 @@ Defined in `src-tauri/src/main.rs` via `tauri_plugin_global_shortcut`.
 
 The workspace has local Agent skills registered in `.agents/skills/`.
 
-* **Code-Doc Aligner (`codedoc-aligner`):**
-  - **SOP สำหรับ Agent:** ทุกครั้งที่ได้รับคำสั่งให้ตรวจทาน Git Diff หรือก่อนส่งงานตรวจรับ (Walkthrough) เอเจนต์สามารถเรียกใช้งานสคริปต์ [chunk_and_align.py](file:///g:/G-Maiden/.agents/skills/codedoc-aligner/scripts/chunk_and_align.py) เพื่อตรวจสอบความสอดคล้องกันระหว่างโค้ดที่เกิดการเปลี่ยนแปลงและรายละเอียดในเอกสาร `docs/` ผ่านโมเดล Mellum2 (Local LLM) ได้โดยอัตโนมัติ
+* **RWANG Code-Doc Aligner (`rwang-codedoc-aligner`):**
+  - **SOP สำหรับ Agent:** ทุกครั้งที่ได้รับคำสั่งให้ตรวจทาน Git Diff หรือก่อนส่งงานตรวจรับ (Walkthrough) เอเจนต์สามารถเรียกใช้งานสคริปต์ [chunk_and_align.py](file:///g:/G-Maiden/.agents/skills/rwang-codedoc-aligner/scripts/chunk_and_align.py) เพื่อตรวจสอบความสอดคล้องกันระหว่างโค้ดที่เกิดการเปลี่ยนแปลงและรายละเอียดในเอกสาร `docs/` ผ่านโมเดล Mellum2 (Local LLM) ได้โดยอัตโนมัติ
 
 ## Visual language
 
@@ -238,3 +264,11 @@ only by CI on a pushed version tag — never by a plain push to `main`.
 
 ## repo https://github.com/Freshair129/G-Maiden.git
 deploy to web by vercel cli
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.2.1b | 2026-07-22 | Normalized reader-facing Closed Beta naming from GMAD to G-Maiden while preserving technical identifiers such as functions, anchors, and storage paths. |
+| 0.2.0b | 2026-07-21 | Added GMAD Closed Beta delivery, legal-consent, and desktop first-run handoff context; CR-021 remains counsel-gated and CR-022 is not yet authored. |
+| 0.1.0b | 2026-07-21 | Added the planned GID security and privacy-safe web-profile contract; no implementation is implied. |

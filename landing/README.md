@@ -38,12 +38,20 @@ vercel deploy --prebuilt --prod
 
 Vercel project metadata ใน `.vercel/` ถูก ignore และไม่ควร commit
 
+## Web Analytics
+
+- ใช้ `@vercel/analytics/react` เพราะ landing เป็น React + Vite
+- เก็บเฉพาะ aggregate page views; ไม่มี custom events
+- ตัด query string และ URL fragment ก่อนส่ง เพื่อไม่ให้ OAuth code/token หลุดออกจาก browser
+- ห้ามส่ง email, GID, account state, match state, CV detection หรือ G-Log
+- Git deployment source: `Freshair129/g-maiden-landing` (`main` → production)
+
 ## Scope
 
 - Thai-first fullscreen hero (`100svh`) + shipped-feature signal rails
-- Original sea-captain + stone-titan hero artwork พร้อม cinematic 2.5D motion
+- Original MPFB2-based G-Maiden Ice Mage GLB พร้อม baked idle, bounded cursor/scroll motion และ static fallback
 - Watch-your-back positioning โดยไม่อ้างการเห็นข้อมูลลับหรือทำนายอนาคต
 - Responsive desktop/mobile navigation
 - Keyboard-accessible fullscreen mobile menu
 - Google OAuth + server-authoritative GID + Closed Beta enrollment
-- No analytics, routing หรือ player-data egress
+- Aggregate Vercel page-view analytics เท่านั้น; ไม่มี account/player-data egress หรือ custom events

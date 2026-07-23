@@ -9,13 +9,14 @@ export const LogCard: React.FC<{ live: boolean; clockTime: number }> = ({ live, 
   const [current, setCurrent] = useState<string | null>(null)
   const [matches, setMatches] = useState<MatchLog[]>([])
   const [showHistory, setShowHistory] = useState(false)
+  const clockMinute = Math.floor(clockTime / 60)
   const refreshMatches = () => { void invoke<MatchLog[]>('list_match_logs').then(setMatches).catch(() => setMatches([])) }
   useEffect(() => { void invoke<string>('get_log_dir').then(setDir).catch(() => {}) }, [])
   // Re-check current match path whenever the in-game flag flips or the clock
   // makes a sub-minute jump — covers the start of a new match without polling.
   useEffect(() => {
     void invoke<string | null>('current_match_path').then(setCurrent).catch(() => {})
-  }, [live, Math.floor(clockTime / 60)])
+  }, [live, clockMinute])
   useEffect(() => { if (showHistory) refreshMatches() }, [showHistory, live])
 
   const totalSize = matches.reduce((acc, m) => acc + m.size, 0)

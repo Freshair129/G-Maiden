@@ -1,7 +1,7 @@
 ---
-version: "0.4.1b"
+version: "0.13.1b"
 created_at: "2026-07-20T00:00:00+07:00,ATHER"
-last_update: "2026-07-20T21:20:00+07:00,ATHER"
+last_update: "2026-07-22T13:45:00+07:00,ATHER"
 status: "beta"
 attributes:
   domain: "public-landing"
@@ -11,7 +11,7 @@ attributes:
 
 # G-Maiden Thai-first Landing — Design System
 
-> **Implementation status:** approved and deployed to production for beta validation on 2026-07-20
+> **Implementation status:** CR-029 art-first 2.5D Hero, CR-030 scroll-driven cinematic narrative, CR-031 localized layer motion, and CR-032 scene-depth plus character-rig decomposition scaffold are approved; the shipped Hero remains the approved CM key art while the owner-approved `D:\dota\01.mp4` and `D:\dota\02.mp4` assets are used in the VDO demo section, and production deployment requires the recorded visual-QA gate in `landing/design-qa.md`.
 
 ## 1. Objective
 
@@ -24,14 +24,15 @@ display headline 3 บรรทัด, CTA, proof row และ mobile menu over
 
 ## 2. Complexity and risk
 
-- **Complexity:** C-2 — Documentation-Driven Implementation (`Text → Doc → Code`)
-- **Risk:** MEDIUM — เป็นการเปลี่ยน microsite ทั้งชุดจาก static HTML เป็น React + Vite + Tailwind
+- **Complexity:** C-3 — Architecture-Driven Implementation (`Text → Doc → Diagram → Code`)
+- **Risk:** HIGH — Hero ใช้ responsive cinematic key art, provenance manifest, bounded pointer/scroll motion และ production visual-QA gate
 - **Parent alignment:** ใช้ product truth จาก `docs/product/product-requirements.md` และ
   `docs/product/software-requirements-specification.md`
 - **Peer alignment:** ใช้ COLD BOOTH palette จาก `docs/design-system/02-tokens.md` แต่แยก namespace
   ของ landing เพื่อไม่ชนกับ Command Deck
-- **Known impact:** pricing/waitlist fake-door UI และ `tier_click` analytics ใน landing เดิมจะถูกถอดออก
-  จาก surface นี้; ไม่มีการแตะ Tauri app, overlay, GSI, auth หรือ release version
+- **Known impact:** pricing/waitlist fake-door UI และ `tier_click` analytics ใน landing เดิมถูกถอดออก;
+  อนุญาตเฉพาะ Vercel Web Analytics แบบ aggregate page view ตาม §11.1 โดยไม่มี custom event และไม่แตะ
+  Tauri app, overlay, GSI, auth หรือ release version
 
 ## 3. Accepted concept
 
@@ -39,14 +40,14 @@ display headline 3 บรรทัด, CTA, proof row และ mobile menu over
 
 - Native concept size: `1672 × 941` (ประมาณ 16:9)
 - Concept มีหน้าที่ล็อก composition, hierarchy, density และ G-Maiden color direction
-- Production background ต้องใช้ video URL ที่ผู้ใช้ระบุ ไม่ใช้ภาพ arena ใน concept เป็น asset จริง
+- Production Hero ใช้ approved CM key art ที่คุม composition ได้ ส่วน VDO demo ใช้ local MP4 assets ที่ owner อนุมัติ
 - VANGUARD ใช้เป็น structural reference เท่านั้น และต้องไม่มีคำว่า `VANGUARD` ในหน้า production
 
 ## 4. Page anatomy
 
 หน้าเดียวสูง `100svh`/`100dvh` โดยไม่เกิด page scroll ใน viewport ปกติ:
 
-1. Fullscreen looping background video
+1. Fullscreen responsive `<picture>` Hero art with separate desktop/mobile key art
 2. Readability layer แบบ neutral black เฉพาะบริเวณที่จำเป็น ห้าม tint วิดีโอเป็นสีน้ำเงิน
 3. Navbar ด้านบน
 4. Hero content ชิดซ้ายและกึ่งกลางแนวตั้ง
@@ -125,14 +126,72 @@ another condensed display face.
 
 ## 7. Media treatment
 
-- Source: original G-Maiden sea-captain + stone-titan artwork; ไม่มี Valve/Dota model, costume, logo หรือ asset
-- Production delivery: optimized WebP `206 KB` loaded as the hero background
-- Motion: cinematic 2.5D camera drift + independent particle layer; ไม่มี WebGL/runtime 3D dependency
-- Fit: absolute full-viewport image, `object-fit: cover`, desktop position `62%`, mobile `69%`
-- Background fallback: `--landing-void`
-- Readability: neutral black left-edge/vertical scrim only when required for contrast
-- Prohibited: external copyrighted character video, heavy blur, decorative bloom หรือ character overlap ใน text-safe zone
-- Reduced motion: `prefers-reduced-motion: reduce` หยุด camera/particle animation และแสดง static approved frame
+- Source: approved Hero key art `gmaiden-2-5d-hero-desktop-v1.webp` and `gmaiden-2-5d-hero-mobile-v1.webp`. Owner-approved demo capture assets `D:\dota\01.mp4` and `D:\dota\02.mp4` are reserved for the dedicated VDO demo section.
+- Production delivery: desktop WebP `81,068 bytes` (`1672 × 941`) and mobile WebP `87,836 bytes` (`941 × 1672`) selected through semantic `<picture>` media in the Hero; the VDO demo section uses local MP4 cards with native controls.
+- Motion: bounded `requestAnimationFrame` pointer parallax (`≤9px`, `≤0.6deg`), slow breathing scale, and passive scroll exit on the Hero image. Glow and fog layers are decorative only.
+- Runtime gate: pointer motion runs only for `pointer: fine`; touch and `prefers-reduced-motion: reduce` receive the static responsive frame with all decorative transforms disabled.
+- Fit: the character framing is biased to the right so the headline and countdown keep dedicated reading zones. Media never receives pointer events; headline, countdown, navigation, and CTA remain semantic HTML above the Hero art.
+- Readability: neutral black directional scrims plus a soft in-scene glow preserve the left text-safe zone and the dedicated lower-right countdown zone without washing the Hero flat.
+- Prohibited: Three.js/WebGL in the Hero, runtime image generation, Hero audio, scroll pinning, or interaction-capturing media.
+
+### 7.1 Scroll-driven cinematic narrative
+
+- CR-030 adds one passive scroll controller for the landing root. It writes bounded progress values
+  only to CSS custom properties and never pins, captures, or changes native browser scrolling.
+- Hero art, scrim, and copy use a short composited exit depth. The Open Beta beacon receives an
+  ice-signal sweep tied to that same bounded progress.
+- The G-Maiden access section and feature rails are visible by default. `IntersectionObserver` adds a one-time enhancement
+  state for diagnostic line, brightness, and focus treatment after the content is already visible.
+- Touch and `prefers-reduced-motion: reduce` disable decorative scroll transforms and preserve the
+  same content, anchor links, CTA behavior, and reading order.
+- No GSAP, Lenis, ScrollTrigger, WebGL, remote media, or new runtime dependency is permitted.
+
+### 7.2 Layer-separated Hero wind motion
+
+- CR-031 upgrades the Hero from one flat media plane into a layered render stack: base silhouette,
+  localized hair edge pass, localized cloth edge pass, and frost atmosphere.
+- The layered stack reuses the approved original Hero art source and separates motion through
+  localized masked DOM layers instead of shifting multiple full-frame duplicates. This avoids face
+  skew, body ghosting, and the “one warped slab” failure seen in owner UAT.
+- Hair moves with the highest wind amplitude, cloth follows with a slightly heavier lag, and frost
+  stays in a lighter foreground screen-blend pass so the scene reads as wind instead of a rigid
+  poster translation.
+- One Hero animation loop owns pointer drift and wind-phase variables. The countdown, navigation,
+  and copy stay outside the media stack.
+- Touch and `prefers-reduced-motion: reduce` collapse the layered stack to the static base Hero
+  image so the mobile and accessible paths avoid duplicate-layer ghosting.
+
+### 7.3 Scene-depth and character-rig decomposition scaffold
+
+- CR-032 restructures the Hero into a full scene stack before deeper animation work:
+  background backdrop, mid-depth B, mid-depth A, cave wall left, cave wall right, character layer,
+  and atmosphere overlay.
+- The figure remains one scene layer, but inside that character layer the DOM must expose separate
+  groups for core, hair, left arm, right arm, cloth, and held object.
+- This scaffold is an authoring boundary, not a claim that full skeletal animation is already done.
+  The immediate goal is correct component ownership, layer order, and pivot targeting.
+- Named pivots such as `head`, `shoulder_left`, `elbow_left`, `wrist_left`, `pelvis`,
+  `hair_root_front`, and `object_anchor` are required so later motion can animate the right piece
+  without re-authoring the full Hero structure again.
+- Inside those approved groups, production DOM should expose named subnodes (for example hair
+  strands, arm segments, cloth panels, and held-object parts) through stable targeting hooks so a
+  later motion pass can address one piece without guessing selectors from visual classes alone.
+- This pass may still reuse the approved Hero art through masked DOM slices while the team prepares
+  a more complete asset-separation workflow.
+
+### 7.4 Phase-2 localized motion authoring
+
+- Phase 2 starts after the scene-depth scaffold is in place. It does not claim full skeletal
+  animation; instead it adds separate motion channels for the already-approved subnodes.
+- Head, face, and upper torso stay comparatively stable so the Hero keeps a premium portrait read,
+  while the stronger motion energy belongs to front hair, hair tails, cloth panels, hem, and the
+  held crystal.
+- One animation loop may author stable CSS custom properties for these localized channels. The DOM
+  ownership from CR-032 must remain unchanged; Phase 2 is about motion targeting, not a new layer map.
+- Object glow and aura may pulse independently from cloth and hair motion so the crystal reads as a
+  separate magical element rather than a rigid extension of the hand.
+- Touch and `prefers-reduced-motion: reduce` still collapse the Hero to the static approved image
+  path. Decorative motion channels must fully zero out in that fallback.
 
 ## 8. Components and states
 
@@ -156,7 +215,7 @@ another condensed display face.
 - Secondary CTA: `ดูการทำงาน` → technical design document
 - Signed-in state: แสดง immutable GID + account email และข้อความให้ใช้ Google account เดียวกันใน desktop app
 - Loading/error/signed-out/registered เป็น honest states; control ที่กำลังทำงานถูก disable
-- ไม่มี analytics หรือ player-data egress; enrollment เก็บ identity status เท่านั้น
+- Vercel Web Analytics เก็บเฉพาะ aggregate page view ตาม §11.1; enrollment เก็บ identity status เท่านั้น
 
 ### Closed Beta identity
 
@@ -166,6 +225,72 @@ another condensed display face.
 - `closed_beta_enrollments` เปิด RLS: anon ไม่มีสิทธิ์, authenticated select/insert เฉพาะ row ตัวเอง,
   ไม่มี update grant จึง self-approve เป็น `invited` ไม่ได้
 - web session ไม่ถูกส่งเข้า desktop ผ่าน URL; desktop login ด้วย Google account เดิมแล้ว resolve UUID/GID เดิม
+
+### User journey: สมัครและเข้าสู่ระบบ Closed Beta
+
+```mermaid
+flowchart TD
+  A[ผู้ใช้เปิด G-Maiden Landing] --> B{มี session อยู่แล้วหรือไม่}
+  B -- ไม่มี --> C[กด รับ GID สำหรับ Closed Beta]
+  C --> D[ไปยัง Google Sign-in ผ่าน Supabase Auth]
+  D --> E{ยืนยันตัวตนสำเร็จหรือไม่}
+  E -- ไม่สำเร็จ/ยกเลิก --> F[กลับ Landing พร้อมข้อความให้ลองใหม่]
+  E -- สำเร็จ --> G[Supabase callback กลับโดเมน Landing]
+  G --> H[Landing ขอออกหรืออ่าน GID ผ่าน mint-gid]
+  B -- มี --> H
+  H --> I{ออก/อ่าน GID สำเร็จหรือไม่}
+  I -- ไม่สำเร็จ --> J[แสดงข้อความผิดพลาดและปุ่มลองอีกครั้ง]
+  I -- สำเร็จ --> K[บันทึกหรืออ่านสถานะ Closed Beta]
+  K --> L{สถานะ registered หรือ invited}
+  L -- ใช่ --> M[แสดง GID, อีเมล และสถานะลงทะเบียนแล้ว]
+  L -- ไม่ใช่ --> J
+```
+
+### GID Security และ Web Profile (ข้อกำหนดที่เสนอ — ยังไม่พัฒนา)
+
+- Google OAuth ยังคงเป็นวิธี sign-in หลักเพียงวิธีเดียว; ไม่มี username/password สำหรับ login และ GID
+  เป็นรหัสระบุตัวตนถาวร ไม่ใช่ credential หรือ recovery factor
+- Landing มีสองพื้นที่ที่แยกหน้าที่ชัดเจน: public profile (`/u/<handle-or-gid>`) แสดงเฉพาะข้อมูลที่เจ้าของ
+  เลือกเผยแพร่ และ account center (`/account`) สำหรับเจ้าของที่ sign-in แล้ว เพื่อจัดการ display name,
+  avatar, Steam link, การแจ้งเตือน และความปลอดภัย. Display name แก้ได้จาก Desktop หรือ account center;
+  การเปลี่ยนต้องสะท้อน identity เดียวกัน
+- Public profile ห้ามแสดง email, เบอร์โทร, recovery email, ประวัติ security activity, session, GID secret
+  material หรือข้อมูล match/CV/G-Log. การมีหน้า profile ไม่เปลี่ยนหลักการ local-first ของข้อมูลเกม
+- `GID Shield` เป็น badge ที่ผู้ใช้เลือกแสดงบน public profile ได้. Badge หมายถึงเปิด Google primary,
+  TOTP 2FA, recovery email ที่ยืนยันแล้ว และ phone OTP ที่ยืนยันแล้วเท่านั้น; ไม่ใช่การยืนยันตัวตนทางกฎหมาย
+  หรือการรับรองระดับฝีมือ. สถานะ security เริ่มต้นเป็น private
+- TOTP เป็น second factor หลัก. Phone OTP ใช้เป็น recovery/contact factor เท่านั้น และต้องมี rate limit,
+  consent, E.164 normalization และ SMS provider ที่ได้รับอนุมัติก่อนทำจริง; ห้ามใช้เบอร์โทรเพียงอย่างเดียว
+  เพื่อย้ายบัญชีหรือเปลี่ยน Google identity
+- Recovery email ใช้ passwordless magic link. เมื่อเข้า Google เดิมไม่ได้ ต้องผ่าน recovery email และ
+  TOTP หรือ phone OTP เพื่อออก recovery session ชั่วคราว; การผูก Google account ใหม่มี hold 24 ชั่วโมง
+  และส่ง security alert ไปยังช่องทางเดิม/สำรอง. หากหายทุก factor ต้องเข้าสู่ manual support review;
+  Steam หรือ GID อย่างเดียวไม่พอสำหรับ recovery
+- Security activity ที่ต้องแจ้งทันที: login/new device, เริ่มหรือจบ recovery, เปลี่ยน Google identity,
+  TOTP, phone หรือ recovery email. ข่าวสารผลิตภัณฑ์เป็น opt-in แยกต่างหากและยกเลิกได้. ห้ามส่ง raw match,
+  CV หรือ G-Log ออกนอกเครื่องในทุกกรณี
+- ข้อมูล phone/recovery/security ต้องแยกจาก public `profiles`, จำกัดด้วย RLS และไม่เก็บ secret หรือ
+  authorization state ใน client-accessible user metadata. ต้องมี threat model และ schema/migration review
+  ก่อน implementation เพราะเป็นการเปลี่ยนระดับ C-3 / HIGH
+
+```mermaid
+flowchart TD
+  A[Google OAuth primary] --> B[Account center]
+  B --> C[ตั้งค่า TOTP 2FA]
+  C --> D[ยืนยัน recovery email]
+  D --> E[ยืนยัน phone OTP]
+  E --> F[GID Shield พร้อมเปิด badge แบบ opt-in]
+  X[เข้า Google เดิมไม่ได้] --> Y[Recovery email magic link]
+  Y --> Z{ผ่าน TOTP หรือ phone OTP}
+  Z -->|ผ่าน| R[Temporary recovery session]
+  R --> S[ผูก Google account ใหม่]
+  S --> T[Hold 24 ชั่วโมง + security alerts]
+  Z -->|ไม่ผ่าน| U[Manual support review]
+```
+
+- Google เป็นช่องทางยืนยันตัวตนช่องทางเดียวของ Landing และไม่ส่ง session/token เข้า desktop ผ่าน URL
+- `mint-gid` ต้องรับ browser preflight และตอบ CORS headers ทุกสถานะ ก่อนตรวจ JWT และออก GID
+- ผู้ใช้ที่กลับมาอีกครั้งใช้ flow เดิมเพื่ออ่าน GID และสถานะเดิม ไม่ออก GID ซ้ำ
 
 ### Icons
 
@@ -214,29 +339,50 @@ Landing ใช้ React + Vite + TypeScript + Tailwind แยกจาก app �
 - `landing/tsconfig*.json`
 - `landing/src/main.tsx`
 - `landing/src/App.tsx` — component เดียวตาม brief, `useState` สำหรับ mobile menu
+- `landing/src/HeroMedia25D.tsx` — semantic responsive Hero art with bounded decorative motion and right-weighted framing for CM
 - `landing/src/beta.ts` — Google OAuth PKCE + server-authoritative GID/enrollment state
 - `landing/src/index.css`
-- `landing/assets/hero/g-maiden-sea-captain-stone-titan-v1.webp` — optimized production hero art
+- `landing/public/assets/hero/gmaiden-2-5d-hero-desktop-v1.webp` — desktop production Hero art
+- `landing/public/assets/hero/gmaiden-2-5d-hero-mobile-v1.webp` — mobile production Hero art
+- `landing/public/assets/hero/hero-demo-desktop-01.mp4` — desktop VDO demo asset
+- `landing/public/assets/hero/hero-demo-mobile-02.mp4` — mobile VDO demo asset
 - `landing/README.md` — local dev/build/deploy instructions
 - `supabase/migrations/20260720183000_cr005_closed_beta_registration.sql`
 - `supabase/migrations/20260720184500_cr005_beta_rls_initplan.sql`
 - `supabase/tests/cr005_closed_beta_registration.sql`
 
 Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind/PostCSS/Autoprefixer, `lucide-react` และ
-`@supabase/supabase-js` แบบ pinned. ไม่เพิ่ม router, analytics หรือ state library
+`@supabase/supabase-js` กับ `@vercel/analytics` แบบ pinned. ไม่เพิ่ม router หรือ state library
+
+### 11.1 Web Analytics privacy boundary
+
+- ใช้ `@vercel/analytics/react` สำหรับ React + Vite; ห้ามใช้ entrypoint `/next`
+- เก็บเฉพาะ page view แบบ aggregate และไม่สร้าง custom event
+- `beforeSend` ต้องตัด query string และ fragment ออกจาก URL ก่อนส่งทุกครั้ง
+- ห้ามส่ง email, GID, OAuth code/token, Supabase session, account state, match state, CV detection หรือ G-Log
+- Analytics เป็นของ public landing เท่านั้นและไม่ถูกนำเข้า desktop application
+- Local preview บน `localhost` และ `127.0.0.1` ต้องไม่ mount analytics script เพื่อไม่ให้เกิด console noise
+  หรือหลอกว่า local QA เป็น production page view
+- Production source คือ private repository `Freshair129/g-maiden-landing`; branch `main` deploy production
+  ผ่าน Vercel Git integration และ branch อื่นใช้ preview deployment
 
 ## 12. Acceptance, success, and exit criteria
 
 ### Acceptance criteria
 
 - ชื่อและ copy ทั้งหมดเป็น G-Maiden; ไม่มี VANGUARD production copy
-- ใช้ exact CloudFront video URL และ media attributes ตาม brief
+- Hero ใช้ exact approved key art assets และ VDO demo section ใช้ exact local assets `hero-demo-desktop-01.mp4` และ `hero-demo-mobile-02.mp4` ตาม spec
 - Desktop/mobile composition และ mobile menu ตรง spec
 - Color/type/icon/motion ใช้ tokens และ component rules ในเอกสารนี้
 - Keyboard navigation, `Escape`, focus return และ reduced-motion ทำงาน
 - CTA Google OAuth ทำงานจริง; successful signup แสดง GID และลง enrollment แบบ idempotent
+- Analytics ส่งเฉพาะ redacted page view และไม่ส่ง query/fragment หรือข้อมูล account/game
 - signup ใหม่เป็น generation `B`; existing GID ไม่ถูกเปลี่ยน
 - anon/cross-user/self-approve ถูก RLS/grants ปฏิเสธ
+- public profile ไม่เผยข้อมูลติดต่อหรือข้อมูลเกมภายในเครื่อง และ public badge ต้อง opt-in
+- ไม่มี password login; GID/Steam เพียงอย่างเดียวใช้ recovery หรือเปลี่ยน Google identity ไม่ได้
+- recovery ต้องบังคับ recovery email ร่วมกับ TOTP หรือ phone OTP, ทำ hold 24 ชั่วโมงก่อน rebind identity
+  และบันทึก/แจ้ง security activity
 
 ### Success criteria
 
@@ -244,7 +390,7 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 - ไม่มี overflow ที่ `320 × 568`, `390 × 844`, `768 × 1024`, `1366 × 768`, `1440 × 900`
 - Primary content ไม่ถูกตัดใน viewport เล็ก
 - Video error มี dark fallback และ content ยังอ่านได้
-- hero artwork ≤250 KB และไม่มี external background-video request
+- Hero และ VDO demo ไม่มี external media request; ทุก asset ต้องเป็น local static asset ภายใน `landing/public/assets/hero/`
 - production callback กลับ landing origin ที่อยู่ใน Supabase redirect allow list
 
 ### Exit criteria
@@ -253,6 +399,7 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 - จับ screenshot ที่ native concept ratio เมื่อทำได้
 - เปรียบเทียบ concept กับ render อย่างน้อย 5 จุด: copy, composition, typography, palette,
   media treatment, spacing, responsive behavior และ motion
+- `landing/design-qa.md` ต้องบันทึก source/render comparison ใน artifact เดียวกันทั้ง `1440×900` และ `390×844` พร้อม `final result: passed` ก่อน deploy
 - ทำ above-the-fold copy diff ได้ผลตรงกับ §5
 - รัน `codedoc-aligner`; exit `2` ถือว่า gate ไม่ผ่าน ไม่ใช่ aligned
 - ไม่แตะ/รวมไฟล์ dirty เดิมที่อยู่นอก `landing/`
@@ -269,17 +416,34 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 ## 14. Out of scope
 
 - การเปลี่ยน Command Deck, overlay หรือ Rust backend
-- pricing, analytics, social graph, invite admin dashboard และ email campaign
-- Version bump, release, tag หรือ deploy
+- pricing, custom-event analytics, social graph, invite admin dashboard และ email campaign
+- Desktop app version bump, GitHub release และ tag; Landing production deploy อยู่ภายใต้ CR-029 เท่านั้น
 - การใช้ concept image เป็น production background
 - prediction percentage, hidden-information claim และ future path projection
+- การ implement MFA, SMS provider, schema migration, recovery workflow หรือ public-profile routes ก่อนผ่าน
+  threat-model และ approval gate
 
 ## CHANGELOG
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
+| 0.13.1b | 2026-07-22 | beta | Normalized reader-facing landing narrative references from GMAD to G-Maiden while preserving technical identifiers and history. | - | ATHER |
+| 0.13.0b | 2026-07-22 | beta | Kept the approved Hero art with corrected right-side framing and moved the owner-approved `D:\dota` MP4 assets into a dedicated VDO demo section. | - | ATHER |
 | 0.1.0b | 2026-07-20 | candidate | Initial G-Maiden landing design-system proposal using the VANGUARD brief as structural reference | — | ATHER |
 | 0.2.0b | 2026-07-20 | beta | Approved implementation; added production cold video grade and Vercel deployment state | — | ATHER |
 | 0.3.0b | 2026-07-20 | beta | Original cinematic hero, Closed Beta Google OAuth/GID enrollment, RLS contract and production verification gates | — | ATHER |
 | 0.4.0b | 2026-07-20 | beta | Thai-first hero and open feature rails; watch-your-back positioning without prediction overclaims | — | ATHER |
 | 0.4.1b | 2026-07-20 | beta | Production asset isolation and verified Vercel deployment | — | ATHER |
+| 0.5.0b | 2026-07-20 | beta | Approved aggregate Vercel page-view analytics with URL redaction and standalone Git deployment contract | — | ATHER |
+| 0.5.1b | 2026-07-21 | beta | Added Closed Beta signup and login user-flow diagram, including callback, GID, registration, and recoverable failure states | - | ATHER |
+| 0.6.0b | 2026-07-21 | beta | Added proposed GID Shield, 2FA, phone/recovery, security notification, and privacy-safe web-profile contract | - | ATHER |
+| 0.7.0b | 2026-07-21 | beta | Replaced the static two-character Hero with the reviewed MPFB2 G-Maiden GLB, accessible fallback, bounded cursor/scroll motion, and CR-028 production handoff | - | ATHER |
+| 0.8.0b | 2026-07-21 | beta | Superseded the rejected MPFB/WebGL Hero with CR-029 responsive cinematic 2.5D media, provenance, bounded passive motion, and mandatory source/render visual QA | - | ATHER |
+| 0.9.0b | 2026-07-21 | beta | Added CR-030 bounded scroll-driven cinematic narrative: one passive progress controller, signal beacon, and observer-enhanced GMAD and feature rails without scroll hijacking | - | ATHER |
+| 0.9.1b | 2026-07-21 | beta | Clarified the implementation status header and normalized document timestamps for the approved CR-030 landing narrative. | - | ATHER |
+| 0.12.1b | 2026-07-21 | beta | Clarified and aligned analytics behavior so local preview on localhost does not mount Vercel Analytics while production privacy rules stay unchanged. | - | ATHER |
+| 0.12.0b | 2026-07-21 | beta | Added Phase-2 localized motion-authoring guidance for head stability, hair tails, cloth channels, and held-crystal pulse on top of the CR-032 rig scaffold. | - | ATHER |
+| 0.11.1b | 2026-07-21 | beta | Clarified CR-032 implementation detail: Hero subcomponents now require stable named node targeting inside each approved rig group for later motion authoring. | - | ATHER |
+| 0.11.0b | 2026-07-21 | beta | Added CR-032 scene-depth and character-rig scaffold requirements so the Hero exposes cave layers, character subcomponents, and pivot ownership before deeper animation work. | - | ATHER |
+| 0.10.1b | 2026-07-21 | beta | Clarified CR-031 to use localized hair and cloth edge masks instead of whole-frame duplicate planes after owner UAT found skewed facial proportions. | - | ATHER |
+| 0.10.0b | 2026-07-21 | beta | Added CR-031 layer-separated Hero wind motion contract with base, hair, cloth, and frost layers plus static fallback rules. | - | ATHER |

@@ -16,6 +16,13 @@ use crate::signal::Sensitivity;
 /// at the main menu, and it keeps idle CPU near zero.
 static IN_GAME: AtomicBool = AtomicBool::new(false);
 
+/// Closed-Beta runtime authorization. This is deliberately process-local and
+/// defaults to false: cached UI state, a GID, or an installer must never arm
+/// the gameplay runtime. It is set only after the native entitlement verifier
+/// receives an `eligible` decision from the JWT-protected backend.
+static GMAD_ENTITLED: AtomicBool = AtomicBool::new(false);
+static GMAD_CAPTURE_STARTED: AtomicBool = AtomicBool::new(false);
+
 /// Whether G-Signal gank warnings are enabled (mirrors the UI toggle). Defaults
 /// on so a fresh install warns out of the box.
 static SIGNAL_ENABLED: AtomicBool = AtomicBool::new(true);
@@ -76,6 +83,23 @@ pub fn set_in_game(v: bool) {
 }
 pub fn in_game() -> bool {
     IN_GAME.load(Ordering::Relaxed)
+}
+
+pub fn set_gmad_entitled(value: bool) {
+    GMAD_ENTITLED.store(value, Ordering::SeqCst);
+    if !value {
+        set_in_game(false);
+    }
+}
+
+pub fn gmad_entitled() -> bool {
+    GMAD_ENTITLED.load(Ordering::SeqCst)
+}
+
+pub fn mark_gmad_capture_started() -> bool {
+    GMAD_CAPTURE_STARTED
+        .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
+        .is_ok()
 }
 
 pub fn set_player_team_name(name: &str) {
@@ -415,31 +439,62 @@ pub fn clear_roster() {
 // while a sign-in the app *itself* started is in flight: single-use + time-boxed.
 // The OAuth redirect URL is deliberately left untouched so it keeps matching the
 // Supabase redirect allowlist.
-static OAUTH_PENDING: AtomicBool = AtomicBool::new(false);
-static OAUTH_PENDING_SINCE_MS: AtomicU64 = AtomicU64::new(0);
+struct OAuthPending {
+    state: String,
+    since_ms: u64,
+}
+
+static OAUTH_PENDING: Mutex<Option<OAuthPending>> = Mutex::new(None);
 const OAUTH_PENDING_TIMEOUT_MS: u64 = 600_000; // 10 min — generous for the browser round-trip
+const OAUTH_STATE_MIN_LEN: usize = 16;
+const OAUTH_STATE_MAX_LEN: usize = 4096;
 
 /// Arm the gate: a sign-in the app initiated is now in flight (called from the
 /// frontend right before it opens the system browser).
-pub fn set_oauth_pending(now_ms: u64) {
-    OAUTH_PENDING_SINCE_MS.store(now_ms, Ordering::Relaxed);
-    // Release publishes the SINCE store above to any thread that Acquire-observes
-    // this flag in take_oauth_pending (the callback runs on a different thread).
-    OAUTH_PENDING.store(true, Ordering::Release);
+pub fn set_oauth_pending(state: String, now_ms: u64) -> bool {
+    if !(OAUTH_STATE_MIN_LEN..=OAUTH_STATE_MAX_LEN).contains(&state.len()) {
+        return false;
+    }
+    if let Ok(mut pending) = OAUTH_PENDING.lock() {
+        *pending = Some(OAuthPending {
+            state,
+            since_ms: now_ms,
+        });
+        true
+    } else {
+        false
+    }
 }
 
 /// Pure, testable window check for the gate.
-fn oauth_pending_ok(pending: bool, since_ms: u64, now_ms: u64, timeout_ms: u64) -> bool {
-    pending && now_ms.saturating_sub(since_ms) <= timeout_ms
+fn oauth_pending_ok(
+    pending: bool,
+    expected_state: &str,
+    callback_state: Option<&str>,
+    since_ms: u64,
+    now_ms: u64,
+    timeout_ms: u64,
+) -> bool {
+    pending
+        && callback_state.is_some_and(|state| state == expected_state)
+        && now_ms.saturating_sub(since_ms) <= timeout_ms
 }
 
 /// Consume the gate (single-use): `true` only if a sign-in is in flight AND still
 /// within the timeout window. Clears the flag either way so a code is honored at
 /// most once.
-pub fn take_oauth_pending(now_ms: u64) -> bool {
-    let was = OAUTH_PENDING.swap(false, Ordering::AcqRel);
-    let since = OAUTH_PENDING_SINCE_MS.load(Ordering::Relaxed);
-    oauth_pending_ok(was, since, now_ms, OAUTH_PENDING_TIMEOUT_MS)
+pub fn take_oauth_pending(callback_state: Option<&str>, now_ms: u64) -> bool {
+    let pending = OAUTH_PENDING.lock().ok().and_then(|mut p| p.take());
+    pending.is_some_and(|p| {
+        oauth_pending_ok(
+            true,
+            &p.state,
+            callback_state,
+            p.since_ms,
+            now_ms,
+            OAUTH_PENDING_TIMEOUT_MS,
+        )
+    })
 }
 
 #[cfg(test)]
@@ -448,23 +503,64 @@ mod tests {
 
     #[test]
     fn oauth_gate_rejects_unsolicited_and_expired_callbacks() {
-        assert!(!oauth_pending_ok(false, 0, 1_000, 600_000), "no sign-in in flight → reject");
-        assert!(oauth_pending_ok(true, 1_000, 1_000, 600_000), "same instant → accept");
         assert!(
-            oauth_pending_ok(true, 1_000, 1_000 + 599_000, 600_000),
+            !oauth_pending_ok(false, "expected", Some("expected"), 0, 1_000, 600_000),
+            "no sign-in in flight → reject"
+        );
+        assert!(
+            oauth_pending_ok(true, "expected", Some("expected"), 1_000, 1_000, 600_000),
+            "same instant + matching state → accept"
+        );
+        assert!(
+            !oauth_pending_ok(true, "expected", Some("attacker"), 1_000, 1_000, 600_000),
+            "wrong state → reject"
+        );
+        assert!(
+            !oauth_pending_ok(true, "expected", None, 1_000, 1_000, 600_000),
+            "missing state → reject"
+        );
+        assert!(
+            oauth_pending_ok(
+                true,
+                "expected",
+                Some("expected"),
+                1_000,
+                1_000 + 599_000,
+                600_000
+            ),
             "within window → accept"
         );
         assert!(
-            !oauth_pending_ok(true, 1_000, 1_000 + 600_001, 600_000),
+            !oauth_pending_ok(
+                true,
+                "expected",
+                Some("expected"),
+                1_000,
+                1_000 + 600_001,
+                600_000
+            ),
             "past window → reject"
         );
     }
 
     #[test]
     fn take_oauth_pending_is_single_use() {
-        set_oauth_pending(10_000);
-        assert!(take_oauth_pending(10_500), "first consume within window");
-        assert!(!take_oauth_pending(10_600), "already consumed → reject the replay");
+        assert!(set_oauth_pending("test-state-0123456789".to_string(), 10_000));
+        assert!(
+            take_oauth_pending(Some("test-state-0123456789"), 10_500),
+            "first consume within window"
+        );
+        assert!(
+            !take_oauth_pending(Some("test-state-0123456789"), 10_600),
+            "already consumed → reject the replay"
+        );
+    }
+
+    #[test]
+    fn oauth_gate_rejects_unusable_state_before_arming() {
+        assert!(!set_oauth_pending("short".to_string(), 10_000));
+        assert!(!take_oauth_pending(Some("short"), 10_500));
+        assert!(!set_oauth_pending("x".repeat(OAUTH_STATE_MAX_LEN + 1), 10_000));
     }
 
     #[test]
