@@ -7,7 +7,7 @@ const SUPABASE_PUBLISHABLE_KEY =
   import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY ??
   'sb_publishable__vr0-aNdudlq3aPbH8OMXw_0rr0JScZ'
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+export const landingSupabase = createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: {
     flowType: 'pkce',
     detectSessionInUrl: true,
@@ -29,7 +29,7 @@ function errorMessage(error: unknown) {
 }
 
 async function loadGid(user: User): Promise<ProfileRow> {
-  const { data: profile, error: profileError } = await supabase
+  const { data: profile, error: profileError } = await landingSupabase
     .from('profiles')
     .select('gid_code, generation')
     .eq('id', user.id)
@@ -38,7 +38,7 @@ async function loadGid(user: User): Promise<ProfileRow> {
   if (profileError) throw profileError
   if (profile.gid_code) return profile
 
-  const { data: minted, error: mintError } = await supabase.functions.invoke<{
+  const { data: minted, error: mintError } = await landingSupabase.functions.invoke<{
     gid_code?: string
   }>('mint-gid')
 
@@ -61,23 +61,6 @@ export function useBetaEnrollment() {
 
     try {
       const profile = await loadGid(user)
-      const { error: insertError } = await supabase
-        .from('closed_beta_enrollments')
-        .insert({ user_id: user.id, source: 'landing' })
-
-      if (insertError && insertError.code !== '23505') throw insertError
-
-      const { data: enrollment, error: enrollmentError } = await supabase
-        .from('closed_beta_enrollments')
-        .select('status')
-        .eq('user_id', user.id)
-        .single<{ status: string }>()
-
-      if (enrollmentError) throw enrollmentError
-      if (!['registered', 'invited'].includes(enrollment.status)) {
-        throw new Error('บัญชีนี้ไม่อยู่ในสถานะลงทะเบียน Closed Beta')
-      }
-
       setGid(profile.gid_code ?? '')
       setGeneration(profile.generation)
       setStatus('registered')
@@ -90,7 +73,7 @@ export function useBetaEnrollment() {
   useEffect(() => {
     let active = true
 
-    void supabase.auth.getSession().then(({ data, error: sessionError }) => {
+    void landingSupabase.auth.getSession().then(({ data, error: sessionError }) => {
       if (!active) return
       if (sessionError) {
         setError(errorMessage(sessionError))
@@ -103,7 +86,7 @@ export function useBetaEnrollment() {
       else setStatus('signed-out')
     })
 
-    const { data: listener } = supabase.auth.onAuthStateChange((_event, nextSession) => {
+    const { data: listener } = landingSupabase.auth.onAuthStateChange((_event, nextSession) => {
       if (!active) return
       setSession(nextSession)
       window.setTimeout(() => {
@@ -132,7 +115,7 @@ export function useBetaEnrollment() {
     setStatus('loading')
     setError('')
     const redirectTo = `${window.location.origin}${window.location.pathname}`
-    const { error: signInError } = await supabase.auth.signInWithOAuth({
+    const { error: signInError } = await landingSupabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo },
     })
@@ -144,7 +127,7 @@ export function useBetaEnrollment() {
   }, [session, syncEnrollment])
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut()
+    await landingSupabase.auth.signOut()
   }, [])
 
   return {
@@ -152,6 +135,7 @@ export function useBetaEnrollment() {
     gid,
     generation,
     email: session?.user.email ?? '',
+    isSignedIn: Boolean(session?.user),
     error,
     register,
     signOut,

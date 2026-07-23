@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-23T18:03:11.623Z",
+  "generatedAt": "2026-07-23T18:08:05.852Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -67,6 +67,11 @@
       "path": "docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md"
     },
     {
+      "id": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
+      "type": "doc",
+      "path": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md"
+    },
+    {
       "id": "docs/architecture/adr/ADR-17-dev-runtime-governance-split.md",
       "type": "doc",
       "path": "docs/architecture/adr/ADR-17-dev-runtime-governance-split.md"
@@ -92,9 +97,19 @@
       "path": "docs/architecture/g-maiden-ui-sitemap-flow-board.md"
     },
     {
+      "id": "docs/architecture/gmad-current-first-run-user-flow-walkthrough.md",
+      "type": "doc",
+      "path": "docs/architecture/gmad-current-first-run-user-flow-walkthrough.md"
+    },
+    {
       "id": "docs/architecture/implementation-plan.md",
       "type": "doc",
       "path": "docs/architecture/implementation-plan.md"
+    },
+    {
+      "id": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "type": "doc",
+      "path": "docs/architecture/oauth-jwt-client-authorization-flows.md"
     },
     {
       "id": "docs/architecture/product-family-design-map.md",
@@ -110,6 +125,11 @@
       "id": "docs/architecture/spikes/S-1-minimap-cv.md",
       "type": "doc",
       "path": "docs/architecture/spikes/S-1-minimap-cv.md"
+    },
+    {
+      "id": "docs/architecture/spikes/S-2-oauth-broker-provider-capability.md",
+      "type": "doc",
+      "path": "docs/architecture/spikes/S-2-oauth-broker-provider-capability.md"
     },
     {
       "id": "docs/architecture/tech-stack.md",
@@ -182,6 +202,11 @@
       "path": "docs/change request/CR-005-W1B-thai-features-and-doc-encoding.md"
     },
     {
+      "id": "docs/change request/CR-005-W1C-landing-analytics-git-integration.md",
+      "type": "doc",
+      "path": "docs/change request/CR-005-W1C-landing-analytics-git-integration.md"
+    },
+    {
       "id": "docs/change request/CR-005-landing-auth-social.md",
       "type": "doc",
       "path": "docs/change request/CR-005-landing-auth-social.md"
@@ -215,6 +240,101 @@
       "id": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
       "type": "doc",
       "path": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md"
+    },
+    {
+      "id": "docs/change request/CR-014-document-impact-map-gmaiden-adapter.md",
+      "type": "doc",
+      "path": "docs/change request/CR-014-document-impact-map-gmaiden-adapter.md"
+    },
+    {
+      "id": "docs/change request/CR-015-genesisblockdb-document-intelligence-projection.md",
+      "type": "doc",
+      "path": "docs/change request/CR-015-genesisblockdb-document-intelligence-projection.md"
+    },
+    {
+      "id": "docs/change request/CR-016-gmad-beta-download-admin-controller.md",
+      "type": "doc",
+      "path": "docs/change request/CR-016-gmad-beta-download-admin-controller.md"
+    },
+    {
+      "id": "docs/change request/CR-017-gstore-migration-history-reconciliation.md",
+      "type": "doc",
+      "path": "docs/change request/CR-017-gstore-migration-history-reconciliation.md"
+    },
+    {
+      "id": "docs/change request/CR-018-ops-route-spa-rewrite.md",
+      "type": "doc",
+      "path": "docs/change request/CR-018-ops-route-spa-rewrite.md"
+    },
+    {
+      "id": "docs/change request/CR-019-owner-role-and-operator-delegation.md",
+      "type": "doc",
+      "path": "docs/change request/CR-019-owner-role-and-operator-delegation.md"
+    },
+    {
+      "id": "docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md",
+      "type": "doc",
+      "path": "docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md"
+    },
+    {
+      "id": "docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md",
+      "type": "doc",
+      "path": "docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md"
+    },
+    {
+      "id": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
+      "type": "doc",
+      "path": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md"
+    },
+    {
+      "id": "docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md",
+      "type": "doc",
+      "path": "docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md"
+    },
+    {
+      "id": "docs/change request/CR-024-gmaiden-3d-studio-and-portable-blender.md",
+      "type": "doc",
+      "path": "docs/change request/CR-024-gmaiden-3d-studio-and-portable-blender.md"
+    },
+    {
+      "id": "docs/change request/CR-025-codedoc-aligner-structured-output-reliability.md",
+      "type": "doc",
+      "path": "docs/change request/CR-025-codedoc-aligner-structured-output-reliability.md"
+    },
+    {
+      "id": "docs/change request/CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import.md",
+      "type": "doc",
+      "path": "docs/change request/CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import.md"
+    },
+    {
+      "id": "docs/change request/CR-027-comfyui-local-generation-and-provenance-bridge.md",
+      "type": "doc",
+      "path": "docs/change request/CR-027-comfyui-local-generation-and-provenance-bridge.md"
+    },
+    {
+      "id": "docs/change request/CR-028-gmaiden-3d-hero-production-handoff.md",
+      "type": "doc",
+      "path": "docs/change request/CR-028-gmaiden-3d-hero-production-handoff.md"
+    },
+    {
+      "id": "docs/change request/CR-029-gmaiden-art-first-2-5d-hero-replacement.md",
+      "type": "doc",
+      "path": "docs/change request/CR-029-gmaiden-art-first-2-5d-hero-replacement.md"
+    },
+    {
+      "id": "docs/change request/CR-030-landing-scroll-driven-cinematic-narrative.md",
+      "type": "doc",
+      "path": "docs/change request/CR-030-landing-scroll-driven-cinematic-narrative.md"
+    },
+    {
+      "id": "docs/change request/CR-031-landing-hero-layer-separated-wind-motion.md",
+      "type": "doc",
+      "path": "docs/change request/CR-031-landing-hero-layer-separated-wind-motion.md"
+    },
+    {
+      "id": "docs/change request/CR-032-landing-hero-scene-depth-and-character-rig-decomposition.md",
+      "type": "doc",
+      "path": "docs/change request/CR-032-landing-hero-scene-depth-and-character-rig-decomposition.md"
     },
     {
       "id": "docs/change request/DXGI-task-assignment.md",
@@ -270,6 +390,11 @@
       "id": "docs/design-system/README.md",
       "type": "doc",
       "path": "docs/design-system/README.md"
+    },
+    {
+      "id": "docs/design-system/landing_page_prompt.md",
+      "type": "doc",
+      "path": "docs/design-system/landing_page_prompt.md"
     },
     {
       "id": "docs/features/FEAT-G-COACH.md",
@@ -362,6 +487,11 @@
       "path": "docs/guides/small-model-prompting.md"
     },
     {
+      "id": "docs/operations/gmaiden-closed-beta-release-playbook.md",
+      "type": "doc",
+      "path": "docs/operations/gmaiden-closed-beta-release-playbook.md"
+    },
+    {
       "id": "docs/operations/validation/forms-and-social.md",
       "type": "doc",
       "path": "docs/operations/validation/forms-and-social.md"
@@ -385,6 +515,16 @@
       "id": "docs/product/business-validation-plan.md",
       "type": "doc",
       "path": "docs/product/business-validation-plan.md"
+    },
+    {
+      "id": "docs/product/closed-beta-privacy-notice-draft.md",
+      "type": "doc",
+      "path": "docs/product/closed-beta-privacy-notice-draft.md"
+    },
+    {
+      "id": "docs/product/closed-beta-terms-of-use-draft.md",
+      "type": "doc",
+      "path": "docs/product/closed-beta-terms-of-use-draft.md"
     },
     {
       "id": "docs/product/competitive-brief.md",
@@ -557,6 +697,16 @@
       "path": "src/src/supabase.ts"
     },
     {
+      "id": "src-tauri/src/gsi.rs",
+      "type": "code",
+      "path": "src-tauri/src/gsi.rs"
+    },
+    {
+      "id": "supabase/config.toml",
+      "type": "code",
+      "path": "supabase/config.toml"
+    },
+    {
       "id": "src/src/companion.ts",
       "type": "code",
       "path": "src/src/companion.ts"
@@ -680,11 +830,6 @@
       "id": "gpu-feeder/src/main.rs",
       "type": "code",
       "path": "gpu-feeder/src/main.rs"
-    },
-    {
-      "id": "src-tauri/src/gsi.rs",
-      "type": "code",
-      "path": "src-tauri/src/gsi.rs"
     },
     {
       "id": "src-tauri/src/cv/mod.rs",
@@ -830,6 +975,11 @@
       "id": "supabase/tests/cr005_closed_beta_registration.sql",
       "type": "code",
       "path": "supabase/tests/cr005_closed_beta_registration.sql"
+    },
+    {
+      "id": "supabase/functions/mint-gid/cors.test.ts",
+      "type": "code",
+      "path": "supabase/functions/mint-gid/cors.test.ts"
     },
     {
       "id": "src/src/AuthPanel.tsx",
@@ -1112,157 +1262,169 @@
       "from": "docs/DOC-INDEX.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 5
+      "line": 21
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 7
+      "line": 23
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/product/business-requirements.md",
       "type": "wikilink",
-      "line": 9
+      "line": 25
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/product/business-validation-plan.md",
       "type": "wikilink",
-      "line": 11
+      "line": 27
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
-      "line": 13
+      "line": 29
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/product/one-pager.md",
       "type": "wikilink",
-      "line": 15
+      "line": 31
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/product/roadmap.md",
       "type": "wikilink",
-      "line": 17
+      "line": 33
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/product/roadmap-legacy.md",
       "type": "wikilink",
-      "line": 19
+      "line": 35
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/README.md",
       "type": "wikilink",
-      "line": 24
+      "line": 40
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/01-foundations.md",
       "type": "wikilink",
-      "line": 26
+      "line": 42
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/02-tokens.md",
       "type": "wikilink",
-      "line": 28
+      "line": 44
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/03-layout.md",
       "type": "wikilink",
-      "line": 30
+      "line": 46
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/04-components.md",
       "type": "wikilink",
-      "line": 32
+      "line": 48
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
-      "line": 34
+      "line": 50
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/06-stack.md",
       "type": "wikilink",
-      "line": 36
+      "line": 52
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/tech-stack.md",
       "type": "wikilink",
-      "line": 43
+      "line": 59
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
-      "line": 45
+      "line": 61
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
-      "line": 47
+      "line": 63
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/design-system.md",
       "type": "wikilink",
-      "line": 49
+      "line": 65
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/product-family-design-map.md",
       "type": "wikilink",
-      "line": 51
+      "line": 67
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "type": "wikilink",
-      "line": 53
+      "line": 69
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/implementation-plan.md",
       "type": "wikilink",
-      "line": 55
+      "line": 71
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "type": "wikilink",
+      "line": 73
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/README.md",
       "type": "wikilink",
-      "line": 77
+      "line": 95
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/operations/gmaiden-closed-beta-release-playbook.md",
+      "type": "wikilink",
+      "line": 102
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 91
+      "line": 112
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 93
+      "line": 114
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 98
+      "line": 119
     },
     {
       "from": "docs/README.md",
@@ -1665,6 +1827,24 @@
       "to": "docs/change request/CR-003-account-phase1-wallet-billing.md",
       "type": "wikilink",
       "line": 235
+    },
+    {
+      "from": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
+      "to": "src-tauri/src/gsi.rs",
+      "type": "symbol",
+      "line": 134
+    },
+    {
+      "from": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
+      "to": "supabase/config.toml",
+      "type": "symbol",
+      "line": 160
+    },
+    {
+      "from": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
+      "to": "src/src/supabase.ts",
+      "type": "symbol",
+      "line": 166
     },
     {
       "from": "docs/architecture/design-system.md",
@@ -2085,6 +2265,12 @@
       "to": ".github/workflows/ci.yml",
       "type": "symbol",
       "line": 142
+    },
+    {
+      "from": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "to": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
+      "type": "wikilink",
+      "line": 33
     },
     {
       "from": "docs/architecture/spikes/S-1-minimap-cv.md",
@@ -3197,6 +3383,12 @@
       "line": 254
     },
     {
+      "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
+      "to": "supabase/functions/mint-gid/cors.test.ts",
+      "type": "symbol",
+      "line": 255
+    },
+    {
       "from": "docs/change request/CR-005-landing-auth-social.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
@@ -4305,6 +4497,12 @@
       "to": "src/src/styles.css",
       "type": "symbol",
       "line": 157
+    },
+    {
+      "from": "docs/change request/CR-015-genesisblockdb-document-intelligence-projection.md",
+      "to": "docs/change request/CR-014-document-impact-map-gmaiden-adapter.md",
+      "type": "symbol",
+      "line": 30
     },
     {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
@@ -5636,13 +5834,13 @@
       "from": "docs/design-system/05-sitemap-ia.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
-      "line": 177
+      "line": 196
     },
     {
       "from": "docs/design-system/05-sitemap-ia.md",
       "to": "CLAUDE.md",
       "type": "symbol",
-      "line": 177
+      "line": 196
     },
     {
       "from": "docs/design-system/06-stack.md",
@@ -5816,13 +6014,13 @@
       "from": "docs/design-system/08-account-gid.md",
       "to": "docs/audits/2026-07-07-independent-full-audit.md",
       "type": "wikilink",
-      "line": 58
+      "line": 64
     },
     {
       "from": "docs/design-system/08-account-gid.md",
       "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
-      "line": 97
+      "line": 124
     },
     {
       "from": "docs/design-system/08-account-gid.md",
@@ -5870,13 +6068,13 @@
       "from": "docs/design-system/08-account-gid.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 73
+      "line": 100
     },
     {
       "from": "docs/design-system/08-account-gid.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 73
+      "line": 100
     },
     {
       "from": "docs/design-system/README.md",
@@ -7268,211 +7466,187 @@
       "from": "docs/product/roadmap.md",
       "to": "docs/change request/CR-003-payment-golive-checklist.md",
       "type": "wikilink",
-      "line": 57
+      "line": 60
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "type": "wikilink",
-      "line": 66
+      "line": 69
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/change request/ADR-13-dxgi-capture-migration.md",
       "type": "wikilink",
-      "line": 111
+      "line": 114
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
       "type": "wikilink",
-      "line": 111
+      "line": 114
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 114
+      "line": 117
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 125
+      "line": 128
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 141
+      "line": 144
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
-      "line": 149
+      "line": 152
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 149
+      "line": 152
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 153
+      "line": 156
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 154
+      "line": 157
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
-      "line": 155
+      "line": 158
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 155
+      "line": 158
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 169
+      "line": 172
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
-      "line": 175
+      "line": 178
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 180
+      "line": 183
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 186
+      "line": 189
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 194
+      "line": 197
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 206
+      "line": 209
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 231
+      "line": 234
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
-      "line": 241
+      "line": 244
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 243
+      "line": 246
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 250
+      "line": 253
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
-      "line": 263
+      "line": 266
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 283
+      "line": 286
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 289
+      "line": 292
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
-      "line": 300
+      "line": 303
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 318
+      "line": 321
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "type": "wikilink",
-      "line": 332
+      "line": 335
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 332
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "docs/product/software-requirements-specification.md",
-      "type": "wikilink",
-      "line": 350
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "docs/product/software-requirements-specification.md",
-      "type": "wikilink",
-      "line": 351
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "docs/product/software-requirements-specification.md",
-      "type": "wikilink",
-      "line": 352
+      "line": 335
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
       "line": 353
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
-      "type": "wikilink",
-      "line": 354
     },
     {
       "from": "docs/product/roadmap.md",
@@ -7488,15 +7662,15 @@
     },
     {
       "from": "docs/product/roadmap.md",
-      "to": "docs/product/product-requirements.md",
+      "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
       "line": 356
     },
     {
       "from": "docs/product/roadmap.md",
-      "to": "docs/product/software-requirements-specification.md",
+      "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 356
+      "line": 357
     },
     {
       "from": "docs/product/roadmap.md",
@@ -7512,27 +7686,51 @@
     },
     {
       "from": "docs/product/roadmap.md",
+      "to": "docs/product/product-requirements.md",
+      "type": "wikilink",
+      "line": 359
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "docs/product/software-requirements-specification.md",
+      "type": "wikilink",
+      "line": 359
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "docs/product/software-requirements-specification.md",
+      "type": "wikilink",
+      "line": 360
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "docs/product/software-requirements-specification.md",
+      "type": "wikilink",
+      "line": 361
+    },
+    {
+      "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 369
+      "line": 372
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
       "type": "wikilink",
-      "line": 373
+      "line": 376
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 374
+      "line": 377
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "type": "wikilink",
-      "line": 375
+      "line": 378
     },
     {
       "from": "docs/product/roadmap.md",
@@ -7544,391 +7742,373 @@
       "from": "docs/product/roadmap.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 64
+      "line": 67
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
-      "line": 65
+      "line": 68
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
-      "line": 74
+      "line": 77
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src/src/App.tsx",
       "type": "symbol",
-      "line": 75
+      "line": 78
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
-      "line": 76
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/setup.rs",
-      "type": "symbol",
       "line": 79
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/setup.rs",
       "type": "symbol",
-      "line": 79
+      "line": 82
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/setup.rs",
+      "type": "symbol",
+      "line": 82
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/signal.rs",
       "type": "symbol",
-      "line": 80
+      "line": 83
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/tts.rs",
       "type": "symbol",
-      "line": 81
+      "line": 84
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/capture_wgc.rs",
       "type": "symbol",
-      "line": 85
+      "line": 88
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/cv/prefilter.rs",
       "type": "symbol",
-      "line": 86
+      "line": 89
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/cv/detector.rs",
       "type": "symbol",
-      "line": 86
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/sentry.rs",
-      "type": "symbol",
-      "line": 87
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/motion.rs",
-      "type": "symbol",
-      "line": 88
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/signal.rs",
-      "type": "symbol",
       "line": 89
     },
     {
       "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/signal.rs",
+      "to": "src-tauri/src/sentry.rs",
       "type": "symbol",
       "line": 90
     },
     {
       "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/motion.rs",
+      "type": "symbol",
+      "line": 91
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/signal.rs",
+      "type": "symbol",
+      "line": 92
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/signal.rs",
+      "type": "symbol",
+      "line": 93
+    },
+    {
+      "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/audio.rs",
-      "type": "symbol",
-      "line": 94
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src/src/useAppUpdate.ts",
-      "type": "symbol",
-      "line": 95
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/log.rs",
-      "type": "symbol",
-      "line": 96
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/master.rs",
       "type": "symbol",
       "line": 97
     },
     {
       "from": "docs/product/roadmap.md",
-      "to": ".github/workflows/release.yml",
+      "to": "src/src/useAppUpdate.ts",
       "type": "symbol",
       "line": 98
     },
     {
       "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/log.rs",
+      "type": "symbol",
+      "line": 99
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/master.rs",
+      "type": "symbol",
+      "line": 100
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": ".github/workflows/release.yml",
+      "type": "symbol",
+      "line": 101
+    },
+    {
+      "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/damage.rs",
-      "type": "symbol",
-      "line": 106
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/announcer.rs",
-      "type": "symbol",
-      "line": 108
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 108
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/main.rs",
       "type": "symbol",
       "line": 109
     },
     {
       "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/announcer.rs",
+      "type": "symbol",
+      "line": 111
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/voice_api/banner.rs",
+      "type": "symbol",
+      "line": 111
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/main.rs",
+      "type": "symbol",
+      "line": 112
+    },
+    {
+      "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/slm.rs",
       "type": "symbol",
-      "line": 110
+      "line": 113
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 112
+      "line": 115
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/dxgi.rs",
       "type": "symbol",
-      "line": 112
+      "line": 115
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/audio.rs",
       "type": "symbol",
-      "line": 128
+      "line": 131
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/tts.rs",
       "type": "symbol",
-      "line": 129
+      "line": 132
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src/src/AudioSettings.tsx",
       "type": "symbol",
-      "line": 139
+      "line": 142
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 150
+      "line": 153
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src/src/supabase.ts",
       "type": "symbol",
-      "line": 151
+      "line": 154
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 152
+      "line": 155
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 152
+      "line": 155
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src/src/companion.ts",
       "type": "symbol",
-      "line": 153
+      "line": 156
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src/src/live/",
       "type": "symbol",
-      "line": 153
+      "line": 156
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 162
+      "line": 165
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/secret.rs",
       "type": "symbol",
-      "line": 172
+      "line": 175
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 181
+      "line": 184
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/items.rs",
       "type": "symbol",
-      "line": 182
+      "line": 185
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/main.rs",
-      "type": "symbol",
-      "line": 188
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/audio.rs",
-      "type": "symbol",
-      "line": 190
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/signal.rs",
       "type": "symbol",
       "line": 191
     },
     {
       "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/slm.rs",
+      "to": "src-tauri/src/audio.rs",
       "type": "symbol",
-      "line": 198
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/slm.rs",
-      "type": "symbol",
-      "line": 207
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/sentry.rs",
-      "type": "symbol",
-      "line": 221
+      "line": 193
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/signal.rs",
       "type": "symbol",
-      "line": 221
+      "line": 194
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/slm.rs",
       "type": "symbol",
-      "line": 222
+      "line": 201
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/slm.rs",
+      "type": "symbol",
+      "line": 210
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/sentry.rs",
+      "type": "symbol",
+      "line": 224
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/signal.rs",
+      "type": "symbol",
+      "line": 224
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/slm.rs",
+      "type": "symbol",
+      "line": 225
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 232
+      "line": 235
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/calibration.rs",
       "type": "symbol",
-      "line": 237
+      "line": 240
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
-      "line": 237
+      "line": 240
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "tools/analyze-log/analyze.py",
       "type": "symbol",
-      "line": 238
+      "line": 241
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "tools/analyze-log/analyze.py",
       "type": "symbol",
-      "line": 239
+      "line": 242
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/sentry.rs",
       "type": "symbol",
-      "line": 240
+      "line": 243
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/signal.rs",
       "type": "symbol",
-      "line": 240
+      "line": 243
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
-      "line": 246
+      "line": 249
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/tts.rs",
       "type": "symbol",
-      "line": 247
+      "line": 250
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 252
+      "line": 255
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "tests/perf/src/bin/perf_cpu_tree.rs",
       "type": "symbol",
-      "line": 265
+      "line": 268
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "tests/perf/src/bin/perf_p7.rs",
       "type": "symbol",
-      "line": 269
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/governor.rs",
-      "type": "symbol",
-      "line": 270
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/capture.rs",
-      "type": "symbol",
-      "line": 270
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "gpu-feeder/",
-      "type": "symbol",
-      "line": 271
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/governor.rs",
-      "type": "symbol",
       "line": 272
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/governor.rs",
+      "type": "symbol",
+      "line": 273
     },
     {
       "from": "docs/product/roadmap.md",
@@ -7938,69 +8118,87 @@
     },
     {
       "from": "docs/product/roadmap.md",
-      "to": "tests/perf/src/bin/perf_p7.rs",
+      "to": "gpu-feeder/",
       "type": "symbol",
-      "line": 278
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src/src/overlay/LayoutEditor.tsx",
-      "type": "symbol",
-      "line": 285
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src/src/CommandDeck.tsx",
-      "type": "symbol",
-      "line": 287
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/main.rs",
-      "type": "symbol",
-      "line": 290
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/signal.rs",
-      "type": "symbol",
-      "line": 301
+      "line": 274
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 302
+      "line": 275
     },
     {
       "from": "docs/product/roadmap.md",
-      "to": "src-tauri/src/sentry.rs",
+      "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 307
+      "line": 276
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "tests/perf/src/bin/perf_p7.rs",
+      "type": "symbol",
+      "line": 281
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src/src/overlay/LayoutEditor.tsx",
+      "type": "symbol",
+      "line": 288
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src/src/CommandDeck.tsx",
+      "type": "symbol",
+      "line": 290
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/main.rs",
+      "type": "symbol",
+      "line": 293
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/signal.rs",
       "type": "symbol",
-      "line": 307
+      "line": 304
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/governor.rs",
+      "type": "symbol",
+      "line": 305
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/sentry.rs",
+      "type": "symbol",
+      "line": 310
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src-tauri/src/signal.rs",
+      "type": "symbol",
+      "line": 310
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/slm.rs",
       "type": "symbol",
-      "line": 307
+      "line": 310
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 308
+      "line": 311
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/cv/detector.rs",
       "type": "symbol",
-      "line": 309
+      "line": 312
     },
     {
       "from": "docs/product/software-requirements-specification.md",
@@ -8317,26 +8515,21 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 70,
+      "line": 88,
       "reason": "glob-slug",
       "slug": "SPEC--*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 72,
+      "line": 90,
       "reason": "glob-slug",
       "slug": "ADR-O-*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 79,
+      "line": 97,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
-    },
-    {
-      "file": "docs/DOC-INDEX.md",
-      "line": null,
-      "reason": "no-metadata"
     },
     {
       "file": "docs/DOCS-IA-REORG-PROPOSAL.md",
@@ -8396,6 +8589,21 @@
       "status": "accepted (design) · pending implementation"
     },
     {
+      "file": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
+      "line": 134,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/gsi.rs",
+      "anchor": 422,
+      "symbol": "rs:L422"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.4.3b",
+      "changelog": "0.4.2b"
+    },
+    {
       "file": "docs/architecture/assets/design-references/README.md",
       "line": null,
       "reason": "no-metadata"
@@ -8413,9 +8621,23 @@
       "status": "accepted"
     },
     {
+      "file": "docs/architecture/gmad-current-first-run-user-flow-walkthrough.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.4.0b",
+      "changelog": "0.1.0b"
+    },
+    {
       "file": "docs/architecture/implementation-plan.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.3.3b",
+      "changelog": "0.3.2b"
     },
     {
       "file": "docs/architecture/spec-orchestra-codedoc-agent.md",
@@ -8492,13 +8714,77 @@
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 94,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/gsi.rs",
+      "anchor": 268,
+      "symbol": "announcer_install"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
       "line": null,
       "reason": "no-metadata"
     },
     {
       "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 70,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/runtime.rs",
+      "anchor": 199,
+      "symbol": "set_master_mode"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 70,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/runtime.rs",
+      "anchor": 206,
+      "symbol": "set_master_api_key"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 70,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/runtime.rs",
+      "anchor": 215,
+      "symbol": "master_api_key_present"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 76,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/runtime.rs",
+      "anchor": 424,
+      "symbol": "set_oauth_pending"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 77,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/runtime.rs",
+      "anchor": 439,
+      "symbol": "take_oauth_pending"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 80,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/gsi.rs",
+      "anchor": 337,
+      "symbol": "oauth_callback"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 36,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/gsi.rs",
+      "anchor": 268,
+      "symbol": "announcer_install"
     },
     {
       "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
@@ -8521,6 +8807,144 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/change request/CR-014-document-impact-map-gmaiden-adapter.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.2.0b",
+      "changelog": "0.1.0b"
+    },
+    {
+      "file": "docs/change request/CR-016-gmad-beta-download-admin-controller.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.2.2b",
+      "changelog": "0.1.0"
+    },
+    {
+      "file": "docs/change request/CR-017-gstore-migration-history-reconciliation.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.2.0b",
+      "changelog": "0.1.0b"
+    },
+    {
+      "file": "docs/change request/CR-018-ops-route-spa-rewrite.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.3.0b",
+      "changelog": "0.1.0b"
+    },
+    {
+      "file": "docs/change request/CR-019-owner-role-and-operator-delegation.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.3.1b",
+      "changelog": "0.1.0b"
+    },
+    {
+      "file": "docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.4.0b",
+      "changelog": "0.1.0b"
+    },
+    {
+      "file": "docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.3.0b",
+      "changelog": "0.1.0b"
+    },
+    {
+      "file": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.8.2b",
+      "changelog": "0.1.0b"
+    },
+    {
+      "file": "docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.7.1b",
+      "changelog": "0.1.0b"
+    },
+    {
+      "file": "docs/change request/CR-024-gmaiden-3d-studio-and-portable-blender.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.8.1b",
+      "changelog": "0.1.0b"
+    },
+    {
+      "file": "docs/change request/CR-025-codedoc-aligner-structured-output-reliability.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.2.0b",
+      "changelog": "0.1.0b"
+    },
+    {
+      "file": "docs/change request/CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.3.1b",
+      "changelog": "0.1.0b"
+    },
+    {
+      "file": "docs/change request/CR-028-gmaiden-3d-hero-production-handoff.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "2.0.0b",
+      "changelog": "0.1.0b"
+    },
+    {
+      "file": "docs/change request/CR-029-gmaiden-art-first-2-5d-hero-replacement.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "1.1.0b",
+      "changelog": "1.0.0b"
+    },
+    {
+      "file": "docs/change request/CR-030-landing-scroll-driven-cinematic-narrative.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "1.1.1b",
+      "changelog": "1.0.0b"
+    },
+    {
+      "file": "docs/change request/CR-031-landing-hero-layer-separated-wind-motion.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "1.1.2b",
+      "changelog": "1.0.0b"
+    },
+    {
+      "file": "docs/change request/CR-032-landing-hero-scene-depth-and-character-rig-decomposition.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "1.0.1b",
+      "changelog": "1.0.0b"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "2.4.1-draft",
+      "changelog": "2.4.0-draft"
+    },
+    {
+      "file": "docs/design-system/08-account-gid.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "1.1.1-draft",
+      "changelog": "1.1.0-draft"
+    },
+    {
+      "file": "docs/design-system/landing_page_prompt.md",
+      "line": null,
+      "reason": "no-metadata"
+    },
+    {
       "file": "docs/features/FEAT-G-COACH.md",
       "line": null,
       "reason": "no-metadata"
@@ -8529,6 +8953,14 @@
       "file": "docs/features/FEAT-G-LOG.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/features/FEAT-G-MASTER.md",
+      "line": 42,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/runtime.rs",
+      "anchor": 327,
+      "symbol": "known_enemies"
     },
     {
       "file": "docs/features/FEAT-G-MASTER.md",
@@ -8606,6 +9038,13 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/operations/gmaiden-closed-beta-release-playbook.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.2.2",
+      "changelog": "0.1.0"
+    },
+    {
       "file": "docs/operations/validation/forms-and-social.md",
       "line": null,
       "reason": "no-metadata"
@@ -8614,6 +9053,20 @@
       "file": "docs/product/business-validation-plan.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/product/closed-beta-privacy-notice-draft.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "1.0.1b",
+      "changelog": "0.1.0b"
+    },
+    {
+      "file": "docs/product/closed-beta-terms-of-use-draft.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "1.0.0b",
+      "changelog": "0.1.0b"
     },
     {
       "file": "docs/product/competitive-brief.md",
@@ -8644,6 +9097,14 @@
       "file": "docs/product/software-requirements-specification.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 28,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/gsi.rs",
+      "anchor": 268,
+      "symbol": "announcer_install"
     },
     {
       "file": "docs/reference/dota-ui/README.md",
@@ -8765,7 +9226,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-07-23T18:03:18.789Z",
+    "generatedAt": "2026-07-23T18:08:12.696Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 73,

@@ -36,6 +36,10 @@ tests/perf/Cargo.lock
 *.swp
 *.swo
 
+# Local agent scratch and verification artifacts
+.tmp/
+.codex-artifacts/
+
 # Python (CV tooling)
 __pycache__/
 *.pyc

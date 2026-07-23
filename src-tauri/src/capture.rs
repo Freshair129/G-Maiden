@@ -251,6 +251,10 @@ mod backend {
         let mut warned_rect_geometry = false;
 
         loop {
+            if !crate::runtime::gmad_entitled() {
+                std::thread::sleep(Duration::from_millis(250));
+                continue;
+            }
             // CR012-P1-01: periodically re-detect which monitor Dota 2 is on
             // and hot-swap the DXGI duplication if it moved (or if the app
             // started before Dota launched and only now can find it).

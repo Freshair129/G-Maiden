@@ -3,6 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import CommandDeck from './CommandDeck'
 import { Overlay } from './app/Overlay'
 import { Control } from './app/Control'
+import GmadFirstRunGate from './GmadFirstRunGate'
 
 export { Control }
 export type { GameTick, Settings, GankState, ReviveAdvice, SettingsCat, BuybackUrgency, Sensitivity } from './app/types'
@@ -18,5 +19,5 @@ export const App: React.FC = () => {
   // tab — passed as a RENDER PROP (CR-013 W2) so CommandDeck can request just
   // one category at a time (its iOS-style split view) without importing App
   // (no module cycle) and without Control ever needing to know about tabs/rails.
-  return label === 'overlay' ? <Overlay /> : <CommandDeck renderSettings={(cat) => <Control category={cat} />} />
+  return label === 'overlay' ? <Overlay /> : <GmadFirstRunGate><CommandDeck renderSettings={(cat) => <Control category={cat} />} /></GmadFirstRunGate>
 }

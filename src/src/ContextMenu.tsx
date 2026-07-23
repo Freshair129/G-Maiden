@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 
+/* eslint-disable react-refresh/only-export-components */
 // CR-011 §F.9 "context menu (token-styled, keyboard navigable, z --g-z-pop)"
 // + §J "Context menus everywhere data lives ... Shift+F10 / Menu key opens
 // them from keyboard focus." — ONE reusable primitive (CR011-P4b-01).
