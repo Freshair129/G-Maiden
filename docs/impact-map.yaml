@@ -1,0 +1,1298 @@
+{
+  "version": "3.10",
+  "updated": "2026-07-22",
+  "changelog": [
+    {
+      "version": "3.10",
+      "date": "2026-07-22",
+      "summary": "Extended reader-facing naming normalization across landing release CRs, QA/design-system docs, operator-authorization prose, and OAuth architecture wording while preserving technical GMAD identifiers."
+    },
+    {
+      "version": "3.9",
+      "date": "2026-07-22",
+      "summary": "Extended naming normalization so user-facing landing, desktop entitlement, legal privacy notice, and agent guidance prefer G-Maiden while technical GMAD identifiers stay intact."
+    },
+    {
+      "version": "3.8",
+      "date": "2026-07-21",
+      "summary": "Normalized reader-facing naming from GMAD to G-Maiden across the CR-022 walkthrough, entitlement design docs, and Genesis Block while preserving technical identifiers."
+    },
+    {
+      "version": "3.7",
+      "date": "2026-07-21",
+      "summary": "Expanded the GMAD walkthrough with mailbox invitation evidence, production signed-out GMAD-section evidence, and runtime-window drift evidence while keeping real entitled-session gaps explicit."
+    },
+    {
+      "version": "3.6",
+      "date": "2026-07-21",
+      "summary": "Expanded the GMAD current first-run walkthrough with current-state harness evidence for eligible, signing, terms-required, no-entitlement, mismatch, and offline branches while keeping real-session proof gaps explicit."
+    },
+    {
+      "version": "3.5",
+      "date": "2026-07-21",
+      "summary": "Added a current GMAD first-run walkthrough with production/browser/component screenshot provenance and explicit evidence gaps for invitation, eligible, and installer states."
+    },
+    {
+      "version": "3.4",
+      "date": "2026-07-22",
+      "summary": "Recorded CR-022 production Google OAuth-start evidence through the Supabase callback and production return URL."
+    },
+    {
+      "version": "3.3",
+      "date": "2026-07-22",
+      "summary": "Recorded CR-022 production migration, Function, Landing, browser, and determinate CodeDoc evidence while preserving the authenticated-UAT release block."
+    },
+    {
+      "version": "3.2",
+      "date": "2026-07-22",
+      "summary": "Recorded the production signed-out GMAD queue 401 RCA and client-side no-session UX guard."
+    },
+    {
+      "version": "3.1",
+      "date": "2026-07-22",
+      "summary": "Recorded the Landing legal-content deployment-root RCA and in-root legal bundle impact."
+    },
+    {
+      "version": "3.0",
+      "date": "2026-07-22",
+      "summary": "Added CR-021 production privilege-drift RCA and explicit least-privilege migration evidence."
+    },
+    {
+      "version": "2.9",
+      "date": "2026-07-22",
+      "summary": "Recorded CR-022 local gate evidence, production UAT/CodeDoc blockers, and the native-runtime plus audit-migration RCA."
+    },
+    {
+      "version": "2.8",
+      "date": "2026-07-21",
+      "summary": "Aligned CR-022 with the implemented native JWT-backed runtime trust boundary and removed stale offline-receipt/grace references."
+    },
+    {
+      "version": "2.7",
+      "date": "2026-07-21",
+      "summary": "Selected online entitlement verification for every Closed Beta launch and removed offline receipt/grace from CR-022 implementation scope."
+    },
+    {
+      "version": "2.6",
+      "date": "2026-07-21",
+      "summary": "Closed the CR-021 legal gate with approved Terms/Privacy policy decisions and authorized phased CR-022 implementation behind security, UAT, and CI gates."
+    },
+    {
+      "version": "2.5",
+      "date": "2026-07-21",
+      "summary": "Recorded completed CR-026 portable MPFB provenance and CR-028 reviewed GLB/fallback landing runtime, browser QA, and Vercel production deployment."
+    },
+    {
+      "version": "2.4",
+      "date": "2026-07-21",
+      "summary": "Recorded Desktop OAuth bounded-state verification and the fail-closed CR-022 readiness audit; hosted Terms, entitlement, Landing parity, and first-run UAT remain open."
+    },
+    {
+      "version": "2.3",
+      "date": "2026-07-21",
+      "summary": "Recorded owner approval of CR-026 and delegated CR-028 authority through realistic asset production, landing integration, browser QA, and Vercel production deployment."
+    },
+    {
+      "version": "2.2",
+      "date": "2026-07-21",
+      "summary": "Implemented legacy Desktop OAuth callback state binding: issuer-created state is stored in the single-use native gate and exact-matched before code exchange."
+    },
+    {
+      "version": "2.1",
+      "date": "2026-07-21",
+      "summary": "Added CR-028 candidate: a bounded original-asset production and review handoff, explicitly separated from landing integration and ComfyUI/image-to-3D approval."
+    },
+    {
+      "version": "2.0",
+      "date": "2026-07-21",
+      "summary": "Normalized impact metadata and relation vocabulary to CR-RWANG-DOCUMENT-IMPACT-MAP; added confidence and line-addressable owner-declaration evidence."
+    },
+    {
+      "version": "1.28",
+      "date": "2026-07-21",
+      "summary": "Selected the fixed 127.0.0.1 Desktop loopback callback and future Mobile claimed-HTTPS redirect profiles under ADR-17; no hosted configuration was changed."
+    },
+    {
+      "version": "1.27",
+      "date": "2026-07-21",
+      "summary": "Updated S-2 with the fail-closed Supabase OAuth Server activation and separate public-client registration runbook; no hosted configuration was changed."
+    },
+    {
+      "version": "1.26",
+      "date": "2026-07-21",
+      "summary": "Corrected ADR-17 to select the supported Supabase OAuth Server public-PKCE model over a custom broker; hosted project discovery remains disabled (HTTP 404)."
+    },
+    {
+      "version": "1.25",
+      "date": "2026-07-21",
+      "summary": "Recorded S-2 read-only provider-capability evidence: ADR-17 broker handoff is unproven and remains fail-closed pending authorized cloud configuration proof."
+    },
+    {
+      "version": "1.24",
+      "date": "2026-07-21",
+      "summary": "Added CR-027 candidate for a local-only ComfyUI provenance bridge, separate from MPFB2 base-mesh authoring and landing export authority."
+    },
+    {
+      "version": "1.23",
+      "date": "2026-07-21",
+      "summary": "Recorded ADR-17: the selected high-assurance brokered OAuth transaction boundary for Desktop and future Mobile; implementation remains gated by provider capability and security review."
+    },
+    {
+      "version": "1.22",
+      "date": "2026-07-21",
+      "summary": "Clarified CR-026 preserves Studio review-pending metadata and blocks any landing promotion until the existing human review gate approves it."
+    },
+    {
+      "version": "1.21",
+      "date": "2026-07-21",
+      "summary": "Added CR-026 candidate for MPFB2 base-mesh authoring and a provenance-gated external image-to-3D intake boundary."
+    },
+    {
+      "version": "1.20",
+      "date": "2026-07-21",
+      "summary": "Added the candidate OAuth 2.0, JWT, Device Authorization, and future mobile-client flow contract with declared ADR-14, SEC-001, and CR-022 constraints."
+    },
+    {
+      "version": "1.19",
+      "date": "2026-07-21",
+      "summary": "Aligned the Command Deck sitemap and Account UX with approved CR-022: Account owns Closed Beta OAuth and entitlement states while Dashboard preserves the existing one-canvas layout as a readiness route."
+    },
+    {
+      "version": "1.18",
+      "date": "2026-07-21",
+      "summary": "Recorded CR-025 implementation and verified Thinking-safe structured output for the CodeDoc Aligner."
+    },
+    {
+      "version": "1.17",
+      "date": "2026-07-21",
+      "summary": "Added CR-025 candidate and RCA for CodeDoc Aligner structured-output reliability."
+    },
+    {
+      "version": "1.16",
+      "date": "2026-07-21",
+      "summary": "Recorded the cinematic-base realism gap and explicit block on export or landing integration until an approved character-authoring route exists."
+    },
+    {
+      "version": "1.15",
+      "date": "2026-07-21",
+      "summary": "Recorded the semi-realistic generated concept reference as source-only material, with no 3D export or landing integration authority."
+    },
+    {
+      "version": "1.14",
+      "date": "2026-07-21",
+      "summary": "Recorded approved semi-realistic cinematic source iteration for the review-pending 3D Hero; all GLB, landing, and provenance gates remain intact."
+    },
+    {
+      "version": "1.13",
+      "date": "2026-07-21",
+      "summary": "Recorded the review-pending original 3D prototype and inspected preview; production mesh, rig, GLB export, and landing integration remain gated."
+    },
+    {
+      "version": "1.12",
+      "date": "2026-07-21",
+      "summary": "Recorded the workspace-bounded Studio project catalogue implementation; preview, GLB export, and publishing remain disabled."
+    },
+    {
+      "version": "1.11",
+      "date": "2026-07-21",
+      "summary": "Recorded the review-pending G: Studio blockout source for CR-023/CR-024; it is neither a production asset nor a landing export."
+    },
+    {
+      "version": "1.10",
+      "date": "2026-07-21",
+      "summary": "Recorded CR-024 Blender portable installation and the build-verified isolated Tauri Studio MVP."
+    },
+    {
+      "version": "1.9",
+      "date": "2026-07-21",
+      "summary": "Recorded execution approval for CR-024 portable Blender and the separate Studio workspace."
+    },
+    {
+      "version": "1.8",
+      "date": "2026-07-21",
+      "summary": "Added CR-024 candidate for portable Blender and an agent-safe 3D Studio boundary."
+    },
+    {
+      "version": "1.7",
+      "date": "2026-07-21",
+      "summary": "Recorded approval of CR-023 while retaining its original-character and asset-rights gate."
+    },
+    {
+      "version": "1.6",
+      "date": "2026-07-21",
+      "summary": "Added CR-023 candidate with declared landing design-system and CR-020 launch-beacon dependencies."
+    },
+    {
+      "version": "1.5",
+      "date": "2026-07-21",
+      "summary": "Recorded owner approval of CR-022 and its Genesis Block while retaining the CR-021 legal implementation block."
+    },
+    {
+      "version": "1.4",
+      "date": "2026-07-21",
+      "summary": "Renamed the Genesis Block artifact to state its GMAD First-Run-to-Ready workflow ownership."
+    },
+    {
+      "version": "1.3",
+      "date": "2026-07-21",
+      "summary": "Added the CR-022 Genesis Block candidate and its declared architecture-governance relationship."
+    },
+    {
+      "version": "1.2",
+      "date": "2026-07-21",
+      "summary": "Updated CR-022 to a diagrams-first design packet while preserving its declared identity, consent, entitlement, desktop, and landing impact edges."
+    },
+    {
+      "version": "1.1",
+      "date": "2026-07-21",
+      "summary": "Added CR-022 candidate and its declared identity, consent, entitlement, desktop, and landing impact edges."
+    }
+  ],
+  "nodes": [
+    {
+      "ref": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "node_kind": "document",
+      "artifact_type": "adr",
+      "domain": "account-identity",
+      "cluster": "gid-security",
+      "system": "G-Maiden",
+      "bounded_context": "identity-access",
+      "layer": "security",
+      "c4_level": "container",
+      "lifecycle": "approved",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/audits/SEC-001-auth-identity-hardening.md",
+      "node_kind": "document",
+      "artifact_type": "threat-model",
+      "domain": "account-identity",
+      "cluster": "gid-security",
+      "system": "G-Maiden",
+      "bounded_context": "identity-access",
+      "layer": "security",
+      "c4_level": "component",
+      "lifecycle": "implemented",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/change request/CR-016-gmad-beta-download-admin-controller.md",
+      "node_kind": "document",
+      "artifact_type": "cr",
+      "domain": "account-identity",
+      "cluster": "closed-beta-distribution",
+      "system": "G-Maiden",
+      "bounded_context": "beta-access-control",
+      "layer": "security",
+      "c4_level": "container",
+      "lifecycle": "implemented",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/change request/CR-017-gstore-migration-history-reconciliation.md",
+      "node_kind": "document",
+      "artifact_type": "cr",
+      "domain": "platform-data",
+      "cluster": "supabase-migration-governance",
+      "system": "Supabase gstore",
+      "bounded_context": "schema-delivery",
+      "layer": "data",
+      "c4_level": "container",
+      "lifecycle": "implemented",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/change request/CR-018-ops-route-spa-rewrite.md",
+      "node_kind": "document",
+      "artifact_type": "cr",
+      "domain": "closed-beta-distribution",
+      "cluster": "landing-routing",
+      "system": "G-Maiden landing",
+      "bounded_context": "web-enrollment",
+      "layer": "application",
+      "c4_level": "container",
+      "lifecycle": "approved",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/change request/CR-019-owner-role-and-operator-delegation.md",
+      "node_kind": "document",
+      "artifact_type": "cr",
+      "domain": "account-identity",
+      "cluster": "operator-authorization",
+      "system": "G-Maiden",
+      "bounded_context": "identity-access",
+      "layer": "security",
+      "c4_level": "container",
+      "lifecycle": "implemented",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md",
+      "node_kind": "document",
+      "artifact_type": "cr",
+      "domain": "closed-beta-distribution",
+      "cluster": "release-notification",
+      "system": "G-Maiden landing",
+      "bounded_context": "beta-access-control",
+      "layer": "application",
+      "c4_level": "container",
+      "lifecycle": "approved",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/change request/CR-025-codedoc-aligner-structured-output-reliability.md",
+      "node_kind": "document",
+      "artifact_type": "cr",
+      "domain": "developer-tooling",
+      "cluster": "codedoc-alignment",
+      "system": "G-Maiden developer tooling",
+      "bounded_context": "documentation-governance",
+      "layer": "application",
+      "c4_level": "component",
+      "lifecycle": "proposed",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md",
+      "node_kind": "document",
+      "artifact_type": "cr",
+      "domain": "public-landing",
+      "cluster": "cinematic-3d-hero",
+      "system": "G-Maiden landing",
+      "bounded_context": "web-enrollment",
+      "layer": "application",
+      "c4_level": "component",
+      "lifecycle": "proposed",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/change request/CR-024-gmaiden-3d-studio-and-portable-blender.md",
+      "node_kind": "document",
+      "artifact_type": "cr",
+      "domain": "3d-content-pipeline",
+      "cluster": "original-asset-toolchain",
+      "system": "G-Maiden 3D Studio",
+      "bounded_context": "creative-production",
+      "layer": "application",
+      "c4_level": "container",
+      "lifecycle": "proposed",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/change request/CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import.md",
+      "node_kind": "document",
+      "artifact_type": "cr",
+      "domain": "3d-content-pipeline",
+      "cluster": "original-asset-toolchain",
+      "system": "G-Maiden 3D Studio",
+      "bounded_context": "creative-production",
+      "layer": "application",
+      "c4_level": "container",
+      "lifecycle": "implemented",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/change request/CR-027-comfyui-local-generation-and-provenance-bridge.md",
+      "node_kind": "document",
+      "artifact_type": "cr",
+      "domain": "3d-content-pipeline",
+      "cluster": "original-asset-toolchain",
+      "system": "G-Maiden 3D Studio",
+      "bounded_context": "creative-production",
+      "layer": "application",
+      "c4_level": "container",
+      "lifecycle": "proposed",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/change request/CR-028-gmaiden-3d-hero-production-handoff.md",
+      "node_kind": "document",
+      "artifact_type": "cr",
+      "domain": "3d-content-pipeline",
+      "cluster": "original-asset-toolchain",
+      "system": "G-Maiden 3D Studio",
+      "bounded_context": "creative-production",
+      "layer": "application",
+      "c4_level": "container",
+      "lifecycle": "implemented",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
+      "node_kind": "document",
+      "artifact_type": "adr",
+      "domain": "identity-access",
+      "cluster": "supabase-oauth-server",
+      "system": "G-Maiden",
+      "bounded_context": "identity-access",
+      "layer": "security",
+      "c4_level": "container",
+      "lifecycle": "proposed",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/architecture/spikes/S-2-oauth-broker-provider-capability.md",
+      "node_kind": "document",
+      "artifact_type": "contract",
+      "domain": "identity-access",
+      "cluster": "supabase-oauth-server",
+      "system": "G-Maiden",
+      "bounded_context": "identity-access",
+      "layer": "security",
+      "c4_level": "component",
+      "lifecycle": "proposed",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md",
+      "node_kind": "document",
+      "artifact_type": "cr",
+      "domain": "legal-privacy-access",
+      "cluster": "closed-beta-consent",
+      "system": "G-Maiden landing",
+      "bounded_context": "beta-access-control",
+      "layer": "security",
+      "c4_level": "container",
+      "lifecycle": "proposed",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
+      "node_kind": "document",
+      "artifact_type": "cr",
+      "domain": "legal-privacy-access",
+      "cluster": "closed-beta-desktop-handoff",
+      "system": "G-Maiden",
+      "bounded_context": "beta-access-control",
+      "layer": "security",
+      "c4_level": "container",
+      "lifecycle": "approved",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/design-system/05-sitemap-ia.md",
+      "node_kind": "document",
+      "artifact_type": "design-system",
+      "domain": "ui-ux",
+      "cluster": "command-deck-information-architecture",
+      "system": "G-Maiden",
+      "bounded_context": "desktop-control-window",
+      "layer": "application",
+      "c4_level": "component",
+      "lifecycle": "proposed",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/design-system/08-account-gid.md",
+      "node_kind": "document",
+      "artifact_type": "design-system",
+      "domain": "ui-ux",
+      "cluster": "account-identity-ux",
+      "system": "G-Maiden",
+      "bounded_context": "desktop-control-window",
+      "layer": "application",
+      "c4_level": "component",
+      "lifecycle": "proposed",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "node_kind": "document",
+      "artifact_type": "contract",
+      "domain": "identity-access",
+      "cluster": "oauth-client-authorization",
+      "system": "G-Maiden",
+      "bounded_context": "identity-access",
+      "layer": "security",
+      "c4_level": "container",
+      "lifecycle": "proposed",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/architecture/gmad-current-first-run-user-flow-walkthrough.md",
+      "node_kind": "document",
+      "artifact_type": "walkthrough",
+      "domain": "ui-ux",
+      "cluster": "closed-beta-desktop-handoff",
+      "system": "G-Maiden",
+      "bounded_context": "desktop-control-window",
+      "layer": "application",
+      "c4_level": "component",
+      "lifecycle": "proposed",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": ".agents/GENESIS-BLOCK-GMAD-FIRST-RUN-TO-READY-WORKFLOW.md",
+      "node_kind": "document",
+      "artifact_type": "contract",
+      "domain": "legal-privacy-access",
+      "cluster": "closed-beta-desktop-handoff",
+      "system": "G-Maiden",
+      "bounded_context": "beta-access-control",
+      "layer": "architecture",
+      "c4_level": "component",
+      "lifecycle": "approved",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/product/closed-beta-terms-of-use-draft.md",
+      "node_kind": "document",
+      "artifact_type": "contract",
+      "domain": "legal-privacy-access",
+      "cluster": "closed-beta-consent",
+      "system": "G-Maiden",
+      "bounded_context": "beta-access-control",
+      "layer": "product",
+      "c4_level": "component",
+      "lifecycle": "proposed",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "docs/product/closed-beta-privacy-notice-draft.md",
+      "node_kind": "document",
+      "artifact_type": "contract",
+      "domain": "legal-privacy-access",
+      "cluster": "closed-beta-consent",
+      "system": "G-Maiden",
+      "bounded_context": "beta-access-control",
+      "layer": "product",
+      "c4_level": "component",
+      "lifecycle": "proposed",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "system:gmaiden-desktop",
+      "node_kind": "service",
+      "domain": "game-companion",
+      "cluster": "local-gateway",
+      "system": "G-Maiden",
+      "bounded_context": "local-runtime",
+      "layer": "application",
+      "c4_level": "container",
+      "lifecycle": "implemented",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "system:gstore",
+      "node_kind": "datastore",
+      "domain": "account-identity",
+      "cluster": "gid-security",
+      "system": "Supabase gstore",
+      "bounded_context": "identity-access",
+      "layer": "data",
+      "c4_level": "container",
+      "lifecycle": "implemented",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "system:gmaiden-landing",
+      "node_kind": "service",
+      "domain": "account-identity",
+      "cluster": "closed-beta",
+      "system": "G-Maiden landing",
+      "bounded_context": "web-enrollment",
+      "layer": "application",
+      "c4_level": "container",
+      "lifecycle": "implemented",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "system:google-oauth",
+      "node_kind": "external_system",
+      "domain": "account-identity",
+      "cluster": "gid-security",
+      "system": "Google OAuth",
+      "bounded_context": "identity-access",
+      "layer": "security",
+      "c4_level": "context",
+      "lifecycle": "implemented",
+      "owners": [
+        "Boss"
+      ]
+    },
+    {
+      "ref": "system:steam-opendota",
+      "node_kind": "external_system",
+      "domain": "account-identity",
+      "cluster": "steam-link",
+      "system": "Steam and OpenDota",
+      "bounded_context": "identity-access",
+      "layer": "application",
+      "c4_level": "context",
+      "lifecycle": "implemented",
+      "owners": [
+        "Boss"
+      ]
+    }
+  ],
+  "edges": [
+    {
+      "from": "docs/change request/CR-025-codedoc-aligner-structured-output-reliability.md",
+      "to": "docs/architecture/spec-orchestra-codedoc-agent.md",
+      "relation": "implements",
+      "assertion": "declared",
+      "evidence": "CR-025 restores the structured JSON response boundary required by FR-4.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 575
+      }
+    },
+    {
+      "from": "docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md",
+      "to": "docs/change request/CR-016-gmad-beta-download-admin-controller.md",
+      "relation": "references",
+      "assertion": "declared",
+      "evidence": "CR-021 adds versioned acceptance as a prerequisite to CR-016 GMAD entitlement issuance",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 587
+      }
+    },
+    {
+      "from": "docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md",
+      "to": "docs/audits/SEC-001-auth-identity-hardening.md",
+      "relation": "depends_on",
+      "assertion": "declared",
+      "evidence": "Acceptance records need the server-authoritative GID identity and private storage boundary established by SEC-001",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 599
+      }
+    },
+    {
+      "from": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
+      "to": "docs/change request/CR-016-gmad-beta-download-admin-controller.md",
+      "relation": "references",
+      "assertion": "declared",
+      "evidence": "CR-022 reuses CR-016 active grant checks but keeps installer URL issuance separate from desktop validation",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 611
+      }
+    },
+    {
+      "from": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "relation": "references",
+      "assertion": "declared",
+      "evidence": "The flow keeps Google OAuth as the only primary sign-in and treats UUID as authorization subject and GID as display-only.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 623
+      }
+    },
+    {
+      "from": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
+      "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "relation": "governs",
+      "assertion": "declared",
+      "evidence": "ADR-17 keeps Google-only primary sign-in, UUID authorization subject, Supabase/RLS source of truth, and GID display-only semantics.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 635
+      }
+    },
+    {
+      "from": "docs/architecture/spikes/S-2-oauth-broker-provider-capability.md",
+      "to": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
+      "relation": "tests",
+      "assertion": "observed",
+      "evidence": "S-2 confirms the supported Supabase OAuth Server model, while hosted discovery is disabled (HTTP 404) and activation/client registration remains fail-closed.",
+      "confidence": "medium",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 647
+      }
+    },
+    {
+      "from": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
+      "to": "docs/audits/SEC-001-auth-identity-hardening.md",
+      "relation": "must_review_with",
+      "assertion": "declared",
+      "evidence": "Supabase OAuth Server transactions must close state binding, protected credential storage, fixed-loopback callback integrity, authorization-UI integrity, and replay controls before production.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 659
+      }
+    },
+    {
+      "from": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
+      "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "relation": "implements",
+      "assertion": "declared",
+      "evidence": "ADR-17 selects the high-assurance implementation target for the multi-client OAuth/JWT flow document.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 671
+      }
+    },
+    {
+      "from": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "to": "docs/audits/SEC-001-auth-identity-hardening.md",
+      "relation": "must_review_with",
+      "assertion": "declared",
+      "evidence": "PKCE state binding, protected refresh-token storage, and JWT validation are security controls required before implementation.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 683
+      }
+    },
+    {
+      "from": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "to": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
+      "relation": "governs",
+      "assertion": "declared",
+      "evidence": "Desktop authorization reuses CR-022 entitlement validation while preventing installer URLs, GID, and offline receipts from becoming mobile credentials.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 695
+      }
+    },
+    {
+      "from": "docs/architecture/gmad-current-first-run-user-flow-walkthrough.md",
+      "to": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
+      "relation": "tests",
+      "assertion": "observed",
+      "evidence": "The walkthrough records which CR-022 steps already have production or current-surface screenshot evidence and which still require an entitled session or external artifact.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 707
+      }
+    },
+    {
+      "from": "docs/architecture/gmad-current-first-run-user-flow-walkthrough.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
+      "relation": "references",
+      "assertion": "declared",
+      "evidence": "The walkthrough uses the current one-canvas dashboard target surface and GSI-ready route described by the sitemap IA document.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 719
+      }
+    },
+    {
+      "from": "docs/architecture/gmad-current-first-run-user-flow-walkthrough.md",
+      "to": "docs/design-system/08-account-gid.md",
+      "relation": "references",
+      "assertion": "declared",
+      "evidence": "The walkthrough uses the current Account surface and Google-only sign-in posture described by the Account/GID UX document.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 731
+      }
+    },
+    {
+      "from": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
+      "relation": "governs",
+      "assertion": "declared",
+      "evidence": "CR-022 access states preserve the seven-page one-canvas deck and use Dashboard only as a readiness route to Account.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 707
+      }
+    },
+    {
+      "from": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
+      "to": "docs/design-system/08-account-gid.md",
+      "relation": "governs",
+      "assertion": "declared",
+      "evidence": "CR-022 makes Account the complete desktop OAuth and entitlement surface without typed GID or download-URL proof.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 719
+      }
+    },
+    {
+      "from": ".agents/GENESIS-BLOCK-GMAD-FIRST-RUN-TO-READY-WORKFLOW.md",
+      "to": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
+      "relation": "depends_on",
+      "assertion": "declared",
+      "evidence": "The Genesis Block decomposes CR-022 into candidate module, feature, algorithm, entity, guardrail, audit, and local setup atoms",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 731
+      }
+    },
+    {
+      "from": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
+      "to": "docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md",
+      "relation": "depends_on",
+      "assertion": "declared",
+      "evidence": "Desktop unlock requires the legal-approved current Terms receipt contract proposed by CR-021",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 743
+      }
+    },
+    {
+      "from": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
+      "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "relation": "must_review_with",
+      "assertion": "declared",
+      "evidence": "Desktop handoff must preserve Google OAuth PKCE and server-owned UUID to immutable GID identity",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 755
+      }
+    },
+    {
+      "from": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
+      "to": "docs/audits/SEC-001-auth-identity-hardening.md",
+      "relation": "must_review_with",
+      "assertion": "declared",
+      "evidence": "Desktop OAuth callback, local receipt protection, and entitlement authorization require the SEC-001 controls",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 767
+      }
+    },
+    {
+      "from": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
+      "to": "system:gmaiden-desktop",
+      "relation": "governs",
+      "assertion": "declared",
+      "evidence": "CR-022 defines the desktop control-window first-run state machine and local-only setup handoff",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 779
+      }
+    },
+    {
+      "from": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
+      "to": "system:gstore",
+      "relation": "depends_on",
+      "assertion": "declared",
+      "evidence": "The entitlement decision is server-derived from authenticated UUID, active grant, and current private receipt",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 791
+      }
+    },
+    {
+      "from": "docs/product/closed-beta-terms-of-use-draft.md",
+      "to": "docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md",
+      "relation": "implements",
+      "assertion": "declared",
+      "evidence": "The terms draft supplies the required-acceptance content specified by CR-021",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 803
+      }
+    },
+    {
+      "from": "docs/product/closed-beta-privacy-notice-draft.md",
+      "to": "docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md",
+      "relation": "implements",
+      "assertion": "declared",
+      "evidence": "The privacy notice draft supplies the information and optional-consent boundary specified by CR-021",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 815
+      }
+    },
+    {
+      "from": "docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md",
+      "to": "docs/change request/CR-016-gmad-beta-download-admin-controller.md",
+      "relation": "depends_on",
+      "assertion": "declared",
+      "evidence": "CR-020 reuses CR-016 owned-GID entitlement checks and five-minute signed artifact URLs",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 827
+      }
+    },
+    {
+      "from": "docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md",
+      "to": "landing/DESIGN-SYSTEM.md",
+      "relation": "references",
+      "assertion": "declared",
+      "evidence": "CR-023 retains the Thai-first landing structure while replacing the static Hero media treatment with an original 3D scene and fallback.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 839
+      }
+    },
+    {
+      "from": "docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md",
+      "to": "docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md",
+      "relation": "governs",
+      "assertion": "declared",
+      "evidence": "CR-023 keeps CR-020's Open Beta countdown and working GID CTA outside the WebGL canvas.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 851
+      }
+    },
+    {
+      "from": "docs/change request/CR-024-gmaiden-3d-studio-and-portable-blender.md",
+      "to": "docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md",
+      "relation": "implements",
+      "assertion": "declared",
+      "evidence": "CR-024 provides the local project, review, preview, and GLB export toolchain required before CR-023's original 3D Hero can ship.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 863
+      }
+    },
+    {
+      "from": "docs/change request/CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import.md",
+      "to": "docs/change request/CR-024-gmaiden-3d-studio-and-portable-blender.md",
+      "relation": "references",
+      "assertion": "declared",
+      "evidence": "CR-026 adds an editable local base-mesh authoring route and a quarantined provenance record at CR-024's existing Studio boundary.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 875
+      }
+    },
+    {
+      "from": "docs/change request/CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import.md",
+      "to": "docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md",
+      "relation": "references",
+      "assertion": "declared",
+      "evidence": "CR-026 supplies a rights-auditable source route for the original 3D hero, while preserving CR-023's review and export gate.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 887
+      }
+    },
+    {
+      "from": "docs/change request/CR-027-comfyui-local-generation-and-provenance-bridge.md",
+      "to": "docs/change request/CR-024-gmaiden-3d-studio-and-portable-blender.md",
+      "relation": "references",
+      "assertion": "declared",
+      "evidence": "CR-027 adds a typed local generation adapter while retaining CR-024's workspace-bounded Studio safety boundary.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 899
+      }
+    },
+    {
+      "from": "docs/change request/CR-027-comfyui-local-generation-and-provenance-bridge.md",
+      "to": "docs/change request/CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import.md",
+      "relation": "references",
+      "assertion": "declared",
+      "evidence": "CR-027 output remains quarantined evidence and does not replace CR-026's editable MPFB2/Blender base-mesh path.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 911
+      }
+    },
+    {
+      "from": "docs/change request/CR-027-comfyui-local-generation-and-provenance-bridge.md",
+      "to": "docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md",
+      "relation": "governs",
+      "assertion": "declared",
+      "evidence": "CR-027 preserves CR-023's original-only asset requirement, human review gate, and landing transfer budgets.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 923
+      }
+    },
+    {
+      "from": "docs/change request/CR-028-gmaiden-3d-hero-production-handoff.md",
+      "to": "docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md",
+      "relation": "implements",
+      "assertion": "declared",
+      "evidence": "CR-028 produced and reviewed the original GLB, fallback, and provenance packet, then completed CR-023 landing integration and production deployment.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 935
+      }
+    },
+    {
+      "from": "docs/change request/CR-028-gmaiden-3d-hero-production-handoff.md",
+      "to": "docs/change request/CR-024-gmaiden-3d-studio-and-portable-blender.md",
+      "relation": "depends_on",
+      "assertion": "declared",
+      "evidence": "CR-028 uses the existing workspace-bounded Studio and portable Blender controls from CR-024 for source, export, and inspection.",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 947
+      }
+    },
+    {
+      "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "to": "docs/audits/SEC-001-auth-identity-hardening.md",
+      "relation": "must_review_with",
+      "assertion": "declared",
+      "evidence": "Approved security impact rule",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 959
+      }
+    },
+    {
+      "from": "docs/change request/CR-016-gmad-beta-download-admin-controller.md",
+      "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "relation": "must_review_with",
+      "assertion": "declared",
+      "evidence": "GMAD ownership must resolve the existing UUID and immutable GID contract",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 971
+      }
+    },
+    {
+      "from": "docs/change request/CR-016-gmad-beta-download-admin-controller.md",
+      "to": "docs/audits/SEC-001-auth-identity-hardening.md",
+      "relation": "must_review_with",
+      "assertion": "declared",
+      "evidence": "Admin role, service-role boundary, and signed download access are security-sensitive",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 983
+      }
+    },
+    {
+      "from": "docs/change request/CR-017-gstore-migration-history-reconciliation.md",
+      "to": "docs/change request/CR-016-gmad-beta-download-admin-controller.md",
+      "relation": "references",
+      "assertion": "observed",
+      "evidence": "CR-017 made CR-016 the sole dry-run schema delta on 2026-07-21",
+      "confidence": "medium",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 995
+      }
+    },
+    {
+      "from": "docs/change request/CR-018-ops-route-spa-rewrite.md",
+      "to": "docs/change request/CR-016-gmad-beta-download-admin-controller.md",
+      "relation": "implements",
+      "assertion": "declared",
+      "evidence": "CR-018 lets Vercel serve the existing GMAD operator SPA page",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 1007
+      }
+    },
+    {
+      "from": "docs/change request/CR-019-owner-role-and-operator-delegation.md",
+      "to": "docs/audits/SEC-001-auth-identity-hardening.md",
+      "relation": "must_review_with",
+      "assertion": "declared",
+      "evidence": "Owner delegation changes application authorization and must preserve anti-escalation controls",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 1019
+      }
+    },
+    {
+      "from": "system:gmaiden-desktop",
+      "to": "system:gstore",
+      "relation": "reads",
+      "assertion": "declared",
+      "evidence": "ADR-14 account backend contract",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "docs/impact-map.yaml",
+        "line": 1031
+      }
+    }
+  ],
+  "entities": [
+    {
+      "name": "profiles",
+      "source": "supabase/migrations/20260704000000_adr14_gid_account_identity.sql",
+      "classification": "identity-pii",
+      "rls_reference": "supabase/migrations/20260704120000_sec001_identity_hardening.sql",
+      "owns_data": "identity-access",
+      "fields": [
+        "uuid id PK"
+      ]
+    },
+    {
+      "name": "closed_beta_enrollments",
+      "source": "supabase/migrations/20260720183000_cr005_closed_beta_registration.sql",
+      "classification": "identity-status",
+      "rls_reference": "supabase/migrations/20260720184500_cr005_beta_rls_initplan.sql",
+      "owns_data": "identity-access",
+      "fields": [
+        "uuid user_id FK"
+      ]
+    },
+    {
+      "name": "gmad_download_batches",
+      "source": "supabase/migrations/20260721120000_cr016_gmad_download_access.sql",
+      "classification": "distribution-control",
+      "rls_reference": "supabase/migrations/20260721120000_cr016_gmad_download_access.sql",
+      "owns_data": "beta-access-control",
+      "fields": [
+        "uuid id PK",
+        "uuid created_by FK"
+      ]
+    },
+    {
+      "name": "gmad_download_grants",
+      "source": "supabase/migrations/20260721120000_cr016_gmad_download_access.sql",
+      "classification": "distribution-entitlement",
+      "rls_reference": "supabase/migrations/20260721120000_cr016_gmad_download_access.sql",
+      "owns_data": "beta-access-control",
+      "fields": [
+        "uuid batch_id FK",
+        "uuid user_id FK"
+      ]
+    },
+    {
+      "name": "gmad_download_audit",
+      "source": "supabase/migrations/20260721120000_cr016_gmad_download_access.sql",
+      "classification": "security-audit",
+      "rls_reference": "supabase/migrations/20260721120000_cr016_gmad_download_access.sql",
+      "owns_data": "beta-access-control",
+      "fields": [
+        "uuid id PK",
+        "uuid actor_id FK"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "from": "closed_beta_enrollments.user_id",
+      "to": "profiles.id",
+      "cardinality": "0..1 to 1",
+      "relation": "foreign_key",
+      "assertion": "declared",
+      "source": "supabase/migrations/20260720183000_cr005_closed_beta_registration.sql",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "supabase/migrations/20260720183000_cr005_closed_beta_registration.sql",
+        "line": 8
+      }
+    },
+    {
+      "from": "gmad_download_batches.created_by",
+      "to": "profiles.id",
+      "cardinality": "many to 1",
+      "relation": "foreign_key",
+      "assertion": "declared",
+      "source": "supabase/migrations/20260721120000_cr016_gmad_download_access.sql",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "supabase/migrations/20260721120000_cr016_gmad_download_access.sql",
+        "line": 24
+      }
+    },
+    {
+      "from": "gmad_download_grants.user_id",
+      "to": "profiles.id",
+      "cardinality": "many to 1",
+      "relation": "foreign_key",
+      "assertion": "declared",
+      "source": "supabase/migrations/20260721120000_cr016_gmad_download_access.sql",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "supabase/migrations/20260721120000_cr016_gmad_download_access.sql",
+        "line": 32
+      }
+    },
+    {
+      "from": "gmad_download_grants.batch_id",
+      "to": "gmad_download_batches.id",
+      "cardinality": "many to 1",
+      "relation": "foreign_key",
+      "assertion": "declared",
+      "source": "supabase/migrations/20260721120000_cr016_gmad_download_access.sql",
+      "confidence": "high",
+      "evidence_reference": {
+        "path": "supabase/migrations/20260721120000_cr016_gmad_download_access.sql",
+        "line": 31
+      }
+    }
+  ]
+}

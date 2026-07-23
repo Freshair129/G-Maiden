@@ -20,6 +20,7 @@ pub mod damage;
 #[cfg(not(feature = "wgc"))]
 pub mod dxgi;
 mod governor;
+mod gmad_entitlement;
 pub mod gsi;
 mod identity;
 mod items;
@@ -44,7 +45,32 @@ mod voice_api;
 #[tauri::command]
 fn set_overlay_visible(app: tauri::AppHandle, visible: bool) {
     if let Some(ov) = app.get_webview_window("overlay") {
-        let _ = if visible { ov.show() } else { ov.hide() };
+        let _ = if visible && runtime::gmad_entitled() { ov.show() } else { ov.hide() };
+    }
+}
+
+#[tauri::command]
+async fn verify_gmad_entitlement(
+    app: tauri::AppHandle,
+    access_token: String,
+) -> Result<gmad_entitlement::EntitlementDecision, String> {
+    runtime::set_gmad_entitled(false);
+    if let Some(overlay) = app.get_webview_window("overlay") {
+        let _ = overlay.hide();
+    }
+    let decision = gmad_entitlement::verify(&access_token).await?;
+    runtime::set_gmad_entitled(decision.unlocks_runtime());
+    if decision.unlocks_runtime() && runtime::mark_gmad_capture_started() {
+        capture::start(app.clone());
+    }
+    Ok(decision)
+}
+
+#[tauri::command]
+fn lock_gmad_runtime(app: tauri::AppHandle) {
+    runtime::set_gmad_entitled(false);
+    if let Some(overlay) = app.get_webview_window("overlay") {
+        let _ = overlay.hide();
     }
 }
 
@@ -408,12 +434,14 @@ fn has_master_api_key() -> bool {
 /// browser, so `:3000/auth/callback` only honors a code for a sign-in the app
 /// actually initiated (CR-008 WP-3 — login-CSRF / session-fixation guard).
 #[tauri::command]
-fn oauth_begin() {
+fn oauth_begin(state: String) -> Result<(), String> {
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis() as u64)
         .unwrap_or(0);
-    runtime::set_oauth_pending(now);
+    runtime::set_oauth_pending(state, now)
+        .then_some(())
+        .ok_or_else(|| "invalid OAuth transaction state".to_string())
 }
 
 /// Toggle in-game calibration evidence capture (screenshots + audit clips).
@@ -482,6 +510,11 @@ fn get_volume() -> u8 {
 #[tauri::command]
 fn detect_gsi_setup() -> setup::SetupStatus {
     setup::detect()
+}
+
+#[tauri::command]
+fn detect_dota_running() -> bool {
+    setup::dota_running()
 }
 
 /// Write our GSI cfg into the discovered Dota 2 directory.
@@ -604,7 +637,11 @@ pub fn run() {
                     if shortcut == &toggle2 {
                         if let Some(ov) = app.get_webview_window("overlay") {
                             let visible = ov.is_visible().unwrap_or(true);
-                            let _ = if visible { ov.hide() } else { ov.show() };
+                            let _ = if visible || !runtime::gmad_entitled() {
+                                ov.hide()
+                            } else {
+                                ov.show()
+                            };
                         }
                     } else if shortcut == &vol_up2 {
                         let cur = audio::get_volume();
@@ -634,6 +671,8 @@ pub fn run() {
         )
         .invoke_handler(tauri::generate_handler![
             set_overlay_visible,
+            verify_gmad_entitlement,
+            lock_gmad_runtime,
             speak,
             speak_event,
             cancel_speech,
@@ -674,6 +713,7 @@ pub fn run() {
             open_voice_cache_dir,
             open_url,
             detect_gsi_setup,
+            detect_dota_running,
             install_gsi_config,
             get_log_dir,
             save_settings_file,
@@ -703,10 +743,6 @@ pub fn run() {
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(gsi::serve(handle));
 
-            // P2.0: minimap capture → prefilter; emits `minimap-cv` debug events.
-            // Read-only WGC; quietly no-ops if capture is unavailable.
-            capture::start(app.handle().clone());
-
             // G7.2: resource governor — poll RAM/CPU every 10s, emit resource-stats.
             governor::start(app.handle().clone());
             // Headless GPU feeder sidecar → pushes nvidia-smi metrics to
@@ -725,6 +761,7 @@ pub fn run() {
                     let _ = ov.set_position(tauri::PhysicalPosition::new(0, 0));
                 }
                 let _ = ov.set_ignore_cursor_events(true);
+                let _ = ov.hide();
             }
 
             // --- System tray ---

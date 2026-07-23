@@ -1,7 +1,7 @@
 ---
-version: "0.12.1b"
+version: "0.13.1b"
 created_at: "2026-07-20T00:00:00+07:00,ATHER"
-last_update: "2026-07-21T06:29:00+07:00,ATHER"
+last_update: "2026-07-22T13:45:00+07:00,ATHER"
 status: "beta"
 attributes:
   domain: "public-landing"
@@ -11,7 +11,7 @@ attributes:
 
 # G-Maiden Thai-first Landing — Design System
 
-> **Implementation status:** CR-029 art-first 2.5D Hero, CR-030 scroll-driven cinematic narrative, CR-031 localized layer motion, and CR-032 scene-depth plus character-rig decomposition scaffold are approved; production deployment requires the recorded visual-QA gate in `landing/design-qa.md`.
+> **Implementation status:** CR-029 art-first 2.5D Hero, CR-030 scroll-driven cinematic narrative, CR-031 localized layer motion, and CR-032 scene-depth plus character-rig decomposition scaffold are approved; the shipped Hero remains the approved CM key art while the owner-approved `D:\dota\01.mp4` and `D:\dota\02.mp4` assets are used in the VDO demo section, and production deployment requires the recorded visual-QA gate in `landing/design-qa.md`.
 
 ## 1. Objective
 
@@ -40,14 +40,14 @@ display headline 3 บรรทัด, CTA, proof row และ mobile menu over
 
 - Native concept size: `1672 × 941` (ประมาณ 16:9)
 - Concept มีหน้าที่ล็อก composition, hierarchy, density และ G-Maiden color direction
-- Production background ต้องใช้ video URL ที่ผู้ใช้ระบุ ไม่ใช้ภาพ arena ใน concept เป็น asset จริง
+- Production Hero ใช้ approved CM key art ที่คุม composition ได้ ส่วน VDO demo ใช้ local MP4 assets ที่ owner อนุมัติ
 - VANGUARD ใช้เป็น structural reference เท่านั้น และต้องไม่มีคำว่า `VANGUARD` ในหน้า production
 
 ## 4. Page anatomy
 
 หน้าเดียวสูง `100svh`/`100dvh` โดยไม่เกิด page scroll ใน viewport ปกติ:
 
-1. Fullscreen responsive `<picture>` media with separate desktop/mobile key art
+1. Fullscreen responsive `<picture>` Hero art with separate desktop/mobile key art
 2. Readability layer แบบ neutral black เฉพาะบริเวณที่จำเป็น ห้าม tint วิดีโอเป็นสีน้ำเงิน
 3. Navbar ด้านบน
 4. Hero content ชิดซ้ายและกึ่งกลางแนวตั้ง
@@ -126,14 +126,13 @@ another condensed display face.
 
 ## 7. Media treatment
 
-- Source: original G-Maiden cinematic key art generated from the approved internal character target; no Valve/Dota/Crystal Maiden model, costume, logo, footage, or `D:\dota` media is shipped.
-- Production delivery: desktop WebP `81,068 bytes` (`1672 × 941`) and mobile WebP `87,836 bytes` (`941 × 1672`), selected through semantic `<picture>` media under CR-029.
-- Provenance: generation prompt summary, tool, reference hash, output hashes, rights boundary, and production review state live in `G:\G-Maiden-3D-Studio\workspace\gmaiden-ice-mage\source\production-art\gmaiden-2-5d-hero-v1.provenance.json`.
-- Motion: slow ambient media scale plus bounded `requestAnimationFrame` pointer parallax (`≤18px`, `≤0.7deg`) and passive scroll exit (`≤18px`). No character-body deformation claim.
-- Runtime gate: pointer motion runs only for `pointer: fine`; touch and `prefers-reduced-motion: reduce` receive the static responsive image with all decorative transforms disabled.
-- Fit: cinematic subject stays in the media plane and does not receive pointer events; headline, countdown, navigation, and CTA remain semantic HTML above the image.
-- Readability: neutral black directional scrims preserve the left text-safe zone and the dedicated lower-right countdown zone without covering the subject's face or torso.
-- Prohibited: Three.js/WebGL in the Hero, external copyrighted character media, runtime image generation, audio, scroll pinning, or interaction-capturing media.
+- Source: approved Hero key art `gmaiden-2-5d-hero-desktop-v1.webp` and `gmaiden-2-5d-hero-mobile-v1.webp`. Owner-approved demo capture assets `D:\dota\01.mp4` and `D:\dota\02.mp4` are reserved for the dedicated VDO demo section.
+- Production delivery: desktop WebP `81,068 bytes` (`1672 × 941`) and mobile WebP `87,836 bytes` (`941 × 1672`) selected through semantic `<picture>` media in the Hero; the VDO demo section uses local MP4 cards with native controls.
+- Motion: bounded `requestAnimationFrame` pointer parallax (`≤9px`, `≤0.6deg`), slow breathing scale, and passive scroll exit on the Hero image. Glow and fog layers are decorative only.
+- Runtime gate: pointer motion runs only for `pointer: fine`; touch and `prefers-reduced-motion: reduce` receive the static responsive frame with all decorative transforms disabled.
+- Fit: the character framing is biased to the right so the headline and countdown keep dedicated reading zones. Media never receives pointer events; headline, countdown, navigation, and CTA remain semantic HTML above the Hero art.
+- Readability: neutral black directional scrims plus a soft in-scene glow preserve the left text-safe zone and the dedicated lower-right countdown zone without washing the Hero flat.
+- Prohibited: Three.js/WebGL in the Hero, runtime image generation, Hero audio, scroll pinning, or interaction-capturing media.
 
 ### 7.1 Scroll-driven cinematic narrative
 
@@ -141,7 +140,7 @@ another condensed display face.
   only to CSS custom properties and never pins, captures, or changes native browser scrolling.
 - Hero art, scrim, and copy use a short composited exit depth. The Open Beta beacon receives an
   ice-signal sweep tied to that same bounded progress.
-- GMAD and feature rails are visible by default. `IntersectionObserver` adds a one-time enhancement
+- The G-Maiden access section and feature rails are visible by default. `IntersectionObserver` adds a one-time enhancement
   state for diagnostic line, brightness, and focus treatment after the content is already visible.
 - Touch and `prefers-reduced-motion: reduce` disable decorative scroll transforms and preserve the
   same content, anchor links, CTA behavior, and reading order.
@@ -340,11 +339,13 @@ Landing ใช้ React + Vite + TypeScript + Tailwind แยกจาก app �
 - `landing/tsconfig*.json`
 - `landing/src/main.tsx`
 - `landing/src/App.tsx` — component เดียวตาม brief, `useState` สำหรับ mobile menu
-- `landing/src/HeroMedia25D.tsx` — semantic responsive Hero art with bounded decorative motion plus the scene-depth and character-rig scaffold
+- `landing/src/HeroMedia25D.tsx` — semantic responsive Hero art with bounded decorative motion and right-weighted framing for CM
 - `landing/src/beta.ts` — Google OAuth PKCE + server-authoritative GID/enrollment state
 - `landing/src/index.css`
-- `landing/public/assets/hero/gmaiden-2-5d-hero-desktop-v1.webp` — desktop production key art
-- `landing/public/assets/hero/gmaiden-2-5d-hero-mobile-v1.webp` — mobile production key art
+- `landing/public/assets/hero/gmaiden-2-5d-hero-desktop-v1.webp` — desktop production Hero art
+- `landing/public/assets/hero/gmaiden-2-5d-hero-mobile-v1.webp` — mobile production Hero art
+- `landing/public/assets/hero/hero-demo-desktop-01.mp4` — desktop VDO demo asset
+- `landing/public/assets/hero/hero-demo-mobile-02.mp4` — mobile VDO demo asset
 - `landing/README.md` — local dev/build/deploy instructions
 - `supabase/migrations/20260720183000_cr005_closed_beta_registration.sql`
 - `supabase/migrations/20260720184500_cr005_beta_rls_initplan.sql`
@@ -370,7 +371,7 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 ### Acceptance criteria
 
 - ชื่อและ copy ทั้งหมดเป็น G-Maiden; ไม่มี VANGUARD production copy
-- ใช้ exact CloudFront video URL และ media attributes ตาม brief
+- Hero ใช้ exact approved key art assets และ VDO demo section ใช้ exact local assets `hero-demo-desktop-01.mp4` และ `hero-demo-mobile-02.mp4` ตาม spec
 - Desktop/mobile composition และ mobile menu ตรง spec
 - Color/type/icon/motion ใช้ tokens และ component rules ในเอกสารนี้
 - Keyboard navigation, `Escape`, focus return และ reduced-motion ทำงาน
@@ -389,7 +390,7 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 - ไม่มี overflow ที่ `320 × 568`, `390 × 844`, `768 × 1024`, `1366 × 768`, `1440 × 900`
 - Primary content ไม่ถูกตัดใน viewport เล็ก
 - Video error มี dark fallback และ content ยังอ่านได้
-- hero artwork ≤250 KB และไม่มี external background-video request
+- Hero และ VDO demo ไม่มี external media request; ทุก asset ต้องเป็น local static asset ภายใน `landing/public/assets/hero/`
 - production callback กลับ landing origin ที่อยู่ใน Supabase redirect allow list
 
 ### Exit criteria
@@ -426,6 +427,8 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
+| 0.13.1b | 2026-07-22 | beta | Normalized reader-facing landing narrative references from GMAD to G-Maiden while preserving technical identifiers and history. | - | ATHER |
+| 0.13.0b | 2026-07-22 | beta | Kept the approved Hero art with corrected right-side framing and moved the owner-approved `D:\dota` MP4 assets into a dedicated VDO demo section. | - | ATHER |
 | 0.1.0b | 2026-07-20 | candidate | Initial G-Maiden landing design-system proposal using the VANGUARD brief as structural reference | — | ATHER |
 | 0.2.0b | 2026-07-20 | beta | Approved implementation; added production cold video grade and Vercel deployment state | — | ATHER |
 | 0.3.0b | 2026-07-20 | beta | Original cinematic hero, Closed Beta Google OAuth/GID enrollment, RLS contract and production verification gates | — | ATHER |

@@ -1,3 +1,15 @@
+---
+version: "0.1.4"
+created_at: "2026-07-19T00:00:00+07:00,Unknown"
+last_update: "2026-07-22T20:18:00+07:00,ATHER"
+status: "active"
+attributes:
+  domain: "documentation-governance"
+  doc_type: "document-index"
+  scope: "repository documentation index"
+  language: "th/en"
+---
+
 # Documentation Index
 
 ## Product
@@ -54,8 +66,10 @@
   - `docs/architecture/g-maiden-ui-sitemap-flow-board.md` — G-Maiden player-facing UI sitemap, user flow, and board
 - [[implementation-plan]]
   - `docs/architecture/implementation-plan.md` — implementation plan / ultraplan
+- [[oauth-jwt-client-authorization-flows]]
+  - `docs/architecture/oauth-jwt-client-authorization-flows.md` — C-3/HIGH OAuth 2.0 + PKCE, JWT, Device Authorization pairing, and future mobile-client authorization contract
 - `docs/architecture/adr/`
-  - `docs/architecture/adr/` — architecture decisions (ADR-10/11/12 strategy, ADR-13 DXGI, **ADR-14 GID account & identity layer** — Supabase `gstore`, Google OAuth, GID codec, privacy reconcile)
+  - `docs/architecture/adr/` — architecture decisions (ADR-10/11/12 strategy, ADR-13 DXGI, **ADR-14 GID account & identity layer**, **ADR-17 brokered OAuth transaction boundary**)
 - `docs/architecture/spikes/`
   - `docs/architecture/spikes/` — spike และ technical proof
 
@@ -81,6 +95,9 @@
 
 ## Operations
 
+- [[gmaiden-closed-beta-release-playbook]]
+  - `docs/operations/gmaiden-closed-beta-release-playbook.md` — playbook สำหรับปล่อยสิทธิ์ดาวน์โหลด G-Maiden Closed Beta, flow จริงของ queue/grant/download, และ naming convention ของ `release_id`/`artifact_path`
+
 - `docs/operations/validation/`
   - `docs/operations/validation/` — toolkit, forms, social validation assets
 - `docs/operations/audits/`
@@ -103,3 +120,6 @@
 | --- | --- | --- |
 | 0.1.0 | — | สารบัญ docs ฉบับแรก (untracked) |
 | 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): fixed unresolved wikilinks — `[[architecture/design-system]]` → `[[design-system]]`; directory/non-doc-graph targets (`architecture/adr`, `architecture/spikes`, `design-system/assets`, `operations/validation`, `operations/audits`, `orchestration/docs/*`) converted to plain backtick path text. `docs/operations/audits/` does not exist on disk (dangling; real audits live at `docs/audits/`) |
+| 0.1.2 | 2026-07-21 | Added the OAuth/JWT multi-client authorization-flow architecture document. |
+| 0.1.3 | 2026-07-21 | Added ADR-17 as the selected high-assurance OAuth transaction architecture. |
+| 0.1.4 | 2026-07-22 | Added the G-Maiden Closed Beta release playbook under Operations. |

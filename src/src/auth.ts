@@ -8,6 +8,7 @@ import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { supabase } from "./supabase";
 import { loadIdentity } from "./live/identity";
+import { oauthStateFromAuthorizationUrl } from "./oauthTransaction";
 
 // Fixed loopback redirect served by the GSI axum server (/auth/callback). Must
 // be in Supabase → Auth → URL Configuration → Redirect URLs.
@@ -92,10 +93,11 @@ export function useAuth() {
       });
       if (error) throw error;
       if (data?.url) {
+        const state = oauthStateFromAuthorizationUrl(data.url);
+        if (!state) throw new Error("Google sign-in could not start securely. Please try again.");
         // CR-008 WP-3: arm the callback gate so :3000/auth/callback only accepts
-        // a code for this app-initiated sign-in (login-CSRF guard), then open the
-        // system browser.
-        await invoke("oauth_begin");
+        // a code and state for this app-initiated sign-in, then open the system browser.
+        await invoke("oauth_begin", { state });
         await invoke("open_url", { url: data.url });
       }
       // The session arrives asynchronously via the oauth-callback listener.

@@ -1,110 +1,226 @@
-import { type ReactNode, useEffect, useRef } from 'react'
+import { useEffect, useRef, useState } from 'react'
 
 const DESKTOP_ART = '/assets/hero/gmaiden-2-5d-hero-desktop-v1.webp'
 const MOBILE_ART = '/assets/hero/gmaiden-2-5d-hero-mobile-v1.webp'
 
-export const HERO_SCENE_LAYER_ORDER = [
-  'background-backdrop',
-  'mid-depth-b',
-  'mid-depth-a',
-  'cave-wall-left',
-  'cave-wall-right',
-  'character-layer',
-  'atmosphere-overlay',
-] as const
+type HeroVariableMap = Record<string, string>
 
-export const HERO_CHARACTER_COMPONENT_ORDER = [
-  'character-core',
-  'character-hair-rig',
-  'character-arm-rig-left',
-  'character-arm-rig-right',
-  'character-cloth-rig',
-  'character-held-object',
-] as const
-
-export const HERO_CHARACTER_PIVOTS = [
-  'root',
-  'neck',
-  'head',
-  'shoulder_left',
-  'elbow_left',
-  'wrist_left',
-  'shoulder_right',
-  'elbow_right',
-  'wrist_right',
-  'chest',
-  'pelvis',
-  'hair_root_front',
-  'hair_root_side_left',
-  'hair_root_side_right',
-  'cape_root_left',
-  'cape_root_right',
-  'object_anchor',
-] as const
-
-type HeroWindSample = {
-  frost: number
-  shimmer: number
-  turn: number
-  x: number
-  y: number
+type HeroNodeSpec = {
+  key: string
+  nodeClass: string
+  pictureClass: string
+  pivot: string
 }
 
-type HeroRigMotionSample = {
-  armLeftTurn: number
-  armRightTurn: number
-  auraPulse: number
-  clothFrontSway: number
-  clothHemLift: number
-  clothSideLeft: number
-  clothSideRight: number
-  crystalFloatX: number
-  crystalFloatY: number
-  crystalTurn: number
-  hairBackShift: number
-  hairFrontSway: number
-  hairTailLeftTurn: number
-  hairTailRightTurn: number
-  headLift: number
-  headTurn: number
+const SCENE_LAYERS = [
+  {
+    key: 'background-backdrop',
+    layerClass: 'hero-scene-layer hero-scene-layer-background-backdrop',
+    pictureClass: 'hero-scene-picture hero-scene-picture-background-backdrop',
+  },
+  {
+    key: 'mid-depth-b',
+    layerClass: 'hero-scene-layer hero-scene-layer-mid-depth-b',
+    pictureClass: 'hero-scene-picture hero-scene-picture-mid-depth-b',
+  },
+  {
+    key: 'mid-depth-a',
+    layerClass: 'hero-scene-layer hero-scene-layer-mid-depth-a',
+    pictureClass: 'hero-scene-picture hero-scene-picture-mid-depth-a',
+  },
+  {
+    key: 'cave-wall-left',
+    layerClass: 'hero-scene-layer hero-scene-layer-cave-wall-left',
+    pictureClass: 'hero-scene-picture hero-scene-picture-cave-wall-left',
+  },
+  {
+    key: 'cave-wall-right',
+    layerClass: 'hero-scene-layer hero-scene-layer-cave-wall-right',
+    pictureClass: 'hero-scene-picture hero-scene-picture-cave-wall-right',
+  },
+] as const
+
+const CHARACTER_CORE_NODES: HeroNodeSpec[] = [
+  { key: 'neck', nodeClass: 'hero-character-node hero-character-node-neck', pictureClass: 'hero-character-picture hero-character-picture-neck', pivot: 'neck' },
+  { key: 'head', nodeClass: 'hero-character-node hero-character-node-head', pictureClass: 'hero-character-picture hero-character-picture-head', pivot: 'head' },
+  { key: 'face', nodeClass: 'hero-character-node hero-character-node-face', pictureClass: 'hero-character-picture hero-character-picture-face', pivot: 'head' },
+  { key: 'chest', nodeClass: 'hero-character-node hero-character-node-chest', pictureClass: 'hero-character-picture hero-character-picture-chest', pivot: 'chest' },
+  { key: 'torso', nodeClass: 'hero-character-node hero-character-node-torso', pictureClass: 'hero-character-picture hero-character-picture-torso', pivot: 'chest' },
+  { key: 'hip-base', nodeClass: 'hero-character-node hero-character-node-hip-base', pictureClass: 'hero-character-picture hero-character-picture-hip-base', pivot: 'pelvis' },
+]
+
+const CHARACTER_HAIR_NODES: HeroNodeSpec[] = [
+  { key: 'hair-crown', nodeClass: 'hero-character-node hero-character-node-hair-crown', pictureClass: 'hero-character-picture hero-character-picture-hair-crown', pivot: 'hair_root_front' },
+  { key: 'hair-front-a', nodeClass: 'hero-character-node hero-character-node-hair-front-a', pictureClass: 'hero-character-picture hero-character-picture-hair-front-a', pivot: 'hair_root_front' },
+  { key: 'hair-front-b', nodeClass: 'hero-character-node hero-character-node-hair-front-b', pictureClass: 'hero-character-picture hero-character-picture-hair-front-b', pivot: 'hair_root_front' },
+  { key: 'hair-side-left', nodeClass: 'hero-character-node hero-character-node-hair-side-left', pictureClass: 'hero-character-picture hero-character-picture-hair-side-left', pivot: 'hair_root_side_left' },
+  { key: 'hair-side-right', nodeClass: 'hero-character-node hero-character-node-hair-side-right', pictureClass: 'hero-character-picture hero-character-picture-hair-side-right', pivot: 'hair_root_side_right' },
+  { key: 'hair-tail-left', nodeClass: 'hero-character-node hero-character-node-hair-tail-left', pictureClass: 'hero-character-picture hero-character-picture-hair-tail-left', pivot: 'hair_root_side_left' },
+  { key: 'hair-tail-right', nodeClass: 'hero-character-node hero-character-node-hair-tail-right', pictureClass: 'hero-character-picture hero-character-picture-hair-tail-right', pivot: 'hair_root_side_right' },
+  { key: 'hair-back-mass', nodeClass: 'hero-character-node hero-character-node-hair-back-mass', pictureClass: 'hero-character-picture hero-character-picture-hair-back-mass', pivot: 'hair_root_front' },
+]
+
+const CHARACTER_LEFT_ARM_NODES: HeroNodeSpec[] = [
+  { key: 'left-shoulder', nodeClass: 'hero-character-node hero-character-node-left-shoulder', pictureClass: 'hero-character-picture hero-character-picture-left-shoulder', pivot: 'shoulder_left' },
+  { key: 'left-upper-arm', nodeClass: 'hero-character-node hero-character-node-left-upper-arm', pictureClass: 'hero-character-picture hero-character-picture-left-upper-arm', pivot: 'shoulder_left' },
+  { key: 'left-forearm', nodeClass: 'hero-character-node hero-character-node-left-forearm', pictureClass: 'hero-character-picture hero-character-picture-left-forearm', pivot: 'elbow_left' },
+  { key: 'left-hand', nodeClass: 'hero-character-node hero-character-node-left-hand', pictureClass: 'hero-character-picture hero-character-picture-left-hand', pivot: 'wrist_left' },
+]
+
+const CHARACTER_RIGHT_ARM_NODES: HeroNodeSpec[] = [
+  { key: 'right-shoulder', nodeClass: 'hero-character-node hero-character-node-right-shoulder', pictureClass: 'hero-character-picture hero-character-picture-right-shoulder', pivot: 'shoulder_right' },
+  { key: 'right-upper-arm', nodeClass: 'hero-character-node hero-character-node-right-upper-arm', pictureClass: 'hero-character-picture hero-character-picture-right-upper-arm', pivot: 'shoulder_right' },
+  { key: 'right-forearm', nodeClass: 'hero-character-node hero-character-node-right-forearm', pictureClass: 'hero-character-picture hero-character-picture-right-forearm', pivot: 'elbow_right' },
+  { key: 'right-hand', nodeClass: 'hero-character-node hero-character-node-right-hand', pictureClass: 'hero-character-picture hero-character-picture-right-hand', pivot: 'wrist_right' },
+]
+
+const CHARACTER_CLOTH_NODES: HeroNodeSpec[] = [
+  { key: 'shoulder-cape-left', nodeClass: 'hero-character-node hero-character-node-shoulder-cape-left', pictureClass: 'hero-character-picture hero-character-picture-shoulder-cape-left', pivot: 'cape_root_left' },
+  { key: 'shoulder-cape-right', nodeClass: 'hero-character-node hero-character-node-shoulder-cape-right', pictureClass: 'hero-character-picture hero-character-picture-shoulder-cape-right', pivot: 'cape_root_right' },
+  { key: 'collar-drape', nodeClass: 'hero-character-node hero-character-node-collar-drape', pictureClass: 'hero-character-picture hero-character-picture-collar-drape', pivot: 'chest' },
+  { key: 'front-cloth-panel-a', nodeClass: 'hero-character-node hero-character-node-front-cloth-panel-a', pictureClass: 'hero-character-picture hero-character-picture-front-cloth-panel-a', pivot: 'pelvis' },
+  { key: 'front-cloth-panel-b', nodeClass: 'hero-character-node hero-character-node-front-cloth-panel-b', pictureClass: 'hero-character-picture hero-character-picture-front-cloth-panel-b', pivot: 'pelvis' },
+  { key: 'side-cloth-left', nodeClass: 'hero-character-node hero-character-node-side-cloth-left', pictureClass: 'hero-character-picture hero-character-picture-side-cloth-left', pivot: 'cape_root_left' },
+  { key: 'side-cloth-right', nodeClass: 'hero-character-node hero-character-node-side-cloth-right', pictureClass: 'hero-character-picture hero-character-picture-side-cloth-right', pivot: 'cape_root_right' },
+  { key: 'lower-hem', nodeClass: 'hero-character-node hero-character-node-lower-hem', pictureClass: 'hero-character-picture hero-character-picture-lower-hem', pivot: 'pelvis' },
+]
+
+const CHARACTER_OBJECT_NODES: HeroNodeSpec[] = [
+  { key: 'held-crystal-core', nodeClass: 'hero-character-node hero-character-node-held-crystal-core', pictureClass: 'hero-character-picture hero-character-picture-held-crystal-core', pivot: 'object_anchor' },
+  { key: 'held-crystal-ring', nodeClass: 'hero-character-node hero-character-node-held-crystal-ring', pictureClass: 'hero-character-picture hero-character-picture-held-crystal-ring', pivot: 'object_anchor' },
+  { key: 'held-crystal-glow', nodeClass: 'hero-character-node hero-character-node-held-crystal-glow', pictureClass: 'hero-character-picture hero-character-picture-held-crystal-glow', pivot: 'object_anchor' },
+]
+
+const STATIC_HERO_SAMPLE: HeroVariableMap = {
+  '--hero-media-x': '0px',
+  '--hero-media-y': '0px',
+  '--hero-media-tilt': '0deg',
+  '--hero-media-scale': '1.035',
+  '--hero-media-glow': '0.42',
+  '--hero-base-x': '0px',
+  '--hero-base-y': '0px',
+  '--hero-base-turn': '0deg',
+  '--hero-head-lift': '0px',
+  '--hero-head-turn': '0deg',
+  '--hero-hair-x': '0px',
+  '--hero-hair-y': '0px',
+  '--hero-hair-turn': '0deg',
+  '--hero-hair-back-shift': '0px',
+  '--hero-hair-front-sway': '0px',
+  '--hero-hair-tail-left-turn': '0deg',
+  '--hero-hair-tail-right-turn': '0deg',
+  '--hero-arm-left-turn': '0deg',
+  '--hero-arm-right-turn': '0deg',
+  '--hero-cloak-x': '0px',
+  '--hero-cloak-y': '0px',
+  '--hero-cloak-turn': '0deg',
+  '--hero-cloth-front-sway': '0px',
+  '--hero-cloth-side-left': '0px',
+  '--hero-cloth-side-right': '0px',
+  '--hero-cloth-hem-lift': '0px',
+  '--hero-frost-x': '0px',
+  '--hero-frost-y': '0px',
+  '--hero-frost-pulse': '0.18',
+  '--hero-glint': '0.26',
+  '--hero-aura-pulse': '0.18',
+  '--hero-object-x': '0px',
+  '--hero-object-y': '0px',
+  '--hero-object-turn': '0deg',
 }
 
-export const sampleHeroWind = (timeMs: number): HeroWindSample => {
+function clamp(value: number, min: number, max: number) {
+  return Math.min(max, Math.max(min, value))
+}
+
+function px(value: number) {
+  return `${value.toFixed(3)}px`
+}
+
+function deg(value: number) {
+  return `${value.toFixed(3)}deg`
+}
+
+function unit(value: number) {
+  return value.toFixed(4)
+}
+
+export function sampleHeroWind(timeMs: number, pointerX: number, pointerY: number): HeroVariableMap {
+  const pxNorm = clamp(pointerX, -1, 1)
+  const pyNorm = clamp(pointerY, -1, 1)
   const time = timeMs * 0.001
 
+  const driftX = Math.sin(time * 0.34) * 3.1
+  const driftY = Math.cos(time * 0.28) * 2.2
+  const breath = (Math.sin(time * 0.32) + 1) * 0.5
+  const windA = Math.sin(time * 0.92)
+  const windB = Math.cos(time * 0.76)
+  const windC = Math.sin(time * 1.18 + 0.8)
+
+  const mediaX = pxNorm * 7.6 + driftX
+  const mediaY = pyNorm * 5.6 + driftY
+  const baseX = pxNorm * 4.8 + windA * 1.6
+  const baseY = pyNorm * 3.1 + windB * 1.2
+  const hairX = pxNorm * 6.2 + windA * 3.4
+  const hairY = pyNorm * 2.8 + windB * 1.9
+  const cloakX = pxNorm * 4.5 + windC * 2.6
+  const cloakY = pyNorm * 2.5 + windA * 1.8
+  const frostX = pxNorm * 3.2 + windB * 3
+  const frostY = pyNorm * 1.8 + windC * 2.2
+  const objectX = pxNorm * 1.1 + windB * 0.8
+  const objectY = pyNorm * 0.9 + windA * 0.8
+  const frontSway = windA * 2.2 + pxNorm * 1.2
+  const hemLift = (Math.sin(time * 1.28 + 1.2) + 1) * 1.2
+  const sideLeft = windB * 1.6 + pxNorm * 0.8
+  const sideRight = windC * 1.5 + pxNorm * 0.7
+  const glint = 0.26 + breath * 0.44
+  const frostPulse = 0.16 + ((windB + 1) * 0.5) * 0.32
+  const auraPulse = 0.14 + ((windC + 1) * 0.5) * 0.38
+
   return {
-    x: Math.sin(time * 0.92) * 7.4 + Math.sin(time * 1.51 + 0.62) * 2.2,
-    y: Math.cos(time * 0.58 + 0.44) * 4.2 + Math.sin(time * 1.07 + 0.18) * 1.15,
-    turn: Math.sin(time * 0.73 + 0.92) * 1.5 + Math.cos(time * 0.49 + 0.2) * 0.48,
-    shimmer: (Math.sin(time * 1.19 + 0.14) + 1) * 0.5,
-    frost: (Math.cos(time * 0.52 - 0.38) + 1) * 0.5,
+    '--hero-media-x': px(mediaX),
+    '--hero-media-y': px(mediaY),
+    '--hero-media-tilt': deg(pxNorm * 0.52),
+    '--hero-media-scale': unit(1.032 + breath * 0.016),
+    '--hero-media-glow': unit(0.28 + breath * 0.34),
+    '--hero-base-x': px(baseX),
+    '--hero-base-y': px(baseY),
+    '--hero-base-turn': deg(pxNorm * 0.42 + windA * 0.24),
+    '--hero-head-lift': px(windB * 1.25 + pyNorm * -0.8),
+    '--hero-head-turn': deg(pxNorm * 0.62 + windA * 0.3),
+    '--hero-hair-x': px(hairX),
+    '--hero-hair-y': px(hairY),
+    '--hero-hair-turn': deg(pxNorm * 0.76 + windA * 0.58),
+    '--hero-hair-back-shift': px(windC * 2.2),
+    '--hero-hair-front-sway': px(frontSway),
+    '--hero-hair-tail-left-turn': deg(windB * 1.18),
+    '--hero-hair-tail-right-turn': deg(windC * -1.06),
+    '--hero-arm-left-turn': deg(pxNorm * 0.18 + windA * 0.38),
+    '--hero-arm-right-turn': deg(pxNorm * -0.16 + windB * 0.34),
+    '--hero-cloak-x': px(cloakX),
+    '--hero-cloak-y': px(cloakY),
+    '--hero-cloak-turn': deg(pxNorm * 0.58 + windC * 0.64),
+    '--hero-cloth-front-sway': px(frontSway * 0.9),
+    '--hero-cloth-side-left': px(sideLeft),
+    '--hero-cloth-side-right': px(sideRight),
+    '--hero-cloth-hem-lift': px(hemLift),
+    '--hero-frost-x': px(frostX),
+    '--hero-frost-y': px(frostY),
+    '--hero-frost-pulse': unit(frostPulse),
+    '--hero-glint': unit(glint),
+    '--hero-aura-pulse': unit(auraPulse),
+    '--hero-object-x': px(objectX),
+    '--hero-object-y': px(objectY),
+    '--hero-object-turn': deg(pxNorm * 0.3 + windA * 0.42),
   }
 }
 
-export const sampleHeroRigMotion = (timeMs: number): HeroRigMotionSample => {
-  const time = timeMs * 0.001
-
-  return {
-    headTurn: Math.sin(time * 0.54 + 0.42) * 1.2,
-    headLift: Math.cos(time * 0.78 + 0.11) * 2.8,
-    hairFrontSway: Math.sin(time * 1.22 + 0.36) * 5.2,
-    hairBackShift: Math.cos(time * 0.82 + 0.58) * 3.4,
-    hairTailLeftTurn: Math.sin(time * 1.34 + 1.08) * 4.6,
-    hairTailRightTurn: Math.cos(time * 1.28 + 0.84) * 4.2,
-    armLeftTurn: Math.sin(time * 0.64 + 0.74) * 1.6,
-    armRightTurn: Math.cos(time * 0.59 + 0.18) * 1.4,
-    clothFrontSway: Math.sin(time * 0.92 + 0.34) * 4.8,
-    clothSideLeft: Math.cos(time * 0.88 + 0.96) * 4.2,
-    clothSideRight: Math.sin(time * 0.86 + 1.34) * 4,
-    clothHemLift: (Math.sin(time * 1.04 + 0.25) + 1) * 2.4,
-    crystalFloatX: Math.sin(time * 1.16 + 0.44) * 3.2,
-    crystalFloatY: Math.cos(time * 1.04 + 0.67) * 4.2,
-    crystalTurn: Math.sin(time * 0.72 + 0.91) * 3.4,
-    auraPulse: (Math.sin(time * 1.42 + 0.26) + 1) * 0.5,
-  }
+function applyHeroVariables(shell: HTMLDivElement, sample: HeroVariableMap) {
+  Object.entries(sample).forEach(([key, value]) => {
+    shell.style.setProperty(key, value)
+  })
 }
 
-function HeroLayerPicture({ className }: { className: string }) {
+function HeroPicture({ className }: { className: string }) {
   return (
     <picture className={className}>
       <source media="(max-width: 767px)" srcSet={MOBILE_ART} />
@@ -113,163 +229,43 @@ function HeroLayerPicture({ className }: { className: string }) {
   )
 }
 
-function HeroSceneLayer({
-  layerClassName,
-  pictureClassName,
-}: {
-  layerClassName: string
-  pictureClassName: string
-}) {
+function HeroNode({ nodeClass, pictureClass, pivot }: HeroNodeSpec) {
   return (
-    <div className={`hero-scene-layer ${layerClassName}`}>
-      <HeroLayerPicture className={`hero-media-picture hero-scene-picture ${pictureClassName}`} />
-    </div>
-  )
-}
-
-function HeroCharacterNode({
-  className,
-  pictureClassName,
-  nodeId,
-  pivot,
-  children,
-}: {
-  className: string
-  pictureClassName: string
-  nodeId: string
-  pivot: (typeof HERO_CHARACTER_PIVOTS)[number]
-  children?: ReactNode
-}) {
-  return (
-    <div className={`hero-character-node ${className}`} data-node={nodeId} data-pivot={pivot}>
-      <HeroLayerPicture className={`hero-media-picture hero-character-picture ${pictureClassName}`} />
-      {children}
-    </div>
-  )
-}
-
-function HeroCharacterLayer() {
-  return (
-    <div className="hero-scene-layer hero-scene-layer-character-layer" data-layer="character-layer">
-      <div className="hero-character-shell">
-        <div className="hero-character-component hero-character-core" data-component={HERO_CHARACTER_COMPONENT_ORDER[0]}>
-          <HeroCharacterNode className="hero-character-node-neck" pictureClassName="hero-character-picture-neck" nodeId="neck" pivot="neck" />
-          <HeroCharacterNode className="hero-character-node-head" pictureClassName="hero-character-picture-head" nodeId="head" pivot="head" />
-          <HeroCharacterNode className="hero-character-node-face" pictureClassName="hero-character-picture-face" nodeId="face" pivot="head" />
-          <HeroCharacterNode className="hero-character-node-chest" pictureClassName="hero-character-picture-chest" nodeId="chest" pivot="chest" />
-          <HeroCharacterNode className="hero-character-node-torso" pictureClassName="hero-character-picture-torso" nodeId="torso" pivot="chest" />
-          <HeroCharacterNode className="hero-character-node-hip-base" pictureClassName="hero-character-picture-hip-base" nodeId="hip-base" pivot="pelvis" />
-        </div>
-
-        <div className="hero-character-component hero-character-hair-rig" data-component={HERO_CHARACTER_COMPONENT_ORDER[1]}>
-          <HeroCharacterNode className="hero-character-node-hair-crown" pictureClassName="hero-character-picture-hair-crown" nodeId="hair-crown" pivot="head" />
-          <HeroCharacterNode className="hero-character-node-hair-front-a" pictureClassName="hero-character-picture-hair-front-a" nodeId="hair-front-a" pivot="hair_root_front" />
-          <HeroCharacterNode className="hero-character-node-hair-front-b" pictureClassName="hero-character-picture-hair-front-b" nodeId="hair-front-b" pivot="hair_root_front" />
-          <HeroCharacterNode className="hero-character-node-hair-side-left" pictureClassName="hero-character-picture-hair-side-left" nodeId="hair-side-left" pivot="hair_root_side_left" />
-          <HeroCharacterNode className="hero-character-node-hair-side-right" pictureClassName="hero-character-picture-hair-side-right" nodeId="hair-side-right" pivot="hair_root_side_right" />
-          <HeroCharacterNode className="hero-character-node-hair-tail-left" pictureClassName="hero-character-picture-hair-tail-left" nodeId="hair-tail-left" pivot="hair_root_side_left" />
-          <HeroCharacterNode className="hero-character-node-hair-tail-right" pictureClassName="hero-character-picture-hair-tail-right" nodeId="hair-tail-right" pivot="hair_root_side_right" />
-          <HeroCharacterNode className="hero-character-node-hair-back-mass" pictureClassName="hero-character-picture-hair-back-mass" nodeId="hair-back-mass" pivot="hair_root_front" />
-        </div>
-
-        <div className="hero-character-component hero-character-arm-rig-left" data-component={HERO_CHARACTER_COMPONENT_ORDER[2]}>
-          <HeroCharacterNode className="hero-character-node-left-shoulder" pictureClassName="hero-character-picture-left-shoulder" nodeId="left-shoulder" pivot="shoulder_left" />
-          <HeroCharacterNode className="hero-character-node-left-upper-arm" pictureClassName="hero-character-picture-left-upper-arm" nodeId="left-upper-arm" pivot="shoulder_left" />
-          <HeroCharacterNode className="hero-character-node-left-forearm" pictureClassName="hero-character-picture-left-forearm" nodeId="left-forearm" pivot="elbow_left" />
-          <HeroCharacterNode className="hero-character-node-left-hand" pictureClassName="hero-character-picture-left-hand" nodeId="left-hand" pivot="wrist_left" />
-        </div>
-
-        <div className="hero-character-component hero-character-arm-rig-right" data-component={HERO_CHARACTER_COMPONENT_ORDER[3]}>
-          <HeroCharacterNode className="hero-character-node-right-shoulder" pictureClassName="hero-character-picture-right-shoulder" nodeId="right-shoulder" pivot="shoulder_right" />
-          <HeroCharacterNode className="hero-character-node-right-upper-arm" pictureClassName="hero-character-picture-right-upper-arm" nodeId="right-upper-arm" pivot="shoulder_right" />
-          <HeroCharacterNode className="hero-character-node-right-forearm" pictureClassName="hero-character-picture-right-forearm" nodeId="right-forearm" pivot="elbow_right" />
-          <HeroCharacterNode className="hero-character-node-right-hand" pictureClassName="hero-character-picture-right-hand" nodeId="right-hand" pivot="wrist_right" />
-        </div>
-
-        <div className="hero-character-component hero-character-cloth-rig" data-component={HERO_CHARACTER_COMPONENT_ORDER[4]}>
-          <HeroCharacterNode className="hero-character-node-shoulder-cape-left" pictureClassName="hero-character-picture-shoulder-cape-left" nodeId="shoulder-cape-left" pivot="cape_root_left" />
-          <HeroCharacterNode className="hero-character-node-shoulder-cape-right" pictureClassName="hero-character-picture-shoulder-cape-right" nodeId="shoulder-cape-right" pivot="cape_root_right" />
-          <HeroCharacterNode className="hero-character-node-collar-drape" pictureClassName="hero-character-picture-collar-drape" nodeId="collar-drape" pivot="chest" />
-          <HeroCharacterNode className="hero-character-node-front-cloth-panel-a" pictureClassName="hero-character-picture-front-cloth-panel-a" nodeId="front-cloth-panel-a" pivot="pelvis" />
-          <HeroCharacterNode className="hero-character-node-front-cloth-panel-b" pictureClassName="hero-character-picture-front-cloth-panel-b" nodeId="front-cloth-panel-b" pivot="pelvis" />
-          <HeroCharacterNode className="hero-character-node-side-cloth-left" pictureClassName="hero-character-picture-side-cloth-left" nodeId="side-cloth-left" pivot="cape_root_left" />
-          <HeroCharacterNode className="hero-character-node-side-cloth-right" pictureClassName="hero-character-picture-side-cloth-right" nodeId="side-cloth-right" pivot="cape_root_right" />
-          <HeroCharacterNode className="hero-character-node-lower-hem" pictureClassName="hero-character-picture-lower-hem" nodeId="lower-hem" pivot="pelvis" />
-        </div>
-
-        <div className="hero-character-component hero-character-held-object" data-component={HERO_CHARACTER_COMPONENT_ORDER[5]}>
-          <HeroCharacterNode className="hero-character-node-held-crystal-core" pictureClassName="hero-character-picture-held-crystal-core" nodeId="held-crystal-core" pivot="object_anchor" />
-          <HeroCharacterNode className="hero-character-node-held-crystal-ring" pictureClassName="hero-character-picture-held-crystal-ring" nodeId="held-crystal-ring" pivot="object_anchor" />
-          <HeroCharacterNode className="hero-character-node-held-crystal-glow" pictureClassName="hero-character-picture-held-crystal-glow" nodeId="held-crystal-glow" pivot="object_anchor">
-            <span className="hero-character-held-crystal-aura hero-character-held-crystal-aura-a" />
-            <span className="hero-character-held-crystal-aura hero-character-held-crystal-aura-b" />
-          </HeroCharacterNode>
-        </div>
-      </div>
-    </div>
-  )
-}
-
-function HeroAtmosphereLayer() {
-  return (
-    <div className="hero-scene-layer hero-scene-layer-atmosphere-overlay" data-layer="atmosphere-overlay">
-      <span className="hero-media-frost-plume hero-media-frost-plume-a" />
-      <span className="hero-media-frost-plume hero-media-frost-plume-b" />
-      <span className="hero-media-frost-trace hero-media-frost-trace-a" />
-      <span className="hero-media-frost-trace hero-media-frost-trace-b" />
+    <div className={nodeClass} data-pivot={pivot}>
+      <HeroPicture className={pictureClass} />
     </div>
   )
 }
 
 export default function HeroMedia25D() {
   const shellRef = useRef<HTMLDivElement>(null)
+  const [staticMode, setStaticMode] = useState(false)
+
+  useEffect(() => {
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
+    const coarsePointer = window.matchMedia('(pointer: coarse)')
+
+    const syncStaticMode = () => {
+      setStaticMode(reducedMotion.matches || coarsePointer.matches)
+    }
+
+    syncStaticMode()
+    reducedMotion.addEventListener('change', syncStaticMode)
+    coarsePointer.addEventListener('change', syncStaticMode)
+
+    return () => {
+      reducedMotion.removeEventListener('change', syncStaticMode)
+      coarsePointer.removeEventListener('change', syncStaticMode)
+    }
+  }, [])
 
   useEffect(() => {
     const shell = shellRef.current
     if (!shell) return
 
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)')
-    const coarsePointer = window.matchMedia('(pointer: coarse)')
+    applyHeroVariables(shell, STATIC_HERO_SAMPLE)
 
-    const setStatic = () => {
-      shell.style.setProperty('--hero-media-x', '0px')
-      shell.style.setProperty('--hero-media-y', '0px')
-      shell.style.setProperty('--hero-media-tilt', '0deg')
-      shell.style.setProperty('--hero-base-x', '0px')
-      shell.style.setProperty('--hero-base-y', '0px')
-      shell.style.setProperty('--hero-base-turn', '0deg')
-      shell.style.setProperty('--hero-hair-x', '0px')
-      shell.style.setProperty('--hero-hair-y', '0px')
-      shell.style.setProperty('--hero-hair-turn', '0deg')
-      shell.style.setProperty('--hero-cloak-x', '0px')
-      shell.style.setProperty('--hero-cloak-y', '0px')
-      shell.style.setProperty('--hero-cloak-turn', '0deg')
-      shell.style.setProperty('--hero-frost-x', '0px')
-      shell.style.setProperty('--hero-frost-y', '0px')
-      shell.style.setProperty('--hero-glint', '0.5')
-      shell.style.setProperty('--hero-frost-pulse', '0.5')
-      shell.style.setProperty('--hero-head-turn', '0deg')
-      shell.style.setProperty('--hero-head-lift', '0px')
-      shell.style.setProperty('--hero-hair-front-sway', '0px')
-      shell.style.setProperty('--hero-hair-back-shift', '0px')
-      shell.style.setProperty('--hero-hair-tail-left-turn', '0deg')
-      shell.style.setProperty('--hero-hair-tail-right-turn', '0deg')
-      shell.style.setProperty('--hero-arm-left-turn', '0deg')
-      shell.style.setProperty('--hero-arm-right-turn', '0deg')
-      shell.style.setProperty('--hero-cloth-front-sway', '0px')
-      shell.style.setProperty('--hero-cloth-side-left', '0px')
-      shell.style.setProperty('--hero-cloth-side-right', '0px')
-      shell.style.setProperty('--hero-cloth-hem-lift', '0px')
-      shell.style.setProperty('--hero-object-x', '0px')
-      shell.style.setProperty('--hero-object-y', '0px')
-      shell.style.setProperty('--hero-object-turn', '0deg')
-      shell.style.setProperty('--hero-aura-pulse', '0.5')
-    }
-
-    if (reducedMotion.matches || coarsePointer.matches) {
-      setStatic()
-      return
-    }
+    if (staticMode) return
 
     let frame = 0
     let currentX = 0
@@ -282,54 +278,11 @@ export default function HeroMedia25D() {
       targetY = (event.clientY / window.innerHeight - 0.5) * 2
     }
 
-    const render = (time: number) => {
-      const wind = sampleHeroWind(time)
-      const rigMotion = sampleHeroRigMotion(time)
-
+    const render = (timeMs: number) => {
       currentX += (targetX - currentX) * 0.055
       currentY += (targetY - currentY) * 0.055
 
-      const shellX = currentX * 10.5
-      const shellY = currentY * 7.1
-      const shellTilt = currentX * 0.35
-
-      shell.style.setProperty('--hero-media-x', `${shellX.toFixed(2)}px`)
-      shell.style.setProperty('--hero-media-y', `${shellY.toFixed(2)}px`)
-      shell.style.setProperty('--hero-media-tilt', `${shellTilt.toFixed(3)}deg`)
-
-      shell.style.setProperty('--hero-base-x', `${(currentX * 5.4).toFixed(2)}px`)
-      shell.style.setProperty('--hero-base-y', `${(currentY * 3.7).toFixed(2)}px`)
-      shell.style.setProperty('--hero-base-turn', `${(currentX * 0.14 + wind.turn * 0.04).toFixed(3)}deg`)
-
-      shell.style.setProperty('--hero-hair-x', `${(currentX * 8.8 + wind.x * 0.72).toFixed(2)}px`)
-      shell.style.setProperty('--hero-hair-y', `${(currentY * 4.8 - wind.y * 0.88).toFixed(2)}px`)
-      shell.style.setProperty('--hero-hair-turn', `${(currentX * 0.29 + wind.turn * 0.64).toFixed(3)}deg`)
-
-      shell.style.setProperty('--hero-cloak-x', `${(currentX * 7.1 + wind.x * 0.34).toFixed(2)}px`)
-      shell.style.setProperty('--hero-cloak-y', `${(currentY * 6.2 + wind.y * 0.56).toFixed(2)}px`)
-      shell.style.setProperty('--hero-cloak-turn', `${(currentX * 0.18 + wind.turn * 0.31).toFixed(3)}deg`)
-
-      shell.style.setProperty('--hero-frost-x', `${(currentX * 4.1 + wind.x * 0.22).toFixed(2)}px`)
-      shell.style.setProperty('--hero-frost-y', `${(currentY * 2.5 - wind.y * 0.35).toFixed(2)}px`)
-      shell.style.setProperty('--hero-glint', wind.shimmer.toFixed(3))
-      shell.style.setProperty('--hero-frost-pulse', wind.frost.toFixed(3))
-      shell.style.setProperty('--hero-head-turn', `${(currentX * 0.52 + rigMotion.headTurn).toFixed(3)}deg`)
-      shell.style.setProperty('--hero-head-lift', `${(rigMotion.headLift - currentY * 1.25).toFixed(2)}px`)
-      shell.style.setProperty('--hero-hair-front-sway', `${(currentX * 2.2 + rigMotion.hairFrontSway).toFixed(2)}px`)
-      shell.style.setProperty('--hero-hair-back-shift', `${(currentY * 0.9 + rigMotion.hairBackShift).toFixed(2)}px`)
-      shell.style.setProperty('--hero-hair-tail-left-turn', `${(currentX * 1.8 + rigMotion.hairTailLeftTurn).toFixed(3)}deg`)
-      shell.style.setProperty('--hero-hair-tail-right-turn', `${(-currentX * 1.6 + rigMotion.hairTailRightTurn).toFixed(3)}deg`)
-      shell.style.setProperty('--hero-arm-left-turn', `${(currentX * 0.8 + rigMotion.armLeftTurn).toFixed(3)}deg`)
-      shell.style.setProperty('--hero-arm-right-turn', `${(-currentX * 0.74 + rigMotion.armRightTurn).toFixed(3)}deg`)
-      shell.style.setProperty('--hero-cloth-front-sway', `${(currentX * 1.8 + rigMotion.clothFrontSway).toFixed(2)}px`)
-      shell.style.setProperty('--hero-cloth-side-left', `${(currentX * 1.3 + rigMotion.clothSideLeft).toFixed(2)}px`)
-      shell.style.setProperty('--hero-cloth-side-right', `${(-currentX * 1.24 + rigMotion.clothSideRight).toFixed(2)}px`)
-      shell.style.setProperty('--hero-cloth-hem-lift', `${(rigMotion.clothHemLift + Math.abs(currentY) * 1.3).toFixed(2)}px`)
-      shell.style.setProperty('--hero-object-x', `${(currentX * 1.1 + rigMotion.crystalFloatX).toFixed(2)}px`)
-      shell.style.setProperty('--hero-object-y', `${(-currentY * 1.2 + rigMotion.crystalFloatY).toFixed(2)}px`)
-      shell.style.setProperty('--hero-object-turn', `${(currentX * 1.1 + rigMotion.crystalTurn).toFixed(3)}deg`)
-      shell.style.setProperty('--hero-aura-pulse', rigMotion.auraPulse.toFixed(3))
-
+      applyHeroVariables(shell, sampleHeroWind(timeMs, currentX, currentY))
       frame = window.requestAnimationFrame(render)
     }
 
@@ -340,17 +293,66 @@ export default function HeroMedia25D() {
       window.cancelAnimationFrame(frame)
       window.removeEventListener('pointermove', onPointerMove)
     }
-  }, [])
+  }, [staticMode])
 
   return (
-    <div ref={shellRef} className="hero-media-shell" aria-hidden="true">
-      <HeroSceneLayer layerClassName="hero-scene-layer-background-backdrop" pictureClassName="hero-scene-picture-background-backdrop" />
-      <HeroSceneLayer layerClassName="hero-scene-layer-mid-depth-b" pictureClassName="hero-scene-picture-mid-depth-b" />
-      <HeroSceneLayer layerClassName="hero-scene-layer-mid-depth-a" pictureClassName="hero-scene-picture-mid-depth-a" />
-      <HeroSceneLayer layerClassName="hero-scene-layer-cave-wall-left" pictureClassName="hero-scene-picture-cave-wall-left" />
-      <HeroSceneLayer layerClassName="hero-scene-layer-cave-wall-right" pictureClassName="hero-scene-picture-cave-wall-right" />
-      <HeroCharacterLayer />
-      <HeroAtmosphereLayer />
+    <div ref={shellRef} className="hero-media-shell" data-static-mode={staticMode ? 'true' : 'false'} aria-hidden="true">
+      <div className="hero-image-frame hero-scene-shell">
+        {SCENE_LAYERS.map((layer) => (
+          <div key={layer.key} className={layer.layerClass}>
+            <HeroPicture className={layer.pictureClass} />
+          </div>
+        ))}
+
+        <div className="hero-scene-layer hero-scene-layer-character-layer">
+          <div className="hero-character-shell">
+            <div className="hero-character-component hero-character-core">
+              {CHARACTER_CORE_NODES.map((node) => (
+                <HeroNode key={node.key} nodeClass={node.nodeClass} pictureClass={node.pictureClass} pivot={node.pivot} />
+              ))}
+            </div>
+
+            <div className="hero-character-component hero-character-hair-rig">
+              {CHARACTER_HAIR_NODES.map((node) => (
+                <HeroNode key={node.key} nodeClass={node.nodeClass} pictureClass={node.pictureClass} pivot={node.pivot} />
+              ))}
+            </div>
+
+            <div className="hero-character-component hero-character-arm-rig-left">
+              {CHARACTER_LEFT_ARM_NODES.map((node) => (
+                <HeroNode key={node.key} nodeClass={node.nodeClass} pictureClass={node.pictureClass} pivot={node.pivot} />
+              ))}
+            </div>
+
+            <div className="hero-character-component hero-character-arm-rig-right">
+              {CHARACTER_RIGHT_ARM_NODES.map((node) => (
+                <HeroNode key={node.key} nodeClass={node.nodeClass} pictureClass={node.pictureClass} pivot={node.pivot} />
+              ))}
+            </div>
+
+            <div className="hero-character-component hero-character-cloth-rig">
+              {CHARACTER_CLOTH_NODES.map((node) => (
+                <HeroNode key={node.key} nodeClass={node.nodeClass} pictureClass={node.pictureClass} pivot={node.pivot} />
+              ))}
+            </div>
+
+            <div className="hero-character-component hero-character-held-object">
+              {CHARACTER_OBJECT_NODES.map((node) => (
+                <HeroNode key={node.key} nodeClass={node.nodeClass} pictureClass={node.pictureClass} pivot={node.pivot} />
+              ))}
+              <span className="hero-character-held-crystal-aura hero-character-held-crystal-aura-a" />
+              <span className="hero-character-held-crystal-aura hero-character-held-crystal-aura-b" />
+            </div>
+          </div>
+        </div>
+
+        <div className="hero-scene-layer hero-scene-layer-atmosphere-overlay">
+          <span className="hero-media-frost-plume hero-media-frost-plume-a" />
+          <span className="hero-media-frost-plume hero-media-frost-plume-b" />
+          <span className="hero-media-frost-trace hero-media-frost-trace-a" />
+          <span className="hero-media-frost-trace hero-media-frost-trace-b" />
+        </div>
+      </div>
     </div>
   )
 }

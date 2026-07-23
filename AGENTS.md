@@ -168,11 +168,45 @@ detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`)
 - Two windows: `control` (main UI) and `overlay` (transparent, click-through, always-on-top)
 - Run `npx tsc --noEmit` to verify — zero errors required
 
+### GID security and web profiles (planned; not shipped)
+- Google OAuth remains the sole primary sign-in. Do not add a GID/password login or treat GID/Steam
+  as a recovery credential.
+- The proposed landing web experience has a public, opt-in profile and a signed-in account center.
+  The public surface may show owner-selected display fields and an opt-in `GID Shield` badge only;
+  it must never reveal email, phone, recovery contacts, security activity, sessions, or match/CV/G-Log data.
+- `GID Shield` means Google primary + TOTP MFA + verified recovery email + verified phone OTP. It
+  signals enabled account safeguards, not legal identity verification or gameplay skill validation.
+- Recovery is passwordless: recovery-email magic link plus TOTP or phone OTP creates a temporary
+  recovery session. A Google identity rebind waits 24 hours and produces security alerts; loss of
+  all factors requires manual support review. Phone alone cannot recover or move an account.
+- Any MFA, SMS, recovery, notification, or public-profile implementation is **C-3 / HIGH**. Before
+  code, migrations, or provider setup: document the threat model, define separate RLS-protected
+  private storage (not public `profiles` or client-readable auth metadata), establish consent and
+  rate limits, and obtain approval.
+
+### G-Maiden Closed Beta delivery and desktop handoff
+- The landing G-Maiden queue, private `gmad-releases` Storage bucket, and entitlement Functions are
+  deployed under CR-016. `request-gmad-download` is the only artifact-URL issuer: it rechecks
+  authenticated Google user, GID ownership, and active grant, then returns a five-minute signed URL.
+  An email URL, typed GID, download URL, or installer file is never a login or durable entitlement
+  credential.
+- CR-020's Hero countdown and corrected `G-Maiden Closed Beta` copy are deployed. Email is only a
+  notification route to landing, not a bearer download link.
+- CR-021, `closed-beta-terms-of-use-draft.md`, and `closed-beta-privacy-notice-draft.md` are
+  candidate documents only. Do not implement Terms acceptance, diagnostic/marketing/data-sharing
+  consent, email automation, a receipt schema, or a Terms-based download gate until legal review
+  and an explicit approval are recorded. Required Terms acceptance and optional consents must never
+  share one forced checkbox.
+- The next desktop work is a C-3/HIGH CR-022 first-run handoff: installed G-Maiden -> Google OAuth with
+  the same GID -> current Terms receipt -> active entitlement -> GSI/Dota setup -> command deck.
+  It must define mismatch, revoke, new-device, installer, offline, and Terms-version states before
+  code. Google OAuth remains the sole primary sign-in; do not add password or GID/Steam recovery.
+
 ### Custom Agent Skills & SOP
 We maintain custom AI skills under `.agents/skills/`.
 
-* **Code-Doc Aligner (`codedoc-aligner`):**
-  - **SOP:** AI agents MUST run [chunk_and_align.py](file:///g:/G-Maiden/.agents/skills/codedoc-aligner/scripts/chunk_and_align.py) inside the `.agents/skills/codedoc-aligner/` skill directory whenever code diffs or docs are updated to verify alignment and prevent spec drift.
+* **RWANG Code-Doc Aligner (`rwang-codedoc-aligner`):**
+  - **SOP:** AI agents MUST run [chunk_and_align.py](file:///g:/G-Maiden/.agents/skills/rwang-codedoc-aligner/scripts/chunk_and_align.py) inside the `.agents/skills/rwang-codedoc-aligner/` skill directory whenever code diffs or docs are updated to verify alignment and prevent spec drift.
 
 ### General
 - Specs (PRD, SRS) are in **Thai** — the source of truth for requirements
@@ -262,6 +296,12 @@ to hand off or tag, run all of:
   (`gid.ts`, `G-[Gen][Payload][Checksum]`) on the shared `gstore` Supabase backend; links Steam
   (`identity.rs`) and loads the player's public OpenDota profile. Match/CV/G-Log data stay local;
   the account stores identity only (email + public Steam ids + display name + GID).
+- **GID security/web profiles are proposed only, not shipped**: TOTP MFA, phone OTP, recovery email,
+  security activity/alerts, and an opt-in public profile/badge require the C-3/HIGH contract above.
+- **G-Maiden beta distribution is partially shipped**: CR-016 private Storage/Functions and landing
+  queue/ops UI are live. CR-020 Hero countdown is live. The legal acceptance receipt and desktop
+  first-run entitlement handoff are not shipped; CR-021 awaits counsel review and CR-022 must be
+  authored/approved before implementation.
 - rodio audio backend (in-process WAV, <1ms cancel)
 - Individual stat toggles (timer, score, HP/Mana, K/D/A, gold/NW)
 - Custom overlay positioning with X/Y sliders + profile save/load
@@ -306,6 +346,8 @@ These are **functional requirements**, not flavor text. Maiden must:
 - CV capture is **read-only** — no injection or memory access (Risk R-06)
 - GitHub Secrets: `TAURI_SIGNING_PRIVATE_KEY` + `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 - No telemetry, no analytics, no crash reporting that sends player data
+- Account security/contact data must be private, minimal, RLS-protected, and excluded from public
+  profiles, client-readable auth metadata, Vercel Analytics, and all game-data pipelines
 
 ---
 
@@ -319,3 +361,13 @@ These are **functional requirements**, not flavor text. Maiden must:
 6. **Version bumps**: if your change is user-facing, bump version in all 3 places
 7. **No breaking the overlay**: the overlay window is transparent + click-through + always-on-top; test changes don't break this
 8. **Latency is sacred**: anything in the GSI → G-Signal → voice path must be <300ms total
+9. **Account security is C-3/HIGH**: do not implement MFA, phone/SMS, recovery, notifications, or
+   public profiles without an approved threat model, private-data/RLS design, and rollback plan
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.2.1b | 2026-07-22 | Normalized reader-facing Closed Beta naming from GMAD to G-Maiden while preserving technical identifiers such as functions, buckets, and anchors. |
+| 0.2.0b | 2026-07-21 | Added authoritative GMAD delivery, legal-consent, and desktop first-run handoff context for cross-session agents. |
+| 0.1.0b | 2026-07-21 | Added governance for proposed GID security, recovery, and privacy-safe web profiles; no implementation is implied. |

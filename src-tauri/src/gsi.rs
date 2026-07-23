@@ -179,6 +179,9 @@ pub fn parse_tick_from_json(body: &str) -> GameTick {
 }
 
 async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
+    if !crate::runtime::gmad_entitled() {
+        return "locked";
+    }
     let tick = parse_tick_from_json(&body);
     // Announcer: detect kill/streak/state events from the tick and voice the
     // most significant one (clip-or-silent — these aren't TTS-faked).
@@ -343,7 +346,7 @@ async fn oauth_callback(
         // (single-use, time-boxed). This unauthenticated local endpoint would
         // otherwise let a drive-by page inject an attacker's `code` → session
         // fixation. An unsolicited/expired callback is ignored, not exchanged.
-        if crate::runtime::take_oauth_pending(epoch_ms()) {
+        if crate::runtime::take_oauth_pending(params.get("state").map(String::as_str), epoch_ms()) {
             let _ = app.emit("oauth-callback", code.clone());
         } else {
             let _ = app.emit(
