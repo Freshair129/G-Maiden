@@ -1,8 +1,12 @@
 ---
+title: "Documentation Index"
+doc_id: "DOC-INDEX"
 version: "0.1.4"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
 last_update: "2026-07-22T20:18:00+07:00,ATHER"
 status: "active"
+updated: "2026-07-22"
+owner: "Boss"
 attributes:
   domain: "documentation-governance"
   doc_type: "document-index"

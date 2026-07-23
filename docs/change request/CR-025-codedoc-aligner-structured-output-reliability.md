@@ -5,7 +5,8 @@ doc_id: "CR-025-codedoc-aligner-structured-output-reliability"
 created_at: "2026-07-21T20:05:00+07:00,ATHER"
 last_update: "2026-07-21T20:20:00+07:00,ATHER"
 owner: "Boss"
-status: "beta"
+status: "active"
+updated: "2026-07-21"
 superseded_by: null
 attributes:
   doc_type: "change-request"

@@ -1,7 +1,7 @@
 ---
 title: "CR-019: Owner role and controlled operator delegation"
 doc_id: "CR-019-owner-role-and-operator-delegation"
-status: "beta"
+status: "active"
 version: "0.3.1b"
 updated: "2026-07-22"
 owner: "Boss"

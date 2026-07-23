@@ -1,8 +1,12 @@
 ---
+title: "CR-014: Document Impact Map for the G-Maiden adapter"
+doc_id: "CR-014-document-impact-map-gmaiden-adapter"
 version: "0.2.0b"
 created_at: "2026-07-21T10:45:00+07:00,ATHER"
 last_update: "2026-07-21T15:00:00+07:00,ATHER"
-status: "beta"
+status: "active"
+updated: "2026-07-21"
+owner: "Boss"
 attributes:
   domain: "documentation-governance"
   cluster: "doc-graph-impact-analysis"

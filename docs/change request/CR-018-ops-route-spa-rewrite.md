@@ -1,7 +1,7 @@
 ---
 title: "CR-018: Serve the GMAD operator route through the SPA shell"
 doc_id: "CR-018-ops-route-spa-rewrite"
-status: "implemented"
+status: "historical"
 version: "0.3.0b"
 updated: "2026-07-21"
 owner: "Boss"

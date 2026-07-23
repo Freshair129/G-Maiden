@@ -5,7 +5,8 @@ doc_id: "CR-020-gmad-beta-notification-and-open-beta-countdown"
 created_at: "2026-07-21T15:00:00+07:00,ATHER"
 last_update: "2026-07-22T16:02:00+07:00,ATHER"
 owner: "Boss"
-status: "beta"
+status: "active"
+updated: "2026-07-22"
 superseded_by: null
 attributes:
   doc_type: "change-request"

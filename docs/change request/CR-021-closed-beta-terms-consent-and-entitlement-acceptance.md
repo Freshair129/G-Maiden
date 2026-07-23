@@ -5,7 +5,8 @@ doc_id: "CR-021-closed-beta-terms-consent-and-entitlement-acceptance"
 created_at: "2026-07-21T16:00:00+07:00,ATHER"
 last_update: "2026-07-21T23:05:06+07:00,ATHER"
 owner: "Boss"
-status: "beta"
+status: "draft"
+updated: "2026-07-21"
 superseded_by: null
 attributes:
   doc_type: "change-request"

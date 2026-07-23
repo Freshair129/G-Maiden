@@ -1,11 +1,12 @@
 ---
 version: "1.0.0b"
 title: "G-Maiden Closed Beta Terms of Use"
-doc_id: "GMAIDEN-CLOSED-BETA-TERMS"
+doc_id: "closed-beta-terms-of-use-draft"
 created_at: "2026-07-21T16:00:00+07:00,ATHER"
 last_update: "2026-07-21T23:05:06+07:00,ATHER"
 owner: "Boss"
-status: "beta"
+status: "draft"
+updated: "2026-07-21"
 superseded_by: null
 attributes:
   doc_type: "legal-terms"

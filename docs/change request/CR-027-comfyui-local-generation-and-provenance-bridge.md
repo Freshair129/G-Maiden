@@ -5,7 +5,8 @@ doc_id: "CR-027-comfyui-local-generation-and-provenance-bridge"
 created_at: "2026-07-21T21:20:00+07:00,ATHER"
 last_update: "2026-07-21T21:20:00+07:00,ATHER"
 owner: "Boss"
-status: "candidate"
+status: "draft"
+updated: "2026-07-21"
 superseded_by: null
 attributes:
   doc_type: "change-request"

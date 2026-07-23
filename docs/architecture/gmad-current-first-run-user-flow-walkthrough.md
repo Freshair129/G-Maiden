@@ -2,7 +2,7 @@
 version: "0.4.0b"
 created_at: "2026-07-21T05:00:00+07:00,ATHER"
 last_update: "2026-07-21T06:50:00+07:00,ATHER"
-status: "candidate"
+status: "draft"
 superseded_by: null
 attributes:
   domain: "ui-ux"

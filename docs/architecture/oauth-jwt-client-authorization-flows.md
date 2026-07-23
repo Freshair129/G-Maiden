@@ -2,7 +2,8 @@
 version: "0.3.3b"
 created_at: "2026-07-21T18:30:56+07:00,ATHER"
 last_update: "2026-07-21T23:10:00+07:00,ATHER"
-status: "beta"
+status: "active"
+updated: "2026-07-21"
 attributes:
   domain: "identity-access"
   doc_type: "architecture-flow"

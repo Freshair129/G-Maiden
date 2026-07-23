@@ -1,8 +1,12 @@
 ---
+title: "CR-017: Reconcile gstore migration history before CR-016 deployment"
+doc_id: "CR-017-gstore-migration-history-reconciliation"
 version: "0.2.0b"
 created_at: "2026-07-21T13:10:00+07:00,ATHER"
 last_update: "2026-07-21T13:25:00+07:00,ATHER"
-status: "implemented"
+status: "historical"
+updated: "2026-07-21"
+owner: "Boss"
 attributes:
   doc_type: "change-request"
   domain: "platform-data"

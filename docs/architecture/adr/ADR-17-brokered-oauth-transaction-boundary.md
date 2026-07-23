@@ -4,7 +4,8 @@ doc_id: "ADR-17-brokered-oauth-transaction-boundary"
 version: "0.4.3b"
 created_at: "2026-07-21T20:30:58+07:00,ATHER"
 last_update: "2026-07-22T13:45:00+07:00,ATHER"
-status: "beta"
+status: "active"
+updated: "2026-07-22"
 owner: "Boss"
 source_of_truth: true
 attributes:

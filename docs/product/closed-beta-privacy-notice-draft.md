@@ -1,11 +1,12 @@
 ---
 version: "1.0.1b"
 title: "G-Maiden Closed Beta Privacy Notice"
-doc_id: "GMAIDEN-CLOSED-BETA-PRIVACY-NOTICE"
+doc_id: "closed-beta-privacy-notice-draft"
 created_at: "2026-07-21T16:00:00+07:00,ATHER"
 last_update: "2026-07-22T13:20:00+07:00,ATHER"
 owner: "Boss"
-status: "beta"
+status: "draft"
+updated: "2026-07-22"
 superseded_by: null
 attributes:
   doc_type: "privacy-notice"

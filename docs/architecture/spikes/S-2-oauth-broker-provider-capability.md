@@ -2,7 +2,8 @@
 version: "0.2.1b"
 created_at: "2026-07-21T21:00:37+07:00,ATHER"
 last_update: "2026-07-21T21:48:00+07:00,ATHER"
-status: "beta"
+status: "active"
+updated: "2026-07-21"
 attributes:
   domain: "identity-access"
   doc_type: "technical-spike"

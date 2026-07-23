@@ -8,6 +8,7 @@ owner: "Boss"
 approved_by: "Boss"
 approved_date: "2026-07-21"
 status: "accepted"
+updated: "2026-07-22"
 superseded_by: null
 attributes:
   doc_type: "change-request"
