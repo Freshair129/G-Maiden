@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-23T18:08:05.852Z",
+  "generatedAt": "2026-07-23T18:19:24.924Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -335,6 +335,11 @@
       "id": "docs/change request/CR-032-landing-hero-scene-depth-and-character-rig-decomposition.md",
       "type": "doc",
       "path": "docs/change request/CR-032-landing-hero-scene-depth-and-character-rig-decomposition.md"
+    },
+    {
+      "id": "docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md",
+      "type": "doc",
+      "path": "docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md"
     },
     {
       "id": "docs/change request/DXGI-task-assignment.md",
@@ -9226,7 +9231,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-07-23T18:08:12.696Z",
+    "generatedAt": "2026-07-23T18:19:30.151Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 73,
