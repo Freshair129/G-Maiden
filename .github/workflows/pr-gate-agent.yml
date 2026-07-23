@@ -1,0 +1,36 @@
+name: PR Gate Agent
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, reopened, synchronize, ready_for_review, edited]
+  pull_request_review:
+    types: [submitted, dismissed, edited]
+
+permissions:
+  contents: read
+  checks: read
+  pull-requests: write
+
+jobs:
+  pr-gate-agent:
+    if: github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+    name: pr-gate-agent
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: PR gate agent unit tests
+        run: node --test tools/pr-gate-agent/*.test.mjs
+
+      - name: Evaluate PR gate
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_GATE_AGENT_REVIEW_TOKEN: ${{ secrets.PR_GATE_AGENT_REVIEW_TOKEN }}
+        run: node tools/pr-gate-agent/run.mjs

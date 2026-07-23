@@ -1,11 +1,13 @@
 ---
-version: "0.1.0b"
+version: "0.2.0b"
 title: "CR-033: PR gate agent with required status review gate"
 doc_id: "CR-033-pr-gate-agent-required-status-review-gate"
 created_at: "2026-07-23T18:30:00+07:00,ATHER"
-last_update: "2026-07-23T18:30:00+07:00,ATHER"
+last_update: "2026-07-23T19:05:00+07:00,ATHER"
 owner: "Boss"
-status: "draft"
+approved_by: "Boss"
+approved_date: "2026-07-23"
+status: "accepted"
 updated: "2026-07-23"
 superseded_by: null
 attributes:
@@ -207,6 +209,23 @@ After implementation is verified, `main` should enforce:
 - require `ci` and `pr-gate-agent`
 - validate merge block/unblock behavior on real PRs
 
+## Implementation record
+
+Approved by Boss on **Thursday, July 23, 2026**. The first implementation pass wires:
+
+- `.github/workflows/pr-gate-agent.yml`
+- `tools/pr-gate-agent/run.mjs`
+- `tools/pr-gate-agent/rules.mjs`
+- `tools/pr-gate-agent/rules.test.mjs`
+
+This first pass is intentionally deterministic and runner-safe:
+
+- required check output comes from the workflow/job named `pr-gate-agent`
+- advisory GitHub review posting is optional and only activates when
+  `PR_GATE_AGENT_REVIEW_TOKEN` exists
+- doc-governance PRs additionally run `tools/doc-graph/ci-gate.mjs`
+- merge authority enforcement on `main` still depends on branch protection rollout
+
 ## Acceptance criteria
 
 - every PR to `main` gets a `pr-gate-agent` result
@@ -230,4 +249,5 @@ approved, because it changes repository merge authority and can block all contri
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.2.0b | 2026-07-23 | Recorded approval and first deterministic implementation pass: workflow, rule engine, tests, and optional advisory review token path. |
 | 0.1.0b | 2026-07-23 | Initial C-3/HIGH proposal for a required-status PR gate agent with optional advisory review output. |
