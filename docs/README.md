@@ -92,6 +92,27 @@ approved_date: "YYYY-MM-DD"          # คู่กับ approved_by เสม�
 - เอกสาร product รุ่นแรกที่ใช้ blockquote header (`> **เวอร์ชัน:** ...`) ถือว่า valid อยู่ — ถ้าจะย้ายเป็น frontmatter ให้ย้ายทั้งก้อนในคราวเดียว ห้ามมีเวอร์ชันสองที่
 - คู่กับ SOP ฝั่งท้ายเอกสาร: ทุกการแก้ต้อง bump `version:` + เพิ่มแถว `## Changelog` (ดู codedoc-aligner SKILL.md Step 5)
 
+## Feature registration / supersede / archive rules
+
+ใช้กติกานี้เมื่อเอกสารเกี่ยวข้องกับ capability หรือ feature-bearing spec:
+
+1. **Register**
+   - feature spec ใหม่ต้องอยู่ในที่ที่ detector รู้จักอย่างชัดเจน เช่น `docs/features/FEAT-*.md`
+     หรือ `orchestration/docs/FEAT--*.md` / `SPEC--*.md`
+   - ถ้าเป็นฟีเจอร์ฝั่ง G-Maiden ให้เพิ่ม anchor อย่างน้อยหนึ่งอย่างในระบบ active:
+     `docs/features/README.md`, `PROJECT_FEATURE_MAP.md`, หรือ `docs/feature-ledger.manifest.yaml`
+   - ถ้าเป็น planned feature ให้ระบุสถานะ planned ในตัวเอกสารหรือ roadmap ที่เกี่ยวข้องอย่างชัดเจน
+
+2. **Supersede**
+   - ห้ามลบ spec เก่าเมื่อมีตัวแทนใหม่
+   - ให้ตั้ง lifecycle/status เป็น `superseded` และระบุ `superseded_by` ไปยังเอกสารตัวแทนที่ resolve ได้จริง
+   - เอกสารตัวแทนใหม่ควรเป็น anchor active ก่อน แล้วค่อยย้ายของเก่าไปสถานะ superseded
+
+3. **Archive / historical**
+   - เอกสารที่เก็บไว้เป็นประวัติเท่านั้นให้ใช้ `historical` หรือ `archived`
+   - เอกสาร historical/archived ไม่นับเป็น active anchor สำหรับกัน orphan
+   - ถ้าต้องการเก็บ doc ไว้โดยไม่มี implementation แล้วไม่ให้โดนมองเป็น orphan ต้องมี lifecycle อธิบายเหตุผลไว้ชัด
+
 ## Changelog
 | Version | Date | Summary |
 | --- | --- | --- |
@@ -100,3 +121,4 @@ approved_date: "YYYY-MM-DD"          # คู่กับ approved_by เสม�
 | 0.3.0 | 2026-07-19 | + section "มาตรฐาน metadata หัวเอกสาร" — ประกาศ schema กลาง (ยึดแบบ FEAT/ADR/CR) + กติกา migration สำหรับเอกสารเก่า |
 | 0.4.0 | 2026-07-19 | + status enum นิยามครบ (lowercase, รับจาก GoVibe STD §13) + sign-off fields `approved_by`/`approved_date` — unification Mechanical #2 ตาม [[2026-07-19-govibe-gmaiden-governance-comparison]] |
 | 0.4.1 | 2026-07-19 | link/metadata sweep (G15-T2): directory wikilinks (`docs/product/` etc.) and the cross-repo `SPEC--GOVIBE-INTEGRATION` link converted to plain backtick path text (non-doc-graph targets) |
+| 0.4.2 | 2026-07-24 | Added feature registration / supersede / archive guidance so feature-bearing specs declare active anchors or lifecycle intent instead of drifting into silent orphan state. |
