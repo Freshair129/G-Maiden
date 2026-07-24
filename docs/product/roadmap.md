@@ -17,6 +17,13 @@
 > labels ด้านล่างไปแล้ว — label คงไว้เป็น historical reference เท่านั้น. สถานะจริงรายฟีเจอร์อยู่ที่
 > **`PROJECT_FEATURE_MAP.md`** (`PROJECT_FEATURE_MAP.md` — feature → file → status).
 
+## Release Governance Note
+
+- เอกสารนี้เป็น source of truth สำหรับ feature-phase history, implementation direction, และ milestone framing ของตัว product
+- สถานะฟีเจอร์ระดับรายการและ file-to-feature traceability อยู่ที่ `PROJECT_FEATURE_MAP.md`
+- release maturity, stage gates, candidate/promotion flow, และ release evidence ownership อยู่ที่ `docs/releases/README.md` และเอกสารใต้ `docs/releases/`
+- หาก roadmap release กับ roadmap feature ขัดกัน ให้ตีความว่า `docs/releases/` เป็น source of truth สำหรับการเลื่อน stage และ release gating โดยไม่ rewrite ประวัติ phase ในเอกสารนี้
+
 ### Shipped v0.10.0 → v0.13.0 (ก.ค. 2026) — ดู `CHANGELOG.md` สำหรับรายละเอียดทุก patch
 - [x] **v0.11.0** — G-Store เปิดของจริง: แพ็กฟรี "Maiden — Community Pack" claim ได้ทันที + redeem
       codes (`MAIDENFREE` แพ็กฟรี, `WELCOME250` 250 coins) + แพ็ก coming-soon (Frost/Meme); G-Motion
@@ -384,3 +391,4 @@
 | 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): `[[PROJECT_FEATURE_MAP]]` converted to plain backtick path text (PROJECT_FEATURE_MAP.md is outside docs/, not a doc-graph slug) |
 | 0.1.2 | 2026-07-19 | link/metadata sweep (G15-T5): symbol-link `CREATE_NO_WINDOW` to its `setup.rs` definition |
 | 0.1.3 | 2026-07-23 | Recorded the public landing shift from Closed Beta queue/download to a GID-first, roadmap-first Open Beta release funnel. |
+| 0.1.4 | 2026-07-24 | Clarified ownership boundaries between the feature roadmap, `PROJECT_FEATURE_MAP.md`, and the release-governance documents under `docs/releases/`. |

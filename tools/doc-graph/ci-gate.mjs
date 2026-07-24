@@ -21,6 +21,8 @@
  *   4. ledger.mjs exits 0 (the manifest was pruned to authoritative on
  *      2026-07-20 — any status-inflation or dangling ref from here on is a
  *      real regression, so it blocks).
+ *   5. orphan-report.mjs exits 0 (no new conservative orphan-spec regression,
+ *      no broken superseded_by lifecycle).
  *
  * Exit: 0 all gates green, 1 otherwise. Prints verbatim counts.
  */
@@ -118,6 +120,14 @@ if (ledger.code !== 0) {
   fail(`ledger.mjs exit ${ledger.code} — status-inflation or dangling refs regressed.\n${ledger.stderr.slice(0, 2000)}`);
 } else {
   console.log('[ci-gate] ledger exit 0 (no blocking violations).');
+}
+
+// --- Gate 5: orphaned feature-spec report is clean --------------------------
+const orphan = runNode('orphan-report.mjs');
+if (orphan.code !== 0) {
+  fail(`orphan-report.mjs exit ${orphan.code} — orphan-spec governance regressed.\n${orphan.stderr.slice(0, 2000)}`);
+} else {
+  console.log('[ci-gate] orphan-report exit 0 (no blocking orphan-spec regressions).');
 }
 
 console.log(ok ? '[ci-gate] PASS' : '[ci-gate] FAIL');

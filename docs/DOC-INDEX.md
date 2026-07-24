@@ -1,11 +1,11 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.1.4"
+version: "0.1.5"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
-last_update: "2026-07-22T20:18:00+07:00,ATHER"
+last_update: "2026-07-24T15:10:00+07:00,ATHER"
 status: "active"
-updated: "2026-07-22"
+updated: "2026-07-24"
 owner: "Boss"
 attributes:
   domain: "documentation-governance"
@@ -34,6 +34,25 @@ attributes:
   - `docs/product/roadmap.md` — roadmap หลักที่ใช้งานปัจจุบัน
 - [[roadmap-legacy]]
   - `docs/product/roadmap-legacy.md` — roadmap รุ่นเก่าที่ยังเก็บไว้เป็นประวัติ
+
+## Release Governance
+
+- `docs/releases/README.md`
+  - `docs/releases/README.md` — canonical hub ของ release governance, stage gates, และ execution contract
+- `docs/releases/beta-roadmap.md`
+  - `docs/releases/beta-roadmap.md` — release-maturity roadmap แยกจาก feature roadmap
+- `docs/releases/release-channel-architecture.md`
+  - `docs/releases/release-channel-architecture.md` — Dev → Closed Beta → Stable channel architecture และ artifact promotion rules
+- `docs/releases/public-demo/specification.md`
+  - `docs/releases/public-demo/specification.md` — Public Demo scope และ deterministic product-story contract
+- `docs/releases/closed-beta/wave-0/specification.md`
+  - `docs/releases/closed-beta/wave-0/specification.md` — Closed Beta Wave 0 scope
+- `docs/releases/closed-beta/wave-0/definition-of-done.md`
+  - `docs/releases/closed-beta/wave-0/definition-of-done.md` — Wave 0 DoD, evidence, และ exit gate
+- `docs/releases/open-beta/specification.md`
+  - `docs/releases/open-beta/specification.md` — Open Beta scope
+- `docs/releases/open-beta/definition-of-done.md`
+  - `docs/releases/open-beta/definition-of-done.md` — Open Beta DoD และ exit gate
 
 ## Design System
 
@@ -127,3 +146,4 @@ attributes:
 | 0.1.2 | 2026-07-21 | Added the OAuth/JWT multi-client authorization-flow architecture document. |
 | 0.1.3 | 2026-07-21 | Added ADR-17 as the selected high-assurance OAuth transaction architecture. |
 | 0.1.4 | 2026-07-22 | Added the G-Maiden Closed Beta release playbook under Operations. |
+| 0.1.5 | 2026-07-24 | Added a Release Governance section that points canonical indexes to `docs/releases/` while keeping feature ownership in the product roadmap and `PROJECT_FEATURE_MAP.md`. |
