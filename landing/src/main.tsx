@@ -2,6 +2,7 @@ import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { Analytics, type BeforeSendEvent } from '@vercel/analytics/react'
 import App from './App'
+import PublicDemo from './PublicDemo'
 import './index.css'
 
 function shouldEnableAnalytics() {
@@ -18,9 +19,14 @@ function redactAnalyticsEvent(event: BeforeSendEvent): BeforeSendEvent | null {
   return { ...event, url: `${url.origin}${url.pathname}` }
 }
 
+function Root() {
+  const path = window.location.pathname.replace(/\/+$/, '') || '/'
+  return path === '/demo' || path === '/public-demo' ? <PublicDemo /> : <App />
+}
+
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <App />
+    <Root />
     {shouldEnableAnalytics() ? <Analytics beforeSend={redactAnalyticsEvent} /> : null}
   </React.StrictMode>,
 )
