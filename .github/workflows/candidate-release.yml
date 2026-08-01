@@ -14,6 +14,7 @@ concurrency:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   verify-build-sign:
@@ -87,7 +88,7 @@ jobs:
         with:
           name: candidate-evidence-${{ inputs.tag }}
           path: release/evidence/${{ inputs.tag }}/build-evidence.json
-      - name: Publish Dev channel manifest
+      - name: Open Dev channel manifest PR
         shell: pwsh
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -95,10 +96,13 @@ jobs:
           gh release download "${{ inputs.tag }}" --repo "${{ github.repository }}" --pattern latest.json --dir "release/evidence/${{ inputs.tag }}"
           node scripts/releases/manifest-from-tauri.mjs "release/evidence/${{ inputs.tag }}/latest.json" release/channels/dev.json dev "$env:SOURCE_SHA"
           node scripts/releases/channel-manifest.mjs validate-published release/channels/dev.json
+          $manifestBranch = "release/dev-${{ inputs.tag }}-${{ github.run_id }}"
           git fetch origin main
-          git switch --force-create main origin/main
+          git switch --force-create $manifestBranch origin/main
           git config user.name github-actions[bot]
-          git config user.email 41898282+github-actions[bot]
+          git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add release/channels/dev.json
           git commit -m "release: publish ${{ inputs.tag }} to dev channel"
-          git push
+          git push --set-upstream origin $manifestBranch
+          $prUrl = gh pr create --repo "${{ github.repository }}" --base main --head $manifestBranch --title "release: publish ${{ inputs.tag }} to dev channel" --body "Derived from the published signed Tauri latest.json. Review source SHA, artifact URLs, signatures, and SHA-256 values before merge."
+          "Dev manifest PR: $prUrl" | Add-Content -Path $env:GITHUB_STEP_SUMMARY
