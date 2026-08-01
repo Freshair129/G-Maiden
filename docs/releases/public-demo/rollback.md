@@ -5,7 +5,6 @@ status: "draft"
 version: "0.1.0"
 updated: "2026-08-01"
 owner: "Boss"
-related_docs: ["PUBLIC-DEMO-SPEC"]
 ---
 
 # Public Demo Deployment and Rollback
