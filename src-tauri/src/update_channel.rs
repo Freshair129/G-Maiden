@@ -1,3 +1,5 @@
+#![cfg_attr(not(test), allow(dead_code))]
+
 use serde::{Deserialize, Serialize};
 
 pub const DEV_MANIFEST_URL: &str =
@@ -66,7 +68,6 @@ impl ResolvedChannel {
             channel,
             source,
             manifest_url: channel.manifest_url().to_string(),
-            // Channel choice never disables Tauri updater signature validation.
             signature_verification_required: true,
         }
     }
@@ -85,8 +86,6 @@ pub fn resolve(inputs: &ChannelInputs) -> ResolvedChannel {
     ResolvedChannel::new(ReleaseChannel::Stable, ChannelSource::StableFallback)
 }
 
-/// Safe helper for auth/network/error paths. Callers should use this instead of
-/// retaining a previously restricted channel after entitlement resolution fails.
 pub fn stable_fallback() -> ResolvedChannel {
     ResolvedChannel::new(ReleaseChannel::Stable, ChannelSource::StableFallback)
 }
