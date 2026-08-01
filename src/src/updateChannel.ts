@@ -28,9 +28,9 @@ export function resolveUpdateChannel(
 }
 
 /**
- * Uses Tauri's updater plugin so the embedded public key and mandatory updater
- * signature verification remain unchanged. `target` is deliberately limited to
- * the resolver output rather than accepting arbitrary UI input.
+ * The custom target selects both `release/channels/<channel>.json` and the
+ * matching `platforms.<channel>` entry. Tauri still performs the download and
+ * mandatory signature verification with the public key embedded in the app.
  */
 export async function checkResolvedUpdate(
   resolved: ResolvedUpdateChannel,
