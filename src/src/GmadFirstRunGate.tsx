@@ -23,7 +23,8 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
     let cancelled = false;
     void checkResolvedUpdate(resolved)
       .then((update) => {
-        if (!cancelled) setUpdateStatus({ resolved, availableVersion: update?.version });
+        const version = update?.version === "0.0.0" ? undefined : update?.version;
+        if (!cancelled) setUpdateStatus({ resolved, availableVersion: version });
       })
       .catch(() => {
         if (!cancelled) setUpdateStatus({ resolved, error: "update-check-failed" });
