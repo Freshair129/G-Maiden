@@ -1,7 +1,7 @@
 ---
 title: "G-Maiden Closed Beta Wave 2 Specification"
-doc_id: "closed-beta-wave-2-specification"
-status: "candidate"
+doc_id: "specification"
+status: "draft"
 version: "0.1.0"
 updated: "2026-08-01"
 owner: "Boss"

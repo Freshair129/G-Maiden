@@ -1,7 +1,7 @@
 ---
 title: "Closed Beta Wave 1 Definition of Done"
-doc_id: "closed-beta-wave-1-dod"
-status: "candidate"
+doc_id: "definition-of-done"
+status: "draft"
 version: "0.1.0"
 updated: "2026-08-01"
 owner: "Boss"

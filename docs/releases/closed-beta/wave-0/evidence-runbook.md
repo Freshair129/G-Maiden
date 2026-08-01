@@ -1,7 +1,7 @@
 ---
 title: "Closed Beta Wave 0 Evidence Runbook"
-doc_id: "closed-beta-wave-0-evidence-runbook"
-status: "candidate"
+doc_id: "evidence-runbook"
+status: "draft"
 version: "0.1.0"
 updated: "2026-08-01"
 owner: "Boss"

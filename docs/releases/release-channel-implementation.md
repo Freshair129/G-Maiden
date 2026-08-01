@@ -1,7 +1,7 @@
 ---
 title: "G-Maiden Release Channel Implementation and Evidence Runbook"
 doc_id: "release-channel-implementation"
-status: "candidate"
+status: "draft"
 version: "0.2.0"
 updated: "2026-08-01"
 owner: "Boss"
