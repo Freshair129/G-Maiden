@@ -27,6 +27,10 @@ related_docs: ["roadmap", "RELEASE-CHANNEL-ARCHITECTURE", "BETA-ROADMAP"]
 - [[PUBLIC-DEMO-SPEC]] — ขอบเขต Public Demo
 - [[CLOSED-BETA-WAVE-0-SPEC]] — ขอบเขต Technical Preview
 - [[CLOSED-BETA-WAVE-0-DOD]] — DoD และ Exit Gate ของ Wave 0
+- [[CLOSED-BETA-WAVE-1-SPEC]] — Core Intelligence Validation ของ Wave 1
+- [[CLOSED-BETA-WAVE-1-DOD]] — DoD และ Exit Gate ของ Wave 1
+- [[CLOSED-BETA-WAVE-2-SPEC]] — Expanded Access and Operations Validation ของ Wave 2
+- [[CLOSED-BETA-WAVE-2-DOD]] — DoD และ Exit Gate ของ Wave 2
 - [[OPEN-BETA-SPEC]] — ขอบเขต Open Beta
 - [[OPEN-BETA-DOD]] — DoD และ Exit Gate ของ Open Beta
 
@@ -49,4 +53,5 @@ Spec in Git
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.2.0 | 2026-08-01 | Added candidate Wave 1 and Wave 2 specifications and evidence gates |
 | 0.1.0 | 2026-07-23 | Initial release-governance index and execution contract |

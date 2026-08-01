@@ -1,7 +1,12 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
+import { listen } from "@tauri-apps/api/event";
 import { useGmadDesktopEntitlement } from "./gmadEntitlement";
 import { checkResolvedUpdate, resolveUpdateChannel, type ResolvedUpdateChannel } from "./updateChannel";
+import { buildDiagnosticBundle, compatibilityMode, readinessFromRuntime } from "./betaReadiness";
+import { APP_VERSION } from "./app/theme";
+import BetaFeedback from "./BetaFeedback";
+import type { MinimapCv } from "./live/events";
 
 type SetupStatus = { installed: boolean; dota_cfg_dir?: string | null; message: string };
 type UpdateStatus = { resolved: ResolvedUpdateChannel; availableVersion?: string; error?: string };
@@ -13,6 +18,20 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
   const [ready, setReady] = useState(false);
   const [dotaRunning, setDotaRunning] = useState<boolean | null>(null);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
+  const [captureMode, setCaptureMode] = useState<"dxgi" | "lite" | "">("");
+  const [gsiActive, setGsiActive] = useState<boolean | null>(null);
+  const [minimapReady, setMinimapReady] = useState<boolean | null>(null);
+  const [audioReady] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const subscriptions = Promise.all([
+      listen<"dxgi" | "lite">("capture-mode", (event) => { if (active) setCaptureMode(event.payload); }),
+      listen<{ gsi_active?: boolean }>("gsi-status", (event) => { if (active) setGsiActive(event.payload.gsi_active ?? null); }),
+      listen<MinimapCv>("minimap-cv", (event) => { if (active) setMinimapReady(event.payload.classifier === true); }),
+    ]);
+    return () => { active = false; void subscriptions.then((unlisten) => Promise.all(unlisten.map((stop) => stop()))); };
+  }, []);
 
   useEffect(() => {
     const resolved = resolveUpdateChannel(decision);
@@ -67,6 +86,20 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
       {state === "account_not_eligible" && <><h1>บัญชี Google นี้ไม่ใช่บัญชีที่ได้รับสิทธิ์</h1><p>ระบบไม่รับ GID ที่กรอกเองและไม่แสดงข้อมูลของบัญชีอื่น</p><button onClick={() => void signOut()}>ออกจากระบบแล้วใช้บัญชีเดิม</button></>}
       {state === "offline_or_unavailable" && <><h1>ยังยืนยันสิทธิ์ไม่ได้</h1><p>Closed Beta ต้องเชื่อมต่ออินเทอร์เน็ตทุกครั้งที่เปิดแอป ข้อมูล GSI, CV และ G-Log ในเครื่องไม่ถูกส่งขึ้น cloud</p><button onClick={() => void refresh()}>ลองอีกครั้ง</button></>}
       {state === "eligible" && <><h1>ยืนยันสิทธิ์แล้ว</h1><p>{decision?.gid} · Terms {decision?.terms?.version} · ตรวจล่าสุด {decision?.checked_at ? new Date(decision.checked_at).toLocaleString("th-TH") : "—"}</p>
+        {(() => {
+          const readiness = readinessFromRuntime({ gsiInstalled: setup?.installed === true, gsiActive, captureMode, minimapReady, audioReady });
+          const diagnostic = () => {
+            const bundle = buildDiagnosticBundle({ version: APP_VERSION, channel: updateStatus?.resolved.channel ?? "stable", readiness, updateStatus: updateStatus?.availableVersion ? `available:${updateStatus.availableVersion}` : updateStatus?.error ?? "current" });
+            const url = URL.createObjectURL(new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" }));
+            const link = document.createElement("a"); link.href = url; link.download = `g-maiden-diagnostics-${Date.now()}.json`; link.click(); URL.revokeObjectURL(url);
+          };
+          return <>
+            {compatibilityMode(readiness) && <div className="gmad-setup-status"><strong>Compatibility Mode — Vision features unavailable</strong><span>G-Sentry, G-Motion และ minimap vision จะไม่ทำงานจนกว่า DXGI จะพร้อม; GSI-based features ยังทำงานได้</span></div>}
+            <div className="gmad-setup-status"><strong>Wave 0 readiness</strong><span>GSI {readiness.gsi} · Capture {readiness.capture} · Minimap {readiness.minimap} · Overlay {readiness.overlay} · Audio {readiness.audio}</span></div>
+            <button className="secondary" onClick={diagnostic}>สร้าง diagnostic bundle (ไม่รวม credentials, tokens หรือ raw frames)</button>
+            <BetaFeedback version={APP_VERSION} channel={updateStatus?.resolved.channel ?? "stable"} readiness={readiness} updateStatus={updateStatus?.availableVersion ? `available:${updateStatus.availableVersion}` : updateStatus?.error ?? "current"} />
+          </>;
+        })()}
         <div className="gmad-setup-status"><strong>Update channel: {updateStatus?.resolved.channel ?? "stable"}</strong><span>Source: {updateStatus?.resolved.source ?? "stable-fallback"}{updateStatus?.availableVersion ? ` · มีเวอร์ชัน ${updateStatus.availableVersion}` : updateStatus?.error ? " · ตรวจอัปเดตไม่สำเร็จ" : " · เวอร์ชันล่าสุด"}</span></div>
         <div className="gmad-setup-status"><strong>{setup?.installed ? "GSI พร้อมใช้งาน" : "ตั้งค่า GSI/Dota 2"}</strong><span>{setup?.message ?? "กำลังตรวจ Dota 2…"}</span></div>
         {dotaRunning === false && <div className="gmad-setup-status"><strong>ยังไม่พบ Dota 2 ที่กำลังทำงาน</strong><span>เปิด Dota 2 แบบ borderless fullscreen แล้วกลับมากดตรวจอีกครั้งได้ สิทธิ์ Closed Beta ของคุณยังยืนยันแล้ว</span></div>}

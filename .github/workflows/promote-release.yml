@@ -32,7 +32,7 @@ jobs:
           node-version: 20
       - name: Validate candidate and current Stable
         run: |
-          node scripts/releases/channel-manifest.mjs validate "${{ inputs.candidate_manifest }}"
+          node scripts/releases/channel-manifest.mjs validate-published "${{ inputs.candidate_manifest }}"
           node scripts/releases/channel-manifest.mjs validate release/channels/stable.json
       - name: Promote same artifact metadata
         run: node scripts/releases/channel-manifest.mjs promote "${{ inputs.candidate_manifest }}" release/channels/stable.json "${{ inputs.approval_file }}"

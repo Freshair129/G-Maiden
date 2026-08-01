@@ -21,8 +21,52 @@ export function validateManifest(m) {
   return m;
 }
 
+export function validatePublishedManifest(m) {
+  validateManifest(m);
+  if (!/^\d+\.\d+\.\d+(?:-[0-9A-Za-z.-]+)?$/.test(m.version) || m.version === '0.0.0') {
+    throw new Error('published manifest requires a real SemVer version');
+  }
+  if (/^0+$/.test(m.sourceSha)) throw new Error('published manifest cannot use a zero sourceSha');
+  if (Date.parse(m.publishedAt) <= 0) throw new Error('published manifest requires a real publishedAt');
+  for (const [platform, artifact] of Object.entries(m.platforms)) {
+    if (!/^https:\/\//.test(artifact.url) || artifact.url.includes('example.invalid')) {
+      throw new Error(`platform ${platform} has a non-production artifact URL`);
+    }
+    if (!artifact.signature || artifact.signature === 'not-published') {
+      throw new Error(`platform ${platform} has no updater signature`);
+    }
+    if (!/^[0-9a-f]{64}$/i.test(artifact.sha256) || /^0+$/.test(artifact.sha256)) {
+      throw new Error(`platform ${platform} has no artifact SHA-256`);
+    }
+  }
+  return m;
+}
+
 export async function sha256File(path) {
   return createHash('sha256').update(await readFile(path)).digest('hex');
+}
+
+export function promoteManifest(candidate, previous, approval, publishedAt = new Date().toISOString()) {
+  validateManifest(candidate);
+  validateManifest(previous);
+  if (!['dev','closed-beta'].includes(candidate.channel)) throw new Error('only candidate channels can be promoted');
+  if (approval.version !== candidate.version || approval.sourceSha !== candidate.sourceSha) {
+    throw new Error('approval does not match candidate');
+  }
+  if (approval.unresolvedS0S1 !== 0) throw new Error('promotion blocked by unresolved S0/S1 issues');
+  const promoted = {
+    ...candidate,
+    channel: 'stable',
+    publishedAt,
+    promotion: {
+      approver: approval.approver,
+      approvedAt: approval.approvedAt,
+      previousVersion: previous.version,
+      candidateManifest: approval.candidateManifest,
+      evidence: approval.evidence
+    }
+  };
+  return validateManifest(promoted);
 }
 
 async function atomicWrite(path, value) {
@@ -40,32 +84,25 @@ async function main() {
     console.log(`valid: ${path}`);
     return;
   }
+  if (cmd === 'validate-published') {
+    const path = resolve(args[0]);
+    validatePublishedManifest(JSON.parse(await readFile(path, 'utf8')));
+    console.log(`valid published manifest: ${path}`);
+    return;
+  }
   if (cmd === 'promote') {
     const [candidatePath, stablePath, approvalPath] = args.map(resolve);
     const candidate = validateManifest(JSON.parse(await readFile(candidatePath, 'utf8')));
     const approval = JSON.parse(await readFile(approvalPath, 'utf8'));
-    if (!['dev','closed-beta'].includes(candidate.channel)) throw new Error('only candidate channels can be promoted');
-    if (approval.version !== candidate.version || approval.sourceSha !== candidate.sourceSha) throw new Error('approval does not match candidate');
-    if (approval.unresolvedS0S1 !== 0) throw new Error('promotion blocked by unresolved S0/S1 issues');
     const previous = validateManifest(JSON.parse(await readFile(stablePath, 'utf8')));
-    const promoted = {
-      ...candidate,
-      channel: 'stable',
-      publishedAt: new Date().toISOString(),
-      promotion: {
-        approver: approval.approver,
-        approvedAt: approval.approvedAt,
-        previousVersion: previous.version,
-        candidateManifest: candidatePath,
-        evidence: approval.evidence
-      }
-    };
-    validateManifest(promoted);
+    const promoted = promoteManifest(candidate, previous, { ...approval, candidateManifest: candidatePath });
     await atomicWrite(stablePath, promoted);
     console.log(`promoted ${candidate.version}; updater URLs, hashes and signatures preserved`);
     return;
   }
-  throw new Error('usage: channel-manifest.mjs validate <file> | promote <candidate> <stable> <approval>');
+  throw new Error('usage: channel-manifest.mjs validate <file> | validate-published <file> | promote <candidate> <stable> <approval>');
 }
 
-main().catch((error) => { console.error(error.message); process.exit(1); });
+if (process.argv[1]?.replaceAll('\\', '/').endsWith('/channel-manifest.mjs')) {
+  main().catch((error) => { console.error(error.message); process.exit(1); });
+}

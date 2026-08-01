@@ -87,3 +87,18 @@ jobs:
         with:
           name: candidate-evidence-${{ inputs.tag }}
           path: release/evidence/${{ inputs.tag }}/build-evidence.json
+      - name: Publish Dev channel manifest
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download "${{ inputs.tag }}" --repo "${{ github.repository }}" --pattern latest.json --dir "release/evidence/${{ inputs.tag }}"
+          node scripts/releases/manifest-from-tauri.mjs "release/evidence/${{ inputs.tag }}/latest.json" release/channels/dev.json dev "$env:SOURCE_SHA"
+          node scripts/releases/channel-manifest.mjs validate-published release/channels/dev.json
+          git fetch origin main
+          git switch --force-create main origin/main
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]
+          git add release/channels/dev.json
+          git commit -m "release: publish ${{ inputs.tag }} to dev channel"
+          git push
