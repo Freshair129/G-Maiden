@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 1,
+  "channel": "stable",
+  "version": "0.0.0",
+  "sourceSha": "0000000000000000000000000000000000000000",
+  "publishedAt": "1970-01-01T00:00:00.000Z",
+  "artifacts": [
+    {
+      "platform": "windows-x86_64",
+      "url": "https://example.invalid/not-published",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+      "signature": "not-published"
+    }
+  ]
+}
