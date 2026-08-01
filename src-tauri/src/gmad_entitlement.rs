@@ -46,6 +46,21 @@ impl EntitlementDecision {
             update_channel::ReleaseChannel::Stable
         }
     }
+
+    /// Resolve the updater channel through the canonical priority/fallback model.
+    /// Entitlement responses never populate a developer override or installer
+    /// default; those inputs remain owned by their separately verified callers.
+    pub fn resolved_update_channel(&self) -> update_channel::ResolvedChannel {
+        if !self.unlocks_runtime() {
+            return update_channel::stable_fallback();
+        }
+
+        update_channel::resolve(&update_channel::ChannelInputs {
+            signed_developer_override: None,
+            account_entitlement: Some(self.entitled_update_channel()),
+            installer_default: None,
+        })
+    }
 }
 
 pub async fn verify(access_token: &str) -> Result<EntitlementDecision, String> {
@@ -71,10 +86,20 @@ pub async fn verify(access_token: &str) -> Result<EntitlementDecision, String> {
         .into());
     }
 
-    response
+    let decision = response
         .json::<EntitlementDecision>()
         .await
-        .map_err(|_| "invalid entitlement response".to_string())
+        .map_err(|_| "invalid entitlement response".to_string())?;
+
+    // Resolve eagerly so every accepted response exercises the same channel
+    // policy used by updater integration. This also proves restricted channels
+    // cannot survive an invalid entitlement decision.
+    let resolved = decision.resolved_update_channel();
+    debug_assert!(resolved.signature_verification_required);
+    debug_assert!(!resolved.manifest_url.is_empty());
+    debug_assert!(!resolved.channel.is_restricted() || decision.unlocks_runtime());
+
+    Ok(decision)
 }
 
 #[cfg(test)]
@@ -112,11 +137,19 @@ mod tests {
             valid.entitled_update_channel(),
             update_channel::ReleaseChannel::ClosedBeta
         );
+        assert_eq!(
+            valid.resolved_update_channel().channel,
+            update_channel::ReleaseChannel::ClosedBeta
+        );
 
         let mut invalid = decision("no_active_entitlement", Some("G-1ABCDEF0"), true);
         invalid.update_channel = Some(update_channel::ReleaseChannel::Dev);
         assert_eq!(
             invalid.entitled_update_channel(),
+            update_channel::ReleaseChannel::Stable
+        );
+        assert_eq!(
+            invalid.resolved_update_channel().channel,
             update_channel::ReleaseChannel::Stable
         );
     }
