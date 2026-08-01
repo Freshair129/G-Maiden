@@ -2,7 +2,7 @@
 title: "G-Maiden Release Channel Implementation and Evidence Runbook"
 doc_id: "release-channel-implementation"
 status: "draft"
-version: "0.2.0"
+version: "0.4.0"
 updated: "2026-08-01"
 owner: "Boss"
 related_docs: ["RELEASE-CHANNEL-ARCHITECTURE", "CLOSED-BETA-WAVE-0-DOD"]
@@ -13,7 +13,7 @@ related_docs: ["RELEASE-CHANNEL-ARCHITECTURE", "CLOSED-BETA-WAVE-0-DOD"]
 ## Implemented in repository
 
 - `candidate-release.yml` verifies tag lineage, runs the release gates, builds/signs once, publishes a prerelease, writes `build-evidence.json` with the source SHA and release-asset hashes, and uploads that file as a workflow artifact.
-- The same workflow downloads the published signed Tauri `latest.json`, derives and strictly validates `release/channels/dev.json` from its artifact metadata, then commits and pushes that manifest to `main`; it does not rebuild or resign during manifest publication.
+- The same workflow downloads the published signed Tauri `latest.json`, derives and strictly validates `release/channels/dev.json` from its artifact metadata, then opens a protected-main PR for review; it does not rebuild or resign during manifest publication.
 - `channel-manifest.mjs` validates channel metadata, rejects non-publishable placeholders for publication, writes Stable atomically, and preserves artifact URL/signature/SHA fields during promotion.
 - `promote-release.yml` is manual, bound to the `production` environment, validates a published candidate, and performs no build/package/sign operation.
 - `betaReadiness.ts`, `GmadFirstRunGate.tsx`, and `BetaFeedback.tsx` expose GSI/capture/minimap/overlay/audio readiness, disclose exact Compatibility Mode wording, export a sanitized diagnostic JSON bundle locally, and export structured feedback with diagnostics only after explicit consent.
@@ -51,6 +51,10 @@ Until these steps produce real signed artifacts and GitHub run evidence, issues 
 
 Wave 0 evidence is validated separately with `node scripts/releases/wave-0-evidence.mjs validate release/evidence/wave-0/<version>`. The operator packet and HOLD/PASS semantics are defined in `docs/releases/closed-beta/wave-0/evidence-runbook.md`.
 
+## Retirement of the tag publisher
+
+The legacy `.github/workflows/release.yml` tag trigger is retired. A version tag must now be followed by the explicit `candidate-release.yml` dispatch, then reviewed channel-manifest PRs and the protected `promote-release.yml` workflow. This prevents two independent signing jobs from publishing different bytes under one tag and preserves same-artifact promotion.
+
 ## Rollback
 
 Restore the previous Stable manifest from the audited commit only if the updater supports the intended rollback. Otherwise publish a higher emergency forward-fix version that restores the last known-good behavior. Never rebuild or resign an already-promoted candidate to perform a rollback.
@@ -59,6 +63,7 @@ Restore the previous Stable manifest from the audited commit only if the updater
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.4.0 | 2026-08-01 | Retired the competing tag publisher after candidate asset overwrite RCA |
 | 0.3.0 | 2026-08-01 | Documented candidate evidence upload and signed `dev` manifest publication steps |
 | 0.2.0 | 2026-08-01 | Added publication validation, release rehearsal, Wave 0 readiness and evidence runbook |
 | 0.1.0 | 2026-07-23 | Initial release-channel and artifact-promotion architecture |
