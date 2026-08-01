@@ -49,6 +49,14 @@ attributes:
   - `docs/releases/closed-beta/wave-0/specification.md` — Closed Beta Wave 0 scope
 - `docs/releases/closed-beta/wave-0/definition-of-done.md`
   - `docs/releases/closed-beta/wave-0/definition-of-done.md` — Wave 0 DoD, evidence, และ exit gate
+- `docs/releases/closed-beta/wave-1/specification.md`
+  - `docs/releases/closed-beta/wave-1/specification.md` — Wave 1 core-intelligence validation
+- `docs/releases/closed-beta/wave-1/definition-of-done.md`
+  - `docs/releases/closed-beta/wave-1/definition-of-done.md` — Wave 1 DoD and exit gate
+- `docs/releases/closed-beta/wave-2/specification.md`
+  - `docs/releases/closed-beta/wave-2/specification.md` — Wave 2 expanded-access and operations validation
+- `docs/releases/closed-beta/wave-2/definition-of-done.md`
+  - `docs/releases/closed-beta/wave-2/definition-of-done.md` — Wave 2 DoD and exit gate
 - `docs/releases/open-beta/specification.md`
   - `docs/releases/open-beta/specification.md` — Open Beta scope
 - `docs/releases/open-beta/definition-of-done.md`

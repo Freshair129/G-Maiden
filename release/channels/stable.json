@@ -1,0 +1,16 @@
+{
+  "schemaVersion": 1,
+  "channel": "stable",
+  "version": "0.0.0",
+  "notes": "Stable channel has not published an update yet.",
+  "pub_date": "1970-01-01T00:00:00.000Z",
+  "sourceSha": "0000000000000000000000000000000000000000",
+  "publishedAt": "1970-01-01T00:00:00.000Z",
+  "platforms": {
+    "stable": {
+      "url": "https://example.invalid/not-published",
+      "signature": "not-published",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  }
+}

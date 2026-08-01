@@ -48,6 +48,8 @@ Wave 0 may begin only when all items are Pass:
 
 ## Coverage Gate
 
+The machine validator accepts `pass` for every required coverage item. `ultrawide` may instead be recorded as `unsupported` only when that limitation and its user impact are explicitly documented in `known-issues.md`; all other coverage items must be `pass`.
+
 - [ ] Windows 10 covered
 - [ ] Windows 11 covered
 - [ ] 1080p covered

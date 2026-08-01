@@ -143,4 +143,5 @@ A stage is complete only when:
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.2.0 | 2026-08-01 | Added evidence-gated Closed Beta Wave 1 and Wave 2 exit criteria |
 | 0.1.0 | 2026-07-23 | Initial evidence-gated beta and release roadmap |

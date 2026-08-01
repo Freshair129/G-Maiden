@@ -85,6 +85,21 @@ When DXGI/minimap vision is unavailable, UI must say:
 
 The application may continue with GSI-based capabilities, but must clearly state that G-Sentry/G-Motion/G-Signal vision chain is unavailable. Do not market this fallback as a complete Lite product.
 
+### Readiness mapping
+
+`readinessFromRuntime` maps inputs as follows: `gsiInstalled && gsiActive !== false` gives GSI `pass`; `gsiActive === false` gives GSI `warn`; `captureMode === "dxgi"` gives capture `pass`; `captureMode === "lite"` gives capture and minimap `warn`; an empty capture mode gives capture `pending`; minimap is `pass` only when `minimapReady === true` in DXGI mode and otherwise remains `pending` until the detector reports; overlay is `pass`; audio is `pending` until its check reports success. A `warn` capture/minimap result must show the exact Compatibility Mode wording above.
+
+| Runtime input | Readiness result |
+| --- | --- |
+| `capture-mode=dxgi` | capture `pass`; minimap follows the detector result |
+| `capture-mode=lite` | capture `warn`; minimap `warn`; Compatibility Mode required |
+| `capture-mode=dxgi` and `minimapReady=true` | minimap `pass` |
+| `capture-mode=dxgi` and `minimapReady=false` or not yet reported | minimap `pending` until the detector reports |
+| capture mode not yet reported | capture `pending`; no Compatibility Mode claim is made |
+| `gsiInstalled=true` and `gsiActive=true` | GSI `pass` |
+| `gsiActive=false` | GSI `warn` |
+| audio result not yet reported | audio `pending` |
+
 ## Required Diagnostics
 
 - App version and channel

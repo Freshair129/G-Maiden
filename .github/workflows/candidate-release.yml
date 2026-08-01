@@ -1,0 +1,104 @@
+name: candidate-release
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Approved version tag (vX.Y.Z)
+        required: true
+        type: string
+
+concurrency:
+  group: candidate-${{ inputs.tag }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  verify-build-sign:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag }}
+          fetch-depth: 0
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - uses: dtolnay/rust-toolchain@1.96.0
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri
+      - name: Verify tag lineage
+        shell: pwsh
+        run: |
+          $head = (git rev-parse HEAD).Trim()
+          $tag = (git rev-list -n 1 "${{ inputs.tag }}").Trim()
+          if ($head -ne $tag) { throw "tag lineage mismatch: $tag != $head" }
+          "SOURCE_SHA=$head" | Out-File -Append $env:GITHUB_ENV
+      - name: Install dependencies
+        run: |
+          pnpm install --frozen-lockfile
+          pnpm -C src install --frozen-lockfile
+      - run: node src-tauri/scripts/stage-gpu-feeder.mjs
+      - name: Verification gates
+        run: |
+          cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D warnings
+          cargo test --manifest-path src-tauri/Cargo.toml --locked
+          pnpm -C src exec eslint .
+          pnpm -C src exec tsc --noEmit
+          pnpm -C src test -- --run
+      - name: Tauri smoke build
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          args: --no-bundle -- --locked
+      - name: Build, sign and publish prerelease
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tagName: ${{ inputs.tag }}
+          releaseName: "G-Maiden candidate ${{ inputs.tag }}"
+          releaseBody: "Candidate build. Not promoted to Stable."
+          prerelease: true
+          releaseDraft: false
+          args: -- --locked
+      - name: Generate candidate evidence
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force release/evidence/${{ inputs.tag }} | Out-Null
+          $assets = Get-ChildItem src-tauri/target/release/bundle -Recurse -File | Where-Object { $_.Extension -in '.msi','.exe','.zip','.sig' }
+          $records = @()
+          foreach ($asset in $assets) {
+            $records += [ordered]@{ path=$asset.FullName.Replace($pwd.Path+'\',''); sha256=(Get-FileHash $asset.FullName -Algorithm SHA256).Hash.ToLower() }
+          }
+          [ordered]@{ version='${{ inputs.tag }}'; sourceSha=$env:SOURCE_SHA; generatedAt=(Get-Date).ToUniversalTime().ToString('o'); artifacts=$records } |
+            ConvertTo-Json -Depth 6 | Set-Content release/evidence/${{ inputs.tag }}/build-evidence.json
+      - name: Upload evidence
+        uses: actions/upload-artifact@v4
+        with:
+          name: candidate-evidence-${{ inputs.tag }}
+          path: release/evidence/${{ inputs.tag }}/build-evidence.json
+      - name: Publish Dev channel manifest
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release download "${{ inputs.tag }}" --repo "${{ github.repository }}" --pattern latest.json --dir "release/evidence/${{ inputs.tag }}"
+          node scripts/releases/manifest-from-tauri.mjs "release/evidence/${{ inputs.tag }}/latest.json" release/channels/dev.json dev "$env:SOURCE_SHA"
+          node scripts/releases/channel-manifest.mjs validate-published release/channels/dev.json
+          git fetch origin main
+          git switch --force-create main origin/main
+          git config user.name github-actions[bot]
+          git config user.email 41898282+github-actions[bot]
+          git add release/channels/dev.json
+          git commit -m "release: publish ${{ inputs.tag }} to dev channel"
+          git push
