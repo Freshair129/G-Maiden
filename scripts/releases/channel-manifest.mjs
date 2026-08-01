@@ -6,15 +6,17 @@ import { dirname, resolve } from 'node:path';
 const CHANNELS = new Set(['dev', 'closed-beta', 'stable']);
 
 export function validateManifest(m) {
-  const required = ['schemaVersion','channel','version','sourceSha','publishedAt','artifacts'];
+  const required = ['schemaVersion','channel','version','sourceSha','publishedAt','platforms'];
   for (const key of required) if (!m?.[key]) throw new Error(`manifest missing ${key}`);
   if (m.schemaVersion !== 1) throw new Error('unsupported schemaVersion');
   if (!CHANNELS.has(m.channel)) throw new Error(`invalid channel: ${m.channel}`);
   if (!/^[0-9a-f]{40}$/i.test(m.sourceSha)) throw new Error('sourceSha must be a full git SHA');
-  if (!Array.isArray(m.artifacts) || m.artifacts.length === 0) throw new Error('artifacts must be non-empty');
-  for (const a of m.artifacts) {
-    for (const key of ['platform','url','sha256','signature']) if (!a?.[key]) throw new Error(`artifact missing ${key}`);
-    if (!/^[0-9a-f]{64}$/i.test(a.sha256)) throw new Error(`invalid sha256 for ${a.platform}`);
+  if (!m.platforms || typeof m.platforms !== 'object' || Array.isArray(m.platforms)) throw new Error('platforms must be an object');
+  const entries = Object.entries(m.platforms);
+  if (entries.length === 0) throw new Error('platforms must be non-empty');
+  for (const [platform, artifact] of entries) {
+    for (const key of ['url','signature']) if (!artifact?.[key]) throw new Error(`platform ${platform} missing ${key}`);
+    if (artifact.sha256 && !/^[0-9a-f]{64}$/i.test(artifact.sha256)) throw new Error(`invalid sha256 for ${platform}`);
   }
   return m;
 }
@@ -45,7 +47,7 @@ async function main() {
     if (!['dev','closed-beta'].includes(candidate.channel)) throw new Error('only candidate channels can be promoted');
     if (approval.version !== candidate.version || approval.sourceSha !== candidate.sourceSha) throw new Error('approval does not match candidate');
     if (approval.unresolvedS0S1 !== 0) throw new Error('promotion blocked by unresolved S0/S1 issues');
-    const previous = JSON.parse(await readFile(stablePath, 'utf8'));
+    const previous = validateManifest(JSON.parse(await readFile(stablePath, 'utf8')));
     const promoted = {
       ...candidate,
       channel: 'stable',
@@ -60,7 +62,7 @@ async function main() {
     };
     validateManifest(promoted);
     await atomicWrite(stablePath, promoted);
-    console.log(`promoted ${candidate.version}; artifact hashes/signatures preserved`);
+    console.log(`promoted ${candidate.version}; updater URLs, hashes and signatures preserved`);
     return;
   }
   throw new Error('usage: channel-manifest.mjs validate <file> | promote <candidate> <stable> <approval>');
