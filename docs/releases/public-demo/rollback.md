@@ -1,6 +1,6 @@
 ---
 title: "G-Maiden Public Demo Rollback"
-doc_id: "public-demo-rollback"
+doc_id: "rollback"
 status: "draft"
 version: "0.1.0"
 updated: "2026-08-01"
