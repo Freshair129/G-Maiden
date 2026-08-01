@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.13.2] — 2026-08-02
+### Fixed
+- Retired the competing tag publisher so candidate artifacts are built and signed by one release path before same-artifact promotion.
+
 ## [0.13.1] — 2026-08-01
 ### Changed
 - Finalized signed candidate, channel manifest, same-artifact promotion, and Closed Beta evidence gates.

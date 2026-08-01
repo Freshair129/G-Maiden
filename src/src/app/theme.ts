@@ -2,7 +2,7 @@ import { DEFAULTS, type Settings, type OverlayProfile } from './types'
 
 export const C = { bg: '#08090c', ice: '#8fd4ff', txt: '#e7eef6', mut: '#8794a6', ok: '#5be3a7', warn: '#ffcf6b', bad: '#ff7b85', line: 'rgba(143,212,255,0.16)' }
 
-export const APP_VERSION = '0.13.1'
+export const APP_VERSION = '0.13.2'
 
 export const CHANGELOG: { ver: string; date: string; items: string[] }[] = [
   { ver: '0.7.6', date: '2026-06-28', items: [
