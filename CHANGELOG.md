@@ -1,5 +1,9 @@
 # Changelog
 
+## [0.13.1] — 2026-08-01
+### Changed
+- Finalized signed candidate, channel manifest, same-artifact promotion, and Closed Beta evidence gates.
+
 ## [0.13.0] — 2026-07-19
 ### Changed
 - **Overlay เหลือแบบเดียว — ปรับตำแหน่งเองได้ทุกชิ้น** — เดิมมีให้เลือก 2 โหมด
