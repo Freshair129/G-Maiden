@@ -91,9 +91,6 @@ pub async fn verify(access_token: &str) -> Result<EntitlementDecision, String> {
         .await
         .map_err(|_| "invalid entitlement response".to_string())?;
 
-    // Resolve eagerly so every accepted response exercises the same channel
-    // policy used by updater integration. This also proves restricted channels
-    // cannot survive an invalid entitlement decision.
     let resolved = decision.resolved_update_channel();
     debug_assert!(resolved.signature_verification_required);
     debug_assert!(!resolved.manifest_url.is_empty());
