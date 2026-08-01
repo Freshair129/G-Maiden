@@ -1,8 +1,10 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useGmadDesktopEntitlement } from "./gmadEntitlement";
+import { checkResolvedUpdate, resolveUpdateChannel, type ResolvedUpdateChannel } from "./updateChannel";
 
 type SetupStatus = { installed: boolean; dota_cfg_dir?: string | null; message: string };
+type UpdateStatus = { resolved: ResolvedUpdateChannel; availableVersion?: string; error?: string };
 
 export default function GmadFirstRunGate({ children }: { children: ReactNode }) {
   const { state, decision, refresh, signInWithGoogle, signOut, authError } = useGmadDesktopEntitlement();
@@ -10,6 +12,25 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
   const [setupBusy, setSetupBusy] = useState(false);
   const [ready, setReady] = useState(false);
   const [dotaRunning, setDotaRunning] = useState<boolean | null>(null);
+  const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
+
+  useEffect(() => {
+    const resolved = resolveUpdateChannel(decision);
+    if (state !== "eligible") {
+      setUpdateStatus({ resolved });
+      return;
+    }
+    let cancelled = false;
+    void checkResolvedUpdate(resolved)
+      .then((update) => {
+        const version = update?.version === "0.0.0" ? undefined : update?.version;
+        if (!cancelled) setUpdateStatus({ resolved, availableVersion: version });
+      })
+      .catch(() => {
+        if (!cancelled) setUpdateStatus({ resolved, error: "update-check-failed" });
+      });
+    return () => { cancelled = true; };
+  }, [decision, state]);
 
   useEffect(() => {
     if (state !== "eligible") { setReady(false); setSetup(null); setDotaRunning(null); return; }
@@ -46,6 +67,7 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
       {state === "account_not_eligible" && <><h1>บัญชี Google นี้ไม่ใช่บัญชีที่ได้รับสิทธิ์</h1><p>ระบบไม่รับ GID ที่กรอกเองและไม่แสดงข้อมูลของบัญชีอื่น</p><button onClick={() => void signOut()}>ออกจากระบบแล้วใช้บัญชีเดิม</button></>}
       {state === "offline_or_unavailable" && <><h1>ยังยืนยันสิทธิ์ไม่ได้</h1><p>Closed Beta ต้องเชื่อมต่ออินเทอร์เน็ตทุกครั้งที่เปิดแอป ข้อมูล GSI, CV และ G-Log ในเครื่องไม่ถูกส่งขึ้น cloud</p><button onClick={() => void refresh()}>ลองอีกครั้ง</button></>}
       {state === "eligible" && <><h1>ยืนยันสิทธิ์แล้ว</h1><p>{decision?.gid} · Terms {decision?.terms?.version} · ตรวจล่าสุด {decision?.checked_at ? new Date(decision.checked_at).toLocaleString("th-TH") : "—"}</p>
+        <div className="gmad-setup-status"><strong>Update channel: {updateStatus?.resolved.channel ?? "stable"}</strong><span>Source: {updateStatus?.resolved.source ?? "stable-fallback"}{updateStatus?.availableVersion ? ` · มีเวอร์ชัน ${updateStatus.availableVersion}` : updateStatus?.error ? " · ตรวจอัปเดตไม่สำเร็จ" : " · เวอร์ชันล่าสุด"}</span></div>
         <div className="gmad-setup-status"><strong>{setup?.installed ? "GSI พร้อมใช้งาน" : "ตั้งค่า GSI/Dota 2"}</strong><span>{setup?.message ?? "กำลังตรวจ Dota 2…"}</span></div>
         {dotaRunning === false && <div className="gmad-setup-status"><strong>ยังไม่พบ Dota 2 ที่กำลังทำงาน</strong><span>เปิด Dota 2 แบบ borderless fullscreen แล้วกลับมากดตรวจอีกครั้งได้ สิทธิ์ Closed Beta ของคุณยังยืนยันแล้ว</span></div>}
         {!setup?.installed && setup?.dota_cfg_dir && <button disabled={setupBusy} onClick={() => void installGsi()}>{setupBusy ? "กำลังติดตั้ง…" : "ติดตั้ง GSI config"}</button>}

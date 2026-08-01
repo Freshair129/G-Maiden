@@ -2,9 +2,16 @@ import { useCallback, useEffect, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAuth } from "./auth";
 import { decideFirstRunScreen, type EntitlementState, type FirstRunScreen } from "./gmadFirstRun";
+import type { ReleaseChannel } from "./updateChannel";
 
 export type GmadDesktopState = FirstRunScreen;
-export type GmadDecision = { state: EntitlementState; gid?: string; checked_at?: string; terms?: { document_id?: string; version?: string; effective_at?: string } };
+export type GmadDecision = {
+  state: EntitlementState;
+  gid?: string;
+  checked_at?: string;
+  update_channel?: ReleaseChannel;
+  terms?: { document_id?: string; version?: string; effective_at?: string };
+};
 
 export function useGmadDesktopEntitlement() {
   const { session, user, loading, busy, error: authError, signInWithGoogle, signOut: authSignOut } = useAuth();

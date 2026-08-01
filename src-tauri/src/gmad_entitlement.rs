@@ -1,5 +1,8 @@
 use serde::{Deserialize, Serialize};
 
+#[path = "update_channel.rs"]
+pub mod update_channel;
+
 const ENTITLEMENT_URL: &str = "https://wsseitulmcgnolgsrxgh.supabase.co/functions/v1/get-gmad-desktop-entitlement";
 const SUPABASE_PUBLISHABLE_KEY: &str = "sb_publishable__vr0-aNdudlq3aPbH8OMXw_0rr0JScZ";
 
@@ -16,6 +19,10 @@ pub struct EntitlementDecision {
     pub gid: Option<String>,
     pub checked_at: Option<String>,
     pub terms: Option<TermsSummary>,
+    /// Optional server-authoritative updater channel. Missing or malformed
+    /// values remain None and callers must fall back to Stable.
+    #[serde(default)]
+    pub update_channel: Option<update_channel::ReleaseChannel>,
 }
 
 impl EntitlementDecision {
@@ -27,6 +34,32 @@ impl EntitlementDecision {
                 .as_ref()
                 .and_then(|terms| terms.version.as_deref())
                 .is_some_and(|version| !version.is_empty())
+    }
+
+    /// A restricted channel is accepted only from an otherwise valid,
+    /// server-authoritative entitlement decision. Auth failures and public
+    /// accounts therefore resolve to Stable rather than retaining stale access.
+    pub fn entitled_update_channel(&self) -> update_channel::ReleaseChannel {
+        if self.unlocks_runtime() {
+            self.update_channel.unwrap_or_default()
+        } else {
+            update_channel::ReleaseChannel::Stable
+        }
+    }
+
+    /// Resolve the updater channel through the canonical priority/fallback model.
+    /// Entitlement responses never populate a developer override or installer
+    /// default; those inputs remain owned by their separately verified callers.
+    pub fn resolved_update_channel(&self) -> update_channel::ResolvedChannel {
+        if !self.unlocks_runtime() {
+            return update_channel::stable_fallback();
+        }
+
+        update_channel::resolve(&update_channel::ChannelInputs {
+            signed_developer_override: None,
+            account_entitlement: Some(self.entitled_update_channel()),
+            installer_default: None,
+        })
     }
 }
 
@@ -53,19 +86,25 @@ pub async fn verify(access_token: &str) -> Result<EntitlementDecision, String> {
         .into());
     }
 
-    response
+    let decision = response
         .json::<EntitlementDecision>()
         .await
-        .map_err(|_| "invalid entitlement response".to_string())
+        .map_err(|_| "invalid entitlement response".to_string())?;
+
+    let resolved = decision.resolved_update_channel();
+    debug_assert!(resolved.signature_verification_required);
+    debug_assert!(!resolved.manifest_url.is_empty());
+    debug_assert!(!resolved.channel.is_restricted() || decision.unlocks_runtime());
+
+    Ok(decision)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
 
-    #[test]
-    fn only_eligible_decision_with_server_gid_unlocks_runtime() {
-        let decision = |state: &str, gid: Option<&str>, terms: bool| EntitlementDecision {
+    fn decision(state: &str, gid: Option<&str>, terms: bool) -> EntitlementDecision {
+        EntitlementDecision {
             state: state.into(),
             gid: gid.map(str::to_string),
             checked_at: None,
@@ -74,11 +113,49 @@ mod tests {
                 version: Some("1.0.0-beta".into()),
                 effective_at: None,
             }),
-        };
+            update_channel: None,
+        }
+    }
+
+    #[test]
+    fn only_eligible_decision_with_server_gid_unlocks_runtime() {
         assert!(decision("eligible", Some("G-1ABCDEF0"), true).unlocks_runtime());
         assert!(!decision("eligible", None, true).unlocks_runtime());
         assert!(!decision("eligible", Some("G-1ABCDEF0"), false).unlocks_runtime());
         assert!(!decision("terms_required", Some("G-1ABCDEF0"), true).unlocks_runtime());
         assert!(!decision("no_active_entitlement", Some("G-1ABCDEF0"), true).unlocks_runtime());
+    }
+
+    #[test]
+    fn restricted_channel_requires_valid_entitlement() {
+        let mut valid = decision("eligible", Some("G-1ABCDEF0"), true);
+        valid.update_channel = Some(update_channel::ReleaseChannel::ClosedBeta);
+        assert_eq!(
+            valid.entitled_update_channel(),
+            update_channel::ReleaseChannel::ClosedBeta
+        );
+        assert_eq!(
+            valid.resolved_update_channel().channel,
+            update_channel::ReleaseChannel::ClosedBeta
+        );
+
+        let mut invalid = decision("no_active_entitlement", Some("G-1ABCDEF0"), true);
+        invalid.update_channel = Some(update_channel::ReleaseChannel::Dev);
+        assert_eq!(
+            invalid.entitled_update_channel(),
+            update_channel::ReleaseChannel::Stable
+        );
+        assert_eq!(
+            invalid.resolved_update_channel().channel,
+            update_channel::ReleaseChannel::Stable
+        );
+    }
+
+    #[test]
+    fn missing_channel_defaults_to_stable() {
+        assert_eq!(
+            decision("eligible", Some("G-1ABCDEF0"), true).entitled_update_channel(),
+            update_channel::ReleaseChannel::Stable
+        );
     }
 }
