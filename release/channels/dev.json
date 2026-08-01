@@ -7,7 +7,7 @@
   "sourceSha": "0000000000000000000000000000000000000000",
   "publishedAt": "1970-01-01T00:00:00.000Z",
   "platforms": {
-    "windows-x86_64": {
+    "dev": {
       "url": "https://example.invalid/not-published",
       "signature": "not-published",
       "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
