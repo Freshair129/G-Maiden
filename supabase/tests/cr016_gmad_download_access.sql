@@ -32,7 +32,13 @@ select ok(not has_table_privilege('authenticated', 'public.gmad_download_audit',
 
 set local role authenticated;
 set local request.jwt.claims = '{"sub":"00000000-0000-0000-0000-0000000000d2","role":"authenticated"}';
-select is((select count(*)::integer from public.gmad_download_batches), 0, 'RLS denies direct batch roster read');
+-- CR-016 access model is service-role-Edge-Function-only: the migration revokes ALL
+-- table privileges from anon/authenticated and defines no policies, so a direct read
+-- is a hard 42501 (privilege check runs before RLS), not an RLS-filtered empty set.
+select throws_ok(
+  $$ select count(*) from public.gmad_download_batches $$,
+  '42501', null, 'players get permission denied on direct batch roster read'
+);
 select throws_ok(
   $$ insert into public.gmad_download_grants (batch_id, user_id) values ('00000000-0000-0000-0000-0000000000e1', '00000000-0000-0000-0000-0000000000d2') $$,
   '42501', null, 'player cannot self-grant GMAD download'
