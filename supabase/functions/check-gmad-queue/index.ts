@@ -35,7 +35,10 @@ Deno.serve(async (req) => {
     .select("open_beta_enabled,open_beta_batch_id,github_release_url").eq("id", 1).maybeSingle();
 
   const { data: enrollment } = await admin.from("closed_beta_enrollments").select("status").eq("user_id", user.id).maybeSingle();
-  if (!enrollment || enrollment.status === "revoked") return json(200, { state: "revoked" });
+  // A missing enrollment is a brand-new account, not a revocation: fall through so the
+  // response carries `terms` and the landing can offer the Terms form (accepting Terms
+  // is the only path that creates the enrollment row).
+  if (enrollment?.status === "revoked") return json(200, { state: "revoked" });
   const { data: grants, error: grantError } = await admin
     .from("gmad_download_grants")
     .select("batch_id,gmad_download_batches!inner(status,label,release_id)")

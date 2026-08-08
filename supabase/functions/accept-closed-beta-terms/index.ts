@@ -44,7 +44,13 @@ Deno.serve(async (req) => {
   const { data: enrollment } = await admin.from("closed_beta_enrollments")
     .select("status").eq("user_id", user.id).maybeSingle();
   if (!enrollment) {
-    await admin.from("closed_beta_enrollments").insert({ user_id: user.id, source: "landing" });
+    const { error: enrollError } = await admin.from("closed_beta_enrollments")
+      .insert({ user_id: user.id, source: "landing" });
+    // 23505 = concurrent request already created the row; anything else is a real failure
+    // the caller must see, because no other code path creates enrollments.
+    if (enrollError && enrollError.code !== "23505") {
+      return json(500, { error: "could not record enrollment" });
+    }
   }
   if (enrollment?.status !== "revoked") {
     const { data: policy } = await admin.from("gmad_distribution_policy")
