@@ -1,6 +1,6 @@
 import { createClient } from "jsr:@supabase/supabase-js@2";
 import { isPostOrOptions, json, preflight } from "../_shared/gmad.ts";
-import { isGoogleIdentity } from "../_shared/entitlement.ts";
+import { isGoogleIdentity, shouldAutoGrant } from "../_shared/entitlement.ts";
 
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return preflight();
@@ -37,6 +37,36 @@ Deno.serve(async (req) => {
   }).select("id,accepted_at").single();
   if (error || !receipt) return json(500, { error: error?.message ?? "could not record acceptance" });
   await admin.from("gmad_download_audit").insert({ actor_id: user.id, subject_id: user.id, action: "terms_accepted", detail: { document_id: document.document_id, version: document.version } });
+  // SPEC-2026-08-09 Phase 1: accepting Terms makes the "queued" state real
+  // (enrollment row) and, when the Open Beta switch is on, auto-issues the
+  // grant on the designated batch. A previously revoked enrollment is never
+  // resurrected and never auto-granted.
+  const { data: enrollment } = await admin.from("closed_beta_enrollments")
+    .select("status").eq("user_id", user.id).maybeSingle();
+  if (!enrollment) {
+    await admin.from("closed_beta_enrollments").insert({ user_id: user.id, source: "landing" });
+  }
+  if (enrollment?.status !== "revoked") {
+    const { data: policy } = await admin.from("gmad_distribution_policy")
+      .select("open_beta_enabled,open_beta_batch_id,github_release_url")
+      .eq("id", 1).maybeSingle();
+    if (policy?.open_beta_enabled && policy.open_beta_batch_id) {
+      const { data: openBatch } = await admin.from("gmad_download_batches")
+        .select("id,status").eq("id", policy.open_beta_batch_id).maybeSingle();
+      if (shouldAutoGrant(policy, openBatch?.status ?? null)) {
+        const { error: grantError } = await admin.from("gmad_download_grants").upsert(
+          { batch_id: policy.open_beta_batch_id, user_id: user.id },
+          { onConflict: "batch_id,user_id", ignoreDuplicates: true },
+        );
+        if (!grantError) {
+          await admin.from("gmad_download_audit").insert({
+            actor_id: user.id, subject_id: user.id, batch_id: policy.open_beta_batch_id,
+            action: "grant_auto_issued", detail: { source: "accept-closed-beta-terms" },
+          });
+        }
+      }
+    }
+  }
   return json(200, { receipt_id: receipt.id, accepted_at: receipt.accepted_at,
     document: { id: document.document_id, version: document.version, effective_at: document.effective_at },
     privacy: { id: privacy.document_id, version: privacy.version, effective_at: privacy.effective_at } });
