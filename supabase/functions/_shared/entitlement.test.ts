@@ -1,5 +1,14 @@
 import { assertEquals } from "jsr:@std/assert@1";
-import { decideGmadEntitlement, isGoogleIdentity } from "./entitlement.ts";
+import {
+  decideGmadEntitlement,
+  isGoogleIdentity,
+  shouldAutoGrant,
+  resolveDownloadChannel,
+  deriveTermsState,
+  type DistributionPolicy,
+  type DownloadChannel,
+  type TermsState,
+} from "./entitlement.ts";
 
 const currentTerms = {
   document_id: "closed-beta-terms-of-use",
@@ -53,4 +62,34 @@ Deno.test("GMAD access accepts Google identities and rejects email-only identiti
   assertEquals(isGoogleIdentity({ app_metadata: { provider: "google", providers: ["google"] } }), true);
   assertEquals(isGoogleIdentity({ app_metadata: { provider: "email", providers: ["email"] } }), false);
   assertEquals(isGoogleIdentity(null), false);
+});
+
+Deno.test("shouldAutoGrant: only when enabled + batch id set + batch published", () => {
+  const on = { open_beta_enabled: true, open_beta_batch_id: "b1", github_release_url: null };
+  assertEquals(shouldAutoGrant(on, "published"), true);
+  assertEquals(shouldAutoGrant(on, "paused"), false);
+  assertEquals(shouldAutoGrant(on, null), false);
+  assertEquals(shouldAutoGrant({ ...on, open_beta_batch_id: null }, "published"), false);
+  assertEquals(shouldAutoGrant({ ...on, open_beta_enabled: false }, "published"), false);
+  assertEquals(shouldAutoGrant(null, "published"), false);
+});
+
+Deno.test("resolveDownloadChannel: github only for the open-beta batch with a URL", () => {
+  const url = "https://github.com/Freshair129/G-Maiden/releases/latest";
+  const policy = { open_beta_enabled: true, open_beta_batch_id: "b1", github_release_url: url };
+  assertEquals(resolveDownloadChannel(policy, "b1"), { channel: "github", download_url: url });
+  assertEquals(resolveDownloadChannel(policy, "b2"), { channel: "gated" });
+  assertEquals(resolveDownloadChannel({ ...policy, github_release_url: null }, "b1"), { channel: "gated" });
+  assertEquals(resolveDownloadChannel({ ...policy, open_beta_enabled: false }, "b1"), { channel: "gated" });
+  assertEquals(resolveDownloadChannel(null, "b1"), { channel: "gated" });
+});
+
+Deno.test("deriveTermsState: accepted / required / outdated / unavailable", () => {
+  const current = { document_id: "t", version: "1.0.0", document_sha256: "a".repeat(64), effective_at: "2026-01-01T00:00:00Z" };
+  const match = { document_id: "t", document_version: "1.0.0", document_sha256: "a".repeat(64) };
+  assertEquals(deriveTermsState(current, match), "accepted");
+  assertEquals(deriveTermsState(current, null), "required");
+  assertEquals(deriveTermsState(current, { ...match, document_version: "0.9.0" }), "outdated");
+  assertEquals(deriveTermsState(current, { ...match, document_sha256: "b".repeat(64) }), "outdated");
+  assertEquals(deriveTermsState(null, match), "unavailable");
 });

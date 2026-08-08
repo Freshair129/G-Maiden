@@ -40,3 +40,51 @@ export function decideGmadEntitlement(input: EntitlementInput): EntitlementDecis
   if (!input.activeGrant) return { state: "no_active_entitlement", gid: input.gid, terms };
   return { state: "eligible", gid: input.gid, terms };
 }
+
+export type DistributionPolicy = {
+  open_beta_enabled: boolean;
+  open_beta_batch_id: string | null;
+  github_release_url: string | null;
+};
+
+export function shouldAutoGrant(
+  policy: DistributionPolicy | null,
+  batchStatus: string | null,
+): boolean {
+  return policy?.open_beta_enabled === true &&
+    typeof policy.open_beta_batch_id === "string" &&
+    batchStatus === "published";
+}
+
+export type DownloadChannel =
+  | { channel: "github"; download_url: string }
+  | { channel: "gated" };
+
+export function resolveDownloadChannel(
+  policy: DistributionPolicy | null,
+  grantBatchId: string | null,
+): DownloadChannel {
+  if (
+    policy?.open_beta_enabled === true &&
+    typeof policy.github_release_url === "string" &&
+    grantBatchId !== null &&
+    grantBatchId === policy.open_beta_batch_id
+  ) {
+    return { channel: "github", download_url: policy.github_release_url };
+  }
+  return { channel: "gated" };
+}
+
+export type TermsState = "accepted" | "required" | "outdated" | "unavailable";
+
+export function deriveTermsState(
+  current: CurrentTerms | null,
+  latestReceipt: TermsReceipt | null,
+): TermsState {
+  if (!current) return "unavailable";
+  if (!latestReceipt) return "required";
+  const matches = latestReceipt.document_id === current.document_id &&
+    latestReceipt.document_version === current.version &&
+    latestReceipt.document_sha256 === current.document_sha256;
+  return matches ? "accepted" : "outdated";
+}
