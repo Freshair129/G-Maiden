@@ -61,8 +61,9 @@ export default function AccountPage({ entryMode, entryNonce }: { entryMode?: Acc
     <div className="account-page">
       <h2 className="account-title">Account &amp; Profile</h2>
       <p className="account-lead">
-        Sign in to a G-Maiden account (GID) — one identity across the G-series — link your
-        Steam, and set up your profile. The deck works without an account; this adds sync and linking.
+        Sign in to a G-Maiden account (GID) — one identity across the G-series: this deck, the
+        G-Maiden landing site, and creator tools like G-AnnStudio all resolve the same Google
+        sign-in to the same GID. The deck works without an account; this adds sync and linking.
       </p>
       <GmadEntitlementPanel />
 
