@@ -54,11 +54,11 @@ Deno.serve(async (req) => {
       const { data: openBatch } = await admin.from("gmad_download_batches")
         .select("id,status").eq("id", policy.open_beta_batch_id).maybeSingle();
       if (shouldAutoGrant(policy, openBatch?.status ?? null)) {
-        const { error: grantError } = await admin.from("gmad_download_grants").upsert(
+        const { data: insertedGrants, error: grantError } = await admin.from("gmad_download_grants").upsert(
           { batch_id: policy.open_beta_batch_id, user_id: user.id },
           { onConflict: "batch_id,user_id", ignoreDuplicates: true },
-        );
-        if (!grantError) {
+        ).select("batch_id");
+        if (!grantError && (insertedGrants?.length ?? 0) > 0) {
           await admin.from("gmad_download_audit").insert({
             actor_id: user.id, subject_id: user.id, batch_id: policy.open_beta_batch_id,
             action: "grant_auto_issued", detail: { source: "accept-closed-beta-terms" },
