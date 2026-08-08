@@ -146,7 +146,9 @@ landing / AnnStudio (งาน copy)
   ได้เหมือนเดิม แค่ pack ไม่มีชื่อเจ้าของ
 - **Auth:** Google PKCE ผ่าน supabase-js ตรงเข้า `gstore` (loopback callback ของ
   AnnStudio เอง) → UUID → อ่าน profile → เห็น GID เดียวกับ G-Maiden ไม่มี mint ใหม่
-- **Export:** เพิ่มฟิลด์ `author: { gid, displayName? }` ใน `manifest.json` ของ pack
+- **Export:** เพิ่มฟิลด์ optional `authorGid: string` ใน `manifest.json` คู่กับฟิลด์ `author: string`
+  (display name) ที่มีอยู่แล้วทั้งสองฝั่ง — ไม่เปลี่ยน shape ของ `author` เดิมเพื่อ backward compat
+  (แก้จากร่างแรกที่เขียนเป็น `author: { gid, displayName? }` หลังตรวจโค้ดจริง 2026-08-09)
 - **ฝั่ง G-Maiden:** `voice_api.rs` อ่านฟิลด์ `author` แบบ optional (pack เก่าไม่มีฟิลด์
   = ทำงานปกติ ห้าม break) แล้ว Voice UI โชว์ชิป "by G-XXXX"
 
