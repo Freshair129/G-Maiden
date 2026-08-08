@@ -13,6 +13,7 @@ import {
   X,
 } from 'lucide-react'
 import { useBetaEnrollment } from './beta'
+import BetaAccessPanel from './BetaAccessPanel'
 import HeroMedia25D from './HeroMedia25D'
 import { useScrollNarrative } from './scrollNarrative'
 
@@ -549,14 +550,17 @@ function LandingPage() {
               <div className="roadmap-panel-group">
                 <p className="roadmap-panel-label">บัญชีของคุณ</p>
                 {beta.gid ? (
-                  <div className="roadmap-account roadmap-account-ready">
-                    <ShieldCheck aria-hidden="true" />
-                    <div>
-                      <strong>{beta.gid}</strong>
-                      <p>{beta.email}</p>
-                      <small>บัญชีนี้พร้อมใช้ต่อบนเว็บและ desktop app ทันทีเมื่อ release surface ใหม่เปิดใช้งาน</small>
+                  <>
+                    <div className="roadmap-account roadmap-account-ready">
+                      <ShieldCheck aria-hidden="true" />
+                      <div>
+                        <strong>{beta.gid}</strong>
+                        <p>{beta.email}</p>
+                        <small>บัญชีนี้พร้อมใช้ต่อบนเว็บและ desktop app ทันทีเมื่อ release surface ใหม่เปิดใช้งาน</small>
+                      </div>
                     </div>
-                  </div>
+                    <BetaAccessPanel signedIn={beta.status === 'registered'} />
+                  </>
                 ) : (
                   <div className="roadmap-account">
                     <Fingerprint aria-hidden="true" />
