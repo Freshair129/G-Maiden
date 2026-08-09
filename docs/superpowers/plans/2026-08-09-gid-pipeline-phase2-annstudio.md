@@ -22,8 +22,8 @@
 
 | Repo | File | Responsibility |
 | --- | --- | --- |
-| G-Suite | `schemas/announcer-manifest.schema.json` (modify) | canonical schema: optional `authorGid` |
-| G-Suite | `packages/ann-studio/src-tauri/src/announcer-manifest.schema.json` (modify) | mirror copy of the schema |
+| G-Suite | ~~`schemas/announcer-manifest.schema.json` (modify)~~ → `schemas/pack-manifest.schema.json` (create) | canonical schema: optional `authorGid` — see the Task 1 correction below |
+| G-Suite | ~~`packages/ann-studio/src-tauri/src/announcer-manifest.schema.json` (modify)~~ | **does not exist** — no mirror copy in the repo |
 | G-Suite | `packages/ann-studio/src-tauri/src/lib.rs` (modify) | `author_gid` in both install commands + `gid_oauth_listen` command |
 | G-Suite | `packages/ann-studio/src/src/lib/gidAuth.ts` (create) | supabase client, sign-in/out, profile fetch |
 | G-Suite | `packages/ann-studio/src/src/store/useStudioStore.ts` (modify) | `gidAuth` state slice |
@@ -38,6 +38,22 @@
 ---
 
 ### Task 1 (G-Suite): `authorGid` in schema + both install commands
+
+> **CORRECTION (2026-08-09, after execution).** This task targeted the wrong schema file, and the
+> `lib.rs` half was correct and is unaffected.
+>
+> - `schemas/announcer-manifest.schema.json` is **not** the install contract. It accurately describes
+>   the flat sidecar `announcer-manifest.json` that the plain export (`export_all`) writes next to raw
+>   WAVs — a file G-Maiden never reads. Only its `title`/`description` were wrong, claiming to be the
+>   G-AnnStudio→G-Maiden contract. The `authorGid` added here by this task has been **removed**:
+>   `export_all` never writes it.
+> - The real contract — the installed `voice-cache/packs/<id>/manifest.json` written by
+>   `install_gmaiden_pack`/`install_library_pack` and parsed by G-Maiden's `voice_api/pack_io.rs`
+>   `Manifest` — had **no schema at all**. It now lives in `schemas/pack-manifest.schema.json`, with
+>   `authorGid` optional (same pattern), grounded in `pack_io.rs` as source of truth.
+> - `packages/ann-studio/src-tauri/src/announcer-manifest.schema.json` does not exist and never did;
+>   there is no mirror copy. Ignore Step 1's two-file instruction and its validation command.
+> - `pack-transfer.schema.json` is a design sketch for an unimplemented HTTP protocol, not this contract.
 
 **Files:**
 - Modify: `G:\G-Suite\schemas\announcer-manifest.schema.json`
