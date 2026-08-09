@@ -287,6 +287,15 @@ git -C /g/G-Suite commit -m "feat(ann-studio): optional Google sign-in resolving
 
 ### Task 3 (G-Suite): Header chip + stamp on export
 
+> **AS EXECUTED (G-Suite `7d11064`).** Landed as written; no corrections. Recorded here only to name
+> the contract it writes against, which Task 1 originally mis-identified.
+>
+> This is the **producer** side of the installed-pack manifest (`voice-cache/packs/<id>/manifest.json`),
+> now documented in `G-Suite/schemas/pack-manifest.schema.json` (added in `ea017fd`) — *not*
+> `announcer-manifest.schema.json`, which describes the plain-export sidecar. See the Task 1 correction.
+> Step 1's `undefined`-when-signed-out is what makes the key vanish entirely rather than serialize as
+> `null`: `Option<String>` on the Rust side plus the installers' `.filter(|g| !g.is_empty())` guard.
+
 **Files:**
 - Modify: `G:\G-Suite\packages\ann-studio\src\src\components\Header.tsx`
 - Modify: `G:\G-Suite\packages\ann-studio\src\src\lib\exportGmaidenPack.ts`
@@ -328,6 +337,19 @@ git -C /g/G-Suite commit -m "feat(ann-studio): GID chip in header and authorGid 
 ---
 
 ### Task 4 (G-Maiden): read `authorGid` through Manifest → VoicePack + tests
+
+> **AS EXECUTED (G-Maiden `847616e1`).** Landed as written; no corrections. Two things worth carrying
+> forward, learned while writing the schema:
+>
+> - `pack_io.rs` `Manifest` is the **source of truth** for the pack-manifest contract —
+>   `G-Suite/schemas/pack-manifest.schema.json` (`ea017fd`) was derived from this struct, so a change
+>   here is a contract change and the schema must follow. This task is the **consumer** side; Task 3
+>   is the producer.
+> - Validating the schema against real on-disk packs surfaced two invariants this parser implies:
+>   `mappings` may legitimately be `{}` (G-Maiden's own `create_template`/`create_pack_skeleton`
+>   writes an empty-mappings skeleton, so *do not* assume a pack always has mappings), and all five
+>   `ManifestMapping` keys are required — it declares no serde defaults, so one missing key fails the
+>   parse of the **entire manifest**, not just that entry.
 
 **Files:**
 - Modify: `G:\G-Maiden\src-tauri\src\voice_api\pack_io.rs`
