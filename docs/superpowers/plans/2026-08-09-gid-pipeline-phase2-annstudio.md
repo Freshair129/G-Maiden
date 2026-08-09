@@ -429,6 +429,21 @@ git commit -m "feat(voice): read optional authorGid from pack manifests (backwar
 
 ### Task 5 (G-Maiden): unverified creator chip in Voice UI
 
+> **AS EXECUTED (G-Maiden `b2f8b4c4`).** Shipped and working, with one deviation worth recording:
+> `authorGid` went onto the **shared** `VoicePack` type in `src/src/voice-types.ts`, not onto a "local
+> pack type/interface" inside `AudioSettings.tsx` as Step 1 assumed — no such local type exists. The
+> Files list and Step 3's `git add` were therefore both one file short; the commit correctly staged
+> `AudioSettings.tsx`, `styles.css` **and** `voice-types.ts`.
+>
+> Line hints drifted: the chip renders at `AudioSettings.tsx:481`, not ≈290. `.voice-author-gid` lives
+> in `styles.css` and uses `--g-r-pill`, satisfying R3 (COLD BOOTH `--g-*` tokens only).
+>
+> It consumes Task 4's serialization and stays display-only — not editable, excluded from `update_pack`
+> payloads, and explicitly not identity proof. That framing is load-bearing, not cosmetic: the value
+> is copied verbatim out of a `manifest.json` that ships inside an importable `.zip`, so it is
+> attacker-controlled (see `pack-manifest.schema.json`). Nothing may key trust or entitlement off it
+> until cryptographic pack signing lands with the cloud registry.
+
 **Files:**
 - Modify: `G:\G-Maiden\src\src\AudioSettings.tsx`
 
