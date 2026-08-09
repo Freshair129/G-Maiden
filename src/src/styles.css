@@ -1788,6 +1788,13 @@ body {
   color: #9fd8ff;
   border-color: rgba(100, 199, 255, 0.45);
 }
+/* Unverified creator GID. Dashed + dimmed deliberately: sitting in a row of
+   solid chips it must not read as a verified badge — the value is copied from
+   a pack manifest that ships inside an importable .zip. */
+.voice-detail-chip.unverified {
+  border-style: dashed;
+  opacity: 0.85;
+}
 .voice-card-meta {
   padding: 10px 12px 12px;
   display: flex;

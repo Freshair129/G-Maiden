@@ -300,6 +300,20 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
                 <div className="voice-detail-chips">
                   {selectedPack.builtIn ? <span className="voice-detail-chip builtin">ติดมากับแอป</span> : null}
                   {selectedPack.author ? <span className="voice-detail-chip">by {selectedPack.author}</span> : null}
+                  {/* Provenance belongs on the screen where packs are CHOSEN, not
+                      only in the deep editor (AudioSettings). `author` above is
+                      free text anyone can type; the GID at least names a real
+                      account — but it is copied verbatim from a manifest that
+                      ships inside an importable .zip, so it is unverified and
+                      must read that way. Never gate trust on it. */}
+                  {selectedPack.authorGid ? (
+                    <span
+                      className="voice-detail-chip unverified"
+                      title="GID ที่ผู้ทำระบุไว้ในไฟล์ pack — ไม่ใช่การยืนยันตัวตน"
+                    >
+                      {selectedPack.authorGid} · ไม่ยืนยัน
+                    </span>
+                  ) : null}
                   <span className="voice-detail-chip">v{selectedPack.version || "0.0.0"}</span>
                   <span className="voice-detail-chip">{selectedPack.locale || "th-TH"}</span>
                 </div>
