@@ -17,10 +17,18 @@ use crate::signal::Sensitivity;
 static IN_GAME: AtomicBool = AtomicBool::new(false);
 
 /// Closed-Beta runtime authorization. This is deliberately process-local and
-/// defaults to false: cached UI state, a GID, or an installer must never arm
-/// the gameplay runtime. It is set only after the native entitlement verifier
-/// receives an `eligible` decision from the JWT-protected backend.
-static GMAD_ENTITLED: AtomicBool = AtomicBool::new(false);
+/// defaults to false in RELEASE builds: cached UI state, a GID, or an installer
+/// must never arm the gameplay runtime. It is set only after the native
+/// entitlement verifier receives an `eligible` decision from the JWT-protected
+/// backend.
+///
+/// Debug builds seed it `true` so `pnpm tauri dev` is usable for local UI work
+/// without network, a current Terms acceptance and an active grant. This ONLY
+/// relaxes the dev binary — `cargo build --release` and every shipped artifact
+/// still start locked. MIRRORED IN `src/src/App.tsx`, which skips
+/// `GmadFirstRunGate` under the same condition; changing one without the other
+/// gives dev a deck wired to a locked runtime (no GSI, no capture, no overlay).
+static GMAD_ENTITLED: AtomicBool = AtomicBool::new(cfg!(debug_assertions));
 static GMAD_CAPTURE_STARTED: AtomicBool = AtomicBool::new(false);
 
 /// Whether G-Signal gank warnings are enabled (mirrors the UI toggle). Defaults

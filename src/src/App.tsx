@@ -19,5 +19,16 @@ export const App: React.FC = () => {
   // tab — passed as a RENDER PROP (CR-013 W2) so CommandDeck can request just
   // one category at a time (its iOS-style split view) without importing App
   // (no module cycle) and without Control ever needing to know about tabs/rails.
-  return label === 'overlay' ? <Overlay /> : <GmadFirstRunGate><CommandDeck renderSettings={(cat) => <Control category={cat} />} /></GmadFirstRunGate>
+  if (label === 'overlay') return <Overlay />
+  const deck = <CommandDeck renderSettings={(cat) => <Control category={cat} />} />
+  // The Closed Beta gate (sign-in + Terms + entitlement) is RELEASE-ONLY. A dev
+  // build would otherwise be unusable for local UI work: the gate needs network,
+  // a current Terms acceptance and an active grant on every launch, and while it
+  // is up the deck never mounts — which also means no `data-tauri-drag-region`
+  // exists, so the window cannot even be moved.
+  // MIRRORED IN RUST: `runtime.rs` seeds GMAD_ENTITLED from the same
+  // cfg!(debug_assertions). Change one without the other and dev gets a deck
+  // wired to a locked runtime — GSI ingest, DXGI capture and the overlay all
+  // stay off (capture.rs, gsi.rs, lib.rs check `gmad_entitled()`).
+  return import.meta.env.DEV ? deck : <GmadFirstRunGate>{deck}</GmadFirstRunGate>
 }

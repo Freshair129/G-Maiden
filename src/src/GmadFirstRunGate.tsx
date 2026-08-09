@@ -74,7 +74,11 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
   };
   const openLanding = (path: string) => invoke("open_url", { url: `https://g-maiden-landing.vercel.app${path}` });
 
-  return <main className="gmad-first-run" aria-live="polite">
+  // The deck's only drag region lives in CommandDeck, which is not mounted while
+  // this gate is up — without this the window cannot be moved at all on first
+  // run. Native drag region only; children (the card's buttons) are unaffected
+  // because Tauri arms the drag from the element carrying the attribute.
+  return <main className="gmad-first-run" aria-live="polite" data-tauri-drag-region="">
     <section className="gmad-first-run-card">
       <p className="gmad-first-run-kicker">GMAD CLOSED BETA</p>
       {state === "loading" && <><h1>กำลังตรวจสอบสิทธิ์</h1><p>กำลังยืนยันบัญชี Google และสิทธิ์ Closed Beta จากเซิร์ฟเวอร์</p></>}
