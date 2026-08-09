@@ -88,6 +88,7 @@ fn write_pack(root: &Path, id: &str, mappings: BTreeMap<String, ManifestMapping>
         version: "0.1.0".into(),
         locale: "th-TH".into(),
         author: String::new(),
+        author_gid: None,
         description: String::new(),
         cover_image: String::new(),
         mappings,
@@ -530,6 +531,31 @@ fn extract_pack_zip_imports_clean_archive() {
     assert!(dest.join("manifest.json").is_file());
     assert!(dest.join("clips/kill_01.wav").is_file());
     assert_eq!(fs::read(dest.join("clips/kill_01.wav")).unwrap(), b"clipdata");
+}
+
+// --- authorGid (GID pipeline Phase 2 Task 4) ----------------------------
+
+#[test]
+fn manifest_author_gid_roundtrip() {
+    // with the field
+    let with: super::pack_io::Manifest = serde_json::from_str(
+        r#"{"id":"p1","name":"n","version":"1","locale":"th","author":"a",
+            "description":"","mappings":{},"authorGid":"G-F43KRAKGE"}"#,
+    )
+    .unwrap();
+    assert_eq!(with.author_gid.as_deref(), Some("G-F43KRAKGE"));
+    let out = serde_json::to_string(&with).unwrap();
+    assert!(out.contains("\"authorGid\":\"G-F43KRAKGE\""));
+
+    // without the field: parses, and does NOT serialize a null/empty key
+    let without: super::pack_io::Manifest = serde_json::from_str(
+        r#"{"id":"p2","name":"n","version":"1","locale":"th","author":"a",
+            "description":"","mappings":{}}"#,
+    )
+    .unwrap();
+    assert_eq!(without.author_gid, None);
+    let out2 = serde_json::to_string(&without).unwrap();
+    assert!(!out2.contains("authorGid"));
 }
 
 // --- active_pack_name (CR-011 §B utterance ledger meta) ---------------

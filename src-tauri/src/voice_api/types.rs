@@ -67,6 +67,11 @@ pub struct VoicePack {
     pub(crate) version: String,
     pub(crate) locale: String,
     pub(crate) author: String,
+    /// Optional creator GID (SPEC-2026-08-09 §4) surfaced from the pack
+    /// manifest — unsigned display metadata, never identity proof. Absent
+    /// for packs made before Phase 2 or with no author GID set.
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub(crate) author_gid: Option<String>,
     pub(crate) description: String,
     pub(crate) path: String,
     pub(crate) covered_events: usize,

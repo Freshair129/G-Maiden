@@ -83,6 +83,7 @@ pub(crate) fn create_pack_skeleton(
             version: "0.1.0".into(),
             locale: locale.into(),
             author: String::new(),
+            author_gid: None,
             description: "User voice pack".into(),
             cover_image: String::new(),
             mappings: BTreeMap::new(),

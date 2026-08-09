@@ -31,6 +31,10 @@ pub(crate) struct Manifest {
     pub(crate) version: String,
     pub(crate) locale: String,
     pub(crate) author: String,
+    /// Optional creator GID (SPEC-2026-08-09 §4). Unsigned display metadata —
+    /// never identity proof. Absent for packs made before Phase 2.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub(crate) author_gid: Option<String>,
     pub(crate) description: String,
     /// Pack-level cover image (relative path within the pack dir). Empty when
     /// the pack didn't ship one — build_pack() will fall back to the first
@@ -162,6 +166,7 @@ pub(crate) fn build_pack(dir: &Path) -> Result<VoicePack, String> {
         version: manifest.version,
         locale: manifest.locale,
         author: manifest.author,
+        author_gid: manifest.author_gid,
         description: manifest.description,
         path: dir.to_string_lossy().to_string(),
         covered_events: covered,
@@ -251,6 +256,7 @@ pub(crate) fn default_pack() -> Option<VoicePack> {
         version: env!("CARGO_PKG_VERSION").to_string(),
         locale: "th-TH".to_string(),
         author: "G-Maiden".to_string(),
+        author_gid: None,
         description: "เสียงไทยมาตรฐานที่ติดตั้งมากับแอป — ใช้เป็นเสียงสำรองให้ทุกแพ็กเสมอ".to_string(),
         path: dir.to_string_lossy().to_string(),
         covered_events: covered,
