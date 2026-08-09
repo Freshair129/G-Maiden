@@ -121,6 +121,28 @@ git -C /g/G-Suite commit -m "feat(ann-studio): optional authorGid stamped into e
 
 ### Task 2 (G-Suite): Google PKCE sign-in with loopback callback
 
+> **AS EXECUTED (G-Suite `59e1015`, corrected by `8cc8dd6`).** Landed, but Step 2's listener shipped
+> with a bug **this plan introduced**, and two smaller details differed. Do not copy Step 2's snippet.
+>
+> - **Step 2's accept loop was wrong as written.** `for _ in 0..600` caps *connections*, not time,
+>   despite the comment claiming "~180s worth of connections" — and `accept()` was blocking with no
+>   timeout, so with no callback at all it blocked **forever** instead of giving up, while 600 quick
+>   connections (favicon probes, preflights, any local scanner) could exhaust it in seconds. `8cc8dd6`
+>   replaced it with a real deadline: `set_nonblocking(true)` (not the planned `false`), an
+>   `Instant`-based 180s deadline checked each iteration, a 100ms sleep on `WouldBlock`, and a 2s
+>   per-stream read timeout so one silent client cannot stall the loop.
+> - **Opener plugin:** the app already ships `@tauri-apps/plugin-shell`, so `gidAuth.ts` uses its
+>   `open`, not the `openUrl` from `@tauri-apps/plugin-opener` in Step 3's sample. Step 3's NOTE
+>   anticipated exactly this; no Cargo or capability files were needed.
+> - **Lockfile path:** Step 6 stages `packages/ann-studio/src/pnpm-lock.yaml`, which does not exist.
+>   This is a pnpm workspace — the lockfile is the repo-root `pnpm-lock.yaml`, which is what the
+>   commit actually staged.
+>
+> The PKCE reasoning in Step 2's doc comment still holds and is worth preserving on any future edit:
+> the loopback authorization code is useless without the `code_verifier` held by supabase-js in the
+> webview, so a rogue local request to `:3210` cannot hijack the session — it can only cause a failed
+> exchange. The code is never logged.
+
 **Files:**
 - Create: `G:\G-Suite\packages\ann-studio\src\src\lib\gidAuth.ts`
 - Modify: `G:\G-Suite\packages\ann-studio\src-tauri\src\lib.rs` (add `gid_oauth_listen` command + register it)
