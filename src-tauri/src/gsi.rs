@@ -12,6 +12,28 @@ use serde::Serialize;
 use serde_json::Value;
 use tauri::{AppHandle, Emitter};
 
+const OVERLAY_MODULE_IDS: [&str; 19] = [
+    "alert",
+    "gmeter",
+    "toast",
+    "companion",
+    "advice",
+    "buyback",
+    "missing",
+    "banner",
+    "lowhp",
+    "vol",
+    "standby",
+    "clock",
+    "kda",
+    "gold",
+    "gpm",
+    "xpm",
+    "nw",
+    "score",
+    "hero",
+];
+
 /// Clean, UI-facing snapshot of the current game state.
 #[derive(Serialize, serde::Deserialize, Clone, Default)]
 pub struct GameTick {
@@ -272,6 +294,93 @@ async fn announcer_install(body: String) -> axum::Json<serde_json::Value> {
     axum::Json(run_announcer_install(&parse_install_request(&body)))
 }
 
+/// Parse the bounded v1 authoring payload from G-AnnStudio. This is deliberately
+/// separate from `/announcer/install`: that endpoint can only activate an existing
+/// pack, whereas this accepts no files and can only replace `settings.layout`.
+fn parse_overlay_layout_sync(body: &str) -> Result<Value, String> {
+    let payload: Value = serde_json::from_str(body).map_err(|_| "invalid JSON".to_string())?;
+    let root = payload.as_object().ok_or("payload must be an object")?;
+    if root.len() != 2 || root.get("schemaVersion").and_then(Value::as_i64) != Some(1) {
+        return Err("unsupported layout schema".into());
+    }
+    let layout = root
+        .get("layout")
+        .and_then(Value::as_object)
+        .ok_or("layout must be an object")?;
+    if layout.len() != OVERLAY_MODULE_IDS.len() {
+        return Err("layout must contain every known module exactly once".into());
+    }
+    for id in OVERLAY_MODULE_IDS {
+        let module = layout
+            .get(id)
+            .and_then(Value::as_object)
+            .ok_or("layout contains an unknown or missing module")?;
+        if module.len() != 4 {
+            return Err("module must contain x, y, scale, and enabled only".into());
+        }
+        let bounded = |key: &str, min: f64, max: f64| -> Result<(), String> {
+            let value = module
+                .get(key)
+                .and_then(Value::as_f64)
+                .ok_or_else(|| format!("{id}.{key} must be a number"))?;
+            if !value.is_finite() || value < min || value > max {
+                return Err(format!("{id}.{key} is outside its allowed range"));
+            }
+            Ok(())
+        };
+        bounded("x", 0.0, 100.0)?;
+        bounded("y", 0.0, 100.0)?;
+        bounded("scale", 0.6, 1.6)?;
+        if module.get("enabled").and_then(Value::as_bool).is_none() {
+            return Err(format!("{id}.enabled must be a boolean"));
+        }
+    }
+    Ok(payload)
+}
+
+/// Preserve every existing settings field and replace only the validated layout.
+/// Kept pure so the sync boundary is testable without the local settings file.
+fn merge_overlay_layout(existing_settings_json: Option<&str>, layout: Value) -> Value {
+    let mut settings = existing_settings_json
+        .and_then(|raw| serde_json::from_str::<Value>(raw).ok())
+        .filter(Value::is_object)
+        .unwrap_or_else(|| serde_json::json!({}));
+    settings["layout"] = layout;
+    settings
+}
+
+/// Receive a complete layout draft from G-AnnStudio and apply only that field
+/// of the normal settings object. The server is loopback-only; validation here
+/// prevents this authoring seam from becoming a generic settings write surface.
+async fn overlay_layout_sync(State(app): State<AppHandle>, body: String) -> axum::Json<Value> {
+    let payload = match parse_overlay_layout_sync(&body) {
+        Ok(payload) => payload,
+        Err(error) => {
+            return axum::Json(serde_json::json!({ "ok": false, "error": error }));
+        }
+    };
+    let layout = payload["layout"].clone();
+    let settings = merge_overlay_layout(crate::load_settings_json().as_deref(), layout);
+    let serialized = match serde_json::to_string(&settings) {
+        Ok(json) => json,
+        Err(_) => {
+            return axum::Json(
+                serde_json::json!({ "ok": false, "error": "could not encode settings" }),
+            );
+        }
+    };
+    if crate::save_settings_json(&serialized).is_err() {
+        return axum::Json(serde_json::json!({ "ok": false, "error": "could not persist layout" }));
+    }
+    if app.emit("settings", &settings).is_err() {
+        return axum::Json(
+            serde_json::json!({ "ok": false, "error": "layout saved but overlay notification failed" }),
+        );
+    }
+    let _ = app.emit("overlay-layout-sync", &settings["layout"]);
+    axum::Json(serde_json::json!({ "ok": true, "schemaVersion": 1 }))
+}
+
 /// Pure decision logic, split out of the async handler so it's unit-testable
 /// without spinning up axum/tokio.
 fn run_announcer_install(req: &InstallRequest) -> serde_json::Value {
@@ -419,6 +528,7 @@ pub async fn serve(app: AppHandle) {
     let router = Router::new()
         .route("/gsi", post(handle))
         .route("/announcer/install", post(announcer_install))
+        .route("/overlay/layout", post(overlay_layout_sync))
         .route("/telemetry", post(telemetry_ingest))
         .route("/auth/callback", get(oauth_callback))
         .with_state(app);
@@ -696,5 +806,78 @@ mod tests {
     fn install_missing_pack_id_in_body_is_rejected() {
         let resp = run_announcer_install(&parse_install_request("{}"));
         assert_eq!(resp["ok"], false);
+    }
+
+    // --- POST /overlay/layout (`parse_overlay_layout_sync`) ---------------
+
+    fn valid_overlay_layout_payload() -> Value {
+        let ids = [
+            "alert",
+            "gmeter",
+            "toast",
+            "companion",
+            "advice",
+            "buyback",
+            "missing",
+            "banner",
+            "lowhp",
+            "vol",
+            "standby",
+            "clock",
+            "kda",
+            "gold",
+            "gpm",
+            "xpm",
+            "nw",
+            "score",
+            "hero",
+        ];
+        let layout = ids
+            .into_iter()
+            .map(|id| {
+                (
+                    id.to_string(),
+                    serde_json::json!({ "x": 50.0, "y": 25.0, "scale": 1.0, "enabled": true }),
+                )
+            })
+            .collect::<serde_json::Map<_, _>>();
+        serde_json::json!({ "schemaVersion": 1, "layout": layout })
+    }
+
+    #[test]
+    fn overlay_layout_sync_accepts_complete_bounded_v1_payload() {
+        let parsed =
+            parse_overlay_layout_sync(&valid_overlay_layout_payload().to_string()).unwrap();
+        assert_eq!(parsed["schemaVersion"], 1);
+        assert_eq!(parsed["layout"]["banner"]["scale"], 1.0);
+    }
+
+    #[test]
+    fn overlay_layout_sync_merges_only_layout_into_existing_settings() {
+        let payload = valid_overlay_layout_payload();
+        let settings = merge_overlay_layout(Some(r#"{"voiceVolume":0.7}"#), payload["layout"].clone());
+        assert_eq!(settings["voiceVolume"], 0.7);
+        assert_eq!(settings["layout"]["banner"]["enabled"], true);
+    }
+
+    #[test]
+    fn overlay_layout_sync_rejects_unknown_or_partial_modules() {
+        let mut payload = valid_overlay_layout_payload();
+        payload["layout"].as_object_mut().unwrap().remove("hero");
+        assert!(parse_overlay_layout_sync(&payload.to_string()).is_err());
+
+        let mut payload = valid_overlay_layout_payload();
+        payload["layout"].as_object_mut().unwrap().insert(
+            "unknown".into(),
+            serde_json::json!({ "x": 50.0, "y": 25.0, "scale": 1.0, "enabled": true }),
+        );
+        assert!(parse_overlay_layout_sync(&payload.to_string()).is_err());
+    }
+
+    #[test]
+    fn overlay_layout_sync_rejects_out_of_range_geometry() {
+        let mut payload = valid_overlay_layout_payload();
+        payload["layout"]["banner"]["scale"] = serde_json::json!(1.7);
+        assert!(parse_overlay_layout_sync(&payload.to_string()).is_err());
     }
 }

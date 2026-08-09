@@ -543,8 +543,7 @@ fn settings_file_path() -> std::path::PathBuf {
         .join("settings.json")
 }
 
-#[tauri::command]
-fn save_settings_file(json: String) -> Result<(), String> {
+pub(crate) fn save_settings_json(json: &str) -> Result<(), String> {
     let path = settings_file_path();
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
@@ -556,8 +555,17 @@ fn save_settings_file(json: String) -> Result<(), String> {
 }
 
 #[tauri::command]
-fn load_settings_file() -> Option<String> {
+fn save_settings_file(json: String) -> Result<(), String> {
+    save_settings_json(&json)
+}
+
+pub(crate) fn load_settings_json() -> Option<String> {
     std::fs::read_to_string(settings_file_path()).ok()
+}
+
+#[tauri::command]
+fn load_settings_file() -> Option<String> {
+    load_settings_json()
 }
 
 /// Path of the currently-recording match log, or null if no match is active.

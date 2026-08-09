@@ -3,6 +3,7 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import { emit, listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import { LayoutEditor } from '../overlay/LayoutEditor'
+import type { Layout } from '../overlay/modules'
 import QuotaCard from '../QuotaCard'
 import type {
   GameTick, Settings, SettingsCat, GsiStatus, ResourceStats, OverlayProfile, VoiceInfo, Sensitivity,
@@ -147,10 +148,13 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
       if (!controlActiveRef.current) return
       setCaptureMode(e.payload)
     })
+    const u6layout = listen<Layout>('overlay-layout-sync', (e) => {
+      setS((prev) => ({ ...prev, layout: e.payload }))
+    })
     return () => {
       document.removeEventListener('visibilitychange', onVisibility)
       offFocus?.()
-      void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f()); void u4ctrl.then((f) => f()); void u5cap.then((f) => f())
+      void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f()); void u4ctrl.then((f) => f()); void u5cap.then((f) => f()); void u6layout.then((f) => f())
     }
   }, [])
 
