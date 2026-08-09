@@ -58,6 +58,9 @@ export type VoicePack = {
   // True for the synthesized bundled-default pack: pinned first, read-only
   // (no mapping editor / uploads), equippable like any other pack.
   builtIn: boolean;
+  // Unverified creator GID from the pack's manifest.json (if present).
+  // Display-only; not editable and not sent in update_pack payloads.
+  authorGid?: string;
 };
 
 export type VoiceGroup = {

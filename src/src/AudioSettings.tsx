@@ -478,6 +478,11 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
             <span>Author</span>
             <input className="audio-input" value={packAuthor} onChange={(e) => setPackAuthor(e.target.value)} placeholder="Author name" />
           </label>
+          {selectedPack?.authorGid ? (
+            <span className="voice-author-gid" title="GID ที่ผู้ทำระบุไว้ในไฟล์ pack — ไม่ใช่การยืนยันตัวตน">
+              by {selectedPack.authorGid} · ไม่ยืนยัน
+            </span>
+          ) : null}
           <label className="audio-field">
             <span>Description</span>
             <input className="audio-input" value={packDescription} onChange={(e) => setPackDescription(e.target.value)} placeholder="Short summary of this pack" />
