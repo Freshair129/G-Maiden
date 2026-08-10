@@ -71,18 +71,30 @@ export const MODULE_META: { id: ModuleId; label: string }[] = [
  * scoreboard/FPS corner (top-right).
  */
 export const DEFAULT_LAYOUT: Layout = {
-  alert: { x: 50, y: 12, scale: 1, enabled: true },
+  // Top-centre column, restacked 2026-08-11 after measuring the real boxes
+  // (MODULE_BOX) against Dota's own regions. Dota draws its kill feed across
+  // y8–17 at centre; `alert` used to sit at y12, i.e. directly under the game's
+  // kill banner — invisible in any screenshot, collided exactly when an event
+  // fired. Everything below it shifted to keep the column clear of itself:
+  //   Dota kill feed  8.0–17.0   (game-owned)
+  //   alert          18.2–21.9
+  //   toast          22.5–25.6
+  //   banner         27.1–41.0
+  //   lowhp          42.3–45.8
+  alert: { x: 50, y: 20, scale: 1, enabled: true },
   gmeter: { x: 7, y: 47, scale: 1, enabled: true },
-  toast: { x: 50, y: 19, scale: 1, enabled: true },
+  toast: { x: 50, y: 24, scale: 1, enabled: true },
   companion: { x: 7, y: 39, scale: 1, enabled: true },
   advice: { x: 50, y: 72, scale: 1, enabled: true },
   buyback: { x: 50, y: 63, scale: 1, enabled: true },
   missing: { x: 88, y: 12, scale: 1, enabled: true },
-  // Kill & pack banners share one slot (mutually exclusive), upper-centre
-  // where the in-game kill feed reads. lowhp/vol/standby are transient cues.
-  banner: { x: 50, y: 27, scale: 1, enabled: true },
+  // Kill & pack banners share one slot, below the game's own kill feed rather
+  // than on top of it. lowhp/vol/standby are transient cues.
+  banner: { x: 50, y: 34, scale: 1, enabled: true },
   lowhp: { x: 50, y: 44, scale: 1, enabled: true },
-  vol: { x: 50, y: 92, scale: 1, enabled: true },
+  // Was (50, 92) — squarely inside Dota's bottom HUD. Moved to the left gutter,
+  // which is clear between the Maiden/G-Meter stack and the minimap (y78+).
+  vol: { x: 14, y: 72, scale: 1, enabled: true },
   standby: { x: 50, y: 50, scale: 1, enabled: true },
   // Top-left stat strip per the guide: clock → KDA → gold → GPM → NW, y=4.
   clock: { x: 5, y: 4, scale: 1, enabled: true },
