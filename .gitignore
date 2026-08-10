@@ -56,3 +56,12 @@ Thumbs.db
 
 # Tauri updater signing keys (NEVER commit the private key)
 .tauri/
+
+# Announcer packs that G-AnnStudio installs during development. `install_gmaiden_pack`
+# resolves this repo as its target (resolve_gmaiden_dir -> dev sibling), so every test
+# install drops a pack_<id>/ of wavs + webp banners straight into the working tree.
+# Only the committed sample pack belongs in git; the rest is generated output.
+# NOT ignored, deliberately: assets/voice-cache/{advice,danger,death,kill,...}/ are the
+# legacy flat fallback chain the app ships with (see CLAUDE.md), and active-pack.txt.
+/assets/voice-cache/packs/*
+!/assets/voice-cache/packs/pack_mrijgajn/

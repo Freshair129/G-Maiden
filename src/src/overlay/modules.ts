@@ -98,3 +98,69 @@ export const DEFAULT_LAYOUT: Layout = {
 /** Read a module's config with a safe fallback (covers old/partial saved layouts). */
 export const cfgOf = (layout: Layout | undefined, id: ModuleId): ModuleCfg =>
   layout?.[id] ?? DEFAULT_LAYOUT[id]
+
+/** Reference viewport the boxes below are measured against. */
+export const BOX_REF = { w: 1920, h: 1080 } as const
+
+/**
+ * Nominal on-screen footprint of each module, in CSS px at [`BOX_REF`] and
+ * `scale: 1`.
+ *
+ * NOT part of [`ModuleCfg`] on purpose. Size belongs to the RENDERER, not to the
+ * user's layout: a player positions and scales a module but can never resize it,
+ * so putting w/h in the persisted/synced layout would ship redundant data and
+ * break the existing sync contract for no gain.
+ *
+ * These are *nominal* boxes, not exact measurements. Modules in `FullOverlay`
+ * size themselves from content (`minWidth`/`maxWidth` + padding + text), so the
+ * real box moves with hero-name length, advice wrapping and banner art. Each
+ * entry is the typical-to-maximum footprint derived from that component's own
+ * CSS — enough to lay out honestly, reserve space and detect overlap, which is
+ * all any planner needs.
+ *
+ * Two consequences worth remembering:
+ *  - px, not %. The same module covers ~24% of a 1920-wide screen but ~18% of a
+ *    2560-wide one. Convert with [`boxPercent`] against the target resolution;
+ *    never assume the reference.
+ *  - keep in sync with `FullOverlay.tsx`. If you change a module's padding,
+ *    `minWidth`/`maxWidth` or font size, update its entry here in the same
+ *    commit — the layout planner in G-AnnStudio mirrors this table.
+ */
+export const MODULE_BOX: Record<ModuleId, { w: number; h: number }> = {
+  alert: { w: 420, h: 40 },      // pad 10/24, 15px, one line; grows with hero list
+  gmeter: { w: 158, h: 30 },     // minWidth 158
+  toast: { w: 460, h: 34 },      // maxWidth 460
+  companion: { w: 190, h: 64 },  // minWidth 142 + 44px portrait
+  advice: { w: 420, h: 63 },     // maxWidth 420, 13px/1.5, ~2 lines
+  buyback: { w: 420, h: 63 },    // same card as advice, accent border
+  missing: { w: 300, h: 34 },    // pad 8/14, grows with the missing-hero list
+  banner: { w: 420, h: 150 },    // pack art maxWidth 420 / maxHeight 150 (largest variant)
+  lowhp: { w: 300, h: 38 },      // pad 9/22, one line
+  vol: { w: 190, h: 34 },        // icon + 80px bar + 32px readout
+  standby: { w: 150, h: 50 },    // dot + two text lines
+  clock: { w: 78, h: 30 },       // chip with no label row
+  kda: { w: 90, h: 43 },         // chip + label
+  gold: { w: 90, h: 43 },
+  gpm: { w: 78, h: 43 },
+  xpm: { w: 78, h: 43 },
+  nw: { w: 96, h: 43 },
+  score: { w: 96, h: 43 },
+  hero: { w: 160, h: 62 },       // minWidth 140 + name line + hp/mana bars
+}
+
+/**
+ * A module's footprint as a percentage of `viewport`, honouring `scale`.
+ * Returns the full box; callers that position from the centre (as `Module`
+ * does via `translate(-50%, -50%)`) should halve it to get the edges.
+ */
+export function boxPercent(
+  id: ModuleId,
+  cfg: Pick<ModuleCfg, 'scale'>,
+  viewport: { w: number; h: number } = BOX_REF,
+): { w: number; h: number } {
+  const box = MODULE_BOX[id]
+  return {
+    w: ((box.w * cfg.scale) / viewport.w) * 100,
+    h: ((box.h * cfg.scale) / viewport.h) * 100,
+  }
+}
