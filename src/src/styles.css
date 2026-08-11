@@ -3434,6 +3434,33 @@ body {
   border-color: rgba(120, 190, 255, 0.42);
 }
 
+/* Static Dota map shown before the first CV frame. Deliberately NOT styled like
+   the live mirror: dimmed, desaturated and badged, so it reads as "this is what
+   the map looks like" rather than "this is your map right now". */
+.gm-minimap-ref {
+  background: #05070a;
+  border-color: var(--g-hairline);
+}
+.gm-minimap-ref .gm-minimap-img {
+  opacity: 0.32;
+  filter: saturate(0.55);
+}
+.gm-minimap-ref-badge {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  padding: 3px 8px;
+  border-radius: var(--g-r-pill);
+  border: 1px dashed var(--g-hairline);
+  background: rgba(8, 9, 12, 0.72);
+  color: var(--g-text-mute);
+  font-size: 10px;
+  letter-spacing: 0.2px;
+  white-space: nowrap;
+  pointer-events: none;
+}
+
 .gm-minimap-img {
   position: absolute;
   inset: 0;

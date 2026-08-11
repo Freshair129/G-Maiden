@@ -68,19 +68,24 @@ export function MomentumInline({ momentum }: { momentum: CompanionData["momentum
  *  hook keeps the ≈2 Hz image refresh from re-rendering the rest of the deck. */
 export function MinimapMirror() {
   const image = useMinimapImage();
-  return (
-    <div className={`gm-minimap${image ? " gm-minimap-live" : ""}`}>
-      {image ? (
+  if (image) {
+    return (
+      <div className="gm-minimap gm-minimap-live">
         <img className="gm-minimap-img" src={image} alt="In-game minimap" draggable={false} />
-      ) : (
-        <>
-          <div className="gm-map-grid" />
-          <div className="gm-river" />
-          <span className="gm-orb orb-a" />
-          <span className="gm-orb orb-b" />
-          <span className="gm-orb orb-c" />
-        </>
-      )}
+      </div>
+    );
+  }
+  // No CV frame yet — before the match, or in Lite mode where capture never
+  // starts. The decorative grid that used to sit here read as "the map is
+  // empty" rather than "we cannot see it". A real Dota map is the honest
+  // placeholder for the shape of the thing, but it is a STATIC REFERENCE, not
+  // a mirror: it carries no hero positions and must never be mistaken for one.
+  // Hence the dimming and the explicit badge — CR-007's rule that unknown state
+  // renders as unknown, never as a plausible-looking zero.
+  return (
+    <div className="gm-minimap gm-minimap-ref">
+      <img className="gm-minimap-img" src="/dota-minimap-reference.webp" alt="" draggable={false} />
+      <span className="gm-minimap-ref-badge">ยังไม่เห็นแมพ · ภาพอ้างอิง</span>
     </div>
   );
 }
