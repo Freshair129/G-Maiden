@@ -96,14 +96,22 @@ export const DEFAULT_LAYOUT: Layout = {
   // which is clear between the Maiden/G-Meter stack and the minimap (y78+).
   vol: { x: 14, y: 72, scale: 1, enabled: true },
   standby: { x: 50, y: 50, scale: 1, enabled: true },
-  // Top-left stat strip per the guide: clock → KDA → gold → GPM → NW, y=4.
-  clock: { x: 5, y: 4, scale: 1, enabled: true },
-  kda: { x: 12, y: 4, scale: 1, enabled: true },
-  gold: { x: 19, y: 4, scale: 1, enabled: true },
-  gpm: { x: 26, y: 4, scale: 1, enabled: true },
-  xpm: { x: 26, y: 10, scale: 1, enabled: false },
-  nw: { x: 32, y: 4, scale: 1, enabled: true },
-  score: { x: 58, y: 4, scale: 1, enabled: false },
+  // Top-left stat strip: clock → KDA → gold → GPM → NW, y=4.
+  //
+  // Compacted left 2026-08-11. The note above said Dota's portrait bar "starts
+  // ≈x35"; measuring the bar off G-AnnStudio's reference capture (luminance
+  // across y≈3.5%) puts its left edge at ~31% — bright grass to 30%, near-black
+  // by 32%. At the old spacing Net Worth (box 29.5–34.5) sat under the bar.
+  // Every chip moved left so the strip ends clear of 30.
+  clock: { x: 4, y: 4, scale: 1, enabled: true },
+  kda: { x: 9.5, y: 4, scale: 1, enabled: true },
+  gold: { x: 15, y: 4, scale: 1, enabled: true },
+  gpm: { x: 20.5, y: 4, scale: 1, enabled: true },
+  xpm: { x: 20.5, y: 10, scale: 1, enabled: false },
+  nw: { x: 26, y: 4, scale: 1, enabled: true },
+  // Off the portrait bar: disabled by default, but x=58 put it inside the bar
+  // for anyone who switched it on.
+  score: { x: 75, y: 4, scale: 1, enabled: false },
   hero: { x: 14, y: 33, scale: 1, enabled: false },
 }
 
