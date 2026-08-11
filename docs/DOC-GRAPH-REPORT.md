@@ -1,5 +1,15 @@
 # G-Maiden Doc Graph Report
 
+> ⚠️ **ตัวเลขด้านล่างเป็นของรอบ 2026-07-24 ไม่ตรงกับ `DOC-GRAPH.json` ปัจจุบันแล้ว**
+> `DOC-GRAPH.json` ถูกอัปเดตแบบ incremental เมื่อ 2026-08-11 (ตัด node ที่ตายแล้ว
+> `overlay/LayoutEditor.tsx` และ `.github/workflows/release.yml`, เพิ่ม
+> `candidate-release.yml`/`promote-release.yml` และ `assets/dota-reference/README.md`
+> → 254 nodes / 1206 edges, dangling = 0)
+>
+> ไฟล์ .md นี้ยัง**ไม่ได้ regenerate** เพราะตัว generator ไม่ได้อยู่ใน repo —
+> มีแต่ผลลัพธ์ ถ้าต้องการเลขที่ตรงกันต้องรัน generator ตัวจริงอีกครั้ง
+> ผลตรวจสุขภาพล่าสุดอยู่ที่ [`docs/.preflight-report.json`](file:///g:/G-Maiden/docs/.preflight-report.json)
+
 สร้างเมื่อ / Generated at: 2026-07-24T02:57:38.165Z
 
 สแกน 129 ไฟล์เอกสาร, 253 nodes, 1208 edges, 116 รายการปัญหา (64 ตัวบล็อก exit code) / scanned 129 doc files, 253 nodes, 1208 edges, 116 violations (64 blocking exit code).

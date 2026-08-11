@@ -105,7 +105,12 @@
 - [x] In-app auto-updater (GitHub Releases + minisign) — [`useAppUpdate.ts`](file:///g:/G-Maiden/src/src/useAppUpdate.ts)
 - [x] G-Log JSONL local logging + gank event schema — [`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs)
 - [x] G-Master basic (Claude CLI shell-out, 30s throttle) — [`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs)
-- [x] CI/CD release workflow (tag → signed NSIS/MSI) — [`.github/workflows/release.yml`](file:///g:/G-Maiden/.github/workflows/release.yml)
+- [x] CI/CD release workflow (signed NSIS/MSI) — superseded: `release.yml` (tag → publish to
+      everyone) was replaced by the channel pipeline,
+      [`candidate-release.yml`](file:///g:/G-Maiden/.github/workflows/candidate-release.yml) →
+      [`promote-release.yml`](file:///g:/G-Maiden/.github/workflows/promote-release.yml).
+      Both are `workflow_dispatch`; a tag is an input, not a trigger. See
+      [[release-channel-architecture]]
 - [x] Changelog viewer in-app
 - [x] 42 unit tests across all modules (Rust cargo suite; frontend now has 87 Vitest tests, see Phase 3+ below)
 
@@ -292,8 +297,14 @@
 
 ### P7.2 — G-Sensory Advanced ([[software-requirements-specification|SRS]] §3.5)
 - [ ] Hero-element color theming (ice for CM, fire for Lina, etc.)
-- [x] Manual overlay module positioning — [`overlay/LayoutEditor.tsx`](file:///g:/G-Maiden/src/src/overlay/LayoutEditor.tsx) (v0.13.0, single merged
-      overlay, every module drag/resize/toggle); auto-detect-avoid-minimap/skill-bar remains `[ ]`
+- [x] Manual overlay module positioning — moved out of the app 2026-08-11 to G-AnnStudio
+      **Overlay Lab** (`packages/ann-studio/src/src/components/OverlayLab.tsx`); the in-app
+      `LayoutEditor.tsx` was deleted. Syncs back via `sync_overlay_layout` → `overlay-layout-sync`
+- [x] Avoid the game's own UI — by published geometry, not runtime detection:
+      [`overlay/modules.ts`](file:///g:/G-Maiden/src/src/overlay/modules.ts) `MODULE_BOX` gives each
+      module its real footprint, and the Lab tests it against Dota's zones (minimap, bottom HUD,
+      shop, portrait bar, kill feed) plus the pre-game roster/map screen. `DEFAULT_LAYOUT` clears
+      both with zero conflicts. Detecting a *skinned* or non-16:9 HUD at runtime remains `[ ]`
 - [x] Resource stats display in control panel — [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx)
 
 ### P7.3 — Global Hotkeys ([[software-requirements-specification|SRS]] §4.1)

@@ -247,7 +247,7 @@ Boss อนุมัติให้ “ลุยให้จบ” เมื่�
 
 - Landing: [`App.tsx`](file:///g:/G-Maiden/landing/src/App.tsx),
   [`beta.ts`](file:///g:/G-Maiden/landing/src/beta.ts), [`index.css`](file:///g:/G-Maiden/landing/src/index.css)
-- Asset: [`g-maiden-sea-captain-stone-titan-v1.webp`](file:///g:/G-Maiden/landing/assets/concepts/g-maiden-sea-captain-stone-titan-v1.webp)
+- Asset: [`g-maiden-sea-captain-stone-titan-v1.png`](file:///g:/G-Maiden/landing/assets/concepts/g-maiden-sea-captain-stone-titan-v1.png)
   (`206 KB` optimized from the approved concept)
 - Schema/RLS: [`20260720183000_cr005_closed_beta_registration.sql`](file:///g:/G-Maiden/supabase/migrations/20260720183000_cr005_closed_beta_registration.sql)
   + [`20260720184500_cr005_beta_rls_initplan.sql`](file:///g:/G-Maiden/supabase/migrations/20260720184500_cr005_beta_rls_initplan.sql)

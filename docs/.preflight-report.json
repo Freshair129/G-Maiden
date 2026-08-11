@@ -1,0 +1,111 @@
+{
+  "version": "1.0.0",
+  "generated_by": "rwang:doc-preflight",
+  "generated_at": "2026-08-11T16:12:35.212948Z",
+  "project": "G-Maiden",
+  "scanned": {
+    "documents": 143,
+    "code_nodes": 124
+  },
+  "summary": {
+    "critical": 0,
+    "warnings": 3,
+    "info": 1
+  },
+  "findings": [
+    {
+      "severity": "warning",
+      "check": "cross-references",
+      "title": "relative markdown links resolve to nothing",
+      "details": "3 broken",
+      "files": [
+        "docs\\architecture\\engineering-spec.md:149 -> ../orchestration/docs/ADR-O-005--provider-registry.md",
+        "docs\\architecture\\engineering-spec.md:150 -> ../orchestration/docs/SPEC--PROVIDER-REGISTRY.md",
+        "docs\\architecture\\engineering-spec.md:151 -> ../orchestration/docs/GUIDE--ADDING-PROVIDER.md"
+      ],
+      "action": "Fix the path or remove the link"
+    },
+    {
+      "severity": "warning",
+      "check": "cross-references",
+      "title": "wikilinks with no matching document",
+      "details": "31 distinct targets",
+      "files": [
+        "[[architecture/design-system]] x4",
+        "[[dota-ui/README]] x4",
+        "[[CLAUDE.md]] x3",
+        "[[design-system/README]] x2",
+        "[[features/README]] x2",
+        "[[design-references/README]] x2",
+        "[[SPEC--*]] x1",
+        "[[ADR-O-*]] x1",
+        "[[FEAT-G-*]] x1",
+        "[[]] x1",
+        "[[g-orchestra-ui-sitemap-flow-board]] x1",
+        "[[PROJECT_FEATURE_MAP]] x1",
+        "[[ci-gate-clippy-not-test]] x1",
+        "[[RELEASE-CHANNEL-ARCHITECTURE]] x1",
+        "[[BETA-ROADMAP]] x1",
+        "[[PUBLIC-DEMO-SPEC]] x1",
+        "[[CLOSED-BETA-WAVE-0-SPEC]] x1",
+        "[[CLOSED-BETA-WAVE-0-DOD]] x1",
+        "[[CLOSED-BETA-WAVE-1-SPEC]] x1",
+        "[[CLOSED-BETA-WAVE-1-DOD]] x1"
+      ],
+      "action": "Create the doc or correct the name"
+    },
+    {
+      "severity": "warning",
+      "check": "staleness",
+      "title": "code changed after the doc that describes it",
+      "details": "320 doc->code edges across 41 documents",
+      "files": [
+        "docs/architecture/CR-001-dxgi-capture-migration.md (last touched 2026-07-20) -> src-tauri/Cargo.toml (changed 2026-08-11)",
+        "docs/architecture/implementation-plan.md (last touched 2026-07-19) -> package.json (changed 2026-08-11)",
+        "docs/change request/CR-011-cold-booth-ux-direction.md (last touched 2026-07-19) -> src/src/styles.css (changed 2026-08-11)",
+        "docs/change request/CR-011-cold-booth-ux-direction.md (last touched 2026-07-19) -> src/src/styles.css (changed 2026-08-11)",
+        "docs/change request/CR-011-cold-booth-ux-direction.md (last touched 2026-07-19) -> src/src/overlay/FullOverlay.tsx (changed 2026-08-11)",
+        "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md (last touched 2026-07-19) -> src/src/styles.css (changed 2026-08-11)",
+        "docs/design-system/01-foundations.md (last touched 2026-07-20) -> CLAUDE.md (changed 2026-08-11)",
+        "docs/design-system/01-foundations.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
+        "docs/design-system/01-foundations.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
+        "docs/design-system/01-foundations.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
+        "docs/design-system/01-foundations.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
+        "docs/design-system/01-foundations.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
+        "docs/design-system/01-foundations.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
+        "docs/design-system/02-tokens.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
+        "docs/design-system/02-tokens.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
+        "docs/design-system/02-tokens.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
+        "docs/design-system/02-tokens.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
+        "docs/design-system/02-tokens.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
+        "docs/design-system/02-tokens.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
+        "docs/design-system/02-tokens.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)"
+      ],
+      "action": "Re-read the newest ones; code wins per the trust hierarchy"
+    },
+    {
+      "severity": "info",
+      "check": "doc-control",
+      "title": "documents without YAML frontmatter",
+      "details": "60 of 143 docs carry no version/date/status",
+      "files": [
+        "docs\\DOC-GRAPH-REPORT.md",
+        "docs\\DOCS-IA-REORG-PROPOSAL.md",
+        "docs\\FEATURE-LEDGER.md",
+        "docs\\FEATURE-ORPHAN-REPORT.md",
+        "docs\\README.md",
+        "docs\\architecture\\engineering-spec.md",
+        "docs\\architecture\\implementation-plan.md",
+        "docs\\architecture\\spec-orchestra-codedoc-agent.md",
+        "docs\\architecture\\tech-stack.md",
+        "docs\\architecture\\technical-design-document.md",
+        "docs\\audits\\2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+        "docs\\audits\\2026-07-07-independent-full-audit.md",
+        "docs\\change request\\CR-004-voice-command-browser.md",
+        "docs\\change request\\CR-007-frostline-deck-refresh.md",
+        "docs\\change request\\CR-008-login-hardening.md"
+      ],
+      "action": "Add frontmatter to docs that are meant to be authoritative"
+    }
+  ]
+}

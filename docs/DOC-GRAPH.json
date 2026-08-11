@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-07-24T02:57:38.165Z",
+  "generatedAt": "2026-08-11T16:04:48.073585Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -787,11 +787,6 @@
       "path": "src-tauri/src/main.rs"
     },
     {
-      "id": "src/src/overlay/LayoutEditor.tsx",
-      "type": "code",
-      "path": "src/src/overlay/LayoutEditor.tsx"
-    },
-    {
       "id": "src-tauri/src/setup.rs",
       "type": "code",
       "path": "src-tauri/src/setup.rs"
@@ -1232,11 +1227,6 @@
       "path": "src/src/useAppUpdate.ts"
     },
     {
-      "id": ".github/workflows/release.yml",
-      "type": "code",
-      "path": ".github/workflows/release.yml"
-    },
-    {
       "id": "src-tauri/src/items.rs",
       "type": "code",
       "path": "src-tauri/src/items.rs"
@@ -1265,6 +1255,21 @@
       "id": "tools/telemetry/ocr-test",
       "type": "code",
       "path": "tools/telemetry/ocr-test"
+    },
+    {
+      "id": "assets/dota-reference/README.md",
+      "type": "doc",
+      "path": "assets/dota-reference/README.md"
+    },
+    {
+      "id": ".github/workflows/candidate-release.yml",
+      "type": "code",
+      "path": ".github/workflows/candidate-release.yml"
+    },
+    {
+      "id": ".github/workflows/promote-release.yml",
+      "type": "code",
+      "path": ".github/workflows/promote-release.yml"
     }
   ],
   "edges": [
@@ -2227,12 +2232,6 @@
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
       "line": 182
-    },
-    {
-      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "to": "src/src/overlay/LayoutEditor.tsx",
-      "type": "symbol",
-      "line": 183
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -6004,12 +6003,6 @@
     },
     {
       "from": "docs/design-system/07-combat-hud.md",
-      "to": "src/src/overlay/LayoutEditor.tsx",
-      "type": "symbol",
-      "line": 21
-    },
-    {
-      "from": "docs/design-system/07-combat-hud.md",
       "to": "src/src/overlay/FullOverlay.tsx",
       "type": "symbol",
       "line": 95
@@ -7870,12 +7863,6 @@
     },
     {
       "from": "docs/product/roadmap.md",
-      "to": ".github/workflows/release.yml",
-      "type": "symbol",
-      "line": 108
-    },
-    {
-      "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
       "line": 116
@@ -8149,12 +8136,6 @@
       "to": "tests/perf/src/bin/perf_p7.rs",
       "type": "symbol",
       "line": 288
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "src/src/overlay/LayoutEditor.tsx",
-      "type": "symbol",
-      "line": 295
     },
     {
       "from": "docs/product/roadmap.md",
@@ -8515,6 +8496,18 @@
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
       "line": 190
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": ".github/workflows/candidate-release.yml",
+      "type": "symbol",
+      "line": 108
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": ".github/workflows/promote-release.yml",
+      "type": "symbol",
+      "line": 108
     }
   ],
   "violations": [
@@ -10336,5 +10329,6 @@
       }
     ],
     "violations": []
-  }
+  },
+  "updatedBy": "rwang:doc-graph (incremental — generator not vendored in repo)"
 }

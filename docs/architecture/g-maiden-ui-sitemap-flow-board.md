@@ -180,7 +180,7 @@ Layout Editor.
 | `BuybackVerdict` | G-Revive buyback advice | Verdict + narrative on death |
 | `CompanionStage` | Character presence module | Crystal Maiden stylized SVG กำลังมา; ตอนนี้ badge placeholder |
 | `VoicePackCard` | จัดการ voice pack แบบ **bundle** ([`AudioSettings.tsx`](file:///g:/G-Maiden/src/src/AudioSettings.tsx)) | upload clip/banner → active pack; activate → resolve เสียงในเกม; "Play preview" + "Show on overlay" ([`preview_announcer_event`](file:///g:/G-Maiden/src-tauri/src/main.rs) → `announcer-banner`) |
-| [`LayoutEditor`](file:///g:/G-Maiden/src/src/overlay/LayoutEditor.tsx) | Drag editor for the merged overlay (all modules, no Lite/Full tier) | 16:9 preview, magnet grid SNAP=5, HUD reference bg, per-module scale, hover-solo focus |
+| ~~`LayoutEditor`~~ | **ลบแล้ว 2026-08-11** — ย้ายไป G-AnnStudio **Overlay Lab** (`packages/ann-studio/src/src/components/OverlayLab.tsx`) | Lab วาดโมดูลขนาดจริงทับภาพ HUD ของ Dota, เตือนเมื่อทับโซนเกม, ตรวจทั้งจอในเกมและก่อนเกม แล้ว Sync กลับผ่าน `sync_overlay_layout` → event `overlay-layout-sync`; `Settings.layout` ยังเป็นแหล่งความจริงเดิม |
 | `SensitivityPicker` | G-Signal danger threshold | Mirror → [`set_cv_signal_sensitivity`](file:///g:/G-Maiden/src-tauri/src/main.rs); thresholds 0.85 / 0.65 / 0.50 |
 | `MotionIntensity` | Motion control | Low / Medium / High + reduced-motion fallback |
 | `PerformanceGovernor` | Protect FPS/CPU/RAM | Degrades blur / particles / animation; quality tiers cinematic/balanced/eco |

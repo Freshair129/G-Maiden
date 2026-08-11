@@ -18,7 +18,8 @@ owner: "Boss"
 > เอกสารนี้บันทึก **design contract ของ overlay ตามของจริงในโค้ด** (CR-007 กำหนดว่า overlay
 > *ไม่ถูกแตะ* — เอกสารนี้คือ baseline ให้การออกแบบรอบถัดไปอ้าง)
 > Source of truth ของพฤติกรรม: [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) (lite tier), [`src/src/overlay/FullOverlay.tsx`](file:///g:/G-Maiden/src/src/overlay/FullOverlay.tsx),
-> [`src/src/overlay/modules.ts`](file:///g:/G-Maiden/src/src/overlay/modules.ts), [`src/src/overlay/LayoutEditor.tsx`](file:///g:/G-Maiden/src/src/overlay/LayoutEditor.tsx)
+> [`src/src/overlay/modules.ts`](file:///g:/G-Maiden/src/src/overlay/modules.ts)
+> (การจัดตำแหน่งย้ายไป G-AnnStudio **Overlay Lab** แล้ว — `LayoutEditor.tsx` ถูกลบ 2026-08-11)
 
 ## 1. หลักการ (สืบจาก [[01-foundations|01-foundations]] §3)
 
