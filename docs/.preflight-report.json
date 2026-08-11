@@ -42,7 +42,7 @@
       "requirement_ids": [],
       "action": "Pick one contract (platform-id keys with a non-{{target}} URL, or channel-name keys everywhere) and route useAppUpdate through it; until then correct CLAUDE.md:5,256 and PROJECT_FEATURE_MAP.md:105, which assert a working feature.",
       "outcome": "fixed",
-      "outcome_note": "Documentation corrected 2026-08-12 to match the code. No code behaviour was changed; where the code is the defect (CRIT-1) the docs now describe the defect instead of claiming the feature works."
+      "outcome_note": "Fixed in CODE 2026-08-12, not just in prose. Rust commands check_channel_update / install_pending_update own the per-channel endpoint and pass no target; useAppUpdate routes through them and is no longer channel-blind; the channel lives in runtime state set from the entitlement; the stable/closed-beta placeholders were re-keyed to windows-x86_64; and validateManifest now rejects channel-name platform keys so the broken shape cannot return. NOT yet proven end-to-end - dev.json is 0.13.1 against a 0.13.2 tree, so a real self-update needs a fresh candidate."
     },
     {
       "id": "CRIT-2",
@@ -524,6 +524,12 @@
       "CRIT-5 CR-006 cited as binding with no document (needs authoring or folding into CR-007)",
       "CRIT-9 PRD and SRS carry no requirement identifiers (needs an id scheme decision)"
     ],
-    "not_fixed_by_design": "The SRS still states Danger Threshold > 85%. That is the requirement, and the code honours it as the Low sensitivity rung; changing a requirement is an owner decision, not a doc-truth fix. FEATURE-LEDGER.md's G-Motion row is generated output - fix it in feature-ledger.manifest.yaml and regenerate (see WARN-16)."
+    "not_fixed_by_design": "The SRS still states Danger Threshold > 85%. That is the requirement, and the code honours it as the Low sensitivity rung; changing a requirement is an owner decision, not a doc-truth fix. FEATURE-LEDGER.md's G-Motion row is generated output - fix it in feature-ledger.manifest.yaml and regenerate (see WARN-16).",
+    "updater_fix": {
+      "decision": "Option (a): Rust-owned per-channel endpoint, no target passed to the updater.",
+      "why": "tauri-plugin-updater uses one target string for BOTH the {{target}} URL substitution and the platforms{} key lookup, so the channel cannot ride on target. Option (b) (channel-keyed manifests) would have lost installer-type resolution and could not hold two OSes under one key, and would still have required rewriting the channel-blind caller.",
+      "verified": "cargo check + clippy -D warnings, tsc, eslint, vitest 239/239, node channel-manifest 6/6.",
+      "still_unproven": "A real installed-build self-update. Needs a candidate newer than the running app."
+    }
   }
 }

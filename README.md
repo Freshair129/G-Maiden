@@ -51,7 +51,7 @@ Releases move along three channels — `dev` → `closed-beta` → `stable` — 
 
 To release: bump the version in every file listed under "Release & update workflow" in **CLAUDE.md** (kept there as the single source of truth to avoid drift); add a CHANGELOG entry; commit; tag `vX.Y.Z`; then run the **candidate-release** workflow with that tag and merge the manifest PR it opens.
 
-> The in-app updater (Tauri updater plugin) is wired and signature-verified, but it currently resolves no manifest and therefore delivers no updates — see CLAUDE.md for the diagnosis. Testers install by downloading the release asset directly.
+The in-app updater is signature-verified (minisign) and channel-aware: the Rust backend owns the per-channel manifest URL, so the app checks the channel its account is entitled to and falls back to `stable`. It has not yet been proven end-to-end against a fresh candidate.
 
 ## Documentation
 

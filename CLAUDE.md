@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Status: implemented (v0.13.2); the in-app updater is wired but NOT currently delivering
+## Status: implemented (v0.13.2), shipping via in-app updater
 
 The project is scaffolded and shipping — **Tauri v2 + React/Vite + Rust**. For the current
 implementation state, module status, repo layout, and coding rules see **AGENTS.md**. The two
@@ -260,23 +260,23 @@ Users receive updates through an **in-app updater** (Tauri updater plugin). Rele
 | `closed-beta` | invited testers | `release/channels/closed-beta.json` | promotion |
 | `stable` | public | `release/channels/stable.json` | `promote-release.yml` (production approval) |
 
-- **In-app update — CONFIGURED BUT BROKEN, do not describe it as working.** The endpoint is
-  `release/channels/{{target}}.json` on `main` (`tauri.conf.json` → `plugins.updater`), and minisign
-  verification before install is real. But in `tauri-plugin-updater` the single `target` string is
-  used **both** to fill `{{target}}` in the URL **and** as the key looked up in the manifest's
-  `platforms{}` — and the two callers disagree, so neither delivers:
-  - `src/src/useAppUpdate.ts` (the banner + launch auto-check, and the only path that can actually
-    *install*) calls bare `check()`. With no target Tauri substitutes `updater_os()` = `"windows"`,
-    so it requests `release/channels/windows.json` — **404**, swallowed by an empty `catch`.
-    It never imports `updateChannel.ts`, so it is channel-blind.
-  - `src/src/GmadFirstRunGate.tsx` → `checkResolvedUpdate` calls `check({ target: channel })`. That
-    reaches `dev.json` but then looks up `platforms['dev']`, while the manifest is keyed
-    `windows-x86_64{,-msi,-nsis}` (`manifest-from-tauri.mjs` copies Tauri's own ids) → `TargetNotFound`.
-    This path only *reports* an update; it cannot install one.
-  Because `promoteManifest` spreads the candidate, the first real promotion will break `stable.json`
-  the same way. Dev testers must download the GitHub prerelease asset manually until one convention
-  is chosen end to end. Channel resolution itself (`resolveUpdateChannel`: entitlement, **falling
-  back to `stable`**) is correct and unit-tested.
+- **In-app update — the channel goes in the URL, never in `target`.** This is the one rule that
+  keeps the updater working; breaking it is what made the feature inert for months.
+  In `tauri-plugin-updater` a single `target` string is used **both** to fill `{{target}}` in the
+  endpoint **and** as the key looked up in the manifest's `platforms{}`. So the channel cannot ride
+  on `target`: `check({target:'dev'})` fetches the right file and then looks for a `platforms['dev']`
+  that generated manifests never carry, and a bare `check()` asks for a `channels/windows.json` that
+  does not exist.
+  The Rust command **`check_channel_update`** (`lib.rs`) therefore builds the endpoint itself from a
+  hardcoded per-channel URL (`update_channel::ReleaseChannel::manifest_url`) and passes **no target**,
+  so the plugin's own `{os}-{arch}-{installer}` → `{os}-{arch}` fallback resolves the real keys and
+  MSI/NSIS installs each get their own artifact. `install_pending_update` installs what the check
+  offered. The webview passes a **channel enum, never a URL**. Minisign verification is untouched.
+  The channel itself is backend state (`runtime::update_channel`), set from the entitlement decision
+  in `verify_gmad_entitlement` and reset to `stable` on lock — Control and Overlay are separate JS
+  contexts, so a frontend-held channel would be invisible to whichever window checks next.
+  **Manifests are keyed by platform id, never by channel name**, and `channel-manifest.mjs`
+  `validateManifest` now rejects channel-name keys so the old shape cannot come back.
 - **Cutting a candidate:** bump all five version sources (`src-tauri/tauri.conf.json`,
   `src/package.json`, `package.json` root, `src-tauri/Cargo.toml` + `Cargo.lock`,
   `APP_VERSION` in `src/src/app/theme.ts`), add a CHANGELOG entry, commit, tag `vX.Y.Z`, then run

@@ -245,14 +245,17 @@ Read it before touching versions. The summary below exists only so this file doe
   is for smoke-testing only — never the release path.
 
 ### How users get updates
-- **They currently do not.** The updater is configured and minisign verification is real, but
-  neither caller resolves a manifest: `useAppUpdate.ts` calls bare `check()` and requests a
-  nonexistent `release/channels/windows.json` (404, silently caught), and `GmadFirstRunGate.tsx`
-  targets the channel but then looks up a `platforms` key the manifest does not carry. CLAUDE.md has
-  the full diagnosis. Until it is fixed, dev testers install by downloading the prerelease asset by
-  hand.
-- **A commit/push to `main` does NOT reach users** regardless — only a manifest that a workflow
-  wrote and a human merged/approved does.
+- Both the launch auto-check/banner (`useAppUpdate.ts`) and the first-run gate go through the Rust
+  commands **`check_channel_update`** / **`install_pending_update`**, never the updater plugin's JS
+  `check()`. **The channel goes in the endpoint URL, never in `target`** — the plugin uses one
+  `target` string for both the URL template and the `platforms{}` key, so overloading it breaks one
+  or the other. Manifests stay keyed by platform id; `channel-manifest.mjs` rejects channel-name keys.
+- The channel is backend state (`runtime::update_channel`), set from the entitlement in
+  `verify_gmad_entitlement`, reset to `stable` on lock. Do not reintroduce a frontend-held channel:
+  Control and Overlay are separate JS contexts and the window showing the banner is not the one that
+  signed in.
+- **A commit/push to `main` does NOT reach users** — only a manifest that a workflow wrote and a
+  human merged/approved does.
 
 ### Batching policy (IMPORTANT — don't churn versions)
 - **Small fixes → commit to `main` WITHOUT tagging.** Accumulate them.
