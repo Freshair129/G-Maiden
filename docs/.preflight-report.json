@@ -1,111 +1,505 @@
 {
   "version": "1.0.0",
-  "generated_by": "rwang:doc-preflight",
-  "generated_at": "2026-08-11T16:12:35.212948Z",
+  "generated_by": "rwang:doc-preflight (subagent-driven, 4 parallel auditors)",
+  "generated_at": "2026-08-11T19:52:13.567207Z",
+  "previous_run": "2026-08-11T16:00:00Z",
   "project": "G-Maiden",
+  "trust_hierarchy": "Code > SDD/architecture > PRD",
   "scanned": {
     "documents": 143,
-    "code_nodes": 124
+    "doc_graph_nodes": 265,
+    "code_nodes": 124,
+    "line_anchors": 273,
+    "section_refs": 347,
+    "mermaid_blocks": 35
   },
   "summary": {
-    "critical": 0,
-    "warnings": 3,
-    "info": 1
+    "total_checks": 10,
+    "passed": 11,
+    "critical": 9,
+    "warnings": 17,
+    "info": 3,
+    "overall": "critical"
   },
   "findings": [
     {
-      "severity": "warning",
-      "check": "cross-references",
-      "title": "relative markdown links resolve to nothing",
-      "details": "3 broken",
+      "id": "CRIT-1",
+      "severity": "critical",
+      "check": "contradiction",
+      "title": "In-app updater is documented as the shipped primary distribution path but cannot reach any manifest",
+      "details": "CLAUDE.md:5 states 'shipping via in-app updater' and :256 describes channel resolution via updateChannel.ts. useAppUpdate.ts:42/:56 call bare check() and never import updateChannel, so tauri-plugin-updater substitutes {{target}}=updater_os()='windows' and requests release/channels/windows.json, which does not exist (HTTP 404, verified live). The second caller, GmadFirstRunGate.tsx:43 -> updateChannel.ts:38, reaches dev.json but then looks up platforms['dev'] while dev.json:10 keys platforms by windows-x86_64{,-msi,-nsis}; get_urls uses a caller target verbatim with no fallback, so it fails before the version comparison. manifest-from-tauri.mjs:9-15 copies Tauri's platform ids, so a generated manifest can never carry a channel-name key, and channel-manifest.mjs:57 promotes via spread, so the first real promotion will also break stable.json. A third, unwired implementation exists at src-tauri/src/update_channel.rs:20-26, consumed only by a debug_assert.",
       "files": [
-        "docs\\architecture\\engineering-spec.md:149 -> ../orchestration/docs/ADR-O-005--provider-registry.md",
-        "docs\\architecture\\engineering-spec.md:150 -> ../orchestration/docs/SPEC--PROVIDER-REGISTRY.md",
-        "docs\\architecture\\engineering-spec.md:151 -> ../orchestration/docs/GUIDE--ADDING-PROVIDER.md"
+        "CLAUDE.md:5",
+        "CLAUDE.md:256",
+        "PROJECT_FEATURE_MAP.md:105",
+        "src/src/useAppUpdate.ts:42",
+        "src/src/updateChannel.ts:38",
+        "release/channels/dev.json:10",
+        "scripts/releases/manifest-from-tauri.mjs:9"
       ],
-      "action": "Fix the path or remove the link"
+      "requirement_ids": [],
+      "action": "Pick one contract (platform-id keys with a non-{{target}} URL, or channel-name keys everywhere) and route useAppUpdate through it; until then correct CLAUDE.md:5,256 and PROJECT_FEATURE_MAP.md:105, which assert a working feature."
     },
     {
-      "severity": "warning",
-      "check": "cross-references",
-      "title": "wikilinks with no matching document",
-      "details": "31 distinct targets",
+      "id": "CRIT-2",
+      "severity": "critical",
+      "check": "contradiction",
+      "title": "AGENTS.md and README.md still document the retired tag-triggered release.yml",
+      "details": "CLAUDE.md:247 states 'There is no release.yml; both workflows are workflow_dispatch only'. AGENTS.md:224/:237 and README.md:50/:52 still instruct readers to publish by pushing a tag, and AGENTS.md:228 cites the retired releases/latest/download/latest.json endpoint. release.yml was deleted in d505cf5c; no workflow has a tags: trigger. AGENTS.md:213/:241 also say 3 version sources (naming App.tsx APP_VERSION, actually theme.ts:5) where CLAUDE.md:260 lists 5. This matters more than normal doc lag because CLAUDE.md:8 designates AGENTS.md as the SSOT for implementation state.",
       "files": [
-        "[[architecture/design-system]] x4",
-        "[[dota-ui/README]] x4",
-        "[[CLAUDE.md]] x3",
-        "[[design-system/README]] x2",
-        "[[features/README]] x2",
-        "[[design-references/README]] x2",
-        "[[SPEC--*]] x1",
-        "[[ADR-O-*]] x1",
-        "[[FEAT-G-*]] x1",
-        "[[]] x1",
-        "[[g-orchestra-ui-sitemap-flow-board]] x1",
-        "[[PROJECT_FEATURE_MAP]] x1",
-        "[[ci-gate-clippy-not-test]] x1",
-        "[[RELEASE-CHANNEL-ARCHITECTURE]] x1",
-        "[[BETA-ROADMAP]] x1",
-        "[[PUBLIC-DEMO-SPEC]] x1",
-        "[[CLOSED-BETA-WAVE-0-SPEC]] x1",
-        "[[CLOSED-BETA-WAVE-0-DOD]] x1",
-        "[[CLOSED-BETA-WAVE-1-SPEC]] x1",
-        "[[CLOSED-BETA-WAVE-1-DOD]] x1"
+        "AGENTS.md:224",
+        "AGENTS.md:237",
+        "AGENTS.md:213",
+        "README.md:50",
+        "README.md:52"
       ],
-      "action": "Create the doc or correct the name"
+      "requirement_ids": [],
+      "action": "Replace the AGENTS.md Release section and README.md Releases section with a pointer to CLAUDE.md's Release & update workflow."
     },
     {
+      "id": "CRIT-3",
+      "severity": "critical",
+      "check": "contradiction",
+      "title": "CR-022 desktop first-run gate is documented as unauthored and unshipped; it is accepted, shipped, and mandatory in release builds",
+      "details": "CLAUDE.md:106-109 calls CR-022 'the next planned design task ... must be documented and approved before code'; AGENTS.md:303 says it is not shipped. The CR itself is status accepted, approved_by Boss, 2026-07-21, and GmadFirstRunGate.tsx shipped in b6a0fc60. App.tsx:33 wraps the whole deck in it for every non-DEV build. This also contradicts CLAUDE.md:77 ('optional, additive sign-in - the deck works without it') and :60 ('renders signed-out/offline'): in a release build the deck does not mount until Google sign-in, current Terms, and an active grant are verified online.",
+      "files": [
+        "CLAUDE.md:106",
+        "CLAUDE.md:77",
+        "AGENTS.md:303",
+        "src/src/App.tsx:33",
+        "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md"
+      ],
+      "requirement_ids": [
+        "CR-022"
+      ],
+      "action": "Mark CR-022 shipped in both root docs and scope the 'optional/additive sign-in' claim to dev builds."
+    },
+    {
+      "id": "CRIT-4",
+      "severity": "critical",
+      "check": "duplicate-id",
+      "title": "Three requirement ids are assigned twice, and one pair has drifted on a privacy-load-bearing rule",
+      "details": "ADR-17 names both adr/ADR-17-brokered-oauth-transaction-boundary.md (active) and adr/ADR-17-dev-runtime-governance-split.md (accepted, source_of_truth true); DOC-INDEX.md:103 lists only the first, so the second is unreachable by id. CR-014 names both CR-014-document-impact-map-gmaiden-adapter.md (active) and CR-014-g-overlay-lab-sync.md (approved 2026-08-10, no title/doc_id). ADR-01..ADR-09 are defined twice - roadmap.md:385-393 and technical-design-document.md:157-163 - and the copies disagree: roadmap ADR-06 says local-only by default with opt-in sharing allowed (amended by ADR-11), TDD ADR-06 says no egress. That is exactly the drift CLAUDE.md warns has silently dropped the data-flywheel strategy before.",
+      "files": [
+        "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
+        "docs/architecture/adr/ADR-17-dev-runtime-governance-split.md",
+        "docs/change request/CR-014-g-overlay-lab-sync.md",
+        "docs/product/roadmap.md:390",
+        "docs/architecture/technical-design-document.md:162"
+      ],
+      "requirement_ids": [
+        "ADR-17",
+        "CR-014",
+        "ADR-06"
+      ],
+      "action": "Renumber one ADR-17 and one CR-014; make the roadmap ADR table normative and replace the TDD block with a pointer, or at minimum correct TDD:162 to the ADR-11-amended wording."
+    },
+    {
+      "id": "CRIT-5",
+      "severity": "critical",
+      "check": "requirement-coverage",
+      "title": "CR-006 is cited as binding by shipped code and four CRs, but no CR-006 document exists",
+      "details": "styles.css:2387,2400,2592,2597 cite CR-006 as the locked-shell contract; CR-007:1,46, CR-011:13,120,250, CR-013:15 and design-system/03-layout.md:29 treat it as normative. Full-tree grep confirms every hit is a reference, never a definition. The gap is masked because roadmap.md:42 writes the wikilink as [[CR-007-frostline-deck-refresh|CR-006/007]], so link checkers resolve CR-006 to the CR-007 file. CR-012 has the same shape: roadmap.md:51 marks it done, no document exists.",
+      "files": [
+        "src/src/styles.css:2387",
+        "docs/change request/CR-007-frostline-deck-refresh.md:1",
+        "docs/change request/CR-011-cold-booth-ux-direction.md:13",
+        "docs/design-system/03-layout.md:29"
+      ],
+      "requirement_ids": [
+        "CR-006",
+        "CR-012"
+      ],
+      "action": "Author CR-006 capturing the locked geometry the other CRs cite, or fold it into CR-007 and strip the id from styles.css and the four CRs. Add an id register noting 006/012 as retired so ids are not reused (CR-014 already was)."
+    },
+    {
+      "id": "CRIT-6",
+      "severity": "critical",
+      "check": "contradiction",
+      "title": "Docs state the shipped G-Signal danger threshold is >85%; the default is 0.65",
+      "details": "signal.rs:43 sets Sensitivity::Med => (0.65, 0.40) and Med is #[default] (:32-33). DANGER_THRESHOLD = 0.85 (:21) is only the Low rung (:42). The >85% figure is asserted in 8 places including schemas/gmaiden-events.json:9, which is the cross-repo contract G-AnnStudio mirrors. AGENTS.md:126 and FEAT-G-SIGNAL.md:15-19 already carry the correct values.",
+      "files": [
+        "src-tauri/src/signal.rs:43",
+        "CLAUDE.md:45",
+        "schemas/gmaiden-events.json:9",
+        "README.md:19",
+        "docs/architecture/technical-design-document.md:60"
+      ],
+      "requirement_ids": [],
+      "action": "Fix the schema string first (it is a contract), then CLAUDE.md, README, modules.json, 05-sitemap-ia, engineering-spec and the TDD."
+    },
+    {
+      "id": "CRIT-7",
+      "severity": "critical",
+      "check": "contradiction",
+      "title": "CLAUDE.md and README claim G-Motion ships heatmap/path prediction; motion.rs is a time-off-map heuristic",
+      "details": "motion.rs:7-8 states the model is 'a transparent v1 heuristic, not a learned model'. AGENTS.md:125 is correct ('no heatmap/path model yet') and CR-005-W1B:52 explicitly forbids claiming a shipped heatmap/path model - so the marketing-facing docs violate a written rule.",
+      "files": [
+        "src-tauri/src/motion.rs:7",
+        "CLAUDE.md:44",
+        "README.md:18"
+      ],
+      "requirement_ids": [],
+      "action": "Copy AGENTS.md:125's wording into CLAUDE.md:44 and README.md:18."
+    },
+    {
+      "id": "CRIT-8",
+      "severity": "critical",
+      "check": "contradiction",
+      "title": "CR-016 states the landing /ops admin UI exists in the working tree; only the backend function exists",
+      "details": "CR-016:232 asserts 'the landing has a GMAD queue sector and /ops' and :94 draws it in the flowchart. landing/src has no ops page, App.tsx renders LandingPage unconditionally with no router, vercel.json has no rewrites, and CR-018-ops-route-spa-rewrite.md is status historical. supabase/functions/admin-gmad-controller/ does exist. This sits on the Closed Beta entitlement path.",
+      "files": [
+        "docs/change request/CR-016-gmad-beta-download-admin-controller.md:232",
+        "docs/change request/CR-016-gmad-beta-download-admin-controller.md:94"
+      ],
+      "requirement_ids": [
+        "CR-016"
+      ],
+      "action": "Correct line 232 and relabel the /ops node as unimplemented."
+    },
+    {
+      "id": "CRIT-9",
+      "severity": "critical",
+      "check": "requirement-coverage",
+      "title": "Neither the PRD nor the SRS carries a single requirement identifier",
+      "details": "grep for FR-/NFR-/BR-/UC-/AC- returns 0 matches in product-requirements.md (105 lines, 13 modules) and 0 in software-requirements-specification.md (213 lines). SRS functional requirements are numbered only locally per section, so section 3.1 item 1 and section 3.4 item 1 are both '1.'. Downstream FEAT-G-* docs cite section anchors that break on any renumber. The 19 fr-3.x ids in feature-ledger.manifest.yaml:850-1126 were minted by tooling; the manifest's own comment at :840-849 admits the mapping 'is a judgement call, not an extraction' and ships all 12 rows with empty refs.code/refs.tests. Net: every SRS functional requirement has zero code traceability.",
+      "files": [
+        "docs/product/product-requirements.md",
+        "docs/product/software-requirements-specification.md",
+        "docs/feature-ledger.manifest.yaml:840"
+      ],
+      "requirement_ids": [],
+      "action": "Stamp global FR-/NFR- ids into the SRS headings and backfill refs.code per ledger row, or mark the fr group explicitly non-traceable so it stops reading as a 19-row evidence hole."
+    },
+    {
+      "id": "WARN-1",
+      "severity": "warning",
+      "check": "contradiction",
+      "title": "promote-release's 'Prove no artifact identity changed' gate is vacuous",
+      "details": "promote-release.yml:44 compares c.artifacts vs s.artifacts, but channel manifests key on platforms (channel-manifest.mjs:12 requires it and never emits artifacts). Both sides are undefined and stringify equal, so the step always passes. artifacts is the key of a different file, build-evidence.json (candidate-release.yml:79). CLAUDE.md:272 lists 'Promotion must not rebuild or re-sign the artifact' as non-negotiable. release-rehearsal.mjs:18 performs the comparison correctly against .platforms.",
+      "files": [
+        ".github/workflows/promote-release.yml:44",
+        "scripts/releases/channel-manifest.mjs:12",
+        "CLAUDE.md:272"
+      ],
+      "requirement_ids": [],
+      "action": "Change c.artifacts/s.artifacts to c.platforms/s.platforms, or delete the step and call release-rehearsal.mjs."
+    },
+    {
+      "id": "WARN-2",
       "severity": "warning",
       "check": "staleness",
-      "title": "code changed after the doc that describes it",
-      "details": "320 doc->code edges across 41 documents",
+      "title": "The design-system SSOT still documents the deleted in-app Layout Editor, and contradicts itself in the same file",
+      "details": "src/src/overlay/LayoutEditor.tsx was deleted in 86a086e4 (2026-08-11). 07-combat-hud.md:22 records the deletion in its header but :68-72 still documents 'Layout Editor (in Control window)', drag-and-drop, the 5% snap magnet, and hover solo-focus. Residue: PROJECT_FEATURE_MAP.md:106 links the deleted file (one of only 3 dead file:// links repo-wide); feature-ledger.manifest.yaml:652 still lists it under refs.code so the ledger tooling emits a false mapping; g-maiden-ui-sitemap-flow-board.md:163-165 vs :183 contradict each other; closed-beta/wave-0/specification.md:36 lists it as in scope.",
       "files": [
-        "docs/architecture/CR-001-dxgi-capture-migration.md (last touched 2026-07-20) -> src-tauri/Cargo.toml (changed 2026-08-11)",
-        "docs/architecture/implementation-plan.md (last touched 2026-07-19) -> package.json (changed 2026-08-11)",
-        "docs/change request/CR-011-cold-booth-ux-direction.md (last touched 2026-07-19) -> src/src/styles.css (changed 2026-08-11)",
-        "docs/change request/CR-011-cold-booth-ux-direction.md (last touched 2026-07-19) -> src/src/styles.css (changed 2026-08-11)",
-        "docs/change request/CR-011-cold-booth-ux-direction.md (last touched 2026-07-19) -> src/src/overlay/FullOverlay.tsx (changed 2026-08-11)",
-        "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md (last touched 2026-07-19) -> src/src/styles.css (changed 2026-08-11)",
-        "docs/design-system/01-foundations.md (last touched 2026-07-20) -> CLAUDE.md (changed 2026-08-11)",
-        "docs/design-system/01-foundations.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
-        "docs/design-system/01-foundations.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
-        "docs/design-system/01-foundations.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
-        "docs/design-system/01-foundations.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
-        "docs/design-system/01-foundations.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
-        "docs/design-system/01-foundations.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
-        "docs/design-system/02-tokens.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
-        "docs/design-system/02-tokens.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
-        "docs/design-system/02-tokens.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
-        "docs/design-system/02-tokens.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
-        "docs/design-system/02-tokens.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
-        "docs/design-system/02-tokens.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)",
-        "docs/design-system/02-tokens.md (last touched 2026-07-20) -> src/src/styles.css (changed 2026-08-11)"
+        "docs/design-system/07-combat-hud.md:68",
+        "PROJECT_FEATURE_MAP.md:106",
+        "docs/feature-ledger.manifest.yaml:652",
+        "docs/architecture/g-maiden-ui-sitemap-flow-board.md:163"
       ],
-      "action": "Re-read the newest ones; code wins per the trust hierarchy"
+      "requirement_ids": [],
+      "action": "Rewrite 07-combat-hud section 5 to point at G-AnnStudio's Overlay Lab and the sync path; purge the other four references."
     },
     {
-      "severity": "info",
-      "check": "doc-control",
-      "title": "documents without YAML frontmatter",
-      "details": "60 of 143 docs carry no version/date/status",
+      "id": "WARN-3",
+      "severity": "warning",
+      "check": "staleness",
+      "title": "AGENTS.md's repo layout and version claims are stale: lib.rs missing, deleted components cited, v0.9.0 vs 0.13.2",
+      "details": "main.rs is an 11-line shim; all logic is in lib.rs, which is absent from the AGENTS.md:62 tree. CLAUDE.md:220 also places the global shortcuts in main.rs (actually lib.rs:620-624). voice_api.rs is now a directory (AGENTS.md:84, CLAUDE.md:166, PROJECT_FEATURE_MAP.md:12,52). Dashboard.tsx was deleted in a75357ff; the real component is deck/FungDashboard.tsx (AGENTS.md:161,288, CLAUDE.md:56). detector.rs is documented as 128 heroes; sentry.rs:34 uses a 127-hero label set (labels.json's first entry is __negative__). CLAUDE.md:5 and AGENTS.md:279 say v0.9.0 while all five version sources are 0.13.2 - and CLAUDE.md was last committed 2026-08-11, so this is a live claim, not history.",
       "files": [
-        "docs\\DOC-GRAPH-REPORT.md",
-        "docs\\DOCS-IA-REORG-PROPOSAL.md",
-        "docs\\FEATURE-LEDGER.md",
-        "docs\\FEATURE-ORPHAN-REPORT.md",
-        "docs\\README.md",
-        "docs\\architecture\\engineering-spec.md",
-        "docs\\architecture\\implementation-plan.md",
-        "docs\\architecture\\spec-orchestra-codedoc-agent.md",
-        "docs\\architecture\\tech-stack.md",
-        "docs\\architecture\\technical-design-document.md",
-        "docs\\audits\\2026-06-23-audit-gsi-setup-overlay-settings-th.md",
-        "docs\\audits\\2026-07-07-independent-full-audit.md",
-        "docs\\change request\\CR-004-voice-command-browser.md",
-        "docs\\change request\\CR-007-frostline-deck-refresh.md",
-        "docs\\change request\\CR-008-login-hardening.md"
+        "AGENTS.md:62",
+        "AGENTS.md:84",
+        "AGENTS.md:279",
+        "CLAUDE.md:5",
+        "CLAUDE.md:220",
+        "CLAUDE.md:166"
       ],
-      "action": "Add frontmatter to docs that are meant to be authoritative"
+      "requirement_ids": [],
+      "action": "Regenerate the AGENTS.md tree from disk and fix the six symbol/path claims; bump the version statement in both root docs."
+    },
+    {
+      "id": "WARN-4",
+      "severity": "warning",
+      "check": "cross-references",
+      "title": "75 of 273 line anchors point at the wrong line; 52 are styles.css drift with a uniform per-band offset",
+      "details": "Drift in styles.css is +19 below ~L3400, +46 in L3400-3900, +69 at the tail - mechanical, not random (03-layout.md:135 --cr6-panel-left #L2400 vs actual 2419; 04-components.md:439 .gm-palette #L3838 vs 3907). The 40 token anchors in 02-tokens.md are still exact. Separately, an automated pass mis-resolved every voice_api.rs reference to banner.rs after the module split, so anchors land on imports and call sites rather than definitions (CR-009:40 packs_dir -> banner.rs#L17 which is a use statement; real definition paths.rs:44). A third cluster follows the lib/bin split 9c28e849 and the App.tsx split cfa74698: six FEAT docs point at main.rs and six at App.tsx for symbols that moved. Zero anchors point past EOF and zero point at a missing file.",
+      "files": [
+        "docs/design-system/04-components.md:439",
+        "docs/change request/CR-009-voice-pack-banner.md:40",
+        "docs/features/FEAT-G-MASTER.md:41",
+        "docs/architecture/design-system.md:39"
+      ],
+      "requirement_ids": [],
+      "action": "Re-resolve anchors by symbol lookup in one scripted pass; do not hand-edit. The voice_api cluster must be resolved by symbol, not by file heuristic."
+    },
+    {
+      "id": "WARN-5",
+      "severity": "warning",
+      "check": "doc-control",
+      "title": "53 of 134 audited docs have no frontmatter, including the PRD, SRS and TDD; 7 more put prose in the status enum",
+      "details": "39.6% of audited docs carry no version, date, owner or status - including product-requirements.md, software-requirements-specification.md, technical-design-document.md, tech-stack.md, roadmap.md, business-requirements.md, 14 of 15 FEAT-G-* docs, both RCAs and both audits. 37 have neither frontmatter nor any changelog table, so they have zero revision provenance. 7 docs carry free-text status breaking the draft/review/approved/deprecated enum; DOC-GRAPH already flags all 7 as invalid-status. Where frontmatter exists it is high quality: 81/81 have status, 80/81 have version, owner, title, doc_id and a date.",
+      "files": [
+        "docs/product/product-requirements.md",
+        "docs/product/software-requirements-specification.md",
+        "docs/architecture/technical-design-document.md"
+      ],
+      "requirement_ids": [],
+      "action": "Backfill title/doc_id/status/version/updated/owner on the flagship specs first; move narrative out of status into a status_note field."
+    },
+    {
+      "id": "WARN-6",
+      "severity": "warning",
+      "check": "section-completeness",
+      "title": "The PRD is missing scope, stakeholders, use cases, business rules and acceptance criteria - all of which exist in the BRD",
+      "details": "product-requirements.md has an executive summary, module detail and 3 unnumbered NFR bullets, but no scope/boundaries, no stakeholders or user personas (only the AI persona), zero use cases, no business rules and no acceptance criteria. business-requirements.md already holds stakeholders and personas (section 4/4.1), in/out/future scope (5.1-5.3) and BR-01..BR-10 (section 7). The PRD's NFR bullet also under-states the SRS: it says latency < 300ms and omits the 250ms target, CPU 2.5% and RAM 400MB.",
+      "files": [
+        "docs/product/product-requirements.md:101",
+        "docs/product/business-requirements.md"
+      ],
+      "requirement_ids": [],
+      "action": "Cross-reference the BRD rather than duplicating it, and reconcile the NFR bullet to the SRS numbers."
+    },
+    {
+      "id": "WARN-7",
+      "severity": "warning",
+      "check": "section-completeness",
+      "title": "The SRS has no architecture diagram, tech stack, data design, security architecture or testing strategy",
+      "details": "Section 2.1 is prose only; the single embedded image is a module-local trigger flow inside 3.1. grep for tauri/rust/react returns 0 - section 4.2 names only GSI/Gemini/TTS/STT. No data model, schema or retention (G-Log's match-*.jsonl format is defined only in TDD section 9). No auth model or trust boundary, so the SRS reads as if the product has no account layer, while the shipped GID/OAuth/DPAPI design lives in ADR-14/ADR-17. grep for test returns 0. Section 6's approval matrix is an unsigned placeholder with System Architect literally '[your name]'.",
+      "files": [
+        "docs/product/software-requirements-specification.md:25",
+        "docs/product/software-requirements-specification.md:208"
+      ],
+      "requirement_ids": [],
+      "action": "Add or cross-reference the five missing sections; fill or remove the approval matrix before the doc is treated as approved."
+    },
+    {
+      "id": "WARN-8",
+      "severity": "warning",
+      "check": "staleness",
+      "title": "Capture cadence documented as 5-15 Hz; the DXGI migration set it to 4/8/2 Hz",
+      "details": "capture.rs:50 NORMAL_INTERVAL_MS=250 (~4Hz), :54 ALERT_INTERVAL_MS=125 (~8Hz), :57 THROTTLE_INTERVAL_MS=500 (~2Hz). technical-design-document.md:91 says ~5-8Hz rising to ~15Hz and FEAT-G-SENTRY.md:20,54 says 5-15Hz. ADR-13-dxgi-capture-migration.md:50-52 already records 4/8/2 Hz as the accepted decision, so the two docs contradict each other.",
+      "files": [
+        "src-tauri/src/capture.rs:50",
+        "docs/architecture/technical-design-document.md:91",
+        "docs/features/FEAT-G-SENTRY.md:20"
+      ],
+      "requirement_ids": [
+        "ADR-13"
+      ],
+      "action": "Copy ADR-13's figures into the TDD and FEAT-G-SENTRY."
+    },
+    {
+      "id": "WARN-9",
+      "severity": "warning",
+      "check": "staleness",
+      "title": "G-Sentry documented as a 500ms GSI poll, and its documented emit logic omits the confirmation gate",
+      "details": "CLAUDE.md:43 says 'polls GSI every 500ms'. GSI is push-based (setup.rs:23-24 writes buffer 0.1) and Sentry::update is called only from the 250ms CV loop. FEAT-G-SENTRY.md:31-38 prints a Track struct and asserts it is the real one, then :49 emits on the 5s timer alone - but sentry.rs adds hits (:78), confirmed (:80), CONFIRM_HITS=4 (:44), CONFIRM_WINDOW_MS=4000 (:49), STALE_UNCONFIRMED_MS=6000 (:59) and :146-148 skips any unconfirmed track. An unconfirmed track is never emitted, which is the phantom-hero guard.",
+      "files": [
+        "CLAUDE.md:43",
+        "src-tauri/src/sentry.rs:146",
+        "docs/features/FEAT-G-SENTRY.md:31"
+      ],
+      "requirement_ids": [],
+      "action": "Correct the poll claim and document the confirmation gate - it is a real safety behaviour, not an implementation detail."
+    },
+    {
+      "id": "WARN-10",
+      "severity": "warning",
+      "check": "contradiction",
+      "title": "Two design-system laws are documented as shipped but contradicted by the stylesheet",
+      "details": "05-sitemap-ia.md:56-59 states R1 'no page-level scrollbar at any window size' under a heading claiming CR-013 shipped W1-W5; styles.css:2611-2618 gives .page-voice/.page-account/.page-settings/.page-history/.page-build/.page-companion overflow-y:auto !important, with an adjacent comment conceding they are 'unconverted, later-wave territory'. Voice and Account genuinely page-scroll. Separately 04-components.md:454 documents Ctrl+1..8 while shortcuts.ts:72-80 has 7 pages, and the same file at :492-495 forbids listing unshipped bindings while naming Ctrl+D as unshipped - shortcuts.ts:209 wires it.",
+      "files": [
+        "docs/design-system/05-sitemap-ia.md:56",
+        "src/src/styles.css:2611",
+        "docs/design-system/04-components.md:454",
+        "src/src/shortcuts.ts:209"
+      ],
+      "requirement_ids": [
+        "CR-013"
+      ],
+      "action": "Either name the two exceptions and drop 'shipped W1-W5', or convert the pages. Fix Ctrl+1..8 to Ctrl+1..7 and the Ctrl+D claim (also stale in shortcuts.ts:7,65,88 comments)."
+    },
+    {
+      "id": "WARN-11",
+      "severity": "warning",
+      "check": "contradiction",
+      "title": "Lite/Full overlay tiers are documented as a user choice; uiMode is force-coerced to 'full'",
+      "details": "07-combat-hud.md:39-40 presents Lite as the default and Full as opt-in via Settings.uiMode. theme.ts:93 returns uiMode: 'full' unconditionally, mirrored in app/Control.tsx:174 and app/Overlay.tsx:87. There is no reachable Lite tier. The merge is correctly recorded in CHANGELOG v0.13.0 - the design doc simply was not updated.",
+      "files": [
+        "docs/design-system/07-combat-hud.md:39",
+        "src/src/app/theme.ts:93"
+      ],
+      "requirement_ids": [],
+      "action": "Rewrite the tier table as a single overlay with positionable modules."
+    },
+    {
+      "id": "WARN-12",
+      "severity": "warning",
+      "check": "contradiction",
+      "title": "FEAT-G-VOICE says Piper does not exist; tts.rs tries Piper before SAPI on every utterance",
+      "details": "FEAT-G-VOICE.md:7 says there is no Piper and TTS is Windows SAPI only. tts.rs:316-318 is a fast path calling piper_speak_with_priority before falling back. tech-stack.md:18 describes it correctly (used automatically only when piper.exe and a model are present), so the two docs contradict each other; CLAUDE.md:144 and AGENTS.md:25,324 understate it the same way. The mic/STT half of the claim is accurate.",
+      "files": [
+        "docs/features/FEAT-G-VOICE.md:7",
+        "src-tauri/src/tts.rs:316",
+        "CLAUDE.md:144"
+      ],
+      "requirement_ids": [],
+      "action": "Say Piper is implemented and opportunistic, not planned."
+    },
+    {
+      "id": "WARN-13",
+      "severity": "warning",
+      "check": "staleness",
+      "title": "release-channel-architecture section 4 describes the pre-implementation state in the present tense",
+      "details": "release-channel-architecture.md:56 says the current system publishes a full GitHub Release on a v* tag and the updater reads a single releases/latest/download/latest.json endpoint. Both were closed by 48c0f6b3 and d505cf5c. It reads as a live description, not a dated record.",
+      "files": [
+        "docs/releases/release-channel-architecture.md:56"
+      ],
+      "requirement_ids": [],
+      "action": "Retitle as 'Gap as of 2026-07-23 (closed)' or delete the section."
+    },
+    {
+      "id": "WARN-14",
+      "severity": "warning",
+      "check": "cross-references",
+      "title": "6 broken section references and 2 self-references to sections that do not exist",
+      "details": "roadmap.md:140 cites SRS 4.3 for Piper TTS (the SRS has only 4.1/4.2; the TTS section is engineering-spec 4.3). roadmap.md:321 cites Eng Spec 7 for 'Definition of Done' (7 is Orchestrator; DoD is 8). adr-11:52, business-requirements.md:157 and :212 cite Competitive Brief 10/10.3 for strategic pillars - that doc ends at 9.5. CR-008:8 says 'see 6' and :85 says 'see risk in 3'; CR-008 has neither. 339 of 347 section refs do resolve.",
+      "files": [
+        "docs/product/roadmap.md:140",
+        "docs/product/roadmap.md:321",
+        "docs/product/business-requirements.md:157",
+        "docs/change request/CR-008-login-hardening.md:8"
+      ],
+      "requirement_ids": [],
+      "action": "Repoint to engineering-spec 4.3 and 8, and to whatever superseded the pillars section."
+    },
+    {
+      "id": "WARN-15",
+      "severity": "warning",
+      "check": "diagram",
+      "title": "The TDD project tree draws cv.rs and voice_api.rs as flat files and explicitly states flat-files-only",
+      "details": "technical-design-document.md:130,133 draw them as .rs files and :134 asserts the real structure is flat .rs files, not subfolders. Both are directories (cv/ holds detector, draft_detector, draft_region, mod, prefilter, region). AGENTS.md:68-72 draws cv/ correctly, so the TDD tree is the sole outlier. Separately CR-020:91 declares a mermaid participant 'Landing #gmad'; the landing defines only #hero/#roadmap/#features and the access panel mounts inside #roadmap.",
+      "files": [
+        "docs/architecture/technical-design-document.md:130",
+        "docs/change request/CR-020-landing-countdown-notify.md:91"
+      ],
+      "requirement_ids": [],
+      "action": "Switch to cv/ and voice_api/, delete the flat-files claim, and rename the CR-020 participant to the real anchor."
+    },
+    {
+      "id": "WARN-16",
+      "severity": "warning",
+      "check": "doc-code-symlinks",
+      "title": "The feature ledger carries an orphaned code ref to a file deleted three weeks ago",
+      "details": "feature-ledger.manifest.yaml:652 (row 2.2-overlay-hud) lists src/src/overlay/LayoutEditor.tsx, deleted in 86a086e4. The same stale path survives in roadmap.md:295. The ledger's last generation ran with --run-tests=false on 2026-07-24, before the deletion. Note the @req/@spec/@designs/@tested annotation layer has zero occurrences repo-wide - the ledger is this project's real traceability mechanism, so Check 8's sub-checks have an empty input set by construction, not a clean one. 171 of 172 ledger path refs resolve, and all 25 cargo test refs were verified to name real modules with real mod tests blocks.",
+      "files": [
+        "docs/feature-ledger.manifest.yaml:652",
+        "docs/product/roadmap.md:295"
+      ],
+      "requirement_ids": [],
+      "action": "Drop the ref and regenerate the ledger with --run-tests; declare the ledger the official traceability mechanism in AGENTS.md so @req-style tags stop being half-expected."
+    },
+    {
+      "id": "WARN-17",
+      "severity": "warning",
+      "check": "requirement-coverage",
+      "title": "Three desktop-code CRs are approved or accepted with no implementation, and one CR has no status field at all",
+      "details": "Of 35 doc-defined CR/ADR ids with no code reference, 28 are decision records or landing/Supabase scoped (refs verified to live in landing/, supabase/, tools/) and are not defects. Three are real desktop gaps: CR-004-voice-command-browser.md (the only CR file with no status key anywhere), CR-014-g-overlay-lab-sync.md (status approved, a desktop runtime sync receiver with zero refs in src-tauri or src/src), and CR-022 (accepted, C-3/HIGH, intentionally unbuilt per CLAUDE.md). ADR-05 is cited from production code at cv/detector.rs:7 with the word 'revised', but ADR-05 exists only as a one-line table row and no revision is recorded in either ADR table.",
+      "files": [
+        "docs/change request/CR-004-voice-command-browser.md",
+        "docs/change request/CR-014-g-overlay-lab-sync.md",
+        "src-tauri/src/cv/detector.rs:7"
+      ],
+      "requirement_ids": [
+        "CR-004",
+        "ADR-05"
+      ],
+      "action": "Set CR-004's status (withdrawn or backlog); promote ADR-05 to a real file so 'revised' has a home."
+    },
+    {
+      "id": "INFO-1",
+      "severity": "info",
+      "check": "glossary",
+      "title": "No glossary exists and the doc set needs one",
+      "details": "Nothing under docs/**/glossary*; the only definitions block is SRS 1.3 with 5 terms (GSI, SLM, LLM, Belief Revision, Overlay), all of which are in active use - no dead definitions. Undefined but pervasive, by files-using count: GID 60, G-Signal 62, G-Sentry 32, DXGI 31, Lite mode 14, Maiden Line 12, COLD BOOTH 11, shard 7, ONE CANVAS 6, bento 5, minisign 5. Two are genuinely ambiguous: shard means the ADR-16 earned currency, not a database shard; Lite mode means the GSI-only fallback when DXGI capture fails, not the retired Lite overlay tier.",
+      "files": [
+        "docs/product/software-requirements-specification.md"
+      ],
+      "requirement_ids": [],
+      "action": "Add docs/reference/glossary.md covering the ~10 undefined terms and pin the two ambiguous ones; point SRS 1.3 at it."
+    },
+    {
+      "id": "INFO-2",
+      "severity": "info",
+      "check": "doc-existence",
+      "title": "ADR-01..ADR-09 exist only as table rows, ADR-13 and CR-001 are filed in each other's directories, and CR numbering has two holes",
+      "details": "ADR files exist only for 10-17; 01-09 predate the one-file-per-ADR convention, which looks deliberate, but ADR-05 is cited from code. ADR-13-dxgi-capture-migration.md sits in docs/change request/ while CR-001-dxgi-capture-migration.md sits in docs/architecture/ - the two are swapped. 11 docs on disk were unregistered in DOC-GRAPH (added this run). DOC-INDEX points at docs/operations/audits/, which does not exist (real path docs/audits/), already self-noted in its own changelog.",
+      "files": [
+        "docs/change request/ADR-13-dxgi-capture-migration.md",
+        "docs/architecture/CR-001-dxgi-capture-migration.md",
+        "docs/DOC-INDEX.md"
+      ],
+      "requirement_ids": [],
+      "action": "Move the two swapped files; add an ADR/CR id register."
+    },
+    {
+      "id": "INFO-3",
+      "severity": "info",
+      "check": "staleness",
+      "title": "tech-stack.md names four libraries that are not direct dependencies or are unused",
+      "details": "tech-stack.md:14 lists crossbeam and :19 lists cpal; neither is in src-tauri/Cargo.toml [dependencies] (transitive only). :23 claims Zustand (overlay) and TanStack Query (dashboard); both are declared in src/package.json but ripgrep for zustand|react-query|useQuery|QueryClient across src/src returns zero hits. Everything else in the table verified exact. Separately, four docs' frontmatter version is behind their own changelog's top row (releases/README.md, beta-roadmap.md, CR-003, CR-022).",
+      "files": [
+        "docs/architecture/tech-stack.md:14",
+        "docs/architecture/tech-stack.md:23"
+      ],
+      "requirement_ids": [],
+      "action": "Drop the unused entries or mark them transitive; consider removing the two unused frontend deps from package.json."
+    }
+  ],
+  "passes": [
+    {
+      "check": "document-existence",
+      "details": "265 graph nodes (141 doc / 124 code) all resolve on disk; 0 dangling. 11 previously unregistered docs were added this run."
+    },
+    {
+      "check": "cross-references-paths",
+      "details": "Across all docs plus the six root docs there are only 3 dead file:// targets and no broken relative or wiki links. Of 273 line anchors, 0 point past EOF and 0 point at a missing file."
+    },
+    {
+      "check": "cross-references-sections",
+      "details": "339 of 347 section references resolve, including the convention of numbering against top-level list items (ADR-11 item 5, 03-layout 8.4, S-1 4.1) - each confirmed rather than flagged."
+    },
+    {
+      "check": "requirement-ids",
+      "details": "17 of 18 code-cited ids resolve to a real document (only CR-006 fails). FEAT-G-* 15/15, BR-01..BR-10 10/10, R-01..R-07 7/7, SEC-001 clean both ways. AC-* and BR-* confirmed document-scoped rather than global, so the repeats are not collisions."
+    },
+    {
+      "check": "diagrams",
+      "details": "35 mermaid blocks in 23 files: all fences closed, 34 of 35 parse clean, 33 of 35 truth-clean. 18 ASCII trees inspected, 17 clean. Verified against the tree: 10 Edge Functions, 14 CR-003 ER entities, the 300s signed-URL TTL, :3000/auth/callback, CI job ids, and the 7 nav pages."
+    },
+    {
+      "check": "budgets-and-interfaces",
+      "details": "250ms/300ms latency, CPU 2.5%, RAM 400MB and FPS 3% agree across SRS, PRD, BRD, roadmap, design-system, CR-011/013 and the code. Ports and routes (:3000 /gsi /telemetry /announcer/install /auth/callback /overlay/layout, Ollama :11434) match every doc; no stale :4577 or :5599 claims survive."
+    },
+    {
+      "check": "tokens-and-geometry",
+      "details": "#08090c, rgba(18,20,28,0.72), stage 1420x760, panel world 1280x720 and the full --g-* block match 02-tokens and 03-layout token-for-token. Global hotkeys match lib.rs everywhere (only the file path is stale)."
+    },
+    {
+      "check": "event-contract",
+      "details": "The 24-event announcer contract and 13-tier streak ladder mirror across voice_api/events.rs, schemas/gmaiden-events.json, announcer.rs and overlay/streaks.ts, machine-enforced by tests on both sides."
+    },
+    {
+      "check": "model-backends",
+      "details": "claude-haiku-4-5 and the Auto|Claude|Ollama backends agree across five docs, each of which explicitly flags Gemini as the superseded design target - documented divergence, correctly called out."
+    },
+    {
+      "check": "ledger-integrity",
+      "details": "171 of 172 feature-ledger path refs resolve; all 25 cargo test refs name real modules containing real mod tests blocks. No fabricated test evidence. 0 status-inflation across 73 rows."
+    },
+    {
+      "check": "frontmatter-quality",
+      "details": "Of the 81 audited docs that have frontmatter, 81/81 carry status and 80/81 carry version, owner, title, doc_id and a date. 92 of 134 carry a changelog table."
     }
   ]
 }

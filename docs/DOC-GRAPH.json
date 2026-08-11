@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-11T16:04:48.073585Z",
+  "generatedAt": "2026-08-11T19:46:40.754647Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -1270,6 +1270,61 @@
       "id": ".github/workflows/promote-release.yml",
       "type": "code",
       "path": ".github/workflows/promote-release.yml"
+    },
+    {
+      "id": "docs/change request/CR-014-g-overlay-lab-sync.md",
+      "type": "doc",
+      "path": "docs/change request/CR-014-g-overlay-lab-sync.md"
+    },
+    {
+      "id": "docs/releases/closed-beta/wave-0/evidence-runbook.md",
+      "type": "doc",
+      "path": "docs/releases/closed-beta/wave-0/evidence-runbook.md"
+    },
+    {
+      "id": "docs/releases/closed-beta/wave-1/definition-of-done.md",
+      "type": "doc",
+      "path": "docs/releases/closed-beta/wave-1/definition-of-done.md"
+    },
+    {
+      "id": "docs/releases/closed-beta/wave-1/specification.md",
+      "type": "doc",
+      "path": "docs/releases/closed-beta/wave-1/specification.md"
+    },
+    {
+      "id": "docs/releases/closed-beta/wave-2/definition-of-done.md",
+      "type": "doc",
+      "path": "docs/releases/closed-beta/wave-2/definition-of-done.md"
+    },
+    {
+      "id": "docs/releases/closed-beta/wave-2/specification.md",
+      "type": "doc",
+      "path": "docs/releases/closed-beta/wave-2/specification.md"
+    },
+    {
+      "id": "docs/releases/public-demo/rollback.md",
+      "type": "doc",
+      "path": "docs/releases/public-demo/rollback.md"
+    },
+    {
+      "id": "docs/releases/release-channel-implementation.md",
+      "type": "doc",
+      "path": "docs/releases/release-channel-implementation.md"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase1.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase1.md"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md"
+    },
+    {
+      "id": "docs/superpowers/specs/2026-08-09-gid-central-pipeline-design.md",
+      "type": "doc",
+      "path": "docs/superpowers/specs/2026-08-09-gid-central-pipeline-design.md"
     }
   ],
   "edges": [
@@ -10330,5 +10385,5 @@
     ],
     "violations": []
   },
-  "updatedBy": "rwang:doc-graph (incremental — generator not vendored in repo)"
+  "updatedBy": "rwang:doc-graph (subagent-driven preflight, 2026-08-12) — incremental: registered previously-unscanned docs"
 }
