@@ -115,7 +115,7 @@ flowchart LR
   F --> G{"Signal Event?"}
   G -->|Safe| H["Ambient companion state"]
   G -->|Warning| I["G-Master advice panel"]
-  G -->|Critical ≥85%| J["Danger alert + VOICE INTERRUPT (toast fallback if silent)"]
+  G -->|"Critical (over Sensitivity bar, default 0.65)"| J["Danger alert + VOICE INTERRUPT (toast fallback if silent)"]
   J --> K{"Prediction changed?"}
   K -->|Yes| L["Belief Revision (mid-sentence correction)"]
   K -->|No| M["Continue monitoring"]

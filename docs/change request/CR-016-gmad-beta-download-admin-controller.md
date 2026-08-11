@@ -91,7 +91,7 @@ flowchart LR
   P --> D["request-gmad-download Edge Function"]
   D -->|"short-lived signed URL"| P
 
-  B["Boss / Admin Controller at /ops"] --> A["admin-gmad-controller Edge Function"]
+  B["Boss / Admin Controller UI at /ops (NOT IMPLEMENTED)"] --> A["admin-gmad-controller Edge Function"]
   A --> R["profiles + closed_beta_enrollments\nadmin roster view"]
   A --> G["download batches + grant snapshots + audit log"]
   D --> G
@@ -229,8 +229,14 @@ Approval authorizes C-3 implementation only with these defaults:
 
 ## 13. Implementation status
 
-Implementation is present in the working tree: the landing has a GMAD queue sector and `/ops`,
+Implementation is **partially** present in the working tree: the landing has a GMAD queue sector,
 the schema/RLS migration and pgtap contract exist, and the three Edge Function contracts are ready.
+
+**The `/ops` admin UI is not implemented.** Only its backend exists
+(`supabase/functions/admin-gmad-controller/`). `landing/src/App.tsx` renders `LandingPage`
+unconditionally with no router, and `landing/vercel.json` carries no rewrite — so there is no `/ops`
+route to reach. CR-018 (ops-route SPA rewrite) is `status: historical`. Do not treat the controller
+as operable from a browser until a UI and route ship.
 The immediate login prerequisite is deployed: production `mint-gid` now returns the required CORS
 origin, request headers, and `POST, OPTIONS` method header.
 

@@ -19,7 +19,9 @@
     "critical": 9,
     "warnings": 17,
     "info": 3,
-    "overall": "critical"
+    "overall": "critical",
+    "critical_open": 3,
+    "critical_fixed": 6
   },
   "findings": [
     {
@@ -38,7 +40,9 @@
         "scripts/releases/manifest-from-tauri.mjs:9"
       ],
       "requirement_ids": [],
-      "action": "Pick one contract (platform-id keys with a non-{{target}} URL, or channel-name keys everywhere) and route useAppUpdate through it; until then correct CLAUDE.md:5,256 and PROJECT_FEATURE_MAP.md:105, which assert a working feature."
+      "action": "Pick one contract (platform-id keys with a non-{{target}} URL, or channel-name keys everywhere) and route useAppUpdate through it; until then correct CLAUDE.md:5,256 and PROJECT_FEATURE_MAP.md:105, which assert a working feature.",
+      "outcome": "fixed",
+      "outcome_note": "Documentation corrected 2026-08-12 to match the code. No code behaviour was changed; where the code is the defect (CRIT-1) the docs now describe the defect instead of claiming the feature works."
     },
     {
       "id": "CRIT-2",
@@ -54,7 +58,9 @@
         "README.md:52"
       ],
       "requirement_ids": [],
-      "action": "Replace the AGENTS.md Release section and README.md Releases section with a pointer to CLAUDE.md's Release & update workflow."
+      "action": "Replace the AGENTS.md Release section and README.md Releases section with a pointer to CLAUDE.md's Release & update workflow.",
+      "outcome": "fixed",
+      "outcome_note": "Documentation corrected 2026-08-12 to match the code. No code behaviour was changed; where the code is the defect (CRIT-1) the docs now describe the defect instead of claiming the feature works."
     },
     {
       "id": "CRIT-3",
@@ -72,7 +78,9 @@
       "requirement_ids": [
         "CR-022"
       ],
-      "action": "Mark CR-022 shipped in both root docs and scope the 'optional/additive sign-in' claim to dev builds."
+      "action": "Mark CR-022 shipped in both root docs and scope the 'optional/additive sign-in' claim to dev builds.",
+      "outcome": "fixed",
+      "outcome_note": "Documentation corrected 2026-08-12 to match the code. No code behaviour was changed; where the code is the defect (CRIT-1) the docs now describe the defect instead of claiming the feature works."
     },
     {
       "id": "CRIT-4",
@@ -126,7 +134,9 @@
         "docs/architecture/technical-design-document.md:60"
       ],
       "requirement_ids": [],
-      "action": "Fix the schema string first (it is a contract), then CLAUDE.md, README, modules.json, 05-sitemap-ia, engineering-spec and the TDD."
+      "action": "Fix the schema string first (it is a contract), then CLAUDE.md, README, modules.json, 05-sitemap-ia, engineering-spec and the TDD.",
+      "outcome": "fixed",
+      "outcome_note": "Documentation corrected 2026-08-12 to match the code. No code behaviour was changed; where the code is the defect (CRIT-1) the docs now describe the defect instead of claiming the feature works."
     },
     {
       "id": "CRIT-7",
@@ -140,7 +150,9 @@
         "README.md:18"
       ],
       "requirement_ids": [],
-      "action": "Copy AGENTS.md:125's wording into CLAUDE.md:44 and README.md:18."
+      "action": "Copy AGENTS.md:125's wording into CLAUDE.md:44 and README.md:18.",
+      "outcome": "fixed",
+      "outcome_note": "Documentation corrected 2026-08-12 to match the code. No code behaviour was changed; where the code is the defect (CRIT-1) the docs now describe the defect instead of claiming the feature works."
     },
     {
       "id": "CRIT-8",
@@ -155,7 +167,9 @@
       "requirement_ids": [
         "CR-016"
       ],
-      "action": "Correct line 232 and relabel the /ops node as unimplemented."
+      "action": "Correct line 232 and relabel the /ops node as unimplemented.",
+      "outcome": "fixed",
+      "outcome_note": "Documentation corrected 2026-08-12 to match the code. No code behaviour was changed; where the code is the defect (CRIT-1) the docs now describe the defect instead of claiming the feature works."
     },
     {
       "id": "CRIT-9",
@@ -501,5 +515,15 @@
       "check": "frontmatter-quality",
       "details": "Of the 81 audited docs that have frontmatter, 81/81 carry status and 80/81 carry version, owner, title, doc_id and a date. 92 of 134 carry a changelog table."
     }
-  ]
+  ],
+  "remediation": {
+    "at": "2026-08-11T20:12:20.589592Z",
+    "scope": "The six doc-truth criticals only (CRIT-1,2,3,6,7,8). Documentation was edited; no source behaviour changed.",
+    "still_open": [
+      "CRIT-4 duplicate ids ADR-17 / CR-014 / ADR-01..09 (needs a renumbering decision)",
+      "CRIT-5 CR-006 cited as binding with no document (needs authoring or folding into CR-007)",
+      "CRIT-9 PRD and SRS carry no requirement identifiers (needs an id scheme decision)"
+    ],
+    "not_fixed_by_design": "The SRS still states Danger Threshold > 85%. That is the requirement, and the code honours it as the Low sensitivity rung; changing a requirement is an owner decision, not a doc-truth fix. FEATURE-LEDGER.md's G-Motion row is generated output - fix it in feature-ledger.manifest.yaml and regenerate (see WARN-16)."
+  }
 }

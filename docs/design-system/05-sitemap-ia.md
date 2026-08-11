@@ -164,7 +164,7 @@ install require online validation. A pause/revoke blocks on the next online vali
 
 ### 5.2 In-match (peripheral)
 ```
-GSI tick → Dashboard/HUD update → G-Signal คำนวณ → ถ้า gank ≥85%:
+GSI tick → Dashboard/HUD update → G-Signal คำนวณ → ถ้าเกินเกณฑ์ Sensitivity (ค่าเริ่มต้น Med 0.65):
 persona voice interrupt + overlay banner + signal card E (lime) escalate
 ```
 

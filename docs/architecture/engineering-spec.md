@@ -15,7 +15,7 @@
 | 1 | Minimap capture frame ล่าสุดพร้อม | ~30 | DXGI duplication, capture loop วิ่งอยู่แล้ว |
 | 2 | CV ตรวจไอคอนศัตรู + อัปเดตตำแหน่ง | ~50 | ONNX detector เล็ก / template match บนพื้นที่ minimap เท่านั้น |
 | 3 | G-Motion ประเมินความน่าจะเป็น gank | ~20 | คำนวณบน ring buffer ในหน่วยความจำ |
-| 4 | G-Signal เช็ค threshold (>85%) + เลือกบทพูด | ~10 | rule eval + เลือก audio cache key |
+| 4 | G-Signal เช็ค threshold (ตาม Sensitivity — default Med 0.65) + เลือกบทพูด | ~10 | rule eval + เลือก audio cache key |
 | 5 | Interrupt เสียงที่กำลังเล่น + เริ่มเสียงใหม่ | ~30 | ส่งสัญญาณผ่าน channel ไป audio thread |
 | 6 | Audio output buffer latency | ~40 | cpal/rodio output buffer |
 | **รวม** | | **~180ms** | เหลือ headroom ~70–120ms ก่อนชน 300 |
@@ -41,7 +41,9 @@
 
 ### 2.3 G-Signal (Real-time Gank Warning) — critical path
 - **Input:** `GankRisk`
-- **Logic:** ถ้า `probability > 85%` (Danger Threshold) → **interrupt** เสียงที่เล่นอยู่ทันที;
+- **Logic:** ถ้า `probability` เกิน Danger Threshold ของ `Sensitivity` ที่ผู้เล่นเลือก
+  (`signal.rs::thresholds` — **ค่าเริ่มต้น Med = 0.65**, Low = 0.85 คือ baseline ของ SRS, High = 0.50)
+  → **interrupt** เสียงที่เล่นอยู่ทันที;
   ถ้ามี alert เก่ากำลังพูดและ confidence เปลี่ยน → trigger **Belief Revision** (ดู §3)
 - **Output:** `SignalAlert { severity, voice_clip_key, interrupt: true }` → audio engine
 - **Constraint:** ต้องจบใน budget §1
@@ -69,7 +71,7 @@
 
 ## 3. Belief Revision — สัญญาพฤติกรรม (SRS §3.3, บังคับ ไม่ใช่ polish)
 
-เมื่อ Maiden กำลังพูดบทหนึ่งอยู่ แล้วเงื่อนไขเปลี่ยน (เช่น threshold พุ่งข้าม 85% กลางประโยค):
+เมื่อ Maiden กำลังพูดบทหนึ่งอยู่ แล้วเงื่อนไขเปลี่ยน (เช่น ความเสี่ยงพุ่งข้ามเกณฑ์ Sensitivity กลางประโยค):
 
 1. audio engine ได้รับ `Interrupt(reason)` ผ่าน channel ที่ priority สูงสุด
 2. หยุดคลิปปัจจุบันที่ขอบคำถัดไป (word-boundary, ไม่ตัดดิบ)

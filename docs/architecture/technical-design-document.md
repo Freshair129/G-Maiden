@@ -57,7 +57,8 @@ Screen ─DXGI capture──────►  │ Minimap CV (tract-onnx + image 
 
 ```
 capture(frame) ─30ms─► vision(positions) ─50ms─► motion(prob) ─20ms─►
-signal: prob>85%? ─10ms─► [interrupt audio] ─30ms─► [play cached clip] ─40ms─► 🔊
+signal: prob > Sensitivity bar? ─10ms─► [interrupt audio] ─30ms─► [play clip] ─40ms─► 🔊
+        (default Med 0.65; Low 0.85 = SRS baseline; High 0.50)
                                                                    total ≈180ms
 ```
 

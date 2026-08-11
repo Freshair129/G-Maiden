@@ -2,7 +2,7 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Status: implemented (v0.9.0), shipping via in-app updater
+## Status: implemented (v0.13.2); the in-app updater is wired but NOT currently delivering
 
 The project is scaffolded and shipping — **Tauri v2 + React/Vite + Rust**. For the current
 implementation state, module status, repo layout, and coding rules see **AGENTS.md**. The two
@@ -41,8 +41,8 @@ Hybrid **client-server**, split by latency requirement:
 | Module | Responsibility |
 | --- | --- |
 | **G-Sentry** | Fog-of-war monitor — polls GSI every 500ms; flags enemies missing from vision >5s |
-| **G-Motion** | Heatmap/path prediction — keeps 5 min of last-seen enemy positions, predicts gank routes |
-| **G-Signal** | Real-time gank warning — **voice interrupt** when danger threshold >85%; the hard-latency path |
+| **G-Motion** | Time-off-map risk heuristic — keeps 5 min of last-seen enemy positions. **No heatmap or learned path model ships** (`motion.rs` is an explicit v1 heuristic); "predicts gank routes" is the design target, not the build |
+| **G-Signal** | Real-time gank warning — **voice interrupt** when risk crosses the `Sensitivity` bar; the hard-latency path. Default **Med = 0.65 danger / 0.40 clear**. `DANGER_THRESHOLD = 0.85` is the **Low** rung only (the conservative SRS baseline); High is 0.50/0.30 |
 | **G-Master** | Strategic/financial advisor — skill/item build advice vs. enemy Net Worth & items |
 | **G-Sensory** | Overlay rendering + hardware optimization (glassmorphism HUD, FPS/resource budget) |
 | **G-Log** | Feedback loop — logs decisions/outcomes locally to tune prediction params next match |
@@ -57,7 +57,9 @@ deck" (`Dashboard.tsx` + `companion.ts`) with a GSI/LIVE header, a trend stat ba
 cards (status VISIBLE / LOW / MISSING / DEAD). It is **live-wired** (CR-002 Phase 2a/2b, merged
 `170805b8`): `useCompanionData()` subscribes to Tauri events (`game-tick`/`gsi-status`/`minimap-cv`/
 `enemy-missing`/`gank-alert`) and merges pure builders in `src/src/live/` over a baked `MOCK`
-fallback, so it renders signed-out/offline. Own-game honest limit: GSI exposes only the local
+fallback, so the deck itself renders signed-out/offline — but in a **release** build it never gets
+the chance: `App.tsx` wraps it in `GmadFirstRunGate` (see Accounts & GID below), which is bypassed
+only under `import.meta.env.DEV`. Own-game honest limit: GSI exposes only the local
 player, so the other 9 heroes get CV identity/position + missing state only (KDA/items hidden).
 The overlay window + DXGI backend are untouched (window routing lives in `App.tsx`).
 
@@ -74,7 +76,11 @@ every settings category). Three standing laws (SSOT `docs/design-system/05-sitem
 overflow → tab or `rowsThatFit()` pagination, **R3** COLD BOOTH `--g-*` tokens only in the deck
 (the legacy inline `C` hex palette is Overlay-only).
 
-**Accounts & GID (ADR-14)** -- optional, **additive** sign-in (the deck works without it). Google
+**Accounts & GID (ADR-14)** -- sign-in was designed as optional and **additive**, and still is in a
+**dev** build. In a **release** build it is mandatory: `App.tsx:33` mounts the deck only behind
+`GmadFirstRunGate`, which requires Google sign-in + current Terms acceptance + an active
+entitlement, all verified online (CR-022, shipped `b6a0fc60`). Treat "the deck works without an
+account" as a dev-build statement until that gate is relaxed. Google
 OAuth (PKCE, callback on the GSI `:3000/auth/callback` route) → a **GID**, the human-facing
 cross-G-series identity (`G-[Gen][Payload][Checksum]`, `src/src/gid.ts`); internal key stays the
 Supabase UUID. Backend is the shared `gstore` Supabase project (`profiles` + RLS). Steam is linked
@@ -103,10 +109,11 @@ active grant before minting a five-minute signed URL. Never put the artifact URL
 email link as an authorization credential, or allow a typed GID to establish entitlement. CR-020
 defines the landing countdown and notification route. CR-021 is a **candidate legal/consent design**:
 before it ships, counsel must approve final Terms/Privacy language and the implementation must add
-server-written, private, versioned acceptance receipts plus optional-consent withdrawal. The next
-planned design task is CR-022: desktop first-run handoff from installed G-Maiden to Google sign-in with
-the same GID, current Terms acceptance and active entitlement; it is C-3/HIGH and must be documented
-and approved before code. Keep raw match, CV, and G-Log data local even in this flow.
+server-written, private, versioned acceptance receipts plus optional-consent withdrawal. **CR-022 is
+shipped, not planned** — the desktop first-run handoff (installed G-Maiden → Google sign-in with the
+same GID, current Terms acceptance, active entitlement) was accepted 2026-07-21 and landed in
+`b6a0fc60`; it lives in `src/src/GmadFirstRunGate.tsx` and gates the whole deck in release builds.
+Keep raw match, CV, and G-Log data local even in this flow.
 
 When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scalability unity.
 
@@ -253,10 +260,23 @@ Users receive updates through an **in-app updater** (Tauri updater plugin). Rele
 | `closed-beta` | invited testers | `release/channels/closed-beta.json` | promotion |
 | `stable` | public | `release/channels/stable.json` | `promote-release.yml` (production approval) |
 
-- **In-app update:** the app checks `release/channels/{{target}}.json` on `main`
-  (`tauri.conf.json` → `plugins.updater`), where `{{target}}` is the channel resolved in
-  `src/src/updateChannel.ts` — from the signed-in account's entitlement, **falling back to
-  `stable`** when there is none. It verifies the **minisign** signature before installing.
+- **In-app update — CONFIGURED BUT BROKEN, do not describe it as working.** The endpoint is
+  `release/channels/{{target}}.json` on `main` (`tauri.conf.json` → `plugins.updater`), and minisign
+  verification before install is real. But in `tauri-plugin-updater` the single `target` string is
+  used **both** to fill `{{target}}` in the URL **and** as the key looked up in the manifest's
+  `platforms{}` — and the two callers disagree, so neither delivers:
+  - `src/src/useAppUpdate.ts` (the banner + launch auto-check, and the only path that can actually
+    *install*) calls bare `check()`. With no target Tauri substitutes `updater_os()` = `"windows"`,
+    so it requests `release/channels/windows.json` — **404**, swallowed by an empty `catch`.
+    It never imports `updateChannel.ts`, so it is channel-blind.
+  - `src/src/GmadFirstRunGate.tsx` → `checkResolvedUpdate` calls `check({ target: channel })`. That
+    reaches `dev.json` but then looks up `platforms['dev']`, while the manifest is keyed
+    `windows-x86_64{,-msi,-nsis}` (`manifest-from-tauri.mjs` copies Tauri's own ids) → `TargetNotFound`.
+    This path only *reports* an update; it cannot install one.
+  Because `promoteManifest` spreads the candidate, the first real promotion will break `stable.json`
+  the same way. Dev testers must download the GitHub prerelease asset manually until one convention
+  is chosen end to end. Channel resolution itself (`resolveUpdateChannel`: entitlement, **falling
+  back to `stable`**) is correct and unit-tested.
 - **Cutting a candidate:** bump all five version sources (`src-tauri/tauri.conf.json`,
   `src/package.json`, `package.json` root, `src-tauri/Cargo.toml` + `Cargo.lock`,
   `APP_VERSION` in `src/src/app/theme.ts`), add a CHANGELOG entry, commit, tag `vX.Y.Z`, then run
