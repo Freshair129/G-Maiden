@@ -284,7 +284,7 @@ export const Overlay: React.FC = () => {
     void invoke('speak_event', { event: evt, fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
   }, [tick, tick?.in_game, tick?.level, tick?.kills, tick?.deaths, tick?.alive, tick?.mana_percent, lowHp])
 
-  // Kill banner — pop variant-B banner for 3.5s whenever the player scores a kill.
+  // Kill banner — show variant-B for 4.0s, then run its 0.8s exit whenever the player scores a kill.
   // Guess victim from the set of heroes G-Sentry flagged missing (best we can do
   // without a dedicated kill-feed in GSI). Track consecutive kills for streak badge.
   useEffect(() => {
