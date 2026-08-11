@@ -35,6 +35,12 @@
 - **Output event:** `EnemyMissing { hero, missing_for_ms, last_pos, role }`
 
 ### 2.2 G-Motion (Heatmap / Path Prediction)
+
+> **สถานะ (2026-08): สัญญาข้างล่างคือ *เป้าหมาย* ยังไม่ใช่ของที่ ship.** `motion.rs` เป็น
+> time-off-map risk heuristic (มี heading-aware multiplier) — **ไม่มี heatmap และไม่มี path model
+> ที่เรียนรู้** `predicted_paths[]` ยังไม่ถูกผลิตจริง. ห้ามอธิบายว่า heatmap/path prediction
+> ship แล้ว (CR-005-W1B §52).
+
 - **Input:** stream ของ `EnemyMissing` + ring buffer ตำแหน่งย้อนหลัง **5 นาที** (SRS §3.2)
 - **Logic:** ประเมินเส้นทางหลบซ่อน/เส้น gank ที่น่าจะเป็น → ค่าความน่าจะเป็น 0–100%
 - **Output event:** `GankRisk { lane, probability, predicted_paths[], eta_estimate }`
