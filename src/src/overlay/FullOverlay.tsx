@@ -3,7 +3,7 @@
  *
  * Isolated from the stable "lite" overlay in App.tsx. Each piece is an
  * independent MODULE positioned + scaled from Settings.layout (edited in the
- * Control window's LayoutEditor). Backend is shared — same game-tick / gank
+ * G-AnnStudio's Overlay Lab, synced in). Backend is shared — same game-tick / gank
  * events drive both tiers.
  *
  * Phase 2: stats split into individual draggable modules (clock/KDA/gold/GPM/
@@ -290,7 +290,7 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
       {toastUi && !packBanner && M('toast', toastUi)}
       {inGame && M('companion', companion)}
 
-      {/* Ported announcer/persona visuals — each now positionable via LayoutEditor */}
+      {/* Ported announcer/persona visuals — each positionable from G-AnnStudio's Overlay Lab */}
       {inGame && bannerUi && M('banner', bannerUi)}
       {inGame && lowHpUi && M('lowhp', lowHpUi)}
       {volUi && M('vol', volUi)}

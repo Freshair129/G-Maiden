@@ -3,8 +3,13 @@
  *
  * The redesign's core idea: each overlay piece is an independent MODULE the user
  * can position + scale freely (vs the lite tier's single stacked column). The
- * layout lives in Settings (persisted + broadcast to the overlay), so the Control
- * window's layout editor and the live overlay share one source of truth.
+ * layout lives in Settings (persisted + broadcast to the overlay).
+ *
+ * Arranging it moved OUT of this app: the in-app LayoutEditor was removed in
+ * favour of G-AnnStudio's Overlay Lab, which draws each module at its real size
+ * over a Dota HUD capture and flags overlaps. It writes back through the
+ * `sync_overlay_layout` command and the `overlay-layout-sync` event, so Settings
+ * remains the single source of truth the live overlay reads.
  */
 
 export type ModuleId =

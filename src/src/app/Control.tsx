@@ -2,8 +2,7 @@ import React, { useEffect, useRef, useState } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { emit, listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
-import { LayoutEditor } from '../overlay/LayoutEditor'
-import type { Layout } from '../overlay/modules'
+import { MODULE_META, cfgOf, type Layout } from '../overlay/modules'
 import QuotaCard from '../QuotaCard'
 import type {
   GameTick, Settings, SettingsCat, GsiStatus, ResourceStats, OverlayProfile, VoiceInfo, Sensitivity,
@@ -360,9 +359,16 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
 
             <Card title="Overlay UI">
               <div style={{ fontSize: 11.5, color: C.mut, marginBottom: 4, lineHeight: 1.55 }}>
-                ทุกชิ้นของ overlay เป็น <b style={{ color: C.txt }}>โมดูลอิสระ</b> — เปิด/ปิด, ย่อ-ขยาย และลากวางตำแหน่งเองได้ (glass ดีไซน์ Maiden Blue). ลากบนพรีวิว 16:9 ด้านล่าง แล้ว overlay จริงจะขยับตามทันที.
+                ทุกชิ้นของ overlay เป็น <b style={{ color: C.txt }}>โมดูลอิสระ</b> — เปิด/ปิด, ย่อ-ขยาย และลากวางตำแหน่งได้.
+                การจัดตำแหน่งย้ายไปทำที่ <b style={{ color: C.txt }}>G-AnnStudio → Overlay Lab</b> ซึ่งวาดโมดูลขนาดจริง
+                ทับภาพ HUD ของ Dota และเตือนเมื่อทับโซนของเกม แล้วกด Sync ส่งกลับมาที่นี่.
               </div>
-              <LayoutEditor value={s.layout} onChange={(l) => set('layout', l)} />
+              <div style={{ fontSize: 11, color: C.mut, lineHeight: 1.55 }}>
+                ตำแหน่งปัจจุบันยังใช้งานอยู่ตามปกติ — โมดูลที่เปิดไว้:{' '}
+                <b style={{ color: C.txt }}>
+                  {MODULE_META.filter((m) => cfgOf(s.layout, m.id).enabled).length}/{MODULE_META.length}
+                </b>
+              </div>
             </Card>
           </>
         )}
