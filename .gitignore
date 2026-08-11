@@ -65,3 +65,8 @@ Thumbs.db
 # legacy flat fallback chain the app ships with (see CLAUDE.md), and active-pack.txt.
 /assets/voice-cache/packs/*
 !/assets/voice-cache/packs/pack_mrijgajn/
+
+# Doc-graph embedding cache (rwang:doc-graph). A single 70MB+ JSON of vectors that
+# regenerates from docs/; it is untracked but was not ignored, so any `git add -A`
+# would have committed it into history permanently.
+docs/_generated/
