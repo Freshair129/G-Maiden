@@ -240,27 +240,51 @@ Premium-dark dashboard: background `#08090c`, frosted ice-aluminium panels
 
 ## Release & update workflow
 
-Users receive updates through an **in-app updater** (Tauri updater plugin), and releases are cut
-only by CI on a pushed version tag — never by a plain push to `main`.
+Users receive updates through an **in-app updater** (Tauri updater plugin). Releases move along
+**three channels** — a build is never published straight to the public. See
+`docs/releases/release-channel-architecture.md` for the full design.
 
-- **In-app update:** the app checks `https://github.com/Freshair129/G-Maiden/releases/latest/download/latest.json`
-  (set in `tauri.conf.json` → `plugins.updater`) on launch and via the **"ตรวจหาอัปเดต"** button.
-  If a newer version is published, it downloads the signed installer, verifies the **minisign**
-  signature, installs, and relaunches.
-- **Cutting a release:** push a tag `vX.Y.Z` → `.github/workflows/release.yml` builds, signs (key
-  from GitHub Secrets, *not* local), and publishes the GitHub Release + `latest.json`. Steps: bump
-  version in `src-tauri/tauri.conf.json` + `src/package.json` + `package.json` (root) + `src-tauri/Cargo.toml` + `App.tsx` `APP_VERSION`, add a
-  CHANGELOG entry, commit, then `git tag -a vX.Y.Z && git push origin vX.Y.Z`. CI ≈ 13 min.
-- **A commit on `main` does NOT reach users** until a tag is pushed. Local `pnpm tauri build` can't
-  sign — it's for smoke-testing only.
+**Pushing a tag does NOT publish anything.** There is no `release.yml`; both workflows are
+`workflow_dispatch` only. A tag is an input you hand to a workflow, not a trigger.
+
+| Channel | Audience | Manifest | Set by |
+| --- | --- | --- | --- |
+| `dev` | internal testers | `release/channels/dev.json` | `candidate-release.yml` |
+| `closed-beta` | invited testers | `release/channels/closed-beta.json` | promotion |
+| `stable` | public | `release/channels/stable.json` | `promote-release.yml` (production approval) |
+
+- **In-app update:** the app checks `release/channels/{{target}}.json` on `main`
+  (`tauri.conf.json` → `plugins.updater`), where `{{target}}` is the channel resolved in
+  `src/src/updateChannel.ts` — from the signed-in account's entitlement, **falling back to
+  `stable`** when there is none. It verifies the **minisign** signature before installing.
+- **Cutting a candidate:** bump all five version sources (`src-tauri/tauri.conf.json`,
+  `src/package.json`, `package.json` root, `src-tauri/Cargo.toml` + `Cargo.lock`,
+  `APP_VERSION` in `src/src/app/theme.ts`), add a CHANGELOG entry, commit, tag `vX.Y.Z`, then run
+  **candidate-release** with that tag. It verifies tag↔HEAD lineage, runs lint/tests, builds and
+  signs once, publishes a GitHub **prerelease**, and writes `dev.json` only.
+- **Promoting to stable:** run **promote-release** with the candidate manifest and an approval
+  evidence file. It runs in the `production` environment, defaults to `dry_run: true`, and
+  **re-publishes the same signed artifact** — promotion never rebuilds or re-signs.
+
+**Non-negotiable (architecture doc §3):**
+
+1. Stable users never see an unapproved candidate.
+2. Promotion must not rebuild or re-sign the artifact.
+3. A version that failed is burned — never rebuild over it; bump patch/minor and cut a new one.
+4. `stable.json` changes only through the approval-gated workflow.
+5. Every promotion carries test evidence and a known-issues record.
 
 ### Batching policy (avoid version churn)
 
-- **Small fixes → commit to `main` WITHOUT tagging.** Accumulate them into a batch.
-- **Only bump the version + push a tag when the user asks to release** (or a meaningful batch is
-  ready). Do not cut a release per fix — releasing every small fix runs the version number up
-  needlessly ("เวอร์ชันวิ่งทะลุโลก"). If an unreleased fix needs in-game testing, build locally or
-  ask before releasing.
+The gate above answers *how* to release; this answers *when*.
+
+- **Small fixes → commit to `main` WITHOUT tagging.** Accumulate them.
+- **Only bump the version and cut a candidate when the user asks** (or a meaningful batch is
+  ready). Do not cut per fix — that is what runs the version number away
+  ("เวอร์ชันวิ่งทะลุโลก"). Because rule 3 burns failed versions, cutting eagerly costs numbers
+  permanently.
+- If an unreleased fix needs in-game testing, build locally or ship it to `dev` — not to stable.
+  Local `pnpm tauri build` cannot sign, so it is smoke-testing only.
 
 ## repo https://github.com/Freshair129/G-Maiden.git
 deploy to web by vercel cli
@@ -269,6 +293,7 @@ deploy to web by vercel cli
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.3.0b | 2026-08-11 | Replaced the stale tag-publishes-to-everyone release section with the dev/closed-beta/stable channel pipeline that actually ships (candidate-release → promote-release), folded the batching policy into it, and corrected the updater endpoint and APP_VERSION path. |
 | 0.2.1b | 2026-07-22 | Normalized reader-facing Closed Beta naming from GMAD to G-Maiden while preserving technical identifiers such as functions, anchors, and storage paths. |
 | 0.2.0b | 2026-07-21 | Added GMAD Closed Beta delivery, legal-consent, and desktop first-run handoff context; CR-021 remains counsel-gated and CR-022 is not yet authored. |
 | 0.1.0b | 2026-07-21 | Added the planned GID security and privacy-safe web-profile contract; no implementation is implied. |
