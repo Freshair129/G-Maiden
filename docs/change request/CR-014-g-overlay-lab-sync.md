@@ -1,11 +1,11 @@
 ---
-version: "0.1.0"
+version: "0.2.0"
 title: "CR-014 - G-Overlay Lab sync receiver"
 doc_id: "CR-014-g-overlay-lab-sync"
-updated: "2026-08-10"
+updated: "2026-08-14"
 owner: "ATHER"
 created_at: "2026-08-10T00:00:00+07:00,ATHER"
-last_update: "2026-08-10T00:00:00+07:00,ATHER"
+last_update: "2026-08-14T00:00:00+07:00,ATHER"
 status: "accepted"
 approved_by: "Boss"
 approved_date: "2026-08-10"
@@ -36,12 +36,14 @@ G-AnnStudio owns the G-Overlay Lab draft and event preview. G-Maiden remains the
 
 ## Verification
 
-- Rust unit tests cover successful merge, unknown module rejection, missing module rejection, and range rejection.
+- Rust unit tests cover successful merge, invalid JSON/schema/type rejection, unknown module rejection, missing module rejection, and x/y/scale range rejection.
+- The pure local-sync plan test proves unrelated settings survive, the layout-only payload is the `overlay-layout-sync` payload, and the full settings snapshot is the `settings` payload. The route is separate from `/gsi`; this is a local authoring seam and does not add network egress or work on the G-Signal path.
 - G-Ann type-check covers its schema-compatible sender.
-- Manual smoke: change `banner` geometry in G-Ann, sync, and fire a G-Maiden kill preview.
+- Manual smoke remains required: change `banner` geometry in G-Ann, sync, and fire a G-Maiden kill preview. This evidence is not a live Dota/Boss-run measurement.
 
 ## Changelog
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
 | 0.1.0 | 2026-08-10 | approved | Initial approved C-3 contract for bounded G-Ann layout sync. | pending | ATHER |
+| 0.2.0 | 2026-08-14 | accepted | Added bounded local-sync smoke evidence for rejection, merge, event payloads, and critical-path isolation. | pending | ATHER |

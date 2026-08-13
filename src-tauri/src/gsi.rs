@@ -33,6 +33,8 @@ const OVERLAY_MODULE_IDS: [&str; 19] = [
     "score",
     "hero",
 ];
+const SETTINGS_EVENT: &str = "settings";
+const OVERLAY_LAYOUT_SYNC_EVENT: &str = "overlay-layout-sync";
 
 /// Clean, UI-facing snapshot of the current game state.
 #[derive(Serialize, serde::Deserialize, Clone, Default)]
@@ -349,19 +351,40 @@ fn merge_overlay_layout(existing_settings_json: Option<&str>, layout: Value) -> 
     settings
 }
 
+/// Build the complete local-sync result before touching disk or the event bus.
+/// Keeping this pure gives the authoring seam a bounded smoke surface: invalid
+/// payloads fail before persistence, and a valid layout can only produce the
+/// two documented UI updates (the full settings snapshot plus the layout-only
+/// event). This helper is intentionally separate from GSI tick handling.
+#[derive(Debug, PartialEq)]
+struct OverlayLayoutSyncPlan {
+    settings: Value,
+    layout: Value,
+}
+
+fn prepare_overlay_layout_sync(
+    existing_settings_json: Option<&str>,
+    body: &str,
+) -> Result<OverlayLayoutSyncPlan, String> {
+    let payload = parse_overlay_layout_sync(body)?;
+    let layout = payload["layout"].clone();
+    Ok(OverlayLayoutSyncPlan {
+        settings: merge_overlay_layout(existing_settings_json, layout.clone()),
+        layout,
+    })
+}
+
 /// Receive a complete layout draft from G-AnnStudio and apply only that field
 /// of the normal settings object. The server is loopback-only; validation here
 /// prevents this authoring seam from becoming a generic settings write surface.
 async fn overlay_layout_sync(State(app): State<AppHandle>, body: String) -> axum::Json<Value> {
-    let payload = match parse_overlay_layout_sync(&body) {
-        Ok(payload) => payload,
+    let plan = match prepare_overlay_layout_sync(crate::load_settings_json().as_deref(), &body) {
+        Ok(plan) => plan,
         Err(error) => {
             return axum::Json(serde_json::json!({ "ok": false, "error": error }));
         }
     };
-    let layout = payload["layout"].clone();
-    let settings = merge_overlay_layout(crate::load_settings_json().as_deref(), layout);
-    let serialized = match serde_json::to_string(&settings) {
+    let serialized = match serde_json::to_string(&plan.settings) {
         Ok(json) => json,
         Err(_) => {
             return axum::Json(
@@ -372,12 +395,12 @@ async fn overlay_layout_sync(State(app): State<AppHandle>, body: String) -> axum
     if crate::save_settings_json(&serialized).is_err() {
         return axum::Json(serde_json::json!({ "ok": false, "error": "could not persist layout" }));
     }
-    if app.emit("settings", &settings).is_err() {
+    if app.emit(SETTINGS_EVENT, &plan.settings).is_err() {
         return axum::Json(
             serde_json::json!({ "ok": false, "error": "layout saved but overlay notification failed" }),
         );
     }
-    let _ = app.emit("overlay-layout-sync", &settings["layout"]);
+    let _ = app.emit(OVERLAY_LAYOUT_SYNC_EVENT, &plan.layout);
     axum::Json(serde_json::json!({ "ok": true, "schemaVersion": 1 }))
 }
 
@@ -853,11 +876,31 @@ mod tests {
     }
 
     #[test]
-    fn overlay_layout_sync_merges_only_layout_into_existing_settings() {
+    fn overlay_layout_sync_plan_preserves_settings_and_emits_both_contract_payloads() {
         let payload = valid_overlay_layout_payload();
-        let settings = merge_overlay_layout(Some(r#"{"voiceVolume":0.7}"#), payload["layout"].clone());
-        assert_eq!(settings["voiceVolume"], 0.7);
-        assert_eq!(settings["layout"]["banner"]["enabled"], true);
+        let plan = prepare_overlay_layout_sync(
+            Some(r#"{"voiceVolume":0.7,"layout":{"banner":{"x":1}}}"#),
+            &payload.to_string(),
+        )
+        .unwrap();
+        assert_eq!(plan.settings["voiceVolume"], 0.7);
+        assert_eq!(plan.settings["layout"], payload["layout"]);
+        assert_eq!(plan.layout, payload["layout"]);
+        assert_eq!(SETTINGS_EVENT, "settings");
+        assert_eq!(OVERLAY_LAYOUT_SYNC_EVENT, "overlay-layout-sync");
+    }
+
+    #[test]
+    fn overlay_layout_sync_rejects_invalid_json_and_schema_without_preparing_a_plan() {
+        assert!(prepare_overlay_layout_sync(None, "not-json").is_err());
+
+        let mut payload = valid_overlay_layout_payload();
+        payload["schemaVersion"] = serde_json::json!(2);
+        assert!(prepare_overlay_layout_sync(None, &payload.to_string()).is_err());
+
+        let mut payload = valid_overlay_layout_payload();
+        payload["layout"]["banner"]["enabled"] = serde_json::json!("yes");
+        assert!(prepare_overlay_layout_sync(None, &payload.to_string()).is_err());
     }
 
     #[test]
@@ -878,6 +921,14 @@ mod tests {
     fn overlay_layout_sync_rejects_out_of_range_geometry() {
         let mut payload = valid_overlay_layout_payload();
         payload["layout"]["banner"]["scale"] = serde_json::json!(1.7);
-        assert!(parse_overlay_layout_sync(&payload.to_string()).is_err());
+        assert!(prepare_overlay_layout_sync(None, &payload.to_string()).is_err());
+
+        let mut payload = valid_overlay_layout_payload();
+        payload["layout"]["banner"]["x"] = serde_json::json!(-0.1);
+        assert!(prepare_overlay_layout_sync(None, &payload.to_string()).is_err());
+
+        let mut payload = valid_overlay_layout_payload();
+        payload["layout"]["banner"]["y"] = serde_json::json!(100.1);
+        assert!(prepare_overlay_layout_sync(None, &payload.to_string()).is_err());
     }
 }
