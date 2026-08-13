@@ -28,6 +28,16 @@ impl ReleaseChannel {
     pub const fn is_restricted(self) -> bool {
         !matches!(self, Self::Stable)
     }
+
+    /// Wire name, matching the serde `kebab-case` rename and the manifest filename.
+    /// `{:?}` would give `ClosedBeta`, which is neither.
+    pub const fn as_str(self) -> &'static str {
+        match self {
+            Self::Dev => "dev",
+            Self::ClosedBeta => "closed-beta",
+            Self::Stable => "stable",
+        }
+    }
 }
 
 #[derive(Clone, Copy, Debug, Default, Deserialize, Serialize, PartialEq, Eq)]
@@ -144,5 +154,26 @@ mod tests {
     fn restricted_channels_are_never_the_implicit_default() {
         let resolved = stable_fallback();
         assert!(!resolved.channel.is_restricted());
+    }
+
+    #[test]
+    fn wire_name_matches_the_manifest_filename() {
+        // `check_channel_update` reports this back to the UI and the manifest URL is
+        // built from the same names, so `{:?}` (`ClosedBeta`) would be wrong twice over.
+        assert_eq!(ReleaseChannel::Dev.as_str(), "dev");
+        assert_eq!(ReleaseChannel::ClosedBeta.as_str(), "closed-beta");
+        assert_eq!(ReleaseChannel::Stable.as_str(), "stable");
+        for channel in [
+            ReleaseChannel::Dev,
+            ReleaseChannel::ClosedBeta,
+            ReleaseChannel::Stable,
+        ] {
+            assert!(
+                channel
+                    .manifest_url()
+                    .ends_with(&format!("/{}.json", channel.as_str())),
+                "manifest url for {channel:?} must be named after its wire channel"
+            );
+        }
     }
 }

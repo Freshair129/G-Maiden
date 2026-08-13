@@ -37,7 +37,7 @@
       "status": "done",
       "tier": "core",
       "phase": "3",
-      "responsibility": "Real-time gank warning — voice interrupt at >85% danger; hysteresis clear <50%; Belief Revision",
+      "responsibility": "Real-time gank warning — voice interrupt when risk crosses the Sensitivity bar (default Med 0.65 danger / 0.40 clear; Low 0.85/0.50 = SRS baseline; High 0.50/0.30); hysteresis; Belief Revision",
       "source": ["src-tauri/src/signal.rs", "src-tauri/src/audio.rs"],
       "gates": ["p99<=300ms", "belief-revision-immutable"],
       "ai": { "model": "local-templates+slm-fallback", "model_ver": "v1", "in_hot_path": false },

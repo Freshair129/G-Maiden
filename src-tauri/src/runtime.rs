@@ -31,6 +31,14 @@ static IN_GAME: AtomicBool = AtomicBool::new(false);
 static GMAD_ENTITLED: AtomicBool = AtomicBool::new(cfg!(debug_assertions));
 static GMAD_CAPTURE_STARTED: AtomicBool = AtomicBool::new(false);
 
+/// Updater channel resolved from the last entitlement decision. The backend owns
+/// this, not the webview: Control and Overlay are separate JS contexts and the
+/// deck that runs the update banner is not the component that verified the
+/// entitlement, so a frontend-held channel is invisible to whichever window asks
+/// next. `0` = Stable, and Stable is also the fallback for every unknown value —
+/// a restricted channel is never reachable by forgetting to set this.
+static UPDATE_CHANNEL: AtomicU8 = AtomicU8::new(0); // 0=Stable, 1=ClosedBeta, 2=Dev
+
 /// Whether G-Signal gank warnings are enabled (mirrors the UI toggle). Defaults
 /// on so a fresh install warns out of the box.
 static SIGNAL_ENABLED: AtomicBool = AtomicBool::new(true);
@@ -102,6 +110,25 @@ pub fn set_gmad_entitled(value: bool) {
 
 pub fn gmad_entitled() -> bool {
     GMAD_ENTITLED.load(Ordering::SeqCst)
+}
+
+pub fn set_update_channel(channel: crate::gmad_entitlement::update_channel::ReleaseChannel) {
+    use crate::gmad_entitlement::update_channel::ReleaseChannel;
+    let code: u8 = match channel {
+        ReleaseChannel::Stable => 0,
+        ReleaseChannel::ClosedBeta => 1,
+        ReleaseChannel::Dev => 2,
+    };
+    UPDATE_CHANNEL.store(code, Ordering::SeqCst);
+}
+
+pub fn update_channel() -> crate::gmad_entitlement::update_channel::ReleaseChannel {
+    use crate::gmad_entitlement::update_channel::ReleaseChannel;
+    match UPDATE_CHANNEL.load(Ordering::SeqCst) {
+        1 => ReleaseChannel::ClosedBeta,
+        2 => ReleaseChannel::Dev,
+        _ => ReleaseChannel::Stable,
+    }
 }
 
 pub fn mark_gmad_capture_started() -> bool {

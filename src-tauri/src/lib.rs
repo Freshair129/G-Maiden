@@ -7,6 +7,7 @@ use tauri::menu::{Menu, MenuItem, PredefinedMenuItem};
 use tauri::tray::{MouseButton, MouseButtonState, TrayIconBuilder, TrayIconEvent};
 use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
+use tauri_plugin_updater::UpdaterExt;
 
 pub mod announcer;
 pub mod audio;
@@ -20,7 +21,7 @@ pub mod damage;
 #[cfg(not(feature = "wgc"))]
 pub mod dxgi;
 mod governor;
-mod gmad_entitlement;
+pub mod gmad_entitlement;
 pub mod gsi;
 mod identity;
 mod items;
@@ -41,6 +42,96 @@ mod usage;
 mod utterance;
 mod voice_api;
 
+/// The update found by the last `check_channel_update`, held so `install_pending_update`
+/// installs exactly what the user was shown rather than re-resolving and racing a
+/// manifest edit.
+#[derive(Default)]
+struct PendingUpdate(std::sync::Mutex<Option<tauri_plugin_updater::Update>>);
+
+#[derive(serde::Serialize)]
+struct UpdateOffer {
+    version: String,
+    notes: String,
+    channel: String,
+}
+
+/// Check the channel's manifest for an update.
+///
+/// The endpoint is built **in Rust from a hardcoded per-channel URL**
+/// (`update_channel::ReleaseChannel::manifest_url`) and no `target` is passed to the
+/// updater. That is deliberate and load-bearing: `tauri-plugin-updater` uses one
+/// `target` string BOTH to fill `{{target}}` in the endpoint template AND as the key it
+/// looks up in the manifest's `platforms{}`. Overloading it to carry the channel is what
+/// broke both previous callers — bare `check()` asked for a `windows.json` that does not
+/// exist, and `check({target:'dev'})` fetched the right file then looked for a
+/// `platforms['dev']` that manifests generated from Tauri's own `latest.json` never
+/// carry. With the URL supplied here and no target, the plugin falls back through
+/// `{os}-{arch}-{installer}` then `{os}-{arch}`, which is what the manifests actually
+/// contain — and it keeps MSI and NSIS installers resolving to their own artifact.
+///
+/// The webview never supplies a URL, only a channel enum, so a compromised or buggy
+/// frontend cannot point the updater at an attacker's manifest. Signature verification is
+/// untouched: the plugin still checks minisign against the pubkey embedded in the app
+/// before anything is installed.
+#[tauri::command]
+async fn check_channel_update(
+    app: tauri::AppHandle,
+    channel: Option<gmad_entitlement::update_channel::ReleaseChannel>,
+) -> Result<Option<UpdateOffer>, String> {
+    // The webview may NARROW to a less privileged channel, never widen to a restricted
+    // one. Without this clamp the `dev`/`closed-beta` restriction would be enforced only
+    // by frontend code that a modified or buggy renderer can simply not run — the
+    // manifests are public, so a widened request would hand an unentitled install a
+    // tester build. The backend's channel comes from the server-side entitlement
+    // decision and is Stable until one is verified.
+    let backend = runtime::update_channel();
+    let channel = match channel {
+        Some(requested) if !requested.is_restricted() || requested == backend => requested,
+        Some(_) => backend,
+        None => backend,
+    };
+
+    let url: tauri::Url = channel
+        .manifest_url()
+        .parse()
+        .map_err(|_| "invalid channel manifest url".to_string())?;
+
+    let updater = app
+        .updater_builder()
+        .endpoints(vec![url])
+        .map_err(|e| format!("updater endpoint rejected: {e}"))?
+        .timeout(std::time::Duration::from_secs(30))
+        .build()
+        .map_err(|e| format!("updater unavailable: {e}"))?;
+
+    let found = updater
+        .check()
+        .await
+        .map_err(|e| format!("update check failed: {e}"))?;
+
+    let offer = found.as_ref().map(|u| UpdateOffer {
+        version: u.version.clone(),
+        notes: u.body.clone().unwrap_or_default(),
+        channel: channel.as_str().to_string(),
+    });
+    *app.state::<PendingUpdate>().0.lock().unwrap() = found;
+    Ok(offer)
+}
+
+/// Download and install the update from the last successful check.
+#[tauri::command]
+async fn install_pending_update(app: tauri::AppHandle) -> Result<(), String> {
+    // Clone out of the mutex before awaiting — holding the guard across an await
+    // would make this future non-Send and can deadlock a second caller.
+    let update = app.state::<PendingUpdate>().0.lock().unwrap().clone();
+    let update = update.ok_or_else(|| "no update pending".to_string())?;
+    update
+        .download_and_install(|_, _| {}, || {})
+        .await
+        .map_err(|e| format!("install failed: {e}"))?;
+    Ok(())
+}
+
 /// Show/hide the OSD overlay window (called by the control GUI toggle).
 #[tauri::command]
 fn set_overlay_visible(app: tauri::AppHandle, visible: bool) {
@@ -59,6 +150,11 @@ async fn verify_gmad_entitlement(
         let _ = overlay.hide();
     }
     let decision = gmad_entitlement::verify(&access_token).await?;
+    // The channel lives in the backend from here on, so the deck's update banner
+    // (a different window from the one that signed in) resolves the right manifest
+    // without threading state across JS contexts. A failed decision resolves to
+    // Stable, never to a stale restricted channel.
+    runtime::set_update_channel(decision.resolved_update_channel().channel);
     runtime::set_gmad_entitled(decision.unlocks_runtime());
     if decision.unlocks_runtime() && runtime::mark_gmad_capture_started() {
         capture::start(app.clone());
@@ -68,6 +164,7 @@ async fn verify_gmad_entitlement(
 
 #[tauri::command]
 fn lock_gmad_runtime(app: tauri::AppHandle) {
+    runtime::set_update_channel(gmad_entitlement::update_channel::ReleaseChannel::Stable);
     runtime::set_gmad_entitled(false);
     if let Some(overlay) = app.get_webview_window("overlay") {
         let _ = overlay.hide();
@@ -633,6 +730,7 @@ pub fn run() {
     static MUTED_VOL: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
 
     tauri::Builder::default()
+        .manage(PendingUpdate::default())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_store::Builder::default().build())
@@ -681,6 +779,8 @@ pub fn run() {
             set_overlay_visible,
             verify_gmad_entitlement,
             lock_gmad_runtime,
+            check_channel_update,
+            install_pending_update,
             speak,
             speak_event,
             cancel_speech,

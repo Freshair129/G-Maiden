@@ -210,7 +210,7 @@ We maintain custom AI skills under `.agents/skills/`.
 
 ### General
 - Specs (PRD, SRS) are in **Thai** — the source of truth for requirements
-- SemVer: MAJOR.MINOR.PATCH — bump version in 3 places: `tauri.conf.json`, `src/package.json`, `App.tsx APP_VERSION`
+- SemVer: MAJOR.MINOR.PATCH — bump version in **5** places: `src-tauri/tauri.conf.json`, `src/package.json`, root `package.json`, `src-tauri/Cargo.toml` (+ `Cargo.lock`), and `APP_VERSION` in `src/src/app/theme.ts`
 - Keep a Changelog format in `CHANGELOG.md`
 - Comments only when the WHY is non-obvious; no "what" comments
 - No feature flags, no backwards-compat shims — just change the code
@@ -220,32 +220,42 @@ We maintain custom AI skills under `.agents/skills/`.
 
 ## Release & Update Workflow
 
-The app ships to users through an **in-app updater** (Tauri updater plugin), and releases are
-produced **only by CI on a pushed version tag**. Understand both halves before touching versions.
+**SSOT for this topic is [CLAUDE.md](file:///g:/G-Maiden/CLAUDE.md) → "Release & update workflow".**
+Read it before touching versions. The summary below exists only so this file does not contradict it.
 
-### How users get updates
-- The running app checks `plugins.updater.endpoints` in `tauri.conf.json` →
-  `https://github.com/Freshair129/G-Maiden/releases/latest/download/latest.json` on launch and via
-  the **"ตรวจหาอัปเดต"** button (`App.tsx`).
-- It compares the published `latest.json` version against the running app's version. If newer, it
-  downloads the signed installer, verifies it against the embedded **minisign pubkey**, installs,
-  and relaunches.
-- **A commit/push to `main` does NOT reach users.** Only a published GitHub Release does. The
-  updater is blind to untagged commits.
+> **Retired, do not follow:** this section previously described a tag-triggered `release.yml` that
+> published straight to everyone, and an updater endpoint at
+> `releases/latest/download/latest.json`. `release.yml` was **deleted** (`d505cf5c`) and the
+> endpoint changed (`48c0f6b3`). **Pushing a tag now publishes nothing.**
 
 ### How a release is cut
-- `.github/workflows/release.yml` triggers on tags matching `v*`. It builds, **signs** (using
-  `TAURI_SIGNING_PRIVATE_KEY` from GitHub Secrets — the key is *not* on dev machines), and
-  publishes a GitHub Release with the NSIS/MSI installers, their `.sig` files, and `latest.json`.
-- Steps to release:
-  1. Bump the version in **3 places**: `src-tauri/tauri.conf.json`, `src/package.json`, and
-     `App.tsx` `APP_VERSION` (the first drives the updater; the last drives the UI display).
-  2. Add a `CHANGELOG` entry (in `App.tsx` and `CHANGELOG.md`).
-  3. `git commit` → `git push origin main` → `git tag -a vX.Y.Z -m "..."` → `git push origin vX.Y.Z`.
-  4. CI takes ~13 min. Verify the result: the new version is `Latest` and `latest.json` reports the
-     new version **with `signature` present**.
+- Three channels — `dev` → `closed-beta` → `stable` — each with a manifest under
+  `release/channels/`. Both workflows are **`workflow_dispatch` only**; a tag is an *input* you hand
+  to a workflow, never a trigger.
+- `candidate-release.yml` verifies tag↔HEAD lineage, runs clippy/cargo test/eslint/tsc/vitest,
+  builds and **signs once**, publishes a GitHub **prerelease**, and opens a PR updating `dev.json`.
+  Someone must merge that PR before `dev` moves.
+- `promote-release.yml` runs in the `production` environment (required reviewer: the owner),
+  defaults to `dry_run: true`, and **re-points the same signed artifact** — promotion never rebuilds
+  and never re-signs.
+- Bump the version in **5 places**, not 3: `src-tauri/tauri.conf.json`, `src/package.json`, root
+  `package.json`, `src-tauri/Cargo.toml` (+ `Cargo.lock`), and `APP_VERSION` in
+  **`src/src/app/theme.ts`** (not `App.tsx` — it moved).
 - Local `pnpm tauri build` produces installers but **cannot sign** (no private key locally), so it
   is for smoke-testing only — never the release path.
+
+### How users get updates
+- Both the launch auto-check/banner (`useAppUpdate.ts`) and the first-run gate go through the Rust
+  commands **`check_channel_update`** / **`install_pending_update`**, never the updater plugin's JS
+  `check()`. **The channel goes in the endpoint URL, never in `target`** — the plugin uses one
+  `target` string for both the URL template and the `platforms{}` key, so overloading it breaks one
+  or the other. Manifests stay keyed by platform id; `channel-manifest.mjs` rejects channel-name keys.
+- The channel is backend state (`runtime::update_channel`), set from the entitlement in
+  `verify_gmad_entitlement`, reset to `stable` on lock. Do not reintroduce a frontend-held channel:
+  Control and Overlay are separate JS contexts and the window showing the banner is not the one that
+  signed in.
+- **A commit/push to `main` does NOT reach users** — only a manifest that a workflow wrote and a
+  human merged/approved does.
 
 ### Batching policy (IMPORTANT — don't churn versions)
 - **Small fixes → commit to `main` WITHOUT tagging.** Accumulate them.
@@ -272,7 +282,7 @@ to hand off or tag, run all of:
 - `pnpm -C src exec tsc --noEmit` (zero errors)
 - `pnpm -C src test -- --run` (Vitest)
 - Tauri smoke build, `--no-bundle` (compiles Rust + builds the frontend without needing the
-  updater signing secret; the `verify` job in `release.yml` runs this unsigned)
+  updater signing secret; `candidate-release.yml` runs this unsigned before the signed build)
 
 ---
 
@@ -298,10 +308,12 @@ to hand off or tag, run all of:
   the account stores identity only (email + public Steam ids + display name + GID).
 - **GID security/web profiles are proposed only, not shipped**: TOTP MFA, phone OTP, recovery email,
   security activity/alerts, and an opt-in public profile/badge require the C-3/HIGH contract above.
-- **G-Maiden beta distribution is partially shipped**: CR-016 private Storage/Functions and landing
-  queue/ops UI are live. CR-020 Hero countdown is live. The legal acceptance receipt and desktop
-  first-run entitlement handoff are not shipped; CR-021 awaits counsel review and CR-022 must be
-  authored/approved before implementation.
+- **G-Maiden beta distribution is partially shipped**: CR-016 private Storage/Functions and the
+  landing queue are live; its **`/ops` admin UI is not** — only the `admin-gmad-controller` Edge
+  Function exists (the landing renders `LandingPage` unconditionally, no router, no rewrite).
+  CR-020 Hero countdown is live. The legal acceptance receipt is not shipped and CR-021 awaits
+  counsel review. **CR-022 is shipped** (`b6a0fc60`): `src/src/GmadFirstRunGate.tsx` gates the whole
+  deck on Google sign-in + current Terms + active entitlement in every release build.
 - rodio audio backend (in-process WAV, <1ms cancel)
 - Individual stat toggles (timer, score, HP/Mana, K/D/A, gold/NW)
 - Custom overlay positioning with X/Y sliders + profile save/load

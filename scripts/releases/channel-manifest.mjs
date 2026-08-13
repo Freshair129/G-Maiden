@@ -5,6 +5,17 @@ import { dirname, resolve } from 'node:path';
 
 const CHANNELS = new Set(['dev', 'closed-beta', 'stable']);
 
+// `platforms` keys must be the platform ids tauri-plugin-updater actually looks up:
+// `{os}-{arch}` with an optional `-{installer}` suffix. This is enforced because the
+// updater uses ONE string both to fill `{{target}}` in an endpoint template and as this
+// key, which made it tempting to key manifests by CHANNEL name instead — and that is
+// exactly the bug this guard exists to stop coming back. A channel-keyed manifest fetches
+// fine and then fails with TargetNotFound, or silently reports "up to date" when its
+// placeholder version is lower than the running app. The channel belongs in the URL,
+// which the Rust `check_channel_update` command owns.
+const PLATFORM_KEY =
+  /^(windows|darwin|linux)-(x86_64|aarch64|i686|armv7|riscv64)(-(msi|nsis|app|dmg|appimage|deb|rpm))?$/;
+
 export function validateManifest(m) {
   const required = ['schemaVersion','channel','version','sourceSha','publishedAt','platforms'];
   for (const key of required) if (!m?.[key]) throw new Error(`manifest missing ${key}`);
@@ -15,6 +26,9 @@ export function validateManifest(m) {
   const entries = Object.entries(m.platforms);
   if (entries.length === 0) throw new Error('platforms must be non-empty');
   for (const [platform, artifact] of entries) {
+    if (!PLATFORM_KEY.test(platform)) {
+      throw new Error(`platform key ${platform} is not an updater platform id ({os}-{arch}[-{installer}]); the channel belongs in the endpoint URL, not this key`);
+    }
     for (const key of ['url','signature']) if (!artifact?.[key]) throw new Error(`platform ${platform} missing ${key}`);
     if (artifact.sha256 && !/^[0-9a-f]{64}$/i.test(artifact.sha256)) throw new Error(`invalid sha256 for ${platform}`);
   }

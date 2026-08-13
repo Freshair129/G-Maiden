@@ -1,0 +1,19 @@
+{
+  "version": "0.13.0",
+  "notes": "See the assets below to download and install.",
+  "pub_date": "2026-07-19T05:22:11.257Z",
+  "platforms": {
+    "windows-x86_64": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRG1YSUpTS1EyQ1NKR20rSUVwME1FS1JxSmV5NFBoMHlOSG1aZ01kTzRNRGswWUJTWjM4K25aaGp6Mzd0bEFJMncwRGF2OTcvQnZ2YUNWSk8zZmRybUt2N0MraFVvbmcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0NDM4NTI2CWZpbGU6Ry1NYWlkZW5fMC4xMy4wX3g2NF9lbi1VUy5tc2kKdFJ5cGl3WXRYUXBWcUx4MXpJQmJRVnB1WGlTZjd4TmtKaWxXV1RTUEd1UUhXME5YSXNQQmkrL2xNRWw1TTZEb0ZVaWlBWVRlcnhxSTgyY1JHRERhRHc9PQo=",
+      "url": "https://github.com/Freshair129/G-Maiden/releases/download/v0.13.0/G-Maiden_0.13.0_x64_en-US.msi"
+    },
+    "windows-x86_64-msi": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRG1YSUpTS1EyQ1NKR20rSUVwME1FS1JxSmV5NFBoMHlOSG1aZ01kTzRNRGswWUJTWjM4K25aaGp6Mzd0bEFJMncwRGF2OTcvQnZ2YUNWSk8zZmRybUt2N0MraFVvbmcwPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0NDM4NTI2CWZpbGU6Ry1NYWlkZW5fMC4xMy4wX3g2NF9lbi1VUy5tc2kKdFJ5cGl3WXRYUXBWcUx4MXpJQmJRVnB1WGlTZjd4TmtKaWxXV1RTUEd1UUhXME5YSXNQQmkrL2xNRWw1TTZEb0ZVaWlBWVRlcnhxSTgyY1JHRERhRHc9PQo=",
+      "url": "https://github.com/Freshair129/G-Maiden/releases/download/v0.13.0/G-Maiden_0.13.0_x64_en-US.msi"
+    },
+    "windows-x86_64-nsis": {
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRG1YSUpTS1EyQ1ZydnJ3Lyt4Y3prem5mNm9UOXZIRDg2cDI1cWJPMVJEUm1NUVBJN1YzTU5yS2tsZDEzcVBSeDdhbUdOZXFWb2Z4aDRUM0hlQnEyb1V0U3BjTWtqdEFjPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg0NDM4NTI2CWZpbGU6Ry1NYWlkZW5fMC4xMy4wX3g2NC1zZXR1cC5leGUKdFZ6TERFQWpPc0w1SkFHS2tOWVY5T0hpRWFNMERLQXhyc001c0VtcWxoSlJZNlQ0YXhwY0srN1BOQXhydklXNTNHbnpCT3BueUxTRjcwdHpPNnNCQ2c9PQo=",
+      "url": "https://github.com/Freshair129/G-Maiden/releases/download/v0.13.0/G-Maiden_0.13.0_x64-setup.exe"
+    }
+  }
+}

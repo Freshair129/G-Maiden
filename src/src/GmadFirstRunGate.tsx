@@ -2,7 +2,7 @@ import { useEffect, useState, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { useGmadDesktopEntitlement } from "./gmadEntitlement";
-import { checkResolvedUpdate, resolveUpdateChannel, type ResolvedUpdateChannel } from "./updateChannel";
+import { checkChannelUpdate, resolveUpdateChannel, type ResolvedUpdateChannel } from "./updateChannel";
 import { buildDiagnosticBundle, compatibilityMode, readinessFromRuntime } from "./betaReadiness";
 import { APP_VERSION } from "./app/theme";
 import BetaFeedback from "./BetaFeedback";
@@ -40,7 +40,7 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
       return;
     }
     let cancelled = false;
-    void checkResolvedUpdate(resolved)
+    void checkChannelUpdate(resolved.channel)
       .then((update) => {
         const version = update?.version === "0.0.0" ? undefined : update?.version;
         if (!cancelled) setUpdateStatus({ resolved, availableVersion: version });
