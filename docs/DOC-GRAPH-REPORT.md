@@ -1,18 +1,8 @@
 # G-Maiden Doc Graph Report
 
-> ⚠️ **ตัวเลขด้านล่างเป็นของรอบ 2026-07-24 ไม่ตรงกับ `DOC-GRAPH.json` ปัจจุบันแล้ว**
-> `DOC-GRAPH.json` ถูกอัปเดตแบบ incremental เมื่อ 2026-08-11 (ตัด node ที่ตายแล้ว
-> `overlay/LayoutEditor.tsx` และ `.github/workflows/release.yml`, เพิ่ม
-> `candidate-release.yml`/`promote-release.yml` และ `assets/dota-reference/README.md`
-> → 254 nodes / 1206 edges, dangling = 0)
->
-> ไฟล์ .md นี้ยัง**ไม่ได้ regenerate** เพราะตัว generator ไม่ได้อยู่ใน repo —
-> มีแต่ผลลัพธ์ ถ้าต้องการเลขที่ตรงกันต้องรัน generator ตัวจริงอีกครั้ง
-> ผลตรวจสุขภาพล่าสุดอยู่ที่ [`docs/.preflight-report.json`](file:///g:/G-Maiden/docs/.preflight-report.json)
+สร้างเมื่อ / Generated at: 2026-08-13T14:39:42.515Z
 
-สร้างเมื่อ / Generated at: 2026-07-24T02:57:38.165Z
-
-สแกน 129 ไฟล์เอกสาร, 253 nodes, 1208 edges, 116 รายการปัญหา (64 ตัวบล็อก exit code) / scanned 129 doc files, 253 nodes, 1208 edges, 116 violations (64 blocking exit code).
+สแกน 140 ไฟล์เอกสาร, 265 nodes, 1209 edges, 190 รายการปัญหา (136 ตัวบล็อก exit code) / scanned 140 doc files, 265 nodes, 1209 edges, 190 violations (136 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -20,15 +10,15 @@
 
 | Reason | คำอธิบาย / Description | Count | Blocking? |
 | --- | --- | --- | --- |
-| anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 11 | yes |
-| duplicate-slug | สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) | 5 | yes |
+| anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 71 | yes |
+| duplicate-slug | สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) | 9 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 3 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
-| missing-file | symbol link ไปยังไฟล์ที่ไม่มีจริง / symbol link to a missing file | 1 | yes |
-| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 49 | no (informational) |
-| unresolved | wikilink หาไม่เจอ / unresolved wikilink | 7 | yes |
-| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 26 | yes |
+| missing-changelog | มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table | 4 | yes |
+| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 51 | no (informational) |
+| unresolved | wikilink หาไม่เจอ / unresolved wikilink | 11 | yes |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 27 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -38,9 +28,9 @@
 
 ### docs/DOC-INDEX.md
 
-- [L107] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="SPEC--*")
-- [L109] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="ADR-O-*")
-- [L116] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
+- [L115] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="SPEC--*")
+- [L117] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="ADR-O-*")
+- [L124] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
 
 ### docs/DOCS-IA-REORG-PROPOSAL.md
 
@@ -151,10 +141,6 @@
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
-### docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md
-
-- [L250] **missing-file** — symbol link ไปยังไฟล์ที่ไม่มีจริง / symbol link to a missing file (target="landing/assets/concepts/g-maiden-sea-captain-stone-titan-v1.webp")
-
 ### docs/change request/CR-005-landing-auth-social.md
 
 - [-] **invalid-status** — ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) (severity="error", status="DRAFT — awaiting approval")
@@ -263,8 +249,70 @@
 
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.0b", changelog="0.1.0b")
 
+### docs/design-system/02-tokens.md
+
+- [L207] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2227, symbol="g-deck-panel")
+
+### docs/design-system/03-layout.md
+
+- [L70] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2438, symbol="g-l1-white-glass")
+- [L71] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2227, symbol="g-deck-panel")
+- [L72] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2530, symbol="g-panel-rim")
+- [L73] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2186, symbol="g-sidebar-fab")
+- [L73] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2212, symbol="g-topbar-fab")
+- [L73] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2892, symbol="g-audio-rail")
+- [L74] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2611, symbol="g-power-radial")
+- [L74] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2261, symbol="g-signals-fab")
+- [L135] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2400, symbol="--cr6-panel-left")
+- [L136] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2401, symbol="--cr6-panel-top")
+- [L137] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2402, symbol="--cr6-panel-width")
+- [L138] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2403, symbol="--cr6-panel-height")
+- [L139] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2404, symbol="--cr6-topbar-left")
+- [L140] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2405, symbol="--cr6-topbar-top")
+- [L141] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2406, symbol="--cr6-topbar-width")
+- [L142] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2407, symbol="--cr6-sidebar-left")
+- [L143] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2408, symbol="--cr6-sidebar-top")
+- [L144] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2419, symbol="--cr6-power-left")
+- [L145] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2420, symbol="--cr6-power-top")
+- [L146] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2421, symbol="--cr6-power-main-left")
+- [L147] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2422, symbol="--cr6-power-main-top")
+- [L316] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3007, symbol="gm-fung-layout")
+
+### docs/design-system/04-components.md
+
+- [L59] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2212, symbol="g-topbar-fab")
+- [L107] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2186, symbol="g-sidebar-fab")
+- [L108] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2202, symbol="g-nav-item")
+- [L128] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2611, symbol="g-power-radial")
+- [L129] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2621, symbol="g-power-main")
+- [L130] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2645, symbol="g-power-menu")
+- [L155] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2892, symbol="g-audio-rail")
+- [L180] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3022, symbol="gm-score-header")
+- [L198] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3078, symbol="gm-phase-chip")
+- [L199] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/deck/onair.tsx", anchor=216, symbol="PhaseChip")
+- [L240] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3126, symbol="gm-mini-stat")
+- [L257] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3187, symbol="gm-hero-slot")
+- [L273] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3501, symbol="gm-agent-card")
+- [L294] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3674, symbol="gm-tally")
+- [L294] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3684, symbol="gm-tally-onair")
+- [L295] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3525, symbol="gm-sector-log")
+- [L315] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3697, symbol="gm-onair")
+- [L350] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2783, symbol="g-ping-pill")
+- [L374] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3251, symbol="gm-rundown")
+- [L397] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3318, symbol="gm-debrief")
+- [L413] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2261, symbol="g-signals-fab")
+- [L414] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2266, symbol="g-sig")
+- [L439] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3819, symbol="gm-palette-backdrop")
+- [L439] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3838, symbol="gm-palette")
+- [L478] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3820, symbol="gm-sheet-backdrop")
+- [L524] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2782, symbol="g-status-pill")
+- [L573] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2227, symbol="g-deck-panel")
+- [L575] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2530, symbol="g-panel-rim")
+- [L591] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2906, symbol="g-volume-rail")
+
 ### docs/design-system/05-sitemap-ia.md
 
+- [L100] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3078, symbol="gm-phase-chip")
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="2.4.1-draft", changelog="2.4.0-draft")
 
 ### docs/design-system/08-account-gid.md
@@ -390,7 +438,14 @@
 
 ### docs/rca/2026-07-10-voice-pack-path-traversal.md
 
+- [L10] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/pack_io.rs", anchor=66, symbol="build_pack")
+- [L23] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/pack_io.rs", anchor=66, symbol="build_pack")
+- [L25] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/pack_io.rs", anchor=66, symbol="build_pack")
 - [L28] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=268, symbol="announcer_install")
+- [L41] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/pack_io.rs", anchor=347, symbol="sanitize_id")
+- [L42] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/pack_io.rs", anchor=363, symbol="sanitize_file_name")
+- [L55] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/pack_io.rs", anchor=66, symbol="build_pack")
+- [L61] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/pack_io.rs", anchor=66, symbol="build_pack")
 
 ### docs/reference/dota-ui/README.md
 
@@ -403,28 +458,56 @@
 - [L27] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="PUBLIC-DEMO-SPEC")
 - [L28] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CLOSED-BETA-WAVE-0-SPEC")
 - [L29] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CLOSED-BETA-WAVE-0-DOD")
-- [L30] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="OPEN-BETA-SPEC")
-- [L31] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="OPEN-BETA-DOD")
+- [L30] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CLOSED-BETA-WAVE-1-SPEC")
+- [L31] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CLOSED-BETA-WAVE-1-DOD")
+- [L32] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CLOSED-BETA-WAVE-2-SPEC")
+- [L33] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CLOSED-BETA-WAVE-2-DOD")
+- [L34] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="OPEN-BETA-SPEC")
+- [L35] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="OPEN-BETA-DOD")
 
 ### docs/releases/closed-beta/wave-0/definition-of-done.md
 
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="definition-of-done", siblings=["docs/releases/open-beta/definition-of-done.md"])
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="definition-of-done", siblings=["docs/releases/closed-beta/wave-1/definition-of-done.md","docs/releases/closed-beta/wave-2/definition-of-done.md","docs/releases/open-beta/definition-of-done.md"])
 
 ### docs/releases/closed-beta/wave-0/specification.md
 
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/open-beta/specification.md","docs/releases/public-demo/specification.md"])
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/closed-beta/wave-1/specification.md","docs/releases/closed-beta/wave-2/specification.md","docs/releases/open-beta/specification.md","docs/releases/public-demo/specification.md"])
+
+### docs/releases/closed-beta/wave-1/definition-of-done.md
+
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="definition-of-done", siblings=["docs/releases/closed-beta/wave-0/definition-of-done.md","docs/releases/closed-beta/wave-2/definition-of-done.md","docs/releases/open-beta/definition-of-done.md"])
+- [-] **missing-changelog** — มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table
+
+### docs/releases/closed-beta/wave-1/specification.md
+
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/closed-beta/wave-0/specification.md","docs/releases/closed-beta/wave-2/specification.md","docs/releases/open-beta/specification.md","docs/releases/public-demo/specification.md"])
+- [-] **missing-changelog** — มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table
+
+### docs/releases/closed-beta/wave-2/definition-of-done.md
+
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="definition-of-done", siblings=["docs/releases/closed-beta/wave-0/definition-of-done.md","docs/releases/closed-beta/wave-1/definition-of-done.md","docs/releases/open-beta/definition-of-done.md"])
+- [-] **missing-changelog** — มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table
+
+### docs/releases/closed-beta/wave-2/specification.md
+
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/closed-beta/wave-0/specification.md","docs/releases/closed-beta/wave-1/specification.md","docs/releases/open-beta/specification.md","docs/releases/public-demo/specification.md"])
+- [-] **missing-changelog** — มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table
 
 ### docs/releases/open-beta/definition-of-done.md
 
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="definition-of-done", siblings=["docs/releases/closed-beta/wave-0/definition-of-done.md"])
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="definition-of-done", siblings=["docs/releases/closed-beta/wave-0/definition-of-done.md","docs/releases/closed-beta/wave-1/definition-of-done.md","docs/releases/closed-beta/wave-2/definition-of-done.md"])
 
 ### docs/releases/open-beta/specification.md
 
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/closed-beta/wave-0/specification.md","docs/releases/public-demo/specification.md"])
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/closed-beta/wave-0/specification.md","docs/releases/closed-beta/wave-1/specification.md","docs/releases/closed-beta/wave-2/specification.md","docs/releases/public-demo/specification.md"])
 
 ### docs/releases/public-demo/specification.md
 
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/closed-beta/wave-0/specification.md","docs/releases/open-beta/specification.md"])
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/closed-beta/wave-0/specification.md","docs/releases/closed-beta/wave-1/specification.md","docs/releases/closed-beta/wave-2/specification.md","docs/releases/open-beta/specification.md"])
+
+### docs/releases/release-channel-implementation.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.0", changelog="0.1.0")
 
 ### docs/research/assets/dota2-hud-reference.md
 
@@ -439,6 +522,14 @@
 - [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="stable")
 
 ### docs/research/huggingface-dota2-resources.md
+
+- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/superpowers/plans/2026-08-09-gid-pipeline-phase1.md
+
+- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
