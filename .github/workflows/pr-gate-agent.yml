@@ -35,13 +35,18 @@ jobs:
           HEAD_SHA: ${{ github.event.pull_request.head.sha }}
         shell: bash
         run: |
-          for attempt in $(seq 1 60); do
+          # CI includes a cold Tauri native build and can exceed ten minutes.
+          # Keep the gate polling, but give the required check a 60-minute
+          # budget so a slow successful CI run is not reported as a false fail.
+          max_attempts=240
+          poll_seconds=15
+          for attempt in $(seq 1 "${max_attempts}"); do
             status=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs" \
               --jq '[.check_runs[] | select(.name == "ci")][0].status // "missing"')
             conclusion=$(gh api "repos/${GITHUB_REPOSITORY}/commits/${HEAD_SHA}/check-runs" \
               --jq '[.check_runs[] | select(.name == "ci")][0].conclusion // "unknown"')
 
-            echo "required ci check: status=${status} conclusion=${conclusion} attempt=${attempt}/60"
+            echo "required ci check: status=${status} conclusion=${conclusion} attempt=${attempt}/${max_attempts}"
 
             if [[ "${status}" == "completed" ]]; then
               if [[ "${conclusion}" == "success" ]]; then
@@ -51,7 +56,7 @@ jobs:
               exit 1
             fi
 
-            sleep 10
+            sleep "${poll_seconds}"
           done
 
           echo "Timed out waiting for required CI check." >&2

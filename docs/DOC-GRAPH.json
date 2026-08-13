@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-11T19:46:40.754647Z",
+  "generatedAt": "2026-08-13T14:39:42.515Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -250,6 +250,11 @@
       "id": "docs/change request/CR-014-document-impact-map-gmaiden-adapter.md",
       "type": "doc",
       "path": "docs/change request/CR-014-document-impact-map-gmaiden-adapter.md"
+    },
+    {
+      "id": "docs/change request/CR-014-g-overlay-lab-sync.md",
+      "type": "doc",
+      "path": "docs/change request/CR-014-g-overlay-lab-sync.md"
     },
     {
       "id": "docs/change request/CR-015-genesisblockdb-document-intelligence-projection.md",
@@ -597,9 +602,34 @@
       "path": "docs/releases/closed-beta/wave-0/definition-of-done.md"
     },
     {
+      "id": "docs/releases/closed-beta/wave-0/evidence-runbook.md",
+      "type": "doc",
+      "path": "docs/releases/closed-beta/wave-0/evidence-runbook.md"
+    },
+    {
       "id": "docs/releases/closed-beta/wave-0/specification.md",
       "type": "doc",
       "path": "docs/releases/closed-beta/wave-0/specification.md"
+    },
+    {
+      "id": "docs/releases/closed-beta/wave-1/definition-of-done.md",
+      "type": "doc",
+      "path": "docs/releases/closed-beta/wave-1/definition-of-done.md"
+    },
+    {
+      "id": "docs/releases/closed-beta/wave-1/specification.md",
+      "type": "doc",
+      "path": "docs/releases/closed-beta/wave-1/specification.md"
+    },
+    {
+      "id": "docs/releases/closed-beta/wave-2/definition-of-done.md",
+      "type": "doc",
+      "path": "docs/releases/closed-beta/wave-2/definition-of-done.md"
+    },
+    {
+      "id": "docs/releases/closed-beta/wave-2/specification.md",
+      "type": "doc",
+      "path": "docs/releases/closed-beta/wave-2/specification.md"
     },
     {
       "id": "docs/releases/open-beta/definition-of-done.md",
@@ -612,6 +642,11 @@
       "path": "docs/releases/open-beta/specification.md"
     },
     {
+      "id": "docs/releases/public-demo/rollback.md",
+      "type": "doc",
+      "path": "docs/releases/public-demo/rollback.md"
+    },
+    {
       "id": "docs/releases/public-demo/specification.md",
       "type": "doc",
       "path": "docs/releases/public-demo/specification.md"
@@ -620,6 +655,11 @@
       "id": "docs/releases/release-channel-architecture.md",
       "type": "doc",
       "path": "docs/releases/release-channel-architecture.md"
+    },
+    {
+      "id": "docs/releases/release-channel-implementation.md",
+      "type": "doc",
+      "path": "docs/releases/release-channel-implementation.md"
     },
     {
       "id": "docs/research/2026-07-19-govibe-gmaiden-governance-comparison.md",
@@ -645,6 +685,21 @@
       "id": "docs/research/huggingface-dota2-resources.md",
       "type": "doc",
       "path": "docs/research/huggingface-dota2-resources.md"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase1.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase1.md"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md"
+    },
+    {
+      "id": "docs/superpowers/specs/2026-08-09-gid-central-pipeline-design.md",
+      "type": "doc",
+      "path": "docs/superpowers/specs/2026-08-09-gid-central-pipeline-design.md"
     },
     {
       "id": "src-tauri/src/capture.rs",
@@ -967,6 +1022,11 @@
       "path": "landing/src/index.css"
     },
     {
+      "id": "landing/assets/concepts/g-maiden-sea-captain-stone-titan-v1.png",
+      "type": "code",
+      "path": "landing/assets/concepts/g-maiden-sea-captain-stone-titan-v1.png"
+    },
+    {
       "id": "supabase/migrations/20260720183000_cr005_closed_beta_registration.sql",
       "type": "code",
       "path": "supabase/migrations/20260720183000_cr005_closed_beta_registration.sql"
@@ -1227,6 +1287,16 @@
       "path": "src/src/useAppUpdate.ts"
     },
     {
+      "id": ".github/workflows/candidate-release.yml",
+      "type": "code",
+      "path": ".github/workflows/candidate-release.yml"
+    },
+    {
+      "id": ".github/workflows/promote-release.yml",
+      "type": "code",
+      "path": ".github/workflows/promote-release.yml"
+    },
+    {
       "id": "src-tauri/src/items.rs",
       "type": "code",
       "path": "src-tauri/src/items.rs"
@@ -1255,76 +1325,6 @@
       "id": "tools/telemetry/ocr-test",
       "type": "code",
       "path": "tools/telemetry/ocr-test"
-    },
-    {
-      "id": "assets/dota-reference/README.md",
-      "type": "doc",
-      "path": "assets/dota-reference/README.md"
-    },
-    {
-      "id": ".github/workflows/candidate-release.yml",
-      "type": "code",
-      "path": ".github/workflows/candidate-release.yml"
-    },
-    {
-      "id": ".github/workflows/promote-release.yml",
-      "type": "code",
-      "path": ".github/workflows/promote-release.yml"
-    },
-    {
-      "id": "docs/change request/CR-014-g-overlay-lab-sync.md",
-      "type": "doc",
-      "path": "docs/change request/CR-014-g-overlay-lab-sync.md"
-    },
-    {
-      "id": "docs/releases/closed-beta/wave-0/evidence-runbook.md",
-      "type": "doc",
-      "path": "docs/releases/closed-beta/wave-0/evidence-runbook.md"
-    },
-    {
-      "id": "docs/releases/closed-beta/wave-1/definition-of-done.md",
-      "type": "doc",
-      "path": "docs/releases/closed-beta/wave-1/definition-of-done.md"
-    },
-    {
-      "id": "docs/releases/closed-beta/wave-1/specification.md",
-      "type": "doc",
-      "path": "docs/releases/closed-beta/wave-1/specification.md"
-    },
-    {
-      "id": "docs/releases/closed-beta/wave-2/definition-of-done.md",
-      "type": "doc",
-      "path": "docs/releases/closed-beta/wave-2/definition-of-done.md"
-    },
-    {
-      "id": "docs/releases/closed-beta/wave-2/specification.md",
-      "type": "doc",
-      "path": "docs/releases/closed-beta/wave-2/specification.md"
-    },
-    {
-      "id": "docs/releases/public-demo/rollback.md",
-      "type": "doc",
-      "path": "docs/releases/public-demo/rollback.md"
-    },
-    {
-      "id": "docs/releases/release-channel-implementation.md",
-      "type": "doc",
-      "path": "docs/releases/release-channel-implementation.md"
-    },
-    {
-      "id": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase1.md",
-      "type": "doc",
-      "path": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase1.md"
-    },
-    {
-      "id": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md",
-      "type": "doc",
-      "path": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md"
-    },
-    {
-      "id": "docs/superpowers/specs/2026-08-09-gid-central-pipeline-design.md",
-      "type": "doc",
-      "path": "docs/superpowers/specs/2026-08-09-gid-central-pipeline-design.md"
     }
   ],
   "edges": [
@@ -1380,121 +1380,121 @@
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/README.md",
       "type": "wikilink",
-      "line": 59
+      "line": 67
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/01-foundations.md",
       "type": "wikilink",
-      "line": 61
+      "line": 69
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/02-tokens.md",
       "type": "wikilink",
-      "line": 63
+      "line": 71
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/03-layout.md",
       "type": "wikilink",
-      "line": 65
+      "line": 73
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/04-components.md",
       "type": "wikilink",
-      "line": 67
+      "line": 75
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
-      "line": 69
+      "line": 77
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/06-stack.md",
       "type": "wikilink",
-      "line": 71
+      "line": 79
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/tech-stack.md",
       "type": "wikilink",
-      "line": 78
+      "line": 86
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
-      "line": 80
+      "line": 88
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
-      "line": 82
+      "line": 90
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/design-system.md",
       "type": "wikilink",
-      "line": 84
+      "line": 92
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/product-family-design-map.md",
       "type": "wikilink",
-      "line": 86
+      "line": 94
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "type": "wikilink",
-      "line": 88
+      "line": 96
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/implementation-plan.md",
       "type": "wikilink",
-      "line": 90
+      "line": 98
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
       "type": "wikilink",
-      "line": 92
+      "line": 100
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/README.md",
       "type": "wikilink",
-      "line": 114
+      "line": 122
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/operations/gmaiden-closed-beta-release-playbook.md",
       "type": "wikilink",
-      "line": 121
+      "line": 129
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 131
+      "line": 139
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 133
+      "line": 141
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 138
+      "line": 146
     },
     {
       "from": "docs/README.md",
@@ -3427,6 +3427,12 @@
       "to": "landing/src/index.css",
       "type": "symbol",
       "line": 249
+    },
+    {
+      "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
+      "to": "landing/assets/concepts/g-maiden-sea-captain-stone-titan-v1.png",
+      "type": "symbol",
+      "line": 250
     },
     {
       "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
@@ -6036,7 +6042,7 @@
       "from": "docs/design-system/07-combat-hud.md",
       "to": "docs/design-system/01-foundations.md",
       "type": "wikilink",
-      "line": 23
+      "line": 24
     },
     {
       "from": "docs/design-system/07-combat-hud.md",
@@ -6060,13 +6066,13 @@
       "from": "docs/design-system/07-combat-hud.md",
       "to": "src/src/overlay/FullOverlay.tsx",
       "type": "symbol",
-      "line": 95
+      "line": 96
     },
     {
       "from": "docs/design-system/07-combat-hud.md",
       "to": "src/src/DeckIcons.tsx",
       "type": "symbol",
-      "line": 97
+      "line": 98
     },
     {
       "from": "docs/design-system/08-account-gid.md",
@@ -7534,85 +7540,85 @@
     },
     {
       "from": "docs/product/roadmap.md",
+      "to": "docs/releases/release-channel-architecture.md",
+      "type": "wikilink",
+      "line": 113
+    },
+    {
+      "from": "docs/product/roadmap.md",
       "to": "docs/change request/ADR-13-dxgi-capture-migration.md",
       "type": "wikilink",
-      "line": 121
+      "line": 126
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
       "type": "wikilink",
-      "line": 121
+      "line": 126
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 124
+      "line": 129
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 135
+      "line": 140
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 151
+      "line": 156
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
-      "type": "wikilink",
-      "line": 159
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "docs/change request/CR-002-Phase2-wire-backend.md",
-      "type": "wikilink",
-      "line": 159
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "docs/change request/CR-002-Phase2-wire-backend.md",
-      "type": "wikilink",
-      "line": 163
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
       "line": 164
     },
     {
       "from": "docs/product/roadmap.md",
-      "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 165
+      "line": 164
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 165
+      "line": 168
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
+      "type": "wikilink",
+      "line": 169
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "type": "wikilink",
+      "line": 170
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "docs/change request/CR-002-Phase2-wire-backend.md",
+      "type": "wikilink",
+      "line": 170
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 179
+      "line": 184
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/technical-design-document.md",
-      "type": "wikilink",
-      "line": 185
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
       "line": 190
     },
@@ -7620,175 +7626,181 @@
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 196
+      "line": 195
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 204
+      "line": 201
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 216
+      "line": 209
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 241
+      "line": 221
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "docs/product/software-requirements-specification.md",
+      "type": "wikilink",
+      "line": 246
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
-      "line": 251
+      "line": 256
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 253
+      "line": 258
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 260
+      "line": 265
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
-      "line": 273
+      "line": 278
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 293
+      "line": 298
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
-      "type": "wikilink",
-      "line": 299
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
       "line": 310
     },
     {
       "from": "docs/product/roadmap.md",
+      "to": "docs/architecture/engineering-spec.md",
+      "type": "wikilink",
+      "line": 321
+    },
+    {
+      "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 328
+      "line": 339
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "type": "wikilink",
-      "line": 342
+      "line": 353
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 342
+      "line": 353
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 360
+      "line": 371
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 361
+      "line": 372
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 362
+      "line": 373
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 363
+      "line": 374
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 364
+      "line": 375
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 364
+      "line": 375
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 365
+      "line": 376
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 366
+      "line": 377
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 366
+      "line": 377
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 367
+      "line": 378
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/product/software-requirements-specification.md",
-      "type": "wikilink",
-      "line": 368
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
       "line": 379
     },
     {
       "from": "docs/product/roadmap.md",
+      "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
+      "type": "wikilink",
+      "line": 390
+    },
+    {
+      "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
       "type": "wikilink",
-      "line": 383
+      "line": 394
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 384
+      "line": 395
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "type": "wikilink",
-      "line": 385
+      "line": 396
     },
     {
       "from": "docs/product/roadmap.md",
@@ -7918,333 +7930,351 @@
     },
     {
       "from": "docs/product/roadmap.md",
+      "to": ".github/workflows/candidate-release.yml",
+      "type": "symbol",
+      "line": 110
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": ".github/workflows/promote-release.yml",
+      "type": "symbol",
+      "line": 111
+    },
+    {
+      "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 116
+      "line": 121
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/announcer.rs",
       "type": "symbol",
-      "line": 118
+      "line": 123
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
-      "line": 118
+      "line": 123
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
-      "line": 119
+      "line": 124
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/slm.rs",
       "type": "symbol",
-      "line": 120
+      "line": 125
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 122
+      "line": 127
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/dxgi.rs",
       "type": "symbol",
-      "line": 122
+      "line": 127
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/audio.rs",
       "type": "symbol",
-      "line": 138
+      "line": 143
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/tts.rs",
       "type": "symbol",
-      "line": 139
+      "line": 144
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src/src/AudioSettings.tsx",
       "type": "symbol",
-      "line": 149
+      "line": 154
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 160
+      "line": 165
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src/src/supabase.ts",
       "type": "symbol",
-      "line": 161
+      "line": 166
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 162
+      "line": 167
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 162
+      "line": 167
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src/src/companion.ts",
       "type": "symbol",
-      "line": 163
+      "line": 168
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src/src/live/",
       "type": "symbol",
-      "line": 163
+      "line": 168
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 172
+      "line": 177
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/secret.rs",
       "type": "symbol",
-      "line": 182
+      "line": 187
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 191
+      "line": 196
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/items.rs",
       "type": "symbol",
-      "line": 192
+      "line": 197
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
-      "line": 198
+      "line": 203
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/audio.rs",
       "type": "symbol",
-      "line": 200
+      "line": 205
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/signal.rs",
       "type": "symbol",
-      "line": 201
+      "line": 206
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/slm.rs",
       "type": "symbol",
-      "line": 208
+      "line": 213
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/slm.rs",
       "type": "symbol",
-      "line": 217
+      "line": 222
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/sentry.rs",
       "type": "symbol",
-      "line": 231
+      "line": 236
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/signal.rs",
       "type": "symbol",
-      "line": 231
+      "line": 236
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/slm.rs",
       "type": "symbol",
-      "line": 232
+      "line": 237
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 242
+      "line": 247
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/calibration.rs",
       "type": "symbol",
-      "line": 247
+      "line": 252
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
-      "line": 247
+      "line": 252
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "tools/analyze-log/analyze.py",
       "type": "symbol",
-      "line": 248
+      "line": 253
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "tools/analyze-log/analyze.py",
       "type": "symbol",
-      "line": 249
+      "line": 254
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/sentry.rs",
       "type": "symbol",
-      "line": 250
+      "line": 255
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/signal.rs",
       "type": "symbol",
-      "line": 250
+      "line": 255
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
-      "line": 256
+      "line": 261
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/tts.rs",
       "type": "symbol",
-      "line": 257
+      "line": 262
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 262
+      "line": 267
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "tests/perf/src/bin/perf_cpu_tree.rs",
       "type": "symbol",
-      "line": 275
+      "line": 280
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "tests/perf/src/bin/perf_p7.rs",
       "type": "symbol",
-      "line": 279
+      "line": 284
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 280
+      "line": 285
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 280
+      "line": 285
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "gpu-feeder/",
       "type": "symbol",
-      "line": 281
+      "line": 286
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 282
+      "line": 287
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 283
+      "line": 288
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "tests/perf/src/bin/perf_p7.rs",
       "type": "symbol",
-      "line": 288
+      "line": 293
+    },
+    {
+      "from": "docs/product/roadmap.md",
+      "to": "src/src/overlay/modules.ts",
+      "type": "symbol",
+      "line": 304
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
-      "line": 297
+      "line": 308
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
-      "line": 300
+      "line": 311
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/signal.rs",
       "type": "symbol",
-      "line": 311
+      "line": 322
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 312
+      "line": 323
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/sentry.rs",
       "type": "symbol",
-      "line": 317
+      "line": 328
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/signal.rs",
       "type": "symbol",
-      "line": 317
+      "line": 328
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/slm.rs",
       "type": "symbol",
-      "line": 317
+      "line": 328
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 318
+      "line": 329
     },
     {
       "from": "docs/product/roadmap.md",
       "to": "src-tauri/src/cv/detector.rs",
       "type": "symbol",
-      "line": 319
+      "line": 330
     },
     {
       "from": "docs/product/software-requirements-specification.md",
@@ -8551,18 +8581,6 @@
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
       "line": 190
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": ".github/workflows/candidate-release.yml",
-      "type": "symbol",
-      "line": 108
-    },
-    {
-      "from": "docs/product/roadmap.md",
-      "to": ".github/workflows/promote-release.yml",
-      "type": "symbol",
-      "line": 108
     }
   ],
   "violations": [
@@ -8573,19 +8591,19 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 107,
+      "line": 115,
       "reason": "glob-slug",
       "slug": "SPEC--*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 109,
+      "line": 117,
       "reason": "glob-slug",
       "slug": "ADR-O-*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 116,
+      "line": 124,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -8761,12 +8779,6 @@
       "file": "docs/change request/CR-004-voice-command-browser.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
-      "line": 250,
-      "reason": "missing-file",
-      "target": "landing/assets/concepts/g-maiden-sea-captain-stone-titan-v1.webp"
     },
     {
       "file": "docs/change request/CR-005-landing-auth-social.md",
@@ -8996,6 +9008,430 @@
       "changelog": "0.1.0b"
     },
     {
+      "file": "docs/design-system/02-tokens.md",
+      "line": 207,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2227,
+      "symbol": "g-deck-panel"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 70,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2438,
+      "symbol": "g-l1-white-glass"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 71,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2227,
+      "symbol": "g-deck-panel"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 72,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2530,
+      "symbol": "g-panel-rim"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 73,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2186,
+      "symbol": "g-sidebar-fab"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 73,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2212,
+      "symbol": "g-topbar-fab"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 73,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2892,
+      "symbol": "g-audio-rail"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 74,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2611,
+      "symbol": "g-power-radial"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 74,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2261,
+      "symbol": "g-signals-fab"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 135,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2400,
+      "symbol": "--cr6-panel-left"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 136,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2401,
+      "symbol": "--cr6-panel-top"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 137,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2402,
+      "symbol": "--cr6-panel-width"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 138,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2403,
+      "symbol": "--cr6-panel-height"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 139,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2404,
+      "symbol": "--cr6-topbar-left"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 140,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2405,
+      "symbol": "--cr6-topbar-top"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 141,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2406,
+      "symbol": "--cr6-topbar-width"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 142,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2407,
+      "symbol": "--cr6-sidebar-left"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 143,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2408,
+      "symbol": "--cr6-sidebar-top"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 144,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2419,
+      "symbol": "--cr6-power-left"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 145,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2420,
+      "symbol": "--cr6-power-top"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 146,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2421,
+      "symbol": "--cr6-power-main-left"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 147,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2422,
+      "symbol": "--cr6-power-main-top"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
+      "line": 316,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3007,
+      "symbol": "gm-fung-layout"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 59,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2212,
+      "symbol": "g-topbar-fab"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 107,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2186,
+      "symbol": "g-sidebar-fab"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 108,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2202,
+      "symbol": "g-nav-item"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 128,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2611,
+      "symbol": "g-power-radial"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 129,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2621,
+      "symbol": "g-power-main"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 130,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2645,
+      "symbol": "g-power-menu"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 155,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2892,
+      "symbol": "g-audio-rail"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 180,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3022,
+      "symbol": "gm-score-header"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 198,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3078,
+      "symbol": "gm-phase-chip"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 199,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/deck/onair.tsx",
+      "anchor": 216,
+      "symbol": "PhaseChip"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 240,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3126,
+      "symbol": "gm-mini-stat"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 257,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3187,
+      "symbol": "gm-hero-slot"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 273,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3501,
+      "symbol": "gm-agent-card"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 294,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3674,
+      "symbol": "gm-tally"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 294,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3684,
+      "symbol": "gm-tally-onair"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 295,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3525,
+      "symbol": "gm-sector-log"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 315,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3697,
+      "symbol": "gm-onair"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 350,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2783,
+      "symbol": "g-ping-pill"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 374,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3251,
+      "symbol": "gm-rundown"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 397,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3318,
+      "symbol": "gm-debrief"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 413,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2261,
+      "symbol": "g-signals-fab"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 414,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2266,
+      "symbol": "g-sig"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 439,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3819,
+      "symbol": "gm-palette-backdrop"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 439,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3838,
+      "symbol": "gm-palette"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 478,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3820,
+      "symbol": "gm-sheet-backdrop"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 524,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2782,
+      "symbol": "g-status-pill"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 573,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2227,
+      "symbol": "g-deck-panel"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 575,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2530,
+      "symbol": "g-panel-rim"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 591,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 2906,
+      "symbol": "g-volume-rail"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": 100,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 3078,
+      "symbol": "gm-phase-chip"
+    },
+    {
       "file": "docs/design-system/05-sitemap-ia.md",
       "line": null,
       "reason": "version-changelog-mismatch",
@@ -9170,11 +9606,67 @@
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 10,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/pack_io.rs",
+      "anchor": 66,
+      "symbol": "build_pack"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 23,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/pack_io.rs",
+      "anchor": 66,
+      "symbol": "build_pack"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 25,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/pack_io.rs",
+      "anchor": 66,
+      "symbol": "build_pack"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 28,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/gsi.rs",
       "anchor": 268,
       "symbol": "announcer_install"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 41,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/pack_io.rs",
+      "anchor": 347,
+      "symbol": "sanitize_id"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 42,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/pack_io.rs",
+      "anchor": 363,
+      "symbol": "sanitize_file_name"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 55,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/pack_io.rs",
+      "anchor": 66,
+      "symbol": "build_pack"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 61,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/pack_io.rs",
+      "anchor": 66,
+      "symbol": "build_pack"
     },
     {
       "file": "docs/reference/dota-ui/README.md",
@@ -9215,11 +9707,35 @@
       "file": "docs/releases/README.md",
       "line": 30,
       "reason": "unresolved",
-      "slug": "OPEN-BETA-SPEC"
+      "slug": "CLOSED-BETA-WAVE-1-SPEC"
     },
     {
       "file": "docs/releases/README.md",
       "line": 31,
+      "reason": "unresolved",
+      "slug": "CLOSED-BETA-WAVE-1-DOD"
+    },
+    {
+      "file": "docs/releases/README.md",
+      "line": 32,
+      "reason": "unresolved",
+      "slug": "CLOSED-BETA-WAVE-2-SPEC"
+    },
+    {
+      "file": "docs/releases/README.md",
+      "line": 33,
+      "reason": "unresolved",
+      "slug": "CLOSED-BETA-WAVE-2-DOD"
+    },
+    {
+      "file": "docs/releases/README.md",
+      "line": 34,
+      "reason": "unresolved",
+      "slug": "OPEN-BETA-SPEC"
+    },
+    {
+      "file": "docs/releases/README.md",
+      "line": 35,
       "reason": "unresolved",
       "slug": "OPEN-BETA-DOD"
     },
@@ -9229,6 +9745,8 @@
       "reason": "duplicate-slug",
       "slug": "definition-of-done",
       "siblings": [
+        "docs/releases/closed-beta/wave-1/definition-of-done.md",
+        "docs/releases/closed-beta/wave-2/definition-of-done.md",
         "docs/releases/open-beta/definition-of-done.md"
       ]
     },
@@ -9238,9 +9756,77 @@
       "reason": "duplicate-slug",
       "slug": "specification",
       "siblings": [
+        "docs/releases/closed-beta/wave-1/specification.md",
+        "docs/releases/closed-beta/wave-2/specification.md",
         "docs/releases/open-beta/specification.md",
         "docs/releases/public-demo/specification.md"
       ]
+    },
+    {
+      "file": "docs/releases/closed-beta/wave-1/definition-of-done.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "definition-of-done",
+      "siblings": [
+        "docs/releases/closed-beta/wave-0/definition-of-done.md",
+        "docs/releases/closed-beta/wave-2/definition-of-done.md",
+        "docs/releases/open-beta/definition-of-done.md"
+      ]
+    },
+    {
+      "file": "docs/releases/closed-beta/wave-1/definition-of-done.md",
+      "line": null,
+      "reason": "missing-changelog"
+    },
+    {
+      "file": "docs/releases/closed-beta/wave-1/specification.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "specification",
+      "siblings": [
+        "docs/releases/closed-beta/wave-0/specification.md",
+        "docs/releases/closed-beta/wave-2/specification.md",
+        "docs/releases/open-beta/specification.md",
+        "docs/releases/public-demo/specification.md"
+      ]
+    },
+    {
+      "file": "docs/releases/closed-beta/wave-1/specification.md",
+      "line": null,
+      "reason": "missing-changelog"
+    },
+    {
+      "file": "docs/releases/closed-beta/wave-2/definition-of-done.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "definition-of-done",
+      "siblings": [
+        "docs/releases/closed-beta/wave-0/definition-of-done.md",
+        "docs/releases/closed-beta/wave-1/definition-of-done.md",
+        "docs/releases/open-beta/definition-of-done.md"
+      ]
+    },
+    {
+      "file": "docs/releases/closed-beta/wave-2/definition-of-done.md",
+      "line": null,
+      "reason": "missing-changelog"
+    },
+    {
+      "file": "docs/releases/closed-beta/wave-2/specification.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "specification",
+      "siblings": [
+        "docs/releases/closed-beta/wave-0/specification.md",
+        "docs/releases/closed-beta/wave-1/specification.md",
+        "docs/releases/open-beta/specification.md",
+        "docs/releases/public-demo/specification.md"
+      ]
+    },
+    {
+      "file": "docs/releases/closed-beta/wave-2/specification.md",
+      "line": null,
+      "reason": "missing-changelog"
     },
     {
       "file": "docs/releases/open-beta/definition-of-done.md",
@@ -9248,7 +9834,9 @@
       "reason": "duplicate-slug",
       "slug": "definition-of-done",
       "siblings": [
-        "docs/releases/closed-beta/wave-0/definition-of-done.md"
+        "docs/releases/closed-beta/wave-0/definition-of-done.md",
+        "docs/releases/closed-beta/wave-1/definition-of-done.md",
+        "docs/releases/closed-beta/wave-2/definition-of-done.md"
       ]
     },
     {
@@ -9258,6 +9846,8 @@
       "slug": "specification",
       "siblings": [
         "docs/releases/closed-beta/wave-0/specification.md",
+        "docs/releases/closed-beta/wave-1/specification.md",
+        "docs/releases/closed-beta/wave-2/specification.md",
         "docs/releases/public-demo/specification.md"
       ]
     },
@@ -9268,8 +9858,17 @@
       "slug": "specification",
       "siblings": [
         "docs/releases/closed-beta/wave-0/specification.md",
+        "docs/releases/closed-beta/wave-1/specification.md",
+        "docs/releases/closed-beta/wave-2/specification.md",
         "docs/releases/open-beta/specification.md"
       ]
+    },
+    {
+      "file": "docs/releases/release-channel-implementation.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.4.0",
+      "changelog": "0.1.0"
     },
     {
       "file": "docs/research/assets/dota2-hud-reference.md",
@@ -9292,11 +9891,21 @@
       "file": "docs/research/huggingface-dota2-resources.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase1.md",
+      "line": null,
+      "reason": "no-metadata"
+    },
+    {
+      "file": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md",
+      "line": null,
+      "reason": "no-metadata"
     }
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-07-24T02:57:53.473Z",
+    "generatedAt": "2026-08-13T14:39:50.164Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 73,
@@ -10384,6 +10993,5 @@
       }
     ],
     "violations": []
-  },
-  "updatedBy": "rwang:doc-graph (subagent-driven preflight, 2026-08-12) — incremental: registered previously-unscanned docs"
+  }
 }

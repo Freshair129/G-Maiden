@@ -1,9 +1,13 @@
 ---
 title: "GID-Central Pipeline: สมัคร → ดาวน์โหลด → Login ข้าม G-series"
-doc_id: "SPEC-2026-08-09-gid-central-pipeline"
+doc_id: "2026-08-09-gid-central-pipeline-design"
+version: "0.1.0"
+updated: "2026-08-09"
 created_at: "2026-08-09"
 owner: "Boss"
-status: "design-approved-in-session"
+status: "accepted"
+approved_by: "Boss"
+approved_date: "2026-08-09"
 attributes:
   doc_type: "design-spec"
   domain: "identity-entitlement-distribution"
@@ -16,6 +20,12 @@ attributes:
     - "docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md"
     - "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md"
 ---
+
+## Changelog
+
+| Version | Date | Status | Summary |
+| --- | --- | --- | --- |
+| 0.1.0 | 2026-08-09 | accepted | Boss-approved design for the shared GID identity pipeline across landing, desktop, and G-AnnStudio. |
 
 # GID-Central Pipeline: สมัคร → ดาวน์โหลด → Login ข้าม G-series
 

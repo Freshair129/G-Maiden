@@ -649,7 +649,7 @@ entries:
     refs:
       docs: []
       srs: []
-      code: [src/src/App.tsx, src/src/overlay/FullOverlay.tsx, src/src/overlay/modules.ts, src/src/overlay/LayoutEditor.tsx, src/src/overlay/streaks.ts, src/src/personaMilestones.ts]
+      code: [src/src/App.tsx, src/src/overlay/FullOverlay.tsx, src/src/overlay/modules.ts, src/src/overlay/streaks.ts, src/src/personaMilestones.ts]
       tests: [src/src/__tests__/eventContract.test.ts, src/src/__tests__/personaMilestones.test.ts]
       review: [docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md]
 

@@ -1,8 +1,14 @@
 ---
 version: "0.1.0"
+title: "CR-014 - G-Overlay Lab sync receiver"
+doc_id: "CR-014-g-overlay-lab-sync"
+updated: "2026-08-10"
+owner: "ATHER"
 created_at: "2026-08-10T00:00:00+07:00,ATHER"
 last_update: "2026-08-10T00:00:00+07:00,ATHER"
-status: "approved"
+status: "accepted"
+approved_by: "Boss"
+approved_date: "2026-08-10"
 attributes:
   doc_type: "change-request"
   scope: "G-AnnStudio layout authoring to G-Maiden runtime sync"
