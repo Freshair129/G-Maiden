@@ -1,7 +1,7 @@
 ---
 title: "RCA: PR #37 doc-graph CI baseline failure"
 doc_id: "2026-08-13-pr37-doc-graph-ci-baseline"
-version: "0.1.0"
+version: "0.2.0"
 updated: "2026-08-13"
 owner: "ATHER"
 status: "accepted"
@@ -23,6 +23,11 @@ strict doc-graph violations and a blocking dangling ledger reference to
 its failure was the expected consequence of waiting for the failed `ci` check.
 The PR diff itself changed only the overlay timing comment.
 
+After the baseline repair, CI run `31711530833` passed every job, including
+Tauri smoke build, but took 34 minutes 5 seconds. The gate run
+`31711530819` timed out after its original 10-minute polling budget even though
+the required CI later completed successfully.
+
 ## Root Cause
 
 The repository baseline retained stale frontmatter in CR-014 and the GID
@@ -40,10 +45,12 @@ before opening the PR.
 
 Run `node tools/doc-graph/ci-gate.mjs` before opening or updating documentation
 PRs, and treat stale generated graph/ledger references as part of the same
-acceptance gate as code tests.
+acceptance gate as code tests. The PR gate now allows a 60-minute CI polling
+window to cover cold native builds without masking a completed failure.
 
 ## Changelog
 
 | Version | Date | Status | Summary |
 | --- | --- | --- | --- |
 | 0.1.0 | 2026-08-13 | accepted | Recorded the baseline metadata and ledger causes of PR #37 CI failure. |
+| 0.2.0 | 2026-08-13 | accepted | Extended PR gate polling after a 34-minute successful CI run exceeded the original 10-minute timeout. |
