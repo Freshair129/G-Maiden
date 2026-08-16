@@ -208,6 +208,11 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
     void invoke('set_cv_signal_sensitivity', { level: s.signalSensitivity }).catch(() => {})
   }, [s.signalSensitivity])
 
+  // Mirror G-Persona Preset to the Rust speech path
+  useEffect(() => {
+    void invoke('set_persona_preset', { preset: s.personaPreset }).catch(() => {})
+  }, [s.personaPreset])
+
   // Telemetry source for the deck footer (GPU/CPU-temp): auto/feeder/gtelemetry/off.
   useEffect(() => {
     const src = { auto: 0, feeder: 1, gtelemetry: 2, off: 3 }[s.telemetrySource] ?? 0
@@ -443,6 +448,31 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
               </Row>
               <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
                 แบนเนอร์ขึ้นกลาง-บนของจอเมื่อ G-Signal เตือนแก๊งค์ (ไม่บังมินิแมพ).
+              </div>
+            </Card>
+
+            <Card title="G-Persona Presets">
+              <Row label="เลือกโหมดบุคลิก (Preset)">
+                <select value={s.personaPreset || 'coach'} onChange={(e) => {
+                  const p = e.target.value as 'coach' | 'silent' | 'caster' | 'meme'
+                  set('personaPreset', p)
+                  if (p === 'silent') {
+                    set('personaLines', false)
+                  } else {
+                    set('personaLines', true)
+                  }
+                }} style={{ background: 'rgba(18,20,28,0.86)', color: C.txt, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 10px', fontSize: 12.5, maxWidth: 240 }}>
+                  <option value="coach">Serious Coach (ปกติ + จริงจัง)</option>
+                  <option value="silent">Silent Companion (เตือนภัยวิกฤตเท่านั้น)</option>
+                  <option value="caster">Chatty Caster (พูดคุยบ่อย + สบายๆ)</option>
+                  <option value="meme">Meme Partner (ปกติ + มีม/ติดตลก)</option>
+                </select>
+              </Row>
+              <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
+                {s.personaPreset === 'coach' && 'Serious Coach: พูดแจ้งเตือนทั่วไปด้วยน้ำเสียงและคำแนะนำที่เป็นงานเป็นการ เหมาะสำหรับผู้เล่นที่ต้องการโฟกัส'}
+                {s.personaPreset === 'silent' && 'Silent Companion: ซ่อนการพูดคุยเล่นและเสียงประกาศทั่วไปทั้งหมด จะส่งเสียงเตือนเฉพาะเหตุการณ์อันตรายวิกฤต (G-Signal) และแจ้งเตือนด่วนเท่านั้น'}
+                {s.personaPreset === 'caster' && 'Chatty Caster: พากย์เกมอย่างต่อเนื่อง สบายๆ และเป็นกันเอง คอยอัปเดตสถานะและคำแนะนำสม่ำเสมอ'}
+                {s.personaPreset === 'meme' && 'Meme Partner: แทรกมุกตลกเบาสมอง และคำล้อเลียนความเร็วการเดินของ Maiden (Nerf CM) เมื่อทำกิจกรรมต่างๆ ในเกม'}
               </div>
             </Card>
 

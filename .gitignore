@@ -70,3 +70,7 @@ Thumbs.db
 # regenerates from docs/; it is untracked but was not ignored, so any `git add -A`
 # would have committed it into history permanently.
 docs/_generated/
+
+# Worktrees and agent directories
+.codex/
+.worktrees/

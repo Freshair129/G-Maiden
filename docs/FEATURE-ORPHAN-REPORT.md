@@ -3,7 +3,7 @@
 # FEATURE-ORPHAN-REPORT
 
 > **GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs**  
-> Generated `2026-08-13T14:39:56.183Z` · candidates=22
+> Generated `2026-08-16T20:43:47.520Z` · candidates=22
 
 ## Summary
 
@@ -41,6 +41,6 @@
 | SPEC--GOVIBE-INTEGRATION | orchestration/docs/SPEC--GOVIBE-INTEGRATION.md | — | weakly-anchored | — | docs/README.md, orchestration/docs/ADR-O-002--govibe-integration.md, orchestration/docs/ADR-O-003--backend-store.md | — | Only active document references remain; no strong registry/code anchor found. |
 | SPEC--LOCAL-MODEL-ANTI-ERROR-LOOP | orchestration/docs/SPEC--LOCAL-MODEL-ANTI-ERROR-LOOP.md | — | weakly-anchored | — | orchestration/docs/ADR-O-004--role-boundary-native.md, orchestration/docs/SPEC--RUNTIME-REPAIR-GOVERNANCE.md | — | Only active document references remain; no strong registry/code anchor found. |
 | SPEC--PROVIDER-REGISTRY | orchestration/docs/SPEC--PROVIDER-REGISTRY.md | — | weakly-anchored | — | docs/architecture/engineering-spec.md, orchestration/docs/ADR-O-005--provider-registry.md, orchestration/docs/GUIDE--ADDING-PROVIDER.md, orchestration/docs/SRS--G-ORCHESTRA.md | — | Only active document references remain; no strong registry/code anchor found. |
-| SPEC--RUNTIME-REPAIR-GOVERNANCE | orchestration/docs/SPEC--RUNTIME-REPAIR-GOVERNANCE.md | — | weakly-anchored | — | docs/architecture/adr/ADR-17-dev-runtime-governance-split.md | — | Only active document references remain; no strong registry/code anchor found. |
+| SPEC--RUNTIME-REPAIR-GOVERNANCE | orchestration/docs/SPEC--RUNTIME-REPAIR-GOVERNANCE.md | — | weakly-anchored | — | docs/architecture/adr/ADR-18-dev-runtime-governance-split.md | — | Only active document references remain; no strong registry/code anchor found. |
 | SPEC--VERIFY-GATE | orchestration/docs/SPEC--VERIFY-GATE.md | — | weakly-anchored | — | orchestration/docs/ADR-O-001--verify-gate.md, orchestration/docs/RUNBOOK--DOC-TO-CODE-PIPELINE.md, orchestration/docs/SPEC--GOVIBE-INTEGRATION.md, orchestration/docs/SPEC--RUNTIME-REPAIR-GOVERNANCE.md, orchestration/docs/SRS--G-ORCHESTRA.md | — | Only active document references remain; no strong registry/code anchor found. |
 

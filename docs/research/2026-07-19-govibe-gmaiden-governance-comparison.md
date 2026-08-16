@@ -1,16 +1,16 @@
 ---
-title: "เทียบ GoVibe ↔ G-Maiden: doc governance · context/brain · ตำแหน่งใน ADR-17 + ข้อเสนอ unify"
+title: "เทียบ GoVibe ↔ G-Maiden: doc governance · context/brain · ตำแหน่งใน ADR-18 + ข้อเสนอ unify"
 doc_id: "2026-07-19-govibe-gmaiden-governance-comparison"
 status: "draft"
 version: "0.2.0"
 updated: "2026-07-19"
 owner: "Boss"
-related_docs: ["ADR-17-dev-runtime-governance-split", "SPEC--RUNTIME-REPAIR-GOVERNANCE", "subagent-context-scoping"]
+related_docs: ["ADR-18-dev-runtime-governance-split", "SPEC--RUNTIME-REPAIR-GOVERNANCE", "subagent-context-scoping"]
 ---
 
 # เทียบ GoVibe ↔ G-Maiden — รายงาน 3 แกน + ข้อเสนอ unify
 
-> วิธีทำ: 3 agents อ่านคู่ขนาน (doc governance / context-brain / ADR-17 position) อ่านไฟล์จริง
+> วิธีทำ: 3 agents อ่านคู่ขนาน (doc governance / context-brain / ADR-18 position) อ่านไฟล์จริง
 > ทั้งสองฝั่ง + ทดสอบ drift จริง + reality-check โค้ด ไม่ใช่อ่านแค่ที่เอกสาร claim.
 > ทุก claim ในรายงานนี้มี citation ในผลดิบของ agent (เก็บใน session transcript 2026-07-19)
 
@@ -87,7 +87,7 @@ rolling todo, auto-memory, honest verify table + แก้ AGENTS.md ตัว�
 **ควรรวม schema เดียว: ใช่** — narrative core (Entry/Arc/Verify/State/Next) บังคับ,
 YAML gate block เป็น optional สำหรับ repo ที่รัน fleet
 
-## แกน 3 — ตำแหน่งใน ADR-17
+## แกน 3 — ตำแหน่งใน ADR-18
 
 **GoVibe วันนี้คือ:** spec/methodology project + PoC 2 ชิ้นที่รันจริง (Mission Control React UI,
 MCP server scaffold + translator slice) — **ไม่ใช่ live product**; Tauri shell ที่ SDD สัญญา
@@ -95,7 +95,7 @@ MCP server scaffold + translator slice) — **ไม่ใช่ live product**;
 `.rwang/` overlay ติดตั้งแล้ว (RWANG govern repo นี้อยู่แล้วโดยพฤตินัย)
 
 **Overlap:** ทับ **knowledge plane หนักสุด** (SYSTEM-08 GKS/atoms/symbol-graph = สิ่งเดียวกับที่
-ADR-17 D1 มอบให้ RWANG และ D7 ให้วิ่งผ่าน `RWANG:scan`) / STD-Execution-Governance คือ
+ADR-18 D1 มอบให้ RWANG และ D7 ให้วิ่งผ่าน `RWANG:scan`) / STD-Execution-Governance คือ
 methodology ของ RWANG โดยสายเลือดอยู่แล้ว (อ้าง RWANG RFC ตรง ๆ) แค่ไฟล์อยู่ผิดบ้าน /
 **ไม่ทับ** runtime governor (ไม่มีสักบรรทัดเรื่อง signed manifest/Narrow Rails/repair)
 
@@ -114,7 +114,7 @@ methodology ของ RWANG โดยสายเลือดอยู่แล�
 | MCP/A2A interop + Translator/GKS interlingua | **GoVibe** | differentiator แท้ (ADR-017-GoVibe) |
 | Knowledge vault hosting (knowledge-block, atomic_index, JIT render, FTS) | **GoVibe host / RWANG produce** | RWANG:scan ผลิต atoms → GoVibe เก็บ+เสิร์ฟ+วาด |
 | Governance UX (approval/sign-off/gate หน้าจอ) | **GoVibe = หน้าจอ** — policy source คือ RWANG methodology | ตรง PRD §4.8 "Mission Control should not own business rules" |
-| Runtime self-repair governor | **G-Orchestra — ไม่เปลี่ยน** (ADR-17 D2) | คนละ threat model กับ dev-time ทั้งคู่ |
+| Runtime self-repair governor | **G-Orchestra — ไม่เปลี่ยน** (ADR-18 D2) | คนละ threat model กับ dev-time ทั้งคู่ |
 
 **กติกาการรับช่วง:** สิ่งที่ย้าย = operational surface (ดู/สั่ง/อนุมัติ/เชื่อมต่อ); engine internals
 + methodology SSOT **ไม่ย้ายตาม** — GoVibe เรียก RWANG ผ่าน contract (`agent.run` MCP →
@@ -141,5 +141,5 @@ dispatch เข้า runner) ห้าม re-implement loop (ไม่งั้
 ## Changelog
 | Version | Date | Summary |
 | --- | --- | --- |
-| 0.1.0 | 2026-07-19 | รายงานแรก — สังเคราะห์จาก 3 agent axes (doc governance / context-brain / ADR-17 position) + ข้อเสนอ unify 6 mechanical + 3 Boss decisions |
+| 0.1.0 | 2026-07-19 | รายงานแรก — สังเคราะห์จาก 3 agent axes (doc governance / context-brain / ADR-18 position) + ข้อเสนอ unify 6 mechanical + 3 Boss decisions |
 | 0.2.0 | 2026-07-19 | แก้แกน 3 ตาม intent ที่ Boss ชี้แจง: โมเดล **succession** (RWANG=engine → GoVibe=platform รับช่วง, contract=progress schema+MCP) แทน "GoVibe สังกัด RWANG"; ตาราง scope split ถาวร 8 ชิ้น; ADR-conflict ลดเหลือแก้ถ้อยคำ PRD |

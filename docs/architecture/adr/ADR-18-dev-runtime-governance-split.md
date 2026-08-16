@@ -1,9 +1,9 @@
 ---
 title: "ADR: Dev & Runtime Governance Split — RWANG builder · G-Orchestra governor · skill→harness release"
-doc_id: ADR-17-dev-runtime-governance-split
+doc_id: ADR-18-dev-runtime-governance-split
 status: accepted
-version: 1.0.1
-updated: 2026-07-20
+version: 1.0.2
+updated: 2026-08-17
 owner: Boss
 source_of_truth: true
 related_docs: "[\"ADR-11-optin-data-contribution-flywheel\", \"ADR-12-community-ai-marketplace\", \"SPEC--RUNTIME-REPAIR-GOVERNANCE\", \"PROJECT_FEATURE_MAP\"]"
@@ -11,7 +11,7 @@ approved_by: Boss
 approved_date: 2026-07-19
 ---
 
-# ADR-17: Dev & Runtime Governance Split
+# ADR-18: Dev & Runtime Governance Split
 
 > ตัดสินใจโดย Boss ใน working session 2026-07-19 — รวบข้อสรุปสถาปัตยกรรม governance
 > ทั้งฝั่ง dev (RWANG) และฝั่ง runtime (G-Orchestra) ที่ก่อนหน้านี้กระจายอยู่ในบทสนทนา/memory
@@ -103,3 +103,4 @@ release จริงผ่าน harness เท่านั้น. พิสู�
 | --- | --- | --- |
 | 1.0.0 | 2026-07-19 | บันทึก 8 decisions จาก working session (two-plane, Narrow Rails, executor-agnostic, RWANG consolidation, business model, skill→harness pipeline, Genesis Block Cycle mapping, doc governance) |
 | 1.0.1 | 2026-07-20 | approval evidence backfill (G25-T3) — `approved_by`/`approved_date` set from in-body sign-off evidence: "ตัดสินใจโดย Boss ใน working session 2026-07-19" (line 14) |
+| 1.0.2 | 2026-08-17 | Renamed from ADR-17 to ADR-18 to resolve duplicate numbering collision with Supabase OAuth Server transaction boundary. |

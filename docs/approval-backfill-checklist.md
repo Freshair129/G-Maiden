@@ -22,7 +22,7 @@ set honestly.
 
 Two of the original nine `missing-approval` violations **did** have in-doc evidence and were
 fixed directly (not listed here): `ADR-16-credit-economy-and-mint-oracle` (body line: "Boss
-กำหนดทิศทางไว้ (session 2026-07-10)") and `ADR-17-dev-runtime-governance-split` (body line:
+กำหนดทิศทางไว้ (session 2026-07-10)") and `ADR-18-dev-runtime-governance-split` (body line:
 "ตัดสินใจโดย Boss ใน working session 2026-07-19").
 
 ## Checklist

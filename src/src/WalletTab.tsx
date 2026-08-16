@@ -9,6 +9,8 @@ import { useEffect, useState } from "react";
 import { useAuth } from "./auth";
 import { useWallet, type LedgerEntry } from "./wallet";
 import TopupModal from "./TopupModal";
+import MatchShareCard from "./MatchShareCard";
+import { useIdentity } from "./live/identity";
 
 function errText(e: unknown): string {
   return (e as { message?: string })?.message ?? String(e);
@@ -83,6 +85,32 @@ export default function WalletTab({ onViewAllTransactions }: WalletTabProps) {
   const [topupPending, setTopupPending] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
 
+  const { identity } = useIdentity();
+  const [latestMatchId, setLatestMatchId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!identity?.accountId) {
+      setLatestMatchId(null);
+      return;
+    }
+    let cancelled = false;
+    fetch(`https://api.opendota.com/api/players/${identity.accountId}/recentMatches`)
+      .then((r) => r.json())
+      .then((matches) => {
+        if (cancelled) return;
+        if (Array.isArray(matches) && matches.length > 0) {
+          const newest = matches[0];
+          if (newest && newest.match_id) {
+            setLatestMatchId(String(newest.match_id));
+          }
+        }
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [identity?.accountId]);
+
   useEffect(() => {
     let cancelled = false;
     (async () => {
@@ -153,6 +181,10 @@ export default function WalletTab({ onViewAllTransactions }: WalletTabProps) {
           <div className="wallet-hint">เข้าสู่ระบบเพื่อดู Wallet ของคุณ</div>
         )}
       </div>
+
+      {user ? (
+        <MatchShareCard matchId={latestMatchId} />
+      ) : null}
 
       <div className="wallet-ledger-preview">
         <div className="wallet-ledger-head">

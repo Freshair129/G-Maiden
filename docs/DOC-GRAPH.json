@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-13T14:39:42.515Z",
+  "generatedAt": "2026-08-16T20:43:39.503Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -57,6 +57,11 @@
       "path": "docs/architecture/adr/ADR-12-community-ai-marketplace.md"
     },
     {
+      "id": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
+      "type": "doc",
+      "path": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md"
+    },
+    {
       "id": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "doc",
       "path": "docs/architecture/adr/ADR-14-gid-account-identity.md"
@@ -77,9 +82,9 @@
       "path": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md"
     },
     {
-      "id": "docs/architecture/adr/ADR-17-dev-runtime-governance-split.md",
+      "id": "docs/architecture/adr/ADR-18-dev-runtime-governance-split.md",
       "type": "doc",
-      "path": "docs/architecture/adr/ADR-17-dev-runtime-governance-split.md"
+      "path": "docs/architecture/adr/ADR-18-dev-runtime-governance-split.md"
     },
     {
       "id": "docs/architecture/assets/design-references/README.md",
@@ -160,11 +165,6 @@
       "id": "docs/audits/SEC-001-auth-identity-hardening.md",
       "type": "doc",
       "path": "docs/audits/SEC-001-auth-identity-hardening.md"
-    },
-    {
-      "id": "docs/change request/ADR-13-dxgi-capture-migration.md",
-      "type": "doc",
-      "path": "docs/change request/ADR-13-dxgi-capture-migration.md"
     },
     {
       "id": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
@@ -360,6 +360,16 @@
       "id": "docs/change request/IMPL-PLAN-DXGI-migration.md",
       "type": "doc",
       "path": "docs/change request/IMPL-PLAN-DXGI-migration.md"
+    },
+    {
+      "id": "docs/change request/closed-beta-privacy-notice-draft.md",
+      "type": "doc",
+      "path": "docs/change request/closed-beta-privacy-notice-draft.md"
+    },
+    {
+      "id": "docs/change request/closed-beta-terms-of-use-draft.md",
+      "type": "doc",
+      "path": "docs/change request/closed-beta-terms-of-use-draft.md"
     },
     {
       "id": "docs/design-system/01-foundations.md",
@@ -1380,121 +1390,121 @@
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/README.md",
       "type": "wikilink",
-      "line": 67
+      "line": 76
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/01-foundations.md",
       "type": "wikilink",
-      "line": 69
+      "line": 78
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/02-tokens.md",
       "type": "wikilink",
-      "line": 71
+      "line": 80
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/03-layout.md",
       "type": "wikilink",
-      "line": 73
+      "line": 82
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/04-components.md",
       "type": "wikilink",
-      "line": 75
+      "line": 84
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
-      "line": 77
+      "line": 86
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/design-system/06-stack.md",
       "type": "wikilink",
-      "line": 79
+      "line": 88
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/tech-stack.md",
       "type": "wikilink",
-      "line": 86
+      "line": 101
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
-      "line": 88
+      "line": 103
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
-      "line": 90
+      "line": 105
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/design-system.md",
       "type": "wikilink",
-      "line": 92
+      "line": 107
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/product-family-design-map.md",
       "type": "wikilink",
-      "line": 94
+      "line": 109
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "type": "wikilink",
-      "line": 96
+      "line": 111
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/implementation-plan.md",
       "type": "wikilink",
-      "line": 98
+      "line": 113
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
       "type": "wikilink",
-      "line": 100
+      "line": 115
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/README.md",
       "type": "wikilink",
-      "line": 122
+      "line": 146
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/operations/gmaiden-closed-beta-release-playbook.md",
       "type": "wikilink",
-      "line": 129
+      "line": 166
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 139
+      "line": 183
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 141
+      "line": 185
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 146
+      "line": 190
     },
     {
       "from": "docs/README.md",
@@ -1582,7 +1592,7 @@
     },
     {
       "from": "docs/architecture/CR-001-dxgi-capture-migration.md",
-      "to": "docs/change request/ADR-13-dxgi-capture-migration.md",
+      "to": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "type": "wikilink",
       "line": 330
     },
@@ -1711,6 +1721,48 @@
       "to": "docs/product/business-requirements.md",
       "type": "wikilink",
       "line": 53
+    },
+    {
+      "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
+      "to": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
+      "type": "wikilink",
+      "line": 16
+    },
+    {
+      "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
+      "to": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
+      "type": "wikilink",
+      "line": 133
+    },
+    {
+      "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
+      "to": "src-tauri/src/dxgi.rs",
+      "type": "symbol",
+      "line": 69
+    },
+    {
+      "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
+      "to": "src-tauri/src/dxgi.rs",
+      "type": "symbol",
+      "line": 111
+    },
+    {
+      "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
+      "to": "src-tauri/src/capture.rs",
+      "type": "symbol",
+      "line": 116
+    },
+    {
+      "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
+      "to": "src-tauri/src/capture.rs",
+      "type": "symbol",
+      "line": 134
+    },
+    {
+      "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
+      "to": "src-tauri/src/governor.rs",
+      "type": "symbol",
+      "line": 135
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
@@ -2094,103 +2146,103 @@
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
-      "line": 218
+      "line": 226
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 219
+      "line": 227
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 66
+      "line": 74
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 94
+      "line": 102
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 132
+      "line": 140
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 138
+      "line": 146
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/providers.mjs",
       "type": "symbol",
-      "line": 202
+      "line": 210
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/config.json",
       "type": "symbol",
-      "line": 202
+      "line": 210
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/engine.mjs",
       "type": "symbol",
-      "line": 202
+      "line": 210
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/companion.ts",
       "type": "symbol",
-      "line": 207
+      "line": 215
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildTelemetry.ts",
       "type": "symbol",
-      "line": 209
+      "line": 217
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildWeekly.ts",
       "type": "symbol",
-      "line": 209
+      "line": 217
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildInsights.ts",
       "type": "symbol",
-      "line": 209
+      "line": 217
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildHistory.ts",
       "type": "symbol",
-      "line": 209
+      "line": 217
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 212
+      "line": 220
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 214
+      "line": 222
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 214
+      "line": 222
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -2448,7 +2500,7 @@
       "from": "docs/architecture/technical-design-document.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
-      "line": 164
+      "line": 165
     },
     {
       "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
@@ -3019,48 +3071,6 @@
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
       "line": 114
-    },
-    {
-      "from": "docs/change request/ADR-13-dxgi-capture-migration.md",
-      "to": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
-      "type": "wikilink",
-      "line": 16
-    },
-    {
-      "from": "docs/change request/ADR-13-dxgi-capture-migration.md",
-      "to": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
-      "type": "wikilink",
-      "line": 133
-    },
-    {
-      "from": "docs/change request/ADR-13-dxgi-capture-migration.md",
-      "to": "src-tauri/src/dxgi.rs",
-      "type": "symbol",
-      "line": 69
-    },
-    {
-      "from": "docs/change request/ADR-13-dxgi-capture-migration.md",
-      "to": "src-tauri/src/dxgi.rs",
-      "type": "symbol",
-      "line": 111
-    },
-    {
-      "from": "docs/change request/ADR-13-dxgi-capture-migration.md",
-      "to": "src-tauri/src/capture.rs",
-      "type": "symbol",
-      "line": 116
-    },
-    {
-      "from": "docs/change request/ADR-13-dxgi-capture-migration.md",
-      "to": "src-tauri/src/capture.rs",
-      "type": "symbol",
-      "line": 134
-    },
-    {
-      "from": "docs/change request/ADR-13-dxgi-capture-migration.md",
-      "to": "src-tauri/src/governor.rs",
-      "type": "symbol",
-      "line": 135
     },
     {
       "from": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
@@ -4576,7 +4586,7 @@
     },
     {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
-      "to": "docs/change request/ADR-13-dxgi-capture-migration.md",
+      "to": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "type": "wikilink",
       "line": 18
     },
@@ -7546,7 +7556,7 @@
     },
     {
       "from": "docs/product/roadmap.md",
-      "to": "docs/change request/ADR-13-dxgi-capture-migration.md",
+      "to": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "type": "wikilink",
       "line": 126
     },
@@ -8591,19 +8601,19 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 115,
+      "line": 139,
       "reason": "glob-slug",
       "slug": "SPEC--*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 117,
+      "line": 141,
       "reason": "glob-slug",
       "slug": "ADR-O-*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 124,
+      "line": 148,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -8650,6 +8660,13 @@
     },
     {
       "file": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
+      "line": null,
+      "reason": "missing-approval",
+      "severity": "error",
+      "status": "accepted"
+    },
+    {
+      "file": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "line": null,
       "reason": "missing-approval",
       "severity": "error",
@@ -8739,13 +8756,6 @@
       "file": "docs/architecture/technical-design-document.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/change request/ADR-13-dxgi-capture-migration.md",
-      "line": null,
-      "reason": "missing-approval",
-      "severity": "error",
-      "status": "accepted"
     },
     {
       "file": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
@@ -9006,6 +9016,34 @@
       "reason": "version-changelog-mismatch",
       "frontmatter": "0.2.0b",
       "changelog": "0.1.0b"
+    },
+    {
+      "file": "docs/change request/closed-beta-privacy-notice-draft.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "closed-beta-privacy-notice-draft",
+      "siblings": [
+        "docs/product/closed-beta-privacy-notice-draft.md"
+      ]
+    },
+    {
+      "file": "docs/change request/closed-beta-privacy-notice-draft.md",
+      "line": null,
+      "reason": "no-metadata"
+    },
+    {
+      "file": "docs/change request/closed-beta-terms-of-use-draft.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "closed-beta-terms-of-use-draft",
+      "siblings": [
+        "docs/product/closed-beta-terms-of-use-draft.md"
+      ]
+    },
+    {
+      "file": "docs/change request/closed-beta-terms-of-use-draft.md",
+      "line": null,
+      "reason": "no-metadata"
     },
     {
       "file": "docs/design-system/02-tokens.md",
@@ -9563,9 +9601,27 @@
     {
       "file": "docs/product/closed-beta-privacy-notice-draft.md",
       "line": null,
+      "reason": "duplicate-slug",
+      "slug": "closed-beta-privacy-notice-draft",
+      "siblings": [
+        "docs/change request/closed-beta-privacy-notice-draft.md"
+      ]
+    },
+    {
+      "file": "docs/product/closed-beta-privacy-notice-draft.md",
+      "line": null,
       "reason": "version-changelog-mismatch",
       "frontmatter": "1.0.1b",
       "changelog": "0.1.0b"
+    },
+    {
+      "file": "docs/product/closed-beta-terms-of-use-draft.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "closed-beta-terms-of-use-draft",
+      "siblings": [
+        "docs/change request/closed-beta-terms-of-use-draft.md"
+      ]
     },
     {
       "file": "docs/product/closed-beta-terms-of-use-draft.md",
@@ -9905,7 +9961,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-08-13T14:39:50.164Z",
+    "generatedAt": "2026-08-16T20:43:47.192Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 73,

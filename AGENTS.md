@@ -36,19 +36,24 @@ G-Maiden/
 ├── CLAUDE.md              # Instructions for Claude Code (authoritative)
 ├── AGENTS.md              # This file — cross-agent governance
 ├── CHANGELOG.md           # Keep a Changelog format
-|- docs/                  # Canonical documentation hub
-|  |- README.md
-|  |- DOC-INDEX.md
-|  |- product/
-|  |  |- roadmap.md
-|  |  |- product-requirements.md
-|  |  `- software-requirements-specification.md
-|  |- architecture/
-|  |  |- tech-stack.md
-|  |  |- engineering-spec.md
-|  |  `- technical-design-document.md
-|  |- features/
-|  `- operations/
+|- docs/                  # Canonical documentation hub (SSOT)
+|  |- README.md           # Documentation overview
+|  |- DOC-INDEX.md        # Document index and tracking (SSOT)
+|  |- FEATURE-LEDGER.md   # Feature map and registry
+|  |- product/            # Product requirements & roadmap (PRD, SRS)
+|  |- architecture/       # Core architecture design
+|  |  |- adr/             # Architecture Decision Records (ADR-10 to ADR-18)
+|  |  |- spikes/          # Technical proofs and spike notes
+|  |- design-system/      # UI foundations, tokens, sitemap/IA (Iceglass Command Deck HUD v2)
+|  |- features/           # Specs for individual G-series modules (FEAT-G-*)
+|  |- releases/           # Release governance, beta roadmaps, wave specs & DoD
+|  |- change request/     # Change Requests (CR-001 to CR-033) & execution plans
+|  |- operations/         # Runbooks, beta release playbooks, validation forms
+|  |- audits/             # Security and codebase audits
+|  |- rca/                # Root Cause Analysis notes for release failures
+|  |- guides/             # Developer setups and prompting guides
+|  |- research/           # Concept notes and competitive analysis
+|  `- superpowers/        # GID pipeline plans and specs
 ├── models/                # ONNX models + labels (bundled in release)
 ├── gpu-feeder/            # Headless nvidia-smi sidecar (zero-dep crate) → POST /telemetry
 ├── src/                   # Frontend (React/Vite)
@@ -286,7 +291,7 @@ to hand off or tag, run all of:
 
 ---
 
-## Current State (v0.9.0 shipping)
+## Current State (v0.13.2 shipping)
 
 ### What works
 - GSI server receives Dota 2 game state on `:3000`
@@ -306,6 +311,7 @@ to hand off or tag, run all of:
   (`gid.ts`, `G-[Gen][Payload][Checksum]`) on the shared `gstore` Supabase backend; links Steam
   (`identity.rs`) and loads the player's public OpenDota profile. Match/CV/G-Log data stay local;
   the account stores identity only (email + public Steam ids + display name + GID).
+- **G-Store & Credits (ADR-16 / CR-003)**: virtual wallet schema live on `gstore`; catalog seeded; coin packages seeded (`active=false`). Faucet (`match-share-submit`) and topup (`topup-create` / `payment-webhook`) Edge Functions fully implemented; JWT verification configured in `supabase/config.toml`; candidate legal draft documents prepared.
 - **GID security/web profiles are proposed only, not shipped**: TOTP MFA, phone OTP, recovery email,
   security activity/alerts, and an opt-in public profile/badge require the C-3/HIGH contract above.
 - **G-Maiden beta distribution is partially shipped**: CR-016 private Storage/Functions and the
