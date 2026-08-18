@@ -43,7 +43,7 @@ export default function Copilot() {
         <div ref={endRef} />
       </div>
       <form className="cp-input" onSubmit={(e) => { e.preventDefault(); run(input); }}>
-        <input value={input} onChange={(e) => setInput(e.target.value)} placeholder="ask Maiden… (try 'help', 'run wave', 'dispatch feature--cockpit')" autoFocus />
+        <input id="copilot-chat-input" name="copilot-chat-input" value={input} onChange={(e) => setInput(e.target.value)} placeholder="ask Maiden… (try 'help', 'run wave', 'dispatch feature--cockpit')" autoFocus />
         <button type="submit">send</button>
       </form>
     </div>

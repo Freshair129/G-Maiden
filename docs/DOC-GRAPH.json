@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-16T20:43:39.503Z",
+  "generatedAt": "2026-08-18T22:07:50.205Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -9,7 +9,11 @@
     {
       "id": "docs/DOC-INDEX.md",
       "type": "doc",
-      "path": "docs/DOC-INDEX.md"
+      "path": "docs/DOC-INDEX.md",
+      "title": "Documentation Index",
+      "status": "active",
+      "doc_type": "document-index",
+      "domain": "documentation-governance"
     },
     {
       "id": "docs/DOCS-IA-REORG-PROPOSAL.md",
@@ -34,57 +38,81 @@
     {
       "id": "docs/approval-backfill-checklist.md",
       "type": "doc",
-      "path": "docs/approval-backfill-checklist.md"
+      "path": "docs/approval-backfill-checklist.md",
+      "title": "Approval Backfill Checklist — missing-approval violations without in-doc evidence",
+      "status": "draft"
     },
     {
       "id": "docs/architecture/CR-001-dxgi-capture-migration.md",
       "type": "doc",
-      "path": "docs/architecture/CR-001-dxgi-capture-migration.md"
+      "path": "docs/architecture/CR-001-dxgi-capture-migration.md",
+      "title": "CR-001: Migrate Screen Capture from WGC to DXGI Desktop Duplication",
+      "status": "Submitted"
     },
     {
       "id": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
       "type": "doc",
-      "path": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md"
+      "path": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
+      "title": "ADR: Hybrid Ingestion Resilience",
+      "status": "accepted"
     },
     {
       "id": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "doc",
-      "path": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md"
+      "path": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
+      "title": "ADR: Opt-in Data Contribution + match_id Flywheel",
+      "status": "accepted"
     },
     {
       "id": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "type": "doc",
-      "path": "docs/architecture/adr/ADR-12-community-ai-marketplace.md"
+      "path": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
+      "title": "ADR: Community AI Marketplace",
+      "status": "accepted"
     },
     {
       "id": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "type": "doc",
-      "path": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md"
+      "path": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
+      "title": "ADR: Migrate Screen Capture from WGC to DXGI Desktop Duplication",
+      "status": "accepted"
     },
     {
       "id": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "doc",
-      "path": "docs/architecture/adr/ADR-14-gid-account-identity.md"
+      "path": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "title": "ADR: GID — G-Series Account & Identity Layer",
+      "status": "accepted"
     },
     {
       "id": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md",
       "type": "doc",
-      "path": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md"
+      "path": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md",
+      "title": "Command Deck HUD v2 — Subtract-glass shell + design-system SSOT",
+      "status": "accepted (design) · pending implementation"
     },
     {
       "id": "docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md",
       "type": "doc",
-      "path": "docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md"
+      "path": "docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md",
+      "title": "ADR: Credit Economy (shard/wallet) + Mint Oracle + match_ref Storage",
+      "status": "accepted"
     },
     {
       "id": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
       "type": "doc",
-      "path": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md"
+      "path": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
+      "title": "ADR-17: Supabase OAuth Server Transaction Boundary",
+      "status": "active",
+      "doc_type": "architecture-decision",
+      "domain": "identity-access"
     },
     {
       "id": "docs/architecture/adr/ADR-18-dev-runtime-governance-split.md",
       "type": "doc",
-      "path": "docs/architecture/adr/ADR-18-dev-runtime-governance-split.md"
+      "path": "docs/architecture/adr/ADR-18-dev-runtime-governance-split.md",
+      "title": "ADR: Dev & Runtime Governance Split — RWANG builder · G-Orchestra governor · skill→harness release",
+      "status": "accepted"
     },
     {
       "id": "docs/architecture/assets/design-references/README.md",
@@ -94,7 +122,10 @@
     {
       "id": "docs/architecture/design-system.md",
       "type": "doc",
-      "path": "docs/architecture/design-system.md"
+      "path": "docs/architecture/design-system.md",
+      "title": "G-Maiden Iceglass Design System",
+      "status": "draft",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/architecture/engineering-spec.md",
@@ -104,12 +135,18 @@
     {
       "id": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "type": "doc",
-      "path": "docs/architecture/g-maiden-ui-sitemap-flow-board.md"
+      "path": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "title": "G-Maiden UI Sitemap / User Flow / Design Board",
+      "status": "accepted",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/architecture/gmad-current-first-run-user-flow-walkthrough.md",
       "type": "doc",
-      "path": "docs/architecture/gmad-current-first-run-user-flow-walkthrough.md"
+      "path": "docs/architecture/gmad-current-first-run-user-flow-walkthrough.md",
+      "title": "G-Maiden Current First-Run User Flow Walkthrough",
+      "status": "draft",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/architecture/implementation-plan.md",
@@ -119,12 +156,19 @@
     {
       "id": "docs/architecture/oauth-jwt-client-authorization-flows.md",
       "type": "doc",
-      "path": "docs/architecture/oauth-jwt-client-authorization-flows.md"
+      "path": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "title": "OAuth 2.0, JWT, and Multi-Client Authorization Flows",
+      "status": "active",
+      "doc_type": "architecture-flow",
+      "domain": "identity-access"
     },
     {
       "id": "docs/architecture/product-family-design-map.md",
       "type": "doc",
-      "path": "docs/architecture/product-family-design-map.md"
+      "path": "docs/architecture/product-family-design-map.md",
+      "title": "G-Maiden + G-Orchestra Product Family Design Map",
+      "status": "draft",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/architecture/spec-orchestra-codedoc-agent.md",
@@ -139,7 +183,11 @@
     {
       "id": "docs/architecture/spikes/S-2-oauth-broker-provider-capability.md",
       "type": "doc",
-      "path": "docs/architecture/spikes/S-2-oauth-broker-provider-capability.md"
+      "path": "docs/architecture/spikes/S-2-oauth-broker-provider-capability.md",
+      "title": "S-2: Supabase OAuth Server Provider-Capability Spike",
+      "status": "active",
+      "doc_type": "technical-spike",
+      "domain": "identity-access"
     },
     {
       "id": "docs/architecture/tech-stack.md",
@@ -164,32 +212,44 @@
     {
       "id": "docs/audits/SEC-001-auth-identity-hardening.md",
       "type": "doc",
-      "path": "docs/audits/SEC-001-auth-identity-hardening.md"
+      "path": "docs/audits/SEC-001-auth-identity-hardening.md",
+      "title": "SEC-001: Auth & Identity Hardening — live gstore audit + fixes",
+      "status": "Part A + Part B + mint-gid APPLIED to live (2026-07-04) · F1 closed on prod · client release pending"
     },
     {
       "id": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
       "type": "doc",
-      "path": "docs/change request/CR-001-REVIEW-and-execution-plan.md"
+      "path": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
+      "title": "CR-001 Review & Corrected Multi-Agent Execution Plan (DXGI Migration)",
+      "status": "Wave A+B code-complete & gate-green (2026-06-29); Wave C in-game test pending Boss"
     },
     {
       "id": "docs/change request/CR-001-Wave-C-test-plan.md",
       "type": "doc",
-      "path": "docs/change request/CR-001-Wave-C-test-plan.md"
+      "path": "docs/change request/CR-001-Wave-C-test-plan.md",
+      "title": "CR-001 Wave C — In-Game Validation Test Plan (DXGI Migration)",
+      "status": "ready to execute"
     },
     {
       "id": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "doc",
-      "path": "docs/change request/CR-002-Phase2-wire-backend.md"
+      "path": "docs/change request/CR-002-Phase2-wire-backend.md",
+      "title": "CR-002 Phase 2 — Wire command-deck UI to live backend + run in Tauri",
+      "status": "IMPLEMENTED — merged to main 170805b8 (2026-07-02)"
     },
     {
       "id": "docs/change request/CR-003-account-phase1-wallet-billing.md",
       "type": "doc",
-      "path": "docs/change request/CR-003-account-phase1-wallet-billing.md"
+      "path": "docs/change request/CR-003-account-phase1-wallet-billing.md",
+      "title": "CR-003: Account Phase 1 — Wallet · Inventory · History · Billing (PromptPay/TrueMoney)",
+      "status": "accepted"
     },
     {
       "id": "docs/change request/CR-003-payment-golive-checklist.md",
       "type": "doc",
-      "path": "docs/change request/CR-003-payment-golive-checklist.md"
+      "path": "docs/change request/CR-003-payment-golive-checklist.md",
+      "title": "CR-003 Payment Path — Go-Live Checklist",
+      "status": "Open — blocked on Phase 0 (legal/terms) + Phase 1 (Omise)"
     },
     {
       "id": "docs/change request/CR-004-voice-command-browser.md",
@@ -199,22 +259,36 @@
     {
       "id": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
       "type": "doc",
-      "path": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md"
+      "path": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
+      "title": "CR-005 W1A — Dota hero motion + Closed Beta GID registration",
+      "status": "active",
+      "doc_type": "change-request",
+      "domain": "landing-auth-motion"
     },
     {
       "id": "docs/change request/CR-005-W1B-thai-features-and-doc-encoding.md",
       "type": "doc",
-      "path": "docs/change request/CR-005-W1B-thai-features-and-doc-encoding.md"
+      "path": "docs/change request/CR-005-W1B-thai-features-and-doc-encoding.md",
+      "title": "CR-005 W1B — Landing ภาษาไทย, G-Maiden Features และซ่อมเอกสาร Mojibake",
+      "status": "active",
+      "doc_type": "change-request",
+      "domain": "landing-content-documentation-encoding"
     },
     {
       "id": "docs/change request/CR-005-W1C-landing-analytics-git-integration.md",
       "type": "doc",
-      "path": "docs/change request/CR-005-W1C-landing-analytics-git-integration.md"
+      "path": "docs/change request/CR-005-W1C-landing-analytics-git-integration.md",
+      "title": "CR-005 W1C — Landing Analytics และ Git Integration",
+      "status": "active",
+      "doc_type": "change-request",
+      "domain": "landing-analytics-deployment"
     },
     {
       "id": "docs/change request/CR-005-landing-auth-social.md",
       "type": "doc",
-      "path": "docs/change request/CR-005-landing-auth-social.md"
+      "path": "docs/change request/CR-005-landing-auth-social.md",
+      "title": "Landing page + Full-screen Auth + G-Social community",
+      "status": "DRAFT — awaiting approval"
     },
     {
       "id": "docs/change request/CR-007-frostline-deck-refresh.md",
@@ -249,117 +323,199 @@
     {
       "id": "docs/change request/CR-014-document-impact-map-gmaiden-adapter.md",
       "type": "doc",
-      "path": "docs/change request/CR-014-document-impact-map-gmaiden-adapter.md"
+      "path": "docs/change request/CR-014-document-impact-map-gmaiden-adapter.md",
+      "title": "CR-014: Document Impact Map for the G-Maiden adapter",
+      "status": "active",
+      "domain": "documentation-governance"
     },
     {
       "id": "docs/change request/CR-014-g-overlay-lab-sync.md",
       "type": "doc",
-      "path": "docs/change request/CR-014-g-overlay-lab-sync.md"
+      "path": "docs/change request/CR-014-g-overlay-lab-sync.md",
+      "title": "CR-014 - G-Overlay Lab sync receiver",
+      "status": "accepted",
+      "doc_type": "change-request"
     },
     {
       "id": "docs/change request/CR-015-genesisblockdb-document-intelligence-projection.md",
       "type": "doc",
-      "path": "docs/change request/CR-015-genesisblockdb-document-intelligence-projection.md"
+      "path": "docs/change request/CR-015-genesisblockdb-document-intelligence-projection.md",
+      "title": "CR-015: GenesisBlockDB Local Document-Intelligence Projection",
+      "status": "draft",
+      "domain": "documentation-governance"
     },
     {
       "id": "docs/change request/CR-016-gmad-beta-download-admin-controller.md",
       "type": "doc",
-      "path": "docs/change request/CR-016-gmad-beta-download-admin-controller.md"
+      "path": "docs/change request/CR-016-gmad-beta-download-admin-controller.md",
+      "title": "CR-016: GMAD Beta Download Access and Admin Controller",
+      "status": "accepted",
+      "domain": "account-identity"
     },
     {
       "id": "docs/change request/CR-017-gstore-migration-history-reconciliation.md",
       "type": "doc",
-      "path": "docs/change request/CR-017-gstore-migration-history-reconciliation.md"
+      "path": "docs/change request/CR-017-gstore-migration-history-reconciliation.md",
+      "title": "CR-017: Reconcile gstore migration history before CR-016 deployment",
+      "status": "historical",
+      "doc_type": "change-request",
+      "domain": "platform-data"
     },
     {
       "id": "docs/change request/CR-018-ops-route-spa-rewrite.md",
       "type": "doc",
-      "path": "docs/change request/CR-018-ops-route-spa-rewrite.md"
+      "path": "docs/change request/CR-018-ops-route-spa-rewrite.md",
+      "title": "CR-018: Serve the GMAD operator route through the SPA shell",
+      "status": "historical",
+      "domain": "closed-beta-distribution"
     },
     {
       "id": "docs/change request/CR-019-owner-role-and-operator-delegation.md",
       "type": "doc",
-      "path": "docs/change request/CR-019-owner-role-and-operator-delegation.md"
+      "path": "docs/change request/CR-019-owner-role-and-operator-delegation.md",
+      "title": "CR-019: Owner role and controlled operator delegation",
+      "status": "active",
+      "domain": "account-identity"
     },
     {
       "id": "docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md",
       "type": "doc",
-      "path": "docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md"
+      "path": "docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md",
+      "title": "CR-020: G-Maiden Beta Notification and Open Beta Countdown",
+      "status": "active",
+      "doc_type": "change-request",
+      "domain": "landing-release-notification"
     },
     {
       "id": "docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md",
       "type": "doc",
-      "path": "docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md"
+      "path": "docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md",
+      "title": "CR-021: Closed Beta Terms, Consent, and Entitlement Acceptance",
+      "status": "draft",
+      "doc_type": "change-request",
+      "domain": "legal-privacy-access"
     },
     {
       "id": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
       "type": "doc",
-      "path": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md"
+      "path": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
+      "title": "CR-022: G-Maiden Desktop First-Run, Entitlement and Account Handoff",
+      "status": "accepted",
+      "doc_type": "change-request",
+      "domain": "legal-privacy-access"
     },
     {
       "id": "docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md",
       "type": "doc",
-      "path": "docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md"
+      "path": "docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md",
+      "title": "CR-023: G-Maiden Original 3D Hero and Scroll Narrative",
+      "status": "accepted",
+      "doc_type": "change-request",
+      "domain": "public-landing"
     },
     {
       "id": "docs/change request/CR-024-gmaiden-3d-studio-and-portable-blender.md",
       "type": "doc",
-      "path": "docs/change request/CR-024-gmaiden-3d-studio-and-portable-blender.md"
+      "path": "docs/change request/CR-024-gmaiden-3d-studio-and-portable-blender.md",
+      "title": "CR-024: G-Maiden 3D Studio and Portable Blender Toolchain",
+      "status": "accepted",
+      "doc_type": "change-request",
+      "domain": "3d-content-pipeline"
     },
     {
       "id": "docs/change request/CR-025-codedoc-aligner-structured-output-reliability.md",
       "type": "doc",
-      "path": "docs/change request/CR-025-codedoc-aligner-structured-output-reliability.md"
+      "path": "docs/change request/CR-025-codedoc-aligner-structured-output-reliability.md",
+      "title": "CR-025: CodeDoc Aligner Structured Output Reliability",
+      "status": "active",
+      "doc_type": "change-request",
+      "domain": "developer-tooling"
     },
     {
       "id": "docs/change request/CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import.md",
       "type": "doc",
-      "path": "docs/change request/CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import.md"
+      "path": "docs/change request/CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import.md",
+      "title": "CR-026: MPFB2 Character Authoring and Guarded Image-to-3D Import",
+      "status": "accepted",
+      "doc_type": "change-request",
+      "domain": "3d-content-pipeline"
     },
     {
       "id": "docs/change request/CR-027-comfyui-local-generation-and-provenance-bridge.md",
       "type": "doc",
-      "path": "docs/change request/CR-027-comfyui-local-generation-and-provenance-bridge.md"
+      "path": "docs/change request/CR-027-comfyui-local-generation-and-provenance-bridge.md",
+      "title": "CR-027: ComfyUI Local Generation and Provenance Bridge",
+      "status": "draft",
+      "doc_type": "change-request",
+      "domain": "3d-content-pipeline"
     },
     {
       "id": "docs/change request/CR-028-gmaiden-3d-hero-production-handoff.md",
       "type": "doc",
-      "path": "docs/change request/CR-028-gmaiden-3d-hero-production-handoff.md"
+      "path": "docs/change request/CR-028-gmaiden-3d-hero-production-handoff.md",
+      "title": "CR-028: G-Maiden 3D Hero Production Handoff",
+      "status": "superseded",
+      "doc_type": "change-request",
+      "domain": "3d-content-pipeline"
     },
     {
       "id": "docs/change request/CR-029-gmaiden-art-first-2-5d-hero-replacement.md",
       "type": "doc",
-      "path": "docs/change request/CR-029-gmaiden-art-first-2-5d-hero-replacement.md"
+      "path": "docs/change request/CR-029-gmaiden-art-first-2-5d-hero-replacement.md",
+      "title": "CR-029: G-Maiden Art-First 2.5D Hero Replacement",
+      "status": "accepted",
+      "doc_type": "change-request",
+      "domain": "public-landing"
     },
     {
       "id": "docs/change request/CR-030-landing-scroll-driven-cinematic-narrative.md",
       "type": "doc",
-      "path": "docs/change request/CR-030-landing-scroll-driven-cinematic-narrative.md"
+      "path": "docs/change request/CR-030-landing-scroll-driven-cinematic-narrative.md",
+      "title": "CR-030: G-Maiden Landing Scroll-Driven Cinematic Narrative",
+      "status": "accepted",
+      "doc_type": "change-request",
+      "domain": "public-landing"
     },
     {
       "id": "docs/change request/CR-031-landing-hero-layer-separated-wind-motion.md",
       "type": "doc",
-      "path": "docs/change request/CR-031-landing-hero-layer-separated-wind-motion.md"
+      "path": "docs/change request/CR-031-landing-hero-layer-separated-wind-motion.md",
+      "title": "CR-031: G-Maiden Landing Hero Layer-Separated Wind Motion",
+      "status": "accepted",
+      "doc_type": "change-request",
+      "domain": "public-landing"
     },
     {
       "id": "docs/change request/CR-032-landing-hero-scene-depth-and-character-rig-decomposition.md",
       "type": "doc",
-      "path": "docs/change request/CR-032-landing-hero-scene-depth-and-character-rig-decomposition.md"
+      "path": "docs/change request/CR-032-landing-hero-scene-depth-and-character-rig-decomposition.md",
+      "title": "CR-032: Landing Hero Scene-Depth and Character-Rig Decomposition",
+      "status": "accepted",
+      "doc_type": "change-request",
+      "domain": "public-landing"
     },
     {
       "id": "docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md",
       "type": "doc",
-      "path": "docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md"
+      "path": "docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md",
+      "title": "CR-033: PR gate agent with required status review gate",
+      "status": "accepted",
+      "doc_type": "change-request",
+      "domain": "developer-tooling"
     },
     {
       "id": "docs/change request/DXGI-task-assignment.md",
       "type": "doc",
-      "path": "docs/change request/DXGI-task-assignment.md"
+      "path": "docs/change request/DXGI-task-assignment.md",
+      "title": "DXGI Migration — Agent Task Assignment",
+      "status": "active"
     },
     {
       "id": "docs/change request/IMPL-PLAN-DXGI-migration.md",
       "type": "doc",
-      "path": "docs/change request/IMPL-PLAN-DXGI-migration.md"
+      "path": "docs/change request/IMPL-PLAN-DXGI-migration.md",
+      "title": "IMPLEMENTATION PLAN: DXGI Desktop Duplication Migration",
+      "status": "draft"
     },
     {
       "id": "docs/change request/closed-beta-privacy-notice-draft.md",
@@ -374,47 +530,74 @@
     {
       "id": "docs/design-system/01-foundations.md",
       "type": "doc",
-      "path": "docs/design-system/01-foundations.md"
+      "path": "docs/design-system/01-foundations.md",
+      "title": "01 — Foundations",
+      "status": "draft",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/design-system/02-tokens.md",
       "type": "doc",
-      "path": "docs/design-system/02-tokens.md"
+      "path": "docs/design-system/02-tokens.md",
+      "title": "02 — Design Tokens",
+      "status": "draft",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/design-system/03-layout.md",
       "type": "doc",
-      "path": "docs/design-system/03-layout.md"
+      "path": "docs/design-system/03-layout.md",
+      "title": "03 - Layout",
+      "status": "draft",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/design-system/04-components.md",
       "type": "doc",
-      "path": "docs/design-system/04-components.md"
+      "path": "docs/design-system/04-components.md",
+      "title": "04 - Components",
+      "status": "draft",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/design-system/05-sitemap-ia.md",
       "type": "doc",
-      "path": "docs/design-system/05-sitemap-ia.md"
+      "path": "docs/design-system/05-sitemap-ia.md",
+      "title": "05 — Sitemap & Information Architecture",
+      "status": "draft",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/design-system/06-stack.md",
       "type": "doc",
-      "path": "docs/design-system/06-stack.md"
+      "path": "docs/design-system/06-stack.md",
+      "title": "06 — Stack & Code Map",
+      "status": "draft",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/design-system/07-combat-hud.md",
       "type": "doc",
-      "path": "docs/design-system/07-combat-hud.md"
+      "path": "docs/design-system/07-combat-hud.md",
+      "title": "07 — Combat HUD (In-game Overlay)",
+      "status": "draft",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/design-system/08-account-gid.md",
       "type": "doc",
-      "path": "docs/design-system/08-account-gid.md"
+      "path": "docs/design-system/08-account-gid.md",
+      "title": "08 — Account, Login & GID",
+      "status": "draft",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/design-system/README.md",
       "type": "doc",
-      "path": "docs/design-system/README.md"
+      "path": "docs/design-system/README.md",
+      "title": "G-Maiden Design System — SSOT",
+      "status": "draft",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/design-system/landing_page_prompt.md",
@@ -429,7 +612,9 @@
     {
       "id": "docs/features/FEAT-G-DAMAGE.md",
       "type": "doc",
-      "path": "docs/features/FEAT-G-DAMAGE.md"
+      "path": "docs/features/FEAT-G-DAMAGE.md",
+      "title": "FEAT: G-Damage — Real-time Lethality Engine",
+      "status": "draft"
     },
     {
       "id": "docs/features/FEAT-G-LOG.md",
@@ -514,7 +699,10 @@
     {
       "id": "docs/operations/gmaiden-closed-beta-release-playbook.md",
       "type": "doc",
-      "path": "docs/operations/gmaiden-closed-beta-release-playbook.md"
+      "path": "docs/operations/gmaiden-closed-beta-release-playbook.md",
+      "title": "G-Maiden Closed Beta Release Playbook",
+      "status": "active",
+      "domain": "release-operations"
     },
     {
       "id": "docs/operations/validation/forms-and-social.md",
@@ -529,7 +717,9 @@
     {
       "id": "docs/product/MASTERPLAN-account-phase1.md",
       "type": "doc",
-      "path": "docs/product/MASTERPLAN-account-phase1.md"
+      "path": "docs/product/MASTERPLAN-account-phase1.md",
+      "title": "MASTERPLAN: Account Phase 1 (CR-003) — orchestrated build via G-Orchestra",
+      "status": "active"
     },
     {
       "id": "docs/product/business-requirements.md",
@@ -544,12 +734,20 @@
     {
       "id": "docs/product/closed-beta-privacy-notice-draft.md",
       "type": "doc",
-      "path": "docs/product/closed-beta-privacy-notice-draft.md"
+      "path": "docs/product/closed-beta-privacy-notice-draft.md",
+      "title": "G-Maiden Closed Beta Privacy Notice",
+      "status": "draft",
+      "doc_type": "privacy-notice",
+      "domain": "legal-privacy-access"
     },
     {
       "id": "docs/product/closed-beta-terms-of-use-draft.md",
       "type": "doc",
-      "path": "docs/product/closed-beta-terms-of-use-draft.md"
+      "path": "docs/product/closed-beta-terms-of-use-draft.md",
+      "title": "G-Maiden Closed Beta Terms of Use",
+      "status": "draft",
+      "doc_type": "legal-terms",
+      "domain": "legal-privacy-access"
     },
     {
       "id": "docs/product/competitive-brief.md",
@@ -599,82 +797,114 @@
     {
       "id": "docs/releases/README.md",
       "type": "doc",
-      "path": "docs/releases/README.md"
+      "path": "docs/releases/README.md",
+      "title": "G-Maiden Release Governance",
+      "status": "draft"
     },
     {
       "id": "docs/releases/beta-roadmap.md",
       "type": "doc",
-      "path": "docs/releases/beta-roadmap.md"
+      "path": "docs/releases/beta-roadmap.md",
+      "title": "G-Maiden Beta and Release Roadmap",
+      "status": "draft"
     },
     {
       "id": "docs/releases/closed-beta/wave-0/definition-of-done.md",
       "type": "doc",
-      "path": "docs/releases/closed-beta/wave-0/definition-of-done.md"
+      "path": "docs/releases/closed-beta/wave-0/definition-of-done.md",
+      "title": "Closed Beta Wave 0 Definition of Done",
+      "status": "draft"
     },
     {
       "id": "docs/releases/closed-beta/wave-0/evidence-runbook.md",
       "type": "doc",
-      "path": "docs/releases/closed-beta/wave-0/evidence-runbook.md"
+      "path": "docs/releases/closed-beta/wave-0/evidence-runbook.md",
+      "title": "Closed Beta Wave 0 Evidence Runbook",
+      "status": "draft"
     },
     {
       "id": "docs/releases/closed-beta/wave-0/specification.md",
       "type": "doc",
-      "path": "docs/releases/closed-beta/wave-0/specification.md"
+      "path": "docs/releases/closed-beta/wave-0/specification.md",
+      "title": "G-Maiden Closed Beta Wave 0 Specification",
+      "status": "draft"
     },
     {
       "id": "docs/releases/closed-beta/wave-1/definition-of-done.md",
       "type": "doc",
-      "path": "docs/releases/closed-beta/wave-1/definition-of-done.md"
+      "path": "docs/releases/closed-beta/wave-1/definition-of-done.md",
+      "title": "Closed Beta Wave 1 Definition of Done",
+      "status": "draft"
     },
     {
       "id": "docs/releases/closed-beta/wave-1/specification.md",
       "type": "doc",
-      "path": "docs/releases/closed-beta/wave-1/specification.md"
+      "path": "docs/releases/closed-beta/wave-1/specification.md",
+      "title": "G-Maiden Closed Beta Wave 1 Specification",
+      "status": "draft"
     },
     {
       "id": "docs/releases/closed-beta/wave-2/definition-of-done.md",
       "type": "doc",
-      "path": "docs/releases/closed-beta/wave-2/definition-of-done.md"
+      "path": "docs/releases/closed-beta/wave-2/definition-of-done.md",
+      "title": "Closed Beta Wave 2 Definition of Done",
+      "status": "draft"
     },
     {
       "id": "docs/releases/closed-beta/wave-2/specification.md",
       "type": "doc",
-      "path": "docs/releases/closed-beta/wave-2/specification.md"
+      "path": "docs/releases/closed-beta/wave-2/specification.md",
+      "title": "G-Maiden Closed Beta Wave 2 Specification",
+      "status": "draft"
     },
     {
       "id": "docs/releases/open-beta/definition-of-done.md",
       "type": "doc",
-      "path": "docs/releases/open-beta/definition-of-done.md"
+      "path": "docs/releases/open-beta/definition-of-done.md",
+      "title": "Open Beta Definition of Done",
+      "status": "draft"
     },
     {
       "id": "docs/releases/open-beta/specification.md",
       "type": "doc",
-      "path": "docs/releases/open-beta/specification.md"
+      "path": "docs/releases/open-beta/specification.md",
+      "title": "G-Maiden Open Beta Specification",
+      "status": "draft"
     },
     {
       "id": "docs/releases/public-demo/rollback.md",
       "type": "doc",
-      "path": "docs/releases/public-demo/rollback.md"
+      "path": "docs/releases/public-demo/rollback.md",
+      "title": "G-Maiden Public Demo Rollback",
+      "status": "draft"
     },
     {
       "id": "docs/releases/public-demo/specification.md",
       "type": "doc",
-      "path": "docs/releases/public-demo/specification.md"
+      "path": "docs/releases/public-demo/specification.md",
+      "title": "G-Maiden Public Demo Specification",
+      "status": "draft"
     },
     {
       "id": "docs/releases/release-channel-architecture.md",
       "type": "doc",
-      "path": "docs/releases/release-channel-architecture.md"
+      "path": "docs/releases/release-channel-architecture.md",
+      "title": "G-Maiden Release Channel Architecture",
+      "status": "draft"
     },
     {
       "id": "docs/releases/release-channel-implementation.md",
       "type": "doc",
-      "path": "docs/releases/release-channel-implementation.md"
+      "path": "docs/releases/release-channel-implementation.md",
+      "title": "G-Maiden Release Channel Implementation and Evidence Runbook",
+      "status": "draft"
     },
     {
       "id": "docs/research/2026-07-19-govibe-gmaiden-governance-comparison.md",
       "type": "doc",
-      "path": "docs/research/2026-07-19-govibe-gmaiden-governance-comparison.md"
+      "path": "docs/research/2026-07-19-govibe-gmaiden-governance-comparison.md",
+      "title": "เทียบ GoVibe ↔ G-Maiden: doc governance · context/brain · ตำแหน่งใน ADR-18 + ข้อเสนอ unify",
+      "status": "draft"
     },
     {
       "id": "docs/research/assets/dota2-hud-reference.md",
@@ -689,7 +919,10 @@
     {
       "id": "docs/research/concepts/subagent-context-scoping.md",
       "type": "doc",
-      "path": "docs/research/concepts/subagent-context-scoping.md"
+      "path": "docs/research/concepts/subagent-context-scoping.md",
+      "title": "Subagent context scoping — POLA for agents via task scope + escalation",
+      "status": "stable",
+      "domain": "concept"
     },
     {
       "id": "docs/research/huggingface-dota2-resources.md",
@@ -709,7 +942,11 @@
     {
       "id": "docs/superpowers/specs/2026-08-09-gid-central-pipeline-design.md",
       "type": "doc",
-      "path": "docs/superpowers/specs/2026-08-09-gid-central-pipeline-design.md"
+      "path": "docs/superpowers/specs/2026-08-09-gid-central-pipeline-design.md",
+      "title": "GID-Central Pipeline: สมัคร → ดาวน์โหลด → Login ข้าม G-series",
+      "status": "accepted",
+      "doc_type": "design-spec",
+      "domain": "identity-entitlement-distribution"
     },
     {
       "id": "src-tauri/src/capture.rs",
@@ -9961,7 +10198,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-08-16T20:43:47.192Z",
+    "generatedAt": "2026-08-18T22:07:55.233Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 73,

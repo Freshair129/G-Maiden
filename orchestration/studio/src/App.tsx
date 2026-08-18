@@ -10,10 +10,11 @@ import Loadout from "./Loadout";
 import Copilot from "./Copilot";
 import Memory from "./Memory";
 import RwangIngest from "./RwangIngest";
+import GOrchestraAligner from "./GOrchestraAligner";
 import CommandBar from "./CommandBar";
 import { useStore, startPolling } from "./store";
 
-const TABS: [string, string][] = [["progress", "Develop"], ["board", "Board"], ["graph", "Graph"], ["pipeline", "Pipeline"], ["nodedb", "Node↔DB"], ["ingest", "Diagram"], ["cockpit", "Cockpit"], ["loadout", "Loadout"], ["copilot", "Copilot"], ["memory", "Memory"], ["rwang", "RWANG"]];
+const TABS: [string, string][] = [["progress", "Develop"], ["board", "Board"], ["graph", "Graph"], ["pipeline", "Pipeline"], ["nodedb", "Node↔DB"], ["ingest", "Diagram"], ["cockpit", "Cockpit"], ["loadout", "Loadout"], ["copilot", "Copilot"], ["memory", "Memory"], ["rwang", "RWANG"], ["aligner", "G-Aligner"]];
 
 export default function App() {
   const [tab, setTab] = useState("progress");
@@ -45,7 +46,10 @@ export default function App() {
       ) : null}
 
       {loading ? <div className="loading">loading snapshot…</div> : (
-        <main className="surface">
+        <main
+          className={tab === "aligner" ? "surface--fill" : "surface"}
+          style={tab === "aligner" ? { padding: "0 16px 16px 16px" } : {}}
+        >
           {tab === "progress" && <DevProgress />}
           {tab === "board" && <Board />}
           {tab === "graph" && <Graph />}
@@ -57,6 +61,7 @@ export default function App() {
           {tab === "copilot" && <Copilot />}
           {tab === "memory" && <Memory />}
           {tab === "rwang" && <RwangIngest />}
+          {tab === "aligner" && <GOrchestraAligner />}
         </main>
       )}
     </div>

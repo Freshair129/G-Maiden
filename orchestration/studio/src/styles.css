@@ -29,7 +29,9 @@ h3 { margin: 0 0 8px; }
 
 .banner.err { background: #2a0f18; border-bottom: 1px solid #5a2336; color: #ffb1c2; padding: 8px 18px; font-size: 12px; }
 .loading { padding: 40px; color: var(--muted); }
-.surface { flex: 1; overflow: auto; }
+.surface { flex: 1; overflow: auto; min-height: 0; }
+/* aligner tab: panels own their own scroll, no page scroll */
+.surface--fill { flex: 1; overflow: hidden; display: flex; flex-direction: column; min-height: 0; }
 .empty { color: #3a5070; text-align: center; padding: 8px; }
 
 /* ---- Board ---- */
