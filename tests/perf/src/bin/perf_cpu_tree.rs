@@ -52,7 +52,11 @@ fn main() {
     println!("============================================================");
     println!(" G-Maiden CPU Tree Harness");
     println!(" Task Manager-aligned process-group CPU measurement");
-    println!(" Budget: peak grouped CPU <= {:.1}%", CPU_BUDGET_PCT);
+    println!(
+        " Budget: peak grouped CPU <= {:.1}%  (core-normalized over {} logical cores)",
+        CPU_BUDGET_PCT,
+        logical_cores() as u32
+    );
     println!("============================================================");
     println!();
 
@@ -138,16 +142,34 @@ fn descendants_of(root_pid: u32, graph: &[ProcNode]) -> BTreeSet<u32> {
     seen
 }
 
+/// Logical cores, used to put `sysinfo`'s per-core percentages on the same scale
+/// as the NFR.
+///
+/// `Process::cpu_usage()` is relative to ONE core: a process saturating a single
+/// core reports 100%, and a multi-threaded one can exceed it. `governor.rs`
+/// reports the budget-bearing number **core-normalized**
+/// (`(cpu_delta_ms / (wall_ms * cores)) * 100`), and Task Manager's per-process
+/// column is normalized too. Summing raw `cpu_usage()` and comparing it to a 2.5%
+/// budget therefore over-reports by the core count — 12x on a 12-core box, which
+/// makes every run FAIL at roughly 0.2% of real usage. Any conclusion about the
+/// CPU NFR drawn from the un-normalized numbers is wrong by that factor.
+fn logical_cores() -> f32 {
+    std::thread::available_parallelism()
+        .map(|n| n.get() as f32)
+        .unwrap_or(1.0)
+}
+
 fn capture_sample(sys: &System, tree: &BTreeSet<u32>) -> Sample {
     let mut total = 0.0_f32;
     let mut by_name = BTreeMap::new();
     let mut members = Vec::with_capacity(tree.len());
+    let cores = logical_cores();
 
     for pid in tree {
         let Some(proc) = sys.process(Pid::from_u32(*pid)) else {
             continue;
         };
-        let cpu = proc.cpu_usage();
+        let cpu = proc.cpu_usage() / cores;
         total += cpu;
         *by_name.entry(proc.name().to_string()).or_insert(0.0) += cpu;
         members.push((*pid, proc.name().to_string(), cpu));
