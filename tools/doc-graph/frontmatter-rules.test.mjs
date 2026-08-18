@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { validateFrontmatter } from './frontmatter-rules.mjs';
+import { validateFrontmatter, parseFrontmatterFields } from './frontmatter-rules.mjs';
 
 // --- fixtures ----------------------------------------------------------------
 // REL/BASE_OK satisfy every v0.4.0 rule at once, so each rule's test only
@@ -279,4 +279,59 @@ test('parsedDoc accepts either a raw string or a { text } object identically', (
   const asString = validateFrontmatter(BASE_OK, REL);
   const asObject = validateFrontmatter({ text: BASE_OK }, REL);
   assert.deepEqual(asString, asObject);
+});
+
+// --- parseFrontmatterFields: nested `attributes:` block ----------------------
+// Real docs (docs/DOC-INDEX.md and friends) file doc_type/domain one level down
+// under `attributes:`, so the flat parser returned nothing for them.
+
+const NESTED = `---
+title: "Documentation Index"
+status: "active"
+attributes:
+  domain: "documentation-governance"
+  doc_type: "document-index"
+related_docs:
+  - "docs/README.md"
+---
+
+# Body
+`;
+
+test('parseFrontmatterFields flattens a nested block to dotted keys', () => {
+  const f = parseFrontmatterFields(NESTED);
+  assert.equal(f['attributes.domain'], 'documentation-governance');
+  assert.equal(f['attributes.doc_type'], 'document-index');
+});
+
+test('parseFrontmatterFields keeps top-level keys unprefixed alongside a nested block', () => {
+  const f = parseFrontmatterFields(NESTED);
+  assert.equal(f.title, 'Documentation Index');
+  assert.equal(f.status, 'active');
+});
+
+test('a scalar field after a nested block closes it rather than absorbing later keys', () => {
+  const f = parseFrontmatterFields(`---
+attributes:
+  domain: "d"
+owner: "Boss"
+version: "0.1.0"
+---
+`);
+  assert.equal(f['attributes.domain'], 'd');
+  assert.equal(f.owner, 'Boss');
+  assert.equal(f['attributes.owner'], undefined);
+  assert.equal(f['attributes.version'], undefined);
+});
+
+test('a list block contributes no dotted keys (its items are not key: value)', () => {
+  const f = parseFrontmatterFields(NESTED);
+  assert.equal(f.related_docs, '');
+  assert.ok(!Object.keys(f).some((k) => k.startsWith('related_docs.')));
+});
+
+test('nested parsing survives CRLF the same way the flat parser does', () => {
+  const f = parseFrontmatterFields(NESTED.replace(/\n/g, '\r\n'));
+  assert.equal(f['attributes.doc_type'], 'document-index');
+  assert.equal(f.title, 'Documentation Index');
 });

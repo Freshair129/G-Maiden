@@ -30,7 +30,7 @@ import { buildSlugMap, collisions } from './slugmap.mjs';
 import { extractWikilinks, validateWikilinks } from './wikilinks.mjs';
 import { extractSymbolLinks, validateSymbolLinks, validateAnchorIntegrity } from './symlinks.mjs';
 import { checkMetadata } from './metadata.mjs';
-import { validateFrontmatter } from './frontmatter-rules.mjs';
+import { validateFrontmatter, parseFrontmatterFields } from './frontmatter-rules.mjs';
 import { buildIndex } from './atomic-index.mjs';
 
 /** Violation reasons that are informational-only and never fail the exit code. */
@@ -297,6 +297,23 @@ export function runScan({ repoRoot, docsDir, now, strict } = {}) {
     }
 
     // --- T4: frontmatter/version-changelog ----------------------------------
+    // Carry the descriptive frontmatter fields onto the graph node so consumers
+    // (G-Aligner's metadata filter) can group docs without re-reading every file.
+    const fields = parseFrontmatterFields(text);
+    if (fields) {
+      const node = nodes.find((n) => n.id === repoRel);
+      if (node) {
+        // doc_type/domain live under the `attributes:` block in this repo's
+        // frontmatter; accept either spelling.
+        const docType = fields.doc_type || fields['attributes.doc_type'];
+        const domain = fields.domain || fields['attributes.domain'];
+        if (fields.title) node.title = fields.title;
+        if (fields.status) node.status = fields.status;
+        if (docType) node.doc_type = docType;
+        if (domain) node.domain = domain;
+      }
+    }
+
     const meta = checkMetadata(text, repoRel);
     if (meta.kind === 'none') {
       violations.push({ file: repoRel, line: null, reason: 'no-metadata' });

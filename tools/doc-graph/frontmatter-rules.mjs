@@ -80,6 +80,16 @@ function unquote(v) {
  * helper isn't exported and only extracts `version`), generalized to every
  * field this validator needs.
  *
+ * One level of nesting is additionally flattened to a dotted key, because this
+ * repo files `doc_type`/`domain` under an `attributes:` block rather than at the
+ * top level:
+ *
+ *     attributes:
+ *       domain: "documentation-governance"   ->  fields['attributes.domain']
+ *
+ * Top-level keys keep their plain names, so this is additive for every existing
+ * caller — a nested block only ever contributes new dotted entries.
+ *
  * @returns {Record<string,string>|null} null when there is no closed
  *   frontmatter fence at byte 0.
  *
@@ -99,15 +109,24 @@ export function parseFrontmatterFields(text) {
   }
   if (end === -1) return null;
 
+  // Drop a trailing '# comment' the same way the sample block in
+  // docs/README.md writes them (e.g. `status: "draft"  # enum ด้านล่าง`).
+  const clean = (raw) => unquote(raw.trim().replace(/\s+#.*$/, '').trim());
+
   const fields = {};
+  let block = null; // the key of an open `parent:` block, while its indented children run
   for (const line of lines.slice(1, end)) {
+    const nested = /^[ \t]+([A-Za-z_][A-Za-z0-9_-]*)\s*:\s*(.*)$/.exec(line);
+    if (nested) {
+      if (block) fields[`${block}.${nested[1]}`] = clean(nested[2]);
+      continue;
+    }
     const m = /^([A-Za-z_][A-Za-z0-9_]*)\s*:\s*(.*)$/.exec(line);
     if (!m) continue;
-    let val = m[2].trim();
-    // Drop a trailing '# comment' the same way the sample block in
-    // docs/README.md writes them (e.g. `status: "draft"  # enum ด้านล่าง`).
-    val = val.replace(/\s+#.*$/, '').trim();
-    fields[m[1]] = unquote(val);
+    const val = clean(m[2]);
+    fields[m[1]] = val;
+    // `attributes:` on its own line opens a block; `title: "x"` closes any open one.
+    block = val === '' ? m[1] : null;
   }
   return fields;
 }
