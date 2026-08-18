@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-08-13T14:39:42.515Z
+สร้างเมื่อ / Generated at: 2026-08-16T20:43:39.503Z
 
-สแกน 140 ไฟล์เอกสาร, 265 nodes, 1209 edges, 190 รายการปัญหา (136 ตัวบล็อก exit code) / scanned 140 doc files, 265 nodes, 1209 edges, 190 violations (136 blocking exit code).
+สแกน 142 ไฟล์เอกสาร, 267 nodes, 1209 edges, 196 รายการปัญหา (140 ตัวบล็อก exit code) / scanned 142 doc files, 267 nodes, 1209 edges, 196 violations (140 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -11,12 +11,12 @@
 | Reason | คำอธิบาย / Description | Count | Blocking? |
 | --- | --- | --- | --- |
 | anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 71 | yes |
-| duplicate-slug | สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) | 9 | yes |
+| duplicate-slug | สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) | 13 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 3 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
 | missing-changelog | มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table | 4 | yes |
-| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 51 | no (informational) |
+| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 53 | no (informational) |
 | unresolved | wikilink หาไม่เจอ / unresolved wikilink | 11 | yes |
 | version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 27 | yes |
 
@@ -28,9 +28,9 @@
 
 ### docs/DOC-INDEX.md
 
-- [L115] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="SPEC--*")
-- [L117] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="ADR-O-*")
-- [L124] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
+- [L139] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="SPEC--*")
+- [L141] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="ADR-O-*")
+- [L148] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
 
 ### docs/DOCS-IA-REORG-PROPOSAL.md
 
@@ -61,6 +61,10 @@
 - [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="accepted")
 
 ### docs/architecture/adr/ADR-12-community-ai-marketplace.md
+
+- [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="accepted")
+
+### docs/architecture/adr/ADR-13-dxgi-capture-migration.md
 
 - [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="accepted")
 
@@ -116,10 +120,6 @@
 ### docs/architecture/technical-design-document.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/change request/ADR-13-dxgi-capture-migration.md
-
-- [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="accepted")
 
 ### docs/change request/CR-001-REVIEW-and-execution-plan.md
 
@@ -248,6 +248,16 @@
 ### docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md
 
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.0b", changelog="0.1.0b")
+
+### docs/change request/closed-beta-privacy-notice-draft.md
+
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="closed-beta-privacy-notice-draft", siblings=["docs/product/closed-beta-privacy-notice-draft.md"])
+- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/change request/closed-beta-terms-of-use-draft.md
+
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="closed-beta-terms-of-use-draft", siblings=["docs/product/closed-beta-terms-of-use-draft.md"])
+- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/design-system/02-tokens.md
 
@@ -406,10 +416,12 @@
 
 ### docs/product/closed-beta-privacy-notice-draft.md
 
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="closed-beta-privacy-notice-draft", siblings=["docs/change request/closed-beta-privacy-notice-draft.md"])
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.0.1b", changelog="0.1.0b")
 
 ### docs/product/closed-beta-terms-of-use-draft.md
 
+- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="closed-beta-terms-of-use-draft", siblings=["docs/change request/closed-beta-terms-of-use-draft.md"])
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.0.0b", changelog="0.1.0b")
 
 ### docs/product/competitive-brief.md

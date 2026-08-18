@@ -79,6 +79,9 @@ static MASTER_API_KEY: Mutex<String> = Mutex::new(String::new());
 /// nothing about G-Signal's behavior changes unless the user opts in.
 static EFFICACY_ENABLED: AtomicBool = AtomicBool::new(false);
 
+/// G-Persona preset: 0=Coach, 1=Silent, 2=Caster, 3=Meme.
+static PERSONA_PRESET: AtomicU8 = AtomicU8::new(0);
+
 /// Whether the CURRENT match was randomly assigned to the study's "silent arm"
 /// (G-Signal still computes + logs everything, but the gank alert — voice and
 /// banner — is suppressed). Rolled once per match by [`roll_match_arm`].
@@ -129,6 +132,14 @@ pub fn update_channel() -> crate::gmad_entitlement::update_channel::ReleaseChann
         2 => ReleaseChannel::Dev,
         _ => ReleaseChannel::Stable,
     }
+}
+
+pub fn set_persona_preset(val: u8) {
+    PERSONA_PRESET.store(val, Ordering::Relaxed);
+}
+
+pub fn persona_preset() -> u8 {
+    PERSONA_PRESET.load(Ordering::Relaxed)
 }
 
 pub fn mark_gmad_capture_started() -> bool {

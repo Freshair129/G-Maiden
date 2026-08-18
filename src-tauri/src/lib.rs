@@ -481,6 +481,18 @@ fn set_cv_signal_sensitivity(level: signal::Sensitivity) {
     runtime::set_signal_sensitivity(level);
 }
 
+#[tauri::command]
+fn set_persona_preset(preset: String) {
+    let code = match preset.as_str() {
+        "coach" => 0,
+        "silent" => 1,
+        "caster" => 2,
+        "meme" => 3,
+        _ => 0,
+    };
+    runtime::set_persona_preset(code);
+}
+
 /// Pick the G-Master backend (auto/claude/ollama). The user can route around
 /// claude rate-limits or pin to local for privacy/offline play.
 #[tauri::command]
@@ -787,6 +799,7 @@ pub fn run() {
             quit_application,
             list_voices,
             set_cv_voice,
+            set_persona_preset,
             set_cv_signal_enabled,
             set_announcer_enabled,
             set_cv_signal_sensitivity,

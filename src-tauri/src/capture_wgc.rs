@@ -395,9 +395,26 @@ fn voice_interrupt(event: &str, fallback: &str) {
     crate::audio::cancel();
     crate::tts::cancel();
     if !crate::audio::play_random(event) {
+        let resolved_fallback = match event {
+            "gank" => {
+                if crate::runtime::persona_preset() == 0 || crate::runtime::persona_preset() == 1 {
+                    "ระวังค่ะ ตรวจพบการขาดหายไปของศัตรูบนแผนที่ อาจมีการแก๊งค์เกิดขึ้น"
+                } else {
+                    "ระวังนะคะ ศัตรูหายไปจากแมพหลายตัว อาจมีแก๊งค์!"
+                }
+            }
+            "revision" => {
+                if crate::runtime::persona_preset() == 0 || crate::runtime::persona_preset() == 1 {
+                    "ยกเลิกการเตือนภัยแก๊งค์ค่ะ ปลอดภัยแล้ว"
+                } else {
+                    "เอ๊ะ! เดี๋ยวก่อน ดูเหมือนจะปลอดภัยแล้วค่ะ"
+                }
+            }
+            _ => fallback,
+        };
         let (name, rate) = crate::runtime::voice();
         crate::tts::speak_with_priority(
-            fallback,
+            resolved_fallback,
             name.as_deref(),
             rate,
             crate::audio::Priority::Critical,

@@ -11,13 +11,14 @@ import type {
 } from './types'
 import { DEFAULTS } from './types'
 import { C } from './theme'
-import { DANGER_LINE, PERSONA_LINES, REVISION_LINES } from './lines'
+import { TONE_DANGER_LINES, TONE_LINES, TONE_REVISION_LINES } from './lines'
 import { fmtClock, heroName, overlayPanel, Bar, Stat, sep, dangerStyle, gankStyle, gankClearStyle, killBannerStyle, packBannerStyle } from './primitives'
 
 export const Overlay: React.FC = () => {
   const [tick, setTick] = useState<GameTick | null>(null)
   const [seen, setSeen] = useState(false)
   const [s, setS] = useState<Settings>(DEFAULTS)
+  const tone = (s.personaPreset === 'caster' || s.personaPreset === 'meme') ? 'casual' : 'serious'
   // G-Signal gank banner + CV debug feed (item A & B).
   const [gank, setGank] = useState<GankState>(null)
   const [cv, setCv] = useState<MinimapCv | null>(null)
@@ -211,9 +212,12 @@ export const Overlay: React.FC = () => {
         dangerActive.current = true
         lastSpokeKind.current = 'danger'
         dangerHpAtSpeak.current = tick.hp_percent
-        setToast({ event: 'danger', text: DANGER_LINE })
-        if (sRef.current.calibration) void invoke('capture_calibration_clip', { event: 'danger', line: DANGER_LINE, context: { hp: tick.hp_percent, clock: tick.clock_time, level: tick.level } }).catch(() => {})
-        void invoke('speak_event', { event: 'danger', fallback: DANGER_LINE, voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})
+        const t = (sRef.current.personaPreset === 'caster' || sRef.current.personaPreset === 'meme') ? 'casual' : 'serious'
+        const pool = TONE_DANGER_LINES[t]
+        const line = pool[Math.floor(Math.random() * pool.length)]
+        setToast({ event: 'danger', text: line })
+        if (sRef.current.calibration) void invoke('capture_calibration_clip', { event: 'danger', line, context: { hp: tick.hp_percent, clock: tick.clock_time, level: tick.level } }).catch(() => {})
+        void invoke('speak_event', { event: 'danger', fallback: line, voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})
       }
     }
   }, [lowHp, tick, tick?.in_game, tick?.alive, tick?.hp_percent, s.alertThreshold, s.voiceEnabled, s.voiceName, s.voiceRate])
@@ -230,7 +234,8 @@ export const Overlay: React.FC = () => {
     const hpRecovered = tick.hp_percent >= dangerHpAtSpeak.current + 25 && tick.hp_percent > s.alertThreshold + 15
     const gotKill = tick.kills > p.kills
     if (!hpRecovered && !gotKill) return
-    const pool = REVISION_LINES.dangerRetracted
+    const t = (sRef.current.personaPreset === 'caster' || sRef.current.personaPreset === 'meme') ? 'casual' : 'serious'
+    const pool = TONE_REVISION_LINES[t].dangerRetracted
     const line = pool[Math.floor(Math.random() * pool.length)]
     lastSpokeAt.current = Date.now()
     lastSpokeKind.current = 'revision'
@@ -252,7 +257,7 @@ export const Overlay: React.FC = () => {
     if (!tick || !tick.in_game) return
     const p = prev.current
     prev.current = { level: tick.level, kills: tick.kills, deaths: tick.deaths, alive: tick.alive, mana: tick.mana_percent, hp: tick.hp_percent }
-    if (!p || !sRef.current.voiceEnabled || !sRef.current.personaLines) return
+    if (!p || !sRef.current.voiceEnabled || !sRef.current.personaLines || sRef.current.personaPreset === 'silent') return
     if (lowHp) return // don't talk over a danger warning
 
     const events: PersonaEvent[] = []
@@ -275,8 +280,26 @@ export const Overlay: React.FC = () => {
     // Pick the highest-priority event in order: death > respawn > kill > levelUp > manaLow
     const order: PersonaEvent[] = ['death', 'respawn', 'kill', 'levelUp', 'manaLow']
     const evt = order.find((e) => events.includes(e))!
-    const pool = PERSONA_LINES[evt]
-    const line = pool[Math.floor(Math.random() * pool.length)]
+    
+    const currentPreset = sRef.current.personaPreset
+    const t = (currentPreset === 'caster' || currentPreset === 'meme') ? 'casual' : 'serious'
+    const pool = TONE_LINES[t][evt]
+    let line: string = pool[Math.floor(Math.random() * pool.length)]
+
+    // Slot-splicing / placeholder replacement:
+    if (line.includes('{hero}')) {
+      let nameToSplice = 'ศัตรู'
+      if (evt === 'kill') {
+        const missing = [...missingHeroesRef.current]
+        const seen = lastKillHeroes.current
+        const rawVictim = tick?.last_victim_hero || missing.find((h) => !seen.has(h)) || missing[0] || null
+        if (rawVictim) {
+          nameToSplice = heroName(rawVictim)
+        }
+      }
+      line = line.replace('{hero}', nameToSplice)
+    }
+
     lastSpokeAt.current = now
     lastSpokeKind.current = 'persona'
     setToast({ event: evt, text: line })
@@ -361,7 +384,7 @@ export const Overlay: React.FC = () => {
     const currentTick = tickRef.current
     if (!currentTick || !tick?.in_game) return
     const p = prev.current
-    if (!p || !sRef.current.masterEnabled || !sRef.current.autoAdvice || !sRef.current.voiceEnabled) return
+    if (!p || !sRef.current.masterEnabled || !sRef.current.autoAdvice || !sRef.current.voiceEnabled || sRef.current.personaPreset === 'silent') return
 
     type Trigger = { key: string }
     const triggers: Trigger[] = []
@@ -515,7 +538,7 @@ export const Overlay: React.FC = () => {
   // A. Gank warning banner — top-center, above the stat HUD, never over the minimap.
   const gankBanner = s.gankVisuals && gank ? (
     gank.phase === 'clear'
-      ? <div className="gm-gank-clear" style={gankClearStyle}>{REVISION_LINES.gankCleared[0]}</div>
+      ? <div className="gm-gank-clear" style={gankClearStyle}>{TONE_REVISION_LINES[tone].gankCleared[0]}</div>
       : <div className="gm-gank" style={gankStyle}>
           ⚠️ ระวังแก๊งค์! {gank.heroes.length ? gank.heroes.map(heroName).join(', ') + ' หาย — ' : ''}{Math.round(gank.probability * 100)}%
         </div>

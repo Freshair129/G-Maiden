@@ -1,11 +1,11 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.1.5"
+version: "0.1.6"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
-last_update: "2026-07-24T15:10:00+07:00,ATHER"
+last_update: "2026-08-17T03:43:00+07:00,Antigravity"
 status: "active"
-updated: "2026-07-24"
+updated: "2026-08-17"
 owner: "Boss"
 attributes:
   domain: "documentation-governance"
@@ -34,6 +34,9 @@ attributes:
   - `docs/product/roadmap.md` — roadmap หลักที่ใช้งานปัจจุบัน
 - [[roadmap-legacy]]
   - `docs/product/roadmap-legacy.md` — roadmap รุ่นเก่าที่ยังเก็บไว้เป็นประวัติ
+- `docs/product/closed-beta-privacy-notice-draft.md` — ร่างนโยบายความเป็นส่วนตัวสำหรับ Closed Beta
+- `docs/product/closed-beta-terms-of-use-draft.md` — ร่างข้อตกลงการใช้งานสำหรับ Closed Beta
+- `docs/product/MASTERPLAN-account-phase1.md` — แผนแม่บทระบบบัญชีและ Wallet Phase 1
 
 ## Release Governance
 
@@ -43,12 +46,18 @@ attributes:
   - `docs/releases/beta-roadmap.md` — release-maturity roadmap แยกจาก feature roadmap
 - `docs/releases/release-channel-architecture.md`
   - `docs/releases/release-channel-architecture.md` — Dev → Closed Beta → Stable channel architecture และ artifact promotion rules
+- `docs/releases/release-channel-implementation.md`
+  - `docs/releases/release-channel-implementation.md` — บันทึกและสถานะการติดตั้งระบบ release channels
 - `docs/releases/public-demo/specification.md`
   - `docs/releases/public-demo/specification.md` — Public Demo scope และ deterministic product-story contract
+- `docs/releases/public-demo/rollback.md`
+  - `docs/releases/public-demo/rollback.md` — แผนการย้อนกลับ (Rollback Plan) ของ Public Demo
 - `docs/releases/closed-beta/wave-0/specification.md`
   - `docs/releases/closed-beta/wave-0/specification.md` — Closed Beta Wave 0 scope
 - `docs/releases/closed-beta/wave-0/definition-of-done.md`
   - `docs/releases/closed-beta/wave-0/definition-of-done.md` — Wave 0 DoD, evidence, และ exit gate
+- `docs/releases/closed-beta/wave-0/evidence-runbook.md`
+  - `docs/releases/closed-beta/wave-0/evidence-runbook.md` — คู่มือการเก็บหลักฐานและรันเทสสำหรับ Wave 0
 - `docs/releases/closed-beta/wave-1/specification.md`
   - `docs/releases/closed-beta/wave-1/specification.md` — Wave 1 core-intelligence validation
 - `docs/releases/closed-beta/wave-1/definition-of-done.md`
@@ -78,6 +87,12 @@ attributes:
   - `docs/design-system/05-sitemap-ia.md` — IA, navigation, page inventory, flows
 - [[06-stack]]
   - `docs/design-system/06-stack.md` — tech stack + code map + migration checklist
+- `docs/design-system/07-combat-hud.md`
+  - `docs/design-system/07-combat-hud.md` — เอกสารการออกแบบ Combat HUD ของหน้าจอ overlay
+- `docs/design-system/08-account-gid.md`
+  - `docs/design-system/08-account-gid.md` — การออกแบบส่วนเชื่อมต่อระบบบัญชีและ GID
+- `docs/design-system/landing_page_prompt.md`
+  - `docs/design-system/landing_page_prompt.md` — prompt reference สำหรับออกแบบหน้าเว็บ landing
 - `docs/design-system/assets/`
   - `docs/design-system/assets/` — annotated wireframe/subtract-shape/swatches (SVG) + glass prototype (HTML)
 
@@ -99,10 +114,19 @@ attributes:
   - `docs/architecture/implementation-plan.md` — implementation plan / ultraplan
 - [[oauth-jwt-client-authorization-flows]]
   - `docs/architecture/oauth-jwt-client-authorization-flows.md` — C-3/HIGH OAuth 2.0 + PKCE, JWT, Device Authorization pairing, and future mobile-client authorization contract
-- `docs/architecture/adr/`
-  - `docs/architecture/adr/` — architecture decisions (ADR-10/11/12 strategy, ADR-13 DXGI, **ADR-14 GID account & identity layer**, **ADR-17 brokered OAuth transaction boundary**)
-- `docs/architecture/spikes/`
-  - `docs/architecture/spikes/` — spike และ technical proof
+- `docs/architecture/adr/` — Architecture Decision Records (ADRs):
+  - `docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md` — Hybrid Ingestion Resilience
+  - `docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md` — Opt-in Data Contribution + match_id Flywheel
+  - `docs/architecture/adr/ADR-12-community-ai-marketplace.md` — Community AI Marketplace
+  - `docs/architecture/adr/ADR-13-dxgi-capture-migration.md` — Migrate Screen Capture from WGC to DXGI Desktop Duplication
+  - `docs/architecture/adr/ADR-14-gid-account-identity.md` — GID — G-Series Account & Identity Layer
+  - `docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md` — Command Deck HUD v2 design system
+  - `docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md` — Credit Economy (shard/wallet) + Mint Oracle + match_ref Storage
+  - `docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md` — Supabase OAuth Server Transaction Boundary
+  - `docs/architecture/adr/ADR-18-dev-runtime-governance-split.md` — Dev & Runtime Governance Split (renamed from ADR-17)
+- `docs/architecture/spikes/` — Spikes & Technical Proofs:
+  - `docs/architecture/spikes/S-1-minimap-cv.md` — Spike minimap computer vision
+  - `docs/architecture/spikes/S-2-oauth-broker-provider-capability.md` — Spike Supabase OAuth Server & Loopback gate capability
 
 ## Orchestration
 
@@ -124,15 +148,35 @@ attributes:
 - [[FEAT-G-*]]
   - `docs/features/FEAT-G-*.md` — เอกสารเชิงโมดูลของ G-series
 
+## Change Requests (CR)
+
+- `docs/change request/` — ข้อเสนอการเปลี่ยนแปลงและการขยายฟีเจอร์ของระบบ:
+  - `docs/change request/CR-001-REVIEW-and-execution-plan.md` — DXGI Capture Migration REVIEW & Execution
+  - `docs/change request/CR-002-Phase2-wire-backend.md` — Phase 2 Live-wired bento deck
+  - `docs/change request/CR-003-account-phase1-wallet-billing.md` — Account Phase 1 Wallet & Billing
+  - `docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md` — One Canvas Sitemap
+  - `docs/change request/CR-016-gmad-beta-download-admin-controller.md` — Beta download controller
+  - `docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md` — Countdown spec
+  - `docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md` — Desktop first-run entitlement gate
+  - `docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md` — PR gate agent review rule
+  - `docs/change request/CR-*.md` — เอกสาร CR อื่นๆ ทั้งหมดตั้งแต่ CR-001 ถึง CR-033
+
 ## Operations
 
 - [[gmaiden-closed-beta-release-playbook]]
   - `docs/operations/gmaiden-closed-beta-release-playbook.md` — playbook สำหรับปล่อยสิทธิ์ดาวน์โหลด G-Maiden Closed Beta, flow จริงของ queue/grant/download, และ naming convention ของ `release_id`/`artifact_path`
-
 - `docs/operations/validation/`
   - `docs/operations/validation/` — toolkit, forms, social validation assets
-- `docs/operations/audits/`
-  - `docs/operations/audits/` — audit reports
+
+## Audits & RCA
+
+- `docs/audits/` — รายงานการตรวจความปลอดภัยและคุณภาพโค้ด (Audit Reports):
+  - `docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md` — รายงานตรวจสอบการตั้งค่า GSI & Overlay
+  - `docs/audits/2026-07-07-independent-full-audit.md` — รายงานการตรวจโค้ดอิสระฉบับเต็ม
+  - `docs/audits/SEC-001-auth-identity-hardening.md` — รายงานตรวจสอบความปลอดภัย auth
+- `docs/rca/` — รายงานสาเหตุความผิดพลาดและการปรับปรุง (Root Cause Analysis):
+  - `docs/rca/2026-07-10-release-gate-drift-v0.9.0.md` — วิเคราะห์ความล้มเหลวในการปล่อย v0.9.0
+  - `docs/rca/2026-07-10-voice-pack-path-traversal.md` — วิเคราะห์ช่องโหว่ path traversal ของ voice pack
 
 ## Guides
 
@@ -146,6 +190,13 @@ attributes:
 - [[subagent-context-scoping]]
   - `docs/research/concepts/subagent-context-scoping.md` — concept note เรื่อง subagent context scoping
 
+## Superpowers
+
+- `docs/superpowers/` — แผนและข้อกำหนดของฟีเจอร์ขั้นสูง (Superpowers Plans & Specs):
+  - `docs/superpowers/specs/2026-08-09-gid-central-pipeline-design.md` — GID Central Pipeline Design
+  - `docs/superpowers/plans/2026-08-09-gid-pipeline-phase1.md` — GID Central Pipeline Phase 1 Plan
+  - `docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md` — GID Central Pipeline Phase 2 Plan (AnnStudio)
+
 ## Changelog
 | Version | Date | Summary |
 | --- | --- | --- |
@@ -155,3 +206,4 @@ attributes:
 | 0.1.3 | 2026-07-21 | Added ADR-17 as the selected high-assurance OAuth transaction architecture. |
 | 0.1.4 | 2026-07-22 | Added the G-Maiden Closed Beta release playbook under Operations. |
 | 0.1.5 | 2026-07-24 | Added a Release Governance section that points canonical indexes to `docs/releases/` while keeping feature ownership in the product roadmap and `PROJECT_FEATURE_MAP.md`. |
+| 0.1.6 | 2026-08-17 | Updated index to include missing folders (change request, audits, rca, superpowers) and listed all ADRs (ADR-10 to ADR-18) explicitly. |
