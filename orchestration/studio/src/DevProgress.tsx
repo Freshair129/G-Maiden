@@ -119,7 +119,7 @@ export default function DevProgress() {
 
       <div className="dev-toolbar">
         <label className="tb-l">Owner</label>
-        <select className="tb-sel" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
+        <select id="devprogress-owner-filter" name="devprogress-owner-filter" className="tb-sel" value={ownerFilter} onChange={(e) => setOwnerFilter(e.target.value)}>
           <option value="">all owners</option>
           <option value={NONE}>unassigned</option>
           {personas.map((p) => <option key={p.id} value={p.id}>{p.id} · {p.role}</option>)}
@@ -133,7 +133,7 @@ export default function DevProgress() {
         {selected.size > 0 && (
           <div className="batch-bar">
             <span className="bb-n">{selected.size} selected</span>
-            <select className="tb-sel" defaultValue="" onChange={(e) => { batchAssign(e.target.value); e.currentTarget.value = ""; }}>
+            <select id="devprogress-batch-assign" name="devprogress-batch-assign" className="tb-sel" defaultValue="" onChange={(e) => { batchAssign(e.target.value); e.currentTarget.value = ""; }}>
               <option value="">batch assign to…</option>
               <option value={NONE}>— unassign —</option>
               {personas.map((p) => <option key={p.id} value={p.id}>{p.id} · {p.role}</option>)}
@@ -232,7 +232,7 @@ function TaskRow({ t, atoms, personas, assignOwner, selected, onSelect, expanded
           title={reviewOnly ? "owner is review-only (DACI shared &) — cannot claim/&mut" : t.ready ? "claim for worker 'studio'" : "not ready"}
           onClick={() => cmd("claim", t.id, { worker: "studio" })}>{reviewOnly ? "review-only" : t.ready ? "claim" : "blocked"}</button>
 
-        <select className="ctl assign-sel" value={t.owner ?? ""} title="assign an agent/persona (or drag a chip onto this card)"
+        <select id={`devprogress-assign-${t.id}`} name={`devprogress-assign-${t.id}`} className="ctl assign-sel" value={t.owner ?? ""} title="assign an agent/persona (or drag a chip onto this card)"
           onChange={(e) => assignOwner(t.id, e.target.value)}>
           <option value="">— unassigned —</option>
           {personas.map((p) => <option key={p.id} value={p.id}>{p.id} · {p.role}{p.borrow === "shared" ? " (&)" : ""}</option>)}

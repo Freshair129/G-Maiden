@@ -17,7 +17,7 @@ export default function CommandBar() {
         {lim.killSwitch ? "⛔ KILL-SWITCH ON" : "kill-switch"}
       </button>
       <label className="cb-tier">tier
-        <select value={lim.tier || ""} onChange={(e) => cmd("settier", "", { tier: e.target.value })}>
+        <select id="commandbar-tier" name="commandbar-tier" value={lim.tier || ""} onChange={(e) => cmd("settier", "", { tier: e.target.value })}>
           {(lim.tiers || []).map((t: string) => <option key={t} value={t}>{t}</option>)}
         </select>
       </label>

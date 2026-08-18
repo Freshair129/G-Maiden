@@ -43,7 +43,7 @@ export default function NodeDbCanvas() {
       <div>
         <div className="graph-legend">query GenesisDB back (hybrid search)</div>
         <div style={{ display: "flex", gap: 8, marginBottom: 8 }}>
-          <input value={q} onChange={(e) => setQ(e.target.value)} placeholder="semantic query…" style={{ flex: 1 }} />
+          <input id="nodedb-semantic-query" name="nodedb-semantic-query" value={q} onChange={(e) => setQ(e.target.value)} placeholder="semantic query…" style={{ flex: 1 }} />
           <button onClick={query}>search</button>
         </div>
         <pre style={{ fontSize: 11, maxHeight: "32vh", overflow: "auto", background: "#0b1220", padding: 8 }}>{results ? JSON.stringify(results, null, 2) : "(no query yet)"}</pre>
