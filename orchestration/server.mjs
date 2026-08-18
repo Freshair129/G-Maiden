@@ -14,6 +14,13 @@ import { loadRwangProject, toSnapshot, listProjects } from "./gks/rwang-ingest.m
 
 const PORT = Number((process.argv.includes("--port") ? process.argv[process.argv.indexOf("--port") + 1] : 0)) || 4577;
 const UI = join(E.PATHS.__dir, "public", "index.html");
+const DOC_GRAPH_FILE = join(E.PATHS.ROOT, "docs", "DOC-GRAPH.json");
+
+/** The scanner's published graph, or null when it has not been generated yet. */
+function readDocGraph() {
+  if (!existsSync(DOC_GRAPH_FILE)) return null;
+  return JSON.parse(readFileSync(DOC_GRAPH_FILE, "utf8"));
+}
 
 function send(res, code, body, type = "application/json") {
   res.writeHead(code, { "Content-Type": type, "Cache-Control": "no-store" });
@@ -53,6 +60,29 @@ const server = createServer(async (req, res) => {
       const offset = Number(url.searchParams.get("offset") || 0) || 0;
       return send(res, 200, E.readLogChunk(id, offset));
     }
+    // Doc registry (feature--g-aligner). Reads the doc-graph the scanner already published.
+    if (req.method === "GET" && url.pathname === "/api/doc-graph") {
+      const graph = readDocGraph();
+      if (!graph) return send(res, 404, { ok: false, error: `${DOC_GRAPH_FILE} not found — run tools/doc-graph/scan.mjs first` });
+      return send(res, 200, graph);
+    }
+    if (req.method === "GET" && url.pathname === "/api/doc-content") {
+      // SECURITY: `path` is caller-controlled, so it is never joined onto ROOT and probed.
+      // It must name a node the doc-graph already published — a membership test against a
+      // known set. A `startsWith(ROOT)` check on `join(ROOT, rel)` does NOT hold: '../G-Maiden-secret'
+      // normalizes to a sibling directory whose absolute path still passes the prefix test,
+      // and even a correct containment check would still expose .env / .git/config.
+      // Same rule as /api/rwang/state above: no filesystem path from the query string.
+      const graph = readDocGraph();
+      if (!graph) return send(res, 404, { ok: false, error: `${DOC_GRAPH_FILE} not found — run tools/doc-graph/scan.mjs first` });
+      const rel = url.searchParams.get("path") || "";
+      if (!(graph.nodes || []).some((n) => n.path === rel)) {
+        return send(res, 403, { ok: false, error: "path is not a doc-graph node" });
+      }
+      const full = join(E.PATHS.ROOT, rel);
+      if (!existsSync(full)) return send(res, 404, { ok: false, error: "File not found" });
+      return send(res, 200, { ok: true, content: readFileSync(full, "utf8") });
+    }
     // Node↔DB canvas write endpoints (feature--node-db-canvas)
     if (req.method === "POST" && url.pathname === "/api/node") {
       const body = await readBody(req);
@@ -68,6 +98,15 @@ const server = createServer(async (req, res) => {
       const body = await readBody(req);
       try { return send(res, 200, await queryNodes(E.CONFIG, body)); }
       catch (e) { return send(res, 500, { ok: false, error: e.message }); }
+    }
+    // Semantic doc search (feature--g-aligner). Roots are fixed server-side, never taken from the body.
+    if (req.method === "POST" && url.pathname === "/api/search") {
+      const { query, limit, backend } = await readBody(req);
+      try {
+        const { semanticSearch } = await import("../tools/doc-graph/semantic_ir.mjs");
+        const roots = [join(E.PATHS.ROOT, "docs"), join(E.PATHS.ROOT, ".govibe", ".brain")];
+        return send(res, 200, { ok: true, hits: await semanticSearch(roots, query, { limit, backend }) });
+      } catch (e) { return send(res, 500, { ok: false, error: e.message }); }
     }
     if (req.method === "POST" && url.pathname === "/api/cmd") {
       const { action, id, worker, model, owner, mode, max, on, tier, deps } = await readBody(req);
