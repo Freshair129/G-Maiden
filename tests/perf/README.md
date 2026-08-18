@@ -138,6 +138,68 @@ Both binaries follow the POSIX `automake` convention:
 
 This allows `run_gate_p3.bat` and CI workflows to distinguish meaningful failures from expected skips.
 
+## GATE P7 FPS Boss-run (PresentMon / ETW)
+
+`perf_p7` keeps the FPS leg honest: it never treats a design estimate, a missing
+capture, or a stale baseline as a pass. The two phases are operator-controlled
+because the harness cannot inspect whether the transparent overlay is actually
+visible.
+
+Prerequisites:
+
+- Windows 10/11 with Dota 2 running borderless fullscreen (`dota2.exe`)
+- `PresentMon.exe` (pass an explicit path or put it on `PATH`)
+- PowerShell started **as Administrator** so PresentMon can subscribe to ETW
+- the same map/graphics/settings and a repeatable camera/gameplay segment for both phases
+- no recording, shader compilation, downloads, or other workload changes between phases
+
+Run from `tests/perf` (or use an absolute `--output-dir`):
+
+```powershell
+# Phase 1: keep G-Maiden overlay OFF and visibly verify it before confirming.
+cargo run --release --bin perf_p7 -- \
+  --fps-baseline --confirm-overlay-off \
+  --presentmon C:\Tools\PresentMon.exe --duration-secs 30 --output-dir .\p7-run
+
+# Phase 2: enable the same G-Maiden build/overlay and visibly verify it before confirming.
+cargo run --release --bin perf_p7 -- \
+  --fps-overlay --confirm-overlay-on \
+  --presentmon C:\Tools\PresentMon.exe --duration-secs 30 --output-dir .\p7-run
+```
+
+The run writes three local artifacts under `--output-dir`:
+
+| Artifact | Meaning |
+|---|---|
+| `fps-baseline.json` | Measured overlay-off phase; includes schema, process, duration, PresentMon path, ETW/elevation evidence, present count, and baseline FPS. |
+| `fps-baseline.csv` | Raw PresentMon capture for the baseline phase. |
+| `fps-report.json` | Measured overlay phase and verdict (`pass`/`fail`), or a truthful `skip` reason when prerequisites/confirmation are missing. |
+| `fps-overlay.csv` | Raw PresentMon capture for the overlay-on phase. |
+
+The JSON report is local evidence only and contains no GSI, CV, G-Log, match,
+or player data. The overlay phase accepts a baseline only when it is schema
+version 1, measured, explicitly overlay-off, non-empty, and has a positive FPS.
+Therefore an old or hand-written `fps-baseline.json` cannot silently produce a
+PASS. The report's `fps_drop_pct` is the non-negative reduction from baseline;
+the gate passes only when it is `<= 3.0`.
+
+Expected outcomes:
+
+- exit `0`: both real ETW measurements completed and the overlay phase is within budget;
+- exit `1`: the real overlay-on measurement exceeds the 3% budget;
+- exit `77`: missing PresentMon/Dota/admin token/operator confirmation, invalid baseline,
+  or another measurement prerequisite. A skip is not evidence of compliance.
+
+Boss-run checklist:
+
+1. Record the commit/build identifier and GPU/driver before Phase 1.
+2. Use the same reproducible in-game segment for both 30-second captures.
+3. Keep the overlay disabled/enabled exactly as confirmed; do not change settings between phases.
+4. Attach `fps-report.json` plus both raw CSVs to the validation record. Do not claim P7 closeout
+   until `verdict` is `pass` from a real run.
+5. If ETW cannot be captured, preserve the `skip` report and record the exact admin/PresentMon
+   error rather than substituting Task Manager, DWM composition timing, or a design estimate.
+
 ## References
 
 - **Engineering Spec §1** (Thai: `docs/product/software-requirements-specification.md` §1) – latency budgets and Definition of Done criteria

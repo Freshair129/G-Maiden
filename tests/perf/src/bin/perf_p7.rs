@@ -29,16 +29,16 @@
 //!   cd tests/perf
 //!   cargo run --release --bin perf_p7 -- --pid 1234   # RAM only for a running G-Maiden
 //!   cargo run --release --bin perf_p7 -- --stub        # Show design estimates (SKIP, not PASS)
-//!   cargo run --release --bin perf_p7 -- --fps-baseline
-//!   cargo run --release --bin perf_p7 -- --fps-overlay
+//!   cargo run --release --bin perf_p7 -- --fps-baseline --confirm-overlay-off
+//!   cargo run --release --bin perf_p7 -- --fps-overlay --confirm-overlay-on
 //!
 //! # FPS two-phase workflow (requires PresentMon in PATH or common locations)
 //!
 //!   1. Start Dota 2 (no G-Maiden overlay)
-//!   2. cargo run --release --bin perf_p7 -- --fps-baseline
+//!   2. cargo run --release --bin perf_p7 -- --fps-baseline --confirm-overlay-off
 //!      (captures 30 s of dota2.exe DXGI Present events → fps-baseline.json)
 //!   3. Start G-Maiden overlay
-//!   4. cargo run --release --bin perf_p7 -- --fps-overlay
+//!   4. cargo run --release --bin perf_p7 -- --fps-overlay --confirm-overlay-on
 //!      (captures 30 s, compares, asserts ≤3% FPS drop)
 //!
 //! # Exit codes
@@ -74,7 +74,10 @@ const STUB_RAM_PEAK_MB: u64 = 210;
 const STUB_FPS_DROP_PCT: f64 = 0.8;
 
 const BASELINE_FILE: &str = "fps-baseline.json";
+#[allow(dead_code)]
 const FPS_CAPTURE_FILE: &str = "fps-capture.csv";
+const FPS_REPORT_FILE: &str = "fps-report.json";
+const REPORT_SCHEMA_VERSION: u64 = 1;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tri-state measurement result
@@ -97,8 +100,69 @@ use std::{
     path::{Path, PathBuf},
     process,
     thread,
-    time::{Duration, Instant},
+    time::{Duration, Instant, SystemTime, UNIX_EPOCH},
 };
+
+use serde_json::{json, Value};
+
+#[derive(Debug, Clone)]
+struct FpsRunConfig {
+    output_dir: PathBuf,
+    presentmon: Option<PathBuf>,
+    duration_secs: u64,
+    confirm_overlay_off: bool,
+    confirm_overlay_on: bool,
+}
+
+impl Default for FpsRunConfig {
+    fn default() -> Self {
+        Self {
+            output_dir: PathBuf::from("."),
+            presentmon: None,
+            duration_secs: FPS_MEASURE_SECS,
+            confirm_overlay_off: false,
+            confirm_overlay_on: false,
+        }
+    }
+}
+
+impl FpsRunConfig {
+    fn baseline_path(&self) -> PathBuf {
+        self.output_dir.join(BASELINE_FILE)
+    }
+
+    fn capture_path(&self, phase: &str) -> PathBuf {
+        self.output_dir.join(format!("fps-{phase}.csv"))
+    }
+
+    fn report_path(&self) -> PathBuf {
+        self.output_dir.join(FPS_REPORT_FILE)
+    }
+}
+
+fn unix_timestamp_secs() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_secs())
+        .unwrap_or(0)
+}
+
+fn write_json_atomic(path: &Path, value: &Value) -> Result<(), String> {
+    let parent = path.parent().unwrap_or_else(|| Path::new("."));
+    fs::create_dir_all(parent).map_err(|error| {
+        format!(
+            "cannot create report directory {}: {error}",
+            parent.display()
+        )
+    })?;
+    let temp_path = path.with_extension("json.tmp");
+    let bytes = serde_json::to_vec_pretty(value)
+        .map_err(|error| format!("cannot encode report JSON: {error}"))?;
+    fs::write(&temp_path, bytes)
+        .map_err(|error| format!("cannot write {}: {error}", temp_path.display()))?;
+    fs::rename(&temp_path, path)
+        .map_err(|error| format!("cannot publish {}: {error}", path.display()))
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // RAM module
@@ -110,6 +174,7 @@ mod ram {
 
     pub struct RamResult {
         pub peak_mb: f64,
+        #[allow(dead_code)]
         pub samples: usize,
         pub state: MeasureState,
     }
@@ -188,6 +253,8 @@ mod fps {
     pub struct FpsSample {
         pub fps: f64,
         pub drop_rate_pct: f64,
+        pub frame_count: u64,
+        pub dropped_count: u64,
     }
 
     // ── Phase 1: record baseline (no overlay) ────────────────────────────────
@@ -195,6 +262,7 @@ mod fps {
     /// Returns true if the baseline was measured and saved to BASELINE_FILE.
     /// Returns false if prerequisites are missing (PresentMon not found, dota2.exe
     /// not running) — caller should exit SKIP.
+    #[allow(dead_code)]
     pub fn run_baseline() -> bool {
         let pm = match find_presentmon() {
             Some(p) => p,
@@ -238,6 +306,7 @@ mod fps {
         pub state: MeasureState,
     }
 
+    #[allow(dead_code)]
     pub fn run_overlay() -> OverlayResult {
         let json = match fs::read_to_string(BASELINE_FILE) {
             Ok(j) => j,
@@ -272,13 +341,325 @@ mod fps {
                 OverlayResult { fps_delta_pct: 0.0, state: MeasureState::Skip }
             }
             Ok(overlay) => {
-                let baseline = FpsSample { fps: b_fps, drop_rate_pct: b_drop };
-                compare(baseline, overlay)
+                let baseline = FpsSample {
+                    fps: b_fps,
+                    drop_rate_pct: b_drop,
+                    frame_count: 0,
+                    dropped_count: 0,
+                };
+                compare(&baseline, &overlay)
             }
         }
     }
 
     // ── PresentMon integration ────────────────────────────────────────────────
+
+    /// Guarded baseline phase used by the Boss-run workflow.
+    pub fn run_baseline_guarded(config: &FpsRunConfig) -> bool {
+        if !config.confirm_overlay_off {
+            return skip(
+                config,
+                "baseline",
+                "missing --confirm-overlay-off; disable the overlay and confirm it visibly",
+            );
+        }
+        if !has_elevated_token() {
+            return skip(
+                config,
+                "baseline",
+                "PresentMon ETW requires an elevated PowerShell/admin token on Windows",
+            );
+        }
+        let pm = match config.presentmon.clone().or_else(find_presentmon) {
+            Some(path) => path,
+            None => {
+                return skip(
+                    config,
+                    "baseline",
+                    "PresentMon.exe not found; pass --presentmon <path>",
+                )
+            }
+        };
+        if !dota2_running() {
+            return skip(
+                config,
+                "baseline",
+                "dota2.exe is not running; start Dota 2 in borderless fullscreen",
+            );
+        }
+        let capture_path = config.capture_path("baseline");
+        println!(
+            "[FPS] Capturing dota2.exe via PresentMon ETW ({} s, overlay OFF) ...",
+            config.duration_secs
+        );
+        let sample = match measure_fps_presentmon(
+            &pm,
+            "dota2.exe",
+            config.duration_secs,
+            capture_path.to_string_lossy().as_ref(),
+        ) {
+            Ok(sample) => sample,
+            Err(error) => {
+                skip(config, "baseline", &format!("PresentMon error: {error}"));
+                return false;
+            }
+        };
+        let report = baseline_report(config, &pm, &capture_path, &sample);
+        if let Err(error) = write_json_atomic(&config.baseline_path(), &report) {
+            skip(
+                config,
+                "baseline",
+                &format!("cannot publish baseline: {error}"),
+            );
+            return false;
+        }
+        if let Err(error) = write_json_atomic(&config.report_path(), &report) {
+            eprintln!("[FPS] WARNING - cannot publish report: {error}");
+        }
+        println!(
+            "[FPS] Baseline {:.1} fps ({} presents) saved -> {}",
+            sample.fps,
+            sample.frame_count,
+            config.baseline_path().display()
+        );
+        println!("[FPS] Next: enable G-Maiden overlay and run --fps-overlay --confirm-overlay-on");
+        true
+    }
+
+    /// Guarded overlay phase. It refuses to compare against a legacy/minimal or
+    /// malformed baseline so a stale artifact cannot produce a false PASS.
+    pub fn run_overlay_guarded(config: &FpsRunConfig) -> OverlayResult {
+        if !config.confirm_overlay_on {
+            skip_overlay(
+                config,
+                "missing --confirm-overlay-on; enable the overlay and confirm it visibly",
+            );
+            return OverlayResult {
+                fps_delta_pct: 0.0,
+                state: MeasureState::Skip,
+            };
+        }
+        if !has_elevated_token() {
+            skip_overlay(
+                config,
+                "PresentMon ETW requires an elevated PowerShell/admin token on Windows",
+            );
+            return OverlayResult {
+                fps_delta_pct: 0.0,
+                state: MeasureState::Skip,
+            };
+        }
+        let baseline_path = config.baseline_path();
+        let baseline_json = match fs::read_to_string(&baseline_path) {
+            Ok(json) => json,
+            Err(error) => {
+                skip_overlay(
+                    config,
+                    &format!(
+                        "{} not found: {error}; run the baseline phase first",
+                        baseline_path.display()
+                    ),
+                );
+                return OverlayResult {
+                    fps_delta_pct: 0.0,
+                    state: MeasureState::Skip,
+                };
+            }
+        };
+        let baseline = match parse_baseline_report(&baseline_json) {
+            Ok(sample) => sample,
+            Err(error) => {
+                skip_overlay(
+                    config,
+                    &format!("invalid baseline: {error}; re-run the baseline phase"),
+                );
+                return OverlayResult {
+                    fps_delta_pct: 0.0,
+                    state: MeasureState::Skip,
+                };
+            }
+        };
+        if baseline.frame_count < 2 || config.duration_secs == 0 {
+            skip_overlay(
+                config,
+                "baseline has too few presents or an invalid duration",
+            );
+            return OverlayResult {
+                fps_delta_pct: 0.0,
+                state: MeasureState::Skip,
+            };
+        }
+        let pm = match config.presentmon.clone().or_else(find_presentmon) {
+            Some(path) => path,
+            None => {
+                skip_overlay(config, "PresentMon.exe not found; pass --presentmon <path>");
+                return OverlayResult {
+                    fps_delta_pct: 0.0,
+                    state: MeasureState::Skip,
+                };
+            }
+        };
+        if !dota2_running() {
+            skip_overlay(
+                config,
+                "dota2.exe is not running; start Dota 2 in borderless fullscreen",
+            );
+            return OverlayResult {
+                fps_delta_pct: 0.0,
+                state: MeasureState::Skip,
+            };
+        }
+        let capture_path = config.capture_path("overlay");
+        println!(
+            "[FPS] Capturing dota2.exe via PresentMon ETW ({} s, overlay ON) ...",
+            config.duration_secs
+        );
+        let overlay = match measure_fps_presentmon(
+            &pm,
+            "dota2.exe",
+            config.duration_secs,
+            capture_path.to_string_lossy().as_ref(),
+        ) {
+            Ok(sample) => sample,
+            Err(error) => {
+                skip_overlay(config, &format!("PresentMon error: {error}"));
+                return OverlayResult {
+                    fps_delta_pct: 0.0,
+                    state: MeasureState::Skip,
+                };
+            }
+        };
+        let result = compare(&baseline, &overlay);
+        let report = comparison_report(config, &pm, &capture_path, &baseline, &overlay, &result);
+        if let Err(error) = write_json_atomic(&config.report_path(), &report) {
+            eprintln!("[FPS] WARNING - cannot publish report: {error}");
+        } else {
+            println!("[FPS] Report saved -> {}", config.report_path().display());
+        }
+        result
+    }
+
+    fn skip(config: &FpsRunConfig, phase: &str, reason: &str) -> bool {
+        eprintln!("[FPS] SKIP - {reason}");
+        let report = json!({
+            "schema_version": REPORT_SCHEMA_VERSION,
+            "gate": "P7",
+            "measurement": "fps",
+            "phase": phase,
+            "status": "skip",
+            "verdict": "skip",
+            "reason": reason,
+            "created_at_unix": unix_timestamp_secs(),
+            "budget": {"fps_drop_max_pct": FPS_DROP_MAX_PCT},
+        });
+        if let Err(error) = write_json_atomic(&config.report_path(), &report) {
+            eprintln!("[FPS] WARNING - cannot publish skip report: {error}");
+        }
+        false
+    }
+
+    fn skip_overlay(config: &FpsRunConfig, reason: &str) {
+        let _ = skip(config, "overlay", reason);
+    }
+
+    fn baseline_report(
+        config: &FpsRunConfig,
+        pm: &Path,
+        capture: &Path,
+        sample: &FpsSample,
+    ) -> Value {
+        json!({
+            "schema_version": REPORT_SCHEMA_VERSION,
+            "gate": "P7",
+            "measurement": "fps",
+            "phase": "baseline",
+            "status": "measured",
+            "verdict": "pending_overlay_phase",
+            "process": "dota2.exe",
+            "overlay": "off",
+            "duration_secs": config.duration_secs,
+            "fps": sample.fps,
+            "frame_count": sample.frame_count,
+            "dropped_present_count": sample.dropped_count,
+            "dropped_present_pct": sample.drop_rate_pct,
+            "capture_file": capture.display().to_string(),
+            "presentmon": {"path": pm.display().to_string(), "etw": true, "elevated": true},
+            "operator_confirmation": "overlay-off",
+            "created_at_unix": unix_timestamp_secs(),
+            "budget": {"fps_drop_max_pct": FPS_DROP_MAX_PCT},
+        })
+    }
+
+    fn comparison_report(
+        config: &FpsRunConfig,
+        pm: &Path,
+        capture: &Path,
+        baseline: &FpsSample,
+        overlay: &FpsSample,
+        result: &OverlayResult,
+    ) -> Value {
+        json!({
+            "schema_version": REPORT_SCHEMA_VERSION,
+            "gate": "P7",
+            "measurement": "fps",
+            "phase": "overlay",
+            "status": "measured",
+            "verdict": if result.state == MeasureState::Pass { "pass" } else { "fail" },
+            "process": "dota2.exe",
+            "overlay": "on",
+            "duration_secs": config.duration_secs,
+            "baseline_fps": baseline.fps,
+            "overlay_fps": overlay.fps,
+            "fps_drop_pct": result.fps_delta_pct,
+            "baseline_frame_count": baseline.frame_count,
+            "overlay_frame_count": overlay.frame_count,
+            "baseline_dropped_present_pct": baseline.drop_rate_pct,
+            "overlay_dropped_present_pct": overlay.drop_rate_pct,
+            "capture_file": capture.display().to_string(),
+            "presentmon": {"path": pm.display().to_string(), "etw": true, "elevated": true},
+            "operator_confirmation": "overlay-on",
+            "created_at_unix": unix_timestamp_secs(),
+            "budget": {"fps_drop_max_pct": FPS_DROP_MAX_PCT},
+        })
+    }
+
+    pub(super) fn parse_baseline_report(json: &str) -> Result<FpsSample, String> {
+        let value: Value = serde_json::from_str(json).map_err(|error| error.to_string())?;
+        if value.get("schema_version").and_then(Value::as_u64) != Some(REPORT_SCHEMA_VERSION) {
+            return Err("unsupported schema_version".to_string());
+        }
+        if value.get("phase").and_then(Value::as_str) != Some("baseline")
+            || value.get("status").and_then(Value::as_str) != Some("measured")
+            || value.get("overlay").and_then(Value::as_str) != Some("off")
+        {
+            return Err("baseline must be a measured overlay-off artifact".to_string());
+        }
+        let number = |key: &str| {
+            value
+                .get(key)
+                .and_then(Value::as_f64)
+                .ok_or_else(|| format!("missing numeric field {key}"))
+        };
+        let fps = number("fps")?;
+        let drop_rate_pct = number("dropped_present_pct")?;
+        let frame_count = value
+            .get("frame_count")
+            .and_then(Value::as_u64)
+            .ok_or_else(|| "missing frame_count".to_string())?;
+        let dropped_count = value
+            .get("dropped_present_count")
+            .and_then(Value::as_u64)
+            .unwrap_or(0);
+        if !fps.is_finite() || fps <= 0.0 || !drop_rate_pct.is_finite() || frame_count == 0 {
+            return Err("baseline contains non-finite/empty measurement".to_string());
+        }
+        Ok(FpsSample {
+            fps,
+            drop_rate_pct,
+            frame_count,
+            dropped_count,
+        })
+    }
 
     /// Searches PATH (via where.exe on Windows) and common install locations.
     fn find_presentmon() -> Option<PathBuf> {
@@ -313,6 +694,25 @@ mod fps {
             }
         }
         None
+    }
+
+    #[cfg(windows)]
+    fn has_elevated_token() -> bool {
+        process::Command::new("whoami.exe")
+            .args(["/groups"])
+            .output()
+            .map(|output| {
+                let text = String::from_utf8_lossy(&output.stdout).to_ascii_lowercase();
+                output.status.success()
+                    && (text.contains("high mandatory level")
+                        || text.contains("system mandatory level"))
+            })
+            .unwrap_or(false)
+    }
+
+    #[cfg(not(windows))]
+    fn has_elevated_token() -> bool {
+        false
     }
 
     fn dota2_running() -> bool {
@@ -437,12 +837,17 @@ mod fps {
             0.0
         };
 
-        Ok(FpsSample { fps, drop_rate_pct })
+        Ok(FpsSample {
+            fps,
+            drop_rate_pct,
+            frame_count: total_count,
+            dropped_count,
+        })
     }
 
     // ── Comparison ────────────────────────────────────────────────────────────
 
-    fn compare(baseline: FpsSample, overlay: FpsSample) -> OverlayResult {
+    fn compare(baseline: &FpsSample, overlay: &FpsSample) -> OverlayResult {
         // Clamp to 0: if overlay is somehow faster than baseline (measurement noise),
         // that is not a failure — treat as 0% impact.
         let fps_delta_pct = if baseline.fps > 0.0 {
@@ -468,6 +873,7 @@ mod fps {
 
     // ── JSON baseline parsing (no external deps) ──────────────────────────────
 
+    #[allow(dead_code)]
     pub fn parse_baseline_json(json: &str) -> (f64, f64) {
         let extract = |key: &str| -> f64 {
             let needle = format!(r#""{key}":"#);
@@ -503,6 +909,13 @@ fn find_gmaiden_pid() -> Option<u32> {
         .map(|p| p.pid().as_u32())
 }
 
+fn cli_value<'a>(args: &'a [String], flag: &str) -> Option<&'a str> {
+    args.iter()
+        .position(|arg| arg == flag)
+        .and_then(|index| args.get(index + 1))
+        .map(String::as_str)
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // CLI
 // ─────────────────────────────────────────────────────────────────────────────
@@ -514,6 +927,26 @@ fn main() {
     let force_stub   = has("--stub");
     let fps_baseline = has("--fps-baseline");
     let fps_overlay  = has("--fps-overlay");
+    let mut fps_config = FpsRunConfig {
+        confirm_overlay_off: has("--confirm-overlay-off"),
+        confirm_overlay_on: has("--confirm-overlay-on"),
+        ..FpsRunConfig::default()
+    };
+    if let Some(value) = cli_value(&args, "--output-dir") {
+        fps_config.output_dir = PathBuf::from(value);
+    }
+    if let Some(value) = cli_value(&args, "--presentmon") {
+        fps_config.presentmon = Some(PathBuf::from(value));
+    }
+    if let Some(value) = cli_value(&args, "--duration-secs") {
+        match value.parse::<u64>() {
+            Ok(duration) if (1..=600).contains(&duration) => fps_config.duration_secs = duration,
+            _ => {
+                eprintln!("[FPS] SKIP - --duration-secs must be an integer from 1 to 600");
+                process::exit(EXIT_SKIP);
+            }
+        }
+    }
 
     println!("═══════════════════════════════════════════════════════════");
     println!(" G-Maiden Perf Suite  —  GATE P7");
@@ -547,10 +980,10 @@ fn main() {
     if fps_baseline {
         println!("Phase 1/2 — recording dota2.exe FPS baseline (overlay must be OFF)");
         println!();
-        let saved = fps::run_baseline();
+        let saved = fps::run_baseline_guarded(&fps_config);
         println!();
         if saved {
-            println!("Baseline recorded. Start G-Maiden overlay then run --fps-overlay.");
+            println!("Baseline recorded. Start G-Maiden overlay then run --fps-overlay --confirm-overlay-on.");
             // exit 0 — baseline phase is a success even though gate not yet evaluated
         } else {
             println!("GATE P7 (FPS baseline): SKIP — see errors above");
@@ -562,7 +995,7 @@ fn main() {
     if fps_overlay {
         println!("Phase 2/2 — measuring dota2.exe FPS with overlay ACTIVE");
         println!();
-        let result = fps::run_overlay();
+        let result = fps::run_overlay_guarded(&fps_config);
         println!();
         match result.state {
             MeasureState::Pass => {
@@ -604,9 +1037,9 @@ fn main() {
     println!("── 2 / 2  FPS Impact (≤{FPS_DROP_MAX_PCT}%) ─────────────────────────────");
     println!("[FPS] SKIP — FPS gate requires the two-phase PresentMon workflow:");
     println!("[FPS]   1. Start Dota 2 (no overlay)");
-    println!("[FPS]   2. cargo run --release --bin perf_p7 -- --fps-baseline");
+    println!("[FPS]   2. cargo run --release --bin perf_p7 -- --fps-baseline --confirm-overlay-off");
     println!("[FPS]   3. Start G-Maiden overlay");
-    println!("[FPS]   4. cargo run --release --bin perf_p7 -- --fps-overlay");
+    println!("[FPS]   4. cargo run --release --bin perf_p7 -- --fps-overlay --confirm-overlay-on");
     println!();
 
     // Summary
@@ -830,5 +1263,53 @@ mod tests {
         assert_eq!(MeasureState::Skip, MeasureState::Skip);
         assert_ne!(MeasureState::Pass, MeasureState::Fail);
         assert_ne!(MeasureState::Pass, MeasureState::Skip);
+    }
+
+    #[test]
+    fn guarded_baseline_parser_rejects_legacy_minimal_json() {
+        let legacy = r#"{"fps":144.0,"drop_rate_pct":0.0}"#;
+        assert!(fps::parse_baseline_report(legacy).is_err());
+    }
+
+    #[test]
+    fn guarded_baseline_parser_accepts_measured_overlay_off_report() {
+        let report = json!({
+            "schema_version": REPORT_SCHEMA_VERSION,
+            "phase": "baseline",
+            "status": "measured",
+            "overlay": "off",
+            "fps": 144.0,
+            "dropped_present_pct": 0.0,
+            "frame_count": 900,
+            "dropped_present_count": 0,
+        });
+        let parsed = fps::parse_baseline_report(&report.to_string()).expect("valid baseline");
+        assert_eq!(parsed.frame_count, 900);
+        assert!((parsed.fps - 144.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn guarded_baseline_parser_rejects_empty_measurement() {
+        let report = json!({
+            "schema_version": REPORT_SCHEMA_VERSION,
+            "phase": "baseline",
+            "status": "measured",
+            "overlay": "off",
+            "fps": 0.0,
+            "dropped_present_pct": 0.0,
+            "frame_count": 0,
+        });
+        assert!(fps::parse_baseline_report(&report.to_string()).is_err());
+    }
+
+    #[test]
+    fn fps_config_keeps_baseline_and_report_in_output_dir() {
+        let config = FpsRunConfig {
+            output_dir: PathBuf::from("p7-artifacts"),
+            ..FpsRunConfig::default()
+        };
+        assert_eq!(config.baseline_path(), PathBuf::from("p7-artifacts/fps-baseline.json"));
+        assert_eq!(config.report_path(), PathBuf::from("p7-artifacts/fps-report.json"));
+        assert_eq!(config.capture_path("overlay"), PathBuf::from("p7-artifacts/fps-overlay.csv"));
     }
 }
