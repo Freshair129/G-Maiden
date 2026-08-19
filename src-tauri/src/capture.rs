@@ -779,6 +779,14 @@ mod backend {
 
             // G-Motion: history + gank-risk over currently-missing enemies.
             state.motion.record(&detections, &r, now_ms);
+            // Audit H3: discount enemies we know are dead. Read fresh each
+            // frame — the pool is written on the GSI thread and expires on
+            // wall-clock, while `now_ms` here is this thread's own monotonic
+            // origin, so the two clocks must not be mixed (hence the
+            // no-argument accessor).
+            state
+                .motion
+                .set_dead_enemies(crate::runtime::dead_enemy_count());
             let missing = state.sentry.missing(now_ms);
             let risk = state.motion.assess(&missing, now_ms);
 

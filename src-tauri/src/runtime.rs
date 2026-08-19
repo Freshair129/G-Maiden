@@ -105,6 +105,10 @@ pub fn set_in_game(v: bool) {
     // Dota-exit watchdog call it.
     if IN_GAME.swap(v, Ordering::Relaxed) != v {
         MATCH_EPOCH.fetch_add(1, Ordering::Relaxed);
+        // Same boundary, same reasoning as the capture-side pipeline rebuild:
+        // last match's corpses must not discount this match's threats, and the
+        // score baseline has to re-seed from the new scoreboard.
+        clear_enemy_deaths();
     }
 }
 pub fn in_game() -> bool {
@@ -187,6 +191,105 @@ pub fn enemy_team_ring() -> (f32, f32, f32) {
         2 => crate::cv::RADIANT_RING,
         _ => crate::cv::DIRE_RING,
     }
+}
+
+// ── Dead-enemy pool (G-Motion threat discount) ───────────────────────────────
+//
+// A dead enemy is invisible on the minimap, so G-Sentry flags them "missing"
+// and G-Motion counts them as a gank threat — exactly backwards: the map is
+// SAFER right after a teamfight win, and that is precisely when the old code
+// screamed loudest (5 enemies wiped ⇒ 5 "missing" ⇒ ~90% risk).
+//
+// What is exactly observable, and what is not:
+//   • HOW MANY enemies are dead — yes. `map.{radiant,dire}_score` is kills-by
+//     that team, so the LOCAL team's score is the enemy death count. Exact.
+//   • WHICH enemy died — effectively no. `hero.kill_list` carries a victim
+//     slot, but only for the local player's OWN kills, and mapping slot→hero
+//     needs the Draft-CV roster, which ships inert (no portrait assets). So
+//     this pool is deliberately ANONYMOUS: a count, never an identity.
+//   • For HOW LONG — not observable. Respawn scales with the dead hero's
+//     level, which GSI never exposes for enemies. The caller supplies an
+//     estimate; see `gsi::enemy_respawn_estimate_ms` for the bias argument.
+//
+// Cleared on every match boundary alongside the epoch bump — a stale death
+// from last match would silence a real warning in this one.
+/// Expiry stamps and score baseline live under ONE lock on purpose. They are
+/// written from the GSI thread and read from the capture thread, and the
+/// watchdog can clear them concurrently with a tick — two mutexes would make
+/// lock ORDER load-bearing, which is the kind of invariant a later edit breaks
+/// silently. One lock, no ordering to get wrong.
+struct EnemyDeaths {
+    /// Wall-clock ms at which each believed-dead enemy is back up.
+    expiry: Vec<u64>,
+    /// Last observed local-team score, so a rise can be read as N enemy deaths.
+    /// `None` until the first tick of a match: the app can attach mid-game to a
+    /// 14-3 scoreboard, and that opening reading is a BASELINE, not 14 deaths.
+    baseline: Option<i64>,
+}
+
+static ENEMY_DEATHS: Mutex<EnemyDeaths> = Mutex::new(EnemyDeaths {
+    expiry: Vec::new(),
+    baseline: None,
+});
+
+/// Fold this tick's local-team score into the dead-enemy pool. Returns how many
+/// fresh deaths were recorded (0 on the baseline tick and on any tick that did
+/// not advance the score). `respawn_ms` is how long each new death should keep
+/// discounting a threat slot.
+pub fn note_enemy_score(score: i64, respawn_ms: u64, now_ms: u64) -> usize {
+    let Ok(mut d) = ENEMY_DEATHS.lock() else {
+        return 0;
+    };
+    let previous = match d.baseline {
+        // First tick of the match — seed only. See `baseline`'s doc comment.
+        None => {
+            d.baseline = Some(score);
+            return 0;
+        }
+        Some(p) => p,
+    };
+    d.baseline = Some(score);
+    // A score that went DOWN means a new match we haven't been told about yet
+    // (or a malformed tick). Re-baseline rather than underflow.
+    if score <= previous {
+        return 0;
+    }
+    let fresh = (score - previous) as usize;
+    for _ in 0..fresh {
+        d.expiry.push(now_ms.saturating_add(respawn_ms));
+    }
+    fresh
+}
+
+/// How many enemies are believed dead right now. Expired entries are swept on
+/// read, so the pool cannot grow across a long match.
+pub fn dead_enemy_count_at(now_ms: u64) -> usize {
+    let Ok(mut d) = ENEMY_DEATHS.lock() else {
+        return 0;
+    };
+    d.expiry.retain(|expiry| *expiry > now_ms);
+    d.expiry.len()
+}
+
+/// Wall-clock convenience for the capture loop, whose own `now_ms` is a
+/// thread-local monotonic origin and must NOT be mixed with the epoch stamps
+/// the GSI path writes here.
+pub fn dead_enemy_count() -> usize {
+    dead_enemy_count_at(epoch_ms())
+}
+
+fn clear_enemy_deaths() {
+    if let Ok(mut d) = ENEMY_DEATHS.lock() {
+        d.expiry.clear();
+        d.baseline = None;
+    }
+}
+
+fn epoch_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|d| d.as_millis() as u64)
+        .unwrap_or(0)
 }
 
 pub fn set_signal_enabled(v: bool) {
@@ -570,6 +673,20 @@ pub fn take_oauth_pending(callback_state: Option<&str>, now_ms: u64) -> bool {
 mod tests {
     use super::*;
 
+    /// Serialises the tests that drive process-global match state
+    /// (`IN_GAME`/`MATCH_EPOCH` and the dead-enemy pool). Rust runs tests in
+    /// parallel threads inside ONE process, so without this they race: a
+    /// `set_in_game` in one test clears the pool another test just seeded, and
+    /// the failure only shows up in a full-suite run, never when the test is
+    /// run alone. Poisoning is ignored deliberately — one test panicking
+    /// should surface as that test's own failure, not as a cascade of
+    /// unrelated "poisoned lock" errors that hide it.
+    static MATCH_STATE_LOCK: Mutex<()> = Mutex::new(());
+
+    fn match_state_guard() -> std::sync::MutexGuard<'static, ()> {
+        MATCH_STATE_LOCK.lock().unwrap_or_else(|e| e.into_inner())
+    }
+
     #[test]
     fn oauth_gate_rejects_unsolicited_and_expired_callbacks() {
         assert!(
@@ -634,6 +751,7 @@ mod tests {
 
     #[test]
     fn match_epoch_advances_on_every_in_game_transition() {
+        let _guard = match_state_guard();
         // Both edges are match boundaries: the horn ends the previous match's
         // observation window, and the post-game screen ends this one. The
         // capture loop rebuilds G-Sentry/G-Motion/G-Signal on either, so both
@@ -659,6 +777,67 @@ mod tests {
 
         set_in_game(false);
         assert_eq!(match_epoch(), base + 2, "match end must bump the epoch");
+    }
+
+    #[test]
+    fn enemy_score_baseline_does_not_count_as_deaths() {
+        let _guard = match_state_guard();
+        clear_enemy_deaths();
+        // Attaching mid-match to a 14-3 scoreboard must record a BASELINE, not
+        // fourteen corpses — otherwise every mid-game launch would silence
+        // G-Signal until the fake pool expired.
+        assert_eq!(note_enemy_score(14, 30_000, 1_000), 0, "first tick seeds only");
+        assert_eq!(dead_enemy_count_at(1_000), 0);
+        // Only the advance past the baseline counts.
+        assert_eq!(note_enemy_score(16, 30_000, 2_000), 2);
+        assert_eq!(dead_enemy_count_at(2_000), 2);
+        clear_enemy_deaths();
+    }
+
+    #[test]
+    fn enemy_deaths_expire_on_their_own_respawn_estimate() {
+        let _guard = match_state_guard();
+        clear_enemy_deaths();
+        note_enemy_score(0, 30_000, 0);
+        assert_eq!(note_enemy_score(2, 30_000, 10_000), 2);
+        assert_eq!(dead_enemy_count_at(39_999), 2, "still dead just before respawn");
+        assert_eq!(dead_enemy_count_at(40_001), 0, "swept once respawned");
+        clear_enemy_deaths();
+    }
+
+    #[test]
+    fn unchanged_or_falling_score_records_nothing() {
+        let _guard = match_state_guard();
+        clear_enemy_deaths();
+        note_enemy_score(5, 30_000, 0);
+        // GSI posts ~10Hz; the vast majority of ticks repeat the same score.
+        for _ in 0..50 {
+            assert_eq!(note_enemy_score(5, 30_000, 1_000), 0);
+        }
+        // A score that goes backwards is a stale/rolled-over tick, not deaths.
+        assert_eq!(note_enemy_score(1, 30_000, 2_000), 0);
+        assert_eq!(dead_enemy_count_at(2_000), 0);
+        clear_enemy_deaths();
+    }
+
+    #[test]
+    fn match_boundary_clears_the_dead_pool() {
+        let _guard = match_state_guard();
+        clear_enemy_deaths();
+        set_in_game(false);
+        note_enemy_score(0, 600_000, 0);
+        assert_eq!(note_enemy_score(5, 600_000, 1_000), 5);
+        assert_eq!(dead_enemy_count_at(1_000), 5);
+        // A very long respawn estimate would otherwise leak into the next match
+        // and silence its opening warnings.
+        set_in_game(true);
+        assert_eq!(
+            dead_enemy_count_at(1_000),
+            0,
+            "last match's corpses must not discount this match's threats"
+        );
+        set_in_game(false);
+        clear_enemy_deaths();
     }
 
     #[test]

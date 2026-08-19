@@ -135,6 +135,42 @@ fn parse_kill_list(v: &Value) -> (i64, i64) {
     }
 }
 
+/// The local team's score, which in Dota's GSI IS the enemy death count:
+/// `map.radiant_score` counts kills *by* Radiant, i.e. Dire deaths. `None` when
+/// the tick has no usable `player.team_name` (menu / spectator), because
+/// guessing a side here would attribute our own deaths to the enemy.
+pub(crate) fn enemy_deaths_from_score(tick: &GameTick) -> Option<i64> {
+    if tick.team_name.eq_ignore_ascii_case("radiant") {
+        Some(tick.radiant_score)
+    } else if tick.team_name.eq_ignore_ascii_case("dire") {
+        Some(tick.dire_score)
+    } else {
+        None
+    }
+}
+
+/// How long one enemy death should discount a G-Motion threat slot (ms).
+///
+/// Enemy hero level is not observable — GSI exposes the local player only — so
+/// this uses the local player's level as the closest available proxy and reads
+/// the **turbo** (shorter) respawn table on purpose. The game mode is likewise
+/// unknown (`revive.rs` has the same gap), and the two error directions are not
+/// symmetric:
+///
+///   • window too LONG  ⇒ a respawned enemy stays discounted ⇒ **missed gank
+///     warning**. The dangerous direction for a safety feature.
+///   • window too SHORT ⇒ a still-dead enemy counts as a threat again ⇒ a
+///     false warning, which is exactly today's unfixed behaviour — so erring
+///     short is never worse than the status quo.
+///
+/// The shorter table is therefore the honest floor, not a mode guess. Most of
+/// the harm this fix targets sits in the first ~30 s after death anyway (per-
+/// hero risk peaks at 12 s off-map), which even the turbo floor covers.
+pub(crate) fn enemy_respawn_estimate_ms(level: i64) -> u64 {
+    let lvl = level.clamp(1, 25) as u32;
+    (crate::respawn::respawn_seconds(lvl, true) * 1000.0) as u64
+}
+
 /// Tight definition of "actually in a match" — we want the overlay/voice/log
 /// to engage only when the player is on the map. Excludes hero pick, draft,
 /// load screens, the post-game scoreboard, and disconnects.
@@ -216,6 +252,20 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
     crate::runtime::set_in_game(tick.in_game);
     crate::runtime::set_in_draft(is_in_draft(&tick.game_state));
     crate::runtime::set_player_team_name(&tick.team_name);
+    // G-Motion threat discount (audit H3): a dead enemy is off the minimap and
+    // therefore "missing", but is the opposite of a gank threat. Folded in here
+    // — after `set_in_game` above, so a match boundary has already cleared the
+    // pool — and only while actually in a match, so the post-game scoreboard
+    // can't top it up.
+    if tick.in_game {
+        if let Some(enemy_deaths) = enemy_deaths_from_score(&tick) {
+            crate::runtime::note_enemy_score(
+                enemy_deaths,
+                enemy_respawn_estimate_ms(tick.level),
+                epoch_ms(),
+            );
+        }
+    }
     crate::log::note_tick(&tick);
     let _ = app.emit("game-tick", tick);
     // CR-007 WP-4: the announcer (kill/streak/death lines) is a separate,
@@ -677,6 +727,50 @@ mod tests {
         assert!(!t.alive);
         assert_eq!(t.buyback_cost, 1500);
         assert_eq!(t.respawn_seconds, 30);
+    }
+
+    #[test]
+    fn enemy_deaths_read_the_local_teams_score() {
+        // Dota's GSI counts kills BY a team, so the LOCAL team's score is the
+        // enemy death count. Getting this backwards would discount threats
+        // every time WE died — the exact inversion of the fix.
+        let mut t = run_handle(serde_json::json!({
+            "map": { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
+                     "radiant_score": 14, "dire_score": 9 },
+            "player": { "team_name": "radiant" },
+            "hero": { "name": "npc_dota_hero_lina" }
+        }));
+        assert_eq!(enemy_deaths_from_score(&t), Some(14), "radiant player kills dire");
+
+        t.team_name = "dire".into();
+        assert_eq!(enemy_deaths_from_score(&t), Some(9), "dire player kills radiant");
+
+        // No side ⇒ no answer. Guessing would attribute our own deaths to them.
+        t.team_name = String::new();
+        assert_eq!(enemy_deaths_from_score(&t), None);
+        t.team_name = "spectator".into();
+        assert_eq!(enemy_deaths_from_score(&t), None);
+    }
+
+    #[test]
+    fn respawn_estimate_errs_short_and_clamps_the_level_range() {
+        // Erring SHORT is the safe direction: too long silences a real warning.
+        // The turbo table is strictly below the default one at every level.
+        for lvl in [1i64, 7, 15, 25] {
+            let est = enemy_respawn_estimate_ms(lvl);
+            let default_table =
+                (crate::respawn::respawn_seconds(lvl as u32, false) * 1000.0) as u64;
+            assert!(
+                est < default_table,
+                "level {lvl}: estimate {est}ms must undercut the default table's {default_table}ms"
+            );
+        }
+        // Out-of-range levels must clamp, not index out of bounds.
+        assert_eq!(enemy_respawn_estimate_ms(0), enemy_respawn_estimate_ms(1));
+        assert_eq!(enemy_respawn_estimate_ms(-5), enemy_respawn_estimate_ms(1));
+        assert_eq!(enemy_respawn_estimate_ms(99), enemy_respawn_estimate_ms(25));
+        // And it must actually be a usable window, not zero.
+        assert!(enemy_respawn_estimate_ms(1) >= 5_000);
     }
 
     #[test]
