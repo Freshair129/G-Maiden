@@ -3,7 +3,7 @@
 // sign-in we upsert the `profiles` row and link the current Steam identity.
 
 import { useCallback, useEffect, useState } from "react";
-import type { Session } from "@supabase/supabase-js";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { supabase } from "./supabase";
@@ -36,6 +36,15 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  // Audit B2: the Closed Beta gate re-verifies entitlement whenever `session`
+  // changes — but Supabase mints a NEW session object on a plain access-token
+  // rotation (~hourly) with no real identity change. Without the event name,
+  // the gate could not tell a routine token refresh apart from an actual
+  // sign-in/out, and treated both as "verify from scratch", which is what let
+  // a background refresh yank the whole deck back to a blocking loading
+  // screen. `gmadEntitlement.ts` uses this to skip that gating for
+  // `TOKEN_REFRESHED` once a session has already been shown as eligible.
+  const [lastAuthEvent, setLastAuthEvent] = useState<AuthChangeEvent | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -47,7 +56,10 @@ export function useAuth() {
         setLoading(false);
       }
     });
-    const { data: sub } = supabase.auth.onAuthStateChange((_event, s) => setSession(s));
+    const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
+      setSession(s);
+      setLastAuthEvent(event);
+    });
 
     // Google OAuth: the browser lands on the GSI /auth/callback route which
     // emits `oauth-callback` with the PKCE code; complete the exchange here.
@@ -113,5 +125,5 @@ export function useAuth() {
     setError(null);
   }, []);
 
-  return { session, user: session?.user ?? null, loading, busy, error, signInWithGoogle, signOut };
+  return { session, user: session?.user ?? null, loading, busy, error, lastAuthEvent, signInWithGoogle, signOut };
 }

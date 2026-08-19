@@ -89,7 +89,7 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
       {state === "no_active_entitlement" && <><h1>ยังไม่มีสิทธิ์ Closed Beta ที่ใช้งานได้</h1><p>บัญชีนี้ยืนยันเป็น {decision?.gid} แล้ว แต่ไม่มี active grant</p><button onClick={() => void openLanding("/#gmad")}>เปิดหน้าตรวจสิทธิ์</button><button className="secondary" onClick={() => void signOut()}>ใช้บัญชี Google อื่น</button></>}
       {state === "account_not_eligible" && <><h1>บัญชี Google นี้ไม่ใช่บัญชีที่ได้รับสิทธิ์</h1><p>ระบบไม่รับ GID ที่กรอกเองและไม่แสดงข้อมูลของบัญชีอื่น</p><button onClick={() => void signOut()}>ออกจากระบบแล้วใช้บัญชีเดิม</button></>}
       {state === "offline_or_unavailable" && <><h1>ยังยืนยันสิทธิ์ไม่ได้</h1><p>Closed Beta ต้องเชื่อมต่ออินเทอร์เน็ตทุกครั้งที่เปิดแอป ข้อมูล GSI, CV และ G-Log ในเครื่องไม่ถูกส่งขึ้น cloud</p><button onClick={() => void refresh()}>ลองอีกครั้ง</button></>}
-      {state === "eligible" && <><h1>ยืนยันสิทธิ์แล้ว</h1><p>{decision?.gid} · Terms {decision?.terms?.version} · ตรวจล่าสุด {decision?.checked_at ? new Date(decision.checked_at).toLocaleString("th-TH") : "—"}</p>
+      {state === "eligible" && <><h1>ยืนยันสิทธิ์แล้ว</h1><p>{decision?.gid} · Terms {decision?.terms?.version} · ตรวจล่าสุด {decision?.checked_at ? new Date(decision.checked_at).toLocaleString("th-TH") : "—"}{decision?.stale ? " · ออฟไลน์ชั่วคราว — ใช้สิทธิ์ที่ยืนยันไว้ล่าสุด" : ""}</p>
         {(() => {
           const readiness = readinessFromRuntime({ gsiInstalled: setup?.installed === true, gsiActive, captureMode, minimapReady, audioReady });
           const diagnostic = () => {
