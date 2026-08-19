@@ -35,7 +35,7 @@ export const LiveMatchPage = memo(function LiveMatchPage() {
         </div>
         <div className="page-pill-row">
           <span className="metric-chip live">LIVE • {data.match.clock}</span>
-          <span className="metric-chip">{data.match.activeAlerts} active alerts</span>
+          <span className="metric-chip">{statValue(data.match.activeAlerts)} active alerts</span>
         </div>
       </section>
 
@@ -130,20 +130,31 @@ export const BuildAdvisorPage = memo(function BuildAdvisorPage() {
       <section className="card-shell page-hero">
         <div>
           <div className="eyebrow">Build Advisor</div>
-          <h2>{data.buildAdvisor.hero} recommendation path</h2>
-          <p>{data.buildAdvisor.lane} • next major item: {data.buildAdvisor.nextItem}</p>
+          <h2>{data.buildAdvisor.hero}</h2>
+          {/* lane and nextItem are honest "—" sentinels: GSI exposes no lane
+              assignment, and G-Master answers in prose rather than a structured
+              next-item pick. See live/buildAdvisor.ts. */}
+          <p>lane: {data.buildAdvisor.lane} • next major item: {data.buildAdvisor.nextItem}</p>
         </div>
       </section>
       <div className="domain-grid two-up">
         <Card title="Current item path" kicker="Build">
-          <div className="chip-cloud">
-            {data.buildAdvisor.itemPath.map((item) => <span key={item} className="metric-chip">{item}</span>)}
-          </div>
+          {data.buildAdvisor.itemPath.length > 0 ? (
+            <div className="chip-cloud">
+              {data.buildAdvisor.itemPath.map((item) => <span key={item} className="metric-chip">{item}</span>)}
+            </div>
+          ) : (
+            <p className="muted-note">— ยังไม่มีไอเทม (ต้องอยู่ในแมตช์)</p>
+          )}
         </Card>
         <Card title="Advisor notes" kicker="Guidance">
-          <ul className="simple-list">
-            {data.buildAdvisor.notes.map((note) => <li key={note}>{note}</li>)}
-          </ul>
+          {data.buildAdvisor.notes.length > 0 ? (
+            <ul className="simple-list">
+              {data.buildAdvisor.notes.map((note) => <li key={note}>{note}</li>)}
+            </ul>
+          ) : (
+            <p className="muted-note">— Maiden ยังไม่ได้ให้คำแนะนำในแมตช์นี้</p>
+          )}
         </Card>
       </div>
     </div>

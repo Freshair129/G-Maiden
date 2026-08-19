@@ -45,6 +45,11 @@ export interface GameTick {
   respawn_seconds: number; // 0 when alive
   kill_list_len: number;
   last_victim_slot: number;
+  /** Player's real current inventory (items.rs). Rust has always sent this;
+   *  the deck simply never typed it. Drives the Build tab's item card.
+   *  Optional to mirror the Rust field's `#[serde(default)]` — a tick
+   *  round-tripped from an older build legitimately omits it. */
+  item_names?: string[];
 }
 
 /** gsi-status — connection/liveliness pushed every ~4s. */

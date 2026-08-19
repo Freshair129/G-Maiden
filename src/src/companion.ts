@@ -7,7 +7,8 @@ import { buildMatch } from "./live/buildMatch";
 import { buildUtterances, type Utterance } from "./live/utterances";
 import { buildHeroes, assignEnemySlot } from "./live/buildHeroes";
 import { buildMarkers } from "./live/buildMarkers";
-import { buildSignals } from "./live/buildSignals";
+import { buildSignals, countActiveAlerts } from "./live/buildSignals";
+import { buildAdvisor } from "./live/buildAdvisor";
 import { buildProfile } from "./live/buildProfile";
 import { buildBaselines } from "./live/buildBaselines";
 import { buildTelemetry } from "./live/buildTelemetry";
@@ -48,11 +49,8 @@ export type CompanionData = {
     rightTeamName: string;
     leftScore: number;
     rightScore: number;
-    viewers: number;
     watchLabel: string;
     activeAlerts: number;
-    latencyMs: number;
-    gsiScore: number;
     overlayMode: string;
     voicePack: string;
     privacy: string;
@@ -255,11 +253,11 @@ export const FALLBACK: CompanionData = {
     rightTeamName: "Dire",
     leftScore: 0,
     rightScore: 0,
-    viewers: 0,
     watchLabel: "WATCH IN-GAME",
-    activeAlerts: 3,
-    latencyMs: 18,
-    gsiScore: 86,
+    // -1 = "no reading" (same convention as telemetry below) so the Live page
+    // renders "—". Was a hardcoded 3 that buildMatch never overrode, so the
+    // header pill claimed "3 active alerts" permanently — live matches included.
+    activeAlerts: -1,
     overlayMode: "Mirror mode",
     voicePack: "Calm tactical",
     privacy: "Local-only",
@@ -285,7 +283,10 @@ export const FALLBACK: CompanionData = {
   ],
   activity: [],
   events: [],
-  buildAdvisor: { hero: "Maiden", lane: "Support", itemPath: [], nextItem: "", notes: [] },
+  // Honest empty build state. Was `{ hero: "Maiden", lane: "Support" }` — two
+  // hardcoded strings rendered as the player's actual hero and lane on a page
+  // with no producer. buildAdvisor() fills these from the real tick.
+  buildAdvisor: { hero: "—", lane: "—", itemPath: [], nextItem: "—", notes: [] },
   companion: { overlayEnabled: true, voiceEnabled: true, motionIntensity: 60, dangerThreshold: 70, hotkeys: [] },
   // -1 = "no reading" so the footer/stat cards render "—" (waiting), not a fake 0.
   telemetry: { cpuLoad: -1, cpuTemp: -1, gpuLoad: -1, gpuTemp: -1, ramLoad: -1, ramTemp: -1, vramLoad: -1, vramTemp: -1, ramUsedGb: -1, ramTotalGb: -1, vramUsedGb: -1, vramTotalGb: -1 },
@@ -332,11 +333,8 @@ export const MOCK: CompanionData = {
     rightTeamName: "Dire",
     leftScore: 45,
     rightScore: 23,
-    viewers: 5,
     watchLabel: "WATCH IN-GAME",
     activeAlerts: 3,
-    latencyMs: 18,
-    gsiScore: 86,
     overlayMode: "Mirror mode",
     voicePack: "Calm tactical",
     privacy: "Local-only",
@@ -519,6 +517,9 @@ type LiveState = {
   // Fail-closed is the whole point: buildSignals() must not print a green
   // "Clear" on the strength of a sensor that isn't running.
   health: SensorHealth | null;
+  // Latest G-Master advice text (`advice-update`). Feeds the Live page's Build
+  // tab, which previously had no producer at all. null until Maiden answers.
+  advice: string | null;
   logs: MatchLog[] | null;     // Phase 2c: local G-Log match files (history + learnedMatches)
   // CR-007 WP-4: persisted ring buffer for the Alert Deck, same pattern as
   // `missing`/`missingPos` above — appended incrementally by buildActivity()
@@ -549,7 +550,7 @@ type LiveState = {
 const EMPTY_LIVE: LiveState = {
   tick: null, status: null, cv: null, gank: null, missing: new Map(), missingPos: new Map(),
   enemySlots: new Map(),
-  active: false, od: null, stats: null, health: null, logs: null, activityLog: [], mom: EMPTY_MOMENTUM, roster: null,
+  active: false, od: null, stats: null, health: null, advice: null, logs: null, activityLog: [], mom: EMPTY_MOMENTUM, roster: null,
   utterances: [],
   phase: "standby"
 };
@@ -601,10 +602,11 @@ function buildCompanionData(live: LiveState): CompanionData {
     ? {
         ...FALLBACK,
         updatedAt: Date.now(),
-        match: { ...buildMatch(live.tick, live.status, FALLBACK.match), matchPhase: live.phase },
+        match: { ...buildMatch(live.tick, live.status, FALLBACK.match), matchPhase: live.phase, activeAlerts: countActiveAlerts(live.gank, live.missing, live.health?.healthy ?? false) ?? -1 },
         heroes: buildHeroes(live.tick, live.missing, live.cv, FALLBACK.heroes, live.enemySlots, live.roster, live.tick?.team_name ?? ""),
         markers: buildMarkers(live.cv, live.missingPos, FALLBACK.markers),
         signals: buildSignals(live.gank, live.missing, live.health?.healthy ?? false),
+        buildAdvisor: buildAdvisor(live.tick, live.advice, FALLBACK.buildAdvisor),
         activity: live.activityLog,
         momentum: momentumView(live.mom, live.tick),
         utterances: live.utterances
@@ -852,6 +854,14 @@ function ensureRuntime() {
   // a "live" shell with nothing behind it. FALLBACK's signals are already all
   // "—", so both branches stay honest.
   sub<SensorHealth>("sensor-health", (p) => updateLive((s) => ({ ...s, health: p }), true));
+  // G-Master advice reached only the Overlay toast and the Settings card; the
+  // deck's own Build tab had no producer at all. Cached re-fetches are ignored —
+  // the auto path re-emits the same text within its cooldown, and re-rendering
+  // identical advice adds nothing.
+  sub<{ text: string; cached: boolean }>("advice-update", (p) => {
+    if (p.cached || !p.text) return;
+    updateLive((s) => ({ ...s, advice: p.text, active: true }), true);
+  });
   sub<MinimapCv>("minimap-cv", (p) => {
     const now = Date.now();
     if (now - lastCvAt < CV_UPDATE_MS) return;

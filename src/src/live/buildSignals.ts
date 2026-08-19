@@ -28,6 +28,25 @@ function riskTier(gankActive: boolean, missingCount: number): 0 | 1 | 2 | 3 {
 const RISK_LABELS = ["ปลอดภัย", "ระวัง", "เสี่ยง", "อันตราย"] as const;
 const RISK_TONES: readonly CompanionTone[] = ["good", "info", "warn", "danger"];
 
+/** How many G-Signal alerts are genuinely active right now.
+ *
+ * Was a hardcoded `3` living in FALLBACK.match — and because `buildMatch()`
+ * starts from that base and never touched the field, the Live page's header
+ * pill read "3 active alerts" **permanently**, in live matches included. It was
+ * never a fallback value; it was a constant rendered as live state.
+ *
+ * `null` means "can't say" and renders as `—`: with no trustworthy sensor, "0
+ * active alerts" is as much a claim as "3" — the same rule buildSignals()
+ * follows below. */
+export function countActiveAlerts(
+  gank: SignalAlert | null,
+  missing: Map<string, number>,
+  sensorOk: boolean
+): number | null {
+  if (!sensorOk && gank === null) return null;
+  return missing.size + (gank !== null ? 1 : 0);
+}
+
 export function buildSignals(
   gank: SignalAlert | null,
   missing: Map<string, number>,

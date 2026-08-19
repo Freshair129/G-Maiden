@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { buildSignals } from "../buildSignals";
+import { buildSignals, countActiveAlerts } from "../buildSignals";
 import type { SignalAlert } from "../events";
 
 function makeGank(overrides: Partial<SignalAlert> = {}): SignalAlert {
@@ -177,5 +177,32 @@ describe("buildSignals", () => {
       const sig = buildSignals(null, missing, false)[0];
       expect(sig.value).toBe("—");
     });
+  });
+});
+
+// `activeAlerts` was a hardcoded 3 in FALLBACK that buildMatch() never
+// overrode, so the Live page's header pill read "3 active alerts" permanently
+// — in live matches included. It was a constant rendered as live state.
+describe("countActiveAlerts", () => {
+  it("counts missing heroes plus an active gank", () => {
+    const missing = new Map<string, number>([
+      ["npc_dota_hero_warden", 6000],
+      ["npc_dota_hero_mirage", 8000]
+    ]);
+    expect(countActiveAlerts(null, missing, true)).toBe(2);
+    expect(countActiveAlerts(makeGank(), missing, true)).toBe(3);
+  });
+
+  it("is 0 — not 3 — on a genuinely quiet map", () => {
+    expect(countActiveAlerts(null, new Map(), true)).toBe(0);
+  });
+
+  it("is null (renders '—') when the sensor cannot be trusted", () => {
+    // "0 active alerts" is as much a claim as "3" when nothing is watching.
+    expect(countActiveAlerts(null, new Map(), false)).toBeNull();
+  });
+
+  it("still reports an alert that did arrive, even with an untrusted sensor", () => {
+    expect(countActiveAlerts(makeGank(), new Map(), false)).toBe(1);
   });
 });
