@@ -302,6 +302,24 @@ impl DxgiCapture {
         self.height
     }
 
+    /// Which backend `acquire_frame`/`acquire_rect` is serving frames from
+    /// right now: `"dxgi"` (Desktop Duplication) or `"gdi"` (the `BitBlt`
+    /// fall-back this type switches to after [`GDI_FALLBACK_THRESHOLD`]
+    /// consecutive `ACCESS_LOST`s — which, per the live diagnostic in that
+    /// constant's doc comment, is what Dota 2's borderless-fullscreen
+    /// independent-flip/MPO ownership actually forces).
+    ///
+    /// Surfaced so `capture.rs` can report it in `sensor-health`: the flip
+    /// used to be entirely invisible to the UI, so every surface kept claiming
+    /// the GPU-copy path while the CPU `BitBlt` path was the one running.
+    pub fn backend(&self) -> &'static str {
+        if self.gdi_mode {
+            "gdi"
+        } else {
+            "dxgi"
+        }
+    }
+
     /// Grab the next desktop frame as tightly-packed BGRA8 `(bytes, width, height)`.
     ///
     /// Returns `None` when no new frame arrived within the timeout (normal — the

@@ -6,7 +6,7 @@ import { VoiceWave } from '../overlay/VoiceWave'
 import { STREAK_LABELS } from '../overlay/streaks'
 import { crossedAnyLevelUpMilestone, crossedLevelUpMilestones } from '../personaMilestones'
 import type {
-  GameTick, MinimapCv, GankAlert, EnemyMissing, AdviceUpdate, ReviveAdvice, GsiStatus,
+  GameTick, MinimapCv, GankAlert, EnemyMissing, AdviceUpdate, ReviveAdvice, GsiStatus, SensorHealth,
   Settings, GankState, PersonaEvent,
 } from './types'
 import { DEFAULTS } from './types'
@@ -36,6 +36,11 @@ export const Overlay: React.FC = () => {
   // (Dota stops POSTing without a final tick; `tick` would otherwise stay stale).
   const [gsiActive, setGsiActive] = useState(true)
   const [previewMode, setPreviewMode] = useState(false)
+  // Minimap-sensor truth. Starts NULL, and null is treated as "not healthy" —
+  // fail-closed. In a release build the capture thread only starts after the
+  // entitlement check, so "we have never heard from it" is a real state, and
+  // it must not read as a working sensor (audit B3).
+  const [sensorHealth, setSensorHealth] = useState<SensorHealth | null>(null)
   // #6: mirror each Maiden voice line as a transient on-screen toast so triggers
   // are verifiable even before the voice pack / TTS is finalized (debug aid —
   // becomes a user toggle in the overlay redesign). The voice still fires too.
@@ -109,6 +114,7 @@ export const Overlay: React.FC = () => {
       gankClearTimer.current = setTimeout(() => setGank(null), 2200)
     })
     const u6 = listen<GsiStatus>('gsi-status', (e) => setGsiActive(e.payload.gsi_active))
+    const uSH = listen<SensorHealth>('sensor-health', (e) => setSensorHealth(e.payload))
     const u7 = listen<boolean>('preview-mode', (e) => setPreviewMode(e.payload))
     // G2.6: G-Sentry missing-hero events — accumulate into a set; clear when gank clears.
     const u8 = listen<EnemyMissing>('enemy-missing', (e) => {
@@ -174,7 +180,7 @@ export const Overlay: React.FC = () => {
       void u4.then((f) => f()); void u5.then((f) => f()); void u6.then((f) => f())
       void u7.then((f) => f()); void u8.then((f) => f()); void u9.then((f) => f())
       void u10.then((f) => f()); void uK.then((f) => f()); void uPB.then((f) => f())
-      void uBA.then((f) => f()); void uBN.then((f) => f())
+      void uBA.then((f) => f()); void uBN.then((f) => f()); void uSH.then((f) => f())
       if (gankTimer.current) clearTimeout(gankTimer.current)
       if (gankClearTimer.current) clearTimeout(gankClearTimer.current)
       if (adviceTimer.current) clearTimeout(adviceTimer.current)
@@ -568,6 +574,7 @@ export const Overlay: React.FC = () => {
         overlayAdvice={overlayAdvice} buyback={buyback} toast={toast}
         killBanner={killBanner} packBanner={packBanner} lowHp={lowHp}
         volToast={volToast} gsiActive={gsiActive} previewMode={previewMode}
+        sensorOk={sensorHealth?.healthy ?? false}
       />
     )
   }

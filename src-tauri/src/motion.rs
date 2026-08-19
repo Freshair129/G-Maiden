@@ -99,6 +99,18 @@ struct Sample {
 pub struct Motion {
     history: VecDeque<Sample>,
     params: MotionParams,
+    /// How many enemies are believed dead right now (audit H3). Applied as a
+    /// count-based discount in [`Motion::assess`]. A per-tick field rather than
+    /// an `assess` argument for the same reason `Signal::set_sensitivity` is:
+    /// the capture loop refreshes it every frame, and the offline harnesses
+    /// (`tests/perf`) have no GSI death signal to pass.
+    ///
+    /// Defaulting to 0 is the SAFE default here — "assume nobody is dead" means
+    /// every missing hero still counts as a threat, i.e. today's behaviour and
+    /// the louder side of the error. (Contrast the sensor-health flag, whose
+    /// safe default is `false`, because there the permissive value would have
+    /// meant "pretend the sensor works".)
+    dead_enemies: usize,
 }
 
 impl Motion {
@@ -114,7 +126,15 @@ impl Motion {
         Motion {
             history: VecDeque::new(),
             params,
+            dead_enemies: 0,
         }
+    }
+
+    /// Refresh the believed dead-enemy count for the next [`Motion::assess`].
+    /// Cheap (one word); the capture loop calls it every frame from
+    /// `runtime::dead_enemy_count()`, the same shape as `Signal::set_sensitivity`.
+    pub fn set_dead_enemies(&mut self, n: usize) {
+        self.dead_enemies = n;
     }
 
     /// Append this frame's sightings and evict anything older than the window.
@@ -145,9 +165,8 @@ impl Motion {
     /// Assess gank risk from the set of currently-missing heroes
     /// (`(hero, missing_ms, last_pos)`, as produced by [`crate::sentry::Sentry::missing`]).
     pub fn assess(&self, missing: &[(String, u64, (f32, f32))], _now_ms: u64) -> GankRisk {
-        let mut names = Vec::new();
-        let mut p_safe = 1.0f32; // P(no one is ganking)
-        let mut min_eta = u64::MAX;
+        // Per-hero risk first, so the dead-enemy discount below can rank them.
+        let mut scored: Vec<(&String, f32, u64)> = Vec::new();
         for (hero, ms, _pos) in missing {
             let base = self.missing_risk(*ms);
             if base <= 0.0 {
@@ -158,9 +177,41 @@ impl Motion {
             // out toward its own jungle/base. Uses the pre-vanish trail already
             // in `history`; neutral (1.0) when there's no usable trail.
             let r = (base * self.heading_multiplier(hero)).clamp(0.0, 1.0);
+            scored.push((hero, r, self.eta_estimate(*ms)));
+        }
+
+        // Dead-enemy discount (audit H3). We know HOW MANY enemies are dead
+        // (exact, from the team score) but not WHICH — see
+        // `runtime::note_enemy_score`. So drop that many contributors by COUNT,
+        // choosing the LOWEST-risk ones.
+        //
+        // The choice is deliberate and asymmetric. Attribution would be a
+        // guess, and guessing wrong on the highest-risk hero silently removes
+        // the very warning the player needed. Dropping the lowest-risk entries
+        // removes exactly as many threats as we know are gone while assuming
+        // the corpses were the least threatening — it under-discounts rather
+        // than over-discounts, keeping the alarm on the safe side of the error.
+        //
+        // Known cost, accepted deliberately: a hero killed while still VISIBLE
+        // on the minimap never entered `missing`, so their death still burns a
+        // discount slot and drops a live hero instead. That is a real false
+        // negative. It is bounded precisely BY the lowest-risk rule — the hero
+        // dropped is the smallest contributor to `p_safe`, so the probability
+        // barely moves — and it is traded against a large systematic false
+        // POSITIVE it removes (a won teamfight reading as a five-hero gank).
+        if self.dead_enemies > 0 && !scored.is_empty() {
+            scored.sort_by(|a, b| b.1.total_cmp(&a.1));
+            let keep = scored.len().saturating_sub(self.dead_enemies);
+            scored.truncate(keep);
+        }
+
+        let mut names = Vec::new();
+        let mut p_safe = 1.0f32; // P(no one is ganking)
+        let mut min_eta = u64::MAX;
+        for (hero, r, eta) in scored {
             names.push(hero.clone());
             p_safe *= 1.0 - r;
-            min_eta = min_eta.min(self.eta_estimate(*ms));
+            min_eta = min_eta.min(eta);
         }
         let mut probability = 1.0 - p_safe;
         // coordinated-gank boost: 2+ heroes off-map together is more dangerous
@@ -351,6 +402,104 @@ mod tests {
             "prob {} should equal base {}",
             risk.probability,
             base
+        );
+    }
+
+    /// The case the whole fix exists for: our team wipes theirs, all five
+    /// enemies vanish from the minimap at once, and the OLD model read that as
+    /// a maximal coordinated gank — screaming loudest at the exact moment the
+    /// map was safest.
+    #[test]
+    fn full_wipe_is_silent_not_maximal() {
+        let missing: Vec<(String, u64, (f32, f32))> = ["a", "b", "c", "d", "e"]
+            .iter()
+            .map(|h| ((*h).to_string(), 11_000u64, (0.5f32, 0.5f32)))
+            .collect();
+
+        let mut m = Motion::new();
+        let undiscounted = m.assess(&missing, 12_000);
+        assert!(
+            undiscounted.probability > 0.9,
+            "pre-fix behaviour must still be reproducible: got {}",
+            undiscounted.probability
+        );
+
+        m.set_dead_enemies(5);
+        let discounted = m.assess(&missing, 12_000);
+        assert_eq!(
+            discounted.probability, 0.0,
+            "five dead enemies are zero threats"
+        );
+        assert!(discounted.missing_heroes.is_empty());
+        assert_eq!(discounted.eta_ms, 0, "no threat ⇒ no ETA");
+    }
+
+    #[test]
+    fn discount_drops_the_lowest_risk_hero_not_the_highest() {
+        // Two missing: one deep in the 12s gank window (high risk), one long
+        // gone and decayed to the floor (low risk). One of them is dead.
+        // We cannot know which, so the model must keep the DANGEROUS one —
+        // under-discounting is the safe side of an unknowable attribution.
+        let missing = vec![
+            ("fresh".to_string(), 12_000u64, (0.5f32, 0.5f32)),
+            ("stale".to_string(), 200_000u64, (0.5f32, 0.5f32)),
+        ];
+        let mut m = Motion::new();
+        m.set_dead_enemies(1);
+        let risk = m.assess(&missing, 200_000);
+        assert_eq!(
+            risk.missing_heroes,
+            vec!["fresh".to_string()],
+            "the high-risk hero must survive the discount"
+        );
+    }
+
+    #[test]
+    fn discount_never_underflows_past_the_missing_set() {
+        // More deaths than missing heroes (e.g. an enemy died while already
+        // visible, or the pool outlived a reappearance) must clamp to zero
+        // threats, not panic and not wrap.
+        let missing = vec![("solo".to_string(), 11_000u64, (0.5f32, 0.5f32))];
+        let mut m = Motion::new();
+        m.set_dead_enemies(9);
+        let risk = m.assess(&missing, 12_000);
+        assert_eq!(risk.probability, 0.0);
+        assert!(risk.missing_heroes.is_empty());
+    }
+
+    #[test]
+    fn partial_discount_still_warns_and_drops_the_multi_boost() {
+        // Three missing, two dead ⇒ one real threat. The survivor's risk stands
+        // alone, and the 2+-hero coordinated-gank boost must NOT apply.
+        let missing: Vec<(String, u64, (f32, f32))> = ["a", "b", "c"]
+            .iter()
+            .map(|h| ((*h).to_string(), 11_000u64, (0.5f32, 0.5f32)))
+            .collect();
+        let mut m = Motion::new();
+        m.set_dead_enemies(2);
+        let risk = m.assess(&missing, 12_000);
+        assert_eq!(risk.missing_heroes.len(), 1);
+        let base = m.missing_risk(11_000);
+        assert!(
+            (risk.probability - base).abs() < 1e-6,
+            "single survivor should carry exactly its own risk (no multi-boost): {} vs {base}",
+            risk.probability
+        );
+    }
+
+    #[test]
+    fn zero_dead_is_exactly_the_pre_fix_behaviour() {
+        let missing: Vec<(String, u64, (f32, f32))> = ["a", "b"]
+            .iter()
+            .map(|h| ((*h).to_string(), 11_000u64, (0.5f32, 0.5f32)))
+            .collect();
+        let m_default = Motion::new();
+        let mut m_explicit = Motion::new();
+        m_explicit.set_dead_enemies(0);
+        assert_eq!(
+            m_default.assess(&missing, 12_000).probability,
+            m_explicit.assess(&missing, 12_000).probability,
+            "the default must be a no-op, so untouched callers keep today's model"
         );
     }
 
