@@ -80,6 +80,11 @@ interface Props {
   gsiActive: boolean
   /** Settings overlay-preview is active — also shows the standby chip. */
   previewMode: boolean
+  /** The minimap sensor is producing trustworthy data (capture.rs
+   * `sensor-health.healthy`). FALSE means Lite mode / no ONNX model / a capture
+   * stall — states in which the missing-hero set is empty for the wrong reason,
+   * so the G-Meter must NOT show green. */
+  sensorOk: boolean
 }
 
 /** Continuous-risk level derived from G-Sentry's missing-hero count (and the
@@ -100,7 +105,7 @@ const G_LEVELS = [
   { label: 'อันตราย', color: '#ff7b85', glow: 'rgba(255,123,133,0.6)' },
 ] as const
 
-export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, overlayAdvice, buyback, toast, killBanner, packBanner, lowHp, volToast, gsiActive, previewMode }) => {
+export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, overlayAdvice, buyback, toast, killBanner, packBanner, lowHp, volToast, gsiActive, previewMode, sensorOk }) => {
   const op = s.opacity
   // gsiActive guards the stale-tick case: Dota killed mid-match leaves the last
   // tick frozen at in_game=true — only the watchdog notices the feed died.
@@ -156,7 +161,16 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
 
   // ── G-Meter — always-on continuous risk indicator (low/med/high, no %).
   // 4-segment LED-style: lit segments == level (0..3), color shifts safe→danger.
+  //
+  // BLIND STATE (audit B3): `missingHeroes` is empty both when the map is
+  // genuinely clear and when nothing is watching it — Lite mode, a missing
+  // ONNX model, a capture stall. Rendering a green "ปลอดภัย" for the second
+  // case is the one failure a safety companion may not have, so when the
+  // sensor is not healthy the meter goes dark and says so instead. An active
+  // G-Signal alert still wins: we withhold reassurance, never a warning.
+  const blind = inGame && !sensorOk && gank?.phase !== 'alert'
   const lvl = inGame ? gmeterLevel(missingHeroes.size, gank) : 0
+  const meterColor = blind ? C.mut : G_LEVELS[lvl].color
   const gMeter = (
     <div style={{ ...glass(op), padding: '7px 12px', display: 'flex', alignItems: 'center', gap: 10, minWidth: 158 }}>
       <span style={{ fontSize: 10, color: C.mut, textTransform: 'uppercase', letterSpacing: 0.7 }}>Risk</span>
@@ -164,14 +178,17 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
         {[0, 1, 2, 3].map((i) => (
           <div key={i} style={{
             width: 16, height: 8, borderRadius: 2,
-            background: i <= lvl ? G_LEVELS[lvl].color : 'rgba(255,255,255,0.08)',
-            boxShadow: i <= lvl ? `0 0 6px ${G_LEVELS[lvl].glow}` : 'none',
+            // Blind: every segment unlit — the absence of a reading is the
+            // reading. Never color-only (Principle: color + label together),
+            // so the label below carries the same meaning in words.
+            background: !blind && i <= lvl ? meterColor : 'rgba(255,255,255,0.08)',
+            boxShadow: !blind && i <= lvl ? `0 0 6px ${G_LEVELS[lvl].glow}` : 'none',
             transition: 'background 200ms ease, box-shadow 200ms ease',
           }} />
         ))}
       </div>
-      <span style={{ fontSize: 11.5, fontWeight: 700, color: G_LEVELS[lvl].color, marginLeft: 'auto' }}>
-        {G_LEVELS[lvl].label}
+      <span style={{ fontSize: 11.5, fontWeight: 700, color: meterColor, marginLeft: 'auto' }}>
+        {blind ? 'ไม่มีสัญญาณ' : G_LEVELS[lvl].label}
       </span>
     </div>
   )

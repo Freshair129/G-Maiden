@@ -30,8 +30,25 @@ const RISK_TONES: readonly CompanionTone[] = ["good", "info", "warn", "danger"];
 
 export function buildSignals(
   gank: SignalAlert | null,
-  missing: Map<string, number>
+  missing: Map<string, number>,
+  sensorOk: boolean
 ): CompanionData["signals"] {
+  // An empty missing-set is ambiguous: it means "the CV pipeline saw every
+  // enemy" OR "the CV pipeline saw nothing at all" (Lite mode, no ONNX model,
+  // capture stalled). Those used to render identically as a green "Clear" —
+  // the fake-safe state PRODUCT.md Principle 3 forbids. When the sensor isn't
+  // trustworthy we refuse to claim safety and fall back to the same NO_SENSOR
+  // "—" sentinel the rest of the deck already uses. An alert that DID arrive
+  // is still shown: we withhold reassurance, never a warning.
+  if (!sensorOk && gank === null) {
+    return [
+      { label: "Enemy Missing", tone: "info", value: "—", barPct: 0 },
+      { label: "Gank Risk", tone: "info", value: "—", barPct: 0 },
+      { label: "Risk Level", tone: "info", value: "—", barPct: 0 },
+      { label: "Gank ETA", tone: "info", value: "—", barPct: 0 }
+    ];
+  }
+
   const missingCount = missing.size;
 
   // D — Enemy Missing: real count of heroes currently in the missing map.

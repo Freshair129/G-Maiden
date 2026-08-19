@@ -90,6 +90,18 @@ mod backend {
     /// stall shows up as frames creeping over budget before anything locks up.
     const SLOW_FRAME_MS: u128 = 100;
 
+    /// How long the pipeline may go without a frame before `sensor-health`
+    /// stops calling the minimap sensor trustworthy. Normal cadence is 250ms
+    /// (125ms in alert, 500ms throttled), so this is ~8 missed normal ticks —
+    /// generous enough not to flap on a couple of `DXGI_ERROR_WAIT_TIMEOUT`s,
+    /// tight enough that a real capture stall is visible within a gank window.
+    const STALE_FRAME_MS: u64 = 2_000;
+
+    /// Heartbeat for `sensor-health` (ms). The event is edge-triggered on any
+    /// field the UI branches on; this only exists so `frame_age_ms` keeps
+    /// ticking on screen while nothing else changes.
+    const HEALTH_HEARTBEAT_MS: u128 = 1_000;
+
     /// Minimum gap (ms) between recorded `risk_trace` log lines ≈ 1 Hz — this is
     /// the offline re-fit input for G-Motion/G-Signal (audit item: thresholds
     /// unmeasured because inputs were never recorded), sampled far below the CV
@@ -126,6 +138,58 @@ mod backend {
         region: MinimapRegion,
     }
 
+    /// Honest state of the minimap sensor, broadcast to every window.
+    ///
+    /// Before this event the only thing the UI ever heard was `capture-mode`,
+    /// emitted twice per process: once at thread start and once on a hard
+    /// init failure. Everything in between — the GDI fall-back, a missing
+    /// ONNX model, a governor throttle, a mid-session capture stall — was
+    /// invisible, so an empty missing-hero set rendered as an affirmative
+    /// green "ปลอดภัย" whether the map was genuinely clear or the sensor was
+    /// dead. `healthy` is the single field a consumer should branch on before
+    /// claiming safety; the rest is diagnosis.
+    #[derive(Clone, Copy, serde::Serialize)]
+    #[serde(rename_all = "camelCase")]
+    struct SensorHealth {
+        /// `"dxgi"` | `"gdi"` | `"lite"` — the backend actually serving frames.
+        backend: &'static str,
+        /// ONNX classifier loaded. False ⇒ candidate-only mode, which yields
+        /// zero detections forever, which looks exactly like "map is clear".
+        classifier: bool,
+        /// Governor has the process over budget ⇒ capture is down to 2 Hz.
+        throttled: bool,
+        /// Milliseconds since the last frame that actually reached the CV
+        /// pipeline. Held near zero while out of a match so re-entry is clean.
+        /// `None` in Lite mode: there is no capture loop, so there is no frame
+        /// clock to report — the same "no data is not a number" rule the
+        /// governor follows with its `-1` sentinels. (It also keeps this off
+        /// the JSON `2^53` cliff that a `u64::MAX` sentinel would sit on.)
+        frame_age_ms: Option<u64>,
+        /// Is the minimap sensor producing trustworthy data right now?
+        healthy: bool,
+    }
+
+    impl SensorHealth {
+        /// The terminal state: no capture backend could start at all, so the
+        /// app is in GSI-only Lite mode for the rest of the session.
+        fn lite() -> Self {
+            SensorHealth {
+                backend: "lite",
+                classifier: false,
+                throttled: false,
+                frame_age_ms: None,
+                healthy: false,
+            }
+        }
+
+        /// What the UI branches on. Fail-closed: anything we are unsure about
+        /// resolves to "not healthy", because the cost of wrongly claiming the
+        /// sensor works is a player trusting a green light over a dead feed.
+        fn key(&self) -> (&'static str, bool, bool, bool) {
+            (self.backend, self.classifier, self.throttled, self.healthy)
+        }
+    }
+
     /// Per-frame pipeline state. Same shape as the old WGC `MinimapCapture` minus
     /// the capture-API trait (the DXGI loop owns cadence) and `last_processed`
     /// (the explicit loop sleep replaces the per-frame throttle).
@@ -151,6 +215,16 @@ mod backend {
         /// Draft-CV: pick-screen portrait recognizer + the 10 portrait boxes.
         draft: DraftRecognizer,
         draft_region: DraftRegion,
+        /// `runtime::match_epoch()` as of the last pipeline rebuild. When the
+        /// shared counter moves past this, a match boundary happened and
+        /// Sentry/Motion/Signal are rebuilt (see `reset_pipeline`).
+        match_epoch: u64,
+        /// Last frame that reached `process_frame`. Drives `frame_age_ms`.
+        last_frame_ok: Instant,
+        /// Last `sensor-health` emit + the field tuple it carried, so the event
+        /// is edge-triggered rather than spammed at loop cadence.
+        last_health_emit: Instant,
+        last_health_key: Option<(&'static str, bool, bool, bool)>,
     }
 
     impl CaptureState {
@@ -177,16 +251,73 @@ mod backend {
                 last_risk_trace: now,
                 draft,
                 draft_region,
+                match_epoch: crate::runtime::match_epoch(),
+                last_frame_ok: now,
+                last_health_emit: now,
+                last_health_key: None,
+            }
+        }
+
+        /// Rebuild the three stateful G-modules. Their tracks are only valid
+        /// within one continuous observation of one map: G-Sentry's `confirmed`
+        /// flag is sticky by design (so a hero seen all match isn't re-confirmed
+        /// every frame), G-Motion's history is keyed to a coordinate space, and
+        /// G-Signal holds an `alerted` latch. Carrying any of that across a
+        /// match boundary or a monitor switch turns it from memory into a lie.
+        fn reset_pipeline(&mut self) {
+            self.sentry = Sentry::new();
+            self.motion = Motion::new();
+            self.signal = Signal::new();
+        }
+
+        /// Rebuild the pipeline if a match boundary passed since the last check.
+        /// Called once per loop tick — an atomic load plus a compare, so it is
+        /// free enough to sit ahead of the G-Signal path.
+        fn sync_match_epoch(&mut self) {
+            let epoch = crate::runtime::match_epoch();
+            if epoch != self.match_epoch {
+                self.match_epoch = epoch;
+                self.reset_pipeline();
+                crate::log::error(&format!(
+                    "[capture] match boundary (epoch {epoch}) — G-Sentry/G-Motion/G-Signal reset"
+                ));
+            }
+        }
+
+        /// Emit `sensor-health` when anything the UI branches on changed, or on
+        /// the [`HEALTH_HEARTBEAT_MS`] heartbeat. Called from the loop body,
+        /// never from `process_frame` — the ≤300ms G-Signal path must not pay
+        /// for reporting.
+        fn emit_health(&mut self, backend: &'static str) {
+            let frame_age_ms = self.last_frame_ok.elapsed().as_millis() as u64;
+            let classifier = self.detector.is_active();
+            let throttled = crate::governor::cpu_throttle();
+            let health = SensorHealth {
+                backend,
+                classifier,
+                throttled,
+                frame_age_ms: Some(frame_age_ms),
+                healthy: backend != "lite" && classifier && frame_age_ms <= STALE_FRAME_MS,
+            };
+            let key = health.key();
+            if self.last_health_key != Some(key)
+                || self.last_health_emit.elapsed().as_millis() >= HEALTH_HEARTBEAT_MS
+            {
+                self.last_health_key = Some(key);
+                self.last_health_emit = Instant::now();
+                let _ = self.app.emit("sensor-health", health);
             }
         }
 
         /// Re-target the pipeline at a new capture resolution/region after a
         /// monitor switch (CR012-P1-01). `region`/`icon` drive minimap CV;
         /// `draft_region` drives the pick-screen portrait boxes — both are
-        /// resolution-dependent, so both must move together. G-Sentry and
-        /// G-Motion are reset: their tracked positions are expressed in the
-        /// OLD monitor's coordinate space and would otherwise misfire as
-        /// bogus "enemy moved instantly" events against the new one. A
+        /// resolution-dependent, so both must move together. G-Sentry,
+        /// G-Motion and G-Signal are reset: the tracked positions are
+        /// expressed in the OLD monitor's coordinate space and would otherwise
+        /// misfire as bogus "enemy moved instantly" events against the new
+        /// one, and a latched G-Signal alert would belong to a screen we are
+        /// no longer looking at. A
         /// monitor switch is rare (Dota relocated to another screen, or the
         /// app started before Dota launched), so losing a few seconds of
         /// missing/motion history here is the right trade against silently
@@ -195,8 +326,7 @@ mod backend {
             self.region = region;
             self.icon = region.icon_size();
             self.draft_region = DraftRegion::for_resolution(screen_w, screen_h);
-            self.sentry = Sentry::new();
-            self.motion = Motion::new();
+            self.reset_pipeline();
         }
     }
 
@@ -216,6 +346,11 @@ mod backend {
                          (GSI-only, minimap CV off)"
                     ));
                     let _ = app.emit("capture-mode", "lite");
+                    // The loop never starts, so this is the only chance to tell
+                    // the overlay + deck that the minimap sensor is gone for
+                    // this session. Without it they would keep rendering an
+                    // empty missing-set as an affirmative "safe".
+                    let _ = app.emit("sensor-health", SensorHealth::lite());
                 }
             })
             .expect("capture thread spawn");
@@ -255,6 +390,14 @@ mod backend {
                 std::thread::sleep(Duration::from_millis(250));
                 continue;
             }
+            // Match boundary → rebuild Sentry/Motion/Signal before this tick's
+            // frame can fold into last match's tracks. Ahead of the draft and
+            // in-game gates so state is already clean when the horn lands.
+            state.sync_match_epoch();
+            // Honest sensor state for the overlay + deck. Ahead of the gates
+            // too, so "capture is alive" is reported at the menu and during the
+            // draft, not only mid-match.
+            state.emit_health(dxgi.backend());
             // CR012-P1-01: periodically re-detect which monitor Dota 2 is on
             // and hot-swap the DXGI duplication if it moved (or if the app
             // started before Dota launched and only now can find it).
@@ -312,11 +455,20 @@ mod backend {
                         process_draft_frame(&mut state, &strip, sw, sh, bx, by);
                     }
                 }
+                // Same reasoning as the not-in-game branch below: the minimap
+                // pipeline is idle by design during the pick screen, so don't
+                // let it age into a false "stalled" reading.
+                state.last_frame_ok = Instant::now();
                 std::thread::sleep(Duration::from_millis(DRAFT_INTERVAL_MS));
                 continue;
             }
             // Gate to live matches — no CV work at the menu (idle-CPU saver).
             if !crate::runtime::in_game() {
+                // Hold the frame clock at "just now" while we're deliberately
+                // not capturing, so entering a match doesn't start out looking
+                // like a 40-minute-old stall. `frame_age_ms` is only meaningful
+                // as "the pipeline is running but starved".
+                state.last_frame_ok = Instant::now();
                 std::thread::sleep(Duration::from_millis(500));
                 continue;
             }
@@ -573,6 +725,9 @@ mod backend {
     /// Downstream logic is otherwise identical to the old WGC `on_frame_arrived`.
     fn process_frame(state: &mut CaptureState, cropped: Vec<u8>, w: usize, h: usize) {
         let work_start = Instant::now();
+        // A frame reached the pipeline — this is the only thing that resets the
+        // staleness clock `sensor-health` reports.
+        state.last_frame_ok = work_start;
 
         let r = state.region;
         let now_ms = state.start.elapsed().as_millis() as u64;

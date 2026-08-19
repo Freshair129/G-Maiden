@@ -98,10 +98,33 @@ pub fn last_post_ms() -> u64 {
 }
 
 pub fn set_in_game(v: bool) {
-    IN_GAME.store(v, Ordering::Relaxed);
+    // Every in_game transition — horn and post-game alike — is a match
+    // boundary. Bumping the epoch here (rather than from `log::start_match`)
+    // keeps ONE authority for "a new match began": this is already the single
+    // place the transition is recorded, and both the GSI handler and the
+    // Dota-exit watchdog call it.
+    if IN_GAME.swap(v, Ordering::Relaxed) != v {
+        MATCH_EPOCH.fetch_add(1, Ordering::Relaxed);
+    }
 }
 pub fn in_game() -> bool {
     IN_GAME.load(Ordering::Relaxed)
+}
+
+/// Monotonic counter bumped on every match boundary (see [`set_in_game`]).
+///
+/// G-Sentry / G-Motion / G-Signal live inside the capture thread's own state,
+/// so nothing outside it could ever reset them — their tracks were sticky for
+/// the whole *process* lifetime. A hero confirmed in match 1 therefore stayed
+/// in `Sentry::missing()` forever: it fed G-Motion a permanent residual-risk
+/// floor (enough to cross the High danger bar within a couple of matches),
+/// and pinned the capture loop at its 8 Hz "suspicious" cadence for the rest
+/// of the session. The capture loop compares this counter every tick and
+/// rebuilds the pipeline when it moves.
+static MATCH_EPOCH: AtomicU64 = AtomicU64::new(0);
+
+pub fn match_epoch() -> u64 {
+    MATCH_EPOCH.load(Ordering::Relaxed)
 }
 
 pub fn set_gmad_entitled(value: bool) {
@@ -607,6 +630,35 @@ mod tests {
         assert!(!set_oauth_pending("short".to_string(), 10_000));
         assert!(!take_oauth_pending(Some("short"), 10_500));
         assert!(!set_oauth_pending("x".repeat(OAUTH_STATE_MAX_LEN + 1), 10_000));
+    }
+
+    #[test]
+    fn match_epoch_advances_on_every_in_game_transition() {
+        // Both edges are match boundaries: the horn ends the previous match's
+        // observation window, and the post-game screen ends this one. The
+        // capture loop rebuilds G-Sentry/G-Motion/G-Signal on either, so both
+        // must move the counter. (Statics are process-global and other tests
+        // touch in_game, so this asserts on deltas, never absolute values.)
+        set_in_game(false);
+        let base = match_epoch();
+
+        set_in_game(true);
+        assert_eq!(match_epoch(), base + 1, "horn must bump the epoch");
+
+        // Repeat ticks of the SAME state are the common case (GSI posts ~10Hz)
+        // and must be free — otherwise the pipeline would reset every tick and
+        // G-Sentry could never accumulate its confirmation hits.
+        for _ in 0..50 {
+            set_in_game(true);
+        }
+        assert_eq!(
+            match_epoch(),
+            base + 1,
+            "steady-state ticks must not bump the epoch"
+        );
+
+        set_in_game(false);
+        assert_eq!(match_epoch(), base + 2, "match end must bump the epoch");
     }
 
     #[test]

@@ -12,6 +12,8 @@
 //   gank-alert    capture.rs:292    edge, gank probability >= danger threshold
 //   gank-clear    capture.rs:297    edge, unit payload
 //   capture-mode  capture.rs:140/151  once at startup: "lite" | "dxgi"
+//   sensor-health capture.rs        edge + ~1Hz heartbeat; the ONLY honest
+//                                   answer to "is the minimap sensor alive?"
 //   resource-stats governor.rs:60   every 10s
 
 /** game-tick — GSI snapshot of the LOCAL player only (not all 10 heroes). */
@@ -77,6 +79,24 @@ export interface MinimapCv {
   count: number;
   detections: CvDetection[];
   classifier: boolean;
+}
+
+/** sensor-health — honest state of the minimap sensor (capture.rs). Edge-triggered
+ *  on any field below plus a ~1Hz heartbeat, and broadcast to BOTH windows.
+ *
+ *  Branch on `healthy` before rendering ANY affirmative "safe" reading. An empty
+ *  missing-hero set means "nothing detected", which is indistinguishable from
+ *  "nothing is being detected" — Lite mode, a missing ONNX model, or a capture
+ *  stall all produce it. `backend`/`classifier`/`throttled`/`frameAgeMs` are
+ *  diagnosis, not the gate. Note `backend: "gdi"` is still healthy: frames flow,
+ *  just via the CPU BitBlt fall-back rather than Desktop Duplication. */
+export interface SensorHealth {
+  backend: "dxgi" | "gdi" | "lite";
+  classifier: boolean;
+  throttled: boolean;
+  /** null in Lite mode: no capture loop means no frame clock to report. */
+  frameAgeMs: number | null;
+  healthy: boolean;
 }
 
 /** minimap-frame — live minimap mirror for the Command Deck (~3Hz). `image` is a

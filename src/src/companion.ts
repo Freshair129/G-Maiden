@@ -2,7 +2,7 @@ import { useRef, useSyncExternalStore } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { GameTick, GsiStatus, MinimapCv, MinimapFrame, DraftRoster, EnemyMissing, SignalAlert, ResourceStats, UtteranceEvent } from "./live/events";
+import type { GameTick, GsiStatus, MinimapCv, MinimapFrame, DraftRoster, EnemyMissing, SignalAlert, ResourceStats, SensorHealth, UtteranceEvent } from "./live/events";
 import { buildMatch } from "./live/buildMatch";
 import { buildUtterances, type Utterance } from "./live/utterances";
 import { buildHeroes, assignEnemySlot } from "./live/buildHeroes";
@@ -513,6 +513,12 @@ type LiveState = {
   active: boolean; // flips true after the first live event (else pure FALLBACK)
   od: OpenDotaProfile | null; // Phase 2b-A: your public OpenDota profile (no DB)
   stats: ResourceStats | null; // Phase 2c: governor RAM/CPU sample (telemetry footer)
+  // Honest minimap-sensor state (capture.rs `sensor-health`). `null` = the
+  // capture thread has never reported, which in a release build means it never
+  // started — so it is treated exactly like "not healthy", NOT like "fine".
+  // Fail-closed is the whole point: buildSignals() must not print a green
+  // "Clear" on the strength of a sensor that isn't running.
+  health: SensorHealth | null;
   logs: MatchLog[] | null;     // Phase 2c: local G-Log match files (history + learnedMatches)
   // CR-007 WP-4: persisted ring buffer for the Alert Deck, same pattern as
   // `missing`/`missingPos` above — appended incrementally by buildActivity()
@@ -543,7 +549,7 @@ type LiveState = {
 const EMPTY_LIVE: LiveState = {
   tick: null, status: null, cv: null, gank: null, missing: new Map(), missingPos: new Map(),
   enemySlots: new Map(),
-  active: false, od: null, stats: null, logs: null, activityLog: [], mom: EMPTY_MOMENTUM, roster: null,
+  active: false, od: null, stats: null, health: null, logs: null, activityLog: [], mom: EMPTY_MOMENTUM, roster: null,
   utterances: [],
   phase: "standby"
 };
@@ -598,7 +604,7 @@ function buildCompanionData(live: LiveState): CompanionData {
         match: { ...buildMatch(live.tick, live.status, FALLBACK.match), matchPhase: live.phase },
         heroes: buildHeroes(live.tick, live.missing, live.cv, FALLBACK.heroes, live.enemySlots, live.roster, live.tick?.team_name ?? ""),
         markers: buildMarkers(live.cv, live.missingPos, FALLBACK.markers),
-        signals: buildSignals(live.gank, live.missing),
+        signals: buildSignals(live.gank, live.missing, live.health?.healthy ?? false),
         activity: live.activityLog,
         momentum: momentumView(live.mom, live.tick),
         utterances: live.utterances
@@ -838,6 +844,14 @@ function ensureRuntime() {
     }))
   );
   sub<ResourceStats>("resource-stats", (p) => updateLive((s) => ({ ...s, stats: p }), true));
+  // Immediate, not batched: this gates whether the deck is allowed to claim
+  // safety at all, so it must never sit in the 250ms flush queue behind other
+  // live state.
+  // Deliberately does NOT set `active` — a heartbeat from the capture thread is
+  // not live match data, and flipping the deck out of FALLBACK on it would show
+  // a "live" shell with nothing behind it. FALLBACK's signals are already all
+  // "—", so both branches stay honest.
+  sub<SensorHealth>("sensor-health", (p) => updateLive((s) => ({ ...s, health: p }), true));
   sub<MinimapCv>("minimap-cv", (p) => {
     const now = Date.now();
     if (now - lastCvAt < CV_UPDATE_MS) return;
