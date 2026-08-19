@@ -23,6 +23,19 @@ pub struct EntitlementDecision {
     /// values remain None and callers must fall back to Stable.
     #[serde(default)]
     pub update_channel: Option<update_channel::ReleaseChannel>,
+    /// True when this decision was served from `runtime`'s grace-window
+    /// cache after a RE-verification's network call failed — not just
+    /// confirmed by the server. Always `false` for anything actually
+    /// deserialized from the server response (the server never sends this
+    /// field, so `#[serde(default)]` leaves that path untouched) and for a
+    /// genuinely fresh success. See `lib.rs::verify_gmad_entitlement` and
+    /// CLAUDE.md's resilience clause — the whole reason this field exists is
+    /// so a transient network hiccup during a background re-check does not
+    /// revoke an already-established session, while still telling the UI
+    /// honestly that the grant it's showing is not fresh (Design Principle 3:
+    /// no data = "—"/an honest marker, never fake certainty).
+    #[serde(default)]
+    pub stale: bool,
 }
 
 impl EntitlementDecision {
@@ -114,6 +127,7 @@ mod tests {
                 effective_at: None,
             }),
             update_channel: None,
+            stale: false,
         }
     }
 
@@ -157,5 +171,21 @@ mod tests {
             decision("eligible", Some("G-1ABCDEF0"), true).entitled_update_channel(),
             update_channel::ReleaseChannel::Stable
         );
+    }
+
+    #[test]
+    fn server_response_without_stale_field_deserializes_as_not_stale() {
+        // The real entitlement server has never heard of `stale` — it's a
+        // purely local, runtime-cache-only field. `#[serde(default)]` must
+        // keep the actual server response path working unchanged.
+        let raw = r#"{
+            "state": "eligible",
+            "gid": "G-1ABCDEF0",
+            "checked_at": "2026-08-19T00:00:00Z",
+            "terms": { "document_id": "closed-beta-terms-of-use", "version": "1.0.0-beta", "effective_at": null }
+        }"#;
+        let parsed: EntitlementDecision = serde_json::from_str(raw).expect("valid server payload must parse");
+        assert!(!parsed.stale, "a real server response is never stale");
+        assert!(parsed.unlocks_runtime());
     }
 }

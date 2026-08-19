@@ -140,32 +140,75 @@ fn set_overlay_visible(app: tauri::AppHandle, visible: bool) {
     }
 }
 
+/// Verify (or re-verify) Closed Beta entitlement. Called both at sign-in and,
+/// automatically, whenever the frontend's Supabase session object changes —
+/// which includes a plain access-token rotation (~hourly), not just a real
+/// sign-in/out.
+///
+/// Audit B1/B2: this used to disarm the runtime and hide the overlay
+/// UNCONDITIONALLY, before the network call even started, on every one of
+/// those calls. A background token refresh whose entitlement re-check then
+/// hit a transient network failure left G-Signal disarmed until the NEXT
+/// success — with no bound — directly contradicting CLAUDE.md's resilience
+/// clause ("on cloud/network loss, G-Sentry and G-Signal must keep running").
+/// Now: nothing is disarmed until the outcome is known, and a network FAILURE
+/// falls back to the last server-confirmed grant if it's still inside
+/// `runtime`'s grace window (see `runtime::stale_entitlement_within_grace`).
+/// Cold start is unaffected — there is nothing to fall back to on first
+/// launch, so a network failure there still locks exactly as before.
 #[tauri::command]
 async fn verify_gmad_entitlement(
     app: tauri::AppHandle,
     access_token: String,
 ) -> Result<gmad_entitlement::EntitlementDecision, String> {
-    runtime::set_gmad_entitled(false);
-    if let Some(overlay) = app.get_webview_window("overlay") {
-        let _ = overlay.hide();
+    match gmad_entitlement::verify(&access_token).await {
+        Ok(decision) => {
+            // The channel lives in the backend from here on, so the deck's update
+            // banner (a different window from the one that signed in) resolves the
+            // right manifest without threading state across JS contexts.
+            runtime::set_update_channel(decision.resolved_update_channel().channel);
+            let entitled = decision.unlocks_runtime();
+            runtime::set_gmad_entitled(entitled);
+            if entitled {
+                runtime::cache_entitlement(decision.clone());
+                if runtime::mark_gmad_capture_started() {
+                    capture::start(app.clone());
+                }
+            } else {
+                // A confirmed, fresh denial is authoritative and strictly more
+                // recent than any cached grant — drop the cache so a LATER
+                // network failure can't fall back to reinstating access that
+                // was just explicitly revoked.
+                runtime::clear_entitlement_cache();
+                if let Some(overlay) = app.get_webview_window("overlay") {
+                    let _ = overlay.hide();
+                }
+            }
+            Ok(decision)
+        }
+        Err(e) => {
+            if let Some(stale) = runtime::stale_entitlement_within_grace() {
+                return Ok(stale);
+            }
+            // No usable fallback (cold start, or grace expired) — this is the
+            // one network-failure case that still locks, same as before.
+            runtime::set_gmad_entitled(false);
+            if let Some(overlay) = app.get_webview_window("overlay") {
+                let _ = overlay.hide();
+            }
+            Err(e)
+        }
     }
-    let decision = gmad_entitlement::verify(&access_token).await?;
-    // The channel lives in the backend from here on, so the deck's update banner
-    // (a different window from the one that signed in) resolves the right manifest
-    // without threading state across JS contexts. A failed decision resolves to
-    // Stable, never to a stale restricted channel.
-    runtime::set_update_channel(decision.resolved_update_channel().channel);
-    runtime::set_gmad_entitled(decision.unlocks_runtime());
-    if decision.unlocks_runtime() && runtime::mark_gmad_capture_started() {
-        capture::start(app.clone());
-    }
-    Ok(decision)
 }
 
 #[tauri::command]
 fn lock_gmad_runtime(app: tauri::AppHandle) {
     runtime::set_update_channel(gmad_entitlement::update_channel::ReleaseChannel::Stable);
     runtime::set_gmad_entitled(false);
+    // A real sign-out is a genuine "stop trusting this session" event — the
+    // grace cache must not let a later re-verify fail over to the account
+    // that was just signed out of.
+    runtime::clear_entitlement_cache();
     if let Some(overlay) = app.get_webview_window("overlay") {
         let _ = overlay.hide();
     }
