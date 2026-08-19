@@ -830,6 +830,14 @@ mod tests {
     impl Drop for InstallRootGuard {
         fn drop(&mut self) {
             crate::voice_api::set_test_voice_root(None);
+            // These tests write manifest.json/active-pack.txt directly (see
+            // install_write_pack), bypassing write_manifest/write_active_pack_id
+            // — but `run_announcer_install`'s activate=true path still calls
+            // through `activate_if_exists` -> write_active_pack_id, which DOES
+            // populate the resolved-clip cache (audit H8) from this test's
+            // scratch root. Must not leak into whatever test lands on this
+            // pooled thread next.
+            crate::voice_api::clear_resolved_cache_for_test();
             let _ = std::fs::remove_dir_all(&self.0);
         }
     }

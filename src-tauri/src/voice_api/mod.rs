@@ -71,3 +71,15 @@ pub(crate) use base64::base64_encode;
 /// `#[cfg(test)] mod tests` (`crate::voice_api::set_test_voice_root`).
 #[cfg(test)]
 pub(crate) use paths::set_test_voice_root;
+
+/// Warm the resolved-clip cache (audit H8) once at app startup, so a pack left
+/// active from a prior session is already cached before the first event fires
+/// — not just after the first pack switch. See `pack_io::rebuild_resolved_cache`.
+pub(crate) use pack_io::rebuild_resolved_cache;
+
+/// Test-only cache teardown, paired with `set_test_voice_root(None)` in every
+/// pack-lifecycle test's `Drop` guard — same reason, same pattern: a pooled
+/// worker thread must not start the next test with this test's cached pack
+/// still answering `cached_event_clips`. See `pack_io`'s cache doc comment.
+#[cfg(test)]
+pub(crate) use pack_io::clear_resolved_cache_for_test;
