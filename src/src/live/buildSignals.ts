@@ -28,10 +28,46 @@ function riskTier(gankActive: boolean, missingCount: number): 0 | 1 | 2 | 3 {
 const RISK_LABELS = ["ปลอดภัย", "ระวัง", "เสี่ยง", "อันตราย"] as const;
 const RISK_TONES: readonly CompanionTone[] = ["good", "info", "warn", "danger"];
 
+/** How many G-Signal alerts are genuinely active right now.
+ *
+ * Was a hardcoded `3` living in FALLBACK.match — and because `buildMatch()`
+ * starts from that base and never touched the field, the Live page's header
+ * pill read "3 active alerts" **permanently**, in live matches included. It was
+ * never a fallback value; it was a constant rendered as live state.
+ *
+ * `null` means "can't say" and renders as `—`: with no trustworthy sensor, "0
+ * active alerts" is as much a claim as "3" — the same rule buildSignals()
+ * follows below. */
+export function countActiveAlerts(
+  gank: SignalAlert | null,
+  missing: Map<string, number>,
+  sensorOk: boolean
+): number | null {
+  if (!sensorOk && gank === null) return null;
+  return missing.size + (gank !== null ? 1 : 0);
+}
+
 export function buildSignals(
   gank: SignalAlert | null,
-  missing: Map<string, number>
+  missing: Map<string, number>,
+  sensorOk: boolean
 ): CompanionData["signals"] {
+  // An empty missing-set is ambiguous: it means "the CV pipeline saw every
+  // enemy" OR "the CV pipeline saw nothing at all" (Lite mode, no ONNX model,
+  // capture stalled). Those used to render identically as a green "Clear" —
+  // the fake-safe state PRODUCT.md Principle 3 forbids. When the sensor isn't
+  // trustworthy we refuse to claim safety and fall back to the same NO_SENSOR
+  // "—" sentinel the rest of the deck already uses. An alert that DID arrive
+  // is still shown: we withhold reassurance, never a warning.
+  if (!sensorOk && gank === null) {
+    return [
+      { label: "Enemy Missing", tone: "info", value: "—", barPct: 0 },
+      { label: "Gank Risk", tone: "info", value: "—", barPct: 0 },
+      { label: "Risk Level", tone: "info", value: "—", barPct: 0 },
+      { label: "Gank ETA", tone: "info", value: "—", barPct: 0 }
+    ];
+  }
+
   const missingCount = missing.size;
 
   // D — Enemy Missing: real count of heroes currently in the missing map.

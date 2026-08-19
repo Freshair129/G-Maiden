@@ -740,6 +740,13 @@ body {
   margin-top: 8px;
 }
 
+/* Honest empty state inside a card — dimmer than real content so an absent
+   reading never reads as a present one (PRODUCT.md principle 3). */
+.muted-note {
+  margin: 0;
+  color: #8794a6;
+}
+
 .history-list {
   display: flex;
   flex-direction: column;

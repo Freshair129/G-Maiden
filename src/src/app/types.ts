@@ -64,6 +64,21 @@ export interface ReviveAdvice {
 /** Connection/status pushed by the Rust watchdog (gsi.rs) every ~4s. */
 export interface GsiStatus { dota_running: boolean; gsi_active: boolean; in_game: boolean; display_exclusive: boolean }
 
+/** sensor-health (capture.rs) — the overlay's copy of the minimap-sensor
+ * contract. Mirrors `live/events.ts`'s `SensorHealth`; duplicated rather than
+ * imported because the Overlay window's type surface is deliberately kept
+ * independent of the deck's `live/` builders. Branch on `healthy` before
+ * rendering any affirmative "safe" reading — an empty missing-hero set is
+ * produced both by a genuinely clear map and by a sensor that isn't running. */
+export interface SensorHealth {
+  backend: 'dxgi' | 'gdi' | 'lite'
+  classifier: boolean
+  throttled: boolean
+  /** null in Lite mode: no capture loop means no frame clock to report. */
+  frameAgeMs: number | null
+  healthy: boolean
+}
+
 export type Pos = 'top' | 'left' | 'right' | 'custom'
 export type Sensitivity = 'low' | 'med' | 'high'
 /** CR-013 §4 (iOS-style Settings split view). `Control` groups its existing

@@ -212,7 +212,7 @@ Role ประกาศ `requires`; Provider ประกาศ `capabilities`.
 ### 7.6 Live Tauri events (command deck) & GID/account contract
 
 Command deck (CR-002 Phase 2a/2b, merged `170805b8`) subscribes to live Tauri events via
-[`useCompanionData`](file:///g:/G-Maiden/src/src/companion.ts#L927), feeding pure builders in `src/src/live/` that are merged over a MOCK
+[`useCompanionData`](file:///g:/G-Maiden/src/src/companion.ts#L941), feeding pure builders in `src/src/live/` that are merged over a MOCK
 fallback (renders signed-out/offline). Events actually emitted: `game-tick`, `gsi-status`,
 `minimap-cv`, `enemy-missing`, `gank-alert`, `gank-clear`, `resource-stats`. Live builders อยู่ใน `src/src/live/` (เช่น [`buildTelemetry`](file:///g:/G-Maiden/src/src/live/buildTelemetry.ts)/[`buildWeekly`](file:///g:/G-Maiden/src/src/live/buildWeekly.ts)/[`buildInsights`](file:///g:/G-Maiden/src/src/live/buildInsights.ts)/[`buildHistory`](file:///g:/G-Maiden/src/src/live/buildHistory.ts)).
 
