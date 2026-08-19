@@ -903,6 +903,13 @@ pub fn run() {
                 runtime::set_master_api_key(Some(key));
             }
 
+            // Audit H8: warm the resolved-clip cache before the first event can
+            // fire, so a pack left active from a prior session doesn't pay the
+            // cold-cache resolution cost on the first gank alert of a new
+            // session. Cheap (one manifest read+parse) and infallible — see
+            // `voice_api::pack_io::rebuild_resolved_cache`.
+            voice_api::rebuild_resolved_cache();
+
             // G1.1: GSI ingestion server (127.0.0.1:3000); emits `game-tick` to all windows.
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(gsi::serve(handle));

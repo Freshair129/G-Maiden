@@ -8,10 +8,12 @@
 //! `VoicePack`/`VoiceEvent`/`VoiceMapping` DTOs), so they sit next to the
 //! code that reads/writes them.
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, HashMap};
 use std::fs;
 use std::io::Write;
-use std::path::Path;
+use std::path::{Path, PathBuf};
+#[cfg(not(test))]
+use std::sync::Mutex;
 
 use serde::{Deserialize, Serialize};
 
@@ -19,8 +21,8 @@ use crate::audio;
 
 use super::banner::read_banner_data_url;
 use super::events::{EVENTS, GROUPS};
-use super::path_safety::safe_pack_path;
-use super::paths::{active_path, voice_root};
+use super::path_safety::{resolve_existing_clips, safe_pack_path};
+use super::paths::{active_path, packs_dir, voice_root};
 use super::types::{VoiceAssetOption, VoiceEvent, VoiceMapping, VoicePack, DEFAULT_PACK_ID};
 
 #[derive(Deserialize, Serialize, Default)]
@@ -64,7 +66,14 @@ pub(crate) fn write_manifest(dir: &Path, manifest: &Manifest) -> Result<(), Stri
     let path = dir.join("manifest.json");
     let raw =
         serde_json::to_string_pretty(manifest).map_err(|e| format!("serialize manifest: {e}"))?;
-    fs::write(&path, raw).map_err(|e| format!("write {}: {e}", path.display()))
+    fs::write(&path, raw).map_err(|e| format!("write {}: {e}", path.display()))?;
+    // Unconditional, even though `dir` might not be the currently-active
+    // pack's dir (editing a pack you haven't equipped yet). A rebuild that
+    // re-reads the SAME active pack is a harmless no-op; the alternative is
+    // threading a "is this the active pack" check through every caller for a
+    // cost that only matters on an explicit, human-paced admin action.
+    rebuild_resolved_cache();
+    Ok(())
 }
 
 pub(crate) fn build_pack(dir: &Path) -> Result<VoicePack, String> {
@@ -328,6 +337,128 @@ pub(crate) fn asset_option(base: &Path, rel: &str) -> Option<VoiceAssetOption> {
     })
 }
 
+// ── Resolved-clip cache (audit H8) ───────────────────────────────────────────
+//
+// `active_event_clips` used to do this on every call, live, from the G-Signal
+// gank path: read `active-pack.txt`, read + parse `manifest.json`, then for
+// every clip in the mapping stat the file AND canonicalize both the pack dir
+// and the candidate to check containment (`resolve_existing_clips`) — ~9
+// filesystem syscalls plus a JSON parse, on a hop with a ≤300ms total budget.
+// A pack switch or a manifest edit is a rare, explicit, admin-UI action; a
+// gank alert firing is not. There is no reason the second should ever pay for
+// the first.
+//
+// So the resolution now happens ONCE, eagerly, at the moment something that
+// could change the answer actually changes — not on read. `active_event_clips`
+// becomes a HashMap lookup behind one mutex lock: no disk I/O, no JSON parse,
+// no canonicalize, on the hot path, ever.
+struct ResolvedCache {
+    /// Which pack this cache reflects — not currently read back by anyone
+    /// (`cached_event_clips` only serves the map), but kept for the obvious
+    /// future need (a debug/status surface showing what's cached) and because
+    /// a struct that names its own cache key is easier to reason about in six
+    /// months than a bare `HashMap`.
+    #[allow(dead_code)]
+    pack_id: String,
+    clips_by_event: HashMap<String, Vec<PathBuf>>,
+}
+
+// Production: one process-global slot — there is exactly one active pack per
+// running app. Test: a `thread_local`, for the SAME reason `voice_root()`'s
+// override two files over is one (see that file's doc comment) — this cache
+// is written by `write_active_pack_id`/`write_manifest`, which every existing
+// pack-lifecycle test already calls against its own scratch `voice_root()`, so
+// a single shared static here would let one test's pack silently answer
+// another's `cached_event_clips` query whenever cargo schedules two tests
+// onto the same worker thread. A real, non-hot-path-only staleness bug in
+// production would need to survive a full pack switch to matter this same
+// way; in a test binary "some other test just ran on this thread" is the
+// normal case, not the exotic one.
+#[cfg(not(test))]
+static RESOLVED_CACHE: Mutex<Option<ResolvedCache>> = Mutex::new(None);
+#[cfg(test)]
+thread_local! {
+    static RESOLVED_CACHE: std::cell::RefCell<Option<ResolvedCache>> = const { std::cell::RefCell::new(None) };
+}
+
+#[cfg(not(test))]
+fn store_resolved_cache(next: Option<ResolvedCache>) {
+    if let Ok(mut cache) = RESOLVED_CACHE.lock() {
+        *cache = next;
+    }
+}
+#[cfg(test)]
+fn store_resolved_cache(next: Option<ResolvedCache>) {
+    RESOLVED_CACHE.with(|cell| *cell.borrow_mut() = next);
+}
+
+#[cfg(not(test))]
+fn with_resolved_cache<R>(f: impl FnOnce(Option<&ResolvedCache>) -> R) -> R {
+    match RESOLVED_CACHE.lock() {
+        Ok(guard) => f(guard.as_ref()),
+        Err(_) => f(None),
+    }
+}
+#[cfg(test)]
+fn with_resolved_cache<R>(f: impl FnOnce(Option<&ResolvedCache>) -> R) -> R {
+    RESOLVED_CACHE.with(|cell| f(cell.borrow().as_ref()))
+}
+
+/// Recompute the cache from whatever pack is active on disk RIGHT NOW.
+///
+/// Infallible by design: a rebuild that can't complete (no active pack, a
+/// manifest that fails to parse) clears the cache to `None` rather than
+/// erroring, which makes `cached_event_clips` return `None` for every event —
+/// exactly the "no active-pack clips, fall through to legacy/default" behavior
+/// the old live-resolution code had on any read failure. Never fails the
+/// caller's write, which has already landed on disk by the time this runs.
+///
+/// Called from every place that can change what `active_event_clips` would
+/// return: [`write_active_pack_id`] and [`write_manifest`] below cover six of
+/// the seven real command-level mutation sites for free (`activate_if_exists`,
+/// `action("activate")`, `create_template`, `import_archive`, `map_event`,
+/// `update_pack` — every "activate a pack" / "edit its manifest" command in
+/// `commands.rs` and `banner.rs` bottoms out in one of those two functions).
+/// The seventh — `commands::upload_asset` adding a clip FILE without touching
+/// manifest.json — calls this directly, because
+/// `resolve_existing_clips`'s existence check cares about that even though no
+/// manifest byte changed. Also called once at app startup (`lib.rs`) so a
+/// pack left active from a prior session is warm before the first alert, not
+/// just after the first pack switch.
+///
+/// Also called from every test-root teardown guard (mirroring
+/// `set_test_voice_root(None)`) so a pooled worker thread starts the next
+/// test's pack-lifecycle assertions from a clean cache, not the previous
+/// test's leftovers.
+pub(crate) fn rebuild_resolved_cache() {
+    let next = (|| {
+        let id = read_active_pack_id()?;
+        let dir = packs_dir().join(sanitize_id(&id));
+        let manifest = read_manifest(&dir).ok()?;
+        let mut clips_by_event = HashMap::with_capacity(manifest.mappings.len());
+        for (event, mapping) in &manifest.mappings {
+            clips_by_event.insert(event.clone(), resolve_existing_clips(&dir, &mapping.clips));
+        }
+        Some(ResolvedCache { pack_id: id, clips_by_event })
+    })();
+    store_resolved_cache(next);
+}
+
+/// Drop the cache without recomputing it — for test teardown, where there may
+/// be no active pack left to resolve against (the temp root is about to be
+/// deleted) and the only thing that matters is not leaking into the next test.
+#[cfg(test)]
+pub(crate) fn clear_resolved_cache_for_test() {
+    store_resolved_cache(None);
+}
+
+/// O(1) read of the cache [`rebuild_resolved_cache`] built. `None` when there
+/// is no active pack or its manifest is unreadable — callers already treat
+/// that as "fall through to the legacy flat dir / bundled default pack".
+pub(crate) fn cached_event_clips(event: &str) -> Option<Vec<PathBuf>> {
+    with_resolved_cache(|cache| cache?.clips_by_event.get(event).cloned())
+}
+
 pub(crate) fn read_active_pack_id() -> Option<String> {
     fs::read_to_string(active_path())
         .ok()
@@ -338,7 +469,9 @@ pub(crate) fn read_active_pack_id() -> Option<String> {
 pub(crate) fn write_active_pack_id(id: &str) -> Result<(), String> {
     let root = voice_root();
     fs::create_dir_all(&root).map_err(|e| format!("create voice root: {e}"))?;
-    fs::write(active_path(), id).map_err(|e| format!("write active pack: {e}"))
+    fs::write(active_path(), id).map_err(|e| format!("write active pack: {e}"))?;
+    rebuild_resolved_cache();
+    Ok(())
 }
 
 pub(crate) fn write_bytes(path: &Path, bytes: &[u8]) -> Result<(), String> {

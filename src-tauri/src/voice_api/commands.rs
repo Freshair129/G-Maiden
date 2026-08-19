@@ -13,7 +13,6 @@ use super::pack_io::{
     self, read_active_pack_id, read_manifest, sanitize_file_name, sanitize_id, write_active_pack_id,
     write_bytes, write_manifest, ManifestMapping,
 };
-use super::path_safety::resolve_existing_clips;
 use super::paths::{create_pack_skeleton, discover_pack_dirs, pack_dir, packs_dir, voice_root};
 use super::types::{
     ImportResult, MapEventRequest, UpdatePackRequest, UploadResult, VoiceGroup, VoiceState,
@@ -131,6 +130,15 @@ pub fn upload_asset(
     let rel = format!("{folder}/{file_name}");
     let dest = base.join(&rel);
     write_bytes(&dest, bytes)?;
+    // The one resolved-cache mutation site that doesn't flow through
+    // write_manifest/write_active_pack_id: a manifest can already map an
+    // event to a clip path that doesn't exist on disk yet (e.g. authored in
+    // G-AnnStudio, uploaded after), and `resolve_existing_clips`'s existence
+    // check is what decides whether that mapping counts. Only clips affect
+    // it — a banner upload changes nothing `active_event_clips` reads.
+    if kind == "clip" {
+        pack_io::rebuild_resolved_cache();
+    }
     Ok(UploadResult {
         path: rel.replace('\\', "/"),
     })
@@ -280,18 +288,16 @@ pub fn update_pack(payload: UpdatePackRequest) -> Result<VoiceState, String> {
 /// (its manifest) is the source of truth for playback, so a fired announcer event
 /// voices the pack's clips and its banner together — the "bundle" contract.
 /// Existing files only; empty when there is no active pack / manifest / mapping.
+///
+/// Audit H8: this is the entry point `audio::list_clips` calls first, ahead of
+/// the legacy flat dir and the bundled default — i.e. it runs on EVERY fired
+/// event, including a gank alert on the ≤300ms G-Signal path. It used to do 2
+/// file reads + a JSON parse + a per-clip stat+canonicalize live, right there.
+/// Now it's a lookup into the cache `pack_io::rebuild_resolved_cache` keeps
+/// current — no I/O here at all. See that function's doc comment for exactly
+/// when the cache is rebuilt.
 pub fn active_event_clips(event: &str) -> Vec<PathBuf> {
-    let Some(id) = read_active_pack_id() else {
-        return Vec::new();
-    };
-    let dir = packs_dir().join(sanitize_id(&id));
-    let Ok(manifest) = read_manifest(&dir) else {
-        return Vec::new();
-    };
-    let Some(mapping) = manifest.mappings.get(event) else {
-        return Vec::new();
-    };
-    resolve_existing_clips(&dir, &mapping.clips)
+    pack_io::cached_event_clips(event).unwrap_or_default()
 }
 
 /// Human-facing name of the currently active pack, if any. Used only to tag

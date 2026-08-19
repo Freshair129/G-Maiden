@@ -18,10 +18,11 @@ use super::banner::{
     activate_if_exists, fired_banner, fired_banner_from, image_mime, install_report, preview_clip,
 };
 use super::base64::base64_encode;
-use super::commands::{active_pack_name, extract_pack_zip};
+use super::commands::{action, active_event_clips, active_pack_name, extract_pack_zip, upload_asset};
 use super::events::EVENTS;
 use super::pack_io::{
-    default_pack, sanitize_id, write_active_pack_id, write_manifest, Manifest, ManifestMapping,
+    cached_event_clips, clear_resolved_cache_for_test, default_pack, sanitize_id,
+    write_active_pack_id, write_manifest, Manifest, ManifestMapping,
 };
 use super::path_safety::safe_pack_path;
 use super::paths::set_test_voice_root;
@@ -111,6 +112,7 @@ struct RootGuard(PathBuf);
 impl Drop for RootGuard {
     fn drop(&mut self) {
         set_test_voice_root(None);
+        clear_resolved_cache_for_test();
         let _ = fs::remove_dir_all(&self.0);
     }
 }
@@ -197,6 +199,7 @@ fn real_pack_mrijgajn_maps_voice_and_banners() {
     impl Drop for Reset {
         fn drop(&mut self) {
             set_test_voice_root(None);
+            clear_resolved_cache_for_test();
         }
     }
     let _reset = Reset;
@@ -698,4 +701,199 @@ fn vendored_schema_matches_g_suite_sibling() {
         vendored_value, sibling_value,
         "vendored schemas/gmaiden-events.json is stale vs G-Suite — re-copy and review the diff"
     );
+}
+
+// --- Resolved-clip cache (audit H8) ----------------------------------------
+//
+// The G-Signal gank path used to call `active_event_clips` and pay 2 file
+// reads + a manifest parse + a per-clip stat+canonicalize, live, on every
+// alert. `write_active_pack_id`/`write_manifest` now populate a cache eagerly
+// instead, and `active_event_clips`/`cached_event_clips` just read it. These
+// tests exercise every place the cache is supposed to change, not just the
+// happy path — a cache that goes stale on ANY of these is worse than no
+// cache, because it would fail silently (wrong or missing clips) rather than
+// loudly (the old code's Err/empty-Vec paths).
+
+#[test]
+fn cached_clips_populate_on_activation_and_match_the_manifest() {
+    let root = temp_root("h8-activate");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+
+    let dir = write_pack(
+        &root,
+        "demo",
+        BTreeMap::from([("gank".to_string(), mapping(&["clips/g1.wav", "clips/g2.wav"]))]),
+    );
+    fs::write(dir.join("clips/g1.wav"), b"x").unwrap();
+    fs::write(dir.join("clips/g2.wav"), b"x").unwrap();
+
+    // Before activation: no active pack yet, so nothing is cached.
+    assert_eq!(cached_event_clips("gank"), None);
+    assert_eq!(active_event_clips("gank").len(), 0, "public wrapper: empty Vec, not a panic");
+
+    write_active_pack_id("demo").unwrap();
+
+    let clips = cached_event_clips("gank").expect("activation must populate the cache");
+    assert_eq!(clips.len(), 2);
+    assert!(clips.iter().all(|p| p.starts_with(&dir)));
+    assert_eq!(active_event_clips("gank"), clips, "public wrapper must match the cache exactly");
+}
+
+#[test]
+fn editing_the_active_packs_manifest_updates_the_cache_without_reactivating() {
+    let root = temp_root("h8-edit");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+
+    let dir = write_pack(
+        &root,
+        "demo",
+        BTreeMap::from([("kill".to_string(), mapping(&["clips/k1.wav"]))]),
+    );
+    fs::write(dir.join("clips/k1.wav"), b"x").unwrap();
+    write_active_pack_id("demo").unwrap();
+    assert_eq!(cached_event_clips("kill").unwrap().len(), 1);
+
+    // Re-map "kill" to a second clip — via write_manifest directly, exactly
+    // what map_event() does — WITHOUT touching active-pack.txt again.
+    fs::write(dir.join("clips/k2.wav"), b"x").unwrap();
+    let mut manifest = super::pack_io::read_manifest(&dir).unwrap();
+    manifest
+        .mappings
+        .insert("kill".to_string(), mapping(&["clips/k1.wav", "clips/k2.wav"]));
+    write_manifest(&dir, &manifest).unwrap();
+
+    assert_eq!(
+        cached_event_clips("kill").unwrap().len(),
+        2,
+        "a manifest edit on the ACTIVE pack must reach the cache without a re-activate"
+    );
+}
+
+#[test]
+fn switching_the_active_pack_replaces_the_cache_not_merges_it() {
+    let root = temp_root("h8-switch");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+
+    let dir_a = write_pack(
+        &root,
+        "pack-a",
+        BTreeMap::from([("gank".to_string(), mapping(&["clips/a.wav"]))]),
+    );
+    fs::write(dir_a.join("clips/a.wav"), b"x").unwrap();
+    let dir_b = write_pack(
+        &root,
+        "pack-b",
+        BTreeMap::from([("gank".to_string(), mapping(&["clips/b.wav"]))]),
+    );
+    fs::write(dir_b.join("clips/b.wav"), b"x").unwrap();
+
+    write_active_pack_id("pack-a").unwrap();
+    let a_clips = cached_event_clips("gank").unwrap();
+    assert!(a_clips[0].starts_with(&dir_a));
+
+    write_active_pack_id("pack-b").unwrap();
+    let b_clips = cached_event_clips("gank").unwrap();
+    assert_eq!(b_clips.len(), 1, "must not accumulate pack-a's entries alongside pack-b's");
+    assert!(b_clips[0].starts_with(&dir_b), "must serve pack-b now, not a stale pack-a path");
+}
+
+#[test]
+fn uploading_a_clip_updates_the_cache_without_a_manifest_write() {
+    // The one mutation site that doesn't flow through write_manifest/
+    // write_active_pack_id: a manifest can map an event to a clip path that
+    // doesn't exist on disk YET (authored elsewhere, uploaded after).
+    // resolve_existing_clips' existence check is what decides whether that
+    // mapping counts, so upload_asset must invalidate explicitly.
+    let root = temp_root("h8-upload");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+
+    write_pack(
+        &root,
+        "demo",
+        BTreeMap::from([("gank".to_string(), mapping(&["clips/not_yet.wav"]))]),
+    );
+    write_active_pack_id("demo").unwrap();
+
+    assert_eq!(
+        cached_event_clips("gank").unwrap().len(),
+        0,
+        "mapped but missing from disk — must not be reported as playable"
+    );
+
+    upload_asset("demo", "clip", "not_yet.wav", b"x").expect("upload must succeed");
+
+    assert_eq!(
+        cached_event_clips("gank").unwrap().len(),
+        1,
+        "uploading the mapped clip must make it appear WITHOUT any write_manifest call"
+    );
+}
+
+#[test]
+fn banner_upload_does_not_fabricate_a_missing_clip() {
+    // The kind=="clip" gate on the explicit invalidation in upload_asset: a
+    // banner upload changes nothing resolve_existing_clips cares about, and
+    // must not have the side effect of making an unrelated missing clip
+    // suddenly resolve (it wouldn't, today — this pins that non-behavior so a
+    // future refactor of the gate can't silently regress it).
+    let root = temp_root("h8-banner");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+
+    write_pack(
+        &root,
+        "demo",
+        BTreeMap::from([("gank".to_string(), mapping(&["clips/still_missing.wav"]))]),
+    );
+    write_active_pack_id("demo").unwrap();
+    assert_eq!(cached_event_clips("gank").unwrap().len(), 0);
+
+    upload_asset("demo", "banner", "cover.png", b"x").expect("banner upload must succeed");
+
+    assert_eq!(
+        cached_event_clips("gank").unwrap().len(),
+        0,
+        "a banner upload must not affect clip resolution for an unrelated event"
+    );
+}
+
+#[test]
+fn activating_via_the_action_command_populates_the_cache_too() {
+    // action("activate", ..) is the Voice Packs UI's actual entry point
+    // (distinct from calling write_active_pack_id directly, which every
+    // other test here does for brevity) — must go through the same path.
+    let root = temp_root("h8-action");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+
+    let dir = write_pack(
+        &root,
+        "demo",
+        BTreeMap::from([("death".to_string(), mapping(&["clips/d1.wav"]))]),
+    );
+    fs::write(dir.join("clips/d1.wav"), b"x").unwrap();
+
+    action("activate", Some("demo")).expect("activate action must succeed");
+
+    assert_eq!(cached_event_clips("death").unwrap().len(), 1);
+}
+
+#[test]
+fn no_active_pack_is_a_clean_none_not_a_leftover_from_a_prior_test() {
+    // Guards the test-isolation fix itself: on a freshly test-rooted
+    // directory with NOTHING activated, the cache must read as empty even
+    // though other tests in this file (possibly on the same pooled worker
+    // thread) activate packs constantly. If this ever fails, the
+    // thread_local + Drop-guard teardown pairing has regressed.
+    let root = temp_root("h8-clean-slate");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+
+    assert_eq!(cached_event_clips("gank"), None);
+    assert_eq!(cached_event_clips("kill"), None);
+    assert_eq!(active_event_clips("gank"), Vec::<PathBuf>::new());
 }
