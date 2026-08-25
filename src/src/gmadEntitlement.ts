@@ -79,7 +79,6 @@ export function useGmadDesktopEntitlement() {
 
   const signOut = useCallback(async () => {
     everEligible.current = false;
-    await invoke("lock_gmad_runtime").catch(() => {});
     await authSignOut();
   }, [authSignOut]);
   return { state, decision, refresh, signInWithGoogle, signOut, authError };

@@ -569,6 +569,20 @@ entries:
       tests: [src/src/__tests__/gid.test.ts, src/src/__tests__/secureStorage.test.ts]
       review: [docs/audits/SEC-001-auth-identity-hardening.md]
 
+  - id: 2.2-iam-completion
+    title: "GID IAM production completion"
+    kind: feature
+    phase_target: P6
+    phase_source: derived
+    claimed_status: code+tests-present
+    source: CR-034 Phase 2 local implementation, 2026-08-24
+    refs:
+      docs: [docs/change request/CR-034-gid-iam-production-completion.md]
+      srs: []
+      code: [supabase/functions/_shared/iam.ts, supabase/functions/_shared/iam_runtime.ts, supabase/functions/_shared/iam_security.ts, supabase/functions/_shared/gmad_admin.ts, supabase/functions/admin-gmad-controller/index.ts, supabase/functions/iam-security-state/index.ts, supabase/functions/iam-session-action/index.ts, supabase/functions/iam-security-events/index.ts, supabase/migrations/20260823221844_cr034_iam_phase1_foundation.sql, supabase/migrations/20260824024920_cr034_iam_phase2_sessions.sql, src/src/AccountSecurity.tsx, src/src/securityApi.ts, src/src/securitySession.ts]
+      tests: [supabase/functions/_shared/iam.test.ts, supabase/functions/_shared/iam_security.test.ts, supabase/tests/cr034_iam_phase1.sql, supabase/tests/cr034_iam_phase2.sql, src/src/__tests__/securitySession.test.ts]
+      review: [docs/change request/CR-034-gid-iam-production-completion.md]
+
   - id: 2.2-economy-gstore
     title: "Economy / G-Store"
     kind: feature

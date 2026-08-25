@@ -1,24 +1,10 @@
-import { createClient } from "jsr:@supabase/supabase-js@2";
+import { createClient } from "jsr:@supabase/supabase-js@2.110.2";
 import { isPostOrOptions, isPublishableStatus, json, normaliseGid, preflight } from "../_shared/gmad.ts";
+import { adminCapabilityForAction } from "../_shared/gmad_admin.ts";
+import { iamErrorBody, requireIamContext } from "../_shared/iam_runtime.ts";
 
 type AdminProfile = { id: string; role: string | null };
 type GidProfile = { id: string; gid_code: string; generation: string; cohort_seq: number };
-type AdminContext =
-  | { ok: false; response: Response }
-  | { ok: true; admin: any; actorId: string; role: "admin" | "owner" };
-
-async function requireAdmin(authHeader: string): Promise<AdminContext> {
-  const url = Deno.env.get("SUPABASE_URL")!;
-  const anon = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const service = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
-  const caller = createClient(url, anon, { global: { headers: { Authorization: authHeader } } });
-  const { data: { user } } = await caller.auth.getUser();
-  if (!user) return { ok: false, response: json(401, { error: "invalid token" }) };
-  const admin = createClient(url, service);
-  const { data: profile } = await admin.from("profiles").select("id,role").eq("id", user.id).maybeSingle<AdminProfile>();
-  if (!profile || (profile.role !== "admin" && profile.role !== "owner")) return { ok: false, response: json(403, { error: "operator role required" }) };
-  return { ok: true, admin, actorId: profile.id, role: profile.role };
-}
 
 async function resolveBounds(admin: any, startValue: unknown, endValue: unknown) {
   const gidStart = normaliseGid(startValue);
@@ -41,26 +27,38 @@ Deno.serve(async (req) => {
   if (req.method === "OPTIONS") return preflight();
   if (!isPostOrOptions(req.method)) return json(405, { error: "method not allowed" });
   const authHeader = req.headers.get("Authorization");
-  if (!authHeader) return json(401, { error: "missing authorization" });
+  if (!authHeader) return json(401, { error: "invalid_session" });
   let body: Record<string, unknown>;
   try { body = await req.json(); } catch { return json(400, { error: "invalid JSON body" }); }
   if (typeof body.action !== "string") return json(400, { error: "action is required" });
-  const context = await requireAdmin(authHeader);
-  if (!context.ok) return context.response;
-  const { admin, actorId, role } = context;
+  const capability = adminCapabilityForAction(body.action);
+  if (!capability) return json(400, { error: "unsupported action" });
+  const decision = await requireIamContext(
+    authHeader,
+    capability,
+    "admin-gmad-controller",
+    crypto.randomUUID(),
+  );
+  if (!decision.ok) return json(decision.status, iamErrorBody(decision));
+  const admin = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!,
+  );
+  const actorId = decision.context.userId;
+  const role = decision.context.role;
 
   if (body.action === "change_role") {
-    if (role !== "owner") return json(403, { error: "owner role required" });
+    if (role !== "owner") return json(403, { error: "capability_denied" });
     const targetGid = normaliseGid(body.target_gid);
     const nextRole = typeof body.role === "string" ? body.role : "";
     if (!targetGid || !["user", "creator", "admin"].includes(nextRole)) return json(400, { error: "valid target_gid and delegable role are required" });
     const { data: targetData, error: targetError } = await admin.from("profiles").select("id,role").eq("gid_code", targetGid).maybeSingle();
     const target = targetData as AdminProfile | null;
-    if (targetError || !target) return json(404, { error: "target profile not found" });
-    if (target.id === actorId) return json(409, { error: "owner cannot change own role here" });
-    if (target.role === "owner") return json(409, { error: "owner role cannot be delegated or modified here" });
+    if (targetError || !target) return json(404, { error: "not_found" });
+    if (target.id === actorId) return json(409, { error: "invalid_state" });
+    if (target.role === "owner") return json(409, { error: "invalid_state" });
     const { error: updateError } = await admin.from("profiles").update({ role: nextRole }).eq("id", target.id);
-    if (updateError) return json(500, { error: updateError.message });
+    if (updateError) return json(503, { error: "security_dependency_unavailable" });
     await admin.from("gmad_download_audit").insert({ actor_id: actorId, subject_id: target.id, action: "role_changed", detail: { from: target.role, to: nextRole } });
     return json(200, { gid_code: targetGid, role: nextRole });
   }
@@ -74,12 +72,12 @@ Deno.serve(async (req) => {
       .select("user_id,status,registered_at,profiles!inner(gid_code,generation,cohort_seq)", { count: "exact" })
       .order("registered_at", { ascending: true })
       .range(from, from + pageSize - 1);
-    if (rosterError) return json(500, { error: rosterError.message });
+    if (rosterError) return json(503, { error: "security_dependency_unavailable" });
     const { data: batches, error: batchError } = await admin
       .from("gmad_download_batches")
       .select("id,label,release_id,artifact_path,gid_start,gid_end,generation,cohort_seq_start,cohort_seq_end,status,created_at,published_at")
       .order("created_at", { ascending: false });
-    if (batchError) return json(500, { error: batchError.message });
+    if (batchError) return json(503, { error: "security_dependency_unavailable" });
     return json(200, { roster: roster ?? [], roster_total: count ?? 0, batches: batches ?? [], operator_role: role });
   }
 
@@ -97,7 +95,7 @@ Deno.serve(async (req) => {
       generation: bounds.start.generation, cohort_seq_start: bounds.start.cohort_seq, cohort_seq_end: bounds.end.cohort_seq,
       created_by: actorId,
     }).select("id,label,status").single();
-    if (error || !batch) return json(500, { error: error?.message ?? "could not create batch" });
+    if (error || !batch) return json(503, { error: "security_dependency_unavailable" });
     await admin.from("gmad_download_audit").insert({ actor_id: actorId, batch_id: batch.id, action: "batch_created", detail: { label, release_id: releaseId } });
     return json(201, { batch });
   }
@@ -108,8 +106,8 @@ Deno.serve(async (req) => {
       .from("gmad_download_batches")
       .select("id,status,generation,cohort_seq_start,cohort_seq_end")
       .eq("id", batchId).maybeSingle();
-    if (batchError || !batch) return json(404, { error: "batch not found" });
-    if (batch.status !== "draft") return json(409, { error: "only draft batches can publish" });
+    if (batchError || !batch) return json(404, { error: "not_found" });
+    if (batch.status !== "draft") return json(409, { error: "invalid_state" });
     const { data: eligible, error: eligibleError } = await admin
       .from("closed_beta_enrollments")
       .select("user_id,profiles!inner(generation,cohort_seq)")
@@ -117,14 +115,14 @@ Deno.serve(async (req) => {
       .eq("profiles.generation", batch.generation)
       .gte("profiles.cohort_seq", batch.cohort_seq_start)
       .lte("profiles.cohort_seq", batch.cohort_seq_end);
-    if (eligibleError) return json(500, { error: eligibleError.message });
+    if (eligibleError) return json(503, { error: "security_dependency_unavailable" });
     const grants = (eligible ?? []).map((row: { user_id: string }) => ({ batch_id: batch.id, user_id: row.user_id }));
     if (grants.length) {
       const { error: grantError } = await admin.from("gmad_download_grants").upsert(grants, { onConflict: "batch_id,user_id", ignoreDuplicates: true });
-      if (grantError) return json(500, { error: grantError.message });
+      if (grantError) return json(503, { error: "security_dependency_unavailable" });
     }
     const { error: publishError } = await admin.from("gmad_download_batches").update({ status: "published", published_at: new Date().toISOString(), updated_at: new Date().toISOString() }).eq("id", batch.id);
-    if (publishError) return json(500, { error: publishError.message });
+    if (publishError) return json(503, { error: "security_dependency_unavailable" });
     await admin.from("gmad_download_audit").insert({ actor_id: actorId, batch_id: batch.id, action: "batch_published", detail: { grant_count: grants.length } });
     return json(200, { batch_id: batch.id, status: "published", grant_count: grants.length });
   }
@@ -134,7 +132,7 @@ Deno.serve(async (req) => {
     const status = typeof body.status === "string" ? body.status : "";
     if (!isPublishableStatus(status) || (status !== "paused" && status !== "closed")) return json(400, { error: "status must be paused or closed" });
     const { data: batch, error } = await admin.from("gmad_download_batches").update({ status, updated_at: new Date().toISOString() }).eq("id", batchId).select("id,status").maybeSingle();
-    if (error || !batch) return json(404, { error: error?.message ?? "batch not found" });
+    if (error || !batch) return json(404, { error: "not_found" });
     await admin.from("gmad_download_audit").insert({ actor_id: actorId, batch_id: batch.id, action: "batch_status_changed", detail: { status } });
     return json(200, { batch });
   }

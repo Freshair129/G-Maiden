@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-18T22:07:50.205Z",
+  "generatedAt": "2026-08-24T04:49:44.728Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -502,6 +502,15 @@
       "status": "accepted",
       "doc_type": "change-request",
       "domain": "developer-tooling"
+    },
+    {
+      "id": "docs/change request/CR-034-gid-iam-production-completion.md",
+      "type": "doc",
+      "path": "docs/change request/CR-034-gid-iam-production-completion.md",
+      "title": "CR-034: GID IAM Production Completion",
+      "status": "draft",
+      "doc_type": "change-request",
+      "domain": "account-identity-security"
     },
     {
       "id": "docs/change request/DXGI-task-assignment.md",
@@ -1723,25 +1732,25 @@
       "from": "docs/DOC-INDEX.md",
       "to": "docs/operations/gmaiden-closed-beta-release-playbook.md",
       "type": "wikilink",
-      "line": 166
+      "line": 167
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 183
+      "line": 184
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 185
+      "line": 186
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 190
+      "line": 191
     },
     {
       "from": "docs/README.md",
@@ -8945,6 +8954,14 @@
     },
     {
       "file": "docs/architecture/engineering-spec.md",
+      "line": 215,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/companion.ts",
+      "anchor": 941,
+      "symbol": "useCompanionData"
+    },
+    {
+      "file": "docs/architecture/engineering-spec.md",
       "line": null,
       "reason": "no-metadata"
     },
@@ -8993,6 +9010,14 @@
       "file": "docs/architecture/technical-design-document.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/audits/2026-07-07-independent-full-audit.md",
+      "line": 122,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/companion.ts",
+      "anchor": 941,
+      "symbol": "useCompanionData"
     },
     {
       "file": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
@@ -9044,6 +9069,14 @@
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 127,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/commands.rs",
+      "anchor": 139,
+      "symbol": "import_archive"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
       "line": null,
       "reason": "no-metadata"
     },
@@ -9052,7 +9085,7 @@
       "line": 70,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/runtime.rs",
-      "anchor": 199,
+      "anchor": 365,
       "symbol": "set_master_mode"
     },
     {
@@ -9060,7 +9093,7 @@
       "line": 70,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/runtime.rs",
-      "anchor": 206,
+      "anchor": 372,
       "symbol": "set_master_api_key"
     },
     {
@@ -9068,7 +9101,7 @@
       "line": 70,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/runtime.rs",
-      "anchor": 215,
+      "anchor": 381,
       "symbol": "master_api_key_present"
     },
     {
@@ -9076,7 +9109,7 @@
       "line": 76,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/runtime.rs",
-      "anchor": 424,
+      "anchor": 596,
       "symbol": "set_oauth_pending"
     },
     {
@@ -9084,7 +9117,7 @@
       "line": 77,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/runtime.rs",
-      "anchor": 439,
+      "anchor": 628,
       "symbol": "take_oauth_pending"
     },
     {
@@ -9107,6 +9140,14 @@
       "target": "src-tauri/src/gsi.rs",
       "anchor": 268,
       "symbol": "announcer_install"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 77,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/tests.rs",
+      "anchor": 182,
+      "symbol": "real_pack_mrijgajn_maps_voice_and_banners"
     },
     {
       "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
@@ -9476,6 +9517,30 @@
     },
     {
       "file": "docs/design-system/04-components.md",
+      "line": 83,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 960,
+      "symbol": "profile-wrap"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 84,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 965,
+      "symbol": "profile-trigger"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
+      "line": 85,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/styles.css",
+      "anchor": 1028,
+      "symbol": "profile-dropdown"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
       "line": 107,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/styles.css",
@@ -9700,11 +9765,35 @@
     },
     {
       "file": "docs/design-system/05-sitemap-ia.md",
+      "line": 62,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/CompanionPages.tsx",
+      "anchor": 196,
+      "symbol": "HistoryPage"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
       "line": 100,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/styles.css",
       "anchor": 3078,
       "symbol": "gm-phase-chip"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": 138,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/CompanionPages.tsx",
+      "anchor": 153,
+      "symbol": "InsightsPage"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": 138,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/CompanionPages.tsx",
+      "anchor": 196,
+      "symbol": "HistoryPage"
     },
     {
       "file": "docs/design-system/05-sitemap-ia.md",
@@ -9740,7 +9829,7 @@
       "line": 42,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/runtime.rs",
-      "anchor": 327,
+      "anchor": 493,
       "symbol": "known_enemies"
     },
     {
@@ -9757,6 +9846,62 @@
       "file": "docs/features/FEAT-G-MIND.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 17,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/motion.rs",
+      "anchor": 192,
+      "symbol": "heading_multiplier"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 20,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/motion.rs",
+      "anchor": 234,
+      "symbol": "missing_risk"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 40,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/motion.rs",
+      "anchor": 192,
+      "symbol": "heading_multiplier"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 58,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/motion.rs",
+      "anchor": 234,
+      "symbol": "missing_risk"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 60,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/motion.rs",
+      "anchor": 192,
+      "symbol": "heading_multiplier"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 64,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/motion.rs",
+      "anchor": 248,
+      "symbol": "eta_estimate"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 66,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/motion.rs",
+      "anchor": 121,
+      "symbol": "record"
     },
     {
       "file": "docs/features/FEAT-G-MOTION.md",
@@ -9899,11 +10044,27 @@
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 6,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/commands.rs",
+      "anchor": 283,
+      "symbol": "active_event_clips"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 10,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/pack_io.rs",
       "anchor": 66,
       "symbol": "build_pack"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 12,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/commands.rs",
+      "anchor": 139,
+      "symbol": "import_archive"
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -9931,6 +10092,14 @@
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 37,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/commands.rs",
+      "anchor": 194,
+      "symbol": "extract_pack_zip"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 41,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/pack_io.rs",
@@ -9952,6 +10121,14 @@
       "target": "src-tauri/src/voice_api/pack_io.rs",
       "anchor": 66,
       "symbol": "build_pack"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 60,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/commands.rs",
+      "anchor": 283,
+      "symbol": "active_event_clips"
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -10198,23 +10375,23 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-08-18T22:07:55.233Z",
+    "generatedAt": "2026-08-24T04:49:51.067Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
-    "rowCount": 73,
+    "rowCount": 74,
     "byKind": {
-      "feature": 48,
+      "feature": 49,
       "nfr": 6,
       "fr": 19
     },
     "byStatus": {
       "code+needs-test-or-review": 16,
       "in-code": 12,
-      "code+tests-present (unrun)": 13,
+      "code+tests-present (unrun)": 14,
       "doc-only": 32
     },
     "byDrift": {
-      "aligned": 67,
+      "aligned": 68,
       "unclaimed": 6
     },
     "rows": [
@@ -10718,6 +10895,20 @@
           "tests not run (--run-tests)"
         ],
         "source": "bootstrap-extraction, pruned 2026-07-20"
+      },
+      {
+        "id": "2.2-iam-completion",
+        "kind": "feature",
+        "phase_target": "P6",
+        "phase_source": "derived",
+        "phase_target_source": "derived",
+        "computed": "code+tests-present (unrun)",
+        "claimed": "code+tests-present",
+        "drift": "aligned",
+        "gaps": [
+          "tests not run (--run-tests)"
+        ],
+        "source": "CR-034 Phase 2 local implementation, 2026-08-24"
       },
       {
         "id": "2.2-economy-gstore",

@@ -1,11 +1,11 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.1.6"
+version: "0.2.0"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
-last_update: "2026-08-17T03:43:00+07:00,Antigravity"
+last_update: "2026-08-24T10:04:00+07:00,ATHER"
 status: "active"
-updated: "2026-08-17"
+updated: "2026-08-24"
 owner: "Boss"
 attributes:
   domain: "documentation-governance"
@@ -159,7 +159,8 @@ attributes:
   - `docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md` — Countdown spec
   - `docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md` — Desktop first-run entitlement gate
   - `docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md` — PR gate agent review rule
-  - `docs/change request/CR-*.md` — เอกสาร CR อื่นๆ ทั้งหมดตั้งแต่ CR-001 ถึง CR-033
+  - `docs/change request/CR-034-gid-iam-production-completion.md` — GID IAM Phase 2 implemented locally; live verification and production promotion pending
+  - `docs/change request/CR-*.md` — เอกสาร CR อื่นๆ ทั้งหมดตั้งแต่ CR-001 ถึง CR-034
 
 ## Operations
 
@@ -207,3 +208,7 @@ attributes:
 | 0.1.4 | 2026-07-22 | Added the G-Maiden Closed Beta release playbook under Operations. |
 | 0.1.5 | 2026-07-24 | Added a Release Governance section that points canonical indexes to `docs/releases/` while keeping feature ownership in the product roadmap and `PROJECT_FEATURE_MAP.md`. |
 | 0.1.6 | 2026-08-17 | Updated index to include missing folders (change request, audits, rca, superpowers) and listed all ADRs (ADR-10 to ADR-18) explicitly. |
+| 0.1.7 | 2026-08-23 | Added the CR-034 GID IAM production-completion candidate to the Change Request index. |
+| 0.1.8 | 2026-08-23 | Recorded CR-034 Phase 0 completion and the Phase 1 review gate. |
+| 0.1.9 | 2026-08-24 | Recorded CR-034 Phase 1 local implementation and retained the live-production promotion gate. |
+| 0.2.0 | 2026-08-24 | Recorded CR-034 Phase 2 local session/security implementation and retained the live-production promotion gate. |

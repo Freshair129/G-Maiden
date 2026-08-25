@@ -1167,6 +1167,15 @@ body {
 .account-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start; }
 .account-card { background: rgba(13, 20, 36, 0.72); border: 1px solid rgba(129, 180, 255, 0.14); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 10px; }
 .account-card.muted { opacity: 0.75; }
+.security-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start; }
+.security-row { display: flex; justify-content: space-between; gap: 12px; font-size: 11px; color: #9fb0cc; border-bottom: 1px solid rgba(129, 180, 255, 0.08); padding-bottom: 7px; }
+.security-row strong { color: #e7eef6; text-align: right; font-weight: 600; }
+.security-action { margin-top: 4px; }
+.security-device, .security-event { display: flex; flex-direction: column; gap: 3px; padding: 9px 0; border-bottom: 1px solid rgba(129, 180, 255, 0.08); font-size: 11px; }
+.security-device div { display: flex; justify-content: space-between; gap: 8px; color: #e7eef6; }
+.security-device span, .security-device small, .security-event span { color: #8794a6; font-size: 10px; }
+.security-event strong { color: #c7ddf5; font-size: 11px; }
+.security-activity { grid-column: 1 / -1; }
 
 /* CR011-P5-01 (CR-011 §B/§C): instrument-matte pill mode-switch, shared
    visual language across the Packs (Voice) page and Account's sub-tabs.
