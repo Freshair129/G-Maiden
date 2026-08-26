@@ -300,6 +300,22 @@ struct PrewarmedCritical {
 
 static PREWARMED_CRITICAL: Mutex<Option<PrewarmedCritical>> = Mutex::new(None);
 
+// Review fix: `prewarm_critical_lines` is spawned from two independent sites
+// (app startup, and every `set_cv_voice` call) that can overlap in time —
+// e.g. the startup bake is still running when the frontend's mount-time
+// settings sync fires `set_cv_voice` with the user's actually-persisted
+// voice, which differs from the Rust-side startup default. Both write to the
+// same four fixed paths below via separate PowerShell subprocesses; only the
+// final `PREWARMED_CRITICAL` swap was ever mutex-protected, so the file
+// *writes* themselves could interleave and leave the cache's recorded
+// (voice, rate) pointing at bytes a different, concurrently-running bake
+// actually produced. Serialize the whole bake (writes + swap) behind one
+// lock so at most one invocation ever touches the shared files at a time —
+// a queued call still re-reads the live voice/rate once it's its turn, so
+// the cache ends up correct for whichever call ran last; it just pays the
+// wait instead of racing.
+static PREWARM_LOCK: Mutex<()> = Mutex::new(());
+
 /// Synthesize `text` to a WAV file at `out` via SAPI (no live playback).
 /// Returns false on any failure — spawn error, PowerShell error, or a file
 /// that never got written — so the caller can leave a prior cache in place
@@ -347,6 +363,14 @@ fn synth_to_wav(text: &str, voice: Option<&str>, rate: Option<i32>, out: &std::p
 /// untouched, since a cache miss still falls through to the live path
 /// correctly — it just doesn't get the fast path's latency win.
 pub fn prewarm_critical_lines() {
+    // Hold for the whole bake, not just the cache swap — see PREWARM_LOCK's
+    // doc comment. The guard protects no data of its own (it's a `()`), so
+    // recovering from poison (a prior bake panicking mid-write) is safe:
+    // it can't leave any real invariant broken, only skip a lock we'd
+    // otherwise deadlock on forever.
+    let _serialize = PREWARM_LOCK
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
     let (voice, rate) = crate::runtime::voice();
     let dir = std::env::temp_dir();
     let gank_gentle = dir.join("gmaiden_prewarm_gank_gentle.wav");
