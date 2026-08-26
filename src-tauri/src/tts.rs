@@ -10,7 +10,8 @@
 //! warning) will need in-process TTS later.
 
 use std::process::{Child, Command, Stdio};
-use std::sync::{Mutex, OnceLock};
+use std::sync::Mutex;
+use std::time::{Duration, Instant};
 
 // At most one SAPI process at a time — Maiden never speaks two lines in parallel.
 // Belief Revision (per CLAUDE.md) requires canceling a line mid-stream and
@@ -204,34 +205,67 @@ fn find_piper_model(dir: &std::path::Path) -> Option<std::path::PathBuf> {
 // on *every* TTS call, including G-Signal's hot-path fallback. Piper install
 // state doesn't change over a running session, so probe once per process and
 // reuse the answer (mirrors H8's "resolve once, not on every fired event").
-static PIPER_PROBE: OnceLock<Option<(std::path::PathBuf, std::path::PathBuf)>> = OnceLock::new();
+//
+// Review fix: a bare `OnceLock` cached a *negative* probe forever too — if
+// Piper wasn't found on the very first TTS call of the session (asset
+// staging still finishing, or a user/dev installing it mid-session), it
+// could never be picked up without an app restart. Keep the "don't hit the
+// filesystem on every call" win for the common cases (Piper never
+// installed, or already found) by only re-running the actual probe when the
+// cached answer is a miss *and* enough time has passed since the last
+// attempt. A positive result, once found, is trusted for the rest of the
+// process — Piper's files disappearing mid-session isn't defended against;
+// a spawn would just fail and fall through to SAPI, same as any other
+// Piper failure.
+struct PiperProbeCache {
+    result: Option<(std::path::PathBuf, std::path::PathBuf)>,
+    checked_at: Instant,
+}
+
+static PIPER_PROBE: Mutex<Option<PiperProbeCache>> = Mutex::new(None);
+const PIPER_PROBE_RETRY_INTERVAL: Duration = Duration::from_secs(60);
 
 fn piper_probe() -> Option<(std::path::PathBuf, std::path::PathBuf)> {
-    PIPER_PROBE
-        .get_or_init(|| {
+    let mut guard = PIPER_PROBE
+        .lock()
+        .unwrap_or_else(|poisoned| poisoned.into_inner());
+    let stale = match guard.as_ref() {
+        None => true,
+        Some(c) if c.result.is_none() => c.checked_at.elapsed() >= PIPER_PROBE_RETRY_INTERVAL,
+        Some(_) => false,
+    };
+    if stale {
+        let result = (|| {
             let bin = piper_bin()?;
             let model = find_piper_model(&piper_model_dir()?)?;
             Some((bin, model))
-        })
-        .clone()
+        })();
+        *guard = Some(PiperProbeCache {
+            result: result.clone(),
+            checked_at: Instant::now(),
+        });
+        return result;
+    }
+    guard.as_ref().and_then(|c| c.result.clone())
 }
 
-/// Try to speak `text` via Piper. Returns true if Piper was available and the
-/// synthesis succeeded. On false the caller falls back to SAPI.
-pub fn piper_speak_with_priority(text: &str, priority: crate::audio::Priority) -> bool {
+/// Synthesize `text` to a WAV file at `out` via Piper (no live playback).
+/// Returns true if Piper was available and synthesis succeeded (the process
+/// exited cleanly and `out` was written with nonzero size). Shared by the
+/// live speak path below (which plays the result) and the prewarm bake
+/// (`synth_to_wav`, which only wants the file) so the spawn/feed/wait
+/// sequence exists in exactly one place.
+fn piper_synth(text: &str, out: &std::path::Path) -> bool {
     use std::io::Write;
     let Some((bin, model)) = piper_probe() else {
         return false;
     };
-
-    // Write output to a temp WAV file next to the model.
-    let tmp = std::env::temp_dir().join("gmaiden_piper_out.wav");
     let mut cmd = Command::new(&bin);
     cmd.args([
         "--model",
         model.to_str().unwrap_or_default(),
         "--output_file",
-        tmp.to_str().unwrap_or_default(),
+        out.to_str().unwrap_or_default(),
     ])
     .stdin(Stdio::piped())
     .stdout(Stdio::null())
@@ -262,6 +296,17 @@ pub fn piper_speak_with_priority(text: &str, priority: crate::audio::Priority) -
             eprintln!("[G-Maiden Piper] wait failed: {e}");
             return false;
         }
+    }
+    std::fs::metadata(out).map(|m| m.len() > 0).unwrap_or(false)
+}
+
+/// Try to speak `text` via Piper. Returns true if Piper was available and the
+/// synthesis succeeded. On false the caller falls back to SAPI.
+pub fn piper_speak_with_priority(text: &str, priority: crate::audio::Priority) -> bool {
+    // Write output to a temp WAV file next to the model.
+    let tmp = std::env::temp_dir().join("gmaiden_piper_out.wav");
+    if !piper_synth(text, &tmp) {
+        return false;
     }
     // Play the generated WAV via rodio (in-process, no PowerShell startup cost).
     crate::audio::play_file_with_priority(tmp, priority);
@@ -316,11 +361,21 @@ static PREWARMED_CRITICAL: Mutex<Option<PrewarmedCritical>> = Mutex::new(None);
 // wait instead of racing.
 static PREWARM_LOCK: Mutex<()> = Mutex::new(());
 
-/// Synthesize `text` to a WAV file at `out` via SAPI (no live playback).
+/// Synthesize `text` to a WAV file at `out` (no live playback). Tries Piper
+/// first, falling back to SAPI — the same preference order
+/// `speak_with_priority` uses live. Review fix: this used to go straight to
+/// SAPI unconditionally, so once the prewarm cache warmed (the common case),
+/// G-Signal's fallback silently and permanently stopped using Piper on any
+/// machine where it's installed, even though the live cache-miss path still
+/// preferred it. `voice`/`rate` only apply to the SAPI branch below — like
+/// the live path, Piper always speaks in its bundled model's voice.
 /// Returns false on any failure — spawn error, PowerShell error, or a file
 /// that never got written — so the caller can leave a prior cache in place
 /// rather than serve a broken path.
 fn synth_to_wav(text: &str, voice: Option<&str>, rate: Option<i32>, out: &std::path::Path) -> bool {
+    if piper_synth(text, out) {
+        return true;
+    }
     let b64 = base64(text.as_bytes());
     let voice_line = match voice {
         Some(v) if !v.trim().is_empty() => {
