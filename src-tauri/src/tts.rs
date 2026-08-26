@@ -377,10 +377,42 @@ pub fn prewarm_critical_lines() {
     let gank_alt = dir.join("gmaiden_prewarm_gank_alt.wav");
     let revision_gentle = dir.join("gmaiden_prewarm_revision_gentle.wav");
     let revision_alt = dir.join("gmaiden_prewarm_revision_alt.wav");
-    let ok = synth_to_wav(GANK_LINE_GENTLE, voice.as_deref(), rate, &gank_gentle)
-        && synth_to_wav(GANK_LINE_ALT, voice.as_deref(), rate, &gank_alt)
-        && synth_to_wav(REVISION_LINE_GENTLE, voice.as_deref(), rate, &revision_gentle)
-        && synth_to_wav(REVISION_LINE_ALT, voice.as_deref(), rate, &revision_alt);
+    // Review fix: the four lines are independent (different fixed text,
+    // different output files, same voice/rate) but used to bake one after
+    // another — each synth_to_wav blocks on its own ~150-200ms PowerShell
+    // cold start, so the bake took ~600-800ms end to end. Run all four on
+    // their own threads instead, so the wall-clock cost drops to one
+    // subprocess's worth. Safe to parallelize: PREWARM_LOCK above already
+    // keeps this whole function from overlapping with another
+    // prewarm_critical_lines() call, and each closure below clones the
+    // voice/path values it needs rather than sharing mutable state.
+    let h1 = std::thread::spawn({
+        let voice = voice.clone();
+        let gank_gentle = gank_gentle.clone();
+        move || synth_to_wav(GANK_LINE_GENTLE, voice.as_deref(), rate, &gank_gentle)
+    });
+    let h2 = std::thread::spawn({
+        let voice = voice.clone();
+        let gank_alt = gank_alt.clone();
+        move || synth_to_wav(GANK_LINE_ALT, voice.as_deref(), rate, &gank_alt)
+    });
+    let h3 = std::thread::spawn({
+        let voice = voice.clone();
+        let revision_gentle = revision_gentle.clone();
+        move || synth_to_wav(REVISION_LINE_GENTLE, voice.as_deref(), rate, &revision_gentle)
+    });
+    let h4 = std::thread::spawn({
+        let voice = voice.clone();
+        let revision_alt = revision_alt.clone();
+        move || synth_to_wav(REVISION_LINE_ALT, voice.as_deref(), rate, &revision_alt)
+    });
+    // `&` (not `&&`): every join() must run regardless of an earlier
+    // failure, or a thread whose WAV write is still in flight would be
+    // abandoned mid-write instead of joined.
+    let ok = h1.join().unwrap_or(false)
+        & h2.join().unwrap_or(false)
+        & h3.join().unwrap_or(false)
+        & h4.join().unwrap_or(false);
     if !ok {
         return;
     }
