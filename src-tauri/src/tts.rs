@@ -361,6 +361,33 @@ static PREWARMED_CRITICAL: Mutex<Option<PrewarmedCritical>> = Mutex::new(None);
 // wait instead of racing.
 static PREWARM_LOCK: Mutex<()> = Mutex::new(());
 
+/// Build the PowerShell fragment that selects `voice` on `$s` (a live
+/// `SpeechSynthesizer`), or an empty fragment if no override is given.
+/// `SelectVoice()` fails loudly if the named voice is missing; wrapped in
+/// try/catch so callers fall back to the system default instead of going
+/// silent. Review fix: factored out of synth_to_wav and speak_with_priority,
+/// which each built this same fragment (base64-roundtripping the voice name
+/// to dodge quoting it into a single-quoted PowerShell literal) by hand.
+fn sapi_voice_select_script(voice: Option<&str>) -> String {
+    match voice {
+        Some(v) if !v.trim().is_empty() => {
+            let vb = base64(v.as_bytes());
+            format!(
+                "$vb=[Convert]::FromBase64String('{vb}'); \
+                 $vn=[System.Text.Encoding]::UTF8.GetString($vb); \
+                 try {{ $s.SelectVoice($vn) }} catch {{ }};"
+            )
+        }
+        _ => String::new(),
+    }
+}
+
+/// Clamp a rate override to SAPI's supported range. Shared for the same
+/// reason as [`sapi_voice_select_script`].
+fn sapi_rate_value(rate: Option<i32>) -> i32 {
+    rate.unwrap_or(0).clamp(-10, 10)
+}
+
 /// Synthesize `text` to a WAV file at `out` (no live playback). Tries Piper
 /// first, falling back to SAPI — the same preference order
 /// `speak_with_priority` uses live. Review fix: this used to go straight to
@@ -377,18 +404,8 @@ fn synth_to_wav(text: &str, voice: Option<&str>, rate: Option<i32>, out: &std::p
         return true;
     }
     let b64 = base64(text.as_bytes());
-    let voice_line = match voice {
-        Some(v) if !v.trim().is_empty() => {
-            let vb = base64(v.as_bytes());
-            format!(
-                "$vb=[Convert]::FromBase64String('{vb}'); \
-                 $vn=[System.Text.Encoding]::UTF8.GetString($vb); \
-                 try {{ $s.SelectVoice($vn) }} catch {{ }};"
-            )
-        }
-        _ => String::new(),
-    };
-    let rate_value = rate.unwrap_or(0).clamp(-10, 10);
+    let voice_line = sapi_voice_select_script(voice);
+    let rate_value = sapi_rate_value(rate);
     // Base64-roundtrip the output path too, same as the text — sidesteps
     // quoting a Windows path into a single-quoted PowerShell string literal.
     let out_b64 = base64(out.to_string_lossy().as_bytes());
@@ -550,6 +567,23 @@ pub fn speak_critical_fallback(event: &str, default_fallback: &str) {
     speak_with_priority(text, voice.as_deref(), rate, crate::audio::Priority::Critical);
 }
 
+/// G-Signal's voice-interrupt sequence: cancel any in-flight speech, then
+/// play a resolved voice-pack clip for `event` if one exists, falling back
+/// to [`speak_critical_fallback`] otherwise. Review fix: capture.rs and
+/// capture_wgc.rs each defined their own byte-for-byte identical copy of
+/// this function — only one of those two modules is ever compiled into a
+/// given binary (see the `--features wgc` gate), so the duplication never
+/// showed up as a build conflict, but any future change to the interrupt
+/// sequence had to be applied and kept in sync by hand in both places with
+/// nothing to catch a missed one. Both backends now call this instead.
+pub fn voice_interrupt(event: &str, fallback: &str) {
+    cancel();
+    crate::audio::cancel();
+    if !crate::audio::play_random(event) {
+        speak_critical_fallback(event, fallback);
+    }
+}
+
 // ─────── SAPI (Windows) ─────────────────────────────────────────────────────
 
 /// Stop the current SAPI playback (if any). Used by Belief Revision to retract
@@ -614,20 +648,8 @@ pub fn speak_with_priority(
     }
     // Fallback: SAPI via PowerShell.
     let b64 = base64(text.as_bytes());
-    // SelectVoice() fails loudly if the voice is missing; wrap in try/catch so
-    // we fall back to the system default instead of going silent.
-    let voice_line = match voice {
-        Some(v) if !v.trim().is_empty() => {
-            let vb = base64(v.as_bytes());
-            format!(
-                "$vb=[Convert]::FromBase64String('{vb}'); \
-                 $vn=[System.Text.Encoding]::UTF8.GetString($vb); \
-                 try {{ $s.SelectVoice($vn) }} catch {{ }};"
-            )
-        }
-        _ => String::new(),
-    };
-    let rate_value = rate.unwrap_or(0).clamp(-10, 10);
+    let voice_line = sapi_voice_select_script(voice);
+    let rate_value = sapi_rate_value(rate);
     let sapi_vol = crate::audio::get_volume().min(100);
     let script = format!(
         "Add-Type -AssemblyName System.Speech; \

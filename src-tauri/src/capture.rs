@@ -109,10 +109,15 @@ mod backend {
     /// every frame. See `log::should_record_risk_trace`.
     const RISK_TRACE_INTERVAL_MS: u64 = 1000;
 
-    /// Maiden's spoken gank warning (TTS fallback when no `danger` clip is cached).
-    const GANK_LINE: &str = "ระวังนะคะ ศัตรูหายไปจากแมพหลายตัว อาจมีแก๊งค์!";
-    /// Belief-revision retraction line (TTS fallback when no `revision` clip cached).
-    const REVISION_LINE: &str = "เอ๊ะ! เดี๋ยวก่อน ดูเหมือนจะปลอดภัยแล้วค่ะ";
+    // Review fix: these used to be this module's own `const` copies of the
+    // same Thai text tts.rs bakes into the prewarm cache (GANK_LINE ==
+    // GANK_LINE_ALT, REVISION_LINE == REVISION_LINE_ALT, byte-for-byte) —
+    // tts.rs's doc comment claims hoisting the prewarm lines there means the
+    // cache "can never drift from what's actually said," but this second
+    // copy (feeding voice_interrupt's caption/utterance-ledger/calibration
+    // uses below) meant it silently could. Alias to the single source of
+    // truth instead of duplicating the literals.
+    use crate::tts::{GANK_LINE_ALT as GANK_LINE, REVISION_LINE_ALT as REVISION_LINE};
 
     /// Debug/result payload emitted per processed frame. Candidates feed the
     /// calibration overlay; detections are confirmed heroes (empty until the ONNX
@@ -823,7 +828,7 @@ mod backend {
                 match state.signal.evaluate(&risk) {
                     SignalEvent::Alert(alert) => {
                         if armed {
-                            voice_interrupt("gank", GANK_LINE);
+                            crate::tts::voice_interrupt("gank", GANK_LINE);
                             // CR-011 §B utterance ledger — after the voice
                             // dispatch above, never before, so it can't add
                             // latency to the G-Signal path (CLAUDE.md ≤300ms).
@@ -865,7 +870,7 @@ mod backend {
                     }
                     SignalEvent::Revision => {
                         if armed {
-                            voice_interrupt("revision", REVISION_LINE);
+                            crate::tts::voice_interrupt("revision", REVISION_LINE);
                             // Belief Revision — retracted carries the earlier
                             // GANK_LINE warning being struck through.
                             crate::utterance::emit(
@@ -923,18 +928,9 @@ mod backend {
         }
     }
 
-    fn voice_interrupt(event: &str, fallback: &str) {
-        crate::audio::cancel();
-        crate::tts::cancel();
-        // Audit H9: the persona-branch text resolution and the TTS call both
-        // moved into `tts::speak_critical_fallback` — it plays a prewarmed
-        // WAV when one matches the live voice/rate setting instead of
-        // shelling out to Piper-probe-then-SAPI on this hot path. See
-        // `tts.rs`'s "Prewarmed critical-line cache" section.
-        if !crate::audio::play_random(event) {
-            crate::tts::speak_critical_fallback(event, fallback);
-        }
-    }
+    // Review fix: `voice_interrupt` used to be defined here (and identically
+    // in capture_wgc.rs) — hoisted into `tts::voice_interrupt` since the two
+    // copies were byte-for-byte the same; call sites above now call that.
 
     /// Locate the model directory, preferring the Tauri resource dir, then
     /// `models/` next to the exe, then `models/` in the working directory.
