@@ -495,6 +495,12 @@ fn list_voices() -> Vec<tts::Voice> {
 #[tauri::command]
 fn set_cv_voice(name: Option<String>, rate: Option<i32>) {
     runtime::set_voice(name, rate);
+    // Audit H9: the prewarmed critical-line cache is keyed on (voice, rate) —
+    // a stale bake just falls through to the live path (correct, just slow),
+    // but re-baking here means a voice change doesn't leave the fast path
+    // cold for the rest of the session. Off-thread: same reasoning as the
+    // startup call in `lib.rs::run`.
+    std::thread::spawn(tts::prewarm_critical_lines);
 }
 
 /// Mirror the UI's G-Signal toggle so the capture loop can skip warning work.
@@ -909,6 +915,15 @@ pub fn run() {
             // session. Cheap (one manifest read+parse) and infallible — see
             // `voice_api::pack_io::rebuild_resolved_cache`.
             voice_api::rebuild_resolved_cache();
+
+            // Audit H9: prewarm G-Signal's fixed TTS fallback lines to WAV so
+            // the (rare, but hot-path) cache-miss case never has to shell out
+            // to Piper-probe-then-SAPI from inside the capture loop. Up to
+            // four PowerShell round trips (~150-200ms each) — spawned off the
+            // startup thread so it never delays window creation; harmless if
+            // it's still running when the first gank alert fires, since that
+            // just falls through to the pre-H9 live path exactly as before.
+            std::thread::spawn(tts::prewarm_critical_lines);
 
             // G1.1: GSI ingestion server (127.0.0.1:3000); emits `game-tick` to all windows.
             let handle = app.handle().clone();

@@ -61,10 +61,11 @@ const DEBUG_EMIT_INTERVAL_MS: u128 = 200;
 /// over budget *before* the system locks up.
 const SLOW_FRAME_MS: u128 = 250;
 
-/// Maiden's spoken gank warning (TTS fallback when no `danger` clip is cached).
-const GANK_LINE: &str = "ระวังนะคะ ศัตรูหายไปจากแมพหลายตัว อาจมีแก๊งค์!";
-/// Belief-revision retraction line (TTS fallback when no `revision` clip cached).
-const REVISION_LINE: &str = "เอ๊ะ! เดี๋ยวก่อน ดูเหมือนจะปลอดภัยแล้วค่ะ";
+// Review fix: alias to tts.rs's single source of truth instead of
+// duplicating the literals here too — see capture.rs's copy of this fix for
+// the full rationale (same GANK_LINE == GANK_LINE_ALT / REVISION_LINE ==
+// REVISION_LINE_ALT duplication existed in both capture backends).
+use crate::tts::{GANK_LINE_ALT as GANK_LINE, REVISION_LINE_ALT as REVISION_LINE};
 
 /// Debug/result payload emitted per processed frame. Candidates feed the
 /// calibration overlay; detections are the confirmed heroes (empty until the
@@ -231,7 +232,7 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                         // Use the "gank" event so the bundled voice pack's gank
                         // takes are picked (separate from the HP-danger pack).
                         if armed {
-                            voice_interrupt("gank", GANK_LINE);
+                            crate::tts::voice_interrupt("gank", GANK_LINE);
                         }
                         // W2: only capture calibration evidence when the line
                         // was actually voiced — in the silent arm GANK_LINE is
@@ -261,7 +262,7 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                     SignalEvent::Revision => {
                         let armed = !crate::runtime::silent_arm();
                         if armed {
-                            voice_interrupt("revision", REVISION_LINE);
+                            crate::tts::voice_interrupt("revision", REVISION_LINE);
                         }
                         crate::log::note_event(crate::log::gank_revision_record());
                         if armed {
@@ -385,42 +386,9 @@ fn compat_settings(monitor: Monitor, region: MinimapRegion, app: AppHandle) -> C
     )
 }
 
-/// Voice a critical event with interrupt semantics: cancel whatever Maiden is
-/// saying, then play a pre-recorded clip for `event` if the cache has one, else
-/// speak `fallback` via SAPI. Used by G-Signal so a gank warning cuts in
-/// immediately (and Belief Revision can retract mid-stream). Default voice/rate
-/// — the user's picked voice lives in the frontend; wiring it here is a P2 tuning
-/// item.
-fn voice_interrupt(event: &str, fallback: &str) {
-    crate::audio::cancel();
-    crate::tts::cancel();
-    if !crate::audio::play_random(event) {
-        let resolved_fallback = match event {
-            "gank" => {
-                if crate::runtime::persona_preset() == 0 || crate::runtime::persona_preset() == 1 {
-                    "ระวังค่ะ ตรวจพบการขาดหายไปของศัตรูบนแผนที่ อาจมีการแก๊งค์เกิดขึ้น"
-                } else {
-                    "ระวังนะคะ ศัตรูหายไปจากแมพหลายตัว อาจมีแก๊งค์!"
-                }
-            }
-            "revision" => {
-                if crate::runtime::persona_preset() == 0 || crate::runtime::persona_preset() == 1 {
-                    "ยกเลิกการเตือนภัยแก๊งค์ค่ะ ปลอดภัยแล้ว"
-                } else {
-                    "เอ๊ะ! เดี๋ยวก่อน ดูเหมือนจะปลอดภัยแล้วค่ะ"
-                }
-            }
-            _ => fallback,
-        };
-        let (name, rate) = crate::runtime::voice();
-        crate::tts::speak_with_priority(
-            resolved_fallback,
-            name.as_deref(),
-            rate,
-            crate::audio::Priority::Critical,
-        );
-    }
-}
+// Review fix: `voice_interrupt` used to be defined here (identically to
+// capture.rs's own copy) — hoisted into `tts::voice_interrupt` since the two
+// were byte-for-byte the same; call sites above now call that.
 
 /// Locate the model directory, preferring the Tauri resource dir (where the
 /// installer drops `models/`), then `models/` next to the executable, then

@@ -190,8 +190,16 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
 
   // Item 5: keep Rust's gank voice in sync with the user's chosen voice/rate.
   // Fires once on startup and on every voice setting change. Best-effort.
+  // Review fix: the rate control below is a continuous <input type="range">
+  // with no native debounce, so dragging it fires this effect (and the
+  // Rust-side prewarm rebake it triggers, ~600-800ms of PowerShell spawns)
+  // on every discrete step crossed. Debounce so only the settled value after
+  // the user stops changing it actually reaches the backend.
   useEffect(() => {
-    void invoke('set_cv_voice', { name: s.voiceName || null, rate: s.voiceRate ?? null }).catch(() => {})
+    const t = setTimeout(() => {
+      void invoke('set_cv_voice', { name: s.voiceName || null, rate: s.voiceRate ?? null }).catch(() => {})
+    }, 400)
+    return () => clearTimeout(t)
   }, [s.voiceName, s.voiceRate])
 
   // CR-007 WP-4 Fix 1: `s.voiceEnabled` gates Maiden's PERSONA voice only.
