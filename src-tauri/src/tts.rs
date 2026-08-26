@@ -441,6 +441,19 @@ pub fn speak_critical_fallback(event: &str, default_fallback: &str) {
         if let Some(cache) = guard.as_ref() {
             if cache.voice == voice && cache.rate == rate {
                 if let Some(p) = prewarmed_path_for(cache, event, gentle) {
+                    // Review fix: the miss-path below (speak_with_priority)
+                    // cancels any in-flight SAPI/rodio playback before it
+                    // speaks — this cache-hit path used to skip that, relying
+                    // solely on voice_interrupt's own top-of-function cancel.
+                    // That leaves a narrow window (e.g. a concurrent Normal-
+                    // priority speak_event call from G-Master's advice line
+                    // or an Overlay.tsx persona/danger line) where a racing
+                    // utterance isn't torn down before the critical line
+                    // plays, violating "Maiden never speaks two lines in
+                    // parallel". Cancel here too so both branches give the
+                    // same interrupt guarantee.
+                    cancel();
+                    crate::audio::cancel();
                     crate::audio::play_path(p.clone(), event);
                     return;
                 }

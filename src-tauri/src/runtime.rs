@@ -52,9 +52,13 @@ static SIGNAL_SENSITIVITY: AtomicU8 = AtomicU8::new(1); // 0=Low, 1=Med, 2=High
 static LAST_POST_MS: AtomicU64 = AtomicU64::new(0);
 static PLAYER_TEAM: AtomicU8 = AtomicU8::new(0);
 
-/// Maiden's voice for Rust-side (G-Signal) speech, mirrored from the UI picker.
-static VOICE_NAME: Mutex<Option<String>> = Mutex::new(None);
-static VOICE_RATE: Mutex<Option<i32>> = Mutex::new(None);
+/// Maiden's voice for Rust-side (G-Signal) speech, mirrored from the UI
+/// picker. One lock for both fields together, not two separate ones -- a
+/// caller reading name and rate through independent locks could observe a
+/// torn (name, rate) pairing the user never actually selected if a
+/// concurrent set_voice() lands between the two reads (tts.rs's prewarm
+/// cache now keys correctness on this pair matching what it baked with).
+static VOICE: Mutex<(Option<String>, Option<i32>)> = Mutex::new((None, None));
 
 /// G-Master backend chosen in the UI. 0=Auto (claude→ollama fallback, the
 /// historical behavior), 1=ClaudeOnly, 2=OllamaOnly. Auto is the default so an
@@ -425,19 +429,14 @@ pub fn signal_sensitivity() -> Sensitivity {
 /// Mirror the user's chosen voice/rate so G-Signal speaks in Maiden's selected
 /// voice instead of the SAPI default.
 pub fn set_voice(name: Option<String>, rate: Option<i32>) {
-    if let Ok(mut g) = VOICE_NAME.lock() {
-        *g = name.filter(|s| !s.is_empty());
-    }
-    if let Ok(mut g) = VOICE_RATE.lock() {
-        *g = rate;
+    if let Ok(mut g) = VOICE.lock() {
+        *g = (name.filter(|s| !s.is_empty()), rate);
     }
 }
 
 /// Current (voice name, rate) for the Rust speech path.
 pub fn voice() -> (Option<String>, Option<i32>) {
-    let name = VOICE_NAME.lock().ok().and_then(|g| g.clone());
-    let rate = VOICE_RATE.lock().ok().and_then(|g| *g);
-    (name, rate)
+    VOICE.lock().map(|g| g.clone()).unwrap_or((None, None))
 }
 
 /// G-Master backend mode picked in the UI.
