@@ -67,10 +67,17 @@ select is(
   false,
   'bounded projection rejects an absent user session'
 );
+-- Boss 2026-08-27: this UUID's auth.users insert above (line 57-59) always
+-- fires on_auth_user_created -> handle_new_user(), which unconditionally
+-- creates a public.profiles row (role defaults to 'user' -- see
+-- 20260704000000_adr14_gid_account_identity.sql / profiles_role_check). A
+-- user genuinely absent from profiles is unreachable in this schema, so the
+-- original expectation (null) never matched reality; corrected to assert
+-- the actual auto-provisioned default role instead of a state that can't occur.
 select is(
   iam_private.role_for_user('00000000-0000-0000-0000-000000000341'),
-  null,
-  'bounded projection returns no role for an absent profile'
+  'user',
+  'bounded projection returns the signup trigger''s default role for a freshly-provisioned profile'
 );
 select lives_ok(
   $$
