@@ -3,7 +3,7 @@
 # FEATURE-LEDGER
 
 > **GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs**  
-> Source manifest: `docs/feature-ledger.manifest.yaml` · generated `2026-08-18T22:07:55.233Z` · `--run-tests`=false · rows=73
+> Source manifest: `docs/feature-ledger.manifest.yaml` · generated `2026-08-24T04:49:51.067Z` · `--run-tests`=false · rows=74
 
 One row per feature / FR / NFR. **Computed** status is derived structurally from evidence on disk (never from a claim); **Claimed** is the manifest row's `claimed_status`; **Drift** flags where a claim outruns the evidence; **Evidence gaps** lists exactly what is missing to advance.
 
@@ -13,7 +13,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 
 | Kind | Rows |
 | --- | --- |
-| feature | 48 |
+| feature | 49 |
 | fr | 19 |
 | nfr | 6 |
 
@@ -24,7 +24,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 | doc-only | 32 |
 | in-code | 12 |
 | code+needs-test-or-review | 16 |
-| code+tests-present [(unrun)] | 13 |
+| code+tests-present [(unrun)] | 14 |
 
 ### Drift
 
@@ -32,7 +32,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 | --- | --- |
 | status-inflation | 0 |
 | status-understated | 0 |
-| aligned | 67 |
+| aligned | 68 |
 | unclaimed | 6 |
 
 ## Features
@@ -74,6 +74,7 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 | 2.1-settings | Settings (nav page: iOS split view) | P6 *(derived)* | code+needs-test-or-review | code+needs-test-or-review | aligned | no tests mapped | bootstrap-extraction, pruned 2026-07-20 |
 | 2.2-live-wiring | Live wiring -> Tauri events | P6 *(derived)* | code+needs-test-or-review | code+needs-test-or-review | aligned | review record missing | bootstrap-extraction, pruned 2026-07-20 |
 | 2.2-accounts-gid | Accounts / GID | P6 *(derived)* | code+tests-present (unrun) | code+tests-present | aligned | tests not run (--run-tests) | bootstrap-extraction, pruned 2026-07-20 |
+| 2.2-iam-completion | GID IAM production completion | P6 *(derived)* | code+tests-present (unrun) | code+tests-present | aligned | tests not run (--run-tests) | CR-034 Phase 2 local implementation, 2026-08-24 |
 | 2.2-economy-gstore | Economy / G-Store | P5 *(derived)* | in-code | in-code | aligned | no tests mapped, review record missing | bootstrap-extraction, pruned 2026-07-20 |
 | 2.2-maiden-line | Maiden Line command palette (Ctrl+K) | P6 *(derived)* | code+needs-test-or-review | code+needs-test-or-review | aligned | review record missing | bootstrap-extraction, pruned 2026-07-20 |
 | 2.2-onair-console | ON AIR utterance console | P6 *(derived)* | code+needs-test-or-review | code+needs-test-or-review | aligned | review record missing | bootstrap-extraction, pruned 2026-07-20 |

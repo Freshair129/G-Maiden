@@ -18,13 +18,15 @@ import { useProfile } from "./profile";
 import WalletTab from "./WalletTab";
 import LedgerTab from "./LedgerTab";
 import GmadEntitlementPanel from "./GmadEntitlementPanel";
+import AccountSecurity from "./AccountSecurity";
 
-type AccountMode = "account" | "wallet" | "ledger";
+type AccountMode = "account" | "wallet" | "ledger" | "security";
 
 const ACCOUNT_TABS: Array<{ key: AccountMode; label: string }> = [
   { key: "account", label: "บัญชี" },
   { key: "wallet", label: "กระเป๋า" },
   { key: "ledger", label: "ประวัติธุรกรรม" },
+  { key: "security", label: "ความปลอดภัย" },
 ];
 
 // entryMode/entryNonce: sub-tab deep-link (Opus gate, CR011-P5) — the Store's
@@ -126,6 +128,8 @@ export default function AccountPage({ entryMode, entryNonce }: { entryMode?: Acc
             )}
           </section>
         </div>
+      ) : mode === "security" ? (
+        <AccountSecurity />
       ) : mode === "wallet" ? (
         <WalletTab onViewAllTransactions={() => setMode("ledger")} />
       ) : (

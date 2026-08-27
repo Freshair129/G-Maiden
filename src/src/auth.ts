@@ -9,6 +9,8 @@ import { invoke } from "@tauri-apps/api/core";
 import { supabase } from "./supabase";
 import { loadIdentity } from "./live/identity";
 import { oauthStateFromAuthorizationUrl } from "./oauthTransaction";
+import { requestSessionAction } from "./securityApi";
+import { signOutWithRuntimeLock } from "./securitySession";
 
 // Fixed loopback redirect served by the GSI axum server (/auth/callback). Must
 // be in Supabase → Auth → URL Configuration → Redirect URLs.
@@ -120,7 +122,29 @@ export function useAuth() {
   }, []);
 
   const signOut = useCallback(async () => {
-    await supabase.auth.signOut();
+    const result = await signOutWithRuntimeLock(
+      "current",
+      () => invoke("lock_gmad_runtime"),
+      async () => {
+        try {
+          await requestSessionAction("current");
+          // The Edge Function revokes the provider session and records the
+          // security event. The client call then removes the DPAPI-backed
+          // refresh token and PKCE verifier from this device.
+          const { error } = await supabase.auth.signOut({ scope: "local" });
+          if (error) throw error;
+          return { error: null };
+        } catch (error) {
+          return { error };
+        }
+      },
+    );
+    if (!result.ok) {
+      setError(result.code === "runtime_lock_failed"
+        ? "Runtime could not be locked; sign-out was stopped."
+        : "Security service unavailable; sign-out was stopped.");
+      return;
+    }
     setSession(null);
     setError(null);
   }, []);
