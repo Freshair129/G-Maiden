@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-24T04:49:44.728Z",
+  "generatedAt": "2026-08-28T03:23:09.825Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -215,6 +215,11 @@
       "path": "docs/audits/SEC-001-auth-identity-hardening.md",
       "title": "SEC-001: Auth & Identity Hardening — live gstore audit + fixes",
       "status": "Part A + Part B + mint-gid APPLIED to live (2026-07-04) · F1 closed on prod · client release pending"
+    },
+    {
+      "id": "docs/audits/gap-analysis-prd-srs-vs-impl-2026-08-26.md",
+      "type": "doc",
+      "path": "docs/audits/gap-analysis-prd-srs-vs-impl-2026-08-26.md"
     },
     {
       "id": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
@@ -704,6 +709,15 @@
       "id": "docs/guides/small-model-prompting.md",
       "type": "doc",
       "path": "docs/guides/small-model-prompting.md"
+    },
+    {
+      "id": "docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
+      "type": "doc",
+      "path": "docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
+      "title": "EXEC-PLAN CR-034 — IAM remediation and production reconciliation",
+      "status": "active",
+      "doc_type": "execution-plan",
+      "domain": "account-identity-security"
     },
     {
       "id": "docs/operations/gmaiden-closed-beta-release-playbook.md",
@@ -10375,7 +10389,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-08-24T04:49:51.067Z",
+    "generatedAt": "2026-08-28T03:23:13.418Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

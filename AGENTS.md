@@ -223,6 +223,83 @@ We maintain custom AI skills under `.agents/skills/`.
 
 ---
 
+## Git & GitHub
+
+Enforcement, not style. Every rule below is either enforced by GitHub branch protection or by
+`tools/pr-gate-agent/rules.mjs`, and breaking one costs a CI round trip at minimum.
+
+### Branches
+
+- **`main` is protected. Never commit or push to it directly** — everything lands through a pull
+  request, including a documentation-only change. Required status checks are `ci` and
+  `pr-gate-agent`; `strict` is on, so your branch must be up to date with `main` at merge time.
+  Branch protection has `enforce_admins: false`, so the owner *can* push directly — that is an
+  owner escape hatch, not a workflow. It bypasses both gates. Do not use it.
+- Naming: `wip/<topic>` for multi-commit work, `fix/<topic>` for a bug fix, `docs/<topic>` for
+  documentation. Existing examples: `wip/cr034-gid-iam-completion`, `fix/tts-critical-line-prewarm`.
+- **This repo has two remotes** — `origin` (`Freshair129/G-Maiden`) and `rwang`
+  (`Freshair129/RWANG`). Always `git push -u origin <branch>` on a new branch. A bare `git push`
+  with no upstream can reach the wrong repository.
+- Worktrees: `.gitignore` has no `.worktrees/` or `worktrees/` entry, so create worktrees
+  **outside** the repo (`git worktree add ../gm-<lane> -b <branch>`). A project-local worktree
+  directory would be tracked. If you need one anyway, gitignore it and commit that first.
+
+### Commits
+
+- Conventional commits, `type(scope): subject` — `fix(...)`, `feat(...)`, `docs(...)`, `test(...)`,
+  `refactor(...)`, `perf(...)`, `chore:`. Scope with the CR id when the work belongs to one.
+- **Never `git add -A`.** Parallel sessions on this repo routinely hold unrelated dirty files.
+  Stage explicit paths.
+- Never `--no-verify`, and never disable commit signing. `required_signatures` is off, so do not
+  add `-S` either — leave signing configuration alone.
+- An agent-authored commit carries a trailer naming the agent that wrote it.
+
+### Pull requests
+
+`pr-gate-agent` waits for `ci` to finish (up to 60 minutes — CI includes a cold Tauri native
+build) and then fails the PR on any of:
+
+| Finding | Trigger |
+| --- | --- |
+| `merge-conflict` | PR conflicts with `main` |
+| `missing-ci` / `ci-not-green` | the `ci` check is absent or not `success` |
+| `empty-diff` | PR exposes no changed files |
+| `missing-scope-rationale` | wide-scope PR whose body has no rationale section |
+
+- **Wide-scope** = more than 3 top-level path buckets changed (`docs`, `src`, `src-tauri`,
+  `supabase`, `landing`, `tools`, `scripts`, …) **or** any change under `.github/workflows/`.
+  Such a PR's body must contain `## Summary`, `## Rationale`, `## Scope`, or a
+  `scope-justification:` line. `.github/PULL_REQUEST_TEMPLATE.md` satisfies this by default —
+  do not delete its `## Summary` heading.
+- Prefer several narrow PRs over one wide one. Narrow PRs also review faster and revert cleanly.
+- A **draft** PR relaxes the conflict and CI findings. Open work-in-progress as a draft rather
+  than leaving a red non-draft PR sitting on the gate.
+- **Do not force-push or amend once a PR is open** — `dismiss_stale_reviews` is on, so a rewrite
+  discards the gate's posted review and restarts the cycle.
+- `required_approving_review_count` is `0`. That means the automated gate is the only *mandatory*
+  reviewer — it is **not** permission to self-merge. The owner merges.
+- `required_conversation_resolution` is on: every review thread must be resolved before merge.
+- If `ci` fails, fix the cause. Never disable a check to get green.
+
+### Documentation changes
+
+Any change under `docs/`, or to `CLAUDE.md`, `AGENTS.md`, or `tools/doc-graph/`, runs the
+doc-graph gate. Run it locally first — it is far cheaper than a CI round trip:
+
+```bash
+node tools/doc-graph/ci-gate.mjs
+```
+
+- **It regenerates artifacts** — `docs/DOC-GRAPH.json`, `docs/DOC-GRAPH-REPORT.md`,
+  `docs/FEATURE-LEDGER.md`, `docs/FEATURE-ORPHAN-REPORT.*`, `docs/atomic_index.jsonl`. Commit them
+  **with** the documentation change; a PR that leaves them stale fails.
+- A new or edited document needs frontmatter with `title`, `doc_id`, `status`, `version`,
+  `updated`, `owner`; `status` from `draft | active | accepted | stable | superseded | historical`;
+  and `version` equal to the last row of that document's own `## Changelog` table — that heading
+  **exactly**, since a numbered variant like `## 8. Changelog` is not matched.
+
+---
+
 ## Release & Update Workflow
 
 **SSOT for this topic is [CLAUDE.md](file:///g:/G-Maiden/CLAUDE.md) → "Release & update workflow".**
@@ -263,7 +340,9 @@ Read it before touching versions. The summary below exists only so this file doe
   human merged/approved does.
 
 ### Batching policy (IMPORTANT — don't churn versions)
-- **Small fixes → commit to `main` WITHOUT tagging.** Accumulate them.
+- **Small fixes → land on `main` WITHOUT tagging.** Accumulate them. "Land on `main`" still means
+  through a pull request (see [Git & GitHub](#git--github)); the point of this rule is *no tag*,
+  not *no PR*.
 - **Only bump the version + push a tag when the user asks to release**, or when a meaningful batch
   has accumulated. Do not cut a release per fix — that ran 0.7.0→0.7.1→0.7.2 in minutes once and
   burned version numbers needlessly.
@@ -386,6 +465,7 @@ These are **functional requirements**, not flavor text. Maiden must:
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.3.0b | 2026-08-28 | Added the Git & GitHub section — protected-`main` and PR-only landing, branch naming, the two-remote push hazard, worktree placement, commit conventions, the `pr-gate-agent` failure table with its wide-scope rationale trigger, and the doc-graph regenerated-artifact rule — and disambiguated the batching policy's "commit to `main`" as "no tag", not "no PR". |
 | 0.2.1b | 2026-07-22 | Normalized reader-facing Closed Beta naming from GMAD to G-Maiden while preserving technical identifiers such as functions, buckets, and anchors. |
 | 0.2.0b | 2026-07-21 | Added authoritative GMAD delivery, legal-consent, and desktop first-run handoff context for cross-session agents. |
 | 0.1.0b | 2026-07-21 | Added governance for proposed GID security, recovery, and privacy-safe web profiles; no implementation is implied. |
