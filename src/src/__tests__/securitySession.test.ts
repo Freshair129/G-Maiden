@@ -32,4 +32,26 @@ describe("signOutWithRuntimeLock", () => {
     expect(result).toEqual({ ok: false, code: "runtime_lock_failed" });
     expect(signOut).not.toHaveBeenCalled();
   });
+
+  it("completes local sign-out when current-session revoke fails", async () => {
+    const order: string[] = [];
+    const result = await signOutWithRuntimeLock(
+      "current",
+      async () => { order.push("lock"); },
+      async (scope) => {
+        order.push(`signout:${scope}`);
+        return { error: null, serverRevokeFailed: true };
+      },
+    );
+    expect(result).toEqual({ ok: true, scope: "current", serverRevokeFailed: true });
+    expect(order).toEqual(["lock", "signout:local"]);
+  });
+
+  it("fails closed when signing out other sessions cannot be revoked", async () => {
+    const lock = vi.fn(async () => undefined);
+    const signOut = vi.fn(async () => ({ error: new Error("security service unavailable") }));
+    const result = await signOutWithRuntimeLock("others", lock, signOut);
+    expect(result).toEqual({ ok: false, code: "provider_signout_failed" });
+    expect(lock).not.toHaveBeenCalled();
+  });
 });

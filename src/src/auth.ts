@@ -126,14 +126,18 @@ export function useAuth() {
       "current",
       () => invoke("lock_gmad_runtime"),
       async () => {
+        let serverRevokeFailed = false;
         try {
           await requestSessionAction("current");
-          // The Edge Function revokes the provider session and records the
-          // security event. The client call then removes the DPAPI-backed
-          // refresh token and PKCE verifier from this device.
+        } catch {
+          serverRevokeFailed = true;
+        }
+        try {
+          // The local provider sign-out removes the DPAPI-backed refresh token
+          // and PKCE verifier from this device after the runtime is locked.
           const { error } = await supabase.auth.signOut({ scope: "local" });
           if (error) throw error;
-          return { error: null };
+          return { error: null, ...(serverRevokeFailed ? { serverRevokeFailed: true } : {}) };
         } catch (error) {
           return { error };
         }
@@ -146,7 +150,9 @@ export function useAuth() {
       return;
     }
     setSession(null);
-    setError(null);
+    setError(result.serverRevokeFailed
+      ? "Signed out on this device, but other sessions may still be active — retry from Account Security when back online."
+      : null);
   }, []);
 
   return { session, user: session?.user ?? null, loading, busy, error, lastAuthEvent, signInWithGoogle, signOut };
