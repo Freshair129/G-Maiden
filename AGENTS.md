@@ -156,7 +156,7 @@ detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`)
 - Critical path (GSI → G-Signal → voice) must be **pure Rust** — no cloud, no webview in the hot path (ADR-03)
 - `OutputStream` (rodio) is `!Sync` — lives on dedicated `g-audio` thread, communicate via `mpsc::channel<Cmd>`
 - All new modules must follow `G-` naming convention (ADR-01)
-- Run `cargo test` before committing — ~130 tests, all must pass. CI gate is `cargo clippy --all-targets -- -D warnings` (built-ahead modules need `#![allow(dead_code)]`)
+- Run `cargo test` before committing — **291 tests** (0 failed, 5 ignored, measured 2026-08-28), all must pass. CI gate is `cargo clippy --all-targets -- -D warnings` (built-ahead modules need `#![allow(dead_code)]`)
 - Resource-heavy operations (ONNX inference, screen capture) must respect the CPU/RAM budget
 - **Screen capture = DXGI Desktop Duplication** (`dxgi.rs` + `capture.rs`), not WGC (ADR-13 / CR-001). WGC on Win10 stalled at ~0.7 Hz / 8% CPU and crashed on the `WithoutBorder` toggle; DXGI is a GPU copy that lands within one vsync. Dota 2 **must run borderless-fullscreen** (`-window -noborder`) — exclusive fullscreen is unsupported, so on init failure the app auto-falls back to **GSI-only "Lite mode"** (no minimap CV; voice/overlay/G-Master still work) and shows a Lite badge. Old WGC path preserved behind `--features wgc` (`capture_wgc.rs`); default build = DXGI.
 
@@ -368,6 +368,21 @@ to hand off or tag, run all of:
 - Tauri smoke build, `--no-bundle` (compiles Rust + builds the frontend without needing the
   updater signing secret; `candidate-release.yml` runs this unsigned before the signed build)
 
+**Known-good baseline (2026-08-28)** — a count below these is a regression, not a removed test:
+Rust **291 passed** / 0 failed / 5 ignored · desktop Vitest **268 passed** (27 files, ~21 s) ·
+landing Vitest **14 passed** (4 files, ~2.3 s) · Deno `supabase/functions/_shared/` **24 passed**.
+
+**Bound every suite with a timeout** so a stall fails loudly instead of hanging — roughly ten times
+the baseline: `timeout 300 pnpm -C src test`, 120 s for landing Vitest and Deno, 900 s for a cold
+`cargo test`. PowerShell has no `timeout` command; use Git Bash for these. A suite that hits its
+ceiling is evidence to capture live (`Get-Process node | Select Id,StartTime,CPU`, and the run's
+own output under `DEBUG='vite:*'`), not a known issue to work around.
+
+**Vitest flags are not portable between the two workspaces.** `src/` is on Vitest 1.6.1 / Vite 5;
+`landing/` is on Vitest 4.1.10 / Vite 8 / TypeScript 7. `--reporter=basic` works in `src/` and was
+removed in Vitest 4, where it fails as a reporter-load stack trace that looks nothing like a bad
+flag.
+
 ---
 
 ## Current State (v0.13.2 shipping)
@@ -465,6 +480,7 @@ These are **functional requirements**, not flavor text. Maiden must:
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.3.1b | 2026-08-28 | Corrected the Rust test count to the measured 291, added known-good baselines for all four suites, mandatory timeout ceilings with the capture-live rule, and the cross-workspace Vitest flag-portability warning. |
 | 0.3.0b | 2026-08-28 | Added the Git & GitHub section — protected-`main` and PR-only landing, branch naming, the two-remote push hazard, worktree placement, commit conventions, the `pr-gate-agent` failure table with its wide-scope rationale trigger, and the doc-graph regenerated-artifact rule — and disambiguated the batching policy's "commit to `main`" as "no tag", not "no PR". |
 | 0.2.1b | 2026-07-22 | Normalized reader-facing Closed Beta naming from GMAD to G-Maiden while preserving technical identifiers such as functions, buckets, and anchors. |
 | 0.2.0b | 2026-07-21 | Added authoritative GMAD delivery, legal-consent, and desktop first-run handoff context for cross-session agents. |

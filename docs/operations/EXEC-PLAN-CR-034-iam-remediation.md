@@ -1,9 +1,9 @@
 ---
-version: "0.4.0b"
+version: "0.5.0b"
 title: "EXEC-PLAN CR-034 — IAM remediation and production reconciliation"
 doc_id: "EXEC-PLAN-CR-034-iam-remediation"
 created_at: "2026-08-28T10:40:00+07:00,ATHER"
-last_update: "2026-08-28T12:20:00+07:00,ATHER"
+last_update: "2026-08-28T13:10:00+07:00,ATHER"
 owner: "Boss"
 executor: "Codex"
 status: "active"
@@ -260,6 +260,11 @@ call-site default, and set `gmad.batch.manage` to AAL1 until TOTP enrollment shi
 **Owner:** CODEX **Blocked by:** —
 
 **Goal.** Make the written record match verified production state. No code changes.
+
+**Already done — do not repeat.** CR-034 is at `0.4.4b`: its Phase 0 evidence table's frontend-test
+and policy-test rows were corrected on 2026-08-28 (the recorded Vitest blocker no longer holds; see
+§6.1), `updated`/`last_update` were refreshed, and a `0.4.4b` changelog row was added. Everything
+below is still outstanding.
 
 **Files.**
 - `docs/change request/CR-034-gid-iam-production-completion.md`
@@ -561,8 +566,45 @@ Rust is untouched by this plan, but CI gates on it, so before opening a PR:
 cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D warnings
 ```
 
-**Known baseline (2026-08-28):** Deno shared tests = 24 passed, 0 failed. A drop below 24 means
-something regressed, not that a test was legitimately removed.
+### 6.1 Known-good baseline — measured 2026-08-28
+
+| Suite | Result | Command |
+| --- | --- | --- |
+| Rust | **291 passed**, 0 failed, 5 ignored | `cargo test --manifest-path src-tauri/Cargo.toml --locked` |
+| Desktop Vitest | **268 passed** (27 files, ~21 s) | `pnpm -C src test` |
+| Landing Vitest | **14 passed** (4 files, ~2.3 s) | `pnpm -C landing test` |
+| Deno IAM/GID/entitlement | **24 passed**, 0 failed | `deno test --allow-env --allow-net supabase/functions/_shared/` |
+| Types / lint | exit 0 / exit 0 | `pnpm -C src exec tsc --noEmit` · `pnpm -C src lint` |
+| Doc graph | PASS | `node tools/doc-graph/ci-gate.mjs` |
+
+A count **below** these numbers is a regression, not a legitimately removed test. Say which number
+moved and why, in the PR body.
+
+### 6.2 Always bound the test commands with a timeout
+
+Run every suite under a hard time limit so a stall fails loudly instead of hanging silently:
+
+```bash
+timeout 300 pnpm -C src test
+```
+
+Suggested ceilings, roughly ten times the measured baseline: desktop Vitest **300 s**, landing
+Vitest **120 s**, Deno **120 s**, `cargo test` **900 s** cold / **300 s** warm, doc-graph **300 s**.
+In PowerShell there is no `timeout` command — use Git Bash for these, or wrap with
+`Start-Process -Wait -Timeout`.
+
+**If a suite hits the ceiling, that is data, not a known issue.** On 2026-08-28 the landing suite
+stalled three times, then became unreproducible: nine consecutive clean runs, including under
+11-of-12-core CPU saturation and during an active `cargo` compile, with four candidate causes
+tested and refuted (a bad `--reporter` flag poisoning later runs, cold dependency optimisation,
+CPU starvation, and `cargo` I/O contention). If it recurs, capture the live state **before**
+killing anything — `Get-Process node | Select Id,StartTime,CPU`, and the run's own output under
+`DEBUG='vite:*'` — because the evidence disappears when the process does.
+
+Version skew worth knowing while debugging these: desktop is on Vitest 1.6.1 / Vite 5, landing is
+on Vitest 4.1.10 / Vite 8 / TypeScript 7. Flags are not portable between them — `--reporter=basic`
+exists on desktop and was removed in Vitest 4, where it fails as a reporter-load error that looks
+nothing like a flag mistake.
 
 ---
 
@@ -728,3 +770,4 @@ EXEC-PLAN CR-034 — task <T#> (docs/operations/EXEC-PLAN-CR-034-iam-remediation
 | 0.2.0b | 2026-08-28 | Added the §8 concurrency map (hot-file contention, two waves, worktree-per-lane, integration order, and when not to parallelise), made §3 state-board ownership mode-dependent so lane agents never write it, and added the one-lane-one-worktree guardrail. | Claude (Opus 5) |
 | 0.3.0b | 2026-08-28 | Added §9 GitHub rules from live branch protection and the pr-gate-agent rule source: protected-main constraints, branch/commit conventions, the wide-scope rationale trigger and its bucket math for this plan, the doc-graph frontmatter contract, merge authority, and a PR body template; corrected §8.4 to keep worktrees outside the repo because no worktree directory is gitignored. | Claude (Opus 5) |
 | 0.4.0b | 2026-08-28 | Moved the repository-wide GitHub rules into AGENTS.md → "Git & GitHub" (their real SSOT, auto-loaded by both Codex and Claude Code) and reduced §9 to a pointer plus what is specific to this plan: per-lane bucket math against the wide-scope trigger, merge authority, and the PR body additions. | Claude (Opus 5) |
+| 0.5.0b | 2026-08-28 | Added §6.1 measured known-good baselines for all five suites and §6.2 mandatory timeout ceilings with the capture-it-live rule for a stalled suite, recorded the unreproducible landing-Vitest stall and the four refuted causes, and marked T2's Phase 0 evidence correction as already applied in CR-034 0.4.4b. | Claude (Opus 5) |

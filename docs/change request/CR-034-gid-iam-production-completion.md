@@ -1,14 +1,14 @@
 ---
-version: "0.4.3b"
+version: "0.4.4b"
 title: "CR-034: GID IAM Production Completion"
 doc_id: "CR-034-gid-iam-production-completion"
 created_at: "2026-08-23T18:14:14+07:00,ATHER"
-last_update: "2026-08-24T11:20:00+07:00,ATHER"
+last_update: "2026-08-28T12:55:00+07:00,ATHER"
 owner: "Boss"
 approved_by: "Boss (Phase 0; Phase 1 and Phase 2 local/reviewable implementation)"
 approved_date: "2026-08-24"
 status: "draft"
-updated: "2026-08-24"
+updated: "2026-08-28"
 superseded_by: null
 attributes:
   doc_type: "change-request"
@@ -378,8 +378,8 @@ secret, user, factor, session, recovery record, email/SMS send, deployment or pr
 | Data API | Anonymous `profiles` read returned 401 | live unauthenticated negative probe |
 | Edge Functions | Entitlement/download endpoints reject a publishable-key-only caller; this proves fail-closed unauth behavior only, not role/AAL/session correctness | live negative probe |
 | Landing | `/` returned 200; `/ops` returned 404. Current `landing/vercel.json` has no rewrite and current root routing has no `OpsPage` branch | live + source |
-| Policy tests | Deno IAM/GID/entitlement policy tests: 19 passed, 0 failed | local test |
-| Frontend tests | Desktop and landing Vitest processes stalled before collection under two runner configurations and were terminated; no pass result exists | local blocker |
+| Policy tests | Deno IAM/GID/entitlement policy tests: 19 passed, 0 failed at Phase 0; **24 passed, 0 failed** on re-run 2026-08-28 after Phase 2 added cases | local test |
+| Frontend tests | Phase 0 recorded both Vitest processes stalling before collection with no pass result. **Superseded 2026-08-28:** both suites run clean — desktop 268 passed (27 files, ~21 s), landing 14 passed (4 files, ~2.3 s), and `cargo test --locked` 291 passed / 0 failed / 5 ignored. The stall did not reproduce across nine consecutive runs, including under 11-of-12-core CPU saturation and during an active `cargo` compile; four candidate causes were tested and refuted. Treat a future stall as an environment condition to capture live, not a standing blocker | local test |
 
 Material findings:
 
@@ -712,3 +712,4 @@ live blockers before any production promotion decision.
 | 0.4.1b | 2026-08-24 | draft | Clarified that Phase 2 exposes own activity only, keeps operator audit for a later phase, and treats append-only activity as the notification baseline without outbound sends. | null | ATHER |
 | 0.4.2b | 2026-08-24 | draft | Fixed Phase 2 activity pagination to use a composite timestamp plus event-id cursor and added a tied-timestamp pgTAP regression. | null | ATHER |
 | 0.4.3b | 2026-08-24 | draft | Made the current-to-local and others-to-others provider sign-out mapping explicit for CodeDoc review. | null | ATHER |
+| 0.4.4b | 2026-08-28 | draft | Superseded the Phase 0 frontend-test blocker: desktop, landing, Rust and Deno suites all run clean, and the recorded Vitest stall did not reproduce across nine runs with four candidate causes refuted. Remaining Phase 0 status/lifecycle drift is owned by EXEC-PLAN CR-034 task T2. | null | Claude (Opus 5) |
