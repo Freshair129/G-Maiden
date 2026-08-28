@@ -7,6 +7,26 @@ export type SignOutResult =
 
 type ProviderSignOutResult = { error: unknown; serverRevokeFailed?: boolean };
 
+export async function signOutCurrentSession(
+  revokeCurrentSession: () => Promise<void>,
+  signOutLocal: () => Promise<{ error: unknown }>,
+): Promise<ProviderSignOutResult> {
+  let serverRevokeFailed = false;
+  try {
+    await revokeCurrentSession();
+  } catch {
+    serverRevokeFailed = true;
+  }
+  try {
+    const { error } = await signOutLocal();
+    return error
+      ? { error }
+      : { error: null, ...(serverRevokeFailed ? { serverRevokeFailed: true } : {}) };
+  } catch (error) {
+    return { error };
+  }
+}
+
 export async function signOutWithRuntimeLock(
   scope: SecuritySessionScope,
   lockRuntime: () => Promise<void>,

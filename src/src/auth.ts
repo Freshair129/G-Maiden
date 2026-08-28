@@ -10,7 +10,7 @@ import { supabase } from "./supabase";
 import { loadIdentity } from "./live/identity";
 import { oauthStateFromAuthorizationUrl } from "./oauthTransaction";
 import { requestSessionAction } from "./securityApi";
-import { signOutWithRuntimeLock } from "./securitySession";
+import { signOutCurrentSession, signOutWithRuntimeLock } from "./securitySession";
 
 // Fixed loopback redirect served by the GSI axum server (/auth/callback). Must
 // be in Supabase → Auth → URL Configuration → Redirect URLs.
@@ -125,23 +125,12 @@ export function useAuth() {
     const result = await signOutWithRuntimeLock(
       "current",
       () => invoke("lock_gmad_runtime"),
-      async () => {
-        let serverRevokeFailed = false;
-        try {
-          await requestSessionAction("current");
-        } catch {
-          serverRevokeFailed = true;
-        }
-        try {
-          // The local provider sign-out removes the DPAPI-backed refresh token
-          // and PKCE verifier from this device after the runtime is locked.
-          const { error } = await supabase.auth.signOut({ scope: "local" });
-          if (error) throw error;
-          return { error: null, ...(serverRevokeFailed ? { serverRevokeFailed: true } : {}) };
-        } catch (error) {
-          return { error };
-        }
-      },
+      () => signOutCurrentSession(
+        () => requestSessionAction("current"),
+        // The local provider sign-out removes the DPAPI-backed refresh token
+        // and PKCE verifier from this device after the runtime is locked.
+        () => supabase.auth.signOut({ scope: "local" }),
+      ),
     );
     if (!result.ok) {
       setError(result.code === "runtime_lock_failed"

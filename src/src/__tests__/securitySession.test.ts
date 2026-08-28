@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
-import { signOutWithRuntimeLock } from "../securitySession";
+import { signOutCurrentSession, signOutWithRuntimeLock } from "../securitySession";
 
 describe("signOutWithRuntimeLock", () => {
   it("locks native runtime before terminating the current provider session", async () => {
@@ -35,16 +35,26 @@ describe("signOutWithRuntimeLock", () => {
 
   it("completes local sign-out when current-session revoke fails", async () => {
     const order: string[] = [];
+    const revokeCurrentSession = vi.fn(async () => {
+      order.push("revoke");
+      throw new Error("security service unavailable");
+    });
+    const signOutLocal = vi.fn(async () => {
+      order.push("signout:local");
+      return { error: null };
+    });
     const result = await signOutWithRuntimeLock(
       "current",
       async () => { order.push("lock"); },
       async (scope) => {
-        order.push(`signout:${scope}`);
-        return { error: null, serverRevokeFailed: true };
+        expect(scope).toBe("local");
+        return signOutCurrentSession(revokeCurrentSession, signOutLocal);
       },
     );
     expect(result).toEqual({ ok: true, scope: "current", serverRevokeFailed: true });
-    expect(order).toEqual(["lock", "signout:local"]);
+    expect(revokeCurrentSession).toHaveBeenCalledOnce();
+    expect(signOutLocal).toHaveBeenCalledOnce();
+    expect(order).toEqual(["lock", "revoke", "signout:local"]);
   });
 
   it("fails closed when signing out other sessions cannot be revoked", async () => {
