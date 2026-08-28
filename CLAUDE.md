@@ -102,8 +102,9 @@ or client-readable auth metadata), explicit SMS consent/rate limiting, and a C-3
 and approval gate before any schema, provider, or route is implemented.
 
 **G-Maiden Closed Beta handoff (landing implemented; legal/desktop gate pending).** The landing at
-`https://g-maiden-landing.vercel.app/` has a production G-Maiden queue sector and the owner/admin
-controller at `/ops`. G-Maiden artifacts live only in the private Supabase Storage bucket
+`https://g-maiden-landing.vercel.app/` has a production G-Maiden queue sector; the `/ops` operator
+console has no source in `landing/src`, and its deployed backend is AAL2-gated. G-Maiden artifacts
+live only in the private Supabase Storage bucket
 `gmad-releases`; `request-gmad-download` rechecks the Google-authenticated user, owned GID, and
 active grant before minting a five-minute signed URL. Never put the artifact URL in email, treat an
 email link as an authorization credential, or allow a typed GID to establish entitlement. CR-020
@@ -313,6 +314,7 @@ deploy to web by vercel cli
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.3.1b | 2026-08-28 | Reconciled the Closed Beta handoff with verified production/source state: the queue sector ships, `/ops` has no source in `landing/src`, and its deployed backend is AAL2-gated pending IAM UAT. |
 | 0.3.0b | 2026-08-11 | Replaced the stale tag-publishes-to-everyone release section with the dev/closed-beta/stable channel pipeline that actually ships (candidate-release → promote-release), folded the batching policy into it, and corrected the updater endpoint and APP_VERSION path. |
 | 0.2.1b | 2026-07-22 | Normalized reader-facing Closed Beta naming from GMAD to G-Maiden while preserving technical identifiers such as functions, anchors, and storage paths. |
 | 0.2.0b | 2026-07-21 | Added GMAD Closed Beta delivery, legal-consent, and desktop first-run handoff context; CR-021 remains counsel-gated and CR-022 is not yet authored. |

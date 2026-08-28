@@ -1,10 +1,11 @@
 ---
 title: "CR-018: Serve the GMAD operator route through the SPA shell"
 doc_id: "CR-018-ops-route-spa-rewrite"
-status: "historical"
-version: "0.3.0b"
-updated: "2026-07-21"
+status: "superseded"
+version: "0.3.1b"
+updated: "2026-08-28"
 owner: "Boss"
+superseded_by: "EXEC-PLAN-CR-034-iam-remediation"
 attributes:
   domain: "closed-beta-distribution"
   cluster: "landing-routing"
@@ -20,6 +21,10 @@ attributes:
 The deployed Vite SPA has an `OpsPage` client route, but Vercel currently has no rewrite for a
 direct `/ops` request. Vercel therefore returns 404 before `App.tsx` can select `OpsPage`.
 See [RCA](../../.brain/rca/2026-07-21-landing-ops-route-404.md).
+
+> **Reconciliation note (2026-08-28).** The `OpsPage` client route described by this CR is no
+> longer present in `landing/src` (verified 2026-08-28). The operator console is not shipped in
+> the current source state; this CR is superseded by `EXEC-PLAN-CR-034-iam-remediation`.
 
 ## Proposed change
 
@@ -61,3 +66,4 @@ redeploying; it changes no Supabase schema, user data, or authorization rule.
 | 0.3.0b | 2026-07-21 | implemented | Production rewrite deployed and direct `/ops` plus root HTTP 200 verified. | null | ATHER |
 | 0.2.0b | 2026-07-21 | accepted | Boss approved the narrow SPA rewrite; deployment verification pending. | null | ATHER |
 | 0.1.0b | 2026-07-21 | candidate | Proposed narrow SPA rewrite for the deployed `/ops` 404. | null | ATHER |
+| 0.3.1b | 2026-08-28 | superseded | Superseded after verifying that the described `OpsPage` route is absent from `landing/src`; the current operator console is not shipped. | null | Codex (lane A1) |
