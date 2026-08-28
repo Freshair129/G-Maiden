@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-28T06:14:14.556Z",
+  "generatedAt": "2026-08-28T06:32:13.377Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -371,7 +371,7 @@
       "type": "doc",
       "path": "docs/change request/CR-018-ops-route-spa-rewrite.md",
       "title": "CR-018: Serve the GMAD operator route through the SPA shell",
-      "status": "historical",
+      "status": "superseded",
       "domain": "closed-beta-distribution"
     },
     {
@@ -9205,13 +9205,6 @@
       "changelog": "0.1.0b"
     },
     {
-      "file": "docs/change request/CR-018-ops-route-spa-rewrite.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.3.0b",
-      "changelog": "0.1.0b"
-    },
-    {
       "file": "docs/change request/CR-019-owner-role-and-operator-delegation.md",
       "line": null,
       "reason": "version-changelog-mismatch",
@@ -9978,13 +9971,6 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/operations/gmaiden-closed-beta-release-playbook.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.2.2",
-      "changelog": "0.1.0"
-    },
-    {
       "file": "docs/operations/validation/forms-and-social.md",
       "line": null,
       "reason": "no-metadata"
@@ -10389,7 +10375,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-08-28T06:14:48.205Z",
+    "generatedAt": "2026-08-28T06:32:24.064Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

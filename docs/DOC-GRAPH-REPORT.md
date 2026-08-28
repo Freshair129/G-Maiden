@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-08-28T06:14:14.556Z
+สร้างเมื่อ / Generated at: 2026-08-28T06:32:13.377Z
 
-สแกน 145 ไฟล์เอกสาร, 270 nodes, 1209 edges, 217 รายการปัญหา (161 ตัวบล็อก exit code) / scanned 145 doc files, 270 nodes, 1209 edges, 217 violations (161 blocking exit code).
+สแกน 145 ไฟล์เอกสาร, 270 nodes, 1209 edges, 215 รายการปัญหา (159 ตัวบล็อก exit code) / scanned 145 doc files, 270 nodes, 1209 edges, 215 violations (159 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -18,7 +18,7 @@
 | missing-changelog | มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table | 4 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 53 | no (informational) |
 | unresolved | wikilink หาไม่เจอ / unresolved wikilink | 11 | yes |
-| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 27 | yes |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 25 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -195,10 +195,6 @@
 ### docs/change request/CR-017-gstore-migration-history-reconciliation.md
 
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.0b", changelog="0.1.0b")
-
-### docs/change request/CR-018-ops-route-spa-rewrite.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.0b", changelog="0.1.0b")
 
 ### docs/change request/CR-019-owner-role-and-operator-delegation.md
 
@@ -421,10 +417,6 @@
 ### docs/guides/small-model-prompting.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/operations/gmaiden-closed-beta-release-playbook.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.2", changelog="0.1.0")
 
 ### docs/operations/validation/forms-and-social.md
 
