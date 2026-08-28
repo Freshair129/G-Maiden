@@ -1,9 +1,9 @@
 ---
-version: "0.5.1b"
+version: "0.5.2b"
 title: "EXEC-PLAN CR-034 — IAM remediation and production reconciliation"
 doc_id: "EXEC-PLAN-CR-034-iam-remediation"
 created_at: "2026-08-28T10:40:00+07:00,ATHER"
-last_update: "2026-08-28T13:13:35+07:00,Codex (lane A0)"
+last_update: "2026-08-28T13:42:39+07:00,Codex (orchestrator)"
 owner: "Boss"
 executor: "Codex"
 status: "active"
@@ -142,18 +142,19 @@ Single executor: keep it current yourself. Multi-agent: only the orchestrator wr
 | D3 | Entitlement-path session check scope | BOSS | — | PENDING | see §4 | 2026-08-28 |
 | D4 | `/ops` build or delete | BOSS | — | PENDING | see §4 | 2026-08-28 |
 | T1 | Capability-level AAL policy | CODEX | D1 | TODO | — | 2026-08-28 |
-| T2 | Reconcile docs with production | CODEX | — | TODO | — | 2026-08-28 |
-| T3 | Live IAM probe script | CODEX | — | TODO | — | 2026-08-28 |
+| T2 | Reconcile docs with production | CODEX | — | DONE | `5ca09770`; combined doc-graph `51c3c8c0` | 2026-08-28 |
+| T3 | Live IAM probe script | CODEX | — | DONE | `70ef6464`; syntax/no-token/stub leak checks PASS | 2026-08-28 |
 | T4 | Run live probe, record evidence | BOSS | T3 | TODO | — | 2026-08-28 |
 | T5 | Live-session check on entitlement path | CODEX | D3, T4 | TODO | — | 2026-08-28 |
 | T6 | TOTP enrollment UI + restore AAL2 | CODEX | T1, T4 | TODO | — | 2026-08-28 |
 | T7 | Session-method-aware Google check | CODEX | T4 | TODO | — | 2026-08-28 |
 | T8 | Disable email provider, register hook | BOSS | D2, T7 | TODO | — | 2026-08-28 |
 | T9 | `/ops` resolution | CODEX | D4 | TODO | — | 2026-08-28 |
-| T10 | Sign-out resilience | CODEX | — | TODO | — | 2026-08-28 |
+| T10 | Sign-out resilience | CODEX | — | DONE | `96698e71` + `d7fbeb6f`; Vitest 270/270, tsc/eslint PASS | 2026-08-28 |
 
-Execution order: **T2, T3, T10 can start immediately.** Everything else waits on a decision
-or on T4's live evidence.
+Wave A (`T2`, `T3`, `T10`) is complete on the integration branch. `T4` is now the next
+Boss-owned live-evidence step. Every remaining implementation task still waits on its recorded
+decision and/or on T4's live evidence.
 
 ---
 
@@ -787,3 +788,4 @@ EXEC-PLAN CR-034 — task <T#> (docs/operations/EXEC-PLAN-CR-034-iam-remediation
 | 0.4.0b | 2026-08-28 | Moved the repository-wide GitHub rules into AGENTS.md → "Git & GitHub" (their real SSOT, auto-loaded by both Codex and Claude Code) and reduced §9 to a pointer plus what is specific to this plan: per-lane bucket math against the wide-scope trigger, merge authority, and the PR body additions. | Claude (Opus 5) |
 | 0.5.0b | 2026-08-28 | Added §6.1 measured known-good baselines for all five suites and §6.2 mandatory timeout ceilings with the capture-it-live rule for a stalled suite, recorded the unreproducible landing-Vitest stall and the four refuted causes, and marked T2's Phase 0 evidence correction as already applied in CR-034 0.4.4b. | Claude (Opus 5) |
 | 0.5.1b | 2026-08-28 | Corrected Wave A authored-file versus shared-artifact ownership and added single-owner combined-tree reconciliation before A3; current A1/A2 commits require this integration step. | Codex (lane A0) |
+| 0.5.2b | 2026-08-28 | Recorded orchestrator-verified Wave A completion for T2, T3 and T10, with combined-branch commit and test evidence; T4 is now the next Boss-owned live-evidence step. | Codex (orchestrator) |
