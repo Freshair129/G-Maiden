@@ -1,7 +1,7 @@
 ---
-version: "0.2.2"
+version: "0.2.4"
 created_at: "2026-07-22T20:05:00+07:00,ATHER"
-last_update: "2026-07-23T12:38:00+07:00,ATHER"
+last_update: "2026-08-28T12:00:00+07:00,Codex lane A2"
 status: "active"
 superseded_by: null
 attributes:
@@ -10,7 +10,7 @@ attributes:
   language: "th"
 title: "G-Maiden Closed Beta Release Playbook"
 doc_id: "gmaiden-closed-beta-release-playbook"
-updated: "2026-07-23"
+updated: "2026-08-28"
 owner: "Boss"
 related_docs:
   - "CR-016-gmad-beta-download-admin-controller"
@@ -286,7 +286,24 @@ route `/ops` ถูกถอดออกจาก public landing แล้ว �
 2. ค่าที่แสดงต้องคำนวณจาก payload จริงของ `admin-gmad-controller`
 3. ถ้า roster ที่โหลดมาไม่ครบทั้งหมด ต้องเตือนชัดว่า coverage ที่เห็นเป็น coverage ของชุดข้อมูลที่โหลดมา ไม่ใช่ทั้งระบบ
 
-## CHANGELOG
+## IAM live probe
+
+สำหรับ Boss เท่านั้น: หลัง sign in ใน G-Maiden desktop ให้เปิด DevTools และอ่าน Supabase session
+เพื่อคัดลอกค่า `access_token` ของ session นั้นเท่านั้น ห้ามใส่ token ในเอกสาร, issue, chat หรือ
+คำสั่งที่ commit ลง shell history จากนั้นรัน probe ใน PowerShell แบบชั่วคราว:
+
+```powershell
+$env:GMAD_ACCESS_TOKEN = Read-Host -MaskInput "Paste Supabase access token"
+try { node scripts/iam-live-probe.mjs } finally { Remove-Item Env:GMAD_ACCESS_TOKEN -ErrorAction SilentlyContinue }
+```
+
+สคริปต์ใช้ค่า public Supabase URL/publishable key จาก `src/src/supabase.ts` เป็นค่าเริ่มต้น และเรียก
+เฉพาะ `iam-security-state`, `iam-security-events` และ `admin-gmad-controller` action `list`
+แบบอ่านอย่างเดียว ผลลัพธ์แต่ละบรรทัดจะแสดงเฉพาะ `status`, error code ที่อ่านได้ และ verdict;
+จะไม่แสดง token, headers, response body หรือ identifiers. รหัส exit เป็น `0` เมื่อทั้งสามผลลัพธ์
+อยู่ใน verdict ที่รู้จัก และเป็น `1` เมื่อมีผลลัพธ์ไม่รู้จักหรือเชื่อมต่อไม่ได้
+
+## Changelog
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
@@ -294,3 +311,5 @@ route `/ops` ถูกถอดออกจาก public landing แล้ว �
 | 0.2.1 | 2026-07-23 | active | Marked the public landing Closed Beta queue/download flow, `/ops`, and Terms/Privacy routes as retired while backend release infrastructure remains dormant for the next roadmap. | null | ATHER |
 | 0.2.0 | 2026-07-22 | active | Added the `/ops` operator snapshot contract: current release wave, artifact path, publish recency, loaded-roster coverage, and checklist expectations. | null | ATHER |
 | 0.1.0 | 2026-07-22 | active | Added the operational playbook for G-Maiden Closed Beta release flow, sequence diagram, naming convention, release checklist, and the verified 2026-07-22 release log. | null | ATHER |
+| 0.2.3 | 2026-08-28 | active | Added the read-only IAM live probe procedure and safe verdict/exit-code interpretation for CR-034 T3. | null | Codex lane A2 |
+| 0.2.4 | 2026-08-28 | active | Masked transient IAM probe token input in PowerShell while preserving environment cleanup. | null | Codex lane A2 |

@@ -1,9 +1,9 @@
 ---
-version: "0.4.4b"
+version: "0.5.0b"
 title: "CR-034: GID IAM Production Completion"
 doc_id: "CR-034-gid-iam-production-completion"
 created_at: "2026-08-23T18:14:14+07:00,ATHER"
-last_update: "2026-08-28T12:55:00+07:00,ATHER"
+last_update: "2026-08-28T13:26:29+07:00,Codex (lane A0 integration)"
 owner: "Boss"
 approved_by: "Boss (Phase 0; Phase 1 and Phase 2 local/reviewable implementation)"
 approved_date: "2026-08-24"
@@ -18,8 +18,8 @@ attributes:
   change_class: "C-3"
   risk: "HIGH"
   phase_0_status: "complete-awaiting-review"
-  phase_1_status: "implemented-local-awaiting-live-verification"
-  phase_2_status: "implemented-local-awaiting-live-verification"
+  phase_1_status: "deployed-production-awaiting-uat"
+  phase_2_status: "deployed-production-awaiting-uat"
   related_docs:
     - "docs/architecture/adr/ADR-14-gid-account-identity.md"
     - "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md"
@@ -97,6 +97,9 @@ operator access, RLS และ production UAT ผ่าน exit criteria ใน 
 7. เอกสาร CR-021/CR-022/SEC-001/CLAUDE.md บางส่วนมี lifecycle/status drift
 8. ยังไม่มี authenticated production UAT ครบ same account, wrong account, revoke, role change,
    MFA, session revoke และ recovery
+9. AAL2 is enforced on `gmad.batch.manage` while zero MFA factors exist and no enrollment surface
+   ships, so admin/owner operations are unusable in production — ดูแผน T1/T6 ใน
+   `docs/operations/EXEC-PLAN-CR-034-iam-remediation.md`
 
 ## 4. Non-negotiable boundaries
 
@@ -700,6 +703,13 @@ deployment, Auth/provider changes, production secrets, SMS/email sends, recovery
 promotion or Phase 3–6 implementation. Phase 2 must return with local verification and outstanding
 live blockers before any production promotion decision.
 
+> **Production state note (2026-08-28).** Migrations `20260823221844` and `20260824024920` are
+> applied on production, and Edge Functions `iam-security-state`, `iam-security-events`,
+> `iam-session-action` plus `admin-gmad-controller` v4 are deployed (2026-08-27). This is ahead
+> of the approval recorded in this section. Production promotion of the remaining phases still
+> requires an explicit gate. `iam_private.security_events` is empty, so no production UAT
+> evidence exists yet — see `docs/operations/EXEC-PLAN-CR-034-iam-remediation.md`.
+
 ## CHANGELOG
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
@@ -713,3 +723,4 @@ live blockers before any production promotion decision.
 | 0.4.2b | 2026-08-24 | draft | Fixed Phase 2 activity pagination to use a composite timestamp plus event-id cursor and added a tied-timestamp pgTAP regression. | null | ATHER |
 | 0.4.3b | 2026-08-24 | draft | Made the current-to-local and others-to-others provider sign-out mapping explicit for CodeDoc review. | null | ATHER |
 | 0.4.4b | 2026-08-28 | draft | Superseded the Phase 0 frontend-test blocker: desktop, landing, Rust and Deno suites all run clean, and the recorded Vitest stall did not reproduce across nine runs with four candidate causes refuted. Remaining Phase 0 status/lifecycle drift is owned by EXEC-PLAN CR-034 task T2. | null | Claude (Opus 5) |
+| 0.5.0b | 2026-08-28 | draft | Recorded verified production deployment state, the AAL2/no-MFA lockout, and the partial IAM coverage of the entitlement path. | null | Codex (lane A1) |

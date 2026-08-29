@@ -1,9 +1,9 @@
 ---
-version: "0.5.0b"
+version: "0.5.2b"
 title: "EXEC-PLAN CR-034 — IAM remediation and production reconciliation"
 doc_id: "EXEC-PLAN-CR-034-iam-remediation"
 created_at: "2026-08-28T10:40:00+07:00,ATHER"
-last_update: "2026-08-28T13:10:00+07:00,ATHER"
+last_update: "2026-08-28T13:42:39+07:00,Codex (orchestrator)"
 owner: "Boss"
 executor: "Codex"
 status: "active"
@@ -142,18 +142,19 @@ Single executor: keep it current yourself. Multi-agent: only the orchestrator wr
 | D3 | Entitlement-path session check scope | BOSS | — | PENDING | see §4 | 2026-08-28 |
 | D4 | `/ops` build or delete | BOSS | — | PENDING | see §4 | 2026-08-28 |
 | T1 | Capability-level AAL policy | CODEX | D1 | TODO | — | 2026-08-28 |
-| T2 | Reconcile docs with production | CODEX | — | TODO | — | 2026-08-28 |
-| T3 | Live IAM probe script | CODEX | — | TODO | — | 2026-08-28 |
+| T2 | Reconcile docs with production | CODEX | — | DONE | `5ca09770`; combined doc-graph `51c3c8c0` | 2026-08-28 |
+| T3 | Live IAM probe script | CODEX | — | DONE | `70ef6464`; syntax/no-token/stub leak checks PASS | 2026-08-28 |
 | T4 | Run live probe, record evidence | BOSS | T3 | TODO | — | 2026-08-28 |
 | T5 | Live-session check on entitlement path | CODEX | D3, T4 | TODO | — | 2026-08-28 |
 | T6 | TOTP enrollment UI + restore AAL2 | CODEX | T1, T4 | TODO | — | 2026-08-28 |
 | T7 | Session-method-aware Google check | CODEX | T4 | TODO | — | 2026-08-28 |
 | T8 | Disable email provider, register hook | BOSS | D2, T7 | TODO | — | 2026-08-28 |
 | T9 | `/ops` resolution | CODEX | D4 | TODO | — | 2026-08-28 |
-| T10 | Sign-out resilience | CODEX | — | TODO | — | 2026-08-28 |
+| T10 | Sign-out resilience | CODEX | — | DONE | `96698e71` + `d7fbeb6f`; Vitest 270/270, tsc/eslint PASS | 2026-08-28 |
 
-Execution order: **T2, T3, T10 can start immediately.** Everything else waits on a decision
-or on T4's live evidence.
+Wave A (`T2`, `T3`, `T10`) is complete on the integration branch. `T4` is now the next
+Boss-owned live-evidence step. Every remaining implementation task still waits on its recorded
+decision and/or on T4's live evidence.
 
 ---
 
@@ -652,13 +653,19 @@ costs a merge conflict in a security-policy file, which is the worst place to re
 
 ### 8.3 Waves
 
-**Wave A — dispatch now, three lanes, zero file overlap, no decision blockers**
+**Wave A — dispatch now, three lanes, disjoint authored files; shared generated artifacts require orchestrator reconciliation**
 
 | Lane | Task | Files owned | Model tier |
 | --- | --- | --- | --- |
 | A1 | T2 — reconcile docs | `CR-034.md`, `CR-018.md`, `CLAUDE.md` | standard (judgment: status wording) |
 | A2 | T3 — live probe script | `scripts/iam-live-probe.mjs`, closed-beta playbook | cheap (spec is complete) |
 | A3 | T10 — sign-out resilience | `src/src/securitySession.ts`, `src/src/auth.ts`, its tests | standard |
+
+The authored task files in the table are disjoint. T2 and T3 nevertheless both regenerate the
+same six governed doc artifacts: `docs/DOC-GRAPH.json`, `docs/DOC-GRAPH-REPORT.md`,
+`docs/FEATURE-LEDGER.md`, `docs/FEATURE-ORPHAN-REPORT.json`, `docs/FEATURE-ORPHAN-REPORT.md`,
+and `docs/atomic_index.jsonl`. These generated outputs are integration artifacts, not
+lane-owned files.
 
 **Wave B — after D1–D4 are decided and T4 has produced live evidence**
 
@@ -701,11 +708,20 @@ runs once at integration, not per lane.
 
 ### 8.5 Integration order
 
-Merge lanes back in dependency order, running the full §6 verification set once after each merge —
-not once at the end. Order: **A1, A2, A3 → B1 → B2 → B3.**
+The orchestrator is the single owner of final generated state. Lane artifacts are provisional, so
+Wave A is integrated in this serialized order:
 
-A1 (documents) merges first on purpose: it is the task that makes the repository's written state
-true, and every later reviewer reads those documents to judge whether a change is correct.
+1. Integrate A1's authored documents, treating its six generated artifacts as provisional.
+2. Serialize A2 next. Integrate its authored script and playbook, never hand-edit generated
+   conflicts, and ensure both lanes' authored docs (A1's docs and A2's playbook) and the A2
+   script are present in the combined tree.
+3. Run `node tools/doc-graph/ci-gate.mjs` once on the combined tree and commit the resulting
+   governed artifacts once before A3. Run the full §6 verification set on that combined tree;
+   a lane-local generated-artifact result is not final.
+4. Integrate A3 after this reconciliation, then continue in dependency order: **B1 → B2 → B3.**
+
+The current A1 and A2 commits were created independently and require this combined-tree
+reconciliation before A3; neither lane's generated artifacts are final in isolation.
 
 ### 8.6 When NOT to parallelise this plan
 
@@ -771,3 +787,5 @@ EXEC-PLAN CR-034 — task <T#> (docs/operations/EXEC-PLAN-CR-034-iam-remediation
 | 0.3.0b | 2026-08-28 | Added §9 GitHub rules from live branch protection and the pr-gate-agent rule source: protected-main constraints, branch/commit conventions, the wide-scope rationale trigger and its bucket math for this plan, the doc-graph frontmatter contract, merge authority, and a PR body template; corrected §8.4 to keep worktrees outside the repo because no worktree directory is gitignored. | Claude (Opus 5) |
 | 0.4.0b | 2026-08-28 | Moved the repository-wide GitHub rules into AGENTS.md → "Git & GitHub" (their real SSOT, auto-loaded by both Codex and Claude Code) and reduced §9 to a pointer plus what is specific to this plan: per-lane bucket math against the wide-scope trigger, merge authority, and the PR body additions. | Claude (Opus 5) |
 | 0.5.0b | 2026-08-28 | Added §6.1 measured known-good baselines for all five suites and §6.2 mandatory timeout ceilings with the capture-it-live rule for a stalled suite, recorded the unreproducible landing-Vitest stall and the four refuted causes, and marked T2's Phase 0 evidence correction as already applied in CR-034 0.4.4b. | Claude (Opus 5) |
+| 0.5.1b | 2026-08-28 | Corrected Wave A authored-file versus shared-artifact ownership and added single-owner combined-tree reconciliation before A3; current A1/A2 commits require this integration step. | Codex (lane A0) |
+| 0.5.2b | 2026-08-28 | Recorded orchestrator-verified Wave A completion for T2, T3 and T10, with combined-branch commit and test evidence; T4 is now the next Boss-owned live-evidence step. | Codex (orchestrator) |

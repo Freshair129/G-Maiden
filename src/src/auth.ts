@@ -10,7 +10,7 @@ import { supabase } from "./supabase";
 import { loadIdentity } from "./live/identity";
 import { oauthStateFromAuthorizationUrl } from "./oauthTransaction";
 import { requestSessionAction } from "./securityApi";
-import { signOutWithRuntimeLock } from "./securitySession";
+import { signOutCurrentSession, signOutWithRuntimeLock } from "./securitySession";
 
 // Fixed loopback redirect served by the GSI axum server (/auth/callback). Must
 // be in Supabase → Auth → URL Configuration → Redirect URLs.
@@ -125,19 +125,12 @@ export function useAuth() {
     const result = await signOutWithRuntimeLock(
       "current",
       () => invoke("lock_gmad_runtime"),
-      async () => {
-        try {
-          await requestSessionAction("current");
-          // The Edge Function revokes the provider session and records the
-          // security event. The client call then removes the DPAPI-backed
-          // refresh token and PKCE verifier from this device.
-          const { error } = await supabase.auth.signOut({ scope: "local" });
-          if (error) throw error;
-          return { error: null };
-        } catch (error) {
-          return { error };
-        }
-      },
+      () => signOutCurrentSession(
+        () => requestSessionAction("current"),
+        // The local provider sign-out removes the DPAPI-backed refresh token
+        // and PKCE verifier from this device after the runtime is locked.
+        () => supabase.auth.signOut({ scope: "local" }),
+      ),
     );
     if (!result.ok) {
       setError(result.code === "runtime_lock_failed"
@@ -146,7 +139,9 @@ export function useAuth() {
       return;
     }
     setSession(null);
-    setError(null);
+    setError(result.serverRevokeFailed
+      ? "Signed out on this device, but other sessions may still be active — retry from Account Security when back online."
+      : null);
   }, []);
 
   return { session, user: session?.user ?? null, loading, busy, error, lastAuthEvent, signInWithGoogle, signOut };
