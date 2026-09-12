@@ -2,7 +2,7 @@
 
 > Source-derived context for LLM-assisted navigation, analysis, and maintenance of G-Maiden. Start with llms.txt for a smaller topic index. This reference describes observed code and documents; it does not approve feature changes, certify a deployment, or replace authoritative requirements.
 
-Document version: 0.2.0. Status: active reference. Updated: 2026-09-12 (Asia/Bangkok). Maintainer: RWANG, prepared for Boss. Source baseline: a4a75542c857beaac68267b90e16707ad3263a45 plus the uncommitted, Boss-approved GAP-01/02 remediation in this working tree. Application manifest version: 0.13.2. Review method: tracked-file inventory, targeted source/call-site inspection, document comparison, and static reference validation. This is not a line-by-line security audit of every file.
+Document version: 0.2.1. Status: active reference. Updated: 2026-09-13 (Asia/Bangkok). Maintainer: RWANG, prepared for Boss. Source baseline: a4a75542c857beaac68267b90e16707ad3263a45 plus the Boss-approved GAP-01/02 remediation committed as 56f9fbd. Application manifest version: 0.13.2. Review method: tracked-file inventory, targeted source/call-site inspection, document comparison, and static reference validation. This is not a line-by-line security audit of every file.
 
 Paths below are repository-relative and use forward slashes so the guide survives relocation. Older documents contain absolute G:/ paths; this checkout was reviewed at F:/gmad. References to files in this guide mean source present at the baseline, not externally installed software. Local repository files are not automatically hosted at the landing site's /llms.txt or /llms-full.txt.
 
@@ -500,3 +500,4 @@ When refreshing, compare these authoritative sets: lib.rs generate_handler regis
 | --- | --- | --- |
 | 0.1.0 | 2026-09-12 | Initial source-derived repository reference and llms.txt topic index; current interfaces, ownership, setup, verification limits, and historical documentation discrepancies. Application version unchanged. |
 | 0.2.0 | 2026-09-12 | Update auth cleanup, shared gate state, native request invalidation and approved in-process grace; link remediation verification. Application version unchanged. |
+| 0.2.1 | 2026-09-13 | Pin remediation commit 56f9fbd and refresh evidence date; implementation contract and application version unchanged. |

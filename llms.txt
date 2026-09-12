@@ -2,7 +2,7 @@
 
 > G-Maiden is a Windows Dota 2 companion with a Rust/Tauri 2 core, React command deck, transparent overlay, local minimap vision, and voice advice. This repository also contains the landing/account services and the separate G-Orchestra developer tool.
 
-Repository context index, version 0.2.0, reviewed 2026-09-12 against source commit a4a75542c857beaac68267b90e16707ad3263a45 plus the approved local GAP-01/02 remediation (application version 0.13.2). Paths are relative to this repository root. These files are local repository documentation; their presence does not publish an endpoint on the landing website. The extended reference records implementation evidence and known documentation drift; it is not a release certification or a new product specification.
+Repository context index, version 0.2.1, reviewed 2026-09-13 against source commit a4a75542c857beaac68267b90e16707ad3263a45 plus the approved local GAP-01/02 remediation committed as 56f9fbd (application version 0.13.2). Paths are relative to this repository root. These files are local repository documentation; their presence does not publish an endpoint on the landing website. The extended reference records implementation evidence and known documentation drift; it is not a release certification or a new product specification.
 
 Read AGENTS.md and CLAUDE.md for contribution governance. Thai PRD/SRS and accepted ADRs describe intent; executable call sites describe implementation. Older feature maps and release statements need date and source checks. A source file, migration, or test fixture does not establish that a capability is deployed or verified in a live match.
 

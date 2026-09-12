@@ -1,13 +1,13 @@
 ---
 title: "Auth failure remediation — GAP-01/02"
 doc_id: "auth-failure-remediation-proposal"
-version: "0.2.0b"
+version: "0.2.1b"
 status: "active"
 approved_by: "Boss"
 approved_date: "2026-09-12"
 created_at: "2026-09-12T20:58:04+07:00,RWANG,a4a75542c857beaac68267b90e16707ad3263a45"
-last_update: "2026-09-12T22:26:45+07:00,RWANG"
-updated: "2026-09-12"
+last_update: "2026-09-13T01:30:13+07:00,RWANG"
+updated: "2026-09-13"
 owner: "Boss"
 attributes:
   doc_type: "remediation-proposal"
@@ -135,7 +135,7 @@ Background token refresh ที่กำลังรอยังไม่เป�
 
 ## 9. Local implementation record — 2026-09-12
 
-Implemented in the working tree; application remains `0.13.2`. This is local verification, not production approval or full native/WebView UAT closure.
+Committed as `56f9fbd` on branch `fix/auth-failure-state`; application remains `0.13.2`. This is local verification, not production approval or full native/WebView UAT closure.
 
 - `securitySession.signOutCurrent` shares pending/failure/warning state across hook instances. Native lock is first; remote current-session revocation uses a five-second abort deadline and captured access token. `others` preserves the existing upstream authorization and failure behavior.
 - `supabase.cleanupLocalSession` stops auto-refresh, aborts and drains active auth fetches and pending storage operations, attempts all three known auth keys, then invokes the real pinned SDK against blocked/empty storage to finalize local sign-out. No private SDK method or fake provider success response is used. Native/legacy deletion failures remain visible and retryable. Other secrets/settings/logs are preserved.
@@ -153,6 +153,7 @@ Implemented in the working tree; application remains `0.13.2`. This is local ver
 | Release build | Final Tauri `build --no-bundle -- --locked` succeeded; existing CSS-comment parser/bundle-size warnings remain in untouched frontend styling; no installer signing, publishing or deployment |
 | Doc graph | Wrapper PASS, 215 tests; 14 existing error-severity items checklist-covered, zero uncovered; strict scan remains exit 1 |
 | CodeDoc | Process exit 2, required default model absent; manual source/parent/peer review performed, no model-alignment pass claimed |
+| Native/WebView smoke (2026-09-13) | Release executable cold-start Google gate, native lock IPC, actual DPAPI fixture roundtrip, file-held deletion rejection, retry and absent-key deletion passed; [evidence](../../.brain/verification/gap01-02-webview-2026-09-13/README.md). No synthetic session/entitlement response injected. |
 | Not exercised | Packaged native/WebView sign-out and expired-grace UAT with controlled real sessions; hosted CI and production behavior |
 
 The new native race is documented in RCA Case C. Initial source probes, rendered DOM tests, native unit tests and a release build are distinct evidence layers. T10/T11 retain pending acceptance work in the execution board rather than marking the audit gaps completely closed.
@@ -170,7 +171,7 @@ The new native race is documented in RCA Case C. Initial source probes, rendered
 | llms.txt / llms-full.txt | 0.1.0 | 0.2.0 |
 | Application | 0.13.2 | 0.13.2 (unchanged) |
 
-Final local link/path checks: 163 references across the audit, RCA, proposal and two LLM reference files resolve; historical source line anchors are pinned to the audited commit. Whitespace checks pass. Work remains uncommitted/unpushed.
+Final local link/path checks: 163 references across the audit, RCA, proposal and two LLM reference files resolve; historical source line anchors are pinned to the audited commit. Whitespace checks pass. Implementation committed as `56f9fbd`; no push, release or deployment. This evidence follow-up changes the proposal from `0.2.0b` to `0.2.1b`, execution plan from `0.6.0b` to `0.6.1b`, and LLM references from `0.2.0` to `0.2.1`; application stays `0.13.2`.
 
 ## Changelog
 
@@ -179,3 +180,4 @@ Final local link/path checks: 163 references across the audit, RCA, proposal and
 | 0.1.0b | 2026-09-12 | เสนอ contract แก้ GAP-01/02, credential cleanup failure, UI/native state, parent grace-policy exception และ acceptance tests; รอ approval ก่อน application code. |
 | 0.1.1b | 2026-09-12 | บันทึก Boss approval ของ GAP-01/02 และ grace exception; เริ่ม local implementation. |
 | 0.2.0b | 2026-09-12 | Record approved local implementation, SDK abort/storage behavior, generation guard and local validation; retain native/WebView and CodeDoc limitations. |
+| 0.2.1b | 2026-09-13 | Record implementation commit and bounded release WebView/native DPAPI smoke; retain session UAT and missing-model CodeDoc gate. |
