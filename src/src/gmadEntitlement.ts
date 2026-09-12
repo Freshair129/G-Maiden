@@ -1,8 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { createContext, useCallback, useEffect, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { useAuth } from "./auth";
-import { decideFirstRunScreen, isBackgroundEntitlementRefresh, shouldSurfaceRefreshFailure, type EntitlementState, type FirstRunScreen } from "./gmadFirstRun";
+import { getCurrentSignOut } from "./securitySession";
+import { decideFirstRunScreen, isBackgroundEntitlementRefresh, type EntitlementState, type FirstRunScreen } from "./gmadFirstRun";
 import type { ReleaseChannel } from "./updateChannel";
+
+export const GmadEntitlementContext = createContext<ReturnType<typeof useGmadDesktopEntitlement> | null>(null);
 
 export type GmadDesktopState = FirstRunScreen;
 export type GmadDecision = {
@@ -20,56 +23,70 @@ export type GmadDecision = {
 };
 
 export function useGmadDesktopEntitlement() {
-  const { session, user, loading, busy, error: authError, lastAuthEvent, signInWithGoogle, signOut: authSignOut } = useAuth();
+  const { session, user, loading, busy, error: authError, lastAuthEvent, signOutPhase, signOutWarning, signInWithGoogle, signOut: authSignOut } = useAuth();
   const [state, setState] = useState<GmadDesktopState>("loading");
   const [decision, setDecision] = useState<GmadDecision | null>(null);
-  // Sticky once true: the deck has already been shown as eligible THIS
-  // session. Gates a re-verify against un-gating the UI on a routine
-  // background token refresh — see `refresh` below.
+  // Keep routine token rotation quiet only while the last result is eligible.
   const everEligible = useRef(false);
+  const requestGeneration = useRef(0);
+  const verifiedUser = useRef<string | null>(null);
+  const [runtimeError, setRuntimeError] = useState<string | null>(null);
 
   const refresh = useCallback(async (opts: { background?: boolean } = {}) => {
-    if (!user || !session) {
+    const generation = ++requestGeneration.current;
+    const current = () => generation === requestGeneration.current && getCurrentSignOut().phase === "idle";
+    setRuntimeError(null);
+    if (signOutPhase !== "idle") {
+      verifiedUser.current = null;
       everEligible.current = false;
-      await invoke("lock_gmad_runtime").catch(() => {});
-      setState(busy ? "signing_in" : "sign_in_required");
       setDecision(null);
+      setState(signOutPhase === "done" ? "sign_in_required" : signOutPhase === "failed" ? "sign_out_required" : "signing_out");
       return;
     }
-    // A background re-verify (routine token rotation, an already-eligible
-    // session) must not blank the screen the player is looking at — only the
-    // very first check, or a check the user explicitly asked for, gates.
-    if (!opts.background) setState("loading");
+    if (!user || !session) {
+      verifiedUser.current = null;
+      everEligible.current = false;
+      setState(busy ? "signing_in" : "sign_in_required");
+      setDecision(null);
+      try { await invoke("lock_gmad_runtime"); }
+      catch { if (current()) setRuntimeError("ยังยืนยันการล็อก runtime ไม่ได้ กรุณาลองอีกครั้ง"); }
+      return;
+    }
+    if (!opts.background) {
+      everEligible.current = false;
+      setState("loading");
+      setDecision(null);
+    }
     try {
+      // A new account must never inherit a previous account's grace cache.
+      if (verifiedUser.current !== user.id) {
+        await invoke("lock_gmad_runtime");
+        if (!current()) return;
+        verifiedUser.current = user.id;
+      }
+      if (!current()) return;
       const data = await invoke<GmadDecision>("verify_gmad_entitlement", { accessToken: session.access_token });
+      if (!current()) return;
       const next = decideFirstRunScreen({ authLoading: false, authBusy: false, userPresent: true, entitlement: data, requestFailed: false });
       setDecision(data);
       setState(next);
-      if (next === "eligible") everEligible.current = true;
+      everEligible.current = next === "eligible";
     } catch {
-      // The Rust command already tried its own grace-window cache before
-      // returning an error at all (see `lib.rs::verify_gmad_entitlement`) —
-      // an Err here means EITHER there was nothing to fall back to (cold
-      // start, or the grace window lapsed) OR this was a foreground check
-      // the user is actively waiting on. Either way that's a real "can't
-      // confirm your access" state and must gate.
-      //
-      // A BACKGROUND check failing on an already-eligible session, by
-      // contrast, means the backend already kept gameplay armed via its
-      // cache (or genuinely has nothing new to say) — un-gating the whole UI
-      // for that would recreate exactly the bug this exists to fix, just
-      // moved one layer up. Leave `state`/`decision` untouched and try again
-      // on the next natural trigger.
-      if (!shouldSurfaceRefreshFailure(opts.background ?? false, everEligible.current)) return;
+      if (!current()) return;
+      everEligible.current = false;
       setDecision(null);
       setState("offline_or_unavailable");
+      // A command rejection and an IPC transport failure share this path.
+      try { await invoke("lock_gmad_runtime"); }
+      catch { if (current()) setRuntimeError("ยังยืนยันการล็อก runtime ไม่ได้ กรุณาลองอีกครั้ง"); }
     }
-  }, [busy, session, user]);
+  }, [busy, session, user, signOutPhase]);
 
   useEffect(() => {
     if (loading) return;
     const backgroundOnly = isBackgroundEntitlementRefresh(lastAuthEvent, everEligible.current);
     void refresh({ background: backgroundOnly });
+    return () => { requestGeneration.current += 1; };
     // lastAuthEvent is intentionally in the deps: a token refresh must
     // re-trigger this effect (to send the freshly-rotated access_token on
     // the next verify) even though `session`'s identity change alone already
@@ -79,7 +96,8 @@ export function useGmadDesktopEntitlement() {
 
   const signOut = useCallback(async () => {
     everEligible.current = false;
+    requestGeneration.current += 1;
     await authSignOut();
   }, [authSignOut]);
-  return { state, decision, refresh, signInWithGoogle, signOut, authError };
+  return { state, decision, refresh, signInWithGoogle, signOut, authError: runtimeError ?? authError, signOutWarning };
 }

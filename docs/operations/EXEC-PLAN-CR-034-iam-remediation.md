@@ -1,13 +1,13 @@
 ---
-version: "0.5.0b"
+version: "0.6.0b"
 title: "EXEC-PLAN CR-034 — IAM remediation and production reconciliation"
 doc_id: "EXEC-PLAN-CR-034-iam-remediation"
 created_at: "2026-08-28T10:40:00+07:00,ATHER"
-last_update: "2026-08-28T13:10:00+07:00,ATHER"
+last_update: "2026-09-12T22:26:45+07:00,RWANG"
 owner: "Boss"
 executor: "Codex"
 status: "active"
-updated: "2026-08-28"
+updated: "2026-09-12"
 attributes:
   doc_type: "execution-plan"
   domain: "account-identity-security"
@@ -150,7 +150,8 @@ Single executor: keep it current yourself. Multi-agent: only the orchestrator wr
 | T7 | Session-method-aware Google check | CODEX | T4 | TODO | — | 2026-08-28 |
 | T8 | Disable email provider, register hook | BOSS | D2, T7 | TODO | — | 2026-08-28 |
 | T9 | `/ops` resolution | CODEX | D4 | TODO | — | 2026-08-28 |
-| T10 | Sign-out resilience | CODEX | — | TODO | — | 2026-08-28 |
+| T10 | Sign-out resilience | CODEX | — | IN-PROGRESS | Local implementation/tests complete; [evidence §9](auth-failure-remediation-proposal.md); native/WebView UAT and CodeDoc verdict pending | 2026-09-12 |
+| T11 | Entitlement failure-state alignment (GAP-02) | CODEX | T10 local implementation | IN-PROGRESS | Local UI/native fixes and tests complete; [evidence §9](auth-failure-remediation-proposal.md); native/WebView UAT pending | 2026-09-12 |
 
 Execution order: **T2, T3, T10 can start immediately.** Everything else waits on a decision
 or on T4's live evidence.
@@ -508,7 +509,7 @@ T2's commit.
 - `src/src/auth.ts`
 - `src/src/__tests__/` (extend existing coverage)
 
-**Problem.** `signOutWithRuntimeLock` currently aborts the whole sign-out when
+**Baseline problem (before the 2026-09-12 remediation).** `signOutWithRuntimeLock` aborts the whole sign-out when
 `requestSessionAction("current")` throws, surfacing "Security service unavailable; sign-out was
 stopped." The runtime lock has already succeeded at that point, so refusing to clear the local
 session leaves the user worse off than a local-only sign-out.
@@ -518,9 +519,9 @@ session leaves the user worse off than a local-only sign-out.
    correct — an unlocked runtime with no session is the dangerous state).
 2. For `scope: "current"`, treat a failed `requestSessionAction` as **degraded, not fatal**:
    proceed with `supabase.auth.signOut({ scope: 'local' })`, clear the session, and return a
-   result carrying `serverRevokeFailed: true`.
-3. Surface that honestly in the UI: signed out on this device, but other sessions may still be
-   active — retry from Account Security when back online.
+   result carrying a shared remote-unconfirmed warning (approved amendment: [GAP-01/02 §4](auth-failure-remediation-proposal.md)).
+3. Surface that honestly in the UI: signed out on this device, but current server revocation is
+   unconfirmed. Do not claim anything about other sessions; warning survives navigation.
 4. For `scope: "others"`, keep the current fail-closed behaviour unchanged. Claiming other
    sessions were revoked when they were not is a false security statement.
 5. Add tests for: lock fails → abort; revoke fails on `current` → local sign-out completes with the
@@ -771,3 +772,4 @@ EXEC-PLAN CR-034 — task <T#> (docs/operations/EXEC-PLAN-CR-034-iam-remediation
 | 0.3.0b | 2026-08-28 | Added §9 GitHub rules from live branch protection and the pr-gate-agent rule source: protected-main constraints, branch/commit conventions, the wide-scope rationale trigger and its bucket math for this plan, the doc-graph frontmatter contract, merge authority, and a PR body template; corrected §8.4 to keep worktrees outside the repo because no worktree directory is gitignored. | Claude (Opus 5) |
 | 0.4.0b | 2026-08-28 | Moved the repository-wide GitHub rules into AGENTS.md → "Git & GitHub" (their real SSOT, auto-loaded by both Codex and Claude Code) and reduced §9 to a pointer plus what is specific to this plan: per-lane bucket math against the wide-scope trigger, merge authority, and the PR body additions. | Claude (Opus 5) |
 | 0.5.0b | 2026-08-28 | Added §6.1 measured known-good baselines for all five suites and §6.2 mandatory timeout ceilings with the capture-it-live rule for a stalled suite, recorded the unreproducible landing-Vitest stall and the four refuted causes, and marked T2's Phase 0 evidence correction as already applied in CR-034 0.4.4b. | Claude (Opus 5) |
+| 0.6.0b | 2026-09-12 | Record Boss approval of GAP-01/02, start T10 and add dependent T11; D1–D4 remain pending. | RWANG |

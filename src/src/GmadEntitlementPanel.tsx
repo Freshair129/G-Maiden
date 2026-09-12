@@ -1,7 +1,20 @@
-import { useGmadDesktopEntitlement } from "./gmadEntitlement";
+import { useContext } from "react";
+import { GmadEntitlementContext, useGmadDesktopEntitlement } from "./gmadEntitlement";
 
 export default function GmadEntitlementPanel() {
-  const { state, decision, refresh, signInWithGoogle } = useGmadDesktopEntitlement();
+  const shared = useContext(GmadEntitlementContext);
+  return shared ? <EntitlementStatus value={shared} /> : <StandaloneEntitlementStatus />;
+}
+
+function StandaloneEntitlementStatus() {
+  const value = useGmadDesktopEntitlement();
+  return <EntitlementStatus value={value} />;
+}
+
+function EntitlementStatus({ value }: { value: ReturnType<typeof useGmadDesktopEntitlement> }) {
+  const { state, decision, refresh, signInWithGoogle, signOut, authError } = value;
+  if (state === "signing_out") return <section className="auth-panel"><strong>กำลังออกจากระบบ…</strong></section>;
+  if (state === "sign_out_required") return <section className="auth-panel"><p role="alert">{authError}</p><button onClick={() => void signOut()}>ลองออกจากระบบอีกครั้ง</button></section>;
   if (state === "eligible") return <section className="auth-panel signedin"><strong>G-Maiden Closed Beta active</strong><span>{decision?.gid} · Terms {decision?.terms?.version}{decision?.stale ? " · offline — showing your last confirmed access" : ""}</span></section>;
   if (state === "sign_in_required") return <section className="auth-panel"><strong>Google sign-in required</strong><button onClick={() => void signInWithGoogle()}>Continue with Google</button></section>;
   if (state === "terms_required") return <section className="auth-panel"><strong>Current Terms acceptance required</strong><a href="https://g-maiden-landing.vercel.app/terms?from=desktop">Review Terms on landing</a><button onClick={() => void refresh()}>Re-check</button></section>;

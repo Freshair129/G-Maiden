@@ -1,0 +1,502 @@
+# G-Maiden — Detailed Repository Reference
+
+> Source-derived context for LLM-assisted navigation, analysis, and maintenance of G-Maiden. Start with llms.txt for a smaller topic index. This reference describes observed code and documents; it does not approve feature changes, certify a deployment, or replace authoritative requirements.
+
+Document version: 0.2.0. Status: active reference. Updated: 2026-09-12 (Asia/Bangkok). Maintainer: RWANG, prepared for Boss. Source baseline: a4a75542c857beaac68267b90e16707ad3263a45 plus the uncommitted, Boss-approved GAP-01/02 remediation in this working tree. Application manifest version: 0.13.2. Review method: tracked-file inventory, targeted source/call-site inspection, document comparison, and static reference validation. This is not a line-by-line security audit of every file.
+
+Paths below are repository-relative and use forward slashes so the guide survives relocation. Older documents contain absolute G:/ paths; this checkout was reviewed at F:/gmad. References to files in this guide mean source present at the baseline, not externally installed software. Local repository files are not automatically hosted at the landing site's /llms.txt or /llms-full.txt.
+
+## 1. How to use this reference
+
+Read the section for the requested feature, follow its source paths, and inspect the current working tree before editing. Use these evidence labels:
+
+- **Implemented:** a source path and consumer/caller exist. Runtime acceptance still needs a relevant test.
+- **Conditional:** code exists but requires data, an external service, binary, model, or a particular mode.
+- **Partial:** only a subset of the product contract is present.
+- **Planned:** a requirement or design exists without a complete inspected runtime path.
+- **Historical evidence:** a dated document reports an earlier observation; it was not reverified live for this reference.
+
+Read contribution instructions in [AGENTS.md](AGENTS.md) and [CLAUDE.md](CLAUDE.md). Thai [PRD](docs/product/product-requirements.md), [SRS](docs/product/software-requirements-specification.md), and accepted ADRs define intended behavior. Source and tests establish implementation, not authority to change the contract. Where they disagree, preserve both facts and report the discrepancy. This reference has no instruction priority over the user's current task or applicable agent governance.
+
+The [feature map](PROJECT_FEATURE_MAP.md), modules.json, root guidance, and roadmap contain historical material. Do not copy their SHIPPED/Done labels without checking current call sites. Generated docs are projections, not separate specifications. Never turn a candidate design or a dated production observation into a present-tense deployment claim.
+
+## 2. Scope and repository inventory
+
+The baseline has 1,484 tracked files. Extension counts: 444 Markdown, 57 Rust, 119 TypeScript, 66 TSX, 98 MJS, 17 Python, and 29 SQL files. These counts include tests, tools, and generated material; they are not counts of production modules. docs/ contains 145 Markdown files and orchestration/docs/ contains 20. Large assets and governance archives explain much of the remaining inventory.
+
+| Area | Responsibility | First files to inspect |
+| --- | --- | --- |
+| src/ | Desktop WebView frontend; its own package and lockfile | src/package.json, src/vite.config.ts, src/src/main.tsx |
+| src-tauri/ | G-Maiden native executable, library, capabilities, packaging, default voice pack | src-tauri/Cargo.toml, src-tauri/src/lib.rs, src-tauri/tauri.conf.json |
+| gpu-feeder/ | Standalone Rust GPU telemetry sidecar | gpu-feeder/Cargo.toml, gpu-feeder/src/main.rs |
+| landing/ | Browser landing, beta enrollment/access, cinematic media, public demo | landing/package.json, landing/src/main.tsx, landing/src/App.tsx |
+| supabase/ | Local configuration, migrations, Edge Functions, SQL tests | supabase/config.toml, supabase/migrations/, supabase/functions/ |
+| orchestration/ | Separate G-Orchestra developer product, engine, Studio, GKS | orchestration/package.json, orchestration/engine.mjs, orchestration/server.mjs |
+| hybrid-meter/ | Independent Node usage-log meter | hybrid-meter/cli.mjs, hybrid-meter/package.json |
+| docs/ | Player-product requirements, architecture, ADRs, features, CRs, release governance | docs/README.md, docs/DOC-INDEX.md |
+| schemas/ | Vendored announcer event contract | schemas/gmaiden-events.json |
+| models/ | Tracked minimap detector and labels | models/minimap-detector.onnx, models/labels.json |
+| assets/, audio/ | Art, voice caches, and media inputs; not source-of-truth feature status | assets/dota-reference/README.md |
+| release/, scripts/releases/ | Channel snapshots, evidence templates, release helpers | scripts/releases/channel-manifest.mjs, release/channels/ |
+| tests/perf/ | Native latency, replay, resource, and live-device harnesses | tests/perf/Cargo.toml, tests/perf/README.md |
+| tools/ | Documentation graph, PR gate, model/data preparation, calibration, art tools | tools/doc-graph/, tools/pr-gate-agent/, tools/lithos-hero/ |
+| spikes/ | Technical experiments separate from the default app | spikes/s1-minimap-cv/Cargo.toml |
+| .agents/, .brain/, .govibe/ | Local skills and development/governance records | .agents/skills/rwang-codedoc-aligner/SKILL.md |
+| queue/, state/, template/ | Development task state and templates | Inspect ownership before treating these as active runtime state |
+
+The root package is not a single install command for every JavaScript project. Desktop frontend, landing, and Orchestra Studio have their own manifests. Do not apply one workspace's dependency versions or Vitest options to another.
+
+## 3. Product purpose and constraints
+
+G-Maiden is a Thai-first companion for a Windows Dota 2 player. Maiden narrates events and gives advice through voice and a passive, click-through overlay. The player spends the match in Dota, while the Command Deck serves pre-match readiness, peripheral monitoring, and between-match management. It is not a game-input bot.
+
+[PRODUCT.md](PRODUCT.md) describes a calm, credible, cold visual language and the principle that unknown data should remain visibly unknown. Missing enemy economy, objectives, rank, and lane must not be fabricated. An em dash often means unavailable, not a measured zero. Persona requirements include gentle advice, Crystal Maiden movement-speed humor, and audible correction when a danger prediction is retracted.
+
+The SRS/engineering targets include p50 warning latency at most 250 ms, a 300 ms warning ceiling, background CPU at most 2.5%, RAM at most 400 MB, and at most 3% game FPS impact. These are targets, not measurements made during this documentation task. A harness that skips capture/audio and substitutes budgets cannot prove live end-to-end latency.
+
+Two products share the repository: G-Maiden is player-facing; G-Orchestra is a developer/policy tool. Their roadmaps and runtime guarantees are not interchangeable. ADR-18's knowledge-plane/policy-plane split is a design boundary, not evidence that every future governance service has shipped.
+
+## 4. Technology and build topology
+
+| Component | Manifest evidence | Notes |
+| --- | --- | --- |
+| Root tooling | package.json: pnpm@9.0.0, Tauri CLI ^2.0.0 | App version 0.13.2 |
+| Desktop frontend | src/package.json: React ^18.2.0, Vite ^5.0.0, TS ^5.3.0, Vitest ^1.6.1 | Ranges are manifest declarations, not resolved installed versions |
+| Rust app | src-tauri/Cargo.toml: edition 2021, Tauri 2, axum 0.7, Tokio, rodio 0.19, tract-onnx 0.21 | Library plus executable; Windows API dependencies |
+| Rust toolchain | rust-toolchain.toml: 1.96.0, clippy, rustfmt | CI uses the same pinned version |
+| Landing | landing/package.json: pnpm@10.34.5, React 18.3.1, Vite 8.1.5, TS 7.0.2, Vitest ^4.1.10 | Separate install/build/test environment |
+| Orchestra engine | orchestration/package.json: Node ESM and Tauri CLI | App version 0.1.0; main engine uses Node built-ins |
+| Orchestra Studio | orchestration/studio/package.json: React 18, Vite 5, @xyflow/react | Separate React graph UI |
+| Edge Functions | supabase/functions/: Deno TypeScript | Some shared IAM code uses a PostgreSQL driver directly |
+
+Desktop Vite runs on port 5173 with strictPort and builds to src-tauri/gen/web. Tauri's frontendDist is gen/web relative to src-tauri. beforeDevCommand and beforeBuildCommand stage gpu-feeder before running the frontend command. A fresh direct cargo test/clippy can fail if the external binary has not been staged; CI stages it first using src-tauri/scripts/stage-gpu-feeder.mjs.
+
+The default capture backend is DXGI Desktop Duplication. The optional Cargo feature wgc selects the preserved Windows Graphics Capture path. Windows native compilation and WebView2 are part of the desktop setup; a browser-only frontend preview does not test native capture, audio, secret storage, global hotkeys, or entitlement enforcement.
+
+## 5. Runtime flow
+
+Source anchors: src-tauri/src/main.rs::main, src-tauri/src/lib.rs::run, src-tauri/src/gsi.rs::serve/handle, src-tauri/src/capture.rs, src/src/App.tsx, src/src/companion.ts.
+
+```text
+Dota GSI POST /gsi -> parse GameTick -> runtime snapshot + local G-Log
+                                      -> game-tick -> desktop live builders / overlay
+                                      -> announcer -> clip/TTS + announcer-banner
+
+DXGI minimap capture -> region/prefilter/ONNX -> Sentry -> Motion -> Signal
+                                                                  -> interrupt voice
+                                                                  -> gank-alert/clear
+                     -> minimap-cv / minimap-frame -> frontend
+
+User advice request -> G-Master constructed prompt -> Claude CLI or API
+                                                 -> Ollama in Auto fallback
+                                                 -> advice-update -> UI
+
+Google PKCE -> Supabase account/GID -> Terms + entitlement decision
+                                  -> native runtime unlock + update channel
+
+nvidia-smi in gpu-feeder -> POST /telemetry -> governor -> resource-stats
+```
+
+main.rs is a thin call to g_maiden::run(); it is not the command registry. lib.rs registers plugins, commands, window/tray behavior, initializes voice caches and TTS prewarming, starts the GSI server and resource governor, and manages capture startup. Native state checks protect GSI ingest, capture, and overlay visibility in gated builds.
+
+The hard gank decision is local Rust and does not invoke a language model for each alert. G-Master/Ollama are separate, slower advice paths. Default voice clips and prewarmed WAVs avoid synthesis on the usual alert path, but cold/missing-resource fallback exists; do not claim every voice path is in-process or has measured submillisecond end-to-end latency.
+
+## 6. Native feature map
+
+| Feature | Observed implementation | Limits / evidence paths |
+| --- | --- | --- |
+| GSI ingestion | Implemented: axum loopback server, parser, game-tick, watchdog, local logging | gsi.rs; live own-game data is the local player's snapshot, not all ten economies |
+| G-Sentry | Implemented in the capture pipeline: confirmed detections and missing-state tracking | sentry.rs, capture.rs; no CV-driven missing warnings in Lite mode |
+| G-Motion | Partial product scope: five-minute position history, missing-time risk, coordinated-missing boost, pre-vanish heading | motion.rs::Motion/heading_multiplier/assess; not a learned heatmap or through-fog path model |
+| G-Signal | Implemented: edge-triggered Alert/Revision with runtime sensitivity and hysteresis | signal.rs::Signal::evaluate, capture.rs; depends on capture-derived risk |
+| G-Sensory | Implemented across capture, governor, control and overlay | dxgi.rs, capture.rs, governor.rs, src/src/app/Overlay.tsx; device validation required |
+| G-Master | Conditional: Claude CLI/API or Ollama, counter-item text and self-burst prompt context | master.rs, counter_advice.rs, damage.rs; selected backend/model must be available |
+| G-Log | Implemented: local tick/event JSONL, match list/read/delete, efficacy analysis | log.rs; not an automatic production learning/training loop |
+| G-Damage | Partial: own-hero combo estimate feeds advice | damage.rs::self_burst; an enemy lethal-burst warning needs unobserved enemy stats and is not established by this code |
+| G-Revive | Implemented deterministic buyback verdict plus optional local narrative | revive.rs, respawn.rs, lib.rs::request_buyback_advice |
+| Draft roster CV | Conditional/scaffold: recognition loop and manual roster command exist | cv/draft_detector.rs and cv/draft_region.rs; portraits are absent from tracked models |
+| Scoreboard OCR | Scaffold, not a live enemy-economy feed in the inspected runtime | ocr.rs; model download tool exists, models are not bundled here |
+| Voice packs | Implemented bundle management, active resolution, previews, safe paths/archive extraction | voice_api/ facade, audio.rs, announcer.rs |
+| Persona settings | Preset selection affects runtime persona/voice paths | lib.rs::set_persona_preset, runtime.rs, tts.rs; not the whole future persona product |
+| Two-way G-Voice, G-Memory, G-Coach, advanced G-Mind, G-Stream, G-Score | Treat expanded requirements as planned/partial until a concrete caller proves otherwise | docs/features/ and PRD extensions; voice playback, JSONL history, backend selection, or a spec alone do not complete these features |
+
+### Signal thresholds and vision limits
+
+signal.rs::Sensitivity::thresholds returns Low (0.85, 0.50), Med (0.65, 0.40), High (0.50, 0.30), in danger/clear order. Med is the runtime default. Alert fires at or above danger; Revision fires below clear after an alert. The constants DANGER_THRESHOLD/CLEAR_THRESHOLD represent the Low/SRS baseline, not the default UI level.
+
+motion.rs retains a 300,000 ms window. Its default risk starts after five seconds missing, peaks around twelve seconds, then decays with a floor; heading modifies the heuristic. These probabilities express uncertainty, not knowledge of enemy positions in fog.
+
+DXGI requires a compatible visible desktop/game configuration; the repo calls for borderless fullscreen rather than exclusive fullscreen. Initialization failure leads to capture-mode lite. GSI-derived UI and ordinary event/advice capabilities can remain, but Sentry/Motion/Signal's CV chain cannot. A cloud outage with a working, entitled capture session is a different failure from losing capture or failing first-run authorization.
+
+## 7. Voice, audio, and AI backends
+
+The [event schema](schemas/gmaiden-events.json) and src-tauri/src/voice_api/events.rs mirror 24 non-none events. The mirror is tested against the vendored schema. Preserve exact case:
+
+```text
+danger, gank, revision, hpLow, manaLow, first_blood, kill,
+double_kill, triple_kill, ultra_kill, rampage,
+killing_spree, dominating, mega_kill, unstoppable, wicked_sick,
+monster_kill, godlike, beyond_godlike,
+levelUp, match_start, death, respawn, advice
+```
+
+The authoring ecosystem includes G-AnnStudio in G-Suite; that sibling repository is not part of this checkout. The local schema is available without that sibling. A pack contains manifest.json with clips/banner mappings, clips/, and banners/. The active pack's mapped clip is preferred, then the legacy event folder, then the bundled default. Missing clips reach TTS. The default bundle is exposed as read-only inventory, and its event coverage has a unit test.
+
+audio.rs owns rodio playback on a dedicated audio thread and supports priority/cancel semantics. announcer.rs selects the most important event per tick; gsi.rs emits a banner for the selected event. Banner assets are encoded for the overlay. Preview uses the same announcer-banner interface. Pack import/path handling is split into voice_api/path_safety.rs, pack_io.rs, paths.rs, banner.rs, commands.rs, and types.rs; the old monolithic voice_api.rs path is stale.
+
+tts.rs probes for Piper executable/model resources, can synthesize via an external Piper process and play WAV with rodio, and falls back to Windows SAPI through PowerShell. Critical fixed lines are prewarmed. Only the minimap model/labels are tracked under models at the baseline; an optional Piper code path does not mean a neural Thai voice is bundled or installed.
+
+master.rs::advise selects Auto, Claude, or Ollama. Auto attempts Claude and then local SLM on failure. Explicit Claude does not silently switch to Ollama; explicit Ollama stays local. Claude can use the user's CLI session or the Anthropic Messages API; the source model string is claude-haiku-4-5. Advice is throttled/cached on a 30-second window. No Gemini provider is wired in the inspected G-Maiden advisor.
+
+slm.rs uses http://127.0.0.1:11434/api/chat. A selected model overrides the fallback chain. With an empty selection, the source contains historical defaults hf.co/sillykiwi/Aroow-Rust-Coder-9B-Q4_K_S-GGUF:Q4_K_S then gemma4-rust-coder:latest. These names are code defaults, not recommendations or assertions that a fresh machine has them installed.
+
+## 8. Desktop UI and data contracts
+
+src/src/App.tsx dispatches overlay to app/Overlay.tsx; otherwise it creates CommandDeck with the settings Control component. In Vite DEV the deck is directly accessible; release frontend wraps it in GmadFirstRunGate. Rust separately seeds entitlement from cfg!(debug_assertions), so frontend and native build modes must agree.
+
+| Navigation key | Surface and implementation | Data caveat |
+| --- | --- | --- |
+| dashboard | CommandDeck.tsx: phase-aware dashboard, minimap, ON AIR, signal/resource state | Read readiness and sensor health; a rendered shell is not a live match |
+| live | CompanionPages.tsx: live view and build tab | Build advisor now uses actual hero, owned items, and advice text; unknown lane/next item remain unavailable |
+| voice | VoicePacksPage.tsx, VoiceInventory.tsx, AudioSettings.tsx | Native voice_api commands required for real inventory/actions |
+| store | StorePage.tsx plus WalletTab, InventoryTab, LedgerTab | Backend/provider availability and account rights determine transactions |
+| insights | CompanionPages.tsx plus live/buildInsights.ts, buildWeekly.ts, buildHistory.ts | OpenDota and local G-Log have different sources; missing statistics stay unknown |
+| account | AccountPage.tsx, AuthPanel.tsx, SteamLink.tsx, AccountSecurity.tsx | Identity/session UI exists; complete MFA/recovery does not follow from that |
+| settings | CommandDeck category rail plus app/Control.tsx | Bounded category content, updater, runtime preferences |
+
+The navigation source is shortcuts.ts::PAGES, with seven entries. Command-deck navigation, palette, and shortcut sheet derive from it. Native global shortcuts are registered separately in lib.rs: Ctrl+Alt+S toggles overlay; Alt+Up/Down change volume; Alt+M toggles mute. Closing the control window hides it to tray rather than quitting the process.
+
+companion.ts::useCompanionData composes live event state through pure live/build*.ts functions. The current default is FALLBACK with empty/unknown values. MOCK exists for demos; it is not the production source for every disconnected deck. live/events.ts contains frontend event types; gsi.rs::GameTick is the Rust serialized source for game state. Additive fields need compatible deserialization/default behavior and frontend typing.
+
+GameTick includes phase/clock, team score, local hero/level/alive, gold/net worth/GPM/XPM/KDA/CS/denies, HP/mana percentages, absolute hp/max_hp, Steam ID, buyback cost, respawn countdown, kill-list/victim-slot fields, and own item_names. It does not establish enemy inventory, exact enemy HP/armor/net worth, or lane assignments. CV identity/visibility and public historical OpenDota profiles must not be presented as hidden live game information.
+
+Deck layout intent lives in docs/design-system/: no page-level scrolling, overflow via bounded regions/tabs/pagination, and COLD BOOTH --g-* tokens. The overlay has its own contract and legacy palette. Do not apply an old single-file App.tsx design description to the current split app.
+
+## 9. Local HTTP interface
+
+Canonical router: src-tauri/src/gsi.rs::serve, bound to 127.0.0.1:3000. These are local application endpoints, not public cloud APIs.
+
+| Method | Route | Handler | Behavior |
+| --- | --- | --- | --- |
+| POST | /gsi | handle | Receives game JSON; parses local state, checks native runtime gate, emits game-tick and announcer effects |
+| POST | /announcer/install | announcer_install | Reports an already-on-disk pack and can activate it; supports packId and legacy pack |
+| POST | /overlay/layout | overlay_layout_sync | Validates layout, merges/persists settings, broadcasts settings and overlay-layout-sync |
+| POST | /telemetry | telemetry_ingest | Ingests gpu-feeder metrics for governor/resource presentation |
+| GET | /auth/callback | oauth_callback | Receives OAuth code/error, checks pending transaction, emits callback/error event |
+
+The announcer endpoint does not upload/extract a new pack or authenticate a cloud entitlement. OAuth has transaction-state checking; that does not imply every localhost route has bearer authentication. Do not expose this loopback server publicly as a general integration gateway.
+
+## 10. Registered Tauri commands
+
+The registry is tauri::generate_handler! in src-tauri/src/lib.rs. There are 63 commands at the baseline. Parameters and return types must be read at the named function; these are IPC commands, not HTTP routes. Namespace-qualified Rust entries below are exposed by their command function names.
+
+| Group | Registered commands |
+| --- | --- |
+| Lifecycle / entitlement / updates | set_overlay_visible, verify_gmad_entitlement, lock_gmad_runtime, check_channel_update, install_pending_update, quit_application |
+| Speech / signal / persona | speak, speak_event, cancel_speech, list_voices, set_cv_voice, set_persona_preset, set_cv_signal_enabled, set_announcer_enabled, set_cv_signal_sensitivity |
+| Advisor configuration | set_master_backend, set_master_ollama_model, set_master_mode, set_master_api_key, has_master_api_key |
+| Authentication / secrets | oauth_begin, secret_set, secret_get, secret_delete |
+| Calibration / efficacy | set_calibration_enabled, capture_calibration_clip, set_efficacy_enabled, efficacy_summary |
+| Volume / resources | set_volume, get_volume, set_telemetry_source |
+| Voice inventory / authoring | voice_cache_status, voice_api_state, voice_api_action, voice_api_create_template, voice_api_upload_asset, voice_api_import_archive, voice_api_map_event, voice_api_update_pack, preview_announcer_event, read_audio_bytes, list_event_clips, play_clip, open_voice_cache_dir |
+| Setup / URLs / settings | open_url, detect_gsi_setup, detect_dota_running, install_gsi_config, save_settings_file, load_settings_file |
+| Local log management | get_log_dir, current_match_path, open_log_dir, list_match_logs, delete_match_log, read_match_log, delete_all_match_logs |
+| Gameplay requests / identity / usage | request_advice, request_buyback_advice, set_draft_roster, read_usage, clear_usage_log, resolve_steam_id |
+
+secret_set/get/delete resolve to secret.rs and resolve_steam_id to identity.rs. The rest are registry functions in lib.rs forwarding to native modules. Check src-tauri/capabilities/ and tauri.conf.json security before changing frontend/native access.
+
+## 11. Important Tauri event families
+
+This is a curated consumer map, not an assertion that every emitted diagnostic event is listed. Producers use tauri::Emitter; consumers use @tauri-apps/api/event. Payload types belong to source, not this table.
+
+| Events | Primary producer / consumers | Meaning |
+| --- | --- | --- |
+| game-tick, gsi-status | gsi.rs -> companion.ts and overlay | Snapshot and connection/watchdog state |
+| minimap-cv, minimap-frame, enemy-missing, draft-roster | capture.rs -> companion.ts / live builders | Vision data, display frame, missing state, roster |
+| capture-mode | capture.rs -> frontend status | Capture versus Lite state |
+| gank-alert, gank-clear | capture.rs -> live builders / overlay | Signal alert and retraction |
+| announcer-banner | gsi.rs or preview_announcer_event -> overlay | Fired pack event banner |
+| advice-update | request_advice -> companion.ts and other UI consumers | Text and cached advice status |
+| buyback-advice, buyback-narrative | request_buyback_advice -> overlay | Deterministic verdict and asynchronous narrative |
+| resource-stats | governor.rs -> companion.ts | CPU/RAM and optional GPU sidecar measurements |
+| settings, overlay-layout-sync | settings/layout producers -> separate WebViews | Preference/layout synchronization |
+| volume-change, signal-change, announcer-change | lib.rs settings/hotkeys -> UI | Runtime preferences |
+| oauth-callback, oauth-error | gsi.rs -> auth transaction listeners | OAuth completion/error, not an independently trusted login |
+
+The control and overlay are separate JavaScript contexts. Do not rely on one window's local React state to enforce native permissions or choose update channels for the other.
+
+## 12. Identity, first-run authorization, and resilience
+
+Sources: src/src/auth.ts, oauthTransaction.ts, secureStorage.ts, profile.ts, gid.ts, gmadEntitlement.ts, gmadFirstRun.ts, GmadFirstRunGate.tsx; native secret.rs, runtime.rs, gmad_entitlement.rs, and lib.rs.
+
+Google OAuth with PKCE is the normal primary sign-in. The loopback callback returns a code rather than a fragment access token. The transaction state is single-use/time-bounded; Rust opens the authorization URL through the system browser. Supabase UUID remains the internal identity. GID is a permanent human-readable identifier, not a password, account-recovery factor, or bearer entitlement.
+
+gid.ts defines G-[Generation][Payload][Checksum], with F/B/P cohort markers, a base-31 payload derived from registration day and cohort sequence, and a checksum. Server minting is through mint-gid; arbitrary client GID text cannot create access. Steam linkage resolves public identity via identity.rs and supplies an OpenDota account baseline, not verified control of hidden game state.
+
+In packaged Windows usage, secureStorage routes Supabase session/PKCE storage through native DPAPI secrets. Browser-only preview uses localStorage. Legacy plaintext migration is conditional on a successful native read/write path; it is not a reason to write new native tokens unencrypted. DPAPI protects stored values within its Windows user boundary, not against all code already running as that user.
+
+Release first-run flow is Google account -> current Terms -> active entitlement -> setup/deck. The pure UI state vocabulary includes loading, sign_in_required, signing_in, eligible, terms_required, no_active_entitlement, account_not_eligible, and offline_or_unavailable. Native unlock requires eligible plus nonempty GID and Terms version. Merely rendering the control page, having an installer, or holding a signed download URL is insufficient.
+
+runtime.rs includes a 24-hour in-memory entitlement grace window after a confirmed eligible result. lib.rs::verify_gmad_entitlement can return a stale-marked decision on network failure within that window. A fresh denial or sign-out clears the cache; first cold start has no cached entitlement. This is not a durable offline license. gmadFirstRun.ts also distinguishes background TOKEN_REFRESHED checks from explicit/first checks; inspect native and frontend behavior together when investigating lockouts.
+
+## 13. Account security and known IAM boundary
+
+The GAP-01/02 remediation changes current sign-out: securitySession.ts shares transaction state across hooks; native lock precedes a bounded remote revocation attempt; supabase.ts independently clears the three auth persistence keys and finalizes the actual SDK session even when the remote service fails. secureStorage.removeItem propagates native/legacy deletion failure. A cleanup failure remains gated and retryable; local success with unconfirmed remote revocation displays a warning through navigation. Other-session behavior remains separate. During cleanup, auth storage reads/writes and transport cannot restore the local session; outstanding auth fetches are aborted. The pinned SDK can still finish its internal retry loop with local transport rejections; these are not additional outgoing fetches while blocked.
+
+For entitlement, usable grace remains Ok(stale). Rejected checks clear the UI decision and show unavailable, including background refreshes. The release Account panel consumes the first-run gate's context to avoid competing checks. Native ENTITLEMENT_REQUESTS serializes result commits with lock/invalidation so old responses cannot rearm access. Boss approved the existing 24-hour process-local grace exception in CR-022 on 2026-09-12; this does not create a durable receipt or a continuous expiry timer. See [approved remediation and evidence](docs/operations/auth-failure-remediation-proposal.md) for current verification limits.
+
+AccountSecurity.tsx and securityApi.ts implement security state/events, observed devices, and current/other-session actions. Observed app devices are not an authoritative inventory of every device that has ever accessed Supabase. The API's contacts field is empty in the present contract. A session viewer does not prove completed TOTP enrollment, phone/recovery verification, Google rebind, public profile, or GID Shield.
+
+supabase/functions/_shared/iam.ts contains capability/role/AAL/session decisions; iam_runtime.ts adapts them to Supabase and a least-privilege PostgreSQL connection. IAM code uses IAM_DATABASE_URL and IAM_AUDIT_HMAC_KEY, with configurable retention. Do not disclose their values or put privileged keys in frontend config.
+
+Only admin-gmad-controller and the three iam-* function entrypoints call requireIamContext at this baseline. Other inspected product functions still use auth.getUser and their own access checks. Do not claim universal live-session revocation or capability/audit coverage for all functions.
+
+[CR-034](docs/change%20request/CR-034-gid-iam-production-completion.md) and its [execution plan](docs/operations/EXEC-PLAN-CR-034-iam-remediation.md) explicitly record unfinished remediation. The execution plan reports a 2026-08-28 production snapshot where IAM foundations were deployed ahead of approval/document reconciliation and AAL2 requirements could block administrators without an enrollment path. That is historical evidence, not a live production check on 2026-09-12. Its owner decisions and task-state table must be read before continuing that work.
+
+## 14. Landing and public web surfaces
+
+landing/src/main.tsx normalizes pathname and renders PublicDemo for /demo or /public-demo; other paths render App, whose component returns LandingPage. App.tsx implements the hero, scroll narrative, feature sections, beta/GID entry, countdown, and related access panel. HeroMedia25D.tsx and scrollNarrative.ts implement the media/narrative presentation. Static demo data and visuals are not a live game telemetry surface.
+
+There is no /ops dispatch or OpsPage in this inspected source. landing/vercel.json contains install/build/output settings and no rewrites. Thus even the client-side demo dispatch is not evidence of working production deep links; host behavior must be verified separately. A countdown reaching its configured date is not proof that beta distribution policy has opened.
+
+beta.ts handles browser Supabase sign-in/enrollment; gmadAccess.ts and BetaAccessPanel.tsx handle queue/Terms/download interactions. landing/src/main.tsx enables Vercel Analytics only in production on non-localhost and filters to pageview events with origin/path, dropping query/fragment. This is distinct from player match-log telemetry; an absolute statement that no repository component ever uses analytics is inaccurate.
+
+The landing build runs landing/scripts/verify-legal-mirrors.mjs as prebuild before TypeScript/Vite. Keep the checked legal mirrors aligned with their canonical source if editing them. This reference does not decide whether draft legal copy has legal approval.
+
+## 15. Supabase Edge Function inventory
+
+Thirteen entrypoints exist under supabase/functions/<name>/index.ts. Their presence is source evidence only. Local supabase/config.toml is not an export of hosted provider/auth settings.
+
+| Function | Source responsibility | Boundary |
+| --- | --- | --- |
+| mint-gid | Authenticated profile lookup and server GID mint/persistence | Identity handle, not a sign-in credential |
+| check-gmad-queue | Terms, enrollment, distribution policy, and grant state | Returns queue/access state, not an artifact URL |
+| accept-closed-beta-terms | Validates current legal documents; writes receipt/audit and enrollment/grant effects | Required Terms and optional consent are separate concerns |
+| get-gmad-desktop-entitlement | Validates account, Terms, grant and desktop access/channel decision | Called again natively before runtime unlock |
+| request-gmad-download | Checks account/Terms/GID/grant then signs private artifact access | gmad-releases bucket; five-minute URL, not durable authorization |
+| admin-gmad-controller | Owner/admin role delegation and batch/grant operations | Uses shared IAM capability/AAL/session checks; no matching /ops UI here |
+| iam-security-state | Current session/security factors and app-observed device projection | Requires shared IAM; not a full MFA enrollment service |
+| iam-security-events | Reads private security event projection | Returns bounded/sanitized security context |
+| iam-session-action | Current or other-session action using supported auth mechanisms | Scoped action, not arbitrary auth table editing |
+| pack-download | Verifies owned catalog inventory and signs a pack bundle download | Separate packs bucket and store ownership boundary |
+| topup-create | Authenticated coin-package/order creation and payment-provider integration | Source does not prove live provider activation or successful payment |
+| payment-webhook | Provider event verification, idempotency, and credit_topup RPC | Explicit verify_jwt=false; provider checks substitute for end-user JWT |
+| match-share-submit | Verifies an explicitly submitted finished match with OpenDota and mints Shard | HMAC match reference; provisional scoring/receipt design; no raw G-Log upload |
+
+Explicit local function JWT entries exist for topup-create, match-share-submit, admin-gmad-controller, iam-security-state, iam-session-action, iam-security-events (true), and payment-webhook (false). Absence of an explicit function block is not evidence that authentication is disabled. Inspect both platform configuration and handler checks.
+
+match-share-submit verifies a linked Steam account, completed match, participation, duplicate/cap constraints and uses mint_shard_from_match. Verification failures can return HTTP 200 with shard_minted: 0 and reason; do not treat every HTTP 200 as a reward. It uses a raw match ID only as input/lookup and persists a derived HMAC reference. topup and webhook code must be assessed with the server-side SQL invariants; UI success is not payment settlement evidence.
+
+## 16. Data and migration map
+
+There are fifteen tracked migrations. The table describes purpose and schema names, not which migrations are applied to a hosted project. Read SQL, explicit grants/RLS, and the corresponding SQL tests before changing data boundaries.
+
+| Migration suffix (under supabase/migrations/) | Purpose |
+| --- | --- |
+| 20260702000000_platform_default_privileges.sql | Platform default privileges foundation |
+| 20260704000000_adr14_gid_account_identity.sql | profiles, gid_counters, cohort allocation, new-user profile lifecycle |
+| 20260704120000_sec001_identity_hardening.sql | Identity/role/GID protection and profile write restrictions |
+| 20260711120000_cr003_wallet_billing.sql | Wallet, immutable transaction ledger design, catalog, purchases, inventory, orders, redemption, submissions, tips and economy configuration |
+| 20260720183000_cr005_closed_beta_registration.sql | closed_beta_enrollments and signup integration |
+| 20260720184500_cr005_beta_rls_initplan.sql | Beta RLS optimization |
+| 20260721120000_cr016_gmad_download_access.sql | gmad_download_batches, grants, audit and private distribution |
+| 20260721130000_cr019_owner_role_and_delegation.sql | Owner role and operator delegation boundary |
+| 20260721183000_cr021_terms_receipts.sql | closed_beta_legal_documents and closed_beta_terms_receipts |
+| 20260721184500_cr021_terms_receipt_audit.sql | Receipt audit progression |
+| 20260722011025_cr021_legal_table_privilege_hardening.sql | Legal table privileges |
+| 20260809120000_gid_pipeline_distribution_policy.sql | gmad_distribution_policy |
+| 20260814090000_goe005_private_cloud_sync.sql | Private G-AnnStudio project/asset synchronization (ann_projects, ann_project_assets) |
+| 20260823221844_cr034_iam_phase1_foundation.sql | iam_private.security_events, session/role helpers and signup hook |
+| 20260824024920_cr034_iam_phase2_sessions.sql | iam_private.device_registry and private device/event projections |
+
+CR-003 tables include wallets, wallet_ledger, coin_packages, topup_orders, webhook_events, catalog_items, purchases, inventory, redeem_codes, redemptions, deletion_requests, match_submissions, tips, and economy_config. Important RPCs include ensure_wallet, purchase_item, credit_topup, mint_shard_from_match, tip, and redeem_code. Their caller grants differ; never assume every RPC is a client API.
+
+Eight SQL test files are in supabase/tests/: sec001_identity_lock.sql, cr003_wallet_billing.sql, cr005_closed_beta_registration.sql, cr016_gmad_download_access.sql, gid_pipeline_distribution_policy.sql, goe005_private_cloud_sync.sql, cr034_iam_phase1.sql, and cr034_iam_phase2.sql. Running them requires a correctly prepared isolated database; merely listing them does not prove RLS tests passed.
+
+## 17. Persistence, network, and privacy
+
+| Data / integration | Inspected behavior | Evidence |
+| --- | --- | --- |
+| Match logs | Local JSONL under %LOCALAPPDATA%/G-Maiden/logs, plus local diagnostics | src-tauri/src/log.rs |
+| Settings | Frontend preferences and native settings-file persistence; events sync windows | lib.rs::save_settings_file/load_settings_file and src/src/app/ |
+| Voice assets | Active pack/manifest and clip/banner assets resolved locally | voice_api/paths.rs and pack_io.rs |
+| Auth/API secrets | Native DPAPI store for Windows app; browser preview has a separate storage fallback | secret.rs, secureStorage.ts |
+| Gameplay CV frames/detections | Local capture, local processing, local UI/QA outputs in the inspected path | capture.rs, cv/, calibration.rs |
+| Advisor request | Constructed local hero/level/KDA/economy/HP/mana/score and derived advice context goes to selected backend | master.rs::build_prompt/try_claude; cloud choice has network egress |
+| Public player history | OpenDota HTTP queries using public Steam/account identity | src/src/live/opendota.ts, identity.rs |
+| Identity/access/store | Supabase auth, profile, Terms, entitlements, wallet/store, security services | frontend clients and supabase/functions/ |
+| Explicit match contribution | Finished-match ID lookup, verification and HMAC reference/credit; separate from sign-in | match-share-submit, ADR-11, ADR-16 |
+| Landing pageviews | Production browser pageview analytics with query/fragment redaction | landing/src/main.tsx |
+| GPU telemetry | Local feeder POST, no game-data analytics implied | gpu-feeder/, governor.rs, /telemetry |
+| Software updates | GitHub channel manifest and signed release artifact retrieval | update_channel.rs, lib.rs, release workflow |
+
+Do not summarize this as either "everything stays offline" or "raw match logs are uploaded." Both lose necessary boundaries. Cloud advice sends a constructed gameplay summary; raw log/CV storage is separate. Account sign-in does not opt a player into match contribution. A finished-match contribution is not a live enemy-position feed. Existing comments about privacy are requirements to evaluate against paths, not substitutes for checking those paths.
+
+Public/publishable Supabase client configuration appears in source. Do not copy credentials, JWTs, user records, logs, raw match data, signing secrets, or local environment files into LLM reference files. This guide documents configuration names and contracts only.
+
+## 18. G-Orchestra and developer tooling
+
+G-Orchestra has a separate ownership/documentation boundary. orchestration/engine.mjs manages dependency-ready tasks, claims, leases, routing and execution; orchestrator.mjs provides CLI access; server.mjs is the Node HTTP interface (default port 4577). Its Tauri shell at orchestration/src-tauri/src/main.rs supervises the Node engine. Studio is a separate React/Vite surface with a graph canvas.
+
+server.mjs exposes GET /api/state, /api/ollama, /api/providers, /api/knowledge, /api/personas, /api/rwang/state, /api/log, /api/doc-graph, /api/doc-content and POST /api/node, /api/edge, /api/query-nodes, /api/search, /api/cmd. These belong to the developer tool, not the player's :3000 GSI router. The current listen call supplies a port without a loopback host argument; do not assume this developer server has the GSI server's binding boundary.
+
+orchestration/gks/atoms*.json are authoritative for their compiled projections. gks/compile.mjs produces backlog and atom Markdown outputs; edit the corresponding atoms rather than hand-editing derived output. store/knowledge.mjs and store/genesis-sidecar.mjs provide the knowledge-store integration. A sidecar interface or spec does not establish an available local Genesis service.
+
+The engine can dispatch real agents and change files/state. Running its execution/reset commands is an operational action, not a harmless documentation check. Its model-routing configuration and dollar estimates are independent of the G-Maiden gameplay advisor. The root orchestration README also contains encoding-damaged prose; prefer source and the docs ownership guidance for exact behavior.
+
+hybrid-meter/cli.mjs is a separate usage-log demo/watch/report tool. Its sample replay and estimated savings are not current production usage or a privacy audit of all providers. tools/lithos-hero is an independent React/Vite art utility, not the shipping landing router. Dataset/model/voice preparation lives in tools/gen-dataset, train-detector, gen-herodb, voice-gen, and ocr-download. Read their inputs before regenerating assets; a tool's existence does not prove model accuracy or media provenance.
+
+## 19. Documentation architecture and ownership
+
+| Document group | Use |
+| --- | --- |
+| docs/product/ | Thai product/business requirements, roadmap, identity masterplan, legal drafts |
+| docs/architecture/ | Tech stack, TDD, engineering spec, implementation design, ADRs and spikes |
+| docs/design-system/ | Foundations/tokens/layout/components, sitemap, combat HUD, account/GID |
+| docs/features/ | FEAT-G-* module specifications; filename does not imply implementation |
+| docs/change request/ | CR-001 through CR-034 and related wave/implementation material |
+| docs/releases/ | Channel governance, public-demo, closed/open-beta specs and exit criteria |
+| docs/operations/ | Release/validation runbooks and CR-034 task state |
+| docs/audits/, docs/rca/ | Dated evidence and cause analysis; preserve historical meaning |
+| docs/research/, docs/superpowers/ | Research, competitive concepts, and scoped plans/specs |
+| orchestration/docs/, orchestration/gks/ | Separate developer-product specs and authoritative atoms/projections |
+
+Useful parent/peer pairs: signal.rs -> SRS/engineering spec + FEAT-G-SIGNAL; motion.rs -> FEAT-G-MOTION + capture/sentry contracts; account/entitlement -> ADR-14, CR-008/016/019/021/022/034 + _shared auth policies; voice pack -> vendored event schema + FEAT/CR-009 and overlay banner consumers; release -> channel architecture + scripts/releases/ + .github/workflows/ + native updater.
+
+New Markdown under docs/ requires title, doc_id, status, version, updated and owner frontmatter; approval metadata applies when required by lifecycle. version must match the last row of an exactly named ## Changelog section. Common valid statuses are draft, active, accepted, stable, superseded and historical. Do not manufacture an approval to satisfy a graph check.
+
+tools/doc-graph/ci-gate.mjs runs the existing test suite, encoding checks, strict scan, approval-checklist coverage, ledger and orphan report. It can regenerate docs/DOC-GRAPH.json, DOC-GRAPH-REPORT.md, FEATURE-LEDGER.md, FEATURE-ORPHAN-REPORT.* and atomic_index.jsonl; review/commit generated changes with the source documentation when that gate applies. docs/feature-ledger.manifest.yaml is a registry input, not a generated report to overwrite casually.
+
+The root llms files are curated references, not new FR/CR requirements or generated graph artifacts. llms.txt follows the H1/summary/topic-link structure of the [llms.txt proposal](https://llmstxt.org/). llms-full.txt is a repository-specific extended reference, not a claim to be a verbatim concatenation of every document.
+
+## 20. Development commands and prerequisites
+
+Commands below are read from repository scripts/workflows. They were not all executed during this documentation review. Install dependencies in the correct package with its declared package-manager version. Use an isolated configuration for tests that can contact Supabase; the desktop and landing clients currently contain a hosted backend address, so a localhost UI is not automatically a local backend.
+
+From repository root on a Windows development machine with the Rust/MSVC/WebView2 prerequisites:
+
+```powershell
+pnpm install --frozen-lockfile
+pnpm -C src install --frozen-lockfile
+pnpm dev
+```
+
+pnpm dev expands to pnpm tauri dev and invokes staging/frontend hooks. For frontend-only work, pnpm -C src dev starts Vite. That preview uses frontend fallback behavior and cannot certify native features. pnpm build:fe builds the desktop frontend; pnpm tauri build builds the desktop application with its hooks. Bundling and signing have additional release requirements.
+
+Desktop validation commands used by source governance/workflows:
+
+```powershell
+node src-tauri/scripts/stage-gpu-feeder.mjs
+cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D warnings
+cargo test --manifest-path src-tauri/Cargo.toml --locked
+pnpm -C src exec eslint .
+pnpm -C src exec tsc --noEmit
+pnpm -C src test
+pnpm tauri build --no-bundle -- --locked
+```
+
+For landing, use pnpm 10.34.5 in that package's environment:
+
+```powershell
+pnpm -C landing install --frozen-lockfile
+pnpm -C landing dev
+pnpm -C landing test
+pnpm -C landing build
+```
+
+Do not reuse Vitest 1-only reporters with landing Vitest 4. Landing prebuild checks legal mirrors. The root CI workflow does not install/test landing or all Deno/SQL projects, so a green root CI alone cannot establish those checks passed.
+
+Relevant focused commands for prepared environments:
+
+```powershell
+node tools/doc-graph/ci-gate.mjs
+node --test tools/pr-gate-agent/rules.test.mjs
+deno test --allow-env --allow-net supabase/functions/_shared/
+cargo run --release --manifest-path tests/perf/Cargo.toml
+```
+
+The perf README distinguishes headless hops from live DXGI/audio measurements. Its batch gate uses exit 0 PASS, 1 FAIL, 77 SKIP. Real game/device measurements and FPS impact remain separate acceptance work. Some script commands may require external models, data, services or additional dependencies; absence must be reported as unavailable, not silently replaced with fixture success.
+
+For G-Orchestra, run node orchestrator.mjs status/next/graph from orchestration/ to inspect task state, and npm run ui to start its server. Read engine configuration before executing workers. Compile GKS from orchestration/ with node gks/compile.mjs only when intentionally regenerating projections.
+
+## 21. CI and release semantics
+
+.github/workflows/ci.yml runs on pushes and pull requests to main, on Windows with Node 20, root pnpm configuration and Rust 1.96.0. It installs root/desktop dependencies; runs doc-graph gate; stages gpu-feeder; runs locked clippy, desktop ESLint, locked Rust tests, desktop Vitest; then Tauri build. TypeScript compilation also occurs through the frontend build hook. Inspect current YAML rather than relying on old test counts in prose.
+
+main is governed through pull requests according to AGENTS.md. Create a docs/<topic> branch for documentation; stage explicit paths, never git add -A. Use origin explicitly when pushing; a fresh clone need not contain the historical second rwang remote mentioned in old guidance. The owner merges. Do not disable CI, rewrite reviewed history, or treat required reviewer count zero as authorization to self-merge.
+
+Release channels are dev, closed-beta, stable. candidate-release.yml and promote-release.yml are workflow_dispatch only: pushing a tag does not itself publish a release. Candidate flow verifies lineage, checks/tests, builds/signs artifacts, and opens a dev manifest PR. Promotion uses a production environment and defaults to dry_run; it points stable at the same signed artifact without rebuilding/resigning. A channel manifest file in this checkout is not a live distribution query.
+
+Version sources are root package.json, src/package.json, src-tauri/tauri.conf.json, src-tauri/Cargo.toml plus Cargo.lock, and src/src/app/theme.ts::APP_VERSION. Do not bump the application version for this reference. modules.json still says app 0.7.2 and is not current release version authority.
+
+The active updater commands are check_channel_update and install_pending_update in lib.rs. The backend constructs a hardcoded channel URL and leaves target selection to the plugin. Channel names must not replace platform keys. A frontend request cannot widen to an unauthorized restricted channel. PendingUpdate retains the exact offered artifact. The old-looking configured {{target}} endpoint should not be copied into a new direct JavaScript updater path that bypasses the native channel logic.
+
+## 22. Confirmed documentation discrepancies
+
+These findings explain how this reference differs from older prose. They are recorded without editing unrelated specs or declaring those product gaps fixed.
+
+| Older statement / location | Source-backed correction at the baseline | Evidence anchor |
+| --- | --- | --- |
+| main.rs contains the app and command registry | main.rs is a shim; lib.rs hosts runtime setup/commands | src-tauri/src/main.rs::main; lib.rs::run |
+| App.tsx is the full overlay/settings implementation | It routes to app/Overlay.tsx, app/Control.tsx, CommandDeck and first-run gate | src/src/App.tsx::App |
+| voice_api.rs is the current event/pack implementation | Implementation is a voice_api/ module facade; vendored schema is local | src-tauri/src/voice_api/mod.rs and events.rs; schemas/gmaiden-events.json |
+| All G-Sentry/G-Signal capabilities survive Lite mode | CV gank detection needs capture; Lite retains other GSI paths | capture.rs initialization/loop; signal evaluation occurs in capture |
+| G-Motion implements full heatmap/path prediction | Heading-aware missing-time heuristic; no learned through-fog trajectory model | motion.rs::Motion::assess/heading_multiplier |
+| Build advisor remains MOCK-only | Actual hero, inventory and advice are composed; lane/nextItem unknown | companion.ts buildAdvisor call; live/buildAdvisor.ts::buildAdvisor |
+| No data means a populated MOCK deck | Default production composition starts from honest FALLBACK; MOCK is a separate demo fixture | companion.ts::FALLBACK and initial snapshot |
+| Account sign-in is always optional / CR-022 only planned | Release control surface and native runtime are entitlement-gated; dev differs | App.tsx; runtime.rs::GMAD_ENTITLED; lib.rs::verify_gmad_entitlement |
+| No Terms receipt implementation exists | Receipt migrations and accept-closed-beta-terms exist; legal/deployment status is a separate question | 20260721183000_cr021_terms_receipts.sql; function entrypoint |
+| Account security is wholly planned, or wholly complete | Security/session UI and three IAM functions exist; MFA/recovery and universal enforcement are incomplete | AccountSecurity.tsx; securityApi.ts; IAM entrypoint usage; CR-034 execution plan |
+| /ops owner/admin UI is available | No /ops dispatch/component in this landing checkout; backend controller exists | landing/src/main.tsx::Root; landing/src/App.tsx::App; landing/vercel.json |
+| Landing always has only one surface | main.tsx also dispatches /demo and /public-demo; hosting fallback remains unverified | landing/src/main.tsx::Root |
+| TTS is SAPI-only and Piper has no implementation | Optional Piper probing/synthesis and critical-line prewarm exist; resources are not bundled here | tts.rs::piper_probe/piper_synth/prewarm_critical_lines |
+| Cloud warning engine needs Gemini or a pinned Qwen model | G-Signal is a local deterministic decision; G-Master has Claude/API/Ollama | signal.rs; master.rs; slm.rs |
+| No match-related context ever leaves the machine | Cloud advice sends a constructed gameplay summary; raw logs/CV and explicit contribution have separate boundaries | master.rs::build_prompt and backend dispatch; match-share-submit |
+| Old modules.json and test counts describe current app | Five app version sources say 0.13.2; historical counts are not fresh test results | package/config/Cargo/theme version sources; current workflow |
+
+For exact code locations after a refactor, search the symbol rather than trusting old line numbers. Example: rg -n 'fn verify_gmad_entitlement' src-tauri/src/lib.rs. Evidence links in llms.txt point to current files, while this table names stable symbols for locating the relevant behavior.
+
+## 23. Verification record and limits
+
+This reference was prepared from the baseline source and local documentation. File inventory and extracted registries establish counts, not functional acceptance. The review did not log into a player account, launch a live Dota match, transact payment, apply migrations, change provider settings, publish a website, push a branch, or cut a release. No hosted CI or production status was freshly verified.
+
+The local Code-Doc Aligner requires the model named by CODEDOC_MODEL, whose default is hf.co/yuxinlu1/Mellum2-12B-A2.5B-Claude-4.6-4.8-Opus-Thinking-GGUF:Q4_K_M. Ollama was reachable during review, but that exact default model was absent. The aligner process exited 2 at preflight: INDETERMINATE, never an alignment pass. A differently named Mellum model was not substituted. Static source/reference checks remain distinct from that model gate and from application tests.
+
+| Check performed on 2026-09-12 | Result and scope |
+| --- | --- |
+| Root reference UTF-8 and index structure | Passed; short index uses H1, summary and linked H2 file lists |
+| Local Markdown links across both files | 80 references resolved to existing repository targets |
+| Registry coverage | All 63 Tauri commands, 13 Edge Functions, 15 migrations and 24 voice events represented |
+| Application version sources | Five version sources agree on 0.13.2; not changed by this work |
+| node tools/doc-graph/ci-gate.mjs | Exit 0; 215 tests in 18 files; encoding/ledger/orphan checks passed |
+| Strict graph exceptions | 14 existing strict errors, all covered by the repository checklist, zero uncovered; not a zero-error strict scan |
+| Generated graph outputs | Restored for the initial reference-only review; later audit/remediation regenerates and retains required graph artifacts |
+| Code-Doc Aligner | Exit 2, required default model absent; no model-reviewed alignment verdict |
+| Application/runtime/hosted checks | Initial reference review ran no app suites. Subsequent GAP-01/02 local test/build evidence is recorded in the remediation document; hosted/production acceptance remains separate |
+
+For changes to root text references, validate UTF-8, the short index structure, all local Markdown link targets, path inventory, command/event/function/migration completeness, version consistency, and git diff whitespace. Runtime tests are not replaced by these checks. Any later application change must run the relevant suites and native acceptance work required by governance.
+
+## 24. Maintenance and reading recipes
+
+Refresh manually when source changes; there is no generator or CI freshness check for these two files in this change. Record the new source commit/date, review only changed contracts, and increment the reference version with a Changelog entry. Keep llms.txt compact and navigation-oriented. Keep detailed claims and discrepancies in llms-full.txt. Do not concatenate private session histories, environment files, player data, or secrets into either artifact.
+
+When refreshing, compare these authoritative sets: lib.rs generate_handler registry; gsi.rs Router; voice_api/events.rs versus schemas/gmaiden-events.json; supabase/functions/*/index.ts; supabase/migrations/*.sql; shortcuts.ts::PAGES; landing/src/main.tsx pathname routing; package scripts and workflows. Revisit models/ and resource configuration when classifying conditional features. Keep deployment claims dated and evidence-qualified.
+
+| Task | Read first | Then verify |
+| --- | --- | --- |
+| Missing gank warning | capture.rs, sentry.rs, motion.rs, signal.rs, runtime.rs | Entitlement, capture mode, sensor health, thresholds, audio admission; then live device evidence |
+| Incorrect item/build advice | master.rs, damage.rs, counter_advice.rs, live/buildAdvisor.ts | Available own-game inputs, known-enemy context, chosen backend and UI unknown states |
+| Login/first-run failure | auth.ts, oauthTransaction.ts, gmadEntitlement.ts, lib.rs, gmad_entitlement.rs | OAuth transaction, Terms/eligibility, native gate, grace versus cold-start state |
+| Account security work | CR-034 and execution plan, _shared/iam*, AccountSecurity.tsx | Current approvals, capabilities/AAL/session rules, migrations/grants and isolated negative tests |
+| Voice pack/banner mismatch | schema, voice_api/, announcer.rs, audio.rs, Overlay.tsx | Exact event spelling, active manifest, safe asset path, fallback and banner synchronization |
+| Landing route mismatch | landing/src/main.tsx, App.tsx, vercel.json | Client dispatch separately from deployed deep-link handling |
+| Update failure | lib.rs updater commands, update_channel.rs, manifest tooling | Entitled channel, endpoint, platform key, signature, offered artifact and current manifest |
+| Feature/doc status question | Current source, feature map/ledger, relevant CR/ADR | Implemented versus conditional/planned, provenance date and acceptance evidence |
+| G-Orchestra modification | orchestration engine/server, package, authoritative GKS atoms | Developer-tool ownership, generated projections and side effects |
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | 2026-09-12 | Initial source-derived repository reference and llms.txt topic index; current interfaces, ownership, setup, verification limits, and historical documentation discrepancies. Application version unchanged. |
+| 0.2.0 | 2026-09-12 | Update auth cleanup, shared gate state, native request invalidation and approved in-process grace; link remediation verification. Application version unchanged. |

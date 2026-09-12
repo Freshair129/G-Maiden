@@ -1,14 +1,14 @@
 ---
-version: "0.4.4b"
+version: "0.5.0b"
 title: "CR-034: GID IAM Production Completion"
 doc_id: "CR-034-gid-iam-production-completion"
 created_at: "2026-08-23T18:14:14+07:00,ATHER"
-last_update: "2026-08-28T12:55:00+07:00,ATHER"
+last_update: "2026-09-12T22:26:45+07:00,RWANG"
 owner: "Boss"
 approved_by: "Boss (Phase 0; Phase 1 and Phase 2 local/reviewable implementation)"
 approved_date: "2026-08-24"
 status: "draft"
-updated: "2026-08-28"
+updated: "2026-09-12"
 superseded_by: null
 attributes:
   doc_type: "change-request"
@@ -692,6 +692,12 @@ Boss must approve or supply:
 - match/CV/G-Log cloud upload or analytics
 - wallet/payment redesign
 
+### Approved current-session cleanup amendment — 2026-09-12
+
+Boss approved [GAP-01/02 remediation](../operations/auth-failure-remediation-proposal.md) for local implementation. For current sign-out, native lock is mandatory before the remote attempt; remote timeout/error cannot prevent local cleanup. Remote revocation uses the captured current-session access token and a five-second abort deadline; absence of confirmation is shown separately from local cleanup success. Local auth keys, PKCE verifier and SDK user persistence are removed even when the security service is unavailable. Credential deletion errors remain visible and block new sign-in until cleanup retry succeeds. No claims about other sessions or server audit success are fabricated.
+
+Sign-out state is shared across auth hook instances; the release Account entitlement panel consumes its parent gate's decision instead of starting a competing verification. A native request-generation guard prevents an older in-flight verification from committing after sign-out or a newer check. Cold-start and 24-hour process-local grace follow the newly approved CR-022 §7 amendment. No changes to AAL2, provider configuration, D1–D4 or production authority are included. Task/evidence state remains in EXEC-PLAN CR-034 T10/T11.
+
 ## 19. Approval gate
 
 Approval recorded for **Phase 0**, **Phase 1 local/reviewable implementation**, and **Phase 2
@@ -713,3 +719,4 @@ live blockers before any production promotion decision.
 | 0.4.2b | 2026-08-24 | draft | Fixed Phase 2 activity pagination to use a composite timestamp plus event-id cursor and added a tied-timestamp pgTAP regression. | null | ATHER |
 | 0.4.3b | 2026-08-24 | draft | Made the current-to-local and others-to-others provider sign-out mapping explicit for CodeDoc review. | null | ATHER |
 | 0.4.4b | 2026-08-28 | draft | Superseded the Phase 0 frontend-test blocker: desktop, landing, Rust and Deno suites all run clean, and the recorded Vitest stall did not reproduce across nine runs with four candidate causes refuted. Remaining Phase 0 status/lifecycle drift is owned by EXEC-PLAN CR-034 task T2. | null | Claude (Opus 5) |
+| 0.5.0b | 2026-09-12 | draft | Record Boss-approved local current-session cleanup and native/UI failure-state amendment for GAP-01/02; retain production and remaining IAM gates. | null | RWANG |

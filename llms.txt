@@ -1,0 +1,106 @@
+# G-Maiden
+
+> G-Maiden is a Windows Dota 2 companion with a Rust/Tauri 2 core, React command deck, transparent overlay, local minimap vision, and voice advice. This repository also contains the landing/account services and the separate G-Orchestra developer tool.
+
+Repository context index, version 0.2.0, reviewed 2026-09-12 against source commit a4a75542c857beaac68267b90e16707ad3263a45 plus the approved local GAP-01/02 remediation (application version 0.13.2). Paths are relative to this repository root. These files are local repository documentation; their presence does not publish an endpoint on the landing website. The extended reference records implementation evidence and known documentation drift; it is not a release certification or a new product specification.
+
+Read AGENTS.md and CLAUDE.md for contribution governance. Thai PRD/SRS and accepted ADRs describe intent; executable call sites describe implementation. Older feature maps and release statements need date and source checks. A source file, migration, or test fixture does not establish that a capability is deployed or verified in a live match.
+
+Critical distinctions: Lite mode has no CV-driven gank detection; live GSI does not expose enemy economy; G-Motion is a heading-aware heuristic rather than a learned fog-path predictor. The release desktop has an entitlement gate; dev mode differs. Claude advice can send a constructed gameplay summary to a cloud backend, while G-Log files and CV images remain local in the inspected paths. G-Orchestra is a separate developer product, not the live warning engine.
+
+## Start here
+
+- [Detailed repository reference](llms-full.txt): Architecture, feature evidence, interfaces, persistence, setup, testing, governance, discrepancies, and refresh procedure.
+- [Repository README](README.md): Product introduction and release overview.
+- [Agent governance](AGENTS.md): Repository rules, review gates, protected-main workflow, and documentation conventions.
+- [Contributor context](CLAUDE.md): Product boundaries, coding conventions, and channel release workflow; cross-check historical status claims.
+- [Product experience](PRODUCT.md): Player personas, honest unknown states, visual principles, and accessibility targets.
+- [Documentation hub](docs/README.md): Documentation ownership, metadata, and generated-artifact rules.
+- [Document index](docs/DOC-INDEX.md): Main documentation catalog, including links to orchestration.
+
+## Product and architecture
+
+- [PRD](docs/product/product-requirements.md): Thai product intent and canonical G-series naming.
+- [SRS](docs/product/software-requirements-specification.md): Functional requirements, latency/resource targets, privacy, and resilience.
+- [Technical design](docs/architecture/technical-design-document.md): Two-tier design, threading, vision, and historical architecture decisions.
+- [Engineering spec](docs/architecture/engineering-spec.md): Module contracts and verification budgets.
+- [Feature map](PROJECT_FEATURE_MAP.md): Earlier feature-to-code snapshot; some paths and statuses are stale.
+- [Feature ledger](docs/FEATURE-LEDGER.md): Generated feature registry; source manifest and governance checks live under docs and tools/doc-graph.
+- [Roadmap](docs/product/roadmap.md): Intended development sequence; version labels and completion claims are historical.
+- [DXGI decision](docs/architecture/adr/ADR-13-dxgi-capture-migration.md): Default capture backend and Lite-mode boundary.
+- [Account identity decision](docs/architecture/adr/ADR-14-gid-account-identity.md): Supabase UUID, GID, and account responsibilities.
+- [Data contribution decision](docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md): Separate explicit contribution boundary, not automatic sharing at sign-in.
+- [Credit economy decision](docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md): Post-match verification and credit-minting intent.
+- [Developer/runtime governance split](docs/architecture/adr/ADR-18-dev-runtime-governance-split.md): RWANG knowledge plane and G-Orchestra policy plane.
+
+## Desktop implementation
+
+- [Rust application host](src-tauri/src/lib.rs): Startup, window lifecycle, 63 registered commands, entitlement, and update checks. main.rs is only a shim.
+- [GSI HTTP server](src-tauri/src/gsi.rs): Five loopback routes, GameTick parsing, announcer dispatch, and watchdog.
+- [Capture pipeline](src-tauri/src/capture.rs): DXGI orchestration, CV events, gank evaluation, and Lite fallback.
+- [Motion heuristic](src-tauri/src/motion.rs): Five-minute last-seen history and heading-aware risk.
+- [Signal state machine](src-tauri/src/signal.rs): Sensitivity thresholds, hysteresis, Alert, and Revision.
+- [Advisor backends](src-tauri/src/master.rs): Claude CLI/API, explicit backend selection, constructed prompt, and throttling.
+- [Local model fallback](src-tauri/src/slm.rs): Ollama model selection and historical default chain.
+- [Speech and prewarm](src-tauri/src/tts.rs): Optional Piper, SAPI fallback, cached critical lines, and interruptions.
+- [Voice-pack facade](src-tauri/src/voice_api/mod.rs): Split voice-pack implementation and archive/path validation.
+- [Voice event schema](schemas/gmaiden-events.json): Vendored event contract; mirrored in voice_api/events.rs.
+- [Desktop surface routing](src/src/App.tsx): Overlay versus control window and dev/release gate.
+- [Command deck](src/src/CommandDeck.tsx): Navigation, page composition, and settings categories.
+- [Live data composition](src/src/companion.ts): Tauri subscriptions and pure builders over honest fallback data.
+- [Navigation and shortcuts](src/src/shortcuts.ts): Seven page identifiers and shared shortcut definitions.
+- [Combat HUD](docs/design-system/07-combat-hud.md): Overlay design contract.
+- [Sitemap and layout rules](docs/design-system/05-sitemap-ia.md): Bounded scrolling, pagination, and deck structure.
+
+## Accounts, landing, and services
+
+- [Desktop authentication](src/src/auth.ts): Google PKCE, OAuth transaction handling, and sign-out.
+- [Desktop first-run gate](src/src/GmadFirstRunGate.tsx): Sign-in, Terms, eligibility, and setup surfaces.
+- [Native entitlement decision](src-tauri/src/gmad_entitlement.rs): Server response validation and channel selection.
+- [Runtime state](src-tauri/src/runtime.rs): Native entitlement latch and in-memory grace cache.
+- [Account security UI](src/src/AccountSecurity.tsx): Session/device and security-event surface; not complete MFA/recovery.
+- [Landing entrypoint](landing/src/main.tsx): Landing and public-demo pathname dispatch, analytics redaction.
+- [Landing access contract](landing/src/gmadAccess.ts): Queue, Terms, and authorized download client.
+- [Supabase local configuration](supabase/config.toml): Local services and explicit function JWT settings; not hosted-state proof.
+- [IAM policy](supabase/functions/_shared/iam.ts): Capability and authentication decisions.
+- [IAM runtime adapter](supabase/functions/_shared/iam_runtime.ts): Live-session queries, least-privilege DB access, and audit references.
+- [Desktop entitlement function](supabase/functions/get-gmad-desktop-entitlement/index.ts): Backend eligibility decision.
+- [Download issuer](supabase/functions/request-gmad-download/index.ts): Five-minute signed artifact URL after access checks.
+- [CR-034 IAM scope](docs/change%20request/CR-034-gid-iam-production-completion.md): Phased IAM completion contract and approval boundaries.
+- [CR-034 execution state](docs/operations/EXEC-PLAN-CR-034-iam-remediation.md): Dated reconciliation evidence and outstanding owner decisions; reverify before production work.
+
+## Development and verification
+
+- [Root package scripts](package.json): Desktop dev/build entrypoints and pnpm version.
+- [Desktop frontend package](src/package.json): React/Vite/TypeScript, lint, and Vitest scripts.
+- [Rust manifest](src-tauri/Cargo.toml): Native dependencies, optional WGC feature, and library/bin split.
+- [Tauri configuration](src-tauri/tauri.conf.json): Windows, resources, sidecar, CSP, and build hooks.
+- [Landing package](landing/package.json): Separate package manager and frontend toolchain.
+- [CI workflow](.github/workflows/ci.yml): Actual Windows build/test sequence.
+- [Performance harness](tests/perf/README.md): Headless versus live capture/audio measurements and SKIP semantics.
+- [Doc-graph gate](tools/doc-graph/ci-gate.mjs): Unit tests, encoding, strict scan, checklist coverage, ledger, and orphan checks.
+- [Code-doc aligner](.agents/skills/rwang-codedoc-aligner/SKILL.md): Local model review contract and exit codes.
+
+## Releases and operations
+
+- [Application changelog](CHANGELOG.md): Recorded changes; not proof of current hosted channel state.
+- [Channel architecture](docs/releases/release-channel-architecture.md): dev, closed-beta, stable, and approval boundaries.
+- [Candidate workflow](.github/workflows/candidate-release.yml): Manual candidate build/sign and dev-manifest PR.
+- [Promotion workflow](.github/workflows/promote-release.yml): Production-environment approval and stable promotion without rebuilding.
+- [Channel manifest tooling](scripts/releases/channel-manifest.mjs): Platform-keyed manifests, validation, and promotion.
+- [Beta release playbook](docs/operations/gmaiden-closed-beta-release-playbook.md): Operational handoff and verification requirements.
+
+## Optional
+
+- [G-Orchestra package](orchestration/package.json): Separate developer-tool CLI, server, and Tauri commands.
+- [Orchestration engine](orchestration/engine.mjs): Task dependencies, claim/lease state, execution, and routing.
+- [Orchestration server](orchestration/server.mjs): Developer REST surface, default port 4577.
+- [GKS compiler](orchestration/gks/compile.mjs): Atoms-to-backlog/document projection; do not edit generated projections as source.
+- [Orchestra Studio package](orchestration/studio/package.json): React/Vite and graph-canvas frontend.
+- [Hybrid meter](hybrid-meter/README.md): Separate usage-log cost-meter utility.
+- [Prior gap audit](docs/audits/gap-analysis-prd-srs-vs-impl-2026-08-26.md): Historical requirements gap analysis, not a current runtime verdict.
+- [llms.txt format proposal](https://llmstxt.org/): Index format reference; llms-full.txt is this repository's curated extended companion.
+
+## Current local remediation
+
+- [Auth failure remediation](docs/operations/auth-failure-remediation-proposal.md): Approved GAP-01/02 scope, behavior and local verification limits; production acceptance is separate.
