@@ -1,0 +1,42 @@
+{
+  "hardware": {
+    "cpu": "Intel Core i7-14700KF",
+    "logicalProcessors": 28,
+    "gpu": "NVIDIA GeForce RTX 5060 Ti",
+    "ramGiB": 31.76
+  },
+  "protocol": {
+    "freshProcessPerTrial": true,
+    "rounds": 3,
+    "warmupSeconds": 3,
+    "idleSeconds": 3,
+    "activeSeconds": 9,
+    "motionSeconds": 3,
+    "sourceFps": 30,
+    "sound": false,
+    "nfrAcceptance": false
+  },
+  "trials": [],
+  "functional": [
+    {
+      "runtime": "chrome",
+      "mode": "layers",
+      "alpha": {
+        "corner": 0,
+        "transparent": 195078,
+        "partial": 3856,
+        "opaque": 5866
+      },
+      "oneShotStopped": true,
+      "endTime": 2.999
+    }
+  ],
+  "failures": [
+    {
+      "runtime": "chrome",
+      "round": 1,
+      "mode": "layers",
+      "error": "{'mode': 'layers', 'durationMs': 9222.89999999851, 'rafSamples': 0, 'rafMedianMs': None, 'rafP95Ms': None, 'intervalsOver25ms': 0, 'intervalsOver50ms': 0, 'videoFrames': None, 'videoDropped': None, 'errors': [], 'visibility': 'hidden'}"
+    }
+  ]
+}

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-12T18:31:40.491Z",
+  "generatedAt": "2026-09-13T02:44:09.983Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -734,6 +734,14 @@
       "status": "active",
       "doc_type": "remediation-proposal",
       "domain": "account-identity-security"
+    },
+    {
+      "id": "docs/operations/banner-motion-comparison.md",
+      "type": "doc",
+      "path": "docs/operations/banner-motion-comparison.md",
+      "title": "Overlay motion — four-method comparison",
+      "status": "accepted",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/operations/gmaiden-closed-beta-release-playbook.md",
@@ -10406,7 +10414,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-09-12T18:31:43.721Z",
+    "generatedAt": "2026-09-13T02:44:12.373Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

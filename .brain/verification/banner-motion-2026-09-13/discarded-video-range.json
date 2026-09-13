@@ -1,0 +1,1641 @@
+{
+  "hardware": {
+    "cpu": "Intel Core i7-14700KF",
+    "logicalProcessors": 28,
+    "gpu": "NVIDIA GeForce RTX 5060 Ti",
+    "ramGiB": 31.76
+  },
+  "protocol": {
+    "freshProcessPerTrial": true,
+    "focusEmulation": true,
+    "rounds": 3,
+    "warmupSeconds": 3,
+    "idleSeconds": 3,
+    "activeSeconds": 9,
+    "motionSeconds": 3,
+    "sourceFps": 30,
+    "sound": false,
+    "nfrAcceptance": false
+  },
+  "trials": [
+    {
+      "runtime": "chrome",
+      "round": 1,
+      "mode": "layers",
+      "info": {
+        "mode": "layers",
+        "playing": false,
+        "current": 1.2,
+        "errors": [],
+        "gpu": null,
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+        "dpr": 1,
+        "viewport": [
+          1264,
+          785
+        ]
+      },
+      "idle": {
+        "cpuCorePercent": 1.5274,
+        "cpuMachinePercent": 0.0545,
+        "privateMiB": 328.1589,
+        "workingSetSumMiB": 531.4193,
+        "systemCpuPercent": 3.6167,
+        "privatePeakMiB": 332.15234375,
+        "gpuEnginesPercent": {
+          "VideoEncode": 0,
+          "3D": 0.0673,
+          "VideoDecode": 0,
+          "Copy": 0.001,
+          "Security_1": 0,
+          "Security": 0,
+          "VR": 0,
+          "OFA_0": 0,
+          "JPEG_Decode_0": 0
+        }
+      },
+      "active": {
+        "cpuCorePercent": 6.1124,
+        "cpuMachinePercent": 0.2183,
+        "privateMiB": 308.046,
+        "workingSetSumMiB": 538.7261,
+        "systemCpuPercent": 4.1056,
+        "privatePeakMiB": 327.66015625,
+        "gpuEnginesPercent": {
+          "VideoEncode": 0,
+          "3D": 1.5082,
+          "VideoDecode": 0,
+          "Copy": 0.0269,
+          "Security_1": 0,
+          "Security": 0,
+          "VR": 0,
+          "OFA_0": 0,
+          "JPEG_Decode_0": 0
+        }
+      },
+      "frames": {
+        "mode": "layers",
+        "durationMs": 9229.5,
+        "rafSamples": 553,
+        "rafMedianMs": 16.69999999999891,
+        "rafP95Ms": 16.80000000000109,
+        "intervalsOver25ms": 0,
+        "intervalsOver50ms": 0,
+        "videoFrames": null,
+        "videoDropped": null,
+        "errors": [],
+        "visibility": "visible"
+      },
+      "raw": {
+        "idle": [
+          {
+            "elapsed": 0.5003249000001233,
+            "cpuCorePercent": 0.0,
+            "cpuMachinePercent": 0.0,
+            "privateMiB": 332.15234375,
+            "workingSetSumMiB": 534.57421875,
+            "gpuEnginesPercent": {},
+            "systemCpuPercent": 3.6,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 1.0119150999998965,
+            "cpuCorePercent": 6.108404734886215,
+            "cpuMachinePercent": 0.21815731196022198,
+            "privateMiB": 332.09765625,
+            "workingSetSumMiB": 534.66015625,
+            "gpuEnginesPercent": {
+              "3D": 0,
+              "Copy": 0,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 3.6,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 1.5231105999991996,
+            "cpuCorePercent": 0.0,
+            "cpuMachinePercent": 0.0,
+            "privateMiB": 327.23828125,
+            "workingSetSumMiB": 530.765625,
+            "gpuEnginesPercent": {
+              "3D": 0.40363129338185855,
+              "Copy": 0.005729010752355982,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 5.4,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 2.034264099998836,
+            "cpuCorePercent": 0.0,
+            "cpuMachinePercent": 0.0,
+            "privateMiB": 327.24609375,
+            "workingSetSumMiB": 530.7890625,
+            "gpuEnginesPercent": {
+              "3D": 0,
+              "Copy": 0,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 1.8,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 2.5501233999966644,
+            "cpuCorePercent": 0.0,
+            "cpuMachinePercent": 0.0,
+            "privateMiB": 327.23828125,
+            "workingSetSumMiB": 530.7421875,
+            "gpuEnginesPercent": {
+              "3D": 0,
+              "Copy": 0,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 2.8,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 3.0614550999998755,
+            "cpuCorePercent": 3.055746397084686,
+            "cpuMachinePercent": 0.10913379989588165,
+            "privateMiB": 322.98046875,
+            "workingSetSumMiB": 526.984375,
+            "gpuEnginesPercent": {
+              "3D": 0,
+              "Copy": 0,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 4.5,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          }
+        ],
+        "active": [
+          {
+            "elapsed": 0.5002238000015495,
+            "cpuCorePercent": 15.618009378953579,
+            "cpuMachinePercent": 0.5577860492483421,
+            "privateMiB": 327.62109375,
+            "workingSetSumMiB": 532.6875,
+            "gpuEnginesPercent": {
+              "3D": 4.883972056243694,
+              "Copy": 0.035905363801763325,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 2.8,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 1.0124624999989464,
+            "cpuCorePercent": 0.0,
+            "cpuMachinePercent": 0.0,
+            "privateMiB": 327.66015625,
+            "workingSetSumMiB": 532.98828125,
+            "gpuEnginesPercent": {
+              "3D": 0,
+              "Copy": 0,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 2.6,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 1.5240813000018534,
+            "cpuCorePercent": 0.0,
+            "cpuMachinePercent": 0.0,
+            "privateMiB": 313.6953125,
+            "workingSetSumMiB": 533.01953125,
+            "gpuEnginesPercent": {
+              "3D": 0,
+              "Copy": 0,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 3.7,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 2.0359048999998777,
+            "cpuCorePercent": 0.0,
+            "cpuMachinePercent": 0.0,
+            "privateMiB": 307.3125,
+            "workingSetSumMiB": 529.83984375,
+            "gpuEnginesPercent": {
+              "3D": 0.2765663912585733,
+              "Copy": 0.009155758982160716,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 6.4,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 2.547129099999438,
+            "cpuCorePercent": 0.0,
+            "cpuMachinePercent": 0.0,
+            "privateMiB": 308.2578125,
+            "workingSetSumMiB": 530.9765625,
+            "gpuEnginesPercent": {
+              "3D": 1.3723373041488176,
+              "Copy": 0.007746024294348923,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 2.5,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 3.059172799999942,
+            "cpuCorePercent": 15.257486812145741,
+            "cpuMachinePercent": 0.5449102432909193,
+            "privateMiB": 310.828125,
+            "workingSetSumMiB": 533.75,
+            "gpuEnginesPercent": {
+              "3D": 3.8058671628947627,
+              "Copy": 0.11870569775630999,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 4.0,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 3.5706979999995383,
+            "cpuCorePercent": 12.218361871526435,
+            "cpuMachinePercent": 0.43637006684022983,
+            "privateMiB": 311.62109375,
+            "workingSetSumMiB": 534.48046875,
+            "gpuEnginesPercent": {
+              "3D": 2.5996803147478174,
+              "Copy": 0.01858363092167984,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 4.2,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 4.0840672000013,
+            "cpuCorePercent": 0.0,
+            "cpuMachinePercent": 0.0,
+            "privateMiB": 311.74609375,
+            "workingSetSumMiB": 534.5234375,
+            "gpuEnginesPercent": {
+              "3D": 0,
+              "Copy": 0,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 2.9,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 4.59573889999956,
+            "cpuCorePercent": 3.053715888538126,
+            "cpuMachinePercent": 0.1090612817335045,
+            "privateMiB": 297.30859375,
+            "workingSetSumMiB": 531.1328125,
+            "gpuEnginesPercent": {
+              "3D": 0.12180182251181514,
+              "Copy": 0.0061575307480696145,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 5.6,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 5.1070193000014115,
+            "cpuCorePercent": 0.0,
+            "cpuMachinePercent": 0.0,
+            "privateMiB": 297.3125,
+            "workingSetSumMiB": 531.26953125,
+            "gpuEnginesPercent": {
+              "3D": 0,
+              "Copy": 0,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 4.4,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 5.619029900000896,
+            "cpuCorePercent": 3.051694632887624,
+            "cpuMachinePercent": 0.10898909403170086,
+            "privateMiB": 298.83984375,
+            "workingSetSumMiB": 533.109375,
+            "gpuEnginesPercent": {
+              "3D": 1.7108680230424507,
+              "Copy": 0.011426846537451001,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 3.2,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 6.131973100000323,
+            "cpuCorePercent": 21.32302367983867,
+            "cpuMachinePercent": 0.7615365599942382,
+            "privateMiB": 301.65625,
+            "workingSetSumMiB": 535.04296875,
+            "gpuEnginesPercent": {
+              "3D": 4.509602671162952,
+              "Copy": 0.07188161172895037,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 3.5,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 6.64335679999931,
+            "cpuCorePercent": 3.05543567384548,
+            "cpuMachinePercent": 0.10912270263733857,
+            "privateMiB": 302.12109375,
+            "workingSetSumMiB": 535.6484375,
+            "gpuEnginesPercent": {
+              "3D": 3.7831149720140615,
+              "Copy": 0.14417323238218885,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 9.7,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 7.1557514000014635,
+            "cpuCorePercent": 0.0,
+            "cpuMachinePercent": 0.0,
+            "privateMiB": 302.12109375,
+            "workingSetSumMiB": 535.71875,
+            "gpuEnginesPercent": {
+              "3D": 0,
+              "Copy": 0,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 3.6,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 7.66802269999971,
+            "cpuCorePercent": 3.0501415949036135,
+            "cpuMachinePercent": 0.10893362838941477,
+            "privateMiB": 298.6484375,
+            "workingSetSumMiB": 532.9375,
+            "gpuEnginesPercent": {
+              "3D": 0.2613546705087304,
+              "Copy": 0.007192174913693901,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 2.9,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 8.181379800000286,
+            "cpuCorePercent": 0.0,
+            "cpuMachinePercent": 0.0,
+            "privateMiB": 298.7734375,
+            "workingSetSumMiB": 533.0078125,
+            "gpuEnginesPercent": {
+              "3D": 0,
+              "Copy": 0,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 2.9,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480
+            ]
+          },
+          {
+            "elapsed": 8.693423299999267,
+            "cpuCorePercent": 6.102997108656234,
+            "cpuMachinePercent": 0.21796418245200835,
+            "privateMiB": 311.21484375,
+            "workingSetSumMiB": 571.6171875,
+            "gpuEnginesPercent": {
+              "3D": 1.1251433572472305,
+              "Copy": 0.024567211505061894,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 4.6,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480,
+              43068,
+              14124,
+              9008
+            ]
+          },
+          {
+            "elapsed": 9.208694500001002,
+            "cpuCorePercent": 27.291453510214936,
+            "cpuMachinePercent": 0.974694768221962,
+            "privateMiB": 318.08984375,
+            "workingSetSumMiB": 595.3203125,
+            "gpuEnginesPercent": {
+              "3D": 2.696655441110403,
+              "Copy": 0.029188010276994806,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 4.4,
+            "pids": [
+              32816,
+              46192,
+              37100,
+              15088,
+              52600,
+              49232,
+              49528,
+              48480,
+              43068,
+              14124,
+              9008,
+              17484
+            ]
+          }
+        ]
+      },
+      "gpuCounterError": null
+    },
+    {
+      "runtime": "chrome",
+      "round": 1,
+      "mode": "sprite",
+      "info": {
+        "mode": "sprite",
+        "playing": false,
+        "current": 1.2,
+        "errors": [],
+        "gpu": null,
+        "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/152.0.0.0 Safari/537.36",
+        "dpr": 1,
+        "viewport": [
+          1264,
+          785
+        ]
+      },
+      "idle": {
+        "cpuCorePercent": 15.7942,
+        "cpuMachinePercent": 0.5641,
+        "privateMiB": 389.2168,
+        "workingSetSumMiB": 760.401,
+        "systemCpuPercent": 8.1833,
+        "privatePeakMiB": 439.296875,
+        "gpuEnginesPercent": {
+          "VideoEncode": 0,
+          "3D": 0.01,
+          "VideoDecode": 0,
+          "Copy": 0.0008,
+          "Security_1": 0,
+          "Security": 0,
+          "VR": 0,
+          "OFA_0": 0,
+          "JPEG_Decode_0": 0
+        }
+      },
+      "active": {
+        "cpuCorePercent": 35.012,
+        "cpuMachinePercent": 1.2504,
+        "privateMiB": 405.3713,
+        "workingSetSumMiB": 790.2322,
+        "systemCpuPercent": 5.7,
+        "privatePeakMiB": 426.41796875,
+        "gpuEnginesPercent": {
+          "VideoEncode": 0,
+          "3D": 1.9927,
+          "VideoDecode": 0,
+          "Copy": 0.0774,
+          "Security_1": 0,
+          "Security": 0,
+          "VR": 0,
+          "OFA_0": 0,
+          "JPEG_Decode_0": 0
+        }
+      },
+      "frames": {
+        "mode": "sprite",
+        "durationMs": 9218.699999999255,
+        "rafSamples": 552,
+        "rafMedianMs": 16.69999999999891,
+        "rafP95Ms": 16.799999999999272,
+        "intervalsOver25ms": 0,
+        "intervalsOver50ms": 0,
+        "videoFrames": null,
+        "videoDropped": null,
+        "errors": [],
+        "visibility": "visible"
+      },
+      "raw": {
+        "idle": [
+          {
+            "elapsed": 0.5002765999997791,
+            "cpuCorePercent": 0.0,
+            "cpuMachinePercent": 0.0,
+            "privateMiB": 439.296875,
+            "workingSetSumMiB": 779.01953125,
+            "gpuEnginesPercent": {},
+            "systemCpuPercent": 8.2,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 1.0114476999988256,
+            "cpuCorePercent": 0.0,
+            "cpuMachinePercent": 0.0,
+            "privateMiB": 439.296875,
+            "workingSetSumMiB": 779.01953125,
+            "gpuEnginesPercent": {
+              "3D": 0,
+              "Copy": 0,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 7.4,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 1.5256873999969685,
+            "cpuCorePercent": 3.038466302787674,
+            "cpuMachinePercent": 0.10851665367098837,
+            "privateMiB": 361.12890625,
+            "workingSetSumMiB": 742.2734375,
+            "gpuEnginesPercent": {
+              "3D": 0.05981949608462187,
+              "Copy": 0.004720025449128951,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 7.0,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 2.037721499997133,
+            "cpuCorePercent": 0.0,
+            "cpuMachinePercent": 0.0,
+            "privateMiB": 361.1484375,
+            "workingSetSumMiB": 742.36328125,
+            "gpuEnginesPercent": {
+              "3D": 0,
+              "Copy": 0,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 5.1,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 2.548467199998413,
+            "cpuCorePercent": 45.88878574981886,
+            "cpuMachinePercent": 1.6388852053506735,
+            "privateMiB": 362.28125,
+            "workingSetSumMiB": 746.53515625,
+            "gpuEnginesPercent": {
+              "3D": 0,
+              "Copy": 0,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 10.1,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 3.0597775999995065,
+            "cpuCorePercent": 45.83810538559332,
+            "cpuMachinePercent": 1.6370751923426188,
+            "privateMiB": 372.1484375,
+            "workingSetSumMiB": 773.1953125,
+            "gpuEnginesPercent": {
+              "3D": 0,
+              "Copy": 0,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 11.3,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800,
+              10516,
+              48784
+            ]
+          }
+        ],
+        "active": [
+          {
+            "elapsed": 0.5006715999988955,
+            "cpuCorePercent": 37.44969756631165,
+            "cpuMachinePercent": 1.3374891987968447,
+            "privateMiB": 392.93359375,
+            "workingSetSumMiB": 764.5546875,
+            "gpuEnginesPercent": {
+              "3D": 3.050786971436205,
+              "Copy": 0.3572120362021174,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 7.7,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 1.011450199999672,
+            "cpuCorePercent": 70.35827264483159,
+            "cpuMachinePercent": 2.512795451601128,
+            "privateMiB": 393.92578125,
+            "workingSetSumMiB": 765.44921875,
+            "gpuEnginesPercent": {
+              "3D": 0.7051018443558462,
+              "Copy": 0.0077520197233251435,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 7.9,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 1.524085599998216,
+            "cpuCorePercent": 76.19938069066426,
+            "cpuMachinePercent": 2.7214064532380093,
+            "privateMiB": 395.0546875,
+            "workingSetSumMiB": 766.3984375,
+            "gpuEnginesPercent": {
+              "3D": 0.5408698477306961,
+              "Copy": 0.008739509893771844,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 7.7,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 2.034557599999971,
+            "cpuCorePercent": 88.76588725697826,
+            "cpuMachinePercent": 3.170210259177795,
+            "privateMiB": 397.01953125,
+            "workingSetSumMiB": 767.7265625,
+            "gpuEnginesPercent": {
+              "3D": 0.5625413245424405,
+              "Copy": 0.006545494901938716,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 10.4,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 2.5460817999992287,
+            "cpuCorePercent": 79.4195074251794,
+            "cpuMachinePercent": 2.836410979470693,
+            "privateMiB": 398.48828125,
+            "workingSetSumMiB": 770.18359375,
+            "gpuEnginesPercent": {
+              "3D": 1.043382756727073,
+              "Copy": 0.06290498748640069,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 7.1,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 3.0578518000002077,
+            "cpuCorePercent": 97.7001387340101,
+            "cpuMachinePercent": 3.489290669071789,
+            "privateMiB": 397.6796875,
+            "workingSetSumMiB": 772.015625,
+            "gpuEnginesPercent": {
+              "3D": 2.912946741735257,
+              "Copy": 0.31650307467137545,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 9.1,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 3.5681332999993174,
+            "cpuCorePercent": 48.992565868140666,
+            "cpuMachinePercent": 1.749734495290738,
+            "privateMiB": 394.5234375,
+            "workingSetSumMiB": 767.22265625,
+            "gpuEnginesPercent": {
+              "3D": 0.9112318439023783,
+              "Copy": 0.017246615716236202,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 6.4,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 4.082318000000669,
+            "cpuCorePercent": 9.116373941090975,
+            "cpuMachinePercent": 0.32558478361039195,
+            "privateMiB": 394.5234375,
+            "workingSetSumMiB": 767.31640625,
+            "gpuEnginesPercent": {
+              "3D": 0.43071689591226764,
+              "Copy": 0.00839096990810421,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 5.4,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 4.592965600000753,
+            "cpuCorePercent": 6.119680186491597,
+            "cpuMachinePercent": 0.21856000666041417,
+            "privateMiB": 394.52734375,
+            "workingSetSumMiB": 767.17578125,
+            "gpuEnginesPercent": {
+              "3D": 0.5001770763424049,
+              "Copy": 0.00970495755059394,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 2.4,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 5.104656200001045,
+            "cpuCorePercent": 6.107206190612476,
+            "cpuMachinePercent": 0.21811450680758843,
+            "privateMiB": 394.5546875,
+            "workingSetSumMiB": 767.22265625,
+            "gpuEnginesPercent": {
+              "3D": 1.4279409244464893,
+              "Copy": 0.009018780191393776,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 4.9,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 5.615570699999807,
+            "cpuCorePercent": 15.291208215893128,
+            "cpuMachinePercent": 0.5461145791390403,
+            "privateMiB": 394.515625,
+            "workingSetSumMiB": 767.58203125,
+            "gpuEnginesPercent": {
+              "3D": 2.099543823285389,
+              "Copy": 0.020571337205164478,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 3.2,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800
+            ]
+          },
+          {
+            "elapsed": 6.128297100000054,
+            "cpuCorePercent": 21.33203985594409,
+            "cpuMachinePercent": 0.7618585662837175,
+            "privateMiB": 409.9921875,
+            "workingSetSumMiB": 826.28515625,
+            "gpuEnginesPercent": {
+              "3D": 3.023933892445906,
+              "Copy": 0.43407868396215044,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 5.2,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800,
+              1928,
+              39888,
+              45456,
+              17788
+            ]
+          },
+          {
+            "elapsed": 6.638890999998694,
+            "cpuCorePercent": 12.240647606672654,
+            "cpuMachinePercent": 0.4371659859525948,
+            "privateMiB": 410.23046875,
+            "workingSetSumMiB": 826.6171875,
+            "gpuEnginesPercent": {
+              "3D": 2.8646846905668633,
+              "Copy": 0.01366444158470771,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 3.3,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800,
+              1928,
+              39888,
+              45456,
+              17788
+            ]
+          },
+          {
+            "elapsed": 7.1505661999981385,
+            "cpuCorePercent": 15.268475001345532,
+            "cpuMachinePercent": 0.5453026786194833,
+            "privateMiB": 426.35546875,
+            "workingSetSumMiB": 826.2421875,
+            "gpuEnginesPercent": {
+              "3D": 3.95306017541751,
+              "Copy": 0.011960462742669176,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 5.2,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800,
+              1928,
+              39888,
+              45456,
+              17788
+            ]
+          },
+          {
+            "elapsed": 7.661178700000164,
+            "cpuCorePercent": 24.48040343695153,
+            "cpuMachinePercent": 0.874300122748269,
+            "privateMiB": 426.41796875,
+            "workingSetSumMiB": 825.96875,
+            "gpuEnginesPercent": {
+              "3D": 4.442715776480886,
+              "Copy": 0.014431639786270935,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 5.7,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800,
+              1928,
+              39888,
+              45456,
+              17788
+            ]
+          },
+          {
+            "elapsed": 8.172553600001265,
+            "cpuCorePercent": 3.0554882533277157,
+            "cpuMachinePercent": 0.10912458047598984,
+            "privateMiB": 424.5546875,
+            "workingSetSumMiB": 824.4140625,
+            "gpuEnginesPercent": {
+              "3D": 1.6923240263202608,
+              "Copy": 0.015368410720580981,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 4.6,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800,
+              1928,
+              39888,
+              45456,
+              17788
+            ]
+          },
+          {
+            "elapsed": 8.683670899998106,
+            "cpuCorePercent": 9.17108460235836,
+            "cpuMachinePercent": 0.32753873579851284,
+            "privateMiB": 425.15234375,
+            "workingSetSumMiB": 825.359375,
+            "gpuEnginesPercent": {
+              "3D": 2.164259417480581,
+              "Copy": 0.009723235330410375,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 3.0,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800,
+              1928,
+              39888,
+              45456,
+              17788
+            ]
+          },
+          {
+            "elapsed": 9.196068900000682,
+            "cpuCorePercent": 9.148162170766529,
+            "cpuMachinePercent": 0.32672007752737603,
+            "privateMiB": 426.234375,
+            "workingSetSumMiB": 826.4453125,
+            "gpuEnginesPercent": {
+              "3D": 3.5428431328341206,
+              "Copy": 0.07007800130512958,
+              "Security_1": 0,
+              "VideoDecode": 0,
+              "Security": 0,
+              "VideoEncode": 0,
+              "OFA_0": 0,
+              "JPEG_Decode_0": 0,
+              "VR": 0
+            },
+            "systemCpuPercent": 3.4,
+            "pids": [
+              48596,
+              43440,
+              51556,
+              52960,
+              8780,
+              50016,
+              1628,
+              31268,
+              47800,
+              1928,
+              39888,
+              45456,
+              17788
+            ]
+          }
+        ]
+      },
+      "gpuCounterError": null
+    }
+  ],
+  "functional": [
+    {
+      "runtime": "chrome",
+      "mode": "layers",
+      "alpha": {
+        "corner": 0,
+        "transparent": 195078,
+        "partial": 3856,
+        "opaque": 5866
+      },
+      "oneShotStopped": true,
+      "endTime": 2.999
+    },
+    {
+      "runtime": "chrome",
+      "mode": "sprite",
+      "alpha": {
+        "corner": 0,
+        "transparent": 181202,
+        "partial": 6773,
+        "opaque": 16825
+      },
+      "oneShotStopped": true,
+      "endTime": 2.999
+    }
+  ],
+  "failures": [
+    {
+      "runtime": "chrome",
+      "round": 1,
+      "mode": "video",
+      "error": "{'corner': 0, 'transparent': 204210, 'partial': 590, 'opaque': 0}"
+    }
+  ]
+}

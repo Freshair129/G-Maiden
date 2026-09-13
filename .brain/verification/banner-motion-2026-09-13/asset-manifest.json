@@ -1,0 +1,51 @@
+{
+  "atlas-0.png": {
+    "bytes": 794296,
+    "sha256": "6615096f6ed562a82966cdbcebc6f3d43e034b59c8628f69bec4925de5519fca"
+  },
+  "atlas-1.png": {
+    "bytes": 515896,
+    "sha256": "b459f7eb3cf261001f0d45f353534092b6c5e851dd60caafe9657538d1649afb"
+  },
+  "atlas-2.png": {
+    "bytes": 905152,
+    "sha256": "285dc819baa2c9367c397655cf5a405ba813a4b1820dded0f09324a3df840c2e"
+  },
+  "core.png": {
+    "bytes": 70521,
+    "sha256": "10bb26bb28f5a8412134ea6a79f1b6a9c63bf4a4641751d300af23a6a1b306ba"
+  },
+  "preview.png": {
+    "bytes": 106362,
+    "sha256": "0bd6ece3bfceb232942fc5cfc623e7697374a85270baecdf5552f55c63cf3dc2"
+  },
+  "ring.png": {
+    "bytes": 57141,
+    "sha256": "837c0a3ac4ff5c569f72b351486cedd30495dc2eabb916d32e9d7009955c4223"
+  },
+  "shards.png": {
+    "bytes": 55734,
+    "sha256": "ccacbd1b10d5fd4c43cebaa0582995123dc4970711c6129a639611268851f59e"
+  },
+  "wings.png": {
+    "bytes": 74871,
+    "sha256": "8aa111492ca1ddfa0386b70483bd33d316db62c57546266571bf42f60caec949"
+  },
+  "crest.webm": {
+    "bytes": 229648,
+    "sha256": "f967740cb8538ef5c769e84e61ed2e0d1dbb1cad9d0c558b5f6f159a0eb57baf"
+  },
+  "mesh.json": {
+    "bytes": 271199,
+    "sha256": "b5fa8b9d7c896dd042a27c7bbe2f5c664b8be4f7d3c14662a94d44b60457f261"
+  },
+  "maiden-crest.blend": {
+    "bytes": 1141968,
+    "sha256": "99ba3ca1987e90bee1c9b21f2c47e962a031880ead63b385ed8e5a0ab982c112"
+  },
+  "decodedRGBAEstimates": {
+    "layersBytes": 3276800,
+    "spriteBytes": 73728000,
+    "note": "Pixel buffer estimates only; excludes decoder, browser, GPU driver copies, mipmaps."
+  }
+}
