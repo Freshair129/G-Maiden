@@ -161,7 +161,9 @@ async fn verify_gmad_entitlement(
     app: tauri::AppHandle,
     access_token: String,
 ) -> Result<gmad_entitlement::EntitlementDecision, String> {
-    match gmad_entitlement::verify(&access_token).await {
+    let request = runtime::ENTITLEMENT_REQUESTS.begin()?;
+    let result = gmad_entitlement::verify(&access_token).await;
+    runtime::ENTITLEMENT_REQUESTS.apply(request, || match result {
         Ok(decision) => {
             // The channel lives in the backend from here on, so the deck's update
             // banner (a different window from the one that signed in) resolves the
@@ -198,20 +200,22 @@ async fn verify_gmad_entitlement(
             }
             Err(e)
         }
-    }
+    })?
 }
 
 #[tauri::command]
-fn lock_gmad_runtime(app: tauri::AppHandle) {
-    runtime::set_update_channel(gmad_entitlement::update_channel::ReleaseChannel::Stable);
-    runtime::set_gmad_entitled(false);
-    // A real sign-out is a genuine "stop trusting this session" event — the
-    // grace cache must not let a later re-verify fail over to the account
-    // that was just signed out of.
-    runtime::clear_entitlement_cache();
-    if let Some(overlay) = app.get_webview_window("overlay") {
-        let _ = overlay.hide();
-    }
+fn lock_gmad_runtime(app: tauri::AppHandle) -> Result<(), String> {
+    runtime::ENTITLEMENT_REQUESTS.invalidate(|| {
+        runtime::set_update_channel(gmad_entitlement::update_channel::ReleaseChannel::Stable);
+        runtime::set_gmad_entitled(false);
+        // A real sign-out is a genuine "stop trusting this session" event — the
+        // grace cache must not let a later re-verify fail over to the account
+        // that was just signed out of.
+        runtime::clear_entitlement_cache();
+        if let Some(overlay) = app.get_webview_window("overlay") {
+            let _ = overlay.hide();
+        }
+    })
 }
 
 /// Speak `text` via Maiden's voice (Windows SAPI for now). Fire-and-forget.

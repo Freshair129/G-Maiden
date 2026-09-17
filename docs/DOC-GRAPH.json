@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-28T05:56:05.756Z",
+  "generatedAt": "2026-09-13T02:44:09.983Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -215,6 +215,13 @@
       "path": "docs/audits/SEC-001-auth-identity-hardening.md",
       "title": "SEC-001: Auth & Identity Hardening — live gstore audit + fixes",
       "status": "Part A + Part B + mint-gid APPLIED to live (2026-07-04) · F1 closed on prod · client release pending"
+    },
+    {
+      "id": "docs/audits/gap-analysis-2026-09-12.md",
+      "type": "doc",
+      "path": "docs/audits/gap-analysis-2026-09-12.md",
+      "title": "G-Maiden: Codebase and Documentation Gap Analysis — 2026-09-12",
+      "status": "historical"
     },
     {
       "id": "docs/audits/gap-analysis-prd-srs-vs-impl-2026-08-26.md",
@@ -718,6 +725,23 @@
       "status": "active",
       "doc_type": "execution-plan",
       "domain": "account-identity-security"
+    },
+    {
+      "id": "docs/operations/auth-failure-remediation-proposal.md",
+      "type": "doc",
+      "path": "docs/operations/auth-failure-remediation-proposal.md",
+      "title": "Auth failure remediation — GAP-01/02",
+      "status": "active",
+      "doc_type": "remediation-proposal",
+      "domain": "account-identity-security"
+    },
+    {
+      "id": "docs/operations/banner-motion-comparison.md",
+      "type": "doc",
+      "path": "docs/operations/banner-motion-comparison.md",
+      "title": "Overlay motion — four-method comparison",
+      "status": "accepted",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/operations/gmaiden-closed-beta-release-playbook.md",
@@ -9096,6 +9120,14 @@
     },
     {
       "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 19,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/auth.ts",
+      "anchor": 98,
+      "symbol": "signInWithGoogle"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
       "line": 70,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/runtime.rs",
@@ -9230,13 +9262,6 @@
       "line": null,
       "reason": "version-changelog-mismatch",
       "frontmatter": "0.3.0b",
-      "changelog": "0.1.0b"
-    },
-    {
-      "file": "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.8.2b",
       "changelog": "0.1.0b"
     },
     {
@@ -10389,7 +10414,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-08-28T05:56:54.859Z",
+    "generatedAt": "2026-09-13T02:44:12.373Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

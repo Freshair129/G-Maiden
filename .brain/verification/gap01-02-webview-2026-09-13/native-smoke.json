@@ -1,0 +1,22 @@
+{
+  "commit": "56f9fbd",
+  "binary": "src-tauri/target/release/g-maiden.exe",
+  "app_version": "0.13.2",
+  "date": "2026-09-13",
+  "scope": "release WebView2/native IPC smoke; no account session or entitlement fixtures injected",
+  "checks": {
+    "cold_start_google_gate_visible": true,
+    "native_lock_command_resolved": true,
+    "synthetic_dpapi_roundtrip": true,
+    "ciphertext_does_not_contain_fixture_plaintext": true,
+    "open_handle_delete_error_propagated": true,
+    "retry_delete_succeeded": true,
+    "absent_delete_idempotent": true,
+    "fixture_removed": true
+  },
+  "limitations": [
+    "No actual session sign-out or expired-grace WebView transition exercised",
+    "No provider/production requests initiated by this test",
+    "No native in-memory entitlement state introspection IPC exists; lock command resolution is not an independent state readback"
+  ]
+}
