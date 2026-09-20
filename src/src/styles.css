@@ -1161,7 +1161,7 @@ body {
 .auth-google:disabled { opacity: 0.6; cursor: default; }
 .auth-google-g { font-weight: 800; color: #4285f4; }
 
-.account-page { padding: 4px 2px 20px; overflow-y: auto; height: 100%; }
+.account-page { padding: 4px 2px; height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
 .account-title { font-size: 22px; font-weight: 800; color: #eaf2ff; margin: 6px 0 4px; }
 .account-lead { font-size: 12.5px; color: #8794a6; max-width: 640px; margin: 0 0 18px; line-height: 1.5; }
 .account-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start; }
@@ -1348,13 +1348,9 @@ body {
 }
 .deck-tab:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
 
-/* Packs page shell — the mode body fills whatever's left; the surrounding
-   `.surface.page-voice` already carries `overflow-y: auto` (see the shared
-   rule further down), so this doesn't need its own scroll/height math —
-   each mounted mode (VoiceInventory/StorePage/InventoryTab/AudioSettings)
-   already manages its own internal layout. */
-.gm-packs-page { display: flex; flex-direction: column; min-height: 100%; padding: 4px; }
-.gm-packs-body { flex: 1; min-height: 0; }
+/* Each Voice mode receives the space below its fixed tab row. */
+.gm-packs-page { display: flex; flex-direction: column; height: 100%; min-height: 0; padding: 4px; }
+.gm-packs-body { flex: 1; min-height: 0; overflow: hidden; }
 .account-h3 { font-size: 12px; letter-spacing: 0.8px; text-transform: uppercase; color: #81b4ff; margin: 0 0 4px; }
 .account-note { font-size: 11px; color: #8794a6; line-height: 1.4; }
 .account-hint { font-size: 12px; color: #8794a6; line-height: 1.45; margin: 0; }
@@ -2315,8 +2311,6 @@ body {
 .sg-fill-ice { background: var(--g-ice-500); }
 .sg-fill-safe { background: var(--g-safe); }
 .sg-fill-warn { background: var(--g-warn); }
-.g-deck-panel .surface.page-voice,
-.g-deck-panel .surface.page-account,
 .g-deck-panel .surface.page-settings,
 .g-deck-panel .surface.page-insights,
 .g-deck-panel .surface.page-history,
@@ -2633,6 +2627,8 @@ body {
   overflow-y: auto !important;
 }
 
+.g-deck-panel .surface.page-voice,
+.g-deck-panel .surface.page-account,
 .g-deck-panel .surface.page-live,
 .g-deck-panel .surface.page-insights,
 .g-deck-panel .surface.page-store {
@@ -4624,3 +4620,52 @@ body {
 .gmad-first-run-card button:disabled { opacity: .55; cursor: wait; }
 .gmad-setup-status { display: grid; gap: 5px; padding: 13px; border-radius: 10px; background: rgba(143,212,255,.08); }
 .gmad-setup-status span { color: var(--g-muted, #a9b3c5); font-size: 12px; }
+
+/* WF-01–07: fixed page chrome; only named inner regions may scroll. */
+.gm-packs-tabs, .voice-inventory-header, .voice-pagination,
+.voice-toast, .audio-banner, .account-page > :not(.account-content) { flex-shrink: 0; }
+.page-voice .voice-inventory { height: 100%; min-height: 0; gap: 12px; }
+.page-voice .voice-split { flex: 1; min-height: 0; grid-template-columns: minmax(0, 1.4fr) minmax(300px, .8fr); align-items: stretch; }
+.voice-catalog { min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.page-voice .voice-grid { flex: 1; min-height: 0; overflow: hidden; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); grid-auto-rows: 200px; align-content: start; gap: 12px; }
+.page-voice .voice-card { height: 200px; min-width: 0; background: var(--g-instrument); border: 1px solid var(--g-hairline); box-shadow: none; }
+.page-voice .voice-card.selected { border-color: var(--g-ice-300); }
+.page-voice .voice-card:focus-visible { outline: 2px solid var(--g-ice-300); outline-offset: -3px; }
+.page-voice .voice-card-cover { height: 126px; aspect-ratio: auto; }
+.page-voice .voice-card-meta { padding: 8px 10px; gap: 2px; }
+.voice-pagination { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.page-voice .voice-detail { position: static; min-height: 0; max-height: none; overflow: hidden; display: flex; flex-direction: column; gap: 8px; background: var(--g-instrument); border: 1px solid var(--g-hairline); box-shadow: none; }
+.page-voice .voice-detail-cover { height: 100px; aspect-ratio: auto; flex-shrink: 0; }
+.page-voice .voice-detail-meta { max-height: 125px; flex-shrink: 0; overflow: auto; overflow-wrap: anywhere; }
+.page-voice .voice-detail-events { flex: 1; min-height: 0; overflow: auto; }
+.page-voice .voice-detail-actions, .page-voice .voice-detail-progress { flex-shrink: 0; }
+.page-voice .audio-page { height: 100%; min-height: 0; overflow: hidden; padding: 0; gap: 10px; }
+.page-voice .audio-hero { flex-shrink: 0; padding: 10px 14px; gap: 12px; background: var(--g-instrument); border: 1px solid var(--g-hairline); }
+.page-voice .audio-hero-actions { gap: 6px; display: grid; grid-template-columns: 1fr 1fr; align-items: end; }
+.page-voice .audio-select-wrap { grid-column: 1 / -1; }
+.page-voice .audio-progress { margin-top: 8px; height: 6px; }
+.page-voice .audio-tools-grid, .page-voice .audio-grid { flex: 1; min-height: 0; align-items: stretch; }
+.page-voice .audio-panel { min-height: 0; overflow: auto; gap: 8px; background: var(--g-instrument); border-color: var(--g-hairline); }
+.page-voice .audio-metadata > .audio-panel:first-child { display: grid; grid-template-columns: 1fr 1fr; align-content: start; }
+.page-voice .audio-metadata .audio-editor-h, .page-voice .audio-metadata .audio-preview-actions { grid-column: 1 / -1; }
+.page-voice .audio-field { min-width: 0; gap: 4px; }
+.page-voice .audio-input, .page-voice .audio-select { min-width: 0; width: 100%; box-sizing: border-box; padding: 7px 9px; }
+.page-voice .audio-btn { padding: 7px 10px; }
+.page-voice .audio-paths { margin-top: 0; flex-direction: column; overflow-wrap: anywhere; max-height: 96px; overflow: auto; }
+.page-voice .audio-list, .page-voice .audio-preview { min-height: 0; overflow: auto; }
+.page-voice .audio-preview { position: static; }
+.page-voice :is(.audio-group, .audio-preview, .audio-detail-card, .audio-editor) { background: var(--g-instrument); border: 1px solid var(--g-hairline); box-shadow: none; }
+.page-voice .audio-clip-list, .page-voice .audio-pill-row { max-height: 120px; overflow: auto; }
+.account-content { flex: 1; min-height: 0; overflow: auto; padding-right: 4px; }
+.account-page .account-lead { max-width: none; margin-bottom: 8px; }
+.account-content > .wallet-tab { height: 100%; }
+.account-content .wallet-ledger-preview { min-height: 0; flex: 1; display: flex; flex-direction: column; }
+.account-content .wallet-ledger-list { min-height: 0; overflow: auto; }
+.settings-detail-body.settings-audio-body { overflow: hidden; }
+.g-deck-panel :is(.page-live, .page-insights) .card-shell { background: var(--g-instrument); border: 1px solid var(--g-hairline); box-shadow: none; backdrop-filter: none; }
+.g-deck-panel :is(.page-live, .page-insights) :is(.stat-box, .stats-grid .stat-card) { background: var(--g-instrument-2); border: 1px solid var(--g-hairline); box-shadow: none; backdrop-filter: none; }
+.voice-pagination button:focus-visible, .gm-packs-tab:focus-visible,
+.voice-detail-meta:focus-visible, .voice-detail-events:focus-visible,
+.audio-list:focus-visible, .audio-preview:focus-visible, .account-content:focus-visible {
+  outline: 2px solid var(--g-ice-300); outline-offset: -2px;
+}

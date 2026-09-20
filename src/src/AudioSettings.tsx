@@ -45,6 +45,7 @@ type AudioSettingsProps = {
 };
 
 export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
+  const [section, setSection] = useState<"install" | "details" | "events">("install");
   const [state, setState] = useState<VoiceState | null>(null);
   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -385,11 +386,7 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
           <div className="audio-progress">
             <div className="audio-progress-fill" style={{ width: `${coverage}%` }} />
           </div>
-          <div className="audio-paths">
-            <span>root <code>{state.rootDir}</code></span>
-            <span>packs <code>{state.packsDir}</code></span>
-            <span>cache <code>{state.cacheDir}</code></span>
-          </div>
+
         </div>
 
         <div className="audio-hero-actions">
@@ -411,8 +408,17 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
         </div>
       </section>
 
+      <div className="gm-packs-tabs" role="tablist" aria-label="ส่วนตัวแก้ไขแพ็ก">
+        {([['install', 'ติดตั้งและสร้าง'], ['details', 'ข้อมูลและไฟล์'], ['events', 'ผูกอีเวนต์']] as const).map(([key, label]) => (
+          <button key={key} type="button" role="tab" aria-selected={section === key}
+            className={`gm-packs-tab${section === key ? " active" : ""}`} onClick={() => setSection(key)}>{label}</button>
+        ))}
+      </div>
+      {notice ? <div className="audio-banner ok" role="status">{notice}</div> : null}
+      {err ? <div className="audio-banner err" role="alert">{err}</div> : null}
+      {section === "install" && (
       <section className="audio-tools-grid">
-        <div className="audio-panel">
+        <div className="audio-panel" tabIndex={0}>
           <div className="audio-editor-h">Install Pack</div>
           <button
             className={"audio-dropzone" + (dragging ? " dragging" : "")}
@@ -429,7 +435,7 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
           <input ref={fileInputRef} type="file" accept=".zip" hidden onChange={onPickFile} />
         </div>
 
-        <div className="audio-panel">
+        <div className="audio-panel" tabIndex={0}>
           <div className="audio-editor-h">Template Generator</div>
           <label className="audio-field">
             <span>Pack id</span>
@@ -450,17 +456,18 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
           </div>
         </div>
       </section>
+      )}
 
       {readOnly ? (
         <div className="audio-banner ok">
           แพ็ก &quot;{selectedPack?.name}&quot; เป็นเสียงกลางที่ติดตั้งมากับแอป — แก้ไขไม่ได้
-          ถ้าอยากทำแพ็กของตัวเอง ใช้ Template Generator ด้านบนแล้ว equip แพ็กนั้นก่อนแก้ไข
+          สร้างแพ็กของตัวเองในแท็บ ติดตั้งและสร้าง แล้ว equip แพ็กนั้นก่อนแก้ไข
         </div>
       ) : null}
 
-      {!readOnly ? (
-      <section className="audio-tools-grid">
-        <div className="audio-panel">
+      {section === "details" && !readOnly ? (
+      <section className="audio-tools-grid audio-metadata">
+        <div className="audio-panel" tabIndex={0}>
           <div className="audio-editor-h">Pack Details</div>
           <label className="audio-field">
             <span>Pack name</span>
@@ -504,8 +511,13 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
           </div>
         </div>
 
-        <div className="audio-panel">
+        <div className="audio-panel" tabIndex={0}>
           <div className="audio-editor-h">Asset Uploader</div>
+          <div className="audio-paths">
+            <span>root <code>{state.rootDir}</code></span>
+            <span>packs <code>{state.packsDir}</code></span>
+            <span>cache <code>{state.cacheDir}</code></span>
+          </div>
           <div className="audio-field">
             <span>Clip files</span>
             <button className="audio-btn primary" onClick={() => clipInputRef.current?.click()} disabled={!selectedPack || busy}>Upload clip to active pack</button>
@@ -522,11 +534,9 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
       </section>
       ) : null}
 
-      {notice ? <div className="audio-banner ok">{notice}</div> : null}
-      {err ? <div className="audio-banner err">{err}</div> : null}
 
-      <section className="audio-grid">
-        <div className="audio-list">
+      {section === "events" && (<section className="audio-grid">
+        <div className="audio-list" role="region" aria-label="รายการอีเวนต์" tabIndex={0}>
           {state.groups.map((group) => {
             const items = selectedPack?.items.filter((item) => item.group === group.id) || [];
             return (
@@ -570,7 +580,7 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
           })}
         </div>
 
-        <aside className="audio-preview">
+        <aside className="audio-preview" role="region" aria-label="ตัวอย่างและการผูกอีเวนต์" tabIndex={0}>
           <div className="audio-preview-h">Event Preview</div>
           {selectedEvent ? (
             <>
@@ -688,7 +698,7 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
             <div className="empty">Select an event to inspect its voice line and banner.</div>
           )}
         </aside>
-      </section>
+      </section>)}
     </div>
   );
 }

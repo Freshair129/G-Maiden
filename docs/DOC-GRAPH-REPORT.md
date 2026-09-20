@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-09-13T02:44:09.983Z
+สร้างเมื่อ / Generated at: 2026-09-20T11:38:03.748Z
 
-สแกน 148 ไฟล์เอกสาร, 273 nodes, 1209 edges, 217 รายการปัญหา (161 ตัวบล็อก exit code) / scanned 148 doc files, 273 nodes, 1209 edges, 217 violations (161 blocking exit code).
+สแกน 150 ไฟล์เอกสาร, 275 nodes, 1209 edges, 216 รายการปัญหา (160 ตัวบล็อก exit code) / scanned 150 doc files, 275 nodes, 1209 edges, 216 violations (160 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -18,7 +18,7 @@
 | missing-changelog | มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table | 4 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 53 | no (informational) |
 | unresolved | wikilink หาไม่เจอ / unresolved wikilink | 11 | yes |
-| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 26 | yes |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 25 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -333,7 +333,6 @@
 - [L100] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3078, symbol="gm-phase-chip")
 - [L138] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/CompanionPages.tsx", anchor=153, symbol="InsightsPage")
 - [L138] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/CompanionPages.tsx", anchor=196, symbol="HistoryPage")
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="2.4.1-draft", changelog="2.4.0-draft")
 
 ### docs/design-system/08-account-gid.md
 

@@ -161,7 +161,7 @@ export const BuildAdvisorPage = memo(function BuildAdvisorPage() {
   );
 });
 
-export const InsightsPage = memo(function InsightsPage() {
+export const InsightsPage = memo(function InsightsPage({ onOpenAccount }: { onOpenAccount: () => void }) {
   const { data } = useCompanionData();
   return (
     <div className="domain-page">
@@ -197,7 +197,7 @@ export const InsightsPage = memo(function InsightsPage() {
               <div>{hero.kd}</div>
               <p>{hero.games} games · {hero.winRate}% WR</p>
             </div>
-          )) : <p className="empty">ลิงก์ Steam ในหน้า Account เพื่อดึงสถิติจาก OpenDota</p>}
+          )) : <div className="empty"><p>ลิงก์ Steam ในหน้า Account เพื่อดึงสถิติจาก OpenDota</p><button className="voice-btn" onClick={onOpenAccount}>ไปหน้า Account</button></div>}
         </div>
       </section>
     </div>

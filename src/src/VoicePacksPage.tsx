@@ -13,18 +13,8 @@
 // what you *have* (local-first, works offline), Store is a *transaction*
 // (Supabase, needs sign-in), so Voice never re-hosts Store's own UI.
 //
-// CR011-P5-01 layout choice (unchanged): InventoryTab is its OWN mode rather
-// than being stacked below VoiceInventory inside "คลังของฉัน". VoiceInventory
-// already fills the page with an unbounded-height split (pack grid + detail
-// panel, styles.css `.voice-split`/`.voice-grid` has no fixed height — it
-// grows with however many packs are on disk), while InventoryTab is authored
-// as its own fixed-height frame + pager (CR-003 §3.0's no-page-scroll rule —
-// see its `styles.grid` `height: 400` in InventoryTab.tsx). Stacking the two
-// would either (a) force page-level scroll to see InventoryTab below a tall
-// VoiceInventory grid — which the CR-003 components are explicitly built to
-// avoid — or (b) require capping VoiceInventory's height, which isn't this
-// wave's scope (VoicePacksPage may only be edited additively). A separate
-// mode keeps each surface's own no-scroll contract intact.
+// Each mode owns the remaining canvas height; the voice catalog paginates
+// independently of the economy inventory and the editor sections.
 
 import { useState } from "react";
 import VoiceInventory from "./VoiceInventory";

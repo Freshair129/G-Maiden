@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import { useGmadDesktopEntitlement, type GmadDecision } from "../gmadEntitlement";
 import GmadFirstRunGate from "../GmadFirstRunGate";
 import GmadEntitlementPanel from "../GmadEntitlementPanel";
+import AuthPanel from "../AuthPanel";
 
 const { invokeMock, auth } = vi.hoisted(() => ({
   invokeMock: vi.fn(),
@@ -19,6 +20,7 @@ vi.mock("../updateChannel", () => ({
   resolveUpdateChannel: () => ({ channel: "stable", source: "fixture" }),
 }));
 vi.mock("../auth", () => ({ useAuth: () => auth }));
+vi.mock("../profile", () => ({ useProfile: () => ({ gidCode: null, generationName: null }) }));
 
 const eligible: GmadDecision = { state: "eligible", gid: "G-FIXTURE", stale: false };
 let root: ReturnType<typeof createRoot>;
@@ -121,4 +123,27 @@ it("unmounts the actual ready deck when background verification rejects", async 
   await act(async () => root.render(<AppFixture />));
   expect(element.textContent).not.toContain("Fixture deck");
   expect(element.textContent).toContain("ยังยืนยันสิทธิ์ไม่ได้");
+});
+
+it("keeps a single Google action in guest Account and shows the local-data explanation", async () => {
+  Object.assign(auth, { user: null, session: null, lastAuthEvent: "SIGNED_OUT" });
+  const element = document.createElement("div");
+  await act(async () => root.unmount()); root = createRoot(element);
+  await act(async () => root.render(<><GmadEntitlementPanel /><AuthPanel /></>));
+  const actions = [...element.querySelectorAll("button")].filter((b) => b.textContent?.includes("Continue with Google"));
+  expect(actions).toHaveLength(1);
+  expect(element.textContent).toContain("G-Log เก็บในเครื่อง ไม่อัปโหลดผ่านระบบบัญชี");
+  expect(element.textContent).not.toContain("Optional");
+  await act(async () => actions[0].click());
+  expect(auth.signInWithGoogle).toHaveBeenCalled();
+});
+
+it("shows privacy at release sign-in and never mounts the guest deck", async () => {
+  Object.assign(auth, { user: null, session: null, lastAuthEvent: "SIGNED_OUT" });
+  const element = document.createElement("div");
+  await act(async () => root.unmount()); root = createRoot(element);
+  await act(async () => root.render(<GmadFirstRunGate><p>Fixture deck</p></GmadFirstRunGate>));
+  expect(element.textContent).not.toContain("Fixture deck");
+  expect(element.textContent).toContain("G-Log เก็บในเครื่อง ไม่อัปโหลดผ่านระบบบัญชี");
+  expect([...element.querySelectorAll("button")].filter((b) => b.textContent?.includes("Google"))).toHaveLength(1);
 });

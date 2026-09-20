@@ -1,0 +1,14 @@
+[
+  {
+    "clientH": 720,
+    "overflowY": "auto",
+    "scrollH": 720,
+    "selector": "surface page-account"
+  },
+  {
+    "clientH": 622,
+    "overflowY": "auto",
+    "scrollH": 622,
+    "selector": "account-page"
+  }
+]
