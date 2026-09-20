@@ -681,7 +681,7 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
                 onChange={setInsightsTab}
               />
               <div className="deck-tabbed-body">
-                {insightsTab === "history" ? <HistoryPage /> : <InsightsPage />}
+                {insightsTab === "history" ? <HistoryPage /> : <InsightsPage onOpenAccount={() => navigateTo("account", "account")} />}
               </div>
             </div>
           )}

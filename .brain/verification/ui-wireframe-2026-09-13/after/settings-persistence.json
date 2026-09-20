@@ -1,0 +1,6 @@
+{
+  "before": "med",
+  "afterClick": "low",
+  "restored": true,
+  "environment": "isolated browser; native emits mocked"
+}

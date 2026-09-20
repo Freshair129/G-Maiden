@@ -8,9 +8,8 @@ import type {
   GameTick, Settings, SettingsCat, GsiStatus, ResourceStats, OverlayProfile, VoiceInfo, Sensitivity,
 } from './types'
 import { loadSettings, loadProfiles, C, APP_VERSION, CHANGELOG } from './theme'
-import { panel, Row, Toggle, Seg, Card, Stat, fmtClock, heroName } from './primitives'
+import { panel, Row, Toggle, Seg, Card } from './primitives'
 import { SetupCard } from './cards/SetupCard'
-import { AudioSettingsCard } from './cards/AudioSettingsCard'
 import { MasterCard } from './cards/MasterCard'
 import { EfficacyCard } from './cards/EfficacyCard'
 import { LogCard } from './cards/LogCard'
@@ -22,8 +21,8 @@ import { Welcome } from './cards/Welcome'
 // standalone full-page render + its `embedded` toggle were dead code and
 // were deleted.
 export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
+  const [audioTab, setAudioTab] = useState<'voice' | 'banners'>('voice')
   const [tick, setTick] = useState<GameTick | null>(null)
-  const [seen, setSeen] = useState(false)
   const [s, setS] = useState<Settings>(loadSettings)
   // CR-008 WP-2: reflects whether an Anthropic key is stored in the DPAPI secret
   // store (backend `has_master_api_key`) — the plaintext is never held here.
@@ -132,7 +131,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
     } catch { /* plain-browser dev / non-Tauri runtime */ }
     const u1 = listen<GameTick>('game-tick', (e) => {
       if (!controlActiveRef.current) return
-      setTick(e.payload); setSeen(true)
+      setTick(e.payload)
     })
     const u2 = listen('overlay-ready', () => { void emit('settings', sRef.current) })
     const u3 = listen<GsiStatus>('gsi-status', (e) => {
@@ -317,7 +316,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
   return (
     <>
       {showWelcome && <Welcome onDone={dismissWelcome} />}
-      <div className="settings-detail-body">
+      <div className={`settings-detail-body${category === 'voice' ? ' settings-audio-body' : ''}`}>
         {category === 'overlay' && (
           <>
             <Card title="Overlay (OSD)">
@@ -388,6 +387,11 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
 
         {category === 'voice' && (
           <>
+            <div className="gm-packs-tabs" role="tablist" aria-label="ตั้งค่าเสียงและเตือน">
+              <button type="button" role="tab" aria-selected={audioTab === 'voice'} className={`gm-packs-tab${audioTab === 'voice' ? ' active' : ''}`} onClick={() => setAudioTab('voice')}>เสียงพูด</button>
+              <button type="button" role="tab" aria-selected={audioTab === 'banners'} className={`gm-packs-tab${audioTab === 'banners' ? ' active' : ''}`} onClick={() => setAudioTab('banners')}>แบนเนอร์และบุคลิก</button>
+            </div>
+            {audioTab === 'voice' && (
             <Card title="Alerts (G-Signal)">
               <Row label="เตือนเมื่อ HP ต่ำ"><Toggle on={s.alertEnabled} onChange={(v) => set('alertEnabled', v)} /></Row>
               <Row label={`ขีดเตือน HP: ${s.alertThreshold}%`}>
@@ -434,6 +438,8 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
               </div>
             </Card>
 
+            )}
+            {audioTab === 'banners' && (<>
             <Card title="G-Signal — แบนเนอร์แจ้งเตือน">
               <Row label="แบนเนอร์เตือนแก๊งค์ (gank)"><Toggle on={s.gankVisuals} onChange={(v) => set('gankVisuals', v)} /></Row>
               <Row label="แบนเนอร์ฆ่า / สตรีค (kill banner)">
@@ -484,7 +490,8 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
               </div>
             </Card>
 
-            <AudioSettingsCard />
+
+            </>)}
           </>
         )}
 
@@ -600,20 +607,6 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
                 visible, launch auto-check) — see CommandDeck.tsx + useAppUpdate.
                 This category keeps GSI/diagnostics only. */}
 
-            <Card title="Live (จาก GSI)">
-              {tick && tick.in_game ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', paddingTop: 6 }}>
-                  <Stat label="Clock" value={fmtClock(tick.clock_time)} color={C.ice} />
-                  <Stat label="Hero" value={heroName(tick.hero)} />
-                  <Stat label="Lvl" value={tick.level} />
-                  <Stat label="K/D/A" value={`${tick.kills}/${tick.deaths}/${tick.assists}`} />
-                  <Stat label="Net Worth" value={tick.net_worth.toLocaleString()} color={C.ice} />
-                  <Stat label="HP" value={`${tick.hp_percent}%`} color={tick.hp_percent <= s.alertThreshold ? C.bad : C.ok} />
-                </div>
-              ) : (
-                <div style={{ fontSize: 13, color: C.mut, paddingTop: 10 }}>{seen ? 'เชื่อมต่อแล้ว — รอเข้าเกม Dota 2' : 'เปิด Dota 2 (ติดตั้ง GSI config แล้ว) เพื่อดูข้อมูลสด'}</div>
-              )}
-            </Card>
 
             <SetupCard />
             <LogCard live={!!tick?.in_game} clockTime={tick?.clock_time ?? 0} />

@@ -1,0 +1,11 @@
+{
+  "insightsKeyboardNavigation": "passed using observed button ref",
+  "voiceOneEmptyAndClamp": "passed",
+  "editorReadOnly": "rendered",
+  "editorErrorReachableSave": {
+    "pageHeight": 556,
+    "pageScroll": 556,
+    "panelBottom": 663.8027954101562,
+    "saveBottom": 650.7042236328125
+  }
+}

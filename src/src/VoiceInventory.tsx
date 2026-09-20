@@ -112,6 +112,27 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
   const [err, setErr] = useState<string | null>(null);
   const [dragging, setDragging] = useState(false);
   const importInputRef = useRef<HTMLInputElement | null>(null);
+  const gridRef = useRef<HTMLDivElement | null>(null);
+  const [page, setPage] = useState(0);
+  const [pageSize, setPageSize] = useState(1);
+  const hasPacks = !!state?.packs.length;
+  useEffect(() => {
+    const grid = gridRef.current;
+    if (!grid) return;
+    const measure = () => {
+      // Match the authored 200px rows, 180px minimum columns and 12px gaps.
+      const rows = Math.max(1, Math.floor((grid.clientHeight + 12) / 212));
+      const columns = Math.max(1, Math.floor((grid.clientWidth + 12) / 192));
+      setPageSize(rows * columns);
+    };
+    measure();
+    const observer = new ResizeObserver(measure);
+    observer.observe(grid);
+    return () => observer.disconnect();
+  }, [hasPacks]);
+  const pageCount = Math.max(1, Math.ceil((state?.packs.length ?? 0) / pageSize));
+  const currentPage = Math.min(page, pageCount - 1);
+  useEffect(() => { setPage((previous) => Math.min(previous, pageCount - 1)); }, [pageCount]);
 
   const refresh = useCallback(async () => {
     try {
@@ -271,8 +292,9 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
         </div>
       ) : (
         <div className="voice-split">
-          <div className="voice-grid">
-            {state.packs.map((pack) => (
+          <div className="voice-catalog">
+          <div className="voice-grid" ref={gridRef}>
+            {state.packs.slice(currentPage * pageSize, (currentPage + 1) * pageSize).map((pack) => (
               <PackCard
                 key={pack.id}
                 pack={pack}
@@ -281,6 +303,12 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
                 onSelect={() => setSelectedId(pack.id)}
               />
             ))}
+          </div>
+          <nav className="voice-pagination" aria-label="หน้าแพ็กเสียง">
+            <button className="voice-btn" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>ก่อนหน้า</button>
+            <span aria-live="polite">{currentPage + 1} / {pageCount}</span>
+            <button className="voice-btn" disabled={currentPage + 1 >= pageCount} onClick={() => setPage(currentPage + 1)}>ถัดไป</button>
+          </nav>
           </div>
 
           {selectedPack ? (
@@ -295,7 +323,7 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
                 )}
               </div>
 
-              <div className="voice-detail-meta">
+              <div className="voice-detail-meta" tabIndex={0} role="region" aria-label="ข้อมูลแพ็กที่เลือก">
                 <h3>{selectedPack.name}</h3>
                 <div className="voice-detail-chips">
                   {selectedPack.builtIn ? <span className="voice-detail-chip builtin">ติดมากับแอป</span> : null}
@@ -337,7 +365,7 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
                 </button>
               </div>
 
-              <div className="voice-detail-events">
+              <div className="voice-detail-events" tabIndex={0} role="region" aria-label="อีเวนต์ของแพ็ก">
                 {state.groups.map((group) => {
                   const items = selectedPack.items.filter((item) => item.group === group.id);
                   if (items.length === 0) return null;

@@ -2,6 +2,7 @@
 
 ## [Unreleased]
 ### Fixed
+- **One Canvas UI (WF-01–WF-07)** — Voice แบ่งหน้าแพ็กและแท็บ editor, Account คงหัวหน้า/แท็บพร้อม Ledger ที่เลื่อนดูรายการครบ, Settings เสียงแยกสองส่วนและตัดการ์ดซ้ำ; Live/Build/Insights ใช้ instrument material. แก้ข้อความ Google/Steam/privacy และเพิ่มปุ่มไป Account ใน Insights.
 - **โทเค็นหมดอายุอัตโนมัติไม่ตัดสิทธิ์กลางเกมอีกต่อไป** — Supabase หมุน access token
   ให้อัตโนมัติทุก ๆ ~1 ชั่วโมง ซึ่งเดิมระบบตีความเป็น "session เปลี่ยน" แล้วยืนยันสิทธิ์
   ใหม่ทั้งหมด: ตัดสิทธิ์การเล่น (G-Sentry, G-Motion, G-Signal) และซ่อน overlay

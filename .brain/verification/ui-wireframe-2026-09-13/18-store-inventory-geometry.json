@@ -1,0 +1,14 @@
+[
+  {
+    "clientH": 720,
+    "overflowY": "hidden",
+    "scrollH": 720,
+    "selector": "surface page-store"
+  },
+  {
+    "clientH": 570,
+    "overflowY": "hidden",
+    "scrollH": 570,
+    "selector": "deck-tabbed-body"
+  }
+]
