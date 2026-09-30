@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-10-01",
+  "evidence_origin": "Read-only runScan tool results collected earlier in this chat; summarized counts, not full scanner output",
+  "main": {
+    "checklist_covered_errors": 14,
+    "uncovered_errors": 0,
+    "raw_blockers": 161,
+    "findings": 217,
+    "source_sha": "2d969ac643533b4b8e24494356da2e818eac874f",
+    "severity_errors": 14
+  },
+  "draft_pr_50": {
+    "checklist_covered_errors": 14,
+    "uncovered_errors": 0,
+    "raw_blockers": 160,
+    "findings": 216,
+    "source_sha": "1b352527ddc84a5c4ce0c2a2239f322cfb29bb00",
+    "severity_errors": 14
+  },
+  "interpretation": "Preserve historical snapshots; integration scan is a separate run."
+}

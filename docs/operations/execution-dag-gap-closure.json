@@ -1,0 +1,3223 @@
+{
+  "schema_version": "1.0.0",
+  "doc_id": "execution-dag-gap-closure",
+  "version": "0.1.0",
+  "updated": "2026-10-01",
+  "source_baseline": {
+    "remote": "origin",
+    "branch": "main",
+    "commit": "2d969ac643533b4b8e24494356da2e818eac874f",
+    "role": "immutable application and audit baseline for every node unless a descendant SHA is separately recorded"
+  },
+  "excluded_source_trees": [
+    {
+      "commit": "1b352527ddc84a5c4ce0c2a2239f322cfb29bb00",
+      "status": "Draft PR #50; not in the pinned main baseline",
+      "rule": "Do not mix its source, checks, or generated outputs into baseline evidence; do not describe it as released."
+    }
+  ],
+  "execution_model": {
+    "worker_model": "gpt-6-luna",
+    "reasoning_effort": "max",
+    "worktree_policy": "one lane per isolated worktree outside the repository",
+    "worker_return_format": "TASK <id> | STATUS | evidence",
+    "root_owns_integration_and_state": true,
+    "state_contract": "The JSON defines dependencies, ownership, acceptance, and initial node statuses. Runtime status overrides and review gates are root-owned in runtime_state_ref; dispatch requires verified dependencies and recorded approvals. Root is the current orchestrator; model/reasoning fields name the supporting worker configuration, not the root model.",
+    "max_concurrent_tasks_per_lane": 1,
+    "path_lease_rule": "Root permits one active task per lane and no concurrent overlapping write leases across lanes; a shared-file discovery pauses dispatch for reassignment."
+  },
+  "initiative": {
+    "title": "G-Maiden gap closure execution DAG",
+    "complexity": "C-3",
+    "risk": "HIGH",
+    "objective": "Sequence all 23 historical gap IDs into reviewable evidence, contract, implementation, and acceptance work without treating planned work as implemented or authorized external action.",
+    "current_wave_scope": [
+      "evidence reconciliation",
+      "DAG review",
+      "local documentation and feature-contract preparation",
+      "read-only manifest and source review",
+      "local fixtures and isolated test planning"
+    ],
+    "out_of_scope_now": [
+      "production/provider configuration or project resume",
+      "production migrations or Edge Function deployment",
+      "payments or paid-provider activation",
+      "version bump, tag, candidate publication, or channel promotion",
+      "merge to protected main"
+    ],
+    "status_vocabulary": [
+      "PLANNED",
+      "READY",
+      "RUNNING",
+      "REVIEW",
+      "VERIFIED",
+      "BLOCKED",
+      "DEFERRED"
+    ],
+    "status_semantics": {
+      "READY": "Local work can start within the node's read/write boundary.",
+      "REVIEW": "Evidence or a decision record is submitted for review; this is not acceptance.",
+      "VERIFIED": "This node's listed acceptance criteria passed at its recorded source/evidence revision.",
+      "BLOCKED": "A named prerequisite is missing; no pass is implied.",
+      "DEFERRED": "The Product Owner explicitly moved the scope to a later milestone; it is not implemented or closed."
+    }
+  },
+  "authority": {
+    "product_owner_agent": {
+      "delegated_scope": "Product scope, priority, local acceptance contracts, and recorded D1-D9 choices.",
+      "does_not_authorize": [
+        "production/provider settings",
+        "resuming Supabase",
+        "secrets or account remediation",
+        "migrations or deployment",
+        "legal approval",
+        "paid-provider activation",
+        "artifact signing or promotion",
+        "merge or release"
+      ]
+    },
+    "root_orchestrator": [
+      "assign workers and disjoint worktrees",
+      "own shared task state and CR-034 state-board reconciliation",
+      "own generated doc-graph, ledger, index, and orphan-report outputs",
+      "integrate lanes and preserve evidence-class boundaries"
+    ],
+    "external_owner_gates": [
+      "project resume and hosted provider/Auth configuration",
+      "controlled live IAM and account UAT",
+      "legal/privacy approval where required",
+      "production payment/economics approval",
+      "release signing, publication, and promotion",
+      "protected-branch merge"
+    ]
+  },
+  "current_real_state": {
+    "as_of": "2026-10-01",
+    "po_record": {
+      "state": "delegated decisions D1-D9 recorded; root review/integration remains a separate task",
+      "file": "F:/gm-gap-execution/docs/operations/gap-closure-product-owner-decisions.md",
+      "sha256": "4b47c16c287bfb6e3caffd7a40015ab0048d56b0633570bcf359105cbc889d1f",
+      "decisions": {
+        "D1": "Option B: preserve AAL2 until TOTP enrollment, step-up, and end-to-end UAT pass; TOTP contract/enrollment does not depend on non-dispatchable T1.",
+        "D2": "Google-only primary policy; exact current-session proof is BLOCKED_PROJECT_PAUSED and SESSION_METHOD_EVIDENCE_REQUIRED. No guessed claim interpretation, linked-identity fallback, provider mutation, or legacy-account action.",
+        "D3": "Option C: live-session checks cover mint-gid, check-gmad-queue, accept-closed-beta-terms, get-gmad-desktop-entitlement, and request-gmad-download; fail closed if the dependency is unavailable.",
+        "D4": "Option B: do not build /ops in this wave; remove the shipped-UI claim and treat deployed route status as unverified.",
+        "D5": "G-Orchestra remains local-only; contract requires explicit loopback bind, per-process unguessable mutation capability, and Origin/Host checks.",
+        "D6": "Describe G-Motion as an off-map/heading heuristic risk indicator; no calibrated probability or route model claim. Fit results are not live adopted parameters.",
+        "D7": "Sequence Memory, then Voice, then Coach behind privacy contracts. Memory and raw G-Log stay local; Voice is explicit PTT with no continuous microphone capture; Coach is post-match and local. Cloud context egress requires a separate decision.",
+        "D8": "Prepare path-to-test CI contract; no workflow edit authorized by the decision record. Preserve strict-graph baseline and do not substitute the unavailable semantic model.",
+        "D9": "No version bump, tag, candidate, release, or channel promotion during gap closure."
+      }
+    },
+    "cr034_state": {
+      "root_integrated_document": "F:/gm-gap-execution/docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
+      "version": "0.7.0b",
+      "sha256": "10228c9a318deed4f4a8d65d40bab19f150751c29b431b41b5d7894c9cb38573",
+      "D1_D4": "recorded DONE as delegated decisions, not implementation completion",
+      "T1": "TODO / non-dispatchable because it applies only to D1 option A",
+      "T6": "TODO; local contract under D1=B, implementation after approved enrollment/security contract; hosted acceptance requires T4 and healthy project. No T1 dependency.",
+      "T10_T11": "IN-PROGRESS; native/session UAT and Code-Doc verdict remain pending"
+    },
+    "live_environment": {
+      "project": "gstore main Production",
+      "state": "BLOCKED_PROJECT_PAUSED",
+      "resume_clicked": false,
+      "evidence_file": "F:/gm-gap-execution/.brain/execution/gap-closure-2026-10-01/browser-evidence.json",
+      "custodian": "root-orchestrator",
+      "sha256": "db0e57d30586fdd7e329187773616ccce23b8410855fad49e2b20444687c40b1",
+      "boundary": "Blocks hosted provider configuration, live session-method evidence, and controlled live UAT only; local planning, source review, and isolated fixtures remain actionable."
+    },
+    "strict_document_graph": {
+      "main_baseline": {
+        "findings": 217,
+        "raw_blockers": 161,
+        "severity_errors": 14,
+        "checklist_covered_errors": 14,
+        "uncovered_errors": 0
+      },
+      "draft_pr_50_tree": {
+        "commit": "1b352527ddc84a5c4ce0c2a2239f322cfb29bb00",
+        "findings": 216,
+        "raw_blockers": 160,
+        "severity_errors": 14,
+        "checklist_covered_errors": 14,
+        "uncovered_errors": 0
+      },
+      "custodian": "root-orchestrator; fresh scan result is not a generated artifact owned by this lane",
+      "sha256": "83346c6e2a91e9c5a33cd04143b32b722d0bac851deec523dd7a5f6db9e8813d",
+      "interpretation": "Checklist coverage is an exception mechanism, not a clean strict scan; keep the two source trees distinct."
+    },
+    "semantic_code_doc": {
+      "result": "INDETERMINATE",
+      "reason": "Configured Mellum model is absent from the current 34-model Ollama inventory.",
+      "alternate_model_substitution": false
+    },
+    "release_state": {
+      "dev_manifest_version": "0.13.1",
+      "dev_manifest_source_sha": "53083075a1d7f5be1bf54fcab05628267f3fc308",
+      "current_source_guidance_version": "0.13.2",
+      "observation": "Manifest/source guidance drift is recorded for read-only review; no manifest mutation or release claim is authorized."
+    },
+    "feature_state": {
+      "lite_mode": "GSI-only when DXGI is unavailable; no CV gank detection in Lite mode.",
+      "motion": "Off-map time and heading heuristic; no learned route/heatmap model; fitted parameters are not shown adopted by the live pipeline.",
+      "enemy_economy_ocr_damage": "Observed enemy-economy input, OCR caller/model packaging, and Damage advice acceptance remain incomplete.",
+      "voice_memory_stream": "Required end-to-end product paths are absent in the historical audit; do not infer completion.",
+      "coach": "Partial history/insight inputs; decision-point analysis remains unverified."
+    },
+    "evidence_contract": {
+      "file": "F:/gm-gap-execution/docs/operations/gap-closure-evidence-contract.md",
+      "sha256": "264250cbad033c245325d5d3f208de533b032bb5ab40bb23fd5a0cdf877f81ac",
+      "classes": [
+        "SOURCE",
+        "LOCALTEST",
+        "CONTROLLED_UAT",
+        "DEPLOYED",
+        "RELEASED"
+      ],
+      "rule": "A result in one evidence class does not prove a later class."
+    }
+  },
+  "root_shared_write_paths": [
+    "src-tauri/src/main.rs",
+    "src-tauri/Cargo.toml",
+    "src-tauri/Cargo.lock",
+    "src/src/CommandDeck.tsx",
+    "src/src/App.tsx",
+    "package.json",
+    "pnpm-lock.yaml",
+    "src/pnpm-lock.yaml",
+    "docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
+    "docs/operations/execution-dag-gap-closure.json",
+    "docs/DOC-GRAPH.json",
+    "docs/DOC-GRAPH-REPORT.md",
+    "docs/FEATURE-LEDGER.md",
+    "docs/FEATURE-ORPHAN-REPORT.*",
+    "docs/atomic_index.jsonl",
+    "release/evidence/",
+    "src-tauri/src/lib.rs",
+    ".brain/execution/gap-closure-2026-10-01/"
+  ],
+  "lanes": [
+    {
+      "id": "iam",
+      "worktree": "F:/gm-gap-iam",
+      "branch": "wip/gap-iam",
+      "owner": "Luna Max IAM lane",
+      "write_paths": [
+        "src/src/auth.ts",
+        "src/src/securitySession.ts",
+        "src/src/gmadEntitlement.ts",
+        "src/src/AccountSecurity.tsx",
+        "supabase/functions/_shared/iam.ts",
+        "supabase/functions/_shared/iam_runtime.ts",
+        "supabase/functions/_shared/entitlement.ts",
+        "supabase/functions/mint-gid/index.ts",
+        "supabase/functions/check-gmad-queue/index.ts",
+        "supabase/functions/accept-closed-beta-terms/index.ts",
+        "supabase/functions/get-gmad-desktop-entitlement/index.ts",
+        "supabase/functions/request-gmad-download/index.ts"
+      ],
+      "worktree_state": "PLANNED_NOT_CREATED"
+    },
+    {
+      "id": "orchestra",
+      "worktree": "F:/gm-gap-orchestra",
+      "branch": "wip/gap-orchestra-http-boundary",
+      "owner": "Luna Max Orchestra lane",
+      "write_paths": [
+        "orchestration/server.mjs",
+        "orchestration/tests/server-security.test.mjs"
+      ],
+      "worktree_state": "PLANNED_NOT_CREATED"
+    },
+    {
+      "id": "landing-docs",
+      "worktree": "F:/gm-gap-route-docs",
+      "branch": "docs/gap-ops-claim",
+      "owner": "Luna Max docs lane",
+      "write_paths": [
+        "docs/change request/CR-018-ops-route-spa-rewrite.md",
+        "docs/operations/gmaiden-closed-beta-release-playbook.md"
+      ],
+      "worktree_state": "PLANNED_NOT_CREATED"
+    },
+    {
+      "id": "ci",
+      "worktree": "F:/gm-gap-ci",
+      "branch": "wip/gap-ci-coverage",
+      "owner": "Luna Max CI lane",
+      "write_paths": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/landing-ci.yml",
+        ".github/workflows/deno-ci.yml",
+        ".github/workflows/sql-rls-ci.yml",
+        ".github/workflows/orchestra-ci.yml"
+      ],
+      "worktree_state": "PLANNED_NOT_CREATED"
+    },
+    {
+      "id": "release",
+      "worktree": "F:/gm-gap-release-evidence",
+      "branch": "wip/gap-release-evidence",
+      "owner": "Luna Max release-evidence lane",
+      "write_paths": [],
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "read_paths": [
+        "release/channels/dev.json",
+        "release/channels/closed-beta.json",
+        "release/channels/stable.json"
+      ]
+    },
+    {
+      "id": "lite-cv",
+      "worktree": "F:/gm-gap-lite-cv",
+      "branch": "wip/gap-lite-cv",
+      "owner": "Luna Max runtime-CV lane",
+      "write_paths": [
+        "src-tauri/src/capture.rs",
+        "src-tauri/src/cv/",
+        "src-tauri/src/sentry.rs",
+        "src-tauri/src/signal.rs"
+      ],
+      "worktree_state": "PLANNED_NOT_CREATED"
+    },
+    {
+      "id": "motion",
+      "worktree": "F:/gm-gap-motion",
+      "branch": "wip/gap-motion-fit",
+      "owner": "Luna Max Motion lane",
+      "write_paths": [
+        "src-tauri/src/motion.rs",
+        "tests/perf/src/bin/replay_fit.rs"
+      ],
+      "worktree_state": "PLANNED_NOT_CREATED"
+    },
+    {
+      "id": "master",
+      "worktree": "F:/gm-gap-master-data",
+      "branch": "wip/gap-master-data",
+      "owner": "Luna Max G-Master lane",
+      "write_paths": [
+        "src-tauri/src/master.rs",
+        "src-tauri/src/slm.rs",
+        "src-tauri/src/ocr.rs",
+        "src-tauri/src/damage.rs",
+        "src-tauri/src/items.rs",
+        "src-tauri/src/counter_advice.rs"
+      ],
+      "worktree_state": "PLANNED_NOT_CREATED"
+    },
+    {
+      "id": "memory",
+      "worktree": "F:/gm-gap-memory",
+      "branch": "wip/gap-memory",
+      "owner": "Luna Max Memory lane",
+      "write_paths": [
+        "src-tauri/src/memory.rs",
+        "src-tauri/src/memory/"
+      ],
+      "worktree_state": "PLANNED_NOT_CREATED"
+    },
+    {
+      "id": "voice",
+      "worktree": "F:/gm-gap-voice",
+      "branch": "wip/gap-voice",
+      "owner": "Luna Max Voice lane",
+      "write_paths": [
+        "src-tauri/src/voice_api.rs",
+        "src-tauri/src/tts.rs",
+        "src-tauri/src/voice_input/"
+      ],
+      "worktree_state": "PLANNED_NOT_CREATED"
+    },
+    {
+      "id": "coach",
+      "worktree": "F:/gm-gap-coach",
+      "branch": "wip/gap-coach",
+      "owner": "Luna Max Coach lane",
+      "write_paths": [
+        "src/src/live/coach.ts",
+        "src/src/__tests__/coach.test.ts"
+      ],
+      "worktree_state": "PLANNED_NOT_CREATED"
+    },
+    {
+      "id": "stream",
+      "worktree": "F:/gm-gap-stream",
+      "branch": "wip/gap-stream",
+      "owner": "Luna Max Stream lane",
+      "write_paths": [
+        "src/src/stream/",
+        "src-tauri/src/stream.rs",
+        "src-tauri/src/stream/"
+      ],
+      "worktree_state": "PLANNED_NOT_CREATED"
+    },
+    {
+      "id": "billing",
+      "worktree": "F:/gm-gap-economy",
+      "branch": "wip/gap-economy",
+      "owner": "Luna Max economy lane",
+      "write_paths": [
+        "supabase/functions/match-share-submit/index.ts",
+        "supabase/functions/topup-create/index.ts",
+        "supabase/functions/payment-webhook/index.ts",
+        "supabase/tests/cr003_wallet_billing.sql"
+      ],
+      "worktree_state": "PLANNED_NOT_CREATED"
+    },
+    {
+      "id": "root-evidence",
+      "owner": "root-orchestrator",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-execution",
+      "worktree_state": "CREATED",
+      "write_paths": [],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "product-owner",
+      "owner": "delegated Product Owner Agent; decision scope only",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-po",
+      "worktree_state": "CREATED",
+      "write_paths": [],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "root-browser-evidence",
+      "owner": "human service owner; browser observation owned by root",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-execution",
+      "worktree_state": "CREATED",
+      "write_paths": [],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "auth-evidence",
+      "owner": "Luna Max auth-evidence lane",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-auth-evidence",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [
+        "docs/operations/evidence/gap-auth-local.md"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "auth-uat",
+      "owner": "human test-account owner with Luna Max recording sanitized evidence",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-auth-uat",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "iam-contract",
+      "owner": "Luna Max IAM lane with delegated Product Owner review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-iam-contract",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [
+        "docs/operations/contracts/gap-iam-contract.md"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "iam-uat",
+      "owner": "human security/service owner with root evidence custody",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-iam-uat",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "orchestra-contract",
+      "owner": "Luna Max Orchestra lane with security-owner review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-orchestra-contract",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [
+        "docs/operations/contracts/gap-orch-contract.md"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "landing-routes",
+      "owner": "future Product Owner and security-owner review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-landing-routes",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [
+        "landing/src/main.tsx",
+        "landing/vercel.json",
+        "landing/src/OpsPage.tsx"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "ci-contract",
+      "owner": "Luna Max CI lane with root review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-ci-contract",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [
+        "docs/operations/evidence/gap-ci-matrix.md"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "release-evidence",
+      "owner": "Luna Max release-evidence lane with QA/release-owner review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-release-evidence",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [
+        "docs/operations/evidence/gap-release-matrix.md",
+        "docs/operations/evidence/gap-manifest-review.md"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "release-uat",
+      "owner": "human QA/release owner with Luna Max evidence preparation",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-release-uat",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "lite-contract",
+      "owner": "Luna Max runtime-CV lane with Product Owner review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-lite-contract",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [
+        "docs/operations/contracts/gap-lite-contract.md"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "motion-contract",
+      "owner": "Luna Max Motion lane with Product Owner review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-motion-contract",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [
+        "docs/operations/contracts/gap-motion-contract.md"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "master-contract",
+      "owner": "Luna Max G-Master lane with Product Owner review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-master-contract",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [
+        "docs/operations/contracts/gap-master-contract.md"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "memory-contract",
+      "owner": "Luna Max Memory lane with Product Owner/privacy review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-memory-contract",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [
+        "docs/operations/contracts/gap-memory-contract.md"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "voice-contract",
+      "owner": "Luna Max Voice lane with Product Owner/privacy review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-voice-contract",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [
+        "docs/operations/contracts/gap-voice-contract.md"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "coach-contract",
+      "owner": "Luna Max Coach lane with Product Owner/privacy review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-coach-contract",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [
+        "docs/operations/contracts/gap-coach-contract.md"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "stream-contract",
+      "owner": "Luna Max Stream lane with Product Owner/privacy review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-stream-contract",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [
+        "docs/operations/contracts/gap-stream-contract.md"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "billing-evidence",
+      "owner": "Luna Max economy lane; no provider activity",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-billing-evidence",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [
+        "docs/operations/evidence/gap-billing-local.md"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "billing-live",
+      "owner": "human finance/provider owner",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-billing-live",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "docs-review",
+      "owner": "Luna Max docs lane; root owns shared instruction/state/generated artifacts",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-docs-review",
+      "worktree_state": "PLANNED_NOT_CREATED",
+      "write_paths": [
+        "docs/operations/evidence/gap-docs-recon.md"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "root-generated-docs",
+      "owner": "root-orchestrator only",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-execution",
+      "worktree_state": "CREATED",
+      "write_paths": [
+        "docs/DOC-GRAPH.json",
+        "docs/DOC-GRAPH-REPORT.md",
+        "docs/FEATURE-LEDGER.md",
+        "docs/FEATURE-ORPHAN-REPORT.*",
+        "docs/atomic_index.jsonl"
+      ],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "codedoc-semantic",
+      "owner": "root-orchestrator / configured Code-Doc operator",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-execution",
+      "worktree_state": "CREATED",
+      "write_paths": [],
+      "approval_required_before_source_changes": true
+    },
+    {
+      "id": "root-integration",
+      "owner": "root-orchestrator",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-execution",
+      "worktree_state": "CREATED",
+      "write_paths": [
+        "docs/operations/execution-dag-gap-closure.json",
+        "docs/operations/EXEC-PLAN-CR-034-iam-remediation.md"
+      ],
+      "approval_required_before_source_changes": true
+    }
+  ],
+  "evidence_registry": [
+    {
+      "id": "EV-AGENTS",
+      "class": "SOURCE",
+      "path": "AGENTS.md",
+      "sha256": "8ac7344c2825a9c80945028a36a1a028aefbf93e847cc842149f615bc3ac6b0b",
+      "claim": "Repository governance, status boundaries, and current product constraints at the pinned tree."
+    },
+    {
+      "id": "EV-CLAUDE",
+      "class": "SOURCE",
+      "path": "CLAUDE.md",
+      "sha256": "0c9366d77207d31ff520114da45e7808653b81551f49ad7e8a50c76938edb304",
+      "claim": "Authoritative architecture/release workflow and no-version-churn policy."
+    },
+    {
+      "id": "EV-GAP-AUDIT",
+      "class": "SOURCE",
+      "path": "docs/audits/gap-analysis-2026-09-12.md",
+      "sha256": "7a7f369a0be83970ed78a01b15dad0333f970c67c3942399f1870bd51c7cd65f",
+      "claim": "Historical GAP-01 through GAP-23 register and original closure proposals."
+    },
+    {
+      "id": "EV-CR034-PLAN-BASE",
+      "class": "SOURCE",
+      "path": "docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
+      "sha256": "5a1eed841fbf60a0fb1fee5120ea60ebe1047c4b783bf2178160ff7e73b2d138",
+      "claim": "Pinned baseline CR-034 tasks T1-T11, T10/T11 UAT limits, and concurrency ownership."
+    },
+    {
+      "id": "EV-CR034-SPEC",
+      "class": "SOURCE",
+      "path": "docs/change request/CR-034-gid-iam-production-completion.md",
+      "sha256": "6115fe8b6230b17fe7914511ec46cca5a1dd5ca4d9a71ccb74a1b6c033ce30ac",
+      "claim": "Parent IAM specification and approval boundaries."
+    },
+    {
+      "id": "EV-SRS",
+      "class": "SOURCE",
+      "path": "docs/product/software-requirements-specification.md",
+      "sha256": "b31721315cb53fef761019f6d29b43195e417e4e69541453c45474e1a2f73875",
+      "claim": "Parent product, module, and non-functional requirements."
+    },
+    {
+      "id": "EV-RELEASE-ARCH",
+      "class": "SOURCE",
+      "path": "docs/releases/release-channel-architecture.md",
+      "sha256": "d619804ce4935246a5865cfbf31b7d6c76dc889da75087ba0be39224d4b7099f",
+      "claim": "Release-channel peer document; inspected for drift against CLAUDE.md."
+    },
+    {
+      "id": "EV-BETA-ROADMAP",
+      "class": "SOURCE",
+      "path": "docs/releases/beta-roadmap.md",
+      "sha256": "8413ccec9c408d911ea6764556829f5b153290595e83191646e744a7cb98da53",
+      "claim": "Parent maturity stage and evidence-gated release acceptance."
+    },
+    {
+      "id": "EV-W0-DOD",
+      "class": "SOURCE",
+      "path": "docs/releases/closed-beta/wave-0/definition-of-done.md",
+      "sha256": "1e1834f59ff00401f8be702f3b5439b51bcc6520e6bfb94c2d97451606864c03",
+      "claim": "Peer install, GSI, DXGI, NFR, updater, and privacy exit gates."
+    },
+    {
+      "id": "EV-ORCH-SPEC",
+      "class": "SOURCE",
+      "path": "docs/architecture/spec-orchestra-codedoc-agent.md",
+      "sha256": "6c603736a097eba9602069c10c6068f28b012d9b59d2bbd9b9a9a31c9abdd496",
+      "claim": "G-Orchestra Code-Doc architecture peer; semantic result remains separate from graph structure."
+    },
+    {
+      "id": "EV-GRAPH-REPORT-BASE",
+      "class": "SOURCE",
+      "path": "docs/DOC-GRAPH-REPORT.md",
+      "sha256": "b558ead91db4775fff8b07819389b9833a115ff16be84c0290a21b19cf7e43f7",
+      "claim": "Pinned generated graph report; does not replace the root-fresh strict scan counts."
+    },
+    {
+      "id": "EV-GRAPH-CHECKLIST",
+      "class": "SOURCE",
+      "path": "docs/approval-backfill-checklist.md",
+      "sha256": "2cc476b1f02328aa39d543ab6252d750d0897de42f46cd146e6be198f1b24c17",
+      "claim": "Checklist exception scope for severity-error findings."
+    },
+    {
+      "id": "EV-DEV-MANIFEST",
+      "class": "SOURCE",
+      "path": "release/channels/dev.json",
+      "sha256": "591d66349d43ab5c48e7162183b25723566a3e983a6b8667c94e51d6b1307959",
+      "claim": "Pinned dev manifest version 0.13.1 and sourceSha 53083075a1d7f5be1bf54fcab05628267f3fc308."
+    },
+    {
+      "id": "EV-CB-MANIFEST",
+      "class": "SOURCE",
+      "path": "release/channels/closed-beta.json",
+      "sha256": "b9e67f3bab7e95015c78489ef46baa6b3fc460e00d69bb78961eede46fb0c65a",
+      "claim": "Pinned closed-beta manifest is the not-published placeholder."
+    },
+    {
+      "id": "EV-STABLE-MANIFEST",
+      "class": "SOURCE",
+      "path": "release/channels/stable.json",
+      "sha256": "eb22ce372bf060fc5f114917bcba7b8f22fb0879ff5ca384fc3f3764a786c7f0",
+      "claim": "Pinned stable manifest is the not-published placeholder."
+    },
+    {
+      "id": "EV-PO-DECISIONS",
+      "class": "DELEGATED_DECISION",
+      "path": "F:/gm-gap-execution/docs/operations/gap-closure-product-owner-decisions.md",
+      "sha256": "4b47c16c287bfb6e3caffd7a40015ab0048d56b0633570bcf359105cbc889d1f",
+      "claim": "Delegated product choices D1-D9; not human/external approval or deployment proof."
+    },
+    {
+      "id": "EV-EVIDENCE-CONTRACT",
+      "class": "EVIDENCE_CONTRACT",
+      "path": "F:/gm-gap-execution/docs/operations/gap-closure-evidence-contract.md",
+      "sha256": "264250cbad033c245325d5d3f208de533b032bb5ab40bb23fd5a0cdf877f81ac",
+      "claim": "Evidence classes, source predicates, sanitized live-UAT limits, and complete historical gap traceability."
+    },
+    {
+      "id": "EV-CR034-ROOT-STATE",
+      "class": "ROOT_STATE",
+      "path": "F:/gm-gap-execution/docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
+      "sha256": "10228c9a318deed4f4a8d65d40bab19f150751c29b431b41b5d7894c9cb38573",
+      "claim": "Root-updated CR-034 0.7.0b: D1-D4 are recorded DONE as delegated choices; T1 is non-dispatchable under D1=B; T6 remains incomplete and must not depend on T1; T10/T11 UAT remains pending."
+    },
+    {
+      "id": "EV-LIVE-BROWSER-ROOT",
+      "class": "DEPLOYED",
+      "path": "F:/gm-gap-execution/.brain/execution/gap-closure-2026-10-01/browser-evidence.json",
+      "sha256": "db0e57d30586fdd7e329187773616ccce23b8410855fad49e2b20444687c40b1",
+      "claim": "Read-only deployed-environment dashboard observation only; gstore paused. No controlled UAT or acceptance executed."
+    },
+    {
+      "id": "EV-STRICT-SCAN-ROOT",
+      "class": "LOCALTEST",
+      "path": ".brain/execution/gap-closure-2026-10-01/baseline-scan-summary.json",
+      "sha256": "83346c6e2a91e9c5a33cd04143b32b722d0bac851deec523dd7a5f6db9e8813d",
+      "claim": "Root-reported fresh strict counts: baseline 217 findings/161 raw blockers; Draft PR #50 tree 216/160; 14 covered severity errors/0 uncovered on each. Scanner artifacts and exact run details remain root-custodied."
+    }
+  ],
+  "gap_coverage": [
+    {
+      "gap_id": "GAP-01",
+      "nodes": [
+        "AUTH-LOCAL",
+        "AUTH-NATIVE-UAT"
+      ],
+      "current": "Code and local tests are recorded; controlled real-session/native acceptance remains NOT_RUN."
+    },
+    {
+      "gap_id": "GAP-02",
+      "nodes": [
+        "AUTH-LOCAL",
+        "AUTH-NATIVE-UAT"
+      ],
+      "current": "Current source gates failed decisions; expired-grace WebView/native state acceptance remains NOT_RUN."
+    },
+    {
+      "gap_id": "GAP-03",
+      "nodes": [
+        "LIVE-ENV-GATE",
+        "IAM-CONTRACT",
+        "IAM-SESSION-PROOF",
+        "IAM-LIVE-UAT",
+        "IAM-SESSION-METHOD-CODE",
+        "T4-LIVE-PROBE"
+      ],
+      "current": "Linked Google identity is not current-session proof; exact mechanism awaits sanitized live evidence."
+    },
+    {
+      "gap_id": "GAP-04",
+      "nodes": [
+        "LIVE-ENV-GATE",
+        "IAM-CONTRACT",
+        "IAM-LIVE-UAT",
+        "IAM-CORE-CODE",
+        "T4-LIVE-PROBE"
+      ],
+      "current": "D3 selects live-session checks on all five user identity/entitlement endpoints; implementation/UAT pending."
+    },
+    {
+      "gap_id": "GAP-05",
+      "nodes": [
+        "LIVE-ENV-GATE",
+        "IAM-CONTRACT",
+        "IAM-LIVE-UAT",
+        "IAM-CORE-CODE",
+        "T4-LIVE-PROBE"
+      ],
+      "current": "AAL2 stays required; TOTP enrollment/step-up is absent and must pass before privileged operations are declared usable."
+    },
+    {
+      "gap_id": "GAP-06",
+      "nodes": [
+        "ORCH-CONTRACT",
+        "ORCH-CODE",
+        "ORCH-LOCAL-CHECK"
+      ],
+      "current": "D5 selects local-only management; bind/capability/Origin/Host contract and implementation checks remain."
+    },
+    {
+      "gap_id": "GAP-07",
+      "nodes": [
+        "RELEASE-MATRIX",
+        "MANIFEST-REVIEW",
+        "RELEASE-UAT"
+      ],
+      "current": "Native performance/update acceptance and exact-artifact evidence remain unverified; dev manifest/source guidance drift is read-only finding."
+    },
+    {
+      "gap_id": "GAP-08",
+      "nodes": [
+        "CI-MATRIX",
+        "CI-CODE"
+      ],
+      "current": "Path-specific landing, Deno, isolated SQL/RLS, and Orchestra checks are missing from automatic PR coverage."
+    },
+    {
+      "gap_id": "GAP-09",
+      "nodes": [
+        "VOICE-CONTRACT",
+        "VOICE-CODE"
+      ],
+      "current": "End-to-end voice input path absent; PTT/local capture and privacy contract precede implementation."
+    },
+    {
+      "gap_id": "GAP-10",
+      "nodes": [
+        "MEMORY-CONTRACT",
+        "MEMORY-CODE"
+      ],
+      "current": "Persistent local retrieval, provenance, retention, and deletion product path absent."
+    },
+    {
+      "gap_id": "GAP-11",
+      "nodes": [
+        "COACH-CONTRACT",
+        "COACH-CODE"
+      ],
+      "current": "History/insight foundations are partial; evidence-linked post-match decision-point analysis remains absent."
+    },
+    {
+      "gap_id": "GAP-12",
+      "nodes": [
+        "MOTION-CONTRACT",
+        "MOTION-CODE"
+      ],
+      "current": "PO accepts heuristic wording; route/heatmap prediction is not approved and remains deferred."
+    },
+    {
+      "gap_id": "GAP-13",
+      "nodes": [
+        "MASTER-CONTRACT",
+        "MASTER-CODE"
+      ],
+      "current": "Enemy economy inputs, OCR caller/model readiness, and evidence-backed Damage advice remain incomplete."
+    },
+    {
+      "gap_id": "GAP-14",
+      "nodes": [
+        "MOTION-CONTRACT",
+        "MOTION-CODE"
+      ],
+      "current": "Offline replay fit is not applied by the live pipeline; no automatic adoption is accepted."
+    },
+    {
+      "gap_id": "GAP-15",
+      "nodes": [
+        "OPS-DOCS",
+        "OPS-IMPLEMENTATION"
+      ],
+      "current": "D4 chooses no /ops build in this wave; remove shipped UI claim and leave deployed route status unverified."
+    },
+    {
+      "gap_id": "GAP-16",
+      "nodes": [
+        "MASTER-CONTRACT",
+        "MASTER-CODE"
+      ],
+      "current": "Auto/Claude/Ollama is current; Gemini remains deferred and requires a new approved provider contract."
+    },
+    {
+      "gap_id": "GAP-17",
+      "nodes": [
+        "MASTER-CONTRACT",
+        "MASTER-CODE",
+        "VOICE-CONTRACT",
+        "VOICE-CODE"
+      ],
+      "current": "Persona presets and critical variants exist, but end-to-end behavior across advice/announcer/critical paths is unverified."
+    },
+    {
+      "gap_id": "GAP-18",
+      "nodes": [
+        "RELEASE-MATRIX",
+        "RELEASE-UAT",
+        "LITE-CONTRACT",
+        "LITE-CODE"
+      ],
+      "current": "Full/Lite/model-missing matrix is not acceptance evidence; Lite has no CV gank chain."
+    },
+    {
+      "gap_id": "GAP-19",
+      "nodes": [
+        "LIVE-ENV-GATE",
+        "BILLING-LOCAL",
+        "BILLING-CODE",
+        "BILLING-LIVE"
+      ],
+      "current": "Local SQL/source evidence is distinct from payment provider sandbox, live credits, settlement, and paid-launch acceptance."
+    },
+    {
+      "gap_id": "GAP-20",
+      "nodes": [
+        "MANIFEST-REVIEW",
+        "DOCS-RECON",
+        "DOC-GRAPH-ROOT"
+      ],
+      "current": "Manifest, release-trigger docs, feature ledger, and generated graph state need root-coordinated reconciliation; historical audit remains immutable."
+    },
+    {
+      "gap_id": "GAP-21",
+      "nodes": [
+        "MEMORY-CONTRACT",
+        "MEMORY-CODE",
+        "VOICE-CONTRACT",
+        "VOICE-CODE",
+        "COACH-CONTRACT",
+        "COACH-CODE",
+        "STREAM-CONTRACT",
+        "STREAM-CODE",
+        "DOCS-RECON"
+      ],
+      "current": "Identity, cloud advice, opt-in contribution, raw local game data, and stream masking have distinct boundaries."
+    },
+    {
+      "gap_id": "GAP-22",
+      "nodes": [
+        "STREAM-CONTRACT",
+        "STREAM-CODE"
+      ],
+      "current": "Stream-wide sensitive-field masking/co-host product path is absent."
+    },
+    {
+      "gap_id": "GAP-23",
+      "nodes": [
+        "DOCS-RECON",
+        "DOC-GRAPH-ROOT",
+        "CODEDOC-ALIGN"
+      ],
+      "current": "Graph/schema evidence is structural; semantic alignment is INDETERMINATE with the configured model unavailable."
+    }
+  ],
+  "nodes": [
+    {
+      "id": "BASELINE",
+      "title": "Pin and reconcile source/evidence baselines",
+      "gap_ids": [],
+      "dependencies": [],
+      "lane": "root-evidence",
+      "owner": "root-orchestrator",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-2",
+      "risk": "LOW",
+      "status": "VERIFIED",
+      "approval_required": false,
+      "read_paths": [
+        "docs/audits/gap-analysis-2026-09-12.md",
+        "docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
+        "docs/change request/CR-034-gid-iam-production-completion.md",
+        "docs/product/software-requirements-specification.md",
+        "docs/releases/release-channel-architecture.md",
+        "docs/releases/beta-roadmap.md",
+        "docs/releases/closed-beta/wave-0/definition-of-done.md"
+      ],
+      "write_paths": [],
+      "checks": [
+        "Confirm full source SHA 2d969ac643533b4b8e24494356da2e818eac874f.",
+        "Keep Draft PR #50 commit 1b352527ddc84a5c4ce0c2a2239f322cfb29bb00 separate.",
+        "Use the evidence contract classes SOURCE/LOCALTEST/CONTROLLED_UAT/DEPLOYED/RELEASED."
+      ],
+      "acceptance": [
+        "All claims identify a source tree and evidence class.",
+        "Root reviews source hashes and root-custodied scan/browser evidence."
+      ],
+      "evidence": [
+        "EV-AGENTS",
+        "EV-CLAUDE",
+        "EV-GAP-AUDIT",
+        "EV-CR034-PLAN-BASE",
+        "EV-SRS",
+        "EV-EVIDENCE-CONTRACT",
+        "EV-STRICT-SCAN-ROOT"
+      ],
+      "blockers": [],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "PO-DECISIONS",
+      "title": "Record delegated Product Owner choices D1-D9",
+      "gap_ids": [],
+      "dependencies": [
+        "BASELINE"
+      ],
+      "lane": "product-owner",
+      "owner": "delegated Product Owner Agent; decision scope only",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "REVIEW",
+      "approval_required": false,
+      "read_paths": [
+        "F:/gm-gap-execution/docs/operations/gap-closure-product-owner-decisions.md",
+        "F:/gm-gap-execution/docs/operations/EXEC-PLAN-CR-034-iam-remediation.md"
+      ],
+      "write_paths": [],
+      "checks": [
+        "Check the delegated record contains D1-D9 and marks production/legal/provider/release authority as external.",
+        "Do not copy its conceptual diagram as another operational task-state source."
+      ],
+      "acceptance": [
+        "D1-D4 appear in the root-integrated CR-034 board as DONE decisions while implementation tasks remain incomplete.",
+        "D1=B does not leave TOTP enrollment dependent on T1, which applies only to option A.",
+        "D2 remains blocked on session-method evidence; D3 covers all five endpoints; D4 does not authorize an /ops build.",
+        "D5-D9 remain scoped choices, not external signoff."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-CR034-ROOT-STATE"
+      ],
+      "blockers": [],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "EVIDENCE-CONTRACT",
+      "title": "Apply the evidence-class and sanitized-UAT contract",
+      "gap_ids": [],
+      "dependencies": [
+        "BASELINE"
+      ],
+      "lane": "root-evidence",
+      "owner": "root-orchestrator",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-2",
+      "risk": "LOW",
+      "status": "REVIEW",
+      "approval_required": false,
+      "read_paths": [
+        "F:/gm-gap-execution/docs/operations/gap-closure-evidence-contract.md"
+      ],
+      "write_paths": [],
+      "checks": [
+        "Every execution report records claim, repo SHA, evidence class, exact command/result when applicable, and skipped cases.",
+        "Never persist raw JWTs, tokens, identifiers, signed URLs, or personal rows."
+      ],
+      "acceptance": [
+        "Local test, controlled UAT, deployment, and release claims remain separate.",
+        "Paused-project status gates only hosted/provider observations and dependent UAT."
+      ],
+      "evidence": [
+        "EV-EVIDENCE-CONTRACT",
+        "EV-LIVE-BROWSER-ROOT"
+      ],
+      "blockers": [],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "LIVE-ENV-GATE",
+      "title": "Wait for owner-controlled live project availability",
+      "gap_ids": [
+        "GAP-03",
+        "GAP-04",
+        "GAP-05",
+        "GAP-19"
+      ],
+      "dependencies": [
+        "EVIDENCE-CONTRACT"
+      ],
+      "lane": "root-browser-evidence",
+      "owner": "human service owner; browser observation owned by root",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "F:/gm-gap-execution/.brain/execution/gap-closure-2026-10-01/browser-evidence.json"
+      ],
+      "write_paths": [],
+      "checks": [
+        "After an independently authorized state change, recheck project state read-only before any provider/UAT task.",
+        "Never click Resume, change providers/hooks/secrets, deploy, migrate, or alter account state in this node."
+      ],
+      "acceptance": [
+        "A fresh sanitized root-owned observation proves the project is active and lists which views/configurations are visible.",
+        "No secret or personal identifier is recorded."
+      ],
+      "evidence": [
+        "EV-LIVE-BROWSER-ROOT"
+      ],
+      "blockers": [
+        "gstore main Production is PAUSED; this worker has no resume authority."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "AUTH-LOCAL",
+      "title": "Review existing sign-out and entitlement-state source/local-test evidence",
+      "gap_ids": [
+        "GAP-01",
+        "GAP-02"
+      ],
+      "dependencies": [
+        "BASELINE",
+        "EVIDENCE-CONTRACT"
+      ],
+      "lane": "auth-evidence",
+      "owner": "Luna Max auth-evidence lane",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "REVIEW",
+      "approval_required": false,
+      "read_paths": [
+        "src/src/auth.ts",
+        "src/src/securitySession.ts",
+        "src/src/supabase.ts",
+        "src/src/gmadEntitlement.ts",
+        "src/src/gmadFirstRun.ts",
+        "src-tauri/src/lib.rs",
+        "src-tauri/src/gmad_entitlement.rs",
+        "src-tauri/src/runtime.rs",
+        "src/src/__tests__/authRemediation.test.tsx",
+        "src/src/__tests__/securitySession.test.ts"
+      ],
+      "write_paths": [
+        "docs/operations/evidence/gap-auth-local.md"
+      ],
+      "checks": [
+        "Verify local lock, remote revoke, local cleanup, and UI warning are separate outcomes.",
+        "Verify cold start, stale grace, expired grace, denial, sign-out, and token rotation paths in source/tests.",
+        "Use baseline source predicates in the evidence contract; do not repeat the audit's pre-fix description as current source."
+      ],
+      "acceptance": [
+        "Each GAP-01/02 source claim is reconciled against the pinned source SHA.",
+        "Local checks are called LOCALTEST only and do not close controlled UAT."
+      ],
+      "evidence": [
+        "EV-CR034-ROOT-STATE",
+        "EV-EVIDENCE-CONTRACT"
+      ],
+      "blockers": [
+        "Root review; controlled real-session/native evidence is a separate node."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "AUTH-NATIVE-UAT",
+      "title": "Run controlled auth, native-lock, and expired-grace UAT",
+      "gap_ids": [
+        "GAP-01",
+        "GAP-02"
+      ],
+      "dependencies": [
+        "AUTH-LOCAL",
+        "LIVE-ENV-GATE"
+      ],
+      "lane": "auth-uat",
+      "owner": "human test-account owner with Luna Max recording sanitized evidence",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "F:/gm-gap-execution/docs/operations/gap-closure-evidence-contract.md"
+      ],
+      "write_paths": [],
+      "checks": [
+        "Use approved disposable fixtures and exact app/build SHA.",
+        "Test native lock failure, remote timeout/503, local storage cleanup failure, expired grace, and rendered state independently.",
+        "Record sanitized outcome and cleanup only; do not save credentials or session identifiers."
+      ],
+      "acceptance": [
+        "Native/WebView IPC and provider-session behavior match the separately stated outcomes.",
+        "Expired entitlement is visibly unavailable/locked; a stale allowed result is distinguishable from unavailable-and-locked."
+      ],
+      "evidence": [
+        "EV-EVIDENCE-CONTRACT",
+        "EV-CR034-ROOT-STATE",
+        "EV-LIVE-BROWSER-ROOT"
+      ],
+      "blockers": [
+        "gstore is paused; approved disposable test account/fixture and exact target build are not available in this plan."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "IAM-CONTRACT",
+      "title": "Prepare bounded IAM, TOTP, and five-endpoint revocation contract",
+      "gap_ids": [
+        "GAP-03",
+        "GAP-04",
+        "GAP-05"
+      ],
+      "dependencies": [
+        "PO-DECISIONS",
+        "EVIDENCE-CONTRACT"
+      ],
+      "lane": "iam-contract",
+      "owner": "Luna Max IAM lane with delegated Product Owner review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "PLANNED",
+      "approval_required": true,
+      "read_paths": [
+        "docs/change request/CR-034-gid-iam-production-completion.md",
+        "docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
+        "supabase/functions/_shared/iam.ts",
+        "supabase/functions/_shared/iam_runtime.ts",
+        "supabase/functions/_shared/entitlement.ts",
+        "src/src/AccountSecurity.tsx"
+      ],
+      "write_paths": [
+        "docs/operations/contracts/gap-iam-contract.md"
+      ],
+      "checks": [
+        "Preserve AAL2 until enrollment/step-up and UAT pass; do not dispatch T1's option-A-only AAL1 change.",
+        "TOTP enrollment/step-up local contract is independent of T1 and can be specified/tested locally.",
+        "List all five D3 endpoints and fail-closed dependency behavior.",
+        "For D2 require sanitized current-session/provider evidence; generic amr.oauth and linked Google identity alone do not establish Google."
+      ],
+      "acceptance": [
+        "Per-capability AAL, enrollment, recovery-in-scope, normal-user rejection, revocation timing, and dependency failure cases are explicit.",
+        "D2 method-specific implementation remains blocked until the live-proof gate is satisfied."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-EVIDENCE-CONTRACT",
+        "EV-CR034-ROOT-STATE"
+      ],
+      "blockers": [
+        "Root/PO review of the bounded contract; sanitized live proof is required only for the D2 method decision, not for local contract work."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "IAM-SESSION-PROOF",
+      "title": "Collect sanitized Google session-method and provider evidence",
+      "gap_ids": [
+        "GAP-03"
+      ],
+      "dependencies": [
+        "LIVE-ENV-GATE",
+        "IAM-CONTRACT"
+      ],
+      "lane": "root-browser-evidence",
+      "owner": "root browser custodian and human Supabase owner",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "F:/gm-gap-execution/.brain/execution/gap-closure-2026-10-01/browser-evidence.json"
+      ],
+      "write_paths": [],
+      "checks": [
+        "Use approved test accounts and sanitized provider/session-method aggregates.",
+        "Verify method semantics against actual supported session evidence; generic OAuth is not Google-specific.",
+        "Never retain a raw JWT, token, personal row, or provider secret."
+      ],
+      "acceptance": [
+        "Root records whether usable authoritative Google method evidence exists and exact sanitized conditions.",
+        "Missing/ambiguous proof stays BLOCKED_PROJECT_PAUSED or SESSION_METHOD_EVIDENCE_REQUIRED; no linked-identity fallback."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-LIVE-BROWSER-ROOT",
+        "EV-EVIDENCE-CONTRACT"
+      ],
+      "blockers": [
+        "Supabase production project is paused; provider/session views are unavailable."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "IAM-LIVE-UAT",
+      "title": "Run owner-controlled IAM and revocation UAT",
+      "gap_ids": [
+        "GAP-03",
+        "GAP-04",
+        "GAP-05"
+      ],
+      "dependencies": [
+        "IAM-CORE-CODE",
+        "IAM-SESSION-METHOD-CODE",
+        "IAM-SESSION-PROOF",
+        "T4-LIVE-PROBE",
+        "LIVE-ENV-GATE"
+      ],
+      "lane": "iam-uat",
+      "owner": "human security/service owner with root evidence custody",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "F:/gm-gap-execution/docs/operations/gap-closure-evidence-contract.md"
+      ],
+      "write_paths": [],
+      "checks": [
+        "Use disposable controlled accounts and exact function revision.",
+        "Cover Google-only, non-Google, linked-provider, AAL1/AAL2, revoked/reused session, and IAM dependency outage.",
+        "Collect aggregate response classes and timings only."
+      ],
+      "acceptance": [
+        "All five endpoints enforce the selected current-session policy in the active hosted target.",
+        "TOTP enrollment and step-up work for an authorized admin; normal-user negative case passes.",
+        "Provider/role/account state is not changed except under separate human approval."
+      ],
+      "evidence": [
+        "EV-EVIDENCE-CONTRACT",
+        "EV-LIVE-BROWSER-ROOT"
+      ],
+      "blockers": [
+        "Local code and feature contract are incomplete; project is paused; owner-controlled disposable account is not supplied."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "ORCH-CONTRACT",
+      "title": "Specify local-only G-Orchestra HTTP security contract",
+      "gap_ids": [
+        "GAP-06"
+      ],
+      "dependencies": [
+        "PO-DECISIONS",
+        "EVIDENCE-CONTRACT"
+      ],
+      "lane": "orchestra-contract",
+      "owner": "Luna Max Orchestra lane with security-owner review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "PLANNED",
+      "approval_required": true,
+      "read_paths": [
+        "orchestration/server.mjs",
+        "docs/architecture/engineering-spec.md",
+        "docs/architecture/adr/ADR-18-dev-runtime-governance-split.md",
+        "F:/gm-gap-execution/docs/operations/gap-closure-product-owner-decisions.md"
+      ],
+      "write_paths": [
+        "docs/operations/contracts/gap-orch-contract.md"
+      ],
+      "checks": [
+        "Define explicit loopback bind, per-process unguessable mutation capability, Origin/Host policy, and allowed mutation set.",
+        "Threat-model browser-based cross-site requests and local socket access.",
+        "Do not enable remote management or send dispatch commands to prove the boundary."
+      ],
+      "acceptance": [
+        "Security owner reviews a C-3 local-only contract before server code changes.",
+        "Contract states what a local process/browser can and cannot mutate."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-ORCH-SPEC",
+        "EV-EVIDENCE-CONTRACT"
+      ],
+      "blockers": [
+        "Security-owner review and bounded contract signoff before implementation."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "ORCH-CODE",
+      "title": "Harden G-Orchestra server to the approved local-only contract",
+      "gap_ids": [
+        "GAP-06"
+      ],
+      "dependencies": [
+        "ORCH-CONTRACT"
+      ],
+      "lane": "orchestra",
+      "owner": "Luna Max Orchestra lane; root dispatch after security review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "orchestration/server.mjs",
+        "orchestration/tests/"
+      ],
+      "write_paths": [
+        "orchestration/server.mjs",
+        "orchestration/tests/server-security.test.mjs"
+      ],
+      "checks": [
+        "Test socket bound to loopback only.",
+        "Test missing/invalid capability, wrong Origin/Host, read-only routes, and each mutating route.",
+        "Do not overlap other orchestration server work."
+      ],
+      "acceptance": [
+        "Unauthorized mutation requests fail closed; approved local UI requests continue under the documented contract.",
+        "No remote bind is introduced."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-ORCH-SPEC"
+      ],
+      "blockers": [
+        "Approved threat contract and root dispatch."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": [
+        "ORCH-HTTP"
+      ]
+    },
+    {
+      "id": "ORCH-LOCAL-CHECK",
+      "title": "Verify local G-Orchestra caller and socket boundary",
+      "gap_ids": [
+        "GAP-06"
+      ],
+      "dependencies": [
+        "ORCH-CODE"
+      ],
+      "lane": "orchestra",
+      "owner": "Luna Max Orchestra lane plus root review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": false,
+      "read_paths": [
+        "orchestration/server.mjs",
+        "orchestration/tests/server-security.test.mjs"
+      ],
+      "write_paths": [],
+      "checks": [
+        "Run focused server tests on the exact branch SHA.",
+        "Inspect bind address and rejected cross-origin/missing-capability evidence."
+      ],
+      "acceptance": [
+        "All security contract cases pass locally; this is not a claim about external network reachability."
+      ],
+      "evidence": [
+        "EV-ORCH-SPEC"
+      ],
+      "blockers": [
+        "ORCH-CODE has not been dispatched or reviewed."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": [
+        "ORCH-HTTP"
+      ]
+    },
+    {
+      "id": "OPS-DOCS",
+      "title": "Reconcile /ops claims to D4 without building a route",
+      "gap_ids": [
+        "GAP-15"
+      ],
+      "dependencies": [
+        "PO-DECISIONS",
+        "EVIDENCE-CONTRACT"
+      ],
+      "lane": "landing-docs",
+      "owner": "Luna Max docs lane; root integrates shared state",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "PLANNED",
+      "approval_required": true,
+      "read_paths": [
+        "landing/src/main.tsx",
+        "landing/vercel.json",
+        "docs/change request/CR-018-ops-route-spa-rewrite.md",
+        "docs/operations/gmaiden-closed-beta-release-playbook.md",
+        "CLAUDE.md"
+      ],
+      "write_paths": [
+        "docs/change request/CR-018-ops-route-spa-rewrite.md",
+        "docs/operations/gmaiden-closed-beta-release-playbook.md"
+      ],
+      "checks": [
+        "Preserve historical changelog facts while correcting current shipped-UI wording.",
+        "Describe deployed route state as unverified while the project is paused.",
+        "Do not create OpsPage or Vercel rewrite."
+      ],
+      "acceptance": [
+        "Current docs say admin Edge Function exists but no shipped operator UI is evidenced.",
+        "No historic deployment record is deleted or rewritten."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-EVIDENCE-CONTRACT",
+        "EV-LIVE-BROWSER-ROOT"
+      ],
+      "blockers": [
+        "Root review of doc diff and root-owned generated doc-graph outputs."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "OPS-IMPLEMENTATION",
+      "title": "Future /ops implementation (not in this wave)",
+      "gap_ids": [
+        "GAP-15"
+      ],
+      "dependencies": [
+        "OPS-DOCS"
+      ],
+      "lane": "landing-routes",
+      "owner": "future Product Owner and security-owner review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "DEFERRED",
+      "approval_required": true,
+      "read_paths": [
+        "landing/src/main.tsx",
+        "landing/vercel.json",
+        "docs/change request/CR-018-ops-route-spa-rewrite.md"
+      ],
+      "write_paths": [
+        "landing/src/main.tsx",
+        "landing/vercel.json",
+        "landing/src/OpsPage.tsx"
+      ],
+      "checks": [
+        "Requires a separate C-3 contract for route/rewrite, Google session, AAL2, capabilities, and negative tests."
+      ],
+      "acceptance": [
+        "Do not dispatch unless a later Product Owner decision explicitly reopens the operator UI and security owner approves the contract."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS"
+      ],
+      "blockers": [
+        "D4 chooses no /ops build in this gap-closure wave."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "CI-MATRIX",
+      "title": "Create path-to-check CI coverage matrix",
+      "gap_ids": [
+        "GAP-08"
+      ],
+      "dependencies": [
+        "PO-DECISIONS",
+        "EVIDENCE-CONTRACT"
+      ],
+      "lane": "ci-contract",
+      "owner": "Luna Max CI lane with root review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-2",
+      "risk": "MEDIUM",
+      "status": "PLANNED",
+      "approval_required": false,
+      "read_paths": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/",
+        "landing/package.json",
+        "supabase/functions/_shared/",
+        "supabase/tests/",
+        "orchestration/package.json"
+      ],
+      "write_paths": [
+        "docs/operations/evidence/gap-ci-matrix.md"
+      ],
+      "checks": [
+        "Map landing, Deno, SQL/RLS, Orchestra, desktop, and doc-graph source paths to existing test/build commands.",
+        "Specify isolated SQL fixtures and expected PR path filters.",
+        "Distinguish executed checks from evidence-only tests and manual/advisory suites."
+      ],
+      "acceptance": [
+        "Every relevant source path has a check, runner/environment, timeout, and expected evidence class.",
+        "No workflow edits are included in this matrix task."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-EVIDENCE-CONTRACT",
+        "EV-AGENTS"
+      ],
+      "blockers": [
+        "Root review before workflow implementation is separately authorized."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "CI-CODE",
+      "title": "Implement accepted path-specific PR checks",
+      "gap_ids": [
+        "GAP-08"
+      ],
+      "dependencies": [
+        "CI-MATRIX"
+      ],
+      "lane": "ci",
+      "owner": "Luna Max CI lane; root dispatch after workflow scope review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-2",
+      "risk": "MEDIUM",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        ".github/workflows/ci.yml",
+        "landing/package.json",
+        "supabase/tests/",
+        "orchestration/package.json"
+      ],
+      "write_paths": [
+        ".github/workflows/ci.yml",
+        ".github/workflows/landing-ci.yml",
+        ".github/workflows/deno-ci.yml",
+        ".github/workflows/sql-rls-ci.yml",
+        ".github/workflows/orchestra-ci.yml"
+      ],
+      "checks": [
+        "Implement only after the matrix is accepted and a bounded workflow PR is dispatched.",
+        "Demonstrate a failing relevant test makes its path-specific check fail.",
+        "Do not query production databases or deploy functions."
+      ],
+      "acceptance": [
+        "Changed landing/Deno/SQL-RLS/Orchestra code cannot merge with its required check missing or red.",
+        "Unrelated docs-only changes do not incur unrelated live/provider requirements."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-EVIDENCE-CONTRACT"
+      ],
+      "blockers": [
+        "D8 authorizes a matrix only; root has not dispatched workflow edits."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": [
+        "RUST-TEST",
+        "RUST-CLIPPY",
+        "DESKTOP-TEST",
+        "TS",
+        "ESLINT",
+        "TAURI-SMOKE",
+        "LANDING-TEST",
+        "LANDING-TYPECHECK",
+        "DENO-TEST",
+        "SQL-RLS",
+        "ORCH-HTTP"
+      ]
+    },
+    {
+      "id": "RELEASE-MATRIX",
+      "title": "Define Full/Lite, native, performance, and update acceptance matrix",
+      "gap_ids": [
+        "GAP-07",
+        "GAP-18"
+      ],
+      "dependencies": [
+        "PO-DECISIONS",
+        "EVIDENCE-CONTRACT"
+      ],
+      "lane": "release-evidence",
+      "owner": "Luna Max release-evidence lane with QA/release-owner review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "PLANNED",
+      "approval_required": true,
+      "read_paths": [
+        "docs/releases/beta-roadmap.md",
+        "docs/releases/closed-beta/wave-0/definition-of-done.md",
+        "docs/releases/release-channel-architecture.md",
+        "tests/perf/README.md",
+        ".github/workflows/perf-gate.yml",
+        "release/channels/"
+      ],
+      "write_paths": [
+        "docs/operations/evidence/gap-release-matrix.md"
+      ],
+      "checks": [
+        "Define hardware, Windows, Dota display mode, audio, model/asset, Full/Lite, install, and updater coverage.",
+        "Capture exact source/artifact SHA, process-tree CPU/RAM scope, FPS baseline, latency p50/p99, and measured/skipped hops.",
+        "A skipped live metric is NOT_RUN, never PASS."
+      ],
+      "acceptance": [
+        "Every Wave 0 gate has an evidence field, owner, threshold, and decision rule.",
+        "Lite mode explicitly states no CV gank chain; asset presence/provenance is verified separately."
+      ],
+      "evidence": [
+        "EV-BETA-ROADMAP",
+        "EV-W0-DOD",
+        "EV-RELEASE-ARCH",
+        "EV-EVIDENCE-CONTRACT"
+      ],
+      "blockers": [
+        "QA/release-owner review; no target release artifact is selected for this planning node."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "MANIFEST-REVIEW",
+      "title": "Reconcile release manifest and release-workflow documentation (read-only)",
+      "gap_ids": [
+        "GAP-07",
+        "GAP-20"
+      ],
+      "dependencies": [
+        "BASELINE",
+        "RELEASE-MATRIX"
+      ],
+      "lane": "release-evidence",
+      "owner": "Luna Max release-evidence lane with root/release-owner review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-2",
+      "risk": "MEDIUM",
+      "status": "PLANNED",
+      "approval_required": false,
+      "read_paths": [
+        "release/channels/dev.json",
+        "release/channels/closed-beta.json",
+        "release/channels/stable.json",
+        "CLAUDE.md",
+        "docs/releases/release-channel-architecture.md",
+        ".github/workflows/candidate-release.yml",
+        ".github/workflows/promote-release.yml"
+      ],
+      "write_paths": [
+        "docs/operations/evidence/gap-manifest-review.md"
+      ],
+      "checks": [
+        "Compare manifest source/version to repository release guidance and workflow lineage.",
+        "Preserve the mismatch as a finding until a real candidate artifact and release-owner decision exist."
+      ],
+      "acceptance": [
+        "Report dev 0.13.1/source 53083075 against current source guidance 0.13.2 with a SOURCE evidence boundary.",
+        "Identify stale tag-trigger text in release-channel-architecture.md relative to CLAUDE.md manual-dispatch authority.",
+        "Do not edit manifests, version files, tags, or release state."
+      ],
+      "evidence": [
+        "EV-CLAUDE",
+        "EV-RELEASE-ARCH",
+        "EV-DEV-MANIFEST",
+        "EV-CB-MANIFEST",
+        "EV-STABLE-MANIFEST"
+      ],
+      "blockers": [],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "RELEASE-UAT",
+      "title": "Run exact-artifact native, performance, install, and update acceptance",
+      "gap_ids": [
+        "GAP-07",
+        "GAP-18"
+      ],
+      "dependencies": [
+        "RELEASE-MATRIX",
+        "MANIFEST-REVIEW"
+      ],
+      "lane": "release-uat",
+      "owner": "human QA/release owner with Luna Max evidence preparation",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "docs/releases/closed-beta/wave-0/definition-of-done.md",
+        "F:/gm-gap-execution/docs/operations/gap-closure-evidence-contract.md"
+      ],
+      "write_paths": [],
+      "checks": [
+        "Use a selected signed artifact and exact SHA; record hardware and test settings.",
+        "Measure G-Signal p50 and p99, CPU, RAM, FPS impact, installer, and channel-specific updater behavior.",
+        "Record Full/Lite/model-missing behavior and all skipped legs."
+      ],
+      "acceptance": [
+        "Required thresholds meet the Wave 0 DoD and results are bound to one exact artifact.",
+        "No version bump or promotion occurs as part of the test."
+      ],
+      "evidence": [
+        "EV-W0-DOD",
+        "EV-EVIDENCE-CONTRACT",
+        "EV-PO-DECISIONS"
+      ],
+      "blockers": [
+        "No target signed artifact, device matrix, or release-owner test window is selected; D9 forbids release action in this wave."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "LITE-CONTRACT",
+      "title": "Specify Full/Lite/model-missing capability and user-facing limits",
+      "gap_ids": [
+        "GAP-18"
+      ],
+      "dependencies": [
+        "RELEASE-MATRIX",
+        "PO-DECISIONS"
+      ],
+      "lane": "lite-contract",
+      "owner": "Luna Max runtime-CV lane with Product Owner review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-2",
+      "risk": "MEDIUM",
+      "status": "PLANNED",
+      "approval_required": true,
+      "read_paths": [
+        "src-tauri/src/capture.rs",
+        "src-tauri/src/cv/",
+        "models/",
+        "docs/architecture/adr/ADR-13*",
+        "docs/releases/closed-beta/wave-0/definition-of-done.md"
+      ],
+      "write_paths": [
+        "docs/operations/contracts/gap-lite-contract.md"
+      ],
+      "checks": [
+        "Inventory borderless DXGI Full, GSI-only Lite, missing model/assets, and unsupported display modes.",
+        "State that Lite has no CV enemy identity/gank chain; separate voice/overlay/G-Master behavior from CV behavior.",
+        "Record model license/provenance and packaging checks without adding assets."
+      ],
+      "acceptance": [
+        "Every mode has capability, visible reason, fallback, and test evidence row.",
+        "No SRS example or source file is described as live acceptance."
+      ],
+      "evidence": [
+        "EV-GAP-AUDIT",
+        "EV-W0-DOD",
+        "EV-AGENTS",
+        "EV-EVIDENCE-CONTRACT"
+      ],
+      "blockers": [
+        "Product Owner review of mode wording before source/UI changes."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "LITE-CODE",
+      "title": "Implement approved Lite/CV capability behavior and tests",
+      "gap_ids": [
+        "GAP-18"
+      ],
+      "dependencies": [
+        "LITE-CONTRACT"
+      ],
+      "lane": "lite-cv",
+      "owner": "Luna Max runtime-CV lane; root dispatch after contract review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "src-tauri/src/capture.rs",
+        "src-tauri/src/cv/",
+        "src-tauri/src/sentry.rs",
+        "src-tauri/src/signal.rs"
+      ],
+      "write_paths": [
+        "src-tauri/src/capture.rs",
+        "src-tauri/src/cv/",
+        "src-tauri/src/sentry.rs",
+        "src-tauri/src/signal.rs"
+      ],
+      "checks": [
+        "Implement only an accepted capability contract; preserve CPU/RAM and latency budgets.",
+        "Test DXGI unavailable/model missing behavior and confirm Lite does not claim CV gank detection."
+      ],
+      "acceptance": [
+        "Fallback state is visible and truthful; any altered alert behavior has negative and positive tests.",
+        "No new model is bundled without licensing, provenance, and packaging approval."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-W0-DOD"
+      ],
+      "blockers": [
+        "PO-approved capability contract and root dispatch."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": [
+        "RUST-TEST",
+        "RUST-CLIPPY",
+        "DESKTOP-TEST",
+        "TS",
+        "ESLINT",
+        "TAURI-SMOKE"
+      ]
+    },
+    {
+      "id": "MOTION-CONTRACT",
+      "title": "Reconcile heuristic wording and fit adoption policy",
+      "gap_ids": [
+        "GAP-12",
+        "GAP-14"
+      ],
+      "dependencies": [
+        "PO-DECISIONS",
+        "EVIDENCE-CONTRACT"
+      ],
+      "lane": "motion-contract",
+      "owner": "Luna Max Motion lane with Product Owner review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "PLANNED",
+      "approval_required": true,
+      "read_paths": [
+        "src-tauri/src/motion.rs",
+        "src-tauri/src/capture.rs",
+        "tests/perf/src/bin/replay_fit.rs",
+        "docs/features/FEAT-G-MOTION.md",
+        "docs/audits/gap-analysis-2026-09-12.md"
+      ],
+      "write_paths": [
+        "docs/operations/contracts/gap-motion-contract.md"
+      ],
+      "checks": [
+        "Use heuristic risk indicator/proxy wording; do not say calibrated probability, heatmap, or through-fog route prediction.",
+        "State that replay fit is not adopted by the live pipeline; define only a manual-reviewed future policy if requested.",
+        "Do not create hidden enemy feeds or enable automatic parameter changes."
+      ],
+      "acceptance": [
+        "Product Owner accepts capability and uncertainty wording.",
+        "A future learned route model is separately C-3/HIGH with authorized data and holdout calibration."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-GAP-AUDIT",
+        "EV-EVIDENCE-CONTRACT"
+      ],
+      "blockers": [
+        "Root review before documentation changes; route-model work is deferred."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "MOTION-CODE",
+      "title": "Future Motion model or fit-adoption implementation",
+      "gap_ids": [
+        "GAP-12",
+        "GAP-14"
+      ],
+      "dependencies": [
+        "MOTION-CONTRACT"
+      ],
+      "lane": "motion",
+      "owner": "future Product Owner and root-dispatched Motion lane",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "DEFERRED",
+      "approval_required": true,
+      "read_paths": [
+        "src-tauri/src/motion.rs",
+        "tests/perf/src/bin/replay_fit.rs"
+      ],
+      "write_paths": [
+        "src-tauri/src/motion.rs",
+        "tests/perf/src/bin/replay_fit.rs"
+      ],
+      "checks": [
+        "No learned route model or automatic fit application in this wave.",
+        "Any later fit lifecycle must be versioned, local-only, holdout-evaluated, and rollbackable."
+      ],
+      "acceptance": [
+        "A later C-3 contract names authorized data, uncertainty, holdout target, adoption and rollback policy before code dispatch."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-GAP-AUDIT"
+      ],
+      "blockers": [
+        "D6 accepts current heuristic only; no approved route-model/auto-fit feature contract."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": [
+        "RUST-TEST",
+        "RUST-CLIPPY",
+        "DESKTOP-TEST",
+        "TS",
+        "ESLINT",
+        "TAURI-SMOKE"
+      ]
+    },
+    {
+      "id": "MASTER-CONTRACT",
+      "title": "Define observable enemy economy, OCR/Damage, provider, and persona contracts",
+      "gap_ids": [
+        "GAP-13",
+        "GAP-16",
+        "GAP-17"
+      ],
+      "dependencies": [
+        "PO-DECISIONS",
+        "EVIDENCE-CONTRACT"
+      ],
+      "lane": "master-contract",
+      "owner": "Luna Max G-Master lane with Product Owner review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "PLANNED",
+      "approval_required": true,
+      "read_paths": [
+        "src-tauri/src/master.rs",
+        "src-tauri/src/slm.rs",
+        "src-tauri/src/ocr.rs",
+        "src-tauri/src/damage.rs",
+        "src-tauri/src/items.rs",
+        "models/",
+        "docs/features/FEAT-G-MIND.md",
+        "docs/features/FEAT-G-PERSONA.md"
+      ],
+      "write_paths": [
+        "docs/operations/contracts/gap-master-contract.md"
+      ],
+      "checks": [
+        "List only observed enemy inputs; unknown economy/items cannot become guessed numbers.",
+        "OCR must identify caller, freshness, accuracy, model packaging/license, and no-upload boundary.",
+        "Keep Auto/Claude/Ollama scope; Gemini remains deferred unless a new provider contract is approved.",
+        "Define persona behavior across presets, advice, announcer, revision, and critical interrupts."
+      ],
+      "acceptance": [
+        "Product Owner accepts observable input and uncertainty rules, model/asset readiness, provider scope, and persona matrix.",
+        "Cloud path does not receive live GSI, raw G-Log, or Memory by implication."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-SRS",
+        "EV-GAP-AUDIT",
+        "EV-EVIDENCE-CONTRACT"
+      ],
+      "blockers": [
+        "Detailed product contract review; no enemy economy/OCR source is presumed accurate or packaged."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "MASTER-CODE",
+      "title": "Implement approved G-Master data, OCR, Damage, and persona scope",
+      "gap_ids": [
+        "GAP-13",
+        "GAP-16",
+        "GAP-17"
+      ],
+      "dependencies": [
+        "MASTER-CONTRACT"
+      ],
+      "lane": "master",
+      "owner": "Luna Max G-Master lane; root dispatch after contract review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "src-tauri/src/master.rs",
+        "src-tauri/src/slm.rs",
+        "src-tauri/src/ocr.rs",
+        "src-tauri/src/damage.rs",
+        "src-tauri/src/items.rs",
+        "src-tauri/src/counter_advice.rs",
+        "models/"
+      ],
+      "write_paths": [
+        "src-tauri/src/master.rs",
+        "src-tauri/src/slm.rs",
+        "src-tauri/src/ocr.rs",
+        "src-tauri/src/damage.rs",
+        "src-tauri/src/items.rs",
+        "src-tauri/src/counter_advice.rs"
+      ],
+      "checks": [
+        "Add tests for unknown/stale OCR values, resistance/formula cases, and no guessed enemy fields.",
+        "Verify prompt/data boundaries for Claude and Ollama; do not alter provider choice without contract.",
+        "Keep any game data local unless a separate explicit consent contract permits a specific field/trigger."
+      ],
+      "acceptance": [
+        "Only approved observable values inform advice; stale/unknown values are surfaced as unknown.",
+        "Any assets are licensed, provenance-recorded, and present in the packaged build before claiming availability.",
+        "Persona critical interrupts and belief revision retain required behavior."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-SRS",
+        "EV-GAP-AUDIT"
+      ],
+      "blockers": [
+        "Approved contract and root dispatch."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": [
+        "RUST-TEST",
+        "RUST-CLIPPY",
+        "DESKTOP-TEST",
+        "TS",
+        "ESLINT",
+        "TAURI-SMOKE"
+      ]
+    },
+    {
+      "id": "MEMORY-CONTRACT",
+      "title": "Specify local-only G-Memory storage, provenance, retention, deletion, and retrieval",
+      "gap_ids": [
+        "GAP-10",
+        "GAP-21"
+      ],
+      "dependencies": [
+        "PO-DECISIONS",
+        "EVIDENCE-CONTRACT"
+      ],
+      "lane": "memory-contract",
+      "owner": "Luna Max Memory lane with Product Owner/privacy review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "PLANNED",
+      "approval_required": true,
+      "read_paths": [
+        "src-tauri/src/log.rs",
+        "src-tauri/src/master.rs",
+        "docs/features/FEAT-G-MEMORY.md",
+        "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
+        "docs/audits/gap-analysis-2026-09-12.md"
+      ],
+      "write_paths": [
+        "docs/operations/contracts/gap-memory-contract.md"
+      ],
+      "checks": [
+        "Define user-visible memory controls, local storage, provenance, retention, delete/export, migration, retrieval, and failure behavior.",
+        "Raw G-Log, Memory content, and derived aggregates stay local and out of cloud prompts under D7.",
+        "Reconcile the FEAT-G-MEMORY conflict before code."
+      ],
+      "acceptance": [
+        "Privacy owner and Product Owner accept the local-only contract and negative egress cases.",
+        "Memory contract is approved before Voice contract work begins."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-SRS",
+        "EV-GAP-AUDIT",
+        "EV-EVIDENCE-CONTRACT"
+      ],
+      "blockers": [
+        "Privacy/Product Owner contract review."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "MEMORY-CODE",
+      "title": "Implement approved local G-Memory path",
+      "gap_ids": [
+        "GAP-10",
+        "GAP-21"
+      ],
+      "dependencies": [
+        "MEMORY-CONTRACT"
+      ],
+      "lane": "memory",
+      "owner": "Luna Max Memory lane; root owns G-Master integration",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "src-tauri/src/log.rs",
+        "src-tauri/src/master.rs",
+        "docs/features/FEAT-G-MEMORY.md"
+      ],
+      "write_paths": [
+        "src-tauri/src/memory.rs",
+        "src-tauri/src/memory/"
+      ],
+      "checks": [
+        "Test isolated persistence/retrieval, retention, deletion, corrupt-state recovery, and owner isolation.",
+        "Test prompt construction does not egress memory/raw log content.",
+        "Do not edit shared master.rs; root owns prompt integration."
+      ],
+      "acceptance": [
+        "Approved local-only controls and provenance work through the full path.",
+        "No memory content or aggregate reaches a cloud call under the approved contract."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-SRS"
+      ],
+      "blockers": [
+        "Approved contract and root dispatch."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": [
+        "RUST-TEST",
+        "RUST-CLIPPY",
+        "DESKTOP-TEST",
+        "TS",
+        "ESLINT",
+        "TAURI-SMOKE"
+      ]
+    },
+    {
+      "id": "VOICE-CONTRACT",
+      "title": "Specify explicit local push-to-talk voice interaction",
+      "gap_ids": [
+        "GAP-09",
+        "GAP-17",
+        "GAP-21"
+      ],
+      "dependencies": [
+        "MEMORY-CONTRACT",
+        "PO-DECISIONS"
+      ],
+      "lane": "voice-contract",
+      "owner": "Luna Max Voice lane with Product Owner/privacy review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "PLANNED",
+      "approval_required": true,
+      "read_paths": [
+        "src-tauri/src/voice_api.rs",
+        "src-tauri/src/tts.rs",
+        "src-tauri/src/audio.rs",
+        "src-tauri/src/lib.rs",
+        "docs/features/FEAT-G-VOICE.md",
+        "docs/features/FEAT-G-PERSONA.md"
+      ],
+      "write_paths": [
+        "docs/operations/contracts/gap-voice-contract.md"
+      ],
+      "checks": [
+        "Set PTT key without the existing Alt+M mute conflict, cancel path, Thai/English target, latency class, offline path, and G-Signal preemption.",
+        "No continuous microphone capture; no cloud STT/live GSI/Memory context under current privacy decision.",
+        "Specify persona and critical-interrupt behavior across announcer/advice."
+      ],
+      "acceptance": [
+        "Voice contract follows the approved Memory privacy contract and receives Product Owner/privacy review before implementation."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-SRS",
+        "EV-GAP-AUDIT"
+      ],
+      "blockers": [
+        "Memory contract must be reviewed first; voice-specific contract approval is required."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "VOICE-CODE",
+      "title": "Implement approved PTT voice/STT path",
+      "gap_ids": [
+        "GAP-09",
+        "GAP-17",
+        "GAP-21"
+      ],
+      "dependencies": [
+        "VOICE-CONTRACT",
+        "MEMORY-CODE"
+      ],
+      "lane": "voice",
+      "owner": "Luna Max Voice lane; root dispatch after privacy contract review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "src-tauri/src/voice_api.rs",
+        "src-tauri/src/tts.rs",
+        "src-tauri/src/audio.rs",
+        "src-tauri/src/lib.rs"
+      ],
+      "write_paths": [
+        "src-tauri/src/voice_api.rs",
+        "src-tauri/src/tts.rs",
+        "src-tauri/src/voice_input/"
+      ],
+      "checks": [
+        "Test start/stop/cancel, Thai and English fixtures, critical interrupt, no background capture, and no implicit egress.",
+        "Preserve the pure-Rust critical G-Signal path and audio-thread rules."
+      ],
+      "acceptance": [
+        "User activates explicit PTT; microphone capture ends on release/cancel and never runs continuously.",
+        "G-Signal can preempt voice interaction; output remains within approved latency/resource limits."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-SRS"
+      ],
+      "blockers": [
+        "Approved Voice contract and root dispatch."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": [
+        "RUST-TEST",
+        "RUST-CLIPPY",
+        "DESKTOP-TEST",
+        "TS",
+        "ESLINT",
+        "TAURI-SMOKE"
+      ]
+    },
+    {
+      "id": "COACH-CONTRACT",
+      "title": "Specify post-match local G-Coach decision-point analysis",
+      "gap_ids": [
+        "GAP-11",
+        "GAP-21"
+      ],
+      "dependencies": [
+        "VOICE-CONTRACT",
+        "PO-DECISIONS"
+      ],
+      "lane": "coach-contract",
+      "owner": "Luna Max Coach lane with Product Owner/privacy review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-2",
+      "risk": "MEDIUM",
+      "status": "PLANNED",
+      "approval_required": true,
+      "read_paths": [
+        "src/src/live/buildInsights.ts",
+        "src/src/live/buildHistory.ts",
+        "src-tauri/src/log.rs",
+        "docs/features/FEAT-G-COACH.md"
+      ],
+      "write_paths": [
+        "docs/operations/contracts/gap-coach-contract.md"
+      ],
+      "checks": [
+        "Define timestamp/event provenance, top-three improvement rule, unknown handling, golden fixtures, local-only computation, and post-match scheduling.",
+        "Any cloud analysis requires a separate egress/consent contract."
+      ],
+      "acceptance": [
+        "Coach analysis does not consume live gameplay budget and outputs link to source events/timestamps.",
+        "Contract follows Memory and Voice privacy decisions."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-SRS",
+        "EV-GAP-AUDIT"
+      ],
+      "blockers": [
+        "Memory and Voice contract sequence; Coach-specific acceptance review."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "COACH-CODE",
+      "title": "Implement approved post-match G-Coach builder",
+      "gap_ids": [
+        "GAP-11",
+        "GAP-21"
+      ],
+      "dependencies": [
+        "COACH-CONTRACT",
+        "VOICE-CODE"
+      ],
+      "lane": "coach",
+      "owner": "Luna Max Coach lane; root owns deck integration",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-2",
+      "risk": "MEDIUM",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "src/src/live/buildInsights.ts",
+        "src/src/live/buildHistory.ts",
+        "src-tauri/src/log.rs"
+      ],
+      "write_paths": [
+        "src/src/live/coach.ts",
+        "src/src/__tests__/coach.test.ts"
+      ],
+      "checks": [
+        "Use timestamped golden matches, unknown cases, no-log cases, and evidence reference assertions.",
+        "Do not edit CommandDeck.tsx or shared navigation; root integrates."
+      ],
+      "acceptance": [
+        "Top-three recommendations are reproducible from local event evidence and execute post-match only.",
+        "No cloud or player-data egress is added."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-SRS"
+      ],
+      "blockers": [
+        "Approved Coach contract and root dispatch."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": [
+        "DESKTOP-TEST",
+        "TS",
+        "ESLINT"
+      ]
+    },
+    {
+      "id": "STREAM-CONTRACT",
+      "title": "Specify stream privacy masking and co-host scope",
+      "gap_ids": [
+        "GAP-21",
+        "GAP-22"
+      ],
+      "dependencies": [
+        "PO-DECISIONS",
+        "EVIDENCE-CONTRACT"
+      ],
+      "lane": "stream-contract",
+      "owner": "Luna Max Stream lane with Product Owner/privacy review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-2",
+      "risk": "HIGH",
+      "status": "PLANNED",
+      "approval_required": true,
+      "read_paths": [
+        "src/src/app/Overlay.tsx",
+        "src/src/CommandDeck.tsx",
+        "docs/features/FEAT-G-STREAM.md",
+        "docs/product/software-requirements-specification.md"
+      ],
+      "write_paths": [
+        "docs/operations/contracts/gap-stream-contract.md"
+      ],
+      "checks": [
+        "Enumerate sensitive fields, every visible surface, transitions, screenshots, and co-host permissions.",
+        "Privacy locality does not substitute for on-screen masking."
+      ],
+      "acceptance": [
+        "Privacy owner accepts field/surface matrix and fail-closed mask behavior before implementation."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-SRS",
+        "EV-GAP-AUDIT"
+      ],
+      "blockers": [
+        "Stream feature contract and privacy-owner approval."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "STREAM-CODE",
+      "title": "Implement approved stream masking/co-host surface",
+      "gap_ids": [
+        "GAP-21",
+        "GAP-22"
+      ],
+      "dependencies": [
+        "STREAM-CONTRACT"
+      ],
+      "lane": "stream",
+      "owner": "Luna Max Stream lane; root owns overlay integration",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "src/src/app/Overlay.tsx",
+        "src/src/CommandDeck.tsx",
+        "docs/features/FEAT-G-STREAM.md"
+      ],
+      "write_paths": [
+        "src/src/stream/",
+        "src-tauri/src/stream.rs",
+        "src-tauri/src/stream/"
+      ],
+      "checks": [
+        "Test screenshots/states for every sensitive field, mode transition, and window surface.",
+        "Test co-host control boundaries and fail-closed behavior."
+      ],
+      "acceptance": [
+        "No sensitive field leaks in stream mode; ordinary mode behavior remains correct.",
+        "Root-owned overlay integration is separately reviewed."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-SRS"
+      ],
+      "blockers": [
+        "Approved privacy contract and root dispatch."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": [
+        "RUST-TEST",
+        "RUST-CLIPPY",
+        "DESKTOP-TEST",
+        "TS",
+        "ESLINT",
+        "TAURI-SMOKE"
+      ]
+    },
+    {
+      "id": "BILLING-LOCAL",
+      "title": "Review isolated billing/share evidence and local test coverage",
+      "gap_ids": [
+        "GAP-19"
+      ],
+      "dependencies": [
+        "BASELINE",
+        "EVIDENCE-CONTRACT"
+      ],
+      "lane": "billing-evidence",
+      "owner": "Luna Max economy lane; no provider activity",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "PLANNED",
+      "approval_required": false,
+      "read_paths": [
+        "supabase/functions/match-share-submit/index.ts",
+        "supabase/functions/topup-create/index.ts",
+        "supabase/functions/payment-webhook/index.ts",
+        "supabase/tests/cr003_wallet_billing.sql",
+        "docs/change request/CR-003-payment-golive-checklist.md"
+      ],
+      "write_paths": [
+        "docs/operations/evidence/gap-billing-local.md"
+      ],
+      "checks": [
+        "Use isolated SQL fixtures for idempotency, concurrency, and ledger correctness.",
+        "Separate provisional scoring/receipt logic from verified business policy.",
+        "Do not call production/provider APIs or activate a package."
+      ],
+      "acceptance": [
+        "Report local source/test evidence only; economic approval, provider sandbox, and production settlement remain separate."
+      ],
+      "evidence": [
+        "EV-GAP-AUDIT",
+        "EV-EVIDENCE-CONTRACT",
+        "EV-PO-DECISIONS"
+      ],
+      "blockers": [
+        "Root dispatch for any new local test or code change."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "BILLING-CODE",
+      "title": "Implement approved billing correctness changes using isolated fixtures",
+      "gap_ids": [
+        "GAP-19"
+      ],
+      "dependencies": [
+        "BILLING-LOCAL"
+      ],
+      "lane": "billing",
+      "owner": "Luna Max economy lane; root dispatch after economic/security review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "supabase/functions/match-share-submit/index.ts",
+        "supabase/functions/topup-create/index.ts",
+        "supabase/functions/payment-webhook/index.ts",
+        "supabase/tests/cr003_wallet_billing.sql"
+      ],
+      "write_paths": [
+        "supabase/functions/match-share-submit/index.ts",
+        "supabase/functions/topup-create/index.ts",
+        "supabase/functions/payment-webhook/index.ts",
+        "supabase/tests/cr003_wallet_billing.sql"
+      ],
+      "checks": [
+        "Implement only an approved, isolated local slice; never apply a migration or deploy a function.",
+        "Test idempotency, replay, concurrency, and ledger invariants without real payment."
+      ],
+      "acceptance": [
+        "All approved local billing invariants pass against disposable fixtures.",
+        "No production balance/payment mutation occurs."
+      ],
+      "evidence": [
+        "EV-GAP-AUDIT",
+        "EV-PO-DECISIONS"
+      ],
+      "blockers": [
+        "Bounded approved change request, root dispatch, and isolated test fixture."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": [
+        "DENO-TEST",
+        "SQL-RLS"
+      ]
+    },
+    {
+      "id": "BILLING-LIVE",
+      "title": "Owner-controlled payment sandbox and paid-economy acceptance",
+      "gap_ids": [
+        "GAP-19"
+      ],
+      "dependencies": [
+        "BILLING-CODE",
+        "LIVE-ENV-GATE"
+      ],
+      "lane": "billing-live",
+      "owner": "human finance/provider owner",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "docs/change request/CR-003-payment-golive-checklist.md"
+      ],
+      "write_paths": [],
+      "checks": [
+        "Use provider sandbox and owner-controlled isolated account only after approval.",
+        "Capture no card, account, or personal identifiers."
+      ],
+      "acceptance": [
+        "Settlement/credit evidence, scoring policy approval, and activation decision are separately recorded."
+      ],
+      "evidence": [
+        "EV-EVIDENCE-CONTRACT",
+        "EV-PO-DECISIONS",
+        "EV-LIVE-BROWSER-ROOT"
+      ],
+      "blockers": [
+        "gstore project paused; financial/provider owner approval and sandbox access absent."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "DOCS-RECON",
+      "title": "Reconcile source-backed docs, privacy wording, and release workflow claims",
+      "gap_ids": [
+        "GAP-20",
+        "GAP-21",
+        "GAP-23"
+      ],
+      "dependencies": [
+        "PO-DECISIONS",
+        "EVIDENCE-CONTRACT",
+        "MANIFEST-REVIEW"
+      ],
+      "lane": "docs-review",
+      "owner": "Luna Max docs lane; root owns shared instruction/state/generated artifacts",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-2",
+      "risk": "LOW",
+      "status": "PLANNED",
+      "approval_required": true,
+      "read_paths": [
+        "CLAUDE.md",
+        "AGENTS.md",
+        "docs/FEATURE-LEDGER.md",
+        "docs/feature-ledger.manifest.yaml",
+        "docs/releases/release-channel-architecture.md",
+        "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
+        "docs/features/",
+        "llms.txt",
+        "llms-full.txt"
+      ],
+      "write_paths": [
+        "docs/operations/evidence/gap-docs-recon.md"
+      ],
+      "checks": [
+        "Prepare claim-to-source/owner/status reconciliation; preserve the historical gap audit.",
+        "Separate identity, cloud advice, explicitly submitted match contribution, raw G-Log/CV, and landing analytics boundaries.",
+        "Do not hand-edit generated graph/ledger/index outputs.",
+        "Keep G-Memory, Voice, Coach local-only under D7 unless a separate consent/effect contract is accepted."
+      ],
+      "acceptance": [
+        "Every proposed doc change identifies the source predicate, authority, state, and historical impact.",
+        "Root reviews all doc edits and owns generated outputs."
+      ],
+      "evidence": [
+        "EV-AGENTS",
+        "EV-CLAUDE",
+        "EV-GAP-AUDIT",
+        "EV-PO-DECISIONS",
+        "EV-RELEASE-ARCH",
+        "EV-EVIDENCE-CONTRACT"
+      ],
+      "blockers": [
+        "Root review before persistent doc edits; semantic alignment is a separate node."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "DOC-GRAPH-ROOT",
+      "title": "Root-owned doc-graph structural gate after approved doc edits",
+      "gap_ids": [
+        "GAP-20",
+        "GAP-23"
+      ],
+      "dependencies": [
+        "DOCS-RECON"
+      ],
+      "lane": "root-generated-docs",
+      "owner": "root-orchestrator only",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-2",
+      "risk": "MEDIUM",
+      "status": "PLANNED",
+      "approval_required": false,
+      "read_paths": [
+        "tools/doc-graph/ci-gate.mjs",
+        "docs/approval-backfill-checklist.md",
+        "docs/DOC-GRAPH-REPORT.md"
+      ],
+      "write_paths": [
+        "docs/DOC-GRAPH.json",
+        "docs/DOC-GRAPH-REPORT.md",
+        "docs/FEATURE-LEDGER.md",
+        "docs/FEATURE-ORPHAN-REPORT.*",
+        "docs/atomic_index.jsonl"
+      ],
+      "checks": [
+        "Run only after approved docs change and root schedules generation.",
+        "Compare exact pinned-base and branch scanner output; record raw findings, blockers, checklist-covered errors, and uncovered count.",
+        "Do not call wrapper acceptance a zero-violation scan."
+      ],
+      "acceptance": [
+        "Generated outputs are committed with the approved doc change.",
+        "No newly uncovered strict finding is introduced; inherited baseline debt remains explicit.",
+        "Semantic Code-Doc result stays INDETERMINATE unless its configured model produces a valid verdict."
+      ],
+      "evidence": [
+        "EV-GRAPH-REPORT-BASE",
+        "EV-GRAPH-CHECKLIST",
+        "EV-STRICT-SCAN-ROOT"
+      ],
+      "blockers": [
+        "Approved documentation change; root-only generation and state ownership."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": [
+        "DOC-GRAPH"
+      ]
+    },
+    {
+      "id": "CODEDOC-ALIGN",
+      "title": "Configured-model semantic Code-Doc alignment",
+      "gap_ids": [
+        "GAP-23"
+      ],
+      "dependencies": [
+        "DOCS-RECON"
+      ],
+      "lane": "codedoc-semantic",
+      "owner": "root-orchestrator / configured Code-Doc operator",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-1",
+      "risk": "LOW",
+      "status": "BLOCKED",
+      "approval_required": false,
+      "read_paths": [
+        ".agents/skills/rwang-codedoc-aligner/SKILL.md",
+        ".agents/skills/rwang-codedoc-aligner/scripts/chunk_and_align.py",
+        "docs/architecture/spec-orchestra-codedoc-agent.md"
+      ],
+      "write_paths": [],
+      "checks": [
+        "Use only configured Mellum model; do not install or select a substitute model.",
+        "If configured model is unavailable or returns invalid output, report INDETERMINATE."
+      ],
+      "acceptance": [
+        "A valid configured-model semantic verdict is linked to exact code/doc chunk hashes.",
+        "Structural link/schema checks remain separately reported."
+      ],
+      "evidence": [
+        "EV-ORCH-SPEC",
+        "EV-EVIDENCE-CONTRACT"
+      ],
+      "blockers": [
+        "Configured Mellum model is absent from current Ollama inventory."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "ROOT-STATE",
+      "title": "Root review, integrate decisions, and update canonical task state",
+      "gap_ids": [],
+      "dependencies": [
+        "BASELINE",
+        "PO-DECISIONS",
+        "EVIDENCE-CONTRACT"
+      ],
+      "lane": "root-integration",
+      "owner": "root-orchestrator",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "REVIEW",
+      "approval_required": false,
+      "read_paths": [
+        "docs/operations/execution-dag-gap-closure.md",
+        "docs/operations/execution-dag-gap-closure.json",
+        "F:/gm-gap-execution/docs/operations/gap-closure-product-owner-decisions.md",
+        "F:/gm-gap-execution/docs/operations/gap-closure-evidence-contract.md",
+        "F:/gm-gap-execution/docs/operations/EXEC-PLAN-CR-034-iam-remediation.md"
+      ],
+      "write_paths": [
+        "docs/operations/execution-dag-gap-closure.json",
+        "docs/operations/EXEC-PLAN-CR-034-iam-remediation.md"
+      ],
+      "checks": [
+        "Validate node schema, gap coverage, dependency references, acyclicity, and non-overlapping lane writes.",
+        "Keep conceptual PO diagram separate from this canonical operational DAG.",
+        "Keep current source/environment facts separate from planned work and from downstream acceptance."
+      ],
+      "acceptance": [
+        "Root accepts the Markdown/JSON pair and records any changed node states only in the canonical JSON/state board.",
+        "No source changes, generated outputs, or code claims are attributed to this worker's two-file task."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-EVIDENCE-CONTRACT",
+        "EV-CR034-ROOT-STATE",
+        "EV-STRICT-SCAN-ROOT"
+      ],
+      "blockers": [
+        "Root review of this initial DAG artifact."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    },
+    {
+      "id": "IAM-CORE-CODE",
+      "title": "Implement approved TOTP enrollment and five-endpoint revocation coverage",
+      "gap_ids": [
+        "GAP-04",
+        "GAP-05"
+      ],
+      "dependencies": [
+        "IAM-CONTRACT"
+      ],
+      "lane": "iam",
+      "owner": "Luna Max IAM lane; root dispatch after contract review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "supabase/functions/_shared/iam.ts",
+        "supabase/functions/_shared/iam_runtime.ts",
+        "supabase/functions/admin-gmad-controller/index.ts",
+        "supabase/functions/mint-gid/index.ts",
+        "supabase/functions/check-gmad-queue/index.ts",
+        "supabase/functions/accept-closed-beta-terms/index.ts",
+        "supabase/functions/get-gmad-desktop-entitlement/index.ts",
+        "supabase/functions/request-gmad-download/index.ts",
+        "src/src/AccountSecurity.tsx"
+      ],
+      "write_paths": [
+        "src/src/AccountSecurity.tsx",
+        "supabase/functions/_shared/iam_runtime.ts",
+        "supabase/functions/mint-gid/index.ts",
+        "supabase/functions/check-gmad-queue/index.ts",
+        "supabase/functions/accept-closed-beta-terms/index.ts",
+        "supabase/functions/get-gmad-desktop-entitlement/index.ts",
+        "supabase/functions/request-gmad-download/index.ts"
+      ],
+      "checks": [
+        "Implement only after a bounded PO-reviewed feature contract and root dispatch.",
+        "Local isolated tests cover AAL2, TOTP enroll/step-up, normal-user denial, revocation on all five endpoints, reused token, and unavailable dependency fail-closed.",
+        "Keep the TOTP enrollment/local implementation path independent of T1 and the paused live project.",
+        "Do not edit provider settings, apply migrations, or deploy functions."
+      ],
+      "acceptance": [
+        "Each endpoint rejects the next request after revocation in the isolated test contract.",
+        "Admin privilege remains AAL2 until the verified enrollment path is usable.",
+        "Local enrollment and endpoint tests pass without mutating production state."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-EVIDENCE-CONTRACT"
+      ],
+      "blockers": [
+        "Detailed feature contract approval and root dispatch; hosted acceptance remains a separate gated node."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": [
+        "DENO-TEST",
+        "DESKTOP-TEST",
+        "TS",
+        "ESLINT"
+      ]
+    },
+    {
+      "id": "IAM-SESSION-METHOD-CODE",
+      "title": "Implement only the evidence-backed Google current-session method predicate",
+      "gap_ids": [
+        "GAP-03"
+      ],
+      "dependencies": [
+        "IAM-CONTRACT",
+        "IAM-SESSION-PROOF"
+      ],
+      "lane": "iam",
+      "owner": "Luna Max IAM lane; root dispatch after contract review",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "src/src/auth.ts",
+        "src/src/gmadEntitlement.ts",
+        "supabase/functions/_shared/iam.ts",
+        "supabase/functions/_shared/entitlement.ts"
+      ],
+      "write_paths": [
+        "src/src/auth.ts",
+        "src/src/gmadEntitlement.ts",
+        "supabase/functions/_shared/iam.ts",
+        "supabase/functions/_shared/entitlement.ts"
+      ],
+      "checks": [
+        "Do not dispatch until sanitized live evidence documents supported method semantics and root confirms the contract.",
+        "Reject guessed generic OAuth/AMR interpretation and missing-proof linked-identity fallback.",
+        "Keep local fixtures isolated; no provider mutation or deployment."
+      ],
+      "acceptance": [
+        "Implementation matches the verified current-session evidence predicate and fails closed when evidence is absent.",
+        "Tests cover current Google session, linked-only Google identity, missing/ambiguous method evidence, and non-Google session."
+      ],
+      "evidence": [
+        "EV-PO-DECISIONS",
+        "EV-EVIDENCE-CONTRACT"
+      ],
+      "blockers": [
+        "gstore project is paused; verified session-method evidence and root dispatch are absent."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": [
+        "DENO-TEST",
+        "DESKTOP-TEST",
+        "TS",
+        "ESLINT"
+      ]
+    },
+    {
+      "id": "T4-LIVE-PROBE",
+      "title": "CR-034 T4 owner-controlled live IAM/provider probe",
+      "gap_ids": [
+        "GAP-03",
+        "GAP-04",
+        "GAP-05"
+      ],
+      "dependencies": [
+        "LIVE-ENV-GATE",
+        "IAM-CONTRACT"
+      ],
+      "lane": "root-browser-evidence",
+      "owner": "human Supabase owner with root browser custodian",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "complexity": "C-3",
+      "risk": "HIGH",
+      "status": "BLOCKED",
+      "approval_required": true,
+      "read_paths": [
+        "F:/gm-gap-execution/.brain/execution/gap-closure-2026-10-01/browser-evidence.json",
+        "F:/gm-gap-execution/docs/operations/gap-closure-evidence-contract.md"
+      ],
+      "write_paths": [],
+      "checks": [
+        "Run only after the owner independently makes the project healthy and active and approves the controlled test session.",
+        "Prove session method and the five endpoint revocation path under the accepted contract.",
+        "No provider setting change, resume action, migration, or deployment is authorized by this task."
+      ],
+      "acceptance": [
+        "Root records sanitized live outcomes and exact tested endpoints, session conditions, and fail-closed behavior.",
+        "No raw JWT, token, secret, personal row, or signed URL is retained."
+      ],
+      "evidence": [
+        "EV-LIVE-BROWSER-ROOT",
+        "EV-EVIDENCE-CONTRACT"
+      ],
+      "blockers": [
+        "gstore main Production is PAUSED; owner-approved active project and test session are unavailable."
+      ],
+      "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+      "check_refs": []
+    }
+  ],
+  "dag_acceptance": [
+    "The gap_coverage array contains GAP-01 through GAP-23 exactly once, with no new historical gap IDs.",
+    "Every node includes id, title, gap_ids, dependencies, lane, owner, model, reasoning_effort, complexity, risk, status, approval_required, read_paths, write_paths, checks, acceptance, evidence, blockers, and source_baseline.",
+    "Every dependency resolves to a node; the graph is acyclic.",
+    "Lane write paths are disjoint; root_shared_write_paths are reserved for root.",
+    "D1-D9 are represented as delegated choices; external approvals remain separately gated.",
+    "Code nodes remain BLOCKED until their bounded feature contracts are reviewed; D4-selected /ops implementation and D6 route-model work remain DEFERRED.",
+    "The paused environment blocks hosted/provider work only; local planning and isolated fixtures remain actionable.",
+    "Root reviews the two-file artifact and owns task-state updates and generated documentation outputs.",
+    "Runtime state and review-gate results are recorded separately through runtime_state_ref; initial READY never bypasses unverified dependencies or approvals."
+  ],
+  "initiative_exit": [
+    "Each historical gap is VERIFIED against node acceptance or explicitly DEFERRED by the Product Owner with scope, user-facing claim, owner, and target milestone.",
+    "A deferred feature is not described as implemented or closed; all release-critical gaps pass before a release decision.",
+    "Local tests, controlled UAT, deployed state, and released behavior remain separate evidence classes.",
+    "External provider, legal, payment, production, release, and merge decisions are recorded by their actual authority."
+  ],
+  "release_exit": [
+    "Use the exact signed candidate artifact SHA, its signature and manifest/channel revision.",
+    "Pass applicable install, updater, latency, CPU/RAM, FPS, compatibility, security/privacy, and rollback gates with no live metric skipped as PASS.",
+    "Record owner-controlled promotion separately; this DAG itself grants no release authority."
+  ],
+  "runtime_state_ref": ".brain/execution/gap-closure-2026-10-01/workflow-state.json",
+  "check_catalog": [
+    {
+      "id": "RUST-TEST",
+      "cwd": "src-tauri",
+      "command": "cargo test",
+      "timeout_seconds": 900
+    },
+    {
+      "id": "RUST-CLIPPY",
+      "cwd": "src-tauri",
+      "command": "cargo clippy --all-targets -- -D warnings",
+      "timeout_seconds": 900
+    },
+    {
+      "id": "TS",
+      "cwd": ".",
+      "command": "pnpm -C src exec tsc --noEmit",
+      "timeout_seconds": 300
+    },
+    {
+      "id": "ESLINT",
+      "cwd": ".",
+      "command": "pnpm -C src exec eslint .",
+      "timeout_seconds": 300
+    },
+    {
+      "id": "DESKTOP-TEST",
+      "cwd": ".",
+      "command": "pnpm -C src test -- --run",
+      "timeout_seconds": 300
+    },
+    {
+      "id": "TAURI-SMOKE",
+      "cwd": ".",
+      "command": "pnpm tauri build --no-bundle",
+      "timeout_seconds": 1800
+    },
+    {
+      "id": "LANDING-TEST",
+      "cwd": ".",
+      "command": "pnpm -C landing test",
+      "timeout_seconds": 120
+    },
+    {
+      "id": "LANDING-TYPECHECK",
+      "cwd": ".",
+      "command": "pnpm -C landing typecheck",
+      "timeout_seconds": 300
+    },
+    {
+      "id": "DENO-TEST",
+      "cwd": ".",
+      "command": "deno test --allow-env --allow-net supabase/functions/_shared/",
+      "timeout_seconds": 120,
+      "scope": "local isolated fixtures only; no production credentials"
+    },
+    {
+      "id": "DOC-GRAPH",
+      "cwd": ".",
+      "command": "node tools/doc-graph/ci-gate.mjs",
+      "timeout_seconds": 300
+    },
+    {
+      "id": "SQL-RLS",
+      "cwd": ".",
+      "command": null,
+      "status": "ISOLATED_HARNESS_REQUIRED",
+      "scope": "CI-MATRIX must establish a disposable local database harness before SQL/RLS dispatch."
+    },
+    {
+      "id": "ORCH-HTTP",
+      "cwd": ".",
+      "command": null,
+      "status": "CONTRACT_AND_TEST_HARNESS_REQUIRED",
+      "scope": "ORCH-CONTRACT must name exact isolated test entrypoint; no provider dispatch."
+    }
+  ]
+}

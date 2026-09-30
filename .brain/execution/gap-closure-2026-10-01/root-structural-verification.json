@@ -1,0 +1,23 @@
+{
+  "schema_version": 1,
+  "validator": "root independent inline Node structural checks",
+  "source_sha": "2d969ac643533b4b8e24494356da2e818eac874f",
+  "dag_sha256": "d909253732f3eb54aa04480914104d0f2dbe2b20309a7c91a07440936aa2c9fa",
+  "nodes": 43,
+  "edges": 73,
+  "gaps": 23,
+  "checks": [
+    "required fields",
+    "unique IDs",
+    "dependency references",
+    "acyclic graph",
+    "bidirectional GAP crosswalk",
+    "lane/evidence references",
+    "source pins",
+    "READY prerequisite states",
+    "cross-lane write overlap",
+    "outside-repo planned worktrees"
+  ],
+  "result": "PASS",
+  "failures": []
+}

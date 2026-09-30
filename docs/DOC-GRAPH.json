@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-13T02:44:09.983Z",
+  "generatedAt": "2026-09-30T23:29:52.364Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -742,6 +742,28 @@
       "title": "Overlay motion — four-method comparison",
       "status": "accepted",
       "domain": "ui-ux"
+    },
+    {
+      "id": "docs/operations/execution-dag-gap-closure.md",
+      "type": "doc",
+      "path": "docs/operations/execution-dag-gap-closure.md",
+      "title": "Execution DAG — Gap Closure",
+      "status": "active"
+    },
+    {
+      "id": "docs/operations/gap-closure-evidence-contract.md",
+      "type": "doc",
+      "path": "docs/operations/gap-closure-evidence-contract.md",
+      "title": "Gap-closure evidence contract",
+      "status": "active"
+    },
+    {
+      "id": "docs/operations/gap-closure-product-owner-decisions.md",
+      "type": "doc",
+      "path": "docs/operations/gap-closure-product-owner-decisions.md",
+      "title": "Gap Closure Product Owner Decisions and Execution DAG",
+      "status": "active",
+      "doc_type": "decision-record"
     },
     {
       "id": "docs/operations/gmaiden-closed-beta-release-playbook.md",
@@ -10414,7 +10436,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-09-13T02:44:12.373Z",
+    "generatedAt": "2026-09-30T23:29:55.062Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

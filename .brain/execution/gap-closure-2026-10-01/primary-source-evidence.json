@@ -1,0 +1,19 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-10-01",
+  "timezone": "Asia/Bangkok",
+  "collector": "RWANG Orchestrator",
+  "source": "Chrome rendered official Supabase documentation",
+  "url": "https://supabase.com/docs/guides/auth/jwt-fields",
+  "title": "JWT Claims Reference | Supabase Docs",
+  "observations": [
+    "amr is an optional list of authentication methods",
+    "oauth identifies OAuth provider authentication",
+    "oauth alone does not name Google in this reference",
+    "The method list includes token_refresh and non-OAuth authentication methods"
+  ],
+  "decision_constraint": "Do not infer Google primary session solely from linked providers or an OAuth AMR method; require a verified session/provider contract and controlled evidence",
+  "project_token_sample_obtained": false,
+  "live_provider_configuration_verified": false,
+  "sensitive_values_retained": false
+}
