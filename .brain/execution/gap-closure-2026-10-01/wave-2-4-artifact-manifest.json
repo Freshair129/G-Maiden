@@ -1,0 +1,222 @@
+{
+  "schema_version": 1,
+  "wave": "WAVE_2_4_EVIDENCE_AND_CONTRACTS",
+  "source_sha": "2d969ac643533b4b8e24494356da2e818eac874f",
+  "base_execution_commit": "b9712fd9ffed472a7bf666e8a829e4b025e563cb",
+  "decision": "APPROVE_WITH_LIMITATIONS",
+  "product_owner_reviews": [
+    {
+      "wave": "WAVE_2_INITIAL",
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-2-evidence-po-review.json",
+      "sha256": "EE9D546843096CFCC2E9BD1D612CEC4C0A7CC44921466DB38133922DB0D3EBB3",
+      "disposition": "APPROVE_WITH_LIMITATIONS"
+    },
+    {
+      "wave": "WAVE_2_CI_EOF_REFRESH_R2",
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-2-evidence-po-review-r2.json",
+      "sha256": "1ECBCAD556A85D79A49BBF0912CB6D8F5C42E740E46529F58E5E8C07C627F9BB",
+      "disposition": "APPROVE_WITH_LIMITATIONS"
+    },
+    {
+      "wave": "WAVE_3_INITIAL",
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-3-po-review.json",
+      "sha256": "755A9D5654DD3CE3ED6C2ABB22913626F685C6E0D868C5724E2C9F551CFE55C8",
+      "disposition": "APPROVE_WITH_LIMITATIONS"
+    },
+    {
+      "wave": "WAVE_3_MASTER_EOF_REFRESH_R2",
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-3-po-review-r2.json",
+      "sha256": "F7872965F088EEADC88E878382DC5CE2B4F9DB35A22D98D015C9BA59E57E467B",
+      "disposition": "APPROVE_WITH_LIMITATIONS"
+    },
+    {
+      "wave": "WAVE_4_REVISION_3",
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-4-po-review-r3.json",
+      "sha256": "404AC8D389CF12B02C3AD6167D7B9AD3E3F51DA221BCAB75BDE6DC7F735014E7",
+      "disposition": "APPROVE_WITH_LIMITATIONS"
+    }
+  ],
+  "hash_contract": "reviewed_worktree_sha256 hashes exact reviewed host bytes; canonical_lf_sha256 hashes UTF-8 text after CRLF to LF normalization for Git blob verification.",
+  "mutable_status_excluded": ".brain/execution/gap-closure-2026-10-01/workflow-state.json",
+  "artifacts": [
+    {
+      "path": "docs/change request/CR-018-ops-route-spa-rewrite.md",
+      "reviewed_worktree_sha256": "F4FDAD747FF3CD2998C22B5C2D26F8D8044C5445077DCD841094FFEAE6D0B5FF",
+      "canonical_lf_sha256": "90ABAD3FDB044302F665571650CFDBE86360312E461894CFB760F43D5687EA6D",
+      "product_owner_reviewed": true,
+      "product_owner_review_path": ".brain/execution/gap-closure-2026-10-01/wave-2-evidence-po-review.json",
+      "product_owner_review_sha256": "EE9D546843096CFCC2E9BD1D612CEC4C0A7CC44921466DB38133922DB0D3EBB3"
+    },
+    {
+      "path": "docs/operations/gmaiden-closed-beta-release-playbook.md",
+      "reviewed_worktree_sha256": "7FA5CECFEDA22AC133913170CCE3752359B1AE2548D6813933CBCB09061416F0",
+      "canonical_lf_sha256": "8615D186D864FF999C6E2373BE7135CAD9244967346C9EB7EE70AEC837E3B0B0",
+      "product_owner_reviewed": true,
+      "product_owner_review_path": ".brain/execution/gap-closure-2026-10-01/wave-2-evidence-po-review.json",
+      "product_owner_review_sha256": "EE9D546843096CFCC2E9BD1D612CEC4C0A7CC44921466DB38133922DB0D3EBB3"
+    },
+    {
+      "path": "docs/operations/evidence/gap-ci-matrix.md",
+      "reviewed_worktree_sha256": "FF8EBD3132A4D0A1AF7D15CF0B916C080947F3988FB4B01561ACEEDB66223A19",
+      "canonical_lf_sha256": "FF8EBD3132A4D0A1AF7D15CF0B916C080947F3988FB4B01561ACEEDB66223A19",
+      "product_owner_reviewed": true,
+      "product_owner_review_path": ".brain/execution/gap-closure-2026-10-01/wave-2-evidence-po-review-r2.json",
+      "product_owner_review_sha256": "1ECBCAD556A85D79A49BBF0912CB6D8F5C42E740E46529F58E5E8C07C627F9BB"
+    },
+    {
+      "path": "docs/operations/evidence/gap-release-matrix.md",
+      "reviewed_worktree_sha256": "5A77B0B303DDDB17DBEE52EFCB4556A2DE94BE156DD8D6011839D85FE4FAF315",
+      "canonical_lf_sha256": "5A77B0B303DDDB17DBEE52EFCB4556A2DE94BE156DD8D6011839D85FE4FAF315",
+      "product_owner_reviewed": true,
+      "product_owner_review_path": ".brain/execution/gap-closure-2026-10-01/wave-2-evidence-po-review.json",
+      "product_owner_review_sha256": "EE9D546843096CFCC2E9BD1D612CEC4C0A7CC44921466DB38133922DB0D3EBB3"
+    },
+    {
+      "path": "docs/operations/contracts/gap-motion-contract.md",
+      "reviewed_worktree_sha256": "0881C686FD4D6FB5AD0D228F6D853FD321C57CCE45AABBBA0F4DE6DF56F58783",
+      "canonical_lf_sha256": "0881C686FD4D6FB5AD0D228F6D853FD321C57CCE45AABBBA0F4DE6DF56F58783",
+      "product_owner_reviewed": true,
+      "product_owner_review_path": ".brain/execution/gap-closure-2026-10-01/wave-3-po-review.json",
+      "product_owner_review_sha256": "755A9D5654DD3CE3ED6C2ABB22913626F685C6E0D868C5724E2C9F551CFE55C8"
+    },
+    {
+      "path": "docs/operations/contracts/gap-stream-contract.md",
+      "reviewed_worktree_sha256": "B84671FD9EE2B640B7C43F636C77466A70F451A482772DBCEFFA2227EBA4C632",
+      "canonical_lf_sha256": "423013E9D0C26CE30EC8B1B46E13AD73269DDB50C367C0CB562C682FFCEB4D5B",
+      "product_owner_reviewed": true,
+      "product_owner_review_path": ".brain/execution/gap-closure-2026-10-01/wave-3-po-review.json",
+      "product_owner_review_sha256": "755A9D5654DD3CE3ED6C2ABB22913626F685C6E0D868C5724E2C9F551CFE55C8"
+    },
+    {
+      "path": "docs/operations/contracts/gap-master-contract.md",
+      "reviewed_worktree_sha256": "52BA22E90A4699D482A5A164FCDB93E0565B7F9E665B345CAF0810101E0C2664",
+      "canonical_lf_sha256": "7C87F34D8E3FD2163318D3DF1C7CFABABCF637C92E75DCA8C6C4BBF97651D6CA",
+      "product_owner_reviewed": true,
+      "product_owner_review_path": ".brain/execution/gap-closure-2026-10-01/wave-3-po-review-r2.json",
+      "product_owner_review_sha256": "F7872965F088EEADC88E878382DC5CE2B4F9DB35A22D98D015C9BA59E57E467B"
+    },
+    {
+      "path": "docs/operations/evidence/gap-billing-local.md",
+      "reviewed_worktree_sha256": "EE6BE93BC53C733478B5C545FE400F66B9F262FFD380EF24668D6106298F9692",
+      "canonical_lf_sha256": "EE6BE93BC53C733478B5C545FE400F66B9F262FFD380EF24668D6106298F9692",
+      "product_owner_reviewed": true,
+      "product_owner_review_path": ".brain/execution/gap-closure-2026-10-01/wave-4-po-review-r3.json",
+      "product_owner_review_sha256": "404AC8D389CF12B02C3AD6167D7B9AD3E3F51DA221BCAB75BDE6DC7F735014E7"
+    },
+    {
+      "path": "docs/DOC-GRAPH.json",
+      "reviewed_worktree_sha256": "655E313D1DCDAA3D2EFAAB6BCB8B609AD1079319865E82FC9F0726B7453BC6C3",
+      "canonical_lf_sha256": "655E313D1DCDAA3D2EFAAB6BCB8B609AD1079319865E82FC9F0726B7453BC6C3",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": "docs/DOC-GRAPH-REPORT.md",
+      "reviewed_worktree_sha256": "499191CF9BE71063DCD9DE8ABF83BADF01EBD736C032A215CE89034B8D32B74D",
+      "canonical_lf_sha256": "499191CF9BE71063DCD9DE8ABF83BADF01EBD736C032A215CE89034B8D32B74D",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": "docs/FEATURE-LEDGER.md",
+      "reviewed_worktree_sha256": "41AA732EA0C83BF164953D6C3254E51DE9D01412C661DA0D9F85D4C56A115D6F",
+      "canonical_lf_sha256": "41AA732EA0C83BF164953D6C3254E51DE9D01412C661DA0D9F85D4C56A115D6F",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": "docs/FEATURE-ORPHAN-REPORT.json",
+      "reviewed_worktree_sha256": "D0EB8FF364CD49E79B43374CCC9DD7261FC2C7922B547FFF2BF0BBA869C06477",
+      "canonical_lf_sha256": "D0EB8FF364CD49E79B43374CCC9DD7261FC2C7922B547FFF2BF0BBA869C06477",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": "docs/FEATURE-ORPHAN-REPORT.md",
+      "reviewed_worktree_sha256": "059A374AD64B68E3F045723D487FA160CABA94457604E09ADC52E9DAC31E8831",
+      "canonical_lf_sha256": "059A374AD64B68E3F045723D487FA160CABA94457604E09ADC52E9DAC31E8831",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": "docs/atomic_index.jsonl",
+      "reviewed_worktree_sha256": "927343E87F53A0459551C9999A67D68191C15622609BFFEDD0942BA14C1FBB6B",
+      "canonical_lf_sha256": "927343E87F53A0459551C9999A67D68191C15622609BFFEDD0942BA14C1FBB6B",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/rca/2026-10-01-payment-webhook-same-event-retry-gap.md",
+      "reviewed_worktree_sha256": "F080356846797FD582F477E07E9A11FA19E69B17D288537F2FD7465A12FBD7AE",
+      "canonical_lf_sha256": "37AF4F9CB9EBA6E86CBC36AD0E2411E1F22F9F2B74B35BAFF95F4E30C4CA0DD9",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-2-dispatch.json",
+      "reviewed_worktree_sha256": "9371EE4B9C9AA340646C75B66C24D6E804270752E31121501B6F1B70248E25EE",
+      "canonical_lf_sha256": "9371EE4B9C9AA340646C75B66C24D6E804270752E31121501B6F1B70248E25EE",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-2-evidence-po-review.json",
+      "reviewed_worktree_sha256": "EE9D546843096CFCC2E9BD1D612CEC4C0A7CC44921466DB38133922DB0D3EBB3",
+      "canonical_lf_sha256": "EE9D546843096CFCC2E9BD1D612CEC4C0A7CC44921466DB38133922DB0D3EBB3",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-3-dispatch.json",
+      "reviewed_worktree_sha256": "6C0D9373EFF4C4A011E421FD1A4E6A94BBBAE4D25E17044C56CB58879BABA609",
+      "canonical_lf_sha256": "6C0D9373EFF4C4A011E421FD1A4E6A94BBBAE4D25E17044C56CB58879BABA609",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-3-po-review.json",
+      "reviewed_worktree_sha256": "755A9D5654DD3CE3ED6C2ABB22913626F685C6E0D868C5724E2C9F551CFE55C8",
+      "canonical_lf_sha256": "755A9D5654DD3CE3ED6C2ABB22913626F685C6E0D868C5724E2C9F551CFE55C8",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-4-dispatch.json",
+      "reviewed_worktree_sha256": "774AC290D03A8D39A7CF4103055BF4E6D70ABCCB0A488854B66C877682C630F6",
+      "canonical_lf_sha256": "0DD58ED1E392CBB09A122BE51A87F7442022DD06A91A476712BD0CF4F04BC70D",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-4-po-review.json",
+      "reviewed_worktree_sha256": "C1C8C1B3128A6908CA0E9462C0D155A9880A5665E87B564841B6D370CF43F2EF",
+      "canonical_lf_sha256": "2DA9380E165AA952E47708A8E9F652721A5ABED85CE6D22D062E8A738F6BC664",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-4-po-review-r3.json",
+      "reviewed_worktree_sha256": "404AC8D389CF12B02C3AD6167D7B9AD3E3F51DA221BCAB75BDE6DC7F735014E7",
+      "canonical_lf_sha256": "404AC8D389CF12B02C3AD6167D7B9AD3E3F51DA221BCAB75BDE6DC7F735014E7",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-2-evidence-po-review-r2.json",
+      "reviewed_worktree_sha256": "1ECBCAD556A85D79A49BBF0912CB6D8F5C42E740E46529F58E5E8C07C627F9BB",
+      "canonical_lf_sha256": "1ECBCAD556A85D79A49BBF0912CB6D8F5C42E740E46529F58E5E8C07C627F9BB",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-3-po-review-r2.json",
+      "reviewed_worktree_sha256": "F7872965F088EEADC88E878382DC5CE2B4F9DB35A22D98D015C9BA59E57E467B",
+      "canonical_lf_sha256": "F7872965F088EEADC88E878382DC5CE2B4F9DB35A22D98D015C9BA59E57E467B",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/doc-graph-wave2-4-final.log",
+      "reviewed_worktree_sha256": "51EF9AC5F81412848F3D5EAE5DA4F556576F4200E0ACB3ED2B74B2DE311F5CD0",
+      "canonical_lf_sha256": "AF181DD04F4BEB2BB3150BEBED6D3A3198C51D918D0E6FF32D0502F1B76CF340",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/codedoc-wave2-4-final.log",
+      "reviewed_worktree_sha256": "CDA64DA425E9C3EEF1DE20E7B674496F53BA7AD201D07F556905BD1CCCA5AEDC",
+      "canonical_lf_sha256": "8657C2677A0AFB77C225AD563C6560B1EFA3A50DFB55878EBC8C233F5CFFD34F",
+      "product_owner_reviewed": false
+    }
+  ],
+  "verification_limits": {
+    "doc_graph": "PASS; 215 tests; 14 severity errors checklist-covered; 0 uncovered.",
+    "codedoc": "INDETERMINATE; exit 2 because configured local Mellum model is absent; no alignment claim.",
+    "application_tests": "NOT_RUN; no application source changed.",
+    "billing_retry": "Static source-path inference only; runtime, provider retry policy, deployment, and affected transactions are unknown.",
+    "hosted_ci": "Pending post-push PR check."
+  }
+}

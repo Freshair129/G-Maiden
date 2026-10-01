@@ -3,7 +3,7 @@
 # FEATURE-ORPHAN-REPORT
 
 > **GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs**  
-> Generated `2026-10-01T01:33:57.237Z` · candidates=22
+> Generated `2026-10-01T02:49:00.676Z` · candidates=22
 
 ## Summary
 
@@ -27,15 +27,15 @@
 | FEAT-G-LOG | docs/features/FEAT-G-LOG.md | planned | planned | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-MASTER | docs/features/FEAT-G-MASTER.md | planned | planned | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/FEAT-G-REVIVE.md, docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-MEMORY | docs/features/FEAT-G-MEMORY.md | planned | planned | feature-ledger, features-readme, project-feature-map | docs/features/README.md, docs/operations/contracts/gap-memory-contract.md | — | Document is explicitly planned and remains visible in active registry/docs. |
-| FEAT-G-MIND | docs/features/FEAT-G-MIND.md | planned | planned | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
-| FEAT-G-MOTION | docs/features/FEAT-G-MOTION.md | — | anchored | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/README.md | — | At least one strong anchor exists (registry and/or code evidence). |
-| FEAT-G-PERSONA | docs/features/FEAT-G-PERSONA.md | planned | planned | feature-ledger, features-readme, project-feature-map | docs/architecture/design-system.md, docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
+| FEAT-G-MIND | docs/features/FEAT-G-MIND.md | planned | planned | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/README.md, docs/operations/contracts/gap-master-contract.md | — | Document is explicitly planned and remains visible in active registry/docs. |
+| FEAT-G-MOTION | docs/features/FEAT-G-MOTION.md | — | anchored | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/README.md, docs/operations/contracts/gap-motion-contract.md | — | At least one strong anchor exists (registry and/or code evidence). |
+| FEAT-G-PERSONA | docs/features/FEAT-G-PERSONA.md | planned | planned | feature-ledger, features-readme, project-feature-map | docs/architecture/design-system.md, docs/features/README.md, docs/operations/contracts/gap-master-contract.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-REVIVE | docs/features/FEAT-G-REVIVE.md | — | anchored | feature-ledger, code-evidence, features-readme | docs/features/README.md | — | At least one strong anchor exists (registry and/or code evidence). |
 | FEAT-G-SCORE | docs/features/FEAT-G-SCORE.md | planned | planned | features-readme | docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-SENSORY | docs/features/FEAT-G-SENSORY.md | planned | planned | feature-ledger, features-readme, project-feature-map | docs/architecture/design-system.md, docs/features/FEAT-G-SENTRY.md, docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-SENTRY | docs/features/FEAT-G-SENTRY.md | planned | planned | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-SIGNAL | docs/features/FEAT-G-SIGNAL.md | — | anchored | feature-ledger, code-evidence, features-readme, project-feature-map | docs/architecture/design-system.md, docs/features/FEAT-G-DAMAGE.md, docs/features/FEAT-G-MOTION.md, docs/features/FEAT-G-REVIVE.md, docs/features/README.md | — | At least one strong anchor exists (registry and/or code evidence). |
-| FEAT-G-STREAM | docs/features/FEAT-G-STREAM.md | planned | planned | feature-ledger, features-readme, project-feature-map | docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
+| FEAT-G-STREAM | docs/features/FEAT-G-STREAM.md | planned | planned | feature-ledger, features-readme, project-feature-map | docs/features/README.md, docs/operations/contracts/gap-stream-contract.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-VOICE | docs/features/FEAT-G-VOICE.md | planned | planned | feature-ledger, features-readme, project-feature-map | docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT--MULTI-AGENT-ORCHESTRATOR | orchestration/docs/FEAT--MULTI-AGENT-ORCHESTRATOR.md | candidate | weakly-anchored | — | docs/DOC-INDEX.md, orchestration/docs/DESIGN--G-ORCHESTRA-V2.md, orchestration/docs/g-orchestra-ui-sitemap-flow-board.md, orchestration/docs/SRS--G-ORCHESTRA.md | — | Only active document references remain; no strong registry/code anchor found. |
 | SPEC--GOVIBE-INTEGRATION | orchestration/docs/SPEC--GOVIBE-INTEGRATION.md | — | weakly-anchored | — | docs/README.md, orchestration/docs/ADR-O-002--govibe-integration.md, orchestration/docs/ADR-O-003--backend-store.md | — | Only active document references remain; no strong registry/code anchor found. |

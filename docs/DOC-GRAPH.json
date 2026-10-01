@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-01T01:33:54.760Z",
+  "generatedAt": "2026-10-01T02:48:55.942Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -751,6 +751,13 @@
       "status": "draft"
     },
     {
+      "id": "docs/operations/contracts/gap-master-contract.md",
+      "type": "doc",
+      "path": "docs/operations/contracts/gap-master-contract.md",
+      "title": "G-Master Data and Persona Contract",
+      "status": "draft"
+    },
+    {
       "id": "docs/operations/contracts/gap-memory-contract.md",
       "type": "doc",
       "path": "docs/operations/contracts/gap-memory-contract.md",
@@ -759,10 +766,45 @@
       "doc_type": "feature-contract"
     },
     {
+      "id": "docs/operations/contracts/gap-motion-contract.md",
+      "type": "doc",
+      "path": "docs/operations/contracts/gap-motion-contract.md",
+      "title": "G-Motion Heuristic Contract",
+      "status": "draft"
+    },
+    {
       "id": "docs/operations/contracts/gap-orch-contract.md",
       "type": "doc",
       "path": "docs/operations/contracts/gap-orch-contract.md",
       "title": "G-Orchestra local HTTP security contract",
+      "status": "draft"
+    },
+    {
+      "id": "docs/operations/contracts/gap-stream-contract.md",
+      "type": "doc",
+      "path": "docs/operations/contracts/gap-stream-contract.md",
+      "title": "G-Stream Stream-Safe Co-host Contract",
+      "status": "draft"
+    },
+    {
+      "id": "docs/operations/evidence/gap-billing-local.md",
+      "type": "doc",
+      "path": "docs/operations/evidence/gap-billing-local.md",
+      "title": "CR-003 Local Billing and Share Evidence Inventory",
+      "status": "draft"
+    },
+    {
+      "id": "docs/operations/evidence/gap-ci-matrix.md",
+      "type": "doc",
+      "path": "docs/operations/evidence/gap-ci-matrix.md",
+      "title": "CI Matrix: Gap-Closure Evidence",
+      "status": "draft"
+    },
+    {
+      "id": "docs/operations/evidence/gap-release-matrix.md",
+      "type": "doc",
+      "path": "docs/operations/evidence/gap-release-matrix.md",
+      "title": "Gap 2 Release Acceptance Matrix",
       "status": "draft"
     },
     {
@@ -792,7 +834,7 @@
       "type": "doc",
       "path": "docs/operations/gmaiden-closed-beta-release-playbook.md",
       "title": "G-Maiden Closed Beta Release Playbook",
-      "status": "active",
+      "status": "historical",
       "domain": "release-operations"
     },
     {
@@ -9281,13 +9323,6 @@
       "changelog": "0.1.0b"
     },
     {
-      "file": "docs/change request/CR-018-ops-route-spa-rewrite.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.3.0b",
-      "changelog": "0.1.0b"
-    },
-    {
       "file": "docs/change request/CR-019-owner-role-and-operator-delegation.md",
       "line": null,
       "reason": "version-changelog-mismatch",
@@ -10047,13 +10082,6 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/operations/gmaiden-closed-beta-release-playbook.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.2.2",
-      "changelog": "0.1.0"
-    },
-    {
       "file": "docs/operations/validation/forms-and-social.md",
       "line": null,
       "reason": "no-metadata"
@@ -10458,7 +10486,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-01T01:33:57.080Z",
+    "generatedAt": "2026-10-01T02:49:00.467Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

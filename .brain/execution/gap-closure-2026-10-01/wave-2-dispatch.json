@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "wave": "WAVE_2_DOCS_AND_EVIDENCE",
+  "authorized_by": "User continuation and Wave 1 accepted DAG/PO delegation",
+  "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+  "execution_base": "b9712fd9ffed472a7bf666e8a829e4b025e563cb",
+  "origin_main_refreshed": "2d969ac643533b4b8e24494356da2e818eac874f",
+  "parallel_lanes": [
+    {
+      "id": "/root/dag_worker",
+      "node": "OPS-DOCS",
+      "role": "Luna Max docs /ops claims",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap2-ops-docs",
+      "branch": "docs/gap2-ops-docs",
+      "write_paths": [
+        "docs/change request/CR-018-ops-route-spa-rewrite.md",
+        "docs/operations/gmaiden-closed-beta-release-playbook.md"
+      ],
+      "status": "COMPLETED",
+      "artifact_sha256": [
+        "f4fdad747ff3cd2998c22b5c2d26f8d8044c5445077dcd841094ffeae6d0b5ff",
+        "7fa5cecfeda22ac133913170cce3752359b1ae2548d6813933cbcb09061416f0"
+      ]
+    },
+    {
+      "id": "/root/evidence_worker",
+      "node": "CI-MATRIX",
+      "role": "Luna Max CI evidence",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap2-ci-matrix",
+      "branch": "docs/gap2-ci-matrix",
+      "write_paths": [
+        "docs/operations/evidence/gap-ci-matrix.md"
+      ],
+      "status": "COMPLETED",
+      "artifact_sha256": "ff8ebd3132a4d0a1af7d15cf0b916c080947f3988fb4b01561aceedb66223a19"
+    },
+    {
+      "id": "/root/memory_contract",
+      "node": "RELEASE-MATRIX",
+      "role": "Luna Max release/performance evidence",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap2-release-matrix",
+      "branch": "docs/gap2-release-matrix",
+      "write_paths": [
+        "docs/operations/evidence/gap-release-matrix.md"
+      ],
+      "status": "COMPLETED",
+      "artifact_sha256": "5a77b0b303dddb17dbee52efc4556a2de94be156dd8d6011839d85fe4faf315"
+    }
+  ],
+  "exclusive_leases": true,
+  "root_owned_paths": [
+    ".brain/execution/gap-closure-2026-10-01/",
+    "docs/DOC-GRAPH.json",
+    "docs/DOC-GRAPH-REPORT.md",
+    "docs/FEATURE-LEDGER.md",
+    "docs/FEATURE-ORPHAN-REPORT.*",
+    "docs/atomic_index.jsonl"
+  ],
+  "code_deployment_provider_test_execution_authorized": false,
+  "merge_release_authorized": false,
+  "po_review_after_artifacts": "Exact-hash Product Owner review complete for the four Wave 2 artifacts; the CI matrix received an EOF-only hash refresh in review r2. All execution results remain subject to the recorded NOT_RUN boundary.",
+  "product_owner_review": {
+    "path": ".brain/execution/gap-closure-2026-10-01/wave-2-evidence-po-review-r2.json",
+    "sha256": "1ecbcad556a85d79a49bbf0912cb6d8f5c42e740e46529f58e5e8c07c627f9bb",
+    "decision": "APPROVE_WITH_LIMITATIONS"
+  }
+}
