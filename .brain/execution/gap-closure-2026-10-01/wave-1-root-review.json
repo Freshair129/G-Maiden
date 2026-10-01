@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "wave": "WAVE_1_LOCAL_CONTRACTS",
+  "reviewer": "/root",
+  "status": "PASS",
+  "dag_sha256": "6ae95687281a70c124bf23fef5c163e49a4901e4b095baf215a0e5be94d4db5c",
+  "source_sha": "2d969ac643533b4b8e24494356da2e818eac874f",
+  "checks": {
+    "nodes": 43,
+    "edges": 73,
+    "gaps": 23,
+    "acyclic": true,
+    "mermaid_matches": true,
+    "inverse_gap_crosswalk": true,
+    "worker_models": true,
+    "source_pins": true,
+    "prerequisite_gate_references": true,
+    "memory_code_blocked_by_explicit_glog_gate": true,
+    "document_metadata_versions_and_links": true,
+    "application_source_diff_empty": true
+  },
+  "artifacts": [
+    {
+      "path": "docs/operations/contracts/gap-iam-contract.md",
+      "reviewed_worktree_sha256": "14341bde4f0f9dc9c814123f23a29ead18f21230ee4fb71f3df147679fb95529",
+      "canonical_lf_sha256": "ec18b384738bcfdaa25d603ec32c79b4babd3fe0f41641fe39cdd65c806e6ceb"
+    },
+    {
+      "path": "docs/operations/contracts/gap-orch-contract.md",
+      "reviewed_worktree_sha256": "f26d5e9b6146e6a5c3e16c4e849295478046db011107304875b77b572e487881",
+      "canonical_lf_sha256": "f26d5e9b6146e6a5c3e16c4e849295478046db011107304875b77b572e487881"
+    },
+    {
+      "path": "docs/operations/contracts/gap-memory-contract.md",
+      "reviewed_worktree_sha256": "72d80e23cc6ef0409ddebe716c297e087ac13aae176b7aea8a65e0a69246fc70",
+      "canonical_lf_sha256": "78ddbf99408a762807eb556dae8a1a32907ec6b921da236b3f7eeafa049d49c5"
+    },
+    {
+      "path": "docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
+      "reviewed_worktree_sha256": "b8820cddfa0e883c8634e71cd4bb87195e0b34506b4adbd06cbbf49fc76e5149",
+      "canonical_lf_sha256": "6fb129bae355a641869eba4979eaa3f0d2c8161f717811acfef3301d96af4b8e"
+    },
+    {
+      "path": "docs/operations/execution-dag-gap-closure.md",
+      "reviewed_worktree_sha256": "92ae02378a9e283fbd205e71f6e27ca2f1e1654e5ac5859b00766ccfb23ccc8b",
+      "canonical_lf_sha256": "92ae02378a9e283fbd205e71f6e27ca2f1e1654e5ac5859b00766ccfb23ccc8b"
+    },
+    {
+      "path": "docs/operations/execution-dag-gap-closure.json",
+      "reviewed_worktree_sha256": "6ae95687281a70c124bf23fef5c163e49a4901e4b095baf215a0e5be94d4db5c",
+      "canonical_lf_sha256": "6ae95687281a70c124bf23fef5c163e49a4901e4b095baf215a0e5be94d4db5c"
+    }
+  ],
+  "metadata_revalidated_after_final_authority_wording": true,
+  "final_format_delta": {
+    "path": "docs/operations/contracts/gap-memory-contract.md",
+    "previous_sha256": "cb7c22d8c06c992feff9127dd8e02dc22b4c9914c4bccfd185f7b9a57fc52ab8",
+    "new_sha256": "72d80e23cc6ef0409ddebe716c297e087ac13aae176b7aea8a65e0a69246fc70",
+    "change": "Removed a single empty CRLF EOF row; no content or semantics changed",
+    "bytes_removed": 2
+  }
+}

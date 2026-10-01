@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-10-01",
+  "collector": "RWANG root via Chrome rendered official documentation",
+  "url": "https://supabase.com/docs/guides/auth/auth-mfa/totp",
+  "title": "Multi-Factor Authentication (TOTP) | Supabase Docs",
+  "class": "SOURCE",
+  "scope": "Vendor API semantics only; no live project configuration or UAT",
+  "observations": [
+    "Enrollment returns factor identifier, QR and shared secret; challenge plus verify activates the factor and upgrades assurance.",
+    "Signing in with an enrolled factor requires a challenge and verify step; multiple factors require deliberate selection.",
+    "getAuthenticatorAssuranceLevel current aal2 and next aal1 can indicate a stale JWT after disabling a factor.",
+    "Successful verification refreshes session state; integration must preserve account/session operation fencing and clear transient secrets."
+  ],
+  "live_project_configuration_verified": false,
+  "provider_requests_executed": false,
+  "sensitive_values_retained": false
+}

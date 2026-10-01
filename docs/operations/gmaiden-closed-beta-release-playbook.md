@@ -1,8 +1,8 @@
 ---
-version: "0.2.2"
+version: "0.2.3"
 created_at: "2026-07-22T20:05:00+07:00,ATHER"
-last_update: "2026-07-23T12:38:00+07:00,ATHER"
-status: "active"
+last_update: "2026-10-01T08:55:14+07:00,RWANG"
+status: "historical"
 superseded_by: null
 attributes:
   domain: "release-operations"
@@ -10,7 +10,7 @@ attributes:
   language: "th"
 title: "G-Maiden Closed Beta Release Playbook"
 doc_id: "gmaiden-closed-beta-release-playbook"
-updated: "2026-07-23"
+updated: "2026-10-01"
 owner: "Boss"
 related_docs:
   - "CR-016-gmad-beta-download-admin-controller"
@@ -22,13 +22,19 @@ related_docs:
 
 # G-Maiden Closed Beta Release Playbook
 
-เอกสารนี้เป็น archived playbook สำหรับทีมที่เคยใช้ปล่อยสิทธิ์ดาวน์โหลด G-Maiden Closed Beta ผ่าน landing page
-โดยเก็บ implementation reference จาก `landing/` + Supabase project สำหรับการทบทวนย้อนหลังและงาน operator ภายใน
+เอกสารนี้เป็น archived playbook สำหรับ flow ปล่อยสิทธิ์ดาวน์โหลด G-Maiden Closed Beta ในอดีต
+โดยเก็บ implementation reference จาก landing/ และ Supabase project ไว้ทบทวนย้อนหลัง
 
-> สถานะล่าสุด ณ 2026-07-23: public landing page ถูกถอด flow เช็กคิวดาวน์โหลด, route `/ops`,
-> และหน้า Terms/Privacy สำหรับ Closed Beta ออกจากหน้าเว็บสาธารณะแล้ว เพื่อเตรียมรับ roadmap
-> การปล่อยโปรดักต์รอบถัดไป ส่วน backend artifacts/functions เดิมยังคงเก็บไว้เป็นโครงปฏิบัติการภายใน
-> จนกว่าจะมีเอกสาร supersede ชุดใหม่
+## Current source and deployment status (2026-10-01)
+
+D4=B: ห้ามอ้างว่า UI operator /ops เป็น shipped ปัจจุบัน
+
+- [landing/src/main.tsx](../../landing/src/main.tsx) ส่ง /demo และ /public-demo ไป PublicDemo; path อื่นแสดง App. entrypoint นี้ไม่มี branch เฉพาะสำหรับ /ops และไม่ได้พิสูจน์ว่า App แสดงอะไร
+- [landing/vercel.json](../../landing/vercel.json) ระบุ Vite install/build/output โดยไม่มี rewrite; ข้อเท็จจริงของ source ไม่ได้พิสูจน์ HTTP response ของ deployment ปัจจุบัน
+- สถานะ route ที่ deploy: DEPLOYED: UNKNOWN / NOT_VERIFIED; ไม่มี browser/HTTP probe ปัจจุบันในเอกสารนี้
+- [CLAUDE.md](../../CLAUDE.md) บันทึก production G-Maiden queue sector ซึ่งควรเก็บเป็นข้ออ้างเรื่อง queue/support แยกต่างหาก; เอกสารเดียวกันกล่าวถึง owner/admin controller ที่ /ops แต่ไม่ใช่หลักฐาน UI source หรือ route ที่ deploy และไม่ใช่ข้ออ้างว่า UI ดังกล่าว shipped ตาม D4=B
+
+> บันทึก snapshot ทางประวัติศาสตร์ ณ 2026-07-23: ขณะนั้นเอกสารระบุว่า public landing page ถอด flow เช็กคิว/ดาวน์โหลด, route /ops, และหน้า Terms/Privacy ออกแล้ว ส่วน backend artifacts/functions ยังคงอยู่เป็นโครงปฏิบัติการภายใน ข้อความนี้เป็นประวัติของ snapshot นั้น ไม่ใช่สถานะ deployment วันนี้ และไม่ยกเลิก queue/support claim ที่บันทึกใน CLAUDE.md
 
 ## 1. เป้าหมายของระบบเดิมนี้
 
@@ -204,7 +210,7 @@ flowchart TD
    - grants ถูกสร้างครบ
    - ผู้ใช้ในช่วงนั้น `check-gmad-queue` ได้สถานะ `available`
 
-## 7. ความต่างระหว่าง Closed Beta กับ Open Beta
+## 7. Historical comparison: Closed Beta and Open Beta
 
 ### Closed Beta
 
@@ -214,9 +220,9 @@ flowchart TD
 
 ### Open Beta
 
-- วันที่เปิดตามแผนปัจจุบันคือ `2026-07-24 18:00 ICT`
-- public landing ปิด queue gate และ download gate ชั่วคราวแล้ว
-- แต่ยังควรคงการตรวจ Terms / entitlement shape / signed URL policy ถ้ายังไม่ต้องการ public mirror
+- แผน ณ 2026-07-23 ระบุเวลาเปิด `2026-07-24 18:00 ICT`; วันที่ดังกล่าวเป็นแผนในอดีต ไม่ใช่หลักฐาน availability ปัจจุบัน
+- Snapshot 2026-07-23 บันทึกการปิด queue/download gate ชั่วคราว; ไม่ใช้ข้อความนี้ยืนยันสถานะ landing ปัจจุบัน
+- คง Terms / entitlement shape / signed URL policy เป็นแนวทางออกแบบย้อนหลัง; อย่าอนุมานว่ามี public mirror ปัจจุบัน
 
 ## 8. Release log ที่ยืนยันแล้ว ณ 2026-07-22
 
@@ -268,10 +274,9 @@ flowchart TD
 - [ ] ตรวจ grants แล้ว
 - [ ] ทดสอบ user state ว่าเป็น `available` แล้ว
 
-## 11. Operator snapshot เดิมบน `/ops`
+## 11. Historical operator snapshot for /ops
 
-route `/ops` ถูกถอดออกจาก public landing แล้ว แต่รายละเอียดด้านล่างยังเก็บไว้เป็น reference
-สำหรับ operator tooling ภายใน หากในอนาคตมีการนำ controller surface กลับมาใช้ใหม่:
+รายละเอียดด้านล่างเป็น historical operator snapshot contract เท่านั้น ไม่ใช่ข้ออ้างว่า UI นี้ shipped อยู่ในปัจจุบัน ตาม D4=B ไม่อ้างว่า /ops มีหน้า operator ปัจจุบัน; source/config/deployed status แยกกันตามสถานะด้านบน
 
 - current release wave จาก `release_id` ของ published batch ล่าสุด
 - `artifact_path` ของ wave ที่กำลังปล่อย
@@ -286,11 +291,11 @@ route `/ops` ถูกถอดออกจาก public landing แล้ว �
 2. ค่าที่แสดงต้องคำนวณจาก payload จริงของ `admin-gmad-controller`
 3. ถ้า roster ที่โหลดมาไม่ครบทั้งหมด ต้องเตือนชัดว่า coverage ที่เห็นเป็น coverage ของชุดข้อมูลที่โหลดมา ไม่ใช่ทั้งระบบ
 
-## CHANGELOG
+## Changelog
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
-| --- | --- | --- | --- | --- | --- |
-| 0.2.2 | 2026-07-23 | active | Reframed this document as an archived/dormant operator reference so it no longer describes the removed public landing queue/download flow as current behavior. | null | ATHER |
-| 0.2.1 | 2026-07-23 | active | Marked the public landing Closed Beta queue/download flow, `/ops`, and Terms/Privacy routes as retired while backend release infrastructure remains dormant for the next roadmap. | null | ATHER |
-| 0.2.0 | 2026-07-22 | active | Added the `/ops` operator snapshot contract: current release wave, artifact path, publish recency, loaded-roster coverage, and checklist expectations. | null | ATHER |
 | 0.1.0 | 2026-07-22 | active | Added the operational playbook for G-Maiden Closed Beta release flow, sequence diagram, naming convention, release checklist, and the verified 2026-07-22 release log. | null | ATHER |
+| 0.2.0 | 2026-07-22 | active | Added the `/ops` operator snapshot contract: current release wave, artifact path, publish recency, loaded-roster coverage, and checklist expectations. | null | ATHER |
+| 0.2.1 | 2026-07-23 | active | Marked the public landing Closed Beta queue/download flow, `/ops`, and Terms/Privacy routes as retired while backend release infrastructure remains dormant for the next roadmap. | null | ATHER |
+| 0.2.2 | 2026-07-23 | active | Reframed this document as an archived/dormant operator reference so it no longer describes the removed public landing queue/download flow as current behavior. | null | ATHER |
+| 0.2.3 | 2026-10-01 | historical | Reconciled historical queue/operator notes with current source evidence: preserve the repository queue/support claim, do not claim a current shipped /ops UI, and mark deployed route status unverified. | null | RWANG |

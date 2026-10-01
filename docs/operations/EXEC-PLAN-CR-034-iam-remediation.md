@@ -1,13 +1,13 @@
 ---
-version: "0.6.1b"
+version: "0.7.1b"
 title: "EXEC-PLAN CR-034 — IAM remediation and production reconciliation"
 doc_id: "EXEC-PLAN-CR-034-iam-remediation"
 created_at: "2026-08-28T10:40:00+07:00,ATHER"
-last_update: "2026-09-13T01:30:13+07:00,RWANG"
+last_update: "2026-10-01,RWANG"
 owner: "Boss"
 executor: "Codex"
 status: "active"
-updated: "2026-09-13"
+updated: "2026-10-01"
 attributes:
   doc_type: "execution-plan"
   domain: "account-identity-security"
@@ -46,6 +46,20 @@ Rules for the executor:
    the tasks that depend on them.
 6. Decisions in §4 that are still `PENDING` block their dependent tasks. Do not choose
    for Boss.
+
+### Delegated product decisions — 2026-10-01
+
+The human user explicitly delegated product decisions to a Product Owner Agent in the current
+chat and assigned RWANG to orchestrate Luna Max workers. This supersedes the Boss-only decision
+assignment for D1–D4 in this execution wave. The selected decisions and their limits are recorded
+in [the delegated decision record](gap-closure-product-owner-decisions.md). The separate
+[execution DAG](execution-dag-gap-closure.md) governs the new gap-closure workflow; this table
+remains authoritative for CR-034's existing D/T identifiers.
+
+`DONE` on a D row means the product decision is recorded, not that its dependent code, provider
+configuration, or UAT has passed. Production/provider actions, legal acceptance, merge and release
+remain outside the delegated local scope. Current Chrome evidence shows `gstore` is paused;
+historical production observations below are not current configuration or health evidence.
 
 Status vocabulary: `TODO` / `IN-PROGRESS` / `DONE` / `BLOCKED` / `SUPERSEDED`.
 
@@ -137,63 +151,73 @@ Single executor: keep it current yourself. Multi-agent: only the orchestrator wr
 
 | ID | Task | Owner | Blocked by | Status | Evidence | Updated |
 | --- | --- | --- | --- | --- | --- | --- |
-| D1 | AAL2 unblock strategy | BOSS | — | PENDING | see §4 | 2026-08-28 |
-| D2 | Email provider disable + signup hook | BOSS | — | PENDING | see §4 | 2026-08-28 |
-| D3 | Entitlement-path session check scope | BOSS | — | PENDING | see §4 | 2026-08-28 |
-| D4 | `/ops` build or delete | BOSS | — | PENDING | see §4 | 2026-08-28 |
-| T1 | Capability-level AAL policy | CODEX | D1 | TODO | — | 2026-08-28 |
+| D1 | AAL2 unblock strategy | PRODUCT OWNER AGENT (delegated) | — | DONE | Option B: preserve AAL2 until enrollment/step-up UAT; delegated record D1 | 2026-10-01 |
+| D2 | Email provider disable + signup hook | PRODUCT OWNER AGENT (delegated) | — | DONE | Google-only primary policy; defer provider mutation until session/config proof and legacy-account handling are verified; no configuration changed; delegated record D2 | 2026-10-01 |
+| D3 | Entitlement-path session check scope | PRODUCT OWNER AGENT (delegated) | — | DONE | Option C: live-session checks on all five user identity/entitlement endpoints; code/UAT pending; delegated record D3 | 2026-10-01 |
+| D4 | `/ops` build or delete | PRODUCT OWNER AGENT (delegated) | — | DONE | Option B: stop current shipped-UI claim; source has no OpsPage/rewrite, deployed route unverified; delegated record D4 | 2026-10-01 |
+| T1 | Capability-level AAL policy | CODEX | D1 | TODO | Non-dispatchable under D1=B: this task applies only to option A; no implementation status changed | 2026-10-01 |
 | T2 | Reconcile docs with production | CODEX | — | TODO | — | 2026-08-28 |
 | T3 | Live IAM probe script | CODEX | — | TODO | — | 2026-08-28 |
 | T4 | Run live probe, record evidence | BOSS | T3 | TODO | — | 2026-08-28 |
 | T5 | Live-session check on entitlement path | CODEX | D3, T4 | TODO | — | 2026-08-28 |
-| T6 | TOTP enrollment UI + restore AAL2 | CODEX | T1, T4 | TODO | — | 2026-08-28 |
+| T6 | TOTP enrollment UI + preserve AAL2 | CODEX | Local implementation: approved enrollment contract; hosted acceptance: T4 + healthy project | TODO | D1=B removes the T1(A) dependency; no AAL reduction or restore step | 2026-10-01 |
 | T7 | Session-method-aware Google check | CODEX | T4 | TODO | — | 2026-08-28 |
 | T8 | Disable email provider, register hook | BOSS | D2, T7 | TODO | — | 2026-08-28 |
 | T9 | `/ops` resolution | CODEX | D4 | TODO | — | 2026-08-28 |
 | T10 | Sign-out resilience | CODEX | — | IN-PROGRESS | Committed `56f9fbd`; release WebView/native storage smoke passed; [evidence §9](auth-failure-remediation-proposal.md); session UAT and CodeDoc verdict pending | 2026-09-13 |
 | T11 | Entitlement failure-state alignment (GAP-02) | CODEX | T10 local implementation | IN-PROGRESS | Committed `56f9fbd`; local UI/native tests complete; [evidence §9](auth-failure-remediation-proposal.md); expired-grace native/WebView session UAT pending | 2026-09-13 |
 
-Execution order: **T2, T3, T10 can start immediately.** Everything else waits on a decision
-or on T4's live evidence.
+Execution order for the 2026-10-01 wave is governed by the new execution DAG. T2/T3 planning and
+local contract work can proceed after scoped approval. T10/T11 have code already; their remaining
+session UAT is not a new implementation task. T4 and live acceptance remain blocked while `gstore`
+is paused. Recorded D1–D4 choices do not remove evidence or contract prerequisites.
 
 ---
 
-## 4. Decisions required from Boss
+## 4. Decisions resolved by delegated Product Owner
 
-Each decision is recorded by editing its row in §3 to `DONE` and writing the chosen option here.
+The delegated Product Owner resolved D1–D4 on 2026-10-01. Historical alternatives remain below
+for traceability; the recorded choices govern this wave and do not authorize external changes.
 
 ### D1 — How to unblock admin/owner (P1)
 
 | Option | Effect | Cost |
 | --- | --- | --- |
-| **A (recommended)** — capability-level AAL map: `gmad.batch.manage` → AAL1 temporarily, `iam.role.delegate` stays AAL2 | Batch/roster operations work today; role delegation stays maximum-assurance | Small, reversible; reverted by T6 |
+| A — capability-level AAL map: `gmad.batch.manage` → AAL1 temporarily, `iam.role.delegate` stays AAL2 | Batch/roster operations work today; role delegation stays maximum-assurance | Small, reversible; reverted by T6 |
 | B — ship TOTP enrollment first, keep AAL2 everywhere | No security reduction at any point | Admin stays locked out until T6 lands |
 | C — set `requireAal2 = false` globally | Do not choose. Removes the step-up control entirely | Violates guardrail 3 |
 
-**Chosen:** _(unset)_
-**Rationale:** _(unset)_
+**Chosen:** B — retain AAL2 and prepare TOTP enrollment.
+**Rationale:** Preserve privileged-action assurance. Local contract work is actionable; hosted
+enrollment and step-up acceptance require T4 and a healthy project. T1(A) is non-dispatchable.
 
 ### D2 — Provider boundary (P4)
 
-Disable the `email` provider in Supabase Auth and register
+The historical proposal was to disable the `email` provider in Supabase Auth and register
 `iam_private.hook_restrict_signup_to_google` as the *Before User Created* hook. Requires deciding
 what happens to the one existing user holding an `email` identity and the one user with a password
 set — unlink, leave, or contact.
 
-**Chosen:** _(unset)_
+**Chosen:** Google-only primary sign-in policy; defer provider/hook changes and legacy identity
+treatment until current configuration and a server-authoritative session-provider contract are
+verified. Historical account counts are not a current inventory.
+**Rationale:** Generic `amr.oauth` and a linked identity do not establish Google as the current
+session method. No provider mutation is authorized by this decision.
 
 ### D3 — How far to extend the live-session check (P3)
 
 | Option | Scope |
 | --- | --- |
-| **A (recommended)** | `get-gmad-desktop-entitlement` + `request-gmad-download` — the two that gate the runtime and the artifact |
+| A | `get-gmad-desktop-entitlement` + `request-gmad-download` — the two that gate the runtime and the artifact |
 | B | A, plus `accept-closed-beta-terms` and `check-gmad-queue` |
 | C | All five, `mint-gid` included |
 
 Wider scope means more Auth/database coupling on the landing's first paint. CR-034 §12 Phase 0
 finding 4 recommends the check on *sensitive* functions only.
 
-**Chosen:** _(unset)_
+**Chosen:** C — all five endpoints, including `mint-gid`.
+**Rationale:** Consistent revocation enforcement across authenticated admission paths; fail
+closed on revoked or unavailable session evidence. Implementation and controlled UAT remain pending.
 
 ### D4 — `/ops` (P2)
 
@@ -202,9 +226,12 @@ finding 4 recommends the check on *sensitive* functions only.
 | **A** | Build `OpsPage` + the `vercel.json` rewrite from CR-018, gated by the deployed `admin-gmad-controller` |
 | **B (recommended for now)** | Remove the `/ops` claim from `CLAUDE.md`, mark CR-018 `superseded`, and record that the operator console is not shipped |
 
-B is recommended because the backend behind `/ops` is unusable until D1/T6 close anyway.
+B avoids adding an operator UI before its admission and assurance contracts are verified.
 
-**Chosen:** _(unset)_
+**Chosen:** B — correct active shipped-UI claims and preserve CR-018 as historical evidence;
+do not build `OpsPage` in this wave or infer deployment from source absence.
+**Rationale:** Source has no route/rewrite; the current deployed route is unverified. Historical
+CR-018 status requires evidence reconciliation rather than an automatic superseded label.
 
 ---
 
@@ -373,13 +400,15 @@ rather than surviving until JWT expiry.
     *  For entitlement-path functions that must reject a revoked session but
     *  must not take on capability coupling (CR-034 §12 Phase 0 finding 4). */
    export async function requireLiveSession(authorization: string):
-     Promise<{ ok: true; userId: string; sessionId: string } | { ok: false; status: 401 | 503 }>
+     Promise<{ ok: true; userId: string; sessionId: string } | { ok: false; status: 401 | 503; code: "invalid_session" | "security_dependency_unavailable" }>
    ```
    Reuse the existing `decodeClaims` + `verifyUser` + `iam_private.session_is_active` path. Do not
    duplicate the pool or the HMAC key setup.
 2. In each selected function, call it immediately after the existing `Authorization` header check
-   and before any `service_role` client is constructed. On `ok: false`, return the status with
-   `{ error: "invalid_session" }`.
+   and before any `service_role` client is constructed. On `ok: false`, return `401` with
+   `{ error: "invalid_session" }` for an invalid or revoked session, or `503` with
+   `{ error: "security_dependency_unavailable" }` when the session-check dependency is unavailable.
+   Neither failure may proceed to protected reads or privileged side effects.
 3. Keep the existing `isGoogleIdentity` behaviour untouched here — T7 owns that.
 4. Add unit tests covering: live session passes; revoked session gives 401; database unreachable
    gives 503 and **not** 200.
@@ -393,17 +422,19 @@ rather than surviving until JWT expiry.
 
 ---
 
-### T6 — TOTP enrollment UI, then restore AAL2
+### T6 — TOTP enrollment UI while preserving AAL2
 
-**Owner:** CODEX **Blocked by:** T1, T4
+**Owner:** CODEX **Local contract gate:** delegated D1=B. **Local implementation gate:** approved
+enrollment/security contract. **Hosted acceptance gate:** T4 and a healthy project.
 
-**Goal.** Give users and operators a way to reach AAL2, then revert T1's temporary reduction.
+**Goal.** Give users and operators a way to reach AAL2 without reducing the existing assurance
+requirement. Under delegated D1=B, T1 is non-dispatchable and there is no temporary reduction to
+revert. Local contract/fixture work may proceed separately from hosted acceptance.
 
 **Files.**
 - `src/src/AccountSecurity.tsx`
 - `src/src/securityApi.ts`
 - `src/src/__tests__/` (new test file)
-- `supabase/functions/_shared/iam.ts` (final step only)
 
 **Steps.**
 1. In `AccountSecurity.tsx`, add an enrollment block using the Supabase client directly —
@@ -416,14 +447,14 @@ rather than surviving until JWT expiry.
 3. The QR/secret must never be logged, sent to Rust, or written to disk.
 4. Add Vitest coverage for the enroll → challenge → verify state machine with a mocked client,
    including the failure branch.
-5. **Only after enrollment is verified working against production by Boss:** flip
-   `AAL2_REQUIRED["gmad.batch.manage"]` back to `true` in `iam.ts`, remove the T1 comment, and
-   update T1's row in §3 to `SUPERSEDED`.
+5. Preserve the existing AAL2 policy throughout. Obtain controlled enrollment, step-up and
+   negative-case UAT evidence before declaring privileged operations usable; no policy flip or
+   T1 completion is part of D1=B.
 
 **Acceptance.**
 - `pnpm -C src test` passes; `pnpm -C src exec tsc --noEmit` clean; `pnpm -C src lint` clean
-- `deno test --allow-env --allow-net supabase/functions/_shared/` passes after the flip
-- Step 5 is a separate commit from steps 1–4, so the flip can be reverted alone
+- `deno test --allow-env --allow-net supabase/functions/_shared/` preserves the AAL2 rejection cases
+- Hosted enrollment/step-up acceptance remains distinct from local mocked state-machine tests
 
 ---
 
@@ -440,30 +471,24 @@ the user has linked.
 - `supabase/functions/_shared/iam.ts` (call site)
 
 **Steps.**
-1. Add a new function beside `isGoogleIdentity`:
-   ```ts
-   /** True only when THIS session was minted by Google. `isGoogleIdentity` tests
-    *  identity linkage, which a user holding both google and email identities
-    *  passes even after an email sign-in (CR-034 §4 boundary 1). */
-   export function isGoogleSession(claims: { amr?: unknown }, user: ...): boolean
-   ```
-   Read the `amr` array from the access-token claims and require an entry whose `method` indicates
-   the OAuth/Google path; fall back to `isGoogleIdentity` **only** when `amr` is absent, and record
-   that fallback in the audit context as `reason_code: "amr_absent"`.
-2. Extend `decodeClaims` in `iam.ts` to carry `amr` through, then have `resolveIamContext` call
-   `isGoogleSession` instead of `isGoogleIdentity`.
-3. Tests: google-only user passes; dual-identity user with a google `amr` passes; dual-identity
-   user with a non-google `amr` is rejected `401 invalid_session`; missing `amr` falls back and is
-   flagged.
-4. Do **not** change `get-gmad-desktop-entitlement`'s use of `isGoogleIdentity` in this task — that
-   function returns `account_not_eligible` rather than 401, and changing it is a user-visible
-   behaviour change that belongs with T8's provider decision.
+1. Collect sanitized, verified Google/multi-provider/session-refresh evidence after the live
+   environment is available. Do not retain raw tokens or private user identifiers in the repo.
+   [Supabase's claim reference](https://supabase.com/docs/guides/auth/jwt-fields) describes
+   `amr.method=oauth` as OAuth authentication, not a Google-specific identifier.
+2. Obtain Product Owner approval for the exact server-authoritative session/provider predicate,
+   its verification trust boundary, missing/ambiguous evidence behavior, and endpoint decision
+   mapping before changing code. Linked identity is not an allowed fallback for absent proof.
+3. Specify negative cases for non-Google, dual-provider, missing/ambiguous method evidence,
+   invalid/expired tokens, refresh and revoked sessions. Never label synthetic OAuth AMR as proof
+   of a real Google-authenticated session.
+4. Reconcile the chosen predicate across the D3=C endpoint set while preserving each documented
+   error/eligibility contract. Provider changes and legacy-account treatment remain deferred by D2.
 
 **Acceptance.**
 - `deno test --allow-env --allow-net supabase/functions/_shared/` passes
-- Before merging, verify the real shape of the `amr` claim against a live token captured by T3's
-  probe. If `amr` is absent from production tokens, set `Status: BLOCKED` and record that — the
-  fallback would make this task a no-op, which is worse than not shipping it.
+- Before code dispatch, the verified session/provider contract must be recorded; before acceptance,
+  controlled live evidence must corroborate it. Missing proof is `BLOCKED`/unknown, not linked-identity
+  fallback. Current live evidence is blocked by the paused project.
 
 ---
 
@@ -493,8 +518,10 @@ Authorization stays entirely server-side in `admin-gmad-controller`; the page re
 that function returns and must not infer any permission client-side. Acceptance:
 `pnpm -C landing build` and `pnpm -C landing test` pass.
 
-If **D4 = B**: no code. T2 already removed the claim; just record `Status: DONE` with a pointer to
-T2's commit.
+If **D4 = B**: no application code. Correct the active shipped-UI claims and reconcile CR-018's
+historical assertion, then record documentary acceptance with the exact diff/commit. Current source
+has no OpsPage/rewrite; current deployed route state is unverified. Do not assume T2 has already
+completed that reconciliation or mark T9 DONE without the evidence.
 
 ---
 
@@ -624,6 +651,11 @@ Deliberately excluded — do not expand into these:
 ---
 
 ## 8. Concurrency map — running this plan with more than one agent
+
+The historical wave ordering below predates the delegated D1–D4 decisions. For the 2026-10-01
+initiative, use the new execution DAG and its scoped worker leases. In particular, D1=B excludes
+T1(A), T6 does not depend on that temporary AAL reduction, and T7's former generic OAuth/linked-
+identity fallback is not approved. Retain the old wave layout as historical context, not dispatch authority.
 
 **Default is a single executor working §5 top to bottom.** That mode needs nothing from this
 section. Read on only if two or more agents will work this plan at the same time.
@@ -774,3 +806,5 @@ EXEC-PLAN CR-034 — task <T#> (docs/operations/EXEC-PLAN-CR-034-iam-remediation
 | 0.5.0b | 2026-08-28 | Added §6.1 measured known-good baselines for all five suites and §6.2 mandatory timeout ceilings with the capture-it-live rule for a stalled suite, recorded the unreproducible landing-Vitest stall and the four refuted causes, and marked T2's Phase 0 evidence correction as already applied in CR-034 0.4.4b. | Claude (Opus 5) |
 | 0.6.0b | 2026-09-12 | Record Boss approval of GAP-01/02, start T10 and add dependent T11; D1–D4 remain pending. | RWANG |
 | 0.6.1b | 2026-09-13 | Record GAP-01/02 commit and native storage/WebView cold-start smoke; T10/T11 and D1–D4 retain pending acceptance/decision state. | RWANG |
+| 0.7.0b | 2026-10-01 | Record delegated D1–D4 decisions; preserve task/UAT states; exclude T1(A) from D1=B, reconcile T6/T7/T9 contracts and historical wave ordering, and distinguish paused-project evidence from historical production observations. | RWANG (orchestrator) |
+| 0.7.1b | 2026-10-01 | Align T5's proposed helper/error contract with the existing IAM resolver: distinguish invalid/revoked sessions (401) from dependency failures (503), preserving fail-closed behavior before protected reads and side effects. | RWANG (orchestrator) |

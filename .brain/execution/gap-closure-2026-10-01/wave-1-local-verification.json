@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "wave": "WAVE_1_LOCAL_CONTRACTS",
+  "scope": "Documentation and local contract review only",
+  "source_sha": "2d969ac643533b4b8e24494356da2e818eac874f",
+  "application_source_diff_empty": true,
+  "root_structure": {
+    "status": "PASS",
+    "path": ".brain/execution/gap-closure-2026-10-01/wave-1-root-review.json",
+    "sha256": "fad69d5e9bb3db4a9c0e53e69cb6519c034b4700e65b220ef80a9a713934ff4c"
+  },
+  "doc_graph": {
+    "command": "timeout 300 node tools/doc-graph/ci-gate.mjs",
+    "exit_code": 0,
+    "status": "PASS_WITH_EXISTING_STRICT_DEBT",
+    "test_files": 18,
+    "tests": 215,
+    "encoding_exit": 0,
+    "strict_scan_exit": 1,
+    "strict_findings": 217,
+    "raw_blockers": 161,
+    "severity_errors": 14,
+    "checklist_covered": 14,
+    "uncovered": 0,
+    "ledger_exit": 0,
+    "orphan_exit": 0,
+    "local_log": ".brain/execution/gap-closure-2026-10-01/doc-graph-wave1.log",
+    "log_sha256": "af181dd04f4beb2bb3150bebed6d3a3198c51d918d0e6ff32d0502f1b76cf340"
+  },
+  "codedoc": {
+    "status": "INDETERMINATE",
+    "reason": "Configured Ollama model absent; no substitute or download",
+    "model": "hf.co/yuxinlu1/Mellum2-12B-A2.5B-Claude-4.6-4.8-Opus-Thinking-GGUF:Q4_K_M",
+    "working_directory": "F:/gm-gap-execution/.agents/skills/rwang-codedoc-aligner",
+    "runs": [
+      {
+        "code": "supabase/functions/_shared/iam.ts",
+        "document": "docs/operations/contracts/gap-iam-contract.md",
+        "document_sha256": "14341bde4f0f9dc9c814123f23a29ead18f21230ee4fb71f3df147679fb95529",
+        "command": "py -3 scripts/chunk_and_align.py --code-file F:/gm-gap-execution/supabase/functions/_shared/iam.ts --doc-file F:/gm-gap-execution/docs/operations/contracts/gap-iam-contract.md",
+        "exit_code": 2,
+        "local_log": ".brain/execution/gap-closure-2026-10-01/codedoc-wave1-iam.log",
+        "log_sha256": "5a8cec6e0ba7903fdc308ea8bc5874df233fc82e13dd236ddbe7bfa3f9427ec1"
+      },
+      {
+        "code": "orchestration/server.mjs",
+        "document": "docs/operations/contracts/gap-orch-contract.md",
+        "document_sha256": "f26d5e9b6146e6a5c3e16c4e849295478046db011107304875b77b572e487881",
+        "command": "py -3 scripts/chunk_and_align.py --code-file F:/gm-gap-execution/orchestration/server.mjs --doc-file F:/gm-gap-execution/docs/operations/contracts/gap-orch-contract.md",
+        "exit_code": 2,
+        "local_log": ".brain/execution/gap-closure-2026-10-01/codedoc-wave1-orch.log",
+        "log_sha256": "5a8cec6e0ba7903fdc308ea8bc5874df233fc82e13dd236ddbe7bfa3f9427ec1"
+      },
+      {
+        "code": "src-tauri/src/log.rs",
+        "document": "docs/operations/contracts/gap-memory-contract.md",
+        "document_sha256": "72d80e23cc6ef0409ddebe716c297e087ac13aae176b7aea8a65e0a69246fc70",
+        "command": "py -3 scripts/chunk_and_align.py --code-file F:/gm-gap-execution/src-tauri/src/log.rs --doc-file F:/gm-gap-execution/docs/operations/contracts/gap-memory-contract.md",
+        "exit_code": 2,
+        "local_log": ".brain/execution/gap-closure-2026-10-01/codedoc-wave1-memory.log",
+        "log_sha256": "5a8cec6e0ba7903fdc308ea8bc5874df233fc82e13dd236ddbe7bfa3f9427ec1"
+      },
+      {
+        "code": "supabase/functions/_shared/iam.ts",
+        "document": "docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
+        "document_sha256": "b8820cddfa0e883c8634e71cd4bb87195e0b34506b4adbd06cbbf49fc76e5149",
+        "command": "py -3 scripts/chunk_and_align.py --code-file F:/gm-gap-execution/supabase/functions/_shared/iam.ts --doc-file F:/gm-gap-execution/docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
+        "exit_code": 2,
+        "local_log": ".brain/execution/gap-closure-2026-10-01/codedoc-wave1-plan.log",
+        "log_sha256": "5a8cec6e0ba7903fdc308ea8bc5874df233fc82e13dd236ddbe7bfa3f9427ec1"
+      },
+      {
+        "code": "docs/operations/execution-dag-gap-closure.json",
+        "document": "docs/operations/execution-dag-gap-closure.md",
+        "document_sha256": "92ae02378a9e283fbd205e71f6e27ca2f1e1654e5ac5859b00766ccfb23ccc8b",
+        "command": "py -3 scripts/chunk_and_align.py --code-file F:/gm-gap-execution/docs/operations/execution-dag-gap-closure.json --doc-file F:/gm-gap-execution/docs/operations/execution-dag-gap-closure.md",
+        "exit_code": 2,
+        "local_log": ".brain/execution/gap-closure-2026-10-01/codedoc-wave1-dag.log",
+        "log_sha256": "5a8cec6e0ba7903fdc308ea8bc5874df233fc82e13dd236ddbe7bfa3f9427ec1"
+      }
+    ]
+  },
+  "application_suites": {
+    "status": "NOT_RUN",
+    "reason": "No application-source change or implementation in this docs-only wave"
+  },
+  "hosted_uat": {
+    "status": "BLOCKED_PROJECT_PAUSED",
+    "evidence": ".brain/execution/gap-closure-2026-10-01/browser-evidence.json",
+    "configuration_or_provider_mutation": false
+  },
+  "implementation": "NOT_DISPATCHED",
+  "release": "NOT_AUTHORIZED",
+  "merge": "NOT_AUTHORIZED",
+  "application_version_before": "0.13.2",
+  "application_version_after": "0.13.2"
+}

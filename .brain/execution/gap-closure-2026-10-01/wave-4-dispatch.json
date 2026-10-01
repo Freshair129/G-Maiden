@@ -1,0 +1,62 @@
+{
+  "schema_version": 1,
+  "wave": "WAVE_4_BILLING_LOCAL_SOURCE_TEST_INVENTORY",
+  "authorized_by": "User continuation and ready DAG node BILLING-LOCAL",
+  "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+  "execution_base": "b9712fd9ffed472a7bf666e8a829e4b025e563cb",
+  "parallel_lanes": [
+    {
+      "id": "/root/dag_worker",
+      "node": "BILLING-LOCAL",
+      "role": "Luna Max billing source/test evidence inventory",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap3-billing",
+      "branch": "docs/gap3-billing",
+      "write_paths": [
+        "docs/operations/evidence/gap-billing-local.md"
+      ],
+      "status": "APPROVE_WITH_LIMITATIONS",
+      "artifact_sha256": "ee6be93bc53c733478b5c545fe400f66b9f262ffd380ef24668d6106298f9692",
+      "superseded_artifact_sha256": [
+        "cf1e8b9456301f67a9c45ff3857cf097c9aed8bbd6769218028c21b767389d59",
+        "a6cf6ad378d3fdd88faa8b8521ec754e248309da6d4f95b83bc9787ae1419ed7"
+      ]
+    }
+  ],
+  "execution_boundary": {
+    "source_inventory_only": true,
+    "tests_executed": false,
+    "local_database_started": false,
+    "migrations_applied": false,
+    "provider_or_production_activity": false,
+    "package_activation": false
+  },
+  "exclusive_leases": true,
+  "root_owned_paths": [
+    ".brain/execution/gap-closure-2026-10-01/",
+    "docs/DOC-GRAPH.json",
+    "docs/DOC-GRAPH-REPORT.md",
+    "docs/FEATURE-LEDGER.md",
+    "docs/FEATURE-ORPHAN-REPORT.*",
+    "docs/atomic_index.jsonl"
+  ],
+  "merge_release_authorized": false,
+  "po_review_after_artifact": "Exact-hash PO review complete for Billing inventory 0.2.1. Same-event retry finding is static control-flow inference; tests, DB, provider, and production remain NOT_RUN.",
+  "product_owner_review": {
+    "path": ".brain/execution/gap-closure-2026-10-01/wave-4-po-review-r3.json",
+    "sha256": "404ac8d389cf12b02c3ad6167d7b9ad3e3f51da221bcab75bde6dc7f735014e7",
+    "disposition": "APPROVE_WITH_LIMITATIONS",
+    "superseded_review": {
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-4-po-review.json",
+      "sha256": "c1c8c1b3128a6908ca0e9462c0d155a9880a5665e87b564841b6d370cf43f2ef",
+      "disposition": "NEEDS_CHANGES"
+    }
+  },
+  "root_cause_analysis": {
+    "path": ".brain/rca/2026-10-01-payment-webhook-same-event-retry-gap.md",
+    "sha256": "f080356846797fd582f477e07e9a11fa19e69b17d288537f2fd7465a12fbd7ae",
+    "independent_source_review": "PASS_SOURCE_PATH_ONLY",
+    "runtime_or_production_impact": "UNKNOWN_NOT_VERIFIED"
+  }
+}

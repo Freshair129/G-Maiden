@@ -1,0 +1,115 @@
+{
+  "schema_version": 1,
+  "wave": "WAVE_1_LOCAL_CONTRACTS",
+  "source_sha": "2d969ac643533b4b8e24494356da2e818eac874f",
+  "base_execution_commit": "a5e43a46321cf51ee2ba9e0fa2752efb944fa161",
+  "decision": "APPROVE_WITH_LIMITATIONS",
+  "product_owner_review_sha256": "a86596224e3c02a42c863ddf7dd3a5d30ed062fe966e476f1d29531594ca4b2b",
+  "initial_packet": "Historical initial manifest/reviews remain bound to a5e43a4; this current-wave manifest supersedes hashes of edited artifacts.",
+  "hash_contract": "reviewed_worktree_sha256 hashes exact reviewed host bytes; canonical_lf_sha256 hashes UTF-8 text after CRLF→LF normalization for Git blob verification.",
+  "mutable_status_excluded": ".brain/execution/gap-closure-2026-10-01/workflow-state.json",
+  "artifacts": [
+    {
+      "path": "docs/operations/contracts/gap-iam-contract.md",
+      "reviewed_worktree_sha256": "14341bde4f0f9dc9c814123f23a29ead18f21230ee4fb71f3df147679fb95529",
+      "canonical_lf_sha256": "ec18b384738bcfdaa25d603ec32c79b4babd3fe0f41641fe39cdd65c806e6ceb",
+      "product_owner_reviewed": true
+    },
+    {
+      "path": "docs/operations/contracts/gap-orch-contract.md",
+      "reviewed_worktree_sha256": "f26d5e9b6146e6a5c3e16c4e849295478046db011107304875b77b572e487881",
+      "canonical_lf_sha256": "f26d5e9b6146e6a5c3e16c4e849295478046db011107304875b77b572e487881",
+      "product_owner_reviewed": true
+    },
+    {
+      "path": "docs/operations/contracts/gap-memory-contract.md",
+      "reviewed_worktree_sha256": "72d80e23cc6ef0409ddebe716c297e087ac13aae176b7aea8a65e0a69246fc70",
+      "canonical_lf_sha256": "78ddbf99408a762807eb556dae8a1a32907ec6b921da236b3f7eeafa049d49c5",
+      "product_owner_reviewed": true
+    },
+    {
+      "path": "docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
+      "reviewed_worktree_sha256": "b8820cddfa0e883c8634e71cd4bb87195e0b34506b4adbd06cbbf49fc76e5149",
+      "canonical_lf_sha256": "6fb129bae355a641869eba4979eaa3f0d2c8161f717811acfef3301d96af4b8e",
+      "product_owner_reviewed": true
+    },
+    {
+      "path": "docs/operations/execution-dag-gap-closure.md",
+      "reviewed_worktree_sha256": "92ae02378a9e283fbd205e71f6e27ca2f1e1654e5ac5859b00766ccfb23ccc8b",
+      "canonical_lf_sha256": "92ae02378a9e283fbd205e71f6e27ca2f1e1654e5ac5859b00766ccfb23ccc8b",
+      "product_owner_reviewed": true
+    },
+    {
+      "path": "docs/operations/execution-dag-gap-closure.json",
+      "reviewed_worktree_sha256": "6ae95687281a70c124bf23fef5c163e49a4901e4b095baf215a0e5be94d4db5c",
+      "canonical_lf_sha256": "6ae95687281a70c124bf23fef5c163e49a4901e4b095baf215a0e5be94d4db5c",
+      "product_owner_reviewed": true
+    },
+    {
+      "path": "docs/DOC-GRAPH.json",
+      "reviewed_worktree_sha256": "3de6024bd4162c7ead3f026d3d38f20502721492beec32c783f458c33220564e",
+      "canonical_lf_sha256": "3de6024bd4162c7ead3f026d3d38f20502721492beec32c783f458c33220564e",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": "docs/DOC-GRAPH-REPORT.md",
+      "reviewed_worktree_sha256": "2e758d36b53e187e5c0bc58c345d1bb92f22989e1a8256abc7d9189d55032af0",
+      "canonical_lf_sha256": "2e758d36b53e187e5c0bc58c345d1bb92f22989e1a8256abc7d9189d55032af0",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": "docs/FEATURE-LEDGER.md",
+      "reviewed_worktree_sha256": "95efe147ce20b8262926bfc5fe2901384b731849b9b59e2df3ac1028c9f41f28",
+      "canonical_lf_sha256": "95efe147ce20b8262926bfc5fe2901384b731849b9b59e2df3ac1028c9f41f28",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": "docs/FEATURE-ORPHAN-REPORT.json",
+      "reviewed_worktree_sha256": "553b4369f8641dc556d5fb3795e6caedd1be720f78786cadbf6c77e1316822ac",
+      "canonical_lf_sha256": "553b4369f8641dc556d5fb3795e6caedd1be720f78786cadbf6c77e1316822ac",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": "docs/FEATURE-ORPHAN-REPORT.md",
+      "reviewed_worktree_sha256": "f3c322baf43d4612a6e42cee1b5c2118bdc1e17012859979e6d6602a6035629a",
+      "canonical_lf_sha256": "f3c322baf43d4612a6e42cee1b5c2118bdc1e17012859979e6d6602a6035629a",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": "docs/atomic_index.jsonl",
+      "reviewed_worktree_sha256": "0b639bbdf649ed97d9ac211bd107134b6d5b161a0c888e1fb7ea5ec8fc352060",
+      "canonical_lf_sha256": "0b639bbdf649ed97d9ac211bd107134b6d5b161a0c888e1fb7ea5ec8fc352060",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-1-dispatch.json",
+      "reviewed_worktree_sha256": "9e68d2fc1b2665583b0d49cec62a226559bb67ac4c59b608b7221e2bcd26592f",
+      "canonical_lf_sha256": "07651150c89887ba2f0f7d81b382c6aaa71a08985d01b0a05d7d475b304b48e4",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-1-provider-reference.json",
+      "reviewed_worktree_sha256": "09e6c2c6aba5ebb1272575bbc133948d1fe22fb8460da9ce2f8116be4911ecb8",
+      "canonical_lf_sha256": "133897c01f557b4c9ab471260ba79b819c8d1a37edc1b8671844d2b01c7b8544",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-1-root-review.json",
+      "reviewed_worktree_sha256": "fad69d5e9bb3db4a9c0e53e69cb6519c034b4700e65b220ef80a9a713934ff4c",
+      "canonical_lf_sha256": "fad69d5e9bb3db4a9c0e53e69cb6519c034b4700e65b220ef80a9a713934ff4c",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-1-local-verification.json",
+      "reviewed_worktree_sha256": "6f2644553ced647a39c6241b01346f6e1010e27936c98d5c515154d24d08f288",
+      "canonical_lf_sha256": "6f2644553ced647a39c6241b01346f6e1010e27936c98d5c515154d24d08f288",
+      "product_owner_reviewed": false
+    },
+    {
+      "path": ".brain/execution/gap-closure-2026-10-01/wave-1-po-review.json",
+      "reviewed_worktree_sha256": "a86596224e3c02a42c863ddf7dd3a5d30ed062fe966e476f1d29531594ca4b2b",
+      "canonical_lf_sha256": "14633423f2e9cd2775774f561b8e9e0f9adf17e19071e2ccac6c37478473a601",
+      "product_owner_reviewed": false
+    }
+  ]
+}
