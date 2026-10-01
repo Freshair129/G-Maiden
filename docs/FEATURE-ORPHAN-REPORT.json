@@ -1,6 +1,6 @@
 {
   "_generated": "GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs",
-  "generatedAt": "2026-09-30T23:29:55.223Z",
+  "generatedAt": "2026-10-01T01:33:57.237Z",
   "baselineOrphanCandidates": 0,
   "rowCount": 22,
   "summary": {
@@ -117,7 +117,8 @@
         "project-feature-map"
       ],
       "weakAnchors": [
-        "docs/features/README.md"
+        "docs/features/README.md",
+        "docs/operations/contracts/gap-memory-contract.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,

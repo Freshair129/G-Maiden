@@ -1,5 +1,5 @@
 ---
-version: "0.7.0b"
+version: "0.7.1b"
 title: "EXEC-PLAN CR-034 — IAM remediation and production reconciliation"
 doc_id: "EXEC-PLAN-CR-034-iam-remediation"
 created_at: "2026-08-28T10:40:00+07:00,ATHER"
@@ -400,13 +400,15 @@ rather than surviving until JWT expiry.
     *  For entitlement-path functions that must reject a revoked session but
     *  must not take on capability coupling (CR-034 §12 Phase 0 finding 4). */
    export async function requireLiveSession(authorization: string):
-     Promise<{ ok: true; userId: string; sessionId: string } | { ok: false; status: 401 | 503 }>
+     Promise<{ ok: true; userId: string; sessionId: string } | { ok: false; status: 401 | 503; code: "invalid_session" | "security_dependency_unavailable" }>
    ```
    Reuse the existing `decodeClaims` + `verifyUser` + `iam_private.session_is_active` path. Do not
    duplicate the pool or the HMAC key setup.
 2. In each selected function, call it immediately after the existing `Authorization` header check
-   and before any `service_role` client is constructed. On `ok: false`, return the status with
-   `{ error: "invalid_session" }`.
+   and before any `service_role` client is constructed. On `ok: false`, return `401` with
+   `{ error: "invalid_session" }` for an invalid or revoked session, or `503` with
+   `{ error: "security_dependency_unavailable" }` when the session-check dependency is unavailable.
+   Neither failure may proceed to protected reads or privileged side effects.
 3. Keep the existing `isGoogleIdentity` behaviour untouched here — T7 owns that.
 4. Add unit tests covering: live session passes; revoked session gives 401; database unreachable
    gives 503 and **not** 200.
@@ -805,3 +807,4 @@ EXEC-PLAN CR-034 — task <T#> (docs/operations/EXEC-PLAN-CR-034-iam-remediation
 | 0.6.0b | 2026-09-12 | Record Boss approval of GAP-01/02, start T10 and add dependent T11; D1–D4 remain pending. | RWANG |
 | 0.6.1b | 2026-09-13 | Record GAP-01/02 commit and native storage/WebView cold-start smoke; T10/T11 and D1–D4 retain pending acceptance/decision state. | RWANG |
 | 0.7.0b | 2026-10-01 | Record delegated D1–D4 decisions; preserve task/UAT states; exclude T1(A) from D1=B, reconcile T6/T7/T9 contracts and historical wave ordering, and distinguish paused-project evidence from historical production observations. | RWANG (orchestrator) |
+| 0.7.1b | 2026-10-01 | Align T5's proposed helper/error contract with the existing IAM resolver: distinguish invalid/revoked sessions (401) from dependency failures (503), preserving fail-closed behavior before protected reads and side effects. | RWANG (orchestrator) |

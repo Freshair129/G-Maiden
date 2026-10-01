@@ -1,7 +1,7 @@
 {
   "schema_version": "1.0.0",
   "doc_id": "execution-dag-gap-closure",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "updated": "2026-10-01",
   "source_baseline": {
     "remote": "origin",
@@ -22,7 +22,7 @@
     "worktree_policy": "one lane per isolated worktree outside the repository",
     "worker_return_format": "TASK <id> | STATUS | evidence",
     "root_owns_integration_and_state": true,
-    "state_contract": "The JSON defines dependencies, ownership, acceptance, and initial node statuses. Runtime status overrides and review gates are root-owned in runtime_state_ref; dispatch requires verified dependencies and recorded approvals. Root is the current orchestrator; model/reasoning fields name the supporting worker configuration, not the root model.",
+    "state_contract": "The JSON defines dependencies, ownership, acceptance, and initial node statuses. Runtime status overrides and review gates are root-owned in runtime_state_ref; dispatch requires verified dependencies and recorded approvals. Root is the current orchestrator; model/reasoning fields name the supporting worker configuration, not the root model. Required prerequisite_gates also resolve through prerequisite_gate_catalog and the runtime state; missing or unverified gate blocks dispatch even when graph dependencies pass.",
     "max_concurrent_tasks_per_lane": 1,
     "path_lease_rule": "Root permits one active task per lane and no concurrent overlapping write leases across lanes; a shared-file discovery pauses dispatch for reassignment."
   },
@@ -784,8 +784,8 @@
       "id": "EV-CR034-ROOT-STATE",
       "class": "ROOT_STATE",
       "path": "F:/gm-gap-execution/docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
-      "sha256": "10228c9a318deed4f4a8d65d40bab19f150751c29b431b41b5d7894c9cb38573",
-      "claim": "Root-updated CR-034 0.7.0b: D1-D4 are recorded DONE as delegated choices; T1 is non-dispatchable under D1=B; T6 remains incomplete and must not depend on T1; T10/T11 UAT remains pending."
+      "sha256": "b8820cddfa0e883c8634e71cd4bb87195e0b34506b4adbd06cbbf49fc76e5149",
+      "claim": "Root-updated CR-034 0.7.1b: D1-D4 are recorded DONE as delegated choices; T1 is non-dispatchable under D1=B; T6 remains incomplete and must not depend on T1; T10/T11 UAT remains pending. T5 distinguishes 401 invalid_session from 503 security_dependency_unavailable."
     },
     {
       "id": "EV-LIVE-BROWSER-ROOT",
@@ -2284,7 +2284,8 @@
       "read_paths": [
         "src-tauri/src/log.rs",
         "src-tauri/src/master.rs",
-        "docs/features/FEAT-G-MEMORY.md"
+        "docs/features/FEAT-G-MEMORY.md",
+        "docs/operations/contracts/gap-memory-contract.md"
       ],
       "write_paths": [
         "src-tauri/src/memory.rs",
@@ -2293,18 +2294,21 @@
       "checks": [
         "Test isolated persistence/retrieval, retention, deletion, corrupt-state recovery, and owner isolation.",
         "Test prompt construction does not egress memory/raw log content.",
-        "Do not edit shared master.rs; root owns prompt integration."
+        "Do not edit shared master.rs; root owns prompt integration.",
+        "Fail closed across clear/re-enable/restart and source-delete retry; no excluded source may resurrect a contribution."
       ],
       "acceptance": [
         "Approved local-only controls and provenance work through the full path.",
-        "No memory content or aggregate reaches a cloud call under the approved contract."
+        "No memory content or aggregate reaches a cloud call under the approved contract.",
+        "GLOG-MEMORY-BOUNDARY is independently accepted with exact completion/provenance/deletion fixture evidence; no implicit log.rs lease."
       ],
       "evidence": [
         "EV-PO-DECISIONS",
         "EV-SRS"
       ],
       "blockers": [
-        "Approved contract and root dispatch."
+        "Approved contract and root dispatch.",
+        "GLOG-MEMORY-BOUNDARY: absent stable G-Log completion/provenance/deletion boundary, separately owned work not scheduled."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
       "check_refs": [
@@ -2314,6 +2318,9 @@
         "TS",
         "ESLINT",
         "TAURI-SMOKE"
+      ],
+      "prerequisite_gates": [
+        "GLOG-MEMORY-BOUNDARY"
       ]
     },
     {
@@ -3218,6 +3225,21 @@
       "command": null,
       "status": "CONTRACT_AND_TEST_HARNESS_REQUIRED",
       "scope": "ORCH-CONTRACT must name exact isolated test entrypoint; no provider dispatch."
+    }
+  ],
+  "prerequisite_gate_catalog": [
+    {
+      "id": "GLOG-MEMORY-BOUNDARY",
+      "status": "BLOCKED_UNSCHEDULED",
+      "owner": "root plus delegated Product Owner/privacy review",
+      "required_evidence": [
+        "Accepted separately owned G-Log completion/provenance/deletion-hook contract and fixture evidence",
+        "Recorded exclusive cross-module write lease before any log.rs change",
+        "Clear/re-enable/restart and pending-deletion no-resurrection fixtures",
+        "Monotonic match-start sequence and representative finalized-log size fixtures for the provisional 2 MiB parse cap"
+      ],
+      "rule": "A verified MEMORY-CONTRACT alone cannot release MEMORY-CODE. Until this evidence is accepted, root must keep MEMORY-CODE BLOCKED. This gate grants no source write lease or implementation authority.",
+      "runtime_status_ref": ".brain/execution/gap-closure-2026-10-01/workflow-state.json#prerequisite_gates"
     }
   ]
 }

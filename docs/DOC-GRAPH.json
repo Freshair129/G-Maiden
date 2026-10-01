@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-09-30T23:29:52.364Z",
+  "generatedAt": "2026-10-01T01:33:54.760Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -742,6 +742,28 @@
       "title": "Overlay motion — four-method comparison",
       "status": "accepted",
       "domain": "ui-ux"
+    },
+    {
+      "id": "docs/operations/contracts/gap-iam-contract.md",
+      "type": "doc",
+      "path": "docs/operations/contracts/gap-iam-contract.md",
+      "title": "IAM Enrollment and Live-Session Contract",
+      "status": "draft"
+    },
+    {
+      "id": "docs/operations/contracts/gap-memory-contract.md",
+      "type": "doc",
+      "path": "docs/operations/contracts/gap-memory-contract.md",
+      "title": "G-Memory Local Privacy and Data Contract",
+      "status": "draft",
+      "doc_type": "feature-contract"
+    },
+    {
+      "id": "docs/operations/contracts/gap-orch-contract.md",
+      "type": "doc",
+      "path": "docs/operations/contracts/gap-orch-contract.md",
+      "title": "G-Orchestra local HTTP security contract",
+      "status": "draft"
     },
     {
       "id": "docs/operations/execution-dag-gap-closure.md",
@@ -10436,7 +10458,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-09-30T23:29:55.062Z",
+    "generatedAt": "2026-10-01T01:33:57.080Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

@@ -2,7 +2,7 @@
 title: "Execution DAG — Gap Closure"
 doc_id: "execution-dag-gap-closure"
 status: active
-version: "0.1.0"
+version: "0.1.1"
 updated: "2026-10-01"
 owner: "RWANG"
 ---
@@ -15,7 +15,7 @@ This C-3 / HIGH plan turns the 23 identifiers in `docs/audits/gap-analysis-2026-
 
 The immutable application baseline is `origin/main` at `2d969ac643533b4b8e24494356da2e818eac874f`. The UI remediation commit `1b352527ddc84a5c4ce0c2a2239f322cfb29bb00` belongs to Draft PR #50 and is not in this baseline. Do not mix its tree, evidence, or generated reports into main-baseline claims; it is not a released change.
 
-The JSON defines dependencies, ownership, acceptance, and initial node statuses. Runtime status overrides and review gates live in root-owned `.brain/execution/gap-closure-2026-10-01/workflow-state.json`; dispatch requires verified dependencies and recorded approvals. A node status does not assert live acceptance or release. Current implementation and environment facts are separate in `current_real_state`. Model fields describe supporting Luna Max workers; root retains its current orchestrator configuration.
+The JSON defines dependencies, ownership, acceptance, and initial node statuses. Runtime status overrides and review gates live in root-owned `.brain/execution/gap-closure-2026-10-01/workflow-state.json`; dispatch requires verified dependencies, prerequisite gates, and recorded approvals. A node status does not assert live acceptance or release. Current implementation and environment facts are separate in `current_real_state`. Model fields describe supporting Luna Max workers; root retains its current orchestrator configuration.
 
 ## 2. Current state and evidence boundary
 
@@ -204,6 +204,8 @@ Workers return task status plus command/evidence hashes; they do not edit shared
 
 ## 7. Success, acceptance, and exit criteria
 
+`MEMORY-CODE` additionally requires `GLOG-MEMORY-BOUNDARY` in the JSON prerequisite-gate catalog. The baseline logger lacks a stable completion/provenance event and the deletion hook required by the Memory contract. Root must keep code blocked until a separately owned boundary contract and its fixture evidence are independently accepted, including clear/re-enable/restart and deletion-retry suppression. This unscheduled prerequisite grants no `log.rs` write lease. Contract approval alone does not release the code node.
+
 **DAG success** requires all 23 historical identifiers to appear exactly once in the coverage register; every work node has a valid dependency path and required schema fields; the graph is acyclic; each writable path has one lane owner; all source pins and available SHA-256 evidence are recorded; D1–D9 are represented as delegated choices without implying human/external approval; and root accepts the plan.
 
 **Gap acceptance** requires the node-specific checks and acceptance statements in the JSON, evidence from the pinned revision or a separately identified descendant, negative cases for security boundaries, and review by the required owner. Local code/tests, fixture results, browser state, hosted CI, native runtime, deployment, and production are distinct evidence classes. A code node cannot become `VERIFIED` on unit tests alone when its contract calls for native/live/runtime acceptance.
@@ -243,3 +245,4 @@ Workers return task status plus command/evidence hashes; they do not edit shared
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-10-01 | Initial pinned-baseline execution DAG, approval boundaries, lane ownership, acceptance criteria, and complete GAP01–GAP23 crosswalk. |
+| 0.1.1 | 2026-10-01 | Add the explicit blocking G-Log provenance/deletion prerequisite for MEMORY-CODE; pin the CR-034 T5 error-contract correction without changing node/edge topology. |
