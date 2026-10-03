@@ -453,7 +453,7 @@ pub fn loadout_from_names<I: AsRef<str>>(names: &[I]) -> Vec<LoadoutItem> {
 // we express raw combo potential against a soft target: 0 armor, the default
 // 25% hero magic resistance. "your combo hits ~X on a squishy", not "you kill Y".
 const BASELINE_TARGET_ARMOR: f64 = 0.0;
-const BASELINE_TARGET_MAGIC_RES: f64 = 0.25;
+const BASELINE_TARGET_MAGIC_RES: f64 = 25.0;
 
 /// Estimate the LOCAL player's single-combo burst from their real hero + level +
 /// items. The skill build is estimated (`ability_levels = None`) on purpose: GSI's
@@ -504,6 +504,25 @@ mod tests {
             "a modelled attack item can only add burst: {} vs {}",
             armed.total_burst,
             bare.total_burst
+        );
+    }
+
+    #[test]
+    fn self_burst_applies_baseline_magic_resistance_as_percentage() {
+        let bare = self_burst("npc_dota_hero_crystal_maiden", 6, &[])
+            .expect("known hero in DB");
+        let dagon = self_burst(
+            "npc_dota_hero_crystal_maiden",
+            6,
+            &["item_dagon_5".to_string()],
+        )
+        .expect("known hero in DB");
+
+        // Dagon 5 is 800 magical damage; baseline 25% resistance must leave 600.
+        let dagon_effective = dagon.total_burst - bare.total_burst;
+        assert!(
+            (dagon_effective - 600.0).abs() < 0.5,
+            "self-burst must apply 25% baseline magic resistance: got {dagon_effective}"
         );
     }
 

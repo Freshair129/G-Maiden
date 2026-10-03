@@ -2,7 +2,7 @@
 title: "RCA: G-Damage Magic Resistance Unit Mismatch"
 doc_id: "RCA-2026-10-04-G-DAMAGE-MAGIC-RESISTANCE"
 status: "active"
-version: "1.0.0"
+version: "1.0.1"
 updated: "2026-10-04"
 owner: "Boss"
 source_of_truth: true
@@ -15,7 +15,7 @@ related_docs: ["G-SERIES-DATA-LINEAGE", "FEAT-G-DAMAGE", "engineering-spec"]
 
 ## Summary
 
-การตรวจ data lineage ของ G-Damage พบว่า contract ของค่า magic resistance ใช้หน่วยไม่ตรงกันระหว่างฟังก์ชันคำนวณกับค่า baseline ของ `self_burst`. RCA นี้ยืนยัน root cause จาก source code และ test coverage แล้ว แต่ยังไม่แก้ runtime code ในงานนี้
+การตรวจ data lineage ของ G-Damage พบว่า contract ของค่า magic resistance ใช้หน่วยไม่ตรงกันระหว่างฟังก์ชันคำนวณกับค่า baseline ของ `self_burst`. RCA นี้ยืนยัน root cause จาก source code และ regression test แล้ว และ fix runtime ใน scope นี้เรียบร้อยแล้ว
 
 ## Symptom
 
@@ -69,11 +69,16 @@ Root cause นี้เป็น code/document contract defect ไม่ใช�
 3. เพิ่ม regression test ระดับ integration สำหรับ `self_burst` ที่ตรวจ magical ability/item contribution กับ baseline 25%.
 4. ตั้งชื่อ field/parameter ให้มี suffix `_pct` หรือสร้าง unit wrapper เมื่อ target-side G-Damage ถูกต่อจริง.
 5. เพิ่ม field-level fixture ใน [[G-SERIES-DATA-LINEAGE]] ระบุ unit, valid range, formula, and fallback สำหรับ armor/magic resistance.
-6. ก่อนแก้โค้ด ให้รัน RCA-approved fix gate: damage unit tests, full `cargo test`, `cargo clippy --all-targets -- -D warnings`, และ G-Master prompt fixture.
+6. หลังแก้โค้ด ให้รัน RCA-approved fix gate: targeted damage regression, full `cargo test`, `cargo clippy --all-targets -- -D warnings`, และ G-Master prompt fixture.
 
 ## Fix boundary
 
-การแก้ `BASELINE_TARGET_MAGIC_RES` หรือเปลี่ยน API เป็นการเปลี่ยน runtime behavior จึงอยู่นอก RCA commit นี้. ต้องทำเป็นงานแก้แยกที่อ้าง RCA นี้ และต้องเพิ่ม test ก่อนประกาศว่า fixed.
+แก้ `BASELINE_TARGET_MAGIC_RES` เป็น canonical percentage `25.0` ใน `src-tauri/src/damage.rs` และเพิ่ม `self_burst_applies_baseline_magic_resistance_as_percentage` เพื่อบังคับ caller-to-formula contract. ไม่เปลี่ยน target-side lethality หรือ G-Signal wiring.
+
+## Fix verification
+
+- RED: test ได้ `797.999...` effective damage จาก Dagon 5 เพราะ baseline เดิมคือ `0.25`.
+- GREEN: หลังแก้เป็น `25.0`, targeted test ได้ `600.0` effective damage และผ่าน.
 
 ## RCA completion criteria
 
@@ -82,10 +87,11 @@ Root cause นี้เป็น code/document contract defect ไม่ใช�
 - [x] Root cause ระบุ unit contract defect อย่างเฉพาะเจาะจง.
 - [x] Escape path ระบุ test/documentation gap.
 - [x] Prevention และ fix boundary ระบุแล้ว.
-- [ ] Runtime fix และ regression verification — แยกงาน ยังไม่ทำ.
+- [x] Runtime fix และ regression verification — baseline เป็น `25.0`; targeted regression ผ่าน.
 
 ## Changelog
 
 | Version | Date | Summary |
 | --- | --- | --- |
 | 1.0.0 | 2026-10-04 | Documented confirmed G-Damage magic-resistance unit mismatch, impact, escape path, and prevention. |
+| 1.0.1 | 2026-10-04 | Implemented the approved self-burst baseline fix and recorded RED/GREEN regression evidence. |

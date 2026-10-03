@@ -2,8 +2,8 @@
 title: "FEAT: G-Damage — Real-time Lethality Engine"
 doc_id: "FEAT-G-DAMAGE"
 status: "draft"
-version: "0.2.1"
-updated: "2026-07-19"
+version: "0.2.2"
+updated: "2026-10-04"
 owner: "Boss"
 source_of_truth: true
 prd_system: "SYSTEM-03::G-Signal"
@@ -17,7 +17,7 @@ related_docs: ["FEAT-G-SIGNAL", "FEAT-G-MASTER", "FEAT-G-MOTION", "FEAT-G-SENSOR
 
 > **Module:** G-Damage · **Priority:** Core · **Phase:** 3 (feeds G-Signal)
 > **SRS:** [[software-requirements-specification|SRS]] §3.3, §3.4 · [[engineering-spec|Eng Spec]] §2.3 · [[technical-design-document|TDD]] §3
-> **สถานะโค้ดปัจจุบัน:** [`src-tauri/src/damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs) — defensive ([`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)) + offensive ([`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334), P-D1) + item/ability-level engine ([`burst_damage_with`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136), P-D2a) + JSON hero/item DB (P-D3) พร้อม 23 unit tests. **ต่อสายจริงแล้ว (บางส่วน):** [`self_burst()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L465) ใช้ hero/level/item_names จริงจาก GSI ป้อน [`burst_damage_with()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136) แล้วถูกเรียกจาก [`master::build_prompt`](file:///g:/G-Maiden/src-tauri/src/master.rs#L51) (`master.rs:72`) — โผล่เป็นบรรทัด "พลังคอมโบโดยประมาณ ~X dmg" ใน advice ของ **G-Master** จริงในเกม. **ยังขาด:** ฝั่ง target-side ทั้งหมด — [`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)/[`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334)/[`KillWindow`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L309) ยังไม่ต่อเข้า G-Signal หรือ Tauri command ใด ๆ, ability-level array จาก GSI (P-D2b), CV HP-bar (P-D4), belief-revision wiring (P-D5) — โมดูลยังมี `#![allow(dead_code)]` ครอบส่วนที่ยังไม่ถูกเรียก
+> **สถานะโค้ดปัจจุบัน:** [`src-tauri/src/damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs) — defensive ([`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)) + offensive ([`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334), P-D1) + item/ability-level engine ([`burst_damage_with`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136), P-D2a) + JSON hero/item DB (P-D3) พร้อม 27 unit tests. **ต่อสายจริงแล้ว (บางส่วน):** [`self_burst()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L465) ใช้ hero/level/item_names จริงจาก GSI ป้อน [`burst_damage_with()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136) แล้วถูกเรียกจาก [`master::build_prompt`](file:///g:/G-Maiden/src-tauri/src/master.rs#L51) (`master.rs:72`) — โผล่เป็นบรรทัด "พลังคอมโบโดยประมาณ ~X dmg" ใน advice ของ **G-Master** จริงในเกม. Baseline magic resistance ใช้ canonical percentage `[0, 100]` โดย 25% ส่งเป็น `25.0`; มี regression test ครอบ caller-to-formula path แล้ว. **ยังขาด:** ฝั่ง target-side ทั้งหมด — [`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)/[`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334)/[`KillWindow`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L309) ยังไม่ต่อเข้า G-Signal หรือ Tauri command ใด ๆ, ability-level array จาก GSI (P-D2b), CV HP-bar (P-D4), belief-revision wiring (P-D5) — โมดูลยังมี `#![allow(dead_code)]` ครอบส่วนที่ยังไม่ถูกเรียก
 
 ---
 
@@ -184,3 +184,4 @@ pub fn can_i_kill_with(attacker, attacker_level, ability_levels, items,
 | 0.1.0 | 2026-06-XX | G-Damage defensive engine ([`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs)) ใน v0.6.0 |
 | 0.2.0 | 2026-06-23 | เพิ่ม spec ฝั่ง offensive lethality + two-sided problem + belief-revision wiring + ช่องโหว่ที่ต้องอุด |
 | 0.2.1 | 2026-07-19 | symbol-link coverage extension (G1.5) |
+| 0.2.2 | 2026-10-04 | แก้ self-burst magic-resistance unit mismatch และเพิ่ม regression coverage สำหรับ baseline 25%. |

@@ -2,7 +2,7 @@
 title: "G-Series Data Lineage and Computation Contract"
 doc_id: "G-SERIES-DATA-LINEAGE"
 status: "accepted"
-version: "1.0.1"
+version: "1.0.2"
 updated: "2026-10-04"
 owner: "Boss"
 approved_by: "user"
@@ -222,7 +222,7 @@ confidence = P(burst >= true_ehp)
 can_kill = confidence >= 0.70
 ```
 
-**Open data-contract finding:** `magic_multiplier()` expects a percentage such as `25.0`, while the self-burst baseline currently passes `0.25` as the documented 25% resistance. This unit mismatch can overstate magical damage. It is recorded here for RCA/fix scope; no code change is made by this documentation change.
+**Resolved data-contract finding (2026-10-04):** `magic_multiplier()` expects a percentage such as `25.0`. `self_burst` now passes `25.0` for the documented 25% baseline resistance, and the caller-to-formula regression test verifies that Dagon 5's 800 magical damage becomes 600 effective damage. The target-side G-Damage path remains unwired.
 
 **Status:** `PARTIAL`. Self-burst is live in G-Master; target-side `KillWindow` is not connected to G-Signal/Tauri. See [`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L22), [`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136), and [`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L284).
 
@@ -380,3 +380,4 @@ The following are documentation/verification requirements, not claims that the c
 | --- | --- | --- |
 | 1.0.0 | 2026-10-03 | Approved G-Series data lineage, endpoint mapping, computation formulas, fallbacks, and open gaps. |
 | 1.0.1 | 2026-10-04 | Added the approved RCA reference and fix boundary for `DL-001`. |
+| 1.0.2 | 2026-10-04 | Resolved `DL-001` in the self-burst caller and recorded regression evidence for the canonical percentage unit. |
