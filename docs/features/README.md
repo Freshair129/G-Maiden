@@ -3,6 +3,10 @@
 > Doc-driven development: FEAT docs เป็น source of truth ของแต่ละ module.
 > เปลี่ยน spec ก่อน → แล้วค่อย implement.
 
+## Cross-feature data contract
+
+- [[G-SERIES-DATA-LINEAGE]] — source, transport, field mapping, fallback, computation formula, and output contract for every G-Series module
+
 ---
 
 ## Core Modules (Dota Intelligence)

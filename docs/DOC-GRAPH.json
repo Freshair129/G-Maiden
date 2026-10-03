@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-08-28T05:56:05.756Z",
+  "generatedAt": "2026-10-03T22:03:22.768Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -696,6 +696,13 @@
       "path": "docs/features/FEAT-G-VOICE.md"
     },
     {
+      "id": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "type": "doc",
+      "path": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "title": "G-Series Data Lineage and Computation Contract",
+      "status": "accepted"
+    },
+    {
       "id": "docs/features/README.md",
       "type": "doc",
       "path": "docs/features/README.md"
@@ -811,6 +818,13 @@
       "id": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "type": "doc",
       "path": "docs/rca/2026-07-10-voice-pack-path-traversal.md"
+    },
+    {
+      "id": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
+      "type": "doc",
+      "path": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
+      "title": "RCA: G-Damage Magic Resistance Unit Mismatch",
+      "status": "active"
     },
     {
       "id": "docs/reference/dota-ui/README.md",
@@ -1744,27 +1758,33 @@
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "type": "wikilink",
+      "line": 148
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/operations/gmaiden-closed-beta-release-playbook.md",
       "type": "wikilink",
-      "line": 167
+      "line": 169
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 184
+      "line": 187
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 186
+      "line": 189
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 191
+      "line": 194
     },
     {
       "from": "docs/README.md",
@@ -7323,94 +7343,178 @@
       "line": 50
     },
     {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
+      "type": "wikilink",
+      "line": 356
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/gsi.rs",
+      "type": "symbol",
+      "line": 85
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/sentry.rs",
+      "type": "symbol",
+      "line": 126
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/motion.rs",
+      "type": "symbol",
+      "line": 168
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/signal.rs",
+      "type": "symbol",
+      "line": 191
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/damage.rs",
+      "type": "symbol",
+      "line": 227
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/damage.rs",
+      "type": "symbol",
+      "line": 227
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/damage.rs",
+      "type": "symbol",
+      "line": 227
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/master.rs",
+      "type": "symbol",
+      "line": 248
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/governor.rs",
+      "type": "symbol",
+      "line": 266
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/governor.rs",
+      "type": "symbol",
+      "line": 266
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/log.rs",
+      "type": "symbol",
+      "line": 276
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/revive.rs",
+      "type": "symbol",
+      "line": 302
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "type": "wikilink",
+      "line": 8
+    },
+    {
       "from": "docs/features/README.md",
       "to": "docs/features/FEAT-G-SENTRY.md",
-      "type": "wikilink",
-      "line": 12
-    },
-    {
-      "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-MOTION.md",
-      "type": "wikilink",
-      "line": 13
-    },
-    {
-      "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-SIGNAL.md",
-      "type": "wikilink",
-      "line": 14
-    },
-    {
-      "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-DAMAGE.md",
-      "type": "wikilink",
-      "line": 15
-    },
-    {
-      "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-MASTER.md",
       "type": "wikilink",
       "line": 16
     },
     {
       "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-SENSORY.md",
+      "to": "docs/features/FEAT-G-MOTION.md",
       "type": "wikilink",
       "line": 17
     },
     {
       "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-LOG.md",
+      "to": "docs/features/FEAT-G-SIGNAL.md",
       "type": "wikilink",
       "line": 18
     },
     {
       "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-DAMAGE.md",
+      "type": "wikilink",
+      "line": 19
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-MASTER.md",
+      "type": "wikilink",
+      "line": 20
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-SENSORY.md",
+      "type": "wikilink",
+      "line": 21
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-LOG.md",
+      "type": "wikilink",
+      "line": 22
+    },
+    {
+      "from": "docs/features/README.md",
       "to": "docs/features/FEAT-G-VOICE.md",
-      "type": "wikilink",
-      "line": 24
-    },
-    {
-      "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-MEMORY.md",
-      "type": "wikilink",
-      "line": 25
-    },
-    {
-      "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-COACH.md",
-      "type": "wikilink",
-      "line": 26
-    },
-    {
-      "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-REVIVE.md",
-      "type": "wikilink",
-      "line": 27
-    },
-    {
-      "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-MIND.md",
       "type": "wikilink",
       "line": 28
     },
     {
       "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-PERSONA.md",
+      "to": "docs/features/FEAT-G-MEMORY.md",
       "type": "wikilink",
       "line": 29
     },
     {
       "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-STREAM.md",
+      "to": "docs/features/FEAT-G-COACH.md",
       "type": "wikilink",
       "line": 30
     },
     {
       "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-REVIVE.md",
+      "type": "wikilink",
+      "line": 31
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-MIND.md",
+      "type": "wikilink",
+      "line": 32
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-PERSONA.md",
+      "type": "wikilink",
+      "line": 33
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-STREAM.md",
+      "type": "wikilink",
+      "line": 34
+    },
+    {
+      "from": "docs/features/README.md",
       "to": "docs/features/FEAT-G-SCORE.md",
       "type": "wikilink",
-      "line": 36
+      "line": 40
     },
     {
       "from": "docs/guides/scaffold-setup.md",
@@ -8805,6 +8909,42 @@
       "line": 61
     },
     {
+      "from": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
+      "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "type": "wikilink",
+      "line": 71
+    },
+    {
+      "from": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
+      "to": "src-tauri/src/damage.rs",
+      "type": "symbol",
+      "line": 35
+    },
+    {
+      "from": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
+      "to": "src-tauri/src/damage.rs",
+      "type": "symbol",
+      "line": 36
+    },
+    {
+      "from": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
+      "to": "src-tauri/src/damage.rs",
+      "type": "symbol",
+      "line": 37
+    },
+    {
+      "from": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
+      "to": "src-tauri/src/master.rs",
+      "type": "symbol",
+      "line": 38
+    },
+    {
+      "from": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
+      "to": "src-tauri/src/damage.rs",
+      "type": "symbol",
+      "line": 39
+    },
+    {
       "from": "docs/reference/dota-ui/README.md",
       "to": "docs/architecture/assets/design-references/README.md",
       "type": "wikilink",
@@ -8873,7 +9013,7 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 148,
+      "line": 150,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -10389,7 +10529,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-08-28T05:56:54.859Z",
+    "generatedAt": "2026-10-03T22:03:26.956Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

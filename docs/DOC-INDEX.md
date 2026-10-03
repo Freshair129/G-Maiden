@@ -145,6 +145,8 @@ attributes:
 
 - [[features/README]]
   - `docs/features/README.md` — ดัชนี feature docs
+- [[G-SERIES-DATA-LINEAGE]]
+  - `docs/features/G-SERIES-DATA-LINEAGE.md` — source, transport, formula, fallback, and output lineage ของ G-Series ทุกโมดูล
 - [[FEAT-G-*]]
   - `docs/features/FEAT-G-*.md` — เอกสารเชิงโมดูลของ G-series
 
@@ -178,6 +180,7 @@ attributes:
 - `docs/rca/` — รายงานสาเหตุความผิดพลาดและการปรับปรุง (Root Cause Analysis):
   - `docs/rca/2026-07-10-release-gate-drift-v0.9.0.md` — วิเคราะห์ความล้มเหลวในการปล่อย v0.9.0
   - `docs/rca/2026-07-10-voice-pack-path-traversal.md` — วิเคราะห์ช่องโหว่ path traversal ของ voice pack
+  - `docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md` — RCA ของหน่วย magic resistance ใน G-Damage
 
 ## Guides
 
