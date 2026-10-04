@@ -2,7 +2,7 @@
 title: "G-Series Data Lineage and Computation Contract"
 doc_id: "G-SERIES-DATA-LINEAGE"
 status: "accepted"
-version: "1.0.4"
+version: "1.0.5"
 updated: "2026-10-04"
 owner: "Boss"
 approved_by: "user"
@@ -224,11 +224,13 @@ can_kill = confidence >= 0.70
 ```
 
 `TargetCombatSnapshot` in `damage.rs` preserves the observed HP interval and validates the required
-target id, level, armor, and percentage magic resistance. `to_kill_input(now_ms)` applies the 500 ms
-HP TTL, the 5 s stat TTL, completeness, and the 0.70 data-confidence floor. The safe wrapper
-`can_i_kill_from_snapshot(...)` returns `None` instead of a `KillWindow` when the contract is not
-actionable. The lower-level `can_i_kill_with(...)` remains the deterministic formula boundary and
-is not a live source adapter.
+target id, level, armor, and percentage magic resistance. `TargetCombatSnapshot::merge(...)` can
+combine compatible partial local observations within the 500 ms HP window; it widens overlapping
+HP intervals and rejects target/HP/stat conflicts rather than silently preferring CV or OCR.
+`to_kill_input(now_ms)` applies the 500 ms HP TTL, the 5 s stat TTL, completeness, and the 0.70
+data-confidence floor. The safe wrapper `can_i_kill_from_snapshot(...)` returns `None` instead of
+a `KillWindow` when the contract is not actionable. The lower-level `can_i_kill_with(...)` remains
+the deterministic formula boundary and is not a live source adapter.
 
 **Resolved data-contract findings (2026-10-04):** `magic_multiplier()` expects a percentage such as
 `25.0`. `self_burst` now passes `25.0` for the documented 25% baseline resistance, and the
@@ -371,7 +373,7 @@ There is no numeric computation. Independent tone/verbosity axes and full hot-sw
 | ID | Gap | Impact | Required next action |
 | --- | --- | --- | --- |
 | `DL-001` | G-Damage magic-resistance unit mismatch (`25` percent versus `0.25` fraction) | Self-burst can overstate magical damage | RCA: [[2026-10-04-g-damage-magic-resistance-unit-mismatch]]; add a regression test, then make the smallest approved unit-normalization fix. |
-| `DL-002` | Enemy HP/armor/magic resistance/level source is not available to target-side G-Damage | No truthful live enemy lethality warning | Contract accepted and normalization/fail-closed wrapper implemented in [[FEAT-G-DAMAGE]] §4.1; source proofs and G-Damage/G-Signal wiring remain blocked until a local CV/OCR source is available and separately reviewed. |
+| `DL-002` | Enemy HP/armor/magic resistance/level source is not available to target-side G-Damage | No truthful live enemy lethality warning | Contract, conservative observation reconciliation, and normalization/fail-closed wrapper are implemented in [[FEAT-G-DAMAGE]] §4.1; live source proofs and G-Damage/G-Signal wiring remain blocked until a local CV/OCR source is available and separately reviewed. |
 | `DL-003` | G-Motion parameters are hard-coded and replay fitting is not injected | No closed-loop calibration | Define versioned local `TuningDelta` storage and rollback behavior. |
 | `DL-004` | G-Sensory has no FPS delta computation | FPS ≤3% cannot be proven | Define PresentMon/ETW receipt schema and acceptance run. |
 | `DL-005` | Static hero/item/counter snapshots lack a single patch/version manifest | Advice and damage provenance can drift | Add source URL, patch/date, generator commit, and checksum to the data contract. |
@@ -400,3 +402,4 @@ The following are documentation/verification requirements, not claims that the c
 | 1.0.2 | 2026-10-04 | Resolved `DL-001` in the self-burst caller and recorded regression evidence for the canonical percentage unit. |
 | 1.0.3 | 2026-10-04 | Accepted the DL-002 target-side source, confidence, fallback, privacy, and evidence contract. |
 | 1.0.4 | 2026-10-04 | Implemented the DL-002 target snapshot normalization and fail-closed lethality boundary; live enemy sources and G-Signal wiring remain open. |
+| 1.0.5 | 2026-10-04 | Added conservative target-observation reconciliation and recorded conflict/out-of-window fail-closed evidence; live enemy sources remain open. |

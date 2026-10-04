@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T03:09:01.971Z",
+  "generatedAt": "2026-10-04T05:56:48.809Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -6542,7 +6542,7 @@
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "docs/features/FEAT-G-SIGNAL.md",
       "type": "wikilink",
-      "line": 209
+      "line": 215
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
@@ -6620,91 +6620,91 @@
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 228
+      "line": 234
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 232
+      "line": 238
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 233
+      "line": 239
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 236
+      "line": 242
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/src/cv/",
       "type": "symbol",
-      "line": 237
+      "line": 243
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 241
+      "line": 247
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 241
+      "line": 247
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 241
+      "line": 247
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 242
+      "line": 248
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 242
+      "line": 248
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
-      "line": 243
+      "line": 249
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/data/heroes.json",
       "type": "symbol",
-      "line": 244
+      "line": 250
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/data/items.json",
       "type": "symbol",
-      "line": 244
+      "line": 250
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "tools/gen-herodb/",
       "type": "symbol",
-      "line": 244
+      "line": 250
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 281
+      "line": 287
     },
     {
       "from": "docs/features/FEAT-G-LOG.md",
@@ -7352,13 +7352,13 @@
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
       "type": "wikilink",
-      "line": 373
+      "line": 375
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "docs/features/FEAT-G-DAMAGE.md",
       "type": "wikilink",
-      "line": 374
+      "line": 376
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
@@ -7388,49 +7388,49 @@
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 242
-    },
-    {
-      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
-      "to": "src-tauri/src/damage.rs",
-      "type": "symbol",
-      "line": 243
-    },
-    {
-      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
-      "to": "src-tauri/src/damage.rs",
-      "type": "symbol",
       "line": 244
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/damage.rs",
+      "type": "symbol",
+      "line": 245
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/damage.rs",
+      "type": "symbol",
+      "line": 246
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 265
+      "line": 267
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 283
+      "line": 285
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 283
+      "line": 285
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 293
+      "line": 295
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/revive.rs",
       "type": "symbol",
-      "line": 319
+      "line": 321
     },
     {
       "from": "docs/features/README.md",
@@ -10011,23 +10011,23 @@
     },
     {
       "file": "docs/features/FEAT-G-DAMAGE.md",
-      "line": 236,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/damage.rs",
-      "anchor": 334,
-      "symbol": "can_i_kill"
-    },
-    {
-      "file": "docs/features/FEAT-G-DAMAGE.md",
-      "line": 241,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/damage.rs",
-      "anchor": 334,
-      "symbol": "can_i_kill"
-    },
-    {
-      "file": "docs/features/FEAT-G-DAMAGE.md",
       "line": 242,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/damage.rs",
+      "anchor": 334,
+      "symbol": "can_i_kill"
+    },
+    {
+      "file": "docs/features/FEAT-G-DAMAGE.md",
+      "line": 247,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/damage.rs",
+      "anchor": 334,
+      "symbol": "can_i_kill"
+    },
+    {
+      "file": "docs/features/FEAT-G-DAMAGE.md",
+      "line": 248,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/damage.rs",
       "anchor": 444,
@@ -10613,7 +10613,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-04T03:09:06.598Z",
+    "generatedAt": "2026-10-04T05:57:01.756Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

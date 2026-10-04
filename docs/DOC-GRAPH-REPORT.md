@@ -1,6 +1,6 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-10-04T03:09:01.971Z
+สร้างเมื่อ / Generated at: 2026-10-04T05:56:48.809Z
 
 สแกน 147 ไฟล์เอกสาร, 272 nodes, 1232 edges, 226 รายการปัญหา (170 ตัวบล็อก exit code) / scanned 147 doc files, 272 nodes, 1232 edges, 226 violations (170 blocking exit code).
 
@@ -355,9 +355,9 @@
 - [L20] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=334, symbol="can_i_kill")
 - [L20] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=465, symbol="self_burst")
 - [L20] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=334, symbol="can_i_kill")
-- [L236] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=334, symbol="can_i_kill")
-- [L241] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=334, symbol="can_i_kill")
-- [L242] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=444, symbol="loadout_from_names")
+- [L242] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=334, symbol="can_i_kill")
+- [L247] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=334, symbol="can_i_kill")
+- [L248] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=444, symbol="loadout_from_names")
 
 ### docs/features/FEAT-G-LOG.md
 

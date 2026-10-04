@@ -366,6 +366,46 @@ pub struct TargetLethalityInput {
 }
 
 impl TargetCombatSnapshot {
+    /// Reconcile two local observations without silently preferring one source.
+    ///
+    /// The observations must identify the same target and be close enough that
+    /// the HP TTL can cover both. Optional fields may complement one another;
+    /// overlapping HP intervals are widened conservatively. Conflicting scalar
+    /// values or disjoint HP intervals return `None`, which keeps the caller on
+    /// the fail-closed `UNKNOWN` path.
+    pub fn merge(&self, other: &Self) -> Option<Self> {
+        if self.target_id.trim().is_empty()
+            || self.target_id != other.target_id
+            || self.observed_at_ms.abs_diff(other.observed_at_ms) > TARGET_HP_TTL_MS
+        {
+            return None;
+        }
+
+        let (current_hp_low, current_hp_high) = merge_hp_interval(
+            self.current_hp_low,
+            self.current_hp_high,
+            other.current_hp_low,
+            other.current_hp_high,
+        )?;
+        let max_hp = merge_optional_f64(self.max_hp, other.max_hp)?;
+        let level = merge_optional_value(self.level, other.level)?;
+        let armor = merge_optional_f64(self.armor, other.armor)?;
+        let magic_resistance_pct =
+            merge_optional_f64(self.magic_resistance_pct, other.magic_resistance_pct)?;
+
+        Some(Self {
+            target_id: self.target_id.clone(),
+            current_hp_low,
+            current_hp_high,
+            max_hp,
+            level,
+            armor,
+            magic_resistance_pct,
+            observed_at_ms: self.observed_at_ms.max(other.observed_at_ms),
+            source_confidence: self.source_confidence.min(other.source_confidence),
+        })
+    }
+
     /// Return the source-quality score after freshness and completeness are
     /// applied. Invalid values return zero instead of being clamped into a
     /// seemingly trustworthy observation.
@@ -447,6 +487,43 @@ impl TargetCombatSnapshot {
         );
         target_id + hp_interval + level + armor + magic_resistance
     }
+}
+
+fn merge_hp_interval(
+    left_low: f64,
+    left_high: f64,
+    right_low: f64,
+    right_high: f64,
+) -> Option<(f64, f64)> {
+    if left_high < right_low || right_high < left_low {
+        None
+    } else {
+        Some((left_low.min(right_low), left_high.max(right_high)))
+    }
+}
+
+fn merge_optional_value<T: Copy + PartialEq>(
+    left: Option<T>,
+    right: Option<T>,
+) -> Option<Option<T>> {
+    match (left, right) {
+        (Some(left), Some(right)) if left != right => None,
+        (Some(value), _) | (_, Some(value)) => Some(Some(value)),
+        (None, None) => Some(None),
+    }
+}
+
+fn merge_optional_f64(left: Option<f64>, right: Option<f64>) -> Option<Option<f64>> {
+    match (left, right) {
+        (Some(left), Some(right)) if !approximately_equal(left, right) => None,
+        (Some(value), _) | (_, Some(value)) => Some(Some(value)),
+        (None, None) => Some(None),
+    }
+}
+
+fn approximately_equal(left: f64, right: f64) -> bool {
+    let scale = left.abs().max(right.abs()).max(1.0);
+    (left - right).abs() <= scale * 1e-6
 }
 
 fn freshness_factor(age_ms: u64, ttl_ms: u64) -> f64 {
@@ -1038,6 +1115,58 @@ mod tests {
 
         let snapshot = fresh_target_snapshot();
         assert!(snapshot.to_kill_input(1_000 + TARGET_HP_TTL_MS).is_none());
+    }
+
+    #[test]
+    fn target_snapshot_merge_combines_compatible_partial_observations() {
+        let mut hp = fresh_target_snapshot();
+        hp.max_hp = None;
+        hp.level = None;
+        hp.armor = None;
+        hp.magic_resistance_pct = None;
+
+        let mut stats = fresh_target_snapshot();
+        stats.current_hp_low = 700.0;
+        stats.current_hp_high = 900.0;
+        stats.source_confidence = 0.9;
+
+        let merged = hp
+            .merge(&stats)
+            .expect("compatible local observations should merge");
+        let input = merged
+            .to_kill_input(1_000)
+            .expect("merged complete observation should be actionable");
+
+        assert_eq!(input.current_hp, 800.0);
+        assert_eq!(input.ehp_uncertainty, 0.25);
+        assert_eq!(merged.source_confidence, 0.9);
+    }
+
+    #[test]
+    fn target_snapshot_merge_rejects_conflicting_observations() {
+        let first = fresh_target_snapshot();
+
+        let mut different_target = first.clone();
+        different_target.target_id = "npc_dota_hero_axe".to_string();
+        assert!(first.merge(&different_target).is_none());
+
+        let mut different_armor = first.clone();
+        different_armor.armor = Some(7.0);
+        assert!(first.merge(&different_armor).is_none());
+
+        let mut disjoint_hp = first.clone();
+        disjoint_hp.current_hp_low = 1_100.0;
+        disjoint_hp.current_hp_high = 1_300.0;
+        assert!(first.merge(&disjoint_hp).is_none());
+    }
+
+    #[test]
+    fn target_snapshot_merge_rejects_observations_outside_hp_ttl() {
+        let first = fresh_target_snapshot();
+        let mut later = first.clone();
+        later.observed_at_ms += TARGET_HP_TTL_MS + 1;
+
+        assert!(first.merge(&later).is_none());
     }
 
     #[test]
