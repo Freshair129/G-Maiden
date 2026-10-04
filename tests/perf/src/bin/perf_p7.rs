@@ -78,6 +78,12 @@ const BASELINE_FILE: &str = "fps-baseline.json";
 const FPS_CAPTURE_FILE: &str = "fps-capture.csv";
 const FPS_REPORT_FILE: &str = "fps-report.json";
 const REPORT_SCHEMA_VERSION: u64 = 1;
+const P7_RECEIPT_TYPE: &str = "gmaiden.p7-fps-receipt";
+const P7_FPS_FORMULA: &str = "1000 / mean(MsBetweenPresents)";
+const P7_FPS_DROP_FORMULA: &str = "max(0, (baseline_fps - overlay_fps) / baseline_fps * 100)";
+const P7_SAMPLE_RATE: &str = "per Present event; aggregate over capture window";
+const P7_FALLBACK: &str = "skip_exit_77";
+const P7_RECEIPT_OUTPUT: &str = "fps-report.json";
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Tri-state measurement result
@@ -541,17 +547,8 @@ mod fps {
 
     fn skip(config: &FpsRunConfig, phase: &str, reason: &str) -> bool {
         eprintln!("[FPS] SKIP - {reason}");
-        let report = json!({
-            "schema_version": REPORT_SCHEMA_VERSION,
-            "gate": "P7",
-            "measurement": "fps",
-            "phase": phase,
-            "status": "skip",
-            "verdict": "skip",
-            "reason": reason,
-            "created_at_unix": unix_timestamp_secs(),
-            "budget": {"fps_drop_max_pct": FPS_DROP_MAX_PCT},
-        });
+        let mut report = receipt_base(config, phase, "skip", "skip", "unknown", None);
+        report["reason"] = json!(reason);
         if let Err(error) = write_json_atomic(&config.report_path(), &report) {
             eprintln!("[FPS] WARNING - cannot publish skip report: {error}");
         }
@@ -568,26 +565,20 @@ mod fps {
         capture: &Path,
         sample: &FpsSample,
     ) -> Value {
-        json!({
-            "schema_version": REPORT_SCHEMA_VERSION,
-            "gate": "P7",
-            "measurement": "fps",
-            "phase": "baseline",
-            "status": "measured",
-            "verdict": "pending_overlay_phase",
-            "process": "dota2.exe",
-            "overlay": "off",
-            "duration_secs": config.duration_secs,
-            "fps": sample.fps,
-            "frame_count": sample.frame_count,
-            "dropped_present_count": sample.dropped_count,
-            "dropped_present_pct": sample.drop_rate_pct,
-            "capture_file": capture.display().to_string(),
-            "presentmon": {"path": pm.display().to_string(), "etw": true, "elevated": true},
-            "operator_confirmation": "overlay-off",
-            "created_at_unix": unix_timestamp_secs(),
-            "budget": {"fps_drop_max_pct": FPS_DROP_MAX_PCT},
-        })
+        let mut report = receipt_base(
+            config,
+            "baseline",
+            "measured",
+            "pending_overlay_phase",
+            "off",
+            Some("overlay-off"),
+        );
+        add_capture_metadata(&mut report, pm, capture);
+        report["fps"] = json!(sample.fps);
+        report["frame_count"] = json!(sample.frame_count);
+        report["dropped_present_count"] = json!(sample.dropped_count);
+        report["dropped_present_pct"] = json!(sample.drop_rate_pct);
+        report
     }
 
     fn comparison_report(
@@ -598,29 +589,174 @@ mod fps {
         overlay: &FpsSample,
         result: &OverlayResult,
     ) -> Value {
+        let verdict = if result.state == MeasureState::Pass {
+            "pass"
+        } else {
+            "fail"
+        };
+        let mut report = receipt_base(
+            config,
+            "overlay",
+            "measured",
+            verdict,
+            "on",
+            Some("overlay-on"),
+        );
+        add_capture_metadata(&mut report, pm, capture);
+        report["baseline_fps"] = json!(baseline.fps);
+        report["overlay_fps"] = json!(overlay.fps);
+        report["fps_drop_pct"] = json!(result.fps_delta_pct);
+        report["baseline_frame_count"] = json!(baseline.frame_count);
+        report["overlay_frame_count"] = json!(overlay.frame_count);
+        report["baseline_dropped_present_pct"] = json!(baseline.drop_rate_pct);
+        report["overlay_dropped_present_pct"] = json!(overlay.drop_rate_pct);
+        report
+    }
+
+    fn receipt_base(
+        config: &FpsRunConfig,
+        phase: &str,
+        status: &str,
+        verdict: &str,
+        overlay: &str,
+        operator_confirmation: Option<&str>,
+    ) -> Value {
         json!({
+            "receipt_type": P7_RECEIPT_TYPE,
             "schema_version": REPORT_SCHEMA_VERSION,
             "gate": "P7",
             "measurement": "fps",
-            "phase": "overlay",
-            "status": "measured",
-            "verdict": if result.state == MeasureState::Pass { "pass" } else { "fail" },
+            "phase": phase,
+            "status": status,
+            "verdict": verdict,
             "process": "dota2.exe",
-            "overlay": "on",
+            "overlay": overlay,
             "duration_secs": config.duration_secs,
-            "baseline_fps": baseline.fps,
-            "overlay_fps": overlay.fps,
-            "fps_drop_pct": result.fps_delta_pct,
-            "baseline_frame_count": baseline.frame_count,
-            "overlay_frame_count": overlay.frame_count,
-            "baseline_dropped_present_pct": baseline.drop_rate_pct,
-            "overlay_dropped_present_pct": overlay.drop_rate_pct,
-            "capture_file": capture.display().to_string(),
-            "presentmon": {"path": pm.display().to_string(), "etw": true, "elevated": true},
-            "operator_confirmation": "overlay-on",
+            "operator_confirmation": operator_confirmation,
             "created_at_unix": unix_timestamp_secs(),
             "budget": {"fps_drop_max_pct": FPS_DROP_MAX_PCT},
+            "lineage": {
+                "source": "dota2.exe",
+                "transport": "PresentMon ETW",
+                "sample_rate": P7_SAMPLE_RATE,
+                "fps_formula": P7_FPS_FORMULA,
+                "fps_drop_formula": P7_FPS_DROP_FORMULA,
+                "fallback": P7_FALLBACK,
+                "output": P7_RECEIPT_OUTPUT,
+            },
+            "privacy": {
+                "network": "none",
+                "contains_match_data": false,
+                "contains_player_data": false,
+                "contains_gsi_cv_glog": false,
+            },
         })
+    }
+
+    fn add_capture_metadata(report: &mut Value, presentmon: &Path, capture: &Path) {
+        let object = report
+            .as_object_mut()
+            .expect("P7 receipt base must be a JSON object");
+        object.insert(
+            "capture_file".to_string(),
+            json!(capture.display().to_string()),
+        );
+        object.insert(
+            "presentmon".to_string(),
+            json!({
+                "path": presentmon.display().to_string(),
+                "etw": true,
+                "elevated": true,
+            }),
+        );
+    }
+
+    fn require_receipt_string(
+        value: &Value,
+        key: &str,
+        expected: &str,
+    ) -> Result<(), String> {
+        if value.get(key).and_then(Value::as_str) == Some(expected) {
+            Ok(())
+        } else {
+            Err(format!("receipt field {key} must be {expected}"))
+        }
+    }
+
+    fn validate_baseline_receipt(value: &Value) -> Result<(), String> {
+        require_receipt_string(value, "receipt_type", P7_RECEIPT_TYPE)?;
+        require_receipt_string(value, "gate", "P7")?;
+        require_receipt_string(value, "measurement", "fps")?;
+        require_receipt_string(value, "phase", "baseline")?;
+        require_receipt_string(value, "status", "measured")?;
+        require_receipt_string(value, "verdict", "pending_overlay_phase")?;
+        require_receipt_string(value, "process", "dota2.exe")?;
+        require_receipt_string(value, "overlay", "off")?;
+        require_receipt_string(value, "operator_confirmation", "overlay-off")?;
+
+        if value
+            .get("duration_secs")
+            .and_then(Value::as_u64)
+            .unwrap_or(0)
+            == 0
+        {
+            return Err("receipt duration_secs must be positive".to_string());
+        }
+        if value
+            .get("capture_file")
+            .and_then(Value::as_str)
+            .is_none_or(str::is_empty)
+        {
+            return Err("receipt capture_file must be non-empty".to_string());
+        }
+
+        let presentmon = value
+            .get("presentmon")
+            .and_then(Value::as_object)
+            .ok_or_else(|| "receipt presentmon metadata is missing".to_string())?;
+        if presentmon
+            .get("path")
+            .and_then(Value::as_str)
+            .is_none_or(str::is_empty)
+            || presentmon.get("etw").and_then(Value::as_bool) != Some(true)
+            || presentmon.get("elevated").and_then(Value::as_bool) != Some(true)
+        {
+            return Err("receipt PresentMon metadata is incomplete".to_string());
+        }
+
+        let lineage = value
+            .get("lineage")
+            .and_then(Value::as_object)
+            .ok_or_else(|| "receipt lineage metadata is missing".to_string())?;
+        let lineage_value = |key: &str| {
+            lineage
+                .get(key)
+                .and_then(Value::as_str)
+                .ok_or_else(|| format!("receipt lineage field {key} is missing"))
+        };
+        if lineage_value("source")? != "dota2.exe"
+            || lineage_value("transport")? != "PresentMon ETW"
+            || lineage_value("sample_rate")? != P7_SAMPLE_RATE
+            || lineage_value("fps_formula")? != P7_FPS_FORMULA
+            || lineage_value("fps_drop_formula")? != P7_FPS_DROP_FORMULA
+            || lineage_value("fallback")? != P7_FALLBACK
+            || lineage_value("output")? != P7_RECEIPT_OUTPUT
+        {
+            return Err("receipt lineage metadata does not match P7 contract".to_string());
+        }
+
+        let privacy = value
+            .get("privacy")
+            .and_then(Value::as_object)
+            .ok_or_else(|| "receipt privacy metadata is missing".to_string())?;
+        if privacy.get("network").and_then(Value::as_str) != Some("none")
+            || privacy.get("contains_match_data").and_then(Value::as_bool) != Some(false)
+            || privacy.get("contains_player_data").and_then(Value::as_bool) != Some(false)
+            || privacy.get("contains_gsi_cv_glog").and_then(Value::as_bool) != Some(false)
+        {
+            return Err("receipt privacy metadata is not local-only".to_string());
+        }
+        Ok(())
     }
 
     pub(super) fn parse_baseline_report(json: &str) -> Result<FpsSample, String> {
@@ -628,12 +764,7 @@ mod fps {
         if value.get("schema_version").and_then(Value::as_u64) != Some(REPORT_SCHEMA_VERSION) {
             return Err("unsupported schema_version".to_string());
         }
-        if value.get("phase").and_then(Value::as_str) != Some("baseline")
-            || value.get("status").and_then(Value::as_str) != Some("measured")
-            || value.get("overlay").and_then(Value::as_str) != Some("off")
-        {
-            return Err("baseline must be a measured overlay-off artifact".to_string());
-        }
+        validate_baseline_receipt(&value)?;
         let number = |key: &str| {
             value
                 .get(key)
@@ -886,6 +1017,58 @@ mod fps {
                 .unwrap_or(0.0)
         };
         (extract("fps"), extract("drop_rate_pct"))
+    }
+
+    #[cfg(test)]
+    mod receipt_contract_tests {
+        use super::*;
+
+        #[test]
+        fn measured_baseline_receipt_contains_lineage_contract() {
+            let config = FpsRunConfig {
+                output_dir: PathBuf::from("p7-artifacts"),
+                duration_secs: 30,
+                ..FpsRunConfig::default()
+            };
+            let sample = FpsSample {
+                fps: 144.0,
+                drop_rate_pct: 0.0,
+                frame_count: 900,
+                dropped_count: 0,
+            };
+
+            let receipt = baseline_report(
+                &config,
+                Path::new("C:/Tools/PresentMon.exe"),
+                Path::new("p7-artifacts/fps-baseline.csv"),
+                &sample,
+            );
+
+            assert_eq!(receipt["receipt_type"], "gmaiden.p7-fps-receipt");
+            assert_eq!(receipt["lineage"]["source"], "dota2.exe");
+            assert_eq!(receipt["lineage"]["transport"], "PresentMon ETW");
+            assert_eq!(
+                receipt["lineage"]["fps_formula"],
+                "1000 / mean(MsBetweenPresents)"
+            );
+            assert_eq!(receipt["privacy"]["network"], "none");
+        }
+
+        #[test]
+        fn baseline_parser_rejects_receipt_without_contract_envelope() {
+            let legacy_envelope = json!({
+                "schema_version": REPORT_SCHEMA_VERSION,
+                "phase": "baseline",
+                "status": "measured",
+                "overlay": "off",
+                "fps": 144.0,
+                "dropped_present_pct": 0.0,
+                "frame_count": 900,
+                "dropped_present_count": 0,
+            });
+
+            assert!(parse_baseline_report(&legacy_envelope.to_string()).is_err());
+        }
     }
 }
 
@@ -1274,10 +1457,38 @@ mod tests {
     #[test]
     fn guarded_baseline_parser_accepts_measured_overlay_off_report() {
         let report = json!({
+            "receipt_type": P7_RECEIPT_TYPE,
             "schema_version": REPORT_SCHEMA_VERSION,
+            "gate": "P7",
+            "measurement": "fps",
             "phase": "baseline",
             "status": "measured",
+            "verdict": "pending_overlay_phase",
+            "process": "dota2.exe",
             "overlay": "off",
+            "duration_secs": 30,
+            "capture_file": "fps-baseline.csv",
+            "presentmon": {
+                "path": "C:/Tools/PresentMon.exe",
+                "etw": true,
+                "elevated": true,
+            },
+            "operator_confirmation": "overlay-off",
+            "lineage": {
+                "source": "dota2.exe",
+                "transport": "PresentMon ETW",
+                "sample_rate": P7_SAMPLE_RATE,
+                "fps_formula": P7_FPS_FORMULA,
+                "fps_drop_formula": P7_FPS_DROP_FORMULA,
+                "fallback": P7_FALLBACK,
+                "output": P7_RECEIPT_OUTPUT,
+            },
+            "privacy": {
+                "network": "none",
+                "contains_match_data": false,
+                "contains_player_data": false,
+                "contains_gsi_cv_glog": false,
+            },
             "fps": 144.0,
             "dropped_present_pct": 0.0,
             "frame_count": 900,
@@ -1291,10 +1502,38 @@ mod tests {
     #[test]
     fn guarded_baseline_parser_rejects_empty_measurement() {
         let report = json!({
+            "receipt_type": P7_RECEIPT_TYPE,
             "schema_version": REPORT_SCHEMA_VERSION,
+            "gate": "P7",
+            "measurement": "fps",
             "phase": "baseline",
             "status": "measured",
+            "verdict": "pending_overlay_phase",
+            "process": "dota2.exe",
             "overlay": "off",
+            "duration_secs": 30,
+            "capture_file": "fps-baseline.csv",
+            "presentmon": {
+                "path": "C:/Tools/PresentMon.exe",
+                "etw": true,
+                "elevated": true,
+            },
+            "operator_confirmation": "overlay-off",
+            "lineage": {
+                "source": "dota2.exe",
+                "transport": "PresentMon ETW",
+                "sample_rate": P7_SAMPLE_RATE,
+                "fps_formula": P7_FPS_FORMULA,
+                "fps_drop_formula": P7_FPS_DROP_FORMULA,
+                "fallback": P7_FALLBACK,
+                "output": P7_RECEIPT_OUTPUT,
+            },
+            "privacy": {
+                "network": "none",
+                "contains_match_data": false,
+                "contains_player_data": false,
+                "contains_gsi_cv_glog": false,
+            },
             "fps": 0.0,
             "dropped_present_pct": 0.0,
             "frame_count": 0,

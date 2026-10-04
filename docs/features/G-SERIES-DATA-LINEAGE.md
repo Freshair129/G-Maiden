@@ -2,8 +2,8 @@
 title: "G-Series Data Lineage and Computation Contract"
 doc_id: "G-SERIES-DATA-LINEAGE"
 status: "accepted"
-version: "1.0.6"
-updated: "2026-10-04"
+version: "1.0.7"
+updated: "2026-10-05"
 owner: "Boss"
 approved_by: "user"
 approved_date: "2026-10-04"
@@ -75,6 +75,7 @@ GPU feeder POST /telemetry ────► G-Sensory resource footer
 | `SRC-COUNTER-DB` | Embedded `src-tauri/data/item_counters.json` | hero key → recommended item keys | G-Master | Unknown hero/key returns no counter advice. |
 | `SRC-LOG` | Local JSONL append/flush | ticks, typed events, risk traces, utterances | G-Log, offline replay tools, future G-Memory/G-Coach | Replay reads this source locally; only an explicit FULL-evidence fit may produce a tuning profile, and raw logs never leave the machine. |
 | `SRC-TUNING` | Local JSON at `%LOCALAPPDATA%\G-Maiden\motion-tuning.json`, written only by `replay_fit --write-tuning` | versioned `TuningDelta` with FULL evidence, match count, baseline/candidate F1, and old/new `MotionParams` | G-Motion at next-match capture initialization | Invalid, missing, APPROX, non-improving, or corrupt primary profiles fall back to the previous valid `.json.bak`, then shipped defaults; no network transport. |
+| `SRC-FPS-P7` | Local `PresentMon.exe` subprocess subscribing to Windows ETW for `dota2.exe`; no HTTP | `MsBetweenPresents`, `Dropped`, process identity, overlay phase, operator confirmation | G-Sensory P7 acceptance evidence | Missing PresentMon, Dota, elevation, confirmation, or valid receipt produces `SKIP`/exit `77`; the receipt contains no GSI, CV, G-Log, match, or player data. |
 | `SRC-OPENDOTA` | Frontend `GET https://api.opendota.com/api/...` | public profile, win/loss, recent matches, hero stats | Control deck profile/weekly/insights | Public/private/offline/429 failures resolve to locked or fallback UI; not on G-Signal critical path. |
 | `SRC-CLAUDE` | Claude CLI or Anthropic `POST /v1/messages` | prompt built from current GameTick and known CV enemies | G-Master | 30-second throttle/cache; Auto falls back to Ollama. |
 | `SRC-OLLAMA` | Local `POST http://127.0.0.1:11434/api/chat` | prompt plus selected local model | G-Master, G-Revive narration | Local-only fallback; failure returns an error or cached result. |
@@ -283,9 +284,17 @@ CPU_percent = (process_cpu_delta_ms / (wall_delta_ms * logical_core_count)) * 10
 over_budget = RAM_MB > 400 || CPU_percent > 2.5
 ```
 
-The governor samples every 10 seconds and sets a capture throttle when over budget. GPU load, temperature, and VRAM are parsed values, not calculated estimates. FPS impact is a target only; no FPS delta formula is currently instrumented.
+The governor samples every 10 seconds and sets a capture throttle when over budget. GPU load, temperature, and VRAM are parsed values, not calculated estimates. The P7 harness measures FPS locally from PresentMon ETW receipts over a two-phase capture window (default 30 seconds per phase):
 
-**Status:** `PARTIAL`, `UNVERIFIED` for sustained whole-app CPU/RAM and FPS acceptance. See [`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L86) and [`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L318).
+```text
+fps = 1000 / mean(MsBetweenPresents)
+fps_drop_pct = max(0, (baseline_fps - overlay_fps) / baseline_fps * 100)
+pass when fps_drop_pct <= 3.0
+```
+
+Each baseline, overlay, and prerequisite failure emits the same versioned `gmaiden.p7-fps-receipt` envelope with source/transport/formula/fallback/privacy metadata. A missing prerequisite is `SKIP`/exit `77`, never a PASS. The receipt is local evidence only; it does not prove a live acceptance result until a real overlay-on run returns `verdict=pass`.
+
+**Status:** `PARTIAL`, `UNVERIFIED` for sustained whole-app CPU/RAM and real FPS acceptance. The FPS computation and receipt contract are implemented/tested; no live receipt is currently committed. See [`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L86), [`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L318), and [`perf_p7.rs`](file:///g:/G-Maiden/tests/perf/src/bin/perf_p7.rs).
 
 ### 5.7 G-Log — local event record and future feedback loop
 
@@ -377,11 +386,13 @@ There is no numeric computation. Independent tone/verbosity axes and full hot-sw
 | --- | --- | --- | --- |
 | `DL-001` | G-Damage magic-resistance unit mismatch (`25` percent versus `0.25` fraction) | Self-burst can overstate magical damage | RCA: [[2026-10-04-g-damage-magic-resistance-unit-mismatch]]; add a regression test, then make the smallest approved unit-normalization fix. |
 | `DL-002` | Enemy HP/armor/magic resistance/level source is not available to target-side G-Damage | No truthful live enemy lethality warning | Contract, conservative observation reconciliation, and normalization/fail-closed wrapper are implemented in [[FEAT-G-DAMAGE]] §4.1; live source proofs and G-Damage/G-Signal wiring remain blocked until a local CV/OCR source is available and separately reviewed. |
-| `DL-004` | G-Sensory has no FPS delta computation | FPS ≤3% cannot be proven | Define PresentMon/ETW receipt schema and acceptance run. |
+| `DL-004` | G-Sensory FPS computation lacked a canonical receipt contract and live acceptance evidence | FPS ≤3% remains unverified | Receipt schema and strict baseline validation are implemented; execute the two-phase PresentMon/ETW run and retain a real `verdict=pass` receipt before closeout. |
 | `DL-005` | Static hero/item/counter snapshots lack a single patch/version manifest | Advice and damage provenance can drift | Add source URL, patch/date, generator commit, and checksum to the data contract. |
 | `DL-006` | G-Voice/G-Memory/G-Coach/G-Stream/G-Score have no runtime lineage | Planned features cannot be implemented reproducibly | Approve separate C-2/C-3 specs before implementation. |
 
 `DL-003` is resolved in version `1.0.6`: the runtime consumes only a validated, local, FULL-evidence `TuningDelta` at the next match boundary, with complete temp-file persistence, backup rollback, and default fallback. This closes the storage/injection gap; it does not claim that real-match accuracy or the broader G-Log acceptance gate has passed.
+
+`DL-004` is partially resolved in version `1.0.7`: `perf_p7` now emits and validates a shared local P7 receipt envelope with the PresentMon/ETW source, formula, fallback, and privacy boundary. This closes the instrumentation/schema gap; it does not claim live FPS compliance because no real Dota/PresentMon receipt is present.
 
 ## 8. Acceptance evidence required
 
@@ -394,6 +405,7 @@ The following are documentation/verification requirements, not claims that the c
 - G-Revive fixture covering live respawn, table fallback, affordability, threat unknown, and buyback penalty.
 - Live G-Signal capture-to-audio latency receipt with p50 and p99.
 - Sustained CPU/RAM receipt and FPS-impact receipt.
+- P7 FPS receipt must be schema version `1`, measured, overlay-off baseline plus overlay-on comparison, and `verdict=pass`; `SKIP`/unit-test output is not acceptance proof.
 - No-egress receipt for G-Log and any future G-Memory path.
 - Provenance manifest for every static data snapshot and external API mapping.
 
@@ -408,3 +420,4 @@ The following are documentation/verification requirements, not claims that the c
 | 1.0.4 | 2026-10-04 | Implemented the DL-002 target snapshot normalization and fail-closed lethality boundary; live enemy sources and G-Signal wiring remain open. |
 | 1.0.5 | 2026-10-04 | Added conservative target-observation reconciliation and recorded conflict/out-of-window fail-closed evidence; live enemy sources remain open. |
 | 1.0.6 | 2026-10-04 | Closed DL-003 with FULL-only local TuningDelta persistence, next-match G-Motion loading, backup rollback, and fail-closed defaults. |
+| 1.0.7 | 2026-10-05 | Implemented the DL-004 P7 FPS receipt envelope, strict baseline validation, lineage formula, fallback, and privacy metadata; live acceptance remains unverified. |

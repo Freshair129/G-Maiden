@@ -1,3 +1,13 @@
+---
+title: "G-Maiden Performance Gates"
+doc_id: "tests-perf-readme"
+status: "active"
+version: "0.1.1"
+updated: "2026-10-05"
+owner: "Boss"
+source_of_truth: false
+---
+
 # GATE P3 — G-Signal Latency Performance Gate
 
 ## What GATE P3 measures
@@ -178,7 +188,7 @@ cargo run --release --bin perf_p7 -- \
   --presentmon C:\Tools\PresentMon.exe --duration-secs 30 --output-dir .\p7-run
 ```
 
-The run writes three local artifacts under `--output-dir`:
+The run writes four local artifacts under `--output-dir`:
 
 | Artifact | Meaning |
 |---|---|
@@ -187,12 +197,26 @@ The run writes three local artifacts under `--output-dir`:
 | `fps-report.json` | Measured overlay phase and verdict (`pass`/`fail`), or a truthful `skip` reason when prerequisites/confirmation are missing. |
 | `fps-overlay.csv` | Raw PresentMon capture for the overlay-on phase. |
 
-The JSON report is local evidence only and contains no GSI, CV, G-Log, match,
-or player data. The overlay phase accepts a baseline only when it is schema
-version 1, measured, explicitly overlay-off, non-empty, and has a positive FPS.
-Therefore an old or hand-written `fps-baseline.json` cannot silently produce a
-PASS. The report's `fps_drop_pct` is the non-negative reduction from baseline;
-the gate passes only when it is `<= 3.0`.
+The JSON artifacts are local evidence only and contain no GSI, CV, G-Log, match,
+or player data. Both measured and prerequisite-failure artifacts use the
+`gmaiden.p7-fps-receipt` envelope with `schema_version: 1` and a shared lineage
+object:
+
+| Field | Contract |
+|---|---|
+| `source` | `dota2.exe` |
+| `transport` | local PresentMon ETW subscription |
+| `sample_rate` | one value per `MsBetweenPresents`, aggregated over the capture window |
+| `fps_formula` | `1000 / mean(MsBetweenPresents)` |
+| `fps_drop_formula` | `max(0, (baseline_fps - overlay_fps) / baseline_fps * 100)` |
+| `fallback` | missing prerequisite or invalid receipt → `SKIP`, exit `77` |
+| `privacy` | no network; no GSI/CV/G-Log/match/player data |
+
+The overlay phase accepts a baseline only when it is schema version 1, the
+canonical receipt type, measured, explicitly overlay-off, non-empty, and has a
+positive FPS. Therefore an old or hand-written `fps-baseline.json` cannot silently
+produce a PASS. The report's `fps_drop_pct` is the non-negative reduction from
+baseline; the gate passes only when it is `<= 3.0`.
 
 Expected outcomes:
 
@@ -210,6 +234,12 @@ Boss-run checklist:
    until `verdict` is `pass` from a real run.
 5. If ETW cannot be captured, preserve the `skip` report and record the exact admin/PresentMon
    error rather than substituting Task Manager, DWM composition timing, or a design estimate.
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.1 | 2026-10-05 | Documented the canonical DL-004 P7 receipt envelope, lineage formula, privacy boundary, and truthful SKIP semantics. |
 
 ## References
 

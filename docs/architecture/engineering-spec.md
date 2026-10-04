@@ -2,8 +2,8 @@
 title: "G-Maiden — Engineering Spec"
 doc_id: "engineering-spec"
 status: "active"
-version: "0.1.0"
-updated: "2026-10-04"
+version: "0.1.1"
+updated: "2026-10-05"
 owner: "Boss"
 source_of_truth: false
 complexity: "C-2"
@@ -78,6 +78,12 @@ risk: "LOW"
 - **Input:** ทุก event ข้างบน + resource telemetry
 - **Logic:** เรนเดอร์ glassmorphism HUD; **throttle ตัวเองเมื่อ FPS เกม drop เข้าใกล้ 3%**;
   ปรับโทนสี overlay ตาม element ฮีโร่ที่เล่น (PRD)
+- **P7 evidence:** `tests/perf/src/bin/perf_p7.rs` captures `dota2.exe` through local PresentMon/ETW
+  in two phases (overlay off/on, default 30 seconds each) and emits a versioned
+  `gmaiden.p7-fps-receipt`. `fps = 1000 / mean(MsBetweenPresents)` and
+  `fps_drop_pct = max(0, (baseline_fps - overlay_fps) / baseline_fps * 100)`; only a real
+  overlay-on receipt with `verdict=pass` proves the ≤3% acceptance. Missing prerequisites are
+  `SKIP`/exit `77`, never PASS, and the local receipt contains no GSI/CV/G-Log/player data.
 - **Output:** UI state + render commands; ไม่บัง minimap/skill bar/stats panel
 
 ### 2.6 G-Log (Feedback Loop) — local only
@@ -247,7 +253,7 @@ OpenDota profile + baselines. Match/CV/G-Log data stays local; the account store
 - [ ] CPU gate ต้องพิสูจน์จาก sustained app-path harness; Windows Task Manager peak `20%+` ณ 2026-07-08 ยังถือว่า fail spec จนกว่าจะยืนยัน steady-state อยู่ใน budget
 - [ ] CPU investigation ต้องแยก `Rust host` vs `WebView2 child processes` vs `sidecars/subprocesses`; harness หลักคือ `tests/perf/src/bin/perf_cpu_tree.rs`
 - [ ] RAM ≤400MB (สถานะ cloud-online, SLM ไม่โหลด)
-- [ ] FPS drop ≤3% (วัดเทียบ baseline เกมจริง)
+- [ ] FPS drop ≤3% (วัดเทียบ baseline เกมจริง; ต้องมี P7 overlay-on receipt `verdict=pass`)
 - [ ] cloud-loss test: ปิดเน็ต → G-Sentry/G-Signal ยังทำงานครบ
 - [ ] no-egress test: ตรวจว่าไม่มี request พา G-Log/สถิติออกนอกเครื่อง
 - [ ] orchestrator: `resolveForRole()` resolves ทั้ง 5 roles (parseModel → capability check → return)
@@ -261,3 +267,4 @@ OpenDota profile + baselines. Match/CV/G-Log data stays local; the account store
 | --- | --- | --- |
 | — | 2026-07-19 | symbol-link coverage extension (G1.5) |
 | 0.1.0 | 2026-10-04 | Reconciled the G-Log FULL-only tuning handoff with the implemented local G-Motion next-match loader and rollback boundary. |
+| 0.1.1 | 2026-10-05 | Added the DL-004 PresentMon/ETW P7 receipt contract, formula, fallback, and live-acceptance boundary. |
