@@ -2,7 +2,7 @@
 title: "FEAT: G-Damage — Real-time Lethality Engine"
 doc_id: "FEAT-G-DAMAGE"
 status: "draft"
-version: "0.2.2"
+version: "0.3.0"
 updated: "2026-10-04"
 owner: "Boss"
 source_of_truth: true
@@ -77,6 +77,90 @@ on tick(my_state, target):
 // DEFENSIVE — is_lethal (มีแล้วใน damage.rs:240, คงไว้ — ยังไม่ต่อเข้า G-Signal command จริง)
 on tick: if enemy_burst >= my_hp → G-Signal ("ถอย!")
 ```
+
+## 4.1 Target-side data contract (DL-002)
+
+**สถานะ contract:** accepted for implementation planning on 2026-10-04. Runtime implementation
+ยังต้องผ่าน C-3/HIGH implementation review แยกต่างหาก.
+
+Target-side G-Damage จะคำนวณได้ต่อเมื่อมีข้อมูลครบและยังสดพอเท่านั้น. ห้ามใช้ LLM, OpenDota,
+G-Master narrative, หรือค่าที่เดาเองเป็น authority ของตัวเลขศัตรู.
+
+### Field authority and canonical units
+
+| Field | Canonical unit | Authoritative source | Freshness budget | Required for `KillWindow` |
+| --- | --- | --- | --- | --- |
+| `target_id` | internal hero id หรือ `Unknown` | minimap CV identity / approved roster source | 500 ms | yes |
+| `current_hp` | absolute HP interval `[low, high]` | future enemy HP-bar CV | 500 ms | yes |
+| `max_hp` | absolute HP | approved local visual/stat source | 5 s | yes when converting HP-bar ratio |
+| `level` | integer level, validated against current patch | future local scoreboard OCR or approved visual source | 5 s | yes |
+| `armor` | raw armor points, not percent | hero base stats at level + verified visible modifiers | 5 s | yes |
+| `magic_resistance_pct` | percentage `[0, 100]`; `25.0` means 25% | hero base resistance + verified visible modifiers | 5 s | yes |
+| `observed_at_ms` | monotonic milliseconds | capture/OCR observation | n/a | yes |
+| `source_confidence` | `0.0..=1.0` | source adapter | n/a | yes |
+
+Current runtime does not provide the target-side sources: minimap CV supplies identity/position only,
+`ocr.rs` has no bundled model or caller, and GSI is local-player-only. Therefore this contract does
+not claim that target data is currently available.
+
+### Normalization and confidence formula
+
+The adapter must preserve uncertainty instead of collapsing an approximate HP bar into a false exact
+number:
+
+```text
+hp_estimate = (hp_low + hp_high) / 2
+ehp_uncertainty = (hp_high - hp_low) / (hp_high + hp_low)
+freshness_factor = max(0, 1 - age_ms / ttl_ms)
+completeness_factor = present_required_fields / required_fields
+target_data_confidence = source_confidence * freshness_factor * completeness_factor
+```
+
+`hp_low <= hp_estimate <= hp_high` is required. The existing G-Damage call then receives
+`target_current_hp = hp_estimate`, raw `armor`, canonical `magic_resistance_pct`, and
+`ehp_uncertainty`; its existing `kill_confidence()` remains the separate probability that burst
+exceeds the uncertain effective HP.
+
+### Fail-closed and fallback rules
+
+1. Missing `target_id`, HP interval, level, armor, or magic resistance → do not call
+   `can_i_kill_with()` and do not emit a `KillWindow`.
+2. `target_data_confidence < 0.70`, stale fields, contradictory observations, or Lite mode →
+   target-side G-Damage is `UNKNOWN`; G-Signal must not say “กดเลย!”.
+3. An estimate may appear in a clearly labelled non-actionable G-Master narrative only after a
+   separate approval; it must never feed the G-Signal critical path.
+4. Unknown item/buff/patch state lowers confidence or blocks the action result; it must not be
+   silently converted to zero resistance or zero armor.
+5. When the source disappears, the last snapshot expires at its field TTL; no indefinite cache is
+   valid for a kill decision.
+
+### Privacy, anti-cheat, and transport boundary
+
+- Capture and OCR are read-only local screen processing. No process injection, memory read, or game
+  write is permitted.
+- Raw frames, OCR text, and CV detections remain local. They are not sent to Claude, Ollama, OpenDota,
+  Supabase, or any other network endpoint.
+- The target snapshot is an in-memory local contract. Any future local G-Log record may contain only
+  the decision, confidence, freshness, and source-quality metadata approved by the privacy contract;
+  never raw pixels or raw OCR payloads.
+- `POST /gsi`, OpenDota `GET`, and cloud brain responses are not authoritative target-stat sources.
+
+### Acceptance evidence before runtime wiring
+
+| Case | Expected result |
+| --- | --- |
+| Complete fresh fixture with bounded HP interval | normalized snapshot and deterministic input to `can_i_kill_with()` |
+| HP interval `[600, 1000]` | `hp_estimate = 800`, `ehp_uncertainty = 0.25` |
+| Missing HP or defense field | no `KillWindow`, no offensive G-Signal alert |
+| Field older than TTL | snapshot expires; no stale kill decision |
+| `magic_resistance_pct = 25.0` | formula uses `1 - 25/100`, never fraction `0.25` |
+| Conflicting CV/OCR observations | lower confidence or `UNKNOWN`, never silent overwrite |
+| DXGI Lite mode / capture unavailable | target-side path disabled without affecting GSI-only safety path |
+| Network disabled | target-side local contract remains deterministic; no egress |
+
+Implementation is gated into separate slices: source-region/CV proof, OCR/visual-source proof,
+normalization adapter and fixtures, then G-Damage/G-Signal wiring. Each slice must retain the
+fail-closed behavior above.
 
 ## 5. Output
 
@@ -185,3 +269,4 @@ pub fn can_i_kill_with(attacker, attacker_level, ability_levels, items,
 | 0.2.0 | 2026-06-23 | เพิ่ม spec ฝั่ง offensive lethality + two-sided problem + belief-revision wiring + ช่องโหว่ที่ต้องอุด |
 | 0.2.1 | 2026-07-19 | symbol-link coverage extension (G1.5) |
 | 0.2.2 | 2026-10-04 | แก้ self-burst magic-resistance unit mismatch และเพิ่ม regression coverage สำหรับ baseline 25%. |
+| 0.3.0 | 2026-10-04 | Approved the DL-002 target-side data contract, source authority, confidence formula, fail-closed rules, and acceptance evidence. |

@@ -2,7 +2,7 @@
 title: "G-Series Data Lineage and Computation Contract"
 doc_id: "G-SERIES-DATA-LINEAGE"
 status: "accepted"
-version: "1.0.2"
+version: "1.0.3"
 updated: "2026-10-04"
 owner: "Boss"
 approved_by: "user"
@@ -354,7 +354,7 @@ There is no numeric computation. Independent tone/verbosity axes and full hot-sw
 | ID | Gap | Impact | Required next action |
 | --- | --- | --- | --- |
 | `DL-001` | G-Damage magic-resistance unit mismatch (`25` percent versus `0.25` fraction) | Self-burst can overstate magical damage | RCA: [[2026-10-04-g-damage-magic-resistance-unit-mismatch]]; add a regression test, then make the smallest approved unit-normalization fix. |
-| `DL-002` | Enemy HP/armor/magic resistance/level source is not available to target-side G-Damage | No truthful live enemy lethality warning | Approve CV/OCR data contract before code. |
+| `DL-002` | Enemy HP/armor/magic resistance/level source is not available to target-side G-Damage | No truthful live enemy lethality warning | Contract accepted in [[FEAT-G-DAMAGE]] §4.1; implement source proofs and normalization only after separate C-3/HIGH code approval. |
 | `DL-003` | G-Motion parameters are hard-coded and replay fitting is not injected | No closed-loop calibration | Define versioned local `TuningDelta` storage and rollback behavior. |
 | `DL-004` | G-Sensory has no FPS delta computation | FPS ≤3% cannot be proven | Define PresentMon/ETW receipt schema and acceptance run. |
 | `DL-005` | Static hero/item/counter snapshots lack a single patch/version manifest | Advice and damage provenance can drift | Add source URL, patch/date, generator commit, and checksum to the data contract. |
@@ -381,3 +381,4 @@ The following are documentation/verification requirements, not claims that the c
 | 1.0.0 | 2026-10-03 | Approved G-Series data lineage, endpoint mapping, computation formulas, fallbacks, and open gaps. |
 | 1.0.1 | 2026-10-04 | Added the approved RCA reference and fix boundary for `DL-001`. |
 | 1.0.2 | 2026-10-04 | Resolved `DL-001` in the self-burst caller and recorded regression evidence for the canonical percentage unit. |
+| 1.0.3 | 2026-10-04 | Accepted the DL-002 target-side source, confidence, fallback, privacy, and evidence contract. |
