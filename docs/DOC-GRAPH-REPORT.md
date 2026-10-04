@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-10-04T02:25:35.472Z
+สร้างเมื่อ / Generated at: 2026-10-04T03:09:01.971Z
 
-สแกน 147 ไฟล์เอกสาร, 272 nodes, 1231 edges, 217 รายการปัญหา (161 ตัวบล็อก exit code) / scanned 147 doc files, 272 nodes, 1231 edges, 217 violations (161 blocking exit code).
+สแกน 147 ไฟล์เอกสาร, 272 nodes, 1232 edges, 226 รายการปัญหา (170 ตัวบล็อก exit code) / scanned 147 doc files, 272 nodes, 1232 edges, 226 violations (170 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -10,7 +10,7 @@
 
 | Reason | คำอธิบาย / Description | Count | Blocking? |
 | --- | --- | --- | --- |
-| anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 92 | yes |
+| anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 101 | yes |
 | duplicate-slug | สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) | 13 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 3 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
@@ -350,6 +350,15 @@
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
+### docs/features/FEAT-G-DAMAGE.md
+
+- [L20] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=334, symbol="can_i_kill")
+- [L20] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=465, symbol="self_burst")
+- [L20] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=334, symbol="can_i_kill")
+- [L236] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=334, symbol="can_i_kill")
+- [L241] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=334, symbol="can_i_kill")
+- [L242] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=444, symbol="loadout_from_names")
+
 ### docs/features/FEAT-G-LOG.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
@@ -482,6 +491,12 @@
 - [L55] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/pack_io.rs", anchor=66, symbol="build_pack")
 - [L60] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/commands.rs", anchor=283, symbol="active_event_clips")
 - [L61] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/pack_io.rs", anchor=66, symbol="build_pack")
+
+### docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md
+
+- [L35] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=33, symbol="magic_multiplier")
+- [L36] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=456, symbol="BASELINE_TARGET_MAGIC_RES")
+- [L37] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/damage.rs", anchor=465, symbol="self_burst")
 
 ### docs/reference/dota-ui/README.md
 

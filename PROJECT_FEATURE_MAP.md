@@ -158,7 +158,7 @@ Specified but **not shipped** — the "Companion Experience Extensions" layered 
 4. **Draft-CV is inert** — the recognizer ships but has no portrait templates on disk, so it
    never auto-reads a roster (only the manual `set_draft_roster` dev cmd). Matches "IDLE until assets".
 5. **[`ocr.rs`](file:///g:/G-Maiden/src-tauri/src/ocr.rs) is fully dead code** — compiled but unreferenced; enemy-NW OCR not wired, models unbundled.
-6. **[`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs) half-wired (blocked-by-data)** — only [`self_burst`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L444) feeds G-Master; the enemy-burst /
+6. **[`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs) half-wired (blocked-by-data)** — only [`self_burst`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L444) feeds G-Master; the source-neutral `TargetCombatSnapshot` normalization and fail-closed wrapper are now unit-tested, but the enemy-burst /
    lethal-HP warning stays unwired because GSI is local-only and CV gives enemies identity+position
    only (no enemy level/items/HP). **Groundwork done (2026-07-18):** `GameTick` now carries absolute
    `hp`/`max_hp` (the defender-side input `is_lethal` needs). Two remaining blockers, both held: (a)

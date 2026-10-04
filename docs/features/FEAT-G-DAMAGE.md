@@ -2,7 +2,7 @@
 title: "FEAT: G-Damage — Real-time Lethality Engine"
 doc_id: "FEAT-G-DAMAGE"
 status: "draft"
-version: "0.3.0"
+version: "0.3.1"
 updated: "2026-10-04"
 owner: "Boss"
 source_of_truth: true
@@ -17,7 +17,7 @@ related_docs: ["FEAT-G-SIGNAL", "FEAT-G-MASTER", "FEAT-G-MOTION", "FEAT-G-SENSOR
 
 > **Module:** G-Damage · **Priority:** Core · **Phase:** 3 (feeds G-Signal)
 > **SRS:** [[software-requirements-specification|SRS]] §3.3, §3.4 · [[engineering-spec|Eng Spec]] §2.3 · [[technical-design-document|TDD]] §3
-> **สถานะโค้ดปัจจุบัน:** [`src-tauri/src/damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs) — defensive ([`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)) + offensive ([`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334), P-D1) + item/ability-level engine ([`burst_damage_with`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136), P-D2a) + JSON hero/item DB (P-D3) พร้อม 27 unit tests. **ต่อสายจริงแล้ว (บางส่วน):** [`self_burst()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L465) ใช้ hero/level/item_names จริงจาก GSI ป้อน [`burst_damage_with()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136) แล้วถูกเรียกจาก [`master::build_prompt`](file:///g:/G-Maiden/src-tauri/src/master.rs#L51) (`master.rs:72`) — โผล่เป็นบรรทัด "พลังคอมโบโดยประมาณ ~X dmg" ใน advice ของ **G-Master** จริงในเกม. Baseline magic resistance ใช้ canonical percentage `[0, 100]` โดย 25% ส่งเป็น `25.0`; มี regression test ครอบ caller-to-formula path แล้ว. **ยังขาด:** ฝั่ง target-side ทั้งหมด — [`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)/[`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334)/[`KillWindow`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L309) ยังไม่ต่อเข้า G-Signal หรือ Tauri command ใด ๆ, ability-level array จาก GSI (P-D2b), CV HP-bar (P-D4), belief-revision wiring (P-D5) — โมดูลยังมี `#![allow(dead_code)]` ครอบส่วนที่ยังไม่ถูกเรียก
+> **สถานะโค้ดปัจจุบัน:** [`src-tauri/src/damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs) — defensive ([`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)) + offensive ([`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334), P-D1) + item/ability-level engine ([`burst_damage_with`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136), P-D2a) + JSON hero/item DB (P-D3) + source-neutral [`TargetCombatSnapshot`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L345) normalization/fail-closed wrapper (DL-002) พร้อม unit coverage. **ต่อสายจริงแล้ว (บางส่วน):** [`self_burst()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L465) ใช้ hero/level/item_names จริงจาก GSI ป้อน [`burst_damage_with()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136) แล้วถูกเรียกจาก [`master::build_prompt`](file:///g:/G-Maiden/src-tauri/src/master.rs#L51) (`master.rs:72`) — โผล่เป็นบรรทัด "พลังคอมโบโดยประมาณ ~X dmg" ใน advice ของ **G-Master** จริงในเกม. Baseline magic resistance ใช้ canonical percentage `[0, 100]` โดย 25% ส่งเป็น `25.0`; มี regression test ครอบ caller-to-formula path แล้ว. **ยังขาด:** live target-side source/wiring — [`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)/[`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334)/[`KillWindow`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L309) ยังไม่ต่อเข้า G-Signal หรือ Tauri command ใด ๆ, ability-level array จาก GSI (P-D2b), CV HP-bar (P-D4), belief-revision wiring (P-D5) — โมดูลยังมี `#![allow(dead_code)]` ครอบส่วนที่ยังไม่ถูกเรียก
 
 ---
 
@@ -80,8 +80,9 @@ on tick: if enemy_burst >= my_hp → G-Signal ("ถอย!")
 
 ## 4.1 Target-side data contract (DL-002)
 
-**สถานะ contract:** accepted for implementation planning on 2026-10-04. Runtime implementation
-ยังต้องผ่าน C-3/HIGH implementation review แยกต่างหาก.
+**สถานะ contract:** accepted for implementation planning on 2026-10-04. The source-neutral
+normalization boundary is now implemented and unit-tested in `damage.rs`; runtime source
+integration still requires the separate C-3/HIGH review.
 
 Target-side G-Damage จะคำนวณได้ต่อเมื่อมีข้อมูลครบและยังสดพอเท่านั้น. ห้ามใช้ LLM, OpenDota,
 G-Master narrative, หรือค่าที่เดาเองเป็น authority ของตัวเลขศัตรู.
@@ -101,7 +102,10 @@ G-Master narrative, หรือค่าที่เดาเองเป็น
 
 Current runtime does not provide the target-side sources: minimap CV supplies identity/position only,
 `ocr.rs` has no bundled model or caller, and GSI is local-player-only. Therefore this contract does
-not claim that target data is currently available.
+not claim that target data is currently available. `TargetCombatSnapshot` accepts only a complete
+local snapshot, and `to_kill_input(now_ms)` returns `None` for missing, contradictory, stale, or
+low-confidence data. `can_i_kill_from_snapshot(...)` is the source-safe wrapper; the lower-level
+`can_i_kill_with(...)` remains available for deterministic formula tests and approved adapters.
 
 ### Normalization and confidence formula
 
@@ -158,9 +162,15 @@ exceeds the uncertain effective HP.
 | DXGI Lite mode / capture unavailable | target-side path disabled without affecting GSI-only safety path |
 | Network disabled | target-side local contract remains deterministic; no egress |
 
-Implementation is gated into separate slices: source-region/CV proof, OCR/visual-source proof,
-normalization adapter and fixtures, then G-Damage/G-Signal wiring. Each slice must retain the
-fail-closed behavior above.
+Implementation is gated into separate slices: source-region/CV proof and OCR/visual-source proof
+remain blocked by missing approved local sources; the normalization adapter and fixtures are now
+implemented; G-Damage/G-Signal wiring remains pending until those source proofs exist. Each slice
+must retain the fail-closed behavior above.
+
+**Local evidence (2026-10-04):** Rust unit tests cover HP interval normalization, the freshness /
+completeness confidence formula, missing/invalid/stale rejection, and the canonical `25.0%` magic
+resistance path. These tests prove the adapter boundary only; they do not prove live enemy source
+availability, CV accuracy, OCR accuracy, or G-Signal acceptance.
 
 ## 5. Output
 
@@ -187,6 +197,9 @@ pub fn can_i_kill(attacker: &HeroData, attacker_level: u32, target_current_hp: f
 // P-D2: item/ability-level aware variant
 pub fn can_i_kill_with(attacker, attacker_level, ability_levels, items,
                        target_current_hp, target_armor, target_magic_res, ehp_uncertainty) -> KillWindow;
+// DL-002: complete/fresh snapshot only; None means target data is not actionable
+pub fn can_i_kill_from_snapshot(attacker, attacker_level, ability_levels, items,
+                                snapshot, now_ms) -> Option<KillWindow>;
 ```
 
 → ส่งเข้า **G-Signal** (offensive prompt) และ **G-Sensory** (overlay margin bar)
@@ -270,3 +283,4 @@ pub fn can_i_kill_with(attacker, attacker_level, ability_levels, items,
 | 0.2.1 | 2026-07-19 | symbol-link coverage extension (G1.5) |
 | 0.2.2 | 2026-10-04 | แก้ self-burst magic-resistance unit mismatch และเพิ่ม regression coverage สำหรับ baseline 25%. |
 | 0.3.0 | 2026-10-04 | Approved the DL-002 target-side data contract, source authority, confidence formula, fail-closed rules, and acceptance evidence. |
+| 0.3.1 | 2026-10-04 | Implemented the source-neutral target snapshot normalization, TTL/confidence gate, and fail-closed lethality wrapper with Rust unit coverage; live CV/OCR sources remain blocked. |

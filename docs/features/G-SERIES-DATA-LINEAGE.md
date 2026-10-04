@@ -2,7 +2,7 @@
 title: "G-Series Data Lineage and Computation Contract"
 doc_id: "G-SERIES-DATA-LINEAGE"
 status: "accepted"
-version: "1.0.3"
+version: "1.0.4"
 updated: "2026-10-04"
 owner: "Boss"
 approved_by: "user"
@@ -214,7 +214,8 @@ total_burst = Σ effective_abilities
 
 The two attacks are an explicit burst-window assumption. Missing ability levels use the standard-build estimator; `self_burst` deliberately estimates the local player's combo against a soft target instead of claiming a kill.
 
-The unwired target-side confidence model is:
+The target-side confidence model is implemented at the source-neutral snapshot boundary, but no
+live enemy source currently populates it:
 
 ```text
 true_ehp ~ Uniform(ehp * (1 - uncertainty), ehp * (1 + uncertainty))
@@ -222,9 +223,25 @@ confidence = P(burst >= true_ehp)
 can_kill = confidence >= 0.70
 ```
 
-**Resolved data-contract finding (2026-10-04):** `magic_multiplier()` expects a percentage such as `25.0`. `self_burst` now passes `25.0` for the documented 25% baseline resistance, and the caller-to-formula regression test verifies that Dagon 5's 800 magical damage becomes 600 effective damage. The target-side G-Damage path remains unwired.
+`TargetCombatSnapshot` in `damage.rs` preserves the observed HP interval and validates the required
+target id, level, armor, and percentage magic resistance. `to_kill_input(now_ms)` applies the 500 ms
+HP TTL, the 5 s stat TTL, completeness, and the 0.70 data-confidence floor. The safe wrapper
+`can_i_kill_from_snapshot(...)` returns `None` instead of a `KillWindow` when the contract is not
+actionable. The lower-level `can_i_kill_with(...)` remains the deterministic formula boundary and
+is not a live source adapter.
 
-**Status:** `PARTIAL`. Self-burst is live in G-Master; target-side `KillWindow` is not connected to G-Signal/Tauri. See [`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L22), [`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136), and [`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L284).
+**Resolved data-contract findings (2026-10-04):** `magic_multiplier()` expects a percentage such as
+`25.0`. `self_burst` now passes `25.0` for the documented 25% baseline resistance, and the
+caller-to-formula regression test verifies that Dagon 5's 800 magical damage becomes 600 effective
+damage. DL-002's normalization and fail-closed wrapper are now unit-tested, but the target-side
+source and G-Signal path remain unwired because current GSI/CV/OCR evidence does not provide the
+required enemy fields.
+
+**Status:** `PARTIAL`. Self-burst is live in G-Master; target-side `KillWindow` is not connected to
+G-Signal/Tauri, and no live local target source is approved. See
+[`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L22),
+[`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136), and
+[`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L309).
 
 ### 5.5 G-Master — strategic advice
 
@@ -354,7 +371,7 @@ There is no numeric computation. Independent tone/verbosity axes and full hot-sw
 | ID | Gap | Impact | Required next action |
 | --- | --- | --- | --- |
 | `DL-001` | G-Damage magic-resistance unit mismatch (`25` percent versus `0.25` fraction) | Self-burst can overstate magical damage | RCA: [[2026-10-04-g-damage-magic-resistance-unit-mismatch]]; add a regression test, then make the smallest approved unit-normalization fix. |
-| `DL-002` | Enemy HP/armor/magic resistance/level source is not available to target-side G-Damage | No truthful live enemy lethality warning | Contract accepted in [[FEAT-G-DAMAGE]] §4.1; implement source proofs and normalization only after separate C-3/HIGH code approval. |
+| `DL-002` | Enemy HP/armor/magic resistance/level source is not available to target-side G-Damage | No truthful live enemy lethality warning | Contract accepted and normalization/fail-closed wrapper implemented in [[FEAT-G-DAMAGE]] §4.1; source proofs and G-Damage/G-Signal wiring remain blocked until a local CV/OCR source is available and separately reviewed. |
 | `DL-003` | G-Motion parameters are hard-coded and replay fitting is not injected | No closed-loop calibration | Define versioned local `TuningDelta` storage and rollback behavior. |
 | `DL-004` | G-Sensory has no FPS delta computation | FPS ≤3% cannot be proven | Define PresentMon/ETW receipt schema and acceptance run. |
 | `DL-005` | Static hero/item/counter snapshots lack a single patch/version manifest | Advice and damage provenance can drift | Add source URL, patch/date, generator commit, and checksum to the data contract. |
@@ -382,3 +399,4 @@ The following are documentation/verification requirements, not claims that the c
 | 1.0.1 | 2026-10-04 | Added the approved RCA reference and fix boundary for `DL-001`. |
 | 1.0.2 | 2026-10-04 | Resolved `DL-001` in the self-burst caller and recorded regression evidence for the canonical percentage unit. |
 | 1.0.3 | 2026-10-04 | Accepted the DL-002 target-side source, confidence, fallback, privacy, and evidence contract. |
+| 1.0.4 | 2026-10-04 | Implemented the DL-002 target snapshot normalization and fail-closed lethality boundary; live enemy sources and G-Signal wiring remain open. |
