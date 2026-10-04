@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T20:01:38.169Z",
+  "generatedAt": "2026-10-04T20:24:25.610Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -1072,6 +1072,16 @@
       "id": "src/src/CommandDeck.tsx",
       "type": "code",
       "path": "src/src/CommandDeck.tsx"
+    },
+    {
+      "id": "src-tauri/data/provenance.json",
+      "type": "code",
+      "path": "src-tauri/data/provenance.json"
+    },
+    {
+      "id": "tools/data-provenance/verify_manifest.py",
+      "type": "code",
+      "path": "tools/data-provenance/verify_manifest.py"
     },
     {
       "id": "src-tauri/src/log.rs",
@@ -2444,103 +2454,115 @@
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
-      "line": 243
+      "line": 248
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 244
+      "line": 249
+    },
+    {
+      "from": "docs/architecture/engineering-spec.md",
+      "to": "src-tauri/data/provenance.json",
+      "type": "symbol",
+      "line": 77
+    },
+    {
+      "from": "docs/architecture/engineering-spec.md",
+      "to": "tools/data-provenance/verify_manifest.py",
+      "type": "symbol",
+      "line": 78
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 92
+      "line": 97
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 120
+      "line": 125
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 158
+      "line": 163
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 164
+      "line": 169
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/providers.mjs",
       "type": "symbol",
-      "line": 227
+      "line": 232
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/config.json",
       "type": "symbol",
-      "line": 227
+      "line": 232
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/engine.mjs",
       "type": "symbol",
-      "line": 227
+      "line": 232
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/companion.ts",
       "type": "symbol",
-      "line": 232
+      "line": 237
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildTelemetry.ts",
       "type": "symbol",
-      "line": 234
+      "line": 239
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildWeekly.ts",
       "type": "symbol",
-      "line": 234
+      "line": 239
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildInsights.ts",
       "type": "symbol",
-      "line": 234
+      "line": 239
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildHistory.ts",
       "type": "symbol",
-      "line": 234
+      "line": 239
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 237
+      "line": 242
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 239
+      "line": 244
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 239
+      "line": 244
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -6594,6 +6616,12 @@
     },
     {
       "from": "docs/features/FEAT-G-DAMAGE.md",
+      "to": "src-tauri/data/provenance.json",
+      "type": "symbol",
+      "line": 20
+    },
+    {
+      "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
       "line": 20
@@ -7388,109 +7416,121 @@
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
       "type": "wikilink",
-      "line": 387
+      "line": 409
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "docs/features/FEAT-G-DAMAGE.md",
       "type": "wikilink",
-      "line": 388
+      "line": 410
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/data/provenance.json",
+      "type": "symbol",
+      "line": 90
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "tools/data-provenance/verify_manifest.py",
+      "type": "symbol",
+      "line": 103
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
-      "line": 87
+      "line": 109
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/sentry.rs",
       "type": "symbol",
-      "line": 128
+      "line": 150
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/motion.rs",
       "type": "symbol",
-      "line": 172
+      "line": 194
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/tuning.rs",
       "type": "symbol",
-      "line": 172
+      "line": 194
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/signal.rs",
       "type": "symbol",
-      "line": 195
+      "line": 217
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 248
+      "line": 270
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/damage.rs",
-      "type": "symbol",
-      "line": 249
-    },
-    {
-      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
-      "to": "src-tauri/src/damage.rs",
-      "type": "symbol",
-      "line": 250
-    },
-    {
-      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
-      "to": "src-tauri/src/master.rs",
       "type": "symbol",
       "line": 271
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
-      "to": "src-tauri/src/governor.rs",
+      "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 297
+      "line": 272
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/master.rs",
+      "type": "symbol",
+      "line": 293
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 297
+      "line": 319
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/governor.rs",
+      "type": "symbol",
+      "line": 319
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "tests/perf/src/bin/perf_p7.rs",
       "type": "symbol",
-      "line": 297
+      "line": 319
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 307
+      "line": 329
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/tuning.rs",
       "type": "symbol",
-      "line": 307
+      "line": 329
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "tests/perf/src/bin/replay_fit.rs",
       "type": "symbol",
-      "line": 307
+      "line": 329
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/revive.rs",
       "type": "symbol",
-      "line": 333
+      "line": 355
     },
     {
       "from": "docs/features/README.md",
@@ -9180,7 +9220,7 @@
     },
     {
       "file": "docs/architecture/engineering-spec.md",
-      "line": 232,
+      "line": 237,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/companion.ts",
       "anchor": 941,
@@ -10653,7 +10693,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-04T20:01:49.674Z",
+    "generatedAt": "2026-10-04T20:24:29.307Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

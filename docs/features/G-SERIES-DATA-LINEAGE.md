@@ -2,7 +2,7 @@
 title: "G-Series Data Lineage and Computation Contract"
 doc_id: "G-SERIES-DATA-LINEAGE"
 status: "accepted"
-version: "1.0.7"
+version: "1.0.8"
 updated: "2026-10-05"
 owner: "Boss"
 approved_by: "user"
@@ -70,9 +70,10 @@ GPU feeder POST /telemetry ────► G-Sensory resource footer
 | --- | --- | --- | --- | --- |
 | `SRC-GSI` | Dota → `POST http://127.0.0.1:3000/gsi` | `map.*`, `player.*`, `hero.*`, `items.*` | G-Sentry gate, G-Motion death discount, G-Log, G-Revive, G-Master, deck | Missing fields become zero/false/empty; GSI exposes the local player, not enemy stats or enemy positions. |
 | `SRC-CV` | DXGI Desktop Duplication → minimap region → ONNX detector; no HTTP | `Detection { name, x, y, label }` | G-Sentry, G-Motion, G-Signal, future target-side G-Damage/G-Revive | Capture-init failure enters Lite mode; CV-dependent warnings are silent. |
-| `SRC-HERO-DB` | Embedded `src-tauri/data/heroes.json` via `include_str!` | base stats and curated ability tables | G-Damage | Base stats cover the roster; ability tables are curated and incomplete. |
-| `SRC-ITEM-DB` | Embedded `src-tauri/data/items.json` and `item-prices.json` | burst contribution and item cost | G-Damage, GSI net-worth fallback | Unknown items contribute zero; values are snapshots and need patch provenance. |
-| `SRC-COUNTER-DB` | Embedded `src-tauri/data/item_counters.json` | hero key → recommended item keys | G-Master | Unknown hero/key returns no counter advice. |
+| `SRC-HERO-DB` | Embedded `src-tauri/data/heroes.json` via `include_str!` | base stats and curated ability tables | G-Damage | Base stats cover the roster; ability tables are curated and incomplete; provenance is in `SRC-DATA-MANIFEST`. |
+| `SRC-ITEM-DB` | Embedded `src-tauri/data/items.json` and `item-prices.json` | burst contribution and item cost | G-Damage, GSI net-worth fallback | Unknown items contribute zero; snapshot provenance is in `SRC-DATA-MANIFEST`. |
+| `SRC-COUNTER-DB` | Embedded `src-tauri/data/item_counters.json` | hero key → recommended item keys | G-Master | Unknown hero/key returns no counter advice; curation status is in `SRC-DATA-MANIFEST`. |
+| `SRC-DATA-MANIFEST` | Local `src-tauri/data/provenance.json` plus `tools/data-provenance/verify_manifest.py` | source kind/URL, patch/date fields, generation commit, SHA-256, evidence status | G-Damage, G-Master, GSI net-worth fallback, maintenance gates | Build-time/local only; checksum mismatch fails verification; missing historical provenance remains `PARTIAL`/`UNVERIFIED`; no runtime fetch. |
 | `SRC-LOG` | Local JSONL append/flush | ticks, typed events, risk traces, utterances | G-Log, offline replay tools, future G-Memory/G-Coach | Replay reads this source locally; only an explicit FULL-evidence fit may produce a tuning profile, and raw logs never leave the machine. |
 | `SRC-TUNING` | Local JSON at `%LOCALAPPDATA%\G-Maiden\motion-tuning.json`, written only by `replay_fit --write-tuning` | versioned `TuningDelta` with FULL evidence, match count, baseline/candidate F1, and old/new `MotionParams` | G-Motion at next-match capture initialization | Invalid, missing, APPROX, non-improving, or corrupt primary profiles fall back to the previous valid `.json.bak`, then shipped defaults; no network transport. |
 | `SRC-FPS-P7` | Local `PresentMon.exe` subprocess subscribing to Windows ETW for `dota2.exe`; no HTTP | `MsBetweenPresents`, `Dropped`, process identity, overlay phase, operator confirmation | G-Sensory P7 acceptance evidence | Missing PresentMon, Dota, elevation, confirmation, or valid receipt produces `SKIP`/exit `77`; the receipt contains no GSI, CV, G-Log, match, or player data. |
@@ -81,6 +82,27 @@ GPU feeder POST /telemetry ────► G-Sensory resource footer
 | `SRC-OLLAMA` | Local `POST http://127.0.0.1:11434/api/chat` | prompt plus selected local model | G-Master, G-Revive narration | Local-only fallback; failure returns an error or cached result. |
 | `SRC-GPU` | GPU feeder `POST /telemetry`, or local `telemetry-latest.json` | GPU load/temp/VRAM and optional CPU temp | G-Sensory | Feeder stale after 30s; bridge file stale after 5s; unavailable values are `-1`/`—`. |
 | `SRC-RUNTIME` | Tauri settings/events and atomics | sensitivity, backend, persona, signal enabled | G-Signal, G-Master, G-Persona, overlay | Runtime state is local; settings do not change GSI source data. |
+
+### 3.1 DL-005 — static data provenance manifest
+
+Runtime static data is compiled into the Rust binary with `include_str!`; the application does
+not fetch or refresh these files during a match. The machine-readable manifest at
+[`src-tauri/data/provenance.json`](file:///g:/G-Maiden/src-tauri/data/provenance.json) records one
+entry for every runtime snapshot and the curated hero-ability generator input.
+
+Each entry must contain:
+
+- the repository-relative file path, role, consumers, and SHA-256 of the exact checked-in bytes;
+- source kind, URL when known, upstream revision, Dota patch, retrieval date, and dataset label;
+- the generation/curation tool and the repository commit that introduced the snapshot; and
+- an evidence status: `VERIFIED`, `PARTIAL`, or `UNVERIFIED`.
+
+`VERIFIED` is reserved for entries with a recorded source revision and retrieval date plus a
+generation tool and commit. Unknown historical fields are explicit `null` values and force
+`PARTIAL` or `UNVERIFIED`; the verifier must never turn an unknown source into a current-patch
+claim. [`verify_manifest.py`](file:///g:/G-Maiden/tools/data-provenance/verify_manifest.py) is a
+local build/maintenance check only: it validates the manifest schema, JSON files, repository
+boundaries, and checksums. It performs no network request and is not a runtime data source.
 
 ## 4. GSI field mapping
 
@@ -387,12 +409,18 @@ There is no numeric computation. Independent tone/verbosity axes and full hot-sw
 | `DL-001` | G-Damage magic-resistance unit mismatch (`25` percent versus `0.25` fraction) | Self-burst can overstate magical damage | RCA: [[2026-10-04-g-damage-magic-resistance-unit-mismatch]]; add a regression test, then make the smallest approved unit-normalization fix. |
 | `DL-002` | Enemy HP/armor/magic resistance/level source is not available to target-side G-Damage | No truthful live enemy lethality warning | Contract, conservative observation reconciliation, and normalization/fail-closed wrapper are implemented in [[FEAT-G-DAMAGE]] §4.1; live source proofs and G-Damage/G-Signal wiring remain blocked until a local CV/OCR source is available and separately reviewed. |
 | `DL-004` | G-Sensory FPS computation lacked a canonical receipt contract and live acceptance evidence | FPS ≤3% remains unverified | Receipt schema and strict baseline validation are implemented; execute the two-phase PresentMon/ETW run and retain a real `verdict=pass` receipt before closeout. |
-| `DL-005` | Static hero/item/counter snapshots lack a single patch/version manifest | Advice and damage provenance can drift | Add source URL, patch/date, generator commit, and checksum to the data contract. |
+| `DL-005` | Static hero/item/counter snapshots lack a single patch/version manifest | Advice and damage provenance can drift | Manifest and local checksum verifier are implemented; historical entries remain explicitly `PARTIAL`/`UNVERIFIED` where patch/date/source evidence was not recorded. |
 | `DL-006` | G-Voice/G-Memory/G-Coach/G-Stream/G-Score have no runtime lineage | Planned features cannot be implemented reproducibly | Approve separate C-2/C-3 specs before implementation. |
 
 `DL-003` is resolved in version `1.0.6`: the runtime consumes only a validated, local, FULL-evidence `TuningDelta` at the next match boundary, with complete temp-file persistence, backup rollback, and default fallback. This closes the storage/injection gap; it does not claim that real-match accuracy or the broader G-Log acceptance gate has passed.
 
 `DL-004` is partially resolved in version `1.0.7`: `perf_p7` now emits and validates a shared local P7 receipt envelope with the PresentMon/ETW source, formula, fallback, and privacy boundary. This closes the instrumentation/schema gap; it does not claim live FPS compliance because no real Dota/PresentMon receipt is present.
+
+`DL-005` is structurally resolved in version `1.0.8`: the static hero, curated-ability, item,
+item-price, and counter snapshots have one local provenance manifest and a checksum verifier.
+The verifier proves repository bytes and schema integrity only; it does not retroactively create
+missing upstream patch, revision, or retrieval-date evidence. Those entries remain `PARTIAL` or
+`UNVERIFIED` until the source record is supplied.
 
 ## 8. Acceptance evidence required
 
@@ -407,7 +435,9 @@ The following are documentation/verification requirements, not claims that the c
 - Sustained CPU/RAM receipt and FPS-impact receipt.
 - P7 FPS receipt must be schema version `1`, measured, overlay-off baseline plus overlay-on comparison, and `verdict=pass`; `SKIP`/unit-test output is not acceptance proof.
 - No-egress receipt for G-Log and any future G-Memory path.
-- Provenance manifest for every static data snapshot and external API mapping.
+- Provenance manifest for every static data snapshot and the external endpoint mapping that supplied
+  it; the local verifier must pass, and a tampered artifact must fail checksum validation without
+  making a network request.
 
 ## Changelog
 
@@ -421,3 +451,4 @@ The following are documentation/verification requirements, not claims that the c
 | 1.0.5 | 2026-10-04 | Added conservative target-observation reconciliation and recorded conflict/out-of-window fail-closed evidence; live enemy sources remain open. |
 | 1.0.6 | 2026-10-04 | Closed DL-003 with FULL-only local TuningDelta persistence, next-match G-Motion loading, backup rollback, and fail-closed defaults. |
 | 1.0.7 | 2026-10-05 | Implemented the DL-004 P7 FPS receipt envelope, strict baseline validation, lineage formula, fallback, and privacy metadata; live acceptance remains unverified. |
+| 1.0.8 | 2026-10-05 | Implemented DL-005 static-data provenance manifest, explicit historical evidence statuses, and local SHA-256 verification with no runtime network fetch. |

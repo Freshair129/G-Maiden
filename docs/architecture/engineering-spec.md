@@ -2,7 +2,7 @@
 title: "G-Maiden — Engineering Spec"
 doc_id: "engineering-spec"
 status: "active"
-version: "0.1.1"
+version: "0.1.2"
 updated: "2026-10-05"
 owner: "Boss"
 source_of_truth: false
@@ -73,6 +73,11 @@ risk: "LOW"
 - **Input:** GSI (net worth, items, abilities ของเรา + ที่มองเห็นของศัตรู) + meta dataset
 - **Logic:** เทียบ net worth/ไอเทม → แนะนำ skill/item แก้ทาง (อ้าง meta ปัจจุบัน)
 - **Output:** `AdvicePayload { topic, recommendation, rationale, persona_text }` (ผ่าน cloud หรือ SLM)
+- **Static-data provenance:** hero, curated-ability, burst-item, item-price, and counter snapshots
+  are recorded in [`provenance.json`](file:///g:/G-Maiden/src-tauri/data/provenance.json). The
+  local [`verify_manifest.py`](file:///g:/G-Maiden/tools/data-provenance/verify_manifest.py)
+  checks schema, JSON validity, repository-relative paths, and SHA-256 before maintenance or
+  acceptance; the runtime never fetches these snapshots.
 
 ### 2.5 G-Sensory (Overlay & Hardware Optimization)
 - **Input:** ทุก event ข้างบน + resource telemetry
@@ -268,3 +273,4 @@ OpenDota profile + baselines. Match/CV/G-Log data stays local; the account store
 | — | 2026-07-19 | symbol-link coverage extension (G1.5) |
 | 0.1.0 | 2026-10-04 | Reconciled the G-Log FULL-only tuning handoff with the implemented local G-Motion next-match loader and rollback boundary. |
 | 0.1.1 | 2026-10-05 | Added the DL-004 PresentMon/ETW P7 receipt contract, formula, fallback, and live-acceptance boundary. |
+| 0.1.2 | 2026-10-05 | Added the DL-005 static-data provenance and checksum-verification contract. |

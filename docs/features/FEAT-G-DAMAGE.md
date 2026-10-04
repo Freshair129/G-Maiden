@@ -2,8 +2,8 @@
 title: "FEAT: G-Damage — Real-time Lethality Engine"
 doc_id: "FEAT-G-DAMAGE"
 status: "draft"
-version: "0.3.2"
-updated: "2026-10-04"
+version: "0.3.3"
+updated: "2026-10-05"
 owner: "Boss"
 source_of_truth: true
 prd_system: "SYSTEM-03::G-Signal"
@@ -17,7 +17,7 @@ related_docs: ["FEAT-G-SIGNAL", "FEAT-G-MASTER", "FEAT-G-MOTION", "FEAT-G-SENSOR
 
 > **Module:** G-Damage · **Priority:** Core · **Phase:** 3 (feeds G-Signal)
 > **SRS:** [[software-requirements-specification|SRS]] §3.3, §3.4 · [[engineering-spec|Eng Spec]] §2.3 · [[technical-design-document|TDD]] §3
-> **สถานะโค้ดปัจจุบัน:** [`src-tauri/src/damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs) — defensive ([`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)) + offensive ([`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334), P-D1) + item/ability-level engine ([`burst_damage_with`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136), P-D2a) + JSON hero/item DB (P-D3) + source-neutral [`TargetCombatSnapshot`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L345) normalization/fail-closed wrapper (DL-002) พร้อม unit coverage. **ต่อสายจริงแล้ว (บางส่วน):** [`self_burst()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L465) ใช้ hero/level/item_names จริงจาก GSI ป้อน [`burst_damage_with()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136) แล้วถูกเรียกจาก [`master::build_prompt`](file:///g:/G-Maiden/src-tauri/src/master.rs#L51) (`master.rs:72`) — โผล่เป็นบรรทัด "พลังคอมโบโดยประมาณ ~X dmg" ใน advice ของ **G-Master** จริงในเกม. Baseline magic resistance ใช้ canonical percentage `[0, 100]` โดย 25% ส่งเป็น `25.0`; มี regression test ครอบ caller-to-formula path แล้ว. **ยังขาด:** live target-side source/wiring — [`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)/[`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334)/[`KillWindow`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L309) ยังไม่ต่อเข้า G-Signal หรือ Tauri command ใด ๆ, ability-level array จาก GSI (P-D2b), CV HP-bar (P-D4), belief-revision wiring (P-D5) — โมดูลยังมี `#![allow(dead_code)]` ครอบส่วนที่ยังไม่ถูกเรียก
+> **สถานะโค้ดปัจจุบัน:** [`src-tauri/src/damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs) — defensive ([`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)) + offensive ([`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334), P-D1) + item/ability-level engine ([`burst_damage_with`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136), P-D2a) + JSON hero/item DB (P-D3) + source-neutral [`TargetCombatSnapshot`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L345) normalization/fail-closed wrapper (DL-002) พร้อม unit coverage. Static hero, curated-ability, and burst-item inputs are tracked by the local [`provenance.json`](file:///g:/G-Maiden/src-tauri/data/provenance.json) manifest; missing historical patch/date evidence remains explicit rather than being treated as current. **ต่อสายจริงแล้ว (บางส่วน):** [`self_burst()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L465) ใช้ hero/level/item_names จริงจาก GSI ป้อน [`burst_damage_with()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136) แล้วถูกเรียกจาก [`master::build_prompt`](file:///g:/G-Maiden/src-tauri/src/master.rs#L51) (`master.rs:72`) — โผล่เป็นบรรทัด "พลังคอมโบโดยประมาณ ~X dmg" ใน advice ของ **G-Master** จริงในเกม. Baseline magic resistance ใช้ canonical percentage `[0, 100]` โดย 25% ส่งเป็น `25.0`; มี regression test ครอบ caller-to-formula path แล้ว. **ยังขาด:** live target-side source/wiring — [`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)/[`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334)/[`KillWindow`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L309) ยังไม่ต่อเข้า G-Signal หรือ Tauri command ใด ๆ, ability-level array จาก GSI (P-D2b), CV HP-bar (P-D4), belief-revision wiring (P-D5) — โมดูลยังมี `#![allow(dead_code)]` ครอบส่วนที่ยังไม่ถูกเรียก
 
 ---
 
@@ -291,3 +291,4 @@ pub fn can_i_kill_from_snapshot(attacker, attacker_level, ability_levels, items,
 | 0.3.0 | 2026-10-04 | Approved the DL-002 target-side data contract, source authority, confidence formula, fail-closed rules, and acceptance evidence. |
 | 0.3.1 | 2026-10-04 | Implemented the source-neutral target snapshot normalization, TTL/confidence gate, and fail-closed lethality wrapper with Rust unit coverage; live CV/OCR sources remain blocked. |
 | 0.3.2 | 2026-10-04 | Added conservative target-observation reconciliation: compatible partial observations merge, while conflicts and out-of-window data fail closed. |
+| 0.3.3 | 2026-10-05 | Linked the DL-005 static-data provenance manifest and preserved unknown patch/date evidence as non-verified metadata. |

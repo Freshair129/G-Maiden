@@ -3,17 +3,17 @@
 # FEATURE-ORPHAN-REPORT
 
 > **GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs**  
-> Generated `2026-10-04T20:01:51.919Z` · candidates=22
+> Generated `2026-10-04T20:24:29.554Z` · candidates=22
 
 ## Summary
 
 | Classification | Count |
 | --- | --- |
-| anchored | 4 |
+| anchored | 3 |
 | planned | 11 |
 | weakly-anchored | 7 |
 | superseded | 0 |
-| archived | 0 |
+| archived | 1 |
 | orphan-candidate | 0 |
 | confirmed-orphan | 0 |
 
@@ -23,7 +23,7 @@
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | CR-004-voice-command-browser | docs/change request/CR-004-voice-command-browser.md | — | weakly-anchored | — | docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md, docs/change request/CR-009-gannstudio-authoring-install-contract.md | — | Only active document references remain; no strong registry/code anchor found. |
 | FEAT-G-COACH | docs/features/FEAT-G-COACH.md | planned | planned | feature-ledger, features-readme, project-feature-map | docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
-| FEAT-G-DAMAGE | docs/features/FEAT-G-DAMAGE.md | draft | anchored | feature-ledger, code-evidence, features-readme | docs/features/G-SERIES-DATA-LINEAGE.md, docs/features/README.md, docs/product/competitive-brief.md, docs/README.md | — | At least one strong anchor exists (registry and/or code evidence). |
+| FEAT-G-DAMAGE | docs/features/FEAT-G-DAMAGE.md | draft | archived | feature-ledger, code-evidence, features-readme | docs/features/G-SERIES-DATA-LINEAGE.md, docs/features/README.md, docs/product/competitive-brief.md, docs/README.md | — | Lifecycle explicitly marks the document as retained history. |
 | FEAT-G-LOG | docs/features/FEAT-G-LOG.md | active | planned | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-MASTER | docs/features/FEAT-G-MASTER.md | planned | planned | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/FEAT-G-REVIVE.md, docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-MEMORY | docs/features/FEAT-G-MEMORY.md | planned | planned | feature-ledger, features-readme, project-feature-map | docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
