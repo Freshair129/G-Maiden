@@ -115,6 +115,10 @@ cargo run --release --manifest-path tests/perf/Cargo.toml --bin replay_fit
 # against a specific directory, with a custom death-attribution window
 cargo run --release --manifest-path tests/perf/Cargo.toml --bin replay_fit -- \
   C:\path\to\logs --window-ms 8000
+
+# explicitly write an accepted FULL-only profile for the next match
+cargo run --release --manifest-path tests/perf/Cargo.toml --bin replay_fit -- \
+  C:\path\to\logs --write-tuning
 ```
 
 **Two reconstruction modes** (every output row is labeled so one is never mistaken
@@ -125,9 +129,16 @@ for the other):
   missing-hero timeline is reconstructed by extrapolating `missing_for_ms` linearly
   forward from the event, capped at 30s — a bounded guess, not a measurement.
 
-**Privacy.** Read-only, zero network. It only reads the JSONL files `log.rs` already
-wrote to the local machine (CLAUDE.md: G-Log raw data is local-only) and never writes
-back to them or sends anything anywhere.
+**Tuning and privacy.** The default invocation is read-only and zero network. With the
+explicit `--write-tuning` flag, only `FULL` logs are eligible: at least 3 FULL matches
+are required, the best `Med` candidate must improve the shipped default by at least
+`0.01` F1, and every parameter must pass schema/range/order validation. The accepted
+`TuningDelta` is written through a complete temporary file to the local
+`%LOCALAPPDATA%\G-Maiden\motion-tuning.json`; the prior profile is retained as
+`motion-tuning.json.bak`. The runtime loads it only at next-match capture
+initialization and falls back to the backup or shipped defaults when invalid. The
+flag never modifies the source JSONL files and never sends G-Log or tuning data over
+the network. `APPROX` rows are reported for analysis only and can never tune runtime.
 
 ## Exit code conventions
 

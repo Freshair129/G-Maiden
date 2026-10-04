@@ -2,7 +2,7 @@
 title: "G-Series Data Lineage and Computation Contract"
 doc_id: "G-SERIES-DATA-LINEAGE"
 status: "accepted"
-version: "1.0.5"
+version: "1.0.6"
 updated: "2026-10-04"
 owner: "Boss"
 approved_by: "user"
@@ -73,7 +73,8 @@ GPU feeder POST /telemetry ────► G-Sensory resource footer
 | `SRC-HERO-DB` | Embedded `src-tauri/data/heroes.json` via `include_str!` | base stats and curated ability tables | G-Damage | Base stats cover the roster; ability tables are curated and incomplete. |
 | `SRC-ITEM-DB` | Embedded `src-tauri/data/items.json` and `item-prices.json` | burst contribution and item cost | G-Damage, GSI net-worth fallback | Unknown items contribute zero; values are snapshots and need patch provenance. |
 | `SRC-COUNTER-DB` | Embedded `src-tauri/data/item_counters.json` | hero key → recommended item keys | G-Master | Unknown hero/key returns no counter advice. |
-| `SRC-LOG` | Local JSONL append/flush | ticks, typed events, risk traces, utterances | G-Log, offline replay tools, future G-Memory/G-Coach | No runtime tuning injection is currently performed. |
+| `SRC-LOG` | Local JSONL append/flush | ticks, typed events, risk traces, utterances | G-Log, offline replay tools, future G-Memory/G-Coach | Replay reads this source locally; only an explicit FULL-evidence fit may produce a tuning profile, and raw logs never leave the machine. |
+| `SRC-TUNING` | Local JSON at `%LOCALAPPDATA%\G-Maiden\motion-tuning.json`, written only by `replay_fit --write-tuning` | versioned `TuningDelta` with FULL evidence, match count, baseline/candidate F1, and old/new `MotionParams` | G-Motion at next-match capture initialization | Invalid, missing, APPROX, non-improving, or corrupt primary profiles fall back to the previous valid `.json.bak`, then shipped defaults; no network transport. |
 | `SRC-OPENDOTA` | Frontend `GET https://api.opendota.com/api/...` | public profile, win/loss, recent matches, hero stats | Control deck profile/weekly/insights | Public/private/offline/429 failures resolve to locked or fallback UI; not on G-Signal critical path. |
 | `SRC-CLAUDE` | Claude CLI or Anthropic `POST /v1/messages` | prompt built from current GameTick and known CV enemies | G-Master | 30-second throttle/cache; Auto falls back to Ollama. |
 | `SRC-OLLAMA` | Local `POST http://127.0.0.1:11434/api/chat` | prompt plus selected local model | G-Master, G-Revive narration | Local-only fallback; failure returns an error or cached result. |
@@ -131,6 +132,8 @@ re-arm when the hero is detected again
 
 **Default parameters:** `ramp_start=5s`, `peak=12s`, `peak_risk=0.70`, `decay=0.03/s`, `floor=0.10`, `multi_boost=1.15`, `heading_amp=0.22`.
 
+**Next-match tuning:** `Motion::for_next_match` loads the validated `new_params` from `SRC-TUNING` when the capture pipeline is created or reset at a match boundary. A monitor switch clears observation history but preserves the profile already selected for the current match. The formula above is unchanged; tuning changes only these G-Motion parameters and never mutates a live match. A profile is accepted only when its schema is current, evidence is `FULL`, at least three FULL matches support it, the candidate Med-sensitivity F1 improves the shipped default by at least `0.01`, and every parameter passes finite/range/order checks. `APPROX` rows, invalid JSON, failed writes, and missing profiles resolve to the previous valid backup or the default parameters.
+
 For each missing hero, with `s = missing_ms / 1000`:
 
 ```text
@@ -165,7 +168,7 @@ Known enemy deaths remove the lowest-risk contributors by count. The death-windo
 
 **Output:** `GankRisk { probability, missing_heroes, eta_ms }`.
 
-**Status:** `PARTIAL`. The formula is explicit and testable, but there is no full heatmap, lane model, through-fog path prediction, or automatic runtime tuning. See [`motion.rs`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L165).
+**Status:** `PARTIAL`. The formula is explicit and testable, and the local G-Log → next-match G-Motion tuning handoff is implemented. There is still no full heatmap, lane model, or through-fog path prediction. See [`motion.rs`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L165) and [`tuning.rs`](file:///g:/G-Maiden/src-tauri/src/tuning.rs).
 
 ### 5.3 G-Signal — threshold and belief revision
 
@@ -288,11 +291,11 @@ The governor samples every 10 seconds and sets a capture throttle when over budg
 
 **Sources:** GSI ticks, Sentry missing events, Motion risk traces, Signal alerts/revisions, audio utterances, and resource events as each integration is enabled.
 
-**Current computation:** no decision formula. The current writer emits a tick at approximately 1 Hz, appends typed JSONL records, flushes each record, and supports local deletion/disable behavior.
+**Current computation:** no live decision formula. The writer emits a tick at approximately 1 Hz, appends typed JSONL records, flushes each record, and supports local deletion/disable behavior. `tests/perf/src/bin/replay_fit.rs` replays `risk_trace` rows through the real Motion/Signal code and keeps `FULL` and `APPROX` evidence separate.
 
-The offline replay/fit tooling can calculate signal accuracy and candidate Motion/Sensitivity parameter sets, but it does not currently persist or inject a `TuningDelta` into the next live match.
+With the explicit `--write-tuning` flag, replay-fit selects the best Med-sensitivity candidate from FULL logs only. It requires at least `3` FULL matches and `candidate_f1 >= baseline_f1 + 0.01`, then writes a complete schema-versioned `TuningDelta` through a temporary file to `SRC-TUNING`; the previous valid profile is retained as `.json.bak`. The next capture initialization loads that profile for G-Motion. Invalid/APPROX/non-improving/corrupt profiles fail closed to the backup or shipped defaults. G-Signal thresholds and the live match are not changed by this loop.
 
-**Status:** `PARTIAL`; local data lineage is explicit, closed-loop learning is planned. See [`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs#L151).
+**Status:** `PARTIAL`; the local G-Log → G-Motion next-match loop is implemented and unit/producer-tested, while advice calibration, real-match accuracy, and no-egress runtime receipts remain open. See [`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs#L151), [`tuning.rs`](file:///g:/G-Maiden/src-tauri/src/tuning.rs), and [`replay_fit.rs`](file:///g:/G-Maiden/tests/perf/src/bin/replay_fit.rs).
 
 ## 6. Companion G-series contracts
 
@@ -374,10 +377,11 @@ There is no numeric computation. Independent tone/verbosity axes and full hot-sw
 | --- | --- | --- | --- |
 | `DL-001` | G-Damage magic-resistance unit mismatch (`25` percent versus `0.25` fraction) | Self-burst can overstate magical damage | RCA: [[2026-10-04-g-damage-magic-resistance-unit-mismatch]]; add a regression test, then make the smallest approved unit-normalization fix. |
 | `DL-002` | Enemy HP/armor/magic resistance/level source is not available to target-side G-Damage | No truthful live enemy lethality warning | Contract, conservative observation reconciliation, and normalization/fail-closed wrapper are implemented in [[FEAT-G-DAMAGE]] §4.1; live source proofs and G-Damage/G-Signal wiring remain blocked until a local CV/OCR source is available and separately reviewed. |
-| `DL-003` | G-Motion parameters are hard-coded and replay fitting is not injected | No closed-loop calibration | Define versioned local `TuningDelta` storage and rollback behavior. |
 | `DL-004` | G-Sensory has no FPS delta computation | FPS ≤3% cannot be proven | Define PresentMon/ETW receipt schema and acceptance run. |
 | `DL-005` | Static hero/item/counter snapshots lack a single patch/version manifest | Advice and damage provenance can drift | Add source URL, patch/date, generator commit, and checksum to the data contract. |
 | `DL-006` | G-Voice/G-Memory/G-Coach/G-Stream/G-Score have no runtime lineage | Planned features cannot be implemented reproducibly | Approve separate C-2/C-3 specs before implementation. |
+
+`DL-003` is resolved in version `1.0.6`: the runtime consumes only a validated, local, FULL-evidence `TuningDelta` at the next match boundary, with complete temp-file persistence, backup rollback, and default fallback. This closes the storage/injection gap; it does not claim that real-match accuracy or the broader G-Log acceptance gate has passed.
 
 ## 8. Acceptance evidence required
 
@@ -403,3 +407,4 @@ The following are documentation/verification requirements, not claims that the c
 | 1.0.3 | 2026-10-04 | Accepted the DL-002 target-side source, confidence, fallback, privacy, and evidence contract. |
 | 1.0.4 | 2026-10-04 | Implemented the DL-002 target snapshot normalization and fail-closed lethality boundary; live enemy sources and G-Signal wiring remain open. |
 | 1.0.5 | 2026-10-04 | Added conservative target-observation reconciliation and recorded conflict/out-of-window fail-closed evidence; live enemy sources remain open. |
+| 1.0.6 | 2026-10-04 | Closed DL-003 with FULL-only local TuningDelta persistence, next-match G-Motion loading, backup rollback, and fail-closed defaults. |

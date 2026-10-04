@@ -26,11 +26,11 @@ pub const WINDOW_MS: u64 = 300_000;
 /// Tunable knobs behind the gank-risk heuristic ([`Motion::assess`]).
 ///
 /// [`Default`] reproduces today's hardcoded literals exactly — constructing a
-/// `Motion` via [`Motion::new`] is behaviorally identical to before this
-/// struct existed. G-Log's offline replay/fit harness is the intended way to
-/// discover better values from real match outcomes; nothing in the live path
-/// changes just by this struct existing.
-#[derive(Clone, Copy, Debug, PartialEq)]
+/// `Motion` via [`Motion::new`] remains the shipped baseline. The live capture
+/// path uses [`Motion::for_next_match`] to load only a validated local profile;
+/// G-Log's offline replay/fit harness is the intended way to discover better
+/// values from real match outcomes.
+#[derive(Clone, Copy, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct MotionParams {
     /// Seconds a hero must be missing before any risk accrues (below this,
     /// `missing_risk` is exactly 0.0). Today's literal: `5.0` — matches
@@ -74,6 +74,30 @@ impl Default for MotionParams {
             multi_boost: 1.15,
             heading_amp: 0.22,
         }
+    }
+}
+
+impl MotionParams {
+    /// Reject non-finite or unsafe tuning values before they can influence the
+    /// live risk heuristic. The ranges are deliberately broad enough for the
+    /// existing replay grid while preserving the model's ordering invariants.
+    pub fn is_valid(&self) -> bool {
+        self.ramp_start_s.is_finite()
+            && self.peak_s.is_finite()
+            && self.peak_risk.is_finite()
+            && self.decay_per_s.is_finite()
+            && self.floor.is_finite()
+            && self.multi_boost.is_finite()
+            && self.heading_amp.is_finite()
+            && self.ramp_start_s > 0.0
+            && self.ramp_start_s <= 30.0
+            && self.peak_s > self.ramp_start_s
+            && self.peak_s <= 60.0
+            && (0.0..=1.0).contains(&self.peak_risk)
+            && (0.0..=1.0).contains(&self.decay_per_s)
+            && (0.0..=self.peak_risk).contains(&self.floor)
+            && (1.0..=2.0).contains(&self.multi_boost)
+            && (0.0..=1.0).contains(&self.heading_amp)
     }
 }
 
@@ -121,13 +145,27 @@ impl Motion {
     /// Construct with explicit tunables (see [`MotionParams`]) instead of the
     /// legacy-reproducing [`Default`]. Used by the offline fit/replay harness
     /// (G-Log) to evaluate alternative parameter sets against real outcomes;
-    /// the live app still calls [`Motion::new`].
+    /// the live capture path uses [`Motion::for_next_match`].
     pub fn with_params(params: MotionParams) -> Self {
         Motion {
             history: VecDeque::new(),
             params,
             dead_enemies: 0,
         }
+    }
+
+    /// Build the state for a new match from the validated local replay-fit
+    /// profile. Invalid/missing profiles are resolved by the tuning store to
+    /// `MotionParams::default()`.
+    pub fn for_next_match() -> Self {
+        Motion::with_params(crate::tuning::load_motion_params())
+    }
+
+    /// Clear observation state after a monitor/coordinate-space change while
+    /// preserving the profile selected for the current match.
+    pub fn reset_tracking(&mut self) {
+        self.history.clear();
+        self.dead_enemies = 0;
     }
 
     /// Refresh the believed dead-enemy count for the next [`Motion::assess`].

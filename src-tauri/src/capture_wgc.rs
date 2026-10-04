@@ -103,6 +103,8 @@ struct MinimapCapture {
     last_emit: Instant,
     /// last time we fed a frame to the calibration buffer (≈9 Hz when on).
     last_calib: Instant,
+    /// Runtime match epoch as of the last pipeline reset.
+    match_epoch: u64,
 }
 
 impl GraphicsCaptureApiHandler for MinimapCapture {
@@ -121,12 +123,13 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
             icon,
             detector,
             sentry: Sentry::new(),
-            motion: Motion::new(),
+            motion: Motion::for_next_match(),
             signal: Signal::new(),
             start: now,
             last_processed: now,
             last_emit: now,
             last_calib: now,
+            match_epoch: crate::runtime::match_epoch(),
         })
     }
 
@@ -135,6 +138,13 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
         frame: &mut WcFrame<'_>,
         _control: InternalCaptureControl,
     ) -> Result<(), Self::Error> {
+        let epoch = crate::runtime::match_epoch();
+        if epoch != self.match_epoch {
+            self.match_epoch = epoch;
+            self.sentry = Sentry::new();
+            self.motion = Motion::for_next_match();
+            self.signal = Signal::new();
+        }
         // Gate to live matches — no CV work at the menu (idle-CPU saver).
         if !crate::runtime::in_game() {
             return Ok(());

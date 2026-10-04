@@ -1,3 +1,15 @@
+---
+title: "FEAT-G-MOTION — Heatmap & Path Prediction"
+doc_id: "FEAT-G-MOTION"
+status: "active"
+version: "0.1.0"
+updated: "2026-10-04"
+owner: "Boss"
+source_of_truth: false
+complexity: "C-2"
+risk: "LOW"
+---
+
 # FEAT-G-MOTION — Heatmap & Path Prediction
 
 > **Module:** G-Motion · **Priority:** Core · **Phase:** 3
@@ -18,7 +30,7 @@
 > ล่าสุดของฮีโร่ก่อนหายเพื่อเทียบทิศเดินกับทิศเข้ากลางแมพ (มุ่งเข้า = เสี่ยงแก๊งค์สูงขึ้น
 > ×1.22 สูงสุด, เดินออก = ฟาร์ม/ถอย ×0.78 ต่ำสุด, ไม่มี trail = neutral ×1.0) ก่อนคูณเข้ากับ
 > [`missing_risk()`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L234). ยังไม่มี full heatmap หรือ through-fog path/lane prediction — trail จบที่
-> จุดหายจากแมพเท่านั้น (เก็บไว้สำหรับ G-Log tuning ในอนาคต). probability เป็น `f32` 0..1
+> จุดหายจากแมพเท่านั้น (เก็บไว้สำหรับ G-Log tuning แบบ FULL ในเกมถัดไป). probability เป็น `f32` 0..1
 > (ไม่ใช่ u8 0–100).
 
 ## 2. Input
@@ -65,6 +77,20 @@ assess(missing):                         // missing = [(hero, missing_ms, last_p
   คำนวณระยะทางจริงหรือ lane
 - **Ring buffer cleanup:** evict entries >5 min ทุกครั้งที่ [`record`](file:///g:/G-Maiden/src-tauri/src/motion.rs#L121)
 
+### 4.1 Parameters and next-match tuning
+
+ค่า shipped default คือ `ramp_start=5s`, `peak=12s`, `peak_risk=0.70`, `decay=0.03/s`,
+`floor=0.10`, `multi_boost=1.15`, `heading_amp=0.22`. `Motion::for_next_match()` โหลด
+`new_params` จาก local `%LOCALAPPDATA%\G-Maiden\motion-tuning.json` เมื่อสร้างหรือ reset
+capture pipeline ที่ match boundary; monitor switch จะล้าง observation history แต่คง profile
+ของแมตช์ปัจจุบันไว้ จึงไม่มีการเปลี่ยน parameter ระหว่างแมตช์.
+
+เฉพาะ `TuningDelta` ที่ schema ตรง, มีหลักฐาน `FULL` อย่างน้อย 3 แมตช์, candidate F1 สูงกว่า
+default อย่างน้อย `0.01`, baseline ตรงกับ shipped default และผ่าน finite/range/order checks
+เท่านั้นที่นำมาใช้. `APPROX`, JSON เสีย, candidate ไม่ดีขึ้น, หรือค่าอยู่นอกขอบเขตจะ fallback
+ไป `.json.bak` ที่ valid ก่อน แล้วจึงใช้ default. การจูนนี้เปลี่ยนเฉพาะ G-Motion; ไม่เปลี่ยน
+threshold ของ G-Signal.
+
 ## 5. Output Event
 
 ```rust
@@ -93,7 +119,8 @@ GankRisk {
 - **Latency:** ≤20ms (Eng Spec §1 ขั้น 3)
 - **Memory:** ring buffer 5 min at 20Hz ≈ 6000 entries × ~64 bytes ≈ 384KB
 - **ไม่มี cloud dependency:** heuristic ล้วน, ทำงานได้ offline
-- **Accuracy tradeoff:** เริ่มด้วย simple heuristic; ปรับจูนจาก G-Log feedback loop (Phase 6)
+- **Accuracy tradeoff:** เริ่มด้วย simple heuristic; replay FULL จาก G-Log ปรับจูนได้แบบ
+  explicit/local สำหรับเกมถัดไป แต่ยังไม่มีหลักฐาน accuracy จากแมตช์จริง
 
 ## 8. Dependencies
 
@@ -102,7 +129,7 @@ GankRisk {
 | Missing events | **G-Sentry** |
 | Position history | `vision` ring buffer |
 | → ส่งออกไป | **G-Signal** |
-| Tuning feedback | **G-Log** (Phase 6) |
+| Tuning feedback | **G-Log** FULL replay → local `TuningDelta` → G-Motion เกมถัดไป |
 
 ## 9. Acceptance Criteria
 
@@ -112,3 +139,10 @@ GankRisk {
 - [ ] eta_estimate สมเหตุสมผล (heuristic ตามเวลาหาย, floor 1s)
 - [ ] memory ≤1MB สำหรับ motion state ทั้งหมด
 - [ ] ไม่ crash เมื่อ ring buffer ว่าง (เกมเพิ่งเริ่ม)
+- [x] invalid/APPROX/corrupt tuning profile fail closed to a valid backup or default (unit-tested)
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | 2026-10-04 | Documented the validated local next-match G-Motion tuning contract and rollback behavior. |

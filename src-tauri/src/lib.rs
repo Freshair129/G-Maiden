@@ -38,6 +38,7 @@ mod setup;
 pub mod signal;
 mod slm;
 pub mod tts;
+pub mod tuning;
 mod usage;
 mod utterance;
 mod voice_api;

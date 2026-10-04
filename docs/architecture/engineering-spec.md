@@ -1,3 +1,15 @@
+---
+title: "G-Maiden — Engineering Spec"
+doc_id: "engineering-spec"
+status: "active"
+version: "0.1.0"
+updated: "2026-10-04"
+owner: "Boss"
+source_of_truth: false
+complexity: "C-2"
+risk: "LOW"
+---
+
 # G-Maiden — Engineering Spec
 
 > เอกสารนี้แปลง requirement จาก PRD/SRS ให้เป็น **สัญญาทางวิศวกรรม (contracts)** ที่ implement ได้:
@@ -70,8 +82,8 @@
 
 ### 2.6 G-Log (Feedback Loop) — local only
 - **Input:** decisions ที่ Maiden ส่ง + ผลลัพธ์ (death/teamfight/win)
-- **Logic:** เทียบคำแนะนำ vs ผล → ปรับ tuning params ของ G-Sentry/G-Signal เกมหน้า
-- **Output:** เขียน G-Log เป็น JSONL local (`match-*.jsonl` ใน `%LOCALAPPDATA%\G-Maiden\logs\`, [`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs)); ส่ง `TuningDelta` กลับเข้า config (ดู §6)
+- **Logic:** เทียบ risk trace ของ G-Motion กับผลลัพธ์จาก FULL logs; ปรับเฉพาะ G-Motion เกมหน้าเมื่อผู้ใช้เรียก replay-fit ด้วย `--write-tuning`
+- **Output:** เขียน G-Log เป็น JSONL local (`match-*.jsonl` ใน `%LOCALAPPDATA%\G-Maiden\logs\`, [`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs)); เขียน validated `TuningDelta` แยกไปที่ `motion-tuning.json` และโหลดตอน next-match capture initialization (ดู §6)
 
 ---
 
@@ -145,10 +157,9 @@ UI subscribe ผ่าน event แยกชื่อ (ไม่มี channel �
 
 > **สถานะ (2026-07): ไม่ใช่ SQLite/`rusqlite` — G-Log เก็บเป็น JSONL flat files ([`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs))**
 
-หนึ่งไฟล์ `match-*.jsonl` ต่อแมตช์ใน `%LOCALAPPDATA%\G-Maiden\logs\` — append หนึ่ง JSON object ต่อ tick/เหตุการณ์ (match-start/decision/signal/outcome) ไม่มีสคีมา SQL, ไม่มี network egress. tuning params ที่ G-Log จูนกลับถูกเขียนแยกเป็น config ในโฟลเดอร์เดียวกัน (ป้อน feedback loop, SRS §3.6).
+หนึ่งไฟล์ `match-*.jsonl` ต่อแมตช์ใน `%LOCALAPPDATA%\G-Maiden\logs\` — append หนึ่ง JSON object ต่อ tick/เหตุการณ์ (match-start/decision/signal/outcome) ไม่มีสคีมา SQL, ไม่มี network egress. เมื่อเรียก replay-fit ด้วย `--write-tuning` และผ่านเงื่อนไข FULL-only ระบบจะเขียน `motion-tuning.json` แยกด้วย temp-file replacement ในโฟลเดอร์ `%LOCALAPPDATA%\G-Maiden\` พร้อม `.json.bak` สำหรับ rollback.
 
-tuning params ที่ G-Log จูนถูกป้อนกลับเข้า G-Sentry/G-Signal ตอนเริ่มแมตช์ถัดไป (ปิด feedback loop, SRS §3.6).
-**ไม่มี network egress จากตารางเหล่านี้.**
+`Motion::for_next_match()` โหลด `new_params` ที่ validate แล้วตอนเริ่มหรือ reset capture pipeline. ไฟล์เสีย/หาย/ไม่ผ่าน schema, evidence, F1 หรือ bounds จะ fallback ไป backup ที่ valid หรือ shipped default. ไม่มีการเปลี่ยนค่ากลางแมตช์ และไม่มี network egress จาก G-Log หรือ tuning profile.
 
 ---
 
@@ -249,3 +260,4 @@ OpenDota profile + baselines. Match/CV/G-Log data stays local; the account store
 | Version | Date | Summary |
 | --- | --- | --- |
 | — | 2026-07-19 | symbol-link coverage extension (G1.5) |
+| 0.1.0 | 2026-10-04 | Reconciled the G-Log FULL-only tuning handoff with the implemented local G-Motion next-match loader and rollback boundary. |

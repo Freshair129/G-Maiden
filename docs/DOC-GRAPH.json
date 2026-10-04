@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T05:56:48.809Z",
+  "generatedAt": "2026-10-04T07:44:30.362Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -130,7 +130,9 @@
     {
       "id": "docs/architecture/engineering-spec.md",
       "type": "doc",
-      "path": "docs/architecture/engineering-spec.md"
+      "path": "docs/architecture/engineering-spec.md",
+      "title": "G-Maiden — Engineering Spec",
+      "status": "active"
     },
     {
       "id": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -633,7 +635,9 @@
     {
       "id": "docs/features/FEAT-G-LOG.md",
       "type": "doc",
-      "path": "docs/features/FEAT-G-LOG.md"
+      "path": "docs/features/FEAT-G-LOG.md",
+      "title": "FEAT-G-LOG — Feedback Loop & Local Analytics",
+      "status": "active"
     },
     {
       "id": "docs/features/FEAT-G-MASTER.md",
@@ -653,7 +657,9 @@
     {
       "id": "docs/features/FEAT-G-MOTION.md",
       "type": "doc",
-      "path": "docs/features/FEAT-G-MOTION.md"
+      "path": "docs/features/FEAT-G-MOTION.md",
+      "title": "FEAT-G-MOTION — Heatmap & Path Prediction",
+      "status": "active"
     },
     {
       "id": "docs/features/FEAT-G-PERSONA.md",
@@ -1504,6 +1510,16 @@
       "id": "tools/gen-herodb/",
       "type": "code",
       "path": "tools/gen-herodb/"
+    },
+    {
+      "id": "tests/perf/src/bin/replay_fit.rs",
+      "type": "code",
+      "path": "tests/perf/src/bin/replay_fit.rs"
+    },
+    {
+      "id": "src-tauri/src/tuning.rs",
+      "type": "code",
+      "path": "src-tauri/src/tuning.rs"
     },
     {
       "id": "src-tauri/data/respawn.json",
@@ -2414,115 +2430,115 @@
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
-      "line": 5
+      "line": 17
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/architecture/tech-stack.md",
       "type": "wikilink",
-      "line": 5
+      "line": 17
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
-      "line": 226
+      "line": 237
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 227
+      "line": 238
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 74
+      "line": 86
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 102
+      "line": 114
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 140
+      "line": 152
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 146
+      "line": 158
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/providers.mjs",
       "type": "symbol",
-      "line": 210
+      "line": 221
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/config.json",
       "type": "symbol",
-      "line": 210
+      "line": 221
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/engine.mjs",
       "type": "symbol",
-      "line": 210
+      "line": 221
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/companion.ts",
       "type": "symbol",
-      "line": 215
+      "line": 226
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildTelemetry.ts",
       "type": "symbol",
-      "line": 217
+      "line": 228
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildWeekly.ts",
       "type": "symbol",
-      "line": 217
+      "line": 228
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildInsights.ts",
       "type": "symbol",
-      "line": 217
+      "line": 228
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildHistory.ts",
       "type": "symbol",
-      "line": 217
+      "line": 228
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 220
+      "line": 231
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 222
+      "line": 233
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 222
+      "line": 233
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -6710,37 +6726,31 @@
       "from": "docs/features/FEAT-G-LOG.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 4
+      "line": 16
     },
     {
       "from": "docs/features/FEAT-G-LOG.md",
       "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
-      "line": 4
+      "line": 16
     },
     {
       "from": "docs/features/FEAT-G-LOG.md",
       "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
-      "line": 4
+      "line": 16
     },
     {
       "from": "docs/features/FEAT-G-LOG.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 31
+      "line": 43
     },
     {
       "from": "docs/features/FEAT-G-LOG.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 42
-    },
-    {
-      "from": "docs/features/FEAT-G-LOG.md",
-      "to": "src-tauri/src/log.rs",
-      "type": "symbol",
-      "line": 55
+      "line": 54
     },
     {
       "from": "docs/features/FEAT-G-LOG.md",
@@ -6752,19 +6762,37 @@
       "from": "docs/features/FEAT-G-LOG.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 67
+      "line": 79
     },
     {
       "from": "docs/features/FEAT-G-LOG.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 68
+      "line": 79
     },
     {
       "from": "docs/features/FEAT-G-LOG.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 77
+      "line": 80
+    },
+    {
+      "from": "docs/features/FEAT-G-LOG.md",
+      "to": "src-tauri/src/log.rs",
+      "type": "symbol",
+      "line": 94
+    },
+    {
+      "from": "docs/features/FEAT-G-LOG.md",
+      "to": "tests/perf/src/bin/replay_fit.rs",
+      "type": "symbol",
+      "line": 94
+    },
+    {
+      "from": "docs/features/FEAT-G-LOG.md",
+      "to": "src-tauri/src/tuning.rs",
+      "type": "symbol",
+      "line": 94
     },
     {
       "from": "docs/features/FEAT-G-MASTER.md",
@@ -6854,47 +6882,29 @@
       "from": "docs/features/FEAT-G-MOTION.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 4
+      "line": 16
     },
     {
       "from": "docs/features/FEAT-G-MOTION.md",
       "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
-      "line": 4
+      "line": 16
     },
     {
       "from": "docs/features/FEAT-G-MOTION.md",
       "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
-      "line": 4
+      "line": 16
     },
     {
       "from": "docs/features/FEAT-G-MOTION.md",
       "to": "docs/features/FEAT-G-SIGNAL.md",
       "type": "wikilink",
-      "line": 88
+      "line": 114
     },
     {
       "from": "docs/features/FEAT-G-MOTION.md",
       "to": "src-tauri/src/motion.rs",
-      "type": "symbol",
-      "line": 17
-    },
-    {
-      "from": "docs/features/FEAT-G-MOTION.md",
-      "to": "src-tauri/src/motion.rs",
-      "type": "symbol",
-      "line": 20
-    },
-    {
-      "from": "docs/features/FEAT-G-MOTION.md",
-      "to": "src-tauri/src/sentry.rs",
-      "type": "symbol",
-      "line": 28
-    },
-    {
-      "from": "docs/features/FEAT-G-MOTION.md",
-      "to": "src-tauri/src/cv/detector.rs",
       "type": "symbol",
       "line": 29
     },
@@ -6902,31 +6912,49 @@
       "from": "docs/features/FEAT-G-MOTION.md",
       "to": "src-tauri/src/motion.rs",
       "type": "symbol",
+      "line": 32
+    },
+    {
+      "from": "docs/features/FEAT-G-MOTION.md",
+      "to": "src-tauri/src/sentry.rs",
+      "type": "symbol",
       "line": 40
     },
     {
       "from": "docs/features/FEAT-G-MOTION.md",
-      "to": "src-tauri/src/motion.rs",
+      "to": "src-tauri/src/cv/detector.rs",
       "type": "symbol",
-      "line": 58
+      "line": 41
     },
     {
       "from": "docs/features/FEAT-G-MOTION.md",
       "to": "src-tauri/src/motion.rs",
       "type": "symbol",
-      "line": 60
+      "line": 52
     },
     {
       "from": "docs/features/FEAT-G-MOTION.md",
       "to": "src-tauri/src/motion.rs",
       "type": "symbol",
-      "line": 64
+      "line": 70
     },
     {
       "from": "docs/features/FEAT-G-MOTION.md",
       "to": "src-tauri/src/motion.rs",
       "type": "symbol",
-      "line": 66
+      "line": 72
+    },
+    {
+      "from": "docs/features/FEAT-G-MOTION.md",
+      "to": "src-tauri/src/motion.rs",
+      "type": "symbol",
+      "line": 76
+    },
+    {
+      "from": "docs/features/FEAT-G-MOTION.md",
+      "to": "src-tauri/src/motion.rs",
+      "type": "symbol",
+      "line": 78
     },
     {
       "from": "docs/features/FEAT-G-PERSONA.md",
@@ -7352,85 +7380,103 @@
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
       "type": "wikilink",
-      "line": 375
+      "line": 378
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "docs/features/FEAT-G-DAMAGE.md",
       "type": "wikilink",
-      "line": 376
+      "line": 379
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
-      "line": 85
+      "line": 86
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/sentry.rs",
       "type": "symbol",
-      "line": 126
+      "line": 127
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/motion.rs",
       "type": "symbol",
-      "line": 168
+      "line": 171
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/tuning.rs",
+      "type": "symbol",
+      "line": 171
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/signal.rs",
       "type": "symbol",
-      "line": 191
+      "line": 194
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 244
+      "line": 247
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 245
+      "line": 248
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 246
+      "line": 249
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 267
+      "line": 270
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 285
+      "line": 288
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 285
+      "line": 288
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 295
+      "line": 298
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "src-tauri/src/tuning.rs",
+      "type": "symbol",
+      "line": 298
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "tests/perf/src/bin/replay_fit.rs",
+      "type": "symbol",
+      "line": 298
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/revive.rs",
       "type": "symbol",
-      "line": 321
+      "line": 324
     },
     {
       "from": "docs/features/README.md",
@@ -9120,16 +9166,11 @@
     },
     {
       "file": "docs/architecture/engineering-spec.md",
-      "line": 215,
+      "line": 226,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/companion.ts",
       "anchor": 941,
       "symbol": "useCompanionData"
-    },
-    {
-      "file": "docs/architecture/engineering-spec.md",
-      "line": null,
-      "reason": "no-metadata"
     },
     {
       "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -10034,11 +10075,6 @@
       "symbol": "loadout_from_names"
     },
     {
-      "file": "docs/features/FEAT-G-LOG.md",
-      "line": null,
-      "reason": "no-metadata"
-    },
-    {
       "file": "docs/features/FEAT-G-MASTER.md",
       "line": 42,
       "reason": "anchor-symbol-mismatch",
@@ -10063,7 +10099,7 @@
     },
     {
       "file": "docs/features/FEAT-G-MOTION.md",
-      "line": 17,
+      "line": 29,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/motion.rs",
       "anchor": 192,
@@ -10071,7 +10107,7 @@
     },
     {
       "file": "docs/features/FEAT-G-MOTION.md",
-      "line": 20,
+      "line": 32,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/motion.rs",
       "anchor": 234,
@@ -10079,7 +10115,7 @@
     },
     {
       "file": "docs/features/FEAT-G-MOTION.md",
-      "line": 40,
+      "line": 52,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/motion.rs",
       "anchor": 192,
@@ -10087,7 +10123,7 @@
     },
     {
       "file": "docs/features/FEAT-G-MOTION.md",
-      "line": 58,
+      "line": 70,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/motion.rs",
       "anchor": 234,
@@ -10095,7 +10131,7 @@
     },
     {
       "file": "docs/features/FEAT-G-MOTION.md",
-      "line": 60,
+      "line": 72,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/motion.rs",
       "anchor": 192,
@@ -10103,7 +10139,7 @@
     },
     {
       "file": "docs/features/FEAT-G-MOTION.md",
-      "line": 64,
+      "line": 76,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/motion.rs",
       "anchor": 248,
@@ -10111,16 +10147,11 @@
     },
     {
       "file": "docs/features/FEAT-G-MOTION.md",
-      "line": 66,
+      "line": 78,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/motion.rs",
       "anchor": 121,
       "symbol": "record"
-    },
-    {
-      "file": "docs/features/FEAT-G-MOTION.md",
-      "line": null,
-      "reason": "no-metadata"
     },
     {
       "file": "docs/features/FEAT-G-PERSONA.md",
@@ -10613,7 +10644,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-04T05:57:01.756Z",
+    "generatedAt": "2026-10-04T07:44:33.824Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

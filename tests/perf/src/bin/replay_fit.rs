@@ -1,13 +1,13 @@
 //! replay_fit — offline G-Log replay/fit harness (G-Log #7 closes the loop).
 //!
-//! **Read-only, zero network.** Reads archived match logs from disk
+//! **Local-only, zero network.** Reads archived match logs from disk
 //! (`%LOCALAPPDATA%\G-Maiden\logs\match-*.jsonl` by default, or a directory
 //! passed on the command line), replays each match's missing-hero timeline
 //! through the REAL `g_maiden::motion::Motion` / `g_maiden::signal::Signal`
 //! machinery for a grid of parameter choices, and scores each choice against
 //! the match's own death timestamps. Nothing is written back to the logs and
-//! nothing leaves the machine — this only reads what `log.rs` already wrote
-//! locally (see CLAUDE.md privacy-first: G-Log raw data is local-only).
+//! nothing leaves the machine. With `--write-tuning`, an explicitly requested
+//! FULL-only candidate is written to the local next-match tuning profile.
 //!
 //! ## Why this exists
 //!
@@ -79,9 +79,11 @@
 use std::collections::{BTreeSet, HashMap};
 use std::fs;
 use std::path::{Path, PathBuf};
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use g_maiden::motion::{GankRisk, Motion, MotionParams};
 use g_maiden::signal::{Sensitivity, Signal, SignalEvent};
+use g_maiden::tuning::{self, TuningDelta, TuningEvidence, MIN_FULL_MATCHES};
 
 /// Mirrors `log.rs::EFFICACY_WINDOW_MS` — the window after an alert within
 /// which a death still counts as that alert's outcome.
@@ -436,6 +438,39 @@ fn run_grid(matches: &[&MatchData], window_ms: u64) -> Vec<Row> {
     rows
 }
 
+/// Build the only profile the runtime is allowed to consume: a FULL-evidence
+/// candidate at the shipped Med sensitivity, measurably better than the
+/// shipped default. Sensitivity changes stay out of this slice.
+fn build_tuning_delta(
+    full_match_count: u32,
+    rows: &[Row],
+    generated_at_ms: u64,
+) -> Result<TuningDelta, String> {
+    let baseline = rows
+        .iter()
+        .find(|row| row.is_default && row.sensitivity == Sensitivity::Med)
+        .and_then(|row| row.metrics.f1())
+        .ok_or_else(|| "FULL baseline has no measurable Med F1".to_string())?;
+    let candidate = rows
+        .iter()
+        .filter(|row| row.sensitivity == Sensitivity::Med)
+        .filter_map(|row| row.metrics.f1().map(|f1| (f1, row)))
+        .max_by(|(left, _), (right, _)| left.total_cmp(right))
+        .ok_or_else(|| "FULL candidates have no measurable Med F1".to_string())?;
+    let delta = TuningDelta {
+        schema_version: tuning::TUNING_SCHEMA_VERSION,
+        generated_at_ms,
+        evidence: TuningEvidence::Full,
+        full_matches: full_match_count,
+        baseline_f1: baseline,
+        candidate_f1: candidate.0,
+        old_params: MotionParams::default(),
+        new_params: candidate.1.params,
+    };
+    delta.validate().map_err(|err| err.to_string())?;
+    Ok(delta)
+}
+
 fn sensitivity_label(s: Sensitivity) -> &'static str {
     match s {
         Sensitivity::Low => "Low",
@@ -548,13 +583,15 @@ fn read_matches(dir: &Path) -> Vec<MatchData> {
     out
 }
 
-fn parse_args() -> (PathBuf, u64) {
+fn parse_args() -> (PathBuf, u64, bool) {
     let args: Vec<String> = std::env::args().skip(1).collect();
     let mut log_dir: Option<PathBuf> = None;
     let mut window_ms = DEFAULT_WINDOW_MS;
+    let mut write_tuning = false;
     let mut i = 0;
     while i < args.len() {
         match args[i].as_str() {
+            "--write-tuning" => write_tuning = true,
             "--window-ms" => {
                 i += 1;
                 if let Some(v) = args.get(i) {
@@ -570,11 +607,18 @@ fn parse_args() -> (PathBuf, u64) {
         }
         i += 1;
     }
-    (log_dir.unwrap_or_else(default_log_dir), window_ms)
+    (log_dir.unwrap_or_else(default_log_dir), window_ms, write_tuning)
+}
+
+fn now_ms() -> u64 {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_millis() as u64)
+        .unwrap_or(0)
 }
 
 fn main() {
-    let (dir, window_ms) = parse_args();
+    let (dir, window_ms, write_tuning) = parse_args();
 
     println!("============================================================");
     println!(" G-Log replay_fit — offline gank-warning param fit harness");
@@ -617,6 +661,26 @@ fn main() {
 
     report_mode(Mode::Full, &full_matches, window_ms);
     report_mode(Mode::Approx, &approx_matches, window_ms);
+
+    if write_tuning {
+        let rows = run_grid(&full_matches, window_ms);
+        match build_tuning_delta(full_matches.len() as u32, &rows, now_ms()) {
+            Ok(delta) => match tuning::write_tuning_delta(&delta) {
+                Ok(()) => println!(
+                    "\nWrote FULL-only next-match tuning profile to {}",
+                    tuning::motion_tuning_path().display()
+                ),
+                Err(err) => {
+                    eprintln!("\nTuning profile was not written: {err}");
+                    std::process::exit(1);
+                }
+            },
+            Err(err) => {
+                eprintln!("\nTuning candidate was not accepted: {err}");
+                std::process::exit(1);
+            }
+        }
+    }
 
     println!();
     println!("──────────────────────────────────────────────────────────────────────────");
@@ -791,6 +855,48 @@ mod tests {
         assert!(!is_default_combo(&d, Sensitivity::Low));
         let other = MotionParams { peak_s: 8.0, ..d };
         assert!(!is_default_combo(&other, Sensitivity::Med));
+    }
+
+    #[test]
+    fn tuning_delta_selects_an_improving_full_med_candidate() {
+        let default_row = Row {
+            params: MotionParams::default(),
+            sensitivity: Sensitivity::Med,
+            metrics: Metrics {
+                alerts: 10,
+                deaths: 10,
+                hit_alerts: 5,
+                hit_deaths: 5,
+            },
+            is_default: true,
+        };
+        let candidate_row = Row {
+            params: MotionParams {
+                peak_s: 15.0,
+                ..MotionParams::default()
+            },
+            sensitivity: Sensitivity::Med,
+            metrics: Metrics {
+                alerts: 10,
+                deaths: 10,
+                hit_alerts: 7,
+                hit_deaths: 7,
+            },
+            is_default: false,
+        };
+
+        let delta = build_tuning_delta(
+            MIN_FULL_MATCHES,
+            &[default_row, candidate_row],
+            123,
+        )
+        .expect("improving FULL candidate should produce a delta");
+
+        assert_eq!(delta.evidence, TuningEvidence::Full);
+        assert_eq!(delta.full_matches, MIN_FULL_MATCHES);
+        assert_eq!(delta.old_params, MotionParams::default());
+        assert_eq!(delta.new_params.peak_s, 15.0);
+        assert!(delta.candidate_f1 > delta.baseline_f1);
     }
 
     #[test]
