@@ -1,3 +1,15 @@
+---
+title: "FEAT-G-STREAM — Streamer Co-host Mode"
+doc_id: "FEAT-G-STREAM"
+status: "active"
+version: "0.1.0"
+updated: "2026-10-05"
+owner: "Boss"
+source_of_truth: true
+complexity: "C-3"
+risk: "HIGH"
+---
+
 # FEAT-G-STREAM — Streamer Co-host Mode
 
 > **สถานะ (2026-07): ยังไม่ได้ทำ (spec ล่วงหน้า) — ไม่มีโมดูลนี้ในโค้ด (`src-tauri/src/`)**
@@ -105,3 +117,43 @@ if stream_mode.enabled:
 - [ ] toggle real-time ไม่ crash
 - [ ] G-Signal ทำงานปกติใน stream mode
 - [ ] no-egress ยังคง pass (inherit GATE P6)
+
+## 9. DL-006 Lineage Contract (approved design; runtime not implemented)
+
+### 9.1 Source and output boundary
+
+| Source | Transport | Allowed output | Forbidden output |
+| --- | --- | --- | --- |
+| G-Sensory events and public GSI fields | In-process event handoff to the overlay | Clock, team score, public event labels, and explicitly approved hero/event text | Raw GSI, SteamID, MMR/rank, real name, exact private stats |
+| G-Memory | Local in-process read only | Qualitative public-safe state, if explicitly enabled | Personal memory details, exact hotspots, history, or MMR |
+| G-Log | None | No direct stream output | JSONL, risk traces, and local logs |
+
+This contract defines overlay-only stream-safe output. There is no OBS socket, streaming
+endpoint, telemetry route, or other external transport in this slice; the broadcaster may
+capture the already-filtered overlay through normal screen capture.
+
+### 9.2 Fail-closed redaction algorithm
+
+```text
+candidate = project(input, PUBLIC_ALLOWLIST)
+if an unknown field is present or projection fails:
+    drop the event
+safe_event = candidate - SENSITIVE_DENYLIST
+render/text-to-speech only safe_event
+```
+
+The allowlist is authoritative even when the denylist is incomplete. Text must be generated
+from `safe_event`; arbitrary raw audio cannot be redacted after synthesis. Stream mode is
+an output-layer toggle and must not gate, delay, or mutate G-Signal evaluation.
+
+### 9.3 Fallback and evidence
+
+- Redaction error → suppress the event or use a generic safe phrase; never pass through raw text.
+- Missing public fields → omit them, never substitute private fields.
+- Acceptance requires fixtures for MMR/name/memory/unknown-field redaction, a real-time
+  toggle test, a no-egress check, and proof that G-Signal output remains available.
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | 2026-10-05 | Added the DL-006 source, overlay-only boundary, fail-closed redaction, fallback, privacy, and evidence contract. |

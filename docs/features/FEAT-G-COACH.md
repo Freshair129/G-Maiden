@@ -1,3 +1,15 @@
+---
+title: "FEAT-G-COACH — Post-Match Deep Review"
+doc_id: "FEAT-G-COACH"
+status: "active"
+version: "0.1.0"
+updated: "2026-10-05"
+owner: "Boss"
+source_of_truth: true
+complexity: "C-3"
+risk: "HIGH"
+---
+
 # FEAT-G-COACH — Post-Match Deep Review
 
 > **สถานะ (2026-07): ยังไม่ได้ทำ (spec ล่วงหน้า) — ยังไม่มีโมดูลนี้ในโค้ด (`src-tauri/src/`)**
@@ -92,3 +104,49 @@ CoachReview {
 - [ ] cloud fail → fallback shorter analysis (ไม่ crash)
 - [ ] privacy: ไม่ส่ง raw G-Log/G-Memory ขึ้น cloud
 - [ ] completes within 30s of match end
+
+## 9. DL-006 Lineage Contract (approved design; runtime not implemented)
+
+### 9.1 Source and transport
+
+| Source | Transport | Fields/contract | Current status |
+| --- | --- | --- | --- |
+| G-Log | Local read after match finalization | Tick stream plus `gank_signal`, `gank_revision`, explicit outcome records | Implemented writer; analyzer planned |
+| G-Memory | In-process local `MemoryContext` | Bounded recurrence/style aggregates; missing values remain `UNKNOWN` | Planned dependency |
+| GSI | Final `GameTick` snapshot already present in G-Log | Match clock, final stats, hero, duration/result when explicitly available | Implemented upstream |
+| Brain | Redacted compact `CoachInput` to Claude/Anthropic or local Ollama | Only derived moments and aggregates; never raw JSONL | Partial upstream |
+
+The raw match file is parsed and compacted locally before any model call. There is no
+coach-specific GET endpoint and no cloud upload of `match-*.jsonl` or raw `MemoryContext`.
+
+### 9.2 Deterministic moment and recommendation scoring
+
+For each fixed event window, normalized to `[0, 1]`:
+
+```text
+risk       = max(gank_signal.probability in window)
+death      = 1 when GameTick.alive changes true → false in window, else 0
+revision   = 1 when gank_revision exists in window, else 0
+moment_score = 0.6*risk + 0.2*death + 0.2*revision
+```
+
+Select the top three non-overlapping windows by `moment_score`, then timestamp for stable
+ties. Recommendation priority is `0.6*moment_score + 0.4*memory_recurrence`; when
+`memory_recurrence` is unavailable, use `0` and label the result as incomplete. The model
+may narrate or explain these facts, but it cannot replace the deterministic selection.
+
+### 9.3 Output, fallback, and evidence
+
+`CoachReview` contains `key_moments`, `recommendations`, `praise_points`,
+`persona_narrative`, and evidence/status metadata. The output is local post-match UI/audio
+and never enters the G-Signal critical path.
+
+- Claude/Anthropic failure → Ollama → local template based on deterministic facts.
+- Missing or malformed logs → an explicit incomplete review; no fabricated moments.
+- Acceptance requires hand-calculated scorer fixtures, top-three ordering tests, a redacted
+  prompt inspection, cloud-failure fallback evidence, and completion within 30 seconds.
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | 2026-10-05 | Added the DL-006 source, compact-input, deterministic scoring, fallback, privacy, and evidence contract. |

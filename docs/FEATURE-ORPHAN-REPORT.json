@@ -1,6 +1,6 @@
 {
   "_generated": "GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs",
-  "generatedAt": "2026-10-04T20:24:29.554Z",
+  "generatedAt": "2026-10-04T23:39:15.929Z",
   "baselineOrphanCandidates": 0,
   "rowCount": 22,
   "summary": {
@@ -32,7 +32,7 @@
       "id": "FEAT-G-COACH",
       "slug": "FEAT-G-COACH",
       "path": "docs/features/FEAT-G-COACH.md",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "classification": "planned",
       "strongAnchors": [
         "feature-ledger",
@@ -40,7 +40,8 @@
         "project-feature-map"
       ],
       "weakAnchors": [
-        "docs/features/README.md"
+        "docs/features/README.md",
+        "docs/features/G-SERIES-DATA-LINEAGE.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,
@@ -110,7 +111,7 @@
       "id": "FEAT-G-MEMORY",
       "slug": "FEAT-G-MEMORY",
       "path": "docs/features/FEAT-G-MEMORY.md",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "classification": "planned",
       "strongAnchors": [
         "feature-ledger",
@@ -118,7 +119,8 @@
         "project-feature-map"
       ],
       "weakAnchors": [
-        "docs/features/README.md"
+        "docs/features/README.md",
+        "docs/features/G-SERIES-DATA-LINEAGE.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,
@@ -203,13 +205,14 @@
       "id": "FEAT-G-SCORE",
       "slug": "FEAT-G-SCORE",
       "path": "docs/features/FEAT-G-SCORE.md",
-      "lifecycle": "planned",
+      "lifecycle": "draft",
       "classification": "planned",
       "strongAnchors": [
         "features-readme"
       ],
       "weakAnchors": [
-        "docs/features/README.md"
+        "docs/features/README.md",
+        "docs/features/G-SERIES-DATA-LINEAGE.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,
@@ -281,7 +284,7 @@
       "id": "FEAT-G-STREAM",
       "slug": "FEAT-G-STREAM",
       "path": "docs/features/FEAT-G-STREAM.md",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "classification": "planned",
       "strongAnchors": [
         "feature-ledger",
@@ -289,7 +292,8 @@
         "project-feature-map"
       ],
       "weakAnchors": [
-        "docs/features/README.md"
+        "docs/features/README.md",
+        "docs/features/G-SERIES-DATA-LINEAGE.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,
@@ -299,7 +303,7 @@
       "id": "FEAT-G-VOICE",
       "slug": "FEAT-G-VOICE",
       "path": "docs/features/FEAT-G-VOICE.md",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "classification": "planned",
       "strongAnchors": [
         "feature-ledger",
@@ -307,7 +311,8 @@
         "project-feature-map"
       ],
       "weakAnchors": [
-        "docs/features/README.md"
+        "docs/features/README.md",
+        "docs/features/G-SERIES-DATA-LINEAGE.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,
