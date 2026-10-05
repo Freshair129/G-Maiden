@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-10-04T23:39:09.187Z
+สร้างเมื่อ / Generated at: 2026-10-05T16:59:40.711Z
 
-สแกน 147 ไฟล์เอกสาร, 276 nodes, 1244 edges, 217 รายการปัญหา (170 ตัวบล็อก exit code) / scanned 147 doc files, 276 nodes, 1244 edges, 217 violations (170 blocking exit code).
+สแกน 147 ไฟล์เอกสาร, 276 nodes, 1244 edges, 218 รายการปัญหา (171 ตัวบล็อก exit code) / scanned 147 doc files, 276 nodes, 1244 edges, 218 violations (171 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -18,7 +18,7 @@
 | missing-changelog | มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table | 4 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 44 | no (informational) |
 | unresolved | wikilink หาไม่เจอ / unresolved wikilink | 11 | yes |
-| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 27 | yes |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 28 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -87,7 +87,7 @@
 
 ### docs/architecture/engineering-spec.md
 
-- [L255] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/companion.ts", anchor=941, symbol="useCompanionData")
+- [L257] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/companion.ts", anchor=941, symbol="useCompanionData")
 
 ### docs/architecture/g-maiden-ui-sitemap-flow-board.md
 
@@ -388,6 +388,10 @@
 ### docs/features/FEAT-G-SIGNAL.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/features/G-SERIES-DATA-LINEAGE.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.0.9", changelog="1.0.10")
 
 ### docs/features/README.md
 

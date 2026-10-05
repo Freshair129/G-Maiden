@@ -74,7 +74,7 @@ GPU feeder POST /telemetry ────► G-Sensory resource footer
 | `SRC-ITEM-DB` | Embedded `src-tauri/data/items.json` and `item-prices.json` | burst contribution and item cost | G-Damage, GSI net-worth fallback | Unknown items contribute zero; snapshot provenance is in `SRC-DATA-MANIFEST`. |
 | `SRC-COUNTER-DB` | Embedded `src-tauri/data/item_counters.json` | hero key → recommended item keys | G-Master | Unknown hero/key returns no counter advice; curation status is in `SRC-DATA-MANIFEST`. |
 | `SRC-DATA-MANIFEST` | Local `src-tauri/data/provenance.json` plus `tools/data-provenance/verify_manifest.py` | source kind/URL, patch/date fields, generation commit, SHA-256, evidence status | G-Damage, G-Master, GSI net-worth fallback, maintenance gates | Build-time/local only; checksum mismatch fails verification; missing historical provenance remains `PARTIAL`/`UNVERIFIED`; no runtime fetch. |
-| `SRC-LOG` | Local JSONL append/flush | ticks, typed events, risk traces, utterances | G-Log, offline replay tools, future G-Memory/G-Coach | Replay reads this source locally; only an explicit FULL-evidence fit may produce a tuning profile, and raw logs never leave the machine. |
+| `SRC-LOG` | Local JSONL append/flush | ticks, typed events, risk traces, utterances | G-Log, G-Memory, offline replay tools, future G-Coach | Replay and G-Memory read this source locally; only an explicit FULL-evidence fit may produce a tuning profile, and raw logs never leave the machine. |
 | `SRC-TUNING` | Local JSON at `%LOCALAPPDATA%\G-Maiden\motion-tuning.json`, written only by `replay_fit --write-tuning` | versioned `TuningDelta` with FULL evidence, match count, baseline/candidate F1, and old/new `MotionParams` | G-Motion at next-match capture initialization | Invalid, missing, APPROX, non-improving, or corrupt primary profiles fall back to the previous valid `.json.bak`, then shipped defaults; no network transport. |
 | `SRC-FPS-P7` | Local `PresentMon.exe` subprocess subscribing to Windows ETW for `dota2.exe`; no HTTP | `MsBetweenPresents`, `Dropped`, process identity, overlay phase, operator confirmation | G-Sensory P7 acceptance evidence | Missing PresentMon, Dota, elevation, confirmation, or valid receipt produces `SKIP`/exit `77`; the receipt contains no GSI, CV, G-Log, match, or player data. |
 | `SRC-OPENDOTA` | Frontend `GET https://api.opendota.com/api/...` | public profile, win/loss, recent matches, hero stats | Control deck profile/weekly/insights | Public/private/offline/429 failures resolve to locked or fallback UI; not on G-Signal critical path. |
@@ -373,13 +373,17 @@ code is output-only.
 
 **Lineage contract:** read only finalized local G-Log JSONL and explicit `GameTick` outcome
 fields; no external GET, OpenDota, Steam, sync, or telemetry route is authorized. The first
-storage design is an atomically replaced local `memory.json` snapshot with an in-memory
-query index. Hero counts/win rate and final GPM/XPM use explicit arithmetic formulas;
-missing player death coordinates or rating data remain `UNKNOWN`, never inferred.
+storage design is a schema-versioned local `memory.json` snapshot rebuilt from a complete
+temporary file and returned directly while source metadata is unchanged. Hero counts/win
+rate and final GPM/XPM use explicit arithmetic formulas; missing player death coordinates
+or rating data remain `UNKNOWN`, never inferred.
 
-The full source/field/formula/delete/no-egress contract is in [`FEAT-G-MEMORY` §10](FEAT-G-MEMORY.md#10-dl-006-lineage-contract-approved-design-runtime-not-implemented).
+The full source/field/formula/delete/no-egress contract is in [`FEAT-G-MEMORY` §10](FEAT-G-MEMORY.md#10-dl-006-lineage-contract-approved-design-runtime-partial).
 
-**Status:** `PLANNED`. No GET or cloud sync is authorized by this contract.
+**Status:** `PARTIAL`. The local JSONL reader, derived snapshot cache, explicit UNKNOWN
+fields, and privacy-scoped Tauri commands exist. No post-match outcome writer, consumer UI,
+death/MMR/style derivation, or no-egress runtime receipt is claimed. No GET or cloud sync is
+authorized by this contract.
 
 ### 6.4 G-Coach — post-match review
 
@@ -440,7 +444,7 @@ The full source/formula/audio-priority/fallback/evidence contract is in [`FEAT-G
 | `DL-002` | Enemy HP/armor/magic resistance/level source is not available to target-side G-Damage | No truthful live enemy lethality warning | Contract, conservative observation reconciliation, and normalization/fail-closed wrapper are implemented in [[FEAT-G-DAMAGE]] §4.1; live source proofs and G-Damage/G-Signal wiring remain blocked until a local CV/OCR source is available and separately reviewed. |
 | `DL-004` | G-Sensory FPS computation lacked a canonical receipt contract and live acceptance evidence | FPS ≤3% remains unverified | Receipt schema and strict baseline validation are implemented; execute the two-phase PresentMon/ETW run and retain a real `verdict=pass` receipt before closeout. |
 | `DL-005` | Static hero/item/counter snapshots lack a single patch/version manifest | Advice and damage provenance can drift | Manifest and local checksum verifier are implemented; historical entries remain explicitly `PARTIAL`/`UNVERIFIED` where patch/date/source evidence was not recorded. |
-| `DL-006` | G-Voice/G-Memory/G-Coach/G-Stream/G-Score have no runtime lineage | Planned features cannot be implemented reproducibly | **Structurally resolved:** five module contracts now define source, transport, computation, output, fallback, privacy, and evidence. Runtime remains `PLANNED`/`PROPOSED`. |
+| `DL-006` | G-Voice/G-Memory/G-Coach/G-Stream/G-Score have no runtime lineage | Planned features cannot be implemented reproducibly | **Structurally resolved:** five module contracts now define source, transport, computation, output, fallback, privacy, and evidence. G-Memory has a partial local reader/snapshot implementation; the remaining companion runtime slices remain `PLANNED`/`PROPOSED`. |
 
 `DL-003` is resolved in version `1.0.6`: the runtime consumes only a validated, local, FULL-evidence `TuningDelta` at the next match boundary, with complete temp-file persistence, backup rollback, and default fallback. This closes the storage/injection gap; it does not claim that real-match accuracy or the broader G-Log acceptance gate has passed.
 
@@ -453,8 +457,9 @@ missing upstream patch, revision, or retrieval-date evidence. Those entries rema
 `UNVERIFIED` until the source record is supplied.
 
 `DL-006` is structurally resolved in version `1.0.9`: the five companion feature specs now
-define source-to-output lineage and deterministic boundaries. This closes the documentation
-gap only; no companion runtime module is claimed as shipped, and G-Score remains proposed.
+define source-to-output lineage and deterministic boundaries. The G-Memory local reader is
+now `PARTIAL` in version `1.0.10`; this does not close its live acceptance evidence, and
+G-Score remains proposed.
 
 ## 8. Acceptance evidence required
 
@@ -492,3 +497,4 @@ The following are documentation/verification requirements, not claims that the c
 | 1.0.7 | 2026-10-05 | Implemented the DL-004 P7 FPS receipt envelope, strict baseline validation, lineage formula, fallback, and privacy metadata; live acceptance remains unverified. |
 | 1.0.8 | 2026-10-05 | Implemented DL-005 static-data provenance manifest, explicit historical evidence statuses, and local SHA-256 verification with no runtime network fetch. |
 | 1.0.9 | 2026-10-05 | Closed DL-006 structurally with five companion source-to-output contracts; runtime implementation and live acceptance remain open. |
+| 1.0.10 | 2026-10-05 | Implemented the first local G-Memory reader/snapshot slice and narrowed DL-006 runtime status to partial rather than shipped. |

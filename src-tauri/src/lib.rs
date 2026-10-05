@@ -27,6 +27,7 @@ mod identity;
 mod items;
 mod log;
 mod master;
+pub mod memory;
 pub mod motion;
 mod ocr;
 pub mod respawn;
@@ -688,6 +689,18 @@ fn get_log_dir() -> String {
     log::log_dir().to_string_lossy().to_string()
 }
 
+/// Load the local derived G-Memory context. No network access is performed.
+#[tauri::command]
+fn get_player_memory() -> Result<memory::MemoryContext, String> {
+    memory::get_player_memory()
+}
+
+/// Delete only the derived G-Memory snapshot; archived G-Log files remain intact.
+#[tauri::command]
+fn delete_player_memory() -> Result<(), String> {
+    memory::delete_player_memory()
+}
+
 /// Settings persistence — `%LOCALAPPDATA%\G-Maiden\settings.json`.
 ///
 /// localStorage alone loses the overlay layout whenever the webview origin
@@ -887,6 +900,8 @@ pub fn run() {
             detect_dota_running,
             install_gsi_config,
             get_log_dir,
+            get_player_memory,
+            delete_player_memory,
             save_settings_file,
             load_settings_file,
             current_match_path,

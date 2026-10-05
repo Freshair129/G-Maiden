@@ -2,7 +2,7 @@
 title: "G-Maiden — Engineering Spec"
 doc_id: "engineering-spec"
 status: "active"
-version: "0.1.3"
+version: "0.1.4"
 updated: "2026-10-05"
 owner: "Boss"
 source_of_truth: false
@@ -181,14 +181,16 @@ critical path. Their source-to-output contracts are canonical in
 | Module | Source/transport | Computation boundary | Output/fallback |
 | --- | --- | --- | --- |
 | G-Voice | Transient local PTT + `POST /gsi` `GameTick` + local `MemoryContext` | `capture + STT + router + TTS ≤2s`; cloud STT not authorized | Audio/TTS turn; G-Signal preempts; no persistence |
-| G-Memory | Local finalized G-Log JSONL; no network GET | Explicit aggregate formulas; absent rating/position fields are `UNKNOWN` | Local snapshot/context; empty context on invalid data |
+| G-Memory | Local finalized G-Log JSONL; no network GET | Explicit aggregate formulas; absent rating/position fields are `UNKNOWN` | Local `memory.json` snapshot/context via `get_player_memory`; delete command removes only the derived snapshot |
 | G-Coach | Local G-Log compaction + memory aggregates | `0.6*risk + 0.2*death + 0.2*revision`, top three non-overlapping windows | Post-match review; Claude → Ollama → template |
 | G-Stream | Local public-event allowlist | Fail-closed projection; unknown fields drop | Overlay/TTS safe view only; no OBS/network route |
 | G-Score | Local GSI/Motion/Signal intensity + verified local packs | Proposed weighted intensity only; missing sources stay `UNKNOWN` | Lowest-priority local soundtrack; no track is safe fallback |
 
-These boundaries are design contracts, not evidence that the modules exist or that their
-acceptance gates have passed. Raw G-Log/G-Memory data remains local and never enters a
-cloud prompt; detailed privacy and evidence requirements remain in the linked feature specs.
+These boundaries are design contracts, not evidence that every module exists or that its
+acceptance gates have passed. The G-Memory reader/snapshot is a partial implementation;
+its consumer wiring and runtime no-egress receipt remain open. Raw G-Log/G-Memory data
+remains local and never enters a cloud prompt; detailed privacy and evidence requirements
+remain in the linked feature specs.
 
 ---
 
@@ -293,3 +295,4 @@ OpenDota profile + baselines. Match/CV/G-Log data stays local; the account store
 | 0.1.1 | 2026-10-05 | Added the DL-004 PresentMon/ETW P7 receipt contract, formula, fallback, and live-acceptance boundary. |
 | 0.1.2 | 2026-10-05 | Added the DL-005 static-data provenance and checksum-verification contract. |
 | 0.1.3 | 2026-10-05 | Added the DL-006 companion module boundary and source-to-output contract references; runtime remains unimplemented. |
+| 0.1.4 | 2026-10-05 | Recorded the partial G-Memory local reader/snapshot boundary and its privacy-scoped command surface. |

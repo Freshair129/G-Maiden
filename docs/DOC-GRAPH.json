@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-04T23:39:09.187Z",
+  "generatedAt": "2026-10-05T16:59:40.711Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -2464,13 +2464,13 @@
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
-      "line": 266
+      "line": 268
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 267
+      "line": 269
     },
     {
       "from": "docs/architecture/engineering-spec.md",
@@ -2512,67 +2512,67 @@
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/providers.mjs",
       "type": "symbol",
-      "line": 250
+      "line": 252
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/config.json",
       "type": "symbol",
-      "line": 250
+      "line": 252
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/engine.mjs",
       "type": "symbol",
-      "line": 250
+      "line": 252
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/companion.ts",
       "type": "symbol",
-      "line": 255
+      "line": 257
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildTelemetry.ts",
       "type": "symbol",
-      "line": 257
+      "line": 259
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildWeekly.ts",
       "type": "symbol",
-      "line": 257
+      "line": 259
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildInsights.ts",
       "type": "symbol",
-      "line": 257
+      "line": 259
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildHistory.ts",
       "type": "symbol",
-      "line": 257
+      "line": 259
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 260
-    },
-    {
-      "from": "docs/architecture/engineering-spec.md",
-      "to": "src-tauri/src/identity.rs",
-      "type": "symbol",
       "line": 262
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 262
+      "line": 264
+    },
+    {
+      "from": "docs/architecture/engineering-spec.md",
+      "to": "src-tauri/src/identity.rs",
+      "type": "symbol",
+      "line": 264
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -7426,13 +7426,13 @@
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
       "type": "wikilink",
-      "line": 439
+      "line": 443
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "docs/features/FEAT-G-DAMAGE.md",
       "type": "wikilink",
-      "line": 440
+      "line": 444
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
@@ -9230,7 +9230,7 @@
     },
     {
       "file": "docs/architecture/engineering-spec.md",
-      "line": 255,
+      "line": 257,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/companion.ts",
       "anchor": 941,
@@ -10228,6 +10228,13 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "1.0.9",
+      "changelog": "1.0.10"
+    },
+    {
       "file": "docs/features/README.md",
       "line": null,
       "reason": "no-metadata"
@@ -10678,7 +10685,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-04T23:39:14.878Z",
+    "generatedAt": "2026-10-05T16:59:44.135Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,
