@@ -2,8 +2,8 @@
 title: "FEAT-G-MEMORY — Persistent Player Memory"
 doc_id: "FEAT-G-MEMORY"
 status: "active"
-version: "0.2.2"
-updated: "2026-10-05"
+version: "0.2.3"
+updated: "2026-10-06"
 owner: "Boss"
 source_of_truth: true
 complexity: "C-3"
@@ -12,7 +12,7 @@ risk: "HIGH"
 
 # FEAT-G-MEMORY — Persistent Player Memory
 
-> **สถานะ (2026-10-05): `PARTIAL` — มี local JSONL reader/aggregator และ Tauri commands แล้ว; ยังไม่มี post-match hook, UI, death/MMR/style derivation หรือ no-egress receipt**
+> **สถานะ (2026-10-06): `PARTIAL` — มี local JSONL reader/aggregator, snapshot และ durable forget marker; ยังไม่มี post-match hook, UI, death/MMR/style derivation หรือ no-egress receipt**
 
 > **Module:** G-Memory · **Priority:** Companion P0 · **Phase:** 6
 > **PRD:** [[product-requirements|PRD]] §3A G-Memory · **SRS:** [[software-requirements-specification|SRS]] §3.8
@@ -52,8 +52,10 @@ PlayerMemory {
 ## 3. Storage
 
 - **Backend (implemented slice):** derive from archived **JSONL** (`match-*.jsonl` in `%LOCALAPPDATA%\G-Maiden\logs\`) and persist a schema-versioned `memory.json` beside the G-Log directory. No SQLite or new network source is added.
+- **Forget marker:** persist a schema-versioned `memory-clear.json` beside the snapshot. It stores only a monotonic `cleared_before_ms` timestamp, not match contents or aggregate values.
 - **Location:** local disk only — `memory.json` อยู่ข้างข้อมูล G-Log
 - **Refresh:** `get_player_memory` reuses the snapshot while source filename/mtime/size metadata is unchanged; otherwise it reads and rebuilds the aggregate.
+- **Clear:** `delete_player_memory` advances the forget marker and removes the derived snapshot. Archived G-Log files remain unchanged; sources started at or before the marker are excluded on every later read, including after app restart. Newer matches can contribute to a fresh memory.
 - **Retention:** the derived snapshot contains bounded aggregates; archived match-log retention remains governed by G-Log.
 - **Size:** bounded by aggregate fields; the ≤5 MB per 1000 matches target is not yet measured as a runtime receipt.
 
@@ -83,14 +85,15 @@ The following are deliberate partial-state boundaries, not missing documentation
 
 | Runtime symbol | Current truth | Consequence |
 | --- | --- | --- |
-| [`parse_match`](../../src-tauri/src/memory.rs#L317) | consumes `match_result.win` only when the record is explicit | current archives without that record expose `win_rate: None`; no inferred win/loss is emitted |
-| [`get_player_memory`](../../src-tauri/src/memory.rs#L269) | on-demand read/cache only | no automatic post-match refresh and no downstream companion consumer is claimed |
-| [`write_snapshot`](../../src-tauri/src/memory.rs#L373) | writes a complete `memory.json.tmp` before replacement | the slice uses local JSON snapshot persistence; it does not add SQLite |
+| [`parse_match`](../../src-tauri/src/memory.rs#L451) | consumes `match_result.win` only when the record is explicit | current archives without that record expose `win_rate: None`; no inferred win/loss is emitted |
+| [`get_player_memory`](../../src-tauri/src/memory.rs#L391) | on-demand read/cache only; applies the persisted clear cutoff before cache lookup | no automatic post-match refresh and no downstream companion consumer is claimed |
+| [`delete_player_memory`](../../src-tauri/src/memory.rs#L444) | advances `memory-clear.json` and removes the derived snapshot | pre-clear G-Log sources remain archived but are no longer included in memory |
+| [`write_snapshot`](../../src-tauri/src/memory.rs#L507) | writes a complete `memory.json.tmp` before replacement | the slice uses local JSON snapshot persistence; it does not add SQLite |
 
 ## 5. Output
 
 - `get_player_memory` → local `MemoryContext` snapshot for a future G-Voice/G-Master/G-Coach consumer
-- `delete_player_memory` → removes only the derived `memory.json`; it does not delete G-Log archives
+- `delete_player_memory` → forgets all G-Memory derived from matches started at or before the persisted clear time; it preserves G-Log archives
 - Persona references → *"จำได้ไหม สองแมตช์ก่อนคุณก็โดนแกงตรงนี้พอดี"*
 
 ## 6. Persona Behavior
@@ -103,6 +106,8 @@ The following are deliberate partial-state boundaries, not missing documentation
 ## 7. Privacy (Critical)
 
 - **LOCAL ONLY** — ห้ามส่งข้อมูล G-Memory ออกนอกเครื่องเด็ดขาด
+- The local `memory-clear.json` stores only the forget cutoff. It is written before the snapshot is removed; the cutoff never moves backward.
+- A missing marker means no prior clear. An unreadable or invalid marker fails closed: G-Memory returns an error and does not rebuild from archived logs.
 - ไม่ include raw memory data ใน cloud LLM prompts
   - ส่งได้เฉพาะ **summary/aggregate** (เช่น "ผู้เล่นถนัด carry, aggressive style")
   - ห้ามส่ง death locations, MMR numbers, match history ดิบ
@@ -138,10 +143,11 @@ The following are deliberate partial-state boundaries, not missing documentation
 | GSI snapshot | In-process `GameTick` already recorded by G-Log | Hero, final GPM/XPM, K/D/A and match clock where present | Implemented upstream |
 | External services | None | No OpenDota, Steam, cloud GET, sync, or telemetry route | Forbidden by this contract |
 
-The first implementation uses a schema-versioned local derived snapshot (`memory.json`)
+The implementation uses a schema-versioned local derived snapshot (`memory.json`)
 rebuilt from finalized JSONL after a complete temporary file is written and replaced. It
 does not add SQLite until a separate storage decision is approved. The loaded snapshot is
-returned directly when source metadata is unchanged; it does not repeatedly parse JSONL.
+returned directly when source metadata and the clear marker are unchanged; it does not
+repeatedly parse JSONL.
 
 ### 10.2 Deterministic derivation
 
@@ -171,6 +177,40 @@ Acceptance requires hand-calculated aggregation fixtures, query timing after sna
 load, delete-all verification, and a no-egress receipt showing no network request from
 the memory reader.
 
+### 10.4 Durable forget semantics (DL-007)
+
+`delete_player_memory` writes a local, schema-versioned `memory-clear.json` marker before
+removing `memory.json`. The marker stores `cleared_before_ms`, updated monotonically as
+`max(previous_cutoff, current_epoch_ms)`. It contains no match payload or aggregate.
+
+G-Log names each match `match-{start_epoch_seconds}.jsonl`. When a cutoff exists, G-Memory
+includes a source only when its filename timestamp is valid and
+`start_epoch_seconds * 1000 > cleared_before_ms`. The filename has one-second precision,
+so a match sharing the cutoff second is also excluded. Unparseable source names are
+excluded and reported as partial input. The filter runs before cache stamps are built;
+the snapshot also records the cutoff so a pre-clear cache cannot be returned after clear.
+
+The operation preserves archived G-Log bytes. A later G-Log deletion remains a separate
+user action. A malformed or unreadable marker makes reads fail closed rather than
+re-importing old matches. Repeated clear advances the cutoff monotonically and does not
+send data over the network.
+
+```mermaid
+flowchart LR
+  D[delete_player_memory] --> M[Persist memory-clear.json]
+  D --> C[Remove memory.json snapshot]
+  L[Archived G-Log JSONL] --> F[Filter by clear cutoff]
+  M --> F
+  F --> A[Aggregate eligible matches]
+  A --> S[Write local memory.json]
+  M -. invalid .-> X[Fail closed; do not rebuild]
+```
+
+DL-007 acceptance requires: pre-clear matches stay excluded after a new read and app
+restart; post-clear matches are eligible; same-second sources are excluded; corrupt
+markers do not return or rebuild old memory; and every archived G-Log file remains
+byte-for-byte unchanged by `delete_player_memory`.
+
 ## Changelog
 | Version | Date | Summary |
 | --- | --- | --- |
@@ -178,3 +218,4 @@ the memory reader.
 | 0.2.0 | 2026-10-05 | Implemented the first local G-Memory slice: JSONL aggregation, schema-versioned snapshot cache, explicit UNKNOWN fields, and privacy-scoped Tauri commands. |
 | 0.2.1 | 2026-10-05 | Clarified the intentional partial boundaries reported by code-doc alignment: explicit outcome-only win rate, on-demand refresh, and `.json.tmp` snapshot replacement. |
 | 0.2.2 | 2026-10-05 | Updated Symbol Graph line links after adding fail-closed source-boundary comments in `memory.rs`. |
+| 0.2.3 | 2026-10-06 | Implemented DL-007 durable G-Memory forget semantics while preserving archived G-Log sources. |

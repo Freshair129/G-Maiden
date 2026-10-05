@@ -2,11 +2,11 @@
 title: "G-Series Data Lineage and Computation Contract"
 doc_id: "G-SERIES-DATA-LINEAGE"
 status: "accepted"
-version: "1.0.9"
-updated: "2026-10-05"
+version: "1.0.11"
+updated: "2026-10-06"
 owner: "Boss"
 approved_by: "user"
-approved_date: "2026-10-05"
+approved_date: "2026-10-06"
 source_of_truth: true
 complexity: "C-3"
 risk: "HIGH"
@@ -378,12 +378,12 @@ temporary file and returned directly while source metadata is unchanged. Hero co
 rate and final GPM/XPM use explicit arithmetic formulas; missing player death coordinates
 or rating data remain `UNKNOWN`, never inferred.
 
-The full source/field/formula/delete/no-egress contract is in [`FEAT-G-MEMORY` §10](FEAT-G-MEMORY.md#10-dl-006-lineage-contract-approved-design-runtime-partial).
+The full source/field/formula/delete/no-egress contract is in [`FEAT-G-MEMORY` §10](FEAT-G-MEMORY.md#10-dl-006-lineage-contract-approved-design-runtime-partial). DL-007 persists a monotonic local clear cutoff; old match filenames are filtered before snapshot stamps, while the archived JSONL files remain unchanged. An invalid clear marker fails closed.
 
-**Status:** `PARTIAL`. The local JSONL reader, derived snapshot cache, explicit UNKNOWN
-fields, and privacy-scoped Tauri commands exist. No post-match outcome writer, consumer UI,
-death/MMR/style derivation, or no-egress runtime receipt is claimed. No GET or cloud sync is
-authorized by this contract.
+**Status:** `PARTIAL`. The local JSONL reader, derived snapshot cache, monotonic forget
+cutoff, explicit UNKNOWN fields, and privacy-scoped Tauri commands exist. No post-match
+outcome writer, consumer UI, death/MMR/style derivation, or no-egress runtime receipt is
+claimed. No GET or cloud sync is authorized by this contract.
 
 ### 6.4 G-Coach — post-match review
 
@@ -445,6 +445,7 @@ The full source/formula/audio-priority/fallback/evidence contract is in [`FEAT-G
 | `DL-004` | G-Sensory FPS computation lacked a canonical receipt contract and live acceptance evidence | FPS ≤3% remains unverified | Receipt schema and strict baseline validation are implemented; execute the two-phase PresentMon/ETW run and retain a real `verdict=pass` receipt before closeout. |
 | `DL-005` | Static hero/item/counter snapshots lack a single patch/version manifest | Advice and damage provenance can drift | Manifest and local checksum verifier are implemented; historical entries remain explicitly `PARTIAL`/`UNVERIFIED` where patch/date/source evidence was not recorded. |
 | `DL-006` | G-Voice/G-Memory/G-Coach/G-Stream/G-Score have no runtime lineage | Planned features cannot be implemented reproducibly | **Structurally resolved:** five module contracts now define source, transport, computation, output, fallback, privacy, and evidence. G-Memory has a partial local reader/snapshot implementation; the remaining companion runtime slices remain `PLANNED`/`PROPOSED`. |
+| `DL-007` | Clearing G-Memory removed only the cache, so the next read could rebuild it from retained pre-clear G-Log files | A user's cleared memory could reappear after refresh/restart | **Implemented in 1.0.11:** persist a local monotonic cutoff, exclude pre-cutoff match files, preserve G-Log bytes, and fail closed on invalid marker state. Unit tests cover cutoff persistence/filtering and archive preservation; runtime no-egress receipt remains open. |
 
 `DL-003` is resolved in version `1.0.6`: the runtime consumes only a validated, local, FULL-evidence `TuningDelta` at the next match boundary, with complete temp-file persistence, backup rollback, and default fallback. This closes the storage/injection gap; it does not claim that real-match accuracy or the broader G-Log acceptance gate has passed.
 
@@ -461,6 +462,12 @@ define source-to-output lineage and deterministic boundaries. The G-Memory local
 now `PARTIAL` in version `1.0.10`; this does not close its live acceptance evidence, and
 G-Score remains proposed.
 
+`DL-007` is implemented in version `1.0.11`: the local cutoff keeps pre-clear match logs
+out of later aggregates without deleting the separately governed G-Log archives. Unit
+coverage verifies persistence, filtering, monotonic cutoff, fail-closed marker parsing, and
+archive preservation. The player-facing management UI and no-egress runtime receipt remain
+open.
+
 ## 8. Acceptance evidence required
 
 The following are documentation/verification requirements, not claims that the current tree passes them:
@@ -475,7 +482,7 @@ The following are documentation/verification requirements, not claims that the c
 - P7 FPS receipt must be schema version `1`, measured, overlay-off baseline plus overlay-on comparison, and `verdict=pass`; `SKIP`/unit-test output is not acceptance proof.
 - No-egress receipt for G-Log and any future G-Memory path.
 - G-Voice: transient-audio, round-trip, interrupt, and local-STT evidence.
-- G-Memory: hand-calculated aggregate fixtures, unknown-source behavior, delete-all, and no-egress receipt.
+- G-Memory: hand-calculated aggregate fixtures, unknown-source behavior, durable clear across restart while preserving G-Log, and no-egress receipt.
 - G-Coach: moment-score/top-three fixtures, compact redacted prompt inspection, and fallback receipt.
 - G-Stream: allowlist/denylist/unknown-field redaction fixtures and G-Signal non-interference receipt.
 - G-Score: hand-calculated intensity/priority fixtures, pack validation, and CPU/RAM evidence before any post-v1 implementation claim.
@@ -498,3 +505,4 @@ The following are documentation/verification requirements, not claims that the c
 | 1.0.8 | 2026-10-05 | Implemented DL-005 static-data provenance manifest, explicit historical evidence statuses, and local SHA-256 verification with no runtime network fetch. |
 | 1.0.9 | 2026-10-05 | Closed DL-006 structurally with five companion source-to-output contracts; runtime implementation and live acceptance remain open. |
 | 1.0.10 | 2026-10-05 | Implemented the first local G-Memory reader/snapshot slice and narrowed DL-006 runtime status to partial rather than shipped. |
+| 1.0.11 | 2026-10-06 | Implemented DL-007 persistent G-Memory clear cutoff, retained-log filtering, and fail-closed marker behavior; runtime no-egress receipt remains open. |

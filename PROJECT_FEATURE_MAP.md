@@ -107,14 +107,14 @@ palette, and the shortcut sheet are all **derived** from it — rail/palette/she
 
 ---
 
-## 3. Product-level / planned features ([[product-requirements]] §3A / [[software-requirements-specification]] §3A)
+## 3. Product-level / not-fully-shipped features ([[product-requirements]] §3A / [[software-requirements-specification]] §3A)
 
-Specified but **not shipped** — the "Companion Experience Extensions" layered on the six core modules.
+The "Companion Experience Extensions" layered on the six core modules; statuses reflect each feature's current implementation.
 
 | Feature | Priority | Intent | Status |
 | --- | --- | --- | --- |
 | **G-Voice** | P0 | Two-way voice: Push-to-Talk → STT → Cloud Brain → TTS, TH/EN, G-Signal can interrupt | ⚪ PLANNED — needs an STT module (not in shipped interface list) |
-| **G-Memory** | P0 | Persistent cross-match player memory (heroes, death hotspots, mistakes, MMR trend); feeds G-Voice/G-Master | ⚪ PLANNED — would build on G-Log |
+| **G-Memory** | P0 | Persistent cross-match player memory (heroes, death hotspots, mistakes, MMR trend); feeds G-Voice/G-Master | 🟡 PARTIAL — local G-Log JSONL aggregation, cached snapshot, and durable clear cutoff in [`memory.rs`](file:///g:/G-Maiden/src-tauri/src/memory.rs); no management UI or consumer wiring |
 | **G-Coach** | P1 | Post-match deep review over the full GSI log; top-3 improvement points | ⚪ PLANNED — deep-analysis engine (overlaps the shipped DebriefTimeline surface) |
 | **G-Mind** | P1 | Cognitive model router / LLM switcher (anti-vendor-lock-in) | 🟡 PARTIAL — the [`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs) backend picker covers switching; user-facing "choose LLM" UX + Gemini path not wired |
 | **G-Persona** | P2 | Tone & verbosity presets without breaking Belief Revision / Interrupt / "Nerf CM" | ⚪ PLANNED |

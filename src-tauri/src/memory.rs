@@ -7,7 +7,10 @@
 use std::cmp::Ordering;
 use std::collections::BTreeMap;
 use std::fs;
+use std::io::Write;
 use std::path::{Path, PathBuf};
+use std::sync::Mutex;
+use std::time::{SystemTime, UNIX_EPOCH};
 
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
@@ -15,7 +18,10 @@ use serde_json::Value;
 use crate::log;
 
 const MEMORY_SCHEMA_VERSION: u32 = 1;
+const MEMORY_CLEAR_SCHEMA_VERSION: u32 = 1;
 const RECENT_HERO_LIMIT: usize = 20;
+
+static MEMORY_IO: Mutex<()> = Mutex::new(());
 
 #[derive(Clone, Debug)]
 pub struct MemoryLogSource {
@@ -118,7 +124,15 @@ struct SourceStamp {
 struct MemorySnapshot {
     schema_version: u32,
     sources: Vec<SourceStamp>,
+    #[serde(default)]
+    clear_before_ms: Option<u64>,
     context: MemoryContext,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+struct MemoryClearMarker {
+    schema_version: u32,
+    cleared_before_ms: u64,
 }
 
 #[derive(Default)]
@@ -144,6 +158,114 @@ pub fn memory_path() -> PathBuf {
         .map(PathBuf::from)
         .unwrap_or_else(|| PathBuf::from("."))
         .join("memory.json")
+}
+
+fn memory_clear_path() -> PathBuf {
+    memory_path().with_file_name("memory-clear.json")
+}
+
+fn match_start_ms(name: &str) -> Option<u64> {
+    name.strip_prefix("match-")?
+        .strip_suffix(".jsonl")?
+        .parse::<u64>()
+        .ok()?
+        .checked_mul(1000)
+}
+
+fn filter_matches(
+    matches: Vec<log::MatchLog>,
+    clear_before_ms: Option<u64>,
+) -> (Vec<log::MatchLog>, bool) {
+    let Some(clear_before_ms) = clear_before_ms else {
+        return (matches, false);
+    };
+
+    let mut invalid_name = false;
+    let eligible = matches
+        .into_iter()
+        .filter(|entry| match match_start_ms(&entry.name) {
+            Some(start_ms) => start_ms > clear_before_ms,
+            None => {
+                invalid_name = true;
+                false
+            }
+        })
+        .collect();
+    (eligible, invalid_name)
+}
+
+fn load_clear_before_ms(path: &Path) -> Result<Option<u64>, String> {
+    let temp_path = path.with_extension("json.tmp");
+    let mut cutoff = None;
+
+    for candidate in [path, temp_path.as_path()] {
+        let bytes = match fs::read(candidate) {
+            Ok(bytes) => bytes,
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => continue,
+            Err(error) => return Err(format!("อ่าน G-Memory clear marker ไม่สำเร็จ: {error}")),
+        };
+        let marker = serde_json::from_slice::<MemoryClearMarker>(&bytes)
+            .map_err(|error| format!("G-Memory clear marker ไม่ถูกต้อง: {error}"))?;
+        if marker.schema_version != MEMORY_CLEAR_SCHEMA_VERSION {
+            return Err("G-Memory clear marker ใช้ schema version ที่ไม่รองรับ".into());
+        }
+        cutoff = Some(cutoff.unwrap_or(0).max(marker.cleared_before_ms));
+    }
+
+    Ok(cutoff)
+}
+
+fn write_clear_marker(path: &Path, cleared_before_ms: u64) -> Result<(), String> {
+    let Some(parent) = path.parent() else {
+        return Err("G-Memory clear marker ไม่มี parent directory".into());
+    };
+    fs::create_dir_all(parent)
+        .map_err(|error| format!("สร้าง G-Memory directory ไม่สำเร็จ: {error}"))?;
+    let bytes = serde_json::to_vec_pretty(&MemoryClearMarker {
+        schema_version: MEMORY_CLEAR_SCHEMA_VERSION,
+        cleared_before_ms,
+    })
+    .map_err(|error| format!("แปลง G-Memory clear marker ไม่สำเร็จ: {error}"))?;
+    let temp_path = path.with_extension("json.tmp");
+    let mut temp_file = fs::File::create(&temp_path)
+        .map_err(|error| format!("สร้าง G-Memory clear marker ชั่วคราวไม่สำเร็จ: {error}"))?;
+    temp_file
+        .write_all(&bytes)
+        .and_then(|()| temp_file.sync_all())
+        .map_err(|error| format!("เขียน G-Memory clear marker ไม่สำเร็จ: {error}"))?;
+
+    match fs::rename(&temp_path, path) {
+        Ok(()) => Ok(()),
+        Err(rename_error) if path.exists() => {
+            fs::remove_file(path)
+                .map_err(|error| format!("แทนที่ G-Memory clear marker ไม่สำเร็จ: {error}"))?;
+            fs::rename(&temp_path, path).map_err(|error| {
+                format!("แทนที่ G-Memory clear marker ไม่สำเร็จ ({rename_error}): {error}")
+            })
+        }
+        Err(error) => Err(format!("บันทึก G-Memory clear marker ไม่สำเร็จ: {error}")),
+    }
+}
+
+fn clear_player_memory_at(
+    snapshot_path: &Path,
+    marker_path: &Path,
+    now_ms: u64,
+) -> Result<(), String> {
+    let previous_cutoff = load_clear_before_ms(marker_path)?.unwrap_or(0);
+    write_clear_marker(marker_path, previous_cutoff.max(now_ms))?;
+    match fs::remove_file(snapshot_path) {
+        Ok(()) => Ok(()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+        Err(error) => Err(format!("ลบ G-Memory snapshot ไม่สำเร็จ: {error}")),
+    }
+}
+
+fn current_epoch_ms() -> Result<u64, String> {
+    SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .map(|duration| duration.as_millis() as u64)
+        .map_err(|error| format!("อ่านเวลาเพื่อ clear G-Memory ไม่สำเร็จ: {error}"))
 }
 
 /// Derive a memory context from already-read JSONL sources.
@@ -267,7 +389,12 @@ pub fn derive_from_sources(sources: &[MemoryLogSource]) -> MemoryContext {
 
 /// Load the current snapshot or rebuild it when archived log metadata changes.
 pub fn get_player_memory() -> Result<MemoryContext, String> {
-    let matches = log::list_matches();
+    // Keep a concurrent read from republishing a pre-clear snapshot after delete returns.
+    let _guard = MEMORY_IO
+        .lock()
+        .map_err(|error| format!("ล็อก G-Memory ไม่สำเร็จ: {error}"))?;
+    let clear_before_ms = load_clear_before_ms(&memory_clear_path())?;
+    let (matches, invalid_source_name) = filter_matches(log::list_matches(), clear_before_ms);
     let stamps = matches
         .iter()
         .map(|entry| SourceStamp {
@@ -282,6 +409,7 @@ pub fn get_player_memory() -> Result<MemoryContext, String> {
         if let Ok(snapshot) = serde_json::from_slice::<MemorySnapshot>(&bytes) {
             if snapshot.schema_version == MEMORY_SCHEMA_VERSION
                 && snapshot.context.schema_version == MEMORY_SCHEMA_VERSION
+                && snapshot.clear_before_ms == clear_before_ms
                 && snapshot.sources == stamps
             {
                 return Ok(snapshot.context);
@@ -295,23 +423,29 @@ pub fn get_player_memory() -> Result<MemoryContext, String> {
         context.source_status = MemorySourceStatus::Partial;
         context.unknown_fields.push("sourceReadError".into());
     }
+    if invalid_source_name {
+        context.source_status = MemorySourceStatus::Partial;
+        context
+            .unknown_fields
+            .push("unrecognizedSourceTimestamp".into());
+    }
     let snapshot = MemorySnapshot {
         schema_version: MEMORY_SCHEMA_VERSION,
         sources: stamps,
+        clear_before_ms,
         context: context.clone(),
     };
     write_snapshot(&path, &snapshot)?;
     Ok(context)
 }
 
-/// Delete only the derived G-Memory snapshot. G-Log archives are governed by
-/// the separate `delete_all_match_logs` privacy command.
+/// Forget G-Memory derived from matches started before this cutoff while
+/// preserving the separately governed G-Log archives.
 pub fn delete_player_memory() -> Result<(), String> {
-    match fs::remove_file(memory_path()) {
-        Ok(()) => Ok(()),
-        Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
-        Err(error) => Err(format!("ลบ G-Memory ไม่สำเร็จ: {error}")),
-    }
+    let _guard = MEMORY_IO
+        .lock()
+        .map_err(|error| format!("ล็อก G-Memory ไม่สำเร็จ: {error}"))?;
+    clear_player_memory_at(&memory_path(), &memory_clear_path(), current_epoch_ms()?)
 }
 
 fn parse_match(source: &MemoryLogSource) -> MatchFacts {
@@ -395,7 +529,33 @@ fn write_snapshot(path: &Path, snapshot: &MemorySnapshot) -> Result<(), String> 
 
 #[cfg(test)]
 mod tests {
-    use super::{derive_from_sources, MemoryLogSource};
+    use std::fs;
+    use std::time::{SystemTime, UNIX_EPOCH};
+
+    use super::{
+        clear_player_memory_at, derive_from_sources, filter_matches, load_clear_before_ms,
+        MemoryLogSource,
+    };
+    use crate::log::MatchLog;
+
+    fn test_dir() -> std::path::PathBuf {
+        let nonce = SystemTime::now()
+            .duration_since(UNIX_EPOCH)
+            .expect("clock after epoch")
+            .as_nanos();
+        std::env::temp_dir().join(format!(
+            "gmaiden-memory-clear-{}-{nonce}",
+            std::process::id()
+        ))
+    }
+
+    fn match_log(name: &str) -> MatchLog {
+        MatchLog {
+            name: name.into(),
+            size: 10,
+            modified_ms: 1,
+        }
+    }
 
     #[test]
     fn derive_from_sources_uses_latest_tick_and_explicit_outcome() {
@@ -452,5 +612,88 @@ mod tests {
         assert_eq!(memory.source_match_count, 0);
         assert!(memory.favorite_heroes.is_empty());
         assert!(memory.recent_heroes.is_empty());
+    }
+
+    #[test]
+    fn clear_player_memory_persists_cutoff_and_preserves_archives() {
+        let dir = test_dir();
+        let snapshot = dir.join("memory.json");
+        let marker = dir.join("memory-clear.json");
+        let log_dir = dir.join("logs");
+        fs::create_dir_all(&log_dir).unwrap();
+        let archived_log = log_dir.join("match-10.jsonl");
+        let original_log = br#"{"tick":{"hero":"npc_dota_hero_lina"}}"#;
+        fs::write(&snapshot, b"stale snapshot").unwrap();
+        fs::write(&archived_log, original_log).unwrap();
+
+        clear_player_memory_at(&snapshot, &marker, 10_500).unwrap();
+
+        assert!(!snapshot.exists());
+        assert_eq!(fs::read(&archived_log).unwrap(), original_log);
+        assert_eq!(load_clear_before_ms(&marker).unwrap(), Some(10_500));
+
+        // Reloading the marker models a fresh app process; the old source stays
+        // excluded while a match after the cutoff is eligible.
+        let cutoff = load_clear_before_ms(&marker).unwrap();
+        let (eligible, invalid_name) = filter_matches(
+            vec![match_log("match-10.jsonl"), match_log("match-11.jsonl")],
+            cutoff,
+        );
+        assert!(!invalid_name);
+        assert_eq!(
+            eligible
+                .iter()
+                .map(|entry| entry.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["match-11.jsonl"]
+        );
+
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn clear_cutoff_excludes_sources_in_the_same_second_and_unknown_names() {
+        let (eligible, invalid_name) = filter_matches(
+            vec![
+                match_log("match-10.jsonl"),
+                match_log("match-11.jsonl"),
+                match_log("match-unknown.jsonl"),
+            ],
+            Some(10_500),
+        );
+
+        assert!(invalid_name);
+        assert_eq!(
+            eligible
+                .iter()
+                .map(|entry| entry.name.as_str())
+                .collect::<Vec<_>>(),
+            vec!["match-11.jsonl"]
+        );
+    }
+
+    #[test]
+    fn clear_cutoff_never_moves_backwards() {
+        let dir = test_dir();
+        fs::create_dir_all(&dir).unwrap();
+        let snapshot = dir.join("memory.json");
+        let marker = dir.join("memory-clear.json");
+        fs::write(&marker, r#"{"schema_version":1,"cleared_before_ms":20000}"#).unwrap();
+
+        clear_player_memory_at(&snapshot, &marker, 10_000).unwrap();
+
+        assert_eq!(load_clear_before_ms(&marker).unwrap(), Some(20_000));
+        fs::remove_dir_all(dir).unwrap();
+    }
+
+    #[test]
+    fn malformed_clear_marker_fails_closed() {
+        let dir = test_dir();
+        fs::create_dir_all(&dir).unwrap();
+        let marker = dir.join("memory-clear.json");
+        fs::write(&marker, b"not-json").unwrap();
+
+        assert!(load_clear_before_ms(&marker).is_err());
+        fs::remove_dir_all(dir).unwrap();
     }
 }

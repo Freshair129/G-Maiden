@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-05T16:59:40.711Z",
+  "generatedAt": "2026-10-05T18:40:14.955Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -10228,13 +10228,6 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/features/G-SERIES-DATA-LINEAGE.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "1.0.9",
-      "changelog": "1.0.10"
-    },
-    {
       "file": "docs/features/README.md",
       "line": null,
       "reason": "no-metadata"
@@ -10685,7 +10678,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-05T16:59:44.135Z",
+    "generatedAt": "2026-10-05T18:40:20.779Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,
