@@ -4,6 +4,7 @@
 
 use axum::{
     extract::{Query, State},
+    http::StatusCode,
     response::Html,
     routing::{get, post},
     Router,
@@ -190,7 +191,7 @@ fn is_in_draft(game_state: &str) -> bool {
     )
 }
 
-pub(crate) fn parse_tick_from_value(v: &Value) -> GameTick {
+fn parse_tick_from_value(v: &Value) -> GameTick {
     let game_state = s(v, &["map", "game_state"]);
     let gold = i(v, &["player", "gold"]);
     let raw_nw = i(v, &["player", "net_worth"]);
@@ -234,15 +235,299 @@ pub(crate) fn parse_tick_from_value(v: &Value) -> GameTick {
 }
 
 pub fn parse_tick_from_json(body: &str) -> GameTick {
+    // The capture/performance harnesses use compact fixed fixtures; production
+    // ingestion uses parse_gsi_payload, which validates before extraction. Keep
+    // this helper non-panicking for callers outside those harnesses as well.
     let v: Value = serde_json::from_str(body).unwrap_or(Value::Null);
     parse_tick_from_value(&v)
 }
 
-async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
-    if !crate::runtime::gmad_entitled() {
-        return "locked";
+fn value_at<'a>(v: &'a Value, path: &[&str]) -> Option<&'a Value> {
+    path.iter().try_fold(v, |cur, key| cur.get(*key))
+}
+
+fn optional_object<'a>(
+    v: &'a Value,
+    path: &[&str],
+) -> Result<Option<&'a serde_json::Map<String, Value>>, &'static str> {
+    match value_at(v, path) {
+        None => Ok(None),
+        Some(Value::Null) => Ok(None),
+        Some(Value::Object(value)) => Ok(Some(value)),
+        Some(_) => Err("expected object"),
     }
-    let tick = parse_tick_from_json(&body);
+}
+
+fn validate_int(
+    v: &Value,
+    path: &[&str],
+    min: i64,
+    max: i64,
+    required: bool,
+) -> Result<(), &'static str> {
+    let Some(value) = value_at(v, path) else {
+        return if required {
+            Err("missing integer")
+        } else {
+            Ok(())
+        };
+    };
+    if value.is_null() && !required {
+        return Ok(());
+    }
+    let Some(value) = value.as_i64() else {
+        return Err("expected integer");
+    };
+    if !(min..=max).contains(&value) {
+        return Err("integer outside allowed range");
+    }
+    Ok(())
+}
+
+fn validate_bool(v: &Value, path: &[&str], required: bool) -> Result<(), &'static str> {
+    match value_at(v, path) {
+        None if required => Err("missing boolean"),
+        None => Ok(()),
+        Some(Value::Null) if !required => Ok(()),
+        Some(Value::Bool(_)) => Ok(()),
+        Some(_) => Err("expected boolean"),
+    }
+}
+
+fn validate_string<'a>(
+    v: &'a Value,
+    path: &[&str],
+    required: bool,
+    max_len: usize,
+) -> Result<Option<&'a str>, &'static str> {
+    let Some(value) = value_at(v, path) else {
+        return if required {
+            Err("missing string")
+        } else {
+            Ok(None)
+        };
+    };
+    if value.is_null() && !required {
+        return Ok(None);
+    }
+    let Some(value) = value.as_str() else {
+        return Err("expected string");
+    };
+    if value.len() > max_len {
+        return Err("string outside allowed range");
+    }
+    if required && value.is_empty() {
+        return Err("string must not be empty");
+    }
+    Ok(Some(value))
+}
+
+fn validate_gsi_payload(v: &Value) -> Result<(), &'static str> {
+    let root = v.as_object().ok_or("payload must be an object")?;
+    for key in ["provider", "map", "player", "hero", "items", "auth"] {
+        if root.contains_key(key) {
+            let _ = optional_object(v, &[key])?;
+        }
+    }
+
+    optional_object(v, &["map"])?.ok_or("missing map object")?;
+    let game_state =
+        validate_string(v, &["map", "game_state"], true, 96)?.ok_or("missing game state")?;
+    const KNOWN_GAME_STATES: &[&str] = &[
+        "DOTA_GAMERULES_STATE_INIT",
+        "DOTA_GAMERULES_STATE_WAIT_FOR_PLAYERS_TO_LOAD",
+        "DOTA_GAMERULES_STATE_HERO_SELECTION",
+        "DOTA_GAMERULES_STATE_STRATEGY_TIME",
+        "DOTA_GAMERULES_STATE_PRE_GAME",
+        "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
+        "DOTA_GAMERULES_STATE_POST_GAME",
+        "DOTA_GAMERULES_STATE_DISCONNECT",
+        "DOTA_GAMERULES_STATE_TEAM_SHOWCASE",
+        "DOTA_GAMERULES_STATE_WAIT_FOR_MAP_TO_LOAD",
+        "DOTA_GAMERULES_STATE_CUSTOM_GAME_SETUP",
+        "DOTA_GAMERULES_STATE_SCENARIO_SETUP",
+        "DOTA_GAMERULES_STATE_PLAYER_DRAFT",
+    ];
+    if !KNOWN_GAME_STATES.contains(&game_state) {
+        return Err("unknown game state");
+    }
+
+    // These sections are present in the configured GSI feed when available.
+    // Validate present values even in menus so wrong types never become zeros.
+    if let Some(provider) = optional_object(v, &["provider"])? {
+        let _ = validate_string(v, &["provider", "name"], false, 128)?;
+        validate_int(v, &["provider", "appid"], 0, i64::MAX, false)?;
+        if let Some(appid) = provider.get("appid").and_then(Value::as_i64) {
+            if appid != 570 {
+                return Err("provider is not Dota 2");
+            }
+        }
+        validate_int(v, &["provider", "version"], 0, i64::MAX, false)?;
+        validate_int(v, &["provider", "timestamp"], 0, i64::MAX, false)?;
+        let _ = validate_string(v, &["provider", "steamid"], false, 32)?;
+    }
+    if optional_object(v, &["auth"])?.is_some() {
+        let _ = validate_string(v, &["auth", "token"], false, 256)?;
+    }
+    // GSI may include change metadata beside its current snapshot. Validate its
+    // envelope, but never merge it into a cached match snapshot here.
+    for section in ["added", "previously"] {
+        if root.get(section).is_some_and(|value| !value.is_object()) {
+            return Err("change metadata must be an object");
+        }
+    }
+
+    validate_int(v, &["map", "clock_time"], -86_400, 86_400, false)?;
+    validate_bool(v, &["map", "daytime"], false)?;
+    validate_int(v, &["map", "radiant_score"], 0, 1_000, false)?;
+    validate_int(v, &["map", "dire_score"], 0, 1_000, false)?;
+
+    let has_player = optional_object(v, &["player"])?.is_some();
+    if has_player {
+        let _ = validate_string(v, &["player", "team_name"], false, 32)?;
+        let _ = validate_string(v, &["player", "steamid"], false, 32)?;
+        for (field, max) in [
+            ("gold", 1_000_000),
+            ("net_worth", 10_000_000),
+            ("gpm", 100_000),
+            ("xpm", 100_000),
+            ("kills", 100_000),
+            ("deaths", 100_000),
+            ("assists", 100_000),
+            ("last_hits", 100_000),
+            ("denies", 100_000),
+        ] {
+            validate_int(v, &["player", field], 0, max, false)?;
+        }
+    }
+
+    if let Some(hero) = optional_object(v, &["hero"])? {
+        let name = validate_string(v, &["hero", "name"], false, 128)?;
+        if name.is_some_and(|name| !name.is_empty() && !name.starts_with("npc_dota_hero_")) {
+            return Err("invalid hero name");
+        }
+        validate_int(v, &["hero", "level"], 0, 30, false)?;
+        validate_bool(v, &["hero", "alive"], false)?;
+        validate_int(v, &["hero", "health_percent"], 0, 100, false)?;
+        validate_int(v, &["hero", "mana_percent"], 0, 100, false)?;
+        validate_int(v, &["hero", "health"], 0, 100_000, false)?;
+        validate_int(v, &["hero", "max_health"], 0, 100_000, false)?;
+        validate_int(v, &["hero", "buyback_cost"], 0, i64::MAX, false)?;
+        validate_int(v, &["hero", "respawn_seconds"], 0, i64::MAX, false)?;
+        if let Some(kill_list) = hero.get("kill_list").filter(|value| !value.is_null()) {
+            let entries = kill_list.as_object().ok_or("kill list must be an object")?;
+            for entry in entries.values() {
+                let victimid = entry
+                    .get("victimid")
+                    .and_then(Value::as_i64)
+                    .ok_or("victim slot must be an integer")?;
+                if !(0..=9).contains(&victimid) {
+                    return Err("victim slot outside allowed range");
+                }
+            }
+        }
+    }
+
+    if let Some(items) = optional_object(v, &["items"])? {
+        for item in items.values() {
+            if item.is_null() {
+                continue;
+            }
+            let item = item.as_object().ok_or("item slot must be an object")?;
+            if let Some(name) = item.get("name").filter(|value| !value.is_null()) {
+                if name.as_str().is_none_or(|name| name.len() > 256) {
+                    return Err("item name must be a string");
+                }
+            }
+        }
+    }
+
+    if is_in_game(game_state) {
+        for (field, min, max) in [
+            ("clock_time", -86_400, 86_400),
+            ("radiant_score", 0, 1_000),
+            ("dire_score", 0, 1_000),
+        ] {
+            validate_int(v, &["map", field], min, max, true)?;
+        }
+        validate_bool(v, &["map", "daytime"], true)?;
+
+        if !has_player {
+            return Err("active match missing player object");
+        }
+        let team = validate_string(v, &["player", "team_name"], true, 32)?
+            .ok_or("active match missing team")?;
+        if !team.eq_ignore_ascii_case("radiant") && !team.eq_ignore_ascii_case("dire") {
+            return Err("active match team must be radiant or dire");
+        }
+        for (field, max) in [
+            ("gold", 1_000_000),
+            ("net_worth", 10_000_000),
+            ("gpm", 100_000),
+            ("xpm", 100_000),
+            ("kills", 100_000),
+            ("deaths", 100_000),
+            ("assists", 100_000),
+            ("last_hits", 100_000),
+            ("denies", 100_000),
+        ] {
+            validate_int(v, &["player", field], 0, max, true)?;
+        }
+
+        let _ = optional_object(v, &["hero"])?.ok_or("active match missing hero object")?;
+        let name = validate_string(v, &["hero", "name"], true, 128)?
+            .ok_or("active match missing hero name")?;
+        if !name.starts_with("npc_dota_hero_") || name.len() <= "npc_dota_hero_".len() {
+            return Err("active match hero name is invalid");
+        }
+        validate_int(v, &["hero", "level"], 1, 30, true)?;
+        validate_bool(v, &["hero", "alive"], true)?;
+        validate_int(v, &["hero", "health_percent"], 0, 100, true)?;
+        validate_int(v, &["hero", "mana_percent"], 0, 100, true)?;
+        let health = value_at(v, &["hero", "health"])
+            .and_then(Value::as_i64)
+            .filter(|value| (0..=100_000).contains(value))
+            .ok_or("active match health is missing or invalid")?;
+        let max_health = value_at(v, &["hero", "max_health"])
+            .and_then(Value::as_i64)
+            .filter(|value| (1..=100_000).contains(value))
+            .ok_or("active match max health is missing or invalid")?;
+        if health > max_health {
+            return Err("hero health exceeds max health");
+        }
+        validate_int(v, &["hero", "buyback_cost"], 0, i64::MAX, true)?;
+        validate_int(v, &["hero", "respawn_seconds"], 0, i64::MAX, true)?;
+        optional_object(v, &["items"])?.ok_or("active match missing items object")?;
+    }
+
+    Ok(())
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum GsiPayloadError {
+    InvalidJson,
+    InvalidSchema,
+}
+
+fn parse_gsi_payload(body: &str) -> Result<GameTick, GsiPayloadError> {
+    let value: Value = serde_json::from_str(body).map_err(|_| GsiPayloadError::InvalidJson)?;
+    validate_gsi_payload(&value).map_err(|_| GsiPayloadError::InvalidSchema)?;
+    Ok(parse_tick_from_value(&value))
+}
+
+async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'static str) {
+    if !crate::runtime::gmad_entitled() {
+        return (StatusCode::OK, "locked");
+    }
+    let tick = match parse_gsi_payload(&body) {
+        Ok(tick) => tick,
+        Err(GsiPayloadError::InvalidJson) => {
+            return (StatusCode::BAD_REQUEST, "invalid JSON");
+        }
+        Err(GsiPayloadError::InvalidSchema) => {
+            return (StatusCode::UNPROCESSABLE_ENTITY, "invalid GSI payload");
+        }
+    };
     // Announcer: detect kill/streak/state events from the tick and voice the
     // most significant one (clip-or-silent — these aren't TTS-faked).
     let announce = crate::announcer::most_important(&crate::announcer::observe(&tick));
@@ -300,7 +585,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> &'static str {
             let _ = app.emit("announcer-banner", banner);
         }
     }
-    "ok"
+    (StatusCode::OK, "ok")
 }
 
 /// Receive a GPU telemetry sample PUSHed by the headless `gpu-feeder` sidecar
@@ -646,35 +931,153 @@ mod tests {
         }
     }
 
-    fn run_handle(payload: serde_json::Value) -> GameTick {
+    fn live_payload() -> Value {
+        serde_json::json!({
+            "provider": { "name": "Dota 2", "appid": 570, "version": 1, "timestamp": 123456 },
+            "map": { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
+                     "clock_time": 612, "daytime": true,
+                     "radiant_score": 14, "dire_score": 9 },
+            "player": { "steamid": "76561198000000000", "gold": 2300, "net_worth": 14500,
+                        "gpm": 520, "xpm": 610, "team_name": "radiant",
+                        "kills": 7, "deaths": 2, "assists": 10,
+                        "last_hits": 145, "denies": 8 },
+            "hero": { "name": "npc_dota_hero_crystal_maiden", "level": 14,
+                      "alive": true, "health_percent": 78, "mana_percent": 65,
+                      "health": 507, "max_health": 650,
+                      "buyback_cost": 0, "respawn_seconds": 0 },
+            "items": { "slot0": { "name": "empty" } }
+        })
+    }
+
+    fn run_handle(payload: Value) -> GameTick {
+        validate_gsi_payload(&payload).expect("test payload must satisfy the GSI schema");
         parse_tick_from_value(&payload)
     }
 
     #[test]
-    fn missing_fields_default_to_zero_not_panic() {
-        // Empty body should yield a fully-zero tick, not a panic. GSI sometimes
-        // POSTs a near-empty payload during state changes.
-        let t = run_handle(serde_json::json!({}));
-        assert!(!t.in_game);
-        assert_eq!(t.clock_time, 0);
-        assert_eq!(t.hp_percent, 0);
-        assert!(t.hero.is_empty());
+    fn cold_and_lobby_states_allow_empty_player_and_hero_sections() {
+        for game_state in [
+            "DOTA_GAMERULES_STATE_INIT",
+            "DOTA_GAMERULES_STATE_HERO_SELECTION",
+            "DOTA_GAMERULES_STATE_STRATEGY_TIME",
+            "DOTA_GAMERULES_STATE_WAIT_FOR_MAP_TO_LOAD",
+            "DOTA_GAMERULES_STATE_POST_GAME",
+            "DOTA_GAMERULES_STATE_DISCONNECT",
+        ] {
+            let payload = serde_json::json!({ "map": { "game_state": game_state } });
+            let tick = parse_gsi_payload(&payload.to_string()).unwrap();
+            assert!(!tick.in_game);
+            assert!(tick.hero.is_empty());
+            assert_eq!(tick.clock_time, 0);
+        }
+
+        let payload = serde_json::json!({
+            "map": { "game_state": "DOTA_GAMERULES_STATE_HERO_SELECTION" },
+            "player": null,
+            "hero": { "name": "", "level": 0 },
+            "items": null
+        });
+        let tick = parse_gsi_payload(&payload.to_string()).unwrap();
+        assert!(tick.hero.is_empty());
+    }
+
+    #[test]
+    fn malformed_json_null_and_wrong_envelopes_are_rejected() {
+        assert!(matches!(
+            parse_gsi_payload("{\"map\":"),
+            Err(GsiPayloadError::InvalidJson)
+        ));
+        assert!(matches!(
+            parse_gsi_payload("null"),
+            Err(GsiPayloadError::InvalidSchema)
+        ));
+        assert!(validate_gsi_payload(&serde_json::json!([])).is_err());
+        assert!(validate_gsi_payload(&serde_json::json!({ "map": null })).is_err());
+        assert!(validate_gsi_payload(&serde_json::json!({ "map": { "game_state": 5 } })).is_err());
+    }
+
+    #[test]
+    fn benchmark_json_helper_keeps_legacy_non_panicking_fallback() {
+        let tick = parse_tick_from_json("{\"map\":");
+        assert!(!tick.in_game);
+        assert!(tick.hero.is_empty());
+    }
+
+    #[test]
+    fn active_match_requires_the_fields_used_to_build_a_live_tick() {
+        let mut missing_player_stat = live_payload();
+        missing_player_stat["player"]
+            .as_object_mut()
+            .unwrap()
+            .remove("kills");
+        assert!(validate_gsi_payload(&missing_player_stat).is_err());
+
+        let mut missing_hero = live_payload();
+        missing_hero.as_object_mut().unwrap().remove("hero");
+        assert!(validate_gsi_payload(&missing_hero).is_err());
+
+        let mut missing_items = live_payload();
+        missing_items.as_object_mut().unwrap().remove("items");
+        assert!(validate_gsi_payload(&missing_items).is_err());
+    }
+
+    #[test]
+    fn wrong_types_ranges_and_unknown_states_are_rejected() {
+        let mut wrong_type = live_payload();
+        wrong_type["hero"]["alive"] = serde_json::json!("false");
+        assert!(validate_gsi_payload(&wrong_type).is_err());
+
+        let mut out_of_range = live_payload();
+        out_of_range["hero"]["health_percent"] = serde_json::json!(101);
+        assert!(validate_gsi_payload(&out_of_range).is_err());
+
+        let mut negative_buyback = live_payload();
+        negative_buyback["hero"]["buyback_cost"] = serde_json::json!(-1);
+        assert!(validate_gsi_payload(&negative_buyback).is_err());
+
+        let mut negative_respawn = live_payload();
+        negative_respawn["hero"]["respawn_seconds"] = serde_json::json!(-1);
+        assert!(validate_gsi_payload(&negative_respawn).is_err());
+
+        let mut fractional = live_payload();
+        fractional["player"]["kills"] = serde_json::json!(7.5);
+        assert!(validate_gsi_payload(&fractional).is_err());
+
+        let mut unknown = live_payload();
+        unknown["map"]["game_state"] = serde_json::json!("DOTA_GAMERULES_STATE_FUTURE");
+        assert!(validate_gsi_payload(&unknown).is_err());
+
+        let mut wrong_provider = live_payload();
+        wrong_provider["provider"]["appid"] = serde_json::json!(730);
+        assert!(validate_gsi_payload(&wrong_provider).is_err());
+
+        let mut wrong_item = live_payload();
+        wrong_item["items"]["slot0"]["name"] = serde_json::json!(false);
+        assert!(validate_gsi_payload(&wrong_item).is_err());
+    }
+
+    #[test]
+    fn full_snapshots_with_change_metadata_are_valid_but_partial_live_deltas_are_not() {
+        let mut snapshot = live_payload();
+        snapshot["previously"] = serde_json::json!({ "player": { "kills": 6 } });
+        snapshot["added"] = serde_json::json!({ "hero": { "alive": true } });
+        assert!(validate_gsi_payload(&snapshot).is_ok());
+
+        let partial_delta = serde_json::json!({
+            "map": { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS", "clock_time": 613 },
+            "previously": { "map": { "clock_time": 612 } },
+            "added": {}
+        });
+        assert!(validate_gsi_payload(&partial_delta).is_err());
+        assert!(matches!(
+            parse_gsi_payload(&partial_delta.to_string()),
+            Err(GsiPayloadError::InvalidSchema)
+        ));
     }
 
     #[test]
     fn happy_path_in_match() {
-        let t = run_handle(serde_json::json!({
-            "map":    { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
-                        "clock_time": 612, "daytime": true,
-                        "radiant_score": 14, "dire_score": 9 },
-            "player": { "gold": 2300, "net_worth": 14500, "gpm": 520, "xpm": 610,
-                        "team_name": "radiant",
-                        "kills": 7, "deaths": 2, "assists": 10,
-                        "last_hits": 145, "denies": 8 },
-            "hero":   { "name": "npc_dota_hero_crystal_maiden", "level": 14,
-                        "alive": true, "health_percent": 78, "mana_percent": 65,
-                        "health": 507, "max_health": 650 }
-        }));
+        let t = run_handle(live_payload());
         assert!(t.in_game);
         assert_eq!(t.clock_time, 612);
         assert_eq!(t.hero, "npc_dota_hero_crystal_maiden");
@@ -684,22 +1087,26 @@ mod tests {
         // abs HP/max HP (feature-map #6 groundwork) parse alongside the percentage
         assert_eq!(t.hp, 507);
         assert_eq!(t.max_hp, 650);
+
+        let mut pre_game = live_payload();
+        pre_game["map"]["game_state"] = serde_json::json!("DOTA_GAMERULES_STATE_PRE_GAME");
+        assert!(run_handle(pre_game).in_game);
     }
 
     #[test]
     fn net_worth_derived_when_gsi_omits_it() {
         // Player-mode GSI sends net_worth=0; the overlay used to show "—". With
         // the derivation path, gold + Σ item costs lands a real number.
-        let t = run_handle(serde_json::json!({
-            "map":    { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS" },
-            "player": { "gold": 1500, "net_worth": 0 },
-            "items":  {
-                "slot0": { "name": "item_blink" },           // 2250
-                "slot1": { "name": "item_black_king_bar" },  // 4050
-                "slot2": { "name": "empty" },                // 0
-                "slot3": { "name": "item_tpscroll" },        // 100
-            }
-        }));
+        let mut payload = live_payload();
+        payload["player"]["gold"] = serde_json::json!(1500);
+        payload["player"]["net_worth"] = serde_json::json!(0);
+        payload["items"] = serde_json::json!({
+            "slot0": { "name": "item_blink" },
+            "slot1": { "name": "item_black_king_bar" },
+            "slot2": { "name": "empty" },
+            "slot3": { "name": "item_tpscroll" }
+        });
+        let t = run_handle(payload);
         assert_eq!(t.gold, 1500);
         assert_eq!(t.net_worth, 1500 + 2250 + 4050 + 100);
     }
@@ -708,22 +1115,23 @@ mod tests {
     fn net_worth_passthrough_when_gsi_sends_real_value() {
         // Spectator clients populate net_worth — trust it (more accurate than
         // our cost-snapshot which lags patches).
-        let t = run_handle(serde_json::json!({
-            "map":    { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS" },
-            "player": { "gold": 1500, "net_worth": 19999 },
-            "items":  { "slot0": { "name": "item_blink" } } // would derive to 1500+2250
-        }));
+        let mut payload = live_payload();
+        payload["player"]["gold"] = serde_json::json!(1500);
+        payload["player"]["net_worth"] = serde_json::json!(19999);
+        payload["items"] = serde_json::json!({ "slot0": { "name": "item_blink" } });
+        let t = run_handle(payload);
         assert_eq!(t.net_worth, 19999);
     }
 
     #[test]
     fn parses_buyback_and_respawn_when_dead() {
         // When the hero is dead, GSI exposes buyback_cost + respawn_seconds.
-        let t = run_handle(serde_json::json!({
-            "map":  { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS" },
-            "hero": { "name": "npc_dota_hero_crystal_maiden", "level": 16,
-                      "alive": false, "buyback_cost": 1500, "respawn_seconds": 30 }
-        }));
+        let mut payload = live_payload();
+        payload["hero"]["level"] = serde_json::json!(16);
+        payload["hero"]["alive"] = serde_json::json!(false);
+        payload["hero"]["buyback_cost"] = serde_json::json!(1500);
+        payload["hero"]["respawn_seconds"] = serde_json::json!(30);
+        let t = run_handle(payload);
         assert!(!t.alive);
         assert_eq!(t.buyback_cost, 1500);
         assert_eq!(t.respawn_seconds, 30);
@@ -734,16 +1142,21 @@ mod tests {
         // Dota's GSI counts kills BY a team, so the LOCAL team's score is the
         // enemy death count. Getting this backwards would discount threats
         // every time WE died — the exact inversion of the fix.
-        let mut t = run_handle(serde_json::json!({
-            "map": { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
-                     "radiant_score": 14, "dire_score": 9 },
-            "player": { "team_name": "radiant" },
-            "hero": { "name": "npc_dota_hero_lina" }
-        }));
-        assert_eq!(enemy_deaths_from_score(&t), Some(14), "radiant player kills dire");
+        let mut payload = live_payload();
+        payload["hero"]["name"] = serde_json::json!("npc_dota_hero_lina");
+        let mut t = run_handle(payload);
+        assert_eq!(
+            enemy_deaths_from_score(&t),
+            Some(14),
+            "radiant player kills dire"
+        );
 
         t.team_name = "dire".into();
-        assert_eq!(enemy_deaths_from_score(&t), Some(9), "dire player kills radiant");
+        assert_eq!(
+            enemy_deaths_from_score(&t),
+            Some(9),
+            "dire player kills radiant"
+        );
 
         // No side ⇒ no answer. Guessing would attribute our own deaths to them.
         t.team_name = String::new();
@@ -775,28 +1188,24 @@ mod tests {
 
     #[test]
     fn kill_list_parsed() {
-        let t = run_handle(serde_json::json!({
-            "map":    { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS" },
-            "player": { "kills": 3 },
-            "hero":   {
-                "name": "npc_dota_hero_crystal_maiden",
-                "kill_list": {
-                    "0": { "victimid": 5 },
-                    "1": { "victimid": 2 },
-                    "2": { "victimid": 7 }
-                }
-            }
-        }));
+        let mut payload = live_payload();
+        payload["player"]["kills"] = serde_json::json!(3);
+        payload["hero"]["kill_list"] = serde_json::json!({
+            "0": { "victimid": 5 },
+            "1": { "victimid": 2 },
+            "2": { "victimid": 7 }
+        });
+        let t = run_handle(payload);
         assert_eq!(t.kill_list_len, 3);
         assert_eq!(t.last_victim_slot, 7);
     }
 
     #[test]
     fn kill_list_empty() {
-        let t = run_handle(serde_json::json!({
-            "map":    { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS" },
-            "hero":   { "name": "npc_dota_hero_invoker" }
-        }));
+        let mut payload = live_payload();
+        payload["hero"]["name"] = serde_json::json!("npc_dota_hero_invoker");
+        payload["hero"]["kill_list"] = serde_json::json!({});
+        let t = run_handle(payload);
         assert_eq!(t.kill_list_len, 0);
         assert_eq!(t.last_victim_slot, -1);
     }
