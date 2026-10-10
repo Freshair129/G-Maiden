@@ -29,6 +29,21 @@ afterEach(() => {
 const KEY = "sb-wsseitulmcgnolgsrxgh-auth-token";
 
 describe("secureStorage under Tauri", () => {
+  test("reports native deletion failure while still scrubbing the legacy copy", async () => {
+    const ls = fakeLocalStorage({ [KEY]: "old" });
+    const s = await load(true, ls);
+    invokeMock.mockRejectedValueOnce(new Error("access denied"));
+    await expect(s.removeItem(KEY)).rejects.toThrow();
+    expect(ls.has(KEY)).toBe(false);
+  });
+
+  test("reports legacy deletion failure even when native deletion succeeds", async () => {
+    const ls = fakeLocalStorage();
+    const s = await load(true, ls);
+    invokeMock.mockResolvedValueOnce(undefined);
+    ls.removeItem = () => { throw new Error("storage blocked"); };
+    await expect(s.removeItem(KEY)).rejects.toThrow();
+  });
   test("getItem returns the stored value (Ok(Some)) without migrating", async () => {
     const ls = fakeLocalStorage();
     const s = await load(true, ls);

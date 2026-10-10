@@ -31,6 +31,35 @@ static IN_GAME: AtomicBool = AtomicBool::new(false);
 static GMAD_ENTITLED: AtomicBool = AtomicBool::new(cfg!(debug_assertions));
 static GMAD_CAPTURE_STARTED: AtomicBool = AtomicBool::new(false);
 
+/// Serialize response commits with explicit locks, without holding a mutex
+/// across the network await. New requests and sign-out invalidate older replies.
+pub static ENTITLEMENT_REQUESTS: EntitlementRequests = EntitlementRequests(Mutex::new(0));
+
+pub struct EntitlementRequests(Mutex<u64>);
+
+impl EntitlementRequests {
+    pub fn begin(&self) -> Result<u64, String> {
+        let mut generation = self.0.lock().map_err(|_| "Entitlement lock unavailable")?;
+        *generation += 1;
+        Ok(*generation)
+    }
+
+    pub fn apply<T>(&self, request: u64, commit: impl FnOnce() -> T) -> Result<T, String> {
+        let generation = self.0.lock().map_err(|_| "Entitlement lock unavailable")?;
+        if request != *generation {
+            return Err("Entitlement request superseded".into());
+        }
+        Ok(commit())
+    }
+
+    pub fn invalidate(&self, lock: impl FnOnce()) -> Result<(), String> {
+        let mut generation = self.0.lock().map_err(|_| "Entitlement lock unavailable")?;
+        *generation += 1;
+        lock();
+        Ok(())
+    }
+}
+
 /// Updater channel resolved from the last entitlement decision. The backend owns
 /// this, not the webview: Control and Overlay are separate JS contexts and the
 /// deck that runs the update banner is not the component that verified the
@@ -798,6 +827,31 @@ mod tests {
             update_channel: None,
             stale: false,
         }
+    }
+
+    #[test]
+    fn old_verification_cannot_commit_after_sign_out() {
+        let requests = EntitlementRequests(Mutex::new(0));
+        let armed = AtomicBool::new(true);
+        let pending = requests.begin().unwrap();
+        requests
+            .invalidate(|| armed.store(false, Ordering::SeqCst))
+            .unwrap();
+        assert!(requests
+            .apply(pending, || armed.store(true, Ordering::SeqCst))
+            .is_err());
+        assert!(!armed.load(Ordering::SeqCst));
+    }
+
+    #[test]
+    fn only_the_latest_verification_can_apply_success_or_failure() {
+        let requests = EntitlementRequests(Mutex::new(0));
+        let old = requests.begin().unwrap();
+        let current = requests.begin().unwrap();
+        assert!(requests
+            .apply(old, || panic!("old failure must not lock newer state"))
+            .is_err());
+        assert_eq!(requests.apply(current, || "eligible").unwrap(), "eligible");
     }
 
     #[test]

@@ -1,0 +1,9 @@
+chrome layers PASS
+chrome sprite PASS
+chrome video PASS
+chrome realtime PASS
+webview2 layers PASS
+webview2 sprite PASS
+webview2 video PASS
+webview2 realtime PASS
+8/8 final combinations passed

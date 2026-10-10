@@ -1,4 +1,4 @@
-import { supabase } from "./supabase";
+import { supabase, revokeCurrentSession } from "./supabase";
 import { APP_VERSION } from "./app/theme";
 
 export type SecuritySessionScope = "current" | "others";
@@ -66,7 +66,11 @@ export async function readSecurityEvents(): Promise<SecurityEvent[]> {
   return data.events ?? [];
 }
 
-export async function requestSessionAction(scope: SecuritySessionScope): Promise<void> {
+export async function requestSessionAction(scope: SecuritySessionScope, accessToken?: string): Promise<void> {
+  if (scope === "current") {
+    if (!accessToken) throw new Error("No current session to revoke");
+    return revokeCurrentSession(accessToken);
+  }
   const { error } = await supabase.functions.invoke("iam-session-action", {
     method: "POST",
     body: { scope },

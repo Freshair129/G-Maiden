@@ -1,14 +1,14 @@
 ---
-version: "0.8.2b"
+version: "0.9.0b"
 title: "CR-022: G-Maiden Desktop First-Run, Entitlement and Account Handoff"
 doc_id: "CR-022-gmad-desktop-first-run-entitlement-account-handoff"
 created_at: "2026-07-21T18:00:00+07:00,ATHER"
-last_update: "2026-07-21T23:10:00+07:00,ATHER"
+last_update: "2026-09-12T22:01:36+07:00,RWANG"
 owner: "Boss"
 status: "accepted"
-updated: "2026-07-21"
+updated: "2026-09-12"
 approved_by: "Boss"
-approved_date: "2026-07-21"
+approved_date: "2026-09-12"
 superseded_by: null
 attributes:
   doc_type: "change-request"
@@ -321,20 +321,18 @@ over calling one Edge Function from another or exposing tables to the desktop.
 verify Closed Beta access” screen with Retry. This prevents an installer file from becoming an
 offline entitlement credential.
 
-**Every account-gated launch requires an online entitlement check.** The highest-security policy was
-selected: no offline entitlement receipt or grace period is issued in this Closed Beta. Local settings
-and G-Log remain intact when verification is unavailable, but dashboard/overlay access stays locked.
+**Every account-gated launch requires an online entitlement check.** No durable offline receipt is issued. Boss approved a scoped amendment on 2026-09-12 in [Auth failure remediation](../operations/auth-failure-remediation-proposal.md): retain the existing 24-hour in-process cache after fresh eligible verification. A failed re-verification may return `Ok(stale)` only while that cache remains valid; restart, sign-out and fresh denial cannot reuse it. This supersedes the former blanket no-grace wording for the current process only.
 
 | Control | Policy |
 | --- | --- |
-| Local receipt | None; GID, installer state, signed URL, cached response, or local setting never unlocks access |
+| Local receipt | None; an installer, GID, disk cache or local setting cannot unlock a cold start |
 | Device/reinstall | Every install/device validates the current Google session and entitlement online |
-| Online refresh | Required on each account-gated launch and explicit Retry |
-| Revocation | Server pause/revoke blocks the next launch/check immediately |
-| Service failure | Label as unavailable rather than denied; preserve local settings/G-Log but keep gated UI locked |
+| Online refresh | Required on launch and Retry; a transient failure may use valid process-local grace |
+| Revocation | Fresh server denial locks and clears cache; later outage cannot restore the revoked grant |
+| Service failure within grace | Remain eligible with stale indication; no loading flicker on routine token refresh |
+| Service failure without valid grace | Native locks; UI shows unavailable and clears its previous decision |
 
-This removes offline-receipt signing, copying, clock rollback, delayed revocation, and protected-store
-failure from the Closed Beta attack surface. A future offline policy requires a new C-3 approval.
+Grace is bounded by 24 hours from the last fresh eligible verification, checked when verification falls back; this amendment does not introduce a continuous expiry timer. No persisted receipt is added. Revocation during an outage may remain unknown within this bound; this is the explicit tradeoff approved here. Raw settings/G-Log remain intact. Further policy changes require C-3 approval.
 
 ## 8. Implementation plan (after approval only)
 
@@ -377,7 +375,7 @@ identity/entitlement feature, separate from post-match opt-in data contribution.
 | UAT-09 | Cached response/local state tampered | Local files or WebView state claim eligible | Native runtime remains locked because no server decision was received in this process. |
 | UAT-10 | Reinstall/new device | New app data directory or Windows account | Google sign-in + online entitlement re-check required; no receipt migration exists. |
 | UAT-11 | OAuth callback fail | Wrong/missing/replayed state, code exchange failure, or port route unavailable | No session created; actionable Retry; no token/code in UI/logs. |
-| UAT-12 | Supabase unavailable | Timeout/5xx after a prior online validation | Clearly label service unavailable, not denial; keep dashboard/overlay/GSI/CV locked. |
+| UAT-12 | Supabase unavailable | Timeout/5xx after prior validation | Within valid process-local grace: Ok(stale), eligible without loading flicker. Without valid grace: native locked, UI unavailable/decision cleared. |
 | UAT-13 | GSI setup required | Entitlement confirmed, GSI absent | Shows local configuration path; no game data egress. |
 | UAT-14 | Dota not detected | GSI configured but Dota process absent | Shows detection guidance/retry; entitlement remains confirmed and dashboard can remain in setup state. |
 
@@ -413,7 +411,7 @@ decisions. Production deployment still requires exact document/hash verification
    explicit decision not to collect age data);
 5. liability limitations, governing law, jurisdiction/dispute language, termination/revocation terms,
    and Valve/Dota 2 non-affiliation wording; and
-6. the selected no-offline-grace policy and immediate next-online-check revocation behavior.
+6. the §7 process-local grace amendment and immediate fresh-denial revocation behavior.
 
 ## 12. Acceptance criteria
 
@@ -422,7 +420,7 @@ decisions. Production deployment still requires exact document/hash verification
 | AC-01 | Desktop requires Google OAuth and derives identity/GID exclusively from the authenticated server-side UUID. |
 | AC-02 | No typed GID, Steam ID, signed download URL, installer artifact, or landing browser session unlocks desktop access. |
 | AC-03 | Only active grant + current server-written Terms receipt unlocks the first-run desktop flow. |
-| AC-04 | Every account-gated launch while offline remains locked; no local receipt or grace period exists. |
+| AC-04 | Every offline cold start remains locked; no durable receipt. Only an existing process may use the approved 24-hour grace under §7. |
 | AC-05 | Pause/revoke blocks the next online validation and is communicated without exposing another user’s information. |
 | AC-06 | Terms-required and no-entitlement states explain the practical next action without overclaiming gameplay benefit. |
 | AC-07 | GSI/Dota setup starts immediately after entitlement succeeds and does not upload match state, CV detections, or G-Log. |
@@ -452,3 +450,4 @@ decisions. Production deployment still requires exact document/hash verification
 | 0.3.0b | 2026-07-21 | candidate | Added the companion Genesis Block atom composition, execution boundary, and approval-batched implementation framing. | null | ATHER |
 | 0.2.0b | 2026-07-21 | candidate | Moved the design review to a diagrams-first packet: context, flow, user journey, state, sequence, and conceptual class diagrams. | null | ATHER |
 | 0.1.0b | 2026-07-21 | candidate | Initial C-3/HIGH design: desktop first-run state machine, server-authoritative entitlement contract, bounded offline policy, legal gate, and UAT matrix. | null | ATHER |
+| 0.9.0b | 2026-09-12 | accepted | Boss approved 24-hour process-local grace amendment for GAP-01/02; cold start stays online-only; revise failure-state UAT/AC. | null | RWANG |

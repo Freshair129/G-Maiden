@@ -5,11 +5,17 @@ import { useAuth } from "./auth";
 import { useProfile } from "./profile";
 
 export default function AuthPanel() {
-  const { user, loading, busy, error, signInWithGoogle, signOut } = useAuth();
+  const { user, loading, busy, error, signOutPhase, signOutWarning, signInWithGoogle, signOut } = useAuth();
   const { gidCode, generationName } = useProfile();
 
   if (loading) {
     return <div className="auth-panel muted">checking account…</div>;
+  }
+
+  if (signOutPhase === "failed" || signOutPhase === "cleaning" || signOutPhase === "locking") {
+    return <div className="auth-panel"><p role="alert">{error ?? "กำลังออกจากระบบ…"}</p>
+      {signOutPhase === "failed" && <button onClick={() => void signOut()}>ลองออกจากระบบอีกครั้ง</button>}
+    </div>;
   }
 
   if (user) {
@@ -22,6 +28,7 @@ export default function AuthPanel() {
         <div className="auth-sub">{user.email}</div>
         <div className="auth-gid-label">GID{generationName ? ` · ${generationName}` : ""}</div>
         <code className="auth-gid" title={user.id}>{gidCode || "…"}</code>
+        {error && <p role="alert" className="auth-err">{error}</p>}
         <button type="button" className="auth-out" onClick={() => void signOut()}>Sign out</button>
       </div>
     );
@@ -34,7 +41,8 @@ export default function AuthPanel() {
         <span className="auth-google-g">G</span>
         {busy ? "Opening…" : "Continue with Google"}
       </button>
-      {error ? <div className="auth-err">{error}</div> : null}
+      {error ? <div role="alert" className="auth-err">{error}</div> : null}
+      {signOutWarning && <p role="status">{signOutWarning}</p>}
       <div className="auth-hint">Optional — links your Steam profile to a G-Maiden account.</div>
     </div>
   );

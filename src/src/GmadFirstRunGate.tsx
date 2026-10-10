@@ -1,7 +1,7 @@
 import { useEffect, useState, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
-import { useGmadDesktopEntitlement } from "./gmadEntitlement";
+import { GmadEntitlementContext, useGmadDesktopEntitlement } from "./gmadEntitlement";
 import { checkChannelUpdate, resolveUpdateChannel, type ResolvedUpdateChannel } from "./updateChannel";
 import { buildDiagnosticBundle, compatibilityMode, readinessFromRuntime } from "./betaReadiness";
 import { APP_VERSION } from "./app/theme";
@@ -12,7 +12,8 @@ type SetupStatus = { installed: boolean; dota_cfg_dir?: string | null; message: 
 type UpdateStatus = { resolved: ResolvedUpdateChannel; availableVersion?: string; error?: string };
 
 export default function GmadFirstRunGate({ children }: { children: ReactNode }) {
-  const { state, decision, refresh, signInWithGoogle, signOut, authError } = useGmadDesktopEntitlement();
+  const entitlement = useGmadDesktopEntitlement();
+  const { state, decision, refresh, signInWithGoogle, signOut, authError, signOutWarning } = entitlement;
   const [setup, setSetup] = useState<SetupStatus | null>(null);
   const [setupBusy, setSetupBusy] = useState(false);
   const [ready, setReady] = useState(false);
@@ -65,7 +66,7 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
     });
   }, [state]);
 
-  if (state === "eligible" && ready) return <>{children}</>;
+  if (state === "eligible" && ready) return <GmadEntitlementContext.Provider value={entitlement}>{children}</GmadEntitlementContext.Provider>;
 
   const installGsi = async () => {
     setSetupBusy(true);
@@ -84,7 +85,10 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
       {state === "loading" && <><h1>กำลังตรวจสอบสิทธิ์</h1><p>กำลังยืนยันบัญชี Google และสิทธิ์ Closed Beta จากเซิร์ฟเวอร์</p></>}
       {state === "signing_in" && <><h1>กำลังเข้าสู่ระบบ</h1><p>ดำเนินการต่อในเบราว์เซอร์ ระบบจะกลับมาที่ G-Maiden เมื่อ Google OAuth สำเร็จ โดยจะไม่แสดงหรือบันทึกรหัส OAuth</p></>}
       {state === "sign_in_required" && <><h1>เข้าสู่ระบบด้วย Google</h1><p>ใช้บัญชีเดียวกับที่ได้รับ GID และสิทธิ์ดาวน์โหลด ไม่ต้องกรอก GID ซ้ำ</p><button onClick={() => void signInWithGoogle()}>ดำเนินการต่อด้วย Google</button></>}
-      {state === "sign_in_required" && authError && <p className="gmad-first-run-error">เข้าสู่ระบบไม่สำเร็จ: {authError}</p>}
+      {authError && <p role="alert" className="gmad-first-run-error">{authError}</p>}
+      {signOutWarning && <p role="status">{signOutWarning}</p>}
+      {state === "signing_out" && <><h1>กำลังออกจากระบบ</h1><p>กำลังล้างข้อมูลเข้าสู่ระบบในเครื่อง</p></>}
+      {state === "sign_out_required" && <><h1>ยังล้างข้อมูลเข้าสู่ระบบไม่สำเร็จ</h1><button onClick={() => void signOut()}>ลองออกจากระบบอีกครั้ง</button></>}
       {state === "terms_required" && <><h1>ต้องยอมรับ Terms เวอร์ชันปัจจุบัน</h1><p>GID: {decision?.gid}</p><button onClick={() => void openLanding("/terms?from=desktop")}>อ่านและยอมรับบน Landing</button><button className="secondary" onClick={() => void refresh()}>ตรวจอีกครั้ง</button></>}
       {state === "no_active_entitlement" && <><h1>ยังไม่มีสิทธิ์ Closed Beta ที่ใช้งานได้</h1><p>บัญชีนี้ยืนยันเป็น {decision?.gid} แล้ว แต่ไม่มี active grant</p><button onClick={() => void openLanding("/#gmad")}>เปิดหน้าตรวจสิทธิ์</button><button className="secondary" onClick={() => void signOut()}>ใช้บัญชี Google อื่น</button></>}
       {state === "account_not_eligible" && <><h1>บัญชี Google นี้ไม่ใช่บัญชีที่ได้รับสิทธิ์</h1><p>ระบบไม่รับ GID ที่กรอกเองและไม่แสดงข้อมูลของบัญชีอื่น</p><button onClick={() => void signOut()}>ออกจากระบบแล้วใช้บัญชีเดิม</button></>}

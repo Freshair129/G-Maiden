@@ -1,5 +1,5 @@
 export type EntitlementState = "eligible" | "terms_required" | "no_active_entitlement" | "account_not_eligible";
-export type FirstRunScreen = "loading" | "sign_in_required" | "signing_in" | EntitlementState | "offline_or_unavailable";
+export type FirstRunScreen = "loading" | "sign_in_required" | "signing_in" | EntitlementState | "offline_or_unavailable" | "signing_out" | "sign_out_required";
 
 export function decideFirstRunScreen(input: {
   authLoading: boolean;
@@ -20,8 +20,8 @@ export function decideFirstRunScreen(input: {
 // re-verify from scratch on every session change — including that one — and
 // flipped state to "loading" (un-gating the deck) for the round trip, then to
 // "offline_or_unavailable" (fully re-gating it) on any transient failure.
-// These two predicates are the gate's actual decision, pulled out of
-// `gmadEntitlement.ts`'s hook plumbing so they're unit-testable the same way
+// This predicate decides whether the in-flight refresh can stay quiet, separate from
+// `gmadEntitlement.ts`'s response handling, and is unit-testable the same way
 // `decideFirstRunScreen` above is — see that file's `refresh()`.
 
 /** May THIS re-verify run silently, without moving `state` away from
@@ -31,17 +31,4 @@ export function decideFirstRunScreen(input: {
  *  explicit user-initiated re-check must all still gate exactly as before. */
 export function isBackgroundEntitlementRefresh(authEvent: string | null, everEligible: boolean): boolean {
   return authEvent === "TOKEN_REFRESHED" && everEligible;
-}
-
-/** Should a FAILED re-verify be surfaced as "offline_or_unavailable" (gating
- *  the whole app) — or swallowed, leaving `state`/`decision` untouched?
- *
- *  The Rust command already tried its own grace-window cache before ever
- *  returning an error (see `lib.rs::verify_gmad_entitlement`), so an error
- *  here means there was genuinely nothing to fall back to — UNLESS this was
- *  a background check on an already-eligible session, in which case the
- *  backend kept gameplay armed regardless, and re-gating the UI on top of
- *  that would just move the same bug up one layer. */
-export function shouldSurfaceRefreshFailure(background: boolean, everEligible: boolean): boolean {
-  return !(background && everEligible);
 }
