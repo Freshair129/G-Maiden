@@ -6,9 +6,9 @@ import { checkChannelUpdate, resolveUpdateChannel, type ResolvedUpdateChannel } 
 import { buildDiagnosticBundle, compatibilityMode, readinessFromRuntime } from "./betaReadiness";
 import { APP_VERSION } from "./app/theme";
 import BetaFeedback from "./BetaFeedback";
-import type { MinimapCv } from "./live/events";
+import type { GsiStatus, MinimapCv } from "./live/events";
 
-type SetupStatus = { installed: boolean; dota_cfg_dir?: string | null; message: string };
+type SetupStatus = { installed: boolean; cfg_present?: boolean; cfg_valid?: boolean; dota_cfg_dir?: string | null; message: string };
 type UpdateStatus = { resolved: ResolvedUpdateChannel; availableVersion?: string; error?: string };
 
 export default function GmadFirstRunGate({ children }: { children: ReactNode }) {
@@ -21,6 +21,7 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
   const [captureMode, setCaptureMode] = useState<"dxgi" | "lite" | "">("");
   const [gsiActive, setGsiActive] = useState<boolean | null>(null);
+  const [gsiStatus, setGsiStatus] = useState<GsiStatus | null>(null);
   const [minimapReady, setMinimapReady] = useState<boolean | null>(null);
   const [audioReady] = useState<boolean | null>(null);
 
@@ -28,7 +29,13 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
     let active = true;
     const subscriptions = Promise.all([
       listen<"dxgi" | "lite">("capture-mode", (event) => { if (active) setCaptureMode(event.payload); }),
-      listen<{ gsi_active?: boolean }>("gsi-status", (event) => { if (active) setGsiActive(event.payload.gsi_active ?? null); }),
+      listen<GsiStatus>("gsi-status", (event) => {
+        if (active) {
+          setGsiActive(event.payload.gsi_active ?? null);
+          setGsiStatus(event.payload);
+          setDotaRunning(event.payload.dota_running);
+        }
+      }),
       listen<MinimapCv>("minimap-cv", (event) => { if (active) setMinimapReady(event.payload.classifier === true); }),
     ]);
     return () => { active = false; void subscriptions.then((unlisten) => Promise.all(unlisten.map((stop) => stop()))); };
@@ -109,9 +116,14 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
           </>;
         })()}
         <div className="gmad-setup-status"><strong>Update channel: {updateStatus?.resolved.channel ?? "stable"}</strong><span>Source: {updateStatus?.resolved.source ?? "stable-fallback"}{updateStatus?.availableVersion ? ` · มีเวอร์ชัน ${updateStatus.availableVersion}` : updateStatus?.error ? " · ตรวจอัปเดตไม่สำเร็จ" : " · เวอร์ชันล่าสุด"}</span></div>
-        <div className="gmad-setup-status"><strong>{setup?.installed ? "GSI พร้อมใช้งาน" : "ตั้งค่า GSI/Dota 2"}</strong><span>{setup?.message ?? "กำลังตรวจ Dota 2…"}</span></div>
+        <div className="gmad-setup-status">
+          <strong>{setup?.installed ? "GSI config ถูกต้อง" : setup?.cfg_present && setup.cfg_valid === false ? "GSI config ไม่ถูกต้อง" : "ตั้งค่า GSI/Dota 2"}</strong>
+          <span>{setup?.message ?? "กำลังตรวจ Dota 2…"}</span>
+          <span>Listener พอร์ต 3000: {!gsiStatus ? "กำลังตรวจ…" : gsiStatus.server_state === "listening" ? "พร้อมรับ GSI และ OAuth callback" : gsiStatus.server_state === "port_conflict" ? "พอร์ตถูกใช้งาน — ปิด G-Maiden ที่เปิดซ้ำหรือโปรแกรมอื่นที่ใช้พอร์ต 3000; ระบบลองใหม่อัตโนมัติทุก 3 วินาที" : gsiStatus.server_state === "bind_error" ? "เปิดพอร์ตไม่สำเร็จ — ปิดโปรแกรมที่ใช้พอร์ต 3000 แล้วตรวจซ้ำ" : "กำลังเริ่ม listener…"}</span>
+          <span>ข้อมูลเกม: {gsiActive ? "ได้รับ GSI ล่าสุด · live" : dotaRunning ? "Dota 2 เปิดอยู่ แต่ยังรอข้อมูล GSI; หากเพิ่งติดตั้งหรือซ่อม config ให้ปิดแล้วเปิดเกมใหม่" : "รอเปิด Dota 2"}</span>
+        </div>
         {dotaRunning === false && <div className="gmad-setup-status"><strong>ยังไม่พบ Dota 2 ที่กำลังทำงาน</strong><span>เปิด Dota 2 แบบ borderless fullscreen แล้วกลับมากดตรวจอีกครั้งได้ สิทธิ์ Closed Beta ของคุณยังยืนยันแล้ว</span></div>}
-        {!setup?.installed && setup?.dota_cfg_dir && <button disabled={setupBusy} onClick={() => void installGsi()}>{setupBusy ? "กำลังติดตั้ง…" : "ติดตั้ง GSI config"}</button>}
+        {!setup?.installed && setup?.dota_cfg_dir && <button disabled={setupBusy} onClick={() => void installGsi()}>{setupBusy ? "กำลังติดตั้ง…" : setup?.cfg_present && setup?.cfg_valid === false ? "ซ่อม GSI config" : "ติดตั้ง GSI config"}</button>}
         <button className="secondary" onClick={() => void Promise.all([invoke<SetupStatus>("detect_gsi_setup").then(setSetup), invoke<boolean>("detect_dota_running").then(setDotaRunning)])}>ตรวจ Dota/GSI อีกครั้ง</button>
         <button className="secondary" onClick={() => setReady(true)}>{setup?.installed ? "เปิด Dashboard" : "เข้า Dashboard และตั้งค่าภายหลัง"}</button>
       </>}

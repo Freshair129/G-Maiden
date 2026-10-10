@@ -62,7 +62,13 @@ export interface ReviveAdvice {
   reason: string
 }
 /** Connection/status pushed by the Rust watchdog (gsi.rs) every ~4s. */
-export interface GsiStatus { dota_running: boolean; gsi_active: boolean; in_game: boolean; display_exclusive: boolean }
+export interface GsiStatus {
+  dota_running: boolean
+  gsi_active: boolean
+  in_game: boolean
+  display_exclusive: boolean
+  server_state: 'starting' | 'listening' | 'port_conflict' | 'bind_error'
+}
 
 /** sensor-health (capture.rs) — the overlay's copy of the minimap-sensor
  * contract. Mirrors `live/events.ts`'s `SensorHealth`; duplicated rather than
@@ -139,6 +145,7 @@ export interface SetupStatus {
   steam_path: string | null
   dota_cfg_dir: string | null
   cfg_present: boolean
+  cfg_valid: boolean
   message: string
 }
 
