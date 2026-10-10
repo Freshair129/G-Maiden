@@ -2,8 +2,8 @@
 title: "G-Maiden MVP Backlog"
 doc_id: "mvp-backlog"
 status: "draft"
-version: "0.3.0"
-updated: "2026-10-10"
+version: "0.3.1"
+updated: "2026-10-11"
 owner: "Boss"
 related_docs: ["roadmap", "mvp-execution-dag", "software-requirements-specification", "G-SERIES-DATA-LINEAGE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "EXEC-PLAN-CR-034-iam-remediation"]
 ---
@@ -135,7 +135,7 @@ Backlog สำหรับทำให้ผู้เล่นใช้งาน
 
 | ID | P / Size | สถานะ | Depends on | งานและเกณฑ์รับ |
 | --- | --- | --- | --- | --- |
-| MVP-038 | P0 / L | TODO | MVP-003, MVP-005, MVP-006 | **ออกแบบและประเมิน local STT.** เลือก mic/STT dependency และ model จาก Thai/English corpus, วัด cold/warm latency/RAM พร้อม license/size/resource delivery; ระบุ PTT key ใหม่ที่ไม่ชน Alt+M, privacy/retention และ lifecycle; ไม่ใช้ cloud STT หรือดาวน์โหลด model เงียบ ๆ เพื่อเลี่ยงงบ |
+| MVP-038 | P0 / L | TODO | MVP-003, MVP-005, MVP-006 | **ออกแบบและประเมิน local STT.** เลือก mic/STT dependency และ model จาก Thai/English corpus, วัด cold/warm latency/RAM พร้อม license/size/resource delivery; ระบุ PTT key ใหม่ที่ไม่ชน Alt+M, privacy/retention และ lifecycle; ไม่ใช้ cloud STT หรือดาวน์โหลด model เงียบ ๆ เพื่อเลี่ยงงบ ดู [[MVP-038-local-stt-evaluation]] — กำหนด protocol แล้ว แต่ยังไม่มีผลวัดหรือ candidate ที่เลือก |
 | MVP-039 | P0 / M | TODO | MVP-038, MVP-024 | **ทำ PTT/mic lifecycle.** กดค้างเริ่มรับเสียง ปล่อยหยุด, มี listening indicator/device selection/permission error; ไม่ always-on, hotkey focus/เกม/อุปกรณ์หลุดไม่ค้างอัด และปิดแอปแล้วปล่อย device |
 | MVP-040 | P0 / L | TODO | MVP-039 | **เชื่อม local STT และผลที่ไม่แน่ใจ.** Audio buffer มีขนาด/อายุจำกัด, Thai/English transcription ผ่าน corpus และ thresholds จาก MVP-006; silence/low confidence ขอพูดใหม่โดยไม่สร้างคำถามมั่ว, cancel ล้าง transient audio และไม่ส่ง audio ออกเครือข่าย |
 | MVP-041 | P0 / L | TODO | MVP-040, MVP-029, MVP-036 | **ต่อ conversation turn.** PTT→STT→latest permitted context→local/cloud route ตาม policy→text/TTS, มี turn ID, single-flight/backpressure และ cancel; คำตอบสั้นตาม persona, Memory ใช้เฉพาะ local branch, no-model/timeout ยังมีทางออกชัดเจน |
@@ -242,3 +242,4 @@ Status:
 | 0.1.0 | 2026-10-10 | แตก roadmap M0–M6 เป็น 52 MVP tasks และ 10 deferred/separate-product tasks พร้อม priority, size, status, dependencies, source links และ acceptance; คง Voice/Memory ตาม SRS และบันทึก policy/security/release gates |
 | 0.2.0 | 2026-10-10 | เพิ่ม execution DAG/waves; แยก baseline/readiness/performance/CI เป็นขั้น A/B โดยคง parent IDs; เพิ่ม producer, access และ STT packaging dependencies ที่จำเป็นต่อการทำงานขนาน |
 | 0.3.0 | 2026-10-10 | บันทึก delegated decisions MVP-003–006 และรับ baseline MVP-001/002; legacy desktop handoff 045 ไม่อยู่ใน scope ตาม mvp-decisions |
+| 0.3.1 | 2026-10-11 | Linked MVP-038's candidate-neutral evaluation protocol and kept the task open until measurements and a candidate decision exist. |

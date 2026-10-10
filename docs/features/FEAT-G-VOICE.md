@@ -2,8 +2,8 @@
 title: "FEAT-G-VOICE — Two-Way Voice Conversation"
 doc_id: "FEAT-G-VOICE"
 status: "active"
-version: "0.3.0"
-updated: "2026-10-10"
+version: "0.3.1"
+updated: "2026-10-11"
 owner: "Boss"
 source_of_truth: true
 complexity: "C-3"
@@ -15,10 +15,9 @@ risk: "HIGH"
 > **Module:** G-Voice · **Priority:** Companion P0 · **Phase:** 4
 > **PRD:** [[product-requirements|PRD]] §3A G-Voice · **SRS:** [[software-requirements-specification|SRS]] §3.7
 
-> **สถานะ (2026-10-10): `PLANNED` — Voice เป็น Companion P0 ใน MVP แต่ runtime ยังไม่มีไมค์/STT/two-way path; ห้ามนับว่าเสร็จจากการคง scope ไว้.**
-> capture / STT / Whisper / cpal เลย (grep ยืนยัน) และยังไม่มี Piper — TTS ปัจจุบันเป็น
-> **Windows SAPI อย่างเดียว** ([`tts.rs`](file:///g:/G-Maiden/src-tauri/src/tts.rs), ยืนอยู่แทน Piper ที่วางแผนไว้ใน TDD). Hotkey
-> `Alt+M` **ไม่ใช่** trigger ของ G-Voice — มันคือ **mute toggle** ([`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs)). เอกสารด้านล่าง
+> **สถานะ (2026-10-11): `PLANNED` — Voice เป็น Companion P0 ใน MVP แต่ runtime ยังไม่มีไมค์/STT/two-way path; ห้ามนับว่าเสร็จจากการคง scope ไว้.**
+> source ไม่มี mic-capture/STT implementation. TTS ลอง Piper เมื่อพบ `piper.exe` กับโมเดลในเครื่อง แล้ว fallback เป็น Windows SAPI ([`tts.rs`](../../src-tauri/src/tts.rs)); การมี optional path นี้ยังไม่ยืนยันว่า Piper/model ถูก bundle ใน clean install. Hotkey
+> `Alt+M` **ไม่ใช่** trigger ของ G-Voice — มันคือ **mute toggle** ([`lib.rs`](../../src-tauri/src/lib.rs#L800)). เอกสารด้านล่าง
 > เป็นดีไซน์อนาคต ไม่ใช่พฤติกรรมปัจจุบัน; เขียนเป็นแบบวางแผน (planned).
 
 ---
@@ -61,9 +60,9 @@ STT ทั้งหมดในตารางนี้ยัง**ไม่ไ�
 
 | Component | Technology | Latency |
 | --- | --- | --- |
-| STT | Local STT candidate to be selected/benchmarked in MVP-038 — **ยังไม่ได้ทำ** | measured in MVP-038 |
+| STT | Local STT candidate to be selected/benchmarked in MVP-038 — **ยังไม่ได้ทำ** ([protocol](../architecture/spikes/MVP-038-local-stt-evaluation.md)) | measured in MVP-038 |
 | Interpretation/answer | Local model/rules only for Voice — **ยังไม่ได้ทำ** | measured end-to-end |
-| TTS | **Windows SAPI วันนี้** · Piper (local ONNX) เป็นแผนอนาคต | ~80–200ms |
+| TTS | Piper local path เมื่อพบ executable/model; Windows SAPI PowerShell fallback ตาม `tts.rs` | ยังไม่มีผลบน acceptance matrix; วัดแยกตาม path |
 | **Total** | | PTT release → first audible ≤2,000ms for every accepted ready/warm turn; cold model preparation is reported separately (MVP-006) |
 
 ## 6. Persona Behavior
@@ -144,3 +143,4 @@ Transcript and microphone buffer are not persisted or sent to a network provider
 | — | 2026-07-19 | link/metadata sweep (G1.5): wikilink/symbol-link fixes only — no content change |
 | 0.2.0 | 2026-10-05 | Added the DL-006 source, transport, latency, privacy, fallback, and evidence contract; runtime remains planned. |
 | 0.3.0 | 2026-10-10 | Aligned P0 Voice with accepted MVP contract: Ctrl+Alt+V PTT, local STT/answer only, no cloud utterance or Memory egress, and measured latency/quality acceptance. |
+| 0.3.1 | 2026-10-11 | Linked the MVP-038 evaluation protocol and corrected TTS runtime status to match the Piper-first/SAPI-fallback source path; Voice capture/STT remain unimplemented. |

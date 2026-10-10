@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-10T23:05:32.569Z",
+  "generatedAt": "2026-10-10T23:38:34.372Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -176,6 +176,13 @@
       "id": "docs/architecture/spec-orchestra-codedoc-agent.md",
       "type": "doc",
       "path": "docs/architecture/spec-orchestra-codedoc-agent.md"
+    },
+    {
+      "id": "docs/architecture/spikes/MVP-038-local-stt-evaluation.md",
+      "type": "doc",
+      "path": "docs/architecture/spikes/MVP-038-local-stt-evaluation.md",
+      "title": "MVP-038 — Local STT Design and Evaluation Protocol",
+      "status": "draft"
     },
     {
       "id": "docs/architecture/spikes/S-1-minimap-cv.md",
@@ -1839,37 +1846,37 @@
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/README.md",
       "type": "wikilink",
-      "line": 153
+      "line": 154
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 155
+      "line": 156
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/operations/gmaiden-closed-beta-release-playbook.md",
       "type": "wikilink",
-      "line": 176
+      "line": 177
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 194
+      "line": 195
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 196
+      "line": 197
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 201
+      "line": 202
     },
     {
       "from": "docs/README.md",
@@ -2782,6 +2789,30 @@
       "to": "docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md",
       "type": "wikilink",
       "line": 33
+    },
+    {
+      "from": "docs/architecture/spikes/MVP-038-local-stt-evaluation.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 17
+    },
+    {
+      "from": "docs/architecture/spikes/MVP-038-local-stt-evaluation.md",
+      "to": "docs/features/FEAT-G-VOICE.md",
+      "type": "wikilink",
+      "line": 17
+    },
+    {
+      "from": "docs/architecture/spikes/MVP-038-local-stt-evaluation.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 74
+    },
+    {
+      "from": "docs/architecture/spikes/MVP-038-local-stt-evaluation.md",
+      "to": "docs/product/mvp-backlog.md",
+      "type": "wikilink",
+      "line": 115
     },
     {
       "from": "docs/architecture/spikes/S-1-minimap-cv.md",
@@ -7485,25 +7516,13 @@
       "from": "docs/features/FEAT-G-VOICE.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 117
+      "line": 116
     },
     {
       "from": "docs/features/FEAT-G-VOICE.md",
       "to": "src-tauri/src/tts.rs",
       "type": "symbol",
-      "line": 20
-    },
-    {
-      "from": "docs/features/FEAT-G-VOICE.md",
-      "to": "src-tauri/src/main.rs",
-      "type": "symbol",
-      "line": 21
-    },
-    {
-      "from": "docs/features/FEAT-G-VOICE.md",
-      "to": "src-tauri/src/tts.rs",
-      "type": "symbol",
-      "line": 60
+      "line": 59
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
@@ -8074,6 +8093,12 @@
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
       "line": 134
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/architecture/spikes/MVP-038-local-stt-evaluation.md",
+      "type": "wikilink",
+      "line": 138
     },
     {
       "from": "docs/product/mvp-backlog.md",
@@ -8678,19 +8703,19 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 146,
+      "line": 147,
       "reason": "glob-slug",
       "slug": "SPEC--*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 148,
+      "line": 149,
       "reason": "glob-slug",
       "slug": "ADR-O-*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 157,
+      "line": 158,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -8790,6 +8815,14 @@
       "target": "src/src/companion.ts",
       "anchor": 941,
       "symbol": "useCompanionData"
+    },
+    {
+      "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "line": 187,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/setup.rs",
+      "anchor": 72,
+      "symbol": "exclusive_fullscreen_active"
     },
     {
       "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -10153,7 +10186,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-10T23:06:03.567Z",
+    "generatedAt": "2026-10-10T23:38:39.587Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,
