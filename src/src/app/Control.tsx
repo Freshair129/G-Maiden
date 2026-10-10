@@ -7,7 +7,7 @@ import QuotaCard from '../QuotaCard'
 import type {
   GameTick, Settings, SettingsCat, GsiStatus, ResourceStats, OverlayProfile, VoiceInfo, Sensitivity,
 } from './types'
-import { loadSettings, loadProfiles, C, APP_VERSION, CHANGELOG } from './theme'
+import { loadProfiles, C, APP_VERSION, CHANGELOG } from './theme'
 import { panel, Row, Toggle, Seg, Card, Stat, fmtClock, heroName } from './primitives'
 import { SetupCard } from './cards/SetupCard'
 import { AudioSettingsCard } from './cards/AudioSettingsCard'
@@ -15,6 +15,7 @@ import { MasterCard } from './cards/MasterCard'
 import { EfficacyCard } from './cards/EfficacyCard'
 import { LogCard } from './cards/LogCard'
 import { Welcome } from './cards/Welcome'
+import { useStartupSettings } from './settings'
 
 // CR-002 Phase 1: the command deck (<CommandDeck/>) renders in the control
 // window. CR-013 W3: `Control` now only ever renders one settings category
@@ -22,9 +23,9 @@ import { Welcome } from './cards/Welcome'
 // standalone full-page render + its `embedded` toggle were dead code and
 // were deleted.
 export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
+  const { settings: s, setSettings: setS, clearLegacyMasterApiKey } = useStartupSettings()
   const [tick, setTick] = useState<GameTick | null>(null)
   const [seen, setSeen] = useState(false)
-  const [s, setS] = useState<Settings>(loadSettings)
   // CR-008 WP-2: reflects whether an Anthropic key is stored in the DPAPI secret
   // store (backend `has_master_api_key`) — the plaintext is never held here.
   const [apiKeyPresent, setApiKeyPresent] = useState(false)
@@ -42,9 +43,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
   const [profiles, setProfiles] = useState<OverlayProfile[]>(loadProfiles)
   const previewTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const previewClock = useRef(600)
-  const sRef = useRef(s)
   const controlActiveRef = useRef(true)
-  sRef.current = s
 
   const saveProfile = (name: string) => {
     const p: OverlayProfile = { name, position: s.position, customX: s.customX, customY: s.customY, opacity: s.opacity, showTimer: s.showTimer, showScore: s.showScore, showHeroBar: s.showHeroBar, showKda: s.showKda, showGold: s.showGold }
@@ -106,9 +105,9 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
         })
       } catch { /* command unavailable */ }
     })()
-  }, [])
+  }, [setS])
 
-  // bind once; use ref so the overlay-ready handler always emits current settings
+  // Bind status listeners once; the startup provider owns settings and overlay sync.
   useEffect(() => {
     // NOTE — no document-level styling here. The old standalone-window version
     // painted document.body black (C.bg) and force-enabled page scroll; since
@@ -134,112 +133,27 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
       if (!controlActiveRef.current) return
       setTick(e.payload); setSeen(true)
     })
-    const u2 = listen('overlay-ready', () => { void emit('settings', sRef.current) })
-    const u3 = listen<GsiStatus>('gsi-status', (e) => {
+    const u2 = listen<GsiStatus>('gsi-status', (e) => {
       if (!controlActiveRef.current) return
       setStatus(e.payload)
     })
-    const u4ctrl = listen<ResourceStats>('resource-stats', (e) => {
+    const u3 = listen<ResourceStats>('resource-stats', (e) => {
       if (!controlActiveRef.current) return
       setResources(e.payload)
     })
-    const u5cap = listen<string>('capture-mode', (e) => {
+    const u4cap = listen<string>('capture-mode', (e) => {
       if (!controlActiveRef.current) return
       setCaptureMode(e.payload)
     })
-    const u6layout = listen<Layout>('overlay-layout-sync', (e) => {
+    const u5layout = listen<Layout>('overlay-layout-sync', (e) => {
       setS((prev) => ({ ...prev, layout: e.payload }))
     })
     return () => {
       document.removeEventListener('visibilitychange', onVisibility)
       offFocus?.()
-      void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f()); void u4ctrl.then((f) => f()); void u5cap.then((f) => f()); void u6layout.then((f) => f())
+      void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f()); void u4cap.then((f) => f()); void u5layout.then((f) => f())
     }
-  }, [])
-
-  // Hydrate from the backend settings file once on boot (Boss 2026-07-20:
-  // layout "ปิดเปิดเกมมาก็หาย"). localStorage is per-webview-ORIGIN, so dev
-  // (:5173) and production (tauri://localhost) each kept their own copy and
-  // switching builds looked like the layout vanished. The Rust-side file at
-  // %LOCALAPPDATA%\G-Maiden\settings.json is origin-independent and wins when
-  // present; the persist effect below then keeps both stores in sync (first
-  // run with no file yet = seeded from whatever localStorage had).
-  const hydrated = useRef(false)
-  useEffect(() => {
-    void (async () => {
-      try {
-        const raw = await invoke<string | null>('load_settings_file')
-        if (raw) {
-          const parsed = JSON.parse(raw) as Partial<Settings>
-          setS((prev) => ({ ...prev, ...parsed, uiMode: 'full' }))
-        }
-      } catch { /* plain-browser dev / command unavailable — localStorage seed stands */ }
-      hydrated.current = true
-    })()
-  }, [])
-
-  // persist + broadcast + apply overlay visibility on any change
-  useEffect(() => {
-    localStorage.setItem('gm-settings', JSON.stringify(s))
-    // Mirror to the origin-independent backend file — but not before hydration
-    // resolves, or the localStorage seed would clobber the file's newer copy.
-    if (hydrated.current) void invoke('save_settings_file', { json: JSON.stringify(s) }).catch(() => {})
-    void emit('settings', s)
-    void invoke('set_overlay_visible', { visible: s.overlayVisible }).catch(() => {})
-  }, [s])
-
-  // Item 5: keep Rust's gank voice in sync with the user's chosen voice/rate.
-  // Fires once on startup and on every voice setting change. Best-effort.
-  // Review fix: the rate control below is a continuous <input type="range">
-  // with no native debounce, so dragging it fires this effect (and the
-  // Rust-side prewarm rebake it triggers, ~600-800ms of PowerShell spawns)
-  // on every discrete step crossed. Debounce so only the settled value after
-  // the user stops changing it actually reaches the backend.
-  useEffect(() => {
-    const t = setTimeout(() => {
-      void invoke('set_cv_voice', { name: s.voiceName || null, rate: s.voiceRate ?? null }).catch(() => {})
-    }, 400)
-    return () => clearTimeout(t)
-  }, [s.voiceName, s.voiceRate])
-
-  // CR-007 WP-4 Fix 1: `s.voiceEnabled` gates Maiden's PERSONA voice only.
-  // G-Signal's own gate is now owned solely by the deck's audio rail SIGNAL
-  // toggle (CommandDeck.tsx, `set_cv_signal_enabled`) — this effect used to
-  // also push `set_cv_signal_enabled` here, which meant muting persona voice
-  // silently desynced the deck's SIGNAL toggle (two owners writing the same
-  // backend flag). Do not re-add an invoke('set_cv_signal_enabled', ...) call
-  // keyed off s.voiceEnabled; see CR-007-frostline-deck-refresh.md WP-4.
-
-  // Mirror the user's chosen gank-warning sensitivity to the Rust capture loop
-  // (applied on the next CV tick — no restart needed).
-  useEffect(() => {
-    void invoke('set_cv_signal_sensitivity', { level: s.signalSensitivity }).catch(() => {})
-  }, [s.signalSensitivity])
-
-  // Mirror G-Persona Preset to the Rust speech path
-  useEffect(() => {
-    void invoke('set_persona_preset', { preset: s.personaPreset }).catch(() => {})
-  }, [s.personaPreset])
-
-  // Telemetry source for the deck footer (GPU/CPU-temp): auto/feeder/gtelemetry/off.
-  useEffect(() => {
-    const src = { auto: 0, feeder: 1, gtelemetry: 2, off: 3 }[s.telemetrySource] ?? 0
-    void invoke('set_telemetry_source', { source: src }).catch(() => {})
-  }, [s.telemetrySource])
-
-  // G-Master backend & ollama model — mirror to the Rust state used by advise().
-  useEffect(() => {
-    void invoke('set_master_backend', { backend: s.masterBackend }).catch(() => {})
-  }, [s.masterBackend])
-  useEffect(() => {
-    void invoke('set_master_ollama_model', { name: s.masterOllamaModel }).catch(() => {})
-  }, [s.masterOllamaModel])
-  // G-Master auth MODE only (plan vs apikey). CR-008 WP-2: the key is owned by
-  // the DPAPI secret store, not this effect — pushing it here would clobber the
-  // startup-loaded key with '' (gate finding B2).
-  useEffect(() => {
-    void invoke('set_master_mode', { auth: s.masterAuth }).catch(() => {})
-  }, [s.masterAuth])
+  }, [setS])
 
   // CR-008 WP-2: store/clear the Anthropic key in the DPAPI secret store (backend
   // owns the plaintext). Passing '' clears it. Refresh saved-state from the
@@ -247,56 +161,16 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
   const saveMasterApiKey = async (k: string) => {
     try {
       await invoke('set_master_api_key', { key: k })
+      clearLegacyMasterApiKey()
       setApiKeyPresent(await invoke<boolean>('has_master_api_key'))
     } catch { /* not under Tauri (browser dev) — nothing to persist */ }
   }
 
-  // CR-008 WP-2 one-time migration: move a legacy plaintext key out of the
-  // localStorage settings blob into the DPAPI store, then scrub it. We read the
-  // value straight from localStorage (source of truth, independent of the `[s]`
-  // save-effect ordering) and only delete the plaintext AFTER a confirmed DPAPI
-  // write — on any failure the plaintext is kept and retried next launch (no
-  // silent loss). Also seeds `apiKeyPresent` from the backend.
+  // StartupSettingsProvider migrates any legacy plaintext key before it
+  // rewrites the settings snapshot. Read only the DPAPI-backed saved-state here.
   useEffect(() => {
-    void (async () => {
-      try {
-        const raw = JSON.parse(localStorage.getItem('gm-settings') ?? '{}') as Record<string, unknown>
-        const legacy = typeof raw.masterApiKey === 'string' ? raw.masterApiKey.trim() : ''
-        if (legacy) {
-          await invoke('set_master_api_key', { key: legacy }) // throws → caught, plaintext kept
-          delete raw.masterApiKey
-          localStorage.setItem('gm-settings', JSON.stringify(raw))
-          setS((p) => { const cp: Record<string, unknown> = { ...p }; delete cp.masterApiKey; return cp as unknown as Settings })
-        }
-      } catch { /* not under Tauri, or DPAPI write failed — keep plaintext, retry next launch */ }
-      try { setApiKeyPresent(await invoke<boolean>('has_master_api_key')) } catch { /* browser dev */ }
-    })()
+    void invoke<boolean>('has_master_api_key').then(setApiKeyPresent).catch(() => {})
   }, [])
-
-  // Toggle in-game calibration evidence capture (off by default; QA/tuning mode).
-  useEffect(() => {
-    void invoke('set_calibration_enabled', { enabled: s.calibration }).catch(() => {})
-  }, [s.calibration])
-
-  // Silent-arm efficacy study opt-in (RWANG TASK 2) — off by default, local only.
-  useEffect(() => {
-    void invoke('set_efficacy_enabled', { enabled: s.efficacyStudy }).catch(() => {})
-  }, [s.efficacyStudy])
-
-  // Sync master volume to Rust audio backend on user-driven changes only.
-  // CR-007 WP-4 Fix 1: the deck's audio rail is now the single owner that
-  // pushes volume on MOUNT (CommandDeck.tsx) — if this effect also fired on
-  // mount (it did: a `[s.volume]`-keyed effect runs on the initial render
-  // too), Control's locally-loaded `s.volume` could stomp the rail's
-  // just-pushed value the instant Control mounted (e.g. opening Settings).
-  // The skip-first-run guard below means this only invokes on an actual
-  // subsequent change, while the existing `volume-change` listener below
-  // keeps Control's own slider in sync with whoever else changed it.
-  const volumeFirstRun = useRef(true)
-  useEffect(() => {
-    if (volumeFirstRun.current) { volumeFirstRun.current = false; return }
-    void invoke('set_volume', { vol: s.volume }).catch(() => {})
-  }, [s.volume])
 
   // Listen for hotkey-driven volume changes from the backend (Alt+Up/Down/M).
   useEffect(() => {
@@ -304,7 +178,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
       setS((prev) => ({ ...prev, volume: e.payload }))
     })
     return () => { void u.then((f) => f()) }
-  }, [])
+  }, [setS])
 
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((p) => ({ ...p, [k]: v }))
 

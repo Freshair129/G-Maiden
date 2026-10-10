@@ -14,10 +14,10 @@ import { C } from './theme'
 import { TONE_DANGER_LINES, TONE_LINES, TONE_REVISION_LINES } from './lines'
 import { fmtClock, heroName, overlayPanel, Bar, Stat, sep, dangerStyle, gankStyle, gankClearStyle, killBannerStyle, packBannerStyle } from './primitives'
 
-export const Overlay: React.FC = () => {
+export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSettings = DEFAULTS }) => {
   const [tick, setTick] = useState<GameTick | null>(null)
   const [seen, setSeen] = useState(false)
-  const [s, setS] = useState<Settings>(DEFAULTS)
+  const [s, setS] = useState<Settings>(initialSettings)
   const tone = (s.personaPreset === 'caster' || s.personaPreset === 'meme') ? 'casual' : 'serious'
   // G-Signal gank banner + CV debug feed (item A & B).
   const [gank, setGank] = useState<GankState>(null)
@@ -174,7 +174,9 @@ export const Overlay: React.FC = () => {
         packBannerTimer.current = setTimeout(() => setPackBanner(null), 800)
       }, 4000)
     })
-    void emit('overlay-ready')
+    // The Control window sends the hydrated snapshot in response to this
+    // handshake; wait until the settings listener is registered first.
+    void u2.then(() => emit('overlay-ready')).catch(() => {})
     return () => {
       void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f())
       void u4.then((f) => f()); void u5.then((f) => f()); void u6.then((f) => f())
@@ -565,7 +567,7 @@ export const Overlay: React.FC = () => {
 
   // Single overlay: the merged Full tier (positionable modules + all the
   // announcer/persona visuals ported from lite). uiMode is coerced to 'full'
-  // everywhere (loadSettings / settings broadcast), so the lite render below is
+  // everywhere (startup settings / settings broadcast), so the lite render below is
   // dormant — kept one release as a fallback, not user-reachable.
   if (s.uiMode === 'full') {
     return (
