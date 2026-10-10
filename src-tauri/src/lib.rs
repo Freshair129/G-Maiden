@@ -922,6 +922,15 @@ pub fn run() {
             identity::resolve_steam_id
         ])
         .setup(move |app| {
+            // Restore local runtime preferences before GSI can deliver the
+            // first gameplay tick. The webview later hydrates the same,
+            // validated snapshot for Control and Overlay.
+            if let Some(settings) = load_settings_json() {
+                if let Err(error) = runtime::apply_startup_settings_json(&settings) {
+                    eprintln!("[settings] saved runtime settings were not loaded: {error}");
+                }
+            }
+
             // CR-008 WP-2: load the Anthropic API key from the DPAPI secret store
             // into the runtime once at startup. Owned separately from the auth
             // mode so the frontend's mode-sync effect can never clobber it (B2).

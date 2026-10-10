@@ -100,6 +100,8 @@ export interface Settings {
   voiceName: string
   voiceRate: number
   volume: number
+  announcerEnabled: boolean
+  signalEnabled: boolean
   personaLines: boolean
   autoAdvice: boolean
   gankVisuals: boolean
@@ -122,7 +124,7 @@ export interface Settings {
   showGold: boolean
   personaPreset: 'coach' | 'silent' | 'caster' | 'meme'
 }
-export const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, personaLines: true, autoAdvice: false, gankVisuals: true, killVisuals: true, signalSensitivity: 'med', masterEnabled: true, masterBackend: 'auto', masterAuth: 'plan', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, efficacyStudy: false, telemetrySource: 'auto', uiMode: 'full', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false, personaPreset: 'coach' }
+export const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, announcerEnabled: true, signalEnabled: true, personaLines: true, autoAdvice: false, gankVisuals: true, killVisuals: true, signalSensitivity: 'med', masterEnabled: true, masterBackend: 'auto', masterAuth: 'plan', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, efficacyStudy: false, telemetrySource: 'auto', uiMode: 'full', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false, personaPreset: 'coach' }
 export interface OverlayProfile { name: string; position: Pos; customX: number; customY: number; opacity: number; showTimer: boolean; showScore: boolean; showHeroBar: boolean; showKda: boolean; showGold: boolean }
 
 export interface VoiceInfo { name: string; culture: string; gender: string; age: string }
