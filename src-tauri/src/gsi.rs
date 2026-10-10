@@ -11,6 +11,7 @@ use axum::{
 };
 use serde::Serialize;
 use serde_json::Value;
+use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use tauri::{AppHandle, Emitter};
 
 const OVERLAY_MODULE_IDS: [&str; 19] = [
@@ -839,6 +840,40 @@ fn epoch_ms() -> u64 {
 
 /// Connection/status snapshot pushed to the UI by the watchdog so it can stop
 /// showing "connected" after Dota closes (Dota just goes silent — no final tick).
+#[derive(Serialize, Clone, Copy)]
+#[serde(rename_all = "snake_case")]
+enum GsiServerState {
+    Starting = 0,
+    Listening = 1,
+    PortConflict = 2,
+    BindError = 3,
+}
+
+static GSI_SERVER_STATE: AtomicU8 = AtomicU8::new(GsiServerState::Starting as u8);
+static DOTA_PROCESS_RUNNING: AtomicBool = AtomicBool::new(false);
+
+fn server_state() -> GsiServerState {
+    match GSI_SERVER_STATE.load(Ordering::Relaxed) {
+        1 => GsiServerState::Listening,
+        2 => GsiServerState::PortConflict,
+        3 => GsiServerState::BindError,
+        _ => GsiServerState::Starting,
+    }
+}
+
+fn classify_bind_error(error: &std::io::Error) -> GsiServerState {
+    if error.kind() == std::io::ErrorKind::AddrInUse {
+        GsiServerState::PortConflict
+    } else {
+        GsiServerState::BindError
+    }
+}
+
+fn set_server_state(app: &AppHandle, state: GsiServerState) {
+    GSI_SERVER_STATE.store(state as u8, Ordering::Relaxed);
+    emit_status(app, DOTA_PROCESS_RUNNING.load(Ordering::Relaxed));
+}
+
 #[derive(Serialize, Clone)]
 struct GsiStatus {
     dota_running: bool,
@@ -849,6 +884,32 @@ struct GsiStatus {
     /// work (no DWM) and the desktop may freeze. UI warns the user to switch to
     /// Borderless. False for Borderless / Windowed / Fullscreen-Optimizations.
     display_exclusive: bool,
+    server_state: GsiServerState,
+}
+
+fn emit_status(app: &AppHandle, running: bool) {
+    DOTA_PROCESS_RUNNING.store(running, Ordering::Relaxed);
+    if !running {
+        crate::runtime::set_in_game(false);
+        crate::log::force_end();
+    }
+    let last = crate::runtime::last_post_ms();
+    let server_state = server_state();
+    let gsi_active = running
+        && matches!(server_state, GsiServerState::Listening)
+        && last != 0
+        && epoch_ms().saturating_sub(last) < 45_000;
+    let display_exclusive = running && crate::setup::exclusive_fullscreen_active();
+    let _ = app.emit(
+        "gsi-status",
+        GsiStatus {
+            dota_running: running,
+            gsi_active,
+            in_game: crate::runtime::in_game(),
+            display_exclusive,
+            server_state,
+        },
+    );
 }
 
 /// Watchdog: every few seconds, check whether Dota is still running. When it
@@ -856,31 +917,15 @@ struct GsiStatus {
 /// "live" forever). Always pushes a `gsi-status` event so the UI reflects
 /// reality. Spawned alongside the server.
 async fn watchdog(app: AppHandle) {
-    const STALE_MS: u64 = 45_000; // > GSI heartbeat (30s) + margin
     loop {
-        tokio::time::sleep(std::time::Duration::from_secs(4)).await;
         let running = crate::setup::dota_running();
-        if !running {
-            crate::runtime::set_in_game(false);
-            crate::log::force_end();
-        }
-        let last = crate::runtime::last_post_ms();
-        let gsi_active = running && last != 0 && epoch_ms().saturating_sub(last) < STALE_MS;
-        // Only meaningful while Dota runs; cheap single Win32 query.
-        let display_exclusive = running && crate::setup::exclusive_fullscreen_active();
-        let _ = app.emit(
-            "gsi-status",
-            GsiStatus {
-                dota_running: running,
-                gsi_active,
-                in_game: crate::runtime::in_game(),
-                display_exclusive,
-            },
-        );
+        emit_status(&app, running);
+        tokio::time::sleep(std::time::Duration::from_secs(4)).await;
     }
 }
 
-/// Bind :3000 and serve GSI. Spawned as a background task by `main`.
+/// Bind :3000 and serve GSI. Retries after a bind conflict so closing the
+/// competing process is enough to recover without restarting G-Maiden.
 pub async fn serve(app: AppHandle) {
     tauri::async_runtime::spawn(watchdog(app.clone()));
     let router = Router::new()
@@ -889,21 +934,52 @@ pub async fn serve(app: AppHandle) {
         .route("/overlay/layout", post(overlay_layout_sync))
         .route("/telemetry", post(telemetry_ingest))
         .route("/auth/callback", get(oauth_callback))
-        .with_state(app);
-    match tokio::net::TcpListener::bind("127.0.0.1:3000").await {
-        Ok(listener) => {
-            eprintln!("[G-Maiden] GSI server listening on http://127.0.0.1:3000/gsi");
-            if let Err(e) = axum::serve(listener, router).await {
-                eprintln!("[G-Maiden] GSI server error: {e}");
+        .with_state(app.clone());
+    loop {
+        match tokio::net::TcpListener::bind("127.0.0.1:3000").await {
+            Ok(listener) => {
+                eprintln!("[G-Maiden] GSI server listening on http://127.0.0.1:3000/gsi");
+                set_server_state(&app, GsiServerState::Listening);
+                if let Err(error) = axum::serve(listener, router.clone()).await {
+                    eprintln!("[G-Maiden] GSI server error: {error}");
+                    set_server_state(&app, GsiServerState::BindError);
+                } else {
+                    break;
+                }
+            }
+            Err(error) => {
+                let state = classify_bind_error(&error);
+                if matches!(state, GsiServerState::PortConflict) {
+                    eprintln!("[G-Maiden] GSI port 3000 is occupied; close the other listener to restore GSI and OAuth.");
+                } else {
+                    eprintln!("[G-Maiden] could not bind GSI port 3000: {error}");
+                }
+                set_server_state(&app, state);
             }
         }
-        Err(e) => eprintln!("[G-Maiden] could not bind GSI port 3000: {e}"),
+        tokio::time::sleep(std::time::Duration::from_secs(3)).await;
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn classifies_port_conflicts_separately_from_other_bind_errors() {
+        assert!(matches!(
+            classify_bind_error(&std::io::Error::from(std::io::ErrorKind::AddrInUse)),
+            GsiServerState::PortConflict
+        ));
+        assert!(matches!(
+            classify_bind_error(&std::io::Error::from(std::io::ErrorKind::PermissionDenied)),
+            GsiServerState::BindError
+        ));
+        assert_eq!(
+            serde_json::to_string(&GsiServerState::PortConflict).unwrap(),
+            "\"port_conflict\""
+        );
+    }
 
     #[test]
     fn in_game_only_during_active_play() {

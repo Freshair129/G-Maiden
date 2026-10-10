@@ -58,6 +58,7 @@ export interface GsiStatus {
   gsi_active: boolean;
   in_game: boolean;
   display_exclusive: boolean;
+  server_state: "starting" | "listening" | "port_conflict" | "bind_error";
 }
 
 /** A single confirmed hero detection inside the minimap-cv payload.
