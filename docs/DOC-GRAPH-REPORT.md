@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-10-10T00:51:37.685Z
+สร้างเมื่อ / Generated at: 2026-10-10T02:36:33.829Z
 
-สแกน 150 ไฟล์เอกสาร, 279 nodes, 1244 edges, 217 รายการปัญหา (170 ตัวบล็อก exit code) / scanned 150 doc files, 279 nodes, 1244 edges, 217 violations (170 blocking exit code).
+สแกน 153 ไฟล์เอกสาร, 276 nodes, 1145 edges, 205 รายการปัญหา (159 ตัวบล็อก exit code) / scanned 153 doc files, 276 nodes, 1145 edges, 205 violations (159 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -16,8 +16,7 @@
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
 | missing-changelog | มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table | 4 | yes |
-| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 44 | no (informational) |
-| unresolved | wikilink หาไม่เจอ / unresolved wikilink | 11 | yes |
+| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 43 | no (informational) |
 | version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 26 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
@@ -28,9 +27,9 @@
 
 ### docs/DOC-INDEX.md
 
-- [L139] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="SPEC--*")
-- [L141] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="ADR-O-*")
-- [L150] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
+- [L146] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="SPEC--*")
+- [L148] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="ADR-O-*")
+- [L157] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
 
 ### docs/DOCS-IA-REORG-PROPOSAL.md
 
@@ -436,10 +435,6 @@
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
-### docs/product/roadmap.md
-
-- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
 ### docs/product/software-requirements-specification.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
@@ -468,20 +463,6 @@
 ### docs/reference/dota-ui/README.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/releases/README.md
-
-- [L25] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="RELEASE-CHANNEL-ARCHITECTURE")
-- [L26] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="BETA-ROADMAP")
-- [L27] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="PUBLIC-DEMO-SPEC")
-- [L28] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CLOSED-BETA-WAVE-0-SPEC")
-- [L29] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CLOSED-BETA-WAVE-0-DOD")
-- [L30] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CLOSED-BETA-WAVE-1-SPEC")
-- [L31] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CLOSED-BETA-WAVE-1-DOD")
-- [L32] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CLOSED-BETA-WAVE-2-SPEC")
-- [L33] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="CLOSED-BETA-WAVE-2-DOD")
-- [L34] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="OPEN-BETA-SPEC")
-- [L35] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="OPEN-BETA-DOD")
 
 ### docs/releases/closed-beta/wave-0/definition-of-done.md
 

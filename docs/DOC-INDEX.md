@@ -1,11 +1,11 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.0"
+version: "0.2.3"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
-last_update: "2026-08-24T10:04:00+07:00,ATHER"
+last_update: "2026-10-10,Codex"
 status: "active"
-updated: "2026-08-24"
+updated: "2026-10-10"
 owner: "Boss"
 attributes:
   domain: "documentation-governance"
@@ -31,7 +31,14 @@ attributes:
 - [[one-pager]]
   - `docs/product/one-pager.md` — สรุปสั้นสำหรับการเล่าโปรดักต์
 - [[roadmap]]
-  - `docs/product/roadmap.md` — roadmap หลักที่ใช้งานปัจจุบัน
+  - `docs/product/roadmap.md` — MVP roadmap M0–M6 หลังยกเลิก Closed Beta
+- [[mvp-decisions]]
+  - `docs/product/mvp-decisions.md` — owner-delegated scope/access/data/quality contracts และ baseline acceptance
+- [[mvp-backlog]]
+  - `docs/product/mvp-backlog.md` — 52 MVP tasks และ 10 งานที่เลื่อน/แยกสาย พร้อม dependency และ acceptance
+- [[mvp-execution-dag]]
+  - `docs/product/mvp-execution-dag.md` — 57 execution nodes ใน 14 waves พร้อมคิวขนาน 3 workers, leases และ merge/evidence gates
+  - `docs/product/mvp-execution-dag.json` — nodes/edges/conditional dependencies และ wave allocation สำหรับต่อ scheduler
 - [[roadmap-legacy]]
   - `docs/product/roadmap-legacy.md` — roadmap รุ่นเก่าที่ยังเก็บไว้เป็นประวัติ
 - `docs/product/closed-beta-privacy-notice-draft.md` — ร่างนโยบายความเป็นส่วนตัวสำหรับ Closed Beta
@@ -43,7 +50,7 @@ attributes:
 - `docs/releases/README.md`
   - `docs/releases/README.md` — canonical hub ของ release governance, stage gates, และ execution contract
 - `docs/releases/beta-roadmap.md`
-  - `docs/releases/beta-roadmap.md` — release-maturity roadmap แยกจาก feature roadmap
+  - `docs/releases/beta-roadmap.md` — release-maturity reference เดิม; Closed Beta ยกเลิกแล้ว ให้ใช้ MVP roadmap สำหรับแผนปัจจุบัน
 - `docs/releases/release-channel-architecture.md`
   - `docs/releases/release-channel-architecture.md` — Dev → Closed Beta → Stable channel architecture และ artifact promotion rules
 - `docs/releases/release-channel-implementation.md`
@@ -215,3 +222,6 @@ attributes:
 | 0.1.8 | 2026-08-23 | Recorded CR-034 Phase 0 completion and the Phase 1 review gate. |
 | 0.1.9 | 2026-08-24 | Recorded CR-034 Phase 1 local implementation and retained the live-production promotion gate. |
 | 0.2.0 | 2026-08-24 | Recorded CR-034 Phase 2 local session/security implementation and retained the live-production promotion gate. |
+| 0.2.1 | 2026-10-10 | Added the MVP roadmap/backlog entrypoints and recorded cancellation of the Closed Beta programme. |
+| 0.2.2 | 2026-10-10 | Added the MVP execution DAG and machine-readable parallel-wave schedule. |
+| 0.2.3 | 2026-10-10 | ลงทะเบียน mvp-decisions ที่รับรองตาม Owner delegation |

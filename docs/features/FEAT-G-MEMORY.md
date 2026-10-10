@@ -2,8 +2,8 @@
 title: "FEAT-G-MEMORY — Persistent Player Memory"
 doc_id: "FEAT-G-MEMORY"
 status: "active"
-version: "0.2.3"
-updated: "2026-10-06"
+version: "0.2.4"
+updated: "2026-10-10"
 owner: "Boss"
 source_of_truth: true
 complexity: "C-3"
@@ -53,7 +53,7 @@ PlayerMemory {
 
 - **Backend (implemented slice):** derive from archived **JSONL** (`match-*.jsonl` in `%LOCALAPPDATA%\G-Maiden\logs\`) and persist a schema-versioned `memory.json` beside the G-Log directory. No SQLite or new network source is added.
 - **Forget marker:** persist a schema-versioned `memory-clear.json` beside the snapshot. It stores only a monotonic `cleared_before_ms` timestamp, not match contents or aggregate values.
-- **Location:** local disk only — `memory.json` อยู่ข้างข้อมูล G-Log
+- **Location:** local disk only — snapshot คือ `%LOCALAPPDATA%\G-Maiden\memory.json` และ forget marker คือ `%LOCALAPPDATA%\G-Maiden\memory-clear.json`; archived logs อยู่ใน `%LOCALAPPDATA%\G-Maiden\logs\`. Snapshot/marker อยู่ใน parent directory ของ `logs` ตาม [`memory_path()`](../../src-tauri/src/memory.rs#L155).
 - **Refresh:** `get_player_memory` reuses the snapshot while source filename/mtime/size metadata is unchanged; otherwise it reads and rebuilds the aggregate.
 - **Clear:** `delete_player_memory` advances the forget marker and removes the derived snapshot. Archived G-Log files remain unchanged; sources started at or before the marker are excluded on every later read, including after app restart. Newer matches can contribute to a fresh memory.
 - **Retention:** the derived snapshot contains bounded aggregates; archived match-log retention remains governed by G-Log.
@@ -219,3 +219,4 @@ byte-for-byte unchanged by `delete_player_memory`.
 | 0.2.1 | 2026-10-05 | Clarified the intentional partial boundaries reported by code-doc alignment: explicit outcome-only win rate, on-demand refresh, and `.json.tmp` snapshot replacement. |
 | 0.2.2 | 2026-10-05 | Updated Symbol Graph line links after adding fail-closed source-boundary comments in `memory.rs`. |
 | 0.2.3 | 2026-10-06 | Implemented DL-007 durable G-Memory forget semantics while preserving archived G-Log sources. |
+| 0.2.4 | 2026-10-10 | Clarified exact snapshot, marker and archived-log paths after CodeDoc confused the module declaration with storage location; matches `memory_path()` and changes no runtime behavior. |
