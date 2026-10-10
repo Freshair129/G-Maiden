@@ -288,6 +288,127 @@ pub fn persona_preset() -> u8 {
     PERSONA_PRESET.load(Ordering::Relaxed)
 }
 
+#[derive(Debug, PartialEq, Eq)]
+struct StartupSettings {
+    volume: u8,
+    announcer_enabled: bool,
+    signal_enabled: bool,
+    signal_sensitivity: u8,
+    voice_name: Option<String>,
+    voice_rate: Option<i32>,
+    persona_preset: u8,
+    master_backend: u8,
+    master_auth_apikey: bool,
+    master_ollama_model: String,
+    telemetry_source: u8,
+    calibration_enabled: bool,
+    efficacy_study: bool,
+}
+
+fn parse_startup_settings(json: &str) -> Result<StartupSettings, String> {
+    let value: serde_json::Value = serde_json::from_str(json)
+        .map_err(|_| "saved settings are not valid JSON".to_string())?;
+    let settings = value
+        .as_object()
+        .ok_or_else(|| "saved settings must be a JSON object".to_string())?;
+
+    let bool_or = |key: &str, fallback: bool| {
+        settings.get(key).and_then(serde_json::Value::as_bool).unwrap_or(fallback)
+    };
+    let sensitivity = match settings.get("signalSensitivity").and_then(serde_json::Value::as_str) {
+        Some("low") => 0,
+        Some("high") => 2,
+        _ => 1,
+    };
+    let persona = match settings.get("personaPreset").and_then(serde_json::Value::as_str) {
+        Some("silent") => 1,
+        Some("caster") => 2,
+        Some("meme") => 3,
+        _ => 0,
+    };
+    let backend = match settings.get("masterBackend").and_then(serde_json::Value::as_str) {
+        Some("claude") => 1,
+        Some("ollama") => 2,
+        _ => 0,
+    };
+    let telemetry_source = match settings.get("telemetrySource").and_then(serde_json::Value::as_str) {
+        Some("feeder") => 1,
+        Some("gtelemetry") => 2,
+        Some("off") => 3,
+        _ => 0,
+    };
+    let voice_name = settings
+        .get("voiceName")
+        .and_then(serde_json::Value::as_str)
+        .map(str::trim)
+        .filter(|name| name.len() <= 128 && !name.chars().any(char::is_control) && !name.is_empty())
+        .map(str::to_owned);
+    let voice_rate = settings
+        .get("voiceRate")
+        .and_then(serde_json::Value::as_f64)
+        .filter(|rate| rate.is_finite())
+        .map(|rate| rate.clamp(-10.0, 10.0).round() as i32);
+    let master_ollama_model = settings
+        .get("masterOllamaModel")
+        .and_then(serde_json::Value::as_str)
+        .map(str::trim)
+        .filter(|model| !model.is_empty() && model.len() <= 128 && !model.chars().any(char::is_control))
+        .unwrap_or("qwen3.5:4b")
+        .to_owned();
+    let volume = settings
+        .get("volume")
+        .and_then(serde_json::Value::as_f64)
+        .filter(|volume| volume.is_finite())
+        .map(|volume| volume.clamp(0.0, 100.0).round() as u8)
+        .unwrap_or(80);
+
+    Ok(StartupSettings {
+        volume,
+        announcer_enabled: bool_or("announcerEnabled", true),
+        signal_enabled: bool_or("signalEnabled", true),
+        signal_sensitivity: sensitivity,
+        voice_name,
+        voice_rate,
+        persona_preset: persona,
+        master_backend: backend,
+        master_auth_apikey: settings
+            .get("masterAuth")
+            .and_then(serde_json::Value::as_str)
+            == Some("apikey"),
+        master_ollama_model,
+        telemetry_source,
+        calibration_enabled: bool_or("calibration", false),
+        efficacy_study: bool_or("efficacyStudy", false),
+    })
+}
+
+/// Apply the saved runtime preferences before the GSI server starts. Unknown or
+/// invalid fields use the same safe defaults as the frontend settings snapshot.
+pub fn apply_startup_settings_json(json: &str) -> Result<(), String> {
+    let settings = parse_startup_settings(json)?;
+    crate::audio::set_volume(settings.volume);
+    set_announcer_enabled(settings.announcer_enabled);
+    set_signal_enabled(settings.signal_enabled);
+    set_signal_sensitivity(match settings.signal_sensitivity {
+        0 => Sensitivity::Low,
+        2 => Sensitivity::High,
+        _ => Sensitivity::Med,
+    });
+    set_voice(settings.voice_name, settings.voice_rate);
+    set_persona_preset(settings.persona_preset);
+    set_master_backend(match settings.master_backend {
+        1 => MasterBackend::Claude,
+        2 => MasterBackend::Ollama,
+        _ => MasterBackend::Auto,
+    });
+    set_master_mode(settings.master_auth_apikey);
+    set_master_ollama_model(settings.master_ollama_model);
+    crate::governor::set_telemetry_source(settings.telemetry_source);
+    crate::calibration::set_enabled(settings.calibration_enabled);
+    set_efficacy_enabled(settings.efficacy_study);
+    Ok(())
+}
+
 pub fn mark_gmad_capture_started() -> bool {
     GMAD_CAPTURE_STARTED
         .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
@@ -1236,5 +1357,63 @@ mod tests {
             silent > low && silent < high,
             "silent-arm share {silent}/{n} outside 15%-35% band — randomization degenerate"
         );
+    }
+
+    #[test]
+    fn startup_settings_parse_saved_runtime_preferences() {
+        let settings = parse_startup_settings(
+            r#"{"volume":41,"announcerEnabled":false,"signalEnabled":false,"signalSensitivity":"high","voiceName":"  Microsoft Aria  ","voiceRate":-3,"personaPreset":"meme","masterBackend":"ollama","masterAuth":"apikey","masterOllamaModel":"llama3.2:3b","telemetrySource":"off","calibration":true,"efficacyStudy":true}"#,
+        )
+        .unwrap();
+
+        assert_eq!(settings.volume, 41);
+        assert!(!settings.announcer_enabled);
+        assert!(!settings.signal_enabled);
+        assert_eq!(settings.signal_sensitivity, 2);
+        assert_eq!(settings.voice_name.as_deref(), Some("Microsoft Aria"));
+        assert_eq!(settings.voice_rate, Some(-3));
+        assert_eq!(settings.persona_preset, 3);
+        assert_eq!(settings.master_backend, 2);
+        assert!(settings.master_auth_apikey);
+        assert_eq!(settings.master_ollama_model, "llama3.2:3b");
+        assert_eq!(settings.telemetry_source, 3);
+        assert!(settings.calibration_enabled);
+        assert!(settings.efficacy_study);
+    }
+
+    #[test]
+    fn startup_settings_normalize_invalid_values_to_safe_defaults() {
+        let settings = parse_startup_settings(
+            r#"{"volume":101,"announcerEnabled":"yes","signalEnabled":null,"signalSensitivity":"unknown","voiceName":"\u0000","voiceRate":11,"personaPreset":"unknown","masterBackend":"unknown","masterAuth":"unknown","masterOllamaModel":"\u0000","efficacyStudy":"true"}"#,
+        )
+        .unwrap();
+
+        assert_eq!(settings.volume, 100);
+        assert!(settings.announcer_enabled);
+        assert!(settings.signal_enabled);
+        assert_eq!(settings.signal_sensitivity, 1);
+        assert_eq!(settings.voice_name, None);
+        assert_eq!(settings.voice_rate, Some(10));
+        assert_eq!(settings.persona_preset, 0);
+        assert_eq!(settings.master_backend, 0);
+        assert!(!settings.master_auth_apikey);
+        assert_eq!(settings.master_ollama_model, "qwen3.5:4b");
+        assert_eq!(settings.telemetry_source, 0);
+        assert!(!settings.calibration_enabled);
+        assert!(!settings.efficacy_study);
+    }
+
+    #[test]
+    fn startup_settings_round_fractional_numeric_controls_like_the_frontend() {
+        let settings = parse_startup_settings(r#"{"volume":44.6,"voiceRate":-3.6}"#).unwrap();
+
+        assert_eq!(settings.volume, 45);
+        assert_eq!(settings.voice_rate, Some(-4));
+    }
+
+    #[test]
+    fn startup_settings_require_a_json_object() {
+        assert!(parse_startup_settings("not-json").is_err());
+        assert!(parse_startup_settings("[]").is_err());
     }
 }
