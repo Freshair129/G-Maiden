@@ -12,6 +12,10 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
       # Fix: setup-node BEFORE pnpm/action-setup so cache key is available
       - uses: actions/setup-node@v4
         with:
@@ -40,6 +44,13 @@ jobs:
       # cargo work.
       - name: Doc-graph gate (tests + strict scan + checklist + ledger)
         run: node tools/doc-graph/ci-gate.mjs
+
+      # Static gameplay snapshots must keep their provenance manifest, runtime
+      # schema, and generated hero abilities aligned before Rust embeds them.
+      - name: Static gameplay data provenance gate
+        run: |
+          python tools/data-provenance/verify_manifest.py
+          python -m unittest discover -s tools/data-provenance -v
 
       # The gpu-feeder sidecar is bundled via tauri.conf externalBin, which
       # tauri-build validates at *any* cargo invocation (clippy included). The

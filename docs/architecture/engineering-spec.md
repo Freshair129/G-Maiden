@@ -2,8 +2,8 @@
 title: "G-Maiden — Engineering Spec"
 doc_id: "engineering-spec"
 status: "active"
-version: "0.2.0"
-updated: "2026-10-10"
+version: "0.2.1"
+updated: "2026-10-11"
 owner: "Boss"
 source_of_truth: false
 complexity: "C-3"
@@ -85,9 +85,10 @@ admission, T3 = loopback first audible sample. รวม acquisition wait ห้
 - **Output:** `AdvicePayload { topic, recommendation, rationale, persona_text }` (ผ่าน cloud หรือ SLM)
 - **Static-data provenance:** hero, curated-ability, burst-item, item-price, and counter snapshots
   are recorded in [`provenance.json`](file:///g:/G-Maiden/src-tauri/data/provenance.json). The
-  local [`verify_manifest.py`](file:///g:/G-Maiden/tools/data-provenance/verify_manifest.py)
-  checks schema, JSON validity, repository-relative paths, and SHA-256 before maintenance or
-  acceptance; the runtime never fetches these snapshots.
+  [`verify_manifest.py`](file:///g:/G-Maiden/tools/data-provenance/verify_manifest.py) local/CI
+  gate checks required artifact coverage, JSON/runtime schema, duplicate keys, curated-to-embedded
+  hero ability consistency, repository-relative paths, and SHA-256. This is integrity evidence, not
+  gameplay-accuracy or current-patch evidence; the runtime never fetches these snapshots.
 
 ### 2.5 G-Sensory (Overlay & Hardware Optimization)
 - **Input:** ทุก event ข้างบน + resource telemetry
@@ -319,3 +320,4 @@ entitlement or local Terms-receipt gating as part of this target.
 | 0.1.4 | 2026-10-05 | Recorded the partial G-Memory local reader/snapshot boundary and its privacy-scoped command surface. |
 | 0.1.5 | 2026-10-06 | Added the DL-007 durable G-Memory forget cutoff and retained G-Log boundary. |
 | 0.2.0 | 2026-10-10 | Reconciled T0/T3 and strict G-Signal latency, local-only Voice/Memory and critical path, cloud allowlist target, account-optional target versus current gate, and whole-app acceptance measurements. |
+| 0.2.1 | 2026-10-11 | Added the static gameplay data structural and lineage consistency checks to the CI acceptance gate; retained accuracy and patch currency as unverified. |
