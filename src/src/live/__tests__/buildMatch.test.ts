@@ -40,6 +40,7 @@ function makeStatus(overrides: Partial<GsiStatus> = {}): GsiStatus {
     gsi_active: true,
     in_game: true,
     display_exclusive: false,
+    server_state: "listening",
     ...overrides
   };
 }
