@@ -2,8 +2,8 @@
 title: "G-Series Data Lineage and Computation Contract"
 doc_id: "G-SERIES-DATA-LINEAGE"
 status: "accepted"
-version: "1.1.0"
-updated: "2026-10-10"
+version: "1.1.1"
+updated: "2026-10-11"
 owner: "Boss"
 approved_by: "user"
 approved_date: "2026-10-06"
@@ -82,7 +82,7 @@ enforced; MVP-027/MVP-050 own runtime enforcement and evidence.
 | `SRC-HERO-DB` | Embedded `src-tauri/data/heroes.json` via `include_str!` | base stats and curated ability tables | G-Damage | Base stats cover the roster; ability tables are curated and incomplete; provenance is in `SRC-DATA-MANIFEST`. |
 | `SRC-ITEM-DB` | Embedded `src-tauri/data/items.json` and `item-prices.json` | burst contribution and item cost | G-Damage, GSI net-worth fallback | Unknown items contribute zero; snapshot provenance is in `SRC-DATA-MANIFEST`. |
 | `SRC-COUNTER-DB` | Embedded `src-tauri/data/item_counters.json` | hero key → recommended item keys | G-Master | Unknown hero/key returns no counter advice; curation status is in `SRC-DATA-MANIFEST`. |
-| `SRC-DATA-MANIFEST` | Local `src-tauri/data/provenance.json` plus `tools/data-provenance/verify_manifest.py` | source kind/URL, patch/date fields, generation commit, SHA-256, evidence status | G-Damage, G-Master, GSI net-worth fallback, maintenance gates | Build-time/local only; checksum mismatch fails verification; missing historical provenance remains `PARTIAL`/`UNVERIFIED`; no runtime fetch. |
+| `SRC-DATA-MANIFEST` | Local `src-tauri/data/provenance.json` plus `tools/data-provenance/verify_manifest.py` | source kind/URL, patch/date fields, generation commit, SHA-256, evidence status | G-Damage, G-Master, GSI net-worth fallback, maintenance gates | Local and CI gate checks artifact coverage, runtime data shape, curated/runtime ability consistency, and SHA-256; missing historical provenance remains `PARTIAL`/`UNVERIFIED`; no runtime fetch. |
 | `SRC-LOG` | Local JSONL append/flush | ticks, typed events, risk traces, utterances | G-Log, G-Memory, offline replay tools, future G-Coach | Replay and G-Memory read this source locally; only an explicit FULL-evidence fit may produce a tuning profile, and raw logs never leave the machine. |
 | `SRC-TUNING` | Local JSON at `%LOCALAPPDATA%\G-Maiden\motion-tuning.json`, written only by `replay_fit --write-tuning` | versioned `TuningDelta` with FULL evidence, match count, baseline/candidate F1, and old/new `MotionParams` | G-Motion at next-match capture initialization | Invalid, missing, APPROX, non-improving, or corrupt primary profiles fall back to the previous valid `.json.bak`, then shipped defaults; no network transport. |
 | `SRC-FPS-P7` | Local `PresentMon.exe` subprocess subscribing to Windows ETW for `dota2.exe`; no HTTP | `MsBetweenPresents`, `Dropped`, process identity, overlay phase, operator confirmation | G-Sensory P7 acceptance evidence | Missing PresentMon, Dota, elevation, confirmation, or valid receipt produces `SKIP`/exit `77`; the receipt contains no GSI, CV, G-Log, match, or player data. |
@@ -109,9 +109,13 @@ Each entry must contain:
 `VERIFIED` is reserved for entries with a recorded source revision and retrieval date plus a
 generation tool and commit. Unknown historical fields are explicit `null` values and force
 `PARTIAL` or `UNVERIFIED`; the verifier must never turn an unknown source into a current-patch
-claim. [`verify_manifest.py`](file:///g:/G-Maiden/tools/data-provenance/verify_manifest.py) is a
-local build/maintenance check only: it validates the manifest schema, JSON files, repository
-boundaries, and checksums. It performs no network request and is not a runtime data source.
+claim. [`verify_manifest.py`](file:///g:/G-Maiden/tools/data-provenance/verify_manifest.py) checks
+the five required gameplay artifacts, their declared paths/roles, JSON shape, unique hero/item
+keys, curated ability schema, and equality between curated ability input and embedded hero data.
+It also validates repository boundaries and SHA-256 checksums. CI runs this verifier and its
+negative-case tests; it performs no network request and is not a runtime data source. These checks
+establish structural integrity and lineage consistency, not gameplay accuracy or current-patch
+coverage. Missing historical provenance remains explicitly unverified.
 
 ## 4. GSI field mapping
 
@@ -467,7 +471,7 @@ The full source/formula/audio-priority/fallback/evidence contract is in [`FEAT-G
 | `DL-001` | G-Damage magic-resistance unit mismatch (`25` percent versus `0.25` fraction) | Self-burst can overstate magical damage | RCA: [[2026-10-04-g-damage-magic-resistance-unit-mismatch]]; add a regression test, then make the smallest approved unit-normalization fix. |
 | `DL-002` | Enemy HP/armor/magic resistance/level source is not available to target-side G-Damage | No truthful live enemy lethality warning | Contract, conservative observation reconciliation, and normalization/fail-closed wrapper are implemented in [[FEAT-G-DAMAGE]] §4.1; live source proofs and G-Damage/G-Signal wiring remain blocked until a local CV/OCR source is available and separately reviewed. |
 | `DL-004` | G-Sensory FPS computation lacked a canonical receipt contract and live acceptance evidence | FPS ≤3% remains unverified | Receipt schema and strict baseline validation are implemented; execute the two-phase PresentMon/ETW run and retain a real `verdict=pass` receipt before closeout. |
-| `DL-005` | Static hero/item/counter snapshots lack a single patch/version manifest | Advice and damage provenance can drift | Manifest and local checksum verifier are implemented; historical entries remain explicitly `PARTIAL`/`UNVERIFIED` where patch/date/source evidence was not recorded. |
+| `DL-005` | Static hero/item/counter snapshots lack a single patch/version manifest | Advice and damage provenance can drift | Manifest, required-artifact/schema checks, curated/runtime consistency, checksum verification, and a CI gate are implemented; historical entries remain explicitly `PARTIAL`/`UNVERIFIED` where patch/date/source evidence was not recorded. |
 | `DL-006` | G-Voice/G-Memory/G-Coach/G-Stream/G-Score have no runtime lineage | Planned features cannot be implemented reproducibly | **Structurally resolved:** five module contracts now define source, transport, computation, output, fallback, privacy, and evidence. G-Memory has a partial local reader/snapshot implementation; the remaining companion runtime slices remain `PLANNED`/`PROPOSED`. |
 | `DL-007` | Clearing G-Memory removed only the cache, so the next read could rebuild it from retained pre-clear G-Log files | A user's cleared memory could reappear after refresh/restart | **Implemented in 1.0.11:** persist a local monotonic cutoff, exclude pre-cutoff match files, preserve G-Log bytes, and fail closed on invalid marker state. Unit tests cover cutoff persistence/filtering and archive preservation; runtime no-egress receipt remains open. |
 
@@ -531,3 +535,4 @@ The following are documentation/verification requirements, not claims that the c
 | 1.0.10 | 2026-10-05 | Implemented the first local G-Memory reader/snapshot slice and narrowed DL-006 runtime status to partial rather than shipped. |
 | 1.0.11 | 2026-10-06 | Implemented DL-007 persistent G-Memory clear cutoff, retained-log filtering, and fail-closed marker behavior; runtime no-egress receipt remains open. |
 | 1.1.0 | 2026-10-10 | Reconciled MVP target precedence, cloud-context allowlist/opt-in, local-only Voice and Memory, and deferred deep Coach; kept broader current implementation claims distinct from acceptance evidence. |
+| 1.1.1 | 2026-10-11 | Added CI-gated static gameplay data schema, coverage, duplicate-key, and curated/runtime consistency verification without upgrading unknown source evidence. |
