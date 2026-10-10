@@ -11,6 +11,26 @@ A **real-time AI companion for Dota 2** that narrates and advises during live ma
 
 The persona is "**Maiden**" — inspired by Dota 2's Crystal Maiden. Gentle, intelligent, statistically credible, meme-aware (self-deprecating about CM's nerfed movement speed), and capable of mid-sentence belief revision when a prediction is wrong.
 
+## Accepted MVP Contract
+
+`docs/product/mvp-decisions.md` is the accepted target for MVP scope, account access, cloud data,
+and quality. G-Voice and G-Memory remain Companion P0, but neither is complete at runtime yet.
+Target acceptance: Windows x64 builds 19045/26100; live Dota 2 5v5 All Pick Ranked/Unranked; CV at
+1080p 16:9, one primary display, 100% DPI, default bottom-left minimap, borderless-fullscreen.
+Other modes/layouts require calibration/evidence; unknown coverage must be reported as unknown.
+This target does not claim a tested compatibility result or shipped runtime behavior.
+
+The product target allows local core without account/session/entitlement/network, while the account
+surface remains exposed and protected actions remain server-authorized. The current release still
+has CR-022's first-run gate until MVP-008 changes and verifies it. Closed Beta is cancelled; keep
+Beta/legal/release history and gates accurate without restarting that programme.
+
+Cloud game context is off by default and limited to the explicit own-stat allowlist after separate
+opt-in. G-Voice audio/transcript/free-form question, G-Memory including aggregates, CV, raw
+GSI/GameTick, G-Log/history/replay, account/security fields and local diagnostics stay local.
+G-Signal is pure Rust with no cloud or SLM dependency. `Ctrl+Alt+V` is the MVP PTT default to
+implement; `Alt+M` remains mute. These are product targets until implementation/evidence lands.
+
 ---
 
 ## Tech Stack
@@ -23,8 +43,8 @@ The persona is "**Maiden**" — inspired by Dota 2's Crystal Maiden. Gentle, int
 | CV pipeline | **DXGI Desktop Duplication → ONNX detector** (ADR-13) | Minimap hero detection; borderless-fullscreen required, Lite-mode fallback |
 | Audio | **rodio** (in-process WAV playback) | Sub-1ms cancel, no cmd flash |
 | TTS | **Windows SAPI** (PowerShell, planned: Piper ONNX) | Thai voice, latency fallback chain |
-| Cloud brain | **Claude CLI / Anthropic API** (`claude-haiku-4-5`) | Narrative, deep analysis, item advice (Gemini = design target, not wired) |
-| Local SLM | **Ollama** (HTTP, model chosen in UI) | Offline resilience fallback (no llama-cpp/Qwen pin in code) |
+| Cloud advice | **Claude CLI / Anthropic API** (`claude-haiku-4-5`) | Non-critical G-Master advice only under MVP-005 separate opt-in/own-stat allowlist; runtime enforcement acceptance remains open |
+| Local SLM | **Ollama** (HTTP, model chosen in UI) | Local non-critical advice fallback; G-Voice must keep its transcript local and G-Signal never depends on any SLM |
 | GPU telemetry | **`gpu-feeder/`** sidecar (nvidia-smi → POST /telemetry) | GPU/VRAM/temp in the deck footer; keeps nvidia-smi out of the main process |
 
 ---
@@ -114,9 +134,9 @@ detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`)
 └─────────────────────────────────────────────────────┘
          ↕ (non-critical, degrades gracefully)
 ┌─────────────────────────────────────────────────────┐
-│  CLOUD BRAIN (Maiden Scribe)                        │
-│  Claude CLI / Anthropic API → narration + advice    │
-│  Fallback: Ollama local SLM  (Gemini = design only) │
+│  OPTIONAL CLOUD ADVICE                               │
+│  G-Master only; separate opt-in + own-stat allowlist │
+│  Fallback: local Ollama or unavailable               │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -126,7 +146,7 @@ detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`)
 
 | Module | Status | Responsibility |
 |--------|--------|---------------|
-| **G-Sentry** | Done | Fog-of-war monitor — polls GSI/CV every 500ms; flags enemies missing >5s |
+| **G-Sentry** | Done | Fog-of-war monitor — current CV loop polls at 250ms normally, 125ms while missing heroes, and 500ms under CPU throttle (`capture.rs`); MVP target is event-driven evaluation, with 500ms only as watchdog/freshness cadence; flags enemies missing >5s |
 | **G-Motion** | Done | Time-off-map risk heuristic — 5-min ring buffer of last-seen positions (no heatmap/path model yet) |
 | **G-Signal** | Done | Gank warning — voice interrupt at the Sensitivity danger threshold (default Med 0.65; clear 0.40) |
 | **G-Master** | Done | Advisor — Claude CLI / Anthropic API + Ollama SLM fallback (Auto\|Claude\|Ollama) |
@@ -140,12 +160,12 @@ detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`)
 
 | Constraint | Target | Consequence of violation |
 |-----------|--------|------------------------|
-| G-Signal end-to-end latency | p50 ≤ 250ms, **never exceed 300ms** | Player dies before warning |
-| Background CPU | ≤ 2.5% on mid-range | Game stutters |
-| RAM | ≤ 400MB (all modules active) | Swap thrash |
+| G-Signal end-to-end latency | p50 ≤ 250ms, **every measured sample ≤300ms** from acquisition/GSI arrival to audible onset | Player dies before warning |
+| Whole-app CPU | ≤ 2.5% normalized by logical CPU capacity, every 1s sample | Game stutters |
+| Whole-app RAM | Aggregate peak Working Set ≤ 400,000,000 bytes, including host/WebView2/feeder/STT/SLM/model processes | Swap thrash |
 | FPS impact | ≤ 3% Dota 2 FPS drop | Unacceptable for competitive play |
-| **Privacy** | G-Log + player stats **local only** | **NEVER upload raw data** |
-| **Resilience** | G-Sentry + G-Signal work without cloud | Core safety must survive disconnects |
+| **Privacy** | G-Log, G-Memory (including aggregates), CV, Voice audio/transcript local only; own-stat cloud context requires separate opt-in + allowlist | No implicit egress from sign-in/Ask/provider choice |
+| **Resilience** | G-Sentry/G-Motion/G-Signal and local Voice/Memory work without cloud; G-Signal has no SLM dependency | Core safety must survive disconnects |
 | **Signing key** | `.tauri/` is gitignored | **NEVER commit signing keys** |
 
 ---
@@ -153,12 +173,12 @@ detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`)
 ## Coding Rules
 
 ### Rust (src-tauri/)
-- Critical path (GSI → G-Signal → voice) must be **pure Rust** — no cloud, no webview in the hot path (ADR-03)
+- Critical path (GSI → G-Signal → cached alert audio) must be **pure Rust** — no cloud, SLM, or webview in the hot path (ADR-03)
 - `OutputStream` (rodio) is `!Sync` — lives on dedicated `g-audio` thread, communicate via `mpsc::channel<Cmd>`
 - All new modules must follow `G-` naming convention (ADR-01)
 - Run `cargo test` before committing — **291 tests** (0 failed, 5 ignored, measured 2026-08-28), all must pass. CI gate is `cargo clippy --all-targets -- -D warnings` (built-ahead modules need `#![allow(dead_code)]`)
 - Resource-heavy operations (ONNX inference, screen capture) must respect the CPU/RAM budget
-- **Screen capture = DXGI Desktop Duplication** (`dxgi.rs` + `capture.rs`), not WGC (ADR-13 / CR-001). WGC on Win10 stalled at ~0.7 Hz / 8% CPU and crashed on the `WithoutBorder` toggle; DXGI is a GPU copy that lands within one vsync. Dota 2 **must run borderless-fullscreen** (`-window -noborder`) — exclusive fullscreen is unsupported, so on init failure the app auto-falls back to **GSI-only "Lite mode"** (no minimap CV; voice/overlay/G-Master still work) and shows a Lite badge. Old WGC path preserved behind `--features wgc` (`capture_wgc.rs`); default build = DXGI.
+- **Screen capture = DXGI Desktop Duplication** (`dxgi.rs` + `capture.rs`), not WGC (ADR-13 / CR-001). WGC on Win10 stalled at ~0.7 Hz / 8% CPU and crashed on the `WithoutBorder` toggle; DXGI is a GPU copy that lands within one vsync. MVP CV target: Windows x64 build 19045/26100; 1920×1080, 16:9, one primary display, 100% DPI, default HUD/minimap bottom-left, borderless-fullscreen. Other geometries require calibration/evidence before certification. On init failure the app falls back to **GSI-only Lite mode** (no minimap CV; local core continues) and shows a Lite badge; no coverage is not a safe assertion. Old WGC path preserved behind `--features wgc`; default build = DXGI.
 
 ### TypeScript (src/)
 - **Two UI surfaces** (App.tsx is no longer single-file): `src/src/App.tsx` = the **overlay**
@@ -189,23 +209,27 @@ detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`)
   private storage (not public `profiles` or client-readable auth metadata), establish consent and
   rate limits, and obtain approval.
 
-### G-Maiden Closed Beta delivery and desktop handoff
+### Former G-Maiden Closed Beta access path (cancelled; history only)
+- The Closed Beta programme and countdown are cancelled. Keep old queue/storage/legal artifacts as
+  history; they are not the current MVP access or release plan.
 - The landing G-Maiden queue, private `gmad-releases` Storage bucket, and entitlement Functions are
   deployed under CR-016. `request-gmad-download` is the only artifact-URL issuer: it rechecks
   authenticated Google user, GID ownership, and active grant, then returns a five-minute signed URL.
   An email URL, typed GID, download URL, or installer file is never a login or durable entitlement
   credential.
-- CR-020's Hero countdown and corrected `G-Maiden Closed Beta` copy are deployed. Email is only a
-  notification route to landing, not a bearer download link.
+- CR-020's Hero countdown and corrected `G-Maiden Closed Beta` copy are historical deployment
+  facts. Do not revive the countdown/queue as current work. Email is only a notification route,
+  never a bearer download link.
 - CR-021, `closed-beta-terms-of-use-draft.md`, and `closed-beta-privacy-notice-draft.md` are
   candidate documents only. Do not implement Terms acceptance, diagnostic/marketing/data-sharing
   consent, email automation, a receipt schema, or a Terms-based download gate until legal review
   and an explicit approval are recorded. Required Terms acceptance and optional consents must never
   share one forced checkbox.
-- The next desktop work is a C-3/HIGH CR-022 first-run handoff: installed G-Maiden -> Google OAuth with
-  the same GID -> current Terms receipt -> active entitlement -> GSI/Dota setup -> command deck.
-  It must define mismatch, revoke, new-device, installer, offline, and Terms-version states before
-  code. Google OAuth remains the sole primary sign-in; do not add password or GID/Steam recovery.
+- CR-022's Google/Terms/entitlement first-run gate is still implemented in release builds. Accepted
+  MVP target removes that gate from local-core startup in MVP-008; do not claim account-optional
+  runtime shipped until that implementation and acceptance land. Preserve server authorization for
+  account actions, Google as sole primary sign-in, and no GID/Steam recovery. Do not add a local Beta
+  Terms receipt or change server Terms/issuer/RLS from this product-target reconciliation.
 
 ### Custom Agent Skills & SOP
 We maintain custom AI skills under `.agents/skills/`.
@@ -214,12 +238,15 @@ We maintain custom AI skills under `.agents/skills/`.
   - **SOP:** AI agents MUST run [chunk_and_align.py](file:///g:/G-Maiden/.agents/skills/rwang-codedoc-aligner/scripts/chunk_and_align.py) inside the `.agents/skills/rwang-codedoc-aligner/` skill directory whenever code diffs or docs are updated to verify alignment and prevent spec drift.
 
 ### General
-- Specs (PRD, SRS) are in **Thai** — the source of truth for requirements
+- Specs (PRD, SRS) are in **Thai**. `docs/product/mvp-decisions.md` governs accepted MVP scope,
+  access, privacy, and quality; PRD/SRS describe requirements and must align with that contract.
 - SemVer: MAJOR.MINOR.PATCH — bump version in **5** places: `src-tauri/tauri.conf.json`, `src/package.json`, root `package.json`, `src-tauri/Cargo.toml` (+ `Cargo.lock`), and `APP_VERSION` in `src/src/app/theme.ts`
 - Keep a Changelog format in `CHANGELOG.md`
 - Comments only when the WHY is non-obvious; no "what" comments
 - No feature flags, no backwards-compat shims — just change the code
-- Privacy-first: never add telemetry, analytics, or network egress for player data
+- Privacy-first: never add telemetry/analytics or player-data egress beyond the accepted
+  `mvp-decisions` contract; its own-stat advice allowlist requires separate opt-in and every other
+  listed field/route stays local.
 
 ---
 
@@ -336,6 +363,10 @@ Read it before touching versions. The summary below exists only so this file doe
   `verify_gmad_entitlement`, reset to `stable` on lock. Do not reintroduce a frontend-held channel:
   Control and Overlay are separate JS contexts and the window showing the banner is not the one that
   signed in.
+- This describes the current implementation. The accepted MVP target lets local core use the
+  existing signed stable updater channel without a Beta grant; MVP-008 must separate local-core
+  startup/update state from account authorization. Do not say that change is shipped before code and
+  runtime acceptance land, and do not add Beta entitlement gating to the target.
 - **A commit/push to `main` does NOT reach users** — only a manifest that a workflow wrote and a
   human merged/approved does.
 
@@ -408,18 +439,23 @@ flag.
 - **G-Store & Credits (ADR-16 / CR-003)**: virtual wallet schema live on `gstore`; catalog seeded; coin packages seeded (`active=false`). Faucet (`match-share-submit`) and topup (`topup-create` / `payment-webhook`) Edge Functions fully implemented; JWT verification configured in `supabase/config.toml`; candidate legal draft documents prepared.
 - **GID security/web profiles are proposed only, not shipped**: TOTP MFA, phone OTP, recovery email,
   security activity/alerts, and an opt-in public profile/badge require the C-3/HIGH contract above.
-- **G-Maiden beta distribution is partially shipped**: CR-016 private Storage/Functions and the
+- **Former Closed Beta distribution artifacts are historical**: CR-016 private Storage/Functions and the
   landing queue are live; its **`/ops` admin UI is not** — only the `admin-gmad-controller` Edge
   Function exists (the landing renders `LandingPage` unconditionally, no router, no rewrite).
-  CR-020 Hero countdown is live. The legal acceptance receipt is not shipped and CR-021 awaits
-  counsel review. **CR-022 is shipped** (`b6a0fc60`): `src/src/GmadFirstRunGate.tsx` gates the whole
-  deck on Google sign-in + current Terms + active entitlement in every release build.
+  The queue/countdown programme is cancelled. The legal acceptance receipt is not shipped and
+  CR-021 awaits counsel review. **CR-022 remains in current code** (`b6a0fc60`):
+  `src/src/GmadFirstRunGate.tsx` gates the whole deck on Google sign-in + current Terms + active
+  entitlement in every release build; MVP-008 must implement/test the accepted optional-local-core
+  target before describing the runtime differently.
 - rodio audio backend (in-process WAV, <1ms cancel)
 - Individual stat toggles (timer, score, HP/Mana, K/D/A, gold/NW)
 - Custom overlay positioning with X/Y sliders + profile save/load
 - Overlay preview without affecting Dota/GSI status chips
 - G-Damage engine with 8-hero database and burst damage calculator
 - G-Master advisor (Claude CLI / Anthropic API + Ollama SLM fallback, 30s throttle)
+- Companion P0 status: G-Voice two-way PTT/STT/answer is planned and not implemented; G-Memory
+  has a partial local reader/snapshot slice. Do not describe either as complete; see
+  `docs/features/FEAT-G-VOICE.md` and `FEAT-G-MEMORY.md`.
 - G-Log local JSONL logging
 - **Announcer packs = bundles**: activating a pack changes the in-game voice (active-pack-first clip
   resolution) and shows the pack's **banner image** on the overlay when an event fires
@@ -434,7 +470,8 @@ flag.
 
 ### What's next (see [[roadmap]] (`docs/product/roadmap.md`))
 - **Phase 3** (v0.6): Piper local neural TTS for Thai voice (SAPI ships today)
-- **Phase 4** (v0.7): cloud brain — DONE via Claude CLI/Anthropic API (Gemini specifically deferred)
+- **Phase 4** (v0.7): G-Master Claude CLI/Anthropic API route exists (Gemini specifically deferred);
+  accepted MVP cloud-context opt-in/allowlist enforcement and evidence remain open, and G-Voice is local-only
 - **Phase 5** (v0.8): Local SLM offline resilience — DONE via Ollama
 - **Phase 6** (v0.9): G-Log probability calibration (logs are already JSONL, not SQLite)
 - **Phase 7** (v0.10): Resource governor + advanced overlay
@@ -454,7 +491,10 @@ These are **functional requirements**, not flavor text. Maiden must:
 ## Security Constraints
 
 - `.tauri/` directory contains the **signing private key** — gitignored, MUST NEVER be committed
-- G-Log raw data stays **local only** — privacy-first, no network egress
+- G-Log/history/replay, G-Memory including aggregates, CV/enemy fields, raw GSI/GameTick,
+  Voice audio/transcript/free-form utterance, account/security data, and local diagnostics stay
+  **local only**. G-Master cloud context is off by default and limited to the accepted own-stat
+  allowlist after separate opt-in; sign-in, provider choice, and Ask are not consent.
 - CV capture is **read-only** — no injection or memory access (Risk R-06)
 - GitHub Secrets: `TAURI_SIGNING_PRIVATE_KEY` + `TAURI_SIGNING_PRIVATE_KEY_PASSWORD`
 - No telemetry, no analytics, no crash reporting that sends player data
@@ -480,6 +520,7 @@ These are **functional requirements**, not flavor text. Maiden must:
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.4.0b | 2026-10-10 | Added accepted MVP target versus runtime status, required but incomplete Voice/Memory P0, supported matrix, local-only data rules, account-optional target and current CR-022 gate, and accepted quality limits. |
 | 0.3.1b | 2026-08-28 | Corrected the Rust test count to the measured 291, added known-good baselines for all four suites, mandatory timeout ceilings with the capture-live rule, and the cross-workspace Vitest flag-portability warning. |
 | 0.3.0b | 2026-08-28 | Added the Git & GitHub section — protected-`main` and PR-only landing, branch naming, the two-remote push hazard, worktree placement, commit conventions, the `pr-gate-agent` failure table with its wide-scope rationale trigger, and the doc-graph regenerated-artifact rule — and disambiguated the batching policy's "commit to `main`" as "no tag", not "no PR". |
 | 0.2.1b | 2026-07-22 | Normalized reader-facing Closed Beta naming from GMAD to G-Maiden while preserving technical identifiers such as functions, buckets, and anchors. |

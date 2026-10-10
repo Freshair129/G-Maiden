@@ -1,7 +1,7 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.3"
+version: "0.2.4"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
 last_update: "2026-10-10,Codex"
 status: "active"
@@ -41,8 +41,8 @@ attributes:
   - `docs/product/mvp-execution-dag.json` — nodes/edges/conditional dependencies และ wave allocation สำหรับต่อ scheduler
 - [[roadmap-legacy]]
   - `docs/product/roadmap-legacy.md` — roadmap รุ่นเก่าที่ยังเก็บไว้เป็นประวัติ
-- `docs/product/closed-beta-privacy-notice-draft.md` — ร่างนโยบายความเป็นส่วนตัวสำหรับ Closed Beta
-- `docs/product/closed-beta-terms-of-use-draft.md` — ร่างข้อตกลงการใช้งานสำหรับ Closed Beta
+- `docs/product/closed-beta-privacy-notice-draft.md` — ร่างสำหรับ Closed Beta ที่ยกเลิกแล้ว; เก็บเป็นประวัติ/รอ legal review ไม่ใช่ MVP consent gate
+- `docs/product/closed-beta-terms-of-use-draft.md` — ร่างสำหรับ Closed Beta ที่ยกเลิกแล้ว; ไม่ใช่ Terms receipt หรือ MVP access gate
 - `docs/product/MASTERPLAN-account-phase1.md` — แผนแม่บทระบบบัญชีและ Wallet Phase 1
 
 ## Release Governance
@@ -225,3 +225,4 @@ attributes:
 | 0.2.1 | 2026-10-10 | Added the MVP roadmap/backlog entrypoints and recorded cancellation of the Closed Beta programme. |
 | 0.2.2 | 2026-10-10 | Added the MVP execution DAG and machine-readable parallel-wave schedule. |
 | 0.2.3 | 2026-10-10 | ลงทะเบียน mvp-decisions ที่รับรองตาม Owner delegation |
+| 0.2.4 | 2026-10-10 | Clarified accepted MVP contract entrypoint and labeled cancelled Closed Beta legal drafts as historical candidates, not current access gates. |

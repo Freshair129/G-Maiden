@@ -3,7 +3,7 @@
 # FEATURE-LEDGER
 
 > **GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs**  
-> Source manifest: `docs/feature-ledger.manifest.yaml` · generated `2026-10-10T20:51:40.182Z` · `--run-tests`=false · rows=74
+> Source manifest: `docs/feature-ledger.manifest.yaml` · generated `2026-10-10T21:15:51.434Z` · `--run-tests`=false · rows=74
 
 One row per feature / FR / NFR. **Computed** status is derived structurally from evidence on disk (never from a claim); **Claimed** is the manifest row's `claimed_status`; **Drift** flags where a claim outruns the evidence; **Evidence gaps** lists exactly what is missing to advance.
 
@@ -34,6 +34,12 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 | status-understated | 0 |
 | aligned | 68 |
 | unclaimed | 6 |
+
+## Violations
+
+| Row | Type | Blocking | Detail |
+| --- | --- | --- | --- |
+| fr-4.2.2 | unbacked-phase-source | no | phase_source: doc but no refs.docs entry both resolves on disk and states a phase (**Phase:** line) — phase_target rendered as derived |
 
 ## Features
 
@@ -111,7 +117,7 @@ _Legend: *(derived)* — Phase is a bootstrap badge-heuristic guess, not a phase
 | fr-4.1.2 | Every module is controlled through discrete modular panels | P6 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
 | fr-4.1.3 | Global hotkeys for quick commands (e.g. Alt+M for an instant situation summary) | P6 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
 | fr-4.2.1 | Dota 2 GSI engine connected via local HTTP POST on port 3000 | P6 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
-| fr-4.2.2 | Cloud cognitive engine via Gemini API — SRS marks this explicitly as a Phase-4 target, not yet wired | P4 | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
+| fr-4.2.2 | Cloud cognitive engine via Gemini API — SRS marks this explicitly as a Phase-4 target, not yet wired | P4 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
 | fr-4.2.3 | TTS module: high-frequency responsive speech with a voice-actor-like tone | P6 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
 | fr-4.2.4 | STT module for G-Voice push-to-talk, supporting Thai and English | P4 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
 
