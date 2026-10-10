@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "manifest_id": "G-DATA-PROVENANCE",
+  "generated_at": "2026-10-05",
+  "generated_by": "tools/data-provenance/verify_manifest.py",
+  "runtime_network_fetch": false,
+  "artifacts": [
+    {
+      "id": "SRC-HERO-DB",
+      "path": "src-tauri/data/heroes.json",
+      "role": "runtime_snapshot",
+      "consumers": ["G-Damage"],
+      "source": {
+        "kind": "external_snapshot",
+        "url": "https://raw.githubusercontent.com/odota/dotaconstants/master/build/heroes.json",
+        "revision": null,
+        "patch": null,
+        "retrieved_at": null,
+        "dataset_label": "dotaconstants build/heroes.json"
+      },
+      "generation": {
+        "tool": "tools/gen-herodb/gen_herodb.py",
+        "commit": "169c868c889134ce30ea2806b6443fe546759f09"
+      },
+      "sha256": "0a4270927c667349cf3348fd2ad8d9435a1b3038862cff66b6e9d4f8dbbfdf08",
+      "status": "PARTIAL",
+      "notes": "Base stats are sourced from the documented upstream snapshot; upstream revision and retrieval date were not recorded. Curated ability data is merged from SRC-HERO-ABILITIES-CURATED."
+    },
+    {
+      "id": "SRC-HERO-ABILITIES-CURATED",
+      "path": "tools/gen-herodb/curated_abilities.json",
+      "role": "generator_input",
+      "consumers": ["G-Damage"],
+      "source": {
+        "kind": "manual_curated",
+        "url": null,
+        "revision": null,
+        "patch": null,
+        "retrieved_at": null,
+        "dataset_label": "hand-verified ability burst tables"
+      },
+      "generation": {
+        "tool": "manual-curation",
+        "commit": "169c868c889134ce30ea2806b6443fe546759f09"
+      },
+      "sha256": "409ab32b8bbab72fb5f3e94d0429f2e40b00497f8dc0cc73992aaa1bf5f2602f",
+      "status": "UNVERIFIED",
+      "notes": "The file claims hand verification but does not retain per-ability external references or verification dates."
+    },
+    {
+      "id": "SRC-ITEM-DB",
+      "path": "src-tauri/data/items.json",
+      "role": "runtime_snapshot",
+      "consumers": ["G-Damage"],
+      "source": {
+        "kind": "manual_curated",
+        "url": null,
+        "revision": null,
+        "patch": null,
+        "retrieved_at": null,
+        "dataset_label": "burst-relevant item table"
+      },
+      "generation": {
+        "tool": "manual-curation",
+        "commit": "169c868c889134ce30ea2806b6443fe546759f09"
+      },
+      "sha256": "4af14421de3bf74f665e22ca8b0b191e0524bfa7b1b0712c630db1f17ce38534",
+      "status": "UNVERIFIED",
+      "notes": "The runtime source describes these values as approximate to the current patch, but no patch, upstream source, or verification date is recorded."
+    },
+    {
+      "id": "SRC-ITEM-PRICES",
+      "path": "src-tauri/data/item-prices.json",
+      "role": "runtime_snapshot",
+      "consumers": ["GSI net-worth fallback"],
+      "source": {
+        "kind": "manual_snapshot",
+        "url": "https://api.opendota.com/api/constants/items",
+        "revision": null,
+        "patch": null,
+        "retrieved_at": null,
+        "dataset_label": "OpenDota constants/items"
+      },
+      "generation": {
+        "tool": "manual-snapshot",
+        "commit": "6125e1303f5dcac77e8cb7eb37ae5308708e89bf"
+      },
+      "sha256": "1d9fdd96788b91ed4cb1b8db140f8575540916aa654d15dbc859acd1b7259fd3",
+      "status": "PARTIAL",
+      "notes": "The source endpoint is documented in the introducing change, but the upstream revision and retrieval date were not recorded."
+    },
+    {
+      "id": "SRC-COUNTER-DB",
+      "path": "src-tauri/data/item_counters.json",
+      "role": "runtime_snapshot",
+      "consumers": ["G-Master"],
+      "source": {
+        "kind": "manual_curated",
+        "url": null,
+        "revision": null,
+        "patch": null,
+        "retrieved_at": null,
+        "dataset_label": "G5.2 meta dataset"
+      },
+      "generation": {
+        "tool": "manual-curation",
+        "commit": "fc8b4f6f3f7e09dc3a165277c38a5c6bc76c641a"
+      },
+      "sha256": "cf2c1a7e97afe36e2148e7eceb8a288b5f8e039ed738977787acc8e6d2829814",
+      "status": "UNVERIFIED",
+      "notes": "The dataset label and introducing commit are known; no patch, external source, or review date is recorded."
+    }
+  ]
+}

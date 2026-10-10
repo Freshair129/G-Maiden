@@ -1,3 +1,15 @@
+---
+title: "FEAT-G-LOG — Feedback Loop & Local Analytics"
+doc_id: "FEAT-G-LOG"
+status: "active"
+version: "0.1.0"
+updated: "2026-10-04"
+owner: "Boss"
+source_of_truth: false
+complexity: "C-2"
+risk: "LOW"
+---
+
 # FEAT-G-LOG — Feedback Loop & Local Analytics
 
 > **Module:** G-Log · **Priority:** Core · **Phase:** 6
@@ -9,7 +21,7 @@
 ## 1. Purpose
 
 บันทึก decisions ที่ Maiden ส่ง + ผลลัพธ์ (death/teamfight outcome/win-loss)
-เพื่อเทียบคำแนะนำ vs ผลจริง → ปรับ tuning parameters ของ G-Sentry/G-Signal
+เพื่อเทียบคำแนะนำ vs ผลจริง → ปรับ tuning parameters ของ G-Motion สำหรับเกมถัดไป
 ในเกมถัดไป. **ข้อมูลทั้งหมดอยู่ local เท่านั้น — ห้ามส่งออกเด็ดขาด.**
 
 ## 2. Input
@@ -23,7 +35,7 @@
 | G-Signal | `gank_signal` (probability, missing heroes, eta) + `gank_revision` — **ทำแล้ว** |
 | G-Sentry | `enemy_missing` (hero, missing_for_ms, last_pos) — **ทำแล้ว** |
 | G-Master | `Advice` (recommendation given) — *(planned)* |
-| G-Motion | `GankRisk` (probability vs actual outcome) — *(planned)* |
+| G-Motion | `risk_trace` (measured probability timeline vs death outcomes) — **ทำแล้วสำหรับ FULL replay** |
 | Governor | `ResourceStat` (CPU/RAM/FPS telemetry) — *(planned)* |
 
 ## 3. Storage format (JSONL, local-only)
@@ -72,12 +84,14 @@ during match:
 
 **ปัจจุบัน (ทำแล้ว):**
 - append JSONL แบบ flush ต่อบรรทัด (non-blocking พอสำหรับ ~1 Hz)
-- ไม่มี metric / TuningDelta / feedback ใด ๆ ส่งกลับเข้า runtime
+- `replay_fit` แยก `FULL` (มี `risk_trace`) ออกจาก `APPROX` (reconstructed legacy rows) อย่างชัดเจน
+- `replay_fit --write-tuning` สร้างและเขียน `TuningDelta` local สำหรับ G-Motion เกมถัดไป เมื่อผ่านเงื่อนไขหลักฐาน
 
-**Planned (ยังไม่ได้ทำ — [`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs) เรียกส่วนนี้ว่า "Future use"):** replay ไฟล์ JSONL แบบ
-offline เพื่อคำนวณ `signal_accuracy` / `advice_hit_rate`, สร้าง `TuningDelta { key,
-old_value, new_value, reason }`, แล้ว inject เข้า config ของ G-Sentry/G-Signal ในแมตช์ถัดไป.
-ตอนนี้ยังไม่มี `tuning_state`, accuracy metric, หรือ inject-on-next-match.
+**Local tuning contract:** `replay_fit --write-tuning` อ่านเฉพาะ FULL logs, ต้องมีอย่างน้อย `3` แมตช์, เลือก candidate ที่ Sensitivity `Med` เท่านั้น, และต้องมี `candidate_f1 >= baseline_f1 + 0.01`. ผลลัพธ์เป็น schema-versioned `TuningDelta` ที่มี `old_params`/`new_params`, F1 baseline/candidate และจำนวนแมตช์; ไม่รับ `APPROX`, ค่า NaN/out-of-range หรือ baseline ที่ไม่ใช่ค่า shipped default.
+
+การเขียนเป็น local temp-file replace ไปที่ `%LOCALAPPDATA%\G-Maiden\motion-tuning.json` พร้อมสำรอง profile เดิมที่ valid เป็น `.json.bak`. `Motion::for_next_match` โหลดเฉพาะ profile ที่ validate ผ่านตอนสร้างหรือ reset capture pipeline ที่ match boundary; หากไฟล์หลักเสีย/หาย/ไม่ผ่าน validation จะลอง backup แล้วกลับไปใช้ default. ไม่มีการเปลี่ยนค่ากลางแมตช์ และไม่มีการจูน threshold ของ G-Signal ใน slice นี้.
+
+**ยัง planned:** outcome backfill สำหรับ advice, `advice_hit_rate`, real-match accuracy receipt และ no-egress runtime receipt. [`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs) ยังคงเป็น writer; replay/tuning อยู่ใน [`replay_fit.rs`](file:///g:/G-Maiden/tests/perf/src/bin/replay_fit.rs) และ [`tuning.rs`](file:///g:/G-Maiden/src-tauri/src/tuning.rs).
 
 ## 6. Privacy (GATE P6)
 
@@ -86,6 +100,7 @@ old_value, new_value, reason }`, แล้ว inject เข้า config ขอ�
   - ไม่ส่งไฟล์ JSONL (`match-*.jsonl`) ขึ้น cloud
   - ไม่ sync กับ external service
   - ไม่ include G-Log data ใน cloud LLM prompts
+- `motion-tuning.json` และ `.json.bak` เป็นไฟล์ local-only เช่นกัน; flag `--write-tuning` ไม่แก้ไขไฟล์ JSONL ต้นฉบับและไม่ทำ network request
 - **Validation:** no-egress test — monitor all network calls ตลอด session, verify ว่า
   ไม่มี request พาข้อมูล G-Log ออก
 
@@ -110,13 +125,20 @@ old_value, new_value, reason }`, แล้ว inject เข้า config ขอ�
 | Advice data | **G-Master** |
 | Risk data | **G-Motion** |
 | Match results | GSI |
-| → Tuning output | **G-Sentry**, **G-Signal** (next match) — *(planned)* |
+| → Tuning output | **G-Motion** (next match, validated local profile) — **ทำแล้วใน code path; real-match receipt ยังไม่ทำ** |
 
 ## 10. Acceptance Criteria
 
 - [x] writes ไม่ block game loop (append JSONL, ~1 Hz)
 - [x] JSONL record format ตรงตาม §3 (tick + typed events)
-- [ ] tuning feedback ทำงาน: replay → TuningDelta → load next match *(planned — ยังไม่ได้ทำ)*
+- [x] code-level tuning feedback: FULL replay → validated `TuningDelta` → temp-file write/backup → next-match load
+- [ ] real-match tuning accuracy receipt (ยังไม่ claim จาก unit/producer tests)
 - [ ] **no-egress test pass** (GATE P6) — zero network calls with G-Log data
 - [x] delete_match / delete_all กันไฟล์ที่กำลังบันทึกอยู่
 - [ ] CPU overhead from logging ≤0.1%
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | 2026-10-04 | Reconciled the local FULL-only replay-to-next-match G-Motion tuning contract and its fail-closed boundaries. |

@@ -247,7 +247,7 @@ mod backend {
                 icon,
                 detector,
                 sentry: Sentry::new(),
-                motion: Motion::new(),
+                motion: Motion::for_next_match(),
                 signal: Signal::new(),
                 start: now,
                 last_emit: now,
@@ -271,7 +271,7 @@ mod backend {
         /// match boundary or a monitor switch turns it from memory into a lie.
         fn reset_pipeline(&mut self) {
             self.sentry = Sentry::new();
-            self.motion = Motion::new();
+            self.motion = Motion::for_next_match();
             self.signal = Signal::new();
         }
 
@@ -331,7 +331,9 @@ mod backend {
             self.region = region;
             self.icon = region.icon_size();
             self.draft_region = DraftRegion::for_resolution(screen_w, screen_h);
-            self.reset_pipeline();
+            self.sentry = Sentry::new();
+            self.motion.reset_tracking();
+            self.signal = Signal::new();
         }
     }
 

@@ -1,3 +1,15 @@
+---
+title: "G-Maiden — Engineering Spec"
+doc_id: "engineering-spec"
+status: "active"
+version: "0.1.5"
+updated: "2026-10-06"
+owner: "Boss"
+source_of_truth: false
+complexity: "C-3"
+risk: "HIGH"
+---
+
 # G-Maiden — Engineering Spec
 
 > เอกสารนี้แปลง requirement จาก PRD/SRS ให้เป็น **สัญญาทางวิศวกรรม (contracts)** ที่ implement ได้:
@@ -61,17 +73,28 @@
 - **Input:** GSI (net worth, items, abilities ของเรา + ที่มองเห็นของศัตรู) + meta dataset
 - **Logic:** เทียบ net worth/ไอเทม → แนะนำ skill/item แก้ทาง (อ้าง meta ปัจจุบัน)
 - **Output:** `AdvicePayload { topic, recommendation, rationale, persona_text }` (ผ่าน cloud หรือ SLM)
+- **Static-data provenance:** hero, curated-ability, burst-item, item-price, and counter snapshots
+  are recorded in [`provenance.json`](file:///g:/G-Maiden/src-tauri/data/provenance.json). The
+  local [`verify_manifest.py`](file:///g:/G-Maiden/tools/data-provenance/verify_manifest.py)
+  checks schema, JSON validity, repository-relative paths, and SHA-256 before maintenance or
+  acceptance; the runtime never fetches these snapshots.
 
 ### 2.5 G-Sensory (Overlay & Hardware Optimization)
 - **Input:** ทุก event ข้างบน + resource telemetry
 - **Logic:** เรนเดอร์ glassmorphism HUD; **throttle ตัวเองเมื่อ FPS เกม drop เข้าใกล้ 3%**;
   ปรับโทนสี overlay ตาม element ฮีโร่ที่เล่น (PRD)
+- **P7 evidence:** `tests/perf/src/bin/perf_p7.rs` captures `dota2.exe` through local PresentMon/ETW
+  in two phases (overlay off/on, default 30 seconds each) and emits a versioned
+  `gmaiden.p7-fps-receipt`. `fps = 1000 / mean(MsBetweenPresents)` and
+  `fps_drop_pct = max(0, (baseline_fps - overlay_fps) / baseline_fps * 100)`; only a real
+  overlay-on receipt with `verdict=pass` proves the ≤3% acceptance. Missing prerequisites are
+  `SKIP`/exit `77`, never PASS, and the local receipt contains no GSI/CV/G-Log/player data.
 - **Output:** UI state + render commands; ไม่บัง minimap/skill bar/stats panel
 
 ### 2.6 G-Log (Feedback Loop) — local only
 - **Input:** decisions ที่ Maiden ส่ง + ผลลัพธ์ (death/teamfight/win)
-- **Logic:** เทียบคำแนะนำ vs ผล → ปรับ tuning params ของ G-Sentry/G-Signal เกมหน้า
-- **Output:** เขียน G-Log เป็น JSONL local (`match-*.jsonl` ใน `%LOCALAPPDATA%\G-Maiden\logs\`, [`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs)); ส่ง `TuningDelta` กลับเข้า config (ดู §6)
+- **Logic:** เทียบ risk trace ของ G-Motion กับผลลัพธ์จาก FULL logs; ปรับเฉพาะ G-Motion เกมหน้าเมื่อผู้ใช้เรียก replay-fit ด้วย `--write-tuning`
+- **Output:** เขียน G-Log เป็น JSONL local (`match-*.jsonl` ใน `%LOCALAPPDATA%\G-Maiden\logs\`, [`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs)); เขียน validated `TuningDelta` แยกไปที่ `motion-tuning.json` และโหลดตอน next-match capture initialization (ดู §6)
 
 ---
 
@@ -145,10 +168,29 @@ UI subscribe ผ่าน event แยกชื่อ (ไม่มี channel �
 
 > **สถานะ (2026-07): ไม่ใช่ SQLite/`rusqlite` — G-Log เก็บเป็น JSONL flat files ([`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs))**
 
-หนึ่งไฟล์ `match-*.jsonl` ต่อแมตช์ใน `%LOCALAPPDATA%\G-Maiden\logs\` — append หนึ่ง JSON object ต่อ tick/เหตุการณ์ (match-start/decision/signal/outcome) ไม่มีสคีมา SQL, ไม่มี network egress. tuning params ที่ G-Log จูนกลับถูกเขียนแยกเป็น config ในโฟลเดอร์เดียวกัน (ป้อน feedback loop, SRS §3.6).
+หนึ่งไฟล์ `match-*.jsonl` ต่อแมตช์ใน `%LOCALAPPDATA%\G-Maiden\logs\` — append หนึ่ง JSON object ต่อ tick/เหตุการณ์ (match-start/decision/signal/outcome) ไม่มีสคีมา SQL, ไม่มี network egress. เมื่อเรียก replay-fit ด้วย `--write-tuning` และผ่านเงื่อนไข FULL-only ระบบจะเขียน `motion-tuning.json` แยกด้วย temp-file replacement ในโฟลเดอร์ `%LOCALAPPDATA%\G-Maiden\` พร้อม `.json.bak` สำหรับ rollback.
 
-tuning params ที่ G-Log จูนถูกป้อนกลับเข้า G-Sentry/G-Signal ตอนเริ่มแมตช์ถัดไป (ปิด feedback loop, SRS §3.6).
-**ไม่มี network egress จากตารางเหล่านี้.**
+`Motion::for_next_match()` โหลด `new_params` ที่ validate แล้วตอนเริ่มหรือ reset capture pipeline. ไฟล์เสีย/หาย/ไม่ผ่าน schema, evidence, F1 หรือ bounds จะ fallback ไป backup ที่ valid หรือ shipped default. ไม่มีการเปลี่ยนค่ากลางแมตช์ และไม่มี network egress จาก G-Log หรือ tuning profile.
+
+### 6.1 DL-006 companion lineage boundary
+
+The five companion modules are non-critical and must not be inserted into the G-Signal
+critical path. Their source-to-output contracts are canonical in
+[`G-SERIES-DATA-LINEAGE`](../features/G-SERIES-DATA-LINEAGE.md) and the peer feature specs:
+
+| Module | Source/transport | Computation boundary | Output/fallback |
+| --- | --- | --- | --- |
+| G-Voice | Transient local PTT + `POST /gsi` `GameTick` + local `MemoryContext` | `capture + STT + router + TTS ≤2s`; cloud STT not authorized | Audio/TTS turn; G-Signal preempts; no persistence |
+| G-Memory | Local finalized G-Log JSONL; no network GET | Explicit aggregate formulas; absent rating/position fields are `UNKNOWN`; pre-clear sources are excluded by a monotonic local cutoff | Local `memory.json` snapshot/context via `get_player_memory`; `delete_player_memory` persists `memory-clear.json`, removes the snapshot, and preserves G-Log archives |
+| G-Coach | Local G-Log compaction + memory aggregates | `0.6*risk + 0.2*death + 0.2*revision`, top three non-overlapping windows | Post-match review; Claude → Ollama → template |
+| G-Stream | Local public-event allowlist | Fail-closed projection; unknown fields drop | Overlay/TTS safe view only; no OBS/network route |
+| G-Score | Local GSI/Motion/Signal intensity + verified local packs | Proposed weighted intensity only; missing sources stay `UNKNOWN` | Lowest-priority local soundtrack; no track is safe fallback |
+
+These boundaries are design contracts, not evidence that every module exists or that its
+acceptance gates have passed. The G-Memory reader/snapshot is a partial implementation;
+its consumer wiring and runtime no-egress receipt remain open. Raw G-Log/G-Memory data
+remains local and never enters a cloud prompt; detailed privacy and evidence requirements
+remain in the linked feature specs.
 
 ---
 
@@ -236,7 +278,7 @@ OpenDota profile + baselines. Match/CV/G-Log data stays local; the account store
 - [ ] CPU gate ต้องพิสูจน์จาก sustained app-path harness; Windows Task Manager peak `20%+` ณ 2026-07-08 ยังถือว่า fail spec จนกว่าจะยืนยัน steady-state อยู่ใน budget
 - [ ] CPU investigation ต้องแยก `Rust host` vs `WebView2 child processes` vs `sidecars/subprocesses`; harness หลักคือ `tests/perf/src/bin/perf_cpu_tree.rs`
 - [ ] RAM ≤400MB (สถานะ cloud-online, SLM ไม่โหลด)
-- [ ] FPS drop ≤3% (วัดเทียบ baseline เกมจริง)
+- [ ] FPS drop ≤3% (วัดเทียบ baseline เกมจริง; ต้องมี P7 overlay-on receipt `verdict=pass`)
 - [ ] cloud-loss test: ปิดเน็ต → G-Sentry/G-Signal ยังทำงานครบ
 - [ ] no-egress test: ตรวจว่าไม่มี request พา G-Log/สถิติออกนอกเครื่อง
 - [ ] orchestrator: `resolveForRole()` resolves ทั้ง 5 roles (parseModel → capability check → return)
@@ -249,3 +291,9 @@ OpenDota profile + baselines. Match/CV/G-Log data stays local; the account store
 | Version | Date | Summary |
 | --- | --- | --- |
 | — | 2026-07-19 | symbol-link coverage extension (G1.5) |
+| 0.1.0 | 2026-10-04 | Reconciled the G-Log FULL-only tuning handoff with the implemented local G-Motion next-match loader and rollback boundary. |
+| 0.1.1 | 2026-10-05 | Added the DL-004 PresentMon/ETW P7 receipt contract, formula, fallback, and live-acceptance boundary. |
+| 0.1.2 | 2026-10-05 | Added the DL-005 static-data provenance and checksum-verification contract. |
+| 0.1.3 | 2026-10-05 | Added the DL-006 companion module boundary and source-to-output contract references; runtime remains unimplemented. |
+| 0.1.4 | 2026-10-05 | Recorded the partial G-Memory local reader/snapshot boundary and its privacy-scoped command surface. |
+| 0.1.5 | 2026-10-06 | Added the DL-007 durable G-Memory forget cutoff and retained G-Log boundary. |
