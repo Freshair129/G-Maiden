@@ -1,11 +1,11 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.4"
+version: "0.2.5"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
-last_update: "2026-10-10,Codex"
+last_update: "2026-10-11,Codex"
 status: "active"
-updated: "2026-10-10"
+updated: "2026-10-11"
 owner: "Boss"
 attributes:
   domain: "documentation-governance"
@@ -134,6 +134,7 @@ attributes:
 - `docs/architecture/spikes/` — Spikes & Technical Proofs:
   - `docs/architecture/spikes/S-1-minimap-cv.md` — Spike minimap computer vision
   - `docs/architecture/spikes/S-2-oauth-broker-provider-capability.md` — Spike Supabase OAuth Server & Loopback gate capability
+  - `docs/architecture/spikes/MVP-038-local-stt-evaluation.md` — Local STT candidate, corpus, resource, privacy, and acceptance evaluation protocol
 
 ## Orchestration
 
@@ -226,3 +227,4 @@ attributes:
 | 0.2.2 | 2026-10-10 | Added the MVP execution DAG and machine-readable parallel-wave schedule. |
 | 0.2.3 | 2026-10-10 | ลงทะเบียน mvp-decisions ที่รับรองตาม Owner delegation |
 | 0.2.4 | 2026-10-10 | Clarified accepted MVP contract entrypoint and labeled cancelled Closed Beta legal drafts as historical candidates, not current access gates. |
+| 0.2.5 | 2026-10-11 | Added the MVP-038 local STT evaluation protocol to the architecture-spike index. |

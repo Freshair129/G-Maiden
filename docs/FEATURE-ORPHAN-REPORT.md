@@ -3,7 +3,7 @@
 # FEATURE-ORPHAN-REPORT
 
 > **GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs**  
-> Generated `2026-10-10T21:15:51.776Z` · candidates=22
+> Generated `2026-10-10T23:14:23.490Z` · candidates=22
 
 ## Summary
 
@@ -36,7 +36,7 @@
 | FEAT-G-SENTRY | docs/features/FEAT-G-SENTRY.md | planned | planned | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-SIGNAL | docs/features/FEAT-G-SIGNAL.md | active | anchored | feature-ledger, code-evidence, features-readme, project-feature-map | docs/architecture/design-system.md, docs/features/FEAT-G-DAMAGE.md, docs/features/FEAT-G-MOTION.md, docs/features/FEAT-G-REVIVE.md, docs/features/README.md | — | At least one strong anchor exists (registry and/or code evidence). |
 | FEAT-G-STREAM | docs/features/FEAT-G-STREAM.md | active | planned | feature-ledger, features-readme, project-feature-map | docs/features/README.md, docs/features/G-SERIES-DATA-LINEAGE.md | — | Document is explicitly planned and remains visible in active registry/docs. |
-| FEAT-G-VOICE | docs/features/FEAT-G-VOICE.md | active | planned | feature-ledger, features-readme, project-feature-map | docs/features/README.md, docs/product/mvp-backlog.md, docs/product/roadmap.md, docs/features/G-SERIES-DATA-LINEAGE.md | — | Document is explicitly planned and remains visible in active registry/docs. |
+| FEAT-G-VOICE | docs/features/FEAT-G-VOICE.md | active | planned | feature-ledger, features-readme, project-feature-map | docs/architecture/spikes/MVP-038-local-stt-evaluation.md, docs/features/README.md, docs/product/mvp-backlog.md, docs/product/roadmap.md, docs/features/G-SERIES-DATA-LINEAGE.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT--MULTI-AGENT-ORCHESTRATOR | orchestration/docs/FEAT--MULTI-AGENT-ORCHESTRATOR.md | candidate | weakly-anchored | — | docs/DOC-INDEX.md, orchestration/docs/DESIGN--G-ORCHESTRA-V2.md, orchestration/docs/g-orchestra-ui-sitemap-flow-board.md, orchestration/docs/SRS--G-ORCHESTRA.md | — | Only active document references remain; no strong registry/code anchor found. |
 | SPEC--GOVIBE-INTEGRATION | orchestration/docs/SPEC--GOVIBE-INTEGRATION.md | — | weakly-anchored | — | docs/README.md, orchestration/docs/ADR-O-002--govibe-integration.md, orchestration/docs/ADR-O-003--backend-store.md | — | Only active document references remain; no strong registry/code anchor found. |
 | SPEC--LOCAL-MODEL-ANTI-ERROR-LOOP | orchestration/docs/SPEC--LOCAL-MODEL-ANTI-ERROR-LOOP.md | — | weakly-anchored | — | orchestration/docs/ADR-O-004--role-boundary-native.md, orchestration/docs/SPEC--RUNTIME-REPAIR-GOVERNANCE.md | — | Only active document references remain; no strong registry/code anchor found. |
