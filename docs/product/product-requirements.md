@@ -1,3 +1,14 @@
+---
+title: "G-Maiden Product Requirements"
+doc_id: "product-requirements"
+status: "active"
+version: "0.2.0"
+updated: "2026-10-10"
+owner: "Boss"
+source_of_truth: true
+related_docs: ["software-requirements-specification", "mvp-decisions", "roadmap"]
+---
+
 # **Product Requirement Document (PRD)**
 
 ## **Project: G-Maiden \- AI Companion Engine**
@@ -6,100 +17,118 @@
 
 **G-Maiden** คือระบบ AI Companion อัจฉริยะสำหรับเกม Dota 2 ที่ออกแบบมาเพื่อเป็น "นักพากย์สดและที่ปรึกษาข้างกาย" โดยมี **"Maiden"** (แรงบันดาลใจจาก Crystal Maiden) เป็น AI Persona หลัก
 
+## **1A. MVP Contract and Supported Matrix**
+
+ขอบเขตที่ต้องส่งมอบและตรวจรับใน MVP อ้างอิง [[mvp-decisions]] ซึ่งเป็นมติผลิตภัณฑ์/วิศวกรรมที่ Owner มอบหมายให้เลือกไว้ เอกสารนี้ยังแสดงภาพผลิตภัณฑ์ระยะยาว; รายการ P1/P2 และแนวคิดที่เกินขอบเขตด้านล่างไม่ทำให้ถือว่าเป็น MVP โดยอัตโนมัติ.
+
+* **Companion MVP:** คง G-Voice และ G-Memory เป็น P0 พร้อม GSI/CV/G-Signal, overlay/audio, manual advice, local history และ summary ในเครื่องไม่เกิน 3 จุดต่อ complete session โดยมี event/timestamp; session ที่ไม่ complete ต้องแสดง unknown และไม่เดา win/loss หรือสาเหตุการตาย. Voice และ Memory ยังเป็นงานที่ต้องทำ/ตรวจรับ ไม่ใช่ข้ออ้างว่าฟังก์ชันเสร็จแล้ว.
+* **ระบบปฏิบัติการเป้าหมายตรวจรับ:** Windows x64 build 19045 และ build 26100. นี่คือ matrix เป้าหมาย ไม่ใช่หลักฐาน compatibility ที่ผ่านแล้ว; รุ่น/สภาพแวดล้อมอื่นต้องมีหลักฐานก่อนประกาศรองรับ.
+* **โหมดเกมเริ่มต้น:** Dota 2 แบบ live 5v5 All Pick ทั้ง Ranked และ Unranked. Turbo, custom game, spectator และ replay ไม่รองรับข้อสรุปที่ขึ้นกับโหมด; ถ้าไม่ทราบโหมดให้ระบุ unknown.
+* **CV layout เริ่มต้น:** 1920×1080, 16:9, จอหลักหนึ่งจอ, DPI 100%, HUD ค่าเริ่มต้นและ minimap มุมล่างซ้าย, borderless-fullscreen. Geometry อื่นต้อง calibration และหลักฐานก่อนเพิ่มใน certified matrix. GSI-only Lite mode ยังให้ local core ทำงานได้ แต่ไม่มี CV; ไม่มี coverage/ข้อมูลว่างไม่ใช่คำยืนยันว่าปลอดภัย.
+* **Access และ data:** local core ต้องเริ่มได้โดยไม่ลงชื่อเข้าใช้/สิทธิ์/network ตาม target; account actions ยังตรวจสิทธิ์บน server. Cloud game context ปิดโดยค่าเริ่มต้นและต้อง opt-in แยกตาม allowlist. Voice transcript/audio, G-Memory, G-Log และ CV ไม่ส่ง cloud.
+
+ข้อกำหนดเชิงข้อมูล, quality threshold, สถานะ offline/account และวิธีวัดฉบับเต็มอยู่ใน [[mvp-decisions]]; SRS §5 เป็นรายละเอียด requirement ที่ต้องสอดคล้องกับมตินี้.
+
 ## **2\. Naming Concept: The "Maiden" Archetype**
 
-* **Inspiration:** ร่างจำลองอัจฉริยะจาก Rylai (Crystal Maiden)  
-* **Core Concept:** Iconic ของ Top tier supporter ผสมผสานความอ่อนโยน (Gentle), สติปัญญา (High INT), และความเป็นมีมระดับตำนาน "Nerf CM"  
+* **Inspiration:** ร่างจำลองอัจฉริยะจาก Rylai (Crystal Maiden)
+* **Core Concept:** Iconic ของ Top tier supporter ผสมผสานความอ่อนโยน (Gentle), สติปัญญา (High INT), และความเป็นมีมระดับตำนาน "Nerf CM"
 * **The "Nerf" Self-Awareness:** Maiden มีความเป็นมนุษย์ผ่านการรับรู้ถึงข้อจำกัดของระบบ (Meta-Humor) เช่น การเตือนผู้เล่นด้วยความเอ็นดูว่า "ขอโทษนะที่ Maiden ช่วยได้แค่นี้... ดูเหมือนระบบจะเนิร์ฟฉันอีกแล้ว"
 
 ## **3\. System Architecture & Feature Details**
 
 ### **G-Sentry (Fog of War Monitoring)**
 
-* **Description:** ระบบตรวจจับการหายไปจากมินิแมพ (Missing-in-Action)  
-* **Logic:** ตรวจสอบตำแหน่งฮีโร่ศัตรูผ่าน GSI (Game State Integration) หากฮีโร่ตัวสำคัญหายไปจากระยะการมองเห็น (Vision) เกิน 5 วินาที ระบบจะคำนวณโอกาสการแก๊ง  
+* **Description:** ระบบตรวจจับการหายไปจากมินิแมพ (Missing-in-Action)
+* **Logic:** ตรวจสอบตำแหน่งฮีโร่ศัตรูผ่าน GSI (Game State Integration) หากฮีโร่ตัวสำคัญหายไปจากระยะการมองเห็น (Vision) เกิน 5 วินาที ระบบจะคำนวณโอกาสการแก๊ง
 * **Maiden's Touch:** แจ้งเตือนด้วยความห่วงใย "ระวังนะ... พวกเขาหายไปจากเลนแล้ว ฉันมองไม่เห็นพวกเขาเลย"
 
-### **G-Motion (Strategy & Heatmap)**
+### **G-Motion (Time-off-map Risk Heuristic)**
 
-* **Description:** การวิเคราะห์ทิศทางและ Heatmap  
-* **Logic:** วิเคราะห์ Pattern การเดินเกมของศัตรูย้อนหลัง 5 นาที เพื่อทำนายตำแหน่งที่น่าจะไป (Gank Path/Jungle Farming)  
-* **Maiden's Touch:** Maiden จะวิเคราะห์ว่า "ดูจากทิศทางที่ผ่านมา... พวกเขาน่าจะกำลังดักรอคุณที่จุดนี้"
+* **Description:** ประเมินความเสี่ยงจากเวลาที่ฮีโร่หายไปและทิศก่อนหาย โดยใช้ประวัติตำแหน่งในเครื่อง 5 นาที
+* **Logic:** heuristic สำหรับความเสี่ยงเท่านั้น; ไม่มี heatmap, lane model หรือการทำนายเส้นทางผ่าน fog ใน MVP.
+* **Maiden's Touch:** Maiden อธิบายระดับความเสี่ยงตามหลักฐานที่เห็นและระบุความไม่แน่นอน.
 
 ### **G-Signal (Real-time Gank Warning)**
 
-* **Description:** ระบบ Interrupt แจ้งเตือนภัยเร่งด่วน  
-* **Logic:** Latency \< 300ms. เมื่อตรวจพบว่าศัตรูเข้าใกล้ในระยะอันตราย (Danger Zone) จะส่งสัญญาณเสียง (Voice Alert) ทันที  
+* **Description:** ระบบ Interrupt แจ้งเตือนภัยเร่งด่วน
+* **Logic:** p50 ≤250ms และทุก sample ที่วัด ≤300ms จาก T0 (GSI POST arrival หรือรอบ capture acquisition ที่ถึงกำหนดก่อนการรอ) ถึง T3 (loopback first audible sample); critical path เป็น local Rust ไม่เรียก cloud หรือ SLM ตาม [[mvp-decisions]]
 * **Maiden's Touch:** "ถอยเร็ว\! ศัตรูกำลังมา... โอ้ย ระบบดันมาเนิร์ฟเสียงแจ้งเตือนฉันตอนนี้ซะได้ แต่รีบหนีเถอะ\!"
 
 ### **G-Master (Strategic Advisor)**
 
-* **Description:** ระบบแนะนำการเล่นเชิงกลยุทธ์  
-* **Logic:** แนะนำ Skill Build/Item Build ตามสถานการณ์เงิน (Net Worth) และไอเทมศัตรู  
-* **Maiden's Touch:** "ถ้าจะเอาชนะตัวนั้น ฉันแนะนำ \[Item\] นะ แต่ถ้าฉันมีเงินน้อยแบบทุกวันนี้ ฉันคงซื้อแค่ Ward แหละ... คุณลองเลือกดูนะ"
+* **Description:** ระบบแนะนำการเล่นเชิงกลยุทธ์
+* **Logic:** แนะนำ Skill Build/Item Build จากข้อมูลผู้เล่นและ static dataset ที่มีหลักฐาน; enemy Net Worth/items ใช้ได้เฉพาะเมื่อมี source ที่อนุญาตและผ่าน allowlist. Cloud context ต้อง opt-in แยก.
+* **Maiden's Touch:** แนะนำจาก own-player fields ที่ยืนยันได้และ static matchup data; ระบุ unknown เมื่อไม่มีข้อมูล enemy build ที่ผ่านการยืนยัน.
 
 ### **G-Sensory (Overlay & Hardware Optimization)**
 
-* **Description:** ระบบจัดการ Overlay และทรัพยากร  
-* **Logic:** ระบบ Overlay แบบโปร่งใสไม่รบกวนสายตา (Low Resource) พร้อม Hotkey ปรับแต่ง Maiden ตามความเหมาะสมของฮีโร่ที่เล่น  
+* **Description:** ระบบจัดการ Overlay และทรัพยากร
+* **Logic:** ระบบ Overlay แบบโปร่งใสไม่รบกวนสายตา (Low Resource) พร้อม Hotkey ปรับแต่ง Maiden ตามความเหมาะสมของฮีโร่ที่เล่น
 * **Maiden's Touch:** ปรับเปลี่ยนสี Overlay ตาม Element ของฮีโร่ที่คุณเล่น (เช่น สีน้ำแข็งเมื่อเล่น Maiden)
 
 ### **G-Log (Feedback Loop)**
 
-* **Description:** ระบบเก็บข้อมูลและเรียนรู้  
-* **Logic:** บันทึก Decision-making ของผู้เล่นและผลลัพธ์เพื่อนำมาปรับจูนค่าความแม่นยำในการทำนายของ Maiden ในแมตช์ถัดไป  
+* **Description:** ระบบเก็บข้อมูลและเรียนรู้
+* **Logic:** บันทึก Decision-making ของผู้เล่นและผลลัพธ์เพื่อนำมาปรับจูนค่าความแม่นยำในการทำนายของ Maiden ในแมตช์ถัดไป
 * **Maiden's Touch:** สรุปผลหลังจบเกม: "วันนี้เราทำดีที่สุดแล้วนะ ถึงฉันจะช่วยได้ไม่มาก แต่แมตช์หน้า... ฉันว่าเราทำได้ดีกว่านี้แน่"
 
 ## **3A. Companion Experience Extensions (Competitive Benchmark: Questie AI)**
 
-จากการวิเคราะห์คู่แข่ง **Questie AI** (เพื่อนเล่นเกม AI ที่ใช้ Vision อ่านหน้าจอ + voice chat รองรับ 50+ เกม รวมถึง Dota 2) เราพบว่า G-Maiden เหนือกว่าด้านเทคนิคแกนหลัก (GSI แม่นกว่า Vision, latency ต่ำกว่า, มี local SLM fallback, privacy-first) แต่ยังขาดคุณสมบัติที่สร้าง **ความผูกพันระยะยาว** กับผู้ใช้ จึงเพิ่มโมดูลส่วนขยายต่อไปนี้ — ยึดจุดยืน **"แคบแต่ลึกใน Dota"** ไม่ไล่ตามการรองรับหลายเกมแบบ Questie
+โมดูลต่อไปนี้เป็น product extensions; MVP boundary อยู่ใน [[mvp-decisions]] และ §1A. G-Voice/G-Memory เป็น Companion P0 ที่คงไว้. Benchmark narrative นี้ไม่ใช่ evidence ว่า competitor capability หรือ G-Maiden acceptance ผ่านแล้ว.
 
 ### **G-Voice (Two-Way Voice Conversation) — P0**
 
-* **Description:** สนทนาด้วยเสียงสองทาง ผู้เล่นกด Push-to-Talk (`Alt+M`) เพื่อถาม Maiden ได้  
-* **Logic:** STT → Cloud Brain (อิงบริบท GSI + G-Memory) → TTS; G-Signal ขัดจังหวะได้เสมอเมื่อเกิดเหตุวิกฤต  
+* **Description:** สนทนาด้วยเสียงสองทางแบบ push-to-talk ด้วย `Ctrl+Alt+V` เป็นค่าเริ่มต้นที่เสนอสำหรับ MVP; ตรวจ conflict และ remap ได้. `Alt+M` คงเป็น mute และไม่มี always-on microphone.
+* **Logic:** audio/STT/transcript/free-form question และบริบท GSI/G-Memory อยู่ในเครื่อง; local interpretation/answer → TTS. G-Signal ขัดจังหวะได้เสมอ. ห้าม fallback จาก Voice ไป cloud.
 * **Maiden's Touch:** ตอบคำถามเชิงกลยุทธ์แบบเรียลไทม์โดยไม่ต้องหยุดเล่น
 
 ### **G-Memory (Persistent Player Memory) — P0**
 
-* **Description:** Maiden "จำผู้เล่นได้" ข้ามแมตช์ (moat หลักของ persona)  
-* **Logic:** เก็บฮีโร่ถนัด/จุดที่มักตาย/เทรนด์ MMR ภายในเครื่องเท่านั้น (Privacy-First) ต่อยอดจาก G-Log  
-* **Maiden's Touch:** "จำได้ไหม สองแมตช์ก่อนคุณก็โดนแกงตรงนี้พอดี"
+* **Description:** Maiden "จำผู้เล่นได้" ข้ามแมตช์ (moat หลักของ persona)
+* **Logic:** เก็บเฉพาะ aggregate จากแหล่ง local ที่มีหลักฐาน; ข้อมูลที่ไม่มี source เป็น unknown. Summary สูงสุด 3 จุดต่อ complete session พร้อม event/timestamp; partial session ไม่เดาผลหรือสาเหตุการตาย. G-Memory อยู่ในเครื่องและไม่เข้า cloud prompt.
+* **Maiden's Touch:** อ้างเฉพาะสิ่งที่ local history ยืนยันได้.
 
-### **G-Coach (Post-Match Deep Review) — P1**
+### **G-Coach (Post-Match Deep Review) — P1; outside MVP**
 
-* **Description:** รีวิวเชิงลึกหลังจบเกม (เหนือกว่า Questie ที่ทำเฉพาะ realtime)  
-* **Logic:** วิเคราะห์ GSI log เต็มแมตช์ ชี้ key decision points + จัด 3 จุดที่ควรปรับปรุง  
+* **Description:** รีวิวเชิงลึกหลังจบเกม (เหนือกว่า Questie ที่ทำเฉพาะ realtime)
+* **Logic:** วิเคราะห์ GSI log เต็มแมตช์ ชี้ key decision points + จัด 3 จุดที่ควรปรับปรุง
 * **Maiden's Touch:** "จุดที่น่าเสียดายที่สุดคือนาทีที่ 24 ที่เราเข้าไฟต์เร็วไป"
 
 ### **G-Mind (Cognitive Model Router) — P1**
 
-* **Description:** สลับ/เลือก Cloud LLM ได้ (Gemini ค่าเริ่มต้น) กัน vendor lock-in  
-* **Logic:** คง fallback ไป Local SLM เมื่อขาดคลาวด์ และไม่กระทบ latency ของ G-Signal  
-* **Maiden's Touch:** "ตอนนี้ฉันกำลังคิดด้วยสมองกลีบ Gemini อยู่ค่ะ"
+* **Description:** แนวคิด router สำหรับเลือก Cloud LLM หลายค่าย; Gemini เป็นเพียง design target เดิม
+* **Logic:** G-Mind/provider switching เป็น P1 และอยู่นอก MVP. Cloud context ของ manual advice ปิดโดยค่าเริ่มต้น; เมื่อ opt-in ให้ส่งได้เฉพาะ allowlist ที่ Owner เลือกไว้. G-Signal ไม่พึ่ง router.
+* **Maiden's Touch:** ใช้ชื่อ provider เฉพาะเมื่อระบบยืนยัน backend จริง.
 
-### **G-Persona (Tone & Verbosity Presets) — P2**
+### **G-Persona (Tone & Verbosity Presets) — P2; outside MVP**
 
-* **Description:** ปรับโทน/ความถี่การพูดของ Maiden (เงียบ↔ช่างพูด, จริงจัง↔มีม) โดยคงตัวตนเดียว  
-* **Logic:** ไม่ลบล้างพฤติกรรมบังคับ (Belief Revision, Interrupt, มีม "Nerf CM")  
+* **Description:** ปรับโทน/ความถี่การพูดของ Maiden (เงียบ↔ช่างพูด, จริงจัง↔มีม) โดยคงตัวตนเดียว
+* **Logic:** ไม่ลบล้างพฤติกรรมบังคับ (Belief Revision, Interrupt, มีม "Nerf CM")
 * **Maiden's Touch:** ผู้เล่นเลือกได้ว่าจะให้ Maiden เงียบ ๆ หรือพากย์ครื้นเครง
 
-### **G-Stream (Streamer Co-host Mode) — P2**
+### **G-Stream (Streamer Co-host Mode) — P2; outside MVP**
 
-* **Description:** โหมดผู้ช่วยสำหรับสตรีมเมอร์ + ปกปิดข้อมูลละเอียดอ่อน  
-* **Logic:** ปรับ Overlay/โทนสำหรับออกอากาศ; ไม่ส่ง G-Memory/G-Log ออกนอกเครื่อง  
+* **Description:** โหมดผู้ช่วยสำหรับสตรีมเมอร์ + ปกปิดข้อมูลละเอียดอ่อน
+* **Logic:** ปรับ Overlay/โทนสำหรับออกอากาศ; ไม่ส่ง G-Memory/G-Log ออกนอกเครื่อง
 * **Maiden's Touch:** "สวัสดีทุกคนในห้องค่ะ~ วันนี้เราจะพา Crystal Maiden ไปได้ไกลแค่ไหนกันนะ"
 
 ## **4\. ADR-01: G-Series Branding Nomenclature**
 
-* **Decision:** ใช้ Prefix **"G-"** สำหรับทุกโมดูลการทำงานภายใน G-Maiden  
-* **Rationale:**  
-  * **Scalability:** ทำให้ง่ายต่อการขยายฟีเจอร์ในอนาคต  
-  * **Brand Unity:** สร้างเอกภาพในตัวสินค้า (G-Series)  
+* **Decision:** ใช้ Prefix **"G-"** สำหรับทุกโมดูลการทำงานภายใน G-Maiden
+* **Rationale:**
+  * **Scalability:** ทำให้ง่ายต่อการขยายฟีเจอร์ในอนาคต
+  * **Brand Unity:** สร้างเอกภาพในตัวสินค้า (G-Series)
   * **Community Bridge:** สื่อถึงรากเหง้าของชื่อ "G-MID" ที่มีความเป็นคอมมูนิตี้สูง
 
 ## **5\. Non-Functional Requirements**
 
-* **Latency:** \< 300ms สำหรับ G-Signal  
-* **Personality Consistency:** Maiden ต้องรักษาบุคลิก "อ่อนโยนแต่แม่นยำ" และมีม "Nerf CM" อยู่เสมอ  
-* **Platform:** Windows 10/11 (เน้น Low resource usage)
+* **Latency:** p50 ≤250ms และทุก sample ≤300ms ตาม T0→T3 ใน [[mvp-decisions]]
+* **Personality Consistency:** Maiden ต้องรักษาบุคลิก "อ่อนโยนแต่แม่นยำ" และมีม "Nerf CM" อยู่เสมอ
+* **Platform:** Windows x64 build 19045 และ 26100 เป็นเป้าหมายตรวจรับ; ถือว่า support เมื่อมี evidence ตาม matrix ของ MVP เท่านั้น.
+* **Resource:** CPU ทั้ง process group ≤2.5% ทุก sample 1 วินาที; aggregate peak Working Set ≤400,000,000 bytes; FPS impact ≤3% ตาม paired-run protocol ใน [[mvp-decisions]].
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.2.0 | 2026-10-10 | กำหนด MVP boundary และ supported matrix ตามมติ Owner; แก้ G-Motion, Voice, Memory, privacy และ quality claims ให้เป็น target ที่ตรวจรับได้ |

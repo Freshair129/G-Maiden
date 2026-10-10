@@ -2,8 +2,8 @@
 title: "FEAT-G-VOICE — Two-Way Voice Conversation"
 doc_id: "FEAT-G-VOICE"
 status: "active"
-version: "0.2.0"
-updated: "2026-10-05"
+version: "0.3.0"
+updated: "2026-10-10"
 owner: "Boss"
 source_of_truth: true
 complexity: "C-3"
@@ -15,7 +15,7 @@ risk: "HIGH"
 > **Module:** G-Voice · **Priority:** Companion P0 · **Phase:** 4
 > **PRD:** [[product-requirements|PRD]] §3A G-Voice · **SRS:** [[software-requirements-specification|SRS]] §3.7
 
-> **สถานะ (2026-07): ยังไม่ได้ทำ (spec ล่วงหน้า — Phase 4).** โค้ดจริงยัง**ไม่มี** mic
+> **สถานะ (2026-10-10): `PLANNED` — Voice เป็น Companion P0 ใน MVP แต่ runtime ยังไม่มีไมค์/STT/two-way path; ห้ามนับว่าเสร็จจากการคง scope ไว้.**
 > capture / STT / Whisper / cpal เลย (grep ยืนยัน) และยังไม่มี Piper — TTS ปัจจุบันเป็น
 > **Windows SAPI อย่างเดียว** ([`tts.rs`](file:///g:/G-Maiden/src-tauri/src/tts.rs), ยืนอยู่แทน Piper ที่วางแผนไว้ใน TDD). Hotkey
 > `Alt+M` **ไม่ใช่** trigger ของ G-Voice — มันคือ **mute toggle** ([`main.rs`](file:///g:/G-Maiden/src-tauri/src/main.rs)). เอกสารด้านล่าง
@@ -31,13 +31,12 @@ risk: "HIGH"
 
 ## 2. Flow (planned)
 
-หมายเหตุ: ยังไม่มี push-to-talk key ที่ผูกกับ G-Voice; `Alt+M` ปัจจุบันคือ mute
-(ต้องเลือก hotkey ใหม่เมื่อสร้างฟีเจอร์นี้จริง) และ TTS จะเป็น SAPI จนกว่า Piper จะ land.
+ใช้ `Ctrl+Alt+V` เป็น PTT ค่าเริ่มต้นใน MVP; implementation ต้องตรวจ collision กับ global shortcuts และรองรับ remap. `Alt+M` คงเป็น mute toggle. ไม่มี always-on mic. TTS ปัจจุบันเป็น SAPI จนกว่า Piper จะ land.
 
 ```
-Player holds <push-to-talk key, TBD> → mic capture (STT) [ยังไม่ได้ทำ]
-  → text prompt + GSI context + G-Memory context
-  → Brain Router (Cloud LLM / Local SLM)
+Player holds Ctrl+Alt+V → transient local mic capture → local STT [ยังไม่ได้ทำ]
+  → local transcript + valid local GSI context + bounded local G-Memory context
+  → local interpretation/answer (local SLM or local rules)
   → response text
   → TTS (SAPI วันนี้ · Piper ในอนาคต)
   → audio playback (preemptible by G-Signal)
@@ -47,9 +46,9 @@ Player holds <push-to-talk key, TBD> → mic capture (STT) [ยังไม่�
 
 | Source | Data |
 | --- | --- |
-| Microphone | Raw audio (push-to-talk hold — hotkey TBD; **ไม่ใช่** `Alt+M` ซึ่งเป็น mute) [ยังไม่ได้ทำ] |
-| GSI | Current game state (context for LLM) |
-| G-Memory | Player history (ฮีโร่ถนัด, เทรนด์, จุดมักตาย) |
+| Microphone | Transient raw audio only while PTT is held (`Ctrl+Alt+V` default); **ไม่ใช่** `Alt+M` ซึ่งเป็น mute; local only |
+| GSI | Valid current local GameTick; use only fields with fresh source timestamps |
+| G-Memory | Bounded local aggregates with explicit `UNKNOWN` for absent sources; never cloud context |
 
 ## 4. Output
 
@@ -58,15 +57,14 @@ Player holds <push-to-talk key, TBD> → mic capture (STT) [ยังไม่�
 
 ## 5. STT/TTS Contract (planned)
 
-STT ทั้งหมดในตารางนี้ยัง**ไม่ได้ทำ** (ไม่มีโค้ด mic/STT). TTS ปัจจุบันคือ SAPI
-อย่างเดียว — Piper เป็นแผน (ดู [`tts.rs`](file:///g:/G-Maiden/src-tauri/src/tts.rs)).
+STT ทั้งหมดในตารางนี้ยัง**ไม่ได้ทำ** (ไม่มีโค้ด mic/STT). MVP บังคับ local STT และ local interpretation/answer; cloud STT/LLM ใช้กับ Voice ไม่ได้. TTS ปัจจุบันคือ SAPI อย่างเดียว — Piper เป็นแผน (ดู [`tts.rs`](file:///g:/G-Maiden/src-tauri/src/tts.rs)).
 
 | Component | Technology | Latency |
 | --- | --- | --- |
-| STT | Cloud STT (Google/Whisper) or local Whisper.cpp — **ยังไม่ได้ทำ** | ~500ms |
-| LLM | Brain Router (Claude / SLM) | ~500–1500ms |
+| STT | Local STT candidate to be selected/benchmarked in MVP-038 — **ยังไม่ได้ทำ** | measured in MVP-038 |
+| Interpretation/answer | Local model/rules only for Voice — **ยังไม่ได้ทำ** | measured end-to-end |
 | TTS | **Windows SAPI วันนี้** · Piper (local ONNX) เป็นแผนอนาคต | ~80–200ms |
-| **Total** | | **~1–2s** (non-critical, เมื่อสร้างครบ) |
+| **Total** | | PTT release → first audible ≤2,000ms for every accepted ready/warm turn; cold model preparation is reported separately (MVP-006) |
 
 ## 6. Persona Behavior
 
@@ -80,7 +78,7 @@ STT ทั้งหมดในตารางนี้ยัง**ไม่ไ�
 - **Non-critical path:** ไม่มี hard latency budget
 - **G-Signal priority:** G-Signal interrupt ตัด voice conversation ได้ทันที
 - **Privacy:** STT audio ไม่เก็บถาวร — process แล้วทิ้ง
-- **Offline:** fallback ไป local Whisper.cpp + local SLM เมื่อ cloud ไม่ได้
+- **Local-only:** Voice STT, transcript, free-form utterance, GSI/Memory context และ interpretation/answer อยู่ในเครื่องเสมอ; cloud fallback forbidden.
 - **Resource:** STT/TTS ไม่ควรเพิ่ม CPU >1% ขณะ idle
 
 ## 8. Dependencies
@@ -90,50 +88,52 @@ STT ทั้งหมดในตารางนี้ยัง**ไม่ไ�
 | Hotkey trigger | **G-Sensory** (global hotkey system) |
 | Game context | GSI Server |
 | Player memory | **G-Memory** |
-| LLM inference | Brain Router |
+| Local interpretation/answer | Local model/rules only; no cloud route |
 | Audio playback | Audio Engine (shared with G-Signal) |
 | → Interrupt by | **G-Signal** (critical alerts override) |
 
 ## 9. Acceptance Criteria
 
-- [ ] push-to-talk (hotkey TBD — ไม่ใช่ `Alt+M`) captures audio correctly
-- [ ] STT → LLM → TTS roundtrip ≤2s (cloud available)
+- [ ] `Ctrl+Alt+V` PTT captures audio correctly; hotkey collision is reported and remap works; `Alt+M` remains mute
+- [ ] local STT: English WER ≤15%, Thai CER ≤20%, intent/critical-slot accuracy ≥90% on ≥100 held-out utterances per language, split by speaker/session and quiet/game-audio
+- [ ] PTT release → first audible answer ≤2.0s for every accepted ready/warm turn; completion ≥95% per language; cold preparation ≤10s with visible preparing state
 - [ ] G-Signal interrupt cuts voice response immediately
 - [ ] bilingual (Thai/English) recognition and response
-- [ ] offline fallback: local STT + local SLM works
-- [ ] audio not persisted after processing (privacy)
+- [ ] local path works without network; missing/unready local model shows unavailable without cloud fallback
+- [ ] audio and transcript are not persisted or sent to network; verify filesystem and outbound traffic
 - [ ] response contextually relevant (uses GSI + G-Memory)
 
-## 10. DL-006 Lineage Contract (approved design; runtime not implemented)
+## 10. DL-006 Lineage Contract (MVP policy alignment; runtime not implemented)
 
 ### 10.1 Sources and transport
 
 | Source | Transport | Fields/contract | Current status |
 | --- | --- | --- | --- |
-| Player microphone | Transient local capture after a future PTT hotkey | Raw PCM only for the active turn; `Alt+M` remains the existing mute toggle | Not implemented |
+| Player microphone | Transient local capture after `Ctrl+Alt+V` PTT | Raw PCM only for active turn; `Alt+M` remains the mute toggle; audio is never uploaded | Not implemented |
 | GSI | Local HTTP `POST /gsi` on `127.0.0.1:3000` → `game-tick` | `clock_time`, `game_state`, `hero`, `level`, `hp_percent`, `mana_percent`, K/D/A, gold, net worth, GPM/XPM and scores; select fields only | Implemented upstream |
 | G-Memory | In-process `MemoryContext` read; no external GET | Bounded aggregates and `UNKNOWN` values; never raw JSONL | Planned dependency |
-| Brain | Existing G-Master backend boundary: Claude CLI or Anthropic `POST /v1/messages`, then local Ollama fallback | Redacted text prompt only; no raw audio, raw G-Log, or hidden player identifiers | Partial upstream |
+| Voice interpretation | Local model/rules only | Transcript and free-form question stay in process; local bounded context only; no Claude/Anthropic/Ollama network call from Voice | Not implemented |
 
-Cloud STT is not authorized by this contract. The first implementation must use local STT or fail closed; adding a cloud STT endpoint requires a separate privacy/consent decision because audio cannot be field-redacted.
+Cloud STT and cloud interpretation for Voice are forbidden by the accepted [[mvp-decisions]] contract. This boundary is stricter than generic G-Master cloud advice: audio, transcript/free-form question, and G-Memory never enter cloud requests. Changing it requires a new explicit privacy decision.
 
 ### 10.2 Computation and output
 
 ```text
-turn_latency = capture_time + stt_time + router_time + tts_time
-target turn_latency <= 2,000 ms                  # non-critical path
+warm_turn_latency = PTT release → first audible answer
+target warm_turn_latency <= 2,000 ms             # measured per accepted warm turn
+capture/model preparation is reported separately # cold preparation ≤10s, visible state
 critical G-Signal event => cancel current turn  # always wins
 ```
 
-The output is a transient `VoiceTurn` containing `request_id`, redacted transcript,
-response text, backend label, and latency metadata. Response audio goes through the
+The output is a transient in-process `VoiceTurn` containing `request_id`, transcript,
+response text, local backend label, and latency metadata. Response audio goes through the
 existing Audio Engine at a non-critical priority; optional subtitles go to G-Sensory.
-No transcript or microphone buffer is persisted.
+Transcript and microphone buffer are not persisted or sent to a network provider.
 
 ### 10.3 Fallback and evidence
 
 - STT failure → discard the buffer and return a local, non-persistent error state.
-- Cloud/Claude failure → Ollama; Ollama failure → no generated response. G-Signal remains independent.
+- Local STT/model unavailable → return a local, non-persistent unavailable state; never route Voice content to Claude or another cloud provider. G-Signal remains independent.
 - Acceptance requires a hand-calculated round-trip fixture, an interrupt test proving the
   current audio is cancelled, bilingual STT/response fixtures, and a filesystem/network
   check proving that raw audio and transcripts are not persisted or sent by default.
@@ -143,3 +143,4 @@ No transcript or microphone buffer is persisted.
 | --- | --- | --- |
 | — | 2026-07-19 | link/metadata sweep (G1.5): wikilink/symbol-link fixes only — no content change |
 | 0.2.0 | 2026-10-05 | Added the DL-006 source, transport, latency, privacy, fallback, and evidence contract; runtime remains planned. |
+| 0.3.0 | 2026-10-10 | Aligned P0 Voice with accepted MVP contract: Ctrl+Alt+V PTT, local STT/answer only, no cloud utterance or Memory egress, and measured latency/quality acceptance. |

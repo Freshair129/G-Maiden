@@ -1,16 +1,16 @@
 ---
-title: "FEAT-G-MOTION — Heatmap & Path Prediction"
+title: "FEAT-G-MOTION — Time-off-map Risk Heuristic"
 doc_id: "FEAT-G-MOTION"
 status: "active"
-version: "0.1.0"
-updated: "2026-10-04"
+version: "0.2.0"
+updated: "2026-10-10"
 owner: "Boss"
 source_of_truth: false
 complexity: "C-2"
 risk: "LOW"
 ---
 
-# FEAT-G-MOTION — Heatmap & Path Prediction
+# FEAT-G-MOTION — Time-off-map Risk Heuristic
 
 > **Module:** G-Motion · **Priority:** Core · **Phase:** 3
 > **SRS:** [[software-requirements-specification|SRS]] §3.2 · [[engineering-spec|Eng Spec]] §2.2 · [[technical-design-document|TDD]] §2 `motion`
@@ -18,6 +18,10 @@ risk: "LOW"
 ---
 
 ## 1. Purpose
+
+MVP scope is the shipped local time-off-map heuristic documented below. A complete
+heatmap, lane model, or through-fog path prediction is not included or claimed as a
+supported capability.
 
 เก็บประวัติตำแหน่งศัตรูย้อนหลัง 5 นาที แล้วคำนวณความน่าจะเป็นของ gank
 (`probability: f32`, 0..1) จากชุดฮีโร่ที่หายจากแมพ เพื่อป้อนให้ G-Signal ตัดสิน
@@ -146,3 +150,4 @@ GankRisk {
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-10-04 | Documented the validated local next-match G-Motion tuning contract and rollback behavior. |
+| 0.2.0 | 2026-10-10 | Reframed the feature name and MVP boundary around the implemented heuristic; explicitly deferred full heatmap and path prediction. |
