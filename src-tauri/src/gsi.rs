@@ -193,6 +193,16 @@ fn is_in_draft(game_state: &str) -> bool {
     )
 }
 
+fn lifecycle_for_tick(tick: &GameTick) -> crate::runtime::MatchLifecycle {
+    use crate::runtime::MatchLifecycle;
+    match tick.game_state.as_str() {
+        "DOTA_GAMERULES_STATE_DISCONNECT" => MatchLifecycle::Disconnected,
+        "DOTA_GAMERULES_STATE_POST_GAME" => MatchLifecycle::End,
+        "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS" => MatchLifecycle::Live,
+        _ => MatchLifecycle::Draft,
+    }
+}
+
 fn parse_tick_from_value(v: &Value) -> GameTick {
     let game_state = s(v, &["map", "game_state"]);
     let gold = i(v, &["player", "gold"]);
@@ -236,6 +246,20 @@ fn parse_tick_from_value(v: &Value) -> GameTick {
     }
 }
 
+fn parse_match_id(v: &Value) -> Option<String> {
+    let value = value_at(v, &["map", "matchid"])?;
+    let id = match value {
+        Value::Number(number) => number.as_u64()?,
+        Value::String(raw)
+            if !raw.is_empty() && raw.bytes().all(|byte| byte.is_ascii_digit()) =>
+        {
+            raw.parse::<u64>().ok()?
+        }
+        _ => return None,
+    };
+    (id > 0).then(|| id.to_string())
+}
+
 pub fn parse_tick_from_json(body: &str) -> GameTick {
     // The capture/performance harnesses use compact fixed fixtures; production
     // ingestion uses parse_gsi_payload, which validates before extraction. Keep
@@ -246,6 +270,20 @@ pub fn parse_tick_from_json(body: &str) -> GameTick {
 
 fn value_at<'a>(v: &'a Value, path: &[&str]) -> Option<&'a Value> {
     path.iter().try_fold(v, |cur, key| cur.get(*key))
+}
+
+struct ParsedGsiPayload {
+    tick: GameTick,
+    match_id: Option<String>,
+}
+
+fn parse_gsi_payload_with_identity(body: &str) -> Result<ParsedGsiPayload, GsiPayloadError> {
+    let value: Value = serde_json::from_str(body).map_err(|_| GsiPayloadError::InvalidJson)?;
+    validate_gsi_payload(&value).map_err(|_| GsiPayloadError::InvalidSchema)?;
+    Ok(ParsedGsiPayload {
+        tick: parse_tick_from_value(&value),
+        match_id: parse_match_id(&value),
+    })
 }
 
 fn optional_object<'a>(
@@ -511,18 +549,17 @@ enum GsiPayloadError {
     InvalidSchema,
 }
 
+#[cfg_attr(not(test), allow(dead_code))]
 fn parse_gsi_payload(body: &str) -> Result<GameTick, GsiPayloadError> {
-    let value: Value = serde_json::from_str(body).map_err(|_| GsiPayloadError::InvalidJson)?;
-    validate_gsi_payload(&value).map_err(|_| GsiPayloadError::InvalidSchema)?;
-    Ok(parse_tick_from_value(&value))
+    parse_gsi_payload_with_identity(body).map(|parsed| parsed.tick)
 }
 
 async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'static str) {
     if !crate::runtime::gmad_entitled() {
         return (StatusCode::OK, "locked");
     }
-    let tick = match parse_gsi_payload(&body) {
-        Ok(tick) => tick,
+    let ParsedGsiPayload { tick, match_id } = match parse_gsi_payload_with_identity(&body) {
+        Ok(parsed) => parsed,
         Err(GsiPayloadError::InvalidJson) => {
             return (StatusCode::BAD_REQUEST, "invalid JSON");
         }
@@ -530,15 +567,22 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
             return (StatusCode::UNPROCESSABLE_ENTITY, "invalid GSI payload");
         }
     };
-    // Announcer: detect kill/streak/state events from the tick and voice the
-    // most significant one (clip-or-silent — these aren't TTS-faked).
-    let announce = crate::announcer::most_important(&crate::announcer::observe(&tick));
     // Note the POST (watchdog uses recency) and gate the CV pipeline to live
     // matches (saves idle CPU).
     crate::runtime::mark_post(epoch_ms());
-    crate::runtime::set_in_game(tick.in_game);
+    let session = crate::runtime::observe_match_tick(
+        lifecycle_for_tick(&tick),
+        match_id,
+        tick.clock_time,
+        tick.in_game,
+    );
     crate::runtime::set_in_draft(is_in_draft(&tick.game_state));
     crate::runtime::set_player_team_name(&tick.team_name);
+    // Announcer: detect kill/streak/state events from the tick and voice the
+    // most significant one (clip-or-silent — these aren't TTS-faked).
+    let announce = crate::announcer::most_important(&crate::announcer::observe_for_session(
+        &tick, &session,
+    ));
     // G-Motion threat discount (audit H3): a dead enemy is off the minimap and
     // therefore "missing", but is the opposite of a gank threat. Folded in here
     // — after `set_in_game` above, so a match boundary has already cleared the
@@ -553,18 +597,26 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
             );
         }
     }
-    crate::log::note_tick(&tick);
+    crate::log::note_tick(&tick, &session);
     // Publish freshness before the tick so every UI consumer can gate its own-
     // state decisions against the same validated observation. Reuse the cached
     // display-mode sample; the 500ms/process watchdogs refresh that separately.
     emit_observation_status(&app);
-    let _ = app.emit("game-tick", tick);
+    let _ = app.emit(
+        "game-tick",
+        GameTickEvent {
+            tick: &tick,
+            session: &session,
+        },
+    );
     // CR-007 WP-4: the announcer (kill/streak/death lines) is a separate,
     // non-critical path from G-Signal — `runtime::signal_enabled()` gates
     // capture.rs's gank/danger/revision voice_interrupt() calls, which never
     // pass through here. Muting the announcer must never touch that path.
     if let Some(ev) = announce {
-        if crate::runtime::announcer_enabled() {
+        if crate::runtime::announcer_enabled()
+            && crate::runtime::is_current_active_session_epoch(session.session_epoch)
+        {
             // Voice the clip and show the banner from the SAME active pack, so the
             // announcer sound and its queue banner always fire together (the bundle).
             // Resolve the clip ONCE so the overlay can drive its reactive waveform
@@ -575,20 +627,24 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
                 // CR-011 §B utterance ledger — only when a clip actually
                 // played (Maiden stayed silent otherwise), and after the
                 // dispatch above so this never delays the clip itself.
-                crate::utterance::emit(
+                crate::utterance::emit_for_session(
                     &app,
-                    crate::utterance::UtterancePayload::new(
+                    crate::utterance::UtterancePayload::new_for_session(
                         "announcer",
                         "line",
                         ev.clone(),
                         None,
                         crate::voice_api::active_pack_name(),
+                        &session,
                     ),
                 );
             }
             let mut banner = crate::voice_api::fired_banner(&ev);
             banner.clip = clip.map(|p| p.to_string_lossy().into_owned());
-            let _ = app.emit("announcer-banner", banner);
+            if crate::runtime::is_current_active_session_epoch(session.session_epoch) {
+                let event = crate::runtime::MatchSessionEvent::new(banner, &session);
+                let _ = app.emit("announcer-banner", event);
+            }
         }
     }
     (StatusCode::OK, "ok")
@@ -915,6 +971,10 @@ struct GsiStatus {
     /// Age of the last validated GSI POST; absent until the first valid payload.
     gsi_age_ms: Option<u64>,
     in_game: bool,
+    match_id: Option<String>,
+    session_id: Option<String>,
+    session_epoch: u64,
+    session_lifecycle: Option<crate::runtime::MatchLifecycle>,
     /// Dota is in *true* Exclusive Fullscreen → overlay + minimap capture can't
     /// work (no DWM) and the desktop may freeze. UI warns the user to switch to
     /// Borderless. False for Borderless / Windowed / Fullscreen-Optimizations.
@@ -922,11 +982,20 @@ struct GsiStatus {
     server_state: GsiServerState,
 }
 
+#[derive(Serialize)]
+#[derive(Clone)]
+struct GameTickEvent<'a> {
+    #[serde(flatten)]
+    tick: &'a GameTick,
+    #[serde(flatten)]
+    session: &'a crate::runtime::MatchSessionSnapshot,
+}
+
 fn emit_status(app: &AppHandle, running: bool) {
     let was_running = DOTA_PROCESS_RUNNING.swap(running, Ordering::Relaxed);
     if was_running && !running {
-        crate::runtime::set_in_game(false);
-        crate::log::force_end();
+        let session = crate::runtime::mark_dota_exited();
+        crate::log::force_end(&session);
     }
     let display_exclusive = running && crate::setup::exclusive_fullscreen_active();
     DISPLAY_EXCLUSIVE_ACTIVE.store(display_exclusive, Ordering::Relaxed);
@@ -958,6 +1027,8 @@ fn emit_status_snapshot(app: &AppHandle, running: bool, display_exclusive: bool)
         now_ms,
     );
     let gsi_active = gsi_freshness == GsiFreshness::Fresh;
+    let session = crate::runtime::observe_gsi_status(running, gsi_active);
+    crate::log::note_session_status(&session);
     let _ = app.emit(
         "gsi-status",
         GsiStatus {
@@ -966,6 +1037,10 @@ fn emit_status_snapshot(app: &AppHandle, running: bool, display_exclusive: bool)
             gsi_freshness,
             gsi_age_ms,
             in_game: crate::runtime::in_game(),
+            match_id: session.match_id,
+            session_id: session.session_id,
+            session_epoch: session.session_epoch,
+            session_lifecycle: session.session_lifecycle,
             display_exclusive,
             server_state,
         },
@@ -1108,6 +1183,46 @@ mod tests {
                       "buyback_cost": 0, "respawn_seconds": 0 },
             "items": { "slot0": { "name": "empty" } }
         })
+    }
+
+    #[test]
+    fn match_id_accepts_positive_decimal_numbers_and_strings() {
+        let number = serde_json::json!({ "map": { "matchid": 123456u64 } });
+        let string = serde_json::json!({ "map": { "matchid": "00123456" } });
+        assert_eq!(parse_match_id(&number).as_deref(), Some("123456"));
+        assert_eq!(parse_match_id(&string).as_deref(), Some("123456"));
+    }
+
+    #[test]
+    fn missing_zero_or_invalid_match_id_falls_back_without_rejecting_gsi() {
+        for value in [
+            serde_json::json!({}),
+            serde_json::json!({ "map": { "matchid": 0 } }),
+            serde_json::json!({ "map": { "matchid": -1 } }),
+            serde_json::json!({ "map": { "matchid": 1.5 } }),
+            serde_json::json!({ "map": { "matchid": "12x" } }),
+            serde_json::json!({ "map": { "matchid": "+12" } }),
+        ] {
+            assert_eq!(parse_match_id(&value), None);
+        }
+
+        let mut payload = live_payload();
+        payload["map"]["matchid"] = serde_json::json!("bad-id");
+        let parsed = parse_gsi_payload_with_identity(&payload.to_string())
+            .expect("an invalid optional id must not reject an otherwise valid GSI tick");
+        assert_eq!(parsed.match_id, None);
+    }
+
+    #[test]
+    fn lifecycle_maps_only_game_in_progress_to_live() {
+        let mut tick = run_handle(live_payload());
+        assert_eq!(lifecycle_for_tick(&tick), crate::runtime::MatchLifecycle::Live);
+        tick.game_state = "DOTA_GAMERULES_STATE_PRE_GAME".into();
+        assert_eq!(lifecycle_for_tick(&tick), crate::runtime::MatchLifecycle::Draft);
+        tick.game_state = "DOTA_GAMERULES_STATE_DISCONNECT".into();
+        assert_eq!(lifecycle_for_tick(&tick), crate::runtime::MatchLifecycle::Disconnected);
+        tick.game_state = "DOTA_GAMERULES_STATE_POST_GAME".into();
+        assert_eq!(lifecycle_for_tick(&tick), crate::runtime::MatchLifecycle::End);
     }
 
     fn run_handle(payload: Value) -> GameTick {

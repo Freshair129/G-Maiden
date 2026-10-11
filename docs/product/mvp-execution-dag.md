@@ -2,8 +2,8 @@
 title: "G-Maiden MVP Execution DAG"
 doc_id: "mvp-execution-dag"
 status: "draft"
-version: "0.2.0"
-updated: "2026-10-10"
+version: "0.2.3"
+updated: "2026-10-11"
 owner: "Boss"
 related_docs: ["roadmap", "mvp-backlog", "releases/README"]
 ---
@@ -82,7 +82,7 @@ Depends on เป็น hard edges; conditional edges แสดงเครื�
 | MVP-012 | ตรวจ first-run และ restart ใน release mode. | W08 | 008, 009, 010, 011.B, 001.B, 002, 003 | — |
 | MVP-013 | Validate GSI envelope และ fields. | W02 | 001.B, 002, 003 | GSI |
 | MVP-014 | ทำ freshness เป็นสถานะร่วม. | W03 | 013, 006, 001.B, 002, 003 | GSI, CORE_STATE, UI_LIVE, UI_OVERLAY |
-| MVP-015 | สร้าง match/session identity และ lifecycle กลาง. | W04 | 013, 014, 001.B, 002, 003 | GSI, CORE_STATE, LOG, UI_LIVE |
+| MVP-015 | สร้าง match/session identity และ lifecycle กลาง. | W04 | 013, 014, 001.B, 002, 003 | GSI, CORE_STATE, LOG, UI_LIVE, CAPTURE, UTTERANCE, UI_OVERLAY, UI_SETTINGS |
 | MVP-016 | เพิ่ม capture retry/recovery. | W05 | 014, 015, 001.B, 002, 003 | CAPTURE, CORE_STATE |
 | MVP-017 | กำหนดและตรวจ capture coverage. | W06 | 006, 016, 001.B, 002, 003 | CAPTURE, UI_ONBOARDING |
 | MVP-018 | แยก unknown, no coverage, clear และ danger. | W07 | 014, 017, 001.B, 002, 003 | CAPTURE, UI_LIVE, UI_OVERLAY |
@@ -215,13 +215,14 @@ Node เริ่มได้เมื่อครบทุกข้อ:
 
 | พื้นที่ร่วม | ผู้ถือ lease ครั้งละหนึ่งงาน | ตัวอย่างงานที่ต้องจัดคิว |
 | --- | --- | --- |
-| `runtime.rs` lifecycle/state | CORE_STATE | 008, 009, 014–016, 022, 024, 029, 039–040, 046 |
+| `runtime.rs` lifecycle/state + `announcer.rs` epoch-scoped detector state | CORE_STATE | 008, 009, 014–016, 022, 024, 029, 039–040, 046 |
 | `gsi.rs` payload/events/server | GSI | 010, 013–015, 019, 022, 025, 032 |
-| `app/Overlay.tsx` | UI_OVERLAY | 009, 014, 018–019, 022–023, 025–026, 030, 041 |
-| `app/Control.tsx` และ settings | UI_SETTINGS | 009, 024, 027–028, 035, 037, 039 |
+| `app/Overlay.tsx` | UI_OVERLAY | 009, 014–015, 018–019, 022–023, 025–026, 030, 041 |
+| `app/Control.tsx`, settings และ session-scoped advice state | UI_SETTINGS | 009, 015, 024, 027–028, 035, 037, 039 |
 | `master.rs` / `slm.rs` | BRAIN | 020, 027–030, 036, 041 |
 | `audio.rs` / critical TTS | AUDIO / TTS | 022, 024–025, 039 |
-| `capture.rs` / `dxgi.rs` / geometry | CAPTURE | 016–018, 037 |
+| `capture.rs` / `capture_wgc.rs` / `dxgi.rs` / geometry | CAPTURE | 015–018, 037 |
+| `utterance.rs` event identity/epoch boundary | UTTERANCE | 015, 022 |
 | `log.rs` / `memory.rs` | LOG / MEMORY | 015, 032–036 |
 | `lib.rs` command/module registry | ผู้ประสาน I | Worker ส่ง command signatures/registration patch ให้ I รวมทีละงาน; ไม่ให้หลาย worktree รับผิดชอบ registry พร้อมกัน |
 | Generated doc graph/ledger/index | ผู้ประสาน I | Regenerate หลังรวม source docs บน integration SHA; ไม่ cherry-pick artifact เก่าจากหลาย lanes ทับกัน |
@@ -297,3 +298,6 @@ Completion or NOT_APPLICABLE decision:
 | 0.1.0 | 2026-10-10 | วาง execution DAG ครบ 52 MVP parents เป็น 57 nodes/14 waves พร้อม A/B splits, conditional gates, 3-worker batches, file/resource leases, immutable evidence join และ JSON สำหรับต่อ scheduler |
 | 0.1.1 | 2026-10-10 | บันทึกเริ่ม execution ด้วย Luna max พร้อม source fingerprint และสถานะ preparation/verification/decision ที่ไม่แทน DONE |
 | 0.2.0 | 2026-10-10 | รับ owner-delegated contracts/baseline, activation false/true/false และ legacy handoff NOT_APPLICABLE; อ้าง mvp-decisions เป็น dispatch contract |
+| 0.2.1 | 2026-10-11 | เพิ่ม CAPTURE, UTTERANCE และ UI_OVERLAY lease ให้ MVP-015 เพื่อ tag/drop session-stale events ใน producer และ overlay callback/timer; บันทึก owner approval และยืนยัน W04 ไม่ชน MVP-028 |
+| 0.2.2 | 2026-10-11 | ขยายความรับผิดชอบ CORE_STATE ให้ reset announcer detector ตาม session epoch และระบุ WGC producer coverage; W04 ยังไม่ชน MVP-028 |
+| 0.2.3 | 2026-10-11 | เพิ่ม UI_SETTINGS lease ให้ MVP-015 เพื่อ clear/gate MasterCard advice เมื่อ session เปลี่ยน; MVP-028 merge barrier ผ่านก่อนขยาย scope |

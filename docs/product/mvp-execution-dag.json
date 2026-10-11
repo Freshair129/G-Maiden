@@ -1,8 +1,8 @@
 {
   "schema_version": 1,
   "document_id": "mvp-execution-dag",
-  "version": "0.2.0",
-  "updated": "2026-10-10",
+  "version": "0.2.3",
+  "updated": "2026-10-11",
   "mode": "execution_active",
   "source": {
     "path": "docs/product/mvp-backlog.md",
@@ -39,14 +39,15 @@
     "DATA_POLICY": "Cloud/local data contract",
     "QUALITY_CONTRACT": "Acceptance matrix and numeric thresholds",
     "DOCS": "Cross-project requirement reconciliation; generated doc artifacts handled by integrator",
-    "CORE_STATE": "src-tauri/src/runtime.rs shared lifecycle and state",
+    "CORE_STATE": "src-tauri/src/runtime.rs shared lifecycle/state and announcer.rs epoch-scoped detector state",
+    "UTTERANCE": "src-tauri/src/utterance.rs session identity/epoch envelope and stale-event gate",
     "GSI": "src-tauri/src/gsi.rs and ingestion/schema changes",
     "UI_ONBOARDING": "GmadFirstRunGate/betaReadiness/setup UI",
-    "UI_SETTINGS": "app/Control and settings lifecycle",
+    "UI_SETTINGS": "app/Control and settings lifecycle/session-scoped advice state",
     "UI_OVERLAY": "app/Overlay and in-game components",
     "UI_DECK": "CommandDeck/dashboard routing",
     "UI_LIVE": "companion.ts and live builders",
-    "CAPTURE": "capture.rs/dxgi.rs/cv region and sensor health",
+    "CAPTURE": "capture.rs/capture_wgc.rs/dxgi.rs/cv region and sensor health",
     "REVIVE": "revive/respawn/buyback data",
     "GAME_DATA": "damage/item/hero provenance data",
     "REPLAY": "Local labeled replay quality evidence",
@@ -758,7 +759,11 @@
         "GSI",
         "CORE_STATE",
         "LOG",
-        "UI_LIVE"
+        "UI_LIVE",
+        "CAPTURE",
+        "UTTERANCE",
+        "UI_OVERLAY",
+        "UI_SETTINGS"
       ],
       "verification_locks": [],
       "external_gates": [],
@@ -3744,6 +3749,21 @@
     "baseline_evidence": "D:/gm-mvp-001-evidence/MVP-001-B-evidence.md",
     "completion_policy": "PREPARED, INTEGRATED, VERIFIED, RUNNING, and DECISION_PENDING do not satisfy DONE dependencies."
   },
+  "scope_change_records": [
+    {
+      "date": "2026-10-11",
+      "node": "MVP-015",
+      "authority": "Owner explicitly approved the write-lock extension in W04 coordination.",
+      "added_write_locks": [
+        "CAPTURE",
+        "UTTERANCE",
+        "UI_OVERLAY",
+        "UI_SETTINGS"
+      ],
+      "reason": "Session epochs tag and reject stale capture-derived, utterance, overlay callback state, and Control advice requests/results; CORE_STATE now also resets process-global announcer streak/dedup state only when the session epoch changes.",
+      "overlap_review": "MVP-028 was merged before MVP-015 expanded into UI_SETTINGS; no concurrent writer remains. Later settings work uses its existing UI_SETTINGS lease, and CAPTURE/AUDIO work depends on MVP-015 or starts afterward. Announcer state is held under the already exclusive CORE_STATE lease."
+    }
+  ],
   "decision_record": {
     "path": "docs/product/mvp-decisions.md",
     "version": "0.1.0",

@@ -14,18 +14,27 @@ use std::sync::Mutex;
 use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::gsi::GameTick;
+use crate::runtime::{MatchLifecycle, MatchSessionSnapshot};
 
 struct LogState {
     file: Option<File>,
     path: Option<PathBuf>,
-    in_game: bool,
+    file_name: Option<String>,
+    match_id: Option<String>,
+    session_id: Option<String>,
+    session_epoch: u64,
+    lifecycle: Option<MatchLifecycle>,
     last_clock: i64,
 }
 
 static STATE: Mutex<LogState> = Mutex::new(LogState {
     file: None,
     path: None,
-    in_game: false,
+    file_name: None,
+    match_id: None,
+    session_id: None,
+    session_epoch: 0,
+    lifecycle: None,
     last_clock: i64::MIN,
 });
 
@@ -94,17 +103,54 @@ pub fn init_panic_hook() {
     }));
 }
 
-fn start_match(state: &mut LogState) {
+fn session_log_name(session: &MatchSessionSnapshot) -> String {
+    let id = session
+        .session_id
+        .as_deref()
+        .unwrap_or("unknown")
+        .chars()
+        .map(|c| if c.is_ascii_alphanumeric() || c == '-' { c } else { '_' })
+        .collect::<String>();
+    format!("match-{id}-e{}.jsonl", session.session_epoch)
+}
+
+fn append_lifecycle(state: &mut LogState, record_type: &str) {
+    if state.file.is_none() {
+        return;
+    }
+    let value = serde_json::json!({
+        "ts": now_ms() as u64,
+        "type": record_type,
+        "match_id": state.match_id.clone(),
+        "session_id": state.session_id.clone(),
+        "session_epoch": state.session_epoch,
+    });
+    if let Ok(line) = serde_json::to_string(&value) {
+        let Some(file) = state.file.as_mut() else { return };
+        let _ = file.write_all(line.as_bytes());
+        let _ = file.write_all(b"\n");
+        let _ = file.flush();
+    }
+}
+
+fn start_match(state: &mut LogState, session: &MatchSessionSnapshot) {
     let dir = log_dir();
     if let Err(e) = fs::create_dir_all(&dir) {
         eprintln!("[G-Maiden log] mkdir failed: {e}");
         return;
     }
-    let ts_sec = now_ms() / 1000;
+    let name = state
+        .file_name
+        .clone()
+        .unwrap_or_else(|| session_log_name(session));
     // Tag calibration evidence with the same match id so its screenshots/clips
     // land in a per-match folder that lines up with this log file.
-    crate::calibration::set_match(&format!("match-{ts_sec}"));
-    let path = dir.join(format!("match-{ts_sec}.jsonl"));
+    crate::calibration::set_match(&format!(
+        "{}-e{}",
+        session.session_id.as_deref().unwrap_or("unknown"),
+        session.session_epoch
+    ));
+    let path = dir.join(&name);
     match OpenOptions::new().create(true).append(true).open(&path) {
         Ok(mut f) => {
             // Silent-arm efficacy study (RWANG TASK 2): roll the per-match arm
@@ -128,6 +174,9 @@ fn start_match(state: &mut LogState) {
                 "type": "match_start",
                 "silent_arm": silent_arm,
                 "study": crate::runtime::efficacy_enabled(),
+                "match_id": session.match_id.clone(),
+                "session_id": session.session_id.clone(),
+                "session_epoch": session.session_epoch,
             });
             if let Ok(line) = serde_json::to_string(&start_record) {
                 let _ = f.write_all(line.as_bytes());
@@ -136,9 +185,38 @@ fn start_match(state: &mut LogState) {
             }
             state.file = Some(f);
             state.path = Some(path);
+            state.file_name = Some(name);
             state.last_clock = i64::MIN;
         }
         Err(e) => eprintln!("[G-Maiden log] open failed: {e}"),
+    }
+}
+
+fn resume_match(state: &mut LogState, session: &MatchSessionSnapshot) {
+    let dir = log_dir();
+    if let Err(e) = fs::create_dir_all(&dir) {
+        eprintln!("[G-Maiden log] mkdir failed: {e}");
+        return;
+    }
+    crate::calibration::set_match(&format!(
+        "{}-e{}",
+        session.session_id.as_deref().unwrap_or("unknown"),
+        session.session_epoch
+    ));
+    let name = state
+        .file_name
+        .clone()
+        .unwrap_or_else(|| session_log_name(session));
+    let path = dir.join(&name);
+    match OpenOptions::new().create(true).append(true).open(&path) {
+        Ok(file) => {
+            state.file = Some(file);
+            state.path = Some(path);
+            state.file_name = Some(name);
+            state.last_clock = i64::MIN;
+            append_lifecycle(state, "match_reconnect");
+        }
+        Err(e) => eprintln!("[G-Maiden log] reopen failed: {e}"),
     }
 }
 
@@ -151,20 +229,79 @@ fn end_match(state: &mut LogState) {
 /// Note a new tick from the GSI handler. Detects match-start / match-end
 /// transitions, rotates the log file accordingly, and appends one JSONL
 /// record per second of in-game time.
-pub fn note_tick(tick: &GameTick) {
+pub fn note_tick(tick: &GameTick, session: &MatchSessionSnapshot) {
     let Ok(mut state) = STATE.lock() else { return };
-
-    // State transition: start / end a match log when in_game flips.
-    if tick.in_game && !state.in_game {
-        start_match(&mut state);
-    } else if !tick.in_game && state.in_game {
-        end_match(&mut state);
+    if state.session_epoch != session.session_epoch {
+        if state.file.is_some() {
+            append_lifecycle(&mut state, "match_abandon");
+            end_match(&mut state);
+        }
+        state.file_name = None;
+        state.match_id = session.match_id.clone();
+        state.session_id = session.session_id.clone();
+        state.session_epoch = session.session_epoch;
+        state.lifecycle = None;
+    } else if state.session_id != session.session_id || state.match_id != session.match_id {
+        state.session_id = session.session_id.clone();
+        state.match_id = session.match_id.clone();
+        append_lifecycle(&mut state, "session_identity");
     }
-    state.in_game = tick.in_game;
 
-    if !tick.in_game || state.file.is_none() {
+    let lifecycle = session.session_lifecycle.unwrap_or(if tick.in_game {
+        MatchLifecycle::Live
+    } else {
+        MatchLifecycle::Draft
+    });
+    match lifecycle {
+        MatchLifecycle::Disconnected => {
+            if state.lifecycle != Some(MatchLifecycle::Disconnected) {
+                append_lifecycle(&mut state, "match_disconnect");
+            }
+            state.lifecycle = Some(lifecycle);
+            return;
+        }
+        MatchLifecycle::End => {
+            if state.lifecycle != Some(MatchLifecycle::End) {
+                append_lifecycle(&mut state, "match_end");
+            }
+            state.lifecycle = Some(lifecycle);
+            end_match(&mut state);
+            return;
+        }
+        MatchLifecycle::Abandon => {
+            if state.lifecycle != Some(MatchLifecycle::Abandon) {
+                append_lifecycle(&mut state, "match_abandon");
+            }
+            state.lifecycle = Some(lifecycle);
+            end_match(&mut state);
+            return;
+        }
+        MatchLifecycle::Draft => {
+            state.lifecycle = Some(lifecycle);
+            return;
+        }
+        MatchLifecycle::Live => {}
+    }
+    let resume_abandoned = should_resume_abandoned(&state, session);
+    if state.lifecycle == Some(MatchLifecycle::Disconnected) && state.file.is_some() {
+        append_lifecycle(&mut state, "match_reconnect");
+    }
+    if !tick.in_game {
+        state.lifecycle = Some(MatchLifecycle::Live);
         return;
     }
+    if state.file.is_none() {
+        if resume_abandoned {
+            resume_match(&mut state, session);
+        } else {
+            start_match(&mut state, session);
+        }
+    }
+    if state.file.is_none() {
+        state.lifecycle = Some(MatchLifecycle::Live);
+        return;
+    }
+    state.lifecycle = Some(MatchLifecycle::Live);
 
     // Sample at ~1 Hz: skip ticks where clock_time hasn't advanced. Allow
     // any change including resets (going back in time during draft / pause).
@@ -173,7 +310,13 @@ pub fn note_tick(tick: &GameTick) {
     }
     state.last_clock = tick.clock_time;
 
-    let payload = serde_json::json!({ "ts": now_ms() as u64, "tick": tick });
+    let payload = serde_json::json!({
+        "ts": now_ms() as u64,
+        "match_id": session.match_id,
+        "session_id": session.session_id,
+        "session_epoch": session.session_epoch,
+        "tick": tick,
+    });
     let Ok(line) = serde_json::to_string(&payload) else {
         return;
     };
@@ -188,35 +331,101 @@ pub fn note_tick(tick: &GameTick) {
 /// Force-close the active match log (used by the GSI watchdog when Dota exits
 /// without sending a final out-of-game tick). Resets in-game state so the next
 /// match starts a fresh file. No-op if nothing is recording.
-pub fn force_end() {
+pub fn force_end(session: &MatchSessionSnapshot) {
     if let Ok(mut state) = STATE.lock() {
         if state.file.is_some() {
+            state.match_id = session.match_id.clone();
+            state.session_id = session.session_id.clone();
+            state.session_epoch = session.session_epoch;
+            append_lifecycle(&mut state, "match_abandon");
             end_match(&mut state);
         }
-        state.in_game = false;
+        state.lifecycle = Some(MatchLifecycle::Abandon);
     }
 }
 
-/// Append a typed G-Signal event to the current match log, time-aligned with the
-/// tick stream. No-op when no match is recording. Used to capture the inputs of
-/// each gank decision so we can later (offline) join them against outcomes —
-/// the raw material for calibrating G-Motion's probability model (#7). The `ts`
-/// field is stamped here; callers pass a record built by the helpers below.
-pub fn note_event(mut value: serde_json::Value) {
+/// Persist status-only transitions (such as a quiet GSI feed) without closing
+/// the log, so a reconnect can continue the same canonical session.
+pub fn note_session_status(session: &MatchSessionSnapshot) {
     let Ok(mut state) = STATE.lock() else { return };
-    if state.file.is_none() {
+    update_session_status(&mut state, session);
+}
+
+fn update_session_status(state: &mut LogState, session: &MatchSessionSnapshot) {
+    if state.session_epoch != session.session_epoch {
+        if state.file.is_some() {
+            append_lifecycle(state, "match_abandon");
+            end_match(state);
+        }
+        state.file_name = None;
+        state.match_id = session.match_id.clone();
+        state.session_id = session.session_id.clone();
+        state.session_epoch = session.session_epoch;
+        state.lifecycle = None;
+    } else if state.session_id != session.session_id || state.match_id != session.match_id {
+        state.session_id = session.session_id.clone();
+        state.match_id = session.match_id.clone();
+        append_lifecycle(state, "session_identity");
+    }
+    let Some(lifecycle) = session.session_lifecycle else { return };
+    match lifecycle {
+        MatchLifecycle::Disconnected if state.lifecycle != Some(lifecycle) => {
+            append_lifecycle(state, "match_disconnect");
+        }
+        MatchLifecycle::End if state.lifecycle != Some(lifecycle) => {
+            append_lifecycle(state, "match_end");
+            end_match(state);
+        }
+        MatchLifecycle::Abandon if state.lifecycle != Some(lifecycle) => {
+            append_lifecycle(state, "match_abandon");
+            end_match(state);
+        }
+        MatchLifecycle::Live if state.lifecycle == Some(MatchLifecycle::Abandon) => {
+            // Leave Abandon in place until note_tick sees the resumed feed. It
+            // must reopen the existing log rather than start a duplicate match.
+            return;
+        }
+        MatchLifecycle::Live
+            if state.lifecycle == Some(MatchLifecycle::Disconnected) && state.file.is_some() =>
+        {
+            append_lifecycle(state, "match_reconnect");
+        }
+        _ => {}
+    }
+    state.lifecycle = Some(lifecycle);
+}
+
+fn should_resume_abandoned(state: &LogState, session: &MatchSessionSnapshot) -> bool {
+    state.lifecycle == Some(MatchLifecycle::Abandon)
+        && state.file.is_none()
+        && state.match_id.is_some()
+        && state.match_id == session.match_id
+}
+
+pub fn note_event_for_session(epoch: u64, mut value: serde_json::Value) {
+    let Ok(mut state) = STATE.lock() else { return };
+    if state.session_epoch != epoch
+        || !matches!(
+            state.lifecycle,
+            Some(MatchLifecycle::Live | MatchLifecycle::Disconnected)
+        )
+        || state.file.is_none()
+    {
         return;
     }
     if let Some(obj) = value.as_object_mut() {
         obj.insert("ts".into(), serde_json::json!(now_ms() as u64));
+        obj.insert("match_id".into(), serde_json::json!(state.match_id));
+        obj.insert("session_id".into(), serde_json::json!(state.session_id));
+        obj.insert("session_epoch".into(), serde_json::json!(state.session_epoch));
     }
     let Ok(line) = serde_json::to_string(&value) else {
         return;
     };
-    if let Some(f) = state.file.as_mut() {
-        let _ = f.write_all(line.as_bytes());
-        let _ = f.write_all(b"\n");
-        let _ = f.flush();
+    if let Some(file) = state.file.as_mut() {
+        let _ = file.write_all(line.as_bytes());
+        let _ = file.write_all(b"\n");
+        let _ = file.flush();
     }
 }
 
@@ -770,6 +979,62 @@ mod tests {
     use super::*;
 
     #[test]
+    fn live_status_keeps_abandon_until_tick_can_resume_same_canonical_match() {
+        let session = MatchSessionSnapshot {
+            match_id: Some("123".into()),
+            session_id: Some("dota-123".into()),
+            session_epoch: 7,
+            session_lifecycle: Some(MatchLifecycle::Live),
+        };
+        let mut state = LogState {
+            file: None,
+            path: None,
+            file_name: Some("match-dota-123-e7.jsonl".into()),
+            match_id: Some("123".into()),
+            session_id: Some("dota-123".into()),
+            session_epoch: 7,
+            lifecycle: Some(MatchLifecycle::Abandon),
+            last_clock: i64::MIN,
+        };
+
+        update_session_status(&mut state, &session);
+
+        assert_eq!(state.lifecycle, Some(MatchLifecycle::Abandon));
+        assert!(should_resume_abandoned(&state, &session));
+        let different_match = MatchSessionSnapshot {
+            match_id: Some("456".into()),
+            session_id: Some("dota-456".into()),
+            ..session
+        };
+        assert!(!should_resume_abandoned(&state, &different_match));
+    }
+
+    #[test]
+    fn same_epoch_gsi_reconnect_status_transitions_to_live_once() {
+        let session = MatchSessionSnapshot {
+            match_id: Some("123".into()),
+            session_id: Some("dota-123".into()),
+            session_epoch: 7,
+            session_lifecycle: Some(MatchLifecycle::Live),
+        };
+        let mut state = LogState {
+            file: None,
+            path: None,
+            file_name: Some("match-dota-123-e7.jsonl".into()),
+            match_id: Some("123".into()),
+            session_id: Some("dota-123".into()),
+            session_epoch: 7,
+            lifecycle: Some(MatchLifecycle::Disconnected),
+            last_clock: i64::MIN,
+        };
+
+        update_session_status(&mut state, &session);
+        assert_eq!(state.lifecycle, Some(MatchLifecycle::Live));
+        update_session_status(&mut state, &session);
+        assert_eq!(state.lifecycle, Some(MatchLifecycle::Live));
+    }
+
+    #[test]
     fn gank_signal_record_shape() {
         let r = gank_signal_record(0.91, &["CM".into(), "SF".into()], 2500, true);
         assert_eq!(r["type"], "gank_signal");
@@ -778,6 +1043,27 @@ mod tests {
         assert_eq!(r["armed"], true);
         // probability round-trips as a number
         assert!((r["probability"].as_f64().unwrap() - 0.91).abs() < 1e-6);
+    }
+
+    #[test]
+    fn session_log_names_are_safe_and_distinct_per_epoch() {
+        let first = MatchSessionSnapshot {
+            match_id: Some("123".into()),
+            session_id: Some("dota-123".into()),
+            session_epoch: 1,
+            session_lifecycle: Some(MatchLifecycle::Live),
+        };
+        let second = MatchSessionSnapshot {
+            session_epoch: 2,
+            ..first.clone()
+        };
+        assert_eq!(session_log_name(&first), "match-dota-123-e1.jsonl");
+        assert_eq!(session_log_name(&second), "match-dota-123-e2.jsonl");
+        let unsafe_id = MatchSessionSnapshot {
+            session_id: Some("bad/name".into()),
+            ..first
+        };
+        assert!(!session_log_name(&unsafe_id).contains('/'));
     }
 
     #[test]

@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { emit, listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import { FullOverlay } from '../overlay/FullOverlay'
@@ -7,12 +7,14 @@ import { STREAK_LABELS } from '../overlay/streaks'
 import { crossedAnyLevelUpMilestone, crossedLevelUpMilestones } from '../personaMilestones'
 import type {
   GameTick, MinimapCv, GankAlert, EnemyMissing, AdviceUpdate, ReviveAdvice, GsiStatus, SensorHealth,
+  MatchSessionMetadata, AnnouncerBanner, SessionTextEvent,
   Settings, GankState, PersonaEvent,
 } from './types'
 import { DEFAULTS } from './types'
 import { C } from './theme'
 import { TONE_DANGER_LINES, TONE_LINES, TONE_REVISION_LINES } from './lines'
 import { fmtClock, heroName, overlayPanel, Bar, Stat, sep, dangerStyle, gankStyle, gankClearStyle, killBannerStyle, packBannerStyle } from './primitives'
+import { allowsSessionLifecycleAdvance } from '../live/session'
 
 export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSettings = DEFAULTS }) => {
   const [lastTick, setLastTick] = useState<GameTick | null>(null)
@@ -26,6 +28,10 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   // G2.6: set of hero names currently flagged as missing by G-Sentry.
   const [missingHeroes, setMissingHeroes] = useState<Set<string>>(new Set())
   const missingHeroesRef = useRef(missingHeroes)
+  const missingTimers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
+  const sessionEpoch = useRef<number | null>(null)
+  const sessionLifecycle = useRef<MatchSessionMetadata['session_lifecycle']>(null)
+  const sessionMatchId = useRef<string | null>(null)
   // G5.4: latest advice from G-Master, shown as an in-overlay panel.
   const [overlayAdvice, setOverlayAdvice] = useState<string | null>(null)
   const adviceTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -66,6 +72,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   const packBannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const gankTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const gankClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const revisionTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Volume toast — brief on-screen feedback when player uses Alt+Up/Down/M.
   const [volToast, setVolToast] = useState<number | null>(null)
   const volToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -93,60 +100,176 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   gsiStatusRef.current = gsiStatus
   previewModeRef.current = previewMode
   const mayUseOwnState = () => previewModeRef.current || gsiStatusRef.current?.gsi_freshness === 'fresh'
+  const resetSessionUi = useCallback(() => {
+    for (const timer of [gankTimer, gankClearTimer, adviceTimer, killTimer, packBannerTimer, revisionTimer]) {
+      if (timer.current) clearTimeout(timer.current)
+      timer.current = null
+    }
+    for (const timer of missingTimers.current.values()) clearTimeout(timer)
+    missingTimers.current.clear()
+    setLastTick(null)
+    setGank(null)
+    setCv(null)
+    setMissingHeroes(new Set())
+    setOverlayAdvice(null)
+    setBuyback(null)
+    setToast(null)
+    setKillBanner(null)
+    setPackBanner(null)
+    killStreak.current = 0
+    lastKillHeroes.current.clear()
+    dangerActive.current = false
+    lastSpokeAt.current = 0
+    lastSpokeKind.current = null
+    dangerHpAtSpeak.current = 0
+    prev.current = null
+    prevAlive.current = null
+    manaActive.current = false
+    recentDeathClock.current = null
+    advisedAt.current = {}
+  }, [])
+  const observeSessionAuthority = useCallback((event: MatchSessionMetadata): boolean => {
+    const incoming = event.session_epoch
+    if (incoming === undefined || incoming === null || !Number.isSafeInteger(incoming) || incoming < 0) return true
+    if (sessionEpoch.current !== null && incoming < sessionEpoch.current) return false
+    if (sessionEpoch.current === null || incoming > sessionEpoch.current) {
+      resetSessionUi()
+      sessionEpoch.current = incoming
+      sessionLifecycle.current = event.session_lifecycle ?? null
+      sessionMatchId.current = event.match_id ?? null
+      return true
+    }
+    const lifecycle = event.session_lifecycle ?? null
+    if (lifecycle && lifecycle !== sessionLifecycle.current) {
+      if (!allowsSessionLifecycleAdvance(
+        sessionLifecycle.current,
+        lifecycle,
+        sessionMatchId.current,
+        event.match_id
+      )) return false
+      resetSessionUi()
+      sessionLifecycle.current = lifecycle
+    }
+    if (event.match_id) sessionMatchId.current = event.match_id
+    return true
+  }, [resetSessionUi])
+  const acceptsSessionEvent = useCallback((
+    event: MatchSessionMetadata,
+    allowed: readonly NonNullable<MatchSessionMetadata['session_lifecycle']>[] = ['draft', 'live', 'disconnected'],
+    allowUntagged = false
+  ): boolean => {
+    const incoming = event.session_epoch
+    if (incoming === undefined || incoming === null || !Number.isSafeInteger(incoming) || incoming < 0) {
+      return allowUntagged || sessionEpoch.current === null
+    }
+    if (sessionEpoch.current === null || incoming > sessionEpoch.current) {
+      // Events can race the periodic GSI status heartbeat. A higher backend
+      // epoch is itself an authoritative boundary, so reset before accepting it.
+      resetSessionUi()
+      sessionEpoch.current = incoming
+      sessionLifecycle.current = event.session_lifecycle ?? null
+    } else if (incoming < sessionEpoch.current) {
+      return false
+    }
+    const lifecycle = event.session_lifecycle ?? sessionLifecycle.current
+    if (lifecycle && !allowed.includes(lifecycle)) return false
+    if (sessionLifecycle.current && event.session_lifecycle && event.session_lifecycle !== sessionLifecycle.current) return false
+    return true
+  }, [resetSessionUi])
   useEffect(() => {
     missingHeroesRef.current = missingHeroes
   }, [missingHeroes])
   tickRef.current = tick
   useEffect(() => {
-    const u1 = listen<GameTick>('game-tick', (e) => { setLastTick(e.payload); setSeen(true) })
+    const missingTimerMap = missingTimers.current
+    const u1 = listen<GameTick>('game-tick', (e) => {
+      if (!observeSessionAuthority(e.payload)) return
+      if (e.payload.session_lifecycle === 'end' || e.payload.session_lifecycle === 'abandon') {
+        setLastTick(null)
+        setSeen(true)
+        return
+      }
+      setLastTick(e.payload)
+      setSeen(true)
+    })
     const u2 = listen<Settings>('settings', (e) => setS({ ...DEFAULTS, ...e.payload, uiMode: 'full' }))
     // CV debug feed — fires 8–15 Hz. Cheap setState; only rendered when cvDebug is on.
     const u3 = listen<MinimapCv>('minimap-cv', (e) => {
+      if (!acceptsSessionEvent(e.payload, ['live', 'disconnected'])) return
       if (!sRef.current.cvDebug) return
       setCv(e.payload)
     })
     // G-Signal: show banner on alert, retract on clear (Belief Revision visual echo).
     const u4 = listen<GankAlert>('gank-alert', (e) => {
+      if (!acceptsSessionEvent(e.payload, ['live', 'disconnected'])) return
       if (gankClearTimer.current) { clearTimeout(gankClearTimer.current); gankClearTimer.current = null }
       setGank({ phase: 'alert', heroes: e.payload.missing_heroes ?? [], probability: e.payload.probability })
       if (gankTimer.current) clearTimeout(gankTimer.current)
+      const epoch = sessionEpoch.current
       // auto-dismiss after ~6s if no gank-clear arrives
-      gankTimer.current = setTimeout(() => setGank(null), 6000)
+      gankTimer.current = setTimeout(() => {
+        if (sessionEpoch.current === epoch) setGank(null)
+      }, 6000)
     })
-    const u5 = listen('gank-clear', () => {
+    const u5 = listen<MatchSessionMetadata>('gank-clear', (e) => {
+      if (!acceptsSessionEvent(e.payload, ['live', 'disconnected'])) return
       if (gankTimer.current) { clearTimeout(gankTimer.current); gankTimer.current = null }
       setGank({ phase: 'clear' })
       // G2.6: clear the missing-hero indicator when G-Signal retracts.
       setMissingHeroes(new Set())
+      for (const timer of missingTimerMap.values()) clearTimeout(timer)
+      missingTimerMap.clear()
       // brief soft echo, then fade out; don't re-show until a new gank-alert
       if (gankClearTimer.current) clearTimeout(gankClearTimer.current)
-      gankClearTimer.current = setTimeout(() => setGank(null), 2200)
+      const epoch = sessionEpoch.current
+      gankClearTimer.current = setTimeout(() => {
+        if (sessionEpoch.current === epoch) setGank(null)
+      }, 2200)
     })
-    const u6 = listen<GsiStatus>('gsi-status', (e) => setGsiStatus(e.payload))
+    const u6 = listen<GsiStatus>('gsi-status', (e) => {
+      if (!observeSessionAuthority(e.payload)) return
+      setGsiStatus(e.payload)
+    })
     const uSH = listen<SensorHealth>('sensor-health', (e) => setSensorHealth(e.payload))
     const u7 = listen<boolean>('preview-mode', (e) => setPreviewMode(e.payload))
     // G2.6: G-Sentry missing-hero events — accumulate into a set; clear when gank clears.
     const u8 = listen<EnemyMissing>('enemy-missing', (e) => {
+      if (!acceptsSessionEvent(e.payload, ['live', 'disconnected'])) return
       setMissingHeroes((prev) => new Set([...prev, e.payload.hero]))
       // auto-clear the hero from the indicator after 30s (they probably re-appeared)
-      setTimeout(() => setMissingHeroes((prev) => { const n = new Set(prev); n.delete(e.payload.hero); return n }), 30_000)
+      const hero = e.payload.hero
+      const epoch = sessionEpoch.current
+      const old = missingTimers.current.get(hero)
+      if (old) clearTimeout(old)
+      const timer = setTimeout(() => {
+        if (sessionEpoch.current !== epoch) return
+        setMissingHeroes((prev) => { const n = new Set(prev); n.delete(hero); return n })
+        missingTimers.current.delete(hero)
+      }, 30_000)
+      missingTimers.current.set(hero, timer)
     })
     // G5.4: Advice panel — show for 20s then dismiss.
     const u9 = listen<AdviceUpdate>('advice-update', (e) => {
+      if (!acceptsSessionEvent(e.payload, ['live'])) return
       if (mayUseOwnState() && !e.payload.cached) {
         setOverlayAdvice(e.payload.text)
         if (adviceTimer.current) clearTimeout(adviceTimer.current)
-        adviceTimer.current = setTimeout(() => setOverlayAdvice(null), 20_000)
+        const epoch = sessionEpoch.current
+        adviceTimer.current = setTimeout(() => {
+          if (sessionEpoch.current === epoch) setOverlayAdvice(null)
+        }, 20_000)
       }
     })
     // G-Revive: buyback verdict card. `buyback-advice` carries the deterministic
     // verdict (broadcast, so it shows regardless of which window triggered the
     // request); `buyback-narrative` follows with Maiden's voiced line.
     const uBA = listen<ReviveAdvice>('buyback-advice', (e) => {
+      if (!acceptsSessionEvent(e.payload, ['live'])) return
       if (mayUseOwnState()) setBuyback({ advice: e.payload, narrative: null })
     })
-    const uBN = listen<string>('buyback-narrative', (e) => {
-      if (mayUseOwnState()) setBuyback((b) => (b ? { ...b, narrative: e.payload } : b))
+    const uBN = listen<SessionTextEvent>('buyback-narrative', (e) => {
+      if (!acceptsSessionEvent(e.payload, ['live'])) return
+      if (mayUseOwnState()) setBuyback((b) => (b ? { ...b, narrative: e.payload.text } : b))
     })
     const u10 = listen<number>('volume-change', (e) => {
       setVolToast(e.payload)
@@ -158,15 +281,22 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     const uK = listen<{ streak: number; victim: string | null }>('preview-kill', (e) => {
       if (killTimer.current) clearTimeout(killTimer.current)
       setKillBanner({ phase: 'show', kills: 0, streak: e.payload.streak, victim: e.payload.victim })
+      const epoch = sessionEpoch.current
       killTimer.current = setTimeout(() => {
+        if (sessionEpoch.current !== epoch) return
         setKillBanner((kb) => kb ? { ...kb, phase: 'exit' } : null)
-        killTimer.current = setTimeout(() => setKillBanner(null), 800)
+        killTimer.current = setTimeout(() => {
+          if (sessionEpoch.current === epoch) setKillBanner(null)
+        }, 800)
       }, 4000)
     })
     // Announcer bundle: the active pack's banner image for a fired event. Only
     // shows when the pack actually maps an image (bannerUrl); otherwise we leave
     // the built-in kill card to handle it. Clears the card so we never stack both.
-    const uPB = listen<{ event: string; bannerData: string | null; bannerText: string; thai: string; clip: string | null }>('announcer-banner', (e) => {
+    const uPB = listen<AnnouncerBanner>('announcer-banner', (e) => {
+      // `preview_announcer_event` is a deliberate app-level preview and has no
+      // match epoch; live announcer events are always stamped by GSI.
+      if (!acceptsSessionEvent(e.payload, ['draft', 'live', 'disconnected'], true)) return
       if (!mayUseOwnState()) return
       // Show the bundle banner when the pack maps an image OR a voice clip fired —
       // a voice-only event still gets the transcript + reactive waveform strip.
@@ -179,9 +309,13 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       setToast(null)
       if (packBannerTimer.current) clearTimeout(packBannerTimer.current)
       setPackBanner({ phase: 'show', url: e.payload.bannerData, text: e.payload.bannerText, thai: e.payload.thai, clip: e.payload.clip })
+      const epoch = sessionEpoch.current
       packBannerTimer.current = setTimeout(() => {
+        if (sessionEpoch.current !== epoch) return
         setPackBanner((pb) => pb ? { ...pb, phase: 'exit' } : null)
-        packBannerTimer.current = setTimeout(() => setPackBanner(null), 800)
+        packBannerTimer.current = setTimeout(() => {
+          if (sessionEpoch.current === epoch) setPackBanner(null)
+        }, 800)
       }, 4000)
     })
     // The Control window sends the hydrated snapshot in response to this
@@ -198,13 +332,20 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       if (adviceTimer.current) clearTimeout(adviceTimer.current)
       if (volToastTimer.current) clearTimeout(volToastTimer.current)
       if (packBannerTimer.current) clearTimeout(packBannerTimer.current)
+      if (killTimer.current) clearTimeout(killTimer.current)
+      if (revisionTimer.current) clearTimeout(revisionTimer.current)
+      for (const timer of missingTimerMap.values()) clearTimeout(timer)
+      missingTimerMap.clear()
     }
-  }, [])
+  }, [acceptsSessionEvent, observeSessionAuthority])
 
   // #6: auto-dismiss the event toast 4s after the most recent voice event.
   useEffect(() => {
     if (!toast) return
-    const id = setTimeout(() => setToast(null), 4000)
+    const epoch = sessionEpoch.current
+    const id = setTimeout(() => {
+      if (sessionEpoch.current === epoch) setToast(null)
+    }, 4000)
     return () => clearTimeout(id)
   }, [toast])
 
@@ -263,7 +404,10 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     void invoke('cancel_speech').catch(() => {})
     // brief gap lets the killed SAPI process die before the new one starts,
     // otherwise Windows audio sometimes squashes the first syllable
-    setTimeout(() => {
+    const epoch = sessionEpoch.current
+    if (revisionTimer.current) clearTimeout(revisionTimer.current)
+    revisionTimer.current = setTimeout(() => {
+      if (sessionEpoch.current !== epoch) return
       void invoke('speak_event', { event: 'revision', fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
     }, 90)
   }, [tick, tick?.in_game, tick?.hp_percent, tick?.kills, s.alertThreshold])
@@ -341,9 +485,13 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     const victim = tick?.last_victim_hero || missing.find((h) => !seen.has(h)) || missing[0] || null
     if (victim) seen.add(victim)
     setKillBanner({ phase: 'show', kills: tick?.kills ?? 0, streak: killStreak.current, victim })
+    const epoch = sessionEpoch.current
     killTimer.current = setTimeout(() => {
+      if (sessionEpoch.current !== epoch) return
       setKillBanner((kb) => kb ? { ...kb, phase: 'exit' } : null)
-      killTimer.current = setTimeout(() => setKillBanner(null), 800)
+      killTimer.current = setTimeout(() => {
+        if (sessionEpoch.current === epoch) setKillBanner(null)
+      }, 800)
     }, 4000)
   }, [tick?.in_game, tick?.kills, tick?.last_victim_hero])
   // Reset streak on death + fire the G-Revive buyback verdict; clear on respawn.
@@ -364,7 +512,12 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       // returns immediately (deterministic) and is broadcast on `buyback-advice`
       // — the listener above owns display; the voiced narrative follows on
       // `buyback-narrative`. Fire-and-forget; ignore errors (SLM/CLI absent).
-      if (currentTick.in_game) void invoke('request_buyback_advice', { tick: currentTick }).catch(() => {})
+      if (currentTick.in_game) {
+        const requestEpoch = currentTick.session_epoch ?? sessionEpoch.current
+        if (requestEpoch !== null && Number.isSafeInteger(requestEpoch)) {
+          void invoke('request_buyback_advice', { tick: currentTick, sessionEpoch: requestEpoch }).catch(() => {})
+        }
+      }
     }
     if (!was && currentTick.alive) {
       setBuyback(null) // respawned — dismiss the card
@@ -425,6 +578,8 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     if (!currentTick || !tick?.in_game) return
     const p = prev.current
     if (!p || !sRef.current.masterEnabled || !sRef.current.autoAdvice || !sRef.current.voiceEnabled || sRef.current.personaPreset === 'silent') return
+    const requestEpoch = currentTick.session_epoch ?? sessionEpoch.current
+    if (requestEpoch === null || !Number.isSafeInteger(requestEpoch)) return
 
     type Trigger = { key: string }
     const triggers: Trigger[] = []
@@ -456,6 +611,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
               || (typeof budget.weeklyUsd === 'number' && budget.weeklyUsd > 0)
             if (hasBudget) {
               const stats = await invoke<{ session: { cost_usd: number }; weekly: { cost_usd: number } }>('read_usage')
+              if (sessionEpoch.current !== requestEpoch) return
               if (typeof budget.sessionUsd === 'number' && budget.sessionUsd > 0
                   && stats.session.cost_usd >= budget.sessionUsd) return
               if (typeof budget.weeklyUsd === 'number' && budget.weeklyUsd > 0
@@ -463,9 +619,10 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
             }
           }
         } catch { /* budget parse failure -> let the request through */ }
-        return invoke<{ text: string; cached: boolean }>('request_advice', { tick: currentTick })
+        if (sessionEpoch.current !== requestEpoch) return
+        return invoke<{ text: string; cached: boolean }>('request_advice', { tick: currentTick, sessionEpoch: requestEpoch })
         .then((a) => {
-          if (!a?.text) return
+          if (!a?.text || sessionEpoch.current !== requestEpoch) return
           setToast({ event: 'advice', text: a.text })
           if (sRef.current.calibration) void invoke('capture_calibration_clip', { event: 'advice', line: a.text, context: { clock: currentTick.clock_time, level: currentTick.level } }).catch(() => {})
           void invoke('speak_event', {
