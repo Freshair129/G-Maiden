@@ -1,7 +1,6 @@
-//! G-Master — cloud advisor backed by the user's `claude` CLI (Plan quota).
-//! No API key, no per-token cost: we shell out to `claude -p "<prompt>"` and
-//! the CLI uses the session the user already logged into. Same shell-out
-//! pattern as TTS/registry/VDF — no new Rust dependency.
+//! G-Master — local advice with an optional, explicitly consented cloud route.
+//! Cloud requests use a purpose-built own-stat allowlist; local Ollama may use
+//! the richer match context. Provider choice and manual Ask are not consent.
 //!
 //! Throttle to 30s/request and cache the last answer so a quick double-click
 //! still feels responsive without burning the Plan budget.
@@ -22,8 +21,14 @@ const PERSONA_PROMPT: &str = r#"คุณคือ "Maiden" — ที่ปร�
 
 const THROTTLE: Duration = Duration::from_secs(30);
 
-static LAST_CALL: Mutex<Option<Instant>> = Mutex::new(None);
-static LAST_RESPONSE: Mutex<Option<String>> = Mutex::new(None);
+struct CachedAdvice {
+    text: String,
+    created_at: Instant,
+    context_generation: u64,
+    from_slm: bool,
+}
+
+static LAST_RESPONSE: Mutex<Option<CachedAdvice>> = Mutex::new(None);
 /// Which backend resolved the most recent *fresh* (non-cached) `advise()`
 /// call — "claude" or "ollama". Recorded purely for the CR-011 §B utterance
 /// ledger's `meta` field (main.rs::request_advice) so that event can say who
@@ -40,6 +45,17 @@ pub struct Advice {
 /// `None` before the first call, or if the mutex is poisoned.
 pub fn last_backend() -> Option<&'static str> {
     LAST_BACKEND.lock().ok().and_then(|g| *g)
+}
+
+/// Consent changes must not leave a cloud-derived answer available through the
+/// throttle cache, nor allow an older in-flight call to be reused as fresh.
+pub(crate) fn invalidate_advice_cache() {
+    if let Ok(mut response) = LAST_RESPONSE.lock() {
+        *response = None;
+    }
+    if let Ok(mut backend) = LAST_BACKEND.lock() {
+        *backend = None;
+    }
 }
 
 fn hero_thai(raw: &str) -> String {
@@ -104,58 +120,193 @@ fn build_prompt(tick: &GameTick, enemies: &[String]) -> String {
     )
 }
 
-/// Ask Maiden (via Claude Plan quota) for advice on the current game state.
-/// On claude CLI failure, falls back to the local SLM (G7.1, ollama).
-/// Blocking — call from a worker thread. Throttled to 30s; cached responses
-/// are returned with `cached=true` so the UI can hint at staleness.
-pub fn advise(tick: &GameTick, enemies: &[String]) -> Result<Advice, String> {
-    // Throttle window — serve cached.
-    if let Ok(g) = LAST_CALL.lock() {
-        if let Some(t) = *g {
-            if t.elapsed() < THROTTLE {
-                if let Ok(r) = LAST_RESPONSE.lock() {
-                    if let Some(text) = r.clone() {
-                        return Ok(Advice { text, cached: true });
-                    }
-                }
-            }
-        }
+/// The only live-match fields allowed into an external provider request.
+/// Keep this purpose-built object separate from `GameTick` so adding a GSI
+/// field cannot silently widen the cloud payload.
+#[derive(Debug, PartialEq, Eq)]
+struct CloudAdviceContext {
+    phase: &'static str,
+    own_hero: String,
+    own_level: i64,
+    own_kills: i64,
+    own_deaths: i64,
+    own_assists: i64,
+    own_net_worth: i64,
+    own_gold: i64,
+    own_hp_percent: i64,
+    own_mana_percent: i64,
+    radiant_score: i64,
+    dire_score: i64,
+}
+
+fn safe_own_hero(raw: &str) -> String {
+    let name = raw.strip_prefix("npc_dota_hero_").unwrap_or(raw);
+    if name.is_empty()
+        || name.len() > 64
+        || !name
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_')
+    {
+        return "unknown".into();
     }
+    name.replace('_', " ")
+}
 
-    let prompt = build_prompt(tick, enemies);
+fn cloud_advice_context(tick: &GameTick) -> CloudAdviceContext {
+    let phase = if tick.clock_time < 0 {
+        "pre-game"
+    } else if tick.clock_time < 600 {
+        "early game"
+    } else if tick.clock_time < 1800 {
+        "mid game"
+    } else {
+        "late game"
+    };
+    CloudAdviceContext {
+        phase,
+        own_hero: safe_own_hero(&tick.hero),
+        own_level: tick.level.clamp(0, 30),
+        own_kills: tick.kills.max(0),
+        own_deaths: tick.deaths.max(0),
+        own_assists: tick.assists.max(0),
+        own_net_worth: tick.net_worth.max(0),
+        own_gold: tick.gold.max(0),
+        own_hp_percent: tick.hp_percent.clamp(0, 100),
+        own_mana_percent: tick.mana_percent.clamp(0, 100),
+        radiant_score: tick.radiant_score.max(0),
+        dire_score: tick.dire_score.max(0),
+    }
+}
 
-    // Backend choice respects the UI selector — Auto keeps the historical
-    // claude-then-SLM ladder; Claude/Ollama force one path so the user can
-    // route around rate-limits or stay offline by choice.
-    let backend = crate::runtime::master_backend();
-    let ollama_model = crate::runtime::master_ollama_model();
-    let (text, from_slm) = match backend {
-        crate::runtime::MasterBackend::Ollama => {
-            let t = crate::slm::advise_offline(&prompt, &ollama_model)
-                .map_err(|e| format!("ollama: {e}"))?;
-            (t, true)
+fn build_cloud_prompt(tick: &GameTick) -> String {
+    let context = cloud_advice_context(tick);
+    format!(
+        "{persona}\n\nสถานการณ์โดยสรุป ({phase}): ฮีโร่ของผู้เล่น {hero} เลเวล {level}, KDA {kills}/{deaths}/{assists}, net worth {net_worth}, gold {gold}, HP {hp}%, mana {mana}%, score {radiant}:{dire}.\nแนะนำสั้น ๆ ว่าควรทำอะไรต่อ โดยอ้างอิงเฉพาะข้อมูลที่ให้มา.",
+        persona = PERSONA_PROMPT,
+        phase = context.phase,
+        hero = context.own_hero,
+        level = context.own_level,
+        kills = context.own_kills,
+        deaths = context.own_deaths,
+        assists = context.own_assists,
+        net_worth = context.own_net_worth,
+        gold = context.own_gold,
+        hp = context.own_hp_percent,
+        mana = context.own_mana_percent,
+        radiant = context.radiant_score,
+        dire = context.dire_score,
+    )
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum AdviceRoute {
+    LocalOnly,
+    CloudOnly,
+    CloudThenLocal,
+}
+
+fn advice_route(
+    backend: crate::runtime::MasterBackend,
+    cloud_context_opt_in: bool,
+) -> Result<AdviceRoute, &'static str> {
+    use crate::runtime::MasterBackend::{Auto, Claude, Ollama};
+    match (backend, cloud_context_opt_in) {
+        (Ollama, _) | (Auto, false) => Ok(AdviceRoute::LocalOnly),
+        (Claude, false) => {
+            Err("Cloud game context is off. Enable the separate opt-in or choose Ollama.")
         }
-        crate::runtime::MasterBackend::Claude => {
-            let t = try_claude(&prompt).map_err(|e| format!("claude: {e}"))?;
-            (t, false)
-        }
-        crate::runtime::MasterBackend::Auto => match try_claude(&prompt) {
-            Ok(t) => (t, false),
-            Err(e) => {
-                eprintln!("[G-Master] claude unavailable ({e}); trying local SLM…");
-                match crate::slm::advise_offline(&prompt, &ollama_model) {
-                    Ok(t) => (t, true),
-                    Err(e2) => return Err(format!("claude: {e}; SLM: {e2}")),
-                }
+        (Claude, true) => Ok(AdviceRoute::CloudOnly),
+        (Auto, true) => Ok(AdviceRoute::CloudThenLocal),
+    }
+}
+
+fn execute_advice_route<C, L>(
+    route: AdviceRoute,
+    cloud: C,
+    local: L,
+) -> Result<(String, bool), String>
+where
+    C: FnOnce() -> Result<String, String>,
+    L: FnOnce() -> Result<String, String>,
+{
+    match route {
+        AdviceRoute::LocalOnly => local()
+            .map(|text| (text, true))
+            .map_err(|error| format!("ollama: {error}")),
+        AdviceRoute::CloudOnly => cloud()
+            .map(|text| (text, false))
+            .map_err(|error| format!("claude: {error}")),
+        AdviceRoute::CloudThenLocal => match cloud() {
+            Ok(text) => Ok((text, false)),
+            Err(cloud_error) => {
+                eprintln!("[G-Master] claude unavailable ({cloud_error}); trying local SLM…");
+                local()
+                    .map(|text| (text, true))
+                    .map_err(|local_error| format!("claude: {cloud_error}; SLM: {local_error}"))
             }
         },
-    };
-
-    if let Ok(mut g) = LAST_CALL.lock() {
-        *g = Some(Instant::now());
     }
+}
+
+fn cache_origin_allowed(route: AdviceRoute, from_slm: bool) -> bool {
+    match route {
+        AdviceRoute::LocalOnly => from_slm,
+        AdviceRoute::CloudOnly => !from_slm,
+        AdviceRoute::CloudThenLocal => true,
+    }
+}
+
+/// Ask Maiden for advice on the current game state. Auto stays on local Ollama
+/// until cloud-context consent is enabled; opted-in Claude failures may fall
+/// back to Ollama. Blocking — call from a worker thread. Throttled to 30s.
+pub fn advise(tick: &GameTick, enemies: &[String]) -> Result<Advice, String> {
+    let backend = crate::runtime::master_backend();
+    let cloud_context_opt_in = crate::runtime::master_cloud_context_opt_in();
+    let route = advice_route(backend, cloud_context_opt_in).map_err(str::to_string)?;
+    let context_generation = crate::runtime::master_cloud_context_generation();
+
+    // Throttle window — serve cached.
+    if let Ok(response) = LAST_RESPONSE.lock() {
+        if let Some(cached) = response.as_ref() {
+            if cached.context_generation == context_generation
+                && cached.created_at.elapsed() < THROTTLE
+                && cache_origin_allowed(route, cached.from_slm)
+                && crate::runtime::master_cloud_context_generation() == context_generation
+            {
+                return Ok(Advice {
+                    text: cached.text.clone(),
+                    cached: true,
+                });
+            }
+        }
+    }
+
+    let local_prompt = build_prompt(tick, enemies);
+
+    // Cloud receives a separately-built allowlisted prompt. Auto skips cloud
+    // entirely while consent is off; a forced Claude route fails closed.
+    let ollama_model = crate::runtime::master_ollama_model();
+    let (text, from_slm) = execute_advice_route(
+        route,
+        || try_claude(&build_cloud_prompt(tick)),
+        || crate::slm::advise_offline(&local_prompt, &ollama_model),
+    )?;
+
+    if crate::runtime::master_cloud_context_generation() != context_generation {
+        return Err("Cloud-context preference changed; advice response discarded.".into());
+    }
+
     if let Ok(mut g) = LAST_RESPONSE.lock() {
-        *g = Some(text.clone());
+        *g = Some(CachedAdvice {
+            text: text.clone(),
+            created_at: Instant::now(),
+            context_generation,
+            from_slm,
+        });
+    }
+    if crate::runtime::master_cloud_context_generation() != context_generation {
+        invalidate_advice_cache();
+        return Err("Cloud-context preference changed; advice response discarded.".into());
     }
     if let Ok(mut g) = LAST_BACKEND.lock() {
         *g = Some(if from_slm { "ollama" } else { "claude" });
@@ -163,7 +314,10 @@ pub fn advise(tick: &GameTick, enemies: &[String]) -> Result<Advice, String> {
     // Quota monitor — only Claude-served responses burn Plan/API quota.
     // Ollama answers are free, and cached hits returned before this point.
     if !from_slm {
-        crate::usage::record_advice(prompt.chars().count(), text.chars().count());
+        crate::usage::record_advice(
+            build_cloud_prompt(tick).chars().count(),
+            text.chars().count(),
+        );
     }
     Ok(Advice {
         text,
@@ -184,12 +338,7 @@ fn try_claude(prompt: &str) -> Result<String, String> {
 /// POST the prompt to the Anthropic Messages API via curl (same shell-out pattern
 /// as the ollama path — no new Rust dependency). Parses `content[0].text`.
 fn try_anthropic_api(prompt: &str, key: &str) -> Result<String, String> {
-    let body = serde_json::json!({
-        "model": ANTHROPIC_MODEL,
-        "max_tokens": 300,
-        "messages": [{ "role": "user", "content": prompt }],
-    })
-    .to_string();
+    let body = anthropic_request_body(prompt);
 
     let mut cmd = Command::new("curl");
     cmd.args([
@@ -238,9 +387,22 @@ fn try_anthropic_api(prompt: &str, key: &str) -> Result<String, String> {
         .ok_or_else(|| "Anthropic API คืนผลว่าง".into())
 }
 
+fn anthropic_request_body(prompt: &str) -> String {
+    serde_json::json!({
+        "model": ANTHROPIC_MODEL,
+        "max_tokens": 300,
+        "messages": [{ "role": "user", "content": prompt }],
+    })
+    .to_string()
+}
+
+fn claude_cli_args(prompt: &str) -> [&str; 2] {
+    ["-p", prompt]
+}
+
 fn try_claude_cli(prompt: &str) -> Result<String, String> {
     let mut cmd = Command::new("claude");
-    cmd.args(["-p", prompt])
+    cmd.args(claude_cli_args(prompt))
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -342,6 +504,198 @@ mod tests {
         let grounded = build_prompt(&fake_tick(), &["phantom_assassin".to_string()]);
         assert!(grounded.contains("counter:"), "enemy → counter line present: {grounded}");
         assert!(grounded.contains("MKB"), "PA counter item must reach the prompt: {grounded}");
+    }
+
+    #[test]
+    fn cloud_prompt_contains_only_the_approved_own_stat_context() {
+        let mut tick = fake_tick();
+        tick.clock_time = 1729;
+        tick.game_state = "SENTINEL_GAME_STATE".into();
+        tick.gpm = 987_654;
+        tick.xpm = 987_655;
+        tick.last_hits = 987_656;
+        tick.denies = 987_657;
+        tick.steamid = "SENTINEL_STEAM_ID".into();
+        tick.item_names = vec!["SENTINEL_ITEM".into()];
+
+        let prompt = build_cloud_prompt(&tick);
+        for approved in [
+            "mid game",
+            "crystal maiden",
+            "เลเวล 11",
+            "KDA 4/2/6",
+            "net worth 8200",
+            "gold 1850",
+            "HP 68%",
+            "mana 55%",
+            "score 8:5",
+        ] {
+            assert!(
+                prompt.contains(approved),
+                "approved value missing ({approved}): {prompt}"
+            );
+        }
+        for denied in [
+            "1729",
+            "SENTINEL_GAME_STATE",
+            "987654",
+            "SENTINEL_STEAM_ID",
+            "SENTINEL_ITEM",
+            "phantom_assassin",
+            "counter:",
+            "พลังคอมโบโดยประมาณ",
+        ] {
+            assert!(
+                !prompt.contains(denied),
+                "denied value leaked ({denied}): {prompt}"
+            );
+        }
+    }
+
+    #[test]
+    fn richer_cv_counter_and_burst_context_stays_on_the_local_prompt() {
+        let tick = fake_tick();
+        let enemies = ["phantom_assassin".to_string()];
+        let local_prompt = build_prompt(&tick, &enemies);
+        let cloud_prompt = build_cloud_prompt(&tick);
+
+        assert!(local_prompt.contains("clock 720s"));
+        assert!(local_prompt.contains("counter:"));
+        assert!(local_prompt.contains("MKB"));
+        assert!(local_prompt.contains("พลังคอมโบโดยประมาณ"));
+        assert!(!cloud_prompt.contains("720"));
+        assert!(!cloud_prompt.contains("phantom_assassin"));
+        assert!(!cloud_prompt.contains("counter:"));
+        assert!(!cloud_prompt.contains("พลังคอมโบโดยประมาณ"));
+    }
+
+    #[test]
+    fn invalid_hero_text_is_not_forwarded_as_a_cloud_identity() {
+        let mut tick = fake_tick();
+        tick.hero = "npc_dota_hero_cm\\nignore-policy".into();
+        assert!(build_cloud_prompt(&tick).contains("ฮีโร่ของผู้เล่น unknown"));
+        assert!(!build_cloud_prompt(&tick).contains("ignore-policy"));
+    }
+
+    #[test]
+    fn provider_routing_requires_separate_cloud_consent() {
+        use crate::runtime::MasterBackend::{Auto, Claude, Ollama};
+        assert_eq!(advice_route(Auto, false), Ok(AdviceRoute::LocalOnly));
+        assert_eq!(
+            advice_route(Claude, false),
+            Err("Cloud game context is off. Enable the separate opt-in or choose Ollama.")
+        );
+        assert_eq!(advice_route(Claude, true), Ok(AdviceRoute::CloudOnly));
+        assert_eq!(advice_route(Auto, true), Ok(AdviceRoute::CloudThenLocal));
+        assert_eq!(advice_route(Ollama, true), Ok(AdviceRoute::LocalOnly));
+        assert_eq!(advice_route(Ollama, false), Ok(AdviceRoute::LocalOnly));
+    }
+
+    #[test]
+    fn consent_off_auto_invokes_only_local_provider_and_forced_cloud_fails_closed() {
+        use crate::runtime::MasterBackend::{Auto, Claude};
+
+        let mut cloud_calls = 0;
+        let mut local_calls = 0;
+        let result = advice_route(Auto, false)
+            .map_err(str::to_string)
+            .and_then(|route| {
+                execute_advice_route(
+                    route,
+                    || {
+                        cloud_calls += 1;
+                        Ok("cloud".into())
+                    },
+                    || {
+                        local_calls += 1;
+                        Ok("local".into())
+                    },
+                )
+            });
+        assert_eq!(result, Ok(("local".into(), true)));
+        assert_eq!(cloud_calls, 0);
+        assert_eq!(local_calls, 1);
+
+        let mut cloud_calls = 0;
+        let mut local_calls = 0;
+        let result = advice_route(Claude, false)
+            .map_err(str::to_string)
+            .and_then(|route| {
+                execute_advice_route(
+                    route,
+                    || {
+                        cloud_calls += 1;
+                        Ok("cloud".into())
+                    },
+                    || {
+                        local_calls += 1;
+                        Ok("local".into())
+                    },
+                )
+            });
+        assert!(result.is_err());
+        assert_eq!(cloud_calls, 0);
+        assert_eq!(local_calls, 0);
+    }
+
+    #[test]
+    fn opted_in_auto_cloud_failure_falls_back_to_local_provider() {
+        use crate::runtime::MasterBackend::Auto;
+
+        let mut cloud_calls = 0;
+        let mut local_calls = 0;
+        let result = advice_route(Auto, true)
+            .map_err(str::to_string)
+            .and_then(|route| {
+                execute_advice_route(
+                    route,
+                    || {
+                        cloud_calls += 1;
+                        Err("offline".into())
+                    },
+                    || {
+                        local_calls += 1;
+                        Ok("local".into())
+                    },
+                )
+            });
+        assert_eq!(result, Ok(("local".into(), true)));
+        assert_eq!(cloud_calls, 1);
+        assert_eq!(local_calls, 1);
+    }
+
+    #[test]
+    fn local_only_routes_never_reuse_a_cloud_derived_cached_answer() {
+        assert!(!cache_origin_allowed(AdviceRoute::LocalOnly, false));
+        assert!(cache_origin_allowed(AdviceRoute::LocalOnly, true));
+        assert!(!cache_origin_allowed(AdviceRoute::CloudOnly, true));
+        assert!(cache_origin_allowed(AdviceRoute::CloudOnly, false));
+        assert!(cache_origin_allowed(AdviceRoute::CloudThenLocal, false));
+        assert!(cache_origin_allowed(AdviceRoute::CloudThenLocal, true));
+    }
+
+    #[test]
+    fn serialized_anthropic_payload_contains_only_the_cloud_prompt() {
+        let prompt = build_cloud_prompt(&fake_tick());
+        let body: serde_json::Value =
+            serde_json::from_str(&anthropic_request_body(&prompt)).unwrap();
+        let root = body.as_object().unwrap();
+        assert_eq!(root.len(), 3);
+        assert_eq!(root["model"], ANTHROPIC_MODEL);
+        assert_eq!(root["max_tokens"], 300);
+        let message = root["messages"][0].as_object().unwrap();
+        assert_eq!(message.len(), 2);
+        assert_eq!(message["role"], "user");
+        assert_eq!(message["content"], prompt);
+        assert!(!body.to_string().contains("item_dagon"));
+    }
+
+    #[test]
+    fn serialized_claude_cli_arguments_contain_only_the_cloud_prompt() {
+        let prompt = build_cloud_prompt(&fake_tick());
+        let args = claude_cli_args(&prompt);
+        assert_eq!(args, ["-p", prompt.as_str()]);
+        assert!(!args[1].contains("item_dagon"));
     }
 
     #[test]

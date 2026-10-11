@@ -555,6 +555,13 @@ fn set_master_backend(backend: runtime::MasterBackend) {
     runtime::set_master_backend(backend);
 }
 
+/// Set the separate local consent for sending the own-stat allowlist to Claude.
+/// Choosing a provider or invoking Ask does not call or imply this opt-in.
+#[tauri::command]
+fn set_master_cloud_context_opt_in(enabled: bool) {
+    runtime::set_master_cloud_context_opt_in(enabled);
+}
+
 /// Pick the Ollama model G-Master uses when the Ollama backend is active.
 /// Empty string = legacy default chain in slm.rs.
 #[tauri::command]
@@ -871,6 +878,7 @@ pub fn run() {
             set_announcer_enabled,
             set_cv_signal_sensitivity,
             set_master_backend,
+            set_master_cloud_context_opt_in,
             set_master_ollama_model,
             set_master_mode,
             set_master_api_key,

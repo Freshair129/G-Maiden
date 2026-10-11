@@ -20,6 +20,7 @@ describe('startup settings normalization', () => {
       autoAdvice: true,
       signalSensitivity: 'high',
       masterBackend: 'ollama',
+      cloudContextOptIn: true,
       masterAuth: 'apikey',
       masterOllamaModel: 'llama3.2:3b',
       personaPreset: 'caster',
@@ -44,6 +45,7 @@ describe('startup settings normalization', () => {
     expect(settings.autoAdvice).toBe(true)
     expect(settings.signalSensitivity).toBe('high')
     expect(settings.masterBackend).toBe('ollama')
+    expect(settings.cloudContextOptIn).toBe(true)
     expect(settings.masterAuth).toBe('apikey')
     expect(settings.masterOllamaModel).toBe('llama3.2:3b')
     expect(settings.personaPreset).toBe('caster')
@@ -67,6 +69,7 @@ describe('startup settings normalization', () => {
     expect(settings.autoAdvice).toBe(DEFAULTS.autoAdvice)
     expect(settings.signalSensitivity).toBe(DEFAULTS.signalSensitivity)
     expect(settings.masterBackend).toBe(DEFAULTS.masterBackend)
+    expect(settings.cloudContextOptIn).toBe(false)
     expect(settings.masterAuth).toBe(DEFAULTS.masterAuth)
     expect(settings.voiceName).toBe(DEFAULTS.voiceName)
     expect(settings.voiceRate).toBe(10)
