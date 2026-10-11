@@ -148,6 +148,7 @@ export function normalizeSettings(value: unknown, fallback: Settings = DEFAULTS)
     signalSensitivity: enumValue(raw, 'signalSensitivity', ['low', 'med', 'high'] as const, fallback.signalSensitivity),
     masterEnabled: boolValue(raw, 'masterEnabled', fallback.masterEnabled),
     masterBackend: enumValue(raw, 'masterBackend', ['auto', 'claude', 'ollama'] as const, fallback.masterBackend),
+    cloudContextOptIn: boolValue(raw, 'cloudContextOptIn', fallback.cloudContextOptIn),
     masterAuth: enumValue(raw, 'masterAuth', ['plan', 'apikey'] as const, fallback.masterAuth),
     masterOllamaModel: stringValue(raw, 'masterOllamaModel', fallback.masterOllamaModel, 128) || fallback.masterOllamaModel,
     cvDebug: boolValue(raw, 'cvDebug', fallback.cvDebug),
@@ -205,7 +206,7 @@ function writeBrowserCopies(settings: Settings, legacyMasterApiKey: string | nul
 
 const RUNTIME_BOOTSTRAP_FIELDS: (keyof Settings)[] = [
   'volume', 'announcerEnabled', 'signalEnabled', 'signalSensitivity', 'voiceName', 'voiceRate',
-  'personaPreset', 'masterBackend', 'masterAuth', 'masterOllamaModel', 'telemetrySource',
+  'personaPreset', 'masterBackend', 'cloudContextOptIn', 'masterAuth', 'masterOllamaModel', 'telemetrySource',
   'calibration', 'efficacyStudy',
 ]
 
@@ -233,6 +234,7 @@ function applyNativeSettings(
     calls.push(invoke('set_telemetry_source', { source }))
   }
   if (syncRuntime('masterBackend')) calls.push(invoke('set_master_backend', { backend: settings.masterBackend }))
+  if (syncRuntime('cloudContextOptIn')) calls.push(invoke('set_master_cloud_context_opt_in', { enabled: settings.cloudContextOptIn }))
   if (syncRuntime('masterOllamaModel')) calls.push(invoke('set_master_ollama_model', { name: settings.masterOllamaModel }))
   if (syncRuntime('masterAuth')) calls.push(invoke('set_master_mode', { auth: settings.masterAuth }))
   if (syncRuntime('calibration')) calls.push(invoke('set_calibration_enabled', { enabled: settings.calibration }))
@@ -336,6 +338,10 @@ export function StartupSettingsProvider({
     settingsRef.current = next
     setSettingsState(next)
     writeBrowserCopies(next, legacyMasterApiKeyRef.current)
+
+    if (previous.cloudContextOptIn !== next.cloudContextOptIn) {
+      void invoke('set_master_cloud_context_opt_in', { enabled: next.cloudContextOptIn }).catch(() => {})
+    }
 
     const appliedVoice = appliedVoiceRef.current
     if (!appliedVoice || appliedVoice.name !== next.voiceName || appliedVoice.rate !== next.voiceRate) {

@@ -92,11 +92,16 @@ static PLAYER_TEAM: AtomicU8 = AtomicU8::new(0);
 /// cache now keys correctness on this pair matching what it baked with).
 static VOICE: Mutex<(Option<String>, Option<i32>)> = Mutex::new((None, None));
 
-/// G-Master backend chosen in the UI. 0=Auto (claude→ollama fallback, the
-/// historical behavior), 1=ClaudeOnly, 2=OllamaOnly. Auto is the default so an
-/// installer untouched by the user still works on a Plan account, and the local
-/// path is one click away when claude is rate-limited or offline.
+/// G-Master backend chosen in the UI. 0=Auto, 1=ClaudeOnly, 2=OllamaOnly.
+/// Auto uses Claude only after the separate cloud-context opt-in; otherwise it
+/// takes the local Ollama path.
 static MASTER_BACKEND: AtomicU8 = AtomicU8::new(0);
+
+/// Separate, local preference for sending the narrow own-stat context to a
+/// cloud advice provider. Provider selection, API-key entry, and Ask do not
+/// grant this consent. Old settings files omit the value and remain off.
+static MASTER_CLOUD_CONTEXT_OPT_IN: AtomicBool = AtomicBool::new(false);
+static MASTER_CLOUD_CONTEXT_GENERATION: AtomicU64 = AtomicU64::new(0);
 
 /// Ollama model name the user picked for G-Master (empty → legacy default).
 static MASTER_OLLAMA_MODEL: Mutex<String> = Mutex::new(String::new());
@@ -317,6 +322,7 @@ struct StartupSettings {
     voice_rate: Option<i32>,
     persona_preset: u8,
     master_backend: u8,
+    cloud_context_opt_in: bool,
     master_auth_apikey: bool,
     master_ollama_model: String,
     telemetry_source: u8,
@@ -390,6 +396,7 @@ fn parse_startup_settings(json: &str) -> Result<StartupSettings, String> {
         voice_rate,
         persona_preset: persona,
         master_backend: backend,
+        cloud_context_opt_in: bool_or("cloudContextOptIn", false),
         master_auth_apikey: settings
             .get("masterAuth")
             .and_then(serde_json::Value::as_str)
@@ -420,6 +427,7 @@ pub fn apply_startup_settings_json(json: &str) -> Result<(), String> {
         2 => MasterBackend::Ollama,
         _ => MasterBackend::Auto,
     });
+    set_master_cloud_context_opt_in(settings.cloud_context_opt_in);
     set_master_mode(settings.master_auth_apikey);
     set_master_ollama_model(settings.master_ollama_model);
     crate::governor::set_telemetry_source(settings.telemetry_source);
@@ -630,6 +638,24 @@ pub fn master_backend() -> MasterBackend {
         2 => MasterBackend::Ollama,
         _ => MasterBackend::Auto,
     }
+}
+
+/// Enable or disable the separate own-stat cloud-context consent. Any change
+/// invalidates in-flight advice and cached answers so an old consent decision
+/// cannot authorize a later request or response.
+pub fn set_master_cloud_context_opt_in(enabled: bool) {
+    if MASTER_CLOUD_CONTEXT_OPT_IN.swap(enabled, Ordering::SeqCst) != enabled {
+        MASTER_CLOUD_CONTEXT_GENERATION.fetch_add(1, Ordering::SeqCst);
+        crate::master::invalidate_advice_cache();
+    }
+}
+
+pub fn master_cloud_context_opt_in() -> bool {
+    MASTER_CLOUD_CONTEXT_OPT_IN.load(Ordering::SeqCst)
+}
+
+pub fn master_cloud_context_generation() -> u64 {
+    MASTER_CLOUD_CONTEXT_GENERATION.load(Ordering::SeqCst)
 }
 
 pub fn set_master_ollama_model(name: String) {
@@ -1395,7 +1421,7 @@ mod tests {
     #[test]
     fn startup_settings_parse_saved_runtime_preferences() {
         let settings = parse_startup_settings(
-            r#"{"volume":41,"announcerEnabled":false,"signalEnabled":false,"signalSensitivity":"high","voiceName":"  Microsoft Aria  ","voiceRate":-3,"personaPreset":"meme","masterBackend":"ollama","masterAuth":"apikey","masterOllamaModel":"llama3.2:3b","telemetrySource":"off","calibration":true,"efficacyStudy":true}"#,
+            r#"{"volume":41,"announcerEnabled":false,"signalEnabled":false,"signalSensitivity":"high","voiceName":"  Microsoft Aria  ","voiceRate":-3,"personaPreset":"meme","masterBackend":"ollama","cloudContextOptIn":true,"masterAuth":"apikey","masterOllamaModel":"llama3.2:3b","telemetrySource":"off","calibration":true,"efficacyStudy":true}"#,
         )
         .unwrap();
 
@@ -1407,6 +1433,7 @@ mod tests {
         assert_eq!(settings.voice_rate, Some(-3));
         assert_eq!(settings.persona_preset, 3);
         assert_eq!(settings.master_backend, 2);
+        assert!(settings.cloud_context_opt_in);
         assert!(settings.master_auth_apikey);
         assert_eq!(settings.master_ollama_model, "llama3.2:3b");
         assert_eq!(settings.telemetry_source, 3);
@@ -1429,6 +1456,7 @@ mod tests {
         assert_eq!(settings.voice_rate, Some(10));
         assert_eq!(settings.persona_preset, 0);
         assert_eq!(settings.master_backend, 0);
+        assert!(!settings.cloud_context_opt_in);
         assert!(!settings.master_auth_apikey);
         assert_eq!(settings.master_ollama_model, "qwen3.5:4b");
         assert_eq!(settings.telemetry_source, 0);

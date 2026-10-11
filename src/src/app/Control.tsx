@@ -365,7 +365,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
 
         {category === 'ai' && (
           <>
-            <MasterCard tick={freshTick} voice={s.voiceName} rate={s.voiceRate} enabled={s.masterEnabled} onEnabledChange={(v) => set('masterEnabled', v)} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} backend={s.masterBackend} onBackendChange={(b) => set('masterBackend', b)} auth={s.masterAuth} onAuthChange={(a) => set('masterAuth', a)} apiKeyPresent={apiKeyPresent} onApiKeySave={saveMasterApiKey} ollamaModel={s.masterOllamaModel} onOllamaModelChange={(m) => set('masterOllamaModel', m)} onUsageChanged={() => setQuotaTick((n) => n + 1)} />
+            <MasterCard tick={freshTick} voice={s.voiceName} rate={s.voiceRate} enabled={s.masterEnabled} onEnabledChange={(v) => set('masterEnabled', v)} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} backend={s.masterBackend} onBackendChange={(b) => set('masterBackend', b)} cloudContextOptIn={s.cloudContextOptIn} onCloudContextOptInChange={(v) => set('cloudContextOptIn', v)} auth={s.masterAuth} onAuthChange={(a) => set('masterAuth', a)} apiKeyPresent={apiKeyPresent} onApiKeySave={saveMasterApiKey} ollamaModel={s.masterOllamaModel} onOllamaModelChange={(m) => set('masterOllamaModel', m)} onUsageChanged={() => setQuotaTick((n) => n + 1)} />
             <QuotaCard refreshTrigger={quotaTick} />
           </>
         )}

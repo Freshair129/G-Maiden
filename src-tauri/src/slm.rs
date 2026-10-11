@@ -1,11 +1,11 @@
 //! G7.1 — Local SLM fallback via ollama.
 //!
-//! When the cloud brain (Claude CLI, Plan quota) is offline or errors, we fall
-//! back to the local Aroow-9B model running under ollama on port 11434. This
+//! When cloud-context consent is off, or a consented Claude request errors, G-Master
+//! uses the local model running under ollama on port 11434. This
 //! keeps basic situational advice available when there's no internet, at the
 //! cost of lower quality and higher latency (~15-60s warm, slower cold).
 //!
-//! Only activates on `advise()` failure. Not persisted — every session rechecks.
+//! This never calls an external provider; its HTTP endpoint is loopback only.
 
 use std::process::Command;
 
