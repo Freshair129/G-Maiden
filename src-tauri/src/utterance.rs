@@ -27,6 +27,14 @@ pub struct UtterancePayload {
     pub retracted: Option<String>,
     /// master: backend used ("claude"/"ollama"); announcer: active pack name.
     pub meta: Option<String>,
+    #[serde(rename = "match_id")]
+    pub match_id: Option<String>,
+    #[serde(rename = "session_id")]
+    pub session_id: Option<String>,
+    #[serde(rename = "session_epoch")]
+    pub session_epoch: Option<u64>,
+    #[serde(rename = "session_lifecycle")]
+    pub session_lifecycle: Option<crate::runtime::MatchLifecycle>,
 }
 
 impl UtterancePayload {
@@ -45,7 +53,27 @@ impl UtterancePayload {
             text: text.into(),
             retracted,
             meta,
+            match_id: None,
+            session_id: None,
+            session_epoch: None,
+            session_lifecycle: None,
         }
+    }
+
+    pub fn new_for_session(
+        source: &'static str,
+        kind: &'static str,
+        text: impl Into<String>,
+        retracted: Option<String>,
+        meta: Option<String>,
+        session: &crate::runtime::MatchSessionSnapshot,
+    ) -> Self {
+        let mut payload = Self::new(source, kind, text, retracted, meta);
+        payload.match_id = session.match_id.clone();
+        payload.session_id = session.session_id.clone();
+        payload.session_epoch = Some(session.session_epoch);
+        payload.session_lifecycle = session.session_lifecycle;
+        payload
     }
 }
 
@@ -60,7 +88,18 @@ fn epoch_ms() -> u64 {
 /// AFTER dispatching the actual audio/TTS/clip so the event never delays the
 /// sound itself; errors (e.g. no listener yet) are intentionally ignored.
 pub fn emit(app: &AppHandle, payload: UtterancePayload) {
+    let _ = emit_for_session(app, payload);
+}
+
+pub fn emit_for_session(app: &AppHandle, payload: UtterancePayload) -> bool {
+    let Some(epoch) = payload.session_epoch else {
+        return false;
+    };
+    if !crate::runtime::is_current_active_session_epoch(epoch) {
+        return false;
+    }
     let _ = app.emit("utterance", payload);
+    true
 }
 
 #[cfg(test)]
@@ -76,6 +115,7 @@ mod tests {
         assert_eq!(p.text, "warning text");
         assert!(p.retracted.is_none());
         assert!(p.meta.is_none());
+        assert!(p.session_epoch.is_none());
     }
 
     #[test]

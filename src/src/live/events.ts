@@ -16,8 +16,19 @@
 //                                   answer to "is the minimap sensor alive?"
 //   resource-stats governor.rs:60   every 10s
 
+export type MatchLifecycle = "draft" | "live" | "disconnected" | "end" | "abandon";
+
+/** Canonical match identity and process-local session epoch. Optional because
+ *  the overlay preview and older desktop builds can still publish ticks. */
+export interface MatchSessionMetadata {
+  match_id?: string | null;
+  session_id?: string | null;
+  session_epoch?: number;
+  session_lifecycle?: MatchLifecycle | null;
+}
+
 /** game-tick — GSI snapshot of the LOCAL player only (not all 10 heroes). */
-export interface GameTick {
+export interface GameTick extends MatchSessionMetadata {
   in_game: boolean;
   clock_time: number;      // seconds; negative before horn
   game_state: string;      // e.g. "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS"
@@ -55,7 +66,7 @@ export interface GameTick {
 export type GsiFreshness = "unavailable" | "waiting" | "fresh" | "stale";
 
 /** gsi-status — connection and validated-source freshness, refreshed at 500ms. */
-export interface GsiStatus {
+export interface GsiStatus extends MatchSessionMetadata {
   dota_running: boolean;
   gsi_active: boolean;
   gsi_freshness: GsiFreshness;
@@ -82,7 +93,7 @@ export interface MinimapRegion {
 }
 
 /** minimap-cv — CV debug/detection feed (~5Hz). */
-export interface MinimapCv {
+export interface MinimapCv extends MatchSessionMetadata {
   region: MinimapRegion;
   icon: number;
   candidates: [number, number][];
@@ -112,7 +123,7 @@ export interface SensorHealth {
 /** minimap-frame — live minimap mirror for the Command Deck (~3Hz). `image` is a
  *  ready-to-render base64 `data:image/png` URL of the downscaled captured minimap;
  *  `region` is the same geometry as minimap-cv, in screen px. */
-export interface MinimapFrame {
+export interface MinimapFrame extends MatchSessionMetadata {
   image: string;
   region: MinimapRegion;
 }
@@ -120,20 +131,20 @@ export interface MinimapFrame {
 /** draft-roster — the full 10-hero roster read off the pick screen (Draft-CV),
  *  raw labels.json short form (e.g. "crystal_maiden"). Fills ally identities GSI
  *  can't expose and pre-seeds enemy slots. Split by team; index-independent. */
-export interface DraftRoster {
+export interface DraftRoster extends MatchSessionMetadata {
   radiant: string[];
   dire: string[];
 }
 
 /** enemy-missing — edge event, last_pos already normalised to [0,1]². */
-export interface EnemyMissing {
+export interface EnemyMissing extends MatchSessionMetadata {
   hero: string;
   missing_for_ms: number;   // >= 5000
   last_pos: [number, number]; // normalised [0,1]
 }
 
 /** gank-alert — G-Signal gank warning (SignalAlert). */
-export interface SignalAlert {
+export interface SignalAlert extends MatchSessionMetadata {
   probability: number;      // 0..1
   missing_heroes: string[];
   eta_ms: number;
@@ -163,7 +174,7 @@ export type CaptureMode = "lite" | "dxgi" | "";
  *  (CR-011 §B). Unlike the events above (snake_case, mirroring serde JSON on the
  *  wire), this payload is camelCase per the CR011-P2-02 contract — the backend
  *  worker adding the emit side is following the same shape. */
-export interface UtteranceEvent {
+export interface UtteranceEvent extends MatchSessionMetadata {
   atMs: number;
   source: "signal" | "master" | "announcer";
   kind: "line" | "revision";

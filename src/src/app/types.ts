@@ -1,8 +1,16 @@
 import { DEFAULT_LAYOUT, type Layout } from '../overlay/modules'
 import { PERSONA_LINES } from './lines'
 
+export type MatchLifecycle = 'draft' | 'live' | 'disconnected' | 'end' | 'abandon'
+export interface MatchSessionMetadata {
+  match_id?: string | null
+  session_id?: string | null
+  session_epoch?: number
+  session_lifecycle?: MatchLifecycle | null
+}
+
 /** Mirrors the Rust `GameTick` emitted by the GSI server (src-tauri/src/gsi.rs). */
-export interface GameTick {
+export interface GameTick extends MatchSessionMetadata {
   in_game: boolean
   clock_time: number
   game_state: string
@@ -37,7 +45,7 @@ export interface GameTick {
 }
 
 /** CV/G-Signal events emitted by the Rust backend (src-tauri cv pipeline). */
-export interface MinimapCv {
+export interface MinimapCv extends MatchSessionMetadata {
   region: { x: number; y: number; side: number }
   icon: number
   candidates: [number, number][]
@@ -45,15 +53,15 @@ export interface MinimapCv {
   detections: { label: number; name: string; x: number; y: number; score: number }[]
   classifier: boolean
 }
-export interface GankAlert { probability: number; missing_heroes: string[]; eta_ms: number }
+export interface GankAlert extends MatchSessionMetadata { probability: number; missing_heroes: string[]; eta_ms: number }
 /** G2.6: emitted by G-Sentry when a hero crosses the 5s missing threshold. */
-export interface EnemyMissing { hero: string; missing_for_ms: number; last_pos: [number, number] }
+export interface EnemyMissing extends MatchSessionMetadata { hero: string; missing_for_ms: number; last_pos: [number, number] }
 /** G5.4: advice broadcast from master.rs → overlay. */
-export interface AdviceUpdate { text: string; cached: boolean }
+export interface AdviceUpdate extends MatchSessionMetadata { text: string; cached: boolean }
 /** G-Revive: deterministic buyback verdict (revive.rs → `buyback-advice`).
  *  Mirrors `ReviveAdvice`; `urgency` is the serde-serialized `Urgency` enum. */
 export type BuybackUrgency = 'None' | 'Consider' | 'Strong'
-export interface ReviveAdvice {
+export interface ReviveAdvice extends MatchSessionMetadata {
   recommend_buyback: boolean
   urgency: BuybackUrgency
   natural_respawn_remaining: number
@@ -64,7 +72,7 @@ export interface ReviveAdvice {
 export type GsiFreshness = 'unavailable' | 'waiting' | 'fresh' | 'stale'
 
 /** Connection and validated-source age pushed by the Rust watchdog (gsi.rs). */
-export interface GsiStatus {
+export interface GsiStatus extends MatchSessionMetadata {
   dota_running: boolean
   gsi_active: boolean
   gsi_freshness: GsiFreshness
@@ -73,6 +81,16 @@ export interface GsiStatus {
   display_exclusive: boolean
   server_state: 'starting' | 'listening' | 'port_conflict' | 'bind_error'
 }
+
+export interface AnnouncerBanner extends MatchSessionMetadata {
+  event: string
+  bannerData: string | null
+  bannerText: string
+  thai: string
+  clip: string | null
+}
+
+export interface SessionTextEvent extends MatchSessionMetadata { text: string }
 
 /** sensor-health (capture.rs) — the overlay's copy of the minimap-sensor
  * contract. Mirrors `live/events.ts`'s `SensorHealth`; duplicated rather than

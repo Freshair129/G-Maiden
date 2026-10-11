@@ -11,6 +11,80 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::signal::Sensitivity;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MatchLifecycle {
+    Draft,
+    Live,
+    Disconnected,
+    End,
+    Abandon,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+pub struct MatchSessionSnapshot {
+    pub match_id: Option<String>,
+    pub session_id: Option<String>,
+    pub session_epoch: u64,
+    pub session_lifecycle: Option<MatchLifecycle>,
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct MatchSessionEvent<T> {
+    #[serde(flatten)]
+    pub payload: T,
+    #[serde(flatten)]
+    pub session: MatchSessionSnapshot,
+}
+
+impl<T> MatchSessionEvent<T> {
+    pub fn new(payload: T, session: &MatchSessionSnapshot) -> Self {
+        Self {
+            payload,
+            session: session.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct SessionTextEvent {
+    pub text: String,
+    #[serde(flatten)]
+    pub session: MatchSessionSnapshot,
+}
+
+impl SessionTextEvent {
+    pub fn new(text: impl Into<String>, session: &MatchSessionSnapshot) -> Self {
+        Self {
+            text: text.into(),
+            session: session.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+struct MatchSession {
+    match_id: Option<String>,
+    session_id: String,
+    session_epoch: u64,
+    lifecycle: MatchLifecycle,
+    resume_lifecycle: Option<MatchLifecycle>,
+    last_clock_time: i64,
+}
+
+#[derive(Default)]
+struct MatchSessionState {
+    current: Option<MatchSession>,
+    next_epoch: u64,
+    next_local_id: u64,
+}
+
+static MATCH_SESSION: Mutex<MatchSessionState> = Mutex::new(MatchSessionState {
+    current: None,
+    next_epoch: 0,
+    next_local_id: 0,
+});
+
 /// True while a real match is in progress (set by the GSI server). The capture
 /// loop uses this to gate the expensive CV pipeline — no point detecting heroes
 /// at the main menu, and it keeps idle CPU near zero.
@@ -170,6 +244,366 @@ pub fn set_in_game(v: bool) {
 }
 pub fn in_game() -> bool {
     IN_GAME.load(Ordering::Relaxed)
+}
+
+fn lifecycle_is_terminal(lifecycle: MatchLifecycle) -> bool {
+    matches!(lifecycle, MatchLifecycle::End | MatchLifecycle::Abandon)
+}
+
+fn local_session_id(state: &mut MatchSessionState) -> String {
+    state.next_local_id = state.next_local_id.saturating_add(1);
+    format!(
+        "local-{}-{}-{}",
+        std::process::id(),
+        epoch_ms(),
+        state.next_local_id
+    )
+}
+
+fn session_id_for(match_id: Option<&str>, state: &mut MatchSessionState) -> String {
+    match match_id {
+        Some(id) => format!("dota-{id}"),
+        None => local_session_id(state),
+    }
+}
+
+fn should_start_new_session(
+    current: &MatchSession,
+    lifecycle: MatchLifecycle,
+    match_id: Option<&str>,
+    clock_time: i64,
+) -> bool {
+    if let (Some(current_id), Some(incoming_id)) = (current.match_id.as_deref(), match_id) {
+        if current_id != incoming_id {
+            return true;
+        }
+        // A validated match id is authoritative across reconnects. A clock
+        // reset in the same match must not detach the resumed feed from its
+        // existing identity.
+        return false;
+    }
+
+    match current.lifecycle {
+        MatchLifecycle::End => {
+            return match lifecycle {
+                MatchLifecycle::End => false,
+                MatchLifecycle::Draft => true,
+                MatchLifecycle::Live => current.last_clock_time > 5 && clock_time <= 5,
+                MatchLifecycle::Disconnected | MatchLifecycle::Abandon => false,
+            };
+        }
+        MatchLifecycle::Abandon => {
+            if matches!(lifecycle, MatchLifecycle::Live | MatchLifecycle::Disconnected)
+                && current.match_id.is_some()
+                && current.match_id.as_deref() == match_id
+            {
+                return false;
+            }
+            return lifecycle != MatchLifecycle::Abandon;
+        }
+        _ => {}
+    }
+
+    if lifecycle == MatchLifecycle::Draft {
+        return match current.lifecycle {
+            MatchLifecycle::Live => true,
+            MatchLifecycle::Disconnected => current.resume_lifecycle != Some(MatchLifecycle::Draft),
+            _ => false,
+        };
+    }
+
+    matches!(lifecycle, MatchLifecycle::Live)
+        && current.last_clock_time > 5
+        && clock_time <= 5
+        && matches!(
+            current.lifecycle,
+            MatchLifecycle::Live | MatchLifecycle::Disconnected
+        )
+}
+
+fn start_session(
+    state: &mut MatchSessionState,
+    lifecycle: MatchLifecycle,
+    match_id: Option<String>,
+    clock_time: i64,
+) {
+    state.next_epoch = state.next_epoch.saturating_add(1);
+    let session_id = session_id_for(match_id.as_deref(), state);
+    state.current = Some(MatchSession {
+        match_id,
+        session_id,
+        session_epoch: state.next_epoch,
+        lifecycle,
+        resume_lifecycle: None,
+        last_clock_time: clock_time,
+    });
+}
+
+fn snapshot_of(state: &MatchSessionState) -> MatchSessionSnapshot {
+    match state.current.as_ref() {
+        Some(current) => MatchSessionSnapshot {
+            match_id: current.match_id.clone(),
+            session_id: Some(current.session_id.clone()),
+            session_epoch: current.session_epoch,
+            session_lifecycle: Some(current.lifecycle),
+        },
+        None => MatchSessionSnapshot {
+            match_id: None,
+            session_id: None,
+            session_epoch: 0,
+            session_lifecycle: None,
+        },
+    }
+}
+
+fn observe_session_state(
+    state: &mut MatchSessionState,
+    lifecycle: MatchLifecycle,
+    match_id: Option<String>,
+    clock_time: i64,
+) -> (MatchSessionSnapshot, bool) {
+    let usable_match_id = match_id;
+    // POST_GAME is terminal. A delayed tick with the same or missing ID must
+    // not move the detector back to Live; a new trusted ID, a fresh draft, or
+    // a clock reset can establish a distinct session.
+    if let Some(current) = state
+        .current
+        .as_ref()
+        .filter(|current| current.lifecycle == MatchLifecycle::End)
+    {
+        let distinct_id = match (current.match_id.as_deref(), usable_match_id.as_deref()) {
+            (Some(current_id), Some(incoming_id)) => current_id != incoming_id,
+            (None, Some(_)) => true,
+            _ => false,
+        };
+        let new_without_id = usable_match_id.is_none()
+            && (lifecycle == MatchLifecycle::Draft
+                || (lifecycle == MatchLifecycle::Live
+                    && current.last_clock_time > 5
+                    && clock_time <= 5));
+        if !distinct_id && !new_without_id {
+            return (snapshot_of(state), false);
+        }
+    }
+    let start_new = state.current.as_ref().is_none_or(|current| {
+        should_start_new_session(
+            current,
+            lifecycle,
+            usable_match_id.as_deref(),
+            clock_time,
+        )
+    });
+
+    let mut boundary = false;
+    if start_new {
+        start_session(state, lifecycle, usable_match_id, clock_time);
+        boundary = true;
+    } else if let Some(current) = state.current.as_mut() {
+        let was_terminal = lifecycle_is_terminal(current.lifecycle);
+        if lifecycle == MatchLifecycle::Disconnected
+            && !matches!(current.lifecycle, MatchLifecycle::Disconnected)
+        {
+            current.resume_lifecycle = Some(current.lifecycle);
+        } else {
+            current.resume_lifecycle = None;
+        }
+        if current.match_id.is_none() {
+            if let Some(id) = usable_match_id {
+                current.match_id = Some(id.clone());
+                current.session_id = format!("dota-{id}");
+            }
+        }
+        current.lifecycle = lifecycle;
+        current.last_clock_time = clock_time;
+        boundary = !was_terminal && lifecycle_is_terminal(lifecycle);
+    }
+
+    (snapshot_of(state), boundary)
+}
+
+/// Apply one validated GSI lifecycle observation. A trusted match id enriches
+/// a draft-local session or starts a new session when it changes. A missing id
+/// never destroys an already established identity.
+pub fn observe_match_tick(
+    lifecycle: MatchLifecycle,
+    match_id: Option<String>,
+    clock_time: i64,
+    in_game: bool,
+) -> MatchSessionSnapshot {
+    let Ok(mut state) = MATCH_SESSION.lock() else {
+        return MatchSessionSnapshot {
+            match_id: None,
+            session_id: None,
+            session_epoch: 0,
+            session_lifecycle: None,
+        };
+    };
+    let (snapshot, boundary) =
+        observe_session_state(&mut state, lifecycle, match_id, clock_time);
+    let effective_in_game = in_game
+        && !snapshot
+            .session_lifecycle
+            .is_some_and(lifecycle_is_terminal);
+    let in_game_changed = IN_GAME.load(Ordering::Relaxed) != effective_in_game;
+    set_in_game(effective_in_game);
+    if boundary && !in_game_changed {
+        MATCH_EPOCH.fetch_add(1, Ordering::Relaxed);
+    }
+    if boundary {
+        clear_enemy_deaths();
+        clear_known_enemies();
+        clear_roster();
+    }
+    snapshot
+}
+
+/// GSI can stop while Dota remains open. Keep the session identity stable and
+/// mark its lifecycle disconnected so a fresh observation can resume it.
+pub fn observe_gsi_status(dota_running: bool, gsi_fresh: bool) -> MatchSessionSnapshot {
+    let Ok(mut state) = MATCH_SESSION.lock() else {
+        return MatchSessionSnapshot {
+            match_id: None,
+            session_id: None,
+            session_epoch: 0,
+            session_lifecycle: None,
+        };
+    };
+    if let Some(current) = state.current.as_mut() {
+        if !dota_running
+            && !lifecycle_is_terminal(current.lifecycle)
+        {
+            current.lifecycle = MatchLifecycle::Abandon;
+            current.resume_lifecycle = None;
+            let was_in_game = IN_GAME.load(Ordering::Relaxed);
+            set_in_game(false);
+            if !was_in_game {
+                MATCH_EPOCH.fetch_add(1, Ordering::Relaxed);
+            }
+        } else if !gsi_fresh
+            && matches!(current.lifecycle, MatchLifecycle::Live | MatchLifecycle::Draft)
+        {
+            current.resume_lifecycle = Some(current.lifecycle);
+            current.lifecycle = MatchLifecycle::Disconnected;
+        }
+    }
+    snapshot_of(&state)
+}
+
+/// A process exit before an explicit post-game observation is recorded as an
+/// abandon. If the same trusted match id is observed again, the session can
+/// resume with its original epoch.
+pub fn mark_dota_exited() -> MatchSessionSnapshot {
+    let was_in_game = IN_GAME.load(Ordering::Relaxed);
+    set_in_game(false);
+    let Ok(mut state) = MATCH_SESSION.lock() else {
+        return MatchSessionSnapshot {
+            match_id: None,
+            session_id: None,
+            session_epoch: 0,
+            session_lifecycle: None,
+        };
+    };
+    let mut boundary = false;
+    if let Some(current) = state.current.as_mut() {
+        if !lifecycle_is_terminal(current.lifecycle) {
+            current.resume_lifecycle = Some(current.lifecycle);
+            current.lifecycle = MatchLifecycle::Abandon;
+            boundary = true;
+        }
+    }
+    if boundary && !was_in_game {
+        MATCH_EPOCH.fetch_add(1, Ordering::Relaxed);
+    }
+    snapshot_of(&state)
+}
+
+pub fn match_session_snapshot() -> MatchSessionSnapshot {
+    MATCH_SESSION
+        .lock()
+        .map(|state| snapshot_of(&state))
+        .unwrap_or(MatchSessionSnapshot {
+            match_id: None,
+            session_id: None,
+            session_epoch: 0,
+            session_lifecycle: None,
+        })
+}
+
+/// Whether an asynchronous result still belongs to the current session.
+/// Callers should also require is_current_live_session before publishing
+/// gameplay advice.
+pub fn is_current_session_epoch(epoch: u64) -> bool {
+    MATCH_SESSION
+        .lock()
+        .ok()
+        .and_then(|state| state.current.as_ref().map(|current| current.session_epoch == epoch))
+        .unwrap_or(false)
+}
+
+/// Check that an utterance or announcer event still belongs to an active
+/// session. Draft events are included for match-start narration; terminal
+/// sessions never accept delayed speech or banners.
+pub fn is_current_active_session_epoch(epoch: u64) -> bool {
+    MATCH_SESSION
+        .lock()
+        .ok()
+        .and_then(|state| {
+            state.current.as_ref().map(|current| {
+                current.session_epoch == epoch
+                    && matches!(
+                        current.lifecycle,
+                        MatchLifecycle::Draft
+                            | MatchLifecycle::Live
+                            | MatchLifecycle::Disconnected
+                    )
+            })
+        })
+        .unwrap_or(false)
+}
+
+/// Check the epoch and lifecycle together before publishing session-bound
+/// asynchronous work such as G-Master advice.
+pub fn is_current_live_session(epoch: u64) -> bool {
+    MATCH_SESSION
+        .lock()
+        .ok()
+        .and_then(|state| {
+            state.current.as_ref().map(|current| {
+                current.session_epoch == epoch && current.lifecycle == MatchLifecycle::Live
+            })
+        })
+        .unwrap_or(false)
+}
+
+/// Check that a capture result still belongs to the current live session or to
+/// its same-epoch GSI-disconnected interval. CV can remain useful while GSI is
+/// stale, but must stop as soon as the session ends, is abandoned, or changes.
+pub fn is_current_capture_session(epoch: u64) -> bool {
+    MATCH_SESSION
+        .lock()
+        .ok()
+        .and_then(|state| {
+            state.current.as_ref().map(|current| {
+                current.session_epoch == epoch
+                    && matches!(
+                        current.lifecycle,
+                        MatchLifecycle::Live | MatchLifecycle::Disconnected
+                    )
+            })
+        })
+        .unwrap_or(false)
+}
+
+pub fn is_current_draft_session(epoch: u64) -> bool {
+    MATCH_SESSION
+        .lock()
+        .ok()
+        .and_then(|state| {
+            state.current.as_ref().map(|current| {
+                current.session_epoch == epoch && current.lifecycle == MatchLifecycle::Draft
+            })
+        })
+        .unwrap_or(false)
 }
 
 /// Monotonic counter bumped on every match boundary (see [`set_in_game`]).
@@ -803,6 +1237,30 @@ pub fn add_known_enemy(name: &str) {
     }
 }
 
+pub fn add_known_enemy_for_session(epoch: u64, name: &str) -> bool {
+    let Ok(session) = MATCH_SESSION.lock() else {
+        return false;
+    };
+    if !session.current.as_ref().is_some_and(|current| {
+        current.session_epoch == epoch
+            && matches!(
+                current.lifecycle,
+                MatchLifecycle::Live | MatchLifecycle::Disconnected
+            )
+    }) {
+        return false;
+    }
+    let Ok(mut enemies) = KNOWN_ENEMIES.lock() else {
+        return false;
+    };
+    if let Some(entry) = enemies.iter_mut().find(|(enemy, _)| enemy == name) {
+        entry.1 = entry.1.saturating_add(1);
+    } else {
+        enemies.push((name.to_string(), 1));
+    }
+    true
+}
+
 /// Enemy heroes confirmed by repeated CV sightings this match (raw label form).
 pub fn known_enemies() -> Vec<String> {
     KNOWN_ENEMIES
@@ -865,6 +1323,26 @@ pub fn set_roster(radiant: Vec<String>, dire: Vec<String>) {
     if let Ok(mut g) = ROSTER.lock() {
         *g = Some(Roster { radiant, dire });
     }
+}
+
+pub fn set_roster_for_draft_session(
+    epoch: u64,
+    radiant: Vec<String>,
+    dire: Vec<String>,
+) -> bool {
+    let Ok(session) = MATCH_SESSION.lock() else {
+        return false;
+    };
+    if !session.current.as_ref().is_some_and(|current| {
+        current.session_epoch == epoch && current.lifecycle == MatchLifecycle::Draft
+    }) {
+        return false;
+    }
+    let Ok(mut roster) = ROSTER.lock() else {
+        return false;
+    };
+    *roster = Some(Roster { radiant, dire });
+    true
 }
 
 pub fn roster() -> Option<Roster> {
@@ -956,6 +1434,122 @@ pub fn take_oauth_pending(callback_state: Option<&str>, now_ms: u64) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    fn observe(
+        state: &mut MatchSessionState,
+        lifecycle: MatchLifecycle,
+        match_id: Option<&str>,
+        clock_time: i64,
+    ) -> (MatchSessionSnapshot, bool) {
+        observe_session_state(state, lifecycle, match_id.map(str::to_string), clock_time)
+    }
+
+    #[test]
+    fn draft_identity_is_promoted_when_a_valid_match_id_arrives() {
+        let mut state = MatchSessionState::default();
+        let (draft, _) = observe(&mut state, MatchLifecycle::Draft, None, -1);
+        let (live, boundary) = observe(&mut state, MatchLifecycle::Live, Some("123"), 0);
+        assert_eq!(draft.session_epoch, live.session_epoch);
+        assert_eq!(live.match_id.as_deref(), Some("123"));
+        assert_eq!(live.session_id.as_deref(), Some("dota-123"));
+        assert!(!boundary);
+    }
+
+    #[test]
+    fn session_event_flattens_identity_beside_payload() {
+        let session = MatchSessionSnapshot {
+            match_id: Some("123".into()),
+            session_id: Some("dota-123".into()),
+            session_epoch: 7,
+            session_lifecycle: Some(MatchLifecycle::Live),
+        };
+        let event = MatchSessionEvent::new(serde_json::json!({ "hero": "crystal_maiden" }), &session);
+        let value = serde_json::to_value(event).unwrap();
+        assert_eq!(value["hero"], "crystal_maiden");
+        assert_eq!(value["match_id"], "123");
+        assert_eq!(value["session_id"], "dota-123");
+        assert_eq!(value["session_epoch"], 7);
+        assert_eq!(value["session_lifecycle"], "live");
+    }
+
+    #[test]
+    fn session_text_event_has_a_flattened_text_and_epoch_contract() {
+        let session = MatchSessionSnapshot {
+            match_id: Some("123".into()),
+            session_id: Some("dota-123".into()),
+            session_epoch: 7,
+            session_lifecycle: Some(MatchLifecycle::Live),
+        };
+        let value = serde_json::to_value(SessionTextEvent::new("buyback line", &session)).unwrap();
+        assert_eq!(value["text"], "buyback line");
+        assert_eq!(value["session_epoch"], 7);
+        assert_eq!(value["session_lifecycle"], "live");
+    }
+
+    #[test]
+    fn a_reconnect_with_the_same_match_id_keeps_its_epoch_even_after_clock_reset() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 900);
+        observe(&mut state, MatchLifecycle::Disconnected, Some("123"), 900);
+        let (reconnected, boundary) =
+            observe(&mut state, MatchLifecycle::Live, Some("123"), 0);
+        assert_eq!(reconnected.session_epoch, first.session_epoch);
+        assert_eq!(reconnected.session_id, first.session_id);
+        assert_eq!(reconnected.session_lifecycle, Some(MatchLifecycle::Live));
+        assert!(!boundary);
+    }
+
+    #[test]
+    fn a_different_match_id_starts_a_new_epoch() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 900);
+        let (next, boundary) = observe(&mut state, MatchLifecycle::Live, Some("456"), 10);
+        assert_eq!(next.session_epoch, first.session_epoch + 1);
+        assert_eq!(next.session_id.as_deref(), Some("dota-456"));
+        assert!(boundary);
+    }
+
+    #[test]
+    fn a_clock_reset_starts_a_new_local_session_when_match_id_is_unavailable() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, None, 900);
+        let (next, boundary) = observe(&mut state, MatchLifecycle::Live, None, 0);
+        assert_eq!(next.session_epoch, first.session_epoch + 1);
+        assert_ne!(next.session_id, first.session_id);
+        assert!(boundary);
+    }
+
+    #[test]
+    fn terminal_end_cannot_be_resurrected_by_a_late_tick_for_the_same_match() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 900);
+        observe(&mut state, MatchLifecycle::End, Some("123"), 1200);
+        let (late, boundary) = observe(&mut state, MatchLifecycle::Live, Some("123"), 1200);
+        assert_eq!(late.session_epoch, first.session_epoch);
+        assert_eq!(late.session_lifecycle, Some(MatchLifecycle::End));
+        assert!(!boundary);
+
+        let (late_without_id, boundary) = observe(&mut state, MatchLifecycle::Live, None, 1200);
+        assert_eq!(late_without_id.session_epoch, first.session_epoch);
+        assert_eq!(late_without_id.session_lifecycle, Some(MatchLifecycle::End));
+        assert!(!boundary);
+    }
+
+    #[test]
+    fn trusted_abandon_can_resume_but_unknown_abandon_starts_a_new_local_session() {
+        let mut trusted = MatchSessionState::default();
+        let (first, _) = observe(&mut trusted, MatchLifecycle::Live, Some("123"), 900);
+        observe(&mut trusted, MatchLifecycle::Abandon, Some("123"), 900);
+        let (resumed, _) = observe(&mut trusted, MatchLifecycle::Live, Some("123"), 1000);
+        assert_eq!(resumed.session_epoch, first.session_epoch);
+
+        let mut local = MatchSessionState::default();
+        let (local_first, _) = observe(&mut local, MatchLifecycle::Live, None, 900);
+        observe(&mut local, MatchLifecycle::Abandon, None, 900);
+        let (local_next, boundary) = observe(&mut local, MatchLifecycle::Live, None, 1000);
+        assert_eq!(local_next.session_epoch, local_first.session_epoch + 1);
+        assert!(boundary);
+    }
 
     /// Serialises the tests that drive process-global match state
     /// (`IN_GAME`/`MATCH_EPOCH` and the dead-enemy pool). Rust runs tests in

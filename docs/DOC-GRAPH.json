@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-11T00:11:09.072Z",
+  "generatedAt": "2026-10-11T01:44:46.142Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -8920,6 +8920,14 @@
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 82,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/announcer.rs",
+      "anchor": 84,
+      "symbol": "most_important"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
       "line": 94,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/gsi.rs",
@@ -9473,6 +9481,14 @@
     },
     {
       "file": "docs/design-system/04-components.md",
+      "line": 200,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/live/phase.ts",
+      "anchor": 71,
+      "symbol": "stepPhase"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
       "line": 240,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/styles.css",
@@ -9641,11 +9657,27 @@
     },
     {
       "file": "docs/design-system/05-sitemap-ia.md",
+      "line": 74,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/live/phase.ts",
+      "anchor": 71,
+      "symbol": "stepPhase"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
       "line": 100,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/styles.css",
       "anchor": 3078,
       "symbol": "gm-phase-chip"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": 135,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/CompanionPages.tsx",
+      "anchor": 126,
+      "symbol": "BuildAdvisorPage"
     },
     {
       "file": "docs/design-system/05-sitemap-ia.md",
@@ -9702,6 +9734,14 @@
       "file": "docs/features/FEAT-G-DAMAGE.md",
       "line": 20,
       "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/master.rs",
+      "anchor": 51,
+      "symbol": "build_prompt"
+    },
+    {
+      "file": "docs/features/FEAT-G-DAMAGE.md",
+      "line": 20,
+      "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/damage.rs",
       "anchor": 334,
       "symbol": "can_i_kill"
@@ -9729,6 +9769,46 @@
       "target": "src-tauri/src/damage.rs",
       "anchor": 444,
       "symbol": "loadout_from_names"
+    },
+    {
+      "file": "docs/features/FEAT-G-LOG.md",
+      "line": 54,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/log.rs",
+      "anchor": 205,
+      "symbol": "note_event"
+    },
+    {
+      "file": "docs/features/FEAT-G-LOG.md",
+      "line": 67,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/log.rs",
+      "anchor": 154,
+      "symbol": "note_tick"
+    },
+    {
+      "file": "docs/features/FEAT-G-LOG.md",
+      "line": 79,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/log.rs",
+      "anchor": 359,
+      "symbol": "delete_match"
+    },
+    {
+      "file": "docs/features/FEAT-G-LOG.md",
+      "line": 79,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/log.rs",
+      "anchor": 376,
+      "symbol": "delete_all"
+    },
+    {
+      "file": "docs/features/FEAT-G-LOG.md",
+      "line": 80,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/log.rs",
+      "anchor": 582,
+      "symbol": "open_log_dir"
     },
     {
       "file": "docs/features/FEAT-G-MASTER.md",
@@ -9808,6 +9888,14 @@
       "file": "docs/features/FEAT-G-SENTRY.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "line": 122,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/gsi.rs",
+      "anchor": 193,
+      "symbol": "parse_tick_from_value"
     },
     {
       "file": "docs/features/README.md",
@@ -10016,6 +10104,14 @@
       "symbol": "self_burst"
     },
     {
+      "file": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
+      "line": 38,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/master.rs",
+      "anchor": 51,
+      "symbol": "build_prompt"
+    },
+    {
       "file": "docs/reference/dota-ui/README.md",
       "line": null,
       "reason": "no-metadata"
@@ -10193,7 +10289,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-11T00:11:39.975Z",
+    "generatedAt": "2026-10-11T01:44:52.204Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

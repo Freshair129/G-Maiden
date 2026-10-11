@@ -452,14 +452,17 @@ mod backend {
             // (`roster().is_none()`), then idles. `in_game()` is false here, so
             // this is the only place the loop wakes during the draft.
             if crate::runtime::in_draft() {
-                if crate::runtime::roster().is_none() {
+                let session = crate::runtime::match_session_snapshot();
+                if crate::runtime::is_current_draft_session(session.session_epoch)
+                    && crate::runtime::roster().is_none()
+                {
                     // CR-live-probe-rect: acquire only the bounding strip of the
                     // 10 portrait boxes instead of the full desktop — `DraftRegion`
                     // guarantees every box (and therefore the strip bounding them)
                     // sits on-screen, so no geometry fallback is needed here.
                     let (bx, by, bw, bh) = draft_bounding_rect(&state.draft_region.boxes);
                     if let Some((strip, sw, sh)) = dxgi.acquire_rect(bx, by, bw, bh) {
-                        process_draft_frame(&mut state, &strip, sw, sh, bx, by);
+                        process_draft_frame(&mut state, &strip, sw, sh, bx, by, &session);
                     }
                 }
                 // Same reasoning as the not-in-game branch below: the minimap
@@ -480,6 +483,13 @@ mod backend {
                 continue;
             }
 
+            state.sync_match_epoch();
+            let session = crate::runtime::match_session_snapshot();
+            if !crate::runtime::is_current_capture_session(session.session_epoch) {
+                std::thread::sleep(Duration::from_millis(250));
+                continue;
+            }
+
             // CR-live-probe-rect: calibration/QA mode still needs the WHOLE
             // desktop (`calibration::push_full_bgra` feeds the calibration
             // overlay evidence buffer with full-screen frames), so that path
@@ -490,10 +500,12 @@ mod backend {
                 if let Some((full, fw, fh)) = dxgi.acquire_frame() {
                     if state.last_calib.elapsed().as_millis() >= 110 {
                         state.last_calib = Instant::now();
-                        crate::calibration::push_full_bgra(&full, fw, fh);
+                        if crate::runtime::is_current_capture_session(session.session_epoch) {
+                            crate::calibration::push_full_bgra(&full, fw, fh);
+                        }
                     }
                     if let Some((cropped, w, h)) = crop_bgra(&full, fw, fh, &state.region) {
-                        process_frame(&mut state, cropped, w, h);
+                        process_frame(&mut state, cropped, w, h, &session);
                     }
                 }
             } else {
@@ -524,7 +536,7 @@ mod backend {
                         .and_then(|(full, fw, fh)| crop_bgra(&full, fw, fh, &r))
                 };
                 if let Some((cropped, w, h)) = cropped_frame {
-                    process_frame(&mut state, cropped, w, h);
+                    process_frame(&mut state, cropped, w, h, &session);
                 }
             }
             std::thread::sleep(Duration::from_millis(select_interval(&state)));
@@ -631,8 +643,12 @@ mod backend {
         sh: u32,
         strip_x: u32,
         strip_y: u32,
+        session: &crate::runtime::MatchSessionSnapshot,
     ) {
-        if !state.draft.is_active() {
+        state.sync_match_epoch();
+        if !state.draft.is_active()
+            || !crate::runtime::is_current_draft_session(session.session_epoch)
+        {
             return;
         }
         let mut radiant = Vec::with_capacity(5);
@@ -658,10 +674,20 @@ mod backend {
             crate::log::error(&format!(
                 "[draft] roster read — radiant {radiant:?} dire {dire:?}"
             ));
-            crate::runtime::set_roster(radiant.clone(), dire.clone());
-            let _ = state
-                .app
-                .emit("draft-roster", crate::runtime::Roster { radiant, dire });
+            if !crate::runtime::set_roster_for_draft_session(
+                session.session_epoch,
+                radiant.clone(),
+                dire.clone(),
+            ) {
+                return;
+            }
+            if crate::runtime::is_current_draft_session(session.session_epoch) {
+                let event = crate::runtime::MatchSessionEvent::new(
+                    crate::runtime::Roster { radiant, dire },
+                    session,
+                );
+                let _ = state.app.emit("draft-roster", event);
+            }
         }
     }
 
@@ -730,7 +756,17 @@ mod backend {
     /// `acquire_frame` in calibration/QA mode (which separately feeds
     /// `calibration::push_full_bgra` from the full buffer it already has).
     /// Downstream logic is otherwise identical to the old WGC `on_frame_arrived`.
-    fn process_frame(state: &mut CaptureState, cropped: Vec<u8>, w: usize, h: usize) {
+    fn process_frame(
+        state: &mut CaptureState,
+        cropped: Vec<u8>,
+        w: usize,
+        h: usize,
+        session: &crate::runtime::MatchSessionSnapshot,
+    ) {
+        state.sync_match_epoch();
+        if !crate::runtime::is_current_capture_session(session.session_epoch) {
+            return;
+        }
         let work_start = Instant::now();
         // A frame reached the pipeline — this is the only thing that resets the
         // staleness clock `sensor-health` reports.
@@ -763,17 +799,23 @@ mod backend {
             // on who's actually in the match (runtime is the single source of
             // truth; cleared at match start). Best-effort, dedup handled inside.
             for d in &detections {
-                crate::runtime::add_known_enemy(&d.name);
+                if !crate::runtime::add_known_enemy_for_session(session.session_epoch, &d.name) {
+                    return;
+                }
             }
 
             // G-Sentry: flag enemies missing >5s (edge-triggered).
             for em in state.sentry.update(&detections, &r, now_ms) {
-                crate::log::note_event(crate::log::enemy_missing_record(
-                    &em.hero,
-                    em.missing_for_ms,
-                    em.last_pos,
-                ));
-                if crate::calibration::is_enabled() {
+                if !crate::runtime::is_current_capture_session(session.session_epoch) {
+                    return;
+                }
+                crate::log::note_event_for_session(
+                    session.session_epoch,
+                    crate::log::enemy_missing_record(&em.hero, em.missing_for_ms, em.last_pos),
+                );
+                if crate::calibration::is_enabled()
+                    && crate::runtime::is_current_capture_session(session.session_epoch)
+                {
                     crate::calibration::screenshot(
                         "enemy-missing",
                         serde_json::json!({
@@ -781,7 +823,10 @@ mod backend {
                         }),
                     );
                 }
-                let _ = state.app.emit("enemy-missing", &em);
+                if crate::runtime::is_current_capture_session(session.session_epoch) {
+                    let event = crate::runtime::MatchSessionEvent::new(&em, session);
+                    let _ = state.app.emit("enemy-missing", event);
+                }
             }
 
             // G-Motion: history + gank-risk over currently-missing enemies.
@@ -812,7 +857,10 @@ mod backend {
                 risk.probability,
             ) {
                 state.last_risk_trace = Instant::now();
-                crate::log::note_event(crate::log::risk_trace_record(risk.probability, &missing));
+                crate::log::note_event_for_session(
+                    session.session_epoch,
+                    crate::log::risk_trace_record(risk.probability, &missing),
+                );
             }
 
             // G-Signal: edge-triggered warning + Belief Revision, voiced now (only
@@ -831,18 +879,22 @@ mod backend {
                 match state.signal.evaluate(&risk) {
                     SignalEvent::Alert(alert) => {
                         if armed {
+                            if !crate::runtime::is_current_capture_session(session.session_epoch) {
+                                return;
+                            }
                             crate::tts::voice_interrupt("gank", GANK_LINE);
                             // CR-011 §B utterance ledger — after the voice
                             // dispatch above, never before, so it can't add
                             // latency to the G-Signal path (CLAUDE.md ≤300ms).
-                            crate::utterance::emit(
+                            crate::utterance::emit_for_session(
                                 &state.app,
-                                crate::utterance::UtterancePayload::new(
+                                crate::utterance::UtterancePayload::new_for_session(
                                     "signal",
                                     "line",
                                     GANK_LINE,
                                     None,
                                     None,
+                                    session,
                                 ),
                             );
                         }
@@ -850,7 +902,10 @@ mod backend {
                         // was actually voiced — in the silent arm GANK_LINE is
                         // suppressed, so recording it would falsely log it as
                         // spoken. The gank_signal log below stays unconditional.
-                        if armed && crate::calibration::is_enabled() {
+                        if armed
+                            && crate::calibration::is_enabled()
+                            && crate::runtime::is_current_capture_session(session.session_epoch)
+                        {
                             crate::calibration::record(
                                 "gank",
                                 Some(GANK_LINE),
@@ -861,35 +916,46 @@ mod backend {
                                 }),
                             );
                         }
-                        crate::log::note_event(crate::log::gank_signal_record(
-                            alert.probability,
-                            &alert.missing_heroes,
-                            alert.eta_ms,
-                            armed,
-                        ));
-                        if armed {
-                            let _ = state.app.emit("gank-alert", &alert);
+                        crate::log::note_event_for_session(
+                            session.session_epoch,
+                            crate::log::gank_signal_record(
+                                alert.probability,
+                                &alert.missing_heroes,
+                                alert.eta_ms,
+                                armed,
+                            ),
+                        );
+                        if armed && crate::runtime::is_current_capture_session(session.session_epoch) {
+                            let event = crate::runtime::MatchSessionEvent::new(&alert, session);
+                            let _ = state.app.emit("gank-alert", event);
                         }
                     }
                     SignalEvent::Revision => {
                         if armed {
+                            if !crate::runtime::is_current_capture_session(session.session_epoch) {
+                                return;
+                            }
                             crate::tts::voice_interrupt("revision", REVISION_LINE);
                             // Belief Revision — retracted carries the earlier
                             // GANK_LINE warning being struck through.
-                            crate::utterance::emit(
+                            crate::utterance::emit_for_session(
                                 &state.app,
-                                crate::utterance::UtterancePayload::new(
+                                crate::utterance::UtterancePayload::new_for_session(
                                     "signal",
                                     "revision",
                                     REVISION_LINE,
                                     Some(GANK_LINE.to_string()),
                                     None,
+                                    session,
                                 ),
                             );
                         }
-                        crate::log::note_event(crate::log::gank_revision_record());
-                        if armed {
-                            let _ = state.app.emit("gank-clear", ());
+                        crate::log::note_event_for_session(
+                            session.session_epoch,
+                            crate::log::gank_revision_record(),
+                        );
+                        if armed && crate::runtime::is_current_capture_session(session.session_epoch) {
+                            let _ = state.app.emit("gank-clear", session);
                         }
                     }
                     SignalEvent::None => {}
@@ -907,7 +973,10 @@ mod backend {
                     detections,
                     classifier: state.detector.is_active(),
                 };
-                let _ = state.app.emit("minimap-cv", payload);
+                if crate::runtime::is_current_capture_session(session.session_epoch) {
+                    let event = crate::runtime::MatchSessionEvent::new(payload, session);
+                    let _ = state.app.emit("minimap-cv", event);
+                }
             }
 
             // Live minimap mirror for the Command Deck (throttled ≈6.7 Hz). Encodes
@@ -916,7 +985,11 @@ mod backend {
             if state.last_frame_emit.elapsed().as_millis() >= MINIMAP_FRAME_INTERVAL_MS {
                 state.last_frame_emit = Instant::now();
                 if let Some(image) = encode_minimap_dataurl(&f.bgra, f.width, f.height) {
-                    let _ = state.app.emit("minimap-frame", MinimapFrame { image, region: r });
+                    if crate::runtime::is_current_capture_session(session.session_epoch) {
+                        let payload = MinimapFrame { image, region: r };
+                        let event = crate::runtime::MatchSessionEvent::new(payload, session);
+                        let _ = state.app.emit("minimap-frame", event);
+                    }
                 }
             }
         }
