@@ -4,8 +4,8 @@ import { C } from '../theme'
 import { Card, Row, Toggle } from '../primitives'
 import type { GameTick, Advice, MasterBackend } from '../types'
 
-// ─────────────────────────────── G-MASTER (Claude Plan advisor) ───────────────────────────────
-export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number; enabled: boolean; onEnabledChange: (v: boolean) => void; autoAdvice: boolean; onAutoAdviceChange: (v: boolean) => void; backend: MasterBackend; onBackendChange: (b: MasterBackend) => void; auth: 'plan' | 'apikey'; onAuthChange: (a: 'plan' | 'apikey') => void; apiKeyPresent: boolean; onApiKeySave: (k: string) => void; ollamaModel: string; onOllamaModelChange: (m: string) => void; onUsageChanged?: () => void }> = ({ tick, voice, rate, enabled, onEnabledChange, autoAdvice, onAutoAdviceChange, backend, onBackendChange, auth, onAuthChange, apiKeyPresent, onApiKeySave, ollamaModel, onOllamaModelChange, onUsageChanged }) => {
+// ─────────────────────────────── G-MASTER (local-first advisor) ──────────────────────────────
+export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: number; enabled: boolean; onEnabledChange: (v: boolean) => void; autoAdvice: boolean; onAutoAdviceChange: (v: boolean) => void; backend: MasterBackend; onBackendChange: (b: MasterBackend) => void; cloudContextOptIn: boolean; onCloudContextOptInChange: (v: boolean) => void; auth: 'plan' | 'apikey'; onAuthChange: (a: 'plan' | 'apikey') => void; apiKeyPresent: boolean; onApiKeySave: (k: string) => void; ollamaModel: string; onOllamaModelChange: (m: string) => void; onUsageChanged?: () => void }> = ({ tick, voice, rate, enabled, onEnabledChange, autoAdvice, onAutoAdviceChange, backend, onBackendChange, cloudContextOptIn, onCloudContextOptInChange, auth, onAuthChange, apiKeyPresent, onApiKeySave, ollamaModel, onOllamaModelChange, onUsageChanged }) => {
   const [advice, setAdvice] = useState<Advice | null>(null)
   const [error, setError] = useState<string | null>(null)
   const [busy, setBusy] = useState(false)
@@ -32,7 +32,7 @@ export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: 
     void invoke('speak_event', { event: 'advice', fallback: advice.text, voice: voice || null, rate }).catch(() => {})
   }
   const backendLabel: Record<MasterBackend, string> = {
-    auto: 'อัตโนมัติ (claude → ollama)',
+    auto: cloudContextOptIn ? 'อัตโนมัติ (Claude → Ollama)' : 'อัตโนมัติ (Ollama local · cloud ปิด)',
     claude: 'Claude CLI (Plan quota)',
     ollama: `Ollama local${ollamaModel ? ` (${ollamaModel})` : ''}`,
   }
@@ -49,6 +49,12 @@ export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: 
           ))}
         </div>
       </Row>
+      <Row label="อนุญาตบริบท own-stat ไปยัง Claude">
+        <Toggle on={cloudContextOptIn} onChange={onCloudContextOptInChange} />
+      </Row>
+      <div style={{ margin: '-2px 0 10px', fontSize: 11.5, lineHeight: 1.5, color: C.mut }}>
+        ปิดไว้เป็นค่าเริ่มต้น · เมื่อเปิด จะส่งเฉพาะช่วงเกม ฮีโร่/เลเวล/KDA/net worth/gold/HP%/mana% และคะแนนทีม. การเลือก Backend, API key หรือกดขอคำแนะนำไม่ถือเป็นการยินยอม. CV, enemy identity, items, clock, burst, G-Log, Memory, เสียง และข้อความพูดคงอยู่ในเครื่อง.
+      </div>
       {usesClaude && (
         <Row label="Login / Auth (Claude)">
           <select value={auth} onChange={(e) => onAuthChange(e.target.value as 'plan' | 'apikey')}
