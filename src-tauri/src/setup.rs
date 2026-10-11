@@ -24,7 +24,7 @@ const CFG_BODY: &str = r#""G-Maiden Integration"
     "timeout"       "5.0"
     "buffer"        "0.1"
     "throttle"      "0.1"
-    "heartbeat"     "30.0"
+    "heartbeat"     "1.0"
     "data"
     {
         "provider"      "1"
@@ -185,6 +185,24 @@ fn validate_gsi_config(text: &str) -> bool {
         })
     };
     if !pair_is(root, "uri", "http://127.0.0.1:3000/gsi") {
+        return false;
+    }
+    let mut heartbeat_count = 0;
+    let mut heartbeat_ok = false;
+    for entry in root {
+        if let KvEntry::Pair(key, value) = entry {
+            if key.eq_ignore_ascii_case("heartbeat") {
+                heartbeat_count += 1;
+                heartbeat_ok = value
+                    .parse::<f64>()
+                    .is_ok_and(|seconds| seconds.is_finite() && seconds > 0.0 && seconds <= 1.0);
+                if !heartbeat_ok {
+                    return false;
+                }
+            }
+        }
+    }
+    if heartbeat_count != 1 || !heartbeat_ok {
         return false;
     }
     let Some(KvEntry::Block(_, data)) = root.iter().find(
@@ -481,6 +499,27 @@ mod tests {
     #[test]
     fn accepts_the_installed_gsi_config() {
         assert!(validate_gsi_config(CFG_BODY));
+    }
+
+    #[test]
+    fn requires_a_heartbeat_that_can_satisfy_freshness_contract() {
+        assert!(validate_gsi_config(&CFG_BODY.replace("\"1.0\"", "\"0.5\"")));
+        assert!(!validate_gsi_config(&CFG_BODY.replace("\"1.0\"", "\"2.1\"")));
+        assert!(!validate_gsi_config(&CFG_BODY.replace("\"1.0\"", "\"30.0\"")));
+        assert!(!validate_gsi_config(&CFG_BODY.replace("\"1.0\"", "\"NaN\"")));
+        let duplicate_heartbeat = CFG_BODY.replace(
+            "\"heartbeat\"     \"1.0\"",
+            "\"heartbeat\"     \"1.0\"\n    \"heartbeat\"     \"30.0\"",
+        );
+        assert!(!validate_gsi_config(&duplicate_heartbeat));
+    }
+
+    #[test]
+    fn legacy_thirty_second_config_is_invalid_and_installer_config_repairs_it() {
+        let legacy = CFG_BODY.replace("\"1.0\"", "\"30.0\"");
+        assert!(!validate_gsi_config(&legacy));
+        assert!(validate_gsi_config(CFG_BODY));
+        assert!(CFG_BODY.contains("\"heartbeat\"     \"1.0\""));
     }
 
     #[test]

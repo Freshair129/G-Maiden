@@ -38,6 +38,8 @@ function makeStatus(overrides: Partial<GsiStatus> = {}): GsiStatus {
   return {
     dota_running: true,
     gsi_active: true,
+    gsi_freshness: "fresh",
+    gsi_age_ms: 0,
     in_game: true,
     display_exclusive: false,
     server_state: "listening",
@@ -118,5 +120,25 @@ describe("buildMatch", () => {
     const status = makeStatus({ gsi_active: false });
     const result = buildMatch(null, status, MOCK.match);
     expect(result.gsiOnline).toBe(false);
+  });
+
+  it("does not use stale own-state while Dota remains open", () => {
+    const result = buildMatch(makeTick({ kills: 99, net_worth: 999_999 }), makeStatus({
+      gsi_active: false,
+      gsi_freshness: "stale",
+      gsi_age_ms: 2_500,
+      in_game: true,
+    }), MOCK.match);
+
+    expect(result.gsiOnline).toBe(false);
+    expect(result.gsiFreshness).toBe("stale");
+    expect(result.gsiAgeMs).toBe(2_500);
+    expect(result.phase).toBe("live");
+    expect(result.centerLabel).toBe("LIVE · GSI STALE");
+    expect(result.clock).toBe("--:--");
+    expect(result.leftScore).toBe(-1);
+    expect(result.player.k).toBe(-1);
+    expect(result.player.nw).toBe(-1);
+    expect(result.playerStats.net).toBe("—");
   });
 });

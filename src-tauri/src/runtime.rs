@@ -77,8 +77,11 @@ static SIGNAL_ENABLED: AtomicBool = AtomicBool::new(true);
 static SIGNAL_SENSITIVITY: AtomicU8 = AtomicU8::new(1); // 0=Low, 1=Med, 2=High
 
 /// Epoch-ms of the last GSI POST received. 0 = none yet. The watchdog uses this
-/// to tell "Dota open & sending" (heartbeat ~30s) from "gone quiet".
+/// to tell "Dota open & sending" from "gone quiet".
 static LAST_POST_MS: AtomicU64 = AtomicU64::new(0);
+/// Accepted MVP contract: a GSI-backed conclusion is usable only while its
+/// last validated source observation is at most two seconds old.
+pub const GSI_FRESHNESS_MAX_AGE_MS: u64 = 2_000;
 static PLAYER_TEAM: AtomicU8 = AtomicU8::new(0);
 
 /// Maiden's voice for Rust-side (G-Signal) speech, mirrored from the UI
@@ -133,6 +136,22 @@ pub fn mark_post(ms: u64) {
 }
 pub fn last_post_ms() -> u64 {
     LAST_POST_MS.load(Ordering::Relaxed)
+}
+
+pub fn gsi_is_fresh_at(last_post_ms: u64, now_ms: u64) -> bool {
+    last_post_ms != 0
+        && now_ms.saturating_sub(last_post_ms) <= GSI_FRESHNESS_MAX_AGE_MS
+}
+
+pub fn gsi_is_fresh() -> bool {
+    gsi_is_fresh_at(last_post_ms(), epoch_ms())
+}
+
+/// The score-derived dead-enemy discount is own-state. While the GSI feed is
+/// stale, treat the count as unknown and keep every CV-observed missing hero in
+/// the risk set rather than reusing a potentially outdated safe-side discount.
+pub fn fresh_dead_enemy_count(is_gsi_fresh: bool, known_dead: usize) -> usize {
+    if is_gsi_fresh { known_dead } else { 0 }
 }
 
 pub fn set_in_game(v: bool) {
@@ -1234,6 +1253,20 @@ mod tests {
         assert_eq!(note_enemy_score(1, 30_000, 2_000), 0);
         assert_eq!(dead_enemy_count_at(2_000), 0);
         clear_enemy_deaths();
+    }
+
+    #[test]
+    fn gsi_freshness_uses_the_accepted_two_second_source_age() {
+        assert!(!gsi_is_fresh_at(0, 10_000), "no valid post is unknown");
+        assert!(gsi_is_fresh_at(10_000, 12_000), "the 2s boundary is inclusive");
+        assert!(!gsi_is_fresh_at(10_000, 12_001), "older source data is stale");
+        assert!(gsi_is_fresh_at(11_000, 10_000), "clock rollback must not age a source");
+    }
+
+    #[test]
+    fn stale_gsi_cannot_reuse_score_based_dead_enemy_discount() {
+        assert_eq!(fresh_dead_enemy_count(true, 3), 3);
+        assert_eq!(fresh_dead_enemy_count(false, 3), 0);
     }
 
     #[test]

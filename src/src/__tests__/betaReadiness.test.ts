@@ -5,6 +5,8 @@ import type { GsiStatus, SensorHealth } from "../live/events";
 const liveGsi: GsiStatus = {
   dota_running: true,
   gsi_active: true,
+  gsi_freshness: "fresh",
+  gsi_age_ms: 0,
   in_game: true,
   display_exclusive: false,
   server_state: "listening",

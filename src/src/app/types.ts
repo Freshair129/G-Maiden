@@ -61,10 +61,14 @@ export interface ReviveAdvice {
   next_respawn_if_buyback: number
   reason: string
 }
-/** Connection/status pushed by the Rust watchdog (gsi.rs) every ~4s. */
+export type GsiFreshness = 'unavailable' | 'waiting' | 'fresh' | 'stale'
+
+/** Connection and validated-source age pushed by the Rust watchdog (gsi.rs). */
 export interface GsiStatus {
   dota_running: boolean
   gsi_active: boolean
+  gsi_freshness: GsiFreshness
+  gsi_age_ms: number | null
   in_game: boolean
   display_exclusive: boolean
   server_state: 'starting' | 'listening' | 'port_conflict' | 'bind_error'

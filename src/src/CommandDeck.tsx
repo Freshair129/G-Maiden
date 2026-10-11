@@ -504,11 +504,13 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
         <span className="g-logo">G-MAIDEN</span>
 
         <div className="g-topbar-status">
-          <div className={`g-status-pill${data.match.gsiOnline ? " online" : ""}`}>
+          <div className={`g-status-pill${data.match.gsiOnline ? " online" : data.match.gsiFreshness === "stale" ? " stale" : ""}`}>
             <span className="dot" />
-            <strong>{data.match.gsiOnline ? "GSI Online" : "GSI Offline"}</strong>
+            <strong>{data.match.gsiOnline ? "GSI Online" : data.match.gsiFreshness === "stale" ? "GSI Stale" : data.match.gsiFreshness === "waiting" ? "GSI Waiting" : "GSI Offline"}</strong>
           </div>
-          <FeedAgePill updatedAt={data.updatedAt} online={data.match.gsiOnline} />
+          {data.match.gsiFreshness === "stale" && data.match.gsiAgeMs !== null
+            ? <span className="g-gsi-age">{(data.match.gsiAgeMs / 1000).toFixed(1)}s</span>
+            : <FeedAgePill updatedAt={data.updatedAt} online={data.match.gsiOnline} />}
         </div>
 
         <div className={`profile-wrap${profileOpen ? " open" : ""}`}>

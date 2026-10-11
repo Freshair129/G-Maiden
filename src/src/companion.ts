@@ -2,7 +2,7 @@ import { useRef, useSyncExternalStore } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { GameTick, GsiStatus, MinimapCv, MinimapFrame, DraftRoster, EnemyMissing, SignalAlert, ResourceStats, SensorHealth, UtteranceEvent } from "./live/events";
+import type { GameTick, GsiFreshness, GsiStatus, MinimapCv, MinimapFrame, DraftRoster, EnemyMissing, SignalAlert, ResourceStats, SensorHealth, UtteranceEvent } from "./live/events";
 import { buildMatch } from "./live/buildMatch";
 import { buildUtterances, type Utterance } from "./live/utterances";
 import { buildHeroes, assignEnemySlot } from "./live/buildHeroes";
@@ -37,12 +37,14 @@ export type CompanionData = {
     mode: string;
     phase: "pregame" | "live";
     // CR-011 §B/§E phase axis (CR011-P3-02): standby -> prep -> live -> debrief,
-    // derived by live/phase.ts's stepPhase() from GSI online + game_state. Kept
+    // derived by live/phase.ts's stepPhase() from source freshness/process + game_state. Kept
     // separate from the existing `phase` field above (that one stays exactly as
     // it was — this is additive, not a replacement).
     matchPhase: MatchPhase;
     minimapState: "empty" | "live";
     gsiOnline: boolean;
+    gsiFreshness: GsiFreshness;
+    gsiAgeMs: number | null;
     centerLabel: string;
     centerSubLabel: string;
     leftTeamName: string;
@@ -247,12 +249,14 @@ export const FALLBACK: CompanionData = {
     matchPhase: "standby",
     minimapState: "empty",
     gsiOnline: false,
+    gsiFreshness: "unavailable",
+    gsiAgeMs: null,
     centerLabel: "NOT IN A MATCH",
     centerSubLabel: "WAITING FOR GSI",
     leftTeamName: "Radiant",
     rightTeamName: "Dire",
-    leftScore: 0,
-    rightScore: 0,
+    leftScore: -1,
+    rightScore: -1,
     watchLabel: "WATCH IN-GAME",
     // -1 = "no reading" (same convention as telemetry below) so the Live page
     // renders "—". Was a hardcoded 3 that buildMatch never overrode, so the
@@ -262,11 +266,11 @@ export const FALLBACK: CompanionData = {
     voicePack: "Calm tactical",
     privacy: "Local-only",
     systemStatus: "Companion monitoring",
-    playerStats: { goal: "Hold river", net: "0", ward: "0/0", gpm: 0, xpm: 0 },
+    playerStats: { goal: "Hold river", net: "—", ward: "—", gpm: -1, xpm: -1 },
     player: {
-      nw: 0, nwAvg: 0, gpm: 0, gpmAvg: 0, xpm: 0, xpmAvg: 0,
-      k: 0, kAvg: 0, d: 0, dAvg: 0, a: 0, aAvg: 0,
-      cs: 0, csAvg: 0, denies: 0, deniesAvg: 0, ping: 0
+      nw: -1, nwAvg: -1, gpm: -1, gpmAvg: -1, xpm: -1, xpmAvg: -1,
+      k: -1, kAvg: -1, d: -1, dAvg: -1, a: -1, aAvg: -1,
+      cs: -1, csAvg: -1, denies: -1, deniesAvg: -1, ping: -1
     }
   },
   heroes: FALLBACK_HEROES,
@@ -294,7 +298,7 @@ export const FALLBACK: CompanionData = {
   agentSector: { name: "G-Maiden", title: "Tactical AI", status: "Standby", summary: [] },
   insights: { powerScore: -1, winRate: -1, objectiveControl: -1, wardEfficiency: -1, learnedMatches: -1 },
   history: [],
-  momentum: { value: 0, label: "—", tone: "info", phase: "pregame", phaseLabel: "ก่อนเกม" },
+  momentum: { value: 0, label: "—", tone: "info", phase: "pregame", phaseLabel: "—" },
   // Honest empty ledger — the ON AIR console shows its Thai teaching line
   // until the first real `utterance` event arrives (see CommandDeck.tsx).
   utterances: []
@@ -327,6 +331,8 @@ export const MOCK: CompanionData = {
     matchPhase: "live",
     minimapState: "live",
     gsiOnline: true,
+    gsiFreshness: "fresh",
+    gsiAgeMs: 0,
     centerLabel: "ALL PICK",
     centerSubLabel: "24:18",
     leftTeamName: "Radiant",
@@ -598,17 +604,19 @@ function cloneLive(state: LiveState): LiveState {
 }
 
 function buildCompanionData(live: LiveState): CompanionData {
+  const gsiFresh = live.status?.gsi_freshness === "fresh";
+  const freshTick = gsiFresh ? live.tick : null;
   let d: CompanionData = live.active
     ? {
         ...FALLBACK,
         updatedAt: Date.now(),
-        match: { ...buildMatch(live.tick, live.status, FALLBACK.match), matchPhase: live.phase, activeAlerts: countActiveAlerts(live.gank, live.missing, live.health?.healthy ?? false) ?? -1 },
-        heroes: buildHeroes(live.tick, live.missing, live.cv, FALLBACK.heroes, live.enemySlots, live.roster, live.tick?.team_name ?? ""),
+        match: { ...buildMatch(freshTick, live.status, FALLBACK.match), matchPhase: live.phase, activeAlerts: countActiveAlerts(live.gank, live.missing, live.health?.healthy ?? false) ?? -1 },
+        heroes: buildHeroes(freshTick, live.missing, live.cv, FALLBACK.heroes, live.enemySlots, live.roster, freshTick?.team_name ?? ""),
         markers: buildMarkers(live.cv, live.missingPos, FALLBACK.markers),
         signals: buildSignals(live.gank, live.missing, live.health?.healthy ?? false),
-        buildAdvisor: buildAdvisor(live.tick, live.advice, FALLBACK.buildAdvisor),
+        buildAdvisor: buildAdvisor(freshTick, gsiFresh ? live.advice : null, FALLBACK.buildAdvisor),
         activity: live.activityLog,
-        momentum: momentumView(live.mom, live.tick),
+        momentum: gsiFresh ? momentumView(live.mom, freshTick) : FALLBACK.momentum,
         utterances: live.utterances
       }
     : { ...FALLBACK, updatedAt: Date.now() };
@@ -677,7 +685,7 @@ function applyDerivedSideEffects() {
     }
   }
 
-  const inGame = liveState.tick?.in_game ?? false;
+  const inGame = liveState.status?.in_game ?? liveState.tick?.in_game ?? false;
   if (logsLoadedForInGame !== inGame) {
     logsLoadedForInGame = inGame;
     void refreshMatchLogs();
@@ -802,6 +810,10 @@ function ensureRuntime() {
 
   sub<GameTick>("game-tick", (p) =>
     updateLive((s) => {
+      // The Overlay's preview also uses game-tick, but it does not publish a
+      // freshness status. Only the backend's validated, status-first source
+      // may update deck state, phase, match history, or momentum.
+      if (s.status?.gsi_freshness !== "fresh" || !s.status.gsi_active) return s;
       // CR-007 WP-4 Fix 3: reset the permanent enemy-slot table (+ the missing
       // map that feeds it) on a new match. `clock_time <= 5` is the same
       // "match just started" heuristic the backend already uses for the
@@ -818,10 +830,11 @@ function ensureRuntime() {
       const mom = stepMomentum(isNewMatch ? EMPTY_MOMENTUM : s.mom, p, p.gpm);
       // CR-011 §E: advance the phase axis from this tick's game_state/in_game,
       // using whatever gsi-status last reported (a game-tick implies GSI is
-      // posting, but `gsiOnline` here should still reflect the watchdog's own
-      // view, not be inferred from the mere fact a tick arrived).
+      // posting; the producer emits a fresh status before each validated tick,
+      // so this phase transition uses the same source-freshness decision.
       const phase = stepPhase(s.phase, {
         gsiOnline: s.status?.gsi_active ?? false,
+        dotaRunning: s.status?.dota_running ?? false,
         gameState: p.game_state,
         inGame: p.in_game,
         clockSeconds: p.clock_time
@@ -839,6 +852,7 @@ function ensureRuntime() {
       active: true,
       phase: stepPhase(s.phase, {
         gsiOnline: p.gsi_active,
+        dotaRunning: p.dota_running,
         gameState: s.tick?.game_state ?? null,
         inGame: s.tick?.in_game ?? false,
         clockSeconds: s.tick?.clock_time ?? -1
