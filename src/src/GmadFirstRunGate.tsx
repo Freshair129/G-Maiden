@@ -3,10 +3,10 @@ import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { GmadEntitlementContext, useGmadDesktopEntitlement } from "./gmadEntitlement";
 import { checkChannelUpdate, resolveUpdateChannel, type ResolvedUpdateChannel } from "./updateChannel";
-import { buildDiagnosticBundle, compatibilityMode, readinessFromRuntime } from "./betaReadiness";
+import { buildDiagnosticBundle, compatibilityMode, readinessFromRuntime, readinessLabel } from "./betaReadiness";
 import { APP_VERSION } from "./app/theme";
 import BetaFeedback from "./BetaFeedback";
-import type { GsiStatus, MinimapCv } from "./live/events";
+import type { GsiStatus, SensorHealth } from "./live/events";
 
 type SetupStatus = { installed: boolean; cfg_present?: boolean; cfg_valid?: boolean; dota_cfg_dir?: string | null; message: string };
 type UpdateStatus = { resolved: ResolvedUpdateChannel; availableVersion?: string; error?: string };
@@ -15,20 +15,19 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
   const entitlement = useGmadDesktopEntitlement();
   const { state, decision, refresh, signInWithGoogle, signOut, authError, signOutWarning } = entitlement;
   const [setup, setSetup] = useState<SetupStatus | null>(null);
+  const [setupError, setSetupError] = useState<string | null>(null);
   const [setupBusy, setSetupBusy] = useState(false);
   const [ready, setReady] = useState(false);
   const [dotaRunning, setDotaRunning] = useState<boolean | null>(null);
   const [updateStatus, setUpdateStatus] = useState<UpdateStatus | null>(null);
-  const [captureMode, setCaptureMode] = useState<"dxgi" | "lite" | "">("");
   const [gsiActive, setGsiActive] = useState<boolean | null>(null);
   const [gsiStatus, setGsiStatus] = useState<GsiStatus | null>(null);
-  const [minimapReady, setMinimapReady] = useState<boolean | null>(null);
-  const [audioReady] = useState<boolean | null>(null);
+  const [sensorHealth, setSensorHealth] = useState<SensorHealth | null>(null);
+  const [overlayReady, setOverlayReady] = useState(false);
 
   useEffect(() => {
     let active = true;
     const subscriptions = Promise.all([
-      listen<"dxgi" | "lite">("capture-mode", (event) => { if (active) setCaptureMode(event.payload); }),
       listen<GsiStatus>("gsi-status", (event) => {
         if (active) {
           setGsiActive(event.payload.gsi_active ?? null);
@@ -36,7 +35,8 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
           setDotaRunning(event.payload.dota_running);
         }
       }),
-      listen<MinimapCv>("minimap-cv", (event) => { if (active) setMinimapReady(event.payload.classifier === true); }),
+      listen<SensorHealth>("sensor-health", (event) => { if (active) setSensorHealth(event.payload); }),
+      listen("overlay-ready", () => { if (active) setOverlayReady(true); }),
     ]);
     return () => { active = false; void subscriptions.then((unlisten) => Promise.all(unlisten.map((stop) => stop()))); };
   }, []);
@@ -60,15 +60,17 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
   }, [decision, state]);
 
   useEffect(() => {
-    if (state !== "eligible") { setReady(false); setSetup(null); setDotaRunning(null); return; }
+    if (state !== "eligible") { setReady(false); setSetup(null); setSetupError(null); setDotaRunning(null); return; }
     void Promise.all([
       invoke<SetupStatus>("detect_gsi_setup"),
       invoke<boolean>("detect_dota_running"),
     ]).then(([nextSetup, running]) => {
       setSetup(nextSetup);
+      setSetupError(null);
       setDotaRunning(running);
     }).catch(() => {
-      setSetup({ installed: false, message: "ไม่สามารถตรวจสถานะ Dota 2 ได้ กรุณาลองใหม่" });
+      setSetup(null);
+      setSetupError("ไม่สามารถตรวจสถานะ GSI/Dota 2 ได้ กรุณาลองใหม่");
       setDotaRunning(null);
     });
   }, [state]);
@@ -77,7 +79,12 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
 
   const installGsi = async () => {
     setSetupBusy(true);
-    try { setSetup(await invoke<SetupStatus>("install_gsi_config")); }
+    try {
+      setSetup(await invoke<SetupStatus>("install_gsi_config"));
+      setSetupError(null);
+    } catch {
+      setSetupError("ติดตั้งหรือซ่อม GSI config ไม่สำเร็จ กรุณาลองใหม่");
+    }
     finally { setSetupBusy(false); }
   };
   const openLanding = (path: string) => invoke("open_url", { url: `https://g-maiden-landing.vercel.app${path}` });
@@ -102,15 +109,24 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
       {state === "offline_or_unavailable" && <><h1>ยังยืนยันสิทธิ์ไม่ได้</h1><p>Closed Beta ต้องเชื่อมต่ออินเทอร์เน็ตทุกครั้งที่เปิดแอป ข้อมูล GSI, CV และ G-Log ในเครื่องไม่ถูกส่งขึ้น cloud</p><button onClick={() => void refresh()}>ลองอีกครั้ง</button></>}
       {state === "eligible" && <><h1>ยืนยันสิทธิ์แล้ว</h1><p>{decision?.gid} · Terms {decision?.terms?.version} · ตรวจล่าสุด {decision?.checked_at ? new Date(decision.checked_at).toLocaleString("th-TH") : "—"}{decision?.stale ? " · ออฟไลน์ชั่วคราว — ใช้สิทธิ์ที่ยืนยันไว้ล่าสุด" : ""}</p>
         {(() => {
-          const readiness = readinessFromRuntime({ gsiInstalled: setup?.installed === true, gsiActive, captureMode, minimapReady, audioReady });
+          const readiness = readinessFromRuntime({
+            gsiConfigured: setup?.installed ?? null,
+            gsiStatus,
+            sensorHealth,
+            overlayReady,
+          });
           const diagnostic = () => {
             const bundle = buildDiagnosticBundle({ version: APP_VERSION, channel: updateStatus?.resolved.channel ?? "stable", readiness, updateStatus: updateStatus?.availableVersion ? `available:${updateStatus.availableVersion}` : updateStatus?.error ?? "current" });
             const url = URL.createObjectURL(new Blob([JSON.stringify(bundle, null, 2)], { type: "application/json" }));
             const link = document.createElement("a"); link.href = url; link.download = `g-maiden-diagnostics-${Date.now()}.json`; link.click(); URL.revokeObjectURL(url);
           };
           return <>
-            {compatibilityMode(readiness) && <div className="gmad-setup-status"><strong>Compatibility Mode — Vision features unavailable</strong><span>G-Sentry, G-Motion และ minimap vision จะไม่ทำงานจนกว่า DXGI จะพร้อม; GSI-based features ยังทำงานได้</span></div>}
-            <div className="gmad-setup-status"><strong>Wave 0 readiness</strong><span>GSI {readiness.gsi} · Capture {readiness.capture} · Minimap {readiness.minimap} · Overlay {readiness.overlay} · Audio {readiness.audio}</span></div>
+            {compatibilityMode(readiness) && <div className="gmad-setup-status"><strong>Compatibility Mode — Vision features unavailable</strong><span>ยังใช้ minimap vision ไม่ได้เพราะ capture อยู่ Lite mode หรือไม่มี ONNX classifier; ฟีเจอร์ที่ใช้ GSI ยังทำงานได้</span></div>}
+            <div className="gmad-setup-status">
+              <strong>Readiness จาก runtime evidence</strong>
+              <span>GSI {readinessLabel(readiness.gsi)} · Capture health {readinessLabel(readiness.capture)} · Minimap coverage {readinessLabel(readiness.minimap)} · Overlay runtime {readinessLabel(readiness.overlay)} · Audio playback {readinessLabel(readiness.audio)}</span>
+              <span>Minimap coverage และ audio playback ยังไม่ผ่านการตรวจจริงจนกว่าจะมี producer เฉพาะ</span>
+            </div>
             <button className="secondary" onClick={diagnostic}>สร้าง diagnostic bundle (ไม่รวม credentials, tokens หรือ raw frames)</button>
             <BetaFeedback version={APP_VERSION} channel={updateStatus?.resolved.channel ?? "stable"} readiness={readiness} updateStatus={updateStatus?.availableVersion ? `available:${updateStatus.availableVersion}` : updateStatus?.error ?? "current"} />
           </>;
@@ -118,7 +134,7 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
         <div className="gmad-setup-status"><strong>Update channel: {updateStatus?.resolved.channel ?? "stable"}</strong><span>Source: {updateStatus?.resolved.source ?? "stable-fallback"}{updateStatus?.availableVersion ? ` · มีเวอร์ชัน ${updateStatus.availableVersion}` : updateStatus?.error ? " · ตรวจอัปเดตไม่สำเร็จ" : " · เวอร์ชันล่าสุด"}</span></div>
         <div className="gmad-setup-status">
           <strong>{setup?.installed ? "GSI config ถูกต้อง" : setup?.cfg_present && setup.cfg_valid === false ? "GSI config ไม่ถูกต้อง" : "ตั้งค่า GSI/Dota 2"}</strong>
-          <span>{setup?.message ?? "กำลังตรวจ Dota 2…"}</span>
+          <span>{setup?.message ?? setupError ?? "กำลังตรวจ Dota 2…"}</span>
           <span>Listener พอร์ต 3000: {!gsiStatus ? "กำลังตรวจ…" : gsiStatus.server_state === "listening" ? "พร้อมรับ GSI และ OAuth callback" : gsiStatus.server_state === "port_conflict" ? "พอร์ตถูกใช้งาน — ปิด G-Maiden ที่เปิดซ้ำหรือโปรแกรมอื่นที่ใช้พอร์ต 3000; ระบบลองใหม่อัตโนมัติทุก 3 วินาที" : gsiStatus.server_state === "bind_error" ? "เปิดพอร์ตไม่สำเร็จ — ปิดโปรแกรมที่ใช้พอร์ต 3000 แล้วตรวจซ้ำ" : "กำลังเริ่ม listener…"}</span>
           <span>ข้อมูลเกม: {gsiStatus?.gsi_freshness === "stale"
             ? `Dota 2 ยังเปิด แต่ feed GSI ล้าสมัย${gsiStatus.gsi_age_ms === null ? "" : ` ${(gsiStatus.gsi_age_ms / 1000).toFixed(1)} วินาที`}; พักข้อสรุปจาก own-state จน feed กลับมา`

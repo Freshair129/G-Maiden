@@ -1,9 +1,9 @@
 ---
 title: "G-Maiden Closed Beta Wave 0 Specification"
 doc_id: "specification"
-status: "draft"
-version: "0.1.0"
-updated: "2026-07-23"
+status: "historical"
+version: "0.2.0"
+updated: "2026-10-11"
 owner: "Boss"
 related_docs: ["BETA-ROADMAP", "CLOSED-BETA-WAVE-0-DOD", "RELEASE-CHANNEL-ARCHITECTURE"]
 ---
@@ -87,18 +87,27 @@ The application may continue with GSI-based capabilities, but must clearly state
 
 ### Readiness mapping
 
-`readinessFromRuntime` maps inputs as follows: `gsiInstalled && gsiActive !== false` gives GSI `pass`; `gsiActive === false` gives GSI `warn`; `captureMode === "dxgi"` gives capture `pass`; `captureMode === "lite"` gives capture and minimap `warn`; an empty capture mode gives capture `pending`; minimap is `pass` only when `minimapReady === true` in DXGI mode and otherwise remains `pending` until the detector reports; overlay is `pass`; audio is `pending` until its check reports success. A `warn` capture/minimap result must show the exact Compatibility Mode wording above.
+เอกสาร Wave 0 เดิมเคยใช้ `pass`/`warn`/`pending`; mapping นั้นเป็นประวัติของแผน Closed Beta ที่ยกเลิกแล้ว ไม่ใช่เกณฑ์ MVP ปัจจุบัน เอกสารนี้ถูกเก็บเป็น `historical` เพื่อรักษาประวัติ งานปัจจุบันยึด [MVP backlog — MVP-011](../../../product/mvp-backlog.md) และ [execution DAG](../../../product/mvp-execution-dag.md)
 
-| Runtime input | Readiness result |
+MVP-011.A กำหนดผลเป็น `ready`, `degraded` หรือ `unknown` ตาม evidence จาก runtime เท่านั้น เมื่อไม่มี producer หรือยังไม่มีผล ให้เป็น `unknown`; ห้ามตีความ null หรือการ preview เป็น `ready` ตารางนี้บันทึก contract/UI ของขั้น A ไม่ได้ปิด MVP-011 ทั้งงาน เพราะการวัด minimap coverage และ audio health จริงยังอยู่ใน MVP-011.B
+
+UI แสดง `ready` เป็น “พร้อม”, `degraded` เป็น “บกพร่อง” และ `unknown` เป็น “ยังไม่ทราบ” ผ่าน `readinessLabel` ค่า `setup.installed` เป็น evidence ของ GSI config เท่านั้น; readiness นี้เป็นข้อมูลสถานะ ไม่ได้เปลี่ยน account/entitlement eligibility หรือเงื่อนไขเปิด Dashboard
+
+| Runtime evidence | Readiness result |
 | --- | --- |
-| `capture-mode=dxgi` | capture `pass`; minimap follows the detector result |
-| `capture-mode=lite` | capture `warn`; minimap `warn`; Compatibility Mode required |
-| `capture-mode=dxgi` and `minimapReady=true` | minimap `pass` |
-| `capture-mode=dxgi` and `minimapReady=false` or not yet reported | minimap `pending` until the detector reports |
-| capture mode not yet reported | capture `pending`; no Compatibility Mode claim is made |
-| `gsiInstalled=true` and `gsiActive=true` | GSI `pass` |
-| `gsiActive=false` | GSI `warn` |
-| audio result not yet reported | audio `pending` |
+| GSI server เป็น `port_conflict`/`bind_error` | GSI `degraded` |
+| `gsi-status.gsi_active=true` และ server ไม่ได้เป็น `port_conflict`/`bind_error` | GSI `ready` |
+| `setup.installed=false` และไม่มี live GSI หรือ Dota เปิดอยู่ขณะ `gsi_active=false` | GSI `degraded` |
+| ยังไม่มี GSI status หรือไม่มี live GSI ขณะ Dota ไม่ได้ทำงาน และยังไม่มีหลักฐานว่า config เสีย | GSI `unknown` |
+| `sensor-health.healthy=true` / `false` | Capture health `ready` / `degraded` |
+| ยังไม่ได้รับ `sensor-health` | Capture health `unknown` |
+| Sensor backend เป็น `lite` หรือไม่มี classifier | Minimap coverage `degraded`; Compatibility Mode แสดง |
+| ยังไม่ได้รับ `sensor-health` | Minimap coverage `unknown` |
+| Sensor ทำงานและมี classifier แต่ยังไม่มีผลวัด coverage | Minimap coverage `unknown` — classifier/capture พร้อมไม่ใช่หลักฐาน coverage |
+| ได้รับ event `overlay-ready` | Overlay runtime `ready`; หาก event ยังไม่สังเกตเห็น ให้เป็น `unknown` |
+| Audio playback | `unknown` จนกว่าจะมี producer วัด audio health; การ preview อย่างเดียวไม่ใช่ผลผ่าน |
+
+เมื่อ minimap coverage เป็น `degraded`, UI ใช้ข้อความ `Compatibility Mode — Vision features unavailable` และแจ้งว่า capture อยู่ Lite mode หรือไม่มี ONNX classifier; ฟีเจอร์ที่ใช้ GSI ยังทำงานได้
 
 ## Required Diagnostics
 
@@ -145,4 +154,5 @@ Successful Wave 0 promotes to Closed Beta Wave 1 — Core Intelligence Validatio
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.2.0 | 2026-10-11 | Marked the cancelled Wave 0 specification historical and reconciled readiness with the current MVP-011.A evidence contract. |
 | 0.1.0 | 2026-07-23 | Initial Closed Beta Wave 0 Technical Preview specification |

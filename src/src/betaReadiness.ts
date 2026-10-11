@@ -1,4 +1,6 @@
-export type ReadinessStatus = "pass" | "warn" | "fail" | "pending";
+import type { GsiStatus, SensorHealth } from "./live/events";
+
+export type ReadinessStatus = "ready" | "degraded" | "unknown";
 export type BetaReadiness = {
   gsi: ReadinessStatus;
   capture: ReadinessStatus;
@@ -8,23 +10,43 @@ export type BetaReadiness = {
 };
 
 export function readinessFromRuntime(input: {
-  gsiInstalled: boolean;
-  gsiActive: boolean | null;
-  captureMode: "dxgi" | "lite" | "";
-  minimapReady: boolean | null;
-  audioReady: boolean | null;
+  gsiConfigured: boolean | null;
+  gsiStatus: GsiStatus | null;
+  sensorHealth: SensorHealth | null;
+  overlayReady: boolean | null;
 }): BetaReadiness {
+  const gsi = input.gsiStatus;
+  const sensor = input.sensorHealth;
+
   return {
-    gsi: input.gsiInstalled && input.gsiActive !== false ? "pass" : input.gsiActive === false ? "warn" : "pending",
-    capture: input.captureMode === "dxgi" ? "pass" : input.captureMode === "lite" ? "warn" : "pending",
-    minimap: input.minimapReady === true ? "pass" : input.captureMode === "lite" ? "warn" : "pending",
-    overlay: "pass",
-    audio: input.audioReady === true ? "pass" : "pending",
+    gsi: gsi?.server_state === "port_conflict" || gsi?.server_state === "bind_error"
+      ? "degraded"
+      : gsi?.gsi_active === true
+        ? "ready"
+        : input.gsiConfigured === false || (gsi?.gsi_active === false && gsi.dota_running)
+          ? "degraded"
+          : "unknown",
+    capture: sensor ? (sensor.healthy ? "ready" : "degraded") : "unknown",
+    // A live sensor or loaded classifier is not evidence that the minimap is
+    // covered correctly for this user's display and HUD geometry.
+    minimap: sensor && (sensor.backend === "lite" || !sensor.classifier) ? "degraded" : "unknown",
+    overlay: input.overlayReady === true ? "ready" : "unknown",
+    // There is no audio health producer yet. A preview action is not proof of
+    // reliable playback, so this remains unknown until a producer is added.
+    audio: "unknown",
   };
 }
 
 export function compatibilityMode(readiness: BetaReadiness): boolean {
-  return readiness.capture === "warn" || readiness.minimap === "warn";
+  return readiness.minimap === "degraded";
+}
+
+export function readinessLabel(status: ReadinessStatus): string {
+  switch (status) {
+    case "ready": return "พร้อม";
+    case "degraded": return "บกพร่อง";
+    case "unknown": return "ยังไม่ทราบ";
+  }
 }
 
 export function buildDiagnosticBundle(input: {
@@ -35,7 +57,7 @@ export function buildDiagnosticBundle(input: {
   userNote?: string;
 }) {
   return {
-    schemaVersion: 1,
+    schemaVersion: 2,
     createdAt: new Date().toISOString(),
     app: { version: input.version, channel: input.channel },
     readiness: input.readiness,
