@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-10-10T23:38:34.372Z
+สร้างเมื่อ / Generated at: 2026-10-11T00:11:09.072Z
 
-สแกน 154 ไฟล์เอกสาร, 277 nodes, 1168 edges, 203 รายการปัญหา (163 ตัวบล็อก exit code) / scanned 154 doc files, 277 nodes, 1168 edges, 203 violations (163 blocking exit code).
+สแกน 154 ไฟล์เอกสาร, 277 nodes, 1168 edges, 204 รายการปัญหา (164 ตัวบล็อก exit code) / scanned 154 doc files, 277 nodes, 1168 edges, 204 violations (164 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -17,7 +17,7 @@
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
 | missing-changelog | มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table | 5 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 37 | no (informational) |
-| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 27 | yes |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 28 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -460,6 +460,7 @@
 ### docs/releases/closed-beta/wave-0/specification.md
 
 - [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/closed-beta/wave-1/specification.md","docs/releases/closed-beta/wave-2/specification.md","docs/releases/open-beta/specification.md","docs/releases/public-demo/specification.md"])
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.0", changelog="0.1.0")
 
 ### docs/releases/closed-beta/wave-1/definition-of-done.md
 

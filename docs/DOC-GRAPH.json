@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-10T23:38:34.372Z",
+  "generatedAt": "2026-10-11T00:11:09.072Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -948,7 +948,7 @@
       "type": "doc",
       "path": "docs/releases/closed-beta/wave-0/specification.md",
       "title": "G-Maiden Closed Beta Wave 0 Specification",
-      "status": "draft"
+      "status": "historical"
     },
     {
       "id": "docs/releases/closed-beta/wave-1/definition-of-done.md",
@@ -10044,6 +10044,13 @@
       ]
     },
     {
+      "file": "docs/releases/closed-beta/wave-0/specification.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.2.0",
+      "changelog": "0.1.0"
+    },
+    {
       "file": "docs/releases/closed-beta/wave-1/definition-of-done.md",
       "line": null,
       "reason": "duplicate-slug",
@@ -10186,7 +10193,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-10T23:38:39.587Z",
+    "generatedAt": "2026-10-11T00:11:39.975Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,
