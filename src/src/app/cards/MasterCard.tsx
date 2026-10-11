@@ -13,11 +13,14 @@ export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: 
   const [readinessError, setReadinessError] = useState<string | null>(null)
   const [readinessBusy, setReadinessBusy] = useState(false)
   const readinessRequest = useRef(0)
+  const adviceRequest = useRef(0)
+  const activeSessionEpoch = useRef<number | null>(tick?.session_epoch ?? null)
   // CR-008 WP-2: the key never round-trips back to the webview. We keep only a
   // transient draft; on save it goes straight to the DPAPI store via the backend
   // and is cleared here. `apiKeyPresent` reflects stored state (has_master_api_key).
   const [keyDraft, setKeyDraft] = useState('')
-  const canAsk = enabled && !!tick && tick.in_game && !busy
+  const canAsk = enabled && !!tick && tick.in_game && tick.session_lifecycle === 'live'
+    && Number.isSafeInteger(tick.session_epoch) && !busy
   const usesClaude = backend === 'claude' || backend === 'auto'
   const refreshReadiness = useCallback(async () => {
     const requestId = ++readinessRequest.current
@@ -39,16 +42,33 @@ export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: 
     const timer = window.setTimeout(() => void refreshReadiness(), 250)
     return () => window.clearTimeout(timer)
   }, [refreshReadiness, backend, cloudContextOptIn, ollamaModel, auth, apiKeyPresent])
+  useEffect(() => {
+    activeSessionEpoch.current = tick?.session_epoch ?? null
+    adviceRequest.current += 1
+    setAdvice(null)
+    setError(null)
+    setBusy(false)
+  }, [tick?.session_epoch])
   const ask = async () => {
-    if (!tick) return
+    if (!tick || !Number.isSafeInteger(tick.session_epoch) || tick.session_lifecycle !== 'live') {
+      setError('รอข้อมูล match/session ที่ยัง live ก่อนขอคำแนะนำ')
+      return
+    }
+    const requestId = ++adviceRequest.current
+    const requestEpoch = tick.session_epoch as number
     setBusy(true); setError(null); setAdvice(null)
     try {
-      const a = await invoke<Advice>('request_advice', { tick })
+      const a = await invoke<Advice>('request_advice', { tick, sessionEpoch: requestEpoch })
+      if (requestId !== adviceRequest.current || activeSessionEpoch.current !== requestEpoch) return
       setAdvice(a)
       if (!a.cached) onUsageChanged?.()
     } catch (e: unknown) {
-      setError(typeof e === 'string' ? e : (e instanceof Error ? e.message : String(e)))
-    } finally { setBusy(false) }
+      if (requestId === adviceRequest.current && activeSessionEpoch.current === requestEpoch) {
+        setError(typeof e === 'string' ? e : (e instanceof Error ? e.message : String(e)))
+      }
+    } finally {
+      if (requestId === adviceRequest.current) setBusy(false)
+    }
   }
   const speakAdvice = () => {
     if (!advice) return

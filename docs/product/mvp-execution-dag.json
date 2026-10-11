@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
   "document_id": "mvp-execution-dag",
-  "version": "0.2.2",
+  "version": "0.2.3",
   "updated": "2026-10-11",
   "mode": "execution_active",
   "source": {
@@ -43,7 +43,7 @@
     "UTTERANCE": "src-tauri/src/utterance.rs session identity/epoch envelope and stale-event gate",
     "GSI": "src-tauri/src/gsi.rs and ingestion/schema changes",
     "UI_ONBOARDING": "GmadFirstRunGate/betaReadiness/setup UI",
-    "UI_SETTINGS": "app/Control and settings lifecycle",
+    "UI_SETTINGS": "app/Control and settings lifecycle/session-scoped advice state",
     "UI_OVERLAY": "app/Overlay and in-game components",
     "UI_DECK": "CommandDeck/dashboard routing",
     "UI_LIVE": "companion.ts and live builders",
@@ -762,7 +762,8 @@
         "UI_LIVE",
         "CAPTURE",
         "UTTERANCE",
-        "UI_OVERLAY"
+        "UI_OVERLAY",
+        "UI_SETTINGS"
       ],
       "verification_locks": [],
       "external_gates": [],
@@ -3756,10 +3757,11 @@
       "added_write_locks": [
         "CAPTURE",
         "UTTERANCE",
-        "UI_OVERLAY"
+        "UI_OVERLAY",
+        "UI_SETTINGS"
       ],
-      "reason": "Session epochs tag and reject stale capture-derived, utterance, and overlay callback state; CORE_STATE now also resets process-global announcer streak/dedup state only when the session epoch changes.",
-      "overlap_review": "W04 MVP-028 remains disjoint (BRAIN/UI_SETTINGS); later CAPTURE/AUDIO work depends on MVP-015 or starts afterward. Announcer state is held under the already exclusive CORE_STATE lease."
+      "reason": "Session epochs tag and reject stale capture-derived, utterance, overlay callback state, and Control advice requests/results; CORE_STATE now also resets process-global announcer streak/dedup state only when the session epoch changes.",
+      "overlap_review": "MVP-028 was merged before MVP-015 expanded into UI_SETTINGS; no concurrent writer remains. Later settings work uses its existing UI_SETTINGS lease, and CAPTURE/AUDIO work depends on MVP-015 or starts afterward. Announcer state is held under the already exclusive CORE_STATE lease."
     }
   ],
   "decision_record": {

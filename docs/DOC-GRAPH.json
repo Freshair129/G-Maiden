@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-11T01:44:46.142Z",
+  "generatedAt": "2026-10-11T01:50:24.168Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -9812,6 +9812,14 @@
     },
     {
       "file": "docs/features/FEAT-G-MASTER.md",
+      "line": 55,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/master.rs",
+      "anchor": 23,
+      "symbol": "THROTTLE"
+    },
+    {
+      "file": "docs/features/FEAT-G-MASTER.md",
       "line": 64,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/runtime.rs",
@@ -9878,6 +9886,14 @@
       "file": "docs/features/FEAT-G-PERSONA.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/features/FEAT-G-REVIVE.md",
+      "line": 102,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/slm.rs",
+      "anchor": 22,
+      "symbol": "advise_offline"
     },
     {
       "file": "docs/features/FEAT-G-REVIVE.md",
@@ -10289,7 +10305,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-11T01:44:52.204Z",
+    "generatedAt": "2026-10-11T01:50:37.092Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

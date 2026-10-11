@@ -84,13 +84,6 @@ fn epoch_ms() -> u64 {
         .unwrap_or(0)
 }
 
-/// Fire-and-forget emit of the `utterance` event. Callers must invoke this
-/// AFTER dispatching the actual audio/TTS/clip so the event never delays the
-/// sound itself; errors (e.g. no listener yet) are intentionally ignored.
-pub fn emit(app: &AppHandle, payload: UtterancePayload) {
-    let _ = emit_for_session(app, payload);
-}
-
 pub fn emit_for_session(app: &AppHandle, payload: UtterancePayload) -> bool {
     let Some(epoch) = payload.session_epoch else {
         return false;

@@ -418,17 +418,36 @@ fn get_master_readiness() -> master::MasterReadiness {
 async fn request_advice(
     app: tauri::AppHandle,
     tick: gsi::GameTick,
+    session_epoch: u64,
 ) -> Result<master::Advice, String> {
+    if !runtime::is_current_live_session(session_epoch) || !tick.in_game {
+        return Err("Advice request does not belong to the active live match.".into());
+    }
+    let session = runtime::match_session_snapshot();
+    if session.session_epoch != session_epoch {
+        return Err("Advice request belongs to an earlier match session.".into());
+    }
     // Ground counter-advice on the enemies CV has identified this match. Read
     // from the Rust runtime (single source of truth) rather than a per-window
     // frontend list — the always-on advice path fires from the overlay window,
     // whose companion store is never populated.
     let enemies = runtime::known_enemies();
-    let result = tauri::async_runtime::spawn_blocking(move || master::advise(&tick, &enemies))
-        .await
-        .map_err(|e| format!("internal: {e}"))??;
-    // Broadcast to overlay — ignore error (overlay may be hidden).
-    let _ = app.emit("advice-update", &result);
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        master::advise_with_epoch(&tick, &enemies, Some(session_epoch))
+    })
+    .await
+    .map_err(|e| format!("internal: {e}"))??;
+    if !runtime::is_current_live_session(session_epoch) {
+        return Err("Advice response belongs to an earlier match session and was discarded.".into());
+    }
+    let session = runtime::match_session_snapshot();
+    if session.session_epoch != session_epoch {
+        return Err("Advice response belongs to an earlier match session and was discarded.".into());
+    }
+    // Broadcast a flattened identity envelope so both the companion and overlay
+    // can reject a response queued before a match boundary.
+    let event = runtime::MatchSessionEvent::new(result.clone(), &session);
+    let _ = app.emit("advice-update", event);
     // CR-011 §B utterance ledger — fired after the broadcast above, never
     // before, so it can't add latency to the advice dispatch itself. `meta`
     // is the resolved backend ("claude"/"ollama") when `advise()` just ran a
@@ -438,9 +457,17 @@ async fn request_advice(
     // signal/announcer entries out of the 30-cap ledger (Opus gate, CR011-P2).
     if !result.cached {
         let backend_meta = master::last_backend().map(str::to_string);
-        utterance::emit(
+        let payload = utterance::UtterancePayload::new_for_session(
+            "master",
+            "line",
+            result.text.clone(),
+            None,
+            backend_meta,
+            &session,
+        );
+        utterance::emit_for_session(
             &app,
-            utterance::UtterancePayload::new("master", "line", result.text.clone(), None, backend_meta),
+            payload,
         );
     }
     Ok(result)
@@ -453,10 +480,19 @@ async fn request_advice(
 async fn request_buyback_advice(
     app: tauri::AppHandle,
     tick: gsi::GameTick,
-) -> revive::ReviveAdvice {
+    session_epoch: u64,
+) -> Result<revive::ReviveAdvice, String> {
+    if !runtime::is_current_live_session(session_epoch) || !tick.in_game {
+        return Err("Buyback request does not belong to the active live match.".into());
+    }
+    let session = runtime::match_session_snapshot();
+    if session.session_epoch != session_epoch {
+        return Err("Buyback request belongs to an earlier match session.".into());
+    }
     let ctx = revive::DeathContext::from_tick(&tick);
     let advice = revive::advise_buyback(&ctx);
-    let _ = app.emit("buyback-advice", &advice);
+    let event = runtime::MatchSessionEvent::new(advice.clone(), &session);
+    let _ = app.emit("buyback-advice", event);
 
     // Voice the verdict via the local SLM off the hot path — fire-and-forget so the
     // UI gets the verdict now; the narrative emits when (if) ollama answers.
@@ -466,10 +502,16 @@ async fn request_buyback_advice(
         // Use the user-picked model from Settings; empty → legacy chain in slm.rs.
         let model = runtime::master_ollama_model();
         if let Ok(text) = slm::advise_offline(&prompt, &model) {
-            let _ = app2.emit("buyback-narrative", text);
+            if runtime::is_current_active_session_epoch(session_epoch) {
+                let current = runtime::match_session_snapshot();
+                if current.session_epoch == session_epoch {
+                    let event = runtime::SessionTextEvent::new(text, &current);
+                    let _ = app2.emit("buyback-narrative", event);
+                }
+            }
         }
     });
-    advice
+    Ok(advice)
 }
 
 /// Manual roster injection (Draft-CV). Sets the match roster by hand — 10 hero

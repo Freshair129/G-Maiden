@@ -381,13 +381,6 @@ fn cache_origin_allowed(route: AdviceRoute, from_slm: bool) -> bool {
     }
 }
 
-/// Ask Maiden for advice on the current game state. Auto stays on local Ollama
-/// until cloud-context consent is enabled; opted-in Claude failures may fall
-/// back to Ollama. Blocking — call from a worker thread. Throttled to 30s.
-pub fn advise(tick: &GameTick, enemies: &[String]) -> Result<Advice, String> {
-    advise_with_epoch(tick, enemies, None)
-}
-
 /// Ask for advice within a match-session namespace. Callers should pass the
 /// active session epoch so a late result from an ended match cannot hit or
 /// overwrite the cache for the next one.
