@@ -120,7 +120,9 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
           <strong>{setup?.installed ? "GSI config ถูกต้อง" : setup?.cfg_present && setup.cfg_valid === false ? "GSI config ไม่ถูกต้อง" : "ตั้งค่า GSI/Dota 2"}</strong>
           <span>{setup?.message ?? "กำลังตรวจ Dota 2…"}</span>
           <span>Listener พอร์ต 3000: {!gsiStatus ? "กำลังตรวจ…" : gsiStatus.server_state === "listening" ? "พร้อมรับ GSI และ OAuth callback" : gsiStatus.server_state === "port_conflict" ? "พอร์ตถูกใช้งาน — ปิด G-Maiden ที่เปิดซ้ำหรือโปรแกรมอื่นที่ใช้พอร์ต 3000; ระบบลองใหม่อัตโนมัติทุก 3 วินาที" : gsiStatus.server_state === "bind_error" ? "เปิดพอร์ตไม่สำเร็จ — ปิดโปรแกรมที่ใช้พอร์ต 3000 แล้วตรวจซ้ำ" : "กำลังเริ่ม listener…"}</span>
-          <span>ข้อมูลเกม: {gsiActive ? "ได้รับ GSI ล่าสุด · live" : dotaRunning ? "Dota 2 เปิดอยู่ แต่ยังรอข้อมูล GSI; หากเพิ่งติดตั้งหรือซ่อม config ให้ปิดแล้วเปิดเกมใหม่" : "รอเปิด Dota 2"}</span>
+          <span>ข้อมูลเกม: {gsiStatus?.gsi_freshness === "stale"
+            ? `Dota 2 ยังเปิด แต่ feed GSI ล้าสมัย${gsiStatus.gsi_age_ms === null ? "" : ` ${(gsiStatus.gsi_age_ms / 1000).toFixed(1)} วินาที`}; พักข้อสรุปจาก own-state จน feed กลับมา`
+            : gsiActive ? "ได้รับ GSI ล่าสุด · live" : dotaRunning ? "Dota 2 เปิดอยู่ แต่ยังรอข้อมูล GSI; หากเพิ่งติดตั้งหรือซ่อม config ให้ปิดแล้วเปิดเกมใหม่" : "รอเปิด Dota 2"}</span>
         </div>
         {dotaRunning === false && <div className="gmad-setup-status"><strong>ยังไม่พบ Dota 2 ที่กำลังทำงาน</strong><span>เปิด Dota 2 แบบ borderless fullscreen แล้วกลับมากดตรวจอีกครั้งได้ สิทธิ์ Closed Beta ของคุณยังยืนยันแล้ว</span></div>}
         {!setup?.installed && setup?.dota_cfg_dir && <button disabled={setupBusy} onClick={() => void installGsi()}>{setupBusy ? "กำลังติดตั้ง…" : setup?.cfg_present && setup?.cfg_valid === false ? "ซ่อม GSI config" : "ติดตั้ง GSI config"}</button>}

@@ -22,8 +22,9 @@ export function buildMatch(
   if (!tick && !status) return base;
 
   let match = base;
+  const fresh = status ? status.gsi_freshness === "fresh" : tick !== null;
 
-  if (tick) {
+  if (tick && fresh) {
     const seconds = tick.clock_time;
     const clock = formatTimer(Math.max(0, tick.clock_time));
     const phase: CompanionData["match"]["phase"] = tick.in_game ? "live" : "pregame";
@@ -72,7 +73,39 @@ export function buildMatch(
   }
 
   if (status) {
-    match = { ...match, gsiOnline: status.gsi_active };
+    const gsiFreshness = status.gsi_freshness;
+    const gsiAgeMs = status.gsi_age_ms;
+    match = {
+      ...match,
+      gsiOnline: status.gsi_active && fresh,
+      gsiFreshness,
+      gsiAgeMs,
+    };
+
+    if (!fresh) {
+      const matchStillOpen = status.dota_running && status.in_game;
+      const age = gsiAgeMs === null ? "" : ` · ${(gsiAgeMs / 1000).toFixed(1)}s`;
+      match = {
+        ...match,
+        phase: matchStillOpen ? "live" : "pregame",
+        minimapState: matchStillOpen ? "live" : "empty",
+        clock: "--:--",
+        seconds: 0,
+        centerLabel: matchStillOpen ? "LIVE · GSI STALE" : "GSI STALE",
+        centerSubLabel: `รอข้อมูล GSI${age}`,
+        leftScore: -1,
+        rightScore: -1,
+        player: {
+          ...base.player,
+          nw: -1, nwAvg: -1, gpm: -1, gpmAvg: -1, xpm: -1, xpmAvg: -1,
+          k: -1, kAvg: -1, d: -1, dAvg: -1, a: -1, aAvg: -1,
+          cs: -1, csAvg: -1, denies: -1, deniesAvg: -1, ping: -1,
+        },
+        playerStats: { ...base.playerStats, net: "—", gpm: -1, xpm: -1 },
+      };
+    }
+  } else if (tick) {
+    match = { ...match, gsiOnline: true, gsiFreshness: "fresh", gsiAgeMs: 0 };
   }
 
   return match;

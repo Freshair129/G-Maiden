@@ -11,7 +11,7 @@
  * Crystal Maiden portrait into CompanionStage, voice-pack tab.
  */
 import React from 'react'
-import type { GameTick, Settings, GankState, ReviveAdvice } from '../App'
+import type { GameTick, GsiFreshness, Settings, GankState, ReviveAdvice } from '../App'
 import { cfgOf, type ModuleCfg, type ModuleId } from './modules'
 import { VoiceWave } from './VoiceWave'
 import { STREAK_LABELS } from './streaks'
@@ -78,6 +78,12 @@ interface Props {
   volToast: number | null
   /** GSI feed is live (Dota running) — gates the pre-game standby chip. */
   gsiActive: boolean
+  /** Fresh validated GSI source; preview ticks are explicitly allowed too. */
+  gsiFresh: boolean
+  gsiFreshness: GsiFreshness
+  gsiAgeMs: number | null
+  /** Dota's last-known in-match lifecycle remains open through a feed outage. */
+  matchActive: boolean
   /** Settings overlay-preview is active — also shows the standby chip. */
   previewMode: boolean
   /** The minimap sensor is producing trustworthy data (capture.rs
@@ -105,11 +111,11 @@ const G_LEVELS = [
   { label: 'อันตราย', color: '#ff7b85', glow: 'rgba(255,123,133,0.6)' },
 ] as const
 
-export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, overlayAdvice, buyback, toast, killBanner, packBanner, lowHp, volToast, gsiActive, previewMode, sensorOk }) => {
+export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, overlayAdvice, buyback, toast, killBanner, packBanner, lowHp, volToast, gsiActive, gsiFresh, gsiFreshness, gsiAgeMs, matchActive, previewMode, sensorOk }) => {
   const op = s.opacity
-  // gsiActive guards the stale-tick case: Dota killed mid-match leaves the last
-  // tick frozen at in_game=true — only the watchdog notices the feed died.
-  const inGame = !!tick && tick.in_game && gsiActive
+  // Session lifecycle remains visible during a feed outage, while own-state
+  // widgets stay suppressed because the parent passes no stale tick.
+  const inGame = matchActive
   const t = tick
   const L = s.layout
 
@@ -168,7 +174,7 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
   // case is the one failure a safety companion may not have, so when the
   // sensor is not healthy the meter goes dark and says so instead. An active
   // G-Signal alert still wins: we withhold reassurance, never a warning.
-  const blind = inGame && !sensorOk && gank?.phase !== 'alert'
+  const blind = inGame && (!sensorOk || !gsiFresh) && gank?.phase !== 'alert'
   const lvl = inGame ? gmeterLevel(missingHeroes.size, gank) : 0
   const meterColor = blind ? C.mut : G_LEVELS[lvl].color
   const gMeter = (
@@ -286,19 +292,27 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
   ) : null
 
   // ── Standby chip (ported) — pre-game "GSI Signal" presence over Dota menus.
-  const showStandby = !inGame && (gsiActive || previewMode)
+  const showStandby = !inGame && (gsiActive || previewMode || gsiFreshness === 'stale')
   const standbyUi = (
     <div style={{ ...glass(op), padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-      <span style={{ width: 8, height: 8, borderRadius: 99, background: gsiActive ? C.ok : C.bad }} />
+      <span style={{ width: 8, height: 8, borderRadius: 99, background: gsiFreshness === 'stale' ? C.warn : gsiActive ? C.ok : C.bad }} />
       <div>
         <div style={{ fontWeight: 600, fontSize: 13 }}>G-Maiden</div>
-        <div style={{ fontSize: 11, color: C.mut }}>GSI Signal</div>
+        <div style={{ fontSize: 11, color: gsiFreshness === 'stale' ? C.warn : C.mut }}>
+          {gsiFreshness === 'stale' ? `GSI stale${gsiAgeMs === null ? '' : ` · ${(gsiAgeMs / 1000).toFixed(1)}s`}` : 'GSI Signal'}
+        </div>
       </div>
     </div>
   )
+  const staleNotice = gsiFreshness === 'stale' ? (
+    <div style={{ position: 'fixed', right: 12, bottom: 12, ...glass(0.88), padding: '6px 10px', color: C.warn, fontSize: 11, zIndex: 30 }}>
+      GSI stale{gsiAgeMs === null ? '' : ` · ${(gsiAgeMs / 1000).toFixed(1)}s`} · พักข้อมูลผู้เล่น · CV ยังทำงาน
+    </div>
+  ) : null
 
   return (
     <div style={{ position: 'fixed', inset: 0, background: 'transparent', pointerEvents: 'none' }}>
+      {staleNotice}
       {alert}
       {inGame && M('gmeter', gMeter)}
       {/* Consolidation (Boss 2026-07-20): the announcer banner already carries

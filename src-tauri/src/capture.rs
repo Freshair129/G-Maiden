@@ -786,14 +786,15 @@ mod backend {
 
             // G-Motion: history + gank-risk over currently-missing enemies.
             state.motion.record(&detections, &r, now_ms);
-            // Audit H3: discount enemies we know are dead. Read fresh each
-            // frame — the pool is written on the GSI thread and expires on
-            // wall-clock, while `now_ms` here is this thread's own monotonic
-            // origin, so the two clocks must not be mixed (hence the
-            // no-argument accessor).
-            state
-                .motion
-                .set_dead_enemies(crate::runtime::dead_enemy_count());
+            // A score-based death count is only authoritative while the last
+            // validated GSI source remains fresh. On feed loss, keep the CV-only
+            // path running but stop using an old own-team score to discount
+            // missing enemies; unknown deaths stay in the risk set.
+            let dead_enemies = crate::runtime::fresh_dead_enemy_count(
+                crate::runtime::gsi_is_fresh(),
+                crate::runtime::dead_enemy_count(),
+            );
+            state.motion.set_dead_enemies(dead_enemies);
             let missing = state.sentry.missing(now_ms);
             let risk = state.motion.assess(&missing, now_ms);
 

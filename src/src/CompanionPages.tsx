@@ -34,7 +34,13 @@ export const LiveMatchPage = memo(function LiveMatchPage() {
           <p>Read the current battlefield with score states, objective timing, and synchronized activity/event feeds.</p>
         </div>
         <div className="page-pill-row">
-          <span className="metric-chip live">LIVE • {data.match.clock}</span>
+          <span className={`metric-chip${data.match.gsiFreshness === "fresh" ? " live" : ""}`}>
+            {data.match.gsiFreshness === "fresh"
+              ? `LIVE • ${data.match.clock}`
+              : data.match.gsiFreshness === "stale"
+                ? `GSI STALE • ${data.match.gsiAgeMs === null ? "" : `${(data.match.gsiAgeMs / 1000).toFixed(1)}s`}`
+                : "WAITING FOR GSI"}
+          </span>
           <span className="metric-chip">{statValue(data.match.activeAlerts)} active alerts</span>
         </div>
       </section>

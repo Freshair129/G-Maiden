@@ -3,8 +3,8 @@
 // Single source of truth so every live builder + the integration hook agree.
 //
 // Emit sites (relative to worktree root):
-//   game-tick     gsi.rs:136        ~30s GSI heartbeat (LOCAL player only)
-//   gsi-status    gsi.rs:194        every 4s watchdog
+//   game-tick     gsi.rs:136        validated GSI observation (LOCAL player only)
+//   gsi-status    gsi.rs:194        every 500ms freshness watchdog + observations
 //   minimap-cv    capture.rs:314    ~5Hz CV debug (detections = pixels within region)
 //   minimap-frame capture.rs        ~3Hz live minimap mirror (base64 PNG data URL)
 //   draft-roster  capture.rs / set_draft_roster cmd  10-hero roster from the pick screen
@@ -52,10 +52,14 @@ export interface GameTick {
   item_names?: string[];
 }
 
-/** gsi-status — connection/liveliness pushed every ~4s. */
+export type GsiFreshness = "unavailable" | "waiting" | "fresh" | "stale";
+
+/** gsi-status — connection and validated-source freshness, refreshed at 500ms. */
 export interface GsiStatus {
   dota_running: boolean;
   gsi_active: boolean;
+  gsi_freshness: GsiFreshness;
+  gsi_age_ms: number | null;
   in_game: boolean;
   display_exclusive: boolean;
   server_state: "starting" | "listening" | "port_conflict" | "bind_error";

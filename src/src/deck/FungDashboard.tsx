@@ -28,6 +28,7 @@ export function GMaidenFungDashboard({
   // renders "—" instead of a fake 0.
   const cpuValue = data.telemetry.cpuLoad >= 0 ? `${data.telemetry.cpuLoad}%` : "—";
   const ramValue = data.telemetry.ramUsedGb >= 0 ? `${Math.round(data.telemetry.ramUsedGb * 1024)} MB` : "—";
+  const gsiFresh = data.match.gsiFreshness === "fresh";
 
   // CR-011 §E: the seat content follows the real phase axis, except a quiet
   // local override ("กลับไปดูสด" in the debrief timeline) can force the live
@@ -47,16 +48,16 @@ export function GMaidenFungDashboard({
   return (
     <div className="gm-fung-layout">
       <section className="gm-score-header" data-seat="score-header" tabIndex={-1}>
-        <strong>{data.match.leftTeamName} {data.match.leftScore}</strong>
-        <span className="gm-clock">{data.match.clock}</span>
-        <strong>{data.match.rightScore} {data.match.rightTeamName}</strong>
+        <strong>{data.match.leftTeamName} {gsiFresh ? data.match.leftScore : "—"}</strong>
+        <span className="gm-clock">{gsiFresh ? data.match.clock : "--:--"}</span>
+        <strong>{gsiFresh ? data.match.rightScore : "—"} {data.match.rightTeamName}</strong>
         <MomentumInline momentum={data.momentum} />
       </section>
 
       <section className="gm-stats-bar" data-seat="stats" tabIndex={-1}>
-        <MiniStat label="NW" value={String(data.match.player.nw)} sub="Local" />
-        <MiniStat label="GPM" value={String(data.match.player.gpm)} sub="Farm" />
-        <MiniStat label="XPM" value={String(data.match.player.xpm)} sub="Tempo" />
+        <MiniStat label="NW" value={gsiFresh ? String(data.match.player.nw) : "—"} sub="Local" />
+        <MiniStat label="GPM" value={gsiFresh ? String(data.match.player.gpm) : "—"} sub="Farm" />
+        <MiniStat label="XPM" value={gsiFresh ? String(data.match.player.xpm) : "—"} sub="Tempo" />
       </section>
 
       <section className="gm-battle-grid" data-seat="battle-grid" tabIndex={-1}>

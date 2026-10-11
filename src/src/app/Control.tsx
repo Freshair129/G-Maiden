@@ -31,6 +31,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
   const [apiKeyPresent, setApiKeyPresent] = useState(false)
   const [voices, setVoices] = useState<VoiceInfo[]>([])
   const [status, setStatus] = useState<GsiStatus | null>(null)
+  const freshTick = status?.gsi_freshness === 'fresh' ? tick : null
   const [resources, setResources] = useState<ResourceStats | null>(null)
   const [captureMode, setCaptureMode] = useState<string>('initializing')
   const [showWelcome, setShowWelcome] = useState(() => localStorage.getItem('gm-onboarded') !== '1')
@@ -364,7 +365,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
 
         {category === 'ai' && (
           <>
-            <MasterCard tick={tick} voice={s.voiceName} rate={s.voiceRate} enabled={s.masterEnabled} onEnabledChange={(v) => set('masterEnabled', v)} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} backend={s.masterBackend} onBackendChange={(b) => set('masterBackend', b)} auth={s.masterAuth} onAuthChange={(a) => set('masterAuth', a)} apiKeyPresent={apiKeyPresent} onApiKeySave={saveMasterApiKey} ollamaModel={s.masterOllamaModel} onOllamaModelChange={(m) => set('masterOllamaModel', m)} onUsageChanged={() => setQuotaTick((n) => n + 1)} />
+            <MasterCard tick={freshTick} voice={s.voiceName} rate={s.voiceRate} enabled={s.masterEnabled} onEnabledChange={(v) => set('masterEnabled', v)} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} backend={s.masterBackend} onBackendChange={(b) => set('masterBackend', b)} auth={s.masterAuth} onAuthChange={(a) => set('masterAuth', a)} apiKeyPresent={apiKeyPresent} onApiKeySave={saveMasterApiKey} ollamaModel={s.masterOllamaModel} onOllamaModelChange={(m) => set('masterOllamaModel', m)} onUsageChanged={() => setQuotaTick((n) => n + 1)} />
             <QuotaCard refreshTrigger={quotaTick} />
           </>
         )}
@@ -475,22 +476,26 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
                 This category keeps GSI/diagnostics only. */}
 
             <Card title="Live (จาก GSI)">
-              {tick && tick.in_game ? (
+              {freshTick && freshTick.in_game ? (
                 <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', paddingTop: 6 }}>
-                  <Stat label="Clock" value={fmtClock(tick.clock_time)} color={C.ice} />
-                  <Stat label="Hero" value={heroName(tick.hero)} />
-                  <Stat label="Lvl" value={tick.level} />
-                  <Stat label="K/D/A" value={`${tick.kills}/${tick.deaths}/${tick.assists}`} />
-                  <Stat label="Net Worth" value={tick.net_worth.toLocaleString()} color={C.ice} />
-                  <Stat label="HP" value={`${tick.hp_percent}%`} color={tick.hp_percent <= s.alertThreshold ? C.bad : C.ok} />
+                  <Stat label="Clock" value={fmtClock(freshTick.clock_time)} color={C.ice} />
+                  <Stat label="Hero" value={heroName(freshTick.hero)} />
+                  <Stat label="Lvl" value={freshTick.level} />
+                  <Stat label="K/D/A" value={`${freshTick.kills}/${freshTick.deaths}/${freshTick.assists}`} />
+                  <Stat label="Net Worth" value={freshTick.net_worth.toLocaleString()} color={C.ice} />
+                  <Stat label="HP" value={`${freshTick.hp_percent}%`} color={freshTick.hp_percent <= s.alertThreshold ? C.bad : C.ok} />
                 </div>
               ) : (
-                <div style={{ fontSize: 13, color: C.mut, paddingTop: 10 }}>{seen ? 'เชื่อมต่อแล้ว — รอเข้าเกม Dota 2' : 'เปิด Dota 2 (ติดตั้ง GSI config แล้ว) เพื่อดูข้อมูลสด'}</div>
+                <div style={{ fontSize: 13, color: C.mut, paddingTop: 10 }}>
+                  {status?.gsi_freshness === 'stale'
+                    ? `ข้อมูล GSI ล้าสมัย${status.gsi_age_ms === null ? '' : ` (${(status.gsi_age_ms / 1000).toFixed(1)} วินาที)`} — พักข้อมูลผู้เล่นไว้จนกว่า feed จะกลับมา; CV ยังประเมิน minimap ต่อได้`
+                    : seen ? 'เชื่อมต่อแล้ว — รอเข้าเกม Dota 2' : 'เปิด Dota 2 (ติดตั้ง GSI config แล้ว) เพื่อดูข้อมูลสด'}
+                </div>
               )}
             </Card>
 
             <SetupCard />
-            <LogCard live={!!tick?.in_game} clockTime={tick?.clock_time ?? 0} />
+            <LogCard live={!!status?.dota_running && !!status.in_game} clockTime={freshTick?.clock_time ?? 0} />
 
             <Card title="ระบบ">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 6, flexWrap: 'wrap', gap: 10 }}>

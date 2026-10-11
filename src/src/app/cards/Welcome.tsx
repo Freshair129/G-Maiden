@@ -70,7 +70,9 @@ export const Welcome: React.FC<{ onDone: () => void }> = ({ onDone }) => {
           <div style={{ marginLeft: 38, fontSize: 12, color: C.mut, lineHeight: 1.55 }}>
             <div style={{ color: C.txt, fontWeight: 600 }}>สถานะการเชื่อมต่อ</div>
             <div>{!health ? 'กำลังตรวจพอร์ต GSI…' : health.server_state === 'listening' ? 'listener พร้อมรับ GSI' : health.server_state === 'port_conflict' ? 'พอร์ต 3000 ถูกใช้งาน ซึ่งกระทบทั้ง GSI และ Google OAuth callback' : health.server_state === 'bind_error' ? 'เปิดพอร์ต 3000 ไม่สำเร็จ ตรวจโปรแกรมที่ใช้งานพอร์ตแล้วลองตรวจซ้ำ' : 'กำลังเริ่ม listener…'}</div>
-            <div>{health?.gsi_active ? 'ได้รับข้อมูลเกมล่าสุดแล้ว · live' : health?.dota_running ? 'Dota 2 เปิดอยู่แต่ยังไม่ส่งข้อมูล; หลังติดตั้งหรือซ่อม config ให้ปิดแล้วเปิดเกมใหม่' : 'รอเปิด Dota 2'}</div>
+            <div>{health?.gsi_freshness === 'stale'
+              ? `Dota 2 ยังเปิด แต่ feed GSI ล้าสมัย${health.gsi_age_ms === null ? '' : ` ${(health.gsi_age_ms / 1000).toFixed(1)} วินาที`}; Maiden จะพักข้อสรุปจากสถานะผู้เล่นจน feed กลับมา`
+              : health?.gsi_active ? 'ได้รับข้อมูลเกมล่าสุดแล้ว · live' : health?.dota_running ? 'Dota 2 เปิดอยู่แต่ยังไม่ส่งข้อมูล; หลังติดตั้งหรือซ่อม config ให้ปิดแล้วเปิดเกมใหม่' : 'รอเปิด Dota 2'}</div>
             {portConflict && <div>ปิด G-Maiden ที่เปิดซ้ำหรือโปรแกรมที่ใช้พอร์ตนี้ แล้วระบบจะลองเชื่อมต่อใหม่อัตโนมัติทุก 3 วินาที</div>}
           </div>
         </div>

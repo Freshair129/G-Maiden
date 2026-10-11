@@ -15,7 +15,8 @@ import { TONE_DANGER_LINES, TONE_LINES, TONE_REVISION_LINES } from './lines'
 import { fmtClock, heroName, overlayPanel, Bar, Stat, sep, dangerStyle, gankStyle, gankClearStyle, killBannerStyle, packBannerStyle } from './primitives'
 
 export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSettings = DEFAULTS }) => {
-  const [tick, setTick] = useState<GameTick | null>(null)
+  const [lastTick, setLastTick] = useState<GameTick | null>(null)
+  const [gsiStatus, setGsiStatus] = useState<GsiStatus | null>(null)
   const [seen, setSeen] = useState(false)
   const [s, setS] = useState<Settings>(initialSettings)
   const tone = (s.personaPreset === 'caster' || s.personaPreset === 'meme') ? 'casual' : 'serious'
@@ -32,10 +33,13 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   // deterministic verdict; `narrative` is the local-SLM voiced line that arrives
   // a beat later on `buyback-narrative`. Cleared on respawn.
   const [buyback, setBuyback] = useState<{ advice: ReviveAdvice; narrative: string | null } | null>(null)
-  // GSI activity from the watchdog — so the HUD disappears when Dota closes
-  // (Dota stops POSTing without a final tick; `tick` would otherwise stay stale).
-  const [gsiActive, setGsiActive] = useState(true)
   const [previewMode, setPreviewMode] = useState(false)
+  const gsiFresh = gsiStatus?.gsi_freshness === 'fresh'
+  const gsiActive = gsiFresh
+  const tick = (gsiFresh || previewMode) ? lastTick : null
+  // Keep the session shell alive while Dota is still open, but do not expose
+  // the last own-state tick after its source has crossed the freshness limit.
+  const matchActive = previewMode ? !!lastTick?.in_game : !!gsiStatus?.dota_running && !!gsiStatus.in_game
   // Minimap-sensor truth. Starts NULL, and null is treated as "not healthy" —
   // fail-closed. In a release build the capture thread only starts after the
   // entitlement check, so "we have never heard from it" is a real state, and
@@ -83,13 +87,18 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   const recentDeathClock = useRef<number | null>(null)
   const advisedAt = useRef<Record<string, number>>({})
   const sRef = useRef(s)
+  const gsiStatusRef = useRef(gsiStatus)
+  const previewModeRef = useRef(previewMode)
   sRef.current = s
+  gsiStatusRef.current = gsiStatus
+  previewModeRef.current = previewMode
+  const mayUseOwnState = () => previewModeRef.current || gsiStatusRef.current?.gsi_freshness === 'fresh'
   useEffect(() => {
     missingHeroesRef.current = missingHeroes
   }, [missingHeroes])
   tickRef.current = tick
   useEffect(() => {
-    const u1 = listen<GameTick>('game-tick', (e) => { setTick(e.payload); setSeen(true) })
+    const u1 = listen<GameTick>('game-tick', (e) => { setLastTick(e.payload); setSeen(true) })
     const u2 = listen<Settings>('settings', (e) => setS({ ...DEFAULTS, ...e.payload, uiMode: 'full' }))
     // CV debug feed — fires 8–15 Hz. Cheap setState; only rendered when cvDebug is on.
     const u3 = listen<MinimapCv>('minimap-cv', (e) => {
@@ -113,7 +122,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       if (gankClearTimer.current) clearTimeout(gankClearTimer.current)
       gankClearTimer.current = setTimeout(() => setGank(null), 2200)
     })
-    const u6 = listen<GsiStatus>('gsi-status', (e) => setGsiActive(e.payload.gsi_active))
+    const u6 = listen<GsiStatus>('gsi-status', (e) => setGsiStatus(e.payload))
     const uSH = listen<SensorHealth>('sensor-health', (e) => setSensorHealth(e.payload))
     const u7 = listen<boolean>('preview-mode', (e) => setPreviewMode(e.payload))
     // G2.6: G-Sentry missing-hero events — accumulate into a set; clear when gank clears.
@@ -124,7 +133,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     })
     // G5.4: Advice panel — show for 20s then dismiss.
     const u9 = listen<AdviceUpdate>('advice-update', (e) => {
-      if (!e.payload.cached) {
+      if (mayUseOwnState() && !e.payload.cached) {
         setOverlayAdvice(e.payload.text)
         if (adviceTimer.current) clearTimeout(adviceTimer.current)
         adviceTimer.current = setTimeout(() => setOverlayAdvice(null), 20_000)
@@ -134,10 +143,10 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     // verdict (broadcast, so it shows regardless of which window triggered the
     // request); `buyback-narrative` follows with Maiden's voiced line.
     const uBA = listen<ReviveAdvice>('buyback-advice', (e) => {
-      setBuyback({ advice: e.payload, narrative: null })
+      if (mayUseOwnState()) setBuyback({ advice: e.payload, narrative: null })
     })
     const uBN = listen<string>('buyback-narrative', (e) => {
-      setBuyback((b) => (b ? { ...b, narrative: e.payload } : b))
+      if (mayUseOwnState()) setBuyback((b) => (b ? { ...b, narrative: e.payload } : b))
     })
     const u10 = listen<number>('volume-change', (e) => {
       setVolToast(e.payload)
@@ -158,6 +167,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     // shows when the pack actually maps an image (bannerUrl); otherwise we leave
     // the built-in kill card to handle it. Clears the card so we never stack both.
     const uPB = listen<{ event: string; bannerData: string | null; bannerText: string; thai: string; clip: string | null }>('announcer-banner', (e) => {
+      if (!mayUseOwnState()) return
       // Show the bundle banner when the pack maps an image OR a voice clip fired —
       // a voice-only event still gets the transcript + reactive waveform strip.
       if ((!e.payload.bannerData && !e.payload.clip) || !sRef.current.killVisuals) return
@@ -367,9 +377,9 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   // the next match's pre-game). Clear them all on the in_game falling edge.
   const prevInGame = useRef(false)
   useEffect(() => {
-    // gsiActive matters too: if Dota is killed mid-match the last tick stays
-    // frozen at in_game=true and only the watchdog notices.
-    const now = !!tick?.in_game && gsiActive
+    // The backend's process + lifecycle status keeps this true across a GSI
+    // outage, so feed staleness cannot masquerade as a match-end transition.
+    const now = matchActive
     if (prevInGame.current && !now) {
       setBuyback(null)
       setOverlayAdvice(null)
@@ -382,7 +392,29 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       lastKillHeroes.current.clear()
     }
     prevInGame.current = now
-  }, [tick?.in_game, gsiActive])
+  }, [matchActive])
+
+  const wasFresh = useRef<boolean | null>(null)
+  useEffect(() => {
+    const nowFresh = gsiFresh || previewMode
+    if (wasFresh.current && !nowFresh) {
+      setBuyback(null)
+      setOverlayAdvice(null)
+      setToast(null)
+      setKillBanner(null)
+      setPackBanner(null)
+      killStreak.current = 0
+      lastKillHeroes.current.clear()
+      dangerActive.current = false
+      manaActive.current = false
+      lastSpokeKind.current = null
+      lastSpokeAt.current = 0
+      prev.current = null
+      prevAlive.current = null
+      recentDeathClock.current = null
+    }
+    wasFresh.current = nowFresh
+  }, [gsiFresh, previewMode])
 
   // Auto-advice (G-Master proactive). Fires Claude Plan request + speaks the
   // result on key moments: ult level milestones and a death-streak (2 deaths
@@ -575,7 +607,9 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
         tick={tick} s={s} gank={gank} missingHeroes={missingHeroes}
         overlayAdvice={overlayAdvice} buyback={buyback} toast={toast}
         killBanner={killBanner} packBanner={packBanner} lowHp={lowHp}
-        volToast={volToast} gsiActive={gsiActive} previewMode={previewMode}
+        volToast={volToast} gsiActive={gsiActive} gsiFresh={gsiFresh || previewMode}
+        gsiFreshness={gsiStatus?.gsi_freshness ?? 'unavailable'} gsiAgeMs={gsiStatus?.gsi_age_ms ?? null}
+        matchActive={matchActive} previewMode={previewMode}
         sensorOk={sensorHealth?.healthy ?? false}
       />
     )
@@ -588,7 +622,8 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     // desktop, permanently. Only show it when there's a live GSI feed (Dota
     // menus — useful "I'm alive" feedback over the game) or during the
     // settings overlay-preview; on a plain desktop the overlay draws nothing.
-    const showStandbyChip = gsiActive || previewMode
+    const stale = gsiStatus?.gsi_freshness === 'stale'
+    const showStandbyChip = gsiActive || previewMode || stale
     return (
       <>
         {cvDebug}
@@ -599,10 +634,12 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
             {eventToast}
             {showStandbyChip && (
               <div style={{ ...overlayPanel(s.opacity), padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 99, background: gsiActive ? C.ok : C.bad }} />
+                <span style={{ width: 8, height: 8, borderRadius: 99, background: stale ? C.warn : gsiActive ? C.ok : C.bad }} />
                 <div>
                   <div style={{ fontWeight: 600, fontSize: 13 }}>G-Maiden</div>
-                  <div style={{ fontSize: 11, color: C.mut }}>GSI Signal</div>
+                  <div style={{ fontSize: 11, color: stale ? C.warn : C.mut }}>
+                    {stale ? `GSI stale${gsiStatus?.gsi_age_ms === null || gsiStatus?.gsi_age_ms === undefined ? '' : ` · ${(gsiStatus.gsi_age_ms / 1000).toFixed(1)}s`}` : 'GSI Signal'}
+                  </div>
                 </div>
               </div>
             )}

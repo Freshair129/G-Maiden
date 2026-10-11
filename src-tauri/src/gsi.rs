@@ -37,6 +37,7 @@ const OVERLAY_MODULE_IDS: [&str; 19] = [
 ];
 const SETTINGS_EVENT: &str = "settings";
 const OVERLAY_LAYOUT_SYNC_EVENT: &str = "overlay-layout-sync";
+const GSI_STATUS_INTERVAL_MS: u64 = 500;
 
 /// Clean, UI-facing snapshot of the current game state.
 #[derive(Serialize, serde::Deserialize, Clone, Default)]
@@ -553,6 +554,10 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
         }
     }
     crate::log::note_tick(&tick);
+    // Publish freshness before the tick so every UI consumer can gate its own-
+    // state decisions against the same validated observation. Reuse the cached
+    // display-mode sample; the 500ms/process watchdogs refresh that separately.
+    emit_observation_status(&app);
     let _ = app.emit("game-tick", tick);
     // CR-007 WP-4: the announcer (kill/streak/death lines) is a separate,
     // non-critical path from G-Signal — `runtime::signal_enabled()` gates
@@ -840,7 +845,7 @@ fn epoch_ms() -> u64 {
 
 /// Connection/status snapshot pushed to the UI by the watchdog so it can stop
 /// showing "connected" after Dota closes (Dota just goes silent — no final tick).
-#[derive(Serialize, Clone, Copy)]
+#[derive(Serialize, Clone, Copy, PartialEq, Eq)]
 #[serde(rename_all = "snake_case")]
 enum GsiServerState {
     Starting = 0,
@@ -849,8 +854,35 @@ enum GsiServerState {
     BindError = 3,
 }
 
+#[derive(Debug, Serialize, Clone, Copy, PartialEq, Eq)]
+#[serde(rename_all = "snake_case")]
+enum GsiFreshness {
+    Unavailable,
+    Waiting,
+    Fresh,
+    Stale,
+}
+
+fn freshness_at(
+    dota_running: bool,
+    listener_ready: bool,
+    last_post_ms: u64,
+    now_ms: u64,
+) -> GsiFreshness {
+    if !dota_running || !listener_ready {
+        GsiFreshness::Unavailable
+    } else if last_post_ms == 0 {
+        GsiFreshness::Waiting
+    } else if crate::runtime::gsi_is_fresh_at(last_post_ms, now_ms) {
+        GsiFreshness::Fresh
+    } else {
+        GsiFreshness::Stale
+    }
+}
+
 static GSI_SERVER_STATE: AtomicU8 = AtomicU8::new(GsiServerState::Starting as u8);
 static DOTA_PROCESS_RUNNING: AtomicBool = AtomicBool::new(false);
+static DISPLAY_EXCLUSIVE_ACTIVE: AtomicBool = AtomicBool::new(false);
 
 fn server_state() -> GsiServerState {
     match GSI_SERVER_STATE.load(Ordering::Relaxed) {
@@ -877,8 +909,11 @@ fn set_server_state(app: &AppHandle, state: GsiServerState) {
 #[derive(Serialize, Clone)]
 struct GsiStatus {
     dota_running: bool,
-    /// a GSI POST arrived recently (heartbeat is ~30s, so we allow a 45s gap).
+    /// True only while a validated GSI observation is within the accepted 2s age.
     gsi_active: bool,
+    gsi_freshness: GsiFreshness,
+    /// Age of the last validated GSI POST; absent until the first valid payload.
+    gsi_age_ms: Option<u64>,
     in_game: bool,
     /// Dota is in *true* Exclusive Fullscreen → overlay + minimap capture can't
     /// work (no DWM) and the desktop may freeze. UI warns the user to switch to
@@ -888,23 +923,48 @@ struct GsiStatus {
 }
 
 fn emit_status(app: &AppHandle, running: bool) {
-    DOTA_PROCESS_RUNNING.store(running, Ordering::Relaxed);
-    if !running {
+    let was_running = DOTA_PROCESS_RUNNING.swap(running, Ordering::Relaxed);
+    if was_running && !running {
         crate::runtime::set_in_game(false);
         crate::log::force_end();
     }
+    let display_exclusive = running && crate::setup::exclusive_fullscreen_active();
+    DISPLAY_EXCLUSIVE_ACTIVE.store(display_exclusive, Ordering::Relaxed);
+    emit_status_snapshot(app, running, display_exclusive);
+}
+
+fn emit_observation_status(app: &AppHandle) {
+    DOTA_PROCESS_RUNNING.store(true, Ordering::Relaxed);
+    emit_status_snapshot(app, true, DISPLAY_EXCLUSIVE_ACTIVE.load(Ordering::Relaxed));
+}
+
+fn emit_freshness_status(app: &AppHandle) {
+    emit_status_snapshot(
+        app,
+        DOTA_PROCESS_RUNNING.load(Ordering::Relaxed),
+        DISPLAY_EXCLUSIVE_ACTIVE.load(Ordering::Relaxed),
+    );
+}
+
+fn emit_status_snapshot(app: &AppHandle, running: bool, display_exclusive: bool) {
+    let now_ms = epoch_ms();
     let last = crate::runtime::last_post_ms();
     let server_state = server_state();
-    let gsi_active = running
-        && matches!(server_state, GsiServerState::Listening)
-        && last != 0
-        && epoch_ms().saturating_sub(last) < 45_000;
-    let display_exclusive = running && crate::setup::exclusive_fullscreen_active();
+    let gsi_age_ms = (last != 0).then(|| now_ms.saturating_sub(last));
+    let gsi_freshness = freshness_at(
+        running,
+        matches!(server_state, GsiServerState::Listening),
+        last,
+        now_ms,
+    );
+    let gsi_active = gsi_freshness == GsiFreshness::Fresh;
     let _ = app.emit(
         "gsi-status",
         GsiStatus {
             dota_running: running,
             gsi_active,
+            gsi_freshness,
+            gsi_age_ms,
             in_game: crate::runtime::in_game(),
             display_exclusive,
             server_state,
@@ -924,10 +984,20 @@ async fn watchdog(app: AppHandle) {
     }
 }
 
+/// Publish source freshness at the contract cadence without polling the Dota
+/// process every 500ms. The separate process watchdog remains at four seconds.
+async fn freshness_watchdog(app: AppHandle) {
+    loop {
+        emit_freshness_status(&app);
+        tokio::time::sleep(std::time::Duration::from_millis(GSI_STATUS_INTERVAL_MS)).await;
+    }
+}
+
 /// Bind :3000 and serve GSI. Retries after a bind conflict so closing the
 /// competing process is enough to recover without restarting G-Maiden.
 pub async fn serve(app: AppHandle) {
     tauri::async_runtime::spawn(watchdog(app.clone()));
+    tauri::async_runtime::spawn(freshness_watchdog(app.clone()));
     let router = Router::new()
         .route("/gsi", post(handle))
         .route("/announcer/install", post(announcer_install))
@@ -979,6 +1049,21 @@ mod tests {
             serde_json::to_string(&GsiServerState::PortConflict).unwrap(),
             "\"port_conflict\""
         );
+    }
+
+    #[test]
+    fn freshness_status_distinguishes_waiting_fresh_stale_and_unavailable() {
+        assert_eq!(freshness_at(false, true, 1_000, 1_500), GsiFreshness::Unavailable);
+        assert_eq!(freshness_at(true, false, 1_000, 1_500), GsiFreshness::Unavailable);
+        assert_eq!(freshness_at(true, true, 0, 1_500), GsiFreshness::Waiting);
+        assert_eq!(freshness_at(true, true, 10_000, 12_000), GsiFreshness::Fresh);
+        assert_eq!(freshness_at(true, true, 10_000, 12_001), GsiFreshness::Stale);
+    }
+
+    #[test]
+    fn stale_feed_while_dota_is_open_is_distinct_from_process_exit() {
+        assert_eq!(freshness_at(true, true, 10_000, 12_001), GsiFreshness::Stale);
+        assert_eq!(freshness_at(false, true, 10_000, 12_001), GsiFreshness::Unavailable);
     }
 
     #[test]

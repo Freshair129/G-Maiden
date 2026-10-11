@@ -7,7 +7,7 @@ import { StartupSettingsProvider, useStartupSettings } from './app/settings'
 import GmadFirstRunGate from './GmadFirstRunGate'
 
 export { Control }
-export type { GameTick, Settings, GankState, ReviveAdvice, SettingsCat, BuybackUrgency, Sensitivity } from './app/types'
+export type { GameTick, GsiFreshness, Settings, GankState, ReviveAdvice, SettingsCat, BuybackUrgency, Sensitivity } from './app/types'
 
 const HydratedOverlay: React.FC = () => {
   const { settings } = useStartupSettings()
