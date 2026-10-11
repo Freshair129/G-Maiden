@@ -57,7 +57,13 @@ export interface GankAlert extends MatchSessionMetadata { probability: number; m
 /** G2.6: emitted by G-Sentry when a hero crosses the 5s missing threshold. */
 export interface EnemyMissing extends MatchSessionMetadata { hero: string; missing_for_ms: number; last_pos: [number, number] }
 /** G5.4: advice broadcast from master.rs → overlay. */
-export interface AdviceUpdate extends MatchSessionMetadata { text: string; cached: boolean }
+export interface AdviceUpdate extends MatchSessionMetadata {
+  text: string
+  cached: boolean
+  backend?: 'claude' | 'ollama'
+  elapsed_ms?: number
+  cached_age_ms?: number | null
+}
 /** G-Revive: deterministic buyback verdict (revive.rs → `buyback-advice`).
  *  Mirrors `ReviveAdvice`; `urgency` is the serde-serialized `Urgency` enum. */
 export type BuybackUrgency = 'None' | 'Consider' | 'Strong'
@@ -176,9 +182,31 @@ export interface SetupStatus {
 export interface VoiceCacheStatus { dir: string; counts: Record<string, number>; total: number }
 export interface EventClip { name: string; path: string; source: string }
 
-// ─────────────────────────────── G-MASTER (Claude Plan advisor) ───────────────────────────────
-export interface Advice { text: string; cached: boolean }
+// ─────────────────────────────── G-MASTER (local-first advisor) ───────────────────────────────
+export interface Advice { text: string; cached: boolean; backend?: 'claude' | 'ollama'; elapsed_ms?: number; cached_age_ms?: number | null }
 export type MasterBackend = 'auto' | 'claude' | 'ollama'
+export type OllamaReadinessState = 'available' | 'missing-model' | 'unavailable' | 'invalid-model'
+export interface OllamaReadiness {
+  state: OllamaReadinessState
+  model: string
+  detail: string | null
+  probeTimeoutMs: number
+  requestTimeoutMs: number
+}
+export interface MasterReadiness {
+  backend: MasterBackend
+  cloudContextOptIn: boolean
+  route: 'local-only' | 'cloud-only' | 'cloud-then-local' | 'cloud-blocked-by-opt-in'
+  ollama: OllamaReadiness
+  claudeCli: { executableDetected: boolean; authenticationVerified: boolean }
+  anthropicApi: { apiKeySaved: boolean; credentialVerified: boolean }
+  deterministicLocalFallback: boolean
+  claudeRequestTimeoutMs: number
+  autoClaudeAttemptTimeoutMs: number
+  ollamaRequestTimeoutMs: number
+  maxAdviceRequestTimeoutMs: number
+  costNote: string
+}
 
 // ─────────────────────────────── G-LOG (local match logging) ───────────────────────────────
 export interface MatchLog { name: string; size: number; modified_ms: number }

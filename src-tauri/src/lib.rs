@@ -410,6 +410,11 @@ fn open_url(url: String) {
 /// Also broadcasts `advice-update` to the overlay window so it can show the
 /// advice inline (G5.4) without the control panel being open.
 #[tauri::command]
+fn get_master_readiness() -> master::MasterReadiness {
+    master::backend_readiness()
+}
+
+#[tauri::command]
 async fn request_advice(
     app: tauri::AppHandle,
     tick: gsi::GameTick,
@@ -923,6 +928,7 @@ pub fn run() {
             read_match_log,
             delete_all_match_logs,
             request_advice,
+            get_master_readiness,
             request_buyback_advice,
             set_draft_roster,
             read_usage,
