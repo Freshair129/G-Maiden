@@ -2,8 +2,8 @@
 title: "G-Series Data Lineage and Computation Contract"
 doc_id: "G-SERIES-DATA-LINEAGE"
 status: "accepted"
-version: "1.1.1"
-updated: "2026-10-11"
+version: "1.1.2"
+updated: "2026-10-12"
 owner: "Boss"
 approved_by: "user"
 approved_date: "2026-10-06"
@@ -326,12 +326,12 @@ The natural-language answer is model inference, not a reproducible numeric formu
 ```text
 RAM_MB = WorkingSetSize / 1,048,576
 
-CPU_percent = (process_cpu_delta_ms / (wall_delta_ms * logical_core_count)) * 100
+CPU_group_percent = (job_cpu_delta_ms / (wall_delta_ms * logical_core_count)) * 100
 
-over_budget = RAM_MB > 400 || CPU_percent > 2.5
+over_budget = RAM_MB > 400 || CPU_group_percent > 10 || CPU_group_unavailable
 ```
 
-The governor samples every 10 seconds and sets a capture throttle when over budget. GPU load, temperature, and VRAM are parsed values, not calculated estimates. The P7 harness measures FPS locally from PresentMon ETW receipts over a two-phase capture window (default 30 seconds per phase):
+The governor samples every second and sets a capture throttle when RAM/CPU exceeds budget or the CPU group query becomes unavailable. If creating/configuring/assigning the Windows Job Object hard cap fails, the current implementation continues with an unavailable CPU sample and capture throttle enabled; there is no whole-app cap guarantee in this state. After successful setup, a query failure is unknown but does not remove the OS cap. The current `resource-stats` payload does not expose cap initialization separately, so the UI cannot distinguish these states. `KILL_ON_JOB_CLOSE` cleans up job members when the app's last private job handle closes; when the job exists, `gpu-feeder` uses default inherited membership and no breakaway flag. If setup failed, the feeder is outside that job and may remain after an abnormal host termination. WebView2 membership and crash cleanup still require Windows acceptance evidence. Normal Tauri exit also stops the exact owned GPU feeder child. GPU load, temperature, and VRAM are parsed values, not calculated estimates. The P7 harness measures FPS locally from PresentMon ETW receipts over a two-phase capture window (default 30 seconds per phase):
 
 ```text
 fps = 1000 / mean(MsBetweenPresents)
@@ -536,3 +536,4 @@ The following are documentation/verification requirements, not claims that the c
 | 1.0.11 | 2026-10-06 | Implemented DL-007 persistent G-Memory clear cutoff, retained-log filtering, and fail-closed marker behavior; runtime no-egress receipt remains open. |
 | 1.1.0 | 2026-10-10 | Reconciled MVP target precedence, cloud-context allowlist/opt-in, local-only Voice and Memory, and deferred deep Coach; kept broader current implementation claims distinct from acceptance evidence. |
 | 1.1.1 | 2026-10-11 | Added CI-gated static gameplay data schema, coverage, duplicate-key, and curated/runtime consistency verification without upgrading unknown source evidence. |
+| 1.1.2 | 2026-10-12 | Updated whole-app CPU calculation, threshold, cadence and Job Object failure/lifecycle contract. |

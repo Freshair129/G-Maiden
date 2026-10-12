@@ -1,31 +1,50 @@
 //! G7.2 — Resource Governor.
 //!
-//! Monitors the process's own RAM and CPU usage. Emits `resource-stats` events
+//! Monitors the process's RAM and whole-app job-group CPU usage. Emits `resource-stats` events
 //! to the control window every [`POLL_INTERVAL_S`] seconds so the dashboard can
 //! display live numbers. Also enforces the NFR budgets (SRS):
 //!   - RAM ≤ 400 MB working set
-//!   - Background CPU ≤ 2.5% on a mid-range chipset
+//!   - Whole-app CPU ≤ 10% of logical CPU capacity
 //!
-//! On Windows we read memory + CPU directly from Win32 APIs. This avoids the
-//! old PowerShell subprocess probes, which showed up as grouped CPU spikes in
-//! Task Manager and distorted the app-level budget story.
+//! On Windows, a Job Object both hard-caps CPU and accounts the host plus its
+//! inherited child processes (WebView2 and sidecars). If the job cannot be
+//! configured or assigned, CPU is unavailable, capture throttling stays on,
+//! and no whole-app hard-cap guarantee is made. A later accounting-query
+//! failure is reported separately from cap initialization. We never infer
+//! whole-app usage from process names.
 //!
 //! Throttle callbacks are exported so the capture loop can check whether to
-//! drop a processing tick (reducing from ~8 Hz to ~4 Hz) when CPU is high.
+//! drop a processing tick (reducing to ~2 Hz) when CPU is high. This is an
+//! additional soft mitigation; the OS Job Object hard cap is the 10% ceiling.
 
+#[cfg(windows)]
+use std::os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle};
+use std::process::Child;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
-use std::sync::Mutex;
+use std::sync::{Mutex, OnceLock};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 use tauri::{AppHandle, Emitter};
 #[cfg(windows)]
-use windows::Win32::Foundation::FILETIME;
+use windows::core::PCWSTR;
+#[cfg(windows)]
+use windows::Win32::Foundation::HANDLE;
+#[cfg(windows)]
+use windows::Win32::System::JobObjects::{
+    AssignProcessToJobObject, CreateJobObjectW, JobObjectBasicAccountingInformation,
+    JobObjectCpuRateControlInformation, JobObjectExtendedLimitInformation,
+    QueryInformationJobObject, SetInformationJobObject, JOBOBJECT_BASIC_ACCOUNTING_INFORMATION,
+    JOBOBJECT_CPU_RATE_CONTROL_INFORMATION, JOBOBJECT_CPU_RATE_CONTROL_INFORMATION_0,
+    JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_CPU_RATE_CONTROL_ENABLE,
+    JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
+};
 #[cfg(windows)]
 use windows::Win32::System::ProcessStatus::{GetProcessMemoryInfo, PROCESS_MEMORY_COUNTERS};
 #[cfg(windows)]
-use windows::Win32::System::Threading::{GetCurrentProcess, GetProcessTimes};
+use windows::Win32::System::Threading::GetCurrentProcess;
 
 const POLL_INTERVAL_S: u64 = 1;
 const CPU_BUDGET_PCT: f64 = 10.0;
+const CPU_HARD_CAP_RATE: u32 = 1_000;
 const CPU_THROTTLE_RELEASE_PCT: f64 = 8.0;
 const CPU_THROTTLE_RELEASE_SAMPLES: u8 = 3;
 const RAM_BUDGET_MB: f64 = 400.0;
@@ -65,18 +84,88 @@ struct GpuSample {
     at: Instant,
 }
 static LATEST_GPU: Mutex<Option<GpuSample>> = Mutex::new(None);
+static GPU_FEEDER_CHILD: OnceLock<Mutex<Option<Child>>> = OnceLock::new();
 
 /// True while resource usage is over budget; the capture loop reads this to
 /// drop half its ticks automatically.
-static CPU_THROTTLE: AtomicBool = AtomicBool::new(false);
+static CPU_THROTTLE: AtomicBool = AtomicBool::new(true);
 #[cfg(windows)]
-static CPU_SAMPLE: Mutex<Option<CpuSample>> = Mutex::new(None);
+static PROCESS_JOB: OnceLock<Result<ProcessJob, String>> = OnceLock::new();
+
+#[cfg(windows)]
+struct ProcessJob {
+    // PROCESS_JOB keeps this sole created handle open for the app lifetime; it
+    // is not duplicated or inherited by children.
+    handle: OwnedHandle,
+    sample: Mutex<Option<CpuSample>>,
+}
 
 #[cfg(windows)]
 #[derive(Clone, Copy)]
 struct CpuSample {
     total_100ns: u64,
     wall: Instant,
+}
+
+/// Create and assign the app's CPU-limited process group before Tauri creates
+/// WebView2 or the app starts any sidecars. Descendants inherit job membership.
+pub fn initialize_process_group() -> Result<(), String> {
+    #[cfg(windows)]
+    let result = PROCESS_JOB
+        .get_or_init(create_process_job)
+        .as_ref()
+        .map(|_| ())
+        .map_err(Clone::clone);
+    #[cfg(not(windows))]
+    let result = Err("whole-app CPU job limits are only available on Windows".into());
+    if result.is_err() {
+        CPU_THROTTLE.store(true, Ordering::Relaxed);
+    }
+    result
+}
+
+#[cfg(windows)]
+fn create_process_job() -> Result<ProcessJob, String> {
+    let raw_handle = unsafe { CreateJobObjectW(None, PCWSTR::null()) }
+        .map_err(|error| format!("CreateJobObjectW failed: {error}"))?;
+    let handle = unsafe { OwnedHandle::from_raw_handle(raw_handle.0) };
+    let job_handle = HANDLE(handle.as_raw_handle());
+    let rate_control = JOBOBJECT_CPU_RATE_CONTROL_INFORMATION {
+        ControlFlags: JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP,
+        Anonymous: JOBOBJECT_CPU_RATE_CONTROL_INFORMATION_0 {
+            CpuRate: CPU_HARD_CAP_RATE,
+        },
+    };
+    unsafe {
+        SetInformationJobObject(
+            job_handle,
+            JobObjectCpuRateControlInformation,
+            (&rate_control as *const JOBOBJECT_CPU_RATE_CONTROL_INFORMATION).cast(),
+            std::mem::size_of::<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>() as u32,
+        )
+    }
+    .map_err(|error| format!("setting the 10% Job Object CPU hard cap failed: {error}"))?;
+
+    let mut extended_limits = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
+    extended_limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
+    unsafe {
+        SetInformationJobObject(
+            job_handle,
+            JobObjectExtendedLimitInformation,
+            (&extended_limits as *const JOBOBJECT_EXTENDED_LIMIT_INFORMATION).cast(),
+            std::mem::size_of::<JOBOBJECT_EXTENDED_LIMIT_INFORMATION>() as u32,
+        )
+    }
+    .map_err(|error| format!("enabling Job Object kill-on-close failed: {error}"))?;
+
+    let process = unsafe { GetCurrentProcess() };
+    unsafe { AssignProcessToJobObject(job_handle, process) }
+        .map_err(|error| format!("assigning G-Maiden to its CPU Job Object failed: {error}"))?;
+
+    Ok(ProcessJob {
+        handle,
+        sample: Mutex::new(None),
+    })
 }
 
 /// Read by the capture loop every tick (`capture.rs`) — when true it drops
@@ -91,13 +180,15 @@ pub fn cpu_throttle() -> bool {
 pub struct ResourceStats {
     pub ram_mb: f64,
     pub cpu_pct: f64,
+    /// Active processes accounted by the Windows Job Object; `-1` means that
+    /// whole-app process-group containment/accounting is unavailable.
+    pub cpu_group_processes: i32,
     /// True when one or more NFRs are over budget.
     pub over_budget: bool,
     /// Session peaks (max seen since launch) — lets the deck footer prove the
     /// SRS §5.1 budgets held over a whole match without an external harness.
-    /// `cpu_pct` here is the governor's own-process, core-normalized reading
-    /// (≤10% budget); visible-deck WebView2 render is a separate process
-    /// and is NOT counted (measured 2026-07-18: core 0.12% CPU / 66 MB RAM).
+    /// `cpu_pct` is the whole-app Job Object reading, normalized by logical CPU
+    /// capacity and hard-capped by Windows at 10% when group setup succeeds.
     #[serde(default)]
     pub peak_cpu_pct: f64,
     #[serde(default)]
@@ -123,13 +214,19 @@ pub fn start(app: AppHandle) {
 }
 
 fn poll_loop(app: AppHandle) {
-    let mut peak_cpu = 0.0f64;
+    let mut peak_cpu = NO_READING;
     let mut peak_ram = 0.0f64;
     let mut throttled = false;
     let mut release_samples = 0u8;
     loop {
         let mut stats = measure();
-        peak_cpu = peak_cpu.max(stats.cpu_pct);
+        if stats.cpu_pct >= 0.0 {
+            peak_cpu = if peak_cpu < 0.0 {
+                stats.cpu_pct
+            } else {
+                peak_cpu.max(stats.cpu_pct)
+            };
+        }
         peak_ram = peak_ram.max(stats.ram_mb);
         stats.peak_cpu_pct = peak_cpu;
         stats.peak_ram_mb = peak_ram;
@@ -151,10 +248,16 @@ fn poll_loop(app: AppHandle) {
         }
         CPU_THROTTLE.store(throttled, Ordering::Relaxed);
         if stats.over_budget {
-            eprintln!(
-                "[G-Gov] over budget — RAM {:.0} MB, CPU {:.1}%",
-                stats.ram_mb, stats.cpu_pct
-            );
+            if stats.cpu_pct < 0.0 {
+                eprintln!(
+                    "[G-Gov] whole-app CPU group unavailable; capture throttling remains active"
+                );
+            } else {
+                eprintln!(
+                    "[G-Gov] over budget — RAM {:.0} MB, CPU {:.1}%",
+                    stats.ram_mb, stats.cpu_pct
+                );
+            }
         }
         let _ = app.emit("resource-stats", &stats);
         std::thread::sleep(Duration::from_secs(POLL_INTERVAL_S));
@@ -170,21 +273,19 @@ fn measure() -> ResourceStats {
     let ram_mb = measure_ram_mb().unwrap_or(0.0);
 
     #[cfg(windows)]
-    let cpu_pct = measure_cpu_pct_native()
-        .or_else(measure_cpu_pct)
-        .unwrap_or(0.0);
+    let (cpu_pct, cpu_group_processes) = measure_cpu_group_pct().unwrap_or((NO_READING, -1));
     #[cfg(not(windows))]
-    let cpu_pct = measure_cpu_pct().unwrap_or(0.0);
-    // Own-process budgets — GPU/CPU-temp are whole-machine numbers, NOT ours.
-    let over_budget = ram_mb > RAM_BUDGET_MB || cpu_pct > CPU_BUDGET_PCT;
+    let (cpu_pct, cpu_group_processes) = (NO_READING, -1);
+    let over_budget = is_over_budget(ram_mb, cpu_pct);
     let g = resolve_gpu();
     ResourceStats {
         ram_mb,
         cpu_pct,
+        cpu_group_processes,
         over_budget,
         // Filled by poll_loop (which holds the running peaks across ticks); a
         // one-off measure() outside the loop reports 0.
-        peak_cpu_pct: 0.0,
+        peak_cpu_pct: NO_READING,
         peak_ram_mb: 0.0,
         gpu_pct: g.0,
         gpu_temp_c: g.1,
@@ -192,6 +293,10 @@ fn measure() -> ResourceStats {
         vram_total_mb: g.3,
         cpu_temp_c: g.4,
     }
+}
+
+fn is_over_budget(ram_mb: f64, cpu_pct: f64) -> bool {
+    ram_mb > RAM_BUDGET_MB || cpu_pct < 0.0 || cpu_pct > CPU_BUDGET_PCT
 }
 
 /// Resolve (gpu_load, gpu_temp, vram_used, vram_total, cpu_temp) from the active
@@ -290,7 +395,10 @@ fn parse_bridge_file(raw: &str, now_ms: u64) -> Option<(f64, f64, f64, f64, f64)
 
 /// Spawn the headless `gpu-feeder` sidecar (own process; runs nvidia-smi and
 /// pushes to `POST /telemetry`). Looks next to our exe: the bundled name first,
-/// then the dev second-bin name. No-ops if neither exists (GPU stays "—").
+/// then the dev second-bin name. The child joins this process's Job Object only
+/// if setup and host assignment succeeded and it starts without a breakaway flag;
+/// this app only stops its exact owned child on normal exit. No-ops if neither
+/// binary exists (GPU stays "—").
 pub fn spawn_gpu_feeder() {
     let Ok(exe) = std::env::current_exe() else {
         return;
@@ -300,22 +408,43 @@ pub fn spawn_gpu_feeder() {
     if !path.is_file() {
         return; // not bundled (e.g. no GPU build) — GPU telemetry stays "—"
     }
-    // Clear any feeder left over from a previous run so restarts don't stack them.
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        let _ = std::process::Command::new("taskkill")
-            .args(["/F", "/IM", "gpu-feeder.exe"])
-            .creation_flags(0x0800_0000) // CREATE_NO_WINDOW
-            .output();
-    }
     let mut cmd = std::process::Command::new(&path);
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
     }
-    let _ = cmd.spawn();
+    let child = match cmd.spawn() {
+        Ok(child) => child,
+        Err(error) => {
+            eprintln!("[G-Gov] failed to start owned GPU feeder: {error}");
+            return;
+        }
+    };
+    let slot = GPU_FEEDER_CHILD.get_or_init(|| Mutex::new(None));
+    let mut owned = slot
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    // This slot contains only a child created by this app; do not search for or
+    // terminate unrelated processes by the gpu-feeder image name.
+    if let Some(mut previous_owned_child) = owned.replace(child) {
+        let _ = previous_owned_child.kill();
+        let _ = previous_owned_child.wait();
+    }
+}
+
+/// Stop only the exact feeder child started by this app, using its owned handle.
+pub fn stop_owned_sidecars() {
+    let Some(slot) = GPU_FEEDER_CHILD.get() else {
+        return;
+    };
+    let mut owned = slot
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    if let Some(mut child) = owned.take() {
+        let _ = child.kill();
+        let _ = child.wait();
+    }
 }
 
 #[cfg(windows)]
@@ -337,70 +466,47 @@ fn measure_ram_mb_native() -> Option<f64> {
 }
 
 #[cfg(windows)]
-fn measure_cpu_pct_native() -> Option<f64> {
-    let handle = unsafe { GetCurrentProcess() };
-    let mut creation = FILETIME::default();
-    let mut exit = FILETIME::default();
-    let mut kernel = FILETIME::default();
-    let mut user = FILETIME::default();
-    let ok = unsafe { GetProcessTimes(handle, &mut creation, &mut exit, &mut kernel, &mut user) }
-        .is_ok();
-    if !ok {
+fn measure_cpu_group_pct() -> Option<(f64, i32)> {
+    let job = PROCESS_JOB.get()?.as_ref().ok()?;
+    let mut accounting = JOBOBJECT_BASIC_ACCOUNTING_INFORMATION::default();
+    unsafe {
+        QueryInformationJobObject(
+            Some(HANDLE(job.handle.as_raw_handle())),
+            JobObjectBasicAccountingInformation,
+            (&mut accounting as *mut JOBOBJECT_BASIC_ACCOUNTING_INFORMATION).cast(),
+            std::mem::size_of::<JOBOBJECT_BASIC_ACCOUNTING_INFORMATION>() as u32,
+            None,
+        )
+    }
+    .ok()?;
+    if accounting.ActiveProcesses == 0 {
         return None;
     }
-    let total_100ns = filetime_to_u64(kernel) + filetime_to_u64(user);
+    let total_100ns = (accounting.TotalUserTime.max(0) as u64)
+        .saturating_add(accounting.TotalKernelTime.max(0) as u64);
     let now = Instant::now();
-    let mut slot = CPU_SAMPLE.lock().ok()?;
+    let mut slot = job.sample.lock().ok()?;
     let prev = slot.replace(CpuSample {
         total_100ns,
         wall: now,
     });
     let prev = prev?;
-    let cpu_delta_ms = (total_100ns.saturating_sub(prev.total_100ns) as f64) / 10_000.0;
-    let wall_ms = now.duration_since(prev.wall).as_secs_f64() * 1000.0;
-    if wall_ms <= 0.0 {
-        return Some(0.0);
+    let cpu_delta_s = (total_100ns.saturating_sub(prev.total_100ns) as f64) / 10_000_000.0;
+    let wall_s = now.duration_since(prev.wall).as_secs_f64();
+    if wall_s <= 0.0 {
+        return None;
     }
     let cores = std::thread::available_parallelism().ok()?.get() as f64;
-    Some(((cpu_delta_ms / (wall_ms * cores)) * 100.0).max(0.0))
-}
-
-#[cfg(windows)]
-fn filetime_to_u64(ft: FILETIME) -> u64 {
-    ((ft.dwHighDateTime as u64) << 32) | (ft.dwLowDateTime as u64)
+    Some((
+        ((cpu_delta_s / (wall_s * cores)) * 100.0).max(0.0),
+        accounting.ActiveProcesses as i32,
+    ))
 }
 
 fn measure_ram_mb() -> Option<f64> {
     // PowerShell: get working-set bytes of *this* process, convert to MB.
     let pid = std::process::id();
     let script = format!("(Get-Process -Id {pid}).WorkingSet64 / 1MB");
-    let mut cmd = std::process::Command::new("powershell");
-    cmd.args(["-NoProfile", "-NonInteractive", "-Command", &script]);
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW — stop the PS console flashing every poll
-    }
-    let out = cmd.output().ok()?;
-    String::from_utf8_lossy(&out.stdout)
-        .trim()
-        .parse::<f64>()
-        .ok()
-}
-
-fn measure_cpu_pct() -> Option<f64> {
-    // PowerShell: instantaneous CPU% of this process via WMI.
-    // We take two readings 1s apart so the delta gives a meaningful rate.
-    let pid = std::process::id();
-    let script = format!(
-        "$p = Get-Process -Id {pid}; \
-         $c1 = $p.TotalProcessorTime.TotalMilliseconds; \
-         Start-Sleep -Milliseconds 1000; \
-         $p.Refresh(); \
-         $c2 = $p.TotalProcessorTime.TotalMilliseconds; \
-         $cores = [Environment]::ProcessorCount; \
-         [math]::Round(($c2 - $c1) / (1000.0 * $cores) * 100.0, 2)"
-    );
     let mut cmd = std::process::Command::new("powershell");
     cmd.args(["-NoProfile", "-NonInteractive", "-Command", &script]);
     #[cfg(windows)]
@@ -428,10 +534,11 @@ mod tests {
         // CPU: 0-100% per core.
         assert!(s.ram_mb >= 0.0, "ram_mb must be non-negative: {}", s.ram_mb);
         assert!(
-            s.cpu_pct >= 0.0 && s.cpu_pct <= 200.0,
+            s.cpu_pct == NO_READING || (s.cpu_pct >= 0.0 && s.cpu_pct <= 200.0),
             "cpu_pct out of range: {}",
             s.cpu_pct
         );
+        assert!(s.cpu_group_processes == -1 || s.cpu_group_processes >= 1);
     }
 
     #[test]
@@ -448,8 +555,12 @@ mod tests {
             vram_total_mb: NO_READING,
             cpu_temp_c: NO_READING,
         };
-        let recomputed = s.ram_mb > RAM_BUDGET_MB || s.cpu_pct > CPU_BUDGET_PCT;
-        assert!(recomputed);
+        assert!(is_over_budget(s.ram_mb, s.cpu_pct));
+    }
+
+    #[test]
+    fn unavailable_whole_app_cpu_fails_closed() {
+        assert!(is_over_budget(100.0, NO_READING));
     }
 
     #[test]

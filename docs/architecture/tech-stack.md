@@ -1,7 +1,17 @@
+---
+title: "G-Maiden Tech Stack"
+doc_id: "tech-stack"
+status: "active"
+version: "0.2.0"
+updated: "2026-10-12"
+owner: "Boss"
+related_docs: ["product-requirements", "software-requirements-specification", "mvp-decisions"]
+---
+
 # G-Maiden — Tech Stack
 
 > เอกสารนี้กำหนด **เทคโนโลยีที่เลือกใช้** และเหตุผลที่ผูกตรงกับ Non-Functional Requirements (SRS §5).
-> หลักการตัดสินใจ: ทุกตัวเลือกต้องพิสูจน์ได้ว่าช่วยให้อยู่ใน budget — latency ≤300ms, CPU ≤2.5%,
+> หลักการตัดสินใจ: ทุกตัวเลือกต้องพิสูจน์ได้ว่าช่วยให้อยู่ใน budget — latency ≤300ms, whole-app CPU ≤10% per [[mvp-decisions]],
 > RAM ≤400MB, FPS drop ≤3%, privacy-first, resilient-offline.
 
 ---
@@ -31,7 +41,7 @@
 
 ## 2. ทำไม Tauri ไม่ใช่ Electron
 
-ข้อจำกัด RAM ≤400MB และ CPU ≤2.5% ตัด Electron ออกทันที — Electron ลำพังกิน RAM 150–250MB
+ข้อจำกัด RAM ≤400MB และ whole-app CPU ≤10% ทำให้ต้องเลือก stack ที่ควบคุม footprint ได้ — Electron ลำพังกิน RAM 150–250MB
 ก่อนโหลดแอปด้วยซ้ำ และฝัง Chromium เต็มตัว (CPU สูง). Tauri v2:
 
 - ใช้ **WebView2** ที่ติดมากับ Windows 10/11 อยู่แล้ว → ไม่ฝัง browser engine
@@ -74,7 +84,7 @@ cloud และ webview **ห้าม** อยู่บนเส้นทาง
 | ข้อจำกัด (SRS) | กลไกในสแตกนี้ |
 | --- | --- |
 | G-Signal ≤300ms (target 250) | เส้นทางวิกฤตเป็น Rust ล้วน; เสียงเตือนใช้ **audio cache ที่ render ไว้ล่วงหน้า** (ไม่เรียก LLM/TTS สด); ดู budget ละเอียดใน `engineering-spec.md` |
-| CPU ≤2.5% background | Rust + tokio (async, ไม่ busy-loop); minimap capture แบบ event-driven/throttled; ไม่มี Chromium |
+| Whole-app CPU ≤10% per MVP decision | Rust + tokio (async, ไม่ busy-loop); Windows Job Object hard cap + kill-on-close; if setup fails, CPU telemetry is unavailable and capture stays throttled; UI cannot distinguish it from a query failure |
 | RAM ≤400MB | Tauri (WebView2 ใช้ร่วมกับระบบ); SLM โหลดแบบ lazy เฉพาะตอน fallback (ดู §5 หมายเหตุ) |
 | FPS drop ≤3% | DXGI Desktop Duplication (GPU-assisted capture, ไม่ block render); overlay เป็น window แยก composited โดย DWM |
 | Privacy-first | G-Log เก็บใน JSONL local (match-*.jsonl); ข้อมูลดิบ/สถิติผู้เล่น **ไม่อัปโหลด**; cloud รับเฉพาะ context ที่ผ่าน redaction |
@@ -103,4 +113,9 @@ cloud และ webview **ห้าม** อยู่บนเส้นทาง
 - **ขึ้น Vercel:** landing page, เอกสาร, หน้า remote config/preset ของ Maiden (โทนเสียง, sensitivity),
   ดาวน์โหลด installer. โค้ด React ชุดเดียวกับ overlay (build เป้าหมาย `web`).
 - **ไม่ขึ้น Vercel เด็ดขาด:** GSI data, สถิติผู้เล่น, G-Log — ทั้งหมดอยู่บนเครื่องเท่านั้น (privacy-first).
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.2.0 | 2026-10-12 | Synced the active stack rationale with the whole-app 10% CPU decision and Job Object enforcement design. |
 

@@ -2,7 +2,7 @@
 title: "FEAT-G-SENSORY — Overlay & Hardware Optimization"
 doc_id: "FEAT-G-SENSORY"
 status: "active"
-version: "0.2.1"
+version: "0.2.5"
 updated: "2026-10-12"
 owner: "Boss"
 source_of_truth: false
@@ -34,25 +34,24 @@ risk: "MEDIUM"
 
 ### 2b. Resource Governor (TDD §7)
 
-วัดทุก **10 วินาที** ([`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs) [`POLL_INTERVAL_S`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L27) `= 10`) → emit `resource-stats`
+วัดทุก **1 วินาที** ([`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs) [`POLL_INTERVAL_S`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L45) `= 1`) → emit `resource-stats`
 event ไปยัง control window แล้วเช็ค budget:
 
 | Resource | Limit | Mitigation |
 | --- | --- | --- |
-| CPU budget trigger | >10% normalized per one-second sample | CPU-throttle flag → capture loop drops to ~2 Hz; releases after ≤8% for 3 samples |
+| CPU budget | OS Job Object hard cap at 10% of whole-app logical CPU capacity | One-second group accounting; capture loop also drops to ~2 Hz when a sample exceeds 10%, and releases after ≤8% for 3 samples |
 | RAM | ≤400 MB | (นับรวมใน over-budget flag เดียวกัน) |
 | FPS impact | ≤3% | GATE P7 PresentMon/ETW receipt; live acceptance ยังไม่ยืนยัน |
 
-> **สถานะ (2026-10-12):** ตาม MVP decision v0.2.0, `measure()` ตั้ง `over_budget` เมื่อ RAM >400 MB หรือ CPU >10%; `poll_loop` sample ทุก 1 วินาทีและคง `CPU_THROTTLE` จน CPU ≤8% ต่อเนื่อง 3 samples. การ throttle ลด capture cadence ราวครึ่งหนึ่ง แต่ไม่ใช่การรับรอง live acceptance.
+> **สถานะ (2026-10-12):** ตาม MVP decision v0.2.0, `measure()` อ่าน CPU สะสมของ Windows Job Object group ทุก 1 วินาทีและใช้ logical CPU capacity เป็นตัวหาร; `over_budget` เป็นจริงเมื่อ RAM >400 MB, CPU >10% หรือ runtime CPU group query อ่านไม่ได้. ก่อน Tauri สร้าง WebView2, governor พยายามตั้ง OS hard cap 10% และ `KILL_ON_JOB_CLOSE`. แอปที่สร้าง children ผ่าน `CreateProcess` โดยไม่ใช้ breakaway flag จะอยู่ใน job ตาม Windows default; การรวม WebView2 process ยังต้องยืนยันด้วย Windows acceptance. หากสร้าง/configure/assign job ไม่ได้ พฤติกรรมปัจจุบันคือแอปยังเริ่มต่อใน degraded state: CPU และจำนวน process เป็น `-1`, แสดง CPU reading unavailable, และคง `CPU_THROTTLE`; ไม่มี whole-app hard-cap guarantee ในสถานะนี้. หลัง setup สำเร็จแต่ runtime query ล้มเหลวก็แสดง unavailable เช่นกัน แม้ OS hard cap ยังทำงาน. `ResourceStats` ไม่มี field แยกสถานะ cap จึงแยกสองกรณีนี้จาก UI ไม่ได้. ไม่มี fallback ที่อนุมานจากชื่อหรือ PID. การลด capture cadence ราวครึ่งหนึ่งเป็น soft mitigation เพิ่มเติม ไม่ใช่เพดาน CPU.
 >
-> ปัจจุบัน governor sample เฉพาะ process หลัก; **CPU gate ของ MVP ยังไม่ถือว่าผ่าน** จนกว่า [process-group harness](file:///g:/G-Maiden/tests/perf/src/bin/perf_cpu_tree.rs) จะยืนยัน root host รวม child WebView2/utility/sidecar. ตาราง "unload SLM / ปิด blur / static HUD" ยังเป็น
+> **CPU gate ของ MVP ยังไม่ถือว่าผ่าน** จนกว่าจะเก็บ one-second job-group samples และ process-group harness บนเส้นทางจริงของ app; hard cap ที่ตั้งสำเร็จไม่พิสูจน์ FPS หรือ G-Signal latency. ตาราง "unload SLM / ปิด blur / static HUD" ยังเป็น
 > aspirational (ยังไม่ได้ทำ). FPS มี measurement apparatus แล้วใน
 > [`perf_p7`](file:///g:/G-Maiden/tests/perf/src/bin/perf_p7.rs) แต่ receipt จริงจากเกมยังไม่ถูกใช้เป็น acceptance proof.
 >
-> **Open issue (2026-07-08; ยังเปิดอยู่):** มี observation ล่าสุดจาก **Windows Task Manager**
-> ว่า process CPU peak ไปที่ `20%+` ซึ่งยังสูงกว่า budget ใหม่ (`≤10%`).
-> Governor sample ทุก `1s` และ mitigation จริงลดได้แค่ capture cadence; จึงยังไม่ใช่หลักประกัน
-> ว่า steady-state ทั้ง app จะอยู่ใน budget และอาจไม่สะท้อนภาระจริงที่ OS เห็นครบทุกช่วง.
+> **Open issue (2026-07-08 observation; ต้องตรวจซ้ำหลังใส่ hard cap):** Windows Task Manager เคยแสดง process CPU peak `20%+` ก่อนมี Job Object hard cap. หากสร้าง/configure/assign job ไม่สำเร็จ แอปยังเริ่มแบบ degraded โดยไม่รับประกัน cap; UI แสดง CPU reading unavailable และ capture throttle. หาก runtime accounting query ล้มเหลวหลังตั้ง cap ได้ CPU จะแสดง unavailable และ capture จะ throttle โดย OS cap ยังคงตั้งอยู่. Payload/UI ปัจจุบันแยกสองกรณีนี้ไม่ได้. Sustained CPU, FPS และ latency acceptance ของ build ใหม่นี้ยังไม่มี receipt.
+
+> **GPU feeder lifecycle:** เมื่อ Tauri ได้รับ normal `Exit` จะหยุด `gpu-feeder` child ที่แอปเป็นผู้สร้างโดยตรง. เมื่อ Job Object setup สำเร็จ job handle ที่แอปสร้างถูกเก็บไว้ใน `PROCESS_JOB` ตลอดอายุโปรเซสและโค้ดไม่ duplicate/inherit handle; feeder ที่ spawn ผ่าน `Command` โดยไม่ใช้ breakaway flag อยู่ใน job ตาม Windows default, และการปิด handle สุดท้ายจะยุติสมาชิก job เมื่อแอป crash/ถูก terminate. หาก Job Object setup ล้มเหลว แอปยังสร้าง feeder ต่อใน degraded state แต่ feeder ไม่ได้อยู่ใน job; normal exit ยังหยุด exact owned child, ส่วน abnormal termination อาจทิ้ง feeder ค้าง. นี่ยังไม่มี Windows crash-run receipt จึงไม่อ้างว่า orphan-proof ที่ผ่านการตรวจรับแล้ว; WebView2 membership ต้องยืนยันแยก.
 
 ### 2c. P7 FPS receipt contract
 
@@ -96,12 +95,12 @@ Global shortcuts จริงจาก [`main.rs`](file:///g:/G-Maiden/src-tauri
 - Render commands → GPU-composited transparent window
 - Announcer pack banner → overlay ([`packBanner`](file:///g:/G-Maiden/src/src/App.tsx) ใน [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx), driven โดย
   `announcer-banner` event; รูปของ pack แทน built-in kill card เมื่อ event fire)
-- [`ResourceStats`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L87) `{ ram_mb, cpu_pct, over_budget, gpu_pct, gpu_temp_c, vram_used_mb, vram_total_mb }`
-  (ทั้งหมด `f64`, [`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs)) → emit `resource-stats` ไปยัง control window
+- [`ResourceStats`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L180) `{ ram_mb, cpu_pct, cpu_group_processes, over_budget, gpu_pct, gpu_temp_c, vram_used_mb, vram_total_mb }`
+  (`cpu_group_processes` เป็น `i32`; ค่า `-1` หมายถึง job unavailable; `cpu_pct` และ sensor fields เป็น `f64`.) → emit `resource-stats` ไปยัง control window
 
 > **สถานะ (2026-07): ไม่มีฟิลด์ `est_fps_impact_pct`** — struct จริงคือ
 > `ResourceStats` ข้างบน. GPU load/temp + VRAM เป็นฟิลด์จริงที่ป้อนโดย
-> [`gpu-feeder`](file:///g:/G-Maiden/gpu-feeder/) sidecar (nvidia-smi → `POST /telemetry` → [`governor::ingest_gpu`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L193),
+> [`gpu-feeder`](file:///g:/G-Maiden/gpu-feeder/) sidecar (nvidia-smi → `POST /telemetry` → [`governor::ingest_gpu`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L319),
 > staleness 30s; main app ไม่รัน nvidia-smi เอง). `-1` = ไม่มีค่า → footer แสดง "—".
 
 ## 5. Visual Design
@@ -174,14 +173,13 @@ Canonical UI/UX contract: [[design-system]] (`docs/architecture/design-system.md
 
 ## 11. Current Issue
 
-- Budget ใหม่คือ **whole-app CPU ≤10%** ต่อ sample 1 วินาที (MVP decision v0.2.0); observation จาก Windows Task Manager เมื่อ 2026-07 มี peak `20%+` และยังต้องตรวจซ้ำด้วย process-group harness.
+- Budget ใหม่คือ **whole-app CPU ≤10%** ต่อ sample 1 วินาที (MVP decision v0.2.0); Windows Job Object hard cap/accounting code is present, while live samples and latency/FPS acceptance still need a process-group harness receipt.
 - FPS computation and receipt validation are implemented, but live FPS acceptance remains **UNVERIFIED** because no real Dota 2 + PresentMon receipt is committed.
-- Governor ตรวจ CPU ทุก `1s` และมี hysteresis ตอนคืน capture cadence; มันยัง throttle แค่ minimap capture และ sample process หลัก จึงยังไม่พิสูจน์ whole-app budget.
+- Governor พยายามตั้ง hard cap + kill-on-close ก่อนเปิด Tauri, sample CPU group ทุก `1s`, และมี hysteresis ตอนคืน capture cadence. Group create/configure/assignment ล้มเหลวทำให้ app เริ่มต่อโดยแสดง CPU reading unavailable และคง throttle แต่ UI ไม่แยกจาก runtime query failure หลังตั้ง cap. Live measurement ยังจำเป็นเพื่อยืนยันการรวม process ลูกและผลต่อเกม.
 - สถานะนี้ยังไม่ถือว่าผ่าน gate จนกว่าจะมี sustained harness บนเส้นทางจริงของ app
   ที่พิสูจน์ได้ว่า CPU steady-state อยู่ใน budget.
-- Harness ที่ควรใช้ไล่เรื่องนี้คือ [`tests/perf/src/bin/perf_cpu_tree.rs`](file:///g:/G-Maiden/tests/perf/src/bin/perf_cpu_tree.rs) ซึ่งรวม root
-  host + child WebView2/utility/sidecar แบบใกล้เคียง Task Manager มากกว่า
-  [`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs) ที่วัดแค่ current process.
+- Harness ที่ควรใช้ไล่เรื่องนี้คือ [`tests/perf/src/bin/perf_cpu_tree.rs`](file:///g:/G-Maiden/tests/perf/src/bin/perf_cpu_tree.rs) เพื่อยืนยันค่า job-group
+  เทียบกับ root host + child WebView2/utility/sidecar ที่ Task Manager แสดง; governor ใช้ Job Object accounting แทนการไล่ process names/PIDs.
 
 ## Changelog
 | Version | Date | Summary |
@@ -190,4 +188,8 @@ Canonical UI/UX contract: [[design-system]] (`docs/architecture/design-system.md
 | 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): fixed unresolved wikilink slug `[[architecture/design-system]]` → `[[design-system]]` (×2) |
 | 0.1.2 | 2026-10-05 | Added the DL-004 P7 PresentMon/ETW receipt contract, strict fallback semantics, and explicit live-acceptance boundary. |
 | 0.2.0 | 2026-10-12 | Updated the G-Sensory CPU trigger and documented one-second sampling, 10% budget, and hysteresis per MVP decision v0.2.0. |
-| 0.2.1 | 2026-10-12 | Clarified the CPU acceptance boundary, process-only governor scope, and required root plus WebView2/utility/sidecar process-group harness. |
+| 0.2.1 | 2026-10-12 | Clarified the CPU acceptance boundary and required a root plus WebView2/utility/sidecar process-group harness. |
+| 0.2.2 | 2026-10-12 | Documented whole-app Job Object hard cap/accounting, unavailable-state handling, and live acceptance boundary. |
+| 0.2.3 | 2026-10-12 | Documented graceful GPU-feeder cleanup and the abnormal-termination limitation of the Job Object lifecycle. |
+| 0.2.4 | 2026-10-12 | Documented the unavailable-cap/query ambiguity, kill-on-close assumptions, and degraded-state feeder risk. |
+| 0.2.5 | 2026-10-12 | Corrected the `governor::ingest_gpu` symbol anchor after the CPU governor changes. |

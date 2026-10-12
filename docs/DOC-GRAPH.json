@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-12T12:19:47.192Z",
+  "generatedAt": "2026-10-12T14:22:46.267Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -201,12 +201,16 @@
     {
       "id": "docs/architecture/tech-stack.md",
       "type": "doc",
-      "path": "docs/architecture/tech-stack.md"
+      "path": "docs/architecture/tech-stack.md",
+      "title": "G-Maiden Tech Stack",
+      "status": "active"
     },
     {
       "id": "docs/architecture/technical-design-document.md",
       "type": "doc",
-      "path": "docs/architecture/technical-design-document.md"
+      "path": "docs/architecture/technical-design-document.md",
+      "title": "G-Maiden Technical Design Document",
+      "status": "active"
     },
     {
       "id": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
@@ -705,8 +709,7 @@
       "type": "doc",
       "path": "docs/features/FEAT-G-SENSORY.md",
       "title": "FEAT-G-SENSORY — Overlay & Hardware Optimization",
-      "status": "active",
-      "version": "0.2.1"
+      "status": "active"
     },
     {
       "id": "docs/features/FEAT-G-SENTRY.md",
@@ -2103,6 +2106,18 @@
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 25
+    },
+    {
+      "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 121
+    },
+    {
+      "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
       "type": "wikilink",
       "line": 133
@@ -2841,93 +2856,99 @@
     },
     {
       "from": "docs/architecture/tech-stack.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 14
+    },
+    {
+      "from": "docs/architecture/tech-stack.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 28
+      "line": 38
     },
     {
       "from": "docs/architecture/tech-stack.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
-      "line": 28
+      "line": 38
     },
     {
       "from": "docs/architecture/tech-stack.md",
       "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 16
+      "line": 26
     },
     {
       "from": "docs/architecture/tech-stack.md",
       "to": "src-tauri/src/dxgi.rs",
       "type": "symbol",
-      "line": 16
+      "line": 26
     },
     {
       "from": "docs/architecture/tech-stack.md",
       "to": "src-tauri/src/tts.rs",
       "type": "symbol",
-      "line": 17
+      "line": 27
     },
     {
       "from": "docs/architecture/tech-stack.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 20
+      "line": 30
     },
     {
       "from": "docs/architecture/tech-stack.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 21
+      "line": 31
     },
     {
       "from": "docs/architecture/tech-stack.md",
       "to": "src-tauri/src/slm.rs",
       "type": "symbol",
-      "line": 21
+      "line": 31
     },
     {
       "from": "docs/architecture/tech-stack.md",
       "to": "src-tauri/src/runtime.rs",
       "type": "symbol",
-      "line": 21
+      "line": 31
     },
     {
       "from": "docs/architecture/tech-stack.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 24
+      "line": 34
     },
     {
       "from": "docs/architecture/tech-stack.md",
       "to": "gpu-feeder/src/main.rs",
       "type": "symbol",
-      "line": 27
+      "line": 37
     },
     {
       "from": "docs/architecture/tech-stack.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 28
+      "line": 38
     },
     {
       "from": "docs/architecture/tech-stack.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 28
+      "line": 38
     },
     {
       "from": "docs/architecture/technical-design-document.md",
       "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
-      "line": 5
+      "line": 15
     },
     {
       "from": "docs/architecture/technical-design-document.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
-      "line": 165
+      "line": 176
     },
     {
       "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
@@ -6656,6 +6677,12 @@
       "line": 68
     },
     {
+      "from": "docs/design-system/README.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 68
+    },
+    {
       "from": "docs/features/FEAT-G-COACH.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
@@ -7259,25 +7286,25 @@
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/architecture/design-system.md",
       "type": "wikilink",
-      "line": 109
+      "line": 108
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 135
+      "line": 134
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
-      "line": 159
+      "line": 158
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/architecture/design-system.md",
       "type": "wikilink",
-      "line": 173
+      "line": 172
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
@@ -7301,79 +7328,67 @@
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
-      "line": 76
+      "line": 75
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/App.tsx",
       "type": "symbol",
-      "line": 97
+      "line": 96
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/App.tsx",
       "type": "symbol",
-      "line": 97
+      "line": 96
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 99
-    },
-    {
-      "from": "docs/features/FEAT-G-SENSORY.md",
-      "to": "src-tauri/src/governor.rs",
-      "type": "symbol",
-      "line": 100
+      "line": 98
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "gpu-feeder/",
       "type": "symbol",
-      "line": 104
+      "line": 103
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 104
+      "line": 103
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/App.tsx",
       "type": "symbol",
-      "line": 135
+      "line": 134
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
-      "line": 136
+      "line": 135
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/live/",
       "type": "symbol",
-      "line": 138
+      "line": 137
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 159
+      "line": 158
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "tests/perf/src/bin/perf_cpu_tree.rs",
       "type": "symbol",
-      "line": 182
-    },
-    {
-      "from": "docs/features/FEAT-G-SENSORY.md",
-      "to": "src-tauri/src/governor.rs",
-      "type": "symbol",
-      "line": 184
+      "line": 181
     },
     {
       "from": "docs/features/FEAT-G-SENTRY.md",
@@ -8844,16 +8859,6 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/architecture/tech-stack.md",
-      "line": null,
-      "reason": "no-metadata"
-    },
-    {
-      "file": "docs/architecture/technical-design-document.md",
-      "line": null,
-      "reason": "no-metadata"
-    },
-    {
       "file": "docs/audits/2026-07-07-independent-full-audit.md",
       "line": 122,
       "reason": "anchor-symbol-mismatch",
@@ -9884,22 +9889,6 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/features/FEAT-G-SENSORY.md",
-      "line": 99,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/governor.rs",
-      "anchor": 87,
-      "symbol": "ResourceStats"
-    },
-    {
-      "file": "docs/features/FEAT-G-SENSORY.md",
-      "line": 104,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/governor.rs",
-      "anchor": 193,
-      "symbol": "ingest_gpu"
-    },
-    {
       "file": "docs/features/FEAT-G-SENTRY.md",
       "line": null,
       "reason": "no-metadata"
@@ -9916,7 +9905,7 @@
       "file": "docs/features/README.md",
       "line": null,
       "reason": "version-changelog-mismatch",
-      "frontmatter": "0.2.1",
+      "frontmatter": "0.2.2",
       "changelog": "0.2.0"
     },
     {
@@ -10299,7 +10288,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-12T12:20:20.951Z",
+    "generatedAt": "2026-10-12T14:22:59.869Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

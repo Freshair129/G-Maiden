@@ -2,8 +2,8 @@
 title: "G-Maiden Product Requirements"
 doc_id: "product-requirements"
 status: "active"
-version: "0.2.0"
-updated: "2026-10-10"
+version: "0.2.1"
+updated: "2026-10-12"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["software-requirements-specification", "mvp-decisions", "roadmap"]
@@ -126,9 +126,10 @@ related_docs: ["software-requirements-specification", "mvp-decisions", "roadmap"
 * **Latency:** p50 ≤250ms และทุก sample ≤300ms ตาม T0→T3 ใน [[mvp-decisions]]
 * **Personality Consistency:** Maiden ต้องรักษาบุคลิก "อ่อนโยนแต่แม่นยำ" และมีม "Nerf CM" อยู่เสมอ
 * **Platform:** Windows x64 build 19045 และ 26100 เป็นเป้าหมายตรวจรับ; ถือว่า support เมื่อมี evidence ตาม matrix ของ MVP เท่านั้น.
-* **Resource:** CPU ทั้ง process group ≤2.5% ทุก sample 1 วินาที; aggregate peak Working Set ≤400,000,000 bytes; FPS impact ≤3% ตาม paired-run protocol ใน [[mvp-decisions]].
+* **Resource:** CPU ทั้ง process group ≤10% ของ logical CPU capacity ทุก sample 1 วินาที; aggregate peak Working Set ≤400,000,000 bytes; FPS impact ≤3% ตาม paired-run protocol ใน [[mvp-decisions]].
 
 ## Changelog
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.2.0 | 2026-10-10 | กำหนด MVP boundary และ supported matrix ตามมติ Owner; แก้ G-Motion, Voice, Memory, privacy และ quality claims ให้เป็น target ที่ตรวจรับได้ |
+| 0.2.1 | 2026-10-12 | Aligned the whole-app CPU acceptance limit with MVP decision v0.2.0; runtime acceptance remains evidence-gated. |
