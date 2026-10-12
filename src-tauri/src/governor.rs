@@ -296,7 +296,7 @@ fn measure() -> ResourceStats {
 }
 
 fn is_over_budget(ram_mb: f64, cpu_pct: f64) -> bool {
-    ram_mb > RAM_BUDGET_MB || cpu_pct < 0.0 || cpu_pct > CPU_BUDGET_PCT
+    ram_mb > RAM_BUDGET_MB || !(0.0..=CPU_BUDGET_PCT).contains(&cpu_pct)
 }
 
 /// Resolve (gpu_load, gpu_temp, vram_used, vram_total, cpu_temp) from the active
@@ -546,6 +546,7 @@ mod tests {
         let s = ResourceStats {
             ram_mb: 450.0,
             cpu_pct: 1.0,
+            cpu_group_processes: 1,
             over_budget: false,
             peak_cpu_pct: 0.0,
             peak_ram_mb: 0.0,
