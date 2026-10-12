@@ -161,7 +161,7 @@ detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`)
 | Constraint | Target | Consequence of violation |
 |-----------|--------|------------------------|
 | G-Signal end-to-end latency | p50 ≤ 250ms, **every measured sample ≤300ms** from acquisition/GSI arrival to audible onset | Player dies before warning |
-| Whole-app CPU | ≤ 2.5% normalized by logical CPU capacity, every 1s sample | Game stutters |
+| Whole-app CPU | ≤ 10% normalized by logical CPU capacity, every 1s sample (MVP decision v0.2.0) | Game stutters |
 | Whole-app RAM | Aggregate peak Working Set ≤ 400,000,000 bytes, including host/WebView2/feeder/STT/SLM/model processes | Swap thrash |
 | FPS impact | ≤ 3% Dota 2 FPS drop | Unacceptable for competitive play |
 | **Privacy** | G-Log, G-Memory (including aggregates), CV, Voice audio/transcript local only; own-stat cloud context requires separate opt-in + allowlist | No implicit egress from sign-in/Ask/provider choice |
@@ -520,6 +520,7 @@ These are **functional requirements**, not flavor text. Maiden must:
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.4.1b | 2026-10-12 | Recorded the owner-directed CPU budget update to 10% and the governor's one-second throttle/release policy. |
 | 0.4.0b | 2026-10-10 | Added accepted MVP target versus runtime status, required but incomplete Voice/Memory P0, supported matrix, local-only data rules, account-optional target and current CR-022 gate, and accepted quality limits. |
 | 0.3.1b | 2026-08-28 | Corrected the Rust test count to the measured 291, added known-good baselines for all four suites, mandatory timeout ceilings with the capture-live rule, and the cross-workspace Vitest flag-portability warning. |
 | 0.3.0b | 2026-08-28 | Added the Git & GitHub section — protected-`main` and PR-only landing, branch naming, the two-remote push hazard, worktree placement, commit conventions, the `pr-gate-agent` failure table with its wide-scope rationale trigger, and the doc-graph regenerated-artifact rule — and disambiguated the batching policy's "commit to `main`" as "no tag", not "no PR". |

@@ -2,8 +2,8 @@
 title: "FEAT-G-SENSORY — Overlay & Hardware Optimization"
 doc_id: "FEAT-G-SENSORY"
 status: "active"
-version: "0.1.2"
-updated: "2026-10-05"
+version: "0.2.1"
+updated: "2026-10-12"
 owner: "Boss"
 source_of_truth: false
 complexity: "C-2"
@@ -39,21 +39,19 @@ event ไปยัง control window แล้วเช็ค budget:
 
 | Resource | Limit | Mitigation |
 | --- | --- | --- |
-| CPU | ≤2.5% | CPU-throttle flag → capture loop drop ~ครึ่งหนึ่งของ tick |
+| CPU budget trigger | >10% normalized per one-second sample | CPU-throttle flag → capture loop drops to ~2 Hz; releases after ≤8% for 3 samples |
 | RAM | ≤400 MB | (นับรวมใน over-budget flag เดียวกัน) |
 | FPS impact | ≤3% | GATE P7 PresentMon/ETW receipt; live acceptance ยังไม่ยืนยัน |
 
-> **สถานะ (2026-10-05): mitigation ที่ทำจริงคือ CPU-throttle flag ตัวเดียว** —
-> [`measure()`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L143) ตั้ง `over_budget = ram_mb > 400 || cpu_pct > 2.5` แล้ว
-> [`poll_loop`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L121) เก็บลง [`CPU_THROTTLE`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L67) (atomic) ให้ capture loop อ่านเพื่อ drop
-> ~ครึ่งหนึ่งของ tick. ตาราง "unload SLM / ปิด blur / static HUD" ยังเป็น
+> **สถานะ (2026-10-12):** ตาม MVP decision v0.2.0, `measure()` ตั้ง `over_budget` เมื่อ RAM >400 MB หรือ CPU >10%; `poll_loop` sample ทุก 1 วินาทีและคง `CPU_THROTTLE` จน CPU ≤8% ต่อเนื่อง 3 samples. การ throttle ลด capture cadence ราวครึ่งหนึ่ง แต่ไม่ใช่การรับรอง live acceptance.
+>
+> ปัจจุบัน governor sample เฉพาะ process หลัก; **CPU gate ของ MVP ยังไม่ถือว่าผ่าน** จนกว่า [process-group harness](file:///g:/G-Maiden/tests/perf/src/bin/perf_cpu_tree.rs) จะยืนยัน root host รวม child WebView2/utility/sidecar. ตาราง "unload SLM / ปิด blur / static HUD" ยังเป็น
 > aspirational (ยังไม่ได้ทำ). FPS มี measurement apparatus แล้วใน
 > [`perf_p7`](file:///g:/G-Maiden/tests/perf/src/bin/perf_p7.rs) แต่ receipt จริงจากเกมยังไม่ถูกใช้เป็น acceptance proof.
 >
 > **Open issue (2026-07-08; ยังเปิดอยู่):** มี observation ล่าสุดจาก **Windows Task Manager**
-> ว่า process CPU peak ไปที่ `20%+` ซึ่งยังถือว่า **ผิด spec** (`<=2.5%`).
-> หลักฐานในโค้ดปัจจุบันชี้ว่า governor วัดแบบ 1-second burst sample แต่ re-check
-> ทุก `10s` และ mitigation จริงลดได้แค่ capture cadence; จึงยังไม่ใช่หลักประกัน
+> ว่า process CPU peak ไปที่ `20%+` ซึ่งยังสูงกว่า budget ใหม่ (`≤10%`).
+> Governor sample ทุก `1s` และ mitigation จริงลดได้แค่ capture cadence; จึงยังไม่ใช่หลักประกัน
 > ว่า steady-state ทั้ง app จะอยู่ใน budget และอาจไม่สะท้อนภาระจริงที่ OS เห็นครบทุกช่วง.
 
 ### 2c. P7 FPS receipt contract
@@ -167,7 +165,7 @@ Canonical UI/UX contract: [[design-system]] (`docs/architecture/design-system.md
 - [ ] click-through: ไม่ดัก mouse/keyboard ของเกม
 - [ ] ไม่บัง minimap, skill bar, stats panel
 - [ ] **FPS drop ≤3%** vs baseline (GATE P7) — requires a real measured overlay-on receipt with `verdict=pass`
-- [ ] **CPU ≤2.5%** total (GATE P2/P7)
+- [ ] **CPU ≤10%** per one-second whole-app process-group sample (GATE P2/P7; MVP decision v0.2.0)
 - [ ] **RAM ≤400 MB** (GATE P7)
 - [ ] global hotkeys ทำงาน: `Ctrl+Alt+S` (toggle overlay), `Alt+↑/↓` (vol ±10%), `Alt+M` (mute toggle)
 - [ ] governor auto-throttle เมื่อ resource เกิน budget
@@ -176,10 +174,9 @@ Canonical UI/UX contract: [[design-system]] (`docs/architecture/design-system.md
 
 ## 11. Current Issue
 
-- Spec hard limit คือ **background CPU <= 2.5%** แต่ observation ล่าสุดจาก Windows Task Manager มี peak `20%+`.
+- Budget ใหม่คือ **whole-app CPU ≤10%** ต่อ sample 1 วินาที (MVP decision v0.2.0); observation จาก Windows Task Manager เมื่อ 2026-07 มี peak `20%+` และยังต้องตรวจซ้ำด้วย process-group harness.
 - FPS computation and receipt validation are implemented, but live FPS acceptance remains **UNVERIFIED** because no real Dota 2 + PresentMon receipt is committed.
-- Root cause ที่ยืนยันได้ตอนนี้คือ protection path ยังหยาบเกินไป: sample burst 1 วินาที,
-  governor ตรวจซ้ำทุก `10s`, และ throttle แค่ minimap capture cadence.
+- Governor ตรวจ CPU ทุก `1s` และมี hysteresis ตอนคืน capture cadence; มันยัง throttle แค่ minimap capture และ sample process หลัก จึงยังไม่พิสูจน์ whole-app budget.
 - สถานะนี้ยังไม่ถือว่าผ่าน gate จนกว่าจะมี sustained harness บนเส้นทางจริงของ app
   ที่พิสูจน์ได้ว่า CPU steady-state อยู่ใน budget.
 - Harness ที่ควรใช้ไล่เรื่องนี้คือ [`tests/perf/src/bin/perf_cpu_tree.rs`](file:///g:/G-Maiden/tests/perf/src/bin/perf_cpu_tree.rs) ซึ่งรวม root
@@ -192,3 +189,5 @@ Canonical UI/UX contract: [[design-system]] (`docs/architecture/design-system.md
 | 0.1.0 | — | FEAT-G-SENSORY ฉบับแรก (untracked) |
 | 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): fixed unresolved wikilink slug `[[architecture/design-system]]` → `[[design-system]]` (×2) |
 | 0.1.2 | 2026-10-05 | Added the DL-004 P7 PresentMon/ETW receipt contract, strict fallback semantics, and explicit live-acceptance boundary. |
+| 0.2.0 | 2026-10-12 | Updated the G-Sensory CPU trigger and documented one-second sampling, 10% budget, and hysteresis per MVP decision v0.2.0. |
+| 0.2.1 | 2026-10-12 | Clarified the CPU acceptance boundary, process-only governor scope, and required root plus WebView2/utility/sidecar process-group harness. |

@@ -2,8 +2,8 @@
 title: "G-Maiden MVP Roadmap"
 doc_id: "roadmap"
 status: "active"
-version: "1.2.0"
-updated: "2026-10-10"
+version: "1.3.0"
+updated: "2026-10-12"
 owner: "Boss"
 related_docs: ["software-requirements-specification", "product-requirements", "mvp-backlog", "mvp-execution-dag", "G-SERIES-DATA-LINEAGE", "releases/README"]
 ---
@@ -101,7 +101,7 @@ Milestone เป็นผลลัพธ์สำหรับตรวจรั�
 | Resilience | cloud หาย, timeout, อุปกรณ์เสียงหาย, Alt-Tab, capture init/recovery และ port conflict มีพฤติกรรมที่ตรวจรับได้ |
 | Companion | Voice รับคำถามและถูก interrupt ได้; Memory ถูกใช้จริงและลืมได้; summary อ้างกลับไปเหตุการณ์ได้ |
 | Privacy | ตรวจ outbound payload/traffic ของทุก backend; local-only ไม่เกิด egress; CV/raw G-Log/memory ไม่เข้า cloud |
-| NFR | G-Signal p50 ≤250 ms และทุก sample ที่วัดต้อง ≤300 ms; CPU ≤2.5%, RAM ≤400 MB, Dota FPS drop ≤3% บนเครื่องและ mode ที่ตกลง |
+| NFR | G-Signal p50 ≤250 ms และทุก sample ที่วัดต้อง ≤300 ms; CPU ≤10% ต่อ sample 1 วินาที (MVP decision v0.2.0), RAM ≤400 MB, Dota FPS drop ≤3% บนเครื่องและ mode ที่ตกลง |
 | Release | CI และหลักฐาน native/WebView/live ผูกกับ exact commit + installer hash; signing/update/rollback ผ่าน; owner อนุมัติส่งมอบ |
 
 Latency ต้องรวม acquisition scheduling → decision → audible onset; เงื่อนไข missing >5 วินาทีรายงานแยก ไม่ตัดช่วงที่ช้าออกเพื่อให้ผ่าน ส่วน local STT/SLM ต้องรายงาน footprint และ peak แยกพร้อมยอดรวม ถ้าขัดงบ RAM ให้กลับไปแก้ design หรือผ่านกระบวนการเปลี่ยน requirement ไม่ยกเว้นเอง
@@ -129,3 +129,4 @@ Headless benchmark, unit tests, source code หรือ historical receipts อ
 | 1.0.0 | 2026-10-10 | เปลี่ยนเป็นแผน MVP M0–M6 จาก source gap review; บันทึกการยกเลิก Closed Beta, scope decisions, dependencies และ acceptance; เชื่อม task backlog โดยเก็บประวัติเดิมใน Git |
 | 1.1.0 | 2026-10-10 | เชื่อม execution DAG 14 waves และชี้ชัดว่า milestone ทำเหลื่อมกันได้; readiness รอ health producers และ final evidence ใช้ frozen artifact เดียวกัน |
 | 1.2.0 | 2026-10-10 | ผูก roadmap กับ delegated MVP decisions และ optional-account/local-core data contract |
+| 1.3.0 | 2026-10-12 | Updated the CPU acceptance budget to 10% per one-second sample per MVP decision v0.2.0. |

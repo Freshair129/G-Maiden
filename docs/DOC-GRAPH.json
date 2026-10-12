@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-11T01:50:24.168Z",
+  "generatedAt": "2026-10-12T12:19:47.192Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -705,7 +705,8 @@
       "type": "doc",
       "path": "docs/features/FEAT-G-SENSORY.md",
       "title": "FEAT-G-SENSORY — Overlay & Hardware Optimization",
-      "status": "active"
+      "status": "active",
+      "version": "0.2.1"
     },
     {
       "id": "docs/features/FEAT-G-SENTRY.md",
@@ -7258,25 +7259,25 @@
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/architecture/design-system.md",
       "type": "wikilink",
-      "line": 111
+      "line": 109
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 137
+      "line": 135
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
-      "line": 161
+      "line": 159
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/architecture/design-system.md",
       "type": "wikilink",
-      "line": 175
+      "line": 173
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
@@ -7289,46 +7290,34 @@
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
       "line": 37
-    },
-    {
-      "from": "docs/features/FEAT-G-SENSORY.md",
-      "to": "src-tauri/src/governor.rs",
-      "type": "symbol",
-      "line": 47
-    },
-    {
-      "from": "docs/features/FEAT-G-SENSORY.md",
-      "to": "src-tauri/src/governor.rs",
-      "type": "symbol",
-      "line": 48
-    },
-    {
-      "from": "docs/features/FEAT-G-SENSORY.md",
-      "to": "src-tauri/src/governor.rs",
-      "type": "symbol",
-      "line": 48
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "tests/perf/src/bin/perf_p7.rs",
       "type": "symbol",
-      "line": 51
+      "line": 50
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
-      "line": 78
+      "line": 76
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/App.tsx",
       "type": "symbol",
-      "line": 99
+      "line": 97
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/App.tsx",
+      "type": "symbol",
+      "line": 97
+    },
+    {
+      "from": "docs/features/FEAT-G-SENSORY.md",
+      "to": "src-tauri/src/governor.rs",
       "type": "symbol",
       "line": 99
     },
@@ -7336,61 +7325,55 @@
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 101
-    },
-    {
-      "from": "docs/features/FEAT-G-SENSORY.md",
-      "to": "src-tauri/src/governor.rs",
-      "type": "symbol",
-      "line": 102
+      "line": 100
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "gpu-feeder/",
       "type": "symbol",
-      "line": 106
+      "line": 104
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 106
+      "line": 104
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/App.tsx",
       "type": "symbol",
-      "line": 137
+      "line": 135
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
-      "line": 138
+      "line": 136
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/live/",
       "type": "symbol",
-      "line": 140
+      "line": 138
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 161
+      "line": 159
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "tests/perf/src/bin/perf_cpu_tree.rs",
       "type": "symbol",
-      "line": 185
+      "line": 182
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 187
+      "line": 184
     },
     {
       "from": "docs/features/FEAT-G-SENTRY.md",
@@ -9901,6 +9884,22 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/features/FEAT-G-SENSORY.md",
+      "line": 99,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/governor.rs",
+      "anchor": 87,
+      "symbol": "ResourceStats"
+    },
+    {
+      "file": "docs/features/FEAT-G-SENSORY.md",
+      "line": 104,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/governor.rs",
+      "anchor": 193,
+      "symbol": "ingest_gpu"
+    },
+    {
       "file": "docs/features/FEAT-G-SENTRY.md",
       "line": null,
       "reason": "no-metadata"
@@ -9993,11 +9992,6 @@
       "file": "docs/product/roadmap-legacy.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/product/software-requirements-specification.md",
-      "line": null,
-      "reason": "missing-changelog"
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -10305,7 +10299,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-11T01:50:37.092Z",
+    "generatedAt": "2026-10-12T12:20:20.951Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

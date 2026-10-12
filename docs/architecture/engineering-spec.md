@@ -2,8 +2,8 @@
 title: "G-Maiden — Engineering Spec"
 doc_id: "engineering-spec"
 status: "active"
-version: "0.2.1"
-updated: "2026-10-11"
+version: "0.3.0"
+updated: "2026-10-12"
 owner: "Boss"
 source_of_truth: false
 complexity: "C-3"
@@ -294,8 +294,8 @@ entitlement or local Terms-receipt gating as part of this target.
 
 ทุกฟีเจอร์ต้องผ่าน gate ก่อนถือว่าเสร็จ:
 - [ ] G-Signal p50 ≤250ms and every measured sample ≤300ms; T0 = GSI POST arrival or due capture cycle before acquisition wait, T3 = loopback first audible; ≥300 samples/scenario/profile + live acoustic probe
-- [ ] CPU whole-app process group normalized by logical CPU capacity, every 1s sample ≤2.5% on the MVP reference tier
-- [ ] CPU gate ต้องพิสูจน์จาก sustained app-path harness; Windows Task Manager peak `20%+` ณ 2026-07-08 ยังถือว่า fail spec จนกว่าจะยืนยัน steady-state อยู่ใน budget
+- [ ] CPU whole-app process group normalized by logical CPU capacity, every 1s sample ≤10% on the MVP reference tier (MVP decision v0.2.0)
+- [ ] CPU gate ต้องพิสูจน์จาก sustained app-path harness; Windows Task Manager peak `20%+` ณ 2026-07-08 ยังสูงกว่า budget ใหม่ จนกว่าจะยืนยัน steady-state อยู่ใน budget
 - [ ] CPU investigation ต้องแยก `Rust host` vs `WebView2 child processes` vs `sidecars/subprocesses`; harness หลักคือ `tests/perf/src/bin/perf_cpu_tree.rs`
 - [ ] aggregate peak Working Set ≤400,000,000 bytes; include app host, WebView2, feeder, STT/SLM and external model PIDs
 - [ ] FPS impact ≤3% in each of ≥3 paired overlay-off/on 60s runs, same device/segment/settings; P7 receipt `verdict=pass`
@@ -321,3 +321,4 @@ entitlement or local Terms-receipt gating as part of this target.
 | 0.1.5 | 2026-10-06 | Added the DL-007 durable G-Memory forget cutoff and retained G-Log boundary. |
 | 0.2.0 | 2026-10-10 | Reconciled T0/T3 and strict G-Signal latency, local-only Voice/Memory and critical path, cloud allowlist target, account-optional target versus current gate, and whole-app acceptance measurements. |
 | 0.2.1 | 2026-10-11 | Added the static gameplay data structural and lineage consistency checks to the CI acceptance gate; retained accuracy and patch currency as unverified. |
+| 0.3.0 | 2026-10-12 | Updated the whole-app CPU acceptance threshold to 10% per one-second sample per MVP decision v0.2.0. |

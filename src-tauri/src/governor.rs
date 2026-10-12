@@ -24,7 +24,11 @@ use windows::Win32::System::ProcessStatus::{GetProcessMemoryInfo, PROCESS_MEMORY
 #[cfg(windows)]
 use windows::Win32::System::Threading::{GetCurrentProcess, GetProcessTimes};
 
-const POLL_INTERVAL_S: u64 = 10;
+const POLL_INTERVAL_S: u64 = 1;
+const CPU_BUDGET_PCT: f64 = 10.0;
+const CPU_THROTTLE_RELEASE_PCT: f64 = 8.0;
+const CPU_THROTTLE_RELEASE_SAMPLES: u8 = 3;
+const RAM_BUDGET_MB: f64 = 400.0;
 
 /// GPU telemetry source, user-selectable via `set_telemetry_source`. The bundled
 /// headless `gpu-feeder` sidecar PUSHes GPU-only samples to `POST /telemetry`
@@ -92,7 +96,7 @@ pub struct ResourceStats {
     /// Session peaks (max seen since launch) — lets the deck footer prove the
     /// SRS §5.1 budgets held over a whole match without an external harness.
     /// `cpu_pct` here is the governor's own-process, core-normalized reading
-    /// (≤2.5% background); visible-deck WebView2 render is a separate process
+    /// (≤10% budget); visible-deck WebView2 render is a separate process
     /// and is NOT counted (measured 2026-07-18: core 0.12% CPU / 66 MB RAM).
     #[serde(default)]
     pub peak_cpu_pct: f64,
@@ -121,15 +125,32 @@ pub fn start(app: AppHandle) {
 fn poll_loop(app: AppHandle) {
     let mut peak_cpu = 0.0f64;
     let mut peak_ram = 0.0f64;
+    let mut throttled = false;
+    let mut release_samples = 0u8;
     loop {
         let mut stats = measure();
         peak_cpu = peak_cpu.max(stats.cpu_pct);
         peak_ram = peak_ram.max(stats.ram_mb);
         stats.peak_cpu_pct = peak_cpu;
         stats.peak_ram_mb = peak_ram;
-        let over = stats.over_budget;
-        CPU_THROTTLE.store(over, Ordering::Relaxed);
-        if over {
+        // Keep the reduced capture rate through noisy samples; restore full rate
+        // only after a sustained margin below the CPU budget.
+        if stats.over_budget {
+            throttled = true;
+            release_samples = 0;
+        } else if throttled {
+            if stats.cpu_pct <= CPU_THROTTLE_RELEASE_PCT {
+                release_samples = release_samples.saturating_add(1);
+                if release_samples >= CPU_THROTTLE_RELEASE_SAMPLES {
+                    throttled = false;
+                    release_samples = 0;
+                }
+            } else {
+                release_samples = 0;
+            }
+        }
+        CPU_THROTTLE.store(throttled, Ordering::Relaxed);
+        if stats.over_budget {
             eprintln!(
                 "[G-Gov] over budget — RAM {:.0} MB, CPU {:.1}%",
                 stats.ram_mb, stats.cpu_pct
@@ -155,7 +176,7 @@ fn measure() -> ResourceStats {
     #[cfg(not(windows))]
     let cpu_pct = measure_cpu_pct().unwrap_or(0.0);
     // Own-process budgets — GPU/CPU-temp are whole-machine numbers, NOT ours.
-    let over_budget = ram_mb > 400.0 || cpu_pct > 2.5;
+    let over_budget = ram_mb > RAM_BUDGET_MB || cpu_pct > CPU_BUDGET_PCT;
     let g = resolve_gpu();
     ResourceStats {
         ram_mb,
@@ -427,7 +448,7 @@ mod tests {
             vram_total_mb: NO_READING,
             cpu_temp_c: NO_READING,
         };
-        let recomputed = s.ram_mb > 400.0 || s.cpu_pct > 2.5;
+        let recomputed = s.ram_mb > RAM_BUDGET_MB || s.cpu_pct > CPU_BUDGET_PCT;
         assert!(recomputed);
     }
 
