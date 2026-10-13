@@ -847,8 +847,9 @@ pub fn run() {
     log::error("[startup] G-Maiden process started");
     if let Err(error) = governor::initialize_process_group() {
         log::error(&format!(
-            "[startup] whole-app CPU Job Object hard cap unavailable; continuing with CPU unavailable and capture throttle active: {error}"
+            "[startup] refusing to start without the whole-app CPU Job Object hard cap: {error}"
         ));
+        std::process::exit(1);
     }
 
     // Global hotkeys — work even when Dota 2 is focused.
@@ -1022,9 +1023,10 @@ pub fn run() {
             // G7.2: resource governor — poll RAM/CPU every second, emit resource-stats.
             governor::start(app.handle().clone());
             // Headless GPU feeder sidecar → pushes nvidia-smi metrics to
-            // POST /telemetry. Job Object kill-on-close covers its members only if
-            // setup and host assignment succeeded; normal exit also stops/waits the
-            // exact owned child. A degraded-mode feeder may outlive abnormal exit.
+            // POST /telemetry. Startup reaches this point only after the host joined
+            // its Job Object, so the feeder inherits membership by default. Normal
+            // exit also stops/waits the exact owned child; a feeder left by an older
+            // degraded-mode build may outlive abnormal exit.
             governor::spawn_gpu_feeder();
 
             app.global_shortcut().register(toggle)?;

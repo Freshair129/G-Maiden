@@ -2,8 +2,8 @@
 title: "G-Maiden Tech Stack"
 doc_id: "tech-stack"
 status: "active"
-version: "0.2.0"
-updated: "2026-10-12"
+version: "0.2.1"
+updated: "2026-10-13"
 owner: "Boss"
 related_docs: ["product-requirements", "software-requirements-specification", "mvp-decisions"]
 ---
@@ -84,7 +84,7 @@ cloud และ webview **ห้าม** อยู่บนเส้นทาง
 | ข้อจำกัด (SRS) | กลไกในสแตกนี้ |
 | --- | --- |
 | G-Signal ≤300ms (target 250) | เส้นทางวิกฤตเป็น Rust ล้วน; เสียงเตือนใช้ **audio cache ที่ render ไว้ล่วงหน้า** (ไม่เรียก LLM/TTS สด); ดู budget ละเอียดใน `engineering-spec.md` |
-| Whole-app CPU ≤10% per MVP decision | Rust + tokio (async, ไม่ busy-loop); Windows Job Object hard cap + kill-on-close; if setup fails, CPU telemetry is unavailable and capture stays throttled; UI cannot distinguish it from a query failure |
+| Whole-app CPU ≤10% per MVP decision | Rust + tokio (async, ไม่ busy-loop); Windows Job Object hard cap + kill-on-close; startup exits before Tauri/WebView if setup fails; a runtime query failure after setup leaves telemetry unavailable and capture throttled while the cap remains active |
 | RAM ≤400MB | Tauri (WebView2 ใช้ร่วมกับระบบ); SLM โหลดแบบ lazy เฉพาะตอน fallback (ดู §5 หมายเหตุ) |
 | FPS drop ≤3% | DXGI Desktop Duplication (GPU-assisted capture, ไม่ block render); overlay เป็น window แยก composited โดย DWM |
 | Privacy-first | G-Log เก็บใน JSONL local (match-*.jsonl); ข้อมูลดิบ/สถิติผู้เล่น **ไม่อัปโหลด**; cloud รับเฉพาะ context ที่ผ่าน redaction |
@@ -118,4 +118,5 @@ cloud และ webview **ห้าม** อยู่บนเส้นทาง
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.2.0 | 2026-10-12 | Synced the active stack rationale with the whole-app 10% CPU decision and Job Object enforcement design. |
+| 0.2.1 | 2026-10-13 | Clarified that Job Object initialization failure aborts startup while runtime query failure remains a throttled unavailable reading. |
 

@@ -2,8 +2,8 @@
 title: "G-Maiden Software Requirements Specification"
 doc_id: "software-requirements-specification"
 status: "active"
-version: "0.3.1"
-updated: "2026-10-12"
+version: "0.4.0"
+updated: "2026-10-13"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["product-requirements", "mvp-decisions", "roadmap", "G-SERIES-DATA-LINEAGE"]
@@ -207,7 +207,7 @@ G-Maiden เป็นแอป desktop แบบ local-first ที่เชื�
 ### **5.1 ประสิทธิภาพการทำงาน (Performance)**
 
 * **G-Signal latency:** p50 ≤250ms และทุก measured sample ≤300ms; วัด T3−T0 ตั้งแต่ GSI POST arrival หรือเวลาที่ capture acquisition cycle ถึงกำหนดก่อน scheduler/acquisition/inference wait จนถึง loopback first audible sample. T1 คือ Rust decision และ T2 คือ audio admission. รายงาน source-observation age แยก; ห้ามย้าย T0 หลัง frame-ready. เก็บ ≥300 samples/scenario/profile พร้อม live audible probe.
-* **CPU:** whole-app process group, normalized by logical CPU capacity, ทุก sample 1 วินาที ≤10% (MVP decision v0.2.0). หากสร้าง/configure/assign Windows Job Object ไม่สำเร็จ implementation ปัจจุบันยังเริ่มแอปแบบ degraded, แสดง CPU sample unavailable (`—`) และคง capture throttle; ไม่มี hard-cap guarantee และสถานะนี้ไม่ผ่าน CPU acceptance. Runtime accounting query ที่ล้มเหลวหลังตั้ง cap สำเร็จก็แสดง sentinel เดียวกันแม้ hard cap ยังคงทำงาน; payload/UI ปัจจุบันแยกสองกรณีไม่ได้. **RAM:** aggregate peak Working Set ≤400,000,000 bytes รวม host/WebView2/feeder/STT/SLM และ external model processes. **FPS:** drop ≤3% ในแต่ละ paired overlay-off/on run (อย่างน้อย 3 คู่ ×60 วินาที) บนอุปกรณ์/ช่วงเกม/setting เดียวกัน.
+* **CPU:** whole-app process group, normalized by logical CPU capacity, ทุก sample 1 วินาที ≤10% (MVP decision v0.2.0). หากสร้าง/configure/assign Windows Job Object ไม่สำเร็จ implementation ต้องบันทึกข้อผิดพลาดและออกด้วย exit code 1 ก่อนสร้าง Tauri/WebView หรือ sidecar; ห้ามเปิดแอปโดยไม่มี hard-cap guarantee. หาก runtime accounting query ล้มเหลวหลัง setup สำเร็จ ให้แสดง CPU sample unavailable (`—`) และคง capture throttle ขณะที่ OS hard cap ยังทำงาน. **RAM:** aggregate peak Working Set ≤400,000,000 bytes รวม host/WebView2/feeder/STT/SLM และ external model processes. **FPS:** drop ≤3% ในแต่ละ paired overlay-off/on run (อย่างน้อย 3 คู่ ×60 วินาที) บนอุปกรณ์/ช่วงเกม/setting เดียวกัน.
   > **หมายเหตุ (2026-07):** ปัจจุบันแอปยัง surface **GPU load/temp + VRAM** เพิ่มที่ deck footer
   > ด้วย (ingest ผ่าน `POST /telemetry` ที่ feed จาก `gpu-feeder` sidecar ซึ่งรัน nvidia-smi
   > out-of-process) — เป็นข้อมูลเชิง informational เท่านั้น ไม่ใช่การเปลี่ยน budget ของ NFR ข้างต้น
@@ -234,3 +234,4 @@ G-Maiden เป็นแอป desktop แบบ local-first ที่เชื�
 | 0.2.0 | 2026-10-10 | Accepted the MVP quality matrix and live-evidence requirements. |
 | 0.3.0 | 2026-10-12 | Updated the whole-app CPU budget to 10% per one-second sample per MVP decision v0.2.0. |
 | 0.3.1 | 2026-10-12 | Clarified unavailable CPU telemetry when setup/query fails; no cap guarantee when setup fails and the payload does not distinguish the cause. |
+| 0.4.0 | 2026-10-13 | Set fail-closed startup when the CPU Job Object cannot initialize; retained unavailable telemetry only for runtime query failures after successful setup. |

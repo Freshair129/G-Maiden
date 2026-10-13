@@ -7,11 +7,11 @@
 //!   - Whole-app CPU ≤ 10% of logical CPU capacity
 //!
 //! On Windows, a Job Object both hard-caps CPU and accounts the host plus its
-//! inherited child processes (WebView2 and sidecars). If the job cannot be
-//! configured or assigned, CPU is unavailable, capture throttling stays on,
-//! and no whole-app hard-cap guarantee is made. A later accounting-query
-//! failure is reported separately from cap initialization. We never infer
-//! whole-app usage from process names.
+//! inherited child processes (WebView2 and sidecars). Tauri startup aborts if the
+//! job cannot be configured or assigned. After successful initialization, an
+//! accounting-query failure reports CPU as unavailable and keeps capture
+//! throttled while the OS hard cap remains active. We never infer whole-app usage
+//! from process names.
 //!
 //! Throttle callbacks are exported so the capture loop can check whether to
 //! drop a processing tick (reducing to ~2 Hz) when CPU is high. This is an

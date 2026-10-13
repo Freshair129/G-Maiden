@@ -2,12 +2,12 @@
 title: "G-Maiden MVP — Scope, Access, Data and Quality Decisions"
 doc_id: "mvp-decisions"
 status: "accepted"
-version: "0.2.1"
-updated: "2026-10-12"
+version: "0.3.0"
+updated: "2026-10-13"
 owner: "Boss"
 approved_by: "Boss — explicit owner instruction in conversation"
-approved_date: "2026-10-12"
-approval_basis: "Owner instruction: ปรับ cpu ไม่เกิน 10%"
+approved_date: "2026-10-13"
+approval_basis: "Owner instructions: ปรับ cpu ไม่เกิน 10%; หยุดเปิดแอปหากตั้ง CPU Job Object ไม่สำเร็จ"
 related_docs: ["roadmap", "mvp-backlog", "mvp-execution-dag", "software-requirements-specification", "FEAT-G-VOICE", "FEAT-G-MEMORY"]
 ---
 
@@ -101,15 +101,15 @@ Required cell ที่ไม่มี OS/device/label/audio evidence เป็�
 
 ### Decision v0.2.0 — CPU budget
 
-ตามคำสั่ง Owner วันที่ 2026-10-12 ปรับเพดาน CPU ของ MVP จาก 2.5% เป็น 10% ต่อ sample 1 วินาที โดย normalize CPU ของ Windows Job Object process group ตาม logical CPU capacity. Governor พยายามตั้ง OS hard cap 10% ก่อน Tauri สร้าง WebView2; app-created children ที่ไม่ใช้ breakaway flag สืบทอด job ตาม Windows default, ส่วน WebView2 process membership ยังต้องยืนยันบน Windows. หากสร้าง/configure/assign job ไม่สำเร็จ พฤติกรรมปัจจุบันคือแอปยังเริ่มต่อ, CPU และจำนวน process เป็น unavailable (`-1`), UI แสดง “—”/CPU reading unavailable และคง capture throttle; ไม่มี whole-app hard-cap guarantee ในสถานะนี้. หาก runtime accounting query ล้มเหลวหลัง setup สำเร็จ UI แสดง unavailable เช่นกัน แม้ OS hard cap ยังคงตั้งอยู่. Payload ปัจจุบันไม่มี field แยกว่าตั้ง cap สำเร็จหรือไม่ จึงแยกสองกรณีนี้จาก UI ไม่ได้. Capture throttle เมื่อ CPU >10% และคืน cadence หลัง ≤8% ต่อเนื่อง 3 samples เป็น soft mitigation เสริม; ทั้ง hard cap และ throttle ยังไม่ใช่หลักฐานว่า live CPU/FPS/G-Signal latency acceptance ผ่าน.
+ตามคำสั่ง Owner วันที่ 2026-10-12 ปรับเพดาน CPU ของ MVP จาก 2.5% เป็น 10% ต่อ sample 1 วินาที โดย normalize CPU ของ Windows Job Object process group ตาม logical CPU capacity. Governor ตั้ง OS hard cap 10% ก่อน Tauri สร้าง WebView2; app-created children ที่ไม่ใช้ breakaway flag สืบทอด job ตาม Windows default, ส่วน WebView2 process membership ยังต้องยืนยันบน Windows. หากสร้าง/configure/assign job ไม่สำเร็จ แอปต้องบันทึกข้อผิดพลาดและออกด้วย exit code 1 ก่อนสร้าง Tauri/WebView หรือ sidecar; ห้ามเปิดแอปในสถานะที่ไม่มี whole-app hard-cap guarantee. หาก runtime accounting query ล้มเหลวหลัง setup สำเร็จ UI แสดง unavailable (`—`) และคง capture throttle แม้ OS hard cap ยังคงตั้งอยู่; payload/UI ปัจจุบันไม่มี field แยกสถานะ query นี้. Capture throttle เมื่อ CPU >10% และคืน cadence หลัง ≤8% ต่อเนื่อง 3 samples เป็น soft mitigation เสริม; ทั้ง hard cap และ throttle ยังไม่ใช่หลักฐานว่า live CPU/FPS/G-Signal latency acceptance ผ่าน.
 
 ### Decision v0.2.1 — process containment and cleanup
 
-ตั้ง `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` บน unnamed Job Object ก่อน assign host process. `PROCESS_JOB` เก็บ handle ที่แอปสร้างไว้ตลอดอายุโปรเซสและโค้ดไม่ได้ duplicate/inherit handle; เมื่อ setup สำเร็จ `gpu-feeder` ซึ่ง spawn ผ่าน `Command` โดยไม่ใช้ breakaway flag อยู่ใน job ตาม Windows default. เมื่อ handle สุดท้ายปิด Windows จะยุติสมาชิก job; normal Tauri exit ยัง kill exact owned feeder ก่อนคืน control. หาก setup ล้มเหลวและแอปยังเปิดแบบ degraded feeder อยู่นอก job จึงอาจค้างหลัง host abnormal exit. WebView2 membership และ crash cleanup ยังไม่มี live acceptance receipt; guarantee ใช้กับ process ที่อยู่ใน job ภายใต้ membership/handle-lifetime assumptions นี้.
+ตั้ง `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` บน unnamed Job Object ก่อน assign host process. `PROCESS_JOB` เก็บ handle ที่แอปสร้างไว้ตลอดอายุโปรเซสและโค้ดไม่ได้ duplicate/inherit handle; เมื่อ setup สำเร็จ `gpu-feeder` ซึ่ง spawn ผ่าน `Command` โดยไม่ใช้ breakaway flag อยู่ใน job ตาม Windows default. เมื่อ handle สุดท้ายปิด Windows จะยุติสมาชิก job; normal Tauri exit ยัง kill exact owned feeder ก่อนคืน control. มติ fail-closed ทำให้ startup ปัจจุบันไม่สร้าง feeder หาก setup ล้มเหลว; feeder ที่เหลือจากรุ่นก่อนซึ่งเคยเปิด degraded mode อาจอยู่นอก job และค้างหลัง host abnormal exit. WebView2 membership และ crash cleanup ยังไม่มี live acceptance receipt; guarantee ใช้กับ process ที่อยู่ใน job ภายใต้ membership/handle-lifetime assumptions นี้.
 
-### Pending product choice — CPU cap unavailable at startup
+### Decision v0.3.0 — Fail closed when CPU cap setup fails
 
-เมื่อ Job Object initialization/configuration/assignment ล้มเหลว implementation ปัจจุบันยังเปิดแอปใน degraded state: CPU/process count เป็น `-1`, UI แสดง CPU reading unavailable, และ capture throttle คงอยู่; ไม่มี 10% whole-app hard-cap guarantee และห้ามนับ CPU acceptance ว่าผ่าน. Runtime query failure หลังตั้ง cap สำเร็จก็ใช้ unavailable sentinel เดียวกัน แต่ OS cap ยังคงตั้งอยู่; UI ไม่มีข้อมูลพอแยกสองกรณี. Owner ต้องเลือกระหว่างปฏิเสธการเปิดแอป หรืออนุญาต degraded startup พร้อมคำเตือนว่า cap อาจไม่ active. ยังไม่ได้เปลี่ยนพฤติกรรม startup หรือเพิ่ม UI distinction จนกว่าจะมีคำตัดสินนั้น.
+Owner ตัดสินใจวันที่ 2026-10-13 ว่าเมื่อ Job Object initialization/configuration/assignment ล้มเหลว ให้ปฏิเสธการเปิดแอป: บันทึกข้อผิดพลาดและออกด้วย exit code 1 ก่อนสร้าง Tauri/WebView หรือ sidecar. หาก setup สำเร็จแต่ runtime accounting query ล้มเหลว ให้แสดง CPU unavailable และคง capture throttle; OS hard cap ยังทำงาน. UI จึงต้องแยกเฉพาะกรณี runtime query failure ที่เกิดหลังแอปเริ่มแล้ว.
 
 ## Baseline และ dispatch
 
@@ -124,3 +124,4 @@ MVP-007 reconcile PRD/SRS/AGENTS/CLAUDE ตามมตินี้. งาน c
 | 0.1.0 | 2026-10-10 | Codex ตัดสินตาม Owner delegation: Companion scope, optional-account local core, cloud opt-in allowlist และ fixed acceptance matrix; รับ verified baseline โดยคง legal/release gates |
 | 0.2.0 | 2026-10-12 | Owner เปลี่ยน CPU budget เป็น ≤10% ต่อ sample 1 วินาที พร้อมคง acceptance measurement และเพิ่ม governor hysteresis. |
 | 0.2.1 | 2026-10-12 | Clarified unavailable-cap state, pending startup policy, and kill-on-close membership/handle assumptions. |
+| 0.3.0 | 2026-10-13 | Owner chose fail-closed startup when the CPU Job Object cannot initialize; updated process and feeder lifecycle contract. |
