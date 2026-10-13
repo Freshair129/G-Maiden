@@ -2,12 +2,12 @@
 title: "G-Maiden MVP — Scope, Access, Data and Quality Decisions"
 doc_id: "mvp-decisions"
 status: "accepted"
-version: "0.1.0"
-updated: "2026-10-10"
+version: "0.3.0"
+updated: "2026-10-13"
 owner: "Boss"
-approved_by: "Codex — Owner delegated decisions in conversation"
-approved_date: "2026-10-10"
-approval_basis: "Owner instruction: ตัดสินใจเลย"
+approved_by: "Boss — explicit owner instruction in conversation"
+approved_date: "2026-10-13"
+approval_basis: "Owner instructions: ปรับ cpu ไม่เกิน 10%; หยุดเปิดแอปหากตั้ง CPU Job Object ไม่สำเร็จ"
 related_docs: ["roadmap", "mvp-backlog", "mvp-execution-dag", "software-requirements-specification", "FEAT-G-VOICE", "FEAT-G-MEMORY"]
 ---
 
@@ -87,7 +87,7 @@ Reference tier: 6 physical cores / 12 logical processors, RAM 16 GB, DXGI GPU �
 | Voice response | PTT release → first audible answer ≤2.0 s ทุก accepted turn ใน ready/warm state; completion ≥95% ต่อภาษา. Cold model preparation ≤10 s แสดง preparing ชัด; ห้ามนำ timeout/reject ออกจากรายงานเพื่อทำเลขผ่าน |
 | danger preemption | 100 overlap trials ทุก trial preempt stale Voice/advice และยังผ่าน G-Signal hard latency |
 | G-Signal latency | p50 ≤250 ms, ทุก measured sample ≤300 ms; ≥300 samples/scenario/profile และ live audible probe |
-| CPU | whole-app process group normalized by logical CPU capacity, ทุก 1 s sample ≤2.5% |
+| CPU | whole-app process group normalized by logical CPU capacity, ทุก 1 s sample ≤10% |
 | RAM | peak aggregate Working Set ≤400,000,000 bytes (400 MB); รวม host/WebView2/feeder/STT/SLM และ external model PIDs ที่ใช้งาน |
 | FPS impact | ≤3% แต่ละ paired overlay off/on run; ≥3 pairs ×60 s, same device/segment/settings |
 
@@ -98,6 +98,18 @@ Label guide: episode เริ่มเมื่อ threat actionable ตาม 
 Resource runs: warm-up 2 min แล้ว idle/live-CV/Voice+Signal phase ละ10 min ×3 runs, 1 s sampling, host ไม่มี builds/CodeDoc ร่วม. ถ้า model ที่เลือกเกิน hard RAM/CPU budget ให้ลดขนาด/เปลี่ยน implementation หรือเปิด explicit SRS change; ห้ามยกเว้น model process หรือเพิ่มเพดานโดยปริยาย. Memory/Voice feasibility เป็นงาน spike ก่อนเลือก package.
 
 Required cell ที่ไม่มี OS/device/label/audio evidence เป็น SKIP/INDETERMINATE และไม่ผ่าน. Unsupported layout/mode ต้องสื่อสารชัด ไม่แต่ง safety assertion; complete/partial/unknown states มี source/freshness/coverage. Thresholds นี้ล็อกก่อนดู acceptance results; การเปลี่ยนต้องสร้าง decision version ใหม่พร้อมเหตุผล.
+
+### Decision v0.2.0 — CPU budget
+
+ตามคำสั่ง Owner วันที่ 2026-10-12 ปรับเพดาน CPU ของ MVP จาก 2.5% เป็น 10% ต่อ sample 1 วินาที โดย normalize CPU ของ Windows Job Object process group ตาม logical CPU capacity. Governor ตั้ง OS hard cap 10% ก่อน Tauri สร้าง WebView2; app-created children ที่ไม่ใช้ breakaway flag สืบทอด job ตาม Windows default, ส่วน WebView2 process membership ยังต้องยืนยันบน Windows. หากสร้าง/configure/assign job ไม่สำเร็จ แอปต้องบันทึกข้อผิดพลาดและออกด้วย exit code 1 ก่อนสร้าง Tauri/WebView หรือ sidecar; ห้ามเปิดแอปในสถานะที่ไม่มี whole-app hard-cap guarantee. หาก runtime accounting query ล้มเหลวหลัง setup สำเร็จ UI แสดง unavailable (`—`) และคง capture throttle แม้ OS hard cap ยังคงตั้งอยู่; payload/UI ปัจจุบันไม่มี field แยกสถานะ query นี้. Capture throttle เมื่อ CPU >10% และคืน cadence หลัง ≤8% ต่อเนื่อง 3 samples เป็น soft mitigation เสริม; ทั้ง hard cap และ throttle ยังไม่ใช่หลักฐานว่า live CPU/FPS/G-Signal latency acceptance ผ่าน.
+
+### Decision v0.2.1 — process containment and cleanup
+
+ตั้ง `JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE` บน unnamed Job Object ก่อน assign host process. `PROCESS_JOB` เก็บ handle ที่แอปสร้างไว้ตลอดอายุโปรเซสและโค้ดไม่ได้ duplicate/inherit handle; เมื่อ setup สำเร็จ `gpu-feeder` ซึ่ง spawn ผ่าน `Command` โดยไม่ใช้ breakaway flag อยู่ใน job ตาม Windows default. เมื่อ handle สุดท้ายปิด Windows จะยุติสมาชิก job; normal Tauri exit ยัง kill exact owned feeder ก่อนคืน control. มติ fail-closed ทำให้ startup ปัจจุบันไม่สร้าง feeder หาก setup ล้มเหลว; feeder ที่เหลือจากรุ่นก่อนซึ่งเคยเปิด degraded mode อาจอยู่นอก job และค้างหลัง host abnormal exit. WebView2 membership และ crash cleanup ยังไม่มี live acceptance receipt; guarantee ใช้กับ process ที่อยู่ใน job ภายใต้ membership/handle-lifetime assumptions นี้.
+
+### Decision v0.3.0 — Fail closed when CPU cap setup fails
+
+Owner ตัดสินใจวันที่ 2026-10-13 ว่าเมื่อ Job Object initialization/configuration/assignment ล้มเหลว ให้ปฏิเสธการเปิดแอป: บันทึกข้อผิดพลาดและออกด้วย exit code 1 ก่อนสร้าง Tauri/WebView หรือ sidecar. หาก setup สำเร็จแต่ runtime accounting query ล้มเหลว ให้แสดง CPU unavailable และคง capture throttle; OS hard cap ยังทำงาน. UI จึงต้องแยกเฉพาะกรณี runtime query failure ที่เกิดหลังแอปเริ่มแล้ว.
 
 ## Baseline และ dispatch
 
@@ -110,3 +122,6 @@ MVP-007 reconcile PRD/SRS/AGENTS/CLAUDE ตามมตินี้. งาน c
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-10-10 | Codex ตัดสินตาม Owner delegation: Companion scope, optional-account local core, cloud opt-in allowlist และ fixed acceptance matrix; รับ verified baseline โดยคง legal/release gates |
+| 0.2.0 | 2026-10-12 | Owner เปลี่ยน CPU budget เป็น ≤10% ต่อ sample 1 วินาที พร้อมคง acceptance measurement และเพิ่ม governor hysteresis. |
+| 0.2.1 | 2026-10-12 | Clarified unavailable-cap state, pending startup policy, and kill-on-close membership/handle assumptions. |
+| 0.3.0 | 2026-10-13 | Owner chose fail-closed startup when the CPU Job Object cannot initialize; updated process and feeder lifecycle contract. |

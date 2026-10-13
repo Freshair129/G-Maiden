@@ -408,11 +408,14 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
                   <span style={{ color: resources.ram_mb > 400 ? C.bad : C.ok }}>
                     RAM: <b>{resources.ram_mb.toFixed(0)} MB</b> / 400 MB
                   </span>
-                  <span style={{ color: resources.cpu_pct > 2.5 ? C.bad : C.ok }}>
-                    CPU: <b>{resources.cpu_pct.toFixed(1)}%</b> / 2.5%
+                  <span style={{ color: resources.cpu_pct > 10 ? C.bad : resources.cpu_pct < 0 ? C.warn : C.ok }}>
+                    CPU: <b>{resources.cpu_pct >= 0 ? `${resources.cpu_pct.toFixed(1)}%` : '—'}</b> / 10%
                   </span>
-                  {resources.over_budget && (
+                  {(resources.cpu_pct > 10 || resources.ram_mb > 400) && (
                     <span style={{ color: C.warn }}>⚠ เกิน budget — อาจลดความถี่ CV</span>
+                  )}
+                  {resources.cpu_pct < 0 && (
+                    <span style={{ color: C.warn }}>CPU reading unavailable — capture throttle active</span>
                   )}
                 </div>
               )}

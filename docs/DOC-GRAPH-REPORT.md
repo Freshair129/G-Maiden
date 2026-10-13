@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-10-11T01:50:24.168Z
+สร้างเมื่อ / Generated at: 2026-10-13T00:10:21.846Z
 
-สแกน 154 ไฟล์เอกสาร, 277 nodes, 1168 edges, 218 รายการปัญหา (178 ตัวบล็อก exit code) / scanned 154 doc files, 277 nodes, 1168 edges, 218 violations (178 blocking exit code).
+สแกน 154 ไฟล์เอกสาร, 277 nodes, 1169 edges, 215 รายการปัญหา (177 ตัวบล็อก exit code) / scanned 154 doc files, 277 nodes, 1169 edges, 215 violations (177 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -15,8 +15,8 @@
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 3 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
-| missing-changelog | มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table | 5 | yes |
-| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 37 | no (informational) |
+| missing-changelog | มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table | 4 | yes |
+| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 35 | no (informational) |
 | version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 28 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
@@ -110,14 +110,6 @@
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/architecture/spikes/S-1-minimap-cv.md
-
-- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/architecture/tech-stack.md
-
-- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/architecture/technical-design-document.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
@@ -399,7 +391,7 @@
 
 ### docs/features/README.md
 
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.1", changelog="0.2.0")
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.2", changelog="0.2.0")
 
 ### docs/guides/scaffold-setup.md
 
@@ -442,10 +434,6 @@
 ### docs/product/roadmap-legacy.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/product/software-requirements-specification.md
-
-- [-] **missing-changelog** — มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table
 
 ### docs/rca/2026-07-10-voice-pack-path-traversal.md
 

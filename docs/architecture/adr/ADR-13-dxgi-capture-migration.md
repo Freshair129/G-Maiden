@@ -2,8 +2,8 @@
 title: "ADR: Migrate Screen Capture from WGC to DXGI Desktop Duplication"
 doc_id: "ADR-13-dxgi-capture-migration"
 status: "accepted"
-version: "0.1.1"
-updated: "2026-06-28"
+version: "0.1.2"
+updated: "2026-10-12"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["ADR-05", "ADR-10-hybrid-ingestion-resilience", "src-tauri/src/capture.rs", "src-tauri/src/governor.rs"]
@@ -22,7 +22,7 @@ G-Maiden ใช้ **Windows Graphics Capture (WGC)** จับภาพหน�
 ### หลักฐานจาก error.log (2026-06-28)
 - **SLOW frame 1,300–2,300ms** ต่อเนื่อง **1,294 ครั้ง** ตลอดทั้ง match — frame time ควรเป็น 67–125ms (8–15 Hz) แต่จริงได้แค่ ~0.7 Hz
 - **`suspicious=true` ตลอด** — G-Sentry ตรวจพบ hero หายตลอดเวลา → capture loop boost เป็น 15 Hz → ยิ่ง stress WGC → วงจรอุบาทว์
-- **CPU พุ่ง 8%** เกิน resource budget (≤2.5%) มากกว่า 3 เท่า ทั้งที่ยังไม่มี overlay effects หนักๆ
+- **CPU พุ่ง 8%** เกิน resource budget ณ วันที่วัด (≤2.5%) มากกว่า 3 เท่า ทั้งที่ยังไม่มี overlay effects หนักๆ; เกณฑ์ MVP ปัจจุบันอ้างอิง [[mvp-decisions]] v0.2.0.
 - **WGC startup failure ซ้ำ**: `"Toggling the capture border is not supported by the Graphics Capture API on this platform"` — ต้อง retry หลายรอบ ในบาง session เปิดไม่ได้เลย
 
 ### สาเหตุรากของปัญหา
@@ -118,7 +118,7 @@ capture::start()
 - Emit `capture-mode` event ให้ frontend แสดง mode badge
 
 ### Phase 3: Validation (1–2 days)
-- Run perf_p7 benchmark: assert CPU ≤ 2.5%, RAM ≤ 400 MB
+- Run perf_p7 benchmark: assert whole-app CPU ≤10% per [[mvp-decisions]] v0.2.0 and RAM ≤400 MB
 - In-game test: Dota 2 borderless + G-Maiden + OBS simultaneously
 - Verify gank detection still triggers within 2s of enemy disappearing
 - Verify error.log has zero SLOW frame entries
@@ -140,3 +140,4 @@ capture::start()
 |---|---|---|
 | 0.1.0 | 2026-06-28 | Initial proposal based on in-game performance evidence (CPU 8%, frame time 1.3–2.3s) |
 | 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): `[[CLAUDE.md]]` converted to plain backtick path text (CLAUDE.md is outside docs/, not a doc-graph slug) |
+| 0.1.2 | 2026-10-12 | Clarified that the 2.5% capture measurement was historical and aligned the pending CPU validation gate with MVP decision v0.2.0. |

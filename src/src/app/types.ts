@@ -163,8 +163,8 @@ export const DEFAULTS: Settings = { overlayVisible: true, position: 'top', custo
 export interface OverlayProfile { name: string; position: Pos; customX: number; customY: number; opacity: number; showTimer: boolean; showScore: boolean; showHeroBar: boolean; showKda: boolean; showGold: boolean }
 
 export interface VoiceInfo { name: string; culture: string; gender: string; age: string }
-/** G7.2: resource-governor stats emitted every 10s from governor.rs */
-export interface ResourceStats { ram_mb: number; cpu_pct: number; over_budget: boolean }
+/** G7.2: one-second governor stats; CPU covers the Windows process group. */
+export interface ResourceStats { ram_mb: number; cpu_pct: number; cpu_group_processes: number; over_budget: boolean }
 
 export type GankState = { phase: 'alert'; heroes: string[]; probability: number } | { phase: 'clear' } | null
 

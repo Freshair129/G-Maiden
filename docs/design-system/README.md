@@ -1,5 +1,5 @@
 ---
-version: "3.0.0-draft"
+version: "3.0.1-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
 last_update: "2026-07-15T00:00:00+07:00,Claude"
 status: "draft"
@@ -10,7 +10,7 @@ attributes:
   language: "th/en"
 title: "G-Maiden Design System — SSOT"
 doc_id: "design-system/README"
-updated: "2026-07-19"
+updated: "2026-10-12"
 owner: "Boss"
 ---
 
@@ -65,7 +65,7 @@ owner: "Boss"
 | --- | --- | --- |
 | [[design-system|docs/architecture/design-system.md]] (Iceglass 0.1.0b) | candidate | **ต้นทาง** — v2 ต่อยอด palette/persona; principles ยังใช้ได้ ส่วน shell layout ถูก supersede |
 | [[g-maiden-ui-sitemap-flow-board|docs/architecture/g-maiden-ui-sitemap-flow-board.md]] | accepted | sitemap/flow ระดับ product — ไฟล์ 05 ในชุดนี้ลงรายละเอียด UI จริง ไม่ขัดกัน |
-| [[product-requirements|PRD]] / [[software-requirements-specification|SRS]] (`docs/product/`) | source of truth (requirements) | NFR (FPS≤3%, CPU≤2.5%, RAM≤400MB) เป็น hard constraint ที่ทุก design ต้องผ่าน |
+| [[product-requirements|PRD]] / [[software-requirements-specification|SRS]] (`docs/product/`) | source of truth (requirements) | NFR (FPS≤3%, whole-app CPU≤10% per [[mvp-decisions]] v0.2.0, RAM≤400MB) เป็น hard constraint ที่ทุก design ต้องผ่าน |
 | `CLAUDE.md` → Visual language | in-repo rule | v2 ยึด ice palette เดิม + เพิ่ม lime signal accent (ดู tokens §reconcile) |
 
 ## 4. Token quick-reference
@@ -109,3 +109,4 @@ owner: "Boss"
 | Version | Date | Summary |
 | --- | --- | --- |
 | 3.0.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
+| 3.0.1-draft | 2026-10-12 | Synced the CPU design gate with the current MVP decision; runtime acceptance remains evidence-gated. |

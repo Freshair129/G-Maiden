@@ -845,6 +845,12 @@ pub fn run() {
     // %LOCALAPPDATA%\G-Maiden\logs\error.log so a freeze/crash leaves a trace.
     log::init_panic_hook();
     log::error("[startup] G-Maiden process started");
+    if let Err(error) = governor::initialize_process_group() {
+        log::error(&format!(
+            "[startup] refusing to start without the whole-app CPU Job Object hard cap: {error}"
+        ));
+        std::process::exit(1);
+    }
 
     // Global hotkeys — work even when Dota 2 is focused.
     // Ctrl+Alt+S = overlay show/hide (Alt+S / Ctrl+S collide with Dota binds).
@@ -1014,10 +1020,13 @@ pub fn run() {
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(gsi::serve(handle));
 
-            // G7.2: resource governor — poll RAM/CPU every 10s, emit resource-stats.
+            // G7.2: resource governor — poll RAM/CPU every second, emit resource-stats.
             governor::start(app.handle().clone());
             // Headless GPU feeder sidecar → pushes nvidia-smi metrics to
-            // POST /telemetry (own process; keeps nvidia-smi out of the main app).
+            // POST /telemetry. Startup reaches this point only after the host joined
+            // its Job Object, so the feeder inherits membership by default. Normal
+            // exit also stops/waits the exact owned child; a feeder left by an older
+            // degraded-mode build may outlive abnormal exit.
             governor::spawn_gpu_feeder();
 
             app.global_shortcut().register(toggle)?;
@@ -1087,6 +1096,11 @@ pub fn run() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|_app, event| {
+            if let tauri::RunEvent::Exit = event {
+                governor::stop_owned_sidecars();
+            }
+        });
 }

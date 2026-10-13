@@ -14,7 +14,7 @@
 //   capture-mode  capture.rs:140/151  once at startup: "lite" | "dxgi"
 //   sensor-health capture.rs        edge + ~1Hz heartbeat; the ONLY honest
 //                                   answer to "is the minimap sensor alive?"
-//   resource-stats governor.rs:60   every 10s
+//   resource-stats governor.rs:163  every 1s
 
 export type MatchLifecycle = "draft" | "live" | "disconnected" | "end" | "abandon";
 
@@ -150,15 +150,16 @@ export interface SignalAlert extends MatchSessionMetadata {
   eta_ms: number;
 }
 
-/** resource-stats — G-Governor RAM/CPU sample every 10s. GPU fields are bridged
- *  in from the sibling G-Telemetry app; `-1` = unavailable (bridge not running). */
+/** resource-stats — G-Governor sample every second. CPU is the Windows Job
+ *  Object process group, normalized by logical CPU capacity and hard-capped at
+ *  10% when Job Object setup succeeds. A negative sample means the CPU group
+ *  cannot be measured; this payload does not distinguish setup from query failure. */
 export interface ResourceStats {
   ram_mb: number;
   cpu_pct: number;
+  cpu_group_processes: number;
   over_budget: boolean;
-  /** Session peaks (max since launch) from the governor — prove the SRS §5.1
-   *  budgets held over a match. Own-process, core-normalized (deck WebView2 is a
-   *  separate process, not counted). Optional: absent on older ticks. */
+  /** Session peaks (max since launch) from the whole-app governor. */
   peak_cpu_pct?: number;
   peak_ram_mb?: number;
   gpu_pct: number;        // -1 when the active telemetry source is absent/stale

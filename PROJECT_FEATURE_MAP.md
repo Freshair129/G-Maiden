@@ -128,7 +128,7 @@ The "Companion Experience Extensions" layered on the six core modules; statuses 
 | Constraint | Budget |
 | --- | --- |
 | **G-Signal end-to-end latency** | target **250 ms**, never exceed **300 ms** |
-| Background CPU (mid-range chipset) | ≤ **2.5 %** |
+| Whole-app CPU, normalized by logical CPU capacity | ≤ **10 % per 1-second sample** (MVP decision v0.2.0) |
 | RAM (all modules active) | ≤ **400 MB** |
 | Overlay FPS impact on Dota 2 | ≤ **3 %** drop; must not obscure minimap / skill bar / stats |
 | Resilience | on cloud/network loss, G-Sentry + G-Signal keep running on the local SLM |

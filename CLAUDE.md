@@ -134,7 +134,7 @@ When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scal
 ### Hard constraints (non-functional — enforce these)
 
 - **G-Signal end-to-end latency: target 250ms, never exceed 300ms.**
-- Whole-app process-group CPU normalized by logical CPU capacity ≤ **2.5% per 1-second sample**;
+- Whole-app process-group CPU normalized by logical CPU capacity ≤ **10% per 1-second sample** (MVP decision v0.2.0);
   aggregate peak Working Set ≤ **400,000,000 bytes** including host/WebView2/feeder/STT/SLM/model
   processes; Dota 2 FPS impact ≤3% per paired acceptance run.
 - Overlay must not drop Dota 2 FPS by more than **3%**, and must not obscure minimap, skill bar,

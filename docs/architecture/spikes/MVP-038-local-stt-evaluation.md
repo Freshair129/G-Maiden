@@ -2,8 +2,8 @@
 title: "MVP-038 — Local STT Design and Evaluation Protocol"
 doc_id: "MVP-038-local-stt-evaluation"
 status: "draft"
-version: "0.1.0"
-updated: "2026-10-11"
+version: "0.1.2"
+updated: "2026-10-13"
 owner: "Codex"
 related_docs: ["mvp-decisions", "mvp-backlog", "mvp-execution-dag", "roadmap", "FEAT-G-VOICE", "engineering-spec"]
 ---
@@ -79,7 +79,7 @@ MVP-038 จบได้เมื่อมีผู้สมัครที่เ
 | Warm turn | วัดตั้งแต่ PTT release → final transcript → answer-ready → first audible sample; ทุก accepted ready/warm turn ≤2,000 ms และ completion ≥95% ต่อภาษา |
 | Component latency | บันทึก capture stop, STT start/end, local interpretation, TTS start และ audible onset ด้วย monotonic clock; รายงาน p50/p95/p99/max และจำนวนตัวอย่าง ไม่แยกช่วงช้าออกจาก end-to-end |
 | Resource | warm-up 2 นาที แล้ว idle/live-CV/Voice+Signal เฟสละ 10 นาที ×3 runs, sampling ทุก 1 s; รายงาน process tree, STT child/model PID, aggregate peak Working Set และ incremental STT footprint |
-| System limits | whole-app CPU ทุก 1 s ≤2.5%; aggregate peak Working Set ≤400,000,000 bytes รวม WebView2, feeder, STT/TTS/SLM และ external model processes; FPS impact ≤3% ตาม paired run ใน MVP-006 |
+| System limits | whole-app CPU ทุก 1 s ≤10% ตาม MVP-006; หาก Job Object setup/assignment ไม่สำเร็จ แอปต้องปฏิเสธ startup ก่อนเปิด Tauri/WebView หรือ sidecar; หาก runtime accounting query ล้มเหลวหลัง setup สำเร็จ ให้นับ CPU sample เป็น unavailable และห้ามนับ CPU gate ว่าผ่าน; aggregate peak Working Set ≤400,000,000 bytes รวม WebView2, feeder, STT/TTS/SLM และ external model processes; FPS impact ≤3% ตาม paired run ใน MVP-006 |
 | Critical path | รัน Voice พร้อม G-Signal; STT เพิ่ม latency หรือ block GSI→G-Signal→cached alert ไม่ได้; ใช้ G-Signal thresholds และ hard max เดิม ไม่สร้างข้อยกเว้นให้ STT |
 
 บันทึก warm/cold, accepted/rejected, quiet/game-audio และ language แยกกัน. ใช้ timeout ที่ตั้งไว้ก่อนรันและเก็บ timeout ทุกครั้งในผล. หาก resource limit ไม่ผ่าน ให้ลด/เปลี่ยน configuration หรือเปิดการตัดสินใจ requirement ใหม่; ห้ามนับ external model process ออกจากงบ.
@@ -119,3 +119,5 @@ MVP-038 จบได้เมื่อมีผู้สมัครที่เ
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-10-11 | Defined a candidate-neutral local STT evaluation, corpus, resource, privacy, and exit protocol; no model selected and no benchmark claimed. |
+| 0.1.1 | 2026-10-12 | Aligned the system CPU gate and unavailable-sample evidence rule with MVP decisions v0.2.0–0.2.1. |
+| 0.1.2 | 2026-10-13 | Updated CPU setup-failure handling to fail startup and retained the unavailable-sample gate for runtime query failures. |
