@@ -17,12 +17,12 @@ jobs:
           python-version: '3.12'
 
       # pnpm is installed in the next step, so setup-node must not auto-cache it.
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: '20'
           package-manager-cache: false
 
-      - uses: pnpm/action-setup@v5
+      - uses: pnpm/action-setup@v6.1.0
         # version read from packageManager field in package.json
 
       - uses: dtolnay/rust-toolchain@1.96.0
