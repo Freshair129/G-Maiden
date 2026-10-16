@@ -62,4 +62,4 @@ zip = { version = "4", default-features = false, features = ["deflate"] }
 wgc = ["dep:windows-capture"]
 
 [build-dependencies]
-tauri-build = { version = "2.0", features = [] }
+tauri-build = { version = "2.7", features = [] }
