@@ -42,7 +42,7 @@ import { DeckPrefsCard } from "./deck/DeckPrefsCard";
 import { DeckTabs, FeedAgePill, PhaseChip } from "./deck/onair";
 import { GMaidenFungDashboard, VolumeRail } from "./deck/FungDashboard";
 import { SignalGrid } from "./deck/SignalGrid";
-import { useStartupSettings } from "./app/settings";
+import { useStartupSettings } from "./app/settingsContext";
 
 export default function CommandDeck({ renderSettings }: { renderSettings?: (cat: SettingsCat) => ReactNode } = {}) {
   const { settings, setSettings } = useStartupSettings();

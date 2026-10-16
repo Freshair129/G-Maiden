@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 import { DEFAULTS } from './types'
-import { mergeStoredSettings, normalizeSettings } from './settings'
+import { mergeStoredSettings, normalizeSettings } from './settingsSchema'
 
 describe('startup settings normalization', () => {
   it('validates values and retains the saved preferences that are in range', () => {

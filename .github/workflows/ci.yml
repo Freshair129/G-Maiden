@@ -10,18 +10,19 @@ jobs:
   ci:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      - uses: actions/setup-python@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: '3.12'
 
-      # Fix: setup-node BEFORE pnpm/action-setup so cache key is available
-      - uses: actions/setup-node@v4
+      # pnpm is installed in the next step, so setup-node must not auto-cache it.
+      - uses: actions/setup-node@v5
         with:
           node-version: '20'
+          package-manager-cache: false
 
-      - uses: pnpm/action-setup@v4
+      - uses: pnpm/action-setup@v5
         # version read from packageManager field in package.json
 
       - uses: dtolnay/rust-toolchain@1.96.0
