@@ -13,6 +13,7 @@
 //! Throttle callbacks are exported so the capture loop can check whether to
 //! drop a processing tick (reducing from ~8 Hz to ~4 Hz) when CPU is high.
 
+use std::process::{Child, Command};
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Mutex;
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
@@ -267,34 +268,94 @@ fn parse_bridge_file(raw: &str, now_ms: u64) -> Option<(f64, f64, f64, f64, f64)
     ))
 }
 
+/// Owns the exact feeder child started by this application.
+pub struct GpuFeederProcess {
+    child: Mutex<Option<Child>>,
+}
+
+impl GpuFeederProcess {
+    fn new(child: Option<Child>) -> Self {
+        Self {
+            child: Mutex::new(child),
+        }
+    }
+
+    /// Stop and reap the feeder started by this app. Keep its handle in app
+    /// state if termination or waiting fails.
+    pub fn shutdown(&self) -> bool {
+        let mut child_slot = self
+            .child
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner);
+        let Some(mut child) = child_slot.take() else {
+            return true;
+        };
+
+        let stopped = match child.try_wait() {
+            Ok(Some(_)) => true,
+            Ok(None) => match child.kill() {
+                Ok(()) => match child.wait() {
+                    Ok(_) => true,
+                    Err(error) => {
+                        eprintln!("failed to reap owned gpu-feeder process: {error}");
+                        false
+                    }
+                },
+                Err(kill_error) => match child.try_wait() {
+                    Ok(Some(_)) => true,
+                    Ok(None) => {
+                        eprintln!("failed to stop owned gpu-feeder process: {kill_error}");
+                        false
+                    }
+                    Err(wait_error) => {
+                        eprintln!(
+                            "failed to stop owned gpu-feeder process: {kill_error}; could not check child state: {wait_error}"
+                        );
+                        false
+                    }
+                },
+            },
+            Err(error) => {
+                eprintln!("failed to check owned gpu-feeder process: {error}");
+                false
+            }
+        };
+
+        if !stopped {
+            *child_slot = Some(child);
+        }
+        stopped
+    }
+}
+
 /// Spawn the headless `gpu-feeder` sidecar (own process; runs nvidia-smi and
 /// pushes to `POST /telemetry`). Looks next to our exe: the bundled name first,
 /// then the dev second-bin name. No-ops if neither exists (GPU stays "—").
-pub fn spawn_gpu_feeder() {
+pub fn spawn_gpu_feeder() -> GpuFeederProcess {
     let Ok(exe) = std::env::current_exe() else {
-        return;
+        return GpuFeederProcess::new(None);
     };
-    let Some(dir) = exe.parent() else { return };
+    let Some(dir) = exe.parent() else {
+        return GpuFeederProcess::new(None);
+    };
     let path = dir.join("gpu-feeder.exe");
     if !path.is_file() {
-        return; // not bundled (e.g. no GPU build) — GPU telemetry stays "—"
+        return GpuFeederProcess::new(None); // not bundled (e.g. no GPU build)
     }
-    // Clear any feeder left over from a previous run so restarts don't stack them.
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        let _ = std::process::Command::new("taskkill")
-            .args(["/F", "/IM", "gpu-feeder.exe"])
-            .creation_flags(0x0800_0000) // CREATE_NO_WINDOW
-            .output();
-    }
-    let mut cmd = std::process::Command::new(&path);
+    let mut cmd = Command::new(&path);
     #[cfg(windows)]
     {
         use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
     }
-    let _ = cmd.spawn();
+    let child = match cmd.spawn() {
+        Ok(child) => Some(child),
+        Err(error) => {
+            eprintln!("failed to start gpu-feeder sidecar: {error}");
+            None
+        }
+    };
+    GpuFeederProcess::new(child)
 }
 
 #[cfg(windows)]
@@ -397,6 +458,127 @@ fn measure_cpu_pct() -> Option<f64> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::process::Stdio;
+    use std::time::Instant;
+
+    const GPU_FEEDER_TEST_CHILD_ENV: &str = "G_MAIDEN_GPU_FEEDER_TEST_CHILD";
+
+    #[test]
+    fn gpu_feeder_child_process_fixture() {
+        match std::env::var(GPU_FEEDER_TEST_CHILD_ENV).as_deref() {
+            Ok("running") => loop {
+                std::thread::sleep(Duration::from_secs(60));
+            },
+            Ok("exited") => {}
+            _ => {}
+        }
+    }
+
+    struct TestChildGuard(Option<Child>);
+
+    impl TestChildGuard {
+        fn spawn(mode: &str) -> Self {
+            let mut command = Command::new(std::env::current_exe().expect("test executable"));
+            command
+                .args([
+                    "--exact",
+                    "governor::tests::gpu_feeder_child_process_fixture",
+                    "--nocapture",
+                ])
+                .env(GPU_FEEDER_TEST_CHILD_ENV, mode)
+                .stdin(Stdio::null())
+                .stdout(Stdio::null())
+                .stderr(Stdio::null());
+            #[cfg(windows)]
+            {
+                use std::os::windows::process::CommandExt;
+                command.creation_flags(0x0800_0000); // CREATE_NO_WINDOW
+            }
+            Self(Some(command.spawn().expect("spawn test-owned child")))
+        }
+
+        fn child(&self) -> &Child {
+            self.0.as_ref().expect("child guard is populated")
+        }
+
+        fn child_mut(&mut self) -> &mut Child {
+            self.0.as_mut().expect("child guard is populated")
+        }
+
+        fn take(&mut self) -> Child {
+            self.0.take().expect("child guard is populated")
+        }
+    }
+
+    impl Drop for TestChildGuard {
+        fn drop(&mut self) {
+            if let Some(mut child) = self.0.take() {
+                if !matches!(child.try_wait(), Ok(Some(_))) {
+                    let _ = child.kill();
+                    let _ = child.wait();
+                }
+            }
+        }
+    }
+
+    struct TestFeederGuard(GpuFeederProcess);
+
+    impl Drop for TestFeederGuard {
+        fn drop(&mut self) {
+            let _ = self.0.shutdown();
+        }
+    }
+
+    fn wait_for_exit(child: &mut Child) -> bool {
+        let deadline = Instant::now() + Duration::from_secs(10);
+        loop {
+            match child.try_wait() {
+                Ok(Some(_)) => return true,
+                Ok(None) if Instant::now() < deadline => {
+                    std::thread::sleep(Duration::from_millis(10));
+                }
+                Ok(None) | Err(_) => return false,
+            }
+        }
+    }
+
+    #[test]
+    fn gpu_feeder_shutdown_reaps_only_owned_child_and_accepts_exited_child() {
+        let mut owned_child = TestChildGuard::spawn("running");
+        let mut unrelated_child = TestChildGuard::spawn("running");
+        let unrelated_pid = unrelated_child.child().id();
+        let owned = TestFeederGuard(GpuFeederProcess::new(Some(owned_child.take())));
+
+        assert!(
+            owned.0.shutdown(),
+            "owned feeder should be terminated and reaped"
+        );
+        assert!(owned.0.shutdown(), "shutdown should be idempotent");
+        assert!(
+            owned.0.child.lock().unwrap().is_none(),
+            "successfully reaped child should no longer be retained"
+        );
+        assert_eq!(unrelated_child.child().id(), unrelated_pid);
+        assert!(
+            unrelated_child.child_mut().try_wait().unwrap().is_none(),
+            "an unrelated same-test child must remain running"
+        );
+
+        let mut exited_child = TestChildGuard::spawn("exited");
+        assert!(
+            wait_for_exit(exited_child.child_mut()),
+            "fixture should exit promptly"
+        );
+        let exited = TestFeederGuard(GpuFeederProcess::new(Some(exited_child.take())));
+        assert!(
+            exited.0.shutdown(),
+            "an already-exited child should be harmless"
+        );
+        assert!(
+            GpuFeederProcess::new(None).shutdown(),
+            "missing sidecar should be harmless"
+        );
+    }
 
     #[test]
     fn measure_returns_plausible_values() {

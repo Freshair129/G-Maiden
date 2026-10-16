@@ -949,7 +949,7 @@ pub fn run() {
             governor::start(app.handle().clone());
             // Headless GPU feeder sidecar → pushes nvidia-smi metrics to
             // POST /telemetry (own process; keeps nvidia-smi out of the main app).
-            governor::spawn_gpu_feeder();
+            app.manage(governor::spawn_gpu_feeder());
 
             app.global_shortcut().register(toggle)?;
             app.global_shortcut().register(vol_up)?;
@@ -1018,6 +1018,15 @@ pub fn run() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            if let tauri::RunEvent::Exit = event {
+                if let Some(feeder) = app.try_state::<governor::GpuFeederProcess>() {
+                    if !feeder.shutdown() {
+                        eprintln!("could not fully stop owned gpu-feeder sidecar on app exit");
+                    }
+                }
+            }
+        });
 }
