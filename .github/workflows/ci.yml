@@ -22,8 +22,16 @@ jobs:
           node-version: '20'
           package-manager-cache: false
 
-      - uses: pnpm/action-setup@v6.1.0
-        # version read from packageManager field in package.json
+      - name: Install pinned pnpm
+        shell: pwsh
+        run: |
+          $pnpmPackage = (Get-Content package.json -Raw | ConvertFrom-Json).packageManager
+          $pnpmDir = Join-Path $env:RUNNER_TEMP 'g-maiden-pnpm'
+          npm install --prefix $pnpmDir $pnpmPackage --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $pnpmBin = Join-Path $pnpmDir 'node_modules/.bin'
+          Add-Content -Path $env:GITHUB_PATH -Value $pnpmBin
+          & (Join-Path $pnpmBin 'pnpm.cmd') --version
 
       - uses: dtolnay/rust-toolchain@1.96.0
         with:
