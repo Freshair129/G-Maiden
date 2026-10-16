@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, type ReactNode } from "react";
+import { lazy, Suspense, useState, useRef, useEffect, useMemo, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -6,19 +6,7 @@ import { LogicalSize } from "@tauri-apps/api/dpi";
 // Type-only — erased at compile time, so this does NOT create a runtime
 // import cycle with App.tsx (which imports CommandDeck as a value).
 import type { SettingsCat } from "./App";
-import VoicePacksPage from "./VoicePacksPage";
-import {
-  BuildAdvisorPage,
-  HistoryPage,
-  InsightsPage,
-  LiveMatchPage
-} from "./CompanionPages";
 import { useCompanionData } from "./companion";
-import AccountPage from "./AccountPage";
-import StorePage from "./StorePage";
-import WalletTab from "./WalletTab";
-import InventoryTab from "./InventoryTab";
-import LedgerTab from "./LedgerTab";
 import { useProfile } from "./profile";
 import { useAppUpdate } from "./useAppUpdate";
 import type { VoiceState } from "./voice-types";
@@ -43,6 +31,21 @@ import { DeckTabs, FeedAgePill, PhaseChip } from "./deck/onair";
 import { GMaidenFungDashboard, VolumeRail } from "./deck/FungDashboard";
 import { SignalGrid } from "./deck/SignalGrid";
 import { useStartupSettings } from "./app/settingsContext";
+
+const VoicePacksPage = lazy(() => import("./VoicePacksPage"));
+const LiveMatchPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.LiveMatchPage })));
+const BuildAdvisorPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.BuildAdvisorPage })));
+const InsightsPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.InsightsPage })));
+const HistoryPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.HistoryPage })));
+const AccountPage = lazy(() => import("./AccountPage"));
+const StorePage = lazy(() => import("./StorePage"));
+const WalletTab = lazy(() => import("./WalletTab"));
+const InventoryTab = lazy(() => import("./InventoryTab"));
+const LedgerTab = lazy(() => import("./LedgerTab"));
+
+function DeferredPage({ children }: { children: ReactNode }) {
+  return <Suspense fallback={null}>{children}</Suspense>;
+}
 
 export default function CommandDeck({ renderSettings }: { renderSettings?: (cat: SettingsCat) => ReactNode } = {}) {
   const { settings, setSettings } = useStartupSettings();
@@ -575,11 +578,11 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
                 onChange={setLiveTab}
               />
               <div className="deck-tabbed-body">
-                {liveTab === "live" ? <LiveMatchPage /> : <BuildAdvisorPage />}
+                <DeferredPage>{liveTab === "live" ? <LiveMatchPage /> : <BuildAdvisorPage />}</DeferredPage>
               </div>
             </div>
           )}
-          {tab === "voice" && <VoicePacksPage onNavigate={navigateTo} />}
+          {tab === "voice" && <DeferredPage><VoicePacksPage onNavigate={navigateTo} /></DeferredPage>}
           {tab === "store" && (
             <div className="deck-tabbed">
               <DeckTabs
@@ -593,15 +596,15 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
                 onChange={setStoreTab}
               />
               <div className="deck-tabbed-body">
-                {storeTab === "shop" && (
+                {storeTab === "shop" && <DeferredPage>
                   <StorePage
                     onNavigateToWallet={() => setStoreTab("wallet")}
                     onRequestSignIn={() => navigateTo("account", "account")}
                   />
-                )}
-                {storeTab === "wallet" && <WalletTab onViewAllTransactions={() => setStoreTab("ledger")} />}
-                {storeTab === "inventory" && <InventoryTab onActivated={() => navigateTo("voice")} />}
-                {storeTab === "ledger" && <LedgerTab />}
+                </DeferredPage>}
+                {storeTab === "wallet" && <DeferredPage><WalletTab onViewAllTransactions={() => setStoreTab("ledger")} /></DeferredPage>}
+                {storeTab === "inventory" && <DeferredPage><InventoryTab onActivated={() => navigateTo("voice")} /></DeferredPage>}
+                {storeTab === "ledger" && <DeferredPage><LedgerTab /></DeferredPage>}
               </div>
             </div>
           )}
@@ -621,11 +624,11 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
                 onChange={setInsightsTab}
               />
               <div className="deck-tabbed-body">
-                {insightsTab === "history" ? <HistoryPage /> : <InsightsPage />}
+                <DeferredPage>{insightsTab === "history" ? <HistoryPage /> : <InsightsPage />}</DeferredPage>
               </div>
             </div>
           )}
-          {tab === "account" && <AccountPage entryMode={accountEntry.mode} entryNonce={accountEntry.n} />}
+          {tab === "account" && <DeferredPage><AccountPage entryMode={accountEntry.mode} entryNonce={accountEntry.n} /></DeferredPage>}
           {tab === "settings" && (
             <div className="settings-split">
               <nav className="settings-cats" aria-label="หมวดตั้งค่า">

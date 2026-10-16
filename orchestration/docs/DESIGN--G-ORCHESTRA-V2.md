@@ -2383,7 +2383,7 @@ This section covers everything that turns the proven `orchestration/` engine int
 | Field | Value | Rationale |
 | --- | --- | --- |
 | productName | `G-Orchestra` | brand unity |
-| identifier | `com.gorchestra.app` | distinct from `com.gmaiden.app` (sibling product, separate updater feed) |
+| identifier | `com.gorchestra.app` | distinct from `com.gmaiden.desktop` (sibling product, separate updater feed) |
 | bundle targets | `nsis`, `msi` (Windows v1) → add `app`/`dmg` (mac), `deb`/`appimage` (linux) in v1.1 | Windows-first because GenesisDB's prebuilt N-API binary is `win32-x64` only today |
 | webview | React/Vite built to `gen/web`, served from `tauri://localhost` | the historical `:4577` static server existed only because the tool lived outside Tauri — it is **removed** in v1. No prod HTTP listener at all by default |
 
