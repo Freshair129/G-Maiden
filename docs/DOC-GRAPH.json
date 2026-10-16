@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-13T00:10:21.846Z",
+  "generatedAt": "2026-10-16T06:30:28.166Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -171,11 +171,6 @@
       "title": "G-Maiden + G-Orchestra Product Family Design Map",
       "status": "draft",
       "domain": "ui-ux"
-    },
-    {
-      "id": "docs/architecture/spec-orchestra-codedoc-agent.md",
-      "type": "doc",
-      "path": "docs/architecture/spec-orchestra-codedoc-agent.md"
     },
     {
       "id": "docs/architecture/spikes/MVP-038-local-stt-evaluation.md",
@@ -446,15 +441,6 @@
       "status": "accepted",
       "doc_type": "change-request",
       "domain": "3d-content-pipeline"
-    },
-    {
-      "id": "docs/change request/CR-025-codedoc-aligner-structured-output-reliability.md",
-      "type": "doc",
-      "path": "docs/change request/CR-025-codedoc-aligner-structured-output-reliability.md",
-      "title": "CR-025: CodeDoc Aligner Structured Output Reliability",
-      "status": "active",
-      "doc_type": "change-request",
-      "domain": "developer-tooling"
     },
     {
       "id": "docs/change request/CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import.md",
@@ -3878,49 +3864,49 @@
       "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
       "to": "landing/src/App.tsx",
       "type": "symbol",
-      "line": 248
+      "line": 247
     },
     {
       "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
       "to": "landing/src/beta.ts",
       "type": "symbol",
-      "line": 249
+      "line": 248
     },
     {
       "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
       "to": "landing/src/index.css",
       "type": "symbol",
-      "line": 249
+      "line": 248
     },
     {
       "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
       "to": "landing/assets/concepts/g-maiden-sea-captain-stone-titan-v1.png",
       "type": "symbol",
-      "line": 250
+      "line": 249
     },
     {
       "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
       "to": "supabase/migrations/20260720183000_cr005_closed_beta_registration.sql",
       "type": "symbol",
-      "line": 252
+      "line": 251
     },
     {
       "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
       "to": "supabase/migrations/20260720184500_cr005_beta_rls_initplan.sql",
       "type": "symbol",
-      "line": 253
+      "line": 252
     },
     {
       "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
       "to": "supabase/tests/cr005_closed_beta_registration.sql",
       "type": "symbol",
-      "line": 254
+      "line": 253
     },
     {
       "from": "docs/change request/CR-005-W1A-landing-hero-gid-closed-beta.md",
       "to": "supabase/functions/mint-gid/cors.test.ts",
       "type": "symbol",
-      "line": 255
+      "line": 254
     },
     {
       "from": "docs/change request/CR-005-landing-auth-social.md",
@@ -8861,11 +8847,6 @@
       "changelog": "0.3.2b"
     },
     {
-      "file": "docs/architecture/spec-orchestra-codedoc-agent.md",
-      "line": null,
-      "reason": "no-metadata"
-    },
-    {
       "file": "docs/architecture/spikes/S-1-minimap-cv.md",
       "line": null,
       "reason": "no-metadata"
@@ -9108,13 +9089,6 @@
       "changelog": "0.1.0b"
     },
     {
-      "file": "docs/change request/CR-025-codedoc-aligner-structured-output-reliability.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.2.0b",
-      "changelog": "0.1.0b"
-    },
-    {
       "file": "docs/change request/CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import.md",
       "line": null,
       "reason": "version-changelog-mismatch",
@@ -9127,34 +9101,6 @@
       "reason": "version-changelog-mismatch",
       "frontmatter": "2.0.0b",
       "changelog": "0.1.0b"
-    },
-    {
-      "file": "docs/change request/CR-029-gmaiden-art-first-2-5d-hero-replacement.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "1.1.0b",
-      "changelog": "1.0.0b"
-    },
-    {
-      "file": "docs/change request/CR-030-landing-scroll-driven-cinematic-narrative.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "1.1.1b",
-      "changelog": "1.0.0b"
-    },
-    {
-      "file": "docs/change request/CR-031-landing-hero-layer-separated-wind-motion.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "1.1.2b",
-      "changelog": "1.0.0b"
-    },
-    {
-      "file": "docs/change request/CR-032-landing-hero-scene-depth-and-character-rig-decomposition.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "1.0.1b",
-      "changelog": "1.0.0b"
     },
     {
       "file": "docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md",
@@ -10300,7 +10246,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-13T00:10:26.599Z",
+    "generatedAt": "2026-10-16T06:30:37.959Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

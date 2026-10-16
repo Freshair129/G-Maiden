@@ -74,7 +74,6 @@ UTF-8 อีกครั้ง ทำให้ byte sequence ของภาษ�
 - marker scan ใน tracked Markdown และ generated index ต้องเป็นศูนย์ หรือมี allowlist ที่อธิบายเป็นรายตำแหน่ง
 - ไฟล์ทั้งหมด decode เป็น UTF-8 ได้ และข้อความภาษาไทยอยู่ในช่วง Unicode Thai (`U+0E00–U+0E7F`)
 - จำนวน code fences สมดุล และ link/anchor scan ผ่าน
-- `codedoc-aligner` ผ่านหลัง repair และ regenerate
 - GitHub แสดงตัวอย่างภาษาไทย/เครื่องหมาย dash/ลูกศรถูกต้องหลัง push
 
 ## Resolution

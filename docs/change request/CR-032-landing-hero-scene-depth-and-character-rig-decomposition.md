@@ -1,5 +1,5 @@
 ---
-version: "1.0.1b"
+version: "1.0.2b"
 title: "CR-032: Landing Hero Scene-Depth and Character-Rig Decomposition"
 doc_id: "CR-032-landing-hero-scene-depth-and-character-rig-decomposition"
 created_at: "2026-07-21T18:05:00+07:00,ATHER"
@@ -8,7 +8,7 @@ owner: "Boss"
 approved_by: "Boss"
 approved_date: "2026-07-21"
 status: "accepted"
-updated: "2026-07-22"
+updated: 2026-10-16
 superseded_by: null
 attributes:
   doc_type: "change-request"
@@ -158,7 +158,7 @@ Required secondary pivots:
 | AC-02 | The character layer is decomposed into core, hair, left arm, right arm, cloth, and held-object component groups. |
 | AC-03 | The code exposes named pivot ownership for later rig-style motion work. |
 | AC-04 | The current landing still builds and renders without horizontal overflow regressions. |
-| AC-05 | Landing tests, build, and CodeDoc Aligner pass for the affected Hero files. |
+| AC-05 | Landing tests and build pass for the affected Hero files. |
 | AC-06 | This pass makes no false claim that full skeletal animation is already complete. |
 
 ## Rollback
@@ -166,9 +166,9 @@ Required secondary pivots:
 Revert the Hero back to the CR-031 localized-layer structure. No backend, data, or URL contract is
 involved.
 
-## CHANGELOG
-
+## Changelog
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
 | 1.0.1b | 2026-07-22 | accepted | Normalized reader-facing access references from GMAD to G-Maiden while preserving technical identifiers. | null | ATHER |
 | 1.0.0b | 2026-07-21 | accepted | Owner approved scene-depth and character-rig decomposition as the next Hero foundation pass before a deeper animation pass. | null | ATHER |
+| 1.0.2b | 2026-10-16 | accepted | Remove retired local review integration and related dependencies. | null | Codex |

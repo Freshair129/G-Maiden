@@ -2,7 +2,7 @@
 
 > Source-derived context for LLM-assisted navigation, analysis, and maintenance of G-Maiden. Start with llms.txt for a smaller topic index. This reference describes observed code and documents; it does not approve feature changes, certify a deployment, or replace authoritative requirements.
 
-Document version: 0.2.1. Status: active reference. Updated: 2026-09-13 (Asia/Bangkok). Maintainer: RWANG, prepared for Boss. Source baseline: a4a75542c857beaac68267b90e16707ad3263a45 plus the Boss-approved GAP-01/02 remediation committed as 56f9fbd. Application manifest version: 0.13.2. Review method: tracked-file inventory, targeted source/call-site inspection, document comparison, and static reference validation. This is not a line-by-line security audit of every file.
+Document version: 0.2.2. Status: active reference. Updated: 2026-10-16 (Asia/Bangkok). Maintainer: RWANG, prepared for Boss. Source baseline: a4a75542c857beaac68267b90e16707ad3263a45 plus the Boss-approved GAP-01/02 remediation committed as 56f9fbd. Application manifest version: 0.13.2. Review method: tracked-file inventory, targeted source/call-site inspection, document comparison, and static reference validation. This is not a line-by-line security audit of every file.
 
 Paths below are repository-relative and use forward slashes so the guide survives relocation. Older documents contain absolute G:/ paths; this checkout was reviewed at F:/gmad. References to files in this guide mean source present at the baseline, not externally installed software. Local repository files are not automatically hosted at the landing site's /llms.txt or /llms-full.txt.
 
@@ -41,7 +41,7 @@ The baseline has 1,484 tracked files. Extension counts: 444 Markdown, 57 Rust, 1
 | tests/perf/ | Native latency, replay, resource, and live-device harnesses | tests/perf/Cargo.toml, tests/perf/README.md |
 | tools/ | Documentation graph, PR gate, model/data preparation, calibration, art tools | tools/doc-graph/, tools/pr-gate-agent/, tools/lithos-hero/ |
 | spikes/ | Technical experiments separate from the default app | spikes/s1-minimap-cv/Cargo.toml |
-| .agents/, .brain/, .govibe/ | Local skills and development/governance records | .agents/skills/rwang-codedoc-aligner/SKILL.md |
+| .agents/, .brain/, .govibe/ | Local skills and development/governance records | .agents/skills/end-session/SKILL.md |
 | queue/, state/, template/ | Development task state and templates | Inspect ownership before treating these as active runtime state |
 
 The root package is not a single install command for every JavaScript project. Desktop frontend, landing, and Orchestra Studio have their own manifests. Do not apply one workspace's dependency versions or Vitest options to another.
@@ -460,7 +460,6 @@ For exact code locations after a refactor, search the symbol rather than trustin
 
 This reference was prepared from the baseline source and local documentation. File inventory and extracted registries establish counts, not functional acceptance. The review did not log into a player account, launch a live Dota match, transact payment, apply migrations, change provider settings, publish a website, push a branch, or cut a release. No hosted CI or production status was freshly verified.
 
-The local Code-Doc Aligner requires the model named by CODEDOC_MODEL, whose default is hf.co/yuxinlu1/Mellum2-12B-A2.5B-Claude-4.6-4.8-Opus-Thinking-GGUF:Q4_K_M. Ollama was reachable during review, but that exact default model was absent. The aligner process exited 2 at preflight: INDETERMINATE, never an alignment pass. A differently named Mellum model was not substituted. Static source/reference checks remain distinct from that model gate and from application tests.
 
 | Check performed on 2026-09-12 | Result and scope |
 | --- | --- |
@@ -471,7 +470,6 @@ The local Code-Doc Aligner requires the model named by CODEDOC_MODEL, whose defa
 | node tools/doc-graph/ci-gate.mjs | Exit 0; 215 tests in 18 files; encoding/ledger/orphan checks passed |
 | Strict graph exceptions | 14 existing strict errors, all covered by the repository checklist, zero uncovered; not a zero-error strict scan |
 | Generated graph outputs | Restored for the initial reference-only review; later audit/remediation regenerates and retains required graph artifacts |
-| Code-Doc Aligner | Exit 2, required default model absent; no model-reviewed alignment verdict |
 | Application/runtime/hosted checks | Initial reference review ran no app suites. Subsequent GAP-01/02 local test/build evidence is recorded in the remediation document; hosted/production acceptance remains separate |
 
 For changes to root text references, validate UTF-8, the short index structure, all local Markdown link targets, path inventory, command/event/function/migration completeness, version consistency, and git diff whitespace. Runtime tests are not replaced by these checks. Any later application change must run the relevant suites and native acceptance work required by governance.
@@ -501,3 +499,4 @@ When refreshing, compare these authoritative sets: lib.rs generate_handler regis
 | 0.1.0 | 2026-09-12 | Initial source-derived repository reference and llms.txt topic index; current interfaces, ownership, setup, verification limits, and historical documentation discrepancies. Application version unchanged. |
 | 0.2.0 | 2026-09-12 | Update auth cleanup, shared gate state, native request invalidation and approved in-process grace; link remediation verification. Application version unchanged. |
 | 0.2.1 | 2026-09-13 | Pin remediation commit 56f9fbd and refresh evidence date; implementation contract and application version unchanged. |
+| 0.2.2 | 2026-10-16 | Remove retired local review integration references; implementation baseline and runtime acceptance claims are unchanged. |

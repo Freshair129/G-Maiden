@@ -2,8 +2,8 @@
 title: "G-Maiden MVP Backlog"
 doc_id: "mvp-backlog"
 status: "draft"
-version: "0.3.2"
-updated: "2026-10-12"
+version: "0.3.3"
+updated: 2026-10-16
 owner: "Boss"
 related_docs: ["roadmap", "mvp-execution-dag", "software-requirements-specification", "G-SERIES-DATA-LINEAGE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "EXEC-PLAN-CR-034-iam-remediation"]
 ---
@@ -29,7 +29,7 @@ Backlog สำหรับทำให้ผู้เล่นใช้งาน
 2. งาน code มี regression cases และผล native/WebView หรือ live ตามผลกระทบ ไม่ปิดด้วย unit test อย่างเดียวเมื่อ acceptance ต้องใช้เกม/อุปกรณ์
 3. รัน gate ที่ตรง CI และ suite ของพื้นที่ที่แก้ภายใต้ timeout เมื่อเข้าสู่งาน implementation/verification; เก็บ exact SHA, environment, command, exit code และ artifact hash ถ้ามี
 4. ข้อมูลผิด/ขาด/stale และ error state มีทางออก ไม่มีการใส่ mock เพื่อให้ดูสำเร็จ ไม่มีข้อมูลผู้เล่นออกเครือข่ายนอก contract
-5. เอกสาร, Changelog, doc graph/ledger และ RWANG Code-Doc review สอดคล้องกัน; INDETERMINATE ไม่เท่ากับผ่าน
+5. เอกสาร, Changelog, doc graph/ledger สอดคล้องกัน
 6. Owner รับผลตาม acceptance; จึงเปลี่ยนเป็น DONE พร้อมลิงก์ evidence งานบัญชี/legal/deploy/release ใช้ approval เฉพาะที่กติกากำหนด
 
 มติ MVP-003–006 ถูกบันทึกใน [[mvp-decisions]] ตามคำสั่ง Owner ให้ Codex ตัดสินใจ; รับ verified baseline MVP-001/002. DONE ของงาน contract หมายถึงเลือกข้อกำหนดแล้ว ไม่ใช่รับรองฟีเจอร์ที่ยังต้องพัฒนา. MVP-045 เป็น NOT_APPLICABLE สำหรับ legacy desktop handoff; MVP-043/044 ยัง applicable เพราะมี optional account surface.
@@ -170,7 +170,7 @@ Backlog สำหรับทำให้ผู้เล่นใช้งาน
 | MVP-048 | P0 / L | TODO | MVP-002, MVP-006; ผลสุดท้ายหลัง MVP-025, MVP-042 | **วัดและแก้ NFR ทั้งระบบ.** เริ่ม baseline เร็ว, วัด acquisition→audible onset รวม cold/cache-miss/interrupt/throttle; วัด process tree, peak RAM, STT/SLM และ PresentMon Dota FPS แบบ A/B บน matrix; ผ่าน ≤250ms p50/ทุก sample ≤300ms, whole-app process group CPU≤10% normalized by logical CPU capacity ต่อ sample 1 วินาที, RAM≤400MB, FPS drop≤3% หรือกลับไปแก้ design; SKIP ไม่ใช่ PASS |
 | MVP-049 | P0 / L | TODO | MVP-006, MVP-012, MVP-021, MVP-026, MVP-031, MVP-033, MVP-035, MVP-037, MVP-042, MVP-046, MVP-047 | **รัน player journey และ fault matrix.** Fresh install→match→summary→restart→next match รวม GSI loss, malformed payload, alt-tab, capture/device/network failure, unknown data, crash/reconnect และ live alert accuracy; มี expected/actual, defect IDs, exact build และ local evidence ทุก scenario |
 | MVP-050 | P0 / M | TODO | MVP-005, MVP-027, MVP-035, MVP-041 | **ตรวจ privacy/no-egress ที่ runtime.** เก็บ outbound destinations/payload fields ของ CLI/API/Ollama/account paths ด้วยข้อมูลทดสอบที่ไม่ระบุตัวบุคคล; local-only, non-consented fields, CV/raw logs/Memory และ transient mic data ไม่มี egress ที่ห้าม; forget/retention/diagnostic redaction ผ่าน |
-| MVP-051 | P0 / M | TODO | MVP-001, MVP-002, MVP-006 | **ทำ verification matrix และ CI coverage.** Rust/clippy/eslint/tsc/Vitest/native smoke รวม landing/Deno/SQL เมื่อพื้นที่นั้นอยู่ใน scope; suites มี timeoutและแยก headless/live/manual gates, required check ชี้ exact SHA; doc graph/ledger + CodeDoc ใช้ผลจริง ไม่มี disable check เพื่อผ่าน |
+| MVP-051 | P0 / M | TODO | MVP-001, MVP-002, MVP-006 | **ทำ verification matrix และ CI coverage.** Rust/clippy/eslint/tsc/Vitest/native smoke รวม landing/Deno/SQL เมื่อพื้นที่นั้นอยู่ใน scope; suites มี timeoutและแยก headless/live/manual gates, required check ชี้ exact SHA; doc graph/ledger ใช้ผลจริง ไม่มี disable check เพื่อผ่าน |
 | MVP-052 | P0 / M | TODO | MVP-001–051 ทุกงานที่อยู่ใน scope; MVP-043–045 ต้องผ่านถ้า exposed | **ปิด acceptance และเตรียม release decision.** รวบรวม scope matrix ที่ไม่มี P0/P1 required ค้าง, known limitations, installer hash, CI/native/live/NFR/privacy evidence และ rollback; งาน conditional ที่ไม่ใช้ต้องมี scope decision อ้างกลับได้; owner ตรวจ Go/No-Go และอนุมัติช่องทาง; bump/tag/candidate/promote เฉพาะเมื่อสั่ง release และ main CI ของ SHA นั้น green ไม่ auto-open Beta |
 
 ## E9 หลัง MVP และงานคนละผลิตภัณฑ์
@@ -244,3 +244,4 @@ Status:
 | 0.3.0 | 2026-10-10 | บันทึก delegated decisions MVP-003–006 และรับ baseline MVP-001/002; legacy desktop handoff 045 ไม่อยู่ใน scope ตาม mvp-decisions |
 | 0.3.1 | 2026-10-11 | Linked MVP-038's candidate-neutral evaluation protocol and kept the task open until measurements and a candidate decision exist. |
 | 0.3.2 | 2026-10-12 | Aligned MVP-048 CPU acceptance with the approved 10% whole-app process-group budget and one-second sampling decision. |
+| 0.3.3 | 2026-10-16 | Remove retired local review integration and related references. |

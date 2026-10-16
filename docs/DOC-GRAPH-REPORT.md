@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-10-13T00:10:21.846Z
+สร้างเมื่อ / Generated at: 2026-10-16T06:30:28.166Z
 
-สแกน 154 ไฟล์เอกสาร, 277 nodes, 1169 edges, 215 รายการปัญหา (177 ตัวบล็อก exit code) / scanned 154 doc files, 277 nodes, 1169 edges, 215 violations (177 blocking exit code).
+สแกน 152 ไฟล์เอกสาร, 275 nodes, 1169 edges, 209 รายการปัญหา (172 ตัวบล็อก exit code) / scanned 152 doc files, 275 nodes, 1169 edges, 209 violations (172 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -16,8 +16,8 @@
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
 | missing-changelog | มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table | 4 | yes |
-| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 35 | no (informational) |
-| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 28 | yes |
+| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 34 | no (informational) |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 23 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -104,10 +104,6 @@
 ### docs/architecture/oauth-jwt-client-authorization-flows.md
 
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.3b", changelog="0.3.2b")
-
-### docs/architecture/spec-orchestra-codedoc-agent.md
-
-- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/architecture/spikes/S-1-minimap-cv.md
 
@@ -213,10 +209,6 @@
 
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.8.1b", changelog="0.1.0b")
 
-### docs/change request/CR-025-codedoc-aligner-structured-output-reliability.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.0b", changelog="0.1.0b")
-
 ### docs/change request/CR-026-mpfb2-character-authoring-and-guarded-image-to-3d-import.md
 
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.1b", changelog="0.1.0b")
@@ -224,22 +216,6 @@
 ### docs/change request/CR-028-gmaiden-3d-hero-production-handoff.md
 
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="2.0.0b", changelog="0.1.0b")
-
-### docs/change request/CR-029-gmaiden-art-first-2-5d-hero-replacement.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.1.0b", changelog="1.0.0b")
-
-### docs/change request/CR-030-landing-scroll-driven-cinematic-narrative.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.1.1b", changelog="1.0.0b")
-
-### docs/change request/CR-031-landing-hero-layer-separated-wind-motion.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.1.2b", changelog="1.0.0b")
-
-### docs/change request/CR-032-landing-hero-scene-depth-and-character-rig-decomposition.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.0.1b", changelog="1.0.0b")
 
 ### docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md
 

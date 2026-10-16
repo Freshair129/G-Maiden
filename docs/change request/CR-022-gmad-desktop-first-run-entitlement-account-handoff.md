@@ -1,12 +1,12 @@
 ---
-version: "0.9.0b"
+version: "0.9.1b"
 title: "CR-022: G-Maiden Desktop First-Run, Entitlement and Account Handoff"
 doc_id: "CR-022-gmad-desktop-first-run-entitlement-account-handoff"
 created_at: "2026-07-21T18:00:00+07:00,ATHER"
 last_update: "2026-09-12T22:01:36+07:00,RWANG"
 owner: "Boss"
 status: "accepted"
-updated: "2026-09-12"
+updated: 2026-10-16
 approved_by: "Boss"
 approved_date: "2026-09-12"
 superseded_by: null
@@ -392,8 +392,7 @@ Google sign-in CTA without browser console errors. Starting sign-in from a clean
 Google Accounts through the configured Supabase callback and carries the production Landing return
 URL; verification stopped before account selection or consent.
 
-RWANG CodeDoc completed all three Mellum2 comparisons with exit code `0`, so the native entitlement
-gate and this contract are aligned. Release readiness remains blocked only where real operational
+Release readiness remains blocked only where real operational
 evidence is absent: production currently has no signed G-Maiden artifact, published batch, or controlled
 grant, so authenticated success, pause/revoke, stale-Terms, signed-URL-expiry, reinstall/new-device,
 and same/different-account UAT must not be fabricated. No Desktop tag or installer release is
@@ -439,8 +438,8 @@ decisions. Production deployment still requires exact document/hash verification
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
 | 0.8.1b | 2026-07-22 | beta | Added production Google OAuth-start evidence through the Supabase callback while stopping before account selection. | null | ATHER |
-| 0.8.0b | 2026-07-22 | beta | Recorded production migrations, JWT Functions, Landing deployment/browser evidence, and CodeDoc exit 0; retained release block for absent signed artifact, published batch, controlled grant, and authenticated UAT. | null | ATHER |
-| 0.7.1b | 2026-07-22 | beta | Recorded green local CI-equivalent/build/browser/migration-dry-run evidence and retained production block for indeterminate CodeDoc plus absent artifact/grant UAT fixtures. | null | ATHER |
+| 0.8.0b | 2026-07-22 | beta | Recorded production migrations, JWT Functions, Landing deployment/browser evidence; retained release block for absent signed artifact, published batch, controlled grant, and authenticated UAT. | null | ATHER |
+| 0.7.1b | 2026-07-22 | beta | Recorded green local CI-equivalent/build/browser/migration-dry-run evidence and retained production block for absent artifact/grant UAT fixtures. | null | ATHER |
 | 0.7.0b | 2026-07-21 | beta | Defined the native Rust trust boundary: fresh JWT-backed server decision arms process-local GSI/CV/overlay; removed remaining offline-receipt/grace contradictions. | null | ATHER |
 | 0.6.0b | 2026-07-21 | beta | Selected highest-security online verification on every gated launch; no offline receipt or grace period in Closed Beta. | null | ATHER |
 | 0.5.0b | 2026-07-21 | beta | Recorded closure of the CR-021 legal gate and authorized phased implementation subject to security/UAT/CI gates. | null | ATHER |
@@ -451,3 +450,4 @@ decisions. Production deployment still requires exact document/hash verification
 | 0.2.0b | 2026-07-21 | candidate | Moved the design review to a diagrams-first packet: context, flow, user journey, state, sequence, and conceptual class diagrams. | null | ATHER |
 | 0.1.0b | 2026-07-21 | candidate | Initial C-3/HIGH design: desktop first-run state machine, server-authoritative entitlement contract, bounded offline policy, legal gate, and UAT matrix. | null | ATHER |
 | 0.9.0b | 2026-09-12 | accepted | Boss approved 24-hour process-local grace amendment for GAP-01/02; cold start stays online-only; revise failure-state UAT/AC. | null | RWANG |
+| 0.9.1b | 2026-10-16 | accepted | Remove retired local review integration and related references. | null | Codex |

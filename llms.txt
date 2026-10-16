@@ -2,7 +2,7 @@
 
 > G-Maiden is a Windows Dota 2 companion with a Rust/Tauri 2 core, React command deck, transparent overlay, local minimap vision, and voice advice. This repository also contains the landing/account services and the separate G-Orchestra developer tool.
 
-Repository context index, version 0.2.1, reviewed 2026-09-13 against source commit a4a75542c857beaac68267b90e16707ad3263a45 plus the approved local GAP-01/02 remediation committed as 56f9fbd (application version 0.13.2). Paths are relative to this repository root. These files are local repository documentation; their presence does not publish an endpoint on the landing website. The extended reference records implementation evidence and known documentation drift; it is not a release certification or a new product specification.
+Repository context index, version 0.2.2, reviewed 2026-09-13 against source commit a4a75542c857beaac68267b90e16707ad3263a45 plus the approved local GAP-01/02 remediation committed as 56f9fbd (application version 0.13.2). Paths are relative to this repository root. These files are local repository documentation; their presence does not publish an endpoint on the landing website. The extended reference records implementation evidence and known documentation drift; it is not a release certification or a new product specification.
 
 Read AGENTS.md and CLAUDE.md for contribution governance. Thai PRD/SRS and accepted ADRs describe intent; executable call sites describe implementation. Older feature maps and release statements need date and source checks. A source file, migration, or test fixture does not establish that a capability is deployed or verified in a live match.
 
@@ -79,7 +79,6 @@ Critical distinctions: Lite mode has no CV-driven gank detection; live GSI does 
 - [CI workflow](.github/workflows/ci.yml): Actual Windows build/test sequence.
 - [Performance harness](tests/perf/README.md): Headless versus live capture/audio measurements and SKIP semantics.
 - [Doc-graph gate](tools/doc-graph/ci-gate.mjs): Unit tests, encoding, strict scan, checklist coverage, ledger, and orphan checks.
-- [Code-doc aligner](.agents/skills/rwang-codedoc-aligner/SKILL.md): Local model review contract and exit codes.
 
 ## Releases and operations
 
@@ -104,3 +103,5 @@ Critical distinctions: Lite mode has no CV-driven gank detection; live GSI does 
 ## Current local remediation
 
 - [Auth failure remediation](docs/operations/auth-failure-remediation-proposal.md): Approved GAP-01/02 scope, behavior and local verification limits; production acceptance is separate.
+
+Maintenance 2026-10-16: removed retired local review integration references; implementation baseline and runtime acceptance claims are unchanged.

@@ -234,8 +234,6 @@ detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`)
 ### Custom Agent Skills & SOP
 We maintain custom AI skills under `.agents/skills/`.
 
-* **RWANG Code-Doc Aligner (`rwang-codedoc-aligner`):**
-  - **SOP:** AI agents MUST run [chunk_and_align.py](file:///g:/G-Maiden/.agents/skills/rwang-codedoc-aligner/scripts/chunk_and_align.py) inside the `.agents/skills/rwang-codedoc-aligner/` skill directory whenever code diffs or docs are updated to verify alignment and prevent spec drift.
 
 ### General
 - Specs (PRD, SRS) are in **Thai**. `docs/product/mvp-decisions.md` governs accepted MVP scope,
@@ -527,3 +525,4 @@ These are **functional requirements**, not flavor text. Maiden must:
 | 0.2.1b | 2026-07-22 | Normalized reader-facing Closed Beta naming from GMAD to G-Maiden while preserving technical identifiers such as functions, buckets, and anchors. |
 | 0.2.0b | 2026-07-21 | Added authoritative GMAD delivery, legal-consent, and desktop first-run handoff context for cross-session agents. |
 | 0.1.0b | 2026-07-21 | Added governance for proposed GID security, recovery, and privacy-safe web profiles; no implementation is implied. |
+| 0.4.2b | 2026-10-16 | Remove retired local review integration and its references. |

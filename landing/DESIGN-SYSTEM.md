@@ -1,5 +1,5 @@
 ---
-version: "0.13.1b"
+version: "0.13.2b"
 created_at: "2026-07-20T00:00:00+07:00,ATHER"
 last_update: "2026-07-22T13:45:00+07:00,ATHER"
 status: "beta"
@@ -401,7 +401,6 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
   media treatment, spacing, responsive behavior และ motion
 - `landing/design-qa.md` ต้องบันทึก source/render comparison ใน artifact เดียวกันทั้ง `1440×900` และ `390×844` พร้อม `final result: passed` ก่อน deploy
 - ทำ above-the-fold copy diff ได้ผลตรงกับ §5
-- รัน `codedoc-aligner`; exit `2` ถือว่า gate ไม่ผ่าน ไม่ใช่ aligned
 - ไม่แตะ/รวมไฟล์ dirty เดิมที่อยู่นอก `landing/`
 
 ## 13. Thai-first feature signal rails
@@ -423,8 +422,7 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 - การ implement MFA, SMS provider, schema migration, recovery workflow หรือ public-profile routes ก่อนผ่าน
   threat-model และ approval gate
 
-## CHANGELOG
-
+## Changelog
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
 | 0.13.1b | 2026-07-22 | beta | Normalized reader-facing landing narrative references from GMAD to G-Maiden while preserving technical identifiers and history. | - | ATHER |
@@ -447,3 +445,4 @@ Dependencies จำกัดไว้ที่ React, Vite, TypeScript, Tailwind
 | 0.11.0b | 2026-07-21 | beta | Added CR-032 scene-depth and character-rig scaffold requirements so the Hero exposes cave layers, character subcomponents, and pivot ownership before deeper animation work. | - | ATHER |
 | 0.10.1b | 2026-07-21 | beta | Clarified CR-031 to use localized hair and cloth edge masks instead of whole-frame duplicate planes after owner UAT found skewed facial proportions. | - | ATHER |
 | 0.10.0b | 2026-07-21 | beta | Added CR-031 layer-separated Hero wind motion contract with base, hair, cloth, and frost layers plus static fallback rules. | - | ATHER |
+| 0.13.2b | 2026-10-16 | beta | Remove retired local review integration and related dependencies. | null | Codex |

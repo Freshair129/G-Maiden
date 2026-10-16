@@ -83,7 +83,6 @@ Boss ต้อง mint: `py "G:/Rwang/orchestrator/governance/tool_guard.py" --m
 
 - **Step 5 SOP**: แก้เอกสารไหน → bump version + แถว `## Changelog` ท้ายไฟล์ + frontmatter ตรงกัน
 - **SSOT boundary**: `orchestration/` .md หลายตัว derive จาก `gks/atoms*.json` — ห้ามแก้ .md ตรง
-- **codedoc-aligner**: อ่าน exit code ไม่ใช่ stdout (0=aligned / 1=conflict / 2=fail ห้ามตีความว่าผ่าน)
 - **RWANG สอง repo**: ตัว active คือ `G:\Rwang` ไม่ใช่ `Rwang_remote`
 - session ขนานทำงานพร้อมกันบ่อย — เช็ค `git log`/`git status` ก่อนเชื่อ state ในหัว
 

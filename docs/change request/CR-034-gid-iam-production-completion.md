@@ -1,5 +1,5 @@
 ---
-version: "0.5.0b"
+version: "0.5.1b"
 title: "CR-034: GID IAM Production Completion"
 doc_id: "CR-034-gid-iam-production-completion"
 created_at: "2026-08-23T18:14:14+07:00,ATHER"
@@ -8,7 +8,7 @@ owner: "Boss"
 approved_by: "Boss (Phase 0; Phase 1 and Phase 2 local/reviewable implementation)"
 approved_date: "2026-08-24"
 status: "draft"
-updated: "2026-09-12"
+updated: 2026-10-16
 superseded_by: null
 attributes:
   doc_type: "change-request"
@@ -583,7 +583,7 @@ this `0.2.0b` revision. Required decisions are:
 
 ### Phase 6 — verification and rollout
 
-- local CI-equivalent, pgTAP, advisor, CodeDoc and security review
+- local CI-equivalent, pgTAP, advisor and security review
 - controlled non-production fixtures for every state
 - production canary with real user/owner accounts and rollback drill
 - evidence record, known issues, incident runbook and explicit promotion approval
@@ -628,7 +628,7 @@ this `0.2.0b` revision. Required decisions are:
 | AC-07 | `/ops` is deployed and passes the full unauth/user/creator/admin/owner capability matrix. |
 | AC-08 | Role, recovery, contact, session and MFA security events are immutable, redacted and queryable only by the authorized subject/operator. |
 | AC-09 | `sec001_identity_lock.sql`, all new pgTAP tests and Supabase Security Advisor show no unresolved HIGH/CRITICAL issue. |
-| AC-10 | Full Rust/Vitest/ESLint/TypeScript/Tauri smoke gates and RWANG CodeDoc alignment pass on the exact release commit. |
+| AC-10 | Full Rust/Vitest/ESLint/TypeScript/Tauri smoke gates pass on the exact release commit. |
 | AC-11 | Controlled production UAT covers IAM-T01–IAM-T22 or records an evidenced not-applicable decision approved by owner/security reviewer. |
 | AC-12 | Rollback drill succeeds without restoring a revoked role/session or deleting required audit evidence. |
 
@@ -651,7 +651,7 @@ IAM may be reported **complete** only when all are true:
 - production Auth/provider settings and exact deployed Function/migration versions are verified
 - real account + owner UAT and recovery/rebind timing evidence exist
 - rollback and incident runbooks are exercised
-- docs/index/ledger/CodeDoc alignment are updated
+- docs/index/ledger are updated
 - no known regression or undocumented external gate remains
 
 Local tests, repository merge or unauthenticated `401` probes alone do not satisfy production completion.
@@ -710,13 +710,14 @@ live blockers before any production promotion decision.
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
-| 0.1.1b | 2026-08-23 | draft | Clarified that `skipBrowserRedirect` delegates system-browser launch without bypassing consent and that the fixed loopback callback is the packaged-desktop production pattern, resolving RWANG false-positive ambiguity. | null | ATHER |
+| 0.1.1b | 2026-08-23 | draft | Clarified that `skipBrowserRedirect` delegates system-browser launch without bypassing consent and that the fixed loopback callback is the packaged-desktop production pattern. | null | ATHER |
 | 0.1.0b | 2026-08-23 | candidate | Initial C-3/HIGH IAM completion contract covering identity, authorization, sessions, MFA, recovery, audit, operator access, testing and rollback. | null | ATHER |
 | 0.2.0b | 2026-08-23 | draft | Recorded approved Phase 0 read-only evidence, material production/source drift, exact DDL/API/test/rollback contracts and the private-schema access decision required before Phase 1. | null | ATHER |
 | 0.3.0b | 2026-08-24 | draft | Recorded approved Phase 1 local IAM foundation: common capability resolver, live-session/AAL2 enforcement, private append-only audit, Google-only signup hook, least-privilege runtime projections and local test evidence; production promotion remains blocked. | null | ATHER |
 | 0.4.0b | 2026-08-24 | draft | Recorded Boss approval and local Phase 2 implementation: private device/activity projections, scoped session actions, Account Security UI, redaction/cross-user tests and native runtime-lock ordering; deployment and live session UAT remain blocked. | null | ATHER |
 | 0.4.1b | 2026-08-24 | draft | Clarified that Phase 2 exposes own activity only, keeps operator audit for a later phase, and treats append-only activity as the notification baseline without outbound sends. | null | ATHER |
 | 0.4.2b | 2026-08-24 | draft | Fixed Phase 2 activity pagination to use a composite timestamp plus event-id cursor and added a tied-timestamp pgTAP regression. | null | ATHER |
-| 0.4.3b | 2026-08-24 | draft | Made the current-to-local and others-to-others provider sign-out mapping explicit for CodeDoc review. | null | ATHER |
+| 0.4.3b | 2026-08-24 | draft | Made the current-to-local and others-to-others provider sign-out mapping explicit. | null | ATHER |
 | 0.4.4b | 2026-08-28 | draft | Superseded the Phase 0 frontend-test blocker: desktop, landing, Rust and Deno suites all run clean, and the recorded Vitest stall did not reproduce across nine runs with four candidate causes refuted. Remaining Phase 0 status/lifecycle drift is owned by EXEC-PLAN CR-034 task T2. | null | Claude (Opus 5) |
 | 0.5.0b | 2026-09-12 | draft | Record Boss-approved local current-session cleanup and native/UI failure-state amendment for GAP-01/02; retain production and remaining IAM gates. | null | RWANG |
+| 0.5.1b | 2026-10-16 | draft | Remove retired local review integration and related references. | null | Codex |

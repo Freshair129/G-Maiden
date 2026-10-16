@@ -253,8 +253,6 @@ Defined in `src-tauri/src/main.rs` via `tauri_plugin_global_shortcut`.
 
 The workspace has local Agent skills registered in `.agents/skills/`.
 
-* **RWANG Code-Doc Aligner (`rwang-codedoc-aligner`):**
-  - **SOP สำหรับ Agent:** ทุกครั้งที่ได้รับคำสั่งให้ตรวจทาน Git Diff หรือก่อนส่งงานตรวจรับ (Walkthrough) เอเจนต์สามารถเรียกใช้งานสคริปต์ [chunk_and_align.py](file:///g:/G-Maiden/.agents/skills/rwang-codedoc-aligner/scripts/chunk_and_align.py) เพื่อตรวจสอบความสอดคล้องกันระหว่างโค้ดที่เกิดการเปลี่ยนแปลงและรายละเอียดในเอกสาร `docs/` ผ่านโมเดล Mellum2 (Local LLM) ได้โดยอัตโนมัติ
 
 ## Visual language
 
@@ -334,3 +332,4 @@ deploy to web by vercel cli
 | 0.2.1b | 2026-07-22 | Normalized reader-facing Closed Beta naming from GMAD to G-Maiden while preserving technical identifiers such as functions, anchors, and storage paths. |
 | 0.2.0b | 2026-07-21 | Added GMAD Closed Beta delivery, legal-consent, and desktop first-run handoff context; CR-021 remains counsel-gated and CR-022 is not yet authored. |
 | 0.1.0b | 2026-07-21 | Added the planned GID security and privacy-safe web-profile contract; no implementation is implied. |
+| 0.4.1b | 2026-10-16 | Remove retired local review integration and its references. |

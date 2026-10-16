@@ -1,5 +1,5 @@
 ---
-version: "1.1.1b"
+version: "1.1.2b"
 title: "CR-030: G-Maiden Landing Scroll-Driven Cinematic Narrative"
 doc_id: "CR-030-landing-scroll-driven-cinematic-narrative"
 created_at: "2026-07-21T23:04:00+07:00,ATHER"
@@ -8,7 +8,7 @@ owner: "Boss"
 approved_by: "Boss"
 approved_date: "2026-07-21"
 status: "accepted"
-updated: "2026-07-22"
+updated: 2026-10-16
 superseded_by: null
 attributes:
   doc_type: "change-request"
@@ -77,7 +77,7 @@ flowchart TD
 | AC-02 | G-Maiden access and feature rails have visible-by-default, observer-enhanced scroll states. |
 | AC-03 | Touch and reduced-motion paths disable decorative scroll transforms. |
 | AC-04 | Existing GID, G-Maiden access, Terms, privacy, navigation, and mobile-menu flows remain unchanged. |
-| AC-05 | Landing typecheck, tests, build, reduced-motion review, visual QA, and CodeDoc Aligner pass. |
+| AC-05 | Landing typecheck, tests, build, reduced-motion review, visual QA pass. |
 | AC-06 | Production deployment is browser-checked at desktop and mobile viewports. |
 
 ## Implementation record
@@ -96,10 +96,10 @@ flowchart TD
 Remove the scroll-narrative hook and CSS selectors. The existing semantic content and static Hero
 composition remain usable without a data migration or release artifact change.
 
-## CHANGELOG
-
+## Changelog
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
 | 1.1.1b | 2026-07-22 | accepted | Normalized reader-facing motion-copy references from GMAD to G-Maiden while preserving technical anchors and file paths. | null | ATHER |
 | 1.1.0b | 2026-07-21 | accepted | Added implementation record and finalized the approved bounded scroll-motion contract for verification and deploy. | null | ATHER |
 | 1.0.0b | 2026-07-21 | accepted | Owner approved bounded cinematic scroll narrative for the landing page. | null | ATHER |
+| 1.1.2b | 2026-10-16 | accepted | Remove retired local review integration and related dependencies. | null | Codex |

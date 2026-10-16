@@ -1,10 +1,10 @@
 ---
-version: "1.1.0b"
+version: "1.1.1b"
 title: "CR-029: G-Maiden Art-First 2.5D Hero Replacement"
 doc_id: "CR-029-gmaiden-art-first-2-5d-hero-replacement"
 created_at: "2026-07-22T00:43:21+07:00,ATHER"
 last_update: "2026-07-22T01:18:30+07:00,ATHER"
-updated: "2026-07-22"
+updated: 2026-10-16
 owner: "Boss"
 approved_by: "Boss"
 approved_date: "2026-07-22"
@@ -86,7 +86,6 @@ art passes the same gate.
 
 - Responsive source/render comparison and interaction checks: `landing/design-qa.md` (`final result: passed`).
 - Landing typecheck, 4 Vitest tests, production build, and Three/WebGL absence gate passed.
-- CodeDoc Aligner passed for `HeroMedia25D.tsx` and `index.css` against this CR.
 - Vercel production deployment: `dpl_J3zyvfRpu3uhnko4yxZTPwWMG2Zi` (`READY`).
 - Live alias: `https://g-maiden-landing.vercel.app/`; direct `/`, `/ops`, `/terms`, and `/privacy`
   requests return `200`, and a fresh production browser tab reports no warnings or errors.
@@ -97,9 +96,9 @@ art passes the same gate.
 - Shipping a true 3D character, extracted game model, Dota footage, or `D:\dota` media.
 - Changes to account, download, legal, email, Supabase, desktop login, or game-client code.
 
-## CHANGELOG
-
+## Changelog
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
-| 1.1.0b | 2026-07-22 | accepted | Completed art provenance, semantic 2.5D integration, responsive visual QA, reduced-motion/menu checks, CodeDoc alignment, and production deployment. | null | ATHER |
+| 1.1.0b | 2026-07-22 | accepted | Completed art provenance, semantic 2.5D integration, responsive visual QA, reduced-motion/menu checks, and production deployment. | null | ATHER |
 | 1.0.0b | 2026-07-22 | accepted | Owner approved the art-first 2.5D replacement, visual evidence gate, rollback, and Vercel deployment scope. | null | ATHER |
+| 1.1.1b | 2026-10-16 | accepted | Remove retired local review integration and related dependencies. | null | Codex |
