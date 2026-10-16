@@ -15,7 +15,7 @@ import { MasterCard } from './cards/MasterCard'
 import { EfficacyCard } from './cards/EfficacyCard'
 import { LogCard } from './cards/LogCard'
 import { Welcome } from './cards/Welcome'
-import { useStartupSettings } from './settings'
+import { useStartupSettings } from './settingsContext'
 
 // CR-002 Phase 1: the command deck (<CommandDeck/>) renders in the control
 // window. CR-013 W3: `Control` now only ever renders one settings category

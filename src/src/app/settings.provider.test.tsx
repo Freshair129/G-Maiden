@@ -12,7 +12,8 @@ const { invokeMock, emitMock, listenMock } = vi.hoisted(() => ({
 vi.mock('@tauri-apps/api/core', () => ({ invoke: invokeMock }))
 vi.mock('@tauri-apps/api/event', () => ({ emit: emitMock, listen: listenMock }))
 
-import { StartupSettingsProvider, useStartupSettings } from './settings'
+import { StartupSettingsProvider } from './settings'
+import { useStartupSettings } from './settingsContext'
 
 function SettingsProbe() {
   const { settings } = useStartupSettings()

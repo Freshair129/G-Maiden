@@ -3,7 +3,8 @@ import { getCurrentWindow } from '@tauri-apps/api/window'
 import CommandDeck from './CommandDeck'
 import { Overlay } from './app/Overlay'
 import { Control } from './app/Control'
-import { StartupSettingsProvider, useStartupSettings } from './app/settings'
+import { StartupSettingsProvider } from './app/settings'
+import { useStartupSettings } from './app/settingsContext'
 import GmadFirstRunGate from './GmadFirstRunGate'
 
 export { Control }
