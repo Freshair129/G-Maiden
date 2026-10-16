@@ -166,4 +166,3 @@ export function mergeStoredSettings(localValue: unknown, nativeValue: unknown, l
 
   return normalizeSettings(merged, fallback)
 }
-

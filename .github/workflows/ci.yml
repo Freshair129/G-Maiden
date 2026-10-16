@@ -64,7 +64,7 @@ jobs:
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D warnings
 
       - name: ESLint
-        run: pnpm -C src lint
+        run: pnpm -C src lint --max-warnings=0
 
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml --locked
