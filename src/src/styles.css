@@ -3739,7 +3739,7 @@ body {
 /* ===== CR-011 §B: ON AIR console + tally dots (P2 Honest booth) =====
    Additive only — .gm-agent-card / .gm-sector-log geometry above is untouched.
    Ported from docs/change request/assets/cr011-cold-booth-mock.html
-   (.tally / .chip / .now / .log / .utt), namespaced gm-onair-*/gm-tally. */
+   (.tally / .chip / .now / .log / .utt), namespaced with gm-onair and gm-tally. */
 
 /* -- tally dot (broadcast on-air light): off = idle matte square, onair = lime
    + glow-decay pulse. Used in the ON AIR header and the two gm-sector-log h3s. */

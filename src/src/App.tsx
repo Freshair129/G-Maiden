@@ -1,11 +1,12 @@
 import React from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import CommandDeck from './CommandDeck'
-import { Overlay } from './app/Overlay'
-import { Control } from './app/Control'
 import { StartupSettingsProvider } from './app/settings'
 import { useStartupSettings } from './app/settingsContext'
 import GmadFirstRunGate from './GmadFirstRunGate'
+
+const CommandDeck = React.lazy(() => import('./CommandDeck'))
+const Overlay = React.lazy(() => import('./app/Overlay').then(({ Overlay }) => ({ default: Overlay })))
+const Control = React.lazy(() => import('./app/Control').then(({ Control }) => ({ default: Control })))
 
 export { Control }
 export type { GameTick, GsiFreshness, Settings, GankState, ReviveAdvice, SettingsCat, BuybackUrgency, Sensitivity } from './app/types'
@@ -29,11 +30,21 @@ export const App: React.FC = () => {
   if (label === 'overlay') {
     return (
       <StartupSettingsProvider syncNative={false}>
-        <HydratedOverlay />
+        <React.Suspense fallback={null}>
+          <HydratedOverlay />
+        </React.Suspense>
       </StartupSettingsProvider>
     )
   }
-  const deck = <CommandDeck renderSettings={(cat) => <Control category={cat} />} />
+  const deck = (
+    <React.Suspense fallback={null}>
+      <CommandDeck renderSettings={(cat) => (
+        <React.Suspense fallback={null}>
+          <Control category={cat} />
+        </React.Suspense>
+      )} />
+    </React.Suspense>
+  )
   // The Closed Beta gate (sign-in + Terms + entitlement) is RELEASE-ONLY. A dev
   // build would otherwise be unusable for local UI work: the gate needs network,
   // a current Terms acceptance and an active grant on every launch, and while it
