@@ -1027,7 +1027,7 @@ pub fn run() {
             // its Job Object, so the feeder inherits membership by default. Normal
             // exit also stops/waits the exact owned child; a feeder left by an older
             // degraded-mode build may outlive abnormal exit.
-            governor::spawn_gpu_feeder();
+            app.manage(governor::spawn_gpu_feeder());
 
             app.global_shortcut().register(toggle)?;
             app.global_shortcut().register(vol_up)?;
@@ -1098,9 +1098,13 @@ pub fn run() {
         })
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
-        .run(|_app, event| {
+        .run(|app, event| {
             if let tauri::RunEvent::Exit = event {
-                governor::stop_owned_sidecars();
+                if let Some(feeder) = app.try_state::<governor::GpuFeederProcess>() {
+                    if !feeder.shutdown() {
+                        eprintln!("could not fully stop owned gpu-feeder sidecar on app exit");
+                    }
+                }
             }
         });
 }
