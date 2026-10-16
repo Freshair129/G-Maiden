@@ -1,10 +1,10 @@
 ---
-version: "0.2.1b"
+version: "0.2.2b"
 title: "CR-005 W1A — Dota hero motion + Closed Beta GID registration"
 doc_id: "CR-005-W1A-landing-hero-gid-closed-beta"
 created_at: "2026-07-20T17:46:14+07:00,ATHER"
 last_update: "2026-07-21T10:35:00+07:00,ATHER"
-updated: "2026-07-21"
+updated: 2026-10-16
 owner: "Boss"
 status: "active"
 superseded_by: null
@@ -192,7 +192,7 @@ Production URL และ preview URL ที่ใช้ทดสอบต้อ�
 | B | ผลิตและ optimize 3D loop + poster | codec, file size, loop seam, reduced motion, visual QA |
 | C | migration: beta generation + enrollment + grants/RLS | SQL/RLS positive + negative tests; existing F GID unchanged |
 | D | landing Supabase client + web PKCE callback + CTA/states | OAuth E2E on localhost/preview/production |
-| E | browser QA + code-doc alignment + Vercel deploy | build/typecheck, responsive QA, `codedoc-aligner`, production smoke |
+| E | browser QA + Vercel deploy | build/typecheck, responsive QA, production smoke |
 
 แต่ละ wave ต้องผ่าน gate ก่อนเริ่ม wave ถัดไป โดยเฉพาะ C ต้องไม่ deploy ก่อนตรวจ live trigger ว่าไม่ mint `F`
 ให้ signup ใหม่ทั้งหมด
@@ -221,7 +221,6 @@ Production URL และ preview URL ที่ใช้ทดสอบต้อ�
 
 - asset provenance/license decision ถูกบันทึก
 - schema migration, grants, RLS policies และ tests อยู่ใน version control
-- `codedoc-aligner` ผ่านหลัง code/docs update
 - production smoke ผ่านบน Vercel URL จริง และ desktop login ยืนยัน GID เดียวกันด้วย test account
 - แสดง version diff และไม่รวม dirty files นอก scope
 
@@ -257,10 +256,10 @@ Boss อนุมัติให้ “ลุยให้จบ” เมื่�
 - Live `gstore`: migrations `cr005_closed_beta_registration` + `cr005_beta_rls_initplan` applied;
   behavior probe passed for own-row insert/select, cross-user denial and self-approval denial
 
-## CHANGELOG
-
+## Changelog
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
 | 0.1.0b | 2026-07-20 | candidate | Initial W1A proposal for 3D hero replacement and shared-GID Closed Beta registration | — | ATHER |
 | 0.2.0b | 2026-07-20 | beta | Boss approved recommended path; recorded implemented hero, OAuth/GID, live migration and RLS evidence | — | ATHER |
 | 0.2.1b | 2026-07-21 | beta | Added CORS regression coverage for the server-authoritative GID mint path after the post-OAuth browser failure | — | ATHER |
+| 0.2.2b | 2026-10-16 | active | Remove retired local review integration and related dependencies. | null | Codex |

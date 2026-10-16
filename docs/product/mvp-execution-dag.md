@@ -2,8 +2,8 @@
 title: "G-Maiden MVP Execution DAG"
 doc_id: "mvp-execution-dag"
 status: "draft"
-version: "0.2.3"
-updated: "2026-10-11"
+version: "0.2.4"
+updated: 2026-10-16
 owner: "Boss"
 related_docs: ["roadmap", "mvp-backlog", "releases/README"]
 ---
@@ -252,12 +252,12 @@ Locks ใน JSON เป็นแผนตั้งต้นและค่อ�
 4. Worker stage เฉพาะ paths ของตน, ทำ conventional commit พร้อม agent trailer และส่ง draft PR เมื่อยังเป็น WIP; new branch push ระบุ `origin` ชัดเจน
 5. ผู้ประสานรวมงานตาม topological order; ถ้าจำเป็นต้องทดสอบ branch ที่ยังไม่เข้า main ให้ใช้ integration branch และระบุ SHA ทุก dependency ไม่ถือว่า dependency เข้า main แล้ว
 6. Owner merge ตามกติกา; consumer checkout SHA ที่มีผลรวมจริงก่อนเริ่ม ไม่มี direct push main, force-push/amend PR ที่เปิดแล้ว หรือยกเว้น checks เพื่อให้ทัน wave
-7. หลังรวม docs ให้ I regenerate doc artifacts ชุดเดียว และบันทึกผล structural/CodeDoc checks ตามจริง
+7. หลังรวม docs ให้ I regenerate doc artifacts ชุดเดียว และบันทึกผล structural checks ตามจริง
 
 ## Resource schedule และ final evidence
 
 - `LOCAL_VALIDATION_HOST` เป็น slot เดียวสำหรับ native build/runtime/Dota/audio/GPU/traffic checks บนเครื่องเดียวกัน ทดสอบหลายงานเรียงคิวได้ขณะ worker อื่นแก้ไฟล์ที่ไม่ชน
-- ระหว่างวัด latency/FPS/CPU/RAM ให้เครื่องทดสอบสงบ: ไม่รัน cargo build, Ollama CodeDoc, STT benchmark หรืออีก Dota/capture job พร้อมกัน งานเอกสาร/hosted CI บนเครื่องอื่นทำต่อได้
+- ระหว่างวัด latency/FPS/CPU/RAM ให้เครื่องทดสอบสงบ: ไม่รัน cargo build, STT benchmark หรืออีก Dota/capture job พร้อมกัน งานเอกสาร/hosted CI บนเครื่องอื่นทำต่อได้
 - งาน G-Voice ต้องวัดผลกระทบ STT กับ G-Signal ใน scenario ที่ตั้งใจให้ทำพร้อมกัน นั่นเป็นหนึ่ง measurement job ไม่ใช่การปล่อย benchmark คนละงานแย่งเครื่อง
 - W12 ชุดแนะนำ: **048.B + hosted 051.B**, ต่อด้วย **049**, ต่อด้วย **050**; ถ้ามีเครื่องแยกจริงสามารถเพิ่ม validation slots โดยบันทึก hardware/environment แยก และไม่เปรียบเทียบ A/B ข้ามเครื่องโดยไม่มี baseline คู่กัน
 - GATE-RC รับทุก prefreeze node ที่ applicable แล้วบันทึก source SHA, dirty-tree status, lockfile/model/voice resource hashes, build configuration และ installer hash; final evidence อ้าง fingerprint เดียวกัน
@@ -301,3 +301,4 @@ Completion or NOT_APPLICABLE decision:
 | 0.2.1 | 2026-10-11 | เพิ่ม CAPTURE, UTTERANCE และ UI_OVERLAY lease ให้ MVP-015 เพื่อ tag/drop session-stale events ใน producer และ overlay callback/timer; บันทึก owner approval และยืนยัน W04 ไม่ชน MVP-028 |
 | 0.2.2 | 2026-10-11 | ขยายความรับผิดชอบ CORE_STATE ให้ reset announcer detector ตาม session epoch และระบุ WGC producer coverage; W04 ยังไม่ชน MVP-028 |
 | 0.2.3 | 2026-10-11 | เพิ่ม UI_SETTINGS lease ให้ MVP-015 เพื่อ clear/gate MasterCard advice เมื่อ session เปลี่ยน; MVP-028 merge barrier ผ่านก่อนขยาย scope |
+| 0.2.4 | 2026-10-16 | Remove retired local review integration and related references. |

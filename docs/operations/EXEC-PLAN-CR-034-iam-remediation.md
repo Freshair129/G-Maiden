@@ -1,5 +1,5 @@
 ---
-version: "0.6.1b"
+version: "0.6.2b"
 title: "EXEC-PLAN CR-034 — IAM remediation and production reconciliation"
 doc_id: "EXEC-PLAN-CR-034-iam-remediation"
 created_at: "2026-08-28T10:40:00+07:00,ATHER"
@@ -7,7 +7,7 @@ last_update: "2026-09-13T01:30:13+07:00,RWANG"
 owner: "Boss"
 executor: "Codex"
 status: "active"
-updated: "2026-09-13"
+updated: 2026-10-16
 attributes:
   doc_type: "execution-plan"
   domain: "account-identity-security"
@@ -150,7 +150,7 @@ Single executor: keep it current yourself. Multi-agent: only the orchestrator wr
 | T7 | Session-method-aware Google check | CODEX | T4 | TODO | — | 2026-08-28 |
 | T8 | Disable email provider, register hook | BOSS | D2, T7 | TODO | — | 2026-08-28 |
 | T9 | `/ops` resolution | CODEX | D4 | TODO | — | 2026-08-28 |
-| T10 | Sign-out resilience | CODEX | — | IN-PROGRESS | Committed `56f9fbd`; release WebView/native storage smoke passed; [evidence §9](auth-failure-remediation-proposal.md); session UAT and CodeDoc verdict pending | 2026-09-13 |
+| T10 | Sign-out resilience | CODEX | — | IN-PROGRESS | Committed `56f9fbd`; release WebView/native storage smoke passed; [evidence §9](auth-failure-remediation-proposal.md); session UAT pending | 2026-09-13 |
 | T11 | Entitlement failure-state alignment (GAP-02) | CODEX | T10 local implementation | IN-PROGRESS | Committed `56f9fbd`; local UI/native tests complete; [evidence §9](auth-failure-remediation-proposal.md); expired-grace native/WebView session UAT pending | 2026-09-13 |
 
 Execution order: **T2, T3, T10 can start immediately.** Everything else waits on a decision
@@ -774,3 +774,4 @@ EXEC-PLAN CR-034 — task <T#> (docs/operations/EXEC-PLAN-CR-034-iam-remediation
 | 0.5.0b | 2026-08-28 | Added §6.1 measured known-good baselines for all five suites and §6.2 mandatory timeout ceilings with the capture-it-live rule for a stalled suite, recorded the unreproducible landing-Vitest stall and the four refuted causes, and marked T2's Phase 0 evidence correction as already applied in CR-034 0.4.4b. | Claude (Opus 5) |
 | 0.6.0b | 2026-09-12 | Record Boss approval of GAP-01/02, start T10 and add dependent T11; D1–D4 remain pending. | RWANG |
 | 0.6.1b | 2026-09-13 | Record GAP-01/02 commit and native storage/WebView cold-start smoke; T10/T11 and D1–D4 retain pending acceptance/decision state. | RWANG |
+| 0.6.2b | 2026-10-16 | Remove retired local review integration and related references. | Codex |

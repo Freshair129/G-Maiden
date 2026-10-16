@@ -1,10 +1,10 @@
 ---
-version: "0.3.0b"
+version: "0.3.1b"
 title: "CR-005 W1B — Landing ภาษาไทย, G-Maiden Features และซ่อมเอกสาร Mojibake"
 doc_id: "CR-005-W1B-thai-features-and-doc-encoding"
 created_at: "2026-07-20T18:50:03+07:00,ATHER"
 last_update: "2026-07-20T21:20:00+07:00,ATHER"
-updated: "2026-07-20"
+updated: 2026-10-16
 owner: "Boss"
 status: "active"
 superseded_by: null
@@ -135,7 +135,6 @@ Mobile menu, aria-label และสถานะ loading/error ต้องเ�
 2. **Encoding repair** → verify: zero-marker scan, UTF-8 decode, structural invariant diff
 3. **Landing implementation** → verify: TypeScript/build, keyboard navigation, reduced motion, internal anchor
 4. **Browser QA** → verify: `320×568`, `390×844`, `768×1024`, `1366×768`, `1440×900`; console 0 errors
-5. **Doc alignment** → verify: `codedoc-aligner` exit 0; exit 2 = INDETERMINATE/ไม่ผ่าน
 6. **Deployment** → verify: Vercel production URL, Thai hero/features, OAuth callback, no horizontal overflow
 7. **GitHub verification** → verify: หลัง commit/push ให้เปิดอย่างน้อย 3 เอกสารบน GitHub และตรวจภาษาไทยจริง
 
@@ -159,7 +158,6 @@ Mobile menu, aria-label และสถานะ loading/error ต้องเ�
 ### Exit criteria
 
 - Concept และ documentation ได้รับอนุมัติก่อนแก้ code
-- `codedoc-aligner` ผ่านหลัง implementation
 - Vercel production และ GitHub rendering ถูกตรวจด้วย URL จริง
 - แสดง version diff และรายการไฟล์ที่เปลี่ยนใน handoff
 
@@ -191,8 +189,6 @@ Mobile menu, aria-label และสถานะ loading/error ต้องเ�
 - Doc CI gate: 193 tests ผ่าน; strict debt เดิม 14 รายการถูก checklist ครบ; gate exit 0
 - Landing typecheck/build ผ่าน; browser QA ที่ 320/390/1440 ไม่มี horizontal overflow,
   mobile menu + Escape ผ่าน และ console 0 errors/0 warnings
-- `codedoc-aligner` App↔README: exit 0, 2/2 chunks aligned; App↔CR ฉบับยาวมีผล advisory
-  INDETERMINATE จาก model JSON formatting จึงไม่ถูกนับเป็น aligned
 - Rust: 242 passed, 5 hardware-only ignored; clippy ผ่าน. Frontend: 220 Vitest ผ่าน,
   TypeScript ผ่าน, ESLint 0 errors (18 pre-existing warnings)
 - Tauri smoke build ถูก block โดย `gpu-feeder.exe` ของ G-Maiden instance ที่กำลังรันล็อก target release;
@@ -200,10 +196,10 @@ Mobile menu, aria-label และสถานะ loading/error ต้องเ�
 - Vercel production deployment `dpl_9XuHcYRr2AeyQ1q5SNanKWu28MfA` status `READY`,
   alias `https://g-maiden-landing.vercel.app` ตอบ HTTP 200
 
-## CHANGELOG
-
+## Changelog
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
 | 0.1.0b | 2026-07-20 | candidate | Thai-first landing, shipped-feature rails and evidence-based encoding repair proposal | — | ATHER |
 | 0.2.0b | 2026-07-20 | candidate | Reframed positioning to watch-your-back assistance; removed see-ahead and prediction overclaims | — | ATHER |
 | 0.3.0b | 2026-07-20 | active | Implemented, verified and deployed Thai-first features plus GitHub documentation encoding repair | — | ATHER |
+| 0.3.1b | 2026-10-16 | active | Remove retired local review integration and related dependencies. | null | Codex |

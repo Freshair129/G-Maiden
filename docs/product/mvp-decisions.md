@@ -2,8 +2,8 @@
 title: "G-Maiden MVP — Scope, Access, Data and Quality Decisions"
 doc_id: "mvp-decisions"
 status: "accepted"
-version: "0.3.0"
-updated: "2026-10-13"
+version: "0.3.1"
+updated: 2026-10-16
 owner: "Boss"
 approved_by: "Boss — explicit owner instruction in conversation"
 approved_date: "2026-10-13"
@@ -95,7 +95,7 @@ Reference tier: 6 physical cores / 12 logical processors, RAM 16 GB, DXGI GPU �
 
 Label guide: episode เริ่มเมื่อ threat actionable ตาม observed evidence และจบเมื่อ threat คลาย/หมดความครอบคลุม; ไม่ใช้ death อย่างเดียวเป็น ground truth. กำหนด attribution window ±8 s รอบ labeled risk sample, ให้ผู้ label adjudicate disagreement ก่อน tuning และแยก matches ทั้งก้อนระหว่าง train/tune/holdout.
 
-Resource runs: warm-up 2 min แล้ว idle/live-CV/Voice+Signal phase ละ10 min ×3 runs, 1 s sampling, host ไม่มี builds/CodeDoc ร่วม. ถ้า model ที่เลือกเกิน hard RAM/CPU budget ให้ลดขนาด/เปลี่ยน implementation หรือเปิด explicit SRS change; ห้ามยกเว้น model process หรือเพิ่มเพดานโดยปริยาย. Memory/Voice feasibility เป็นงาน spike ก่อนเลือก package.
+Resource runs: warm-up 2 min แล้ว idle/live-CV/Voice+Signal phase ละ10 min ×3 runs, 1 s sampling, host ไม่มี builds/local model reviews ร่วม. ถ้า model ที่เลือกเกิน hard RAM/CPU budget ให้ลดขนาด/เปลี่ยน implementation หรือเปิด explicit SRS change; ห้ามยกเว้น model process หรือเพิ่มเพดานโดยปริยาย. Memory/Voice feasibility เป็นงาน spike ก่อนเลือก package.
 
 Required cell ที่ไม่มี OS/device/label/audio evidence เป็น SKIP/INDETERMINATE และไม่ผ่าน. Unsupported layout/mode ต้องสื่อสารชัด ไม่แต่ง safety assertion; complete/partial/unknown states มี source/freshness/coverage. Thresholds นี้ล็อกก่อนดู acceptance results; การเปลี่ยนต้องสร้าง decision version ใหม่พร้อมเหตุผล.
 
@@ -125,3 +125,4 @@ MVP-007 reconcile PRD/SRS/AGENTS/CLAUDE ตามมตินี้. งาน c
 | 0.2.0 | 2026-10-12 | Owner เปลี่ยน CPU budget เป็น ≤10% ต่อ sample 1 วินาที พร้อมคง acceptance measurement และเพิ่ม governor hysteresis. |
 | 0.2.1 | 2026-10-12 | Clarified unavailable-cap state, pending startup policy, and kill-on-close membership/handle assumptions. |
 | 0.3.0 | 2026-10-13 | Owner chose fail-closed startup when the CPU Job Object cannot initialize; updated process and feeder lifecycle contract. |
+| 0.3.1 | 2026-10-16 | Remove retired local review integration and related references. |

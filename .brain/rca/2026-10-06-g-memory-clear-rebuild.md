@@ -53,8 +53,7 @@ separation between forgetting derived memory and deleting G-Log archives.
 4. Retain regression tests for restart persistence, post-clear eligibility, same-second
    exclusion, monotonic cutoff, invalid-marker handling, and byte-for-byte archive
    preservation.
-5. Keep the no-egress runtime receipt as a separate open acceptance item; unit tests and
-   code-doc alignment are not network-egress proof.
+5. Keep the no-egress runtime receipt as a separate open acceptance item; unit tests are not network-egress proof.
 
 ## Changelog
 

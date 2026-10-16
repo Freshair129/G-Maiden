@@ -2,8 +2,8 @@
 title: "เทียบ GoVibe ↔ G-Maiden: doc governance · context/brain · ตำแหน่งใน ADR-18 + ข้อเสนอ unify"
 doc_id: "2026-07-19-govibe-gmaiden-governance-comparison"
 status: "draft"
-version: "0.2.0"
-updated: "2026-07-19"
+version: "0.2.1"
+updated: 2026-10-16
 owner: "Boss"
 related_docs: ["ADR-18-dev-runtime-governance-split", "SPEC--RUNTIME-REPAIR-GOVERNANCE", "subagent-context-scoping"]
 ---
@@ -46,15 +46,14 @@ related_docs: ["ADR-18-dev-runtime-governance-split", "SPEC--RUNTIME-REPAIR-GOVE
 | Semantic bump rules | ❌ ไม่มี (registry bump 56 patch/25 วัน) | ✅ patch/minor/major ตามชนิดการแก้ |
 | Status enum | ✅ นิยามครบ §13 + แยก bookkeeping markers | ⚠️ หลวม (`Accepted` casing ปนกัน, ไม่มี transition rule) |
 | Sign-off flow | ✅ `+draft` → drop-on-approval + audit trail | ❌ ไม่มี — ไม่รู้ใครอนุมัติเมื่อไหร่ |
-| Enforcement | ✅ `validate-docs.mjs` = hard error + diff gate | ❌ SOP + LLM advisory (codedoc-aligner) เท่านั้น |
-| Semantic drift (code↔doc โกหกกันไหม) | ❌ เช็คได้แค่ version string ตรง | ✅ codedoc-aligner (Mellum2) |
+| Enforcement | ✅ `validate-docs.mjs` = hard error + diff gate | ❌ SOP เท่านั้น |
 | Migration | normalize-on-touch + sweep ค้าง | ✅ lazy + point-in-time exempt (audits/rca) |
 
 **Verdict: base = G-Maiden in-doc / adopt จาก GoVibe 5 ชิ้น:**
 (1) status lifecycle enum แบบ §13 (นิยาม + casing เดียว) (2) sign-off marker (`approved_by`/
 `approved_date` หรือ `+draft` convention) (3) **structural validator script** เช็ค frontmatter↔
 changelog + schema + enum — port แนวคิด `validate-docs.mjs` (4) diff gate (code เปลี่ยนต้องแตะ
-doc) เป็นชั้น structural ใต้ codedoc-aligner ที่เป็นชั้น semantic (5) legacy mapping table สำหรับ
+doc) เป็น structural gate (5) legacy mapping table สำหรับ
 normalize blockquote header — และ registry แบบ GoVibe ถ้าอยากได้ "หนึ่งหน้ามองทั้ง repo"
 ให้เป็น **derived/generated view** จาก frontmatter (ห้าม hand-maintained)
 → หมายเหตุ: `tools/doc-graph/` (spec G1 PILOT-1 ที่เขียนแล้ว) คือครึ่งแรกของ validator ข้อ (3) พอดี
@@ -143,3 +142,4 @@ dispatch เข้า runner) ห้าม re-implement loop (ไม่งั้
 | --- | --- | --- |
 | 0.1.0 | 2026-07-19 | รายงานแรก — สังเคราะห์จาก 3 agent axes (doc governance / context-brain / ADR-18 position) + ข้อเสนอ unify 6 mechanical + 3 Boss decisions |
 | 0.2.0 | 2026-07-19 | แก้แกน 3 ตาม intent ที่ Boss ชี้แจง: โมเดล **succession** (RWANG=engine → GoVibe=platform รับช่วง, contract=progress schema+MCP) แทน "GoVibe สังกัด RWANG"; ตาราง scope split ถาวร 8 ชิ้น; ADR-conflict ลดเหลือแก้ถ้อยคำ PRD |
+| 0.2.1 | 2026-10-16 | Remove retired local review integration and related dependencies. |

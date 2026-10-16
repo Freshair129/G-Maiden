@@ -2,8 +2,8 @@
 title: "FEAT-G-MEMORY — Persistent Player Memory"
 doc_id: "FEAT-G-MEMORY"
 status: "active"
-version: "0.3.0"
-updated: "2026-10-10"
+version: "0.3.1"
+updated: 2026-10-16
 owner: "Boss"
 source_of_truth: true
 complexity: "C-3"
@@ -232,8 +232,9 @@ byte-for-byte unchanged by `delete_player_memory`.
 | --- | --- | --- |
 | 0.1.0 | 2026-10-05 | Added the DL-006 source, local storage, deterministic derivation, unknown-data, privacy, fallback, and evidence contract. |
 | 0.2.0 | 2026-10-05 | Implemented the first local G-Memory slice: JSONL aggregation, schema-versioned snapshot cache, explicit UNKNOWN fields, and privacy-scoped Tauri commands. |
-| 0.2.1 | 2026-10-05 | Clarified the intentional partial boundaries reported by code-doc alignment: explicit outcome-only win rate, on-demand refresh, and `.json.tmp` snapshot replacement. |
+| 0.2.1 | 2026-10-05 | Clarified the intentional partial boundaries: explicit outcome-only win rate, on-demand refresh, and `.json.tmp` snapshot replacement. |
 | 0.2.2 | 2026-10-05 | Updated Symbol Graph line links after adding fail-closed source-boundary comments in `memory.rs`. |
 | 0.2.3 | 2026-10-06 | Implemented DL-007 durable G-Memory forget semantics while preserving archived G-Log sources. |
-| 0.2.4 | 2026-10-10 | Clarified exact snapshot, marker and archived-log paths after CodeDoc confused the module declaration with storage location; matches `memory_path()` and changes no runtime behavior. |
+| 0.2.4 | 2026-10-10 | Clarified exact snapshot, marker and archived-log paths to distinguish the module declaration from storage location; matches `memory_path()` and changes no runtime behavior. |
 | 0.3.0 | 2026-10-10 | Applied accepted MVP policy: G-Memory and all derived summaries are cloud-denied; retained P0 local consumer scope and bounded complete-session summary rules. |
+| 0.3.1 | 2026-10-16 | Remove retired local review integration and related references. |

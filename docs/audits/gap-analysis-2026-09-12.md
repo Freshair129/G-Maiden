@@ -2,8 +2,8 @@
 title: "G-Maiden: Codebase and Documentation Gap Analysis — 2026-09-12"
 doc_id: "gap-analysis-2026-09-12"
 status: "historical"
-version: "0.1.1"
-updated: "2026-09-12"
+version: "0.1.2"
+updated: 2026-10-16
 owner: "Boss"
 related_docs:
   - "software-requirements-specification"
@@ -172,7 +172,7 @@ Priority ในรายงาน: **P1** แก้หรือมี risk decis
 | **GAP-20 / P2** Docs/ledger semantic drift | AGENTS/feature map/roadmap มี paths/status เก่า; modules.json app=0.7.2; ledger G-Persona เป็น doc-only/aligned ทั้งที่มี code. “aligned” จาก incomplete manifest ไม่พิสูจน์ runtime parity | [ledger](../FEATURE-LEDGER.md), [manifest](../feature-ledger.manifest.yaml), [feature map](../../PROJECT_FEATURE_MAP.md), [llms discrepancies](../../llms-full.txt) | แก้ authoritative claims/mappings/approval provenance แล้ว regenerate; ไม่แก้ generated ledger ตรง ๆ. รักษา historical audits และแยก planned vs implemented. C-2/LOW |
 | **GAP-21 / P2** Privacy/data-flow wording | Local G-Log/CV storage, cloud advice prompt, identity backend, explicit match contribution และ landing analytics มีคนละ boundary; absolute “ทุกอย่าง local” ไม่ตรงกับ call sites. ไม่พบหลักฐานว่า raw G-Log ถูก auto-upload | [master.rs::build_prompt](https://github.com/Freshair129/G-Maiden/blob/a4a75542c857beaac68267b90e16707ad3263a45/src-tauri/src/master.rs#L51), [ADR-11](../architecture/adr/ADR-11-optin-data-contribution-flywheel.md), [landing analytics](../../landing/src/main.tsx) | Approved data-flow inventory ระบุ fields/destination/trigger/consent/local-only exclusions และ egress tests ตาม mode; อย่าส่ง token/ข้อมูลผู้เล่นเข้า docs. Docs C-2/LOW; เปลี่ยน egress C-3/HIGH |
 | **GAP-22 / P3** G-Stream | SRS §3.12 ขอ broadcast co-host และ sensitive-field masking; ไม่พบ runtime mode ที่ครอบคลุมทั้ง deck/overlay. Privacy local-only ไม่ใช่ screen masking | [stream spec](../features/FEAT-G-STREAM.md), [SRS](../product/software-requirements-specification.md), [overlay](../../src/src/app/Overlay.tsx) | ระบุ fields/surfaces ที่ mask และ test screenshot/state; เลือก milestone ก่อนใช้คำว่า stream-ready. C-2/MEDIUM |
-| **GAP-23 / P3** LLM reference assurance | llms เป็น manual snapshot; ยังไม่มี freshness automation และ CodeDoc default model ไม่ติดตั้ง. Link/schema validation ไม่เท่ากับ semantic alignment verdict | [llms verification](../../llms-full.txt), [aligner skill](../../.agents/skills/rwang-codedoc-aligner/SKILL.md) | เริ่มจาก owner/update checklist และ scoped source review ตาม diff; provisioning/model override ต้องประกาศชัด. ไม่จำเป็นต้องสร้าง generator หาก manual review เพียงพอ. C-1/LOW |
+| **GAP-23 / P3** LLM reference assurance | llms เป็น manual snapshot; ยังไม่มี freshness automation. Link/schema validation ไม่เท่ากับ semantic alignment verdict | [llms verification](../../llms-full.txt) | เริ่มจาก owner/update checklist และ scoped source review ตาม diff. ไม่จำเป็นต้องสร้าง generator หาก manual review เพียงพอ. C-1/LOW |
 
 ## 6. สิ่งที่มีอยู่แล้วและไม่ควรสร้างซ้ำ
 
@@ -223,7 +223,6 @@ Node `v24.19.0`; ไม่มี network/account calls:
 | เทียบ baseline graph | รายการ violations ทั้งชุดเท่ากับ HEAD เดิม; audit นี้ไม่เพิ่ม violation. เพิ่มเอกสารจาก 145 เป็น 146 และ nodes จาก 270 เป็น 271 |
 | Local source/document references | 81 local links และ 17 line anchors ใน audit + RCA ตรวจ path/ช่วงบรรทัดครบ |
 | Gap identifiers | GAP-01 ถึง GAP-23 ครบ ไม่ซ้ำเป็น gap ใหม่จากการอ้างข้ามส่วน |
-| Code-Doc Aligner | **INDETERMINATE, process exit 2** ที่ preflight เพราะ default Mellum model ไม่อยู่ใน Ollama; ไม่แทนโมเดลโดยไม่ประกาศและไม่อ้าง semantic alignment ผ่าน |
 | Diff scope | เพิ่ม audit/RCA และ regenerate graph artifacts 6 ไฟล์; application source/tests/version และ llms เดิมไม่เปลี่ยนในงานนี้ |
 
 Graph-wrapper PASS เป็น structural gate ภายใต้ข้อยกเว้นเดิม ไม่ได้หักล้าง GAP-20 เรื่อง semantic/registry mapping และไม่ได้แทน live acceptance.
@@ -242,3 +241,4 @@ Graph-wrapper PASS เป็น structural gate ภายใต้ข้อย�
 | --- | --- | --- |
 | 0.1.0 | 2026-09-12 | วิเคราะห์ 23 gaps จาก source/requirements พร้อม priority, evidence, closure criteria, ownership และ RCA ของสอง auth failure-state cases; ไม่มี application code change. |
 | 0.1.1 | 2026-09-12 | Pin historical source line references to the audited commit after local remediation moved/removed source lines; findings remain the original audit snapshot. |
+| 0.1.2 | 2026-10-16 | Remove retired local review integration and related references. |

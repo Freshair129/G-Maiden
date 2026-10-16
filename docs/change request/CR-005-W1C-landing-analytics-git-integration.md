@@ -1,10 +1,10 @@
 ---
-version: "0.1.0b"
+version: "0.1.1b"
 title: "CR-005 W1C — Landing Analytics และ Git Integration"
 doc_id: "CR-005-W1C-landing-analytics-git-integration"
 created_at: "2026-07-20T22:05:00+07:00,ATHER"
 last_update: "2026-07-20T22:05:00+07:00,ATHER"
-updated: "2026-07-20"
+updated: 2026-10-16
 owner: "Boss"
 status: "active"
 superseded_by: null
@@ -57,7 +57,6 @@ attributes:
 - URL ที่ส่งไม่มี query string/fragment และไม่มี custom event
 - GitHub repo เป็น private, default branch เป็น `main` และไม่มี secret หรือ `.vercel/project.json`
 - Vercel project เชื่อม repo สำเร็จ; push เข้า `main` สร้าง production deployment อัตโนมัติ
-- `codedoc-aligner` exit 0; exit 2 ถือเป็น INDETERMINATE ไม่ใช่ผ่าน
 
 ## 5. Version diff
 
@@ -67,8 +66,8 @@ attributes:
 | Analytics | ไม่มี | Aggregate page views with URL redaction |
 | Deployment source | Vercel CLI จาก monorepo | Private standalone GitHub repo + Vercel Git integration |
 
-## CHANGELOG
-
+## Changelog
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
 | 0.1.0b | 2026-07-20 | active | Approved Vercel Analytics privacy boundary and standalone Git deployment contract | — | ATHER |
+| 0.1.1b | 2026-10-16 | active | Remove retired local review integration and related dependencies. | null | Codex |

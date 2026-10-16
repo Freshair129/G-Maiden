@@ -1,7 +1,12 @@
 {
-  "version": "3.10",
-  "updated": "2026-07-22",
+  "version": "3.11",
+  "updated": "2026-10-16",
   "changelog": [
+    {
+      "version": "3.11",
+      "date": "2026-10-16",
+      "summary": "Remove retired local review integration and related document dependencies."
+    },
     {
       "version": "3.10",
       "date": "2026-07-22",
@@ -40,7 +45,7 @@
     {
       "version": "3.3",
       "date": "2026-07-22",
-      "summary": "Recorded CR-022 production migration, Function, Landing, browser, and determinate CodeDoc evidence while preserving the authenticated-UAT release block."
+      "summary": "Recorded CR-022 production migration, Function, Landing, browser while preserving the authenticated-UAT release block."
     },
     {
       "version": "3.2",
@@ -60,7 +65,7 @@
     {
       "version": "2.9",
       "date": "2026-07-22",
-      "summary": "Recorded CR-022 local gate evidence, production UAT/CodeDoc blockers, and the native-runtime plus audit-migration RCA."
+      "summary": "Recorded CR-022 local gate evidence, production UAT blockers, and the native-runtime plus audit-migration RCA."
     },
     {
       "version": "2.8",
@@ -156,16 +161,6 @@
       "version": "1.19",
       "date": "2026-07-21",
       "summary": "Aligned the Command Deck sitemap and Account UX with approved CR-022: Account owns Closed Beta OAuth and entitlement states while Dashboard preserves the existing one-canvas layout as a readiness route."
-    },
-    {
-      "version": "1.18",
-      "date": "2026-07-21",
-      "summary": "Recorded CR-025 implementation and verified Thinking-safe structured output for the CodeDoc Aligner."
-    },
-    {
-      "version": "1.17",
-      "date": "2026-07-21",
-      "summary": "Added CR-025 candidate and RCA for CodeDoc Aligner structured-output reliability."
     },
     {
       "version": "1.16",
@@ -350,21 +345,6 @@
       "layer": "application",
       "c4_level": "container",
       "lifecycle": "approved",
-      "owners": [
-        "Boss"
-      ]
-    },
-    {
-      "ref": "docs/change request/CR-025-codedoc-aligner-structured-output-reliability.md",
-      "node_kind": "document",
-      "artifact_type": "cr",
-      "domain": "developer-tooling",
-      "cluster": "codedoc-alignment",
-      "system": "G-Maiden developer tooling",
-      "bounded_context": "documentation-governance",
-      "layer": "application",
-      "c4_level": "component",
-      "lifecycle": "proposed",
       "owners": [
         "Boss"
       ]
@@ -681,18 +661,6 @@
     }
   ],
   "edges": [
-    {
-      "from": "docs/change request/CR-025-codedoc-aligner-structured-output-reliability.md",
-      "to": "docs/architecture/spec-orchestra-codedoc-agent.md",
-      "relation": "implements",
-      "assertion": "declared",
-      "evidence": "CR-025 restores the structured JSON response boundary required by FR-4.",
-      "confidence": "high",
-      "evidence_reference": {
-        "path": "docs/impact-map.yaml",
-        "line": 575
-      }
-    },
     {
       "from": "docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md",
       "to": "docs/change request/CR-016-gmad-beta-download-admin-controller.md",

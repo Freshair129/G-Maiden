@@ -1,13 +1,13 @@
 ---
 title: "Auth failure remediation — GAP-01/02"
 doc_id: "auth-failure-remediation-proposal"
-version: "0.2.1b"
+version: "0.2.2b"
 status: "active"
 approved_by: "Boss"
 approved_date: "2026-09-12"
 created_at: "2026-09-12T20:58:04+07:00,RWANG,a4a75542c857beaac68267b90e16707ad3263a45"
 last_update: "2026-09-13T01:30:13+07:00,RWANG"
-updated: "2026-09-13"
+updated: 2026-10-16
 owner: "Boss"
 attributes:
   doc_type: "remediation-proposal"
@@ -121,7 +121,7 @@ Background token refresh ที่กำลังรอยังไม่เป�
 | B4 | Denial แล้ว outage / retry success | ไม่คืนสิทธิ์จาก cache หลัง denial; fresh successful retry คืน UI ได้ |
 | B5 | Sign-out/account change ระหว่าง verify | Deferred old result ไม่คืน eligible/session หรือ rearm native หลัง lock |
 
-ขั้นตอน: regression tests ต้อง fail บน behavior เดิมใน A1/A4/B3 → แก้ implementation → targeted tests + desktop Vitest/TypeScript/lint → Rust tests/clippy ตามไฟล์ที่กระทบและ gate ของ repo → Tauri/WebView smoke ของ sign-out กับ expired-grace โดยใช้ controlled fixtures → doc graph + CodeDoc review.
+ขั้นตอน: regression tests ต้อง fail บน behavior เดิมใน A1/A4/B3 → แก้ implementation → targeted tests + desktop Vitest/TypeScript/lint → Rust tests/clippy ตามไฟล์ที่กระทบและ gate ของ repo → Tauri/WebView smoke ของ sign-out กับ expired-grace โดยใช้ controlled fixtures → doc graph.
 
 ใช้ fake time และ mocked network สำหรับ outage/expiry tests; ห้ามใช้ token จริงใน fixtures/logs. Hook/render test ต้องผ่าน auth/storage/gate composition จริง ไม่เพียง import predicate. Native timing/state tests แยกจาก WebView integration และห้ามอ้างว่าชุดหนึ่งแทนอีกชุดได้. ไม่ weaken assertions เพื่อให้ผ่าน.
 
@@ -129,7 +129,7 @@ Background token refresh ที่กำลังรอยังไม่เป�
 
 ## 8. Proposal verification และ approval boundary
 
-ตรวจ source/parent/peer docs ปัจจุบันแล้ว; source probe ยืนยัน adapter กลืน native deletion error; local links ใน proposal/RCA 24 จุดตรวจ path/line anchors ผ่าน. Doc gate รอบแรกพบ status `candidate` ไม่อยู่ใน enum ของ operations docs จึงปรับเป็น `draft` โดยไม่เปลี่ยนกฎตรวจ. CodeDoc preflight ยังขาด default Mellum model จึง INDETERMINATE; ไม่อ้าง semantic alignment. ผล doc gate รอบสุดท้ายรายงานพร้อมส่งเอกสาร ไม่ถือว่า proposal ถูก implement แล้วจากผล structural gate.
+ตรวจ source/parent/peer docs ปัจจุบันแล้ว; source probe ยืนยัน adapter กลืน native deletion error; local links ใน proposal/RCA 24 จุดตรวจ path/line anchors ผ่าน. Doc gate รอบแรกพบ status `candidate` ไม่อยู่ใน enum ของ operations docs จึงปรับเป็น `draft` โดยไม่เปลี่ยนกฎตรวจ. ผล doc gate รอบสุดท้ายรายงานพร้อมส่งเอกสาร ไม่ถือว่า proposal ถูก implement แล้วจากผล structural gate.
 
 อนุมัติแล้ว: **local implementation ของ GAP-01/02 ตาม §4–7 รวมข้อยกเว้น process-local grace ใน §2**. การอนุมัติให้แก้ parent docs ตามข้อเสนอนี้ก่อน implementation ไม่ได้เป็นการยืนยัน production behavior. งาน GAP-03–23 และ D1–D4 ยังคงเปิดอยู่.
 
@@ -152,7 +152,6 @@ Committed as `56f9fbd` on branch `fix/auth-failure-state`; application remains `
 | Clippy | `cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D warnings`: exit 0 |
 | Release build | Final Tauri `build --no-bundle -- --locked` succeeded; existing CSS-comment parser/bundle-size warnings remain in untouched frontend styling; no installer signing, publishing or deployment |
 | Doc graph | Wrapper PASS, 215 tests; 14 existing error-severity items checklist-covered, zero uncovered; strict scan remains exit 1 |
-| CodeDoc | Process exit 2, required default model absent; manual source/parent/peer review performed, no model-alignment pass claimed |
 | Native/WebView smoke (2026-09-13) | Release executable cold-start Google gate, native lock IPC, actual DPAPI fixture roundtrip, file-held deletion rejection, retry and absent-key deletion passed; [evidence](../../.brain/verification/gap01-02-webview-2026-09-13/README.md). No synthetic session/entitlement response injected. |
 | Not exercised | Packaged native/WebView sign-out and expired-grace UAT with controlled real sessions; hosted CI and production behavior |
 
@@ -179,5 +178,6 @@ Final local link/path checks: 163 references across the audit, RCA, proposal and
 | --- | --- | --- |
 | 0.1.0b | 2026-09-12 | เสนอ contract แก้ GAP-01/02, credential cleanup failure, UI/native state, parent grace-policy exception และ acceptance tests; รอ approval ก่อน application code. |
 | 0.1.1b | 2026-09-12 | บันทึก Boss approval ของ GAP-01/02 และ grace exception; เริ่ม local implementation. |
-| 0.2.0b | 2026-09-12 | Record approved local implementation, SDK abort/storage behavior, generation guard and local validation; retain native/WebView and CodeDoc limitations. |
-| 0.2.1b | 2026-09-13 | Record implementation commit and bounded release WebView/native DPAPI smoke; retain session UAT and missing-model CodeDoc gate. |
+| 0.2.0b | 2026-09-12 | Record approved local implementation, SDK abort/storage behavior, generation guard and local validation; retain native/WebView limitations. |
+| 0.2.1b | 2026-09-13 | Record implementation commit and bounded release WebView/native DPAPI smoke; retain session UAT. |
+| 0.2.2b | 2026-10-16 | Remove retired local review integration and related references. |

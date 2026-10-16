@@ -2,8 +2,8 @@
 title: "ADR: Dev & Runtime Governance Split — RWANG builder · G-Orchestra governor · skill→harness release"
 doc_id: ADR-18-dev-runtime-governance-split
 status: accepted
-version: 1.0.2
-updated: 2026-08-17
+version: 1.0.3
+updated: 2026-10-16
 owner: Boss
 source_of_truth: true
 related_docs: "[\"ADR-11-optin-data-contribution-flywheel\", \"ADR-12-community-ai-marketplace\", \"SPEC--RUNTIME-REPAIR-GOVERNANCE\", \"PROJECT_FEATURE_MAP\"]"
@@ -72,23 +72,20 @@ LangGraph (framework ฟรี + Platform/LangSmith). Graphite **ไม่ใช
 ### D6 — Release pipeline: pilot-as-skill → harden → release-via-harness
 
 Skill = สนามทดลอง (iterate เร็ว, blast radius ต่ำ) → debug + ปิดช่องโหว่ + optimize →
-release จริงผ่าน harness เท่านั้น. พิสูจน์แล้วในเซสชันนี้กับ **codedoc-aligner**
-(false-pass → hardened → 3-path verified). การที่คน copy skill ได้ = การตลาด ไม่ใช่ความสูญเสีย.
+release จริงผ่าน harness เท่านั้น. การที่คน copy skill ได้ = การตลาด ไม่ใช่ความสูญเสีย.
 
 ### D7 — Knowledge scan ใช้ Genesis Block Cycle ไม่สร้างใหม่
 
 - **Stage 1–12 (Block Decomposition ↓)** = สแกน code → knowledge atoms / Symbol Graph
   (ใช้ผ่าน `RWANG:scan` L1/L2 — L1 มี docs-vs-code drift ในตัว)
 - **P0–P6 (Block Assembly ↑)** = ใช้ตอน**สร้าง**แต่ละ work item หลังผ่าน scan gate + Master Plan
-- ไม่สร้าง docscan/codescan skill แยกใหม่ — `codedoc-aligner` ทำหน้าที่ drift-detector
-  ที่ป้อน evidence เข้า L1
 
 ### D8 — Doc governance ฝั่ง G-Maiden (บังคับใช้แล้วในเซสชันนี้)
 
 - SSOT boundary สองโปรดักต์ + กติกา atoms-derived docs → `docs/README.md` §ขอบเขต SSOT
 - มาตรฐาน frontmatter กลาง (ยึดแบบ FEAT/ADR/CR) + migration แบบ lazy → `docs/README.md`
-- Changelog + version ท้ายเอกสารทุกครั้งที่แก้ → codedoc-aligner SKILL.md Step 5
-- Symbol Graph Link Protocol (evidence links) → SKILL.md Step 4
+- Changelog + version ท้ายเอกสารทุกครั้งที่แก้ → `docs/README.md`
+- Symbol Graph Link Protocol (evidence links) → `docs/README.md`
 
 ## 3. Consequences
 
@@ -104,3 +101,4 @@ release จริงผ่าน harness เท่านั้น. พิสู�
 | 1.0.0 | 2026-07-19 | บันทึก 8 decisions จาก working session (two-plane, Narrow Rails, executor-agnostic, RWANG consolidation, business model, skill→harness pipeline, Genesis Block Cycle mapping, doc governance) |
 | 1.0.1 | 2026-07-20 | approval evidence backfill (G25-T3) — `approved_by`/`approved_date` set from in-body sign-off evidence: "ตัดสินใจโดย Boss ใน working session 2026-07-19" (line 14) |
 | 1.0.2 | 2026-08-17 | Renamed from ADR-17 to ADR-18 to resolve duplicate numbering collision with Supabase OAuth Server transaction boundary. |
+| 1.0.3 | 2026-10-16 | Remove retired local review integration and related dependencies. |
