@@ -84,16 +84,18 @@ export const secureStorage: AsyncStorage = {
       return;
     }
     const name = secretName(key);
+    let failed = false;
     try {
       await invoke("secret_delete", { name });
     } catch {
-      /* ignore — deleting an absent secret is not an error backend-side */
+      failed = true; // Native already treats an absent file as success.
     }
     // Also clear any legacy plaintext copy that a prior version may have left.
     try {
       localStorage.removeItem(key);
     } catch {
-      /* no localStorage (unlikely under Tauri) */
+      failed = true;
     }
+    if (failed) throw new Error("Credential deletion failed");
   },
 };

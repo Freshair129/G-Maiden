@@ -2,8 +2,8 @@
 title: "FEAT-G-MEMORY — Persistent Player Memory"
 doc_id: "FEAT-G-MEMORY"
 status: "active"
-version: "0.2.3"
-updated: "2026-10-06"
+version: "0.3.0"
+updated: "2026-10-10"
 owner: "Boss"
 source_of_truth: true
 complexity: "C-3"
@@ -27,21 +27,27 @@ play style preferences. ข้อมูลจะอยู่ **local เท่�
 
 ## 2. Data Model
 
+The model below contains future dimensions, not a promise that every field is available in the
+MVP. MVP may expose only aggregates derivable from local G-Log with an explicit source. Death
+hotspots, causes, MMR/style trends, win rate, and similar fields remain `UNKNOWN` unless an
+accepted source actually provides them; the current G-Log does not provide death coordinates,
+MMR, style inputs, or explicit match outcomes.
+
 ```
 PlayerMemory {
     // Hero preferences
     favorite_heroes: Vec<(HeroId, play_count, winrate)>,
     recent_heroes: Vec<HeroId>,          // last 20 matches
-    
+
     // Death analysis
     death_hotspots: Vec<(MapPosition, frequency, avg_game_time)>,
     common_death_causes: Vec<(Cause, count)>,  // ganked, dove_tower, teamfight
-    
+
     // Trends
     mmr_trend: Vec<(date, estimated_mmr)>,     // from win/loss pattern
     avg_gpm: f32,
     avg_xpm: f32,
-    
+
     // Play style
     aggression_score: f32,     // 0 (passive) – 1 (aggressive)
     farming_preference: f32,   // 0 (fighting) – 1 (farming)
@@ -53,7 +59,7 @@ PlayerMemory {
 
 - **Backend (implemented slice):** derive from archived **JSONL** (`match-*.jsonl` in `%LOCALAPPDATA%\G-Maiden\logs\`) and persist a schema-versioned `memory.json` beside the G-Log directory. No SQLite or new network source is added.
 - **Forget marker:** persist a schema-versioned `memory-clear.json` beside the snapshot. It stores only a monotonic `cleared_before_ms` timestamp, not match contents or aggregate values.
-- **Location:** local disk only — `memory.json` อยู่ข้างข้อมูล G-Log
+- **Location:** local disk only — snapshot คือ `%LOCALAPPDATA%\G-Maiden\memory.json` และ forget marker คือ `%LOCALAPPDATA%\G-Maiden\memory-clear.json`; archived logs อยู่ใน `%LOCALAPPDATA%\G-Maiden\logs\`. Snapshot/marker อยู่ใน parent directory ของ `logs` ตาม [`memory_path()`](../../src-tauri/src/memory.rs#L155).
 - **Refresh:** `get_player_memory` reuses the snapshot while source filename/mtime/size metadata is unchanged; otherwise it reads and rebuilds the aggregate.
 - **Clear:** `delete_player_memory` advances the forget marker and removes the derived snapshot. Archived G-Log files remain unchanged; sources started at or before the marker are excluded on every later read, including after app restart. Newer matches can contribute to a fresh memory.
 - **Retention:** the derived snapshot contains bounded aggregates; archived match-log retention remains governed by G-Log.
@@ -92,11 +98,16 @@ The following are deliberate partial-state boundaries, not missing documentation
 
 ## 5. Output
 
-- `get_player_memory` → local `MemoryContext` snapshot for a future G-Voice/G-Master/G-Coach consumer
+- MVP target: `get_player_memory` supplies a bounded local `MemoryContext` to G-Voice and G-Master;
+  neither consumer is wired yet. G-Coach is outside MVP and would need its own accepted scope.
 - `delete_player_memory` → forgets all G-Memory derived from matches started at or before the persisted clear time; it preserves G-Log archives
 - Persona references → *"จำได้ไหม สองแมตช์ก่อนคุณก็โดนแกงตรงนี้พอดี"*
 
 ## 6. Persona Behavior
+
+Examples that mention death hotspots, win rate, or MMR are illustrative future targets, not facts
+the MVP may claim from current inputs. Those values remain `UNKNOWN` until a source is accepted
+and implemented.
 
 - **Recall:** *"คุณเล่น Invoker บ่อยนะคะ winrate 62% เลย!"*
 - **Warning from memory:** *"ตรงนี้คุณเคยโดน gank 3 ครั้งใน 5 เกมล่าสุด ระวังนะ"*
@@ -108,9 +119,8 @@ The following are deliberate partial-state boundaries, not missing documentation
 - **LOCAL ONLY** — ห้ามส่งข้อมูล G-Memory ออกนอกเครื่องเด็ดขาด
 - The local `memory-clear.json` stores only the forget cutoff. It is written before the snapshot is removed; the cutoff never moves backward.
 - A missing marker means no prior clear. An unreadable or invalid marker fails closed: G-Memory returns an error and does not rebuild from archived logs.
-- ไม่ include raw memory data ใน cloud LLM prompts
-  - ส่งได้เฉพาะ **summary/aggregate** (เช่น "ผู้เล่นถนัด carry, aggressive style")
-  - ห้ามส่ง death locations, MMR numbers, match history ดิบ
+- **ห้ามส่ง G-Memory ขึ้น cloud ทุกกรณี** — ทั้ง raw data และ aggregate/summary ไม่อยู่ใน cloud allowlist ของ MVP. Cloud opt-in สำหรับ own stats ไม่ขยายมาถึง Memory.
+- Local G-Voice/G-Master เท่านั้นที่อ่าน bounded `MemoryContext`; local free-form Voice transcript ยังห้ามออก cloud.
 - Player สามารถ delete memory ได้ทุกเมื่อ (data sovereignty)
 - Inherit no-egress gate จาก G-Log (GATE P6)
 
@@ -119,9 +129,9 @@ The following are deliberate partial-state boundaries, not missing documentation
 | ต้องการจาก | Module |
 | --- | --- |
 | Match data | **G-Log** (decisions, signals, match results) |
-| → Context for | **G-Voice** (conversation context) |
-| → Context for | **G-Master** (advice personalization) |
-| → Context for | **G-Coach** (post-match review) |
+| → Local context for | **G-Voice** (Companion P0; no cloud route) |
+| → Local context for | **G-Master** (personalization; cloud prompt must omit Memory) |
+| → Local context for | **G-Coach** (deep review is outside current MVP) |
 
 ## 9. Acceptance Criteria
 
@@ -129,9 +139,10 @@ The following are deliberate partial-state boundaries, not missing documentation
 - [ ] death hotspots aggregate ถูก position
 - [ ] MMR trend tracks win/loss pattern
 - [ ] memory query ≤5ms (SQLite indexed — หรือเทียบเท่าถ้า derive จาก JSONL)
-- [ ] **no-egress:** memory data ไม่ถูกส่งขึ้น cloud (ส่งได้เฉพาะ summary)
+- [ ] **no-egress:** ทั้ง raw Memory, aggregate, summary และ derived fields ไม่ถูกส่งขึ้น cloud; cloud opt-in เปิดอยู่ก็ต้องไม่มี Memory fields
 - [ ] player สามารถ delete all memory ได้
 - [ ] storage ≤5 MB per 1000 matches
+- [ ] complete-session summary ≤3 points with source event/timestamp; partial session never invents win/loss or death cause
 
 ## 10. DL-006 Lineage Contract (approved design; runtime partial)
 
@@ -166,12 +177,17 @@ to any aggregate whose required source field is absent.
 
 ### 10.3 Output, privacy, and fallback
 
-`MemoryContext` is a bounded local aggregate for a future G-Voice, G-Master, and G-Coach
-consumer. The current reader has no cloud call. Raw JSONL, exact death locations, exact
+`MemoryContext` is a bounded local aggregate for the MVP's local G-Voice/G-Master consumers;
+neither consumer is wired yet, and G-Coach is outside MVP. The current reader has no cloud call.
+Raw JSONL, exact death locations, exact
 MMR values, Steam identifiers, and match history are never added to the context. Missing
 or incomplete fields remain `None` and are listed in `unknown_fields`; malformed source
 lines are skipped without fabricating data. Delete removes the derived snapshot without
 silently deleting the separately governed G-Log archive.
+
+The accepted MVP policy denies every G-Memory-derived field from cloud requests, including
+aggregates and summaries. This remains true when the separate own-stat cloud-context opt-in
+is enabled.
 
 Acceptance requires hand-calculated aggregation fixtures, query timing after snapshot
 load, delete-all verification, and a no-egress receipt showing no network request from
@@ -219,3 +235,5 @@ byte-for-byte unchanged by `delete_player_memory`.
 | 0.2.1 | 2026-10-05 | Clarified the intentional partial boundaries reported by code-doc alignment: explicit outcome-only win rate, on-demand refresh, and `.json.tmp` snapshot replacement. |
 | 0.2.2 | 2026-10-05 | Updated Symbol Graph line links after adding fail-closed source-boundary comments in `memory.rs`. |
 | 0.2.3 | 2026-10-06 | Implemented DL-007 durable G-Memory forget semantics while preserving archived G-Log sources. |
+| 0.2.4 | 2026-10-10 | Clarified exact snapshot, marker and archived-log paths after CodeDoc confused the module declaration with storage location; matches `memory_path()` and changes no runtime behavior. |
+| 0.3.0 | 2026-10-10 | Applied accepted MVP policy: G-Memory and all derived summaries are cloud-denied; retained P0 local consumer scope and bounded complete-session summary rules. |

@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import math
 import re
 import sys
 from pathlib import Path
@@ -42,6 +43,31 @@ REQUIRED_SOURCE_FIELDS = {
     "dataset_label",
 }
 REQUIRED_GENERATION_FIELDS = {"tool", "commit"}
+REQUIRED_GAMEPLAY_ARTIFACTS = {
+    "SRC-HERO-DB": ("src-tauri/data/heroes.json", "runtime_snapshot"),
+    "SRC-HERO-ABILITIES-CURATED": (
+        "tools/gen-herodb/curated_abilities.json",
+        "generator_input",
+    ),
+    "SRC-ITEM-DB": ("src-tauri/data/items.json", "runtime_snapshot"),
+    "SRC-ITEM-PRICES": ("src-tauri/data/item-prices.json", "runtime_snapshot"),
+    "SRC-COUNTER-DB": ("src-tauri/data/item_counters.json", "runtime_snapshot"),
+}
+DAMAGE_TYPES = {"Physical", "Magical", "Pure"}
+HERO_NUMERIC_FIELDS = (
+    "base_damage_min",
+    "base_damage_max",
+    "base_armor",
+    "base_magic_resistance",
+    "base_str",
+    "str_gain",
+    "base_agi",
+    "agi_gain",
+    "base_int",
+    "int_gain",
+    "base_attack_speed",
+    "attack_range",
+)
 
 
 def _sha256(path: Path) -> str:
@@ -65,6 +91,164 @@ def _load_json(path: Path) -> tuple[Any | None, str | None]:
         return json.loads(path.read_text(encoding="utf-8")), None
     except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
         return None, str(exc)
+
+
+def _finite_number(value: Any) -> bool:
+    return (
+        isinstance(value, (int, float))
+        and not isinstance(value, bool)
+        and math.isfinite(value)
+    )
+
+
+def _validate_abilities(abilities: Any, prefix: str, errors: list[str]) -> None:
+    if not isinstance(abilities, list):
+        errors.append(f"{prefix} must be an array")
+        return
+
+    names: set[str] = set()
+    for index, ability in enumerate(abilities):
+        item_prefix = f"{prefix}[{index}]"
+        if not isinstance(ability, dict):
+            errors.append(f"{item_prefix} must be an object")
+            continue
+        name = ability.get("name")
+        if not isinstance(name, str) or not name:
+            errors.append(f"{item_prefix}.name must be a non-empty string")
+        elif name in names:
+            errors.append(f"{item_prefix}.name is duplicated: {name}")
+        else:
+            names.add(name)
+
+        if ability.get("damage_type") not in DAMAGE_TYPES:
+            errors.append(f"{item_prefix}.damage_type must be Physical, Magical, or Pure")
+
+        levels = ability.get("damage_per_level")
+        if not isinstance(levels, list) or not levels:
+            errors.append(f"{item_prefix}.damage_per_level must be a non-empty array")
+        elif any(not _finite_number(value) or value < 0 for value in levels):
+            errors.append(f"{item_prefix}.damage_per_level must contain finite non-negative numbers")
+
+        cooldown = ability.get("cooldown")
+        if not _finite_number(cooldown) or cooldown < 0:
+            errors.append(f"{item_prefix}.cooldown must be a finite non-negative number")
+        if not isinstance(ability.get("is_ultimate"), bool):
+            errors.append(f"{item_prefix}.is_ultimate must be boolean")
+
+
+def _validate_hero_database(heroes: Any, errors: list[str]) -> set[str]:
+    prefix = "SRC-HERO-DB"
+    if not isinstance(heroes, list):
+        errors.append(f"{prefix} must be an array")
+        return set()
+    if len(heroes) < 120:
+        errors.append(f"{prefix} has {len(heroes)} heroes; runtime baseline requires at least 120")
+
+    names: set[str] = set()
+    for index, hero in enumerate(heroes):
+        item_prefix = f"{prefix}[{index}]"
+        if not isinstance(hero, dict):
+            errors.append(f"{item_prefix} must be an object")
+            continue
+        name = hero.get("internal_name")
+        if not isinstance(name, str) or not name:
+            errors.append(f"{item_prefix}.internal_name must be a non-empty string")
+        elif name in names:
+            errors.append(f"{item_prefix}.internal_name is duplicated: {name}")
+        else:
+            names.add(name)
+        if not isinstance(hero.get("display_name"), str) or not hero["display_name"]:
+            errors.append(f"{item_prefix}.display_name must be a non-empty string")
+        if hero.get("primary_attr") not in {"str", "agi", "int", "uni"}:
+            errors.append(f"{item_prefix}.primary_attr is unsupported")
+        for field in HERO_NUMERIC_FIELDS:
+            if not _finite_number(hero.get(field)):
+                errors.append(f"{item_prefix}.{field} must be a finite number")
+        minimum = hero.get("base_damage_min")
+        maximum = hero.get("base_damage_max")
+        if _finite_number(minimum) and _finite_number(maximum) and (minimum < 0 or maximum < minimum):
+            errors.append(f"{item_prefix} base damage range is invalid")
+        _validate_abilities(hero.get("abilities"), f"{item_prefix}.abilities", errors)
+    return names
+
+
+def _validate_item_database(items: Any, errors: list[str]) -> None:
+    prefix = "SRC-ITEM-DB"
+    if not isinstance(items, list) or not items:
+        errors.append(f"{prefix} must be a non-empty array")
+        return
+    names: set[str] = set()
+    for index, item in enumerate(items):
+        item_prefix = f"{prefix}[{index}]"
+        if not isinstance(item, dict):
+            errors.append(f"{item_prefix} must be an object")
+            continue
+        name = item.get("name")
+        if not isinstance(name, str) or not name:
+            errors.append(f"{item_prefix}.name must be a non-empty string")
+        elif name in names:
+            errors.append(f"{item_prefix}.name is duplicated: {name}")
+        else:
+            names.add(name)
+        for field in ("bonus_attack_damage", "active_burst"):
+            value = item.get(field)
+            if not _finite_number(value) or value < 0:
+                errors.append(f"{item_prefix}.{field} must be a finite non-negative number")
+        if item.get("active_burst_type") not in DAMAGE_TYPES:
+            errors.append(f"{item_prefix}.active_burst_type must be Physical, Magical, or Pure")
+
+
+def _validate_gameplay_artifacts(root: Path, errors: list[str]) -> None:
+    loaded: dict[str, Any] = {}
+    for artifact_id, (relative_path, _) in REQUIRED_GAMEPLAY_ARTIFACTS.items():
+        value, load_error = _load_json(root / relative_path)
+        if load_error:
+            errors.append(f"{artifact_id} could not be read: {load_error}")
+        else:
+            loaded[artifact_id] = value
+
+    heroes = loaded.get("SRC-HERO-DB")
+    hero_names = _validate_hero_database(heroes, errors) if heroes is not None else set()
+
+    curated = loaded.get("SRC-HERO-ABILITIES-CURATED")
+    if not isinstance(curated, dict):
+        if curated is not None:
+            errors.append("SRC-HERO-ABILITIES-CURATED must be an object")
+    else:
+        for hero_name, abilities in curated.items():
+            if hero_name.startswith("_"):
+                continue
+            if hero_name not in hero_names:
+                errors.append(f"curated abilities refer to missing hero: {hero_name}")
+            _validate_abilities(abilities, f"curated abilities for {hero_name}", errors)
+
+        if isinstance(heroes, list):
+            for index, hero in enumerate(heroes):
+                if not isinstance(hero, dict) or not isinstance(hero.get("internal_name"), str):
+                    continue
+                expected = curated.get(hero["internal_name"], [])
+                if hero.get("abilities") != expected:
+                    errors.append(
+                        f"SRC-HERO-DB[{index}].abilities do not match curated generator input"
+                    )
+
+    _validate_item_database(loaded.get("SRC-ITEM-DB"), errors)
+
+    prices = loaded.get("SRC-ITEM-PRICES")
+    if not isinstance(prices, dict) or not prices:
+        errors.append("SRC-ITEM-PRICES must be a non-empty object")
+    else:
+        for name, price in prices.items():
+            if not isinstance(name, str) or not name:
+                errors.append("SRC-ITEM-PRICES contains an invalid item name")
+            if not isinstance(price, int) or isinstance(price, bool) or price <= 0:
+                errors.append(f"SRC-ITEM-PRICES[{name!r}] must be a positive integer")
+
+    counters = loaded.get("SRC-COUNTER-DB")
+    if not isinstance(counters, dict) or not isinstance(counters.get("hero_counters"), dict):
+        errors.append("SRC-COUNTER-DB must contain a hero_counters object")
+    if not isinstance(counters, dict) or not isinstance(counters.get("item_counters"), dict):
+        errors.append("SRC-COUNTER-DB must contain an item_counters object")
 
 
 def validate_manifest(repo_root: Path, manifest_path: Path) -> list[str]:
@@ -122,6 +306,17 @@ def validate_manifest(repo_root: Path, manifest_path: Path) -> list[str]:
             errors.append(f"duplicate artifact id: {artifact_id}")
         else:
             seen_ids.add(artifact_id)
+
+        expected_artifact = (
+            REQUIRED_GAMEPLAY_ARTIFACTS.get(artifact_id)
+            if isinstance(artifact_id, str)
+            else None
+        )
+        if expected_artifact is not None and (relative_path, artifact["role"]) != expected_artifact:
+            errors.append(
+                f"{prefix} must map {artifact_id} to {expected_artifact[0]} "
+                f"as {expected_artifact[1]}"
+            )
 
         if not isinstance(relative_path, str) or not relative_path:
             errors.append(f"{prefix}.path must be a non-empty string")
@@ -204,6 +399,11 @@ def validate_manifest(repo_root: Path, manifest_path: Path) -> list[str]:
                 errors.append(
                     f"{prefix} marked VERIFIED but provenance is incomplete; use PARTIAL or UNVERIFIED"
                 )
+
+    missing_artifacts = REQUIRED_GAMEPLAY_ARTIFACTS.keys() - seen_ids
+    for artifact_id in sorted(missing_artifacts):
+        errors.append(f"required gameplay artifact is missing from manifest: {artifact_id}")
+    _validate_gameplay_artifacts(root, errors)
 
     return errors
 

@@ -163,7 +163,9 @@ async fn verify_gmad_entitlement(
     app: tauri::AppHandle,
     access_token: String,
 ) -> Result<gmad_entitlement::EntitlementDecision, String> {
-    match gmad_entitlement::verify(&access_token).await {
+    let request = runtime::ENTITLEMENT_REQUESTS.begin()?;
+    let result = gmad_entitlement::verify(&access_token).await;
+    runtime::ENTITLEMENT_REQUESTS.apply(request, || match result {
         Ok(decision) => {
             // The channel lives in the backend from here on, so the deck's update
             // banner (a different window from the one that signed in) resolves the
@@ -200,20 +202,22 @@ async fn verify_gmad_entitlement(
             }
             Err(e)
         }
-    }
+    })?
 }
 
 #[tauri::command]
-fn lock_gmad_runtime(app: tauri::AppHandle) {
-    runtime::set_update_channel(gmad_entitlement::update_channel::ReleaseChannel::Stable);
-    runtime::set_gmad_entitled(false);
-    // A real sign-out is a genuine "stop trusting this session" event — the
-    // grace cache must not let a later re-verify fail over to the account
-    // that was just signed out of.
-    runtime::clear_entitlement_cache();
-    if let Some(overlay) = app.get_webview_window("overlay") {
-        let _ = overlay.hide();
-    }
+fn lock_gmad_runtime(app: tauri::AppHandle) -> Result<(), String> {
+    runtime::ENTITLEMENT_REQUESTS.invalidate(|| {
+        runtime::set_update_channel(gmad_entitlement::update_channel::ReleaseChannel::Stable);
+        runtime::set_gmad_entitled(false);
+        // A real sign-out is a genuine "stop trusting this session" event — the
+        // grace cache must not let a later re-verify fail over to the account
+        // that was just signed out of.
+        runtime::clear_entitlement_cache();
+        if let Some(overlay) = app.get_webview_window("overlay") {
+            let _ = overlay.hide();
+        }
+    })
 }
 
 /// Speak `text` via Maiden's voice (Windows SAPI for now). Fire-and-forget.
@@ -406,20 +410,44 @@ fn open_url(url: String) {
 /// Also broadcasts `advice-update` to the overlay window so it can show the
 /// advice inline (G5.4) without the control panel being open.
 #[tauri::command]
+fn get_master_readiness() -> master::MasterReadiness {
+    master::backend_readiness()
+}
+
+#[tauri::command]
 async fn request_advice(
     app: tauri::AppHandle,
     tick: gsi::GameTick,
+    session_epoch: u64,
 ) -> Result<master::Advice, String> {
+    if !runtime::is_current_live_session(session_epoch) || !tick.in_game {
+        return Err("Advice request does not belong to the active live match.".into());
+    }
+    let session = runtime::match_session_snapshot();
+    if session.session_epoch != session_epoch {
+        return Err("Advice request belongs to an earlier match session.".into());
+    }
     // Ground counter-advice on the enemies CV has identified this match. Read
     // from the Rust runtime (single source of truth) rather than a per-window
     // frontend list — the always-on advice path fires from the overlay window,
     // whose companion store is never populated.
     let enemies = runtime::known_enemies();
-    let result = tauri::async_runtime::spawn_blocking(move || master::advise(&tick, &enemies))
-        .await
-        .map_err(|e| format!("internal: {e}"))??;
-    // Broadcast to overlay — ignore error (overlay may be hidden).
-    let _ = app.emit("advice-update", &result);
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        master::advise_with_epoch(&tick, &enemies, Some(session_epoch))
+    })
+    .await
+    .map_err(|e| format!("internal: {e}"))??;
+    if !runtime::is_current_live_session(session_epoch) {
+        return Err("Advice response belongs to an earlier match session and was discarded.".into());
+    }
+    let session = runtime::match_session_snapshot();
+    if session.session_epoch != session_epoch {
+        return Err("Advice response belongs to an earlier match session and was discarded.".into());
+    }
+    // Broadcast a flattened identity envelope so both the companion and overlay
+    // can reject a response queued before a match boundary.
+    let event = runtime::MatchSessionEvent::new(result.clone(), &session);
+    let _ = app.emit("advice-update", event);
     // CR-011 §B utterance ledger — fired after the broadcast above, never
     // before, so it can't add latency to the advice dispatch itself. `meta`
     // is the resolved backend ("claude"/"ollama") when `advise()` just ran a
@@ -429,9 +457,17 @@ async fn request_advice(
     // signal/announcer entries out of the 30-cap ledger (Opus gate, CR011-P2).
     if !result.cached {
         let backend_meta = master::last_backend().map(str::to_string);
-        utterance::emit(
+        let payload = utterance::UtterancePayload::new_for_session(
+            "master",
+            "line",
+            result.text.clone(),
+            None,
+            backend_meta,
+            &session,
+        );
+        utterance::emit_for_session(
             &app,
-            utterance::UtterancePayload::new("master", "line", result.text.clone(), None, backend_meta),
+            payload,
         );
     }
     Ok(result)
@@ -444,10 +480,19 @@ async fn request_advice(
 async fn request_buyback_advice(
     app: tauri::AppHandle,
     tick: gsi::GameTick,
-) -> revive::ReviveAdvice {
+    session_epoch: u64,
+) -> Result<revive::ReviveAdvice, String> {
+    if !runtime::is_current_live_session(session_epoch) || !tick.in_game {
+        return Err("Buyback request does not belong to the active live match.".into());
+    }
+    let session = runtime::match_session_snapshot();
+    if session.session_epoch != session_epoch {
+        return Err("Buyback request belongs to an earlier match session.".into());
+    }
     let ctx = revive::DeathContext::from_tick(&tick);
     let advice = revive::advise_buyback(&ctx);
-    let _ = app.emit("buyback-advice", &advice);
+    let event = runtime::MatchSessionEvent::new(advice.clone(), &session);
+    let _ = app.emit("buyback-advice", event);
 
     // Voice the verdict via the local SLM off the hot path — fire-and-forget so the
     // UI gets the verdict now; the narrative emits when (if) ollama answers.
@@ -457,10 +502,16 @@ async fn request_buyback_advice(
         // Use the user-picked model from Settings; empty → legacy chain in slm.rs.
         let model = runtime::master_ollama_model();
         if let Ok(text) = slm::advise_offline(&prompt, &model) {
-            let _ = app2.emit("buyback-narrative", text);
+            if runtime::is_current_active_session_epoch(session_epoch) {
+                let current = runtime::match_session_snapshot();
+                if current.session_epoch == session_epoch {
+                    let event = runtime::SessionTextEvent::new(text, &current);
+                    let _ = app2.emit("buyback-narrative", event);
+                }
+            }
         }
     });
-    advice
+    Ok(advice)
 }
 
 /// Manual roster injection (Draft-CV). Sets the match roster by hand — 10 hero
@@ -549,6 +600,13 @@ fn set_persona_preset(preset: String) {
 #[tauri::command]
 fn set_master_backend(backend: runtime::MasterBackend) {
     runtime::set_master_backend(backend);
+}
+
+/// Set the separate local consent for sending the own-stat allowlist to Claude.
+/// Choosing a provider or invoking Ask does not call or imply this opt-in.
+#[tauri::command]
+fn set_master_cloud_context_opt_in(enabled: bool) {
+    runtime::set_master_cloud_context_opt_in(enabled);
 }
 
 /// Pick the Ollama model G-Master uses when the Ollama backend is active.
@@ -787,6 +845,12 @@ pub fn run() {
     // %LOCALAPPDATA%\G-Maiden\logs\error.log so a freeze/crash leaves a trace.
     log::init_panic_hook();
     log::error("[startup] G-Maiden process started");
+    if let Err(error) = governor::initialize_process_group() {
+        log::error(&format!(
+            "[startup] refusing to start without the whole-app CPU Job Object hard cap: {error}"
+        ));
+        std::process::exit(1);
+    }
 
     // Global hotkeys — work even when Dota 2 is focused.
     // Ctrl+Alt+S = overlay show/hide (Alt+S / Ctrl+S collide with Dota binds).
@@ -867,6 +931,7 @@ pub fn run() {
             set_announcer_enabled,
             set_cv_signal_sensitivity,
             set_master_backend,
+            set_master_cloud_context_opt_in,
             set_master_ollama_model,
             set_master_mode,
             set_master_api_key,
@@ -911,6 +976,7 @@ pub fn run() {
             read_match_log,
             delete_all_match_logs,
             request_advice,
+            get_master_readiness,
             request_buyback_advice,
             set_draft_roster,
             read_usage,
@@ -918,6 +984,15 @@ pub fn run() {
             identity::resolve_steam_id
         ])
         .setup(move |app| {
+            // Restore local runtime preferences before GSI can deliver the
+            // first gameplay tick. The webview later hydrates the same,
+            // validated snapshot for Control and Overlay.
+            if let Some(settings) = load_settings_json() {
+                if let Err(error) = runtime::apply_startup_settings_json(&settings) {
+                    eprintln!("[settings] saved runtime settings were not loaded: {error}");
+                }
+            }
+
             // CR-008 WP-2: load the Anthropic API key from the DPAPI secret store
             // into the runtime once at startup. Owned separately from the auth
             // mode so the frontend's mode-sync effect can never clobber it (B2).
@@ -945,10 +1020,13 @@ pub fn run() {
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(gsi::serve(handle));
 
-            // G7.2: resource governor — poll RAM/CPU every 10s, emit resource-stats.
+            // G7.2: resource governor — poll RAM/CPU every second, emit resource-stats.
             governor::start(app.handle().clone());
             // Headless GPU feeder sidecar → pushes nvidia-smi metrics to
-            // POST /telemetry (own process; keeps nvidia-smi out of the main app).
+            // POST /telemetry. Startup reaches this point only after the host joined
+            // its Job Object, so the feeder inherits membership by default. Normal
+            // exit also stops/waits the exact owned child; a feeder left by an older
+            // degraded-mode build may outlive abnormal exit.
             app.manage(governor::spawn_gpu_feeder());
 
             app.global_shortcut().register(toggle)?;

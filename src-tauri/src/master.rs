@@ -1,17 +1,21 @@
-//! G-Master — cloud advisor backed by the user's `claude` CLI (Plan quota).
-//! No API key, no per-token cost: we shell out to `claude -p "<prompt>"` and
-//! the CLI uses the session the user already logged into. Same shell-out
-//! pattern as TTS/registry/VDF — no new Rust dependency.
+//! G-Master — local advice with an optional, explicitly consented cloud route.
+//! Cloud requests use a purpose-built own-stat allowlist; local Ollama may use
+//! the richer match context. Provider choice and manual Ask are not consent.
 //!
 //! Throttle to 30s/request and cache the last answer so a quick double-click
 //! still feels responsive without burning the Plan budget.
 
+use std::io::Read;
 use std::process::{Command, Stdio};
 use std::sync::Mutex;
+use std::thread;
 use std::time::{Duration, Instant};
 
 /// Cheap, fast Anthropic model for short advice calls (1-2 sentence tips).
 const ANTHROPIC_MODEL: &str = "claude-haiku-4-5";
+const CLAUDE_REQUEST_TIMEOUT_MS: u64 = 12_000;
+const AUTO_CLOUD_ATTEMPT_TIMEOUT_MS: u64 = 6_000;
+const MAX_ADVICE_REQUEST_TIMEOUT_MS: u64 = 12_000;
 
 use crate::counter_advice::counter_advice_text;
 use crate::gsi::GameTick;
@@ -22,24 +26,159 @@ const PERSONA_PROMPT: &str = r#"คุณคือ "Maiden" — ที่ปร�
 
 const THROTTLE: Duration = Duration::from_secs(30);
 
-static LAST_CALL: Mutex<Option<Instant>> = Mutex::new(None);
-static LAST_RESPONSE: Mutex<Option<String>> = Mutex::new(None);
+struct CachedAdvice {
+    text: String,
+    created_at: Instant,
+    context_generation: u64,
+    session_epoch: Option<u64>,
+    backend: &'static str,
+    elapsed_ms: u64,
+    ollama_model: String,
+    from_slm: bool,
+}
+
+#[derive(Default)]
+struct AdviceCache {
+    current_session_epoch: Option<u64>,
+    response: Option<CachedAdvice>,
+}
+
+static ADVICE_CACHE: Mutex<AdviceCache> = Mutex::new(AdviceCache {
+    current_session_epoch: None,
+    response: None,
+});
 /// Which backend resolved the most recent *fresh* (non-cached) `advise()`
 /// call — "claude" or "ollama". Recorded purely for the CR-011 §B utterance
-/// ledger's `meta` field (main.rs::request_advice) so that event can say who
-/// produced the advice without changing `Advice`/the `advice-update` payload.
+/// ledger's `meta` field (main.rs::request_advice); `Advice` also exposes the
+/// source and elapsed time to the control card.
 static LAST_BACKEND: Mutex<Option<&'static str>> = Mutex::new(None);
 
 #[derive(serde::Serialize, Clone)]
 pub struct Advice {
     pub text: String,
     pub cached: bool,
+    pub backend: String,
+    pub elapsed_ms: u64,
+    pub cached_age_ms: Option<u64>,
+}
+
+#[allow(dead_code)] // Constructed by backend_readiness before the lib.rs command is registered.
+#[derive(serde::Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct ClaudeCliReadiness {
+    pub executable_detected: bool,
+    pub authentication_verified: bool,
+}
+
+#[allow(dead_code)] // Constructed by backend_readiness before the lib.rs command is registered.
+#[derive(serde::Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct AnthropicApiReadiness {
+    pub api_key_saved: bool,
+    pub credential_verified: bool,
+}
+
+/// Configuration and loopback model-presence evidence only. Claude credentials,
+/// network access, quota, and completion are deliberately not probed here.
+#[allow(dead_code)] // Returned by the readiness command owned by the lib.rs integrator.
+#[derive(serde::Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct MasterReadiness {
+    pub backend: crate::runtime::MasterBackend,
+    pub cloud_context_opt_in: bool,
+    pub route: &'static str,
+    pub ollama: crate::slm::OllamaReadiness,
+    pub claude_cli: ClaudeCliReadiness,
+    pub anthropic_api: AnthropicApiReadiness,
+    pub deterministic_local_fallback: bool,
+    pub claude_request_timeout_ms: u64,
+    pub auto_claude_attempt_timeout_ms: u64,
+    pub ollama_request_timeout_ms: u64,
+    pub max_advice_request_timeout_ms: u64,
+    pub cost_note: &'static str,
 }
 
 /// Backend that produced the last fresh advice ("claude"/"ollama"), if known.
 /// `None` before the first call, or if the mutex is poisoned.
 pub fn last_backend() -> Option<&'static str> {
     LAST_BACKEND.lock().ok().and_then(|g| *g)
+}
+
+/// Consent changes must not leave a cloud-derived answer available through the
+/// throttle cache, nor allow an older in-flight call to be reused as fresh.
+pub(crate) fn invalidate_advice_cache() {
+    if let Ok(mut cache) = ADVICE_CACHE.lock() {
+        cache.response = None;
+    }
+    if let Ok(mut backend) = LAST_BACKEND.lock() {
+        *backend = None;
+    }
+}
+
+/// Snapshot backend configuration and check whether the selected Ollama model
+/// is listed by the loopback tags endpoint. Cloud auth/network/quota remain
+/// unknown because this preflight sends no request to Anthropic or Claude CLI.
+#[allow(dead_code)] // Registered as get_master_readiness by the lib.rs integration owner.
+pub fn backend_readiness() -> MasterReadiness {
+    let backend = crate::runtime::master_backend();
+    let cloud_context_opt_in = crate::runtime::master_cloud_context_opt_in();
+    let route = match advice_route(backend, cloud_context_opt_in) {
+        Ok(AdviceRoute::LocalOnly) => "local-only",
+        Ok(AdviceRoute::CloudOnly) => "cloud-only",
+        Ok(AdviceRoute::CloudThenLocal) => "cloud-then-local",
+        Err(_) => "cloud-blocked-by-opt-in",
+    };
+    let model = crate::runtime::master_ollama_model();
+    MasterReadiness {
+        backend,
+        cloud_context_opt_in,
+        route,
+        ollama: crate::slm::readiness(&model),
+        claude_cli: ClaudeCliReadiness {
+            executable_detected: executable_on_path("claude"),
+            authentication_verified: false,
+        },
+        anthropic_api: AnthropicApiReadiness {
+            api_key_saved: crate::runtime::master_api_key_present(),
+            credential_verified: false,
+        },
+        deterministic_local_fallback: true,
+        claude_request_timeout_ms: CLAUDE_REQUEST_TIMEOUT_MS,
+        auto_claude_attempt_timeout_ms: AUTO_CLOUD_ATTEMPT_TIMEOUT_MS,
+        ollama_request_timeout_ms: crate::slm::OLLAMA_REQUEST_TIMEOUT_MS,
+        max_advice_request_timeout_ms: MAX_ADVICE_REQUEST_TIMEOUT_MS,
+        cost_note: "Ollama uses local device resources. Claude quota or API cost depends on the selected account; any UI estimate is not an exact charge.",
+    }
+}
+
+#[allow(dead_code)] // Used by backend_readiness before the lib.rs command is registered.
+fn executable_on_path(name: &str) -> bool {
+    let Some(path) = std::env::var_os("PATH") else {
+        return false;
+    };
+    let paths = std::env::split_paths(&path);
+    #[cfg(windows)]
+    let extensions: Vec<String> = std::env::var("PATHEXT")
+        .unwrap_or_else(|_| ".COM;.EXE;.BAT;.CMD".into())
+        .split(';')
+        .filter(|extension| !extension.is_empty())
+        .map(str::to_owned)
+        .collect();
+    paths.into_iter().any(|directory| {
+        if directory.join(name).is_file() {
+            return true;
+        }
+        #[cfg(windows)]
+        {
+            extensions
+                .iter()
+                .any(|extension| directory.join(format!("{name}{extension}")).is_file())
+        }
+        #[cfg(not(windows))]
+        {
+            false
+        }
+    })
 }
 
 fn hero_thai(raw: &str) -> String {
@@ -69,14 +208,15 @@ fn build_prompt(tick: &GameTick, enemies: &[String]) -> String {
     // + items; skill build estimated). Empty when the hero isn't in the damage DB.
     // Own-data only — enemy defenses aren't observable, so this is "combo hits ~X
     // on a soft target", not a kill call.
-    let burst_line = crate::damage::self_burst(&tick.hero, tick.level.max(1) as u32, &tick.item_names)
-        .map(|b| {
-            format!(
+    let burst_line =
+        crate::damage::self_burst(&tick.hero, tick.level.max(1) as u32, &tick.item_names)
+            .map(|b| {
+                format!(
                 "พลังคอมโบโดยประมาณ ~{:.0} dmg (คิดกับเป้าเปลือย เกราะ 0 / ต้านเวท 25%, สกิลบิลด์มาตรฐาน).",
                 b.total_burst
             )
-        })
-        .unwrap_or_default();
+            })
+            .unwrap_or_default();
 
     format!(
         "{persona}\n\nสถานการณ์ ({phase} · clock {clock}s): \
@@ -104,98 +244,400 @@ fn build_prompt(tick: &GameTick, enemies: &[String]) -> String {
     )
 }
 
-/// Ask Maiden (via Claude Plan quota) for advice on the current game state.
-/// On claude CLI failure, falls back to the local SLM (G7.1, ollama).
-/// Blocking — call from a worker thread. Throttled to 30s; cached responses
-/// are returned with `cached=true` so the UI can hint at staleness.
-pub fn advise(tick: &GameTick, enemies: &[String]) -> Result<Advice, String> {
-    // Throttle window — serve cached.
-    if let Ok(g) = LAST_CALL.lock() {
-        if let Some(t) = *g {
-            if t.elapsed() < THROTTLE {
-                if let Ok(r) = LAST_RESPONSE.lock() {
-                    if let Some(text) = r.clone() {
-                        return Ok(Advice { text, cached: true });
-                    }
-                }
-            }
-        }
+/// The only live-match fields allowed into an external provider request.
+/// Keep this purpose-built object separate from `GameTick` so adding a GSI
+/// field cannot silently widen the cloud payload.
+#[derive(Debug, PartialEq, Eq)]
+struct CloudAdviceContext {
+    phase: &'static str,
+    own_hero: String,
+    own_level: i64,
+    own_kills: i64,
+    own_deaths: i64,
+    own_assists: i64,
+    own_net_worth: i64,
+    own_gold: i64,
+    own_hp_percent: i64,
+    own_mana_percent: i64,
+    radiant_score: i64,
+    dire_score: i64,
+}
+
+fn safe_own_hero(raw: &str) -> String {
+    let name = raw.strip_prefix("npc_dota_hero_").unwrap_or(raw);
+    if name.is_empty()
+        || name.len() > 64
+        || !name
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || byte == b'_')
+    {
+        return "unknown".into();
     }
+    name.replace('_', " ")
+}
 
-    let prompt = build_prompt(tick, enemies);
+fn cloud_advice_context(tick: &GameTick) -> CloudAdviceContext {
+    let phase = if tick.clock_time < 0 {
+        "pre-game"
+    } else if tick.clock_time < 600 {
+        "early game"
+    } else if tick.clock_time < 1800 {
+        "mid game"
+    } else {
+        "late game"
+    };
+    CloudAdviceContext {
+        phase,
+        own_hero: safe_own_hero(&tick.hero),
+        own_level: tick.level.clamp(0, 30),
+        own_kills: tick.kills.max(0),
+        own_deaths: tick.deaths.max(0),
+        own_assists: tick.assists.max(0),
+        own_net_worth: tick.net_worth.max(0),
+        own_gold: tick.gold.max(0),
+        own_hp_percent: tick.hp_percent.clamp(0, 100),
+        own_mana_percent: tick.mana_percent.clamp(0, 100),
+        radiant_score: tick.radiant_score.max(0),
+        dire_score: tick.dire_score.max(0),
+    }
+}
 
-    // Backend choice respects the UI selector — Auto keeps the historical
-    // claude-then-SLM ladder; Claude/Ollama force one path so the user can
-    // route around rate-limits or stay offline by choice.
-    let backend = crate::runtime::master_backend();
-    let ollama_model = crate::runtime::master_ollama_model();
-    let (text, from_slm) = match backend {
-        crate::runtime::MasterBackend::Ollama => {
-            let t = crate::slm::advise_offline(&prompt, &ollama_model)
-                .map_err(|e| format!("ollama: {e}"))?;
-            (t, true)
+fn build_cloud_prompt(tick: &GameTick) -> String {
+    let context = cloud_advice_context(tick);
+    format!(
+        "{persona}\n\nสถานการณ์โดยสรุป ({phase}): ฮีโร่ของผู้เล่น {hero} เลเวล {level}, KDA {kills}/{deaths}/{assists}, net worth {net_worth}, gold {gold}, HP {hp}%, mana {mana}%, score {radiant}:{dire}.\nแนะนำสั้น ๆ ว่าควรทำอะไรต่อ โดยอ้างอิงเฉพาะข้อมูลที่ให้มา.",
+        persona = PERSONA_PROMPT,
+        phase = context.phase,
+        hero = context.own_hero,
+        level = context.own_level,
+        kills = context.own_kills,
+        deaths = context.own_deaths,
+        assists = context.own_assists,
+        net_worth = context.own_net_worth,
+        gold = context.own_gold,
+        hp = context.own_hp_percent,
+        mana = context.own_mana_percent,
+        radiant = context.radiant_score,
+        dire = context.dire_score,
+    )
+}
+
+#[derive(Copy, Clone, Debug, PartialEq, Eq)]
+enum AdviceRoute {
+    LocalOnly,
+    CloudOnly,
+    CloudThenLocal,
+}
+
+fn advice_route(
+    backend: crate::runtime::MasterBackend,
+    cloud_context_opt_in: bool,
+) -> Result<AdviceRoute, &'static str> {
+    use crate::runtime::MasterBackend::{Auto, Claude, Ollama};
+    match (backend, cloud_context_opt_in) {
+        (Ollama, _) | (Auto, false) => Ok(AdviceRoute::LocalOnly),
+        (Claude, false) => {
+            Err("Cloud game context is off. Enable the separate opt-in or choose Ollama.")
         }
-        crate::runtime::MasterBackend::Claude => {
-            let t = try_claude(&prompt).map_err(|e| format!("claude: {e}"))?;
-            (t, false)
-        }
-        crate::runtime::MasterBackend::Auto => match try_claude(&prompt) {
-            Ok(t) => (t, false),
-            Err(e) => {
-                eprintln!("[G-Master] claude unavailable ({e}); trying local SLM…");
-                match crate::slm::advise_offline(&prompt, &ollama_model) {
-                    Ok(t) => (t, true),
-                    Err(e2) => return Err(format!("claude: {e}; SLM: {e2}")),
-                }
+        (Claude, true) => Ok(AdviceRoute::CloudOnly),
+        (Auto, true) => Ok(AdviceRoute::CloudThenLocal),
+    }
+}
+
+#[cfg(test)]
+fn execute_advice_route<C, L>(
+    route: AdviceRoute,
+    cloud: C,
+    local: L,
+) -> Result<(String, bool), String>
+where
+    C: FnOnce() -> Result<String, String>,
+    L: FnOnce() -> Result<String, String>,
+{
+    match route {
+        AdviceRoute::LocalOnly => local()
+            .map(|text| (text, true))
+            .map_err(|error| format!("ollama: {error}")),
+        AdviceRoute::CloudOnly => cloud()
+            .map(|text| (text, false))
+            .map_err(|error| format!("claude: {error}")),
+        AdviceRoute::CloudThenLocal => match cloud() {
+            Ok(text) => Ok((text, false)),
+            Err(cloud_error) => {
+                eprintln!("[G-Master] claude unavailable ({cloud_error}); trying local SLM…");
+                local()
+                    .map(|text| (text, true))
+                    .map_err(|local_error| format!("claude: {cloud_error}; SLM: {local_error}"))
             }
         },
-    };
+    }
+}
 
-    if let Ok(mut g) = LAST_CALL.lock() {
-        *g = Some(Instant::now());
+fn cache_origin_allowed(route: AdviceRoute, from_slm: bool) -> bool {
+    match route {
+        AdviceRoute::LocalOnly => from_slm,
+        AdviceRoute::CloudOnly => !from_slm,
+        AdviceRoute::CloudThenLocal => true,
     }
-    if let Ok(mut g) = LAST_RESPONSE.lock() {
-        *g = Some(text.clone());
+}
+
+/// Ask for advice within a match-session namespace. Callers should pass the
+/// active session epoch so a late result from an ended match cannot hit or
+/// overwrite the cache for the next one.
+pub fn advise_with_epoch(
+    tick: &GameTick,
+    enemies: &[String],
+    session_epoch: Option<u64>,
+) -> Result<Advice, String> {
+    let request_started = Instant::now();
+    let backend = crate::runtime::master_backend();
+    let cloud_context_opt_in = crate::runtime::master_cloud_context_opt_in();
+    let route = advice_route(backend, cloud_context_opt_in).map_err(str::to_string)?;
+    let context_generation = crate::runtime::master_cloud_context_generation();
+    let ollama_model = crate::runtime::master_ollama_model();
+
+    // Record a new epoch before doing provider work. This prevents an older
+    // in-flight request from writing after the next match has started.
+    {
+        let mut cache = ADVICE_CACHE
+            .lock()
+            .map_err(|_| "G-Master advice cache is unavailable".to_string())?;
+        observe_session_epoch(&mut cache.current_session_epoch, session_epoch)?;
+        if let Some(cached) = cache.response.as_ref() {
+            if cached.session_epoch == session_epoch
+                && cached.context_generation == context_generation
+                && cached.ollama_model == ollama_model
+                && cached.created_at.elapsed() < THROTTLE
+                && cache_origin_allowed(route, cached.from_slm)
+                && crate::runtime::master_cloud_context_generation() == context_generation
+            {
+                return Ok(Advice {
+                    text: cached.text.clone(),
+                    cached: true,
+                    backend: cached.backend.into(),
+                    elapsed_ms: cached.elapsed_ms,
+                    cached_age_ms: Some(cached.created_at.elapsed().as_millis() as u64),
+                });
+            }
+        }
     }
-    if let Ok(mut g) = LAST_BACKEND.lock() {
-        *g = Some(if from_slm { "ollama" } else { "claude" });
+
+    let local_prompt = build_prompt(tick, enemies);
+
+    // Cloud receives a separately-built allowlisted prompt. Auto skips cloud
+    // entirely while consent is off; a forced Claude route fails closed.
+    let (text, from_slm) = execute_advice_route_with_budget(
+        route,
+        request_started,
+        MAX_ADVICE_REQUEST_TIMEOUT_MS,
+        AUTO_CLOUD_ATTEMPT_TIMEOUT_MS,
+        |timeout_ms| try_claude(&build_cloud_prompt(tick), timeout_ms),
+        |timeout_ms| {
+            crate::slm::advise_offline_with_timeout(&local_prompt, &ollama_model, timeout_ms)
+        },
+    )?;
+
+    if request_started.elapsed() > Duration::from_millis(MAX_ADVICE_REQUEST_TIMEOUT_MS) {
+        return Err(format!(
+            "G-Master request exceeded its {} ms deadline; response discarded.",
+            MAX_ADVICE_REQUEST_TIMEOUT_MS
+        ));
+    }
+    if crate::runtime::master_cloud_context_generation() != context_generation {
+        return Err("Cloud-context preference changed; advice response discarded.".into());
+    }
+
+    let elapsed_ms = request_started.elapsed().as_millis() as u64;
+    let resolved_backend = if from_slm { "ollama" } else { "claude" };
+    {
+        let mut cache = ADVICE_CACHE
+            .lock()
+            .map_err(|_| "G-Master advice cache is unavailable".to_string())?;
+        if !request_epoch_is_current(cache.current_session_epoch, session_epoch) {
+            return Err(
+                "Advice response belongs to an earlier match session and was discarded.".into(),
+            );
+        }
+        if crate::runtime::master_cloud_context_generation() != context_generation {
+            return Err("Cloud-context preference changed; advice response discarded.".into());
+        }
+        cache.response = Some(CachedAdvice {
+            text: text.clone(),
+            created_at: Instant::now(),
+            context_generation,
+            session_epoch,
+            backend: resolved_backend,
+            elapsed_ms,
+            ollama_model,
+            from_slm,
+        });
+        if let Ok(mut g) = LAST_BACKEND.lock() {
+            *g = Some(resolved_backend);
+        }
     }
     // Quota monitor — only Claude-served responses burn Plan/API quota.
     // Ollama answers are free, and cached hits returned before this point.
     if !from_slm {
-        crate::usage::record_advice(prompt.chars().count(), text.chars().count());
+        crate::usage::record_advice(
+            build_cloud_prompt(tick).chars().count(),
+            text.chars().count(),
+        );
     }
     Ok(Advice {
         text,
         cached: false,
+        backend: resolved_backend.into(),
+        elapsed_ms,
+        cached_age_ms: None,
     })
+}
+
+fn observe_session_epoch(current: &mut Option<u64>, requested: Option<u64>) -> Result<(), String> {
+    match (*current, requested) {
+        (Some(current), Some(requested)) if requested < current => {
+            Err("Advice request belongs to an earlier match session and was discarded.".into())
+        }
+        (Some(_), None) => Err(
+            "Advice request is missing the active match session epoch and was discarded.".into(),
+        ),
+        (_, Some(requested)) => {
+            if *current != Some(requested) {
+                *current = Some(requested);
+            }
+            Ok(())
+        }
+        (None, None) => Ok(()),
+    }
+}
+
+fn request_epoch_is_current(current: Option<u64>, requested: Option<u64>) -> bool {
+    current == requested
+}
+
+fn remaining_budget_ms(total_budget_ms: u64, elapsed_ms: u64) -> u64 {
+    total_budget_ms.saturating_sub(elapsed_ms)
+}
+
+fn bounded_provider_budget_ms(remaining_ms: u64, provider_cap_ms: u64) -> u64 {
+    remaining_ms.min(provider_cap_ms)
+}
+
+fn auto_cloud_budget_ms(total_budget_ms: u64, elapsed_ms: u64, cloud_cap_ms: u64) -> u64 {
+    bounded_provider_budget_ms(
+        remaining_budget_ms(total_budget_ms, elapsed_ms),
+        cloud_cap_ms,
+    )
+}
+
+fn fallback_budget_ms(total_budget_ms: u64, elapsed_ms: u64, local_cap_ms: u64) -> u64 {
+    bounded_provider_budget_ms(
+        remaining_budget_ms(total_budget_ms, elapsed_ms),
+        local_cap_ms,
+    )
+}
+
+fn execute_advice_route_with_budget<C, L>(
+    route: AdviceRoute,
+    started: Instant,
+    total_budget_ms: u64,
+    auto_cloud_cap_ms: u64,
+    cloud: C,
+    local: L,
+) -> Result<(String, bool), String>
+where
+    C: FnOnce(u64) -> Result<String, String>,
+    L: FnOnce(u64) -> Result<String, String>,
+{
+    match route {
+        AdviceRoute::LocalOnly => {
+            let budget = fallback_budget_ms(
+                total_budget_ms,
+                started.elapsed().as_millis() as u64,
+                crate::slm::OLLAMA_REQUEST_TIMEOUT_MS,
+            );
+            if budget == 0 {
+                return Err("G-Master request deadline expired before Ollama started.".into());
+            }
+            local(budget)
+                .map(|text| (text, true))
+                .map_err(|error| format!("ollama: {error}"))
+        }
+        AdviceRoute::CloudOnly => {
+            let budget = bounded_provider_budget_ms(
+                remaining_budget_ms(total_budget_ms, started.elapsed().as_millis() as u64),
+                CLAUDE_REQUEST_TIMEOUT_MS,
+            );
+            if budget == 0 {
+                return Err("G-Master request deadline expired before Claude started.".into());
+            }
+            cloud(budget)
+                .map(|text| (text, false))
+                .map_err(|error| format!("claude: {error}"))
+        }
+        AdviceRoute::CloudThenLocal => {
+            let cloud_budget = auto_cloud_budget_ms(
+                total_budget_ms,
+                started.elapsed().as_millis() as u64,
+                auto_cloud_cap_ms,
+            );
+            let cloud_result = if cloud_budget == 0 {
+                Err("request deadline expired before Claude started".to_string())
+            } else {
+                cloud(cloud_budget)
+            };
+            match cloud_result {
+                Ok(text) => Ok((text, false)),
+                Err(cloud_error) => {
+                    let local_budget = fallback_budget_ms(
+                        total_budget_ms,
+                        started.elapsed().as_millis() as u64,
+                        crate::slm::OLLAMA_REQUEST_TIMEOUT_MS,
+                    );
+                    if local_budget == 0 {
+                        return Err(format!(
+                            "claude: {cloud_error}; Ollama fallback skipped because the G-Master request deadline expired"
+                        ));
+                    }
+                    local(local_budget)
+                        .map(|text| (text, true))
+                        .map_err(|local_error| format!("claude: {cloud_error}; SLM: {local_error}"))
+                }
+            }
+        }
+    }
 }
 
 /// Claude advice path. When the user has chosen API-key auth and entered a key,
 /// call the Anthropic Messages API directly; otherwise shell out to the signed-in
 /// `claude` CLI (Plan quota, no key).
-fn try_claude(prompt: &str) -> Result<String, String> {
+fn try_claude(prompt: &str, timeout_ms: u64) -> Result<String, String> {
     if let Some(key) = crate::runtime::master_api_key() {
-        return try_anthropic_api(prompt, &key);
+        return try_anthropic_api_with_timeout(prompt, &key, timeout_ms);
     }
-    try_claude_cli(prompt)
+    try_claude_cli(prompt, timeout_ms)
 }
 
 /// POST the prompt to the Anthropic Messages API via curl (same shell-out pattern
 /// as the ollama path — no new Rust dependency). Parses `content[0].text`.
-fn try_anthropic_api(prompt: &str, key: &str) -> Result<String, String> {
-    let body = serde_json::json!({
-        "model": ANTHROPIC_MODEL,
-        "max_tokens": 300,
-        "messages": [{ "role": "user", "content": prompt }],
-    })
-    .to_string();
+fn try_anthropic_api_with_timeout(
+    prompt: &str,
+    key: &str,
+    timeout_ms: u64,
+) -> Result<String, String> {
+    if timeout_ms == 0 {
+        return Err("Anthropic API request timed out before it started".into());
+    }
+    let body = anthropic_request_body(prompt);
+    let timeout_seconds = format!("{:.3}", timeout_ms.max(1) as f64 / 1000.0);
+    let connect_timeout_seconds = format!("{:.3}", timeout_ms.clamp(1, 2_000) as f64 / 1000.0);
 
     let mut cmd = Command::new("curl");
     cmd.args([
-        "-s",
+        "-sS",
+        "--connect-timeout",
+        &connect_timeout_seconds,
         "--max-time",
-        "30",
+        &timeout_seconds,
         "-X",
         "POST",
         "https://api.anthropic.com/v1/messages",
@@ -218,7 +660,15 @@ fn try_anthropic_api(prompt: &str, key: &str) -> Result<String, String> {
     }
     let out = cmd.output().map_err(|e| format!("เรียก curl ไม่ได้: {e}"))?;
     if !out.status.success() {
-        return Err(format!("curl exit {:?}", out.status.code()));
+        if out.status.code() == Some(28) {
+            return Err(format!("Anthropic API timed out after {timeout_ms} ms"));
+        }
+        let detail = String::from_utf8_lossy(&out.stderr).trim().to_string();
+        return Err(if detail.is_empty() {
+            format!("curl exit {:?}", out.status.code())
+        } else {
+            format!("curl exit {:?}: {detail}", out.status.code())
+        });
     }
     let raw = String::from_utf8_lossy(&out.stdout);
     let v: serde_json::Value = serde_json::from_str(&raw).map_err(|e| {
@@ -238,9 +688,22 @@ fn try_anthropic_api(prompt: &str, key: &str) -> Result<String, String> {
         .ok_or_else(|| "Anthropic API คืนผลว่าง".into())
 }
 
-fn try_claude_cli(prompt: &str) -> Result<String, String> {
+fn anthropic_request_body(prompt: &str) -> String {
+    serde_json::json!({
+        "model": ANTHROPIC_MODEL,
+        "max_tokens": 300,
+        "messages": [{ "role": "user", "content": prompt }],
+    })
+    .to_string()
+}
+
+fn claude_cli_args(prompt: &str) -> [&str; 2] {
+    ["-p", prompt]
+}
+
+fn try_claude_cli(prompt: &str, timeout_ms: u64) -> Result<String, String> {
     let mut cmd = Command::new("claude");
-    cmd.args(["-p", prompt])
+    cmd.args(claude_cli_args(prompt))
         .stdin(Stdio::null())
         .stdout(Stdio::piped())
         .stderr(Stdio::piped());
@@ -249,9 +712,7 @@ fn try_claude_cli(prompt: &str) -> Result<String, String> {
         use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x0800_0000);
     }
-    let out = cmd
-        .output()
-        .map_err(|e| format!("เรียก claude CLI ไม่ได้: {e}"))?;
+    let out = run_command_with_timeout(cmd, timeout_ms, "claude CLI")?;
     if !out.status.success() {
         let stderr = String::from_utf8_lossy(&out.stderr);
         return Err(format!("claude คืน error: {}", stderr.trim()));
@@ -261,6 +722,69 @@ fn try_claude_cli(prompt: &str) -> Result<String, String> {
         return Err("claude คืนผลว่าง".into());
     }
     Ok(text)
+}
+
+fn run_command_with_timeout(
+    mut command: Command,
+    timeout_ms: u64,
+    label: &str,
+) -> Result<std::process::Output, String> {
+    if timeout_ms == 0 {
+        return Err(format!("{label} timed out before it started"));
+    }
+    let mut child = command
+        .spawn()
+        .map_err(|error| format!("could not start {label}: {error}"))?;
+    let stdout = child
+        .stdout
+        .take()
+        .ok_or_else(|| format!("{label} stdout pipe unavailable"))?;
+    let stderr = child
+        .stderr
+        .take()
+        .ok_or_else(|| format!("{label} stderr pipe unavailable"))?;
+    let stdout_reader = thread::spawn(move || read_pipe(stdout));
+    let stderr_reader = thread::spawn(move || read_pipe(stderr));
+    let deadline = Instant::now() + Duration::from_millis(timeout_ms);
+    let status = loop {
+        match child.try_wait() {
+            Ok(Some(status)) => break status,
+            Ok(None) if Instant::now() < deadline => thread::sleep(Duration::from_millis(25)),
+            Ok(None) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                let _ = stdout_reader.join();
+                let _ = stderr_reader.join();
+                return Err(format!("{label} timed out after {timeout_ms} ms"));
+            }
+            Err(error) => {
+                let _ = child.kill();
+                let _ = child.wait();
+                let _ = stdout_reader.join();
+                let _ = stderr_reader.join();
+                return Err(format!("could not wait for {label}: {error}"));
+            }
+        }
+    };
+    let stdout = stdout_reader
+        .join()
+        .map_err(|_| format!("{label} stdout reader failed"))?
+        .map_err(|error| format!("could not read {label} stdout: {error}"))?;
+    let stderr = stderr_reader
+        .join()
+        .map_err(|_| format!("{label} stderr reader failed"))?
+        .map_err(|error| format!("could not read {label} stderr: {error}"))?;
+    Ok(std::process::Output {
+        status,
+        stdout,
+        stderr,
+    })
+}
+
+fn read_pipe<R: Read + Send + 'static>(mut pipe: R) -> std::io::Result<Vec<u8>> {
+    let mut output = Vec::new();
+    pipe.read_to_end(&mut output)?;
+    Ok(output)
 }
 
 #[cfg(test)]
@@ -317,7 +841,10 @@ mod tests {
         assert!(p.contains("HP 68%"), "hp missing: {p}");
         assert!(p.contains("Maiden"), "persona missing: {p}");
         // Self-burst grounding: CM is in the damage DB, so the estimate appears.
-        assert!(p.contains("พลังคอมโบโดยประมาณ"), "self-burst line missing: {p}");
+        assert!(
+            p.contains("พลังคอมโบโดยประมาณ"),
+            "self-burst line missing: {p}"
+        );
     }
 
     #[test]
@@ -338,10 +865,254 @@ mod tests {
         // With no enemies the counter line is blank; with a known enemy the
         // dataset advice is injected into the prompt (grounding, not confabulation).
         let empty = build_prompt(&fake_tick(), &[]);
-        assert!(!empty.contains("counter:"), "no enemies → no counter line: {empty}");
+        assert!(
+            !empty.contains("counter:"),
+            "no enemies → no counter line: {empty}"
+        );
         let grounded = build_prompt(&fake_tick(), &["phantom_assassin".to_string()]);
-        assert!(grounded.contains("counter:"), "enemy → counter line present: {grounded}");
-        assert!(grounded.contains("MKB"), "PA counter item must reach the prompt: {grounded}");
+        assert!(
+            grounded.contains("counter:"),
+            "enemy → counter line present: {grounded}"
+        );
+        assert!(
+            grounded.contains("MKB"),
+            "PA counter item must reach the prompt: {grounded}"
+        );
+    }
+
+    #[test]
+    fn cloud_prompt_contains_only_the_approved_own_stat_context() {
+        let mut tick = fake_tick();
+        tick.clock_time = 1729;
+        tick.game_state = "SENTINEL_GAME_STATE".into();
+        tick.gpm = 987_654;
+        tick.xpm = 987_655;
+        tick.last_hits = 987_656;
+        tick.denies = 987_657;
+        tick.steamid = "SENTINEL_STEAM_ID".into();
+        tick.item_names = vec!["SENTINEL_ITEM".into()];
+
+        let prompt = build_cloud_prompt(&tick);
+        for approved in [
+            "mid game",
+            "crystal maiden",
+            "เลเวล 11",
+            "KDA 4/2/6",
+            "net worth 8200",
+            "gold 1850",
+            "HP 68%",
+            "mana 55%",
+            "score 8:5",
+        ] {
+            assert!(
+                prompt.contains(approved),
+                "approved value missing ({approved}): {prompt}"
+            );
+        }
+        for denied in [
+            "1729",
+            "SENTINEL_GAME_STATE",
+            "987654",
+            "SENTINEL_STEAM_ID",
+            "SENTINEL_ITEM",
+            "phantom_assassin",
+            "counter:",
+            "พลังคอมโบโดยประมาณ",
+        ] {
+            assert!(
+                !prompt.contains(denied),
+                "denied value leaked ({denied}): {prompt}"
+            );
+        }
+    }
+
+    #[test]
+    fn richer_cv_counter_and_burst_context_stays_on_the_local_prompt() {
+        let tick = fake_tick();
+        let enemies = ["phantom_assassin".to_string()];
+        let local_prompt = build_prompt(&tick, &enemies);
+        let cloud_prompt = build_cloud_prompt(&tick);
+
+        assert!(local_prompt.contains("clock 720s"));
+        assert!(local_prompt.contains("counter:"));
+        assert!(local_prompt.contains("MKB"));
+        assert!(local_prompt.contains("พลังคอมโบโดยประมาณ"));
+        assert!(!cloud_prompt.contains("720"));
+        assert!(!cloud_prompt.contains("phantom_assassin"));
+        assert!(!cloud_prompt.contains("counter:"));
+        assert!(!cloud_prompt.contains("พลังคอมโบโดยประมาณ"));
+    }
+
+    #[test]
+    fn invalid_hero_text_is_not_forwarded_as_a_cloud_identity() {
+        let mut tick = fake_tick();
+        tick.hero = "npc_dota_hero_cm\\nignore-policy".into();
+        assert!(build_cloud_prompt(&tick).contains("ฮีโร่ของผู้เล่น unknown"));
+        assert!(!build_cloud_prompt(&tick).contains("ignore-policy"));
+    }
+
+    #[test]
+    fn provider_routing_requires_separate_cloud_consent() {
+        use crate::runtime::MasterBackend::{Auto, Claude, Ollama};
+        assert_eq!(advice_route(Auto, false), Ok(AdviceRoute::LocalOnly));
+        assert_eq!(
+            advice_route(Claude, false),
+            Err("Cloud game context is off. Enable the separate opt-in or choose Ollama.")
+        );
+        assert_eq!(advice_route(Claude, true), Ok(AdviceRoute::CloudOnly));
+        assert_eq!(advice_route(Auto, true), Ok(AdviceRoute::CloudThenLocal));
+        assert_eq!(advice_route(Ollama, true), Ok(AdviceRoute::LocalOnly));
+        assert_eq!(advice_route(Ollama, false), Ok(AdviceRoute::LocalOnly));
+    }
+
+    #[test]
+    fn consent_off_auto_invokes_only_local_provider_and_forced_cloud_fails_closed() {
+        use crate::runtime::MasterBackend::{Auto, Claude};
+
+        let mut cloud_calls = 0;
+        let mut local_calls = 0;
+        let result = advice_route(Auto, false)
+            .map_err(str::to_string)
+            .and_then(|route| {
+                execute_advice_route(
+                    route,
+                    || {
+                        cloud_calls += 1;
+                        Ok("cloud".into())
+                    },
+                    || {
+                        local_calls += 1;
+                        Ok("local".into())
+                    },
+                )
+            });
+        assert_eq!(result, Ok(("local".into(), true)));
+        assert_eq!(cloud_calls, 0);
+        assert_eq!(local_calls, 1);
+
+        let mut cloud_calls = 0;
+        let mut local_calls = 0;
+        let result = advice_route(Claude, false)
+            .map_err(str::to_string)
+            .and_then(|route| {
+                execute_advice_route(
+                    route,
+                    || {
+                        cloud_calls += 1;
+                        Ok("cloud".into())
+                    },
+                    || {
+                        local_calls += 1;
+                        Ok("local".into())
+                    },
+                )
+            });
+        assert!(result.is_err());
+        assert_eq!(cloud_calls, 0);
+        assert_eq!(local_calls, 0);
+    }
+
+    #[test]
+    fn opted_in_auto_cloud_failure_falls_back_to_local_provider() {
+        use crate::runtime::MasterBackend::Auto;
+
+        let mut cloud_calls = 0;
+        let mut local_calls = 0;
+        let result = advice_route(Auto, true)
+            .map_err(str::to_string)
+            .and_then(|route| {
+                execute_advice_route(
+                    route,
+                    || {
+                        cloud_calls += 1;
+                        Err("offline".into())
+                    },
+                    || {
+                        local_calls += 1;
+                        Ok("local".into())
+                    },
+                )
+            });
+        assert_eq!(result, Ok(("local".into(), true)));
+        assert_eq!(cloud_calls, 1);
+        assert_eq!(local_calls, 1);
+    }
+
+    #[test]
+    fn auto_fallback_receives_only_the_remaining_end_to_end_budget() {
+        assert_eq!(auto_cloud_budget_ms(12_000, 0, 6_000), 6_000);
+        assert_eq!(fallback_budget_ms(12_000, 6_000, 10_000), 6_000);
+        assert_eq!(fallback_budget_ms(12_000, 9_000, 10_000), 3_000);
+        assert_eq!(fallback_budget_ms(12_000, 12_000, 10_000), 0);
+    }
+
+    #[test]
+    fn expired_advice_deadline_does_not_launch_a_provider() {
+        let mut cloud_calls = 0;
+        let mut local_calls = 0;
+        let result = execute_advice_route_with_budget(
+            AdviceRoute::CloudThenLocal,
+            Instant::now(),
+            0,
+            6_000,
+            |_| {
+                cloud_calls += 1;
+                Ok("cloud".into())
+            },
+            |_| {
+                local_calls += 1;
+                Ok("local".into())
+            },
+        );
+        assert!(result.is_err());
+        assert_eq!(cloud_calls, 0);
+        assert_eq!(local_calls, 0);
+    }
+
+    #[test]
+    fn advice_session_epoch_cannot_regress_or_be_omitted_after_capture() {
+        let mut current = None;
+        observe_session_epoch(&mut current, Some(7)).unwrap();
+        observe_session_epoch(&mut current, Some(7)).unwrap();
+        assert_eq!(current, Some(7));
+        assert!(observe_session_epoch(&mut current, Some(6)).is_err());
+        assert!(observe_session_epoch(&mut current, None).is_err());
+        assert!(request_epoch_is_current(current, Some(7)));
+        assert!(!request_epoch_is_current(current, Some(6)));
+    }
+
+    #[test]
+    fn local_only_routes_never_reuse_a_cloud_derived_cached_answer() {
+        assert!(!cache_origin_allowed(AdviceRoute::LocalOnly, false));
+        assert!(cache_origin_allowed(AdviceRoute::LocalOnly, true));
+        assert!(!cache_origin_allowed(AdviceRoute::CloudOnly, true));
+        assert!(cache_origin_allowed(AdviceRoute::CloudOnly, false));
+        assert!(cache_origin_allowed(AdviceRoute::CloudThenLocal, false));
+        assert!(cache_origin_allowed(AdviceRoute::CloudThenLocal, true));
+    }
+
+    #[test]
+    fn serialized_anthropic_payload_contains_only_the_cloud_prompt() {
+        let prompt = build_cloud_prompt(&fake_tick());
+        let body: serde_json::Value =
+            serde_json::from_str(&anthropic_request_body(&prompt)).unwrap();
+        let root = body.as_object().unwrap();
+        assert_eq!(root.len(), 3);
+        assert_eq!(root["model"], ANTHROPIC_MODEL);
+        assert_eq!(root["max_tokens"], 300);
+        let message = root["messages"][0].as_object().unwrap();
+        assert_eq!(message.len(), 2);
+        assert_eq!(message["role"], "user");
+        assert_eq!(message["content"], prompt);
+        assert!(!body.to_string().contains("item_dagon"));
+    }
+
+    #[test]
+    fn serialized_claude_cli_arguments_contain_only_the_cloud_prompt() {
+        let prompt = build_cloud_prompt(&fake_tick());
+        let args = claude_cli_args(&prompt);
+        assert_eq!(args, ["-p", prompt.as_str()]);
+        assert!(!args[1].contains("item_dagon"));
     }
 
     #[test]

@@ -2,15 +2,15 @@
 // signed-out). Signing in loads/creates a Supabase auth user (= GID); on
 // sign-in we upsert the `profiles` row and link the current Steam identity.
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useSyncExternalStore } from "react";
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
-import { supabase } from "./supabase";
+import { supabase, cleanupLocalSession } from "./supabase";
 import { loadIdentity } from "./live/identity";
 import { oauthStateFromAuthorizationUrl } from "./oauthTransaction";
 import { requestSessionAction } from "./securityApi";
-import { signOutWithRuntimeLock } from "./securitySession";
+import { getCurrentSignOut, subscribeCurrentSignOut, localAuthBlocked, prepareGoogleSignIn, signOutCurrent } from "./securitySession";
 
 // Fixed loopback redirect served by the GSI axum server (/auth/callback). Must
 // be in Supabase → Auth → URL Configuration → Redirect URLs.
@@ -34,6 +34,7 @@ async function linkProfile(userId: string): Promise<void> {
 }
 
 export function useAuth() {
+  const signOutState = useSyncExternalStore(subscribeCurrentSignOut, getCurrentSignOut);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
@@ -54,13 +55,13 @@ export function useAuth() {
 
     supabase.auth.getSession().then(({ data }) => {
       if (!cancelled) {
-        setSession(data.session);
+        setSession(localAuthBlocked() ? null : data.session);
         setLoading(false);
       }
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
-      setSession(s);
-      setLastAuthEvent(event);
+      setSession(localAuthBlocked() ? null : s);
+      setLastAuthEvent(localAuthBlocked() ? "SIGNED_OUT" : event);
     });
 
     // Google OAuth: the browser lands on the GSI /auth/callback route which
@@ -68,6 +69,7 @@ export function useAuth() {
     (async () => {
       try {
         const u1 = await listen<string>("oauth-callback", async (e) => {
+          if (getCurrentSignOut().phase !== "idle") return;
           setBusy(true);
           setError(null);
           try {
@@ -98,6 +100,8 @@ export function useAuth() {
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
+    if (!prepareGoogleSignIn()) return;
+    await supabase.auth.startAutoRefresh();
     setBusy(true);
     setError(null);
     try {
@@ -122,32 +126,20 @@ export function useAuth() {
   }, []);
 
   const signOut = useCallback(async () => {
-    const result = await signOutWithRuntimeLock(
-      "current",
+    setError(null);
+    const accessToken = session?.access_token;
+    await signOutCurrent(
       () => invoke("lock_gmad_runtime"),
       async () => {
-        try {
-          await requestSessionAction("current");
-          // The Edge Function revokes the provider session and records the
-          // security event. The client call then removes the DPAPI-backed
-          // refresh token and PKCE verifier from this device.
-          const { error } = await supabase.auth.signOut({ scope: "local" });
-          if (error) throw error;
-          return { error: null };
-        } catch (error) {
-          return { error };
-        }
+        if (!accessToken) throw new Error("No current session to revoke");
+        await requestSessionAction("current", accessToken);
       },
+      cleanupLocalSession,
     );
-    if (!result.ok) {
-      setError(result.code === "runtime_lock_failed"
-        ? "Runtime could not be locked; sign-out was stopped."
-        : "Security service unavailable; sign-out was stopped.");
-      return;
-    }
-    setSession(null);
-    setError(null);
-  }, []);
+    if (localAuthBlocked()) setSession(null);
+  }, [session]);
 
-  return { session, user: session?.user ?? null, loading, busy, error, lastAuthEvent, signInWithGoogle, signOut };
+  return { session: localAuthBlocked() ? null : session, user: localAuthBlocked() ? null : session?.user ?? null, loading,
+    busy: busy || ["locking", "cleaning"].includes(signOutState.phase), error: signOutState.error ?? error,
+    signOutPhase: signOutState.phase, signOutWarning: signOutState.warning, lastAuthEvent, signInWithGoogle, signOut };
 }

@@ -5,6 +5,7 @@
 //! Dota 2 (appid 570) is discovered by scanning `libraryfolders.vdf`.
 
 use std::fs;
+use std::io::Read;
 use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
 use std::process::Command;
@@ -16,13 +17,14 @@ const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 const DOTA_APPID: &str = "570";
 const CFG_NAME: &str = "gamestate_integration_gmaiden.cfg";
+const MAX_CFG_BYTES: usize = 64 * 1024;
 const CFG_BODY: &str = r#""G-Maiden Integration"
 {
     "uri"           "http://127.0.0.1:3000/gsi"
     "timeout"       "5.0"
     "buffer"        "0.1"
     "throttle"      "0.1"
-    "heartbeat"     "30.0"
+    "heartbeat"     "1.0"
     "data"
     {
         "provider"      "1"
@@ -41,7 +43,176 @@ pub struct SetupStatus {
     pub steam_path: Option<String>,
     pub dota_cfg_dir: Option<String>,
     pub cfg_present: bool,
+    pub cfg_valid: bool,
     pub message: String,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum KvToken {
+    Text(String),
+    Open,
+    Close,
+}
+
+#[derive(Debug, PartialEq, Eq)]
+enum KvEntry {
+    Pair(String, String),
+    Block(String, Vec<KvEntry>),
+}
+
+fn tokenize_keyvalues(text: &str) -> Result<Vec<KvToken>, ()> {
+    let mut chars = text.trim_start_matches('\u{feff}').chars().peekable();
+    let mut tokens = Vec::new();
+    while let Some(ch) = chars.next() {
+        if ch.is_whitespace() {
+            continue;
+        }
+        if ch == '/' && chars.peek() == Some(&'/') {
+            chars.next();
+            for rest in chars.by_ref() {
+                if rest == '\n' {
+                    break;
+                }
+            }
+            continue;
+        }
+        match ch {
+            '{' => tokens.push(KvToken::Open),
+            '}' => tokens.push(KvToken::Close),
+            '"' => {
+                let mut value = String::new();
+                let mut closed = false;
+                while let Some(next) = chars.next() {
+                    match next {
+                        '"' => {
+                            closed = true;
+                            break;
+                        }
+                        '\\' => {
+                            let Some(escaped) = chars.next() else {
+                                return Err(());
+                            };
+                            value.push(escaped);
+                        }
+                        _ => value.push(next),
+                    }
+                }
+                if !closed {
+                    return Err(());
+                }
+                tokens.push(KvToken::Text(value));
+            }
+            _ => {
+                let mut value = String::from(ch);
+                while let Some(&next) = chars.peek() {
+                    if next.is_whitespace() || matches!(next, '{' | '}' | '"') {
+                        break;
+                    }
+                    value.push(chars.next().expect("peeked character"));
+                }
+                tokens.push(KvToken::Text(value));
+            }
+        }
+    }
+    Ok(tokens)
+}
+
+fn parse_keyvalues_entries(
+    tokens: &[KvToken],
+    cursor: &mut usize,
+    nested: bool,
+    depth: u8,
+) -> Result<Vec<KvEntry>, ()> {
+    if depth > 16 {
+        return Err(());
+    }
+    let mut entries = Vec::new();
+    loop {
+        let Some(token) = tokens.get(*cursor) else {
+            return if nested { Err(()) } else { Ok(entries) };
+        };
+        let key = match token {
+            KvToken::Text(key) => key.clone(),
+            KvToken::Close if nested => {
+                *cursor += 1;
+                return Ok(entries);
+            }
+            _ => return Err(()),
+        };
+        *cursor += 1;
+        match tokens.get(*cursor) {
+            Some(KvToken::Text(value)) => {
+                entries.push(KvEntry::Pair(key, value.clone()));
+                *cursor += 1;
+            }
+            Some(KvToken::Open) => {
+                *cursor += 1;
+                entries.push(KvEntry::Block(
+                    key,
+                    parse_keyvalues_entries(tokens, cursor, true, depth + 1)?,
+                ));
+            }
+            _ => return Err(()),
+        }
+    }
+}
+
+fn validate_gsi_config(text: &str) -> bool {
+    if text.len() > MAX_CFG_BYTES {
+        return false;
+    }
+    let Ok(tokens) = tokenize_keyvalues(text) else {
+        return false;
+    };
+    let mut cursor = 0;
+    let Ok(entries) = parse_keyvalues_entries(&tokens, &mut cursor, false, 0) else {
+        return false;
+    };
+    if cursor != tokens.len() {
+        return false;
+    }
+    let Some(KvEntry::Block(_, root)) = entries
+        .iter()
+        .find(|entry| {
+            matches!(entry, KvEntry::Block(name, _) if name.eq_ignore_ascii_case("G-Maiden Integration"))
+        })
+    else {
+        return false;
+    };
+    let pair_is = |entries: &[KvEntry], key: &str, value: &str| {
+        entries.iter().any(|entry| {
+            matches!(entry, KvEntry::Pair(candidate, actual) if candidate.eq_ignore_ascii_case(key) && actual == value)
+        })
+    };
+    if !pair_is(root, "uri", "http://127.0.0.1:3000/gsi") {
+        return false;
+    }
+    let mut heartbeat_count = 0;
+    let mut heartbeat_ok = false;
+    for entry in root {
+        if let KvEntry::Pair(key, value) = entry {
+            if key.eq_ignore_ascii_case("heartbeat") {
+                heartbeat_count += 1;
+                heartbeat_ok = value
+                    .parse::<f64>()
+                    .is_ok_and(|seconds| seconds.is_finite() && seconds > 0.0 && seconds <= 1.0);
+                if !heartbeat_ok {
+                    return false;
+                }
+            }
+        }
+    }
+    if heartbeat_count != 1 || !heartbeat_ok {
+        return false;
+    }
+    let Some(KvEntry::Block(_, data)) = root.iter().find(
+        |entry| matches!(entry, KvEntry::Block(name, _) if name.eq_ignore_ascii_case("data")),
+    ) else {
+        return false;
+    };
+    ["provider", "map", "player", "hero", "abilities", "items"]
+        .iter()
+        .all(|key| pair_is(data, key, "1"))
 }
 
 /// Whether the Dota 2 client process is currently running. Used by the GSI
@@ -150,6 +321,7 @@ pub fn detect() -> SetupStatus {
             steam_path: None,
             dota_cfg_dir: None,
             cfg_present: false,
+            cfg_valid: false,
             message: "ไม่พบ Steam ในรีจิสทรี (HKCU\\Software\\Valve\\Steam). \
                       ติดตั้ง Steam แล้วลองใหม่อีกครั้ง."
                 .into(),
@@ -162,6 +334,7 @@ pub fn detect() -> SetupStatus {
             steam_path: Some(steam_str),
             dota_cfg_dir: None,
             cfg_present: false,
+            cfg_valid: false,
             message: "พบ Steam แล้ว แต่ยังไม่ได้ติดตั้ง Dota 2 (appid 570). \
                       ติดตั้ง Dota 2 จาก Steam แล้วลองใหม่อีกครั้ง."
                 .into(),
@@ -170,13 +343,30 @@ pub fn detect() -> SetupStatus {
     let dir = dota_cfg_dir(&library);
     let cfg = dir.join(CFG_NAME);
     let present = cfg.is_file();
+    let valid = if present {
+        fs::File::open(&cfg)
+            .ok()
+            .and_then(|file| {
+                let mut contents = String::new();
+                file.take((MAX_CFG_BYTES + 1) as u64)
+                    .read_to_string(&mut contents)
+                    .ok()?;
+                Some(validate_gsi_config(&contents))
+            })
+            .unwrap_or(false)
+    } else {
+        false
+    };
     SetupStatus {
-        installed: present,
+        installed: valid,
         steam_path: Some(steam_str),
         dota_cfg_dir: Some(dir.to_string_lossy().to_string()),
         cfg_present: present,
-        message: if present {
+        cfg_valid: valid,
+        message: if valid {
             "GSI config ติดตั้งแล้ว — เปิด Dota 2 ได้เลย.".into()
+        } else if present {
+            "พบ GSI config แต่รูปแบบหรือปลายทางไม่ถูกต้อง กดซ่อมไฟล์เพื่อใช้ค่าที่ G-Maiden รองรับ.".into()
         } else {
             "พร้อมติดตั้ง GSI config ใน Dota 2 ของคุณ.".into()
         },
@@ -201,6 +391,7 @@ pub fn install() -> SetupStatus {
         Ok(()) => {
             s.installed = true;
             s.cfg_present = true;
+            s.cfg_valid = true;
             s.message = format!("ติดตั้ง GSI config ที่ {} แล้ว.", cfg.to_string_lossy());
         }
         Err(e) => {
@@ -303,5 +494,65 @@ mod tests {
         assert!(
             s.ends_with("\\steamapps\\common\\dota 2 beta\\game\\dota\\cfg\\gamestate_integration")
         );
+    }
+
+    #[test]
+    fn accepts_the_installed_gsi_config() {
+        assert!(validate_gsi_config(CFG_BODY));
+    }
+
+    #[test]
+    fn requires_a_heartbeat_that_can_satisfy_freshness_contract() {
+        assert!(validate_gsi_config(&CFG_BODY.replace("\"1.0\"", "\"0.5\"")));
+        assert!(!validate_gsi_config(&CFG_BODY.replace("\"1.0\"", "\"2.1\"")));
+        assert!(!validate_gsi_config(&CFG_BODY.replace("\"1.0\"", "\"30.0\"")));
+        assert!(!validate_gsi_config(&CFG_BODY.replace("\"1.0\"", "\"NaN\"")));
+        let duplicate_heartbeat = CFG_BODY.replace(
+            "\"heartbeat\"     \"1.0\"",
+            "\"heartbeat\"     \"1.0\"\n    \"heartbeat\"     \"30.0\"",
+        );
+        assert!(!validate_gsi_config(&duplicate_heartbeat));
+    }
+
+    #[test]
+    fn legacy_thirty_second_config_is_invalid_and_installer_config_repairs_it() {
+        let legacy = CFG_BODY.replace("\"1.0\"", "\"30.0\"");
+        assert!(!validate_gsi_config(&legacy));
+        assert!(validate_gsi_config(CFG_BODY));
+        assert!(CFG_BODY.contains("\"heartbeat\"     \"1.0\""));
+    }
+
+    #[test]
+    fn accepts_valid_whitespace_and_comments() {
+        let edited = CFG_BODY.replace("\"timeout\"", "// local note\n    \"timeout\"");
+        assert!(validate_gsi_config(&edited));
+    }
+
+    #[test]
+    fn rejects_wrong_endpoint_and_missing_data_fields() {
+        assert!(!validate_gsi_config(
+            &CFG_BODY.replace("127.0.0.1:3000", "127.0.0.1:3001")
+        ));
+        assert!(!validate_gsi_config(
+            &CFG_BODY.replace("\"items\"", "\"unused\"")
+        ));
+    }
+
+    #[test]
+    fn rejects_malformed_keyvalues() {
+        let mut malformed = CFG_BODY.to_string();
+        let last_close = malformed.rfind('}').expect("config has a closing brace");
+        malformed.remove(last_close);
+        assert!(!validate_gsi_config(&malformed));
+        assert!(!validate_gsi_config(
+            "\"G-Maiden Integration\" { \"uri\" \"unterminated }"
+        ));
+    }
+
+    #[test]
+    fn rejects_oversized_and_deeply_nested_configs() {
+        assert!(!validate_gsi_config(&"x".repeat(MAX_CFG_BYTES + 1)));
+        let nested = format!("{}\"G-Maiden Integration\" {{}}", "\"x\" { ".repeat(17));
+        assert!(!validate_gsi_config(&nested));
     }
 }

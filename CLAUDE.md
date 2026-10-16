@@ -12,10 +12,12 @@ specs remain the source of truth for *requirements*:
 - `docs/product/software-requirements-specification.md` (SRS) — functional + non-functional requirements,
   external interfaces, performance budgets. The SRS is the more detailed/authoritative of the two.
 
-Both are written in Thai. Treat the SRS numbers (latency, CPU, RAM) as hard constraints, not
-aspirations. Build/test commands now exist: `cargo test` (from `src-tauri/`), `npx tsc --noEmit`
-(from `src/`), `pnpm tauri build` (from repo root). Releases go through the **Release & update
-workflow** below.
+Both are written in Thai. `docs/product/mvp-decisions.md` is the accepted authority for MVP
+scope, access, privacy and quality; PRD/SRS define functional requirements and must align with it.
+Treat accepted SRS quality thresholds as hard constraints, not aspirations. Keep current behavior
+separate from targets and cite implementation/evidence before claiming acceptance. Build/test
+commands now exist: `cargo test` (from `src-tauri/`), `npx tsc --noEmit` (from `src/`),
+`pnpm tauri build` (from repo root). Releases go through the **Release & update workflow** below.
 
 
 ## What G-Maiden is
@@ -30,17 +32,19 @@ latency budget without disrupting the player's focus.
 Hybrid **client-server**, split by latency requirement:
 
 1. **Local Gateway (G-Sensory tier)** — receives raw GSI data, processes the minimap, and emits
-   ultra-low-latency voice alerts. Critical-path work (gank warnings) runs here so it survives
-   cloud disconnection by falling back to a **local SLM**.
-2. **Cloud Brain (Maiden Scribe)** — drives live-caster persona, narrative continuity, and deep
-   analysis via a **cloud LLM** (design target was Gemini; **shipped** path is Claude CLI / Anthropic
-   API with an Ollama local-SLM fallback — see `master.rs`). Non-critical; degrades gracefully offline.
+   ultra-low-latency voice alerts. G-Signal critical-path work is local pure Rust with cached audio;
+   it has no cloud, SLM, or WebView dependency.
+2. **Optional cloud advice** — current G-Master provider path is Claude CLI / Anthropic API with
+   Ollama for local advice fallback (`master.rs`). MVP cloud game context is off by default and
+   requires the separate own-stat allowlist opt-in in `docs/product/mvp-decisions.md`. This runtime
+   enforcement remains an implementation/acceptance task; current provider wiring is not proof it
+   is already enforced. G-Voice, G-Memory, CV, G-Log, audio, and transcript never enter cloud.
 
 ### The G-Series modules (ADR-01: every module is prefixed `G-`)
 
 | Module | Responsibility |
 | --- | --- |
-| **G-Sentry** | Fog-of-war monitor — polls GSI every 500ms; flags enemies missing from vision >5s |
+| **G-Sentry** | Fog-of-war monitor — current CV loop polls every 250ms normally, 125ms with missing heroes, and 500ms under CPU throttle (`capture.rs`); MVP target is event-driven evaluation and 500ms watchdog/freshness only; flags enemies missing >5s |
 | **G-Motion** | Time-off-map risk heuristic — keeps 5 min of last-seen enemy positions. **No heatmap or learned path model ships** (`motion.rs` is an explicit v1 heuristic); "predicts gank routes" is the design target, not the build |
 | **G-Signal** | Real-time gank warning — **voice interrupt** when risk crosses the `Sensitivity` bar; the hard-latency path. Default **Med = 0.65 danger / 0.40 clear**. `DANGER_THRESHOLD = 0.85` is the **Low** rung only (the conservative SRS baseline); High is 0.50/0.30 |
 | **G-Master** | Strategic/financial advisor — skill/item build advice vs. enemy Net Worth & items |
@@ -51,6 +55,12 @@ Hybrid **client-server**, split by latency requirement:
 GPU copy within one vsync. Dota 2 ต้องรันแบบ borderless-fullscreen (`-window -noborder`); ถ้า capture
 เริ่มไม่ได้ แอปจะ fall back เป็น **GSI-only "Lite mode"** (ไม่มี minimap CV แต่เสียง/overlay/G-Master ยังทำงาน).
 WGC เดิมเก็บไว้หลัง `--features wgc` (`capture_wgc.rs`).
+
+**MVP scope contract (2026-10-10):** [[mvp-decisions]] governs product target and quality thresholds.
+G-Voice and G-Memory remain Companion P0; both are still incomplete at runtime. Acceptance targets
+Windows x64 builds 19045/26100, live 5v5 All Pick Ranked/Unranked, and initial CV layout 1920×1080,
+16:9, one primary display, 100% DPI, default HUD/minimap bottom-left, borderless-fullscreen. Other
+modes/layouts need calibration/evidence; unknown or empty coverage is not a safety assertion.
 
 **Command-deck UI (`src/src/CommandDeck.tsx`)** -- the control window renders a bento "command
 deck" (`Dashboard.tsx` + `companion.ts`) with a GSI/LIVE header, a trend stat bar, and hero flip
@@ -76,11 +86,12 @@ every settings category). Three standing laws (SSOT `docs/design-system/05-sitem
 overflow → tab or `rowsThatFit()` pagination, **R3** COLD BOOTH `--g-*` tokens only in the deck
 (the legacy inline `C` hex palette is Overlay-only).
 
-**Accounts & GID (ADR-14)** -- sign-in was designed as optional and **additive**, and still is in a
-**dev** build. In a **release** build it is mandatory: `App.tsx:33` mounts the deck only behind
-`GmadFirstRunGate`, which requires Google sign-in + current Terms acceptance + an active
-entitlement, all verified online (CR-022, shipped `b6a0fc60`). Treat "the deck works without an
-account" as a dev-build statement until that gate is relaxed. Google
+**Accounts & GID (ADR-14)** -- accepted MVP target sets `account_gate_required=false` and keeps
+`account_surface_exposed=true`: local core starts without account/session/entitlement/network, while
+protected account actions stay server-authorized and Google remains the sole primary sign-in. The
+current release code still requires Google sign-in + current Terms + active entitlement through
+`GmadFirstRunGate` (CR-022, `b6a0fc60`) until MVP-008 changes and verifies the target. Do not claim
+account-optional release runtime is already shipped. Google
 OAuth (PKCE, callback on the GSI `:3000/auth/callback` route) → a **GID**, the human-facing
 cross-G-series identity (`G-[Gen][Payload][Checksum]`, `src/src/gid.ts`); internal key stays the
 Supabase UUID. Backend is the shared `gstore` Supabase project (`profiles` + RLS). Steam is linked
@@ -101,7 +112,7 @@ Phone and recovery data require a separate, RLS-protected private data model (no
 or client-readable auth metadata), explicit SMS consent/rate limiting, and a C-3/HIGH threat-model
 and approval gate before any schema, provider, or route is implemented.
 
-**G-Maiden Closed Beta handoff (landing implemented; legal/desktop gate pending).** The landing at
+**Former G-Maiden Closed Beta path (programme cancelled; history only).** The landing at
 `https://g-maiden-landing.vercel.app/` has a production G-Maiden queue sector and the owner/admin
 controller at `/ops`. G-Maiden artifacts live only in the private Supabase Storage bucket
 `gmad-releases`; `request-gmad-download` rechecks the Google-authenticated user, owned GID, and
@@ -112,33 +123,37 @@ before it ships, counsel must approve final Terms/Privacy language and the imple
 server-written, private, versioned acceptance receipts plus optional-consent withdrawal. **CR-022 is
 shipped, not planned** — the desktop first-run handoff (installed G-Maiden → Google sign-in with the
 same GID, current Terms acceptance, active entitlement) was accepted 2026-07-21 and landed in
-`b6a0fc60`; it lives in `src/src/GmadFirstRunGate.tsx` and gates the whole deck in release builds.
-Keep raw match, CV, and G-Log data local even in this flow.
+`b6a0fc60`; it lives in `src/src/GmadFirstRunGate.tsx` and still gates the current release build.
+The accepted MVP target removes this runtime Beta grant/Terms gate in MVP-008; until the code task
+lands, describe the current gate accurately. Do not restart the cancelled Beta or add a local
+Terms receipt. Preserve counsel, release, and existing server authorization gates. Keep raw match,
+CV, G-Log, G-Memory, microphone audio, and transcripts local.
 
 When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scalability unity.
 
 ### Hard constraints (non-functional — enforce these)
 
 - **G-Signal end-to-end latency: target 250ms, never exceed 300ms.**
-- Background CPU usage ≤ **2.5%** on a mid-range chipset; RAM ≤ **400MB** with all modules active.
+- Whole-app process-group CPU normalized by logical CPU capacity ≤ **10% per 1-second sample** (MVP decision v0.2.0);
+  aggregate peak Working Set ≤ **400,000,000 bytes** including host/WebView2/feeder/STT/SLM/model
+  processes; Dota 2 FPS impact ≤3% per paired acceptance run.
 - Overlay must not drop Dota 2 FPS by more than **3%**, and must not obscure minimap, skill bar,
   or stats panels.
 - **Privacy-first (match data), local-first by default:** G-Log raw data, live match state, and
   CV detections stay **local only** unless the user explicitly opts in. **Two opt-ins exist, and
   they are separate:**
-  1. **Account layer (ADR-14)** - stores identity only: email (Google auth), public Steam ids,
-     display name, GID - plus reads **public** OpenDota data.
-  2. **Data contribution (ADR-11, accepted 2026-06-23; economics in ADR-16)** - the user may
-     opt in to share a *specific finished match* in exchange for shard credit. This is the
-     data flywheel + marketplace moat (ADR-12). It is **not** enabled by signing in.
-  **Hard rules that survive both opt-ins:** nothing leaves the machine for a match the user did
-  not submit; **CV detections never leave the machine, ever** (third-party consent + Valve risk);
-  shared data is used **post-match / as aggregate prior only** - never fed back as live enemy
-  positions into the same match (= maphack; Valve banned ~40k accounts and killed Overwolf for
-  this - ADR-11 §5); `match_id` is stored only as `HMAC(match_id)` (ADR-16 §5).
-  If you are about to enforce "never upload anything", read ADR-11 and ADR-16 first - an absolute
-  reading of this rule has silently dropped the flywheel strategy several times.
-- **Resilience:** on cloud/network loss, G-Sentry and G-Signal must keep running on the local SLM.
+  1. **Account layer (ADR-14)** - identity and public OpenDota profile data; sign-in is not cloud
+     game-context consent.
+  2. **MVP cloud-context opt-in** - separate local preference for only the own-stat allowlist in
+     `docs/product/mvp-decisions.md`; API-key entry, backend choice, sign-in, or Ask does not imply
+     consent. Opt-out cancels future sends and invalidates stale responses.
+  **MVP denylist:** G-Log/history/replay, G-Memory including aggregates, CV/enemy fields, raw
+  GSI/GameTick, match ID, items/exact clock/self-burst, local paths/diagnostics, account/security
+  data, microphone audio, transcript, and free-form Voice questions stay local. Do not infer that
+  older ADR-11 finished-match contribution, Beta consent, or a user sign-in authorizes these paths.
+- **Resilience:** G-Sentry/G-Motion/G-Signal and local Voice/Memory do not depend on cloud. G-Signal
+  is pure Rust and does not fall back to SLM; non-critical advice may use local Ollama or report
+  unavailable.
 
 ### Key external interfaces
 
@@ -232,6 +247,7 @@ Defined in `src-tauri/src/main.rs` via `tauri_plugin_global_shortcut`.
 | **Alt+↑** | เพิ่มระดับเสียง +10% |
 | **Alt+↓** | ลดระดับเสียง -10% |
 | **Alt+M** | ปิด/เปิดเสียง (mute toggle — กลับเป็นระดับเดิมเมื่อ unmute) |
+| **Ctrl+Alt+V** | G-Voice PTT default for MVP; runtime not implemented yet, check collision and support remap |
 
 ## Custom Agent Skills (Review & Alignment Gate)
 
@@ -313,6 +329,7 @@ deploy to web by vercel cli
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.4.0b | 2026-10-10 | Reconciled accepted MVP scope/privacy/access and hard-path rules; separated the account-optional product target from the current CR-022 runtime gate and marked Closed Beta as cancelled history. |
 | 0.3.0b | 2026-08-11 | Replaced the stale tag-publishes-to-everyone release section with the dev/closed-beta/stable channel pipeline that actually ships (candidate-release → promote-release), folded the batching policy into it, and corrected the updater endpoint and APP_VERSION path. |
 | 0.2.1b | 2026-07-22 | Normalized reader-facing Closed Beta naming from GMAD to G-Maiden while preserving technical identifiers such as functions, anchors, and storage paths. |
 | 0.2.0b | 2026-07-21 | Added GMAD Closed Beta delivery, legal-consent, and desktop first-run handoff context; CR-021 remains counsel-gated and CR-022 is not yet authored. |

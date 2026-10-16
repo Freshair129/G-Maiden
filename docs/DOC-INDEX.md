@@ -1,11 +1,11 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.0"
+version: "0.2.5"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
-last_update: "2026-08-24T10:04:00+07:00,ATHER"
+last_update: "2026-10-11,Codex"
 status: "active"
-updated: "2026-08-24"
+updated: "2026-10-11"
 owner: "Boss"
 attributes:
   domain: "documentation-governance"
@@ -31,11 +31,18 @@ attributes:
 - [[one-pager]]
   - `docs/product/one-pager.md` — สรุปสั้นสำหรับการเล่าโปรดักต์
 - [[roadmap]]
-  - `docs/product/roadmap.md` — roadmap หลักที่ใช้งานปัจจุบัน
+  - `docs/product/roadmap.md` — MVP roadmap M0–M6 หลังยกเลิก Closed Beta
+- [[mvp-decisions]]
+  - `docs/product/mvp-decisions.md` — owner-delegated scope/access/data/quality contracts และ baseline acceptance
+- [[mvp-backlog]]
+  - `docs/product/mvp-backlog.md` — 52 MVP tasks และ 10 งานที่เลื่อน/แยกสาย พร้อม dependency และ acceptance
+- [[mvp-execution-dag]]
+  - `docs/product/mvp-execution-dag.md` — 57 execution nodes ใน 14 waves พร้อมคิวขนาน 3 workers, leases และ merge/evidence gates
+  - `docs/product/mvp-execution-dag.json` — nodes/edges/conditional dependencies และ wave allocation สำหรับต่อ scheduler
 - [[roadmap-legacy]]
   - `docs/product/roadmap-legacy.md` — roadmap รุ่นเก่าที่ยังเก็บไว้เป็นประวัติ
-- `docs/product/closed-beta-privacy-notice-draft.md` — ร่างนโยบายความเป็นส่วนตัวสำหรับ Closed Beta
-- `docs/product/closed-beta-terms-of-use-draft.md` — ร่างข้อตกลงการใช้งานสำหรับ Closed Beta
+- `docs/product/closed-beta-privacy-notice-draft.md` — ร่างสำหรับ Closed Beta ที่ยกเลิกแล้ว; เก็บเป็นประวัติ/รอ legal review ไม่ใช่ MVP consent gate
+- `docs/product/closed-beta-terms-of-use-draft.md` — ร่างสำหรับ Closed Beta ที่ยกเลิกแล้ว; ไม่ใช่ Terms receipt หรือ MVP access gate
 - `docs/product/MASTERPLAN-account-phase1.md` — แผนแม่บทระบบบัญชีและ Wallet Phase 1
 
 ## Release Governance
@@ -43,7 +50,7 @@ attributes:
 - `docs/releases/README.md`
   - `docs/releases/README.md` — canonical hub ของ release governance, stage gates, และ execution contract
 - `docs/releases/beta-roadmap.md`
-  - `docs/releases/beta-roadmap.md` — release-maturity roadmap แยกจาก feature roadmap
+  - `docs/releases/beta-roadmap.md` — release-maturity reference เดิม; Closed Beta ยกเลิกแล้ว ให้ใช้ MVP roadmap สำหรับแผนปัจจุบัน
 - `docs/releases/release-channel-architecture.md`
   - `docs/releases/release-channel-architecture.md` — Dev → Closed Beta → Stable channel architecture และ artifact promotion rules
 - `docs/releases/release-channel-implementation.md`
@@ -127,6 +134,7 @@ attributes:
 - `docs/architecture/spikes/` — Spikes & Technical Proofs:
   - `docs/architecture/spikes/S-1-minimap-cv.md` — Spike minimap computer vision
   - `docs/architecture/spikes/S-2-oauth-broker-provider-capability.md` — Spike Supabase OAuth Server & Loopback gate capability
+  - `docs/architecture/spikes/MVP-038-local-stt-evaluation.md` — Local STT candidate, corpus, resource, privacy, and acceptance evaluation protocol
 
 ## Orchestration
 
@@ -215,3 +223,8 @@ attributes:
 | 0.1.8 | 2026-08-23 | Recorded CR-034 Phase 0 completion and the Phase 1 review gate. |
 | 0.1.9 | 2026-08-24 | Recorded CR-034 Phase 1 local implementation and retained the live-production promotion gate. |
 | 0.2.0 | 2026-08-24 | Recorded CR-034 Phase 2 local session/security implementation and retained the live-production promotion gate. |
+| 0.2.1 | 2026-10-10 | Added the MVP roadmap/backlog entrypoints and recorded cancellation of the Closed Beta programme. |
+| 0.2.2 | 2026-10-10 | Added the MVP execution DAG and machine-readable parallel-wave schedule. |
+| 0.2.3 | 2026-10-10 | ลงทะเบียน mvp-decisions ที่รับรองตาม Owner delegation |
+| 0.2.4 | 2026-10-10 | Clarified accepted MVP contract entrypoint and labeled cancelled Closed Beta legal drafts as historical candidates, not current access gates. |
+| 0.2.5 | 2026-10-11 | Added the MVP-038 local STT evaluation protocol to the architecture-spike index. |

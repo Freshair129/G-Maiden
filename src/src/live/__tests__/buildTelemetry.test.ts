@@ -9,7 +9,7 @@ const fallback = MOCK.telemetry;
 // when G-Telemetry isn't running. Individual tests override what they exercise.
 function stats(over: Partial<ResourceStats> = {}): ResourceStats {
   return {
-    cpu_pct: 1.7, ram_mb: 384, over_budget: false,
+    cpu_pct: 1.7, cpu_group_processes: 1, ram_mb: 384, over_budget: false,
     gpu_pct: -1, gpu_temp_c: -1, vram_used_mb: -1, vram_total_mb: -1, cpu_temp_c: -1,
     ...over
   };

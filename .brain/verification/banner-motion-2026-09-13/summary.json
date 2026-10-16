@@ -1,0 +1,138 @@
+[
+  {
+    "runtime": "chrome",
+    "mode": "layers",
+    "n": 3,
+    "cpuMachineMedianPercent": 1.0061,
+    "cpuMachineRangePercent": [
+      0.2183,
+      1.1024
+    ],
+    "idleCpuMedianPercent": 0.0558,
+    "gpu3DEngineMedianPercent": 1.4011,
+    "privateMedianMiB": 419.4703,
+    "rafP95MedianMs": 16.800000000000182,
+    "payloadKiB": 252.2138671875,
+    "videoFrames": 0,
+    "videoDropped": 0
+  },
+  {
+    "runtime": "chrome",
+    "mode": "sprite",
+    "n": 3,
+    "cpuMachineMedianPercent": 1.1228,
+    "cpuMachineRangePercent": [
+      1.0468,
+      1.2504
+    ],
+    "idleCpuMedianPercent": 0.0554,
+    "gpu3DEngineMedianPercent": 1.3745,
+    "privateMedianMiB": 483.5087,
+    "rafP95MedianMs": 16.800000000000182,
+    "payloadKiB": 2163.421875,
+    "videoFrames": 0,
+    "videoDropped": 0
+  },
+  {
+    "runtime": "chrome",
+    "mode": "video",
+    "n": 3,
+    "cpuMachineMedianPercent": 0.9018,
+    "cpuMachineRangePercent": [
+      0.9017,
+      1.294
+    ],
+    "idleCpuMedianPercent": 0.3806,
+    "gpu3DEngineMedianPercent": 1.1635,
+    "privateMedianMiB": 331.6714,
+    "rafP95MedianMs": 16.799999999999272,
+    "payloadKiB": 224.265625,
+    "videoFrames": 828,
+    "videoDropped": 6
+  },
+  {
+    "runtime": "chrome",
+    "mode": "realtime",
+    "n": 3,
+    "cpuMachineMedianPercent": 1.2066,
+    "cpuMachineRangePercent": [
+      1.0614,
+      1.3169
+    ],
+    "idleCpuMedianPercent": 0.0553,
+    "gpu3DEngineMedianPercent": 1.9383,
+    "privateMedianMiB": 412.1126,
+    "rafP95MedianMs": 16.800000000000182,
+    "payloadKiB": 264.8427734375,
+    "videoFrames": 0,
+    "videoDropped": 0
+  },
+  {
+    "runtime": "webview2",
+    "mode": "layers",
+    "n": 3,
+    "cpuMachineMedianPercent": 0.1456,
+    "cpuMachineRangePercent": [
+      0.1154,
+      0.1941
+    ],
+    "idleCpuMedianPercent": 0.0,
+    "gpu3DEngineMedianPercent": 0.9987,
+    "privateMedianMiB": 227.9362,
+    "rafP95MedianMs": 16.800000000000182,
+    "payloadKiB": 252.2138671875,
+    "videoFrames": 0,
+    "videoDropped": 0
+  },
+  {
+    "runtime": "webview2",
+    "mode": "sprite",
+    "n": 3,
+    "cpuMachineMedianPercent": 0.303,
+    "cpuMachineRangePercent": [
+      0.2791,
+      0.3093
+    ],
+    "idleCpuMedianPercent": 0.0182,
+    "gpu3DEngineMedianPercent": 1.1915,
+    "privateMedianMiB": 302.268,
+    "rafP95MedianMs": 16.80000000000109,
+    "payloadKiB": 2163.421875,
+    "videoFrames": 0,
+    "videoDropped": 0
+  },
+  {
+    "runtime": "webview2",
+    "mode": "video",
+    "n": 3,
+    "cpuMachineMedianPercent": 0.2906,
+    "cpuMachineRangePercent": [
+      0.2726,
+      0.3511
+    ],
+    "idleCpuMedianPercent": 0.0543,
+    "gpu3DEngineMedianPercent": 2.0466,
+    "privateMedianMiB": 231.5623,
+    "rafP95MedianMs": 16.799999999999272,
+    "payloadKiB": 224.265625,
+    "videoFrames": 831,
+    "videoDropped": 7
+  },
+  {
+    "runtime": "webview2",
+    "mode": "realtime",
+    "n": 3,
+    "cpuMachineMedianPercent": 0.2491,
+    "cpuMachineRangePercent": [
+      0.2427,
+      0.2845
+    ],
+    "idleCpuMedianPercent": 0.0,
+    "gpu3DEngineMedianPercent": 1.6354,
+    "privateMedianMiB": 231.1528,
+    "rafP95MedianMs": 16.80000000000109,
+    "payloadKiB": 264.8427734375,
+    "videoFrames": 0,
+    "videoDropped": 0
+  }
+]

@@ -1,0 +1,74 @@
+[
+  {
+    "runtime": "chrome",
+    "mode": "layers",
+    "negativeSeek": true,
+    "oneShotHidden": true,
+    "captionHidden": true,
+    "replay": true,
+    "errors": []
+  },
+  {
+    "runtime": "chrome",
+    "mode": "sprite",
+    "negativeSeek": true,
+    "oneShotHidden": true,
+    "captionHidden": true,
+    "replay": true,
+    "errors": []
+  },
+  {
+    "runtime": "chrome",
+    "mode": "video",
+    "negativeSeek": true,
+    "oneShotHidden": true,
+    "captionHidden": true,
+    "replay": true,
+    "errors": []
+  },
+  {
+    "runtime": "chrome",
+    "mode": "realtime",
+    "negativeSeek": true,
+    "oneShotHidden": true,
+    "captionHidden": true,
+    "replay": true,
+    "errors": []
+  },
+  {
+    "runtime": "webview2",
+    "mode": "layers",
+    "negativeSeek": true,
+    "oneShotHidden": true,
+    "captionHidden": true,
+    "replay": true,
+    "errors": []
+  },
+  {
+    "runtime": "webview2",
+    "mode": "sprite",
+    "negativeSeek": true,
+    "oneShotHidden": true,
+    "captionHidden": true,
+    "replay": true,
+    "errors": []
+  },
+  {
+    "runtime": "webview2",
+    "mode": "video",
+    "negativeSeek": true,
+    "oneShotHidden": true,
+    "captionHidden": true,
+    "replay": true,
+    "errors": []
+  },
+  {
+    "runtime": "webview2",
+    "mode": "realtime",
+    "negativeSeek": true,
+    "oneShotHidden": true,
+    "captionHidden": true,
+    "replay": true,
+    "errors": []
+  }
+]

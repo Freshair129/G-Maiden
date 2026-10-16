@@ -1,3 +1,13 @@
+---
+title: "G-Maiden Technical Design Document"
+doc_id: "technical-design-document"
+status: "active"
+version: "0.2.1"
+updated: "2026-10-13"
+owner: "Boss"
+related_docs: ["engineering-spec", "product-requirements", "mvp-decisions", "FEAT-G-SENSORY"]
+---
+
 # G-Maiden — Technical Design Document (TDD)
 
 > สถาปัตยกรรมระดับ implementation: component, การไหลของข้อมูล, โมเดล concurrency, การออกแบบ
@@ -46,7 +56,7 @@ Screen ─DXGI capture──────►  │ Minimap CV (tract-onnx + image 
 | `audio` | playback + interrupt channel | dedicated thread (realtime-ish) |
 | `brain_router` | เลือก Cloud/SLM/Template + redaction | tokio task |
 | `log` | เขียน G-Log **JSONL** (`match-*.jsonl`), ป้อน tuning กลับ | dedicated thread (append writes) |
-| `governor` | วัด CPU/RAM/GPU, สั่ง throttle | dedicated thread (ทุก 10s) |
+| `governor` | วัด CPU/RAM/GPU, สั่ง throttle | dedicated thread (ทุก 1s) |
 
 การสื่อสารภายในใช้ **bounded channels** (crossbeam/tokio mpsc). ช่อง interrupt ของ audio เป็น
 **priority สูงสุด** และ non-blocking.
@@ -76,7 +86,7 @@ signal: prob > Sensitivity bar? ─10ms─► [interrupt audio] ─30ms─► [p
 - **CPU-bound:** vision ใช้ rayon pool แยก ไม่แย่ง tokio worker
 - **realtime-ish:** audio thread แยก, OS priority สูงกว่าปกติเล็กน้อย
 - **backpressure:** ทุก channel bounded; ถ้าเต็ม drop frame เก่า (capture) ดีกว่าค้าง
-- **no shared mutable global:** state ต่อโมดูลถือใน task เดียว, สื่อสารด้วย message passing
+- **shared state:** G-Signal critical path ไม่พึ่ง shared locks; ใช้ bounded channels ส่งงานข้าม task. Module ที่ไม่อยู่ใน critical path ใช้ `Mutex`, `OnceLock` หรือ atomic สำหรับ state ขนาดเล็กที่ต้องแชร์ เช่น GPU sample, CPU throttle และ process-job lifecycle ใน [`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L86); ห้ามถือ mutex guard ข้าม `await`.
 
 ---
 
@@ -91,7 +101,7 @@ GSI ของ Dota 2 **ไม่เปิดเผยตำแหน่งฮี
 3. map พิกัด pixel → พิกัดเกม → ป้อน `sentry`/`motion`
 4. capture แบบ **adaptive rate:** ปกติ ~5–8Hz, เร่งเป็น ~15Hz เมื่อ Sentry สงสัย (missing เริ่มนับ)
 
-**Trade-off:** CV เพิ่ม CPU — จึงจำกัด region เล็ก + adaptive rate + GPU-assisted capture เพื่ออยู่ใน 2.5%.
+**Trade-off:** CV เพิ่ม CPU — จึงจำกัด region เล็ก + adaptive rate + GPU-assisted capture ภายใต้ MVP whole-app process-group cap ที่ 10%; live CPU/FPS/latency acceptance ยังต้องมีหลักฐานจริง.
 นี่คือ Risk R-02.
 
 ---
@@ -114,11 +124,12 @@ Brain Router ──────────┤
 
 ## 7. การกำกับทรัพยากร (Resource Governor)
 
-`governor` วัดทุก 10s แล้วบังคับ budget:
-- **CPU > 2.5%** → ลด capture rate, ลด vision frequency, batch งาน
+`governor` sample ทุก 1s; ก่อนสร้าง Tauri/WebView2 แอปพยายามตั้ง Windows Job Object hard cap CPU 10% ของ logical CPU capacity, เปิด `KILL_ON_JOB_CLOSE`, แล้ว assign host process. `PROCESS_JOB` ถือ unnamed job handle ตลอดอายุโปรเซส; app-created children ซึ่งไม่ใช้ breakaway flag สืบทอด job membership ตาม Windows default. WebView2 membership ยังต้องยืนยันบน Windows acceptance:
+- **CPU > 10% หรืออ่าน CPU group ไม่ได้** → คง capture throttle; เมื่ออ่านค่าได้และเกิน threshold ลด capture cadence เป็น soft mitigation
+- **Job create/configure/assignment ล้มเหลว** → บันทึกข้อผิดพลาดและออกด้วย exit code 1 ก่อน `tauri::Builder` สร้าง WebView หรือ sidecar; แอปจะไม่เริ่มโดยไม่มี whole-app hard-cap guarantee
 - **RAM ใกล้ 400MB** → unload SLM, ลด cache, GC ring buffer ส่วนเกิน
 - **FPS impact > 3%** → ลด overlay redraw, ปิด effect หนัก (blur), drop ไป static HUD
-- ส่ง `ResourceStat` ให้ UI แสดงสถานะ และ log ลง G-Log เพื่อจูน
+- เมื่อ runtime accounting query ล้มเหลว UI แสดง CPU sample unavailable และ throttle คงอยู่ ขณะที่ hard cap ยังตั้งอยู่. เมื่อ process ปิด handle สุดท้าย Windows ยุติสมาชิก job; normal Tauri Exit ยังหยุด exact owned feeder เพิ่มเติม. มติ fail-closed ทำให้ startup ปัจจุบันไม่สร้าง feeder หาก setup ล้มเหลว; feeder ที่ค้างจากรุ่นเก่าซึ่งเปิด degraded mode อยู่นอก job อาจยังค้างหลัง abnormal host exit. Feeder crash cleanup เป็น API-backed expectation ที่ยังต้องยืนยันบน Windows, ไม่ใช่ live-verified orphan-proof claim. CPU hard cap ไม่ใช่หลักฐานว่า FPS หรือ G-Signal latency ผ่านเกณฑ์; acceptance ยังต้องวัดบน process group จริง
 
 Overlay: หน้าต่าง transparent แยก, composited โดย DWM, **click-through** (WS_EX_TRANSPARENT) ยกเว้น
 แผง control. ห้ามวาดทับ region minimap/skill bar/stats (อ่านพิกัดจาก config resolution).
@@ -171,7 +182,7 @@ G-Maiden/
 | ID | ความเสี่ยง | ผลกระทบ | การรับมือ |
 | --- | --- | --- | --- |
 | **R-01** | SLM กิน RAM เกิน 400MB | ผิด NFR | lazy-load only; ใช้ 0.5B หรือ template fallback; นิยาม budget เป็น background footprint |
-| **R-02** | minimap CV กิน CPU เกิน 2.5% / แม่นยำต่ำ | ผิด NFR / เตือนผิด | region เล็ก + adaptive rate + GPU capture; เริ่ม template ค่อยยก ONNX |
+| **R-02** | minimap CV ทำให้ whole-app CPU เกินเพดาน 10% / แม่นยำต่ำ | ผิด NFR / เตือนผิด | Job Object hard cap + capture soft throttle; วัด CPU/FPS/latency บน process group จริงก่อนปิด acceptance |
 | **R-03** | GSI ไม่มีข้อมูลศัตรูพอ | ฟีเจอร์หลักอ่อน | พึ่ง CV เป็นแหล่งหลักของตำแหน่งศัตรู; GSI ใช้ของเรา/timing |
 | **R-04** | Piper สังเคราะห์สดเกิน budget | G-Signal หลุด 300ms | critical ใช้ cache เสมอ; สดเฉพาะ non-critical |
 | **R-05** | WebView2 เวอร์ชันต่างกันเรนเดอร์เพี้ยน | UI ไม่สม่ำเสมอ | pin runtime ตอน bundle; ทดสอบ Win10/11 |
@@ -180,4 +191,10 @@ G-Maiden/
 
 > **R-06 หมายเหตุ:** ออกแบบให้ **ไม่ยุ่งกับ process เกม** เลย (ไม่ inject, ไม่อ่าน memory) — ใช้เฉพาะ
 > GSI (ทางการของ Valve) + screen capture ภายนอก เพื่อความปลอดภัยจาก VAC.
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.2.0 | 2026-10-12 | Aligned governor design with the 10% cap, unavailable telemetry ambiguity and kill-on-close lifecycle; live acceptance remains unverified. |
+| 0.2.1 | 2026-10-13 | Documented fail-closed startup, the post-setup runtime query fallback, and the bounded scope of shared governor state. |
 

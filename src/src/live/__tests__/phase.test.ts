@@ -4,6 +4,7 @@ import { stepPhase, type MatchPhase, type PhaseInput } from "../phase";
 function input(overrides: Partial<PhaseInput> = {}): PhaseInput {
   return {
     gsiOnline: true,
+    dotaRunning: true,
     gameState: null,
     inGame: false,
     clockSeconds: -1,
@@ -24,9 +25,18 @@ describe("stepPhase — offline", () => {
     expect(stepPhase("debrief", input({ gsiOnline: false }))).toBe("debrief");
   });
 
+  it("keeps a Dota-open match live when the GSI feed becomes stale", () => {
+    expect(stepPhase("live", input({ gsiOnline: false, dotaRunning: true, inGame: true }))).toBe("live");
+  });
+
+  it("does not fabricate a match end when a stale feed recovers", () => {
+    const stale = stepPhase("live", input({ gsiOnline: false, dotaRunning: true, inGame: true }));
+    expect(stepPhase(stale, input({ gsiOnline: true, dotaRunning: true, inGame: true }))).toBe("live");
+  });
+
   it("ignores game_state/inGame noise while offline", () => {
     expect(
-      stepPhase("standby", input({ gsiOnline: false, gameState: "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS", inGame: true }))
+      stepPhase("standby", input({ gsiOnline: false, dotaRunning: false, gameState: "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS", inGame: true }))
     ).toBe("standby");
   });
 });

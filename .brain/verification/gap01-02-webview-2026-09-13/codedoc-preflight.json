@@ -1,0 +1,7 @@
+{
+  "date": "2026-09-13",
+  "process_exit_code": 2,
+  "verdict": "INDETERMINATE",
+  "reason": "Required default model is absent from Ollama",
+  "required_model": "hf.co/yuxinlu1/Mellum2-12B-A2.5B-Claude-4.6-4.8-Opus-Thinking-GGUF:Q4_K_M"
+}

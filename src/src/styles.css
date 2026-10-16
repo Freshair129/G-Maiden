@@ -2840,6 +2840,16 @@ body {
   background: #34d399;
 }
 
+.g-status-pill.stale .dot {
+  background: #fbbf24;
+}
+
+.g-gsi-age {
+  color: #fbbf24;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
+}
+
 .g-status-pill strong,
 .g-ping-pill strong {
   font-size: 11px;

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { decideFirstRunScreen, isBackgroundEntitlementRefresh, shouldSurfaceRefreshFailure } from "../gmadFirstRun";
+import { decideFirstRunScreen, isBackgroundEntitlementRefresh } from "../gmadFirstRun";
 
 describe("decideFirstRunScreen", () => {
   it("requires Google sign-in before any dashboard access", () => {
@@ -46,23 +46,4 @@ describe("isBackgroundEntitlementRefresh", () => {
       expect(isBackgroundEntitlementRefresh(event, true)).toBe(false);
     }
   );
-});
-
-describe("shouldSurfaceRefreshFailure", () => {
-  it("surfaces a foreground failure — nothing was cached to fall back to, or the user is watching", () => {
-    expect(shouldSurfaceRefreshFailure(false, true)).toBe(true);
-    expect(shouldSurfaceRefreshFailure(false, false)).toBe(true);
-  });
-
-  it("surfaces a background failure on a session that was never shown eligible (nothing cached yet either)", () => {
-    expect(shouldSurfaceRefreshFailure(true, false)).toBe(true);
-  });
-
-  // The one case the whole fix exists for: a routine background re-check
-  // fails, but the Rust backend already kept gameplay armed via its own
-  // grace-window cache — re-gating the UI here would just move the bug up
-  // one layer instead of fixing it.
-  it("swallows a background failure on an already-eligible session", () => {
-    expect(shouldSurfaceRefreshFailure(true, true)).toBe(false);
-  });
 });

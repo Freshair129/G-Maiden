@@ -1,8 +1,21 @@
+---
+title: "FEAT-G-SIGNAL — Real-time Gank Warning"
+doc_id: "FEAT-G-SIGNAL"
+status: "active"
+version: "0.2.0"
+updated: "2026-10-10"
+owner: "Boss"
+source_of_truth: true
+complexity: "C-3"
+risk: "HIGH"
+related_docs: ["software-requirements-specification", "mvp-decisions", "G-SERIES-DATA-LINEAGE"]
+---
+
 # FEAT-G-SIGNAL — Real-time Gank Warning (Critical Path)
 
 > **Module:** G-Signal · **Priority:** Core · **Phase:** 3
 > **SRS:** [[software-requirements-specification|SRS]] §3.3 · [[engineering-spec|Eng Spec]] §2.3, §3 · [[technical-design-document|TDD]] §3
-> **GATE:** P3 — p99 ≤300ms, p50 ≤250ms
+> **GATE:** MVP-006 — p50 ≤250ms and every measured sample ≤300ms from acquisition/GSI arrival to first audible output.
 
 ---
 
@@ -96,7 +109,7 @@ struct SignalAlert {
 
 | Constraint | Target | หมายเหตุ |
 | --- | --- | --- |
-| End-to-end latency | p50 ≤250ms, p99 ≤300ms | **GATE P3** |
+| End-to-end latency | p50 ≤250ms; every measured sample ≤300ms | **GATE P3 / MVP-006** |
 | Signal logic | ≤10ms | Eng Spec §1 ขั้น 4 |
 | Audio clips | Pre-rendered cache | ห้ามสังเคราะห์สด (TTS ~80–150ms จะเกิน budget) |
 | Interrupt channel | Non-blocking, priority สูงสุด | ไม่ queue หลัง narration ทั่วไป |
@@ -130,8 +143,10 @@ assets/voice-cache/
 
 ## 11. Acceptance Criteria
 
-- [ ] **p99 end-to-end ≤300ms** (capture → audio output, วัดด้วย timestamp_ms)
+- [ ] **Every measured end-to-end sample ≤300ms**; p99 is supplementary and cannot replace the hard maximum.
 - [ ] **p50 end-to-end ≤250ms**
+- [ ] ≥300 samples per scenario/profile; report T0→T3 and source-observation age separately; include a live audible probe.
+- [ ] T0 is GSI POST arrival or the due critical capture acquisition cycle before scheduler/acquisition/inference wait; T3 is loopback first audible sample. The 500ms cadence is watchdog/freshness only.
 - [ ] probability ข้าม danger threshold → alert fires ภายใน 10ms ของ signal logic
 - [ ] Belief Revision: fire เมื่อ risk ตกต่ำกว่า clear threshold หลัง alert, เล่น stutter clip, ต่อบทใหม่
 - [ ] hysteresis ป้องกัน chatter (alert ไม่ fire ซ้ำจนกว่าจะ clear แล้วข้าม danger ใหม่)
@@ -142,3 +157,4 @@ assets/voice-cache/
 | Version | Date | Summary |
 | --- | --- | --- |
 | — | 2026-07-19 | link/metadata sweep (G1.5): wikilink/symbol-link fixes only — no content change |
+| 0.2.0 | 2026-10-10 | Aligned G-Signal acceptance with MVP-006: every-sample 300ms hard maximum, fixed T0/T3 measurement, and evidence count/live audible probe. |

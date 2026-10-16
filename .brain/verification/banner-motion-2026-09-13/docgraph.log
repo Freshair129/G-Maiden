@@ -1,0 +1,7 @@
+[ci-gate] unit suite green (18 files, 215 tests).
+[ci-gate] encoding check exit 0 (UTF-8 mojibake markers absent).
+[ci-gate] scan --strict exit 1 (0|1 accepted; coverage checked next).
+[ci-gate] strict errors: 14, checklist-covered: 14, uncovered: 0
+[ci-gate] ledger exit 0 (no blocking violations).
+[ci-gate] orphan-report exit 0 (no blocking orphan-spec regressions).
+[ci-gate] PASS

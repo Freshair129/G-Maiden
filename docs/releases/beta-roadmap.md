@@ -2,13 +2,15 @@
 title: "G-Maiden Beta and Release Roadmap"
 doc_id: "beta-roadmap"
 status: "draft"
-version: "0.1.0"
-updated: "2026-07-23"
+version: "0.3.0"
+updated: "2026-10-10"
 owner: "Boss"
 related_docs: ["roadmap", "RELEASE-CHANNEL-ARCHITECTURE", "PUBLIC-DEMO-SPEC", "CLOSED-BETA-WAVE-0-SPEC", "OPEN-BETA-SPEC"]
 ---
 
 # G-Maiden Beta and Release Roadmap
+
+> **แผนปัจจุบัน: [[roadmap]] และ [[mvp-backlog]].** เจ้าของโปรดักต์ยกเลิก Closed Beta แล้วเพราะผลิตภัณฑ์ยังไม่พร้อม โดยบันทึกการตัดสินใจในแผนวันที่ 2026-10-10 ลำดับ Closed Beta Wave 0–2 ด้านล่างจึงเป็น reference เดิมและไม่ใช้เปิดรับผู้ทดสอบ งานปัจจุบันคือพัฒนา/ตรวจรับ MVP ภายใน; Open Beta/RC/GA และ channel promotion ต้องทบทวนและอนุมัติใหม่หลัง MVP ผ่าน
 
 ## 1. Purpose
 
@@ -143,5 +145,6 @@ A stage is complete only when:
 
 | Version | Date | Summary |
 | --- | --- | --- |
-| 0.2.0 | 2026-08-01 | Added evidence-gated Closed Beta Wave 1 and Wave 2 exit criteria |
 | 0.1.0 | 2026-07-23 | Initial evidence-gated beta and release roadmap |
+| 0.2.0 | 2026-08-01 | Added evidence-gated Closed Beta Wave 1 and Wave 2 exit criteria |
+| 0.3.0 | 2026-10-10 | Marked the Closed Beta sequence as cancelled and retained the previous stages as reference; directed current work to the MVP roadmap/backlog. |

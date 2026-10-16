@@ -2,10 +2,10 @@
 // `resource-stats` samples (governor.rs) instead of the baked MOCK numbers —
 // the overlay already reads these, the deck did not.
 //
-// The governor measures ONLY this process's CPU% and RAM (MB); there is no GPU,
-// VRAM, or temperature sensor behind it. Rather than invent those, we mark them
-// unavailable with the NO_SENSOR sentinel and the footer renders "—". Pure and
-// null-safe: `stats === null` (browser / no Tauri / before the first sample)
+// The governor reports whole-app process-group CPU and host-process RAM (MB);
+// there is no GPU, VRAM, or temperature sensor behind it. If job containment or
+// accounting is unavailable, CPU stays at NO_SENSOR and the footer renders "—".
+// It is pure and null-safe: `stats === null` (browser / no Tauri / before the first sample)
 // falls through to the full MOCK demo so the standalone deck still looks alive.
 import type { ResourceStats } from "./events";
 import type { CompanionData } from "../companion";
@@ -24,7 +24,7 @@ export function buildTelemetry(stats: ResourceStats | null, fallback: Telemetry)
   // isn't running, so we keep NO_SENSOR ("—") rather than showing a fake 0.
   const has = (n: number) => n >= 0;
   return {
-    cpuLoad: round1(stats.cpu_pct),
+    cpuLoad: has(stats.cpu_pct) ? round1(stats.cpu_pct) : NO_SENSOR,
     // CPU temp only comes from the rich G-Telemetry source; the light feeder omits it.
     cpuTemp: has(stats.cpu_temp_c) ? round1(stats.cpu_temp_c) : NO_SENSOR,
     gpuLoad: has(stats.gpu_pct) ? round1(stats.gpu_pct) : NO_SENSOR,
