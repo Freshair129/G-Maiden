@@ -8,8 +8,8 @@ import GmadEntitlementPanel from "../GmadEntitlementPanel";
 
 const { invokeMock, auth } = vi.hoisted(() => ({
   invokeMock: vi.fn(),
-  auth: { session: { access_token: "synthetic-1" }, user: { id: "fixture" }, loading: false, busy: false,
-    error: null, lastAuthEvent: "SIGNED_IN", signOutPhase: "idle", signOutWarning: null,
+  auth: { session: { access_token: "synthetic-1" } as { access_token: string } | null, user: { id: "fixture" } as { id: string } | null, loading: false, busy: false,
+    error: null, lastAuthEvent: "SIGNED_IN" as string | null, signOutPhase: "idle", signOutWarning: null,
     signInWithGoogle: vi.fn(), signOut: vi.fn() },
 }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: invokeMock }));
@@ -101,6 +101,23 @@ it("shows cold-start outage and reports a lock failure without claiming native i
   await render();
   expect(value.state).toBe("offline_or_unavailable");
   expect(value.authError).toContain("ยังยืนยันการล็อก runtime ไม่ได้");
+});
+
+it("renders the Google sign-in action from the first-run gate", async () => {
+  const element = document.createElement("div");
+  await act(async () => root.unmount());
+  root = createRoot(element);
+  auth.session = null; auth.user = null; auth.lastAuthEvent = null; auth.busy = false;
+  auth.signInWithGoogle.mockClear();
+
+  await act(async () => root.render(<GmadFirstRunGate><div>Fixture deck</div></GmadFirstRunGate>));
+
+  const button = element.querySelector<HTMLButtonElement>(".gmad-first-run-primary");
+  expect(element.querySelector(".gmad-first-run-card")).toBeDefined();
+  expect(button?.textContent).toContain("ดำเนินการต่อด้วย Google");
+  expect(button?.type).toBe("button");
+  await act(async () => button?.click());
+  expect(auth.signInWithGoogle).toHaveBeenCalledTimes(1);
 });
 
 it("unmounts the actual ready deck when background verification rejects", async () => {

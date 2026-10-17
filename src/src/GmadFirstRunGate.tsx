@@ -1,4 +1,5 @@
 import { useEffect, useState, type ReactNode } from "react";
+import "./gmadFirstRun.css";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { GmadEntitlementContext, useGmadDesktopEntitlement } from "./gmadEntitlement";
@@ -98,7 +99,7 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode }) 
       <p className="gmad-first-run-kicker">GMAD CLOSED BETA</p>
       {state === "loading" && <><h1>กำลังตรวจสอบสิทธิ์</h1><p>กำลังยืนยันบัญชี Google และสิทธิ์ Closed Beta จากเซิร์ฟเวอร์</p></>}
       {state === "signing_in" && <><h1>กำลังเข้าสู่ระบบ</h1><p>ดำเนินการต่อในเบราว์เซอร์ ระบบจะกลับมาที่ G-Maiden เมื่อ Google OAuth สำเร็จ โดยจะไม่แสดงหรือบันทึกรหัส OAuth</p></>}
-      {state === "sign_in_required" && <><h1>เข้าสู่ระบบด้วย Google</h1><p>ใช้บัญชีเดียวกับที่ได้รับ GID และสิทธิ์ดาวน์โหลด ไม่ต้องกรอก GID ซ้ำ</p><button onClick={() => void signInWithGoogle()}>ดำเนินการต่อด้วย Google</button></>}
+      {state === "sign_in_required" && <><h1>เข้าสู่ระบบด้วย Google</h1><p>ใช้บัญชีเดียวกับที่ได้รับ GID และสิทธิ์ดาวน์โหลด ไม่ต้องกรอก GID ซ้ำ</p><button className="gmad-first-run-primary" type="button" onClick={() => void signInWithGoogle()}>ดำเนินการต่อด้วย Google</button></>}
       {authError && <p role="alert" className="gmad-first-run-error">{authError}</p>}
       {signOutWarning && <p role="status">{signOutWarning}</p>}
       {state === "signing_out" && <><h1>กำลังออกจากระบบ</h1><p>กำลังล้างข้อมูลเข้าสู่ระบบในเครื่อง</p></>}
