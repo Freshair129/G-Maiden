@@ -15,6 +15,8 @@ use std::path::{Path, PathBuf};
 #[cfg(not(test))]
 use std::sync::Mutex;
 
+use base64::Engine as _;
+use ring::signature::{UnparsedPublicKey, ED25519};
 use serde::{Deserialize, Serialize};
 
 use crate::audio;
@@ -54,6 +56,83 @@ pub(crate) struct ManifestMapping {
     pub(crate) banner: String,
     pub(crate) banner_asset: String,
     pub(crate) clips: Vec<String>,
+}
+
+#[derive(Deserialize, Serialize)]
+#[serde(rename_all = "camelCase")]
+pub(crate) struct StoreInstallRecord {
+    pub(crate) version: u8,
+    pub(crate) user_id: String,
+    pub(crate) item_id: String,
+    pub(crate) pack_id: String,
+    pub(crate) issued_at: String,
+    pub(crate) signature: String,
+}
+
+const STORE_INSTALL_PUBLIC_KEY: [u8; 32] = [
+    0xc5, 0x03, 0x02, 0xe1, 0x0f, 0xe1, 0x5f, 0xd9, 0x75, 0x8b, 0x88, 0x89, 0x60, 0xba, 0xeb, 0xa0,
+    0xe5, 0x41, 0xfb, 0x94, 0xe6, 0xc0, 0xa9, 0x34, 0x2a, 0xf8, 0x6b, 0x80, 0x3a, 0x0c, 0xc3, 0xea,
+];
+
+fn store_installations_path() -> PathBuf {
+    voice_root().join("store-installations.json")
+}
+
+pub(crate) fn is_store_installed(pack_id: &str) -> bool {
+    let Ok(raw) = fs::read_to_string(store_installations_path()) else {
+        return false;
+    };
+    serde_json::from_str::<Vec<StoreInstallRecord>>(&raw)
+        .map(|records| {
+            records
+                .iter()
+                .any(|record| record.pack_id == pack_id && verify_store_install(record))
+        })
+        .unwrap_or(false)
+}
+
+pub(crate) fn verify_store_install(record: &StoreInstallRecord) -> bool {
+    if record.version != 1
+        || record.user_id.len() > 64
+        || record.item_id.len() > 64
+        || record.pack_id.is_empty()
+        || record.pack_id.len() > 96
+        || record.issued_at.len() > 64
+        || sanitize_id(&record.pack_id) != record.pack_id
+    {
+        return false;
+    }
+    let Ok(signature) = base64::engine::general_purpose::STANDARD.decode(&record.signature) else {
+        return false;
+    };
+    if signature.len() != 64 {
+        return false;
+    }
+    let message = format!(
+        "gmaiden-store-install-v1\n{}\n{}\n{}\n{}",
+        record.user_id, record.item_id, record.pack_id, record.issued_at
+    );
+    UnparsedPublicKey::new(&ED25519, STORE_INSTALL_PUBLIC_KEY)
+        .verify(message.as_bytes(), &signature)
+        .is_ok()
+}
+
+pub(crate) fn record_store_install(record: StoreInstallRecord) -> Result<(), String> {
+    if !verify_store_install(&record) {
+        return Err("หลักฐานติดตั้ง Store ไม่ถูกต้อง".into());
+    }
+    let path = store_installations_path();
+    let mut records = fs::read_to_string(&path)
+        .ok()
+        .and_then(|raw| serde_json::from_str::<Vec<StoreInstallRecord>>(&raw).ok())
+        .unwrap_or_default();
+    records.retain(|existing| {
+        existing.item_id != record.item_id && existing.pack_id != record.pack_id
+    });
+    records.push(record);
+    let raw = serde_json::to_vec_pretty(&records)
+        .map_err(|e| format!("serialize Store installation record: {e}"))?;
+    fs::write(path, raw).map_err(|e| format!("save Store installation record: {e}"))
 }
 
 pub(crate) fn read_manifest(dir: &Path) -> Result<Manifest, String> {
@@ -433,6 +512,9 @@ fn with_resolved_cache<R>(f: impl FnOnce(Option<&ResolvedCache>) -> R) -> R {
 pub(crate) fn rebuild_resolved_cache() {
     let next = (|| {
         let id = read_active_pack_id()?;
+        if !cfg!(debug_assertions) && id != DEFAULT_PACK_ID && !is_store_installed(&id) {
+            return None;
+        }
         let dir = packs_dir().join(sanitize_id(&id));
         let manifest = read_manifest(&dir).ok()?;
         let mut clips_by_event = HashMap::with_capacity(manifest.mappings.len());

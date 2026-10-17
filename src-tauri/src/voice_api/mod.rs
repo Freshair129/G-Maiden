@@ -53,8 +53,9 @@ pub use banner::{
     InstallReport,
 };
 pub use commands::{
-    action, active_event_clips, active_pack_name, create_template, import_archive, map_event,
-    state, update_pack, upload_asset,
+    action, active_event_clips, active_pack_name, create_template, ensure_dev_authoring,
+    import_archive, install_store_pack, is_store_installed, map_event, state, update_pack,
+    upload_asset,
 };
 pub use events::event_ids;
 #[allow(unused_imports)]

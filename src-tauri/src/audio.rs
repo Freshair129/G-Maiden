@@ -213,22 +213,30 @@ fn list_clips_in(dir: &std::path::Path) -> Vec<PathBuf> {
 }
 
 /// Resolution order (first non-empty wins):
-///   1. the active voice pack's clips mapped to this event
-///   2. flat `voice-cache/{event}/`
+///   1. the active Store pack's mapped clips (or a local pack in dev builds)
+///   2. a flat local cache in dev builds only
 ///   3. the bundled default pack
-fn list_clips(event: &str) -> Vec<PathBuf> {
-    let active = crate::voice_api::active_event_clips(event);
+fn resolve_clips(active: Vec<PathBuf>, event: &str) -> (&'static str, Vec<PathBuf>) {
     if !active.is_empty() {
-        return active;
+        return ("pack", active);
     }
-    let user = list_clips_in(&voice_cache_dir().join(event));
-    if !user.is_empty() {
-        return user;
+    if cfg!(debug_assertions) {
+        let local = list_clips_in(&voice_cache_dir().join(event));
+        if !local.is_empty() {
+            return ("cache", local);
+        }
     }
-    if let Some(def) = default_pack_dir() {
-        return list_clips_in(&def.join(event));
+    if let Some(default) = default_pack_dir() {
+        let clips = list_clips_in(&default.join(event));
+        if !clips.is_empty() {
+            return ("default", clips);
+        }
     }
-    Vec::new()
+    ("silent", Vec::new())
+}
+
+fn list_clips(event: &str) -> Vec<PathBuf> {
+    resolve_clips(crate::voice_api::active_event_clips(event), event).1
 }
 
 /// Clips the bundled default pack ships for `event` (empty when the default
@@ -278,36 +286,34 @@ pub fn all_counts() -> std::collections::BTreeMap<String, usize> {
 
 /// List individual clip file names for a given event.
 pub fn list_event_clips(event: &str) -> Vec<(String, String, String)> {
-    let user_clips = list_clips_in(&voice_cache_dir().join(event));
-    if !user_clips.is_empty() {
-        return user_clips
-            .into_iter()
-            .map(|p| {
-                let name = p
-                    .file_name()
-                    .unwrap_or_default()
-                    .to_string_lossy()
-                    .to_string();
-                let full = p.to_string_lossy().to_string();
-                (name, full, "user".to_string())
-            })
-            .collect();
+    let (source, clips) = resolve_clips(crate::voice_api::active_event_clips(event), event);
+    clips
+        .into_iter()
+        .map(|path| {
+            let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let full = path.to_string_lossy().to_string();
+            (name, full, source.to_string())
+        })
+        .collect()
+}
+
+pub(crate) fn validate_clip(path: &std::path::Path) -> Result<(), String> {
+    if !is_clip(path) {
+        return Err("รองรับไฟล์เสียง WAV และ MP3".into());
     }
-    if let Some(def) = default_pack_dir() {
-        return list_clips_in(&def.join(event))
-            .into_iter()
-            .map(|p| {
-                let name = p
-                    .file_name()
-                    .unwrap_or_default()
-                    .to_string_lossy()
-                    .to_string();
-                let full = p.to_string_lossy().to_string();
-                (name, full, "default".to_string())
-            })
-            .collect();
-    }
-    Vec::new()
+    let file = fs::File::open(path).map_err(|e| e.to_string())?;
+    Decoder::new(BufReader::new(file))
+        .map(|_| ())
+        .map_err(|e| format!("ไฟล์เสียงเสียหรืออ่านไม่ได้: {e}"))
+}
+
+pub fn is_resolved_clip_path(path: &std::path::Path) -> bool {
+    let Ok(target) = path.canonicalize() else { return false; };
+    crate::voice_api::event_ids().any(|event| {
+        list_clips(event).iter().any(|candidate| {
+            candidate.canonicalize().is_ok_and(|resolved| resolved == target)
+        })
+    })
 }
 
 /// Stop the current clip immediately.
