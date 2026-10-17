@@ -142,6 +142,7 @@ pub fn install_store_pack(item_id: &str, access_token: &str) -> Result<VoiceStat
         return Err("แพ็กจาก Store มีขนาดเกินกำหนด".into());
     }
 
+    pack_io::persist_store_archive(&grant.install_receipt, &bytes)?;
     let imported = import_archive_with_expected("store-pack.zip", &bytes, Some(&grant.pack_id))?;
     if imported.imported.len() != 1 || imported.imported[0].as_str() != grant.pack_id.as_str() {
         return Err("แพ็กที่ดาวน์โหลดไม่ตรงกับรายการใน Store".into());

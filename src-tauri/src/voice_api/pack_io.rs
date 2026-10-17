@@ -10,10 +10,9 @@
 
 use std::collections::{BTreeMap, HashMap};
 use std::fs;
-use std::io::Write;
+use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
-#[cfg(not(test))]
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex, OnceLock};
 
 use base64::Engine as _;
 use ring::signature::{UnparsedPublicKey, ED25519};
@@ -66,6 +65,8 @@ pub(crate) struct StoreInstallRecord {
     pub(crate) item_id: String,
     pub(crate) pack_id: String,
     pub(crate) issued_at: String,
+    #[serde(default)]
+    pub(crate) archive_sha256: String,
     pub(crate) signature: String,
 }
 
@@ -79,26 +80,28 @@ fn store_installations_path() -> PathBuf {
 }
 
 pub(crate) fn is_store_installed(pack_id: &str) -> bool {
+    read_store_install_record(pack_id).is_some()
+}
+
+fn read_store_install_record(pack_id: &str) -> Option<StoreInstallRecord> {
     let Ok(raw) = fs::read_to_string(store_installations_path()) else {
-        return false;
+        return None;
     };
     serde_json::from_str::<Vec<StoreInstallRecord>>(&raw)
-        .map(|records| {
-            records
-                .iter()
-                .any(|record| record.pack_id == pack_id && verify_store_install(record))
-        })
-        .unwrap_or(false)
+        .ok()?
+        .into_iter()
+        .find(|record| record.pack_id == pack_id && verify_store_install(record))
 }
 
 pub(crate) fn verify_store_install(record: &StoreInstallRecord) -> bool {
-    if record.version != 1
+    if record.version != 2
         || record.user_id.len() > 64
         || record.item_id.len() > 64
         || record.pack_id.is_empty()
         || record.pack_id.len() > 96
         || record.issued_at.len() > 64
         || sanitize_id(&record.pack_id) != record.pack_id
+        || !is_sha256_hex(&record.archive_sha256)
     {
         return false;
     }
@@ -108,12 +111,20 @@ pub(crate) fn verify_store_install(record: &StoreInstallRecord) -> bool {
     if signature.len() != 64 {
         return false;
     }
+    verify_store_install_signature(record, &signature, &STORE_INSTALL_PUBLIC_KEY)
+}
+
+fn verify_store_install_signature(
+    record: &StoreInstallRecord,
+    signature: &[u8],
+    public_key: &[u8; 32],
+) -> bool {
     let message = format!(
-        "gmaiden-store-install-v1\n{}\n{}\n{}\n{}",
-        record.user_id, record.item_id, record.pack_id, record.issued_at
+        "gmaiden-store-install-v2\n{}\n{}\n{}\n{}\n{}",
+        record.user_id, record.item_id, record.pack_id, record.issued_at, record.archive_sha256
     );
-    UnparsedPublicKey::new(&ED25519, STORE_INSTALL_PUBLIC_KEY)
-        .verify(message.as_bytes(), &signature)
+    UnparsedPublicKey::new(&ED25519, public_key)
+        .verify(message.as_bytes(), signature)
         .is_ok()
 }
 
@@ -133,6 +144,277 @@ pub(crate) fn record_store_install(record: StoreInstallRecord) -> Result<(), Str
     let raw = serde_json::to_vec_pretty(&records)
         .map_err(|e| format!("serialize Store installation record: {e}"))?;
     fs::write(path, raw).map_err(|e| format!("save Store installation record: {e}"))
+}
+
+fn is_sha256_hex(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+fn sha256_hex(bytes: &[u8]) -> String {
+    ring::digest::digest(&ring::digest::SHA256, bytes)
+        .as_ref()
+        .iter()
+        .map(|byte| format!("{byte:02x}"))
+        .collect()
+}
+
+pub(crate) fn archive_hash_matches(record: &StoreInstallRecord, bytes: &[u8]) -> bool {
+    verify_store_install(record) && content_matches_hash(&record.archive_sha256, bytes)
+}
+
+fn content_matches_hash(expected_hash: &str, bytes: &[u8]) -> bool {
+    is_sha256_hex(expected_hash) && sha256_hex(bytes) == expected_hash
+}
+
+fn indexed_content_matches(index: &ArchiveIndex, path: &str, bytes: &[u8]) -> bool {
+    index
+        .get(path)
+        .is_some_and(|expected_hash| content_matches_hash(expected_hash, bytes))
+}
+
+pub(crate) fn persist_store_archive(
+    record: &StoreInstallRecord,
+    bytes: &[u8],
+) -> Result<(), String> {
+    if !archive_hash_matches(record, bytes) {
+        return Err("ไฟล์แพ็กไม่ตรงกับลายเซ็นจาก Store".into());
+    }
+    let path = store_archive_path(record);
+    let parent = path
+        .parent()
+        .ok_or_else(|| "ตำแหน่งเก็บแพ็กไม่ถูกต้อง".to_string())?;
+    fs::create_dir_all(parent).map_err(|e| format!("create Store archive directory: {e}"))?;
+
+    if path.exists() {
+        let existing = fs::read(&path).map_err(|e| format!("read Store archive: {e}"))?;
+        return if sha256_hex(&existing) == record.archive_sha256 {
+            Ok(())
+        } else {
+            Err("ไฟล์แพ็ก Store ที่บันทึกไว้เสียหาย".into())
+        };
+    }
+
+    let nonce = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_nanos();
+    let temp = parent.join(format!(
+        ".{}.{}.{nonce}.tmp",
+        record.archive_sha256,
+        std::process::id()
+    ));
+    let write_result = (|| {
+        let mut file = fs::OpenOptions::new()
+            .write(true)
+            .create_new(true)
+            .open(&temp)
+            .map_err(|e| format!("create Store archive: {e}"))?;
+        file.write_all(bytes)
+            .map_err(|e| format!("write Store archive: {e}"))?;
+        file.sync_all()
+            .map_err(|e| format!("flush Store archive: {e}"))?;
+        match fs::rename(&temp, &path) {
+            Ok(()) => Ok(()),
+            Err(error) if path.exists() => {
+                let existing = fs::read(&path).map_err(|e| format!("read Store archive: {e}"))?;
+                if sha256_hex(&existing) == record.archive_sha256 {
+                    Ok(())
+                } else {
+                    Err(format!("Store archive destination already exists: {error}"))
+                }
+            }
+            Err(error) => Err(format!("save Store archive: {error}")),
+        }
+    })();
+    let _ = fs::remove_file(&temp);
+    write_result
+}
+
+fn store_archive_path(record: &StoreInstallRecord) -> PathBuf {
+    voice_root()
+        .join("store-archives")
+        .join(sanitize_id(&record.pack_id))
+        .join(format!("{}.zip", record.archive_sha256))
+}
+
+type ArchiveIndex = HashMap<String, String>;
+type CachedArchiveIndex = Result<Arc<ArchiveIndex>, String>;
+static STORE_ARCHIVE_INDEXES: OnceLock<Mutex<HashMap<String, CachedArchiveIndex>>> =
+    OnceLock::new();
+
+fn archive_index_cache() -> &'static Mutex<HashMap<String, CachedArchiveIndex>> {
+    STORE_ARCHIVE_INDEXES.get_or_init(|| Mutex::new(HashMap::new()))
+}
+
+fn load_store_archive_index(record: &StoreInstallRecord) -> CachedArchiveIndex {
+    let archive_path = store_archive_path(record);
+    let key = format!("{}:{}", archive_path.display(), record.archive_sha256);
+    if let Ok(cache) = archive_index_cache().lock() {
+        if let Some(index) = cache.get(&key) {
+            return index.clone();
+        }
+    }
+
+    let loaded = (|| {
+        let bytes =
+            fs::read(&archive_path).map_err(|e| format!("read signed Store archive: {e}"))?;
+        if bytes.len() > 32 * 1024 * 1024 || !content_matches_hash(&record.archive_sha256, &bytes) {
+            return Err("ไฟล์แพ็ก Store ไม่ตรงกับลายเซ็น".into());
+        }
+        build_store_archive_index(&bytes, &record.pack_id).map(Arc::new)
+    })();
+    if let Ok(mut cache) = archive_index_cache().lock() {
+        cache.insert(key, loaded.clone());
+    }
+    loaded
+}
+
+fn build_store_archive_index(bytes: &[u8], pack_id: &str) -> Result<ArchiveIndex, String> {
+    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes))
+        .map_err(|e| format!("open signed Store archive: {e}"))?;
+    if archive.len() > 4096 {
+        return Err("แพ็กมีจำนวนไฟล์มากเกินไป".into());
+    }
+    let mut expanded = 0u64;
+    let mut entries = Vec::with_capacity(archive.len());
+    for index in 0..archive.len() {
+        let file = archive
+            .by_index(index)
+            .map_err(|e| format!("read Store archive entry: {e}"))?;
+        expanded = expanded.saturating_add(file.size());
+        if expanded > 96 * 1024 * 1024 {
+            return Err("ขนาดแพ็กหลังแตกไฟล์เกิน 96 MB".into());
+        }
+        let path = file
+            .enclosed_name()
+            .ok_or_else(|| "แพ็กมี path ที่ไม่ปลอดภัย".to_string())?;
+        if file.is_symlink() {
+            return Err("แพ็ก Store มี symlink ที่ไม่อนุญาต".into());
+        }
+        entries.push((index, path, file.is_dir(), file.size()));
+    }
+
+    let (manifest_index, manifest_path, manifest_size) = {
+        let manifests: Vec<_> = entries
+            .iter()
+            .filter(|(_, path, is_dir, _)| {
+                !*is_dir
+                    && path.file_name().is_some_and(|name| name == "manifest.json")
+                    && path.components().count() <= 2
+            })
+            .collect();
+        if manifests.len() != 1 {
+            return Err("ZIP ต้องมี manifest.json ของแพ็กเดียว".into());
+        }
+        let (index, path, _, size) = manifests[0];
+        (*index, path.clone(), *size)
+    };
+    let mut manifest_bytes = Vec::new();
+    archive
+        .by_index(manifest_index)
+        .map_err(|e| format!("read Store pack manifest: {e}"))?
+        .take(manifest_size.saturating_add(1))
+        .read_to_end(&mut manifest_bytes)
+        .map_err(|e| format!("read Store pack manifest: {e}"))?;
+    if manifest_bytes.len() as u64 != manifest_size {
+        return Err("ขนาด manifest ในแพ็กไม่ถูกต้อง".into());
+    }
+    let manifest: Manifest = serde_json::from_slice(&manifest_bytes)
+        .map_err(|e| format!("parse Store pack manifest: {e}"))?;
+    if manifest.id != pack_id {
+        return Err("รหัสแพ็กในไฟล์ไม่ตรงกับหลักฐาน Store".into());
+    }
+    let pack_root = manifest_path.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
+
+    let mut index = HashMap::with_capacity(entries.len());
+    for (entry_index, path, is_dir, size) in entries {
+        if is_dir {
+            continue;
+        }
+        let relative = if pack_root.as_os_str().is_empty() {
+            path.as_path()
+        } else if let Ok(relative) = path.strip_prefix(&pack_root) {
+            relative
+        } else {
+            continue;
+        };
+        if relative.as_os_str().is_empty() {
+            continue;
+        }
+        let mut content = Vec::new();
+        archive
+            .by_index(entry_index)
+            .map_err(|e| format!("read Store archive entry: {e}"))?
+            .take(size.saturating_add(1))
+            .read_to_end(&mut content)
+            .map_err(|e| format!("read Store archive entry: {e}"))?;
+        if content.len() as u64 != size {
+            return Err("ขนาดไฟล์ในแพ็กไม่ถูกต้อง".into());
+        }
+        index.insert(
+            relative.to_string_lossy().replace('\\', "/"),
+            sha256_hex(&content),
+        );
+    }
+    Ok(index)
+}
+
+pub(crate) fn open_verified_store_clip(path: &Path) -> Result<Option<fs::File>, String> {
+    if cfg!(debug_assertions) {
+        return Ok(None);
+    }
+    let Ok(packs_root) = packs_dir().canonicalize() else {
+        return Ok(None);
+    };
+    let canonical_path = path
+        .canonicalize()
+        .map_err(|e| format!("resolve Store clip: {e}"))?;
+    let Ok(relative) = canonical_path.strip_prefix(&packs_root) else {
+        return Ok(None);
+    };
+    let mut components = relative.components();
+    let Some(pack_component) = components.next() else {
+        return Err("ตำแหน่งคลิป Store ไม่ถูกต้อง".into());
+    };
+    let pack_id = pack_component
+        .as_os_str()
+        .to_str()
+        .ok_or_else(|| "รหัสแพ็ก Store ไม่ถูกต้อง".to_string())?;
+    let clip_path = components.as_path();
+    let record =
+        read_store_install_record(pack_id).ok_or_else(|| "ไม่พบหลักฐานติดตั้งแพ็ก Store".to_string())?;
+    let archive_index = load_store_archive_index(&record)?;
+    let relative_name = clip_path.to_string_lossy().replace('\\', "/");
+    let mut file = fs::File::open(canonical_path).map_err(|e| format!("open Store clip: {e}"))?;
+    if file
+        .metadata()
+        .map_err(|e| format!("read Store clip metadata: {e}"))?
+        .len()
+        > 96 * 1024 * 1024
+    {
+        return Err("ไฟล์เสียง Store ใหญ่เกินกำหนด".into());
+    }
+    let mut bytes = Vec::new();
+    Read::by_ref(&mut file)
+        .take(96 * 1024 * 1024 + 1)
+        .read_to_end(&mut bytes)
+        .map_err(|e| format!("read Store clip: {e}"))?;
+    if bytes.len() > 96 * 1024 * 1024 {
+        return Err("ไฟล์เสียง Store ใหญ่เกินกำหนด".into());
+    }
+    if !indexed_content_matches(&archive_index, &relative_name, &bytes) {
+        return Err("ไฟล์เสียงไม่ตรงกับแพ็กที่ Store เซ็นรับรอง".into());
+    }
+    file.seek(SeekFrom::Start(0))
+        .map_err(|e| format!("rewind Store clip: {e}"))?;
+    Ok(Some(file))
+}
+
+pub(crate) fn validate_store_clip_integrity(path: &Path) -> Result<(), String> {
+    open_verified_store_clip(path).map(|_| ())
 }
 
 pub(crate) fn read_manifest(dir: &Path) -> Result<Manifest, String> {
@@ -515,6 +797,10 @@ pub(crate) fn rebuild_resolved_cache() {
         if !cfg!(debug_assertions) && id != DEFAULT_PACK_ID && !is_store_installed(&id) {
             return None;
         }
+        if !cfg!(debug_assertions) && id != DEFAULT_PACK_ID {
+            let record = read_store_install_record(&id)?;
+            load_store_archive_index(&record).ok()?;
+        }
         let dir = packs_dir().join(sanitize_id(&id));
         let manifest = read_manifest(&dir).ok()?;
         let mut clips_by_event = HashMap::with_capacity(manifest.mappings.len());
@@ -589,4 +875,87 @@ pub(crate) fn sanitize_file_name(value: &str) -> String {
         .chars()
         .filter(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '.' | '-' | '_' | ' '))
         .collect::<String>()
+}
+
+#[cfg(test)]
+mod integrity_tests {
+    use super::*;
+    use ring::signature::{Ed25519KeyPair, KeyPair};
+
+    #[test]
+    fn install_receipt_signature_covers_the_archive_digest() {
+        let key = Ed25519KeyPair::from_seed_unchecked(&[7u8; 32]).unwrap();
+        let mut public_key = [0u8; 32];
+        public_key.copy_from_slice(key.public_key().as_ref());
+        let mut record = StoreInstallRecord {
+            version: 2,
+            user_id: "user-1".into(),
+            item_id: "item-1".into(),
+            pack_id: "demo".into(),
+            issued_at: "2026-10-18T00:00:00Z".into(),
+            archive_sha256: sha256_hex(b"trusted archive"),
+            signature: String::new(),
+        };
+        let message = format!(
+            "gmaiden-store-install-v2\n{}\n{}\n{}\n{}\n{}",
+            record.user_id, record.item_id, record.pack_id, record.issued_at, record.archive_sha256
+        );
+        let signature = key.sign(message.as_bytes());
+
+        assert!(verify_store_install_signature(
+            &record,
+            signature.as_ref(),
+            &public_key
+        ));
+        record.archive_sha256 = sha256_hex(b"substituted archive");
+        assert!(!verify_store_install_signature(
+            &record,
+            signature.as_ref(),
+            &public_key
+        ));
+    }
+
+    #[test]
+    fn signed_archive_index_rejects_changed_clip_bytes() {
+        let mut zip_bytes = Vec::new();
+        {
+            let cursor = std::io::Cursor::new(&mut zip_bytes);
+            let mut zip = zip::ZipWriter::new(cursor);
+            let options = zip::write::SimpleFileOptions::default()
+                .compression_method(zip::CompressionMethod::Stored);
+            zip.start_file("demo/manifest.json", options).unwrap();
+            zip.write_all(
+                br#"{"id":"demo","name":"Demo","version":"1","locale":"en","author":"","description":"","mappings":{}}"#,
+            )
+            .unwrap();
+            zip.start_file("demo/clips/kill.wav", options).unwrap();
+            zip.write_all(b"trusted clip bytes").unwrap();
+            zip.finish().unwrap();
+        }
+
+        let index = build_store_archive_index(&zip_bytes, "demo").unwrap();
+        assert!(indexed_content_matches(
+            &index,
+            "clips/kill.wav",
+            b"trusted clip bytes"
+        ));
+        assert!(!indexed_content_matches(
+            &index,
+            "clips/kill.wav",
+            b"replaced clip bytes"
+        ));
+        assert!(!indexed_content_matches(
+            &index,
+            "clips/not-in-pack.wav",
+            b"trusted clip bytes"
+        ));
+    }
+
+    #[test]
+    fn signed_archive_digest_rejects_substitution() {
+        let expected = sha256_hex(b"trusted archive");
+        assert!(content_matches_hash(&expected, b"trusted archive"));
+        assert!(!content_matches_hash(&expected, b"substituted archive"));
+        assert!(!content_matches_hash(&"g".repeat(64), b"trusted archive"));
+    }
 }

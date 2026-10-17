@@ -105,10 +105,17 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                 if let Some(s) = sink.take() {
                     s.stop();
                 }
-                let file = match fs::File::open(&path) {
-                    Ok(f) => f,
-                    Err(e) => {
-                        eprintln!("[G-Maiden audio] open {}: {e}", path.display());
+                let file = match crate::voice_api::open_verified_store_clip(&path) {
+                    Ok(Some(file)) => file,
+                    Ok(None) => match fs::File::open(&path) {
+                        Ok(f) => f,
+                        Err(e) => {
+                            eprintln!("[G-Maiden audio] open {}: {e}", path.display());
+                            continue;
+                        }
+                    },
+                    Err(error) => {
+                        eprintln!("[G-Maiden audio] Store clip integrity check failed for {}: {error}", path.display());
                         continue;
                     }
                 };
@@ -301,6 +308,7 @@ pub(crate) fn validate_clip(path: &std::path::Path) -> Result<(), String> {
     if !is_clip(path) {
         return Err("รองรับไฟล์เสียง WAV และ MP3".into());
     }
+    crate::voice_api::validate_store_clip_integrity(path)?;
     let file = fs::File::open(path).map_err(|e| e.to_string())?;
     Decoder::new(BufReader::new(file))
         .map(|_| ())

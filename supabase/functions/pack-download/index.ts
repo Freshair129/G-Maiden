@@ -16,15 +16,21 @@ function json(status: number, body: unknown): Response {
 const SIGNED_URL_TTL_SECONDS = 300; // CR-003 §2.5 — "อายุ 5 นาที"
 
 type StoreInstallReceipt = {
-  version: 1;
+  version: 2;
   userId: string;
   itemId: string;
   packId: string;
   issuedAt: string;
+  archiveSha256: string;
   signature: string;
 };
 
-async function signedInstallReceipt(userId: string, itemId: string, packId: string): Promise<StoreInstallReceipt> {
+async function signedInstallReceipt(
+  userId: string,
+  itemId: string,
+  packId: string,
+  archiveSha256: string,
+): Promise<StoreInstallReceipt> {
   const privateKeyB64 = Deno.env.get("PACK_INSTALL_SIGNING_PRIVATE_KEY_PKCS8");
   if (!privateKeyB64) throw new Error("install receipt signer is not configured");
   const binary = atob(privateKeyB64);
@@ -37,7 +43,7 @@ async function signedInstallReceipt(userId: string, itemId: string, packId: stri
     ["sign"],
   );
   const issuedAt = new Date().toISOString();
-  const message = `gmaiden-store-install-v1\n${userId}\n${itemId}\n${packId}\n${issuedAt}`;
+  const message = `gmaiden-store-install-v2\n${userId}\n${itemId}\n${packId}\n${issuedAt}\n${archiveSha256}`;
   const signature = await crypto.subtle.sign(
     { name: "Ed25519" },
     privateKey,
@@ -46,13 +52,20 @@ async function signedInstallReceipt(userId: string, itemId: string, packId: stri
   const bytes = new Uint8Array(signature);
   const signatureB64 = btoa(String.fromCharCode(...bytes));
   return {
-    version: 1,
+    version: 2,
     userId,
     itemId,
     packId,
     issuedAt,
+    archiveSha256,
     signature: signatureB64,
   };
+}
+
+function sha256Hex(bytes: ArrayBuffer): Promise<string> {
+  return crypto.subtle.digest("SHA-256", bytes).then((digest) =>
+    Array.from(new Uint8Array(digest), (byte) => byte.toString(16).padStart(2, "0")).join("")
+  );
 }
 
 Deno.serve(async (req) => {
@@ -108,9 +121,27 @@ Deno.serve(async (req) => {
     return json(404, { error: "bundle not found for this item" });
   }
 
+  const { data: bundle, error: bundleErr } = await admin
+    .storage
+    .from("packs")
+    .download(item.bundle_path);
+  if (bundleErr || !bundle) {
+    return json(500, { error: bundleErr?.message ?? "failed to read pack bundle" });
+  }
+  if (bundle.size > 32 * 1024 * 1024) {
+    return json(413, { error: "pack bundle exceeds the 32 MB limit" });
+  }
+
+  let archiveSha256: string;
+  try {
+    archiveSha256 = await sha256Hex(await bundle.arrayBuffer());
+  } catch {
+    return json(500, { error: "failed to hash pack bundle" });
+  }
+
   let installReceipt: StoreInstallReceipt;
   try {
-    installReceipt = await signedInstallReceipt(user.id, itemId, item.pack_id);
+    installReceipt = await signedInstallReceipt(user.id, itemId, item.pack_id, archiveSha256);
   } catch {
     return json(503, { error: "Store install receipt signer is not configured" });
   }
