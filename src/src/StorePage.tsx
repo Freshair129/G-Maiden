@@ -41,9 +41,11 @@ function errText(e: unknown): string {
 // with Postgres' undefined_table (42P01) / PostgREST's "schema cache" wording.
 // That's an expected, honest "not live yet" state, not a bug — surface it as
 // the store's normal empty-state in friendly Thai instead of the raw
-// Supabase/Postgres string. Any OTHER error still surfaces via `msg` below
-// (never swallowed).
+// Supabase/Postgres string. Any OTHER error still surfaces in the catalog's
+// retryable error state (never swallowed).
 const CATALOG_UNAVAILABLE_MSG = "ร้านค้ายังไม่เปิดให้บริการ — เร็ว ๆ นี้";
+const CATALOG_REQUEST_TIMEOUT_MS = 8_000;
+const CATALOG_TIMEOUT_MSG = "ร้านค้าตอบกลับช้าเกินไป — ตรวจการเชื่อมต่อแล้วลองอีกครั้ง";
 
 function isTableMissingError(e: unknown): boolean {
   const err = e as { code?: string; message?: string } | null | undefined;
@@ -54,7 +56,7 @@ function isTableMissingError(e: unknown): boolean {
   // RELATION being absent. A bare `.includes("does not exist")` also matched
   // Postgres 42703 `column ... does not exist` — a real deploy/schema bug —
   // and swallowed it into the friendly "coming soon" state. Column/other
-  // "does not exist" errors now fall through to `setMsg` and surface honestly.
+  // "does not exist" errors now fall through to the catalog error state.
   return (
     msg.includes("could not find the table") ||
     msg.includes("schema cache") ||
@@ -124,36 +126,57 @@ export default function StorePage({ onNavigateToWallet, onRequestSignIn }: Store
   const [topupOpen, setTopupOpen] = useState(false);
   const [msg, setMsg] = useState<string | null>(null);
   const [catalogUnavailable, setCatalogUnavailable] = useState(false);
+  const [catalogError, setCatalogError] = useState<string | null>(null);
+  const [catalogAttempt, setCatalogAttempt] = useState(0);
 
   const frameRef = useRef<HTMLDivElement | null>(null);
   const [frameH, setFrameH] = useState(STORE_FRAME_DEFAULT_H);
   const [page, setPage] = useState(0);
 
   useEffect(() => {
-    let cancelled = false;
+    let active = true;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), CATALOG_REQUEST_TIMEOUT_MS);
     (async () => {
       setLoading(true);
-      const { data, error } = await supabase
-        .from("catalog_items")
-        .select("id, sku, title, description, currency, price, banner_url")
-        .eq("status", "active")
-        .order("created_at", { ascending: true });
-      if (cancelled) return;
-      if (error) {
-        if (isTableMissingError(error)) {
-          setCatalogUnavailable(true);
-        } else {
-          setMsg(errText(error));
+      setCatalogUnavailable(false);
+      setCatalogError(null);
+      try {
+        const { data, error } = await supabase
+          .from("catalog_items")
+          .select("id, sku, title, description, currency, price, banner_url")
+          .eq("status", "active")
+          .order("created_at", { ascending: true })
+          .abortSignal(controller.signal);
+        if (!active) return;
+        if (error) {
+          if (isTableMissingError(error)) {
+            setCatalogUnavailable(true);
+          } else if (controller.signal.aborted) {
+            setCatalogError(CATALOG_TIMEOUT_MSG);
+          } else {
+            setCatalogError(errText(error));
+          }
+          setItems([]);
+          return;
         }
-        setItems([]);
-      } else {
         setCatalogUnavailable(false);
         setItems(((data as CatalogRow[] | null) ?? []).map(toCatalogItem));
+      } catch (error) {
+        if (!active) return;
+        setItems([]);
+        setCatalogError(controller.signal.aborted ? CATALOG_TIMEOUT_MSG : errText(error));
+      } finally {
+        window.clearTimeout(timeout);
+        if (active) setLoading(false);
       }
-      setLoading(false);
     })();
-    return () => { cancelled = true; };
-  }, []);
+    return () => {
+      active = false;
+      window.clearTimeout(timeout);
+      controller.abort();
+    };
+  }, [catalogAttempt]);
 
   const loadOwned = useCallback(async () => {
     if (!userId) { setOwnedIds(new Set()); return; }
@@ -266,6 +289,13 @@ export default function StorePage({ onNavigateToWallet, onRequestSignIn }: Store
           <div className="store-hint">กำลังโหลดร้านค้า…</div>
         ) : catalogUnavailable ? (
           <div className="store-hint">{CATALOG_UNAVAILABLE_MSG}</div>
+        ) : catalogError ? (
+          <div className="store-hint" role="alert">
+            <div>{catalogError}</div>
+            <button type="button" className="store-pager-btn" onClick={() => setCatalogAttempt((attempt) => attempt + 1)}>
+              ลองอีกครั้ง
+            </button>
+          </div>
         ) : pageItems.length === 0 ? (
           <div className="store-hint">ยังไม่มีสินค้าในร้านค้าตอนนี้</div>
         ) : (

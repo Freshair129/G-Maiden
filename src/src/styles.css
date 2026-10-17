@@ -246,6 +246,11 @@ body {
   font-family: var(--g-font-ui);
 }
 
+/* The Tauri deck window is transparent outside its shell; the legacy page glow must not fill the canvas. */
+body:has(.deck-v3.g-deck) {
+  background: transparent;
+}
+
 .app {
   display: grid;
   grid-template-columns: 272px minmax(0, 1fr);
@@ -2577,14 +2582,11 @@ body {
   fill: none;
   stroke: rgba(184, 218, 255, 0.30);
   stroke-width: 1.15;
-  /* Panel-edge feather: two dark ambient layers (near + far) + a very faint ice
-     bloom, same family/hue as the FAB shadows below. This is the layer that
-     actually diffuses the panel edge into the background (see the stage-sibling
-     comment above .g-panel-rim for why it has to live outside .g-deck-panel). */
+  /* Keep the rim soft while leaving clear space in the stage's right expansion zone. */
   filter:
-    drop-shadow(0 56px 140px rgba(3, 6, 12, 0.60))
-    drop-shadow(0 20px 58px rgba(3, 6, 12, 0.46))
-    drop-shadow(0 0 74px rgba(143, 212, 255, 0.10));
+    drop-shadow(0 22px 34px rgba(3, 6, 12, 0.45))
+    drop-shadow(0 8px 18px rgba(3, 6, 12, 0.30))
+    drop-shadow(0 0 24px rgba(143, 212, 255, 0.07));
 }
 
 .g-deck-panel .surface {
@@ -4624,13 +4626,3 @@ body {
   transform: translateX(-50%);
   white-space: nowrap;
 }
-.gmad-first-run { min-height: 100vh; display: grid; place-items: center; padding: 28px; background: var(--g-bg, #08090c); color: var(--g-text, #f4f8ff); }
-.gmad-first-run-card { width: min(560px, 100%); display: grid; gap: 14px; padding: 30px; border: 1px solid var(--g-line, rgba(143,212,255,.22)); border-radius: 18px; background: rgba(18,20,28,.92); box-shadow: 0 24px 80px rgba(0,0,0,.45); }
-.gmad-first-run-card h1, .gmad-first-run-card p { margin: 0; }
-.gmad-first-run-card p { color: var(--g-muted, #a9b3c5); line-height: 1.55; }
-.gmad-first-run-kicker { color: var(--g-ice, #8fd4ff) !important; font-size: 11px; letter-spacing: .22em; font-weight: 800; }
-.gmad-first-run-card button { border: 1px solid rgba(143,212,255,.35); border-radius: 9px; padding: 10px 16px; background: #8fd4ff; color: #081018; font-weight: 750; cursor: pointer; }
-.gmad-first-run-card button.secondary { background: transparent; color: #8fd4ff; }
-.gmad-first-run-card button:disabled { opacity: .55; cursor: wait; }
-.gmad-setup-status { display: grid; gap: 5px; padding: 13px; border-radius: 10px; background: rgba(143,212,255,.08); }
-.gmad-setup-status span { color: var(--g-muted, #a9b3c5); font-size: 12px; }
