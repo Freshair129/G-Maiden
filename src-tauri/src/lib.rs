@@ -81,8 +81,7 @@ struct UpdateOffer {
 async fn check_channel_update(
     app: tauri::AppHandle,
 ) -> Result<Option<UpdateOffer>, String> {
-    // Closed Beta is cancelled. Desktop clients check only the public stable
-    // channel; restricted channels require a separate release workflow.
+    // Desktop clients check only the signed stable manifest.
     let channel = update_channel::ReleaseChannel::Stable;
 
     let url: tauri::Url = channel

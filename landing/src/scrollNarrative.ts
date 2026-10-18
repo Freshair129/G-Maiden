@@ -17,7 +17,6 @@ export function useScrollNarrative() {
 
     const setStatic = () => {
       root?.style.setProperty('--landing-hero-progress', '0')
-      root?.style.setProperty('--landing-beacon-progress', '0')
     }
 
     if (!root || reducedMotion.matches || coarsePointer.matches) {
@@ -30,7 +29,6 @@ export function useScrollNarrative() {
       frame = 0
       const progress = heroExitProgress(window.scrollY, window.innerHeight)
       root.style.setProperty('--landing-hero-progress', progress.toFixed(3))
-      root.style.setProperty('--landing-beacon-progress', progress.toFixed(3))
     }
 
     const onScroll = () => {

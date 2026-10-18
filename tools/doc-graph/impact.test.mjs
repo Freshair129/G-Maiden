@@ -17,7 +17,7 @@ function fixture() {
   write(root, 'docs/adr.md', '# docs/adr.md');
   write(root, 'docs/security.md', '# Security');
   write(root, 'src/gid.ts', 'export const gid = true;');
-  write(root, 'supabase/migrations/beta.sql', 'create table public.closed_beta_enrollments (user_id uuid references public.profiles(id));');
+  write(root, 'supabase/migrations/memberships.sql', 'create table public.memberships (user_id uuid references public.profiles(id));');
   write(root, 'supabase/migrations/profiles.sql', 'create table public.profiles (id uuid primary key);');
   write(root, 'supabase/migrations/rls.sql', 'alter table public.profiles enable row level security;');
   const graph = { nodes: [{ id: 'docs/adr.md' }, { id: 'docs/security.md' }, { id: 'src/gid.ts' }], edges: [{ from: 'docs/adr.md', to: 'src/gid.ts', type: 'symbol', line: 4 }] };
@@ -31,9 +31,9 @@ function fixture() {
     edges: [{ from: 'docs/adr.md', to: 'docs/security.md', relation: 'must_review_with', assertion: 'declared', confidence: 'high', evidence: 'fixture rule', evidence_reference: { path: 'docs/adr.md', line: 1 } }],
     entities: [
       { name: 'profiles', source: 'supabase/migrations/profiles.sql', rls_reference: 'supabase/migrations/rls.sql', classification: 'identity-pii', owns_data: 'identity-access', fields: ['uuid id PK'] },
-      { name: 'closed_beta_enrollments', source: 'supabase/migrations/beta.sql', classification: 'identity-status', owns_data: 'identity-access', fields: ['uuid user_id FK'] },
+      { name: 'memberships', source: 'supabase/migrations/memberships.sql', classification: 'identity-status', owns_data: 'identity-access', fields: ['uuid user_id FK'] },
     ],
-    relationships: [{ from: 'closed_beta_enrollments.user_id', to: 'profiles.id', cardinality: '0..1 to 1', relation: 'foreign_key', assertion: 'declared', confidence: 'high', source: 'supabase/migrations/beta.sql', evidence_reference: { path: 'supabase/migrations/beta.sql', line: 1 } }],
+    relationships: [{ from: 'memberships.user_id', to: 'profiles.id', cardinality: '0..1 to 1', relation: 'foreign_key', assertion: 'declared', confidence: 'high', source: 'supabase/migrations/memberships.sql', evidence_reference: { path: 'supabase/migrations/memberships.sql', line: 1 } }],
   };
   return { root, graph, manifest };
 }
@@ -51,7 +51,7 @@ test('impact separates mandatory review from observed linked context', () => {
 
 test('ERD and C4 render only declared metadata', () => {
   const { manifest } = fixture();
-  assert.match(renderErdMermaid(manifest), /profiles \|\|--o\| closed_beta_enrollments/);
+  assert.match(renderErdMermaid(manifest), /profiles \|\|--o\| memberships/);
   assert.match(renderErdMermaid(manifest), /uuid user_id FK/);
   assert.match(renderErdMermaid(manifest), /source: supabase\/migrations\/profiles\.sql/);
   assert.match(renderErdMermaid(manifest), /rls: supabase\/migrations\/rls\.sql/);
@@ -59,7 +59,7 @@ test('ERD and C4 render only declared metadata', () => {
   assert.match(renderC4Mermaid(manifest), /Supabase gstore/);
   assert.doesNotMatch(renderC4Mermaid(manifest, { system: 'G-Maiden' }), /Supabase gstore/);
   manifest.relationships[0].cardinality = 'many to 1';
-  assert.match(renderErdMermaid(manifest), /profiles \|\|--o\{ closed_beta_enrollments/);
+  assert.match(renderErdMermaid(manifest), /profiles \|\|--o\{ memberships/);
 });
 
 test('missing schema evidence is a validation error', () => {
@@ -88,7 +88,7 @@ test('metadata and declared evidence must use the approved contract', () => {
 
 test('ERD rejects an undeclared foreign-key source column', () => {
   const { root, graph, manifest } = fixture();
-  write(root, 'supabase/migrations/beta.sql', 'create table public.closed_beta_enrollments (other uuid);\ncreate table public.other (user_id uuid references public.profiles(id));');
+  write(root, 'supabase/migrations/memberships.sql', 'create table public.memberships (other uuid);\ncreate table public.other (user_id uuid references public.profiles(id));');
   const result = resolveImpact({ graph, graphRaw: JSON.stringify(graph), manifest, root, artifacts: ['docs/adr.md'] });
   assert.equal(result.stale_link[0].reason, 'schema evidence contradicts declared foreign key');
 });

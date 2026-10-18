@@ -9,7 +9,7 @@
 export const GID_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 const BASE = 31n;
 
-export const GENERATIONS = { F: "Founder", B: "Close Beta", P: "Public" } as const;
+export const GENERATIONS = { F: "Founder", B: "Legacy", P: "Public" } as const;
 export type Generation = keyof typeof GENERATIONS;
 
 const EPOCH_MS = Date.UTC(2026, 0, 1); // 2026-01-01

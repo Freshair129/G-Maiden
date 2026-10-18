@@ -16,7 +16,6 @@ attributes:
 related_docs:
   - "ADR-14-gid-account-identity"
   - "SEC-001-auth-identity-hardening"
-  - "CR-022-gmad-desktop-first-run-entitlement-account-handoff"
   - "oauth-jwt-client-authorization-flows"
 ---
 

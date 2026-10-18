@@ -30,6 +30,5 @@ it("renders the desktop deck on a signed-out release startup", async () => {
   await act(async () => root!.render(<App />));
 
   expect(container.textContent).toContain("Command deck");
-  expect(container.textContent).not.toContain("GMAD CLOSED BETA");
   expect(container.textContent).not.toContain("ดำเนินการต่อด้วย Google");
 });

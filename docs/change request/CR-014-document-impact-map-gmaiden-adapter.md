@@ -35,9 +35,9 @@ or infer mandatory changes from a link alone.
   `docs/DOC-GRAPH.json`; it validates targets but does not classify domain/cluster/C4/data ownership.
 - ADR-14 already symbol-links the GID account documents to `gid.ts`, `auth.ts`, `profile.ts`,
   `supabase.ts`, and `identity.rs`.
-- Supabase migrations are authoritative schema evidence. `profiles`, `gid_counters`,
-  `closed_beta_enrollments`, and the CR-003 account/economy tables have explicit primary/foreign
-  keys and RLS policies. Current scanner output does not represent those relationships as ERD edges.
+- Supabase migrations are authoritative schema evidence. `profiles`, `gid_counters`, and the
+  CR-003 account/economy tables have explicit primary/foreign keys and RLS policies. Current
+  scanner output does not represent those relationships as ERD edges.
 
 ## 3. Architecture and ownership
 
@@ -145,12 +145,12 @@ entities:
     rls_reference: "supabase/migrations/20260704120000_sec001_identity_hardening.sql"
     owns_data: "identity-access"
 relationships:
-  - from: "closed_beta_enrollments.user_id"
+  - from: "wallet_ledger.user_id"
     to: "profiles.id"
-    cardinality: "0..1 to 1"
+    cardinality: "0..many to 1"
     relation: "foreign_key"
     assertion: "declared"
-    source: "supabase/migrations/20260720183000_cr005_closed_beta_registration.sql"
+    source: "supabase/migrations/20260711120000_cr003_wallet_billing.sql"
 ```
 
 The resolver validates that every declared schema source exists. It may render an entity only when
@@ -178,7 +178,7 @@ The output must include graph revision/hash and source line/path evidence for ev
 ## 8. Delivery slices
 
 1. **Contract + fixtures:** `impact-map.yaml` schema/validator, isolated fixture graph, one ADR-to-security
-   impact rule, and one `profiles`/`closed_beta_enrollments` ERD relation.
+   impact rule, and one `profiles`/`wallets` ERD relation.
 2. **Resolver:** deterministic inbound/outbound traversal, diff input, evidence labels, and JSON report.
 3. **Views:** Mermaid output for document impact, C4 context/container, and ERD. Unsupported views
    return explicit unavailable status.
@@ -190,8 +190,8 @@ The output must include graph revision/hash and source line/path evidence for ev
 - Existing `scan.mjs` output remains backward compatible and the current doc-graph CI gate remains green.
 - An ADR-14 fixture returns observed account code links as `linked-context` and the declared SEC-001
   relationship as `must-review`.
-- An ERD fixture renders `profiles` and `closed_beta_enrollments` with its declared FK/cardinality,
-  source migration, RLS reference, and identity classification.
+- An ERD fixture renders `profiles` and `wallets` with their declared FK/cardinality, source
+  migration, RLS reference, and identity classification.
 - Invalid/sparse metadata, missing schema source, wrong FK source column, unsupported view/filter,
   or missing graph produces an explicit
   unavailable/incomplete result and non-zero validation exit; no guessed diagram is emitted.

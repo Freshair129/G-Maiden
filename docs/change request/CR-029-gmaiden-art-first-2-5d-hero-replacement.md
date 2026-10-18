@@ -38,8 +38,7 @@ Only the interaction approach may be reused. Images, videos, branding, and remot
 | --- | --- | --- |
 | Public Hero media, provenance, responsive composition, motion and production deployment | C-3 | High |
 
-This change does not alter Google OAuth, GID, queue, Terms, entitlement, Supabase, the desktop app,
-or the Open Beta timestamp.
+This change does not alter account services, Supabase, or the desktop application.
 
 ## Production contract
 

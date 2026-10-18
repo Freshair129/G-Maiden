@@ -57,7 +57,6 @@ a {
 
 .scroll-narrative {
   --landing-hero-progress: 0;
-  --landing-beacon-progress: 0;
 }
 
 .scroll-narrative .hero-art-stage {
@@ -870,121 +869,6 @@ a {
   font-size: 0.7rem;
 }
 
-.launch-beacon {
-  position: relative;
-  z-index: 30;
-  right: auto;
-  bottom: auto;
-  width: 100%;
-  align-self: center;
-  margin-bottom: 0;
-  overflow: hidden;
-  padding: clamp(1.5rem, 2.6vw, 2.45rem);
-  border-top: 1px solid rgba(155, 231, 255, 0.88);
-  border-bottom: 1px solid rgba(155, 231, 255, 0.42);
-  background: linear-gradient(118deg, rgba(3, 9, 18, 0.88), rgba(7, 29, 52, 0.64));
-  box-shadow: 0 1.5rem 5rem rgba(0, 0, 0, 0.32), inset 0 0 2.5rem rgba(74, 174, 255, 0.08);
-  clip-path: polygon(0 0, calc(100% - 1.35rem) 0, 100% 1.35rem, 100% 100%, 1.35rem 100%, 0 calc(100% - 1.35rem));
-  backdrop-filter: blur(14px);
-}
-
-.launch-beacon-head {
-  display: grid;
-  gap: 0.35rem;
-}
-
-.launch-beacon-eyebrow {
-  margin: 0;
-  color: white;
-  font: 800 clamp(1.2rem, 2.4vw, 1.9rem)/0.9 Inter, sans-serif;
-  letter-spacing: 0.24em;
-  text-transform: uppercase;
-}
-
-.launch-beacon-date {
-  margin: 0;
-  color: var(--landing-ice-bright);
-  font: 700 0.8rem/1.2 Inter, sans-serif;
-  letter-spacing: 0.18em;
-  text-transform: uppercase;
-}
-
-.launch-beacon::before {
-  position: absolute;
-  inset: 0;
-  content: "";
-  pointer-events: none;
-  background: linear-gradient(112deg, transparent 42%, rgba(155, 231, 255, 0.3) 50%, transparent 58%);
-  opacity: calc(0.22 + (1 - var(--landing-beacon-progress)) * 0.38);
-  transform: translate3d(calc(var(--landing-beacon-progress) * 22%), 0, 0);
-  transition: opacity 180ms var(--landing-ease-expo);
-  will-change: transform, opacity;
-}
-
-.launch-beacon::after {
-  position: absolute;
-  right: 1.25rem;
-  bottom: 0.95rem;
-  width: 3.5rem;
-  height: 1px;
-  content: "";
-  background: var(--landing-ice-bright);
-  box-shadow: 0 0 8px rgba(155, 231, 255, 0.72);
-  transform: scaleX(calc(1 - var(--landing-beacon-progress)));
-  transform-origin: right center;
-  will-change: transform;
-}
-
-.launch-clock {
-  gap: 0.12em;
-  font-size: clamp(2.7rem, 4.15vw, 4.7rem);
-  font-variant-numeric: tabular-nums;
-  letter-spacing: 0;
-}
-
-.launch-beacon-cta {
-  position: relative;
-  display: flex;
-  min-height: 60px;
-  align-items: center;
-  justify-content: space-between;
-  gap: 1rem;
-  margin-top: 1.35rem;
-  padding: 0.95rem 1rem;
-  border: 1px solid rgba(155, 231, 255, 0.26);
-  background: rgba(10, 22, 36, 0.62);
-  color: rgba(238, 244, 251, 0.9);
-  font: 600 0.68rem/1.35 Inter, sans-serif;
-  letter-spacing: 0.13em;
-  text-decoration: none;
-  text-transform: uppercase;
-  transition: border-color 180ms var(--landing-ease-expo), background-color 180ms var(--landing-ease-expo), color 180ms var(--landing-ease-expo), transform 180ms var(--landing-ease-expo);
-}
-
-.launch-beacon-cta-copy {
-  display: grid;
-  gap: 0.18rem;
-}
-
-.launch-beacon-cta-copy strong {
-  color: white;
-  font-size: 0.82rem;
-  letter-spacing: 0.14em;
-}
-
-.launch-beacon-cta-copy small {
-  color: rgba(238, 244, 251, 0.62);
-  font-size: 0.6rem;
-  letter-spacing: 0.14em;
-}
-
-.launch-beacon-cta:hover {
-  color: var(--landing-ice-bright);
-  border-color: rgba(155, 231, 255, 0.52);
-  background: rgba(12, 28, 44, 0.8);
-  transform: translate3d(0, -1px, 0);
-}
-
 .demo-section {
   position: relative;
   border-top: 1px solid rgba(143, 212, 255, 0.16);
@@ -1682,11 +1566,6 @@ a {
     width: min(100%, 28rem);
   }
 
-  .launch-beacon {
-    grid-column: 2;
-    grid-row: 1 / span 2;
-  }
-
   .roadmap-grid {
     grid-template-columns: 1fr;
   }
@@ -1779,42 +1658,6 @@ a {
   .hero-demo-meta {
     gap: 0.6rem;
     font-size: 0.58rem;
-  }
-
-  .open-beta-countdown {
-    grid-column: auto;
-    grid-row: auto;
-    order: 2;
-    width: auto;
-    padding: 1.25rem 1.25rem 1rem;
-    margin-bottom: 0;
-  }
-
-  .launch-beacon-eyebrow {
-    font-size: 1rem;
-    letter-spacing: 0.18em;
-  }
-
-  .launch-beacon-date {
-    font-size: 0.66rem;
-    letter-spacing: 0.12em;
-  }
-
-  .launch-clock {
-    font-size: clamp(2.45rem, 11vw, 4rem);
-  }
-
-  .launch-beacon-cta {
-    min-height: 52px;
-    padding: 0.8rem 0.9rem;
-  }
-
-  .launch-beacon-cta-copy strong {
-    font-size: 0.72rem;
-  }
-
-  .launch-beacon-cta-copy small {
-    font-size: 0.54rem;
   }
 
   .features-shell {
@@ -1953,22 +1796,6 @@ a {
     letter-spacing: 0.09em;
   }
 
-  .open-beta-countdown {
-    padding: 0.95rem 1rem 0.75rem;
-  }
-
-  .launch-clock {
-    margin-top: 0.45rem;
-    font-size: clamp(2.05rem, 10.5vw, 3rem);
-  }
-
-  .launch-beacon-cta {
-    min-height: 38px;
-    margin-top: 0.55rem;
-    padding-top: 0.55rem;
-    font-size: 0.58rem;
-  }
-
   .features-intro h2 {
     font-size: 2.25rem;
   }
@@ -2021,8 +1848,4 @@ a {
     will-change: auto;
   }
 
-  .launch-beacon::before,
-  .launch-beacon::after {
-    display: none;
-  }
 }

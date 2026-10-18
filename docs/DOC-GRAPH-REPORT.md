@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-10-18T05:05:53.890Z
+สร้างเมื่อ / Generated at: 2026-10-18T06:48:21.184Z
 
-สแกน 154 ไฟล์เอกสาร, 276 nodes, 1181 edges, 220 รายการปัญหา (183 ตัวบล็อก exit code) / scanned 154 doc files, 276 nodes, 1181 edges, 220 violations (183 blocking exit code).
+สแกน 127 ไฟล์เอกสาร, 241 nodes, 1151 edges, 188 รายการปัญหา (156 ตัวบล็อก exit code) / scanned 127 doc files, 241 nodes, 1151 edges, 188 violations (156 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -11,13 +11,11 @@
 | Reason | คำอธิบาย / Description | Count | Blocking? |
 | --- | --- | --- | --- |
 | anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 127 | yes |
-| duplicate-slug | สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) | 13 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 3 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
-| missing-changelog | มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table | 4 | yes |
-| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 34 | no (informational) |
-| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 25 | yes |
+| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 29 | no (informational) |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 15 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -27,9 +25,9 @@
 
 ### docs/DOC-INDEX.md
 
-- [L148] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="SPEC--*")
-- [L150] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="ADR-O-*")
-- [L159] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
+- [L124] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="SPEC--*")
+- [L126] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="ADR-O-*")
+- [L135] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
 
 ### docs/DOCS-IA-REORG-PROPOSAL.md
 
@@ -77,7 +75,7 @@
 
 ### docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md
 
-- [L134] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=422, symbol="rs:L422")
+- [L133] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=422, symbol="rs:L422")
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.3b", changelog="0.4.2b")
 
 ### docs/architecture/assets/design-references/README.md
@@ -93,10 +91,6 @@
 
 - [L187] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/setup.rs", anchor=72, symbol="exclusive_fullscreen_active")
 - [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="accepted")
-
-### docs/architecture/gmad-current-first-run-user-flow-walkthrough.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.1b", changelog="0.1.0b")
 
 ### docs/architecture/implementation-plan.md
 
@@ -178,33 +172,17 @@
 
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.0b", changelog="0.1.0b")
 
-### docs/change request/CR-016-gmad-beta-download-admin-controller.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.2b", changelog="0.1.0")
-
 ### docs/change request/CR-017-gstore-migration-history-reconciliation.md
 
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.0b", changelog="0.1.0b")
-
-### docs/change request/CR-018-ops-route-spa-rewrite.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.0b", changelog="0.1.0b")
 
 ### docs/change request/CR-019-owner-role-and-operator-delegation.md
 
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.1b", changelog="0.1.0b")
 
-### docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.0b", changelog="0.1.0b")
-
-### docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.0b", changelog="0.1.0b")
-
 ### docs/change request/CR-023-gmaiden-original-3d-hero-scroll-narrative.md
 
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.7.1b", changelog="0.1.0b")
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.7.2b", changelog="0.1.0b")
 
 ### docs/change request/CR-024-gmaiden-3d-studio-and-portable-blender.md
 
@@ -221,16 +199,6 @@
 ### docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md
 
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.0b", changelog="0.1.0b")
-
-### docs/change request/closed-beta-privacy-notice-draft.md
-
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="closed-beta-privacy-notice-draft", siblings=["docs/product/closed-beta-privacy-notice-draft.md"])
-- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/change request/closed-beta-terms-of-use-draft.md
-
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="closed-beta-terms-of-use-draft", siblings=["docs/product/closed-beta-terms-of-use-draft.md"])
-- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/design-system/02-tokens.md
 
@@ -376,31 +344,9 @@
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
-### docs/operations/auth-failure-remediation-proposal.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.3b", changelog="0.2.2b")
-
-### docs/operations/gmaiden-closed-beta-release-playbook.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.2", changelog="0.1.0")
-
-### docs/operations/validation/forms-and-social.md
-
-- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
 ### docs/product/business-validation-plan.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/product/closed-beta-privacy-notice-draft.md
-
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="closed-beta-privacy-notice-draft", siblings=["docs/change request/closed-beta-privacy-notice-draft.md"])
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.0.1b", changelog="0.1.0b")
-
-### docs/product/closed-beta-terms-of-use-draft.md
-
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="closed-beta-terms-of-use-draft", siblings=["docs/change request/closed-beta-terms-of-use-draft.md"])
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.0.0b", changelog="0.1.0b")
 
 ### docs/product/competitive-brief.md
 
@@ -408,13 +354,9 @@
 
 ### docs/product/mvp-backlog.md
 
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.4", changelog="0.1.0")
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.6", changelog="0.1.0")
 
 ### docs/product/one-pager.md
-
-- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/product/roadmap-legacy.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
@@ -454,50 +396,9 @@
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
-### docs/releases/closed-beta/wave-0/definition-of-done.md
-
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="definition-of-done", siblings=["docs/releases/closed-beta/wave-1/definition-of-done.md","docs/releases/closed-beta/wave-2/definition-of-done.md","docs/releases/open-beta/definition-of-done.md"])
-
-### docs/releases/closed-beta/wave-0/specification.md
-
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/closed-beta/wave-1/specification.md","docs/releases/closed-beta/wave-2/specification.md","docs/releases/open-beta/specification.md","docs/releases/public-demo/specification.md"])
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.0", changelog="0.1.0")
-
-### docs/releases/closed-beta/wave-1/definition-of-done.md
-
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="definition-of-done", siblings=["docs/releases/closed-beta/wave-0/definition-of-done.md","docs/releases/closed-beta/wave-2/definition-of-done.md","docs/releases/open-beta/definition-of-done.md"])
-- [-] **missing-changelog** — มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table
-
-### docs/releases/closed-beta/wave-1/specification.md
-
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/closed-beta/wave-0/specification.md","docs/releases/closed-beta/wave-2/specification.md","docs/releases/open-beta/specification.md","docs/releases/public-demo/specification.md"])
-- [-] **missing-changelog** — มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table
-
-### docs/releases/closed-beta/wave-2/definition-of-done.md
-
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="definition-of-done", siblings=["docs/releases/closed-beta/wave-0/definition-of-done.md","docs/releases/closed-beta/wave-1/definition-of-done.md","docs/releases/open-beta/definition-of-done.md"])
-- [-] **missing-changelog** — มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table
-
-### docs/releases/closed-beta/wave-2/specification.md
-
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/closed-beta/wave-0/specification.md","docs/releases/closed-beta/wave-1/specification.md","docs/releases/open-beta/specification.md","docs/releases/public-demo/specification.md"])
-- [-] **missing-changelog** — มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table
-
-### docs/releases/open-beta/definition-of-done.md
-
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="definition-of-done", siblings=["docs/releases/closed-beta/wave-0/definition-of-done.md","docs/releases/closed-beta/wave-1/definition-of-done.md","docs/releases/closed-beta/wave-2/definition-of-done.md"])
-
-### docs/releases/open-beta/specification.md
-
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/closed-beta/wave-0/specification.md","docs/releases/closed-beta/wave-1/specification.md","docs/releases/closed-beta/wave-2/specification.md","docs/releases/public-demo/specification.md"])
-
-### docs/releases/public-demo/specification.md
-
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="specification", siblings=["docs/releases/closed-beta/wave-0/specification.md","docs/releases/closed-beta/wave-1/specification.md","docs/releases/closed-beta/wave-2/specification.md","docs/releases/open-beta/specification.md"])
-
 ### docs/releases/release-channel-implementation.md
 
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.1", changelog="0.1.0")
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.5.0", changelog="0.1.0")
 
 ### docs/research/assets/dota2-hud-reference.md
 
@@ -512,10 +413,6 @@
 - [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="stable")
 
 ### docs/research/huggingface-dota2-resources.md
-
-- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/superpowers/plans/2026-08-09-gid-pipeline-phase1.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 

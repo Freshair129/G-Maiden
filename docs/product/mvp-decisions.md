@@ -2,8 +2,8 @@
 title: "G-Maiden MVP — Scope, Access, Data and Quality Decisions"
 doc_id: "mvp-decisions"
 status: "accepted"
-version: "0.3.1"
-updated: 2026-10-16
+version: "0.3.3"
+updated: 2026-10-18
 owner: "Boss"
 approved_by: "Boss — explicit owner instruction in conversation"
 approved_date: "2026-10-13"
@@ -25,7 +25,7 @@ related_docs: ["roadmap", "mvp-backlog", "mvp-execution-dag", "software-requirem
 - Initial CV matrix: 1920×1080, 16:9, จอหลักหนึ่งจอ, 100% DPI, default HUD/minimap ล่างซ้าย, borderless-fullscreen. 1440p/DPI อื่น/ultrawide/multi-monitor/custom minimap ต้องผ่าน calibration และ evidence ก่อนขยาย certified matrix. GSI-only Lite mode ยังมี local core; empty/no coverage ไม่เท่ากับ safe.
 - Own-player fields ใช้เฉพาะ GSI ที่ valid; อีก 9 คนไม่สมมติ KDA/items. CV รับรองเฉพาะ hero classes ที่ผ่านเกณฑ์ราย class และบันทึก model/labels hashes; ยอมรับ coverage แบบค่อยเพิ่ม แต่ก่อน release ต้องแสดงรายการ supported/unknown จริง.
 - คง Alt+M เป็น mute; PTT เลือก **Ctrl+Alt+V** เป็นค่าเริ่มต้นใน MVP-038 พร้อมตรวจ hotkey conflict และ remap ได้. ไม่มี always-on mic.
-- MVP-053–062 เลื่อนตาม backlog; Store/payment, GID Shield/recovery/public profiles, deep Coach และ public campaign อยู่หลัง MVP. Closed Beta ยังคงยกเลิก.
+- MVP-053–062 เลื่อนตาม backlog; Store/payment, GID Shield/recovery/public profiles, deep Coach และ public campaign อยู่หลัง MVP.
 
 ## MVP-004 — Access/offline และขอบเขต account
 
@@ -33,7 +33,6 @@ related_docs: ["roadmap", "mvp-backlog", "mvp-execution-dag", "software-requirem
 | --- | --- |
 | account_gate_required | false |
 | account_surface_exposed | true |
-| legacy_handoff_surface_in_scope | false สำหรับ desktop MVP |
 
 Local core เริ่มได้ใน release/dev โดยไม่มีบัญชี, Google session, entitlement หรือ network. บัญชีเป็น optional และ Google เป็น primary sign-in เดียว; GID/Steam ไม่ใช่ credential/recovery. Account-only operations ยังตรวจ identity/สิทธิ์บน server. MVP-043/044 ยัง applicable เพราะ account surface ยังเปิดอยู่.
 
@@ -44,10 +43,10 @@ Local core เริ่มได้ใน release/dev โดยไม่มี�
 | mismatch / revoke / account switch | แยกและล้าง account session/cache; ปิด protected account actions; local gameplay/history ไม่ถูก lock ตาม grant |
 | sign-out | รักษา credential cleanup/request invalidation ของ auth fixes; ล้างเฉพาะ account state และกลับสู่ local core |
 | new device | local setup ใหม่; Google ตรวจ server สำหรับ account; ไม่ sync raw match/CV/Memory |
-| current Terms changed/missing | รักษา server requirement ของ account services ที่มีอยู่; local core ไม่รอ cancelled Beta Terms receipt |
-| updater | local core ใช้ signed stable channel ที่มีอยู่; channel/backend state แยกจาก Beta entitlement; update install ต้องรอ safe gameplay state |
+| current Terms changed/missing | account services ที่มี requirements ฝั่ง server ทำงานตาม policy ของตน; local core ไม่ถูกล็อกด้วย account Terms |
+| updater | local core ใช้ signed stable channel ที่มีอยู่; updater state แยกจาก account state; update install ต้องรอ safe gameplay state |
 
-**Terms/legal boundary:** ไม่เพิ่ม local Terms acceptance/receipt หรือ consent schema จาก CR-021 draft และไม่แก้ server Terms/issuer/RLS จากมตินี้. ยกเลิกเฉพาะ desktop Beta grant/Terms handoff ที่บังคับ local runtime; public distribution/ข้อความทางกฎหมายยังผ่าน legal/release gates ของตน. ไม่มีการเปลี่ยน entitlement ของ Store/account หรือ private artifact issuer. MVP-045 เป็น NOT_APPLICABLE สำหรับ legacy desktop handoff ตาม scope นี้; หากกลับมาเพิ่ม acceptance/download flow ต้องเปิด task และ gates อีกครั้ง.
+**Terms/legal boundary:** local desktop startup does not implement a Terms receipt or require account Terms acceptance. This decision does not change server-side Terms, Store/account authorization, or RLS policies. Any future account-facing legal flow must have its own product, security, and legal review before implementation. MVP-045 is not applicable to local startup; protected account services retain their existing server checks.
 
 ก่อน MVP-008 ต้องมี design/threat review: แยก local-runtime state ออกจาก account authorization; callback/revoke ที่แข่งกันห้ามเปิด account ของคนอื่น; tests ครอบคลุมทุกแถว, migration และ rollback ผ่าน PR/revert. ไม่เพิ่ม blanket runtime-unlock ที่ใช้เปิด protected account operations. มตินี้อนุมัติ product target; threat/RLS review และหลักฐาน implementation ยังต้องเสร็จก่อนรับงาน.
 
@@ -126,3 +125,5 @@ MVP-007 reconcile PRD/SRS/AGENTS/CLAUDE ตามมตินี้. งาน c
 | 0.2.1 | 2026-10-12 | Clarified unavailable-cap state, pending startup policy, and kill-on-close membership/handle assumptions. |
 | 0.3.0 | 2026-10-13 | Owner chose fail-closed startup when the CPU Job Object cannot initialize; updated process and feeder lifecycle contract. |
 | 0.3.1 | 2026-10-16 | Remove retired local review integration and related references. |
+| 0.3.2 | 2026-10-18 | Clarified local startup and account Terms boundaries. |
+| 0.3.3 | 2026-10-18 | Removed the obsolete desktop handoff activation flag; local startup remains account-independent. |

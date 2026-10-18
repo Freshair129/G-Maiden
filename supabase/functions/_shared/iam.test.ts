@@ -5,7 +5,6 @@ import {
   resolveIamContext,
   sanitizeAuditContext,
 } from "./iam.ts";
-import { adminCapabilityForAction } from "./gmad_admin.ts";
 
 function bearer(payload: Record<string, unknown>): string {
   const encode = (value: unknown) =>
@@ -48,13 +47,13 @@ Deno.test("IAM rejects a missing or malformed bearer before dependency calls", a
     },
   });
 
-  assertEquals(await resolveIamContext("", "gmad.batch.manage", true, deps), {
+  assertEquals(await resolveIamContext("", "iam.security.read", true, deps), {
     ok: false,
     status: 401,
     code: "invalid_session",
   });
   assertEquals(
-    await resolveIamContext("Bearer broken", "gmad.batch.manage", true, deps),
+    await resolveIamContext("Bearer broken", "iam.security.read", true, deps),
     {
       ok: false,
       status: 401,
@@ -73,7 +72,7 @@ Deno.test("IAM accepts only a verified Google identity whose subject matches the
       }),
   });
   assertEquals(
-    await resolveIamContext(validBearer, "gmad.batch.manage", true, emailOnly),
+    await resolveIamContext(validBearer, "iam.security.read", true, emailOnly),
     {
       ok: false,
       status: 401,
@@ -91,7 +90,7 @@ Deno.test("IAM accepts only a verified Google identity whose subject matches the
   assertEquals(
     await resolveIamContext(
       validBearer,
-      "gmad.batch.manage",
+      "iam.security.read",
       true,
       wrongSubject,
     ),
@@ -111,7 +110,7 @@ Deno.test("IAM rejects a JWT without a live matching session", async () => {
   assertEquals(
     await resolveIamContext(
       missingSessionClaim,
-      "gmad.batch.manage",
+      "iam.security.read",
       true,
       dependencies(),
     ),
@@ -125,7 +124,7 @@ Deno.test("IAM rejects a JWT without a live matching session", async () => {
   assertEquals(
     await resolveIamContext(
       validBearer,
-      "gmad.batch.manage",
+      "iam.security.read",
       true,
       dependencies({ sessionExists: () => Promise.resolve(false) }),
     ),
@@ -151,7 +150,7 @@ Deno.test("IAM requires AAL2 before loading role for a privileged capability", a
     },
   });
 
-  assertEquals(await resolveIamContext(aal1, "gmad.batch.manage", true, deps), {
+  assertEquals(await resolveIamContext(aal1, "iam.role.delegate", true, deps), {
     ok: false,
     status: 403,
     code: "step_up_required",
@@ -229,7 +228,7 @@ Deno.test("IAM dependency failures fail closed without provider details", async 
   assertEquals(
     await resolveIamContext(
       validBearer,
-      "gmad.batch.manage",
+      "iam.session.revoke",
       true,
       dependencies({
         sessionExists: () =>
@@ -283,13 +282,4 @@ Deno.test("IAM emits a redacted authorization decision when the caller is known"
     outcome: "denied",
     reasonCode: "capability_denied",
   }]);
-});
-
-Deno.test("GMAD admin actions map to the narrow server capability", () => {
-  assertEquals(adminCapabilityForAction("change_role"), "iam.role.delegate");
-  for (const action of ["list", "create_draft", "publish", "set_status"]) {
-    assertEquals(adminCapabilityForAction(action), "gmad.batch.manage");
-  }
-  assertEquals(adminCapabilityForAction("unknown"), null);
-  assertEquals(adminCapabilityForAction(null), null);
 });

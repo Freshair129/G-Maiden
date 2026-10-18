@@ -58,7 +58,7 @@ pnpm tauri build
 
 ## Releases
 
-Releases move along three channels — `dev` → `closed-beta` → `stable` — and **pushing a tag publishes nothing**. Both release workflows are `workflow_dispatch` only; a tag is an input you hand to a workflow. Promotion to `stable` runs behind a GitHub `production` environment approval and re-points the *same* signed artifact rather than rebuilding it.
+Releases move along two channels — `dev` → `stable` — and **pushing a tag publishes nothing**. Both release workflows are `workflow_dispatch` only; a tag is an input you hand to a workflow. Promotion to `stable` runs behind a GitHub `production` environment approval and re-points the *same* signed artifact rather than rebuilding it.
 
 To release: bump the version in every file listed under "Release & update workflow" in **CLAUDE.md** (kept there as the single source of truth to avoid drift); add a CHANGELOG entry; commit; tag `vX.Y.Z`; then run the **candidate-release** workflow with that tag and merge the manifest PR it opens.
 

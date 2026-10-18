@@ -14,7 +14,8 @@ export type UpdateOffer = {
  * `target` parameter is used both in the endpoint URL and as a manifest platform
  * key. The native command supplies the fixed stable URL and lets the plugin
  * resolve the actual platform key, including MSI vs NSIS installers.
- * Closed Beta is cancelled, so the renderer does not select update channels.
+ * The renderer does not select update channels; the backend owns the fixed
+ * signed stable endpoint.
  */
 export async function checkChannelUpdate(): Promise<UpdateOffer | null> {
   return invoke<UpdateOffer | null>("check_channel_update");

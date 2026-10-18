@@ -31,7 +31,7 @@ attributes:
 - [[one-pager]]
   - `docs/product/one-pager.md` — สรุปสั้นสำหรับการเล่าโปรดักต์
 - [[roadmap]]
-  - `docs/product/roadmap.md` — MVP roadmap M0–M6 หลังยกเลิก Closed Beta
+  - `docs/product/roadmap.md` — MVP roadmap M0–M6
 - [[mvp-decisions]]
   - `docs/product/mvp-decisions.md` — owner-delegated scope/access/data/quality contracts และ baseline acceptance
 - [[mvp-backlog]]
@@ -39,44 +39,20 @@ attributes:
 - [[mvp-execution-dag]]
   - `docs/product/mvp-execution-dag.md` — 57 execution nodes ใน 14 waves พร้อมคิวขนาน 3 workers, leases และ merge/evidence gates
   - `docs/product/mvp-execution-dag.json` — nodes/edges/conditional dependencies และ wave allocation สำหรับต่อ scheduler
-- [[roadmap-legacy]]
-  - `docs/product/roadmap-legacy.md` — roadmap รุ่นเก่าที่ยังเก็บไว้เป็นประวัติ
-- `docs/product/closed-beta-privacy-notice-draft.md` — ร่างสำหรับ Closed Beta ที่ยกเลิกแล้ว; เก็บเป็นประวัติ/รอ legal review ไม่ใช่ MVP consent gate
-- `docs/product/closed-beta-terms-of-use-draft.md` — ร่างสำหรับ Closed Beta ที่ยกเลิกแล้ว; ไม่ใช่ Terms receipt หรือ MVP access gate
 - `docs/product/MASTERPLAN-account-phase1.md` — แผนแม่บทระบบบัญชีและ Wallet Phase 1
 
 ## Release Governance
 
 - `docs/releases/README.md`
   - `docs/releases/README.md` — canonical hub ของ release governance, stage gates, และ execution contract
-- `docs/releases/beta-roadmap.md`
-  - `docs/releases/beta-roadmap.md` — release-maturity reference เดิม; Closed Beta ยกเลิกแล้ว ให้ใช้ MVP roadmap สำหรับแผนปัจจุบัน
 - `docs/releases/release-channel-architecture.md`
-  - `docs/releases/release-channel-architecture.md` — Dev → Closed Beta → Stable channel architecture และ artifact promotion rules
+  - `docs/releases/release-channel-architecture.md` — Dev → Stable channel architecture และ artifact promotion rules
 - `docs/releases/release-channel-implementation.md`
   - `docs/releases/release-channel-implementation.md` — บันทึกและสถานะการติดตั้งระบบ release channels
 - `docs/releases/public-demo/specification.md`
   - `docs/releases/public-demo/specification.md` — Public Demo scope และ deterministic product-story contract
 - `docs/releases/public-demo/rollback.md`
   - `docs/releases/public-demo/rollback.md` — แผนการย้อนกลับ (Rollback Plan) ของ Public Demo
-- `docs/releases/closed-beta/wave-0/specification.md`
-  - `docs/releases/closed-beta/wave-0/specification.md` — Closed Beta Wave 0 scope
-- `docs/releases/closed-beta/wave-0/definition-of-done.md`
-  - `docs/releases/closed-beta/wave-0/definition-of-done.md` — Wave 0 DoD, evidence, และ exit gate
-- `docs/releases/closed-beta/wave-0/evidence-runbook.md`
-  - `docs/releases/closed-beta/wave-0/evidence-runbook.md` — คู่มือการเก็บหลักฐานและรันเทสสำหรับ Wave 0
-- `docs/releases/closed-beta/wave-1/specification.md`
-  - `docs/releases/closed-beta/wave-1/specification.md` — Wave 1 core-intelligence validation
-- `docs/releases/closed-beta/wave-1/definition-of-done.md`
-  - `docs/releases/closed-beta/wave-1/definition-of-done.md` — Wave 1 DoD and exit gate
-- `docs/releases/closed-beta/wave-2/specification.md`
-  - `docs/releases/closed-beta/wave-2/specification.md` — Wave 2 expanded-access and operations validation
-- `docs/releases/closed-beta/wave-2/definition-of-done.md`
-  - `docs/releases/closed-beta/wave-2/definition-of-done.md` — Wave 2 DoD and exit gate
-- `docs/releases/open-beta/specification.md`
-  - `docs/releases/open-beta/specification.md` — Open Beta scope
-- `docs/releases/open-beta/definition-of-done.md`
-  - `docs/releases/open-beta/definition-of-done.md` — Open Beta DoD และ exit gate
 
 ## Design System
 
@@ -166,9 +142,6 @@ attributes:
   - `docs/change request/CR-002-Phase2-wire-backend.md` — Phase 2 Live-wired bento deck
   - `docs/change request/CR-003-account-phase1-wallet-billing.md` — Account Phase 1 Wallet & Billing
   - `docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md` — One Canvas Sitemap
-  - `docs/change request/CR-016-gmad-beta-download-admin-controller.md` — Beta download controller
-  - `docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md` — Countdown spec
-  - `docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md` — Historical desktop first-run entitlement gate; Closed Beta was cancelled and the gate is no longer current
   - `docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md` — PR gate agent review rule
   - `docs/change request/CR-034-gid-iam-production-completion.md` — GID IAM Phase 2 implemented locally; live verification and production promotion pending
   - `docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md` — proposed selected-target HUD CV + single-action G-Damage, Issue #71
@@ -176,8 +149,6 @@ attributes:
 
 ## Operations
 
-- [[gmaiden-closed-beta-release-playbook]]
-  - `docs/operations/gmaiden-closed-beta-release-playbook.md` — playbook สำหรับปล่อยสิทธิ์ดาวน์โหลด G-Maiden Closed Beta, flow จริงของ queue/grant/download, และ naming convention ของ `release_id`/`artifact_path`
 - `docs/operations/validation/`
   - `docs/operations/validation/` — toolkit, forms, social validation assets
 
@@ -218,16 +189,16 @@ attributes:
 | 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): fixed unresolved wikilinks — `[[architecture/design-system]]` → `[[design-system]]`; directory/non-doc-graph targets (`architecture/adr`, `architecture/spikes`, `design-system/assets`, `operations/validation`, `operations/audits`, `orchestration/docs/*`) converted to plain backtick path text. `docs/operations/audits/` does not exist on disk (dangling; real audits live at `docs/audits/`) |
 | 0.1.2 | 2026-07-21 | Added the OAuth/JWT multi-client authorization-flow architecture document. |
 | 0.1.3 | 2026-07-21 | Added ADR-17 as the selected high-assurance OAuth transaction architecture. |
-| 0.1.4 | 2026-07-22 | Added the G-Maiden Closed Beta release playbook under Operations. |
+| 0.1.4 | 2026-07-22 | Added release operations references under Operations. |
 | 0.1.5 | 2026-07-24 | Added a Release Governance section that points canonical indexes to `docs/releases/` while keeping feature ownership in the product roadmap and `PROJECT_FEATURE_MAP.md`. |
 | 0.1.6 | 2026-08-17 | Updated index to include missing folders (change request, audits, rca, superpowers) and listed all ADRs (ADR-10 to ADR-18) explicitly. |
 | 0.1.7 | 2026-08-23 | Added the CR-034 GID IAM production-completion candidate to the Change Request index. |
 | 0.1.8 | 2026-08-23 | Recorded CR-034 Phase 0 completion and the Phase 1 review gate. |
 | 0.1.9 | 2026-08-24 | Recorded CR-034 Phase 1 local implementation and retained the live-production promotion gate. |
 | 0.2.0 | 2026-08-24 | Recorded CR-034 Phase 2 local session/security implementation and retained the live-production promotion gate. |
-| 0.2.1 | 2026-10-10 | Added the MVP roadmap/backlog entrypoints and recorded cancellation of the Closed Beta programme. |
+| 0.2.1 | 2026-10-10 | Added the MVP roadmap/backlog entrypoints. |
 | 0.2.2 | 2026-10-10 | Added the MVP execution DAG and machine-readable parallel-wave schedule. |
 | 0.2.3 | 2026-10-10 | ลงทะเบียน mvp-decisions ที่รับรองตาม Owner delegation |
-| 0.2.4 | 2026-10-10 | Clarified accepted MVP contract entrypoint and labeled cancelled Closed Beta legal drafts as historical candidates, not current access gates. |
+| 0.2.4 | 2026-10-10 | Clarified the accepted MVP contract entrypoint. |
 | 0.2.5 | 2026-10-11 | Added the MVP-038 local STT evaluation protocol to the architecture-spike index. |
-| 0.2.7 | 2026-10-18 | Indexed ADR-19 and CR-035 and marked the cancelled CR-022 desktop handoff as historical. |
+| 0.2.7 | 2026-10-18 | Indexed ADR-19 and CR-035. |
