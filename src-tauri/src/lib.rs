@@ -13,6 +13,7 @@ pub mod announcer;
 pub mod audio;
 mod calibration;
 pub mod capture;
+pub mod capture_frame;
 #[cfg(feature = "wgc")]
 mod capture_wgc;
 mod counter_advice;
