@@ -1,6 +1,8 @@
 # Changelog
 
 ## [Unreleased]
+
+## [0.13.3] — 2026-10-18
 ### Fixed
 - **หยุด startup เมื่อเปิด CPU hard cap ไม่ได้** — หากสร้างหรือ assign Windows Job Object ไม่สำเร็จ แอปจะบันทึก error แล้วออกก่อนสร้าง Tauri/WebView หรือ GPU feeder; accounting query ที่ล้มเหลวหลัง setup สำเร็จยังแสดง unavailable และคง capture throttle ขณะที่ OS cap ทำงานอยู่
 - **โทเค็นหมดอายุอัตโนมัติไม่ตัดสิทธิ์กลางเกมอีกต่อไป** — Supabase หมุน access token
