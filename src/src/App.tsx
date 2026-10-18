@@ -2,7 +2,6 @@ import React from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
 import { StartupSettingsProvider } from './app/settings'
 import { useStartupSettings } from './app/settingsContext'
-import GmadFirstRunGate from './GmadFirstRunGate'
 
 const CommandDeck = React.lazy(() => import('./CommandDeck'))
 const Overlay = React.lazy(() => import('./app/Overlay').then(({ Overlay }) => ({ default: Overlay })))
@@ -45,18 +44,9 @@ export const App: React.FC = () => {
       )} />
     </React.Suspense>
   )
-  // The Closed Beta gate (sign-in + Terms + entitlement) is RELEASE-ONLY. A dev
-  // build would otherwise be unusable for local UI work: the gate needs network,
-  // a current Terms acceptance and an active grant on every launch, and while it
-  // is up the deck never mounts — which also means no `data-tauri-drag-region`
-  // exists, so the window cannot even be moved.
-  // MIRRORED IN RUST: `runtime.rs` seeds GMAD_ENTITLED from the same
-  // cfg!(debug_assertions). Change one without the other and dev gets a deck
-  // wired to a locked runtime — GSI ingest, DXGI capture and the overlay all
-  // stay off (capture.rs, gsi.rs, lib.rs check `gmad_entitled()`).
   return (
     <StartupSettingsProvider>
-      {import.meta.env.DEV ? deck : <GmadFirstRunGate>{deck}</GmadFirstRunGate>}
+      {deck}
     </StartupSettingsProvider>
   )
 }
