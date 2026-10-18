@@ -124,7 +124,7 @@ mod tests {
         for channel in [ReleaseChannel::Dev, ReleaseChannel::Stable] {
             let resolved = resolve(&ChannelInputs {
                 signed_developer_override: None,
-                installer_default: None,
+                installer_default: Some(channel),
             });
             assert!(resolved.signature_verification_required);
             assert!(!resolved.manifest_url.is_empty());
