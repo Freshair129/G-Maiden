@@ -2,6 +2,10 @@
 
 ## [Unreleased]
 
+## [0.13.4] — 2026-10-18
+### Changed
+- **เริ่มใช้แอปเดสก์ท็อปแบบ local-first ได้ทันที** — ไม่บังคับลงชื่อเข้าใช้หรือยืนยัน entitlement ตอนเปิดแอป; ผู้ใช้เชื่อมบัญชีเพิ่มได้จากในแอปตามต้องการ
+
 ## [0.13.3] — 2026-10-18
 ### Fixed
 - **หยุด startup เมื่อเปิด CPU hard cap ไม่ได้** — หากสร้างหรือ assign Windows Job Object ไม่สำเร็จ แอปจะบันทึก error แล้วออกก่อนสร้าง Tauri/WebView หรือ GPU feeder; accounting query ที่ล้มเหลวหลัง setup สำเร็จยังแสดง unavailable และคง capture throttle ขณะที่ OS cap ทำงานอยู่
