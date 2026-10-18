@@ -11,6 +11,14 @@
 //! Only ever used from the single dedicated capture thread, so it is intentionally
 //! not `Send`/`Sync` and holds no locks.
 
+use crate::capture_frame::{
+    valid_requests, CaptureBackend, CaptureRoi, FrameBundle, FrameCaptureIdentity,
+    FrameCaptureMetadata,
+};
+use std::sync::atomic::{AtomicU64, Ordering};
+use std::sync::OnceLock;
+use std::time::Instant;
+
 use windows::core::{Interface, BOOL};
 use windows::Win32::Foundation::{CloseHandle, HMODULE, HWND, LPARAM, RECT};
 use windows::Win32::Graphics::Direct3D::{D3D_DRIVER_TYPE_HARDWARE, D3D_FEATURE_LEVEL_11_0};
@@ -58,6 +66,50 @@ const GDI_FALLBACK_THRESHOLD: u32 = 5;
 /// hop back onto the cheaper GPU path.
 const GDI_RETRY_INTERVAL: u32 = 60;
 
+struct CaptureClock {
+    started_at: Instant,
+    next_frame_id: AtomicU64,
+    last_acquired_at_ms: AtomicU64,
+}
+
+impl CaptureClock {
+    fn new() -> Self {
+        Self {
+            started_at: Instant::now(),
+            next_frame_id: AtomicU64::new(1),
+            last_acquired_at_ms: AtomicU64::new(0),
+        }
+    }
+
+    fn next_identity(&self) -> FrameCaptureIdentity {
+        self.next_identity_at(self.started_at.elapsed().as_millis() as u64)
+    }
+
+    fn next_identity_at(&self, elapsed_ms: u64) -> FrameCaptureIdentity {
+        let previous = self
+            .last_acquired_at_ms
+            .fetch_max(elapsed_ms, Ordering::Relaxed);
+        FrameCaptureIdentity {
+            frame_id: self.next_frame_id.fetch_add(1, Ordering::Relaxed),
+            acquired_at_ms: previous.max(elapsed_ms),
+        }
+    }
+}
+
+fn next_capture_identity() -> FrameCaptureIdentity {
+    static CLOCK: OnceLock<CaptureClock> = OnceLock::new();
+    CLOCK.get_or_init(CaptureClock::new).next_identity()
+}
+
+fn display_fingerprint(device_name: &[u16; 32]) -> u64 {
+    device_name
+        .iter()
+        .take_while(|character| **character != 0)
+        .fold(14_695_981_039_346_656_037_u64, |hash, character| {
+            (hash ^ u64::from(*character)).wrapping_mul(1_099_511_628_211)
+        })
+}
+
 /// A live Desktop Duplication session for one monitor.
 pub struct DxgiCapture {
     duplication: IDXGIOutputDuplication,
@@ -81,6 +133,7 @@ pub struct DxgiCapture {
     /// desktop, so the source offset must be in that same coordinate space.
     desktop_left: i32,
     desktop_top: i32,
+    display_id: u64,
     /// CR012-P2-01: consecutive `ACCESS_LOST` results since the last
     /// successful DXGI acquire; drives the switch into `gdi_mode` at
     /// [`GDI_FALLBACK_THRESHOLD`].
@@ -195,12 +248,34 @@ impl FrameDiag {
 /// has already had its matching `ReleaseFrame` (if any) called internally —
 /// callers only own releasing the `Resource` case, after they've copied it.
 enum AcquireOutcome {
-    /// A fresh frame is ready to copy; the caller must call
-    /// `DxgiCapture::release_frame` afterward, whether or not the copy
-    /// itself succeeds.
-    Resource(IDXGIResource),
+    /// A fresh frame is ready to copy; the caller owns exactly one matching
+    /// ReleaseFrame, whether or not the copy succeeds.
+    Resource {
+        resource: IDXGIResource,
+        identity: FrameCaptureIdentity,
+    },
     /// No frame to copy this tick — already fully handled.
     None,
+}
+
+struct FrameReleaseGuard<F: FnOnce()> {
+    release: Option<F>,
+}
+
+impl<F: FnOnce()> FrameReleaseGuard<F> {
+    fn new(release: F) -> Self {
+        Self {
+            release: Some(release),
+        }
+    }
+}
+
+impl<F: FnOnce()> Drop for FrameReleaseGuard<F> {
+    fn drop(&mut self) {
+        if let Some(release) = self.release.take() {
+            release();
+        }
+    }
 }
 
 /// Clamp a requested rect `(x, y, w, h)` to `(screen_w, screen_h)` bounds.
@@ -256,6 +331,7 @@ impl DxgiCapture {
                 .map_err(|e| format!("IDXGIOutput::GetDesc failed: {e}"))?;
             let desktop_left = output_desc.DesktopCoordinates.left;
             let desktop_top = output_desc.DesktopCoordinates.top;
+            let display_id = display_fingerprint(&output_desc.DeviceName);
 
             let duplication = output1
                 .DuplicateOutput(&device)
@@ -285,6 +361,7 @@ impl DxgiCapture {
                 height,
                 desktop_left,
                 desktop_top,
+                display_id,
                 consecutive_access_lost: 0,
                 gdi_mode: false,
                 gdi_probe_tick: 0,
@@ -400,22 +477,66 @@ impl DxgiCapture {
         self.try_dxgi_acquire_rect_once(cx, cy, cw, ch)
     }
 
+    /// Acquire one desktop frame and extract every requested ROI from that
+    /// same image. Invalid geometry rejects the request before touching DXGI.
+    /// The DXGI path performs a GPU subrect copy for each ROI while retaining
+    /// one acquired resource; the GDI fallback BitBlts once and crops in memory.
+    pub fn acquire_regions(
+        &mut self,
+        session_epoch: u64,
+        requests: &[CaptureRoi],
+    ) -> Option<FrameBundle> {
+        if !valid_requests(requests, self.width, self.height) {
+            return None;
+        }
+
+        if self.gdi_mode {
+            self.gdi_probe_tick = self.gdi_probe_tick.wrapping_add(1);
+            if self.gdi_probe_tick.is_multiple_of(GDI_RETRY_INTERVAL) {
+                if let Some(bundle) = self.try_dxgi_acquire_regions_once(session_epoch, requests) {
+                    self.gdi_mode = false;
+                    crate::log::error(
+                        "[dxgi] Desktop Duplication recovered — leaving GDI fallback (multi-ROI)",
+                    );
+                    return Some(bundle);
+                }
+            }
+
+            let (full, width, height) = self.gdi_capture()?;
+            let identity = next_capture_identity();
+            let metadata = FrameCaptureMetadata {
+                frame_id: identity.frame_id,
+                session_epoch,
+                acquired_at_ms: identity.acquired_at_ms,
+                display_id: self.display_id,
+                screen_width: width,
+                screen_height: height,
+            };
+            let bundle =
+                FrameBundle::from_full_frame(metadata, CaptureBackend::Gdi, requests, &full);
+            self.diag.gdi_copied += u32::from(bundle.is_some());
+            self.diag.maybe_log();
+            return bundle;
+        }
+
+        self.try_dxgi_acquire_regions_once(session_epoch, requests)
+    }
+
     /// One DXGI `AcquireNextFrame` + full-desktop copy — the exact
     /// pre-GDI-fallback path. Used both for the normal (non-fallback) capture
     /// path and for the periodic recovery probe while already in GDI mode.
     fn try_dxgi_acquire_once(&mut self) -> Option<(Vec<u8>, u32, u32)> {
         let resource = match self.acquire_next_frame() {
-            AcquireOutcome::Resource(r) => r,
+            AcquireOutcome::Resource { resource, .. } => resource,
             AcquireOutcome::None => return None,
         };
 
+        let release = self.frame_release_guard();
         let t0 = std::time::Instant::now();
         let result = self.copy_frame(Some(resource));
         self.diag.copy_full_ms_total += t0.elapsed().as_secs_f64() * 1000.0;
         self.diag.copy_full_count += 1;
-        // Always release the frame, even if the copy failed, or the next
-        // AcquireNextFrame will deadlock.
-        self.release_frame();
+        drop(release);
         if result.is_some() {
             self.first_frame = false;
             self.diag.copied += 1;
@@ -436,17 +557,16 @@ impl DxgiCapture {
         h: u32,
     ) -> Option<(Vec<u8>, u32, u32)> {
         let resource = match self.acquire_next_frame() {
-            AcquireOutcome::Resource(r) => r,
+            AcquireOutcome::Resource { resource, .. } => resource,
             AcquireOutcome::None => return None,
         };
 
+        let release = self.frame_release_guard();
         let t0 = std::time::Instant::now();
-        let result = self.copy_rect(resource, x, y, w, h);
+        let result = self.copy_rect(&resource, x, y, w, h);
         self.diag.copy_rect_ms_total += t0.elapsed().as_secs_f64() * 1000.0;
         self.diag.copy_rect_count += 1;
-        // Always release the frame, even if the copy failed, or the next
-        // AcquireNextFrame will deadlock.
-        self.release_frame();
+        drop(release);
         if result.is_some() {
             self.first_frame = false;
             self.diag.copied_rect += 1;
@@ -455,13 +575,62 @@ impl DxgiCapture {
         result
     }
 
+    fn try_dxgi_acquire_regions_once(
+        &mut self,
+        session_epoch: u64,
+        requests: &[CaptureRoi],
+    ) -> Option<FrameBundle> {
+        let (resource, identity) = match self.acquire_next_frame() {
+            AcquireOutcome::Resource { resource, identity } => (resource, identity),
+            AcquireOutcome::None => return None,
+        };
+        let release = self.frame_release_guard();
+        let metadata = FrameCaptureMetadata {
+            frame_id: identity.frame_id,
+            session_epoch,
+            acquired_at_ms: identity.acquired_at_ms,
+            display_id: self.display_id,
+            screen_width: self.width,
+            screen_height: self.height,
+        };
+
+        let started = Instant::now();
+        let mut copied_regions = 0_u32;
+        let result = (|| {
+            let mut regions = Vec::with_capacity(requests.len());
+            for request in requests {
+                let (bgra, _, _) = self.copy_rect(
+                    &resource,
+                    request.rect.x,
+                    request.rect.y,
+                    request.rect.width,
+                    request.rect.height,
+                )?;
+                copied_regions += 1;
+                regions.push(crate::capture_frame::CapturedRoi {
+                    kind: request.kind,
+                    rect: request.rect,
+                    bgra,
+                });
+            }
+            FrameBundle::new(metadata, CaptureBackend::Dxgi, regions)
+        })();
+        self.diag.copy_rect_ms_total += started.elapsed().as_secs_f64() * 1000.0;
+        self.diag.copy_rect_count += copied_regions;
+        if result.is_some() {
+            self.first_frame = false;
+            self.diag.copied_rect += copied_regions;
+        }
+        self.diag.maybe_log();
+        drop(release);
+        result
+    }
+
     /// Shared `AcquireNextFrame` plumbing — timeout/error handling, the
     /// GDI-fallback bookkeeping (consecutive access-lost counting + threshold
     /// flip), and the first-frame skip. This is the ONE place a `ReleaseFrame`
     /// is paired with every early-out that does NOT return `Resource` below;
-    /// callers only need to release once more, after copying, when they get
-    /// `Resource` back (via [`Self::release_frame`]) — used by both the
-    /// full-frame and rect acquire paths so the 1:1 pairing lives in one spot.
+    /// callers pair successful resource acquisitions with a release guard after copying.
     fn acquire_next_frame(&mut self) -> AcquireOutcome {
         let mut info = DXGI_OUTDUPL_FRAME_INFO::default();
         let mut resource: Option<IDXGIResource> = None;
@@ -497,6 +666,7 @@ impl DxgiCapture {
             self.diag.maybe_log();
             return AcquireOutcome::None;
         }
+        let identity = next_capture_identity();
         self.diag.acquired += 1;
         self.consecutive_access_lost = 0;
 
@@ -519,7 +689,7 @@ impl DxgiCapture {
         }
 
         match resource {
-            Some(r) => AcquireOutcome::Resource(r),
+            Some(resource) => AcquireOutcome::Resource { resource, identity },
             None => {
                 // Contractually AcquireNextFrame's Ok path always yields a
                 // resource, but stay defensive and keep ReleaseFrame 1:1
@@ -531,15 +701,20 @@ impl DxgiCapture {
     }
 
     /// Release the frame most recently returned by a successful
-    /// `AcquireNextFrame` — the ONE place `ReleaseFrame` is called, kept
-    /// 1:1 with every acquire by [`Self::acquire_next_frame`]'s early-outs
-    /// and by both `try_dxgi_acquire_*_once` callers after copying.
+    /// `AcquireNextFrame` when acquisition exits before a release guard is made.
     fn release_frame(&mut self) {
         // SAFETY: only ever called after a successful AcquireNextFrame whose
         // frame hasn't yet been released this tick.
         unsafe {
             let _ = self.duplication.ReleaseFrame();
         }
+    }
+
+    fn frame_release_guard(&self) -> FrameReleaseGuard<impl FnOnce()> {
+        let duplication = self.duplication.clone();
+        FrameReleaseGuard::new(move || unsafe {
+            let _ = duplication.ReleaseFrame();
+        })
     }
 
     /// GDI `BitBlt` fallback capture of the monitor this instance was opened
@@ -770,7 +945,7 @@ impl DxgiCapture {
     /// assumed already clamped to screen bounds by the caller.
     fn copy_rect(
         &mut self,
-        resource: IDXGIResource,
+        resource: &IDXGIResource,
         x: u32,
         y: u32,
         w: u32,
@@ -854,7 +1029,36 @@ impl DxgiCapture {
         unsafe {
             match self.output1.DuplicateOutput(&self.device) {
                 Ok(dup) => {
+                    let output_desc = match self.output1.GetDesc() {
+                        Ok(desc) => desc,
+                        Err(e) => {
+                            eprintln!("[dxgi] output description refresh failed: {e}");
+                            return;
+                        }
+                    };
+                    let mode = dup.GetDesc().ModeDesc;
+                    if mode.Width == 0 || mode.Height == 0 {
+                        eprintln!("[dxgi] recreated duplication reported zero size");
+                        return;
+                    }
+                    if mode.Width != self.width || mode.Height != self.height {
+                        match create_staging_texture(&self.device, mode.Width, mode.Height) {
+                            Ok(staging) => {
+                                self.staging = staging;
+                                self.rect_staging.clear();
+                                self.width = mode.Width;
+                                self.height = mode.Height;
+                            }
+                            Err(e) => {
+                                eprintln!("[dxgi] staging refresh failed: {e}");
+                                return;
+                            }
+                        }
+                    }
                     self.duplication = dup;
+                    self.desktop_left = output_desc.DesktopCoordinates.left;
+                    self.desktop_top = output_desc.DesktopCoordinates.top;
+                    self.display_id = display_fingerprint(&output_desc.DeviceName);
                     // The first frame of the fresh duplication is undefined again.
                     self.first_frame = true;
                 }
@@ -1145,6 +1349,40 @@ fn adapter0_output_rects() -> Option<Vec<(i32, i32, i32, i32)>> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::cell::Cell;
+    use std::rc::Rc;
+
+    #[test]
+    fn release_guard_calls_its_release_action_once_on_drop() {
+        let calls = Rc::new(Cell::new(0));
+        {
+            let released = Rc::clone(&calls);
+            let _guard = FrameReleaseGuard::new(move || released.set(released.get() + 1));
+        }
+        assert_eq!(calls.get(), 1);
+    }
+
+    #[test]
+    fn capture_frame_identity_and_timestamp_never_move_backwards() {
+        let clock = CaptureClock::new();
+        let first = clock.next_identity_at(200);
+        let second = clock.next_identity_at(100);
+        assert!(second.frame_id > first.frame_id);
+        assert!(second.acquired_at_ms >= first.acquired_at_ms);
+        assert_eq!(second.acquired_at_ms, 200);
+    }
+
+    #[test]
+    fn display_fingerprint_ignores_fixed_buffer_tail_but_tracks_device_name() {
+        let mut first = [0_u16; 32];
+        first[..4].copy_from_slice(&[b'\\' as u16, b'\\' as u16, b'.' as u16, 0]);
+        let mut same = first;
+        same[10] = b'x' as u16;
+        let mut other = first;
+        other[2] = b'X' as u16;
+        assert_eq!(display_fingerprint(&first), display_fingerprint(&same));
+        assert_ne!(display_fingerprint(&first), display_fingerprint(&other));
+    }
 
     #[test]
     fn point_in_rect_inside_and_edges() {
@@ -1209,6 +1447,36 @@ mod tests {
     // allows only ONE duplication per output, so they must run serially. Run on a
     // desktop session with:
     //   cargo test --lib dxgi -- --ignored --test-threads=1
+
+    #[test]
+    #[ignore = "requires a real display/GPU"]
+    fn acquire_regions_uses_one_frame_for_multiple_rois() {
+        let mut cap = DxgiCapture::new(0).expect("init primary monitor");
+        assert!(cap.width() >= 128 && cap.height() >= 64);
+        let requests = [
+            CaptureRoi::new(crate::capture_frame::CaptureRoiKind::Minimap, 0, 0, 64, 64),
+            CaptureRoi::new(
+                crate::capture_frame::CaptureRoiKind::SelectedTargetHud,
+                64,
+                0,
+                64,
+                64,
+            ),
+        ];
+
+        for _ in 0..30 {
+            if let Some(bundle) = cap.acquire_regions(19, &requests) {
+                assert_eq!(bundle.regions.len(), 2);
+                assert_eq!(bundle.metadata.session_epoch, 19);
+                assert!(bundle.metadata.frame_id > 0);
+                assert_eq!(bundle.regions[0].bgra.len(), 64 * 64 * 4);
+                assert_eq!(bundle.regions[1].bgra.len(), 64 * 64 * 4);
+                return;
+            }
+            std::thread::sleep(std::time::Duration::from_millis(16));
+        }
+        panic!("no multi-ROI frame captured");
+    }
 
     #[test]
     #[ignore = "requires a real display/GPU"]
