@@ -35,6 +35,7 @@ mod backend {
 
     use tauri::{AppHandle, Emitter, Manager};
 
+    use crate::capture_frame::{CaptureRoi, CaptureRoiKind, FrameCaptureMetadata};
     use crate::cv::detector::{Detection, Detector};
     use crate::cv::draft_detector::DraftRecognizer;
     use crate::cv::draft_region::{DraftRegion, PortraitBox};
@@ -130,6 +131,8 @@ mod backend {
         count: usize,
         detections: Vec<Detection>,
         classifier: bool,
+        capture_frame_id: Option<u64>,
+        capture_acquired_at_ms: Option<u64>,
     }
 
     /// Live minimap mirror for the Command Deck: a downscaled PNG of the exact
@@ -393,10 +396,6 @@ mod backend {
         let mut warned_rect_geometry = false;
 
         loop {
-            if !crate::runtime::gmad_entitled() {
-                std::thread::sleep(Duration::from_millis(250));
-                continue;
-            }
             // Match boundary → rebuild Sentry/Motion/Signal before this tick's
             // frame can fold into last match's tracks. Ahead of the draft and
             // in-game gates so state is already clean when the horn lands.
@@ -505,15 +504,26 @@ mod backend {
                         }
                     }
                     if let Some((cropped, w, h)) = crop_bgra(&full, fw, fh, &state.region) {
-                        process_frame(&mut state, cropped, w, h, &session);
+                        process_frame(&mut state, cropped, w, h, &session, None);
                     }
                 }
             } else {
                 let r = state.region;
                 let (sw, sh) = (dxgi.width(), dxgi.height());
                 let cropped_frame = if rect_is_on_screen(r.x, r.y, r.side, r.side, sw, sh) {
-                    dxgi.acquire_rect(r.x, r.y, r.side, r.side)
-                        .map(|(bytes, w, h)| (bytes, w as usize, h as usize))
+                    let request =
+                        CaptureRoi::new(CaptureRoiKind::Minimap, r.x, r.y, r.side, r.side);
+                    dxgi.acquire_regions(session.session_epoch, &[request])
+                        .and_then(|bundle| {
+                            let metadata = bundle.metadata;
+                            let region = bundle.into_region(CaptureRoiKind::Minimap)?;
+                            Some((
+                                region.bgra,
+                                region.rect.width as usize,
+                                region.rect.height as usize,
+                                Some(metadata),
+                            ))
+                        })
                 } else {
                     // Defensive fallback (should not happen in practice —
                     // `MinimapRegion` is always constructed to fit on screen —
@@ -534,9 +544,10 @@ mod backend {
                     }
                     dxgi.acquire_frame()
                         .and_then(|(full, fw, fh)| crop_bgra(&full, fw, fh, &r))
+                        .map(|(bytes, w, h)| (bytes, w, h, None))
                 };
-                if let Some((cropped, w, h)) = cropped_frame {
-                    process_frame(&mut state, cropped, w, h, &session);
+                if let Some((cropped, w, h, frame_metadata)) = cropped_frame {
+                    process_frame(&mut state, cropped, w, h, &session, frame_metadata);
                 }
             }
             std::thread::sleep(Duration::from_millis(select_interval(&state)));
@@ -762,6 +773,7 @@ mod backend {
         w: usize,
         h: usize,
         session: &crate::runtime::MatchSessionSnapshot,
+        frame_metadata: Option<FrameCaptureMetadata>,
     ) {
         state.sync_match_epoch();
         if !crate::runtime::is_current_capture_session(session.session_epoch) {
@@ -972,6 +984,8 @@ mod backend {
                     candidates,
                     detections,
                     classifier: state.detector.is_active(),
+                    capture_frame_id: frame_metadata.map(|metadata| metadata.frame_id),
+                    capture_acquired_at_ms: frame_metadata.map(|metadata| metadata.acquired_at_ms),
                 };
                 if crate::runtime::is_current_capture_session(session.session_epoch) {
                     let event = crate::runtime::MatchSessionEvent::new(payload, session);

@@ -2,8 +2,8 @@
 title: "G-Maiden MVP Execution DAG"
 doc_id: "mvp-execution-dag"
 status: "draft"
-version: "0.2.4"
-updated: 2026-10-16
+version: "0.2.5"
+updated: 2026-10-18
 owner: "Boss"
 related_docs: ["roadmap", "mvp-backlog", "releases/README"]
 ---
@@ -112,7 +112,7 @@ Depends on เป็น hard edges; conditional edges แสดงเครื�
 | MVP-042 | ตรวจ Voice interruption และ privacy. | W10 | 041, 025, 031, 001.B, 002, 003 | — |
 | MVP-043 | ตรวจ auth remediation หลัง integration. | W02 | 001.B, 002, 004, 003 | AUTH |
 | MVP-044 | ปิด Google-session/revocation contract. | W03 | 004, 043, 001.B, 002, 003 | AUTH, IAM |
-| MVP-045 | ทำ Terms/account/download handoff ที่ยังจำเป็น. | W02 | 004, 001.B, 002, 003 | LANDING, AUTH |
+| MVP-045 | NOT_APPLICABLE: legacy desktop Beta Terms/account/download handoff was cancelled; protected server download operations retain their own authorization. | W02 | 004, 001.B, 002, 003 | LANDING, AUTH |
 | MVP-046 | ทำ update ที่ไม่ขัดแมตช์. | W05 | 004, 015, 001.B, 002, 003 | UPDATER, CORE_STATE, UI_DECK |
 | MVP-047 | ตรวจ resource packaging และ clean install. | W09 | 012, 026, 038, 040, 001.B, 002, 003 | PACKAGING |
 | MVP-048.A | เตรียม harness และเก็บ performance baseline | W02 | 001.B, 002, 006 | PERF_HARNESS |
@@ -302,3 +302,4 @@ Completion or NOT_APPLICABLE decision:
 | 0.2.2 | 2026-10-11 | ขยายความรับผิดชอบ CORE_STATE ให้ reset announcer detector ตาม session epoch และระบุ WGC producer coverage; W04 ยังไม่ชน MVP-028 |
 | 0.2.3 | 2026-10-11 | เพิ่ม UI_SETTINGS lease ให้ MVP-015 เพื่อ clear/gate MasterCard advice เมื่อ session เปลี่ยน; MVP-028 merge barrier ผ่านก่อนขยาย scope |
 | 0.2.4 | 2026-10-16 | Remove retired local review integration and related references. |
+| 0.2.5 | 2026-10-18 | Clarify cancelled Closed Beta handoff scope and keep server-side protected download authorization separate. |

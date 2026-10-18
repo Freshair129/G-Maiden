@@ -1,9 +1,9 @@
 ---
-version: "0.3.3b"
+version: "0.3.4b"
 created_at: "2026-07-21T18:30:56+07:00,ATHER"
 last_update: "2026-07-21T23:10:00+07:00,ATHER"
 status: "active"
-updated: "2026-07-21"
+updated: "2026-10-18"
 attributes:
   domain: "identity-access"
   doc_type: "architecture-flow"
@@ -64,21 +64,22 @@ flowchart TD
   E -- "No" --> Q["Show eligibility/queue status"]
   E -- "Yes" --> D["request-gmad-download: 5-min signed URL"]
   D --> I["Install G-Maiden: installer grants nothing"]
-  I --> X["Desktop Dashboard: access-readiness CTA"]
+  I --> L["Local core: GSI/capture/overlay without account"]
+  L --> X["Optional Account surface"]
   X --> A["Account: Google Authorization Code + PKCE"]
   A --> V["Server validates JWT; derives UUID/GID, grant, Terms"]
-  V --> R{"Entitlement eligible?"}
-  R -- "No" --> F["Account: practical failure CTA"]
-  R -- "Yes" --> S["Dashboard: GSI/Dota setup → ready"]
+  V --> R{"Account action authorized?"}
+  R -- "No" --> F["Protected account action unavailable"]
+  R -- "Yes" --> S["Account services available"]
   S --> M["Future mobile companion: authorize same Google identity"]
   M --> P["Mobile gets its own session; never copies Desktop tokens"]
 ```
 
-The existing Command Deck layout stays unchanged: it may show a readiness row and route to the
-Account page, but Account remains the complete OAuth/entitlement surface. On first launch offline,
-the entitlement gate fails closed. After a server verification, only CR-022's bounded protected
-offline receipt policy may permit local desktop operation; it does not create a transferable mobile
-credential.
+**Status note (2026-10-18):** Closed Beta is cancelled and the former CR-022 desktop first-run gate
+has been removed from current source. The diagram's account path is optional: local desktop GSI,
+capture, and overlay start without sign-in or network. Server authorization remains mandatory for
+protected account operations; this document does not grant local entitlement or create a transferable
+mobile credential. Release-mode offline/revoke acceptance is still pending.
 
 ## 4. Authorization Code Flow + PKCE — primary flow
 
@@ -216,12 +217,13 @@ JWK rotation require issuer capability confirmation and security approval before
 | AUTH-05 | Device flow unsupported by issuer | Pairing UI is absent/disabled; app retains Authorization Code + PKCE flow. |
 | AUTH-06 | Device flow approved; user cancels or code expires | Poll stops; no session or pairing side effect. |
 | AUTH-07 | QR/signed URL/token copied to another device | No durable access is granted; each client must create its own authorized session. |
-| AUTH-08 | Offline fresh Desktop/Mobile launch | No entitlement unlock from cached GID, installer state, or user code. |
+| AUTH-08 | Offline Desktop/Mobile launch | Protected account actions remain unavailable; local desktop core continues without a grant. No access derives from cached GID, installer state, or user code. |
 
 Desktop legacy-flow verification on 2026-07-21 covers issuer-state extraction, missing/malformed/
 undersized/oversized state rejection, exact native state matching, single-use consumption, expiry,
-and callback replay rejection. It does not prove hosted OAuth Server activation or complete the
-CR-022 entitlement gate.
+and callback replay rejection. It does not prove hosted OAuth Server activation or protected account
+operation acceptance. The former CR-022 desktop entitlement gate is historical and no longer gates
+local startup.
 
 Before implementation, obtain approval for: OAuth provider support and redirect registration;
 PKCE/state/secure-store design; JWT issuer/audience/JWK validation; refresh/session revocation;
@@ -233,6 +235,7 @@ SEC-001, CR-021, and CR-022.
 
 | Version | Date | Status | Summary | Agent |
 | --- | --- | --- | --- | --- |
+| 0.3.4b | 2026-10-18 | beta | Clarified that Closed Beta desktop gating is retired and local core is account-optional; account authorization remains server-side. | ATHER |
 | 0.1.0b | 2026-07-21 | candidate | Initial C-3/HIGH multi-client OAuth 2.0, PKCE, JWT, Device Authorization, and future mobile connection design. | ATHER |
 | 0.2.0b | 2026-07-21 | beta | Recorded Boss's high-assurance decision: ADR-17 Supabase OAuth Server transaction boundary; legacy social login remains until hosted capability and security gates pass. | ATHER |
 | 0.2.1b | 2026-07-21 | beta | Corrected residual broker terminology to issuer/Supabase OAuth Server terminology. | ATHER |

@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "document_id": "mvp-execution-dag",
-  "version": "0.2.3",
-  "updated": "2026-10-11",
+  "version": "0.2.5",
+  "updated": "2026-10-18",
   "mode": "execution_active",
   "source": {
     "path": "docs/product/mvp-backlog.md",
-    "version": "0.3.0",
-    "sha256": "153825a568a42fa8e2d9c35877a9ef342f13b9d9901dc562193af3bd95424e51"
+    "version": "0.3.4",
+    "sha256": "D294044110C6B24E5228204BBDC684A3C3790DF83D8ECCDDE7EBD8A75A814142"
   },
   "parallelism": {
     "workers": 3,
@@ -42,7 +42,7 @@
     "CORE_STATE": "src-tauri/src/runtime.rs shared lifecycle/state and announcer.rs epoch-scoped detector state",
     "UTTERANCE": "src-tauri/src/utterance.rs session identity/epoch envelope and stale-event gate",
     "GSI": "src-tauri/src/gsi.rs and ingestion/schema changes",
-    "UI_ONBOARDING": "GmadFirstRunGate/betaReadiness/setup UI",
+    "UI_ONBOARDING": "Local setup/readiness UI; account sign-in is optional and Closed Beta gating is cancelled",
     "UI_SETTINGS": "app/Control and settings lifecycle/session-scoped advice state",
     "UI_OVERLAY": "app/Overlay and in-game components",
     "UI_DECK": "CommandDeck/dashboard routing",
@@ -1602,7 +1602,7 @@
     {
       "id": "MVP-045",
       "parent_task": "MVP-045",
-      "title": "ทำ Terms/account/download handoff ที่ยังจำเป็น.",
+          "title": "NOT_APPLICABLE: cancelled legacy desktop Beta handoff; protected server download operations remain separately authorized.",
       "kind": "work",
       "discipline": "web/legal",
       "priority": "P0",

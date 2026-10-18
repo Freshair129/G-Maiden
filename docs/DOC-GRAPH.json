@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-18T04:32:16.981Z",
+  "generatedAt": "2026-10-18T05:05:53.890Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -153,8 +153,8 @@
       "id": "docs/architecture/gmad-current-first-run-user-flow-walkthrough.md",
       "type": "doc",
       "path": "docs/architecture/gmad-current-first-run-user-flow-walkthrough.md",
-      "title": "G-Maiden Current First-Run User Flow Walkthrough",
-      "status": "draft",
+      "title": "Former G-Maiden Closed Beta First-Run User Flow (Historical)",
+      "status": "historical",
       "domain": "ui-ux"
     },
     {
@@ -621,8 +621,8 @@
       "id": "docs/design-system/08-account-gid.md",
       "type": "doc",
       "path": "docs/design-system/08-account-gid.md",
-      "title": "08 — Account, Login & GID",
-      "status": "draft",
+      "title": "08 — Former Account, Login & GID UX (Historical)",
+      "status": "historical",
       "domain": "ui-ux"
     },
     {
@@ -2583,19 +2583,19 @@
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
-      "line": 288
+      "line": 289
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 289
+      "line": 290
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 305
+      "line": 306
     },
     {
       "from": "docs/architecture/engineering-spec.md",
@@ -6609,67 +6609,67 @@
       "from": "docs/design-system/08-account-gid.md",
       "to": "docs/audits/2026-07-07-independent-full-audit.md",
       "type": "wikilink",
-      "line": 64
+      "line": 71
     },
     {
       "from": "docs/design-system/08-account-gid.md",
       "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
-      "line": 124
+      "line": 131
     },
     {
       "from": "docs/design-system/08-account-gid.md",
       "to": "src/src/auth.ts",
       "type": "symbol",
-      "line": 20
+      "line": 27
     },
     {
       "from": "docs/design-system/08-account-gid.md",
       "to": "src/src/profile.ts",
       "type": "symbol",
-      "line": 20
+      "line": 27
     },
     {
       "from": "docs/design-system/08-account-gid.md",
       "to": "src/src/supabase.ts",
       "type": "symbol",
-      "line": 20
+      "line": 27
     },
     {
       "from": "docs/design-system/08-account-gid.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 20
+      "line": 27
     },
     {
       "from": "docs/design-system/08-account-gid.md",
       "to": "src/src/AccountPage.tsx",
       "type": "symbol",
-      "line": 20
+      "line": 27
     },
     {
       "from": "docs/design-system/08-account-gid.md",
       "to": "src/src/AuthPanel.tsx",
       "type": "symbol",
-      "line": 20
+      "line": 27
     },
     {
       "from": "docs/design-system/08-account-gid.md",
       "to": "src/src/SteamLink.tsx",
       "type": "symbol",
-      "line": 20
+      "line": 27
     },
     {
       "from": "docs/design-system/08-account-gid.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 100
+      "line": 107
     },
     {
       "from": "docs/design-system/08-account-gid.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 100
+      "line": 107
     },
     {
       "from": "docs/design-system/README.md",
@@ -8894,6 +8894,13 @@
       "symbol": "useCompanionData"
     },
     {
+      "file": "docs/architecture/engineering-spec.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.3.1",
+      "changelog": "0.3.0"
+    },
+    {
       "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "line": 187,
       "reason": "anchor-symbol-mismatch",
@@ -8912,7 +8919,7 @@
       "file": "docs/architecture/gmad-current-first-run-user-flow-walkthrough.md",
       "line": null,
       "reason": "version-changelog-mismatch",
-      "frontmatter": "0.4.0b",
+      "frontmatter": "0.4.1b",
       "changelog": "0.1.0b"
     },
     {
@@ -8924,7 +8931,7 @@
       "file": "docs/architecture/oauth-jwt-client-authorization-flows.md",
       "line": null,
       "reason": "version-changelog-mismatch",
-      "frontmatter": "0.3.3b",
+      "frontmatter": "0.3.4b",
       "changelog": "0.3.2b"
     },
     {
@@ -9016,14 +9023,6 @@
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/change request/CR-008-login-hardening.md",
-      "line": 19,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src/src/auth.ts",
-      "anchor": 98,
-      "symbol": "signInWithGoogle"
     },
     {
       "file": "docs/change request/CR-008-login-hardening.md",
@@ -9755,20 +9754,6 @@
       "symbol": "Control"
     },
     {
-      "file": "docs/design-system/05-sitemap-ia.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "2.4.1-draft",
-      "changelog": "2.4.0-draft"
-    },
-    {
-      "file": "docs/design-system/08-account-gid.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "1.1.1-draft",
-      "changelog": "1.1.0-draft"
-    },
-    {
       "file": "docs/design-system/landing_page_prompt.md",
       "line": null,
       "reason": "no-metadata"
@@ -9990,6 +9975,13 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/operations/auth-failure-remediation-proposal.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.2.3b",
+      "changelog": "0.2.2b"
+    },
+    {
       "file": "docs/operations/gmaiden-closed-beta-release-playbook.md",
       "line": null,
       "reason": "version-changelog-mismatch",
@@ -10044,6 +10036,13 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/product/mvp-backlog.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.3.4",
+      "changelog": "0.1.0"
+    },
+    {
       "file": "docs/product/one-pager.md",
       "line": null,
       "reason": "no-metadata"
@@ -10052,6 +10051,13 @@
       "file": "docs/product/roadmap-legacy.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/product/software-requirements-specification.md",
+      "line": null,
+      "reason": "version-changelog-mismatch",
+      "frontmatter": "0.4.1",
+      "changelog": "0.4.0"
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -10369,7 +10375,7 @@
       "file": "docs/releases/release-channel-implementation.md",
       "line": null,
       "reason": "version-changelog-mismatch",
-      "frontmatter": "0.4.0",
+      "frontmatter": "0.4.1",
       "changelog": "0.1.0"
     },
     {
@@ -10407,7 +10413,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-18T04:32:23.881Z",
+    "generatedAt": "2026-10-18T05:06:01.432Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

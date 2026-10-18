@@ -20,10 +20,11 @@ Target acceptance: Windows x64 builds 19045/26100; live Dota 2 5v5 All Pick Rank
 Other modes/layouts require calibration/evidence; unknown coverage must be reported as unknown.
 This target does not claim a tested compatibility result or shipped runtime behavior.
 
-The product target allows local core without account/session/entitlement/network, while the account
-surface remains exposed and protected actions remain server-authorized. The current release still
-has CR-022's first-run gate until MVP-008 changes and verifies it. Closed Beta is cancelled; keep
-Beta/legal/release history and gates accurate without restarting that programme.
+Local core starts without account/session/entitlement/network; the account surface remains optional
+and protected actions remain server-authorized. Current source removes the cancelled Closed Beta
+first-run gate and starts GSI/capture independently of sign-in. Release-mode native acceptance of
+cold/offline/revoke behavior is still pending, so do not claim release readiness from code checks
+alone. Keep Beta/legal/release history accurate without restarting that programme.
 
 Cloud game context is off by default and limited to the explicit own-stat allowlist after separate
 opt-in. G-Voice audio/transcript/free-form question, G-Memory including aggregates, CV, raw
@@ -225,11 +226,11 @@ detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`)
   consent, email automation, a receipt schema, or a Terms-based download gate until legal review
   and an explicit approval are recorded. Required Terms acceptance and optional consents must never
   share one forced checkbox.
-- CR-022's Google/Terms/entitlement first-run gate is still implemented in release builds. Accepted
-  MVP target removes that gate from local-core startup in MVP-008; do not claim account-optional
-  runtime shipped until that implementation and acceptance land. Preserve server authorization for
-  account actions, Google as sole primary sign-in, and no GID/Steam recovery. Do not add a local Beta
-  Terms receipt or change server Terms/issuer/RLS from this product-target reconciliation.
+- CR-022's Google/Terms/entitlement first-run gate was historically shipped and has been removed from
+  current desktop source under the accepted MVP access policy. Local runtime and stable updates no
+  longer depend on that entitlement. Release-mode native acceptance remains pending. Preserve server
+  authorization for account actions, Google as sole primary sign-in, and no GID/Steam recovery. Do not
+  add a local Beta Terms receipt or change server Terms/issuer/RLS from this product-target reconciliation.
 
 ### Custom Agent Skills & SOP
 We maintain custom AI skills under `.agents/skills/`.
@@ -352,19 +353,17 @@ Read it before touching versions. The summary below exists only so this file doe
   is for smoke-testing only — never the release path.
 
 ### How users get updates
-- Both the launch auto-check/banner (`useAppUpdate.ts`) and the first-run gate go through the Rust
+- The launch auto-check/banner (`useAppUpdate.ts`) goes through the Rust
   commands **`check_channel_update`** / **`install_pending_update`**, never the updater plugin's JS
   `check()`. **The channel goes in the endpoint URL, never in `target`** — the plugin uses one
   `target` string for both the URL template and the `platforms{}` key, so overloading it breaks one
   or the other. Manifests stay keyed by platform id; `channel-manifest.mjs` rejects channel-name keys.
-- The channel is backend state (`runtime::update_channel`), set from the entitlement in
-  `verify_gmad_entitlement`, reset to `stable` on lock. Do not reintroduce a frontend-held channel:
-  Control and Overlay are separate JS contexts and the window showing the banner is not the one that
-  signed in.
-- This describes the current implementation. The accepted MVP target lets local core use the
-  existing signed stable updater channel without a Beta grant; MVP-008 must separate local-core
-  startup/update state from account authorization. Do not say that change is shipped before code and
-  runtime acceptance land, and do not add Beta entitlement gating to the target.
+- The desktop currently checks only the signed `stable` updater manifest. The renderer supplies no
+  channel or URL; account sign-in does not change update or local-runtime state. Closed Beta is
+  cancelled and its manifest is historical.
+- The accepted MVP target lets local core use the signed stable updater channel without a Beta grant.
+  Code now follows that policy, while release-mode native acceptance is still pending; do not say
+  runtime acceptance is complete before the offline/revoke matrix is exercised.
 - **A commit/push to `main` does NOT reach users** — only a manifest that a workflow wrote and a
   human merged/approved does.
 
@@ -441,10 +440,10 @@ flag.
   landing queue are live; its **`/ops` admin UI is not** — only the `admin-gmad-controller` Edge
   Function exists (the landing renders `LandingPage` unconditionally, no router, no rewrite).
   The queue/countdown programme is cancelled. The legal acceptance receipt is not shipped and
-  CR-021 awaits counsel review. **CR-022 remains in current code** (`b6a0fc60`):
-  `src/src/GmadFirstRunGate.tsx` gates the whole deck on Google sign-in + current Terms + active
-  entitlement in every release build; MVP-008 must implement/test the accepted optional-local-core
-  target before describing the runtime differently.
+  CR-021 awaits counsel review. **CR-022 was removed from current desktop source** after the owner
+  cancelled Closed Beta and the accepted MVP access policy set account gating to false. The main deck,
+  GSI server, and capture start without account/Terms/entitlement; account operations remain
+  server-authorized. Native release-mode acceptance remains pending.
 - rodio audio backend (in-process WAV, <1ms cancel)
 - Individual stat toggles (timer, score, HP/Mana, K/D/A, gold/NW)
 - Custom overlay positioning with X/Y sliders + profile save/load
@@ -518,6 +517,8 @@ These are **functional requirements**, not flavor text. Maiden must:
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.4.3b | 2026-10-18 | Updated agent guidance to reflect removal of the cancelled Closed Beta startup gate and the remaining native acceptance work. |
+| 0.4.2b | 2026-10-16 | Removed the retired local review integration and its references. |
 | 0.4.1b | 2026-10-12 | Recorded the owner-directed CPU budget update to 10% and the governor's one-second throttle/release policy. |
 | 0.4.0b | 2026-10-10 | Added accepted MVP target versus runtime status, required but incomplete Voice/Memory P0, supported matrix, local-only data rules, account-optional target and current CR-022 gate, and accepted quality limits. |
 | 0.3.1b | 2026-08-28 | Corrected the Rust test count to the measured 291, added known-good baselines for all four suites, mandatory timeout ceilings with the capture-live rule, and the cross-workspace Vitest flag-portability warning. |
@@ -525,4 +526,3 @@ These are **functional requirements**, not flavor text. Maiden must:
 | 0.2.1b | 2026-07-22 | Normalized reader-facing Closed Beta naming from GMAD to G-Maiden while preserving technical identifiers such as functions, buckets, and anchors. |
 | 0.2.0b | 2026-07-21 | Added authoritative GMAD delivery, legal-consent, and desktop first-run handoff context for cross-session agents. |
 | 0.1.0b | 2026-07-21 | Added governance for proposed GID security, recovery, and privacy-safe web profiles; no implementation is implied. |
-| 0.4.2b | 2026-10-16 | Remove retired local review integration and its references. |

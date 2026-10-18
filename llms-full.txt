@@ -2,7 +2,9 @@
 
 > Source-derived context for LLM-assisted navigation, analysis, and maintenance of G-Maiden. Start with llms.txt for a smaller topic index. This reference describes observed code and documents; it does not approve feature changes, certify a deployment, or replace authoritative requirements.
 
-Document version: 0.2.2. Status: active reference. Updated: 2026-10-16 (Asia/Bangkok). Maintainer: RWANG, prepared for Boss. Source baseline: a4a75542c857beaac68267b90e16707ad3263a45 plus the Boss-approved GAP-01/02 remediation committed as 56f9fbd. Application manifest version: 0.13.2. Review method: tracked-file inventory, targeted source/call-site inspection, document comparison, and static reference validation. This is not a line-by-line security audit of every file.
+Document version: 0.2.3. Status: active reference. Updated: 2026-10-18 (Asia/Bangkok). Maintainer: RWANG, prepared for Boss. Detailed source baseline: a4a75542c857beaac68267b90e16707ad3263a45 plus the Boss-approved GAP-01/02 remediation committed as 56f9fbd. Application manifest version: 0.13.2. Review method: tracked-file inventory, targeted source/call-site inspection, document comparison, and static reference validation. This is not a line-by-line security audit of every file.
+
+> **Current source delta (2026-10-18):** Closed Beta was cancelled and its desktop first-run entitlement/Terms gate was removed. Local deck and GSI/capture/overlay startup are account-optional; Google/Steam remain account features, and protected server operations keep their own authorization checks. The updater is stable-only. This file's detailed source inventory and registry below remain a dated 2026-09 baseline, so use current source and `AGENTS.md`/`CLAUDE.md` for present behavior. Native release-mode acceptance remains pending.
 
 Paths below are repository-relative and use forward slashes so the guide survives relocation. Older documents contain absolute G:/ paths; this checkout was reviewed at F:/gmad. References to files in this guide mean source present at the baseline, not externally installed software. Local repository files are not automatically hosted at the landing site's /llms.txt or /llms-full.txt.
 
@@ -152,7 +154,7 @@ slm.rs uses http://127.0.0.1:11434/api/chat. A selected model overrides the fall
 
 ## 8. Desktop UI and data contracts
 
-src/src/App.tsx dispatches overlay to app/Overlay.tsx; otherwise it creates CommandDeck with the settings Control component. In Vite DEV the deck is directly accessible; release frontend wraps it in GmadFirstRunGate. Rust separately seeds entitlement from cfg!(debug_assertions), so frontend and native build modes must agree.
+At the 2026-09 source baseline, src/src/App.tsx dispatched overlay to app/Overlay.tsx and wrapped the release deck in GmadFirstRunGate, while Rust seeded entitlement from cfg!(debug_assertions). That Beta gate has since been cancelled and removed; current access status is recorded in the update note at the top of this file.
 
 | Navigation key | Surface and implementation | Data caveat |
 | --- | --- | --- |
@@ -178,7 +180,7 @@ Canonical router: src-tauri/src/gsi.rs::serve, bound to 127.0.0.1:3000. These ar
 
 | Method | Route | Handler | Behavior |
 | --- | --- | --- | --- |
-| POST | /gsi | handle | Receives game JSON; parses local state, checks native runtime gate, emits game-tick and announcer effects |
+| POST | /gsi | handle | At the 2026-09 baseline, received game JSON, checked the native Beta runtime gate, and emitted events. Current source has removed that gate. |
 | POST | /announcer/install | announcer_install | Reports an already-on-disk pack and can activate it; supports packId and legacy pack |
 | POST | /overlay/layout | overlay_layout_sync | Validates layout, merges/persists settings, broadcasts settings and overlay-layout-sync |
 | POST | /telemetry | telemetry_ingest | Ingests gpu-feeder metrics for governor/resource presentation |
@@ -188,7 +190,7 @@ The announcer endpoint does not upload/extract a new pack or authenticate a clou
 
 ## 10. Registered Tauri commands
 
-The registry is tauri::generate_handler! in src-tauri/src/lib.rs. There are 63 commands at the baseline. Parameters and return types must be read at the named function; these are IPC commands, not HTTP routes. Namespace-qualified Rust entries below are exposed by their command function names.
+The registry is tauri::generate_handler! in src-tauri/src/lib.rs. There were 63 commands at the 2026-09 baseline. The table below is historical: current source no longer registers `verify_gmad_entitlement` or `lock_gmad_runtime`. Parameters and return types must be read at the named function; these are IPC commands, not HTTP routes. Namespace-qualified Rust entries below are exposed by their command function names.
 
 | Group | Registered commands |
 | --- | --- |
@@ -454,7 +456,7 @@ These findings explain how this reference differs from older prose. They are rec
 | No match-related context ever leaves the machine | Cloud advice sends a constructed gameplay summary; raw logs/CV and explicit contribution have separate boundaries | master.rs::build_prompt and backend dispatch; match-share-submit |
 | Old modules.json and test counts describe current app | Five app version sources say 0.13.2; historical counts are not fresh test results | package/config/Cargo/theme version sources; current workflow |
 
-For exact code locations after a refactor, search the symbol rather than trusting old line numbers. Example: rg -n 'fn verify_gmad_entitlement' src-tauri/src/lib.rs. Evidence links in llms.txt point to current files, while this table names stable symbols for locating the relevant behavior.
+For exact code locations after a refactor, search the symbol rather than trusting old line numbers. Example: rg -n 'fn check_channel_update' src-tauri/src/lib.rs. The detailed registry above is a dated baseline; consult current source for present behavior.
 
 ## 23. Verification record and limits
 
@@ -484,11 +486,11 @@ When refreshing, compare these authoritative sets: lib.rs generate_handler regis
 | --- | --- | --- |
 | Missing gank warning | capture.rs, sentry.rs, motion.rs, signal.rs, runtime.rs | Entitlement, capture mode, sensor health, thresholds, audio admission; then live device evidence |
 | Incorrect item/build advice | master.rs, damage.rs, counter_advice.rs, live/buildAdvisor.ts | Available own-game inputs, known-enemy context, chosen backend and UI unknown states |
-| Login/first-run failure | auth.ts, oauthTransaction.ts, gmadEntitlement.ts, lib.rs, gmad_entitlement.rs | OAuth transaction, Terms/eligibility, native gate, grace versus cold-start state |
+| Login/first-run failure | auth.ts, oauthTransaction.ts, securitySession.ts, lib.rs, runtime.rs | Optional OAuth/account session behavior and local cleanup; the former Beta gate is historical |
 | Account security work | CR-034 and execution plan, _shared/iam*, AccountSecurity.tsx | Current approvals, capabilities/AAL/session rules, migrations/grants and isolated negative tests |
 | Voice pack/banner mismatch | schema, voice_api/, announcer.rs, audio.rs, Overlay.tsx | Exact event spelling, active manifest, safe asset path, fallback and banner synchronization |
 | Landing route mismatch | landing/src/main.tsx, App.tsx, vercel.json | Client dispatch separately from deployed deep-link handling |
-| Update failure | lib.rs updater commands, update_channel.rs, manifest tooling | Entitled channel, endpoint, platform key, signature, offered artifact and current manifest |
+| Update failure | lib.rs updater commands, update_channel.rs, manifest tooling | Stable-only desktop endpoint, platform key, signature, offered artifact and current manifest |
 | Feature/doc status question | Current source, feature map/ledger, relevant CR/ADR | Implemented versus conditional/planned, provenance date and acceptance evidence |
 | G-Orchestra modification | orchestration engine/server, package, authoritative GKS atoms | Developer-tool ownership, generated projections and side effects |
 
@@ -500,3 +502,4 @@ When refreshing, compare these authoritative sets: lib.rs generate_handler regis
 | 0.2.0 | 2026-09-12 | Update auth cleanup, shared gate state, native request invalidation and approved in-process grace; link remediation verification. Application version unchanged. |
 | 0.2.1 | 2026-09-13 | Pin remediation commit 56f9fbd and refresh evidence date; implementation contract and application version unchanged. |
 | 0.2.2 | 2026-10-16 | Remove retired local review integration references; implementation baseline and runtime acceptance claims are unchanged. |
+| 0.2.3 | 2026-10-18 | Record cancellation of the Closed Beta desktop gate and link the local account-optional startup contract; detailed registry remains the dated baseline. |
