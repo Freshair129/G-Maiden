@@ -9,6 +9,7 @@ use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tauri_plugin_updater::UpdaterExt;
 
+pub mod action_damage;
 pub mod announcer;
 pub mod audio;
 mod calibration;
