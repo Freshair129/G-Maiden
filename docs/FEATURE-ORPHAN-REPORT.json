@@ -1,6 +1,6 @@
 {
   "_generated": "GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs",
-  "generatedAt": "2026-10-16T06:30:38.452Z",
+  "generatedAt": "2026-10-18T03:15:25.008Z",
   "baselineOrphanCandidates": 0,
   "rowCount": 22,
   "summary": {
@@ -61,6 +61,8 @@
         "features-readme"
       ],
       "weakAnchors": [
+        "docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md",
+        "docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md",
         "docs/features/G-SERIES-DATA-LINEAGE.md",
         "docs/features/README.md",
         "docs/product/competitive-brief.md",
