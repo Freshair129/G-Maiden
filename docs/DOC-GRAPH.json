@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-16T06:30:28.166Z",
+  "generatedAt": "2026-10-18T03:15:17.356Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -113,6 +113,13 @@
       "path": "docs/architecture/adr/ADR-18-dev-runtime-governance-split.md",
       "title": "ADR: Dev & Runtime Governance Split — RWANG builder · G-Orchestra governor · skill→harness release",
       "status": "accepted"
+    },
+    {
+      "id": "docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md",
+      "type": "doc",
+      "path": "docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md",
+      "title": "ADR-19: Local HUD Observation and Action-Scoped Lethality",
+      "status": "draft"
     },
     {
       "id": "docs/architecture/assets/design-references/README.md",
@@ -522,6 +529,13 @@
       "status": "draft",
       "doc_type": "change-request",
       "domain": "account-identity-security"
+    },
+    {
+      "id": "docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md",
+      "type": "doc",
+      "path": "docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md",
+      "title": "CR-035: Selected Target HUD CV and Action-Specific Lethality",
+      "status": "draft"
     },
     {
       "id": "docs/change request/DXGI-task-assignment.md",
@@ -1836,37 +1850,37 @@
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/README.md",
       "type": "wikilink",
-      "line": 154
+      "line": 155
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 156
+      "line": 157
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/operations/gmaiden-closed-beta-release-playbook.md",
       "type": "wikilink",
-      "line": 177
+      "line": 179
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 195
+      "line": 197
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 197
+      "line": 199
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 202
+      "line": 204
     },
     {
       "from": "docs/README.md",
@@ -2341,6 +2355,48 @@
       "to": "src/src/supabase.ts",
       "type": "symbol",
       "line": 166
+    },
+    {
+      "from": "docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md",
+      "to": "docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md",
+      "type": "wikilink",
+      "line": 14
+    },
+    {
+      "from": "docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md",
+      "to": "docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md",
+      "type": "wikilink",
+      "line": 136
+    },
+    {
+      "from": "docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md",
+      "to": "docs/features/FEAT-G-DAMAGE.md",
+      "type": "wikilink",
+      "line": 137
+    },
+    {
+      "from": "docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md",
+      "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "type": "wikilink",
+      "line": 138
+    },
+    {
+      "from": "docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md",
+      "to": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
+      "type": "wikilink",
+      "line": 139
+    },
+    {
+      "from": "docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md",
+      "to": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
+      "type": "wikilink",
+      "line": 140
+    },
+    {
+      "from": "docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 141
     },
     {
       "from": "docs/architecture/design-system.md",
@@ -5023,6 +5079,48 @@
       "to": "docs/change request/CR-014-document-impact-map-gmaiden-adapter.md",
       "type": "symbol",
       "line": 30
+    },
+    {
+      "from": "docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md",
+      "to": "docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md",
+      "type": "wikilink",
+      "line": 16
+    },
+    {
+      "from": "docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md",
+      "to": "docs/features/FEAT-G-DAMAGE.md",
+      "type": "wikilink",
+      "line": 16
+    },
+    {
+      "from": "docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md",
+      "to": "docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md",
+      "type": "wikilink",
+      "line": 148
+    },
+    {
+      "from": "docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md",
+      "to": "docs/features/FEAT-G-DAMAGE.md",
+      "type": "wikilink",
+      "line": 149
+    },
+    {
+      "from": "docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md",
+      "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "type": "wikilink",
+      "line": 150
+    },
+    {
+      "from": "docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md",
+      "to": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
+      "type": "wikilink",
+      "line": 151
+    },
+    {
+      "from": "docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 152
     },
     {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
@@ -8699,19 +8797,19 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 147,
+      "line": 148,
       "reason": "glob-slug",
       "slug": "SPEC--*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 149,
+      "line": 150,
       "reason": "glob-slug",
       "slug": "ADR-O-*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 158,
+      "line": 159,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -9211,6 +9309,14 @@
     },
     {
       "file": "docs/design-system/03-layout.md",
+      "line": 80,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/CommandDeck.tsx",
+      "anchor": 44,
+      "symbol": "SignalGrid"
+    },
+    {
+      "file": "docs/design-system/03-layout.md",
       "line": 135,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/styles.css",
@@ -9595,6 +9701,14 @@
     },
     {
       "file": "docs/design-system/05-sitemap-ia.md",
+      "line": 61,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/CommandDeck.tsx",
+      "anchor": 42,
+      "symbol": "DeckTabs"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
       "line": 62,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/CompanionPages.tsx",
@@ -9640,6 +9754,14 @@
       "target": "src/src/CompanionPages.tsx",
       "anchor": 196,
       "symbol": "HistoryPage"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": 140,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/App.tsx",
+      "anchor": 5,
+      "symbol": "Control"
     },
     {
       "file": "docs/design-system/05-sitemap-ia.md",
@@ -10246,7 +10368,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-16T06:30:37.959Z",
+    "generatedAt": "2026-10-18T03:15:24.386Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,
