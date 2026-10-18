@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildDiagnosticBundle, buildFeedback, compatibilityMode, readinessFromRuntime } from "../betaReadiness";
+import { compatibilityMode, readinessFromRuntime } from "../runtimeReadiness";
 import type { GsiStatus, SensorHealth } from "../live/events";
 
 const liveGsi: GsiStatus = {
@@ -80,13 +80,4 @@ describe("runtime readiness contract", () => {
     expect(readiness.minimap).toBe("unknown");
   });
 
-  it("records the honest states in the diagnostic schema and requires consent for feedback", () => {
-    const readiness = readinessFromRuntime({ gsiConfigured: null, gsiStatus: null, sensorHealth: null, overlayReady: null });
-    const bundle = buildDiagnosticBundle({ version: "0.13.0", channel: "stable", readiness, updateStatus: "current", userNote: "test" });
-
-    expect(bundle.schemaVersion).toBe(2);
-    expect(bundle.readiness).toEqual({ gsi: "unknown", capture: "unknown", minimap: "unknown", overlay: "unknown", audio: "unknown" });
-    expect(bundle.privacy).toEqual({ rawFramesIncluded: false, credentialsIncluded: false, tokensIncluded: false });
-    expect(() => buildFeedback({ category: "capture", description: "unknown", diagnostics: bundle, consent: false })).toThrow(/consent/);
-  });
 });

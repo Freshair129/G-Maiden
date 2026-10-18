@@ -3,22 +3,17 @@ import {
   ArrowUpRight,
   BrainCircuit,
   Crown,
-  Fingerprint,
   HardDrive,
-  LoaderCircle,
-  LogOut,
   Radio,
   ScanLine,
   ShieldCheck,
   X,
 } from 'lucide-react'
-import { useBetaEnrollment } from './beta'
-import BetaAccessPanel from './BetaAccessPanel'
 import HeroMedia25D from './HeroMedia25D'
 import { useScrollNarrative } from './scrollNarrative'
 
 const NAV_ITEMS: Array<{ label: string; href: string; external?: boolean }> = [
-  { label: 'ปล่อยรอบถัดไป', href: '#roadmap' },
+  { label: 'สถานะการพัฒนา', href: '#roadmap' },
   { label: 'ฟีเจอร์', href: '#features' },
   {
     label: 'วิธีทำงาน',
@@ -107,42 +102,42 @@ const PRIMARY_URL =
 const ROADMAP_URL =
   'https://github.com/Freshair129/G-Maiden/blob/main/docs/product/roadmap.md'
 
-const RELEASE_PATH = [
-  {
-    step: '01',
-    title: 'เปิดบัญชี G-Maiden ID',
-    body: 'เข้าสู่ระบบด้วย Google เพื่อรับ GID ซึ่งจะเป็นบัญชีเดียวกันสำหรับหน้าเว็บและตัวแอปในรอบปล่อยถัดไป',
-    status: 'พร้อมใช้งานตอนนี้',
-  },
-  {
-    step: '02',
-    title: 'รอหน้าต่าง Open Beta',
-    body: 'นับถอยหลังสู่ 24 กรกฎาคม เวลา 18:00 น. โดยหน้าเว็บจะใช้เป็นจุดประกาศช่องทางเข้าใช้งานและอัปเดตสถานะรอบปล่อยใหม่',
-    status: 'กำลังนับถอยหลัง',
-  },
-  {
-    step: '03',
-    title: 'ใช้ GID เดียวกันในแอป',
-    body: 'เมื่อ release surface ใหม่พร้อม คุณจะใช้ GID เดิมเพื่อไปต่อกับ desktop onboarding และการตั้งค่าภายใน G-Maiden',
-    status: 'ขั้นถัดไปของ funnel',
-  },
-] as const
-
 const PRODUCT_STATUS = [
   {
-    label: 'SHIPPED',
-    title: 'v0.13.0 พร้อมแล้ว',
-    detail: 'Overlay รุ่นปัจจุบัน, บัญชี Google OAuth และ GID ใช้งานได้จริงแล้วในโปรดักต์',
+    label: 'LOCAL CORE',
+    title: 'เริ่มใช้งานโดยไม่ต้องลงชื่อเข้าใช้',
+    detail: 'GSI, capture และ overlay ทำงานแยกจากบัญชี ส่วนบัญชี Google เป็นตัวเลือกสำหรับฟังก์ชันบัญชีเท่านั้น',
   },
   {
-    label: 'NOW',
-    title: 'โฟกัสงานพร้อมปล่อย',
-    detail: 'งานหน้าบ้านตอนนี้คือเก็บ voice/persona, ปิด NFR ที่ค้าง และจัด release surface ชุดใหม่ให้พร้อมใช้งานจริง',
+    label: 'CURRENT',
+    title: 'ตรวจความพร้อมจากหลักฐาน',
+    detail: 'แยกผลทดสอบในเครื่อง การตรวจรับบน desktop และสถานะ release ออกจากกันอย่างชัดเจน',
   },
   {
     label: 'NEXT',
-    title: 'เปิด Open Beta ด้วย funnel ใหม่',
-    detail: 'หน้าเว็บจะพาผู้ใช้จาก GID ไปสู่การเข้าใช้ G-Maiden รอบถัดไปโดยไม่ย้อนกลับไปใช้คิวดาวน์โหลดเดิม',
+    title: 'พัฒนาฟีเจอร์และปิดงานตรวจรับ',
+    detail: 'สถานะ release จะเปลี่ยนเมื่อ build, QA และเกณฑ์รับมอบที่เกี่ยวข้องผ่านครบ',
+  },
+] as const
+
+const DEVELOPMENT_STEPS = [
+  {
+    step: '01',
+    title: 'เริ่มจาก local core',
+    body: 'GSI, capture และ overlay ทำงานได้โดยไม่ต้องมีบัญชีหรือการเชื่อมต่อเครือข่าย',
+    status: 'บัญชีไม่บังคับ',
+  },
+  {
+    step: '02',
+    title: 'ใช้บัญชีเฉพาะงานที่ต้องใช้',
+    body: 'Google sign-in ใช้กับฟังก์ชันบัญชี ส่วน GID และ Steam ไม่ใช่รหัสผ่านหรือช่องทางกู้คืน',
+    status: 'แยกจาก local core',
+  },
+  {
+    step: '03',
+    title: 'ปล่อยเมื่อผ่านเกณฑ์ตรวจรับ',
+    body: 'สถานะความพร้อมอิงผล build, QA และ acceptance evidence ของแต่ละแพลตฟอร์ม',
+    status: 'ต้องมีหลักฐาน',
   },
 ] as const
 
@@ -159,45 +154,11 @@ const DEMO_VIDEOS = [
   },
 ] as const
 
-const OPEN_BETA_AT = new Date('2026-07-24T18:00:00+07:00').getTime()
-
-function getOpenBetaCountdown(now: number) {
-  const remaining = Math.max(0, OPEN_BETA_AT - now)
-  const totalSeconds = Math.floor(remaining / 1000)
-
-  return {
-    isOpen: remaining === 0,
-    totalHours: Math.floor(totalSeconds / 3_600),
-    minutes: Math.floor((totalSeconds % 3_600) / 60),
-    seconds: totalSeconds % 60,
-  }
-}
-
 function LandingPage() {
   const landingRootRef = useScrollNarrative()
   const [menuOpen, setMenuOpen] = useState(false)
   const menuId = useId()
   const menuButtonRef = useRef<HTMLButtonElement>(null)
-  const beta = useBetaEnrollment()
-  const [openBetaCountdown, setOpenBetaCountdown] = useState(() => getOpenBetaCountdown(Date.now()))
-
-  const betaBusy = beta.status === 'loading' || beta.status === 'enrolling'
-  const betaLabel = beta.gid
-    ? beta.gid
-    : betaBusy
-      ? 'กำลังเชื่อมต่อ'
-      : 'รับ GID'
-  const heroPrimaryLabel = beta.gid
-    ? `พร้อมแล้ว · ${beta.gid}`
-    : betaBusy
-      ? 'กำลังออก GID'
-      : 'เปิดบัญชี G-Maiden ID'
-
-  useEffect(() => {
-    const timer = window.setInterval(() => setOpenBetaCountdown(getOpenBetaCountdown(Date.now())), 1_000)
-    return () => window.clearInterval(timer)
-  }, [])
-
   useEffect(() => {
     if (!menuOpen) return
 
@@ -252,19 +213,13 @@ function LandingPage() {
             ))}
           </nav>
 
-          <button
-            type="button"
-            disabled={betaBusy}
-            onClick={() => void beta.register()}
-            className="group hidden min-h-11 items-center gap-3 border border-white/30 px-6 py-3 font-inter text-xs uppercase tracking-widest transition-colors hover:border-white/60 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:cursor-wait disabled:opacity-60 md:flex"
+          <a
+            href="/demo"
+            className="group hidden min-h-11 items-center gap-3 border border-white/30 px-6 py-3 font-inter text-xs uppercase tracking-widest transition-colors hover:border-white/60 hover:bg-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice md:flex"
           >
-            {betaLabel}
-            {betaBusy ? (
-              <LoaderCircle className="h-4 w-4 animate-spin" />
-            ) : (
-              <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
-            )}
-          </button>
+            ลองดูเดโม
+            <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+          </a>
 
           <button
             ref={menuButtonRef}
@@ -326,21 +281,17 @@ function LandingPage() {
               </a>
             ))}
 
-            <button
-              type="button"
-              disabled={betaBusy}
-              className={`group mt-5 flex min-h-12 items-center gap-3 border border-white/30 px-7 py-3 font-inter text-xs uppercase tracking-widest transition-all duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice disabled:cursor-wait disabled:opacity-60 ${
+            <a
+              href="/demo"
+              className={`group mt-5 flex min-h-12 items-center gap-3 border border-white/30 px-7 py-3 font-inter text-xs uppercase tracking-widest transition-all duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice ${
                 menuOpen ? 'translate-y-0 opacity-100' : 'translate-y-5 opacity-0'
               }`}
               style={{ transitionDelay: `${NAV_ITEMS.length * 80 + 100}ms` }}
-              onClick={() => {
-                closeMenu()
-                void beta.register()
-              }}
+              onClick={closeMenu}
             >
-              {betaLabel}
-              {betaBusy ? <LoaderCircle className="h-4 w-4 animate-spin" /> : <ArrowUpRight className="h-4 w-4" />}
-            </button>
+              ลองดูเดโม
+              <ArrowUpRight className="h-4 w-4" />
+            </a>
           </nav>
         </div>
 
@@ -362,52 +313,25 @@ function LandingPage() {
 
               <p className="animate-fade-up-delay-2 mt-5 max-w-md font-inter text-sm leading-relaxed text-white/70 sm:mt-6 sm:text-base lg:mt-7">
                 Maiden คอยเก็บสัญญาณที่อาจหลุดสายตาระหว่างไฟต์ แจ้งเตือนด้วยเสียง และช่วยให้คุณจดจ่อกับ
-                <strong className="font-semibold text-white"> จังหวะตรงหน้า</strong> พร้อมปูบัญชีสำหรับ release รอบถัดไปไว้ล่วงหน้า
+                <strong className="font-semibold text-white"> จังหวะตรงหน้า</strong>
               </p>
 
               <div className="hero-actions animate-fade-up-delay-3 mt-6 flex flex-wrap items-center gap-3 sm:mt-8 sm:gap-4">
-                <button
-                  type="button"
-                  disabled={betaBusy}
-                  onClick={() => void beta.register()}
-                  className="group flex min-h-11 items-center gap-3 bg-action px-5 py-3 font-inter text-[11px] font-semibold uppercase tracking-widest text-white transition-colors hover:bg-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice focus-visible:ring-offset-2 focus-visible:ring-offset-void disabled:cursor-wait disabled:opacity-70 sm:min-h-12 sm:px-7 sm:py-4 sm:text-xs"
-                >
-                  {heroPrimaryLabel}
-                  {betaBusy ? (
-                    <LoaderCircle className="h-4 w-4 animate-spin" />
-                  ) : (
-                    <Fingerprint className="h-4 w-4 transition-transform group-hover:scale-110" />
-                  )}
-                </button>
-
                 <a
-                  href="#roadmap"
-                  className="secondary-cta group flex min-h-11 items-center gap-3 border border-white/25 px-5 py-3 font-inter text-[11px] font-semibold uppercase tracking-widest text-white/80 transition-colors hover:border-white/50 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:min-h-12 sm:px-6 sm:py-4 sm:text-xs"
+                  href="/demo"
+                  className="group flex min-h-11 items-center gap-3 bg-action px-5 py-3 font-inter text-[11px] font-semibold uppercase tracking-widest text-white transition-colors hover:bg-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice focus-visible:ring-offset-2 focus-visible:ring-offset-void sm:min-h-12 sm:px-7 sm:py-4 sm:text-xs"
                 >
-                  ดูแผนปล่อยรอบถัดไป
+                  ลองดู Public Demo
                   <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
                 </a>
-              </div>
 
-              <div className="animate-fade-up-delay-4 mt-4 min-h-5" aria-live="polite">
-                {beta.gid && (
-                  <div className="beta-confirmation flex max-w-md items-center gap-3 border-l-2 border-signal bg-black/35 px-3 py-2.5 backdrop-blur-sm">
-                    <ShieldCheck className="h-5 w-5 shrink-0 text-signal" />
-                    <p className="font-inter text-[10px] uppercase leading-relaxed tracking-wider text-white/75 sm:text-xs">
-                      GID เดียวกับ G-Maiden · {beta.email}
-                      <span className="block text-white/45">บัญชีนี้จะใช้ต่อบน desktop app และ release รอบถัดไป</span>
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => void beta.signOut()}
-                      className="ml-auto flex min-h-11 min-w-11 items-center justify-center text-white/45 transition-colors hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice"
-                      aria-label="ออกจากระบบ"
-                    >
-                      <LogOut className="h-4 w-4" />
-                    </button>
-                  </div>
-                )}
-                {beta.error && <p className="max-w-md font-inter text-xs text-red-300" role="alert">{beta.error}</p>}
+                <a
+                  href="#features"
+                  className="secondary-cta group flex min-h-11 items-center gap-3 border border-white/25 px-5 py-3 font-inter text-[11px] font-semibold uppercase tracking-widest text-white/80 transition-colors hover:border-white/50 hover:bg-white/10 hover:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ice sm:min-h-12 sm:px-6 sm:py-4 sm:text-xs"
+                >
+                  ดูฟีเจอร์
+                  <ArrowUpRight className="h-4 w-4 transition-transform group-hover:-translate-y-0.5 group-hover:translate-x-0.5" />
+                </a>
               </div>
 
               <dl className="animate-fade-up-delay-4 mt-5 flex flex-wrap gap-x-5 gap-y-4 sm:mt-7 sm:gap-x-10 lg:mt-8 lg:gap-x-14">
@@ -429,7 +353,7 @@ function LandingPage() {
               <div className="hero-demo-shell">
                 <div className="hero-demo-copy">
                   <p className="hero-demo-kicker">VDO DEMO</p>
-                  <h2 className="thai-display">ดู flow ก่อนถึงเวลา Open Beta</h2>
+                  <h2 className="thai-display">ดูการทำงานของ G-Maiden</h2>
                 </div>
                 <div className="hero-demo-frame">
                   <video className="hero-demo-video" autoPlay loop muted playsInline preload="metadata" controls>
@@ -443,50 +367,6 @@ function LandingPage() {
               </div>
             </div>
 
-            <aside className="launch-beacon open-beta-countdown animate-fade-up-delay-3" aria-live="polite">
-              <i className="absolute left-0 top-0 h-14 w-14 border-l-2 border-t-2 border-ice-bright shadow-[-0.4rem_-0.4rem_1.5rem_rgba(143,212,255,0.4)]" aria-hidden="true" />
-              <i className="absolute right-0 top-0 h-14 w-14 border-r-2 border-t-2 border-ice-bright shadow-[0.4rem_-0.4rem_1.5rem_rgba(143,212,255,0.4)]" aria-hidden="true" />
-              <i className="absolute bottom-0 left-0 h-14 w-14 border-b-2 border-l-2 border-ice-bright" aria-hidden="true" />
-              <i className="absolute bottom-0 right-0 h-14 w-14 border-b-2 border-r-2 border-ice-bright" aria-hidden="true" />
-              <i className="absolute left-12 right-12 top-0 h-px bg-gradient-to-r from-transparent via-ice-bright to-transparent shadow-[0_0_1rem_rgba(143,212,255,1)]" aria-hidden="true" />
-              <i className="absolute -left-1/4 top-1/2 h-px w-[150%] -rotate-12 bg-gradient-to-r from-transparent via-white/70 to-transparent opacity-60" aria-hidden="true" />
-              <div className="relative">
-                {openBetaCountdown.isOpen ? (
-                  <>
-                    <p className="launch-beacon-eyebrow">Open Beta</p>
-                    <p className="mt-2 font-inter text-lg font-semibold tracking-[0.16em] text-white sm:text-xl">เปิดแล้ว</p>
-                  </>
-                ) : (
-                  <>
-                    <div className="launch-beacon-head">
-                      <p className="launch-beacon-eyebrow">Open Beta</p>
-                      <p className="launch-beacon-date">24 กรกฎาคม · 18:00 น.</p>
-                    </div>
-                    <p className="launch-clock mt-4 flex items-baseline justify-between font-inter font-black leading-none text-white [text-shadow:0_0_1.5rem_rgba(143,212,255,0.85)]">
-                      <span>{String(openBetaCountdown.totalHours).padStart(2, '0')}</span>
-                      <span className="animate-pulse text-ice-bright">:</span>
-                      <span>{String(openBetaCountdown.minutes).padStart(2, '0')}</span>
-                      <span className="animate-pulse text-ice-bright">:</span>
-                      <span>{String(openBetaCountdown.seconds).padStart(2, '0')}</span>
-                    </p>
-                    <div className="mt-4 flex items-center justify-between border-t border-ice-bright/60 pt-3 font-inter text-[9px] font-semibold uppercase tracking-[0.22em] text-white/70">
-                      <span>Hours to launch</span>
-                      <span className="flex items-center gap-2 text-ice-bright">
-                        <i className="h-1.5 w-1.5 animate-pulse rounded-full bg-ice-bright shadow-[0_0_0.65rem_rgba(143,212,255,1)]" />
-                        Live clock
-                      </span>
-                    </div>
-                  </>
-                )}
-              </div>
-              <a className="launch-beacon-cta" href="#roadmap">
-                <span className="launch-beacon-cta-copy">
-                  <strong>ดูแผนปล่อยและสถานะบัญชี</strong>
-                  <small>สรุปว่า GID วันนี้จะพาคุณไปต่ออย่างไรในรอบปล่อยถัดไป</small>
-                </span>
-                <ArrowUpRight className="h-4 w-4" aria-hidden="true" />
-              </a>
-            </aside>
           </div>
         </section>
       </div>
@@ -495,10 +375,10 @@ function LandingPage() {
         <div className="demo-shell">
           <div className="demo-intro">
             <p className="features-kicker"><span aria-hidden="true">//</span> VDO DEMO</p>
-            <h2 id="demo-title" className="thai-display">ดู flow การใช้งานจากคลิปเดโมจริง</h2>
+            <h2 id="demo-title" className="thai-display">ดูตัวอย่างการทำงานจากคลิปเดโม</h2>
             <p>
               ใช้คลิปเดโมชุดนี้เพื่อดูจังหวะการเตือนและบรรยากาศการใช้งานของ G-Maiden
-              ก่อนเปิด Open Beta โดยไม่แย่งสายตาจาก Hero section หลัก
+              โดยไม่ต้องติดตั้งแอป
             </p>
           </div>
 
@@ -522,17 +402,16 @@ function LandingPage() {
       <section id="roadmap" className="roadmap-section" aria-labelledby="roadmap-title" data-scroll-reveal>
         <div className="roadmap-shell">
           <div className="roadmap-intro">
-            <p className="features-kicker"><span aria-hidden="true">//</span> NEXT RELEASE</p>
-            <h2 id="roadmap-title" className="thai-display">เส้นทางปล่อยรอบถัดไป</h2>
+            <p className="features-kicker"><span aria-hidden="true">//</span> CURRENT PLAN</p>
+            <h2 id="roadmap-title" className="thai-display">สถานะการพัฒนา</h2>
             <p>
-              หน้าเว็บรอบนี้ไม่ใช้ flow คิวดาวน์โหลด Closed Beta แบบเดิมแล้ว
-              แต่ใช้ funnel ที่โฟกัสบัญชี, สถานะการปล่อย และความพร้อมเข้าใช้งาน G-Maiden รอบใหม่แทน
+              แสดงขอบเขตการใช้งานและความพร้อมตามหลักฐาน โดย local core ใช้งานได้โดยไม่ต้องผูกกับบัญชี
             </p>
           </div>
 
           <div className="roadmap-grid">
             <div className="roadmap-track">
-              {RELEASE_PATH.map((item) => (
+              {DEVELOPMENT_STEPS.map((item) => (
                 <article key={item.step} className="roadmap-step">
                   <div className="roadmap-step-index" aria-hidden="true">{item.step}</div>
                   <div className="roadmap-step-copy">
@@ -548,36 +427,15 @@ function LandingPage() {
 
             <aside className="roadmap-panel">
               <div className="roadmap-panel-group">
-                <p className="roadmap-panel-label">บัญชีของคุณ</p>
-                {beta.gid ? (
-                  <>
-                    <div className="roadmap-account roadmap-account-ready">
-                      <ShieldCheck aria-hidden="true" />
-                      <div>
-                        <strong>{beta.gid}</strong>
-                        <p>{beta.email}</p>
-                        <small>บัญชีนี้พร้อมใช้ต่อบนเว็บและ desktop app ทันทีเมื่อ release surface ใหม่เปิดใช้งาน</small>
-                      </div>
-                    </div>
-                    <BetaAccessPanel signedIn={beta.status === 'registered'} />
-                  </>
-                ) : (
-                  <div className="roadmap-account">
-                    <Fingerprint aria-hidden="true" />
-                    <div>
-                      <strong>ยังไม่ได้ผูก GID</strong>
-                      <p>เริ่มจาก Google sign-in เพื่อสร้างบัญชี G-Maiden ID ล่วงหน้า</p>
-                    </div>
-                    <button
-                      type="button"
-                      disabled={betaBusy}
-                      className="roadmap-primary"
-                      onClick={() => void beta.register()}
-                    >
-                      {betaBusy ? 'กำลังเชื่อมต่อ…' : 'รับ GID ตอนนี้'}
-                    </button>
+                <p className="roadmap-panel-label">ขอบเขตบัญชี</p>
+                <div className="roadmap-account roadmap-account-ready">
+                  <ShieldCheck aria-hidden="true" />
+                  <div>
+                    <strong>บัญชีเป็นตัวเลือก</strong>
+                    <p>Google ใช้กับการทำงานที่เกี่ยวกับบัญชีเท่านั้น</p>
+                    <small>ไม่มี login, Terms หรือ entitlement มากั้นการเริ่ม local core</small>
                   </div>
-                )}
+                </div>
               </div>
 
               <div className="roadmap-panel-group">

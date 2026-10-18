@@ -47,9 +47,8 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   // the last own-state tick after its source has crossed the freshness limit.
   const matchActive = previewMode ? !!lastTick?.in_game : !!gsiStatus?.dota_running && !!gsiStatus.in_game
   // Minimap-sensor truth. Starts NULL, and null is treated as "not healthy" —
-  // fail-closed. In a release build the capture thread only starts after the
-  // entitlement check, so "we have never heard from it" is a real state, and
-  // it must not read as a working sensor (audit B3).
+  // fail-closed. Until a fresh capture status arrives, the overlay must not
+  // report the sensor as healthy (audit B3).
   const [sensorHealth, setSensorHealth] = useState<SensorHealth | null>(null)
   // #6: mirror each Maiden voice line as a transient on-screen toast so triggers
   // are verifiable even before the voice pack / TTS is finalized (debug aid —

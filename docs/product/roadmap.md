@@ -2,8 +2,8 @@
 title: "G-Maiden MVP Roadmap"
 doc_id: "roadmap"
 status: "active"
-version: "1.3.0"
-updated: "2026-10-12"
+version: "1.4.0"
+updated: "2026-10-18"
 owner: "Boss"
 related_docs: ["software-requirements-specification", "product-requirements", "mvp-backlog", "mvp-execution-dag", "G-SERIES-DATA-LINEAGE", "releases/README"]
 ---
@@ -11,8 +11,6 @@ related_docs: ["software-requirements-specification", "product-requirements", "m
 # G-Maiden MVP Roadmap
 
 เป้าหมายคือผู้เล่นติดตั้ง G-Maiden แล้วใช้งานได้ครบวงจร **เปิดแอป → ตั้งค่า → เล่นหนึ่งแมตช์ → รับคำแนะนำที่เชื่อถือได้ → สรุปหลังเกม → กลับมาเล่นครั้งถัดไป** โดยไม่ต้องแก้ไฟล์หรือใช้ terminal เอง
-
-**Closed Beta ถูกยกเลิกตามคำสั่งเจ้าของโปรดักต์ในบทสนทนานี้** เพราะความพร้อมของผลิตภัณฑ์ยังไม่ถึงเป้าหมาย แผนปัจจุบันเน้นพัฒนาและตรวจรับ MVP ภายในก่อน ไม่มีวันเปิด Beta หรือวัน release ที่ตกลงแล้ว การเลื่อน milestone ใช้ผลตรวจรับ ไม่ผูกกับเลขเวอร์ชัน
 
 แผนนี้กำหนด milestones ส่วน task และ acceptance criteria อยู่ที่ [[mvp-backlog]]; ลำดับ execution, conditional dependencies, waves และการจองไฟล์/เครื่องอยู่ที่ [[mvp-execution-dag]] การมี task ใน backlog ไม่เปลี่ยนสถานะ implementation เป็น done และไม่แทนการอนุมัติ policy, legal, account security หรือการ release
 
@@ -106,7 +104,7 @@ Milestone เป็นผลลัพธ์สำหรับตรวจรั�
 
 Latency ต้องรวม acquisition scheduling → decision → audible onset; เงื่อนไข missing >5 วินาทีรายงานแยก ไม่ตัดช่วงที่ช้าออกเพื่อให้ผ่าน ส่วน local STT/SLM ต้องรายงาน footprint และ peak แยกพร้อมยอดรวม ถ้าขัดงบ RAM ให้กลับไปแก้ design หรือผ่านกระบวนการเปลี่ยน requirement ไม่ยกเว้นเอง
 
-Headless benchmark, unit tests, source code หรือ historical receipts อย่างเดียวไม่ปิด live acceptance; missing prerequisite เป็น SKIP ไม่ใช่ PASS การ release ใช้ workflow/signing ที่มีอยู่ โดยเลือกช่องทางตาม MVP-004 และ MVP-052 ไม่เปิด Closed Beta กลับมาโดยอัตโนมัติ
+Headless benchmark, unit tests, source code หรือ historical receipts อย่างเดียวไม่ปิด live acceptance; missing prerequisite เป็น SKIP ไม่ใช่ PASS. Release ใช้ workflow/signing ที่มีอยู่และต้องอาศัยหลักฐานของ exact artifact พร้อมการอนุมัติที่กำหนด
 
 ## เอกสารและประวัติ
 
@@ -115,7 +113,6 @@ Headless benchmark, unit tests, source code หรือ historical receipts อ
 - [[G-SERIES-DATA-LINEAGE]] — แหล่งข้อมูลและช่องว่าง runtime รายโมดูล
 - [[FEAT-G-VOICE]], [[FEAT-G-MEMORY]], [[FEAT-G-COACH]] — ข้อกำหนด Companion
 - [[releases/README]] — release process, approval และการเก็บหลักฐาน
-- [[roadmap-legacy]] — ประวัติ roadmap รุ่นก่อน
 - [Roadmap ก่อนปรับเป็น MVP ณ 25316ba8](https://github.com/Freshair129/G-Maiden/blob/25316ba8c0e336881b13f24baa5bec080f5eecb9/docs/product/roadmap.md) — เก็บ phase/version history เดิมใน Git; ไม่ใช้รายการ Now/Next เดิมจัดลำดับงานใหม่
 
 ## Changelog
@@ -124,9 +121,9 @@ Headless benchmark, unit tests, source code หรือ historical receipts อ
 | 0.1.0 | — | roadmap ฉบับปัจจุบัน (untracked) |
 | 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): `[[PROJECT_FEATURE_MAP]]` converted to plain backtick path text (PROJECT_FEATURE_MAP.md is outside docs/, not a doc-graph slug) |
 | 0.1.2 | 2026-07-19 | link/metadata sweep (G15-T5): symbol-link `CREATE_NO_WINDOW` to its `setup.rs` definition |
-| 0.1.3 | 2026-07-23 | Recorded the public landing shift from Closed Beta queue/download to a GID-first, roadmap-first Open Beta release funnel. |
 | 0.1.4 | 2026-07-24 | Clarified ownership boundaries between the feature roadmap, `PROJECT_FEATURE_MAP.md`, and the release-governance documents under `docs/releases/`. |
-| 1.0.0 | 2026-10-10 | เปลี่ยนเป็นแผน MVP M0–M6 จาก source gap review; บันทึกการยกเลิก Closed Beta, scope decisions, dependencies และ acceptance; เชื่อม task backlog โดยเก็บประวัติเดิมใน Git |
+| 1.0.0 | 2026-10-10 | เปลี่ยนเป็นแผน MVP M0–M6 จาก source gap review; บันทึก scope decisions, dependencies และ acceptance; เชื่อม task backlog |
 | 1.1.0 | 2026-10-10 | เชื่อม execution DAG 14 waves และชี้ชัดว่า milestone ทำเหลื่อมกันได้; readiness รอ health producers และ final evidence ใช้ frozen artifact เดียวกัน |
 | 1.2.0 | 2026-10-10 | ผูก roadmap กับ delegated MVP decisions และ optional-account/local-core data contract |
 | 1.3.0 | 2026-10-12 | Updated the CPU acceptance budget to 10% per one-second sample per MVP decision v0.2.0. |
+| 1.4.0 | 2026-10-18 | Removed retired distribution funnel references and clarified artifact-based release evidence. |

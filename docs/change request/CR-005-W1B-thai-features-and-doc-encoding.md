@@ -65,7 +65,7 @@ attributes:
 | FAQ | คำถามที่พบบ่อย | GitHub Issues |
 
 Mobile menu, aria-label และสถานะ loading/error ต้องเป็นภาษาไทยด้วย ชื่อ `G-Maiden`, `GID`,
-`Closed Beta`, `Dota 2` และชื่อ G-Series คงรูปเดิม
+`Dota 2` และชื่อ G-Series คงรูปเดิม
 
 ### 4.2 Hero copy
 
@@ -80,7 +80,7 @@ Mobile menu, aria-label และสถานะ loading/error ต้องเ�
   - `≤300MS` / `ความหน่วงของสัญญาณ`
   - `≤2.5%` / `CPU เบื้องหลัง`
   - `LOCAL` / `ข้อมูลแมตช์อยู่ในเครื่อง`
-- Primary CTA: `รับ GID สำหรับ Closed Beta`
+- Primary CTA: `ลองดู Public Demo`
 - Secondary CTA: `ดูวิธีการทำงาน`
 
 ### 4.3 Feature section concept
@@ -100,7 +100,7 @@ Mobile menu, aria-label และสถานะ loading/error ต้องเ�
 | 03 | G-Master | `แนะนำจังหวะเล่นและไอเทมจากบริบทของแมตช์ โดยมีสมอง Local สำรอง` | Claude/Anthropic path + Ollama fallback |
 | 04 | G-Sensory + G-Log | `Overlay โปร่งใสที่ไม่บดบังเกม และบันทึกแมตช์ไว้ในเครื่องเป็นหลัก` | CPU ≤2.5%; RAM ≤400MB; raw match/CV local-only |
 
-ข้อความ privacy ต้องแยก identity enrollment ออกจาก match data อย่างชัดเจน: Closed Beta เก็บสถานะบัญชี/GID
+ข้อความ privacy ต้องแยกข้อมูลบัญชีออกจาก match data อย่างชัดเจน: ระบบบัญชีจัดการ identity/GID
 บน `gstore`; raw match state, CV detections และ G-Log ไม่ถูกอัปโหลดจาก landing
 
 ### 4.4 Positioning guardrail
@@ -152,7 +152,7 @@ Mobile menu, aria-label และสถานะ loading/error ต้องเ�
 
 - Landing build/TypeScript ผ่านและ browser console ไม่มี error
 - ไม่มี overflow หรือข้อความถูกตัดใน viewport ที่กำหนด
-- CTA Closed Beta/GID เดิมยังทำงานและ Thai copy ไม่ทำให้ state layout แตก
+- Primary demo CTA และ Thai copy ทำงานโดยไม่ทำให้ layout แตก
 - Link, frontmatter, code fence และ doc graph ไม่เสียจากการ repair
 
 ### Exit criteria

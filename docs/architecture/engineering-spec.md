@@ -279,12 +279,9 @@ links via [`src-tauri/src/identity.rs`](file:///g:/G-Maiden/src-tauri/src/identi
 OpenDota profile + baselines. Match/CV/G-Log data stays local; the account stores identity
 + public data only (opt-in per ADR-11).
 
-**MVP access target:** local core starts without account/session/entitlement/network; the
-account surface remains exposed and protected actions stay server-authorized (MVP-043/044).
-Current source removes the former `GmadFirstRunGate`; local core and the stable updater no longer
-depend on Beta entitlement. Release-mode native cold/offline/revoke acceptance remains pending.
-Closed Beta is cancelled; do not restore Beta entitlement or local Terms-receipt gating as part of
-this target.
+**MVP access target:** local core starts without account/session/network; the account surface
+remains optional and protected account actions stay server-authorized (MVP-043/044). Release-mode
+native cold/offline/revoke acceptance remains pending.
 
 > See [[ADR-14-gid-account-identity]] and
 > [[CR-002-Phase2-wire-backend]].
@@ -313,7 +310,7 @@ this target.
 ## Changelog
 | Version | Date | Summary |
 | --- | --- | --- |
-| 0.3.1 | 2026-10-18 | Updated desktop access status after removing the cancelled Closed Beta runtime gate. |
+| 0.3.1 | 2026-10-18 | Clarified optional account access for the desktop local core. |
 | — | 2026-07-19 | symbol-link coverage extension (G1.5) |
 | 0.1.0 | 2026-10-04 | Reconciled the G-Log FULL-only tuning handoff with the implemented local G-Motion next-match loader and rollback boundary. |
 | 0.1.1 | 2026-10-05 | Added the DL-004 PresentMon/ETW P7 receipt contract, formula, fallback, and live-acceptance boundary. |

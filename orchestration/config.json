@@ -302,7 +302,7 @@
       "tier": "shared"
     },
     {
-      "path": "docs/product/roadmap-legacy.md",
+      "path": "docs/product/roadmap.md",
       "tier": "shared"
     },
     {
@@ -395,7 +395,7 @@
       "8": {
         "docs": [
           "docs/architecture/tech-stack.md",
-          "docs/product/roadmap-legacy.md"
+          "docs/product/roadmap.md"
         ],
         "budgetTokens": 8000
       }

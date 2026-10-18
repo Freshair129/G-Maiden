@@ -1,14 +1,11 @@
-# G-Maiden Fullscreen Landing
+# G-Maiden Landing
 
-React + Vite + Tailwind microsite สำหรับ public G-Maiden landing page ตาม
-[`DESIGN-SYSTEM.md`](./DESIGN-SYSTEM.md)
-
-Production: <https://g-maiden-landing.vercel.app>
+React + Vite + Tailwind public landing and deterministic product demo.
 
 ## Local development
 
 ```powershell
-cd G:\G-Maiden\landing
+cd landing
 pnpm install
 pnpm dev
 ```
@@ -16,42 +13,25 @@ pnpm dev
 ## Verification
 
 ```powershell
+pnpm test
 pnpm typecheck
 pnpm build
 ```
 
-## Closed Beta / GID
+The landing page is informational. It does not enroll users, issue GIDs, or gate desktop access.
+Google sign-in and Steam linking are optional account features in the desktop application; the
+local GSI, capture, and overlay runtime do not require an account.
 
-- Google OAuth ใช้ Supabase project `gstore` เดียวกับ G-Maiden desktop app
-- Production origin ต้องอยู่ใน Supabase Auth → Redirect URLs
-- ค่า default ใช้ publishable key ที่เปิดเผยใน browser ได้; override ได้ด้วย
-  `VITE_SUPABASE_URL` และ `VITE_SUPABASE_PUBLISHABLE_KEY`
-- ห้ามใส่ `service_role` หรือ secret ใด ๆ ใน `VITE_*`
+## Configuration and privacy
 
-## Deploy with Vercel CLI
+- The public page uses only browser-safe configuration. Never place `service_role` or another
+  secret in a `VITE_*` variable.
+- Aggregate page-view analytics must not include query strings, fragments, account data, or game
+  data.
+- The interactive `/demo` scenario uses synthetic data and does not read user files, screen
+  contents, or the Dota process.
 
-```powershell
-vercel link --yes --project g-maiden-landing
-vercel build --prod
-vercel deploy --prebuilt --prod
-```
+## Deployment
 
-Vercel project metadata ใน `.vercel/` ถูก ignore และไม่ควร commit
-
-## Web Analytics
-
-- ใช้ `@vercel/analytics/react` เพราะ landing เป็น React + Vite
-- เก็บเฉพาะ aggregate page views; ไม่มี custom events
-- ตัด query string และ URL fragment ก่อนส่ง เพื่อไม่ให้ OAuth code/token หลุดออกจาก browser
-- ห้ามส่ง email, GID, account state, match state, CV detection หรือ G-Log
-- Git deployment source: `Freshair129/g-maiden-landing` (`main` → production)
-
-## Scope
-
-- Thai-first fullscreen hero (`100svh`) + shipped-feature signal rails
-- Original MPFB2-based G-Maiden Ice Mage GLB พร้อม baked idle, bounded cursor/scroll motion และ static fallback
-- Watch-your-back positioning โดยไม่อ้างการเห็นข้อมูลลับหรือทำนายอนาคต
-- Responsive desktop/mobile navigation
-- Keyboard-accessible fullscreen mobile menu
-- Google OAuth + server-authoritative GID + Closed Beta enrollment
-- Aggregate Vercel page-view analytics เท่านั้น; ไม่มี account/player-data egress หรือ custom events
+The Vercel project is `g-maiden-landing`. Deployment is a separate reviewed operation; this
+repository cleanup does not publish the landing site.

@@ -2,7 +2,7 @@
 title: "G-Maiden MVP Backlog"
 doc_id: "mvp-backlog"
 status: "draft"
-version: "0.3.4"
+version: "0.3.6"
 updated: 2026-10-18
 owner: "Boss"
 related_docs: ["roadmap", "mvp-execution-dag", "software-requirements-specification", "G-SERIES-DATA-LINEAGE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "EXEC-PLAN-CR-034-iam-remediation"]
@@ -32,7 +32,7 @@ Backlog สำหรับทำให้ผู้เล่นใช้งาน
 5. เอกสาร, Changelog, doc graph/ledger สอดคล้องกัน
 6. Owner รับผลตาม acceptance; จึงเปลี่ยนเป็น DONE พร้อมลิงก์ evidence งานบัญชี/legal/deploy/release ใช้ approval เฉพาะที่กติกากำหนด
 
-มติ MVP-003–006 ถูกบันทึกใน [[mvp-decisions]] ตามคำสั่ง Owner ให้ Codex ตัดสินใจ; รับ verified baseline MVP-001/002. DONE ของงาน contract หมายถึงเลือกข้อกำหนดแล้ว ไม่ใช่รับรองฟีเจอร์ที่ยังต้องพัฒนา. MVP-045 เป็น NOT_APPLICABLE สำหรับ legacy desktop handoff; MVP-043/044 ยัง applicable เพราะมี optional account surface.
+มติ MVP-003–006 ถูกบันทึกใน [[mvp-decisions]] ตามคำสั่ง Owner ให้ Codex ตัดสินใจ; รับ verified baseline MVP-001/002. DONE ของงาน contract หมายถึงเลือกข้อกำหนดแล้ว ไม่ใช่รับรองฟีเจอร์ที่ยังต้องพัฒนา. MVP-045 เป็น NOT_APPLICABLE สำหรับ desktop account/download gate; MVP-043/044 ยัง applicable เพราะมี optional account surface.
 
 ## E0 ฐานพัฒนาและข้อกำหนด
 
@@ -47,20 +47,20 @@ Backlog สำหรับทำให้ผู้เล่นใช้งาน
 | MVP-001 | P0 / M | DONE | MVP-002 สำหรับขั้น B | **รวม baseline จาก working branch และ main.** ขั้น A ตรวจ/รวม source ใน worktree แยกทำขนานกับ environment ได้; ขั้น B รอ MVP-002 แล้วตรวจ regression บน merged source/lockfile; ผลลัพธ์มี SHA เดียว, ไม่มี patch ตกหล่นหรือเขียนทับงานขนาน และหลักฐาน regression ของส่วนที่รวม |
 | MVP-002 | P0 / S | DONE | — | **ฟื้น development environment.** แก้ dependency junction ที่ชี้ G: เดิมด้วยการติดตั้งตาม lockfile, จัด pinned Rust/Node/pnpm ให้ตรง repo; เปิด dev app และสร้าง native no-bundle ได้โดยไม่เปลี่ยน dependency version เพื่อกลบปัญหา |
 | MVP-003 | P0 / S | DONE | — | **ล็อก Companion MVP scope.** Owner ยืนยัน Voice/Memory, ขอบเขต summary, OS/game modes/heroes/layouts ที่รองรับ และรายการเลื่อน; ถ้าลดเป็น alert assistant ต้องแก้ PRD/SRS/คำสัญญาผลิตภัณฑ์ก่อน ไม่มีการนับฟีเจอร์ที่เลื่อนว่าเสร็จ |
-| MVP-004 | P0 / M | DONE | MVP-003 | **กำหนด access/offline หลังยกเลิก Closed Beta.** ทำตาราง cold start, signed-out, network loss, revoke, new device, Terms change, update/recovery; เลือก local core optional account หรือ retained gate พร้อม owner/legal/security approval ที่จำเป็น ระบุ migration/rollback และ channel ปลายทาง ไม่มี blanket bypass |
+| MVP-004 | P0 / M | DONE | MVP-003 | **กำหนด access/offline policy ของ local core และ account actions.** ทำตาราง cold start, signed-out, network loss, revoke, new device, Terms change, update/recovery; local core ไม่ต้องมี account, entitlement, or network, while protected account actions retain server authorization. |
 | MVP-005 | P0 / M | DONE | MVP-003 | **กำหนด data contract ของ AI.** ทำ field-by-field allowlist/denylist พร้อมต้นทางและ consent; CV/raw G-Log/Memory ไม่ออก cloud, live stats ที่ไม่ผ่าน policy ไม่ส่ง; แก้ความขัดกันระหว่าง SRS/ADR/Privacy UI ให้ได้ contract เดียวและเก็บ approval ก่อนเปลี่ยน egress |
 | MVP-006 | P0 / M | DONE | MVP-003 | **กำหนด acceptance matrix.** ระบุเครื่อง/OS/GPU/จอ/DPI/minimap/game mode, label set, precision/recall/false alerts ต่อแมตช์, latency landmarks, Voice STT/response targets และวิธีนับ CPU/RAM ทั้งระบบ; ตัวเลขคุณภาพต้องตกลงก่อนดูผลวัด ไม่ลด hard NFR เพื่อให้ผ่าน |
-| MVP-007 | P1 / M | TODO | MVP-003, MVP-004, MVP-005, MVP-006 | **ทำ product contracts ให้ตรง baseline.** Reconcile PRD/SRS, feature map/ledger, AGENTS/CLAUDE และ entry links ของ release/Beta; แยก implemented/connected/verified, รักษา historical docs, แก้ Alt+M ที่เป็น mute และ local critical path ที่ไม่ต้องพึ่ง SLM; ทุกคำว่า ready มี evidence อ้างกลับได้ |
+| MVP-007 | P1 / M | TODO | MVP-003, MVP-004, MVP-005, MVP-006 | **ทำ product contracts ให้ตรง baseline.** Reconcile PRD/SRS, feature map/ledger, AGENTS/CLAUDE และ release entry links; แยก implemented/connected/verified, แก้ Alt+M ที่เป็น mute และ local critical path ที่ไม่ต้องพึ่ง SLM; ทุกคำว่า ready มี evidence อ้างกลับได้ |
 
 ## E1 เปิดแอปและตั้งค่า
 
 **Milestone:** M1 · **บทบาทที่เสนอ:** Desktop/Rust + frontend + QA
 
-**หลักฐาน:** [App](../../src/src/App.tsx#L33), [Control settings](../../src/src/app/Control.tsx#L171), [CommandDeck](../../src/src/CommandDeck.tsx#L805), [readiness](../../src/src/betaReadiness.ts#L18), [GSI server](../../src-tauri/src/gsi.rs#L599), [setup](../../src-tauri/src/setup.rs)
+**หลักฐาน:** [App](../../src/src/App.tsx#L33), [Control settings](../../src/src/app/Control.tsx#L171), [CommandDeck](../../src/src/CommandDeck.tsx#L805), [runtime readiness](../../src/src/runtimeReadiness.ts#L18), [GSI server](../../src-tauri/src/gsi.rs#L599), [setup](../../src-tauri/src/setup.rs)
 
 | ID | P / Size | สถานะ | Depends on | งานและเกณฑ์รับ |
 | --- | --- | --- | --- | --- |
-| MVP-008 | P0 / L | TODO | MVP-001, MVP-004; MVP-043–045 ถ้าคง account gate | **ปรับ entry/runtime ตาม access policy ใหม่.** Current source now renders the deck signed-out and starts GSI/capture without account or network; updater is stable-only. Remaining acceptance: release-mode cold/offline/revoke checks and proof that protected account operations still fail closed server-side. |
+| MVP-008 | P0 / L | TODO | MVP-001, MVP-004; MVP-043–045 for protected account paths | **ปรับ entry/runtime ตาม access policy.** Current source renders the deck signed-out and starts GSI/capture without account or network; updater is stable-only. Remaining acceptance: release-mode cold/offline checks and proof that protected account operations still fail closed server-side. |
 | MVP-009 | P0 / M | TODO | MVP-001, MVP-002 | **ย้าย settings initialization ไป startup.** โหลด/validate settings หนึ่งจุดก่อนเริ่ม gameplay และ sync Control/Overlay/native; cold restart โดยไม่เข้าหน้า Settings คืน voice, sensitivity, persona, backend/model, privacy และ layout ครบ ไม่มี default cloud call ก่อน hydrate |
 | MVP-010 | P0 / M | TODO | MVP-001, MVP-002 | **ทำ GSI setup และ port health.** แยก config exists/config valid/listening/waiting/live, แจ้ง port 3000 conflict ที่กระทบ GSI/OAuth, มี retry และเลือก/ซ่อม Dota path ที่ควบคุมขอบเขตได้; negative cases แสดงวิธีแก้โดยไม่ใช้ terminal |
 | MVP-011 | P0 / M | TODO | MVP-009, MVP-010; ขั้น B รอ MVP-016, MVP-017, MVP-024 | **แทน readiness สมมติด้วยผลจริง.** ขั้น A ทำ contract/UI ที่แสดง unknown เมื่อยังไม่มี producer; ขั้น B ต่อ capture coverage/audio health จริงก่อนปิดงาน; ตรวจ resources, live GSI, overlay preview และ audible confirmation; null ไม่เป็น pass, overlay ไม่ pass ตายตัว และ Lite mode ชัด |
@@ -153,7 +153,7 @@ Backlog สำหรับทำให้ผู้เล่นใช้งาน
 | --- | --- | --- | --- | --- |
 | MVP-043 | P0 / M | CONDITIONAL | MVP-001, MVP-002, MVP-004 | **ตรวจ auth remediation หลัง integration.** ทดสอบ local sign-out เมื่อ remote ล่ม, account switch และ delayed auth refresh; local credential cleanup กับ remote revoke แสดงคนละผลอย่างถูกต้อง. Sign-out must not lock the local gameplay runtime; protected account actions continue to rely on server authorization. |
 | MVP-044 | P0 / L | CONDITIONAL | MVP-004, MVP-043 | **ปิด Google-session/revocation contract.** ตรวจ sign-in method ของ session และ revocation ทุก privileged endpoint ที่ยังใช้; admin AAL2 ต้องมีทาง enrollment/operation ที่อนุมัติหรือไม่เปิด surface นั้น; probe RLS/role/session กับ production ต้องมีขอบเขตและ approval ไม่ใช้ linked-provider metadata เป็นหลักฐานแทน session method |
-| MVP-045 | P0 / M | NOT_APPLICABLE | MVP-004; legal approval ถ้ายังเก็บ Terms receipt | **ทำ Terms/account/download handoff ที่ยังจำเป็น.** ทุก CTA จาก desktop ไปหน้าที่มีจริง รวม redirect/rewrite/error/back-to-app; receipt version/optional consent แยกตาม legal decision; ถอน Closed Beta CTA/countdown ที่ขัดแผนตาม surface จริง โดยไม่สร้าง ops/payment ใหม่เกิน scope |
+| MVP-045 | P0 / M | NOT_APPLICABLE | MVP-004 | **Local desktop ไม่ต้องมี Terms/account/download gate.** Protected account services continue to enforce their own server authorization; do not add a local receipt or download gate through this task. |
 
 หาก account ยังเปิดให้ใช้แบบ optional งาน E7 ที่เกี่ยวข้องยังต้องผ่านก่อน expose เส้นทางนั้น การเลือก local core ไม่ได้ทำให้ auth ที่ยังมองเห็นอยู่ได้รับการยกเว้นโดยอัตโนมัติ
 
@@ -171,7 +171,7 @@ Backlog สำหรับทำให้ผู้เล่นใช้งาน
 | MVP-049 | P0 / L | TODO | MVP-006, MVP-012, MVP-021, MVP-026, MVP-031, MVP-033, MVP-035, MVP-037, MVP-042, MVP-046, MVP-047 | **รัน player journey และ fault matrix.** Fresh install→match→summary→restart→next match รวม GSI loss, malformed payload, alt-tab, capture/device/network failure, unknown data, crash/reconnect และ live alert accuracy; มี expected/actual, defect IDs, exact build และ local evidence ทุก scenario |
 | MVP-050 | P0 / M | TODO | MVP-005, MVP-027, MVP-035, MVP-041 | **ตรวจ privacy/no-egress ที่ runtime.** เก็บ outbound destinations/payload fields ของ CLI/API/Ollama/account paths ด้วยข้อมูลทดสอบที่ไม่ระบุตัวบุคคล; local-only, non-consented fields, CV/raw logs/Memory และ transient mic data ไม่มี egress ที่ห้าม; forget/retention/diagnostic redaction ผ่าน |
 | MVP-051 | P0 / M | TODO | MVP-001, MVP-002, MVP-006 | **ทำ verification matrix และ CI coverage.** Rust/clippy/eslint/tsc/Vitest/native smoke รวม landing/Deno/SQL เมื่อพื้นที่นั้นอยู่ใน scope; suites มี timeoutและแยก headless/live/manual gates, required check ชี้ exact SHA; doc graph/ledger ใช้ผลจริง ไม่มี disable check เพื่อผ่าน |
-| MVP-052 | P0 / M | TODO | MVP-001–051 ทุกงานที่อยู่ใน scope; MVP-043–045 ต้องผ่านถ้า exposed | **ปิด acceptance และเตรียม release decision.** รวบรวม scope matrix ที่ไม่มี P0/P1 required ค้าง, known limitations, installer hash, CI/native/live/NFR/privacy evidence และ rollback; งาน conditional ที่ไม่ใช้ต้องมี scope decision อ้างกลับได้; owner ตรวจ Go/No-Go และอนุมัติช่องทาง; bump/tag/candidate/promote เฉพาะเมื่อสั่ง release และ main CI ของ SHA นั้น green ไม่ auto-open Beta |
+| MVP-052 | P0 / M | TODO | MVP-001–051 ทุกงานที่อยู่ใน scope; MVP-043–045 ต้องผ่านถ้า exposed | **ปิด acceptance และเตรียม release decision.** รวบรวม scope matrix ที่ไม่มี P0/P1 required ค้าง, known limitations, installer hash, CI/native/live/NFR/privacy evidence และ rollback; งาน conditional ที่ไม่ใช้ต้องมี scope decision อ้างกลับได้; owner ตรวจ Go/No-Go และอนุมัติช่องทาง; bump/tag/candidate/promote เฉพาะเมื่อสั่ง release และ main CI ของ SHA นั้น green |
 
 ## E9 หลัง MVP และงานคนละผลิตภัณฑ์
 
@@ -188,7 +188,7 @@ Backlog สำหรับทำให้ผู้เล่นใช้งาน
 | MVP-059 | P2 / L | DEFERRED | MVP-052 + feature-specific decisions | **G-Stream/G-Score/marketplace.** แตกเป็น feature specs และ task ชุดใหม่ก่อน implementation; privacy/redaction/music rights/resource budget ต้องครบ |
 | MVP-060 | P2 / L | DEFERRED | MVP-044 + C-3/HIGH approval | **GID Shield/recovery/public profiles.** Threat model, private RLS, consent/rate limits, recovery/rollback และ owner approval ก่อน schema/provider/UI; ไม่ผูกกับ MVP local gameplay |
 | MVP-061 | P1 / M | DEFERRED | G-Orchestra owner decision | **ขอบเขตเข้าถึง G-Orchestra management server.** อยู่คนละผลิตภัณฑ์; กำหนด loopback/caller authorization/Origin และตรวจ mutation endpoints ก่อนเปิดใช้ในเครือข่าย ไม่ deploy ร่วม player app และไม่บังคับ player MVP รอหากไม่ expose |
-| MVP-062 | P2 / M | DEFERRED | MVP-052 + explicit launch decision | **Public campaign และการขยายการแจกจ่าย.** ทำเมื่อเจ้าของเลือกแผนใหม่หลัง MVP ผ่าน; Closed Beta ที่ยกเลิกไม่ถูกเปิดกลับด้วย task นี้ ไม่มีวันนับถอยหลังที่ผูกมัดก่อน approval |
+| MVP-062 | P2 / M | DEFERRED | MVP-052 + explicit launch decision | **Public campaign และการขยายการแจกจ่าย.** ทำเมื่อเจ้าของเลือกแผนหลัง MVP ผ่าน พร้อม scope, dates, and release evidence ที่ได้รับอนุมัติ |
 
 ## แผนที่ flow ไปยัง task
 
@@ -239,10 +239,13 @@ Status:
 
 | Version | Date | Summary |
 | --- | --- | --- |
-| 0.3.4 | 2026-10-18 | Recorded desktop local-core startup implementation and the remaining release-mode/offline/revoke acceptance work after Closed Beta cancellation. |
+| 0.3.6 | 2026-10-18 | Removed obsolete handoff wording; desktop startup stays local and protected account services keep separate server authorization. |
+| 0.3.5 | 2026-10-18 | Refreshed account-optional access planning and removed retired distribution paths. |
+| 0.3.4 | 2026-10-18 | Recorded desktop local-core startup implementation and remaining release-mode/offline/revoke acceptance. |
+| 0.3.5 | 2026-10-18 | Refreshed account-optional access planning and removed retired distribution paths. |
 | 0.3.3 | 2026-10-16 | Removed retired local review integration and related references. |
 | 0.3.2 | 2026-10-12 | Aligned MVP-048 CPU acceptance with the approved 10% whole-app process-group budget and one-second sampling decision. |
 | 0.3.1 | 2026-10-11 | Linked MVP-038's candidate-neutral evaluation protocol and kept the task open until measurements and a candidate decision exist. |
-| 0.3.0 | 2026-10-10 | บันทึก delegated decisions MVP-003–006 และรับ baseline MVP-001/002; legacy desktop handoff 045 ไม่อยู่ใน scope ตาม mvp-decisions |
+| 0.3.0 | 2026-10-10 | บันทึก delegated decisions MVP-003–006 และรับ baseline MVP-001/002; desktop account/download gate 045 ไม่อยู่ใน scope ตาม mvp-decisions |
 | 0.2.0 | 2026-10-10 | เพิ่ม execution DAG/waves; แยก baseline/readiness/performance/CI เป็นขั้น A/B โดยคง parent IDs; เพิ่ม producer, access และ STT packaging dependencies ที่จำเป็นต่อการทำงานขนาน |
 | 0.1.0 | 2026-10-10 | แตก roadmap M0–M6 เป็น 52 MVP tasks และ 10 deferred/separate-product tasks พร้อม priority, size, status, dependencies, source links และ acceptance; คง Voice/Memory ตาม SRS และบันทึก policy/security/release gates |

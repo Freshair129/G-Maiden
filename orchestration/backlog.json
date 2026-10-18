@@ -553,7 +553,7 @@
       "scope": {
         "docs": [
           "docs/architecture/tech-stack.md",
-          "docs/product/roadmap-legacy.md"
+          "docs/product/roadmap.md"
         ],
         "budgetTokens": 6000,
         "profile": "ui-heavy",
@@ -562,7 +562,7 @@
     },
     {
       "id": "G8.4",
-      "title": "Closed beta + à¸ˆà¸¹à¸™ persona/sensitivity",
+      "title": "Tune persona and sensitivity from supervised user feedback",
       "type": "process",
       "phase": "8",
       "deps": [

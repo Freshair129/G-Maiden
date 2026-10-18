@@ -2,7 +2,7 @@
 title: "G-Maiden MVP Execution DAG"
 doc_id: "mvp-execution-dag"
 status: "draft"
-version: "0.2.5"
+version: "0.2.6"
 updated: 2026-10-18
 owner: "Boss"
 related_docs: ["roadmap", "mvp-backlog", "releases/README"]
@@ -10,7 +10,7 @@ related_docs: ["roadmap", "mvp-backlog", "releases/README"]
 
 # G-Maiden MVP Execution DAG
 
-แผนทำงานขนานสำหรับ MVP ตาม [[roadmap]] และ [[mvp-backlog]] ใช้ **ผู้ทำงาน 3 slots และผู้ประสานการรวมโค้ด 1 slot** โดยคง task แม่ MVP-001–052 และเลื่อน MVP-053–062 ตาม backlog เดิม การยกเลิก Closed Beta ยังคงมีผล
+แผนทำงานขนานสำหรับ MVP ตาม [[roadmap]] และ [[mvp-backlog]] ใช้ **ผู้ทำงาน 3 slots และผู้ประสานการรวมโค้ด 1 slot** โดยคง task แม่ MVP-001–052 และเลื่อน MVP-053–062 ตาม backlog เดิม
 
 มี **57 execution nodes ใน 14 logical waves**: 52 parent tasks แยก 4 งานเป็น A/B รวมเป็น 56 task nodes และเพิ่ม GATE-RC 1 จุดสำหรับตรึง build ก่อนเก็บ evidence Owner สั่งเริ่ม execution ด้วย GPT-6 Luna ระดับ max จำนวน 3 workers แล้ว; สถานะราย node อยู่ใน JSON และ receipt ของ run โดยงานที่ยังไม่ผ่าน acceptance ไม่ถูกปิดเป็น DONE
 
@@ -70,7 +70,7 @@ Depends on เป็น hard edges; conditional edges แสดงเครื�
 | MVP-001.B | ตรวจ merged baseline ด้วย environment พร้อมแล้วส่งมอบ SHA | W01 | 001.A, 002 | BASELINE |
 | MVP-002 | ฟื้น development environment. | W00 | — | ENVIRONMENT |
 | MVP-003 | ล็อก Companion MVP scope. | W00 | — | SCOPE |
-| MVP-004 | กำหนด access/offline หลังยกเลิก Closed Beta. | W01 | 003 | ACCESS_POLICY |
+| MVP-004 | กำหนด account-optional local startup และ access/offline policy. | W01 | 003 | ACCESS_POLICY |
 | MVP-005 | กำหนด data contract ของ AI. | W01 | 003 | DATA_POLICY |
 | MVP-006 | กำหนด acceptance matrix. | W01 | 003 | QUALITY_CONTRACT |
 | MVP-007 | ทำ product contracts ให้ตรง baseline. | W02 | 003, 004, 005, 006, 001.B | DOCS |
@@ -112,7 +112,7 @@ Depends on เป็น hard edges; conditional edges แสดงเครื�
 | MVP-042 | ตรวจ Voice interruption และ privacy. | W10 | 041, 025, 031, 001.B, 002, 003 | — |
 | MVP-043 | ตรวจ auth remediation หลัง integration. | W02 | 001.B, 002, 004, 003 | AUTH |
 | MVP-044 | ปิด Google-session/revocation contract. | W03 | 004, 043, 001.B, 002, 003 | AUTH, IAM |
-| MVP-045 | NOT_APPLICABLE: legacy desktop Beta Terms/account/download handoff was cancelled; protected server download operations retain their own authorization. | W02 | 004, 001.B, 002, 003 | LANDING, AUTH |
+| MVP-045 | NOT_APPLICABLE: local desktop startup has no Terms/account/download handoff; protected account services retain their own authorization. | W02 | 004, 001.B, 002, 003 | LANDING, AUTH |
 | MVP-046 | ทำ update ที่ไม่ขัดแมตช์. | W05 | 004, 015, 001.B, 002, 003 | UPDATER, CORE_STATE, UI_DECK |
 | MVP-047 | ตรวจ resource packaging และ clean install. | W09 | 012, 026, 038, 040, 001.B, 002, 003 | PACKAGING |
 | MVP-048.A | เตรียม harness และเก็บ performance baseline | W02 | 001.B, 002, 006 | PERF_HARNESS |
@@ -195,7 +195,7 @@ Node เริ่มได้เมื่อครบทุกข้อ:
 | `account_gate_required = true` | 008 รอ 043/044/045; ต้องมี account surface และ handoff ที่รองรับ policy นี้ |
 | `account_gate_required = false` | ถอดเฉพาะ conditional edges เข้า 008 ได้หลัง MVP-004 มีข้อสรุป; shared-file locks ยังใช้เหมือนเดิม |
 | `account_surface_exposed = true` | 043/044 ต้องผ่าน แม้บัญชีเป็น optional; optional ไม่ได้แปลว่า auth ไม่ต้องตรวจ |
-| `legacy_handoff_surface_in_scope = true` | 045 ต้องปิด route/Terms/download/การถอนข้อความเก่าที่เกี่ยวข้อง |
+| MVP-045 remains `NOT_APPLICABLE` under the current local-core decision | A desktop account, Terms, or download gate requires a new owner decision and is outside this plan. |
 | Input เป็น `null` | HOLD เฉพาะ node/edge ที่ขึ้นกับ decision นั้น งาน local ที่เป็นอิสระยังเดินต่อได้ |
 | Surface ไม่ถูก expose ตาม scope | บันทึก NOT_APPLICABLE พร้อม decision/evidence จึงข้าม node นั้นได้; ไม่เปลี่ยนเป็น DONE และไม่ข้ามจากการรอนาน |
 
@@ -207,7 +207,7 @@ Node เริ่มได้เมื่อครบทุกข้อ:
 - 008/044 และงานเปลี่ยน security อื่นตาม scope: ใช้ C-3/HIGH approval, threat model/private storage/RLS/rollback ที่เกี่ยวข้อง
 - 045: legal approval เมื่อเปลี่ยน Terms/receipt/consent; ไม่เพิ่มขั้นอนุมัติเมื่อมี authorization ตรงขอบเขตอยู่แล้ว
 - Live production probes: ใช้ขอบเขตและ authorization ที่กำหนด ไม่ใช้ผล source review อ้างว่า production ผ่าน
-- 052: owner Go/No-Go จาก evidence; tag/build signed candidate/promote เป็นการดำเนินการหลัง DAG ที่ต้องมีคำสั่ง release แยก ไม่มี automation เปิด Beta จากแผนนี้
+- 052: owner Go/No-Go จาก evidence; tag/build signed candidate/promote เป็นการดำเนินการหลัง DAG ที่ต้องมีคำสั่ง release แยก
 
 ## การแบ่งงานและพื้นที่ที่ห้ามชน
 
@@ -297,9 +297,10 @@ Completion or NOT_APPLICABLE decision:
 | --- | --- | --- |
 | 0.1.0 | 2026-10-10 | วาง execution DAG ครบ 52 MVP parents เป็น 57 nodes/14 waves พร้อม A/B splits, conditional gates, 3-worker batches, file/resource leases, immutable evidence join และ JSON สำหรับต่อ scheduler |
 | 0.1.1 | 2026-10-10 | บันทึกเริ่ม execution ด้วย Luna max พร้อม source fingerprint และสถานะ preparation/verification/decision ที่ไม่แทน DONE |
-| 0.2.0 | 2026-10-10 | รับ owner-delegated contracts/baseline, activation false/true/false และ legacy handoff NOT_APPLICABLE; อ้าง mvp-decisions เป็น dispatch contract |
+| 0.2.0 | 2026-10-10 | รับ owner-delegated contracts/baseline, activation false/true/false และ desktop account gate NOT_APPLICABLE; อ้าง mvp-decisions เป็น dispatch contract |
 | 0.2.1 | 2026-10-11 | เพิ่ม CAPTURE, UTTERANCE และ UI_OVERLAY lease ให้ MVP-015 เพื่อ tag/drop session-stale events ใน producer และ overlay callback/timer; บันทึก owner approval และยืนยัน W04 ไม่ชน MVP-028 |
 | 0.2.2 | 2026-10-11 | ขยายความรับผิดชอบ CORE_STATE ให้ reset announcer detector ตาม session epoch และระบุ WGC producer coverage; W04 ยังไม่ชน MVP-028 |
 | 0.2.3 | 2026-10-11 | เพิ่ม UI_SETTINGS lease ให้ MVP-015 เพื่อ clear/gate MasterCard advice เมื่อ session เปลี่ยน; MVP-028 merge barrier ผ่านก่อนขยาย scope |
 | 0.2.4 | 2026-10-16 | Remove retired local review integration and related references. |
-| 0.2.5 | 2026-10-18 | Clarify cancelled Closed Beta handoff scope and keep server-side protected download authorization separate. |
+| 0.2.5 | 2026-10-18 | Clarify account-optional local startup and keep protected server authorization separate. |
+| 0.2.6 | 2026-10-18 | Removed obsolete handoff activation metadata; MVP-045 stays not applicable under the local-core decision. |

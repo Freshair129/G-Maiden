@@ -1,7 +1,7 @@
 ---
-version: "2.4.2-draft"
+version: "2.4.3-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-10-18T10:50:35+07:00,Codex"
+last_update: "2026-10-18T12:00:00+07:00,Codex"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -136,39 +136,18 @@ CR-011 §C).
 | **Voice Packs** | [`VoicePacksPage.tsx`](file:///g:/G-Maiden/src/src/VoicePacksPage.tsx) / [`VoiceInventory.tsx`](file:///g:/G-Maiden/src/src/VoiceInventory.tsx) | announcer pack inventory + active; "หาแพ็กเพิ่ม →" cross-links G-Store | live |
 | **G-Store** | `CommandDeck` store tab → [`StorePage`](file:///g:/G-Maiden/src/src/StorePage.tsx) / [`WalletTab`](file:///g:/G-Maiden/src/src/WalletTab.tsx) / [`InventoryTab`](file:///g:/G-Maiden/src/src/InventoryTab.tsx) / [`LedgerTab`](file:///g:/G-Maiden/src/src/LedgerTab.tsx) | tab `[ร้านค้า | กระเป๋า | คลัง | บันทึก]` (CR-003 economy) | catalog degrades until `catalog_items` deploys |
 | **Insights** | [`CompanionPages.tsx`](file:///g:/G-Maiden/src/src/CompanionPages.tsx) [`InsightsPage`](file:///g:/G-Maiden/src/src/CompanionPages.tsx#L153) + [`HistoryPage`](file:///g:/G-Maiden/src/src/CompanionPages.tsx#L196) | tab `[ภาพรวม | ประวัติ]` — power/win/ward + weekly / paginated G-Log history | scaffold (OpenDota) |
-| **Account** | [`AccountPage.tsx`](file:///g:/G-Maiden/src/src/AccountPage.tsx) / [`AuthPanel.tsx`](file:///g:/G-Maiden/src/src/AuthPanel.tsx) / [`SteamLink.tsx`](file:///g:/G-Maiden/src/src/SteamLink.tsx) | Optional Google/GID identity and Steam link; local desktop startup does not require sign-in or Closed Beta entitlement. Historical UX reference: [[08-account-gid|08-account-gid.md]] | live; Beta handoff cancelled |
+| **Account** | [`AccountPage.tsx`](file:///g:/G-Maiden/src/src/AccountPage.tsx) / [`AuthPanel.tsx`](file:///g:/G-Maiden/src/src/AuthPanel.tsx) / [`SteamLink.tsx`](file:///g:/G-Maiden/src/src/SteamLink.tsx) | Optional Google/GID identity and Steam link; local desktop startup does not require sign-in. See [[08-account-gid|08-account-gid.md]] | live |
 | **Settings** | `App.tsx` [`Control`](file:///g:/G-Maiden/src/src/App.tsx#L5) (category render) + `CommandDeck` split shell | iOS split view, 7 หมวด: ทั่วไป / Overlay / เสียง & เตือน / AI / โมดูล & CV / ความเป็นส่วนตัว / ระบบ | live |
 
 ## 5. Core flows
 
-### 5.1 Former Closed Beta first run (historical; cancelled)
-
-> Flow below records the old CR-022 design only. Closed Beta was cancelled; this is not the current
-> entry flow. Current local startup does not wait for sign-in, Terms, entitlement, or network.
-
-```
-installer installed → launch → Deck (Dashboard, access-readiness state)
-→ CTA “Open Account” → Account: Google OAuth PKCE
-→ server-derived UUID/GID + active grant + current Terms receipt confirmed
-→ return Dashboard → Settings/Onboarding: install GSI cfg → start Dota 2
-→ GSI live (dot lime) → scoreboard/stats เดิน
-```
-
-**Historical layout and auth boundary:** the former CR-022 design treated this as a Closed Beta
-distribution gate, not a new Command Deck page, login modal, or alternate identity system. These
-rules describe the cancelled gate and do not constrain current local startup.
-
-**Historical failure/offline route:** the former flow routed GID mismatch, missing grants, Terms,
-and offline states through Account. It is retained here only as a record of the cancelled Beta
-handoff; current source does not use these states to lock the deck or local runtime.
-
-### 5.2 In-match (peripheral)
+### 5.1 In-match (peripheral)
 ```
 GSI tick → Dashboard/HUD update → G-Signal คำนวณ → ถ้าเกินเกณฑ์ Sensitivity (ค่าเริ่มต้น Med 0.65):
 persona voice interrupt + overlay banner + signal card E (lime) escalate
 ```
 
-### 5.3 Optional account capabilities
+### 5.2 Optional account capabilities
 ```
 Account → Google OAuth (PKCE, callback :3000/auth/callback) → GID ออก
 → link Steam → ดึง public OpenDota profile + baselines (Insights/weekly)
@@ -179,7 +158,7 @@ OpenDota capabilities remain additive under ADR-14; they do not gate the local d
 nor Steam is a credential, recovery path, or typed override. Match state, CV detection, and G-Log
 remain local-only.
 
-### 5.4 Voice pack activate
+### 5.3 Voice pack activate
 ```
 Voice Packs → เลือก pack → active → POST /announcer/install (:3000)
 → in-game event fired → play mapped clip + overlay banner
@@ -200,6 +179,5 @@ Voice Packs → เลือก pack → active → POST /announcer/install (:30
 | --- | --- | --- |
 | 2.3.1-draft | 2026-07-19 | + geometry clarification banner (1280×720 = panel-local เท่านั้น, stage จริง 1420×760) — จากผล design-doc audit |
 | 2.3.2-draft | 2026-07-19 | symbol-link coverage extension (G1.5) |
-| 2.4.0-draft | 2026-07-21 | Historical CR-022 Closed Beta access-readiness design: preserved the 7-page/one-canvas deck and routed OAuth/entitlement states to Account. |
 | 2.4.1-draft | 2026-07-21 | Replaced unnecessary reader-facing GMAD naming with G-Maiden while preserving technical identifiers and route names. |
-| 2.4.2-draft | 2026-10-18 | Marked Closed Beta access handoff cancelled; Account is optional and no longer gates local startup. |
+| 2.4.3-draft | 2026-10-18 | Removed retired access-gate flow from the current sitemap and aligned Account with optional local startup. |

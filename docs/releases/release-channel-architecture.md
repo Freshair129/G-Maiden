@@ -5,7 +5,7 @@ status: "draft"
 version: "0.1.0"
 updated: "2026-07-23"
 owner: "Boss"
-related_docs: ["RELEASE-GOVERNANCE", "BETA-ROADMAP"]
+related_docs: ["RELEASE-GOVERNANCE"]
 ---
 
 # G-Maiden Release Channel Architecture
@@ -37,10 +37,7 @@ stable channel
 | Channel | Audience | Access | Purpose |
 | --- | --- | --- | --- |
 | `dev` | Developer/Internal tester | restricted | ตรวจ candidate ก่อนถึงผู้ใช้จริง |
-| `closed-beta` | Approved beta testers | entitlement/invite | ตรวจ compatibility และ product value |
 | `stable` | Public users | public | รับเฉพาะ artifact ที่ผ่าน promotion |
-
-Open Beta สามารถเพิ่มเป็น channel แยกภายหลังเมื่อ Closed Beta ผ่าน Exit Gate
 
 ## 3. Non-negotiable Rules
 
@@ -65,7 +62,6 @@ Open Beta สามารถเพิ่มเป็น channel แยกภา�
 release/
 ├── channels/
 │   ├── dev.json
-│   ├── closed-beta.json
 │   └── stable.json
 └── evidence/
     └── <version>/
@@ -137,12 +133,10 @@ Recommended priority:
 
 ```text
 signed local override for developers
-→ account entitlement
-→ installer default
 → stable fallback
 ```
 
-Unauthenticated or unresolved users must always fall back to `stable`.
+The desktop currently checks the signed `stable` manifest; account state does not select the updater channel.
 
 ## 10. Security Requirements
 

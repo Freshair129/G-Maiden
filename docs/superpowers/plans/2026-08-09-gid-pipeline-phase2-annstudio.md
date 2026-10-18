@@ -14,7 +14,7 @@
 - Sign-in is OPTIONAL and additive: every AnnStudio flow (import, map, export, install) must work signed-out exactly as today; signed-out packs simply omit `authorGid`.
 - Backward compatibility is absolute: `author` stays a plain string in every schema/struct/manifest; packs WITHOUT `authorGid` must parse and function identically in G-Maiden (serde `default` + `skip_serializing_if`), and `update_pack` must not drop the field.
 - `:3000/announcer/install` gains NO auth (stays low-trust per CLAUDE.md); the new `:3210` listener serves exactly one OAuth callback per explicit user click, is armed only after the click, and never logs the authorization code.
-- gstore URL + publishable key are the same public constants the landing uses (`landing/src/beta.ts`); no service keys, no tokens on disk beyond what supabase-js already persists in webview localStorage.
+- The desktop account client reads its public Supabase configuration from `src/src/supabase.ts`; the public landing has no account client. No service keys or extra token files are introduced.
 - Commits: conventional, no tags, no `git add -A`; G-Suite commits in `G:\G-Suite`, G-Maiden commits in `G:\G-Maiden` — never mix repos in one commit.
 - OPS (owner-gated, NOT a coding task): add `http://127.0.0.1:3210/auth/callback` to the gstore Supabase Auth redirect allowlist before sign-in can complete.
 
@@ -150,7 +150,7 @@ git -C /g/G-Suite commit -m "feat(ann-studio): optional authorGid stamped into e
 - Modify: `G:\G-Suite\packages\ann-studio\src\package.json` (dependency)
 
 **Interfaces:**
-- Consumes: gstore public constants (same as `G:\G-Maiden\landing\src\beta.ts`): URL `https://wsseitulmcgnolgsrxgh.supabase.co`, publishable key `sb_publishable__vr0-aNdudlq3aPbH8OMXw_0rr0JScZ`.
+- Consumes: the public account configuration defined in `src/src/supabase.ts`.
 - Produces (Task 3 consumes): store fields `gid: string`, `gidDisplayName: string`, `gidSignedIn: boolean`, `setGidAuth(p: { gid: string; displayName: string; signedIn: boolean }): void`; functions `signInWithGoogle(): Promise<string | null>` (returns error message or null), `signOutGid(): Promise<void>`, `restoreGidSession(): Promise<void>`.
 
 - [ ] **Step 1: Add the dependency**

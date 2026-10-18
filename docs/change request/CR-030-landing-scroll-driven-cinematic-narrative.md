@@ -13,7 +13,7 @@ superseded_by: null
 attributes:
   doc_type: "change-request"
   domain: "public-landing"
-  scope: "Scroll-driven cinematic motion for Hero, Open Beta beacon, G-Maiden access, and feature rails"
+  scope: "Scroll-driven cinematic motion for Hero and feature rails"
   language: "th"
   related_docs:
     - "docs/change request/CR-029-gmaiden-art-first-2-5d-hero-replacement.md"
@@ -26,8 +26,8 @@ attributes:
 ## Approved decision
 
 Boss approved a premium, scroll-driven landing narrative that makes the existing original
-G-Maiden Hero, Open Beta countdown, G-Maiden access, and feature rails feel connected as one cinematic
-sequence. The work borrows only the interaction quality expected from award-winning marketing sites.
+G-Maiden Hero and feature rails feel connected as one cinematic sequence. The work borrows only the
+interaction quality expected from award-winning marketing sites.
 It does not copy a specific website, external media, layout, branding, or source code.
 
 ## Classification
@@ -44,18 +44,15 @@ This change does not alter OAuth, GID, terms, entitlement, Supabase, queue data,
 flowchart TD
   A["Passive browser scroll"] --> B["One requestAnimationFrame controller"]
   B --> C["Hero exit depth"]
-  B --> D["Open Beta beacon signal"]
-  B --> E["IntersectionObserver reveal markers"]
-  E --> F["G-Maiden access focus"]
-  E --> G["Feature diagnostic rails"]
+  B --> D["IntersectionObserver reveal markers"]
+  D --> E["Roadmap and feature section focus"]
   H["Touch or reduced motion"] --> I["Static readable composition"]
 ```
 
 1. A single passive scroll listener schedules at most one animation frame and writes bounded CSS
    custom properties to the landing root.
 2. Hero exit uses only opacity and transform on the existing art, scrim, and content planes.
-3. The Open Beta beacon receives a bounded ice-signal sweep that tracks Hero exit progress.
-4. G-Maiden access and feature content remain visible by default. `IntersectionObserver` adds an enhancement
+3. Roadmap and feature content remain visible by default. `IntersectionObserver` adds an enhancement
    class only after each section enters view, then unobserves it.
 5. No scroll pinning, scroll hijacking, autoplay audio, WebGL, new remote media, or animation
    library is allowed.

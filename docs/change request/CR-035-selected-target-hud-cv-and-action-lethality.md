@@ -2,7 +2,7 @@
 title: "CR-035: Selected Target HUD CV and Action-Specific Lethality"
 doc_id: "CR-035-selected-target-hud-cv-and-action-lethality"
 status: "draft"
-version: "0.1.0"
+version: "0.1.1"
 updated: "2026-10-18"
 owner: "Boss"
 source_of_truth: true
@@ -111,7 +111,7 @@ Action estimate response (proposed): `{ action_id, target_id, effective_damage_l
 | 2 | CV/OCR | selected target stable identity, two-mode calibration, HP interval, armor/MR/level confidence; degraded states | held-out detection/OCR quality receipt |
 | 3 | G-Damage | adapter to existing `TargetCombatSnapshot`, single-action calculation and patch guard | deterministic formula + unverified-modifier tests |
 | 4 | UI/Logs | read-only overlay, retraction, source/unknown status and privacy-safe local logs | UX/privacy/latency review |
-| 5 | QA | end-to-end game probes; opt-in guarded beta only after acceptance | owner release gate |
+| 5 | QA | end-to-end game probes only after separate owner acceptance; no distribution or release is implied | owner acceptance gate |
 
 Do not start by changing `MVP-054` to DONE: target-side live damage remains deferred in current `mvp-backlog`; schedule this as a separately approved feature with documented dependency/priority changes, not an implicit MVP promise. Reuse `MVP-017/018/021/048/050` coverage, unknown, quality, performance and privacy test contracts.
 
@@ -157,3 +157,4 @@ Rollback: disable SelectedTargetObserver / related advisory, preserve existing G
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-10-18 | Initial proposed CR: SelectedTargetObserver, shared-frame ROI, source-safe target HP/defense, Sniper single-action damage, tests and policy gates; no runtime changes. |
+| 0.1.1 | 2026-10-18 | Clarified that QA evidence is an acceptance gate and does not imply a distribution or release channel. |

@@ -1,13 +1,13 @@
 {
   "schema_version": 1,
   "document_id": "mvp-execution-dag",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "updated": "2026-10-18",
   "mode": "execution_active",
   "source": {
     "path": "docs/product/mvp-backlog.md",
-    "version": "0.3.4",
-    "sha256": "D294044110C6B24E5228204BBDC684A3C3790DF83D8ECCDDE7EBD8A75A814142"
+    "version": "0.3.6",
+    "sha256": "E34D0B0875AD8FA33703C7185585AFD36302659542FCB9E3B1259C9FD01C3197"
   },
   "parallelism": {
     "workers": 3,
@@ -17,8 +17,7 @@
   },
   "activation_inputs": {
     "account_gate_required": false,
-    "account_surface_exposed": true,
-    "legacy_handoff_surface_in_scope": false
+    "account_surface_exposed": true
   },
   "conditional_policy": "Unknown means HOLD for affected nodes/edges. NOT_APPLICABLE requires an explicit MVP-003/MVP-004 scope decision; it is never inferred from elapsed time.",
   "dispatch_rule": "Dependencies integrated/accepted, activation known, external gates satisfied, idle worker and write leases available. Acquire verification resource only when entering that phase; consumers start from the integrated dependency SHA.",
@@ -42,7 +41,7 @@
     "CORE_STATE": "src-tauri/src/runtime.rs shared lifecycle/state and announcer.rs epoch-scoped detector state",
     "UTTERANCE": "src-tauri/src/utterance.rs session identity/epoch envelope and stale-event gate",
     "GSI": "src-tauri/src/gsi.rs and ingestion/schema changes",
-    "UI_ONBOARDING": "Local setup/readiness UI; account sign-in is optional and Closed Beta gating is cancelled",
+    "UI_ONBOARDING": "Local setup/readiness UI; account sign-in is optional",
     "UI_SETTINGS": "app/Control and settings lifecycle/session-scoped advice state",
     "UI_OVERLAY": "app/Overlay and in-game components",
     "UI_DECK": "CommandDeck/dashboard routing",
@@ -409,7 +408,7 @@
     {
       "id": "MVP-004",
       "parent_task": "MVP-004",
-      "title": "กำหนด access/offline หลังยกเลิก Closed Beta.",
+      "title": "กำหนด access/offline policy สำหรับ account-optional local core.",
       "kind": "decision",
       "discipline": "product/security",
       "priority": "P0",
@@ -1602,7 +1601,7 @@
     {
       "id": "MVP-045",
       "parent_task": "MVP-045",
-          "title": "NOT_APPLICABLE: cancelled legacy desktop Beta handoff; protected server download operations remain separately authorized.",
+      "title": "NOT_APPLICABLE: desktop startup has no Terms, account, or download gate; protected account services keep separate server authorization.",
       "kind": "work",
       "discipline": "web/legal",
       "priority": "P0",
@@ -1615,7 +1614,7 @@
         "MVP-003"
       ],
       "conditional_dependencies": [],
-      "activation": "legacy_handoff_surface_in_scope",
+      "activation": "always",
       "write_locks": [
         "LANDING",
         "AUTH"
@@ -3723,7 +3722,6 @@
     "MVP-062"
   ],
   "activation_constraints": [
-    "account_gate_required === true implies account_surface_exposed === true and legacy_handoff_surface_in_scope === true",
     "An inactive node satisfies applicable joins only with an explicit NOT_APPLICABLE scope record."
   ],
   "post_dag_actions": {

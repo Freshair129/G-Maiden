@@ -1,19 +1,10 @@
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it, vi } from 'vitest'
-
-vi.mock('./beta', () => ({
-  useBetaEnrollment: () => ({
-    status: 'signed-out',
-    gid: '',
-    error: '',
-    register: vi.fn(),
-  }),
-}))
+import { describe, expect, it } from 'vitest'
 
 import PublicDemo from './PublicDemo'
 
 describe('PublicDemo', () => {
-  it('renders the deterministic scenario, controls, feature states and beta CTA', () => {
+  it('renders the deterministic scenario, controls, feature states, and privacy boundary', () => {
     const html = renderToStaticMarkup(<PublicDemo />)
 
     expect(html).toContain('G-MAIDEN / PUBLIC DEMO')
@@ -23,7 +14,7 @@ describe('PublicDemo', () => {
     expect(html).toContain('Partial')
     expect(html).toContain('Preview')
     expect(html).toContain('Planned')
-    expect(html).toContain('สมัคร Closed Beta')
     expect(html).toContain('SYNTHETIC DATA')
+    expect(html).toContain('ไม่ต้องลงชื่อเข้าใช้')
   })
 })
