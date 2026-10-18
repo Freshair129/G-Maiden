@@ -1,13 +1,13 @@
 ---
 title: "Auth failure remediation — GAP-01/02"
 doc_id: "auth-failure-remediation-proposal"
-version: "0.2.2b"
+version: "0.2.3b"
 status: "active"
 approved_by: "Boss"
 approved_date: "2026-09-12"
 created_at: "2026-09-12T20:58:04+07:00,RWANG,a4a75542c857beaac68267b90e16707ad3263a45"
 last_update: "2026-09-13T01:30:13+07:00,RWANG"
-updated: 2026-10-16
+updated: 2026-10-18
 owner: "Boss"
 attributes:
   doc_type: "remediation-proposal"
@@ -17,6 +17,11 @@ attributes:
 ---
 
 # ข้อเสนอแก้ Auth failure — GAP-01/02
+
+> **สถานะปัจจุบัน (2026-10-18):** Closed Beta ถูกยกเลิกและ desktop entitlement gate ถูกถอดออกจาก source แล้ว
+> ส่วนที่พูดถึง native runtime lock, entitlement grace และ first-run gate ด้านล่างเป็นหลักฐานของ
+> implementation เดิม ไม่ใช่พฤติกรรมปัจจุบัน. การ sign-out ปัจจุบันล้าง account session โดยไม่หยุด local core;
+> server ยังเป็นผู้ตัดสิน protected account actions.
 
 Boss อนุมัติด้วยข้อความ “approve” วันที่ 2026-09-12: local implementation GAP-01/02 รวม process-local grace ตาม §2. ไม่อนุมัติ production mutation หรือ D1–D4.
 Baseline `a4a75542c857beaac68267b90e16707ad3263a45`, application `0.13.2`.
@@ -40,7 +45,7 @@ Baseline `a4a75542c857beaac68267b90e16707ad3263a45`, application `0.13.2`.
 | [EXEC-PLAN CR-034](EXEC-PLAN-CR-034-iam-remediation.md) §3 | GAP-01 ใช้งานเดิม T10; ตารางนี้ยังเป็น task-state authority ไม่สร้าง board ซ้ำหรือทำเครื่องหมาย DONE ใน proposal |
 | [CR-022](../change%20request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md) §6, AC-04, UAT-12 | ระบุ no-grace/online-only แต่ native ปัจจุบันมี process-local grace 24 ชั่วโมง เป็น policy drift ที่ต้องเปิดเผย |
 | [Native runtime](../../src-tauri/src/runtime.rs) / [verification command](../../src-tauri/src/lib.rs#L160) | Grace ใช้ได้คืน Ok(stale); ใช้ไม่ได้ล็อกแล้วคืน Err; cold start ไม่มี durable receipt |
-| [First-run gate](../../src/src/GmadFirstRunGate.tsx) / [account auth](../../src/src/auth.ts#L124) | Warning หลัง sign-out ต้องปรากฏบนหน้าที่ผู้ใช้เห็นจริง ไม่ถูกติดป้ายว่าเป็น login failure |
+| [Former first-run flow (historical)](../change%20request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md) / [account auth](../../src/src/auth.ts) | Warning หลัง sign-out ต้องปรากฏบนหน้าที่ผู้ใช้เห็นจริง ไม่ถูกติดป้ายว่าเป็น login failure |
 
 **ข้อเสนอ policy สำหรับอนุมัติรอบนี้:** รักษา grace 24 ชั่วโมงที่มีอยู่เฉพาะ process เดิมหลัง fresh verification; ไม่เพิ่มเวลา ไม่ persist receipt และไม่ปลดล็อก cold start. เมื่ออนุมัติ ให้บันทึกข้อยกเว้นนี้ใน CR-022 พร้อมปรับ UAT-12 ให้แยก within-grace กับ no-valid-grace ก่อน code change. ห้ามถือว่า CR-022 เดิมอนุมัติ grace อยู่แล้ว. GAP-02 ไม่อ้างว่า expiry ถูกบังคับด้วย timer ที่ทำงานตลอดเวลา: ขอบเขตนี้คือผลของ verification call.
 
@@ -48,7 +53,7 @@ Baseline `a4a75542c857beaac68267b90e16707ad3263a45`, application `0.13.2`.
 
 **GAP-01:** [auth.ts](../../src/src/auth.ts#L124) เรียก remote security action ก่อน local sign-out ใน try เดียว เมื่อ remote throw จึงข้าม cleanup. [secureStorage.removeItem](../../src/src/secureStorage.ts) ยังกลืน native deletion failure ทำให้ caller แยก cleanup สำเร็จ/ล้มเหลวไม่ได้. Source probe ของ adapter เมื่อ mock `secret_delete` reject ยังคง resolve; ไม่ได้ลบ credential จริงในการตรวจนี้.
 
-**GAP-02:** [gmadEntitlement.ts](../../src/src/gmadEntitlement.ts) กับ [gmadFirstRun.ts](../../src/src/gmadFirstRun.ts) ใช้ everEligible กลืน background rejection แม้ native ให้ grace ผ่าน success branch ไปแล้ว. UI จึงเก็บ decision เก่าในกรณีที่ native ล็อก.
+**GAP-02 (historical gate behavior):** Former `gmadEntitlement.ts` and `gmadFirstRun.ts` used `everEligible` to suppress background rejection; those gate modules are no longer in current source.
 
 ## 4. Contract — current sign-out
 
@@ -97,8 +102,8 @@ Background token refresh ที่กำลังรอยังไม่เป�
 | --- | --- |
 | auth.ts / securitySession.ts / securityApi.ts | ลำดับ transaction, timeout/abort และผล local/remote แยกกัน |
 | secureStorage.ts และ auth client wiring เฉพาะที่จำเป็น | ส่ง deletion error และล้างเฉพาะ auth keys แม้ provider ใช้งานไม่ได้ |
-| gmadEntitlement.ts / gmadFirstRun.ts | gate ตาม rejection, reset eligibility และป้องกัน obsolete results |
-| GmadFirstRunGate.tsx / sign-out error surface ที่ใช้อยู่ | แสดง cleanup/remote warning บนหน้าที่ถูกต้องและมี retry |
+| Former gmadEntitlement.ts / gmadFirstRun.ts | Historical: gate rejection and obsolete-response behavior; removed from current source after Closed Beta cancellation |
+| Former GmadFirstRunGate.tsx / current sign-out error surface | Preserve the historical flow record; current auth UI reports local cleanup and remote revoke separately without a runtime lock |
 | Native lib.rs/runtime.rs เฉพาะหาก regression test ยืนยันว่าผล verify เก่าปลดล็อกหลัง sign-out | ปิด transaction race โดยมี RCA เพิ่มก่อนแก้; ไม่ถือว่า race นี้พิสูจน์แล้ว |
 | Existing auth/storage/gate tests และ integration tests | ใช้ real composition แทน callback จำลองเพียงชั้นเดียว |
 | CR-022, CR-034 execution record, RCA, llms และ generated doc graph | ปรับเฉพาะ contract/implementation/evidence ที่เปลี่ยน; ไม่ประกาศปิด gap ก่อนตรวจผ่าน |
@@ -176,6 +181,7 @@ Final local link/path checks: 163 references across the audit, RCA, proposal and
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.2.3b | 2026-10-18 | Marked entitlement-gate remediation details as historical after Closed Beta cancellation; retained current account sign-out and server-authorization contract. |
 | 0.1.0b | 2026-09-12 | เสนอ contract แก้ GAP-01/02, credential cleanup failure, UI/native state, parent grace-policy exception และ acceptance tests; รอ approval ก่อน application code. |
 | 0.1.1b | 2026-09-12 | บันทึก Boss approval ของ GAP-01/02 และ grace exception; เริ่ม local implementation. |
 | 0.2.0b | 2026-09-12 | Record approved local implementation, SDK abort/storage behavior, generation guard and local validation; retain native/WebView limitations. |

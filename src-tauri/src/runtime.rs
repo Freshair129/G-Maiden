@@ -90,57 +90,9 @@ static MATCH_SESSION: Mutex<MatchSessionState> = Mutex::new(MatchSessionState {
 /// at the main menu, and it keeps idle CPU near zero.
 static IN_GAME: AtomicBool = AtomicBool::new(false);
 
-/// Closed-Beta runtime authorization. This is deliberately process-local and
-/// defaults to false in RELEASE builds: cached UI state, a GID, or an installer
-/// must never arm the gameplay runtime. It is set only after the native
-/// entitlement verifier receives an `eligible` decision from the JWT-protected
-/// backend.
-///
-/// Debug builds seed it `true` so `pnpm tauri dev` is usable for local UI work
-/// without network, a current Terms acceptance and an active grant. This ONLY
-/// relaxes the dev binary — `cargo build --release` and every shipped artifact
-/// still start locked. MIRRORED IN `src/src/App.tsx`, which skips
-/// `GmadFirstRunGate` under the same condition; changing one without the other
-/// gives dev a deck wired to a locked runtime (no GSI, no capture, no overlay).
-static GMAD_ENTITLED: AtomicBool = AtomicBool::new(cfg!(debug_assertions));
-static GMAD_CAPTURE_STARTED: AtomicBool = AtomicBool::new(false);
-
-/// Serialize response commits with explicit locks, without holding a mutex
-/// across the network await. New requests and sign-out invalidate older replies.
-pub static ENTITLEMENT_REQUESTS: EntitlementRequests = EntitlementRequests(Mutex::new(0));
-
-pub struct EntitlementRequests(Mutex<u64>);
-
-impl EntitlementRequests {
-    pub fn begin(&self) -> Result<u64, String> {
-        let mut generation = self.0.lock().map_err(|_| "Entitlement lock unavailable")?;
-        *generation += 1;
-        Ok(*generation)
-    }
-
-    pub fn apply<T>(&self, request: u64, commit: impl FnOnce() -> T) -> Result<T, String> {
-        let generation = self.0.lock().map_err(|_| "Entitlement lock unavailable")?;
-        if request != *generation {
-            return Err("Entitlement request superseded".into());
-        }
-        Ok(commit())
-    }
-
-    pub fn invalidate(&self, lock: impl FnOnce()) -> Result<(), String> {
-        let mut generation = self.0.lock().map_err(|_| "Entitlement lock unavailable")?;
-        *generation += 1;
-        lock();
-        Ok(())
-    }
-}
-
-/// Updater channel resolved from the last entitlement decision. The backend owns
-/// this, not the webview: Control and Overlay are separate JS contexts and the
-/// deck that runs the update banner is not the component that verified the
-/// entitlement, so a frontend-held channel is invisible to whichever window asks
-/// next. `0` = Stable, and Stable is also the fallback for every unknown value —
-/// a restricted channel is never reachable by forgetting to set this.
-static UPDATE_CHANNEL: AtomicU8 = AtomicU8::new(0); // 0=Stable, 1=ClosedBeta, 2=Dev
+/// The local capture thread is started once during app setup, independently of
+/// account sign-in or network state.
+static LOCAL_CAPTURE_STARTED: AtomicBool = AtomicBool::new(false);
 
 /// Whether G-Signal gank warnings are enabled (mirrors the UI toggle). Defaults
 /// on so a fresh install warns out of the box.
@@ -622,122 +574,6 @@ pub fn match_epoch() -> u64 {
     MATCH_EPOCH.load(Ordering::Relaxed)
 }
 
-pub fn set_gmad_entitled(value: bool) {
-    GMAD_ENTITLED.store(value, Ordering::SeqCst);
-    if !value {
-        set_in_game(false);
-    }
-}
-
-pub fn gmad_entitled() -> bool {
-    GMAD_ENTITLED.load(Ordering::SeqCst)
-}
-
-pub fn set_update_channel(channel: crate::gmad_entitlement::update_channel::ReleaseChannel) {
-    use crate::gmad_entitlement::update_channel::ReleaseChannel;
-    let code: u8 = match channel {
-        ReleaseChannel::Stable => 0,
-        ReleaseChannel::ClosedBeta => 1,
-        ReleaseChannel::Dev => 2,
-    };
-    UPDATE_CHANNEL.store(code, Ordering::SeqCst);
-}
-
-pub fn update_channel() -> crate::gmad_entitlement::update_channel::ReleaseChannel {
-    use crate::gmad_entitlement::update_channel::ReleaseChannel;
-    match UPDATE_CHANNEL.load(Ordering::SeqCst) {
-        1 => ReleaseChannel::ClosedBeta,
-        2 => ReleaseChannel::Dev,
-        _ => ReleaseChannel::Stable,
-    }
-}
-
-// ── Entitlement grace cache ──────────────────────────────────────────────────
-//
-// Audit B1/B2: `verify_gmad_entitlement` used to disarm the runtime (and hide
-// the overlay) on EVERY call, success or failure, before the network round
-// trip even started — and it was called not just at sign-in but on every
-// Supabase access-token rotation (~hourly), because the frontend re-verifies
-// whenever the session object changes. A player mid-match could therefore
-// lose G-Signal for the length of a network hiccup that had nothing to do
-// with their actual entitlement, in direct contradiction of CLAUDE.md's
-// resilience clause ("on cloud/network loss, G-Sentry and G-Signal must keep
-// running").
-//
-// This cache is the fix's backend half: remember the last SERVER-CONFIRMED
-// entitled decision, and let a re-verify's network FAILURE fall back to it
-// (marked `stale`) instead of locking, as long as it's still inside
-// [`ENTITLEMENT_GRACE_MS`]. Cold start is untouched — there is nothing to
-// fall back to on first launch, so the disclosed Closed Beta policy ("connect
-// every time you open the app") still holds exactly as before. A genuine,
-// freshly-confirmed DENIAL clears the cache immediately, so a later network
-// failure can never reinstate access that was just explicitly revoked.
-
-/// How long a confirmed-entitled decision is trusted after the server last
-/// confirmed it, purely so a RE-verification's own network failure doesn't
-/// revoke an already-established session. Deliberately bounded — this is a
-/// re-verify fallback for a session already in progress, not a way to stay
-/// entitled indefinitely offline. 24h comfortably covers any single match or
-/// transient outage while still demanding a fresh check at least daily; tune
-/// here if product wants a different trade-off.
-const ENTITLEMENT_GRACE_MS: u64 = 24 * 60 * 60 * 1000;
-
-struct EntitlementCache {
-    decision: crate::gmad_entitlement::EntitlementDecision,
-    verified_at_ms: u64,
-}
-
-static ENTITLEMENT_CACHE: Mutex<Option<EntitlementCache>> = Mutex::new(None);
-
-/// Remember a server-confirmed ENTITLED decision as the fallback for a future
-/// re-verify's network failure. Callers must only pass decisions where
-/// `unlocks_runtime()` is true — a denial must never become a stale grant.
-pub fn cache_entitlement(decision: crate::gmad_entitlement::EntitlementDecision) {
-    cache_entitlement_at(decision, epoch_ms());
-}
-
-/// Injectable-clock version of [`cache_entitlement`] — same shape as
-/// `note_enemy_score`/`dead_enemy_count_at` elsewhere in this file, so the
-/// grace window's expiry boundary is actually testable instead of only
-/// exercisable against real wall-clock time.
-fn cache_entitlement_at(decision: crate::gmad_entitlement::EntitlementDecision, now_ms: u64) {
-    if let Ok(mut slot) = ENTITLEMENT_CACHE.lock() {
-        *slot = Some(EntitlementCache {
-            decision,
-            verified_at_ms: now_ms,
-        });
-    }
-}
-
-/// The last confirmed-entitled decision, cloned and marked `stale`, if it's
-/// still inside the grace window. `None` means the caller must lock: either
-/// nothing was ever cached (cold start — unaffected by this fallback) or the
-/// grace window has lapsed since the last successful check.
-pub fn stale_entitlement_within_grace() -> Option<crate::gmad_entitlement::EntitlementDecision> {
-    stale_entitlement_within_grace_at(epoch_ms())
-}
-
-/// Injectable-clock version of [`stale_entitlement_within_grace`].
-fn stale_entitlement_within_grace_at(now_ms: u64) -> Option<crate::gmad_entitlement::EntitlementDecision> {
-    let slot = ENTITLEMENT_CACHE.lock().ok()?;
-    let cache = slot.as_ref()?;
-    if now_ms.saturating_sub(cache.verified_at_ms) > ENTITLEMENT_GRACE_MS {
-        return None;
-    }
-    let mut decision = cache.decision.clone();
-    decision.stale = true;
-    Some(decision)
-}
-
-/// Drop the cached grant. Called on explicit sign-out/lock (a real "stop
-/// trusting this session" event) and on a freshly-confirmed denial (a more
-/// recent, authoritative answer than whatever was cached).
-pub fn clear_entitlement_cache() {
-    if let Ok(mut slot) = ENTITLEMENT_CACHE.lock() {
-        *slot = None;
-    }
-}
-
 pub fn set_persona_preset(val: u8) {
     PERSONA_PRESET.store(val, Ordering::Relaxed);
 }
@@ -870,8 +706,8 @@ pub fn apply_startup_settings_json(json: &str) -> Result<(), String> {
     Ok(())
 }
 
-pub fn mark_gmad_capture_started() -> bool {
-    GMAD_CAPTURE_STARTED
+pub fn mark_local_capture_started() -> bool {
+    LOCAL_CAPTURE_STARTED
         .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
         .is_ok()
 }
@@ -986,8 +822,7 @@ fn clear_enemy_deaths() {
     }
 }
 
-/// Wall-clock ms. Used by the dead-enemy pool above and the entitlement grace
-/// cache further down. `gsi.rs` and `utterance.rs` each carry their own
+/// Wall-clock ms. Used by the dead-enemy pool above. `gsi.rs` and `utterance.rs` each carry their own
 /// private copy of this same helper — module-private by design, so no shared
 /// `pub(crate)` version to reuse across files.
 fn epoch_ms() -> u64 {
@@ -1435,6 +1270,12 @@ pub fn take_oauth_pending(callback_state: Option<&str>, now_ms: u64) -> bool {
 mod tests {
     use super::*;
 
+    #[test]
+    fn local_capture_start_is_idempotent() {
+        assert!(mark_local_capture_started());
+        assert!(!mark_local_capture_started());
+    }
+
     fn observe(
         state: &mut MatchSessionState,
         lifecycle: MatchLifecycle,
@@ -1563,157 +1404,6 @@ mod tests {
 
     fn match_state_guard() -> std::sync::MutexGuard<'static, ()> {
         MATCH_STATE_LOCK.lock().unwrap_or_else(|e| e.into_inner())
-    }
-
-    /// Same reasoning as [`match_state_guard`], for the entitlement grace
-    /// cache: a separate process-global static, so it needs its own lock
-    /// rather than sharing one that has nothing to do with match state.
-    static ENTITLEMENT_CACHE_LOCK: Mutex<()> = Mutex::new(());
-
-    fn entitlement_cache_guard() -> std::sync::MutexGuard<'static, ()> {
-        ENTITLEMENT_CACHE_LOCK.lock().unwrap_or_else(|e| e.into_inner())
-    }
-
-    fn entitled_decision(gid: &str) -> crate::gmad_entitlement::EntitlementDecision {
-        crate::gmad_entitlement::EntitlementDecision {
-            state: "eligible".into(),
-            gid: Some(gid.into()),
-            checked_at: Some("2026-08-19T00:00:00Z".into()),
-            terms: Some(crate::gmad_entitlement::TermsSummary {
-                document_id: Some("closed-beta-terms-of-use".into()),
-                version: Some("1.0.0-beta".into()),
-                effective_at: None,
-            }),
-            update_channel: None,
-            stale: false,
-        }
-    }
-
-    #[test]
-    fn old_verification_cannot_commit_after_sign_out() {
-        let requests = EntitlementRequests(Mutex::new(0));
-        let armed = AtomicBool::new(true);
-        let pending = requests.begin().unwrap();
-        requests
-            .invalidate(|| armed.store(false, Ordering::SeqCst))
-            .unwrap();
-        assert!(requests
-            .apply(pending, || armed.store(true, Ordering::SeqCst))
-            .is_err());
-        assert!(!armed.load(Ordering::SeqCst));
-    }
-
-    #[test]
-    fn only_the_latest_verification_can_apply_success_or_failure() {
-        let requests = EntitlementRequests(Mutex::new(0));
-        let old = requests.begin().unwrap();
-        let current = requests.begin().unwrap();
-        assert!(requests
-            .apply(old, || panic!("old failure must not lock newer state"))
-            .is_err());
-        assert_eq!(requests.apply(current, || "eligible").unwrap(), "eligible");
-    }
-
-    #[test]
-    fn no_cache_means_no_fallback_cold_start_unaffected() {
-        let _guard = entitlement_cache_guard();
-        clear_entitlement_cache();
-        assert!(
-            stale_entitlement_within_grace().is_none(),
-            "cold start (nothing ever cached) must still fall through to locking"
-        );
-    }
-
-    #[test]
-    fn a_fresh_cache_serves_within_grace_marked_stale() {
-        let _guard = entitlement_cache_guard();
-        clear_entitlement_cache();
-        cache_entitlement(entitled_decision("G-1ABCDEF0"));
-        let fallback = stale_entitlement_within_grace().expect("just cached — must be servable");
-        assert!(fallback.stale, "a fallback decision must be honestly marked stale");
-        assert!(
-            fallback.unlocks_runtime(),
-            "the underlying grant is still valid — only its freshness is in question"
-        );
-        assert_eq!(fallback.gid.as_deref(), Some("G-1ABCDEF0"));
-        clear_entitlement_cache();
-    }
-
-    #[test]
-    fn cache_never_mutates_the_original_stored_decision() {
-        // Every read stamps a CLONE `stale`; the stored record itself must
-        // stay pristine so a second read within grace is independently honest
-        // rather than accidentally inheriting a prior read's mutation.
-        let _guard = entitlement_cache_guard();
-        clear_entitlement_cache();
-        cache_entitlement(entitled_decision("G-1ABCDEF0"));
-        let _ = stale_entitlement_within_grace();
-        let second = stale_entitlement_within_grace().expect("still within grace");
-        assert!(second.stale);
-        clear_entitlement_cache();
-    }
-
-    #[test]
-    fn clearing_removes_the_fallback_immediately() {
-        // Models both real clear sites: an explicit sign-out/lock, and a
-        // freshly-confirmed DENIAL — either way, once cleared, a later
-        // network failure must NOT resurrect the old grant.
-        let _guard = entitlement_cache_guard();
-        clear_entitlement_cache();
-        cache_entitlement(entitled_decision("G-1ABCDEF0"));
-        assert!(stale_entitlement_within_grace().is_some());
-        clear_entitlement_cache();
-        assert!(
-            stale_entitlement_within_grace().is_none(),
-            "a cleared cache must never serve a fallback again until re-cached"
-        );
-    }
-
-    #[test]
-    fn a_second_successful_verify_replaces_the_cached_grant() {
-        // Re-caching (the normal path on every successful re-verify) must
-        // overwrite, not accumulate — and must slide the grace window's
-        // origin forward to the NEW confirmation, not the old one.
-        let _guard = entitlement_cache_guard();
-        clear_entitlement_cache();
-        cache_entitlement(entitled_decision("G-OLD00000"));
-        cache_entitlement(entitled_decision("G-NEW11111"));
-        let fallback = stale_entitlement_within_grace().expect("re-cached — must be servable");
-        assert_eq!(fallback.gid.as_deref(), Some("G-NEW11111"));
-        clear_entitlement_cache();
-    }
-
-    #[test]
-    fn grace_window_expiry_is_a_hard_boundary() {
-        let _guard = entitlement_cache_guard();
-        clear_entitlement_cache();
-        cache_entitlement_at(entitled_decision("G-1ABCDEF0"), 1_000);
-        assert!(
-            stale_entitlement_within_grace_at(1_000 + ENTITLEMENT_GRACE_MS).is_some(),
-            "exactly at the boundary must still be servable"
-        );
-        assert!(
-            stale_entitlement_within_grace_at(1_000 + ENTITLEMENT_GRACE_MS + 1).is_none(),
-            "one ms past the boundary must lock, not linger"
-        );
-        clear_entitlement_cache();
-    }
-
-    #[test]
-    fn a_re_verify_success_slides_the_grace_origin_forward() {
-        // The steady-state this protects: as long as at least one background
-        // re-check succeeds per grace window, the session never goes stale —
-        // each success resets the clock from ITS OWN confirmation time, not
-        // the original sign-in.
-        let _guard = entitlement_cache_guard();
-        clear_entitlement_cache();
-        cache_entitlement_at(entitled_decision("G-1ABCDEF0"), 0);
-        cache_entitlement_at(entitled_decision("G-1ABCDEF0"), 1_000);
-        // Long past the FIRST cache's grace window, but well within the
-        // second's — must still be servable because the origin moved.
-        let far_past_first_origin = ENTITLEMENT_GRACE_MS + 500;
-        assert!(stale_entitlement_within_grace_at(far_past_first_origin).is_some());
-        clear_entitlement_cache();
     }
 
     #[test]
