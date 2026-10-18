@@ -1,9 +1,9 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.6"
+version: "0.2.7"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
-last_update: "2026-10-18T10:50:35+07:00,Codex"
+last_update: "2026-10-18T11:31:03+07:00,Codex"
 status: "active"
 updated: "2026-10-18"
 owner: "Boss"
@@ -131,6 +131,7 @@ attributes:
   - `docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md` — Credit Economy (shard/wallet) + Mint Oracle + match_ref Storage
   - `docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md` — Supabase OAuth Server Transaction Boundary
   - `docs/architecture/adr/ADR-18-dev-runtime-governance-split.md` — Dev & Runtime Governance Split (renamed from ADR-17)
+  - `docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md` — proposed local HUD target observation and action-scoped lethality (Issue #71)
 - `docs/architecture/spikes/` — Spikes & Technical Proofs:
   - `docs/architecture/spikes/S-1-minimap-cv.md` — Spike minimap computer vision
   - `docs/architecture/spikes/S-2-oauth-broker-provider-capability.md` — Spike Supabase OAuth Server & Loopback gate capability
@@ -170,7 +171,8 @@ attributes:
   - `docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md` — Historical desktop first-run entitlement gate; Closed Beta was cancelled and the gate is no longer current
   - `docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md` — PR gate agent review rule
   - `docs/change request/CR-034-gid-iam-production-completion.md` — GID IAM Phase 2 implemented locally; live verification and production promotion pending
-  - `docs/change request/CR-*.md` — เอกสาร CR อื่นๆ ทั้งหมดตั้งแต่ CR-001 ถึง CR-034
+  - `docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md` — proposed selected-target HUD CV + single-action G-Damage, Issue #71
+  - `docs/change request/CR-*.md` — เอกสาร CR อื่นๆ ทั้งหมดตั้งแต่ CR-001 ถึง CR-035
 
 ## Operations
 
@@ -228,4 +230,4 @@ attributes:
 | 0.2.3 | 2026-10-10 | ลงทะเบียน mvp-decisions ที่รับรองตาม Owner delegation |
 | 0.2.4 | 2026-10-10 | Clarified accepted MVP contract entrypoint and labeled cancelled Closed Beta legal drafts as historical candidates, not current access gates. |
 | 0.2.5 | 2026-10-11 | Added the MVP-038 local STT evaluation protocol to the architecture-spike index. |
-| 0.2.6 | 2026-10-18 | Marked CR-022 as historical after cancellation of the Closed Beta desktop handoff. |
+| 0.2.7 | 2026-10-18 | Indexed ADR-19 and CR-035 and marked the cancelled CR-022 desktop handoff as historical. |
