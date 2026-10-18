@@ -12,7 +12,7 @@ export default function AuthPanel() {
     return <div className="auth-panel muted">checking account…</div>;
   }
 
-  if (signOutPhase === "failed" || signOutPhase === "cleaning" || signOutPhase === "locking") {
+  if (signOutPhase === "failed" || signOutPhase === "cleaning") {
     return <div className="auth-panel"><p role="alert">{error ?? "กำลังออกจากระบบ…"}</p>
       {signOutPhase === "failed" && <button onClick={() => void signOut()}>ลองออกจากระบบอีกครั้ง</button>}
     </div>;

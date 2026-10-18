@@ -67,9 +67,9 @@ deck" (`Dashboard.tsx` + `companion.ts`) with a GSI/LIVE header, a trend stat ba
 cards (status VISIBLE / LOW / MISSING / DEAD). It is **live-wired** (CR-002 Phase 2a/2b, merged
 `170805b8`): `useCompanionData()` subscribes to Tauri events (`game-tick`/`gsi-status`/`minimap-cv`/
 `enemy-missing`/`gank-alert`) and merges pure builders in `src/src/live/` over a baked `MOCK`
-fallback, so the deck itself renders signed-out/offline — but in a **release** build it never gets
-the chance: `App.tsx` wraps it in `GmadFirstRunGate` (see Accounts & GID below), which is bypassed
-only under `import.meta.env.DEV`. Own-game honest limit: GSI exposes only the local
+fallback, so the deck itself renders signed-out/offline. The cancelled Beta first-run gate has been
+removed from current source; release-mode native acceptance remains pending. Own-game honest limit:
+GSI exposes only the local
 player, so the other 9 heroes get CV identity/position + missing state only (KDA/items hidden).
 The overlay window + DXGI backend are untouched (window routing lives in `App.tsx`).
 
@@ -88,10 +88,10 @@ overflow → tab or `rowsThatFit()` pagination, **R3** COLD BOOTH `--g-*` tokens
 
 **Accounts & GID (ADR-14)** -- accepted MVP target sets `account_gate_required=false` and keeps
 `account_surface_exposed=true`: local core starts without account/session/entitlement/network, while
-protected account actions stay server-authorized and Google remains the sole primary sign-in. The
-current release code still requires Google sign-in + current Terms + active entitlement through
-`GmadFirstRunGate` (CR-022, `b6a0fc60`) until MVP-008 changes and verifies the target. Do not claim
-account-optional release runtime is already shipped. Google
+protected account actions stay server-authorized and Google remains the sole primary sign-in. Current
+source removes the cancelled Closed Beta first-run gate: the deck and local GSI/capture runtime no
+longer wait for Google sign-in, Terms, entitlement, or network. Release-mode native acceptance remains
+pending; do not claim the target is shipped until the cold/offline/revoke matrix is verified. Google
 OAuth (PKCE, callback on the GSI `:3000/auth/callback` route) → a **GID**, the human-facing
 cross-G-series identity (`G-[Gen][Payload][Checksum]`, `src/src/gid.ts`); internal key stays the
 Supabase UUID. Backend is the shared `gstore` Supabase project (`profiles` + RLS). Steam is linked
@@ -119,14 +119,13 @@ controller at `/ops`. G-Maiden artifacts live only in the private Supabase Stora
 active grant before minting a five-minute signed URL. Never put the artifact URL in email, treat an
 email link as an authorization credential, or allow a typed GID to establish entitlement. CR-020
 defines the landing countdown and notification route. CR-021 is a **candidate legal/consent design**:
-before it ships, counsel must approve final Terms/Privacy language and the implementation must add
-server-written, private, versioned acceptance receipts plus optional-consent withdrawal. **CR-022 is
-shipped, not planned** — the desktop first-run handoff (installed G-Maiden → Google sign-in with the
-same GID, current Terms acceptance, active entitlement) was accepted 2026-07-21 and landed in
-`b6a0fc60`; it lives in `src/src/GmadFirstRunGate.tsx` and still gates the current release build.
-The accepted MVP target removes this runtime Beta grant/Terms gate in MVP-008; until the code task
-lands, describe the current gate accurately. Do not restart the cancelled Beta or add a local
-Terms receipt. Preserve counsel, release, and existing server authorization gates. Keep raw match,
+  before it ships, counsel must approve final Terms/Privacy language and the implementation must add
+  server-written, private, versioned acceptance receipts plus optional-consent withdrawal. **CR-022
+  was historically shipped** — the desktop first-run handoff (Google sign-in, current Terms, active
+  entitlement) landed in `b6a0fc60` and has since been removed from current source under the accepted
+  account-optional MVP policy. It no longer gates startup. Release-mode native acceptance remains
+  pending. Do not restart the cancelled Beta or add a local Terms receipt. Preserve counsel, release,
+  and existing server authorization gates. Keep raw match,
 CV, G-Log, G-Memory, microphone audio, and transcripts local.
 
 When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scalability unity.
@@ -271,7 +270,7 @@ Users receive updates through an **in-app updater** (Tauri updater plugin). Rele
 | Channel | Audience | Manifest | Set by |
 | --- | --- | --- | --- |
 | `dev` | internal testers | `release/channels/dev.json` | `candidate-release.yml` |
-| `closed-beta` | invited testers | `release/channels/closed-beta.json` | promotion |
+| `closed-beta` | cancelled; historical manifest | `release/channels/closed-beta.json` | retired |
 | `stable` | public | `release/channels/stable.json` | `promote-release.yml` (production approval) |
 
 - **In-app update — the channel goes in the URL, never in `target`.** This is the one rule that
@@ -286,9 +285,8 @@ Users receive updates through an **in-app updater** (Tauri updater plugin). Rele
   so the plugin's own `{os}-{arch}-{installer}` → `{os}-{arch}` fallback resolves the real keys and
   MSI/NSIS installs each get their own artifact. `install_pending_update` installs what the check
   offered. The webview passes a **channel enum, never a URL**. Minisign verification is untouched.
-  The channel itself is backend state (`runtime::update_channel`), set from the entitlement decision
-  in `verify_gmad_entitlement` and reset to `stable` on lock — Control and Overlay are separate JS
-  contexts, so a frontend-held channel would be invisible to whichever window checks next.
+  The current desktop client checks only the signed `stable` manifest. The cancelled Beta channel is
+  not selectable by the renderer, and account sign-in no longer changes updater or local-runtime state.
   **Manifests are keyed by platform id, never by channel name**, and `channel-manifest.mjs`
   `validateManifest` now rejects channel-name keys so the old shape cannot come back.
 - **Cutting a candidate:** bump all five version sources (`src-tauri/tauri.conf.json`,
@@ -327,6 +325,7 @@ deploy to web by vercel cli
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.4.2b | 2026-10-18 | Removed the cancelled Closed Beta first-run runtime gate from current desktop source; documented account-optional startup and pending native acceptance. |
 | 0.4.0b | 2026-10-10 | Reconciled accepted MVP scope/privacy/access and hard-path rules; separated the account-optional product target from the current CR-022 runtime gate and marked Closed Beta as cancelled history. |
 | 0.3.0b | 2026-08-11 | Replaced the stale tag-publishes-to-everyone release section with the dev/closed-beta/stable channel pipeline that actually ships (candidate-release → promote-release), folded the batching policy into it, and corrected the updater endpoint and APP_VERSION path. |
 | 0.2.1b | 2026-07-22 | Normalized reader-facing Closed Beta naming from GMAD to G-Maiden while preserving technical identifiers such as functions, anchors, and storage paths. |

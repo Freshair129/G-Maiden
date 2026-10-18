@@ -1,11 +1,11 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.5"
+version: "0.2.6"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
-last_update: "2026-10-11,Codex"
+last_update: "2026-10-18T10:50:35+07:00,Codex"
 status: "active"
-updated: "2026-10-11"
+updated: "2026-10-18"
 owner: "Boss"
 attributes:
   domain: "documentation-governance"
@@ -167,7 +167,7 @@ attributes:
   - `docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md` — One Canvas Sitemap
   - `docs/change request/CR-016-gmad-beta-download-admin-controller.md` — Beta download controller
   - `docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md` — Countdown spec
-  - `docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md` — Desktop first-run entitlement gate
+  - `docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md` — Historical desktop first-run entitlement gate; Closed Beta was cancelled and the gate is no longer current
   - `docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md` — PR gate agent review rule
   - `docs/change request/CR-034-gid-iam-production-completion.md` — GID IAM Phase 2 implemented locally; live verification and production promotion pending
   - `docs/change request/CR-*.md` — เอกสาร CR อื่นๆ ทั้งหมดตั้งแต่ CR-001 ถึง CR-034
@@ -228,3 +228,4 @@ attributes:
 | 0.2.3 | 2026-10-10 | ลงทะเบียน mvp-decisions ที่รับรองตาม Owner delegation |
 | 0.2.4 | 2026-10-10 | Clarified accepted MVP contract entrypoint and labeled cancelled Closed Beta legal drafts as historical candidates, not current access gates. |
 | 0.2.5 | 2026-10-11 | Added the MVP-038 local STT evaluation protocol to the architecture-spike index. |
+| 0.2.6 | 2026-10-18 | Marked CR-022 as historical after cancellation of the Closed Beta desktop handoff. |

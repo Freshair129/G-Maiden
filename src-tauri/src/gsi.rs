@@ -555,9 +555,6 @@ fn parse_gsi_payload(body: &str) -> Result<GameTick, GsiPayloadError> {
 }
 
 async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'static str) {
-    if !crate::runtime::gmad_entitled() {
-        return (StatusCode::OK, "locked");
-    }
     let ParsedGsiPayload { tick, match_id } = match parse_gsi_payload_with_identity(&body) {
         Ok(parsed) => parsed,
         Err(GsiPayloadError::InvalidJson) => {

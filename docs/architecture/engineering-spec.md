@@ -2,8 +2,8 @@
 title: "G-Maiden — Engineering Spec"
 doc_id: "engineering-spec"
 status: "active"
-version: "0.3.0"
-updated: "2026-10-12"
+version: "0.3.1"
+updated: "2026-10-18"
 owner: "Boss"
 source_of_truth: false
 complexity: "C-3"
@@ -281,9 +281,10 @@ OpenDota profile + baselines. Match/CV/G-Log data stays local; the account store
 
 **MVP access target:** local core starts without account/session/entitlement/network; the
 account surface remains exposed and protected actions stay server-authorized (MVP-043/044).
-This is not the current release runtime state: `GmadFirstRunGate` still gates the deck until
-MVP-008 changes and verifies the access flow. Closed Beta is cancelled; do not restore Beta
-entitlement or local Terms-receipt gating as part of this target.
+Current source removes the former `GmadFirstRunGate`; local core and the stable updater no longer
+depend on Beta entitlement. Release-mode native cold/offline/revoke acceptance remains pending.
+Closed Beta is cancelled; do not restore Beta entitlement or local Terms-receipt gating as part of
+this target.
 
 > See [[ADR-14-gid-account-identity]] and
 > [[CR-002-Phase2-wire-backend]].
@@ -312,6 +313,7 @@ entitlement or local Terms-receipt gating as part of this target.
 ## Changelog
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.3.1 | 2026-10-18 | Updated desktop access status after removing the cancelled Closed Beta runtime gate. |
 | — | 2026-07-19 | symbol-link coverage extension (G1.5) |
 | 0.1.0 | 2026-10-04 | Reconciled the G-Log FULL-only tuning handoff with the implemented local G-Motion next-match loader and rollback boundary. |
 | 0.1.1 | 2026-10-05 | Added the DL-004 PresentMon/ETW P7 receipt contract, formula, fallback, and live-acceptance boundary. |

@@ -1,22 +1,26 @@
 ---
-version: "0.4.0b"
+version: "0.4.1b"
 created_at: "2026-07-21T05:00:00+07:00,ATHER"
-last_update: "2026-07-21T06:50:00+07:00,ATHER"
-status: "draft"
+last_update: "2026-10-18T10:50:35+07:00,Codex"
+status: "historical"
 superseded_by: null
 attributes:
   domain: "ui-ux"
-  scope: "current G-Maiden first-run walkthrough with screenshot provenance"
+  scope: "historical Closed Beta first-run walkthrough with screenshot provenance"
   language: "th"
-title: "G-Maiden Current First-Run User Flow Walkthrough"
+title: "Former G-Maiden Closed Beta First-Run User Flow (Historical)"
 doc_id: "gmad-current-first-run-user-flow-walkthrough"
 updated: "2026-07-21"
 owner: "Boss"
 ---
 
-# G-Maiden Current First-Run User Flow Walkthrough
+# Former G-Maiden Closed Beta First-Run User Flow
 
-> เอกสารนี้เป็น evidence walkthrough ของ surface ปัจจุบันสำหรับ flow
+> **สถานะปัจจุบัน:** Closed Beta ถูกยกเลิก และ CR-022 first-run gate ถูกถอดออกจาก desktop source แล้ว
+> เอกสารนี้เก็บภาพและ flow ของ implementation เดิมไว้เป็นประวัติ ไม่ใช่คำแนะนำหรือหลักฐาน UAT
+> ของแอปปัจจุบัน. Local core เริ่มได้โดยไม่ต้อง sign-in, Terms, entitlement หรือ network.
+
+เอกสารนี้เป็น evidence walkthrough ของ surface เดิมสำหรับ flow
 > `invitation -> landing -> terms/privacy -> desktop sign-in -> entitlement states -> account/setup -> dashboard`
 > โดยแยกชัดเจนว่า screenshot ไหนเป็น production page จริง, ไหนเป็น current desktop surface จริง,
 > ไหนเป็น current state harness จาก logic ปัจจุบัน, ไหนเป็น runtime window จริงบนเครื่องนี้,
@@ -34,7 +38,7 @@ owner: "Boss"
 | `runtime window capture` | จับภาพจากหน้าต่าง executable/runtime ที่กำลังรันอยู่จริงบนเครื่องนี้; ใช้ยืนยันสิ่งที่ runtime แสดง ณ เวลาจับภาพ แม้อาจ drift จาก current source |
 | `not captured` | ยังไม่มีภาพหลักฐานจากเครื่องนี้ เพราะต้องใช้ invited / entitled session จริง หรือเป็น artifact นอก repo |
 
-## 2. User flow ปัจจุบัน
+## 2. Former user flow (historical)
 
 ```mermaid
 flowchart TD
@@ -145,7 +149,7 @@ Privacy Notice เป็นเอกสารคู่กับ Terms สำห�
 
 หลักฐาน: `current web build`
 
-นี่คือ first-run gate ปัจจุบันของ G-Maiden desktop flow ที่บังคับ Google sign-in ก่อนเข้าหน้าใช้งาน
+นี่คือ first-run gate เดิมของ G-Maiden desktop flow ซึ่งบังคับ Google sign-in ก่อนเข้าหน้าใช้งาน
 
 ![Desktop first-run sign-in gate](../assets/cr022-current-user-flow/web-home.png)
 
@@ -213,7 +217,7 @@ Offline / Supabase unavailable:
 ![Offline state](../assets/cr022-current-user-flow/11-desktop-offline-harness.png)
 
 สิ่งที่ยืนยันได้จากภาพชุดนี้:
-- first-run gate ปัจจุบันสามารถ map เป็น blocked states หลักของ CR-022 ได้ครบขึ้น
+- historical first-run gate สามารถ map เป็น blocked states หลักของ CR-022 ได้ครบขึ้น
 - CTA ของแต่ละ state แยกตามเหตุผลเชิงปฏิบัติ ไม่ใช่บอกลอย ๆ ว่าเข้าไม่ได้
 - ไม่มี state ใดขอให้ user กรอก GID เอง
 
@@ -280,6 +284,7 @@ Offline / Supabase unavailable:
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
+| 0.4.1b | 2026-10-18 | historical | Marked the Closed Beta first-run screenshots and flow as historical after the owner cancelled the program and the desktop gate was removed. | — | Codex |
 | 0.4.0b | 2026-07-21 | candidate | Replaced unnecessary reader-facing GMAD naming with G-Maiden while preserving technical identifiers such as `#gmad`, filenames, and runtime literals. | null | ATHER |
 | 0.3.0b | 2026-07-21 | candidate | Added mailbox invitation evidence, production `#gmad` signed-out evidence, and runtime-window drift evidence while preserving the real entitled-session gaps. | null | ATHER |
 | 0.2.0b | 2026-07-21 | candidate | Added current-state harness screenshots for eligible, signing, terms-required, no-entitlement, mismatch, and offline branches while keeping production-proof gaps explicit. | null | ATHER |

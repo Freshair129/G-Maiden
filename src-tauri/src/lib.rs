@@ -21,7 +21,7 @@ pub mod damage;
 #[cfg(not(feature = "wgc"))]
 pub mod dxgi;
 mod governor;
-pub mod gmad_entitlement;
+pub mod update_channel;
 pub mod gsi;
 mod identity;
 mod items;
@@ -59,7 +59,7 @@ struct UpdateOffer {
 
 /// Check the channel's manifest for an update.
 ///
-/// The endpoint is built **in Rust from a hardcoded per-channel URL**
+/// The endpoint is built **in Rust from the hardcoded stable URL**
 /// (`update_channel::ReleaseChannel::manifest_url`) and no `target` is passed to the
 /// updater. That is deliberate and load-bearing: `tauri-plugin-updater` uses one
 /// `target` string BOTH to fill `{{target}}` in the endpoint template AND as the key it
@@ -71,27 +71,17 @@ struct UpdateOffer {
 /// `{os}-{arch}-{installer}` then `{os}-{arch}`, which is what the manifests actually
 /// contain — and it keeps MSI and NSIS installers resolving to their own artifact.
 ///
-/// The webview never supplies a URL, only a channel enum, so a compromised or buggy
-/// frontend cannot point the updater at an attacker's manifest. Signature verification is
-/// untouched: the plugin still checks minisign against the pubkey embedded in the app
-/// before anything is installed.
+/// The webview supplies neither a URL nor a channel, so a compromised or buggy
+/// renderer cannot select an attacker's or restricted manifest. Signature
+/// verification is untouched: the plugin still checks minisign against the pubkey
+/// embedded in the app before anything is installed.
 #[tauri::command]
 async fn check_channel_update(
     app: tauri::AppHandle,
-    channel: Option<gmad_entitlement::update_channel::ReleaseChannel>,
 ) -> Result<Option<UpdateOffer>, String> {
-    // The webview may NARROW to a less privileged channel, never widen to a restricted
-    // one. Without this clamp the `dev`/`closed-beta` restriction would be enforced only
-    // by frontend code that a modified or buggy renderer can simply not run — the
-    // manifests are public, so a widened request would hand an unentitled install a
-    // tester build. The backend's channel comes from the server-side entitlement
-    // decision and is Stable until one is verified.
-    let backend = runtime::update_channel();
-    let channel = match channel {
-        Some(requested) if !requested.is_restricted() || requested == backend => requested,
-        Some(_) => backend,
-        None => backend,
-    };
+    // Closed Beta is cancelled. Desktop clients check only the public stable
+    // channel; restricted channels require a separate release workflow.
+    let channel = update_channel::ReleaseChannel::Stable;
 
     let url: tauri::Url = channel
         .manifest_url()
@@ -138,86 +128,8 @@ async fn install_pending_update(app: tauri::AppHandle) -> Result<(), String> {
 #[tauri::command]
 fn set_overlay_visible(app: tauri::AppHandle, visible: bool) {
     if let Some(ov) = app.get_webview_window("overlay") {
-        let _ = if visible && runtime::gmad_entitled() { ov.show() } else { ov.hide() };
+        let _ = if visible { ov.show() } else { ov.hide() };
     }
-}
-
-/// Verify (or re-verify) Closed Beta entitlement. Called both at sign-in and,
-/// automatically, whenever the frontend's Supabase session object changes —
-/// which includes a plain access-token rotation (~hourly), not just a real
-/// sign-in/out.
-///
-/// Audit B1/B2: this used to disarm the runtime and hide the overlay
-/// UNCONDITIONALLY, before the network call even started, on every one of
-/// those calls. A background token refresh whose entitlement re-check then
-/// hit a transient network failure left G-Signal disarmed until the NEXT
-/// success — with no bound — directly contradicting CLAUDE.md's resilience
-/// clause ("on cloud/network loss, G-Sentry and G-Signal must keep running").
-/// Now: nothing is disarmed until the outcome is known, and a network FAILURE
-/// falls back to the last server-confirmed grant if it's still inside
-/// `runtime`'s grace window (see `runtime::stale_entitlement_within_grace`).
-/// Cold start is unaffected — there is nothing to fall back to on first
-/// launch, so a network failure there still locks exactly as before.
-#[tauri::command]
-async fn verify_gmad_entitlement(
-    app: tauri::AppHandle,
-    access_token: String,
-) -> Result<gmad_entitlement::EntitlementDecision, String> {
-    let request = runtime::ENTITLEMENT_REQUESTS.begin()?;
-    let result = gmad_entitlement::verify(&access_token).await;
-    runtime::ENTITLEMENT_REQUESTS.apply(request, || match result {
-        Ok(decision) => {
-            // The channel lives in the backend from here on, so the deck's update
-            // banner (a different window from the one that signed in) resolves the
-            // right manifest without threading state across JS contexts.
-            runtime::set_update_channel(decision.resolved_update_channel().channel);
-            let entitled = decision.unlocks_runtime();
-            runtime::set_gmad_entitled(entitled);
-            if entitled {
-                runtime::cache_entitlement(decision.clone());
-                if runtime::mark_gmad_capture_started() {
-                    capture::start(app.clone());
-                }
-            } else {
-                // A confirmed, fresh denial is authoritative and strictly more
-                // recent than any cached grant — drop the cache so a LATER
-                // network failure can't fall back to reinstating access that
-                // was just explicitly revoked.
-                runtime::clear_entitlement_cache();
-                if let Some(overlay) = app.get_webview_window("overlay") {
-                    let _ = overlay.hide();
-                }
-            }
-            Ok(decision)
-        }
-        Err(e) => {
-            if let Some(stale) = runtime::stale_entitlement_within_grace() {
-                return Ok(stale);
-            }
-            // No usable fallback (cold start, or grace expired) — this is the
-            // one network-failure case that still locks, same as before.
-            runtime::set_gmad_entitled(false);
-            if let Some(overlay) = app.get_webview_window("overlay") {
-                let _ = overlay.hide();
-            }
-            Err(e)
-        }
-    })?
-}
-
-#[tauri::command]
-fn lock_gmad_runtime(app: tauri::AppHandle) -> Result<(), String> {
-    runtime::ENTITLEMENT_REQUESTS.invalidate(|| {
-        runtime::set_update_channel(gmad_entitlement::update_channel::ReleaseChannel::Stable);
-        runtime::set_gmad_entitled(false);
-        // A real sign-out is a genuine "stop trusting this session" event — the
-        // grace cache must not let a later re-verify fail over to the account
-        // that was just signed out of.
-        runtime::clear_entitlement_cache();
-        if let Some(overlay) = app.get_webview_window("overlay") {
-            let _ = overlay.hide();
-        }
-    })
 }
 
 /// Speak `text` via Maiden's voice (Windows SAPI for now). Fire-and-forget.
@@ -882,7 +794,7 @@ pub fn run() {
                     if shortcut == &toggle2 {
                         if let Some(ov) = app.get_webview_window("overlay") {
                             let visible = ov.is_visible().unwrap_or(true);
-                            let _ = if visible || !runtime::gmad_entitled() {
+                            let _ = if visible {
                                 ov.hide()
                             } else {
                                 ov.show()
@@ -916,8 +828,6 @@ pub fn run() {
         )
         .invoke_handler(tauri::generate_handler![
             set_overlay_visible,
-            verify_gmad_entitlement,
-            lock_gmad_runtime,
             check_channel_update,
             install_pending_update,
             speak,
@@ -1019,6 +929,9 @@ pub fn run() {
             // G1.1: GSI ingestion server (127.0.0.1:3000); emits `game-tick` to all windows.
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(gsi::serve(handle));
+            if runtime::mark_local_capture_started() {
+                capture::start(app.handle().clone());
+            }
 
             // G7.2: resource governor — poll RAM/CPU every second, emit resource-stats.
             governor::start(app.handle().clone());

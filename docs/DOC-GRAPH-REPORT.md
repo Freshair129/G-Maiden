@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-10-16T06:30:28.166Z
+สร้างเมื่อ / Generated at: 2026-10-18T04:14:35.286Z
 
-สแกน 152 ไฟล์เอกสาร, 275 nodes, 1169 edges, 209 รายการปัญหา (172 ตัวบล็อก exit code) / scanned 152 doc files, 275 nodes, 1169 edges, 209 violations (172 blocking exit code).
+สแกน 152 ไฟล์เอกสาร, 275 nodes, 1169 edges, 213 รายการปัญหา (176 ตัวบล็อก exit code) / scanned 152 doc files, 275 nodes, 1169 edges, 213 violations (176 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -10,14 +10,14 @@
 
 | Reason | คำอธิบาย / Description | Count | Blocking? |
 | --- | --- | --- | --- |
-| anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 118 | yes |
+| anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 120 | yes |
 | duplicate-slug | สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) | 13 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 3 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
 | missing-changelog | มี version แต่ไม่มีตาราง Changelog / version set but no Changelog table | 4 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 34 | no (informational) |
-| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 23 | yes |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 25 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -87,6 +87,7 @@
 ### docs/architecture/engineering-spec.md
 
 - [L271] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/companion.ts", anchor=941, symbol="useCompanionData")
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.1", changelog="0.3.0")
 
 ### docs/architecture/g-maiden-ui-sitemap-flow-board.md
 
@@ -95,7 +96,7 @@
 
 ### docs/architecture/gmad-current-first-run-user-flow-walkthrough.md
 
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.0b", changelog="0.1.0b")
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.1b", changelog="0.1.0b")
 
 ### docs/architecture/implementation-plan.md
 
@@ -103,7 +104,7 @@
 
 ### docs/architecture/oauth-jwt-client-authorization-flows.md
 
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.3b", changelog="0.3.2b")
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.4b", changelog="0.3.2b")
 
 ### docs/architecture/spikes/S-1-minimap-cv.md
 
@@ -146,7 +147,6 @@
 
 ### docs/change request/CR-008-login-hardening.md
 
-- [L19] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/auth.ts", anchor=98, symbol="signInWithGoogle")
 - [L70] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/runtime.rs", anchor=365, symbol="set_master_mode")
 - [L70] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/runtime.rs", anchor=372, symbol="set_master_api_key")
 - [L70] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/runtime.rs", anchor=381, symbol="master_api_key_present")
@@ -245,6 +245,7 @@
 - [L73] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2892, symbol="g-audio-rail")
 - [L74] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2611, symbol="g-power-radial")
 - [L74] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2261, symbol="g-signals-fab")
+- [L80] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/CommandDeck.tsx", anchor=44, symbol="SignalGrid")
 - [L135] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2400, symbol="--cr6-panel-left")
 - [L136] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2401, symbol="--cr6-panel-top")
 - [L137] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=2402, symbol="--cr6-panel-width")
@@ -299,17 +300,14 @@
 
 ### docs/design-system/05-sitemap-ia.md
 
+- [L61] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/CommandDeck.tsx", anchor=42, symbol="DeckTabs")
 - [L62] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/CompanionPages.tsx", anchor=196, symbol="HistoryPage")
 - [L74] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/live/phase.ts", anchor=71, symbol="stepPhase")
 - [L100] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3078, symbol="gm-phase-chip")
 - [L135] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/CompanionPages.tsx", anchor=126, symbol="BuildAdvisorPage")
 - [L138] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/CompanionPages.tsx", anchor=153, symbol="InsightsPage")
 - [L138] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/CompanionPages.tsx", anchor=196, symbol="HistoryPage")
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="2.4.1-draft", changelog="2.4.0-draft")
-
-### docs/design-system/08-account-gid.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="1.1.1-draft", changelog="1.1.0-draft")
+- [L140] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/App.tsx", anchor=5, symbol="Control")
 
 ### docs/design-system/landing_page_prompt.md
 
@@ -377,6 +375,10 @@
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
+### docs/operations/auth-failure-remediation-proposal.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.3b", changelog="0.2.2b")
+
 ### docs/operations/gmaiden-closed-beta-release-playbook.md
 
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.2", changelog="0.1.0")
@@ -403,6 +405,10 @@
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
+### docs/product/mvp-backlog.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.4", changelog="0.1.0")
+
 ### docs/product/one-pager.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
@@ -410,6 +416,10 @@
 ### docs/product/roadmap-legacy.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/product/software-requirements-specification.md
+
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.1", changelog="0.4.0")
 
 ### docs/rca/2026-07-10-voice-pack-path-traversal.md
 
@@ -480,7 +490,7 @@
 
 ### docs/releases/release-channel-implementation.md
 
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.0", changelog="0.1.0")
+- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.1", changelog="0.1.0")
 
 ### docs/research/assets/dota2-hud-reference.md
 

@@ -2,8 +2,8 @@
 title: "G-Maiden Software Requirements Specification"
 doc_id: "software-requirements-specification"
 status: "active"
-version: "0.4.0"
-updated: "2026-10-13"
+version: "0.4.1"
+updated: "2026-10-18"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["product-requirements", "mvp-decisions", "roadmap", "G-SERIES-DATA-LINEAGE"]
@@ -25,7 +25,7 @@ G-Maiden เป็น Companion สำหรับ Dota 2 ที่รวมก�
 
 **Matrix เป้าหมายตรวจรับ MVP:** Windows x64 build 19045 และ 26100; Dota 2 live 5v5 All Pick Ranked/Unranked; CV ที่ 1920×1080, 16:9, จอหลักหนึ่งจอ, DPI 100%, default HUD/minimap ล่างซ้าย, borderless-fullscreen. ยังไม่ใช่ผล compatibility test. Turbo/custom/spectator/replay และ geometry อื่นไม่รองรับข้อสรุปที่ขึ้นกับ mode/layout จนมี calibration และ evidence. หาก mode/layout/source ไม่รู้หรือไม่มี coverage ให้รายงาน `UNKNOWN`/unavailable; GSI-only Lite mode ยังให้ local core ทำงานแต่ไม่มี CV.
 
-**Access target:** local core เริ่มได้โดยไม่ต้องมี account/session/entitlement/network (`account_gate_required=false`); Google เป็น primary sign-in เดียวสำหรับ account actions, GID/Steam ไม่ใช่ credential หรือ recovery. Account surface ยังคงเปิดอยู่ จึงยังต้องคุ้มครอง action ฝั่ง server. นี่เป็น product target; release code ยังมี CR-022 first-run gate จนกว่า MVP-008 จะเปลี่ยนและตรวจรับ จึงห้ามอธิบาย target ว่าถูก deploy แล้ว. Closed Beta ถูกยกเลิก; ไม่มีการเพิ่ม Beta Terms receipt หรือ Beta entitlement gate จาก requirement นี้.
+**Access target:** local core เริ่มได้โดยไม่ต้องมี account/session/entitlement/network (`account_gate_required=false`); Google เป็น primary sign-in เดียวสำหรับ account actions, GID/Steam ไม่ใช่ credential หรือ recovery. Account surface ยังคงเปิดอยู่ จึงยังต้องคุ้มครอง action ฝั่ง server. Current source now removes the former CR-022 desktop gate and keeps the updater on the signed stable channel; cold/offline/revoke behavior still needs release-mode native acceptance before this is called verified. Closed Beta ถูกยกเลิก; ไม่มีการเพิ่ม Beta Terms receipt หรือ Beta entitlement gate จาก requirement นี้.
 
 ### **1.3 คำนิยามและคำย่อ (Definitions & Acronyms)**
 
@@ -231,6 +231,7 @@ G-Maiden เป็นแอป desktop แบบ local-first ที่เชื�
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.4.1 | 2026-10-18 | Aligned current implementation status with the cancelled Closed Beta and recorded remaining release-mode access acceptance. |
 | 0.2.0 | 2026-10-10 | Accepted the MVP quality matrix and live-evidence requirements. |
 | 0.3.0 | 2026-10-12 | Updated the whole-app CPU budget to 10% per one-second sample per MVP decision v0.2.0. |
 | 0.3.1 | 2026-10-12 | Clarified unavailable CPU telemetry when setup/query fails; no cap guarantee when setup fails and the payload does not distinguish the cause. |
