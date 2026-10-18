@@ -1,19 +1,26 @@
 ---
-version: "1.1.1-draft"
+version: "1.1.2-historical"
 created_at: "2026-07-09T00:00:00+07:00,Fable"
-last_update: "2026-07-21T23:10:00+07:00,ATHER"
-status: "draft"
+last_update: "2026-10-18T10:50:35+07:00,Codex"
+status: "historical"
+superseded_by: "docs/product/mvp-decisions.md"
 attributes:
   domain: "ui-ux"
-  scope: "Google OAuth, GID, Steam link, and Closed Beta desktop entitlement UX"
+  scope: "Historical Google OAuth, GID, Steam link, and Closed Beta desktop entitlement UX"
   language: "th/en"
-title: "08 — Account, Login & GID"
+title: "08 — Former Account, Login & GID UX (Historical)"
 doc_id: "08-account-gid"
-updated: "2026-07-21"
+updated: "2026-10-18"
 owner: "Boss"
 ---
 
-# 08 — Account, Login & GID
+# 08 — Former Account, Login & GID UX (Historical)
+
+> **Historical design:** The owner cancelled Closed Beta. The desktop first-run entitlement/Terms
+> gate described here was removed from current source. Google sign-in and Steam linking remain
+> optional account features; the local deck, GSI, capture, and overlay do not wait for them. Use
+> [`mvp-decisions.md`](../product/mvp-decisions.md) for the current access policy. This document
+> is retained only as a record of the former Beta flow, not as current UI or UAT guidance.
 
 > UX design ของระบบบัญชี อิงสถาปัตยกรรมจริง (ADR-14 + SEC-001):
 > Google OAuth (PKCE) → Supabase `gstore` → mint GID (Edge Fn) → link Steam → public OpenDota
@@ -131,5 +138,6 @@ SIGNED-IN → ใส่ vanity URL / profile URL / SteamID64 (ช่องเด
 | Version | Date | Summary |
 | --- | --- | --- |
 | 1.0.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
-| 1.1.1-draft | 2026-07-21 | Replaced unnecessary reader-facing GMAD naming with G-Maiden while preserving technical identifiers and CR references. |
 | 1.1.0-draft | 2026-07-21 | Added CR-022 Closed Beta entitlement exception: Account is the only auth surface; Dashboard remains a layout-preserving readiness route; no typed GID, URL credential, or non-Google recovery path. |
+| 1.1.1-draft | 2026-07-21 | Replaced unnecessary reader-facing GMAD naming with G-Maiden while preserving technical identifiers and CR references. |
+| 1.1.2-historical | 2026-10-18 | Marked the former Closed Beta first-run flow historical after the owner cancelled the program and its desktop gate was removed. |

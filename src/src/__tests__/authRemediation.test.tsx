@@ -59,7 +59,7 @@ async function mount(status = 503, native = false) {
 it.each([200, 401, 403, 503])("cleans real SDK credentials after remote status %s and shares the outcome", async (status) => {
   const view = await mount(status);
   await act(async () => { await view.auth.signOut(); });
-  expect(invokeMock).toHaveBeenCalledWith("lock_gmad_runtime");
+  expect(invokeMock).not.toHaveBeenCalledWith("lock_gmad_runtime");
   expect(localStorage.getItem(KEY)).toBeNull();
   expect(localStorage.getItem(`${KEY}-code-verifier`)).toBeNull();
   expect((await view.supabase.auth.getSession()).data.session).toBeNull();
@@ -89,16 +89,6 @@ it("reports DPAPI failure, attempts other keys, and permits cleanup retry but no
   await act(async () => { await view.auth.signOut(); });
   expect(view.auth.signOutPhase).toBe("done");
   expect(view.secrets.has(KEY)).toBe(false);
-});
-
-it("does not attempt remote or local cleanup if native lock fails", async () => {
-  const view = await mount();
-  invokeMock.mockRejectedValue(new Error("IPC unavailable"));
-  await act(async () => { await view.auth.signOut(); });
-  expect(view.fetchMock).not.toHaveBeenCalled();
-  expect(localStorage.getItem(KEY)).not.toBeNull();
-  expect(view.auth.error).toContain("Runtime could not be locked");
-  expect(view.auth.user?.id).toBe("synthetic-user");
 });
 
 it("aborts a hanging security request at five seconds and still clears credentials", async () => {

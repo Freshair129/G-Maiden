@@ -396,10 +396,6 @@ mod backend {
         let mut warned_rect_geometry = false;
 
         loop {
-            if !crate::runtime::gmad_entitled() {
-                std::thread::sleep(Duration::from_millis(250));
-                continue;
-            }
             // Match boundary → rebuild Sentry/Motion/Signal before this tick's
             // frame can fold into last match's tracks. Ahead of the draft and
             // in-game gates so state is already clean when the horn lands.

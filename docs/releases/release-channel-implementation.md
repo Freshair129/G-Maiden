@@ -2,13 +2,17 @@
 title: "G-Maiden Release Channel Implementation and Evidence Runbook"
 doc_id: "release-channel-implementation"
 status: "draft"
-version: "0.4.0"
-updated: "2026-08-01"
+version: "0.4.1"
+updated: "2026-10-18"
 owner: "Boss"
 related_docs: ["RELEASE-CHANNEL-ARCHITECTURE", "CLOSED-BETA-WAVE-0-DOD"]
 ---
 
 # Release channel implementation and evidence runbook
+
+> **Current access status (2026-10-18):** Closed Beta is cancelled. This runbook preserves release
+> workflow history; the desktop no longer uses a Beta first-run gate or entitlement-selected updater
+> channel. Current desktop checks Stable only. Release-mode offline/revoke acceptance remains pending.
 
 ## Implemented in repository
 
@@ -16,7 +20,7 @@ related_docs: ["RELEASE-CHANNEL-ARCHITECTURE", "CLOSED-BETA-WAVE-0-DOD"]
 - The same workflow downloads the published signed Tauri `latest.json`, derives and strictly validates `release/channels/dev.json` from its artifact metadata, then opens a protected-main PR for review; it does not rebuild or resign during manifest publication.
 - `channel-manifest.mjs` validates channel metadata, rejects non-publishable placeholders for publication, writes Stable atomically, and preserves artifact URL/signature/SHA fields during promotion.
 - `promote-release.yml` is manual, bound to the `production` environment, validates a published candidate, and performs no build/package/sign operation.
-- `betaReadiness.ts`, `GmadFirstRunGate.tsx`, and `BetaFeedback.tsx` expose GSI/capture/minimap/overlay/audio readiness, disclose exact Compatibility Mode wording, export a sanitized diagnostic JSON bundle locally, and export structured feedback with diagnostics only after explicit consent.
+- `betaReadiness.ts` and `BetaFeedback.tsx` are historical readiness/feedback surfaces; the cancelled Beta first-run gate was removed from current desktop source. Sanitized diagnostics and feedback were separate explicit-consent flows, not current access requirements.
 - `release-rehearsal.mjs` validates the Dev-to-Stable same-artifact identity and writes a machine-readable rehearsal report when given real candidate, Stable, and approval metadata.
 - `wave-0-evidence.mjs` validates the complete Closed Beta Wave 0 evidence packet against the published entry/exit thresholds without inventing measurements.
 
@@ -63,6 +67,7 @@ Restore the previous Stable manifest from the audited commit only if the updater
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.4.1 | 2026-10-18 | Clarified Closed Beta retirement and stable-only desktop update behavior. |
 | 0.4.0 | 2026-08-01 | Retired the competing tag publisher after candidate asset overwrite RCA |
 | 0.3.0 | 2026-08-01 | Documented candidate evidence upload and signed `dev` manifest publication steps |
 | 0.2.0 | 2026-08-01 | Added publication validation, release rehearsal, Wave 0 readiness and evidence runbook |
