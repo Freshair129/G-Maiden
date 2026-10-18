@@ -1,7 +1,7 @@
 ---
-version: "2.0.0-draft"
+version: "2.0.1-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-05T00:00:00+07:00,Opus"
+last_update: "2026-10-18T00:00:00+07:00,Codex"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -9,7 +9,7 @@ attributes:
   language: "th/en"
 title: "06 — Stack & Code Map"
 doc_id: "06-stack"
-updated: "2026-07-19"
+updated: "2026-10-18"
 owner: "Boss"
 ---
 
@@ -40,7 +40,7 @@ owner: "Boss"
 | **Dashboard** (bento, scoreboard, G-Signal) | `src/src/Dashboard.tsx` + [`companion.ts`](file:///g:/G-Maiden/src/src/companion.ts) |
 | **Pages** (Live/Companion/Build/Insights/History/Settings) | [`src/src/CompanionPages.tsx`](file:///g:/G-Maiden/src/src/CompanionPages.tsx) |
 | **Account** (GID, OAuth, Steam) | [`AccountPage.tsx`](file:///g:/G-Maiden/src/src/AccountPage.tsx) [`AuthPanel.tsx`](file:///g:/G-Maiden/src/src/AuthPanel.tsx) [`SteamLink.tsx`](file:///g:/G-Maiden/src/src/SteamLink.tsx) + [`auth.ts`](file:///g:/G-Maiden/src/src/auth.ts) [`profile.ts`](file:///g:/G-Maiden/src/src/profile.ts) [`gid.ts`](file:///g:/G-Maiden/src/src/gid.ts) |
-| **Voice packs** | [`VoicePacksPage.tsx`](file:///g:/G-Maiden/src/src/VoicePacksPage.tsx) [`VoiceInventory.tsx`](file:///g:/G-Maiden/src/src/VoiceInventory.tsx) [`AudioSettings.tsx`](file:///g:/G-Maiden/src/src/AudioSettings.tsx) |
+| **Voice packs** | [`VoicePacksPage.tsx`](file:///g:/G-Maiden/src/src/VoicePacksPage.tsx) [`VoiceInventory.tsx`](file:///g:/G-Maiden/src/src/VoiceInventory.tsx) — player installs packs from Store; authoring is in G-AnnStudio |
 | **Live data builders** | [`src/src/live/`](file:///g:/G-Maiden/src/src/live/) (merge Tauri events over MOCK/FALLBACK) |
 | **Overlay + capture backend** | [`src-tauri/src/`](file:///g:/G-Maiden/src-tauri/src/) (DXGI, [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs), [`announcer.rs`](file:///g:/G-Maiden/src-tauri/src/announcer.rs), [`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs)) |
 
@@ -77,3 +77,4 @@ Release ผ่าน tag `vX.Y.Z` → CI เท่านั้น (ดู [`CLAU
 | Version | Date | Summary |
 | --- | --- | --- |
 | 2.0.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
+| 2.0.1-draft | 2026-10-18 | Update voice-pack code map to reflect Store-only player installation and separate G-AnnStudio authoring. |

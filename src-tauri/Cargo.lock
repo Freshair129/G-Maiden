@@ -1393,6 +1393,7 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "07bbe89c50d7a535e539b8c17bc0b49bdb77747034daa8087407d655f3f7cc1d"
 dependencies = [
  "futures-core",
+ "futures-sink",
 ]
 
 [[package]]
@@ -1462,10 +1463,12 @@ name = "g-maiden"
 version = "0.13.2"
 dependencies = [
  "axum",
+ "base64 0.22.1",
  "geo-types",
  "image",
  "pure-onnx-ocr-sync",
  "reqwest",
+ "ring",
  "rodio",
  "serde",
  "serde_json",
@@ -4156,6 +4159,7 @@ dependencies = [
  "base64 0.22.1",
  "bytes",
  "encoding_rs",
+ "futures-channel",
  "futures-core",
  "futures-util",
  "h2",

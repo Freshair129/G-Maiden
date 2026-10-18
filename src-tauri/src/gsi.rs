@@ -679,11 +679,11 @@ fn parse_install_request(body: &str) -> InstallRequest {
 }
 
 /// Receive a notify from G-AnnStudio after it installs a pack into
-/// `voice-cache/packs/<id>/`. `:3000` has no auth, so this only ever
-/// activates a pack that's ALREADY on disk (`voice_api::activate_if_exists`) —
-/// it never creates, writes, moves, or extracts anything; the clip files
-/// themselves are G-AnnStudio's job. Returns real per-event counts resolved
-/// from the pack's manifest (`voice_api::install_report`), replacing the old
+/// `voice-cache/packs/<id>/`. `:3000` has no auth and never writes, moves, or
+/// extracts files. Development builds can activate local authoring packs;
+/// release builds accept only a Store-install receipt and otherwise reject the
+/// activation. Returns real per-event counts resolved from the pack's manifest
+/// (`voice_api::install_report`), replacing the old
 /// `audio::all_counts()` call which counted subfolders of the legacy flat
 /// `voice-cache/` layout and had no notion of a manifest-based pack.
 async fn announcer_install(body: String) -> axum::Json<serde_json::Value> {
@@ -803,6 +803,13 @@ async fn overlay_layout_sync(State(app): State<AppHandle>, body: String) -> axum
 fn run_announcer_install(req: &InstallRequest) -> serde_json::Value {
     if req.pack_id.is_empty() {
         return serde_json::json!({ "ok": false, "error": "missing packId" });
+    }
+    if !crate::voice_api::is_store_installed(&req.pack_id) {
+        return serde_json::json!({
+            "ok": false,
+            "pack": req.pack_id,
+            "error": "pack is not installed from the Store"
+        });
     }
 
     let report = match crate::voice_api::install_report(&req.pack_id) {

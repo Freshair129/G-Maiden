@@ -434,3 +434,6 @@ verify_jwt = true
 
 [functions.iam-security-events]
 verify_jwt = true
+
+[functions.g-annstudio-access]
+verify_jwt = true

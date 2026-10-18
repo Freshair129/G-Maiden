@@ -1,8 +1,5 @@
-// Voice-tab wrapper (CR-011 §C/§E "Packs" — merges the pack inventory, the
-// CR-003 owned-items Inventory, and the deep pack editor into one nav
-// destination). Three modes behind a top pill row:
-//   คลังของฉัน (VoiceInventory, default) · ไอเทม (InventoryTab) ·
-//   ตัวแก้ไข (AudioSettings editor).
+// Consumer voice page: Store-installed pack inventory and owned Store items.
+// Pack authoring lives in the separate developer-only G-AnnStudio app.
 //
 // CR-013 W4-01 (§3.1/§5.3): the economy Store used to be a FOURTH mode here
 // (an embedded <StorePage>), duplicating the page that now has its own nav
@@ -10,33 +7,30 @@
 // คลัง/บันทึก tab set — §5.1). That embedded copy is gone; "หาแพ็กเพิ่ม →"
 // below is a pure cross-link that switches the WHOLE deck to the Store nav
 // tab via `onNavigate`, per CR-013 §3.1's "เหตุผลแยก Voice/Store" — Voice is
-// what you *have* (local-first, works offline), Store is a *transaction*
+// what you *have* (Store-installed, works offline), Store is a *transaction*
 // (Supabase, needs sign-in), so Voice never re-hosts Store's own UI.
 //
 // CR011-P5-01 layout choice (unchanged): InventoryTab is its OWN mode rather
 // than being stacked below VoiceInventory inside "คลังของฉัน". VoiceInventory
 // already fills the page with an unbounded-height split (pack grid + detail
 // panel, styles.css `.voice-split`/`.voice-grid` has no fixed height — it
-// grows with however many packs are on disk), while InventoryTab is authored
+// grows with however many Store packs are installed), while InventoryTab is authored
 // as its own fixed-height frame + pager (CR-003 §3.0's no-page-scroll rule —
 // see its `styles.grid` `height: 400` in InventoryTab.tsx). Stacking the two
 // would either (a) force page-level scroll to see InventoryTab below a tall
 // VoiceInventory grid — which the CR-003 components are explicitly built to
 // avoid — or (b) require capping VoiceInventory's height, which isn't this
-// wave's scope (VoicePacksPage may only be edited additively). A separate
-// mode keeps each surface's own no-scroll contract intact.
+// scope. A separate mode keeps each surface's own no-scroll contract intact.
 
 import { useState } from "react";
 import VoiceInventory from "./VoiceInventory";
-import AudioSettings from "./AudioSettings";
 import InventoryTab from "./InventoryTab";
 
-type Mode = "inventory" | "items" | "editor";
+type Mode = "inventory" | "items";
 
 const MODE_TABS: Array<{ key: Mode; label: string }> = [
   { key: "inventory", label: "คลังของฉัน" },
   { key: "items", label: "ไอเทม" },
-  { key: "editor", label: "ตัวแก้ไข" },
 ];
 
 export interface VoicePacksPageProps {
@@ -77,9 +71,8 @@ export default function VoicePacksPage({ onNavigate }: VoicePacksPageProps = {})
       </div>
 
       <div className="gm-packs-body">
-        {mode === "inventory" ? <VoiceInventory onOpenEditor={() => setMode("editor")} /> : null}
+        {mode === "inventory" ? <VoiceInventory /> : null}
         {mode === "items" ? <InventoryTab /> : null}
-        {mode === "editor" ? <AudioSettings onBack={() => setMode("inventory")} /> : null}
       </div>
     </div>
   );

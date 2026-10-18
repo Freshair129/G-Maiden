@@ -3,7 +3,7 @@
 # FEATURE-LEDGER
 
 > **GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs**  
-> Source manifest: `docs/feature-ledger.manifest.yaml` · generated `2026-10-18T04:31:32.954Z` · `--run-tests`=false · rows=74
+> Source manifest: `docs/feature-ledger.manifest.yaml` · generated `2026-10-18T05:06:01.432Z` · `--run-tests`=false · rows=74
 
 One row per feature / FR / NFR. **Computed** status is derived structurally from evidence on disk (never from a claim); **Claimed** is the manifest row's `claimed_status`; **Drift** flags where a claim outruns the evidence; **Evidence gaps** lists exactly what is missing to advance.
 
