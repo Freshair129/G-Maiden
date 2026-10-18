@@ -53,8 +53,9 @@ pub use banner::{
     InstallReport,
 };
 pub use commands::{
-    action, active_event_clips, active_pack_name, create_template, import_archive, map_event,
-    state, update_pack, upload_asset,
+    action, active_event_clips, active_pack_name, create_template, ensure_dev_authoring,
+    import_archive, install_store_pack, is_store_installed, map_event, state, update_pack,
+    upload_asset,
 };
 pub use events::event_ids;
 #[allow(unused_imports)]
@@ -72,10 +73,12 @@ pub(crate) use base64::base64_encode;
 #[cfg(test)]
 pub(crate) use paths::set_test_voice_root;
 
+pub(crate) use pack_io::open_verified_store_clip;
 /// Warm the resolved-clip cache (audit H8) once at app startup, so a pack left
 /// active from a prior session is already cached before the first event fires
 /// — not just after the first pack switch. See `pack_io::rebuild_resolved_cache`.
 pub(crate) use pack_io::rebuild_resolved_cache;
+pub(crate) use pack_io::validate_store_clip_integrity;
 
 /// Test-only cache teardown, paired with `set_test_voice_root(None)` in every
 /// pack-lifecycle test's `Drop` guard — same reason, same pattern: a pooled

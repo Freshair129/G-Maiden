@@ -480,7 +480,7 @@ entries:
     refs:
       docs: []
       srs: []
-      code: [src/src/VoicePacksPage.tsx, src/src/VoiceInventory.tsx, src/src/AudioSettings.tsx]
+      code: [src/src/VoicePacksPage.tsx, src/src/VoiceInventory.tsx]
       tests: []
       review: []
 

@@ -9,6 +9,7 @@ use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tauri_plugin_updater::UpdaterExt;
 
+pub mod action_damage;
 pub mod announcer;
 pub mod audio;
 mod calibration;
@@ -205,25 +206,45 @@ struct EventClip {
     source: String,
 }
 
-/// Play a specific clip file by its full path (for previewing individual clips).
+/// Preview a clip only when it belongs to an installed Store pack or the bundled default.
 #[tauri::command]
-fn play_clip(path: String) {
-    audio::play_file(std::path::PathBuf::from(path));
+fn play_clip(path: String) -> Result<(), String> {
+    let path = std::path::PathBuf::from(path);
+    if !audio::is_resolved_clip_path(&path) {
+        return Err("ดูตัวอย่างได้เฉพาะเสียงจากแพ็กที่ติดตั้งและเลือกใช้อยู่".into());
+    }
+    audio::validate_clip(&path)?;
+    audio::play_file(path);
+    Ok(())
 }
 
-/// Open the voice-cache directory in Explorer so the user can drop clips in.
+/// Open the voice-cache directory only in development builds for authoring.
 #[tauri::command]
-fn open_voice_cache_dir() {
+fn open_voice_cache_dir() -> Result<(), String> {
+    voice_api::ensure_dev_authoring()?;
     let dir = audio::voice_cache_dir();
-    let _ = std::fs::create_dir_all(&dir);
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let _ = std::process::Command::new("explorer")
         .arg(dir.as_os_str())
         .spawn();
+    Ok(())
 }
 
 #[tauri::command]
 fn voice_api_state() -> Result<voice_api::VoiceState, String> {
     voice_api::state()
+}
+
+#[tauri::command]
+async fn voice_api_install_store_pack(
+    item_id: String,
+    access_token: String,
+) -> Result<voice_api::VoiceState, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        voice_api::install_store_pack(&item_id, &access_token)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -275,19 +296,24 @@ fn voice_api_update_pack(
     voice_api::update_pack(payload)
 }
 
-/// Preview an announcer event on the overlay WITHOUT being in-game: play the
-/// pack's mapped clip and emit the same `announcer-banner` payload gsi.rs emits
-/// on a real fired event, so the pack's banner shows on the overlay exactly as it
-/// will in a match. Lets users verify a pack's banner+sound bundle before playing.
+/// Preview an announcer event only for an installed Store pack or the bundled default.
 #[tauri::command]
-fn preview_announcer_event(app: tauri::AppHandle, pack_id: String, event: String) {
-    let clip = voice_api::preview_clip(&pack_id, &event);
-    if let Some(p) = &clip {
-        audio::play_file(p.clone());
+fn preview_announcer_event(
+    app: tauri::AppHandle,
+    pack_id: String,
+    event: String,
+) -> Result<(), String> {
+    if !voice_api::is_store_installed(&pack_id) {
+        return Err("ดูตัวอย่างได้เฉพาะแพ็กที่ติดตั้งจาก Store".into());
     }
+    let clip = voice_api::preview_clip(&pack_id, &event)
+        .ok_or_else(|| "เหตุการณ์นี้ไม่มีไฟล์เสียงที่ใช้ได้".to_string())?;
+    audio::validate_clip(&clip)?;
+    audio::play_file(clip.clone());
     let mut banner = voice_api::preview_banner(&pack_id, &event);
-    banner.clip = clip.map(|p| p.to_string_lossy().into_owned());
+    banner.clip = Some(clip.to_string_lossy().into_owned());
     let _ = app.emit("announcer-banner", banner);
+    Ok(())
 }
 
 /// Read a voiced clip's bytes so the overlay can decode it via Web Audio and drive
@@ -295,6 +321,9 @@ fn preview_announcer_event(app: tauri::AppHandle, pack_id: String, event: String
 /// dir — the path always originates from our own clip resolver, never user input.
 #[tauri::command]
 fn read_audio_bytes(path: String) -> Result<Vec<u8>, String> {
+    if !audio::is_resolved_clip_path(std::path::Path::new(&path)) {
+        return Err("อ่านได้เฉพาะเสียงจากแพ็กที่ติดตั้งและเลือกใช้อยู่".into());
+    }
     audio::read_clip_bytes(&path)
 }
 
@@ -859,6 +888,7 @@ pub fn run() {
             set_telemetry_source,
             voice_cache_status,
             voice_api_state,
+            voice_api_install_store_pack,
             voice_api_action,
             voice_api_create_template,
             voice_api_upload_asset,

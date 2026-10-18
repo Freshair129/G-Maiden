@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-18T06:40:08.656Z",
+  "generatedAt": "2026-10-18T06:48:21.184Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -1018,9 +1018,9 @@
       "path": "src/src/shortcuts.ts"
     },
     {
-      "id": "src/src/AudioSettings.tsx",
+      "id": "src/src/VoicePacksPage.tsx",
       "type": "code",
-      "path": "src/src/AudioSettings.tsx"
+      "path": "src/src/VoicePacksPage.tsx"
     },
     {
       "id": "src-tauri/src/main.rs",
@@ -1296,11 +1296,6 @@
       "id": "src/src/live/buildBaselines.ts",
       "type": "code",
       "path": "src/src/live/buildBaselines.ts"
-    },
-    {
-      "id": "src/src/VoicePacksPage.tsx",
-      "type": "code",
-      "path": "src/src/VoicePacksPage.tsx"
     },
     {
       "id": "src/src/AccountPage.tsx",
@@ -2542,13 +2537,7 @@
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "to": "src/src/AudioSettings.tsx",
-      "type": "symbol",
-      "line": 182
-    },
-    {
-      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "to": "src-tauri/src/main.rs",
+      "to": "src/src/VoicePacksPage.tsx",
       "type": "symbol",
       "line": 182
     },
@@ -6250,12 +6239,6 @@
     },
     {
       "from": "docs/design-system/06-stack.md",
-      "to": "src/src/AudioSettings.tsx",
-      "type": "symbol",
-      "line": 43
-    },
-    {
-      "from": "docs/design-system/06-stack.md",
       "to": "src/src/live/",
       "type": "symbol",
       "line": 44
@@ -8599,6 +8582,14 @@
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 126,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/commands.rs",
+      "anchor": 23,
+      "symbol": "state"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
       "line": 127,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/commands.rs",
@@ -9537,6 +9528,14 @@
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 6,
       "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/audio.rs",
+      "anchor": 145,
+      "symbol": "play_file"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 6,
+      "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/commands.rs",
       "anchor": 283,
       "symbol": "active_event_clips"
@@ -9551,6 +9550,14 @@
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 10,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/commands.rs",
+      "anchor": 23,
+      "symbol": "state"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 12,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/commands.rs",
@@ -9559,11 +9566,35 @@
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 19,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/audio.rs",
+      "anchor": 145,
+      "symbol": "play_file"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 23,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/pack_io.rs",
       "anchor": 66,
       "symbol": "build_pack"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 24,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/commands.rs",
+      "anchor": 23,
+      "symbol": "state"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 25,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/commands.rs",
+      "anchor": 23,
+      "symbol": "state"
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -9612,6 +9643,14 @@
       "target": "src-tauri/src/voice_api/pack_io.rs",
       "anchor": 66,
       "symbol": "build_pack"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 55,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/commands.rs",
+      "anchor": 23,
+      "symbol": "state"
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -9703,7 +9742,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-18T06:40:16.100Z",
+    "generatedAt": "2026-10-18T06:48:26.007Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,
