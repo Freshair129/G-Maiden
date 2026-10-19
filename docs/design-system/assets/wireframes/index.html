@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>G-Maiden · Wireframe, Wireflow & User Flow</title>
+  <link rel="stylesheet" href="viewer.css">
+</head>
+<body>
+  <header class="viewer-header">
+    <div><span class="eyebrow">G-MAIDEN / DESIGN REVIEW</span><h1>7 หน้า · กริดเดียวกัน</h1></div>
+    <div class="mode-tabs" role="group" aria-label="มุมมอง"><button id="screens-mode" aria-pressed="true">Wireframe</button><button id="flows-mode" aria-pressed="false">Wireflow</button><button id="userflows-mode" aria-pressed="false">User Flow</button></div>
+  </header>
+  <main>
+    <p class="scope-note">แบบร่างสำหรับตรวจ layout และเส้นทางใช้งาน · ปุ่มจำลองไม่เชื่อมต่อเกม บัญชี เสียง หรือการชำระเงิน</p>
+    <section id="screen-view">
+      <nav id="page-nav" aria-label="เลือกหน้า wireframe"></nav>
+      <div class="toolbar">
+        <label>แท็บ / หมวด <select id="tab-select"></select></label>
+        <label>สถานะ <select id="state-select"></select></label>
+        <label class="check"><input id="grid-toggle" type="checkbox" checked> กริด 40 px</label>
+        <button id="back-button">ย้อนกลับ</button>
+      </div>
+      <div class="screen-caption"><strong id="screen-title"></strong><span id="screen-description"></span></div>
+      <div id="screen-canvas" class="canvas"></div>
+      <details><summary>พิกัดและรหัสโซนของหน้านี้</summary><div id="geometry"></div></details>
+    </section>
+    <section id="flow-view" hidden>
+      <div class="toolbar"><label>เส้นทาง <select id="flow-select"></select></label><button id="open-current">กลับหน้าที่กำลังดู</button></div>
+      <p class="flow-note">ทุกหน้าสลับผ่านเมนู I ได้เสมอ · H เปิดเมนูโปรไฟล์ · ลูกศรด้านล่างเป็นเส้นทางตามงานและมีทางออกเมื่อผิดพลาด</p>
+      <nav id="all-page-links" aria-label="ทางเชื่อมทั้ง 7 หน้า"></nav>
+      <div id="flow-canvas" class="canvas"></div>
+      <h2>ทางออกและการกู้คืน</h2><div id="recovery-links"></div>
+    </section>
+    <section id="userflow-view" hidden>
+      <div class="toolbar"><label for="userflow-select">เป้าหมายผู้ใช้</label><select id="userflow-select"></select><button id="related-wireflow">ดู Wireflow ที่เกี่ยวข้อง</button></div>
+      <p class="flow-note">เริ่มจากเป้าหมาย → ตัดสินใจ → ลงมือทำ → ได้ผลลัพธ์ · กดขั้นตอนที่มี P01–P07 เพื่อเปิด wireframe หน้านั้น</p>
+      <p class="flow-note">กรอบวงรี = เริ่ม / ผลลัพธ์ · สี่เหลี่ยม = การกระทำ / ระบบตอบสนอง · ข้าวหลามตัด = จุดตัดสินใจ · ลูกศรมีป้าย = เงื่อนไข</p>
+      <p id="userflow-success" role="status"></p>
+      <div id="userflow-canvas" class="canvas"></div>
+    </section>
+    <footer><span id="status" role="status" aria-live="polite"></span><a href="../../10-wireframes.md">สเปก Wireframe</a><a href="../../11-wireflows.md">สเปก Wireflow</a><a href="../../12-user-flows.md">สเปก User Flow</a></footer>
+  </main>
+  <dialog id="chrome-dialog"><h2 id="dialog-title"></h2><div id="dialog-content"></div><button id="dialog-close">ปิด / กลับหน้าเดิม</button></dialog>
+  <script src="model.js"></script><script src="render.js"></script><script src="user-flows.js"></script><script src="viewer.js"></script>
+</body>
+</html>

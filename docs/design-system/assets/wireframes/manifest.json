@@ -1,0 +1,2075 @@
+{
+  "version": "1.1.0",
+  "stage": {
+    "w": 1420,
+    "h": 760
+  },
+  "panel": {
+    "x": 12,
+    "y": 12,
+    "w": 1280,
+    "h": 720
+  },
+  "pages": 7,
+  "tabFrames": 23,
+  "stateVariants": 88,
+  "flows": [
+    {
+      "id": "F01",
+      "title": "เริ่มใช้โดยไม่เข้าสู่ระบบ",
+      "file": "F01-wireflow.svg",
+      "steps": [
+        [
+          "dashboard/main/standby",
+          "เปิดแอป"
+        ],
+        [
+          "settings/system/ready",
+          "D-SETUP · ตั้งค่า GSI"
+        ],
+        [
+          "settings/system/saving",
+          "S-GSI · ติดตั้ง"
+        ],
+        [
+          "settings/system/saved",
+          "config พร้อม"
+        ],
+        [
+          "dashboard/main/prep",
+          "เปิด Dota / valid tick"
+        ]
+      ],
+      "recovery": [
+        [
+          "settings/system/error",
+          "ติดตั้งไม่สำเร็จ → แก้ path / สิทธิ์ → ลองใหม่"
+        ],
+        [
+          "dashboard/main/standby",
+          "ออฟไลน์หรือไม่มีบัญชี → ใช้ local core ต่อ"
+        ]
+      ]
+    },
+    {
+      "id": "F02",
+      "title": "ก่อนเกม → สด → สรุป",
+      "file": "F02-wireflow.svg",
+      "steps": [
+        [
+          "dashboard/main/prep",
+          "GSI draft"
+        ],
+        [
+          "dashboard/main/live",
+          "GSI live"
+        ],
+        [
+          "live/live/live",
+          "D-LIVE · ดูรายละเอียด"
+        ],
+        [
+          "dashboard/main/debrief",
+          "GSI จบเกม / จัดเก็บเซสชัน"
+        ],
+        [
+          "insights/history/complete",
+          "D-HISTORY · ดูประวัติ"
+        ]
+      ],
+      "recovery": [
+        [
+          "dashboard/main/stale",
+          "GSI ขาดช่วง → Unknown → valid tick ใหม่"
+        ],
+        [
+          "insights/history/partial",
+          "หลุดกลางเกม → partial · ไม่เดาผล"
+        ]
+      ]
+    },
+    {
+      "id": "F03",
+      "title": "เลือกแพ็กเสียงแล้วกลับเกม",
+      "file": "F03-wireflow.svg",
+      "steps": [
+        [
+          "dashboard/main/standby",
+          "ก่อนเกม"
+        ],
+        [
+          "voice/inventory/ready",
+          "D-VOICE · เลือกแพ็ก"
+        ],
+        [
+          "voice/inventory/active",
+          "V-EQUIP · เปิดใช้"
+        ],
+        [
+          "settings/voice/ready",
+          "V-AUDIO · ทดสอบเสียง"
+        ],
+        [
+          "dashboard/main/standby",
+          "S-HOME · กลับหน้าหลัก"
+        ]
+      ],
+      "recovery": [
+        [
+          "voice/inventory/error",
+          "อ่าน/ติดตั้งพลาด → คงแพ็กเดิม → สแกนใหม่"
+        ],
+        [
+          "voice/editor/error",
+          "แก้แพ็กไม่สำเร็จ → คงงานค้าง / ยกเลิก"
+        ]
+      ]
+    },
+    {
+      "id": "F04",
+      "title": "แพ็กเพิ่มเติม / ร้านหลัง MVP",
+      "file": "F04-wireflow.svg",
+      "steps": [
+        [
+          "voice/inventory/ready",
+          "คลังในเครื่อง"
+        ],
+        [
+          "store/shop/deferred",
+          "V-MORE · หาแพ็กเพิ่ม"
+        ],
+        [
+          "store/wallet/deferred",
+          "แท็บกระเป๋า"
+        ],
+        [
+          "store/ledger/deferred",
+          "แท็บบันทึก"
+        ],
+        [
+          "voice/inventory/ready",
+          "T-VOICE · กลับคลัง"
+        ]
+      ],
+      "recovery": [
+        [
+          "store/inventory/deferred",
+          "คลังบัญชียังไม่เปิด → ไม่แสร้งว่าติดตั้งแล้ว"
+        ],
+        [
+          "account/account/signedout",
+          "T-ACCOUNT · บัญชีเป็นทางเลือก"
+        ]
+      ]
+    },
+    {
+      "id": "F05",
+      "title": "บัญชี optional / ยกเลิก / หมดอายุ",
+      "file": "F05-wireflow.svg",
+      "steps": [
+        [
+          "dashboard/main/standby",
+          "ใช้ local core ได้"
+        ],
+        [
+          "account/account/signedout",
+          "H / I · เปิดบัญชี"
+        ],
+        [
+          "account/account/loading",
+          "Q-GOOGLE · OAuth"
+        ],
+        [
+          "account/account/signedin",
+          "callback ที่ผ่านการตรวจ"
+        ],
+        [
+          "insights/overview/empty",
+          "Q-STEAM · โปรไฟล์สาธารณะ"
+        ]
+      ],
+      "recovery": [
+        [
+          "account/account/error",
+          "ยกเลิก / callback ล้มเหลว → ลองใหม่หรือกลับ local"
+        ],
+        [
+          "account/security/expired",
+          "หมดอายุ / revoke → ปิดเฉพาะ account actions"
+        ],
+        [
+          "dashboard/main/standby",
+          "Q-LOCAL / sign-out → local core"
+        ]
+      ]
+    },
+    {
+      "id": "F06",
+      "title": "ปรับ Overlay / Cloud / ความเป็นส่วนตัว",
+      "file": "F06-wireflow.svg",
+      "steps": [
+        [
+          "settings/overlay/ready",
+          "I · ตั้งค่า Overlay"
+        ],
+        [
+          "settings/overlay/saved",
+          "preview → บันทึกหรือยกเลิก"
+        ],
+        [
+          "settings/ai/ready",
+          "หมวด AI · local เป็นค่าเริ่มต้น"
+        ],
+        [
+          "settings/privacy/ready",
+          "S-PRIVACY · ตรวจข้อมูล"
+        ],
+        [
+          "dashboard/main/standby",
+          "S-HOME · กลับหน้าหลัก"
+        ]
+      ],
+      "recovery": [
+        [
+          "settings/overlay/error",
+          "ค่าใช้ไม่ได้ → คงโปรไฟล์เดิม"
+        ],
+        [
+          "settings/ai/error",
+          "local model ไม่พร้อม → unavailable"
+        ],
+        [
+          "settings/privacy/error",
+          "ลบไม่สำเร็จ → แจ้งขอบเขตที่เหลือ · ไม่รายงานว่าลบแล้ว"
+        ]
+      ]
+    },
+    {
+      "id": "F07",
+      "title": "ประวัติ → รายละเอียด → ตรวจปัญหา",
+      "file": "F07-wireflow.svg",
+      "steps": [
+        [
+          "insights/overview/complete",
+          "I · สถิติ"
+        ],
+        [
+          "insights/history/complete",
+          "N-HISTORY · เลือกเซสชัน"
+        ],
+        [
+          "insights/history/partial",
+          "เลือกเซสชันที่ไม่ครบ"
+        ],
+        [
+          "settings/system/ready",
+          "N-SYSTEM · ตรวจ Log"
+        ],
+        [
+          "insights/history/loading",
+          "กลับประวัติ / ลองอ่านใหม่"
+        ]
+      ],
+      "recovery": [
+        [
+          "insights/history/empty",
+          "ไม่มีเซสชัน → กลับไปเล่นเกม"
+        ],
+        [
+          "insights/history/error",
+          "อ่านไม่สำเร็จ → retry / ตรวจไฟล์ในเครื่อง"
+        ]
+      ]
+    },
+    {
+      "id": "F08",
+      "title": "อัปเดตโดยไม่รบกวนเกม",
+      "file": "F08-wireflow.svg",
+      "steps": [
+        [
+          "settings/general/ready",
+          "ตรวจอัปเดต Stable"
+        ],
+        [
+          "settings/general/saving",
+          "กำลังตรวจ / ดาวน์โหลด"
+        ],
+        [
+          "settings/general/saved",
+          "พร้อมติดตั้งเมื่อพ้นเกม"
+        ],
+        [
+          "dashboard/main/standby",
+          "เปิดใหม่ → local core"
+        ]
+      ],
+      "recovery": [
+        [
+          "settings/general/error",
+          "ดาวน์โหลด / ตรวจลายเซ็นพลาด → คงเวอร์ชันเดิม"
+        ],
+        [
+          "dashboard/main/live",
+          "กำลังเล่น → ภายหลัง / รอจบเกม"
+        ]
+      ]
+    }
+  ],
+  "userFlows": [
+    {
+      "id": "UF01",
+      "title": "เริ่มใช้และเตรียมเล่น",
+      "goal": "เข้าเล่นพร้อมผู้ช่วยในเครื่อง โดยเลือกใช้บัญชีภายหลังได้",
+      "success": "ได้รับข้อมูลเกมจริง และเห็นความพร้อมของ GSI / CV ตามจริง",
+      "wireflow": "F01",
+      "file": "UF01-user-flow.svg",
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "col": 1,
+          "row": 0,
+          "title": "เปิด G-Maiden",
+          "detail": "เริ่มที่หน้าหลัก",
+          "route": "dashboard/main/standby"
+        },
+        {
+          "id": "tick",
+          "type": "decision",
+          "col": 1,
+          "row": 1,
+          "title": "ได้รับข้อมูลเกมแล้ว?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "setup",
+          "type": "action",
+          "col": 0,
+          "row": 1,
+          "title": "ตรวจการเชื่อมต่อเกม",
+          "detail": "เลือก Dota path / ติดตั้ง GSI",
+          "route": "settings/system/ready"
+        },
+        {
+          "id": "configured",
+          "type": "decision",
+          "col": 0,
+          "row": 2,
+          "title": "ตั้งค่าสำเร็จ?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "repair",
+          "type": "recovery",
+          "col": 0,
+          "row": 4,
+          "title": "แก้ path หรือสิทธิ์",
+          "detail": "คงสถานะไม่พร้อม แล้วลองใหม่",
+          "route": "settings/system/error"
+        },
+        {
+          "id": "game",
+          "type": "action",
+          "col": 0,
+          "row": 3,
+          "title": "เปิด Dota และรอข้อมูล",
+          "detail": "ติดตั้งสำเร็จยังไม่เท่ากับ LIVE",
+          "route": "dashboard/main/standby"
+        },
+        {
+          "id": "later",
+          "type": "outcome",
+          "col": 2,
+          "row": 2,
+          "title": "ตั้งค่าภายหลัง",
+          "detail": "กลับหน้าหลักได้ แต่ยังไม่พร้อมเกม",
+          "route": "dashboard/main/standby"
+        },
+        {
+          "id": "ready",
+          "type": "system",
+          "col": 1,
+          "row": 2,
+          "title": "แสดงข้อมูลเกมที่ได้รับ",
+          "detail": "หน้าหลักเปลี่ยนตาม phase จริง",
+          "route": "dashboard/main/prep"
+        },
+        {
+          "id": "cv",
+          "type": "decision",
+          "col": 1,
+          "row": 3,
+          "title": "ภาพแผนที่พร้อมใช้?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "full",
+          "type": "outcome",
+          "col": 1,
+          "row": 4,
+          "title": "เล่นพร้อมข้อมูล GSI + CV",
+          "detail": "รับเสียงและ Overlay ตามความพร้อม",
+          "route": "dashboard/main/live"
+        },
+        {
+          "id": "lite",
+          "type": "outcome",
+          "col": 2,
+          "row": 4,
+          "title": "เล่นแบบ Lite",
+          "detail": "GSI ต่อได้ / ระบุ CV ใช้ไม่ได้",
+          "route": "settings/modules/ready"
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "to": "tick",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "tick",
+          "to": "ready",
+          "label": "มี",
+          "loop": null
+        },
+        {
+          "from": "tick",
+          "to": "setup",
+          "label": "ยังไม่มี",
+          "loop": null
+        },
+        {
+          "from": "setup",
+          "to": "configured",
+          "label": "ติดตั้ง / ตรวจ",
+          "loop": null
+        },
+        {
+          "from": "setup",
+          "to": "later",
+          "label": "ภายหลัง",
+          "loop": null
+        },
+        {
+          "from": "configured",
+          "to": "game",
+          "label": "สำเร็จ",
+          "loop": null
+        },
+        {
+          "from": "configured",
+          "to": "repair",
+          "label": "ไม่สำเร็จ",
+          "loop": null
+        },
+        {
+          "from": "repair",
+          "to": "setup",
+          "label": "ลองใหม่",
+          "loop": "left"
+        },
+        {
+          "from": "game",
+          "to": "tick",
+          "label": "รอข้อมูลจริง",
+          "loop": "right"
+        },
+        {
+          "from": "ready",
+          "to": "cv",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "cv",
+          "to": "full",
+          "label": "พร้อม",
+          "loop": null
+        },
+        {
+          "from": "cv",
+          "to": "lite",
+          "label": "ไม่พร้อม",
+          "loop": null
+        }
+      ]
+    },
+    {
+      "id": "UF02",
+      "title": "เล่นเกมและรับคำแนะนำ",
+      "goal": "รับคำเตือนระหว่างเล่น โดยดูรายละเอียดเมื่อจำเป็น",
+      "success": "เล่นต่อได้ และจบด้วยประวัติที่แยกข้อมูลครบกับข้อมูลขาด",
+      "wireflow": "F02",
+      "file": "UF02-user-flow.svg",
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "col": 1,
+          "row": 0,
+          "title": "เริ่มเกม Dota",
+          "detail": "ข้อมูลเกมเป็นตัวกำหนด phase",
+          "route": "dashboard/main/prep"
+        },
+        {
+          "id": "fresh",
+          "type": "decision",
+          "col": 1,
+          "row": 1,
+          "title": "ข้อมูลยังสดใหม่?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "stale",
+          "type": "recovery",
+          "col": 2,
+          "row": 1,
+          "title": "เห็นว่าข้อมูลขาดช่วง",
+          "detail": "แสดง Unknown / ไม่รับรองว่าปลอดภัย",
+          "route": "dashboard/main/stale"
+        },
+        {
+          "id": "play",
+          "type": "action",
+          "col": 1,
+          "row": 2,
+          "title": "เล่นและรับเสียง / Overlay",
+          "detail": "คำเตือนสำคัญแทรกคำแนะนำได้",
+          "route": "dashboard/main/live"
+        },
+        {
+          "id": "detail",
+          "type": "action",
+          "col": 0,
+          "row": 2,
+          "title": "เปิดรายละเอียดเมื่อจำเป็น",
+          "detail": "ดูสด / บิลด์ แล้วกลับไปเล่น",
+          "route": "live/live/live"
+        },
+        {
+          "id": "ended",
+          "type": "decision",
+          "col": 1,
+          "row": 3,
+          "title": "เกมจบ / เซสชันปิด?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "continue",
+          "type": "action",
+          "col": 0,
+          "row": 3,
+          "title": "เล่นต่อ",
+          "detail": "ไม่ย้ายหน้าอัตโนมัติ",
+          "route": "dashboard/main/live"
+        },
+        {
+          "id": "archive",
+          "type": "system",
+          "col": 1,
+          "row": 4,
+          "title": "เก็บประวัติในเครื่อง",
+          "detail": "แสดงช่วงจบเกมบนหน้าหลัก",
+          "route": "dashboard/main/debrief"
+        },
+        {
+          "id": "complete",
+          "type": "decision",
+          "col": 1,
+          "row": 5,
+          "title": "ข้อมูลเซสชันครบ?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "summary",
+          "type": "outcome",
+          "col": 0,
+          "row": 6,
+          "title": "ดูสรุปพร้อมหลักฐาน",
+          "detail": "ไม่เกิน 3 ข้อ พร้อมเวลาเหตุการณ์",
+          "route": "insights/history/complete"
+        },
+        {
+          "id": "partial",
+          "type": "outcome",
+          "col": 2,
+          "row": 6,
+          "title": "ดูประวัติที่ไม่ครบ",
+          "detail": "ระบุช่วงหาย / ไม่เดาผลเกม",
+          "route": "insights/history/partial"
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "to": "fresh",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "fresh",
+          "to": "play",
+          "label": "สดใหม่",
+          "loop": null
+        },
+        {
+          "from": "fresh",
+          "to": "stale",
+          "label": "ขาดช่วง",
+          "loop": null
+        },
+        {
+          "from": "stale",
+          "to": "fresh",
+          "label": "ข้อมูลกลับมา",
+          "loop": "right"
+        },
+        {
+          "from": "stale",
+          "to": "archive",
+          "label": "เซสชันปิด",
+          "loop": "right"
+        },
+        {
+          "from": "play",
+          "to": "detail",
+          "label": "ต้องการรายละเอียด",
+          "loop": null
+        },
+        {
+          "from": "play",
+          "to": "ended",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "detail",
+          "to": "ended",
+          "label": "กลับไปเล่น",
+          "loop": null
+        },
+        {
+          "from": "ended",
+          "to": "continue",
+          "label": "ยังไม่จบ",
+          "loop": null
+        },
+        {
+          "from": "continue",
+          "to": "fresh",
+          "label": "รอบถัดไป",
+          "loop": "left"
+        },
+        {
+          "from": "ended",
+          "to": "archive",
+          "label": "จบ / ปิดเซสชัน",
+          "loop": null
+        },
+        {
+          "from": "archive",
+          "to": "complete",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "complete",
+          "to": "summary",
+          "label": "ครบ",
+          "loop": null
+        },
+        {
+          "from": "complete",
+          "to": "partial",
+          "label": "ไม่ครบ",
+          "loop": null
+        }
+      ]
+    },
+    {
+      "id": "UF03",
+      "title": "เลือกเสียงที่อยากใช้",
+      "goal": "ลองฟังและเปลี่ยนแพ็ก โดยรักษาเสียงเดิมเมื่อทำรายการไม่สำเร็จ",
+      "success": "เห็นแพ็กที่ใช้อยู่จริง แล้วกลับไปเล่นได้",
+      "wireflow": "F03",
+      "file": "UF03-user-flow.svg",
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "col": 1,
+          "row": 0,
+          "title": "อยากเปลี่ยนเสียง",
+          "detail": "เปิดคลังแพ็กในเครื่อง",
+          "route": "voice/inventory/ready"
+        },
+        {
+          "id": "pack",
+          "type": "decision",
+          "col": 1,
+          "row": 1,
+          "title": "มีแพ็กที่ต้องการ?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "import",
+          "type": "action",
+          "col": 2,
+          "row": 1,
+          "title": "เลือกไฟล์นำเข้า",
+          "detail": "ยกเลิกได้ / ไม่เปลี่ยนแพ็กเดิม",
+          "route": "voice/inventory/loading"
+        },
+        {
+          "id": "valid",
+          "type": "decision",
+          "col": 2,
+          "row": 2,
+          "title": "แพ็กอ่านได้?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "invalid",
+          "type": "recovery",
+          "col": 2,
+          "row": 3,
+          "title": "เห็นเหตุผลที่ใช้ไม่ได้",
+          "detail": "เลือกไฟล์ใหม่ หรือใช้เสียงเดิม",
+          "route": "voice/inventory/error"
+        },
+        {
+          "id": "preview",
+          "type": "action",
+          "col": 1,
+          "row": 3,
+          "title": "เลือกแพ็กและลองฟัง",
+          "detail": "ปรับระดับเสียงก่อนเปิดใช้",
+          "route": "voice/inventory/ready"
+        },
+        {
+          "id": "activate",
+          "type": "action",
+          "col": 1,
+          "row": 4,
+          "title": "กดเปิดใช้",
+          "detail": "รอระบบยืนยันก่อนแสดง Active",
+          "route": "voice/inventory/ready"
+        },
+        {
+          "id": "ok",
+          "type": "decision",
+          "col": 1,
+          "row": 5,
+          "title": "เปิดใช้สำเร็จ?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "failed",
+          "type": "recovery",
+          "col": 2,
+          "row": 5,
+          "title": "คงแพ็กเดิมไว้",
+          "detail": "ลองใหม่ หรือกลับไปเลือกแพ็ก",
+          "route": "voice/inventory/error"
+        },
+        {
+          "id": "done",
+          "type": "outcome",
+          "col": 1,
+          "row": 6,
+          "title": "ใช้เสียงที่เลือกแล้ว",
+          "detail": "กลับเกมได้ / ตั้งค่าเตือนเพิ่มได้",
+          "route": "voice/inventory/active"
+        },
+        {
+          "id": "cancel",
+          "type": "outcome",
+          "col": 0,
+          "row": 4,
+          "title": "ใช้เสียงเดิมต่อ",
+          "detail": "ยกเลิกการนำเข้า / ไม่เปิดใช้",
+          "route": "dashboard/main/standby"
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "to": "pack",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "pack",
+          "to": "preview",
+          "label": "มี",
+          "loop": null
+        },
+        {
+          "from": "pack",
+          "to": "import",
+          "label": "ไม่มี",
+          "loop": null
+        },
+        {
+          "from": "import",
+          "to": "valid",
+          "label": "เลือกไฟล์",
+          "loop": null
+        },
+        {
+          "from": "import",
+          "to": "cancel",
+          "label": "ยกเลิก",
+          "loop": "left"
+        },
+        {
+          "from": "valid",
+          "to": "preview",
+          "label": "อ่านได้",
+          "loop": null
+        },
+        {
+          "from": "valid",
+          "to": "invalid",
+          "label": "อ่านไม่ได้",
+          "loop": null
+        },
+        {
+          "from": "invalid",
+          "to": "import",
+          "label": "เลือกใหม่",
+          "loop": "right"
+        },
+        {
+          "from": "invalid",
+          "to": "cancel",
+          "label": "ไว้ภายหลัง",
+          "loop": "left"
+        },
+        {
+          "from": "preview",
+          "to": "activate",
+          "label": "ต้องการใช้",
+          "loop": null
+        },
+        {
+          "from": "preview",
+          "to": "cancel",
+          "label": "ใช้เสียงเดิม",
+          "loop": null
+        },
+        {
+          "from": "activate",
+          "to": "ok",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "ok",
+          "to": "done",
+          "label": "สำเร็จ",
+          "loop": null
+        },
+        {
+          "from": "ok",
+          "to": "failed",
+          "label": "ไม่สำเร็จ",
+          "loop": null
+        },
+        {
+          "from": "failed",
+          "to": "preview",
+          "label": "กลับไปเลือก",
+          "loop": "right"
+        }
+      ]
+    },
+    {
+      "id": "UF04",
+      "title": "หาแพ็กเสียงเพิ่มเติม",
+      "goal": "เข้าใจสถานะร้านและมีทางกลับไปใช้แพ็กในเครื่อง",
+      "success": "ใช้เสียง local ต่อได้ โดยไม่ติดอยู่ที่หน้าร้าน",
+      "wireflow": "F04",
+      "file": "UF04-user-flow.svg",
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "col": 1,
+          "row": 0,
+          "title": "ต้องการแพ็กเพิ่ม",
+          "detail": "จากคลังเสียง",
+          "route": "voice/inventory/ready"
+        },
+        {
+          "id": "store",
+          "type": "action",
+          "col": 1,
+          "row": 1,
+          "title": "เปิดร้าน",
+          "detail": "ดูร้าน / กระเป๋า / คลัง / บันทึก",
+          "route": "store/shop/deferred"
+        },
+        {
+          "id": "scope",
+          "type": "system",
+          "col": 1,
+          "row": 2,
+          "title": "ร้านอยู่หลัง MVP",
+          "detail": "ซื้อ / เติมเงินยังไม่เปิดในแบบนี้",
+          "route": "store/wallet/deferred"
+        },
+        {
+          "id": "local",
+          "type": "decision",
+          "col": 1,
+          "row": 3,
+          "title": "ใช้แพ็กในเครื่องต่อไหม?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "voice",
+          "type": "action",
+          "col": 0,
+          "row": 4,
+          "title": "กลับคลังแพ็กเสียง",
+          "detail": "เลือกแพ็กที่มี / นำเข้าไฟล์เอง",
+          "route": "voice/inventory/ready"
+        },
+        {
+          "id": "home",
+          "type": "action",
+          "col": 2,
+          "row": 4,
+          "title": "กลับหน้าหลัก",
+          "detail": "บัญชีไม่เป็นเงื่อนไขเล่น local",
+          "route": "dashboard/main/standby"
+        },
+        {
+          "id": "done",
+          "type": "outcome",
+          "col": 1,
+          "row": 5,
+          "title": "เล่นต่อด้วยเสียง local",
+          "detail": "ไม่มีธุรกรรมหรือการจ่ายเงินจริง",
+          "route": "dashboard/main/standby"
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "to": "store",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "store",
+          "to": "scope",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "scope",
+          "to": "local",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "local",
+          "to": "voice",
+          "label": "ใช้",
+          "loop": null
+        },
+        {
+          "from": "local",
+          "to": "home",
+          "label": "กลับก่อน",
+          "loop": null
+        },
+        {
+          "from": "voice",
+          "to": "done",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "home",
+          "to": "done",
+          "label": "",
+          "loop": null
+        }
+      ]
+    },
+    {
+      "id": "UF05",
+      "title": "เชื่อมบัญชีตามต้องการ",
+      "goal": "ใช้บริการบัญชีหรือโปรไฟล์สาธารณะ โดยเล่น local ต่อได้เสมอ",
+      "success": "ได้บัญชีที่ตรวจแล้ว หรือเลือกกลับ local อย่างชัดเจน",
+      "wireflow": "F05",
+      "file": "UF05-user-flow.svg",
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "col": 1,
+          "row": 0,
+          "title": "เปิดหน้าบัญชี",
+          "detail": "จากเมนูหรือโปรไฟล์",
+          "route": "account/account/signedout"
+        },
+        {
+          "id": "want",
+          "type": "decision",
+          "col": 1,
+          "row": 1,
+          "title": "ต้องการเข้าสู่ระบบ?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "local",
+          "type": "outcome",
+          "col": 0,
+          "row": 1,
+          "title": "ใช้งาน local ต่อ",
+          "detail": "ไม่ต้องมี Google / GID เพื่อเล่น",
+          "route": "dashboard/main/standby"
+        },
+        {
+          "id": "google",
+          "type": "action",
+          "col": 1,
+          "row": 2,
+          "title": "เลือกเข้าใช้ด้วย Google",
+          "detail": "รอ browser callback / ยกเลิกได้",
+          "route": "account/account/loading"
+        },
+        {
+          "id": "verified",
+          "type": "decision",
+          "col": 1,
+          "row": 3,
+          "title": "ยืนยันบัญชีสำเร็จ?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "error",
+          "type": "recovery",
+          "col": 2,
+          "row": 3,
+          "title": "แจ้งยกเลิก / เข้าใช้ไม่ได้",
+          "detail": "ไม่เปิดข้อมูลบัญชีที่ยังไม่ยืนยัน",
+          "route": "account/account/error"
+        },
+        {
+          "id": "retry",
+          "type": "decision",
+          "col": 2,
+          "row": 4,
+          "title": "ต้องการลองใหม่?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "profile",
+          "type": "system",
+          "col": 1,
+          "row": 4,
+          "title": "แสดงบัญชีและ GID",
+          "detail": "GID มาจาก server ไม่ใช่รหัสผ่าน",
+          "route": "account/account/signedin"
+        },
+        {
+          "id": "steam",
+          "type": "decision",
+          "col": 1,
+          "row": 5,
+          "title": "ต้องการเชื่อม Steam?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "public",
+          "type": "outcome",
+          "col": 0,
+          "row": 6,
+          "title": "ดูโปรไฟล์สาธารณะ",
+          "detail": "อ่านไม่ได้ให้แสดง unavailable",
+          "route": "insights/overview/empty"
+        },
+        {
+          "id": "done",
+          "type": "outcome",
+          "col": 2,
+          "row": 6,
+          "title": "ใช้บัญชีโดยไม่เชื่อม Steam",
+          "detail": "ออกจากบัญชีแล้ว local ยังใช้ได้",
+          "route": "account/account/signedin"
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "to": "want",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "want",
+          "to": "local",
+          "label": "ไม่ต้องการ",
+          "loop": null
+        },
+        {
+          "from": "want",
+          "to": "google",
+          "label": "ต้องการ",
+          "loop": null
+        },
+        {
+          "from": "google",
+          "to": "verified",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "verified",
+          "to": "profile",
+          "label": "สำเร็จ",
+          "loop": null
+        },
+        {
+          "from": "verified",
+          "to": "error",
+          "label": "ยกเลิก / ไม่สำเร็จ",
+          "loop": null
+        },
+        {
+          "from": "error",
+          "to": "retry",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "retry",
+          "to": "google",
+          "label": "ลองใหม่",
+          "loop": "right"
+        },
+        {
+          "from": "retry",
+          "to": "local",
+          "label": "กลับ local",
+          "loop": "left"
+        },
+        {
+          "from": "profile",
+          "to": "steam",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "steam",
+          "to": "public",
+          "label": "เชื่อม",
+          "loop": null
+        },
+        {
+          "from": "steam",
+          "to": "done",
+          "label": "ยังไม่เชื่อม",
+          "loop": null
+        }
+      ]
+    },
+    {
+      "id": "UF06",
+      "title": "ปรับผู้ช่วยและความเป็นส่วนตัว",
+      "goal": "ปรับ Overlay / AI โดยรู้ว่าบันทึกอะไร และเลือกการส่ง context เอง",
+      "success": "ใช้ค่าที่บันทึกแล้ว พร้อมขอบเขตข้อมูลที่ผู้ใช้เลือก",
+      "wireflow": "F06",
+      "file": "UF06-user-flow.svg",
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "col": 1,
+          "row": 0,
+          "title": "เปิดตั้งค่า",
+          "detail": "เลือกหมวดที่ต้องการ",
+          "route": "settings/overlay/ready"
+        },
+        {
+          "id": "preview",
+          "type": "action",
+          "col": 1,
+          "row": 1,
+          "title": "ปรับค่าและดูตัวอย่าง",
+          "detail": "Preview ไม่เปลี่ยนข้อมูลเกม",
+          "route": "settings/overlay/ready"
+        },
+        {
+          "id": "keep",
+          "type": "decision",
+          "col": 1,
+          "row": 2,
+          "title": "ต้องการเก็บค่าใหม่?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "cancel",
+          "type": "outcome",
+          "col": 0,
+          "row": 2,
+          "title": "กลับไปใช้ค่าเดิม",
+          "detail": "ยกเลิก / ปิด preview",
+          "route": "dashboard/main/standby"
+        },
+        {
+          "id": "save",
+          "type": "action",
+          "col": 1,
+          "row": 3,
+          "title": "บันทึกในเครื่อง",
+          "detail": "รอผลก่อนแจ้งว่าสำเร็จ",
+          "route": "settings/overlay/saving"
+        },
+        {
+          "id": "saved",
+          "type": "decision",
+          "col": 1,
+          "row": 4,
+          "title": "บันทึกสำเร็จ?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "error",
+          "type": "recovery",
+          "col": 2,
+          "row": 4,
+          "title": "คงค่าที่ใช้ได้เดิม",
+          "detail": "แจ้งข้อผิดพลาดและลองใหม่",
+          "route": "settings/overlay/error"
+        },
+        {
+          "id": "cloud",
+          "type": "decision",
+          "col": 1,
+          "row": 5,
+          "title": "ต้องการ cloud context?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "off",
+          "type": "outcome",
+          "col": 0,
+          "row": 5,
+          "title": "ใช้ local ต่อ",
+          "detail": "ค่าเริ่มต้น: ไม่ส่ง context",
+          "route": "settings/ai/ready"
+        },
+        {
+          "id": "explain",
+          "type": "action",
+          "col": 1,
+          "row": 6,
+          "title": "อ่านข้อมูลที่จะส่งและจุดประสงค์",
+          "detail": "เลือก provider / login ไม่ใช่ consent",
+          "route": "settings/privacy/ready"
+        },
+        {
+          "id": "consent",
+          "type": "decision",
+          "col": 1,
+          "row": 7,
+          "title": "ยืนยัน opt-in แยก?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "on",
+          "type": "outcome",
+          "col": 2,
+          "row": 8,
+          "title": "ส่งเฉพาะ context ที่อนุญาต",
+          "detail": "Voice / Memory / raw logs อยู่ local",
+          "route": "settings/privacy/saved"
+        },
+        {
+          "id": "decline",
+          "type": "outcome",
+          "col": 0,
+          "row": 8,
+          "title": "ยังไม่ส่ง context",
+          "detail": "ปฏิเสธได้และใช้งาน local ต่อ",
+          "route": "settings/ai/ready"
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "to": "preview",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "preview",
+          "to": "keep",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "keep",
+          "to": "cancel",
+          "label": "ยกเลิก",
+          "loop": null
+        },
+        {
+          "from": "keep",
+          "to": "save",
+          "label": "บันทึก",
+          "loop": null
+        },
+        {
+          "from": "save",
+          "to": "saved",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "saved",
+          "to": "cloud",
+          "label": "สำเร็จ",
+          "loop": null
+        },
+        {
+          "from": "saved",
+          "to": "error",
+          "label": "ไม่สำเร็จ",
+          "loop": null
+        },
+        {
+          "from": "error",
+          "to": "preview",
+          "label": "ลองใหม่",
+          "loop": "right"
+        },
+        {
+          "from": "cloud",
+          "to": "off",
+          "label": "ไม่ต้องการ",
+          "loop": null
+        },
+        {
+          "from": "cloud",
+          "to": "explain",
+          "label": "ต้องการ",
+          "loop": null
+        },
+        {
+          "from": "explain",
+          "to": "consent",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "consent",
+          "to": "on",
+          "label": "ยืนยัน",
+          "loop": null
+        },
+        {
+          "from": "consent",
+          "to": "decline",
+          "label": "ไม่ยืนยัน",
+          "loop": null
+        }
+      ]
+    },
+    {
+      "id": "UF07",
+      "title": "ทบทวนเกมที่ผ่านมา",
+      "goal": "ดูสิ่งที่เกิดขึ้นจากประวัติในเครื่อง พร้อมรู้ข้อจำกัดของข้อมูล",
+      "success": "ได้สรุปที่มีหลักฐาน หรือคำอธิบายว่าข้อมูลใดขาด",
+      "wireflow": "F07",
+      "file": "UF07-user-flow.svg",
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "col": 1,
+          "row": 0,
+          "title": "เปิดสถิติ / ประวัติ",
+          "detail": "จากเมนูหรือหน้าสรุปหลังเกม",
+          "route": "insights/history/loading"
+        },
+        {
+          "id": "read",
+          "type": "decision",
+          "col": 1,
+          "row": 1,
+          "title": "อ่านประวัติได้?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "error",
+          "type": "recovery",
+          "col": 2,
+          "row": 1,
+          "title": "แจ้งว่าอ่านไม่ได้",
+          "detail": "เปิดตั้งค่าระบบเพื่อตรวจ Log",
+          "route": "settings/system/ready"
+        },
+        {
+          "id": "exists",
+          "type": "decision",
+          "col": 1,
+          "row": 2,
+          "title": "มีเซสชันในเครื่อง?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "empty",
+          "type": "outcome",
+          "col": 0,
+          "row": 2,
+          "title": "ยังไม่มีประวัติ",
+          "detail": "กลับไปเล่นก่อน / ไม่แสดงเลข 0 แทน",
+          "route": "insights/history/empty"
+        },
+        {
+          "id": "select",
+          "type": "action",
+          "col": 1,
+          "row": 3,
+          "title": "เลือกเซสชัน",
+          "detail": "คง page และรายการที่เลือกเมื่อกลับ",
+          "route": "insights/history/complete"
+        },
+        {
+          "id": "complete",
+          "type": "decision",
+          "col": 1,
+          "row": 4,
+          "title": "ข้อมูลครบ?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "summary",
+          "type": "action",
+          "col": 0,
+          "row": 5,
+          "title": "อ่านสรุปและเหตุการณ์",
+          "detail": "ไม่เกิน 3 ข้อ พร้อมหลักฐานเวลา",
+          "route": "insights/history/complete"
+        },
+        {
+          "id": "partial",
+          "type": "action",
+          "col": 2,
+          "row": 5,
+          "title": "ตรวจช่วงข้อมูลที่ขาด",
+          "detail": "ไม่เดา win/loss หรือสาเหตุการตาย",
+          "route": "insights/history/partial"
+        },
+        {
+          "id": "done",
+          "type": "outcome",
+          "col": 1,
+          "row": 6,
+          "title": "เข้าใจเกมที่ผ่านมา",
+          "detail": "กลับรายการเดิมหรือเริ่มเกมถัดไป",
+          "route": "dashboard/main/standby"
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "to": "read",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "read",
+          "to": "exists",
+          "label": "อ่านได้",
+          "loop": null
+        },
+        {
+          "from": "read",
+          "to": "error",
+          "label": "อ่านไม่ได้",
+          "loop": null
+        },
+        {
+          "from": "error",
+          "to": "read",
+          "label": "ลองอ่านใหม่",
+          "loop": "right"
+        },
+        {
+          "from": "exists",
+          "to": "empty",
+          "label": "ไม่มี",
+          "loop": null
+        },
+        {
+          "from": "exists",
+          "to": "select",
+          "label": "มี",
+          "loop": null
+        },
+        {
+          "from": "select",
+          "to": "complete",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "complete",
+          "to": "summary",
+          "label": "ครบ",
+          "loop": null
+        },
+        {
+          "from": "complete",
+          "to": "partial",
+          "label": "ไม่ครบ",
+          "loop": null
+        },
+        {
+          "from": "summary",
+          "to": "done",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "partial",
+          "to": "done",
+          "label": "",
+          "loop": null
+        }
+      ]
+    },
+    {
+      "id": "UF08",
+      "title": "อัปเดตโดยไม่ขัดจังหวะเกม",
+      "goal": "เลือกเวลาอัปเดตที่ปลอดจากการเล่น และรู้ผลเมื่ออัปเดตไม่สำเร็จ",
+      "success": "อัปเดตแล้วกลับเข้า local core หรือใช้เวอร์ชันเดิมต่อ",
+      "wireflow": "F08",
+      "file": "UF08-user-flow.svg",
+      "nodes": [
+        {
+          "id": "start",
+          "type": "start",
+          "col": 1,
+          "row": 0,
+          "title": "ตรวจอัปเดต",
+          "detail": "ตั้งค่า / ทั่วไป",
+          "route": "settings/general/ready"
+        },
+        {
+          "id": "available",
+          "type": "decision",
+          "col": 1,
+          "row": 1,
+          "title": "มีอัปเดตใหม่?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "current",
+          "type": "outcome",
+          "col": 0,
+          "row": 1,
+          "title": "ใช้เวอร์ชันปัจจุบันต่อ",
+          "detail": "ไม่มีอัปเดต / ผู้ใช้เลือกภายหลัง",
+          "route": "dashboard/main/standby"
+        },
+        {
+          "id": "download",
+          "type": "system",
+          "col": 1,
+          "row": 2,
+          "title": "ดาวน์โหลดและตรวจความถูกต้อง",
+          "detail": "แสดงความคืบหน้า",
+          "route": "settings/general/saving"
+        },
+        {
+          "id": "verified",
+          "type": "decision",
+          "col": 1,
+          "row": 3,
+          "title": "ไฟล์พร้อมติดตั้ง?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "error",
+          "type": "recovery",
+          "col": 2,
+          "row": 3,
+          "title": "คงเวอร์ชันเดิม",
+          "detail": "เครือข่าย / ลายเซ็น / ติดตั้งผิดพลาด",
+          "route": "settings/general/error"
+        },
+        {
+          "id": "playing",
+          "type": "decision",
+          "col": 1,
+          "row": 4,
+          "title": "กำลังเล่นเกม?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "wait",
+          "type": "action",
+          "col": 2,
+          "row": 4,
+          "title": "เลื่อนไปหลังเกม",
+          "detail": "ไม่ restart แทรกคำเตือน",
+          "route": "dashboard/main/live"
+        },
+        {
+          "id": "confirm",
+          "type": "decision",
+          "col": 1,
+          "row": 5,
+          "title": "ยืนยันติดตั้งตอนนี้?",
+          "detail": "",
+          "route": null
+        },
+        {
+          "id": "later",
+          "type": "outcome",
+          "col": 0,
+          "row": 5,
+          "title": "ติดตั้งภายหลัง",
+          "detail": "ยังใช้เวอร์ชันเดิมได้",
+          "route": "settings/general/saved"
+        },
+        {
+          "id": "install",
+          "type": "system",
+          "col": 1,
+          "row": 6,
+          "title": "ติดตั้งและเปิดแอปใหม่",
+          "detail": "รายงาน error ถ้าไม่สำเร็จ",
+          "route": "settings/general/saved"
+        },
+        {
+          "id": "done",
+          "type": "outcome",
+          "col": 1,
+          "row": 7,
+          "title": "กลับสู่หน้าหลัก",
+          "detail": "local core ไม่รอ Beta grant",
+          "route": "dashboard/main/standby"
+        }
+      ],
+      "edges": [
+        {
+          "from": "start",
+          "to": "available",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "available",
+          "to": "current",
+          "label": "ไม่มี / ภายหลัง",
+          "loop": null
+        },
+        {
+          "from": "available",
+          "to": "download",
+          "label": "มี",
+          "loop": null
+        },
+        {
+          "from": "download",
+          "to": "verified",
+          "label": "",
+          "loop": null
+        },
+        {
+          "from": "verified",
+          "to": "error",
+          "label": "ไม่พร้อม",
+          "loop": null
+        },
+        {
+          "from": "error",
+          "to": "download",
+          "label": "ลองใหม่",
+          "loop": "right"
+        },
+        {
+          "from": "verified",
+          "to": "playing",
+          "label": "พร้อม",
+          "loop": null
+        },
+        {
+          "from": "playing",
+          "to": "wait",
+          "label": "กำลังเล่น",
+          "loop": null
+        },
+        {
+          "from": "wait",
+          "to": "playing",
+          "label": "พ้นเกมแล้ว",
+          "loop": "right"
+        },
+        {
+          "from": "playing",
+          "to": "confirm",
+          "label": "ไม่ได้เล่น",
+          "loop": null
+        },
+        {
+          "from": "confirm",
+          "to": "later",
+          "label": "ภายหลัง",
+          "loop": null
+        },
+        {
+          "from": "confirm",
+          "to": "install",
+          "label": "ยืนยัน",
+          "loop": null
+        },
+        {
+          "from": "install",
+          "to": "done",
+          "label": "สำเร็จ",
+          "loop": null
+        },
+        {
+          "from": "install",
+          "to": "error",
+          "label": "ไม่สำเร็จ",
+          "loop": "right"
+        }
+      ]
+    }
+  ],
+  "screens": [
+    {
+      "id": "P01",
+      "page": "dashboard",
+      "tab": "main",
+      "route": "dashboard/main/standby",
+      "file": "P01-dashboard-main.svg",
+      "states": [
+        "standby",
+        "prep",
+        "live",
+        "debrief",
+        "stale"
+      ]
+    },
+    {
+      "id": "P02",
+      "page": "live",
+      "tab": "live",
+      "route": "live/live/waiting",
+      "file": "P02-live-live.svg",
+      "states": [
+        "waiting",
+        "live",
+        "stale"
+      ]
+    },
+    {
+      "id": "P02",
+      "page": "live",
+      "tab": "build",
+      "route": "live/build/waiting",
+      "file": "P02-live-build.svg",
+      "states": [
+        "waiting",
+        "live",
+        "stale"
+      ]
+    },
+    {
+      "id": "P03",
+      "page": "voice",
+      "tab": "inventory",
+      "route": "voice/inventory/ready",
+      "file": "P03-voice-inventory.svg",
+      "states": [
+        "ready",
+        "empty",
+        "loading",
+        "error",
+        "active"
+      ]
+    },
+    {
+      "id": "P03",
+      "page": "voice",
+      "tab": "items",
+      "route": "voice/items/ready",
+      "file": "P03-voice-items.svg",
+      "states": [
+        "ready",
+        "empty",
+        "loading",
+        "error",
+        "active"
+      ]
+    },
+    {
+      "id": "P03",
+      "page": "voice",
+      "tab": "editor",
+      "route": "voice/editor/ready",
+      "file": "P03-voice-editor.svg",
+      "states": [
+        "ready",
+        "empty",
+        "loading",
+        "error",
+        "active"
+      ]
+    },
+    {
+      "id": "P04",
+      "page": "store",
+      "tab": "shop",
+      "route": "store/shop/deferred",
+      "file": "P04-store-shop.svg",
+      "states": [
+        "deferred"
+      ]
+    },
+    {
+      "id": "P04",
+      "page": "store",
+      "tab": "wallet",
+      "route": "store/wallet/deferred",
+      "file": "P04-store-wallet.svg",
+      "states": [
+        "deferred"
+      ]
+    },
+    {
+      "id": "P04",
+      "page": "store",
+      "tab": "inventory",
+      "route": "store/inventory/deferred",
+      "file": "P04-store-inventory.svg",
+      "states": [
+        "deferred"
+      ]
+    },
+    {
+      "id": "P04",
+      "page": "store",
+      "tab": "ledger",
+      "route": "store/ledger/deferred",
+      "file": "P04-store-ledger.svg",
+      "states": [
+        "deferred"
+      ]
+    },
+    {
+      "id": "P05",
+      "page": "insights",
+      "tab": "overview",
+      "route": "insights/overview/empty",
+      "file": "P05-insights-overview.svg",
+      "states": [
+        "empty",
+        "complete",
+        "partial",
+        "loading",
+        "error"
+      ]
+    },
+    {
+      "id": "P05",
+      "page": "insights",
+      "tab": "history",
+      "route": "insights/history/empty",
+      "file": "P05-insights-history.svg",
+      "states": [
+        "empty",
+        "complete",
+        "partial",
+        "loading",
+        "error"
+      ]
+    },
+    {
+      "id": "P06",
+      "page": "account",
+      "tab": "account",
+      "route": "account/account/signedout",
+      "file": "P06-account-account.svg",
+      "states": [
+        "signedout",
+        "loading",
+        "signedin",
+        "error",
+        "expired"
+      ]
+    },
+    {
+      "id": "P06",
+      "page": "account",
+      "tab": "wallet",
+      "route": "account/wallet/signedout",
+      "file": "P06-account-wallet.svg",
+      "states": [
+        "signedout",
+        "loading",
+        "signedin",
+        "error",
+        "expired"
+      ]
+    },
+    {
+      "id": "P06",
+      "page": "account",
+      "tab": "ledger",
+      "route": "account/ledger/signedout",
+      "file": "P06-account-ledger.svg",
+      "states": [
+        "signedout",
+        "loading",
+        "signedin",
+        "error",
+        "expired"
+      ]
+    },
+    {
+      "id": "P06",
+      "page": "account",
+      "tab": "security",
+      "route": "account/security/signedout",
+      "file": "P06-account-security.svg",
+      "states": [
+        "signedout",
+        "loading",
+        "signedin",
+        "error",
+        "expired"
+      ]
+    },
+    {
+      "id": "P07",
+      "page": "settings",
+      "tab": "general",
+      "route": "settings/general/ready",
+      "file": "P07-settings-general.svg",
+      "states": [
+        "ready",
+        "saving",
+        "saved",
+        "error"
+      ]
+    },
+    {
+      "id": "P07",
+      "page": "settings",
+      "tab": "overlay",
+      "route": "settings/overlay/ready",
+      "file": "P07-settings-overlay.svg",
+      "states": [
+        "ready",
+        "saving",
+        "saved",
+        "error"
+      ]
+    },
+    {
+      "id": "P07",
+      "page": "settings",
+      "tab": "voice",
+      "route": "settings/voice/ready",
+      "file": "P07-settings-voice.svg",
+      "states": [
+        "ready",
+        "saving",
+        "saved",
+        "error"
+      ]
+    },
+    {
+      "id": "P07",
+      "page": "settings",
+      "tab": "ai",
+      "route": "settings/ai/ready",
+      "file": "P07-settings-ai.svg",
+      "states": [
+        "ready",
+        "saving",
+        "saved",
+        "error"
+      ]
+    },
+    {
+      "id": "P07",
+      "page": "settings",
+      "tab": "modules",
+      "route": "settings/modules/ready",
+      "file": "P07-settings-modules.svg",
+      "states": [
+        "ready",
+        "saving",
+        "saved",
+        "error"
+      ]
+    },
+    {
+      "id": "P07",
+      "page": "settings",
+      "tab": "privacy",
+      "route": "settings/privacy/ready",
+      "file": "P07-settings-privacy.svg",
+      "states": [
+        "ready",
+        "saving",
+        "saved",
+        "error"
+      ]
+    },
+    {
+      "id": "P07",
+      "page": "settings",
+      "tab": "system",
+      "route": "settings/system/ready",
+      "file": "P07-settings-system.svg",
+      "states": [
+        "ready",
+        "saving",
+        "saved",
+        "error"
+      ]
+    }
+  ]
+}

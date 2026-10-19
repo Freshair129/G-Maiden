@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-10-18T06:48:21.184Z
+สร้างเมื่อ / Generated at: 2026-10-19T16:20:44.455Z
 
-สแกน 127 ไฟล์เอกสาร, 241 nodes, 1151 edges, 188 รายการปัญหา (156 ตัวบล็อก exit code) / scanned 127 doc files, 241 nodes, 1151 edges, 188 violations (156 blocking exit code).
+สแกน 132 ไฟล์เอกสาร, 248 nodes, 1210 edges, 187 รายการปัญหา (155 ตัวบล็อก exit code) / scanned 132 doc files, 248 nodes, 1210 edges, 187 violations (155 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -15,7 +15,7 @@
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 29 | no (informational) |
-| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 15 | yes |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 14 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -25,9 +25,9 @@
 
 ### docs/DOC-INDEX.md
 
-- [L124] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="SPEC--*")
-- [L126] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="ADR-O-*")
-- [L135] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
+- [L132] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="SPEC--*")
+- [L134] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="ADR-O-*")
+- [L143] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
 
 ### docs/DOCS-IA-REORG-PROPOSAL.md
 
@@ -351,10 +351,6 @@
 ### docs/product/competitive-brief.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/product/mvp-backlog.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.6", changelog="0.1.0")
 
 ### docs/product/one-pager.md
 

@@ -1,7 +1,7 @@
 ---
-version: "2.4.3-draft"
+version: "2.4.4-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-10-18T12:00:00+07:00,Codex"
+last_update: "2026-10-19T00:00:00+07:00,Codex"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -9,7 +9,7 @@ attributes:
   language: "th/en"
 title: "05 — Sitemap & Information Architecture"
 doc_id: "05-sitemap-ia"
-updated: "2026-10-18"
+updated: "2026-10-19"
 owner: "Boss"
 ---
 
@@ -141,9 +141,11 @@ CR-011 §C).
 
 ## 5. Core flows
 
+> **Implementation status (source `origin/main` at `621c83d6`):** `App.tsx` mounts `CommandDeck` directly; no first-run gate component or mount is present in this source tree. Settings voice controls are `AudioSettingsCard` inside `Control`; Store and top-up handlers exist, but provider/settlement acceptance is unverified. The updater has no in-game install guard. This sitemap remains the design target and does not certify those flows.
+
 ### 5.1 In-match (peripheral)
 ```
-GSI tick → Dashboard/HUD update → G-Signal คำนวณ → ถ้าเกินเกณฑ์ Sensitivity (ค่าเริ่มต้น Med 0.65):
+DXGI capture → minimap CV detections → G-Sentry → G-Motion → G-Signal → cached alert audio. GSI separately supplies player/session context and score-derived enemy-death count; it does not supply enemy positions.
 persona voice interrupt + overlay banner + signal card E (lime) escalate
 ```
 
@@ -181,3 +183,4 @@ Voice Packs → เลือก pack → active → POST /announcer/install (:30
 | 2.3.2-draft | 2026-07-19 | symbol-link coverage extension (G1.5) |
 | 2.4.1-draft | 2026-07-21 | Replaced unnecessary reader-facing GMAD naming with G-Maiden while preserving technical identifiers and route names. |
 | 2.4.3-draft | 2026-10-18 | Removed retired access-gate flow from the current sitemap and aligned Account with optional local startup. |
+| 2.4.4-draft | 2026-10-19 | Clarified current entry, Store/update paths and the GSI-versus-minimap-CV boundary while retaining the sitemap as target UX. |

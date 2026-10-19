@@ -2,8 +2,8 @@
 title: "G-Maiden MVP Execution DAG"
 doc_id: "mvp-execution-dag"
 status: "draft"
-version: "0.2.6"
-updated: 2026-10-18
+version: "0.2.7"
+updated: 2026-10-19
 owner: "Boss"
 related_docs: ["roadmap", "mvp-backlog", "releases/README"]
 ---
@@ -14,7 +14,7 @@ related_docs: ["roadmap", "mvp-backlog", "releases/README"]
 
 มี **57 execution nodes ใน 14 logical waves**: 52 parent tasks แยก 4 งานเป็น A/B รวมเป็น 56 task nodes และเพิ่ม GATE-RC 1 จุดสำหรับตรึง build ก่อนเก็บ evidence Owner สั่งเริ่ม execution ด้วย GPT-6 Luna ระดับ max จำนวน 3 workers แล้ว; สถานะราย node อยู่ใน JSON และ receipt ของ run โดยงานที่ยังไม่ผ่าน acceptance ไม่ถูกปิดเป็น DONE
 
-สถานะ execution ปัจจุบัน: 001.A = INTEGRATED และ 001.B = VERIFIED บน commit `c63bad098d6e12e6f073e832dce045dbbeacd687` (tree `d687254de6c4cfc976e06e4f60e0f4dc8e038009`); Rust 315 passed / 5 ignored, desktop Vitest 284 passed พร้อม ESLint, TypeScript, Clippy และ native no-bundle ผ่านครบ. 002 = VERIFIED บน source เดิม โดยเก็บ binary แยกไว้; 003–006 = DECISION_PENDING และมีข้อเสนอ scope/access/privacy/quality พร้อมตรวจ. สถานะเหล่านี้ไม่แทน DONE และไม่ปลดล็อก consumers โดยอัตโนมัติ; คำสั่งเดินหน้าจัดทำงานไม่ได้อนุมัติ policy หรือ thresholds ใหม่ที่เสนอ
+สถานะ execution ปัจจุบันให้อ่านจาก JSON: 001.A = INTEGRATED, 001.B = VERIFIED, 002 = VERIFIED และ 003–006 = DONE ตามมติใน [[mvp-decisions]]; 007/008 ยัง NOT_STARTED. DONE ของ MVP-003–006 ปิดเฉพาะ contract decisions ไม่ได้ปิด implementation, runtime acceptance หรือ consumer tasks. Receipt `DECISION_PENDING` เป็นสถานะก่อนลงมติและล้าสมัยแล้ว.
 
 - Backlog เป็น source of truth ของ scope และ acceptance ราย task
 - [Execution DAG JSON](mvp-execution-dag.json) เก็บ nodes, edges, conditional gates, locks, parent completion และ wave allocation เป็นข้อมูลสำหรับนำไปต่อ scheduler
@@ -304,3 +304,4 @@ Completion or NOT_APPLICABLE decision:
 | 0.2.4 | 2026-10-16 | Remove retired local review integration and related references. |
 | 0.2.5 | 2026-10-18 | Clarify account-optional local startup and keep protected server authorization separate. |
 | 0.2.6 | 2026-10-18 | Removed obsolete handoff activation metadata; MVP-045 stays not applicable under the local-core decision. |
+| 0.2.7 | 2026-10-19 | Reconciled the stale DECISION_PENDING execution summary with the current JSON and decision record; contract completion remains separate from implementation acceptance. |

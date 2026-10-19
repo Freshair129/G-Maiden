@@ -2,8 +2,8 @@
 title: "G-Maiden Product Requirements"
 doc_id: "product-requirements"
 status: "active"
-version: "0.2.1"
-updated: "2026-10-12"
+version: "0.2.2"
+updated: "2026-10-19"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["software-requirements-specification", "mvp-decisions", "roadmap"]
@@ -40,7 +40,7 @@ related_docs: ["software-requirements-specification", "mvp-decisions", "roadmap"
 ### **G-Sentry (Fog of War Monitoring)**
 
 * **Description:** ระบบตรวจจับการหายไปจากมินิแมพ (Missing-in-Action)
-* **Logic:** ตรวจสอบตำแหน่งฮีโร่ศัตรูผ่าน GSI (Game State Integration) หากฮีโร่ตัวสำคัญหายไปจากระยะการมองเห็น (Vision) เกิน 5 วินาที ระบบจะคำนวณโอกาสการแก๊ง
+* **Logic:** ใช้ minimap CV เป็นแหล่งตำแหน่งศัตรูและตรวจการหายไปจาก vision; GSI ให้ GameTick, own-player/session context และ score-derived enemy-death count ไม่ได้เปิดเผยตำแหน่งศัตรู. ความเสี่ยงจากเวลาที่หายใช้ G-Motion ซึ่งยังเป็น heuristic ไม่ใช่เส้นทางที่เห็นผ่าน fog.
 * **Maiden's Touch:** แจ้งเตือนด้วยความห่วงใย "ระวังนะ... พวกเขาหายไปจากเลนแล้ว ฉันมองไม่เห็นพวกเขาเลย"
 
 ### **G-Motion (Time-off-map Risk Heuristic)**
@@ -133,3 +133,4 @@ related_docs: ["software-requirements-specification", "mvp-decisions", "roadmap"
 | --- | --- | --- |
 | 0.2.0 | 2026-10-10 | กำหนด MVP boundary และ supported matrix ตามมติ Owner; แก้ G-Motion, Voice, Memory, privacy และ quality claims ให้เป็น target ที่ตรวจรับได้ |
 | 0.2.1 | 2026-10-12 | Aligned the whole-app CPU acceptance limit with MVP decision v0.2.0; runtime acceptance remains evidence-gated. |
+| 0.2.2 | 2026-10-19 | Corrected G-Sentry inputs: enemy positions come from minimap CV; GSI supplies player/session and score-derived death context. |

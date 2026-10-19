@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-18T06:48:21.184Z",
+  "generatedAt": "2026-10-19T16:20:44.455Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -555,12 +555,47 @@
       "status": "active"
     },
     {
+      "id": "docs/design-system/09-graphite-clarity.md",
+      "type": "doc",
+      "path": "docs/design-system/09-graphite-clarity.md",
+      "title": "09 — Graphite Clarity implementation contract",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/design-system/10-wireframes.md",
+      "type": "doc",
+      "path": "docs/design-system/10-wireframes.md",
+      "title": "10 — Wireframes: Command Deck 7 pages",
+      "status": "draft"
+    },
+    {
+      "id": "docs/design-system/11-wireflows.md",
+      "type": "doc",
+      "path": "docs/design-system/11-wireflows.md",
+      "title": "11 — Wireflows: Command Deck navigation and recovery",
+      "status": "draft"
+    },
+    {
+      "id": "docs/design-system/12-user-flows.md",
+      "type": "doc",
+      "path": "docs/design-system/12-user-flows.md",
+      "title": "12 — User Flows: Goals, decisions and outcomes",
+      "status": "draft"
+    },
+    {
       "id": "docs/design-system/README.md",
       "type": "doc",
       "path": "docs/design-system/README.md",
       "title": "G-Maiden Design System — SSOT",
       "status": "draft",
       "domain": "ui-ux"
+    },
+    {
+      "id": "docs/design-system/assets/wireframes/design-qa.md",
+      "type": "doc",
+      "path": "docs/design-system/assets/wireframes/design-qa.md",
+      "title": "Wireframe Package — Design QA",
+      "status": "draft"
     },
     {
       "id": "docs/design-system/landing_page_prompt.md",
@@ -1338,6 +1373,16 @@
       "path": "src/src/SteamLink.tsx"
     },
     {
+      "id": "src/src/app/Control.tsx",
+      "type": "code",
+      "path": "src/src/app/Control.tsx"
+    },
+    {
+      "id": "src/src/app/cards/AudioSettingsCard.tsx",
+      "type": "code",
+      "path": "src/src/app/cards/AudioSettingsCard.tsx"
+    },
+    {
       "id": "src-tauri/src/",
       "type": "code",
       "path": "src-tauri/src/"
@@ -1553,81 +1598,105 @@
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/design-system/09-graphite-clarity.md",
+      "type": "wikilink",
+      "line": 77
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/design-system/10-wireframes.md",
+      "type": "wikilink",
+      "line": 79
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/design-system/11-wireflows.md",
+      "type": "wikilink",
+      "line": 81
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/design-system/12-user-flows.md",
+      "type": "wikilink",
+      "line": 83
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/architecture/tech-stack.md",
-      "type": "wikilink",
-      "line": 84
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/engineering-spec.md",
-      "type": "wikilink",
-      "line": 86
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/technical-design-document.md",
-      "type": "wikilink",
-      "line": 88
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/design-system.md",
-      "type": "wikilink",
-      "line": 90
-    },
-    {
-      "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/product-family-design-map.md",
       "type": "wikilink",
       "line": 92
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
       "line": 94
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/implementation-plan.md",
+      "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
       "line": 96
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "to": "docs/architecture/design-system.md",
       "type": "wikilink",
       "line": 98
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/architecture/product-family-design-map.md",
+      "type": "wikilink",
+      "line": 100
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "type": "wikilink",
+      "line": 102
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/architecture/implementation-plan.md",
+      "type": "wikilink",
+      "line": 104
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "type": "wikilink",
+      "line": 106
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/features/README.md",
       "type": "wikilink",
-      "line": 131
+      "line": 139
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 133
+      "line": 141
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 168
+      "line": 176
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 170
+      "line": 178
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 175
+      "line": 183
     },
     {
       "from": "docs/README.md",
@@ -2731,13 +2800,7 @@
       "from": "docs/architecture/technical-design-document.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
-      "line": 176
-    },
-    {
-      "from": "docs/architecture/technical-design-document.md",
-      "to": "src-tauri/src/governor.rs",
-      "type": "symbol",
-      "line": 89
+      "line": 170
     },
     {
       "from": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
@@ -6145,13 +6208,13 @@
       "from": "docs/design-system/05-sitemap-ia.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
-      "line": 175
+      "line": 177
     },
     {
       "from": "docs/design-system/05-sitemap-ia.md",
       "to": "CLAUDE.md",
       "type": "symbol",
-      "line": 175
+      "line": 177
     },
     {
       "from": "docs/design-system/06-stack.md",
@@ -6239,39 +6302,51 @@
     },
     {
       "from": "docs/design-system/06-stack.md",
-      "to": "src/src/live/",
+      "to": "src/src/app/Control.tsx",
       "type": "symbol",
       "line": 44
     },
     {
       "from": "docs/design-system/06-stack.md",
-      "to": "src-tauri/src/",
+      "to": "src/src/app/cards/AudioSettingsCard.tsx",
+      "type": "symbol",
+      "line": 44
+    },
+    {
+      "from": "docs/design-system/06-stack.md",
+      "to": "src/src/live/",
       "type": "symbol",
       "line": 45
+    },
+    {
+      "from": "docs/design-system/06-stack.md",
+      "to": "src-tauri/src/",
+      "type": "symbol",
+      "line": 46
     },
     {
       "from": "docs/design-system/06-stack.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
-      "line": 45
+      "line": 46
     },
     {
       "from": "docs/design-system/06-stack.md",
       "to": "src-tauri/src/announcer.rs",
       "type": "symbol",
-      "line": 45
+      "line": 46
     },
     {
       "from": "docs/design-system/06-stack.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 45
+      "line": 46
     },
     {
       "from": "docs/design-system/06-stack.md",
       "to": "CLAUDE.md",
       "type": "symbol",
-      "line": 64
+      "line": 65
     },
     {
       "from": "docs/design-system/07-combat-hud.md",
@@ -6308,6 +6383,234 @@
       "to": "src/src/DeckIcons.tsx",
       "type": "symbol",
       "line": 98
+    },
+    {
+      "from": "docs/design-system/09-graphite-clarity.md",
+      "to": "docs/design-system/10-wireframes.md",
+      "type": "wikilink",
+      "line": 19
+    },
+    {
+      "from": "docs/design-system/09-graphite-clarity.md",
+      "to": "docs/design-system/11-wireflows.md",
+      "type": "wikilink",
+      "line": 19
+    },
+    {
+      "from": "docs/design-system/09-graphite-clarity.md",
+      "to": "docs/design-system/03-layout.md",
+      "type": "wikilink",
+      "line": 25
+    },
+    {
+      "from": "docs/design-system/09-graphite-clarity.md",
+      "to": "docs/design-system/02-tokens.md",
+      "type": "wikilink",
+      "line": 26
+    },
+    {
+      "from": "docs/design-system/09-graphite-clarity.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
+      "type": "wikilink",
+      "line": 27
+    },
+    {
+      "from": "docs/design-system/09-graphite-clarity.md",
+      "to": "docs/design-system/04-components.md",
+      "type": "wikilink",
+      "line": 27
+    },
+    {
+      "from": "docs/design-system/09-graphite-clarity.md",
+      "to": "docs/design-system/03-layout.md",
+      "type": "wikilink",
+      "line": 37
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/design-system/03-layout.md",
+      "type": "wikilink",
+      "line": 15
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/design-system/09-graphite-clarity.md",
+      "type": "wikilink",
+      "line": 15
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 16
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/design-system/11-wireflows.md",
+      "type": "wikilink",
+      "line": 38
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/design-system/07-combat-hud.md",
+      "type": "wikilink",
+      "line": 39
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/design-system/03-layout.md",
+      "type": "wikilink",
+      "line": 46
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/design-system/03-layout.md",
+      "type": "wikilink",
+      "line": 63
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/design-system/03-layout.md",
+      "type": "wikilink",
+      "line": 65
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/design-system/04-components.md",
+      "type": "wikilink",
+      "line": 89
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/design-system/09-graphite-clarity.md",
+      "type": "wikilink",
+      "line": 89
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 149
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 170
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/design-system/08-account-gid.md",
+      "type": "wikilink",
+      "line": 170
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/design-system/03-layout.md",
+      "type": "wikilink",
+      "line": 197
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 199
+    },
+    {
+      "from": "docs/design-system/10-wireframes.md",
+      "to": "docs/product/mvp-backlog.md",
+      "type": "wikilink",
+      "line": 199
+    },
+    {
+      "from": "docs/design-system/11-wireflows.md",
+      "to": "docs/design-system/10-wireframes.md",
+      "type": "wikilink",
+      "line": 13
+    },
+    {
+      "from": "docs/design-system/11-wireflows.md",
+      "to": "docs/design-system/12-user-flows.md",
+      "type": "wikilink",
+      "line": 16
+    },
+    {
+      "from": "docs/design-system/11-wireflows.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 66
+    },
+    {
+      "from": "docs/design-system/11-wireflows.md",
+      "to": "docs/design-system/07-combat-hud.md",
+      "type": "wikilink",
+      "line": 73
+    },
+    {
+      "from": "docs/design-system/11-wireflows.md",
+      "to": "docs/product/mvp-backlog.md",
+      "type": "wikilink",
+      "line": 117
+    },
+    {
+      "from": "docs/design-system/11-wireflows.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 175
+    },
+    {
+      "from": "docs/design-system/11-wireflows.md",
+      "to": "docs/design-system/10-wireframes.md",
+      "type": "wikilink",
+      "line": 211
+    },
+    {
+      "from": "docs/design-system/12-user-flows.md",
+      "to": "docs/design-system/10-wireframes.md",
+      "type": "wikilink",
+      "line": 13
+    },
+    {
+      "from": "docs/design-system/12-user-flows.md",
+      "to": "docs/design-system/10-wireframes.md",
+      "type": "wikilink",
+      "line": 19
+    },
+    {
+      "from": "docs/design-system/12-user-flows.md",
+      "to": "docs/design-system/11-wireflows.md",
+      "type": "wikilink",
+      "line": 20
+    },
+    {
+      "from": "docs/design-system/12-user-flows.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 28
+    },
+    {
+      "from": "docs/design-system/12-user-flows.md",
+      "to": "docs/product/mvp-backlog.md",
+      "type": "wikilink",
+      "line": 31
+    },
+    {
+      "from": "docs/design-system/12-user-flows.md",
+      "to": "docs/design-system/07-combat-hud.md",
+      "type": "wikilink",
+      "line": 66
+    },
+    {
+      "from": "docs/design-system/12-user-flows.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 106
+    },
+    {
+      "from": "docs/design-system/12-user-flows.md",
+      "to": "docs/design-system/10-wireframes.md",
+      "type": "wikilink",
+      "line": 142
     },
     {
       "from": "docs/design-system/README.md",
@@ -6359,39 +6662,117 @@
     },
     {
       "from": "docs/design-system/README.md",
+      "to": "docs/design-system/09-graphite-clarity.md",
+      "type": "wikilink",
+      "line": 42
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/design-system/10-wireframes.md",
+      "type": "wikilink",
+      "line": 43
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/design-system/11-wireflows.md",
+      "type": "wikilink",
+      "line": 44
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/design-system/12-user-flows.md",
+      "type": "wikilink",
+      "line": 45
+    },
+    {
+      "from": "docs/design-system/README.md",
       "to": "docs/design-system/06-stack.md",
       "type": "wikilink",
-      "line": 51
+      "line": 55
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/architecture/design-system.md",
       "type": "wikilink",
-      "line": 66
+      "line": 70
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "type": "wikilink",
-      "line": 67
+      "line": 71
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
+      "type": "wikilink",
+      "line": 71
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/design-system/10-wireframes.md",
+      "type": "wikilink",
+      "line": 71
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/design-system/11-wireflows.md",
+      "type": "wikilink",
+      "line": 71
+    },
+    {
+      "from": "docs/design-system/README.md",
+      "to": "docs/design-system/12-user-flows.md",
+      "type": "wikilink",
+      "line": 71
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 68
+      "line": 72
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 68
+      "line": 72
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 68
+      "line": 72
+    },
+    {
+      "from": "docs/design-system/assets/wireframes/design-qa.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
+      "type": "wikilink",
+      "line": 74
+    },
+    {
+      "from": "docs/design-system/assets/wireframes/design-qa.md",
+      "to": "docs/design-system/10-wireframes.md",
+      "type": "wikilink",
+      "line": 74
+    },
+    {
+      "from": "docs/design-system/assets/wireframes/design-qa.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
+      "type": "wikilink",
+      "line": 76
+    },
+    {
+      "from": "docs/design-system/assets/wireframes/design-qa.md",
+      "to": "docs/design-system/12-user-flows.md",
+      "type": "wikilink",
+      "line": 76
+    },
+    {
+      "from": "docs/design-system/assets/wireframes/design-qa.md",
+      "to": "docs/design-system/12-user-flows.md",
+      "type": "wikilink",
+      "line": 89
     },
     {
       "from": "docs/features/FEAT-G-COACH.md",
@@ -7739,57 +8120,69 @@
     },
     {
       "from": "docs/product/mvp-backlog.md",
+      "to": "docs/design-system/10-wireframes.md",
+      "type": "wikilink",
+      "line": 65
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/design-system/11-wireflows.md",
+      "type": "wikilink",
+      "line": 65
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/design-system/12-user-flows.md",
+      "type": "wikilink",
+      "line": 65
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 43
+      "line": 106
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 43
+      "line": 106
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-MEMORY.md",
       "type": "wikilink",
-      "line": 119
+      "line": 182
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-COACH.md",
       "type": "wikilink",
-      "line": 119
+      "line": 182
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-VOICE.md",
       "type": "wikilink",
-      "line": 134
+      "line": 197
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 134
-    },
-    {
-      "from": "docs/product/mvp-backlog.md",
-      "to": "docs/architecture/spikes/MVP-038-local-stt-evaluation.md",
-      "type": "wikilink",
-      "line": 138
+      "line": 197
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/README.md",
       "type": "wikilink",
-      "line": 164
+      "line": 227
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/release-channel-architecture.md",
       "type": "wikilink",
-      "line": 164
+      "line": 227
     },
     {
       "from": "docs/product/mvp-decisions.md",
@@ -7808,6 +8201,12 @@
       "to": "docs/product/mvp-backlog.md",
       "type": "wikilink",
       "line": 13
+    },
+    {
+      "from": "docs/product/mvp-execution-dag.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 17
     },
     {
       "from": "docs/product/mvp-execution-dag.md",
@@ -8364,19 +8763,19 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 124,
+      "line": 132,
       "reason": "glob-slug",
       "slug": "SPEC--*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 126,
+      "line": 134,
       "reason": "glob-slug",
       "slug": "ADR-O-*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 135,
+      "line": 143,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -9506,13 +9905,6 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/product/mvp-backlog.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.3.6",
-      "changelog": "0.1.0"
-    },
-    {
       "file": "docs/product/one-pager.md",
       "line": null,
       "reason": "no-metadata"
@@ -9742,7 +10134,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-18T06:48:26.007Z",
+    "generatedAt": "2026-10-19T16:20:48.651Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,
@@ -9752,10 +10144,10 @@
       "fr": 19
     },
     "byStatus": {
-      "code+needs-test-or-review": 16,
-      "in-code": 12,
+      "code+needs-test-or-review": 19,
       "code+tests-present (unrun)": 14,
-      "doc-only": 32
+      "doc-only": 30,
+      "in-code": 11
     },
     "byDrift": {
       "aligned": 68,
@@ -9782,11 +10174,10 @@
         "phase_target": "P3",
         "phase_source": "doc",
         "phase_target_source": "sourced",
-        "computed": "in-code",
-        "claimed": "in-code",
+        "computed": "code+needs-test-or-review",
+        "claimed": "code+needs-test-or-review",
         "drift": "aligned",
         "gaps": [
-          "no tests mapped",
           "review record missing"
         ],
         "source": "bootstrap-extraction, pruned 2026-07-20"
@@ -10578,12 +10969,11 @@
         "phase_target": "P3",
         "phase_source": "derived",
         "phase_target_source": "derived",
-        "computed": "doc-only",
-        "claimed": "doc-only",
+        "computed": "code+needs-test-or-review",
+        "claimed": "code+needs-test-or-review",
         "drift": "aligned",
         "gaps": [
-          "primary doc status not accepted/stable",
-          "no code mapped"
+          "review record missing"
         ],
         "source": "bootstrap-extraction"
       },
@@ -10788,12 +11178,11 @@
         "phase_target": "P6",
         "phase_source": "heuristic",
         "phase_target_source": "derived",
-        "computed": "doc-only",
-        "claimed": "doc-only",
+        "computed": "code+needs-test-or-review",
+        "claimed": "code+needs-test-or-review",
         "drift": "aligned",
         "gaps": [
-          "primary doc status not accepted/stable",
-          "no code mapped"
+          "review record missing"
         ],
         "source": "bootstrap-extraction"
       },

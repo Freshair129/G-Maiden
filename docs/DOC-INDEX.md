@@ -1,11 +1,11 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.7"
+version: "0.2.8"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
-last_update: "2026-10-18T11:31:03+07:00,Codex"
+last_update: "2026-10-19T00:00:00+07:00,Codex"
 status: "active"
-updated: "2026-10-18"
+updated: "2026-10-19"
 owner: "Boss"
 attributes:
   domain: "documentation-governance"
@@ -74,10 +74,18 @@ attributes:
   - `docs/design-system/07-combat-hud.md` — เอกสารการออกแบบ Combat HUD ของหน้าจอ overlay
 - `docs/design-system/08-account-gid.md`
   - `docs/design-system/08-account-gid.md` — การออกแบบส่วนเชื่อมต่อระบบบัญชีและ GID
+- [[09-graphite-clarity]]
+  - `docs/design-system/09-graphite-clarity.md` — approved Graphite Clarity art direction and implementation contract
+- [[10-wireframes]]
+  - `docs/design-system/10-wireframes.md` — target wireframes for the seven Command Deck pages
+- [[11-wireflows]]
+  - `docs/design-system/11-wireflows.md` — target navigation and recovery wireflows
+- [[12-user-flows]]
+  - `docs/design-system/12-user-flows.md` — target user goals, decisions, and outcomes
 - `docs/design-system/landing_page_prompt.md`
   - `docs/design-system/landing_page_prompt.md` — prompt reference สำหรับออกแบบหน้าเว็บ landing
 - `docs/design-system/assets/`
-  - `docs/design-system/assets/` — annotated wireframe/subtract-shape/swatches (SVG) + glass prototype (HTML)
+  - `docs/design-system/assets/` — annotated wireframe/subtract-shape/swatches (SVG), glass prototype (HTML), and interactive wireframe/wireflow/user-flow viewer
 
 ## Architecture
 
@@ -202,3 +210,4 @@ attributes:
 | 0.2.4 | 2026-10-10 | Clarified the accepted MVP contract entrypoint. |
 | 0.2.5 | 2026-10-11 | Added the MVP-038 local STT evaluation protocol to the architecture-spike index. |
 | 0.2.7 | 2026-10-18 | Indexed ADR-19 and CR-035. |
+| 0.2.8 | 2026-10-19 | Indexed Graphite Clarity and the Command Deck wireframe, wireflow, and user-flow documents. |
