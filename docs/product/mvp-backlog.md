@@ -2,8 +2,8 @@
 title: "G-Maiden MVP Backlog"
 doc_id: "mvp-backlog"
 status: "draft"
-version: "0.3.8"
-updated: 2026-10-19
+version: "0.3.9"
+updated: 2026-10-20
 owner: "Boss"
 related_docs: ["roadmap", "mvp-execution-dag", "software-requirements-specification", "G-SERIES-DATA-LINEAGE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "EXEC-PLAN-CR-034-iam-remediation"]
 ---
@@ -124,10 +124,13 @@ Backlog สำหรับทำให้ผู้เล่นใช้งาน
 | ID | P / Size | สถานะ | Depends on | งานและเกณฑ์รับ |
 | --- | --- | --- | --- | --- |
 | MVP-008 | P0 / L | TODO | MVP-001, MVP-004; MVP-043–045 ถ้าคง account gate | **ปรับ entry/runtime ตาม access policy ที่เลือกและตรวจใน release build.** MVP-004 ตั้ง account_gate_required=false; ใน source baseline นี้ App.tsx mount CommandDeck โดยตรง และไม่พบ GmadFirstRunGate component หรือ mount จึงห้ามอ้างไฟล์ gate เป็นหลักฐานว่ามี active gate หรือว่าการย้าย access flow เสร็จแล้ว. ทำ local core startup โดยไม่พึ่ง account/entitlement พร้อมคง server-side authorization สำหรับ protected account actions; ตรวจ signed-out, cold offline, network loss, revoke, account switch, new device และ Terms/version ตาม contract. ปิดได้เมื่อ frontend/native/channel/runtime matrix และ security gate ที่ใช้จริงผ่านบน integrated SHA; ห้ามถอด guard ฝั่งเดียวหรืออนุมาน approval จากเอกสาร |
-| MVP-009 | P0 / M | TODO | MVP-001, MVP-002 | **ย้าย settings initialization ไป startup.** โหลด/validate settings หนึ่งจุดก่อนเริ่ม gameplay และ sync Control/Overlay/native; cold restart โดยไม่เข้าหน้า Settings คืน voice, sensitivity, persona, backend/model, privacy และ layout ครบ ไม่มี default cloud call ก่อน hydrate |
+| MVP-009 | P0 / M | DONE | MVP-001, MVP-002 | **ย้าย settings initialization ไป startup.** โหลด/validate settings หนึ่งจุดก่อนเริ่ม gameplay และ sync Control/Overlay/native; cold restart โดยไม่เข้าหน้า Settings คืน voice, sensitivity, persona, backend/model, privacy และ layout ครบ ไม่มี default cloud call ก่อน hydrate |
 | MVP-010 | P0 / M | TODO | MVP-001, MVP-002 | **ทำ GSI setup และ port health.** แยก config exists/config valid/listening/waiting/live, แจ้ง port 3000 conflict ที่กระทบ GSI/OAuth, มี retry และเลือก/ซ่อม Dota path ที่ควบคุมขอบเขตได้; negative cases แสดงวิธีแก้โดยไม่ใช้ terminal |
 | MVP-011 | P0 / M | TODO | MVP-009, MVP-010; ขั้น B รอ MVP-016, MVP-017, MVP-024 | **แทน readiness สมมติด้วยผลจริง.** ขั้น A ทำ contract/UI ที่แสดง unknown เมื่อยังไม่มี producer; ขั้น B ต่อ capture coverage/audio health จริงก่อนปิดงาน; ตรวจ resources, live GSI, overlay preview และ audible confirmation; null ไม่เป็น pass, overlay ไม่ pass ตายตัว และ Lite mode ชัด |
 | MVP-012 | P0 / M | TODO | MVP-008, MVP-009, MVP-010, MVP-011 | **ตรวจ first-run และ restart ใน release mode.** บนเครื่องสะอาด/โปรไฟล์ใหม่ ทำ install→setup→deck→ปิดเปิด; ผ่าน/ขาด config, port ชน, ไม่มีเสียง, ไม่มีโมเดล และ offline แสดงสถานะตาม contract; เก็บภาพและ native logs ที่ไม่เผยข้อมูลผู้เล่น |
+
+
+**หลักฐานปิด MVP-009 (Owner อนุมัติ 2026-10-20; integrated base SHA 6de1871ac227be05ab168d7616cae997b62baf24):** Cold-start แอป Tauri ในโปรไฟล์แยก; Dashboard แสดง volume 35% ก่อนเปิด Settings. หลัง restart, Settings UI และ native settings.json ตรงกัน: voice rate +2/volume 35, sensitivity high, persona Meme Partner, backend Ollama/model qwen3.5:9b, cloud opt-in/calibration/efficacy ปิด และ overlay position right/opacity 65%. DevTools Network บนการเริ่มด้วยค่าเริ่มต้นและ renderer reload หลัง cold-start แสดงเฉพาะ local ipc.localhost/secret_get; ไม่พบ external/provider request. Source ยืนยัน [native restore ก่อน GSI](../../src-tauri/src/lib.rs#L930), [Control hydrate และ emit](../../src/src/app/settings.tsx#L91), [Overlay hydrate](../../src/src/App.tsx#L25) และ [รับ settings update](../../src/src/app/Overlay.tsx#L194). GSI ยัง offline เพราะ Docker ใช้ port 3000; รอบนี้ยืนยัน settings startup/persistence.
 
 ## E2 ข้อมูลเกมและคำเตือนที่เชื่อถือได้
 
@@ -276,7 +279,7 @@ Backlog สำหรับทำให้ผู้เล่นใช้งาน
 
 1. `MVP-001` และ `MVP-002` เริ่มได้ทันที; บันทึกผลและข้อจำกัดก่อนแก้ product code
 2. เตรียม decision records ของ `MVP-003–006` ให้ owner ลงข้อสรุป; งาน setup/settings ที่ไม่ขึ้นกับ access decision ทำต่อได้เมื่อ baseline พร้อม
-3. `MVP-009`, `MVP-010`, `MVP-013` เป็น implementation slices แรกหลัง prerequisites ครบ
+3. `MVP-010`, `MVP-013` เป็น implementation slices ถัดไปหลัง prerequisites ครบ
 4. ต่อ `MVP-011`, `MVP-014–015`, `MVP-019`, `MVP-022–024` ตาม dependency ไม่เปิดงานกระจัดกระจายทุก epic พร้อมกัน
 5. เปิด design spike `MVP-038` และ performance/CI baseline `MVP-048`, `MVP-051` เมื่อ M0 พร้อม เพื่อพบปัญหา resource แต่ต้น
 
@@ -312,3 +315,4 @@ Status:
 | 0.3.6 | 2026-10-19 | บันทึก Owner approval ต่อผล static audit และการแก้เอกสาร โดยคง MVP-007/008 และ runtime/provider/security acceptance ไว้ตามสถานะจริง |
 | 0.3.7 | 2026-10-19 | เพิ่มการเทียบ transition registry ทุกกลุ่มกับ handler ที่ mount; ปรับ account-security evidence และแยก wired, partial, target, viewer-only ตาม source ปัจจุบัน |
 | 0.3.8 | 2026-10-19 | Pin crosswalk to origin/main, repair stale source anchors and flow claims, and keep MVP-007/008 open pending integrated/runtime acceptance. |
+| 0.3.9 | 2026-10-20 | ปิด MVP-009 หลัง isolated native cold-start acceptance บน integrated SHA; บันทึก settings persistence, provider egress ที่ไม่พบ และคิวงานถัดไป |
