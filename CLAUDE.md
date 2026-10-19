@@ -155,7 +155,7 @@ When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scal
 
 Maiden voices community-made announcer packs on top of TTS. A pack is a **bundle** — a folder
 `voice-cache/packs/<id>/` with a `manifest.json` that maps each event to clips **and a banner image**,
-plus `clips/` and `banners/` (managed by `voice_api.rs` + `src/src/AudioSettings.tsx`). Per fired
+plus `clips/` and `banners/` (managed by `voice_api.rs` + `src/src/app/cards/AudioSettingsCard.tsx`). Per fired
 event, `audio::play_random` resolves clips in order: **(1) the ACTIVE pack's mapped clips**
 (`voice_api::active_event_clips`), (2) the legacy flat `voice-cache/{event}/*.wav`, (3) the bundled
 default pack; `speak_event` falls back to SAPI TTS when none is found — so **activating a pack
@@ -178,7 +178,7 @@ instead of a false "missing".
   (`voice_api::fired_banner`; the banner image is inlined as a base64 `data:` URL because the overlay
   CSP is `img-src 'self' data:`). The overlay (`App.tsx` `packBanner`) then shows the active pack's
   banner **image** for that event, replacing the built-in kill card (falls back to the card when the
-  pack maps no image). Preview without a match: the **"Show on overlay"** button in `AudioSettings.tsx`
+  pack maps no image). Preview without a match: the **"Show on overlay"** button in `AudioSettingsCard.tsx`
   → the `preview_announcer_event(pack_id, event)` command fires the exact same path.
 - **Kill-banner sync (enforce)** — the streak ladder in `announcer.rs` mirrors the overlay kill
   banner (`src/src/App.tsx` `STREAK_LABELS`) exactly, so the voiced streak and the on-screen banner

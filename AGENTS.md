@@ -79,7 +79,7 @@ G-Maiden/
 ├── src/                   # Frontend (React/Vite)
 │   ├── package.json
 │   └── src/               # App.tsx (Overlay+Control), CommandDeck.tsx + companion.ts + live/*.ts (deck),
-│                          #   AudioSettings.tsx (voice packs), account/auth/gid modules
+│                          #   app/cards/AudioSettingsCard.tsx (voice settings), account/auth/gid modules
 ├── src-tauri/             # Rust backend
 │   ├── Cargo.toml
 │   ├── tauri.conf.json
@@ -118,14 +118,12 @@ detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`)
 ```
 ┌─────────────────────────────────────────────────────┐
 │  LOCAL GATEWAY (G-Sensory tier)                      │
-│  ┌──────┐  ┌────────┐  ┌────────┐  ┌───────┐        │
-│  │ GSI  │→│G-Sentry │→│G-Motion │→│G-Signal│→ VOICE │
-│  │:3000 │  │(fog)    │  │(paths)  │  │(alert)│        │
-│  └──────┘  └────────┘  └────────┘  └───────┘        │
-│  ┌──────────┐  ┌────────┐  ┌─────────┐              │
-│  │ Capture  │→│  CV    │→│G-Damage │→ HP WARNING   │
-│  │ (DXGI)  │  │(ONNX)  │  │(burst)  │              │
-│  └──────────┘  └────────┘  └─────────┘              │
+│  GSI (:3000) → GameTick / own-player / session / score-derived enemy deaths │
+│                                                                            │
+│  Capture (DXGI) → minimap CV detections → G-Sentry → G-Motion → G-Signal  │
+│                                               ↑                            │
+│                            enemy-death count ┘                            │
+│                                             → cached alert audio           │
 │                                                     │
 │  ┌──────────┐  ┌────────┐                           │
 │  │ Overlay  │  │ G-Log  │  (all local, no egress)   │

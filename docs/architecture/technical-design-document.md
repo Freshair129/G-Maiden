@@ -2,8 +2,8 @@
 title: "G-Maiden Technical Design Document"
 doc_id: "technical-design-document"
 status: "active"
-version: "0.2.1"
-updated: "2026-10-13"
+version: "0.2.2"
+updated: "2026-10-19"
 owner: "Boss"
 related_docs: ["engineering-spec", "product-requirements", "mvp-decisions", "FEAT-G-SENSORY"]
 ---
@@ -21,24 +21,20 @@ related_docs: ["engineering-spec", "product-requirements", "mvp-decisions", "FEA
 ตาม SRS §2.1 — แยกตาม latency requirement:
 
 - **Tier A — Local Gateway (G-Sensory):** Rust core ใน Tauri. ถือ critical path ทั้งหมด.
-  รอดได้แม้ cloud หลุด (fallback local SLM/templates).
+  G-Signal และ cached alert audio ทำงานโดยไม่พึ่ง cloud หรือ SLM; G-Master เป็นเส้นทางแยกที่ลดระดับได้.
 - **Tier B — Cloud Brain (Maiden Scribe):** Claude CLI / Anthropic Messages API (`claude-haiku-4-5`). persona narration + วิเคราะห์ลึก. non-critical, degrade gracefully. > **สถานะ (2026-07): Gemini = เป้า Phase-4 — ยังไม่ wired**
 
 ```
-Dota 2  ──GSI POST :3000──►  ┌──────────── Rust Core (Tier A) ───────────┐
-                             │ GSI Server (axum/tokio)                    │
-Screen ─DXGI capture──────►  │ Minimap CV (tract-onnx + image + pure-onnx-ocr-sync)     │
-                             │   │                                        │
-                             │   ▼                                        │
-                             │ G-Sentry ─► G-Motion ─► G-Signal ──┐       │
-                             │                                    ▼       │
-                             │ Audio Engine (rodio) ◄── interrupt channel │
-                             │ G-Log (JSONL match-*.jsonl) ◄── decisions/outcomes        │
-                             │ Brain Router ──► Cloud | LocalSLM | Tmpl   │
-                             └──────┬─────────────────────┬──────────────┘
-                                IPC │ (Tauri events)      │ async (non-critical)
-                                    ▼                     ▼
-                          React Overlay UI         Claude CLI / Anthropic API (Tier B)
+Dota 2 ──GSI POST :3000──► GSI server (GameTick, own-player/session, score-derived enemy deaths)
+                                      │
+Screen ──DXGI capture──► minimap CV detections ─► G-Sentry ─► G-Motion ─► G-Signal
+                                                        ▲                    │
+                                      enemy death count ┘                    ▼
+                                                        cached alert audio / rodio thread
+
+GSI/CV events ──Tauri IPC──► React Control / Overlay
+Manual advice ──non-critical, policy-gated──► Claude CLI / Anthropic API; Ollama local fallback
+G-Log ──local JSONL; no player-data egress
 ```
 
 ---
@@ -48,11 +44,11 @@ Screen ─DXGI capture──────►  │ Minimap CV (tract-onnx + image 
 | Component | หน้าที่ | Thread/Task |
 | --- | --- | --- |
 | `gsi_server` | รับ GSI POST, parse, ออก `GameTick` | tokio task |
-| `capture` | DXGI duplication ของ region minimap | dedicated thread (throttled) |
-| `vision` | ตรวจไอคอนศัตรู → ตำแหน่ง | thread pool (rayon) |
-| `sentry` | ติดตาม missing >5s | tokio task |
-| `motion` | ring buffer 5 นาที + ทำนายเส้นทาง | tokio task |
-| `signal` | threshold + interrupt (critical) | **high-priority** path |
+| `capture` | DXGI frame, minimap CV, แล้วประเมิน Sentry → Motion → Signal ต่อกัน | dedicated capture thread / loop |
+| `vision` | ตรวจไอคอนศัตรู → ตำแหน่ง | capture loop; no separate Rayon pool |
+| `sentry` | ติดตาม detections ที่หายจาก vision >5s | state owned by capture loop |
+| `motion` | 5-minute last-seen ring buffer + heading-aware risk heuristic | state owned by capture loop |
+| `signal` | sensitivity/hysteresis + interrupt request | state owned by capture loop; audio plays on its own thread |
 | `audio` | playback + interrupt channel | dedicated thread (realtime-ish) |
 | `brain_router` | เลือก Cloud/SLM/Template + redaction | tokio task |
 | `log` | เขียน G-Log **JSONL** (`match-*.jsonl`), ป้อน tuning กลับ | dedicated thread (append writes) |
@@ -66,15 +62,13 @@ Screen ─DXGI capture──────►  │ Minimap CV (tract-onnx + image 
 ## 3. Critical path — G-Signal sequence (≤300ms)
 
 ```
-capture(frame) ─30ms─► vision(positions) ─50ms─► motion(prob) ─20ms─►
-signal: prob > Sensitivity bar? ─10ms─► [interrupt audio] ─30ms─► [play clip] ─40ms─► 🔊
-        (default Med 0.65; Low 0.85 = SRS baseline; High 0.50)
-                                                                   total ≈180ms
+DXGI capture loop → minimap CV detections → G-Sentry → G-Motion risk → G-Signal
+                                                        → interrupt command → cached audio on g-audio thread
 ```
 
 หลักการที่ทำให้ไม่หลุด budget:
 1. **ไม่มี LLM/network ในเส้นทางนี้** — เสียงมาจาก cache, การตัดสินใจเป็น rule-based
-2. capture loop **วิ่งล่วงหน้าอยู่แล้ว** — ขั้น 1 คือ "หยิบ frame ล่าสุด" ไม่ใช่ "เริ่ม capture"
+2. capture loop owns the CV/Sentry/Motion/Signal state and runs at its configured capture cadence.
 3. interrupt เป็น channel send ไม่ block; audio thread จัดการสลับคลิปเอง
 4. วัดด้วย `timestamp_ms` ทุก hop → ออก `ResourceStat`/trace เพื่อพิสูจน์ p99
 
@@ -83,10 +77,10 @@ signal: prob > Sensitivity bar? ─10ms─► [interrupt audio] ─30ms─► [p
 ## 4. โมเดล Concurrency & threading
 
 - **async runtime:** tokio (multi-thread) สำหรับ I/O (GSI, cloud, JSONL log writes)
-- **CPU-bound:** vision ใช้ rayon pool แยก ไม่แย่ง tokio worker
+- **CPU-bound:** minimap CV runs inside the dedicated capture loop; this TDD does not claim a Rayon pool.
 - **realtime-ish:** audio thread แยก, OS priority สูงกว่าปกติเล็กน้อย
-- **backpressure:** ทุก channel bounded; ถ้าเต็ม drop frame เก่า (capture) ดีกว่าค้าง
-- **shared state:** G-Signal critical path ไม่พึ่ง shared locks; ใช้ bounded channels ส่งงานข้าม task. Module ที่ไม่อยู่ใน critical path ใช้ `Mutex`, `OnceLock` หรือ atomic สำหรับ state ขนาดเล็กที่ต้องแชร์ เช่น GPU sample, CPU throttle และ process-job lifecycle ใน [`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L86); ห้ามถือ mutex guard ข้าม `await`.
+- **capture cadence:** capture loop adjusts its wait interval for normal, suspected-missing, and CPU-throttled states; it does not schedule Sentry or Motion as separate Tokio tasks.
+- **shared state:** GSI/runtime and non-critical services share small values through atomics/mutexes; the stateful CV/Sentry/Motion/Signal sequence is owned by the capture loop. Audio commands cross to the dedicated audio thread.
 
 ---
 
@@ -197,4 +191,5 @@ G-Maiden/
 | --- | --- | --- |
 | 0.2.0 | 2026-10-12 | Aligned governor design with the 10% cap, unavailable telemetry ambiguity and kill-on-close lifecycle; live acceptance remains unverified. |
 | 0.2.1 | 2026-10-13 | Documented fail-closed startup, the post-setup runtime query fallback, and the bounded scope of shared governor state. |
+| 0.2.2 | 2026-10-19 | Aligned the system diagram and concurrency model with the capture-owned CV → Sentry → Motion → Signal pipeline and separate audio thread. |
 

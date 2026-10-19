@@ -1,7 +1,7 @@
 ---
-version: "3.0.1-draft"
+version: "3.0.2-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-07-15T00:00:00+07:00,Claude"
+last_update: "2026-10-19T00:00:00+07:00,Codex"
 status: "draft"
 supersedes: "docs/architecture/design-system.md (Iceglass v0.1.0b, candidate)"
 attributes:
@@ -10,7 +10,7 @@ attributes:
   language: "th/en"
 title: "G-Maiden Design System — SSOT"
 doc_id: "design-system/README"
-updated: "2026-10-12"
+updated: "2026-10-19"
 owner: "Boss"
 ---
 
@@ -39,7 +39,11 @@ owner: "Boss"
 | 06 | [[06-stack|06-stack.md]] | tech stack + code map (token/component อยู่ไฟล์ไหนในโค้ดจริง) |
 | 07 | [[07-combat-hud|07-combat-hud.md]] | Combat HUD (overlay) design contract — อิง implementation จริง |
 | 08 | [[08-account-gid|08-account-gid.md]] | Login (Google OAuth) + GID + Steam link — UX design |
-| — | [`assets/`](assets/) | wireframe/mockup ที่ระบุ dimension (SVG) + swatches |
+| 09 | [[09-graphite-clarity]] | accepted art direction and implementation contract for the current shell |
+| 10 | [[10-wireframes]] | target wireframes for the seven Command Deck pages |
+| 11 | [[11-wireflows]] | target navigation, confirmation, and recovery paths |
+| 12 | [[12-user-flows]] | target user goals, decisions, and outcomes |
+| — | [`assets/`](assets/) | wireframe/mockup SVGs, swatches, and the interactive viewer under `assets/wireframes/` |
 
 ### Mockup / snapshot (ระบุ dimension)
 
@@ -64,7 +68,7 @@ owner: "Boss"
 | เอกสาร | สถานะ | ความสัมพันธ์ |
 | --- | --- | --- |
 | [[design-system|docs/architecture/design-system.md]] (Iceglass 0.1.0b) | candidate | **ต้นทาง** — v2 ต่อยอด palette/persona; principles ยังใช้ได้ ส่วน shell layout ถูก supersede |
-| [[g-maiden-ui-sitemap-flow-board|docs/architecture/g-maiden-ui-sitemap-flow-board.md]] | accepted | sitemap/flow ระดับ product — ไฟล์ 05 ในชุดนี้ลงรายละเอียด UI จริง ไม่ขัดกัน |
+| [[g-maiden-ui-sitemap-flow-board|docs/architecture/g-maiden-ui-sitemap-flow-board.md]] | accepted | product-level sitemap and flow board — [[05-sitemap-ia]] details the UI IA, with page and transition detail in [[10-wireframes]], [[11-wireflows]], and [[12-user-flows]] |
 | [[product-requirements|PRD]] / [[software-requirements-specification|SRS]] (`docs/product/`) | source of truth (requirements) | NFR (FPS≤3%, whole-app CPU≤10% per [[mvp-decisions]] v0.2.0, RAM≤400MB) เป็น hard constraint ที่ทุก design ต้องผ่าน |
 | `CLAUDE.md` → Visual language | in-repo rule | v2 ยึด ice palette เดิม + เพิ่ม lime signal accent (ดู tokens §reconcile) |
 
@@ -110,3 +114,4 @@ owner: "Boss"
 | --- | --- | --- |
 | 3.0.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
 | 3.0.1-draft | 2026-10-12 | Synced the CPU design gate with the current MVP decision; runtime acceptance remains evidence-gated. |
+| 3.0.2-draft | 2026-10-19 | Indexed accepted Graphite Clarity and the target flow documents while retaining the accepted product flow-board reference. |

@@ -1,7 +1,7 @@
 ---
-version: "2.0.1-draft"
+version: "2.0.2-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-10-18T00:00:00+07:00,Codex"
+last_update: "2026-10-19T00:00:00+07:00,Codex"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -9,7 +9,7 @@ attributes:
   language: "th/en"
 title: "06 — Stack & Code Map"
 doc_id: "06-stack"
-updated: "2026-10-18"
+updated: "2026-10-19"
 owner: "Boss"
 ---
 
@@ -41,6 +41,7 @@ owner: "Boss"
 | **Pages** (Live/Companion/Build/Insights/History/Settings) | [`src/src/CompanionPages.tsx`](file:///g:/G-Maiden/src/src/CompanionPages.tsx) |
 | **Account** (GID, OAuth, Steam) | [`AccountPage.tsx`](file:///g:/G-Maiden/src/src/AccountPage.tsx) [`AuthPanel.tsx`](file:///g:/G-Maiden/src/src/AuthPanel.tsx) [`SteamLink.tsx`](file:///g:/G-Maiden/src/src/SteamLink.tsx) + [`auth.ts`](file:///g:/G-Maiden/src/src/auth.ts) [`profile.ts`](file:///g:/G-Maiden/src/src/profile.ts) [`gid.ts`](file:///g:/G-Maiden/src/src/gid.ts) |
 | **Voice packs** | [`VoicePacksPage.tsx`](file:///g:/G-Maiden/src/src/VoicePacksPage.tsx) [`VoiceInventory.tsx`](file:///g:/G-Maiden/src/src/VoiceInventory.tsx) — player installs packs from Store; authoring is in G-AnnStudio |
+| **Voice settings** | [`Control.tsx`](file:///g:/G-Maiden/src/src/app/Control.tsx) + [`AudioSettingsCard.tsx`](file:///g:/G-Maiden/src/src/app/cards/AudioSettingsCard.tsx) |
 | **Live data builders** | [`src/src/live/`](file:///g:/G-Maiden/src/src/live/) (merge Tauri events over MOCK/FALLBACK) |
 | **Overlay + capture backend** | [`src-tauri/src/`](file:///g:/G-Maiden/src-tauri/src/) (DXGI, [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs), [`announcer.rs`](file:///g:/G-Maiden/src-tauri/src/announcer.rs), [`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs)) |
 
@@ -61,7 +62,7 @@ owner: "Boss"
 | Full build (smoke) | `pnpm tauri build` | root (จาก root — CLI อยู่ root `node_modules/.bin`) |
 | CI gate | clippy `-D warnings` (ไม่ใช่แค่ test) | — |
 
-Release ผ่าน tag `vX.Y.Z` → CI เท่านั้น (ดู [`CLAUDE.md`](file:///g:/G-Maiden/CLAUDE.md) → Release workflow); commit บน main ไม่ถึง user จนกว่าจะ tag
+Release ใช้ `workflow_dispatch` ตาม channel workflow; tag เป็น input ไม่ใช่ trigger (ดู [`CLAUDE.md`](file:///g:/G-Maiden/CLAUDE.md) → Release workflow). Commit บน main ไม่ถึง user จนกว่า manifest PR จะถูกรวมและ channel ถูก publish ตามขั้นตอน.
 
 ## 5. Design→code checklist (ก่อน merge UI PR)
 
@@ -78,3 +79,4 @@ Release ผ่าน tag `vX.Y.Z` → CI เท่านั้น (ดู [`CLAU
 | --- | --- | --- |
 | 2.0.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
 | 2.0.1-draft | 2026-10-18 | Update voice-pack code map to reflect Store-only player installation and separate G-AnnStudio authoring. |
+| 2.0.2-draft | 2026-10-19 | Point voice settings to AudioSettingsCard and align release entry with workflow_dispatch. |
