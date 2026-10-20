@@ -126,14 +126,32 @@ export interface SensorHealth {
 export interface MinimapFrame extends MatchSessionMetadata {
   image: string;
   region: MinimapRegion;
+  /** Bounds of the map interior represented by image, relative to region.side. */
+  map_crop: { left: number; top: number; right: number; bottom: number };
 }
 
-/** draft-roster — the full 10-hero roster read off the pick screen (Draft-CV),
- *  raw labels.json short form (e.g. "crystal_maiden"). Fills ally identities GSI
- *  can't expose and pre-seeds enemy slots. Split by team; index-independent. */
+/** draft-roster — slot-preserving progress from the pick-screen CV read.
+ *  Null slots are unknown; arrays always map to the same 5 player positions. */
 export interface DraftRoster extends MatchSessionMetadata {
-  radiant: string[];
-  dire: string[];
+  radiant: Array<string | null>;
+  dire: Array<string | null>;
+  complete: boolean;
+  recognizer_active: boolean;
+  templates_loading: boolean;
+}
+
+export type HeroHudCue = "death_hint" | "colored" | "unknown";
+
+export interface HeroHudSlot {
+  cue: HeroHudCue;
+  /** Mean RGB chroma over the portrait, 0..255. Low chroma is only a visual death hint. */
+  mean_chroma: number;
+}
+
+/** hero-hud — one sample per topbar player slot; identity is joined by draft slot order. */
+export interface HeroHudRead extends MatchSessionMetadata {
+  radiant: HeroHudSlot[];
+  dire: HeroHudSlot[];
 }
 
 /** enemy-missing — edge event, last_pos already normalised to [0,1]². */

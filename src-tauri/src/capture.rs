@@ -72,8 +72,9 @@ pub use backend::{retry, start};
 
 #[cfg(not(feature = "wgc"))]
 mod backend {
+    use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::mpsc::{self, Receiver, SyncSender, TryRecvError, TrySendError};
-    use std::sync::{Mutex, OnceLock};
+    use std::sync::{Arc, Mutex, OnceLock};
     use std::time::{Duration, Instant};
 
     use tauri::{AppHandle, Emitter, Manager};
@@ -83,6 +84,7 @@ mod backend {
     use crate::cv::detector::{Detection, Detector};
     use crate::cv::draft_detector::DraftRecognizer;
     use crate::cv::draft_region::{DraftRegion, PortraitBox};
+    use crate::cv::hero_hud::HeroHudRegion;
     use crate::cv::prefilter::{prefilter_candidates, DEFAULT_THRESHOLD_FRAC};
     use crate::cv::region::MinimapRegion;
     use crate::cv::Frame;
@@ -226,6 +228,15 @@ mod backend {
     struct MinimapFrame {
         image: String,
         region: MinimapRegion,
+        map_crop: MinimapMirrorCrop,
+    }
+
+    #[derive(Clone, Copy, serde::Serialize)]
+    struct MinimapMirrorCrop {
+        left: f32,
+        top: f32,
+        right: f32,
+        bottom: f32,
     }
 
     /// Honest state of the minimap sensor, broadcast to every window.
@@ -305,6 +316,15 @@ mod backend {
         /// Draft-CV: pick-screen portrait recognizer + the 10 portrait boxes.
         draft: DraftRecognizer,
         draft_region: DraftRegion,
+        draft_template_dir: std::path::PathBuf,
+        draft_bundled_template_dir: std::path::PathBuf,
+        draft_labels_path: std::path::PathBuf,
+        draft_template_fetch_started: bool,
+        draft_template_fetch_done: Arc<AtomicBool>,
+        draft_templates_reloaded: bool,
+        last_draft_progress_epoch: Option<u64>,
+        last_draft_progress: Option<crate::runtime::DraftRosterProgress>,
+        last_hero_hud_emit: Instant,
         /// `runtime::match_epoch()` as of the last pipeline rebuild. When the
         /// shared counter moves past this, a match boundary happened and
         /// Sentry/Motion/Signal are rebuilt (see `reset_pipeline`).
@@ -323,7 +343,16 @@ mod backend {
             let dir = model_dir(&app);
             let detector =
                 Detector::load(&dir.join("minimap-detector.onnx"), &dir.join("labels.json"));
-            let draft = DraftRecognizer::load(&dir.join("portraits"));
+            let draft_template_dir = app
+                .path()
+                .app_local_data_dir()
+                .map(|path| path.join("cv").join("portraits"))
+                .unwrap_or_else(|_| dir.join("portraits"));
+            let draft_bundled_template_dir = dir.join("portraits");
+            let draft = DraftRecognizer::load_from_dirs(&[
+                &draft_template_dir,
+                &draft_bundled_template_dir,
+            ]);
             let draft_region = DraftRegion::for_resolution(screen_w, screen_h);
             let now = Instant::now();
             CaptureState {
@@ -341,6 +370,15 @@ mod backend {
                 last_risk_trace: now,
                 draft,
                 draft_region,
+                draft_template_dir,
+                draft_bundled_template_dir,
+                draft_labels_path: dir.join("labels.json"),
+                draft_template_fetch_started: false,
+                draft_template_fetch_done: Arc::new(AtomicBool::new(false)),
+                draft_templates_reloaded: false,
+                last_draft_progress_epoch: None,
+                last_draft_progress: None,
+                last_hero_hud_emit: now,
                 match_epoch: crate::runtime::match_epoch(),
                 last_frame_ok: now,
                 last_health_emit: now,
@@ -372,6 +410,79 @@ mod backend {
                     "[capture] match boundary (epoch {epoch}) — G-Sentry/G-Motion/G-Signal reset"
                 ));
             }
+        }
+
+        /// Warm the public, static portrait reference cache only after Dota
+        /// reaches hero selection. Network work is isolated on its own thread;
+        /// the capture loop keeps rendering unknown slots until local templates
+        /// are ready.
+        fn prepare_draft_templates(&mut self) {
+            if !self.draft_template_fetch_started {
+                self.draft_template_fetch_started = true;
+                let dir = self.draft_template_dir.clone();
+                let labels = self.draft_labels_path.clone();
+                let done = Arc::clone(&self.draft_template_fetch_done);
+                let spawn = std::thread::Builder::new()
+                    .name("g-draft-assets".into())
+                    .spawn(move || {
+                        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                            let downloaded =
+                                DraftRecognizer::fetch_missing_templates(&dir, &labels);
+                            crate::log::error(&format!(
+                                "[draft] cached {downloaded} hero portrait templates locally"
+                            ));
+                        }));
+                        done.store(true, Ordering::Release);
+                    });
+                if spawn.is_err() {
+                    self.draft_template_fetch_done
+                        .store(true, Ordering::Release);
+                }
+            }
+
+            self.reload_draft_templates_if_ready();
+        }
+
+        fn reload_draft_templates_if_ready(&mut self) -> bool {
+            if self.draft_templates_reloaded
+                || !self.draft_template_fetch_done.load(Ordering::Acquire)
+            {
+                return false;
+            }
+            self.draft = DraftRecognizer::load_from_dirs(&[
+                &self.draft_template_dir,
+                &self.draft_bundled_template_dir,
+            ]);
+            self.draft_templates_reloaded = true;
+            true
+        }
+
+        fn emit_draft_template_ready(&mut self) {
+            let session = crate::runtime::match_session_snapshot();
+            if self.last_draft_progress_epoch != Some(session.session_epoch) {
+                return;
+            }
+            let Some(mut progress) = self.last_draft_progress.clone() else {
+                return;
+            };
+            if !progress.templates_loading {
+                return;
+            }
+            progress.templates_loading = false;
+            progress.recognizer_active = self.draft.is_active();
+            if !crate::runtime::is_current_capture_session(session.session_epoch)
+                && !crate::runtime::is_current_draft_session(session.session_epoch)
+            {
+                return;
+            }
+            self.last_draft_progress = Some(progress.clone());
+            let event = crate::runtime::MatchSessionEvent::new(progress, &session);
+            let _ = self.app.emit("draft-roster", event);
+        }
+
+        fn draft_templates_loading(&self) -> bool {
+            self.draft_template_fetch_started
+                && !self.draft_template_fetch_done.load(Ordering::Acquire)
         }
 
         /// Emit `sensor-health` when anything the UI branches on changed, or on
@@ -416,6 +527,8 @@ mod backend {
             self.region = region;
             self.icon = region.icon_size();
             self.draft_region = DraftRegion::for_resolution(screen_w, screen_h);
+            self.last_draft_progress = None;
+            self.last_hero_hud_emit = Instant::now();
             self.sentry = Sentry::new();
             self.motion.reset_tracking();
             self.signal = Signal::new();
@@ -561,6 +674,10 @@ mod backend {
             // frame can fold into last match's tracks. Ahead of the draft and
             // in-game gates so state is already clean when the horn lands.
             state.sync_match_epoch();
+            let templates_reloaded = state.reload_draft_templates_if_ready();
+            if templates_reloaded && !crate::runtime::in_draft() {
+                state.emit_draft_template_ready();
+            }
             // Honest sensor state for the overlay + deck. Ahead of the gates
             // too, so "capture is alive" is reported at the menu and during the
             // draft, not only mid-match.
@@ -611,6 +728,7 @@ mod backend {
             // (`roster().is_none()`), then idles. `in_game()` is false here, so
             // this is the only place the loop wakes during the draft.
             if crate::runtime::in_draft() {
+                state.prepare_draft_templates();
                 let session = crate::runtime::match_session_snapshot();
                 if crate::runtime::is_current_draft_session(session.session_epoch)
                     && crate::runtime::roster().is_none()
@@ -711,6 +829,40 @@ mod backend {
                 }
             }
 
+            if state.last_hero_hud_emit.elapsed() >= Duration::from_millis(1000) {
+                state.last_hero_hud_emit = Instant::now();
+                let hud = HeroHudRegion::for_resolution(dxgi.width(), dxgi.height());
+                let (x, y, width, height) = hud.bounding_rect();
+                if rect_is_on_screen(x, y, width, height, dxgi.width(), dxgi.height()) {
+                    let request = CaptureRoi::new(
+                        CaptureRoiKind::TopHeroBar,
+                        x,
+                        y,
+                        width,
+                        height,
+                    );
+                    if let Some(bundle) = dxgi.acquire_regions(session.session_epoch, &[request]) {
+                        if let Some(region) = bundle.into_region(CaptureRoiKind::TopHeroBar) {
+                            if let Some(frame) = Frame::from_bgra(
+                                region.rect.width as usize,
+                                region.rect.height as usize,
+                                region.bgra,
+                            ) {
+                                if crate::runtime::is_current_capture_session(
+                                    session.session_epoch,
+                                ) {
+                                    let payload = hud.read(&frame, x, y);
+                                    let event = crate::runtime::MatchSessionEvent::new(
+                                        payload, &session,
+                                    );
+                                    let _ = state.app.emit("hero-hud", event);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             let backend = dxgi.backend();
             if backend != reported_backend {
                 reported_backend = backend;
@@ -757,13 +909,21 @@ mod backend {
     /// Smallest rect that bounds every Draft-CV portrait box, so the loop can
     /// `acquire_rect` just that strip instead of the full desktop.
     /// `DraftRegion::for_resolution` always produces boxes that fit on screen
-    /// (see its `boxes_are_on_screen_and_square_sized` test), so the bounding
+    /// (see its calibration tests), so the bounding
     /// strip is guaranteed on-screen too — no geometry fallback needed here.
     fn draft_bounding_rect(boxes: &[PortraitBox]) -> (u32, u32, u32, u32) {
         let min_x = boxes.iter().map(|b| b.x).min().unwrap_or(0);
         let min_y = boxes.iter().map(|b| b.y).min().unwrap_or(0);
-        let max_x = boxes.iter().map(|b| b.x + b.side).max().unwrap_or(0);
-        let max_y = boxes.iter().map(|b| b.y + b.side).max().unwrap_or(0);
+        let max_x = boxes
+            .iter()
+            .map(|b| b.x.saturating_add(b.width))
+            .max()
+            .unwrap_or(0);
+        let max_y = boxes
+            .iter()
+            .map(|b| b.y.saturating_add(b.height))
+            .max()
+            .unwrap_or(0);
         (min_x, min_y, max_x.saturating_sub(min_x), max_y.saturating_sub(min_y))
     }
 
@@ -790,8 +950,20 @@ mod backend {
         y: u32,
         side: u32,
     ) -> Option<(Vec<u8>, usize, usize)> {
-        let end_x = (x + side).min(fw);
-        let end_y = (y + side).min(fh);
+        crop_rect(full, fw, fh, x, y, side, side)
+    }
+
+    fn crop_rect(
+        full: &[u8],
+        fw: u32,
+        fh: u32,
+        x: u32,
+        y: u32,
+        width: u32,
+        height: u32,
+    ) -> Option<(Vec<u8>, usize, usize)> {
+        let end_x = x.checked_add(width)?.min(fw);
+        let end_y = y.checked_add(height)?.min(fh);
         if x >= end_x || y >= end_y {
             return None;
         }
@@ -814,11 +986,9 @@ mod backend {
     /// Draft-CV: crop the 10 pick-screen portrait boxes out of `strip` — a
     /// pre-acquired subrect (`sw`×`sh`) that bounds all 10 boxes, acquired at
     /// `(strip_x, strip_y)` in screen space (see `draft_bounding_rect`) —
-    /// recognize each, and once ALL 10 read confidently (i.e. the draft is
-    /// complete) commit the roster to `runtime` and emit `draft-roster`. A
-    /// partial pick screen (picks still coming in) recognizes fewer than 10
-    /// and simply retries next poll. No-op when the recognizer has no
-    /// templates (asset pack not shipped yet).
+    /// recognize each, and emit slot-preserving progress as picks become
+    /// readable. Only a complete, fully identified roster is committed to
+    /// `runtime`, where the minimap classifier can safely constrain labels.
     fn process_draft_frame(
         state: &mut CaptureState,
         strip: &[u8],
@@ -829,48 +999,68 @@ mod backend {
         session: &crate::runtime::MatchSessionSnapshot,
     ) {
         state.sync_match_epoch();
-        if !state.draft.is_active()
-            || !crate::runtime::is_current_draft_session(session.session_epoch)
-        {
+        if !crate::runtime::is_current_draft_session(session.session_epoch) {
             return;
         }
-        let mut radiant = Vec::with_capacity(5);
-        let mut dire = Vec::with_capacity(5);
-        for (i, b) in state.draft_region.boxes.iter().enumerate() {
-            // Boxes are in screen-space; `strip` is local to `(strip_x, strip_y)`.
-            let local_x = b.x.saturating_sub(strip_x);
-            let local_y = b.y.saturating_sub(strip_y);
-            let name = crop_square(strip, sw, sh, local_x, local_y, b.side)
-                .and_then(|(bytes, w, h)| Frame::from_bgra(w, h, bytes))
-                .and_then(|f| state.draft.recognize(&f))
-                .map(|(name, _score)| name);
-            match name {
-                Some(n) if i < 5 => radiant.push(n),
-                Some(n) => dire.push(n),
-                None => {}
+
+        if state.last_draft_progress_epoch != Some(session.session_epoch) {
+            state.last_draft_progress_epoch = Some(session.session_epoch);
+            state.last_draft_progress = None;
+        }
+
+        let recognizer_active = state.draft.is_active();
+        let templates_loading = state.draft_templates_loading();
+        let mut radiant = vec![None; 5];
+        let mut dire = vec![None; 5];
+        if recognizer_active {
+            for (i, b) in state.draft_region.boxes.iter().enumerate() {
+                // Boxes are in screen-space; `strip` is local to `(strip_x, strip_y)`.
+                let local_x = b.x.saturating_sub(strip_x);
+                let local_y = b.y.saturating_sub(strip_y);
+                let name = crop_rect(strip, sw, sh, local_x, local_y, b.width, b.height)
+                    .and_then(|(bytes, w, h)| Frame::from_bgra(w, h, bytes))
+                    .and_then(|f| state.draft.recognize(&f))
+                    .map(|(name, _score)| name);
+                if i < 5 {
+                    radiant[i] = name;
+                } else {
+                    dire[i - 5] = name;
+                }
             }
         }
-        // Only commit a COMPLETE roster (both teams fully identified). This
-        // naturally waits for the draft to finish — unpicked slots recognize
-        // nothing — and once committed, `roster().is_some()` idles the loop.
-        if radiant.len() == 5 && dire.len() == 5 {
+
+        let complete = recognizer_active
+            && radiant.iter().all(Option::is_some)
+            && dire.iter().all(Option::is_some);
+        let progress = crate::runtime::DraftRosterProgress {
+            radiant: radiant.clone(),
+            dire: dire.clone(),
+            complete,
+            recognizer_active,
+            templates_loading,
+        };
+
+        if complete {
+            let radiant_full = radiant.into_iter().flatten().collect::<Vec<_>>();
+            let dire_full = dire.into_iter().flatten().collect::<Vec<_>>();
             crate::log::error(&format!(
-                "[draft] roster read — radiant {radiant:?} dire {dire:?}"
+                "[draft] roster read — radiant {radiant_full:?} dire {dire_full:?}"
             ));
             if !crate::runtime::set_roster_for_draft_session(
                 session.session_epoch,
-                radiant.clone(),
-                dire.clone(),
+                radiant_full,
+                dire_full,
             ) {
                 return;
             }
-            if crate::runtime::is_current_draft_session(session.session_epoch) {
-                let event = crate::runtime::MatchSessionEvent::new(
-                    crate::runtime::Roster { radiant, dire },
-                    session,
-                );
-                let _ = state.app.emit("draft-roster", event);
-            }
+        }
+
+        if state.last_draft_progress.as_ref() != Some(&progress)
+            && crate::runtime::is_current_draft_session(session.session_epoch)
+        {
+            state.last_draft_progress = Some(progress.clone());
+            let event = crate::runtime::MatchSessionEvent::new(progress, session);
+            let _ = state.app.emit("draft-roster", event);
         }
     }
 
@@ -1172,7 +1362,16 @@ mod backend {
                 state.last_frame_emit = Instant::now();
                 if let Some(image) = encode_minimap_dataurl(&f.bgra, f.width, f.height) {
                     if crate::runtime::is_current_capture_session(session.session_epoch) {
-                        let payload = MinimapFrame { image, region: r };
+                        let payload = MinimapFrame {
+                            image,
+                            region: r,
+                            map_crop: MinimapMirrorCrop {
+                                left: MIRROR_CROP_L,
+                                top: MIRROR_CROP_T,
+                                right: MIRROR_CROP_R,
+                                bottom: MIRROR_CROP_B,
+                            },
+                        };
                         let event = crate::runtime::MatchSessionEvent::new(payload, session);
                         let _ = state.app.emit("minimap-frame", event);
                     }
