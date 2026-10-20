@@ -12,6 +12,7 @@ use axum::{
 use serde::Serialize;
 use serde_json::Value;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
+use std::sync::Mutex;
 use tauri::{AppHandle, Emitter};
 
 const OVERLAY_MODULE_IDS: [&str; 19] = [
@@ -38,6 +39,7 @@ const OVERLAY_MODULE_IDS: [&str; 19] = [
 const SETTINGS_EVENT: &str = "settings";
 const OVERLAY_LAYOUT_SYNC_EVENT: &str = "overlay-layout-sync";
 const GSI_STATUS_INTERVAL_MS: u64 = 500;
+static GSI_SNAPSHOT_CACHE: Mutex<Option<Value>> = Mutex::new(None);
 
 /// Clean, UI-facing snapshot of the current game state.
 #[derive(Serialize, serde::Deserialize, Clone, Default)]
@@ -250,9 +252,7 @@ fn parse_match_id(v: &Value) -> Option<String> {
     let value = value_at(v, &["map", "matchid"])?;
     let id = match value {
         Value::Number(number) => number.as_u64()?,
-        Value::String(raw)
-            if !raw.is_empty() && raw.bytes().all(|byte| byte.is_ascii_digit()) =>
-        {
+        Value::String(raw) if !raw.is_empty() && raw.bytes().all(|byte| byte.is_ascii_digit()) => {
             raw.parse::<u64>().ok()?
         }
         _ => return None,
@@ -279,7 +279,7 @@ struct ParsedGsiPayload {
 
 fn parse_gsi_payload_with_identity(body: &str) -> Result<ParsedGsiPayload, GsiPayloadError> {
     let value: Value = serde_json::from_str(body).map_err(|_| GsiPayloadError::InvalidJson)?;
-    validate_gsi_payload(&value).map_err(|_| GsiPayloadError::InvalidSchema)?;
+    validate_gsi_payload(&value).map_err(GsiPayloadError::InvalidSchema)?;
     Ok(ParsedGsiPayload {
         tick: parse_tick_from_value(&value),
         match_id: parse_match_id(&value),
@@ -363,6 +363,14 @@ fn validate_string<'a>(
 }
 
 fn validate_gsi_payload(v: &Value) -> Result<(), &'static str> {
+    validate_gsi_payload_mode(v, true)
+}
+
+fn validate_gsi_fragment(v: &Value) -> Result<(), &'static str> {
+    validate_gsi_payload_mode(v, false)
+}
+
+fn validate_gsi_payload_mode(v: &Value, require_snapshot: bool) -> Result<(), &'static str> {
     let root = v.as_object().ok_or("payload must be an object")?;
     for key in ["provider", "map", "player", "hero", "items", "auth"] {
         if root.contains_key(key) {
@@ -370,9 +378,11 @@ fn validate_gsi_payload(v: &Value) -> Result<(), &'static str> {
         }
     }
 
-    optional_object(v, &["map"])?.ok_or("missing map object")?;
-    let game_state =
-        validate_string(v, &["map", "game_state"], true, 96)?.ok_or("missing game state")?;
+    let has_map = optional_object(v, &["map"])?.is_some();
+    if require_snapshot && !has_map {
+        return Err("missing map object");
+    }
+    let game_state = validate_string(v, &["map", "game_state"], require_snapshot, 96)?;
     const KNOWN_GAME_STATES: &[&str] = &[
         "DOTA_GAMERULES_STATE_INIT",
         "DOTA_GAMERULES_STATE_WAIT_FOR_PLAYERS_TO_LOAD",
@@ -388,7 +398,7 @@ fn validate_gsi_payload(v: &Value) -> Result<(), &'static str> {
         "DOTA_GAMERULES_STATE_SCENARIO_SETUP",
         "DOTA_GAMERULES_STATE_PLAYER_DRAFT",
     ];
-    if !KNOWN_GAME_STATES.contains(&game_state) {
+    if game_state.is_some_and(|state| !KNOWN_GAME_STATES.contains(&state)) {
         return Err("unknown game state");
     }
 
@@ -482,7 +492,7 @@ fn validate_gsi_payload(v: &Value) -> Result<(), &'static str> {
         }
     }
 
-    if is_in_game(game_state) {
+    if require_snapshot && game_state.is_some_and(is_in_game) {
         for (field, min, max) in [
             ("clock_time", -86_400, 86_400),
             ("radiant_score", 0, 1_000),
@@ -546,7 +556,190 @@ fn validate_gsi_payload(v: &Value) -> Result<(), &'static str> {
 #[derive(Debug, PartialEq, Eq)]
 enum GsiPayloadError {
     InvalidJson,
-    InvalidSchema,
+    InvalidSchema(&'static str),
+    IncompleteSnapshot(&'static str),
+    NoCurrentData,
+}
+
+fn reset_gsi_snapshot(cached: &Value, fragment: &Value) -> bool {
+    if let (Some(current), Some(incoming)) = (parse_match_id(cached), parse_match_id(fragment)) {
+        if current != incoming {
+            return true;
+        }
+    }
+
+    let incoming_state = value_at(fragment, &["map", "game_state"]).and_then(Value::as_str);
+    let current_state = value_at(cached, &["map", "game_state"]).and_then(Value::as_str);
+    incoming_state.is_some_and(|state| {
+        let new_session_state = matches!(
+            state,
+            "DOTA_GAMERULES_STATE_INIT"
+                | "DOTA_GAMERULES_STATE_WAIT_FOR_PLAYERS_TO_LOAD"
+                | "DOTA_GAMERULES_STATE_HERO_SELECTION"
+                | "DOTA_GAMERULES_STATE_WAIT_FOR_MAP_TO_LOAD"
+                | "DOTA_GAMERULES_STATE_CUSTOM_GAME_SETUP"
+        ) && current_state.is_some_and(|current| current != state);
+        let returning_from_idle = matches!(
+            state,
+            "DOTA_GAMERULES_STATE_PRE_GAME" | "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS"
+        ) && current_state
+            .is_some_and(|current| !is_in_game(current) && !is_in_draft(current));
+        new_session_state || returning_from_idle
+    })
+}
+
+fn merge_json(target: &mut Value, incoming: &Value) {
+    if let Some(incoming) = incoming.as_object() {
+        if !target.is_object() {
+            *target = Value::Object(serde_json::Map::new());
+        }
+        let target = target.as_object_mut().expect("target was set to an object");
+        for (key, value) in incoming {
+            merge_json(target.entry(key.clone()).or_insert(Value::Null), value);
+        }
+    } else {
+        *target = incoming.clone();
+    }
+}
+
+fn merge_gsi_fragment(snapshot: &mut Value, fragment: &Value) {
+    const CURRENT_SECTIONS: [&str; 5] = ["provider", "map", "player", "hero", "items"];
+    for section in CURRENT_SECTIONS {
+        if let Some(incoming) = fragment.get(section) {
+            merge_json(&mut snapshot[section], incoming);
+        }
+    }
+}
+
+fn missing_snapshot_data(snapshot: &Value) -> bool {
+    let Some(game_state) = value_at(snapshot, &["map", "game_state"]).and_then(Value::as_str)
+    else {
+        return true;
+    };
+    if !is_in_game(game_state) {
+        return false;
+    }
+
+    let required = [
+        &["map", "clock_time"][..],
+        &["map", "daytime"][..],
+        &["map", "radiant_score"][..],
+        &["map", "dire_score"][..],
+        &["player", "gold"][..],
+        &["player", "gpm"][..],
+        &["player", "xpm"][..],
+        &["player", "kills"][..],
+        &["player", "deaths"][..],
+        &["player", "assists"][..],
+        &["player", "last_hits"][..],
+        &["player", "denies"][..],
+        &["player", "team_name"][..],
+        &["hero", "name"][..],
+        &["hero", "level"][..],
+        &["hero", "alive"][..],
+        &["hero", "health_percent"][..],
+        &["hero", "mana_percent"][..],
+        &["hero", "health"][..],
+        &["hero", "max_health"][..],
+        &["hero", "buyback_cost"][..],
+        &["hero", "respawn_seconds"][..],
+    ];
+    required.iter().any(|path| {
+        value_at(snapshot, path).is_none_or(|value| {
+            value.is_null()
+                || value.as_str().is_some_and(str::is_empty)
+                || value.as_object().is_some_and(serde_json::Map::is_empty)
+        })
+    }) || optional_object(snapshot, &["items"])
+        .ok()
+        .flatten()
+        .is_none()
+}
+
+fn is_incomplete_snapshot_error(reason: &str) -> bool {
+    matches!(
+        reason,
+        "missing integer"
+            | "missing map object"
+            | "missing game state"
+            | "missing string"
+            | "missing boolean"
+            | "missing map.clock_time"
+            | "missing map.radiant_score"
+            | "missing map.dire_score"
+            | "missing player.gold"
+            | "missing player.gpm"
+            | "missing player.xpm"
+            | "missing player.kills"
+            | "missing player.deaths"
+            | "missing player.assists"
+            | "missing player.last_hits"
+            | "missing player.denies"
+            | "missing hero.level"
+            | "missing hero.health"
+            | "missing hero.max_health"
+            | "active match health is missing or invalid"
+            | "active match max health is missing or invalid"
+            | "missing hero.health_percent"
+            | "missing hero.mana_percent"
+            | "missing hero.buyback_cost"
+            | "missing hero.respawn_seconds"
+            | "active match missing player object"
+            | "active match missing team"
+            | "active match missing hero object"
+            | "active match missing hero name"
+            | "active match missing items object"
+    )
+}
+
+fn parse_gsi_fragment_with_cache(
+    cache: &mut Option<Value>,
+    body: &str,
+) -> Result<ParsedGsiPayload, GsiPayloadError> {
+    let fragment: Value = serde_json::from_str(body).map_err(|_| GsiPayloadError::InvalidJson)?;
+    validate_gsi_fragment(&fragment).map_err(GsiPayloadError::InvalidSchema)?;
+    if !["map", "player", "hero", "items"]
+        .iter()
+        .any(|section| fragment.get(section).is_some())
+    {
+        return Err(GsiPayloadError::NoCurrentData);
+    }
+
+    let reset = cache
+        .as_ref()
+        .is_some_and(|snapshot| reset_gsi_snapshot(snapshot, &fragment));
+    let mut candidate = if reset {
+        Value::Object(serde_json::Map::new())
+    } else {
+        cache
+            .clone()
+            .unwrap_or_else(|| Value::Object(serde_json::Map::new()))
+    };
+    merge_gsi_fragment(&mut candidate, &fragment);
+
+    match validate_gsi_payload(&candidate) {
+        Ok(()) => {
+            *cache = Some(candidate.clone());
+            Ok(ParsedGsiPayload {
+                tick: parse_tick_from_value(&candidate),
+                match_id: parse_match_id(&candidate),
+            })
+        }
+        Err(reason) => {
+            if missing_snapshot_data(&candidate) && is_incomplete_snapshot_error(reason) {
+                *cache = Some(candidate);
+                return Err(GsiPayloadError::IncompleteSnapshot(reason));
+            }
+            Err(GsiPayloadError::InvalidSchema(reason))
+        }
+    }
+}
+
+fn parse_gsi_http_payload(body: &str) -> Result<ParsedGsiPayload, GsiPayloadError> {
+    let mut cache = GSI_SNAPSHOT_CACHE
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    parse_gsi_fragment_with_cache(&mut cache, body)
 }
 
 #[cfg_attr(not(test), allow(dead_code))]
@@ -555,13 +748,19 @@ fn parse_gsi_payload(body: &str) -> Result<GameTick, GsiPayloadError> {
 }
 
 async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'static str) {
-    let ParsedGsiPayload { tick, match_id } = match parse_gsi_payload_with_identity(&body) {
+    let ParsedGsiPayload { tick, match_id } = match parse_gsi_http_payload(&body) {
         Ok(parsed) => parsed,
         Err(GsiPayloadError::InvalidJson) => {
             return (StatusCode::BAD_REQUEST, "invalid JSON");
         }
-        Err(GsiPayloadError::InvalidSchema) => {
+        Err(GsiPayloadError::InvalidSchema(_)) => {
             return (StatusCode::UNPROCESSABLE_ENTITY, "invalid GSI payload");
+        }
+        Err(GsiPayloadError::IncompleteSnapshot(_)) => {
+            return (StatusCode::ACCEPTED, "waiting for complete GSI snapshot");
+        }
+        Err(GsiPayloadError::NoCurrentData) => {
+            return (StatusCode::ACCEPTED, "no current game data");
         }
     };
     // Note the POST (watchdog uses recency) and gate the CV pipeline to live
@@ -577,9 +776,8 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
     crate::runtime::set_player_team_name(&tick.team_name);
     // Announcer: detect kill/streak/state events from the tick and voice the
     // most significant one (clip-or-silent — these aren't TTS-faked).
-    let announce = crate::announcer::most_important(&crate::announcer::observe_for_session(
-        &tick, &session,
-    ));
+    let announce =
+        crate::announcer::most_important(&crate::announcer::observe_for_session(&tick, &session));
     // G-Motion threat discount (audit H3): a dead enemy is off the minimap and
     // therefore "missing", but is the opposite of a gank threat. Folded in here
     // — after `set_in_game` above, so a match boundary has already cleared the
@@ -986,8 +1184,7 @@ struct GsiStatus {
     server_state: GsiServerState,
 }
 
-#[derive(Serialize)]
-#[derive(Clone)]
+#[derive(Serialize, Clone)]
 struct GameTickEvent<'a> {
     #[serde(flatten)]
     tick: &'a GameTick,
@@ -1132,17 +1329,35 @@ mod tests {
 
     #[test]
     fn freshness_status_distinguishes_waiting_fresh_stale_and_unavailable() {
-        assert_eq!(freshness_at(false, true, 1_000, 1_500), GsiFreshness::Unavailable);
-        assert_eq!(freshness_at(true, false, 1_000, 1_500), GsiFreshness::Unavailable);
+        assert_eq!(
+            freshness_at(false, true, 1_000, 1_500),
+            GsiFreshness::Unavailable
+        );
+        assert_eq!(
+            freshness_at(true, false, 1_000, 1_500),
+            GsiFreshness::Unavailable
+        );
         assert_eq!(freshness_at(true, true, 0, 1_500), GsiFreshness::Waiting);
-        assert_eq!(freshness_at(true, true, 10_000, 12_000), GsiFreshness::Fresh);
-        assert_eq!(freshness_at(true, true, 10_000, 12_001), GsiFreshness::Stale);
+        assert_eq!(
+            freshness_at(true, true, 10_000, 12_000),
+            GsiFreshness::Fresh
+        );
+        assert_eq!(
+            freshness_at(true, true, 10_000, 12_001),
+            GsiFreshness::Stale
+        );
     }
 
     #[test]
     fn stale_feed_while_dota_is_open_is_distinct_from_process_exit() {
-        assert_eq!(freshness_at(true, true, 10_000, 12_001), GsiFreshness::Stale);
-        assert_eq!(freshness_at(false, true, 10_000, 12_001), GsiFreshness::Unavailable);
+        assert_eq!(
+            freshness_at(true, true, 10_000, 12_001),
+            GsiFreshness::Stale
+        );
+        assert_eq!(
+            freshness_at(false, true, 10_000, 12_001),
+            GsiFreshness::Unavailable
+        );
     }
 
     #[test]
@@ -1174,7 +1389,8 @@ mod tests {
     fn live_payload() -> Value {
         serde_json::json!({
             "provider": { "name": "Dota 2", "appid": 570, "version": 1, "timestamp": 123456 },
-            "map": { "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
+            "map": { "matchid": "1234567890",
+                     "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
                      "clock_time": 612, "daytime": true,
                      "radiant_score": 14, "dire_score": 9 },
             "player": { "steamid": "76561198000000000", "gold": 2300, "net_worth": 14500,
@@ -1220,13 +1436,25 @@ mod tests {
     #[test]
     fn lifecycle_maps_only_game_in_progress_to_live() {
         let mut tick = run_handle(live_payload());
-        assert_eq!(lifecycle_for_tick(&tick), crate::runtime::MatchLifecycle::Live);
+        assert_eq!(
+            lifecycle_for_tick(&tick),
+            crate::runtime::MatchLifecycle::Live
+        );
         tick.game_state = "DOTA_GAMERULES_STATE_PRE_GAME".into();
-        assert_eq!(lifecycle_for_tick(&tick), crate::runtime::MatchLifecycle::Draft);
+        assert_eq!(
+            lifecycle_for_tick(&tick),
+            crate::runtime::MatchLifecycle::Draft
+        );
         tick.game_state = "DOTA_GAMERULES_STATE_DISCONNECT".into();
-        assert_eq!(lifecycle_for_tick(&tick), crate::runtime::MatchLifecycle::Disconnected);
+        assert_eq!(
+            lifecycle_for_tick(&tick),
+            crate::runtime::MatchLifecycle::Disconnected
+        );
         tick.game_state = "DOTA_GAMERULES_STATE_POST_GAME".into();
-        assert_eq!(lifecycle_for_tick(&tick), crate::runtime::MatchLifecycle::End);
+        assert_eq!(
+            lifecycle_for_tick(&tick),
+            crate::runtime::MatchLifecycle::End
+        );
     }
 
     fn run_handle(payload: Value) -> GameTick {
@@ -1269,7 +1497,7 @@ mod tests {
         ));
         assert!(matches!(
             parse_gsi_payload("null"),
-            Err(GsiPayloadError::InvalidSchema)
+            Err(GsiPayloadError::InvalidSchema(_))
         ));
         assert!(validate_gsi_payload(&serde_json::json!([])).is_err());
         assert!(validate_gsi_payload(&serde_json::json!({ "map": null })).is_err());
@@ -1351,7 +1579,83 @@ mod tests {
         assert!(validate_gsi_payload(&partial_delta).is_err());
         assert!(matches!(
             parse_gsi_payload(&partial_delta.to_string()),
-            Err(GsiPayloadError::InvalidSchema)
+            Err(GsiPayloadError::InvalidSchema(_))
+        ));
+    }
+
+    #[test]
+    fn http_gsi_parser_merges_current_values_and_ignores_change_history() {
+        let mut cache = None;
+        let initial = parse_gsi_fragment_with_cache(&mut cache, &live_payload().to_string())
+            .expect("full GSI snapshot should initialize the delta cache");
+        assert_eq!(initial.match_id.as_deref(), Some("1234567890"));
+
+        let delta = serde_json::json!({
+            "map": { "clock_time": 613 },
+            "player": { "kills": 8 },
+            "hero": { "health": 490 },
+            "previously": { "map": { "clock_time": 612 }, "player": { "kills": 7 } },
+            "added": {}
+        });
+        let updated = parse_gsi_fragment_with_cache(&mut cache, &delta.to_string())
+            .expect("partial delta should merge onto the validated snapshot");
+        assert_eq!(updated.tick.clock_time, 613);
+        assert_eq!(updated.tick.kills, 8);
+        assert_eq!(updated.tick.hp, 490);
+        assert_eq!(updated.match_id.as_deref(), Some("1234567890"));
+    }
+
+    #[test]
+    fn http_gsi_parser_waits_for_a_complete_snapshot_and_resets_on_match_change() {
+        let mut cache = None;
+        let partial = serde_json::json!({
+            "map": {
+                "matchid": "1234567890",
+                "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
+                "clock_time": 1
+            }
+        });
+        assert!(matches!(
+            parse_gsi_fragment_with_cache(&mut cache, &partial.to_string()),
+            Err(GsiPayloadError::IncompleteSnapshot(_))
+        ));
+        assert!(cache.is_some());
+
+        cache = Some(live_payload());
+        let next_match = serde_json::json!({
+            "map": {
+                "matchid": "9876543210",
+                "game_state": "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
+                "clock_time": 2
+            }
+        });
+        assert!(matches!(
+            parse_gsi_fragment_with_cache(&mut cache, &next_match.to_string()),
+            Err(GsiPayloadError::IncompleteSnapshot(_))
+        ));
+        let cached = cache.expect("partial new-match snapshot must be retained");
+        assert_eq!(cached["map"]["matchid"], "9876543210");
+        assert!(
+            cached.get("player").is_none(),
+            "old-match player data must not leak"
+        );
+    }
+
+    #[test]
+    fn http_gsi_parser_rejects_bad_fragments_without_mutating_cache() {
+        let mut cache = Some(live_payload());
+        let before = cache.clone();
+        let bad = serde_json::json!({ "map": { "clock_time": "not-a-number" } });
+        assert!(matches!(
+            parse_gsi_fragment_with_cache(&mut cache, &bad.to_string()),
+            Err(GsiPayloadError::InvalidSchema(_))
+        ));
+        assert_eq!(cache, before);
+
+        let provider_only = serde_json::json!({ "provider": { "name": "Dota 2" } });
+        assert!(matches!(
+            parse_gsi_fragment_with_cache(&mut cache, &provider_only.to_string()),
+            Err(GsiPayloadError::NoCurrentData)
         ));
     }
 

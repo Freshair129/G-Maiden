@@ -2,6 +2,23 @@
 
 ## [Unreleased]
 
+### Fixed
+- **DXGI capture ฟื้นตัวเองได้หลังเริ่มไม่สำเร็จหรืออุปกรณ์กราฟิกรีเซ็ต** — เดิมการเปิด
+  capture ล้มเหลวครั้งเดียวจะทิ้ง worker ไว้ใน Lite mode ตลอดอายุแอป และกรณีย้าย Dota
+  ไปอีกจอแล้วเปิด capture จอใหม่ไม่สำเร็จยังใช้ภาพจากจอเก่าต่อไป ตอนนี้ worker เดิมลอง
+  เริ่มใหม่ด้วย backoff สูงสุด 5 วินาที; device reset จะสร้าง DXGI resources ใหม่ และ
+  เมื่อย้ายจอล้มเหลวจะหยุดใช้ภาพจากจอเก่าพร้อมรายงาน Lite ระหว่างรอ ส่วน GSI, voice,
+  overlay และ G-Master ทำงานต่อได้
+- **ไม่ใช้ภาพ desktop แทน minimap และแจ้ง layout ที่อยู่นอก CV matrix** — เมื่อ Dota ไม่อยู่
+  หน้าสุด ระบบพัก minimap/draft CV, รายงาน sensor unhealthy และรอ foreground กลับมา;
+  profile ที่ไม่ใช่ 1920×1080, 96 DPI, จอเดียว, borderless-fullscreen แสดง unsupported.
+  profile `unsupported/unknown` จะไม่ถูกป้อนเข้า minimap/draft inference; profile ตรง matrix
+  ยังเป็น candidate จนตรวจ coverage ด้วยภาพจริง
+- **G-Revive ไม่เดา buyback จากข้อมูลที่หาย** — mode, ภัยฐาน และจำนวนเพื่อนที่ไม่ทราบจะให้ verdict
+  เป็น unknown แทนโหมดปกติ/ฐานปลอดภัย/เพื่อน 4 คน; overlay แสดง timer, gold, cost และ
+  affordability ที่ GSI มีจริง, ไม่ส่ง unknown verdict ไปให้ SLM และทิ้งคำตอบที่มาช้าจากการตายครั้งเก่า
+
+
 ## [0.13.4] — 2026-10-18
 ### Changed
 - **เริ่มใช้แอปเดสก์ท็อปแบบ local-first ได้ทันที** — ไม่บังคับลงชื่อเข้าใช้หรือยืนยัน entitlement ตอนเปิดแอป; ผู้ใช้เชื่อมบัญชีเพิ่มได้จากในแอปตามต้องการ

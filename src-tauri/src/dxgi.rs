@@ -30,7 +30,8 @@ use windows::Win32::Graphics::Direct3D11::{
 use windows::Win32::Graphics::Dxgi::Common::{DXGI_FORMAT_B8G8R8A8_UNORM, DXGI_SAMPLE_DESC};
 use windows::Win32::Graphics::Dxgi::{
     CreateDXGIFactory1, IDXGIAdapter, IDXGIDevice, IDXGIFactory1, IDXGIOutput1,
-    IDXGIOutputDuplication, IDXGIResource, DXGI_ERROR_ACCESS_LOST, DXGI_ERROR_WAIT_TIMEOUT,
+    IDXGIOutputDuplication, IDXGIResource, DXGI_ERROR_ACCESS_LOST, DXGI_ERROR_DEVICE_HUNG,
+    DXGI_ERROR_DEVICE_REMOVED, DXGI_ERROR_DEVICE_RESET, DXGI_ERROR_WAIT_TIMEOUT,
     DXGI_OUTDUPL_FRAME_INFO,
 };
 use windows::Win32::Graphics::Gdi::{
@@ -38,12 +39,12 @@ use windows::Win32::Graphics::Gdi::{
     ReleaseDC, SelectObject, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS, SRCCOPY,
 };
 use windows::Win32::System::Threading::{
-    OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32,
-    PROCESS_QUERY_LIMITED_INFORMATION,
+    OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
 };
+use windows::Win32::UI::HiDpi::GetDpiForWindow;
 use windows::Win32::UI::WindowsAndMessaging::{
-    EnumWindows, GetClientRect, GetWindowRect, GetWindowTextW, GetWindowThreadProcessId,
-    IsWindowVisible,
+    EnumWindows, GetClientRect, GetForegroundWindow, GetSystemMetrics, GetWindowRect,
+    GetWindowTextW, GetWindowThreadProcessId, IsWindowVisible, SM_CMONITORS,
 };
 
 /// How long `acquire_frame` blocks waiting for a new desktop frame before giving
@@ -138,6 +139,9 @@ pub struct DxgiCapture {
     /// successful DXGI acquire; drives the switch into `gdi_mode` at
     /// [`GDI_FALLBACK_THRESHOLD`].
     consecutive_access_lost: u32,
+    /// Set when DXGI reports a removed/reset device; capture must rebuild the
+    /// full D3D device as well as its output duplication.
+    device_lost: bool,
     /// True once Desktop Duplication has been given up on for this session
     /// (until a periodic recovery probe succeeds) — `acquire_frame` then
     /// serves frames via GDI `BitBlt` instead of `AcquireNextFrame`.
@@ -284,7 +288,14 @@ impl<F: FnOnce()> Drop for FrameReleaseGuard<F> {
 /// screen edge. Otherwise returns the (possibly shrunk) `(x, y, w, h)` that
 /// is guaranteed to fit entirely within the screen. Kept free of any Windows
 /// types so it's unit-testable without a real display/GPU.
-fn clamp_rect(x: u32, y: u32, w: u32, h: u32, screen_w: u32, screen_h: u32) -> Option<(u32, u32, u32, u32)> {
+fn clamp_rect(
+    x: u32,
+    y: u32,
+    w: u32,
+    h: u32,
+    screen_w: u32,
+    screen_h: u32,
+) -> Option<(u32, u32, u32, u32)> {
     if w == 0 || h == 0 || x >= screen_w || y >= screen_h {
         return None;
     }
@@ -363,6 +374,7 @@ impl DxgiCapture {
                 desktop_top,
                 display_id,
                 consecutive_access_lost: 0,
+                device_lost: false,
                 gdi_mode: false,
                 gdi_probe_tick: 0,
                 first_frame: true,
@@ -395,6 +407,10 @@ impl DxgiCapture {
         } else {
             "dxgi"
         }
+    }
+
+    pub fn device_lost(&self) -> bool {
+        self.device_lost
     }
 
     /// Grab the next desktop frame as tightly-packed BGRA8 `(bytes, width, height)`.
@@ -656,6 +672,12 @@ impl DxgiCapture {
                             "[dxgi] Desktop Duplication access-lost x5 — falling back to GDI capture",
                         );
                     }
+                }
+                DXGI_ERROR_DEVICE_REMOVED | DXGI_ERROR_DEVICE_RESET | DXGI_ERROR_DEVICE_HUNG => {
+                    self.device_lost = true;
+                    self.diag.other_err += 1;
+                    self.diag.last_err = format!("{:?}", e.code());
+                    eprintln!("[dxgi] D3D device lost: {e}");
                 }
                 _ => {
                     self.diag.other_err += 1;
@@ -1166,6 +1188,80 @@ pub fn detect_dota_monitor() -> Option<u32> {
         .map(|i| i as u32)
 }
 
+/// True only while the foreground top-level window belongs to Dota 2.
+/// Background/desktop frames must never be folded into minimap risk state.
+pub fn dota_window_is_foreground() -> bool {
+    let hwnd = unsafe { GetForegroundWindow() };
+    !hwnd.is_invalid() && unsafe { is_dota_window(hwnd) }
+}
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub struct CaptureLayoutStatus {
+    pub status: &'static str,
+    pub reason: &'static str,
+    pub dpi: Option<u32>,
+    pub monitor_count: u32,
+}
+
+/// Compare the active display and Dota window with the initial CV matrix.
+/// Matching geometry remains a candidate until real minimap images establish
+/// coverage for that layout; out-of-matrix profiles are explicitly unsupported.
+pub fn capture_layout_status(screen_width: u32, screen_height: u32) -> CaptureLayoutStatus {
+    let monitor_count = unsafe { GetSystemMetrics(SM_CMONITORS) }.max(0) as u32;
+    let result = |status, reason, dpi| CaptureLayoutStatus {
+        status,
+        reason,
+        dpi,
+        monitor_count,
+    };
+
+    if monitor_count == 0 {
+        return result("unknown", "display-count-unavailable", None);
+    }
+    if monitor_count != 1 {
+        return result(
+            "unsupported",
+            "multiple-displays-outside-initial-matrix",
+            None,
+        );
+    }
+    if (screen_width, screen_height) != (1920, 1080) {
+        return result("unsupported", "resolution-outside-initial-matrix", None);
+    }
+
+    let Some((hwnd, window_rect)) = find_dota_window() else {
+        return result("unknown", "dota-window-not-found", None);
+    };
+    let dpi = unsafe { GetDpiForWindow(hwnd) };
+    if dpi != 96 {
+        return result("unsupported", "dpi-outside-initial-matrix", Some(dpi));
+    }
+
+    let Some(monitor_index) = detect_dota_monitor() else {
+        return result("unknown", "dota-output-unresolved", Some(dpi));
+    };
+    let Some(output_rect) =
+        adapter0_output_rects().and_then(|rects| rects.get(monitor_index as usize).copied())
+    else {
+        return result("unknown", "dota-output-unresolved", Some(dpi));
+    };
+    let window_bounds = (
+        window_rect.left,
+        window_rect.top,
+        window_rect.right,
+        window_rect.bottom,
+    );
+    if window_bounds != output_rect {
+        return result(
+            "unsupported",
+            "dota-window-not-borderless-fullscreen",
+            Some(dpi),
+        );
+    }
+
+    result("candidate", "image-evidence-required", Some(dpi))
+}
+
 /// Pure containment check: is point `(px, py)` inside `rect` given as
 /// `(left, top, right, bottom)`? Right/bottom are treated as exclusive,
 /// matching Win32 `RECT` conventions. Kept free of any Windows types so the
@@ -1181,14 +1277,16 @@ fn point_in_rect(px: i32, py: i32, rect: (i32, i32, i32, i32)) -> bool {
 /// real game window.
 struct DotaWindowScan {
     best_area: i64,
+    best_hwnd: Option<HWND>,
     best_rect: Option<RECT>,
 }
 
-/// Find Dota 2's main window and return the center point of its screen rect
-/// (in virtual-desktop coordinates, matching `DXGI_OUTPUT_DESC.DesktopCoordinates`).
-fn find_dota_window_center() -> Option<(i32, i32)> {
+/// Find Dota 2's main window and return its screen rect, in virtual-desktop
+/// coordinates matching `DXGI_OUTPUT_DESC.DesktopCoordinates`.
+fn find_dota_window() -> Option<(HWND, RECT)> {
     let mut scan = DotaWindowScan {
         best_area: 0,
+        best_hwnd: None,
         best_rect: None,
     };
     // SAFETY: `EnumWindows` is synchronous — it only returns once every
@@ -1200,8 +1298,13 @@ fn find_dota_window_center() -> Option<(i32, i32)> {
         let lparam = LPARAM(std::ptr::addr_of_mut!(scan) as isize);
         let _ = EnumWindows(Some(enum_windows_proc), lparam);
     }
-    let r = scan.best_rect?;
-    Some(((r.left + r.right) / 2, (r.top + r.bottom) / 2))
+    Some((scan.best_hwnd?, scan.best_rect?))
+}
+
+/// Find Dota 2's main window center in virtual-desktop coordinates.
+fn find_dota_window_center() -> Option<(i32, i32)> {
+    let (_, rect) = find_dota_window()?;
+    Some(((rect.left + rect.right) / 2, (rect.top + rect.bottom) / 2))
 }
 
 /// `EnumWindows` callback: skip anything that isn't a visible Dota 2 window,
@@ -1230,6 +1333,7 @@ unsafe extern "system" fn enum_windows_proc(hwnd: HWND, lparam: LPARAM) -> BOOL 
         let area = w * h;
         if area > scan.best_area {
             scan.best_area = area;
+            scan.best_hwnd = Some(hwnd);
             scan.best_rect = Some(rect);
         }
         BOOL(1)
@@ -1388,7 +1492,10 @@ mod tests {
     fn point_in_rect_inside_and_edges() {
         let rect = (100, 200, 300, 400); // left, top, right, bottom
         assert!(point_in_rect(150, 250, rect), "clearly inside");
-        assert!(point_in_rect(100, 200, rect), "top-left corner is inclusive");
+        assert!(
+            point_in_rect(100, 200, rect),
+            "top-left corner is inclusive"
+        );
         assert!(
             !point_in_rect(300, 250, rect),
             "right edge is exclusive (belongs to the next monitor)"
@@ -1416,7 +1523,10 @@ mod tests {
     #[test]
     fn clamp_rect_fits_within_bounds() {
         // Fully inside — unchanged.
-        assert_eq!(clamp_rect(0, 788, 292, 292, 1920, 1080), Some((0, 788, 292, 292)));
+        assert_eq!(
+            clamp_rect(0, 788, 292, 292, 1920, 1080),
+            Some((0, 788, 292, 292))
+        );
     }
 
     #[test]

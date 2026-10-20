@@ -2,8 +2,8 @@
 title: "ADR: Migrate Screen Capture from WGC to DXGI Desktop Duplication"
 doc_id: "ADR-13-dxgi-capture-migration"
 status: "accepted"
-version: "0.1.2"
-updated: "2026-10-12"
+version: "0.1.3"
+updated: "2026-10-20"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["ADR-05", "ADR-10-hybrid-ingestion-resilience", "src-tauri/src/capture.rs", "src-tauri/src/governor.rs"]
@@ -53,6 +53,10 @@ G-Suite กำลังจะ position เป็น streamer tool — ต้อ�
 
 #### 3. GSI-only fallback (Lite mode)
 - เมื่อ DXGI init fail (exclusive fullscreen / permission) → ทำงานต่อโดยไม่มี CV
+- เมื่อ init หรือ recovery ไม่สำเร็จ ให้ worker เดิม emit `capture-mode: lite` และ `sensor-health: lite` ทันที จากนั้น retry แบบ backoff สูงสุด 5 วินาที; ไม่สร้าง thread ซ้อน
+- ถ้า D3D device ถูกถอด/reset ให้ทิ้ง DXGI resources เดิมและ init device ใหม่; ถ้าย้ายจอแล้ว init จอเป้าหมายไม่ได้ ให้หยุดใช้ภาพจากจอเก่าและคงสถานะ Lite จน retry สำเร็จ
+- Initial CV matrix คือ 1920×1080, 16:9, จอเดียว, 96 DPI, Dota borderless-fullscreen และ minimap default ล่างซ้าย; profile นอก matrix แสดง unsupported และทั้ง unsupported/unknown จะไม่ถูกป้อนเข้า minimap/draft inference ส่วน profile ตรง matrix ยังเป็น candidate จนมีภาพจริงยืนยัน coverage
+- เมื่อ Dota ไม่อยู่หน้าสุด ให้ `sensor-health.healthy` เป็น false และพัก minimap/draft CV; poll foreground ทุก 250ms เพื่อไม่ใช้ภาพ desktop หรือเกมเบื้องหลังเป็น observation
 - G-Signal ใช้ kill feed timing + death pattern จาก GSI ประมาณ gank risk แทน
 - UI แสดง badge "Lite Mode — minimap detection off"
 - ยังได้: announcer, overlay, G-Master advice, kill banner, stat HUD ทั้งหมด
@@ -60,11 +64,20 @@ G-Suite กำลังจะ position เป็น streamer tool — ต้อ�
 #### 4. Migration path ใน capture.rs
 ```
 capture::start()
-  ├─ try DxgiCapture::new(monitor_index, timeout_ms)
-  │   ├─ success → run dxgi_loop(4 Hz / 8 Hz alert)
-  │   └─ fail → log warning, emit "capture-mode: lite"
-  └─ fallback: GSI-only mode (no CV thread)
+  └─ one capture worker
+      ├─ try DxgiCapture::new(monitor_index, timeout_ms)
+      │   ├─ success → run dxgi_loop(4 Hz / 8 Hz alert)
+      │   └─ fail → emit "capture-mode: lite", wait with bounded backoff, retry
+      ├─ inspect resolution / monitor count / DPI / borderless geometry against initial matrix
+      │   ├─ outside matrix → report unsupported
+      │   └─ matches → remain candidate until real-image coverage evidence exists
+      ├─ Dota not foreground → emit unhealthy sensor state; pause minimap and draft CV
+      └─ device/monitor recovery failure → keep Lite; retry on this same worker
 ```
+
+`LOCAL_CAPTURE_STARTED` prevents duplicate local capture workers. It remains set during
+retry waits and is reset if thread creation fails or the worker exits, so a later local
+reconciliation can safely start a replacement worker.
 
 - [`DxgiCapture`](file:///g:/G-Maiden/src-tauri/src/dxgi.rs) struct: holds `IDXGIOutputDuplication` + staging texture
 - `acquire_frame()` → returns `Option<Vec<u8>>` (BGRA) — same format as WGC
@@ -141,3 +154,4 @@ capture::start()
 | 0.1.0 | 2026-06-28 | Initial proposal based on in-game performance evidence (CPU 8%, frame time 1.3–2.3s) |
 | 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): `[[CLAUDE.md]]` converted to plain backtick path text (CLAUDE.md is outside docs/, not a doc-graph slug) |
 | 0.1.2 | 2026-10-12 | Clarified that the 2.5% capture measurement was historical and aligned the pending CPU validation gate with MVP decision v0.2.0. |
+| 0.1.3 | 2026-10-20 | Bound DXGI recovery retries, report foreground/display-layout health, and keep unsupported layouts out of CV observations. |

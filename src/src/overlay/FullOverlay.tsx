@@ -62,7 +62,7 @@ interface Props {
   missingHeroes: Set<string>
   overlayAdvice: string | null
   /** G-Revive buyback verdict shown while dead (null when alive/none). */
-  buyback: { advice: ReviveAdvice; narrative: string | null } | null
+  buyback: { advice: ReviveAdvice; narrative: string | null; requestId: string } | null
   /** Last voice event mirrored on-screen (G-Signal/persona/advice). Becomes
    * the silent fallback when the voice pack hasn't shipped — users still see
    * which event triggered. Auto-dismisses in the parent. */
@@ -87,9 +87,9 @@ interface Props {
   /** Settings overlay-preview is active — also shows the standby chip. */
   previewMode: boolean
   /** The minimap sensor is producing trustworthy data (capture.rs
-   * `sensor-health.healthy`). FALSE means Lite mode / no ONNX model / a capture
-   * stall — states in which the missing-hero set is empty for the wrong reason,
-   * so the G-Meter must NOT show green. */
+   * `sensor-health.healthy`). FALSE includes Lite mode, missing ONNX model,
+   * capture stall, background focus, or an uncertified display layout — states
+   * in which the missing-hero set cannot justify a green G-Meter. */
   sensorOk: boolean
 }
 
@@ -339,14 +339,28 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
       {inGame && buyback && s.gankVisuals
         ? M('buyback', (() => {
             const a = buyback.advice
-            const accent = a.urgency === 'Strong' ? C.bad : a.urgency === 'Consider' ? C.warn : C.ice
-            const verdict = a.recommend_buyback ? (a.urgency === 'Strong' ? 'ซื้อเกิดเลย!' : 'ควรซื้อเกิด') : 'รอเกิด'
+            const accent = a.urgency === 'Strong' ? C.bad : a.urgency === 'Consider' ? C.warn : a.urgency === 'Unknown' ? C.mut : C.ice
+            const verdict = a.recommend_buyback === null
+              ? 'ข้อมูลไม่พอสรุป'
+              : a.recommend_buyback
+                ? (a.urgency === 'Strong' ? 'ซื้อเกิดเลย!' : 'ควรซื้อเกิด')
+                : a.affordable === false ? 'ซื้อเกิดไม่ไหว' : 'ไม่จำเป็นต้องซื้อเกิด'
             // Live countdown: GSI streams hero.respawn_seconds every tick, so
             // prefer it over the advice's frozen at-death snapshot (Boss
             // 2026-07-20: "เวลาไม่นับถอยหลัง").
             const secs = t && !t.alive && t.respawn_seconds > 0
               ? t.respawn_seconds
-              : Math.max(0, Math.round(a.natural_respawn_remaining))
+              : a.natural_respawn_remaining
+            const gold = t && !t.alive ? t.gold : a.gold
+            const cost = t && !t.alive
+              ? (t.buyback_cost > 0 ? t.buyback_cost : null)
+              : a.buyback_cost
+            const affordability = cost === null ? null : gold >= cost
+            const facts = [
+              secs === null ? 'เวลาเกิดยังไม่ทราบ' : `เกิดเองใน ${Math.max(0, Math.round(secs))}s`,
+              cost === null ? `ค่า buyback ยังไม่ทราบ · ทอง ${gold}` : `ค่า buyback ${cost} · ทอง ${gold}`,
+              affordability === null ? 'ยังไม่ทราบว่าซื้อไหวหรือไม่' : affordability ? 'เงินพอซื้อเกิด' : 'เงินไม่พอซื้อเกิด',
+            ].join(' · ')
             return (
               <div style={{ ...glass(op), padding: '12px 18px', maxWidth: 420, fontSize: 13, lineHeight: 1.5, border: `1px solid ${accent}` }}>
                 <div style={{ fontSize: 10, color: accent, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5, display: 'flex', alignItems: 'center', gap: 8 }}>
@@ -354,7 +368,7 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
                   <span style={{ background: accent, color: '#08090c', borderRadius: 6, padding: '1px 7px', fontWeight: 700 }}>{verdict}</span>
                 </div>
                 <div>{buyback.narrative || a.reason}</div>
-                <div style={{ fontSize: 11, color: C.mut, marginTop: 4 }}>เกิดเองใน {secs}s{a.affordable === false ? ' · เงินไม่พอซื้อเกิด' : ''}</div>
+                <div style={{ fontSize: 11, color: C.mut, marginTop: 4 }}>{facts}</div>
               </div>
             )
           })())

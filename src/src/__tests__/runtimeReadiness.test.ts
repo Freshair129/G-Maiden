@@ -16,8 +16,16 @@ const healthySensor: SensorHealth = {
   backend: "dxgi",
   classifier: true,
   throttled: false,
+  dotaForeground: true,
+  layoutStatus: "candidate",
+  layoutReason: "image-evidence-required",
+  displayWidth: 1920,
+  displayHeight: 1080,
+  displayDpi: 96,
+  monitorCount: 1,
+  minimapSide: 292,
   frameAgeMs: 20,
-  healthy: true,
+  healthy: false,
 };
 
 describe("runtime readiness contract", () => {
@@ -61,7 +69,7 @@ describe("runtime readiness contract", () => {
     const readiness = readinessFromRuntime({
       gsiConfigured: true,
       gsiStatus: { ...liveGsi, gsi_active: false },
-      sensorHealth: { ...healthySensor, backend: "lite", classifier: false, frameAgeMs: null, healthy: false },
+      sensorHealth: { ...healthySensor, backend: "lite", classifier: false, dotaForeground: false, layoutStatus: "unknown", frameAgeMs: null, healthy: false },
       overlayReady: null,
     });
 
