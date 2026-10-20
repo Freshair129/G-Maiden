@@ -3,7 +3,7 @@
 # FEATURE-ORPHAN-REPORT
 
 > **GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs**  
-> Generated `2026-10-19T20:39:55.360Z` · candidates=22
+> Generated `2026-10-20T15:54:26.513Z` · candidates=22
 
 ## Summary
 
@@ -30,7 +30,7 @@
 | FEAT-G-MIND | docs/features/FEAT-G-MIND.md | active | planned | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-MOTION | docs/features/FEAT-G-MOTION.md | active | anchored | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/README.md | — | At least one strong anchor exists (registry and/or code evidence). |
 | FEAT-G-PERSONA | docs/features/FEAT-G-PERSONA.md | planned | planned | feature-ledger, features-readme, project-feature-map | docs/architecture/design-system.md, docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
-| FEAT-G-REVIVE | docs/features/FEAT-G-REVIVE.md | — | anchored | feature-ledger, code-evidence, features-readme | docs/features/README.md | — | At least one strong anchor exists (registry and/or code evidence). |
+| FEAT-G-REVIVE | docs/features/FEAT-G-REVIVE.md | active | anchored | feature-ledger, code-evidence, features-readme | docs/features/README.md | — | At least one strong anchor exists (registry and/or code evidence). |
 | FEAT-G-SCORE | docs/features/FEAT-G-SCORE.md | draft | planned | features-readme | docs/features/README.md, docs/features/G-SERIES-DATA-LINEAGE.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-SENSORY | docs/features/FEAT-G-SENSORY.md | active | planned | feature-ledger, features-readme, project-feature-map | docs/architecture/design-system.md, docs/features/FEAT-G-SENTRY.md, docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-SENTRY | docs/features/FEAT-G-SENTRY.md | planned | planned | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |

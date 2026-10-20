@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-19T20:39:45.876Z",
+  "generatedAt": "2026-10-20T15:54:18.377Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -659,7 +659,9 @@
     {
       "id": "docs/features/FEAT-G-REVIVE.md",
       "type": "doc",
-      "path": "docs/features/FEAT-G-REVIVE.md"
+      "path": "docs/features/FEAT-G-REVIVE.md",
+      "title": "FEAT-G-REVIVE — Death Analysis & Buyback Advisor",
+      "status": "active"
     },
     {
       "id": "docs/features/FEAT-G-SCORE.md",
@@ -1418,16 +1420,6 @@
       "path": "src-tauri/src/tuning.rs"
     },
     {
-      "id": "src-tauri/data/respawn.json",
-      "type": "code",
-      "path": "src-tauri/data/respawn.json"
-    },
-    {
-      "id": "src-tauri/src/respawn.rs",
-      "type": "code",
-      "path": "src-tauri/src/respawn.rs"
-    },
-    {
       "id": "tests/perf",
       "type": "code",
       "path": "tests/perf"
@@ -1491,6 +1483,11 @@
       "id": "tools/telemetry/ocr-test",
       "type": "code",
       "path": "tools/telemetry/ocr-test"
+    },
+    {
+      "id": "src-tauri/src/respawn.rs",
+      "type": "code",
+      "path": "src-tauri/src/respawn.rs"
     }
   ],
   "edges": [
@@ -1930,43 +1927,43 @@
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 121
+      "line": 134
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
       "type": "wikilink",
-      "line": 133
+      "line": 146
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "src-tauri/src/dxgi.rs",
       "type": "symbol",
-      "line": 69
+      "line": 82
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "src-tauri/src/dxgi.rs",
       "type": "symbol",
-      "line": 111
+      "line": 124
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 116
+      "line": 129
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 134
+      "line": 147
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 135
+      "line": 148
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
@@ -7258,85 +7255,19 @@
       "from": "docs/features/FEAT-G-REVIVE.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 4
+      "line": 14
     },
     {
       "from": "docs/features/FEAT-G-REVIVE.md",
       "to": "docs/features/FEAT-G-MASTER.md",
       "type": "wikilink",
-      "line": 4
+      "line": 14
     },
     {
       "from": "docs/features/FEAT-G-REVIVE.md",
       "to": "docs/features/FEAT-G-SIGNAL.md",
       "type": "wikilink",
-      "line": 4
-    },
-    {
-      "from": "docs/features/FEAT-G-REVIVE.md",
-      "to": "src-tauri/data/respawn.json",
-      "type": "symbol",
-      "line": 25
-    },
-    {
-      "from": "docs/features/FEAT-G-REVIVE.md",
-      "to": "src-tauri/src/respawn.rs",
-      "type": "symbol",
-      "line": 25
-    },
-    {
-      "from": "docs/features/FEAT-G-REVIVE.md",
-      "to": "src-tauri/src/respawn.rs",
-      "type": "symbol",
-      "line": 29
-    },
-    {
-      "from": "docs/features/FEAT-G-REVIVE.md",
-      "to": "src-tauri/src/respawn.rs",
-      "type": "symbol",
-      "line": 91
-    },
-    {
-      "from": "docs/features/FEAT-G-REVIVE.md",
-      "to": "src-tauri/data/respawn.json",
-      "type": "symbol",
-      "line": 91
-    },
-    {
-      "from": "docs/features/FEAT-G-REVIVE.md",
-      "to": "src-tauri/src/revive.rs",
-      "type": "symbol",
-      "line": 98
-    },
-    {
-      "from": "docs/features/FEAT-G-REVIVE.md",
-      "to": "src-tauri/src/respawn.rs",
-      "type": "symbol",
-      "line": 99
-    },
-    {
-      "from": "docs/features/FEAT-G-REVIVE.md",
-      "to": "src-tauri/src/revive.rs",
-      "type": "symbol",
-      "line": 100
-    },
-    {
-      "from": "docs/features/FEAT-G-REVIVE.md",
-      "to": "src-tauri/src/main.rs",
-      "type": "symbol",
-      "line": 101
-    },
-    {
-      "from": "docs/features/FEAT-G-REVIVE.md",
-      "to": "src-tauri/src/revive.rs",
-      "type": "symbol",
-      "line": 102
-    },
-    {
-      "from": "docs/features/FEAT-G-REVIVE.md",
-      "to": "src-tauri/src/slm.rs",
-      "type": "symbol",
-      "line": 102
+      "line": 14
     },
     {
       "from": "docs/features/FEAT-G-SCORE.md",
@@ -9852,19 +9783,6 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/features/FEAT-G-REVIVE.md",
-      "line": 102,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src-tauri/src/slm.rs",
-      "anchor": 22,
-      "symbol": "advise_offline"
-    },
-    {
-      "file": "docs/features/FEAT-G-REVIVE.md",
-      "line": null,
-      "reason": "no-metadata"
-    },
-    {
       "file": "docs/features/FEAT-G-SENTRY.md",
       "line": null,
       "reason": "no-metadata"
@@ -10134,7 +10052,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-19T20:39:54.791Z",
+    "generatedAt": "2026-10-20T15:54:26.037Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

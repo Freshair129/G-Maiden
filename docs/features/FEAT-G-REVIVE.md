@@ -1,3 +1,13 @@
+---
+title: "FEAT-G-REVIVE — Death Analysis & Buyback Advisor"
+doc_id: "FEAT-G-REVIVE"
+status: active
+version: "0.2.1"
+updated: "2026-10-12"
+owner: "Boss"
+source_of_truth: true
+---
+
 # FEAT-G-REVIVE — Death Analysis & Buyback Advisor
 
 > **Module:** G-Revive · **Priority:** P1 · **Phase:** 5–6
@@ -7,79 +17,92 @@
 
 ## 1. Purpose
 
-วิเคราะห์ช่วง **ตาย → รอเกิด (respawn window)** — เวลาที่ผู้เล่นกดอะไรไม่ได้นอกจาก "ซื้อเกิด" (buyback)
-จึงเป็น latency budget ที่ใจป้ำที่สุดในแอป G-Revive ตอบ 2 อย่าง:
+ประเมินช่วง **ตาย → รอเกิด (respawn window)** จากข้อมูลที่มีจริง G-Revive แสดง timer,
+buyback cost และ affordability เมื่อ GSI ส่งค่า ส่วน verdict เชิงกลยุทธ์ต้องรอข้อมูล threat ที่เชื่อถือได้:
 
-1. **ทำไมตาย** (root cause) — โดนจับเพราะ positioning / ไม่มี escape / no vision
-2. **ควรซื้อเกิดไหม** — คำนวณว่าเกิดเองทันป้องบ้านหรือไม่ ("บ้านแตกแน่ → ซื้อเกิด")
+1. **ทำไมตาย** (root cause) — ยังไม่ทำจนกว่าจะมี combat evidence ที่ใช้ระบุเหตุได้
+2. **ควรซื้อเกิดไหม** — สรุปได้เมื่อรู้ภัยฐาน, เวลาเกิด, affordability และจำนวนเพื่อนที่ยังป้องกันได้
 
 > หลักการ: **verdict ซื้อเกิดเป็น math (deterministic) ไม่ใช่ LLM** เพราะเดิมพันสูง ห้าม hallucinate.
-> local SLM แปลง verdict เป็นเสียง persona + เล่า root cause (ดู §5).
+> เมื่อ verdict ยังเป็น unknown ให้แสดงเฉพาะ facts ที่ทราบและไม่ส่ง prompt ไปยัง SLM.
 
 ## 2. Input
 
 | Source | Data |
 | --- | --- |
-| GSI tick | `hero.alive`, `hero.level`, `player.gold`, `hero.buyback_cost`, `hero.respawn_seconds` |
-| CV | enemies pushing high-ground, building HP, allies-alive count |
-| respawn config | [`data/respawn.json`](file:///g:/G-Maiden/src-tauri/data/respawn.json) → respawn table + buyback penalty (via [`src/respawn.rs`](file:///g:/G-Maiden/src-tauri/src/respawn.rs)) |
+| GSI tick | `hero.alive`, `hero.level`, `player.gold`, `hero.buyback_cost`, `hero.respawn_seconds`; current ingestion does not expose a trusted game-mode value |
+| CV | enemies pushing high-ground, building HP, allies-alive count — not wired to G-Revive yet |
+| respawn config | [`data/respawn.json`](../../src-tauri/data/respawn.json) → respawn table + buyback penalty (via [`src/respawn.rs`](../../src-tauri/src/respawn.rs)) |
 | Combat log (CV) | last ~10s before death (root-cause narrative — SLM layer) |
 
-> GSI ให้ `hero.respawn_seconds` (live countdown) และ `hero.buyback_cost` ตรงเมื่อ subscribe hero details —
-> ใช้ค่านี้ก่อน; [`respawn.rs`](file:///g:/G-Maiden/src-tauri/src/respawn.rs) (table) เป็น fallback/predictor เมื่อ field หาย หรือเพื่อทำนาย "ถ้าตายตอนนี้".
+`hero.respawn_seconds` และ `hero.buyback_cost` เป็น facts เมื่อ GSI ส่งค่าบวกมาเท่านั้น; ค่า absent/zero
+เป็น unknown. Respawn table ใช้ได้เมื่อระบุ game mode, level, elapsed time และสถานะ Wraith King aura ครบ
+จาก source ที่เชื่อถือได้; live path ปัจจุบันยังไม่มี facts เหล่านี้ครบ จึงไม่ใช้ table เป็น fallback.
 
 ## 3. Logic
 
 ```
-on GSI tick where hero.alive == false:    // เข้า respawn-window mode
-  natural = hero.respawn_seconds           // GSI live ถ้ามี
-          ?? respawn::respawn_seconds(level, turbo) - elapsed_since_death   // fallback (table)
-          (× 0.9 ถ้ามี Wraith King Reincarnation ในทีม)
+on GSI tick where hero.alive == false:
+  natural    = positive hero.respawn_seconds, otherwise unknown
+  cost       = positive hero.buyback_cost, otherwise unknown
+  affordable = gold >= cost only when cost is known
 
-  affordable      = gold >= buyback_cost
-  too_late        = seconds_to_base_fall < natural        // เกิดเองไม่ทันป้องบ้าน
-  recommend       = base_under_threat AND affordable AND too_late
-  urgency         = Strong  if recommend AND allies_alive == 0   // เราคือความหวังเดียว
-                  | Consider if recommend
-                  | None
-  penalty_warning = respawn::next_respawn_after_buyback(level, turbo)  // +25s ตายซ้ำ
+  if base-under-threat is unknown:
+    verdict = Unknown
+  else if base is confirmed safe:
+    verdict = no-buyback-needed
+  else if natural, time-to-base-fall, affordability, or allies-alive is unknown:
+    verdict = Unknown
+  else:
+    apply the deterministic timing/affordability rule
 
-  emit ReviveAdvice { recommend, urgency, natural, affordable, penalty, reason }
+  emit ReviveAdvice { optional verdict, urgency, optional timer, cost, affordability, reason }
 ```
 
 decision inequality หลัก:
 
 ```
-ซื้อเกิด ⟺  base_under_threat  ∧  gold ≥ buyback_cost  ∧  time_to_base_fall < natural_respawn
+ซื้อเกิด ⟺  confirmed base_under_threat
+          ∧  gold ≥ known buyback_cost
+          ∧  known time_to_base_fall < known natural_respawn
+          ∧  known allies_alive
 ```
+
+Unknown values stay `None`; they never become `false`, four surviving allies, or a normal-mode guess.
+With the current GSI-only call site, the strategic verdict is therefore `Unknown` while the card can
+still report its fresh timer, gold, cost and affordability.
 
 ## 4. Output
 
 ```rust
 ReviveAdvice {
-    recommend_buyback: bool,
-    urgency: Urgency,                 // None | Consider | Strong
-    natural_respawn_remaining: f64,   // เกิดเองอีกกี่วิ
-    affordable: Option<bool>,         // None = ไม่รู้ buyback_cost
-    next_death_penalty: f64,          // +25s ถ้าซื้อเกิดแล้วตายซ้ำ
+    recommend_buyback: Option<bool>,  // None = evidence does not support a verdict
+    urgency: Urgency,                 // Unknown | None | Consider | Strong
+    natural_respawn_remaining: Option<f64>,
+    gold: u32,
+    buyback_cost: Option<u32>,
+    affordable: Option<bool>,
+    next_respawn_if_buyback: Option<f64>,
     reason: String,                   // เหตุผลไทยแบบ template (deterministic)
 }
 ```
 
-→ verdict ส่งให้ **local SLM** → เสียง persona: *"บ้านแตกแน่ค่ะ ซื้อเกิดเลย! รอบนี้โดน SF จับเพราะดันเลนเกิน คราวหน้าพก TP นะ"*
+→ verdict ที่รู้แน่แล้วจึงส่งให้ **local SLM** เพื่อเรียบเรียงเสียง persona; unknown แสดงเฉพาะ facts จาก GSI
 → ส่ง **G-Sensory** (overlay) + **Audio Engine** (narration)
 
 ## 5. Persona Behavior (SLM layer)
 
-- verdict (Rust) → SLM เล่า root cause + อ่าน verdict ในน้ำเสียง Maiden
+- verdict ที่มีหลักฐานครบ (Rust) → SLM เรียบเรียงคำแนะนำในน้ำเสียง Maiden
 - อ่อนโยน ไม่ judge: *"ไม่เป็นไรนะ รอบนี้โดนจับเพราะไม่มี ward — คราวหน้าระวังนิดนึง"*
 - Nerf CM humor ในจังหวะปลอดภัย: *"รอเกิดแป๊บนึงนะ ช้าเหมือน move speed ฉันเลย..."*
+- unknown verdict → ไม่เรียก SLM และไม่สร้างคำแนะนำจากช่องข้อมูลที่หาย
 
 ## 6. Constraints
 
 - **Deterministic verdict:** การตัดสินซื้อเกิดต้องเป็น math ล้วน (testable) — SLM ทำแค่ narrative/voice
 - **Generous latency:** ผู้เล่นตายอยู่ = idle → 3B SLM คิดได้สบาย (ไม่กระทบ FPS เพราะไม่ได้คุมฮีโร่)
-- **Graceful unknowns:** ถ้าไม่รู้ `buyback_cost`/threat → degrade เป็นคำแนะนำกว้าง ไม่เดา
+- **Graceful unknowns:** เมื่อไม่รู้ mode/threat/allies/timer/cost ให้แสดงเฉพาะ timer/cost/affordability ที่มีจริง; ไม่มีข้อความว่า safe หรือให้เก็บเงินจากข้อมูลที่หาย
+- **Expiry:** buyback card และ narrative ต้องถูกล้างเมื่อ GSI ยืนยันว่า player กลับมามีชีวิต หรือ session สิ้นสุด/ข้อมูลหมดอายุ
 - **Privacy:** root-cause analysis อยู่ local เท่านั้น (combat log = raw data, ห้าม upload)
 
 ## 7. Dependencies
@@ -88,23 +111,27 @@ ReviveAdvice {
 | --- | --- |
 | Game state (alive/level/gold/buyback_cost) | GSI Server |
 | Threat (base push, allies-alive, building HP) | G-Sentry / CV |
-| Respawn timing + buyback penalty | **[`src/respawn.rs`](file:///g:/G-Maiden/src-tauri/src/respawn.rs)** (config: [`data/respawn.json`](file:///g:/G-Maiden/src-tauri/data/respawn.json)) |
+| Respawn timing + buyback penalty | **[`src/respawn.rs`](../../src-tauri/src/respawn.rs)** (config: [`data/respawn.json`](../../src-tauri/data/respawn.json)) |
 | Root-cause narrative + voice | Local SLM (Brain Router) |
 | → แสดงผล | **G-Sensory** (overlay) |
 | → เสียง | Audio Engine |
 
 ## 8. Acceptance Criteria
 
-- [x] buyback verdict เป็น pure function ทดสอบได้ ([`revive::advise_buyback`](file:///g:/G-Maiden/src-tauri/src/revive.rs#L105))
-- [x] ใช้ [`respawn.rs`](file:///g:/G-Maiden/src-tauri/src/respawn.rs) config จริง (respawn table + +25 penalty + WK aura)
-- [x] parse `hero.buyback_cost` + `hero.respawn_seconds` จาก GSI ([`DeathContext::from_tick`](file:///g:/G-Maiden/src-tauri/src/revive.rs#L50))
-- [x] live wiring: [`request_buyback_advice`](file:///g:/G-Maiden/src-tauri/src/main.rs) command → emit `buyback-advice` + SLM `buyback-narrative`
-- [x] SLM narrative: persona voice ([`narrate_prompt`](file:///g:/G-Maiden/src-tauri/src/revive.rs#L170) → [`slm::advise_offline`](file:///g:/G-Maiden/src-tauri/src/slm.rs#L22), async best-effort)
-- [ ] threat estimate (base-fall time, allies-alive) จาก CV — verdict ยัง conservative จนกว่าจะ wire
-- [ ] root-cause "ทำไมตาย" จาก combat-log CV (ตอนนี้ narrate ห้ามแต่งเหตุการณ์)
+- [x] buyback verdict เป็น pure function ทดสอบได้ ([`revive::advise_buyback`](../../src-tauri/src/revive.rs))
+- [x] ใช้ [`respawn.rs`](../../src-tauri/src/respawn.rs) config เมื่อ mode, level, elapsed time และ aura ถูกระบุครบ; ไม่ตั้ง mode/aura เป็นค่า default
+- [x] parse `hero.buyback_cost` + `hero.respawn_seconds` จาก GSI ([`DeathContext::from_tick`](../../src-tauri/src/revive.rs))
+- [x] live wiring: [`request_buyback_advice`](../../src-tauri/src/lib.rs) command → emit `buyback-advice`; emit SLM `buyback-narrative` only when a verdict is known
+- [x] unknown threat/mode stays `Unknown`; card reports known GSI timer/gold/cost/affordability without a safe default
+- [x] card clears on respawn; advice and narrative responses carry a per-death request ID and are ignored after respawn or a newer death
+- [ ] SLM narrative quality against the grounded verdict
+- [ ] threat estimate (base-fall time, allies-alive) จาก CV — verdict ยังคง Unknown จนกว่าจะ wire source ที่เชื่อถือได้
+- [ ] root-cause "ทำไมตาย" จาก combat-log CV (ตอนนี้ยังไม่มี producer และไม่ส่งสาเหตุให้ SLM)
 - [ ] verdict ถูกต้อง ≥90% เทียบ scenario เดิมพันบ้าน (manual eval)
 
 ## Changelog
 | Version | Date | Summary |
 | --- | --- | --- |
 | — | 2026-07-19 | link/metadata sweep (G1.5): wikilink/symbol-link fixes only — no content change |
+| 0.2.0 | 2026-10-12 | Keep unknown buyback inputs explicit, avoid safe defaults and mode guesses, and limit the live card/SLM to evidence-backed facts |
+| 0.2.1 | 2026-10-12 | Correlate buyback advice and narrative with the active death so late same-session responses cannot replace a newer card |

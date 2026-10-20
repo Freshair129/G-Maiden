@@ -26,6 +26,7 @@ export interface GameTick extends MatchSessionMetadata {
   assists: number
   last_hits: number
   denies: number
+  buyback_cost: number
   hero: string
   level: number
   alive: boolean
@@ -66,15 +67,18 @@ export interface AdviceUpdate extends MatchSessionMetadata {
 }
 /** G-Revive: deterministic buyback verdict (revive.rs → `buyback-advice`).
  *  Mirrors `ReviveAdvice`; `urgency` is the serde-serialized `Urgency` enum. */
-export type BuybackUrgency = 'None' | 'Consider' | 'Strong'
+export type BuybackUrgency = 'Unknown' | 'None' | 'Consider' | 'Strong'
 export interface ReviveAdvice extends MatchSessionMetadata {
-  recommend_buyback: boolean
+  recommend_buyback: boolean | null
   urgency: BuybackUrgency
-  natural_respawn_remaining: number
+  gold: number
+  buyback_cost: number | null
+  natural_respawn_remaining: number | null
   affordable: boolean | null
-  next_respawn_if_buyback: number
+  next_respawn_if_buyback: number | null
   reason: string
 }
+export interface BuybackAdviceEvent extends ReviveAdvice { request_id: string }
 export type GsiFreshness = 'unavailable' | 'waiting' | 'fresh' | 'stale'
 
 /** Connection and validated-source age pushed by the Rust watchdog (gsi.rs). */
@@ -97,6 +101,7 @@ export interface AnnouncerBanner extends MatchSessionMetadata {
 }
 
 export interface SessionTextEvent extends MatchSessionMetadata { text: string }
+export interface BuybackNarrativeEvent extends SessionTextEvent { request_id: string }
 
 /** sensor-health (capture.rs) — the overlay's copy of the minimap-sensor
  * contract. Mirrors `live/events.ts`'s `SensorHealth`; duplicated rather than
@@ -108,6 +113,14 @@ export interface SensorHealth {
   backend: 'dxgi' | 'gdi' | 'lite'
   classifier: boolean
   throttled: boolean
+  dotaForeground: boolean
+  layoutStatus: 'unknown' | 'candidate' | 'unsupported' | 'supported'
+  layoutReason: string
+  displayWidth: number
+  displayHeight: number
+  displayDpi: number | null
+  monitorCount: number
+  minimapSide: number
   /** null in Lite mode: no capture loop means no frame clock to report. */
   frameAgeMs: number | null
   healthy: boolean

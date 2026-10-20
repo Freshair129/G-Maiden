@@ -72,7 +72,9 @@ pub use backend::{retry, start};
 
 #[cfg(not(feature = "wgc"))]
 mod backend {
-    use std::sync::mpsc::{self, Receiver, SyncSender, TryRecvError, TrySendError};
+    use std::sync::mpsc::{
+        self, Receiver, RecvTimeoutError, SyncSender, TryRecvError, TrySendError,
+    };
     use std::sync::{Mutex, OnceLock};
     use std::time::{Duration, Instant};
 
@@ -146,11 +148,29 @@ mod backend {
     /// down so DXGI/device state can be rebuilt. This absorbs short Alt-Tab
     /// and mode changes while bounding a permanently lost capture session.
     const CAPTURE_RECOVERY_MS: u64 = STALE_FRAME_MS * 3;
+    /// Bounded backoff while capture is degraded; retry stays on the one worker.
+    const CAPTURE_RETRY_BASE_MS: u64 = 1_000;
+    const CAPTURE_RETRY_MAX_MS: u64 = 5_000;
+    const FOREGROUND_RECHECK_MS: u64 = 250;
 
     /// Heartbeat for `sensor-health` (ms). The event is edge-triggered on any
     /// field the UI branches on; this only exists so `frame_age_ms` keeps
     /// ticking on screen while nothing else changes.
     const HEALTH_HEARTBEAT_MS: u128 = 1_000;
+
+    fn sensor_is_healthy(
+        backend: &str,
+        classifier: bool,
+        dota_foreground: bool,
+        layout_status: &str,
+        frame_age_ms: u64,
+    ) -> bool {
+        backend != "lite"
+            && classifier
+            && dota_foreground
+            && layout_status == "supported"
+            && frame_age_ms <= STALE_FRAME_MS
+    }
 
     /// Minimum gap (ms) between recorded `risk_trace` log lines ≈ 1 Hz — this is
     /// the offline re-fit input for G-Motion/G-Signal (audit item: thresholds
@@ -248,6 +268,16 @@ mod backend {
         classifier: bool,
         /// Governor has the process over budget ⇒ capture is down to 2 Hz.
         throttled: bool,
+        /// The foreground window belongs to Dota; desktop/background frames are not observations.
+        dota_foreground: bool,
+        /// `candidate` remains untrusted pending real-image coverage evidence.
+        layout_status: &'static str,
+        layout_reason: &'static str,
+        display_width: u32,
+        display_height: u32,
+        display_dpi: Option<u32>,
+        monitor_count: u32,
+        minimap_side: u32,
         /// Milliseconds since the last frame that actually reached the CV
         /// pipeline. Held near zero while out of a match so re-entry is clean.
         /// `None` in Lite mode: there is no capture loop, so there is no frame
@@ -267,6 +297,14 @@ mod backend {
                 backend: "lite",
                 classifier: false,
                 throttled: false,
+                dota_foreground: false,
+                layout_status: "unknown",
+                layout_reason: "capture-unavailable",
+                display_width: 0,
+                display_height: 0,
+                display_dpi: None,
+                monitor_count: 0,
+                minimap_side: 0,
                 frame_age_ms: None,
                 healthy: false,
             }
@@ -275,9 +313,38 @@ mod backend {
         /// What the UI branches on. Fail-closed: anything we are unsure about
         /// resolves to "not healthy", because the cost of wrongly claiming the
         /// sensor works is a player trusting a green light over a dead feed.
-        fn key(&self) -> (&'static str, bool, bool, bool) {
-            (self.backend, self.classifier, self.throttled, self.healthy)
+        fn key(&self) -> SensorHealthKey {
+            SensorHealthKey {
+                backend: self.backend,
+                classifier: self.classifier,
+                throttled: self.throttled,
+                dota_foreground: self.dota_foreground,
+                layout_status: self.layout_status,
+                layout_reason: self.layout_reason,
+                display_width: self.display_width,
+                display_height: self.display_height,
+                display_dpi: self.display_dpi,
+                monitor_count: self.monitor_count,
+                minimap_side: self.minimap_side,
+                healthy: self.healthy,
+            }
         }
+    }
+
+    #[derive(Clone, Copy, PartialEq, Eq)]
+    struct SensorHealthKey {
+        backend: &'static str,
+        classifier: bool,
+        throttled: bool,
+        dota_foreground: bool,
+        layout_status: &'static str,
+        layout_reason: &'static str,
+        display_width: u32,
+        display_height: u32,
+        display_dpi: Option<u32>,
+        monitor_count: u32,
+        minimap_side: u32,
+        healthy: bool,
     }
 
     /// Per-frame pipeline state. Same shape as the old WGC `MinimapCapture` minus
@@ -309,12 +376,20 @@ mod backend {
         /// shared counter moves past this, a match boundary happened and
         /// Sentry/Motion/Signal are rebuilt (see `reset_pipeline`).
         match_epoch: u64,
+        /// Last observed focus state; a transition invalidates pre-focus tracks.
+        dota_foreground: Option<bool>,
+        screen_width: u32,
+        screen_height: u32,
+        layout_status: &'static str,
+        layout_reason: &'static str,
+        display_dpi: Option<u32>,
+        monitor_count: u32,
         /// Last frame that reached `process_frame`. Drives `frame_age_ms`.
         last_frame_ok: Instant,
         /// Last `sensor-health` emit + the field tuple it carried, so the event
         /// is edge-triggered rather than spammed at loop cadence.
         last_health_emit: Instant,
-        last_health_key: Option<(&'static str, bool, bool, bool)>,
+        last_health_key: Option<SensorHealthKey>,
     }
 
     impl CaptureState {
@@ -342,10 +417,49 @@ mod backend {
                 draft,
                 draft_region,
                 match_epoch: crate::runtime::match_epoch(),
+                dota_foreground: None,
+                screen_width: screen_w,
+                screen_height: screen_h,
+                layout_status: "unknown",
+                layout_reason: "profile-not-checked",
+                display_dpi: None,
+                monitor_count: 0,
                 last_frame_ok: now,
                 last_health_emit: now,
                 last_health_key: None,
             }
+        }
+
+        fn refresh_layout(&mut self) {
+            let profile = crate::dxgi::capture_layout_status(self.screen_width, self.screen_height);
+            let changed = self.layout_status != profile.status
+                || self.layout_reason != profile.reason
+                || self.display_dpi != profile.dpi
+                || self.monitor_count != profile.monitor_count;
+            self.layout_status = profile.status;
+            self.layout_reason = profile.reason;
+            self.display_dpi = profile.dpi;
+            self.monitor_count = profile.monitor_count;
+            if changed {
+                self.reset_pipeline();
+                self.last_frame_ok =
+                    Instant::now() - Duration::from_millis(STALE_FRAME_MS.saturating_add(1));
+            }
+        }
+
+        fn observe_dota_foreground(&mut self, foreground: bool) -> bool {
+            let changed = self.dota_foreground != Some(foreground);
+            if changed {
+                if self.dota_foreground.is_some() {
+                    self.reset_pipeline();
+                }
+                self.dota_foreground = Some(foreground);
+                if !foreground {
+                    self.last_frame_ok =
+                        Instant::now() - Duration::from_millis(STALE_FRAME_MS.saturating_add(1));
+                }
+            }
+            changed
         }
 
         /// Rebuild the three stateful G-modules. Their tracks are only valid
@@ -378,7 +492,7 @@ mod backend {
         /// the [`HEALTH_HEARTBEAT_MS`] heartbeat. Called from the loop body,
         /// never from `process_frame` — the ≤300ms G-Signal path must not pay
         /// for reporting.
-        fn emit_health(&mut self, backend: &'static str) {
+        fn emit_health(&mut self, backend: &'static str, dota_foreground: bool) {
             let frame_age_ms = self.last_frame_ok.elapsed().as_millis() as u64;
             let classifier = self.detector.is_active();
             let throttled = crate::governor::cpu_throttle();
@@ -386,8 +500,22 @@ mod backend {
                 backend,
                 classifier,
                 throttled,
+                dota_foreground,
+                layout_status: self.layout_status,
+                layout_reason: self.layout_reason,
+                display_width: self.screen_width,
+                display_height: self.screen_height,
+                display_dpi: self.display_dpi,
+                monitor_count: self.monitor_count,
+                minimap_side: self.region.side,
                 frame_age_ms: Some(frame_age_ms),
-                healthy: backend != "lite" && classifier && frame_age_ms <= STALE_FRAME_MS,
+                healthy: sensor_is_healthy(
+                    backend,
+                    classifier,
+                    dota_foreground,
+                    self.layout_status,
+                    frame_age_ms,
+                ),
             };
             let key = health.key();
             if self.last_health_key != Some(key)
@@ -415,7 +543,10 @@ mod backend {
         fn set_region(&mut self, region: MinimapRegion, screen_w: u32, screen_h: u32) {
             self.region = region;
             self.icon = region.icon_size();
+            self.screen_width = screen_w;
+            self.screen_height = screen_h;
             self.draft_region = DraftRegion::for_resolution(screen_w, screen_h);
+            self.refresh_layout();
             self.sentry = Sentry::new();
             self.motion.reset_tracking();
             self.signal = Signal::new();
@@ -493,18 +624,37 @@ mod backend {
         }
     }
 
+    fn retry_delay(failures: u32) -> Duration {
+        let multiplier = 1u64 << failures.min(4);
+        Duration::from_millis(
+            CAPTURE_RETRY_BASE_MS
+                .saturating_mul(multiplier)
+                .min(CAPTURE_RETRY_MAX_MS),
+        )
+    }
+
     fn supervise(app: AppHandle, receiver: Receiver<()>) {
+        let mut failures = 0u32;
         loop {
             match run_dxgi(app.clone(), &receiver) {
                 Ok(CaptureExit::RetryRequested) => {
+                    failures = 0;
                     publish_mode(&app, "retrying");
                 }
                 Ok(CaptureExit::SenderClosed) => break,
                 Err(error) => {
                     publish_lite(&app, &error);
-                    match receiver.recv() {
-                        Ok(()) => publish_mode(&app, "retrying"),
-                        Err(_) => break,
+                    let delay = retry_delay(failures);
+                    failures = failures.saturating_add(1);
+                    crate::log::error(&format!(
+                        "[capture] retrying DXGI initialization in {}ms",
+                        delay.as_millis()
+                    ));
+                    match receiver.recv_timeout(delay) {
+                        Ok(()) | Err(RecvTimeoutError::Timeout) => {
+                            publish_mode(&app, "retrying");
+                        }
+                        Err(RecvTimeoutError::Disconnected) => break,
                     }
                 }
             }
@@ -542,6 +692,7 @@ mod backend {
         ));
         let (screen_w, screen_h) = (dxgi.width(), dxgi.height());
         let mut state = CaptureState::new(app, region, screen_w, screen_h);
+        state.refresh_layout();
         let mut last_monitor_check = Instant::now();
         // CR-live-probe-rect: fires at most once — logs the ONE legitimate case
         // an `acquire_rect` can fail where `acquire_frame` would not (the
@@ -561,10 +712,20 @@ mod backend {
             // frame can fold into last match's tracks. Ahead of the draft and
             // in-game gates so state is already clean when the horn lands.
             state.sync_match_epoch();
-            // Honest sensor state for the overlay + deck. Ahead of the gates
-            // too, so "capture is alive" is reported at the menu and during the
-            // draft, not only mid-match.
-            state.emit_health(dxgi.backend());
+            // Honest sensor state for the overlay + deck. Never treat desktop or
+            // a background Dota window as a minimap observation.
+            let dota_foreground = crate::dxgi::dota_window_is_foreground();
+            if state.observe_dota_foreground(dota_foreground) && dota_foreground {
+                last_monitor_check = Instant::now() - Duration::from_millis(MONITOR_RECHECK_MS);
+            }
+            state.emit_health(dxgi.backend(), dota_foreground);
+            if dxgi.device_lost() {
+                return Err("D3D device was removed or reset".into());
+            }
+            if !dota_foreground {
+                std::thread::sleep(Duration::from_millis(FOREGROUND_RECHECK_MS));
+                continue;
+            }
             // CR012-P1-01: periodically re-detect which monitor Dota 2 is on
             // and hot-swap the DXGI duplication if it moved (or if the app
             // started before Dota launched and only now can find it).
@@ -604,6 +765,12 @@ mod backend {
                         }
                     }
                 }
+                state.refresh_layout();
+            }
+
+            if !matches!(state.layout_status, "candidate" | "supported") {
+                std::thread::sleep(Duration::from_millis(FOREGROUND_RECHECK_MS));
+                continue;
             }
 
             // Draft-CV: read the roster off the pick screen before the horn. Runs
@@ -764,7 +931,12 @@ mod backend {
         let min_y = boxes.iter().map(|b| b.y).min().unwrap_or(0);
         let max_x = boxes.iter().map(|b| b.x + b.side).max().unwrap_or(0);
         let max_y = boxes.iter().map(|b| b.y + b.side).max().unwrap_or(0);
-        (min_x, min_y, max_x.saturating_sub(min_x), max_y.saturating_sub(min_y))
+        (
+            min_x,
+            min_y,
+            max_x.saturating_sub(min_x),
+            max_y.saturating_sub(min_y),
+        )
     }
 
     /// Crop the minimap square out of a full-screen tightly-packed BGRA8 buffer.
@@ -1073,12 +1245,7 @@ mod backend {
                             crate::utterance::emit_for_session(
                                 &state.app,
                                 crate::utterance::UtterancePayload::new_for_session(
-                                    "signal",
-                                    "line",
-                                    GANK_LINE,
-                                    None,
-                                    None,
-                                    session,
+                                    "signal", "line", GANK_LINE, None, None, session,
                                 ),
                             );
                         }
@@ -1109,7 +1276,9 @@ mod backend {
                                 armed,
                             ),
                         );
-                        if armed && crate::runtime::is_current_capture_session(session.session_epoch) {
+                        if armed
+                            && crate::runtime::is_current_capture_session(session.session_epoch)
+                        {
                             let event = crate::runtime::MatchSessionEvent::new(&alert, session);
                             let _ = state.app.emit("gank-alert", event);
                         }
@@ -1138,7 +1307,9 @@ mod backend {
                             session.session_epoch,
                             crate::log::gank_revision_record(),
                         );
-                        if armed && crate::runtime::is_current_capture_session(session.session_epoch) {
+                        if armed
+                            && crate::runtime::is_current_capture_session(session.session_epoch)
+                        {
                             let _ = state.app.emit("gank-clear", session);
                         }
                     }
@@ -1232,6 +1403,39 @@ mod backend {
             assert!(queue_retry(&sender).is_ok());
             assert!(receiver.try_recv().is_ok());
             assert!(receiver.try_recv().is_err());
+        }
+
+        #[test]
+        fn capture_retry_backoff_is_bounded() {
+            assert_eq!(retry_delay(0), Duration::from_millis(1_000));
+            assert_eq!(retry_delay(1), Duration::from_millis(2_000));
+            assert_eq!(retry_delay(2), Duration::from_millis(4_000));
+            assert_eq!(retry_delay(3), Duration::from_millis(5_000));
+            assert_eq!(retry_delay(u32::MAX), Duration::from_millis(5_000));
+        }
+
+        #[test]
+        fn minimap_health_requires_supported_layout_and_fresh_foreground_frames() {
+            assert!(sensor_is_healthy(
+                "dxgi",
+                true,
+                true,
+                "supported",
+                STALE_FRAME_MS
+            ));
+            assert!(sensor_is_healthy("gdi", true, true, "supported", 100));
+            assert!(!sensor_is_healthy("lite", true, true, "supported", 100));
+            assert!(!sensor_is_healthy("dxgi", false, true, "supported", 100));
+            assert!(!sensor_is_healthy("dxgi", true, false, "supported", 100));
+            assert!(!sensor_is_healthy("dxgi", true, true, "candidate", 100));
+            assert!(!sensor_is_healthy("dxgi", true, true, "unsupported", 100));
+            assert!(!sensor_is_healthy(
+                "dxgi",
+                true,
+                true,
+                "supported",
+                STALE_FRAME_MS + 1
+            ));
         }
 
         fn synthetic_frame(n: usize) -> Frame {

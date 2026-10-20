@@ -424,15 +424,32 @@ async fn request_advice(
     Ok(result)
 }
 
-/// G-Revive: on death, return the deterministic buyback verdict immediately and
-/// fire a best-effort local-SLM narrative that arrives later via `buyback-narrative`.
-/// Threat fields default safe until CV is wired, so the verdict is conservative.
+/// G-Revive: on death, return the deterministic buyback assessment immediately.
+/// When the evidence supports a verdict, a best-effort local-SLM narrative may
+/// arrive later via `buyback-narrative`; unknown inputs never trigger a guess.
+#[derive(Clone, Debug, serde::Serialize)]
+struct BuybackAdvicePayload {
+    #[serde(flatten)]
+    advice: revive::ReviveAdvice,
+    request_id: String,
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
+struct BuybackNarrativePayload {
+    text: String,
+    request_id: String,
+}
+
 #[tauri::command]
 async fn request_buyback_advice(
     app: tauri::AppHandle,
     tick: gsi::GameTick,
     session_epoch: u64,
+    request_id: String,
 ) -> Result<revive::ReviveAdvice, String> {
+    if request_id.is_empty() || request_id.len() > 64 {
+        return Err("Buyback request id is invalid.".into());
+    }
     if !runtime::is_current_live_session(session_epoch) || !tick.in_game {
         return Err("Buyback request does not belong to the active live match.".into());
     }
@@ -442,26 +459,38 @@ async fn request_buyback_advice(
     }
     let ctx = revive::DeathContext::from_tick(&tick);
     let advice = revive::advise_buyback(&ctx);
-    let event = runtime::MatchSessionEvent::new(advice.clone(), &session);
+    let event = runtime::MatchSessionEvent::new(
+        BuybackAdvicePayload {
+            advice: advice.clone(),
+            request_id: request_id.clone(),
+        },
+        &session,
+    );
     let _ = app.emit("buyback-advice", event);
 
-    // Voice the verdict via the local SLM off the hot path — fire-and-forget so the
-    // UI gets the verdict now; the narrative emits when (if) ollama answers.
-    let prompt = revive::narrate_prompt(&advice, &tick);
-    let app2 = app.clone();
-    tauri::async_runtime::spawn_blocking(move || {
-        // Use the user-picked model from Settings; empty → legacy chain in slm.rs.
-        let model = runtime::master_ollama_model();
-        if let Ok(text) = slm::advise_offline(&prompt, &model) {
-            if runtime::is_current_active_session_epoch(session_epoch) {
-                let current = runtime::match_session_snapshot();
-                if current.session_epoch == session_epoch {
-                    let event = runtime::SessionTextEvent::new(text, &current);
-                    let _ = app2.emit("buyback-narrative", event);
+    // Unknown buyback state contains only known GSI facts; do not ask an SLM to
+    // turn missing threat/mode inputs into a recommendation. Known verdicts can
+    // be phrased off the hot path while the deterministic card is already shown.
+    if advice.recommend_buyback.is_some() {
+        let prompt = revive::narrate_prompt(&advice, &tick);
+        let app2 = app.clone();
+        tauri::async_runtime::spawn_blocking(move || {
+            // Use the user-picked model from Settings; empty → legacy chain in slm.rs.
+            let model = runtime::master_ollama_model();
+            if let Ok(text) = slm::advise_offline(&prompt, &model) {
+                if runtime::is_current_active_session_epoch(session_epoch) {
+                    let current = runtime::match_session_snapshot();
+                    if current.session_epoch == session_epoch {
+                        let event = runtime::MatchSessionEvent::new(
+                            BuybackNarrativePayload { text, request_id },
+                            &current,
+                        );
+                        let _ = app2.emit("buyback-narrative", event);
+                    }
                 }
             }
-        }
-    });
+        });
+    }
     Ok(advice)
 }
 

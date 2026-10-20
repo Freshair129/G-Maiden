@@ -6,8 +6,8 @@ import { VoiceWave } from '../overlay/VoiceWave'
 import { STREAK_LABELS } from '../overlay/streaks'
 import { crossedAnyLevelUpMilestone, crossedLevelUpMilestones } from '../personaMilestones'
 import type {
-  GameTick, MinimapCv, GankAlert, EnemyMissing, AdviceUpdate, ReviveAdvice, GsiStatus, SensorHealth,
-  MatchSessionMetadata, AnnouncerBanner, SessionTextEvent,
+  GameTick, MinimapCv, GankAlert, EnemyMissing, AdviceUpdate, ReviveAdvice, BuybackAdviceEvent,
+  BuybackNarrativeEvent, GsiStatus, SensorHealth, MatchSessionMetadata, AnnouncerBanner,
   Settings, GankState, PersonaEvent,
 } from './types'
 import { DEFAULTS } from './types'
@@ -38,7 +38,10 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   // G-Revive: buyback verdict shown while the player is dead. `advice` is the
   // deterministic verdict; `narrative` is the local-SLM voiced line that arrives
   // a beat later on `buyback-narrative`. Cleared on respawn.
-  const [buyback, setBuyback] = useState<{ advice: ReviveAdvice; narrative: string | null } | null>(null)
+  const [buyback, setBuyback] = useState<{
+    advice: ReviveAdvice; narrative: string | null; requestId: string
+  } | null>(null)
+  const activeBuybackRequestId = useRef<string | null>(null)
   const [previewMode, setPreviewMode] = useState(false)
   const gsiFresh = gsiStatus?.gsi_freshness === 'fresh'
   const gsiActive = gsiFresh
@@ -112,6 +115,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     setMissingHeroes(new Set())
     setOverlayAdvice(null)
     setBuyback(null)
+    activeBuybackRequestId.current = null
     setToast(null)
     setKillBanner(null)
     setPackBanner(null)
@@ -262,13 +266,23 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     // G-Revive: buyback verdict card. `buyback-advice` carries the deterministic
     // verdict (broadcast, so it shows regardless of which window triggered the
     // request); `buyback-narrative` follows with Maiden's voiced line.
-    const uBA = listen<ReviveAdvice>('buyback-advice', (e) => {
+    const uBA = listen<BuybackAdviceEvent>('buyback-advice', (e) => {
       if (!acceptsSessionEvent(e.payload, ['live'])) return
-      if (mayUseOwnState()) setBuyback({ advice: e.payload, narrative: null })
+      if (e.payload.request_id !== activeBuybackRequestId.current) return
+      const currentTick = tickRef.current
+      if (mayUseOwnState() && currentTick?.in_game && !currentTick.alive) {
+        setBuyback({ advice: e.payload, narrative: null, requestId: e.payload.request_id })
+      }
     })
-    const uBN = listen<SessionTextEvent>('buyback-narrative', (e) => {
+    const uBN = listen<BuybackNarrativeEvent>('buyback-narrative', (e) => {
       if (!acceptsSessionEvent(e.payload, ['live'])) return
-      if (mayUseOwnState()) setBuyback((b) => (b ? { ...b, narrative: e.payload.text } : b))
+      if (e.payload.request_id !== activeBuybackRequestId.current) return
+      const currentTick = tickRef.current
+      if (mayUseOwnState() && currentTick?.in_game && !currentTick.alive) {
+        setBuyback((b) => (
+          b?.requestId === e.payload.request_id ? { ...b, narrative: e.payload.text } : b
+        ))
+      }
     })
     const u10 = listen<number>('volume-change', (e) => {
       setVolToast(e.payload)
@@ -514,11 +528,18 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       if (currentTick.in_game) {
         const requestEpoch = currentTick.session_epoch ?? sessionEpoch.current
         if (requestEpoch !== null && Number.isSafeInteger(requestEpoch)) {
-          void invoke('request_buyback_advice', { tick: currentTick, sessionEpoch: requestEpoch }).catch(() => {})
+          const requestId = crypto.randomUUID()
+          activeBuybackRequestId.current = requestId
+          void invoke('request_buyback_advice', {
+            tick: currentTick,
+            sessionEpoch: requestEpoch,
+            requestId,
+          }).catch(() => {})
         }
       }
     }
     if (!was && currentTick.alive) {
+      activeBuybackRequestId.current = null
       setBuyback(null) // respawned — dismiss the card
     }
   }, [tick?.alive, tick?.in_game])
@@ -533,6 +554,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     // outage, so feed staleness cannot masquerade as a match-end transition.
     const now = matchActive
     if (prevInGame.current && !now) {
+      activeBuybackRequestId.current = null
       setBuyback(null)
       setOverlayAdvice(null)
       setGank(null)
@@ -550,6 +572,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   useEffect(() => {
     const nowFresh = gsiFresh || previewMode
     if (wasFresh.current && !nowFresh) {
+      activeBuybackRequestId.current = null
       setBuyback(null)
       setOverlayAdvice(null)
       setToast(null)
@@ -704,12 +727,25 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   // Accent tracks urgency: Strong = red (buy back NOW), Consider = amber, else ice.
   const buybackPanel = buyback && s.gankVisuals ? (() => {
     const a = buyback.advice
-    const accent = a.urgency === 'Strong' ? C.bad : a.urgency === 'Consider' ? C.warn : C.ice
-    const verdict = a.recommend_buyback ? (a.urgency === 'Strong' ? 'ซื้อเกิดเลย!' : 'ควรซื้อเกิด') : 'รอเกิด'
-    // Live GSI countdown over the frozen at-death snapshot (parity with FullOverlay).
+    const accent = a.urgency === 'Strong' ? C.bad : a.urgency === 'Consider' ? C.warn : a.urgency === 'Unknown' ? C.mut : C.ice
+    const verdict = a.recommend_buyback === null
+      ? 'ข้อมูลไม่พอสรุป'
+      : a.recommend_buyback
+        ? (a.urgency === 'Strong' ? 'ซื้อเกิดเลย!' : 'ควรซื้อเกิด')
+        : a.affordable === false ? 'ซื้อเกิดไม่ไหว' : 'ไม่จำเป็นต้องซื้อเกิด'
     const secs = tick && !tick.alive && tick.respawn_seconds > 0
       ? tick.respawn_seconds
-      : Math.max(0, Math.round(a.natural_respawn_remaining))
+      : a.natural_respawn_remaining
+    const gold = tick && !tick.alive ? tick.gold : a.gold
+    const cost = tick && !tick.alive
+      ? (tick.buyback_cost > 0 ? tick.buyback_cost : null)
+      : a.buyback_cost
+    const affordability = cost === null ? null : gold >= cost
+    const facts = [
+      secs === null ? 'เวลาเกิดยังไม่ทราบ' : `เกิดเองใน ${Math.max(0, Math.round(secs))}s`,
+      cost === null ? `ค่า buyback ยังไม่ทราบ · ทอง ${gold}` : `ค่า buyback ${cost} · ทอง ${gold}`,
+      affordability === null ? 'ยังไม่ทราบว่าซื้อไหวหรือไม่' : affordability ? 'เงินพอซื้อเกิด' : 'เงินไม่พอซื้อเกิด',
+    ].join(' · ')
     return (
       <div style={{
         ...overlayPanel(s.opacity), padding: '10px 16px', maxWidth: 380, fontSize: 13,
@@ -720,10 +756,11 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
           <span style={{ background: accent, color: C.bg, borderRadius: 6, padding: '1px 7px', fontWeight: 700, letterSpacing: 0.4 }}>{verdict}</span>
         </div>
         <div style={{ color: C.txt }}>{buyback.narrative || a.reason}</div>
-        <div style={{ fontSize: 11, color: C.mut, marginTop: 4 }}>
-          เกิดเองใน {secs}s{a.affordable === false ? ' · เงินไม่พอซื้อเกิด' : ''}
-        </div>
-        <button onClick={() => setBuyback(null)} style={{
+        <div style={{ fontSize: 11, color: C.mut, marginTop: 4 }}>{facts}</div>
+        <button onClick={() => {
+          activeBuybackRequestId.current = null
+          setBuyback(null)
+        }} style={{
           position: 'absolute', top: 6, right: 8, background: 'transparent', border: 'none',
           color: C.mut, cursor: 'pointer', fontSize: 13, lineHeight: 1,
         }}>✕</button>

@@ -109,12 +109,24 @@ export interface MinimapCv extends MatchSessionMetadata {
  *  missing-hero set means "nothing detected", which is indistinguishable from
  *  "nothing is being detected" — Lite mode, a missing ONNX model, or a capture
  *  stall all produce it. `backend`/`classifier`/`throttled`/`frameAgeMs` are
- *  diagnosis, not the gate. Note `backend: "gdi"` is still healthy: frames flow,
- *  just via the CPU BitBlt fall-back rather than Desktop Duplication. */
+ *  diagnosis, not the gate. `dotaForeground` is also required: desktop or
+ *  background-game frames must not count as minimap observations. `layoutStatus`
+ *  is only a candidate until actual images establish coverage. Note
+ *  `backend: "gdi"` is still healthy when Dota is foreground and frames flow,
+ *  just via the CPU BitBlt fall-back rather than Desktop Duplication; it is
+ *  healthy only after the active layout has also been accepted as supported. */
 export interface SensorHealth {
   backend: "dxgi" | "gdi" | "lite";
   classifier: boolean;
   throttled: boolean;
+  dotaForeground: boolean;
+  layoutStatus: "unknown" | "candidate" | "unsupported" | "supported";
+  layoutReason: string;
+  displayWidth: number;
+  displayHeight: number;
+  displayDpi: number | null;
+  monitorCount: number;
+  minimapSide: number;
   /** null in Lite mode: no capture loop means no frame clock to report. */
   frameAgeMs: number | null;
   healthy: boolean;

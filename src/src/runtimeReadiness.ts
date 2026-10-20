@@ -26,10 +26,18 @@ export function readinessFromRuntime(input: {
         : input.gsiConfigured === false || (gsi?.gsi_active === false && gsi.dota_running)
           ? "degraded"
           : "unknown",
-    capture: sensor ? (sensor.healthy ? "ready" : "degraded") : "unknown",
+    capture: sensor
+      ? sensor.backend !== "lite" && sensor.dotaForeground && sensor.frameAgeMs !== null && sensor.frameAgeMs <= 2_000
+        ? "ready"
+        : "degraded"
+      : "unknown",
     // A live sensor or loaded classifier is not evidence that the minimap is
     // covered correctly for this user's display and HUD geometry.
-    minimap: sensor && (sensor.backend === "lite" || !sensor.classifier) ? "degraded" : "unknown",
+    minimap: sensor && (sensor.backend === "lite" || !sensor.classifier || !sensor.dotaForeground || sensor.layoutStatus === "unsupported")
+      ? "degraded"
+      : sensor?.layoutStatus === "supported" && sensor.healthy
+        ? "ready"
+        : "unknown",
     overlay: input.overlayReady === true ? "ready" : "unknown",
     // There is no audio health producer yet. A preview action is not proof of
     // reliable playback, so this remains unknown until a producer is added.
