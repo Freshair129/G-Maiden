@@ -499,8 +499,218 @@ mod tests {
         let rejected = ["", "..", "a/b", "a\\b", "a.b", "UPPER", "foo bar"];
 
         for name in rejected {
-            assert!(validate_name(name).is_err(), "name should be rejected: {name}");
+            assert!(
+                validate_name(name).is_err(),
+                "name should be rejected: {name}"
+            );
         }
+    }
+
+    #[test]
+    fn secret_store_uses_tauri_path_without_isolated_smoke_argument() {
+        let tmp = TestDir::new("secret_store_normal_path_selection");
+        let args = [OsString::from("g-maiden.exe")];
+
+        let base = isolated_app_base_dir(
+            &args,
+            SmokeIsolationEnvironment {
+                root: Some(tmp.path().as_os_str()),
+                temp_parent: Some(tmp.path().as_os_str()),
+                normal_profile: Some(tmp.path().as_os_str()),
+                normal_local_app_data: Some(tmp.path().as_os_str()),
+            },
+            "com.gmaiden.app",
+        )
+        .expect("normal mode path selection should succeed");
+
+        assert_eq!(base, None);
+    }
+
+    #[test]
+    fn isolated_smoke_requires_an_explicit_existing_root() {
+        let args = [
+            OsString::from("g-maiden.exe"),
+            OsString::from(MVP009_ISOLATED_SMOKE_ARG),
+        ];
+
+        let missing_root = isolated_app_base_dir(
+            &args,
+            SmokeIsolationEnvironment {
+                root: None,
+                temp_parent: None,
+                normal_profile: None,
+                normal_local_app_data: None,
+            },
+            "com.gmaiden.app",
+        )
+        .expect_err("isolated smoke must fail closed without a root");
+        assert!(missing_root.contains(MVP009_ISOLATION_ROOT_ENV));
+
+        let relative_root = isolated_app_base_dir(
+            &args,
+            SmokeIsolationEnvironment {
+                root: Some(OsStr::new("relative-run-root")),
+                temp_parent: None,
+                normal_profile: None,
+                normal_local_app_data: None,
+            },
+            "com.gmaiden.app",
+        )
+        .expect_err("isolated smoke must reject relative roots");
+        assert!(relative_root.contains("absolute directory"));
+    }
+
+    #[test]
+    fn isolated_smoke_secret_store_stays_under_the_explicit_run_root() {
+        let tmp = TestDir::new("secret_store_isolated_path");
+        let temp_parent = tmp.path().join("launch-parent");
+        let normal_profile = tmp.path().join("normal-profile");
+        let normal_local_app_data = tmp.path().join("normal-local-app-data");
+        fs::create_dir_all(&temp_parent).expect("launch parent should be created");
+        fs::create_dir_all(&normal_profile).expect("normal profile should be created");
+        fs::create_dir_all(&normal_local_app_data).expect("normal local data should be created");
+        let run_root = temp_parent.join("gmaiden-mvp009-550e8400-e29b-41d4-a716-446655440000");
+        fs::create_dir(&run_root).expect("run root should be created");
+        let args = [
+            OsString::from("g-maiden.exe"),
+            OsString::from(MVP009_ISOLATED_SMOKE_ARG),
+        ];
+
+        let base = isolated_app_base_dir(
+            &args,
+            SmokeIsolationEnvironment {
+                root: Some(run_root.as_os_str()),
+                temp_parent: Some(temp_parent.as_os_str()),
+                normal_profile: Some(normal_profile.as_os_str()),
+                normal_local_app_data: Some(normal_local_app_data.as_os_str()),
+            },
+            "com.gmaiden.app",
+        )
+        .expect("isolated smoke path should resolve")
+        .expect("isolated smoke should select a separate base directory");
+
+        assert_eq!(
+            base,
+            fs::canonicalize(&run_root)
+                .expect("run root should canonicalize")
+                .join("app-local-data")
+                .join("com.gmaiden.app")
+        );
+
+        let outside = tmp.path().join("outside-secret-store");
+        fs::create_dir_all(&outside).expect("outside directory should be created");
+        fs::create_dir_all(&base).expect("isolated app directory should be created");
+        let secrets = secret_dir(&base);
+        #[cfg(windows)]
+        {
+            let symlink_result = std::os::windows::fs::symlink_dir(&outside, &secrets);
+            if symlink_result.is_err() {
+                fs::write(&secrets, []).expect("fallback path should be created");
+            }
+        }
+
+        let error = isolated_app_base_dir(
+            &args,
+            SmokeIsolationEnvironment {
+                root: Some(run_root.as_os_str()),
+                temp_parent: Some(temp_parent.as_os_str()),
+                normal_profile: Some(normal_profile.as_os_str()),
+                normal_local_app_data: Some(normal_local_app_data.as_os_str()),
+            },
+            "com.gmaiden.app",
+        )
+        .expect_err("isolated smoke must reject a linked or invalid secrets directory");
+        assert!(error.contains("real directory"));
+    }
+
+    #[test]
+    fn secret_reads_reject_symlinked_files() {
+        let tmp = TestDir::new("secret_read_link_rejected");
+        let outside = tmp.path().join("outside.bin");
+        let base = tmp.path().join("base");
+        fs::create_dir_all(secret_dir(&base)).expect("secrets directory should be created");
+        fs::write(&outside, b"external file").expect("outside file should be created");
+        let linked_secret = secret_path(&base, "anthropic_api_key").expect("name should be valid");
+
+        #[cfg(windows)]
+        {
+            if let Err(err) = std::os::windows::fs::symlink_file(&outside, &linked_secret) {
+                if err.kind() == ErrorKind::PermissionDenied || err.raw_os_error() == Some(1314) {
+                    eprintln!("skipping file symlink assertion: {err}");
+                    return;
+                }
+                panic!("test should be able to create a file symlink: {err}");
+            }
+        }
+        #[cfg(unix)]
+        std::os::unix::fs::symlink(&outside, &linked_secret)
+            .expect("test should be able to create a file symlink");
+
+        let error = get_secret_in(&base, "anthropic_api_key")
+            .expect_err("secret read must reject a linked file");
+
+        assert!(error.contains("regular file"));
+    }
+
+    #[test]
+    fn isolated_smoke_rejects_application_identifier_path_traversal() {
+        let tmp = TestDir::new("secret_store_identifier_validation");
+        let temp_parent = tmp.path().join("launch-parent");
+        let normal_profile = tmp.path().join("normal-profile");
+        let normal_local_app_data = tmp.path().join("normal-local-app-data");
+        fs::create_dir_all(&temp_parent).expect("launch parent should be created");
+        fs::create_dir_all(&normal_profile).expect("normal profile should be created");
+        fs::create_dir_all(&normal_local_app_data).expect("normal local data should be created");
+        let run_root = temp_parent.join("gmaiden-mvp009-550e8400-e29b-41d4-a716-446655440000");
+        fs::create_dir(&run_root).expect("run root should be created");
+        let args = [
+            OsString::from("g-maiden.exe"),
+            OsString::from(MVP009_ISOLATED_SMOKE_ARG),
+        ];
+
+        let error = isolated_app_base_dir(
+            &args,
+            SmokeIsolationEnvironment {
+                root: Some(run_root.as_os_str()),
+                temp_parent: Some(temp_parent.as_os_str()),
+                normal_profile: Some(normal_profile.as_os_str()),
+                normal_local_app_data: Some(normal_local_app_data.as_os_str()),
+            },
+            "../secrets",
+        )
+        .expect_err("isolated smoke must reject path-like identifiers");
+
+        assert!(error.contains("single path component"));
+    }
+
+    #[test]
+    fn isolated_smoke_rejects_run_roots_that_overlap_normal_data() {
+        let tmp = TestDir::new("secret_store_profile_overlap");
+        let normal_profile = tmp.path().join("normal-profile");
+        let normal_local_app_data = normal_profile.join("AppData").join("Local");
+        let temp_parent = normal_profile.join("Temp");
+        fs::create_dir_all(&normal_local_app_data).expect("normal local data should be created");
+        fs::create_dir_all(&temp_parent).expect("launch parent should be created");
+        let run_root = temp_parent.join("gmaiden-mvp009-550e8400-e29b-41d4-a716-446655440000");
+        fs::create_dir(&run_root).expect("run root should be created");
+        let args = [
+            OsString::from("g-maiden.exe"),
+            OsString::from(MVP009_ISOLATED_SMOKE_ARG),
+        ];
+
+        let error = isolated_app_base_dir(
+            &args,
+            SmokeIsolationEnvironment {
+                root: Some(run_root.as_os_str()),
+                temp_parent: Some(temp_parent.as_os_str()),
+                normal_profile: Some(normal_profile.as_os_str()),
+                normal_local_app_data: Some(normal_local_app_data.as_os_str()),
+            },
+            "com.gmaiden.app",
+        )
+        .expect_err("isolated smoke must reject roots under the normal profile");
+
+        assert!(error.contains("overlap a normal user data directory"));
     }
 
     #[test]
