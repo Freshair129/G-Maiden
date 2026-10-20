@@ -1,16 +1,24 @@
 import React, { useEffect, useState } from 'react'
-import { invoke } from '@tauri-apps/api/core'
 import { listen } from '@tauri-apps/api/event'
 import { C } from '../theme'
 import { panel, Gem } from '../primitives'
 import type { GsiStatus, SetupStatus } from '../types'
+import {
+  chooseDotaInstallPath,
+  detectGsiSetup,
+  installGsiConfig,
+  saveDotaInstallPath,
+  savedDotaInstallPath,
+} from '../gsiSetup'
 
 // ─────────────────────────────── ONBOARDING (first run welcome) ───────────────────────────────
 export const Welcome: React.FC<{ onDone: () => void }> = ({ onDone }) => {
   const [st, setSt] = useState<SetupStatus | null>(null)
   const [health, setHealth] = useState<GsiStatus | null>(null)
+  const [selectedPath, setSelectedPath] = useState<string | null>(() => savedDotaInstallPath())
+  const [pathError, setPathError] = useState('')
   const [busy, setBusy] = useState(false)
-  useEffect(() => { void (async () => { try { setSt(await invoke<SetupStatus>('detect_gsi_setup')) } catch { /* command unavailable */ } })() }, [])
+  useEffect(() => { void detectGsiSetup(savedDotaInstallPath()).then(setSt).catch(() => {}) }, [])
   useEffect(() => {
     let active = true
     let stop: (() => void) | null = null
@@ -19,8 +27,38 @@ export const Welcome: React.FC<{ onDone: () => void }> = ({ onDone }) => {
       .catch(() => {})
     return () => { active = false; stop?.() }
   }, [])
-  const install = async () => { setBusy(true); try { setSt(await invoke<SetupStatus>('install_gsi_config')) } finally { setBusy(false) } }
-  const refresh = async () => { setBusy(true); try { setSt(await invoke<SetupStatus>('detect_gsi_setup')) } finally { setBusy(false) } }
+  const install = async () => {
+    setBusy(true)
+    try { setSt(await installGsiConfig(selectedPath)); setPathError('') }
+    catch (error) { setPathError(`ติดตั้ง GSI config ไม่สำเร็จ: ${String(error)}`) }
+    finally { setBusy(false) }
+  }
+  const refresh = async (path = selectedPath) => {
+    setBusy(true)
+    try { setSt(await detectGsiSetup(path)); setPathError('') }
+    catch (error) { setPathError(`ตรวจ GSI setup ไม่สำเร็จ: ${String(error)}`) }
+    finally { setBusy(false) }
+  }
+  const choosePath = async () => {
+    setBusy(true)
+    try {
+      const path = await chooseDotaInstallPath(selectedPath)
+      if (!path) return
+      setSelectedPath(path)
+      saveDotaInstallPath(path)
+      await refresh(path)
+    } catch (error) {
+      setPathError(`เปิดหน้าต่างเลือกโฟลเดอร์ไม่สำเร็จ: ${String(error)}`)
+    } finally { setBusy(false) }
+  }
+  const clearPath = async () => {
+    setBusy(true)
+    setSelectedPath(null)
+    saveDotaInstallPath(null)
+    try { setSt(await detectGsiSetup(null)); setPathError('') }
+    catch (error) { setPathError(`ตรวจ GSI setup ไม่สำเร็จ: ${String(error)}`) }
+    finally { setBusy(false) }
+  }
   const step1Done = st?.installed === true
   const portConflict = health?.server_state === 'port_conflict'
   const overlay: React.CSSProperties = {
@@ -46,14 +84,22 @@ export const Welcome: React.FC<{ onDone: () => void }> = ({ onDone }) => {
               <div style={{ fontSize: 12, color: C.mut, marginTop: 3 }}>
                 {!st ? 'กำลังตรวจสอบ…' : step1Done ? `config ถูกต้องที่ ${st.dota_cfg_dir}` : st.dota_cfg_dir ? st.cfg_present && !st.cfg_valid ? 'พบ config แต่ปลายทางหรือโครงสร้างไม่ถูกต้อง กดซ่อมไฟล์ด้านล่าง' : 'กดปุ่มด้านล่างเพื่อให้ G-Maiden วางไฟล์ให้อัตโนมัติ' : st.message}
               </div>
-              {st && !step1Done && st.dota_cfg_dir && (
-                <button onClick={install} disabled={busy}
-                  style={{ marginTop: 9, background: 'rgba(143,212,255,0.18)', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '7px 15px', fontSize: 12.5, cursor: busy ? 'wait' : 'pointer', fontWeight: 600 }}>
-                  {busy ? 'กำลังติดตั้ง…' : st.cfg_present && !st.cfg_valid ? 'ซ่อม GSI config' : 'ติดตั้ง GSI config'}
-                </button>
-              )}
-              {st && !step1Done && st.dota_cfg_dir && <button onClick={() => void refresh()} disabled={busy}
-                style={{ marginTop: 8, marginLeft: 7, background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '7px 12px', fontSize: 12, cursor: busy ? 'wait' : 'pointer' }}>ตรวจ config ซ้ำ</button>}
+              {st && !step1Done && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 9 }}>
+                <button onClick={() => void choosePath()} disabled={busy}
+                  style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '7px 12px', fontSize: 12, cursor: busy ? 'wait' : 'pointer' }}>เลือกโฟลเดอร์ Dota 2</button>
+                {st.dota_cfg_dir && <>
+                  <button onClick={install} disabled={busy}
+                    style={{ background: 'rgba(143,212,255,0.18)', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '7px 15px', fontSize: 12.5, cursor: busy ? 'wait' : 'pointer', fontWeight: 600 }}>
+                    {busy ? 'กำลังติดตั้ง…' : st.cfg_present && !st.cfg_valid ? 'ซ่อม GSI config' : 'ติดตั้ง GSI config'}
+                  </button>
+                  <button onClick={() => void refresh()} disabled={busy}
+                    style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '7px 12px', fontSize: 12, cursor: busy ? 'wait' : 'pointer' }}>ตรวจ config ซ้ำ</button>
+                </>}
+                {selectedPath && <button onClick={() => void clearPath()} disabled={busy}
+                  style={{ background: 'transparent', color: C.mut, border: 'none', fontSize: 11.5, cursor: busy ? 'wait' : 'pointer' }}>ใช้ตำแหน่ง Steam อัตโนมัติ</button>}
+              </div>}
+              {selectedPath && <div style={{ fontSize: 11.5, color: C.mut, marginTop: 5, wordBreak: 'break-all' }}>Dota 2 ที่เลือก: <span style={{ color: C.txt }}>{selectedPath}</span></div>}
+              {pathError && <div role="alert" style={{ fontSize: 11.5, color: C.warn, marginTop: 5 }}>{pathError}</div>}
             </div>
           </div>
 

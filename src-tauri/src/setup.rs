@@ -302,50 +302,156 @@ fn find_dota_library(steam: &std::path::Path) -> Option<PathBuf> {
     parse_dota_library(&text)
 }
 
-fn dota_cfg_dir(library: &std::path::Path) -> PathBuf {
-    library
-        .join("steamapps")
-        .join("common")
-        .join("dota 2 beta")
+fn dota_install_dir(library: &std::path::Path) -> PathBuf {
+    library.join("steamapps").join("common").join("dota 2 beta")
+}
+
+fn dota_cfg_dir(install_dir: &std::path::Path) -> PathBuf {
+    install_dir
         .join("game")
         .join("dota")
         .join("cfg")
         .join("gamestate_integration")
 }
 
-/// Check current setup state without modifying anything.
-pub fn detect() -> SetupStatus {
+fn empty_status(steam_path: Option<String>, message: String) -> SetupStatus {
+    SetupStatus {
+        installed: false,
+        steam_path,
+        dota_cfg_dir: None,
+        cfg_present: false,
+        cfg_valid: false,
+        message,
+    }
+}
+
+fn status_at_root_with_error(
+    steam_path: Option<String>,
+    root: &std::path::Path,
+    message: String,
+) -> SetupStatus {
+    let root_string = root.to_string_lossy().to_string();
+    let mut status = detect(Some(&root_string));
+    status.steam_path = steam_path;
+    status.message = message;
+    status
+}
+
+/// Accept only a Dota 2 install root. The game executable and config tree are
+/// both checked after canonicalization so a user-selected junction cannot
+/// redirect the config write outside the selected game folder.
+fn validate_dota_install_dir(path: &std::path::Path) -> Result<PathBuf, String> {
+    let root = fs::canonicalize(path)
+        .map_err(|_| "ไม่พบโฟลเดอร์นี้ เลือกโฟลเดอร์ Dota 2 beta ที่มีโฟลเดอร์ game อยู่ด้านใน.".to_string())?;
+    if !root.is_dir() {
+        return Err("ตำแหน่งที่เลือกไม่ใช่โฟลเดอร์ Dota 2.".into());
+    }
+    let game_dir = root.join("game");
+    let dota_dir = game_dir.join("dota");
+    let executable = game_dir.join("bin").join("win64").join("dota2.exe");
+    for required in [&game_dir, &dota_dir, &executable] {
+        let resolved = fs::canonicalize(required).map_err(|_| {
+            "ไม่พบไฟล์เกม Dota 2 ในตำแหน่งนี้ เลือกโฟลเดอร์ Dota 2 beta แล้วลองอีกครั้ง.".to_string()
+        })?;
+        if !resolved.starts_with(&root) {
+            return Err("ตำแหน่ง Dota 2 อ้างอิงออกนอกโฟลเดอร์เกม จึงไม่สามารถเขียน GSI config ได้.".into());
+        }
+    }
+    if !dota_dir.is_dir() || !executable.is_file() {
+        return Err(
+            "โฟลเดอร์ที่เลือกไม่มีไฟล์เกม Dota 2 ที่จำเป็น เลือกโฟลเดอร์ Dota 2 beta แล้วลองอีกครั้ง.".into(),
+        );
+    }
+    Ok(root)
+}
+
+/// Resolve either the explicitly selected game root or the Steam library that
+/// owns appid 570. A failed lookup returns actionable UI text and never writes.
+fn resolve_dota_install_dir(
+    selected_install_dir: Option<&str>,
+) -> Result<(Option<String>, PathBuf), SetupStatus> {
+    if let Some(selected) = selected_install_dir
+        .map(str::trim)
+        .filter(|path| !path.is_empty())
+    {
+        return validate_dota_install_dir(std::path::Path::new(selected))
+            .map(|root| (None, root))
+            .map_err(|message| empty_status(None, message));
+    }
+
     let Some(steam) = read_steam_path() else {
-        return SetupStatus {
-            installed: false,
-            steam_path: None,
-            dota_cfg_dir: None,
-            cfg_present: false,
-            cfg_valid: false,
-            message: "ไม่พบ Steam ในรีจิสทรี (HKCU\\Software\\Valve\\Steam). \
-                      ติดตั้ง Steam แล้วลองใหม่อีกครั้ง."
-                .into(),
-        };
+        return Err(empty_status(
+            None,
+            "ไม่พบ Steam ในรีจิสทรี (HKCU\\Software\\Valve\\Steam). ติดตั้ง Steam หรือเลือกโฟลเดอร์ Dota 2 ด้วยตนเอง.".into(),
+        ));
     };
-    let steam_str = steam.to_string_lossy().to_string();
+    let steam_path = steam.to_string_lossy().to_string();
     let Some(library) = find_dota_library(&steam) else {
-        return SetupStatus {
-            installed: false,
-            steam_path: Some(steam_str),
-            dota_cfg_dir: None,
-            cfg_present: false,
-            cfg_valid: false,
-            message: "พบ Steam แล้ว แต่ยังไม่ได้ติดตั้ง Dota 2 (appid 570). \
-                      ติดตั้ง Dota 2 จาก Steam แล้วลองใหม่อีกครั้ง."
-                .into(),
-        };
+        return Err(empty_status(
+            Some(steam_path),
+            "พบ Steam แล้ว แต่ไม่พบ Dota 2 (appid 570) ใน libraryfolders.vdf. ติดตั้งเกมหรือเลือกโฟลเดอร์ Dota 2 ด้วยตนเอง.".into(),
+        ));
     };
-    let dir = dota_cfg_dir(&library);
+    let install_dir = dota_install_dir(&library);
+    validate_dota_install_dir(&install_dir)
+        .map(|root| (Some(steam_path.clone()), root))
+        .map_err(|_| {
+            empty_status(
+                Some(steam_path),
+                "Steam ระบุตำแหน่ง Dota 2 ที่ไม่มีไฟล์เกมครบ อาจย้ายหรือติดตั้งใหม่แล้ว เลือกโฟลเดอร์ Dota 2 beta เพื่อแก้ตำแหน่ง.".into(),
+            )
+        })
+}
+
+/// Resolve every existing component of the config directory before creating
+/// the rest. This rejects directory symlinks/junctions that leave the game root.
+fn resolve_cfg_dir(root: &std::path::Path, create: bool) -> Result<PathBuf, String> {
+    let candidate = dota_cfg_dir(root);
+    let relative = candidate
+        .strip_prefix(root)
+        .map_err(|_| "ตำแหน่ง GSI config อยู่นอกโฟลเดอร์ Dota 2.".to_string())?;
+    let mut resolved = root.to_path_buf();
+    for component in relative.components() {
+        let next = resolved.join(component);
+        if next.exists() {
+            let canonical = fs::canonicalize(&next)
+                .map_err(|e| format!("ตรวจตำแหน่ง GSI config ไม่สำเร็จ: {e}"))?;
+            if !canonical.starts_with(root) {
+                return Err("ตำแหน่ง GSI config อ้างอิงออกนอกโฟลเดอร์เกม จึงไม่สามารถเขียนได้.".into());
+            }
+            resolved = canonical;
+        } else if create {
+            fs::create_dir(&next).map_err(|e| format!("สร้างโฟลเดอร์ cfg ไม่สำเร็จ: {e}"))?;
+            let canonical = fs::canonicalize(&next)
+                .map_err(|e| format!("ตรวจตำแหน่ง GSI config ไม่สำเร็จ: {e}"))?;
+            if !canonical.starts_with(root) {
+                return Err("ตำแหน่ง GSI config อ้างอิงออกนอกโฟลเดอร์เกม จึงไม่สามารถเขียนได้.".into());
+            }
+            resolved = canonical;
+        } else {
+            return Ok(candidate);
+        }
+    }
+    Ok(resolved)
+}
+
+/// Check current setup state without modifying anything.
+pub fn detect(selected_install_dir: Option<&str>) -> SetupStatus {
+    let (steam_path, root) = match resolve_dota_install_dir(selected_install_dir) {
+        Ok(resolved) => resolved,
+        Err(status) => return status,
+    };
+    let dir = match resolve_cfg_dir(&root, false) {
+        Ok(dir) => dir,
+        Err(message) => return empty_status(steam_path, message),
+    };
     let cfg = dir.join(CFG_NAME);
     let present = cfg.is_file();
     let valid = if present {
-        fs::File::open(&cfg)
+        fs::canonicalize(&cfg)
             .ok()
+            .filter(|path| path.starts_with(&root))
+            .and_then(|_| fs::File::open(&cfg).ok())
             .and_then(|file| {
                 let mut contents = String::new();
                 file.take((MAX_CFG_BYTES + 1) as u64)
@@ -359,7 +465,7 @@ pub fn detect() -> SetupStatus {
     };
     SetupStatus {
         installed: valid,
-        steam_path: Some(steam_str),
+        steam_path,
         dota_cfg_dir: Some(dir.to_string_lossy().to_string()),
         cfg_present: present,
         cfg_valid: valid,
@@ -373,32 +479,65 @@ pub fn detect() -> SetupStatus {
     }
 }
 
-/// Write our GSI cfg to the discovered Dota 2 directory. Returns the updated
-/// status. Idempotent: rewriting the cfg is harmless and keeps the file in
-/// sync if we ever change its contents.
-pub fn install() -> SetupStatus {
-    let mut s = detect();
-    let Some(dir_str) = s.dota_cfg_dir.clone() else {
-        return s;
+/// Write our GSI cfg only under a validated Dota 2 install root.
+pub fn install(selected_install_dir: Option<&str>) -> SetupStatus {
+    let (steam_path, root) = match resolve_dota_install_dir(selected_install_dir) {
+        Ok(resolved) => resolved,
+        Err(status) => return status,
     };
-    let dir = PathBuf::from(&dir_str);
-    if let Err(e) = fs::create_dir_all(&dir) {
-        s.message = format!("สร้างโฟลเดอร์ cfg ไม่สำเร็จ: {e}");
-        return s;
-    }
+    let dir = match resolve_cfg_dir(&root, true) {
+        Ok(dir) => dir,
+        Err(message) => return status_at_root_with_error(steam_path, &root, message),
+    };
     let cfg = dir.join(CFG_NAME);
+    match fs::symlink_metadata(&cfg) {
+        Ok(metadata) if metadata.file_type().is_symlink() => {
+            if let Err(error) = fs::remove_file(&cfg) {
+                return status_at_root_with_error(
+                    steam_path,
+                    &root,
+                    format!("ไฟล์ GSI config เป็นลิงก์และลบเพื่อซ่อมไม่ได้: {error} เปิดโฟลเดอร์ config ใน Explorer แล้วลบเฉพาะไฟล์ {CFG_NAME} ก่อนลองใหม่."),
+                );
+            }
+        }
+        Ok(_) => {
+            let Ok(existing) = fs::canonicalize(&cfg) else {
+                return status_at_root_with_error(
+                    steam_path,
+                    &root,
+                    "ตรวจไฟล์ GSI config เดิมไม่สำเร็จ จึงไม่เขียนทับ.".into(),
+                );
+            };
+            if !existing.starts_with(&root) {
+                return status_at_root_with_error(
+                    steam_path,
+                    &root,
+                    "ไฟล์ GSI config อ้างอิงออกนอกโฟลเดอร์เกม จึงไม่เขียนทับ.".into(),
+                );
+            }
+        }
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => {}
+        Err(error) => {
+            return status_at_root_with_error(
+                steam_path,
+                &root,
+                format!("ตรวจไฟล์ GSI config เดิมไม่สำเร็จ: {error}"),
+            );
+        }
+    }
     match fs::write(&cfg, CFG_BODY) {
         Ok(()) => {
-            s.installed = true;
-            s.cfg_present = true;
-            s.cfg_valid = true;
-            s.message = format!("ติดตั้ง GSI config ที่ {} แล้ว.", cfg.to_string_lossy());
+            let root_string = root.to_string_lossy().to_string();
+            let mut status = detect(Some(&root_string));
+            status.steam_path = steam_path;
+            status
         }
-        Err(e) => {
-            s.message = format!("เขียนไฟล์ cfg ไม่สำเร็จ: {e}");
-        }
+        Err(e) => status_at_root_with_error(
+            steam_path,
+            &root,
+            format!("เขียนไฟล์ cfg ไม่สำเร็จ: {e} ตรวจสิทธิ์ของโฟลเดอร์ใน Explorer แล้วลองอีกครั้ง."),
+        ),
     }
-    s
 }
 
 #[cfg(test)]
@@ -487,13 +626,78 @@ mod tests {
 
     #[test]
     fn cfg_dir_layout_is_dota_specific() {
-        let library = PathBuf::from("D:\\steam");
-        let dir = dota_cfg_dir(&library);
+        let install = PathBuf::from("D:\\steam\\steamapps\\common\\dota 2 beta");
+        let dir = dota_cfg_dir(&install);
         let s = dir.to_string_lossy().replace('/', "\\");
         // Must hit the exact spot Dota 2 scans for GSI configs.
-        assert!(
-            s.ends_with("\\steamapps\\common\\dota 2 beta\\game\\dota\\cfg\\gamestate_integration")
+        assert!(s.ends_with("\\dota 2 beta\\game\\dota\\cfg\\gamestate_integration"));
+    }
+
+    fn fake_dota_install() -> PathBuf {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("gmaiden-dota-setup-{unique}"));
+        fs::create_dir_all(root.join("game/dota")).unwrap();
+        fs::create_dir_all(root.join("game/bin/win64")).unwrap();
+        fs::write(root.join("game/bin/win64/dota2.exe"), b"fixture").unwrap();
+        root
+    }
+
+    #[test]
+    fn selected_install_path_must_contain_the_dota_executable_and_config_tree() {
+        let root = fake_dota_install();
+        let selected = validate_dota_install_dir(&root).unwrap();
+        assert_eq!(selected, fs::canonicalize(&root).unwrap());
+        fs::remove_dir_all(&root).unwrap();
+    }
+
+    #[test]
+    fn selected_arbitrary_folder_is_rejected_without_a_config_target() {
+        let unique = std::time::SystemTime::now()
+            .duration_since(std::time::UNIX_EPOCH)
+            .unwrap()
+            .as_nanos();
+        let root = std::env::temp_dir().join(format!("gmaiden-not-dota-{unique}"));
+        fs::create_dir_all(&root).unwrap();
+        let root_text = root.to_string_lossy().to_string();
+        let status = detect(Some(&root_text));
+        assert!(!status.installed);
+        assert!(status.dota_cfg_dir.is_none());
+        assert!(status.message.contains("ไฟล์เกม Dota 2"));
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn selected_path_install_writes_only_to_the_gsi_config_location() {
+        let root = fake_dota_install();
+        let root_text = root.to_string_lossy().to_string();
+        let status = install(Some(&root_text));
+        assert!(status.installed, "{}", status.message);
+        let config = root
+            .join("game/dota/cfg/gamestate_integration")
+            .join(CFG_NAME);
+        assert_eq!(fs::read_to_string(&config).unwrap(), CFG_BODY);
+        fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn install_failure_keeps_the_repair_location_visible() {
+        let root = fake_dota_install();
+        let canonical_root = fs::canonicalize(&root).unwrap();
+        let config_dir = dota_cfg_dir(&canonical_root);
+        fs::create_dir_all(config_dir.join(CFG_NAME)).unwrap();
+        let root_text = root.to_string_lossy().to_string();
+        let status = install(Some(&root_text));
+        let expected_config_dir = config_dir.to_string_lossy().to_string();
+        assert!(!status.installed);
+        assert_eq!(
+            status.dota_cfg_dir.as_deref(),
+            Some(expected_config_dir.as_str())
         );
+        assert!(status.message.contains("Explorer"));
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]
@@ -504,9 +708,15 @@ mod tests {
     #[test]
     fn requires_a_heartbeat_that_can_satisfy_freshness_contract() {
         assert!(validate_gsi_config(&CFG_BODY.replace("\"1.0\"", "\"0.5\"")));
-        assert!(!validate_gsi_config(&CFG_BODY.replace("\"1.0\"", "\"2.1\"")));
-        assert!(!validate_gsi_config(&CFG_BODY.replace("\"1.0\"", "\"30.0\"")));
-        assert!(!validate_gsi_config(&CFG_BODY.replace("\"1.0\"", "\"NaN\"")));
+        assert!(!validate_gsi_config(
+            &CFG_BODY.replace("\"1.0\"", "\"2.1\"")
+        ));
+        assert!(!validate_gsi_config(
+            &CFG_BODY.replace("\"1.0\"", "\"30.0\"")
+        ));
+        assert!(!validate_gsi_config(
+            &CFG_BODY.replace("\"1.0\"", "\"NaN\"")
+        ));
         let duplicate_heartbeat = CFG_BODY.replace(
             "\"heartbeat\"     \"1.0\"",
             "\"heartbeat\"     \"1.0\"\n    \"heartbeat\"     \"30.0\"",
