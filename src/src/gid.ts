@@ -4,7 +4,7 @@
 //
 // Format:  G-[Generation][Payload][Checksum]
 //   G-           literal prefix, exactly one hyphen right after G
-//   Generation   one char cohort marker (permanent): F Founder · B Close Beta · P Public
+//   Generation   one char cohort marker (permanent): F Founder · B Legacy · P Public
 //   Payload      base31 of (registration-day, cohort-sequence) — 5..8 chars, padded to 5
 //   Checksum     1 char, weighted mod-31 over Generation+Payload — catches typos/transposes
 //
@@ -18,7 +18,7 @@ export const GID_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 const BASE = 31n;
 
 // Cohort generations (permanent — represents the user's original entry cohort).
-export const GENERATIONS = { F: "Founder", B: "Close Beta", P: "Public" } as const;
+export const GENERATIONS = { F: "Founder", B: "Legacy", P: "Public" } as const;
 export type Generation = keyof typeof GENERATIONS;
 
 // Ecosystem launch epoch; registration day = whole UTC days since this.
@@ -27,7 +27,7 @@ const MS_PER_DAY = 86_400_000;
 
 // Max registrations per generation before the payload structure needs revision.
 // Guarantees uniqueness: payload = day*CAP + seq, so distinct (day, seq) never
-// collide while seq < CAP. 10M is ample for Founder/Beta and years of Public.
+// collide while seq < CAP. 10M is ample for Founder/Legacy and years of Public.
 const COHORT_CAP = 10_000_000n;
 
 const MIN_PAYLOAD = 5; // pad short payloads for a consistent, premium look

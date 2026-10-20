@@ -1,9 +1,9 @@
 ---
-version: "0.3.3b"
+version: "0.3.4b"
 created_at: "2026-07-21T18:30:56+07:00,ATHER"
 last_update: "2026-07-21T23:10:00+07:00,ATHER"
 status: "active"
-updated: "2026-07-21"
+updated: "2026-10-18"
 attributes:
   domain: "identity-access"
   doc_type: "architecture-flow"
@@ -15,7 +15,6 @@ owner: "Boss"
 related_docs:
   - "ADR-14-gid-account-identity"
   - "SEC-001-auth-identity-hardening"
-  - "CR-022-gmad-desktop-first-run-entitlement-account-handoff"
 ---
 
 # OAuth 2.0, JWT, and Multi-Client Authorization Flows
@@ -49,36 +48,30 @@ the identity service by default.
 | Desktop redirect | Registered only as `http://127.0.0.1:3000/auth/callback`, bound only to the numeric loopback IP. It uses system browser, high-entropy single-use state, and the original PKCE verifier; never `localhost`, LAN, wildcard, dynamic port, or custom scheme. |
 | Future mobile redirect | Use a registered claimed HTTPS App/Universal Link redirect, exact-match only. A custom scheme is a fallback only after platform threat review; no wildcard redirects. |
 | JWT | Supabase/issuer mints access and refresh tokens. Clients do not mint custom JWTs or treat decoded client claims as authorization truth. |
-| Backend authorization | Validate signature/JWK, `iss`, `aud`, `exp`, `nbf`, and token type; derive `auth.users.id` server-side, then resolve profile/GID, role, grant, and Terms receipt. |
-| Token handling | Never place authorization code, access JWT, refresh token, Google token, device code, or signed download URL in UI, logs, analytics, URL history, crash reports, or support tickets. |
+| Backend authorization | Validate signature/JWK, `iss`, `aud`, `exp`, `nbf`, and token type; derive `auth.users.id` server-side, then resolve profile/GID and role for protected account actions. |
+| Token handling | Never place authorization code, access JWT, refresh token, Google token, or device code in UI, logs, analytics, URL history, crash reports, or support tickets. |
 | Local storage | Store session/refresh material only in OS-protected storage. SEC-001 F5 must close before production desktop/mobile persistence. |
-| Authorization | A signed G-Maiden download URL is a five-minute artifact URL only. It is never a session, device credential, mobile handoff credential, or entitlement proof. |
-| Local-only data | Identity calls carry identity/entitlement metadata only; raw GSI, CV, match state, and G-Log stay local. |
+| Local-only data | Account calls carry identity metadata only; raw GSI, CV, match state, and G-Log stay local. |
 
 ## 3. User flow — Landing to desktop to future mobile
 
 ```mermaid
 flowchart TD
-  U["Player"] --> L["Landing: Google OAuth + current Terms"]
-  L --> E{"Active G-Maiden grant?"}
-  E -- "No" --> Q["Show eligibility/queue status"]
-  E -- "Yes" --> D["request-gmad-download: 5-min signed URL"]
-  D --> I["Install G-Maiden: installer grants nothing"]
-  I --> X["Desktop Dashboard: access-readiness CTA"]
-  X --> A["Account: Google Authorization Code + PKCE"]
-  A --> V["Server validates JWT; derives UUID/GID, grant, Terms"]
-  V --> R{"Entitlement eligible?"}
-  R -- "No" --> F["Account: practical failure CTA"]
-  R -- "Yes" --> S["Dashboard: GSI/Dota setup → ready"]
-  S --> M["Future mobile companion: authorize same Google identity"]
+  U["Player"] --> I["Install and start local G-Maiden core"]
+  I --> L["Configure local GSI/capture/overlay"]
+  L --> X["Optional Account surface"]
+  X --> A["Google Authorization Code + PKCE"]
+  A --> V["Server validates JWT and resolves UUID/GID"]
+  V --> R{"Protected account action authorized?"}
+  R -- "No" --> F["Account action unavailable; local core remains available"]
+  R -- "Yes" --> S["Requested account service available"]
+  S --> M["Future mobile companion: authorize the same Google identity"]
   M --> P["Mobile gets its own session; never copies Desktop tokens"]
 ```
 
-The existing Command Deck layout stays unchanged: it may show a readiness row and route to the
-Account page, but Account remains the complete OAuth/entitlement surface. On first launch offline,
-the entitlement gate fails closed. After a server verification, only CR-022's bounded protected
-offline receipt policy may permit local desktop operation; it does not create a transferable mobile
-credential.
+Local desktop GSI, capture, and overlay start without sign-in or network. Server authorization
+remains mandatory for protected account operations. Each client owns its own session; credentials
+are never transferred between clients. Release-mode offline/revoke acceptance remains pending.
 
 ## 4. Authorization Code Flow + PKCE — primary flow
 
@@ -117,8 +110,8 @@ sequenceDiagram
 | PKCE exchange fails | Do not expose code/token; clear transaction and restart from system browser. |
 | Redirect does not exact-match a registered URI | Reject at authorization server; no fallback redirect. |
 | Access JWT expires | Refresh only through protected issuer session machinery; if refresh fails, return to Google OAuth. |
-| Server denies entitlement | Preserve session but show Terms/grant/mismatch CTA; never accept user-entered GID. |
-| Offline first launch | Explain that internet is required once; do not substitute cached identity or installer state. |
+| Server denies a protected account operation | Keep local core available, report the operation-specific denial, and never accept user-entered GID as authorization. |
+| Offline first launch | Start local setup/core; show account services as unavailable until network returns. Cached account state is not proof for a protected operation. |
 
 ### 4.3 Legacy Desktop callback state binding
 
@@ -188,9 +181,10 @@ flowchart LR
   UI -. "never carries" .-> LD["GSI/CV/G-Log raw data"]
 ```
 
-JWT is proof of an authenticated session, not an entitlement itself. Every privileged endpoint,
-including `request-gmad-download` and proposed `get-gmad-desktop-entitlement`, re-evaluates its
-own server-side authorization decision. Access-token claims must not replace database/RLS checks.
+JWT is proof of an authenticated session, not authorization by itself. Every privileged account
+endpoint, including `iam-session-action`, `iam-security-state`, and `pack-download`, re-evaluates
+its own server-side authorization decision. Access-token claims must not replace database/RLS
+checks. Desktop local-core startup does not depend on account entitlement or network access.
 Refresh token rotation, session revocation, device/session management, token TTL, audiences, and
 JWK rotation require issuer capability confirmation and security approval before implementation.
 
@@ -200,43 +194,45 @@ JWK rotation require issuer capability confirmation and security approval before
 | --- | --- |
 | Identity | Mobile uses the same Google account and issuer UUID, then receives the same immutable display GID; it never asks to type/import GID. |
 | Transport | TLS only, issuer/API host allowlist, certificate/platform validation, and authorization header over authenticated API calls. |
-| Authorization | Mobile requests only scopes/features it needs. It cannot use Desktop's installer URL, offline receipt, local GSI port, filesystem, CV pipeline, or G-Log. |
+| Authorization | Mobile requests only its own account scopes. It cannot access Desktop's local GSI port, filesystem, CV pipeline, or G-Log. |
 | Pairing | QR/user code coordinates an approved device flow only; it is not a bearer-link, account recovery mechanism, or device trust bypass. |
 | Privacy | Mobile is not a default sync target for gameplay data. Any post-match sharing remains a separate explicit opt-in under ADR-11/ADR-16. |
-| Entitlement | A Mobile session may read its own safe entitlement status, but cannot alter grants, Terms receipts, roles, or another device's session. |
+| Account boundary | A Mobile session may read only its own account state; it cannot change roles or another device's session. |
 
 ## 8. UAT and approval gates
 
 | ID | Scenario | Expected result |
 | --- | --- | --- |
-| AUTH-01 | Desktop Auth Code + PKCE, same Google account | State and PKCE exchange succeeds; API derives UUID/GID; desktop entitlement is evaluated server-side. |
+| AUTH-01 | Desktop Auth Code + PKCE, same Google account | State and PKCE exchange succeeds; API derives UUID/GID; account features remain optional to local use. |
 | AUTH-02 | Replayed/wrong OAuth state | No session, no token exposure, actionable retry. |
 | AUTH-03 | JWT is expired, wrong audience, wrong issuer, or bad signature | API rejects before any profile/grant read. |
-| AUTH-04 | Mobile uses its own Authorization Code + PKCE session | Same UUID/GID may resolve; no Desktop token/receipt/installer URL transfer. |
+| AUTH-04 | Mobile uses its own Authorization Code + PKCE session | Same UUID/GID may resolve; credentials are not shared between clients. |
 | AUTH-05 | Device flow unsupported by issuer | Pairing UI is absent/disabled; app retains Authorization Code + PKCE flow. |
 | AUTH-06 | Device flow approved; user cancels or code expires | Poll stops; no session or pairing side effect. |
-| AUTH-07 | QR/signed URL/token copied to another device | No durable access is granted; each client must create its own authorized session. |
-| AUTH-08 | Offline fresh Desktop/Mobile launch | No entitlement unlock from cached GID, installer state, or user code. |
+| AUTH-07 | QR/token copied to another device | Each client must create its own authorized session; copied identity data grants no access. |
+| AUTH-08 | Offline Desktop/Mobile launch | Protected account actions remain unavailable; local desktop core continues without an account session. |
 
 Desktop legacy-flow verification on 2026-07-21 covers issuer-state extraction, missing/malformed/
 undersized/oversized state rejection, exact native state matching, single-use consumption, expiry,
-and callback replay rejection. It does not prove hosted OAuth Server activation or complete the
-CR-022 entitlement gate.
+and callback replay rejection. It does not prove hosted OAuth Server activation or protected account
+operation acceptance. Desktop local startup does not require an account session; protected account
+operations still require their own authorization.
 
 Before implementation, obtain approval for: OAuth provider support and redirect registration;
 PKCE/state/secure-store design; JWT issuer/audience/JWK validation; refresh/session revocation;
-mobile threat model and deep-link ownership; Device Grant rate limits; Terms/privacy/data-controller
-requirements; and any requested scope beyond identity. All changes remain subject to ADR-14,
-SEC-001, CR-021, and CR-022.
+mobile threat model and deep-link ownership; Device Grant rate limits; privacy/data-controller
+requirements; and any requested scope beyond identity. All changes remain subject to ADR-14 and
+SEC-001.
 
 ## Changelog
 
 | Version | Date | Status | Summary | Agent |
 | --- | --- | --- | --- | --- |
+| 0.3.5b | 2026-10-18 | beta | Clarified optional desktop account use and server authorization for protected account actions. | Codex |
 | 0.1.0b | 2026-07-21 | candidate | Initial C-3/HIGH multi-client OAuth 2.0, PKCE, JWT, Device Authorization, and future mobile connection design. | ATHER |
 | 0.2.0b | 2026-07-21 | beta | Recorded Boss's high-assurance decision: ADR-17 Supabase OAuth Server transaction boundary; legacy social login remains until hosted capability and security gates pass. | ATHER |
 | 0.2.1b | 2026-07-21 | beta | Corrected residual broker terminology to issuer/Supabase OAuth Server terminology. | ATHER |
 | 0.3.0b | 2026-07-21 | beta | Applied the ADR-17 RFC 8252 Desktop fixed-loopback and future Mobile claimed-HTTPS redirect decisions. | ATHER |
 | 0.3.1b | 2026-07-21 | beta | Documented the implemented legacy Desktop issuer-state binding and callback fail-closed behavior. | ATHER |
 | 0.3.3b | 2026-07-21 | beta | Replaced unnecessary reader-facing GMAD naming with G-Maiden while preserving technical identifiers and API names. | ATHER |
-| 0.3.2b | 2026-07-21 | beta | Added bounded-state verification evidence and kept hosted OAuth Server plus CR-022 entitlement completion explicitly open. | ATHER |
+| 0.3.2b | 2026-07-21 | beta | Added bounded-state verification evidence and kept hosted OAuth Server capability work explicitly open. | ATHER |

@@ -14,6 +14,7 @@
 //! `cargo test` instead of drifting silently.
 
 use crate::gsi::GameTick;
+use crate::runtime::{MatchLifecycle, MatchSessionSnapshot};
 use std::sync::{Mutex, OnceLock};
 
 const MULTIKILL_WINDOW_S: i64 = 18; // kills within this span chain into double/triple/…
@@ -47,9 +48,15 @@ struct State {
     window_kills: i64,
 }
 
-fn state() -> &'static Mutex<State> {
-    static S: OnceLock<Mutex<State>> = OnceLock::new();
-    S.get_or_init(|| Mutex::new(State::default()))
+#[derive(Default)]
+struct SessionDetector {
+    epoch: Option<u64>,
+    detector: State,
+}
+
+fn session_state() -> &'static Mutex<SessionDetector> {
+    static S: OnceLock<Mutex<SessionDetector>> = OnceLock::new();
+    S.get_or_init(|| Mutex::new(SessionDetector::default()))
 }
 
 /// Higher = louder moment. Audio is single-slot, so when a tick yields several
@@ -92,10 +99,54 @@ fn reset(s: &mut State) {
     s.seen = keep_seen;
 }
 
-/// Observe one tick against the global state; return event ids to voice.
-pub fn observe(tick: &GameTick) -> Vec<String> {
-    let mut s = state().lock().unwrap();
-    step(&mut s, tick)
+/// Observe a tick only if it still belongs to the current match session.
+/// Detector streaks and dedup baselines are reset once when a newer session
+/// epoch arrives; an out-of-order older tick can never reset newer state.
+pub fn observe_for_session(
+    tick: &GameTick,
+    session: &MatchSessionSnapshot,
+) -> Vec<String> {
+    let Some(lifecycle) = session.session_lifecycle else {
+        return Vec::new();
+    };
+    let epoch = session.session_epoch;
+    if epoch == 0
+        || !matches!(lifecycle, MatchLifecycle::Draft | MatchLifecycle::Live)
+        || !crate::runtime::is_current_active_session_epoch(epoch)
+    {
+        return Vec::new();
+    }
+
+    let Ok(mut current) = session_state().lock() else {
+        return Vec::new();
+    };
+    if !crate::runtime::is_current_active_session_epoch(epoch) {
+        return Vec::new();
+    }
+    let events = observe_session_state(&mut current, tick, epoch, lifecycle);
+    if crate::runtime::is_current_active_session_epoch(epoch) {
+        events
+    } else {
+        Vec::new()
+    }
+}
+
+fn observe_session_state(
+    current: &mut SessionDetector,
+    tick: &GameTick,
+    epoch: u64,
+    lifecycle: MatchLifecycle,
+) -> Vec<String> {
+    if !matches!(lifecycle, MatchLifecycle::Draft | MatchLifecycle::Live)
+        || current.epoch.is_some_and(|known| epoch < known)
+    {
+        return Vec::new();
+    }
+    if current.epoch != Some(epoch) {
+        reset(&mut current.detector);
+        current.epoch = Some(epoch);
+    }
+    step(&mut current.detector, tick)
 }
 
 /// Pure detector — all the logic, no globals (so tests own their state).
@@ -236,6 +287,97 @@ mod tests {
             hp_percent: 100,
             mana_percent: 100,
             ..Default::default()
+        }
+    }
+
+    #[test]
+    fn session_detector_keeps_same_epoch_baselines() {
+        let mut current = SessionDetector::default();
+        observe_session_state(&mut current, &tick(true, 0, 0, true), 4, MatchLifecycle::Live);
+        observe_session_state(&mut current, &tick(true, 10, 1, true), 4, MatchLifecycle::Live);
+
+        let events = observe_session_state(
+            &mut current,
+            &tick(true, 15, 2, true),
+            4,
+            MatchLifecycle::Live,
+        );
+        assert!(events.contains(&"double_kill".to_string()));
+    }
+
+    #[test]
+    fn next_session_epoch_resets_announcer_state_once() {
+        let mut current = SessionDetector::default();
+        observe_session_state(&mut current, &tick(true, 0, 0, true), 4, MatchLifecycle::Live);
+        for kills in 1..=3 {
+            observe_session_state(
+                &mut current,
+                &tick(true, kills * 30, kills, true),
+                4,
+                MatchLifecycle::Live,
+            );
+        }
+
+        let events = observe_session_state(
+            &mut current,
+            &tick(true, 0, 0, true),
+            5,
+            MatchLifecycle::Live,
+        );
+        assert_eq!(current.epoch, Some(5));
+        assert!(events.contains(&"match_start".to_string()));
+        assert!(!events.contains(&"killing_spree".to_string()));
+        let next = observe_session_state(
+            &mut current,
+            &tick(true, 10, 1, true),
+            5,
+            MatchLifecycle::Live,
+        );
+        assert!(next.contains(&"first_blood".to_string()));
+        assert!(!next.contains(&"killing_spree".to_string()));
+    }
+
+    #[test]
+    fn stale_epoch_cannot_mutate_or_reset_current_announcer_state() {
+        let mut current = SessionDetector::default();
+        observe_session_state(&mut current, &tick(true, 0, 0, true), 5, MatchLifecycle::Live);
+        observe_session_state(&mut current, &tick(true, 10, 1, true), 5, MatchLifecycle::Live);
+
+        let stale = observe_session_state(
+            &mut current,
+            &tick(true, 0, 10, true),
+            4,
+            MatchLifecycle::Live,
+        );
+        assert!(stale.is_empty());
+        assert_eq!(current.epoch, Some(5));
+
+        let resumed = observe_session_state(
+            &mut current,
+            &tick(true, 15, 2, true),
+            5,
+            MatchLifecycle::Live,
+        );
+        assert!(resumed.contains(&"double_kill".to_string()));
+    }
+
+    #[test]
+    fn disconnected_or_terminal_session_does_not_advance_detector_epoch() {
+        let mut current = SessionDetector::default();
+        observe_session_state(&mut current, &tick(true, 0, 0, true), 5, MatchLifecycle::Live);
+        for lifecycle in [
+            MatchLifecycle::Disconnected,
+            MatchLifecycle::End,
+            MatchLifecycle::Abandon,
+        ] {
+            let events = observe_session_state(
+                &mut current,
+                &tick(false, 0, 0, false),
+                6,
+                lifecycle,
+            );
+            assert!(events.is_empty());
+            assert_eq!(current.epoch, Some(5));
         }
     }
 

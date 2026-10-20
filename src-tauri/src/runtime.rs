@@ -11,62 +11,88 @@ use std::time::{SystemTime, UNIX_EPOCH};
 
 use crate::signal::Sensitivity;
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+#[serde(rename_all = "snake_case")]
+pub enum MatchLifecycle {
+    Draft,
+    Live,
+    Disconnected,
+    End,
+    Abandon,
+}
+
+#[derive(Clone, Debug, PartialEq, Eq, serde::Serialize)]
+pub struct MatchSessionSnapshot {
+    pub match_id: Option<String>,
+    pub session_id: Option<String>,
+    pub session_epoch: u64,
+    pub session_lifecycle: Option<MatchLifecycle>,
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct MatchSessionEvent<T> {
+    #[serde(flatten)]
+    pub payload: T,
+    #[serde(flatten)]
+    pub session: MatchSessionSnapshot,
+}
+
+impl<T> MatchSessionEvent<T> {
+    pub fn new(payload: T, session: &MatchSessionSnapshot) -> Self {
+        Self {
+            payload,
+            session: session.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Debug, serde::Serialize)]
+pub struct SessionTextEvent {
+    pub text: String,
+    #[serde(flatten)]
+    pub session: MatchSessionSnapshot,
+}
+
+impl SessionTextEvent {
+    pub fn new(text: impl Into<String>, session: &MatchSessionSnapshot) -> Self {
+        Self {
+            text: text.into(),
+            session: session.clone(),
+        }
+    }
+}
+
+#[derive(Clone, Debug)]
+struct MatchSession {
+    match_id: Option<String>,
+    session_id: String,
+    session_epoch: u64,
+    lifecycle: MatchLifecycle,
+    resume_lifecycle: Option<MatchLifecycle>,
+    last_clock_time: i64,
+}
+
+#[derive(Default)]
+struct MatchSessionState {
+    current: Option<MatchSession>,
+    next_epoch: u64,
+    next_local_id: u64,
+}
+
+static MATCH_SESSION: Mutex<MatchSessionState> = Mutex::new(MatchSessionState {
+    current: None,
+    next_epoch: 0,
+    next_local_id: 0,
+});
+
 /// True while a real match is in progress (set by the GSI server). The capture
 /// loop uses this to gate the expensive CV pipeline — no point detecting heroes
 /// at the main menu, and it keeps idle CPU near zero.
 static IN_GAME: AtomicBool = AtomicBool::new(false);
 
-/// Closed-Beta runtime authorization. This is deliberately process-local and
-/// defaults to false in RELEASE builds: cached UI state, a GID, or an installer
-/// must never arm the gameplay runtime. It is set only after the native
-/// entitlement verifier receives an `eligible` decision from the JWT-protected
-/// backend.
-///
-/// Debug builds seed it `true` so `pnpm tauri dev` is usable for local UI work
-/// without network, a current Terms acceptance and an active grant. This ONLY
-/// relaxes the dev binary — `cargo build --release` and every shipped artifact
-/// still start locked. MIRRORED IN `src/src/App.tsx`, which skips
-/// `GmadFirstRunGate` under the same condition; changing one without the other
-/// gives dev a deck wired to a locked runtime (no GSI, no capture, no overlay).
-static GMAD_ENTITLED: AtomicBool = AtomicBool::new(cfg!(debug_assertions));
-static GMAD_CAPTURE_STARTED: AtomicBool = AtomicBool::new(false);
-
-/// Serialize response commits with explicit locks, without holding a mutex
-/// across the network await. New requests and sign-out invalidate older replies.
-pub static ENTITLEMENT_REQUESTS: EntitlementRequests = EntitlementRequests(Mutex::new(0));
-
-pub struct EntitlementRequests(Mutex<u64>);
-
-impl EntitlementRequests {
-    pub fn begin(&self) -> Result<u64, String> {
-        let mut generation = self.0.lock().map_err(|_| "Entitlement lock unavailable")?;
-        *generation += 1;
-        Ok(*generation)
-    }
-
-    pub fn apply<T>(&self, request: u64, commit: impl FnOnce() -> T) -> Result<T, String> {
-        let generation = self.0.lock().map_err(|_| "Entitlement lock unavailable")?;
-        if request != *generation {
-            return Err("Entitlement request superseded".into());
-        }
-        Ok(commit())
-    }
-
-    pub fn invalidate(&self, lock: impl FnOnce()) -> Result<(), String> {
-        let mut generation = self.0.lock().map_err(|_| "Entitlement lock unavailable")?;
-        *generation += 1;
-        lock();
-        Ok(())
-    }
-}
-
-/// Updater channel resolved from the last entitlement decision. The backend owns
-/// this, not the webview: Control and Overlay are separate JS contexts and the
-/// deck that runs the update banner is not the component that verified the
-/// entitlement, so a frontend-held channel is invisible to whichever window asks
-/// next. `0` = Stable, and Stable is also the fallback for every unknown value —
-/// a restricted channel is never reachable by forgetting to set this.
-static UPDATE_CHANNEL: AtomicU8 = AtomicU8::new(0); // 0=Stable, 1=ClosedBeta, 2=Dev
+/// The local capture thread is started once during app setup, independently of
+/// account sign-in or network state.
+static LOCAL_CAPTURE_STARTED: AtomicBool = AtomicBool::new(false);
 
 /// Whether G-Signal gank warnings are enabled (mirrors the UI toggle). Defaults
 /// on so a fresh install warns out of the box.
@@ -77,8 +103,11 @@ static SIGNAL_ENABLED: AtomicBool = AtomicBool::new(true);
 static SIGNAL_SENSITIVITY: AtomicU8 = AtomicU8::new(1); // 0=Low, 1=Med, 2=High
 
 /// Epoch-ms of the last GSI POST received. 0 = none yet. The watchdog uses this
-/// to tell "Dota open & sending" (heartbeat ~30s) from "gone quiet".
+/// to tell "Dota open & sending" from "gone quiet".
 static LAST_POST_MS: AtomicU64 = AtomicU64::new(0);
+/// Accepted MVP contract: a GSI-backed conclusion is usable only while its
+/// last validated source observation is at most two seconds old.
+pub const GSI_FRESHNESS_MAX_AGE_MS: u64 = 2_000;
 static PLAYER_TEAM: AtomicU8 = AtomicU8::new(0);
 
 /// Maiden's voice for Rust-side (G-Signal) speech, mirrored from the UI
@@ -89,11 +118,16 @@ static PLAYER_TEAM: AtomicU8 = AtomicU8::new(0);
 /// cache now keys correctness on this pair matching what it baked with).
 static VOICE: Mutex<(Option<String>, Option<i32>)> = Mutex::new((None, None));
 
-/// G-Master backend chosen in the UI. 0=Auto (claude→ollama fallback, the
-/// historical behavior), 1=ClaudeOnly, 2=OllamaOnly. Auto is the default so an
-/// installer untouched by the user still works on a Plan account, and the local
-/// path is one click away when claude is rate-limited or offline.
+/// G-Master backend chosen in the UI. 0=Auto, 1=ClaudeOnly, 2=OllamaOnly.
+/// Auto uses Claude only after the separate cloud-context opt-in; otherwise it
+/// takes the local Ollama path.
 static MASTER_BACKEND: AtomicU8 = AtomicU8::new(0);
+
+/// Separate, local preference for sending the narrow own-stat context to a
+/// cloud advice provider. Provider selection, API-key entry, and Ask do not
+/// grant this consent. Old settings files omit the value and remain off.
+static MASTER_CLOUD_CONTEXT_OPT_IN: AtomicBool = AtomicBool::new(false);
+static MASTER_CLOUD_CONTEXT_GENERATION: AtomicU64 = AtomicU64::new(0);
 
 /// Ollama model name the user picked for G-Master (empty → legacy default).
 static MASTER_OLLAMA_MODEL: Mutex<String> = Mutex::new(String::new());
@@ -130,6 +164,22 @@ pub fn last_post_ms() -> u64 {
     LAST_POST_MS.load(Ordering::Relaxed)
 }
 
+pub fn gsi_is_fresh_at(last_post_ms: u64, now_ms: u64) -> bool {
+    last_post_ms != 0
+        && now_ms.saturating_sub(last_post_ms) <= GSI_FRESHNESS_MAX_AGE_MS
+}
+
+pub fn gsi_is_fresh() -> bool {
+    gsi_is_fresh_at(last_post_ms(), epoch_ms())
+}
+
+/// The score-derived dead-enemy discount is own-state. While the GSI feed is
+/// stale, treat the count as unknown and keep every CV-observed missing hero in
+/// the risk set rather than reusing a potentially outdated safe-side discount.
+pub fn fresh_dead_enemy_count(is_gsi_fresh: bool, known_dead: usize) -> usize {
+    if is_gsi_fresh { known_dead } else { 0 }
+}
+
 pub fn set_in_game(v: bool) {
     // Every in_game transition — horn and post-game alike — is a match
     // boundary. Bumping the epoch here (rather than from `log::start_match`)
@@ -148,6 +198,366 @@ pub fn in_game() -> bool {
     IN_GAME.load(Ordering::Relaxed)
 }
 
+fn lifecycle_is_terminal(lifecycle: MatchLifecycle) -> bool {
+    matches!(lifecycle, MatchLifecycle::End | MatchLifecycle::Abandon)
+}
+
+fn local_session_id(state: &mut MatchSessionState) -> String {
+    state.next_local_id = state.next_local_id.saturating_add(1);
+    format!(
+        "local-{}-{}-{}",
+        std::process::id(),
+        epoch_ms(),
+        state.next_local_id
+    )
+}
+
+fn session_id_for(match_id: Option<&str>, state: &mut MatchSessionState) -> String {
+    match match_id {
+        Some(id) => format!("dota-{id}"),
+        None => local_session_id(state),
+    }
+}
+
+fn should_start_new_session(
+    current: &MatchSession,
+    lifecycle: MatchLifecycle,
+    match_id: Option<&str>,
+    clock_time: i64,
+) -> bool {
+    if let (Some(current_id), Some(incoming_id)) = (current.match_id.as_deref(), match_id) {
+        if current_id != incoming_id {
+            return true;
+        }
+        // A validated match id is authoritative across reconnects. A clock
+        // reset in the same match must not detach the resumed feed from its
+        // existing identity.
+        return false;
+    }
+
+    match current.lifecycle {
+        MatchLifecycle::End => {
+            return match lifecycle {
+                MatchLifecycle::End => false,
+                MatchLifecycle::Draft => true,
+                MatchLifecycle::Live => current.last_clock_time > 5 && clock_time <= 5,
+                MatchLifecycle::Disconnected | MatchLifecycle::Abandon => false,
+            };
+        }
+        MatchLifecycle::Abandon => {
+            if matches!(lifecycle, MatchLifecycle::Live | MatchLifecycle::Disconnected)
+                && current.match_id.is_some()
+                && current.match_id.as_deref() == match_id
+            {
+                return false;
+            }
+            return lifecycle != MatchLifecycle::Abandon;
+        }
+        _ => {}
+    }
+
+    if lifecycle == MatchLifecycle::Draft {
+        return match current.lifecycle {
+            MatchLifecycle::Live => true,
+            MatchLifecycle::Disconnected => current.resume_lifecycle != Some(MatchLifecycle::Draft),
+            _ => false,
+        };
+    }
+
+    matches!(lifecycle, MatchLifecycle::Live)
+        && current.last_clock_time > 5
+        && clock_time <= 5
+        && matches!(
+            current.lifecycle,
+            MatchLifecycle::Live | MatchLifecycle::Disconnected
+        )
+}
+
+fn start_session(
+    state: &mut MatchSessionState,
+    lifecycle: MatchLifecycle,
+    match_id: Option<String>,
+    clock_time: i64,
+) {
+    state.next_epoch = state.next_epoch.saturating_add(1);
+    let session_id = session_id_for(match_id.as_deref(), state);
+    state.current = Some(MatchSession {
+        match_id,
+        session_id,
+        session_epoch: state.next_epoch,
+        lifecycle,
+        resume_lifecycle: None,
+        last_clock_time: clock_time,
+    });
+}
+
+fn snapshot_of(state: &MatchSessionState) -> MatchSessionSnapshot {
+    match state.current.as_ref() {
+        Some(current) => MatchSessionSnapshot {
+            match_id: current.match_id.clone(),
+            session_id: Some(current.session_id.clone()),
+            session_epoch: current.session_epoch,
+            session_lifecycle: Some(current.lifecycle),
+        },
+        None => MatchSessionSnapshot {
+            match_id: None,
+            session_id: None,
+            session_epoch: 0,
+            session_lifecycle: None,
+        },
+    }
+}
+
+fn observe_session_state(
+    state: &mut MatchSessionState,
+    lifecycle: MatchLifecycle,
+    match_id: Option<String>,
+    clock_time: i64,
+) -> (MatchSessionSnapshot, bool) {
+    let usable_match_id = match_id;
+    // POST_GAME is terminal. A delayed tick with the same or missing ID must
+    // not move the detector back to Live; a new trusted ID, a fresh draft, or
+    // a clock reset can establish a distinct session.
+    if let Some(current) = state
+        .current
+        .as_ref()
+        .filter(|current| current.lifecycle == MatchLifecycle::End)
+    {
+        let distinct_id = match (current.match_id.as_deref(), usable_match_id.as_deref()) {
+            (Some(current_id), Some(incoming_id)) => current_id != incoming_id,
+            (None, Some(_)) => true,
+            _ => false,
+        };
+        let new_without_id = usable_match_id.is_none()
+            && (lifecycle == MatchLifecycle::Draft
+                || (lifecycle == MatchLifecycle::Live
+                    && current.last_clock_time > 5
+                    && clock_time <= 5));
+        if !distinct_id && !new_without_id {
+            return (snapshot_of(state), false);
+        }
+    }
+    let start_new = state.current.as_ref().is_none_or(|current| {
+        should_start_new_session(
+            current,
+            lifecycle,
+            usable_match_id.as_deref(),
+            clock_time,
+        )
+    });
+
+    let mut boundary = false;
+    if start_new {
+        start_session(state, lifecycle, usable_match_id, clock_time);
+        boundary = true;
+    } else if let Some(current) = state.current.as_mut() {
+        let was_terminal = lifecycle_is_terminal(current.lifecycle);
+        if lifecycle == MatchLifecycle::Disconnected
+            && !matches!(current.lifecycle, MatchLifecycle::Disconnected)
+        {
+            current.resume_lifecycle = Some(current.lifecycle);
+        } else {
+            current.resume_lifecycle = None;
+        }
+        if current.match_id.is_none() {
+            if let Some(id) = usable_match_id {
+                current.match_id = Some(id.clone());
+                current.session_id = format!("dota-{id}");
+            }
+        }
+        current.lifecycle = lifecycle;
+        current.last_clock_time = clock_time;
+        boundary = !was_terminal && lifecycle_is_terminal(lifecycle);
+    }
+
+    (snapshot_of(state), boundary)
+}
+
+/// Apply one validated GSI lifecycle observation. A trusted match id enriches
+/// a draft-local session or starts a new session when it changes. A missing id
+/// never destroys an already established identity.
+pub fn observe_match_tick(
+    lifecycle: MatchLifecycle,
+    match_id: Option<String>,
+    clock_time: i64,
+    in_game: bool,
+) -> MatchSessionSnapshot {
+    let Ok(mut state) = MATCH_SESSION.lock() else {
+        return MatchSessionSnapshot {
+            match_id: None,
+            session_id: None,
+            session_epoch: 0,
+            session_lifecycle: None,
+        };
+    };
+    let (snapshot, boundary) =
+        observe_session_state(&mut state, lifecycle, match_id, clock_time);
+    let effective_in_game = in_game
+        && !snapshot
+            .session_lifecycle
+            .is_some_and(lifecycle_is_terminal);
+    let in_game_changed = IN_GAME.load(Ordering::Relaxed) != effective_in_game;
+    set_in_game(effective_in_game);
+    if boundary && !in_game_changed {
+        MATCH_EPOCH.fetch_add(1, Ordering::Relaxed);
+    }
+    if boundary {
+        clear_enemy_deaths();
+        clear_known_enemies();
+        clear_roster();
+    }
+    snapshot
+}
+
+/// GSI can stop while Dota remains open. Keep the session identity stable and
+/// mark its lifecycle disconnected so a fresh observation can resume it.
+pub fn observe_gsi_status(dota_running: bool, gsi_fresh: bool) -> MatchSessionSnapshot {
+    let Ok(mut state) = MATCH_SESSION.lock() else {
+        return MatchSessionSnapshot {
+            match_id: None,
+            session_id: None,
+            session_epoch: 0,
+            session_lifecycle: None,
+        };
+    };
+    if let Some(current) = state.current.as_mut() {
+        if !dota_running
+            && !lifecycle_is_terminal(current.lifecycle)
+        {
+            current.lifecycle = MatchLifecycle::Abandon;
+            current.resume_lifecycle = None;
+            let was_in_game = IN_GAME.load(Ordering::Relaxed);
+            set_in_game(false);
+            if !was_in_game {
+                MATCH_EPOCH.fetch_add(1, Ordering::Relaxed);
+            }
+        } else if !gsi_fresh
+            && matches!(current.lifecycle, MatchLifecycle::Live | MatchLifecycle::Draft)
+        {
+            current.resume_lifecycle = Some(current.lifecycle);
+            current.lifecycle = MatchLifecycle::Disconnected;
+        }
+    }
+    snapshot_of(&state)
+}
+
+/// A process exit before an explicit post-game observation is recorded as an
+/// abandon. If the same trusted match id is observed again, the session can
+/// resume with its original epoch.
+pub fn mark_dota_exited() -> MatchSessionSnapshot {
+    let was_in_game = IN_GAME.load(Ordering::Relaxed);
+    set_in_game(false);
+    let Ok(mut state) = MATCH_SESSION.lock() else {
+        return MatchSessionSnapshot {
+            match_id: None,
+            session_id: None,
+            session_epoch: 0,
+            session_lifecycle: None,
+        };
+    };
+    let mut boundary = false;
+    if let Some(current) = state.current.as_mut() {
+        if !lifecycle_is_terminal(current.lifecycle) {
+            current.resume_lifecycle = Some(current.lifecycle);
+            current.lifecycle = MatchLifecycle::Abandon;
+            boundary = true;
+        }
+    }
+    if boundary && !was_in_game {
+        MATCH_EPOCH.fetch_add(1, Ordering::Relaxed);
+    }
+    snapshot_of(&state)
+}
+
+pub fn match_session_snapshot() -> MatchSessionSnapshot {
+    MATCH_SESSION
+        .lock()
+        .map(|state| snapshot_of(&state))
+        .unwrap_or(MatchSessionSnapshot {
+            match_id: None,
+            session_id: None,
+            session_epoch: 0,
+            session_lifecycle: None,
+        })
+}
+
+/// Whether an asynchronous result still belongs to the current session.
+/// Callers should also require is_current_live_session before publishing
+/// gameplay advice.
+pub fn is_current_session_epoch(epoch: u64) -> bool {
+    MATCH_SESSION
+        .lock()
+        .ok()
+        .and_then(|state| state.current.as_ref().map(|current| current.session_epoch == epoch))
+        .unwrap_or(false)
+}
+
+/// Check that an utterance or announcer event still belongs to an active
+/// session. Draft events are included for match-start narration; terminal
+/// sessions never accept delayed speech or banners.
+pub fn is_current_active_session_epoch(epoch: u64) -> bool {
+    MATCH_SESSION
+        .lock()
+        .ok()
+        .and_then(|state| {
+            state.current.as_ref().map(|current| {
+                current.session_epoch == epoch
+                    && matches!(
+                        current.lifecycle,
+                        MatchLifecycle::Draft
+                            | MatchLifecycle::Live
+                            | MatchLifecycle::Disconnected
+                    )
+            })
+        })
+        .unwrap_or(false)
+}
+
+/// Check the epoch and lifecycle together before publishing session-bound
+/// asynchronous work such as G-Master advice.
+pub fn is_current_live_session(epoch: u64) -> bool {
+    MATCH_SESSION
+        .lock()
+        .ok()
+        .and_then(|state| {
+            state.current.as_ref().map(|current| {
+                current.session_epoch == epoch && current.lifecycle == MatchLifecycle::Live
+            })
+        })
+        .unwrap_or(false)
+}
+
+/// Check that a capture result still belongs to the current live session or to
+/// its same-epoch GSI-disconnected interval. CV can remain useful while GSI is
+/// stale, but must stop as soon as the session ends, is abandoned, or changes.
+pub fn is_current_capture_session(epoch: u64) -> bool {
+    MATCH_SESSION
+        .lock()
+        .ok()
+        .and_then(|state| {
+            state.current.as_ref().map(|current| {
+                current.session_epoch == epoch
+                    && matches!(
+                        current.lifecycle,
+                        MatchLifecycle::Live | MatchLifecycle::Disconnected
+                    )
+            })
+        })
+        .unwrap_or(false)
+}
+
+pub fn is_current_draft_session(epoch: u64) -> bool {
+    MATCH_SESSION
+        .lock()
+        .ok()
+        .and_then(|state| {
+            state.current.as_ref().map(|current| {
+                current.session_epoch == epoch && current.lifecycle == MatchLifecycle::Draft
+            })
+        })
+        .unwrap_or(false)
+}
+
 /// Monotonic counter bumped on every match boundary (see [`set_in_game`]).
 ///
 /// G-Sentry / G-Motion / G-Signal live inside the capture thread's own state,
@@ -164,122 +574,6 @@ pub fn match_epoch() -> u64 {
     MATCH_EPOCH.load(Ordering::Relaxed)
 }
 
-pub fn set_gmad_entitled(value: bool) {
-    GMAD_ENTITLED.store(value, Ordering::SeqCst);
-    if !value {
-        set_in_game(false);
-    }
-}
-
-pub fn gmad_entitled() -> bool {
-    GMAD_ENTITLED.load(Ordering::SeqCst)
-}
-
-pub fn set_update_channel(channel: crate::gmad_entitlement::update_channel::ReleaseChannel) {
-    use crate::gmad_entitlement::update_channel::ReleaseChannel;
-    let code: u8 = match channel {
-        ReleaseChannel::Stable => 0,
-        ReleaseChannel::ClosedBeta => 1,
-        ReleaseChannel::Dev => 2,
-    };
-    UPDATE_CHANNEL.store(code, Ordering::SeqCst);
-}
-
-pub fn update_channel() -> crate::gmad_entitlement::update_channel::ReleaseChannel {
-    use crate::gmad_entitlement::update_channel::ReleaseChannel;
-    match UPDATE_CHANNEL.load(Ordering::SeqCst) {
-        1 => ReleaseChannel::ClosedBeta,
-        2 => ReleaseChannel::Dev,
-        _ => ReleaseChannel::Stable,
-    }
-}
-
-// ── Entitlement grace cache ──────────────────────────────────────────────────
-//
-// Audit B1/B2: `verify_gmad_entitlement` used to disarm the runtime (and hide
-// the overlay) on EVERY call, success or failure, before the network round
-// trip even started — and it was called not just at sign-in but on every
-// Supabase access-token rotation (~hourly), because the frontend re-verifies
-// whenever the session object changes. A player mid-match could therefore
-// lose G-Signal for the length of a network hiccup that had nothing to do
-// with their actual entitlement, in direct contradiction of CLAUDE.md's
-// resilience clause ("on cloud/network loss, G-Sentry and G-Signal must keep
-// running").
-//
-// This cache is the fix's backend half: remember the last SERVER-CONFIRMED
-// entitled decision, and let a re-verify's network FAILURE fall back to it
-// (marked `stale`) instead of locking, as long as it's still inside
-// [`ENTITLEMENT_GRACE_MS`]. Cold start is untouched — there is nothing to
-// fall back to on first launch, so the disclosed Closed Beta policy ("connect
-// every time you open the app") still holds exactly as before. A genuine,
-// freshly-confirmed DENIAL clears the cache immediately, so a later network
-// failure can never reinstate access that was just explicitly revoked.
-
-/// How long a confirmed-entitled decision is trusted after the server last
-/// confirmed it, purely so a RE-verification's own network failure doesn't
-/// revoke an already-established session. Deliberately bounded — this is a
-/// re-verify fallback for a session already in progress, not a way to stay
-/// entitled indefinitely offline. 24h comfortably covers any single match or
-/// transient outage while still demanding a fresh check at least daily; tune
-/// here if product wants a different trade-off.
-const ENTITLEMENT_GRACE_MS: u64 = 24 * 60 * 60 * 1000;
-
-struct EntitlementCache {
-    decision: crate::gmad_entitlement::EntitlementDecision,
-    verified_at_ms: u64,
-}
-
-static ENTITLEMENT_CACHE: Mutex<Option<EntitlementCache>> = Mutex::new(None);
-
-/// Remember a server-confirmed ENTITLED decision as the fallback for a future
-/// re-verify's network failure. Callers must only pass decisions where
-/// `unlocks_runtime()` is true — a denial must never become a stale grant.
-pub fn cache_entitlement(decision: crate::gmad_entitlement::EntitlementDecision) {
-    cache_entitlement_at(decision, epoch_ms());
-}
-
-/// Injectable-clock version of [`cache_entitlement`] — same shape as
-/// `note_enemy_score`/`dead_enemy_count_at` elsewhere in this file, so the
-/// grace window's expiry boundary is actually testable instead of only
-/// exercisable against real wall-clock time.
-fn cache_entitlement_at(decision: crate::gmad_entitlement::EntitlementDecision, now_ms: u64) {
-    if let Ok(mut slot) = ENTITLEMENT_CACHE.lock() {
-        *slot = Some(EntitlementCache {
-            decision,
-            verified_at_ms: now_ms,
-        });
-    }
-}
-
-/// The last confirmed-entitled decision, cloned and marked `stale`, if it's
-/// still inside the grace window. `None` means the caller must lock: either
-/// nothing was ever cached (cold start — unaffected by this fallback) or the
-/// grace window has lapsed since the last successful check.
-pub fn stale_entitlement_within_grace() -> Option<crate::gmad_entitlement::EntitlementDecision> {
-    stale_entitlement_within_grace_at(epoch_ms())
-}
-
-/// Injectable-clock version of [`stale_entitlement_within_grace`].
-fn stale_entitlement_within_grace_at(now_ms: u64) -> Option<crate::gmad_entitlement::EntitlementDecision> {
-    let slot = ENTITLEMENT_CACHE.lock().ok()?;
-    let cache = slot.as_ref()?;
-    if now_ms.saturating_sub(cache.verified_at_ms) > ENTITLEMENT_GRACE_MS {
-        return None;
-    }
-    let mut decision = cache.decision.clone();
-    decision.stale = true;
-    Some(decision)
-}
-
-/// Drop the cached grant. Called on explicit sign-out/lock (a real "stop
-/// trusting this session" event) and on a freshly-confirmed denial (a more
-/// recent, authoritative answer than whatever was cached).
-pub fn clear_entitlement_cache() {
-    if let Ok(mut slot) = ENTITLEMENT_CACHE.lock() {
-        *slot = None;
-    }
-}
-
 pub fn set_persona_preset(val: u8) {
     PERSONA_PRESET.store(val, Ordering::Relaxed);
 }
@@ -288,10 +582,138 @@ pub fn persona_preset() -> u8 {
     PERSONA_PRESET.load(Ordering::Relaxed)
 }
 
-pub fn mark_gmad_capture_started() -> bool {
-    GMAD_CAPTURE_STARTED
+#[derive(Debug, PartialEq, Eq)]
+struct StartupSettings {
+    volume: u8,
+    announcer_enabled: bool,
+    signal_enabled: bool,
+    signal_sensitivity: u8,
+    voice_name: Option<String>,
+    voice_rate: Option<i32>,
+    persona_preset: u8,
+    master_backend: u8,
+    cloud_context_opt_in: bool,
+    master_auth_apikey: bool,
+    master_ollama_model: String,
+    telemetry_source: u8,
+    calibration_enabled: bool,
+    efficacy_study: bool,
+}
+
+fn parse_startup_settings(json: &str) -> Result<StartupSettings, String> {
+    let value: serde_json::Value = serde_json::from_str(json)
+        .map_err(|_| "saved settings are not valid JSON".to_string())?;
+    let settings = value
+        .as_object()
+        .ok_or_else(|| "saved settings must be a JSON object".to_string())?;
+
+    let bool_or = |key: &str, fallback: bool| {
+        settings.get(key).and_then(serde_json::Value::as_bool).unwrap_or(fallback)
+    };
+    let sensitivity = match settings.get("signalSensitivity").and_then(serde_json::Value::as_str) {
+        Some("low") => 0,
+        Some("high") => 2,
+        _ => 1,
+    };
+    let persona = match settings.get("personaPreset").and_then(serde_json::Value::as_str) {
+        Some("silent") => 1,
+        Some("caster") => 2,
+        Some("meme") => 3,
+        _ => 0,
+    };
+    let backend = match settings.get("masterBackend").and_then(serde_json::Value::as_str) {
+        Some("claude") => 1,
+        Some("ollama") => 2,
+        _ => 0,
+    };
+    let telemetry_source = match settings.get("telemetrySource").and_then(serde_json::Value::as_str) {
+        Some("feeder") => 1,
+        Some("gtelemetry") => 2,
+        Some("off") => 3,
+        _ => 0,
+    };
+    let voice_name = settings
+        .get("voiceName")
+        .and_then(serde_json::Value::as_str)
+        .map(str::trim)
+        .filter(|name| name.len() <= 128 && !name.chars().any(char::is_control) && !name.is_empty())
+        .map(str::to_owned);
+    let voice_rate = settings
+        .get("voiceRate")
+        .and_then(serde_json::Value::as_f64)
+        .filter(|rate| rate.is_finite())
+        .map(|rate| rate.clamp(-10.0, 10.0).round() as i32);
+    let master_ollama_model = settings
+        .get("masterOllamaModel")
+        .and_then(serde_json::Value::as_str)
+        .map(str::trim)
+        .filter(|model| !model.is_empty() && model.len() <= 128 && !model.chars().any(char::is_control))
+        .unwrap_or("qwen3.5:4b")
+        .to_owned();
+    let volume = settings
+        .get("volume")
+        .and_then(serde_json::Value::as_f64)
+        .filter(|volume| volume.is_finite())
+        .map(|volume| volume.clamp(0.0, 100.0).round() as u8)
+        .unwrap_or(80);
+
+    Ok(StartupSettings {
+        volume,
+        announcer_enabled: bool_or("announcerEnabled", true),
+        signal_enabled: bool_or("signalEnabled", true),
+        signal_sensitivity: sensitivity,
+        voice_name,
+        voice_rate,
+        persona_preset: persona,
+        master_backend: backend,
+        cloud_context_opt_in: bool_or("cloudContextOptIn", false),
+        master_auth_apikey: settings
+            .get("masterAuth")
+            .and_then(serde_json::Value::as_str)
+            == Some("apikey"),
+        master_ollama_model,
+        telemetry_source,
+        calibration_enabled: bool_or("calibration", false),
+        efficacy_study: bool_or("efficacyStudy", false),
+    })
+}
+
+/// Apply the saved runtime preferences before the GSI server starts. Unknown or
+/// invalid fields use the same safe defaults as the frontend settings snapshot.
+pub fn apply_startup_settings_json(json: &str) -> Result<(), String> {
+    let settings = parse_startup_settings(json)?;
+    crate::audio::set_volume(settings.volume);
+    set_announcer_enabled(settings.announcer_enabled);
+    set_signal_enabled(settings.signal_enabled);
+    set_signal_sensitivity(match settings.signal_sensitivity {
+        0 => Sensitivity::Low,
+        2 => Sensitivity::High,
+        _ => Sensitivity::Med,
+    });
+    set_voice(settings.voice_name, settings.voice_rate);
+    set_persona_preset(settings.persona_preset);
+    set_master_backend(match settings.master_backend {
+        1 => MasterBackend::Claude,
+        2 => MasterBackend::Ollama,
+        _ => MasterBackend::Auto,
+    });
+    set_master_cloud_context_opt_in(settings.cloud_context_opt_in);
+    set_master_mode(settings.master_auth_apikey);
+    set_master_ollama_model(settings.master_ollama_model);
+    crate::governor::set_telemetry_source(settings.telemetry_source);
+    crate::calibration::set_enabled(settings.calibration_enabled);
+    set_efficacy_enabled(settings.efficacy_study);
+    Ok(())
+}
+
+pub fn mark_local_capture_started() -> bool {
+    LOCAL_CAPTURE_STARTED
         .compare_exchange(false, true, Ordering::SeqCst, Ordering::SeqCst)
         .is_ok()
+}
+
+pub fn reset_local_capture_started() {
+    LOCAL_CAPTURE_STARTED.store(false, Ordering::SeqCst);
 }
 
 pub fn set_player_team_name(name: &str) {
@@ -404,8 +826,7 @@ fn clear_enemy_deaths() {
     }
 }
 
-/// Wall-clock ms. Used by the dead-enemy pool above and the entitlement grace
-/// cache further down. `gsi.rs` and `utterance.rs` each carry their own
+/// Wall-clock ms. Used by the dead-enemy pool above. `gsi.rs` and `utterance.rs` each carry their own
 /// private copy of this same helper — module-private by design, so no shared
 /// `pub(crate)` version to reuse across files.
 fn epoch_ms() -> u64 {
@@ -490,6 +911,24 @@ pub fn master_backend() -> MasterBackend {
         2 => MasterBackend::Ollama,
         _ => MasterBackend::Auto,
     }
+}
+
+/// Enable or disable the separate own-stat cloud-context consent. Any change
+/// invalidates in-flight advice and cached answers so an old consent decision
+/// cannot authorize a later request or response.
+pub fn set_master_cloud_context_opt_in(enabled: bool) {
+    if MASTER_CLOUD_CONTEXT_OPT_IN.swap(enabled, Ordering::SeqCst) != enabled {
+        MASTER_CLOUD_CONTEXT_GENERATION.fetch_add(1, Ordering::SeqCst);
+        crate::master::invalidate_advice_cache();
+    }
+}
+
+pub fn master_cloud_context_opt_in() -> bool {
+    MASTER_CLOUD_CONTEXT_OPT_IN.load(Ordering::SeqCst)
+}
+
+pub fn master_cloud_context_generation() -> u64 {
+    MASTER_CLOUD_CONTEXT_GENERATION.load(Ordering::SeqCst)
 }
 
 pub fn set_master_ollama_model(name: String) {
@@ -637,6 +1076,30 @@ pub fn add_known_enemy(name: &str) {
     }
 }
 
+pub fn add_known_enemy_for_session(epoch: u64, name: &str) -> bool {
+    let Ok(session) = MATCH_SESSION.lock() else {
+        return false;
+    };
+    if !session.current.as_ref().is_some_and(|current| {
+        current.session_epoch == epoch
+            && matches!(
+                current.lifecycle,
+                MatchLifecycle::Live | MatchLifecycle::Disconnected
+            )
+    }) {
+        return false;
+    }
+    let Ok(mut enemies) = KNOWN_ENEMIES.lock() else {
+        return false;
+    };
+    if let Some(entry) = enemies.iter_mut().find(|(enemy, _)| enemy == name) {
+        entry.1 = entry.1.saturating_add(1);
+    } else {
+        enemies.push((name.to_string(), 1));
+    }
+    true
+}
+
 /// Enemy heroes confirmed by repeated CV sightings this match (raw label form).
 pub fn known_enemies() -> Vec<String> {
     KNOWN_ENEMIES
@@ -699,6 +1162,26 @@ pub fn set_roster(radiant: Vec<String>, dire: Vec<String>) {
     if let Ok(mut g) = ROSTER.lock() {
         *g = Some(Roster { radiant, dire });
     }
+}
+
+pub fn set_roster_for_draft_session(
+    epoch: u64,
+    radiant: Vec<String>,
+    dire: Vec<String>,
+) -> bool {
+    let Ok(session) = MATCH_SESSION.lock() else {
+        return false;
+    };
+    if !session.current.as_ref().is_some_and(|current| {
+        current.session_epoch == epoch && current.lifecycle == MatchLifecycle::Draft
+    }) {
+        return false;
+    }
+    let Ok(mut roster) = ROSTER.lock() else {
+        return false;
+    };
+    *roster = Some(Roster { radiant, dire });
+    true
 }
 
 pub fn roster() -> Option<Roster> {
@@ -791,6 +1274,132 @@ pub fn take_oauth_pending(callback_state: Option<&str>, now_ms: u64) -> bool {
 mod tests {
     use super::*;
 
+    #[test]
+    fn local_capture_start_is_idempotent() {
+        reset_local_capture_started();
+        assert!(mark_local_capture_started());
+        assert!(!mark_local_capture_started());
+        reset_local_capture_started();
+        assert!(mark_local_capture_started());
+        reset_local_capture_started();
+    }
+
+    fn observe(
+        state: &mut MatchSessionState,
+        lifecycle: MatchLifecycle,
+        match_id: Option<&str>,
+        clock_time: i64,
+    ) -> (MatchSessionSnapshot, bool) {
+        observe_session_state(state, lifecycle, match_id.map(str::to_string), clock_time)
+    }
+
+    #[test]
+    fn draft_identity_is_promoted_when_a_valid_match_id_arrives() {
+        let mut state = MatchSessionState::default();
+        let (draft, _) = observe(&mut state, MatchLifecycle::Draft, None, -1);
+        let (live, boundary) = observe(&mut state, MatchLifecycle::Live, Some("123"), 0);
+        assert_eq!(draft.session_epoch, live.session_epoch);
+        assert_eq!(live.match_id.as_deref(), Some("123"));
+        assert_eq!(live.session_id.as_deref(), Some("dota-123"));
+        assert!(!boundary);
+    }
+
+    #[test]
+    fn session_event_flattens_identity_beside_payload() {
+        let session = MatchSessionSnapshot {
+            match_id: Some("123".into()),
+            session_id: Some("dota-123".into()),
+            session_epoch: 7,
+            session_lifecycle: Some(MatchLifecycle::Live),
+        };
+        let event = MatchSessionEvent::new(serde_json::json!({ "hero": "crystal_maiden" }), &session);
+        let value = serde_json::to_value(event).unwrap();
+        assert_eq!(value["hero"], "crystal_maiden");
+        assert_eq!(value["match_id"], "123");
+        assert_eq!(value["session_id"], "dota-123");
+        assert_eq!(value["session_epoch"], 7);
+        assert_eq!(value["session_lifecycle"], "live");
+    }
+
+    #[test]
+    fn session_text_event_has_a_flattened_text_and_epoch_contract() {
+        let session = MatchSessionSnapshot {
+            match_id: Some("123".into()),
+            session_id: Some("dota-123".into()),
+            session_epoch: 7,
+            session_lifecycle: Some(MatchLifecycle::Live),
+        };
+        let value = serde_json::to_value(SessionTextEvent::new("buyback line", &session)).unwrap();
+        assert_eq!(value["text"], "buyback line");
+        assert_eq!(value["session_epoch"], 7);
+        assert_eq!(value["session_lifecycle"], "live");
+    }
+
+    #[test]
+    fn a_reconnect_with_the_same_match_id_keeps_its_epoch_even_after_clock_reset() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 900);
+        observe(&mut state, MatchLifecycle::Disconnected, Some("123"), 900);
+        let (reconnected, boundary) =
+            observe(&mut state, MatchLifecycle::Live, Some("123"), 0);
+        assert_eq!(reconnected.session_epoch, first.session_epoch);
+        assert_eq!(reconnected.session_id, first.session_id);
+        assert_eq!(reconnected.session_lifecycle, Some(MatchLifecycle::Live));
+        assert!(!boundary);
+    }
+
+    #[test]
+    fn a_different_match_id_starts_a_new_epoch() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 900);
+        let (next, boundary) = observe(&mut state, MatchLifecycle::Live, Some("456"), 10);
+        assert_eq!(next.session_epoch, first.session_epoch + 1);
+        assert_eq!(next.session_id.as_deref(), Some("dota-456"));
+        assert!(boundary);
+    }
+
+    #[test]
+    fn a_clock_reset_starts_a_new_local_session_when_match_id_is_unavailable() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, None, 900);
+        let (next, boundary) = observe(&mut state, MatchLifecycle::Live, None, 0);
+        assert_eq!(next.session_epoch, first.session_epoch + 1);
+        assert_ne!(next.session_id, first.session_id);
+        assert!(boundary);
+    }
+
+    #[test]
+    fn terminal_end_cannot_be_resurrected_by_a_late_tick_for_the_same_match() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 900);
+        observe(&mut state, MatchLifecycle::End, Some("123"), 1200);
+        let (late, boundary) = observe(&mut state, MatchLifecycle::Live, Some("123"), 1200);
+        assert_eq!(late.session_epoch, first.session_epoch);
+        assert_eq!(late.session_lifecycle, Some(MatchLifecycle::End));
+        assert!(!boundary);
+
+        let (late_without_id, boundary) = observe(&mut state, MatchLifecycle::Live, None, 1200);
+        assert_eq!(late_without_id.session_epoch, first.session_epoch);
+        assert_eq!(late_without_id.session_lifecycle, Some(MatchLifecycle::End));
+        assert!(!boundary);
+    }
+
+    #[test]
+    fn trusted_abandon_can_resume_but_unknown_abandon_starts_a_new_local_session() {
+        let mut trusted = MatchSessionState::default();
+        let (first, _) = observe(&mut trusted, MatchLifecycle::Live, Some("123"), 900);
+        observe(&mut trusted, MatchLifecycle::Abandon, Some("123"), 900);
+        let (resumed, _) = observe(&mut trusted, MatchLifecycle::Live, Some("123"), 1000);
+        assert_eq!(resumed.session_epoch, first.session_epoch);
+
+        let mut local = MatchSessionState::default();
+        let (local_first, _) = observe(&mut local, MatchLifecycle::Live, None, 900);
+        observe(&mut local, MatchLifecycle::Abandon, None, 900);
+        let (local_next, boundary) = observe(&mut local, MatchLifecycle::Live, None, 1000);
+        assert_eq!(local_next.session_epoch, local_first.session_epoch + 1);
+        assert!(boundary);
+    }
+
     /// Serialises the tests that drive process-global match state
     /// (`IN_GAME`/`MATCH_EPOCH` and the dead-enemy pool). Rust runs tests in
     /// parallel threads inside ONE process, so without this they race: a
@@ -803,157 +1412,6 @@ mod tests {
 
     fn match_state_guard() -> std::sync::MutexGuard<'static, ()> {
         MATCH_STATE_LOCK.lock().unwrap_or_else(|e| e.into_inner())
-    }
-
-    /// Same reasoning as [`match_state_guard`], for the entitlement grace
-    /// cache: a separate process-global static, so it needs its own lock
-    /// rather than sharing one that has nothing to do with match state.
-    static ENTITLEMENT_CACHE_LOCK: Mutex<()> = Mutex::new(());
-
-    fn entitlement_cache_guard() -> std::sync::MutexGuard<'static, ()> {
-        ENTITLEMENT_CACHE_LOCK.lock().unwrap_or_else(|e| e.into_inner())
-    }
-
-    fn entitled_decision(gid: &str) -> crate::gmad_entitlement::EntitlementDecision {
-        crate::gmad_entitlement::EntitlementDecision {
-            state: "eligible".into(),
-            gid: Some(gid.into()),
-            checked_at: Some("2026-08-19T00:00:00Z".into()),
-            terms: Some(crate::gmad_entitlement::TermsSummary {
-                document_id: Some("closed-beta-terms-of-use".into()),
-                version: Some("1.0.0-beta".into()),
-                effective_at: None,
-            }),
-            update_channel: None,
-            stale: false,
-        }
-    }
-
-    #[test]
-    fn old_verification_cannot_commit_after_sign_out() {
-        let requests = EntitlementRequests(Mutex::new(0));
-        let armed = AtomicBool::new(true);
-        let pending = requests.begin().unwrap();
-        requests
-            .invalidate(|| armed.store(false, Ordering::SeqCst))
-            .unwrap();
-        assert!(requests
-            .apply(pending, || armed.store(true, Ordering::SeqCst))
-            .is_err());
-        assert!(!armed.load(Ordering::SeqCst));
-    }
-
-    #[test]
-    fn only_the_latest_verification_can_apply_success_or_failure() {
-        let requests = EntitlementRequests(Mutex::new(0));
-        let old = requests.begin().unwrap();
-        let current = requests.begin().unwrap();
-        assert!(requests
-            .apply(old, || panic!("old failure must not lock newer state"))
-            .is_err());
-        assert_eq!(requests.apply(current, || "eligible").unwrap(), "eligible");
-    }
-
-    #[test]
-    fn no_cache_means_no_fallback_cold_start_unaffected() {
-        let _guard = entitlement_cache_guard();
-        clear_entitlement_cache();
-        assert!(
-            stale_entitlement_within_grace().is_none(),
-            "cold start (nothing ever cached) must still fall through to locking"
-        );
-    }
-
-    #[test]
-    fn a_fresh_cache_serves_within_grace_marked_stale() {
-        let _guard = entitlement_cache_guard();
-        clear_entitlement_cache();
-        cache_entitlement(entitled_decision("G-1ABCDEF0"));
-        let fallback = stale_entitlement_within_grace().expect("just cached — must be servable");
-        assert!(fallback.stale, "a fallback decision must be honestly marked stale");
-        assert!(
-            fallback.unlocks_runtime(),
-            "the underlying grant is still valid — only its freshness is in question"
-        );
-        assert_eq!(fallback.gid.as_deref(), Some("G-1ABCDEF0"));
-        clear_entitlement_cache();
-    }
-
-    #[test]
-    fn cache_never_mutates_the_original_stored_decision() {
-        // Every read stamps a CLONE `stale`; the stored record itself must
-        // stay pristine so a second read within grace is independently honest
-        // rather than accidentally inheriting a prior read's mutation.
-        let _guard = entitlement_cache_guard();
-        clear_entitlement_cache();
-        cache_entitlement(entitled_decision("G-1ABCDEF0"));
-        let _ = stale_entitlement_within_grace();
-        let second = stale_entitlement_within_grace().expect("still within grace");
-        assert!(second.stale);
-        clear_entitlement_cache();
-    }
-
-    #[test]
-    fn clearing_removes_the_fallback_immediately() {
-        // Models both real clear sites: an explicit sign-out/lock, and a
-        // freshly-confirmed DENIAL — either way, once cleared, a later
-        // network failure must NOT resurrect the old grant.
-        let _guard = entitlement_cache_guard();
-        clear_entitlement_cache();
-        cache_entitlement(entitled_decision("G-1ABCDEF0"));
-        assert!(stale_entitlement_within_grace().is_some());
-        clear_entitlement_cache();
-        assert!(
-            stale_entitlement_within_grace().is_none(),
-            "a cleared cache must never serve a fallback again until re-cached"
-        );
-    }
-
-    #[test]
-    fn a_second_successful_verify_replaces_the_cached_grant() {
-        // Re-caching (the normal path on every successful re-verify) must
-        // overwrite, not accumulate — and must slide the grace window's
-        // origin forward to the NEW confirmation, not the old one.
-        let _guard = entitlement_cache_guard();
-        clear_entitlement_cache();
-        cache_entitlement(entitled_decision("G-OLD00000"));
-        cache_entitlement(entitled_decision("G-NEW11111"));
-        let fallback = stale_entitlement_within_grace().expect("re-cached — must be servable");
-        assert_eq!(fallback.gid.as_deref(), Some("G-NEW11111"));
-        clear_entitlement_cache();
-    }
-
-    #[test]
-    fn grace_window_expiry_is_a_hard_boundary() {
-        let _guard = entitlement_cache_guard();
-        clear_entitlement_cache();
-        cache_entitlement_at(entitled_decision("G-1ABCDEF0"), 1_000);
-        assert!(
-            stale_entitlement_within_grace_at(1_000 + ENTITLEMENT_GRACE_MS).is_some(),
-            "exactly at the boundary must still be servable"
-        );
-        assert!(
-            stale_entitlement_within_grace_at(1_000 + ENTITLEMENT_GRACE_MS + 1).is_none(),
-            "one ms past the boundary must lock, not linger"
-        );
-        clear_entitlement_cache();
-    }
-
-    #[test]
-    fn a_re_verify_success_slides_the_grace_origin_forward() {
-        // The steady-state this protects: as long as at least one background
-        // re-check succeeds per grace window, the session never goes stale —
-        // each success resets the clock from ITS OWN confirmation time, not
-        // the original sign-in.
-        let _guard = entitlement_cache_guard();
-        clear_entitlement_cache();
-        cache_entitlement_at(entitled_decision("G-1ABCDEF0"), 0);
-        cache_entitlement_at(entitled_decision("G-1ABCDEF0"), 1_000);
-        // Long past the FIRST cache's grace window, but well within the
-        // second's — must still be servable because the origin moved.
-        let far_past_first_origin = ENTITLEMENT_GRACE_MS + 500;
-        assert!(stale_entitlement_within_grace_at(far_past_first_origin).is_some());
-        clear_entitlement_cache();
     }
 
     #[test]
@@ -1087,6 +1545,20 @@ mod tests {
         assert_eq!(note_enemy_score(1, 30_000, 2_000), 0);
         assert_eq!(dead_enemy_count_at(2_000), 0);
         clear_enemy_deaths();
+    }
+
+    #[test]
+    fn gsi_freshness_uses_the_accepted_two_second_source_age() {
+        assert!(!gsi_is_fresh_at(0, 10_000), "no valid post is unknown");
+        assert!(gsi_is_fresh_at(10_000, 12_000), "the 2s boundary is inclusive");
+        assert!(!gsi_is_fresh_at(10_000, 12_001), "older source data is stale");
+        assert!(gsi_is_fresh_at(11_000, 10_000), "clock rollback must not age a source");
+    }
+
+    #[test]
+    fn stale_gsi_cannot_reuse_score_based_dead_enemy_discount() {
+        assert_eq!(fresh_dead_enemy_count(true, 3), 3);
+        assert_eq!(fresh_dead_enemy_count(false, 3), 0);
     }
 
     #[test]
@@ -1236,5 +1708,65 @@ mod tests {
             silent > low && silent < high,
             "silent-arm share {silent}/{n} outside 15%-35% band — randomization degenerate"
         );
+    }
+
+    #[test]
+    fn startup_settings_parse_saved_runtime_preferences() {
+        let settings = parse_startup_settings(
+            r#"{"volume":41,"announcerEnabled":false,"signalEnabled":false,"signalSensitivity":"high","voiceName":"  Microsoft Aria  ","voiceRate":-3,"personaPreset":"meme","masterBackend":"ollama","cloudContextOptIn":true,"masterAuth":"apikey","masterOllamaModel":"llama3.2:3b","telemetrySource":"off","calibration":true,"efficacyStudy":true}"#,
+        )
+        .unwrap();
+
+        assert_eq!(settings.volume, 41);
+        assert!(!settings.announcer_enabled);
+        assert!(!settings.signal_enabled);
+        assert_eq!(settings.signal_sensitivity, 2);
+        assert_eq!(settings.voice_name.as_deref(), Some("Microsoft Aria"));
+        assert_eq!(settings.voice_rate, Some(-3));
+        assert_eq!(settings.persona_preset, 3);
+        assert_eq!(settings.master_backend, 2);
+        assert!(settings.cloud_context_opt_in);
+        assert!(settings.master_auth_apikey);
+        assert_eq!(settings.master_ollama_model, "llama3.2:3b");
+        assert_eq!(settings.telemetry_source, 3);
+        assert!(settings.calibration_enabled);
+        assert!(settings.efficacy_study);
+    }
+
+    #[test]
+    fn startup_settings_normalize_invalid_values_to_safe_defaults() {
+        let settings = parse_startup_settings(
+            r#"{"volume":101,"announcerEnabled":"yes","signalEnabled":null,"signalSensitivity":"unknown","voiceName":"\u0000","voiceRate":11,"personaPreset":"unknown","masterBackend":"unknown","masterAuth":"unknown","masterOllamaModel":"\u0000","efficacyStudy":"true"}"#,
+        )
+        .unwrap();
+
+        assert_eq!(settings.volume, 100);
+        assert!(settings.announcer_enabled);
+        assert!(settings.signal_enabled);
+        assert_eq!(settings.signal_sensitivity, 1);
+        assert_eq!(settings.voice_name, None);
+        assert_eq!(settings.voice_rate, Some(10));
+        assert_eq!(settings.persona_preset, 0);
+        assert_eq!(settings.master_backend, 0);
+        assert!(!settings.cloud_context_opt_in);
+        assert!(!settings.master_auth_apikey);
+        assert_eq!(settings.master_ollama_model, "qwen3.5:4b");
+        assert_eq!(settings.telemetry_source, 0);
+        assert!(!settings.calibration_enabled);
+        assert!(!settings.efficacy_study);
+    }
+
+    #[test]
+    fn startup_settings_round_fractional_numeric_controls_like_the_frontend() {
+        let settings = parse_startup_settings(r#"{"volume":44.6,"voiceRate":-3.6}"#).unwrap();
+
+        assert_eq!(settings.volume, 45);
+        assert_eq!(settings.voice_rate, Some(-4));
+    }
+
+    #[test]
+    fn startup_settings_require_a_json_object() {
+        assert!(parse_startup_settings("not-json").is_err());
+        assert!(parse_startup_settings("[]").is_err());
     }
 }

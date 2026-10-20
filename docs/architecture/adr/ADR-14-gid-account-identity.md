@@ -2,8 +2,8 @@
 title: "ADR: GID — G-Series Account & Identity Layer"
 doc_id: "ADR-14-gid-account-identity"
 status: "accepted"
-version: "1.0.2"
-updated: "2026-07-19"
+version: "1.0.3"
+updated: "2026-10-18"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["ADR-10-hybrid-ingestion-resilience", "ADR-11-optin-data-contribution-flywheel", "ADR-12-community-ai-marketplace", "CR-002-Phase2-wire-backend"]
@@ -52,7 +52,7 @@ Email + phone OTP were built and then **cut** (adoption friction + SMS cost + PI
 **4. GID codec ([`src/src/gid.ts`](file:///g:/G-Maiden/src/src/gid.ts)) — single-sourced in TypeScript.**
 Format `G-[Generation][Payload][Checksum]`:
 - 31-char base31 alphabet, excludes ambiguous `0 1 O I L`.
-- [`Generation`](file:///g:/G-Maiden/src/src/gid.ts#L22) ∈ {F Founder, B Close Beta, P Public} — permanent cohort; **Founders are
+- [`Generation`](file:///g:/G-Maiden/src/src/gid.ts#L22) ∈ {F Founder, B Legacy, P Public} — permanent cohort marker; existing B identifiers remain valid and are not a current enrollment channel. **Founders are
   identifiable at a glance** as `G-F…` (prestige, per ADR-12 community status).
 - `Payload` = base31 of `(registration-day since 2026-01-01)·10⁷ + cohort-sequence`, padded
   ≥5 — encodes only **immutable** data (date + seq), never account state/tier/payment.
@@ -87,8 +87,8 @@ explicit opt-in (see Privacy).
   obligations (consent, deletion, retention) once real users exist.
 - New hard dependency on Supabase availability for the account features (deck still works
   without it).
-- Generation is hardcoded `'F'` in the signup trigger — must be changed to `'B'`/`'P'` when
-  cohorts open (consider a config table).
+- Generation issuance is server-owned. Existing B identifiers remain readable for account
+  compatibility; any new cohort marker requires a separate product decision and migration review.
 
 ### Privacy reconciliation (updates the "never upload" rule)
 The CLAUDE.md/AGENTS.md rule **"G-Log + player match data stay local, never upload"** is
@@ -120,3 +120,4 @@ data is uploaded. Account creation is **opt-in** (additive sign-in), consistent 
 | 1.0.0 | 2026-07-02 | Accepted — GID cross-ecosystem identity, Supabase `gstore`, Google-OAuth, GID codec, Steam linking, privacy reconciliation |
 | 1.0.1 | 2026-07-19 | symbol-link coverage extension (G1.5) |
 | 1.0.2 | 2026-07-19 | link/metadata sweep (G1.5) — link `Generation` type |
+| 1.0.3 | 2026-10-18 | Reclassified the existing B generation label as legacy while preserving parsing of issued identifiers. |

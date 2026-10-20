@@ -1,0 +1,3772 @@
+{
+  "schema_version": 1,
+  "document_id": "mvp-execution-dag",
+  "version": "0.2.6",
+  "updated": "2026-10-18",
+  "mode": "execution_active",
+  "source": {
+    "path": "docs/product/mvp-backlog.md",
+    "version": "0.3.6",
+    "sha256": "E34D0B0875AD8FA33703C7185585AFD36302659542FCB9E3B1259C9FD01C3197"
+  },
+  "parallelism": {
+    "workers": 3,
+    "integrator": 1,
+    "owner_decisions": "external; not auto-approved",
+    "wave_semantics": "Earliest eligibility under conservative active conditional branches; not calendar time or a global barrier."
+  },
+  "activation_inputs": {
+    "account_gate_required": false,
+    "account_surface_exposed": true
+  },
+  "conditional_policy": "Unknown means HOLD for affected nodes/edges. NOT_APPLICABLE requires an explicit MVP-003/MVP-004 scope decision; it is never inferred from elapsed time.",
+  "dispatch_rule": "Dependencies integrated/accepted, activation known, external gates satisfied, idle worker and write leases available. Acquire verification resource only when entering that phase; consumers start from the integrated dependency SHA.",
+  "integration_owner_paths": [
+    "src-tauri/src/lib.rs command/module registry",
+    "docs/DOC-GRAPH.json",
+    "docs/DOC-GRAPH-REPORT.md",
+    "docs/FEATURE-LEDGER.md",
+    "docs/FEATURE-ORPHAN-REPORT.json",
+    "docs/FEATURE-ORPHAN-REPORT.md",
+    "docs/atomic_index.jsonl"
+  ],
+  "lock_descriptions": {
+    "BASELINE": "Integration checkout/merge state",
+    "ENVIRONMENT": "Pinned toolchain setup and dependency repair",
+    "SCOPE": "MVP scope decision",
+    "ACCESS_POLICY": "Access/offline contract",
+    "DATA_POLICY": "Cloud/local data contract",
+    "QUALITY_CONTRACT": "Acceptance matrix and numeric thresholds",
+    "DOCS": "Cross-project requirement reconciliation; generated doc artifacts handled by integrator",
+    "CORE_STATE": "src-tauri/src/runtime.rs shared lifecycle/state and announcer.rs epoch-scoped detector state",
+    "UTTERANCE": "src-tauri/src/utterance.rs session identity/epoch envelope and stale-event gate",
+    "GSI": "src-tauri/src/gsi.rs and ingestion/schema changes",
+    "UI_ONBOARDING": "Local setup/readiness UI; account sign-in is optional",
+    "UI_SETTINGS": "app/Control and settings lifecycle/session-scoped advice state",
+    "UI_OVERLAY": "app/Overlay and in-game components",
+    "UI_DECK": "CommandDeck/dashboard routing",
+    "UI_LIVE": "companion.ts and live builders",
+    "CAPTURE": "capture.rs/capture_wgc.rs/dxgi.rs/cv region and sensor health",
+    "REVIVE": "revive/respawn/buyback data",
+    "GAME_DATA": "damage/item/hero provenance data",
+    "REPLAY": "Local labeled replay quality evidence",
+    "AUDIO": "audio.rs and playback/device queue",
+    "TTS": "tts.rs and critical cache",
+    "VOICE_ASSETS": "Voice packs/default assets",
+    "UI_VOICE": "AudioSettings and pack inventory",
+    "BRAIN": "master.rs/slm.rs/context/cache",
+    "LOG": "log.rs and session records",
+    "MEMORY": "memory.rs and forget/aggregate contract",
+    "TUNING": "tuning.rs and replay-fit application",
+    "VOICE_DESIGN": "Local STT/mic/model contract",
+    "STT": "New G-Voice implementation area",
+    "AUTH": "auth/entitlement/session frontend and native boundary",
+    "IAM": "Supabase IAM/functions/policies",
+    "LANDING": "Landing routes and access/legal copy",
+    "UPDATER": "useAppUpdate/channel update lifecycle",
+    "PACKAGING": "Tauri resources, native dependencies and lockfiles",
+    "PERF_HARNESS": "tests/perf measurement tooling and receipts",
+    "CI": ".github/workflows and verification matrix",
+    "RELEASE_RECORD": "Owner release decision/evidence register",
+    "FREEZE_RECORD": "Immutable candidate fingerprint"
+  },
+  "verification_resources": {
+    "LOCAL_VALIDATION_HOST": "Exclusive local runtime/build/Dota/GPU/audio/traffic validation slot. No other local builds, Ollama, STT, capture or heavy checks during timed/FPS measurements.",
+    "HOSTED_CI_RUNNER": "Independent hosted runner; may run concurrently with local validation if it does not execute on that same host."
+  },
+  "parent_completion": {
+    "MVP-001": [
+      "MVP-001.A",
+      "MVP-001.B"
+    ],
+    "MVP-002": [
+      "MVP-002"
+    ],
+    "MVP-003": [
+      "MVP-003"
+    ],
+    "MVP-004": [
+      "MVP-004"
+    ],
+    "MVP-005": [
+      "MVP-005"
+    ],
+    "MVP-006": [
+      "MVP-006"
+    ],
+    "MVP-007": [
+      "MVP-007"
+    ],
+    "MVP-008": [
+      "MVP-008"
+    ],
+    "MVP-009": [
+      "MVP-009"
+    ],
+    "MVP-010": [
+      "MVP-010"
+    ],
+    "MVP-011": [
+      "MVP-011.A",
+      "MVP-011.B"
+    ],
+    "MVP-012": [
+      "MVP-012"
+    ],
+    "MVP-013": [
+      "MVP-013"
+    ],
+    "MVP-014": [
+      "MVP-014"
+    ],
+    "MVP-015": [
+      "MVP-015"
+    ],
+    "MVP-016": [
+      "MVP-016"
+    ],
+    "MVP-017": [
+      "MVP-017"
+    ],
+    "MVP-018": [
+      "MVP-018"
+    ],
+    "MVP-019": [
+      "MVP-019"
+    ],
+    "MVP-020": [
+      "MVP-020"
+    ],
+    "MVP-021": [
+      "MVP-021"
+    ],
+    "MVP-022": [
+      "MVP-022"
+    ],
+    "MVP-023": [
+      "MVP-023"
+    ],
+    "MVP-024": [
+      "MVP-024"
+    ],
+    "MVP-025": [
+      "MVP-025"
+    ],
+    "MVP-026": [
+      "MVP-026"
+    ],
+    "MVP-027": [
+      "MVP-027"
+    ],
+    "MVP-028": [
+      "MVP-028"
+    ],
+    "MVP-029": [
+      "MVP-029"
+    ],
+    "MVP-030": [
+      "MVP-030"
+    ],
+    "MVP-031": [
+      "MVP-031"
+    ],
+    "MVP-032": [
+      "MVP-032"
+    ],
+    "MVP-033": [
+      "MVP-033"
+    ],
+    "MVP-034": [
+      "MVP-034"
+    ],
+    "MVP-035": [
+      "MVP-035"
+    ],
+    "MVP-036": [
+      "MVP-036"
+    ],
+    "MVP-037": [
+      "MVP-037"
+    ],
+    "MVP-038": [
+      "MVP-038"
+    ],
+    "MVP-039": [
+      "MVP-039"
+    ],
+    "MVP-040": [
+      "MVP-040"
+    ],
+    "MVP-041": [
+      "MVP-041"
+    ],
+    "MVP-042": [
+      "MVP-042"
+    ],
+    "MVP-043": [
+      "MVP-043"
+    ],
+    "MVP-044": [
+      "MVP-044"
+    ],
+    "MVP-045": [
+      "MVP-045"
+    ],
+    "MVP-046": [
+      "MVP-046"
+    ],
+    "MVP-047": [
+      "MVP-047"
+    ],
+    "MVP-048": [
+      "MVP-048.A",
+      "MVP-048.B"
+    ],
+    "MVP-049": [
+      "MVP-049"
+    ],
+    "MVP-050": [
+      "MVP-050"
+    ],
+    "MVP-051": [
+      "MVP-051.A",
+      "MVP-051.B"
+    ],
+    "MVP-052": [
+      "MVP-052"
+    ]
+  },
+  "nodes": [
+    {
+      "id": "GATE-RC",
+      "parent_task": null,
+      "title": "ตรึง source SHA, lockfiles, resource hashes และ acceptance installer hash",
+      "kind": "gate",
+      "discipline": "integrator",
+      "priority": "P0",
+      "size": "S",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-002",
+        "MVP-003",
+        "MVP-004",
+        "MVP-005",
+        "MVP-006",
+        "MVP-007",
+        "MVP-008",
+        "MVP-009",
+        "MVP-010",
+        "MVP-012",
+        "MVP-013",
+        "MVP-014",
+        "MVP-015",
+        "MVP-016",
+        "MVP-017",
+        "MVP-018",
+        "MVP-019",
+        "MVP-020",
+        "MVP-021",
+        "MVP-022",
+        "MVP-023",
+        "MVP-024",
+        "MVP-025",
+        "MVP-026",
+        "MVP-027",
+        "MVP-028",
+        "MVP-029",
+        "MVP-030",
+        "MVP-031",
+        "MVP-032",
+        "MVP-033",
+        "MVP-034",
+        "MVP-035",
+        "MVP-036",
+        "MVP-037",
+        "MVP-038",
+        "MVP-039",
+        "MVP-040",
+        "MVP-041",
+        "MVP-042",
+        "MVP-043",
+        "MVP-044",
+        "MVP-045",
+        "MVP-046",
+        "MVP-047",
+        "MVP-001.A",
+        "MVP-001.B",
+        "MVP-011.A",
+        "MVP-011.B",
+        "MVP-048.A",
+        "MVP-051.A"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "FREEZE_RECORD"
+      ],
+      "verification_locks": [],
+      "external_gates": [
+        "ALL_APPLICABLE_PREFREEZE_TASKS_ACCEPTED",
+        "AUTHORIZED_SIGNED_CANDIDATE_IF_PUBLIC_DELIVERY"
+      ],
+      "completion_rule": "All applicable prefreeze tasks accepted; immutable source/config/resource/installer fingerprint. Public delivery evidence uses the authorized signed candidate. Any change creates a new candidate fingerprint and reopens final evidence.",
+      "wave": "W11"
+    },
+    {
+      "id": "MVP-001.A",
+      "parent_task": "MVP-001",
+      "title": "เตรียม integration worktree และรวม source โดยยังไม่รับรอง baseline",
+      "kind": "work",
+      "discipline": "integration",
+      "priority": "P0",
+      "size": "M",
+      "state": "DONE",
+      "depends_on": [],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "BASELINE"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W00",
+      "acceptance_record": "docs/product/mvp-decisions.md"
+    },
+    {
+      "id": "MVP-001.B",
+      "parent_task": "MVP-001",
+      "title": "ตรวจ merged baseline ด้วย environment พร้อมแล้วส่งมอบ SHA",
+      "kind": "work",
+      "discipline": "integration",
+      "priority": "P0",
+      "size": "M",
+      "state": "DONE",
+      "depends_on": [
+        "MVP-001.A",
+        "MVP-002"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "BASELINE"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W01",
+      "acceptance_record": "docs/product/mvp-decisions.md"
+    },
+    {
+      "id": "MVP-002",
+      "parent_task": "MVP-002",
+      "title": "ฟื้น development environment.",
+      "kind": "work",
+      "discipline": "environment",
+      "priority": "P0",
+      "size": "S",
+      "state": "DONE",
+      "depends_on": [],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "ENVIRONMENT"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W00",
+      "acceptance_record": "docs/product/mvp-decisions.md"
+    },
+    {
+      "id": "MVP-003",
+      "parent_task": "MVP-003",
+      "title": "ล็อก Companion MVP scope.",
+      "kind": "decision",
+      "discipline": "product",
+      "priority": "P0",
+      "size": "S",
+      "state": "DONE",
+      "depends_on": [],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "SCOPE"
+      ],
+      "verification_locks": [],
+      "external_gates": [
+        "OWNER_RECORDED_DECISION"
+      ],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W00",
+      "acceptance_record": "docs/product/mvp-decisions.md"
+    },
+    {
+      "id": "MVP-004",
+      "parent_task": "MVP-004",
+      "title": "กำหนด access/offline policy สำหรับ account-optional local core.",
+      "kind": "decision",
+      "discipline": "product/security",
+      "priority": "P0",
+      "size": "M",
+      "state": "DONE",
+      "depends_on": [
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "ACCESS_POLICY"
+      ],
+      "verification_locks": [],
+      "external_gates": [
+        "OWNER_RECORDED_DECISION"
+      ],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W01",
+      "acceptance_record": "docs/product/mvp-decisions.md"
+    },
+    {
+      "id": "MVP-005",
+      "parent_task": "MVP-005",
+      "title": "กำหนด data contract ของ AI.",
+      "kind": "decision",
+      "discipline": "privacy",
+      "priority": "P0",
+      "size": "M",
+      "state": "DONE",
+      "depends_on": [
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "DATA_POLICY"
+      ],
+      "verification_locks": [],
+      "external_gates": [
+        "OWNER_RECORDED_DECISION"
+      ],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W01",
+      "acceptance_record": "docs/product/mvp-decisions.md"
+    },
+    {
+      "id": "MVP-006",
+      "parent_task": "MVP-006",
+      "title": "กำหนด acceptance matrix.",
+      "kind": "decision",
+      "discipline": "QA",
+      "priority": "P0",
+      "size": "M",
+      "state": "DONE",
+      "depends_on": [
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "QUALITY_CONTRACT"
+      ],
+      "verification_locks": [],
+      "external_gates": [
+        "OWNER_RECORDED_DECISION"
+      ],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W01",
+      "acceptance_record": "docs/product/mvp-decisions.md"
+    },
+    {
+      "id": "MVP-007",
+      "parent_task": "MVP-007",
+      "title": "ทำ product contracts ให้ตรง baseline.",
+      "kind": "work",
+      "discipline": "documentation",
+      "priority": "P1",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-003",
+        "MVP-004",
+        "MVP-005",
+        "MVP-006",
+        "MVP-001.B"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "DOCS"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W02"
+    },
+    {
+      "id": "MVP-008",
+      "parent_task": "MVP-008",
+      "title": "ปรับ entry/runtime ตาม access policy ใหม่.",
+      "kind": "work",
+      "discipline": "access/runtime",
+      "priority": "P0",
+      "size": "L",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-001.B",
+        "MVP-004",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [
+        {
+          "id": "MVP-043",
+          "when": "account_gate_required"
+        },
+        {
+          "id": "MVP-044",
+          "when": "account_gate_required"
+        },
+        {
+          "id": "MVP-045",
+          "when": "account_gate_required"
+        }
+      ],
+      "activation": "always",
+      "write_locks": [
+        "CORE_STATE",
+        "UI_ONBOARDING",
+        "UI_DECK"
+      ],
+      "verification_locks": [],
+      "external_gates": [
+        "APPLICABLE_C3_SECURITY_APPROVAL"
+      ],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W04"
+    },
+    {
+      "id": "MVP-009",
+      "parent_task": "MVP-009",
+      "title": "ย้าย settings initialization ไป startup.",
+      "kind": "work",
+      "discipline": "startup",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "CORE_STATE",
+        "UI_SETTINGS",
+        "UI_OVERLAY",
+        "UI_DECK"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W02"
+    },
+    {
+      "id": "MVP-010",
+      "parent_task": "MVP-010",
+      "title": "ทำ GSI setup และ port health.",
+      "kind": "work",
+      "discipline": "GSI/setup",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "GSI",
+        "UI_ONBOARDING"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W02"
+    },
+    {
+      "id": "MVP-011.A",
+      "parent_task": "MVP-011",
+      "title": "นิยาม readiness contract และ UI ที่แสดง unknown เมื่อไม่มีผล",
+      "kind": "work",
+      "discipline": "readiness",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003",
+        "MVP-009",
+        "MVP-010"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "UI_ONBOARDING"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W03"
+    },
+    {
+      "id": "MVP-011.B",
+      "parent_task": "MVP-011",
+      "title": "เชื่อม readiness เข้ากับ capture coverage และ audio health จริง",
+      "kind": "work",
+      "discipline": "readiness",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-011.A",
+        "MVP-016",
+        "MVP-017",
+        "MVP-024"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "UI_ONBOARDING"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W07"
+    },
+    {
+      "id": "MVP-012",
+      "parent_task": "MVP-012",
+      "title": "ตรวจ first-run และ restart ใน release mode.",
+      "kind": "verification",
+      "discipline": "QA",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-008",
+        "MVP-009",
+        "MVP-010",
+        "MVP-011.B",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W08"
+    },
+    {
+      "id": "MVP-013",
+      "parent_task": "MVP-013",
+      "title": "Validate GSI envelope และ fields.",
+      "kind": "work",
+      "discipline": "GSI",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "GSI"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W02"
+    },
+    {
+      "id": "MVP-014",
+      "parent_task": "MVP-014",
+      "title": "ทำ freshness เป็นสถานะร่วม.",
+      "kind": "work",
+      "discipline": "runtime",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-013",
+        "MVP-006",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "GSI",
+        "CORE_STATE",
+        "UI_LIVE",
+        "UI_OVERLAY"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W03"
+    },
+    {
+      "id": "MVP-015",
+      "parent_task": "MVP-015",
+      "title": "สร้าง match/session identity และ lifecycle กลาง.",
+      "kind": "work",
+      "discipline": "runtime",
+      "priority": "P0",
+      "size": "L",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-013",
+        "MVP-014",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "GSI",
+        "CORE_STATE",
+        "LOG",
+        "UI_LIVE",
+        "CAPTURE",
+        "UTTERANCE",
+        "UI_OVERLAY",
+        "UI_SETTINGS"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W04"
+    },
+    {
+      "id": "MVP-016",
+      "parent_task": "MVP-016",
+      "title": "เพิ่ม capture retry/recovery.",
+      "kind": "work",
+      "discipline": "CV",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-014",
+        "MVP-015",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "CAPTURE",
+        "CORE_STATE"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W05"
+    },
+    {
+      "id": "MVP-017",
+      "parent_task": "MVP-017",
+      "title": "กำหนดและตรวจ capture coverage.",
+      "kind": "work",
+      "discipline": "CV",
+      "priority": "P0",
+      "size": "L",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-006",
+        "MVP-016",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "CAPTURE",
+        "UI_ONBOARDING"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W06"
+    },
+    {
+      "id": "MVP-018",
+      "parent_task": "MVP-018",
+      "title": "แยก unknown, no coverage, clear และ danger.",
+      "kind": "work",
+      "discipline": "signals/UI",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-014",
+        "MVP-017",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "CAPTURE",
+        "UI_LIVE",
+        "UI_OVERLAY"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W07"
+    },
+    {
+      "id": "MVP-019",
+      "parent_task": "MVP-019",
+      "title": "แก้ buyback unknown และ mode assumptions.",
+      "kind": "work",
+      "discipline": "gameplay",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-013",
+        "MVP-015",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "REVIVE",
+        "GSI",
+        "UI_OVERLAY"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W05"
+    },
+    {
+      "id": "MVP-020",
+      "parent_task": "MVP-020",
+      "title": "ตรวจ static gameplay data และข้ออ้าง damage.",
+      "kind": "work",
+      "discipline": "gameplay data",
+      "priority": "P1",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-003",
+        "MVP-005",
+        "MVP-001.B",
+        "MVP-002"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "GAME_DATA",
+        "BRAIN"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W02"
+    },
+    {
+      "id": "MVP-021",
+      "parent_task": "MVP-021",
+      "title": "สร้างและวัด quality baseline.",
+      "kind": "work",
+      "discipline": "QA/data",
+      "priority": "P0",
+      "size": "L",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-006",
+        "MVP-018",
+        "MVP-020",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "REPLAY"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W08"
+    },
+    {
+      "id": "MVP-022",
+      "parent_task": "MVP-022",
+      "title": "ทำ event owner และ deduplication.",
+      "kind": "work",
+      "discipline": "events/audio",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-015",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "GSI",
+        "CORE_STATE",
+        "AUDIO",
+        "UI_OVERLAY"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W05"
+    },
+    {
+      "id": "MVP-023",
+      "parent_task": "MVP-023",
+      "title": "แก้ transition consumers.",
+      "kind": "work",
+      "discipline": "overlay",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-022",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "UI_OVERLAY"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W06"
+    },
+    {
+      "id": "MVP-024",
+      "parent_task": "MVP-024",
+      "title": "ทำ audio health และ device recovery.",
+      "kind": "work",
+      "discipline": "audio",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-009",
+        "MVP-022",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "AUDIO",
+        "CORE_STATE",
+        "UI_SETTINGS"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W06"
+    },
+    {
+      "id": "MVP-025",
+      "parent_task": "MVP-025",
+      "title": "ปิด critical audio path.",
+      "kind": "work",
+      "discipline": "critical audio",
+      "priority": "P0",
+      "size": "L",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-006",
+        "MVP-022",
+        "MVP-024",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "AUDIO",
+        "TTS",
+        "GSI",
+        "UI_OVERLAY"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W07"
+    },
+    {
+      "id": "MVP-026",
+      "parent_task": "MVP-026",
+      "title": "ตรวจ pack/persona/overlay ครบ event contract.",
+      "kind": "work",
+      "discipline": "voice/overlay",
+      "priority": "P1",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-023",
+        "MVP-024",
+        "MVP-025",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "VOICE_ASSETS",
+        "UI_OVERLAY",
+        "UI_VOICE"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W08"
+    },
+    {
+      "id": "MVP-027",
+      "parent_task": "MVP-027",
+      "title": "บังคับ outbound allowlist ใน backend.",
+      "kind": "work",
+      "discipline": "AI/privacy",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-005",
+        "MVP-009",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "BRAIN",
+        "UI_SETTINGS"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W03"
+    },
+    {
+      "id": "MVP-028",
+      "parent_task": "MVP-028",
+      "title": "ตรวจ backend/model readiness และ fallback.",
+      "kind": "work",
+      "discipline": "AI/settings",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-009",
+        "MVP-027",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "BRAIN",
+        "UI_SETTINGS"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W04"
+    },
+    {
+      "id": "MVP-029",
+      "parent_task": "MVP-029",
+      "title": "ผูก request/cache กับ context.",
+      "kind": "work",
+      "discipline": "AI/runtime",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-015",
+        "MVP-028",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "BRAIN",
+        "CORE_STATE"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W05"
+    },
+    {
+      "id": "MVP-030",
+      "parent_task": "MVP-030",
+      "title": "ต่อ auto-advice กับ events และ budget.",
+      "kind": "work",
+      "discipline": "AI/overlay",
+      "priority": "P1",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-023",
+        "MVP-029",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "UI_OVERLAY",
+        "BRAIN"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W07"
+    },
+    {
+      "id": "MVP-031",
+      "parent_task": "MVP-031",
+      "title": "ตรวจ manual advice ตั้งแต่ปุ่มถึงเสียง.",
+      "kind": "verification",
+      "discipline": "QA",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-008",
+        "MVP-011.B",
+        "MVP-020",
+        "MVP-025",
+        "MVP-027",
+        "MVP-029",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W08"
+    },
+    {
+      "id": "MVP-032",
+      "parent_task": "MVP-032",
+      "title": "บันทึกจบ session และผลแมตช์ตามหลักฐาน.",
+      "kind": "work",
+      "discipline": "logs",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-015",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "LOG",
+        "GSI"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W05"
+    },
+    {
+      "id": "MVP-033",
+      "parent_task": "MVP-033",
+      "title": "ทำ summary ที่ใช้ได้จริง.",
+      "kind": "work",
+      "discipline": "summary/UI",
+      "priority": "P1",
+      "size": "L",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-003",
+        "MVP-032",
+        "MVP-020",
+        "MVP-001.B",
+        "MVP-002"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "UI_DECK",
+        "LOG"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W06"
+    },
+    {
+      "id": "MVP-034",
+      "parent_task": "MVP-034",
+      "title": "ทำ Memory aggregates ที่ตรง source.",
+      "kind": "work",
+      "discipline": "memory",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-032",
+        "MVP-005",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "MEMORY"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W06"
+    },
+    {
+      "id": "MVP-035",
+      "parent_task": "MVP-035",
+      "title": "ทำหน้าดูและลืมความจำ.",
+      "kind": "work",
+      "discipline": "memory/UI",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-034",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "MEMORY",
+        "UI_SETTINGS"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W07"
+    },
+    {
+      "id": "MVP-036",
+      "parent_task": "MVP-036",
+      "title": "ใช้ Memory ในคำแนะนำ local จริง.",
+      "kind": "work",
+      "discipline": "AI/memory",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-005",
+        "MVP-027",
+        "MVP-029",
+        "MVP-034",
+        "MVP-035",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "MEMORY",
+        "BRAIN"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W08"
+    },
+    {
+      "id": "MVP-037",
+      "parent_task": "MVP-037",
+      "title": "ทำ tuning workflow ที่ตรวจสอบและย้อนกลับได้.",
+      "kind": "work",
+      "discipline": "tuning",
+      "priority": "P1",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-021",
+        "MVP-032",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "TUNING",
+        "CAPTURE",
+        "UI_SETTINGS"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W09"
+    },
+    {
+      "id": "MVP-038",
+      "parent_task": "MVP-038",
+      "title": "ออกแบบและประเมิน local STT.",
+      "kind": "work",
+      "discipline": "STT design",
+      "priority": "P0",
+      "size": "L",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-003",
+        "MVP-005",
+        "MVP-006",
+        "MVP-001.B",
+        "MVP-002"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "VOICE_DESIGN"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W02"
+    },
+    {
+      "id": "MVP-039",
+      "parent_task": "MVP-039",
+      "title": "ทำ PTT/mic lifecycle.",
+      "kind": "work",
+      "discipline": "mic/hotkeys",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-038",
+        "MVP-024",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "AUDIO",
+        "CORE_STATE",
+        "UI_SETTINGS"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W07"
+    },
+    {
+      "id": "MVP-040",
+      "parent_task": "MVP-040",
+      "title": "เชื่อม local STT และผลที่ไม่แน่ใจ.",
+      "kind": "work",
+      "discipline": "STT",
+      "priority": "P0",
+      "size": "L",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-039",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "STT",
+        "CORE_STATE"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W08"
+    },
+    {
+      "id": "MVP-041",
+      "parent_task": "MVP-041",
+      "title": "ต่อ conversation turn.",
+      "kind": "work",
+      "discipline": "conversation",
+      "priority": "P0",
+      "size": "L",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-040",
+        "MVP-029",
+        "MVP-036",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "STT",
+        "BRAIN",
+        "UI_OVERLAY"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W09"
+    },
+    {
+      "id": "MVP-042",
+      "parent_task": "MVP-042",
+      "title": "ตรวจ Voice interruption และ privacy.",
+      "kind": "verification",
+      "discipline": "QA",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-041",
+        "MVP-025",
+        "MVP-031",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W10"
+    },
+    {
+      "id": "MVP-043",
+      "parent_task": "MVP-043",
+      "title": "ตรวจ auth remediation หลัง integration.",
+      "kind": "work",
+      "discipline": "auth",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-004",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "account_surface_exposed",
+      "write_locks": [
+        "AUTH"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [
+        "LIVE_PROBE_APPROVAL_IF_PRODUCTION"
+      ],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W02"
+    },
+    {
+      "id": "MVP-044",
+      "parent_task": "MVP-044",
+      "title": "ปิด Google-session/revocation contract.",
+      "kind": "work",
+      "discipline": "IAM",
+      "priority": "P0",
+      "size": "L",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-004",
+        "MVP-043",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "account_surface_exposed",
+      "write_locks": [
+        "AUTH",
+        "IAM"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [
+        "APPLICABLE_C3_SECURITY_APPROVAL",
+        "LIVE_PROBE_APPROVAL_IF_PRODUCTION"
+      ],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W03"
+    },
+    {
+      "id": "MVP-045",
+      "parent_task": "MVP-045",
+      "title": "NOT_APPLICABLE: desktop startup has no Terms, account, or download gate; protected account services keep separate server authorization.",
+      "kind": "work",
+      "discipline": "web/legal",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_APPLICABLE",
+      "depends_on": [
+        "MVP-004",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "LANDING",
+        "AUTH"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [
+        "LEGAL_APPROVAL_IF_TERMS_CHANGE",
+        "LIVE_PROBE_APPROVAL_IF_PRODUCTION"
+      ],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W02",
+      "scope_decision": "docs/product/mvp-decisions.md#MVP-004"
+    },
+    {
+      "id": "MVP-046",
+      "parent_task": "MVP-046",
+      "title": "ทำ update ที่ไม่ขัดแมตช์.",
+      "kind": "work",
+      "discipline": "updates",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-004",
+        "MVP-015",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "UPDATER",
+        "CORE_STATE",
+        "UI_DECK"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W05"
+    },
+    {
+      "id": "MVP-047",
+      "parent_task": "MVP-047",
+      "title": "ตรวจ resource packaging และ clean install.",
+      "kind": "work",
+      "discipline": "packaging",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-012",
+        "MVP-026",
+        "MVP-038",
+        "MVP-040",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "PACKAGING"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W09"
+    },
+    {
+      "id": "MVP-048.A",
+      "parent_task": "MVP-048",
+      "title": "เตรียม harness และเก็บ performance baseline",
+      "kind": "work",
+      "discipline": "performance",
+      "priority": "P0",
+      "size": "L",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-006"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "PERF_HARNESS"
+      ],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W02"
+    },
+    {
+      "id": "MVP-048.B",
+      "parent_task": "MVP-048",
+      "title": "วัด NFR ขั้นสุดท้ายบน frozen artifact",
+      "kind": "verification",
+      "discipline": "performance",
+      "priority": "P0",
+      "size": "L",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-048.A",
+        "GATE-RC"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W12"
+    },
+    {
+      "id": "MVP-049",
+      "parent_task": "MVP-049",
+      "title": "รัน player journey และ fault matrix.",
+      "kind": "verification",
+      "discipline": "QA",
+      "priority": "P0",
+      "size": "L",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-006",
+        "MVP-012",
+        "MVP-021",
+        "MVP-026",
+        "MVP-031",
+        "MVP-033",
+        "MVP-035",
+        "MVP-037",
+        "MVP-042",
+        "MVP-046",
+        "MVP-047",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003",
+        "GATE-RC"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W12"
+    },
+    {
+      "id": "MVP-050",
+      "parent_task": "MVP-050",
+      "title": "ตรวจ privacy/no-egress ที่ runtime.",
+      "kind": "verification",
+      "discipline": "privacy QA",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-005",
+        "MVP-027",
+        "MVP-035",
+        "MVP-041",
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-003",
+        "GATE-RC"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [],
+      "verification_locks": [
+        "LOCAL_VALIDATION_HOST"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W12"
+    },
+    {
+      "id": "MVP-051.A",
+      "parent_task": "MVP-051",
+      "title": "เตรียม verification matrix และ CI coverage",
+      "kind": "work",
+      "discipline": "CI",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-001.B",
+        "MVP-002",
+        "MVP-006"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "CI"
+      ],
+      "verification_locks": [],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W02"
+    },
+    {
+      "id": "MVP-051.B",
+      "parent_task": "MVP-051",
+      "title": "รัน required CI บน frozen source SHA",
+      "kind": "verification",
+      "discipline": "CI",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "MVP-051.A",
+        "GATE-RC"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [],
+      "verification_locks": [
+        "HOSTED_CI_RUNNER"
+      ],
+      "external_gates": [],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W12"
+    },
+    {
+      "id": "MVP-052",
+      "parent_task": "MVP-052",
+      "title": "ตรวจ Go/No-Go และรับมอบ evidence เพื่อให้ owner ตัดสิน release",
+      "kind": "gate",
+      "discipline": "release owner",
+      "priority": "P0",
+      "size": "M",
+      "state": "NOT_STARTED",
+      "depends_on": [
+        "GATE-RC",
+        "MVP-048.B",
+        "MVP-049",
+        "MVP-050",
+        "MVP-051.B"
+      ],
+      "conditional_dependencies": [],
+      "activation": "always",
+      "write_locks": [
+        "RELEASE_RECORD"
+      ],
+      "verification_locks": [],
+      "external_gates": [
+        "OWNER_GO_NO_GO"
+      ],
+      "completion_rule": "Task acceptance evidence on integrated SHA; owner acceptance according to backlog.",
+      "wave": "W13"
+    }
+  ],
+  "edges": [
+    {
+      "from": "MVP-002",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-003",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-004",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-005",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-006",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-007",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-008",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-009",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-010",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-012",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-013",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-014",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-015",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-016",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-017",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-018",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-019",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-020",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-021",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-022",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-023",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-024",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-025",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-026",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-027",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-028",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-029",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-030",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-031",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-032",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-033",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-034",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-035",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-036",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-037",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-038",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-039",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-040",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-041",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-042",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-043",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-044",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-045",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-046",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-047",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-001.A",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-011.A",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-011.B",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-048.A",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-051.A",
+      "to": "GATE-RC",
+      "type": "acceptance_join"
+    },
+    {
+      "from": "MVP-001.A",
+      "to": "MVP-001.B",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-001.B",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-004",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-005",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-006",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-007",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-004",
+      "to": "MVP-007",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-005",
+      "to": "MVP-007",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-006",
+      "to": "MVP-007",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-007",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-008",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-004",
+      "to": "MVP-008",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-008",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-008",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-043",
+      "to": "MVP-008",
+      "type": "conditional",
+      "when": "account_gate_required"
+    },
+    {
+      "from": "MVP-044",
+      "to": "MVP-008",
+      "type": "conditional",
+      "when": "account_gate_required"
+    },
+    {
+      "from": "MVP-045",
+      "to": "MVP-008",
+      "type": "conditional",
+      "when": "account_gate_required"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-009",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-009",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-009",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-010",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-010",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-010",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-011.A",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-011.A",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-011.A",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-009",
+      "to": "MVP-011.A",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-010",
+      "to": "MVP-011.A",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-011.A",
+      "to": "MVP-011.B",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-016",
+      "to": "MVP-011.B",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-017",
+      "to": "MVP-011.B",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-024",
+      "to": "MVP-011.B",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-008",
+      "to": "MVP-012",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-009",
+      "to": "MVP-012",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-010",
+      "to": "MVP-012",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-011.B",
+      "to": "MVP-012",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-012",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-012",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-012",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-013",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-013",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-013",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-013",
+      "to": "MVP-014",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-006",
+      "to": "MVP-014",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-014",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-014",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-014",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-013",
+      "to": "MVP-015",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-014",
+      "to": "MVP-015",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-015",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-015",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-015",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-014",
+      "to": "MVP-016",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-015",
+      "to": "MVP-016",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-016",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-016",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-016",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-006",
+      "to": "MVP-017",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-016",
+      "to": "MVP-017",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-017",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-017",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-017",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-014",
+      "to": "MVP-018",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-017",
+      "to": "MVP-018",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-018",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-018",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-018",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-013",
+      "to": "MVP-019",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-015",
+      "to": "MVP-019",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-019",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-019",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-019",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-020",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-005",
+      "to": "MVP-020",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-020",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-020",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-006",
+      "to": "MVP-021",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-018",
+      "to": "MVP-021",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-020",
+      "to": "MVP-021",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-021",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-021",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-021",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-015",
+      "to": "MVP-022",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-022",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-022",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-022",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-022",
+      "to": "MVP-023",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-023",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-023",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-023",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-009",
+      "to": "MVP-024",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-022",
+      "to": "MVP-024",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-024",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-024",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-024",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-006",
+      "to": "MVP-025",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-022",
+      "to": "MVP-025",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-024",
+      "to": "MVP-025",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-025",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-025",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-025",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-023",
+      "to": "MVP-026",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-024",
+      "to": "MVP-026",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-025",
+      "to": "MVP-026",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-026",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-026",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-026",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-005",
+      "to": "MVP-027",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-009",
+      "to": "MVP-027",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-027",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-027",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-027",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-009",
+      "to": "MVP-028",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-027",
+      "to": "MVP-028",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-028",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-028",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-028",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-015",
+      "to": "MVP-029",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-028",
+      "to": "MVP-029",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-029",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-029",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-029",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-023",
+      "to": "MVP-030",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-029",
+      "to": "MVP-030",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-030",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-030",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-030",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-008",
+      "to": "MVP-031",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-011.B",
+      "to": "MVP-031",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-020",
+      "to": "MVP-031",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-025",
+      "to": "MVP-031",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-027",
+      "to": "MVP-031",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-029",
+      "to": "MVP-031",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-031",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-031",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-031",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-015",
+      "to": "MVP-032",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-032",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-032",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-032",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-033",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-032",
+      "to": "MVP-033",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-020",
+      "to": "MVP-033",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-033",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-033",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-032",
+      "to": "MVP-034",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-005",
+      "to": "MVP-034",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-034",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-034",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-034",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-034",
+      "to": "MVP-035",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-035",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-035",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-035",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-005",
+      "to": "MVP-036",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-027",
+      "to": "MVP-036",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-029",
+      "to": "MVP-036",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-034",
+      "to": "MVP-036",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-035",
+      "to": "MVP-036",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-036",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-036",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-036",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-021",
+      "to": "MVP-037",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-032",
+      "to": "MVP-037",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-037",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-037",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-037",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-038",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-005",
+      "to": "MVP-038",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-006",
+      "to": "MVP-038",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-038",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-038",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-038",
+      "to": "MVP-039",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-024",
+      "to": "MVP-039",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-039",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-039",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-039",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-039",
+      "to": "MVP-040",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-040",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-040",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-040",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-040",
+      "to": "MVP-041",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-029",
+      "to": "MVP-041",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-036",
+      "to": "MVP-041",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-041",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-041",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-041",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-041",
+      "to": "MVP-042",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-025",
+      "to": "MVP-042",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-031",
+      "to": "MVP-042",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-042",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-042",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-042",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-043",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-043",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-004",
+      "to": "MVP-043",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-043",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-004",
+      "to": "MVP-044",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-043",
+      "to": "MVP-044",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-044",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-044",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-044",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-004",
+      "to": "MVP-045",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-045",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-045",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-045",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-004",
+      "to": "MVP-046",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-015",
+      "to": "MVP-046",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-046",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-046",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-046",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-012",
+      "to": "MVP-047",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-026",
+      "to": "MVP-047",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-038",
+      "to": "MVP-047",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-040",
+      "to": "MVP-047",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-047",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-047",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-047",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-048.A",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-048.A",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-006",
+      "to": "MVP-048.A",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-048.A",
+      "to": "MVP-048.B",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "GATE-RC",
+      "to": "MVP-048.B",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-006",
+      "to": "MVP-049",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-012",
+      "to": "MVP-049",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-021",
+      "to": "MVP-049",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-026",
+      "to": "MVP-049",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-031",
+      "to": "MVP-049",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-033",
+      "to": "MVP-049",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-035",
+      "to": "MVP-049",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-037",
+      "to": "MVP-049",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-042",
+      "to": "MVP-049",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-046",
+      "to": "MVP-049",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-047",
+      "to": "MVP-049",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-049",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-049",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-049",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "GATE-RC",
+      "to": "MVP-049",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-005",
+      "to": "MVP-050",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-027",
+      "to": "MVP-050",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-035",
+      "to": "MVP-050",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-041",
+      "to": "MVP-050",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-050",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-050",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-003",
+      "to": "MVP-050",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "GATE-RC",
+      "to": "MVP-050",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-001.B",
+      "to": "MVP-051.A",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-002",
+      "to": "MVP-051.A",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-006",
+      "to": "MVP-051.A",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-051.A",
+      "to": "MVP-051.B",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "GATE-RC",
+      "to": "MVP-051.B",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "GATE-RC",
+      "to": "MVP-052",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-048.B",
+      "to": "MVP-052",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-049",
+      "to": "MVP-052",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-050",
+      "to": "MVP-052",
+      "type": "finish_to_start"
+    },
+    {
+      "from": "MVP-051.B",
+      "to": "MVP-052",
+      "type": "finish_to_start"
+    }
+  ],
+  "waves": [
+    {
+      "id": "W00",
+      "eligible_nodes": [
+        "MVP-001.A",
+        "MVP-002",
+        "MVP-003"
+      ],
+      "suggested_batches": [
+        [
+          "MVP-001.A",
+          "MVP-002",
+          "MVP-003"
+        ]
+      ]
+    },
+    {
+      "id": "W01",
+      "eligible_nodes": [
+        "MVP-001.B",
+        "MVP-006",
+        "MVP-005",
+        "MVP-004"
+      ],
+      "suggested_batches": [
+        [
+          "MVP-001.B",
+          "MVP-006",
+          "MVP-005"
+        ],
+        [
+          "MVP-004"
+        ]
+      ]
+    },
+    {
+      "id": "W02",
+      "eligible_nodes": [
+        "MVP-013",
+        "MVP-009",
+        "MVP-010",
+        "MVP-038",
+        "MVP-043",
+        "MVP-045",
+        "MVP-020",
+        "MVP-048.A",
+        "MVP-051.A",
+        "MVP-007"
+      ],
+      "suggested_batches": [
+        [
+          "MVP-013",
+          "MVP-009",
+          "MVP-038"
+        ],
+        [
+          "MVP-010",
+          "MVP-043",
+          "MVP-020"
+        ],
+        [
+          "MVP-045",
+          "MVP-048.A",
+          "MVP-051.A"
+        ],
+        [
+          "MVP-007"
+        ]
+      ]
+    },
+    {
+      "id": "W03",
+      "eligible_nodes": [
+        "MVP-014",
+        "MVP-027",
+        "MVP-011.A",
+        "MVP-044"
+      ],
+      "suggested_batches": [
+        [
+          "MVP-014",
+          "MVP-027",
+          "MVP-011.A"
+        ],
+        [
+          "MVP-044"
+        ]
+      ]
+    },
+    {
+      "id": "W04",
+      "eligible_nodes": [
+        "MVP-015",
+        "MVP-028",
+        "MVP-008"
+      ],
+      "suggested_batches": [
+        [
+          "MVP-015",
+          "MVP-028"
+        ],
+        [
+          "MVP-008"
+        ]
+      ]
+    },
+    {
+      "id": "W05",
+      "eligible_nodes": [
+        "MVP-022",
+        "MVP-032",
+        "MVP-016",
+        "MVP-029",
+        "MVP-019",
+        "MVP-046"
+      ],
+      "suggested_batches": [
+        [
+          "MVP-022"
+        ],
+        [
+          "MVP-032",
+          "MVP-016"
+        ],
+        [
+          "MVP-029",
+          "MVP-019"
+        ],
+        [
+          "MVP-046"
+        ]
+      ]
+    },
+    {
+      "id": "W06",
+      "eligible_nodes": [
+        "MVP-024",
+        "MVP-034",
+        "MVP-017",
+        "MVP-023",
+        "MVP-033"
+      ],
+      "suggested_batches": [
+        [
+          "MVP-024",
+          "MVP-034",
+          "MVP-017"
+        ],
+        [
+          "MVP-023",
+          "MVP-033"
+        ]
+      ]
+    },
+    {
+      "id": "W07",
+      "eligible_nodes": [
+        "MVP-035",
+        "MVP-039",
+        "MVP-011.B",
+        "MVP-018",
+        "MVP-025",
+        "MVP-030"
+      ],
+      "suggested_batches": [
+        [
+          "MVP-035",
+          "MVP-011.B",
+          "MVP-018"
+        ],
+        [
+          "MVP-039",
+          "MVP-030"
+        ],
+        [
+          "MVP-025"
+        ]
+      ]
+    },
+    {
+      "id": "W08",
+      "eligible_nodes": [
+        "MVP-036",
+        "MVP-040",
+        "MVP-012",
+        "MVP-021",
+        "MVP-031",
+        "MVP-026"
+      ],
+      "suggested_batches": [
+        [
+          "MVP-036",
+          "MVP-040",
+          "MVP-012"
+        ],
+        [
+          "MVP-021",
+          "MVP-031",
+          "MVP-026"
+        ]
+      ]
+    },
+    {
+      "id": "W09",
+      "eligible_nodes": [
+        "MVP-041",
+        "MVP-047",
+        "MVP-037"
+      ],
+      "suggested_batches": [
+        [
+          "MVP-041",
+          "MVP-047",
+          "MVP-037"
+        ]
+      ]
+    },
+    {
+      "id": "W10",
+      "eligible_nodes": [
+        "MVP-042"
+      ],
+      "suggested_batches": [
+        [
+          "MVP-042"
+        ]
+      ]
+    },
+    {
+      "id": "W11",
+      "eligible_nodes": [
+        "GATE-RC"
+      ],
+      "suggested_batches": [
+        [
+          "GATE-RC"
+        ]
+      ]
+    },
+    {
+      "id": "W12",
+      "eligible_nodes": [
+        "MVP-048.B",
+        "MVP-049",
+        "MVP-050",
+        "MVP-051.B"
+      ],
+      "suggested_batches": [
+        [
+          "MVP-048.B",
+          "MVP-051.B"
+        ],
+        [
+          "MVP-049"
+        ],
+        [
+          "MVP-050"
+        ]
+      ]
+    },
+    {
+      "id": "W13",
+      "eligible_nodes": [
+        "MVP-052"
+      ],
+      "suggested_batches": [
+        [
+          "MVP-052"
+        ]
+      ]
+    }
+  ],
+  "longest_dependency_chain": [
+    "MVP-001.A",
+    "MVP-001.B",
+    "MVP-013",
+    "MVP-014",
+    "MVP-015",
+    "MVP-022",
+    "MVP-024",
+    "MVP-039",
+    "MVP-040",
+    "MVP-041",
+    "MVP-042",
+    "GATE-RC",
+    "MVP-048.B",
+    "MVP-052"
+  ],
+  "critical_path_note": "Longest chain by edge count only; not a duration estimate. File/resource queues and owner decisions can dominate elapsed time.",
+  "deferred_tasks": [
+    "MVP-053",
+    "MVP-054",
+    "MVP-055",
+    "MVP-056",
+    "MVP-057",
+    "MVP-058",
+    "MVP-059",
+    "MVP-060",
+    "MVP-061",
+    "MVP-062"
+  ],
+  "activation_constraints": [
+    "An inactive node satisfies applicable joins only with an explicit NOT_APPLICABLE scope record."
+  ],
+  "post_dag_actions": {
+    "release": "Requires a separate explicit release request and applicable workflow/owner approvals. No dispatch/release action is performed by this planning artifact."
+  },
+  "phase_lock_policy": {
+    "work": "Hold write leases through integration acceptance; acquire LOCAL_VALIDATION_HOST only during runtime/build checks.",
+    "verification": "Acquire verification resources before running; final local measurements are mutually exclusive.",
+    "decision": "Owner decision is external; drafting is not approval and a waiting decision need not occupy a worker.",
+    "scope_change": "Re-evaluate actual file overlap and regenerate batches when write scope changes."
+  },
+  "execution_run": {
+    "run_id": "mvp-w00-2026-10-10",
+    "status_receipt": "D:/gm-mvp-execution-evidence/run-status.json",
+    "authorization": "Owner requested GPT-6 Luna max parallel work and instructed to continue.",
+    "model": "gpt-6-luna",
+    "reasoning_effort": "max",
+    "integration_worktree": "D:/gm-mvp-001-integration",
+    "source_head": "25316ba8c0e336881b13f24baa5bec080f5eecb9",
+    "merge_head": "2d969ac643533b4b8e24494356da2e818eac874f",
+    "integration_index_tree": "d687254de6c4cfc976e06e4f60e0f4dc8e038009",
+    "integrated_commit": "c63bad098d6e12e6f073e832dce045dbbeacd687",
+    "baseline_evidence": "D:/gm-mvp-001-evidence/MVP-001-B-evidence.md",
+    "completion_policy": "PREPARED, INTEGRATED, VERIFIED, RUNNING, and DECISION_PENDING do not satisfy DONE dependencies."
+  },
+  "scope_change_records": [
+    {
+      "date": "2026-10-11",
+      "node": "MVP-015",
+      "authority": "Owner explicitly approved the write-lock extension in W04 coordination.",
+      "added_write_locks": [
+        "CAPTURE",
+        "UTTERANCE",
+        "UI_OVERLAY",
+        "UI_SETTINGS"
+      ],
+      "reason": "Session epochs tag and reject stale capture-derived, utterance, overlay callback state, and Control advice requests/results; CORE_STATE now also resets process-global announcer streak/dedup state only when the session epoch changes.",
+      "overlap_review": "MVP-028 was merged before MVP-015 expanded into UI_SETTINGS; no concurrent writer remains. Later settings work uses its existing UI_SETTINGS lease, and CAPTURE/AUDIO work depends on MVP-015 or starts afterward. Announcer state is held under the already exclusive CORE_STATE lease."
+    }
+  ],
+  "decision_record": {
+    "path": "docs/product/mvp-decisions.md",
+    "version": "0.1.0",
+    "authority": "Owner explicitly delegated decisions to Codex: ตัดสินใจเลย (2026-10-10)",
+    "legal_review": "not asserted",
+    "release_approval": "not granted"
+  }
+}

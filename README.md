@@ -21,6 +21,17 @@ Hybrid client-server design split by latency requirements:
 | **G-Sensory** | Overlay rendering and hardware optimization (glassmorphism HUD, FPS budget) |
 | **G-Log** | Feedback loop; logs decisions locally to tune prediction parameters next match |
 
+## Announcer packs
+
+G-AnnStudio is an authoring tool for authorized developers and collaborators. Consumer G-Maiden
+release builds install announcer packs through G-Store only, after a completed Store purchase;
+local audio import and upload commands are disabled in release builds. The `pack-download` Edge
+Function requires the `PACK_INSTALL_SIGNING_PRIVATE_KEY_PKCS8` Supabase secret (base64 Ed25519
+PKCS#8) to sign installation receipts. Keep that private key outside the repository and use the
+key whose public half is compiled into `src-tauri/src/voice_api/pack_io.rs`. Deploy both
+`pack-download` and `g-annstudio-access` before enabling Store installation or distributing
+G-AnnStudio; configure `G_ANNSTUDIO_ALLOWED_EMAILS` as a server-side comma-separated allowlist.
+
 ## Tech Stack
 
 - **Tauri v2** desktop framework (Rust + WebView2 backend)
@@ -47,7 +58,7 @@ pnpm tauri build
 
 ## Releases
 
-Releases move along three channels — `dev` → `closed-beta` → `stable` — and **pushing a tag publishes nothing**. Both release workflows are `workflow_dispatch` only; a tag is an input you hand to a workflow. Promotion to `stable` runs behind a GitHub `production` environment approval and re-points the *same* signed artifact rather than rebuilding it.
+Releases move along two channels — `dev` → `stable` — and **pushing a tag publishes nothing**. Both release workflows are `workflow_dispatch` only; a tag is an input you hand to a workflow. Promotion to `stable` runs behind a GitHub `production` environment approval and re-points the *same* signed artifact rather than rebuilding it.
 
 To release: bump the version in every file listed under "Release & update workflow" in **CLAUDE.md** (kept there as the single source of truth to avoid drift); add a CHANGELOG entry; commit; tag `vX.Y.Z`; then run the **candidate-release** workflow with that tag and merge the manifest PR it opens.
 

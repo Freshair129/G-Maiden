@@ -2,9 +2,9 @@
 title: "Gap 2 Release Acceptance Matrix"
 doc_id: "gap-release-matrix"
 status: "draft"
-version: "0.1.0"
-updated: "2026-10-01"
-owner: "Product Owner Agent (Luna Max)"
+version: "0.2.0"
+updated: "2026-10-20"
+owner: "Boss"
 related_docs:
   - "beta-roadmap"
   - "definition-of-done"
@@ -121,4 +121,5 @@ No release, channel, artifact, performance, privacy, or promotion gate is marked
 
 | Version | Date | Summary | Owner |
 | --- | --- | --- | --- |
-| 0.1.0 | 2026-10-01 | Mapped Full/Lite/model-missing, native/update, P3/P7, manifest lineage, hosted workflow, UAT, and owner-promotion acceptance evidence. | Product Owner Agent (Luna Max) |
+| 0.1.0 | 2026-10-01 | Mapped Full/Lite/model-missing, native/update, P3/P7, manifest lineage, hosted workflow, UAT, and owner-promotion acceptance evidence. | Boss |
+| 0.2.0 | 2026-10-20 | Correct record ownership; preserve release gates as source-grounded requirements, not approvals. | Boss |

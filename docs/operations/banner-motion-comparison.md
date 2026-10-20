@@ -1,11 +1,11 @@
 ---
 title: "Overlay motion — four-method comparison"
 doc_id: "banner-motion-comparison"
-version: "0.2.0b"
+version: "0.2.1b"
 status: "accepted"
 approved_by: "Boss"
 approved_date: "2026-09-13"
-updated: "2026-09-13"
+updated: 2026-10-16
 owner: "Boss"
 attributes:
   domain: "ui-ux"
@@ -66,7 +66,7 @@ Boss อนุมัติการทดลองสี่วิธีด้ว
 - บันทึกข้อจำกัดด้าน fidelity และข้อผิดพลาดตามจริง รวมถึง runtime ที่ทดสอบไม่ได้.
 - สรุป trade-off จากค่าที่วัด; ไม่สรุปผู้ชนะเมื่อความต่างอยู่ใน noise หรือคุณภาพภาพไม่เท่ากัน.
 - ต้นแบบอยู่ใน `.brain/verification/banner-motion-2026-09-13/`; ไม่แก้ app code/dependencies.
-- ตรวจ CodeDoc และ doc-graph; missing model = INDETERMINATE ไม่ใช่ aligned.
+- ตรวจ doc-graph.
 
 ## ผลทดลองในเครื่อง
 
@@ -89,7 +89,7 @@ Realtime ใช้ shader แบบง่าย จึงไม่ใช่ข�
 วิดีโอ pause/scrub ใช้สำเนา decoded frame ใน canvas ชั่วคราว; ลบก่อนเล่น จึงไม่มี
 canvas draw loop ใน active video benchmark. การแก้ preview วิดีโอวัดซ้ำทั้งหกรอบ.
 one-shot end visibility ตรวจแยกจาก loop workload เพื่อไม่ให้มีเศษผลึกค้างหลังจบ.
-CodeDoc ยัง INDETERMINATE เพราะไม่มีโมเดลที่กำหนด; doc-graph wrapper ผ่านโดยไม่มี
+Doc-graph wrapper ผ่านโดยไม่มี
 strict errors ใหม่ที่อยู่นอก checklist.
 
 ## Changelog
@@ -98,3 +98,4 @@ strict errors ใหม่ที่อยู่นอก checklist.
 | --- | --- | --- |
 | 0.1.0b | 2026-09-13 | Record approved four-method prototype, shared scene, measurement boundaries and acceptance. |
 | 0.2.0b | 2026-09-13 | Record 24 controlled trials, renderer trade-offs, video preview correction and remaining native/game acceptance. |
+| 0.2.1b | 2026-10-16 | Remove retired local review integration and related references. |

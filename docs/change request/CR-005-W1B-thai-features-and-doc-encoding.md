@@ -1,10 +1,10 @@
 ---
-version: "0.3.0b"
+version: "0.3.1b"
 title: "CR-005 W1B — Landing ภาษาไทย, G-Maiden Features และซ่อมเอกสาร Mojibake"
 doc_id: "CR-005-W1B-thai-features-and-doc-encoding"
 created_at: "2026-07-20T18:50:03+07:00,ATHER"
 last_update: "2026-07-20T21:20:00+07:00,ATHER"
-updated: "2026-07-20"
+updated: 2026-10-16
 owner: "Boss"
 status: "active"
 superseded_by: null
@@ -65,7 +65,7 @@ attributes:
 | FAQ | คำถามที่พบบ่อย | GitHub Issues |
 
 Mobile menu, aria-label และสถานะ loading/error ต้องเป็นภาษาไทยด้วย ชื่อ `G-Maiden`, `GID`,
-`Closed Beta`, `Dota 2` และชื่อ G-Series คงรูปเดิม
+`Dota 2` และชื่อ G-Series คงรูปเดิม
 
 ### 4.2 Hero copy
 
@@ -80,7 +80,7 @@ Mobile menu, aria-label และสถานะ loading/error ต้องเ�
   - `≤300MS` / `ความหน่วงของสัญญาณ`
   - `≤2.5%` / `CPU เบื้องหลัง`
   - `LOCAL` / `ข้อมูลแมตช์อยู่ในเครื่อง`
-- Primary CTA: `รับ GID สำหรับ Closed Beta`
+- Primary CTA: `ลองดู Public Demo`
 - Secondary CTA: `ดูวิธีการทำงาน`
 
 ### 4.3 Feature section concept
@@ -100,7 +100,7 @@ Mobile menu, aria-label และสถานะ loading/error ต้องเ�
 | 03 | G-Master | `แนะนำจังหวะเล่นและไอเทมจากบริบทของแมตช์ โดยมีสมอง Local สำรอง` | Claude/Anthropic path + Ollama fallback |
 | 04 | G-Sensory + G-Log | `Overlay โปร่งใสที่ไม่บดบังเกม และบันทึกแมตช์ไว้ในเครื่องเป็นหลัก` | CPU ≤2.5%; RAM ≤400MB; raw match/CV local-only |
 
-ข้อความ privacy ต้องแยก identity enrollment ออกจาก match data อย่างชัดเจน: Closed Beta เก็บสถานะบัญชี/GID
+ข้อความ privacy ต้องแยกข้อมูลบัญชีออกจาก match data อย่างชัดเจน: ระบบบัญชีจัดการ identity/GID
 บน `gstore`; raw match state, CV detections และ G-Log ไม่ถูกอัปโหลดจาก landing
 
 ### 4.4 Positioning guardrail
@@ -135,7 +135,6 @@ Mobile menu, aria-label และสถานะ loading/error ต้องเ�
 2. **Encoding repair** → verify: zero-marker scan, UTF-8 decode, structural invariant diff
 3. **Landing implementation** → verify: TypeScript/build, keyboard navigation, reduced motion, internal anchor
 4. **Browser QA** → verify: `320×568`, `390×844`, `768×1024`, `1366×768`, `1440×900`; console 0 errors
-5. **Doc alignment** → verify: `codedoc-aligner` exit 0; exit 2 = INDETERMINATE/ไม่ผ่าน
 6. **Deployment** → verify: Vercel production URL, Thai hero/features, OAuth callback, no horizontal overflow
 7. **GitHub verification** → verify: หลัง commit/push ให้เปิดอย่างน้อย 3 เอกสารบน GitHub และตรวจภาษาไทยจริง
 
@@ -153,13 +152,12 @@ Mobile menu, aria-label และสถานะ loading/error ต้องเ�
 
 - Landing build/TypeScript ผ่านและ browser console ไม่มี error
 - ไม่มี overflow หรือข้อความถูกตัดใน viewport ที่กำหนด
-- CTA Closed Beta/GID เดิมยังทำงานและ Thai copy ไม่ทำให้ state layout แตก
+- Primary demo CTA และ Thai copy ทำงานโดยไม่ทำให้ layout แตก
 - Link, frontmatter, code fence และ doc graph ไม่เสียจากการ repair
 
 ### Exit criteria
 
 - Concept และ documentation ได้รับอนุมัติก่อนแก้ code
-- `codedoc-aligner` ผ่านหลัง implementation
 - Vercel production และ GitHub rendering ถูกตรวจด้วย URL จริง
 - แสดง version diff และรายการไฟล์ที่เปลี่ยนใน handoff
 
@@ -191,8 +189,6 @@ Mobile menu, aria-label และสถานะ loading/error ต้องเ�
 - Doc CI gate: 193 tests ผ่าน; strict debt เดิม 14 รายการถูก checklist ครบ; gate exit 0
 - Landing typecheck/build ผ่าน; browser QA ที่ 320/390/1440 ไม่มี horizontal overflow,
   mobile menu + Escape ผ่าน และ console 0 errors/0 warnings
-- `codedoc-aligner` App↔README: exit 0, 2/2 chunks aligned; App↔CR ฉบับยาวมีผล advisory
-  INDETERMINATE จาก model JSON formatting จึงไม่ถูกนับเป็น aligned
 - Rust: 242 passed, 5 hardware-only ignored; clippy ผ่าน. Frontend: 220 Vitest ผ่าน,
   TypeScript ผ่าน, ESLint 0 errors (18 pre-existing warnings)
 - Tauri smoke build ถูก block โดย `gpu-feeder.exe` ของ G-Maiden instance ที่กำลังรันล็อก target release;
@@ -200,10 +196,10 @@ Mobile menu, aria-label และสถานะ loading/error ต้องเ�
 - Vercel production deployment `dpl_9XuHcYRr2AeyQ1q5SNanKWu28MfA` status `READY`,
   alias `https://g-maiden-landing.vercel.app` ตอบ HTTP 200
 
-## CHANGELOG
-
+## Changelog
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
 | 0.1.0b | 2026-07-20 | candidate | Thai-first landing, shipped-feature rails and evidence-based encoding repair proposal | — | ATHER |
 | 0.2.0b | 2026-07-20 | candidate | Reframed positioning to watch-your-back assistance; removed see-ahead and prediction overclaims | — | ATHER |
 | 0.3.0b | 2026-07-20 | active | Implemented, verified and deployed Thai-first features plus GitHub documentation encoding repair | — | ATHER |
+| 0.3.1b | 2026-10-16 | active | Remove retired local review integration and related dependencies. | null | Codex |

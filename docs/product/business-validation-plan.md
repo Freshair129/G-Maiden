@@ -1,83 +1,87 @@
 # Business Validation Plan — G-Maiden
 
-> **เป้าหมาย:** พิสูจน์สมมติฐานเชิงธุรกิจที่เสี่ยงสุด *ก่อน*ลงแรง/ลงเงิน — แบบ lean (solo dev, งบ~0, ใช้ช่องทางไทย)
-> **วันที่:** 2026-06-23 · อ้างอิง [[business-requirements|BRD]] §3,§8,§9,§12
-> **หลักการ:** validate ตามลำดับความเสี่ยง — *core value → retention → ราคา → distribution → marketplace*. อย่าตั้งราคาของที่ยังไม่รู้ว่าคนต้องการ
+> **Goal:** test the riskiest product and business assumptions before committing significant time
+> or money. Keep validation local-first, small, and evidence-based.
+> **Principle:** validate core value and usability before pricing, distribution, or marketplace work.
 
----
+## 1. Risky assumptions
 
-## 1. สมมติฐานที่เสี่ยงสุด (เรียงตามถ้าผิดแล้วเจ็บสุด)
-
-| # | สมมติฐาน | ถ้าผิด = ? |
+| # | Assumption | If false |
 | --- | --- | --- |
-| **A1** 🔴 | G-Signal เตือน gank **เชื่อถือได้ + ไม่รำคาญ** จนผู้ใช้รู้สึก "ขาดไม่ได้" | core value พัง → ทุกอย่างจบ |
-| **A2** 🔴 | ผู้ใช้ **กลับมาใช้** (D7/D30) — persona/memory ทำให้ติด | ไม่มี retention = ไม่มีธุรกิจ (ชะตา MS Copilot) |
-| **A3** | ผู้เล่นไทย **ยอมจ่าย ฿99–199** + tier/ช่องทางไหน | โมเดลรายได้พัง → ต้อง rethink (ad? ถูกลง?) |
-| **A4** | ผ่าน onboarding ได้ (ติดตั้ง + ตั้ง GSI สำเร็จ → ใช้จริง 1 แมตช์) | technical friction ฆ่า activation เงียบๆ |
-| **A5** | หาผู้ใช้ได้จริง — Overwolf vs web ช่องไหนดีกว่า | distribution คือจุดที่ brief บอกว่าเราแพ้ |
-| **A6** | (post-v1.0) มีคนอยากเทรน/ใช้ community style | สร้าง marketplace เปล่าถ้าไม่มี demand |
+| **A1** | G-Signal warnings are useful and do not distract players | The core value proposition fails |
+| **A2** | Players return because the companion helps them improve | There is no sustained use |
+| **A3** | Thai players will pay ฿99–199, and a suitable payment model exists | Revenue assumptions need revision |
+| **A4** | Players can install the app, configure GSI, and use it in a real match | Setup friction blocks activation |
+| **A5** | A distribution channel can reach the intended audience | Adoption remains too expensive |
+| **A6** | Players want community-created companion styles | A marketplace would have no demand |
 
----
+## 2. Experiments
 
-## 2. การทดลอง (cheap → expensive)
+### E1 — Supervised local usability sessions 🔴 *(A1, A2, A4)*
 
-### E1 — Closed Beta Cohort 🔴 *(validate A1, A2, A4)*
-- recruit **15–30 ผู้เล่นไทย** จาก FB (Dota2 Thailand, Lakoi), Discord, คนรู้จัก
-- ปล่อย beta ฟรี · instrument ผ่าน G-Log (local) + **ขอ opt-in แชร์ metric** (ใช้กลไก [[ADR-11-optin-data-contribution-flywheel|ADR-11]] จริง)
-- วัด: activation %, **D7/D30 retention**, G-Signal **false-positive rate**, "ปิดเสียงไหม", NPS, สัมภาษณ์สั้นหลังใช้
-- **gate:** D7 ≥40% · ผู้ปิดเสียงเพราะ FP <15% · NPS เป็นบวก
-- งบ ~0 · 2–4 สัปดาห์
+- Run owner-approved supervised usability sessions with a review build after its acceptance gates pass.
+- Keep G-Log and diagnostic data on the test machine. Collect no background analytics or match data.
+- Ask separately before recording notes or receiving a manually exported diagnostic bundle.
+- Measure setup completion, warning usefulness, false alerts, mute actions, and short-term return intent.
+- Use findings to prioritize fixes; this session is not a distribution or release decision.
 
-### E2 — Problem/Solution Interviews *(validate A1, A3 เชิงคุณภาพ)*
-- 8–12 สัมภาษณ์ (~30 นาที) กับกลุ่มเป้าหมาย
-- ถาม: ทุกวันนี้พัฒนาฝีมือยังไง, เจ็บสุดเรื่องอะไร (ตายเพราะแกงค์?), เสียงเตือนช่วยไหม, จ่ายไหม/เท่าไหร่, จ่ายเกมยังไง (TrueMoney/PromptPay?)
-- งบ ~0 · 1–2 สัปดาห์
+### E2 — Problem and solution interviews *(A1, A3)*
 
-### E3 — Van Westendorp Pricing Survey *(validate A3)*
-- แบบสอบถามใน FB/Discord (n≥100) · 4 คำถาม PSM (แพงไป/แพง/ถูก/ถูกไป) เป็น ฿
-- ได้: ช่วงราคาที่ยอมรับ + จุดราคาที่เหมาะสม · ถามช่องทางจ่ายที่ชอบ (sub vs one-time/top-up)
-- งบ ~0 · 1 สัปดาห์
+- Conduct 8–12 interviews with target players.
+- Ask how they currently improve, what causes avoidable deaths, whether a warning helps, and what
+  they would pay for a trustworthy companion.
+- Keep interview notes limited to the stated research purpose.
 
-### E4 — Fake-door Landing Page *(validate A3 intent + A5)*
-- หน้า Vercel: hero + pricing tier (฿99/฿199 + one-time) + ปุ่ม "เริ่มใช้/จ่าย" → waitlist/"เร็วๆ นี้"
-- วัด: visit→click intent, **tier ไหนคนกดมากกว่า**, ช่องจ่ายที่เลือก
-- ดึง traffic จาก FB/Discord/โพสต์แคสเตอร์
-- งบต่ำ · ต่อเนื่อง
+### E3 — Van Westendorp pricing survey *(A3)*
 
-### E5 — Distribution Test *(validate A5)*
-- ปล่อยบน **Overwolf store** (soft) + ลิงก์ web → เทียบ install funnel, organic reach, friction
-- trade-off: Overwolf = ฐานผู้ใช้พร้อม แต่โดนหัก %/คุมน้อย · web = คุมเต็มแต่ cold
-- งบกลาง · หลัง beta ผ่าน
+- Survey at least 100 respondents through suitable Thai gaming communities.
+- Ask the four price-sensitivity questions and preferred payment model.
+- Report the accepted price range and sampling limitations.
 
-### E6 — Marketplace Smoke Test *(validate A6, post-v1.0)*
-- Wizard-of-Oz: ปล่อย "trainer style" ไม่กี่ตัว (ผู้ก่อตั้ง + แคสเตอร์ 1–2 คน) เป็น preset → วัดการใช้ + signal "อยากสร้างเองไหม"
-- ทำ*ก่อน*สร้าง Pillar C จริง
+### E4 — Pricing intent page *(A3, A5)*
 
----
+- Present clearly labeled proposed price options and a non-binding interest action.
+- Measure page visits and option interest without collecting match data or implying an available
+  purchase.
+- Stop the experiment if the page misleads users about current product availability.
 
-## 3. ลำดับ & Decision Gates
+### E5 — Distribution comparison *(A5)*
 
-```
-สัปดาห์ 1–2:  E2 สัมภาษณ์ + E3 pricing survey (ขนานกัน, ถูก)  → ตั้ง hypothesis ราคา
-สัปดาห์ 1–4:  E1 BETA COHORT  ← GATE หลัก (core value + retention)
-ระหว่าง beta: E4 fake-door (WTP intent)
-หลัง beta ผ่าน: E5 distribution
-post-v1.0:    E6 marketplace smoke test
-```
+- Compare candidate channels only after install, security, support, and update requirements are ready.
+- Measure install completion and support burden using aggregate counts with explicit privacy review.
+- Choose a channel from measured friction and reach, not assumed audience size.
 
-| Gate | เกณฑ์ผ่าน | ถ้าไม่ผ่าน |
+### E6 — Marketplace demand check *(A6, after v1.0)*
+
+- Demonstrate a small set of curated companion styles before building marketplace infrastructure.
+- Measure actual use and requests to create styles; postpone implementation without clear demand.
+
+## 3. Decision gates
+
+| Gate | Evidence | If it fails |
 | --- | --- | --- |
-| **G1 — core value** (E1) | D7 ≥40% · FP-disable <15% | **หยุด — ซ่อม G-Signal ก่อน** อย่าเพิ่งคิดราคา |
-| **G2 — WTP** (E3+E4) | PSM optimal ≥฿99 · fake-door intent ถึงเป้า | rethink โมเดล (ad-supported / ถูกลง / one-time) |
-| **G3 — distribution** (E5) | ช่องที่ install funnel ดีสุด | โฟกัสช่องนั้น |
-| **G4 — marketplace** (E6) | demand signal ชัด | เลื่อน/ลด scope Pillar C |
+| **G1 — core value** | Useful warnings, manageable false-alert rate, and successful setup in local sessions | Fix G-Signal or setup before pricing work |
+| **G2 — willingness to pay** | Pricing survey plus non-binding page intent | Revisit pricing and product packaging |
+| **G3 — distribution** | Install completion and support burden for candidate channels | Focus on the channel with lower verified friction |
+| **G4 — marketplace** | Repeated requests and demonstrated use of curated styles | Defer marketplace work |
+
+## 4. Financial model
+
+The base case estimates about 125 paid users. At 5% conversion, that implies roughly 2,500 active
+users; at 60% activation, about 4,200 installs. E1 measures setup and use, while E3/E4 test whether
+the conversion and price assumptions have evidence in the Thai market.
+
+## 5. Privacy and operating limits
+
+- G-Log remains local. Sharing any diagnostic requires a separate, explicit user action.
+- Do not add analytics, enrollment records, or account requirements to local usability sessions.
+- E2/E3 can begin without a game build; E1 requires a safe, reviewable build and a supervised session.
 
 ---
 
-## 4. เช็คความสมเหตุสมผลกับ financial model
-Base case ต้องการ **~125 paid** → ที่ conversion 5% = ~2,500 active → ที่ activation 60% = **~4,200 installs**. validation ต้องตอบ: funnel rate เหล่านี้จริงไหมในตลาดไทย (E1 ให้ activation/retention จริง, E3/E4 ให้ conversion/ราคาจริง)
+## Changelog
 
-## 5. หมายเหตุ
-- **ใช้ช่องทางไทยเป็นหลัก** (FB groups, Discord, แคสเตอร์) — CAC ~0 ช่วงพิสูจน์
-- metric sharing ใน beta = ใช้ **opt-in ([[ADR-11-optin-data-contribution-flywheel|ADR-11]])** จริง → validate กลไก privacy ไปในตัว
-- เริ่มได้**ทันที**ด้วย E2+E3 (ไม่ต้องรออะไร) ขนานกับเตรียม E1 beta build
+| Version | Date | Summary |
+| --- | --- | --- |
+| 1.0.1 | 2026-10-18 | Limited proposed usability sessions to owner-approved supervised review builds. |
+| 1.0.0 | 2026-10-18 | Replaced distribution-cohort planning with supervised local usability sessions and privacy limits. |

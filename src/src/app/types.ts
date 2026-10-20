@@ -1,8 +1,16 @@
 import { DEFAULT_LAYOUT, type Layout } from '../overlay/modules'
 import { PERSONA_LINES } from './lines'
 
+export type MatchLifecycle = 'draft' | 'live' | 'disconnected' | 'end' | 'abandon'
+export interface MatchSessionMetadata {
+  match_id?: string | null
+  session_id?: string | null
+  session_epoch?: number
+  session_lifecycle?: MatchLifecycle | null
+}
+
 /** Mirrors the Rust `GameTick` emitted by the GSI server (src-tauri/src/gsi.rs). */
-export interface GameTick {
+export interface GameTick extends MatchSessionMetadata {
   in_game: boolean
   clock_time: number
   game_state: string
@@ -37,7 +45,7 @@ export interface GameTick {
 }
 
 /** CV/G-Signal events emitted by the Rust backend (src-tauri cv pipeline). */
-export interface MinimapCv {
+export interface MinimapCv extends MatchSessionMetadata {
   region: { x: number; y: number; side: number }
   icon: number
   candidates: [number, number][]
@@ -45,15 +53,21 @@ export interface MinimapCv {
   detections: { label: number; name: string; x: number; y: number; score: number }[]
   classifier: boolean
 }
-export interface GankAlert { probability: number; missing_heroes: string[]; eta_ms: number }
+export interface GankAlert extends MatchSessionMetadata { probability: number; missing_heroes: string[]; eta_ms: number }
 /** G2.6: emitted by G-Sentry when a hero crosses the 5s missing threshold. */
-export interface EnemyMissing { hero: string; missing_for_ms: number; last_pos: [number, number] }
+export interface EnemyMissing extends MatchSessionMetadata { hero: string; missing_for_ms: number; last_pos: [number, number] }
 /** G5.4: advice broadcast from master.rs → overlay. */
-export interface AdviceUpdate { text: string; cached: boolean }
+export interface AdviceUpdate extends MatchSessionMetadata {
+  text: string
+  cached: boolean
+  backend?: 'claude' | 'ollama'
+  elapsed_ms?: number
+  cached_age_ms?: number | null
+}
 /** G-Revive: deterministic buyback verdict (revive.rs → `buyback-advice`).
  *  Mirrors `ReviveAdvice`; `urgency` is the serde-serialized `Urgency` enum. */
 export type BuybackUrgency = 'None' | 'Consider' | 'Strong'
-export interface ReviveAdvice {
+export interface ReviveAdvice extends MatchSessionMetadata {
   recommend_buyback: boolean
   urgency: BuybackUrgency
   natural_respawn_remaining: number
@@ -61,8 +75,28 @@ export interface ReviveAdvice {
   next_respawn_if_buyback: number
   reason: string
 }
-/** Connection/status pushed by the Rust watchdog (gsi.rs) every ~4s. */
-export interface GsiStatus { dota_running: boolean; gsi_active: boolean; in_game: boolean; display_exclusive: boolean }
+export type GsiFreshness = 'unavailable' | 'waiting' | 'fresh' | 'stale'
+
+/** Connection and validated-source age pushed by the Rust watchdog (gsi.rs). */
+export interface GsiStatus extends MatchSessionMetadata {
+  dota_running: boolean
+  gsi_active: boolean
+  gsi_freshness: GsiFreshness
+  gsi_age_ms: number | null
+  in_game: boolean
+  display_exclusive: boolean
+  server_state: 'starting' | 'listening' | 'port_conflict' | 'bind_error'
+}
+
+export interface AnnouncerBanner extends MatchSessionMetadata {
+  event: string
+  bannerData: string | null
+  bannerText: string
+  thai: string
+  clip: string | null
+}
+
+export interface SessionTextEvent extends MatchSessionMetadata { text: string }
 
 /** sensor-health (capture.rs) — the overlay's copy of the minimap-sensor
  * contract. Mirrors `live/events.ts`'s `SensorHealth`; duplicated rather than
@@ -100,6 +134,8 @@ export interface Settings {
   voiceName: string
   voiceRate: number
   volume: number
+  announcerEnabled: boolean
+  signalEnabled: boolean
   personaLines: boolean
   autoAdvice: boolean
   gankVisuals: boolean
@@ -107,6 +143,7 @@ export interface Settings {
   signalSensitivity: Sensitivity
   masterEnabled: boolean
   masterBackend: 'auto' | 'claude' | 'ollama'
+  cloudContextOptIn: boolean
   masterAuth: 'plan' | 'apikey'
   masterOllamaModel: string
   cvDebug: boolean
@@ -122,12 +159,12 @@ export interface Settings {
   showGold: boolean
   personaPreset: 'coach' | 'silent' | 'caster' | 'meme'
 }
-export const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, personaLines: true, autoAdvice: false, gankVisuals: true, killVisuals: true, signalSensitivity: 'med', masterEnabled: true, masterBackend: 'auto', masterAuth: 'plan', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, efficacyStudy: false, telemetrySource: 'auto', uiMode: 'full', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false, personaPreset: 'coach' }
+export const DEFAULTS: Settings = { overlayVisible: true, position: 'top', customX: 50, customY: 2, opacity: 0.72, alertEnabled: true, alertThreshold: 25, voiceEnabled: true, voiceName: '', voiceRate: 0, volume: 80, announcerEnabled: true, signalEnabled: true, personaLines: true, autoAdvice: false, gankVisuals: true, killVisuals: true, signalSensitivity: 'med', masterEnabled: true, masterBackend: 'auto', cloudContextOptIn: false, masterAuth: 'plan', masterOllamaModel: 'qwen3.5:4b', cvDebug: false, calibration: false, efficacyStudy: false, telemetrySource: 'auto', uiMode: 'full', layout: DEFAULT_LAYOUT, showTimer: false, showScore: false, showHeroBar: false, showKda: false, showGold: false, personaPreset: 'coach' }
 export interface OverlayProfile { name: string; position: Pos; customX: number; customY: number; opacity: number; showTimer: boolean; showScore: boolean; showHeroBar: boolean; showKda: boolean; showGold: boolean }
 
 export interface VoiceInfo { name: string; culture: string; gender: string; age: string }
-/** G7.2: resource-governor stats emitted every 10s from governor.rs */
-export interface ResourceStats { ram_mb: number; cpu_pct: number; over_budget: boolean }
+/** G7.2: one-second governor stats; CPU covers the Windows process group. */
+export interface ResourceStats { ram_mb: number; cpu_pct: number; cpu_group_processes: number; over_budget: boolean }
 
 export type GankState = { phase: 'alert'; heroes: string[]; probability: number } | { phase: 'clear' } | null
 
@@ -137,6 +174,7 @@ export interface SetupStatus {
   steam_path: string | null
   dota_cfg_dir: string | null
   cfg_present: boolean
+  cfg_valid: boolean
   message: string
 }
 
@@ -144,9 +182,31 @@ export interface SetupStatus {
 export interface VoiceCacheStatus { dir: string; counts: Record<string, number>; total: number }
 export interface EventClip { name: string; path: string; source: string }
 
-// ─────────────────────────────── G-MASTER (Claude Plan advisor) ───────────────────────────────
-export interface Advice { text: string; cached: boolean }
+// ─────────────────────────────── G-MASTER (local-first advisor) ───────────────────────────────
+export interface Advice { text: string; cached: boolean; backend?: 'claude' | 'ollama'; elapsed_ms?: number; cached_age_ms?: number | null }
 export type MasterBackend = 'auto' | 'claude' | 'ollama'
+export type OllamaReadinessState = 'available' | 'missing-model' | 'unavailable' | 'invalid-model'
+export interface OllamaReadiness {
+  state: OllamaReadinessState
+  model: string
+  detail: string | null
+  probeTimeoutMs: number
+  requestTimeoutMs: number
+}
+export interface MasterReadiness {
+  backend: MasterBackend
+  cloudContextOptIn: boolean
+  route: 'local-only' | 'cloud-only' | 'cloud-then-local' | 'cloud-blocked-by-opt-in'
+  ollama: OllamaReadiness
+  claudeCli: { executableDetected: boolean; authenticationVerified: boolean }
+  anthropicApi: { apiKeySaved: boolean; credentialVerified: boolean }
+  deterministicLocalFallback: boolean
+  claudeRequestTimeoutMs: number
+  autoClaudeAttemptTimeoutMs: number
+  ollamaRequestTimeoutMs: number
+  maxAdviceRequestTimeoutMs: number
+  costNote: string
+}
 
 // ─────────────────────────────── G-LOG (local match logging) ───────────────────────────────
 export interface MatchLog { name: string; size: number; modified_ms: number }

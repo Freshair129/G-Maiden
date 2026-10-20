@@ -18,8 +18,9 @@ use std::time::Duration;
 const HOST: &str = "127.0.0.1:3000";
 /// Consecutive failed pushes (or no-GPU samples) before we assume G-Maiden has
 /// exited and shut ourselves down. At the default 3s interval this is ~60s. This
-/// is a backstop; G-Maiden also kills any prior feeder before spawning a fresh
-/// one, so normally exactly one feeder runs (the current app's).
+/// is a backstop; on normal exit G-Maiden stops and waits only for the exact
+/// child it spawned. A feeder launched outside a Job Object (such as by an older
+/// degraded-mode host) may outlive the host after an abnormal exit.
 const GIVE_UP_AFTER: u32 = 20;
 
 fn main() {

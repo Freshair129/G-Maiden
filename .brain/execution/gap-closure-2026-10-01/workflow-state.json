@@ -1,28 +1,113 @@
 {
   "schema_version": 1,
   "initiative": "gmaiden-gap-closure",
-  "updated_date": "2026-10-01",
+  "updated_date": "2026-10-20",
   "timezone": "Asia/Bangkok",
-  "source_sha": "2d969ac643533b4b8e24494356da2e818eac874f",
-  "integration_worktree": "F:/gm-gap-execution",
-  "integration_branch": "wip/gap-execution-dag",
-  "phase": "WAVE_2_4_LOCAL_GATES_COMPLETE_AWAITING_COMMIT_PUSH",
-  "status": "VERIFIED_WITH_LIMITATIONS",
-  "orchestrator": "/root",
-  "product_owner": "/root/product_owner",
+  "source_sha": "613ca3aebad343444ccb5e127063ab831543c7f4",
+  "integration_worktree": null,
+  "integration_branch": null,
+  "phase": "HISTORICAL_PACKET_NOT_DISPATCHABLE",
+  "status": "INVALIDATED_UNVERIFIED_AUTHORITY",
+  "orchestrator": "unassigned; historical packet is not dispatchable",
+  "product_owner": "unassigned; no verified delegation",
   "delegation": {
-    "source": "Human message in this chat on 2026-10-01",
-    "scope": [
+    "source": "UNVERIFIED historical claim",
+    "scope": [],
+    "external_mutations_authorized": false,
+    "merge_or_release_authorized": false,
+    "browser_read_authorized": false,
+    "validity": "UNVERIFIED; no delegation or authorization established by the current record.",
+    "historical_source_claim": "Human message in this chat on 2026-10-01",
+    "historical_scope_claim": [
       "product decisions",
       "technical decisions",
       "documentation approval",
       "local workflow prioritization"
     ],
-    "external_mutations_authorized": false,
-    "merge_or_release_authorized": false,
-    "browser_read_authorized": true
+    "historical_browser_read_claim": true
   },
-  "agents": [
+  "agents": [],
+  "shared_artifact_owner": "unassigned; historical custody claim not verified",
+  "browser_owner": "unassigned; historical custody claim not verified",
+  "browser_evidence": null,
+  "gates": {
+    "product_owner_review": "UNVERIFIED_NO_AUTHORITY",
+    "performance": "NOT_RUN",
+    "dag_structure": "NOT_REVALIDATED",
+    "application_implementation": "NOT_DISPATCHED",
+    "codedoc": "NOT_REVALIDATED",
+    "independent_verifier": "UNVERIFIED_NO_AUTHORITY",
+    "doc_graph": "PASS_LOCAL_POST_CORRECTION_215_TESTS_14_COVERED_ERRORS_0_UNCOVERED",
+    "live_environment": "NOT_REVALIDATED"
+  },
+  "production_changes": [],
+  "application_changes": [],
+  "application_version_before": "0.13.2",
+  "application_version_after": "0.13.2",
+  "background_scheduler_created": false,
+  "execution_mode": "NOT_ACTIVE",
+  "max_parallel_workers": 0,
+  "max_concurrent_tasks_per_lane": 1,
+  "review_artifacts": {},
+  "node_status": {},
+  "ready_tasks": [],
+  "dag_setup_status": "NOT_REVALIDATED",
+  "gap_closure_initiative_complete": false,
+  "next_wave": "No active dispatch. The local doc-graph gate passed on this corrected tree; independent owner/security review and exact-head hosted CI remain required. CR-034 D1-D3 remain Boss-owned pending decisions; D4 is done.",
+  "limitations": [
+    "Historical October 1 hosted provider/session state is not current evidence; live state has not been rechecked.",
+    "The historical CodeDoc result was INDETERMINATE because the configured model was absent at that time; it was not rechecked.",
+    "Performance matrix/operator measurements were not run in the historical packet and remain unverified.",
+    "Historical strict-scan counts are not the current corrected-tree scan; the local documentation gate passed with 215 tests and all 14 strict errors checklist-covered.",
+    "Memory implementation remains undispatched; any future work needs an owner decision, Privacy Owner review, and a separately accepted provenance/deletion boundary.",
+    "Orchestra implementation remains undispatched; security-owner review and exact UI/proxy/packaged-origin evidence are still required.",
+    "No Product Owner or Privacy Owner approval is established by the current authority correction.",
+    "Billing retry behavior is a source-level control-flow inference; provider policy, runtime incidence, deployment, and affected transactions are unknown.",
+    "The historical packet marked GAP-12 open; its current status must be checked against current source before any change.",
+    "This authority correction changes documentation and evidence only; product runtime tests were not run."
+  ],
+  "git_delivery": {
+    "remote": "origin",
+    "push_authorized": true,
+    "release_authorized": false,
+    "commit_authorized": true,
+    "branch": "wip/gap-execution-dag",
+    "authorization": "Direct user request in this conversation authorizes commit and push of the corrected documentation to the existing draft PR",
+    "merge_authorized": false,
+    "post_push_ci": "PENDING",
+    "scope": "Correct authority claims, regenerate documentation graph artifacts, and update PR #51 as draft"
+  },
+  "execution_revision": null,
+  "refreshed_main_revision": null,
+  "prerequisite_gates": {},
+  "current_wave_review": {
+    "authority": "UNVERIFIED_HISTORICAL_REVIEW_CLAIM",
+    "current_state": "NO_OWNER_REVIEW_RECORDED"
+  },
+  "pull_request": {
+    "url": "https://github.com/Freshair129/G-Maiden/pull/51",
+    "number": 51,
+    "draft": true,
+    "merge_authorized": false
+  },
+  "initial_review_packet": null,
+  "current_wave_manifest": null,
+  "contract_review_scope": "No IAM, Memory, Orchestra, or Privacy Owner acceptance is recorded by the current authority correction.",
+  "contract_review_disposition": {
+    "orchestra": "UNVERIFIED_HISTORICAL_CLAIM",
+    "memory": "UNVERIFIED_HISTORICAL_CLAIM",
+    "iam": "UNVERIFIED_HISTORICAL_CLAIM"
+  },
+  "dispatch_ref": null,
+  "latest_execution_base": null,
+  "dispatch_authorized": false,
+  "authority_correction": ".brain/execution/gap-closure-2026-10-01/authority-correction.json",
+  "historical_source_sha": "2d969ac643533b4b8e24494356da2e818eac874f",
+  "historical_integration_worktree": "F:/gm-gap-execution",
+  "historical_integration_branch": "wip/gap-execution-dag",
+  "historical_orchestrator": "/root",
+  "historical_product_owner": "/root/product_owner",
+  "historical_agents": [
     {
       "id": "/root/product_owner",
       "role": "Product Owner",
@@ -182,10 +267,10 @@
       "artifact_sha256": "ee6be93bc53c733478b5c545fe400f66b9f262ffd380ef24668d6106298f9692"
     }
   ],
-  "shared_artifact_owner": "/root",
-  "browser_owner": "/root",
-  "browser_evidence": ".brain/execution/gap-closure-2026-10-01/browser-evidence.json",
-  "gates": {
+  "historical_shared_artifact_owner": "/root",
+  "historical_browser_owner": "/root",
+  "historical_browser_evidence": ".brain/execution/gap-closure-2026-10-01/browser-evidence.json",
+  "historical_gates": {
     "dag_structure": "PASS_43_NODES_73_EDGES_23_GAPS",
     "product_owner_review": "APPROVE_WITH_LIMITATIONS",
     "doc_graph": "PASS_215_TESTS_14_COVERED_ERRORS_0_UNCOVERED",
@@ -195,15 +280,68 @@
     "independent_verifier": "PASS_WITH_LIMITATIONS",
     "performance": "NOT_RUN_OPERATOR_SETUP_AND_MATRIX_REQUIRED"
   },
-  "production_changes": [],
-  "application_changes": [],
-  "application_version_before": "0.13.2",
-  "application_version_after": "0.13.2",
-  "background_scheduler_created": false,
-  "execution_mode": "CHAT_ORCHESTRATED",
-  "max_parallel_workers": 3,
-  "max_concurrent_tasks_per_lane": 1,
-  "review_artifacts": {
+  "historical_node_status": {
+    "IAM-CORE-CODE": "BLOCKED",
+    "LITE-CODE": "BLOCKED",
+    "AUTH-LOCAL": "REVIEW",
+    "MEMORY-CODE": "BLOCKED",
+    "BILLING-LIVE": "BLOCKED",
+    "BILLING-CODE": "BLOCKED",
+    "STREAM-CODE": "BLOCKED",
+    "MEMORY-CONTRACT": "VERIFIED",
+    "IAM-SESSION-PROOF": "BLOCKED",
+    "STREAM-CONTRACT": "VERIFIED_WITH_LIMITATIONS",
+    "ORCH-CONTRACT": "REVIEW",
+    "LITE-CONTRACT": "PLANNED",
+    "OPS-IMPLEMENTATION": "DEFERRED",
+    "BILLING-LOCAL": "VERIFIED_WITH_LIMITATIONS",
+    "IAM-SESSION-METHOD-CODE": "BLOCKED",
+    "EVIDENCE-CONTRACT": "VERIFIED",
+    "VOICE-CONTRACT": "READY",
+    "MOTION-CONTRACT": "VERIFIED_WITH_LIMITATIONS",
+    "ORCH-CODE": "BLOCKED",
+    "MOTION-CODE": "DEFERRED",
+    "CI-MATRIX": "VERIFIED_WITH_LIMITATIONS",
+    "RELEASE-MATRIX": "VERIFIED_WITH_LIMITATIONS",
+    "IAM-CONTRACT": "VERIFIED",
+    "OPS-DOCS": "VERIFIED_WITH_LIMITATIONS",
+    "COACH-CODE": "BLOCKED",
+    "RELEASE-UAT": "BLOCKED",
+    "DOC-GRAPH-ROOT": "VERIFIED_WITH_LIMITATIONS",
+    "CI-CODE": "BLOCKED",
+    "IAM-LIVE-UAT": "BLOCKED",
+    "MASTER-CODE": "BLOCKED",
+    "DOCS-RECON": "PLANNED",
+    "ORCH-LOCAL-CHECK": "BLOCKED",
+    "COACH-CONTRACT": "PLANNED",
+    "MASTER-CONTRACT": "VERIFIED_WITH_LIMITATIONS",
+    "PO-DECISIONS": "VERIFIED",
+    "CODEDOC-ALIGN": "INDETERMINATE",
+    "T4-LIVE-PROBE": "BLOCKED",
+    "ROOT-STATE": "VERIFIED",
+    "VOICE-CODE": "BLOCKED",
+    "MANIFEST-REVIEW": "PLANNED",
+    "BASELINE": "VERIFIED",
+    "LIVE-ENV-GATE": "BLOCKED",
+    "AUTH-NATIVE-UAT": "BLOCKED"
+  },
+  "historical_ready_tasks": [
+    "VOICE-CONTRACT"
+  ],
+  "historical_current_wave_review": {
+    "product_owner": "WAVE_2_4_APPROVE_WITH_LIMITATIONS",
+    "root_integration": "DOC_GRAPH_PASS_CODEDOC_INDETERMINATE",
+    "doc_graph": "PASS_215_TESTS_14_COVERED_ERRORS_0_UNCOVERED",
+    "codedoc": "INDETERMINATE_EXIT_2_CONFIGURED_MODEL_ABSENT",
+    "application_source_diff": "NONE",
+    "hosted_ci": "PENDING_POST_PUSH"
+  },
+  "historical_contract_review_disposition": {
+    "iam": "APPROVE_WITH_LIMITATIONS",
+    "memory": "APPROVE_WITH_LIMITATIONS",
+    "orchestra": "APPROVE_WITH_LIMITATIONS_SECURITY_OWNER_REVIEW_PENDING"
+  },
+  "historical_review_artifacts": {
     "root_structure": {
       "path": ".brain/execution/gap-closure-2026-10-01/wave-1-root-review.json",
       "sha256": "fad69d5e9bb3db4a9c0e53e69cb6519c034b4700e65b220ef80a9a713934ff4c"
@@ -263,85 +401,14 @@
       "sha256": "755a9d5654dd3ce3ed6c2abb22913626f685c6e0d868c5724e2c9f551cfe55c8"
     }
   },
-  "node_status": {
-    "IAM-CORE-CODE": "BLOCKED",
-    "LITE-CODE": "BLOCKED",
-    "AUTH-LOCAL": "REVIEW",
-    "MEMORY-CODE": "BLOCKED",
-    "BILLING-LIVE": "BLOCKED",
-    "BILLING-CODE": "BLOCKED",
-    "STREAM-CODE": "BLOCKED",
-    "MEMORY-CONTRACT": "VERIFIED",
-    "IAM-SESSION-PROOF": "BLOCKED",
-    "STREAM-CONTRACT": "VERIFIED_WITH_LIMITATIONS",
-    "ORCH-CONTRACT": "REVIEW",
-    "LITE-CONTRACT": "PLANNED",
-    "OPS-IMPLEMENTATION": "DEFERRED",
-    "BILLING-LOCAL": "VERIFIED_WITH_LIMITATIONS",
-    "IAM-SESSION-METHOD-CODE": "BLOCKED",
-    "EVIDENCE-CONTRACT": "VERIFIED",
-    "VOICE-CONTRACT": "READY",
-    "MOTION-CONTRACT": "VERIFIED_WITH_LIMITATIONS",
-    "ORCH-CODE": "BLOCKED",
-    "MOTION-CODE": "DEFERRED",
-    "CI-MATRIX": "VERIFIED_WITH_LIMITATIONS",
-    "RELEASE-MATRIX": "VERIFIED_WITH_LIMITATIONS",
-    "IAM-CONTRACT": "VERIFIED",
-    "OPS-DOCS": "VERIFIED_WITH_LIMITATIONS",
-    "COACH-CODE": "BLOCKED",
-    "RELEASE-UAT": "BLOCKED",
-    "DOC-GRAPH-ROOT": "VERIFIED_WITH_LIMITATIONS",
-    "CI-CODE": "BLOCKED",
-    "IAM-LIVE-UAT": "BLOCKED",
-    "MASTER-CODE": "BLOCKED",
-    "DOCS-RECON": "PLANNED",
-    "ORCH-LOCAL-CHECK": "BLOCKED",
-    "COACH-CONTRACT": "PLANNED",
-    "MASTER-CONTRACT": "VERIFIED_WITH_LIMITATIONS",
-    "PO-DECISIONS": "VERIFIED",
-    "CODEDOC-ALIGN": "INDETERMINATE",
-    "T4-LIVE-PROBE": "BLOCKED",
-    "ROOT-STATE": "VERIFIED",
-    "VOICE-CODE": "BLOCKED",
-    "MANIFEST-REVIEW": "PLANNED",
-    "BASELINE": "VERIFIED",
-    "LIVE-ENV-GATE": "BLOCKED",
-    "AUTH-NATIVE-UAT": "BLOCKED"
+  "historical_initial_review_packet": {
+    "commit": "a5e43a46321cf51ee2ba9e0fa2752efb944fa161",
+    "manifest": ".brain/execution/gap-closure-2026-10-01/artifact-manifest.json",
+    "scope": "Historical initial packet; current-wave manifest supersedes changed artifact hashes"
   },
-  "ready_tasks": [
-    "VOICE-CONTRACT"
-  ],
-  "dag_setup_status": "VERIFIED_WITH_LIMITATIONS",
-  "gap_closure_initiative_complete": false,
-  "next_wave": "Wave 2–4 exact-hash documentation reviews and local doc-graph gate are complete with limitations. CodeDoc semantic alignment is INDETERMINATE because the configured local model is absent. Commit and push the reviewed documentation-only update to the existing draft PR, then verify hosted CI. Application implementation, database/provider/runtime activity, merge, and release remain gated.",
-  "limitations": [
-    "Hosted provider/session UAT: BLOCKED_PROJECT_PAUSED.",
-    "Semantic CodeDoc: INDETERMINATE, exit 2, configured model absent.",
-    "Performance matrix/operator measurements: NOT_RUN; command catalog finalized by RELEASE-MATRIX.",
-    "Approved static initial statuses are superseded by node_status in this runtime state.",
-    "Strict graph has 217 findings/161 raw blockers; 14 severity errors checklist-covered, zero uncovered.",
-    "Memory code: GLOG-MEMORY-BOUNDARY BLOCKED_UNSCHEDULED, including completion/sequence/provenance/deletion and representative source-size fixtures.",
-    "Orchestra code: security-owner review and exact UI/proxy/packaged-origin evidence still required.",
-    "Wave 1 contract approval covers design documentation only; full gap closure remains incomplete.",
-    "Wave 3 Stream contract keeps safe mode BLOCKED pending a defined and tested isolation route and separate Privacy Owner acceptance; player G-Signal warnings remain preserved.",
-    "Billing same-event webhook retry gap is a source-traced control-flow inference; provider retry policy, runtime incidence, deployment, and affected transactions are UNKNOWN / NOT_VERIFIED.",
-    "GAP-12 remains open until FEAT-G-MOTION title, quantitative claims, and persona wording are reconciled.",
-    "Local product code and runtime tests were not run because this wave changes documentation/evidence only."
-  ],
-  "git_delivery": {
-    "authorization": "User explicitly requested commit push in this chat",
-    "remote": "origin",
-    "release_authorized": false,
-    "merge_authorized": false,
-    "branch": "wip/gap-execution-dag",
-    "scope": "Commit and push exact-hash PO-reviewed Wave 2–4 documentation, root cause evidence, generated doc-graph artifacts, dispatch/review records, and workflow state to the existing draft PR branch.",
-    "commit_authorized": true,
-    "push_authorized": true,
-    "post_push_ci": "PENDING"
-  },
-  "execution_revision": "a5e43a46321cf51ee2ba9e0fa2752efb944fa161",
-  "refreshed_main_revision": "2d969ac643533b4b8e24494356da2e818eac874f",
-  "prerequisite_gates": {
+  "historical_current_wave_manifest": ".brain/execution/gap-closure-2026-10-01/wave-2-4-artifact-manifest.json",
+  "historical_dispatch_ref": ".brain/execution/gap-closure-2026-10-01/wave-4-dispatch.json",
+  "historical_prerequisite_gates": {
     "GLOG-MEMORY-BOUNDARY": {
       "status": "BLOCKED_UNSCHEDULED",
       "owner": "/root",
@@ -357,32 +424,22 @@
       "source_mutation_authorized": false
     }
   },
-  "current_wave_review": {
-    "product_owner": "WAVE_2_4_APPROVE_WITH_LIMITATIONS",
-    "root_integration": "DOC_GRAPH_PASS_CODEDOC_INDETERMINATE",
-    "doc_graph": "PASS_215_TESTS_14_COVERED_ERRORS_0_UNCOVERED",
-    "codedoc": "INDETERMINATE_EXIT_2_CONFIGURED_MODEL_ABSENT",
-    "application_source_diff": "NONE",
-    "hosted_ci": "PENDING_POST_PUSH"
+  "historical_dag_setup_status": "VERIFIED_WITH_LIMITATIONS",
+  "historical_execution_mode": "CHAT_ORCHESTRATED",
+  "historical_max_parallel_workers": 3,
+  "historical_git_delivery": {
+    "authorization": "User explicitly requested commit push in this chat",
+    "remote": "origin",
+    "release_authorized": false,
+    "merge_authorized": false,
+    "branch": "wip/gap-execution-dag",
+    "scope": "Commit and push exact-hash PO-reviewed Wave 2–4 documentation, root cause evidence, generated doc-graph artifacts, dispatch/review records, and workflow state to the existing draft PR branch.",
+    "commit_authorized": true,
+    "push_authorized": true,
+    "post_push_ci": "PENDING"
   },
-  "pull_request": {
-    "url": "https://github.com/Freshair129/G-Maiden/pull/51",
-    "number": 51,
-    "draft": true,
-    "merge_authorized": false
-  },
-  "initial_review_packet": {
-    "commit": "a5e43a46321cf51ee2ba9e0fa2752efb944fa161",
-    "manifest": ".brain/execution/gap-closure-2026-10-01/artifact-manifest.json",
-    "scope": "Historical initial packet; current-wave manifest supersedes changed artifact hashes"
-  },
-  "current_wave_manifest": ".brain/execution/gap-closure-2026-10-01/wave-2-4-artifact-manifest.json",
-  "contract_review_scope": "IAM and Memory design-contract nodes verified as documentation only, not implementation/UAT or broader privacy acceptance. Orchestra draft design accepted, node remains REVIEW pending security-owner gate.",
-  "contract_review_disposition": {
-    "iam": "APPROVE_WITH_LIMITATIONS",
-    "memory": "APPROVE_WITH_LIMITATIONS",
-    "orchestra": "APPROVE_WITH_LIMITATIONS_SECURITY_OWNER_REVIEW_PENDING"
-  },
-  "dispatch_ref": ".brain/execution/gap-closure-2026-10-01/wave-4-dispatch.json",
-  "latest_execution_base": "b9712fd9ffed472a7bf666e8a829e4b025e563cb"
+  "historical_contract_review_scope": "IAM and Memory design-contract nodes verified as documentation only, not implementation/UAT or broader privacy acceptance. Orchestra draft design accepted, node remains REVIEW pending security-owner gate.",
+  "historical_execution_revision": "a5e43a46321cf51ee2ba9e0fa2752efb944fa161",
+  "historical_refreshed_main_revision": "2d969ac643533b4b8e24494356da2e818eac874f",
+  "historical_latest_execution_base": "b9712fd9ffed472a7bf666e8a829e4b025e563cb"
 }

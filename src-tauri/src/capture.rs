@@ -19,22 +19,67 @@
 //! Live verification (compile alone is NOT sufficient) needs Dota 2 open in
 //! borderless fullscreen — see ADR-13 Phase 3 validation.
 
+use std::sync::atomic::{AtomicU8, Ordering};
+
+const MODE_INITIALIZING: u8 = 0;
+const MODE_RETRYING: u8 = 1;
+const MODE_LITE: u8 = 2;
+const MODE_DXGI: u8 = 3;
+const MODE_GDI: u8 = 4;
+static CAPTURE_MODE: AtomicU8 = AtomicU8::new(MODE_INITIALIZING);
+
+/// Current capture state, also used to hydrate a settings page opened after
+/// the startup event was emitted.
+pub fn current_mode() -> &'static str {
+    match CAPTURE_MODE.load(Ordering::SeqCst) {
+        MODE_RETRYING => "retrying",
+        MODE_LITE => "lite",
+        MODE_DXGI => "dxgi",
+        MODE_GDI => "gdi",
+        _ => "initializing",
+    }
+}
+
+fn publish_mode(app: &tauri::AppHandle, mode: &'static str) {
+    use tauri::Emitter;
+
+    let value = match mode {
+        "retrying" => MODE_RETRYING,
+        "lite" => MODE_LITE,
+        "dxgi" => MODE_DXGI,
+        "gdi" => MODE_GDI,
+        _ => MODE_INITIALIZING,
+    };
+    CAPTURE_MODE.store(value, Ordering::SeqCst);
+    let _ = app.emit("capture-mode", mode);
+}
+
 /// Legacy WGC backend, selected at build time with `--features wgc` (ADR-13
 /// rollback). Implementation frozen in `capture_wgc.rs`.
 #[cfg(feature = "wgc")]
 pub fn start(app: tauri::AppHandle) {
+    publish_mode(&app, "initializing");
     crate::capture_wgc::start(app);
 }
 
+#[cfg(feature = "wgc")]
+pub fn retry(_app: tauri::AppHandle) -> Result<(), String> {
+    Err("capture retry is unavailable with the legacy WGC backend".into())
+}
+
 #[cfg(not(feature = "wgc"))]
-pub use backend::start;
+pub use backend::{retry, start};
 
 #[cfg(not(feature = "wgc"))]
 mod backend {
+    use std::sync::mpsc::{self, Receiver, SyncSender, TryRecvError, TrySendError};
+    use std::sync::{Mutex, OnceLock};
     use std::time::{Duration, Instant};
 
     use tauri::{AppHandle, Emitter, Manager};
 
+    use crate::capture::publish_mode;
+    use crate::capture_frame::{CaptureRoi, CaptureRoiKind, FrameCaptureMetadata};
     use crate::cv::detector::{Detection, Detector};
     use crate::cv::draft_detector::DraftRecognizer;
     use crate::cv::draft_region::{DraftRegion, PortraitBox};
@@ -97,6 +142,11 @@ mod backend {
     /// tight enough that a real capture stall is visible within a gank window.
     const STALE_FRAME_MS: u64 = 2_000;
 
+    /// A live capture session with no completed frame for this long is torn
+    /// down so DXGI/device state can be rebuilt. This absorbs short Alt-Tab
+    /// and mode changes while bounding a permanently lost capture session.
+    const CAPTURE_RECOVERY_MS: u64 = STALE_FRAME_MS * 3;
+
     /// Heartbeat for `sensor-health` (ms). The event is edge-triggered on any
     /// field the UI branches on; this only exists so `frame_age_ms` keeps
     /// ticking on screen while nothing else changes.
@@ -108,6 +158,39 @@ mod backend {
     /// cadence since it only needs to capture the shape of a gank window, not
     /// every frame. See `log::should_record_risk_trace`.
     const RISK_TRACE_INTERVAL_MS: u64 = 1000;
+
+    static RETRY_SENDER: OnceLock<Mutex<Option<SyncSender<()>>>> = OnceLock::new();
+
+    fn retry_sender() -> &'static Mutex<Option<SyncSender<()>>> {
+        RETRY_SENDER.get_or_init(|| Mutex::new(None))
+    }
+
+    fn queue_retry(sender: &SyncSender<()>) -> Result<(), &'static str> {
+        match sender.try_send(()) {
+            Ok(()) | Err(TrySendError::Full(())) => Ok(()),
+            Err(TrySendError::Disconnected(())) => Err("capture supervisor stopped"),
+        }
+    }
+
+    enum CaptureExit {
+        RetryRequested,
+        SenderClosed,
+    }
+
+    struct CaptureWorkerGuard {
+        app: AppHandle,
+    }
+
+    impl Drop for CaptureWorkerGuard {
+        fn drop(&mut self) {
+            let mut sender = retry_sender()
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            publish_lite(&self.app, "capture supervisor stopped");
+            *sender = None;
+            crate::runtime::reset_local_capture_started();
+        }
+    }
 
     // Review fix: these used to be this module's own `const` copies of the
     // same Thai text tts.rs bakes into the prewarm cache (GANK_LINE ==
@@ -130,6 +213,8 @@ mod backend {
         count: usize,
         detections: Vec<Detection>,
         classifier: bool,
+        capture_frame_id: Option<u64>,
+        capture_acquired_at_ms: Option<u64>,
     }
 
     /// Live minimap mirror for the Command Deck: a downscaled PNG of the exact
@@ -175,8 +260,8 @@ mod backend {
     }
 
     impl SensorHealth {
-        /// The terminal state: no capture backend could start at all, so the
-        /// app is in GSI-only Lite mode for the rest of the session.
+        /// No capture backend is currently producing frames. GSI and voice
+        /// remain available while the supervisor waits for a manual retry.
         fn lite() -> Self {
             SensorHealth {
                 backend: "lite",
@@ -247,7 +332,7 @@ mod backend {
                 icon,
                 detector,
                 sentry: Sentry::new(),
-                motion: Motion::new(),
+                motion: Motion::for_next_match(),
                 signal: Signal::new(),
                 start: now,
                 last_emit: now,
@@ -271,7 +356,7 @@ mod backend {
         /// match boundary or a monitor switch turns it from memory into a lie.
         fn reset_pipeline(&mut self) {
             self.sentry = Sentry::new();
-            self.motion = Motion::new();
+            self.motion = Motion::for_next_match();
             self.signal = Signal::new();
         }
 
@@ -331,45 +416,120 @@ mod backend {
             self.region = region;
             self.icon = region.icon_size();
             self.draft_region = DraftRegion::for_resolution(screen_w, screen_h);
-            self.reset_pipeline();
+            self.sentry = Sentry::new();
+            self.motion.reset_tracking();
+            self.signal = Signal::new();
         }
     }
 
-    /// Spawn the minimap capture on its own thread. Non-blocking; on any failure
-    /// to start DXGI (e.g. exclusive fullscreen, no GPU) it logs, emits
-    /// `capture-mode = "lite"`, and exits the thread quietly — the rest of the app
-    /// (GSI, announcer, overlay, G-Master) keeps running in Lite mode.
+    /// Spawn one capture supervisor. Initialization failures leave the
+    /// supervisor waiting in Lite mode so retry reuses the same thread.
     pub fn start(app: AppHandle) {
-        std::thread::Builder::new()
+        let (sender, receiver) = mpsc::sync_channel(1);
+        {
+            let mut slot = retry_sender()
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if slot.is_some() {
+                return;
+            }
+            *slot = Some(sender);
+        }
+        crate::capture::publish_mode(&app, "initializing");
+
+        let thread_app = app.clone();
+        let spawn = std::thread::Builder::new()
             .name("g-capture".into())
             .spawn(move || {
+                let _guard = CaptureWorkerGuard {
+                    app: thread_app.clone(),
+                };
                 crate::log::error("[capture] DXGI capture thread started");
-                if let Err(e) = run_dxgi(app.clone()) {
-                    eprintln!("[capture] DXGI unavailable: {e} — running in Lite mode (GSI-only)");
-                    crate::log::error(&format!(
-                        "[capture] DXGI unavailable: {e}. Running in Lite mode \
-                         (GSI-only, minimap CV off)"
-                    ));
-                    let _ = app.emit("capture-mode", "lite");
-                    // The loop never starts, so this is the only chance to tell
-                    // the overlay + deck that the minimap sensor is gone for
-                    // this session. Without it they would keep rendering an
-                    // empty missing-set as an affirmative "safe".
-                    let _ = app.emit("sensor-health", SensorHealth::lite());
+                supervise(thread_app, receiver);
+            });
+
+        if let Err(error) = spawn {
+            let mut slot = retry_sender()
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            publish_lite(&app, &format!("failed to spawn supervisor: {error}"));
+            *slot = None;
+            crate::runtime::reset_local_capture_started();
+        }
+    }
+
+    /// Queue a retry without creating another capture thread. Requests
+    /// coalesce while one retry is already waiting in the bounded channel.
+    pub fn retry(app: AppHandle) -> Result<(), String> {
+        let sender = retry_sender()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone();
+
+        if let Some(sender) = sender {
+            if queue_retry(&sender).is_ok() {
+                publish_mode(&app, "retrying");
+                return Ok(());
+            }
+            let mut slot = retry_sender()
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            *slot = None;
+        }
+
+        if !crate::runtime::mark_local_capture_started() {
+            return Err("capture supervisor is still starting".into());
+        }
+        start(app.clone());
+        if retry_sender()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
+            .is_some()
+        {
+            Ok(())
+        } else {
+            Err("capture supervisor could not be started".into())
+        }
+    }
+
+    fn supervise(app: AppHandle, receiver: Receiver<()>) {
+        loop {
+            match run_dxgi(app.clone(), &receiver) {
+                Ok(CaptureExit::RetryRequested) => {
+                    publish_mode(&app, "retrying");
                 }
-            })
-            .expect("capture thread spawn");
+                Ok(CaptureExit::SenderClosed) => break,
+                Err(error) => {
+                    publish_lite(&app, &error);
+                    match receiver.recv() {
+                        Ok(()) => publish_mode(&app, "retrying"),
+                        Err(_) => break,
+                    }
+                }
+            }
+        }
+    }
+
+    fn publish_lite(app: &AppHandle, reason: &str) {
+        eprintln!("[capture] unavailable: {reason} — running in Lite mode (GSI-only)");
+        crate::log::error(&format!(
+            "[capture] unavailable: {reason}. Running in Lite mode (GSI-only, minimap CV off)"
+        ));
+        publish_mode(app, "lite");
+        let _ = app.emit("sensor-health", SensorHealth::lite());
     }
 
     /// Initialise DXGI for whichever monitor Dota 2 is actually running on
     /// (CR012-P1-01 — falls back to monitor 0 / primary if Dota isn't found
     /// yet, e.g. the app started first) and run the capture loop forever.
-    /// Returns `Err` only if the duplication can't be created — the caller turns
-    /// that into Lite mode.
-    fn run_dxgi(app: AppHandle) -> Result<(), String> {
+    /// Returns `Err` when capture must degrade to Lite, or a control event when
+    /// the supervisor should retry or stop.
+    fn run_dxgi(app: AppHandle, retry: &Receiver<()>) -> Result<CaptureExit, String> {
         let mut current_monitor = crate::dxgi::detect_dota_monitor().unwrap_or(0);
         let mut dxgi = DxgiCapture::new(current_monitor)?;
-        let _ = app.emit("capture-mode", "dxgi");
+        let mut reported_backend = dxgi.backend();
+        publish_mode(&app, reported_backend);
         let region = MinimapRegion::for_resolution(dxgi.width(), dxgi.height());
         crate::log::error(&format!(
             "[capture] DXGI active — monitor {}, {}x{}, minimap {}px @ ({},{})",
@@ -391,10 +551,12 @@ mod backend {
         let mut warned_rect_geometry = false;
 
         loop {
-            if !crate::runtime::gmad_entitled() {
-                std::thread::sleep(Duration::from_millis(250));
-                continue;
+            match retry.try_recv() {
+                Ok(()) => return Ok(CaptureExit::RetryRequested),
+                Err(TryRecvError::Disconnected) => return Ok(CaptureExit::SenderClosed),
+                Err(TryRecvError::Empty) => {}
             }
+
             // Match boundary → rebuild Sentry/Motion/Signal before this tick's
             // frame can fold into last match's tracks. Ahead of the draft and
             // in-game gates so state is already clean when the horn lands.
@@ -435,9 +597,8 @@ mod backend {
                                 ));
                             }
                             Err(e) => {
-                                crate::log::error(&format!(
-                                    "[capture] monitor switch to {idx} failed, keeping \
-                                     monitor {current_monitor}: {e}"
+                                return Err(format!(
+                                    "monitor switch to {idx} failed; old output was dropped: {e}"
                                 ));
                             }
                         }
@@ -450,14 +611,17 @@ mod backend {
             // (`roster().is_none()`), then idles. `in_game()` is false here, so
             // this is the only place the loop wakes during the draft.
             if crate::runtime::in_draft() {
-                if crate::runtime::roster().is_none() {
+                let session = crate::runtime::match_session_snapshot();
+                if crate::runtime::is_current_draft_session(session.session_epoch)
+                    && crate::runtime::roster().is_none()
+                {
                     // CR-live-probe-rect: acquire only the bounding strip of the
                     // 10 portrait boxes instead of the full desktop — `DraftRegion`
                     // guarantees every box (and therefore the strip bounding them)
                     // sits on-screen, so no geometry fallback is needed here.
                     let (bx, by, bw, bh) = draft_bounding_rect(&state.draft_region.boxes);
                     if let Some((strip, sw, sh)) = dxgi.acquire_rect(bx, by, bw, bh) {
-                        process_draft_frame(&mut state, &strip, sw, sh, bx, by);
+                        process_draft_frame(&mut state, &strip, sw, sh, bx, by, &session);
                     }
                 }
                 // Same reasoning as the not-in-game branch below: the minimap
@@ -478,6 +642,13 @@ mod backend {
                 continue;
             }
 
+            state.sync_match_epoch();
+            let session = crate::runtime::match_session_snapshot();
+            if !crate::runtime::is_current_capture_session(session.session_epoch) {
+                std::thread::sleep(Duration::from_millis(250));
+                continue;
+            }
+
             // CR-live-probe-rect: calibration/QA mode still needs the WHOLE
             // desktop (`calibration::push_full_bgra` feeds the calibration
             // overlay evidence buffer with full-screen frames), so that path
@@ -488,18 +659,31 @@ mod backend {
                 if let Some((full, fw, fh)) = dxgi.acquire_frame() {
                     if state.last_calib.elapsed().as_millis() >= 110 {
                         state.last_calib = Instant::now();
-                        crate::calibration::push_full_bgra(&full, fw, fh);
+                        if crate::runtime::is_current_capture_session(session.session_epoch) {
+                            crate::calibration::push_full_bgra(&full, fw, fh);
+                        }
                     }
                     if let Some((cropped, w, h)) = crop_bgra(&full, fw, fh, &state.region) {
-                        process_frame(&mut state, cropped, w, h);
+                        process_frame(&mut state, cropped, w, h, &session, None);
                     }
                 }
             } else {
                 let r = state.region;
                 let (sw, sh) = (dxgi.width(), dxgi.height());
                 let cropped_frame = if rect_is_on_screen(r.x, r.y, r.side, r.side, sw, sh) {
-                    dxgi.acquire_rect(r.x, r.y, r.side, r.side)
-                        .map(|(bytes, w, h)| (bytes, w as usize, h as usize))
+                    let request =
+                        CaptureRoi::new(CaptureRoiKind::Minimap, r.x, r.y, r.side, r.side);
+                    dxgi.acquire_regions(session.session_epoch, &[request])
+                        .and_then(|bundle| {
+                            let metadata = bundle.metadata;
+                            let region = bundle.into_region(CaptureRoiKind::Minimap)?;
+                            Some((
+                                region.bgra,
+                                region.rect.width as usize,
+                                region.rect.height as usize,
+                                Some(metadata),
+                            ))
+                        })
                 } else {
                     // Defensive fallback (should not happen in practice —
                     // `MinimapRegion` is always constructed to fit on screen —
@@ -520,10 +704,23 @@ mod backend {
                     }
                     dxgi.acquire_frame()
                         .and_then(|(full, fw, fh)| crop_bgra(&full, fw, fh, &r))
+                        .map(|(bytes, w, h)| (bytes, w, h, None))
                 };
-                if let Some((cropped, w, h)) = cropped_frame {
-                    process_frame(&mut state, cropped, w, h);
+                if let Some((cropped, w, h, frame_metadata)) = cropped_frame {
+                    process_frame(&mut state, cropped, w, h, &session, frame_metadata);
                 }
+            }
+
+            let backend = dxgi.backend();
+            if backend != reported_backend {
+                reported_backend = backend;
+                publish_mode(&state.app, backend);
+            }
+            if state.last_frame_ok.elapsed() >= Duration::from_millis(CAPTURE_RECOVERY_MS) {
+                return Err(format!(
+                    "no minimap frame for {} ms during a live capture session",
+                    state.last_frame_ok.elapsed().as_millis()
+                ));
             }
             std::thread::sleep(Duration::from_millis(select_interval(&state)));
         }
@@ -629,8 +826,12 @@ mod backend {
         sh: u32,
         strip_x: u32,
         strip_y: u32,
+        session: &crate::runtime::MatchSessionSnapshot,
     ) {
-        if !state.draft.is_active() {
+        state.sync_match_epoch();
+        if !state.draft.is_active()
+            || !crate::runtime::is_current_draft_session(session.session_epoch)
+        {
             return;
         }
         let mut radiant = Vec::with_capacity(5);
@@ -656,10 +857,20 @@ mod backend {
             crate::log::error(&format!(
                 "[draft] roster read — radiant {radiant:?} dire {dire:?}"
             ));
-            crate::runtime::set_roster(radiant.clone(), dire.clone());
-            let _ = state
-                .app
-                .emit("draft-roster", crate::runtime::Roster { radiant, dire });
+            if !crate::runtime::set_roster_for_draft_session(
+                session.session_epoch,
+                radiant.clone(),
+                dire.clone(),
+            ) {
+                return;
+            }
+            if crate::runtime::is_current_draft_session(session.session_epoch) {
+                let event = crate::runtime::MatchSessionEvent::new(
+                    crate::runtime::Roster { radiant, dire },
+                    session,
+                );
+                let _ = state.app.emit("draft-roster", event);
+            }
         }
     }
 
@@ -728,7 +939,18 @@ mod backend {
     /// `acquire_frame` in calibration/QA mode (which separately feeds
     /// `calibration::push_full_bgra` from the full buffer it already has).
     /// Downstream logic is otherwise identical to the old WGC `on_frame_arrived`.
-    fn process_frame(state: &mut CaptureState, cropped: Vec<u8>, w: usize, h: usize) {
+    fn process_frame(
+        state: &mut CaptureState,
+        cropped: Vec<u8>,
+        w: usize,
+        h: usize,
+        session: &crate::runtime::MatchSessionSnapshot,
+        frame_metadata: Option<FrameCaptureMetadata>,
+    ) {
+        state.sync_match_epoch();
+        if !crate::runtime::is_current_capture_session(session.session_epoch) {
+            return;
+        }
         let work_start = Instant::now();
         // A frame reached the pipeline — this is the only thing that resets the
         // staleness clock `sensor-health` reports.
@@ -761,17 +983,23 @@ mod backend {
             // on who's actually in the match (runtime is the single source of
             // truth; cleared at match start). Best-effort, dedup handled inside.
             for d in &detections {
-                crate::runtime::add_known_enemy(&d.name);
+                if !crate::runtime::add_known_enemy_for_session(session.session_epoch, &d.name) {
+                    return;
+                }
             }
 
             // G-Sentry: flag enemies missing >5s (edge-triggered).
             for em in state.sentry.update(&detections, &r, now_ms) {
-                crate::log::note_event(crate::log::enemy_missing_record(
-                    &em.hero,
-                    em.missing_for_ms,
-                    em.last_pos,
-                ));
-                if crate::calibration::is_enabled() {
+                if !crate::runtime::is_current_capture_session(session.session_epoch) {
+                    return;
+                }
+                crate::log::note_event_for_session(
+                    session.session_epoch,
+                    crate::log::enemy_missing_record(&em.hero, em.missing_for_ms, em.last_pos),
+                );
+                if crate::calibration::is_enabled()
+                    && crate::runtime::is_current_capture_session(session.session_epoch)
+                {
                     crate::calibration::screenshot(
                         "enemy-missing",
                         serde_json::json!({
@@ -779,19 +1007,23 @@ mod backend {
                         }),
                     );
                 }
-                let _ = state.app.emit("enemy-missing", &em);
+                if crate::runtime::is_current_capture_session(session.session_epoch) {
+                    let event = crate::runtime::MatchSessionEvent::new(&em, session);
+                    let _ = state.app.emit("enemy-missing", event);
+                }
             }
 
             // G-Motion: history + gank-risk over currently-missing enemies.
             state.motion.record(&detections, &r, now_ms);
-            // Audit H3: discount enemies we know are dead. Read fresh each
-            // frame — the pool is written on the GSI thread and expires on
-            // wall-clock, while `now_ms` here is this thread's own monotonic
-            // origin, so the two clocks must not be mixed (hence the
-            // no-argument accessor).
-            state
-                .motion
-                .set_dead_enemies(crate::runtime::dead_enemy_count());
+            // A score-based death count is only authoritative while the last
+            // validated GSI source remains fresh. On feed loss, keep the CV-only
+            // path running but stop using an old own-team score to discount
+            // missing enemies; unknown deaths stay in the risk set.
+            let dead_enemies = crate::runtime::fresh_dead_enemy_count(
+                crate::runtime::gsi_is_fresh(),
+                crate::runtime::dead_enemy_count(),
+            );
+            state.motion.set_dead_enemies(dead_enemies);
             let missing = state.sentry.missing(now_ms);
             let risk = state.motion.assess(&missing, now_ms);
 
@@ -809,7 +1041,10 @@ mod backend {
                 risk.probability,
             ) {
                 state.last_risk_trace = Instant::now();
-                crate::log::note_event(crate::log::risk_trace_record(risk.probability, &missing));
+                crate::log::note_event_for_session(
+                    session.session_epoch,
+                    crate::log::risk_trace_record(risk.probability, &missing),
+                );
             }
 
             // G-Signal: edge-triggered warning + Belief Revision, voiced now (only
@@ -828,18 +1063,22 @@ mod backend {
                 match state.signal.evaluate(&risk) {
                     SignalEvent::Alert(alert) => {
                         if armed {
+                            if !crate::runtime::is_current_capture_session(session.session_epoch) {
+                                return;
+                            }
                             crate::tts::voice_interrupt("gank", GANK_LINE);
                             // CR-011 §B utterance ledger — after the voice
                             // dispatch above, never before, so it can't add
                             // latency to the G-Signal path (CLAUDE.md ≤300ms).
-                            crate::utterance::emit(
+                            crate::utterance::emit_for_session(
                                 &state.app,
-                                crate::utterance::UtterancePayload::new(
+                                crate::utterance::UtterancePayload::new_for_session(
                                     "signal",
                                     "line",
                                     GANK_LINE,
                                     None,
                                     None,
+                                    session,
                                 ),
                             );
                         }
@@ -847,7 +1086,10 @@ mod backend {
                         // was actually voiced — in the silent arm GANK_LINE is
                         // suppressed, so recording it would falsely log it as
                         // spoken. The gank_signal log below stays unconditional.
-                        if armed && crate::calibration::is_enabled() {
+                        if armed
+                            && crate::calibration::is_enabled()
+                            && crate::runtime::is_current_capture_session(session.session_epoch)
+                        {
                             crate::calibration::record(
                                 "gank",
                                 Some(GANK_LINE),
@@ -858,35 +1100,46 @@ mod backend {
                                 }),
                             );
                         }
-                        crate::log::note_event(crate::log::gank_signal_record(
-                            alert.probability,
-                            &alert.missing_heroes,
-                            alert.eta_ms,
-                            armed,
-                        ));
-                        if armed {
-                            let _ = state.app.emit("gank-alert", &alert);
+                        crate::log::note_event_for_session(
+                            session.session_epoch,
+                            crate::log::gank_signal_record(
+                                alert.probability,
+                                &alert.missing_heroes,
+                                alert.eta_ms,
+                                armed,
+                            ),
+                        );
+                        if armed && crate::runtime::is_current_capture_session(session.session_epoch) {
+                            let event = crate::runtime::MatchSessionEvent::new(&alert, session);
+                            let _ = state.app.emit("gank-alert", event);
                         }
                     }
                     SignalEvent::Revision => {
                         if armed {
+                            if !crate::runtime::is_current_capture_session(session.session_epoch) {
+                                return;
+                            }
                             crate::tts::voice_interrupt("revision", REVISION_LINE);
                             // Belief Revision — retracted carries the earlier
                             // GANK_LINE warning being struck through.
-                            crate::utterance::emit(
+                            crate::utterance::emit_for_session(
                                 &state.app,
-                                crate::utterance::UtterancePayload::new(
+                                crate::utterance::UtterancePayload::new_for_session(
                                     "signal",
                                     "revision",
                                     REVISION_LINE,
                                     Some(GANK_LINE.to_string()),
                                     None,
+                                    session,
                                 ),
                             );
                         }
-                        crate::log::note_event(crate::log::gank_revision_record());
-                        if armed {
-                            let _ = state.app.emit("gank-clear", ());
+                        crate::log::note_event_for_session(
+                            session.session_epoch,
+                            crate::log::gank_revision_record(),
+                        );
+                        if armed && crate::runtime::is_current_capture_session(session.session_epoch) {
+                            let _ = state.app.emit("gank-clear", session);
                         }
                     }
                     SignalEvent::None => {}
@@ -903,8 +1156,13 @@ mod backend {
                     candidates,
                     detections,
                     classifier: state.detector.is_active(),
+                    capture_frame_id: frame_metadata.map(|metadata| metadata.frame_id),
+                    capture_acquired_at_ms: frame_metadata.map(|metadata| metadata.acquired_at_ms),
                 };
-                let _ = state.app.emit("minimap-cv", payload);
+                if crate::runtime::is_current_capture_session(session.session_epoch) {
+                    let event = crate::runtime::MatchSessionEvent::new(payload, session);
+                    let _ = state.app.emit("minimap-cv", event);
+                }
             }
 
             // Live minimap mirror for the Command Deck (throttled ≈6.7 Hz). Encodes
@@ -913,7 +1171,11 @@ mod backend {
             if state.last_frame_emit.elapsed().as_millis() >= MINIMAP_FRAME_INTERVAL_MS {
                 state.last_frame_emit = Instant::now();
                 if let Some(image) = encode_minimap_dataurl(&f.bgra, f.width, f.height) {
-                    let _ = state.app.emit("minimap-frame", MinimapFrame { image, region: r });
+                    if crate::runtime::is_current_capture_session(session.session_epoch) {
+                        let payload = MinimapFrame { image, region: r };
+                        let event = crate::runtime::MatchSessionEvent::new(payload, session);
+                        let _ = state.app.emit("minimap-frame", event);
+                    }
                 }
             }
         }
@@ -962,6 +1224,15 @@ mod backend {
         use crate::audio::{priority_for_event, should_accept_incoming, Priority};
         use crate::motion::GankRisk;
         use std::path::Path;
+
+        #[test]
+        fn retry_requests_coalesce_without_spawning_another_worker() {
+            let (sender, receiver) = mpsc::sync_channel(1);
+            assert!(queue_retry(&sender).is_ok());
+            assert!(queue_retry(&sender).is_ok());
+            assert!(receiver.try_recv().is_ok());
+            assert!(receiver.try_recv().is_err());
+        }
 
         fn synthetic_frame(n: usize) -> Frame {
             let (w, h, icon) = (256usize, 256usize, 20usize);

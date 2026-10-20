@@ -1,13 +1,13 @@
 {
   "schema_version": "1.0.0",
   "doc_id": "execution-dag-gap-closure",
-  "version": "0.1.1",
-  "updated": "2026-10-01",
+  "version": "0.1.2",
+  "updated": "2026-10-20",
   "source_baseline": {
     "remote": "origin",
     "branch": "main",
-    "commit": "2d969ac643533b4b8e24494356da2e818eac874f",
-    "role": "immutable application and audit baseline for every node unless a descendant SHA is separately recorded"
+    "commit": "613ca3aebad343444ccb5e127063ab831543c7f4",
+    "role": "Canonical main reference for the authority correction only; the October 1 gap, release, feature, and environment findings remain a historical snapshot and are not current implementation evidence."
   },
   "excluded_source_trees": [
     {
@@ -17,14 +17,15 @@
     }
   ],
   "execution_model": {
-    "worker_model": "gpt-6-luna",
-    "reasoning_effort": "max",
-    "worktree_policy": "one lane per isolated worktree outside the repository",
+    "worker_model": "unassigned",
+    "reasoning_effort": "not-applicable",
+    "worktree_policy": "Historical proposal only; no workers or worktrees are assigned.",
     "worker_return_format": "TASK <id> | STATUS | evidence",
     "root_owns_integration_and_state": true,
-    "state_contract": "The JSON defines dependencies, ownership, acceptance, and initial node statuses. Runtime status overrides and review gates are root-owned in runtime_state_ref; dispatch requires verified dependencies and recorded approvals. Root is the current orchestrator; model/reasoning fields name the supporting worker configuration, not the root model. Required prerequisite_gates also resolve through prerequisite_gate_catalog and the runtime state; missing or unverified gate blocks dispatch even when graph dependencies pass.",
+    "state_contract": "This JSON preserves a historical candidate plan. No task is dispatched or approved by it. Every source baseline, owner decision, review, write set, and acceptance result must be refreshed before a future task is authorized.",
     "max_concurrent_tasks_per_lane": 1,
-    "path_lease_rule": "Root permits one active task per lane and no concurrent overlapping write leases across lanes; a shared-file discovery pauses dispatch for reassignment."
+    "path_lease_rule": "Root permits one active task per lane and no concurrent overlapping write leases across lanes; a shared-file discovery pauses dispatch for reassignment.",
+    "dispatch_authorized": false
   },
   "initiative": {
     "title": "G-Maiden gap closure execution DAG",
@@ -55,32 +56,20 @@
       "DEFERRED"
     ],
     "status_semantics": {
-      "READY": "Local work can start within the node's read/write boundary.",
+      "READY": "Candidate only; work is not assigned or authorized by this DAG.",
       "REVIEW": "Evidence or a decision record is submitted for review; this is not acceptance.",
       "VERIFIED": "This node's listed acceptance criteria passed at its recorded source/evidence revision.",
       "BLOCKED": "A named prerequisite is missing; no pass is implied.",
-      "DEFERRED": "The Product Owner explicitly moved the scope to a later milestone; it is not implemented or closed."
-    }
+      "DEFERRED": "The Boss explicitly moved scope to a later milestone; this does not mean implemented or closed."
+    },
+    "dispatch_status": "BLOCKED_OWNER_REVIEW"
   },
   "authority": {
-    "product_owner_agent": {
-      "delegated_scope": "Product scope, priority, local acceptance contracts, and recorded D1-D9 choices.",
-      "does_not_authorize": [
-        "production/provider settings",
-        "resuming Supabase",
-        "secrets or account remediation",
-        "migrations or deployment",
-        "legal approval",
-        "paid-provider activation",
-        "artifact signing or promotion",
-        "merge or release"
-      ]
-    },
+    "owner_decisions": "CR-034 D1-D3 remain Boss-owned PENDING and D4 is DONE in current main. D5-D9 are unapproved proposals. No Product Owner delegation or worker assignment is established by this record.",
     "root_orchestrator": [
-      "assign workers and disjoint worktrees",
-      "own shared task state and CR-034 state-board reconciliation",
-      "own generated doc-graph, ledger, index, and orphan-report outputs",
-      "integrate lanes and preserve evidence-class boundaries"
+      "No dispatch authority is granted by this historical candidate DAG.",
+      "Generated documentation outputs are updated only within a separately authorized task.",
+      "No product, security, privacy, provider, production, release, or merge decision is implied."
     ],
     "external_owner_gates": [
       "project resume and hosted provider/Auth configuration",
@@ -94,26 +83,26 @@
   "current_real_state": {
     "as_of": "2026-10-01",
     "po_record": {
-      "state": "delegated decisions D1-D9 recorded; root review/integration remains a separate task",
-      "file": "F:/gm-gap-execution/docs/operations/gap-closure-product-owner-decisions.md",
-      "sha256": "4b47c16c287bfb6e3caffd7a40015ab0048d56b0633570bcf359105cbc889d1f",
+      "state": "UNVERIFIED historical delegation claim; do not treat D1-D9 as decisions or approvals.",
+      "file": "docs/operations/gap-closure-product-owner-decisions.md",
+      "sha256": "98d261e581b047d1e80ec5de39aac43cdc6e345b5cb168e7a40c6d6883928ec6",
       "decisions": {
-        "D1": "Option B: preserve AAL2 until TOTP enrollment, step-up, and end-to-end UAT pass; TOTP contract/enrollment does not depend on non-dispatchable T1.",
-        "D2": "Google-only primary policy; exact current-session proof is BLOCKED_PROJECT_PAUSED and SESSION_METHOD_EVIDENCE_REQUIRED. No guessed claim interpretation, linked-identity fallback, provider mutation, or legacy-account action.",
-        "D3": "Option C: live-session checks cover mint-gid, check-gmad-queue, accept-closed-beta-terms, get-gmad-desktop-entitlement, and request-gmad-download; fail closed if the dependency is unavailable.",
-        "D4": "Option B: do not build /ops in this wave; remove the shipped-UI claim and treat deployed route status as unverified.",
-        "D5": "G-Orchestra remains local-only; contract requires explicit loopback bind, per-process unguessable mutation capability, and Origin/Host checks.",
-        "D6": "Describe G-Motion as an off-map/heading heuristic risk indicator; no calibrated probability or route model claim. Fit results are not live adopted parameters.",
-        "D7": "Sequence Memory, then Voice, then Coach behind privacy contracts. Memory and raw G-Log stay local; Voice is explicit PTT with no continuous microphone capture; Coach is post-match and local. Cloud context egress requires a separate decision.",
-        "D8": "Prepare path-to-test CI contract; no workflow edit authorized by the decision record. Preserve strict-graph baseline and do not substitute the unavailable semantic model.",
-        "D9": "No version bump, tag, candidate, release, or channel promotion during gap closure."
+        "D1": "PENDING; Boss-owned in current canonical CR-034 plan.",
+        "D2": "PENDING; Boss-owned in current canonical CR-034 plan.",
+        "D3": "PENDING; Boss-owned in current canonical CR-034 plan.",
+        "D4": "DONE in current canonical CR-034 plan; no operator UI is in current product scope.",
+        "D5": "Unapproved proposal; owner/security review required.",
+        "D6": "Unapproved capability-claim proposal; reconcile against current source.",
+        "D7": "Unapproved privacy/product proposal; owner and Privacy Owner review required.",
+        "D8": "Unapproved CI planning proposal; repository-owner review required before workflow changes.",
+        "D9": "Follow current CLAUDE.md release policy; no new release decision is made here."
       }
     },
     "cr034_state": {
-      "root_integrated_document": "F:/gm-gap-execution/docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
-      "version": "0.7.0b",
-      "sha256": "10228c9a318deed4f4a8d65d40bab19f150751c29b431b41b5d7894c9cb38573",
-      "D1_D4": "recorded DONE as delegated decisions, not implementation completion",
+      "root_integrated_document": "docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
+      "version": "0.6.3b",
+      "sha256": "7e8bbe741db17563f4ed5c1222637631cf598d96ce236ed1bf9de023f1e135ea",
+      "D1_D4": "D1-D3 are Boss-owned PENDING decisions; D4 is DONE in the canonical plan.",
       "T1": "TODO / non-dispatchable because it applies only to D1 option A",
       "T6": "TODO; local contract under D1=B, implementation after approved enrollment/security contract; hosted acceptance requires T4 and healthy project. No T1 dependency.",
       "T10_T11": "IN-PROGRESS; native/session UAT and Code-Doc verdict remain pending"
@@ -176,7 +165,9 @@
         "RELEASED"
       ],
       "rule": "A result in one evidence class does not prove a later class."
-    }
+    },
+    "snapshot_status": "Historical 2026-10-01 snapshot; not revalidated against the current main tree.",
+    "authority_correction": ".brain/execution/gap-closure-2026-10-01/authority-correction.json"
   },
   "root_shared_write_paths": [
     "src-tauri/src/main.rs",
@@ -201,9 +192,9 @@
   "lanes": [
     {
       "id": "iam",
-      "worktree": "F:/gm-gap-iam",
-      "branch": "wip/gap-iam",
-      "owner": "Luna Max IAM lane",
+      "worktree": null,
+      "branch": null,
+      "owner": "Unassigned; historical worker proposal only.",
       "write_paths": [
         "src/src/auth.ts",
         "src/src/securitySession.ts",
@@ -218,35 +209,44 @@
         "supabase/functions/get-gmad-desktop-entitlement/index.ts",
         "supabase/functions/request-gmad-download/index.ts"
       ],
-      "worktree_state": "PLANNED_NOT_CREATED"
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
+      "historical_owner_claim": "Luna Max IAM lane",
+      "historical_worktree_claim": "F:/gm-gap-iam",
+      "historical_branch_claim": "wip/gap-iam"
     },
     {
       "id": "orchestra",
-      "worktree": "F:/gm-gap-orchestra",
-      "branch": "wip/gap-orchestra-http-boundary",
-      "owner": "Luna Max Orchestra lane",
+      "worktree": null,
+      "branch": null,
+      "owner": "Unassigned; historical worker proposal only.",
       "write_paths": [
         "orchestration/server.mjs",
         "orchestration/tests/server-security.test.mjs"
       ],
-      "worktree_state": "PLANNED_NOT_CREATED"
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
+      "historical_owner_claim": "Luna Max Orchestra lane",
+      "historical_worktree_claim": "F:/gm-gap-orchestra",
+      "historical_branch_claim": "wip/gap-orchestra-http-boundary"
     },
     {
       "id": "landing-docs",
-      "worktree": "F:/gm-gap-route-docs",
-      "branch": "docs/gap-ops-claim",
-      "owner": "Luna Max docs lane",
+      "worktree": null,
+      "branch": null,
+      "owner": "Unassigned; historical worker proposal only.",
       "write_paths": [
         "docs/change request/CR-018-ops-route-spa-rewrite.md",
         "docs/operations/gmaiden-closed-beta-release-playbook.md"
       ],
-      "worktree_state": "PLANNED_NOT_CREATED"
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
+      "historical_owner_claim": "Luna Max docs lane",
+      "historical_worktree_claim": "F:/gm-gap-route-docs",
+      "historical_branch_claim": "docs/gap-ops-claim"
     },
     {
       "id": "ci",
-      "worktree": "F:/gm-gap-ci",
-      "branch": "wip/gap-ci-coverage",
-      "owner": "Luna Max CI lane",
+      "worktree": null,
+      "branch": null,
+      "owner": "Unassigned; historical worker proposal only.",
       "write_paths": [
         ".github/workflows/ci.yml",
         ".github/workflows/landing-ci.yml",
@@ -254,50 +254,62 @@
         ".github/workflows/sql-rls-ci.yml",
         ".github/workflows/orchestra-ci.yml"
       ],
-      "worktree_state": "PLANNED_NOT_CREATED"
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
+      "historical_owner_claim": "Luna Max CI lane",
+      "historical_worktree_claim": "F:/gm-gap-ci",
+      "historical_branch_claim": "wip/gap-ci-coverage"
     },
     {
       "id": "release",
-      "worktree": "F:/gm-gap-release-evidence",
-      "branch": "wip/gap-release-evidence",
-      "owner": "Luna Max release-evidence lane",
+      "worktree": null,
+      "branch": null,
+      "owner": "Unassigned; historical worker proposal only.",
       "write_paths": [],
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "read_paths": [
         "release/channels/dev.json",
         "release/channels/closed-beta.json",
         "release/channels/stable.json"
-      ]
+      ],
+      "historical_owner_claim": "Luna Max release-evidence lane",
+      "historical_worktree_claim": "F:/gm-gap-release-evidence",
+      "historical_branch_claim": "wip/gap-release-evidence"
     },
     {
       "id": "lite-cv",
-      "worktree": "F:/gm-gap-lite-cv",
-      "branch": "wip/gap-lite-cv",
-      "owner": "Luna Max runtime-CV lane",
+      "worktree": null,
+      "branch": null,
+      "owner": "Unassigned; historical worker proposal only.",
       "write_paths": [
         "src-tauri/src/capture.rs",
         "src-tauri/src/cv/",
         "src-tauri/src/sentry.rs",
         "src-tauri/src/signal.rs"
       ],
-      "worktree_state": "PLANNED_NOT_CREATED"
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
+      "historical_owner_claim": "Luna Max runtime-CV lane",
+      "historical_worktree_claim": "F:/gm-gap-lite-cv",
+      "historical_branch_claim": "wip/gap-lite-cv"
     },
     {
       "id": "motion",
-      "worktree": "F:/gm-gap-motion",
-      "branch": "wip/gap-motion-fit",
-      "owner": "Luna Max Motion lane",
+      "worktree": null,
+      "branch": null,
+      "owner": "Unassigned; historical worker proposal only.",
       "write_paths": [
         "src-tauri/src/motion.rs",
         "tests/perf/src/bin/replay_fit.rs"
       ],
-      "worktree_state": "PLANNED_NOT_CREATED"
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
+      "historical_owner_claim": "Luna Max Motion lane",
+      "historical_worktree_claim": "F:/gm-gap-motion",
+      "historical_branch_claim": "wip/gap-motion-fit"
     },
     {
       "id": "master",
-      "worktree": "F:/gm-gap-master-data",
-      "branch": "wip/gap-master-data",
-      "owner": "Luna Max G-Master lane",
+      "worktree": null,
+      "branch": null,
+      "owner": "Unassigned; historical worker proposal only.",
       "write_paths": [
         "src-tauri/src/master.rs",
         "src-tauri/src/slm.rs",
@@ -306,327 +318,406 @@
         "src-tauri/src/items.rs",
         "src-tauri/src/counter_advice.rs"
       ],
-      "worktree_state": "PLANNED_NOT_CREATED"
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
+      "historical_owner_claim": "Luna Max G-Master lane",
+      "historical_worktree_claim": "F:/gm-gap-master-data",
+      "historical_branch_claim": "wip/gap-master-data"
     },
     {
       "id": "memory",
-      "worktree": "F:/gm-gap-memory",
-      "branch": "wip/gap-memory",
-      "owner": "Luna Max Memory lane",
+      "worktree": null,
+      "branch": null,
+      "owner": "Unassigned; historical worker proposal only.",
       "write_paths": [
         "src-tauri/src/memory.rs",
         "src-tauri/src/memory/"
       ],
-      "worktree_state": "PLANNED_NOT_CREATED"
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
+      "historical_owner_claim": "Luna Max Memory lane",
+      "historical_worktree_claim": "F:/gm-gap-memory",
+      "historical_branch_claim": "wip/gap-memory"
     },
     {
       "id": "voice",
-      "worktree": "F:/gm-gap-voice",
-      "branch": "wip/gap-voice",
-      "owner": "Luna Max Voice lane",
+      "worktree": null,
+      "branch": null,
+      "owner": "Unassigned; historical worker proposal only.",
       "write_paths": [
         "src-tauri/src/voice_api.rs",
         "src-tauri/src/tts.rs",
         "src-tauri/src/voice_input/"
       ],
-      "worktree_state": "PLANNED_NOT_CREATED"
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
+      "historical_owner_claim": "Luna Max Voice lane",
+      "historical_worktree_claim": "F:/gm-gap-voice",
+      "historical_branch_claim": "wip/gap-voice"
     },
     {
       "id": "coach",
-      "worktree": "F:/gm-gap-coach",
-      "branch": "wip/gap-coach",
-      "owner": "Luna Max Coach lane",
+      "worktree": null,
+      "branch": null,
+      "owner": "Unassigned; historical worker proposal only.",
       "write_paths": [
         "src/src/live/coach.ts",
         "src/src/__tests__/coach.test.ts"
       ],
-      "worktree_state": "PLANNED_NOT_CREATED"
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
+      "historical_owner_claim": "Luna Max Coach lane",
+      "historical_worktree_claim": "F:/gm-gap-coach",
+      "historical_branch_claim": "wip/gap-coach"
     },
     {
       "id": "stream",
-      "worktree": "F:/gm-gap-stream",
-      "branch": "wip/gap-stream",
-      "owner": "Luna Max Stream lane",
+      "worktree": null,
+      "branch": null,
+      "owner": "Unassigned; historical worker proposal only.",
       "write_paths": [
         "src/src/stream/",
         "src-tauri/src/stream.rs",
         "src-tauri/src/stream/"
       ],
-      "worktree_state": "PLANNED_NOT_CREATED"
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
+      "historical_owner_claim": "Luna Max Stream lane",
+      "historical_worktree_claim": "F:/gm-gap-stream",
+      "historical_branch_claim": "wip/gap-stream"
     },
     {
       "id": "billing",
-      "worktree": "F:/gm-gap-economy",
-      "branch": "wip/gap-economy",
-      "owner": "Luna Max economy lane",
+      "worktree": null,
+      "branch": null,
+      "owner": "Unassigned; historical worker proposal only.",
       "write_paths": [
         "supabase/functions/match-share-submit/index.ts",
         "supabase/functions/topup-create/index.ts",
         "supabase/functions/payment-webhook/index.ts",
         "supabase/tests/cr003_wallet_billing.sql"
       ],
-      "worktree_state": "PLANNED_NOT_CREATED"
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
+      "historical_owner_claim": "Luna Max economy lane",
+      "historical_worktree_claim": "F:/gm-gap-economy",
+      "historical_branch_claim": "wip/gap-economy"
     },
     {
       "id": "root-evidence",
       "owner": "root-orchestrator",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-execution",
-      "worktree_state": "CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_worktree_claim": "F:/gm-gap-execution",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "product-owner",
-      "owner": "delegated Product Owner Agent; decision scope only",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-po",
-      "worktree_state": "CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "delegated Product Owner Agent; decision scope only",
+      "historical_worktree_claim": "F:/gm-gap-po",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "root-browser-evidence",
       "owner": "human service owner; browser observation owned by root",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-execution",
-      "worktree_state": "CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_worktree_claim": "F:/gm-gap-execution",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "auth-evidence",
-      "owner": "Luna Max auth-evidence lane",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-auth-evidence",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/operations/evidence/gap-auth-local.md"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "Luna Max auth-evidence lane",
+      "historical_worktree_claim": "F:/gm-gap-auth-evidence",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "auth-uat",
-      "owner": "human test-account owner with Luna Max recording sanitized evidence",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-auth-uat",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "human test-account owner with Luna Max recording sanitized evidence",
+      "historical_worktree_claim": "F:/gm-gap-auth-uat",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "iam-contract",
-      "owner": "Luna Max IAM lane with delegated Product Owner review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-iam-contract",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/operations/contracts/gap-iam-contract.md"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "Luna Max IAM lane with delegated Product Owner review",
+      "historical_worktree_claim": "F:/gm-gap-iam-contract",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "iam-uat",
       "owner": "human security/service owner with root evidence custody",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-iam-uat",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_worktree_claim": "F:/gm-gap-iam-uat",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "orchestra-contract",
-      "owner": "Luna Max Orchestra lane with security-owner review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-orchestra-contract",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/operations/contracts/gap-orch-contract.md"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "Luna Max Orchestra lane with security-owner review",
+      "historical_worktree_claim": "F:/gm-gap-orchestra-contract",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "landing-routes",
       "owner": "future Product Owner and security-owner review",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-landing-routes",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "landing/src/main.tsx",
         "landing/vercel.json",
         "landing/src/OpsPage.tsx"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_worktree_claim": "F:/gm-gap-landing-routes",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "ci-contract",
-      "owner": "Luna Max CI lane with root review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-ci-contract",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/operations/evidence/gap-ci-matrix.md"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "Luna Max CI lane with root review",
+      "historical_worktree_claim": "F:/gm-gap-ci-contract",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "release-evidence",
-      "owner": "Luna Max release-evidence lane with QA/release-owner review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-release-evidence",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/operations/evidence/gap-release-matrix.md",
         "docs/operations/evidence/gap-manifest-review.md"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "Luna Max release-evidence lane with QA/release-owner review",
+      "historical_worktree_claim": "F:/gm-gap-release-evidence",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "release-uat",
-      "owner": "human QA/release owner with Luna Max evidence preparation",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-release-uat",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "human QA/release owner with Luna Max evidence preparation",
+      "historical_worktree_claim": "F:/gm-gap-release-uat",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "lite-contract",
-      "owner": "Luna Max runtime-CV lane with Product Owner review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-lite-contract",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/operations/contracts/gap-lite-contract.md"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "Luna Max runtime-CV lane with Product Owner review",
+      "historical_worktree_claim": "F:/gm-gap-lite-contract",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "motion-contract",
-      "owner": "Luna Max Motion lane with Product Owner review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-motion-contract",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/operations/contracts/gap-motion-contract.md"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "Luna Max Motion lane with Product Owner review",
+      "historical_worktree_claim": "F:/gm-gap-motion-contract",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "master-contract",
-      "owner": "Luna Max G-Master lane with Product Owner review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-master-contract",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/operations/contracts/gap-master-contract.md"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "Luna Max G-Master lane with Product Owner review",
+      "historical_worktree_claim": "F:/gm-gap-master-contract",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "memory-contract",
-      "owner": "Luna Max Memory lane with Product Owner/privacy review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-memory-contract",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/operations/contracts/gap-memory-contract.md"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "Luna Max Memory lane with Product Owner/privacy review",
+      "historical_worktree_claim": "F:/gm-gap-memory-contract",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "voice-contract",
-      "owner": "Luna Max Voice lane with Product Owner/privacy review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-voice-contract",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/operations/contracts/gap-voice-contract.md"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "Luna Max Voice lane with Product Owner/privacy review",
+      "historical_worktree_claim": "F:/gm-gap-voice-contract",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "coach-contract",
-      "owner": "Luna Max Coach lane with Product Owner/privacy review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-coach-contract",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/operations/contracts/gap-coach-contract.md"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "Luna Max Coach lane with Product Owner/privacy review",
+      "historical_worktree_claim": "F:/gm-gap-coach-contract",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "stream-contract",
-      "owner": "Luna Max Stream lane with Product Owner/privacy review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-stream-contract",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/operations/contracts/gap-stream-contract.md"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "Luna Max Stream lane with Product Owner/privacy review",
+      "historical_worktree_claim": "F:/gm-gap-stream-contract",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "billing-evidence",
-      "owner": "Luna Max economy lane; no provider activity",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-billing-evidence",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/operations/evidence/gap-billing-local.md"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "Luna Max economy lane; no provider activity",
+      "historical_worktree_claim": "F:/gm-gap-billing-evidence",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "billing-live",
       "owner": "human finance/provider owner",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-billing-live",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_worktree_claim": "F:/gm-gap-billing-live",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "docs-review",
-      "owner": "Luna Max docs lane; root owns shared instruction/state/generated artifacts",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned; historical worker proposal only.",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-docs-review",
-      "worktree_state": "PLANNED_NOT_CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/operations/evidence/gap-docs-recon.md"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_owner_claim": "Luna Max docs lane; root owns shared instruction/state/generated artifacts",
+      "historical_worktree_claim": "F:/gm-gap-docs-review",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "root-generated-docs",
       "owner": "root-orchestrator only",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-execution",
-      "worktree_state": "CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/DOC-GRAPH.json",
         "docs/DOC-GRAPH-REPORT.md",
@@ -634,30 +725,36 @@
         "docs/FEATURE-ORPHAN-REPORT.*",
         "docs/atomic_index.jsonl"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_worktree_claim": "F:/gm-gap-execution",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "codedoc-semantic",
       "owner": "root-orchestrator / configured Code-Doc operator",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-execution",
-      "worktree_state": "CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_worktree_claim": "F:/gm-gap-execution",
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "root-integration",
       "owner": "root-orchestrator",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
-      "worktree": "F:/gm-gap-execution",
-      "worktree_state": "CREATED",
+      "worktree": null,
+      "worktree_state": "UNASSIGNED; HISTORICAL CLAIM NOT REVALIDATED",
       "write_paths": [
         "docs/operations/execution-dag-gap-closure.json",
         "docs/operations/EXEC-PLAN-CR-034-iam-remediation.md"
       ],
-      "approval_required_before_source_changes": true
+      "approval_required_before_source_changes": true,
+      "historical_worktree_claim": "F:/gm-gap-execution",
+      "historical_model_claim": "gpt-6-luna"
     }
   ],
   "evidence_registry": [
@@ -768,24 +865,24 @@
     },
     {
       "id": "EV-PO-DECISIONS",
-      "class": "DELEGATED_DECISION",
-      "path": "F:/gm-gap-execution/docs/operations/gap-closure-product-owner-decisions.md",
-      "sha256": "4b47c16c287bfb6e3caffd7a40015ab0048d56b0633570bcf359105cbc889d1f",
-      "claim": "Delegated product choices D1-D9; not human/external approval or deployment proof."
+      "class": "OWNER_DECISION_REGISTER",
+      "path": "docs/operations/gap-closure-product-owner-decisions.md",
+      "sha256": "98d261e581b047d1e80ec5de39aac43cdc6e345b5cb168e7a40c6d6883928ec6",
+      "claim": "Corrected draft: D1-D3 pending, D4 done in current canonical main, and D5-D9 proposals only; no delegation or approval is evidenced."
     },
     {
       "id": "EV-EVIDENCE-CONTRACT",
       "class": "EVIDENCE_CONTRACT",
-      "path": "F:/gm-gap-execution/docs/operations/gap-closure-evidence-contract.md",
-      "sha256": "264250cbad033c245325d5d3f208de533b032bb5ab40bb23fd5a0cdf877f81ac",
+      "path": "docs/operations/gap-closure-evidence-contract.md",
+      "sha256": "f5f6e56da6b4f002c335536bdfa296d2aca8e8cb6bc7bea1130b78f4e8e6b998",
       "claim": "Evidence classes, source predicates, sanitized live-UAT limits, and complete historical gap traceability."
     },
     {
       "id": "EV-CR034-ROOT-STATE",
-      "class": "ROOT_STATE",
-      "path": "F:/gm-gap-execution/docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
-      "sha256": "b8820cddfa0e883c8634e71cd4bb87195e0b34506b4adbd06cbbf49fc76e5149",
-      "claim": "Root-updated CR-034 0.7.1b: D1-D4 are recorded DONE as delegated choices; T1 is non-dispatchable under D1=B; T6 remains incomplete and must not depend on T1; T10/T11 UAT remains pending. T5 distinguishes 401 invalid_session from 503 security_dependency_unavailable."
+      "class": "SOURCE",
+      "path": "docs/operations/EXEC-PLAN-CR-034-iam-remediation.md",
+      "sha256": "7e8bbe741db17563f4ed5c1222637631cf598d96ce236ed1bf9de023f1e135ea",
+      "claim": "Canonical current CR-034 state: D1-D3 Boss-owned pending, D4 done; implementation and UAT state remain separate."
     },
     {
       "id": "EV-LIVE-BROWSER-ROOT",
@@ -1023,7 +1120,7 @@
       "dependencies": [],
       "lane": "root-evidence",
       "owner": "root-orchestrator",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-2",
       "risk": "LOW",
@@ -1059,43 +1156,46 @@
       ],
       "blockers": [],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "PO-DECISIONS",
-      "title": "Record delegated Product Owner choices D1-D9",
+      "title": "Review owner decision proposals D1-D9",
       "gap_ids": [],
       "dependencies": [
         "BASELINE"
       ],
-      "lane": "product-owner",
-      "owner": "delegated Product Owner Agent; decision scope only",
-      "model": "gpt-6-luna",
-      "reasoning_effort": "max",
+      "lane": "owner-review",
+      "owner": "Boss",
+      "model": "unassigned",
+      "reasoning_effort": "not-applicable",
       "complexity": "C-3",
       "risk": "HIGH",
-      "status": "REVIEW",
-      "approval_required": false,
+      "status": "BLOCKED",
+      "approval_required": true,
       "read_paths": [
-        "F:/gm-gap-execution/docs/operations/gap-closure-product-owner-decisions.md",
-        "F:/gm-gap-execution/docs/operations/EXEC-PLAN-CR-034-iam-remediation.md"
+        "docs/operations/gap-closure-product-owner-decisions.md",
+        "docs/operations/EXEC-PLAN-CR-034-iam-remediation.md"
       ],
       "write_paths": [],
       "checks": [
-        "Check the delegated record contains D1-D9 and marks production/legal/provider/release authority as external.",
-        "Do not copy its conceptual diagram as another operational task-state source."
+        "Verify D1-D3 remain PENDING and D4 is DONE in current main.",
+        "Treat D5-D9 as proposals pending explicit owner and applicable security/privacy review.",
+        "Do not rely on the October 1 delegation, review, or dispatch artifacts as authority."
       ],
       "acceptance": [
-        "D1-D4 appear in the root-integrated CR-034 board as DONE decisions while implementation tasks remain incomplete.",
-        "D1=B does not leave TOTP enrollment dependent on T1, which applies only to option A.",
-        "D2 remains blocked on session-method evidence; D3 covers all five endpoints; D4 does not authorize an /ops build.",
-        "D5-D9 remain scoped choices, not external signoff."
+        "Boss records any CR-034 decision in the canonical state table.",
+        "The corrected decision register makes no agent-delegation or worker-assignment claim.",
+        "No provider, production, privacy, release, or merge authority is inferred."
       ],
       "evidence": [
         "EV-PO-DECISIONS",
         "EV-CR034-ROOT-STATE"
       ],
-      "blockers": [],
+      "blockers": [
+        "Boss-owned D1-D3 decisions remain pending; no delegation evidence is established."
+      ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
       "check_refs": []
     },
@@ -1108,7 +1208,7 @@
       ],
       "lane": "root-evidence",
       "owner": "root-orchestrator",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-2",
       "risk": "LOW",
@@ -1132,7 +1232,8 @@
       ],
       "blockers": [],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "LIVE-ENV-GATE",
@@ -1148,7 +1249,7 @@
       ],
       "lane": "root-browser-evidence",
       "owner": "human service owner; browser observation owned by root",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -1173,7 +1274,8 @@
         "gstore main Production is PAUSED; this worker has no resume authority."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "AUTH-LOCAL",
@@ -1187,8 +1289,8 @@
         "EVIDENCE-CONTRACT"
       ],
       "lane": "auth-evidence",
-      "owner": "Luna Max auth-evidence lane",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -1226,7 +1328,8 @@
         "Root review; controlled real-session/native evidence is a separate node."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "AUTH-NATIVE-UAT",
@@ -1240,8 +1343,8 @@
         "LIVE-ENV-GATE"
       ],
       "lane": "auth-uat",
-      "owner": "human test-account owner with Luna Max recording sanitized evidence",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -1269,7 +1372,8 @@
         "gstore is paused; approved disposable test account/fixture and exact target build are not available in this plan."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "IAM-CONTRACT",
@@ -1284,8 +1388,8 @@
         "EVIDENCE-CONTRACT"
       ],
       "lane": "iam-contract",
-      "owner": "Luna Max IAM lane with delegated Product Owner review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -1321,7 +1425,8 @@
         "Root/PO review of the bounded contract; sanitized live proof is required only for the D2 method decision, not for local contract work."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "IAM-SESSION-PROOF",
@@ -1335,7 +1440,7 @@
       ],
       "lane": "root-browser-evidence",
       "owner": "root browser custodian and human Supabase owner",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -1363,7 +1468,8 @@
         "Supabase production project is paused; provider/session views are unavailable."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "IAM-LIVE-UAT",
@@ -1382,7 +1488,7 @@
       ],
       "lane": "iam-uat",
       "owner": "human security/service owner with root evidence custody",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -1410,7 +1516,8 @@
         "Local code and feature contract are incomplete; project is paused; owner-controlled disposable account is not supplied."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "ORCH-CONTRACT",
@@ -1423,8 +1530,8 @@
         "EVIDENCE-CONTRACT"
       ],
       "lane": "orchestra-contract",
-      "owner": "Luna Max Orchestra lane with security-owner review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -1457,7 +1564,8 @@
         "Security-owner review and bounded contract signoff before implementation."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "ORCH-CODE",
@@ -1469,8 +1577,8 @@
         "ORCH-CONTRACT"
       ],
       "lane": "orchestra",
-      "owner": "Luna Max Orchestra lane; root dispatch after security review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -1503,7 +1611,8 @@
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
       "check_refs": [
         "ORCH-HTTP"
-      ]
+      ],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "ORCH-LOCAL-CHECK",
@@ -1515,8 +1624,8 @@
         "ORCH-CODE"
       ],
       "lane": "orchestra",
-      "owner": "Luna Max Orchestra lane plus root review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -1543,7 +1652,8 @@
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
       "check_refs": [
         "ORCH-HTTP"
-      ]
+      ],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "OPS-DOCS",
@@ -1556,8 +1666,8 @@
         "EVIDENCE-CONTRACT"
       ],
       "lane": "landing-docs",
-      "owner": "Luna Max docs lane; root integrates shared state",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -1592,7 +1702,8 @@
         "Root review of doc diff and root-owned generated doc-graph outputs."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "OPS-IMPLEMENTATION",
@@ -1605,7 +1716,7 @@
       ],
       "lane": "landing-routes",
       "owner": "future Product Owner and security-owner review",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -1634,7 +1745,8 @@
         "D4 chooses no /ops build in this gap-closure wave."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "CI-MATRIX",
@@ -1647,8 +1759,8 @@
         "EVIDENCE-CONTRACT"
       ],
       "lane": "ci-contract",
-      "owner": "Luna Max CI lane with root review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-2",
       "risk": "MEDIUM",
@@ -1683,7 +1795,8 @@
         "Root review before workflow implementation is separately authorized."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "CI-CODE",
@@ -1695,8 +1808,8 @@
         "CI-MATRIX"
       ],
       "lane": "ci",
-      "owner": "Luna Max CI lane; root dispatch after workflow scope review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-2",
       "risk": "MEDIUM",
@@ -1744,7 +1857,8 @@
         "DENO-TEST",
         "SQL-RLS",
         "ORCH-HTTP"
-      ]
+      ],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "RELEASE-MATRIX",
@@ -1758,8 +1872,8 @@
         "EVIDENCE-CONTRACT"
       ],
       "lane": "release-evidence",
-      "owner": "Luna Max release-evidence lane with QA/release-owner review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -1795,7 +1909,8 @@
         "QA/release-owner review; no target release artifact is selected for this planning node."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "MANIFEST-REVIEW",
@@ -1809,8 +1924,8 @@
         "RELEASE-MATRIX"
       ],
       "lane": "release-evidence",
-      "owner": "Luna Max release-evidence lane with root/release-owner review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-2",
       "risk": "MEDIUM",
@@ -1846,7 +1961,8 @@
       ],
       "blockers": [],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "RELEASE-UAT",
@@ -1860,8 +1976,8 @@
         "MANIFEST-REVIEW"
       ],
       "lane": "release-uat",
-      "owner": "human QA/release owner with Luna Max evidence preparation",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -1890,7 +2006,8 @@
         "No target signed artifact, device matrix, or release-owner test window is selected; D9 forbids release action in this wave."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "LITE-CONTRACT",
@@ -1903,8 +2020,8 @@
         "PO-DECISIONS"
       ],
       "lane": "lite-contract",
-      "owner": "Luna Max runtime-CV lane with Product Owner review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-2",
       "risk": "MEDIUM",
@@ -1939,7 +2056,8 @@
         "Product Owner review of mode wording before source/UI changes."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "LITE-CODE",
@@ -1951,8 +2069,8 @@
         "LITE-CONTRACT"
       ],
       "lane": "lite-cv",
-      "owner": "Luna Max runtime-CV lane; root dispatch after contract review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -1993,7 +2111,8 @@
         "TS",
         "ESLINT",
         "TAURI-SMOKE"
-      ]
+      ],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "MOTION-CONTRACT",
@@ -2007,8 +2126,8 @@
         "EVIDENCE-CONTRACT"
       ],
       "lane": "motion-contract",
-      "owner": "Luna Max Motion lane with Product Owner review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -2042,7 +2161,8 @@
         "Root review before documentation changes; route-model work is deferred."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "MOTION-CODE",
@@ -2056,7 +2176,7 @@
       ],
       "lane": "motion",
       "owner": "future Product Owner and root-dispatched Motion lane",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -2092,7 +2212,8 @@
         "TS",
         "ESLINT",
         "TAURI-SMOKE"
-      ]
+      ],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "MASTER-CONTRACT",
@@ -2107,8 +2228,8 @@
         "EVIDENCE-CONTRACT"
       ],
       "lane": "master-contract",
-      "owner": "Luna Max G-Master lane with Product Owner review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -2147,7 +2268,8 @@
         "Detailed product contract review; no enemy economy/OCR source is presumed accurate or packaged."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "MASTER-CODE",
@@ -2161,8 +2283,8 @@
         "MASTER-CONTRACT"
       ],
       "lane": "master",
-      "owner": "Luna Max G-Master lane; root dispatch after contract review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -2211,7 +2333,8 @@
         "TS",
         "ESLINT",
         "TAURI-SMOKE"
-      ]
+      ],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "MEMORY-CONTRACT",
@@ -2225,8 +2348,8 @@
         "EVIDENCE-CONTRACT"
       ],
       "lane": "memory-contract",
-      "owner": "Luna Max Memory lane with Product Owner/privacy review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -2261,7 +2384,8 @@
         "Privacy/Product Owner contract review."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "MEMORY-CODE",
@@ -2274,8 +2398,8 @@
         "MEMORY-CONTRACT"
       ],
       "lane": "memory",
-      "owner": "Luna Max Memory lane; root owns G-Master integration",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -2321,7 +2445,8 @@
       ],
       "prerequisite_gates": [
         "GLOG-MEMORY-BOUNDARY"
-      ]
+      ],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "VOICE-CONTRACT",
@@ -2336,8 +2461,8 @@
         "PO-DECISIONS"
       ],
       "lane": "voice-contract",
-      "owner": "Luna Max Voice lane with Product Owner/privacy review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -2371,7 +2496,8 @@
         "Memory contract must be reviewed first; voice-specific contract approval is required."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "VOICE-CODE",
@@ -2386,8 +2512,8 @@
         "MEMORY-CODE"
       ],
       "lane": "voice",
-      "owner": "Luna Max Voice lane; root dispatch after privacy contract review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -2427,7 +2553,8 @@
         "TS",
         "ESLINT",
         "TAURI-SMOKE"
-      ]
+      ],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "COACH-CONTRACT",
@@ -2441,8 +2568,8 @@
         "PO-DECISIONS"
       ],
       "lane": "coach-contract",
-      "owner": "Luna Max Coach lane with Product Owner/privacy review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-2",
       "risk": "MEDIUM",
@@ -2474,7 +2601,8 @@
         "Memory and Voice contract sequence; Coach-specific acceptance review."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "COACH-CODE",
@@ -2488,8 +2616,8 @@
         "VOICE-CODE"
       ],
       "lane": "coach",
-      "owner": "Luna Max Coach lane; root owns deck integration",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-2",
       "risk": "MEDIUM",
@@ -2524,7 +2652,8 @@
         "DESKTOP-TEST",
         "TS",
         "ESLINT"
-      ]
+      ],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "STREAM-CONTRACT",
@@ -2538,8 +2667,8 @@
         "EVIDENCE-CONTRACT"
       ],
       "lane": "stream-contract",
-      "owner": "Luna Max Stream lane with Product Owner/privacy review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-2",
       "risk": "HIGH",
@@ -2570,7 +2699,8 @@
         "Stream feature contract and privacy-owner approval."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "STREAM-CODE",
@@ -2583,8 +2713,8 @@
         "STREAM-CONTRACT"
       ],
       "lane": "stream",
-      "owner": "Luna Max Stream lane; root owns overlay integration",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -2623,7 +2753,8 @@
         "TS",
         "ESLINT",
         "TAURI-SMOKE"
-      ]
+      ],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "BILLING-LOCAL",
@@ -2636,8 +2767,8 @@
         "EVIDENCE-CONTRACT"
       ],
       "lane": "billing-evidence",
-      "owner": "Luna Max economy lane; no provider activity",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -2670,7 +2801,8 @@
         "Root dispatch for any new local test or code change."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "BILLING-CODE",
@@ -2682,8 +2814,8 @@
         "BILLING-LOCAL"
       ],
       "lane": "billing",
-      "owner": "Luna Max economy lane; root dispatch after economic/security review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -2720,7 +2852,8 @@
       "check_refs": [
         "DENO-TEST",
         "SQL-RLS"
-      ]
+      ],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "BILLING-LIVE",
@@ -2734,7 +2867,7 @@
       ],
       "lane": "billing-live",
       "owner": "human finance/provider owner",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -2760,7 +2893,8 @@
         "gstore project paused; financial/provider owner approval and sandbox access absent."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "DOCS-RECON",
@@ -2776,8 +2910,8 @@
         "MANIFEST-REVIEW"
       ],
       "lane": "docs-review",
-      "owner": "Luna Max docs lane; root owns shared instruction/state/generated artifacts",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-2",
       "risk": "LOW",
@@ -2819,7 +2953,8 @@
         "Root review before persistent doc edits; semantic alignment is a separate node."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "DOC-GRAPH-ROOT",
@@ -2833,7 +2968,7 @@
       ],
       "lane": "root-generated-docs",
       "owner": "root-orchestrator only",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-2",
       "risk": "MEDIUM",
@@ -2872,7 +3007,8 @@
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
       "check_refs": [
         "DOC-GRAPH"
-      ]
+      ],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "CODEDOC-ALIGN",
@@ -2885,7 +3021,7 @@
       ],
       "lane": "codedoc-semantic",
       "owner": "root-orchestrator / configured Code-Doc operator",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-1",
       "risk": "LOW",
@@ -2913,7 +3049,8 @@
         "Configured Mellum model is absent from current Ollama inventory."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "ROOT-STATE",
@@ -2926,7 +3063,7 @@
       ],
       "lane": "root-integration",
       "owner": "root-orchestrator",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -2962,7 +3099,8 @@
         "Root review of this initial DAG artifact."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "IAM-CORE-CODE",
@@ -2975,8 +3113,8 @@
         "IAM-CONTRACT"
       ],
       "lane": "iam",
-      "owner": "Luna Max IAM lane; root dispatch after contract review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -3026,7 +3164,8 @@
         "DESKTOP-TEST",
         "TS",
         "ESLINT"
-      ]
+      ],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "IAM-SESSION-METHOD-CODE",
@@ -3039,8 +3178,8 @@
         "IAM-SESSION-PROOF"
       ],
       "lane": "iam",
-      "owner": "Luna Max IAM lane; root dispatch after contract review",
-      "model": "gpt-6-luna",
+      "owner": "Unassigned candidate lane; requires explicit authorization and owner review.",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -3080,7 +3219,8 @@
         "DESKTOP-TEST",
         "TS",
         "ESLINT"
-      ]
+      ],
+      "historical_model_claim": "gpt-6-luna"
     },
     {
       "id": "T4-LIVE-PROBE",
@@ -3096,7 +3236,7 @@
       ],
       "lane": "root-browser-evidence",
       "owner": "human Supabase owner with root browser custodian",
-      "model": "gpt-6-luna",
+      "model": "unassigned",
       "reasoning_effort": "max",
       "complexity": "C-3",
       "risk": "HIGH",
@@ -3124,7 +3264,8 @@
         "gstore main Production is PAUSED; owner-approved active project and test session are unavailable."
       ],
       "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
-      "check_refs": []
+      "check_refs": [],
+      "historical_model_claim": "gpt-6-luna"
     }
   ],
   "dag_acceptance": [
@@ -3132,7 +3273,7 @@
     "Every node includes id, title, gap_ids, dependencies, lane, owner, model, reasoning_effort, complexity, risk, status, approval_required, read_paths, write_paths, checks, acceptance, evidence, blockers, and source_baseline.",
     "Every dependency resolves to a node; the graph is acyclic.",
     "Lane write paths are disjoint; root_shared_write_paths are reserved for root.",
-    "D1-D9 are represented as delegated choices; external approvals remain separately gated.",
+    "D1-D3 remain Boss-owned pending decisions, D4 matches current main, and D5-D9 are unapproved proposals; no delegation is claimed.",
     "Code nodes remain BLOCKED until their bounded feature contracts are reviewed; D4-selected /ops implementation and D6 route-model work remain DEFERRED.",
     "The paused environment blocks hosted/provider work only; local planning and isolated fixtures remain actionable.",
     "Root reviews the two-file artifact and owns task-state updates and generated documentation outputs.",
@@ -3231,7 +3372,7 @@
     {
       "id": "GLOG-MEMORY-BOUNDARY",
       "status": "BLOCKED_UNSCHEDULED",
-      "owner": "root plus delegated Product Owner/privacy review",
+      "owner": "Unassigned; historical worker proposal only.",
       "required_evidence": [
         "Accepted separately owned G-Log completion/provenance/deletion-hook contract and fixture evidence",
         "Recorded exclusive cross-module write lease before any log.rs change",
@@ -3239,7 +3380,8 @@
         "Monotonic match-start sequence and representative finalized-log size fixtures for the provisional 2 MiB parse cap"
       ],
       "rule": "A verified MEMORY-CONTRACT alone cannot release MEMORY-CODE. Until this evidence is accepted, root must keep MEMORY-CODE BLOCKED. This gate grants no source write lease or implementation authority.",
-      "runtime_status_ref": ".brain/execution/gap-closure-2026-10-01/workflow-state.json#prerequisite_gates"
+      "runtime_status_ref": ".brain/execution/gap-closure-2026-10-01/workflow-state.json#prerequisite_gates",
+      "historical_owner_claim": "root plus delegated Product Owner/privacy review"
     }
   ]
 }

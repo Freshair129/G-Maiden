@@ -39,14 +39,8 @@ export function useAuth() {
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // Audit B2: the Closed Beta gate re-verifies entitlement whenever `session`
-  // changes — but Supabase mints a NEW session object on a plain access-token
-  // rotation (~hourly) with no real identity change. Without the event name,
-  // the gate could not tell a routine token refresh apart from an actual
-  // sign-in/out, and treated both as "verify from scratch", which is what let
-  // a background refresh yank the whole deck back to a blocking loading
-  // screen. `gmadEntitlement.ts` uses this to skip that gating for
-  // `TOKEN_REFRESHED` once a session has already been shown as eligible.
+  // Keep the provider event so account surfaces can distinguish a real sign-in
+  // from routine token rotation without making local-core rendering depend on it.
   const [lastAuthEvent, setLastAuthEvent] = useState<AuthChangeEvent | null>(null);
 
   useEffect(() => {
@@ -129,7 +123,6 @@ export function useAuth() {
     setError(null);
     const accessToken = session?.access_token;
     await signOutCurrent(
-      () => invoke("lock_gmad_runtime"),
       async () => {
         if (!accessToken) throw new Error("No current session to revoke");
         await requestSessionAction("current", accessToken);
@@ -140,6 +133,6 @@ export function useAuth() {
   }, [session]);
 
   return { session: localAuthBlocked() ? null : session, user: localAuthBlocked() ? null : session?.user ?? null, loading,
-    busy: busy || ["locking", "cleaning"].includes(signOutState.phase), error: signOutState.error ?? error,
+    busy: busy || signOutState.phase === "cleaning", error: signOutState.error ?? error,
     signOutPhase: signOutState.phase, signOutWarning: signOutState.warning, lastAuthEvent, signInWithGoogle, signOut };
 }

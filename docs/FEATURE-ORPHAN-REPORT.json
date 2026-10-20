@@ -1,14 +1,14 @@
 {
   "_generated": "GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs",
-  "generatedAt": "2026-10-01T02:49:00.676Z",
+  "generatedAt": "2026-10-20T15:37:21.982Z",
   "baselineOrphanCandidates": 0,
   "rowCount": 22,
   "summary": {
-    "anchored": 4,
-    "planned": 11,
+    "anchored": 3,
+    "planned": 10,
     "weakly-anchored": 7,
     "superseded": 0,
-    "archived": 0,
+    "archived": 2,
     "orphan-candidate": 0,
     "confirmed-orphan": 0
   },
@@ -32,7 +32,7 @@
       "id": "FEAT-G-COACH",
       "slug": "FEAT-G-COACH",
       "path": "docs/features/FEAT-G-COACH.md",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "classification": "planned",
       "strongAnchors": [
         "feature-ledger",
@@ -40,7 +40,10 @@
         "project-feature-map"
       ],
       "weakAnchors": [
-        "docs/features/README.md"
+        "docs/features/README.md",
+        "docs/product/mvp-backlog.md",
+        "docs/product/roadmap.md",
+        "docs/features/G-SERIES-DATA-LINEAGE.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,
@@ -51,26 +54,29 @@
       "slug": "FEAT-G-DAMAGE",
       "path": "docs/features/FEAT-G-DAMAGE.md",
       "lifecycle": "draft",
-      "classification": "anchored",
+      "classification": "archived",
       "strongAnchors": [
         "feature-ledger",
         "code-evidence",
         "features-readme"
       ],
       "weakAnchors": [
+        "docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md",
+        "docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md",
+        "docs/features/G-SERIES-DATA-LINEAGE.md",
         "docs/features/README.md",
         "docs/product/competitive-brief.md",
         "docs/README.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,
-      "reason": "At least one strong anchor exists (registry and/or code evidence)."
+      "reason": "Lifecycle explicitly marks the document as retained history."
     },
     {
       "id": "FEAT-G-LOG",
       "slug": "FEAT-G-LOG",
       "path": "docs/features/FEAT-G-LOG.md",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "classification": "planned",
       "strongAnchors": [
         "feature-ledger",
@@ -89,7 +95,7 @@
       "id": "FEAT-G-MASTER",
       "slug": "FEAT-G-MASTER",
       "path": "docs/features/FEAT-G-MASTER.md",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "classification": "planned",
       "strongAnchors": [
         "feature-ledger",
@@ -109,8 +115,8 @@
       "id": "FEAT-G-MEMORY",
       "slug": "FEAT-G-MEMORY",
       "path": "docs/features/FEAT-G-MEMORY.md",
-      "lifecycle": "planned",
-      "classification": "planned",
+      "lifecycle": "active",
+      "classification": "archived",
       "strongAnchors": [
         "feature-ledger",
         "features-readme",
@@ -118,17 +124,20 @@
       ],
       "weakAnchors": [
         "docs/features/README.md",
+        "docs/product/mvp-backlog.md",
+        "docs/product/roadmap.md",
+        "docs/features/G-SERIES-DATA-LINEAGE.md",
         "docs/operations/contracts/gap-memory-contract.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,
-      "reason": "Document is explicitly planned and remains visible in active registry/docs."
+      "reason": "Lifecycle explicitly marks the document as retained history."
     },
     {
       "id": "FEAT-G-MIND",
       "slug": "FEAT-G-MIND",
       "path": "docs/features/FEAT-G-MIND.md",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "classification": "planned",
       "strongAnchors": [
         "feature-ledger",
@@ -148,7 +157,7 @@
       "id": "FEAT-G-MOTION",
       "slug": "FEAT-G-MOTION",
       "path": "docs/features/FEAT-G-MOTION.md",
-      "lifecycle": null,
+      "lifecycle": "active",
       "classification": "anchored",
       "strongAnchors": [
         "feature-ledger",
@@ -206,13 +215,14 @@
       "id": "FEAT-G-SCORE",
       "slug": "FEAT-G-SCORE",
       "path": "docs/features/FEAT-G-SCORE.md",
-      "lifecycle": "planned",
+      "lifecycle": "draft",
       "classification": "planned",
       "strongAnchors": [
         "features-readme"
       ],
       "weakAnchors": [
-        "docs/features/README.md"
+        "docs/features/README.md",
+        "docs/features/G-SERIES-DATA-LINEAGE.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,
@@ -222,7 +232,7 @@
       "id": "FEAT-G-SENSORY",
       "slug": "FEAT-G-SENSORY",
       "path": "docs/features/FEAT-G-SENSORY.md",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "classification": "planned",
       "strongAnchors": [
         "feature-ledger",
@@ -261,7 +271,7 @@
       "id": "FEAT-G-SIGNAL",
       "slug": "FEAT-G-SIGNAL",
       "path": "docs/features/FEAT-G-SIGNAL.md",
-      "lifecycle": null,
+      "lifecycle": "active",
       "classification": "anchored",
       "strongAnchors": [
         "feature-ledger",
@@ -284,7 +294,7 @@
       "id": "FEAT-G-STREAM",
       "slug": "FEAT-G-STREAM",
       "path": "docs/features/FEAT-G-STREAM.md",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "classification": "planned",
       "strongAnchors": [
         "feature-ledger",
@@ -293,6 +303,7 @@
       ],
       "weakAnchors": [
         "docs/features/README.md",
+        "docs/features/G-SERIES-DATA-LINEAGE.md",
         "docs/operations/contracts/gap-stream-contract.md"
       ],
       "supersededBy": null,
@@ -303,7 +314,7 @@
       "id": "FEAT-G-VOICE",
       "slug": "FEAT-G-VOICE",
       "path": "docs/features/FEAT-G-VOICE.md",
-      "lifecycle": "planned",
+      "lifecycle": "active",
       "classification": "planned",
       "strongAnchors": [
         "feature-ledger",
@@ -311,7 +322,11 @@
         "project-feature-map"
       ],
       "weakAnchors": [
-        "docs/features/README.md"
+        "docs/architecture/spikes/MVP-038-local-stt-evaluation.md",
+        "docs/features/README.md",
+        "docs/product/mvp-backlog.md",
+        "docs/product/roadmap.md",
+        "docs/features/G-SERIES-DATA-LINEAGE.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,

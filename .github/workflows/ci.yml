@@ -10,15 +10,28 @@ jobs:
   ci:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
-      # Fix: setup-node BEFORE pnpm/action-setup so cache key is available
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      # pnpm is installed in the next step, so setup-node must not auto-cache it.
+      - uses: actions/setup-node@v7.1.0
         with:
           node-version: '20'
+          package-manager-cache: false
 
-      - uses: pnpm/action-setup@v4
-        # version read from packageManager field in package.json
+      - name: Install pinned pnpm
+        shell: pwsh
+        run: |
+          $pnpmPackage = (Get-Content package.json -Raw | ConvertFrom-Json).packageManager
+          $pnpmDir = Join-Path $env:RUNNER_TEMP 'g-maiden-pnpm'
+          npm install --prefix $pnpmDir $pnpmPackage --no-audit --no-fund
+          if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+          $pnpmBin = Join-Path $pnpmDir 'node_modules/.bin'
+          Add-Content -Path $env:GITHUB_PATH -Value $pnpmBin
+          & (Join-Path $pnpmBin 'pnpm.cmd') --version
 
       - uses: dtolnay/rust-toolchain@1.96.0
         with:
@@ -41,6 +54,13 @@ jobs:
       - name: Doc-graph gate (tests + strict scan + checklist + ledger)
         run: node tools/doc-graph/ci-gate.mjs
 
+      # Static gameplay snapshots must keep their provenance manifest, runtime
+      # schema, and generated hero abilities aligned before Rust embeds them.
+      - name: Static gameplay data provenance gate
+        run: |
+          python tools/data-provenance/verify_manifest.py
+          python -m unittest discover -s tools/data-provenance -v
+
       # The gpu-feeder sidecar is bundled via tauri.conf externalBin, which
       # tauri-build validates at *any* cargo invocation (clippy included). The
       # built binary is gitignored, so stage it before cargo runs.
@@ -52,7 +72,7 @@ jobs:
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D warnings
 
       - name: ESLint
-        run: pnpm -C src lint
+        run: pnpm -C src lint --max-warnings=0
 
       - name: Rust tests
         run: cargo test --manifest-path src-tauri/Cargo.toml --locked

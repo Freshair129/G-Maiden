@@ -1,7 +1,14 @@
 # Changelog
 
 ## [Unreleased]
+
+## [0.13.4] — 2026-10-18
+### Changed
+- **เริ่มใช้แอปเดสก์ท็อปแบบ local-first ได้ทันที** — ไม่บังคับลงชื่อเข้าใช้หรือยืนยัน entitlement ตอนเปิดแอป; ผู้ใช้เชื่อมบัญชีเพิ่มได้จากในแอปตามต้องการ
+
+## [0.13.3] — 2026-10-18
 ### Fixed
+- **หยุด startup เมื่อเปิด CPU hard cap ไม่ได้** — หากสร้างหรือ assign Windows Job Object ไม่สำเร็จ แอปจะบันทึก error แล้วออกก่อนสร้าง Tauri/WebView หรือ GPU feeder; accounting query ที่ล้มเหลวหลัง setup สำเร็จยังแสดง unavailable และคง capture throttle ขณะที่ OS cap ทำงานอยู่
 - **โทเค็นหมดอายุอัตโนมัติไม่ตัดสิทธิ์กลางเกมอีกต่อไป** — Supabase หมุน access token
   ให้อัตโนมัติทุก ๆ ~1 ชั่วโมง ซึ่งเดิมระบบตีความเป็น "session เปลี่ยน" แล้วยืนยันสิทธิ์
   ใหม่ทั้งหมด: ตัดสิทธิ์การเล่น (G-Sentry, G-Motion, G-Signal) และซ่อน overlay
@@ -55,7 +62,7 @@
 
 ## [0.13.1] — 2026-08-01
 ### Changed
-- Finalized signed candidate, channel manifest, same-artifact promotion, and Closed Beta evidence gates.
+- Finalized signed candidates, channel manifests, same-artifact promotion, and release evidence gates.
 
 ## [0.13.0] — 2026-07-19
 ### Changed

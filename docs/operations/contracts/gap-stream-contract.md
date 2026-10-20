@@ -2,9 +2,9 @@
 title: "G-Stream Stream-Safe Co-host Contract"
 doc_id: "gap-stream-contract"
 status: draft
-version: "0.3.0"
-updated: "2026-10-01"
-owner: "RWANG"
+version: "0.4.0"
+updated: "2026-10-20"
+owner: "Boss"
 attributes:
   change_class: "C-2"
   privacy_risk: "HIGH"
@@ -73,7 +73,7 @@ FEAT-G-STREAM shows a candidate configuration with `enabled=false`, redaction fl
 
 For this contract, all required redactions are mandatory while stream mode is enabled. A missing or false required mask prevents entry into the safe-on state. No individual setting may disable MMR/name/memory protection without a new Privacy Owner review. The greeting switch is an explicit user permission for co-host speech; it does not authorize disclosure of otherwise blocked fields.
 
-**Delegated Product Owner decision recorded for this revision:** preserve latency-critical G-Signal warnings for the player; stream-safe mode must not suppress or delay them, and this contract makes no claim that viewers cannot hear them. This decision defines product scope and grants no implementation authority.
+**Candidate requirement for owner review:** preserve latency-critical G-Signal warnings for the player; stream-safe mode must not suppress or delay them, and this contract makes no claim that viewers cannot hear them. No owner decision is evidenced by the October 1 packet.
 
 **Unresolved route-policy gate:** an acceptable player-versus-viewer audio isolation option has not been selected or proven. Keep stream-safe mode `BLOCKED_SAFE` until the audio route and calibration-capture boundary are defined and tested. The Privacy Owner must separately accept the exact contract hash, including its viewer-audio behavior.
 
@@ -85,7 +85,7 @@ For this contract, all required redactions are mandatory while stream mode is en
 | Maiden co-host output | Speak approved greetings and commentary derived only from the safe field projection. | No account identity, MMR/rank, raw G-Log, personal memory details, exact hotspots, or unreviewed free text/media. |
 | Application renderer/capture path | Consume the safe projection after the mask gate succeeds. | Must not render or capture raw source objects as a fallback if masking fails. |
 
-**Privacy acceptance gate:** before any code is implemented, a named Privacy Owner must review and accept the exact contract hash, field inventory, visible surfaces, calibration-capture payload/retention/export boundary, state transitions, audio-routing and viewer-audio behavior, co-host permissions, and test evidence. This is separate from the delegated Product Owner scope decision and implementation review. No Privacy Owner acceptance is recorded in this draft.
+**Privacy acceptance gate:** before any code is implemented, a named Privacy Owner must review and accept the exact contract hash, field inventory, visible surfaces, calibration-capture payload/retention/export boundary, state transitions, audio-routing and viewer-audio behavior, co-host permissions, and test evidence. The Boss-owned scope decision remains pending and is separate from Privacy Owner acceptance and implementation review. No Privacy Owner acceptance is recorded in this draft.
 
 ## 5. State transitions and fail-closed behavior
 
@@ -128,7 +128,7 @@ Implementation cannot start until the Product Owner selects an acceptable audio-
 8. With stream mode off, ordinary local behavior remains unchanged and G-Signal warnings are never suppressed or delayed by stream formatting.
 9. No G-Memory/G-Log raw data egress is introduced. Separate data-sharing or cloud-provider decisions remain separate gates.
 
-**Contract exit:** the Product Owner audio-isolation policy is recorded, the named Privacy Owner accepts the exact contract hash, every output/capture/audio surface is classified, and acceptance cases are testable. **Implementation exit:** required tests pass, including calibration-capture and viewer-audio boundary checks, while G-Signal warnings remain available to the player within the SRS latency target. Until then G-Stream remains an unimplemented design candidate and safe mode is `BLOCKED_SAFE`.
+**Contract exit:** the owner records the audio-isolation policy, the named Privacy Owner accepts the exact contract hash, every output/capture/audio surface is classified, and acceptance cases are testable. **Implementation exit:** required tests pass, including calibration-capture and viewer-audio boundary checks, while G-Signal warnings remain available to the player within the SRS latency target. Until then G-Stream remains an unimplemented design candidate and safe mode is `BLOCKED_SAFE`.
 
 ## 7. Scope and non-claims
 
@@ -145,3 +145,4 @@ Source evidence does not prove that G-Stream, a stream-safe toggle, masking, or 
 | 0.1.0 | 2026-10-01 | Define candidate G-Stream field/surface masks, fail-closed state transitions, co-host permissions, and Privacy Owner acceptance gate. |
 | 0.2.0 | 2026-10-01 | Correct calibration-capture evidence; add G-Signal/audio-isolation gates and preserve player warnings. |
 | 0.3.0 | 2026-10-01 | Cite calibration artifacts and local path; narrow unknowns to privacy, retention/export, and stream/audio boundaries. |
+| 0.4.0 | 2026-10-20 | Remove unsupported delegation claims and keep product/audio policy pending owner review. |

@@ -3,7 +3,7 @@
 # FEATURE-LEDGER
 
 > **GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs**  
-> Source manifest: `docs/feature-ledger.manifest.yaml` · generated `2026-10-01T02:49:00.467Z` · `--run-tests`=false · rows=74
+> Source manifest: `docs/feature-ledger.manifest.yaml` · generated `2026-10-20T15:37:21.557Z` · `--run-tests`=false · rows=74
 
 One row per feature / FR / NFR. **Computed** status is derived structurally from evidence on disk (never from a claim); **Claimed** is the manifest row's `claimed_status`; **Drift** flags where a claim outruns the evidence; **Evidence gaps** lists exactly what is missing to advance.
 
@@ -21,9 +21,9 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 
 | Computed status | Rows |
 | --- | --- |
-| doc-only | 32 |
-| in-code | 12 |
-| code+needs-test-or-review | 16 |
+| doc-only | 30 |
+| in-code | 11 |
+| code+needs-test-or-review | 19 |
 | code+tests-present [(unrun)] | 14 |
 
 ### Drift
@@ -35,12 +35,18 @@ One row per feature / FR / NFR. **Computed** status is derived structurally from
 | aligned | 68 |
 | unclaimed | 6 |
 
+## Violations
+
+| Row | Type | Blocking | Detail |
+| --- | --- | --- | --- |
+| fr-4.2.2 | unbacked-phase-source | no | phase_source: doc but no refs.docs entry both resolves on disk and states a phase (**Phase:** line) — phase_target rendered as derived |
+
 ## Features
 
 | ID | Title | Phase | Computed | Claimed | Drift | Evidence gaps | Source |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | 1.1-g-sentry | G-Sentry — fog-of-war monitor (enemies missing from vision) | P2 | code+needs-test-or-review | code+needs-test-or-review | aligned | review record missing | bootstrap-extraction, pruned 2026-07-20 |
-| 1.1-g-motion | G-Motion — heatmap / last-seen positions / gank-route prediction | P3 | in-code | in-code | aligned | no tests mapped, review record missing | bootstrap-extraction, pruned 2026-07-20 |
+| 1.1-g-motion | G-Motion — last-seen history and heading-aware risk heuristic; heatmap/path prediction is a target | P3 | code+needs-test-or-review | code+needs-test-or-review | aligned | review record missing | bootstrap-extraction, pruned 2026-07-20 |
 | 1.1-g-signal | G-Signal — real-time gank warning, voice interrupt (hard-latency path) | P3 | code+tests-present (unrun) | code+tests-present | aligned | tests not run (--run-tests) | bootstrap-extraction, pruned 2026-07-20 |
 | 1.1-g-master | G-Master — strategic/financial advisor (skill/item build vs enemy) | P5 | code+tests-present (unrun) | code+tests-present | aligned | tests not run (--run-tests) | bootstrap-extraction, pruned 2026-07-20 |
 | 1.1-g-sensory | G-Sensory — overlay render + capture + hardware optimization | P6 | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction, pruned 2026-07-20 |
@@ -96,7 +102,7 @@ _Legend: *(derived)* — Phase is a bootstrap badge-heuristic guess, not a phase
 | ID | Title | Phase | Computed | Claimed | Drift | Evidence gaps | Source |
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | fr-3.1 | SRS §3.1 G-Sentry (Fog of War Monitor) | P2 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
-| fr-3.2 | SRS §3.2 G-Motion (Strategy & Heatmap Prediction) | P3 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
+| fr-3.2 | SRS §3.2 G-Motion (Time-off-map Risk Heuristic) | P3 *(derived)* | code+needs-test-or-review | code+needs-test-or-review | aligned | review record missing | bootstrap-extraction |
 | fr-3.3 | SRS §3.3 G-Signal (Real-time Gank Warning with Voice Interrupt) | P3 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
 | fr-3.4 | SRS §3.4 G-Master (Strategic & Financial Advisor) | P5 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
 | fr-3.5 | SRS §3.5 G-Sensory (Overlay & Hardware Optimization) | P6 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
@@ -110,8 +116,8 @@ _Legend: *(derived)* — Phase is a bootstrap badge-heuristic guess, not a phase
 | fr-4.1.1 | Dashboard uses premium-dark #08090c with an ice aluminium translucent frame | P6 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
 | fr-4.1.2 | Every module is controlled through discrete modular panels | P6 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
 | fr-4.1.3 | Global hotkeys for quick commands (e.g. Alt+M for an instant situation summary) | P6 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
-| fr-4.2.1 | Dota 2 GSI engine connected via local HTTP POST on port 3000 | P6 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
-| fr-4.2.2 | Cloud cognitive engine via Gemini API — SRS marks this explicitly as a Phase-4 target, not yet wired | P4 | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
+| fr-4.2.1 | Dota 2 GSI engine connected via local HTTP POST on port 3000 | P6 *(derived)* | code+needs-test-or-review | code+needs-test-or-review | aligned | review record missing | bootstrap-extraction |
+| fr-4.2.2 | Cloud cognitive engine via Gemini API — SRS marks this explicitly as a Phase-4 target, not yet wired | P4 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
 | fr-4.2.3 | TTS module: high-frequency responsive speech with a voice-actor-like tone | P6 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
 | fr-4.2.4 | STT module for G-Voice push-to-talk, supporting Thai and English | P4 *(derived)* | doc-only | doc-only | aligned | primary doc status not accepted/stable, no code mapped | bootstrap-extraction |
 

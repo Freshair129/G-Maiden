@@ -1,8 +1,8 @@
 {
   "$schema": "https://schema.tauri.app/config/2",
   "productName": "G-Maiden",
-  "version": "0.13.2",
-  "identifier": "com.gmaiden.app",
+  "version": "0.13.4",
+  "identifier": "com.gmaiden.desktop",
   "build": {
     "beforeBuildCommand": "node src-tauri/scripts/stage-gpu-feeder.mjs && pnpm -C src build",
     "beforeDevCommand": "node src-tauri/scripts/stage-gpu-feeder.mjs && pnpm -C src dev",
@@ -10,6 +10,13 @@
     "frontendDist": "gen/web"
   },
   "app": {
+    "appDirectoriesOverride": {
+      "config": "$CONFIG/com.gmaiden.app",
+      "data": "$DATA/com.gmaiden.app",
+      "localData": "$LOCALDATA/com.gmaiden.app",
+      "cache": "$CACHE/com.gmaiden.app",
+      "log": "$LOCALDATA/com.gmaiden.app/logs"
+    },
     "windows": [
       {
         "title": "G-Maiden",

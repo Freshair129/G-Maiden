@@ -22,12 +22,12 @@ turning developer infrastructure access into a player-account privilege.
 
 ## Current state
 
-`profiles.role` allows only `user`, `creator`, and `admin`. The G-Maiden controller grants actions
-only to `admin`; no role can delegate roles. Client-side profile updates cannot modify `role`.
+`profiles.role` is server-owned and includes the owner role. Client-side profile updates cannot
+modify it. This record covers role delegation only; it does not define a current operator UI.
 
 ## Proposed authorization model
 
-| Role | G-Maiden batch operations | Role delegation | Platform access |
+| Role | Account administration | Role delegation | Platform access |
 |---|---:|---:|---|
 | `user` | no | no | none |
 | `creator` | no | no | none |
@@ -37,10 +37,8 @@ only to `admin`; no role can delegate roles. Client-side profile updates cannot 
 - `owner` is assigned only by service-role / a trusted platform operator.
 - An owner cannot create another owner through the landing controller. Owner assignment/removal is
   a break-glass dashboard/approved migration operation with audit evidence.
-- Every owner-initiated role change is written to `gmad_download_audit` (or a dedicated
-  authorization audit table if the review determines that scope is clearer).
-- The G-Maiden controller accepts `admin` or `owner` for its existing operations; only `owner` may call
-  the new role-delegation action.
+- Every owner-initiated role change is written to the private authorization audit stream.
+- Only `owner` may perform role delegation; other account capabilities remain separately scoped.
 - Supabase/Vercel project membership remains the way a developer receives deploy/database access;
   it is intentionally separate from `profiles.role`.
 
@@ -50,7 +48,7 @@ only to `admin`; no role can delegate roles. Client-side profile updates cannot 
    column-level restrictions.
 2. Edge Function: replace the single-role guard with auditable role capability checks and add a
    narrow owner-only delegation action.
-3. Landing `/ops`: display the operator role, and expose role management only to an owner.
+3. Native account surface: expose only the role-management state authorized for the current user.
 4. Tests: reject every non-owner delegation attempt; reject owner-to-owner delegation; verify audit
    writes and unchanged G-Maiden admin behavior.
 5. Threat model/RLS review: ensure no user can self-elevate through JWT metadata, direct REST,
@@ -77,10 +75,9 @@ Boss approved CR-019 and provided the first-owner bootstrap target on 2026-07-21
 - Migration `20260721130000_cr019_owner_role_and_delegation.sql` is applied to `gstore`.
 - Exactly one existing profile matched the approved bootstrap email; it was set to `owner` and an
   `owner_bootstrapped` audit row was written. The email is not stored in repository artifacts.
-- `admin-gmad-controller` version 3 is active. It permits `admin` and `owner` for existing G-Maiden
-  operations, while `change_role` requires `owner` and can grant only `user`, `creator`, or `admin`.
-- `deno check` passed for the deployed Function; direct signed-in owner UAT remains the final
-  confirmation for the browser session and delegation workflow.
+- The historic operator implementation is not a current shipped UI or source entrypoint.
+- `deno check` passed for the then-deployed Function; this is historical evidence, not current
+  browser or native acceptance.
 
 ## CHANGELOG
 

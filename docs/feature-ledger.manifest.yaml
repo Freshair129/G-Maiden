@@ -89,17 +89,17 @@ entries:
       review: []
 
   - id: 1.1-g-motion
-    title: "G-Motion — heatmap / last-seen positions / gank-route prediction"
+    title: "G-Motion — last-seen history and heading-aware risk heuristic; heatmap/path prediction is a target"
     kind: feature
     phase_target: P3
     phase_source: doc
-    claimed_status: in-code
+    claimed_status: code+needs-test-or-review
     source: bootstrap-extraction, pruned 2026-07-20
     refs:
       docs: [docs/features/FEAT-G-MOTION.md]
       srs: []
-      code: [src-tauri/src/motion.rs]
-      tests: []
+      code: [src-tauri/src/motion.rs, src-tauri/src/capture.rs]
+      tests: [cargo:motion::tests::, cargo:capture::backend::tests::]
       review: []
 
   - id: 1.1-g-signal
@@ -480,7 +480,7 @@ entries:
     refs:
       docs: []
       srs: []
-      code: [src/src/VoicePacksPage.tsx, src/src/VoiceInventory.tsx, src/src/AudioSettings.tsx]
+      code: [src/src/VoicePacksPage.tsx, src/src/VoiceInventory.tsx]
       tests: []
       review: []
 
@@ -579,7 +579,7 @@ entries:
     refs:
       docs: [docs/change request/CR-034-gid-iam-production-completion.md]
       srs: []
-      code: [supabase/functions/_shared/iam.ts, supabase/functions/_shared/iam_runtime.ts, supabase/functions/_shared/iam_security.ts, supabase/functions/_shared/gmad_admin.ts, supabase/functions/admin-gmad-controller/index.ts, supabase/functions/iam-security-state/index.ts, supabase/functions/iam-session-action/index.ts, supabase/functions/iam-security-events/index.ts, supabase/migrations/20260823221844_cr034_iam_phase1_foundation.sql, supabase/migrations/20260824024920_cr034_iam_phase2_sessions.sql, src/src/AccountSecurity.tsx, src/src/securityApi.ts, src/src/securitySession.ts]
+      code: [supabase/functions/_shared/iam.ts, supabase/functions/_shared/iam_runtime.ts, supabase/functions/_shared/iam_security.ts, supabase/functions/iam-security-state/index.ts, supabase/functions/iam-session-action/index.ts, supabase/functions/iam-security-events/index.ts, supabase/migrations/20260823221844_cr034_iam_phase1_foundation.sql, supabase/migrations/20260824024920_cr034_iam_phase2_sessions.sql, src/src/AccountSecurity.tsx, src/src/securityApi.ts, src/src/securitySession.ts]
       tests: [supabase/functions/_shared/iam.test.ts, supabase/functions/_shared/iam_security.test.ts, supabase/tests/cr034_iam_phase1.sql, supabase/tests/cr034_iam_phase2.sql, src/src/__tests__/securitySession.test.ts]
       review: [docs/change request/CR-034-gid-iam-production-completion.md]
 
@@ -875,17 +875,17 @@ entries:
       tests: []
       review: []
   - id: fr-3.2
-    title: "SRS §3.2 G-Motion (Strategy & Heatmap Prediction)"
+    title: "SRS §3.2 G-Motion (Time-off-map Risk Heuristic)"
     kind: fr
     phase_target: P3
     phase_source: derived
-    claimed_status: doc-only
+    claimed_status: code+needs-test-or-review
     source: bootstrap-extraction
     refs:
       docs: [docs/product/software-requirements-specification.md]
       srs: ['§3.2']
-      code: []
-      tests: []
+      code: [src-tauri/src/motion.rs, src-tauri/src/capture.rs]
+      tests: [cargo:motion::tests::, cargo:capture::backend::tests::]
       review: []
   - id: fr-3.3
     title: "SRS §3.3 G-Signal (Real-time Gank Warning with Voice Interrupt)"
@@ -1044,10 +1044,10 @@ entries:
   # diverge — §4.2's GSI interface ships today while its Gemini interface is
   # explicitly unwired, and a single rolled-up §4.2 row would hide that.
   #
-  # refs.code/tests/review are EMPTY on every row: mapping an SRS interface
-  # clause onto implementing code is a judgement call, not an extraction, so
-  # per the task rule no evidence was invented. claimed_status is `doc-only`
-  # throughout, which is what these rows structurally compute to.
+  # refs.code/tests/review default to EMPTY on SRS rows: mapping an SRS
+  # clause onto implementation is a judgement call, not an extraction. A
+  # source-backed reconciliation may add explicit code/test refs and must keep
+  # status at code+needs-test-or-review until integrated review evidence exists.
   #
   # phase_target is DERIVED, not sourced (`phase_source: heuristic`) so the
   # ledger renders it as an assumption — with ONE exception: fr-4.2.2, where
@@ -1100,13 +1100,13 @@ entries:
     kind: fr
     phase_target: P6
     phase_source: heuristic
-    claimed_status: doc-only
+    claimed_status: code+needs-test-or-review
     source: bootstrap-extraction
     refs:
       docs: [docs/product/software-requirements-specification.md]
       srs: ["§4.2.1"]
-      code: []
-      tests: []
+      code: [src-tauri/src/gsi.rs]
+      tests: [cargo:gsi::tests::]
       review: []
 
   - id: fr-4.2.2

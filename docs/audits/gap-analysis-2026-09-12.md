@@ -2,8 +2,8 @@
 title: "G-Maiden: Codebase and Documentation Gap Analysis — 2026-09-12"
 doc_id: "gap-analysis-2026-09-12"
 status: "historical"
-version: "0.1.1"
-updated: "2026-09-12"
+version: "0.1.3"
+updated: 2026-10-18
 owner: "Boss"
 related_docs:
   - "software-requirements-specification"
@@ -22,7 +22,7 @@ related_docs:
 
 **มีระบบ companion หลักและเส้นทางใช้งานจำนวนมากแล้ว แต่ยังไม่ควรสรุปว่า “ครบ SRS” หรือ “production-ready ทั้งระบบ” จาก code presence หรือ CI สีเขียวเพียงอย่างเดียว.**
 
-การตรวจนี้บันทึก **23 gaps: P1 8 ข้อ, P2 13 ข้อ, P3 2 ข้อ** โดยเป็นรายการที่เลือกตามผลกระทบ ไม่ใช่จำนวน functional requirements ทั้งหมด. ไม่คำนวณเปอร์เซ็นต์ความครบถ้วน เพราะยังไม่มี denominator และเกณฑ์ถ่วงน้ำหนักที่ตกลงกัน.
+การตรวจนี้บันทึก **21 gaps: P1 6 ข้อ, P2 13 ข้อ, P3 2 ข้อ** โดยเป็นรายการที่เลือกตามผลกระทบ ไม่ใช่จำนวน functional requirements ทั้งหมด. ไม่คำนวณเปอร์เซ็นต์ความครบถ้วน เพราะยังไม่มี denominator และเกณฑ์ถ่วงน้ำหนักที่ตกลงกัน.
 
 1. **จัดการ failure-state และ security contract ก่อนขยายการใช้งาน:** sign-out cleanup, expired-grace UI/native mismatch, session-method validation, revocation coverage และ AAL2 enrollment.
 2. **แยก developer-tool exposure จาก player runtime:** G-Orchestra มี write/dispatch HTTP routes แต่ server ไม่ระบุ loopback host และไม่เห็น caller-auth guard ใน request handler.
@@ -43,8 +43,8 @@ related_docs:
 ### แหล่งเปรียบเทียบ
 
 - Parent: [PRD](../product/product-requirements.md), [SRS](../product/software-requirements-specification.md), [engineering spec](../architecture/engineering-spec.md), ADR-11/13/14/16/18.
-- Peer: FEAT-G-* specs, CR-008/016/019/021/022/034, [CR-034 execution plan](../operations/EXEC-PLAN-CR-034-iam-remediation.md), release-channel docs.
-- Implementation: native command/HTTP registries, React routing/builders/auth, all 13 Edge Function entrypoints, migration/test inventory และ workflows.
+- Peer: FEAT-G-* specs, CR-008/019/034, [CR-034 execution plan](../operations/EXEC-PLAN-CR-034-iam-remediation.md), release-channel docs.
+- Implementation: native command/HTTP registries, React routing/builders/auth, active Edge Function entrypoints, migration/test inventory และ workflows.
 - Historical context: [audit 2026-08-26](gap-analysis-prd-srs-vs-impl-2026-08-26.md). ไม่แก้ย้อนหลังหรือยืมเปอร์เซ็นต์/ผลทดสอบจากรายงานนั้นมาเป็นผลปัจจุบัน.
 
 Evidence classes: **S** = source/contract ตรวจตรง, **P** = isolated execution จาก source จริงด้วย mocks, **H** = เอกสารรายงานอดีต, **U** = ยังไม่มี live verification สำหรับข้อสรุปนั้น. Negative finding หมายถึงไม่พบ runtime path ในขอบเขต source/callers ที่ตรวจ ไม่ได้อ้างว่าไม่มีแนวคิดหรือ prototype ในทุก repo ภายนอก.
@@ -82,16 +82,6 @@ Priority ในรายงาน: **P1** แก้หรือมี risk decis
 - Close: อนุมัติ failure contract แล้วทดสอบจริงระดับ hook/adapter กับ timeout/503, provider error, DPAPI error และ native-lock failure. Local cleanup กับ remote revocation ต้องรายงานแยก; ไม่ลด authorization เพื่อแก้ availability.
 - Ownership: ต่อ **CR-034 T10**; root cause/probe อยู่ใน [RCA Case A](../../.brain/rca/2026-09-12-auth-failure-state-gaps.md).
 
-### GAP-02 — Expired grace ทำให้ UI eligible แต่ native locked
-
-**P1 · cross-layer state mismatch · S+P · risk แก้ C-3/HIGH.**
-
-- Expected: UI permission/readiness สะท้อน native authority; within-grace refresh ไม่ทำ UI กระพริบ แต่ expired grace ต้องแสดง unavailable/locked.
-- Actual: [lib.rs:L190](https://github.com/Freshair129/G-Maiden/blob/a4a75542c857beaac68267b90e16707ad3263a45/src-tauri/src/lib.rs#L190) คืน stale เมื่อ cache ยังใช้ได้ มิฉะนั้นล็อกและ Err; [gmadEntitlement.ts](../../src/src/gmadEntitlement.ts) กลืน background error เมื่อเคย eligible โดยอาศัย [gmadFirstRun.ts](../../src/src/gmadFirstRun.ts) ที่ไม่รับ native state.
-- Impact: deck อาจดูอนุญาตแต่ GSI/capture/overlay ถูกล็อก; เป็น state inconsistency ไม่ใช่หลักฐาน native auth bypass.
-- Close: contract tests สำหรับ cold start, valid grace, expired grace, denial, sign-out และ token rotation เชื่อม native decision ถึง rendered state. ระบุ stale-but-allowed ต่างจาก unavailable-and-locked.
-- Ownership: เสนอขยาย CR-022/CR-034 ตาม approval; [RCA Case B](../../.brain/rca/2026-09-12-auth-failure-state-gaps.md). Predicate รันจริงแล้ว; native expiry integration ยังไม่ได้รัน.
-
 ### GAP-03 — “มี Google identity ผูกอยู่” ไม่เท่ากับ “session นี้ล็อกอินด้วย Google”
 
 **P1 · conditional security contract gap · S+P+U · risk แก้ C-3/HIGH.**
@@ -102,23 +92,12 @@ Priority ในรายงาน: **P1** แก้หรือมี risk decis
 - Close: ตกลง session-method/provider contract แล้วทำ negative tests ของบัญชี multi-provider พร้อม controlled provider verification; ไม่มีการเดา claim semantics หรือแก้ Auth provider ในงานนี้.
 - Ownership: **CR-034 D2, T7/T8**.
 
-### GAP-04 — Live-session/revocation policy ไม่ครอบคลุม entitlement flow
-
-**P1 · authorization coverage gap · S+U · risk แก้ C-3/HIGH.**
-
-- Expected: ต้องกำหนดชัดว่า revoked session ใช้ queue, Terms, download และ native entitlement ได้อีกหรือไม่ ภายในเวลาเท่าใด.
-- Actual: `requireIamContext` พบใน admin controller และ iam-* 3 functions; กลุ่ม mint-gid, check-gmad-queue, accept-closed-beta-terms, get-gmad-desktop-entitlement, request-gmad-download ใช้ getUser/own checks แต่ไม่ใช้ shared live-session query.
-- Evidence: [IAM runtime](../../supabase/functions/_shared/iam_runtime.ts), [desktop entitlement entry](../../supabase/functions/get-gmad-desktop-entitlement/index.ts), [download entry](../../supabase/functions/request-gmad-download/index.ts).
-- Impact: มี policy สองแนวทาง; ไม่ควรรับรอง immediate revocation ทั้งผลิตภัณฑ์. ไม่กล่าวว่า endpoint เหล่านี้ unauthenticated เพราะยังมี JWT/user/Terms/grant checks.
-- Close: capability/session decision matrix ต่อ endpoint + revoke/reuse-token negative tests ใน isolated backend และ controlled UAT. Payment webhook เป็นคนละ provider-auth boundary ไม่ควรนับเป็น endpoint ที่ต้องมี user session.
-- Ownership: **CR-034 D3, T3–T5**.
-
 ### GAP-05 — AAL2 enforcement มี แต่เส้นทาง enroll/step-up ยังไม่ครบ
 
 **P1 · operability / incomplete dependency · S+H+U · risk แก้ C-3/HIGH.**
 
 - Expected: ผู้มีสิทธิ์สามารถสร้าง/ยืนยัน factor เพื่อไปถึง assurance ที่ action ต้องใช้.
-- Actual: [iam_runtime.ts:L199](https://github.com/Freshair129/G-Maiden/blob/a4a75542c857beaac68267b90e16707ad3263a45/supabase/functions/_shared/iam_runtime.ts#L199) default `requireAal2=true`; [admin-gmad-controller](../../supabase/functions/admin-gmad-controller/index.ts) ไม่ override. [AccountSecurity.tsx](../../src/src/AccountSecurity.tsx) แสดง factors/devices/events แต่ไม่มี enroll/step-up UI; contacts ยังระบุ Phase 2.
+- Actual: IAM policy กำหนด AAL2 สำหรับ sensitive actions. [AccountSecurity.tsx](../../src/src/AccountSecurity.tsx) แสดง factors/devices/events แต่ไม่มี enroll/step-up UI; contacts ยังระบุ Phase 2.
 - Impact: ผู้มีเพียง AAL1 เข้า privileged action ไม่ได้ตาม policy. เอกสาร 2026-08-28 เคยรายงานไม่มี enrolled factors; จำนวนปัจจุบันไม่ได้ตรวจ.
 - Close: owner เลือก unblock strategy โดยรักษา capability boundary และอนุมัติ MFA flow; test enroll/step-up/revoke/normal-user rejection ก่อนเปิดงานที่พึ่ง AAL2. ไม่ตั้ง false ทั่วระบบ.
 - Ownership: **CR-034 D1, T1/T6**; recovery/rebind ยังเป็นระยะถัดไป ไม่ได้เสร็จเพราะมี session viewer.
@@ -164,7 +143,7 @@ Priority ในรายงาน: **P1** แก้หรือมี risk decis
 | **GAP-12 / P2** G-Motion | SRS §3.2 ขอ route/heatmap; โค้ดใช้ missing-time + heading heuristic. ไม่สามารถอ้างความน่าจะเป็นเฉพาะตำแหน่งจากตัวอย่าง SRS ว่าเป็นผลโมเดลจริง | [motion.rs](../../src-tauri/src/motion.rs), [motion spec](../features/FEAT-G-MOTION.md) | Owner เลือกยอมรับ heuristic แล้วแก้ contract หรือทำ route model ที่มี authorized data/holdout calibration; preserve uncertainty และไม่สร้าง hidden enemy feed. C-3/HIGH หากทำโมเดลใหม่ |
 | **GAP-13 / P2** Enemy economy / lethal advice | SRS §3.4 ต้องเทียบเศรษฐกิจฝ่ายตรงข้าม; prompt มี own stats + counter context. OCR มี module แต่ไม่พบ live caller; model ไม่ bundle. Enemy economy จึงยังไม่ใช่ observed input | [master.rs:L51](https://github.com/Freshair129/G-Maiden/blob/a4a75542c857beaac68267b90e16707ad3263a45/src-tauri/src/master.rs#L51), [gsi.rs::GameTick](../../src-tauri/src/gsi.rs), [ocr.rs](../../src-tauri/src/ocr.rs) | ตัดสิน capability boundary จากข้อมูลที่สังเกตได้จริง; optional capture/OCR ต้องมี accuracy/freshness evidence. Unknown stats ห้ามแทนด้วยตัวเลขเดา. G-Master/G-Damage; C-3/HIGH |
 | **GAP-14 / P2** G-Log feedback loop | SRS §3.6 ต้องจูนเกมถัดไป; มี replay_fit แต่ capture เริ่ม Motion::new() ซึ่งใช้ default params. Offline fit ไม่ใช่ automated/adopted calibration lifecycle | [replay_fit.rs](../../tests/perf/src/bin/replay_fit.rs), [capture.rs:L250](https://github.com/Freshair129/G-Maiden/blob/a4a75542c857beaac68267b90e16707ad3263a45/src-tauri/src/capture.rs#L250), [motion.rs](../../src-tauri/src/motion.rs) | กำหนด manual-reviewed หรือ automatic application policy, versioned parameters, holdout improvement, rollback และ local-only provenance. ไม่ต้องเปิด auto-learning หากยังไม่มีหลักฐาน. C-2/MEDIUM หรือ C-3/HIGH ถ้าอัตโนมัติ |
-| **GAP-15 / P2** /ops และ web route contract | docs บางชุดอ้าง admin UI; source มี admin function แต่ไม่มี OpsPage/dispatch. มี client /demo,/public-demo แต่ vercel config ไม่มี rewrite จึงยังรับรอง deep link production ไม่ได้ | [landing/main.tsx](../../landing/src/main.tsx), [vercel.json](../../landing/vercel.json), [CR-018](../change%20request/CR-018-ops-route-spa-rewrite.md) | **CR-034 D4/T9** เลือกสร้าง/เลิกอ้าง /ops; ถ้าสร้างต้องมี capability tests. ตรวจ direct-navigation/refresh ของ published routes แยกจาก client render. /ops C-3/HIGH |
+| **GAP-15 / P2** /ops และ web route contract | docs บางชุดอ้าง admin UI; source ไม่มี OpsPage/dispatch. มี client /demo,/public-demo แต่ vercel config ไม่มี rewrite จึงยังรับรอง deep link production ไม่ได้ | [landing/main.tsx](../../landing/main.tsx), [vercel.json](../../landing/vercel.json) | **CR-034** ติดตามการลบคำกล่าวอ้าง /ops; ตรวจ direct-navigation/refresh ของ published routes แยกจาก client render. /ops C-3/HIGH |
 | **GAP-16 / P2** G-Mind scope | SRS §3.10 ระบุ cloud provider choice; source มี Auto/Claude/Ollama ไม่ใช่ multi-cloud router. Gemini ถูก SRS note ระบุ deferred แล้ว จึงไม่ใช่ provider failure | [master.rs](../../src-tauri/src/master.rs), [slm.rs](../../src-tauri/src/slm.rs), [mind spec](../features/FEAT-G-MIND.md) | ยืนยัน scope baseline หรือออก approved provider contract + fallback/timeout/privacy tests. ไม่เพิ่ม Gemini เพียงเพื่อให้เช็กลิสต์เต็ม. C-2/MEDIUM |
 | **GAP-17 / P2** Persona end-to-end coverage | มี coach/silent/caster/meme presets และ critical-line variants; G-Master ยังใช้ PERSONA_PROMPT และ THROTTLE คงที่. UI copy “พากย์ต่อเนื่อง” ยังต้องมี behavioral acceptance ข้ามทุกเสียง | [Control.tsx:L464](https://github.com/Freshair129/G-Maiden/blob/a4a75542c857beaac68267b90e16707ad3263a45/src/src/app/Control.tsx#L464), [master.rs:L19](https://github.com/Freshair129/G-Maiden/blob/a4a75542c857beaac68267b90e16707ad3263a45/src-tauri/src/master.rs#L19), [tts.rs](../../src-tauri/src/tts.rs) | ตาราง preset x announcer/advice/critical path พร้อม observable frequency/tone; Silent ไม่ปิด critical interrupt/Revision. หรือปรับคำอธิบายให้ตรง scope ปัจจุบัน. C-2/MEDIUM |
 | **GAP-18 / P2** Mode/asset readiness | DXGI Lite ไม่มี CV gank chain; draft portraits/OCR/Piper resources ไม่อยู่ใน tracked models แม้มี conditional code. คำว่า implemented ทำให้ผู้ใช้คาดว่าจะใช้ได้ทุกเครื่องไม่ได้ | [capture.rs](../../src-tauri/src/capture.rs), [models](../../models/), [tauri.conf.json](../../src-tauri/tauri.conf.json), [tts.rs](../../src-tauri/src/tts.rs) | Capability matrix ต่อ fresh install/full/Lite/model-missing พร้อม UI reason, resource license/provenance และ packaging test. ไม่ติดตั้ง model เพิ่มในงาน audit. C-2/MEDIUM |
@@ -172,11 +151,10 @@ Priority ในรายงาน: **P1** แก้หรือมี risk decis
 | **GAP-20 / P2** Docs/ledger semantic drift | AGENTS/feature map/roadmap มี paths/status เก่า; modules.json app=0.7.2; ledger G-Persona เป็น doc-only/aligned ทั้งที่มี code. “aligned” จาก incomplete manifest ไม่พิสูจน์ runtime parity | [ledger](../FEATURE-LEDGER.md), [manifest](../feature-ledger.manifest.yaml), [feature map](../../PROJECT_FEATURE_MAP.md), [llms discrepancies](../../llms-full.txt) | แก้ authoritative claims/mappings/approval provenance แล้ว regenerate; ไม่แก้ generated ledger ตรง ๆ. รักษา historical audits และแยก planned vs implemented. C-2/LOW |
 | **GAP-21 / P2** Privacy/data-flow wording | Local G-Log/CV storage, cloud advice prompt, identity backend, explicit match contribution และ landing analytics มีคนละ boundary; absolute “ทุกอย่าง local” ไม่ตรงกับ call sites. ไม่พบหลักฐานว่า raw G-Log ถูก auto-upload | [master.rs::build_prompt](https://github.com/Freshair129/G-Maiden/blob/a4a75542c857beaac68267b90e16707ad3263a45/src-tauri/src/master.rs#L51), [ADR-11](../architecture/adr/ADR-11-optin-data-contribution-flywheel.md), [landing analytics](../../landing/src/main.tsx) | Approved data-flow inventory ระบุ fields/destination/trigger/consent/local-only exclusions และ egress tests ตาม mode; อย่าส่ง token/ข้อมูลผู้เล่นเข้า docs. Docs C-2/LOW; เปลี่ยน egress C-3/HIGH |
 | **GAP-22 / P3** G-Stream | SRS §3.12 ขอ broadcast co-host และ sensitive-field masking; ไม่พบ runtime mode ที่ครอบคลุมทั้ง deck/overlay. Privacy local-only ไม่ใช่ screen masking | [stream spec](../features/FEAT-G-STREAM.md), [SRS](../product/software-requirements-specification.md), [overlay](../../src/src/app/Overlay.tsx) | ระบุ fields/surfaces ที่ mask และ test screenshot/state; เลือก milestone ก่อนใช้คำว่า stream-ready. C-2/MEDIUM |
-| **GAP-23 / P3** LLM reference assurance | llms เป็น manual snapshot; ยังไม่มี freshness automation และ CodeDoc default model ไม่ติดตั้ง. Link/schema validation ไม่เท่ากับ semantic alignment verdict | [llms verification](../../llms-full.txt), [aligner skill](../../.agents/skills/rwang-codedoc-aligner/SKILL.md) | เริ่มจาก owner/update checklist และ scoped source review ตาม diff; provisioning/model override ต้องประกาศชัด. ไม่จำเป็นต้องสร้าง generator หาก manual review เพียงพอ. C-1/LOW |
+| **GAP-23 / P3** LLM reference assurance | llms เป็น manual snapshot; ยังไม่มี freshness automation. Link/schema validation ไม่เท่ากับ semantic alignment verdict | [llms verification](../../llms-full.txt) | เริ่มจาก owner/update checklist และ scoped source review ตาม diff. ไม่จำเป็นต้องสร้าง generator หาก manual review เพียงพอ. C-1/LOW |
 
 ## 6. สิ่งที่มีอยู่แล้วและไม่ควรสร้างซ้ำ
 
-- **Release first-run gate, Terms receipts และ private downloads:** มี frontend/native/function/migration paths แล้ว ต้องแก้ failure/coverage ไม่เขียน auth ใหม่ทั้งชุด.
 - **Build advisor:** ใช้ real hero/inventory/advice แล้ว; lane/next item ยังแสดง unknown อย่างตั้งใจ ไม่ใช่ข้อผิดพลาดที่ควรเติม mock.
 - **Voice packs และ Piper:** 24 event contract, safe archive/path helpers, fallback และ optional Piper code มีอยู่แล้ว; ช่องว่างคือทรัพยากร/acceptance ไม่ใช่เริ่ม TTS จากศูนย์.
 - **G-Persona:** มี presets ใน UI/native; ledger doc-only เกิดจาก map/contract scope ไม่ครบ จึงไม่ควรสรุปว่าไม่มี feature.
@@ -190,8 +168,8 @@ Priority ในรายงาน: **P1** แก้หรือมี risk decis
 
 | ลำดับ | ผลลัพธ์ที่ต้องได้ | Gap / dependency | Exit criteria |
 | --- | --- | --- | --- |
-| 1 — Baseline/decision | Owner เลือก CR-034 D1–D4; ระบุ closed-beta/current capability promise และ developer-server exposure model | GAP-03–06, 15; ใช้ state board เดิม | Decision record ที่ระบุ scope/approval โดยไม่ปลอม live status |
-| 2 — Failure contracts | เอกสาร + regression cases ของ sign-out และ expired-grace state | GAP-01/02; ต่อ T10 และเสนอขอบเขต CR-022/034 | Approved docs ก่อน code; หลังแก้ต้องมี source-level และ native/WebView integration evidence |
+| 1 — Baseline/decision | Owner เลือก CR-034 D1–D4; ระบุ current account-capability promise และ developer-server exposure model | GAP-03–06, 15; ใช้ state board เดิม | Decision record ที่ระบุ scope/approval โดยไม่ปลอม live status |
+| 2 — Failure contracts | เอกสาร + regression cases ของ account sign-out and session-expiry state | GAP-01; ต่อ T10 และ CR-034 | Approved docs ก่อน code; หลังแก้ต้องมี source-level และ native/WebView integration evidence |
 | 3 — Access/deployment assurance | Policy matrix, MFA path, revocation coverage, isolated tests และ controlled live probes | GAP-03–06; D1/D2/D3 และ owner live gate | Negative cases ผ่าน; ผู้ใช้/admin ทำเส้นทางที่อนุญาตได้จริง; ไม่มี blanket bypass |
 | 4 — Release evidence | Path-specific CI, NFR/device/install/update evidence, model/mode readiness และ economy go-live decision | GAP-07/08/18/19 | Evidence ผูก exact artifact; SKIP ไม่ปิด required acceptance |
 | 5 — Contract reconciliation | แก้ parent/peer docs + ledger mappings, privacy terms และ feature promises | GAP-12–17/20/21 | Facts/intent/status ตรงกัน, graph gate ผ่าน, history ไม่ถูก rewrite |
@@ -222,8 +200,7 @@ Node `v24.19.0`; ไม่มี network/account calls:
 | Raw strict graph | **exit 1**; scanner รายงาน 217 violations / 161 scanner-blocking items. ในจำนวนนี้มี severity=error 14 ข้อ ซึ่ง wrapper ยอมรับตาม checklist ครบ 14 และ uncovered=0. ไม่ใช่ graph ที่ปราศจากปัญหา |
 | เทียบ baseline graph | รายการ violations ทั้งชุดเท่ากับ HEAD เดิม; audit นี้ไม่เพิ่ม violation. เพิ่มเอกสารจาก 145 เป็น 146 และ nodes จาก 270 เป็น 271 |
 | Local source/document references | 81 local links และ 17 line anchors ใน audit + RCA ตรวจ path/ช่วงบรรทัดครบ |
-| Gap identifiers | GAP-01 ถึง GAP-23 ครบ ไม่ซ้ำเป็น gap ใหม่จากการอ้างข้ามส่วน |
-| Code-Doc Aligner | **INDETERMINATE, process exit 2** ที่ preflight เพราะ default Mellum model ไม่อยู่ใน Ollama; ไม่แทนโมเดลโดยไม่ประกาศและไม่อ้าง semantic alignment ผ่าน |
+| Gap identifiers | Retained identifiers are stable and unique; cross-references do not create new gaps. |
 | Diff scope | เพิ่ม audit/RCA และ regenerate graph artifacts 6 ไฟล์; application source/tests/version และ llms เดิมไม่เปลี่ยนในงานนี้ |
 
 Graph-wrapper PASS เป็น structural gate ภายใต้ข้อยกเว้นเดิม ไม่ได้หักล้าง GAP-20 เรื่อง semantic/registry mapping และไม่ได้แทน live acceptance.
@@ -240,5 +217,7 @@ Graph-wrapper PASS เป็น structural gate ภายใต้ข้อย�
 
 | Version | Date | Summary |
 | --- | --- | --- |
+| 0.1.3 | 2026-10-18 | Reconcile account-readiness findings with the current account-independent local-core contract; retain remaining evidence-backed gaps. |
 | 0.1.0 | 2026-09-12 | วิเคราะห์ 23 gaps จาก source/requirements พร้อม priority, evidence, closure criteria, ownership และ RCA ของสอง auth failure-state cases; ไม่มี application code change. |
 | 0.1.1 | 2026-09-12 | Pin historical source line references to the audited commit after local remediation moved/removed source lines; findings remain the original audit snapshot. |
+| 0.1.2 | 2026-10-16 | Remove retired local review integration and related references. |

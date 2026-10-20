@@ -1,35 +1,31 @@
-import { describe, expect, it, vi } from "vitest";
-import { signOutWithRuntimeLock } from "../securitySession";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import { getCurrentSignOut, localAuthBlocked, prepareGoogleSignIn, signOutCurrent } from "../securitySession";
 
-describe("signOutWithRuntimeLock", () => {
-  it("locks native runtime before terminating the current provider session", async () => {
+describe("signOutCurrent", () => {
+  beforeEach(() => { prepareGoogleSignIn(); });
+
+  it("revokes account access and clears local credentials without locking the local runtime", async () => {
     const order: string[] = [];
-    const result = await signOutWithRuntimeLock(
-      "current",
-      async () => { order.push("lock"); },
-      async (scope) => { order.push(`signout:${scope}`); return { error: null }; },
-    );
-    expect(result).toEqual({ ok: true, scope: "current" });
-    expect(order).toEqual(["lock", "signout:local"]);
+    const revokeRemote = vi.fn(async () => { order.push("revoke"); });
+    const cleanupLocal = vi.fn(async () => { order.push("cleanup"); });
+
+    await signOutCurrent(revokeRemote, cleanupLocal);
+
+    expect(order).toEqual(["revoke", "cleanup"]);
+    expect(getCurrentSignOut()).toEqual({ phase: "done", error: null, warning: null });
+    expect(localAuthBlocked()).toBe(true);
   });
 
-  it("requires AAL2 upstream for others but never locks the local runtime", async () => {
-    const lock = vi.fn(async () => undefined);
-    const signOut = vi.fn(async (scope: "local" | "others") => ({ error: null, scope }));
-    const result = await signOutWithRuntimeLock("others", lock, signOut);
-    expect(result).toEqual({ ok: true, scope: "others" });
-    expect(lock).not.toHaveBeenCalled();
-    expect(signOut).toHaveBeenCalledWith("others");
-  });
+  it("still clears local credentials when server revocation is unavailable", async () => {
+    const cleanupLocal = vi.fn(async () => undefined);
 
-  it("fails closed when the native lock cannot be confirmed", async () => {
-    const signOut = vi.fn(async () => ({ error: null }));
-    const result = await signOutWithRuntimeLock(
-      "current",
-      async () => { throw new Error("native unavailable"); },
-      signOut,
-    );
-    expect(result).toEqual({ ok: false, code: "runtime_lock_failed" });
-    expect(signOut).not.toHaveBeenCalled();
+    await signOutCurrent(async () => { throw new Error("offline"); }, cleanupLocal);
+
+    expect(cleanupLocal).toHaveBeenCalledOnce();
+    expect(getCurrentSignOut()).toEqual({
+      phase: "done",
+      error: null,
+      warning: "ออกจากระบบในเครื่องแล้ว แต่ยังยืนยันการยกเลิก session บนเซิร์ฟเวอร์ไม่ได้",
+    });
   });
 });

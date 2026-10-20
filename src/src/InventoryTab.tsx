@@ -4,18 +4,8 @@
 // row lets the player redeem a code via `useWallet().redeem()`; a successful
 // redeem drops the newly granted item into the grid with a brief highlight.
 //
-// Install/activate reuses the EXACT pipeline the rest of the app already
-// ships (see src-tauri/src/gsi.rs `run_announcer_install` +
-// src-tauri/src/voice_api.rs, and the frontend precedent in
-// AudioSettings.tsx / VoiceInventory.tsx):
-//   ติดตั้ง  -> pack-download Edge Fn (signed URL) -> download bytes
-//            -> voice_api_import_archive (extracts on disk — the local
-//               :3000 endpoint below never writes files itself)
-//            -> POST http://127.0.0.1:3000/announcer/install
-//               body {"packId": ..., "activate": true} (parse_install_request
-//               in gsi.rs accepts exactly this shape)
-//   ใช้งาน   -> invoke("voice_api_action", { action: "activate", packId })
-//               (same call AudioSettings.tsx / VoiceInventory.tsx use to equip)
+// Consumer installation goes through Rust, which verifies the Store purchase,
+// downloads from the private bucket, and records the signed Store receipt.
 //   ✓ กำลังใช้งาน -> voiceState.activePackId === item.packId
 
 import { useCallback, useEffect, useState } from "react";
@@ -244,39 +234,15 @@ export default function InventoryTab({ onActivated }: InventoryTabProps = {}) {
     setInstallingId(item.id);
     setRowError((r) => ({ ...r, [item.id]: "" }));
     try {
-      const { data, error } = await supabase.functions.invoke<{
-        url?: string;
-        signedUrl?: string;
-        downloadUrl?: string;
-      }>("pack-download", { body: { item_id: item.id } });
+      const { data: { session }, error } = await supabase.auth.getSession();
       if (error) throw error;
-      const url = data?.url || data?.signedUrl || data?.downloadUrl;
-      if (!url) throw new Error("pack-download ไม่คืน URL สำหรับดาวน์โหลด");
+      if (!session?.access_token) throw new Error("เข้าสู่ระบบ Store ก่อนติดตั้งแพ็กเสียง");
 
-      const res = await fetch(url);
-      if (!res.ok) throw new Error(`ดาวน์โหลดล้มเหลว (${res.status})`);
-      const bytes = Array.from(new Uint8Array(await res.arrayBuffer()));
-
-      // Land the bundle on disk first — /announcer/install (below) never
-      // writes files; it only activates + reports on a pack that's already
-      // under voice-cache/packs/<id>/ (src-tauri/src/gsi.rs). This is the
-      // same in-process zip extraction AudioSettings.tsx / VoiceInventory.tsx
-      // use for drag-and-drop imports.
-      await invoke("voice_api_import_archive", { name: `${item.packId}.zip`, bytes });
-
-      // Now hit the real install endpoint — same pipeline G-AnnStudio uses,
-      // same body shape `parse_install_request` expects.
-      const resp = await fetch("http://127.0.0.1:3000/announcer/install", {
-        method: "POST",
-        headers: { "content-type": "application/json" },
-        body: JSON.stringify({ packId: item.packId, activate: true }),
+      await invoke("voice_api_install_store_pack", {
+        itemId: item.id,
+        accessToken: session.access_token,
       });
-      const json = (await resp.json().catch(() => ({}))) as { ok?: boolean; error?: string };
-      if (!json.ok) throw new Error(json.error || "ติดตั้ง pack ไม่สำเร็จ");
-
       await refreshVoiceState();
-      // install auto-activates (body sets "activate": true above) — the pack
-      // is live now, so this is the right moment to offer the Voice jump.
       onActivated?.();
     } catch (e) {
       setRowError((r) => ({ ...r, [item.id]: errMessage(e) }));
@@ -367,6 +333,8 @@ export default function InventoryTab({ onActivated }: InventoryTabProps = {}) {
                     <div style={styles.cardMeta}>ได้มาเมื่อ {formatDate(row.acquiredAt)}</div>
                     {status === "unsupported" ? (
                       <div style={styles.cardMeta}>ไอเทมประเภทนี้ยังไม่รองรับการติดตั้งอัตโนมัติ</div>
+                    ) : row.source !== "purchase" ? (
+                      <div style={styles.cardMeta}>ติดตั้งแพ็กเสียงได้เมื่อซื้อจาก Store เท่านั้น</div>
                     ) : status === "active" ? (
                       <button type="button" disabled style={{ ...styles.btn, ...styles.btnActive }}>
                         ✓ กำลังใช้งาน

@@ -84,7 +84,7 @@ test('feature-bearing detector matches FEAT/SPEC docs and explicit additive CRs 
 test('active-doc heuristic excludes historical docs and generated audit surfaces', () => {
   assert.equal(isActiveDoc({ path: 'docs/audits/report.md', status: null }), false);
   assert.equal(isActiveDoc({ path: 'docs/product/roadmap.md', status: null }), true);
-  assert.equal(isActiveDoc({ path: 'docs/change request/CR-018.md', status: 'historical' }), false);
+  assert.equal(isActiveDoc({ path: 'docs/change request/CR-040.md', status: 'historical' }), false);
 });
 
 test('classification covers planned, weakly-anchored, archived, superseded, and orphan-candidate', () => {

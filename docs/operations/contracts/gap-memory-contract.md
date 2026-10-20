@@ -2,14 +2,14 @@
 title: "G-Memory Local Privacy and Data Contract"
 doc_id: "gap-memory-contract"
 status: "draft"
-version: "0.1.0"
-updated: "2026-10-01"
-owner: "Product Owner Agent (Luna Max)"
+version: "0.2.0"
+updated: "2026-10-20"
+owner: "Boss"
 attributes:
   doc_type: "feature-contract"
   change_class: "C-3"
   risk: "HIGH"
-  decision_authority: "Delegated D7 design choices accepted; exact-hash contract disposition is recorded separately in wave-1-po-review.json. Implementation, hosted, legal, and broader privacy acceptance remain separate."
+  decision_authority: "Boss decision and named Privacy Owner acceptance required; no delegation is evidenced here."
 related_docs:
   - "docs/features/FEAT-G-MEMORY.md"
   - "docs/operations/gap-closure-product-owner-decisions.md"
@@ -18,13 +18,11 @@ related_docs:
 
 # G-Memory Local Privacy and Data Contract
 
-> **Status:** design candidate only. G-Memory is not implemented. This draft reconciles delegated D7; it is not implementation, account, provider, release, or privacy-acceptance evidence.
+> **Status:** design candidate only. G-Memory is not implemented. This draft is a candidate only; the D7 proposal is unapproved and this is not implementation, account, provider, release, or privacy-acceptance evidence.
 
 ## 1. Purpose, authority, and boundaries
 
-This contract defines the candidate local data boundary for G-Memory before any code is authorized. D7 sequences Memory → Voice → Coach and requires local storage, provenance, retention, deletion, and retrieval rules. Memory content and its derived aggregates must remain on-device and out of cloud prompts under the current decision.
-
-The source requirements describe persistent player memory for hero preferences, repeated mistakes, MMR trends, and play style. The current G-Memory feature document also permits a summary in cloud prompts. D7 resolves that conflict in favor of the stricter local-only rule until a separate change request is approved. ADR-11's opt-in contribution is a separate data purpose; account sign-in or match-sharing consent does not authorize memory egress.
+This contract proposes a local data boundary for G-Memory before any code is authorized. The sequence and controls below remain unapproved proposals pending Boss decision and named Privacy Owner review. The October 1 packet's claimed D7 delegation is not authority. ADR-11's opt-in contribution is a separate data purpose; account sign-in or match-sharing consent does not authorize memory egress.
 
 This document covers G-Memory's candidate data, lifecycle, retrieval boundary, and verification criteria. G-Voice and G-Coach remain later consumers; this does not authorize their microphone, STT, analysis, prompt, or UI implementation. The shared G-Master prompt path remains root-owned.
 
@@ -68,7 +66,7 @@ Never copy or retain in Memory: raw G-Log lines, full GameTick objects, SteamID/
 
 ## 5. Owner partition and user controls
 
-The Product Owner selected one opaque local Memory scope per Windows user profile, disclosed as shared by anyone using that Windows login. Create a random owner-scope identifier; never derive it from Google, GID, Steam, email, a token, or a device fingerprint. Authentication remains orthogonal.
+This draft proposes one opaque local Memory scope per Windows user profile, disclosed as shared by anyone using that Windows login; both choices remain pending owner and Privacy Owner approval. Create a random owner-scope identifier; never derive it from Google, GID, Steam, email, a token, or a device fingerprint. Authentication remains orthogonal.
 
 Memory is local and anonymous use is supported; no server identity association, sync, or account-based merge is created. At every app start, context and ingestion are disarmed until an explicit enable writes a valid fresh eligibility epoch. This preserves the data across sessions without silently resuming collection after restart.
 
@@ -100,7 +98,7 @@ Interrupted, corrupt, oversized, unsupported, or provenance-mismatched logs prod
 
 ## 7. Retention, deletion, and recovery
 
-The Product Owner selected retention of the latest 1,000 eligible local contributions and no more than 365 days, whichever cap comes first. Recompute hero counts/recency after expiry. Keep the snapshot plus bounded control metadata at or below 5,000,000 bytes per 1,000 local contributions. Do not change G-Log's retention policy.
+Proposed retention, pending owner and Privacy Owner approval, is the latest 1,000 eligible local contributions and no more than 365 days, whichever cap comes first. Recompute hero counts/recency after expiry. Keep the snapshot plus bounded control metadata at or below 5,000,000 bytes per 1,000 local contributions. Do not change G-Log's retention policy.
 
 Clear is ordered for crash safety: (1) suppress context/writes in process; (2) atomically persist disabled control metadata with a new data epoch, new eligibility cutoff, and clear_pending=true; (3) erase the prior projection and cache; (4) durably set clear_pending=false. Report success only after the new epoch and erasure are durable. If control persistence fails, keep the current process suppressed, make no source/projection mutation, and report incomplete erasure; do not claim durable suppression. If cleanup or final metadata persistence fails, the pending state blocks all use until retry. Startup is always disarmed and never reloads an epoch-mismatched snapshot or rescans history.
 
@@ -110,7 +108,7 @@ On missing, corrupt, invalid, or mismatched control metadata, provide no context
 
 ## 8. Schema, import, and export
 
-Use a bounded JSON snapshot plus separate durable control metadata. The Product Owner selected JSON v1 instead of a database. Control metadata is never exported or imported and contains control_schema_version, owner_scope_id, validity state, data_epoch, eligibility_epoch, eligibility cutoff match-start sequence, clear_pending, and at most 64 pending-delete records. Startup is disarmed even when this metadata is valid; missing, corrupt, invalid, pending, or epoch-mismatched state blocks context and ingestion until cleanup and an explicit enable succeed.
+This draft proposes a bounded JSON snapshot plus separate durable control metadata, with JSON v1 instead of a database; the storage choice remains pending owner and Privacy Owner approval. Control metadata is never exported or imported and contains control_schema_version, owner_scope_id, validity state, data_epoch, eligibility_epoch, eligibility cutoff match-start sequence, clear_pending, and at most 64 pending-delete records. Startup is disarmed even when this metadata is valid; missing, corrupt, invalid, pending, or epoch-mismatched state blocks context and ingestion until cleanup and an explicit enable succeed.
 
 Minimum local snapshot shape:
 
@@ -202,11 +200,11 @@ All of these are **NOT RUN** for this documentation task. Static inspection conf
 
 After contract approval, the first code slice is limited to the local JSON v1 projection, separate durable control metadata, allowlisted hero history, bounded query, explicit enable/disable/clear/export/import, source-delete journal integration, and the required failure/race/restart tests. It must wait for root's stable G-Log completion, provenance, sequence, and deletion hooks. No Voice, Coach, prompt integration, provider, server, migration, embedding, vector database, or network code is included.
 
-Root owns shared G-Master integration. Any existing live-GSI egress change or Memory/Voice/Coach remote use remains a separate decision. D7 and the execution DAG govern sequence and scope.
+Root owns shared G-Master integration. Any existing live-GSI egress change or Memory/Voice/Coach remote use remains a separate decision. The D7 proposal and execution DAG do not govern implementation; obtain owner and privacy acceptance first.
 
 ## 13. Decisions and remaining gates
 
-The Product Owner selected: default-off/future-match-only ingestion; one disclosed Windows-user scope; JSON v1; 1,000 matches/365 days; a 5,000,000-byte combined storage cap per 1,000 local contributions; and hero-use history as the initial fact. This draft adds per-run explicit arming, match-start cutoffs, durable clear epochs, and bounded deletion recovery to prevent restart/race resurrection.
+Proposed data controls for owner and Privacy Owner review, not selected decisions: default-off and future-match-only ingestion; one disclosed Windows-user scope; JSON v1; provisional limits of 1,000 matches, 365 days, and 5,000,000 bytes per 1,000 local contributions; and hero-use history as the initial fact. Per-run arming, match-start cutoffs, durable clear epochs, and bounded deletion recovery are also proposals pending review.
 
 Remaining evidence gates are the representative source-file size check for the provisional 2 MiB parse bound and root's G-Log completion/provenance/deletion contract. ADR-11's user-initiated defined source-match contribution remains outside this Memory contract and must never carry Memory facts or aggregates. The existing live-GSI remote prompt conflict remains a separate unresolved egress decision; this document does not remediate it or claim global raw-G-Log no-egress.
 
@@ -216,4 +214,5 @@ No code, provider, deployment, or privacy-acceptance approval is implied.
 
 | Version | Date | Change | Owner |
 | --- | --- | --- | --- |
-| 0.1.0 | 2026-10-01 | Added the D7 local-memory contract, including durable epoch eligibility, fail-closed clear/delete recovery, import provenance, and bounded retrieval. | Product Owner Agent (Luna Max) |
+| 0.1.0 | 2026-10-01 | Historical draft entry; authorship and approval attribution are unverified. | Unverified historical attribution |
+| 0.2.0 | 2026-10-20 | Correct unsupported delegation and selected-policy claims; mark controls as proposals pending owner and Privacy Owner review. | Boss |

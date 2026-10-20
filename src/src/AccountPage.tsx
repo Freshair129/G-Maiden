@@ -17,7 +17,6 @@ import { useIdentity } from "./live/identity";
 import { useProfile } from "./profile";
 import WalletTab from "./WalletTab";
 import LedgerTab from "./LedgerTab";
-import GmadEntitlementPanel from "./GmadEntitlementPanel";
 import AccountSecurity from "./AccountSecurity";
 
 type AccountMode = "account" | "wallet" | "ledger" | "security";
@@ -67,8 +66,6 @@ export default function AccountPage({ entryMode, entryNonce }: { entryMode?: Acc
         G-Maiden landing site, and creator tools like G-AnnStudio all resolve the same Google
         sign-in to the same GID. The deck works without an account; this adds sync and linking.
       </p>
-      <GmadEntitlementPanel />
-
       <div className="gm-account-tabs" role="tablist" aria-label="Account sections">
         {ACCOUNT_TABS.map((t) => (
           <button

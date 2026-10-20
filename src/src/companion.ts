@@ -2,7 +2,7 @@ import { useRef, useSyncExternalStore } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { GameTick, GsiStatus, MinimapCv, MinimapFrame, DraftRoster, EnemyMissing, SignalAlert, ResourceStats, SensorHealth, UtteranceEvent } from "./live/events";
+import type { GameTick, GsiFreshness, GsiStatus, MatchSessionMetadata, MinimapCv, MinimapFrame, DraftRoster, EnemyMissing, SignalAlert, ResourceStats, SensorHealth, UtteranceEvent } from "./live/events";
 import { buildMatch } from "./live/buildMatch";
 import { buildUtterances, type Utterance } from "./live/utterances";
 import { buildHeroes, assignEnemySlot } from "./live/buildHeroes";
@@ -21,6 +21,7 @@ import { stepPhase, type MatchPhase } from "./live/phase";
 import { fetchOpenDotaProfile, type OpenDotaProfile } from "./live/opendota";
 import { loadIdentity, saveIdentity, IDENTITY_EVENT } from "./live/identity";
 import { heroName } from "./live/heroNames";
+import { allowsSessionLifecycleAdvance, sessionEpochRelation } from "./live/session";
 
 const STEAMID64_BASE = 76561197960265728n;
 
@@ -37,12 +38,14 @@ export type CompanionData = {
     mode: string;
     phase: "pregame" | "live";
     // CR-011 §B/§E phase axis (CR011-P3-02): standby -> prep -> live -> debrief,
-    // derived by live/phase.ts's stepPhase() from GSI online + game_state. Kept
+    // derived by live/phase.ts's stepPhase() from source freshness/process + game_state. Kept
     // separate from the existing `phase` field above (that one stays exactly as
     // it was — this is additive, not a replacement).
     matchPhase: MatchPhase;
     minimapState: "empty" | "live";
     gsiOnline: boolean;
+    gsiFreshness: GsiFreshness;
+    gsiAgeMs: number | null;
     centerLabel: string;
     centerSubLabel: string;
     leftTeamName: string;
@@ -247,12 +250,14 @@ export const FALLBACK: CompanionData = {
     matchPhase: "standby",
     minimapState: "empty",
     gsiOnline: false,
+    gsiFreshness: "unavailable",
+    gsiAgeMs: null,
     centerLabel: "NOT IN A MATCH",
     centerSubLabel: "WAITING FOR GSI",
     leftTeamName: "Radiant",
     rightTeamName: "Dire",
-    leftScore: 0,
-    rightScore: 0,
+    leftScore: -1,
+    rightScore: -1,
     watchLabel: "WATCH IN-GAME",
     // -1 = "no reading" (same convention as telemetry below) so the Live page
     // renders "—". Was a hardcoded 3 that buildMatch never overrode, so the
@@ -262,11 +267,11 @@ export const FALLBACK: CompanionData = {
     voicePack: "Calm tactical",
     privacy: "Local-only",
     systemStatus: "Companion monitoring",
-    playerStats: { goal: "Hold river", net: "0", ward: "0/0", gpm: 0, xpm: 0 },
+    playerStats: { goal: "Hold river", net: "—", ward: "—", gpm: -1, xpm: -1 },
     player: {
-      nw: 0, nwAvg: 0, gpm: 0, gpmAvg: 0, xpm: 0, xpmAvg: 0,
-      k: 0, kAvg: 0, d: 0, dAvg: 0, a: 0, aAvg: 0,
-      cs: 0, csAvg: 0, denies: 0, deniesAvg: 0, ping: 0
+      nw: -1, nwAvg: -1, gpm: -1, gpmAvg: -1, xpm: -1, xpmAvg: -1,
+      k: -1, kAvg: -1, d: -1, dAvg: -1, a: -1, aAvg: -1,
+      cs: -1, csAvg: -1, denies: -1, deniesAvg: -1, ping: -1
     }
   },
   heroes: FALLBACK_HEROES,
@@ -294,7 +299,7 @@ export const FALLBACK: CompanionData = {
   agentSector: { name: "G-Maiden", title: "Tactical AI", status: "Standby", summary: [] },
   insights: { powerScore: -1, winRate: -1, objectiveControl: -1, wardEfficiency: -1, learnedMatches: -1 },
   history: [],
-  momentum: { value: 0, label: "—", tone: "info", phase: "pregame", phaseLabel: "ก่อนเกม" },
+  momentum: { value: 0, label: "—", tone: "info", phase: "pregame", phaseLabel: "—" },
   // Honest empty ledger — the ON AIR console shows its Thai teaching line
   // until the first real `utterance` event arrives (see CommandDeck.tsx).
   utterances: []
@@ -327,6 +332,8 @@ export const MOCK: CompanionData = {
     matchPhase: "live",
     minimapState: "live",
     gsiOnline: true,
+    gsiFreshness: "fresh",
+    gsiAgeMs: 0,
     centerLabel: "ALL PICK",
     centerSubLabel: "24:18",
     leftTeamName: "Radiant",
@@ -499,6 +506,7 @@ export const MOCK: CompanionData = {
 type LiveState = {
   tick: GameTick | null;
   status: GsiStatus | null;
+  session: MatchSessionMetadata | null;
   cv: MinimapCv | null;
   gank: SignalAlert | null;
   missing: Map<string, number>;
@@ -548,7 +556,7 @@ type LiveState = {
 };
 
 const EMPTY_LIVE: LiveState = {
-  tick: null, status: null, cv: null, gank: null, missing: new Map(), missingPos: new Map(),
+  tick: null, status: null, session: null, cv: null, gank: null, missing: new Map(), missingPos: new Map(),
   enemySlots: new Map(),
   active: false, od: null, stats: null, health: null, advice: null, logs: null, activityLog: [], mom: EMPTY_MOMENTUM, roster: null,
   utterances: [],
@@ -582,7 +590,7 @@ let pendingLive: LiveState | null = null;
 let flushTimer: number | null = null;
 let lastCvAt = 0;
 let lastFrameAt = 0;
-let logsLoadedForInGame: boolean | null = null;
+let logsLoadedForSession: string | null = null;
 let lastOpenDotaAccountId: number | null = null;
 let logsRequestSeq = 0;
 let profileRequestSeq = 0;
@@ -597,18 +605,94 @@ function cloneLive(state: LiveState): LiveState {
   };
 }
 
+function mergeSessionMetadata(
+  previous: MatchSessionMetadata | null,
+  incoming: MatchSessionMetadata
+): MatchSessionMetadata {
+  const next: MatchSessionMetadata = {
+    match_id: incoming.match_id !== undefined ? incoming.match_id : previous?.match_id,
+    session_id: incoming.session_id !== undefined ? incoming.session_id : previous?.session_id,
+    session_epoch: incoming.session_epoch !== undefined ? incoming.session_epoch : previous?.session_epoch,
+    session_lifecycle: incoming.session_lifecycle !== undefined
+      ? incoming.session_lifecycle
+      : previous?.session_lifecycle
+  };
+  if (previous && previous.session_epoch === next.session_epoch) {
+    if (previous.match_id && !next.match_id) next.match_id = previous.match_id;
+    if (previous.session_id?.startsWith("dota-") && next.session_id?.startsWith("local-")) {
+      next.session_id = previous.session_id;
+    }
+  }
+  return next;
+}
+
+function resetMatchScopedState(
+  state: LiveState,
+  session: MatchSessionMetadata,
+  clearTick: boolean
+): LiveState {
+  for (const timer of expiryTimers.values()) {
+    if (typeof window !== "undefined") window.clearTimeout(timer);
+  }
+  expiryTimers.clear();
+  if (flushTimer !== null && typeof window !== "undefined") {
+    window.clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  pendingLive = null;
+  logsRequestSeq += 1;
+  lastCvAt = 0;
+  lastFrameAt = 0;
+  setMinimapImage(null);
+  return {
+    ...state,
+    ...(clearTick ? { tick: null } : {}),
+    session,
+    cv: null,
+    gank: null,
+    missing: new Map(),
+    missingPos: new Map(),
+    enemySlots: new Map(),
+    advice: null,
+    activityLog: [],
+    mom: EMPTY_MOMENTUM,
+    roster: null
+  };
+}
+
+function sessionEventIsCurrent(
+  state: LiveState,
+  event: MatchSessionMetadata,
+  allowedLifecycles: readonly NonNullable<MatchSessionMetadata['session_lifecycle']>[]
+): boolean {
+  const epoch = event.session_epoch;
+  if (epoch === undefined || epoch === null) {
+    // Legacy and preview-only events may omit identity before a backend
+    // session has been observed. Once an epoch is known, untagged producers
+    // cannot safely mutate match state.
+    return state.session?.session_epoch === undefined;
+  }
+  if (sessionEpochRelation(epoch, state.session?.session_epoch) !== "same") return false;
+  const lifecycle = event.session_lifecycle ?? state.session?.session_lifecycle;
+  return lifecycle == null
+    ? state.status?.gsi_freshness === "fresh"
+    : allowedLifecycles.includes(lifecycle);
+}
+
 function buildCompanionData(live: LiveState): CompanionData {
+  const gsiFresh = live.status?.gsi_freshness === "fresh";
+  const freshTick = gsiFresh ? live.tick : null;
   let d: CompanionData = live.active
     ? {
         ...FALLBACK,
         updatedAt: Date.now(),
-        match: { ...buildMatch(live.tick, live.status, FALLBACK.match), matchPhase: live.phase, activeAlerts: countActiveAlerts(live.gank, live.missing, live.health?.healthy ?? false) ?? -1 },
-        heroes: buildHeroes(live.tick, live.missing, live.cv, FALLBACK.heroes, live.enemySlots, live.roster, live.tick?.team_name ?? ""),
+        match: { ...buildMatch(freshTick, live.status, FALLBACK.match), matchPhase: live.phase, activeAlerts: countActiveAlerts(live.gank, live.missing, live.health?.healthy ?? false) ?? -1 },
+        heroes: buildHeroes(freshTick, live.missing, live.cv, FALLBACK.heroes, live.enemySlots, live.roster, freshTick?.team_name ?? ""),
         markers: buildMarkers(live.cv, live.missingPos, FALLBACK.markers),
         signals: buildSignals(live.gank, live.missing, live.health?.healthy ?? false),
-        buildAdvisor: buildAdvisor(live.tick, live.advice, FALLBACK.buildAdvisor),
+        buildAdvisor: buildAdvisor(freshTick, gsiFresh ? live.advice : null, FALLBACK.buildAdvisor),
         activity: live.activityLog,
-        momentum: momentumView(live.mom, live.tick),
+        momentum: gsiFresh ? momentumView(live.mom, freshTick) : FALLBACK.momentum,
         utterances: live.utterances
       }
     : { ...FALLBACK, updatedAt: Date.now() };
@@ -677,9 +761,11 @@ function applyDerivedSideEffects() {
     }
   }
 
-  const inGame = liveState.tick?.in_game ?? false;
-  if (logsLoadedForInGame !== inGame) {
-    logsLoadedForInGame = inGame;
+  const epoch = liveState.session?.session_epoch;
+  const lifecycle = liveState.session?.session_lifecycle ?? "unknown";
+  const logKey = String(epoch ?? "legacy") + ":" + lifecycle;
+  if (logsLoadedForSession !== logKey) {
+    logsLoadedForSession = logKey;
     void refreshMatchLogs();
   }
 }
@@ -802,6 +888,26 @@ function ensureRuntime() {
 
   sub<GameTick>("game-tick", (p) =>
     updateLive((s) => {
+      const relation = sessionEpochRelation(p.session_epoch, s.session?.session_epoch);
+      if (relation === "stale") return s;
+      // The Overlay's preview also uses game-tick, but it does not publish a
+      // freshness status. Only the backend's validated, status-first source
+      // may update deck state, phase, match history, or momentum.
+      if (s.status?.gsi_freshness !== "fresh" || !s.status.gsi_active) return s;
+      if (p.session_lifecycle === "end" || p.session_lifecycle === "abandon") return s;
+      if (relation !== "new" && !allowsSessionLifecycleAdvance(
+        s.session?.session_lifecycle,
+        p.session_lifecycle,
+        s.session?.match_id,
+        p.match_id
+      )) return s;
+      const newEpoch = relation === "new";
+      const incomingSession = mergeSessionMetadata(s.session, p);
+      const fallbackNewMatch = relation === "unknown" &&
+        p.clock_time <= 5 &&
+        (!s.tick || s.tick.clock_time > 5 || !s.tick.in_game);
+      const isNewMatch = newEpoch || fallbackNewMatch;
+      const base = isNewMatch ? resetMatchScopedState(s, incomingSession, true) : s;
       // CR-007 WP-4 Fix 3: reset the permanent enemy-slot table (+ the missing
       // map that feeds it) on a new match. `clock_time <= 5` is the same
       // "match just started" heuristic the backend already uses for the
@@ -811,39 +917,56 @@ function ensureRuntime() {
       // a second one. Guarded by the previous tick so we only reset on the
       // actual transition (pre-game -> pre-game with clock<=5 would otherwise
       // re-reset every single tick).
-      const isNewMatch = p.clock_time <= 5 && (!s.tick || s.tick.clock_time > 5 || !s.tick.in_game);
       // Advance the momentum EWMA from the prior state (reset on a new match so
       // last match's swing doesn't bleed in). gpm baseline isn't threaded here
       // yet, so pass p.gpm → the economy term is 0 (kill-lead + swing only).
-      const mom = stepMomentum(isNewMatch ? EMPTY_MOMENTUM : s.mom, p, p.gpm);
+      const mom = stepMomentum(isNewMatch ? EMPTY_MOMENTUM : base.mom, p, p.gpm);
       // CR-011 §E: advance the phase axis from this tick's game_state/in_game,
       // using whatever gsi-status last reported (a game-tick implies GSI is
-      // posting, but `gsiOnline` here should still reflect the watchdog's own
-      // view, not be inferred from the mere fact a tick arrived).
-      const phase = stepPhase(s.phase, {
-        gsiOnline: s.status?.gsi_active ?? false,
+      // posting; the producer emits a fresh status before each validated tick,
+      // so this phase transition uses the same source-freshness decision.
+      const phase = stepPhase(base.phase, {
+        gsiOnline: base.status?.gsi_active ?? false,
+        dotaRunning: base.status?.dota_running ?? false,
         gameState: p.game_state,
         inGame: p.in_game,
         clockSeconds: p.clock_time
       });
-      if (isNewMatch) {
-        return { ...s, tick: p, active: true, missing: new Map(), missingPos: new Map(), enemySlots: new Map(), mom, phase };
-      }
-      return { ...s, tick: p, active: true, mom, phase };
+      return { ...base, tick: p, session: incomingSession, active: true, mom, phase };
     })
   );
   sub<GsiStatus>("gsi-status", (p) =>
-    updateLive((s) => ({
-      ...s,
-      status: p,
-      active: true,
-      phase: stepPhase(s.phase, {
-        gsiOnline: p.gsi_active,
-        gameState: s.tick?.game_state ?? null,
-        inGame: s.tick?.in_game ?? false,
-        clockSeconds: s.tick?.clock_time ?? -1
-      })
-    }))
+    updateLive((s) => {
+      const relation = sessionEpochRelation(p.session_epoch, s.session?.session_epoch);
+      if (relation === "stale") return s;
+      const newEpoch = relation === "new";
+      const session = mergeSessionMetadata(s.session, p);
+      let base = newEpoch ? resetMatchScopedState(s, session, true) : s;
+      const lifecycle = p.session_lifecycle;
+      const becameUnavailable =
+        lifecycle === "disconnected" ||
+        lifecycle === "abandon" ||
+        (p.gsi_freshness !== "fresh" && p.in_game);
+      const lifecycleBoundary =
+        (lifecycle === "disconnected" || lifecycle === "abandon" || lifecycle === "end") &&
+        s.session?.session_lifecycle !== lifecycle;
+      if (!newEpoch && (lifecycleBoundary || (becameUnavailable && s.status?.gsi_freshness === "fresh"))) {
+        base = resetMatchScopedState(base, session, lifecycle !== "end");
+      }
+      return {
+        ...base,
+        session: mergeSessionMetadata(base.session, p),
+        status: p,
+        active: true,
+        phase: stepPhase(base.phase, {
+          gsiOnline: p.gsi_active,
+          dotaRunning: p.dota_running,
+          gameState: base.tick?.game_state ?? null,
+          inGame: base.tick?.in_game ?? false,
+          clockSeconds: base.tick?.clock_time ?? -1
+        })
+      };
+    })
   );
   sub<ResourceStats>("resource-stats", (p) => updateLive((s) => ({ ...s, stats: p }), true));
   // Immediate, not batched: this gates whether the deck is allowed to claim
@@ -858,15 +981,23 @@ function ensureRuntime() {
   // deck's own Build tab had no producer at all. Cached re-fetches are ignored —
   // the auto path re-emits the same text within its cooldown, and re-rendering
   // identical advice adds nothing.
-  sub<{ text: string; cached: boolean }>("advice-update", (p) => {
+  sub<{ text: string; cached: boolean } & MatchSessionMetadata>("advice-update", (p) => {
     if (p.cached || !p.text) return;
-    updateLive((s) => ({ ...s, advice: p.text, active: true }), true);
+    updateLive((s) => {
+      if (!sessionEventIsCurrent(s, p, ["live"])) return s;
+      if (s.status?.gsi_freshness !== "fresh" || !s.status.gsi_active) return s;
+      if (s.session?.session_lifecycle && s.session.session_lifecycle !== "live") return s;
+      return { ...s, advice: p.text, active: true };
+    }, true);
   });
   sub<MinimapCv>("minimap-cv", (p) => {
+    const current = pendingLive ?? liveState;
+    if (!sessionEventIsCurrent(current, p, ["live", "disconnected"])) return;
     const now = Date.now();
     if (now - lastCvAt < CV_UPDATE_MS) return;
     lastCvAt = now;
     updateLive((s) => {
+      if (!sessionEventIsCurrent(s, p, ["live", "disconnected"])) return s;
       let enemySlots = s.enemySlots;
       for (const d of p.detections) {
         if (d.name) enemySlots = assignEnemySlot(enemySlots, d.name);
@@ -876,34 +1007,47 @@ function ensureRuntime() {
     });
   });
   sub<DraftRoster>("draft-roster", (p) =>
-    updateLive((s) => ({ ...s, roster: p, active: true }), true)
+    updateLive((s) => sessionEventIsCurrent(s, p, ["draft"])
+      ? ({ ...s, roster: p, active: true })
+      : s, true)
   );
   sub<MinimapFrame>("minimap-frame", (p) => {
+    const current = pendingLive ?? liveState;
+    if (!sessionEventIsCurrent(current, p, ["live", "disconnected"])) return;
     const now = Date.now();
     if (now - lastFrameAt < MINIMAP_IMG_MS) return;
     lastFrameAt = now;
     setMinimapImage(p.image || null);
   });
   sub<SignalAlert>("gank-alert", (p) =>
-    updateLive((s) => ({
-      ...s,
-      gank: p,
-      active: true,
-      activityLog: buildActivity({ kind: "gank-alert", payload: p }, Date.now(), ++activitySeq, s.activityLog)
-    }), true)
+    updateLive((s) => {
+      if (!sessionEventIsCurrent(s, p, ["live", "disconnected"])) return s;
+      return {
+        ...s,
+        gank: p,
+        active: true,
+        activityLog: buildActivity({ kind: "gank-alert", payload: p }, Date.now(), ++activitySeq, s.activityLog)
+      };
+    }, true)
   );
-  sub<unknown>("gank-clear", () =>
-    updateLive((s) => ({
-      ...s,
-      gank: null,
-      missing: new Map(),
-      missingPos: new Map(),
-      active: true,
-      activityLog: buildActivity({ kind: "gank-clear" }, Date.now(), ++activitySeq, s.activityLog)
-    }), true)
+  sub<MatchSessionMetadata>("gank-clear", (p) =>
+    updateLive((s) => {
+      if (!sessionEventIsCurrent(s, p, ["live", "disconnected"])) return s;
+      return {
+        ...s,
+        gank: null,
+        missing: new Map(),
+        missingPos: new Map(),
+        active: true,
+        activityLog: buildActivity({ kind: "gank-clear" }, Date.now(), ++activitySeq, s.activityLog)
+      };
+    }, true)
   );
   sub<EnemyMissing>("enemy-missing", (p) => {
+    const current = pendingLive ?? liveState;
+    if (!sessionEventIsCurrent(current, p, ["live", "disconnected"])) return;
     updateLive((s) => {
+      if (!sessionEventIsCurrent(s, p, ["live", "disconnected"])) return s;
       const next = cloneLive(s);
       next.missing.set(p.hero, p.missing_for_ms);
       next.missingPos.set(p.hero, p.last_pos);
@@ -914,8 +1058,10 @@ function ensureRuntime() {
     });
     const prev = expiryTimers.get(p.hero);
     if (prev) window.clearTimeout(prev);
+    const capturedEpoch = p.session_epoch;
     const t = window.setTimeout(() => {
       updateLive((s) => {
+        if (s.session?.session_epoch !== capturedEpoch) return s;
         if (!s.missing.has(p.hero) && !s.missingPos.has(p.hero)) return s;
         const next = cloneLive(s);
         next.missing.delete(p.hero);
@@ -932,7 +1078,9 @@ function ensureRuntime() {
     // and duplicate a React key (Opus gate, CR011-P2).
     utteranceSeq += 1;
     const seq = utteranceSeq;
-    updateLive((s) => ({ ...s, active: true, utterances: buildUtterances(s.utterances, p, p.atMs + seq) }), true);
+    updateLive((s) => sessionEventIsCurrent(s, p, ["draft", "live", "disconnected"])
+      ? ({ ...s, active: true, utterances: buildUtterances(s.utterances, p, p.atMs + seq) })
+      : s, true);
   });
 
   const syncIdentity = () => {

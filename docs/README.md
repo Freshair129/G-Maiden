@@ -90,7 +90,7 @@ approved_date: "YYYY-MM-DD"          # คู่กับ approved_by เสม�
 - field เสริมตามชนิดเอกสาร: `source_of_truth: true` (SSOT docs), `amends:` (ADR), `prd_system:`/`risk:` (FEAT)
 - **เอกสารเก่าที่ยังไม่มี frontmatter:** เติมเมื่อมีการแก้เนื้อหาครั้งถัดไป (ไม่ต้องกวาดทั้ง repo เพื่อเติมอย่างเดียว) — ยกเว้นเอกสาร point-in-time (audits/, rca/) ให้คงรูปเดิมได้ เพราะเป็นบันทึกประวัติศาสตร์ไม่ใช่ living doc
 - เอกสาร product รุ่นแรกที่ใช้ blockquote header (`> **เวอร์ชัน:** ...`) ถือว่า valid อยู่ — ถ้าจะย้ายเป็น frontmatter ให้ย้ายทั้งก้อนในคราวเดียว ห้ามมีเวอร์ชันสองที่
-- คู่กับ SOP ฝั่งท้ายเอกสาร: ทุกการแก้ต้อง bump `version:` + เพิ่มแถว `## Changelog` (ดู codedoc-aligner SKILL.md Step 5)
+- คู่กับ SOP ฝั่งท้ายเอกสาร: ทุกการแก้ต้อง bump `version:` + เพิ่มแถว `## Changelog`
 
 ## Feature registration / supersede / archive rules
 
@@ -122,3 +122,4 @@ approved_date: "YYYY-MM-DD"          # คู่กับ approved_by เสม�
 | 0.4.0 | 2026-07-19 | + status enum นิยามครบ (lowercase, รับจาก GoVibe STD §13) + sign-off fields `approved_by`/`approved_date` — unification Mechanical #2 ตาม [[2026-07-19-govibe-gmaiden-governance-comparison]] |
 | 0.4.1 | 2026-07-19 | link/metadata sweep (G15-T2): directory wikilinks (`docs/product/` etc.) and the cross-repo `SPEC--GOVIBE-INTEGRATION` link converted to plain backtick path text (non-doc-graph targets) |
 | 0.4.2 | 2026-07-24 | Added feature registration / supersede / archive guidance so feature-bearing specs declare active anchors or lifecycle intent instead of drifting into silent orphan state. |
+| 0.4.3 | 2026-10-16 | Remove retired local review integration and related dependencies. |
