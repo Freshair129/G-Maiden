@@ -677,8 +677,8 @@ fn get_volume() -> u8 {
 
 /// Discover Dota 2's GSI cfg directory and report whether our cfg is in place.
 #[tauri::command]
-fn detect_gsi_setup() -> setup::SetupStatus {
-    setup::detect()
+fn detect_gsi_setup(dota_install_path: Option<String>) -> setup::SetupStatus {
+    setup::detect(dota_install_path.as_deref())
 }
 
 #[tauri::command]
@@ -688,8 +688,8 @@ fn detect_dota_running() -> bool {
 
 /// Write our GSI cfg into the discovered Dota 2 directory.
 #[tauri::command]
-fn install_gsi_config() -> setup::SetupStatus {
-    setup::install()
+fn install_gsi_config(dota_install_path: Option<String>) -> setup::SetupStatus {
+    setup::install(dota_install_path.as_deref())
 }
 
 /// Path to the G-Log directory (privacy-first; local only).
@@ -822,6 +822,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(PendingUpdate::default())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(
