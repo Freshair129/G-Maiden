@@ -229,6 +229,9 @@ describe("buildHeroes — Draft-CV roster fill", () => {
   const roster: DraftRoster = {
     radiant: ["crystal_maiden", "juggernaut", "pudge", "lion", "axe"],
     dire: ["invoker", "zeus", "sniper", "lina", "tinker"],
+    complete: true,
+    recognizer_active: true,
+    templates_loading: false,
   };
 
   it("fills ally slots 1-4 from the local player's team (minus the local hero)", () => {

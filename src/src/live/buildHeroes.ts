@@ -77,9 +77,11 @@ export function buildHeroes(
   // pre-seeds enemy identities before CV ever sights them. Short label form.
   let allyOthers: string[] = [];
   let enemyRoster: string[] = [];
-  if (roster && teamName) {
-    const mine = teamName === "radiant" ? roster.radiant : roster.dire;
-    const theirs = teamName === "radiant" ? roster.dire : roster.radiant;
+  if (roster?.complete && teamName) {
+    const mine = (teamName === "radiant" ? roster.radiant : roster.dire)
+      .filter((name): name is string => name !== null);
+    const theirs = (teamName === "radiant" ? roster.dire : roster.radiant)
+      .filter((name): name is string => name !== null);
     const localShort = tick ? tick.hero.replace(/^npc_dota_hero_/, "") : "";
     allyOthers = mine.filter((n) => n !== localShort); // the 4 teammates
     enemyRoster = theirs;

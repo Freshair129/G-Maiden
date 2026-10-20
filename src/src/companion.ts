@@ -2,7 +2,7 @@ import { useRef, useSyncExternalStore } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { GameTick, GsiFreshness, GsiStatus, MatchSessionMetadata, MinimapCv, MinimapFrame, DraftRoster, EnemyMissing, SignalAlert, ResourceStats, SensorHealth, UtteranceEvent } from "./live/events";
+import type { GameTick, GsiFreshness, GsiStatus, MatchSessionMetadata, MinimapCv, MinimapFrame, DraftRoster, EnemyMissing, HeroHudRead, SignalAlert, ResourceStats, SensorHealth, UtteranceEvent } from "./live/events";
 import { buildMatch } from "./live/buildMatch";
 import { buildUtterances, type Utterance } from "./live/utterances";
 import { buildHeroes, assignEnemySlot } from "./live/buildHeroes";
@@ -199,6 +199,17 @@ export type CompanionData = {
   // utterance log (most-recent-first, capped) instead of a static agent-art
   // block. See live/utterances.ts; fed by the `utterance` Tauri event.
   utterances: Utterance[];
+  heroCv: {
+    roster: DraftRoster | null;
+    hud: HeroHudRead | null;
+    minimap: MinimapCv | null;
+    health: SensorHealth | null;
+    local: { hero: string; team: string; alive: boolean; respawnSeconds: number } | null;
+    missing: string[];
+    missingPos: Array<[string, [number, number]]>;
+    gank: SignalAlert | null;
+    phase: MatchPhase;
+  };
 };
 
 // CR-007 WP-4: an honestly-empty hero slot. GSI only ever exposes the local
@@ -302,7 +313,11 @@ export const FALLBACK: CompanionData = {
   momentum: { value: 0, label: "—", tone: "info", phase: "pregame", phaseLabel: "—" },
   // Honest empty ledger — the ON AIR console shows its Thai teaching line
   // until the first real `utterance` event arrives (see CommandDeck.tsx).
-  utterances: []
+  utterances: [],
+  heroCv: {
+    roster: null, hud: null, minimap: null, health: null, local: null,
+    missing: [], missingPos: [], gank: null, phase: "standby"
+  }
 };
 
 // Small helper for the MOCK utterance ledger below: computes a wall-clock
@@ -491,7 +506,11 @@ export const MOCK: CompanionData = {
       retracted: null,
       meta: "Thai Caster Vol.2"
     }
-  ]
+  ],
+  heroCv: {
+    roster: null, hud: null, minimap: null, health: null, local: null,
+    missing: [], missingPos: [], gank: null, phase: "standby"
+  }
 };
 
 // Phase 2a (CR-002): live-wire the deck to the Rust backend's Tauri events. The
@@ -543,6 +562,7 @@ type LiveState = {
   // on the game-start tick (the draft that produced it ran just before) — it's
   // replaced when the next match's draft emits a fresh `draft-roster`.
   roster: DraftRoster | null;
+  heroHud: HeroHudRead | null;
   // CR-011 §B: ON AIR console ledger, same ring-buffer ownership pattern as
   // `activityLog` above — appended via buildUtterances() as each `utterance`
   // Tauri event arrives. NOT reset on a new match (the pre-match "last session"
@@ -556,7 +576,7 @@ type LiveState = {
 };
 
 const EMPTY_LIVE: LiveState = {
-  tick: null, status: null, session: null, cv: null, gank: null, missing: new Map(), missingPos: new Map(),
+  tick: null, status: null, session: null, cv: null, gank: null, heroHud: null, missing: new Map(), missingPos: new Map(),
   enemySlots: new Map(),
   active: false, od: null, stats: null, health: null, advice: null, logs: null, activityLog: [], mom: EMPTY_MOMENTUM, roster: null,
   utterances: [],
@@ -643,12 +663,13 @@ function resetMatchScopedState(
   logsRequestSeq += 1;
   lastCvAt = 0;
   lastFrameAt = 0;
-  setMinimapImage(null);
+  setMinimapFrame(null);
   return {
     ...state,
     ...(clearTick ? { tick: null } : {}),
     session,
     cv: null,
+    heroHud: null,
     gank: null,
     missing: new Map(),
     missingPos: new Map(),
@@ -730,7 +751,26 @@ function buildCompanionData(live: LiveState): CompanionData {
     };
   }
 
-  return d;
+  const currentTick = live.status?.gsi_freshness === "fresh" ? live.tick : null;
+  return {
+    ...d,
+    heroCv: {
+      roster: live.roster,
+      hud: live.heroHud,
+      minimap: live.cv,
+      health: live.health,
+      local: currentTick ? {
+        hero: currentTick.hero,
+        team: currentTick.team_name,
+        alive: currentTick.alive,
+        respawnSeconds: currentTick.respawn_seconds
+      } : null,
+      missing: [...live.missing.keys()],
+      missingPos: [...live.missingPos.entries()],
+      gank: live.gank,
+      phase: live.phase
+    }
+  };
 }
 
 function publish() {
@@ -1007,8 +1047,13 @@ function ensureRuntime() {
     });
   });
   sub<DraftRoster>("draft-roster", (p) =>
-    updateLive((s) => sessionEventIsCurrent(s, p, ["draft"])
-      ? ({ ...s, roster: p, active: true })
+    updateLive((s) => sessionEventIsCurrent(s, p, ["draft", "live", "disconnected"])
+      ? ({ ...s, roster: p, active: s.active || p.complete })
+      : s, true)
+  );
+  sub<HeroHudRead>("hero-hud", (p) =>
+    updateLive((s) => sessionEventIsCurrent(s, p, ["live", "disconnected"])
+      ? ({ ...s, heroHud: p })
       : s, true)
   );
   sub<MinimapFrame>("minimap-frame", (p) => {
@@ -1017,7 +1062,7 @@ function ensureRuntime() {
     const now = Date.now();
     if (now - lastFrameAt < MINIMAP_IMG_MS) return;
     lastFrameAt = now;
-    setMinimapImage(p.image || null);
+    setMinimapFrame(p);
   });
   sub<SignalAlert>("gank-alert", (p) =>
     updateLive((s) => {
@@ -1112,12 +1157,19 @@ export function useCompanionData() {
 // Isolated here, only the <img> subtree (useMinimapImage consumers) updates —
 // the WebView2 render fan-out is the sensitive CPU path in this window.
 let minimapImage: string | null = null;
+let minimapFrame: MinimapFrame | null = null;
 const minimapSubs = new Set<() => void>();
 
 function setMinimapImage(url: string | null) {
   if (minimapImage === url) return;
   minimapImage = url;
   for (const cb of minimapSubs) cb();
+}
+
+function setMinimapFrame(frame: MinimapFrame | null) {
+  if (minimapFrame === frame) return;
+  minimapFrame = frame;
+  setMinimapImage(frame?.image || null);
 }
 
 /** Latest live minimap mirror as a `data:` URL, or `null` before any frame /
@@ -1134,6 +1186,18 @@ export function useMinimapImage(): string | null {
     },
     () => minimapImage,
     () => minimapImage
+  );
+}
+
+export function useMinimapFrame(): MinimapFrame | null {
+  useSyncExternalStore(subscribeStore, () => snapshot, () => snapshot);
+  return useSyncExternalStore(
+    (cb) => {
+      minimapSubs.add(cb);
+      return () => minimapSubs.delete(cb);
+    },
+    () => minimapFrame,
+    () => minimapFrame
   );
 }
 

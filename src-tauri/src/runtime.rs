@@ -1158,6 +1158,17 @@ pub struct Roster {
     pub dire: Vec<String>,
 }
 
+/// In-progress pick-screen read. Slots stay in their player order so an
+/// unrecognized pick cannot shift the identity assigned to another player.
+#[derive(Clone, Debug, PartialEq, serde::Serialize)]
+pub struct DraftRosterProgress {
+    pub radiant: Vec<Option<String>>,
+    pub dire: Vec<Option<String>>,
+    pub complete: bool,
+    pub recognizer_active: bool,
+    pub templates_loading: bool,
+}
+
 pub fn set_roster(radiant: Vec<String>, dire: Vec<String>) {
     if let Ok(mut g) = ROSTER.lock() {
         *g = Some(Roster { radiant, dire });
@@ -1195,7 +1206,7 @@ pub fn roster_labels() -> Option<Vec<String>> {
     let g = ROSTER.lock().ok()?;
     let r = g.as_ref()?;
     let all: Vec<String> = r.radiant.iter().chain(r.dire.iter()).cloned().collect();
-    (!all.is_empty()).then_some(all)
+    (all.len() == 10 && all.iter().all(|label| !label.is_empty())).then_some(all)
 }
 
 pub fn clear_roster() {
