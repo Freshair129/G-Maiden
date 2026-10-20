@@ -143,9 +143,11 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
       setResources(e.payload)
     })
     const u4cap = listen<string>('capture-mode', (e) => {
-      if (!controlActiveRef.current) return
       setCaptureMode(e.payload)
     })
+    void invoke<string>('get_capture_mode').then((mode) => {
+      setCaptureMode((current) => current === 'initializing' ? mode : current)
+    }).catch(() => {})
     const u5layout = listen<Layout>('overlay-layout-sync', (e) => {
       setS((prev) => ({ ...prev, layout: e.payload }))
     })
@@ -374,18 +376,48 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
           <>
             <Card title="Modules &amp; System">
               {(() => {
-                const capAcc = captureMode === 'dxgi' ? C.ok : captureMode === 'lite' ? C.warn : C.mut
-                const capLabel = captureMode === 'dxgi' ? 'DXGI' : captureMode === 'lite' ? 'Lite' : '…'
+                const capAcc = captureMode === 'dxgi' ? C.ok : ['lite', 'gdi', 'retrying'].includes(captureMode) ? C.warn : C.mut
+                const capLabel = captureMode === 'dxgi' ? 'DXGI' : captureMode === 'gdi' ? 'GDI' : captureMode === 'lite' ? 'Lite' : captureMode === 'retrying' ? 'Retrying' : '…'
                 const capTitle = captureMode === 'dxgi'
                   ? 'DXGI Desktop Duplication — minimap detection active'
+                  : captureMode === 'gdi'
+                    ? 'DXGI unavailable — minimap frames are coming from the GDI fallback'
                   : captureMode === 'lite'
-                    ? 'Minimap detection ปิดอยู่ — ใช้ borderless fullscreen เพื่อเปิด full detection เต็มรูปแบบ'
-                    : 'กำลังเริ่มต้น capture'
+                    ? 'Minimap CV is unavailable. GSI, voice, and overlay continue to work.'
+                    : captureMode === 'retrying'
+                      ? 'กำลังกู้คืน capture — GSI และเสียงยังทำงานต่อ'
+                      : 'กำลังเริ่มต้น capture'
                 return (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 6, fontSize: 11.5, color: C.mut }}>
-                    <span>Capture</span>
-                    <span title={capTitle} style={{ padding: '2px 9px', borderRadius: 99, fontSize: 11, fontWeight: 600, color: capAcc, background: `${capAcc}1f`, border: `1px solid ${capAcc}` }}>{capLabel}</span>
-                  </div>
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 6, fontSize: 11.5, color: C.mut }}>
+                      <span>Capture</span>
+                      <span title={capTitle} style={{ padding: '2px 9px', borderRadius: 99, fontSize: 11, fontWeight: 600, color: capAcc, background: `${capAcc}1f`, border: `1px solid ${capAcc}` }}>{capLabel}</span>
+                      {['lite', 'gdi', 'retrying'].includes(captureMode) && (
+                        <button
+                          onClick={() => {
+                            setCaptureMode('retrying')
+                            void invoke('retry_capture').catch(() => {
+                              void invoke<string>('get_capture_mode').then(setCaptureMode).catch(() => setCaptureMode('lite'))
+                            })
+                          }}
+                          disabled={captureMode === 'retrying'}
+                          style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 7, padding: '3px 9px', fontSize: 11, cursor: captureMode === 'retrying' ? 'wait' : 'pointer', opacity: captureMode === 'retrying' ? 0.65 : 1 }}
+                        >
+                          {captureMode === 'retrying' ? 'กำลังกู้คืน…' : captureMode === 'lite' ? 'ลองกู้คืน CV' : 'ลองกลับไปใช้ DXGI'}
+                        </button>
+                      )}
+                    </div>
+                    {captureMode === 'lite' && (
+                      <div style={{ fontSize: 11.5, color: C.warn, paddingTop: 5, lineHeight: 1.5 }}>
+                        Minimap CV หยุดทำงาน; GSI, เสียง และ overlay ยังใช้ได้ หาก Dota เปิดอยู่ให้ใช้ borderless fullscreen แล้วลองกู้คืน
+                      </div>
+                    )}
+                    {captureMode === 'gdi' && (
+                      <div style={{ fontSize: 11.5, color: C.mut, paddingTop: 5, lineHeight: 1.5 }}>
+                        ใช้ GDI fallback อยู่; ลองกลับไปใช้ DXGI ได้เมื่อสลับโหมดหน้าจอหรือออกจาก Alt-Tab แล้ว
+                      </div>
+                    )}
+                  </>
                 )
               })()}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, paddingTop: 6, fontSize: 12.5 }}>

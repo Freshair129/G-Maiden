@@ -20,6 +20,7 @@ tokio      = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
 axum       = "0.7"
 tauri-plugin-global-shortcut = "2"
 tauri-plugin-updater = "2"
+tauri-plugin-dialog = "=2.7.3"
 tauri-plugin-process = "2"
 tauri-plugin-store = "2"
 reqwest = { version = "0.13", features = ["blocking"] }
