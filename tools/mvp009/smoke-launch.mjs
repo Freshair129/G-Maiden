@@ -117,9 +117,9 @@ function assertAffectedSnapshot(snapshot) {
 }
 
 /**
- * Launch a smoke executable only when a supported, read-only key-scoped reader
- * can prove the two normal-profile keys before and after the isolated run.
- * The reader must return projections only; credential fields are rejected.
+ * Launch a smoke executable with native and WebView2 stores rooted in a fresh,
+ * validated run directory. A supported key-scoped reader can additionally
+ * prove the normal profile's affected settings were unchanged.
  */
 export async function runMvp009IsolatedSmoke({
   command,
@@ -129,6 +129,7 @@ export async function runMvp009IsolatedSmoke({
   normalUserProfile,
   baseEnvironment = process.env,
   readNormalAffectedSettings,
+  requireProfileSnapshot = true,
   spawnCommand = spawn,
 }) {
   if (typeof command !== 'string' || command.trim() === '') throw new Error('smoke command is required');
@@ -138,17 +139,18 @@ export async function runMvp009IsolatedSmoke({
     normalUserProfile,
     baseEnvironment,
   });
-  if (typeof readNormalAffectedSettings !== 'function'
-      || readNormalAffectedSettings.supportedReadOnlyKeyScoped !== true) {
+  const canReadNormalSettings = typeof readNormalAffectedSettings === 'function'
+    && readNormalAffectedSettings.supportedReadOnlyKeyScoped === true;
+  if (requireProfileSnapshot && !canReadNormalSettings) {
     throw new Error('refusing to launch: no supported read-only key-scoped reader is available for normal-profile settings');
   }
 
-  const readSnapshot = async () => {
+  const readSnapshot = canReadNormalSettings ? async () => {
     const snapshot = await readNormalAffectedSettings(AFFECTED_KEYS);
     assertAffectedSnapshot(snapshot);
     return snapshot;
-  };
-  const before = await readSnapshot();
+  } : null;
+  const before = readSnapshot ? await readSnapshot() : null;
   let exit = null;
   let launchError = null;
   try {
@@ -166,8 +168,8 @@ export async function runMvp009IsolatedSmoke({
     launchError = error;
   }
 
-  const after = await readSnapshot();
-  if (!isDeepStrictEqual(before, after)) {
+  const after = readSnapshot ? await readSnapshot() : null;
+  if (readSnapshot && !isDeepStrictEqual(before, after)) {
     throw new Error('normal-profile affected settings changed during isolated smoke; snapshots withheld');
   }
   if (launchError) throw launchError;
@@ -178,13 +180,19 @@ export async function runMvp009IsolatedSmoke({
     tempParent: launch.tempParent,
     nativeSettingsFile: launch.nativeSettingsFile,
     webview2UserDataDirectory: launch.webview2UserDataDirectory,
+    normalSettingsSnapshotVerified: Boolean(readSnapshot),
   });
 }
 
 async function main() {
-  const [command, ...args] = process.argv.slice(2);
+  const [command, ...requestedArgs] = process.argv.slice(2);
   if (!command) {
-    throw new Error('usage: node tools/mvp009/smoke-launch.mjs <release-executable> [args...]');
+    throw new Error('usage: node tools/mvp009/smoke-launch.mjs <release-executable> [args...] [--path-isolation-only]');
+  }
+  const pathIsolationOnly = requestedArgs.includes('--path-isolation-only');
+  const args = requestedArgs.filter((arg) => arg !== '--path-isolation-only');
+  if (pathIsolationOnly) {
+    process.stderr.write('Normal settings were not snapshot-verified; native and WebView2 paths are isolated for this smoke run.\n');
   }
   const result = await runMvp009IsolatedSmoke({
     command: path.resolve(command),
@@ -193,8 +201,7 @@ async function main() {
     normalLocalAppData: process.env.LOCALAPPDATA,
     normalUserProfile: process.env.USERPROFILE,
     baseEnvironment: process.env,
-    // No safe normal-profile reader is available on this host. Deliberately
-    // leave this unset so the CLI cannot launch the executable by default.
+    requireProfileSnapshot: !pathIsolationOnly,
   });
   process.stdout.write(`${JSON.stringify(result)}\n`);
 }

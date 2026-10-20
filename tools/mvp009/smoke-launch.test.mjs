@@ -24,6 +24,7 @@ test('root no-bundle smoke script builds then invokes the isolated launcher', as
   const rootPackage = JSON.parse(await readFile(new URL('../../package.json', import.meta.url), 'utf8'));
   assert.match(rootPackage.scripts['mvp009:smoke'], /tauri build --no-bundle/);
   assert.match(rootPackage.scripts['mvp009:smoke'], /tools\/mvp009\/smoke-launch\.mjs/);
+  assert.match(rootPackage.scripts['mvp009:smoke'], /--path-isolation-only/);
   assert.match(rootPackage.scripts['mvp009:smoke'], /src-tauri\/target\/release\/g-maiden\.exe/);
   assert.ok(path.isAbsolute(new URL('../../package.json', import.meta.url).pathname));
 });
@@ -87,6 +88,26 @@ test('refuses to spawn when no supported key-scoped reader is configured', async
     /no supported read-only key-scoped reader is available/,
   );
   assert.equal(spawned, false);
+});
+
+test('permits the explicit path-isolation-only smoke mode without a profile reader', async () => {
+  let spawnCall;
+  const result = await runMvp009IsolatedSmoke({
+    ...normalPaths,
+    command: 'D:\\build\\g-maiden.exe',
+    requireProfileSnapshot: false,
+    spawnCommand: (command, args, options) => {
+      spawnCall = { command, args, options };
+      const child = new EventEmitter();
+      queueMicrotask(() => child.emit('close', 0, null));
+      return child;
+    },
+  });
+
+  assert.deepEqual(spawnCall.args, ['--mvp009-isolated-smoke']);
+  assert.equal(spawnCall.options.env.WEBVIEW2_USER_DATA_FOLDER, result.webview2UserDataDirectory);
+  assert.equal(result.normalSettingsSnapshotVerified, false);
+  rmSync(result.runRoot, { recursive: true, force: true });
 });
 
 test('refuses to spawn when the temp parent overlaps normal LOCALAPPDATA', async () => {

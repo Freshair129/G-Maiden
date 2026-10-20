@@ -10,7 +10,7 @@
     "build": "pnpm -C src build && pnpm tauri build",
     "build:fe": "pnpm -C src build",
     "build:rust": "pnpm tauri build",
-    "mvp009:smoke": "pnpm tauri build --no-bundle && node tools/mvp009/smoke-launch.mjs src-tauri/target/release/g-maiden.exe",
+    "mvp009:smoke": "pnpm tauri build --no-bundle && node tools/mvp009/smoke-launch.mjs src-tauri/target/release/g-maiden.exe --path-isolation-only",
     "preview": "pnpm -C src preview",
     "lint": "pnpm -C src lint"
   },
