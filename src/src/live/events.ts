@@ -11,7 +11,7 @@
 //   enemy-missing capture.rs:261    edge, per hero crossing 5s threshold
 //   gank-alert    capture.rs:292    edge, gank probability >= danger threshold
 //   gank-clear    capture.rs:297    edge, unit payload
-//   capture-mode  capture.rs:140/151  once at startup: "lite" | "dxgi"
+//   capture-mode  capture.rs  state transitions: initializing/retrying/lite/dxgi/gdi
 //   sensor-health capture.rs        edge + ~1Hz heartbeat; the ONLY honest
 //                                   answer to "is the minimap sensor alive?"
 //   resource-stats governor.rs:163  every 1s
@@ -169,7 +169,7 @@ export interface ResourceStats {
   cpu_temp_c: number;     // -1 unless the rich G-Telemetry source provides it
 }
 
-export type CaptureMode = "lite" | "dxgi" | "";
+export type CaptureMode = "initializing" | "retrying" | "lite" | "dxgi" | "gdi" | "";
 
 /** utterance — G-Signal/G-Master/G-AnnStudio persona line for the ON AIR console
  *  (CR-011 §B). Unlike the events above (snake_case, mirroring serde JSON on the

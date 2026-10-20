@@ -133,6 +133,16 @@ fn set_overlay_visible(app: tauri::AppHandle, visible: bool) {
     }
 }
 
+#[tauri::command]
+fn get_capture_mode() -> String {
+    capture::current_mode().to_string()
+}
+
+#[tauri::command]
+fn retry_capture(app: tauri::AppHandle) -> Result<(), String> {
+    capture::retry(app)
+}
+
 /// Speak `text` via Maiden's voice (Windows SAPI for now). Fire-and-forget.
 #[tauri::command]
 fn speak(text: String, voice: Option<String>, rate: Option<i32>) {
@@ -860,6 +870,8 @@ pub fn run() {
             check_channel_update,
             install_pending_update,
             speak,
+            get_capture_mode,
+            retry_capture,
             speak_event,
             cancel_speech,
             quit_application,
