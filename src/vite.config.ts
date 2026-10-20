@@ -9,6 +9,7 @@ export default defineConfig({
   },
   build: {
     outDir: '../src-tauri/gen/web',
+    emptyOutDir: true,
     minify: 'terser',
     sourcemap: true,
   },

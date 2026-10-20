@@ -14,8 +14,8 @@
 // `updater_os()` = "windows" into the endpoint template and requested a
 // `release/channels/windows.json` that has never existed, so the launch check threw
 // on every run and the banner could never appear. It now goes through the Rust
-// `check_channel_update` command, which owns the per-channel URL and the resolved
-// channel (see updateChannel.ts for why the channel cannot ride on `target`).
+// `check_channel_update` command, which owns the stable URL (see updateChannel.ts
+// for why a channel cannot ride on `target`).
 import { useCallback, useEffect, useRef, useState } from "react";
 import { relaunch } from "@tauri-apps/plugin-process";
 import { checkChannelUpdate, installPendingUpdate, type UpdateOffer } from "./updateChannel";

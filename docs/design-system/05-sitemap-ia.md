@@ -1,7 +1,7 @@
 ---
-version: "2.5.0-draft"
+version: "2.4.4-draft"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
-last_update: "2026-09-13T03:00:00+07:00,RWANG"
+last_update: "2026-10-19T00:00:00+07:00,Codex"
 status: "draft"
 attributes:
   domain: "ui-ux"
@@ -9,7 +9,7 @@ attributes:
   language: "th/en"
 title: "05 — Sitemap & Information Architecture"
 doc_id: "05-sitemap-ia"
-updated: "2026-09-13"
+updated: "2026-10-19"
 owner: "Boss"
 ---
 
@@ -136,62 +136,31 @@ CR-011 §C).
 | **Voice Packs** | [`VoicePacksPage.tsx`](file:///g:/G-Maiden/src/src/VoicePacksPage.tsx) / [`VoiceInventory.tsx`](file:///g:/G-Maiden/src/src/VoiceInventory.tsx) | announcer pack inventory + active; "หาแพ็กเพิ่ม →" cross-links G-Store | live |
 | **G-Store** | `CommandDeck` store tab → [`StorePage`](file:///g:/G-Maiden/src/src/StorePage.tsx) / [`WalletTab`](file:///g:/G-Maiden/src/src/WalletTab.tsx) / [`InventoryTab`](file:///g:/G-Maiden/src/src/InventoryTab.tsx) / [`LedgerTab`](file:///g:/G-Maiden/src/src/LedgerTab.tsx) | tab `[ร้านค้า | กระเป๋า | คลัง | บันทึก]` (CR-003 economy) | catalog degrades until `catalog_items` deploys |
 | **Insights** | [`CompanionPages.tsx`](file:///g:/G-Maiden/src/src/CompanionPages.tsx) [`InsightsPage`](file:///g:/G-Maiden/src/src/CompanionPages.tsx#L153) + [`HistoryPage`](file:///g:/G-Maiden/src/src/CompanionPages.tsx#L196) | tab `[ภาพรวม | ประวัติ]` — power/win/ward + weekly / paginated G-Log history | scaffold (OpenDota) |
-| **Account** | [`AccountPage.tsx`](file:///g:/G-Maiden/src/src/AccountPage.tsx) / [`AuthPanel.tsx`](file:///g:/G-Maiden/src/src/AuthPanel.tsx) / [`SteamLink.tsx`](file:///g:/G-Maiden/src/src/SteamLink.tsx) | GID, Google OAuth, Steam link, and the Account entitlement status surface (release entry remains in the first-run gate) — UX spec: [[08-account-gid|08-account-gid.md]] | live + CR-022 design |
+| **Account** | [`AccountPage.tsx`](file:///g:/G-Maiden/src/src/AccountPage.tsx) / [`AuthPanel.tsx`](file:///g:/G-Maiden/src/src/AuthPanel.tsx) / [`SteamLink.tsx`](file:///g:/G-Maiden/src/src/SteamLink.tsx) | Optional Google/GID identity and Steam link; local desktop startup does not require sign-in. See [[08-account-gid|08-account-gid.md]] | live |
 | **Settings** | `App.tsx` [`Control`](file:///g:/G-Maiden/src/src/App.tsx#L5) (category render) + `CommandDeck` split shell | iOS split view, 7 หมวด: ทั่วไป / Overlay / เสียง & เตือน / AI / โมดูล & CV / ความเป็นส่วนตัว / ระบบ | live |
 
 ## 5. Core flows
 
-### 5.1 Closed Beta first run → entitlement → GSI ready
+> **Implementation status (source `origin/main` at `621c83d6`):** `App.tsx` mounts `CommandDeck` directly; no first-run gate component or mount is present in this source tree. Settings voice controls are `AudioSettingsCard` inside `Control`; Store and top-up handlers exist, but provider/settlement acceptance is unverified. The updater has no in-game install guard. This sitemap remains the design target and does not certify those flows.
+
+### 5.1 In-match (peripheral)
 ```
-installer installed → release launch → control-window first-run gate
-→ Google OAuth PKCE → server-derived UUID/GID + active grant + current Terms
-→ GSI/Dota setup → Command Deck
-```
-
-Current authority is [CR-022](../change%20request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md)
-§5/§8. The release gate mounts before the deck; the Overlay remains locked until eligible.
-DEV bypasses this gate for local development. Google is the only primary sign-in; Steam linking is optional.
-The release sign-in and Account sign-in explain that match/CV/G-Log data stay local and are not uploaded
-through the account system. Guest DEV Account has one Google action in AuthPanel; its entitlement panel
-is informational. Mismatch, denial, Terms, sign-out failure and outage retain the existing explicit actions.
-
-A first launch offline never unlocks. Approved grace is at most 24 hours **within the current process**
-after successful verification; restart/sign-out/denial clears it. There is no persisted seven-day receipt.
-A revoke blocks on the next online validation. UI remediation does not change this access contract.
-
-### 5.1a Fixed layouts after WF-01–WF-07 approval (2026-09-13)
-
-See [approved remediation](../operations/ui-wireframe-remediation-proposal.md) for the layout and
-viewport acceptance matrix. Seven primary nav pages remain unchanged.
-
-- Voice keeps `คลังของฉัน | ไอเทม | ตัวแก้ไข`; inventory paginates within its remaining-height grid.
-  Selection does not equip a pack. Detail metadata/events have bounded regions below fixed chrome.
-  Editor sections are `ติดตั้งและสร้าง | ข้อมูลและไฟล์ | ผูกอีเวนต์`; unsaved form state survives section changes.
-- Account keeps title, entitlement and four tabs fixed; the selected body receives remaining height.
-  Wallet/Ledger still work from G-Store too. Long security/transaction content stays inside the tab body.
-- Settings keeps its seven-category rail. Audio splits into `เสียงพูด | แบนเนอร์และบุคลิก` with no category scroll.
-  AudioSettingsCard and the duplicate Live-from-GSI card are removed from Settings; Voice/Live own those functions.
-- Live/Build/Insights interior cards use opaque instrument tokens, 1px hairlines and no shadow/blur.
-- Insights' Steam teaching empty state includes `ไปหน้า Account`, using the deck's existing navigation.
-
-### 5.2 In-match (peripheral)
-```
-GSI tick → Dashboard/HUD update → G-Signal คำนวณ → ถ้าเกินเกณฑ์ Sensitivity (ค่าเริ่มต้น Med 0.65):
+DXGI capture → minimap CV detections → G-Sentry → G-Motion → G-Signal → cached alert audio. GSI separately supplies player/session context and score-derived enemy-death count; it does not supply enemy positions.
 persona voice interrupt + overlay banner + signal card E (lime) escalate
 ```
 
-### 5.3 Account capabilities after Closed Beta access verification
+### 5.2 Optional account capabilities
 ```
 Account → Google OAuth (PKCE, callback :3000/auth/callback) → GID ออก
 → link Steam → ดึง public OpenDota profile + baselines (Insights/weekly)
 ```
 
-Google OAuth remains the sole primary sign-in. The Google/GID/Steam and public OpenDota capabilities
-remain additive under ADR-14; **the narrow exception is the CR-022 Closed Beta desktop access
-check before the beta dashboard is ready.** Neither GID nor Steam is a credential, recovery path,
-or typed override. Match state, CV detection, and G-Log remain local-only.
+Google OAuth remains the sole primary sign-in for account features. Google/GID/Steam and public
+OpenDota capabilities remain additive under ADR-14; they do not gate the local desktop. Neither GID
+nor Steam is a credential, recovery path, or typed override. Match state, CV detection, and G-Log
+remain local-only.
 
-### 5.4 Voice pack activate
+### 5.3 Voice pack activate
 ```
 Voice Packs → เลือก pack → active → POST /announcer/install (:3000)
 → in-game event fired → play mapped clip + overlay banner
@@ -213,5 +182,5 @@ Voice Packs → เลือก pack → active → POST /announcer/install (:30
 | 2.3.1-draft | 2026-07-19 | + geometry clarification banner (1280×720 = panel-local เท่านั้น, stage จริง 1420×760) — จากผล design-doc audit |
 | 2.3.2-draft | 2026-07-19 | symbol-link coverage extension (G1.5) |
 | 2.4.1-draft | 2026-07-21 | Replaced unnecessary reader-facing GMAD naming with G-Maiden while preserving technical identifiers and route names. |
-| 2.4.0-draft | 2026-07-21 | CR-022 Closed Beta access-readiness flow: preserves the 7-page/one-canvas deck, routes all OAuth and entitlement states to Account, and declares bounded offline/revoke behavior. |
-| 2.5.0-draft | 2026-09-13 | Boss-approved WF-01–07 layouts; reconcile first-run entry/privacy and current process-local grace with CR-022. |
+| 2.4.3-draft | 2026-10-18 | Removed retired access-gate flow from the current sitemap and aligned Account with optional local startup. |
+| 2.4.4-draft | 2026-10-19 | Clarified current entry, Store/update paths and the GSI-versus-minimap-CV boundary while retaining the sitemap as target UX. |

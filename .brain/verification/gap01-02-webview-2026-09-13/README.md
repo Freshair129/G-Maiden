@@ -1,5 +1,5 @@
 ---
-version: "0.1.0"
+version: "0.1.1"
 created_at: "2026-09-13T01:30:13+07:00,RWANG,56f9fbd"
 last_update: "2026-09-13T01:30:13+07:00,RWANG"
 status: "active"
@@ -21,9 +21,8 @@ Tested implementation commit `56f9fbd`, application `0.13.2`, using the locally 
 | DPAPI roundtrip | A previously absent, dedicated key `gmad_uat_gap01_20260913` stored and returned the synthetic value. Its ciphertext did not contain the fixture plaintext. Auth keys and other secrets were not overwritten. |
 | Deletion failure | Holding the exact fixture file open with Python `Path.open("rb")` caused native `secret_delete` to reject; the file remained. Only the boolean rejection was recorded, not the native error path. |
 | Retry and idempotence | After closing the handle, `secret_delete` resolved, `secret_get` returned null, a repeated deletion resolved, and the file was absent. |
-| CodeDoc | Actual Python process returned 2: required default model absent from Ollama. Verdict remains INDETERMINATE. |
 
-Machine-readable records: [native smoke](native-smoke.json), [CodeDoc preflight](codedoc-preflight.json).
+Machine-readable record: [native smoke](native-smoke.json).
 
 ## Method and limits
 
@@ -40,3 +39,4 @@ Out-of-scope environment observation: port 3000 was owned by Docker Desktop (`co
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-09-13 | Record bounded native IPC/DPAPI and release WebView cold-start evidence, missing-model verdict and remaining session UAT. |
+| 0.1.1 | 2026-10-16 | Remove retired local review integration and related references. |

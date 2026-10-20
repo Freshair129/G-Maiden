@@ -63,8 +63,8 @@ session-token transfer.
    authorization id, exact redirect, S256 verifier, expiry, one-time-code replay, denial, client-id,
    refresh rotation, and revocation behavior fail closed where applicable.
 6. Complete security review for authorization-UI integrity, audit redaction/retention, rate limiting,
-   session revocation, and Mobile deep-link ownership. Legal approval remains required for Terms,
-   privacy, receipt retention, data controller, age, and jurisdiction before CR-021/CR-022 gates.
+   session revocation, and Mobile deep-link ownership. Any future legal or personal-data handling
+   requires its own privacy, retention, data-controller, age, and jurisdiction review.
 
 ## Changelog
 

@@ -1,12 +1,13 @@
 ---
 title: "UI wireframe remediation — WF-01 ถึง WF-07"
 doc_id: "ui-wireframe-remediation-proposal"
-version: "0.3.0b"
-status: "accepted"
+version: "0.3.1b"
+status: "superseded"
 approved_by: "Boss"
 approved_date: "2026-09-13"
-updated: "2026-09-13"
+updated: "2026-10-20"
 owner: "Boss"
+superseded_by: "../design-system/05-sitemap-ia.md"
 attributes:
   domain: "ui-ux"
   change_class: "C-2"
@@ -14,6 +15,10 @@ attributes:
 ---
 
 # สเปกแก้ UI ให้ตรง One Canvas
+
+> **บันทึกย้อนหลัง:** การอนุมัตินี้ผูกกับ source `e5012bf` และแอป `0.13.2` เท่านั้น `main` ปัจจุบัน
+> ใช้ startup แบบ local-first และแยกการสร้าง voice pack ไป G-AnnStudio แล้ว จึงไม่ใช่ข้อกำหนด UI ปัจจุบัน
+> ให้อ่าน sitemap ปัจจุบันและ `AGENTS.md` เป็นหลักเมื่อข้อความด้านล่างขัดกับ source ปัจจุบัน
 
 **Boss อนุมัติให้ implementation เมื่อ 2026-09-13 (ข้อความ “approbvve”).** ขอบเขตคือ WF-01–WF-07 จาก
 [รายงานตรวจ UI](../audits/ui-wireframe-alignment-2026-09-13.md) บน source `e5012bf`, app `0.13.2`.
@@ -197,3 +202,4 @@ Dashboard/native Overlay และ security behavior เดิมใช้ regre
 | 0.1.0b | 2026-09-13 | Proposed bounded layouts, material/copy/navigation fixes and acceptance matrix for WF-01–WF-07; pending owner approval under R5. |
 | 0.2.0b | 2026-09-13 | Record Boss approval for implementation of WF-01–WF-07. |
 | 0.3.0b | 2026-09-13 | Record local implementation and verification, including bounded populated Ledger; CodeDoc model gate remains indeterminate. |
+| 0.3.1b | 2026-10-20 | Marked as a historical approval record after main replaced the Closed Beta first-run flow and moved pack authoring out of the desktop deck. |

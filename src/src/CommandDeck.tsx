@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useMemo, type ReactNode } from "react";
+import { lazy, Suspense, useState, useRef, useEffect, useMemo, type ReactNode } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import { listen } from "@tauri-apps/api/event";
 import { getCurrentWindow } from "@tauri-apps/api/window";
@@ -6,19 +6,7 @@ import { LogicalSize } from "@tauri-apps/api/dpi";
 // Type-only — erased at compile time, so this does NOT create a runtime
 // import cycle with App.tsx (which imports CommandDeck as a value).
 import type { SettingsCat } from "./App";
-import VoicePacksPage from "./VoicePacksPage";
-import {
-  BuildAdvisorPage,
-  HistoryPage,
-  InsightsPage,
-  LiveMatchPage
-} from "./CompanionPages";
 import { useCompanionData } from "./companion";
-import AccountPage from "./AccountPage";
-import StorePage from "./StorePage";
-import WalletTab from "./WalletTab";
-import InventoryTab from "./InventoryTab";
-import LedgerTab from "./LedgerTab";
 import { useProfile } from "./profile";
 import { useAppUpdate } from "./useAppUpdate";
 import type { VoiceState } from "./voice-types";
@@ -42,14 +30,31 @@ import { DeckPrefsCard } from "./deck/DeckPrefsCard";
 import { DeckTabs, FeedAgePill, PhaseChip } from "./deck/onair";
 import { GMaidenFungDashboard, VolumeRail } from "./deck/FungDashboard";
 import { SignalGrid } from "./deck/SignalGrid";
+import { useStartupSettings } from "./app/settingsContext";
+
+const VoicePacksPage = lazy(() => import("./VoicePacksPage"));
+const LiveMatchPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.LiveMatchPage })));
+const BuildAdvisorPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.BuildAdvisorPage })));
+const InsightsPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.InsightsPage })));
+const HistoryPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.HistoryPage })));
+const AccountPage = lazy(() => import("./AccountPage"));
+const StorePage = lazy(() => import("./StorePage"));
+const WalletTab = lazy(() => import("./WalletTab"));
+const InventoryTab = lazy(() => import("./InventoryTab"));
+const LedgerTab = lazy(() => import("./LedgerTab"));
+
+function DeferredPage({ children }: { children: ReactNode }) {
+  return <Suspense fallback={null}>{children}</Suspense>;
+}
 
 export default function CommandDeck({ renderSettings }: { renderSettings?: (cat: SettingsCat) => ReactNode } = {}) {
+  const { settings, setSettings } = useStartupSettings();
   const [tab, setTab] = useState("dashboard");
   const [profileOpen, setProfileOpen] = useState(false);
   const [powerOpen, setPowerOpen] = useState(false);
-  const [masterVolume, setMasterVolume] = useState(78);
-  const [annEnabled, setAnnEnabled] = useState(true);
-  const [signalEnabled, setSignalEnabled] = useState(true);
+  const masterVolume = settings.volume;
+  const annEnabled = settings.announcerEnabled;
+  const signalEnabled = settings.signalEnabled;
   const [voicePackName, setVoicePackName] = useState<string | null>(null);
   // CR-013 W1-01: in-page tabs — Live folds in Build, Insights folds in
   // History. Local to CommandDeck (same "single owner" shape as `tab` above);
@@ -96,7 +101,6 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
       }
     })();
   }, []);
-  const volumeDebounceRef = useRef<number | null>(null);
   // CR011-P4a-01: Maiden Line (Ctrl+K) + the shortcut sheet (Ctrl+Shift+/ / ?).
   // State lives here (CommandDeck is the single owner of tab/palette/sheet),
   // the components themselves are mounted as stage SIBLINGS below (window
@@ -121,7 +125,7 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
   const gSub = email || data.agentSector.title;
 
   // CR011-P6-01: deck comfort prefs (quality/density/crisp) — lazy-seeded from
-  // localStorage once on mount (gm-deck-audio-rail pattern), persisted below.
+  // localStorage once on mount, persisted below.
   const [deckPrefs, setDeckPrefs] = useState<DeckPrefs>(loadDeckPrefs);
   useEffect(() => {
     try {
@@ -224,90 +228,39 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
     return () => window.removeEventListener("resize", apply);
   }, [crisp, bigMode]);
 
-  // CR-007 WP-4 Fix 1: the deck's audio rail is the SINGLE owner of volume,
-  // signalEnabled, and announcerEnabled. It persists all three under one
-  // localStorage key and pushes all three to the backend once on mount — the
-  // persisted value is the seed (no `get_volume` round-trip needed, and it
-  // fixes a real bug: a saved volume never used to reach the backend on a
-  // cold start unless the user opened Settings, since Control's set_volume
-  // effect only fired if/when its component mounted).
-  useEffect(() => {
-    let volume = 78;
-    let ann = true;
-    let signal = true;
-    try {
-      const raw = localStorage.getItem("gm-deck-audio-rail");
-      if (raw) {
-        const parsed = JSON.parse(raw) as { volume?: number; master?: number; annEnabled?: boolean; signalEnabled?: boolean };
-        // `master` is the pre-WP-4 key name — read it so an upgrading user keeps their volume.
-        const saved = typeof parsed.volume === "number" ? parsed.volume : parsed.master;
-        if (typeof saved === "number") volume = saved;
-        if (typeof parsed.annEnabled === "boolean") ann = parsed.annEnabled;
-        if (typeof parsed.signalEnabled === "boolean") signal = parsed.signalEnabled;
-      }
-    } catch {
-      /* noop */
-    }
-    setMasterVolume(volume);
-    setAnnEnabled(ann);
-    setSignalEnabled(signal);
-    // Push the persisted values to the backend once on mount — the backend
-    // has no way to recall a prior session's choice on its own (volume aside,
-    // there is no get_announcer_enabled / get_cv_signal_enabled query command).
-    void invoke("set_volume", { vol: volume }).catch(() => {});
-    void invoke("set_announcer_enabled", { enabled: ann }).catch(() => {});
-    void invoke("set_cv_signal_enabled", { enabled: signal }).catch(() => {});
-  }, []);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem("gm-deck-audio-rail", JSON.stringify({ volume: masterVolume, annEnabled, signalEnabled }));
-    } catch {
-      /* noop */
-    }
-  }, [masterVolume, annEnabled, signalEnabled]);
-
   // Stay in sync when any OTHER surface (e.g. the legacy Control panel under
   // Settings, or the Alt+↑/↓/M global hotkeys) changes one of these three —
   // the backend emits *-change events for all three (main.rs) precisely so
   // no single owner can be silently desynced by another writer.
   useEffect(() => {
     let unlisten: (() => void) | undefined;
-    listen<number>("volume-change", (e) => setMasterVolume(e.payload))
+    listen<number>("volume-change", (e) => setSettings((prev) => ({ ...prev, volume: e.payload })))
       .then((fn) => { unlisten = fn; })
       .catch(() => {
         /* not running under Tauri — ignore */
       });
     return () => unlisten?.();
-  }, []);
+  }, [setSettings]);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
-    listen<boolean>("signal-change", (e) => setSignalEnabled(e.payload))
+    listen<boolean>("signal-change", (e) => setSettings((prev) => ({ ...prev, signalEnabled: e.payload })))
       .then((fn) => { unlisten = fn; })
       .catch(() => {
         /* not running under Tauri — ignore */
       });
     return () => unlisten?.();
-  }, []);
+  }, [setSettings]);
 
   useEffect(() => {
     let unlisten: (() => void) | undefined;
-    listen<boolean>("announcer-change", (e) => setAnnEnabled(e.payload))
+    listen<boolean>("announcer-change", (e) => setSettings((prev) => ({ ...prev, announcerEnabled: e.payload })))
       .then((fn) => { unlisten = fn; })
       .catch(() => {
         /* not running under Tauri — ignore */
       });
     return () => unlisten?.();
-  }, []);
-
-  // CR-007 WP-4 Fix 5: clear any in-flight volume debounce on unmount so a
-  // stale timer never fires `set_volume` against an unmounted deck.
-  useEffect(() => {
-    return () => {
-      if (volumeDebounceRef.current !== null) window.clearTimeout(volumeDebounceRef.current);
-    };
-  }, []);
+  }, [setSettings]);
 
   // Companion State "Voice" tile — active announcer pack name, fetched once.
   useEffect(() => {
@@ -317,27 +270,15 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
   }, []);
 
   const handleVolumeChange = (value: number) => {
-    setMasterVolume(value);
-    if (volumeDebounceRef.current !== null) window.clearTimeout(volumeDebounceRef.current);
-    volumeDebounceRef.current = window.setTimeout(() => {
-      void invoke("set_volume", { vol: value }).catch(() => {});
-    }, 80);
+    setSettings((prev) => ({ ...prev, volume: value }));
   };
 
   const handleAnnToggle = () => {
-    setAnnEnabled((prev) => {
-      const next = !prev;
-      void invoke("set_announcer_enabled", { enabled: next }).catch(() => {});
-      return next;
-    });
+    setSettings((prev) => ({ ...prev, announcerEnabled: !prev.announcerEnabled }));
   };
 
   const handleSignalToggle = () => {
-    setSignalEnabled((prev) => {
-      const next = !prev;
-      void invoke("set_cv_signal_enabled", { enabled: next }).catch(() => {});
-      return next;
-    });
+    setSettings((prev) => ({ ...prev, signalEnabled: !prev.signalEnabled }));
   };
 
   // CR011-P4a-01: DeckActions bridges the shortcuts.ts registry + Maiden Line
@@ -566,11 +507,13 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
         <span className="g-logo">G-MAIDEN</span>
 
         <div className="g-topbar-status">
-          <div className={`g-status-pill${data.match.gsiOnline ? " online" : ""}`}>
+          <div className={`g-status-pill${data.match.gsiOnline ? " online" : data.match.gsiFreshness === "stale" ? " stale" : ""}`}>
             <span className="dot" />
-            <strong>{data.match.gsiOnline ? "GSI Online" : "GSI Offline"}</strong>
+            <strong>{data.match.gsiOnline ? "GSI Online" : data.match.gsiFreshness === "stale" ? "GSI Stale" : data.match.gsiFreshness === "waiting" ? "GSI Waiting" : "GSI Offline"}</strong>
           </div>
-          <FeedAgePill updatedAt={data.updatedAt} online={data.match.gsiOnline} />
+          {data.match.gsiFreshness === "stale" && data.match.gsiAgeMs !== null
+            ? <span className="g-gsi-age">{(data.match.gsiAgeMs / 1000).toFixed(1)}s</span>
+            : <FeedAgePill updatedAt={data.updatedAt} online={data.match.gsiOnline} />}
         </div>
 
         <div className={`profile-wrap${profileOpen ? " open" : ""}`}>
@@ -635,11 +578,11 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
                 onChange={setLiveTab}
               />
               <div className="deck-tabbed-body">
-                {liveTab === "live" ? <LiveMatchPage /> : <BuildAdvisorPage />}
+                <DeferredPage>{liveTab === "live" ? <LiveMatchPage /> : <BuildAdvisorPage />}</DeferredPage>
               </div>
             </div>
           )}
-          {tab === "voice" && <VoicePacksPage onNavigate={navigateTo} />}
+          {tab === "voice" && <DeferredPage><VoicePacksPage onNavigate={navigateTo} /></DeferredPage>}
           {tab === "store" && (
             <div className="deck-tabbed">
               <DeckTabs
@@ -653,15 +596,15 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
                 onChange={setStoreTab}
               />
               <div className="deck-tabbed-body">
-                {storeTab === "shop" && (
+                {storeTab === "shop" && <DeferredPage>
                   <StorePage
                     onNavigateToWallet={() => setStoreTab("wallet")}
                     onRequestSignIn={() => navigateTo("account", "account")}
                   />
-                )}
-                {storeTab === "wallet" && <WalletTab onViewAllTransactions={() => setStoreTab("ledger")} />}
-                {storeTab === "inventory" && <InventoryTab onActivated={() => navigateTo("voice")} />}
-                {storeTab === "ledger" && <LedgerTab />}
+                </DeferredPage>}
+                {storeTab === "wallet" && <DeferredPage><WalletTab onViewAllTransactions={() => setStoreTab("ledger")} /></DeferredPage>}
+                {storeTab === "inventory" && <DeferredPage><InventoryTab onActivated={() => navigateTo("voice")} /></DeferredPage>}
+                {storeTab === "ledger" && <DeferredPage><LedgerTab /></DeferredPage>}
               </div>
             </div>
           )}
@@ -681,11 +624,11 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
                 onChange={setInsightsTab}
               />
               <div className="deck-tabbed-body">
-                {insightsTab === "history" ? <HistoryPage /> : <InsightsPage onOpenAccount={() => navigateTo("account", "account")} />}
+                <DeferredPage>{insightsTab === "history" ? <HistoryPage /> : <InsightsPage onOpenAccount={() => navigateTo("account", "account")} />}</DeferredPage>
               </div>
             </div>
           )}
-          {tab === "account" && <AccountPage entryMode={accountEntry.mode} entryNonce={accountEntry.n} />}
+          {tab === "account" && <DeferredPage><AccountPage entryMode={accountEntry.mode} entryNonce={accountEntry.n} /></DeferredPage>}
           {tab === "settings" && (
             <div className="settings-split">
               <nav className="settings-cats" aria-label="หมวดตั้งค่า">

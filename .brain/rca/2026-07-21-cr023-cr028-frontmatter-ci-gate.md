@@ -21,7 +21,7 @@ canonical lifecycle value required by the executable gate.
 
 ## Why the issue escaped detection
 
-The landing build, Blender inspection, browser QA, and scoped CodeDoc alignment do not execute the
+The landing build, Blender inspection and browser QA do not execute the
 repo-wide doc-graph gate. The gate first ran after the branch was pushed.
 
 ## Fix

@@ -12,7 +12,7 @@ export default function AuthPanel() {
     return <div className="auth-panel muted">checking account…</div>;
   }
 
-  if (signOutPhase === "failed" || signOutPhase === "cleaning" || signOutPhase === "locking") {
+  if (signOutPhase === "failed" || signOutPhase === "cleaning") {
     return <div className="auth-panel"><p role="alert">{error ?? "กำลังออกจากระบบ…"}</p>
       {signOutPhase === "failed" && <button onClick={() => void signOut()}>ลองออกจากระบบอีกครั้ง</button>}
     </div>;
@@ -44,7 +44,7 @@ export default function AuthPanel() {
       {error ? <div role="alert" className="auth-err">{error}</div> : null}
       {signOutWarning && <p role="status">{signOutWarning}</p>}
       <p className="auth-hint">ข้อมูลแมตช์ ภาพเกมจาก CV และ G-Log เก็บในเครื่อง ไม่อัปโหลดผ่านระบบบัญชี</p>
-      <div className="auth-hint">ใช้ Google บัญชีเดียวกับที่ได้รับสิทธิ์ Closed Beta แล้วลิงก์ Steam ได้ภายหลัง</div>
+      <div className="auth-hint">บัญชีเป็นตัวเลือกสำหรับซิงก์ตัวตนและลิงก์ Steam; เริ่มใช้ Command Deck ได้โดยไม่ต้องลงชื่อเข้าใช้</div>
     </div>
   );
 }

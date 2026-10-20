@@ -1,7 +1,7 @@
 ---
-version: "0.3.3"
+version: "0.3.4"
 created_at: "2026-06-24T03:10:00+07:00,ATHER,pending"
-last_update: "2026-07-19T00:00:00+07:00,docs-accuracy-pass (v0.13.0 overlay merge)"
+last_update: "2026-10-18T00:00:00+07:00,Codex (store-only voice pack flow)"
 status: "accepted"
 superseded_by: null
 attributes:
@@ -10,7 +10,7 @@ attributes:
   language: "th"
 title: "G-Maiden UI Sitemap / User Flow / Design Board"
 doc_id: "g-maiden-ui-sitemap-flow-board"
-updated: "2026-07-20"
+updated: "2026-10-18"
 owner: "Boss"
 ---
 
@@ -179,7 +179,7 @@ Layout Editor.
 | `VoiceToast` | On-screen mirror of last voice event | Silent fallback when voice pack ยังไม่มา; auto-dismiss |
 | `BuybackVerdict` | G-Revive buyback advice | Verdict + narrative on death |
 | `CompanionStage` | Character presence module | Crystal Maiden stylized SVG กำลังมา; ตอนนี้ badge placeholder |
-| `VoicePackCard` | จัดการ voice pack แบบ **bundle** ([`AudioSettings.tsx`](file:///g:/G-Maiden/src/src/AudioSettings.tsx)) | upload clip/banner → active pack; activate → resolve เสียงในเกม; "Play preview" + "Show on overlay" ([`preview_announcer_event`](file:///g:/G-Maiden/src-tauri/src/main.rs) → `announcer-banner`) |
+| `VoicePacksPage` | หน้าผู้เล่นสำหรับแพ็กเสียงที่ติดตั้งจาก Store ([`VoicePacksPage.tsx`](file:///g:/G-Maiden/src/src/VoicePacksPage.tsx)) | เลือกและดูแพ็กเสียงที่ซื้อ/ติดตั้งจาก Store; ผู้เล่นอัปโหลดแพ็กเองไม่ได้ งานสร้างและนำเข้าแพ็กทำผ่าน G-AnnStudio สำหรับ dev/collaborator แยกต่างหาก |
 | ~~`LayoutEditor`~~ | **ลบแล้ว 2026-08-11** — ย้ายไป G-AnnStudio **Overlay Lab** (`packages/ann-studio/src/src/components/OverlayLab.tsx`) | Lab วาดโมดูลขนาดจริงทับภาพ HUD ของ Dota, เตือนเมื่อทับโซนเกม, ตรวจทั้งจอในเกมและก่อนเกม แล้ว Sync กลับผ่าน `sync_overlay_layout` → event `overlay-layout-sync`; `Settings.layout` ยังเป็นแหล่งความจริงเดิม |
 | `SensitivityPicker` | G-Signal danger threshold | Mirror → [`set_cv_signal_sensitivity`](file:///g:/G-Maiden/src-tauri/src/main.rs); thresholds 0.85 / 0.65 / 0.50 |
 | `MotionIntensity` | Motion control | Low / Medium / High + reduced-motion fallback |
@@ -207,7 +207,7 @@ Layout Editor.
 
 ---
 
-## CHANGELOG
+## Changelog
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 |---------|------|--------|---------|-------------|-------|
@@ -217,3 +217,4 @@ Layout Editor.
 | 0.3.1 | 2026-07-19 | accepted | **v0.13.0 overlay merge.** Lite/Full tier split removed (Lite/Full switch gone, `uiMode` forced `'full'`); every overlay module (kill card, banner, low-HP warning, volume rail, standby chip, stats) is now independently positionable via Layout Editor — updated §2 sitemap note, §4 Live Overlay direction, §5 `LayoutEditor` row, and acceptance criteria accordingly. | pending | docs-accuracy-pass |
 | 0.3.2 | 2026-07-19 | + geometry clarification banner (panel-world ≠ stage; stage = 1420×760) — design-doc audit |
 | 0.3.3 | 2026-07-19 | link/metadata sweep (G1.5) — wikilink/symbol-link fixes only, no content change |
+| 0.3.4 | 2026-10-18 | accepted | Update the voice page boundary: players use Store-installed packs; authoring stays in G-AnnStudio, and remove the deleted AudioSettings.tsx reference. | pending | Codex |

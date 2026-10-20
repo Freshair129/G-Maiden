@@ -11,8 +11,9 @@
 // `KillWindow`/`all_heroes`/`HeroData::{burst_damage,armor_at_level}` — is still
 // unwired scaffold: it answers "can MY combo kill THAT enemy", which needs a
 // live read of the *enemy's* current HP/armor (CV HP-bar or OCR scoreboard,
-// still BLOCKED-BY-DATA per the 2026-07 audit). Per-item `#[allow(dead_code)]`
-// stays on just that unreached half; the test suite exercises every path.
+// still BLOCKED-BY-DATA per the 2026-07 audit). The target snapshot adapter
+// below enforces that boundary; per-item `#[allow(dead_code)]` stays on the
+// source-dependent half until a real local source is approved and wired.
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 use std::sync::OnceLock;
@@ -322,6 +323,217 @@ pub struct KillWindow {
     pub ttl_ms: Option<u32>,
 }
 
+/// Maximum age for an observed target HP interval before an offensive decision
+/// is no longer actionable.
+pub const TARGET_HP_TTL_MS: u64 = 500;
+
+/// Maximum age for target level and defensive-stat observations.
+pub const TARGET_STATS_TTL_MS: u64 = 5_000;
+
+/// Minimum source-quality score required before target-side lethality can be
+/// passed to the damage calculator.
+pub const TARGET_DATA_CONFIDENCE_FLOOR: f64 = 0.70;
+
+const TARGET_REQUIRED_FIELDS: usize = 5;
+
+/// Local, source-neutral target data contract for offensive lethality.
+///
+/// The snapshot deliberately stores an HP interval instead of pretending that
+/// a visual estimate is exact. A future local CV/OCR adapter must populate all
+/// required fields before [`to_kill_input`](Self::to_kill_input) can succeed.
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct TargetCombatSnapshot {
+    pub target_id: String,
+    pub current_hp_low: f64,
+    pub current_hp_high: f64,
+    /// Required only when an upstream source supplies HP as a ratio. The
+    /// normalized absolute interval above is sufficient for the calculator.
+    pub max_hp: Option<f64>,
+    pub level: Option<u32>,
+    pub armor: Option<f64>,
+    pub magic_resistance_pct: Option<f64>,
+    pub observed_at_ms: u64,
+    pub source_confidence: f64,
+}
+
+/// Canonical target values accepted by the existing lethality formula.
+#[derive(Debug, Clone, Copy, PartialEq, Serialize)]
+pub struct TargetLethalityInput {
+    pub current_hp: f64,
+    pub target_armor: f64,
+    pub target_magic_res: f64,
+    pub ehp_uncertainty: f64,
+}
+
+impl TargetCombatSnapshot {
+    /// Reconcile two local observations without silently preferring one source.
+    ///
+    /// The observations must identify the same target and be close enough that
+    /// the HP TTL can cover both. Optional fields may complement one another;
+    /// overlapping HP intervals are widened conservatively. Conflicting scalar
+    /// values or disjoint HP intervals return `None`, which keeps the caller on
+    /// the fail-closed `UNKNOWN` path.
+    pub fn merge(&self, other: &Self) -> Option<Self> {
+        if self.target_id.trim().is_empty()
+            || self.target_id != other.target_id
+            || self.observed_at_ms.abs_diff(other.observed_at_ms) > TARGET_HP_TTL_MS
+        {
+            return None;
+        }
+
+        let (current_hp_low, current_hp_high) = merge_hp_interval(
+            self.current_hp_low,
+            self.current_hp_high,
+            other.current_hp_low,
+            other.current_hp_high,
+        )?;
+        let max_hp = merge_optional_f64(self.max_hp, other.max_hp)?;
+        let level = merge_optional_value(self.level, other.level)?;
+        let armor = merge_optional_f64(self.armor, other.armor)?;
+        let magic_resistance_pct =
+            merge_optional_f64(self.magic_resistance_pct, other.magic_resistance_pct)?;
+
+        Some(Self {
+            target_id: self.target_id.clone(),
+            current_hp_low,
+            current_hp_high,
+            max_hp,
+            level,
+            armor,
+            magic_resistance_pct,
+            observed_at_ms: self.observed_at_ms.max(other.observed_at_ms),
+            source_confidence: self.source_confidence.min(other.source_confidence),
+        })
+    }
+
+    /// Return the source-quality score after freshness and completeness are
+    /// applied. Invalid values return zero instead of being clamped into a
+    /// seemingly trustworthy observation.
+    pub fn data_confidence(&self, now_ms: u64) -> f64 {
+        if !self.source_confidence.is_finite() || !(0.0..=1.0).contains(&self.source_confidence) {
+            return 0.0;
+        }
+
+        let age_ms = now_ms.saturating_sub(self.observed_at_ms);
+        let freshness_factor = freshness_factor(age_ms, TARGET_HP_TTL_MS)
+            .min(freshness_factor(age_ms, TARGET_STATS_TTL_MS));
+        let completeness_factor =
+            self.present_required_fields() as f64 / TARGET_REQUIRED_FIELDS as f64;
+        self.source_confidence * freshness_factor * completeness_factor
+    }
+
+    /// Normalize a complete, fresh snapshot into the scalar values consumed by
+    /// `can_i_kill_with`. Returns `None` for missing, contradictory, stale, or
+    /// low-confidence target data.
+    pub fn to_kill_input(&self, now_ms: u64) -> Option<TargetLethalityInput> {
+        if !self.is_well_formed() || self.data_confidence(now_ms) < TARGET_DATA_CONFIDENCE_FLOOR {
+            return None;
+        }
+
+        let armor = self.armor?;
+        let target_magic_res = self.magic_resistance_pct?;
+
+        let current_hp = (self.current_hp_low + self.current_hp_high) / 2.0;
+        let hp_sum = self.current_hp_low + self.current_hp_high;
+        let ehp_uncertainty = if hp_sum == 0.0 {
+            0.0
+        } else {
+            (self.current_hp_high - self.current_hp_low) / hp_sum
+        };
+        if !current_hp.is_finite() || !ehp_uncertainty.is_finite() {
+            return None;
+        }
+
+        Some(TargetLethalityInput {
+            current_hp,
+            target_armor: armor,
+            target_magic_res,
+            ehp_uncertainty,
+        })
+    }
+
+    fn is_well_formed(&self) -> bool {
+        !self.target_id.trim().is_empty()
+            && self.current_hp_low.is_finite()
+            && self.current_hp_high.is_finite()
+            && self.current_hp_low >= 0.0
+            && self.current_hp_low <= self.current_hp_high
+            && self
+                .max_hp
+                .map(|value| value.is_finite() && value > 0.0)
+                .unwrap_or(true)
+            && self.level.map(|value| value > 0).unwrap_or(false)
+            && self.armor.map(|value| value.is_finite()).unwrap_or(false)
+            && self
+                .magic_resistance_pct
+                .map(|value| value.is_finite() && (0.0..=100.0).contains(&value))
+                .unwrap_or(false)
+    }
+
+    fn present_required_fields(&self) -> usize {
+        let target_id = usize::from(!self.target_id.trim().is_empty());
+        let hp_interval = usize::from(
+            self.current_hp_low.is_finite()
+                && self.current_hp_high.is_finite()
+                && self.current_hp_low >= 0.0
+                && self.current_hp_low <= self.current_hp_high,
+        );
+        let level = usize::from(self.level.map(|value| value > 0).unwrap_or(false));
+        let armor = usize::from(self.armor.map(|value| value.is_finite()).unwrap_or(false));
+        let magic_resistance = usize::from(
+            self.magic_resistance_pct
+                .map(|value| value.is_finite() && (0.0..=100.0).contains(&value))
+                .unwrap_or(false),
+        );
+        target_id + hp_interval + level + armor + magic_resistance
+    }
+}
+
+fn merge_hp_interval(
+    left_low: f64,
+    left_high: f64,
+    right_low: f64,
+    right_high: f64,
+) -> Option<(f64, f64)> {
+    if left_high < right_low || right_high < left_low {
+        None
+    } else {
+        Some((left_low.min(right_low), left_high.max(right_high)))
+    }
+}
+
+fn merge_optional_value<T: Copy + PartialEq>(
+    left: Option<T>,
+    right: Option<T>,
+) -> Option<Option<T>> {
+    match (left, right) {
+        (Some(left), Some(right)) if left != right => None,
+        (Some(value), _) | (_, Some(value)) => Some(Some(value)),
+        (None, None) => Some(None),
+    }
+}
+
+fn merge_optional_f64(left: Option<f64>, right: Option<f64>) -> Option<Option<f64>> {
+    match (left, right) {
+        (Some(left), Some(right)) if !approximately_equal(left, right) => None,
+        (Some(value), _) | (_, Some(value)) => Some(Some(value)),
+        (None, None) => Some(None),
+    }
+}
+
+fn approximately_equal(left: f64, right: f64) -> bool {
+    let scale = left.abs().max(right.abs()).max(1.0);
+    (left - right).abs() <= scale * 1e-6
+}
+
+fn freshness_factor(age_ms: u64, ttl_ms: u64) -> f64 {
+    if ttl_ms == 0 {
+        0.0
+    } else {
+        (1.0 - age_ms as f64 / ttl_ms as f64).clamp(0.0, 1.0)
+    }
+}
+
 /// Can `attacker` (my hero) kill a target at its current HP with one burst rotation?
 ///
 /// `target_current_hp` is the target's *current* HP (from CV HP-bar read, or an
@@ -391,6 +603,30 @@ pub fn can_i_kill_with(
     }
 }
 
+/// Source-safe offensive lethality wrapper. A `KillWindow` is only produced
+/// when the target snapshot has complete, fresh, high-confidence data.
+#[allow(dead_code)]
+pub fn can_i_kill_from_snapshot(
+    attacker: &HeroData,
+    attacker_level: u32,
+    ability_levels: Option<&[u32]>,
+    items: &[LoadoutItem],
+    snapshot: &TargetCombatSnapshot,
+    now_ms: u64,
+) -> Option<KillWindow> {
+    let target = snapshot.to_kill_input(now_ms)?;
+    Some(can_i_kill_with(
+        attacker,
+        attacker_level,
+        ability_levels,
+        items,
+        target.current_hp,
+        target.target_armor,
+        target.target_magic_res,
+        target.ehp_uncertainty,
+    ))
+}
+
 // ────────────────────────── Hero database ──────────────────────────
 
 fn hero_db() -> &'static HashMap<String, HeroData> {
@@ -453,7 +689,7 @@ pub fn loadout_from_names<I: AsRef<str>>(names: &[I]) -> Vec<LoadoutItem> {
 // we express raw combo potential against a soft target: 0 armor, the default
 // 25% hero magic resistance. "your combo hits ~X on a squishy", not "you kill Y".
 const BASELINE_TARGET_ARMOR: f64 = 0.0;
-const BASELINE_TARGET_MAGIC_RES: f64 = 0.25;
+const BASELINE_TARGET_MAGIC_RES: f64 = 25.0;
 
 /// Estimate the LOCAL player's single-combo burst from their real hero + level +
 /// items. The skill build is estimated (`ability_levels = None`) on purpose: GSI's
@@ -504,6 +740,25 @@ mod tests {
             "a modelled attack item can only add burst: {} vs {}",
             armed.total_burst,
             bare.total_burst
+        );
+    }
+
+    #[test]
+    fn self_burst_applies_baseline_magic_resistance_as_percentage() {
+        let bare = self_burst("npc_dota_hero_crystal_maiden", 6, &[])
+            .expect("known hero in DB");
+        let dagon = self_burst(
+            "npc_dota_hero_crystal_maiden",
+            6,
+            &["item_dagon_5".to_string()],
+        )
+        .expect("known hero in DB");
+
+        // Dagon 5 is 800 magical damage; baseline 25% resistance must leave 600.
+        let dagon_effective = dagon.total_burst - bare.total_burst;
+        assert!(
+            (dagon_effective - 600.0).abs() < 0.5,
+            "self-burst must apply 25% baseline magic resistance: got {dagon_effective}"
         );
     }
 
@@ -796,5 +1051,132 @@ mod tests {
             "Dagon 5 (+600 effective) should flip it to a kill"
         );
         assert!(armed.confidence > bare.confidence);
+    }
+
+    fn fresh_target_snapshot() -> TargetCombatSnapshot {
+        TargetCombatSnapshot {
+            target_id: "npc_dota_hero_lina".to_string(),
+            current_hp_low: 600.0,
+            current_hp_high: 1000.0,
+            max_hp: Some(2000.0),
+            level: Some(12),
+            armor: Some(5.0),
+            magic_resistance_pct: Some(25.0),
+            observed_at_ms: 1_000,
+            source_confidence: 1.0,
+        }
+    }
+
+    #[test]
+    fn target_snapshot_normalizes_hp_interval() {
+        let snapshot = fresh_target_snapshot();
+        let input = snapshot
+            .to_kill_input(1_000)
+            .expect("complete fresh target snapshot should be actionable");
+
+        assert!((input.current_hp - 800.0).abs() < f64::EPSILON);
+        assert!((input.ehp_uncertainty - 0.25).abs() < f64::EPSILON);
+        assert_eq!(input.target_armor, 5.0);
+        assert_eq!(input.target_magic_res, 25.0);
+    }
+
+    #[test]
+    fn target_snapshot_confidence_includes_freshness_and_completeness() {
+        let mut snapshot = fresh_target_snapshot();
+        snapshot.source_confidence = 0.8;
+        snapshot.observed_at_ms = 1_000;
+
+        let confidence = snapshot.data_confidence(1_250);
+        assert!((confidence - 0.4).abs() < f64::EPSILON);
+        assert!(snapshot.to_kill_input(1_250).is_none());
+
+        snapshot.level = None;
+        assert!(snapshot.data_confidence(1_000) < 0.8);
+        assert!(snapshot.to_kill_input(1_000).is_none());
+    }
+
+    #[test]
+    fn target_snapshot_rejects_missing_invalid_or_stale_fields() {
+        let mut snapshot = fresh_target_snapshot();
+        snapshot.target_id.clear();
+        assert!(snapshot.to_kill_input(1_000).is_none());
+
+        let mut snapshot = fresh_target_snapshot();
+        snapshot.current_hp_low = 1_100.0;
+        assert!(snapshot.to_kill_input(1_000).is_none());
+
+        let mut snapshot = fresh_target_snapshot();
+        snapshot.magic_resistance_pct = Some(100.1);
+        assert!(snapshot.to_kill_input(1_000).is_none());
+
+        let mut snapshot = fresh_target_snapshot();
+        snapshot.source_confidence = 0.69;
+        assert!(snapshot.to_kill_input(1_000).is_none());
+
+        let snapshot = fresh_target_snapshot();
+        assert!(snapshot.to_kill_input(1_000 + TARGET_HP_TTL_MS).is_none());
+    }
+
+    #[test]
+    fn target_snapshot_merge_combines_compatible_partial_observations() {
+        let mut hp = fresh_target_snapshot();
+        hp.max_hp = None;
+        hp.level = None;
+        hp.armor = None;
+        hp.magic_resistance_pct = None;
+
+        let mut stats = fresh_target_snapshot();
+        stats.current_hp_low = 700.0;
+        stats.current_hp_high = 900.0;
+        stats.source_confidence = 0.9;
+
+        let merged = hp
+            .merge(&stats)
+            .expect("compatible local observations should merge");
+        let input = merged
+            .to_kill_input(1_000)
+            .expect("merged complete observation should be actionable");
+
+        assert_eq!(input.current_hp, 800.0);
+        assert_eq!(input.ehp_uncertainty, 0.25);
+        assert_eq!(merged.source_confidence, 0.9);
+    }
+
+    #[test]
+    fn target_snapshot_merge_rejects_conflicting_observations() {
+        let first = fresh_target_snapshot();
+
+        let mut different_target = first.clone();
+        different_target.target_id = "npc_dota_hero_axe".to_string();
+        assert!(first.merge(&different_target).is_none());
+
+        let mut different_armor = first.clone();
+        different_armor.armor = Some(7.0);
+        assert!(first.merge(&different_armor).is_none());
+
+        let mut disjoint_hp = first.clone();
+        disjoint_hp.current_hp_low = 1_100.0;
+        disjoint_hp.current_hp_high = 1_300.0;
+        assert!(first.merge(&disjoint_hp).is_none());
+    }
+
+    #[test]
+    fn target_snapshot_merge_rejects_observations_outside_hp_ttl() {
+        let first = fresh_target_snapshot();
+        let mut later = first.clone();
+        later.observed_at_ms += TARGET_HP_TTL_MS + 1;
+
+        assert!(first.merge(&later).is_none());
+    }
+
+    #[test]
+    fn snapshot_path_preserves_canonical_magic_resistance_percentage() {
+        let cm = lookup_hero("npc_dota_hero_crystal_maiden").expect("cm in db");
+        let dagon = loadout_from_names(&["item_dagon_5"]);
+        let snapshot = fresh_target_snapshot();
+        let kw = can_i_kill_from_snapshot(cm, 6, None, &dagon, &snapshot, 1_000)
+            .expect("complete fresh target snapshot should produce a kill window");
+
+        assert!((kw.burst.magic_multiplier - 0.75).abs() < f64::EPSILON);
     }
 }

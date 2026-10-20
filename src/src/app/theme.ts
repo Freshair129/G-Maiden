@@ -1,8 +1,8 @@
-import { DEFAULTS, type Settings, type OverlayProfile } from './types'
+import type { OverlayProfile } from './types'
 
 export const C = { bg: '#08090c', ice: '#8fd4ff', txt: '#e7eef6', mut: '#8794a6', ok: '#5be3a7', warn: '#ffcf6b', bad: '#ff7b85', line: 'rgba(143,212,255,0.16)' }
 
-export const APP_VERSION = '0.13.2'
+export const APP_VERSION = '0.13.4'
 
 export const CHANGELOG: { ver: string; date: string; items: string[] }[] = [
   { ver: '0.7.6', date: '2026-06-28', items: [
@@ -80,21 +80,6 @@ export const CHANGELOG: { ver: string; date: string; items: string[] }[] = [
   ]},
 ]
 
-export const loadSettings = (): Settings => {
-  try {
-    const raw = JSON.parse(localStorage.getItem('gm-settings') ?? '{}') as Record<string, unknown>
-    if (typeof raw.showStats === 'boolean' && raw.showStats) {
-      raw.showTimer = raw.showScore = raw.showHeroBar = raw.showKda = raw.showGold = true
-    }
-    delete raw.showStats
-    // Overlay merge: lite retired into the single Full overlay — coerce any
-    // persisted 'lite' so returning users get the merged overlay, not the
-    // dormant fallback.
-    return { ...DEFAULTS, ...(raw as Partial<Settings>), uiMode: 'full' }
-  } catch {
-    return DEFAULTS
-  }
-}
 export const loadProfiles = (): OverlayProfile[] => {
   try { return JSON.parse(localStorage.getItem('gm-profiles') ?? '[]') } catch { return [] }
 }

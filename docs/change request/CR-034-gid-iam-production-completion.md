@@ -1,14 +1,14 @@
 ---
-version: "0.5.0b"
+version: "0.5.3b"
 title: "CR-034: GID IAM Production Completion"
 doc_id: "CR-034-gid-iam-production-completion"
 created_at: "2026-08-23T18:14:14+07:00,ATHER"
-last_update: "2026-09-12T22:26:45+07:00,RWANG"
+last_update: "2026-10-18T00:00:00+07:00,Codex"
 owner: "Boss"
 approved_by: "Boss (Phase 0; Phase 1 and Phase 2 local/reviewable implementation)"
 approved_date: "2026-08-24"
 status: "draft"
-updated: "2026-09-12"
+updated: 2026-10-18
 superseded_by: null
 attributes:
   doc_type: "change-request"
@@ -26,10 +26,7 @@ attributes:
     - "docs/architecture/oauth-jwt-client-authorization-flows.md"
     - "docs/audits/SEC-001-auth-identity-hardening.md"
     - "docs/change request/CR-008-login-hardening.md"
-    - "docs/change request/CR-016-gmad-beta-download-admin-controller.md"
     - "docs/change request/CR-019-owner-role-and-operator-delegation.md"
-    - "docs/change request/CR-021-closed-beta-terms-consent-and-entitlement-acceptance.md"
-    - "docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md"
 ---
 
 # CR-034 — GID IAM Production Completion
@@ -59,7 +56,7 @@ operator access, RLS และ production UAT ผ่าน exit criteria ใน 
 1. ผู้ใช้ปกติเข้าระบบผ่าน Google OAuth + PKCE เท่านั้น และ GID/Steam/email/phone ไม่สามารถใช้เป็น
    normal sign-in credential ได้
 2. สิทธิ์ทุกอย่าง derive จาก server-owned UUID, role/capability, current session และ current
-   entitlement; client payload หรือ `user_metadata` เพิ่มสิทธิ์ไม่ได้
+   server-owned account state; client payload หรือ `user_metadata` เพิ่มสิทธิ์ไม่ได้
 3. Admin/owner และทุก security-sensitive action ต้องใช้ session ที่ยังมีอยู่จริงและ AAL2
 4. ผู้ใช้จัดการ MFA, recovery contacts, sessions และ security activity ของตนเองได้
 5. Recovery ใช้ปัจจัยอิสระอย่างน้อยสองอย่าง, ไม่ปล่อย product session ระหว่าง recovery และการผูก
@@ -82,8 +79,8 @@ operator access, RLS และ production UAT ผ่าน exit criteria ใน 
 - DPAPI storage สำหรับ access/refresh material บน packaged Windows app
 - `profiles` own-row RLS และ column-level lock สำหรับ GID/generation/role/email/id
 - roles `user`, `creator`, `admin`, `owner`; owner-only delegation backend
-- server-authoritative Terms + entitlement + signed-download decision
-- release build ล็อก native runtime จน entitlement decision ผ่าน
+- account features are optional; local gameplay setup and runtime do not depend on account state
+- sensitive account operations require their own server-side authorization decision
 
 ### Gaps that this CR owns
 
@@ -94,7 +91,7 @@ operator access, RLS และ production UAT ผ่าน exit criteria ใน 
 5. ไม่มี verified recovery-email/phone contract และไม่มี Google rebind implementation ที่ผ่าน
    provider capability proof
 6. ไม่มี evidence ล่าสุดว่ารัน `sec001_identity_lock.sql` + Supabase Security Advisor แล้วปิด findings
-7. เอกสาร CR-021/CR-022/SEC-001/CLAUDE.md บางส่วนมี lifecycle/status drift
+7. เอกสาร IAM/SEC-001/CLAUDE.md บางส่วนมี lifecycle/status drift
 8. ยังไม่มี authenticated production UAT ครบ same account, wrong account, revoke, role change,
    MFA, session revoke และ recovery
 
@@ -102,7 +99,7 @@ operator access, RLS และ production UAT ผ่าน exit criteria ใน 
 
 1. **Google remains the sole normal primary sign-in.** ห้ามเพิ่ม password, GID login, Steam login,
    email magic-link login หรือ phone login ลง normal sign-in UI
-2. Recovery email และ phone เป็น recovery/MFA factors เท่านั้น ไม่ใช่ entitlement หรือ identity key
+2. Recovery email และ phone เป็น recovery/MFA factors เท่านั้น ไม่ใช่ identity key
 3. GID, Steam ID, installer, signed URL, client state และ JWT `user_metadata` ไม่ใช่ authorization truth
 4. ห้ามเก็บ role/capability/recovery/security state ใน public profile หรือ client-writable auth metadata
 5. ห้าม expose `service_role`/secret key ไปยัง browser, desktop webview หรือ logs
@@ -110,7 +107,7 @@ operator access, RLS และ production UAT ผ่าน exit criteria ใน 
 7. ห้ามสร้าง custom objects ใน `auth`, `storage` หรือ `realtime` schema; private IAM objects อยู่ใน
    non-exposed schema และใช้ explicit grants
 8. ห้ามเขียน/ลบ `auth.sessions` หรือ `auth.identities` โดยตรง ถ้าไม่มี Supabase-supported API/proof
-9. Recovery transaction ไม่สามารถเรียก product APIs, download, wallet, entitlement หรือ role actions ได้
+9. Recovery transaction ไม่สามารถเรียก product APIs, wallet หรือ role actions ได้
 10. Public profile และ `GID Shield` badge เป็นคนละ CR; CR นี้สร้างเฉพาะ private source-of-truth state
 
 ## 5. Requirements (EARS)
@@ -189,7 +186,7 @@ operator access, RLS และ production UAT ผ่าน exit criteria ใน 
 
 ### IAM-REQ-08 — Security activity and notification
 
-- WHEN login, logout, MFA, recovery, contact, session, entitlement, role or rebind security state changes
+- WHEN login, logout, MFA, recovery, contact, session, role or rebind security state changes
   THEN the server SHALL write an append-only structured security event
 - WHEN a user reads security activity THEN the system SHALL return only their own redacted events
 - WHEN an owner reads operator audit THEN the system SHALL require AAL2 and an owner/admin capability
@@ -202,7 +199,7 @@ operator access, RLS และ production UAT ผ่าน exit criteria ใน 
 - IF an IAM field is public-profile, analytics, match, CV or G-Log data THEN the system SHALL reject the
   cross-domain write
 - WHEN account deletion is approved THEN the system SHALL revoke sessions first, remove recoverable PII,
-  preserve only legally required pseudonymized audit evidence and prevent orphaned entitlement/wallet rows
+  preserve only legally required pseudonymized audit evidence and prevent orphaned wallet rows
 
 ### IAM-REQ-10 — Operations and production evidence
 
@@ -241,7 +238,7 @@ flowchart LR
   E --> V["Viewer resolver\ngetUser + session + AAL"]
   V --> C["Capability policy\nrole + ownership + action"]
   C --> P["iam_private schema\ncontacts / recovery / audit"]
-  C --> X["Existing profiles / entitlement / wallet"]
+  C --> X["Existing profiles / wallet"]
   P --> N["Email/SMS provider\nnotification only"]
   C --> O["/ops capability-gated UI"]
   X -. "never" .-> L["Match / CV / G-Log local data"]
@@ -272,7 +269,6 @@ No endpoint may duplicate a weaker subset of this sequence.
 | Read own security state | yes | yes | yes | yes | valid session |
 | Manage own factors/contacts | yes | yes | yes | yes | fresh AAL2 for removal/change |
 | Sign out own/other sessions | yes | yes | yes | yes | valid session; AAL2 for others |
-| Closed Beta batch operations | no | no | yes | yes | fresh AAL2 |
 | Read redacted operator audit | no | no | yes | yes | fresh AAL2 |
 | Delegate user/creator/admin | no | no | no | yes | fresh AAL2 |
 | Create/change owner | no | no | no | no | break-glass platform operation only |
@@ -376,9 +372,9 @@ secret, user, factor, session, recovery record, email/SMS send, deployment or pr
 | Redirects/hooks/plan | Public settings do not disclose Site URL, redirect allow-list, hooks, plan or full MFA settings | blocked pending authenticated Management API/Dashboard read |
 | Database | Linked project metadata reports Postgres 17.6.1.141, GoTrue v2.193.1 and PostgREST v14.5; exact remote migrations, grants, RLS and `auth.sessions` cannot be read with current credentials/tooling | local linked metadata; live verification blocked |
 | Data API | Anonymous `profiles` read returned 401 | live unauthenticated negative probe |
-| Edge Functions | Entitlement/download endpoints reject a publishable-key-only caller; this proves fail-closed unauth behavior only, not role/AAL/session correctness | live negative probe |
+| Edge Functions | Unauthenticated account-service probes reject a publishable-key-only caller; this proves fail-closed unauth behavior only, not role/AAL/session correctness | live negative probe |
 | Landing | `/` returned 200; `/ops` returned 404. Current `landing/vercel.json` has no rewrite and current root routing has no `OpsPage` branch | live + source |
-| Policy tests | Deno IAM/GID/entitlement policy tests: 19 passed, 0 failed at Phase 0; **24 passed, 0 failed** on re-run 2026-08-28 after Phase 2 added cases | local test |
+| Policy tests | Deno account-authorization policy tests: 19 passed, 0 failed at Phase 0; **24 passed, 0 failed** on re-run 2026-08-28 after Phase 2 added cases; historical suite composition | local test |
 | Frontend tests | Phase 0 recorded both Vitest processes stalling before collection with no pass result. **Superseded 2026-08-28:** both suites run clean — desktop 268 passed (27 files, ~21 s), landing 14 passed (4 files, ~2.3 s), and `cargo test --locked` 291 passed / 0 failed / 5 ignored. The stall did not reproduce across nine consecutive runs, including under 11-of-12-core CPU saturation and during an active `cargo` compile; four candidate causes were tested and refuted. Treat a future stall as an environment condition to capture live, not a standing blocker | local test |
 
 Material findings:
@@ -387,8 +383,8 @@ Material findings:
    production Auth reports email enabled and signup allowed. Phase 1 must block non-Google user creation
    with a `before-user-created` hook and inventory/remediate any existing non-Google identities. Standard
    Supabase email magic links must not implement recovery because they create a normal Auth session.
-2. **CR-018 has regressed.** Its implemented/deployed claim no longer matches source or production:
-   `/ops` is 404 and the SPA renders only Landing/PublicDemo. CR-018 must be reconciled before IAM-T19.
+2. **The operator route is not shipped.** `/ops` returns 404 and the landing SPA exposes only its
+   public routes. No operator UI is part of this account-security implementation.
 3. **Provider-grade session inventory is unavailable to the current client.** V1 Account Security will
    show the current verified session plus explicitly labelled app-observed devices. It will support
    provider `signOut` scopes, but omit individual-session revoke unless a later supported API spike proves it.
@@ -448,7 +444,6 @@ ownership -> capability. Responses never include raw provider/contact/token valu
 | `iam-recovery-start` | public, rate-limited | `POST`; identical generic response; returns no account existence or product session |
 | `iam-recovery-verify` | opaque recovery transaction | `POST`; consumes one factor once, advances state only, never mints normal Auth JWT |
 | `iam-google-rebind` | two-factor recovery or trusted fresh AAL2 | `POST`; creates/cancels/reads 24-hour hold; application is a separate privileged operation |
-| `admin-gmad-controller` | admin/owner + fresh AAL2 + live session | existing behavior through common resolver; owner-only delegation; immutable security event |
 
 The runtime error vocabulary is fixed: `401 invalid_session`, `403 step_up_required`,
 `403 capability_denied`, `404 not_found`, `409 invalid_state`, `429 rate_limited`, and generic `503
@@ -464,7 +459,7 @@ redaction. IAM-T01–IAM-T22 remain the end-to-end matrix.
 Rollback order is fixed:
 
 1. disable new IAM routes and provider sends; cancel pending recovery/rebind work
-2. restore existing `admin-gmad-controller` only if its previous role checks and fail-closed behavior pass
+2. keep account authorization fail-closed while reverting only the newly introduced IAM routes
 3. revoke runtime IAM grants and remove IAM runtime secrets/connection access
 4. preserve `security_events`; export/purge other private rows only under retention approval
 5. drop tables in dependency order: outbox -> rebind -> transactions -> contacts -> devices; retain or
@@ -497,8 +492,8 @@ this `0.2.0b` revision. Required decisions are:
 
 1. เพิ่ม common authorization resolver ที่ตรวจ verified Google identity, JWT `session_id`, live
    session, AAL2 และ server-owned role/capability ตามลำดับ พร้อม fail-closed error vocabulary
-2. ย้าย `admin-gmad-controller` มาใช้ common resolver; `change_role` ต้อง owner capability และ action
-   อื่นต้อง admin/owner capability; provider/SQL error detail ไม่ถูกส่งกลับ client
+2. ใช้ common resolver สำหรับ IAM routes; role-delegation ต้อง owner capability; provider/SQL error
+   detail ไม่ถูกส่งกลับ client
 3. เพิ่ม migration สำหรับ `iam_private.security_events`, RLS, append-only runtime role และ
    `before-user-created` hook ที่อนุญาตเฉพาะ Google identities
 4. ลดสิทธิ์ runtime ด้วย `SECURITY DEFINER` projections ที่ `search_path = ''`; runtime ไม่มี direct
@@ -583,7 +578,7 @@ this `0.2.0b` revision. Required decisions are:
 
 ### Phase 6 — verification and rollout
 
-- local CI-equivalent, pgTAP, advisor, CodeDoc and security review
+- local CI-equivalent, pgTAP, advisor and security review
 - controlled non-production fixtures for every state
 - production canary with real user/owner accounts and rollback drill
 - evidence record, known issues, incident runbook and explicit promotion approval
@@ -594,7 +589,7 @@ this `0.2.0b` revision. Required decisions are:
 | --- | --- | --- |
 | IAM-T01 | Google PKCE happy path | one UUID/GID; no token/code in UI/logs |
 | IAM-T02 | wrong/missing/replayed OAuth state | no session; actionable retry |
-| IAM-T03 | typed GID/Steam/signed URL/email/phone presented as login | rejected; no entitlement |
+| IAM-T03 | typed GID/Steam/email/phone presented as login | rejected; no account session |
 | IAM-T04 | client writes GID/generation/role/email or `user_metadata.role` | denied; no authority change |
 | IAM-T05 | user/creator calls admin/owner actions | 403; no side effect; safe audit |
 | IAM-T06 | stale or signed-out JWT calls privileged action | rejected by live session check |
@@ -628,7 +623,7 @@ this `0.2.0b` revision. Required decisions are:
 | AC-07 | `/ops` is deployed and passes the full unauth/user/creator/admin/owner capability matrix. |
 | AC-08 | Role, recovery, contact, session and MFA security events are immutable, redacted and queryable only by the authorized subject/operator. |
 | AC-09 | `sec001_identity_lock.sql`, all new pgTAP tests and Supabase Security Advisor show no unresolved HIGH/CRITICAL issue. |
-| AC-10 | Full Rust/Vitest/ESLint/TypeScript/Tauri smoke gates and RWANG CodeDoc alignment pass on the exact release commit. |
+| AC-10 | Full Rust/Vitest/ESLint/TypeScript/Tauri smoke gates pass on the exact release commit. |
 | AC-11 | Controlled production UAT covers IAM-T01–IAM-T22 or records an evidenced not-applicable decision approved by owner/security reviewer. |
 | AC-12 | Rollback drill succeeds without restoring a revoked role/session or deleting required audit evidence. |
 
@@ -651,7 +646,7 @@ IAM may be reported **complete** only when all are true:
 - production Auth/provider settings and exact deployed Function/migration versions are verified
 - real account + owner UAT and recovery/rebind timing evidence exist
 - rollback and incident runbooks are exercised
-- docs/index/ledger/CodeDoc alignment are updated
+- docs/index/ledger are updated
 - no known regression or undocumented external gate remains
 
 Local tests, repository merge or unauthenticated `401` probes alone do not satisfy production completion.
@@ -672,7 +667,7 @@ Boss must approve or supply:
 ## 17. Rollback strategy
 
 1. Disable new IAM entry points and notification sends; keep normal Google sign-in and existing
-   entitlement fail-closed behavior
+   local core continues independently of account-service availability
 2. Revoke new Edge Function routes/hooks/provider settings before reverting UI
 3. Revert capability enforcement only to the previously verified role checks; never introduce an
    allow-all bypass
@@ -696,7 +691,10 @@ Boss must approve or supply:
 
 Boss approved [GAP-01/02 remediation](../operations/auth-failure-remediation-proposal.md) for local implementation. For current sign-out, native lock is mandatory before the remote attempt; remote timeout/error cannot prevent local cleanup. Remote revocation uses the captured current-session access token and a five-second abort deadline; absence of confirmation is shown separately from local cleanup success. Local auth keys, PKCE verifier and SDK user persistence are removed even when the security service is unavailable. Credential deletion errors remain visible and block new sign-in until cleanup retry succeeds. No claims about other sessions or server audit success are fabricated.
 
-Sign-out state is shared across auth hook instances; the release Account entitlement panel consumes its parent gate's decision instead of starting a competing verification. A native request-generation guard prevents an older in-flight verification from committing after sign-out or a newer check. Cold-start and 24-hour process-local grace follow the newly approved CR-022 §7 amendment. No changes to AAL2, provider configuration, D1–D4 or production authority are included. Task/evidence state remains in EXEC-PLAN CR-034 T10/T11.
+Sign-out state is shared across auth hook instances. A native request-generation guard prevents an
+older in-flight verification from committing after sign-out or a newer check. Account sign-in is
+optional and does not gate local startup. No changes to AAL2, provider configuration, D1–D4 or
+production authority are included. Task/evidence state remains in EXEC-PLAN CR-034 T10/T11.
 
 ## 19. Approval gate
 
@@ -710,13 +708,16 @@ live blockers before any production promotion decision.
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
-| 0.1.1b | 2026-08-23 | draft | Clarified that `skipBrowserRedirect` delegates system-browser launch without bypassing consent and that the fixed loopback callback is the packaged-desktop production pattern, resolving RWANG false-positive ambiguity. | null | ATHER |
+| 0.1.1b | 2026-08-23 | draft | Clarified that `skipBrowserRedirect` delegates system-browser launch without bypassing consent and that the fixed loopback callback is the packaged-desktop production pattern. | null | ATHER |
 | 0.1.0b | 2026-08-23 | candidate | Initial C-3/HIGH IAM completion contract covering identity, authorization, sessions, MFA, recovery, audit, operator access, testing and rollback. | null | ATHER |
 | 0.2.0b | 2026-08-23 | draft | Recorded approved Phase 0 read-only evidence, material production/source drift, exact DDL/API/test/rollback contracts and the private-schema access decision required before Phase 1. | null | ATHER |
 | 0.3.0b | 2026-08-24 | draft | Recorded approved Phase 1 local IAM foundation: common capability resolver, live-session/AAL2 enforcement, private append-only audit, Google-only signup hook, least-privilege runtime projections and local test evidence; production promotion remains blocked. | null | ATHER |
 | 0.4.0b | 2026-08-24 | draft | Recorded Boss approval and local Phase 2 implementation: private device/activity projections, scoped session actions, Account Security UI, redaction/cross-user tests and native runtime-lock ordering; deployment and live session UAT remain blocked. | null | ATHER |
 | 0.4.1b | 2026-08-24 | draft | Clarified that Phase 2 exposes own activity only, keeps operator audit for a later phase, and treats append-only activity as the notification baseline without outbound sends. | null | ATHER |
 | 0.4.2b | 2026-08-24 | draft | Fixed Phase 2 activity pagination to use a composite timestamp plus event-id cursor and added a tied-timestamp pgTAP regression. | null | ATHER |
-| 0.4.3b | 2026-08-24 | draft | Made the current-to-local and others-to-others provider sign-out mapping explicit for CodeDoc review. | null | ATHER |
+| 0.4.3b | 2026-08-24 | draft | Made the current-to-local and others-to-others provider sign-out mapping explicit. | null | ATHER |
 | 0.4.4b | 2026-08-28 | draft | Superseded the Phase 0 frontend-test blocker: desktop, landing, Rust and Deno suites all run clean, and the recorded Vitest stall did not reproduce across nine runs with four candidate causes refuted. Remaining Phase 0 status/lifecycle drift is owned by EXEC-PLAN CR-034 task T2. | null | Claude (Opus 5) |
 | 0.5.0b | 2026-09-12 | draft | Record Boss-approved local current-session cleanup and native/UI failure-state amendment for GAP-01/02; retain production and remaining IAM gates. | null | RWANG |
+| 0.5.1b | 2026-10-16 | draft | Remove retired local review integration and related references. | null | Codex |
+| 0.5.2b | 2026-10-18 | draft | Reconciled IAM scope with optional account use and removed retired distribution-access flows. | null | Codex |
+| 0.5.3b | 2026-10-18 | draft | Removed obsolete artifact-download endpoint references from the IAM evidence record. | null | Codex |

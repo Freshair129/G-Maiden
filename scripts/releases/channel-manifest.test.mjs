@@ -13,13 +13,16 @@ describe('release channel manifests', () => {
   // reports "up to date" forever when the placeholder version is below the running app.
   // The channel belongs in the URL, which the Rust `check_channel_update` command owns.
   it('rejects channel-name platform keys', () => {
-    for (const channel of ['dev', 'closed-beta', 'stable']) {
+    for (const channel of ['dev', 'stable']) {
       assert.throws(
         () => validateManifest({ ...candidate, platforms: { [channel]: artifact } }),
         /not an updater platform id/,
         `expected ${channel} to be rejected as a platform key`,
       );
     }
+  });
+  it('rejects unsupported release channels', () => {
+    assert.throws(() => validateManifest({ ...candidate, channel: 'preview' }), /invalid channel/);
   });
   it('accepts real updater platform ids, including installer-suffixed ones', () => {
     for (const key of ['windows-x86_64', 'windows-x86_64-msi', 'windows-x86_64-nsis', 'darwin-aarch64', 'linux-x86_64-appimage']) {

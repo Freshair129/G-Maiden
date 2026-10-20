@@ -1,9 +1,9 @@
 ---
 title: "Maiden motion renderer comparison — evidence"
 doc_id: "maiden-motion-renderer-evidence"
-version: "0.1.0"
+version: "0.1.1"
 status: "active"
-updated: "2026-09-13"
+updated: 2026-10-16
 owner: "RWANG"
 ---
 
@@ -100,11 +100,11 @@ are not performance evidence. The initial paused-video screenshots are separatel
 against presented playback, not accepted solely from a successful seek event.
 
 Doc-graph: 215 unit tests passed; wrapper passed with 14 existing checklist-covered strict
-errors and zero uncovered errors. CodeDoc model preflight fails because the required Mellum
-model is not installed; the log is **INDETERMINATE**, not semantic alignment success.
+errors and zero uncovered errors.
 
 ## Changelog
 
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-09-13 | Original assets, four prototypes, controlled benchmark protocol and evidence boundaries. |
+| 0.1.1 | 2026-10-16 | Remove retired local review integration and related references. |

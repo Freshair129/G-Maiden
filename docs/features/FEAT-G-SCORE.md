@@ -1,3 +1,15 @@
+---
+title: "FEAT-G-SCORE — Dynamic GSI-driven Soundtrack"
+doc_id: "FEAT-G-SCORE"
+status: "draft"
+version: "0.2.0"
+updated: "2026-10-05"
+owner: "Boss"
+source_of_truth: true
+complexity: "C-3"
+risk: "MEDIUM"
+---
+
 # FEAT-G-SCORE — Dynamic GSI-driven Soundtrack
 
 > **สถานะ (2026-07): ยังไม่ได้ทำ (spec ล่วงหน้า) — ไม่มีโมดูลนี้ในโค้ด (`src-tauri/src/`)**
@@ -114,6 +126,43 @@ on event(rampage|clutch): play one_shot_sting (ทับ current)
 - [ ] toggle / เปลี่ยน pack ได้ real-time ไม่ crash
 - [ ] (stream mode) เพลงปลอด DMCA
 
+## 10. DL-006 Lineage Contract (proposed; post-v1 runtime not implemented)
+
+### 10.1 Source and transport
+
+| Source | Transport | Fields/contract | Current status |
+| --- | --- | --- | --- |
+| GSI | Local `game-tick` event from `POST /gsi` | Clock, game state, scores and explicit event fields | Implemented upstream |
+| G-Motion/G-Signal | In-process event handoff | Normalized risk and alert intensity; soundtrack never feeds back into Signal | Partial upstream |
+| Music packs | Local verified/bundled asset path | Mood → track manifest; no runtime generation | Not implemented |
+| Cloud/network | None | No music decision or player-data egress | Required boundary |
+
+### 10.2 Proposed intensity formula
+
+Until the missing event sources exist, this formula is design-only:
+
+```text
+R = gank risk in [0, 1]
+E = teamfight/event intensity in [0, 1]
+O = objective urgency in [0, 1]
+C = clutch-event intensity in [0, 1]
+P = game-phase intensity in [0, 1]
+intensity = clamp(0.35*R + 0.25*E + 0.20*O + 0.10*C + 0.10*P, 0, 1)
+```
+
+An absent `E`, `O`, or `C` source is `UNKNOWN`, not an inferred event. Mood selection is
+ordered `boss > combat > tension > calm`; a missing signal leaves the current mood unchanged.
+Crossfade affects only the lowest audio tier: G-Signal voice and game SFX remain above it.
+
+### 10.3 Output, fallback, and evidence
+
+Output is a local soundtrack command to the Audio Engine with pack, mood, track, volume,
+and crossfade metadata. Missing pack/track or invalid input falls back to the current game
+audio/no soundtrack and never delays G-Signal. Acceptance requires hand-calculated intensity
+fixtures, priority/preemption tests, pack validation, CPU/RAM measurement, and stream-mode
+licensing evidence. G-Score remains `PROPOSED` and post-v1 until those sources and product
+decisions are separately approved.
+
 ## Status
 **Delighter, post-v1.0** — ไม่อยู่ใน 12 โมดูล core ของ v1.0 · เปิดเป็นโมดูลที่ 13 (proposed) จัดคู่กับ G-Persona / G-Stream / Marketplace · อย่าให้ดีเลย์ core wedge (gank warning)
 
@@ -121,3 +170,4 @@ on event(rampage|clutch): play one_shot_sting (ทับ current)
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-06-24 | Proposed — dynamic GSI-driven soundtrack; AI-music/DMCA-safe; G-Stream + marketplace synergy |
+| 0.2.0 | 2026-10-05 | Added the DL-006 source, proposed intensity formula, local audio boundary, fallback, privacy, and evidence contract. |

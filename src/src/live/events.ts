@@ -3,21 +3,32 @@
 // Single source of truth so every live builder + the integration hook agree.
 //
 // Emit sites (relative to worktree root):
-//   game-tick     gsi.rs:136        ~30s GSI heartbeat (LOCAL player only)
-//   gsi-status    gsi.rs:194        every 4s watchdog
+//   game-tick     gsi.rs:136        validated GSI observation (LOCAL player only)
+//   gsi-status    gsi.rs:194        every 500ms freshness watchdog + observations
 //   minimap-cv    capture.rs:314    ~5Hz CV debug (detections = pixels within region)
 //   minimap-frame capture.rs        ~3Hz live minimap mirror (base64 PNG data URL)
 //   draft-roster  capture.rs / set_draft_roster cmd  10-hero roster from the pick screen
 //   enemy-missing capture.rs:261    edge, per hero crossing 5s threshold
 //   gank-alert    capture.rs:292    edge, gank probability >= danger threshold
 //   gank-clear    capture.rs:297    edge, unit payload
-//   capture-mode  capture.rs:140/151  once at startup: "lite" | "dxgi"
+//   capture-mode  capture.rs  state transitions: initializing/retrying/lite/dxgi/gdi
 //   sensor-health capture.rs        edge + ~1Hz heartbeat; the ONLY honest
 //                                   answer to "is the minimap sensor alive?"
-//   resource-stats governor.rs:60   every 10s
+//   resource-stats governor.rs:163  every 1s
+
+export type MatchLifecycle = "draft" | "live" | "disconnected" | "end" | "abandon";
+
+/** Canonical match identity and process-local session epoch. Optional because
+ *  the overlay preview and older desktop builds can still publish ticks. */
+export interface MatchSessionMetadata {
+  match_id?: string | null;
+  session_id?: string | null;
+  session_epoch?: number;
+  session_lifecycle?: MatchLifecycle | null;
+}
 
 /** game-tick — GSI snapshot of the LOCAL player only (not all 10 heroes). */
-export interface GameTick {
+export interface GameTick extends MatchSessionMetadata {
   in_game: boolean;
   clock_time: number;      // seconds; negative before horn
   game_state: string;      // e.g. "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS"
@@ -52,12 +63,17 @@ export interface GameTick {
   item_names?: string[];
 }
 
-/** gsi-status — connection/liveliness pushed every ~4s. */
-export interface GsiStatus {
+export type GsiFreshness = "unavailable" | "waiting" | "fresh" | "stale";
+
+/** gsi-status — connection and validated-source freshness, refreshed at 500ms. */
+export interface GsiStatus extends MatchSessionMetadata {
   dota_running: boolean;
   gsi_active: boolean;
+  gsi_freshness: GsiFreshness;
+  gsi_age_ms: number | null;
   in_game: boolean;
   display_exclusive: boolean;
+  server_state: "starting" | "listening" | "port_conflict" | "bind_error";
 }
 
 /** A single confirmed hero detection inside the minimap-cv payload.
@@ -77,7 +93,7 @@ export interface MinimapRegion {
 }
 
 /** minimap-cv — CV debug/detection feed (~5Hz). */
-export interface MinimapCv {
+export interface MinimapCv extends MatchSessionMetadata {
   region: MinimapRegion;
   icon: number;
   candidates: [number, number][];
@@ -107,7 +123,7 @@ export interface SensorHealth {
 /** minimap-frame — live minimap mirror for the Command Deck (~3Hz). `image` is a
  *  ready-to-render base64 `data:image/png` URL of the downscaled captured minimap;
  *  `region` is the same geometry as minimap-cv, in screen px. */
-export interface MinimapFrame {
+export interface MinimapFrame extends MatchSessionMetadata {
   image: string;
   region: MinimapRegion;
 }
@@ -115,34 +131,35 @@ export interface MinimapFrame {
 /** draft-roster — the full 10-hero roster read off the pick screen (Draft-CV),
  *  raw labels.json short form (e.g. "crystal_maiden"). Fills ally identities GSI
  *  can't expose and pre-seeds enemy slots. Split by team; index-independent. */
-export interface DraftRoster {
+export interface DraftRoster extends MatchSessionMetadata {
   radiant: string[];
   dire: string[];
 }
 
 /** enemy-missing — edge event, last_pos already normalised to [0,1]². */
-export interface EnemyMissing {
+export interface EnemyMissing extends MatchSessionMetadata {
   hero: string;
   missing_for_ms: number;   // >= 5000
   last_pos: [number, number]; // normalised [0,1]
 }
 
 /** gank-alert — G-Signal gank warning (SignalAlert). */
-export interface SignalAlert {
+export interface SignalAlert extends MatchSessionMetadata {
   probability: number;      // 0..1
   missing_heroes: string[];
   eta_ms: number;
 }
 
-/** resource-stats — G-Governor RAM/CPU sample every 10s. GPU fields are bridged
- *  in from the sibling G-Telemetry app; `-1` = unavailable (bridge not running). */
+/** resource-stats — G-Governor sample every second. CPU is the Windows Job
+ *  Object process group, normalized by logical CPU capacity and hard-capped at
+ *  10% when Job Object setup succeeds. A negative sample means the CPU group
+ *  cannot be measured; this payload does not distinguish setup from query failure. */
 export interface ResourceStats {
   ram_mb: number;
   cpu_pct: number;
+  cpu_group_processes: number;
   over_budget: boolean;
-  /** Session peaks (max since launch) from the governor — prove the SRS §5.1
-   *  budgets held over a match. Own-process, core-normalized (deck WebView2 is a
-   *  separate process, not counted). Optional: absent on older ticks. */
+  /** Session peaks (max since launch) from the whole-app governor. */
   peak_cpu_pct?: number;
   peak_ram_mb?: number;
   gpu_pct: number;        // -1 when the active telemetry source is absent/stale
@@ -152,13 +169,13 @@ export interface ResourceStats {
   cpu_temp_c: number;     // -1 unless the rich G-Telemetry source provides it
 }
 
-export type CaptureMode = "lite" | "dxgi" | "";
+export type CaptureMode = "initializing" | "retrying" | "lite" | "dxgi" | "gdi" | "";
 
 /** utterance — G-Signal/G-Master/G-AnnStudio persona line for the ON AIR console
  *  (CR-011 §B). Unlike the events above (snake_case, mirroring serde JSON on the
  *  wire), this payload is camelCase per the CR011-P2-02 contract — the backend
  *  worker adding the emit side is following the same shape. */
-export interface UtteranceEvent {
+export interface UtteranceEvent extends MatchSessionMetadata {
   atMs: number;
   source: "signal" | "master" | "announcer";
   kind: "line" | "revision";

@@ -89,7 +89,7 @@ Legend: ✅ shipped ตรงสเปค · 🟡 partial · ❌ missing · ⚠�
 | **Overlay FPS impact** | ≤ 3% drop | **harness มี, หลักฐาน pass ไม่พบ** | `perf_p7.rs` two-phase PresentMon/ETW, gate `fps_drop_pct <= 3.0`, ปฏิเสธ baseline ปลอม/เก่า (README:141-191) | 🟡 **NFR นี้ยัง "asserted but unproven"** — README เองสั่ง "Do not claim P7 closeout until verdict is pass from a real run" และไม่พบ `fps-report.json` ที่ commit ไว้ |
 | **ไม่บดบัง minimap/skill bar/stats** | (SRS §3.5.2) | ❌ ไม่มีการวัด | ตำแหน่ง overlay เป็น user-adjustable; ไม่มี collision check ใด ๆ | asserted-only |
 | **Resilience** | G-Sentry/G-Signal อยู่รอดเมื่อ cloud หลุด | ✅ (โครงสร้าง) | critical path ไม่มี network dependency เลย — pure Rust state machines (`sentry.rs`/`motion.rs`/`signal.rs`, ADR-03); G-Master Auto ตกลง Ollama เมื่อ Claude ล้ม (`master.rs:142-146`) | ⚠️ วิธี achieve ต่างจากสเปค (ไม่ใช้ SLM ใน critical path — ดีกว่า) |
-| **Privacy-first** | G-Log/raw data local-only | ✅ | `log.rs:1-4` ("Never sent off-device"), GSI bind loopback (`gsi.rs:608`), replay_fit read-only zero-network (`replay_fit.rs:3-10`) | ⚠️ SRS §5.2 เขียนแบบ absolute — ไม่รู้จัก opt-in 2 ชั้นที่มีจริงแล้ว (ADR-14 account identity, ADR-11/16 data contribution) และไม่รู้จัก release-gate ที่บังคับ sign-in online (`App.tsx:33` + `GmadFirstRunGate.tsx`, CR-022) — สเปคล้าหลังกว่านโยบายจริง |
+| **Privacy-first** | G-Log/raw data local-only | ✅ | `log.rs:1-4` ("Never sent off-device"), GSI bind loopback (`gsi.rs:608`), replay_fit read-only zero-network (`replay_fit.rs:3-10`) | ⚠️ SRS §5.2 เขียนแบบ absolute — ไม่รู้จัก opt-in 2 ชั้น (ADR-14 account identity, ADR-11/16 data contribution) — สเปคล้าหลังกว่านโยบายจริง |
 
 **สรุป NFR:** ต่างจาก audit 2026-07-07 ที่พบ latency gate เป็น stub — ตอนนี้ gate เป็นของจริงแล้ว (rewrite บันทึกใน `tests/perf/src/main.rs:9-13`) และ CI หลัก (`ci.yml`) รัน clippy + `cargo test` + eslint + vitest + doc-graph gate ทุก push/PR จริง สิ่งที่เหลือคือ (ก) FPS §P7 ยังไม่มี run จริงบันทึกไว้ (ข) latency gate ไม่ผูกกับ release pipeline (ค) CPU/RAM ไม่มีตัวเลข assert อัตโนมัติ
 
@@ -106,7 +106,7 @@ Legend: ✅ shipped ตรงสเปค · 🟡 partial · ❌ missing · ⚠�
 | 5 | `Alt+M` | สรุปสถานการณ์ทันที (SRS §4.1) | mute toggle (`lib.rs:776`) | ไม่มีบันทึกเหตุผล — น่าจะชนกับการที่ G-Voice ไม่เคยถูกสร้าง |
 | 6 | Resilience mechanism | G-Sentry/G-Signal พึ่ง Local SLM เมื่อ cloud หลุด (SRS §5.2) | critical path เป็น pure Rust ไม่มี LLM เลย; SLM เฉพาะ G-Master (`slm.rs`, `master.rs:142-146`) | ADR-03: hot path ห้ามมี cloud/webview — เชื่อถือได้กว่า SLM |
 | 7 | TTS | โมดูล TTS โทนนักพากย์ (SRS §4.2) | SAPI ทั่วไป (`tts.rs:1-5`) + Piper optional ไม่ bundle (`tts.rs:109-165`); โทนนักพากย์จริงมาจาก announcer pack clips (`voice_api/`, `audio.rs`) | Piper อยู่ในแผน Phase 3 (roadmap) |
-| 8 | Product openness | SRS §2.1: แอป standby หลังบ้านทำงานกับเกม (ไม่กล่าวถึงบัญชี) | release build บังคับ Google sign-in + Terms + entitlement ก่อนเห็น deck (`App.tsx:33`, `GmadFirstRunGate.tsx`, `gmad_entitlement.rs` — CR-022) | closed-beta distribution gate; dev build ยังเปิดอิสระ |
+| 8 | Product openness | SRS §2.1: แอป standby หลังบ้านทำงานกับเกม (ไม่กล่าวถึงบัญชี) | At the time of this audit, release startup required sign-in and an access check; current source starts the local core without an account. | The former access gate is absent from current source. |
 | 9 | G-Motion output | Heatmap + path probability (SRS §3.2.2) | time-off-map heuristic + heading multiplier (`motion.rs:6-16`) | ประกาศตรง ๆ ในโค้ดว่าเป็น v1 heuristic; heatmap เป็น design target |
 
 ---
@@ -123,11 +123,10 @@ Legend: ✅ shipped ตรงสเปค · 🟡 partial · ❌ missing · ⚠�
 | **Announcer event packs ทั้งระบบ** — 24 events, pack bundles + banners, `/announcer/install`, default pack | `announcer.rs`, `voice_api/` (10 ไฟล์), `AudioSettings.tsx` | G-Suite schema + CLAUDE.md เท่านั้น |
 | **Draft-CV** (pick-screen roster) + **Scoreboard OCR** scaffold | `cv/draft_detector.rs`, `cv/draft_region.rs`, `ocr.rs` | memory/CR เท่านั้น |
 | **Accounts / GID / Steam link / OpenDota profile** | `auth.ts`, `gid.ts`, `profile.ts`, `identity.rs`, `supabase.ts` | ADR-14 |
-| **G-Store economy** — wallet/inventory/ledger/topup | `StorePage.tsx`, `WalletTab.tsx`, `wallet.ts`, `gmadEntitlement.ts` | ADR-11/12/16, CR-003 |
-| **Closed-beta entitlement gate + first-run handoff** | `gmad_entitlement.rs`, `GmadFirstRunGate.tsx`, `gmadFirstRun.ts` | CR-016/020/022 |
-| **In-app updater 3 channels** | `update_channel.rs:20`, `lib.rs:77,123`, `useAppUpdate.ts`, `release/channels/*.json` | `docs/releases/release-channel-architecture.md` |
+| **G-Store economy** — wallet/inventory/ledger/topup | `StorePage.tsx`, `WalletTab.tsx`, `wallet.ts` | ADR-11/12/16, CR-003 |
+| **In-app updater (dev/stable)** | `update_channel.rs`, `lib.rs`, `useAppUpdate.ts`, `release/channels/{dev,stable}.json` | `docs/releases/release-channel-architecture.md` |
 | **GPU telemetry sidecar** | `gpu-feeder/`, `governor.rs:29-63` | SRS §5.1 มี note 2026-07 แล้ว (จุดเดียวที่ spec ตามทัน) |
-| **Secret store (DPAPI), Claude quota, calibration QA, utterance ledger, Maiden Line palette, BetaFeedback** | `secret.rs`, `usage.rs`, `calibration.rs`, `utterance.rs`, `MaidenLine.tsx`, `BetaFeedback.tsx` | CR-008/CR-011 ฯลฯ |
+| **Secret store (DPAPI), Claude quota, calibration QA, utterance ledger, Maiden Line palette** | `secret.rs`, `usage.rs`, `calibration.rs`, `utterance.rs`, `MaidenLine.tsx` | CR-008/CR-011 ฯลฯ |
 
 **Doc-drift ที่พบระหว่างตรวจ (ควรแก้):**
 - `docs/FEATURE-LEDGER.md` แถว `3-g-persona` = "doc-only / no code mapped" — **ผิด**: G-Persona มีโค้ดจริงครบวงจร (`runtime.rs:82`, `lib.rs:528`, `Control.tsx:456-475`, `Overlay.tsx:266,393`, `capture.rs:932`) → ต้องแก้ manifest แล้ว re-run ledger
@@ -140,13 +139,13 @@ Legend: ✅ shipped ตรงสเปค · 🟡 partial · ❌ missing · ⚠�
 
 ทิศทางกำกับไว้ทุกข้อ: **[แก้โค้ด]** = ทำของให้ตรงสเปค / **[แก้สเปค]** = ยอมรับความจริงแล้ว update เอกสาร
 
-1. **[แก้สเปค — ตัดสินใจระดับ product]** ชี้ขาดชะตากรรม §3A: G-Voice + G-Memory ติดป้าย **P0** มาตั้งแต่การวิเคราะห์ Questie แต่ 0% มา 2+ เดือน ระหว่างที่ทีม ship closed-beta/economy แทน — ถ้ายังเชื่อว่าเป็น moat ให้ตั้ง phase จริงใน roadmap; ถ้าไม่ ให้ลดระดับ/ตัดออกจาก SRS เพื่อไม่ให้ P0 ค้างเป็น false signal กับทุก audit ต่อจากนี้ (และถ้าจะสร้าง G-Voice ต้องย้าย mute ออกจาก `Alt+M` ก่อน — `lib.rs:776`)
+1. **[แก้สเปค — ตัดสินใจระดับ product]** ชี้ขาดชะตากรรม §3A: G-Voice + G-Memory ติดป้าย **P0** มาตั้งแต่การวิเคราะห์ Questie แต่ 0% มา 2+ เดือน ระหว่างที่ทีม ship account/economy work แทน — ถ้ายังเชื่อว่าเป็น moat ให้ตั้ง phase จริงใน roadmap; ถ้าไม่ ให้ลดระดับ/ตัดออกจาก SRS เพื่อไม่ให้ P0 ค้างเป็น false signal กับทุก audit ต่อจากนี้ (และถ้าจะสร้าง G-Voice ต้องย้าย mute ออกจาก `Alt+M` ก่อน — `lib.rs:776`)
 2. **[แก้สเปค]** SRS §3.1/§3.2 + PRD G-Sentry/G-Motion: เขียนใหม่ให้ตรงสถาปัตยกรรมจริง (CV-based enemy tracking ที่ 4–8 Hz เพราะ GSI ไม่ให้ตำแหน่งศัตรู; G-Motion เป็น v1 heuristic, heatmap เป็น future target) — ตอนนี้ CLAUDE.md ตามทันแล้วแต่ SRS ซึ่งเป็น "source of truth" ยังหลอกคนอ่านอยู่
 3. **[แก้สเปค]** SRS §3.3: บันทึก Sensitivity ladder (Low/Med/High + default Med 0.65/0.40) แทน "85%" ค่าเดียว — โค้ดคือพฤติกรรมที่ถูก field-validate แล้ว (`signal.rs:17-20`)
 4. **[แก้โค้ด]** ปิดครึ่งที่ขาดของ SRS §3.4.1: wire `ocr.rs` Phase B/C (scoreboard → enemy NW → prompt) ตามแผนที่เขียนไว้ใน `ocr.rs:11-14` — นี่คือ requirement Core ข้อเดียวที่ยังไม่มีเส้นทางทำงานเลย; ระหว่างนั้นเพิ่ม caveat ใน SRS ว่า advice ปัจจุบัน ground ด้วย CV-identified heroes + own stats เท่านั้น
 5. **[แก้โค้ด]** ปิด G-Log feedback loop จริง (SRS §3.6.2): ให้ผล `replay_fit` เขียนเป็น config (เช่น tuned `MotionParams`/`Sensitivity` per-user) ที่ live path โหลด — ตอนนี้ harness วัดได้แล้วแต่ค่า default ยัง hardcode (`motion.rs:66-78`); นี่คือช่องว่างสุดท้ายของคำโฆษณา "เรียนรู้แมตช์ถัดไป"
 6. **[process]** เก็บหลักฐาน NFR ที่ยังลอย: (ก) รัน GATE P7 FPS จริงหนึ่งครั้งแล้ว commit `fps-report.json` เป็น validation record (ข) ผูก `perf-gate.yml` (latency) เข้า candidate-release checklist (ตอนนี้ dispatch-only) (ค) เพิ่ม assertion ตัวเลข CPU/RAM ในการรัน perf harness ประจำ release
-7. **[แก้สเปค]** SRS §5.2 privacy: อ้างอิง ADR-11/ADR-14/ADR-16 อย่างชัดเจน (identity opt-in ≠ data-contribution opt-in; CV ไม่ออกจากเครื่องเด็ดขาด) — CLAUDE.md เตือนเองว่า absolute reading ของข้อนี้เคยทำ flywheel strategy หายมาแล้วหลายรอบ; และบันทึก release-gate บังคับ sign-in (CR-022) ใน §2.1 Product Perspective
+7. **[แก้สเปค]** SRS §5.2 privacy: อ้างอิง ADR-11/ADR-14/ADR-16 อย่างชัดเจน (identity opt-in ≠ data-contribution opt-in; CV ไม่ออกจากเครื่องเด็ดขาด) — CLAUDE.md เตือนเองว่า absolute reading ของข้อนี้เคยทำ flywheel strategy หายมาแล้วหลายรอบ
 8. **[แก้สเปค]** SRS §4.1/§4.2: อัปเดต hotkey table ให้ตรง `lib.rs:771-776`, บันทึกว่า caster-voice ที่ ship คือ announcer packs + SAPI/Piper fallback chain, และตัดสินใจว่า "Alt+M สรุปสถานการณ์" จะสร้าง (เป็น G-Voice ขั้นแรกแบบ one-way ก็ได้ — ไม่ต้องมี STT) หรือถอนออก
 9. **[แก้ docs]** แก้ FEATURE-LEDGER manifest แถว `3-g-persona` (มีโค้ดแล้ว), confirm phase ของแถว *(derived)*, และอัปเดตตัวเลข test ใน AGENTS.md — ledger เป็น drift-detector ของ repo ถ้าตัวมันเอง stale ความน่าเชื่อถือทั้งระบบตก
 10. **[แก้สเปค/โค้ด — เลือกทางใดทางหนึ่ง]** G-Mind §3.10: ถ้า "กัน vendor lock-in" ยังเป็นเป้า ให้เพิ่ม cloud ตัวที่สอง (Gemini client) เข้า backend picker ที่มีโครงรออยู่แล้ว (`runtime::MasterBackend`); ถ้าไม่ ให้ re-scope §3.10 เป็น "cloud/local backend picker" ตามที่ ship จริง

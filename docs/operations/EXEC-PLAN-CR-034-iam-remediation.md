@@ -1,13 +1,13 @@
 ---
-version: "0.6.1b"
+version: "0.6.3b"
 title: "EXEC-PLAN CR-034 — IAM remediation and production reconciliation"
 doc_id: "EXEC-PLAN-CR-034-iam-remediation"
 created_at: "2026-08-28T10:40:00+07:00,ATHER"
-last_update: "2026-09-13T01:30:13+07:00,RWANG"
+last_update: "2026-10-18T00:00:00+07:00,Codex"
 owner: "Boss"
 executor: "Codex"
 status: "active"
-updated: "2026-09-13"
+updated: 2026-10-18
 attributes:
   doc_type: "execution-plan"
   domain: "account-identity-security"
@@ -16,7 +16,6 @@ attributes:
   state_authority: "this document (§3 State board). No agent holds task state."
   related_docs:
     - "docs/change request/CR-034-gid-iam-production-completion.md"
-    - "docs/change request/CR-018-ops-route-spa-rewrite.md"
     - "docs/architecture/oauth-jwt-client-authorization-flows.md"
     - "docs/architecture/adr/ADR-14-gid-account-identity.md"
     - "docs/audits/SEC-001-auth-identity-hardening.md"
@@ -61,40 +60,36 @@ ahead of, and in conflict with, the approval record in CR-034.
 | Fact | How it was verified |
 | --- | --- |
 | Migrations `20260823221844_cr034_iam_phase1_foundation` and `20260824024920_cr034_iam_phase2_sessions` are **applied on production** | Supabase `list_migrations` on project `wsseitulmcgnolgsrxgh` |
-| Edge Functions `iam-security-state`, `iam-security-events`, `iam-session-action` are **deployed and ACTIVE**; `admin-gmad-controller` is at v4 (deployed 2026-08-27) | Supabase `list_edge_functions` |
+| Edge Functions `iam-security-state`, `iam-security-events`, and `iam-session-action` were reported **deployed and ACTIVE** | Supabase `list_edge_functions` snapshot from 2026-08-28 |
 | `iam_private` schema live: 2 tables, 6 functions, role `gmaiden_iam_runtime` exists with `rolcanlogin=true` and a password set | `pg_namespace` / `pg_proc` / `pg_authid` query |
 | `iam_private.security_events` = **0 rows**; `iam_private.device_registry` = **0 rows** | direct count |
 | `auth.mfa_factors` = **0**; sessions with `aal='aal2'` = **0** (18 sessions total) | direct count |
 | 8 auth users; identities: 8 × `google`, 1 × `email` (that user also has google); 1 user has `encrypted_password` set | `auth.identities` / `auth.users` query |
 | Roles: 1 owner, 1 admin, 6 user | `public.profiles` group-by |
-| `/ops` route does not exist in source: no `OpsPage` in `landing/src` (15 files), no `rewrites` in `landing/vercel.json` | `git ls-files landing/src`, file read, repo-wide grep for `/ops` |
+| No operator UI is part of the current account-security scope | Current product and landing source review |
 | Deno policy tests pass 24/24 | `deno test --allow-env --allow-net supabase/functions/_shared/` |
 | Security Advisor: 3 × `SECURITY DEFINER` RPC callable by `authenticated` (`purchase_item`, `redeem_code`, `tip`); leaked-password protection disabled | `get_advisors type=security` |
 
 ### 1.2 The five problems this plan closes
 
-- **P1 — Admin/owner is locked out of production.**
+- **P1 — AAL2 can block privileged IAM actions.**
   `requireIamContext` defaults `requireAal2 = true`
-  ([`supabase/functions/_shared/iam_runtime.ts`](../../supabase/functions/_shared/iam_runtime.ts))
-  and `admin-gmad-controller` calls it without overriding. Production has zero enrolled MFA
-  factors and no enrollment UI, so no session can reach AAL2 → every admin and owner action
-  returns `403 step_up_required`. Phase 2's enforcement shipped ahead of Phase 3's enrollment.
+  ([`supabase/functions/_shared/iam_runtime.ts`](../../supabase/functions/_shared/iam_runtime.ts)).
+  No factor-enrollment UI is present, so do not claim that step-up is usable. This affects protected
+  account operations only; local setup and gameplay remain independent.
 
-- **P2 — Documents disagree with production.**
-  CR-034 front matter still says `phase_1_status: implemented-local-awaiting-live-verification`
-  and §19 says approval "does not authorize production migration, Edge Function deployment".
-  Both are deployed. `CLAUDE.md` claims an owner/admin controller at `/ops` that has no source.
-  CR-018 asserts an `OpsPage` client route that no longer exists.
+- **P2 — Authorization documents need source reconciliation.**
+  This document records a production snapshot, while current repository source contains no operator
+  route. Treat the snapshot as dated evidence, not current runtime acceptance.
 
-- **P3 — IAM covers 4 of 9 Edge Functions.**
-  Only `admin-gmad-controller` + the three `iam-*` functions use the policy engine. The
-  entitlement path (`check-gmad-queue`, `get-gmad-desktop-entitlement`, `request-gmad-download`,
-  `accept-closed-beta-terms`, `mint-gid`) is `auth.getUser()` + `service_role` only — no live
-  session check, no capability, no audit event. A revoked session keeps working until its JWT
-  expires (up to 3600 s).
+- **P3 — IAM covers three Edge Functions.**
+  The three `iam-*` functions use the policy engine. The
+  other account endpoints use their own authenticated-user checks and are outside the shared
+  capability policy. Re-evaluate each installed endpoint against the current source before making
+  a live-session or audit-coverage claim.
 
 - **P4 — Google-only is enforced in UI, not at the identity boundary.**
-  `isGoogleIdentity` ([`supabase/functions/_shared/entitlement.ts`](../../supabase/functions/_shared/entitlement.ts))
+  `isGoogleIdentity` ([`supabase/functions/_shared/identity.ts`](../../supabase/functions/_shared/identity.ts))
   tests *which identities are linked*, not *which method minted this session*. Production has one
   user with a linked `email` identity and one user with a password set. If the email provider is
   still enabled, a non-Google sign-in passes the check — contradicting CR-034 §4 boundary 1.
@@ -139,18 +134,18 @@ Single executor: keep it current yourself. Multi-agent: only the orchestrator wr
 | --- | --- | --- | --- | --- | --- | --- |
 | D1 | AAL2 unblock strategy | BOSS | — | PENDING | see §4 | 2026-08-28 |
 | D2 | Email provider disable + signup hook | BOSS | — | PENDING | see §4 | 2026-08-28 |
-| D3 | Entitlement-path session check scope | BOSS | — | PENDING | see §4 | 2026-08-28 |
-| D4 | `/ops` build or delete | BOSS | — | PENDING | see §4 | 2026-08-28 |
+| D3 | Sensitive-account session-check scope | BOSS | — | PENDING | see §4 | 2026-08-28 |
+| D4 | Operator UI scope | BOSS | — | DONE | No operator UI is part of current product scope | 2026-10-18 |
 | T1 | Capability-level AAL policy | CODEX | D1 | TODO | — | 2026-08-28 |
 | T2 | Reconcile docs with production | CODEX | — | TODO | — | 2026-08-28 |
 | T3 | Live IAM probe script | CODEX | — | TODO | — | 2026-08-28 |
 | T4 | Run live probe, record evidence | BOSS | T3 | TODO | — | 2026-08-28 |
-| T5 | Live-session check on entitlement path | CODEX | D3, T4 | TODO | — | 2026-08-28 |
+| T5 | Live-session check on sensitive account operations | CODEX | D3, T4 | TODO | — | 2026-08-28 |
 | T6 | TOTP enrollment UI + restore AAL2 | CODEX | T1, T4 | TODO | — | 2026-08-28 |
 | T7 | Session-method-aware Google check | CODEX | T4 | TODO | — | 2026-08-28 |
 | T8 | Disable email provider, register hook | BOSS | D2, T7 | TODO | — | 2026-08-28 |
-| T9 | `/ops` resolution | CODEX | D4 | TODO | — | 2026-08-28 |
-| T10 | Sign-out resilience | CODEX | — | IN-PROGRESS | Committed `56f9fbd`; release WebView/native storage smoke passed; [evidence §9](auth-failure-remediation-proposal.md); session UAT and CodeDoc verdict pending | 2026-09-13 |
+| T9 | Operator UI scope reconciliation | CODEX | D4 | SUPERSEDED | No operator UI is in current scope | 2026-10-18 |
+| T10 | Sign-out resilience | CODEX | — | IN-PROGRESS | Committed `56f9fbd`; release WebView/native storage smoke passed; [evidence §9](auth-failure-remediation-proposal.md); session UAT pending | 2026-09-13 |
 | T11 | Entitlement failure-state alignment (GAP-02) | CODEX | T10 local implementation | IN-PROGRESS | Committed `56f9fbd`; local UI/native tests complete; [evidence §9](auth-failure-remediation-proposal.md); expired-grace native/WebView session UAT pending | 2026-09-13 |
 
 Execution order: **T2, T3, T10 can start immediately.** Everything else waits on a decision
@@ -166,8 +161,8 @@ Each decision is recorded by editing its row in §3 to `DONE` and writing the ch
 
 | Option | Effect | Cost |
 | --- | --- | --- |
-| **A (recommended)** — capability-level AAL map: `gmad.batch.manage` → AAL1 temporarily, `iam.role.delegate` stays AAL2 | Batch/roster operations work today; role delegation stays maximum-assurance | Small, reversible; reverted by T6 |
-| B — ship TOTP enrollment first, keep AAL2 everywhere | No security reduction at any point | Admin stays locked out until T6 lands |
+| **A (recommended)** — keep AAL2 on role delegation and require a validated factor before privileged actions | The authorization boundary stays explicit | Requires a separate enrollment design and acceptance |
+| B — keep enrollment out of scope and avoid adding any new AAL2-only account operation | No new step-up dependency is introduced | Privileged operations remain limited |
 | C — set `requireAal2 = false` globally | Do not choose. Removes the step-up control entirely | Violates guardrail 3 |
 
 **Chosen:** _(unset)_
@@ -186,23 +181,23 @@ set — unlink, leave, or contact.
 
 | Option | Scope |
 | --- | --- |
-| **A (recommended)** | `get-gmad-desktop-entitlement` + `request-gmad-download` — the two that gate the runtime and the artifact |
-| B | A, plus `accept-closed-beta-terms` and `check-gmad-queue` |
-| C | All five, `mint-gid` included |
+| **A (recommended)** | Security-state and security-event reads |
+| B | A, plus current-session actions and identity issuance |
+| C | All installed account endpoints that handle authenticated identity |
 
 Wider scope means more Auth/database coupling on the landing's first paint. CR-034 §12 Phase 0
 finding 4 recommends the check on *sensitive* functions only.
 
 **Chosen:** _(unset)_
 
-### D4 — `/ops` (P2)
+### D4 — Operator UI (P2)
 
 | Option | Effect |
 | --- | --- |
-| **A** | Build `OpsPage` + the `vercel.json` rewrite from CR-018, gated by the deployed `admin-gmad-controller` |
-| **B (recommended for now)** | Remove the `/ops` claim from `CLAUDE.md`, mark CR-018 `superseded`, and record that the operator console is not shipped |
+| **A** | Add a separately approved operator surface with an explicit threat model and capability tests |
+| **B (selected)** | Keep operator UI out of the current product scope |
 
-B is recommended because the backend behind `/ops` is unusable until D1/T6 close anyway.
+No operator surface is included in this work plan.
 
 **Chosen:** _(unset)_
 
@@ -218,8 +213,8 @@ Every task below is self-contained. Read only the task you are executing plus §
 
 **Owner:** CODEX **Blocked by:** D1 (only execute if D1 = Option A)
 
-**Goal.** Make the AAL requirement an explicit, tested, per-capability policy instead of a
-call-site default, and set `gmad.batch.manage` to AAL1 until TOTP enrollment ships (T6).
+**Goal.** Make AAL requirements explicit for current IAM capabilities and preserve step-up for
+role delegation.
 
 **Files.**
 - `supabase/functions/_shared/iam.ts`
@@ -230,20 +225,19 @@ call-site default, and set `gmad.batch.manage` to AAL1 until TOTP enrollment shi
 1. In `iam.ts`, next to the existing `CAPABILITIES` map, add a sibling constant:
    ```ts
    // AAL2 requirement per capability. Kept beside CAPABILITIES so the two halves
-   // of the policy cannot drift. `gmad.batch.manage` is AAL1 ONLY until TOTP
-   // enrollment ships (EXEC-PLAN CR-034 T6) — production has zero enrolled
-   // factors, so requiring AAL2 here locks out every admin and owner.
+   // of the policy cannot drift. Role delegation requires AAL2; the caller may
+   // raise the requirement for another capability but must not lower it.
    const AAL2_REQUIRED: Record<IamCapability, boolean> = { ... };
    ```
-   Values: `gmad.batch.manage: false`, `iam.role.delegate: true`,
-   `iam.audit.read: true`, `iam.security.read: false`, `iam.session.revoke: false`.
+   Values: `iam.role.delegate: true`, `iam.audit.read: true`,
+   `iam.security.read: false`, `iam.session.revoke: false`.
 2. Change `resolveIamContext` so the AAL check reads `AAL2_REQUIRED[capability] || requireAal2`
    — the caller may still *raise* the requirement, never lower it. Keep the existing
    `requireAal2` parameter and its call sites intact.
 3. In `iam-session-action/index.ts` the caller currently passes `scope === "others"`; that still
    raises correctly under the `||`. Do not change it.
 4. Add tests to `iam.test.ts`:
-   - `gmad.batch.manage` is authorized for an admin on an AAL1 session
+   - own `iam.security.read` remains available on an AAL1 session
    - `iam.role.delegate` still returns `403 step_up_required` on an AAL1 session
    - a caller passing `requireAal2 = true` still forces AAL2 on a capability whose map value is `false`
 
@@ -252,7 +246,7 @@ call-site default, and set `gmad.batch.manage` to AAL1 until TOTP enrollment shi
 - No call site outside `iam.ts` decides AAL
 - The comment naming T6 as the revert trigger is present
 
-**Rollback.** Set `gmad.batch.manage` back to `true`. One-line change.
+**Rollback.** Restore the last reviewed capability policy as a single scoped change.
 
 ---
 
@@ -269,7 +263,6 @@ below is still outstanding.
 
 **Files.**
 - `docs/change request/CR-034-gid-iam-production-completion.md`
-- `docs/change request/CR-018-ops-route-spa-rewrite.md`
 - `CLAUDE.md`
 
 **Steps.**
@@ -280,23 +273,19 @@ below is still outstanding.
 
    > **Production state note (2026-08-28).** Migrations `20260823221844` and `20260824024920` are
    > applied on production, and Edge Functions `iam-security-state`, `iam-security-events`,
-   > `iam-session-action` plus `admin-gmad-controller` v4 are deployed (2026-08-27). This is ahead
+   > `iam-session-action` is deployed (2026-08-27). This is ahead
    > of the approval recorded in this section. Production promotion of the remaining phases still
    > requires an explicit gate. `iam_private.security_events` is empty, so no production UAT
    > evidence exists yet — see `docs/operations/EXEC-PLAN-CR-034-iam-remediation.md`.
 
-3. **CR-034 §3 gaps** — append gap 9: *AAL2 is enforced on `gmad.batch.manage` while zero MFA
-   factors exist and no enrollment surface ships, so admin/owner operations are unusable in
+3. **CR-034 §3 gaps** — append gap 9: *AAL2 is enforced for sensitive actions while zero MFA
+   factors exist and no enrollment surface ships, so privileged account operations are unusable in
    production.* Cross-reference this plan's T1/T6.
 4. **CR-034 CHANGELOG** — add a `0.5.0b` row: "Recorded verified production deployment state,
-   the AAL2/no-MFA lockout, and the partial IAM coverage of the entitlement path."
-5. **CR-018** — change `status` from `historical` to `superseded`, add `superseded_by:
-   "EXEC-PLAN-CR-034-iam-remediation"`, and add a note that the `OpsPage` client route it
-   describes is no longer present in `landing/src` (verified 2026-08-28).
-6. **CLAUDE.md** — in the "G-Maiden Closed Beta handoff" paragraph, replace the claim that the
-   landing "has a production G-Maiden queue sector and the owner/admin controller at `/ops`" with
-   an accurate statement: the queue sector ships; the `/ops` operator console has no source in
-   `landing/src` and its backend is AAL2-gated. Add a CLAUDE.md changelog row.
+   the AAL2/no-MFA lockout, and the partial IAM coverage of account authorization."
+5. Keep product guidance scoped to server authorization; operator UI is outside this plan.
+6. **CLAUDE.md** — replace obsolete landing-operator claims with the current public landing scope
+   and record the documentation update in its changelog.
 
 **Acceptance.**
 - `node tools/doc-graph/ci-gate.mjs` passes
@@ -322,7 +311,6 @@ which is the only way to separate "never called" from "secrets missing" (P5).
 2. It performs, in order:
    - `GET  /functions/v1/iam-security-state` with `x-gmaiden-platform` and `x-gmaiden-app-version`
    - `GET  /functions/v1/iam-security-events`
-   - `POST /functions/v1/admin-gmad-controller` with `{"action":"list","page":0,"page_size":1}`
 3. For each call it prints `status` and the parsed `error` code only. **It must never print the
    token, any response body containing identifiers, or any header value.**
 4. It maps outcomes to a verdict line:
@@ -332,8 +320,8 @@ which is the only way to separate "never called" from "secrets missing" (P5).
    - `403 capability_denied` → `ROLE-MISMATCH`
    - `401 invalid_session` → `TOKEN-OR-SESSION-INVALID`
 5. Exit code `0` if every call returned a *recognized* verdict, `1` on an unrecognized response.
-6. Add a short `## IAM live probe` section to `docs/operations/gmaiden-closed-beta-release-playbook.md`
-   explaining how Boss obtains the token (desktop devtools → Supabase session) and runs the script.
+6. Keep the probe instructions beside this task. Never include an access token in the document,
+   command output, or checked-in examples.
 
 **Acceptance.**
 - `node scripts/iam-live-probe.mjs` with no token set exits non-zero with a clear usage message
@@ -356,7 +344,7 @@ T4's `Evidence` cell in §3 and set `Status: DONE`. If any call returns
 
 ---
 
-### T5 — Live-session check on the entitlement path
+### T5 — Live-session check on sensitive account endpoints
 
 **Owner:** CODEX **Blocked by:** D3, T4
 
@@ -370,7 +358,7 @@ rather than surviving until JWT expiry.
 1. Export a narrow helper from `iam_runtime.ts`:
    ```ts
    /** Live-session existence check ONLY — no capability, no AAL, no role load.
-    *  For entitlement-path functions that must reject a revoked session but
+    *  For account endpoints that must reject a revoked session but
     *  must not take on capability coupling (CR-034 §12 Phase 0 finding 4). */
    export async function requireLiveSession(authorization: string):
      Promise<{ ok: true; userId: string; sessionId: string } | { ok: false; status: 401 | 503 }>
@@ -417,8 +405,7 @@ rather than surviving until JWT expiry.
 4. Add Vitest coverage for the enroll → challenge → verify state machine with a mocked client,
    including the failure branch.
 5. **Only after enrollment is verified working against production by Boss:** flip
-   `AAL2_REQUIRED["gmad.batch.manage"]` back to `true` in `iam.ts`, remove the T1 comment, and
-   update T1's row in §3 to `SUPERSEDED`.
+   preserve the AAL2 requirement for `iam.role.delegate` in `iam.ts` and update T1's row in §3.
 
 **Acceptance.**
 - `pnpm -C src test` passes; `pnpm -C src exec tsc --noEmit` clean; `pnpm -C src lint` clean
@@ -435,8 +422,8 @@ rather than surviving until JWT expiry.
 the user has linked.
 
 **Files.**
-- `supabase/functions/_shared/entitlement.ts`
-- `supabase/functions/_shared/entitlement.test.ts`
+- `supabase/functions/_shared/identity.ts`
+- `supabase/functions/_shared/iam.test.ts`
 - `supabase/functions/_shared/iam.ts` (call site)
 
 **Steps.**
@@ -455,9 +442,7 @@ the user has linked.
 3. Tests: google-only user passes; dual-identity user with a google `amr` passes; dual-identity
    user with a non-google `amr` is rejected `401 invalid_session`; missing `amr` falls back and is
    flagged.
-4. Do **not** change `get-gmad-desktop-entitlement`'s use of `isGoogleIdentity` in this task — that
-   function returns `account_not_eligible` rather than 401, and changing it is a user-visible
-   behaviour change that belongs with T8's provider decision.
+4. Keep the change scoped to the shared session-method check and its authorized account call sites.
 
 **Acceptance.**
 - `deno test --allow-env --allow-net supabase/functions/_shared/` passes
@@ -482,19 +467,13 @@ Console-only actions, listed for completeness:
 
 ---
 
-### T9 — `/ops` resolution
+### T9 — Operator UI scope reconciliation (SUPERSEDED)
 
 **Owner:** CODEX **Blocked by:** D4
 
-If **D4 = A**: create `landing/src/OpsPage.tsx`, branch to it from `landing/src/App.tsx` on
-`window.location.pathname === '/ops'`, and add
-`"rewrites": [{ "source": "/ops", "destination": "/index.html" }]` to `landing/vercel.json`.
-Authorization stays entirely server-side in `admin-gmad-controller`; the page renders whatever
-that function returns and must not infer any permission client-side. Acceptance:
-`pnpm -C landing build` and `pnpm -C landing test` pass.
-
-If **D4 = B**: no code. T2 already removed the claim; just record `Status: DONE` with a pointer to
-T2's commit.
+D4 selected B. No operator UI is part of current scope, and this plan has no task to add one. Any
+future operator-facing surface requires a separate product decision, authorization design, and
+acceptance plan.
 
 ---
 
@@ -574,7 +553,7 @@ cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D w
 | Rust | **291 passed**, 0 failed, 5 ignored | `cargo test --manifest-path src-tauri/Cargo.toml --locked` |
 | Desktop Vitest | **268 passed** (27 files, ~21 s) | `pnpm -C src test` |
 | Landing Vitest | **14 passed** (4 files, ~2.3 s) | `pnpm -C landing test` |
-| Deno IAM/GID/entitlement | **24 passed**, 0 failed | `deno test --allow-env --allow-net supabase/functions/_shared/` |
+| Deno IAM/GID policy (historical suite composition) | **24 passed**, 0 failed | `deno test --allow-env --allow-net supabase/functions/_shared/` |
 | Types / lint | exit 0 / exit 0 | `pnpm -C src exec tsc --noEmit` · `pnpm -C src lint` |
 | Doc graph | PASS | `node tools/doc-graph/ci-gate.mjs` |
 
@@ -657,8 +636,8 @@ costs a merge conflict in a security-policy file, which is the worst place to re
 
 | Lane | Task | Files owned | Model tier |
 | --- | --- | --- | --- |
-| A1 | T2 — reconcile docs | `CR-034.md`, `CR-018.md`, `CLAUDE.md` | standard (judgment: status wording) |
-| A2 | T3 — live probe script | `scripts/iam-live-probe.mjs`, closed-beta playbook | cheap (spec is complete) |
+| A1 | T2 — reconcile docs | `CR-034.md`, `CLAUDE.md` | standard (judgment: status wording) |
+| A2 | T3 — live probe script | `scripts/iam-live-probe.mjs`, IAM usage notes | cheap (spec is complete) |
 | A3 | T10 — sign-out resilience | `src/src/securitySession.ts`, `src/src/auth.ts`, its tests | standard |
 
 **Wave B — after D1–D4 are decided and T4 has produced live evidence**
@@ -667,7 +646,6 @@ costs a merge conflict in a security-policy file, which is the worst place to re
 | --- | --- | --- |
 | B1 | **T1 → T7 → T5 → T6 step 5**, strictly in that order | No — serial, one agent |
 | B2 | T6 steps 1–4 (TOTP UI, `src/src/` only) | Yes, alongside B1 |
-| B3 | T9 (`landing/` only, if D4 = A) | Yes, alongside B1 and B2 |
 
 B2 is parallel-safe **because T6 step 5 is already specified as a separate commit** — the frontend
 half touches no backend file. Do not merge the two halves back together to "save a commit"; that
@@ -736,7 +714,6 @@ top-level path buckets. Applied to §8.3:
 | T10 | `src` | No |
 | T1 / T5 / T7 | `supabase` | No |
 | T6 | `src`, `supabase` | No |
-| T9 | `landing` | No |
 | **All ten tasks in one PR** | `docs`, `CLAUDE.md`, `scripts`, `src`, `supabase`, `landing` — **6** | **Yes, and it fails the gate without one** |
 
 So the per-lane split in §8.3 is not only a concurrency choice — it is also what keeps every PR
@@ -774,3 +751,5 @@ EXEC-PLAN CR-034 — task <T#> (docs/operations/EXEC-PLAN-CR-034-iam-remediation
 | 0.5.0b | 2026-08-28 | Added §6.1 measured known-good baselines for all five suites and §6.2 mandatory timeout ceilings with the capture-it-live rule for a stalled suite, recorded the unreproducible landing-Vitest stall and the four refuted causes, and marked T2's Phase 0 evidence correction as already applied in CR-034 0.4.4b. | Claude (Opus 5) |
 | 0.6.0b | 2026-09-12 | Record Boss approval of GAP-01/02, start T10 and add dependent T11; D1–D4 remain pending. | RWANG |
 | 0.6.1b | 2026-09-13 | Record GAP-01/02 commit and native storage/WebView cold-start smoke; T10/T11 and D1–D4 retain pending acceptance/decision state. | RWANG |
+| 0.6.2b | 2026-10-16 | Remove retired local review integration and related references. | Codex |
+| 0.6.3b | 2026-10-18 | Removed obsolete distribution-specific IAM wording and superseded operator UI implementation steps. | Codex |

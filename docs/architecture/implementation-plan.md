@@ -193,11 +193,11 @@ framer-motion      (micro-interactions, ใช้แบบประหยัด)
 - **G7.3** Perf suite: วัด **RAM ≤400MB, FPS drop ≤3%** บนเครื่องระดับกลาง. Files: `tests/perf/`. Accept: ผ่านทุกตัวเลข. Deps G7.2. Est 2d
 - **🚪 GATE P7:** Definition of Done ครบทุกข้อ (Eng Spec §7).
 
-### Phase 8 — Beta → Launch (Track E)
+### Phase 8 — Validation and Launch (Track E)
 - **G8.1** Installer (MSI/NSIS) + วาง GSI cfg อัตโนมัติ + auto-update. Files: `src-tauri/`, `installer/`. Accept: ติดตั้งบนเครื่องสะอาดแล้วใช้ได้. Est 3d
 - **G8.2** Onboarding flow (ตรวจ WebView2, วาง cfg, สอน hotkey). Files: `src/onboarding/`. Accept: ผู้ใช้ใหม่ตั้งค่าจบใน <2 นาที. Est 2d
-- **G8.3** Landing + ดาวน์โหลดบน Vercel + เอกสารผู้ใช้. Files: `src/dashboard/`, `docs/user/`. Accept: หน้า public ใช้งานได้. Est 2d ‖
-- **G8.4** Closed beta + เก็บ feedback + จูน persona/sensitivity. Accept: เกณฑ์ feedback ผ่าน, NFR ผ่านบนเครื่องผู้ใช้จริงหลากหลาย. Est 2สัปดาห์+
+- **G8.3** Public demo landing + เอกสารผู้ใช้. Files: `landing/`, `docs/user/`. Accept: หน้า public ใช้งานได้ตาม public-demo scope. Est 2d ‖
+- **G8.4** Supervised user validation + จูน persona/sensitivity. Accept: เกณฑ์ feedback ผ่าน, NFR ผ่านบนเครื่องผู้ใช้จริงหลากหลาย. Est 2สัปดาห์+
 - **🚪 GATE P8:** v1.0 — NFR ครบบนเครื่องจริง.
 
 ---

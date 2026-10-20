@@ -17,7 +17,6 @@ import { useIdentity } from "./live/identity";
 import { useProfile } from "./profile";
 import WalletTab from "./WalletTab";
 import LedgerTab from "./LedgerTab";
-import GmadEntitlementPanel from "./GmadEntitlementPanel";
 import AccountSecurity from "./AccountSecurity";
 
 type AccountMode = "account" | "wallet" | "ledger" | "security";
@@ -63,10 +62,10 @@ export default function AccountPage({ entryMode, entryNonce }: { entryMode?: Acc
     <div className="account-page">
       <h2 className="account-title">Account &amp; Profile</h2>
       <p className="account-lead">
-        G-Maiden Closed Beta ต้องลงชื่อเข้าใช้ด้วย Google และมีสิทธิ์ใช้งาน การลิงก์ Steam เป็นตัวเลือกสำหรับดูโปรไฟล์และสถิติสาธารณะ
+        Sign in to a G-Maiden account (GID) — one identity across the G-series: this deck, the
+        G-Maiden landing site, and creator tools like G-AnnStudio all resolve the same Google
+        sign-in to the same GID. The deck works without an account; this adds sync and linking.
       </p>
-      <GmadEntitlementPanel />
-
       <div className="gm-account-tabs" role="tablist" aria-label="Account sections">
         {ACCOUNT_TABS.map((t) => (
           <button
@@ -83,57 +82,57 @@ export default function AccountPage({ entryMode, entryNonce }: { entryMode?: Acc
       </div>
 
       <div className="account-content" role="region" aria-label="เนื้อหาบัญชี" tabIndex={0}>
-      {mode === "account" ? (
-        <div className="account-grid">
-          <section className="account-card">
-            <h3 className="account-h3">G-Maiden account</h3>
-            <AuthPanel />
-          </section>
+        {mode === "account" ? (
+          <div className="account-grid">
+            <section className="account-card">
+              <h3 className="account-h3">G-Maiden account</h3>
+              <AuthPanel />
+            </section>
 
-          <section className="account-card">
-            <h3 className="account-h3">Steam</h3>
-            <SteamLink />
-            {identity ? (
-              <div className="account-note">Deck loads OpenDota for account #{identity.accountId}.</div>
-            ) : (
-              <div className="account-note">Link Steam so the deck can load your OpenDota profile.</div>
-            )}
-          </section>
+            <section className="account-card">
+              <h3 className="account-h3">Steam</h3>
+              <SteamLink />
+              {identity ? (
+                <div className="account-note">Deck loads OpenDota for account #{identity.accountId}.</div>
+              ) : (
+                <div className="account-note">Link Steam so the deck can load your OpenDota profile.</div>
+              )}
+            </section>
 
-          <section className={`account-card${user ? "" : " muted"}`}>
-            <h3 className="account-h3">Profile</h3>
-            {user ? (
-              <>
-                <label className="account-field-label">Display name</label>
-                <input
-                  className="account-input"
-                  value={name}
-                  onChange={(e) => setName(e.target.value)}
-                  placeholder="Your name in G-Maiden"
-                  spellCheck={false}
-                />
-                <button
-                  type="button"
-                  className="account-save"
-                  onClick={() => void saveName()}
-                  disabled={saving || name.trim() === displayName}
-                >
-                  {saving ? "Saving…" : "Save"}
-                </button>
-                {msg ? <div className="account-msg">{msg}</div> : null}
-              </>
-            ) : (
-              <p className="account-hint">Sign in to set your display name and sync your profile.</p>
-            )}
-          </section>
-        </div>
-      ) : mode === "security" ? (
-        <AccountSecurity />
-      ) : mode === "wallet" ? (
-        <WalletTab onViewAllTransactions={() => setMode("ledger")} />
-      ) : (
-        <LedgerTab />
-      )}
+            <section className={`account-card${user ? "" : " muted"}`}>
+              <h3 className="account-h3">Profile</h3>
+              {user ? (
+                <>
+                  <label className="account-field-label">Display name</label>
+                  <input
+                    className="account-input"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    placeholder="Your name in G-Maiden"
+                    spellCheck={false}
+                  />
+                  <button
+                    type="button"
+                    className="account-save"
+                    onClick={() => void saveName()}
+                    disabled={saving || name.trim() === displayName}
+                  >
+                    {saving ? "Saving…" : "Save"}
+                  </button>
+                  {msg ? <div className="account-msg">{msg}</div> : null}
+                </>
+              ) : (
+                <p className="account-hint">Sign in to set your display name and sync your profile.</p>
+              )}
+            </section>
+          </div>
+        ) : mode === "security" ? (
+          <AccountSecurity />
+        ) : mode === "wallet" ? (
+          <WalletTab onViewAllTransactions={() => setMode("ledger")} />
+        ) : (
+          <LedgerTab />
+        )}
       </div>
     </div>
   );

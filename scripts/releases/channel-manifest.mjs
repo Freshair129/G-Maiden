@@ -3,7 +3,7 @@ import { createHash } from 'node:crypto';
 import { readFile, writeFile, rename, mkdir } from 'node:fs/promises';
 import { dirname, resolve } from 'node:path';
 
-const CHANNELS = new Set(['dev', 'closed-beta', 'stable']);
+const CHANNELS = new Set(['dev', 'stable']);
 
 // `platforms` keys must be the platform ids tauri-plugin-updater actually looks up:
 // `{os}-{arch}` with an optional `-{installer}` suffix. This is enforced because the
@@ -63,7 +63,7 @@ export async function sha256File(path) {
 export function promoteManifest(candidate, previous, approval, publishedAt = new Date().toISOString()) {
   validateManifest(candidate);
   validateManifest(previous);
-  if (!['dev','closed-beta'].includes(candidate.channel)) throw new Error('only candidate channels can be promoted');
+  if (candidate.channel !== 'dev') throw new Error('only dev candidates can be promoted');
   if (approval.version !== candidate.version || approval.sourceSha !== candidate.sourceSha) {
     throw new Error('approval does not match candidate');
   }

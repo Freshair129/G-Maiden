@@ -246,6 +246,11 @@ body {
   font-family: var(--g-font-ui);
 }
 
+/* The Tauri deck window is transparent outside its shell; the legacy page glow must not fill the canvas. */
+body:has(.deck-v3.g-deck) {
+  background: transparent;
+}
+
 .app {
   display: grid;
   grid-template-columns: 272px minmax(0, 1fr);
@@ -1161,7 +1166,7 @@ body {
 .auth-google:disabled { opacity: 0.6; cursor: default; }
 .auth-google-g { font-weight: 800; color: #4285f4; }
 
-.account-page { padding: 4px 2px; height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+.account-page { padding: 4px 2px 20px; overflow-y: auto; height: 100%; }
 .account-title { font-size: 22px; font-weight: 800; color: #eaf2ff; margin: 6px 0 4px; }
 .account-lead { font-size: 12.5px; color: #8794a6; max-width: 640px; margin: 0 0 18px; line-height: 1.5; }
 .account-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start; }
@@ -1348,9 +1353,13 @@ body {
 }
 .deck-tab:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
 
-/* Each Voice mode receives the space below its fixed tab row. */
-.gm-packs-page { display: flex; flex-direction: column; height: 100%; min-height: 0; padding: 4px; }
-.gm-packs-body { flex: 1; min-height: 0; overflow: hidden; }
+/* Packs page shell — the mode body fills whatever's left; the surrounding
+   `.surface.page-voice` already carries `overflow-y: auto` (see the shared
+   rule further down), so this doesn't need its own scroll/height math —
+   each mounted mode (VoiceInventory/StorePage/InventoryTab/AudioSettings)
+   already manages its own internal layout. */
+.gm-packs-page { display: flex; flex-direction: column; min-height: 100%; padding: 4px; }
+.gm-packs-body { flex: 1; min-height: 0; }
 .account-h3 { font-size: 12px; letter-spacing: 0.8px; text-transform: uppercase; color: #81b4ff; margin: 0 0 4px; }
 .account-note { font-size: 11px; color: #8794a6; line-height: 1.4; }
 .account-hint { font-size: 12px; color: #8794a6; line-height: 1.45; margin: 0; }
@@ -2311,6 +2320,8 @@ body {
 .sg-fill-ice { background: var(--g-ice-500); }
 .sg-fill-safe { background: var(--g-safe); }
 .sg-fill-warn { background: var(--g-warn); }
+.g-deck-panel .surface.page-voice,
+.g-deck-panel .surface.page-account,
 .g-deck-panel .surface.page-settings,
 .g-deck-panel .surface.page-insights,
 .g-deck-panel .surface.page-history,
@@ -2571,14 +2582,11 @@ body {
   fill: none;
   stroke: rgba(184, 218, 255, 0.30);
   stroke-width: 1.15;
-  /* Panel-edge feather: two dark ambient layers (near + far) + a very faint ice
-     bloom, same family/hue as the FAB shadows below. This is the layer that
-     actually diffuses the panel edge into the background (see the stage-sibling
-     comment above .g-panel-rim for why it has to live outside .g-deck-panel). */
+  /* Keep the rim soft while leaving clear space in the stage's right expansion zone. */
   filter:
-    drop-shadow(0 56px 140px rgba(3, 6, 12, 0.60))
-    drop-shadow(0 20px 58px rgba(3, 6, 12, 0.46))
-    drop-shadow(0 0 74px rgba(143, 212, 255, 0.10));
+    drop-shadow(0 22px 34px rgba(3, 6, 12, 0.45))
+    drop-shadow(0 8px 18px rgba(3, 6, 12, 0.30))
+    drop-shadow(0 0 24px rgba(143, 212, 255, 0.07));
 }
 
 .g-deck-panel .surface {
@@ -2627,8 +2635,6 @@ body {
   overflow-y: auto !important;
 }
 
-.g-deck-panel .surface.page-voice,
-.g-deck-panel .surface.page-account,
 .g-deck-panel .surface.page-live,
 .g-deck-panel .surface.page-insights,
 .g-deck-panel .surface.page-store {
@@ -2834,6 +2840,16 @@ body {
 
 .g-status-pill.online .dot {
   background: #34d399;
+}
+
+.g-status-pill.stale .dot {
+  background: #fbbf24;
+}
+
+.g-gsi-age {
+  color: #fbbf24;
+  font-size: 10px;
+  font-variant-numeric: tabular-nums;
 }
 
 .g-status-pill strong,
@@ -3725,7 +3741,7 @@ body {
 /* ===== CR-011 §B: ON AIR console + tally dots (P2 Honest booth) =====
    Additive only — .gm-agent-card / .gm-sector-log geometry above is untouched.
    Ported from docs/change request/assets/cr011-cold-booth-mock.html
-   (.tally / .chip / .now / .log / .utt), namespaced gm-onair-*/gm-tally. */
+   (.tally / .chip / .now / .log / .utt), namespaced with gm-onair and gm-tally. */
 
 /* -- tally dot (broadcast on-air light): off = idle matte square, onair = lime
    + glow-decay pulse. Used in the ON AIR header and the two gm-sector-log h3s. */
@@ -4610,20 +4626,10 @@ body {
   transform: translateX(-50%);
   white-space: nowrap;
 }
-.gmad-first-run { min-height: 100vh; display: grid; place-items: center; padding: 28px; background: var(--g-bg, #08090c); color: var(--g-text, #f4f8ff); }
-.gmad-first-run-card { width: min(560px, 100%); display: grid; gap: 14px; padding: 30px; border: 1px solid var(--g-line, rgba(143,212,255,.22)); border-radius: 18px; background: rgba(18,20,28,.92); box-shadow: 0 24px 80px rgba(0,0,0,.45); }
-.gmad-first-run-card h1, .gmad-first-run-card p { margin: 0; }
-.gmad-first-run-card p { color: var(--g-muted, #a9b3c5); line-height: 1.55; }
-.gmad-first-run-kicker { color: var(--g-ice, #8fd4ff) !important; font-size: 11px; letter-spacing: .22em; font-weight: 800; }
-.gmad-first-run-card button { border: 1px solid rgba(143,212,255,.35); border-radius: 9px; padding: 10px 16px; background: #8fd4ff; color: #081018; font-weight: 750; cursor: pointer; }
-.gmad-first-run-card button.secondary { background: transparent; color: #8fd4ff; }
-.gmad-first-run-card button:disabled { opacity: .55; cursor: wait; }
-.gmad-setup-status { display: grid; gap: 5px; padding: 13px; border-radius: 10px; background: rgba(143,212,255,.08); }
-.gmad-setup-status span { color: var(--g-muted, #a9b3c5); font-size: 12px; }
 
-/* WF-01–07: fixed page chrome; only named inner regions may scroll. */
+/* WF-01–07: keep page chrome fixed and bound long content to inner regions. */
 .gm-packs-tabs, .voice-inventory-header, .voice-pagination,
-.voice-toast, .audio-banner, .account-page > :not(.account-content) { flex-shrink: 0; }
+.voice-toast, .account-page > :not(.account-content) { flex-shrink: 0; }
 .page-voice .voice-inventory { height: 100%; min-height: 0; gap: 12px; }
 .page-voice .voice-split { flex: 1; min-height: 0; grid-template-columns: minmax(0, 1.4fr) minmax(300px, .8fr); align-items: stretch; }
 .voice-catalog { min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
@@ -4639,33 +4645,19 @@ body {
 .page-voice .voice-detail-meta { max-height: 125px; flex-shrink: 0; overflow: auto; overflow-wrap: anywhere; }
 .page-voice .voice-detail-events { flex: 1; min-height: 0; overflow: auto; }
 .page-voice .voice-detail-actions, .page-voice .voice-detail-progress { flex-shrink: 0; }
-.page-voice .audio-page { height: 100%; min-height: 0; overflow: hidden; padding: 0; gap: 10px; }
-.page-voice .audio-hero { flex-shrink: 0; padding: 10px 14px; gap: 12px; background: var(--g-instrument); border: 1px solid var(--g-hairline); }
-.page-voice .audio-hero-actions { gap: 6px; display: grid; grid-template-columns: 1fr 1fr; align-items: end; }
-.page-voice .audio-select-wrap { grid-column: 1 / -1; }
-.page-voice .audio-progress { margin-top: 8px; height: 6px; }
-.page-voice .audio-tools-grid, .page-voice .audio-grid { flex: 1; min-height: 0; align-items: stretch; }
-.page-voice .audio-panel { min-height: 0; overflow: auto; gap: 8px; background: var(--g-instrument); border-color: var(--g-hairline); }
-.page-voice .audio-metadata > .audio-panel:first-child { display: grid; grid-template-columns: 1fr 1fr; align-content: start; }
-.page-voice .audio-metadata .audio-editor-h, .page-voice .audio-metadata .audio-preview-actions { grid-column: 1 / -1; }
-.page-voice .audio-field { min-width: 0; gap: 4px; }
-.page-voice .audio-input, .page-voice .audio-select { min-width: 0; width: 100%; box-sizing: border-box; padding: 7px 9px; }
-.page-voice .audio-btn { padding: 7px 10px; }
-.page-voice .audio-paths { margin-top: 0; flex-direction: column; overflow-wrap: anywhere; max-height: 96px; overflow: auto; }
-.page-voice .audio-list, .page-voice .audio-preview { min-height: 0; overflow: auto; }
-.page-voice .audio-preview { position: static; }
-.page-voice :is(.audio-group, .audio-preview, .audio-detail-card, .audio-editor) { background: var(--g-instrument); border: 1px solid var(--g-hairline); box-shadow: none; }
-.page-voice .audio-clip-list, .page-voice .audio-pill-row { max-height: 120px; overflow: auto; }
+.account-page { height: 100%; min-height: 0; display: flex; flex-direction: column; }
 .account-content { flex: 1; min-height: 0; overflow: auto; padding-right: 4px; }
 .account-page .account-lead { max-width: none; margin-bottom: 8px; }
-.account-content > .wallet-tab { height: 100%; }
+.account-content > .wallet-tab { height: 100%; min-height: 0; }
 .account-content .wallet-ledger-preview { min-height: 0; flex: 1; display: flex; flex-direction: column; }
 .account-content .wallet-ledger-list { min-height: 0; overflow: auto; }
-.settings-detail-body.settings-audio-body { overflow: hidden; }
-.g-deck-panel :is(.page-live, .page-insights) .card-shell { background: var(--g-instrument); border: 1px solid var(--g-hairline); box-shadow: none; backdrop-filter: none; }
-.g-deck-panel :is(.page-live, .page-insights) :is(.stat-box, .stats-grid .stat-card) { background: var(--g-instrument-2); border: 1px solid var(--g-hairline); box-shadow: none; backdrop-filter: none; }
-.voice-pagination button:focus-visible, .gm-packs-tab:focus-visible,
-.voice-detail-meta:focus-visible, .voice-detail-events:focus-visible,
-.audio-list:focus-visible, .audio-preview:focus-visible, .account-content:focus-visible {
+.g-deck-panel :is(.page-live, .page-build, .page-insights) .card-shell { background: var(--g-instrument); border: 1px solid var(--g-hairline); box-shadow: none; backdrop-filter: none; }
+.g-deck-panel :is(.page-live, .page-build, .page-insights) :is(.stat-box, .stats-grid .stat-card) { background: var(--g-instrument-2); border: 1px solid var(--g-hairline); box-shadow: none; backdrop-filter: none; }
+.voice-pagination button:focus-visible, .voice-detail-meta:focus-visible,
+.voice-detail-events:focus-visible, .account-content:focus-visible {
   outline: 2px solid var(--g-ice-300); outline-offset: -2px;
+}
+@media (max-width: 860px) {
+  .page-voice .voice-split { grid-template-columns: minmax(0, 1fr); overflow: auto; }
+  .page-voice .voice-detail { overflow: visible; }
 }

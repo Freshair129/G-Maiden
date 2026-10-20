@@ -87,7 +87,6 @@ export const AudioSettingsCard: React.FC = () => {
         </div>
         <div style={{ display: 'flex', gap: 6 }}>
           <button onClick={refresh} title="สแกนใหม่" style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>⟳</button>
-          <button onClick={() => void invoke('open_voice_cache_dir').catch(() => {})} title="เปิดโฟลเดอร์ voice-cache" style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '6px 10px', fontSize: 12, cursor: 'pointer' }}>📂</button>
         </div>
       </div>
 
@@ -145,7 +144,7 @@ export const AudioSettingsCard: React.FC = () => {
                                 >{playing === clip.path ? '⏹' : '▶'}</button>
                                 <span style={{ color: C.txt, fontFamily: 'monospace', fontSize: 11 }}>{clip.name}</span>
                                 <span style={{ fontSize: 10, color: C.mut, padding: '1px 5px', background: clip.source === 'user' ? 'rgba(91,227,167,0.12)' : 'rgba(143,212,255,0.08)', borderRadius: 4 }}>
-                                  {clip.source === 'user' ? 'user' : 'default'}
+                                  {clip.source === 'pack' ? 'pack' : clip.source === 'cache' ? 'dev' : 'default'}
                                 </span>
                               </div>
                             ))}
@@ -154,7 +153,7 @@ export const AudioSettingsCard: React.FC = () => {
                           <div style={{ fontSize: 12, color: C.mut }}>ไม่มี clip — จะใช้ SAPI TTS พูดว่า "<span style={{ color: C.txt, fontStyle: 'italic' }}>{PREVIEW_LINES[ev] ?? ''}</span>"</div>
                         )}
                         {clips.length > 0 && clips[0].source === 'default' && (
-                          <div style={{ fontSize: 10.5, color: C.mut, marginTop: 6 }}>💡 วาง clip ใน <code style={{ color: C.txt }}>{ev}/</code> เพื่อ override default pack</div>
+                          <div style={{ fontSize: 10.5, color: C.mut, marginTop: 6 }}>ต้องการแพ็กเสียงเพิ่มเติม เลือกแพ็กที่ซื้อไว้ใน Store</div>
                         )}
                       </div>
                     )}
@@ -168,13 +167,9 @@ export const AudioSettingsCard: React.FC = () => {
 
       {/* ── Bottom actions ── */}
       <div style={{ display: 'flex', gap: 8, marginTop: 8, flexWrap: 'wrap', borderTop: `1px solid ${C.line}`, paddingTop: 10 }}>
-        <button onClick={() => void invoke('open_voice_cache_dir').catch(() => {})}
-          style={{ background: 'transparent', color: C.mut, border: `1px solid ${C.line}`, borderRadius: 9, padding: '7px 12px', fontSize: 12, cursor: 'pointer' }}>
-          📂 เปิดโฟลเดอร์เสียง
-        </button>
       </div>
       <div style={{ fontSize: 10.5, color: C.mut, marginTop: 6, lineHeight: 1.5 }}>
-        สร้างแพ็คเอง: <b style={{ color: C.txt }}>G-AnnStudio</b> → map event → กด "ส่ง G-Maiden" แล้วกด ⟳ · วาง WAV/MP3 ลง <code style={{ color: C.txt }}>{`{event}/{n}.wav`}</code>
+        ติดตั้งและเลือกใช้แพ็กเสียงได้จาก Store เท่านั้น · แพ็กสำหรับผู้พัฒนาและผู้ร่วมงานจัดทำผ่าน G-AnnStudio
       </div>
     </Card>
   )

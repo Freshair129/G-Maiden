@@ -2,7 +2,6 @@ import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   ArrowLeft,
   Captions,
-  ChevronRight,
   Pause,
   Play,
   RotateCcw,
@@ -10,7 +9,6 @@ import {
   Volume2,
   VolumeX,
 } from 'lucide-react'
-import { useBetaEnrollment } from './beta'
 import './public-demo.css'
 
 type FeatureState = 'Shipped' | 'Partial' | 'Preview' | 'Planned'
@@ -109,7 +107,6 @@ export default function PublicDemo() {
   const [muted, setMuted] = useState(false)
   const [captions, setCaptions] = useState(true)
   const startedRef = useRef(false)
-  const beta = useBetaEnrollment()
   const beat = useMemo(() => getBeat(time), [time])
 
   useEffect(() => {
@@ -145,11 +142,6 @@ export default function PublicDemo() {
   const jumpTo = (at: number) => {
     setTime(at)
     emitDemoEvent('demo_jump', { at })
-  }
-
-  const apply = async () => {
-    emitDemoEvent('beta_cta_click', { completed_demo: time >= 30 })
-    await beta.register()
   }
 
   return (
@@ -258,20 +250,10 @@ export default function PublicDemo() {
         <ul>
           <li>ไม่มี screen capture, GSI connection หรือ microphone input</li>
           <li>ไม่มี client secret และไม่ส่ง raw match, credential หรือ device identifier</li>
-          <li>analytics event เก็บเพียงจังหวะเริ่ม จบ กระโดด และกดสมัคร</li>
+          <li>เดโมใช้ข้อมูลสังเคราะห์และไม่ต้องลงชื่อเข้าใช้</li>
         </ul>
       </section>
 
-      <section className="public-demo-cta" id="closed-beta">
-        <p className="public-demo-kicker">Closed Beta</p>
-        <h2>พร้อมทดสอบของจริงในขอบเขตที่ระบุชัดเจน</h2>
-        <p>สมัครด้วย G-Maiden ID เดิม ระบบจะเก็บเฉพาะข้อมูลที่จำเป็นต่อการเข้าร่วม beta และแยก consent ด้านการตลาดออกจาก diagnostics</p>
-        <button type="button" onClick={() => void apply()} disabled={beta.status === 'loading' || beta.status === 'enrolling'}>
-          {beta.gid ? `สมัครแล้ว · ${beta.gid}` : beta.status === 'enrolling' ? 'กำลังสมัคร…' : 'สมัคร Closed Beta'}
-          <ChevronRight size={18} />
-        </button>
-        {beta.error ? <div className="public-demo-error" role="alert">{beta.error}</div> : null}
-      </section>
     </main>
   )
 }

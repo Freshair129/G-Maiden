@@ -1,3 +1,13 @@
+---
+title: "G-Maiden Performance Gates"
+doc_id: "tests-perf-readme"
+status: "active"
+version: "0.1.1"
+updated: "2026-10-05"
+owner: "Boss"
+source_of_truth: false
+---
+
 # GATE P3 — G-Signal Latency Performance Gate
 
 ## What GATE P3 measures
@@ -115,6 +125,10 @@ cargo run --release --manifest-path tests/perf/Cargo.toml --bin replay_fit
 # against a specific directory, with a custom death-attribution window
 cargo run --release --manifest-path tests/perf/Cargo.toml --bin replay_fit -- \
   C:\path\to\logs --window-ms 8000
+
+# explicitly write an accepted FULL-only profile for the next match
+cargo run --release --manifest-path tests/perf/Cargo.toml --bin replay_fit -- \
+  C:\path\to\logs --write-tuning
 ```
 
 **Two reconstruction modes** (every output row is labeled so one is never mistaken
@@ -125,9 +139,16 @@ for the other):
   missing-hero timeline is reconstructed by extrapolating `missing_for_ms` linearly
   forward from the event, capped at 30s — a bounded guess, not a measurement.
 
-**Privacy.** Read-only, zero network. It only reads the JSONL files `log.rs` already
-wrote to the local machine (CLAUDE.md: G-Log raw data is local-only) and never writes
-back to them or sends anything anywhere.
+**Tuning and privacy.** The default invocation is read-only and zero network. With the
+explicit `--write-tuning` flag, only `FULL` logs are eligible: at least 3 FULL matches
+are required, the best `Med` candidate must improve the shipped default by at least
+`0.01` F1, and every parameter must pass schema/range/order validation. The accepted
+`TuningDelta` is written through a complete temporary file to the local
+`%LOCALAPPDATA%\G-Maiden\motion-tuning.json`; the prior profile is retained as
+`motion-tuning.json.bak`. The runtime loads it only at next-match capture
+initialization and falls back to the backup or shipped defaults when invalid. The
+flag never modifies the source JSONL files and never sends G-Log or tuning data over
+the network. `APPROX` rows are reported for analysis only and can never tune runtime.
 
 ## Exit code conventions
 
@@ -167,7 +188,7 @@ cargo run --release --bin perf_p7 -- \
   --presentmon C:\Tools\PresentMon.exe --duration-secs 30 --output-dir .\p7-run
 ```
 
-The run writes three local artifacts under `--output-dir`:
+The run writes four local artifacts under `--output-dir`:
 
 | Artifact | Meaning |
 |---|---|
@@ -176,12 +197,26 @@ The run writes three local artifacts under `--output-dir`:
 | `fps-report.json` | Measured overlay phase and verdict (`pass`/`fail`), or a truthful `skip` reason when prerequisites/confirmation are missing. |
 | `fps-overlay.csv` | Raw PresentMon capture for the overlay-on phase. |
 
-The JSON report is local evidence only and contains no GSI, CV, G-Log, match,
-or player data. The overlay phase accepts a baseline only when it is schema
-version 1, measured, explicitly overlay-off, non-empty, and has a positive FPS.
-Therefore an old or hand-written `fps-baseline.json` cannot silently produce a
-PASS. The report's `fps_drop_pct` is the non-negative reduction from baseline;
-the gate passes only when it is `<= 3.0`.
+The JSON artifacts are local evidence only and contain no GSI, CV, G-Log, match,
+or player data. Both measured and prerequisite-failure artifacts use the
+`gmaiden.p7-fps-receipt` envelope with `schema_version: 1` and a shared lineage
+object:
+
+| Field | Contract |
+|---|---|
+| `source` | `dota2.exe` |
+| `transport` | local PresentMon ETW subscription |
+| `sample_rate` | one value per `MsBetweenPresents`, aggregated over the capture window |
+| `fps_formula` | `1000 / mean(MsBetweenPresents)` |
+| `fps_drop_formula` | `max(0, (baseline_fps - overlay_fps) / baseline_fps * 100)` |
+| `fallback` | missing prerequisite or invalid receipt → `SKIP`, exit `77` |
+| `privacy` | no network; no GSI/CV/G-Log/match/player data |
+
+The overlay phase accepts a baseline only when it is schema version 1, the
+canonical receipt type, measured, explicitly overlay-off, non-empty, and has a
+positive FPS. Therefore an old or hand-written `fps-baseline.json` cannot silently
+produce a PASS. The report's `fps_drop_pct` is the non-negative reduction from
+baseline; the gate passes only when it is `<= 3.0`.
 
 Expected outcomes:
 
@@ -199,6 +234,12 @@ Boss-run checklist:
    until `verdict` is `pass` from a real run.
 5. If ETW cannot be captured, preserve the `skip` report and record the exact admin/PresentMon
    error rather than substituting Task Manager, DWM composition timing, or a design estimate.
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.1 | 2026-10-05 | Documented the canonical DL-004 P7 receipt envelope, lineage formula, privacy boundary, and truthful SKIP semantics. |
 
 ## References
 

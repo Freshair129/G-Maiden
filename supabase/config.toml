@@ -423,9 +423,6 @@ verify_jwt = false
 [functions.match-share-submit]
 verify_jwt = true
 
-[functions.admin-gmad-controller]
-verify_jwt = true
-
 [functions.iam-security-state]
 verify_jwt = true
 
@@ -433,4 +430,7 @@ verify_jwt = true
 verify_jwt = true
 
 [functions.iam-security-events]
+verify_jwt = true
+
+[functions.g-annstudio-access]
 verify_jwt = true

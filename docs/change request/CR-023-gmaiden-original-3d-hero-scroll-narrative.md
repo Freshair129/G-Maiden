@@ -1,10 +1,10 @@
 ---
-version: "0.7.1b"
+version: "0.7.2b"
 title: "CR-023: G-Maiden Original 3D Hero and Scroll Narrative"
 doc_id: "CR-023-gmaiden-original-3d-hero-scroll-narrative"
 created_at: "2026-07-21T18:20:00+07:00,ATHER"
-last_update: "2026-07-21T19:50:00+07:00,ATHER"
-updated: "2026-07-21"
+last_update: "2026-10-18T00:00:00+07:00,Codex"
+updated: "2026-10-18"
 owner: "Boss"
 approved_by: "Boss"
 approved_date: "2026-07-21"
@@ -17,7 +17,6 @@ attributes:
   language: "th"
   related_docs:
     - "landing/DESIGN-SYSTEM.md"
-    - "docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md"
 ---
 
 # CR-023 — G-Maiden Original 3D Hero and Scroll Narrative
@@ -38,25 +37,22 @@ appearance and production-use rights remain the next explicit asset gate.
 | Original 3D character, public asset licence, WebGL runtime, fallback and scroll motion | C-3 | High |
 
 The risk is asset-rights, public download weight, GPU capability, accessibility, and layout/runtime
-change. It does not change GID, Google OAuth, queue, grant, or download authorization.
+change. It does not change account services or authorization.
 
 ## Outcome
 
 The initial Hero becomes an interactive cinematic scene on capable desktop devices. The model creates
 presence; it never hides CTA text or turns scroll into a required interaction. The following feature
 rails remain semantic HTML/CSS and use progressive scroll reveal rather than a full-page WebGL scene.
-CR-023 does **not** change the launch schedule: the Launch Beacon continues to use CR-020's approved
-`2026-07-24 18:00 Asia/Bangkok` Open Beta time.
+The landing narrative does not display release timing or account-access prompts.
 
 ```mermaid
 flowchart LR
   A[Original G-Maiden Ice Mage GLB] --> B[Desktop WebGL Hero]
   B --> C[Idle animation + pointer parallax]
-  B --> D[Launch Beacon: OPEN BETA + HHH:MM:SS]
-  D --> E[Receive GID CTA]
-  E --> F[Existing Google OAuth / GID flow]
-  B --> G[Scroll exit: model fades and rails enter]
-  H[Mobile, reduced motion, GPU/WebGL failure] --> I[Static hero artwork fallback]
+  B --> D[Demo and feature navigation]
+  B --> E[Scroll exit: model fades and rails enter]
+  F[Mobile, reduced motion, GPU/WebGL failure] --> G[Static hero artwork fallback]
 ```
 
 ## Original character brief
@@ -127,8 +123,8 @@ existing 3 MB GLB / 2 MB texture transfer limits through baked maps and restrain
 
 | Scroll range | Scene behaviour | Content priority |
 | --- | --- | --- |
-| Initial viewport | Model holds a gentle idle pose; pointer produces small depth response. | Product promise + Launch Beacon + GID CTA |
-| Hero exit | Model drifts out and the beacon yields to the first rail; no abrupt canvas cut. | Feature 01 enters |
+| Initial viewport | Model holds a gentle idle pose; pointer produces small depth response. | Product promise + public-demo CTA |
+| Hero exit | Model drifts out and the introduction yields to the first rail; no abrupt canvas cut. | Feature 01 enters |
 | Feature rails | CSS/HTML rail reveals and fine background light movement only. | Clear Thai feature explanation |
 | Mobile/fallback | Static art with the same DOM order and CTA. | Readability, tap target, fast LCP |
 
@@ -138,7 +134,7 @@ existing 3 MB GLB / 2 MB texture transfer limits through baked maps and restrain
 | --- | --- |
 | AC-01 | Shipping model and all textures/animations are original G-Maiden assets with recorded production-use rights; no Valve/Dota asset is used. |
 | AC-02 | Fine-pointer desktop gets an idle animated 3D G-Maiden scene with bounded cursor response. |
-| AC-03 | Countdown remains `OPEN / BETA` + total-hours `HHH:MM:SS` + launch date/time + working GID CTA, outside the canvas. |
+| AC-03 | Keep the public-demo CTA outside the canvas and consistent with the current landing implementation. |
 | AC-04 | Mobile, coarse pointer, reduced-motion, WebGL failure, and model-load failure render a legible static Hero with no broken CTA or layout shift. |
 | AC-05 | Model/textures meet the stated transfer budgets; no new analytics event or player data egress is added. |
 | AC-06 | Scroll is passive and does not hijack navigation; keyboard and touch users reach all Hero and rail content. |
@@ -163,7 +159,8 @@ existing 3 MB GLB / 2 MB texture transfer limits through baked maps and restrain
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
-| 0.7.1b | 2026-07-21 | accepted | Added the pinned doc-graph `updated` and approval metadata and mapped the approved beta lifecycle to canonical `accepted`; no requirement changed. | null | ATHER |
+| 0.7.1b | 2026-07-21 | accepted | Added the pinned doc-graph `updated` and approval metadata and mapped the approved document lifecycle to canonical `accepted`; no requirement changed. | null | ATHER |
+| 0.7.2b | 2026-10-18 | accepted | Replaced the retired launch countdown and access CTA with the current public-demo scope. | null | Codex |
 | 0.7.0b | 2026-07-21 | beta | Recorded that the first cinematic base assembly is an editable technical study but does not meet the semi-realistic quality gate; blocked export and landing use pending an approved character-authoring route. | null | ATHER |
 | 0.6.0b | 2026-07-21 | beta | Created and stored a semi-realistic cinematic concept reference for the approved original direction; explicitly kept it as non-shipping 2D reference material. | null | ATHER |
 | 0.5.0b | 2026-07-21 | beta | Approved semi-realistic cinematic art direction for a new review-pending prototype while preserving original-asset, performance, and export gates. | null | ATHER |

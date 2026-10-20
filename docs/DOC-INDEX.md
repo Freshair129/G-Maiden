@@ -1,11 +1,11 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.0"
+version: "0.2.8"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
-last_update: "2026-08-24T10:04:00+07:00,ATHER"
+last_update: "2026-10-19T00:00:00+07:00,Codex"
 status: "active"
-updated: "2026-08-24"
+updated: "2026-10-19"
 owner: "Boss"
 attributes:
   domain: "documentation-governance"
@@ -31,45 +31,28 @@ attributes:
 - [[one-pager]]
   - `docs/product/one-pager.md` — สรุปสั้นสำหรับการเล่าโปรดักต์
 - [[roadmap]]
-  - `docs/product/roadmap.md` — roadmap หลักที่ใช้งานปัจจุบัน
-- [[roadmap-legacy]]
-  - `docs/product/roadmap-legacy.md` — roadmap รุ่นเก่าที่ยังเก็บไว้เป็นประวัติ
-- `docs/product/closed-beta-privacy-notice-draft.md` — ร่างนโยบายความเป็นส่วนตัวสำหรับ Closed Beta
-- `docs/product/closed-beta-terms-of-use-draft.md` — ร่างข้อตกลงการใช้งานสำหรับ Closed Beta
+  - `docs/product/roadmap.md` — MVP roadmap M0–M6
+- [[mvp-decisions]]
+  - `docs/product/mvp-decisions.md` — owner-delegated scope/access/data/quality contracts และ baseline acceptance
+- [[mvp-backlog]]
+  - `docs/product/mvp-backlog.md` — 52 MVP tasks และ 10 งานที่เลื่อน/แยกสาย พร้อม dependency และ acceptance
+- [[mvp-execution-dag]]
+  - `docs/product/mvp-execution-dag.md` — 57 execution nodes ใน 14 waves พร้อมคิวขนาน 3 workers, leases และ merge/evidence gates
+  - `docs/product/mvp-execution-dag.json` — nodes/edges/conditional dependencies และ wave allocation สำหรับต่อ scheduler
 - `docs/product/MASTERPLAN-account-phase1.md` — แผนแม่บทระบบบัญชีและ Wallet Phase 1
 
 ## Release Governance
 
 - `docs/releases/README.md`
   - `docs/releases/README.md` — canonical hub ของ release governance, stage gates, และ execution contract
-- `docs/releases/beta-roadmap.md`
-  - `docs/releases/beta-roadmap.md` — release-maturity roadmap แยกจาก feature roadmap
 - `docs/releases/release-channel-architecture.md`
-  - `docs/releases/release-channel-architecture.md` — Dev → Closed Beta → Stable channel architecture และ artifact promotion rules
+  - `docs/releases/release-channel-architecture.md` — Dev → Stable channel architecture และ artifact promotion rules
 - `docs/releases/release-channel-implementation.md`
   - `docs/releases/release-channel-implementation.md` — บันทึกและสถานะการติดตั้งระบบ release channels
 - `docs/releases/public-demo/specification.md`
   - `docs/releases/public-demo/specification.md` — Public Demo scope และ deterministic product-story contract
 - `docs/releases/public-demo/rollback.md`
   - `docs/releases/public-demo/rollback.md` — แผนการย้อนกลับ (Rollback Plan) ของ Public Demo
-- `docs/releases/closed-beta/wave-0/specification.md`
-  - `docs/releases/closed-beta/wave-0/specification.md` — Closed Beta Wave 0 scope
-- `docs/releases/closed-beta/wave-0/definition-of-done.md`
-  - `docs/releases/closed-beta/wave-0/definition-of-done.md` — Wave 0 DoD, evidence, และ exit gate
-- `docs/releases/closed-beta/wave-0/evidence-runbook.md`
-  - `docs/releases/closed-beta/wave-0/evidence-runbook.md` — คู่มือการเก็บหลักฐานและรันเทสสำหรับ Wave 0
-- `docs/releases/closed-beta/wave-1/specification.md`
-  - `docs/releases/closed-beta/wave-1/specification.md` — Wave 1 core-intelligence validation
-- `docs/releases/closed-beta/wave-1/definition-of-done.md`
-  - `docs/releases/closed-beta/wave-1/definition-of-done.md` — Wave 1 DoD and exit gate
-- `docs/releases/closed-beta/wave-2/specification.md`
-  - `docs/releases/closed-beta/wave-2/specification.md` — Wave 2 expanded-access and operations validation
-- `docs/releases/closed-beta/wave-2/definition-of-done.md`
-  - `docs/releases/closed-beta/wave-2/definition-of-done.md` — Wave 2 DoD and exit gate
-- `docs/releases/open-beta/specification.md`
-  - `docs/releases/open-beta/specification.md` — Open Beta scope
-- `docs/releases/open-beta/definition-of-done.md`
-  - `docs/releases/open-beta/definition-of-done.md` — Open Beta DoD และ exit gate
 
 ## Design System
 
@@ -91,10 +74,18 @@ attributes:
   - `docs/design-system/07-combat-hud.md` — เอกสารการออกแบบ Combat HUD ของหน้าจอ overlay
 - `docs/design-system/08-account-gid.md`
   - `docs/design-system/08-account-gid.md` — การออกแบบส่วนเชื่อมต่อระบบบัญชีและ GID
+- [[09-graphite-clarity]]
+  - `docs/design-system/09-graphite-clarity.md` — approved Graphite Clarity art direction and implementation contract
+- [[10-wireframes]]
+  - `docs/design-system/10-wireframes.md` — target wireframes for the seven Command Deck pages
+- [[11-wireflows]]
+  - `docs/design-system/11-wireflows.md` — target navigation and recovery wireflows
+- [[12-user-flows]]
+  - `docs/design-system/12-user-flows.md` — target user goals, decisions, and outcomes
 - `docs/design-system/landing_page_prompt.md`
   - `docs/design-system/landing_page_prompt.md` — prompt reference สำหรับออกแบบหน้าเว็บ landing
 - `docs/design-system/assets/`
-  - `docs/design-system/assets/` — annotated wireframe/subtract-shape/swatches (SVG) + glass prototype (HTML)
+  - `docs/design-system/assets/` — annotated wireframe/subtract-shape/swatches (SVG), glass prototype (HTML), and interactive wireframe/wireflow/user-flow viewer
 
 ## Architecture
 
@@ -124,9 +115,11 @@ attributes:
   - `docs/architecture/adr/ADR-16-credit-economy-and-mint-oracle.md` — Credit Economy (shard/wallet) + Mint Oracle + match_ref Storage
   - `docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md` — Supabase OAuth Server Transaction Boundary
   - `docs/architecture/adr/ADR-18-dev-runtime-governance-split.md` — Dev & Runtime Governance Split (renamed from ADR-17)
+  - `docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md` — proposed local HUD target observation and action-scoped lethality (Issue #71)
 - `docs/architecture/spikes/` — Spikes & Technical Proofs:
   - `docs/architecture/spikes/S-1-minimap-cv.md` — Spike minimap computer vision
   - `docs/architecture/spikes/S-2-oauth-broker-provider-capability.md` — Spike Supabase OAuth Server & Loopback gate capability
+  - `docs/architecture/spikes/MVP-038-local-stt-evaluation.md` — Local STT candidate, corpus, resource, privacy, and acceptance evaluation protocol
 
 ## Orchestration
 
@@ -145,6 +138,8 @@ attributes:
 
 - [[features/README]]
   - `docs/features/README.md` — ดัชนี feature docs
+- [[G-SERIES-DATA-LINEAGE]]
+  - `docs/features/G-SERIES-DATA-LINEAGE.md` — source, transport, formula, fallback, and output lineage ของ G-Series ทุกโมดูล
 - [[FEAT-G-*]]
   - `docs/features/FEAT-G-*.md` — เอกสารเชิงโมดูลของ G-series
 
@@ -155,17 +150,13 @@ attributes:
   - `docs/change request/CR-002-Phase2-wire-backend.md` — Phase 2 Live-wired bento deck
   - `docs/change request/CR-003-account-phase1-wallet-billing.md` — Account Phase 1 Wallet & Billing
   - `docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md` — One Canvas Sitemap
-  - `docs/change request/CR-016-gmad-beta-download-admin-controller.md` — Beta download controller
-  - `docs/change request/CR-020-gmad-beta-notification-and-open-beta-countdown.md` — Countdown spec
-  - `docs/change request/CR-022-gmad-desktop-first-run-entitlement-account-handoff.md` — Desktop first-run entitlement gate
   - `docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md` — PR gate agent review rule
   - `docs/change request/CR-034-gid-iam-production-completion.md` — GID IAM Phase 2 implemented locally; live verification and production promotion pending
-  - `docs/change request/CR-*.md` — เอกสาร CR อื่นๆ ทั้งหมดตั้งแต่ CR-001 ถึง CR-034
+  - `docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md` — proposed selected-target HUD CV + single-action G-Damage, Issue #71
+  - `docs/change request/CR-*.md` — เอกสาร CR อื่นๆ ทั้งหมดตั้งแต่ CR-001 ถึง CR-035
 
 ## Operations
 
-- [[gmaiden-closed-beta-release-playbook]]
-  - `docs/operations/gmaiden-closed-beta-release-playbook.md` — playbook สำหรับปล่อยสิทธิ์ดาวน์โหลด G-Maiden Closed Beta, flow จริงของ queue/grant/download, และ naming convention ของ `release_id`/`artifact_path`
 - `docs/operations/validation/`
   - `docs/operations/validation/` — toolkit, forms, social validation assets
 
@@ -178,6 +169,7 @@ attributes:
 - `docs/rca/` — รายงานสาเหตุความผิดพลาดและการปรับปรุง (Root Cause Analysis):
   - `docs/rca/2026-07-10-release-gate-drift-v0.9.0.md` — วิเคราะห์ความล้มเหลวในการปล่อย v0.9.0
   - `docs/rca/2026-07-10-voice-pack-path-traversal.md` — วิเคราะห์ช่องโหว่ path traversal ของ voice pack
+  - `docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md` — RCA ของหน่วย magic resistance ใน G-Damage
 
 ## Guides
 
@@ -205,10 +197,17 @@ attributes:
 | 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): fixed unresolved wikilinks — `[[architecture/design-system]]` → `[[design-system]]`; directory/non-doc-graph targets (`architecture/adr`, `architecture/spikes`, `design-system/assets`, `operations/validation`, `operations/audits`, `orchestration/docs/*`) converted to plain backtick path text. `docs/operations/audits/` does not exist on disk (dangling; real audits live at `docs/audits/`) |
 | 0.1.2 | 2026-07-21 | Added the OAuth/JWT multi-client authorization-flow architecture document. |
 | 0.1.3 | 2026-07-21 | Added ADR-17 as the selected high-assurance OAuth transaction architecture. |
-| 0.1.4 | 2026-07-22 | Added the G-Maiden Closed Beta release playbook under Operations. |
+| 0.1.4 | 2026-07-22 | Added release operations references under Operations. |
 | 0.1.5 | 2026-07-24 | Added a Release Governance section that points canonical indexes to `docs/releases/` while keeping feature ownership in the product roadmap and `PROJECT_FEATURE_MAP.md`. |
 | 0.1.6 | 2026-08-17 | Updated index to include missing folders (change request, audits, rca, superpowers) and listed all ADRs (ADR-10 to ADR-18) explicitly. |
 | 0.1.7 | 2026-08-23 | Added the CR-034 GID IAM production-completion candidate to the Change Request index. |
 | 0.1.8 | 2026-08-23 | Recorded CR-034 Phase 0 completion and the Phase 1 review gate. |
 | 0.1.9 | 2026-08-24 | Recorded CR-034 Phase 1 local implementation and retained the live-production promotion gate. |
 | 0.2.0 | 2026-08-24 | Recorded CR-034 Phase 2 local session/security implementation and retained the live-production promotion gate. |
+| 0.2.1 | 2026-10-10 | Added the MVP roadmap/backlog entrypoints. |
+| 0.2.2 | 2026-10-10 | Added the MVP execution DAG and machine-readable parallel-wave schedule. |
+| 0.2.3 | 2026-10-10 | ลงทะเบียน mvp-decisions ที่รับรองตาม Owner delegation |
+| 0.2.4 | 2026-10-10 | Clarified the accepted MVP contract entrypoint. |
+| 0.2.5 | 2026-10-11 | Added the MVP-038 local STT evaluation protocol to the architecture-spike index. |
+| 0.2.7 | 2026-10-18 | Indexed ADR-19 and CR-035. |
+| 0.2.8 | 2026-10-19 | Indexed Graphite Clarity and the Command Deck wireframe, wireflow, and user-flow documents. |

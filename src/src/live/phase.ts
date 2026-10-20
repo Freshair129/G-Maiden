@@ -15,6 +15,9 @@ export type PhaseInput = {
   /** GsiStatus.gsi_active — false means the backend hasn't heard from GSI
    *  recently (watchdog, gsi.rs). Not connected = nothing else is trustworthy. */
   gsiOnline: boolean;
+  /** Dota process liveness; lets an in-progress session remain live while its
+   *  GSI source is stale, without trusting the last tick's stats. */
+  dotaRunning: boolean;
   /** GameTick.game_state verbatim, e.g. "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS".
    *  null/undefined/"" when no tick has arrived yet (menu, or pre-GSI). */
   gameState?: string | null;
@@ -58,7 +61,9 @@ const POST_STATES = new Set<string>(["DOTA_GAMERULES_STATE_POST_GAME"]);
  * edge), so this never flaps on a single noisy sample.
  *
  * Rules (CR-011 §E order of precedence):
- * 1. GSI offline -> "standby", EXCEPT a prior "debrief" survives Dota closing
+ * 1. GSI stale -> keep "live" only when Dota is still running and the last
+ *    known lifecycle is in-game; otherwise go to "standby". A prior "debrief"
+ *    survives Dota closing
  *    (a finished match's debrief is honest context even after GSI drops).
  * 2. A recognized live state (or `inGame`) -> "live".
  * 3. A recognized draft/hero-selection/loading state -> "prep".
@@ -70,6 +75,7 @@ const POST_STATES = new Set<string>(["DOTA_GAMERULES_STATE_POST_GAME"]);
  */
 export function stepPhase(prev: MatchPhase, input: PhaseInput): MatchPhase {
   if (!input.gsiOnline) {
+    if (input.dotaRunning && input.inGame) return "live";
     return prev === "debrief" ? "debrief" : "standby";
   }
 

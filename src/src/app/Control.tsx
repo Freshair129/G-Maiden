@@ -7,13 +7,14 @@ import QuotaCard from '../QuotaCard'
 import type {
   GameTick, Settings, SettingsCat, GsiStatus, ResourceStats, OverlayProfile, VoiceInfo, Sensitivity,
 } from './types'
-import { loadSettings, loadProfiles, C, APP_VERSION, CHANGELOG } from './theme'
+import { loadProfiles, C, APP_VERSION, CHANGELOG } from './theme'
 import { panel, Row, Toggle, Seg, Card } from './primitives'
 import { SetupCard } from './cards/SetupCard'
 import { MasterCard } from './cards/MasterCard'
 import { EfficacyCard } from './cards/EfficacyCard'
 import { LogCard } from './cards/LogCard'
 import { Welcome } from './cards/Welcome'
+import { useStartupSettings } from './settingsContext'
 
 // CR-002 Phase 1: the command deck (<CommandDeck/>) renders in the control
 // window. CR-013 W3: `Control` now only ever renders one settings category
@@ -21,14 +22,14 @@ import { Welcome } from './cards/Welcome'
 // standalone full-page render + its `embedded` toggle were dead code and
 // were deleted.
 export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
-  const [audioTab, setAudioTab] = useState<'voice' | 'banners'>('voice')
+  const { settings: s, setSettings: setS, clearLegacyMasterApiKey } = useStartupSettings()
   const [tick, setTick] = useState<GameTick | null>(null)
-  const [s, setS] = useState<Settings>(loadSettings)
   // CR-008 WP-2: reflects whether an Anthropic key is stored in the DPAPI secret
   // store (backend `has_master_api_key`) — the plaintext is never held here.
   const [apiKeyPresent, setApiKeyPresent] = useState(false)
   const [voices, setVoices] = useState<VoiceInfo[]>([])
   const [status, setStatus] = useState<GsiStatus | null>(null)
+  const freshTick = status?.gsi_freshness === 'fresh' ? tick : null
   const [resources, setResources] = useState<ResourceStats | null>(null)
   const [captureMode, setCaptureMode] = useState<string>('initializing')
   const [showWelcome, setShowWelcome] = useState(() => localStorage.getItem('gm-onboarded') !== '1')
@@ -41,9 +42,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
   const [profiles, setProfiles] = useState<OverlayProfile[]>(loadProfiles)
   const previewTimer = useRef<ReturnType<typeof setInterval> | null>(null)
   const previewClock = useRef(600)
-  const sRef = useRef(s)
   const controlActiveRef = useRef(true)
-  sRef.current = s
 
   const saveProfile = (name: string) => {
     const p: OverlayProfile = { name, position: s.position, customX: s.customX, customY: s.customY, opacity: s.opacity, showTimer: s.showTimer, showScore: s.showScore, showHeroBar: s.showHeroBar, showKda: s.showKda, showGold: s.showGold }
@@ -105,9 +104,9 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
         })
       } catch { /* command unavailable */ }
     })()
-  }, [])
+  }, [setS])
 
-  // bind once; use ref so the overlay-ready handler always emits current settings
+  // Bind status listeners once; the startup provider owns settings and overlay sync.
   useEffect(() => {
     // NOTE — no document-level styling here. The old standalone-window version
     // painted document.body black (C.bg) and force-enabled page scroll; since
@@ -133,112 +132,29 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
       if (!controlActiveRef.current) return
       setTick(e.payload)
     })
-    const u2 = listen('overlay-ready', () => { void emit('settings', sRef.current) })
-    const u3 = listen<GsiStatus>('gsi-status', (e) => {
+    const u2 = listen<GsiStatus>('gsi-status', (e) => {
       if (!controlActiveRef.current) return
       setStatus(e.payload)
     })
-    const u4ctrl = listen<ResourceStats>('resource-stats', (e) => {
+    const u3 = listen<ResourceStats>('resource-stats', (e) => {
       if (!controlActiveRef.current) return
       setResources(e.payload)
     })
-    const u5cap = listen<string>('capture-mode', (e) => {
-      if (!controlActiveRef.current) return
+    const u4cap = listen<string>('capture-mode', (e) => {
       setCaptureMode(e.payload)
     })
-    const u6layout = listen<Layout>('overlay-layout-sync', (e) => {
+    void invoke<string>('get_capture_mode').then((mode) => {
+      setCaptureMode((current) => current === 'initializing' ? mode : current)
+    }).catch(() => {})
+    const u5layout = listen<Layout>('overlay-layout-sync', (e) => {
       setS((prev) => ({ ...prev, layout: e.payload }))
     })
     return () => {
       document.removeEventListener('visibilitychange', onVisibility)
       offFocus?.()
-      void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f()); void u4ctrl.then((f) => f()); void u5cap.then((f) => f()); void u6layout.then((f) => f())
+      void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f()); void u4cap.then((f) => f()); void u5layout.then((f) => f())
     }
-  }, [])
-
-  // Hydrate from the backend settings file once on boot (Boss 2026-07-20:
-  // layout "ปิดเปิดเกมมาก็หาย"). localStorage is per-webview-ORIGIN, so dev
-  // (:5173) and production (tauri://localhost) each kept their own copy and
-  // switching builds looked like the layout vanished. The Rust-side file at
-  // %LOCALAPPDATA%\G-Maiden\settings.json is origin-independent and wins when
-  // present; the persist effect below then keeps both stores in sync (first
-  // run with no file yet = seeded from whatever localStorage had).
-  const hydrated = useRef(false)
-  useEffect(() => {
-    void (async () => {
-      try {
-        const raw = await invoke<string | null>('load_settings_file')
-        if (raw) {
-          const parsed = JSON.parse(raw) as Partial<Settings>
-          setS((prev) => ({ ...prev, ...parsed, uiMode: 'full' }))
-        }
-      } catch { /* plain-browser dev / command unavailable — localStorage seed stands */ }
-      hydrated.current = true
-    })()
-  }, [])
-
-  // persist + broadcast + apply overlay visibility on any change
-  useEffect(() => {
-    localStorage.setItem('gm-settings', JSON.stringify(s))
-    // Mirror to the origin-independent backend file — but not before hydration
-    // resolves, or the localStorage seed would clobber the file's newer copy.
-    if (hydrated.current) void invoke('save_settings_file', { json: JSON.stringify(s) }).catch(() => {})
-    void emit('settings', s)
-    void invoke('set_overlay_visible', { visible: s.overlayVisible }).catch(() => {})
-  }, [s])
-
-  // Item 5: keep Rust's gank voice in sync with the user's chosen voice/rate.
-  // Fires once on startup and on every voice setting change. Best-effort.
-  // Review fix: the rate control below is a continuous <input type="range">
-  // with no native debounce, so dragging it fires this effect (and the
-  // Rust-side prewarm rebake it triggers, ~600-800ms of PowerShell spawns)
-  // on every discrete step crossed. Debounce so only the settled value after
-  // the user stops changing it actually reaches the backend.
-  useEffect(() => {
-    const t = setTimeout(() => {
-      void invoke('set_cv_voice', { name: s.voiceName || null, rate: s.voiceRate ?? null }).catch(() => {})
-    }, 400)
-    return () => clearTimeout(t)
-  }, [s.voiceName, s.voiceRate])
-
-  // CR-007 WP-4 Fix 1: `s.voiceEnabled` gates Maiden's PERSONA voice only.
-  // G-Signal's own gate is now owned solely by the deck's audio rail SIGNAL
-  // toggle (CommandDeck.tsx, `set_cv_signal_enabled`) — this effect used to
-  // also push `set_cv_signal_enabled` here, which meant muting persona voice
-  // silently desynced the deck's SIGNAL toggle (two owners writing the same
-  // backend flag). Do not re-add an invoke('set_cv_signal_enabled', ...) call
-  // keyed off s.voiceEnabled; see CR-007-frostline-deck-refresh.md WP-4.
-
-  // Mirror the user's chosen gank-warning sensitivity to the Rust capture loop
-  // (applied on the next CV tick — no restart needed).
-  useEffect(() => {
-    void invoke('set_cv_signal_sensitivity', { level: s.signalSensitivity }).catch(() => {})
-  }, [s.signalSensitivity])
-
-  // Mirror G-Persona Preset to the Rust speech path
-  useEffect(() => {
-    void invoke('set_persona_preset', { preset: s.personaPreset }).catch(() => {})
-  }, [s.personaPreset])
-
-  // Telemetry source for the deck footer (GPU/CPU-temp): auto/feeder/gtelemetry/off.
-  useEffect(() => {
-    const src = { auto: 0, feeder: 1, gtelemetry: 2, off: 3 }[s.telemetrySource] ?? 0
-    void invoke('set_telemetry_source', { source: src }).catch(() => {})
-  }, [s.telemetrySource])
-
-  // G-Master backend & ollama model — mirror to the Rust state used by advise().
-  useEffect(() => {
-    void invoke('set_master_backend', { backend: s.masterBackend }).catch(() => {})
-  }, [s.masterBackend])
-  useEffect(() => {
-    void invoke('set_master_ollama_model', { name: s.masterOllamaModel }).catch(() => {})
-  }, [s.masterOllamaModel])
-  // G-Master auth MODE only (plan vs apikey). CR-008 WP-2: the key is owned by
-  // the DPAPI secret store, not this effect — pushing it here would clobber the
-  // startup-loaded key with '' (gate finding B2).
-  useEffect(() => {
-    void invoke('set_master_mode', { auth: s.masterAuth }).catch(() => {})
-  }, [s.masterAuth])
+  }, [setS])
 
   // CR-008 WP-2: store/clear the Anthropic key in the DPAPI secret store (backend
   // owns the plaintext). Passing '' clears it. Refresh saved-state from the
@@ -246,56 +162,16 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
   const saveMasterApiKey = async (k: string) => {
     try {
       await invoke('set_master_api_key', { key: k })
+      clearLegacyMasterApiKey()
       setApiKeyPresent(await invoke<boolean>('has_master_api_key'))
     } catch { /* not under Tauri (browser dev) — nothing to persist */ }
   }
 
-  // CR-008 WP-2 one-time migration: move a legacy plaintext key out of the
-  // localStorage settings blob into the DPAPI store, then scrub it. We read the
-  // value straight from localStorage (source of truth, independent of the `[s]`
-  // save-effect ordering) and only delete the plaintext AFTER a confirmed DPAPI
-  // write — on any failure the plaintext is kept and retried next launch (no
-  // silent loss). Also seeds `apiKeyPresent` from the backend.
+  // StartupSettingsProvider migrates any legacy plaintext key before it
+  // rewrites the settings snapshot. Read only the DPAPI-backed saved-state here.
   useEffect(() => {
-    void (async () => {
-      try {
-        const raw = JSON.parse(localStorage.getItem('gm-settings') ?? '{}') as Record<string, unknown>
-        const legacy = typeof raw.masterApiKey === 'string' ? raw.masterApiKey.trim() : ''
-        if (legacy) {
-          await invoke('set_master_api_key', { key: legacy }) // throws → caught, plaintext kept
-          delete raw.masterApiKey
-          localStorage.setItem('gm-settings', JSON.stringify(raw))
-          setS((p) => { const cp: Record<string, unknown> = { ...p }; delete cp.masterApiKey; return cp as unknown as Settings })
-        }
-      } catch { /* not under Tauri, or DPAPI write failed — keep plaintext, retry next launch */ }
-      try { setApiKeyPresent(await invoke<boolean>('has_master_api_key')) } catch { /* browser dev */ }
-    })()
+    void invoke<boolean>('has_master_api_key').then(setApiKeyPresent).catch(() => {})
   }, [])
-
-  // Toggle in-game calibration evidence capture (off by default; QA/tuning mode).
-  useEffect(() => {
-    void invoke('set_calibration_enabled', { enabled: s.calibration }).catch(() => {})
-  }, [s.calibration])
-
-  // Silent-arm efficacy study opt-in (RWANG TASK 2) — off by default, local only.
-  useEffect(() => {
-    void invoke('set_efficacy_enabled', { enabled: s.efficacyStudy }).catch(() => {})
-  }, [s.efficacyStudy])
-
-  // Sync master volume to Rust audio backend on user-driven changes only.
-  // CR-007 WP-4 Fix 1: the deck's audio rail is now the single owner that
-  // pushes volume on MOUNT (CommandDeck.tsx) — if this effect also fired on
-  // mount (it did: a `[s.volume]`-keyed effect runs on the initial render
-  // too), Control's locally-loaded `s.volume` could stomp the rail's
-  // just-pushed value the instant Control mounted (e.g. opening Settings).
-  // The skip-first-run guard below means this only invokes on an actual
-  // subsequent change, while the existing `volume-change` listener below
-  // keeps Control's own slider in sync with whoever else changed it.
-  const volumeFirstRun = useRef(true)
-  useEffect(() => {
-    if (volumeFirstRun.current) { volumeFirstRun.current = false; return }
-    void invoke('set_volume', { vol: s.volume }).catch(() => {})
-  }, [s.volume])
 
   // Listen for hotkey-driven volume changes from the backend (Alt+Up/Down/M).
   useEffect(() => {
@@ -303,7 +179,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
       setS((prev) => ({ ...prev, volume: e.payload }))
     })
     return () => { void u.then((f) => f()) }
-  }, [])
+  }, [setS])
 
   const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((p) => ({ ...p, [k]: v }))
 
@@ -316,7 +192,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
   return (
     <>
       {showWelcome && <Welcome onDone={dismissWelcome} />}
-      <div className={`settings-detail-body${category === 'voice' ? ' settings-audio-body' : ''}`}>
+      <div className="settings-detail-body">
         {category === 'overlay' && (
           <>
             <Card title="Overlay (OSD)">
@@ -387,11 +263,6 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
 
         {category === 'voice' && (
           <>
-            <div className="gm-packs-tabs" role="tablist" aria-label="ตั้งค่าเสียงและเตือน">
-              <button type="button" role="tab" aria-selected={audioTab === 'voice'} className={`gm-packs-tab${audioTab === 'voice' ? ' active' : ''}`} onClick={() => setAudioTab('voice')}>เสียงพูด</button>
-              <button type="button" role="tab" aria-selected={audioTab === 'banners'} className={`gm-packs-tab${audioTab === 'banners' ? ' active' : ''}`} onClick={() => setAudioTab('banners')}>แบนเนอร์และบุคลิก</button>
-            </div>
-            {audioTab === 'voice' && (
             <Card title="Alerts (G-Signal)">
               <Row label="เตือนเมื่อ HP ต่ำ"><Toggle on={s.alertEnabled} onChange={(v) => set('alertEnabled', v)} /></Row>
               <Row label={`ขีดเตือน HP: ${s.alertThreshold}%`}>
@@ -438,8 +309,6 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
               </div>
             </Card>
 
-            )}
-            {audioTab === 'banners' && (<>
             <Card title="G-Signal — แบนเนอร์แจ้งเตือน">
               <Row label="แบนเนอร์เตือนแก๊งค์ (gank)"><Toggle on={s.gankVisuals} onChange={(v) => set('gankVisuals', v)} /></Row>
               <Row label="แบนเนอร์ฆ่า / สตรีค (kill banner)">
@@ -490,14 +359,12 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
               </div>
             </Card>
 
-
-            </>)}
           </>
         )}
 
         {category === 'ai' && (
           <>
-            <MasterCard tick={tick} voice={s.voiceName} rate={s.voiceRate} enabled={s.masterEnabled} onEnabledChange={(v) => set('masterEnabled', v)} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} backend={s.masterBackend} onBackendChange={(b) => set('masterBackend', b)} auth={s.masterAuth} onAuthChange={(a) => set('masterAuth', a)} apiKeyPresent={apiKeyPresent} onApiKeySave={saveMasterApiKey} ollamaModel={s.masterOllamaModel} onOllamaModelChange={(m) => set('masterOllamaModel', m)} onUsageChanged={() => setQuotaTick((n) => n + 1)} />
+            <MasterCard tick={freshTick} voice={s.voiceName} rate={s.voiceRate} enabled={s.masterEnabled} onEnabledChange={(v) => set('masterEnabled', v)} autoAdvice={s.autoAdvice} onAutoAdviceChange={(v) => set('autoAdvice', v)} backend={s.masterBackend} onBackendChange={(b) => set('masterBackend', b)} cloudContextOptIn={s.cloudContextOptIn} onCloudContextOptInChange={(v) => set('cloudContextOptIn', v)} auth={s.masterAuth} onAuthChange={(a) => set('masterAuth', a)} apiKeyPresent={apiKeyPresent} onApiKeySave={saveMasterApiKey} ollamaModel={s.masterOllamaModel} onOllamaModelChange={(m) => set('masterOllamaModel', m)} onUsageChanged={() => setQuotaTick((n) => n + 1)} />
             <QuotaCard refreshTrigger={quotaTick} />
           </>
         )}
@@ -506,18 +373,48 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
           <>
             <Card title="Modules &amp; System">
               {(() => {
-                const capAcc = captureMode === 'dxgi' ? C.ok : captureMode === 'lite' ? C.warn : C.mut
-                const capLabel = captureMode === 'dxgi' ? 'DXGI' : captureMode === 'lite' ? 'Lite' : '…'
+                const capAcc = captureMode === 'dxgi' ? C.ok : ['lite', 'gdi', 'retrying'].includes(captureMode) ? C.warn : C.mut
+                const capLabel = captureMode === 'dxgi' ? 'DXGI' : captureMode === 'gdi' ? 'GDI' : captureMode === 'lite' ? 'Lite' : captureMode === 'retrying' ? 'Retrying' : '…'
                 const capTitle = captureMode === 'dxgi'
                   ? 'DXGI Desktop Duplication — minimap detection active'
+                  : captureMode === 'gdi'
+                    ? 'DXGI unavailable — minimap frames are coming from the GDI fallback'
                   : captureMode === 'lite'
-                    ? 'Minimap detection ปิดอยู่ — ใช้ borderless fullscreen เพื่อเปิด full detection เต็มรูปแบบ'
-                    : 'กำลังเริ่มต้น capture'
+                    ? 'Minimap CV is unavailable. GSI, voice, and overlay continue to work.'
+                    : captureMode === 'retrying'
+                      ? 'กำลังกู้คืน capture — GSI และเสียงยังทำงานต่อ'
+                      : 'กำลังเริ่มต้น capture'
                 return (
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 6, fontSize: 11.5, color: C.mut }}>
-                    <span>Capture</span>
-                    <span title={capTitle} style={{ padding: '2px 9px', borderRadius: 99, fontSize: 11, fontWeight: 600, color: capAcc, background: `${capAcc}1f`, border: `1px solid ${capAcc}` }}>{capLabel}</span>
-                  </div>
+                  <>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, paddingTop: 6, fontSize: 11.5, color: C.mut }}>
+                      <span>Capture</span>
+                      <span title={capTitle} style={{ padding: '2px 9px', borderRadius: 99, fontSize: 11, fontWeight: 600, color: capAcc, background: `${capAcc}1f`, border: `1px solid ${capAcc}` }}>{capLabel}</span>
+                      {['lite', 'gdi', 'retrying'].includes(captureMode) && (
+                        <button
+                          onClick={() => {
+                            setCaptureMode('retrying')
+                            void invoke('retry_capture').catch(() => {
+                              void invoke<string>('get_capture_mode').then(setCaptureMode).catch(() => setCaptureMode('lite'))
+                            })
+                          }}
+                          disabled={captureMode === 'retrying'}
+                          style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 7, padding: '3px 9px', fontSize: 11, cursor: captureMode === 'retrying' ? 'wait' : 'pointer', opacity: captureMode === 'retrying' ? 0.65 : 1 }}
+                        >
+                          {captureMode === 'retrying' ? 'กำลังกู้คืน…' : captureMode === 'lite' ? 'ลองกู้คืน CV' : 'ลองกลับไปใช้ DXGI'}
+                        </button>
+                      )}
+                    </div>
+                    {captureMode === 'lite' && (
+                      <div style={{ fontSize: 11.5, color: C.warn, paddingTop: 5, lineHeight: 1.5 }}>
+                        Minimap CV หยุดทำงาน; GSI, เสียง และ overlay ยังใช้ได้ หาก Dota เปิดอยู่ให้ใช้ borderless fullscreen แล้วลองกู้คืน
+                      </div>
+                    )}
+                    {captureMode === 'gdi' && (
+                      <div style={{ fontSize: 11.5, color: C.mut, paddingTop: 5, lineHeight: 1.5 }}>
+                        ใช้ GDI fallback อยู่; ลองกลับไปใช้ DXGI ได้เมื่อสลับโหมดหน้าจอหรือออกจาก Alt-Tab แล้ว
+                      </div>
+                    )}
+                  </>
                 )
               })()}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, paddingTop: 6, fontSize: 12.5 }}>
@@ -540,11 +437,14 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
                   <span style={{ color: resources.ram_mb > 400 ? C.bad : C.ok }}>
                     RAM: <b>{resources.ram_mb.toFixed(0)} MB</b> / 400 MB
                   </span>
-                  <span style={{ color: resources.cpu_pct > 2.5 ? C.bad : C.ok }}>
-                    CPU: <b>{resources.cpu_pct.toFixed(1)}%</b> / 2.5%
+                  <span style={{ color: resources.cpu_pct > 10 ? C.bad : resources.cpu_pct < 0 ? C.warn : C.ok }}>
+                    CPU: <b>{resources.cpu_pct >= 0 ? `${resources.cpu_pct.toFixed(1)}%` : '—'}</b> / 10%
                   </span>
-                  {resources.over_budget && (
+                  {(resources.cpu_pct > 10 || resources.ram_mb > 400) && (
                     <span style={{ color: C.warn }}>⚠ เกิน budget — อาจลดความถี่ CV</span>
+                  )}
+                  {resources.cpu_pct < 0 && (
+                    <span style={{ color: C.warn }}>CPU reading unavailable — capture throttle active</span>
                   )}
                 </div>
               )}
@@ -607,9 +507,8 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
                 visible, launch auto-check) — see CommandDeck.tsx + useAppUpdate.
                 This category keeps GSI/diagnostics only. */}
 
-
             <SetupCard />
-            <LogCard live={!!tick?.in_game} clockTime={tick?.clock_time ?? 0} />
+            <LogCard live={!!status?.dota_running && !!status.in_game} clockTime={freshTick?.clock_time ?? 0} />
 
             <Card title="ระบบ">
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', paddingTop: 6, flexWrap: 'wrap', gap: 10 }}>

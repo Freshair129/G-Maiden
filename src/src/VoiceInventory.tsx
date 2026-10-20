@@ -1,18 +1,15 @@
 // Voice-pack inventory — the user-facing pack picker (HoN-style tiles).
 // Grid of covers on the left, sticky detail panel on the right when a pack
-// is selected. Read/equip/preview only; the deep editor lives in AudioSettings.
+// is selected. Read/equip/preview only; consumer packs come from the Store.
 //
 // TODO: GID sync hook wires here — when the account-branch merges, drop a
 // `useVoiceSync(state.activePackId)` call at the top and route `equip()`
 // through it. All state/props are already sync-ready.
 
-import { ChangeEvent, CSSProperties, DragEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { CSSProperties, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { VoiceEvent, VoicePack, VoiceState } from "./voice-types";
 
-type VoiceInventoryProps = {
-  onOpenEditor?: () => void;
-};
 
 // Pack tile — cover image on top, name/author on the bottom. Falls back to a
 // tinted gradient with the pack name when there is no coverImageUrl.
@@ -104,14 +101,12 @@ function EventRow({ event, onPlay }: { event: VoiceEvent; onPlay: (event: VoiceE
   );
 }
 
-export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {}) {
+export default function VoiceInventory() {
   const [state, setState] = useState<VoiceState | null>(null);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
-  const [dragging, setDragging] = useState(false);
-  const importInputRef = useRef<HTMLInputElement | null>(null);
   const gridRef = useRef<HTMLDivElement | null>(null);
   const [page, setPage] = useState(0);
   const [pageSize, setPageSize] = useState(1);
@@ -120,7 +115,6 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
     const grid = gridRef.current;
     if (!grid) return;
     const measure = () => {
-      // Match the authored 200px rows, 180px minimum columns and 12px gaps.
       const rows = Math.max(1, Math.floor((grid.clientHeight + 12) / 212));
       const columns = Math.max(1, Math.floor((grid.clientWidth + 12) / 192));
       setPageSize(rows * columns);
@@ -208,45 +202,6 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
     if (firstMapped) void previewOnOverlay(firstMapped);
   }, [selectedPack, previewOnOverlay]);
 
-  const importFile = useCallback(async (file: File) => {
-    setBusy(true);
-    try {
-      const result = await invoke<{ imported?: string[] }>("voice_api_import_archive", {
-        name: file.name,
-        bytes: Array.from(new Uint8Array(await file.arrayBuffer()))
-      });
-      await refresh();
-      setNotice(`นำเข้า: ${(result?.imported || [file.name]).join(", ")}`);
-      setErr(null);
-    } catch (e) {
-      setErr(errMessage(e));
-    } finally {
-      setBusy(false);
-      setDragging(false);
-    }
-  }, [refresh]);
-
-  const onDrop = (event: DragEvent<HTMLLabelElement>) => {
-    event.preventDefault();
-    setDragging(false);
-    const file = event.dataTransfer.files?.[0];
-    if (file) void importFile(file);
-  };
-
-  const onPickFile = (event: ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) void importFile(file);
-    event.target.value = "";
-  };
-
-  const openRoot = useCallback(async () => {
-    try {
-      await invoke<VoiceState>("voice_api_action", { action: "open-root", packId: null });
-    } catch (e) {
-      setErr(errMessage(e));
-    }
-  }, []);
-
   if (!state) {
     return (
       <div className="voice-inventory">
@@ -266,20 +221,8 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
           </span>
         </div>
         <div className="voice-inventory-actions">
-          <label
-            className={"voice-dropzone" + (dragging ? " dragging" : "")}
-            onDragOver={(event) => { event.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={onDrop}
-          >
-            <input ref={importInputRef} type="file" accept=".zip" hidden onChange={onPickFile} />
-            <span onClick={() => importInputRef.current?.click()} style={{ cursor: "pointer" }}>
-              ⬇ Import .zip
-            </span>
-          </label>
+
           <button className="voice-btn" onClick={() => void refresh()} disabled={busy}>Rescan</button>
-          <button className="voice-btn" onClick={() => void openRoot()}>Open folder</button>
-          {onOpenEditor ? <button className="voice-btn" onClick={onOpenEditor}>Editor</button> : null}
         </div>
       </header>
 
@@ -288,27 +231,27 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
 
       {state.packs.length === 0 ? (
         <div className="voice-empty">
-          ยังไม่มี voice pack — Import .zip หรือกด Open folder แล้ววาง pack เข้าไปในโฟลเดอร์ packs/
+          ยังไม่มีแพ็กเสียงที่ติดตั้งจาก Store — เลือกซื้อและติดตั้งได้ที่ G-Store
         </div>
       ) : (
         <div className="voice-split">
           <div className="voice-catalog">
-          <div className="voice-grid" ref={gridRef}>
-            {state.packs.slice(currentPage * pageSize, (currentPage + 1) * pageSize).map((pack) => (
-              <PackCard
-                key={pack.id}
-                pack={pack}
-                equipped={pack.id === equippedId}
-                selected={pack.id === selectedPack?.id}
-                onSelect={() => setSelectedId(pack.id)}
-              />
-            ))}
-          </div>
-          <nav className="voice-pagination" aria-label="หน้าแพ็กเสียง">
-            <button className="voice-btn" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>ก่อนหน้า</button>
-            <span aria-live="polite">{currentPage + 1} / {pageCount}</span>
-            <button className="voice-btn" disabled={currentPage + 1 >= pageCount} onClick={() => setPage(currentPage + 1)}>ถัดไป</button>
-          </nav>
+            <div className="voice-grid" ref={gridRef}>
+              {state.packs.slice(currentPage * pageSize, (currentPage + 1) * pageSize).map((pack) => (
+                <PackCard
+                  key={pack.id}
+                  pack={pack}
+                  equipped={pack.id === equippedId}
+                  selected={pack.id === selectedPack?.id}
+                  onSelect={() => setSelectedId(pack.id)}
+                />
+              ))}
+            </div>
+            <nav className="voice-pagination" aria-label="หน้าแพ็กเสียง">
+              <button className="voice-btn" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>ก่อนหน้า</button>
+              <span aria-live="polite">{currentPage + 1} / {pageCount}</span>
+              <button className="voice-btn" disabled={currentPage + 1 >= pageCount} onClick={() => setPage(currentPage + 1)}>ถัดไป</button>
+            </nav>
           </div>
 
           {selectedPack ? (

@@ -88,7 +88,7 @@ select lives_ok(
       '00000000-0000-0000-0000-000000000342',
       '00000000-0000-0000-0000-000000000341',
       '00000000-0000-0000-0000-000000000341',
-      'authorization_granted', 'success', 'admin-gmad-controller', null,
+      'authorization_granted', 'success', 'iam-security-state', null,
       '{"action":"list"}'::jsonb, now() + interval '365 days'
     )
   $$,

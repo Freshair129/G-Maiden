@@ -107,14 +107,14 @@ palette, and the shortcut sheet are all **derived** from it — rail/palette/she
 
 ---
 
-## 3. Product-level / planned features ([[product-requirements]] §3A / [[software-requirements-specification]] §3A)
+## 3. Product-level / not-fully-shipped features ([[product-requirements]] §3A / [[software-requirements-specification]] §3A)
 
-Specified but **not shipped** — the "Companion Experience Extensions" layered on the six core modules.
+The "Companion Experience Extensions" layered on the six core modules; statuses reflect each feature's current implementation.
 
 | Feature | Priority | Intent | Status |
 | --- | --- | --- | --- |
 | **G-Voice** | P0 | Two-way voice: Push-to-Talk → STT → Cloud Brain → TTS, TH/EN, G-Signal can interrupt | ⚪ PLANNED — needs an STT module (not in shipped interface list) |
-| **G-Memory** | P0 | Persistent cross-match player memory (heroes, death hotspots, mistakes, MMR trend); feeds G-Voice/G-Master | ⚪ PLANNED — would build on G-Log |
+| **G-Memory** | P0 | Persistent cross-match player memory (heroes, death hotspots, mistakes, MMR trend); feeds G-Voice/G-Master | 🟡 PARTIAL — local G-Log JSONL aggregation, cached snapshot, and durable clear cutoff in [`memory.rs`](file:///g:/G-Maiden/src-tauri/src/memory.rs); no management UI or consumer wiring |
 | **G-Coach** | P1 | Post-match deep review over the full GSI log; top-3 improvement points | ⚪ PLANNED — deep-analysis engine (overlaps the shipped DebriefTimeline surface) |
 | **G-Mind** | P1 | Cognitive model router / LLM switcher (anti-vendor-lock-in) | 🟡 PARTIAL — the [`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs) backend picker covers switching; user-facing "choose LLM" UX + Gemini path not wired |
 | **G-Persona** | P2 | Tone & verbosity presets without breaking Belief Revision / Interrupt / "Nerf CM" | ⚪ PLANNED |
@@ -128,7 +128,7 @@ Specified but **not shipped** — the "Companion Experience Extensions" layered 
 | Constraint | Budget |
 | --- | --- |
 | **G-Signal end-to-end latency** | target **250 ms**, never exceed **300 ms** |
-| Background CPU (mid-range chipset) | ≤ **2.5 %** |
+| Whole-app CPU, normalized by logical CPU capacity | ≤ **10 % per 1-second sample** (MVP decision v0.2.0) |
 | RAM (all modules active) | ≤ **400 MB** |
 | Overlay FPS impact on Dota 2 | ≤ **3 %** drop; must not obscure minimap / skill bar / stats |
 | Resilience | on cloud/network loss, G-Sentry + G-Signal keep running on the local SLM |
@@ -158,7 +158,7 @@ Specified but **not shipped** — the "Companion Experience Extensions" layered 
 4. **Draft-CV is inert** — the recognizer ships but has no portrait templates on disk, so it
    never auto-reads a roster (only the manual `set_draft_roster` dev cmd). Matches "IDLE until assets".
 5. **[`ocr.rs`](file:///g:/G-Maiden/src-tauri/src/ocr.rs) is fully dead code** — compiled but unreferenced; enemy-NW OCR not wired, models unbundled.
-6. **[`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs) half-wired (blocked-by-data)** — only [`self_burst`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L444) feeds G-Master; the enemy-burst /
+6. **[`damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs) half-wired (blocked-by-data)** — only [`self_burst`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L444) feeds G-Master; the source-neutral `TargetCombatSnapshot` normalization and fail-closed wrapper are now unit-tested, but the enemy-burst /
    lethal-HP warning stays unwired because GSI is local-only and CV gives enemies identity+position
    only (no enemy level/items/HP). **Groundwork done (2026-07-18):** `GameTick` now carries absolute
    `hp`/`max_hp` (the defender-side input `is_lethal` needs). Two remaining blockers, both held: (a)

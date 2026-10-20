@@ -1,26 +1,26 @@
 {
   "schemaVersion": 1,
   "channel": "dev",
-  "version": "0.13.1",
+  "version": "0.13.4",
   "notes": "Candidate build. Not promoted to Stable.",
-  "pub_date": "2026-08-01T14:40:08.573Z",
-  "sourceSha": "53083075a1d7f5be1bf54fcab05628267f3fc308",
-  "publishedAt": "2026-08-01T14:45:15.419Z",
+  "pub_date": "2026-10-18T12:42:00.303Z",
+  "sourceSha": "b15657815829d623715bcd7224d69c41133247cf",
+  "publishedAt": "2026-10-18T12:42:18.590Z",
   "platforms": {
     "windows-x86_64": {
-      "url": "https://github.com/Freshair129/G-Maiden/releases/download/v0.13.1/G-Maiden_0.13.1_x64_en-US.msi",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRG1YSUpTS1EyQ2N0cUlIa0I2Z0RzUVNYQTZ2N1FIeUJQSEZGMWsrMFY4Y0hUUVQzYmZ6cXRIenFJZndRYUVOWjdobHhiZzJYbTBEaUJUSlVqOXlqcS9xTTFPZU9Bb3dNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1NTk1MTk4CWZpbGU6Ry1NYWlkZW5fMC4xMy4xX3g2NF9lbi1VUy5tc2kKNlhoUTZDWWQzTkU5S1BUaDF2NkVGMG0ya2dXVmRuVWEzQ09DZXpCVVAxV2g0Q1NHR0dUd3JOclhETGxmUytzL1ZXRitCeXYvZDV3bnZZWmozYzRHRHc9PQo=",
-      "sha256": "1a7bceb9357adb5f8d2e448fbbe20cce97f5dc6921f4cdba5265c2b8c5e19643"
+      "url": "https://github.com/Freshair129/G-Maiden/releases/download/v0.13.4/G-Maiden_0.13.4_x64_en-US.msi",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRG1YSUpTS1EyQ1IyTlEybXJ2OVlxcVA1RUJsK21UdGZDbis5bXV1NWxYU3daQTdCSUtVTjBDMVhjMEtqZmsxQWF5ZGwyYzNLWldEZTI4QzZ6OTNFYUJSTXZrSXpZL0E4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMzI3MzEyCWZpbGU6Ry1NYWlkZW5fMC4xMy40X3g2NF9lbi1VUy5tc2kJdmVyc2lvbjowLjEzLjQKWFVjaXNsa2tWZmljcldHNm4vNlE3UUhJT0lNWFJ2OENKMnA1Mlc5Q1pzY3dWQUJlMktDa2M0anluTHh6K3JDU2JiZXhLaEdpUDFxNlIzM1psTzdsQnc9PQo=",
+      "sha256": "1d65329bf028473aeb52f03f7e14d210e846f73afb930f3935773e2940e161b2"
     },
     "windows-x86_64-msi": {
-      "url": "https://github.com/Freshair129/G-Maiden/releases/download/v0.13.1/G-Maiden_0.13.1_x64_en-US.msi",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRG1YSUpTS1EyQ2N0cUlIa0I2Z0RzUVNYQTZ2N1FIeUJQSEZGMWsrMFY4Y0hUUVQzYmZ6cXRIenFJZndRYUVOWjdobHhiZzJYbTBEaUJUSlVqOXlqcS9xTTFPZU9Bb3dNPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1NTk1MTk4CWZpbGU6Ry1NYWlkZW5fMC4xMy4xX3g2NF9lbi1VUy5tc2kKNlhoUTZDWWQzTkU5S1BUaDF2NkVGMG0ya2dXVmRuVWEzQ09DZXpCVVAxV2g0Q1NHR0dUd3JOclhETGxmUytzL1ZXRitCeXYvZDV3bnZZWmozYzRHRHc9PQo=",
-      "sha256": "1a7bceb9357adb5f8d2e448fbbe20cce97f5dc6921f4cdba5265c2b8c5e19643"
+      "url": "https://github.com/Freshair129/G-Maiden/releases/download/v0.13.4/G-Maiden_0.13.4_x64_en-US.msi",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRG1YSUpTS1EyQ1IyTlEybXJ2OVlxcVA1RUJsK21UdGZDbis5bXV1NWxYU3daQTdCSUtVTjBDMVhjMEtqZmsxQWF5ZGwyYzNLWldEZTI4QzZ6OTNFYUJSTXZrSXpZL0E4PQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMzI3MzEyCWZpbGU6Ry1NYWlkZW5fMC4xMy40X3g2NF9lbi1VUy5tc2kJdmVyc2lvbjowLjEzLjQKWFVjaXNsa2tWZmljcldHNm4vNlE3UUhJT0lNWFJ2OENKMnA1Mlc5Q1pzY3dWQUJlMktDa2M0anluTHh6K3JDU2JiZXhLaEdpUDFxNlIzM1psTzdsQnc9PQo=",
+      "sha256": "1d65329bf028473aeb52f03f7e14d210e846f73afb930f3935773e2940e161b2"
     },
     "windows-x86_64-nsis": {
-      "url": "https://github.com/Freshair129/G-Maiden/releases/download/v0.13.1/G-Maiden_0.13.1_x64-setup.exe",
-      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRG1YSUpTS1EyQ1NWb1k1bmdCK0tETnI3d1hXb2FIa0hUTGVEOUNWNEk4aTZ2d0VZK0RXdmxGK21iZFJSZTVSeGZEZlg5WThBYjQrSWpBd2FKcmF6SVlyTFF1L2NoVVFzPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzg1NTk1MTk4CWZpbGU6Ry1NYWlkZW5fMC4xMy4xX3g2NC1zZXR1cC5leGUKWGdtQU5vWm4wTGN0ZDZ5ejNLUk9oK3N3djV5T3VmNWVsRXpwYngxaWcrU0pqTGJpaUNkTmgvNkJTVEphcUJmK0VvNnNaT0V5UnlFSWVDd003MVptQUE9PQo=",
-      "sha256": "5d002030310464f74c10b6b496628ec0618c4a0a23e871043ea42174f8d56861"
+      "url": "https://github.com/Freshair129/G-Maiden/releases/download/v0.13.4/G-Maiden_0.13.4_x64-setup.exe",
+      "signature": "dW50cnVzdGVkIGNvbW1lbnQ6IHNpZ25hdHVyZSBmcm9tIHRhdXJpIHNlY3JldCBrZXkKUlVSRG1YSUpTS1EyQ1JDbmFlVHpHSU8rRFdsTE1tWmZzcWRmdU0wRFdKWFVOclArWFpXam1EVHdtVlQvSzBQeGZ2bjZuNmlrSlFOVFgvNGhJV1FGVEozZlkvLzhPRlBPR0FvPQp0cnVzdGVkIGNvbW1lbnQ6IHRpbWVzdGFtcDoxNzkyMzI3MzEyCWZpbGU6Ry1NYWlkZW5fMC4xMy40X3g2NC1zZXR1cC5leGUJdmVyc2lvbjowLjEzLjQKeG1uRXVWWlNVc2wyOHhiVmllNHJScTBjSHk4QVVUNFc3V1ZPNzZNNDAvclNxVjJaUUFVdFBIeUZKM3o5RlR6L1dIdTJ5RVhnOFNXMjE2RTY2NzBJQmc9PQo=",
+      "sha256": "c4822550fc0fd91069a514db749f95a605354a17a6bcf8c649ad777aab989ba2"
     }
   }
 }

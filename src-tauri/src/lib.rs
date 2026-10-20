@@ -9,10 +9,12 @@ use tauri::{Emitter, Manager};
 use tauri_plugin_global_shortcut::{Code, GlobalShortcutExt, Modifiers, Shortcut, ShortcutState};
 use tauri_plugin_updater::UpdaterExt;
 
+pub mod action_damage;
 pub mod announcer;
 pub mod audio;
 mod calibration;
 pub mod capture;
+pub mod capture_frame;
 #[cfg(feature = "wgc")]
 mod capture_wgc;
 mod counter_advice;
@@ -21,12 +23,13 @@ pub mod damage;
 #[cfg(not(feature = "wgc"))]
 pub mod dxgi;
 mod governor;
-pub mod gmad_entitlement;
+pub mod update_channel;
 pub mod gsi;
 mod identity;
 mod items;
 mod log;
 mod master;
+pub mod memory;
 pub mod motion;
 mod ocr;
 pub mod respawn;
@@ -38,6 +41,7 @@ mod setup;
 pub mod signal;
 mod slm;
 pub mod tts;
+pub mod tuning;
 mod usage;
 mod utterance;
 mod voice_api;
@@ -57,7 +61,7 @@ struct UpdateOffer {
 
 /// Check the channel's manifest for an update.
 ///
-/// The endpoint is built **in Rust from a hardcoded per-channel URL**
+/// The endpoint is built **in Rust from the hardcoded stable URL**
 /// (`update_channel::ReleaseChannel::manifest_url`) and no `target` is passed to the
 /// updater. That is deliberate and load-bearing: `tauri-plugin-updater` uses one
 /// `target` string BOTH to fill `{{target}}` in the endpoint template AND as the key it
@@ -69,27 +73,16 @@ struct UpdateOffer {
 /// `{os}-{arch}-{installer}` then `{os}-{arch}`, which is what the manifests actually
 /// contain — and it keeps MSI and NSIS installers resolving to their own artifact.
 ///
-/// The webview never supplies a URL, only a channel enum, so a compromised or buggy
-/// frontend cannot point the updater at an attacker's manifest. Signature verification is
-/// untouched: the plugin still checks minisign against the pubkey embedded in the app
-/// before anything is installed.
+/// The webview supplies neither a URL nor a channel, so a compromised or buggy
+/// renderer cannot select an attacker's or restricted manifest. Signature
+/// verification is untouched: the plugin still checks minisign against the pubkey
+/// embedded in the app before anything is installed.
 #[tauri::command]
 async fn check_channel_update(
     app: tauri::AppHandle,
-    channel: Option<gmad_entitlement::update_channel::ReleaseChannel>,
 ) -> Result<Option<UpdateOffer>, String> {
-    // The webview may NARROW to a less privileged channel, never widen to a restricted
-    // one. Without this clamp the `dev`/`closed-beta` restriction would be enforced only
-    // by frontend code that a modified or buggy renderer can simply not run — the
-    // manifests are public, so a widened request would hand an unentitled install a
-    // tester build. The backend's channel comes from the server-side entitlement
-    // decision and is Stable until one is verified.
-    let backend = runtime::update_channel();
-    let channel = match channel {
-        Some(requested) if !requested.is_restricted() || requested == backend => requested,
-        Some(_) => backend,
-        None => backend,
-    };
+    // Desktop clients check only the signed stable manifest.
+    let channel = update_channel::ReleaseChannel::Stable;
 
     let url: tauri::Url = channel
         .manifest_url()
@@ -136,86 +129,18 @@ async fn install_pending_update(app: tauri::AppHandle) -> Result<(), String> {
 #[tauri::command]
 fn set_overlay_visible(app: tauri::AppHandle, visible: bool) {
     if let Some(ov) = app.get_webview_window("overlay") {
-        let _ = if visible && runtime::gmad_entitled() { ov.show() } else { ov.hide() };
+        let _ = if visible { ov.show() } else { ov.hide() };
     }
 }
 
-/// Verify (or re-verify) Closed Beta entitlement. Called both at sign-in and,
-/// automatically, whenever the frontend's Supabase session object changes —
-/// which includes a plain access-token rotation (~hourly), not just a real
-/// sign-in/out.
-///
-/// Audit B1/B2: this used to disarm the runtime and hide the overlay
-/// UNCONDITIONALLY, before the network call even started, on every one of
-/// those calls. A background token refresh whose entitlement re-check then
-/// hit a transient network failure left G-Signal disarmed until the NEXT
-/// success — with no bound — directly contradicting CLAUDE.md's resilience
-/// clause ("on cloud/network loss, G-Sentry and G-Signal must keep running").
-/// Now: nothing is disarmed until the outcome is known, and a network FAILURE
-/// falls back to the last server-confirmed grant if it's still inside
-/// `runtime`'s grace window (see `runtime::stale_entitlement_within_grace`).
-/// Cold start is unaffected — there is nothing to fall back to on first
-/// launch, so a network failure there still locks exactly as before.
 #[tauri::command]
-async fn verify_gmad_entitlement(
-    app: tauri::AppHandle,
-    access_token: String,
-) -> Result<gmad_entitlement::EntitlementDecision, String> {
-    let request = runtime::ENTITLEMENT_REQUESTS.begin()?;
-    let result = gmad_entitlement::verify(&access_token).await;
-    runtime::ENTITLEMENT_REQUESTS.apply(request, || match result {
-        Ok(decision) => {
-            // The channel lives in the backend from here on, so the deck's update
-            // banner (a different window from the one that signed in) resolves the
-            // right manifest without threading state across JS contexts.
-            runtime::set_update_channel(decision.resolved_update_channel().channel);
-            let entitled = decision.unlocks_runtime();
-            runtime::set_gmad_entitled(entitled);
-            if entitled {
-                runtime::cache_entitlement(decision.clone());
-                if runtime::mark_gmad_capture_started() {
-                    capture::start(app.clone());
-                }
-            } else {
-                // A confirmed, fresh denial is authoritative and strictly more
-                // recent than any cached grant — drop the cache so a LATER
-                // network failure can't fall back to reinstating access that
-                // was just explicitly revoked.
-                runtime::clear_entitlement_cache();
-                if let Some(overlay) = app.get_webview_window("overlay") {
-                    let _ = overlay.hide();
-                }
-            }
-            Ok(decision)
-        }
-        Err(e) => {
-            if let Some(stale) = runtime::stale_entitlement_within_grace() {
-                return Ok(stale);
-            }
-            // No usable fallback (cold start, or grace expired) — this is the
-            // one network-failure case that still locks, same as before.
-            runtime::set_gmad_entitled(false);
-            if let Some(overlay) = app.get_webview_window("overlay") {
-                let _ = overlay.hide();
-            }
-            Err(e)
-        }
-    })?
+fn get_capture_mode() -> String {
+    capture::current_mode().to_string()
 }
 
 #[tauri::command]
-fn lock_gmad_runtime(app: tauri::AppHandle) -> Result<(), String> {
-    runtime::ENTITLEMENT_REQUESTS.invalidate(|| {
-        runtime::set_update_channel(gmad_entitlement::update_channel::ReleaseChannel::Stable);
-        runtime::set_gmad_entitled(false);
-        // A real sign-out is a genuine "stop trusting this session" event — the
-        // grace cache must not let a later re-verify fail over to the account
-        // that was just signed out of.
-        runtime::clear_entitlement_cache();
-        if let Some(overlay) = app.get_webview_window("overlay") {
-            let _ = overlay.hide();
-        }
-    })
+fn retry_capture(app: tauri::AppHandle) -> Result<(), String> {
+    capture::retry(app)
 }
 
 /// Speak `text` via Maiden's voice (Windows SAPI for now). Fire-and-forget.
@@ -291,25 +216,45 @@ struct EventClip {
     source: String,
 }
 
-/// Play a specific clip file by its full path (for previewing individual clips).
+/// Preview a clip only when it belongs to an installed Store pack or the bundled default.
 #[tauri::command]
-fn play_clip(path: String) {
-    audio::play_file(std::path::PathBuf::from(path));
+fn play_clip(path: String) -> Result<(), String> {
+    let path = std::path::PathBuf::from(path);
+    if !audio::is_resolved_clip_path(&path) {
+        return Err("ดูตัวอย่างได้เฉพาะเสียงจากแพ็กที่ติดตั้งและเลือกใช้อยู่".into());
+    }
+    audio::validate_clip(&path)?;
+    audio::play_file(path);
+    Ok(())
 }
 
-/// Open the voice-cache directory in Explorer so the user can drop clips in.
+/// Open the voice-cache directory only in development builds for authoring.
 #[tauri::command]
-fn open_voice_cache_dir() {
+fn open_voice_cache_dir() -> Result<(), String> {
+    voice_api::ensure_dev_authoring()?;
     let dir = audio::voice_cache_dir();
-    let _ = std::fs::create_dir_all(&dir);
+    std::fs::create_dir_all(&dir).map_err(|e| e.to_string())?;
     let _ = std::process::Command::new("explorer")
         .arg(dir.as_os_str())
         .spawn();
+    Ok(())
 }
 
 #[tauri::command]
 fn voice_api_state() -> Result<voice_api::VoiceState, String> {
     voice_api::state()
+}
+
+#[tauri::command]
+async fn voice_api_install_store_pack(
+    item_id: String,
+    access_token: String,
+) -> Result<voice_api::VoiceState, String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        voice_api::install_store_pack(&item_id, &access_token)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -361,19 +306,24 @@ fn voice_api_update_pack(
     voice_api::update_pack(payload)
 }
 
-/// Preview an announcer event on the overlay WITHOUT being in-game: play the
-/// pack's mapped clip and emit the same `announcer-banner` payload gsi.rs emits
-/// on a real fired event, so the pack's banner shows on the overlay exactly as it
-/// will in a match. Lets users verify a pack's banner+sound bundle before playing.
+/// Preview an announcer event only for an installed Store pack or the bundled default.
 #[tauri::command]
-fn preview_announcer_event(app: tauri::AppHandle, pack_id: String, event: String) {
-    let clip = voice_api::preview_clip(&pack_id, &event);
-    if let Some(p) = &clip {
-        audio::play_file(p.clone());
+fn preview_announcer_event(
+    app: tauri::AppHandle,
+    pack_id: String,
+    event: String,
+) -> Result<(), String> {
+    if !voice_api::is_store_installed(&pack_id) {
+        return Err("ดูตัวอย่างได้เฉพาะแพ็กที่ติดตั้งจาก Store".into());
     }
+    let clip = voice_api::preview_clip(&pack_id, &event)
+        .ok_or_else(|| "เหตุการณ์นี้ไม่มีไฟล์เสียงที่ใช้ได้".to_string())?;
+    audio::validate_clip(&clip)?;
+    audio::play_file(clip.clone());
     let mut banner = voice_api::preview_banner(&pack_id, &event);
-    banner.clip = clip.map(|p| p.to_string_lossy().into_owned());
+    banner.clip = Some(clip.to_string_lossy().into_owned());
     let _ = app.emit("announcer-banner", banner);
+    Ok(())
 }
 
 /// Read a voiced clip's bytes so the overlay can decode it via Web Audio and drive
@@ -381,6 +331,9 @@ fn preview_announcer_event(app: tauri::AppHandle, pack_id: String, event: String
 /// dir — the path always originates from our own clip resolver, never user input.
 #[tauri::command]
 fn read_audio_bytes(path: String) -> Result<Vec<u8>, String> {
+    if !audio::is_resolved_clip_path(std::path::Path::new(&path)) {
+        return Err("อ่านได้เฉพาะเสียงจากแพ็กที่ติดตั้งและเลือกใช้อยู่".into());
+    }
     audio::read_clip_bytes(&path)
 }
 
@@ -408,20 +361,44 @@ fn open_url(url: String) {
 /// Also broadcasts `advice-update` to the overlay window so it can show the
 /// advice inline (G5.4) without the control panel being open.
 #[tauri::command]
+fn get_master_readiness() -> master::MasterReadiness {
+    master::backend_readiness()
+}
+
+#[tauri::command]
 async fn request_advice(
     app: tauri::AppHandle,
     tick: gsi::GameTick,
+    session_epoch: u64,
 ) -> Result<master::Advice, String> {
+    if !runtime::is_current_live_session(session_epoch) || !tick.in_game {
+        return Err("Advice request does not belong to the active live match.".into());
+    }
+    let session = runtime::match_session_snapshot();
+    if session.session_epoch != session_epoch {
+        return Err("Advice request belongs to an earlier match session.".into());
+    }
     // Ground counter-advice on the enemies CV has identified this match. Read
     // from the Rust runtime (single source of truth) rather than a per-window
     // frontend list — the always-on advice path fires from the overlay window,
     // whose companion store is never populated.
     let enemies = runtime::known_enemies();
-    let result = tauri::async_runtime::spawn_blocking(move || master::advise(&tick, &enemies))
-        .await
-        .map_err(|e| format!("internal: {e}"))??;
-    // Broadcast to overlay — ignore error (overlay may be hidden).
-    let _ = app.emit("advice-update", &result);
+    let result = tauri::async_runtime::spawn_blocking(move || {
+        master::advise_with_epoch(&tick, &enemies, Some(session_epoch))
+    })
+    .await
+    .map_err(|e| format!("internal: {e}"))??;
+    if !runtime::is_current_live_session(session_epoch) {
+        return Err("Advice response belongs to an earlier match session and was discarded.".into());
+    }
+    let session = runtime::match_session_snapshot();
+    if session.session_epoch != session_epoch {
+        return Err("Advice response belongs to an earlier match session and was discarded.".into());
+    }
+    // Broadcast a flattened identity envelope so both the companion and overlay
+    // can reject a response queued before a match boundary.
+    let event = runtime::MatchSessionEvent::new(result.clone(), &session);
+    let _ = app.emit("advice-update", event);
     // CR-011 §B utterance ledger — fired after the broadcast above, never
     // before, so it can't add latency to the advice dispatch itself. `meta`
     // is the resolved backend ("claude"/"ollama") when `advise()` just ran a
@@ -431,9 +408,17 @@ async fn request_advice(
     // signal/announcer entries out of the 30-cap ledger (Opus gate, CR011-P2).
     if !result.cached {
         let backend_meta = master::last_backend().map(str::to_string);
-        utterance::emit(
+        let payload = utterance::UtterancePayload::new_for_session(
+            "master",
+            "line",
+            result.text.clone(),
+            None,
+            backend_meta,
+            &session,
+        );
+        utterance::emit_for_session(
             &app,
-            utterance::UtterancePayload::new("master", "line", result.text.clone(), None, backend_meta),
+            payload,
         );
     }
     Ok(result)
@@ -446,10 +431,19 @@ async fn request_advice(
 async fn request_buyback_advice(
     app: tauri::AppHandle,
     tick: gsi::GameTick,
-) -> revive::ReviveAdvice {
+    session_epoch: u64,
+) -> Result<revive::ReviveAdvice, String> {
+    if !runtime::is_current_live_session(session_epoch) || !tick.in_game {
+        return Err("Buyback request does not belong to the active live match.".into());
+    }
+    let session = runtime::match_session_snapshot();
+    if session.session_epoch != session_epoch {
+        return Err("Buyback request belongs to an earlier match session.".into());
+    }
     let ctx = revive::DeathContext::from_tick(&tick);
     let advice = revive::advise_buyback(&ctx);
-    let _ = app.emit("buyback-advice", &advice);
+    let event = runtime::MatchSessionEvent::new(advice.clone(), &session);
+    let _ = app.emit("buyback-advice", event);
 
     // Voice the verdict via the local SLM off the hot path — fire-and-forget so the
     // UI gets the verdict now; the narrative emits when (if) ollama answers.
@@ -459,10 +453,16 @@ async fn request_buyback_advice(
         // Use the user-picked model from Settings; empty → legacy chain in slm.rs.
         let model = runtime::master_ollama_model();
         if let Ok(text) = slm::advise_offline(&prompt, &model) {
-            let _ = app2.emit("buyback-narrative", text);
+            if runtime::is_current_active_session_epoch(session_epoch) {
+                let current = runtime::match_session_snapshot();
+                if current.session_epoch == session_epoch {
+                    let event = runtime::SessionTextEvent::new(text, &current);
+                    let _ = app2.emit("buyback-narrative", event);
+                }
+            }
         }
     });
-    advice
+    Ok(advice)
 }
 
 /// Manual roster injection (Draft-CV). Sets the match roster by hand — 10 hero
@@ -551,6 +551,13 @@ fn set_persona_preset(preset: String) {
 #[tauri::command]
 fn set_master_backend(backend: runtime::MasterBackend) {
     runtime::set_master_backend(backend);
+}
+
+/// Set the separate local consent for sending the own-stat allowlist to Claude.
+/// Choosing a provider or invoking Ask does not call or imply this opt-in.
+#[tauri::command]
+fn set_master_cloud_context_opt_in(enabled: bool) {
+    runtime::set_master_cloud_context_opt_in(enabled);
 }
 
 /// Pick the Ollama model G-Master uses when the Ollama backend is active.
@@ -670,8 +677,8 @@ fn get_volume() -> u8 {
 
 /// Discover Dota 2's GSI cfg directory and report whether our cfg is in place.
 #[tauri::command]
-fn detect_gsi_setup() -> setup::SetupStatus {
-    setup::detect()
+fn detect_gsi_setup(dota_install_path: Option<String>) -> setup::SetupStatus {
+    setup::detect(dota_install_path.as_deref())
 }
 
 #[tauri::command]
@@ -681,14 +688,26 @@ fn detect_dota_running() -> bool {
 
 /// Write our GSI cfg into the discovered Dota 2 directory.
 #[tauri::command]
-fn install_gsi_config() -> setup::SetupStatus {
-    setup::install()
+fn install_gsi_config(dota_install_path: Option<String>) -> setup::SetupStatus {
+    setup::install(dota_install_path.as_deref())
 }
 
 /// Path to the G-Log directory (privacy-first; local only).
 #[tauri::command]
 fn get_log_dir() -> String {
     log::log_dir().to_string_lossy().to_string()
+}
+
+/// Load the local derived G-Memory context. No network access is performed.
+#[tauri::command]
+fn get_player_memory() -> Result<memory::MemoryContext, String> {
+    memory::get_player_memory()
+}
+
+/// Delete only the derived G-Memory snapshot; archived G-Log files remain intact.
+#[tauri::command]
+fn delete_player_memory() -> Result<(), String> {
+    memory::delete_player_memory()
 }
 
 /// Settings persistence — `%LOCALAPPDATA%\G-Maiden\settings.json`.
@@ -777,6 +796,12 @@ pub fn run() {
     // %LOCALAPPDATA%\G-Maiden\logs\error.log so a freeze/crash leaves a trace.
     log::init_panic_hook();
     log::error("[startup] G-Maiden process started");
+    if let Err(error) = governor::initialize_process_group() {
+        log::error(&format!(
+            "[startup] refusing to start without the whole-app CPU Job Object hard cap: {error}"
+        ));
+        std::process::exit(1);
+    }
 
     // Global hotkeys — work even when Dota 2 is focused.
     // Ctrl+Alt+S = overlay show/hide (Alt+S / Ctrl+S collide with Dota binds).
@@ -797,6 +822,7 @@ pub fn run() {
     tauri::Builder::default()
         .manage(PendingUpdate::default())
         .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_process::init())
         .plugin(tauri_plugin_store::Builder::default().build())
         .plugin(
@@ -808,7 +834,7 @@ pub fn run() {
                     if shortcut == &toggle2 {
                         if let Some(ov) = app.get_webview_window("overlay") {
                             let visible = ov.is_visible().unwrap_or(true);
-                            let _ = if visible || !runtime::gmad_entitled() {
+                            let _ = if visible {
                                 ov.hide()
                             } else {
                                 ov.show()
@@ -842,11 +868,11 @@ pub fn run() {
         )
         .invoke_handler(tauri::generate_handler![
             set_overlay_visible,
-            verify_gmad_entitlement,
-            lock_gmad_runtime,
             check_channel_update,
             install_pending_update,
             speak,
+            get_capture_mode,
+            retry_capture,
             speak_event,
             cancel_speech,
             quit_application,
@@ -857,6 +883,7 @@ pub fn run() {
             set_announcer_enabled,
             set_cv_signal_sensitivity,
             set_master_backend,
+            set_master_cloud_context_opt_in,
             set_master_ollama_model,
             set_master_mode,
             set_master_api_key,
@@ -874,6 +901,7 @@ pub fn run() {
             set_telemetry_source,
             voice_cache_status,
             voice_api_state,
+            voice_api_install_store_pack,
             voice_api_action,
             voice_api_create_template,
             voice_api_upload_asset,
@@ -890,6 +918,8 @@ pub fn run() {
             detect_dota_running,
             install_gsi_config,
             get_log_dir,
+            get_player_memory,
+            delete_player_memory,
             save_settings_file,
             load_settings_file,
             current_match_path,
@@ -899,6 +929,7 @@ pub fn run() {
             read_match_log,
             delete_all_match_logs,
             request_advice,
+            get_master_readiness,
             request_buyback_advice,
             set_draft_roster,
             read_usage,
@@ -906,6 +937,15 @@ pub fn run() {
             identity::resolve_steam_id
         ])
         .setup(move |app| {
+            // Restore local runtime preferences before GSI can deliver the
+            // first gameplay tick. The webview later hydrates the same,
+            // validated snapshot for Control and Overlay.
+            if let Some(settings) = load_settings_json() {
+                if let Err(error) = runtime::apply_startup_settings_json(&settings) {
+                    eprintln!("[settings] saved runtime settings were not loaded: {error}");
+                }
+            }
+
             // CR-008 WP-2: load the Anthropic API key from the DPAPI secret store
             // into the runtime once at startup. Owned separately from the auth
             // mode so the frontend's mode-sync effect can never clobber it (B2).
@@ -932,12 +972,18 @@ pub fn run() {
             // G1.1: GSI ingestion server (127.0.0.1:3000); emits `game-tick` to all windows.
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(gsi::serve(handle));
+            if runtime::mark_local_capture_started() {
+                capture::start(app.handle().clone());
+            }
 
-            // G7.2: resource governor — poll RAM/CPU every 10s, emit resource-stats.
+            // G7.2: resource governor — poll RAM/CPU every second, emit resource-stats.
             governor::start(app.handle().clone());
             // Headless GPU feeder sidecar → pushes nvidia-smi metrics to
-            // POST /telemetry (own process; keeps nvidia-smi out of the main app).
-            governor::spawn_gpu_feeder();
+            // POST /telemetry. Startup reaches this point only after the host joined
+            // its Job Object, so the feeder inherits membership by default. Normal
+            // exit also stops/waits the exact owned child; a feeder left by an older
+            // degraded-mode build may outlive abnormal exit.
+            app.manage(governor::spawn_gpu_feeder());
 
             app.global_shortcut().register(toggle)?;
             app.global_shortcut().register(vol_up)?;
@@ -1006,6 +1052,15 @@ pub fn run() {
 
             Ok(())
         })
-        .run(tauri::generate_context!())
-        .expect("error while running tauri application");
+        .build(tauri::generate_context!())
+        .expect("error while building tauri application")
+        .run(|app, event| {
+            if let tauri::RunEvent::Exit = event {
+                if let Some(feeder) = app.try_state::<governor::GpuFeederProcess>() {
+                    if !feeder.shutdown() {
+                        eprintln!("could not fully stop owned gpu-feeder sidecar on app exit");
+                    }
+                }
+            }
+        });
 }

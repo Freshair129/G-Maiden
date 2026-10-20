@@ -3,7 +3,6 @@ import { act } from "react";
 import { createRoot } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 import VoiceInventory from "../VoiceInventory";
-import AudioSettings from "../AudioSettings";
 import { InsightsPage } from "../CompanionPages";
 import type { VoiceState } from "../voice-types";
 
@@ -75,20 +74,7 @@ it("clamps pagination after rescan removes the last page and handles an empty in
   expect(host.querySelector(".voice-pagination")?.textContent).toContain("1 / 1");
   fixture = { ...fixture, packs: [], activePack: null, activePackId: null };
   await click("Rescan");
-  expect(host.querySelector(".voice-empty")?.textContent).toContain("ยังไม่มี voice pack");
-});
-
-it("retains an unsaved template draft when switching editor sections", async () => {
-  await act(async () => root.render(<AudioSettings />));
-  const input = host.querySelector('input[placeholder="My Voice Pack"]') as HTMLInputElement;
-  expect(input).toBeTruthy();
-  await act(async () => {
-    Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, "value")!.set!.call(input, "Unsaved fixture");
-    input.dispatchEvent(new Event("input", { bubbles: true }));
-  });
-  await click("ข้อมูลและไฟล์"); await click("ผูกอีเวนต์"); await click("ติดตั้งและสร้าง");
-  expect((host.querySelector('input[placeholder="My Voice Pack"]') as HTMLInputElement).value).toBe("Unsaved fixture");
-  expect(invokeMock.mock.calls.every(([cmd]) => cmd === "voice_api_state")).toBe(true);
+  expect(host.querySelector(".voice-empty")?.textContent).toContain("ยังไม่มีแพ็กเสียงที่ติดตั้งจาก Store");
 });
 
 it("provides an Account navigation action in the Insights teaching empty state", async () => {
