@@ -712,6 +712,10 @@ pub fn mark_local_capture_started() -> bool {
         .is_ok()
 }
 
+pub fn reset_local_capture_started() {
+    LOCAL_CAPTURE_STARTED.store(false, Ordering::SeqCst);
+}
+
 pub fn set_player_team_name(name: &str) {
     let code = if name.eq_ignore_ascii_case("radiant") {
         1
@@ -1272,8 +1276,12 @@ mod tests {
 
     #[test]
     fn local_capture_start_is_idempotent() {
+        reset_local_capture_started();
         assert!(mark_local_capture_started());
         assert!(!mark_local_capture_started());
+        reset_local_capture_started();
+        assert!(mark_local_capture_started());
+        reset_local_capture_started();
     }
 
     fn observe(

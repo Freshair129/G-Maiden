@@ -19,22 +19,66 @@
 //! Live verification (compile alone is NOT sufficient) needs Dota 2 open in
 //! borderless fullscreen — see ADR-13 Phase 3 validation.
 
+use std::sync::atomic::{AtomicU8, Ordering};
+
+const MODE_INITIALIZING: u8 = 0;
+const MODE_RETRYING: u8 = 1;
+const MODE_LITE: u8 = 2;
+const MODE_DXGI: u8 = 3;
+const MODE_GDI: u8 = 4;
+static CAPTURE_MODE: AtomicU8 = AtomicU8::new(MODE_INITIALIZING);
+
+/// Current capture state, also used to hydrate a settings page opened after
+/// the startup event was emitted.
+pub fn current_mode() -> &'static str {
+    match CAPTURE_MODE.load(Ordering::SeqCst) {
+        MODE_RETRYING => "retrying",
+        MODE_LITE => "lite",
+        MODE_DXGI => "dxgi",
+        MODE_GDI => "gdi",
+        _ => "initializing",
+    }
+}
+
+fn publish_mode(app: &tauri::AppHandle, mode: &'static str) {
+    use tauri::Emitter;
+
+    let value = match mode {
+        "retrying" => MODE_RETRYING,
+        "lite" => MODE_LITE,
+        "dxgi" => MODE_DXGI,
+        "gdi" => MODE_GDI,
+        _ => MODE_INITIALIZING,
+    };
+    CAPTURE_MODE.store(value, Ordering::SeqCst);
+    let _ = app.emit("capture-mode", mode);
+}
+
 /// Legacy WGC backend, selected at build time with `--features wgc` (ADR-13
 /// rollback). Implementation frozen in `capture_wgc.rs`.
 #[cfg(feature = "wgc")]
 pub fn start(app: tauri::AppHandle) {
+    publish_mode(&app, "initializing");
     crate::capture_wgc::start(app);
 }
 
+#[cfg(feature = "wgc")]
+pub fn retry(_app: tauri::AppHandle) -> Result<(), String> {
+    Err("capture retry is unavailable with the legacy WGC backend".into())
+}
+
 #[cfg(not(feature = "wgc"))]
-pub use backend::start;
+pub use backend::{retry, start};
 
 #[cfg(not(feature = "wgc"))]
 mod backend {
+    use std::sync::mpsc::{self, Receiver, SyncSender, TryRecvError, TrySendError};
+    use std::sync::{Mutex, OnceLock};
     use std::time::{Duration, Instant};
 
     use tauri::{AppHandle, Emitter, Manager};
 
+    use crate::capture::publish_mode;
     use crate::capture_frame::{CaptureRoi, CaptureRoiKind, FrameCaptureMetadata};
     use crate::cv::detector::{Detection, Detector};
     use crate::cv::draft_detector::DraftRecognizer;
@@ -98,6 +142,11 @@ mod backend {
     /// tight enough that a real capture stall is visible within a gank window.
     const STALE_FRAME_MS: u64 = 2_000;
 
+    /// A live capture session with no completed frame for this long is torn
+    /// down so DXGI/device state can be rebuilt. This absorbs short Alt-Tab
+    /// and mode changes while bounding a permanently lost capture session.
+    const CAPTURE_RECOVERY_MS: u64 = STALE_FRAME_MS * 3;
+
     /// Heartbeat for `sensor-health` (ms). The event is edge-triggered on any
     /// field the UI branches on; this only exists so `frame_age_ms` keeps
     /// ticking on screen while nothing else changes.
@@ -109,6 +158,39 @@ mod backend {
     /// cadence since it only needs to capture the shape of a gank window, not
     /// every frame. See `log::should_record_risk_trace`.
     const RISK_TRACE_INTERVAL_MS: u64 = 1000;
+
+    static RETRY_SENDER: OnceLock<Mutex<Option<SyncSender<()>>>> = OnceLock::new();
+
+    fn retry_sender() -> &'static Mutex<Option<SyncSender<()>>> {
+        RETRY_SENDER.get_or_init(|| Mutex::new(None))
+    }
+
+    fn queue_retry(sender: &SyncSender<()>) -> Result<(), &'static str> {
+        match sender.try_send(()) {
+            Ok(()) | Err(TrySendError::Full(())) => Ok(()),
+            Err(TrySendError::Disconnected(())) => Err("capture supervisor stopped"),
+        }
+    }
+
+    enum CaptureExit {
+        RetryRequested,
+        SenderClosed,
+    }
+
+    struct CaptureWorkerGuard {
+        app: AppHandle,
+    }
+
+    impl Drop for CaptureWorkerGuard {
+        fn drop(&mut self) {
+            let mut sender = retry_sender()
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            publish_lite(&self.app, "capture supervisor stopped");
+            *sender = None;
+            crate::runtime::reset_local_capture_started();
+        }
+    }
 
     // Review fix: these used to be this module's own `const` copies of the
     // same Thai text tts.rs bakes into the prewarm cache (GANK_LINE ==
@@ -178,8 +260,8 @@ mod backend {
     }
 
     impl SensorHealth {
-        /// The terminal state: no capture backend could start at all, so the
-        /// app is in GSI-only Lite mode for the rest of the session.
+        /// No capture backend is currently producing frames. GSI and voice
+        /// remain available while the supervisor waits for a manual retry.
         fn lite() -> Self {
             SensorHealth {
                 backend: "lite",
@@ -340,41 +422,114 @@ mod backend {
         }
     }
 
-    /// Spawn the minimap capture on its own thread. Non-blocking; on any failure
-    /// to start DXGI (e.g. exclusive fullscreen, no GPU) it logs, emits
-    /// `capture-mode = "lite"`, and exits the thread quietly — the rest of the app
-    /// (GSI, announcer, overlay, G-Master) keeps running in Lite mode.
+    /// Spawn one capture supervisor. Initialization failures leave the
+    /// supervisor waiting in Lite mode so retry reuses the same thread.
     pub fn start(app: AppHandle) {
-        std::thread::Builder::new()
+        let (sender, receiver) = mpsc::sync_channel(1);
+        {
+            let mut slot = retry_sender()
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            if slot.is_some() {
+                return;
+            }
+            *slot = Some(sender);
+        }
+        crate::capture::publish_mode(&app, "initializing");
+
+        let thread_app = app.clone();
+        let spawn = std::thread::Builder::new()
             .name("g-capture".into())
             .spawn(move || {
+                let _guard = CaptureWorkerGuard {
+                    app: thread_app.clone(),
+                };
                 crate::log::error("[capture] DXGI capture thread started");
-                if let Err(e) = run_dxgi(app.clone()) {
-                    eprintln!("[capture] DXGI unavailable: {e} — running in Lite mode (GSI-only)");
-                    crate::log::error(&format!(
-                        "[capture] DXGI unavailable: {e}. Running in Lite mode \
-                         (GSI-only, minimap CV off)"
-                    ));
-                    let _ = app.emit("capture-mode", "lite");
-                    // The loop never starts, so this is the only chance to tell
-                    // the overlay + deck that the minimap sensor is gone for
-                    // this session. Without it they would keep rendering an
-                    // empty missing-set as an affirmative "safe".
-                    let _ = app.emit("sensor-health", SensorHealth::lite());
+                supervise(thread_app, receiver);
+            });
+
+        if let Err(error) = spawn {
+            let mut slot = retry_sender()
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            publish_lite(&app, &format!("failed to spawn supervisor: {error}"));
+            *slot = None;
+            crate::runtime::reset_local_capture_started();
+        }
+    }
+
+    /// Queue a retry without creating another capture thread. Requests
+    /// coalesce while one retry is already waiting in the bounded channel.
+    pub fn retry(app: AppHandle) -> Result<(), String> {
+        let sender = retry_sender()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone();
+
+        if let Some(sender) = sender {
+            if queue_retry(&sender).is_ok() {
+                publish_mode(&app, "retrying");
+                return Ok(());
+            }
+            let mut slot = retry_sender()
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            *slot = None;
+        }
+
+        if !crate::runtime::mark_local_capture_started() {
+            return Err("capture supervisor is still starting".into());
+        }
+        start(app.clone());
+        if retry_sender()
+            .lock()
+            .unwrap_or_else(std::sync::PoisonError::into_inner)
+            .clone()
+            .is_some()
+        {
+            Ok(())
+        } else {
+            Err("capture supervisor could not be started".into())
+        }
+    }
+
+    fn supervise(app: AppHandle, receiver: Receiver<()>) {
+        loop {
+            match run_dxgi(app.clone(), &receiver) {
+                Ok(CaptureExit::RetryRequested) => {
+                    publish_mode(&app, "retrying");
                 }
-            })
-            .expect("capture thread spawn");
+                Ok(CaptureExit::SenderClosed) => break,
+                Err(error) => {
+                    publish_lite(&app, &error);
+                    match receiver.recv() {
+                        Ok(()) => publish_mode(&app, "retrying"),
+                        Err(_) => break,
+                    }
+                }
+            }
+        }
+    }
+
+    fn publish_lite(app: &AppHandle, reason: &str) {
+        eprintln!("[capture] unavailable: {reason} — running in Lite mode (GSI-only)");
+        crate::log::error(&format!(
+            "[capture] unavailable: {reason}. Running in Lite mode (GSI-only, minimap CV off)"
+        ));
+        publish_mode(app, "lite");
+        let _ = app.emit("sensor-health", SensorHealth::lite());
     }
 
     /// Initialise DXGI for whichever monitor Dota 2 is actually running on
     /// (CR012-P1-01 — falls back to monitor 0 / primary if Dota isn't found
     /// yet, e.g. the app started first) and run the capture loop forever.
-    /// Returns `Err` only if the duplication can't be created — the caller turns
-    /// that into Lite mode.
-    fn run_dxgi(app: AppHandle) -> Result<(), String> {
+    /// Returns `Err` when capture must degrade to Lite, or a control event when
+    /// the supervisor should retry or stop.
+    fn run_dxgi(app: AppHandle, retry: &Receiver<()>) -> Result<CaptureExit, String> {
         let mut current_monitor = crate::dxgi::detect_dota_monitor().unwrap_or(0);
         let mut dxgi = DxgiCapture::new(current_monitor)?;
-        let _ = app.emit("capture-mode", "dxgi");
+        let mut reported_backend = dxgi.backend();
+        publish_mode(&app, reported_backend);
         let region = MinimapRegion::for_resolution(dxgi.width(), dxgi.height());
         crate::log::error(&format!(
             "[capture] DXGI active — monitor {}, {}x{}, minimap {}px @ ({},{})",
@@ -396,6 +551,12 @@ mod backend {
         let mut warned_rect_geometry = false;
 
         loop {
+            match retry.try_recv() {
+                Ok(()) => return Ok(CaptureExit::RetryRequested),
+                Err(TryRecvError::Disconnected) => return Ok(CaptureExit::SenderClosed),
+                Err(TryRecvError::Empty) => {}
+            }
+
             // Match boundary → rebuild Sentry/Motion/Signal before this tick's
             // frame can fold into last match's tracks. Ahead of the draft and
             // in-game gates so state is already clean when the horn lands.
@@ -436,9 +597,8 @@ mod backend {
                                 ));
                             }
                             Err(e) => {
-                                crate::log::error(&format!(
-                                    "[capture] monitor switch to {idx} failed, keeping \
-                                     monitor {current_monitor}: {e}"
+                                return Err(format!(
+                                    "monitor switch to {idx} failed; old output was dropped: {e}"
                                 ));
                             }
                         }
@@ -549,6 +709,18 @@ mod backend {
                 if let Some((cropped, w, h, frame_metadata)) = cropped_frame {
                     process_frame(&mut state, cropped, w, h, &session, frame_metadata);
                 }
+            }
+
+            let backend = dxgi.backend();
+            if backend != reported_backend {
+                reported_backend = backend;
+                publish_mode(&state.app, backend);
+            }
+            if state.last_frame_ok.elapsed() >= Duration::from_millis(CAPTURE_RECOVERY_MS) {
+                return Err(format!(
+                    "no minimap frame for {} ms during a live capture session",
+                    state.last_frame_ok.elapsed().as_millis()
+                ));
             }
             std::thread::sleep(Duration::from_millis(select_interval(&state)));
         }
@@ -1052,6 +1224,15 @@ mod backend {
         use crate::audio::{priority_for_event, should_accept_incoming, Priority};
         use crate::motion::GankRisk;
         use std::path::Path;
+
+        #[test]
+        fn retry_requests_coalesce_without_spawning_another_worker() {
+            let (sender, receiver) = mpsc::sync_channel(1);
+            assert!(queue_retry(&sender).is_ok());
+            assert!(queue_retry(&sender).is_ok());
+            assert!(receiver.try_recv().is_ok());
+            assert!(receiver.try_recv().is_err());
+        }
 
         fn synthetic_frame(n: usize) -> Frame {
             let (w, h, icon) = (256usize, 256usize, 20usize);
