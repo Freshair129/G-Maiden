@@ -1,0 +1,17 @@
+{
+  "src/src/AccountPage.tsx": "0afc75bbb1bb06e8a36446f73e15a597a3cd18af3f4f2449351e8143872a9be9",
+  "src/src/AudioSettings.tsx": "afd6900b9cdb1faf49550e7cc7337269bf13b197d504df3ea68367af8904a96f",
+  "src/src/AuthPanel.tsx": "ff634e766dfc4101de3fce14a69fa50c8fd6335b264016b845b31631df911b68",
+  "src/src/CommandDeck.tsx": "1c0b62f6fe61be25ee8a963f878a67c8647e63ba08d58699c8278a80f05d2945",
+  "src/src/CompanionPages.tsx": "b736aa8cc9a169c77d74009f2f42b9825ddc5330f6ce332fd71a8c3ad3ffc63a",
+  "src/src/GmadEntitlementPanel.tsx": "5fc205f2a7c95bc8b3f22857775450ee373ae878e305c97e8d0f4f214466d7f3",
+  "src/src/GmadFirstRunGate.tsx": "8c5a9f8e2bfec8055cf7334b083d8a0d86ad57ed12bd28bbdf2add6886ca3dc8",
+  "src/src/LedgerTab.tsx": "449ab28c4e8a58de1353a351765f28e8b08592a273aa0ee88bc4735de0db61ef",
+  "src/src/VoiceInventory.tsx": "4e8cd7e0d89eefcebc10403203d5717909662c24952f13e7a9c06fdddccb4ae4",
+  "src/src/VoicePacksPage.tsx": "c32d70f740415f3e352137395b6516b70c26f3e48c068f3c87e9e576b38068d0",
+  "src/src/WalletTab.tsx": "1e1e4f1e29cd9abb67c213685d423f8ad7b6cd15b4b2422c83ab8219965f4621",
+  "src/src/__tests__/gmadEntitlement.test.tsx": "3479c4253c0141c69feab92070c31191a00d6c9ca57feb681ee0d7a2e9a55369",
+  "src/src/app/Control.tsx": "5bcae1e777fcdde3ebd4c5c53edefa6c80f12f48be996157d9e7fe626e7846fa",
+  "src/src/styles.css": "bb5af963600c5d1e601ccc2248feb1d427ab0310f3615ad45c34019e28c67cc6",
+  "src/src/__tests__/uiWireframe.test.tsx": "32ccce3ee9f577aa34995239c4490b4b94ffef3b89698d8b28715d7af47cf5b8"
+}

@@ -43,7 +43,8 @@ export default function AuthPanel() {
       </button>
       {error ? <div role="alert" className="auth-err">{error}</div> : null}
       {signOutWarning && <p role="status">{signOutWarning}</p>}
-      <div className="auth-hint">Optional — links your Steam profile to a G-Maiden account.</div>
+      <p className="auth-hint">ข้อมูลแมตช์ ภาพเกมจาก CV และ G-Log เก็บในเครื่อง ไม่อัปโหลดผ่านระบบบัญชี</p>
+      <div className="auth-hint">บัญชีเป็นตัวเลือกสำหรับซิงก์ตัวตนและลิงก์ Steam; เริ่มใช้ Command Deck ได้โดยไม่ต้องลงชื่อเข้าใช้</div>
     </div>
   );
 }

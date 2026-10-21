@@ -196,7 +196,7 @@ export default function WalletTab({ onViewAllTransactions }: WalletTabProps) {
         ) : recent.length === 0 ? (
           <div className="wallet-hint">ยังไม่มีธุรกรรม — เริ่มจากเหรียญต้อนรับของคุณ ❄</div>
         ) : (
-          <ul className="wallet-ledger-list">
+          <ul className="wallet-ledger-list" aria-label="ธุรกรรมล่าสุด" tabIndex={0}>
             {recent.map((entry) => (
               <li className="wallet-ledger-row" key={entry.id}>
                 <span className="wallet-ledger-icon">{entryIcon(entry)}</span>

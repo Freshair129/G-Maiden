@@ -632,7 +632,7 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
                 onChange={setInsightsTab}
               />
               <div className="deck-tabbed-body">
-                <DeferredPage>{insightsTab === "history" ? <HistoryPage /> : <InsightsPage />}</DeferredPage>
+                <DeferredPage>{insightsTab === "history" ? <HistoryPage /> : <InsightsPage onOpenAccount={() => navigateTo("account", "account")} />}</DeferredPage>
               </div>
             </div>
           )}

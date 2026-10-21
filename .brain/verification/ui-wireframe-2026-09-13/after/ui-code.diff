@@ -1,0 +1,618 @@
+diff --git a/src/src/AccountPage.tsx b/src/src/AccountPage.tsx
+index b4eeed8..1363d25 100644
+--- a/src/src/AccountPage.tsx
++++ b/src/src/AccountPage.tsx
+@@ -63,9 +63,7 @@ export default function AccountPage({ entryMode, entryNonce }: { entryMode?: Acc
+     <div className="account-page">
+       <h2 className="account-title">Account &amp; Profile</h2>
+       <p className="account-lead">
+-        Sign in to a G-Maiden account (GID) — one identity across the G-series: this deck, the
+-        G-Maiden landing site, and creator tools like G-AnnStudio all resolve the same Google
+-        sign-in to the same GID. The deck works without an account; this adds sync and linking.
++        G-Maiden Closed Beta ต้องลงชื่อเข้าใช้ด้วย Google และมีสิทธิ์ใช้งาน การลิงก์ Steam เป็นตัวเลือกสำหรับดูโปรไฟล์และสถิติสาธารณะ
+       </p>
+       <GmadEntitlementPanel />
+
+@@ -84,6 +82,7 @@ export default function AccountPage({ entryMode, entryNonce }: { entryMode?: Acc
+         ))}
+       </div>
+
++      <div className="account-content" role="region" aria-label="เนื้อหาบัญชี" tabIndex={0}>
+       {mode === "account" ? (
+         <div className="account-grid">
+           <section className="account-card">
+@@ -135,6 +134,7 @@ export default function AccountPage({ entryMode, entryNonce }: { entryMode?: Acc
+       ) : (
+         <LedgerTab />
+       )}
++      </div>
+     </div>
+   );
+ }
+diff --git a/src/src/AudioSettings.tsx b/src/src/AudioSettings.tsx
+index fee0a69..743e090 100644
+--- a/src/src/AudioSettings.tsx
++++ b/src/src/AudioSettings.tsx
+@@ -45,6 +45,7 @@ type AudioSettingsProps = {
+ };
+
+ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
++  const [section, setSection] = useState<"install" | "details" | "events">("install");
+   const [state, setState] = useState<VoiceState | null>(null);
+   const [selectedEventId, setSelectedEventId] = useState<string | null>(null);
+   const [busy, setBusy] = useState(false);
+@@ -385,11 +386,7 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
+           <div className="audio-progress">
+             <div className="audio-progress-fill" style={{ width: `${coverage}%` }} />
+           </div>
+-          <div className="audio-paths">
+-            <span>root <code>{state.rootDir}</code></span>
+-            <span>packs <code>{state.packsDir}</code></span>
+-            <span>cache <code>{state.cacheDir}</code></span>
+-          </div>
++
+         </div>
+
+         <div className="audio-hero-actions">
+@@ -411,8 +408,17 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
+         </div>
+       </section>
+
++      <div className="gm-packs-tabs" role="tablist" aria-label="ส่วนตัวแก้ไขแพ็ก">
++        {([['install', 'ติดตั้งและสร้าง'], ['details', 'ข้อมูลและไฟล์'], ['events', 'ผูกอีเวนต์']] as const).map(([key, label]) => (
++          <button key={key} type="button" role="tab" aria-selected={section === key}
++            className={`gm-packs-tab${section === key ? " active" : ""}`} onClick={() => setSection(key)}>{label}</button>
++        ))}
++      </div>
++      {notice ? <div className="audio-banner ok" role="status">{notice}</div> : null}
++      {err ? <div className="audio-banner err" role="alert">{err}</div> : null}
++      {section === "install" && (
+       <section className="audio-tools-grid">
+-        <div className="audio-panel">
++        <div className="audio-panel" tabIndex={0}>
+           <div className="audio-editor-h">Install Pack</div>
+           <button
+             className={"audio-dropzone" + (dragging ? " dragging" : "")}
+@@ -429,7 +435,7 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
+           <input ref={fileInputRef} type="file" accept=".zip" hidden onChange={onPickFile} />
+         </div>
+
+-        <div className="audio-panel">
++        <div className="audio-panel" tabIndex={0}>
+           <div className="audio-editor-h">Template Generator</div>
+           <label className="audio-field">
+             <span>Pack id</span>
+@@ -450,17 +456,18 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
+           </div>
+         </div>
+       </section>
++      )}
+
+       {readOnly ? (
+         <div className="audio-banner ok">
+           แพ็ก &quot;{selectedPack?.name}&quot; เป็นเสียงกลางที่ติดตั้งมากับแอป — แก้ไขไม่ได้
+-          ถ้าอยากทำแพ็กของตัวเอง ใช้ Template Generator ด้านบนแล้ว equip แพ็กนั้นก่อนแก้ไข
++          สร้างแพ็กของตัวเองในแท็บ ติดตั้งและสร้าง แล้ว equip แพ็กนั้นก่อนแก้ไข
+         </div>
+       ) : null}
+
+-      {!readOnly ? (
+-      <section className="audio-tools-grid">
+-        <div className="audio-panel">
++      {section === "details" && !readOnly ? (
++      <section className="audio-tools-grid audio-metadata">
++        <div className="audio-panel" tabIndex={0}>
+           <div className="audio-editor-h">Pack Details</div>
+           <label className="audio-field">
+             <span>Pack name</span>
+@@ -504,8 +511,13 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
+           </div>
+         </div>
+
+-        <div className="audio-panel">
++        <div className="audio-panel" tabIndex={0}>
+           <div className="audio-editor-h">Asset Uploader</div>
++          <div className="audio-paths">
++            <span>root <code>{state.rootDir}</code></span>
++            <span>packs <code>{state.packsDir}</code></span>
++            <span>cache <code>{state.cacheDir}</code></span>
++          </div>
+           <div className="audio-field">
+             <span>Clip files</span>
+             <button className="audio-btn primary" onClick={() => clipInputRef.current?.click()} disabled={!selectedPack || busy}>Upload clip to active pack</button>
+@@ -522,11 +534,9 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
+       </section>
+       ) : null}
+
+-      {notice ? <div className="audio-banner ok">{notice}</div> : null}
+-      {err ? <div className="audio-banner err">{err}</div> : null}
+
+-      <section className="audio-grid">
+-        <div className="audio-list">
++      {section === "events" && (<section className="audio-grid">
++        <div className="audio-list" role="region" aria-label="รายการอีเวนต์" tabIndex={0}>
+           {state.groups.map((group) => {
+             const items = selectedPack?.items.filter((item) => item.group === group.id) || [];
+             return (
+@@ -570,7 +580,7 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
+           })}
+         </div>
+
+-        <aside className="audio-preview">
++        <aside className="audio-preview" role="region" aria-label="ตัวอย่างและการผูกอีเวนต์" tabIndex={0}>
+           <div className="audio-preview-h">Event Preview</div>
+           {selectedEvent ? (
+             <>
+@@ -688,7 +698,7 @@ export default function AudioSettings({ onBack }: AudioSettingsProps = {}) {
+             <div className="empty">Select an event to inspect its voice line and banner.</div>
+           )}
+         </aside>
+-      </section>
++      </section>)}
+     </div>
+   );
+ }
+diff --git a/src/src/AuthPanel.tsx b/src/src/AuthPanel.tsx
+index 94dc58e..4f2f847 100644
+--- a/src/src/AuthPanel.tsx
++++ b/src/src/AuthPanel.tsx
+@@ -43,7 +43,8 @@ export default function AuthPanel() {
+       </button>
+       {error ? <div role="alert" className="auth-err">{error}</div> : null}
+       {signOutWarning && <p role="status">{signOutWarning}</p>}
+-      <div className="auth-hint">Optional — links your Steam profile to a G-Maiden account.</div>
++      <p className="auth-hint">ข้อมูลแมตช์ ภาพเกมจาก CV และ G-Log เก็บในเครื่อง ไม่อัปโหลดผ่านระบบบัญชี</p>
++      <div className="auth-hint">ใช้ Google บัญชีเดียวกับที่ได้รับสิทธิ์ Closed Beta แล้วลิงก์ Steam ได้ภายหลัง</div>
+     </div>
+   );
+ }
+diff --git a/src/src/CommandDeck.tsx b/src/src/CommandDeck.tsx
+index 04fc49e..9f484c5 100644
+--- a/src/src/CommandDeck.tsx
++++ b/src/src/CommandDeck.tsx
+@@ -681,7 +681,7 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
+                 onChange={setInsightsTab}
+               />
+               <div className="deck-tabbed-body">
+-                {insightsTab === "history" ? <HistoryPage /> : <InsightsPage />}
++                {insightsTab === "history" ? <HistoryPage /> : <InsightsPage onOpenAccount={() => navigateTo("account", "account")} />}
+               </div>
+             </div>
+           )}
+diff --git a/src/src/CompanionPages.tsx b/src/src/CompanionPages.tsx
+index a6d1b51..9d7b291 100644
+--- a/src/src/CompanionPages.tsx
++++ b/src/src/CompanionPages.tsx
+@@ -161,7 +161,7 @@ export const BuildAdvisorPage = memo(function BuildAdvisorPage() {
+   );
+ });
+
+-export const InsightsPage = memo(function InsightsPage() {
++export const InsightsPage = memo(function InsightsPage({ onOpenAccount }: { onOpenAccount: () => void }) {
+   const { data } = useCompanionData();
+   return (
+     <div className="domain-page">
+@@ -197,7 +197,7 @@ export const InsightsPage = memo(function InsightsPage() {
+               <div>{hero.kd}</div>
+               <p>{hero.games} games · {hero.winRate}% WR</p>
+             </div>
+-          )) : <p className="empty">ลิงก์ Steam ในหน้า Account เพื่อดึงสถิติจาก OpenDota</p>}
++          )) : <div className="empty"><p>ลิงก์ Steam ในหน้า Account เพื่อดึงสถิติจาก OpenDota</p><button className="voice-btn" onClick={onOpenAccount}>ไปหน้า Account</button></div>}
+         </div>
+       </section>
+     </div>
+diff --git a/src/src/GmadEntitlementPanel.tsx b/src/src/GmadEntitlementPanel.tsx
+index c0626f1..9791239 100644
+--- a/src/src/GmadEntitlementPanel.tsx
++++ b/src/src/GmadEntitlementPanel.tsx
+@@ -12,11 +12,11 @@ function StandaloneEntitlementStatus() {
+ }
+
+ function EntitlementStatus({ value }: { value: ReturnType<typeof useGmadDesktopEntitlement> }) {
+-  const { state, decision, refresh, signInWithGoogle, signOut, authError } = value;
++  const { state, decision, refresh, signOut, authError } = value;
+   if (state === "signing_out") return <section className="auth-panel"><strong>กำลังออกจากระบบ…</strong></section>;
+   if (state === "sign_out_required") return <section className="auth-panel"><p role="alert">{authError}</p><button onClick={() => void signOut()}>ลองออกจากระบบอีกครั้ง</button></section>;
+   if (state === "eligible") return <section className="auth-panel signedin"><strong>G-Maiden Closed Beta active</strong><span>{decision?.gid} · Terms {decision?.terms?.version}{decision?.stale ? " · offline — showing your last confirmed access" : ""}</span></section>;
+-  if (state === "sign_in_required") return <section className="auth-panel"><strong>Google sign-in required</strong><button onClick={() => void signInWithGoogle()}>Continue with Google</button></section>;
++  if (state === "sign_in_required") return <section className="auth-panel"><strong>Google sign-in required</strong><span>ลงชื่อเข้าใช้ในแท็บบัญชีเพื่อยืนยันสิทธิ์ Closed Beta</span></section>;
+   if (state === "terms_required") return <section className="auth-panel"><strong>Current Terms acceptance required</strong><a href="https://g-maiden-landing.vercel.app/terms?from=desktop">Review Terms on landing</a><button onClick={() => void refresh()}>Re-check</button></section>;
+   if (state === "no_active_entitlement" || state === "account_not_eligible") return <section className="auth-panel"><strong>No active G-Maiden entitlement</strong><a href="https://g-maiden-landing.vercel.app/#gmad">Open eligibility page</a></section>;
+   if (state === "offline_or_unavailable") return <section className="auth-panel"><strong>Unable to verify access</strong><span>Internet is required for first verification.</span><button onClick={() => void refresh()}>Retry</button></section>;
+diff --git a/src/src/GmadFirstRunGate.tsx b/src/src/GmadFirstRunGate.tsx
+index 5a1abbf..7f8bcfa 100644
+--- a/src/src/GmadFirstRunGate.tsx
++++ b/src/src/GmadFirstRunGate.tsx
+@@ -84,7 +84,7 @@ export default function GmadFirstRunGate({ children }: { children: ReactNode })
+       <p className="gmad-first-run-kicker">GMAD CLOSED BETA</p>
+       {state === "loading" && <><h1>กำลังตรวจสอบสิทธิ์</h1><p>กำลังยืนยันบัญชี Google และสิทธิ์ Closed Beta จากเซิร์ฟเวอร์</p></>}
+       {state === "signing_in" && <><h1>กำลังเข้าสู่ระบบ</h1><p>ดำเนินการต่อในเบราว์เซอร์ ระบบจะกลับมาที่ G-Maiden เมื่อ Google OAuth สำเร็จ โดยจะไม่แสดงหรือบันทึกรหัส OAuth</p></>}
+-      {state === "sign_in_required" && <><h1>เข้าสู่ระบบด้วย Google</h1><p>ใช้บัญชีเดียวกับที่ได้รับ GID และสิทธิ์ดาวน์โหลด ไม่ต้องกรอก GID ซ้ำ</p><button onClick={() => void signInWithGoogle()}>ดำเนินการต่อด้วย Google</button></>}
++      {state === "sign_in_required" && <><h1>เข้าสู่ระบบด้วย Google</h1><p>ใช้บัญชีเดียวกับที่ได้รับ GID และสิทธิ์ดาวน์โหลด ไม่ต้องกรอก GID ซ้ำ</p><p>ข้อมูลแมตช์ ภาพเกมจาก CV และ G-Log เก็บในเครื่อง ไม่อัปโหลดผ่านระบบบัญชี</p><button onClick={() => void signInWithGoogle()}>ดำเนินการต่อด้วย Google</button></>}
+       {authError && <p role="alert" className="gmad-first-run-error">{authError}</p>}
+       {signOutWarning && <p role="status">{signOutWarning}</p>}
+       {state === "signing_out" && <><h1>กำลังออกจากระบบ</h1><p>กำลังล้างข้อมูลเข้าสู่ระบบในเครื่อง</p></>}
+diff --git a/src/src/LedgerTab.tsx b/src/src/LedgerTab.tsx
+index 32f2e60..f96d406 100644
+--- a/src/src/LedgerTab.tsx
++++ b/src/src/LedgerTab.tsx
+@@ -188,7 +188,7 @@ export default function LedgerTab() {
+           ) : visibleRows.length === 0 ? (
+             <div style={styles.empty}>ไม่มีรายการประเภทนี้ในหน้านี้ — ลองหน้าอื่นหรือเลือก &quot;ทั้งหมด&quot;</div>
+           ) : (
+-            <div style={styles.list}>
++            <div style={styles.list} role="region" aria-label="รายการธุรกรรมในหน้านี้" tabIndex={0}>
+               {visibleRows.map((entry) => {
+                 const positive = entry.amount > 0;
+                 const clickable = entry.refType === "topup_order";
+@@ -300,10 +300,10 @@ const styles: Record<string, React.CSSProperties> = {
+   // Active fill must differ from the base chip's (both mapped to instrument-2
+   // during the token migration, collapsing the active state — Opus gate, CR011-P5).
+   chipActive: { borderColor: "var(--g-ice-600)", color: "var(--g-ice-300)", background: "color-mix(in srgb, var(--g-ice-600) 10%, var(--g-instrument-2))" },
+-  // Fixed-height frame — this is the load-bearing part of the no-page-scroll
+-  // rule: content never grows the page, pagination replaces what's shown.
+-  frame: { height: 400, overflow: "hidden", display: "flex", flexDirection: "column" },
+-  list: { display: "flex", flexDirection: "column", gap: 6, overflow: "hidden" },
++  // Cursor pagination fetches 20 rows; keep the whole batch reachable inside
++  // the remaining frame without scrolling Account chrome.
++  frame: { flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" },
++  list: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 6, overflow: "auto" },
+   row: {
+     display: "grid",
+     gridTemplateColumns: "22px minmax(0, 1.6fr) 110px 130px 120px",
+diff --git a/src/src/VoiceInventory.tsx b/src/src/VoiceInventory.tsx
+index 24ab2ca..8c96cde 100644
+--- a/src/src/VoiceInventory.tsx
++++ b/src/src/VoiceInventory.tsx
+@@ -112,6 +112,27 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
+   const [err, setErr] = useState<string | null>(null);
+   const [dragging, setDragging] = useState(false);
+   const importInputRef = useRef<HTMLInputElement | null>(null);
++  const gridRef = useRef<HTMLDivElement | null>(null);
++  const [page, setPage] = useState(0);
++  const [pageSize, setPageSize] = useState(1);
++  const hasPacks = !!state?.packs.length;
++  useEffect(() => {
++    const grid = gridRef.current;
++    if (!grid) return;
++    const measure = () => {
++      // Match the authored 200px rows, 180px minimum columns and 12px gaps.
++      const rows = Math.max(1, Math.floor((grid.clientHeight + 12) / 212));
++      const columns = Math.max(1, Math.floor((grid.clientWidth + 12) / 192));
++      setPageSize(rows * columns);
++    };
++    measure();
++    const observer = new ResizeObserver(measure);
++    observer.observe(grid);
++    return () => observer.disconnect();
++  }, [hasPacks]);
++  const pageCount = Math.max(1, Math.ceil((state?.packs.length ?? 0) / pageSize));
++  const currentPage = Math.min(page, pageCount - 1);
++  useEffect(() => { setPage((previous) => Math.min(previous, pageCount - 1)); }, [pageCount]);
+
+   const refresh = useCallback(async () => {
+     try {
+@@ -271,8 +292,9 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
+         </div>
+       ) : (
+         <div className="voice-split">
+-          <div className="voice-grid">
+-            {state.packs.map((pack) => (
++          <div className="voice-catalog">
++          <div className="voice-grid" ref={gridRef}>
++            {state.packs.slice(currentPage * pageSize, (currentPage + 1) * pageSize).map((pack) => (
+               <PackCard
+                 key={pack.id}
+                 pack={pack}
+@@ -282,6 +304,12 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
+               />
+             ))}
+           </div>
++          <nav className="voice-pagination" aria-label="หน้าแพ็กเสียง">
++            <button className="voice-btn" disabled={currentPage === 0} onClick={() => setPage(currentPage - 1)}>ก่อนหน้า</button>
++            <span aria-live="polite">{currentPage + 1} / {pageCount}</span>
++            <button className="voice-btn" disabled={currentPage + 1 >= pageCount} onClick={() => setPage(currentPage + 1)}>ถัดไป</button>
++          </nav>
++          </div>
+
+           {selectedPack ? (
+             <aside className="voice-detail">
+@@ -295,7 +323,7 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
+                 )}
+               </div>
+
+-              <div className="voice-detail-meta">
++              <div className="voice-detail-meta" tabIndex={0} role="region" aria-label="ข้อมูลแพ็กที่เลือก">
+                 <h3>{selectedPack.name}</h3>
+                 <div className="voice-detail-chips">
+                   {selectedPack.builtIn ? <span className="voice-detail-chip builtin">ติดมากับแอป</span> : null}
+@@ -337,7 +365,7 @@ export default function VoiceInventory({ onOpenEditor }: VoiceInventoryProps = {
+                 </button>
+               </div>
+
+-              <div className="voice-detail-events">
++              <div className="voice-detail-events" tabIndex={0} role="region" aria-label="อีเวนต์ของแพ็ก">
+                 {state.groups.map((group) => {
+                   const items = selectedPack.items.filter((item) => item.group === group.id);
+                   if (items.length === 0) return null;
+diff --git a/src/src/VoicePacksPage.tsx b/src/src/VoicePacksPage.tsx
+index 4be190f..7c0410e 100644
+--- a/src/src/VoicePacksPage.tsx
++++ b/src/src/VoicePacksPage.tsx
+@@ -13,18 +13,8 @@
+ // what you *have* (local-first, works offline), Store is a *transaction*
+ // (Supabase, needs sign-in), so Voice never re-hosts Store's own UI.
+ //
+-// CR011-P5-01 layout choice (unchanged): InventoryTab is its OWN mode rather
+-// than being stacked below VoiceInventory inside "คลังของฉัน". VoiceInventory
+-// already fills the page with an unbounded-height split (pack grid + detail
+-// panel, styles.css `.voice-split`/`.voice-grid` has no fixed height — it
+-// grows with however many packs are on disk), while InventoryTab is authored
+-// as its own fixed-height frame + pager (CR-003 §3.0's no-page-scroll rule —
+-// see its `styles.grid` `height: 400` in InventoryTab.tsx). Stacking the two
+-// would either (a) force page-level scroll to see InventoryTab below a tall
+-// VoiceInventory grid — which the CR-003 components are explicitly built to
+-// avoid — or (b) require capping VoiceInventory's height, which isn't this
+-// wave's scope (VoicePacksPage may only be edited additively). A separate
+-// mode keeps each surface's own no-scroll contract intact.
++// Each mode owns the remaining canvas height; the voice catalog paginates
++// independently of the economy inventory and the editor sections.
+
+ import { useState } from "react";
+ import VoiceInventory from "./VoiceInventory";
+diff --git a/src/src/WalletTab.tsx b/src/src/WalletTab.tsx
+index 0bc5603..9151b87 100644
+--- a/src/src/WalletTab.tsx
++++ b/src/src/WalletTab.tsx
+@@ -196,7 +196,7 @@ export default function WalletTab({ onViewAllTransactions }: WalletTabProps) {
+         ) : recent.length === 0 ? (
+           <div className="wallet-hint">ยังไม่มีธุรกรรม — เริ่มจากเหรียญต้อนรับของคุณ ❄</div>
+         ) : (
+-          <ul className="wallet-ledger-list">
++          <ul className="wallet-ledger-list" aria-label="ธุรกรรมล่าสุด" tabIndex={0}>
+             {recent.map((entry) => (
+               <li className="wallet-ledger-row" key={entry.id}>
+                 <span className="wallet-ledger-icon">{entryIcon(entry)}</span>
+diff --git a/src/src/__tests__/gmadEntitlement.test.tsx b/src/src/__tests__/gmadEntitlement.test.tsx
+index 85bb5fd..6ff8f3f 100644
+--- a/src/src/__tests__/gmadEntitlement.test.tsx
++++ b/src/src/__tests__/gmadEntitlement.test.tsx
+@@ -5,6 +5,7 @@ import { afterEach, beforeEach, expect, it, vi } from "vitest";
+ import { useGmadDesktopEntitlement, type GmadDecision } from "../gmadEntitlement";
+ import GmadFirstRunGate from "../GmadFirstRunGate";
+ import GmadEntitlementPanel from "../GmadEntitlementPanel";
++import AuthPanel from "../AuthPanel";
+
+ const { invokeMock, auth } = vi.hoisted(() => ({
+   invokeMock: vi.fn(),
+@@ -19,6 +20,7 @@ vi.mock("../updateChannel", () => ({
+   resolveUpdateChannel: () => ({ channel: "stable", source: "fixture" }),
+ }));
+ vi.mock("../auth", () => ({ useAuth: () => auth }));
++vi.mock("../profile", () => ({ useProfile: () => ({ gidCode: null, generationName: null }) }));
+
+ const eligible: GmadDecision = { state: "eligible", gid: "G-FIXTURE", stale: false };
+ let root: ReturnType<typeof createRoot>;
+@@ -122,3 +124,26 @@ it("unmounts the actual ready deck when background verification rejects", async
+   expect(element.textContent).not.toContain("Fixture deck");
+   expect(element.textContent).toContain("ยังยืนยันสิทธิ์ไม่ได้");
+ });
++
++it("keeps a single Google action in guest Account and shows the local-data explanation", async () => {
++  Object.assign(auth, { user: null, session: null, lastAuthEvent: "SIGNED_OUT" });
++  const element = document.createElement("div");
++  await act(async () => root.unmount()); root = createRoot(element);
++  await act(async () => root.render(<><GmadEntitlementPanel /><AuthPanel /></>));
++  const actions = [...element.querySelectorAll("button")].filter((b) => b.textContent?.includes("Continue with Google"));
++  expect(actions).toHaveLength(1);
++  expect(element.textContent).toContain("G-Log เก็บในเครื่อง ไม่อัปโหลดผ่านระบบบัญชี");
++  expect(element.textContent).not.toContain("Optional");
++  await act(async () => actions[0].click());
++  expect(auth.signInWithGoogle).toHaveBeenCalled();
++});
++
++it("shows privacy at release sign-in and never mounts the guest deck", async () => {
++  Object.assign(auth, { user: null, session: null, lastAuthEvent: "SIGNED_OUT" });
++  const element = document.createElement("div");
++  await act(async () => root.unmount()); root = createRoot(element);
++  await act(async () => root.render(<GmadFirstRunGate><p>Fixture deck</p></GmadFirstRunGate>));
++  expect(element.textContent).not.toContain("Fixture deck");
++  expect(element.textContent).toContain("G-Log เก็บในเครื่อง ไม่อัปโหลดผ่านระบบบัญชี");
++  expect([...element.querySelectorAll("button")].filter((b) => b.textContent?.includes("Google"))).toHaveLength(1);
++});
+diff --git a/src/src/app/Control.tsx b/src/src/app/Control.tsx
+index 8c5e0e9..ee19172 100644
+--- a/src/src/app/Control.tsx
++++ b/src/src/app/Control.tsx
+@@ -8,9 +8,8 @@ import type {
+   GameTick, Settings, SettingsCat, GsiStatus, ResourceStats, OverlayProfile, VoiceInfo, Sensitivity,
+ } from './types'
+ import { loadSettings, loadProfiles, C, APP_VERSION, CHANGELOG } from './theme'
+-import { panel, Row, Toggle, Seg, Card, Stat, fmtClock, heroName } from './primitives'
++import { panel, Row, Toggle, Seg, Card } from './primitives'
+ import { SetupCard } from './cards/SetupCard'
+-import { AudioSettingsCard } from './cards/AudioSettingsCard'
+ import { MasterCard } from './cards/MasterCard'
+ import { EfficacyCard } from './cards/EfficacyCard'
+ import { LogCard } from './cards/LogCard'
+@@ -22,8 +21,8 @@ import { Welcome } from './cards/Welcome'
+ // standalone full-page render + its `embedded` toggle were dead code and
+ // were deleted.
+ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
++  const [audioTab, setAudioTab] = useState<'voice' | 'banners'>('voice')
+   const [tick, setTick] = useState<GameTick | null>(null)
+-  const [seen, setSeen] = useState(false)
+   const [s, setS] = useState<Settings>(loadSettings)
+   // CR-008 WP-2: reflects whether an Anthropic key is stored in the DPAPI secret
+   // store (backend `has_master_api_key`) — the plaintext is never held here.
+@@ -132,7 +131,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
+     } catch { /* plain-browser dev / non-Tauri runtime */ }
+     const u1 = listen<GameTick>('game-tick', (e) => {
+       if (!controlActiveRef.current) return
+-      setTick(e.payload); setSeen(true)
++      setTick(e.payload)
+     })
+     const u2 = listen('overlay-ready', () => { void emit('settings', sRef.current) })
+     const u3 = listen<GsiStatus>('gsi-status', (e) => {
+@@ -317,7 +316,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
+   return (
+     <>
+       {showWelcome && <Welcome onDone={dismissWelcome} />}
+-      <div className="settings-detail-body">
++      <div className={`settings-detail-body${category === 'voice' ? ' settings-audio-body' : ''}`}>
+         {category === 'overlay' && (
+           <>
+             <Card title="Overlay (OSD)">
+@@ -388,6 +387,11 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
+
+         {category === 'voice' && (
+           <>
++            <div className="gm-packs-tabs" role="tablist" aria-label="ตั้งค่าเสียงและเตือน">
++              <button type="button" role="tab" aria-selected={audioTab === 'voice'} className={`gm-packs-tab${audioTab === 'voice' ? ' active' : ''}`} onClick={() => setAudioTab('voice')}>เสียงพูด</button>
++              <button type="button" role="tab" aria-selected={audioTab === 'banners'} className={`gm-packs-tab${audioTab === 'banners' ? ' active' : ''}`} onClick={() => setAudioTab('banners')}>แบนเนอร์และบุคลิก</button>
++            </div>
++            {audioTab === 'voice' && (
+             <Card title="Alerts (G-Signal)">
+               <Row label="เตือนเมื่อ HP ต่ำ"><Toggle on={s.alertEnabled} onChange={(v) => set('alertEnabled', v)} /></Row>
+               <Row label={`ขีดเตือน HP: ${s.alertThreshold}%`}>
+@@ -434,6 +438,8 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
+               </div>
+             </Card>
+
++            )}
++            {audioTab === 'banners' && (<>
+             <Card title="G-Signal — แบนเนอร์แจ้งเตือน">
+               <Row label="แบนเนอร์เตือนแก๊งค์ (gank)"><Toggle on={s.gankVisuals} onChange={(v) => set('gankVisuals', v)} /></Row>
+               <Row label="แบนเนอร์ฆ่า / สตรีค (kill banner)">
+@@ -484,7 +490,8 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
+               </div>
+             </Card>
+
+-            <AudioSettingsCard />
++
++            </>)}
+           </>
+         )}
+
+@@ -600,20 +607,6 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
+                 visible, launch auto-check) — see CommandDeck.tsx + useAppUpdate.
+                 This category keeps GSI/diagnostics only. */}
+
+-            <Card title="Live (จาก GSI)">
+-              {tick && tick.in_game ? (
+-                <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', paddingTop: 6 }}>
+-                  <Stat label="Clock" value={fmtClock(tick.clock_time)} color={C.ice} />
+-                  <Stat label="Hero" value={heroName(tick.hero)} />
+-                  <Stat label="Lvl" value={tick.level} />
+-                  <Stat label="K/D/A" value={`${tick.kills}/${tick.deaths}/${tick.assists}`} />
+-                  <Stat label="Net Worth" value={tick.net_worth.toLocaleString()} color={C.ice} />
+-                  <Stat label="HP" value={`${tick.hp_percent}%`} color={tick.hp_percent <= s.alertThreshold ? C.bad : C.ok} />
+-                </div>
+-              ) : (
+-                <div style={{ fontSize: 13, color: C.mut, paddingTop: 10 }}>{seen ? 'เชื่อมต่อแล้ว — รอเข้าเกม Dota 2' : 'เปิด Dota 2 (ติดตั้ง GSI config แล้ว) เพื่อดูข้อมูลสด'}</div>
+-              )}
+-            </Card>
+
+             <SetupCard />
+             <LogCard live={!!tick?.in_game} clockTime={tick?.clock_time ?? 0} />
+diff --git a/src/src/styles.css b/src/src/styles.css
+index ba1a05a..f319302 100644
+--- a/src/src/styles.css
++++ b/src/src/styles.css
+@@ -1161,7 +1161,7 @@ body {
+ .auth-google:disabled { opacity: 0.6; cursor: default; }
+ .auth-google-g { font-weight: 800; color: #4285f4; }
+
+-.account-page { padding: 4px 2px 20px; overflow-y: auto; height: 100%; }
++.account-page { padding: 4px 2px; height: 100%; min-height: 0; display: flex; flex-direction: column; overflow: hidden; }
+ .account-title { font-size: 22px; font-weight: 800; color: #eaf2ff; margin: 6px 0 4px; }
+ .account-lead { font-size: 12.5px; color: #8794a6; max-width: 640px; margin: 0 0 18px; line-height: 1.5; }
+ .account-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 16px; align-items: start; }
+@@ -1348,13 +1348,9 @@ body {
+ }
+ .deck-tab:focus-visible { outline: 2px solid var(--g-ice-500); outline-offset: 2px; }
+
+-/* Packs page shell — the mode body fills whatever's left; the surrounding
+-   `.surface.page-voice` already carries `overflow-y: auto` (see the shared
+-   rule further down), so this doesn't need its own scroll/height math —
+-   each mounted mode (VoiceInventory/StorePage/InventoryTab/AudioSettings)
+-   already manages its own internal layout. */
+-.gm-packs-page { display: flex; flex-direction: column; min-height: 100%; padding: 4px; }
+-.gm-packs-body { flex: 1; min-height: 0; }
++/* Each Voice mode receives the space below its fixed tab row. */
++.gm-packs-page { display: flex; flex-direction: column; height: 100%; min-height: 0; padding: 4px; }
++.gm-packs-body { flex: 1; min-height: 0; overflow: hidden; }
+ .account-h3 { font-size: 12px; letter-spacing: 0.8px; text-transform: uppercase; color: #81b4ff; margin: 0 0 4px; }
+ .account-note { font-size: 11px; color: #8794a6; line-height: 1.4; }
+ .account-hint { font-size: 12px; color: #8794a6; line-height: 1.45; margin: 0; }
+@@ -2315,8 +2311,6 @@ body {
+ .sg-fill-ice { background: var(--g-ice-500); }
+ .sg-fill-safe { background: var(--g-safe); }
+ .sg-fill-warn { background: var(--g-warn); }
+-.g-deck-panel .surface.page-voice,
+-.g-deck-panel .surface.page-account,
+ .g-deck-panel .surface.page-settings,
+ .g-deck-panel .surface.page-insights,
+ .g-deck-panel .surface.page-history,
+@@ -2633,6 +2627,8 @@ body {
+   overflow-y: auto !important;
+ }
+
++.g-deck-panel .surface.page-voice,
++.g-deck-panel .surface.page-account,
+ .g-deck-panel .surface.page-live,
+ .g-deck-panel .surface.page-insights,
+ .g-deck-panel .surface.page-store {
+@@ -4624,3 +4620,52 @@ body {
+ .gmad-first-run-card button:disabled { opacity: .55; cursor: wait; }
+ .gmad-setup-status { display: grid; gap: 5px; padding: 13px; border-radius: 10px; background: rgba(143,212,255,.08); }
+ .gmad-setup-status span { color: var(--g-muted, #a9b3c5); font-size: 12px; }
++
++/* WF-01–07: fixed page chrome; only named inner regions may scroll. */
++.gm-packs-tabs, .voice-inventory-header, .voice-pagination,
++.voice-toast, .audio-banner, .account-page > :not(.account-content) { flex-shrink: 0; }
++.page-voice .voice-inventory { height: 100%; min-height: 0; gap: 12px; }
++.page-voice .voice-split { flex: 1; min-height: 0; grid-template-columns: minmax(0, 1.4fr) minmax(300px, .8fr); align-items: stretch; }
++.voice-catalog { min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
++.page-voice .voice-grid { flex: 1; min-height: 0; overflow: hidden; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); grid-auto-rows: 200px; align-content: start; gap: 12px; }
++.page-voice .voice-card { height: 200px; min-width: 0; background: var(--g-instrument); border: 1px solid var(--g-hairline); box-shadow: none; }
++.page-voice .voice-card.selected { border-color: var(--g-ice-300); }
++.page-voice .voice-card:focus-visible { outline: 2px solid var(--g-ice-300); outline-offset: -3px; }
++.page-voice .voice-card-cover { height: 126px; aspect-ratio: auto; }
++.page-voice .voice-card-meta { padding: 8px 10px; gap: 2px; }
++.voice-pagination { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
++.page-voice .voice-detail { position: static; min-height: 0; max-height: none; overflow: hidden; display: flex; flex-direction: column; gap: 8px; background: var(--g-instrument); border: 1px solid var(--g-hairline); box-shadow: none; }
++.page-voice .voice-detail-cover { height: 100px; aspect-ratio: auto; flex-shrink: 0; }
++.page-voice .voice-detail-meta { max-height: 125px; flex-shrink: 0; overflow: auto; overflow-wrap: anywhere; }
++.page-voice .voice-detail-events { flex: 1; min-height: 0; overflow: auto; }
++.page-voice .voice-detail-actions, .page-voice .voice-detail-progress { flex-shrink: 0; }
++.page-voice .audio-page { height: 100%; min-height: 0; overflow: hidden; padding: 0; gap: 10px; }
++.page-voice .audio-hero { flex-shrink: 0; padding: 10px 14px; gap: 12px; background: var(--g-instrument); border: 1px solid var(--g-hairline); }
++.page-voice .audio-hero-actions { gap: 6px; display: grid; grid-template-columns: 1fr 1fr; align-items: end; }
++.page-voice .audio-select-wrap { grid-column: 1 / -1; }
++.page-voice .audio-progress { margin-top: 8px; height: 6px; }
++.page-voice .audio-tools-grid, .page-voice .audio-grid { flex: 1; min-height: 0; align-items: stretch; }
++.page-voice .audio-panel { min-height: 0; overflow: auto; gap: 8px; background: var(--g-instrument); border-color: var(--g-hairline); }
++.page-voice .audio-metadata > .audio-panel:first-child { display: grid; grid-template-columns: 1fr 1fr; align-content: start; }
++.page-voice .audio-metadata .audio-editor-h, .page-voice .audio-metadata .audio-preview-actions { grid-column: 1 / -1; }
++.page-voice .audio-field { min-width: 0; gap: 4px; }
++.page-voice .audio-input, .page-voice .audio-select { min-width: 0; width: 100%; box-sizing: border-box; padding: 7px 9px; }
++.page-voice .audio-btn { padding: 7px 10px; }
++.page-voice .audio-paths { margin-top: 0; flex-direction: column; overflow-wrap: anywhere; max-height: 96px; overflow: auto; }
++.page-voice .audio-list, .page-voice .audio-preview { min-height: 0; overflow: auto; }
++.page-voice .audio-preview { position: static; }
++.page-voice :is(.audio-group, .audio-preview, .audio-detail-card, .audio-editor) { background: var(--g-instrument); border: 1px solid var(--g-hairline); box-shadow: none; }
++.page-voice .audio-clip-list, .page-voice .audio-pill-row { max-height: 120px; overflow: auto; }
++.account-content { flex: 1; min-height: 0; overflow: auto; padding-right: 4px; }
++.account-page .account-lead { max-width: none; margin-bottom: 8px; }
++.account-content > .wallet-tab { height: 100%; }
++.account-content .wallet-ledger-preview { min-height: 0; flex: 1; display: flex; flex-direction: column; }
++.account-content .wallet-ledger-list { min-height: 0; overflow: auto; }
++.settings-detail-body.settings-audio-body { overflow: hidden; }
++.g-deck-panel :is(.page-live, .page-insights) .card-shell { background: var(--g-instrument); border: 1px solid var(--g-hairline); box-shadow: none; backdrop-filter: none; }
++.g-deck-panel :is(.page-live, .page-insights) :is(.stat-box, .stats-grid .stat-card) { background: var(--g-instrument-2); border: 1px solid var(--g-hairline); box-shadow: none; backdrop-filter: none; }
++.voice-pagination button:focus-visible, .gm-packs-tab:focus-visible,
++.voice-detail-meta:focus-visible, .voice-detail-events:focus-visible,
++.audio-list:focus-visible, .audio-preview:focus-visible, .account-content:focus-visible {
++  outline: 2px solid var(--g-ice-300); outline-offset: -2px;
++}

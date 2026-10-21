@@ -1,0 +1,14 @@
+[
+  {
+    "clientH": 720,
+    "overflowY": "hidden",
+    "scrollH": 720,
+    "selector": "surface page-settings settings-split-mode"
+  },
+  {
+    "clientH": 622,
+    "overflowY": "auto",
+    "scrollH": 836,
+    "selector": "settings-detail-body"
+  }
+]

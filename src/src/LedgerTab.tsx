@@ -188,7 +188,7 @@ export default function LedgerTab() {
           ) : visibleRows.length === 0 ? (
             <div style={styles.empty}>ไม่มีรายการประเภทนี้ในหน้านี้ — ลองหน้าอื่นหรือเลือก &quot;ทั้งหมด&quot;</div>
           ) : (
-            <div style={styles.list}>
+            <div style={styles.list} role="region" aria-label="รายการธุรกรรมในหน้านี้" tabIndex={0}>
               {visibleRows.map((entry) => {
                 const positive = entry.amount > 0;
                 const clickable = entry.refType === "topup_order";
@@ -300,10 +300,10 @@ const styles: Record<string, React.CSSProperties> = {
   // Active fill must differ from the base chip's (both mapped to instrument-2
   // during the token migration, collapsing the active state — Opus gate, CR011-P5).
   chipActive: { borderColor: "var(--g-ice-600)", color: "var(--g-ice-300)", background: "color-mix(in srgb, var(--g-ice-600) 10%, var(--g-instrument-2))" },
-  // Fixed-height frame — this is the load-bearing part of the no-page-scroll
-  // rule: content never grows the page, pagination replaces what's shown.
-  frame: { height: 400, overflow: "hidden", display: "flex", flexDirection: "column" },
-  list: { display: "flex", flexDirection: "column", gap: 6, overflow: "hidden" },
+  // Cursor pagination fetches 20 rows; keep the whole batch reachable inside
+  // the remaining frame without scrolling Account chrome.
+  frame: { flex: 1, minHeight: 0, overflow: "hidden", display: "flex", flexDirection: "column" },
+  list: { flex: 1, minHeight: 0, display: "flex", flexDirection: "column", gap: 6, overflow: "auto" },
   row: {
     display: "grid",
     gridTemplateColumns: "22px minmax(0, 1.6fr) 110px 130px 120px",

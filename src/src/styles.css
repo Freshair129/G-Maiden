@@ -4747,3 +4747,38 @@ body:has(.deck-v3.g-deck) {
   transform: translateX(-50%);
   white-space: nowrap;
 }
+
+/* WF-01–07: keep page chrome fixed and bound long content to inner regions. */
+.gm-packs-tabs, .voice-inventory-header, .voice-pagination,
+.voice-toast, .account-page > :not(.account-content) { flex-shrink: 0; }
+.page-voice .voice-inventory { height: 100%; min-height: 0; gap: 12px; }
+.page-voice .voice-split { flex: 1; min-height: 0; grid-template-columns: minmax(0, 1.4fr) minmax(300px, .8fr); align-items: stretch; }
+.voice-catalog { min-height: 0; min-width: 0; display: flex; flex-direction: column; gap: 10px; }
+.page-voice .voice-grid { flex: 1; min-height: 0; overflow: hidden; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); grid-auto-rows: 200px; align-content: start; gap: 12px; }
+.page-voice .voice-card { height: 200px; min-width: 0; background: var(--g-instrument); border: 1px solid var(--g-hairline); box-shadow: none; }
+.page-voice .voice-card.selected { border-color: var(--g-ice-300); }
+.page-voice .voice-card:focus-visible { outline: 2px solid var(--g-ice-300); outline-offset: -3px; }
+.page-voice .voice-card-cover { height: 126px; aspect-ratio: auto; }
+.page-voice .voice-card-meta { padding: 8px 10px; gap: 2px; }
+.voice-pagination { display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+.page-voice .voice-detail { position: static; min-height: 0; max-height: none; overflow: hidden; display: flex; flex-direction: column; gap: 8px; background: var(--g-instrument); border: 1px solid var(--g-hairline); box-shadow: none; }
+.page-voice .voice-detail-cover { height: 100px; aspect-ratio: auto; flex-shrink: 0; }
+.page-voice .voice-detail-meta { max-height: 125px; flex-shrink: 0; overflow: auto; overflow-wrap: anywhere; }
+.page-voice .voice-detail-events { flex: 1; min-height: 0; overflow: auto; }
+.page-voice .voice-detail-actions, .page-voice .voice-detail-progress { flex-shrink: 0; }
+.account-page { height: 100%; min-height: 0; display: flex; flex-direction: column; }
+.account-content { flex: 1; min-height: 0; overflow: auto; padding-right: 4px; }
+.account-page .account-lead { max-width: none; margin-bottom: 8px; }
+.account-content > .wallet-tab { height: 100%; min-height: 0; }
+.account-content .wallet-ledger-preview { min-height: 0; flex: 1; display: flex; flex-direction: column; }
+.account-content .wallet-ledger-list { min-height: 0; overflow: auto; }
+.g-deck-panel :is(.page-live, .page-build, .page-insights) .card-shell { background: var(--g-instrument); border: 1px solid var(--g-hairline); box-shadow: none; backdrop-filter: none; }
+.g-deck-panel :is(.page-live, .page-build, .page-insights) :is(.stat-box, .stats-grid .stat-card) { background: var(--g-instrument-2); border: 1px solid var(--g-hairline); box-shadow: none; backdrop-filter: none; }
+.voice-pagination button:focus-visible, .voice-detail-meta:focus-visible,
+.voice-detail-events:focus-visible, .account-content:focus-visible {
+  outline: 2px solid var(--g-ice-300); outline-offset: -2px;
+}
+@media (max-width: 860px) {
+  .page-voice .voice-split { grid-template-columns: minmax(0, 1fr); overflow: auto; }
+  .page-voice .voice-detail { overflow: visible; }
+}

@@ -8,6 +8,9 @@
   เมื่อหายจากสายตา; รวมคำใบ้การตายจาก HUD กับสถานะ GSI ของผู้เล่นเรา และบอก readiness
   ของ G-Signal ตามสถานะเซนเซอร์จริง
 
+### Fixed
+- **One Canvas UI** — Voice pack inventory paginates within its available space, Account content uses a bounded scroll region, Insights links to Account when Steam is not linked, and duplicate voice/GSI cards are removed from Settings.
+
 ## [0.13.4] — 2026-10-18
 ### Changed
 - **เริ่มใช้แอปเดสก์ท็อปแบบ local-first ได้ทันที** — ไม่บังคับลงชื่อเข้าใช้หรือยืนยัน entitlement ตอนเปิดแอป; ผู้ใช้เชื่อมบัญชีเพิ่มได้จากในแอปตามต้องการ

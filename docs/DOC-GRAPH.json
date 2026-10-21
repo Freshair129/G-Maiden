@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-19T20:39:45.876Z",
+  "generatedAt": "2026-10-20T14:38:19.402Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -234,6 +234,15 @@
       "id": "docs/audits/gap-analysis-prd-srs-vs-impl-2026-08-26.md",
       "type": "doc",
       "path": "docs/audits/gap-analysis-prd-srs-vs-impl-2026-08-26.md"
+    },
+    {
+      "id": "docs/audits/ui-wireframe-alignment-2026-09-13.md",
+      "type": "doc",
+      "path": "docs/audits/ui-wireframe-alignment-2026-09-13.md",
+      "title": "G-Maiden UI versus wireframe — page-by-page review",
+      "status": "active",
+      "doc_type": "audit",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
@@ -749,6 +758,14 @@
       "path": "docs/operations/banner-motion-comparison.md",
       "title": "Overlay motion — four-method comparison",
       "status": "accepted",
+      "domain": "ui-ux"
+    },
+    {
+      "id": "docs/operations/ui-wireframe-remediation-proposal.md",
+      "type": "doc",
+      "path": "docs/operations/ui-wireframe-remediation-proposal.md",
+      "title": "UI wireframe remediation — WF-01 ถึง WF-07",
+      "status": "superseded",
       "domain": "ui-ux"
     },
     {
@@ -10134,7 +10151,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-19T20:39:54.791Z",
+    "generatedAt": "2026-10-20T14:38:24.837Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

@@ -8,9 +8,8 @@ import type {
   GameTick, Settings, SettingsCat, GsiStatus, ResourceStats, OverlayProfile, VoiceInfo, Sensitivity,
 } from './types'
 import { loadProfiles, C, APP_VERSION, CHANGELOG } from './theme'
-import { panel, Row, Toggle, Seg, Card, Stat, fmtClock, heroName } from './primitives'
+import { panel, Row, Toggle, Seg, Card } from './primitives'
 import { SetupCard } from './cards/SetupCard'
-import { AudioSettingsCard } from './cards/AudioSettingsCard'
 import { MasterCard } from './cards/MasterCard'
 import { EfficacyCard } from './cards/EfficacyCard'
 import { LogCard } from './cards/LogCard'
@@ -25,7 +24,6 @@ import { useStartupSettings } from './settingsContext'
 export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
   const { settings: s, setSettings: setS, clearLegacyMasterApiKey } = useStartupSettings()
   const [tick, setTick] = useState<GameTick | null>(null)
-  const [seen, setSeen] = useState(false)
   // CR-008 WP-2: reflects whether an Anthropic key is stored in the DPAPI secret
   // store (backend `has_master_api_key`) — the plaintext is never held here.
   const [apiKeyPresent, setApiKeyPresent] = useState(false)
@@ -132,7 +130,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
     } catch { /* plain-browser dev / non-Tauri runtime */ }
     const u1 = listen<GameTick>('game-tick', (e) => {
       if (!controlActiveRef.current) return
-      setTick(e.payload); setSeen(true)
+      setTick(e.payload)
     })
     const u2 = listen<GsiStatus>('gsi-status', (e) => {
       if (!controlActiveRef.current) return
@@ -361,7 +359,6 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
               </div>
             </Card>
 
-            <AudioSettingsCard />
           </>
         )}
 
@@ -509,25 +506,6 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
                 update-check moved to the deck-owned settings shell (always
                 visible, launch auto-check) — see CommandDeck.tsx + useAppUpdate.
                 This category keeps GSI/diagnostics only. */}
-
-            <Card title="Live (จาก GSI)">
-              {freshTick && freshTick.in_game ? (
-                <div style={{ display: 'flex', alignItems: 'center', gap: 20, flexWrap: 'wrap', paddingTop: 6 }}>
-                  <Stat label="Clock" value={fmtClock(freshTick.clock_time)} color={C.ice} />
-                  <Stat label="Hero" value={heroName(freshTick.hero)} />
-                  <Stat label="Lvl" value={freshTick.level} />
-                  <Stat label="K/D/A" value={`${freshTick.kills}/${freshTick.deaths}/${freshTick.assists}`} />
-                  <Stat label="Net Worth" value={freshTick.net_worth.toLocaleString()} color={C.ice} />
-                  <Stat label="HP" value={`${freshTick.hp_percent}%`} color={freshTick.hp_percent <= s.alertThreshold ? C.bad : C.ok} />
-                </div>
-              ) : (
-                <div style={{ fontSize: 13, color: C.mut, paddingTop: 10 }}>
-                  {status?.gsi_freshness === 'stale'
-                    ? `ข้อมูล GSI ล้าสมัย${status.gsi_age_ms === null ? '' : ` (${(status.gsi_age_ms / 1000).toFixed(1)} วินาที)`} — พักข้อมูลผู้เล่นไว้จนกว่า feed จะกลับมา; CV ยังประเมิน minimap ต่อได้`
-                    : seen ? 'เชื่อมต่อแล้ว — รอเข้าเกม Dota 2' : 'เปิด Dota 2 (ติดตั้ง GSI config แล้ว) เพื่อดูข้อมูลสด'}
-                </div>
-              )}
-            </Card>
 
             <SetupCard />
             <LogCard live={!!status?.dota_running && !!status.in_game} clockTime={freshTick?.clock_time ?? 0} />
