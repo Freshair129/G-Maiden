@@ -77,6 +77,35 @@ describe('startup settings normalization', () => {
     expect(settings.layout).toEqual(DEFAULTS.layout)
   })
 
+  it('moves old centred event and standby defaults to upper-right safe zones', () => {
+    const settings = normalizeSettings({
+      layout: {
+        ...DEFAULTS.layout,
+        banner: { x: 50, y: 34, scale: 1, enabled: true },
+        standby: { x: 50, y: 5, scale: 1, enabled: true },
+      },
+    })
+
+    expect(settings.layout.banner).toEqual({ x: 84, y: 27, scale: 1, enabled: true })
+    expect(settings.layout.standby).toEqual({ x: 92, y: 14, scale: 1, enabled: true })
+  })
+
+  it('preserves user-positioned event and standby modules', () => {
+    const savedBanner = { x: 72, y: 40, scale: 0.8, enabled: true }
+    const savedStandby = { x: 77, y: 22, scale: 1.2, enabled: true }
+    const settings = normalizeSettings({
+      layout: {
+        ...DEFAULTS.layout,
+        alert: { ...DEFAULTS.layout.alert, x: 49 },
+        banner: savedBanner,
+        standby: savedStandby,
+      },
+    })
+
+    expect(settings.layout.banner).toEqual(savedBanner)
+    expect(settings.layout.standby).toEqual(savedStandby)
+  })
+
   it('uses native settings over origin-scoped storage and migrates the deck audio rail', () => {
     const settings = mergeStoredSettings(
       { voiceName: 'local voice', signalSensitivity: 'low', volume: 35 },

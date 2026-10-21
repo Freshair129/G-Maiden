@@ -500,9 +500,11 @@ fn validate_gsi_payload(v: &Value) -> Result<(), &'static str> {
         if !team.eq_ignore_ascii_case("radiant") && !team.eq_ignore_ascii_case("dire") {
             return Err("active match team must be radiant or dire");
         }
+        // Dota's local-player GSI omits net_worth; the parser derives it from
+        // gold and items. The optional value is still range-checked above when
+        // a provider supplies it.
         for (field, max) in [
             ("gold", 1_000_000),
-            ("net_worth", 10_000_000),
             ("gpm", 100_000),
             ("xpm", 100_000),
             ("kills", 100_000),
@@ -1389,6 +1391,19 @@ mod tests {
         let t = run_handle(payload);
         assert_eq!(t.gold, 1500);
         assert_eq!(t.net_worth, 1500 + 2250 + 4050 + 100);
+    }
+
+    #[test]
+    fn active_local_player_gsi_is_accepted_when_net_worth_is_absent() {
+        let mut payload = live_payload();
+        payload["player"].as_object_mut().unwrap().remove("net_worth");
+
+        let tick = parse_gsi_payload(&payload.to_string())
+            .expect("Dota local-player GSI omits net_worth during active matches");
+
+        assert!(tick.in_game);
+        assert_eq!(tick.hero, "npc_dota_hero_crystal_maiden");
+        assert_eq!(tick.net_worth, tick.gold);
     }
 
     #[test]
