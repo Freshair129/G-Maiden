@@ -1,0 +1,31 @@
+{
+  "record_type": "authority-correction",
+  "recorded_on": "2026-10-20",
+  "status": "CORRECTED",
+  "scope": [
+    "gap-closure-product-owner-decisions.md",
+    "execution-dag-gap-closure.md",
+    "execution-dag-gap-closure.json",
+    "workflow-state.json",
+    "wave dispatch artifacts",
+    "wave Product Owner review artifacts"
+  ],
+  "finding": "The historical packet asserts a user delegation of D1-D9, Product Owner reviews, worker assignments, and wave dispatches. The authorized conversation and canonical owner state available for this reconciliation do not establish those approvals or assignments.",
+  "canonical_cr034_state": {
+    "source_commit": "613ca3aebad343444ccb5e127063ab831543c7f4",
+    "d1": "PENDING; Boss-owned",
+    "d2": "PENDING; Boss-owned",
+    "d3": "PENDING; Boss-owned",
+    "d4": "DONE in the canonical plan; no operator UI is in current product scope"
+  },
+  "treatment": "Preserve original 2026-10-01 artifacts for audit history. Do not use their decision, review, dispatch, or worker-assignment claims as authority, acceptance, or permission to act. Candidate product directions require explicit owner and applicable security/privacy review.",
+  "corrected_record": "docs/operations/gap-closure-product-owner-decisions.md",
+  "corrected_record_sha256": "98d261e581b047d1e80ec5de39aac43cdc6e345b5cb168e7a40c6d6883928ec6",
+  "current_cr034_plan_sha256": "7e8bbe741db17563f4ed5c1222637631cf598d96ce236ed1bf9de023f1e135ea",
+  "memory_contract_sha256": "85c7f6d13cc9f7b4d781634e894b0903496d479969ca4e18425dbddd3b9e1258",
+  "execution_dag_markdown_sha256": "e45a8effb97f21735ab1dc0084996241567fc44028cc03095ea81a6a42bfa29e",
+  "release_matrix_sha256": "e477b717c56436009a8f2c82a531c81e7d4b8575f113b215308d2d6af0ce077d",
+  "workflow_state_sha256": "eadcbff6f2905eab8de62f95ce71332f85cc5150c990ad1159834243cdf89a6c",
+  "execution_dag_json_sha256": "6234f975844720c197ba40766fb4168abd049c262bcf1c3a201982ad7d689cca",
+  "stream_contract_sha256": "628014f6a5b53bf05a1d07866db688085bd8e900bbf8f3e00e189e1d5b413e73"
+}

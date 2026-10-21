@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "wave": "WAVE_1_LOCAL_CONTRACTS",
+  "authority": "User continued the delegated execution DAG after commit/push; existing PO accepted bounded local contracts",
+  "complexity": "C-3",
+  "risk": "HIGH",
+  "execution_revision": "a5e43a46321cf51ee2ba9e0fa2752efb944fa161",
+  "application_source_sha": "2d969ac643533b4b8e24494356da2e818eac874f",
+  "tasks": [
+    {
+      "id": "/root/dag_worker",
+      "role": "IAM contract worker",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-iam-contract",
+      "branch": "wip/gap-iam-contract",
+      "task": "IAM-CONTRACT: source-grounded local TOTP/five-endpoint revocation and blocked session-proof contract",
+      "write_paths": [
+        "docs/operations/contracts/gap-iam-contract.md"
+      ],
+      "status": "RUNNING"
+    },
+    {
+      "id": "/root/evidence_worker",
+      "role": "Orchestra contract worker",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-orchestra-contract",
+      "branch": "wip/gap-orchestra-contract",
+      "task": "ORCH-CONTRACT: local-only HTTP threat/security contract with exact isolated checks",
+      "write_paths": [
+        "docs/operations/contracts/gap-orch-contract.md"
+      ],
+      "status": "RUNNING"
+    },
+    {
+      "id": "/root/memory_contract",
+      "role": "Memory contract worker",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap-memory-contract",
+      "branch": "wip/gap-memory-contract",
+      "task": "MEMORY-CONTRACT: local-only persistence/provenance/retention/deletion/retrieval and egress boundaries",
+      "write_paths": [
+        "docs/operations/contracts/gap-memory-contract.md"
+      ],
+      "status": "RUNNING"
+    }
+  ],
+  "root_shared_paths": [
+    ".brain/execution/gap-closure-2026-10-01/",
+    "docs/operations/execution-dag-gap-closure.md",
+    "docs/operations/execution-dag-gap-closure.json",
+    "docs/DOC-GRAPH.json",
+    "docs/DOC-GRAPH-REPORT.md",
+    "docs/FEATURE-LEDGER.md",
+    "docs/FEATURE-ORPHAN-REPORT.*",
+    "docs/atomic_index.jsonl"
+  ],
+  "next_gate": "Independent PO and root review against exact contract hashes; no blanket source-code authorization"
+}

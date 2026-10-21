@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-19T20:39:45.876Z",
+  "generatedAt": "2026-10-20T15:37:14.851Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -750,6 +750,92 @@
       "title": "Overlay motion — four-method comparison",
       "status": "accepted",
       "domain": "ui-ux"
+    },
+    {
+      "id": "docs/operations/contracts/gap-iam-contract.md",
+      "type": "doc",
+      "path": "docs/operations/contracts/gap-iam-contract.md",
+      "title": "IAM Enrollment and Live-Session Contract",
+      "status": "draft"
+    },
+    {
+      "id": "docs/operations/contracts/gap-master-contract.md",
+      "type": "doc",
+      "path": "docs/operations/contracts/gap-master-contract.md",
+      "title": "G-Master Data and Persona Contract",
+      "status": "draft"
+    },
+    {
+      "id": "docs/operations/contracts/gap-memory-contract.md",
+      "type": "doc",
+      "path": "docs/operations/contracts/gap-memory-contract.md",
+      "title": "G-Memory Local Privacy and Data Contract",
+      "status": "draft",
+      "doc_type": "feature-contract"
+    },
+    {
+      "id": "docs/operations/contracts/gap-motion-contract.md",
+      "type": "doc",
+      "path": "docs/operations/contracts/gap-motion-contract.md",
+      "title": "G-Motion Heuristic Contract",
+      "status": "draft"
+    },
+    {
+      "id": "docs/operations/contracts/gap-orch-contract.md",
+      "type": "doc",
+      "path": "docs/operations/contracts/gap-orch-contract.md",
+      "title": "G-Orchestra local HTTP security contract",
+      "status": "draft"
+    },
+    {
+      "id": "docs/operations/contracts/gap-stream-contract.md",
+      "type": "doc",
+      "path": "docs/operations/contracts/gap-stream-contract.md",
+      "title": "G-Stream Stream-Safe Co-host Contract",
+      "status": "draft"
+    },
+    {
+      "id": "docs/operations/evidence/gap-billing-local.md",
+      "type": "doc",
+      "path": "docs/operations/evidence/gap-billing-local.md",
+      "title": "CR-003 Local Billing and Share Evidence Inventory",
+      "status": "draft"
+    },
+    {
+      "id": "docs/operations/evidence/gap-ci-matrix.md",
+      "type": "doc",
+      "path": "docs/operations/evidence/gap-ci-matrix.md",
+      "title": "CI Matrix: Gap-Closure Evidence",
+      "status": "draft"
+    },
+    {
+      "id": "docs/operations/evidence/gap-release-matrix.md",
+      "type": "doc",
+      "path": "docs/operations/evidence/gap-release-matrix.md",
+      "title": "Gap 2 Release Acceptance Matrix",
+      "status": "draft"
+    },
+    {
+      "id": "docs/operations/execution-dag-gap-closure.md",
+      "type": "doc",
+      "path": "docs/operations/execution-dag-gap-closure.md",
+      "title": "Execution DAG — Gap Closure",
+      "status": "draft"
+    },
+    {
+      "id": "docs/operations/gap-closure-evidence-contract.md",
+      "type": "doc",
+      "path": "docs/operations/gap-closure-evidence-contract.md",
+      "title": "Gap-closure evidence contract",
+      "status": "active"
+    },
+    {
+      "id": "docs/operations/gap-closure-product-owner-decisions.md",
+      "type": "doc",
+      "path": "docs/operations/gap-closure-product-owner-decisions.md",
+      "title": "Gap Closure Owner Decision Register",
+      "status": "draft",
+      "doc_type": "decision-register"
     },
     {
       "id": "docs/product/MASTERPLAN-account-phase1.md",
@@ -10134,7 +10220,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-19T20:39:54.791Z",
+    "generatedAt": "2026-10-20T15:37:21.557Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

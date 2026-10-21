@@ -1,0 +1,81 @@
+{
+  "schema_version": 1,
+  "wave": "WAVE_3_CONTRACT_DRAFTS",
+  "authorized_by": "User continuation and DAG-eligible nodes after verified Wave 1 prerequisites",
+  "source_baseline": "2d969ac643533b4b8e24494356da2e818eac874f",
+  "execution_base": "b9712fd9ffed472a7bf666e8a829e4b025e563cb",
+  "parallel_lanes": [
+    {
+      "id": "/root/evidence_worker",
+      "node": "MOTION-CONTRACT",
+      "role": "Luna Max motion contract draft",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap3-motion",
+      "branch": "docs/gap3-motion",
+      "write_paths": [
+        "docs/operations/contracts/gap-motion-contract.md"
+      ],
+      "status": "APPROVE_WITH_LIMITATIONS",
+      "artifact_sha256": "0881c686fd4d6fb5ad0d228f6d853fd321c57cce45aabbba0f4de6df56f58783"
+    },
+    {
+      "id": "/root/dag_worker",
+      "node": "STREAM-CONTRACT",
+      "role": "Luna Max stream contract draft",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap3-stream",
+      "branch": "docs/gap3-stream",
+      "write_paths": [
+        "docs/operations/contracts/gap-stream-contract.md"
+      ],
+      "status": "APPROVE_WITH_LIMITATIONS",
+      "artifact_sha256": "b84671fd9ee2b640b7c43f636c77466a70f451a482772dbceffa2227eba4c632",
+      "superseded_artifact_sha256": [
+        "0638f9db96546f00f2258ffbbdb851e91fc0d802698f5afbcf99cd2ab2771fc",
+        "2b8ce36cebbab100d47343202cd5c5c33d9b4a4c312bc9a8c7f0f1c11b77bfea"
+      ]
+    },
+    {
+      "id": "/root/evidence_worker",
+      "node": "MASTER-CONTRACT",
+      "role": "Luna Max G-Master contract draft",
+      "model": "gpt-6-luna",
+      "reasoning_effort": "max",
+      "worktree": "F:/gm-gap3-master",
+      "branch": "docs/gap3-master",
+      "write_paths": [
+        "docs/operations/contracts/gap-master-contract.md"
+      ],
+      "status": "APPROVE_WITH_LIMITATIONS",
+      "artifact_sha256": "52ba22e90a4699d482a5a164fcdb93e0565b7f9e665b345caf0810101e0c2664",
+      "superseded_artifact_sha256": [
+        "a7b9208f940d5daf80fd14f341b7210f1860dec5774d3b123e5c15a0dd350c6f",
+        "7249f117246e2367dbb934f959bbc219f06ecf8ef2f18d9f88cb632e007cad40"
+      ]
+    }
+  ],
+  "verified_dependencies": {
+    "PO-DECISIONS": "VERIFIED",
+    "EVIDENCE-CONTRACT": "VERIFIED",
+    "MEMORY-CONTRACT": "APPROVE_WITH_LIMITATIONS; any sensitive-field masking/use-specific review remains required"
+  },
+  "exclusive_leases": true,
+  "root_owned_paths": [
+    ".brain/execution/gap-closure-2026-10-01/",
+    "docs/DOC-GRAPH.json",
+    "docs/DOC-GRAPH-REPORT.md",
+    "docs/FEATURE-LEDGER.md",
+    "docs/FEATURE-ORPHAN-REPORT.*",
+    "docs/atomic_index.jsonl"
+  ],
+  "code_deployment_provider_test_execution_authorized": false,
+  "merge_release_authorized": false,
+  "po_review_after_artifacts": "Exact-hash Product Owner review complete for Motion 0.2.0, Stream 0.3.0, and Master 0.2.1. The Master contract received an EOF-only hash refresh in review r2. Safe-mode/privacy and GAP-12 gates remain open; no code or implementation authority.",
+  "product_owner_review": {
+    "path": ".brain/execution/gap-closure-2026-10-01/wave-3-po-review-r2.json",
+    "sha256": "f7872965f088eeadc88e878382dc5ce2b4f9db35a22d98d015c9ba59e57e467b",
+    "disposition": "APPROVE_WITH_LIMITATIONS"
+  }
+}

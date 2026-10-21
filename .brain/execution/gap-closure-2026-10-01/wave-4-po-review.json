@@ -1,0 +1,45 @@
+{
+  "wave_4_completion_claimed": false,
+  "reviewed_artifacts": [
+    {
+      "re_review_required": true,
+      "sha256": "CF1E8B9456301F67A9C45FF3857CF097C9AED8BBD6769218028C21B767389D59",
+      "limitations": [
+        "No Supabase, pgTAP, Deno, HTTP handler, concurrency, provider sandbox, production, or migration operation was run.",
+        "A test assertion declaration is not a passing test. The 2026-07-18 checklist snapshot is historical and does not establish current project/provider/package state.",
+        "The source inventory appropriately records provisional shard scoring/receipt signing and the charge-before-order failure window; those policies and paths are not approved here.",
+        "This disposition does not authorize payment, provider, package activation, migration, code, deployment, production, legal, release, or merge actions."
+      ],
+      "source_grounded_finding": {
+        "evidence": "supabase/functions/payment-webhook/index.ts lines 54-61 insert/duplicate early-return; lines 69-89 missing-secret and charge-fetch error returns; lines 108-112 credit_topup reached only later.",
+        "limitation": "This is a code-path inference from the pinned source. No handler, database, provider sandbox, or live payment was executed; no current lost payment or production impact is asserted.",
+        "finding": "If a first delivery is durably inserted and then re-fetch fails (including missing OMISE_SECRET_KEY, network failure, or non-2xx response), the same event retry reaches the unique-conflict branch and returns 200 before re-fetching or calling credit_topup. The stored idempotency key can therefore suppress recovery for that delivery and leave an order unresolved absent another event or reconciliation.",
+        "classification": "STATIC_CONTROL_FLOW_INFERENCE"
+      },
+      "group": "WAVE_4_BILLING_LOCAL",
+      "verified_claims": [
+        "The three handlers and SQL test are inventoried as source/test declarations, distinct from executed evidence.",
+        "The dated 2026-07-18 checklist statements, including 69/69 assertions, active=false packages, unverified Omise re-fetch, and undeployed functions, are explicitly treated as historical, not fresh external state.",
+        "The SQL file declares plan(63); DB-05 and DB-12 are sequential calls and the header explicitly says they do not prove concurrent-session behavior.",
+        "The match-share handler uses a derived HMAC reference for RPC/storage, uses the raw match ID for OpenDota lookup, and maps duplicate/cap outcomes to HTTP 200 per the source.",
+        "topup-create reads package price server-side, checks active status, counts pending orders in the preceding hour, creates a provider charge before inserting an order, and has no explicit request idempotency token or pre-charge deduplication in the inspected file.",
+        "The payment-webhook source inserts (provider,event_id) before re-fetching the charge; the unique-conflict branch returns HTTP 200 before re-fetch/credit, while later missing-secret and fetch failures return 500/502."
+      ],
+      "required_amendment": "Add this same-event retry boundary to the evidence inventory and distinguish source-level risk from runtime impact; retain handler tests/provider retries as NOT_RUN. Any behavior fix or reconciliation is separate work requiring its own authorization and validation.",
+      "decision": "NEEDS_CHANGES",
+      "path": "F:/gm-gap3-billing/docs/operations/evidence/gap-billing-local.md",
+      "blocking_documentary_defects": [
+        "The document omits the same-event retry failure path caused by inserting webhook_events before re-fetch and then acknowledging a duplicate event without resuming processing."
+      ]
+    }
+  ],
+  "scope": "Independent exact-hash Product Owner review of the local billing/share evidence inventory and its named source claims only. Documentation disposition only; no code or provider authority.",
+  "decision": "NEEDS_CHANGES",
+  "review_id": "gap-closure-2026-10-01-wave-4-po-review",
+  "source_baseline": "origin/main 2d969ac643533b4b8e24494356da2e818eac874f",
+  "review_date": "2026-10-01",
+  "reviewer": "/root/product_owner",
+  "delegation": "The human user delegated product and technical decisions to the Product Owner Agent. This does not claim human legal, financial, security, provider, production, deployment, or release signoff.",
+  "artifact_review_status": "REVIEWED_NEEDS_CHANGES",
+  "schema_version": 1
+}

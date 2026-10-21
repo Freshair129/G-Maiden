@@ -1,0 +1,22 @@
+{
+  "schema_version": 1,
+  "observed_date": "2026-10-01",
+  "timezone": "Asia/Bangkok",
+  "collector": "RWANG Orchestrator",
+  "source": "Chrome visible UI through cua_repl",
+  "project_ref": "wsseitulmcgnolgsrxgh",
+  "project_name": "gstore",
+  "url": "https://supabase.com/dashboard/project/wsseitulmcgnolgsrxgh",
+  "environment_label": "main PRODUCTION",
+  "project_state": "PAUSED",
+  "visible_message": "Project gstore is paused",
+  "resume_control_present": true,
+  "resume_control_used": false,
+  "provider_configuration": "NOT_VERIFIED",
+  "database_configuration": "NOT_VERIFIED",
+  "production_uat": "NOT_RUN",
+  "blocker": "BLOCKED_PROJECT_PAUSED",
+  "scope": "Blocks provider/database live verification; local planning and isolated fixtures remain actionable",
+  "external_mutations": [],
+  "sensitive_values_retained": false
+}

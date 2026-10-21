@@ -1,6 +1,6 @@
 {
   "_generated": "GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs",
-  "generatedAt": "2026-10-19T20:39:55.360Z",
+  "generatedAt": "2026-10-20T15:37:21.982Z",
   "baselineOrphanCandidates": 0,
   "rowCount": 22,
   "summary": {
@@ -126,7 +126,8 @@
         "docs/features/README.md",
         "docs/product/mvp-backlog.md",
         "docs/product/roadmap.md",
-        "docs/features/G-SERIES-DATA-LINEAGE.md"
+        "docs/features/G-SERIES-DATA-LINEAGE.md",
+        "docs/operations/contracts/gap-memory-contract.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,
@@ -145,7 +146,8 @@
         "project-feature-map"
       ],
       "weakAnchors": [
-        "docs/features/README.md"
+        "docs/features/README.md",
+        "docs/operations/contracts/gap-master-contract.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,
@@ -164,7 +166,8 @@
         "project-feature-map"
       ],
       "weakAnchors": [
-        "docs/features/README.md"
+        "docs/features/README.md",
+        "docs/operations/contracts/gap-motion-contract.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,
@@ -183,7 +186,8 @@
       ],
       "weakAnchors": [
         "docs/architecture/design-system.md",
-        "docs/features/README.md"
+        "docs/features/README.md",
+        "docs/operations/contracts/gap-master-contract.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,
@@ -299,7 +303,8 @@
       ],
       "weakAnchors": [
         "docs/features/README.md",
-        "docs/features/G-SERIES-DATA-LINEAGE.md"
+        "docs/features/G-SERIES-DATA-LINEAGE.md",
+        "docs/operations/contracts/gap-stream-contract.md"
       ],
       "supersededBy": null,
       "supersededByExists": true,

@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "review_id": "gap-closure-2026-10-01-wave-2-evidence-po",
+  "reviewer": "/root/product_owner",
+  "review_date": "2026-10-01",
+  "decision": "APPROVE_WITH_LIMITATIONS",
+  "scope": "Independent exact-hash review of source-grounded documentation only. No implementation, provider, deployment, release, or merge authority is granted.",
+  "delegation": "The human user explicitly delegated product and technical choices and documentation review to the Product Owner Agent. This review does not claim human, legal, provider, security-owner, or deployment signoff.",
+  "source_baseline": "origin/main 2d969ac643533b4b8e24494356da2e818eac874f",
+  "artifact_review_status": "COMPLETE_FOR_LISTED_ARTIFACTS",
+  "wave_2_completion_claimed": false,
+  "reviewed_artifacts": [
+    {
+      "group": "WAVE_2_CI_EVIDENCE",
+      "path": "F:/gm-gap2-ci-matrix/docs/operations/evidence/gap-ci-matrix.md",
+      "sha256": "C5FA05140F0AB3C970D5B1257FFD9C7EBC4A3C580B2BAB5F7FBD05E30903077C",
+      "decision": "APPROVE_WITH_LIMITATIONS",
+      "verified_claims": [
+        "ci.yml declares the main push/PR Windows job and the listed Rust, desktop lint/test, doc-graph, and Tauri build steps; it does not invoke landing/orchestration scripts, Deno tests, SQL/RLS tests, or explicit tsc.",
+        "Landing and orchestration package script inventories match their package.json files.",
+        "Four shared Deno test modules declare 24 cases; eight SQL files declare 167 pgTAP assertions. These are declarations, not passing results."
+      ],
+      "limitations": [
+        "No local or hosted test/build/workflow result was executed or inspected; all results remain NOT_RUN/NOT_INSPECTED.",
+        "The workflow filename inventory does not prove the triggers, commands, or results of other workflows."
+      ],
+      "blocking_factual_defects": []
+    },
+    {
+      "group": "WAVE_2_RELEASE_EVIDENCE",
+      "path": "F:/gm-gap2-release-matrix/docs/operations/evidence/gap-release-matrix.md",
+      "sha256": "5A77B0B303DDDB17DBEE52EFCB4556A2DE94BE156DD8D6011839D85FE4FAF315",
+      "decision": "APPROVE_WITH_LIMITATIONS",
+      "verified_claims": [
+        "Wave 0 targets and blank/pending actuals match the DoD; platform coverage remains unchecked.",
+        "P3 documents p50 <=250 ms and p99 <=300 ms, while its stated exit-0 math explicitly gates p99 plus skipped-hop budgets; the unresolved p50 acceptance gap is correctly identified.",
+        "The manual perf workflow runs only the headless harness and maps exit 77 to workflow success; the matrix correctly requires inspecting the step log to distinguish SKIP.",
+        "Checked-in dev.json is populated for 0.13.1, while closed-beta.json and stable.json are unpublished placeholders; manifest fields are not signature, lineage, deployment, or install proof.",
+        "Release architecture/current-manifest differences and all unrun hardware/UAT/promotion gates are called out."
+      ],
+      "limitations": [
+        "No performance, build, install/update, hosted workflow, UAT, signature, channel-isolation, provider, or promotion check was run.",
+        "The release architecture, roadmap, and DoD are draft requirements; their statements do not establish deployed behavior.",
+        "The PowerShell examples with backslash continuation are transcribed but unexecuted; validate shell syntax before an operator run."
+      ],
+      "blocking_factual_defects": []
+    },
+    {
+      "group": "OPS_DOCS_CR018",
+      "path": "F:/gm-gap2-ops-docs/docs/change request/CR-018-ops-route-spa-rewrite.md",
+      "sha256": "F4FDAD747FF3CD2998C22B5C2D26F8D8044C5445077DCD841094FFEAE6D0B5FF",
+      "decision": "APPROVE_WITH_LIMITATIONS",
+      "verified_claims": [
+        "landing/src/main.tsx routes /demo and /public-demo to PublicDemo and otherwise renders App; it has no explicit /ops branch.",
+        "landing/vercel.json contains Vite install/build/output settings and no rewrite.",
+        "The document separates checked-in source from deployed route status and labels current /ops deployment UNKNOWN/NOT_VERIFIED."
+      ],
+      "limitations": [
+        "The 2026-07-21 deployment/HTTP/build statements and historical Boss approval changelog row remain historical assertions; this review did not independently validate them and they are not current route or approval evidence.",
+        "The parent-provided browser-evidence artifact, captured 2026-10-01, records gstore main PRODUCTION as PAUSED and provider configuration/database/UAT as unverified. Treat the CLAUDE.md queue/support description as a documented source claim, not proof that queue service is currently available. This review does not assert the project state after that capture."
+      ],
+      "blocking_factual_defects": []
+    },
+    {
+      "group": "OPS_DOCS_ARCHIVED_PLAYBOOK",
+      "path": "F:/gm-gap2-ops-docs/docs/operations/gmaiden-closed-beta-release-playbook.md",
+      "sha256": "7FA5CECFEDA22AC133913170CCE3752359B1AE2548D6813933CBCB09061416F0",
+      "decision": "APPROVE_WITH_LIMITATIONS",
+      "verified_claims": [
+        "The frontmatter/changelog mark the playbook historical; the current-status section explicitly says /ops is not a current shipped UI and the deployed route is unverified.",
+        "Legacy sequence/operator sections are labeled prior, dormant, or historical and are framed as backend/operator references."
+      ],
+      "limitations": [
+        "Do not use the old release checklist, dates, batch IDs, artifact paths, or GID roster as current release instructions or current availability evidence; revalidate each before any future use.",
+        "The historical queue/support description is not evidence of present service availability; the stored browser evidence captured 2026-10-01 records the Supabase project paused.",
+        "The document retains historical GID and artifact identifiers; keep them within the intended internal historical context and do not treat this review as privacy/legal approval."
+      ],
+      "blocking_factual_defects": []
+    },
+    {
+      "group": "ADJACENT_MOTION_CONTRACT",
+      "path": "F:/gm-gap3-motion/docs/operations/contracts/gap-motion-contract.md",
+      "sha256": "08A9DD58D7C3614E5CDC02DD8AEC199270B42AD0EDEE52B4F0DA50EC04B82DE8",
+      "decision": "APPROVE_WITH_LIMITATIONS",
+      "verified_claims": [
+        "motion.rs and capture.rs support the documented five-minute visible-sample history, current heuristic defaults/formula, heading adjustment, count-only death discount, reset/fallback boundaries, and GankRisk output.",
+        "The contract correctly labels probability as an uncalibrated heuristic score and documents replay-fit's FULL/APPROX distinction and mismatch from live heading/death-count inputs.",
+        "Feature spec and audit sources describe route/heatmap/through-fog prediction as absent and keep future work behind separate evidence gates."
+      ],
+      "product_owner_decision": {
+        "current_scope": "Accept the bounded missing-time plus last-visible-heading heuristic as the current documented G-Motion behavior, described as a heuristic risk estimate/score rather than an empirically calibrated probability.",
+        "user_facing_claims": "Do not claim calibrated percentage confidence, location-specific 'around here' accuracy, or path/heatmap prediction without separate calibration and location evidence.",
+        "future_route_heatmap_through_fog_work": "Keep it separate and BLOCKED pending its own C-3/HIGH contract, authorized local-data/provenance and privacy boundary, held-out evaluation, and explicit approval. No hidden-enemy feed, automatic tuning, or live-default changes are approved.",
+        "documentation_follow_up": "This exact-hash review records the delegated product choice. The pinned contract remains a draft whose review record says the choice is pending; reconcile that status in a later documentation revision before treating the contract itself as accepted."
+      },
+      "limitations": [
+        "Tests, replay, datasets, performance, calibration, and live/runtime behavior were not run or verified.",
+        "This disposition selects documentation/product scope only; no Rust changes, parameter tuning, model work, or implementation dispatch is authorized."
+      ],
+      "blocking_factual_defects": []
+    }
+  ],
+  "cross_cutting_evidence": {
+    "source_inspection": "Static source inspection only; the named checked source paths match the pinned baseline. No repository tests, builds, CI runs, provider operations, deployment probes, or release actions were performed for this review.",
+    "paused_project_evidence": {
+      "artifact": "F:/gm-gap-execution/.brain/execution/gap-closure-2026-10-01/browser-evidence.json",
+      "sha256": "DB0E57D30586FDD7E329187773616CCCE23B8410855FAD49E2B20444687C40B1",
+      "captured": "2026-10-01 Asia/Bangkok",
+      "recorded_state": "gstore main PRODUCTION PAUSED; provider configuration, database configuration, and production UAT NOT_VERIFIED/NOT_RUN; resume control unused.",
+      "time_boundary": "This is the state recorded at capture time, not a fresh live check in this review."
+    }
+  },
+  "approval_boundary": {
+    "approved": "The listed exact-hash documents as source-grounded drafts with their stated limitations, plus the bounded Motion product direction in this review under the human delegation.",
+    "not_approved": "Any test/result pass, current queue or /ops availability, provider/configuration change, project resume, database migration, implementation, model/tuning work, deployment, production UAT, release/promotion, legal or separate human security/privacy signoff, merge, or full product completion."
+  }
+}

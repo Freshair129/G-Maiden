@@ -1,0 +1,114 @@
+{
+  "schema_version": 1,
+  "review_id": "gap-closure-2026-10-01-wave-3-po-review",
+  "reviewer": "/root/product_owner",
+  "review_date": "2026-10-01",
+  "decision": "APPROVE_WITH_LIMITATIONS",
+  "scope": "Independent exact-hash Product Owner review of three Wave 3 source-grounded documentation drafts. Documentation and delegated product direction only; no implementation, privacy-owner, provider, deployment, release, or merge authority.",
+  "delegation": "The human user explicitly delegated product and technical decisions and Product Owner review to this agent. No separate human security, privacy, legal, provider, deployment, or release signoff is claimed.",
+  "source_baseline": "origin/main 2d969ac643533b4b8e24494356da2e818eac874f",
+  "artifact_review_status": "COMPLETE_FOR_LISTED_ARTIFACTS",
+  "wave_3_completion_claimed": false,
+  "reviewed_artifacts": [
+    {
+      "group": "WAVE_3_MOTION_CONTRACT",
+      "path": "F:/gm-gap3-motion/docs/operations/contracts/gap-motion-contract.md",
+      "sha256": "0881C686FD4D6FB5AD0D228F6D853FD321C57CCE45AABBBA0F4DE6DF56F58783",
+      "version": "0.2.0",
+      "decision": "APPROVE_WITH_LIMITATIONS",
+      "verified_claims": [
+        "Current behavior is accurately bounded as a missing-time plus last-visible-heading heuristic, and probability is explicitly not described as calibrated.",
+        "Source-linked defaults, aggregation, death-count discount, heading proxy, ETA, reset, and five-minute visible history align with the inspected Rust paths.",
+        "The draft separates acceptance targets and source declarations from tests, calibration, performance, replay, UAT, and release evidence.",
+        "The delegated Wave 2 Product Owner choice for heuristic-only current scope is recorded; route, heatmap, and through-fog work remain separately blocked."
+      ],
+      "product_owner_decision": {
+        "current_scope": "Accept the bounded heuristic-only description as current product scope. Describe the value as an uncalibrated heuristic risk score, not an empirically calibrated probability.",
+        "future_route_heatmap_through_fog": "Keep separate and BLOCKED pending a C-3/HIGH contract, authorized local-data/provenance boundary, held-out evaluation, and explicit future approval. No automatic tuning or live-default change is authorized.",
+        "status": "Keep document status draft until FEAT-G-MOTION title and quantitative/persona wording are reconciled; GAP-12 remains open."
+      },
+      "limitations": [
+        "No Rust tests, replay data, benchmark, performance, calibration, runtime/UAT, or release behavior was run or verified.",
+        "The exact-hash review gate is satisfied by this review; the draft still awaits feature-spec wording alignment. Its Section 6 pending-review note may be refreshed in a later versioned revision before promotion or acceptance."
+      ],
+      "blocking_findings": []
+    },
+    {
+      "group": "WAVE_3_STREAM_CONTRACT",
+      "path": "F:/gm-gap3-stream/docs/operations/contracts/gap-stream-contract.md",
+      "sha256": "B84671FD9EE2B640B7C43F636C77466A70F451A482772DBCEFFA2227EBA4C632",
+      "version": "0.3.0",
+      "decision": "APPROVE_WITH_LIMITATIONS",
+      "verified_claims": [
+        "The draft inventories identity, rank/MMR, Memory/Log, match/CV, generated text/media, imported child views, capture, and audio surfaces with fail-closed handling for unknown or failed masks.",
+        "Calibration source references identify the opt-in command, default-off behavior, local artifact path and fallback, full-screen PNG screenshots, GIF/keyframe PNG clips, and audit context; the draft does not claim these are stream-masked or viewer-safe.",
+        "Unreviewed FullOverlay/CommandDeck children and external viewer capture remain unresolved gates, and a separate named Privacy Owner must accept the exact contract hash.",
+        "The draft records the delegated policy to preserve latency-critical G-Signal warnings for the player and makes no viewer-audio safety claim."
+      ],
+      "product_owner_decision": {
+        "player_warning": "Preserve latency-critical G-Signal warnings for the player. Stream formatting or mode must never suppress or delay them.",
+        "viewer_audio": "Do not claim the player warning is inaudible to viewers; inspected sources do not establish isolation from broadcast capture.",
+        "safe_mode": "Keep safe mode BLOCKED_SAFE and unavailable for ON_SAFE until a player-versus-viewer audio/capture isolation option is defined and tests demonstrate both the isolation boundary and continued player-warning availability within the latency target.",
+        "route_selection": "No specific implementation route is selected because the inspected sources do not evidence an isolated local-audio path. This is a policy-level block condition, not implementation authority.",
+        "privacy_owner": "A separate named Privacy Owner must accept the exact hash and viewer-audio/capture behavior; this Product Owner disposition is not Privacy Owner acceptance."
+      },
+      "limitations": [
+        "This is a draft product/privacy contract only. No G-Stream implementation, audio routing, screenshot/capture change, or runtime mode exists or is approved here.",
+        "No audio-isolation, capture, masking, child-view, screenshot, or latency test was run. Local calibration storage does not establish masking, retention/deletion, export, or viewer safety.",
+        "No Privacy Owner, legal, security-owner, or provider acceptance is claimed."
+      ],
+      "blocking_findings": []
+    },
+    {
+      "group": "WAVE_3_MASTER_CONTRACT",
+      "path": "F:/gm-gap3-master/docs/operations/contracts/gap-master-contract.md",
+      "sha256": "092227F6B12BFF6A6663AAF41AD82BA8246F5192CD415329225FB3C12DE769E1",
+      "version": "0.2.1",
+      "decision": "APPROVE_WITH_LIMITATIONS",
+      "verified_claims": [
+        "The prompt builder documents selected GameTick fields and enemy hero-name strings for counter advice; unobserved enemy inventory, economy, defense, HP, and OCR values remain unknown instead of being filled with zeros or guesses.",
+        "The OCR section records no live G-Master caller in the inspected path, missing tracked OCR model files, unestablished accuracy/freshness, and no license/provenance evidence; it does not authorize bundling or upload.",
+        "Provider scope is bounded to Auto, Claude, and Ollama as source-visible, with Gemini and the proposed G-Mind router deferred.",
+        "The prompt-builder observation that it contains no G-Log or Memory input is explicitly not presented as whole-application egress proof or a provider-side handling guarantee.",
+        "Persona wording distinguishes partial source-visible coach/silent/caster/meme effects from FEAT-G-PERSONA numeric tone/verbosity and apply_tone design targets; low-HP danger and end-to-end critical audio remain unverified.",
+        "Frontmatter version 0.2.1 matches the latest chronological changelog row."
+      ],
+      "limitations": [
+        "Selected remote prompt fields are described as current source behavior only; no exact provider payload/privacy acceptance or provider-side handling is approved by this review.",
+        "No prompt/provider tests, OCR inference/model lookup, licensing review, model download, UAT, deployment, or runtime persona validation was performed.",
+        "Do not claim no GSI-derived egress: this is a narrow builder/source review and selected gameplay fields are sent along the remote Claude path when that path is used."
+      ],
+      "blocking_findings": []
+    }
+  ],
+  "superseded_hashes": [
+    {
+      "path": "F:/gm-gap3-stream/docs/operations/contracts/gap-stream-contract.md",
+      "sha256": "0638F9DB96546F00F2258FFBBDB851E91FC0D802698F5AFBCBF99CD2AB2771FC",
+      "reason": "Superseded by later stream contract revisions."
+    },
+    {
+      "path": "F:/gm-gap3-stream/docs/operations/contracts/gap-stream-contract.md",
+      "sha256": "2B8CE36CEBBAB100D47343202CD5C5C33D9B4A4C312BC9A8C7F0F1C11B77BFEA",
+      "reason": "Superseded after backend calibration sources established concrete image artifacts and output path."
+    },
+    {
+      "path": "F:/gm-gap3-master/docs/operations/contracts/gap-master-contract.md",
+      "sha256": "F682CF52AF4E0F6125E85B3D598068221050A99B68976B78AD1C26EA018508F8",
+      "reason": "Superseded by control-character repair and corrected persona evidence."
+    },
+    {
+      "path": "F:/gm-gap3-master/docs/operations/contracts/gap-master-contract.md",
+      "sha256": "A7B9208F940D5DAF80FD14F341B7210F1860DEC5774D3B123E5C15A0DD350C6F",
+      "reason": "Superseded by revised persona scope and chronological changelog/version correction."
+    }
+  ],
+  "cross_cutting_evidence": {
+    "source_inspection": "Static inspection at the pinned source baseline only. Source presence and code-path analysis are not tests, runtime, deployment, production, provider, privacy, or performance results.",
+    "verification": "No application, integration, provider, audio-isolation, capture, performance, OCR, or persona test was run for this Product Owner review."
+  },
+  "approval_boundary": {
+    "approved": "The three exact-hash drafts as source-grounded product/technical documentation with the stated limitations, plus the Motion heuristic-only scope decision and Stream safe-mode block policy recorded here.",
+    "not_approved": "Application implementation or dispatch; audio/capture routing; privacy or legal acceptance; provider/configuration changes; OCR/model download or licensing; Memory/G-Log integration; hosted UAT; migration; deployment; production; release/promotion; merge; or full initiative completion."
+  }
+}
