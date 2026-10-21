@@ -84,7 +84,7 @@ export const DEFAULT_LAYOUT: Layout = {
   //   Dota kill feed  8.0–17.0   (game-owned)
   //   alert          18.2–21.9
   //   toast          22.5–25.6
-  //   banner         27.1–41.0
+  //   banner         upper-right at y≈27 — clear of the Dota HUD and centre aim area
   //   lowhp          42.3–45.8
   alert: { x: 50, y: 20, scale: 1, enabled: true },
   gmeter: { x: 7, y: 47, scale: 1, enabled: true },
@@ -93,9 +93,9 @@ export const DEFAULT_LAYOUT: Layout = {
   advice: { x: 50, y: 72, scale: 1, enabled: true },
   buyback: { x: 50, y: 63, scale: 1, enabled: true },
   missing: { x: 88, y: 12, scale: 1, enabled: true },
-  // Kill & pack banners share one slot, below the game's own kill feed rather
-  // than on top of it. lowhp/vol/standby are transient cues.
-  banner: { x: 50, y: 34, scale: 1, enabled: true },
+  // Kill & pack banners share a right-side slot below Dota's top scoreboard;
+  // keeping the large event art out of the centre preserves the playable view.
+  banner: { x: 84, y: 27, scale: 1, enabled: true },
   lowhp: { x: 50, y: 44, scale: 1, enabled: true },
   // Was (50, 92) — inside Dota's bottom HUD — then (14, 72), which cleared the
   // HUD but sat on the left-hand roster of the PRE-GAME screen. `vol` is hotkey
@@ -103,11 +103,9 @@ export const DEFAULT_LAYOUT: Layout = {
   // gutter between the minimap (x≤13) and the bottom HUD (x≥28) in game, and
   // below the rosters (y≤88) before one starts.
   vol: { x: 20, y: 95, scale: 1, enabled: true },
-  // Standby renders only while `!inGame`, so it answers to the PRE-GAME screen
-  // alone — where (50, 50) put it dead centre on the map. Moved to the top band
-  // above both rosters (y12+) and the map (y10+): the one strip that screen
-  // leaves empty, and where a status chip reads as chrome rather than content.
-  standby: { x: 50, y: 5, scale: 1, enabled: true },
+  // Standby renders only while `!inGame`; put it beneath the player strip at
+  // the right edge, above the hero grid and away from the central draft timer.
+  standby: { x: 92, y: 14, scale: 1, enabled: true },
   // Top-left stat strip: clock → KDA → gold → GPM → NW, y=4.
   //
   // Compacted left 2026-08-11. The note above said Dota's portrait bar "starts
