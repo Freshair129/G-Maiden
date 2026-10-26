@@ -39,13 +39,14 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   // deterministic verdict; `narrative` is the local-SLM voiced line that arrives
   // a beat later on `buyback-narrative`. Cleared on respawn.
   const [buyback, setBuyback] = useState<{ advice: ReviveAdvice; narrative: string | null } | null>(null)
-  const [previewMode, setPreviewMode] = useState(false)
+  const [previewTick, setPreviewTick] = useState<GameTick | null>(null)
+  const previewMode = previewTick !== null
   const gsiFresh = gsiStatus?.gsi_freshness === 'fresh'
   const gsiActive = gsiFresh
-  const tick = (gsiFresh || previewMode) ? lastTick : null
+  const tick = gsiFresh ? lastTick : null
   // Keep the session shell alive while Dota is still open, but do not expose
   // the last own-state tick after its source has crossed the freshness limit.
-  const matchActive = previewMode ? !!lastTick?.in_game : !!gsiStatus?.dota_running && !!gsiStatus.in_game
+  const matchActive = !!gsiStatus?.dota_running && !!gsiStatus.in_game
   // Minimap-sensor truth. Starts NULL, and null is treated as "not healthy" —
   // fail-closed. Until a fresh capture status arrives, the overlay must not
   // report the sensor as healthy (audit B3).
@@ -94,11 +95,9 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   const advisedAt = useRef<Record<string, number>>({})
   const sRef = useRef(s)
   const gsiStatusRef = useRef(gsiStatus)
-  const previewModeRef = useRef(previewMode)
   sRef.current = s
   gsiStatusRef.current = gsiStatus
-  previewModeRef.current = previewMode
-  const mayUseOwnState = () => previewModeRef.current || gsiStatusRef.current?.gsi_freshness === 'fresh'
+  const mayUseOwnState = () => gsiStatusRef.current?.gsi_freshness === 'fresh'
   const resetSessionUi = useCallback(() => {
     for (const timer of [gankTimer, gankClearTimer, adviceTimer, killTimer, packBannerTimer, revisionTimer]) {
       if (timer.current) clearTimeout(timer.current)
@@ -230,7 +229,12 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       setGsiStatus(e.payload)
     })
     const uSH = listen<SensorHealth>('sensor-health', (e) => setSensorHealth(e.payload))
-    const u7 = listen<boolean>('preview-mode', (e) => setPreviewMode(e.payload))
+    let previewExpiry: ReturnType<typeof setTimeout> | undefined
+    const u7 = listen<GameTick | null>('overlay-preview', (e) => {
+      clearTimeout(previewExpiry)
+      setPreviewTick(e.payload)
+      if (e.payload) previewExpiry = setTimeout(() => setPreviewTick(null), 4000)
+    })
     // G2.6: G-Sentry missing-hero events — accumulate into a set; clear when gank clears.
     const u8 = listen<EnemyMissing>('enemy-missing', (e) => {
       if (!acceptsSessionEvent(e.payload, ['live', 'disconnected'])) return
@@ -323,6 +327,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     return () => {
       void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f())
       void u4.then((f) => f()); void u5.then((f) => f()); void u6.then((f) => f())
+      clearTimeout(previewExpiry)
       void u7.then((f) => f()); void u8.then((f) => f()); void u9.then((f) => f())
       void u10.then((f) => f()); void uK.then((f) => f()); void uPB.then((f) => f())
       void uBA.then((f) => f()); void uBN.then((f) => f()); void uSH.then((f) => f())
@@ -548,7 +553,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
 
   const wasFresh = useRef<boolean | null>(null)
   useEffect(() => {
-    const nowFresh = gsiFresh || previewMode
+    const nowFresh = gsiFresh
     if (wasFresh.current && !nowFresh) {
       setBuyback(null)
       setOverlayAdvice(null)
@@ -566,7 +571,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       recentDeathClock.current = null
     }
     wasFresh.current = nowFresh
-  }, [gsiFresh, previewMode])
+  }, [gsiFresh])
 
   // Auto-advice (G-Master proactive). Fires Claude Plan request + speaks the
   // result on key moments: ult level milestones and a death-streak (2 deaths
@@ -760,12 +765,12 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   if (s.uiMode === 'full') {
     return (
       <FullOverlay
-        tick={tick} s={s} gank={gank} missingHeroes={missingHeroes}
+        tick={previewTick ?? tick} s={s} gank={gank} missingHeroes={missingHeroes}
         overlayAdvice={overlayAdvice} buyback={buyback} toast={toast}
         killBanner={killBanner} packBanner={packBanner} lowHp={lowHp}
         volToast={volToast} gsiActive={gsiActive} gsiFresh={gsiFresh || previewMode}
         gsiFreshness={gsiStatus?.gsi_freshness ?? 'unavailable'} gsiAgeMs={gsiStatus?.gsi_age_ms ?? null}
-        matchActive={matchActive} previewMode={previewMode}
+        matchActive={previewMode ? !!previewTick.in_game : matchActive} previewMode={previewMode}
         sensorOk={sensorHealth?.healthy ?? false}
       />
     )

@@ -1,14 +1,17 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { emit, listen } from '@tauri-apps/api/event'
+import { emit, emitTo, listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
-import { MODULE_META, cfgOf, type Layout } from '../overlay/modules'
+import { type Layout } from '../overlay/modules'
+import { OverlayLayoutEditor } from '../overlay/OverlayLayoutEditor'
+import { OVERLAY_PREVIEW_TICK } from '../overlay/preview'
+import { normalizeLayout } from '../overlay/layoutGeometry'
 import QuotaCard from '../QuotaCard'
 import type {
   GameTick, Settings, SettingsCat, GsiStatus, ResourceStats, OverlayProfile, VoiceInfo, Sensitivity,
 } from './types'
 import { loadProfiles, C, APP_VERSION, CHANGELOG } from './theme'
-import { panel, Row, Toggle, Seg, Card, Stat, fmtClock, heroName } from './primitives'
+import { panel, Row, Toggle, Card, Stat, fmtClock, heroName } from './primitives'
 import { SetupCard } from './cards/SetupCard'
 import { AudioSettingsCard } from './cards/AudioSettingsCard'
 import { MasterCard } from './cards/MasterCard'
@@ -36,24 +39,24 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
   const [captureMode, setCaptureMode] = useState<string>('initializing')
   const [showWelcome, setShowWelcome] = useState(() => localStorage.getItem('gm-onboarded') !== '1')
   const dismissWelcome = () => { localStorage.setItem('gm-onboarded', '1'); setShowWelcome(false) }
-  // Overlay preview: feed the overlay a fake in-game tick so you can see the HUD
-  // + danger banner (and hear the voice) without launching Dota.
+  // Preview is render-only and never enters the live game event stream.
   const [preview, setPreview] = useState(false)
   const [showChangelog, setShowChangelog] = useState(false)
   const [quotaTick, setQuotaTick] = useState(0)
   const [profiles, setProfiles] = useState<OverlayProfile[]>(loadProfiles)
-  const previewTimer = useRef<ReturnType<typeof setInterval> | null>(null)
-  const previewClock = useRef(600)
+  const [profileName, setProfileName] = useState('')
+  const sRef = useRef(s)
+  sRef.current = s
   const controlActiveRef = useRef(true)
 
   const saveProfile = (name: string) => {
-    const p: OverlayProfile = { name, position: s.position, customX: s.customX, customY: s.customY, opacity: s.opacity, showTimer: s.showTimer, showScore: s.showScore, showHeroBar: s.showHeroBar, showKda: s.showKda, showGold: s.showGold }
+    const p: OverlayProfile = { name, layout: normalizeLayout(s.layout), position: s.position, customX: s.customX, customY: s.customY, opacity: s.opacity, showTimer: s.showTimer, showScore: s.showScore, showHeroBar: s.showHeroBar, showKda: s.showKda, showGold: s.showGold }
     const updated = [...profiles.filter(x => x.name !== name), p]
     setProfiles(updated)
     localStorage.setItem('gm-profiles', JSON.stringify(updated))
   }
   const applyProfile = (p: OverlayProfile) => {
-    setS(prev => ({ ...prev, position: p.position, customX: p.customX, customY: p.customY, opacity: p.opacity, showTimer: p.showTimer, showScore: p.showScore, showHeroBar: p.showHeroBar, showKda: p.showKda, showGold: p.showGold }))
+    setS(prev => ({ ...prev, opacity: p.opacity, layout: p.layout ? normalizeLayout(p.layout) : normalizeLayout({ ...prev.layout, clock: { ...prev.layout.clock, enabled: p.showTimer }, score: { ...prev.layout.score, enabled: p.showScore }, hero: { ...prev.layout.hero, enabled: p.showHeroBar }, kda: { ...prev.layout.kda, enabled: p.showKda }, gold: { ...prev.layout.gold, enabled: p.showGold } }) }))
   }
   const deleteProfile = (name: string) => {
     const updated = profiles.filter(x => x.name !== name)
@@ -61,30 +64,21 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
     localStorage.setItem('gm-profiles', JSON.stringify(updated))
   }
 
-  // Preview emits a synthetic game-tick + preview-mode flag to the overlay.
-  // Does NOT emit fake gsi-status — status chips stay real.
   useEffect(() => {
-    if (!preview) {
-      if (previewTimer.current) { clearInterval(previewTimer.current); previewTimer.current = null }
-      void emit('preview-mode', false)
-      return
+    if (!preview || category !== 'overlay') return
+    const send = () => { void emitTo('overlay', 'overlay-preview', OVERLAY_PREVIEW_TICK).catch(() => {}) }
+    send()
+    const timer = setInterval(send, 1500)
+    return () => {
+      clearInterval(timer)
+      void emitTo('overlay', 'overlay-preview', null).catch(() => {})
+      void invoke('set_overlay_visible', { visible: sRef.current.overlayVisible }).catch(() => {})
     }
-    void emit('preview-mode', true)
-    const tickOnce = () => {
-      previewClock.current += 2
-      const lowPhase = Math.floor(previewClock.current / 14) % 2 === 0
-      const hp = lowPhase ? 18 : 80
-      void emit('game-tick', {
-        in_game: true, clock_time: previewClock.current, game_state: 'DOTA_GAMERULES_STATE_GAME_IN_PROGRESS',
-        daytime: true, radiant_score: 12, dire_score: 9, gold: 1500, net_worth: 8200, gpm: 520, xpm: 610,
-        kills: 4, deaths: 2, assists: 7, last_hits: 88, denies: 6, hero: 'npc_dota_hero_crystal_maiden',
-        level: 9, alive: true, hp_percent: hp, mana_percent: 42,
-      })
-    }
-    tickOnce()
-    previewTimer.current = setInterval(tickOnce, 1500)
-    return () => { if (previewTimer.current) { clearInterval(previewTimer.current); previewTimer.current = null } }
-  }, [preview])
+  }, [preview, category])
+
+  useEffect(() => {
+    if (preview && category === 'overlay') void invoke('set_overlay_visible', { visible: true }).catch(() => {})
+  }, [preview, category, s.overlayVisible])
 
   // CR-013 W2 gate fix (Opus F1): the launch auto-check + install action moved
   // to useAppUpdate (owned by CommandDeck) so it fires regardless of which
@@ -199,31 +193,9 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
           <>
             <Card title="Overlay (OSD)">
               <Row label="แสดง overlay บนเกม"><Toggle on={s.overlayVisible} onChange={(v) => set('overlayVisible', v)} /></Row>
-              <Row label="ตำแหน่ง"><Seg value={s.position} options={[['top', 'บน'], ['left', 'ซ้าย'], ['right', 'ขวา'], ['custom', 'กำหนดเอง']]} onChange={(v) => set('position', v)} /></Row>
-              {s.position === 'custom' && (
-                <>
-                  <Row label={`X: ${s.customX}%`}>
-                    <input type="range" min={0} max={100} value={s.customX} onChange={(e) => set('customX', Number(e.target.value))} style={{ width: 150 }} />
-                  </Row>
-                  <Row label={`Y: ${s.customY}%`}>
-                    <input type="range" min={0} max={90} value={s.customY} onChange={(e) => set('customY', Number(e.target.value))} style={{ width: 150 }} />
-                  </Row>
-                </>
-              )}
               <Row label={`ความทึบพาเนล: ${Math.round(s.opacity * 100)}%`}>
                 <input type="range" min={40} max={100} value={Math.round(s.opacity * 100)} onChange={(e) => set('opacity', Number(e.target.value) / 100)} style={{ width: 150 }} />
               </Row>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '11px 0', borderTop: '1px solid rgba(143,212,255,0.08)' }}>
-                <span style={{ fontSize: 13.5 }}>แผงสถิติ overlay</span>
-                <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
-                  {([['showTimer', 'นาฬิกา'], ['showScore', 'สกอร์'], ['showHeroBar', 'HP/Mana'], ['showKda', 'K/D/A'], ['showGold', 'ทอง/NW']] as [keyof Settings, string][]).map(([k, label]) => (
-                    <label key={k} style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12.5, color: s[k] ? C.txt : C.mut, cursor: 'pointer' }}>
-                      <input type="checkbox" checked={s[k] as boolean} onChange={(e) => set(k, e.target.checked as never)} style={{ accentColor: C.ice }} />
-                      {label}
-                    </label>
-                  ))}
-                </div>
-              </div>
               <Row label="ทดสอบ overlay (จำลอง ไม่ต้องเปิดเกม)"><Toggle on={preview} onChange={setPreview} /></Row>
               {profiles.length > 0 && (
                 <div style={{ borderTop: `1px solid ${C.line}`, marginTop: 6, paddingTop: 8, display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
@@ -240,25 +212,16 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
                 <div style={{ fontSize: 11.5, color: C.mut, lineHeight: 1.6 }}>
                   💡 <b style={{ color: C.ice }}>Ctrl+Alt+S</b> ซ่อน/แสดง · <b style={{ color: C.ice }}>Alt+↑/↓</b> ระดับเสียง · <b style={{ color: C.ice }}>Alt+M</b> ปิด/เปิดเสียง
                 </div>
-                <button onClick={() => { const n = prompt('ชื่อโปรไฟล์:'); if (n?.trim()) saveProfile(n.trim()) }}
+                <input aria-label="ชื่อโปรไฟล์ overlay" placeholder="ชื่อโปรไฟล์" value={profileName} onChange={e => setProfileName(e.target.value)} style={{ width: 120, background: C.bg, color: C.txt, border: `1px solid ${C.line}`, padding: 5 }} />
+                <button disabled={!profileName.trim()} onClick={() => { saveProfile(profileName.trim()); setProfileName('') }}
                   style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 7, padding: '4px 10px', fontSize: 11, cursor: 'pointer' }}>
                   + บันทึกโปรไฟล์
                 </button>
               </div>
             </Card>
 
-            <Card title="Overlay UI">
-              <div style={{ fontSize: 11.5, color: C.mut, marginBottom: 4, lineHeight: 1.55 }}>
-                ทุกชิ้นของ overlay เป็น <b style={{ color: C.txt }}>โมดูลอิสระ</b> — เปิด/ปิด, ย่อ-ขยาย และลากวางตำแหน่งได้.
-                การจัดตำแหน่งย้ายไปทำที่ <b style={{ color: C.txt }}>G-AnnStudio → Overlay Lab</b> ซึ่งวาดโมดูลขนาดจริง
-                ทับภาพ HUD ของ Dota และเตือนเมื่อทับโซนของเกม แล้วกด Sync ส่งกลับมาที่นี่.
-              </div>
-              <div style={{ fontSize: 11, color: C.mut, lineHeight: 1.55 }}>
-                ตำแหน่งปัจจุบันยังใช้งานอยู่ตามปกติ — โมดูลที่เปิดไว้:{' '}
-                <b style={{ color: C.txt }}>
-                  {MODULE_META.filter((m) => cfgOf(s.layout, m.id).enabled).length}/{MODULE_META.length}
-                </b>
-              </div>
+            <Card title="จัดวาง Overlay ใน G-Maiden">
+              <OverlayLayoutEditor settings={s} onEnterFullscreen={() => setPreview(false)} onChange={layout => set('layout', layout)} />
             </Card>
           </>
         )}

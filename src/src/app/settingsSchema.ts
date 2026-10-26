@@ -101,7 +101,7 @@ function migrateLegacyDefaultPositions(value: unknown): unknown {
     const legacy = LEGACY_DEFAULT_POSITIONS[id]
     if (current?.x === legacy.x && current.y === legacy.y
       && current.scale === legacy.scale && current.enabled === legacy.enabled) {
-      next[id] = { ...current, x: DEFAULT_LAYOUT[id].x, y: DEFAULT_LAYOUT[id].y }
+      next[id] = { ...DEFAULT_LAYOUT[id] }
     }
   }
   return next

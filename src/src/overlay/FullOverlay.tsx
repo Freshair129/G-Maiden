@@ -1,18 +1,6 @@
-/**
- * Full overlay — the redesign tier (opt-in via Settings.uiMode = 'full').
- *
- * Isolated from the stable "lite" overlay in App.tsx. Each piece is an
- * independent MODULE positioned + scaled from Settings.layout (edited in the
- * G-AnnStudio's Overlay Lab, synced in). Backend is shared — same game-tick / gank
- * events drive both tiers.
- *
- * Phase 2: stats split into individual draggable modules (clock/KDA/gold/GPM/
- * XPM/NW/score/HP-mana) + a CompanionStage presence module. Next: drop the
- * Crystal Maiden portrait into CompanionStage, voice-pack tab.
- */
-import React from 'react'
+import React, { useEffect, useRef, useState } from 'react'
 import type { GameTick, GsiFreshness, Settings, GankState, ReviveAdvice } from '../App'
-import { cfgOf, type ModuleCfg, type ModuleId } from './modules'
+import { BOX_REF, MODULE_BOX, cfgOf, type ModuleCfg, type ModuleId } from './modules'
 import { VoiceWave } from './VoiceWave'
 import { STREAK_LABELS } from './streaks'
 
@@ -31,11 +19,23 @@ const heroName = (raw: string) => {
   return n ? n.replace(/\b\w/g, (c) => c.toUpperCase()) : '—'
 }
 
-const Module: React.FC<{ cfg: ModuleCfg; children: React.ReactNode }> = ({ cfg, children }) => (
-  <div style={{ position: 'fixed', left: `${cfg.x}%`, top: `${cfg.y}%`, transform: `translate(-50%, -50%) scale(${cfg.scale})`, pointerEvents: 'none', zIndex: 10 }}>
-    {children}
+const Module: React.FC<{ id: ModuleId; cfg: ModuleCfg; children: React.ReactNode }> = ({ id, cfg, children }) => {
+  const content = useRef<HTMLDivElement>(null)
+  const [fit, setFit] = useState(1)
+  const box = MODULE_BOX[id]
+  useEffect(() => {
+    const node = content.current
+    if (!node) return
+    const measure = () => setFit(Math.min(1, box.w / Math.max(1, node.scrollWidth), box.h / Math.max(1, node.offsetHeight)))
+    const observer = new ResizeObserver(measure)
+    observer.observe(node)
+    measure()
+    return () => observer.disconnect()
+  }, [box])
+  return <div data-overlay-module={id} style={{ position: 'fixed', left: `${cfg.x}%`, top: `${cfg.y}%`, width: box.w, height: box.h, display: 'flex', alignItems: 'center', justifyContent: 'center', transform: `translate(-50%, -50%) scale(calc(${cfg.scale} * var(--gm-overlay-scale, 1)))`, pointerEvents: 'none', zIndex: 10 }}>
+    <div ref={content} style={{ width: box.w, flexShrink: 0, overflowWrap: 'anywhere', transform: `scale(${fit})` }}>{children}</div>
   </div>
-)
+}
 
 const glass = (op: number): React.CSSProperties => ({
   background: `rgba(14,17,24,${op})`,
@@ -91,6 +91,7 @@ interface Props {
    * stall — states in which the missing-hero set is empty for the wrong reason,
    * so the G-Meter must NOT show green. */
   sensorOk: boolean
+  referenceViewport?: boolean
 }
 
 /** Continuous-risk level derived from G-Sentry's missing-hero count (and the
@@ -111,7 +112,16 @@ const G_LEVELS = [
   { label: 'อันตราย', color: '#ff7b85', glow: 'rgba(255,123,133,0.6)' },
 ] as const
 
-export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, overlayAdvice, buyback, toast, killBanner, packBanner, lowHp, volToast, gsiActive, gsiFresh, gsiFreshness, gsiAgeMs, matchActive, previewMode, sensorOk }) => {
+export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, overlayAdvice, buyback, toast, killBanner, packBanner, lowHp, volToast, gsiActive, gsiFresh, gsiFreshness, gsiAgeMs, matchActive, previewMode, sensorOk, referenceViewport = false }) => {
+  const [viewportScale, setViewportScale] = useState(1)
+  useEffect(() => {
+    if (referenceViewport) return
+    const resize = () => setViewportScale(Math.min(window.innerWidth / BOX_REF.w, window.innerHeight / BOX_REF.h))
+    resize()
+    window.addEventListener('resize', resize)
+    return () => window.removeEventListener('resize', resize)
+  }, [referenceViewport])
+
   const op = s.opacity
   // Session lifecycle remains visible during a feed outage, while own-state
   // widgets stay suppressed because the parent passes no stale tick.
@@ -122,7 +132,7 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
   /** Wrap content in a positioned module iff it's enabled in the layout. */
   const M = (id: ModuleId, content: React.ReactNode) => {
     const cfg = cfgOf(L, id)
-    return cfg.enabled ? <Module key={id} cfg={cfg}>{content}</Module> : null
+    return cfg.enabled ? <Module key={id} id={id} cfg={cfg}>{content}</Module> : null
   }
   /** Small stat chip (one value). */
   const chip = (label: string, value: React.ReactNode, color?: string) => (
@@ -135,7 +145,7 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
   // ── Danger Alert (special — gank state drives the variant)
   const alertCfg = cfgOf(L, 'alert')
   const alert = s.gankVisuals && gank && alertCfg.enabled ? (
-    <Module key="alert" cfg={alertCfg}>
+    <Module key="alert" id="alert" cfg={alertCfg}>
       {gank.phase === 'clear' ? (
         <div style={{ ...glass(0.82), padding: '9px 22px', border: `1px solid ${C.ice}`, color: C.ice, fontWeight: 600, fontSize: 14 }}>เอ๊ะ… ปลอดภัยแล้วค่ะ</div>
       ) : (
@@ -311,7 +321,7 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
   ) : null
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'transparent', pointerEvents: 'none' }}>
+    <div style={{ position: 'fixed', inset: 0, background: 'transparent', pointerEvents: 'none', '--gm-overlay-scale': viewportScale } as React.CSSProperties}>
       {staleNotice}
       {alert}
       {inGame && M('gmeter', gMeter)}
