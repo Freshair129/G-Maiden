@@ -81,7 +81,7 @@ use std::fs;
 use std::path::{Path, PathBuf};
 use std::time::{SystemTime, UNIX_EPOCH};
 
-use g_maiden::motion::{GankRisk, Motion, MotionParams};
+use g_maiden::motion::{Motion, MotionParams};
 use g_maiden::signal::{Sensitivity, Signal, SignalEvent};
 use g_maiden::tuning::{self, TuningDelta, TuningEvidence, MIN_FULL_MATCHES};
 
@@ -358,8 +358,8 @@ fn replay_match(m: &MatchData, params: MotionParams, sensitivity: Sensitivity, w
     for (ts, entries) in &m.timeline {
         if let Some(prev) = last_ts {
             if *ts > prev && *ts - prev > GAP_RESET_MS {
-                // Implicit all-clear: see module doc on GAP_RESET_MS.
-                let _ = signal.evaluate(&GankRisk::default());
+                // Missing observations cannot prove that enemies reappeared.
+                signal.suspend();
             }
         }
         last_ts = Some(*ts);
@@ -369,7 +369,7 @@ fn replay_match(m: &MatchData, params: MotionParams, sensitivity: Sensitivity, w
             .map(|e| (e.hero.clone(), e.missing_for_ms, e.last_pos))
             .collect();
         let risk = motion.assess(&missing, *ts);
-        if let SignalEvent::Alert(_) = signal.evaluate(&risk) {
+        if let SignalEvent::Alert(_) = signal.evaluate(&risk, &risk.missing_heroes, *ts, true) {
             alerts.push(*ts);
         }
     }

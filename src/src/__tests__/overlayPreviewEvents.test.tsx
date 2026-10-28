@@ -17,7 +17,7 @@ vi.mock('@tauri-apps/api/event', () => ({
   }),
 }))
 vi.mock('../overlay/FullOverlay', () => ({
-  FullOverlay: ({ tick }: { tick: GameTick | null }) => <output>{tick?.gold ?? 'offline'}</output>,
+  FullOverlay: ({ tick, missingHeroes, warningStatus }: { tick: GameTick | null; missingHeroes: Set<string>; warningStatus?: { ready: boolean } }) => <output data-missing={[...missingHeroes].join(',')} data-ready={String(warningStatus?.ready ?? false)}>{tick?.gold ?? 'offline'}</output>,
 }))
 import { Overlay } from '../app/Overlay'
 import { DEFAULTS } from '../app/types'
@@ -37,6 +37,8 @@ beforeEach(async () => {
   document.body.append(container)
   root = createRoot(container)
   await act(async () => { root.render(<Overlay initialSettings={{ ...DEFAULTS, autoAdvice: true }} />) })
+  expect(invokeMock.mock.calls).toEqual([['overlay_bootstrap_ready']])
+  invokeMock.mockClear()
 })
 afterEach(async () => {
   await act(async () => { root.unmount() })
@@ -67,3 +69,23 @@ it('returns to the real feed after preview and never revives stale own-player da
   await send('overlay-preview', null)
   expect(container.textContent).toBe('offline')
 })
+
+it('uses current missing snapshots and expires to unknown rather than retaining old names', async () => {
+  await send('missing-state', { heroes: ['axe'], roster_known: 5, ready: true, reason: 'evidence_ready' })
+  expect(container.querySelector('output')?.getAttribute('data-missing')).toBe('axe')
+  await send('missing-state', { heroes: [], roster_known: 5, ready: true, reason: 'missing_without_rotation' })
+  expect(container.querySelector('output')?.getAttribute('data-missing')).toBe('')
+  await send('missing-state', { heroes: ['lina'], roster_known: 5, ready: true, reason: 'evidence_ready' })
+  await act(async () => { vi.advanceTimersByTime(3001) })
+  expect(container.querySelector('output')?.getAttribute('data-missing')).toBe('')
+  expect(container.querySelector('output')?.getAttribute('data-ready')).toBe('false')
+})
+
+it('rejects stale match snapshots and clears warnings when evidence is unavailable', async () => {
+  await send('missing-state', { session_epoch: 8, session_lifecycle: 'live', heroes: ['axe'], roster_known: 5, ready: true });
+  await send('missing-state', { session_epoch: 7, session_lifecycle: 'live', heroes: ['lina'], roster_known: 5, ready: true });
+  expect(container.querySelector('output')?.getAttribute('data-missing')).toBe('axe');
+  await send('missing-state', { session_epoch: 8, session_lifecycle: 'live', heroes: [], roster_known: 5, ready: false });
+  expect(container.querySelector('output')?.getAttribute('data-missing')).toBe('');
+  expect(container.querySelector('output')?.getAttribute('data-ready')).toBe('false');
+});

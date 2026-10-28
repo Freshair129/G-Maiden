@@ -196,7 +196,7 @@ describe("buildHeroes — honest FALLBACK base (CR-007 WP-4 regression)", () => 
     expect(result[7].hero).toBe("—");
   });
 
-  it("renders a CV-only (visible, never-missing) enemy identity honestly as 'visible'", () => {
+  it("does not treat a raw CV classification as confirmed current presence", () => {
     const cv: MinimapCv = {
       region: { x: 0, y: 0, side: 100 },
       icon: 0,
@@ -208,18 +208,15 @@ describe("buildHeroes — honest FALLBACK base (CR-007 WP-4 regression)", () => 
     const enemySlots = slotsFor("npc_dota_hero_oracle");
     const result = buildHeroes(null, new Map(), cv, FALLBACK.heroes, enemySlots);
     expect(result[5].hero).toBe("Oracle");
-    expect(result[5].state).toBe("visible");
+    expect(result[5].state).toBe("empty");
     expect(result[5].timer).toBe(0);
   });
 
-  it("a hero once assigned stays 'visible' in its slot even once CV stops re-detecting it", () => {
-    // The slot table is the identity source of truth now — a hero doesn't
-    // need to be present in *this tick's* cv.detections to keep rendering,
-    // only to not be in the `missing` map.
+  it("keeps identity but withdraws presence when there is no current observation", () => {
     const enemySlots = slotsFor("npc_dota_hero_oracle");
     const result = buildHeroes(null, new Map(), null, FALLBACK.heroes, enemySlots);
     expect(result[5].hero).toBe("Oracle");
-    expect(result[5].state).toBe("visible");
+    expect(result[5].state).toBe("empty");
   });
 });
 
@@ -233,6 +230,12 @@ describe("buildHeroes — Draft-CV roster fill", () => {
     recognizer_active: true,
     templates_loading: false,
   };
+
+  it("preserves unknown enemy slots in a partial roster and rejects stale minimap identities", () => {
+    const partial = { ...roster, complete: false, dire: [null, "zeus", null, "lina", null] };
+    const result = buildHeroes(makeTick(), new Map(), null, FALLBACK.heroes, slotsFor("axe"), partial, "radiant");
+    expect(result.slice(5).map((hero) => hero.hero)).toEqual(["—", "Zeus", "—", "Lina", "—"]);
+  });
 
   it("fills ally slots 1-4 from the local player's team (minus the local hero)", () => {
     const tick = makeTick({ team_name: "radiant" }); // local = crystal_maiden
@@ -252,7 +255,7 @@ describe("buildHeroes — Draft-CV roster fill", () => {
     const tick = makeTick({ team_name: "radiant" });
     const result = buildHeroes(tick, new Map(), null, FALLBACK.heroes, new Map(), roster, "radiant");
     expect(result.slice(5, 10).map((h) => h.hero)).toEqual(["Invoker", "Zeus", "Sniper", "Lina", "Tinker"]);
-    expect(result[5].state).toBe("visible");
+    expect(result[5].state).toBe("empty");
   });
 
   it("flips ally/enemy when the local player is on Dire", () => {

@@ -9,6 +9,16 @@ export interface MatchSessionMetadata {
   session_lifecycle?: MatchLifecycle | null
 }
 
+export interface MissingState extends MatchSessionMetadata {
+  heroes: string[]
+  /** Current Sentry-confirmed observations; roster identity alone is insufficient. */
+  visible_heroes: string[]
+  observations: { hero: string; missing_for_ms: number; last_pos: [number, number] }[]
+  roster_known: number
+  ready: boolean
+  reason: string
+}
+
 /** Mirrors the Rust `GameTick` emitted by the GSI server (src-tauri/src/gsi.rs). */
 export interface GameTick extends MatchSessionMetadata {
   in_game: boolean
@@ -39,8 +49,8 @@ export interface GameTick extends MatchSessionMetadata {
   last_victim_slot: number
   // Exact slain hero (npc name) resolved backend-side from last_victim_slot +
   // the roster the backend already holds (GSI/CV). Optional — when the backend
-  // populates it, the kill banner shows the exact victim; until then we guess
-  // from G-Sentry's missing set below. See CR-010.
+  // populates it for a single kill, the banner can show the victim; otherwise
+  // use generic wording. Missing-map evidence never identifies a victim.
   last_victim_hero?: string
 }
 
@@ -57,19 +67,21 @@ export interface GankAlert extends MatchSessionMetadata { probability: number; m
 /** G2.6: emitted by G-Sentry when a hero crosses the 5s missing threshold. */
 export interface EnemyMissing extends MatchSessionMetadata { hero: string; missing_for_ms: number; last_pos: [number, number] }
 /** G5.4: advice broadcast from master.rs → overlay. */
-export interface AdviceUpdate extends MatchSessionMetadata {
-  text: string
-  cached: boolean
-  backend?: 'claude' | 'ollama'
-  elapsed_ms?: number
-  cached_age_ms?: number | null
-}
+export interface AdviceUpdate extends MatchSessionMetadata, Advice {}
 /** G-Revive: deterministic buyback verdict (revive.rs → `buyback-advice`).
  *  Mirrors `ReviveAdvice`; `urgency` is the serde-serialized `Urgency` enum. */
-export type BuybackUrgency = 'None' | 'Consider' | 'Strong'
-export interface ReviveAdvice extends MatchSessionMetadata {
-  recommend_buyback: boolean
+export type BuybackUrgency = 'Unknown' | 'None' | 'Consider' | 'Strong'
+export interface BuybackIdentity {
+  death_episode: number
+  request_id: number
+}
+export interface BuybackNarrative extends MatchSessionMetadata, BuybackIdentity { text: string }
+export interface ReviveAdvice extends MatchSessionMetadata, BuybackIdentity {
+  /** null means the available evidence cannot support a buyback decision. */
+  recommend_buyback: boolean | null
   urgency: BuybackUrgency
+  base_under_threat: boolean | null
+  allies_alive: number | null
   natural_respawn_remaining: number
   affordable: boolean | null
   next_respawn_if_buyback: number
@@ -86,6 +98,8 @@ export interface GsiStatus extends MatchSessionMetadata {
   in_game: boolean
   display_exclusive: boolean
   server_state: 'starting' | 'listening' | 'port_conflict' | 'bind_error'
+  gsi_port?: number
+  dota_restart_required?: boolean
 }
 
 export interface AnnouncerBanner extends MatchSessionMetadata {
@@ -183,7 +197,7 @@ export interface VoiceCacheStatus { dir: string; counts: Record<string, number>;
 export interface EventClip { name: string; path: string; source: string }
 
 // ─────────────────────────────── G-MASTER (local-first advisor) ───────────────────────────────
-export interface Advice { text: string; cached: boolean; backend?: 'claude' | 'ollama'; elapsed_ms?: number; cached_age_ms?: number | null }
+export interface Advice { text: string; cached: boolean; context_generation: number; backend?: 'claude' | 'ollama'; elapsed_ms?: number; cached_age_ms?: number | null }
 export type MasterBackend = 'auto' | 'claude' | 'ollama'
 export type OllamaReadinessState = 'available' | 'missing-model' | 'unavailable' | 'invalid-model'
 export interface OllamaReadiness {

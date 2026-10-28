@@ -142,10 +142,10 @@ export const CvHeroesPage = memo(function CvHeroesPage() {
   const roster = cv.roster;
   const knownCount = [...(roster?.radiant ?? []), ...(roster?.dire ?? [])]
     .filter((name) => typeof name === "string").length;
+  const seenNames = new Set(cv.phase === "live" && cv.warningReady ? cv.visible.map(shortHeroName) : []);
   const detections = cv.phase === "live" && cv.health?.healthy
-    ? cv.minimap?.detections ?? []
+    ? (cv.minimap?.detections ?? []).filter((detection) => seenNames.has(shortHeroName(detection.name)))
     : [];
-  const seenNames = new Set(detections.map((detection) => shortHeroName(detection.name)));
   const mapReady = cv.phase === "live" && !!frame && !!cv.minimap && cv.health?.healthy === true;
   const missingNames = new Set(cv.phase === "live" ? cv.missing.map(shortHeroName) : []);
   const lastSeenMarkers = mapReady && frame && cv.minimap
@@ -162,7 +162,7 @@ export const CvHeroesPage = memo(function CvHeroesPage() {
         }];
       })
     : [];
-  const signalReady = settings.signalEnabled && cv.phase === "live" && cv.health?.healthy === true;
+  const signalReady = settings.signalEnabled && cv.phase === "live" && cv.health?.healthy === true && cv.warningReady;
   const gankText = !settings.signalEnabled
     ? "ปิดอยู่ในการตั้งค่า"
     : cv.phase !== "live"

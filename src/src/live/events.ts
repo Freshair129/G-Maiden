@@ -7,7 +7,7 @@
 //   gsi-status    gsi.rs:194        every 500ms freshness watchdog + observations
 //   minimap-cv    capture.rs:314    ~5Hz CV debug (detections = pixels within region)
 //   minimap-frame capture.rs        ~3Hz live minimap mirror (base64 PNG data URL)
-//   draft-roster  capture.rs / set_draft_roster cmd  10-hero roster from the pick screen
+//   draft-roster  capture.rs (portrait CV only)  10-hero roster from the pick screen
 //   enemy-missing capture.rs:261    edge, per hero crossing 5s threshold
 //   gank-alert    capture.rs:292    edge, gank probability >= danger threshold
 //   gank-clear    capture.rs:297    edge, unit payload
@@ -197,6 +197,7 @@ export interface UtteranceEvent extends MatchSessionMetadata {
   atMs: number;
   source: "signal" | "master" | "announcer";
   kind: "line" | "revision";
+  phase: "generated" | "requested" | "admitted";
   text: string;
   retracted?: string | null;
   meta?: string | null; // master: "claude"|"ollama"; announcer: pack name

@@ -109,7 +109,13 @@ fn session_log_name(session: &MatchSessionSnapshot) -> String {
         .as_deref()
         .unwrap_or("unknown")
         .chars()
-        .map(|c| if c.is_ascii_alphanumeric() || c == '-' { c } else { '_' })
+        .map(|c| {
+            if c.is_ascii_alphanumeric() || c == '-' {
+                c
+            } else {
+                '_'
+            }
+        })
         .collect::<String>();
     format!("match-{id}-e{}.jsonl", session.session_epoch)
 }
@@ -126,7 +132,9 @@ fn append_lifecycle(state: &mut LogState, record_type: &str) {
         "session_epoch": state.session_epoch,
     });
     if let Ok(line) = serde_json::to_string(&value) {
-        let Some(file) = state.file.as_mut() else { return };
+        let Some(file) = state.file.as_mut() else {
+            return;
+        };
         let _ = file.write_all(line.as_bytes());
         let _ = file.write_all(b"\n");
         let _ = file.flush();
@@ -367,7 +375,9 @@ fn update_session_status(state: &mut LogState, session: &MatchSessionSnapshot) {
         state.match_id = session.match_id.clone();
         append_lifecycle(state, "session_identity");
     }
-    let Some(lifecycle) = session.session_lifecycle else { return };
+    let Some(lifecycle) = session.session_lifecycle else {
+        return;
+    };
     match lifecycle {
         MatchLifecycle::Disconnected if state.lifecycle != Some(lifecycle) => {
             append_lifecycle(state, "match_disconnect");
@@ -417,7 +427,10 @@ pub fn note_event_for_session(epoch: u64, mut value: serde_json::Value) {
         obj.insert("ts".into(), serde_json::json!(now_ms() as u64));
         obj.insert("match_id".into(), serde_json::json!(state.match_id));
         obj.insert("session_id".into(), serde_json::json!(state.session_id));
-        obj.insert("session_epoch".into(), serde_json::json!(state.session_epoch));
+        obj.insert(
+            "session_epoch".into(),
+            serde_json::json!(state.session_epoch),
+        );
     }
     let Ok(line) = serde_json::to_string(&value) else {
         return;
@@ -462,6 +475,7 @@ pub fn enemy_missing_record(
     serde_json::json!({
         "type": "enemy_missing",
         "hero": hero,
+        "hero_id": crate::cv::identity::HeroId::from_label(hero),
         "missing_for_ms": missing_for_ms,
         "last_pos": [last_pos.0, last_pos.1],
     })
@@ -635,7 +649,10 @@ fn to_timeline_entry(v: &serde_json::Value) -> Option<TimelineEntry> {
         "match_start" => {
             let study = v.get("study").and_then(|s| s.as_bool()).unwrap_or(false);
             if study {
-                let silent_arm = v.get("silent_arm").and_then(|s| s.as_bool()).unwrap_or(false);
+                let silent_arm = v
+                    .get("silent_arm")
+                    .and_then(|s| s.as_bool())
+                    .unwrap_or(false);
                 format!(
                     "Match started (efficacy study; G-Signal {})",
                     if silent_arm { "silenced" } else { "armed" }
@@ -651,7 +668,11 @@ fn to_timeline_entry(v: &serde_json::Value) -> Option<TimelineEntry> {
             let missing: Vec<String> = v
                 .get("missing_heroes")
                 .and_then(|m| m.as_array())
-                .map(|arr| arr.iter().filter_map(|h| h.as_str().map(str::to_string)).collect())
+                .map(|arr| {
+                    arr.iter()
+                        .filter_map(|h| h.as_str().map(str::to_string))
+                        .collect()
+                })
                 .unwrap_or_default();
             let missing_part = if missing.is_empty() {
                 String::new()
@@ -914,7 +935,10 @@ fn join_and_bucket(
     for sig in signals {
         let bucket = if sig.armed { &mut armed } else { &mut silent };
         bucket.events += 1;
-        if deaths.iter().any(|&d| d > sig.ts && d <= sig.ts + window_ms) {
+        if deaths
+            .iter()
+            .any(|&d| d > sig.ts && d <= sig.ts + window_ms)
+        {
             bucket.deaths += 1;
         }
     }
@@ -1170,7 +1194,10 @@ mod tests {
         let m = parse_efficacy_records(content);
         assert_eq!(m.signals.len(), 1);
         assert!(m.signals[0].armed);
-        assert!(!m.study, "legacy match with no match_start must not be a study match");
+        assert!(
+            !m.study,
+            "legacy match with no match_start must not be a study match"
+        );
     }
 
     #[test]
@@ -1187,9 +1214,18 @@ mod tests {
     fn join_and_bucket_splits_by_armed_and_counts_deaths_in_window() {
         let deaths = vec![4000u64, 20000];
         let signals = vec![
-            EfficacySignal { ts: 1000, armed: true }, // death at 4000 -> hit
-            EfficacySignal { ts: 5000, armed: false }, // no death in (5000,13000] -> miss
-            EfficacySignal { ts: 19000, armed: false }, // death at 20000 -> hit
+            EfficacySignal {
+                ts: 1000,
+                armed: true,
+            }, // death at 4000 -> hit
+            EfficacySignal {
+                ts: 5000,
+                armed: false,
+            }, // no death in (5000,13000] -> miss
+            EfficacySignal {
+                ts: 19000,
+                armed: false,
+            }, // death at 20000 -> hit
         ];
         let (armed, silent) = join_and_bucket(&deaths, &signals, 8000);
         assert_eq!(armed.events, 1);
@@ -1201,7 +1237,10 @@ mod tests {
     #[test]
     fn join_and_bucket_death_exactly_at_window_edge_counts() {
         let deaths = vec![9000u64];
-        let signals = vec![EfficacySignal { ts: 1000, armed: true }];
+        let signals = vec![EfficacySignal {
+            ts: 1000,
+            armed: true,
+        }];
         let (armed, _) = join_and_bucket(&deaths, &signals, 8000);
         assert_eq!(armed.events, 1);
         assert_eq!(armed.deaths, 1, "death at ts+window_ms is inclusive");
@@ -1220,8 +1259,14 @@ mod tests {
     #[test]
     fn arm_bucket_add_accumulates_across_matches() {
         let mut total = ArmBucket::default();
-        total.add(ArmBucket { events: 3, deaths: 1 });
-        total.add(ArmBucket { events: 2, deaths: 2 });
+        total.add(ArmBucket {
+            events: 3,
+            deaths: 1,
+        });
+        total.add(ArmBucket {
+            events: 2,
+            deaths: 2,
+        });
         assert_eq!(total.events, 5);
         assert_eq!(total.deaths, 3);
     }
@@ -1231,10 +1276,7 @@ mod tests {
         // W1: a study=true match contributes to the buckets; a study=false /
         // legacy match (no match_start) is excluded entirely, so the armed
         // arm can't be polluted by a different (pre-study) population.
-        let dir = std::env::temp_dir().join(format!(
-            "gmaiden-eff-test-{}",
-            now_ms()
-        ));
+        let dir = std::env::temp_dir().join(format!("gmaiden-eff-test-{}", now_ms()));
         fs::create_dir_all(&dir).unwrap();
 
         // Study match: 1 armed signal followed by a death, 1 silent signal not.
@@ -1318,7 +1360,7 @@ mod tests {
             "not json, a torn power-cut line\n",
             "{\"ts\":0,\"tick\":{\"deaths\":0}}\n", // raw tick snapshot: no `type`
             "{\"ts\":10,\"type\":\"some_future_event\",\"x\":1}\n", // unrecognized type
-            "{\"type\":\"gank_revision\"}\n", // missing ts
+            "{\"type\":\"gank_revision\"}\n",       // missing ts
             "{\"ts\":20,\"type\":\"gank_revision\"}\n", // the only valid line
         );
         let entries = parse_timeline(content);
@@ -1379,7 +1421,8 @@ mod tests {
     #[test]
     fn safe_log_path_accepts_well_formed_bare_filename() {
         let dir = temp_log_dir("accept");
-        let resolved = safe_log_path_in_dir(&dir, "match-1752345600.jsonl").expect("should be accepted");
+        let resolved =
+            safe_log_path_in_dir(&dir, "match-1752345600.jsonl").expect("should be accepted");
         assert_eq!(resolved, dir.join("match-1752345600.jsonl"));
         let _ = fs::remove_dir_all(&dir);
     }

@@ -1,11 +1,12 @@
 //! G-Maiden Perf Suite — GATE P7 (Round-2 Revision)
 //!
-//! Measures two non-negotiable NFRs from SRS §5 / TDD §7:
-//!   • RAM ≤ 400 MB  (always-on background footprint, cloud-online, SLM not loaded)
+//! Legacy single-process RAM diagnostic plus the PresentMon FPS gate:
+//!   • Aggregate RAM ≤ 900,000,000 bytes; this host-only sampler cannot prove a pass.
 //!   • FPS drop ≤ 3% (Dota 2 in-game FPS measured via PresentMon ETW on dota2.exe)
 //!
-//! NOTE (ADR-13 — DXGI capture migration): this gate asserts RAM + FPS-drop only;
-//! it does NOT assert raw capture CPU%.  Post-migration the capture CPU target
+//! NOTE (ADR-13 — DXGI capture migration): aggregate RAM acceptance requires a
+//! separate all-process sampler. This tool does NOT assert raw capture CPU%.
+//! Post-migration the capture CPU target
 //! dropped from ~8% (old WGC backend, which also stalled at ~0.7 Hz) to ≤1.5%
 //! (DXGI Desktop Duplication, GPU copy).  That CPU figure is observed separately
 //! via the app's own resource-stats (governor/resource panel), not gated here.
@@ -27,7 +28,7 @@
 //! # Usage
 //!
 //!   cd tests/perf
-//!   cargo run --release --bin perf_p7 -- --pid 1234   # RAM only for a running G-Maiden
+//!   cargo run --release --bin perf_p7 -- --pid 1234   # Host-only RAM lower bound (never aggregate PASS)
 //!   cargo run --release --bin perf_p7 -- --stub        # Show design estimates (SKIP, not PASS)
 //!   cargo run --release --bin perf_p7 -- --fps-baseline --confirm-overlay-off
 //!   cargo run --release --bin perf_p7 -- --fps-overlay --confirm-overlay-on
@@ -43,9 +44,9 @@
 //!
 //! # Exit codes
 //!
-//!   0  = GATE P7 PASS  (real measurements, all within budget)
+//!   0  = FPS phase success (not aggregate RAM acceptance)
 //!   1  = GATE P7 FAIL  (budget exceeded)
-//!   77 = SKIP          (prerequisites missing: no G-Maiden process, no PresentMon,
+//!   77 = SKIP          (host-only RAM coverage or prerequisites missing: no process, no PresentMon,
 //!                       no dota2.exe, or stub mode — not a failure, not a pass)
 
 /// POSIX skip convention — matches automake/cargo-nextest skip semantics.
@@ -55,9 +56,9 @@ const EXIT_SKIP: i32 = 77;
 // Gate constants  (SRS §5 / Engineering Spec §7 / TDD §7)
 // ─────────────────────────────────────────────────────────────────────────────
 
-/// Always-on background footprint ceiling.
-/// ADR-07: SLM lazy-load only — its ~1–1.3 GB is NOT included in this budget.
-const RAM_BUDGET_MB: u64 = 400;
+/// All app-used PIDs, including WebView2 and providers; no SLM exemption.
+const RAM_BUDGET_MB: u64 = 900;
+const RAM_BUDGET_BYTES: u64 = RAM_BUDGET_MB * 1_000_000;
 
 /// Max FPS reduction the overlay may cause vs. a game-with-no-overlay baseline.
 const FPS_DROP_MAX_PCT: f64 = 3.0;
@@ -95,6 +96,14 @@ enum MeasureState {
     Fail,
     /// Prerequisites missing or stub mode; not a measurement failure.
     Skip,
+}
+
+fn host_only_ram_state(peak_bytes: u64) -> MeasureState {
+    if peak_bytes > RAM_BUDGET_BYTES {
+        MeasureState::Fail
+    } else {
+        MeasureState::Skip
+    }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -234,18 +243,20 @@ mod ram {
             println!("[RAM] SKIP — no samples collected (process may have exited immediately)");
             MeasureState::Skip
         } else {
-            let passed = peak_bytes <= RAM_BUDGET_MB * 1_048_576;
+            let state = host_only_ram_state(peak_bytes);
             println!(
-                "[RAM] RESULT  peak {:.1} MB  /  {} MB  →  {}",
-                peak_mb, RAM_BUDGET_MB, gate_label(passed)
+                "[RAM] HOST-ONLY peak {:.1} MB / {} MB aggregate ceiling → {}",
+                peak_mb, RAM_BUDGET_MB,
+                if state == MeasureState::Fail { "FAIL (host alone exceeds ceiling)" }
+                else { "SKIP (child/provider Working Sets are not measured)" }
             );
-            if passed { MeasureState::Pass } else { MeasureState::Fail }
+            state
         };
 
         RamResult { peak_mb, samples, state }
     }
 
-    fn bytes_to_mb(b: u64) -> f64 { b as f64 / 1_048_576.0 }
+    fn bytes_to_mb(b: u64) -> f64 { b as f64 / 1_000_000.0 }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -1142,7 +1153,7 @@ fn main() {
         println!("STUB MODE — architectural design estimates only");
         println!();
         println!(
-            "  RAM estimate : {} MB  /  {} MB  (Tauri v2: Rust core + WebView2, SLM not loaded)",
+            "  Legacy RAM estimate : {} MB / {} MB aggregate ceiling (not acceptance evidence)",
             STUB_RAM_PEAK_MB, RAM_BUDGET_MB
         );
         println!(
@@ -1213,7 +1224,7 @@ fn main() {
     }
     println!();
 
-    println!("── 1 / 2  RAM Budget (≤{} MB) ──────────────────────────", RAM_BUDGET_MB);
+    println!("── 1 / 2  Host-only RAM diagnostic (aggregate ceiling {} MB) ──", RAM_BUDGET_MB);
     let ram = ram::run(pid);
     println!();
 
@@ -1228,9 +1239,10 @@ fn main() {
     // Summary
     println!("═══════════════════════════════════════════════════════════");
     let ram_label = match &ram.state {
-        MeasureState::Pass => format!("{:.1} MB / {} MB  {}", ram.peak_mb, RAM_BUDGET_MB, gate_label(true)),
+        MeasureState::Pass => unreachable!("host-only RAM cannot establish an aggregate pass"),
         MeasureState::Fail => format!("{:.1} MB / {} MB  {}", ram.peak_mb, RAM_BUDGET_MB, gate_label(false)),
-        MeasureState::Skip => "SKIP".to_string(),
+        MeasureState::Skip if ram.samples == 0 => "SKIP (no host samples)".to_string(),
+        MeasureState::Skip => format!("{:.1} MB host peak; SKIP (aggregate RAM unverified)", ram.peak_mb),
     };
     println!("  RAM  {ram_label}");
     println!("  FPS  SKIP (use --fps-baseline / --fps-overlay)");
@@ -1244,12 +1256,11 @@ fn main() {
             process::exit(1);
         }
         MeasureState::Pass => {
-            println!("  GATE P7: SKIP (RAM passed; FPS not yet measured)");
-            println!("  → Complete the FPS phase: --fps-baseline then --fps-overlay");
+            unreachable!("host-only RAM cannot establish an aggregate pass");
         }
         MeasureState::Skip => {
-            println!("  GATE P7: SKIP (no live process found)");
-            println!("  → Start G-Maiden then re-run (or pass --pid <pid>)");
+            println!("  GATE P7: SKIP (aggregate RAM is not measured by this diagnostic)");
+            println!("  → Measure full Working Sets across all app-used PIDs, including providers");
         }
     }
     println!("═══════════════════════════════════════════════════════════");
@@ -1270,8 +1281,15 @@ mod tests {
 
     #[test]
     fn ram_budget_matches_srs() {
-        // SRS §5: RAM ≤ 400 MB (background footprint, SLM excluded per ADR-07)
-        assert_eq!(RAM_BUDGET_MB, 400);
+        assert_eq!(RAM_BUDGET_MB, 900);
+    }
+
+    #[test]
+    fn host_only_ram_cannot_establish_aggregate_pass() {
+        for bytes in [0, 400_000_000, 800_000_000, 899_999_999, 900_000_000] {
+            assert_eq!(host_only_ram_state(bytes), MeasureState::Skip);
+        }
+        assert_eq!(host_only_ram_state(900_000_001), MeasureState::Fail);
     }
 
     #[test]
@@ -1371,14 +1389,13 @@ mod tests {
 
     #[test]
     fn ram_budget_in_bytes_is_correct() {
-        let budget_bytes = RAM_BUDGET_MB * 1_048_576;
-        assert_eq!(budget_bytes, 419_430_400); // 400 × 1024 × 1024
+        assert_eq!(RAM_BUDGET_BYTES, 900_000_000);
     }
 
     #[test]
     fn stub_ram_bytes_within_budget_bytes() {
-        let stub_bytes   = STUB_RAM_PEAK_MB * 1_048_576;
-        let budget_bytes = RAM_BUDGET_MB * 1_048_576;
+        let stub_bytes   = STUB_RAM_PEAK_MB * 1_000_000;
+        let budget_bytes = RAM_BUDGET_BYTES;
         assert!(stub_bytes <= budget_bytes);
     }
 

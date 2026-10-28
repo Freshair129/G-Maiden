@@ -36,6 +36,9 @@ struct State {
     level: i64,
     alive: bool,
     kills: i64,
+    deaths: i64,
+    clock: i64,
+    opening_closed: bool,
     mana: i64,
     hp: i64,
     score_total: i64,
@@ -94,18 +97,13 @@ pub fn most_important(events: &[String]) -> Option<String> {
 
 /// Reset between matches so streaks/first-blood don't leak across games.
 fn reset(s: &mut State) {
-    let keep_seen = s.seen;
     *s = State::default();
-    s.seen = keep_seen;
 }
 
 /// Observe a tick only if it still belongs to the current match session.
 /// Detector streaks and dedup baselines are reset once when a newer session
 /// epoch arrives; an out-of-order older tick can never reset newer state.
-pub fn observe_for_session(
-    tick: &GameTick,
-    session: &MatchSessionSnapshot,
-) -> Vec<String> {
+pub fn observe_for_session(tick: &GameTick, session: &MatchSessionSnapshot) -> Vec<String> {
     let Some(lifecycle) = session.session_lifecycle else {
         return Vec::new();
     };
@@ -154,17 +152,23 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
     let mut out = Vec::new();
 
     // match boundary
-    if tick.in_game && !s.in_game {
-        reset(s);
+    if tick.in_game && (!s.in_game || !s.seen) {
         s.in_game = true;
         // only announce match start near the opening horn, not on reconnect
-        if tick.clock_time <= 5 {
+        if !s.opening_closed && (0..=5).contains(&tick.clock_time) {
             out.push("match_start".to_string());
+            s.opening_closed = true;
         }
+        s.opening_closed |= tick.clock_time > 5;
+        s.streak = 0;
+        s.streak_tier = 0;
+        s.window_kills = 0;
         // seed baselines so the first real tick doesn't false-fire
         s.level = tick.level;
         s.alive = tick.alive;
         s.kills = tick.kills;
+        s.deaths = tick.deaths;
+        s.clock = tick.clock_time;
         s.mana = tick.mana_percent;
         s.hp = tick.hp_percent;
         s.score_total = tick.radiant_score + tick.dire_score;
@@ -175,17 +179,11 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
         s.in_game = false;
         return out;
     }
-    if !s.seen {
-        // first tick we ever see is mid-match (e.g. app started late) — baseline only
-        s.in_game = true;
-        s.level = tick.level;
-        s.alive = tick.alive;
-        s.kills = tick.kills;
-        s.mana = tick.mana_percent;
-        s.hp = tick.hp_percent;
-        s.score_total = tick.radiant_score + tick.dire_score;
-        s.seen = true;
-        return out;
+    if !s.opening_closed && tick.clock_time >= 0 {
+        if s.clock < 0 && tick.clock_time <= 5 {
+            out.push("match_start".to_string());
+        }
+        s.opening_closed = true;
     }
 
     // level up
@@ -194,11 +192,15 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
     }
 
     // death / respawn
-    if s.alive && !tick.alive {
-        out.push("death".to_string());
+    let death_observed = tick.deaths > s.deaths || (s.alive && !tick.alive);
+    let counters_reset = tick.kills < s.kills || tick.deaths < s.deaths;
+    if death_observed || counters_reset {
         s.streak = 0;
         s.streak_tier = 0;
         s.window_kills = 0;
+    }
+    if s.alive && !tick.alive {
+        out.push("death".to_string());
     } else if !s.alive && tick.alive {
         out.push("respawn".to_string());
     }
@@ -214,52 +216,60 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
     // kills
     let new_kills = (tick.kills - s.kills).max(0);
     if new_kills > 0 {
-        // first blood: our first kill while the match score was still 0-0
-        if !s.first_blood_done && s.score_total == 0 {
+        let score_total = tick.radiant_score + tick.dire_score;
+        if !s.first_blood_done && s.score_total == 0 && score_total == 1 && new_kills == 1 {
             out.push("first_blood".to_string());
             s.first_blood_done = true;
         }
 
-        // multikill window (chain kills that land close together)
-        if tick.clock_time - s.window_start_clock > MULTIKILL_WINDOW_S || s.window_kills == 0 {
-            s.window_start_clock = tick.clock_time;
-            s.window_kills = 0;
-        }
-        s.window_kills += new_kills;
+        // A batch containing kills and deaths does not establish their order.
+        if death_observed || counters_reset || !tick.alive {
+            out.push("kill".to_string());
+        } else {
+            // multikill window (chain kills that land close together)
+            if tick.clock_time < s.window_start_clock
+                || tick.clock_time - s.window_start_clock > MULTIKILL_WINDOW_S
+                || s.window_kills == 0
+            {
+                s.window_start_clock = tick.clock_time;
+                s.window_kills = 0;
+            }
+            s.window_kills += new_kills;
 
-        // streak (consecutive kills without dying)
-        s.streak += new_kills;
+            // streak (consecutive kills without dying)
+            s.streak += new_kills;
 
-        let multikill = match s.window_kills {
-            2 => Some("double_kill"),
-            3 => Some("triple_kill"),
-            4 => Some("ultra_kill"),
-            n if n >= 5 => Some("rampage"),
-            _ => None,
-        };
-        match multikill {
-            Some(ev) => out.push(ev.to_string()),
-            None => out.push("kill".to_string()),
-        }
-
-        // streak ladder — mirrors the overlay kill banner exactly
-        // (App.tsx STREAK_LABELS): one rung per consecutive kill, 3→10+.
-        // `streak_tier` holds the highest rung already announced (capped at 10
-        // so Beyond Godlike fires once, then every further kill is silent here).
-        let rung = s.streak.min(10);
-        if rung >= 3 && rung > s.streak_tier {
-            s.streak_tier = rung;
-            let ev = match rung {
-                3 => "killing_spree",
-                4 => "dominating",
-                5 => "mega_kill",
-                6 => "unstoppable",
-                7 => "wicked_sick",
-                8 => "monster_kill",
-                9 => "godlike",
-                _ => "beyond_godlike",
+            let multikill = match s.window_kills {
+                2 => Some("double_kill"),
+                3 => Some("triple_kill"),
+                4 => Some("ultra_kill"),
+                n if n >= 5 => Some("rampage"),
+                _ => None,
             };
-            out.push(ev.to_string());
+            match multikill {
+                Some(ev) => out.push(ev.to_string()),
+                None => out.push("kill".to_string()),
+            }
+
+            // streak ladder — mirrors the overlay kill banner exactly
+            // (App.tsx STREAK_LABELS): one rung per consecutive kill, 3→10+.
+            // `streak_tier` holds the highest rung already announced (capped at 10
+            // so Beyond Godlike fires once, then every further kill is silent here).
+            let rung = s.streak.min(10);
+            if rung >= 3 && rung > s.streak_tier {
+                s.streak_tier = rung;
+                let ev = match rung {
+                    3 => "killing_spree",
+                    4 => "dominating",
+                    5 => "mega_kill",
+                    6 => "unstoppable",
+                    7 => "wicked_sick",
+                    8 => "monster_kill",
+                    9 => "godlike",
+                    _ => "beyond_godlike",
+                };
+                out.push(ev.to_string());
+            }
         }
     }
 
@@ -267,9 +277,12 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
     s.level = tick.level;
     s.alive = tick.alive;
     s.kills = tick.kills;
+    s.deaths = tick.deaths;
+    s.clock = tick.clock_time;
     s.mana = tick.mana_percent;
     s.hp = tick.hp_percent;
     s.score_total = tick.radiant_score + tick.dire_score;
+    s.first_blood_done |= s.score_total > 0;
 
     out
 }
@@ -284,6 +297,7 @@ mod tests {
             clock_time: clock,
             alive,
             kills,
+            radiant_score: kills,
             hp_percent: 100,
             mana_percent: 100,
             ..Default::default()
@@ -293,8 +307,18 @@ mod tests {
     #[test]
     fn session_detector_keeps_same_epoch_baselines() {
         let mut current = SessionDetector::default();
-        observe_session_state(&mut current, &tick(true, 0, 0, true), 4, MatchLifecycle::Live);
-        observe_session_state(&mut current, &tick(true, 10, 1, true), 4, MatchLifecycle::Live);
+        observe_session_state(
+            &mut current,
+            &tick(true, 0, 0, true),
+            4,
+            MatchLifecycle::Live,
+        );
+        observe_session_state(
+            &mut current,
+            &tick(true, 10, 1, true),
+            4,
+            MatchLifecycle::Live,
+        );
 
         let events = observe_session_state(
             &mut current,
@@ -308,7 +332,12 @@ mod tests {
     #[test]
     fn next_session_epoch_resets_announcer_state_once() {
         let mut current = SessionDetector::default();
-        observe_session_state(&mut current, &tick(true, 0, 0, true), 4, MatchLifecycle::Live);
+        observe_session_state(
+            &mut current,
+            &tick(true, 0, 0, true),
+            4,
+            MatchLifecycle::Live,
+        );
         for kills in 1..=3 {
             observe_session_state(
                 &mut current,
@@ -340,8 +369,18 @@ mod tests {
     #[test]
     fn stale_epoch_cannot_mutate_or_reset_current_announcer_state() {
         let mut current = SessionDetector::default();
-        observe_session_state(&mut current, &tick(true, 0, 0, true), 5, MatchLifecycle::Live);
-        observe_session_state(&mut current, &tick(true, 10, 1, true), 5, MatchLifecycle::Live);
+        observe_session_state(
+            &mut current,
+            &tick(true, 0, 0, true),
+            5,
+            MatchLifecycle::Live,
+        );
+        observe_session_state(
+            &mut current,
+            &tick(true, 10, 1, true),
+            5,
+            MatchLifecycle::Live,
+        );
 
         let stale = observe_session_state(
             &mut current,
@@ -364,18 +403,19 @@ mod tests {
     #[test]
     fn disconnected_or_terminal_session_does_not_advance_detector_epoch() {
         let mut current = SessionDetector::default();
-        observe_session_state(&mut current, &tick(true, 0, 0, true), 5, MatchLifecycle::Live);
+        observe_session_state(
+            &mut current,
+            &tick(true, 0, 0, true),
+            5,
+            MatchLifecycle::Live,
+        );
         for lifecycle in [
             MatchLifecycle::Disconnected,
             MatchLifecycle::End,
             MatchLifecycle::Abandon,
         ] {
-            let events = observe_session_state(
-                &mut current,
-                &tick(false, 0, 0, false),
-                6,
-                lifecycle,
-            );
+            let events =
+                observe_session_state(&mut current, &tick(false, 0, 0, false), 6, lifecycle);
             assert!(events.is_empty());
             assert_eq!(current.epoch, Some(5));
         }
@@ -388,6 +428,70 @@ mod tests {
         let mut s = State::default();
         let e = step(&mut s, &tick(true, 0, 0, true));
         assert!(e.contains(&"match_start".to_string()));
+    }
+
+    #[test]
+    fn pregame_waits_for_horn_and_same_session_reconnect_does_not_replay_start() {
+        let mut s = State::default();
+        assert!(step(&mut s, &tick(true, -90, 0, true)).is_empty());
+        assert!(step(&mut s, &tick(true, -1, 0, true)).is_empty());
+        assert_eq!(step(&mut s, &tick(true, 0, 0, true)), vec!["match_start"]);
+        assert!(step(&mut s, &tick(true, 1, 0, true)).is_empty());
+        step(&mut s, &tick(false, 1, 0, true));
+        assert!(step(&mut s, &tick(true, 2, 0, true)).is_empty());
+    }
+
+    #[test]
+    fn midmatch_attach_does_not_claim_start_or_prior_events() {
+        let mut s = State::default();
+        assert!(step(&mut s, &tick(true, 300, 4, true)).is_empty());
+        step(&mut s, &tick(false, 300, 4, true));
+        assert!(step(&mut s, &tick(true, 301, 4, true)).is_empty());
+    }
+
+    #[test]
+    fn hidden_death_and_respawn_reset_streak_and_multikill() {
+        let mut s = State::default();
+        step(&mut s, &tick(true, 0, 0, true));
+        step(&mut s, &tick(true, 10, 1, true));
+        step(&mut s, &tick(true, 15, 2, true));
+        let mut after_gap = tick(true, 16, 2, true);
+        after_gap.deaths = 1;
+        assert!(step(&mut s, &after_gap).is_empty());
+        after_gap.kills = 3;
+        after_gap.radiant_score = 3;
+        after_gap.clock_time = 17;
+        assert_eq!(step(&mut s, &after_gap), vec!["kill"]);
+    }
+
+    #[test]
+    fn unordered_kills_and_deaths_do_not_establish_streak_or_multikill() {
+        let mut s = State::default();
+        step(&mut s, &tick(true, 0, 0, true));
+        step(&mut s, &tick(true, 10, 2, true));
+        let mut ambiguous = tick(true, 15, 3, true);
+        ambiguous.deaths = 1;
+        assert_eq!(step(&mut s, &ambiguous), vec!["kill"]);
+        ambiguous.kills = 4;
+        ambiguous.radiant_score = 4;
+        ambiguous.clock_time = 16;
+        assert_eq!(step(&mut s, &ambiguous), vec!["kill"]);
+    }
+
+    #[test]
+    fn first_blood_requires_exactly_one_local_kill_and_one_total_score() {
+        for (kills, radiant, dire) in [(1, 1, 1), (2, 2, 0), (1, 0, 0)] {
+            let mut s = State::default();
+            step(&mut s, &tick(true, 0, 0, true));
+            let mut batch = tick(true, 20, kills, true);
+            batch.radiant_score = radiant;
+            batch.dire_score = dire;
+            assert!(!step(&mut s, &batch).iter().any(|e| e == "first_blood"));
+        }
+        let mut s = State::default();
+        step(&mut s, &tick(true, 0, 0, true));
+        let events = step(&mut s, &tick(true, 20, 1, true));
+        assert!(events.iter().any(|e| e == "first_blood"));
     }
 
     #[test]
@@ -504,8 +608,12 @@ mod tests {
     /// (`schemas/gmaiden-events.json`, byte-identical to the sibling
     /// `G-Suite/schemas/gmaiden-events.json`).
     fn load_vendored_schema() -> EventSchema {
-        let path = format!("{}/../schemas/gmaiden-events.json", env!("CARGO_MANIFEST_DIR"));
-        let raw = std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("failed to read {path}: {e}"));
+        let path = format!(
+            "{}/../schemas/gmaiden-events.json",
+            env!("CARGO_MANIFEST_DIR")
+        );
+        let raw =
+            std::fs::read_to_string(&path).unwrap_or_else(|e| panic!("failed to read {path}: {e}"));
         serde_json::from_str(&raw).unwrap_or_else(|e| panic!("failed to parse {path}: {e}"))
     }
 
@@ -530,7 +638,7 @@ mod tests {
 
         let mut s = State::default();
         step(&mut s, &tick(true, 0, 0, true)); // start, baseline kills=0
-        // space kills > 18s apart so multikill chaining never masks the streak rung
+                                               // space kills > 18s apart so multikill chaining never masks the streak rung
         for (i, expected_id) in expected_streak_ids.iter().enumerate() {
             let k = i as i64 + 3;
             let e = step(&mut s, &tick(true, k * 30, k, true));

@@ -1,0 +1,514 @@
+{
+  "source": "https://www.dota2.com/datafeed/herolist?language=english",
+  "retrieved": "2026-10-27",
+  "heroes": [
+    {
+      "id": 1,
+      "label": "antimage"
+    },
+    {
+      "id": 2,
+      "label": "axe"
+    },
+    {
+      "id": 3,
+      "label": "bane"
+    },
+    {
+      "id": 4,
+      "label": "bloodseeker"
+    },
+    {
+      "id": 5,
+      "label": "crystal_maiden"
+    },
+    {
+      "id": 6,
+      "label": "drow_ranger"
+    },
+    {
+      "id": 7,
+      "label": "earthshaker"
+    },
+    {
+      "id": 8,
+      "label": "juggernaut"
+    },
+    {
+      "id": 9,
+      "label": "mirana"
+    },
+    {
+      "id": 11,
+      "label": "nevermore"
+    },
+    {
+      "id": 10,
+      "label": "morphling"
+    },
+    {
+      "id": 12,
+      "label": "phantom_lancer"
+    },
+    {
+      "id": 13,
+      "label": "puck"
+    },
+    {
+      "id": 14,
+      "label": "pudge"
+    },
+    {
+      "id": 15,
+      "label": "razor"
+    },
+    {
+      "id": 16,
+      "label": "sand_king"
+    },
+    {
+      "id": 17,
+      "label": "storm_spirit"
+    },
+    {
+      "id": 18,
+      "label": "sven"
+    },
+    {
+      "id": 19,
+      "label": "tiny"
+    },
+    {
+      "id": 20,
+      "label": "vengefulspirit"
+    },
+    {
+      "id": 21,
+      "label": "windrunner"
+    },
+    {
+      "id": 22,
+      "label": "zuus"
+    },
+    {
+      "id": 23,
+      "label": "kunkka"
+    },
+    {
+      "id": 25,
+      "label": "lina"
+    },
+    {
+      "id": 31,
+      "label": "lich"
+    },
+    {
+      "id": 26,
+      "label": "lion"
+    },
+    {
+      "id": 27,
+      "label": "shadow_shaman"
+    },
+    {
+      "id": 28,
+      "label": "slardar"
+    },
+    {
+      "id": 29,
+      "label": "tidehunter"
+    },
+    {
+      "id": 30,
+      "label": "witch_doctor"
+    },
+    {
+      "id": 32,
+      "label": "riki"
+    },
+    {
+      "id": 33,
+      "label": "enigma"
+    },
+    {
+      "id": 34,
+      "label": "tinker"
+    },
+    {
+      "id": 35,
+      "label": "sniper"
+    },
+    {
+      "id": 36,
+      "label": "necrolyte"
+    },
+    {
+      "id": 37,
+      "label": "warlock"
+    },
+    {
+      "id": 38,
+      "label": "beastmaster"
+    },
+    {
+      "id": 39,
+      "label": "queenofpain"
+    },
+    {
+      "id": 40,
+      "label": "venomancer"
+    },
+    {
+      "id": 41,
+      "label": "faceless_void"
+    },
+    {
+      "id": 42,
+      "label": "skeleton_king"
+    },
+    {
+      "id": 43,
+      "label": "death_prophet"
+    },
+    {
+      "id": 44,
+      "label": "phantom_assassin"
+    },
+    {
+      "id": 45,
+      "label": "pugna"
+    },
+    {
+      "id": 46,
+      "label": "templar_assassin"
+    },
+    {
+      "id": 47,
+      "label": "viper"
+    },
+    {
+      "id": 48,
+      "label": "luna"
+    },
+    {
+      "id": 49,
+      "label": "dragon_knight"
+    },
+    {
+      "id": 50,
+      "label": "dazzle"
+    },
+    {
+      "id": 51,
+      "label": "rattletrap"
+    },
+    {
+      "id": 52,
+      "label": "leshrac"
+    },
+    {
+      "id": 53,
+      "label": "furion"
+    },
+    {
+      "id": 54,
+      "label": "life_stealer"
+    },
+    {
+      "id": 55,
+      "label": "dark_seer"
+    },
+    {
+      "id": 56,
+      "label": "clinkz"
+    },
+    {
+      "id": 57,
+      "label": "omniknight"
+    },
+    {
+      "id": 58,
+      "label": "enchantress"
+    },
+    {
+      "id": 59,
+      "label": "huskar"
+    },
+    {
+      "id": 60,
+      "label": "night_stalker"
+    },
+    {
+      "id": 61,
+      "label": "broodmother"
+    },
+    {
+      "id": 62,
+      "label": "bounty_hunter"
+    },
+    {
+      "id": 63,
+      "label": "weaver"
+    },
+    {
+      "id": 64,
+      "label": "jakiro"
+    },
+    {
+      "id": 65,
+      "label": "batrider"
+    },
+    {
+      "id": 66,
+      "label": "chen"
+    },
+    {
+      "id": 67,
+      "label": "spectre"
+    },
+    {
+      "id": 69,
+      "label": "doom_bringer"
+    },
+    {
+      "id": 68,
+      "label": "ancient_apparition"
+    },
+    {
+      "id": 70,
+      "label": "ursa"
+    },
+    {
+      "id": 71,
+      "label": "spirit_breaker"
+    },
+    {
+      "id": 72,
+      "label": "gyrocopter"
+    },
+    {
+      "id": 73,
+      "label": "alchemist"
+    },
+    {
+      "id": 74,
+      "label": "invoker"
+    },
+    {
+      "id": 75,
+      "label": "silencer"
+    },
+    {
+      "id": 76,
+      "label": "obsidian_destroyer"
+    },
+    {
+      "id": 77,
+      "label": "lycan"
+    },
+    {
+      "id": 78,
+      "label": "brewmaster"
+    },
+    {
+      "id": 79,
+      "label": "shadow_demon"
+    },
+    {
+      "id": 80,
+      "label": "lone_druid"
+    },
+    {
+      "id": 81,
+      "label": "chaos_knight"
+    },
+    {
+      "id": 82,
+      "label": "meepo"
+    },
+    {
+      "id": 83,
+      "label": "treant"
+    },
+    {
+      "id": 84,
+      "label": "ogre_magi"
+    },
+    {
+      "id": 85,
+      "label": "undying"
+    },
+    {
+      "id": 86,
+      "label": "rubick"
+    },
+    {
+      "id": 87,
+      "label": "disruptor"
+    },
+    {
+      "id": 88,
+      "label": "nyx_assassin"
+    },
+    {
+      "id": 89,
+      "label": "naga_siren"
+    },
+    {
+      "id": 90,
+      "label": "keeper_of_the_light"
+    },
+    {
+      "id": 91,
+      "label": "wisp"
+    },
+    {
+      "id": 92,
+      "label": "visage"
+    },
+    {
+      "id": 93,
+      "label": "slark"
+    },
+    {
+      "id": 94,
+      "label": "medusa"
+    },
+    {
+      "id": 95,
+      "label": "troll_warlord"
+    },
+    {
+      "id": 96,
+      "label": "centaur"
+    },
+    {
+      "id": 97,
+      "label": "magnataur"
+    },
+    {
+      "id": 98,
+      "label": "shredder"
+    },
+    {
+      "id": 99,
+      "label": "bristleback"
+    },
+    {
+      "id": 100,
+      "label": "tusk"
+    },
+    {
+      "id": 101,
+      "label": "skywrath_mage"
+    },
+    {
+      "id": 102,
+      "label": "abaddon"
+    },
+    {
+      "id": 103,
+      "label": "elder_titan"
+    },
+    {
+      "id": 104,
+      "label": "legion_commander"
+    },
+    {
+      "id": 106,
+      "label": "ember_spirit"
+    },
+    {
+      "id": 107,
+      "label": "earth_spirit"
+    },
+    {
+      "id": 109,
+      "label": "terrorblade"
+    },
+    {
+      "id": 110,
+      "label": "phoenix"
+    },
+    {
+      "id": 111,
+      "label": "oracle"
+    },
+    {
+      "id": 105,
+      "label": "techies"
+    },
+    {
+      "id": 112,
+      "label": "winter_wyvern"
+    },
+    {
+      "id": 113,
+      "label": "arc_warden"
+    },
+    {
+      "id": 108,
+      "label": "abyssal_underlord"
+    },
+    {
+      "id": 114,
+      "label": "monkey_king"
+    },
+    {
+      "id": 120,
+      "label": "pangolier"
+    },
+    {
+      "id": 119,
+      "label": "dark_willow"
+    },
+    {
+      "id": 121,
+      "label": "grimstroke"
+    },
+    {
+      "id": 129,
+      "label": "mars"
+    },
+    {
+      "id": 126,
+      "label": "void_spirit"
+    },
+    {
+      "id": 128,
+      "label": "snapfire"
+    },
+    {
+      "id": 123,
+      "label": "hoodwink"
+    },
+    {
+      "id": 135,
+      "label": "dawnbreaker"
+    },
+    {
+      "id": 136,
+      "label": "marci"
+    },
+    {
+      "id": 137,
+      "label": "primal_beast"
+    },
+    {
+      "id": 138,
+      "label": "muerta"
+    },
+    {
+      "id": 131,
+      "label": "ringmaster"
+    },
+    {
+      "id": 145,
+      "label": "kez"
+    },
+    {
+      "id": 155,
+      "label": "largo"
+    }
+  ]
+}

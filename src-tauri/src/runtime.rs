@@ -110,6 +110,54 @@ static LAST_POST_MS: AtomicU64 = AtomicU64::new(0);
 pub const GSI_FRESHNESS_MAX_AGE_MS: u64 = 2_000;
 static PLAYER_TEAM: AtomicU8 = AtomicU8::new(0);
 
+#[derive(Default)]
+struct WarningContext {
+    epoch: u64,
+    clock: i64,
+    advanced_at: u64,
+    updated_at: u64,
+    playing: bool,
+    alive: bool,
+}
+
+static WARNING_CONTEXT: Mutex<WarningContext> = Mutex::new(WarningContext {
+    epoch: 0,
+    clock: 0,
+    advanced_at: 0,
+    updated_at: 0,
+    playing: false,
+    alive: false,
+});
+
+pub fn update_warning_context(epoch: u64, tick: &crate::gsi::GameTick) {
+    if let Ok(mut context) = WARNING_CONTEXT.lock() {
+        let now = epoch_ms();
+        if context.epoch != epoch || tick.clock_time != context.clock {
+            context.advanced_at = now;
+        }
+        context.epoch = epoch;
+        context.clock = tick.clock_time;
+        context.updated_at = now;
+        context.playing = tick.game_state == "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS";
+        context.alive = tick.alive;
+    }
+}
+
+fn warning_context_ready(context: &WarningContext, epoch: u64, now: u64) -> bool {
+    context.epoch == epoch
+        && context.playing
+        && context.alive
+        && context.clock >= 30
+        && now.saturating_sub(context.updated_at) <= GSI_FRESHNESS_MAX_AGE_MS
+        && now.saturating_sub(context.advanced_at) <= 2500
+}
+
+pub fn warning_context_is_ready(epoch: u64) -> bool {
+    WARNING_CONTEXT
+        .lock()
+        .is_ok_and(|context| warning_context_ready(&context, epoch, epoch_ms()))
+}
+
 /// Maiden's voice for Rust-side (G-Signal) speech, mirrored from the UI
 /// picker. One lock for both fields together, not two separate ones -- a
 /// caller reading name and rate through independent locks could observe a
@@ -118,28 +166,36 @@ static PLAYER_TEAM: AtomicU8 = AtomicU8::new(0);
 /// cache now keys correctness on this pair matching what it baked with).
 static VOICE: Mutex<(Option<String>, Option<i32>)> = Mutex::new((None, None));
 
-/// G-Master backend chosen in the UI. 0=Auto, 1=ClaudeOnly, 2=OllamaOnly.
-/// Auto uses Claude only after the separate cloud-context opt-in; otherwise it
-/// takes the local Ollama path.
-static MASTER_BACKEND: AtomicU8 = AtomicU8::new(0);
+/// Routing, consent and provider settings share one generation. Auto uses
+/// Claude only after separate opt-in; API credentials never grant consent.
+static MASTER_CONFIG: Mutex<MasterConfig> = Mutex::new(MasterConfig {
+    backend: MasterBackend::Auto,
+    cloud_context_opt_in: false,
+    generation: 0,
+    ollama_model: String::new(),
+    use_api_key: false,
+    api_key: String::new(),
+});
 
-/// Separate, local preference for sending the narrow own-stat context to a
-/// cloud advice provider. Provider selection, API-key entry, and Ask do not
-/// grant this consent. Old settings files omit the value and remain off.
-static MASTER_CLOUD_CONTEXT_OPT_IN: AtomicBool = AtomicBool::new(false);
-static MASTER_CLOUD_CONTEXT_GENERATION: AtomicU64 = AtomicU64::new(0);
+struct MasterConfig {
+    backend: MasterBackend,
+    cloud_context_opt_in: bool,
+    generation: u64,
+    ollama_model: String,
+    use_api_key: bool,
+    api_key: String,
+}
 
-/// Ollama model name the user picked for G-Master (empty → legacy default).
-static MASTER_OLLAMA_MODEL: Mutex<String> = Mutex::new(String::new());
-
-/// G-Master Claude auth mode. `false` = use the signed-in `claude` CLI Plan quota
-/// (the historical, no-API-key path); `true` = call the Anthropic Messages API
-/// directly with the user's own API key. Lets users who don't have the CLI signed
-/// in (or who want a dedicated key) still drive the cloud advisor.
-static MASTER_USE_APIKEY: AtomicBool = AtomicBool::new(false);
-
-/// The Anthropic API key when `MASTER_USE_APIKEY` is on (empty → not provided).
-static MASTER_API_KEY: Mutex<String> = Mutex::new(String::new());
+/// A route and its authorization generation must be captured together. Never
+/// serialize this object: its auth snapshot can contain the private API key.
+#[derive(Clone)]
+pub(crate) struct MasterRequestContext {
+    pub backend: MasterBackend,
+    pub cloud_context_opt_in: bool,
+    pub generation: u64,
+    pub ollama_model: String,
+    pub api_key: Option<String>,
+}
 
 /// Silent-arm efficacy study opt-in (RWANG TASK 2, C-2): "does G-Signal's gank
 /// warning actually reduce deaths?". Mirrors the UI toggle. Off by default —
@@ -165,8 +221,7 @@ pub fn last_post_ms() -> u64 {
 }
 
 pub fn gsi_is_fresh_at(last_post_ms: u64, now_ms: u64) -> bool {
-    last_post_ms != 0
-        && now_ms.saturating_sub(last_post_ms) <= GSI_FRESHNESS_MAX_AGE_MS
+    last_post_ms != 0 && now_ms.saturating_sub(last_post_ms) <= GSI_FRESHNESS_MAX_AGE_MS
 }
 
 pub fn gsi_is_fresh() -> bool {
@@ -177,7 +232,11 @@ pub fn gsi_is_fresh() -> bool {
 /// stale, treat the count as unknown and keep every CV-observed missing hero in
 /// the risk set rather than reusing a potentially outdated safe-side discount.
 pub fn fresh_dead_enemy_count(is_gsi_fresh: bool, known_dead: usize) -> usize {
-    if is_gsi_fresh { known_dead } else { 0 }
+    if is_gsi_fresh {
+        known_dead
+    } else {
+        0
+    }
 }
 
 pub fn set_in_game(v: bool) {
@@ -245,8 +304,10 @@ fn should_start_new_session(
             };
         }
         MatchLifecycle::Abandon => {
-            if matches!(lifecycle, MatchLifecycle::Live | MatchLifecycle::Disconnected)
-                && current.match_id.is_some()
+            if matches!(
+                lifecycle,
+                MatchLifecycle::Live | MatchLifecycle::Disconnected
+            ) && current.match_id.is_some()
                 && current.match_id.as_deref() == match_id
             {
                 return false;
@@ -338,12 +399,7 @@ fn observe_session_state(
         }
     }
     let start_new = state.current.as_ref().is_none_or(|current| {
-        should_start_new_session(
-            current,
-            lifecycle,
-            usable_match_id.as_deref(),
-            clock_time,
-        )
+        should_start_new_session(current, lifecycle, usable_match_id.as_deref(), clock_time)
     });
 
     let mut boundary = false;
@@ -390,8 +446,7 @@ pub fn observe_match_tick(
             session_lifecycle: None,
         };
     };
-    let (snapshot, boundary) =
-        observe_session_state(&mut state, lifecycle, match_id, clock_time);
+    let (snapshot, boundary) = observe_session_state(&mut state, lifecycle, match_id, clock_time);
     let effective_in_game = in_game
         && !snapshot
             .session_lifecycle
@@ -406,6 +461,10 @@ pub fn observe_match_tick(
         clear_known_enemies();
         clear_roster();
     }
+    crate::master::observe_advice_session(
+        snapshot.session_epoch,
+        snapshot.session_lifecycle == Some(MatchLifecycle::Live),
+    );
     snapshot
 }
 
@@ -421,9 +480,7 @@ pub fn observe_gsi_status(dota_running: bool, gsi_fresh: bool) -> MatchSessionSn
         };
     };
     if let Some(current) = state.current.as_mut() {
-        if !dota_running
-            && !lifecycle_is_terminal(current.lifecycle)
-        {
+        if !dota_running && !lifecycle_is_terminal(current.lifecycle) {
             current.lifecycle = MatchLifecycle::Abandon;
             current.resume_lifecycle = None;
             let was_in_game = IN_GAME.load(Ordering::Relaxed);
@@ -432,13 +489,21 @@ pub fn observe_gsi_status(dota_running: bool, gsi_fresh: bool) -> MatchSessionSn
                 MATCH_EPOCH.fetch_add(1, Ordering::Relaxed);
             }
         } else if !gsi_fresh
-            && matches!(current.lifecycle, MatchLifecycle::Live | MatchLifecycle::Draft)
+            && matches!(
+                current.lifecycle,
+                MatchLifecycle::Live | MatchLifecycle::Draft
+            )
         {
             current.resume_lifecycle = Some(current.lifecycle);
             current.lifecycle = MatchLifecycle::Disconnected;
         }
     }
-    snapshot_of(&state)
+    let snapshot = snapshot_of(&state);
+    crate::master::observe_advice_session(
+        snapshot.session_epoch,
+        snapshot.session_lifecycle == Some(MatchLifecycle::Live),
+    );
+    snapshot
 }
 
 /// A process exit before an explicit post-game observation is recorded as an
@@ -466,7 +531,9 @@ pub fn mark_dota_exited() -> MatchSessionSnapshot {
     if boundary && !was_in_game {
         MATCH_EPOCH.fetch_add(1, Ordering::Relaxed);
     }
-    snapshot_of(&state)
+    let snapshot = snapshot_of(&state);
+    crate::master::observe_advice_session(snapshot.session_epoch, false);
+    snapshot
 }
 
 pub fn match_session_snapshot() -> MatchSessionSnapshot {
@@ -488,7 +555,12 @@ pub fn is_current_session_epoch(epoch: u64) -> bool {
     MATCH_SESSION
         .lock()
         .ok()
-        .and_then(|state| state.current.as_ref().map(|current| current.session_epoch == epoch))
+        .and_then(|state| {
+            state
+                .current
+                .as_ref()
+                .map(|current| current.session_epoch == epoch)
+        })
         .unwrap_or(false)
 }
 
@@ -504,9 +576,7 @@ pub fn is_current_active_session_epoch(epoch: u64) -> bool {
                 current.session_epoch == epoch
                     && matches!(
                         current.lifecycle,
-                        MatchLifecycle::Draft
-                            | MatchLifecycle::Live
-                            | MatchLifecycle::Disconnected
+                        MatchLifecycle::Draft | MatchLifecycle::Live | MatchLifecycle::Disconnected
                     )
             })
         })
@@ -525,6 +595,146 @@ pub fn is_current_live_session(epoch: u64) -> bool {
             })
         })
         .unwrap_or(false)
+}
+
+// Buyback request identity is independent of the match epoch: a match can have
+// many death/respawn cycles and multiple requests for the same death.
+#[derive(Clone, Copy, Debug, PartialEq, Eq, serde::Serialize)]
+pub struct BuybackIdentity {
+    pub death_episode: i64,
+    pub request_id: u64,
+}
+
+#[derive(Clone, serde::Serialize)]
+pub struct BuybackEvent<T> {
+    #[serde(flatten)]
+    pub payload: T,
+    #[serde(flatten)]
+    pub identity: BuybackIdentity,
+}
+
+#[derive(Default)]
+struct BuybackState {
+    session_epoch: Option<u64>,
+    alive: bool,
+    deaths: i64,
+    next_request: u64,
+    current_request: Option<BuybackIdentity>,
+}
+
+impl BuybackState {
+    fn observe(&mut self, epoch: u64, alive: bool, deaths: i64) {
+        if self.session_epoch.is_some_and(|current| epoch < current) {
+            return;
+        }
+        if self.session_epoch != Some(epoch) || self.alive != alive || self.deaths != deaths {
+            self.current_request = None;
+        }
+        self.session_epoch = Some(epoch);
+        self.alive = alive;
+        self.deaths = deaths;
+    }
+
+    fn begin(&mut self, epoch: u64, deaths: i64) -> Result<BuybackIdentity, String> {
+        if self.session_epoch != Some(epoch) || self.alive || self.deaths != deaths || deaths < 0 {
+            return Err("Buyback request belongs to an obsolete death episode.".into());
+        }
+        self.next_request = self.next_request.wrapping_add(1);
+        let identity = BuybackIdentity {
+            death_episode: deaths,
+            request_id: self.next_request,
+        };
+        self.current_request = Some(identity);
+        Ok(identity)
+    }
+
+    fn accepts(&self, epoch: u64, identity: BuybackIdentity) -> bool {
+        self.session_epoch == Some(epoch)
+            && !self.alive
+            && self.deaths == identity.death_episode
+            && self.current_request == Some(identity)
+    }
+}
+
+static BUYBACK_STATE: Mutex<BuybackState> = Mutex::new(BuybackState {
+    session_epoch: None,
+    alive: true,
+    deaths: 0,
+    next_request: 0,
+    current_request: None,
+});
+
+/// Called only for accepted authoritative GSI ticks, before frontend emission.
+pub fn observe_buyback_tick(session_epoch: u64, alive: bool, deaths: i64) {
+    if let Ok(mut state) = BUYBACK_STATE.lock() {
+        state.observe(session_epoch, alive, deaths);
+    }
+}
+
+fn with_live_buyback_state<T>(
+    session_epoch: u64,
+    admit: impl FnOnce(&mut BuybackState) -> Result<T, String>,
+) -> Result<T, String> {
+    let session = MATCH_SESSION
+        .lock()
+        .map_err(|_| "Match session is unavailable".to_string())?;
+    if !session.current.as_ref().is_some_and(|current| {
+        current.session_epoch == session_epoch && current.lifecycle == MatchLifecycle::Live
+    }) {
+        return Err("Buyback request does not belong to the active live match.".into());
+    }
+    let mut state = BUYBACK_STATE
+        .lock()
+        .map_err(|_| "Buyback state is unavailable".to_string())?;
+    admit(&mut state)
+}
+
+pub fn begin_buyback_request(session_epoch: u64, deaths: i64) -> Result<BuybackIdentity, String> {
+    with_live_buyback_state(session_epoch, |state| state.begin(session_epoch, deaths))
+}
+
+/// Only bounded event publication belongs here; never hold these locks over inference.
+pub fn with_buyback_publication<T>(
+    session_epoch: u64,
+    identity: BuybackIdentity,
+    publish: impl FnOnce() -> Result<T, String>,
+) -> Result<T, String> {
+    with_live_buyback_state(session_epoch, |state| {
+        if !state.accepts(session_epoch, identity) {
+            return Err("Buyback response belongs to an obsolete death episode or request.".into());
+        }
+        publish()
+    })
+}
+
+#[cfg(test)]
+mod buyback_tests {
+    use super::*;
+
+    #[test]
+    fn same_session_respawn_next_death_and_newer_request_invalidate_old_work() {
+        let mut state = BuybackState::default();
+        state.observe(8, false, 1);
+        let first = state.begin(8, 1).unwrap();
+        assert!(state.accepts(8, first));
+        state.observe(8, true, 1);
+        assert!(!state.accepts(8, first));
+        assert!(state.begin(8, 1).is_err());
+        state.observe(8, false, 2);
+        assert!(state.begin(8, 1).is_err());
+        let second = state.begin(8, 2).unwrap();
+        assert!(!state.accepts(8, first));
+        assert!(state.accepts(8, second));
+        let newest = state.begin(8, 2).unwrap();
+        assert!(!state.accepts(8, second));
+        assert!(state.accepts(8, newest));
+        state.observe(9, false, 1);
+        assert!(!state.accepts(8, newest));
+        state.observe(8, false, 2);
+        assert!(state.begin(8, 2).is_err());
+        let next_match = state.begin(9, 1).unwrap();
+        assert!(state.accepts(9, next_match));
+    }
 }
 
 /// Check that a capture result still belongs to the current live session or to
@@ -601,32 +811,47 @@ struct StartupSettings {
 }
 
 fn parse_startup_settings(json: &str) -> Result<StartupSettings, String> {
-    let value: serde_json::Value = serde_json::from_str(json)
-        .map_err(|_| "saved settings are not valid JSON".to_string())?;
+    let value: serde_json::Value =
+        serde_json::from_str(json).map_err(|_| "saved settings are not valid JSON".to_string())?;
     let settings = value
         .as_object()
         .ok_or_else(|| "saved settings must be a JSON object".to_string())?;
 
     let bool_or = |key: &str, fallback: bool| {
-        settings.get(key).and_then(serde_json::Value::as_bool).unwrap_or(fallback)
+        settings
+            .get(key)
+            .and_then(serde_json::Value::as_bool)
+            .unwrap_or(fallback)
     };
-    let sensitivity = match settings.get("signalSensitivity").and_then(serde_json::Value::as_str) {
+    let sensitivity = match settings
+        .get("signalSensitivity")
+        .and_then(serde_json::Value::as_str)
+    {
         Some("low") => 0,
         Some("high") => 2,
         _ => 1,
     };
-    let persona = match settings.get("personaPreset").and_then(serde_json::Value::as_str) {
+    let persona = match settings
+        .get("personaPreset")
+        .and_then(serde_json::Value::as_str)
+    {
         Some("silent") => 1,
         Some("caster") => 2,
         Some("meme") => 3,
         _ => 0,
     };
-    let backend = match settings.get("masterBackend").and_then(serde_json::Value::as_str) {
+    let backend = match settings
+        .get("masterBackend")
+        .and_then(serde_json::Value::as_str)
+    {
         Some("claude") => 1,
         Some("ollama") => 2,
         _ => 0,
     };
-    let telemetry_source = match settings.get("telemetrySource").and_then(serde_json::Value::as_str) {
+    let telemetry_source = match settings
+        .get("telemetrySource")
+        .and_then(serde_json::Value::as_str)
+    {
         Some("feeder") => 1,
         Some("gtelemetry") => 2,
         Some("off") => 3,
@@ -647,7 +872,9 @@ fn parse_startup_settings(json: &str) -> Result<StartupSettings, String> {
         .get("masterOllamaModel")
         .and_then(serde_json::Value::as_str)
         .map(str::trim)
-        .filter(|model| !model.is_empty() && model.len() <= 128 && !model.chars().any(char::is_control))
+        .filter(|model| {
+            !model.is_empty() && model.len() <= 128 && !model.chars().any(char::is_control)
+        })
         .unwrap_or("qwen3.5:4b")
         .to_owned();
     let volume = settings
@@ -889,6 +1116,10 @@ pub fn voice() -> (Option<String>, Option<i32>) {
     VOICE.lock().map(|g| g.clone()).unwrap_or((None, None))
 }
 
+pub fn try_voice() -> Option<(Option<String>, Option<i32>)> {
+    VOICE.try_lock().ok().map(|voice| voice.clone())
+}
+
 /// G-Master backend mode picked in the UI.
 #[derive(Copy, Clone, Debug, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -897,94 +1128,172 @@ pub enum MasterBackend {
     Claude,
     Ollama,
 }
-pub fn set_master_backend(b: MasterBackend) {
-    let code: u8 = match b {
-        MasterBackend::Auto => 0,
-        MasterBackend::Claude => 1,
-        MasterBackend::Ollama => 2,
-    };
-    MASTER_BACKEND.store(code, Ordering::Relaxed);
+pub(crate) fn master_request_context() -> Result<MasterRequestContext, String> {
+    let config = MASTER_CONFIG
+        .lock()
+        .map_err(|_| "G-Master configuration is unavailable".to_string())?;
+    Ok(MasterRequestContext {
+        backend: config.backend,
+        cloud_context_opt_in: config.cloud_context_opt_in,
+        generation: config.generation,
+        ollama_model: config.ollama_model.clone(),
+        api_key: selected_api_key(&config),
+    })
 }
-pub fn master_backend() -> MasterBackend {
-    match MASTER_BACKEND.load(Ordering::Relaxed) {
-        1 => MasterBackend::Claude,
-        2 => MasterBackend::Ollama,
-        _ => MasterBackend::Auto,
+
+fn selected_api_key(config: &MasterConfig) -> Option<String> {
+    (config.use_api_key && !config.api_key.trim().is_empty()).then(|| config.api_key.clone())
+}
+
+/// Linearizes dispatch and publication against configuration changes. Closures
+/// may only perform bounded admission work (spawn/cache mutation), never wait
+/// for provider I/O. An admitted spawn is in flight; revocation cannot retract
+/// bytes already handed to that process, but always rejects its later output.
+/// Lock order: MASTER_CONFIG -> ADVICE_CACHE -> LAST_BACKEND.
+pub(crate) fn with_master_request_admission<T>(
+    request: &MasterRequestContext,
+    cloud: bool,
+    admit: impl FnOnce() -> Result<T, String>,
+) -> Result<T, String> {
+    with_master_generation_admission(request.generation, cloud, admit)
+}
+
+pub(crate) fn with_master_generation_admission<T>(
+    generation: u64,
+    cloud: bool,
+    admit: impl FnOnce() -> Result<T, String>,
+) -> Result<T, String> {
+    let config = MASTER_CONFIG
+        .lock()
+        .map_err(|_| "G-Master configuration is unavailable".to_string())?;
+    if config.generation != generation || (cloud && !config.cloud_context_opt_in) {
+        return Err("G-Master preference changed; advice request discarded.".into());
+    }
+    admit()
+}
+
+/// Linearize native speech append/spawn with preference and session changes.
+/// Lock order is MASTER_CONFIG -> MATCH_SESSION. The closure must only commit
+/// bounded admission work; synthesis, decoding and process waits stay outside.
+pub(crate) fn with_speech_admission<T>(
+    epoch: u64,
+    generation: Option<u64>,
+    admit: impl FnOnce() -> Result<T, String>,
+) -> Result<T, String> {
+    let config = MASTER_CONFIG
+        .lock()
+        .map_err(|_| "G-Master configuration is unavailable".to_string())?;
+    if generation.is_some_and(|generation| generation != config.generation) {
+        return Err("G-Master preference changed; speech discarded.".into());
+    }
+    let session = MATCH_SESSION
+        .lock()
+        .map_err(|_| "Match session is unavailable".to_string())?;
+    let allowed = session.current.as_ref().is_some_and(|current| {
+        current.session_epoch == epoch
+            && if generation.is_some() {
+                current.lifecycle == MatchLifecycle::Live
+            } else {
+                matches!(
+                    current.lifecycle,
+                    MatchLifecycle::Draft | MatchLifecycle::Live | MatchLifecycle::Disconnected
+                )
+            }
+    });
+    if !allowed {
+        return Err("Speech does not belong to the current eligible match session.".into());
+    }
+    admit()
+}
+
+fn update_master_config(update: impl FnOnce(&mut MasterConfig) -> bool) {
+    if let Ok(mut config) = MASTER_CONFIG.lock() {
+        if update(&mut config) {
+            config.generation = config.generation.wrapping_add(1);
+            crate::master::invalidate_advice_cache();
+        }
     }
 }
 
-/// Enable or disable the separate own-stat cloud-context consent. Any change
-/// invalidates in-flight advice and cached answers so an old consent decision
-/// cannot authorize a later request or response.
+pub fn set_master_backend(backend: MasterBackend) {
+    update_master_config(|config| {
+        let changed = config.backend != backend;
+        config.backend = backend;
+        changed
+    });
+}
+
+pub fn master_backend() -> MasterBackend {
+    MASTER_CONFIG
+        .lock()
+        .map(|c| c.backend)
+        .unwrap_or(MasterBackend::Auto)
+}
+
+/// Provider selection, API-key entry and Ask never grant this separate consent.
+/// Changes invalidate dispatch admission, in-flight output and cached answers.
 pub fn set_master_cloud_context_opt_in(enabled: bool) {
-    if MASTER_CLOUD_CONTEXT_OPT_IN.swap(enabled, Ordering::SeqCst) != enabled {
-        MASTER_CLOUD_CONTEXT_GENERATION.fetch_add(1, Ordering::SeqCst);
-        crate::master::invalidate_advice_cache();
-    }
+    update_master_config(|config| {
+        let changed = config.cloud_context_opt_in != enabled;
+        config.cloud_context_opt_in = enabled;
+        changed
+    });
 }
 
 pub fn master_cloud_context_opt_in() -> bool {
-    MASTER_CLOUD_CONTEXT_OPT_IN.load(Ordering::SeqCst)
+    MASTER_CONFIG.lock().is_ok_and(|c| c.cloud_context_opt_in)
 }
 
 pub fn master_cloud_context_generation() -> u64 {
-    MASTER_CLOUD_CONTEXT_GENERATION.load(Ordering::SeqCst)
+    MASTER_CONFIG
+        .lock()
+        .map(|c| c.generation)
+        .unwrap_or(u64::MAX)
 }
 
 pub fn set_master_ollama_model(name: String) {
-    if let Ok(mut g) = MASTER_OLLAMA_MODEL.lock() {
-        *g = name;
-    }
+    update_master_config(|config| {
+        let changed = config.ollama_model != name;
+        config.ollama_model = name;
+        changed
+    });
 }
+
 pub fn master_ollama_model() -> String {
-    MASTER_OLLAMA_MODEL
+    MASTER_CONFIG
         .lock()
-        .ok()
-        .map(|g| g.clone())
+        .map(|c| c.ollama_model.clone())
         .unwrap_or_default()
 }
 
-/// Set the G-Master Claude auth *mode* only. `false` keeps the `claude` CLI Plan
-/// path; `true` routes Claude advice through the Anthropic Messages API using the
-/// key held separately by [`set_master_api_key`]. The key is deliberately NOT a
-/// parameter here so the frontend's mode-sync effect can never overwrite the
-/// DPAPI-loaded key with an empty string (CR-008 WP-2, gate finding B2).
+/// Auth mode remains separate from the DPAPI-loaded key so mount-time mode
+/// synchronization cannot erase the user's stored credential (CR-008 WP-2).
 pub fn set_master_mode(use_api_key: bool) {
-    MASTER_USE_APIKEY.store(use_api_key, Ordering::Relaxed);
+    update_master_config(|config| {
+        let changed = config.use_api_key != use_api_key;
+        config.use_api_key = use_api_key;
+        changed
+    });
 }
 
-/// Set (or clear, with `None`/empty) the Anthropic API key. Owned separately from
-/// the mode: written once at startup from the DPAPI secret store and again only
-/// on an explicit user edit — never from the mount-time mode sync.
 pub fn set_master_api_key(key: Option<String>) {
-    if let Ok(mut g) = MASTER_API_KEY.lock() {
-        *g = key.filter(|s| !s.trim().is_empty()).unwrap_or_default();
-    }
+    let key = key.filter(|s| !s.trim().is_empty()).unwrap_or_default();
+    update_master_config(|config| {
+        let changed = config.api_key != key;
+        config.api_key = key;
+        changed
+    });
 }
 
-/// Whether an Anthropic API key is currently stored (regardless of auth mode).
-/// Drives the UI "key saved" state without ever handing the plaintext back to
-/// the webview.
+/// Presence only; plaintext never crosses the webview boundary.
 pub fn master_api_key_present() -> bool {
-    MASTER_API_KEY
+    MASTER_CONFIG
         .lock()
-        .ok()
-        .map(|g| !g.trim().is_empty())
-        .unwrap_or(false)
+        .is_ok_and(|c| !c.api_key.trim().is_empty())
 }
 
-/// The Anthropic API key to use for Claude advice, or `None` when the user is on
-/// the CLI Plan path (or hasn't entered a key). `Some` only when API-key mode is
-/// on *and* a non-empty key is present, so callers can branch with a single check.
 pub fn master_api_key() -> Option<String> {
-    if !MASTER_USE_APIKEY.load(Ordering::Relaxed) {
-        return None;
-    }
-    MASTER_API_KEY
-        .lock()
-        .ok()
-        .map(|g| g.clone())
-        .filter(|s| !s.trim().is_empty())
+    MASTER_CONFIG.lock().ok().and_then(|c| selected_api_key(&c))
 }
 
 /// Toggle the silent-arm efficacy study. When turned OFF, instantly force the
@@ -1143,19 +1452,34 @@ pub fn in_draft() -> bool {
 }
 
 // ── Match roster (Draft-CV) ──────────────────────────────────────────────────
-// The 10 hero identities read off the pick screen (raw labels.json form), split
-// by team. Unlike KNOWN_ENEMIES (which trickles in enemy-only from minimap
-// sightings), this is the FULL roster known before the horn. It (a) fills ally
-// identities the GSI never exposes, and (b) constrains the minimap classifier to
-// the real 10 heroes via `roster_labels()`, so a misclassification into a hero
-// not in the match is dropped (the definitive phantom-hero fix). Cleared at
-// match start alongside KNOWN_ENEMIES.
+// Portrait-confirmed identities, fixed player slots, and the session that owns
+// them. Minimap predictions cannot add identities to this roster.
 static ROSTER: Mutex<Option<Roster>> = Mutex::new(None);
 
 #[derive(Clone, Default, Debug, PartialEq, serde::Serialize)]
 pub struct Roster {
+    pub session_epoch: u64,
+    pub hero_ids: Vec<Option<crate::cv::identity::HeroId>>,
     pub radiant: Vec<String>,
     pub dire: Vec<String>,
+}
+
+impl Roster {
+    fn enemies_for_session(&self, epoch: u64, team: u8) -> Vec<String> {
+        if self.session_epoch != epoch || self.hero_ids.len() != 10 {
+            return Vec::new();
+        }
+        let names: Vec<_> = self.radiant.iter().chain(&self.dire).collect();
+        if names.len() != 10
+            || names
+                .iter()
+                .zip(&self.hero_ids)
+                .any(|(name, id)| crate::cv::identity::HeroId::from_label(name) != *id)
+        {
+            return Vec::new();
+        }
+        crate::cv::roster::enemy_labels(&self.radiant, &self.dire, team)
+    }
 }
 
 /// In-progress pick-screen read. Slots stay in their player order so an
@@ -1169,44 +1493,55 @@ pub struct DraftRosterProgress {
     pub templates_loading: bool,
 }
 
-pub fn set_roster(radiant: Vec<String>, dire: Vec<String>) {
-    if let Ok(mut g) = ROSTER.lock() {
-        *g = Some(Roster { radiant, dire });
-    }
+pub fn roster() -> Option<Roster> {
+    ROSTER.lock().ok().and_then(|g| g.clone())
 }
 
-pub fn set_roster_for_draft_session(
-    epoch: u64,
-    radiant: Vec<String>,
-    dire: Vec<String>,
-) -> bool {
+pub fn enemy_roster_labels() -> Vec<String> {
+    let session = match_session_snapshot();
+    roster()
+        .map(|roster| {
+            roster.enemies_for_session(session.session_epoch, PLAYER_TEAM.load(Ordering::Relaxed))
+        })
+        .unwrap_or_default()
+}
+
+/// Publish temporally confirmed portrait identities, including unknown slots.
+/// This cannot write across a session boundary or replace a finished match.
+pub fn set_roster_for_capture_session(epoch: u64, radiant: Vec<String>, dire: Vec<String>) -> bool {
     let Ok(session) = MATCH_SESSION.lock() else {
         return false;
     };
     if !session.current.as_ref().is_some_and(|current| {
-        current.session_epoch == epoch && current.lifecycle == MatchLifecycle::Draft
+        current.session_epoch == epoch
+            && matches!(
+                current.lifecycle,
+                MatchLifecycle::Draft | MatchLifecycle::Live
+            )
     }) {
+        return false;
+    }
+    if radiant.len() != 5 || dire.len() != 5 {
         return false;
     }
     let Ok(mut roster) = ROSTER.lock() else {
         return false;
     };
-    *roster = Some(Roster { radiant, dire });
+    let hero_ids = radiant
+        .iter()
+        .chain(&dire)
+        .map(|name| crate::cv::identity::HeroId::from_label(name))
+        .collect();
+    *roster = Some(Roster {
+        radiant,
+        dire,
+        session_epoch: epoch,
+        hero_ids,
+    });
+    if let Ok(mut enemies) = KNOWN_ENEMIES.lock() {
+        enemies.clear();
+    }
     true
-}
-
-pub fn roster() -> Option<Roster> {
-    ROSTER.lock().ok().and_then(|g| g.clone())
-}
-
-/// All roster hero labels (both teams), or `None` if no roster has been read yet
-/// (or it's empty). The minimap detector consults this to reject detections whose
-/// hero isn't one of the real 10 — the roster-grounded phantom-hero fix.
-pub fn roster_labels() -> Option<Vec<String>> {
-    let g = ROSTER.lock().ok()?;
-    let r = g.as_ref()?;
-    let all: Vec<String> = r.radiant.iter().chain(r.dire.iter()).cloned().collect();
-    (all.len() == 10 && all.iter().all(|label| !label.is_empty())).then_some(all)
 }
 
 pub fn clear_roster() {
@@ -1286,6 +1621,32 @@ mod tests {
     use super::*;
 
     #[test]
+    fn warning_gate_requires_live_alive_fresh_advancing_context() {
+        let mut c = WarningContext {
+            epoch: 7,
+            clock: 30,
+            advanced_at: 1000,
+            updated_at: 1000,
+            playing: true,
+            alive: true,
+        };
+        assert!(warning_context_ready(&c, 7, 1000));
+        assert!(!warning_context_ready(&c, 8, 1000));
+        c.clock = 29;
+        assert!(!warning_context_ready(&c, 7, 1000));
+        c.clock = 30;
+        c.playing = false;
+        assert!(!warning_context_ready(&c, 7, 1000));
+        c.playing = true;
+        c.alive = false;
+        assert!(!warning_context_ready(&c, 7, 1000));
+        c.alive = true;
+        assert!(!warning_context_ready(&c, 7, 3001));
+        c.updated_at = 4000;
+        assert!(!warning_context_ready(&c, 7, 4000));
+    }
+
+    #[test]
     fn local_capture_start_is_idempotent() {
         reset_local_capture_started();
         assert!(mark_local_capture_started());
@@ -1323,7 +1684,8 @@ mod tests {
             session_epoch: 7,
             session_lifecycle: Some(MatchLifecycle::Live),
         };
-        let event = MatchSessionEvent::new(serde_json::json!({ "hero": "crystal_maiden" }), &session);
+        let event =
+            MatchSessionEvent::new(serde_json::json!({ "hero": "crystal_maiden" }), &session);
         let value = serde_json::to_value(event).unwrap();
         assert_eq!(value["hero"], "crystal_maiden");
         assert_eq!(value["match_id"], "123");
@@ -1351,8 +1713,7 @@ mod tests {
         let mut state = MatchSessionState::default();
         let (first, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 900);
         observe(&mut state, MatchLifecycle::Disconnected, Some("123"), 900);
-        let (reconnected, boundary) =
-            observe(&mut state, MatchLifecycle::Live, Some("123"), 0);
+        let (reconnected, boundary) = observe(&mut state, MatchLifecycle::Live, Some("123"), 0);
         assert_eq!(reconnected.session_epoch, first.session_epoch);
         assert_eq!(reconnected.session_id, first.session_id);
         assert_eq!(reconnected.session_lifecycle, Some(MatchLifecycle::Live));
@@ -1469,7 +1830,10 @@ mod tests {
 
     #[test]
     fn take_oauth_pending_is_single_use() {
-        assert!(set_oauth_pending("test-state-0123456789".to_string(), 10_000));
+        assert!(set_oauth_pending(
+            "test-state-0123456789".to_string(),
+            10_000
+        ));
         assert!(
             take_oauth_pending(Some("test-state-0123456789"), 10_500),
             "first consume within window"
@@ -1484,7 +1848,10 @@ mod tests {
     fn oauth_gate_rejects_unusable_state_before_arming() {
         assert!(!set_oauth_pending("short".to_string(), 10_000));
         assert!(!take_oauth_pending(Some("short"), 10_500));
-        assert!(!set_oauth_pending("x".repeat(OAUTH_STATE_MAX_LEN + 1), 10_000));
+        assert!(!set_oauth_pending(
+            "x".repeat(OAUTH_STATE_MAX_LEN + 1),
+            10_000
+        ));
     }
 
     #[test]
@@ -1524,7 +1891,11 @@ mod tests {
         // Attaching mid-match to a 14-3 scoreboard must record a BASELINE, not
         // fourteen corpses — otherwise every mid-game launch would silence
         // G-Signal until the fake pool expired.
-        assert_eq!(note_enemy_score(14, 30_000, 1_000), 0, "first tick seeds only");
+        assert_eq!(
+            note_enemy_score(14, 30_000, 1_000),
+            0,
+            "first tick seeds only"
+        );
         assert_eq!(dead_enemy_count_at(1_000), 0);
         // Only the advance past the baseline counts.
         assert_eq!(note_enemy_score(16, 30_000, 2_000), 2);
@@ -1538,7 +1909,11 @@ mod tests {
         clear_enemy_deaths();
         note_enemy_score(0, 30_000, 0);
         assert_eq!(note_enemy_score(2, 30_000, 10_000), 2);
-        assert_eq!(dead_enemy_count_at(39_999), 2, "still dead just before respawn");
+        assert_eq!(
+            dead_enemy_count_at(39_999),
+            2,
+            "still dead just before respawn"
+        );
         assert_eq!(dead_enemy_count_at(40_001), 0, "swept once respawned");
         clear_enemy_deaths();
     }
@@ -1561,9 +1936,18 @@ mod tests {
     #[test]
     fn gsi_freshness_uses_the_accepted_two_second_source_age() {
         assert!(!gsi_is_fresh_at(0, 10_000), "no valid post is unknown");
-        assert!(gsi_is_fresh_at(10_000, 12_000), "the 2s boundary is inclusive");
-        assert!(!gsi_is_fresh_at(10_000, 12_001), "older source data is stale");
-        assert!(gsi_is_fresh_at(11_000, 10_000), "clock rollback must not age a source");
+        assert!(
+            gsi_is_fresh_at(10_000, 12_000),
+            "the 2s boundary is inclusive"
+        );
+        assert!(
+            !gsi_is_fresh_at(10_000, 12_001),
+            "older source data is stale"
+        );
+        assert!(
+            gsi_is_fresh_at(11_000, 10_000),
+            "clock rollback must not age a source"
+        );
     }
 
     #[test]
@@ -1601,11 +1985,19 @@ mod tests {
         add_known_enemy("lina"); // seen once → below threshold, excluded
         add_known_enemy(""); // ignored
         let e = known_enemies();
-        assert_eq!(e, vec!["antimage".to_string()], "only repeatedly-seen heroes qualify: {e:?}");
+        assert_eq!(
+            e,
+            vec!["antimage".to_string()],
+            "only repeatedly-seen heroes qualify: {e:?}"
+        );
         for _ in 0..MIN_ENEMY_SIGHTINGS {
             add_known_enemy("lina");
         }
-        assert_eq!(known_enemies().len(), 2, "lina crosses the bar after repeats");
+        assert_eq!(
+            known_enemies().len(),
+            2,
+            "lina crosses the bar after repeats"
+        );
         clear_known_enemies();
         assert!(known_enemies().is_empty(), "cleared on match start");
     }
@@ -1676,7 +2068,10 @@ mod tests {
         set_silent_arm(true);
         assert!(silent_arm());
         set_efficacy_enabled(false);
-        assert!(!silent_arm(), "turning the study off must instantly clear silent-arm");
+        assert!(
+            !silent_arm(),
+            "turning the study off must instantly clear silent-arm"
+        );
         assert!(!efficacy_enabled());
     }
 
@@ -1711,7 +2106,10 @@ mod tests {
         }
         // The bug: raw (unmixed) FILETIME inputs are degenerate — every one is
         // silenced. This asserts the defect exists so the fix is meaningful.
-        assert_eq!(raw_hits, n, "raw FILETIME nanos should be 100% silenced (the B1 bug)");
+        assert_eq!(
+            raw_hits, n,
+            "raw FILETIME nanos should be 100% silenced (the B1 bug)"
+        );
         // The fix: mixed entropy lands in a loose band around 25%.
         let low = n * 15 / 100;
         let high = n * 35 / 100;
@@ -1773,6 +2171,29 @@ mod tests {
 
         assert_eq!(settings.volume, 45);
         assert_eq!(settings.voice_rate, Some(-4));
+    }
+
+    #[test]
+    fn roster_ids_cannot_cross_sessions_or_disagree_with_labels() {
+        let radiant = vec![String::new(); 5];
+        let dire = ["axe", "lina", "", "", ""].map(str::to_string).to_vec();
+        let hero_ids = radiant
+            .iter()
+            .chain(&dire)
+            .map(|label| crate::cv::identity::HeroId::from_label(label))
+            .collect();
+        let mut roster = Roster {
+            radiant,
+            dire,
+            hero_ids,
+            session_epoch: 7,
+        };
+        assert_eq!(roster.enemies_for_session(7, 1), vec!["axe", "lina"]);
+        assert!(roster.enemies_for_session(8, 1).is_empty());
+        assert!(roster.enemies_for_session(7, 2).is_empty());
+        assert!(roster.enemies_for_session(7, 0).is_empty());
+        roster.hero_ids[5] = crate::cv::identity::HeroId::from_label("lina");
+        assert!(roster.enemies_for_session(7, 1).is_empty());
     }
 
     #[test]

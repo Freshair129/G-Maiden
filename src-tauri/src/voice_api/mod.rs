@@ -49,13 +49,12 @@ mod tests;
 // intentional instead of tripping `-D warnings`.
 #[allow(unused_imports)]
 pub use banner::{
-    activate_if_exists, fired_banner, install_report, preview_banner, preview_clip, FiredBanner,
-    InstallReport,
+    activate_if_exists, install_report, preview_audio_clip, preview_banner, preview_clip,
+    FiredBanner, InstallReport,
 };
 pub use commands::{
-    action, active_event_clips, active_pack_name, create_template, ensure_dev_authoring,
-    import_archive, install_store_pack, is_store_installed, map_event, state, update_pack,
-    upload_asset,
+    action, active_event_clips, create_template, ensure_dev_authoring, import_archive,
+    install_store_pack, is_store_installed, map_event, state, update_pack, upload_asset,
 };
 pub use events::event_ids;
 #[allow(unused_imports)]
@@ -79,6 +78,7 @@ pub(crate) use pack_io::open_verified_store_clip;
 /// — not just after the first pack switch. See `pack_io::rebuild_resolved_cache`.
 pub(crate) use pack_io::rebuild_resolved_cache;
 pub(crate) use pack_io::validate_store_clip_integrity;
+pub use pack_io::{select_announcer_clip, with_current_announcer_clip};
 
 /// Test-only cache teardown, paired with `set_test_voice_root(None)` in every
 /// pack-lifecycle test's `Drop` guard — same reason, same pattern: a pooled

@@ -4,11 +4,7 @@
 
 use super::Frame;
 
-const SLOT_WIDTH_FRAC: f32 = 0.03125;
 const SLOT_HEIGHT_FRAC: f32 = 0.0389;
-const RADIANT_FIRST_LEFT_FRAC: f32 = 0.2844;
-const DIRE_FIRST_LEFT_FRAC: f32 = 0.5547;
-const SLOT_STEP_FRAC: f32 = 0.0323;
 const COLOR_SAMPLE_LEFT_FRAC: f32 = 0.12;
 const COLOR_SAMPLE_RIGHT_FRAC: f32 = 0.88;
 const COLOR_SAMPLE_TOP_FRAC: f32 = 0.12;
@@ -54,24 +50,33 @@ pub struct HeroHudRegion {
 impl HeroHudRegion {
     /// The fixed top portrait bar in the 1920x1080 in-game reference screenshots.
     pub fn for_resolution(screen_w: u32, screen_h: u32) -> Self {
-        let width = ((screen_w as f32 * SLOT_WIDTH_FRAC).round() as u32).max(2);
         let height = ((screen_h as f32 * SLOT_HEIGHT_FRAC).round() as u32).max(2);
-        let step = (screen_w as f32 * SLOT_STEP_FRAC).round() as u32;
-        let slot = |first_left_frac: f32, index: u32| HeroHudBox {
-            x: (screen_w as f32 * first_left_frac).round() as u32 + step * index,
-            y: 0,
-            width,
-            height,
-        };
-
-        let mut boxes = Vec::with_capacity(10);
-        for index in 0..5u32 {
-            boxes.push(slot(RADIANT_FIRST_LEFT_FRAC, index));
-        }
-        for index in 0..5u32 {
-            boxes.push(slot(DIRE_FIRST_LEFT_FRAC, index));
-        }
+        let boxes = Self::identity_boxes(screen_w, screen_h)
+            .into_iter()
+            .map(|slot| HeroHudBox {
+                y: 0,
+                height,
+                ..slot
+            })
+            .collect();
         Self { boxes }
+    }
+
+    /// Inner scoreboard portraits measured in the 1920x1080 Steam references.
+    /// Keep borders / player-color stripes out of identity NCC, independently
+    /// of the larger rectangles used for death-state cues.
+    pub fn identity_boxes(screen_w: u32, screen_h: u32) -> Vec<HeroHudBox> {
+        let sx = screen_w as f32 / 1920.0;
+        let sy = screen_h as f32 / 1080.0;
+        (0..10)
+            .map(|slot| HeroHudBox {
+                x: (((if slot < 5 { 546 } else { 1064 }) + (slot % 5) * 62) as f32 * sx).round()
+                    as u32,
+                y: (4.0 * sy).round() as u32,
+                width: (62.0 * sx).round() as u32,
+                height: (35.0 * sy).round() as u32,
+            })
+            .collect()
     }
 
     pub fn bounding_rect(&self) -> (u32, u32, u32, u32) {
@@ -165,5 +170,30 @@ impl HeroHudRegion {
             }
         }
         HeroHudRead { radiant, dire }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn capture_strip_contains_every_identity_crop_at_supported_scales() {
+        for (w, h) in [
+            (1280, 720),
+            (1366, 768),
+            (1920, 1080),
+            (2560, 1440),
+            (3840, 2160),
+        ] {
+            let (x, y, width, height) = HeroHudRegion::for_resolution(w, h).bounding_rect();
+            for b in HeroHudRegion::identity_boxes(w, h) {
+                assert!(
+                    b.x >= x
+                        && b.y >= y
+                        && b.x + b.width <= x + width
+                        && b.y + b.height <= y + height
+                );
+            }
+        }
     }
 }

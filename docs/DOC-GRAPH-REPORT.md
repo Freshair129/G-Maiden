@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-10-26T19:26:33.235Z
+สร้างเมื่อ / Generated at: 2026-10-28T09:54:09.234Z
 
-สแกน 132 ไฟล์เอกสาร, 248 nodes, 1210 edges, 187 รายการปัญหา (155 ตัวบล็อก exit code) / scanned 132 doc files, 248 nodes, 1210 edges, 187 violations (155 blocking exit code).
+สแกน 143 ไฟล์เอกสาร, 259 nodes, 1218 edges, 209 รายการปัญหา (178 ตัวบล็อก exit code) / scanned 143 doc files, 259 nodes, 1218 edges, 209 violations (178 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -10,12 +10,13 @@
 
 | Reason | คำอธิบาย / Description | Count | Blocking? |
 | --- | --- | --- | --- |
-| anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 127 | yes |
+| anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 145 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 3 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
-| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 29 | no (informational) |
-| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 14 | yes |
+| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 28 | no (informational) |
+| unresolved | wikilink หาไม่เจอ / unresolved wikilink | 6 | yes |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 13 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -92,10 +93,6 @@
 - [L187] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/setup.rs", anchor=72, symbol="exclusive_fullscreen_active")
 - [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="accepted")
 
-### docs/architecture/implementation-plan.md
-
-- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
 ### docs/architecture/oauth-jwt-client-authorization-flows.md
 
 - [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.3.4b", changelog="0.3.2b")
@@ -107,6 +104,27 @@
 ### docs/audits/2026-07-07-independent-full-audit.md
 
 - [L122] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/companion.ts", anchor=941, symbol="useCompanionData")
+
+### docs/audits/2026-10-27-400mb-remediation-plan.md
+
+- [L14] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="PLAN-MVP-EVENT-CORRECTIONS-20261028")
+
+### docs/audits/2026-10-27-feature-logic-audit.md
+
+- [L13] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="RESULTS-AUDIT-COMPLETION-20261028")
+
+### docs/audits/2026-10-27-memory-budget-decision-proposal.md
+
+- [L13] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="PLAN-MVP-EVENT-CORRECTIONS-20261028")
+
+### docs/audits/2026-10-27-p1-remediation-results.md
+
+- [L13] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="PLAN-MVP-EVENT-CORRECTIONS-20261028")
+
+### docs/audits/2026-10-28-audit-completion-results.md
+
+- [L35] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="AUDIT-P1-REMEDIATION-RESULTS-20261027")
+- [L35] **unresolved** — wikilink หาไม่เจอ / unresolved wikilink (slug="RESULTS-MVP-EVENT-CORRECTIONS-20261028")
 
 ### docs/change request/CR-001-REVIEW-and-execution-plan.md
 
@@ -136,12 +154,16 @@
 
 - [L82] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/announcer.rs", anchor=84, symbol="most_important")
 - [L94] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=268, symbol="announcer_install")
+- [L99] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/banner.rs", anchor=182, symbol="activate_if_exists")
+- [L102] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/banner.rs", anchor=128, symbol="install_report")
 - [L126] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/commands.rs", anchor=23, symbol="state")
 - [L127] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/commands.rs", anchor=139, symbol="import_archive")
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/change request/CR-008-login-hardening.md
 
+- [L19] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/auth.ts", anchor=98, symbol="signInWithGoogle")
+- [L70] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/secret.rs", anchor=229, symbol="load_secret")
 - [L70] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/runtime.rs", anchor=365, symbol="set_master_mode")
 - [L70] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/runtime.rs", anchor=372, symbol="set_master_api_key")
 - [L70] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/runtime.rs", anchor=381, symbol="master_api_key_present")
@@ -153,6 +175,9 @@
 ### docs/change request/CR-009-gannstudio-authoring-install-contract.md
 
 - [L36] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=268, symbol="announcer_install")
+- [L36] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/banner.rs", anchor=182, symbol="activate_if_exists")
+- [L61] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/banner.rs", anchor=206, symbol="image_mime")
+- [L72] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/banner.rs", anchor=206, symbol="image_mime")
 - [L77] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/tests.rs", anchor=182, symbol="real_pack_mrijgajn_maps_voice_and_banners")
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
@@ -166,6 +191,7 @@
 
 ### docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md
 
+- [L38] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/StorePage.tsx", anchor=80, symbol="rowsThatFit")
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/change request/CR-014-document-impact-map-gmaiden-adapter.md
@@ -270,6 +296,7 @@
 ### docs/design-system/05-sitemap-ia.md
 
 - [L61] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/CommandDeck.tsx", anchor=42, symbol="DeckTabs")
+- [L61] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/StorePage.tsx", anchor=80, symbol="rowsThatFit")
 - [L62] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/CompanionPages.tsx", anchor=196, symbol="HistoryPage")
 - [L74] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/live/phase.ts", anchor=71, symbol="stepPhase")
 - [L100] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/styles.css", anchor=3078, symbol="gm-phase-chip")
@@ -309,6 +336,7 @@
 
 - [L33] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/motion.rs", anchor=192, symbol="heading_multiplier")
 - [L36] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/motion.rs", anchor=234, symbol="missing_risk")
+- [L44] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/sentry.rs", anchor=164, symbol="missing")
 - [L56] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/motion.rs", anchor=192, symbol="heading_multiplier")
 - [L74] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/motion.rs", anchor=234, symbol="missing_risk")
 - [L76] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/motion.rs", anchor=192, symbol="heading_multiplier")
@@ -321,8 +349,16 @@
 
 ### docs/features/FEAT-G-REVIVE.md
 
+- [L98] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/revive.rs", anchor=105, symbol="advise_buyback")
+- [L102] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/revive.rs", anchor=170, symbol="narrate_prompt")
 - [L102] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/slm.rs", anchor=22, symbol="advise_offline")
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
+
+### docs/features/FEAT-G-SENSORY.md
+
+- [L37] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/governor.rs", anchor=45, symbol="POLL_INTERVAL_S")
+- [L99] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/governor.rs", anchor=276, symbol="measure")
+- [L103] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/governor.rs", anchor=319, symbol="ingest_gpu")
 
 ### docs/features/FEAT-G-SENTRY.md
 
@@ -356,10 +392,6 @@
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
-### docs/product/software-requirements-specification.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.4.1", changelog="0.4.0")
-
 ### docs/rca/2026-07-10-voice-pack-path-traversal.md
 
 - [L6] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/audio.rs", anchor=145, symbol="play_file")
@@ -368,10 +400,12 @@
 - [L10] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/commands.rs", anchor=23, symbol="state")
 - [L12] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/commands.rs", anchor=139, symbol="import_archive")
 - [L19] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/audio.rs", anchor=145, symbol="play_file")
+- [L21] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/banner.rs", anchor=194, symbol="read_banner_data_url")
 - [L23] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/pack_io.rs", anchor=66, symbol="build_pack")
 - [L24] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/commands.rs", anchor=23, symbol="state")
 - [L25] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/commands.rs", anchor=23, symbol="state")
 - [L25] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/pack_io.rs", anchor=66, symbol="build_pack")
+- [L26] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/banner.rs", anchor=194, symbol="read_banner_data_url")
 - [L28] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=268, symbol="announcer_install")
 - [L37] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/commands.rs", anchor=194, symbol="extract_pack_zip")
 - [L41] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/pack_io.rs", anchor=347, symbol="sanitize_id")
@@ -379,6 +413,7 @@
 - [L55] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/pack_io.rs", anchor=66, symbol="build_pack")
 - [L55] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/commands.rs", anchor=23, symbol="state")
 - [L60] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/commands.rs", anchor=283, symbol="active_event_clips")
+- [L61] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/banner.rs", anchor=128, symbol="install_report")
 - [L61] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/pack_io.rs", anchor=66, symbol="build_pack")
 
 ### docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md

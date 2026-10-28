@@ -67,22 +67,24 @@ function pickAccentGradient(pack: VoicePack): string {
   return `linear-gradient(135deg, ${accent}44 0%, #0b1220 65%, #060913 100%)`;
 }
 
-// One event row in the detail panel — clip status + play button that goes
-// through the same `play_clip` Tauri command AudioSettings uses.
+// One event row in the detail panel — clip status + native audio-only preview.
 //
-// Status mirrors the REAL runtime resolution chain (audio.rs list_clips):
-// pack clip → bundled default clip → TTS. "missing" is never shown — an
-// unmapped event still voices via the default pack, and the play button
-// previews exactly the sound the player will hear in-game.
+// ANN stays silent when the selected pack has no clip. Maiden/Signal retain
+// their own fallback chain; previews report that source explicitly.
+function allowsVoiceFallback(event: VoiceEvent) {
+  return ['gank', 'danger', 'revision', 'advice'].includes(event.id)
+}
 function EventRow({ event, onPlay }: { event: VoiceEvent; onPlay: (event: VoiceEvent) => void }) {
   const hasPackClip = !!event.mapping?.hasClip;
-  const status = hasPackClip ? "clip" : event.defaultClipCount > 0 ? "default" : "tts";
+  const fallback = allowsVoiceFallback(event)
+  const status = hasPackClip ? "clip" : !fallback ? "silent" : event.defaultClipCount > 0 ? "default" : "tts";
   const statusText = hasPackClip
     ? `${event.mapping!.clipCount} คลิป`
+    : !fallback ? "ไม่มีคลิป ANN"
     : event.defaultClipCount > 0
     ? "เสียงกลาง"
     : "TTS";
-  const playable = hasPackClip ? event.mapping?.clipUrl : event.defaultClipUrl;
+  const playable = hasPackClip ? event.mapping?.clipUrl : fallback && event.defaultClipUrl;
   return (
     <div className="voice-event-row">
       <button
@@ -152,20 +154,15 @@ export default function VoiceInventory() {
     }
   }, []);
 
-  const playEventClip = useCallback((event: VoiceEvent) => {
-    // Preview what will REALLY play: the pack's clip, else the bundled
-    // default clip this event falls back to (audio.rs resolution chain).
-    const url = event.mapping?.clipUrl || event.defaultClipUrl;
-    if (!url) return;
-    // Windows paths go through the Tauri command; anything else is treated
-    // as a URL and played via <audio>. Matches AudioSettings.playUrl().
-    if (/^[a-z]:[\\/]/i.test(url) || url.startsWith("\\\\")) {
-      invoke("play_clip", { path: url }).catch(() => {});
-      return;
+  const playEventClip = useCallback(async (event: VoiceEvent) => {
+    if (!selectedPack || !(event.mapping?.clipUrl || (allowsVoiceFallback(event) && event.defaultClipUrl))) return;
+    try {
+      await invoke("preview_voice_event_audio", { packId: selectedPack.id, event: event.id });
+      setErr(null);
+    } catch (e) {
+      setErr(errMessage(e));
     }
-    const audio = new Audio(url);
-    audio.play().catch(() => {});
-  }, []);
+  }, [selectedPack]);
 
   const previewOnOverlay = useCallback(async (event: VoiceEvent) => {
     if (!selectedPack) return;

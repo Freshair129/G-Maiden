@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-26T19:26:33.235Z",
+  "generatedAt": "2026-10-28T09:54:09.234Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -152,7 +152,9 @@
     {
       "id": "docs/architecture/implementation-plan.md",
       "type": "doc",
-      "path": "docs/architecture/implementation-plan.md"
+      "path": "docs/architecture/implementation-plan.md",
+      "title": "G-Maiden — Ultraplan (Master Implementation Plan)",
+      "status": "draft"
     },
     {
       "id": "docs/architecture/oauth-jwt-client-authorization-flows.md",
@@ -215,6 +217,76 @@
       "id": "docs/audits/2026-07-07-independent-full-audit.md",
       "type": "doc",
       "path": "docs/audits/2026-07-07-independent-full-audit.md"
+    },
+    {
+      "id": "docs/audits/2026-10-27-400mb-remediation-plan.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-27-400mb-remediation-plan.md",
+      "title": "G-Maiden — Keep 400 MB Native Remediation",
+      "status": "superseded"
+    },
+    {
+      "id": "docs/audits/2026-10-27-feature-logic-audit.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-27-feature-logic-audit.md",
+      "title": "G-Maiden — Feature Logic Audit 2026-10-27",
+      "status": "draft"
+    },
+    {
+      "id": "docs/audits/2026-10-27-memory-budget-decision-proposal.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-27-memory-budget-decision-proposal.md",
+      "title": "G-Maiden — Native RAM Budget Decision Proposal",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/audits/2026-10-27-p1-remediation-plan.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-27-p1-remediation-plan.md",
+      "title": "G-Maiden — Seven P1 Remediation Plan",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/audits/2026-10-27-p1-remediation-results.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-27-p1-remediation-results.md",
+      "title": "G-Maiden — Seven P1 Remediation Results",
+      "status": "draft"
+    },
+    {
+      "id": "docs/audits/2026-10-28-audit-completion-plan.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-28-audit-completion-plan.md",
+      "title": "G-Maiden — Remaining audit completion plan",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/audits/2026-10-28-audit-completion-results.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-28-audit-completion-results.md",
+      "title": "G-Maiden — Audit completion results",
+      "status": "active"
+    },
+    {
+      "id": "docs/audits/2026-10-28-mvp-event-corrections-plan.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-28-mvp-event-corrections-plan.md",
+      "title": "G-Maiden — MVP event corrections and 900 MB budget",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/audits/2026-10-28-mvp-event-corrections-results.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-28-mvp-event-corrections-results.md",
+      "title": "G-Maiden — MVP event corrections results",
+      "status": "active"
+    },
+    {
+      "id": "docs/audits/2026-10-28-related-webviews-memory-spike.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-28-related-webviews-memory-spike.md",
+      "title": "G-Maiden — Related WebViews Memory Spike",
+      "status": "draft"
     },
     {
       "id": "docs/audits/SEC-001-auth-identity-hardening.md",
@@ -476,6 +548,13 @@
       "path": "docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md",
       "title": "CR-035: Selected Target HUD CV and Action-Specific Lethality",
       "status": "draft"
+    },
+    {
+      "id": "docs/change request/CR-036-missing-alert-evidence.md",
+      "type": "doc",
+      "path": "docs/change request/CR-036-missing-alert-evidence.md",
+      "title": "CR-036 — ยืนยันรายชื่อและหลักฐานก่อนเตือนฮีโร่หาย",
+      "status": "accepted"
     },
     {
       "id": "docs/change request/DXGI-task-assignment.md",
@@ -761,7 +840,9 @@
     {
       "id": "docs/product/business-requirements.md",
       "type": "doc",
-      "path": "docs/product/business-requirements.md"
+      "path": "docs/product/business-requirements.md",
+      "title": "Business Requirements Document (BRD) — G-Maiden",
+      "status": "draft"
     },
     {
       "id": "docs/product/business-validation-plan.md",
@@ -2638,19 +2719,19 @@
       "from": "docs/architecture/implementation-plan.md",
       "to": "src-tauri/tauri.conf.json",
       "type": "symbol",
-      "line": 139
+      "line": 147
     },
     {
       "from": "docs/architecture/implementation-plan.md",
       "to": "package.json",
       "type": "symbol",
-      "line": 139
+      "line": 147
     },
     {
       "from": "docs/architecture/implementation-plan.md",
       "to": ".github/workflows/ci.yml",
       "type": "symbol",
-      "line": 142
+      "line": 150
     },
     {
       "from": "docs/architecture/oauth-jwt-client-authorization-flows.md",
@@ -2723,6 +2804,12 @@
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
       "line": 38
+    },
+    {
+      "from": "docs/architecture/tech-stack.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 99
     },
     {
       "from": "docs/architecture/tech-stack.md",
@@ -3221,6 +3308,48 @@
       "to": "src/src/auth.ts",
       "type": "symbol",
       "line": 144
+    },
+    {
+      "from": "docs/audits/2026-10-27-400mb-remediation-plan.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 14
+    },
+    {
+      "from": "docs/audits/2026-10-27-400mb-remediation-plan.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 16
+    },
+    {
+      "from": "docs/audits/2026-10-27-memory-budget-decision-proposal.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 13
+    },
+    {
+      "from": "docs/audits/2026-10-27-memory-budget-decision-proposal.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 15
+    },
+    {
+      "from": "docs/audits/2026-10-27-p1-remediation-results.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 13
+    },
+    {
+      "from": "docs/audits/2026-10-27-p1-remediation-results.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 15
+    },
+    {
+      "from": "docs/audits/2026-10-28-mvp-event-corrections-results.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 13
     },
     {
       "from": "docs/audits/SEC-001-auth-identity-hardening.md",
@@ -7954,145 +8083,145 @@
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 3
+      "line": 11
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 3
+      "line": 11
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 5
+      "line": 13
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 5
+      "line": 13
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
-      "line": 5
+      "line": 13
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/roadmap.md",
       "type": "wikilink",
-      "line": 5
+      "line": 13
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
-      "line": 25
+      "line": 33
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
-      "line": 78
+      "line": 86
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 89
+      "line": 97
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 89
+      "line": 97
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
       "type": "wikilink",
-      "line": 95
+      "line": 103
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 96
+      "line": 104
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "type": "wikilink",
-      "line": 102
+      "line": 110
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
-      "line": 120
+      "line": 128
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
-      "line": 157
+      "line": 165
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
       "type": "wikilink",
-      "line": 159
+      "line": 167
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 160
+      "line": 168
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "type": "wikilink",
-      "line": 161
+      "line": 169
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 185
+      "line": 193
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
-      "type": "wikilink",
-      "line": 204
-    },
-    {
-      "from": "docs/product/business-requirements.md",
-      "to": "docs/product/product-requirements.md",
-      "type": "wikilink",
-      "line": 211
-    },
-    {
-      "from": "docs/product/business-requirements.md",
-      "to": "docs/product/software-requirements-specification.md",
-      "type": "wikilink",
-      "line": 211
-    },
-    {
-      "from": "docs/product/business-requirements.md",
-      "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
       "line": 212
     },
     {
       "from": "docs/product/business-requirements.md",
+      "to": "docs/product/product-requirements.md",
+      "type": "wikilink",
+      "line": 219
+    },
+    {
+      "from": "docs/product/business-requirements.md",
+      "to": "docs/product/software-requirements-specification.md",
+      "type": "wikilink",
+      "line": 219
+    },
+    {
+      "from": "docs/product/business-requirements.md",
+      "to": "docs/product/competitive-brief.md",
+      "type": "wikilink",
+      "line": 220
+    },
+    {
+      "from": "docs/product/business-requirements.md",
       "to": "docs/product/roadmap.md",
       "type": "wikilink",
-      "line": 213
+      "line": 221
     },
     {
       "from": "docs/product/competitive-brief.md",
@@ -8899,11 +9028,6 @@
       "status": "accepted"
     },
     {
-      "file": "docs/architecture/implementation-plan.md",
-      "line": null,
-      "reason": "no-metadata"
-    },
-    {
       "file": "docs/architecture/oauth-jwt-client-authorization-flows.md",
       "line": null,
       "reason": "version-changelog-mismatch",
@@ -8922,6 +9046,42 @@
       "target": "src/src/companion.ts",
       "anchor": 941,
       "symbol": "useCompanionData"
+    },
+    {
+      "file": "docs/audits/2026-10-27-400mb-remediation-plan.md",
+      "line": 14,
+      "reason": "unresolved",
+      "slug": "PLAN-MVP-EVENT-CORRECTIONS-20261028"
+    },
+    {
+      "file": "docs/audits/2026-10-27-feature-logic-audit.md",
+      "line": 13,
+      "reason": "unresolved",
+      "slug": "RESULTS-AUDIT-COMPLETION-20261028"
+    },
+    {
+      "file": "docs/audits/2026-10-27-memory-budget-decision-proposal.md",
+      "line": 13,
+      "reason": "unresolved",
+      "slug": "PLAN-MVP-EVENT-CORRECTIONS-20261028"
+    },
+    {
+      "file": "docs/audits/2026-10-27-p1-remediation-results.md",
+      "line": 13,
+      "reason": "unresolved",
+      "slug": "PLAN-MVP-EVENT-CORRECTIONS-20261028"
+    },
+    {
+      "file": "docs/audits/2026-10-28-audit-completion-results.md",
+      "line": 35,
+      "reason": "unresolved",
+      "slug": "AUDIT-P1-REMEDIATION-RESULTS-20261027"
+    },
+    {
+      "file": "docs/audits/2026-10-28-audit-completion-results.md",
+      "line": 35,
+      "reason": "unresolved",
+      "slug": "RESULTS-MVP-EVENT-CORRECTIONS-20261028"
     },
     {
       "file": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
@@ -8981,6 +9141,22 @@
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 99,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 182,
+      "symbol": "activate_if_exists"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 102,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 128,
+      "symbol": "install_report"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
       "line": 126,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/commands.rs",
@@ -8999,6 +9175,22 @@
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 19,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/auth.ts",
+      "anchor": 98,
+      "symbol": "signInWithGoogle"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 70,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/secret.rs",
+      "anchor": 229,
+      "symbol": "load_secret"
     },
     {
       "file": "docs/change request/CR-008-login-hardening.md",
@@ -9063,6 +9255,30 @@
     },
     {
       "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 36,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 182,
+      "symbol": "activate_if_exists"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 61,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 206,
+      "symbol": "image_mime"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 72,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 206,
+      "symbol": "image_mime"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "line": 77,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/tests.rs",
@@ -9083,6 +9299,14 @@
       "file": "docs/change request/CR-011-cold-booth-ux-direction.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
+      "line": 38,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/StorePage.tsx",
+      "anchor": 80,
+      "symbol": "rowsThatFit"
     },
     {
       "file": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
@@ -9619,6 +9843,14 @@
     },
     {
       "file": "docs/design-system/05-sitemap-ia.md",
+      "line": 61,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/StorePage.tsx",
+      "anchor": 80,
+      "symbol": "rowsThatFit"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
       "line": 62,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/CompanionPages.tsx",
@@ -9808,6 +10040,14 @@
     },
     {
       "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 44,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/sentry.rs",
+      "anchor": 164,
+      "symbol": "missing"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
       "line": 56,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/motion.rs",
@@ -9853,6 +10093,22 @@
     },
     {
       "file": "docs/features/FEAT-G-REVIVE.md",
+      "line": 98,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/revive.rs",
+      "anchor": 105,
+      "symbol": "advise_buyback"
+    },
+    {
+      "file": "docs/features/FEAT-G-REVIVE.md",
+      "line": 102,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/revive.rs",
+      "anchor": 170,
+      "symbol": "narrate_prompt"
+    },
+    {
+      "file": "docs/features/FEAT-G-REVIVE.md",
       "line": 102,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/slm.rs",
@@ -9863,6 +10119,30 @@
       "file": "docs/features/FEAT-G-REVIVE.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/features/FEAT-G-SENSORY.md",
+      "line": 37,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/governor.rs",
+      "anchor": 45,
+      "symbol": "POLL_INTERVAL_S"
+    },
+    {
+      "file": "docs/features/FEAT-G-SENSORY.md",
+      "line": 99,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/governor.rs",
+      "anchor": 276,
+      "symbol": "measure"
+    },
+    {
+      "file": "docs/features/FEAT-G-SENSORY.md",
+      "line": 103,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/governor.rs",
+      "anchor": 319,
+      "symbol": "ingest_gpu"
     },
     {
       "file": "docs/features/FEAT-G-SENTRY.md",
@@ -9908,13 +10188,6 @@
       "file": "docs/product/one-pager.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/product/software-requirements-specification.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.4.1",
-      "changelog": "0.4.0"
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -9966,6 +10239,14 @@
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 21,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 194,
+      "symbol": "read_banner_data_url"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 23,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/pack_io.rs",
@@ -9995,6 +10276,14 @@
       "target": "src-tauri/src/voice_api/pack_io.rs",
       "anchor": 66,
       "symbol": "build_pack"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 26,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 194,
+      "symbol": "read_banner_data_url"
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -10051,6 +10340,14 @@
       "target": "src-tauri/src/voice_api/commands.rs",
       "anchor": 283,
       "symbol": "active_event_clips"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 61,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 128,
+      "symbol": "install_report"
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -10134,7 +10431,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-26T19:26:38.819Z",
+    "generatedAt": "2026-10-28T09:54:13.951Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,
