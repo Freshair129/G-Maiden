@@ -23,9 +23,11 @@ use rodio::{Decoder, OutputStream, Sink};
 #[path = "playback_admission.rs"]
 mod playback_admission;
 pub use playback_admission::PlaybackResult;
-use playback_admission::{attempt_commit, OutputAdmission, PlaybackReceipt};
+use playback_admission::{attempt_commit_if, OutputAdmission, PlaybackReceipt};
 static OUTPUT_ADMISSION: OutputAdmission = OutputAdmission::new();
 static PLAYING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+#[path = "audio_preparation.rs"]
+mod preparation;
 
 pub(crate) fn output_admission() -> Option<std::sync::MutexGuard<'static, ()>> {
     OUTPUT_ADMISSION.try_enter()
@@ -146,6 +148,12 @@ fn cached_critical_path(cached: Option<PathBuf>, prepared: Option<PathBuf>) -> O
 enum Cmd {
     Play(PathBuf, Priority),
     Observed(PathBuf, Priority, PlaybackObservation),
+    Prepared(
+        PathBuf,
+        Priority,
+        preparation::PreparedClip,
+        PlaybackObservation,
+    ),
     Critical(PathBuf, Instant, mpsc::SyncSender<bool>),
     Stop,
     StopAtMost(Priority),
@@ -163,6 +171,24 @@ fn sender() -> &'static Mutex<mpsc::Sender<Cmd>> {
     })
 }
 
+struct PlaybackTrace {
+    path: PathBuf,
+    started: Instant,
+    duration: Option<Duration>,
+    priority: Priority,
+}
+fn finish_trace(trace: &mut Option<PlaybackTrace>, reason: &str) {
+    if let Some(trace) = trace.take() {
+        eprintln!(
+            "[G-Maiden audio] phase={reason} clip={} played_ms={} expected_ms={} priority={:?}",
+            trace.path.file_name().unwrap_or_default().to_string_lossy(),
+            trace.started.elapsed().as_millis(),
+            trace.duration.unwrap_or_default().as_millis(),
+            trace.priority
+        );
+    }
+}
+
 fn audio_thread(rx: mpsc::Receiver<Cmd>) {
     let Ok((_stream, handle)) = OutputStream::try_default() else {
         eprintln!("[G-Maiden audio] no audio output device - clips disabled");
@@ -173,9 +199,11 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
     AUDIO_READY.store(true, Ordering::Release);
     let mut sink: Option<Sink> = None;
     let mut current_priority = Priority::Cosmetic;
+    let mut trace = None;
 
     loop {
         if sink.as_ref().is_some_and(|s| s.empty()) {
+            finish_trace(&mut trace, "completed");
             sink = None;
             current_priority = Priority::Cosmetic;
             ACTIVE_PRIORITY.store(Priority::Cosmetic.as_u8(), Ordering::Relaxed);
@@ -188,25 +216,33 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
             Err(mpsc::RecvTimeoutError::Disconnected) => break,
         };
 
-        let (cmd, critical, observation) = match cmd {
+        let (cmd, critical, observation, prepared) = match cmd {
             Cmd::Critical(path, deadline, accepted) => (
                 Cmd::Play(path, Priority::Critical),
                 Some((deadline, accepted)),
                 None,
+                None,
             ),
             Cmd::Observed(path, priority, observation) => {
-                (Cmd::Play(path, priority), None, Some(observation))
+                (Cmd::Play(path, priority), None, Some(observation), None)
             }
-            other => (other, None, None),
+            Cmd::Prepared(path, priority, pcm, observation) => (
+                Cmd::Play(path, priority),
+                None,
+                Some(observation),
+                Some(pcm),
+            ),
+            other => (other, None, None, None),
         };
         match cmd {
-            Cmd::Critical(..) | Cmd::Observed(..) => {
+            Cmd::Critical(..) | Cmd::Observed(..) | Cmd::Prepared(..) => {
                 unreachable!("playback command is normalized above")
             }
             Cmd::StopAtMost(ceiling) => {
                 if should_cancel_current(current_priority, ceiling) {
                     if let Some(s) = sink.take() {
                         s.stop();
+                        finish_trace(&mut trace, "cancelled");
                     }
                     current_priority = Priority::Cosmetic;
                     ACTIVE_PRIORITY.store(Priority::Cosmetic.as_u8(), Ordering::Relaxed);
@@ -216,6 +252,7 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
             Cmd::Stop => {
                 if let Some(s) = sink.take() {
                     s.stop();
+                    finish_trace(&mut trace, "cancelled");
                 }
                 current_priority = Priority::Cosmetic;
                 ACTIVE_PRIORITY.store(Priority::Cosmetic.as_u8(), Ordering::Relaxed);
@@ -236,28 +273,27 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                 if sink.is_some() && !should_accept_incoming(current_priority, priority) {
                     continue;
                 }
-                let file = match crate::voice_api::open_verified_store_clip(&path) {
-                    Ok(Some(file)) => file,
-                    Ok(None) => match fs::File::open(&path) {
-                        Ok(f) => f,
-                        Err(e) => {
-                            eprintln!("[G-Maiden audio] open {}: {e}", path.display());
-                            continue;
+                let fence = prepared.as_ref().map(|pcm| pcm.fence.clone());
+                if fence.as_ref().is_some_and(|fence| !fence.is_current()) {
+                    continue;
+                }
+                let source: Box<dyn rodio::Source<Item = i16> + Send> = match prepared {
+                    Some(pcm) => Box::new(pcm),
+                    None => {
+                        let file = match preparation::open_verified_file(&path) {
+                            Ok(file) => file,
+                            Err(error) => {
+                                eprintln!("[G-Maiden audio] open clip: {error}");
+                                continue;
+                            }
+                        };
+                        match Decoder::new(BufReader::new(file)) {
+                            Ok(source) => Box::new(source),
+                            Err(error) => {
+                                eprintln!("[G-Maiden audio] decode clip: {error}");
+                                continue;
+                            }
                         }
-                    },
-                    Err(error) => {
-                        eprintln!(
-                            "[G-Maiden audio] Store clip integrity check failed for {}: {error}",
-                            path.display()
-                        );
-                        continue;
-                    }
-                };
-                let source = match Decoder::new(BufReader::new(file)) {
-                    Ok(s) => s,
-                    Err(e) => {
-                        eprintln!("[G-Maiden audio] decode {}: {e}", path.display());
-                        continue;
                     }
                 };
                 if !source_has_frames(&source) {
@@ -282,7 +318,9 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                         {
                             continue;
                         }
-                        let committed = attempt_commit(
+                        let mut previous_trace = None;
+                        let committed = attempt_commit_if(
+                            || fence.as_ref().is_none_or(|fence| fence.is_current()),
                             |commit| {
                                 if let Some(observation) = observation.as_ref() {
                                     (observation.admit)(commit);
@@ -292,9 +330,19 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                             },
                             || {
                                 admit_nonempty_source(source, |source| {
+                                    if priority == Priority::Critical {
+                                        preparation::cancel_up_to(Priority::Normal);
+                                    }
                                     if let Some(previous) = sink.take() {
+                                        previous_trace = trace.take();
                                         previous.stop();
                                     }
+                                    trace = Some(PlaybackTrace {
+                                        path: path.clone(),
+                                        started: Instant::now(),
+                                        duration: source.total_duration(),
+                                        priority,
+                                    });
                                     s.append(source);
                                     sink = Some(s);
                                     current_priority = priority;
@@ -303,16 +351,24 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                                 });
                             },
                         );
+                        drop(_output_guard);
                         if committed {
-                            if let Some(observation) = observation {
-                                observation.receipt.admit();
-                            }
                             if let Some((_, accepted)) = critical {
                                 let _ = accepted.try_send(true);
                             }
+                            if let Some(observation) = observation {
+                                observation.receipt.admit();
+                            }
+                            finish_trace(&mut previous_trace, "preempted");
+                            eprintln!("[G-Maiden audio] phase=started clip={} duration_ms={} priority={priority:?}",
+                                path.file_name().unwrap_or_default().to_string_lossy(),
+                                trace.as_ref().and_then(|trace| trace.duration).unwrap_or_default().as_millis());
                         }
                     }
-                    Err(e) => eprintln!("[G-Maiden audio] sink: {e}"),
+                    Err(e) => {
+                        drop(_output_guard);
+                        eprintln!("[G-Maiden audio] sink: {e}");
+                    }
                 }
             }
         }
@@ -320,6 +376,11 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
 }
 
 fn send(cmd: Cmd) {
+    match &cmd {
+        Cmd::Stop => preparation::cancel_up_to(Priority::Normal),
+        Cmd::StopAtMost(ceiling) => preparation::cancel_up_to(*ceiling),
+        _ => {}
+    }
     if let Ok(tx) = sender().lock() {
         let _ = tx.send(cmd);
     }
@@ -341,14 +402,15 @@ pub fn play_observed(
     admit: impl Fn(&mut dyn FnMut()) + Send + 'static,
     notify: impl FnOnce(PlaybackResult) + Send + 'static,
 ) {
-    send(Cmd::Observed(
-        path,
-        priority,
-        PlaybackObservation {
-            admit: Box::new(admit),
-            receipt: PlaybackReceipt::new(notify),
-        },
-    ));
+    let observation = PlaybackObservation {
+        admit: Box::new(admit),
+        receipt: PlaybackReceipt::new(notify),
+    };
+    if priority == Priority::Critical {
+        send(Cmd::Observed(path, priority, observation));
+    } else {
+        preparation::enqueue(path, priority, observation);
+    }
 }
 
 /// Where Maiden's user-installed clips live. Exe-relative first, then dev-tree.
@@ -781,6 +843,38 @@ mod empty_clip_tests {
     use super::*;
     use std::io::{Cursor, Write};
     use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[test]
+    fn prepared_playback_never_reads_the_file_from_the_output_callback() {
+        use std::sync::{atomic::AtomicBool, Arc};
+        struct GuardedReader {
+            inner: Cursor<Vec<u8>>,
+            callback_started: Arc<AtomicBool>,
+        }
+        impl std::io::Read for GuardedReader {
+            fn read(&mut self, buf: &mut [u8]) -> std::io::Result<usize> {
+                assert!(
+                    !self.callback_started.load(Ordering::Acquire),
+                    "audio callback attempted blocking file I/O"
+                );
+                std::io::Read::read(&mut self.inner, buf)
+            }
+        }
+        impl std::io::Seek for GuardedReader {
+            fn seek(&mut self, from: std::io::SeekFrom) -> std::io::Result<u64> {
+                std::io::Seek::seek(&mut self.inner, from)
+            }
+        }
+        let samples: Vec<i16> = (0..16_384).map(|i| (i % 8_000) as i16).collect();
+        let callback_started = Arc::new(AtomicBool::new(false));
+        let prepared = preparation::prepare_source(BufReader::new(GuardedReader {
+            inner: Cursor::new(wav(&samples)),
+            callback_started: callback_started.clone(),
+        }))
+        .unwrap();
+        callback_started.store(true, Ordering::Release);
+        assert_eq!(prepared.collect::<Vec<_>>(), samples);
+    }
 
     #[test]
     fn waveform_opener_does_not_admit_unresolved_external_fixture() {

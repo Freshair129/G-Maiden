@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T18:21:20.632Z",
+  "generatedAt": "2026-10-28T20:11:16.161Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -1006,6 +1006,13 @@
       "id": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md",
       "type": "doc",
       "path": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-10-29-announcer-playback-buffering.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-10-29-announcer-playback-buffering.md",
+      "title": "แผนแก้เสียง announcer สะดุดระหว่างเล่นเกม",
+      "status": "active"
     },
     {
       "id": "src-tauri/src/capture.rs",
@@ -10457,7 +10464,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-28T18:21:27.453Z",
+    "generatedAt": "2026-10-28T20:11:22.263Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

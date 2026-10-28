@@ -60,6 +60,26 @@ pub fn attempt_commit(admit: impl FnOnce(&mut dyn FnMut()), action: impl FnOnce(
     committed
 }
 
+pub fn attempt_commit_if(
+    is_current: impl Fn() -> bool,
+    admit: impl FnOnce(&mut dyn FnMut()),
+    action: impl FnOnce(),
+) -> bool {
+    if !is_current() {
+        return false;
+    }
+    attempt_commit(
+        |commit| {
+            admit(&mut || {
+                if is_current() {
+                    commit();
+                }
+            })
+        },
+        action,
+    )
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -67,6 +87,28 @@ mod tests {
         atomic::{AtomicUsize, Ordering},
         Arc,
     };
+
+    #[test]
+    fn stale_prepared_audio_never_touches_admission_or_output() {
+        assert!(!attempt_commit_if(
+            || false,
+            |_| panic!("stale audio must not stop or reserve another output"),
+            || panic!("stale audio must not append"),
+        ));
+    }
+
+    #[test]
+    fn preparation_cancelled_while_admission_waits_never_appends_or_reports_success() {
+        let current = std::sync::atomic::AtomicBool::new(true);
+        assert!(!attempt_commit_if(
+            || current.load(Ordering::Acquire),
+            |commit| {
+                current.store(false, Ordering::Release);
+                commit();
+            },
+            || panic!("cancelled prepared audio must not append"),
+        ));
+    }
     #[test]
     fn queued_or_dropped_audio_is_not_admitted() {
         let result = Arc::new(Mutex::new(Vec::new()));
