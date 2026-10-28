@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T20:11:16.161Z",
+  "generatedAt": "2026-10-28T20:51:36.574Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -1013,6 +1013,13 @@
       "path": "docs/superpowers/plans/2026-10-29-announcer-playback-buffering.md",
       "title": "แผนแก้เสียง announcer สะดุดระหว่างเล่นเกม",
       "status": "active"
+    },
+    {
+      "id": "docs/superpowers/specs/2026-10-29-minimap-live-preview-60fps-design.md",
+      "type": "doc",
+      "path": "docs/superpowers/specs/2026-10-29-minimap-live-preview-60fps-design.md",
+      "title": "แบบพรีวิวมินิแมปสด 60 FPS",
+      "status": "draft"
     },
     {
       "id": "src-tauri/src/capture.rs",
@@ -10464,7 +10471,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-28T20:11:22.263Z",
+    "generatedAt": "2026-10-28T20:51:40.424Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,
