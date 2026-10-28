@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T09:54:09.234Z",
+  "generatedAt": "2026-10-28T18:21:20.632Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -279,6 +279,20 @@
       "type": "doc",
       "path": "docs/audits/2026-10-28-mvp-event-corrections-results.md",
       "title": "G-Maiden — MVP event corrections results",
+      "status": "active"
+    },
+    {
+      "id": "docs/audits/2026-10-28-mvp011-readiness-semantics-plan.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-28-mvp011-readiness-semantics-plan.md",
+      "title": "G-Maiden — MVP-011 readiness semantics correction",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/audits/2026-10-28-mvp048-runtime-baseline.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-28-mvp048-runtime-baseline.md",
+      "title": "G-Maiden — Post-audit native resource baseline",
       "status": "active"
     },
     {
@@ -3350,6 +3364,18 @@
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
       "line": 13
+    },
+    {
+      "from": "docs/audits/2026-10-28-mvp011-readiness-semantics-plan.md",
+      "to": "docs/audits/2026-10-28-mvp048-runtime-baseline.md",
+      "type": "wikilink",
+      "line": 31
+    },
+    {
+      "from": "docs/audits/2026-10-28-mvp048-runtime-baseline.md",
+      "to": "docs/audits/2026-10-28-mvp011-readiness-semantics-plan.md",
+      "type": "wikilink",
+      "line": 48
     },
     {
       "from": "docs/audits/SEC-001-auth-identity-hardening.md",
@@ -10431,7 +10457,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-28T09:54:13.951Z",
+    "generatedAt": "2026-10-28T18:21:27.453Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

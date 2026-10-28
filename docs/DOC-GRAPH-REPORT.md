@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-10-28T09:54:09.234Z
+สร้างเมื่อ / Generated at: 2026-10-28T18:21:20.632Z
 
-สแกน 143 ไฟล์เอกสาร, 259 nodes, 1218 edges, 209 รายการปัญหา (178 ตัวบล็อก exit code) / scanned 143 doc files, 259 nodes, 1218 edges, 209 violations (178 blocking exit code).
+สแกน 145 ไฟล์เอกสาร, 261 nodes, 1220 edges, 209 รายการปัญหา (178 ตัวบล็อก exit code) / scanned 145 doc files, 261 nodes, 1220 edges, 209 violations (178 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
