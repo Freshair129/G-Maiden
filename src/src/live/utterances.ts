@@ -14,6 +14,7 @@ export type Utterance = {
   timeLabel: string;
   source: "signal" | "master" | "announcer";
   kind: "line" | "revision";
+  phase: "generated" | "requested" | "admitted";
   text: string;
   retracted: string | null;
   meta: string | null;
@@ -86,6 +87,7 @@ export function buildUtterances(
     timeLabel: timeLabel(ev.atMs),
     source: ev.source,
     kind: ev.kind,
+    phase: ev.phase,
     // Announcer events arrive as canonical enum ids ("double_kill") — the ledger
     // shows the human label the kill banner uses (Opus gate, CR011-P2).
     text: ev.source === "announcer" ? announcerLabel(ev.text) : ev.text,

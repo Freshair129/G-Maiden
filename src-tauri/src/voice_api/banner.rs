@@ -12,7 +12,7 @@ use crate::audio;
 
 use super::base64::base64_encode;
 use super::events::{event_ids, EVENTS};
-use super::pack_io::{read_active_pack_id, read_manifest, sanitize_id, write_active_pack_id};
+use super::pack_io::{read_manifest, sanitize_id, write_active_pack_id};
 use super::path_safety::{resolve_existing_clips, safe_pack_path};
 use super::paths::packs_dir;
 use super::types::DEFAULT_PACK_ID;
@@ -44,8 +44,9 @@ const MAX_BANNER_BYTES: u64 = 3 * 1024 * 1024;
 
 /// Resolve the banner for a just-fired announcer `event` against the active pack.
 /// Used on the live GSI path (gsi.rs).
+#[cfg(test)]
 pub fn fired_banner(event: &str) -> FiredBanner {
-    fired_banner_from(read_active_pack_id(), event)
+    fired_banner_from(super::pack_io::read_active_pack_id(), event)
 }
 
 /// Resolve the banner against a SPECIFIC pack — used by the overlay preview so a
@@ -104,7 +105,29 @@ pub fn preview_clip(pack_id: &str, event: &str) -> Option<PathBuf> {
     let dir = packs_dir().join(sanitize_id(pack_id));
     let manifest = read_manifest(&dir).ok()?;
     let mapping = manifest.mappings.get(event)?;
-    mapping.clips.iter().find_map(|rel| safe_pack_path(&dir, rel))
+    mapping
+        .clips
+        .iter()
+        .find_map(|rel| safe_pack_path(&dir, rel))
+}
+
+pub fn preview_audio_clip(pack_id: &str, event: &str) -> Result<PathBuf, String> {
+    if !super::commands::is_store_installed(pack_id) {
+        return Err("ดูตัวอย่างได้เฉพาะแพ็กที่ติดตั้งจาก Store".into());
+    }
+    if !event_ids().any(|id| id == event) {
+        return Err("ไม่พบเหตุการณ์เสียงนี้".into());
+    }
+    if pack_id != DEFAULT_PACK_ID {
+        install_report(pack_id)?;
+    }
+    preview_clip(pack_id, event)
+        .or_else(|| {
+            matches!(event, "gank" | "danger" | "revision" | "advice")
+                .then(|| audio::default_event_clips(event).into_iter().next())
+                .flatten()
+        })
+        .ok_or_else(|| "เหตุการณ์นี้ไม่มีไฟล์เสียงที่ใช้ได้".to_string())
 }
 
 /// Real per-event report for a pack, used by `POST /announcer/install`

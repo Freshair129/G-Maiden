@@ -1,6 +1,6 @@
-import React, { useEffect, useRef, useState } from 'react'
+import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { getCurrentWindow } from '@tauri-apps/api/window'
-import { emit, emitTo, listen } from '@tauri-apps/api/event'
+import { emitTo, listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import { type Layout } from '../overlay/modules'
 import { OverlayLayoutEditor } from '../overlay/OverlayLayoutEditor'
@@ -8,17 +8,18 @@ import { OVERLAY_PREVIEW_TICK } from '../overlay/preview'
 import { normalizeLayout } from '../overlay/layoutGeometry'
 import QuotaCard from '../QuotaCard'
 import type {
-  GameTick, Settings, SettingsCat, GsiStatus, ResourceStats, OverlayProfile, VoiceInfo, Sensitivity,
+  GameTick, Settings, SettingsCat, GsiStatus, ResourceStats, OverlayProfile, VoiceInfo,
 } from './types'
 import { loadProfiles, C, APP_VERSION, CHANGELOG } from './theme'
 import { panel, Row, Toggle, Card, Stat, fmtClock, heroName } from './primitives'
 import { SetupCard } from './cards/SetupCard'
-import { AudioSettingsCard } from './cards/AudioSettingsCard'
+import { VoiceSettings } from './VoiceSettings'
 import { MasterCard } from './cards/MasterCard'
 import { EfficacyCard } from './cards/EfficacyCard'
 import { LogCard } from './cards/LogCard'
 import { Welcome } from './cards/Welcome'
 import { useStartupSettings } from './settingsContext'
+import { RAM_BUDGET_MB } from './resourceBudget'
 
 // CR-002 Phase 1: the command deck (<CommandDeck/>) renders in the control
 // window. CR-013 W3: `Control` now only ever renders one settings category
@@ -36,6 +37,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
   const [status, setStatus] = useState<GsiStatus | null>(null)
   const freshTick = status?.gsi_freshness === 'fresh' ? tick : null
   const [resources, setResources] = useState<ResourceStats | null>(null)
+  const ramAvailable = resources !== null && Number.isFinite(resources.ram_mb) && resources.ram_mb >= 0
   const [captureMode, setCaptureMode] = useState<string>('initializing')
   const [showWelcome, setShowWelcome] = useState(() => localStorage.getItem('gm-onboarded') !== '1')
   const dismissWelcome = () => { localStorage.setItem('gm-onboarded', '1'); setShowWelcome(false) }
@@ -118,11 +120,12 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
     syncControlActive()
     const onVisibility = () => syncControlActive()
     document.addEventListener('visibilitychange', onVisibility)
+    let disposed = false
     let offFocus: (() => void) | null = null
     try {
       void getCurrentWindow().onFocusChanged(({ payload }) => {
         syncControlActive(payload)
-      }).then((fn) => { offFocus = fn }).catch(() => {})
+      }).then((fn) => { if (disposed) fn(); else offFocus = fn }).catch(() => {})
     } catch { /* plain-browser dev / non-Tauri runtime */ }
     const u1 = listen<GameTick>('game-tick', (e) => {
       if (!controlActiveRef.current) return
@@ -146,6 +149,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
       setS((prev) => ({ ...prev, layout: e.payload }))
     })
     return () => {
+      disposed = true
       document.removeEventListener('visibilitychange', onVisibility)
       offFocus?.()
       void u1.then((f) => f()); void u2.then((f) => f()); void u3.then((f) => f()); void u4cap.then((f) => f()); void u5layout.then((f) => f())
@@ -177,7 +181,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
     return () => { void u.then((f) => f()) }
   }, [setS])
 
-  const set = <K extends keyof Settings>(k: K, v: Settings[K]) => setS((p) => ({ ...p, [k]: v }))
+  const set = useCallback(<K extends keyof Settings>(k: K, v: Settings[K]) => setS((p) => ({ ...p, [k]: v })), [setS])
 
   // CR-013 W2 (§4 + §4.3 "move the skin, not the brain"): render ONLY the
   // given category's groups — bare, no outer page chrome (no app header, no
@@ -227,105 +231,7 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
         )}
 
         {category === 'voice' && (
-          <>
-            <Card title="Alerts (G-Signal)">
-              <Row label="เตือนเมื่อ HP ต่ำ"><Toggle on={s.alertEnabled} onChange={(v) => set('alertEnabled', v)} /></Row>
-              <Row label={`ขีดเตือน HP: ${s.alertThreshold}%`}>
-                <input type="range" min={10} max={50} value={s.alertThreshold} onChange={(e) => set('alertThreshold', Number(e.target.value))} style={{ width: 150 }} disabled={!s.alertEnabled} />
-              </Row>
-              <Row label="เสียงพูด (Maiden)">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <button onClick={() => void invoke('speak', { text: 'G-Maiden voice test. ทดสอบเสียงค่ะ เลือดน้อยแล้ว ถอยก่อน', voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})} disabled={!s.voiceEnabled}
-                    style={{ background: 'transparent', color: s.voiceEnabled ? C.ice : C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 11px', fontSize: 12, cursor: s.voiceEnabled ? 'pointer' : 'not-allowed' }}>
-                    🔊 ทดสอบเสียง
-                  </button>
-                  <Toggle on={s.voiceEnabled} onChange={(v) => set('voiceEnabled', v)} />
-                </div>
-              </Row>
-              <Row label="เลือกเสียง">
-                <select value={s.voiceName} onChange={(e) => set('voiceName', e.target.value)} disabled={!s.voiceEnabled || voices.length === 0}
-                  style={{ background: 'rgba(18,20,28,0.86)', color: s.voiceEnabled ? C.txt : C.mut, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 10px', fontSize: 12.5, maxWidth: 240 }}>
-                  <option value="">— ระบบเลือกเอง —</option>
-                  {voices.map((v) => (
-                    <option key={v.name} value={v.name}>{v.name} ({v.culture}, {v.gender === 'Female' ? 'หญิง' : v.gender === 'Male' ? 'ชาย' : v.gender})</option>
-                  ))}
-                </select>
-              </Row>
-              <Row label={`ความเร็ว: ${s.voiceRate > 0 ? '+' : ''}${s.voiceRate}`}>
-                <input type="range" min={-5} max={5} step={1} value={s.voiceRate} onChange={(e) => set('voiceRate', Number(e.target.value))} disabled={!s.voiceEnabled} style={{ width: 150 }} />
-              </Row>
-              <Row label={`ระดับเสียง: ${s.volume}%${s.volume === 0 ? ' (ปิดเสียง)' : ''}`}>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button onClick={() => set('volume', s.volume === 0 ? 80 : 0)}
-                    style={{ background: 'transparent', color: s.volume === 0 ? C.bad : C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '4px 8px', fontSize: 13, cursor: 'pointer', lineHeight: 1 }}>
-                    {s.volume === 0 ? '🔇' : s.volume <= 30 ? '🔈' : s.volume <= 70 ? '🔉' : '🔊'}
-                  </button>
-                  <input type="range" min={0} max={100} step={5} value={s.volume} onChange={(e) => set('volume', Number(e.target.value))} style={{ width: 130 }} />
-                </div>
-              </Row>
-              <Row label="พูดเสริมตามเหตุการณ์">
-                <Toggle on={s.personaLines} onChange={(v) => set('personaLines', v)} />
-              </Row>
-              <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
-                Windows SAPI · ติดตั้งเสียงไทยใน Windows Settings · Time & Language · Speech เพื่อให้ Maiden พูดไทยชัดขึ้น
-                {voices.length > 0 && voices.every((v) => !v.culture.startsWith('th')) && (
-                  <span style={{ color: C.warn }}> · ตอนนี้ยังไม่มี Thai voice → จะใช้เสียง {voices[0]?.gender === 'Female' ? 'อังกฤษ' : 'อังกฤษ'} อ่านข้อความไทย</span>
-                )}
-              </div>
-            </Card>
-
-            <Card title="G-Signal — แบนเนอร์แจ้งเตือน">
-              <Row label="แบนเนอร์เตือนแก๊งค์ (gank)"><Toggle on={s.gankVisuals} onChange={(v) => set('gankVisuals', v)} /></Row>
-              <Row label="แบนเนอร์ฆ่า / สตรีค (kill banner)">
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <button onClick={() => { void emit('preview-kill', { streak: 5, victim: 'npc_dota_hero_lina' }); void invoke('speak_event', { event: 'mega_kill', fallback: 'เมก้าคิล!', voice: null, rate: null }).catch(() => {}) }}
-                    title="โชว์ตัวอย่างแบนเนอร์บน overlay (ต้องเปิด overlay อยู่)"
-                    style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 11px', fontSize: 12, cursor: 'pointer' }}>▶ ดูตัวอย่าง</button>
-                  <Toggle on={s.killVisuals} onChange={(v) => set('killVisuals', v)} />
-                </div>
-              </Row>
-              <Row label="ความไวเตือนแก๊งค์">
-                <div style={{ display: 'inline-flex', border: `1px solid ${C.line}`, borderRadius: 9, overflow: 'hidden' }}>
-                  {(['low','med','high'] as Sensitivity[]).map((lv) => (
-                    <button key={lv} onClick={() => set('signalSensitivity', lv)}
-                      style={{ background: s.signalSensitivity === lv ? 'rgba(143,212,255,0.16)' : 'transparent', color: s.signalSensitivity === lv ? C.ice : C.mut, border: 'none', padding: '6px 14px', cursor: 'pointer', fontSize: 12 }}>
-                      {lv === 'low' ? 'ตึง (≥85%)' : lv === 'med' ? 'สมดุล (≥65%)' : 'ไว (≥50%)'}
-                    </button>
-                  ))}
-                </div>
-              </Row>
-              <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
-                แบนเนอร์ขึ้นกลาง-บนของจอเมื่อ G-Signal เตือนแก๊งค์ (ไม่บังมินิแมพ).
-              </div>
-            </Card>
-
-            <Card title="G-Persona Presets">
-              <Row label="เลือกโหมดบุคลิก (Preset)">
-                <select value={s.personaPreset || 'coach'} onChange={(e) => {
-                  const p = e.target.value as 'coach' | 'silent' | 'caster' | 'meme'
-                  set('personaPreset', p)
-                  if (p === 'silent') {
-                    set('personaLines', false)
-                  } else {
-                    set('personaLines', true)
-                  }
-                }} style={{ background: 'rgba(18,20,28,0.86)', color: C.txt, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 10px', fontSize: 12.5, maxWidth: 240 }}>
-                  <option value="coach">Serious Coach (ปกติ + จริงจัง)</option>
-                  <option value="silent">Silent Companion (เตือนภัยวิกฤตเท่านั้น)</option>
-                  <option value="caster">Chatty Caster (พูดคุยบ่อย + สบายๆ)</option>
-                  <option value="meme">Meme Partner (ปกติ + มีม/ติดตลก)</option>
-                </select>
-              </Row>
-              <div style={{ fontSize: 11.5, color: C.mut, marginTop: 8, lineHeight: 1.55 }}>
-                {s.personaPreset === 'coach' && 'Serious Coach: พูดแจ้งเตือนทั่วไปด้วยน้ำเสียงและคำแนะนำที่เป็นงานเป็นการ เหมาะสำหรับผู้เล่นที่ต้องการโฟกัส'}
-                {s.personaPreset === 'silent' && 'Silent Companion: ซ่อนการพูดคุยเล่นและเสียงประกาศทั่วไปทั้งหมด จะส่งเสียงเตือนเฉพาะเหตุการณ์อันตรายวิกฤต (G-Signal) และแจ้งเตือนด่วนเท่านั้น'}
-                {s.personaPreset === 'caster' && 'Chatty Caster: พากย์เกมอย่างต่อเนื่อง สบายๆ และเป็นกันเอง คอยอัปเดตสถานะและคำแนะนำสม่ำเสมอ'}
-                {s.personaPreset === 'meme' && 'Meme Partner: แทรกมุกตลกเบาสมอง และคำล้อเลียนความเร็วการเดินของ Maiden (Nerf CM) เมื่อทำกิจกรรมต่างๆ ในเกม'}
-              </div>
-            </Card>
-
-            <AudioSettingsCard />
-          </>
+          <VoiceSettings settings={s} voices={voices} set={set} />
         )}
 
         {category === 'ai' && (
@@ -400,14 +306,17 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
               </div>
               {resources && (
                 <div style={{ borderTop: `1px solid ${C.line}`, marginTop: 10, paddingTop: 8, display: 'flex', gap: 20, fontSize: 12 }}>
-                  <span style={{ color: resources.ram_mb > 400 ? C.bad : C.ok }}>
-                    RAM: <b>{resources.ram_mb.toFixed(0)} MB</b> / 400 MB
+                  <span style={{ color: !ramAvailable ? C.warn : resources.ram_mb > RAM_BUDGET_MB ? C.bad : C.ok }}>
+                    RAM: <b>{ramAvailable ? `${resources.ram_mb.toFixed(0)} MB` : '—'}</b> / {RAM_BUDGET_MB} MB
                   </span>
                   <span style={{ color: resources.cpu_pct > 10 ? C.bad : resources.cpu_pct < 0 ? C.warn : C.ok }}>
                     CPU: <b>{resources.cpu_pct >= 0 ? `${resources.cpu_pct.toFixed(1)}%` : '—'}</b> / 10%
                   </span>
-                  {(resources.cpu_pct > 10 || resources.ram_mb > 400) && (
+                  {(resources.cpu_pct > 10 || (ramAvailable && resources.ram_mb > RAM_BUDGET_MB)) && (
                     <span style={{ color: C.warn }}>⚠ เกิน budget — อาจลดความถี่ CV</span>
+                  )}
+                  {!ramAvailable && (
+                    <span style={{ color: C.warn }}>RAM reading unavailable</span>
                   )}
                   {resources.cpu_pct < 0 && (
                     <span style={{ color: C.warn }}>CPU reading unavailable — capture throttle active</span>

@@ -2,8 +2,8 @@
 title: "ADR: Migrate Screen Capture from WGC to DXGI Desktop Duplication"
 doc_id: "ADR-13-dxgi-capture-migration"
 status: "accepted"
-version: "0.1.2"
-updated: "2026-10-12"
+version: "0.1.4"
+updated: "2026-10-28"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["ADR-05", "ADR-10-hybrid-ingestion-resilience", "src-tauri/src/capture.rs", "src-tauri/src/governor.rs"]
@@ -118,7 +118,7 @@ capture::start()
 - Emit `capture-mode` event ให้ frontend แสดง mode badge
 
 ### Phase 3: Validation (1–2 days)
-- Run perf_p7 benchmark: assert whole-app CPU ≤10% per [[mvp-decisions]] v0.2.0 and RAM ≤400 MB
+- Run perf_p7 benchmark: assert whole-app CPU ≤10% per [[mvp-decisions]] v0.2.0 and RAM ≤900 MB
 - In-game test: Dota 2 borderless + G-Maiden + OBS simultaneously
 - Verify gank detection still triggers within 2s of enemy disappearing
 - Verify error.log has zero SLOW frame entries
@@ -141,3 +141,5 @@ capture::start()
 | 0.1.0 | 2026-06-28 | Initial proposal based on in-game performance evidence (CPU 8%, frame time 1.3–2.3s) |
 | 0.1.1 | 2026-07-19 | link/metadata sweep (G15-T2): `[[CLAUDE.md]]` converted to plain backtick path text (CLAUDE.md is outside docs/, not a doc-graph slug) |
 | 0.1.2 | 2026-10-12 | Clarified that the 2.5% capture measurement was historical and aligned the pending CPU validation gate with MVP decision v0.2.0. |
+| 0.1.3 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
+| 0.1.4 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |

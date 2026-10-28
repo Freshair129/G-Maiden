@@ -111,7 +111,7 @@ export function OverlayLayoutEditor({ settings, onChange, onEnterFullscreen }: {
           gank={selected === 'alert' ? { phase: 'alert', heroes: ['npc_dota_hero_axe'], probability: 0.8 } : null}
           missingHeroes={new Set(['npc_dota_hero_axe', 'npc_dota_hero_pudge'])}
           overlayAdvice="เก็บระยะจากศัตรู และรอเพื่อนก่อนเข้าทีมไฟต์ค่ะ"
-          buyback={{ advice: { recommend_buyback: false, urgency: 'None', natural_respawn_remaining: 30, affordable: true, next_respawn_if_buyback: 55, reason: 'รอเกิด เก็บเงินไว้ก่อนค่ะ' }, narrative: null }}
+          buyback={{ advice: { death_episode: 1, request_id: 1, recommend_buyback: null, urgency: 'Unknown', base_under_threat: null, allies_alive: null, natural_respawn_remaining: 30, affordable: true, next_respawn_if_buyback: 55, reason: 'ข้อมูลภัยต่อฐานยังไม่พอประเมินซื้อเกิดค่ะ' }, narrative: null }}
           toast={{ event: 'ตัวอย่าง', text: 'เตรียมพร้อมก่อนเข้าทีมไฟต์ค่ะ' }}
           killBanner={{ phase: 'show', kills: 4, streak: 3, victim: null }} packBanner={null}
           lowHp={selected === 'lowhp'} volToast={80} gsiActive={false} gsiFresh={true} gsiFreshness="unavailable" gsiAgeMs={null} matchActive={sampleTick.in_game} previewMode sensorOk={false} />

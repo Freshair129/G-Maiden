@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { toneClass, useMinimapImage, type CompanionData } from "../companion";
+import { latestBackendReceiptAt, toneClass, useMinimapImage, type CompanionData } from "../companion";
 import type { MatchPhase } from "../live/phase";
 import type { ContextMenuController, ContextMenuEntry } from "../ContextMenu";
 
@@ -16,8 +16,9 @@ export function FeedAgePill({ updatedAt, online }: { updatedAt: number; online: 
   }, []);
 
   let value = "—";
-  if (online && updatedAt > 0) {
-    const age = Date.now() - updatedAt;
+  const receiptAt = Math.max(updatedAt, latestBackendReceiptAt());
+  if (online && receiptAt > 0) {
+    const age = Date.now() - receiptAt;
     value = age < 1000 ? "<1s" : `${Math.min(99, Math.round(age / 1000))}s`;
   }
 
@@ -95,6 +96,7 @@ const UTT_SOURCE_LABEL: Record<"signal" | "master" | "announcer", string> = {
   master: "MASTER",
   announcer: "ANN"
 };
+const UTT_PHASE_LABEL = { generated: "สร้างแล้ว", requested: "ร้องขอเสียง", admitted: "รับเข้าเล่นแล้ว" };
 
 /** Text copied by the utterance row's "คัดลอกข้อความ" context-menu item —
  *  includes the retracted prefix when the line is a belief-revision, so the
@@ -127,7 +129,7 @@ export function OnAirConsole({ data, menu }: { data: CompanionData; menu: Contex
   const rest = list.slice(1);
   // Backend chip: the newest MASTER-sourced line tells us which engine answered
   // ("ollama" = the local-SLM fallback, anything else = the cloud path).
-  const latestMaster = list.find((u) => u.source === "master");
+  const latestMaster = list.find((u) => u.source === "master" && (u.meta === "ollama" || u.meta === "claude"));
   const isLocalSlm = latestMaster?.meta === "ollama";
   const tallyOn = data.match.gsiOnline;
 
@@ -138,7 +140,7 @@ export function OnAirConsole({ data, menu }: { data: CompanionData; menu: Contex
         <b className="gm-onair-title">ON AIR — MAIDEN</b>
         <span className="gm-onair-end">
           <span className={`gm-onair-chip ${isLocalSlm ? "gm-onair-chip-local" : "gm-onair-chip-cloud"}`}>
-            {isLocalSlm ? "LOCAL SLM" : "CLOUD"}
+            {latestMaster ? (isLocalSlm ? "LOCAL SLM" : "CLOUD") : "SOURCE —"}
           </span>
           <span className="gm-onair-agent">{data.agentSector.name}</span>
         </span>
@@ -151,7 +153,7 @@ export function OnAirConsole({ data, menu }: { data: CompanionData; menu: Contex
           onContextMenu={(e) => menu.openFromMouseEvent(e, utteranceMenuItems(newest))}
           onKeyDown={(e) => menu.openFromKeyboard(e, utteranceMenuItems(newest))}
         >
-          <span className="gm-onair-now-meta">{newest.timeLabel} · {UTT_SOURCE_LABEL[newest.source]}</span>
+          <span className="gm-onair-now-meta">{newest.timeLabel} · {UTT_SOURCE_LABEL[newest.source]} · {UTT_PHASE_LABEL[newest.phase]}</span>
           <p className="gm-onair-now-text">
             {/* Belief revision is the headline signature — the strikethrough must
                 show at the most prominent slot too, not only in the log rows
@@ -184,7 +186,7 @@ export function OnAirConsole({ data, menu }: { data: CompanionData; menu: Contex
             onKeyDown={(e) => menu.openFromKeyboard(e, utteranceMenuItems(u))}
           >
             <span className="gm-onair-row-time">{u.timeLabel}</span>
-            <span className={`gm-onair-row-chip gm-onair-row-chip-${u.source}`}>{UTT_SOURCE_LABEL[u.source]}</span>
+            <span className={`gm-onair-row-chip gm-onair-row-chip-${u.source}`}>{UTT_SOURCE_LABEL[u.source]} · {UTT_PHASE_LABEL[u.phase]}</span>
             <p className="gm-onair-row-text">
               {u.kind === "revision" && u.retracted ? (
                 <>

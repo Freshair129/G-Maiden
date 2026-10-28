@@ -21,6 +21,7 @@
       {
         "title": "G-Maiden",
         "label": "control",
+        "create": false,
         "width": 1200,
         "height": 780,
         "minWidth": 940,
@@ -36,6 +37,7 @@
       {
         "title": "G-Maiden Overlay",
         "label": "overlay",
+        "create": false,
         "width": 1280,
         "height": 720,
         "transparent": true,
@@ -50,7 +52,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' http://localhost:* ws://localhost:*; connect-src 'self' http://localhost:* ws://localhost:* https://api.opendota.com https://wsseitulmcgnolgsrxgh.supabase.co; script-src 'self' 'wasm-unsafe-eval' http://localhost:*; img-src 'self' data: https://cdn.cloudflare.steamstatic.com; media-src 'self' data:"
+      "csp": "default-src 'self' http://localhost:* ws://localhost:*; frame-src 'none'; connect-src 'self' http://localhost:* ws://localhost:* https://api.opendota.com https://wsseitulmcgnolgsrxgh.supabase.co; script-src 'self' 'wasm-unsafe-eval' http://localhost:*; img-src 'self' data: https://cdn.cloudflare.steamstatic.com; media-src 'self' data:"
     }
   },
   "bundle": {

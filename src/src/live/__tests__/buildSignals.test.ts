@@ -21,15 +21,15 @@ describe("buildSignals", () => {
   describe("D — Enemy Missing", () => {
     it("0 missing -> tone 'good', value 'Clear', bar 0", () => {
       const sig = buildSignals(null, new Map(), true)[0];
-      expect(sig.tone).toBe("good");
-      expect(sig.value).toBe("Clear");
+      expect(sig.tone).toBe("info");
+      expect(sig.value).toBe("0 observed missing");
       expect(sig.barPct).toBe(0);
     });
 
     it("1 missing -> tone 'warn', value '1 hero'", () => {
       const missing = new Map<string, number>([["npc_dota_hero_warden", 6000]]);
       const sig = buildSignals(null, missing, true)[0];
-      expect(sig.tone).toBe("warn");
+      expect(sig.tone).toBe("info");
       expect(sig.value).toBe("1 hero");
       expect(sig.barPct).toBe(20);
     });
@@ -40,7 +40,7 @@ describe("buildSignals", () => {
         ["npc_dota_hero_mirage", 8000]
       ]);
       const sig = buildSignals(null, missing, true)[0];
-      expect(sig.tone).toBe("danger");
+      expect(sig.tone).toBe("info");
       expect(sig.value).toBe("2 heroes");
       expect(sig.barPct).toBe(40);
     });
@@ -79,15 +79,15 @@ describe("buildSignals", () => {
   describe("F — Risk Level (must mirror overlay gmeterLevel tiers)", () => {
     it("no gank, 0 missing -> tier 0 ปลอดภัย, tone good", () => {
       const sig = buildSignals(null, new Map(), true)[2];
-      expect(sig.value).toBe("ปลอดภัย");
-      expect(sig.tone).toBe("good");
+      expect(sig.value).toBe("ยังไม่มีสัญญาณเสี่ยง");
+      expect(sig.tone).toBe("info");
       expect(sig.barPct).toBe(0);
     });
 
     it("1 missing (no gank) -> tier 1 ระวัง", () => {
       const missing = new Map<string, number>([["npc_dota_hero_warden", 6000]]);
       const sig = buildSignals(null, missing, true)[2];
-      expect(sig.value).toBe("ระวัง");
+      expect(sig.value).toBe("มองไม่เห็น");
     });
 
     it("2 missing (no gank) -> tier 2 เสี่ยง", () => {
@@ -96,7 +96,7 @@ describe("buildSignals", () => {
         ["npc_dota_hero_mirage", 8000]
       ]);
       const sig = buildSignals(null, missing, true)[2];
-      expect(sig.value).toBe("เสี่ยง");
+      expect(sig.value).toBe("มองไม่เห็น");
     });
 
     it("3 missing (no gank) -> tier 3 อันตราย", () => {
@@ -106,7 +106,7 @@ describe("buildSignals", () => {
         ["npc_dota_hero_oracle", 9000]
       ]);
       const sig = buildSignals(null, missing, true)[2];
-      expect(sig.value).toBe("อันตราย");
+      expect(sig.value).toBe("มองไม่เห็น");
     });
 
     it("an active gank alert forces tier 3 อันตราย even with 0 missing", () => {
@@ -153,11 +153,11 @@ describe("buildSignals", () => {
       expect(result.some((s) => s.tone === "good")).toBe(false);
     });
 
-    it("the same inputs with a healthy sensor DO claim safety — proving the gate is what changed", () => {
+    it("the same inputs with a healthy sensor report observation coverage without claiming safety", () => {
       const healthy = buildSignals(null, new Map(), true);
-      expect(healthy[0].value).toBe("Clear");
-      expect(healthy[0].tone).toBe("good");
-      expect(healthy[2].value).toBe("ปลอดภัย");
+      expect(healthy[0].value).toBe("0 observed missing");
+      expect(healthy[0].tone).toBe("info");
+      expect(healthy[2].value).toBe("ยังไม่มีสัญญาณเสี่ยง");
     });
 
     it("withholds reassurance, never a warning: an active alert still renders", () => {
@@ -184,13 +184,13 @@ describe("buildSignals", () => {
 // overrode, so the Live page's header pill read "3 active alerts" permanently
 // — in live matches included. It was a constant rendered as live state.
 describe("countActiveAlerts", () => {
-  it("counts missing heroes plus an active gank", () => {
+  it("counts actionable gank warnings, not quiet missing observations", () => {
     const missing = new Map<string, number>([
       ["npc_dota_hero_warden", 6000],
       ["npc_dota_hero_mirage", 8000]
     ]);
-    expect(countActiveAlerts(null, missing, true)).toBe(2);
-    expect(countActiveAlerts(makeGank(), missing, true)).toBe(3);
+    expect(countActiveAlerts(null, missing, true)).toBe(0);
+    expect(countActiveAlerts(makeGank(), missing, true)).toBe(1);
   });
 
   it("is 0 — not 3 — on a genuinely quiet map", () => {

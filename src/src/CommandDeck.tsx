@@ -31,6 +31,7 @@ import { DeckTabs, FeedAgePill, PhaseChip } from "./deck/onair";
 import { GMaidenFungDashboard, VolumeRail } from "./deck/FungDashboard";
 import { SignalGrid } from "./deck/SignalGrid";
 import { useStartupSettings } from "./app/settingsContext";
+import { initializeGsiSetupSelection, savedDotaInstallPath } from "./app/gsiSetup";
 
 const VoicePacksPage = lazy(() => import("./VoicePacksPage"));
 const LiveMatchPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.LiveMatchPage })));
@@ -49,6 +50,14 @@ function DeferredPage({ children }: { children: ReactNode }) {
 }
 
 export default function CommandDeck({ renderSettings }: { renderSettings?: (cat: SettingsCat) => ReactNode } = {}) {
+  const gsiSelectionInitialized = useRef(false);
+  useEffect(() => {
+    if (gsiSelectionInitialized.current) return;
+    gsiSelectionInitialized.current = true;
+    // Native automatic cfg repair waits for this launch's saved selection,
+    // including an explicit null that clears a former native-only path.
+    void initializeGsiSetupSelection(savedDotaInstallPath()).catch(() => {});
+  }, []);
   const { settings, setSettings } = useStartupSettings();
   const [tab, setTab] = useState("dashboard");
   const [profileOpen, setProfileOpen] = useState(false);
@@ -234,33 +243,36 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
   // the backend emits *-change events for all three (main.rs) precisely so
   // no single owner can be silently desynced by another writer.
   useEffect(() => {
+    let disposed = false;
     let unlisten: (() => void) | undefined;
     listen<number>("volume-change", (e) => setSettings((prev) => ({ ...prev, volume: e.payload })))
-      .then((fn) => { unlisten = fn; })
+      .then((fn) => { if (disposed) fn(); else unlisten = fn; })
       .catch(() => {
         /* not running under Tauri — ignore */
       });
-    return () => unlisten?.();
+    return () => { disposed = true; unlisten?.(); };
   }, [setSettings]);
 
   useEffect(() => {
+    let disposed = false;
     let unlisten: (() => void) | undefined;
     listen<boolean>("signal-change", (e) => setSettings((prev) => ({ ...prev, signalEnabled: e.payload })))
-      .then((fn) => { unlisten = fn; })
+      .then((fn) => { if (disposed) fn(); else unlisten = fn; })
       .catch(() => {
         /* not running under Tauri — ignore */
       });
-    return () => unlisten?.();
+    return () => { disposed = true; unlisten?.(); };
   }, [setSettings]);
 
   useEffect(() => {
+    let disposed = false;
     let unlisten: (() => void) | undefined;
     listen<boolean>("announcer-change", (e) => setSettings((prev) => ({ ...prev, announcerEnabled: e.payload })))
-      .then((fn) => { unlisten = fn; })
+      .then((fn) => { if (disposed) fn(); else unlisten = fn; })
       .catch(() => {
         /* not running under Tauri — ignore */
       });
-    return () => unlisten?.();
+    return () => { disposed = true; unlisten?.(); };
   }, [setSettings]);
 
   // Companion State "Voice" tile — active announcer pack name, fetched once.
@@ -669,7 +681,7 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
                       <span>
                         {update.phase === "downloading"
                           ? "กำลังดาวน์โหลดและติดตั้ง… แอปจะรีสตาร์ทเอง"
-                          : update.available.notes || "อัปเดตแล้วแอปจะรีสตาร์ทให้อัตโนมัติ"}
+                          : update.error || update.available.notes || "ปิด Dota 2 ก่อนติดตั้ง · อัปเดตแล้วแอปจะรีสตาร์ทให้อัตโนมัติ"}
                       </span>
                     </div>
                     <button

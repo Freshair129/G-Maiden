@@ -202,7 +202,11 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                 DEFAULT_THRESHOLD_FRAC,
                 crate::runtime::enemy_team_ring(),
             );
-            let detections = self.detector.detect(&f, &candidates, self.icon);
+            let mut detections = self.detector.detect(&f, &candidates, self.icon);
+            let allowed = crate::runtime::enemy_roster_labels();
+            detections.retain(|d| allowed.contains(&d.name));
+            self.sentry.retain_allowed(&allowed);
+            self.motion.retain_allowed(&allowed);
 
             // Record identified enemies for grounded G-Master counter advice
             // (runtime source of truth, cleared at match start). Mirrors capture.rs.
@@ -247,7 +251,10 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                 // since the previous tick (atomic read, ~free).
                 self.signal
                     .set_sensitivity(crate::runtime::signal_sensitivity());
-                match self.signal.evaluate(&risk) {
+                match self
+                    .signal
+                    .evaluate(&risk, &risk.missing_heroes, now_ms, false)
+                {
                     SignalEvent::Alert(alert) => {
                         // Silent-arm efficacy study (TASK 2): when this match is
                         // silent-armed the pipeline + logging still run, but the
@@ -272,7 +279,8 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                         // was actually voiced — in the silent arm GANK_LINE is
                         // suppressed, so recording it would falsely log it as
                         // spoken. The gank_signal log below stays unconditional.
-                        if armed && crate::calibration::is_enabled()
+                        if armed
+                            && crate::calibration::is_enabled()
                             && crate::runtime::is_current_capture_session(session.session_epoch)
                         {
                             crate::calibration::record(
@@ -294,7 +302,9 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                                 armed,
                             ),
                         );
-                        if armed && crate::runtime::is_current_capture_session(session.session_epoch) {
+                        if armed
+                            && crate::runtime::is_current_capture_session(session.session_epoch)
+                        {
                             let event = crate::runtime::MatchSessionEvent::new(&alert, &session);
                             let _ = self.app.emit("gank-alert", event);
                         }
@@ -322,7 +332,9 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                             session.session_epoch,
                             crate::log::gank_revision_record(),
                         );
-                        if armed && crate::runtime::is_current_capture_session(session.session_epoch) {
+                        if armed
+                            && crate::runtime::is_current_capture_session(session.session_epoch)
+                        {
                             let _ = self.app.emit("gank-clear", session.clone());
                         }
                     }
@@ -549,7 +561,7 @@ mod tests {
             motion.record(&dets, &region, now_ms);
             let missing = sentry.missing(now_ms);
             let risk = motion.assess(&missing, now_ms);
-            let _ = signal.evaluate(&risk);
+            let _ = signal.evaluate(&risk, &risk.missing_heroes, now_ms, true);
             samples_us.push(t.elapsed().as_micros());
         }
         samples_us.sort_unstable();

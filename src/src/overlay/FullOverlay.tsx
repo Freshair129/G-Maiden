@@ -1,3 +1,4 @@
+import type { MissingState } from '../app/types'
 import React, { useEffect, useRef, useState } from 'react'
 import type { GameTick, GsiFreshness, Settings, GankState, ReviveAdvice } from '../App'
 import { BOX_REF, MODULE_BOX, cfgOf, type ModuleCfg, type ModuleId } from './modules'
@@ -60,6 +61,7 @@ interface Props {
   s: Settings
   gank: GankState
   missingHeroes: Set<string>
+  warningStatus?: MissingState | null
   overlayAdvice: string | null
   /** G-Revive buyback verdict shown while dead (null when alive/none). */
   buyback: { advice: ReviveAdvice; narrative: string | null } | null
@@ -100,19 +102,17 @@ interface Props {
  * อันตราย" — without showing raw probability percentages. */
 function gmeterLevel(missing: number, gank: GankState): 0 | 1 | 2 | 3 {
   if (gank?.phase === 'alert') return 3
-  if (missing >= 3) return 3
-  if (missing >= 2) return 2
   if (missing >= 1) return 1
   return 0
 }
 const G_LEVELS = [
-  { label: 'ปลอดภัย', color: '#5be3a7', glow: 'rgba(91,227,167,0.35)' },
-  { label: 'ระวัง', color: '#8fd4ff', glow: 'rgba(143,212,255,0.35)' },
+  { label: 'ยังไม่มีสัญญาณเสี่ยง', color: '#8794a6', glow: 'rgba(91,227,167,0.35)' },
+  { label: 'มองไม่เห็น', color: '#8fd4ff', glow: 'rgba(143,212,255,0.35)' },
   { label: 'เสี่ยง', color: '#ffcf6b', glow: 'rgba(255,207,107,0.5)' },
   { label: 'อันตราย', color: '#ff7b85', glow: 'rgba(255,123,133,0.6)' },
 ] as const
 
-export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, overlayAdvice, buyback, toast, killBanner, packBanner, lowHp, volToast, gsiActive, gsiFresh, gsiFreshness, gsiAgeMs, matchActive, previewMode, sensorOk, referenceViewport = false }) => {
+export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, warningStatus, overlayAdvice, buyback, toast, killBanner, packBanner, lowHp, volToast, gsiActive, gsiFresh, gsiFreshness, gsiAgeMs, matchActive, previewMode, sensorOk, referenceViewport = false }) => {
   const [viewportScale, setViewportScale] = useState(1)
   useEffect(() => {
     if (referenceViewport) return
@@ -184,7 +184,7 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
   // case is the one failure a safety companion may not have, so when the
   // sensor is not healthy the meter goes dark and says so instead. An active
   // G-Signal alert still wins: we withhold reassurance, never a warning.
-  const blind = inGame && (!sensorOk || !gsiFresh) && gank?.phase !== 'alert'
+  const blind = inGame && (!sensorOk || !gsiFresh || (!previewMode && !warningStatus?.ready)) && gank?.phase !== 'alert'
   const lvl = inGame ? gmeterLevel(missingHeroes.size, gank) : 0
   const meterColor = blind ? C.mut : G_LEVELS[lvl].color
   const gMeter = (
@@ -204,7 +204,7 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
         ))}
       </div>
       <span style={{ fontSize: 11.5, fontWeight: 700, color: meterColor, marginLeft: 'auto' }}>
-        {blind ? 'ไม่มีสัญญาณ' : G_LEVELS[lvl].label}
+        {blind ? (warningStatus && warningStatus.roster_known < 5 ? `ยืนยันศัตรู ${warningStatus.roster_known}/5` : 'ข้อมูลยังไม่พร้อม') : G_LEVELS[lvl].label}
       </span>
     </div>
   )
@@ -350,7 +350,7 @@ export const FullOverlay: React.FC<Props> = ({ tick, s, gank, missingHeroes, ove
         ? M('buyback', (() => {
             const a = buyback.advice
             const accent = a.urgency === 'Strong' ? C.bad : a.urgency === 'Consider' ? C.warn : C.ice
-            const verdict = a.recommend_buyback ? (a.urgency === 'Strong' ? 'ซื้อเกิดเลย!' : 'ควรซื้อเกิด') : 'รอเกิด'
+            const verdict = a.recommend_buyback === null ? 'ยังประเมินไม่ได้' : a.recommend_buyback ? (a.urgency === 'Strong' ? 'ซื้อเกิดเลย!' : 'ควรซื้อเกิด') : 'รอเกิด'
             // Live countdown: GSI streams hero.respawn_seconds every tick, so
             // prefer it over the advice's frozen at-death snapshot (Boss
             // 2026-07-20: "เวลาไม่นับถอยหลัง").

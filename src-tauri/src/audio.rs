@@ -17,15 +17,106 @@ use std::io::BufReader;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU8, Ordering};
 use std::sync::{mpsc, Mutex, OnceLock};
-use std::time::{SystemTime, UNIX_EPOCH};
+use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use rodio::{Decoder, OutputStream, Sink};
+#[path = "playback_admission.rs"]
+mod playback_admission;
+pub use playback_admission::PlaybackResult;
+use playback_admission::{attempt_commit, OutputAdmission, PlaybackReceipt};
+static OUTPUT_ADMISSION: OutputAdmission = OutputAdmission::new();
+static PLAYING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+pub(crate) fn output_admission() -> Option<std::sync::MutexGuard<'static, ()>> {
+    OUTPUT_ADMISSION.try_enter()
+}
+pub(crate) fn is_playing() -> bool {
+    PLAYING.load(Ordering::Acquire)
+}
+
+type PlaybackAdmission = dyn Fn(&mut dyn FnMut()) + Send;
+struct PlaybackObservation {
+    admit: Box<PlaybackAdmission>,
+    receipt: PlaybackReceipt,
+}
 
 /// Master volume 0-100. Shared with the audio thread via atomic so `set_volume`
 /// doesn't need the channel (and the Sink is adjusted immediately on the next
 /// `Play`).
 static VOLUME: AtomicU8 = AtomicU8::new(80);
 static ACTIVE_PRIORITY: AtomicU8 = AtomicU8::new(0);
+static AUDIO_READY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static AUDIO_SENDER: OnceLock<Mutex<mpsc::Sender<Cmd>>> = OnceLock::new();
+struct CriticalClips {
+    at: Instant,
+    gank: Option<PathBuf>,
+    revision: Option<PathBuf>,
+}
+static CRITICAL_CLIPS: Mutex<Option<CriticalClips>> = Mutex::new(None);
+
+/// Called from startup/prewarm workers; file resolution never runs on capture.
+pub fn prepare_critical_playback() {
+    let _ = sender();
+    static STARTED: OnceLock<()> = OnceLock::new();
+    STARTED.get_or_init(|| {
+        let _ = std::thread::Builder::new()
+            .name("g-critical-clips".into())
+            .spawn(|| loop {
+                let gank = pick_clip("gank");
+                let revision = pick_clip("revision");
+                if let Ok(mut slot) = CRITICAL_CLIPS.lock() {
+                    *slot = Some(CriticalClips {
+                        at: Instant::now(),
+                        gank,
+                        revision,
+                    });
+                }
+                std::thread::sleep(Duration::from_secs(1));
+            });
+    });
+}
+
+pub fn try_interrupt_cached_before(
+    event: &str,
+    prepared: Option<PathBuf>,
+    deadline: Instant,
+) -> bool {
+    if !AUDIO_READY.load(Ordering::Acquire) || Instant::now() >= deadline {
+        return false;
+    }
+    let cached = CRITICAL_CLIPS.try_lock().ok().and_then(|slot| {
+        let cache = slot
+            .as_ref()
+            .filter(|cache| cache.at.elapsed() < Duration::from_secs(2))?;
+        match event {
+            "gank" => cache.gank.clone(),
+            "revision" => cache.revision.clone(),
+            _ => None,
+        }
+    });
+    let path = cached_critical_path(cached, prepared);
+    let Some(path) = path else {
+        return false;
+    };
+    let Some(sender) = AUDIO_SENDER.get() else {
+        return false;
+    };
+    let Ok(sender) = sender.try_lock() else {
+        return false;
+    };
+    let (accepted, admission) = mpsc::sync_channel(1);
+    if sender
+        .send(Cmd::Critical(path, deadline, accepted))
+        .is_err()
+    {
+        return false;
+    }
+    drop(sender);
+    let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
+        return false;
+    };
+    admission.recv_timeout(remaining).unwrap_or(false)
+}
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 pub enum Priority {
@@ -44,15 +135,25 @@ pub(crate) fn should_accept_incoming(current: Priority, incoming: Priority) -> b
     incoming >= current
 }
 
+pub(crate) fn should_cancel_current(current: Priority, ceiling: Priority) -> bool {
+    current <= ceiling
+}
+
+fn cached_critical_path(cached: Option<PathBuf>, prepared: Option<PathBuf>) -> Option<PathBuf> {
+    cached.or(prepared)
+}
+
 enum Cmd {
     Play(PathBuf, Priority),
+    Observed(PathBuf, Priority, PlaybackObservation),
+    Critical(PathBuf, Instant, mpsc::SyncSender<bool>),
     Stop,
+    StopAtMost(Priority),
     Volume(f32),
 }
 
 fn sender() -> &'static Mutex<mpsc::Sender<Cmd>> {
-    static TX: OnceLock<Mutex<mpsc::Sender<Cmd>>> = OnceLock::new();
-    TX.get_or_init(|| {
+    AUDIO_SENDER.get_or_init(|| {
         let (tx, rx) = mpsc::channel::<Cmd>();
         std::thread::Builder::new()
             .name("g-audio".into())
@@ -69,6 +170,7 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
         return;
     };
 
+    AUDIO_READY.store(true, Ordering::Release);
     let mut sink: Option<Sink> = None;
     let mut current_priority = Priority::Cosmetic;
 
@@ -77,6 +179,7 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
             sink = None;
             current_priority = Priority::Cosmetic;
             ACTIVE_PRIORITY.store(Priority::Cosmetic.as_u8(), Ordering::Relaxed);
+            PLAYING.store(false, Ordering::Release);
         }
 
         let cmd = match rx.recv_timeout(std::time::Duration::from_millis(50)) {
@@ -85,13 +188,38 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
             Err(mpsc::RecvTimeoutError::Disconnected) => break,
         };
 
+        let (cmd, critical, observation) = match cmd {
+            Cmd::Critical(path, deadline, accepted) => (
+                Cmd::Play(path, Priority::Critical),
+                Some((deadline, accepted)),
+                None,
+            ),
+            Cmd::Observed(path, priority, observation) => {
+                (Cmd::Play(path, priority), None, Some(observation))
+            }
+            other => (other, None, None),
+        };
         match cmd {
+            Cmd::Critical(..) | Cmd::Observed(..) => {
+                unreachable!("playback command is normalized above")
+            }
+            Cmd::StopAtMost(ceiling) => {
+                if should_cancel_current(current_priority, ceiling) {
+                    if let Some(s) = sink.take() {
+                        s.stop();
+                    }
+                    current_priority = Priority::Cosmetic;
+                    ACTIVE_PRIORITY.store(Priority::Cosmetic.as_u8(), Ordering::Relaxed);
+                    PLAYING.store(false, Ordering::Release);
+                }
+            }
             Cmd::Stop => {
                 if let Some(s) = sink.take() {
                     s.stop();
                 }
                 current_priority = Priority::Cosmetic;
                 ACTIVE_PRIORITY.store(Priority::Cosmetic.as_u8(), Ordering::Relaxed);
+                PLAYING.store(false, Ordering::Release);
             }
             Cmd::Volume(vol) => {
                 if let Some(s) = &sink {
@@ -99,11 +227,14 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                 }
             }
             Cmd::Play(path, priority) => {
-                if sink.is_some() && !should_accept_incoming(current_priority, priority) {
+                if critical
+                    .as_ref()
+                    .is_some_and(|(deadline, _)| Instant::now() >= *deadline)
+                {
                     continue;
                 }
-                if let Some(s) = sink.take() {
-                    s.stop();
+                if sink.is_some() && !should_accept_incoming(current_priority, priority) {
+                    continue;
                 }
                 let file = match crate::voice_api::open_verified_store_clip(&path) {
                     Ok(Some(file)) => file,
@@ -115,7 +246,10 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                         }
                     },
                     Err(error) => {
-                        eprintln!("[G-Maiden audio] Store clip integrity check failed for {}: {error}", path.display());
+                        eprintln!(
+                            "[G-Maiden audio] Store clip integrity check failed for {}: {error}",
+                            path.display()
+                        );
                         continue;
                     }
                 };
@@ -126,13 +260,57 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                         continue;
                     }
                 };
+                if !source_has_frames(&source) {
+                    continue;
+                }
+                let Some(_output_guard) = output_admission() else {
+                    continue;
+                };
+                let deadline = critical
+                    .as_ref()
+                    .map(|(deadline, _)| *deadline)
+                    .unwrap_or_else(|| Instant::now() + Duration::from_millis(50));
+                if !crate::tts::stop_for_clip(priority, deadline) {
+                    continue;
+                }
                 match Sink::try_new(&handle) {
                     Ok(s) => {
                         s.set_volume(VOLUME.load(Ordering::Relaxed) as f32 / 100.0);
-                        s.append(source);
-                        sink = Some(s);
-                        current_priority = priority;
-                        ACTIVE_PRIORITY.store(priority.as_u8(), Ordering::Relaxed);
+                        if critical
+                            .as_ref()
+                            .is_some_and(|(deadline, _)| Instant::now() >= *deadline)
+                        {
+                            continue;
+                        }
+                        let committed = attempt_commit(
+                            |commit| {
+                                if let Some(observation) = observation.as_ref() {
+                                    (observation.admit)(commit);
+                                } else {
+                                    commit();
+                                }
+                            },
+                            || {
+                                admit_nonempty_source(source, |source| {
+                                    if let Some(previous) = sink.take() {
+                                        previous.stop();
+                                    }
+                                    s.append(source);
+                                    sink = Some(s);
+                                    current_priority = priority;
+                                    ACTIVE_PRIORITY.store(priority.as_u8(), Ordering::Relaxed);
+                                    PLAYING.store(true, Ordering::Release);
+                                });
+                            },
+                        );
+                        if committed {
+                            if let Some(observation) = observation {
+                                observation.receipt.admit();
+                            }
+                            if let Some((_, accepted)) = critical {
+                                let _ = accepted.try_send(true);
+                            }
+                        }
                     }
                     Err(e) => eprintln!("[G-Maiden audio] sink: {e}"),
                 }
@@ -155,6 +333,22 @@ pub fn play_file(path: PathBuf) {
 
 pub fn play_file_with_priority(path: PathBuf, priority: Priority) {
     send(Cmd::Play(path, priority));
+}
+
+pub fn play_observed(
+    path: PathBuf,
+    priority: Priority,
+    admit: impl Fn(&mut dyn FnMut()) + Send + 'static,
+    notify: impl FnOnce(PlaybackResult) + Send + 'static,
+) {
+    send(Cmd::Observed(
+        path,
+        priority,
+        PlaybackObservation {
+            admit: Box::new(admit),
+            receipt: PlaybackReceipt::new(notify),
+        },
+    ));
 }
 
 /// Where Maiden's user-installed clips live. Exe-relative first, then dev-tree.
@@ -297,7 +491,11 @@ pub fn list_event_clips(event: &str) -> Vec<(String, String, String)> {
     clips
         .into_iter()
         .map(|path| {
-            let name = path.file_name().unwrap_or_default().to_string_lossy().to_string();
+            let name = path
+                .file_name()
+                .unwrap_or_default()
+                .to_string_lossy()
+                .to_string();
             let full = path.to_string_lossy().to_string();
             (name, full, source.to_string())
         })
@@ -316,10 +514,14 @@ pub(crate) fn validate_clip(path: &std::path::Path) -> Result<(), String> {
 }
 
 pub fn is_resolved_clip_path(path: &std::path::Path) -> bool {
-    let Ok(target) = path.canonicalize() else { return false; };
+    let Ok(target) = path.canonicalize() else {
+        return false;
+    };
     crate::voice_api::event_ids().any(|event| {
         list_clips(event).iter().any(|candidate| {
-            candidate.canonicalize().is_ok_and(|resolved| resolved == target)
+            candidate
+                .canonicalize()
+                .is_ok_and(|resolved| resolved == target)
         })
     })
 }
@@ -327,6 +529,10 @@ pub fn is_resolved_clip_path(path: &std::path::Path) -> bool {
 /// Stop the current clip immediately.
 pub fn cancel() {
     send(Cmd::Stop);
+}
+
+pub fn cancel_at_most(priority: Priority) {
+    send(Cmd::StopAtMost(priority));
 }
 
 pub fn active_priority() -> Priority {
@@ -368,9 +574,13 @@ pub fn play_random_with_priority(event: &str, priority: Priority) -> bool {
 
 /// Resolve the clip that WOULD play for an event (active pack → legacy → default),
 /// picking one at random. Split out so the caller can play it AND hand the same
-/// path to the overlay (it plays a silent copy to drive the reactive waveform).
+/// path to the overlay for bounded native waveform metadata analysis.
 pub fn pick_clip(event: &str) -> Option<PathBuf> {
     let clips = list_clips(event);
+    choose_clip(clips)
+}
+
+pub(crate) fn choose_clip(clips: Vec<PathBuf>) -> Option<PathBuf> {
     if clips.is_empty() {
         return None;
     }
@@ -387,22 +597,49 @@ pub fn pick_clip(event: &str) -> Option<PathBuf> {
     Some(clips[(z as usize) % clips.len()].clone())
 }
 
+pub fn recorded_advice_label(path: &std::path::Path) -> String {
+    format!(
+        "คลิปเสียง advice: {}",
+        path.file_name().unwrap_or_default().to_string_lossy()
+    )
+}
+
 /// Play a specific already-resolved clip file (the twin of pick_clip).
 pub fn play_path(path: PathBuf, event: &str) {
     send(Cmd::Play(path, priority_for_event(event)));
 }
 
-/// Read a clip's raw bytes for the overlay's Web Audio waveform. Confined to the
+/// Legacy clip-byte reader retained while callers migrate to native metadata. Confined to the
 /// voice-cache / bundled-default roots and to audio files: the caller only ever
 /// passes a path our own resolver produced, but we contain-check anyway so a
 /// stray path can't turn this into an arbitrary file read.
 pub fn read_clip_bytes(path: &str) -> Result<Vec<u8>, String> {
+    fs::read(canonical_clip_path(path)?).map_err(|e| e.to_string())
+}
+
+/// Same active resolver and canonical-root boundary as read_audio_bytes, with
+/// Store verification retained. Analysis streams this handle instead of PCM IPC.
+pub fn open_clip_for_analysis(path: &str) -> Result<fs::File, String> {
+    if !is_resolved_clip_path(std::path::Path::new(path)) {
+        return Err("อ่านได้เฉพาะเสียงจากแพ็กที่ติดตั้งและเลือกใช้อยู่".into());
+    }
+    let canon = canonical_clip_path(path)?;
+    match crate::voice_api::open_verified_store_clip(&canon)? {
+        Some(file) => Ok(file),
+        None => fs::File::open(canon).map_err(|e| e.to_string()),
+    }
+}
+
+fn canonical_clip_path(path: &str) -> Result<PathBuf, String> {
     let p = std::path::Path::new(path);
     if !is_clip(p) {
         return Err("not an audio clip".into());
     }
     let canon = p.canonicalize().map_err(|e| e.to_string())?;
-    let roots = [voice_cache_dir().canonicalize().ok(), default_pack_dir().and_then(|d| d.canonicalize().ok())];
+    let roots = [
+        voice_cache_dir().canonicalize().ok(),
+        default_pack_dir().and_then(|d| d.canonicalize().ok()),
+    ];
     let allowed = roots
         .into_iter()
         .flatten()
@@ -410,12 +647,108 @@ pub fn read_clip_bytes(path: &str) -> Result<Vec<u8>, String> {
     if !allowed {
         return Err("clip outside voice-cache".into());
     }
-    fs::read(&canon).map_err(|e| e.to_string())
+    Ok(canon)
+}
+
+// A decoder may be structurally valid while containing no audio frames.
+fn source_has_frames(source: &impl rodio::Source<Item = i16>) -> bool {
+    source.total_duration() != Some(Duration::ZERO) && source.current_frame_len() != Some(0)
+}
+
+fn admit_nonempty_source<S: rodio::Source<Item = i16>>(source: S, admit: impl FnOnce(S)) -> bool {
+    if !source_has_frames(&source) {
+        return false;
+    }
+    admit(source);
+    true
+}
+
+/// Prewarm outputs are WAVs. Check physical data bounds too: rodio's WAV
+/// adapter substitutes zero for some truncated-data errors during iteration.
+pub(crate) fn prepared_wav_has_frames(path: &std::path::Path) -> bool {
+    fn complete_data(file: &mut fs::File) -> std::io::Result<bool> {
+        use std::io::{Read, Seek, SeekFrom};
+        let mut header = [0; 12];
+        file.read_exact(&mut header)?;
+        if &header[..4] != b"RIFF" || &header[8..] != b"WAVE" {
+            return Ok(false);
+        }
+        let riff_end = u64::from(u32::from_le_bytes(header[4..8].try_into().unwrap())) + 8;
+        if riff_end > file.metadata()?.len() {
+            return Ok(false);
+        }
+        let mut position = 12_u64;
+        while position + 8 <= riff_end {
+            let mut chunk = [0; 8];
+            file.read_exact(&mut chunk)?;
+            let size = u64::from(u32::from_le_bytes(chunk[4..].try_into().unwrap()));
+            let end = position + 8 + size;
+            if end > riff_end {
+                return Ok(false);
+            }
+            if &chunk[..4] == b"data" {
+                return Ok(size > 0);
+            }
+            position = end + size % 2;
+            file.seek(SeekFrom::Start(position))?;
+        }
+        Ok(false)
+    }
+    let Ok(mut file) = fs::File::open(path) else {
+        return false;
+    };
+    if !complete_data(&mut file).unwrap_or(false) {
+        return false;
+    }
+    use std::io::{Seek, SeekFrom};
+    if file.seek(SeekFrom::Start(0)).is_err() {
+        return false;
+    }
+    // Some malformed WAV metadata panics in rodio 0.19's WAV constructor.
+    std::panic::catch_unwind(|| {
+        Decoder::new_wav(BufReader::new(file))
+            .map(|source| source_has_frames(&source))
+            .unwrap_or(false)
+    })
+    .unwrap_or(false)
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn prepared_fallback_survives_a_pack_cache_miss() {
+        let prepared = PathBuf::from("prepared_gank.wav");
+        assert_eq!(
+            cached_critical_path(None, Some(prepared.clone())),
+            Some(prepared)
+        );
+        assert_eq!(cached_critical_path(None, None), None);
+    }
+
+    #[test]
+    fn advice_cancel_after_critical_admission_preserves_current_warning() {
+        use std::sync::{Arc, Barrier};
+        let state = Arc::new(Mutex::new(Priority::Normal));
+        let barrier = Arc::new(Barrier::new(2));
+        let worker_state = Arc::clone(&state);
+        let worker_barrier = Arc::clone(&barrier);
+        let advice = std::thread::spawn(move || {
+            assert_eq!(*worker_state.lock().unwrap(), Priority::Normal);
+            worker_barrier.wait();
+            worker_barrier.wait();
+            let mut current = worker_state.lock().unwrap();
+            if should_cancel_current(*current, Priority::Normal) {
+                *current = Priority::Cosmetic;
+            }
+        });
+        barrier.wait();
+        *state.lock().unwrap() = Priority::Critical;
+        barrier.wait();
+        advice.join().unwrap();
+        assert_eq!(*state.lock().unwrap(), Priority::Critical);
+    }
 
     #[test]
     fn missing_event_folder_returns_zero_clips() {
@@ -440,5 +773,178 @@ mod tests {
             Priority::Critical
         ));
         assert!(should_accept_incoming(Priority::Normal, Priority::Normal));
+    }
+}
+
+#[cfg(test)]
+mod empty_clip_tests {
+    use super::*;
+    use std::io::{Cursor, Write};
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
+    #[test]
+    fn waveform_opener_does_not_admit_unresolved_external_fixture() {
+        let fixture = Fixture::new(&wav(&[1, -1]));
+        assert!(!is_resolved_clip_path(&fixture.0));
+        assert!(open_clip_for_analysis(&fixture.0.to_string_lossy()).is_err());
+        assert!(canonical_clip_path(&fixture.0.to_string_lossy()).is_err());
+    }
+
+    // Exact bytes of all four observed 46-byte Temp prewarm outputs.
+    // SHA256 4A0A34B299C5F781A8D9699474F2010B3D69F2DB123E48D823137A633D53E2FF.
+    fn wav(samples: &[i16]) -> Vec<u8> {
+        let size = (samples.len() * 2) as u32;
+        let mut bytes = Vec::new();
+        bytes.extend_from_slice(b"RIFF");
+        bytes.extend_from_slice(&(38 + size).to_le_bytes());
+        bytes.extend_from_slice(b"WAVEfmt ");
+        bytes.extend_from_slice(&18_u32.to_le_bytes());
+        bytes.extend_from_slice(&1_u16.to_le_bytes());
+        bytes.extend_from_slice(&1_u16.to_le_bytes());
+        bytes.extend_from_slice(&22_050_u32.to_le_bytes());
+        bytes.extend_from_slice(&44_100_u32.to_le_bytes());
+        bytes.extend_from_slice(&2_u16.to_le_bytes());
+        bytes.extend_from_slice(&16_u16.to_le_bytes());
+        bytes.extend_from_slice(&0_u16.to_le_bytes());
+        bytes.extend_from_slice(b"data");
+        bytes.extend_from_slice(&size.to_le_bytes());
+        for sample in samples {
+            bytes.extend_from_slice(&sample.to_le_bytes());
+        }
+        bytes
+    }
+
+    struct Fixture(std::path::PathBuf);
+    impl Fixture {
+        fn new(bytes: &[u8]) -> Self {
+            static SEQUENCE: AtomicUsize = AtomicUsize::new(0);
+            let path = std::env::temp_dir().join(format!(
+                "gm-empty-audio-test-{}-{}.wav",
+                std::process::id(),
+                SEQUENCE.fetch_add(1, Ordering::Relaxed)
+            ));
+            let mut file = fs::OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&path)
+                .unwrap();
+            file.write_all(bytes).unwrap();
+            Self(path)
+        }
+    }
+    impl Drop for Fixture {
+        fn drop(&mut self) {
+            let _ = fs::remove_file(&self.0);
+        }
+    }
+
+    #[test]
+    fn real_header_only_prewarm_is_not_valid_prepared_audio() {
+        let bytes = wav(&[]);
+        assert_eq!(bytes.len(), 46);
+        let fixture = Fixture::new(&bytes);
+        // This valid container passes the old len>0 predicate and Decoder construction.
+        assert!(fs::metadata(&fixture.0).unwrap().len() > 0);
+        assert!(Decoder::new(Cursor::new(bytes)).is_ok());
+        assert!(!prepared_wav_has_frames(&fixture.0));
+    }
+
+    #[test]
+    fn positive_frames_are_accepted_without_an_audibility_or_duration_threshold() {
+        // Even one silent frame is structurally nonempty; silence detection is out of scope.
+        for samples in [vec![0], vec![1, -1, 3_000, -3_000], vec![0; 32]] {
+            let fixture = Fixture::new(&wav(&samples));
+            assert!(prepared_wav_has_frames(&fixture.0));
+        }
+    }
+
+    #[test]
+    fn malformed_and_physically_truncated_wavs_are_rejected() {
+        let mut truncated = wav(&[1, 2, 3, 4]);
+        truncated.truncate(48);
+        let mut no_payload = wav(&[1, 2]);
+        no_payload.truncate(46);
+        let mut odd_sample = wav(&[1]);
+        odd_sample[42..46].copy_from_slice(&1_u32.to_le_bytes());
+        for bytes in [b"not a wave".to_vec(), truncated, no_payload, odd_sample] {
+            let fixture = Fixture::new(&bytes);
+            assert!(!prepared_wav_has_frames(&fixture.0));
+        }
+    }
+
+    #[test]
+    fn header_only_decoder_never_reaches_append_or_success_ack() {
+        let decoder = Decoder::new(Cursor::new(wav(&[]))).unwrap();
+        let (accepted, admission) = mpsc::sync_channel(1);
+        let mut appended = false;
+        assert!(!admit_nonempty_source(decoder, |_| {
+            appended = true;
+            accepted.try_send(true).unwrap();
+        }));
+        assert!(!appended);
+        assert!(!admission.try_recv().unwrap_or(false));
+    }
+
+    #[test]
+    fn positive_decoder_is_admitted_without_consuming_its_first_sample() {
+        use rodio::Source;
+        let decoder = Decoder::new(Cursor::new(wav(&[1_234, -432]))).unwrap();
+        let mut observed = None;
+        assert!(admit_nonempty_source(decoder, |mut source| {
+            observed = source.next();
+            assert_eq!(source.channels(), 1);
+        }));
+        assert_eq!(observed, Some(1_234));
+    }
+
+    struct MetadataOnly {
+        duration: Option<Duration>,
+        frame_len: Option<usize>,
+    }
+    impl Iterator for MetadataOnly {
+        type Item = i16;
+        fn next(&mut self) -> Option<i16> {
+            panic!("admission must not decode a sample")
+        }
+    }
+    impl rodio::Source for MetadataOnly {
+        fn current_frame_len(&self) -> Option<usize> {
+            self.frame_len
+        }
+        fn channels(&self) -> u16 {
+            1
+        }
+        fn sample_rate(&self) -> u32 {
+            22_050
+        }
+        fn total_duration(&self) -> Option<Duration> {
+            self.duration
+        }
+    }
+
+    #[test]
+    fn unknown_duration_remains_admissible_and_known_zero_metadata_is_rejected() {
+        for (duration, frame_len, expected) in [
+            (None, None, true),
+            (None, Some(128), true),
+            (Some(Duration::from_nanos(1)), None, true),
+            (Some(Duration::ZERO), None, false),
+            (None, Some(0), false),
+        ] {
+            let mut admitted = false;
+            assert_eq!(
+                admit_nonempty_source(
+                    MetadataOnly {
+                        duration,
+                        frame_len
+                    },
+                    |_| {
+                        admitted = true;
+                    }
+                ),
+                expected
+            );
+            assert_eq!(admitted, expected);
+        }
     }
 }

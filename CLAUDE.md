@@ -1,3 +1,11 @@
+---
+title: "CLAUDE.md"
+doc_id: "claude"
+status: active
+version: "0.4.4"
+updated: "2026-10-28"
+owner: "G-Maiden"
+---
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
@@ -117,7 +125,7 @@ When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scal
 
 - **G-Signal end-to-end latency: target 250ms, never exceed 300ms.**
 - Whole-app process-group CPU normalized by logical CPU capacity ≤ **10% per 1-second sample** (MVP decision v0.2.0);
-  aggregate peak Working Set ≤ **400,000,000 bytes** including host/WebView2/feeder/STT/SLM/model
+  aggregate peak Working Set ≤ **900,000,000 bytes** including host/WebView2/feeder/STT/SLM/model
   processes; Dota 2 FPS impact ≤3% per paired acceptance run.
 - Overlay must not drop Dota 2 FPS by more than **3%**, and must not obscure minimap, skill bar,
   or stats panels.
@@ -314,3 +322,5 @@ deploy to web by vercel cli
 | 0.2.0b | 2026-07-21 | Added desktop delivery and account handoff context. |
 | 0.1.0b | 2026-07-21 | Added the planned GID security and privacy-safe web-profile contract; no implementation is implied. |
 | 0.4.1b | 2026-10-16 | Remove retired local review integration and its references. |
+| 0.4.3 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
+| 0.4.4 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |

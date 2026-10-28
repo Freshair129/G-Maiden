@@ -1,3 +1,11 @@
+---
+title: "AGENTS.md"
+doc_id: "agents"
+status: active
+version: "0.4.5"
+updated: "2026-10-28"
+owner: "G-Maiden"
+---
 # AGENTS.md
 
 > Context and governance for AI coding agents (Codex, Claude Code, Copilot, etc.)
@@ -160,7 +168,7 @@ detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`)
 |-----------|--------|------------------------|
 | G-Signal end-to-end latency | p50 ≤ 250ms, **every measured sample ≤300ms** from acquisition/GSI arrival to audible onset | Player dies before warning |
 | Whole-app CPU | ≤ 10% normalized by logical CPU capacity, every 1s sample (MVP decision v0.2.0) | Game stutters |
-| Whole-app RAM | Aggregate peak Working Set ≤ 400,000,000 bytes, including host/WebView2/feeder/STT/SLM/model processes | Swap thrash |
+| Whole-app RAM | Aggregate peak Working Set ≤ 900,000,000 bytes, including host/WebView2/feeder/STT/SLM/model processes | Swap thrash |
 | FPS impact | ≤ 3% Dota 2 FPS drop | Unacceptable for competitive play |
 | **Privacy** | G-Log, G-Memory (including aggregates), CV, Voice audio/transcript local only; own-stat cloud context requires separate opt-in + allowlist | No implicit egress from sign-in/Ask/provider choice |
 | **Resilience** | G-Sentry/G-Motion/G-Signal and local Voice/Memory work without cloud; G-Signal has no SLM dependency | Core safety must survive disconnects |
@@ -495,3 +503,5 @@ These are **functional requirements**, not flavor text. Maiden must:
 | 0.2.1b | 2026-07-22 | Normalized reader-facing product naming while preserving technical identifiers and anchors. |
 | 0.2.0b | 2026-07-21 | Added authoritative GMAD delivery, legal-consent, and desktop first-run handoff context for cross-session agents. |
 | 0.1.0b | 2026-07-21 | Added governance for proposed GID security, recovery, and privacy-safe web profiles; no implementation is implied. |
+| 0.4.4 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
+| 0.4.5 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |

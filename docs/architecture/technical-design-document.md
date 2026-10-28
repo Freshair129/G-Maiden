@@ -2,8 +2,8 @@
 title: "G-Maiden Technical Design Document"
 doc_id: "technical-design-document"
 status: "active"
-version: "0.2.2"
-updated: "2026-10-19"
+version: "0.2.4"
+updated: "2026-10-28"
 owner: "Boss"
 related_docs: ["engineering-spec", "product-requirements", "mvp-decisions", "FEAT-G-SENSORY"]
 ---
@@ -118,10 +118,10 @@ Brain Router ──────────┤
 
 ## 7. การกำกับทรัพยากร (Resource Governor)
 
-`governor` sample ทุก 1s; ก่อนสร้าง Tauri/WebView2 แอปพยายามตั้ง Windows Job Object hard cap CPU 10% ของ logical CPU capacity, เปิด `KILL_ON_JOB_CLOSE`, แล้ว assign host process. `PROCESS_JOB` ถือ unnamed job handle ตลอดอายุโปรเซส; app-created children ซึ่งไม่ใช้ breakaway flag สืบทอด job membership ตาม Windows default. WebView2 membership ยังต้องยืนยันบน Windows acceptance:
+`governor` sample ทุก 1s; ก่อนสร้าง Tauri/WebView2 แอปพยายามตั้ง Windows Job Object operating hard cap CPU 8% ภายใต้ acceptance CPU≤10% ของ logical CPU capacity, เปิด `KILL_ON_JOB_CLOSE`, แล้ว assign host process. `PROCESS_JOB` ถือ unnamed job handle ตลอดอายุโปรเซส; app-created children ซึ่งไม่ใช้ breakaway flag สืบทอด job membership ตาม Windows default. WebView2 membership ยังต้องยืนยันบน Windows acceptance:
 - **CPU > 10% หรืออ่าน CPU group ไม่ได้** → คง capture throttle; เมื่ออ่านค่าได้และเกิน threshold ลด capture cadence เป็น soft mitigation
 - **Job create/configure/assignment ล้มเหลว** → บันทึกข้อผิดพลาดและออกด้วย exit code 1 ก่อน `tauri::Builder` สร้าง WebView หรือ sidecar; แอปจะไม่เริ่มโดยไม่มี whole-app hard-cap guarantee
-- **RAM ใกล้ 400MB** → unload SLM, ลด cache, GC ring buffer ส่วนเกิน
+- **Aggregate RAM >900MB หรืออ่านสมาชิกไม่ครบ** → resource pressure และถอน capture readiness ตาม governor; ไม่ยกเว้น model/shared pages ไม่ kill external model และไม่ trim Working Set/สั่ง browser GC เพื่อให้ผ่าน
 - **FPS impact > 3%** → ลด overlay redraw, ปิด effect หนัก (blur), drop ไป static HUD
 - เมื่อ runtime accounting query ล้มเหลว UI แสดง CPU sample unavailable และ throttle คงอยู่ ขณะที่ hard cap ยังตั้งอยู่. เมื่อ process ปิด handle สุดท้าย Windows ยุติสมาชิก job; normal Tauri Exit ยังหยุด exact owned feeder เพิ่มเติม. มติ fail-closed ทำให้ startup ปัจจุบันไม่สร้าง feeder หาก setup ล้มเหลว; feeder ที่ค้างจากรุ่นเก่าซึ่งเปิด degraded mode อยู่นอก job อาจยังค้างหลัง abnormal host exit. Feeder crash cleanup เป็น API-backed expectation ที่ยังต้องยืนยันบน Windows, ไม่ใช่ live-verified orphan-proof claim. CPU hard cap ไม่ใช่หลักฐานว่า FPS หรือ G-Signal latency ผ่านเกณฑ์; acceptance ยังต้องวัดบน process group จริง
 
@@ -175,7 +175,7 @@ G-Maiden/
 
 | ID | ความเสี่ยง | ผลกระทบ | การรับมือ |
 | --- | --- | --- | --- |
-| **R-01** | SLM กิน RAM เกิน 400MB | ผิด NFR | lazy-load only; ใช้ 0.5B หรือ template fallback; นิยาม budget เป็น background footprint |
+| **R-01** | SLM กิน RAM เกิน 900MB | ผิด NFR | lazy-load only; ใช้ 0.5B หรือ template fallback; นิยาม budget เป็น background footprint |
 | **R-02** | minimap CV ทำให้ whole-app CPU เกินเพดาน 10% / แม่นยำต่ำ | ผิด NFR / เตือนผิด | Job Object hard cap + capture soft throttle; วัด CPU/FPS/latency บน process group จริงก่อนปิด acceptance |
 | **R-03** | GSI ไม่มีข้อมูลศัตรูพอ | ฟีเจอร์หลักอ่อน | พึ่ง CV เป็นแหล่งหลักของตำแหน่งศัตรู; GSI ใช้ของเรา/timing |
 | **R-04** | Piper สังเคราะห์สดเกิน budget | G-Signal หลุด 300ms | critical ใช้ cache เสมอ; สดเฉพาะ non-critical |
@@ -192,4 +192,5 @@ G-Maiden/
 | 0.2.0 | 2026-10-12 | Aligned governor design with the 10% cap, unavailable telemetry ambiguity and kill-on-close lifecycle; live acceptance remains unverified. |
 | 0.2.1 | 2026-10-13 | Documented fail-closed startup, the post-setup runtime query fallback, and the bounded scope of shared governor state. |
 | 0.2.2 | 2026-10-19 | Aligned the system diagram and concurrency model with the capture-owned CV → Sentry → Motion → Signal pipeline and separate audio thread. |
-
+| 0.2.3 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
+| 0.2.4 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |

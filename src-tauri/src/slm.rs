@@ -125,7 +125,10 @@ pub fn readiness(model: &str) -> OllamaReadiness {
     };
     let (state, detail) = match ollama_tags_body() {
         Ok(models) if models.iter().any(|installed| installed == &model) => {
-            (OllamaState::Available, None)
+            match crate::governor::admit_local_provider() {
+                Ok(()) => (OllamaState::Available, None),
+                Err(detail) => (OllamaState::Unavailable, Some(detail)),
+            }
         }
         Ok(_) => (
             OllamaState::MissingModel,
@@ -161,6 +164,7 @@ pub fn advise_offline_with_timeout(
         return Err("Ollama request timed out before it started".into());
     }
     let model = selected_model(model)?;
+    crate::governor::admit_local_provider()?;
     call_ollama(&ollama_request_body(prompt, &model), timeout_ms)
 }
 
@@ -175,6 +179,7 @@ fn ollama_request_body(prompt: &str, model: &str) -> String {
 }
 
 fn call_ollama(json_body: &str, timeout_ms: u64) -> Result<String, String> {
+    crate::governor::record_external_ollama_use();
     let timeout_seconds = format!("{:.3}", timeout_ms.max(1) as f64 / 1000.0);
     let connect_timeout_seconds = format!("{:.3}", timeout_ms.clamp(1, 2_000) as f64 / 1000.0);
     let mut cmd = Command::new("curl");

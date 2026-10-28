@@ -71,8 +71,8 @@ pub fn net_worth_from(items_block: &Value, gold: i64) -> i64 {
 }
 
 /// Collect the internal item names present in the GSI `items` block, skipping
-/// empty slots. Feeds the self-burst estimate (damage.rs) so G-Master's advice is
-/// grounded on the player's real loadout. Same tolerant walk as `item_cost_sum`.
+/// empty slots. This describes ownership, including backpack/stash, and must
+/// not be used as the currently available combat loadout.
 pub fn item_names_from(items_block: &Value) -> Vec<String> {
     let Some(obj) = items_block.as_object() else {
         return Vec::new();
@@ -81,6 +81,35 @@ pub fn item_names_from(items_block: &Value) -> Vec<String> {
         .filter_map(|item| item.get("name").and_then(|n| n.as_str()))
         .filter(|n| !n.is_empty() && *n != "empty")
         .map(|n| n.to_string())
+        .collect()
+}
+
+/// Resolve equipped combat contributions separately from ownership/net worth.
+/// Only main inventory and the neutral slot confer combat bonuses. Backpack,
+/// stash, TP and unrecognized slots are excluded. Item actives require both an
+/// explicit zero cooldown and `can_cast: true`; unknown readiness adds no active
+/// burst. Cooldown does not remove an equipped item's passive attack bonus.
+pub fn combat_loadout_from(items_block: &Value) -> Vec<crate::damage::LoadoutItem> {
+    let Some(obj) = items_block.as_object() else {
+        return Vec::new();
+    };
+    obj.iter()
+        .filter(|(slot, _)| {
+            matches!(
+                slot.as_str(),
+                "slot0" | "slot1" | "slot2" | "slot3" | "slot4" | "slot5" | "neutral0"
+            )
+        })
+        .filter_map(|(_, item)| {
+            let name = item.get("name")?.as_str()?;
+            let mut contribution = crate::damage::lookup_item(name)?.clone();
+            let active_ready = item.get("cooldown").and_then(Value::as_f64) == Some(0.0)
+                && item.get("can_cast").and_then(Value::as_bool) == Some(true);
+            if !active_ready {
+                contribution.active_burst = 0.0;
+            }
+            Some(contribution)
+        })
         .collect()
 }
 
@@ -140,8 +169,79 @@ mod tests {
         });
         let mut names = item_names_from(&items);
         names.sort();
-        assert_eq!(names, vec!["item_blink".to_string(), "item_dagon".to_string()]);
+        assert_eq!(
+            names,
+            vec!["item_blink".to_string(), "item_dagon".to_string()]
+        );
         assert!(item_names_from(&Value::Null).is_empty());
+    }
+
+    #[test]
+    fn combat_loadout_excludes_backpack_stash_and_unknown_slots_without_losing_ownership() {
+        let items = json!({
+            "slot0": {"name": "item_demon_edge"},
+            "slot6": {"name": "item_dagon_5", "cooldown": 0, "can_cast": true},
+            "stash0": {"name": "item_dagon_5", "cooldown": 0, "can_cast": true},
+            "future0": {"name": "item_dagon_5", "cooldown": 0, "can_cast": true},
+            "teleport0": {"name": "item_dagon_5", "cooldown": 0, "can_cast": true}
+        });
+        let combat = combat_loadout_from(&items);
+        assert_eq!(combat.len(), 1);
+        assert_eq!(combat[0].name, "item_demon_edge");
+        assert_eq!(item_names_from(&items).len(), 5);
+        assert_eq!(net_worth_from(&items, 100), 2200 + 4 * 7650 + 100);
+    }
+
+    #[test]
+    fn combat_actives_require_explicit_ready_and_castable_state() {
+        for unavailable in [
+            json!({"name":"item_dagon_5"}),
+            json!({"name":"item_dagon_5", "cooldown":0}),
+            json!({"name":"item_dagon_5", "cooldown":1, "can_cast":true}),
+            json!({"name":"item_dagon_5", "cooldown":0, "can_cast":false}),
+            json!({"name":"item_dagon_5", "cooldown":-1, "can_cast":true}),
+            json!({"name":"item_dagon_5", "cooldown":"0", "can_cast":true}),
+        ] {
+            let combat = combat_loadout_from(&json!({"slot0":unavailable}));
+            assert_eq!(combat[0].active_burst, 0.0);
+        }
+        let combat = combat_loadout_from(&json!({
+            "slot5":{"name":"item_dagon_5", "cooldown":0, "can_cast":true},
+            "neutral0":{"name":"item_demon_edge"}
+        }));
+        assert_eq!(combat.len(), 2);
+        assert!(combat.iter().any(|item| item.active_burst == 800.0));
+    }
+
+    #[test]
+    fn combat_preserves_equipped_passive_damage_while_active_is_unavailable() {
+        let combat = combat_loadout_from(&json!({
+            "slot0":{"name":"item_demon_edge", "cooldown":8, "can_cast":false}
+        }));
+        assert_eq!(combat[0].bonus_attack_damage, 46.0);
+    }
+
+    #[test]
+    fn self_burst_uses_only_equipped_ready_contributions() {
+        let hero = "npc_dota_hero_crystal_maiden";
+        let burst = |items: Value| {
+            crate::damage::self_burst_with_loadout(hero, 6, &combat_loadout_from(&items))
+                .unwrap()
+                .total_burst
+        };
+        let bare = burst(json!({}));
+        let stashed =
+            burst(json!({"stash0":{"name":"item_dagon_5", "cooldown":0, "can_cast":true}}));
+        let cooling =
+            burst(json!({"slot0":{"name":"item_dagon_5", "cooldown":1, "can_cast":true}}));
+        let ready = burst(json!({"slot0":{"name":"item_dagon_5", "cooldown":0, "can_cast":true}}));
+        assert_eq!(stashed, bare);
+        assert_eq!(cooling, bare);
+        assert!((ready - bare - 600.0).abs() < 0.001);
+        assert!(
+            burst(json!({"slot0":{"name":"item_demon_edge", "cooldown":1, "can_cast":false}}))
+                > bare
+        );
     }
 
     #[test]

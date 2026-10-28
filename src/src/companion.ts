@@ -1,3 +1,5 @@
+import { DEFAULTS, type AdviceUpdate, type MissingState, type Settings } from "./app/types";
+import { adviceAllowedBySettings, advicePolicyKey, isAdviceGenerationCurrent, validAdviceGeneration } from "./app/adviceGeneration";
 import { useRef, useSyncExternalStore } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
@@ -26,8 +28,8 @@ import { allowsSessionLifecycleAdvance, sessionEpochRelation } from "./live/sess
 const STEAMID64_BASE = 76561197960265728n;
 
 export type CompanionTone = "info" | "warn" | "danger" | "good";
-// "empty" = an honestly-unknown slot (CR-007 WP-4): GSI exposes only the
-// local player, so 9 of the 10 hero slots start with no identity at all.
+// "empty" = unknown presence, including a known roster identity without a
+// current confirmed observation. Own-player presence comes directly from GSI.
 export type HeroState = "visible" | "missing" | "dead" | "empty";
 
 export type CompanionData = {
@@ -206,6 +208,8 @@ export type CompanionData = {
     health: SensorHealth | null;
     local: { hero: string; team: string; alive: boolean; respawnSeconds: number } | null;
     missing: string[];
+    visible: string[];
+    warningReady: boolean;
     missingPos: Array<[string, [number, number]]>;
     gank: SignalAlert | null;
     phase: MatchPhase;
@@ -316,7 +320,7 @@ export const FALLBACK: CompanionData = {
   utterances: [],
   heroCv: {
     roster: null, hud: null, minimap: null, health: null, local: null,
-    missing: [], missingPos: [], gank: null, phase: "standby"
+    missing: [], visible: [], warningReady: false, missingPos: [], gank: null, phase: "standby"
   }
 };
 
@@ -483,6 +487,7 @@ export const MOCK: CompanionData = {
       id: "utt-mock-1",
       ...mockUtteranceAt(1),
       source: "signal",
+      phase: "requested",
       kind: "revision",
       text: "เอ๊ะ! เดี๋ยวก่อน — เจอ Pudge ที่รูนบนค่ะ ถอยก่อนนะคะ",
       retracted: "เลนบนปลอดภัย เดินหน้าได้เลย",
@@ -492,6 +497,7 @@ export const MOCK: CompanionData = {
       id: "utt-mock-2",
       ...mockUtteranceAt(3),
       source: "master",
+      phase: "requested",
       kind: "line",
       text: "ศัตรูมี magic burst สูง — ชิ้นต่อไปแนะนำ Glimmer Cape ค่ะ (เหลืออีก 350 ทอง)",
       retracted: null,
@@ -501,6 +507,7 @@ export const MOCK: CompanionData = {
       id: "utt-mock-3",
       ...mockUtteranceAt(5),
       source: "announcer",
+      phase: "requested",
       kind: "line",
       text: "ดับเบิลคิล (Double Kill) — แพ็ก Thai Caster Vol.2",
       retracted: null,
@@ -509,7 +516,7 @@ export const MOCK: CompanionData = {
   ],
   heroCv: {
     roster: null, hud: null, minimap: null, health: null, local: null,
-    missing: [], missingPos: [], gank: null, phase: "standby"
+    missing: [], visible: [], warningReady: false, missingPos: [], gank: null, phase: "standby"
   }
 };
 
@@ -529,6 +536,8 @@ type LiveState = {
   cv: MinimapCv | null;
   gank: SignalAlert | null;
   missing: Map<string, number>;
+  visibleHeroes: Set<string>;
+  warningReady: boolean;
   missingPos: Map<string, [number, number]>; // 2b-B: last-seen pos of missing enemies (markers)
   // CR-007 WP-4 Fix 3: permanent npcHeroName -> enemy-slot-index (0-4) table.
   // Assigned once per hero (assignEnemySlot in buildHeroes.ts), never
@@ -576,7 +585,7 @@ type LiveState = {
 };
 
 const EMPTY_LIVE: LiveState = {
-  tick: null, status: null, session: null, cv: null, gank: null, heroHud: null, missing: new Map(), missingPos: new Map(),
+  tick: null, status: null, session: null, cv: null, gank: null, heroHud: null, warningReady: false, missing: new Map(), visibleHeroes: new Set(), missingPos: new Map(),
   enemySlots: new Map(),
   active: false, od: null, stats: null, health: null, advice: null, logs: null, activityLog: [], mom: EMPTY_MOMENTUM, roster: null,
   utterances: [],
@@ -614,15 +623,22 @@ let logsLoadedForSession: string | null = null;
 let lastOpenDotaAccountId: number | null = null;
 let logsRequestSeq = 0;
 let profileRequestSeq = 0;
+let identityRequestSeq = 0;
+let identityPending = false;
+let lastAutoSteamId: string | null = null;
 let activitySeq = 0; // monotonic id source for buildActivity() — keeps ids pure/deterministic
+let heartbeatReceiptAt = 0;
 
-function cloneLive(state: LiveState): LiveState {
-  return {
-    ...state,
-    missing: new Map(state.missing),
-    missingPos: new Map(state.missingPos),
-    enemySlots: new Map(state.enemySlots),
-  };
+// The feed-age pill can observe duplicate receipts on its own small timer;
+// identical idle heartbeats need not rebuild every deck panel to update age.
+export function latestBackendReceiptAt(): number {
+  return heartbeatReceiptAt;
+}
+
+function equalHeartbeat<T extends object>(previous: T | null, incoming: T): boolean {
+  if (!previous) return false;
+  const keys = Object.keys(incoming) as Array<keyof T>;
+  return keys.length === Object.keys(previous).length && keys.every((key) => Object.is(previous[key], incoming[key]));
 }
 
 function mergeSessionMetadata(
@@ -671,7 +687,9 @@ function resetMatchScopedState(
     cv: null,
     heroHud: null,
     gank: null,
+    warningReady: false,
     missing: new Map(),
+    visibleHeroes: new Set(),
     missingPos: new Map(),
     enemySlots: new Map(),
     advice: null,
@@ -707,10 +725,10 @@ function buildCompanionData(live: LiveState): CompanionData {
     ? {
         ...FALLBACK,
         updatedAt: Date.now(),
-        match: { ...buildMatch(freshTick, live.status, FALLBACK.match), matchPhase: live.phase, activeAlerts: countActiveAlerts(live.gank, live.missing, live.health?.healthy ?? false) ?? -1 },
-        heroes: buildHeroes(freshTick, live.missing, live.cv, FALLBACK.heroes, live.enemySlots, live.roster, freshTick?.team_name ?? ""),
+        match: { ...buildMatch(freshTick, live.status, FALLBACK.match), matchPhase: live.phase, activeAlerts: countActiveAlerts(live.gank, live.missing, (live.health?.healthy ?? false) && live.warningReady) ?? -1 },
+        heroes: buildHeroes(freshTick, live.missing, live.cv, FALLBACK.heroes, live.enemySlots, live.roster, freshTick?.team_name ?? "", live.visibleHeroes),
         markers: buildMarkers(live.cv, live.missingPos, FALLBACK.markers),
-        signals: buildSignals(live.gank, live.missing, live.health?.healthy ?? false),
+        signals: buildSignals(live.gank, live.missing, (live.health?.healthy ?? false) && live.warningReady),
         buildAdvisor: buildAdvisor(freshTick, gsiFresh ? live.advice : null, FALLBACK.buildAdvisor),
         activity: live.activityLog,
         momentum: gsiFresh ? momentumView(live.mom, freshTick) : FALLBACK.momentum,
@@ -766,6 +784,8 @@ function buildCompanionData(live: LiveState): CompanionData {
         respawnSeconds: currentTick.respawn_seconds
       } : null,
       missing: [...live.missing.keys()],
+      visible: [...live.visibleHeroes],
+      warningReady: live.warningReady,
       missingPos: [...live.missingPos.entries()],
       gank: live.gank,
       phase: live.phase
@@ -788,7 +808,8 @@ function subscribeStore(onStoreChange: () => void) {
 
 function applyDerivedSideEffects() {
   const sid = liveState.tick?.steamid;
-  if (sid && accountIdState == null) {
+  if (sid && accountIdState == null && !identityPending && sid !== lastAutoSteamId) {
+    lastAutoSteamId = sid;
     try {
       const acc = Number(BigInt(sid) - STEAMID64_BASE);
       if (acc > 0) {
@@ -857,7 +878,12 @@ function syncRuntimeActive() {
   const next = docVisible && windowFocused;
   if (runtimeActive === next) return;
   runtimeActive = next;
-  if (runtimeActive) flushPending();
+  if (runtimeActive) {
+    // Expiry can commit while hidden without leaving a pending flush. Rebuild
+    // the snapshot on focus so an old visible reading cannot reappear.
+    if (pendingLive) flushPending();
+    else publish();
+  }
 }
 
 async function refreshOpenDotaProfile(accountId: number) {
@@ -866,7 +892,7 @@ async function refreshOpenDotaProfile(accountId: number) {
   const req = ++profileRequestSeq;
   try {
     const od = await fetchOpenDotaProfile(String(accountId), heroName);
-    if (req !== profileRequestSeq || !od) return;
+    if (req !== profileRequestSeq || accountIdState !== accountId || !od) return;
     updateLive((s) => (s.od === od ? s : { ...s, od }), true);
   } catch {
     /* offline / private profile — stay on fallback */
@@ -979,6 +1005,8 @@ function ensureRuntime() {
     updateLive((s) => {
       const relation = sessionEpochRelation(p.session_epoch, s.session?.session_epoch);
       if (relation === "stale") return s;
+      heartbeatReceiptAt = Date.now();
+      if (p.gsi_active === false && p.in_game === false && equalHeartbeat(s.status, p)) return s;
       const newEpoch = relation === "new";
       const session = mergeSessionMetadata(s.session, p);
       let base = newEpoch ? resetMatchScopedState(s, session, true) : s;
@@ -1016,19 +1044,47 @@ function ensureRuntime() {
   // not live match data, and flipping the deck out of FALLBACK on it would show
   // a "live" shell with nothing behind it. FALLBACK's signals are already all
   // "—", so both branches stay honest.
-  sub<SensorHealth>("sensor-health", (p) => updateLive((s) => ({ ...s, health: p }), true));
+  sub<SensorHealth>("sensor-health", (p) => {
+    heartbeatReceiptAt = Date.now();
+    updateLive((s) => p.healthy === false && equalHeartbeat(s.health, p) ? s : { ...s, health: p }, true);
+  });
   // G-Master advice reached only the Overlay toast and the Settings card; the
   // deck's own Build tab had no producer at all. Cached re-fetches are ignored —
   // the auto path re-emits the same text within its cooldown, and re-rendering
   // identical advice adds nothing.
-  sub<{ text: string; cached: boolean } & MatchSessionMetadata>("advice-update", (p) => {
-    if (p.cached || !p.text) return;
-    updateLive((s) => {
-      if (!sessionEventIsCurrent(s, p, ["live"])) return s;
-      if (s.status?.gsi_freshness !== "fresh" || !s.status.gsi_active) return s;
-      if (s.session?.session_lifecycle && s.session.session_lifecycle !== "live") return s;
-      return { ...s, advice: p.text, active: true };
-    }, true);
+  let adviceRevision = 0;
+  let nativeAdviceGeneration: number | null = null;
+  let adviceSettings = DEFAULTS;
+  sub<Settings>("settings", (settings) => {
+    const next = { ...DEFAULTS, ...settings };
+    if (advicePolicyKey(next) !== advicePolicyKey(adviceSettings)) {
+      adviceRevision += 1;
+      updateLive((s) => ({ ...s, advice: null }), true);
+    }
+    adviceSettings = next;
+  });
+  sub<{ context_generation: number }>("master-context-changed", (p) => {
+    if (!validAdviceGeneration(p.context_generation)) return;
+    if (nativeAdviceGeneration !== null && p.context_generation <= nativeAdviceGeneration) return;
+    nativeAdviceGeneration = p.context_generation;
+    adviceRevision += 1;
+    updateLive((s) => ({ ...s, advice: null }), true);
+  });
+  sub<AdviceUpdate>("advice-update", (p) => {
+    if (p.cached || !p.text || !adviceAllowedBySettings(p, adviceSettings)) return;
+    if (nativeAdviceGeneration !== null && p.context_generation < nativeAdviceGeneration) return;
+    const revision = adviceRevision;
+    void isAdviceGenerationCurrent(p).then((current) => {
+      if (!current || revision !== adviceRevision || !adviceAllowedBySettings(p, adviceSettings)) return;
+      if (nativeAdviceGeneration !== null && p.context_generation < nativeAdviceGeneration) return;
+      nativeAdviceGeneration = p.context_generation;
+      updateLive((s) => {
+        if (!sessionEventIsCurrent(s, p, ["live"])) return s;
+        if (s.status?.gsi_freshness !== "fresh" || !s.status.gsi_active) return s;
+        if (s.session?.session_lifecycle && s.session.session_lifecycle !== "live") return s;
+        return { ...s, advice: p.text, active: true };
+      }, true);
+    });
   });
   sub<MinimapCv>("minimap-cv", (p) => {
     const current = pendingLive ?? liveState;
@@ -1064,58 +1120,43 @@ function ensureRuntime() {
     lastFrameAt = now;
     setMinimapFrame(p);
   });
-  sub<SignalAlert>("gank-alert", (p) =>
-    updateLive((s) => {
-      if (!sessionEventIsCurrent(s, p, ["live", "disconnected"])) return s;
-      return {
-        ...s,
-        gank: p,
-        active: true,
-        activityLog: buildActivity({ kind: "gank-alert", payload: p }, Date.now(), ++activitySeq, s.activityLog)
-      };
-    }, true)
-  );
+  sub<SignalAlert>("gank-alert", (p) => {
+    if (!sessionEventIsCurrent(pendingLive ?? liveState, p, ["live", "disconnected"])) return;
+    updateLive((s) => ({ ...s, gank: p, active: true,
+      activityLog: buildActivity({ kind: "gank-alert", payload: p }, Date.now(), ++activitySeq, s.activityLog),
+    }), true);
+    const old = expiryTimers.get("gank-alert");
+    if (old) window.clearTimeout(old);
+    expiryTimers.set("gank-alert", window.setTimeout(() => {
+      updateLive((s) => s.session?.session_epoch === p.session_epoch ? { ...s, gank: null } : s, true);
+      expiryTimers.delete("gank-alert");
+    }, 6000));
+  });
   sub<MatchSessionMetadata>("gank-clear", (p) =>
-    updateLive((s) => {
-      if (!sessionEventIsCurrent(s, p, ["live", "disconnected"])) return s;
-      return {
-        ...s,
-        gank: null,
-        missing: new Map(),
-        missingPos: new Map(),
-        active: true,
-        activityLog: buildActivity({ kind: "gank-clear" }, Date.now(), ++activitySeq, s.activityLog)
-      };
-    }, true)
+    updateLive((s) => sessionEventIsCurrent(s, p, ["live", "disconnected"])
+      ? { ...s, gank: null, activityLog: buildActivity({ kind: "gank-clear" }, Date.now(), ++activitySeq, s.activityLog) }
+      : s, true)
   );
   sub<EnemyMissing>("enemy-missing", (p) => {
-    const current = pendingLive ?? liveState;
-    if (!sessionEventIsCurrent(current, p, ["live", "disconnected"])) return;
-    updateLive((s) => {
-      if (!sessionEventIsCurrent(s, p, ["live", "disconnected"])) return s;
-      const next = cloneLive(s);
-      next.missing.set(p.hero, p.missing_for_ms);
-      next.missingPos.set(p.hero, p.last_pos);
-      next.enemySlots = assignEnemySlot(next.enemySlots, p.hero);
-      next.active = true;
-      next.activityLog = buildActivity({ kind: "enemy-missing", payload: p }, Date.now(), ++activitySeq, s.activityLog);
-      return next;
-    });
-    const prev = expiryTimers.get(p.hero);
-    if (prev) window.clearTimeout(prev);
-    const capturedEpoch = p.session_epoch;
-    const t = window.setTimeout(() => {
-      updateLive((s) => {
-        if (s.session?.session_epoch !== capturedEpoch) return s;
-        if (!s.missing.has(p.hero) && !s.missingPos.has(p.hero)) return s;
-        const next = cloneLive(s);
-        next.missing.delete(p.hero);
-        next.missingPos.delete(p.hero);
-        return next;
-      }, true);
-      expiryTimers.delete(p.hero);
-    }, 30_000);
-    expiryTimers.set(p.hero, t);
+    updateLive((s) => sessionEventIsCurrent(s, p, ["live", "disconnected"])
+      ? { ...s, activityLog: buildActivity({ kind: "enemy-missing", payload: p }, Date.now(), ++activitySeq, s.activityLog) }
+      : s);
+  });
+  sub<MissingState>("missing-state", (p) => {
+    if (!sessionEventIsCurrent(pendingLive ?? liveState, p, ["live", "disconnected"])) return;
+    updateLive((s) => ({ ...s, active: true, warningReady: p.ready,
+      visibleHeroes: new Set(p.ready ? p.visible_heroes : []),
+      missing: new Map(p.ready ? p.observations.map((observation) => [observation.hero, observation.missing_for_ms]) : []),
+      missingPos: new Map(p.ready ? p.observations.map((observation) => [observation.hero, observation.last_pos]) : []),
+      gank: p.ready ? s.gank : null,
+    }), true);
+    const old = expiryTimers.get("missing-state");
+    if (old) window.clearTimeout(old);
+    expiryTimers.set("missing-state", window.setTimeout(() => {
+      updateLive((s) => s.session?.session_epoch === p.session_epoch
+        ? { ...s, warningReady: false, gank: null, visibleHeroes: new Set(), missing: new Map(), missingPos: new Map() } : s, true);
+      expiryTimers.delete("missing-state");
+    }, 1000));
   });
   sub<UtteranceEvent>("utterance", (p) => {
     // Monotonic seq (not Date.now()) as the collision breaker: a 3rd same-source
@@ -1129,9 +1170,16 @@ function ensureRuntime() {
   });
 
   const syncIdentity = () => {
+    const request = ++identityRequestSeq;
+    identityPending = true;
+    profileRequestSeq++;
+    lastOpenDotaAccountId = null;
+    lastAutoSteamId = liveState.tick?.steamid ?? null;
+    updateLive((s) => s.od ? { ...s, od: null } : s, true);
     void loadIdentity().then((id) => {
+      if (request !== identityRequestSeq) return;
+      identityPending = false;
       const next = id?.accountId ?? null;
-      if (accountIdState === next) return;
       accountIdState = next;
       if (next != null) void refreshOpenDotaProfile(next);
     });

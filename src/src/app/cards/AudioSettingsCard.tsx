@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core'
 import { C } from '../theme'
 import { Card } from '../primitives'
 import type { VoiceCacheStatus, EventClip } from '../types'
+import { speakStaticAdvicePreview } from '../adviceGeneration'
 
 // ─────────────────────────────── AUDIO SETTINGS (unified voice pack + event manager) ───────────────────────────────
 const PREVIEW_LINES: Record<string, string> = {
@@ -44,7 +45,7 @@ const EVENT_LABELS: Record<string, string> = {
   wicked_sick: 'โหดมาก', monster_kill: 'มอนสเตอร์', godlike: 'ก็อดไลก์', beyond_godlike: 'เหนือเทพ',
   match_start: 'เริ่มเกม', death: 'ตาย', respawn: 'ฟื้น', levelUp: 'เลเวลอัป', advice: 'คำแนะนำ',
 }
-export const AudioSettingsCard: React.FC = () => {
+export const AudioSettingsCard: React.FC = React.memo(function AudioSettingsCard() {
   const [st, setSt] = useState<VoiceCacheStatus | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [clips, setClips] = useState<EventClip[]>([])
@@ -69,7 +70,8 @@ export const AudioSettingsCard: React.FC = () => {
   }
   const playEvent = (ev: string) => {
     setPlaying(ev)
-    void invoke('speak_event', { event: ev, fallback: PREVIEW_LINES[ev] ?? '', voice: null, rate: null }).catch(() => {})
+    if (ev === 'advice') void speakStaticAdvicePreview().catch(() => {})
+    else void invoke('speak_event', { event: ev, fallback: PREVIEW_LINES[ev] ?? '', voice: null, rate: null }).catch(() => {})
     setTimeout(() => setPlaying(null), 2000)
   }
 
@@ -173,4 +175,4 @@ export const AudioSettingsCard: React.FC = () => {
       </div>
     </Card>
   )
-}
+})

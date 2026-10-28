@@ -1,6 +1,27 @@
 # Changelog
 
 ## [Unreleased]
+### Changed
+- **งบ RAM รวม 900 MB ตามมติผู้ใช้** — ใช้เพดาน 900,000,000 bytes สำหรับ Working Set รวม host/WebView2/feeder/STT/SLM และ provider/model ที่ใช้จริง; UI และ resource governor ใช้เกณฑ์เดียวกัน คง CPU, latency, FPS, privacy และการปฏิเสธ provider ที่พิสูจน์งบไม่ได้
+
+### Fixed
+- **ปิด logic ที่เหลือจาก feature audit** — กันคำขอคำแนะนำซ้อนและคำตอบเก่าข้ามการตั้งค่า/แมตช์; ซื้อเกิดผูกกับ death episode/request; บัญชีและ Steam ปฏิเสธ response เก่า พร้อมรับ OAuth callback เพียงชุดเดียว
+- **เสียงและแบนเนอร์ตรงแหล่งจริง** — ANN ใช้เฉพาะแพ็กที่เลือก ไม่แทนด้วยเสียงกลางเมื่อไม่มีคลิป; SAPI/rodio ใช้ admission ร่วม; ledger แยกสร้าง/ร้องขอ/รับเข้าเล่นและระบุคลิปจริง; preview นอกเกมมี identity/expiry ของตัวเอง
+- **Memory และ combat inventory** — log ชื่อ session ใช้งานหลังล้าง Memory ได้จาก start record ที่ตรวจสอบแล้ว อ่าน header แบบจำกัด; combo ใช้เฉพาะช่องไอเท็มที่พร้อมรบ โดยคงข้อมูล ownership/NW แยกไว้
+- **Event ของ overlay ไม่ถูกกลืน** — แยก baseline ของ persona, kill banner และ auto-advice; กันพลาด kill แรกตอนเปลี่ยนแมตช์/เข้า live และไม่เดาชื่อเหยื่อจากรายชื่อฮีโร่หาย
+- **Announcer ตรงข้อมูลเกมมากขึ้น** — เริ่มที่ horn แทนเวลาติดลบก่อนเกม; reset สตรีคจากยอดตายแม้ feed ขาด; ไม่ประกาศ first blood หรือสตรีคจากชุดข้อมูลที่ลำดับกำกวม
+- **ลดงานซ้ำของหน้าจอและภาพจับ** — cache ข้อความวันที่ประวัติแบบจำกัดขนาด และสร้าง texture เต็มจอของ DXGI เมื่อมีผู้ใช้จริง; การจับ ROI และเงื่อนไข CV เดิมยังครบ ต้องวัด RAM รวมจาก native build อีกครั้ง
+- **Waveform และปุ่มฟังแพ็ก** — สร้างข้อมูลแถบเสียงขนาดจำกัดใน Rust แทนการถอดรหัสและเปิดเสียงเงียบซ้ำใน WebView; ปุ่ม Play ฟังแพ็กที่เลือกผ่าน native โดยไม่เปลี่ยนแพ็กหลักหรือเรียกแบนเนอร์
+- **รายชื่อเสียง Windows และไฟล์เสียงว่าง** — อ่าน metadata classic SAPI ผ่าน native COM โดยไม่เปิด PowerShell; ปฏิเสธ WAV ที่ไม่มีเฟรมก่อนยืนยัน playback และล้าง priority ค้างเมื่อเสียงถูกปฏิเสธ
+- **ลดโปรเซสชั่วคราวของระบบตรวจจับ** — ตรวจชื่อ Dota ด้วย native process snapshot และอ่าน GPU ผ่าน NVML แบบ read-only แทนการเปิด tasklist/NVIDIA-SMI; คง error/health/ACK และนับ RAM ของทุกโปรเซสตามเดิม ผลรอบทดสอบงบเดิม 400 MB เก็บแยกจากมติ MVP 900 MB
+- **ลดการสร้าง formatter ซ้ำในหน้าแอป** — ใช้ตัวจัดรูปแบบวันที่ประวัติร่วมกันแทนการสร้างใหม่ทุกแถวเมื่อ telemetry อัปเดต โดยคงวันที่ท้องถิ่นและภาษาเดิม; ผล native ต้องแยกจากผล unit tests
+- **แก้เจ็ดจุดเร่งด่วนจาก feature audit** — GSI เลือกพอร์ต 3000–3010 พร้อม health/Studio/feeder และซิงก์ตำแหน่งติดตั้งที่เลือก; สถานะฮีโร่และซื้อเกิดไม่ตีความข้อมูลที่ขาดว่าปลอดภัย; updater ตรวจอีกครั้งก่อนเปิด installer; คำแนะนำและเสียงปฏิเสธ generation เก่าเมื่อเปลี่ยนสิทธิ์หรือการตั้งค่า
+- **Resource/CV admission** — รวม RAM ของ process group ตามหน่วย decimal MB และ CPU ลูกที่จบไปแล้ว; ปฏิเสธ Ollama ที่พิสูจน์งบไม่ได้; ตัด polling delay ออกจาก critical path ใช้ deadline และ cached audio admission พร้อมคง prewarmed Signal fallback และ priority ของเสียงเตือน
+- **อ่าน HUD portrait ให้ตรงภาพจริง (CR-036)** — แก้กรอบครอปและตัดไอคอนทับออก เทียบทั้ง grayscale/RGB กับ default/Arcana/Persona อ้างอิงในเครื่อง; คง confidence/margin และ hero-ID/temporal gates เดิม ไม่บังคับเดาช่องที่ตายหรือมีเอฟเฟกต์บัง
+- **ผูก CV กับ Valve hero ID (CR-036)** — Sentry ติดตามด้วย ID ที่ยืนยันจาก portrait และ session ปัจจุบันเท่านั้น; unknown/ชื่อไม่มี ID/รายชื่อเก่าไม่สร้างการเตือน พร้อม local roster_confirmed และ hero_id ใน missing log
+- **ลด false missing/gank alerts (CR-036)** — ใช้รายชื่อศัตรูที่ยืนยันจาก portrait หลายเฟรม กรอง unknown/ชื่อซ้ำ/พันธมิตร; งดเตือนก่อนเกมเริ่ม ขณะตาย ภาพขาดหรือออกจากเกม และต้องมีหลักฐานการเคลื่อนที่ร่วมกันก่อนเตือนเสียง
+- **กันเตือนซ้ำและชื่อค้าง** — หนึ่งเสียงต่อการหายหนึ่งครั้ง พร้อม cooldown; ใช้ missing snapshot สด ไม่สะสมชื่อ 30 วินาที และไม่อ้างปลอดภัยจาก risk ที่ลดลงเอง มี local warning_gate log สำหรับตรวจย้อนหลัง
+
 ### Added
 - **จัดวาง Overlay ในแอปและขยายเต็มจอ** — ลาก/ปรับขนาดบนภาพ Dota ที่ฝังมากับแอป บันทึกโปรไฟล์ กดปิดหรือ Esc กลับขนาดหน้าต่างเดิม; preview แสดง Score/KDA/Gold โดยไม่ส่ง game-tick จำลอง และย้ายค่าเริ่มต้นออกจาก HUD กลางจอ
 - **แท็บฮีโร่ CV ตั้งแต่ Draft ถึง In-game** — อ่านช่องผู้เล่น Radiant/Dire จากภาพ

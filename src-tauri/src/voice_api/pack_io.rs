@@ -71,10 +71,8 @@ pub(crate) struct StoreInstallRecord {
 }
 
 const STORE_INSTALL_PUBLIC_KEY: [u8; 32] = [
-    0x79, 0xe2, 0x56, 0xed, 0x1d, 0x81, 0x6f, 0x08,
-    0x3a, 0x0c, 0xb9, 0x80, 0x2a, 0x6f, 0x59, 0x00,
-    0x30, 0x45, 0xf9, 0xc1, 0x0a, 0x38, 0x16, 0x17,
-    0xc1, 0xea, 0x9a, 0x9f, 0xae, 0xc1, 0xa8, 0x7a,
+    0x79, 0xe2, 0x56, 0xed, 0x1d, 0x81, 0x6f, 0x08, 0x3a, 0x0c, 0xb9, 0x80, 0x2a, 0x6f, 0x59, 0x00,
+    0x30, 0x45, 0xf9, 0xc1, 0x0a, 0x38, 0x16, 0x17, 0xc1, 0xea, 0x9a, 0x9f, 0xae, 0xc1, 0xa8, 0x7a,
 ];
 
 fn store_installations_path() -> PathBuf {
@@ -329,7 +327,10 @@ fn build_store_archive_index(bytes: &[u8], pack_id: &str) -> Result<ArchiveIndex
     if manifest.id != pack_id {
         return Err("รหัสแพ็กในไฟล์ไม่ตรงกับหลักฐาน Store".into());
     }
-    let pack_root = manifest_path.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
+    let pack_root = manifest_path
+        .parent()
+        .unwrap_or_else(|| Path::new(""))
+        .to_path_buf();
 
     let mut index = HashMap::with_capacity(entries.len());
     for (entry_index, path, is_dir, size) in entries {
@@ -454,7 +455,8 @@ pub(crate) fn build_pack(dir: &Path) -> Result<VoicePack, String> {
         // bannerAsset (see safe_pack_path) — this path runs on every
         // `state()` call, i.e. merely opening Audio Settings, not just on a
         // fired event, so it must be validated too.
-        let url = safe_pack_path(dir, &manifest.cover_image).and_then(|path| read_banner_data_url(&path));
+        let url =
+            safe_pack_path(dir, &manifest.cover_image).and_then(|path| read_banner_data_url(&path));
         (manifest.cover_image.clone(), url)
     } else if let Some(first) = banners.first() {
         let path = dir.join(first.path.replace('\\', "/"));
@@ -575,11 +577,7 @@ pub(crate) fn default_pack() -> Option<VoicePack> {
                 .iter()
                 .filter_map(|full| {
                     Some(VoiceAssetOption {
-                        path: format!(
-                            "{}/{}",
-                            event.id,
-                            full.file_name()?.to_string_lossy()
-                        ),
+                        path: format!("{}/{}", event.id, full.file_name()?.to_string_lossy()),
                         name: full.file_name()?.to_string_lossy().to_string(),
                         url: full.to_string_lossy().to_string(),
                     })
@@ -629,7 +627,7 @@ pub(crate) fn default_pack() -> Option<VoicePack> {
         locale: "th-TH".to_string(),
         author: "G-Maiden".to_string(),
         author_gid: None,
-        description: "เสียงไทยมาตรฐานที่ติดตั้งมากับแอป — ใช้เป็นเสียงสำรองให้ทุกแพ็กเสมอ".to_string(),
+        description: "เสียงมาตรฐาน Maiden และ G-Signal; เสียง Announcer ใช้ตามแพ็กที่เลือก".to_string(),
         path: dir.to_string_lossy().to_string(),
         covered_events: covered,
         total_events: EVENTS.len(),
@@ -723,6 +721,7 @@ struct ResolvedCache {
     /// months than a bare `HashMap`.
     #[allow(dead_code)]
     pack_id: String,
+    pack_name: String,
     clips_by_event: HashMap<String, Vec<PathBuf>>,
 }
 
@@ -804,12 +803,30 @@ pub(crate) fn rebuild_resolved_cache() {
             load_store_archive_index(&record).ok()?;
         }
         let dir = packs_dir().join(sanitize_id(&id));
+        if id == DEFAULT_PACK_ID {
+            return Some(ResolvedCache {
+                pack_id: id,
+                pack_name: "G-Maiden Default".into(),
+                clips_by_event: EVENTS
+                    .iter()
+                    .map(|e| (e.id.to_string(), audio::default_event_clips(e.id)))
+                    .collect(),
+            });
+        }
         let manifest = read_manifest(&dir).ok()?;
         let mut clips_by_event = HashMap::with_capacity(manifest.mappings.len());
         for (event, mapping) in &manifest.mappings {
             clips_by_event.insert(event.clone(), resolve_existing_clips(&dir, &mapping.clips));
         }
-        Some(ResolvedCache { pack_id: id, clips_by_event })
+        Some(ResolvedCache {
+            pack_id: id.clone(),
+            pack_name: if manifest.name.is_empty() {
+                id
+            } else {
+                manifest.name
+            },
+            clips_by_event,
+        })
     })();
     store_resolved_cache(next);
 }
@@ -827,6 +844,42 @@ pub(crate) fn clear_resolved_cache_for_test() {
 /// that as "fall through to the legacy flat dir / bundled default pack".
 pub(crate) fn cached_event_clips(event: &str) -> Option<Vec<PathBuf>> {
     with_resolved_cache(|cache| cache?.clips_by_event.get(event).cloned())
+}
+
+#[derive(Clone, Debug)]
+pub struct AnnouncerClip {
+    pub pack_id: String,
+    pub pack_name: String,
+    pub path: PathBuf,
+}
+
+/// The selected pack and clip are read under the same cache lock. No ANN fallback.
+pub fn select_announcer_clip(event: &str) -> Option<AnnouncerClip> {
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        let path = audio::choose_clip(cache.clips_by_event.get(event)?.clone())?;
+        Some(AnnouncerClip {
+            pack_id: cache.pack_id.clone(),
+            pack_name: cache.pack_name.clone(),
+            path,
+        })
+    })
+}
+
+pub fn with_current_announcer_clip<T>(
+    event: &str,
+    selected: &AnnouncerClip,
+    admit: impl FnOnce() -> T,
+) -> Option<T> {
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        (cache.pack_id == selected.pack_id
+            && cache
+                .clips_by_event
+                .get(event)
+                .is_some_and(|clips| clips.contains(&selected.path)))
+        .then(admit)
+    })
 }
 
 pub(crate) fn read_active_pack_id() -> Option<String> {

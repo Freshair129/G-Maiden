@@ -12,8 +12,8 @@ use crate::audio;
 
 use super::events::GROUPS;
 use super::pack_io::{
-    self, read_active_pack_id, read_manifest, sanitize_file_name, sanitize_id, write_active_pack_id,
-    write_bytes, write_manifest, ManifestMapping, StoreInstallRecord,
+    self, read_active_pack_id, read_manifest, sanitize_file_name, sanitize_id,
+    write_active_pack_id, write_bytes, write_manifest, ManifestMapping, StoreInstallRecord,
 };
 use super::paths::{create_pack_skeleton, discover_pack_dirs, pack_dir, packs_dir, voice_root};
 use super::types::{
@@ -100,7 +100,10 @@ pub fn install_store_pack(item_id: &str, access_token: &str) -> Result<VoiceStat
     }
     let grant: StoreDownloadGrant = serde_json::from_slice(&grant_body)
         .map_err(|_| "คำตอบจาก Store มีรูปแบบไม่ถูกต้อง".to_string())?;
-    if grant.item_id != item_id || grant.pack_id.is_empty() || sanitize_id(&grant.pack_id) != grant.pack_id {
+    if grant.item_id != item_id
+        || grant.pack_id.is_empty()
+        || sanitize_id(&grant.pack_id) != grant.pack_id
+    {
         return Err("Store ส่งข้อมูลแพ็กที่ไม่ตรงกับรายการที่ซื้อ".into());
     }
     if grant.install_receipt.item_id != grant.item_id
@@ -110,14 +113,16 @@ pub fn install_store_pack(item_id: &str, access_token: &str) -> Result<VoiceStat
         return Err("หลักฐานติดตั้งจาก Store ไม่ถูกต้อง".into());
     }
 
-    let signed_url = reqwest::Url::parse(&grant.url)
-        .map_err(|_| "Store ส่งที่อยู่ดาวน์โหลดที่ไม่ถูกต้อง".to_string())?;
+    let signed_url =
+        reqwest::Url::parse(&grant.url).map_err(|_| "Store ส่งที่อยู่ดาวน์โหลดที่ไม่ถูกต้อง".to_string())?;
     if signed_url.scheme() != "https"
         || signed_url.host_str() != Some("wsseitulmcgnolgsrxgh.supabase.co")
         || signed_url.port_or_known_default() != Some(443)
         || !signed_url.username().is_empty()
         || signed_url.password().is_some()
-        || !signed_url.path().starts_with("/storage/v1/object/sign/packs/")
+        || !signed_url
+            .path()
+            .starts_with("/storage/v1/object/sign/packs/")
     {
         return Err("ปฏิเสธที่อยู่ดาวน์โหลดที่ไม่ได้มาจาก Store".into());
     }
@@ -129,7 +134,10 @@ pub fn install_store_pack(item_id: &str, access_token: &str) -> Result<VoiceStat
     if !download.status().is_success() {
         return Err("ลิงก์ดาวน์โหลดหมดอายุหรือแพ็กไม่พร้อมใช้งาน".into());
     }
-    if download.content_length().is_some_and(|n| n > MAX_ARCHIVE_BYTES as u64) {
+    if download
+        .content_length()
+        .is_some_and(|n| n > MAX_ARCHIVE_BYTES as u64)
+    {
         return Err("แพ็กจาก Store มีขนาดเกินกำหนด".into());
     }
     let mut bytes = Vec::new();
@@ -185,17 +193,19 @@ pub fn state() -> Result<VoiceState, String> {
     // bundled default (that IS what voices Maiden out of the box) — only when
     // it's absent do we fall back to the first user pack dir.
     let active_id = read_active_pack_id()
-        .filter(|id| cfg!(debug_assertions) || id == DEFAULT_PACK_ID || pack_io::is_store_installed(id))
+        .filter(|id| {
+            cfg!(debug_assertions) || id == DEFAULT_PACK_ID || pack_io::is_store_installed(id)
+        })
         .or_else(|| {
-        if bundled_default.is_some() {
-            Some(DEFAULT_PACK_ID.to_string())
-        } else {
-            pack_dirs
-                .first()
-                .and_then(|dir| dir.file_name())
-                .map(|name| name.to_string_lossy().to_string())
-        }
-    });
+            if bundled_default.is_some() {
+                Some(DEFAULT_PACK_ID.to_string())
+            } else {
+                pack_dirs
+                    .first()
+                    .and_then(|dir| dir.file_name())
+                    .map(|name| name.to_string_lossy().to_string())
+            }
+        });
 
     let mut packs_out = Vec::new();
 
@@ -211,14 +221,14 @@ pub fn state() -> Result<VoiceState, String> {
         packs_out.insert(0, default);
     }
 
-    let active_pack_id = active_id.filter(|id| packs_out.iter().any(|pack| &pack.id == id))
+    let active_pack_id = active_id
+        .filter(|id| packs_out.iter().any(|pack| &pack.id == id))
         .or_else(|| packs_out.first().map(|pack| pack.id.clone()));
     let active_pack = active_pack_id
         .as_ref()
         .and_then(|id| packs_out.iter().find(|pack| &pack.id == id).cloned());
 
     Ok(VoiceState {
-
         root_dir: root.to_string_lossy().to_string(),
         packs_dir: packs.to_string_lossy().to_string(),
         cache_dir: audio::voice_cache_dir().to_string_lossy().to_string(),
@@ -243,11 +253,17 @@ pub fn action(action: &str, pack_id: Option<&str>) -> Result<VoiceState, String>
             if !is_store_installed(id) {
                 return Err("ติดตั้งและใช้งานได้เฉพาะแพ็กที่ซื้อจาก Store".into());
             }
-            if id != DEFAULT_PACK_ID { super::banner::activate_if_exists(id)?; }
-            else { write_active_pack_id(id)?; }
+            if id != DEFAULT_PACK_ID {
+                super::banner::activate_if_exists(id)?;
+            } else {
+                write_active_pack_id(id)?;
+            }
             state()
         }
-        "rescan" => { pack_io::rebuild_resolved_cache(); state() },
+        "rescan" => {
+            pack_io::rebuild_resolved_cache();
+            state()
+        }
         "open-root" => {
             ensure_dev_authoring()?;
             let dir = voice_root();
@@ -307,12 +323,19 @@ pub fn upload_asset(
     })
 }
 
-struct ImportStage { root: PathBuf, dir: PathBuf, committed: bool }
+struct ImportStage {
+    root: PathBuf,
+    dir: PathBuf,
+    committed: bool,
+}
 impl Drop for ImportStage {
     fn drop(&mut self) {
         // A failed rollback must keep the previous pack recoverable.
         if !self.committed && self.dir.join("previous").exists() {
-            eprintln!("[G-Maiden] preserved previous pack at {}", self.dir.display());
+            eprintln!(
+                "[G-Maiden] preserved previous pack at {}",
+                self.dir.display()
+            );
             return;
         }
         if let Ok(path) = self.dir.canonicalize() {
@@ -333,20 +356,35 @@ fn import_archive_with_expected(
     bytes: &[u8],
     expected_pack_id: Option<&str>,
 ) -> Result<ImportResult, String> {
-    if bytes.len() > MAX_ARCHIVE_BYTES { return Err("ไฟล์แพ็กต้องมีขนาดไม่เกิน 32 MB".into()); }
+    if bytes.len() > MAX_ARCHIVE_BYTES {
+        return Err("ไฟล์แพ็กต้องมีขนาดไม่เกิน 32 MB".into());
+    }
     let imports = voice_root().join("imports");
     fs::create_dir_all(&imports).map_err(|e| e.to_string())?;
     let root = imports.canonicalize().map_err(|e| e.to_string())?;
-    let nonce = std::time::SystemTime::now().duration_since(std::time::UNIX_EPOCH).map_err(|e| e.to_string())?.as_nanos();
-    let mut stage = ImportStage { dir: root.join(format!("stage-{}-{nonce}", std::process::id())), root, committed: false };
+    let nonce = std::time::SystemTime::now()
+        .duration_since(std::time::UNIX_EPOCH)
+        .map_err(|e| e.to_string())?
+        .as_nanos();
+    let mut stage = ImportStage {
+        dir: root.join(format!("stage-{}-{nonce}", std::process::id())),
+        root,
+        committed: false,
+    };
     fs::create_dir(&stage.dir).map_err(|e| e.to_string())?;
     let unpacked = stage.dir.join("unpacked");
     fs::create_dir(&unpacked).map_err(|e| e.to_string())?;
     extract_pack_zip(bytes, &unpacked, name)?;
-    let source = if unpacked.join("manifest.json").is_file() { unpacked.clone() } else {
-        let candidates: Vec<_> = discover_pack_dirs(&unpacked).into_iter()
-            .filter(|dir| dir.join("manifest.json").is_file()).collect();
-        if candidates.len() != 1 { return Err("ZIP ต้องมี manifest.json ของแพ็กเดียว".into()); }
+    let source = if unpacked.join("manifest.json").is_file() {
+        unpacked.clone()
+    } else {
+        let candidates: Vec<_> = discover_pack_dirs(&unpacked)
+            .into_iter()
+            .filter(|dir| dir.join("manifest.json").is_file())
+            .collect();
+        if candidates.len() != 1 {
+            return Err("ZIP ต้องมี manifest.json ของแพ็กเดียว".into());
+        }
         candidates[0].clone()
     };
     let manifest = read_manifest(&source)?;
@@ -366,25 +404,35 @@ fn import_archive_with_expected(
                 .ok_or_else(|| format!("ไม่พบไฟล์เสียงที่ใช้ได้: {clip}"))?;
             audio::validate_clip(&path)?;
         }
-        if !mapping.banner_asset.is_empty() && super::path_safety::safe_pack_path(&source, &mapping.banner_asset).is_none() {
+        if !mapping.banner_asset.is_empty()
+            && super::path_safety::safe_pack_path(&source, &mapping.banner_asset).is_none()
+        {
             return Err(format!("ไม่พบแบนเนอร์: {}", mapping.banner_asset));
         }
     }
-    if !manifest.cover_image.is_empty() && super::path_safety::safe_pack_path(&source, &manifest.cover_image).is_none() {
+    if !manifest.cover_image.is_empty()
+        && super::path_safety::safe_pack_path(&source, &manifest.cover_image).is_none()
+    {
         return Err("ไม่พบภาพปกของแพ็ก".into());
     }
     fs::create_dir_all(packs_dir()).map_err(|e| e.to_string())?;
     let dest = packs_dir().join(&id);
     let backup = stage.dir.join("previous");
-    if dest.exists() { fs::rename(&dest, &backup).map_err(|e| format!("สำรองแพ็กเดิมไม่ได้: {e}"))?; }
+    if dest.exists() {
+        fs::rename(&dest, &backup).map_err(|e| format!("สำรองแพ็กเดิมไม่ได้: {e}"))?;
+    }
     if let Err(e) = fs::rename(&source, &dest) {
-        if backup.exists() { let _ = fs::rename(&backup, &dest); }
+        if backup.exists() {
+            let _ = fs::rename(&backup, &dest);
+        }
         return Err(format!("ติดตั้งแพ็กไม่ได้: {e}"));
     }
     if let Err(e) = write_active_pack_id(&id) {
         // Both paths are generated inside the validated staging directory.
         let _ = fs::rename(&dest, stage.dir.join("failed"));
-        if backup.exists() { let _ = fs::rename(&backup, &dest); }
+        if backup.exists() {
+            let _ = fs::rename(&backup, &dest);
+        }
         return Err(e);
     }
     stage.committed = true;
@@ -421,7 +469,9 @@ pub(crate) fn extract_pack_zip(bytes: &[u8], dest: &Path, pack_id: &str) -> Resu
         zip::ZipArchive::new(std::io::Cursor::new(bytes)).map_err(|e| format!("open zip: {e}"))?;
 
     // Pass 1 — validate every entry before writing anything.
-    if archive.len() > 4096 { return Err("แพ็กมีจำนวนไฟล์มากเกินไป".into()); }
+    if archive.len() > 4096 {
+        return Err("แพ็กมีจำนวนไฟล์มากเกินไป".into());
+    }
     let mut expanded = 0u64;
     let mut entries = Vec::with_capacity(archive.len());
     for i in 0..archive.len() {
@@ -429,7 +479,9 @@ pub(crate) fn extract_pack_zip(bytes: &[u8], dest: &Path, pack_id: &str) -> Resu
             .by_index(i)
             .map_err(|e| format!("read zip entry {i}: {e}"))?;
         expanded = expanded.saturating_add(file.size());
-        if expanded > MAX_EXPANDED_BYTES { return Err("ขนาดแพ็กหลังแตกไฟล์เกิน 96 MB".into()); }
+        if expanded > MAX_EXPANDED_BYTES {
+            return Err("ขนาดแพ็กหลังแตกไฟล์เกิน 96 MB".into());
+        }
         let raw_name = file.name().to_string();
         let is_dir = file.is_dir();
         let is_symlink = file.is_symlink();
@@ -467,8 +519,8 @@ pub(crate) fn extract_pack_zip(bytes: &[u8], dest: &Path, pack_id: &str) -> Resu
         let mut file = archive
             .by_index(i)
             .map_err(|e| format!("read zip entry {i}: {e}"))?;
-        let mut outfile = fs::File::create(&outpath)
-            .map_err(|e| format!("create {}: {e}", outpath.display()))?;
+        let mut outfile =
+            fs::File::create(&outpath).map_err(|e| format!("create {}: {e}", outpath.display()))?;
         std::io::copy(&mut file, &mut outfile)
             .map_err(|e| format!("write {}: {e}", outpath.display()))?;
     }
@@ -528,6 +580,7 @@ pub fn active_event_clips(event: &str) -> Vec<PathBuf> {
 /// same cost profile as `active_event_clips` above (two small file reads: the
 /// active-pack pointer, then that pack's manifest). `None` when there's no
 /// active pack or its manifest can't be read.
+#[cfg(test)]
 pub fn active_pack_name() -> Option<String> {
     let id = read_active_pack_id()?;
     let dir = packs_dir().join(sanitize_id(&id));

@@ -18,7 +18,9 @@ use super::banner::{
     activate_if_exists, fired_banner, fired_banner_from, image_mime, install_report, preview_clip,
 };
 use super::base64::base64_encode;
-use super::commands::{action, active_event_clips, active_pack_name, extract_pack_zip, upload_asset};
+use super::commands::{
+    action, active_event_clips, active_pack_name, extract_pack_zip, upload_asset,
+};
 use super::events::EVENTS;
 use super::pack_io::{
     cached_event_clips, clear_resolved_cache_for_test, default_pack, sanitize_id,
@@ -27,6 +29,35 @@ use super::pack_io::{
 use super::path_safety::safe_pack_path;
 use super::paths::set_test_voice_root;
 use super::types::DEFAULT_PACK_ID;
+
+#[test]
+fn announcer_selection_never_substitutes_an_unmapped_pack_and_retains_provenance() {
+    let root = temp_root("ann-selection");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    assert!(super::select_announcer_clip("gank").is_none());
+    let dir = write_pack(
+        &root,
+        "nakom",
+        BTreeMap::from([("kill".into(), mapping(&["clips/k.wav"]))]),
+    );
+    fs::write(dir.join("clips/k.wav"), b"clip").unwrap();
+    write_active_pack_id("nakom").unwrap();
+    assert!(super::select_announcer_clip("gank").is_none());
+    let selected = super::select_announcer_clip("kill").unwrap();
+    assert_eq!(selected.pack_id, "nakom");
+    assert_eq!(selected.path, dir.join("clips/k.wav"));
+    assert!(super::with_current_announcer_clip("kill", &selected, || ()).is_some());
+    let other = write_pack(
+        &root,
+        "other",
+        BTreeMap::from([("kill".into(), mapping(&["clips/k.wav"]))]),
+    );
+    fs::write(other.join("clips/k.wav"), b"other").unwrap();
+    write_active_pack_id("other").unwrap();
+    assert!(super::with_current_announcer_clip("kill", &selected, || ()).is_none());
+    assert_eq!(selected.pack_id, "nakom");
+}
 
 #[test]
 fn base64_rfc4648_vectors() {
@@ -74,8 +105,7 @@ fn temp_root(tag: &str) -> PathBuf {
         .duration_since(std::time::UNIX_EPOCH)
         .unwrap()
         .as_nanos();
-    let dir =
-        std::env::temp_dir().join(format!("gmaiden-voice-api-test-{tag}-{}", nanos));
+    let dir = std::env::temp_dir().join(format!("gmaiden-voice-api-test-{tag}-{}", nanos));
     fs::create_dir_all(&dir).unwrap();
     dir
 }
@@ -126,7 +156,10 @@ fn install_report_happy_path_counts_existing_clips() {
     let pack_dir = write_pack(
         &root,
         "demo",
-        BTreeMap::from([("kill".to_string(), mapping(&["clips/kill_01.wav", "clips/kill_02.wav"]))]),
+        BTreeMap::from([(
+            "kill".to_string(),
+            mapping(&["clips/kill_01.wav", "clips/kill_02.wav"]),
+        )]),
     );
     fs::write(pack_dir.join("clips/kill_01.wav"), b"x").unwrap();
     fs::write(pack_dir.join("clips/kill_02.wav"), b"x").unwrap();
@@ -151,17 +184,17 @@ fn install_report_flags_mapped_but_missing_clip() {
     let pack_dir = write_pack(
         &root,
         "demo",
-        BTreeMap::from([("kill".to_string(), mapping(&["clips/kill_01.wav", "clips/ghost.wav"]))]),
+        BTreeMap::from([(
+            "kill".to_string(),
+            mapping(&["clips/kill_01.wav", "clips/ghost.wav"]),
+        )]),
     );
     fs::write(pack_dir.join("clips/kill_01.wav"), b"x").unwrap();
     // clips/ghost.wav intentionally never written.
 
     let report = install_report("demo").expect("report");
     assert_eq!(report.counts.get("kill"), Some(&1));
-    assert!(report
-        .missing_clips
-        .iter()
-        .any(|c| c == "clips/ghost.wav"));
+    assert!(report.missing_clips.iter().any(|c| c == "clips/ghost.wav"));
 }
 
 #[test]
@@ -217,9 +250,19 @@ fn real_pack_mrijgajn_maps_voice_and_banners() {
 
     // Each of the 13 mapped events resolves >=1 clip; two have two takes.
     for ev in [
-        "death", "dominating", "double_kill", "first_blood", "kill",
-        "killing_spree", "mega_kill", "monster_kill", "respawn",
-        "triple_kill", "ultra_kill", "unstoppable", "wicked_sick",
+        "death",
+        "dominating",
+        "double_kill",
+        "first_blood",
+        "kill",
+        "killing_spree",
+        "mega_kill",
+        "monster_kill",
+        "respawn",
+        "triple_kill",
+        "ultra_kill",
+        "unstoppable",
+        "wicked_sick",
     ] {
         assert!(
             report.counts.get(ev).copied().unwrap_or(0) >= 1,
@@ -450,6 +493,63 @@ fn preview_clip_ignores_traversal_and_finds_real_clip_after() {
 }
 
 #[test]
+fn audio_preview_resolves_nonactive_pack_without_changing_activation() {
+    let root = temp_root("audio-preview-selected");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    write_pack(&root, "active", BTreeMap::new());
+    write_active_pack_id("active").unwrap();
+    let selected = write_pack(
+        &root,
+        "selected",
+        BTreeMap::from([("kill".into(), mapping(&["clips/kill.wav"]))]),
+    );
+    fs::write(selected.join("clips/kill.wav"), b"clip").unwrap();
+    assert_eq!(
+        super::preview_audio_clip("selected", "kill").unwrap(),
+        selected.join("clips/kill.wav")
+    );
+    assert_eq!(
+        super::pack_io::read_active_pack_id().as_deref(),
+        Some("active")
+    );
+}
+
+#[test]
+fn audio_preview_ann_default_is_explicit_and_signal_fallback_is_preserved() {
+    let root = temp_root("audio-preview-default");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    write_pack(&root, "selected", BTreeMap::new());
+    let default = audio::default_event_clips("kill")
+        .into_iter()
+        .next()
+        .expect("bundled kill clip");
+    assert_eq!(
+        super::preview_audio_clip(DEFAULT_PACK_ID, "kill").unwrap(),
+        default
+    );
+    assert!(super::preview_audio_clip("selected", "kill").is_err());
+    let danger = audio::default_event_clips("danger")
+        .into_iter()
+        .next()
+        .expect("bundled danger clip");
+    assert_eq!(
+        super::preview_audio_clip("selected", "danger").unwrap(),
+        danger
+    );
+}
+
+#[test]
+fn audio_preview_rejects_missing_pack_and_unknown_event() {
+    let root = temp_root("audio-preview-reject");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    assert!(super::preview_audio_clip("missing", "kill").is_err());
+    assert!(super::preview_audio_clip(DEFAULT_PACK_ID, "../../kill").is_err());
+}
+
+#[test]
 fn install_report_rejects_traversal_clip_as_missing() {
     let root = temp_root("install-report-traversal");
     set_test_voice_root(Some(root.clone()));
@@ -458,15 +558,15 @@ fn install_report_rejects_traversal_clip_as_missing() {
     write_pack(
         &root,
         "demo",
-        BTreeMap::from([(
-            "kill".to_string(),
-            mapping(&["../../../evil.wav"]),
-        )]),
+        BTreeMap::from([("kill".to_string(), mapping(&["../../../evil.wav"]))]),
     );
 
     let report = install_report("demo").expect("report");
     assert_eq!(report.counts.get("kill"), Some(&0));
-    assert!(report.missing_clips.iter().any(|c| c == "../../../evil.wav"));
+    assert!(report
+        .missing_clips
+        .iter()
+        .any(|c| c == "../../../evil.wav"));
     assert!(report.unmapped_events.contains(&"kill".to_string()));
 }
 
@@ -496,10 +596,7 @@ fn extract_pack_zip_refuses_traversal_entry_and_writes_nothing() {
     let root = temp_root("zip-traversal");
     let _guard = RootGuard(root.clone());
     let dest = root.join("dest");
-    let bytes = build_test_zip(&[
-        ("manifest.json", b"{}" as &[u8]),
-        ("../evil.txt", b"pwned"),
-    ]);
+    let bytes = build_test_zip(&[("manifest.json", b"{}" as &[u8]), ("../evil.txt", b"pwned")]);
 
     assert!(extract_pack_zip(&bytes, &dest, "demo").is_err());
     assert!(!root.join("evil.txt").is_file());
@@ -533,7 +630,10 @@ fn extract_pack_zip_imports_clean_archive() {
     extract_pack_zip(&bytes, &dest, "demo").expect("clean archive should import");
     assert!(dest.join("manifest.json").is_file());
     assert!(dest.join("clips/kill_01.wav").is_file());
-    assert_eq!(fs::read(dest.join("clips/kill_01.wav")).unwrap(), b"clipdata");
+    assert_eq!(
+        fs::read(dest.join("clips/kill_01.wav")).unwrap(),
+        b"clipdata"
+    );
 }
 
 // --- authorGid (GID pipeline Phase 2 Task 4) ----------------------------
@@ -641,7 +741,10 @@ struct EventSchema {
 /// (`schemas/gmaiden-events.json`, byte-identical to the sibling
 /// `G-Suite/schemas/gmaiden-events.json`).
 fn load_vendored_schema() -> EventSchema {
-    let path = format!("{}/../schemas/gmaiden-events.json", env!("CARGO_MANIFEST_DIR"));
+    let path = format!(
+        "{}/../schemas/gmaiden-events.json",
+        env!("CARGO_MANIFEST_DIR")
+    );
     let raw = fs::read_to_string(&path).unwrap_or_else(|e| panic!("failed to read {path}: {e}"));
     serde_json::from_str(&raw).unwrap_or_else(|e| panic!("failed to parse {path}: {e}"))
 }
@@ -679,16 +782,18 @@ fn events_match_schema_contract() {
 /// when the sibling checkout isn't present — CI only has this repo.
 #[test]
 fn vendored_schema_matches_g_suite_sibling() {
-    let g_suite_dir = std::env::var("G_SUITE_DIR").unwrap_or_else(|_| {
-        format!("{}/../../G-Suite", env!("CARGO_MANIFEST_DIR"))
-    });
+    let g_suite_dir = std::env::var("G_SUITE_DIR")
+        .unwrap_or_else(|_| format!("{}/../../G-Suite", env!("CARGO_MANIFEST_DIR")));
     let sibling_path = format!("{g_suite_dir}/schemas/gmaiden-events.json");
     let Ok(sibling_raw) = fs::read_to_string(&sibling_path) else {
         eprintln!("skip: sibling G-Suite checkout not found at {sibling_path}");
         return;
     };
 
-    let vendored_path = format!("{}/../schemas/gmaiden-events.json", env!("CARGO_MANIFEST_DIR"));
+    let vendored_path = format!(
+        "{}/../schemas/gmaiden-events.json",
+        env!("CARGO_MANIFEST_DIR")
+    );
     let vendored_raw = fs::read_to_string(&vendored_path)
         .unwrap_or_else(|e| panic!("failed to read {vendored_path}: {e}"));
 
@@ -723,21 +828,32 @@ fn cached_clips_populate_on_activation_and_match_the_manifest() {
     let dir = write_pack(
         &root,
         "demo",
-        BTreeMap::from([("gank".to_string(), mapping(&["clips/g1.wav", "clips/g2.wav"]))]),
+        BTreeMap::from([(
+            "gank".to_string(),
+            mapping(&["clips/g1.wav", "clips/g2.wav"]),
+        )]),
     );
     fs::write(dir.join("clips/g1.wav"), b"x").unwrap();
     fs::write(dir.join("clips/g2.wav"), b"x").unwrap();
 
     // Before activation: no active pack yet, so nothing is cached.
     assert_eq!(cached_event_clips("gank"), None);
-    assert_eq!(active_event_clips("gank").len(), 0, "public wrapper: empty Vec, not a panic");
+    assert_eq!(
+        active_event_clips("gank").len(),
+        0,
+        "public wrapper: empty Vec, not a panic"
+    );
 
     write_active_pack_id("demo").unwrap();
 
     let clips = cached_event_clips("gank").expect("activation must populate the cache");
     assert_eq!(clips.len(), 2);
     assert!(clips.iter().all(|p| p.starts_with(&dir)));
-    assert_eq!(active_event_clips("gank"), clips, "public wrapper must match the cache exactly");
+    assert_eq!(
+        active_event_clips("gank"),
+        clips,
+        "public wrapper must match the cache exactly"
+    );
 }
 
 #[test]
@@ -759,9 +875,10 @@ fn editing_the_active_packs_manifest_updates_the_cache_without_reactivating() {
     // what map_event() does — WITHOUT touching active-pack.txt again.
     fs::write(dir.join("clips/k2.wav"), b"x").unwrap();
     let mut manifest = super::pack_io::read_manifest(&dir).unwrap();
-    manifest
-        .mappings
-        .insert("kill".to_string(), mapping(&["clips/k1.wav", "clips/k2.wav"]));
+    manifest.mappings.insert(
+        "kill".to_string(),
+        mapping(&["clips/k1.wav", "clips/k2.wav"]),
+    );
     write_manifest(&dir, &manifest).unwrap();
 
     assert_eq!(
@@ -796,8 +913,15 @@ fn switching_the_active_pack_replaces_the_cache_not_merges_it() {
 
     write_active_pack_id("pack-b").unwrap();
     let b_clips = cached_event_clips("gank").unwrap();
-    assert_eq!(b_clips.len(), 1, "must not accumulate pack-a's entries alongside pack-b's");
-    assert!(b_clips[0].starts_with(&dir_b), "must serve pack-b now, not a stale pack-a path");
+    assert_eq!(
+        b_clips.len(),
+        1,
+        "must not accumulate pack-a's entries alongside pack-b's"
+    );
+    assert!(
+        b_clips[0].starts_with(&dir_b),
+        "must serve pack-b now, not a stale pack-a path"
+    );
 }
 
 #[test]

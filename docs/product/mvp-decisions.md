@@ -2,12 +2,12 @@
 title: "G-Maiden MVP — Scope, Access, Data and Quality Decisions"
 doc_id: "mvp-decisions"
 status: "accepted"
-version: "0.3.3"
-updated: 2026-10-18
+version: "0.5.0"
+updated: 2026-10-28
 owner: "Boss"
 approved_by: "Boss — explicit owner instruction in conversation"
-approved_date: "2026-10-13"
-approval_basis: "Owner instructions: ปรับ cpu ไม่เกิน 10%; หยุดเปิดแอปหากตั้ง CPU Job Object ไม่สำเร็จ"
+approved_date: "2026-10-28"
+approval_basis: "Owner instruction: 900mb ก็ได้สำหรับ mvp ทำส่วนอื่นต่อ"
 related_docs: ["roadmap", "mvp-backlog", "mvp-execution-dag", "software-requirements-specification", "FEAT-G-VOICE", "FEAT-G-MEMORY"]
 ---
 
@@ -87,7 +87,7 @@ Reference tier: 6 physical cores / 12 logical processors, RAM 16 GB, DXGI GPU �
 | danger preemption | 100 overlap trials ทุก trial preempt stale Voice/advice และยังผ่าน G-Signal hard latency |
 | G-Signal latency | p50 ≤250 ms, ทุก measured sample ≤300 ms; ≥300 samples/scenario/profile และ live audible probe |
 | CPU | whole-app process group normalized by logical CPU capacity, ทุก 1 s sample ≤10% |
-| RAM | peak aggregate Working Set ≤400,000,000 bytes (400 MB); รวม host/WebView2/feeder/STT/SLM และ external model PIDs ที่ใช้งาน |
+| RAM | peak aggregate Working Set ≤900,000,000 bytes (900 MB); รวม host/WebView2/feeder/STT/SLM และ external model PIDs ที่ใช้งาน |
 | FPS impact | ≤3% แต่ละ paired overlay off/on run; ≥3 pairs ×60 s, same device/segment/settings |
 
 **Latency landmarks:** T0 = fresh GSI POST arrival หรือเวลาที่ critical capture acquisition cycle ถึงกำหนด ก่อนรอ scheduler/acquisition/inference; T1 = Rust decision; T2 = audio admission; T3 = loopback first audible sample. วัด T3−T0 รวม wait/acquisition ไม่ขยับ T0 ไปหลัง poll/frame-ready เพื่อกลบ delay; รายงาน upstream observation age แยก. ใช้ event-driven evaluation; 500 ms เป็น watchdog/freshness cadence เท่านั้น. p99/headless estimated budget ไม่แทน hard max/live acoustic proof.
@@ -110,6 +110,16 @@ Required cell ที่ไม่มี OS/device/label/audio evidence เป็�
 
 Owner ตัดสินใจวันที่ 2026-10-13 ว่าเมื่อ Job Object initialization/configuration/assignment ล้มเหลว ให้ปฏิเสธการเปิดแอป: บันทึกข้อผิดพลาดและออกด้วย exit code 1 ก่อนสร้าง Tauri/WebView หรือ sidecar. หาก setup สำเร็จแต่ runtime accounting query ล้มเหลว ให้แสดง CPU unavailable และคง capture throttle; OS hard cap ยังทำงาน. UI จึงต้องแยกเฉพาะกรณี runtime query failure ที่เกิดหลังแอปเริ่มแล้ว.
 
+### Decision v0.4.0 — Owner-approved 800 MB aggregate RAM budget
+
+วันที่ 2026-10-28 Owner สั่งโดยตรงว่า “เพิ่มramจาก400เป็น 800”. เปลี่ยนเพดานเป็น **800,000,000 bytes (800 decimal MB)** ของ peak aggregate full Working Set รวมทุก process ของแอปและ external provider/model PIDs ที่ใช้จริง. มตินี้แทนการคง400MBเมื่อ2026-10-27; ไม่ใช่การอนุมัติข้อเสนอ1,000MBเดิม.
+
+คงวิธีวัดและการนับ shared resident pages/child processes เดิม ไม่มีการยกเว้น WebView2/feeder/model, เปลี่ยนเป็น private/PSS, trim Working Set หรือสั่ง GC เพื่อให้ผ่าน. CPU≤10%ต่อsample1วินาที, operating hard cap8%, latency/FPS/privacy/consentและprovider admissionเดิมไม่เปลี่ยน. External Ollama ที่พิสูจน์reservation/processgroupไม่ได้ยัง unavailable. ผลวัดและauditที่ใช้400MBเป็นหลักฐานย้อนหลังของสัญญาเก่า ห้ามเปลี่ยนให้ดูว่าผ่าน800MBมาก่อน; buildและnative acceptanceรอบ800MBต้องตรวจใหม่.
+
+### Decision v0.5.0 — MVP 900 MB aggregate RAM budget
+
+Owner สั่งวันที่2026-10-28ว่า “900mb ก็ได้สำหรับ mvp ทำส่วนอื่นต่อ”. เพดาน MVP ปัจจุบันคือ **900,000,000bytes (900 decimal MB)** รวม full Working Set ของทุก process ที่ใช้จริง. มตินี้แทน800MBในv0.4.0; คงCPU/latency/FPS/privacy/consent/provider admissionและวิธีวัดเดิม ไม่มีการยกเว้นchild/model/shared pages. ผลเดิม400/800MBยังเป็นประวัติ ไม่ใช่ผลผ่าน900MB; การกดEscapeทำให้รอบ800MBหยุดก่อนเก็บsample จึงไม่มีacceptanceจากรอบนั้น. ดำเนินการแก้event/overlayตามauditต่อโดยไม่ใช้การลดRAMเป็นตัวบล็อกงานอื่น.
+
 ## Baseline และ dispatch
 
 รับผล verification ของ MVP-001/002 ภายใต้คำสั่งมอบหมายตัดสินใจ: integrated source commit `c63bad098d6e12e6f073e832dce045dbbeacd687`, tree `d687254de6c4cfc976e06e4f60e0f4dc8e038009`; Rust 315 passed/5 ignored, desktop Vitest 284 passed, ESLint/tsc/clippy/native no-bundle ผ่าน. Evidence อยู่ที่ `D:/gm-mvp-001-evidence/MVP-001-B-evidence.md`; binary SHA-256 `970D6C0D5DE02B5BDAE86BF26145969E129AAA6A4BCC244B37405AAA98008BA1`. เป็น baseline engineering receipt ไม่ใช่ผล live MVP acceptance.
@@ -127,3 +137,5 @@ MVP-007 reconcile PRD/SRS/AGENTS/CLAUDE ตามมตินี้. งาน c
 | 0.3.1 | 2026-10-16 | Remove retired local review integration and related references. |
 | 0.3.2 | 2026-10-18 | Clarified local startup and account Terms boundaries. |
 | 0.3.3 | 2026-10-18 | Removed the obsolete desktop handoff activation flag; local startup remains account-independent. |
+| 0.4.0 | 2026-10-28 | Owner explicitly raised aggregate full Working Set budget to800MB; retain all-process accounting, CPU/latency/FPS/privacy and provider-admission gates. |
+| 0.5.0 | 2026-10-28 | Owner approved900MB for MVP and continuing other audited event defects; retain prior evidence and all accounting/quality gates. |

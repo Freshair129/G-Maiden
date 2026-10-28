@@ -46,7 +46,7 @@ const NEGATIVE_LABEL: &str = "__negative__";
 
 type Runnable = TypedRunnableModel<TypedModel>;
 
-/// A confirmed hero detection at a minimap patch.
+/// A classifier candidate; Sentry still requires portrait-backed ID admission.
 #[derive(Clone, serde::Serialize)]
 pub struct Detection {
     /// Class index into the labels list.
