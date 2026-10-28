@@ -5,6 +5,7 @@
 - **งบ RAM รวม 900 MB ตามมติผู้ใช้** — ใช้เพดาน 900,000,000 bytes สำหรับ Working Set รวม host/WebView2/feeder/STT/SLM และ provider/model ที่ใช้จริง; UI และ resource governor ใช้เกณฑ์เดียวกัน คง CPU, latency, FPS, privacy และการปฏิเสธ provider ที่พิสูจน์งบไม่ได้
 
 ### Fixed
+- **MVP-011 readiness ไม่สรุปจากสวิตช์** — หน้าเตรียมเกมแยกค่าที่เปิด/ตั้งไว้จากสถานะที่มีหลักฐานจริง; GSI ต้องสดและ active จึงได้เครื่องหมายพร้อม ส่วน capture/audio ยังไม่ถูกอ้างว่าผ่าน และค่าระดับเสียงที่ผิดรูปแบบคง unknown
 - **ปิด logic ที่เหลือจาก feature audit** — กันคำขอคำแนะนำซ้อนและคำตอบเก่าข้ามการตั้งค่า/แมตช์; ซื้อเกิดผูกกับ death episode/request; บัญชีและ Steam ปฏิเสธ response เก่า พร้อมรับ OAuth callback เพียงชุดเดียว
 - **เสียงและแบนเนอร์ตรงแหล่งจริง** — ANN ใช้เฉพาะแพ็กที่เลือก ไม่แทนด้วยเสียงกลางเมื่อไม่มีคลิป; SAPI/rodio ใช้ admission ร่วม; ledger แยกสร้าง/ร้องขอ/รับเข้าเล่นและระบุคลิปจริง; preview นอกเกมมี identity/expiry ของตัวเอง
 - **Memory และ combat inventory** — log ชื่อ session ใช้งานหลังล้าง Memory ได้จาก start record ที่ตรวจสอบแล้ว อ่าน header แบบจำกัด; combo ใช้เฉพาะช่องไอเท็มที่พร้อมรบ โดยคงข้อมูล ownership/NW แยกไว้

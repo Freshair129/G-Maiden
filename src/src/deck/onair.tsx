@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { latestBackendReceiptAt, toneClass, useMinimapImage, type CompanionData } from "../companion";
 import type { MatchPhase } from "../live/phase";
+import type { GsiFreshness } from "../live/events";
 import type { ContextMenuController, ContextMenuEntry } from "../ContextMenu";
 
 /** Honest replacement for the old permanent "—" ping readout: GSI has no ping
@@ -256,10 +257,11 @@ export function DeckTabs({
 
 /** CR-011 §E standby/prep seat content — replaces the hero columns + minimap
  *  with a readiness rundown built ONLY from data the deck genuinely has today
- *  (no fake "Dota detected" checks). Ready rows get an ice check glyph;
- *  not-ready rows render an honest "—" mute, never a fake pass. */
+ *  (no fake "Dota detected" checks). Fresh evidence gets an ice check;
+ *  configuration gets a circle, and unknown/disabled rows get a dash. */
 export function ReadinessRundown({
   gsiOnline,
+  gsiFreshness,
   voicePackName,
   signalEnabled,
   annEnabled,
@@ -268,6 +270,7 @@ export function ReadinessRundown({
   onPreviewLive
 }: {
   gsiOnline: boolean;
+  gsiFreshness: GsiFreshness;
   voicePackName: string | null;
   signalEnabled: boolean;
   annEnabled: boolean;
@@ -275,14 +278,16 @@ export function ReadinessRundown({
   draftNote: boolean;
   onPreviewLive: () => void;
 }) {
-  // "ปิด"/"ปิดเสียง" for deliberately-toggled-off features — a user choice is not
-  // the same state as a genuinely-absent capability ("—") (Opus gate, CR011-P3).
-  const rows: Array<{ label: string; ready: boolean; value: string }> = [
-    { label: "เชื่อมต่อ GSI", ready: gsiOnline, value: gsiOnline ? "ออนไลน์" : "—" },
-    { label: "แพ็กเสียง", ready: voicePackName != null, value: voicePackName ?? "—" },
-    { label: "G-Signal", ready: signalEnabled, value: signalEnabled ? "พร้อม" : "ปิด" },
-    { label: "เสียงประกาศ ANN", ready: annEnabled, value: annEnabled ? "พร้อม" : "ปิด" },
-    { label: "ระดับเสียง", ready: masterVolume > 0, value: masterVolume > 0 ? `${masterVolume}%` : "ปิดเสียง" }
+  const freshGsi = gsiOnline && gsiFreshness === "fresh";
+  const packName = voicePackName?.trim() || null;
+  const validVolume = Number.isFinite(masterVolume) && masterVolume >= 0 && masterVolume <= 100;
+  // Settings prove configuration, not capture coverage or successful audio output.
+  const rows: Array<{ label: string; status: "ready" | "configured" | "disabled" | "unknown"; value: string }> = [
+    { label: "เชื่อมต่อ GSI", status: freshGsi ? "ready" : "unknown", value: freshGsi ? "ออนไลน์ · ข้อมูลสด" : gsiFreshness === "stale" ? "ข้อมูลล้าสมัย" : "ยังไม่ทราบ" },
+    { label: "แพ็กเสียง", status: packName ? "configured" : "unknown", value: packName ?? "ยังไม่ทราบ" },
+    { label: "G-Signal", status: signalEnabled ? "configured" : "disabled", value: signalEnabled ? "เปิด · ยังไม่ยืนยัน" : "ปิด" },
+    { label: "เสียงประกาศ ANN", status: annEnabled ? "configured" : "disabled", value: annEnabled ? "เปิด · ยังไม่ยืนยัน" : "ปิด" },
+    { label: "ระดับเสียง", status: !validVolume ? "unknown" : masterVolume > 0 ? "configured" : "disabled", value: !validVolume ? "ยังไม่ทราบ" : masterVolume > 0 ? `${masterVolume}%` : "ปิดเสียง" }
   ];
 
   return (
@@ -290,8 +295,9 @@ export function ReadinessRundown({
       {draftNote ? <div className="gm-rundown-note">กำลังดราฟต์ — รอเข้าเกม</div> : null}
       <div className="gm-rundown-list">
         {rows.map((row) => (
-          <div key={row.label} className={`gm-rundown-row${row.ready ? " ready" : ""}`}>
-            <span className="gm-rundown-glyph">{row.ready ? "✓" : "—"}</span>
+          <div key={row.label} className={`gm-rundown-row${row.status === "ready" ? " ready" : ""}`}
+            title={row.status === "configured" ? "ตั้งค่าแล้ว ยังไม่ยืนยันการจับภาพและเสียงออก" : undefined}>
+            <span className="gm-rundown-glyph">{row.status === "ready" ? "✓" : row.status === "configured" ? "○" : "—"}</span>
             <span className="gm-rundown-label">{row.label}</span>
             <span className="gm-rundown-value">{row.value}</span>
           </div>

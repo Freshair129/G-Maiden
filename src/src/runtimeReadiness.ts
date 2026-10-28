@@ -21,9 +21,9 @@ export function readinessFromRuntime(input: {
   return {
     gsi: gsi?.server_state === "port_conflict" || gsi?.server_state === "bind_error"
       ? "degraded"
-      : gsi?.gsi_active === true
+      : gsi?.gsi_active === true && gsi.gsi_freshness === "fresh"
         ? "ready"
-        : input.gsiConfigured === false || (gsi?.gsi_active === false && gsi.dota_running)
+        : input.gsiConfigured === false || gsi?.gsi_freshness === "stale" || (gsi?.gsi_active === false && gsi.dota_running)
           ? "degraded"
           : "unknown",
     capture: sensor ? (sensor.healthy ? "ready" : "degraded") : "unknown",

@@ -76,6 +76,7 @@ export function GMaidenFungDashboard({
         ) : (
           <ReadinessRundown
             gsiOnline={data.match.gsiOnline}
+            gsiFreshness={data.match.gsiFreshness}
             voicePackName={voicePackName}
             signalEnabled={signalEnabled}
             annEnabled={annEnabled}
