@@ -1,8 +1,8 @@
 ---
 title: "แบบพรีวิวมินิแมปสด 60 FPS"
 doc_id: 2026-10-29-minimap-live-preview-60fps-design
-status: draft
-version: 0.1.0
+status: active
+version: 0.2.0
 updated: 2026-10-29
 owner: G-Maiden
 ---
@@ -11,7 +11,7 @@ owner: G-Maiden
 
 ## สถานะและเป้าหมาย
 
-เจ้าของเลือกเป้าหมาย **60 FPS ก่อน** วันที่ 2026-10-29 เพื่อให้มินิแมปใน G-Maiden ดูลื่นเหมือนพรีวิวภาพสด ส่วนวิธีส่งภาพด้านล่างเป็นข้อเสนอของผู้จัดทำ เอกสารนี้ยังรออนุมัติก่อนเขียน product code และ implementation plan
+เจ้าของอนุมัติเป้าหมายและแบบพรีวิว 60 FPS วันที่ 2026-10-29 โดยคงงบ RAM 900,000,000 bytes และ VRZO เดิม พร้อมวัดผลในเกมก่อนรับรอง
 
 คงตำแหน่งและขนาดการ์ดมินิแมปเดิม ให้ Dashboard และหน้าที่ใช้ภาพมินิแมปใช้ stream เดียวกัน แยกความถี่ของ **ภาพที่มองเห็น** ออกจาก **ผล CV/คำเตือน**; ภาพ 60 FPS ไม่ใช่หลักฐานว่าอ่านตำแหน่งหรือสถานะฮีโร่ได้ 60 ครั้งต่อวินาที
 
@@ -29,13 +29,13 @@ owner: G-Maiden
 2. **DXGI preview worker + binary IPC + Canvas:** ข้อเสนอสำหรับ MVP 60 FPS ใช้ API/dependency ที่มีอยู่ เตรียมเฉพาะ ROI และแยกการแสดงภาพจาก React snapshot/CV; ยังมี GPU readback และ CPU copy จึงต้องวัดจริง
 3. **GPU texture ไป native compositor:** เป็นทางประเมินต่อหากข้อ 2 ผ่าน 60 FPS/งบไม่ได้ ต้องพิสูจน์การฝัง surface และ lifecycle ร่วมกับ Tauri/WebView2 ก่อน ไม่ถือว่ามี zero-copy integration สำเร็จแล้ว
 
-เจ้าของเลือกเป้าหมาย 60 FPS แทนการตาม 144/240 Hz ในรอบนี้; ข้อ 2 เป็นทางเทคนิคที่เสนอ ไม่ตีความว่าการเลือก FPS เป็นการอนุมัติรายละเอียดทั้งหมด
+เจ้าของอนุมัติข้อ 2 และเป้าหมาย 60 FPS; การแยก child process และ physical display fencing เป็น technical correction ภายในขอบเขตเดิม
 
 ## แบบที่เสนอ
 
 ### การจับภาพ
 
-- มี preview worker เจ้าของ DXGI instance ของตนเอง เพียงหนึ่ง worker เมื่อมีผู้ชมที่มองเห็น ไม่แชร์ D3D context/duplication ข้าม thread
+- มี headless child mode ของ EXE เดิมเป็นเจ้าของ DXGI preview แยก process จาก CV โดยใช้ bounded pipes, shared Windows QPC, lease และ inherited Job; หยุดเมื่อไม่มีผู้ชมหรือ resource pressure
 - ใช้ monitor, ROI, crop และ geometry generation จากแหล่งนิยามเดียวกับ CV; งาน publish metadata ต้องไม่เพิ่ม blocking wait ใน G-Signal
 - รอบ acquisition ตั้งเป้า 60 FPS ด้วย monotonic deadlines; เมื่อพลาดรอบให้ทิ้งรอบเก่า ไม่ยิง burst เพื่อไล่ตามเวลา
 - ไม่ย้าย CV inference ไปทำ 60 ครั้งต่อวินาที และไม่ใช้เฟรม preview ไปเปลี่ยน roster, missing state, observation readiness หรือจุดเริ่มวัด latency ของคำเตือน
@@ -81,6 +81,13 @@ owner: G-Maiden
 - Regression suite, Clippy, frontend TypeScript/ESLint/Vitest, doc gate และ native smoke build ต้องผ่าน; การเปิดโปรแกรมได้ไม่แทนหลักฐาน FPS/RAM/เสียงจริง
 - หาก binary transport ไปไม่ถึงเป้าหมายในงบ ให้รายงานผลและทบทวนแบบ GPU compositor; ไม่เพิ่มเพดาน 900 MB หรือแก้ตัวเลข FPS เพื่ออ้างว่าผ่าน
 
+## การกู้ซอร์สและแก้เฟรมค้าง
+
+- Worktree เดิมสูญหาย; กู้ 30 ไฟล์จากประวัติและยืนยัน SHA-256 ตรงซอร์สที่ใช้ build ก่อนแก้ทุกไฟล์ สำเนาแยกเก็บที่ `D:/gm-recovery-backend` และ `D:/gm-recovery-frontend`
+- GMMP v2 ใช้ source/session/lease/geometry และ physical display fingerprint+origin; frame เก่าที่ payload ถูกต้องต้องอ่านให้ครบและทิ้ง ห้ามแสดง ห้ามทำ worker restart เพียงเพราะอายุเกิน 250 ms
+- บันทึกเวลาจับ/แปลง/ส่งภาพและเหตุผล worker หยุดแบบรวมช่วง ไม่มีภาพหรือข้อมูลผู้เล่นออกนอกเครื่อง; ลดงานซ้ำโดยคงค่า pixel และ input CV เดิม
+- เกณฑ์รับรอง physical 60 FPS, CPU/RAM/FPS เกมและ latency ในเกมยังต้องวัดจริง การทดสอบ synthetic และ publication count ไม่ใช่หลักฐาน presentation
+
 ## References
 
 - [Microsoft Desktop Duplication API](https://learn.microsoft.com/en-us/windows/win32/direct3ddxgi/desktop-dup-api): รับ desktop updates เป็น DXGI surface; การนำเสนอพรีวิวและต้นทุน readback เป็นหน้าที่แอป
@@ -92,3 +99,4 @@ owner: G-Maiden
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-10-29 | ร่างเป้าหมาย 60 FPS และเส้นทาง preview แยกจาก CV พร้อมขอบเขตทรัพยากรและหลักฐานที่ต้องวัด |
+| 0.2.0 | 2026-10-29 | บันทึกการอนุมัติ ขอบเขต child preview และการกู้ซอร์ส/แก้เฟรมเก่าโดยคงเกณฑ์เดิม |

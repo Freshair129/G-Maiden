@@ -21,7 +21,7 @@ vi.mock('@tauri-apps/api/window', () => ({ getCurrentWindow: () => ({ onFocusCha
 vi.mock('../app/settingsContext', () => ({ useStartupSettings: () => ({ settings: DEFAULTS, setSettings, clearLegacyMasterApiKey: vi.fn() }) }))
 vi.mock('../companion', async (original) => {
   const actual = await original<typeof import('../companion')>()
-  return { ...actual, useCompanionData: () => ({ data: actual.FALLBACK }), useMinimapImage: () => null }
+  return { ...actual, useCompanionData: () => ({ data: actual.FALLBACK }) }
 })
 vi.mock('../profile', () => ({ useProfile: () => ({ displayName: '', email: '' }) }))
 vi.mock('../useAppUpdate', () => ({ useAppUpdate: () => ({ available: null, phase: 'idle' }) }))

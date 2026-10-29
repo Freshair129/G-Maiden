@@ -1263,6 +1263,7 @@ mod tests {
 
     fn fake_tick() -> GameTick {
         GameTick {
+            local_player_verified: true,
             in_game: true,
             clock_time: 720,
             game_state: "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS".into(),

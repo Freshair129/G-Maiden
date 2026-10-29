@@ -11,6 +11,7 @@ pub mod draft_detector;
 pub mod draft_region;
 pub mod hero_hud;
 pub mod identity;
+mod patch_cache;
 pub mod prefilter;
 pub mod region;
 pub mod roster;

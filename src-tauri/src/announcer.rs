@@ -31,6 +31,7 @@ fn crossed_level_up_milestone(prev_level: i64, next_level: i64) -> bool {
 
 #[derive(Default)]
 struct State {
+    owner: String,
     seen: bool, // have we processed at least one in-game tick
     in_game: bool,
     level: i64,
@@ -66,18 +67,20 @@ fn session_state() -> &'static Mutex<SessionDetector> {
 /// events we voice only the most significant one (avoids clips cutting clips).
 fn priority(ev: &str) -> u8 {
     match ev {
+        // A timed multikill explains the current fight; a simultaneous lifetime
+        // streak must not replace its single audio clip and matching banner.
+        "rampage" => 113,
+        "ultra_kill" => 112,
+        "triple_kill" => 111,
+        "double_kill" => 110,
         "beyond_godlike" => 99,
-        "rampage" => 98,
         "godlike" => 95,
         "monster_kill" => 92,
-        "ultra_kill" => 90,
         "wicked_sick" => 88,
         "unstoppable" => 85,
         "mega_kill" => 82,
-        "triple_kill" => 80,
         "dominating" => 75,
         "killing_spree" => 70,
-        "double_kill" => 65,
         "first_blood" => 60,
         "kill" => 50,
         "death" => 45,
@@ -150,10 +153,19 @@ fn observe_session_state(
 /// Pure detector — all the logic, no globals (so tests own their state).
 fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
     let mut out = Vec::new();
+    if !tick.local_player_verified {
+        reset(s);
+        return out;
+    }
+    if s.seen && s.owner != tick.steamid {
+        reset(s);
+        s.opening_closed = true;
+    }
 
     // match boundary
     if tick.in_game && (!s.in_game || !s.seen) {
         s.in_game = true;
+        s.owner = tick.steamid.clone();
         // only announce match start near the opening horn, not on reconnect
         if !s.opening_closed && (0..=5).contains(&tick.clock_time) {
             out.push("match_start".to_string());
@@ -224,6 +236,7 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
 
         // A batch containing kills and deaths does not establish their order.
         if death_observed || counters_reset || !tick.alive {
+            s.window_kills = 0;
             out.push("kill".to_string());
         } else {
             // multikill window (chain kills that land close together)
@@ -231,10 +244,17 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
                 || tick.clock_time - s.window_start_clock > MULTIKILL_WINDOW_S
                 || s.window_kills == 0
             {
-                s.window_start_clock = tick.clock_time;
+                // The kill happened after the previous observation, not
+                // necessarily at receipt. Use its earliest observed bound.
+                s.window_start_clock = s.clock;
                 s.window_kills = 0;
             }
-            s.window_kills += new_kills;
+            // An aggregate counter jump has no per-kill timing evidence.
+            if new_kills == 1 {
+                s.window_kills += 1;
+            } else {
+                s.window_kills = 0;
+            }
 
             // streak (consecutive kills without dying)
             s.streak += new_kills;
@@ -296,12 +316,63 @@ mod tests {
             in_game,
             clock_time: clock,
             alive,
+            local_player_verified: true,
+            steamid: "76561198115363193".into(),
             kills,
             radiant_score: kills,
             hp_percent: 100,
             mana_percent: 100,
             ..Default::default()
         }
+    }
+
+    #[test]
+    fn team_score_changes_without_player_kills_never_announce_kills() {
+        let mut state = State::default();
+        step(&mut state, &tick(true, 20, 0, true));
+        let mut next = tick(true, 21, 0, true);
+        next.radiant_score = 8;
+        next.dire_score = 7;
+        assert!(step(&mut state, &next).is_empty());
+    }
+
+    #[test]
+    fn unverified_player_discards_baseline_and_recovery_does_not_replay_kills() {
+        let mut state = State::default();
+        step(&mut state, &tick(true, 20, 0, true));
+        let mut unverified = tick(true, 21, 5, true);
+        unverified.local_player_verified = false;
+        assert!(step(&mut state, &unverified).is_empty());
+        assert!(step(&mut state, &tick(true, 22, 5, true)).is_empty());
+    }
+
+    #[test]
+    fn changed_player_identity_reseeds_without_announcing_foreign_kills() {
+        let mut state = State::default();
+        let mut first = tick(true, 20, 0, true);
+        first.steamid = "76561198115363193".into();
+        step(&mut state, &first);
+        let mut other = tick(true, 21, 2, true);
+        other.steamid = "76561198115363194".into();
+        assert!(step(&mut state, &other).is_empty());
+        assert!(step(&mut state, &first).is_empty());
+    }
+
+    #[test]
+    fn accumulated_kills_after_feed_gap_do_not_invent_multikill() {
+        let mut state = State::default();
+        step(&mut state, &tick(true, 20, 0, true));
+        let events = step(&mut state, &tick(true, 21, 2, true));
+        assert!(!events.iter().any(|event| event == "double_kill"));
+    }
+
+    #[test]
+    fn single_old_kill_after_long_gap_does_not_start_multikill_window() {
+        let mut state = State::default();
+        step(&mut state, &tick(true, 20, 0, true));
+        step(&mut state, &tick(true, 1000, 1, true));
+        let next = step(&mut state, &tick(true, 1001, 2, true));
+        assert!(!next.iter().any(|event| event == "double_kill"));
     }
 
     #[test]
@@ -498,7 +569,8 @@ mod tests {
     fn first_blood_and_multikill_chain() {
         let mut s = State::default();
         step(&mut s, &tick(true, 0, 0, true)); // start
-                                               // first kill at score 0-0 → first_blood + kill
+        step(&mut s, &tick(true, 100, 0, true)); // fresh pre-kill observation
+                                                 // first kill at score 0-0 → first_blood + kill
         let e1 = step(&mut s, &tick(true, 100, 1, true));
         assert!(e1.contains(&"first_blood".to_string()));
         // second kill within window → double_kill
@@ -517,6 +589,50 @@ mod tests {
         step(&mut s, &tick(true, 50, 1, true));
         let d = step(&mut s, &tick(true, 60, 1, false));
         assert!(d.contains(&"death".to_string()));
+    }
+
+    #[test]
+    fn live_personal_double_kill_is_not_hidden_by_simultaneous_dominating() {
+        let mut s = State::default();
+        let mut sample = |clock, kills| {
+            let mut value = tick(true, clock, kills, true);
+            value.deaths = 1;
+            value.radiant_score = 7;
+            value.dire_score = 7 + kills;
+            step(&mut s, &value)
+        };
+        sample(720, 5);
+        sample(721, 6);
+        sample(763, 6);
+        sample(764, 7);
+        sample(823, 7);
+        sample(824, 8);
+        sample(826, 8);
+        let events = sample(827, 9);
+        assert!(events.contains(&"dominating".to_string()));
+        assert!(events.contains(&"double_kill".to_string()));
+        assert_eq!(most_important(&events).as_deref(), Some("double_kill"));
+    }
+
+    #[test]
+    fn every_multikill_takes_precedence_over_a_simultaneous_streak() {
+        for multi in ["double_kill", "triple_kill", "ultra_kill", "rampage"] {
+            for streak in [
+                "killing_spree",
+                "dominating",
+                "mega_kill",
+                "unstoppable",
+                "wicked_sick",
+                "monster_kill",
+                "godlike",
+                "beyond_godlike",
+            ] {
+                assert_eq!(
+                    most_important(&[multi.into(), streak.into()]).as_deref(),
+                    Some(multi)
+                );
+            }
+        }
     }
 
     #[test]

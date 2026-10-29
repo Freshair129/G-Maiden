@@ -16,6 +16,73 @@ pub struct Reading {
     pub cpu_100ns: u64,
 }
 
+/// Follow only parent links whose process creation times could form a real lineage.
+/// An inaccessible relevant process is unknown, not evidence of non-membership.
+pub fn descendants(
+    roots: &[u32],
+    edges: &[(u32, u32)],
+    mut created: impl FnMut(u32) -> Option<u64>,
+) -> Option<BTreeSet<Identity>> {
+    let mut found = BTreeMap::new();
+    for &pid in roots {
+        if pid == 0 {
+            return None;
+        }
+        let time = created(pid)?;
+        if time == 0 {
+            return None;
+        }
+        if found.insert(pid, time).is_some_and(|prior| prior != time) {
+            return None;
+        }
+    }
+    loop {
+        let before = found.len();
+        for &(pid, parent) in edges {
+            let Some(&parent_time) = found.get(&parent) else {
+                continue;
+            };
+            if found.contains_key(&pid) {
+                continue;
+            }
+            if pid == 0 {
+                return None;
+            }
+            let time = created(pid)?;
+            if time == 0 {
+                return None;
+            }
+            if time >= parent_time {
+                found.insert(pid, time);
+            }
+        }
+        if before == found.len() {
+            break;
+        }
+    }
+    Some(
+        found
+            .into_iter()
+            .map(|(pid, created)| Identity { pid, created })
+            .collect(),
+    )
+}
+
+pub fn all_in_job(descendants: &BTreeSet<Identity>, pids: &[u32]) -> bool {
+    descendants
+        .iter()
+        .all(|identity| pids.contains(&identity.pid))
+}
+
+pub fn same_identities(required: &[Identity], readings: &[Reading]) -> bool {
+    required.len() == readings.len()
+        && required.iter().copied().collect::<BTreeSet<_>>()
+            == readings
+                .iter()
+                .map(|reading| reading.identity)
+                .collect::<BTreeSet<_>>()
+}
+
 pub fn aggregate(required: &[u32], readings: &[Reading]) -> Option<(u64, BTreeMap<Identity, u64>)> {
     let required: BTreeSet<_> = required.iter().copied().collect();
     if required.is_empty() || required.contains(&0) {
@@ -76,6 +143,58 @@ pub fn normalized_with_job(
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn older_reused_parent_id_does_not_claim_old_child_or_grandchild() {
+        let times = BTreeMap::from([(10, 300), (20, 200), (30, 250), (40, 310)]);
+        let got = descendants(&[10], &[(20, 10), (30, 20), (40, 10)], |pid| {
+            times.get(&pid).copied()
+        })
+        .unwrap();
+        assert_eq!(
+            got,
+            BTreeSet::from([
+                Identity {
+                    pid: 10,
+                    created: 300
+                },
+                Identity {
+                    pid: 40,
+                    created: 310
+                }
+            ])
+        );
+    }
+
+    #[test]
+    fn live_breakaway_child_and_grandchild_are_not_exempt_from_job() {
+        let times = BTreeMap::from([(10, 100), (20, 110), (30, 120)]);
+        let got =
+            descendants(&[10], &[(20, 10), (30, 20)], |pid| times.get(&pid).copied()).unwrap();
+        assert!(!all_in_job(&got, &[10, 20]));
+        assert!(all_in_job(&got, &[10, 20, 30]));
+    }
+
+    #[test]
+    fn inaccessible_relevant_times_and_pid_reuse_race_fail_closed() {
+        let times = BTreeMap::from([(10, 100)]);
+        assert!(descendants(&[10], &[(20, 10)], |pid| times.get(&pid).copied()).is_none());
+        assert!(descendants(&[10], &[], |_| None).is_none());
+        assert!(!same_identities(
+            &[Identity {
+                pid: 10,
+                created: 100
+            }],
+            &[r(10, 1, 0)]
+        ));
+        assert!(same_identities(
+            &[Identity {
+                pid: 10,
+                created: 1
+            }],
+            &[r(10, 1, 0)]
+        ));
+    }
     fn r(pid: u32, bytes: u64, cpu: u64) -> Reading {
         Reading {
             identity: Identity { pid, created: 1 },

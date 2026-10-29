@@ -171,7 +171,7 @@ fn display_fingerprint(device_name: &[u16; 32]) -> u64 {
 
 /// A live Desktop Duplication session for one monitor.
 pub struct DxgiCapture {
-    duplication: IDXGIOutputDuplication,
+    duplication: Option<IDXGIOutputDuplication>,
     device: ID3D11Device,
     context: ID3D11DeviceContext,
     /// Full-frame calibration/fallback only; ROI capture never allocates it.
@@ -432,7 +432,7 @@ impl DxgiCapture {
             ));
 
             Ok(Self {
-                duplication,
+                duplication: Some(duplication),
                 device,
                 context,
                 staging: None,
@@ -454,6 +454,13 @@ impl DxgiCapture {
 
     pub fn width(&self) -> u32 {
         self.width
+    }
+
+    pub(crate) fn desktop_origin(&self) -> (i32, i32) {
+        (self.desktop_left, self.desktop_top)
+    }
+    pub(crate) fn display_id(&self) -> u64 {
+        self.display_id
     }
 
     pub fn height(&self) -> u32 {
@@ -726,9 +733,11 @@ impl DxgiCapture {
         let mut resource: Option<IDXGIResource> = None;
 
         // SAFETY: out-params are owned locals; we check the Result before use.
-        let acquired = unsafe {
-            self.duplication
-                .AcquireNextFrame(ACQUIRE_TIMEOUT_MS, &mut info, &mut resource)
+        let acquired = match &self.duplication {
+            Some(duplication) => unsafe {
+                duplication.AcquireNextFrame(ACQUIRE_TIMEOUT_MS, &mut info, &mut resource)
+            },
+            None => Err(DXGI_ERROR_ACCESS_LOST.into()),
         };
         self.diag.calls += 1;
         if let Err(e) = acquired {
@@ -795,15 +804,21 @@ impl DxgiCapture {
     fn release_frame(&mut self) {
         // SAFETY: only ever called after a successful AcquireNextFrame whose
         // frame hasn't yet been released this tick.
-        unsafe {
-            let _ = self.duplication.ReleaseFrame();
+        if let Some(duplication) = &self.duplication {
+            unsafe {
+                let _ = duplication.ReleaseFrame();
+            }
         }
     }
 
     fn frame_release_guard(&self) -> FrameReleaseGuard<impl FnOnce()> {
         let duplication = self.duplication.clone();
-        FrameReleaseGuard::new(move || unsafe {
-            let _ = duplication.ReleaseFrame();
+        FrameReleaseGuard::new(move || {
+            if let Some(duplication) = duplication {
+                unsafe {
+                    let _ = duplication.ReleaseFrame();
+                }
+            }
         })
     }
 
@@ -1130,39 +1145,41 @@ impl DxgiCapture {
     /// Rebuild the output duplication after the OS revoked it. Best-effort: on
     /// failure the next `acquire_frame` simply keeps returning `None`.
     fn recreate(&mut self) {
-        // SAFETY: FFI; on success we swap in the fresh duplication, on error we
-        // keep the (now-dead) old one and report None until the next attempt.
-        unsafe {
-            match self.output1.DuplicateOutput(&self.device) {
-                Ok(dup) => {
-                    let output_desc = match self.output1.GetDesc() {
-                        Ok(desc) => desc,
-                        Err(e) => {
-                            eprintln!("[dxgi] output description refresh failed: {e}");
-                            return;
-                        }
-                    };
-                    let mode = dup.GetDesc().ModeDesc;
-                    if mode.Width == 0 || mode.Height == 0 {
-                        eprintln!("[dxgi] recreated duplication reported zero size");
-                        return;
-                    }
-                    // Full copies rebuild lazily against the fresh duplication.
-                    invalidate_full_staging(&mut self.staging);
-                    if mode.Width != self.width || mode.Height != self.height {
-                        self.rect_staging.clear();
-                        self.width = mode.Width;
-                        self.height = mode.Height;
-                    }
-                    self.duplication = dup;
-                    self.desktop_left = output_desc.DesktopCoordinates.left;
-                    self.desktop_top = output_desc.DesktopCoordinates.top;
-                    self.display_id = display_fingerprint(&output_desc.DeviceName);
-                    // The first frame of the fresh duplication is undefined again.
-                    self.first_frame = true;
-                }
-                Err(e) => eprintln!("[dxgi] recreate DuplicateOutput failed: {e}"),
+        // Windows permits one duplication per process/output, including invalid
+        // interfaces. Drop it before requesting the replacement, not after.
+        let output = &self.output1;
+        let device = &self.device;
+        let mut refreshed = None;
+        let result = crate::capture_recovery::replace_released(&mut self.duplication, || unsafe {
+            let duplication = output
+                .DuplicateOutput(device)
+                .map_err(|e| format!("DuplicateOutput failed: {e}"))?;
+            let description = output
+                .GetDesc()
+                .map_err(|e| format!("output refresh failed: {e}"))?;
+            let mode = duplication.GetDesc().ModeDesc;
+            if mode.Width == 0 || mode.Height == 0 {
+                return Err("recreated duplication reported zero size".to_string());
             }
+            refreshed = Some((mode.Width, mode.Height, description));
+            Ok(duplication)
+        });
+        match result {
+            Ok(()) => {
+                let (width, height, description) =
+                    refreshed.expect("successful replacement has geometry");
+                invalidate_full_staging(&mut self.staging);
+                if width != self.width || height != self.height {
+                    self.rect_staging.clear();
+                    self.width = width;
+                    self.height = height;
+                }
+                self.desktop_left = description.DesktopCoordinates.left;
+                self.desktop_top = description.DesktopCoordinates.top;
+                self.display_id = display_fingerprint(&description.DeviceName);
+                self.first_frame = true;
+            }
+            Err(error) => eprintln!("[dxgi] recreate {error}"),
         }
     }
 }
@@ -1281,14 +1298,16 @@ fn point_in_rect(px: i32, py: i32, rect: (i32, i32, i32, i32)) -> bool {
 struct DotaWindowScan {
     best_area: i64,
     best_rect: Option<RECT>,
+    best_hwnd: Option<HWND>,
 }
 
 /// Find Dota 2's main window and return the center point of its screen rect
 /// (in virtual-desktop coordinates, matching `DXGI_OUTPUT_DESC.DesktopCoordinates`).
-fn find_dota_window_center() -> Option<(i32, i32)> {
+fn scan_dota_windows() -> DotaWindowScan {
     let mut scan = DotaWindowScan {
         best_area: 0,
         best_rect: None,
+        best_hwnd: None,
     };
     // SAFETY: `EnumWindows` is synchronous — it only returns once every
     // top-level window has been visited (or the callback stops it), so
@@ -1299,8 +1318,25 @@ fn find_dota_window_center() -> Option<(i32, i32)> {
         let lparam = LPARAM(std::ptr::addr_of_mut!(scan) as isize);
         let _ = EnumWindows(Some(enum_windows_proc), lparam);
     }
-    let r = scan.best_rect?;
+    scan
+}
+fn find_dota_window_center() -> Option<(i32, i32)> {
+    let r = scan_dota_windows().best_rect?;
     Some(((r.left + r.right) / 2, (r.top + r.bottom) / 2))
+}
+
+/// Preview requires an identified game process rather than a title-only match.
+pub(crate) fn preview_dota_window() -> Option<(HWND, u32)> {
+    let scan = scan_dota_windows();
+    let hwnd = scan.best_hwnd?;
+    unsafe {
+        if !process_exe_name(hwnd)?.eq_ignore_ascii_case("dota2.exe") {
+            return None;
+        }
+        let mut pid = 0;
+        windows::Win32::UI::WindowsAndMessaging::GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        Some((hwnd, pid))
+    }
 }
 
 /// `EnumWindows` callback: skip anything that isn't a visible Dota 2 window,
@@ -1308,13 +1344,15 @@ fn find_dota_window_center() -> Option<(i32, i32)> {
 /// `TRUE` (continue enumerating) since we want the largest match overall,
 /// not just the first hit.
 unsafe extern "system" fn enum_windows_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
-    // SAFETY: `lparam` was set by `find_dota_window_center` to a live
+    // SAFETY: `lparam` was set by `scan_dota_windows` to a live
     // `&mut DotaWindowScan` valid for the duration of this synchronous
     // `EnumWindows` call. `hwnd` is a handle Windows owns; every API used
     // below either takes it read-only or writes into a local out-param.
     unsafe {
         let scan = &mut *(lparam.0 as *mut DotaWindowScan);
-        if !is_dota_window(hwnd) {
+        if !is_dota_window(hwnd)
+            || windows::Win32::UI::WindowsAndMessaging::IsIconic(hwnd).as_bool()
+        {
             return BOOL(1);
         }
         let mut rect = RECT::default();
@@ -1330,6 +1368,7 @@ unsafe extern "system" fn enum_windows_proc(hwnd: HWND, lparam: LPARAM) -> BOOL 
         if area > scan.best_area {
             scan.best_area = area;
             scan.best_rect = Some(rect);
+            scan.best_hwnd = Some(hwnd);
         }
         BOOL(1)
     }

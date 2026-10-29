@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-28T20:51:36.574Z",
+  "generatedAt": "2026-10-29T13:05:56.532Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -845,6 +845,13 @@
       "domain": "ui-ux"
     },
     {
+      "id": "docs/operations/vrzo-banner-validation.md",
+      "type": "doc",
+      "path": "docs/operations/vrzo-banner-validation.md",
+      "title": "VRZO synchronized banner validation",
+      "status": "active"
+    },
+    {
       "id": "docs/product/MASTERPLAN-account-phase1.md",
       "type": "doc",
       "path": "docs/product/MASTERPLAN-account-phase1.md",
@@ -1015,11 +1022,39 @@
       "status": "active"
     },
     {
+      "id": "docs/superpowers/plans/2026-10-29-minimap-live-preview-60fps.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-10-29-minimap-live-preview-60fps.md",
+      "title": "แผนกู้และแก้มินิแมปสด",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md",
+      "title": "VRZO synchronized banner implementation plan",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-10-29-vrzo-v8-mixed-audio.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-10-29-vrzo-v8-mixed-audio.md",
+      "title": "VRZO v8 verified mixed audio implementation plan",
+      "status": "active"
+    },
+    {
       "id": "docs/superpowers/specs/2026-10-29-minimap-live-preview-60fps-design.md",
       "type": "doc",
       "path": "docs/superpowers/specs/2026-10-29-minimap-live-preview-60fps-design.md",
       "title": "แบบพรีวิวมินิแมปสด 60 FPS",
-      "status": "draft"
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
+      "type": "doc",
+      "path": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
+      "title": "VRZO banner synchronized with announcer",
+      "status": "active"
     },
     {
       "id": "src-tauri/src/capture.rs",
@@ -2403,45 +2438,51 @@
     },
     {
       "from": "docs/architecture/design-system.md",
-      "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
+      "to": "docs/operations/vrzo-banner-validation.md",
       "type": "wikilink",
-      "line": 449
+      "line": 428
     },
     {
       "from": "docs/architecture/design-system.md",
-      "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
       "line": 451
     },
     {
       "from": "docs/architecture/design-system.md",
+      "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "type": "wikilink",
+      "line": 453
+    },
+    {
+      "from": "docs/architecture/design-system.md",
       "to": "docs/features/FEAT-G-SENSORY.md",
-      "type": "wikilink",
-      "line": 479
-    },
-    {
-      "from": "docs/architecture/design-system.md",
-      "to": "docs/product/software-requirements-specification.md",
-      "type": "wikilink",
-      "line": 480
-    },
-    {
-      "from": "docs/architecture/design-system.md",
-      "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
       "line": 481
     },
     {
       "from": "docs/architecture/design-system.md",
-      "to": "docs/architecture/technical-design-document.md",
+      "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
       "line": 482
     },
     {
       "from": "docs/architecture/design-system.md",
-      "to": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
       "line": 483
+    },
+    {
+      "from": "docs/architecture/design-system.md",
+      "to": "docs/architecture/technical-design-document.md",
+      "type": "wikilink",
+      "line": 484
+    },
+    {
+      "from": "docs/architecture/design-system.md",
+      "to": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "type": "wikilink",
+      "line": 485
     },
     {
       "from": "docs/architecture/design-system.md",
@@ -2483,7 +2524,7 @@
       "from": "docs/architecture/design-system.md",
       "to": "src/src/App.tsx",
       "type": "symbol",
-      "line": 436
+      "line": 438
     },
     {
       "from": "docs/architecture/engineering-spec.md",
@@ -2511,21 +2552,33 @@
     },
     {
       "from": "docs/architecture/engineering-spec.md",
+      "to": "docs/operations/vrzo-banner-validation.md",
+      "type": "wikilink",
+      "line": 181
+    },
+    {
+      "from": "docs/architecture/engineering-spec.md",
+      "to": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
+      "type": "wikilink",
+      "line": 181
+    },
+    {
+      "from": "docs/architecture/engineering-spec.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
-      "line": 286
+      "line": 292
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 287
+      "line": 293
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 303
+      "line": 309
     },
     {
       "from": "docs/architecture/engineering-spec.md",
@@ -2555,79 +2608,79 @@
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 177
+      "line": 183
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 183
+      "line": 189
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/providers.mjs",
       "type": "symbol",
-      "line": 266
+      "line": 272
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/config.json",
       "type": "symbol",
-      "line": 266
+      "line": 272
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/engine.mjs",
       "type": "symbol",
-      "line": 266
+      "line": 272
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/companion.ts",
       "type": "symbol",
-      "line": 271
+      "line": 277
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildTelemetry.ts",
       "type": "symbol",
-      "line": 273
+      "line": 279
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildWeekly.ts",
       "type": "symbol",
-      "line": 273
+      "line": 279
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildInsights.ts",
       "type": "symbol",
-      "line": 273
+      "line": 279
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildHistory.ts",
       "type": "symbol",
-      "line": 273
+      "line": 279
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 276
+      "line": 282
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 278
+      "line": 284
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 278
+      "line": 284
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -2673,6 +2726,12 @@
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "to": "docs/operations/vrzo-banner-validation.md",
+      "type": "wikilink",
+      "line": 176
+    },
+    {
+      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
       "line": 191
@@ -2700,18 +2759,6 @@
       "to": "src/src/shortcuts.ts",
       "type": "symbol",
       "line": 53
-    },
-    {
-      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 176
-    },
-    {
-      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 176
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -7545,27 +7592,39 @@
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 46
+    },
+    {
+      "from": "docs/features/FEAT-G-SENSORY.md",
+      "to": "docs/operations/vrzo-banner-validation.md",
+      "type": "wikilink",
+      "line": 96
+    },
+    {
+      "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/architecture/design-system.md",
       "type": "wikilink",
-      "line": 108
+      "line": 107
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 134
+      "line": 133
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
-      "line": 158
+      "line": 157
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/architecture/design-system.md",
       "type": "wikilink",
-      "line": 172
+      "line": 171
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
@@ -7593,15 +7652,9 @@
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
-      "to": "src/src/App.tsx",
+      "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 96
-    },
-    {
-      "from": "docs/features/FEAT-G-SENSORY.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 96
+      "line": 97
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
@@ -7611,51 +7664,45 @@
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
-      "to": "src-tauri/src/governor.rs",
-      "type": "symbol",
-      "line": 99
-    },
-    {
-      "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "gpu-feeder/",
       "type": "symbol",
-      "line": 103
+      "line": 102
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 103
+      "line": 102
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/App.tsx",
       "type": "symbol",
-      "line": 134
+      "line": 133
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
-      "line": 135
+      "line": 134
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/live/",
       "type": "symbol",
-      "line": 137
+      "line": 136
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 158
+      "line": 157
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "tests/perf/src/bin/perf_cpu_tree.rs",
       "type": "symbol",
-      "line": 181
+      "line": 180
     },
     {
       "from": "docs/features/FEAT-G-SENTRY.md",
@@ -8112,6 +8159,18 @@
       "to": "orchestration",
       "type": "symbol",
       "line": 72
+    },
+    {
+      "from": "docs/operations/vrzo-banner-validation.md",
+      "to": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
+      "type": "wikilink",
+      "line": 12
+    },
+    {
+      "from": "docs/operations/vrzo-banner-validation.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 12
     },
     {
       "from": "docs/product/MASTERPLAN-account-phase1.md",
@@ -8922,6 +8981,12 @@
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
       "line": 190
+    },
+    {
+      "from": "docs/superpowers/plans/2026-10-29-vrzo-v8-mixed-audio.md",
+      "to": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
+      "type": "wikilink",
+      "line": 19
     }
   ],
   "violations": [
@@ -9039,18 +9104,11 @@
     },
     {
       "file": "docs/architecture/engineering-spec.md",
-      "line": 271,
+      "line": 277,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/companion.ts",
       "anchor": 941,
       "symbol": "useCompanionData"
-    },
-    {
-      "file": "docs/architecture/engineering-spec.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.3.1",
-      "changelog": "0.3.0"
     },
     {
       "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -9918,6 +9976,14 @@
       "line": 135,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/CompanionPages.tsx",
+      "anchor": 17,
+      "symbol": "LiveMatchPage"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": 135,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/CompanionPages.tsx",
       "anchor": 126,
       "symbol": "BuildAdvisorPage"
     },
@@ -10170,7 +10236,15 @@
     },
     {
       "file": "docs/features/FEAT-G-SENSORY.md",
-      "line": 99,
+      "line": 97,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/governor.rs",
+      "anchor": 180,
+      "symbol": "ResourceStats"
+    },
+    {
+      "file": "docs/features/FEAT-G-SENSORY.md",
+      "line": 98,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/governor.rs",
       "anchor": 276,
@@ -10178,7 +10252,7 @@
     },
     {
       "file": "docs/features/FEAT-G-SENSORY.md",
-      "line": 103,
+      "line": 102,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/governor.rs",
       "anchor": 319,
@@ -10467,11 +10541,29 @@
       "file": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "2026-10-29-vrzo-synced-banner",
+      "siblings": [
+        "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md"
+      ]
+    },
+    {
+      "file": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "2026-10-29-vrzo-synced-banner",
+      "siblings": [
+        "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md"
+      ]
     }
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-28T20:51:40.424Z",
+    "generatedAt": "2026-10-29T13:06:08.109Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

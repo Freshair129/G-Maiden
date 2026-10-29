@@ -1,7 +1,7 @@
 //! Bounded PCM preparation, isolated from the output callback and Critical queue.
 use super::{send, Cmd, PlaybackObservation, Priority};
 use rodio::{buffer::SamplesBuffer, Decoder, Source};
-use std::io::{BufReader, Read, Seek};
+use std::io::{BufReader, Cursor, Read, Seek, SeekFrom};
 use std::path::PathBuf;
 use std::sync::{
     atomic::{AtomicU64, AtomicUsize, Ordering},
@@ -12,6 +12,7 @@ use std::time::{Duration, Instant};
 const MAX_SAMPLES: usize = 2 * 1024 * 1024;
 const MAX_CLIPS: usize = 2;
 const MAX_WAIT: Duration = Duration::from_secs(2);
+const MAX_VISUAL_AUDIO_BYTES: usize = 16 * 1024 * 1024;
 
 #[derive(Default)]
 struct Epochs {
@@ -83,6 +84,8 @@ impl Drop for Slot {
 pub(super) struct PreparedClip {
     pcm: SamplesBuffer<i16>,
     pub(super) fence: Fence,
+    pub(super) audio_sha256: Option<[u8; 32]>,
+    pub(super) played_audio_sha256: Option<[u8; 32]>,
     // Keep the slot through playback, including SourcesQueue/mixer ownership.
     _slot: Slot,
 }
@@ -115,6 +118,81 @@ pub(super) fn prepare_source<R: Read + Seek + Send + Sync + 'static>(
 ) -> Result<SamplesBuffer<i16>, String> {
     let decoder = Decoder::new(reader).map_err(|e| e.to_string())?;
     buffer_source(decoder, MAX_SAMPLES)
+}
+
+fn visual_snapshot(reader: &mut impl Read, limit: usize) -> Option<Vec<u8>> {
+    let mut bytes = Vec::new();
+    reader
+        .take((limit + 1) as u64)
+        .read_to_end(&mut bytes)
+        .ok()?;
+    (bytes.len() <= limit).then_some(bytes)
+}
+
+fn decode_visual_snapshot(bytes: Vec<u8>) -> Result<(SamplesBuffer<i16>, [u8; 32]), String> {
+    let hash = ring::digest::digest(&ring::digest::SHA256, &bytes);
+    let mut digest = [0; 32];
+    digest.copy_from_slice(hash.as_ref());
+    let pcm = prepare_source(Cursor::new(bytes))?;
+    Ok((pcm, digest))
+}
+
+fn prepare_file(
+    file: std::fs::File,
+    visual: bool,
+) -> Result<(SamplesBuffer<i16>, Option<[u8; 32]>), String> {
+    prepare_reader(file, visual, MAX_VISUAL_AUDIO_BYTES)
+}
+
+fn prepare_mix(
+    pcm: SamplesBuffer<i16>,
+    original: Option<[u8; 32]>,
+    selection: Option<&crate::vrzo_banner::MixedSelection>,
+) -> (SamplesBuffer<i16>, Option<[u8; 32]>) {
+    let Some(selection) = selection else {
+        return (pcm, None);
+    };
+    let attempt = || -> Result<_, String> {
+        let digest = original.ok_or("original_snapshot_unavailable")?;
+        if crate::vrzo_mix::hex_digest(&digest) != selection.original_sha256 {
+            return Err("original_hash".into());
+        }
+        let duration = pcm
+            .total_duration()
+            .ok_or("original_duration")?
+            .as_secs_f64();
+        if (selection.samples as f64 - duration * 48000.0).abs() > 1.0001 {
+            return Err("mixed_duration".into());
+        }
+        let mut file = std::fs::File::open(&selection.path).map_err(|_| "mixed_missing")?;
+        let bytes = visual_snapshot(&mut file, MAX_VISUAL_AUDIO_BYTES).ok_or("mixed_size")?;
+        let (samples, digest) =
+            crate::vrzo_mix::decode_mix(&bytes, &selection.mixed_sha256, selection.samples)?;
+        Ok((SamplesBuffer::new(1, 48000, samples), Some(digest)))
+    };
+    match attempt() {
+        Ok(mix) => mix,
+        Err(reason) => {
+            eprintln!("[G-Maiden audio] phase=degraded source=original reason={reason}");
+            (pcm, None)
+        }
+    }
+}
+
+fn prepare_reader<R: Read + Seek + Send + Sync + 'static>(
+    mut file: R,
+    visual: bool,
+    limit: usize,
+) -> Result<(SamplesBuffer<i16>, Option<[u8; 32]>), String> {
+    if visual {
+        if let Some(bytes) = visual_snapshot(&mut file, limit) {
+            let (pcm, digest) = decode_visual_snapshot(bytes)?;
+            return Ok((pcm, Some(digest)));
+        }
+        file.seek(SeekFrom::Start(0))
+            .map_err(|error| error.to_string())?;
+    }
+    prepare_source(BufReader::new(file)).map(|pcm| (pcm, None))
 }
 
 fn buffer_source(
@@ -159,14 +237,21 @@ pub(super) fn enqueue(path: PathBuf, priority: Priority, observation: PlaybackOb
             for request in rx {
                 if request.requested.elapsed() >= MAX_WAIT || !request.fence.is_current() { continue; }
                 let prepared = open_verified_file(&request.path)
-                    .and_then(|file| prepare_source(BufReader::new(file)));
+                    .and_then(|file| prepare_file(file, request.observation.lifecycle.is_some()));
                 match prepared {
-                    Ok(pcm) if request.requested.elapsed() < MAX_WAIT && request.fence.is_current() => {
+                    Ok((pcm, audio_sha256)) if request.requested.elapsed() < MAX_WAIT && request.fence.is_current() => {
+                        let (pcm, played_audio_sha256) = prepare_mix(pcm, audio_sha256,
+                            request.observation.lifecycle.as_ref().and_then(|observer| observer.mixed.as_ref()));
+                        if request.requested.elapsed() >= MAX_WAIT || !request.fence.is_current() { continue; }
+                        eprintln!("[G-Maiden audio] source={} original_sha256={} played_sha256={}",
+                            if played_audio_sha256.is_some() {"vrzo-mixed"} else {"original"},
+                            audio_sha256.as_ref().map(crate::vrzo_mix::hex_digest).unwrap_or_default(),
+                            played_audio_sha256.or(audio_sha256).as_ref().map(crate::vrzo_mix::hex_digest).unwrap_or_default());
                         eprintln!("[G-Maiden audio] phase=prepared clip={} preparation_ms={} duration_ms={}",
                             request.path.file_name().unwrap_or_default().to_string_lossy(),
                             request.requested.elapsed().as_millis(), pcm.total_duration().unwrap_or_default().as_millis());
                         send(Cmd::Prepared(request.path, request.priority,
-                            PreparedClip { pcm, _slot: request.slot, fence: request.fence }, request.observation));
+                            PreparedClip { pcm, audio_sha256, played_audio_sha256, _slot: request.slot, fence: request.fence }, request.observation));
                     }
                     Ok(_) => eprintln!("[G-Maiden audio] phase=rejected reason=preparation_expired"),
                     Err(error) => eprintln!("[G-Maiden audio] phase=rejected reason=preparation error={error}"),
@@ -198,6 +283,78 @@ mod tests {
     use super::*;
 
     #[test]
+    fn invalid_or_missing_mix_preserves_exact_original_once_without_visual_proof() {
+        let mut selection = crate::vrzo_banner::MixedSelection {
+            path: std::env::temp_dir().join("gm-nonexistent-v8-mix.wav"),
+            original_sha256: "0".repeat(64),
+            mixed_sha256: "1".repeat(64),
+            samples: 3,
+        };
+        let original = || SamplesBuffer::new(1, 48000, vec![11i16, 0, -12]);
+        for digest in [None, Some([1; 32]), Some([0; 32])] {
+            let (pcm, proof) = prepare_mix(original(), digest, Some(&selection));
+            assert_eq!(pcm.collect::<Vec<_>>(), vec![11, 0, -12]);
+            assert_eq!(proof, None);
+        }
+        selection.samples = 100;
+        let (pcm, proof) = prepare_mix(original(), Some([0; 32]), Some(&selection));
+        assert_eq!(pcm.collect::<Vec<_>>(), vec![11, 0, -12]);
+        assert_eq!(proof, None);
+    }
+
+    #[test]
+    fn visual_snapshot_digest_and_samples_survive_later_file_mutation() {
+        use std::io::{Seek, SeekFrom, Write};
+        let path = std::env::temp_dir().join(format!(
+            "gm-audio-snapshot-{}-{:?}.wav",
+            std::process::id(),
+            std::thread::current().id()
+        ));
+        let mut original = Vec::new();
+        original.extend_from_slice(b"RIFF");
+        original.extend_from_slice(&38_u32.to_le_bytes());
+        original.extend_from_slice(b"WAVEfmt ");
+        original.extend_from_slice(&16_u32.to_le_bytes());
+        original.extend_from_slice(&1_u16.to_le_bytes());
+        original.extend_from_slice(&1_u16.to_le_bytes());
+        original.extend_from_slice(&8000_u32.to_le_bytes());
+        original.extend_from_slice(&16000_u32.to_le_bytes());
+        original.extend_from_slice(&2_u16.to_le_bytes());
+        original.extend_from_slice(&16_u16.to_le_bytes());
+        original.extend_from_slice(b"data");
+        original.extend_from_slice(&2_u32.to_le_bytes());
+        original.extend_from_slice(&1234_i16.to_le_bytes());
+        let mut file = std::fs::File::create(&path).unwrap();
+        file.write_all(&original).unwrap();
+        drop(file);
+        let mut file = std::fs::OpenOptions::new()
+            .read(true)
+            .write(true)
+            .open(&path)
+            .unwrap();
+        let bytes = visual_snapshot(&mut file, MAX_VISUAL_AUDIO_BYTES).expect("small snapshot");
+        file.seek(SeekFrom::Start(44)).unwrap();
+        file.write_all(&(-1234_i16).to_le_bytes()).unwrap();
+        drop(file);
+        let (pcm, digest) = decode_visual_snapshot(bytes).unwrap();
+        let expected = ring::digest::digest(&ring::digest::SHA256, &original);
+        assert_eq!(&digest[..], expected.as_ref());
+        assert_eq!(pcm.collect::<Vec<_>>(), vec![1234]);
+        let (fallback_pcm, fallback_digest) =
+            prepare_reader(Cursor::new(original), true, 8).unwrap();
+        assert_eq!(fallback_digest, None);
+        assert_eq!(fallback_pcm.collect::<Vec<_>>(), vec![1234]);
+        std::fs::remove_file(path).unwrap();
+    }
+
+    #[test]
+    fn oversized_visual_snapshot_declines_without_preventing_audio_fallback() {
+        let mut data = std::io::Cursor::new(vec![0; MAX_VISUAL_AUDIO_BYTES + 1]);
+        assert!(visual_snapshot(&mut data, MAX_VISUAL_AUDIO_BYTES).is_none());
+        assert_eq!(data.seek(std::io::SeekFrom::Start(0)).unwrap(), 0);
+    }
+
+    #[test]
     fn pcm_limits_reject_oversize_and_empty_but_preserve_silent_frames() {
         assert!(buffer_source(SamplesBuffer::new(1, 44_100, vec![0_i16; 129]), 128).is_err());
         assert!(buffer_source(SamplesBuffer::new(1, 44_100, Vec::<i16>::new()), 128).is_err());
@@ -212,6 +369,8 @@ mod tests {
         let count = Arc::new(AtomicUsize::new(0));
         let playing = PreparedClip {
             pcm: SamplesBuffer::new(1, 44_100, vec![1_i16]),
+            audio_sha256: None,
+            played_audio_sha256: None,
             _slot: Slot::acquire(&count).unwrap(),
             fence: Fence::capture(&Arc::new(Epochs::default()), Priority::Cosmetic),
         };

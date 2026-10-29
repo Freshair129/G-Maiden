@@ -4,7 +4,8 @@ import { useRef, useSyncExternalStore } from "react";
 import { listen } from "@tauri-apps/api/event";
 import { invoke } from "@tauri-apps/api/core";
 import { getCurrentWindow } from "@tauri-apps/api/window";
-import type { GameTick, GsiFreshness, GsiStatus, MatchSessionMetadata, MinimapCv, MinimapFrame, DraftRoster, EnemyMissing, HeroHudRead, SignalAlert, ResourceStats, SensorHealth, UtteranceEvent } from "./live/events";
+import type { GameTick, GsiFreshness, GsiStatus, MatchSessionMetadata, MinimapCv, DraftRoster, EnemyMissing, HeroHudRead, SignalAlert, ResourceStats, SensorHealth, UtteranceEvent } from "./live/events";
+import { minimapPreview } from "./live/minimapPreviewStore";
 import { buildMatch } from "./live/buildMatch";
 import { buildUtterances, type Utterance } from "./live/utterances";
 import { buildHeroes, assignEnemySlot } from "./live/buildHeroes";
@@ -599,10 +600,6 @@ type CompanionSnapshot = {
 };
 
 const CV_UPDATE_MS = 1000;
-// Live minimap mirror publishes at ≈2 Hz on the frontend — smooth enough to
-// glance at, and (unlike the full deck data) isolated in its own store so this
-// cadence re-renders only the <img>, never the whole deck tree.
-const MINIMAP_IMG_MS = 500;
 const LIVE_FLUSH_MS = 250;
 const subscribers = new Set<() => void>();
 const expiryTimers = new Map<string, number>();
@@ -618,7 +615,6 @@ let windowFocused = true;
 let pendingLive: LiveState | null = null;
 let flushTimer: number | null = null;
 let lastCvAt = 0;
-let lastFrameAt = 0;
 let logsLoadedForSession: string | null = null;
 let lastOpenDotaAccountId: number | null = null;
 let logsRequestSeq = 0;
@@ -678,8 +674,7 @@ function resetMatchScopedState(
   pendingLive = null;
   logsRequestSeq += 1;
   lastCvAt = 0;
-  lastFrameAt = 0;
-  setMinimapFrame(null);
+  syncMinimapSession(session, null);
   return {
     ...state,
     ...(clearTick ? { tick: null } : {}),
@@ -837,6 +832,14 @@ function commitLive(next: LiveState, notify: boolean) {
   if (notify) publish();
 }
 
+function syncMinimapSession(session: MatchSessionMetadata | null, status: GsiStatus | null) {
+  const epoch = session?.session_epoch;
+  minimapPreview.setSession(
+    epoch !== undefined && Number.isSafeInteger(epoch) && epoch >= 0 ? BigInt(epoch) : null,
+    session?.session_lifecycle === "live" && status?.gsi_freshness === "fresh" && status.gsi_active && status.in_game
+  );
+}
+
 function flushPending() {
   if (flushTimer !== null) {
     window.clearTimeout(flushTimer);
@@ -853,7 +856,7 @@ function scheduleFlush() {
   flushTimer = window.setTimeout(() => {
     flushTimer = null;
     flushPending();
-  }, LIVE_FLUSH_MS);
+  }, windowFocused ? LIVE_FLUSH_MS : 1000);
 }
 
 function updateLive(mutator: (state: LiveState) => LiveState, immediate = false) {
@@ -875,7 +878,9 @@ function updateLive(mutator: (state: LiveState) => LiveState, immediate = false)
 }
 
 function syncRuntimeActive() {
-  const next = docVisible && windowFocused;
+  // A visible second-screen dashboard must still update while Dota has focus.
+  // Unfocused views use the slower flush above; genuinely hidden views stay idle.
+  const next = docVisible;
   if (runtimeActive === next) return;
   runtimeActive = next;
   if (runtimeActive) {
@@ -1005,6 +1010,9 @@ function ensureRuntime() {
     updateLive((s) => {
       const relation = sessionEpochRelation(p.session_epoch, s.session?.session_epoch);
       if (relation === "stale") return s;
+      if (relation !== "new" && !allowsSessionLifecycleAdvance(
+        s.session?.session_lifecycle, p.session_lifecycle, s.session?.match_id, p.match_id
+      )) return s;
       heartbeatReceiptAt = Date.now();
       if (p.gsi_active === false && p.in_game === false && equalHeartbeat(s.status, p)) return s;
       const newEpoch = relation === "new";
@@ -1021,6 +1029,7 @@ function ensureRuntime() {
       if (!newEpoch && (lifecycleBoundary || (becameUnavailable && s.status?.gsi_freshness === "fresh"))) {
         base = resetMatchScopedState(base, session, lifecycle !== "end");
       }
+      syncMinimapSession(session, p);
       return {
         ...base,
         session: mergeSessionMetadata(base.session, p),
@@ -1112,14 +1121,6 @@ function ensureRuntime() {
       ? ({ ...s, heroHud: p })
       : s, true)
   );
-  sub<MinimapFrame>("minimap-frame", (p) => {
-    const current = pendingLive ?? liveState;
-    if (!sessionEventIsCurrent(current, p, ["live", "disconnected"])) return;
-    const now = Date.now();
-    if (now - lastFrameAt < MINIMAP_IMG_MS) return;
-    lastFrameAt = now;
-    setMinimapFrame(p);
-  });
   sub<SignalAlert>("gank-alert", (p) => {
     if (!sessionEventIsCurrent(pendingLive ?? liveState, p, ["live", "disconnected"])) return;
     updateLive((s) => ({ ...s, gank: p, active: true,
@@ -1194,58 +1195,6 @@ export function useCompanionData() {
     subscribeStore,
     () => snapshot,
     () => snapshot
-  );
-}
-
-// --- Live minimap mirror -----------------------------------------------------
-// The captured minimap image (base64 PNG data URL from capture.rs `minimap-frame`)
-// lives in its OWN tiny external store, deliberately separate from CompanionData.
-// The image refreshes ≈2 Hz and is a few KB; folding it into the big snapshot
-// would re-run every deck builder and re-render the whole tree at that cadence.
-// Isolated here, only the <img> subtree (useMinimapImage consumers) updates —
-// the WebView2 render fan-out is the sensitive CPU path in this window.
-let minimapImage: string | null = null;
-let minimapFrame: MinimapFrame | null = null;
-const minimapSubs = new Set<() => void>();
-
-function setMinimapImage(url: string | null) {
-  if (minimapImage === url) return;
-  minimapImage = url;
-  for (const cb of minimapSubs) cb();
-}
-
-function setMinimapFrame(frame: MinimapFrame | null) {
-  if (minimapFrame === frame) return;
-  minimapFrame = frame;
-  setMinimapImage(frame?.image || null);
-}
-
-/** Latest live minimap mirror as a `data:` URL, or `null` before any frame /
- *  outside Tauri. Subscribing also guarantees the event runtime is started. */
-export function useMinimapImage(): string | null {
-  // Piggy-back on the main store's subscribe so the Tauri `minimap-frame`
-  // listener (registered in ensureRuntime) is running even if a consumer uses
-  // only this hook.
-  useSyncExternalStore(subscribeStore, () => snapshot, () => snapshot);
-  return useSyncExternalStore(
-    (cb) => {
-      minimapSubs.add(cb);
-      return () => minimapSubs.delete(cb);
-    },
-    () => minimapImage,
-    () => minimapImage
-  );
-}
-
-export function useMinimapFrame(): MinimapFrame | null {
-  useSyncExternalStore(subscribeStore, () => snapshot, () => snapshot);
-  return useSyncExternalStore(
-    (cb) => {
-      minimapSubs.add(cb);
-      return () => minimapSubs.delete(cb);
-    },
-    () => minimapFrame,
-    () => minimapFrame
   );
 }
 

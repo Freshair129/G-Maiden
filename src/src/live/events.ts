@@ -6,7 +6,6 @@
 //   game-tick     gsi.rs:136        validated GSI observation (LOCAL player only)
 //   gsi-status    gsi.rs:194        every 500ms freshness watchdog + observations
 //   minimap-cv    capture.rs:314    ~5Hz CV debug (detections = pixels within region)
-//   minimap-frame capture.rs        ~3Hz live minimap mirror (base64 PNG data URL)
 //   draft-roster  capture.rs (portrait CV only)  10-hero roster from the pick screen
 //   enemy-missing capture.rs:261    edge, per hero crossing 5s threshold
 //   gank-alert    capture.rs:292    edge, gank probability >= danger threshold
@@ -29,6 +28,7 @@ export interface MatchSessionMetadata {
 
 /** game-tick — GSI snapshot of the LOCAL player only (not all 10 heroes). */
 export interface GameTick extends MatchSessionMetadata {
+  local_player_verified?: boolean;
   in_game: boolean;
   clock_time: number;      // seconds; negative before horn
   game_state: string;      // e.g. "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS"
@@ -94,6 +94,10 @@ export interface MinimapRegion {
 
 /** minimap-cv — CV debug/detection feed (~5Hz). */
 export interface MinimapCv extends MatchSessionMetadata {
+  geometry_generation: string;
+  display_index: number;
+  display_fingerprint: string;
+  desktop_origin: [number, number];
   region: MinimapRegion;
   icon: number;
   candidates: [number, number][];
@@ -118,16 +122,6 @@ export interface SensorHealth {
   /** null in Lite mode: no capture loop means no frame clock to report. */
   frameAgeMs: number | null;
   healthy: boolean;
-}
-
-/** minimap-frame — live minimap mirror for the Command Deck (~3Hz). `image` is a
- *  ready-to-render base64 `data:image/png` URL of the downscaled captured minimap;
- *  `region` is the same geometry as minimap-cv, in screen px. */
-export interface MinimapFrame extends MatchSessionMetadata {
-  image: string;
-  region: MinimapRegion;
-  /** Bounds of the map interior represented by image, relative to region.side. */
-  map_crop: { left: number; top: number; right: number; bottom: number };
 }
 
 /** draft-roster — slot-preserving progress from the pick-screen CV read.

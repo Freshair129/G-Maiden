@@ -2,8 +2,8 @@
 title: "AGENTS.md"
 doc_id: "agents"
 status: active
-version: "0.4.5"
-updated: "2026-10-28"
+version: "0.4.7"
+updated: "2026-10-29"
 owner: "G-Maiden"
 ---
 # AGENTS.md
@@ -304,7 +304,11 @@ node tools/doc-graph/ci-gate.mjs
   **with** the documentation change; a PR that leaves them stale fails.
 - A new or edited document needs frontmatter with `title`, `doc_id`, `status`, `version`,
   `updated`, `owner`; `status` from `draft | active | accepted | stable | superseded | historical`;
-  and `version` equal to the last row of that document's own `## Changelog` table — that heading
+  and `version` equal to the last row of that document's own `### VRZO v8 runtime correction
+
+VRZO v8 verifies the selected original WAV snapshot and the bundled mixed WAV snapshot separately, then admits exactly one mono48k PCM16 source through rodio. Mixed bytes must match their catalog hash, format and original duration; failure plays original once, suppresses the v8 visual and logs the reason. Lifecycle carries distinct original/played hashes. Silent video is cancelled even during its natural-completion tail. Native GSI owns gameplay pack events when announcer is enabled; Overlay does not issue a second persona clip. Personal events require player SteamID agreement with the active local Steam login (read-only HKCU ActiveProcess.ActiveUser; provider SteamID is not required); unknown identity is silent, owner changes reseed, and aggregate kill jumps do not establish multi-kill timing. Native acoustic/sync and false-event match acceptance remain unverified.
+
+## Changelog` table — that heading
   **exactly**, since a numbered variant like `## 8. Changelog` is not matched.
 
 ---
@@ -431,9 +435,7 @@ flag.
   has a partial local reader/snapshot slice. Do not describe either as complete; see
   `docs/features/FEAT-G-VOICE.md` and `FEAT-G-MEMORY.md`.
 - G-Log local JSONL logging
-- **Announcer packs = bundles**: activating a pack changes the in-game voice (active-pack-first clip
-  resolution) and shows the pack's **banner image** on the overlay when an event fires
-  (`announcer-banner` event); "Show on overlay" previews a pack without a match
+- **Announcer packs and VRZO banner:** source integration selects the active pack's actual event clip. For `pack_vrzo_20261028` v0.2.0, a local 15-event/21-variant catalog maps the SHA-256 of the bytes decoded by rodio plus selected event and clip ID to bundled composite WebM. The video is muted; rodio owns audio. Unknown/mismatched clips do not produce this visual. A bounded off-audio-thread lifecycle fences playback/session/pack, gives natural completion at most 1.4 s silent tail, and clears on cancel/preemption/new playback/scope change. A VRZO variant picker previews the exact selected clip in Control when VRZO is equipped, isolated from live match state. Other pack banners retain their existing path. Catalog identity/hash validation does not make a locally imported pack a signed Store pack or grant entitlement. See [[vrzo-banner-validation]] (`docs/operations/vrzo-banner-validation.md`). WebView2 alpha/mute, cold timing, in-game sync and 900 MB resource acceptance remain NOT_RUN.
 - **Deck panels live-wired (Phase 2c)**: telemetry footer, weeklyReport, insights, history,
   agentSector.status now use real data (resource-stats / OpenDota / G-Log / GSI); buildAdvisor still MOCK
 - **GPU/VRAM/temp telemetry**: bundled headless `gpu-feeder` sidecar (nvidia-smi → POST /telemetry);
@@ -505,3 +507,5 @@ These are **functional requirements**, not flavor text. Maiden must:
 | 0.1.0b | 2026-07-21 | Added governance for proposed GID security, recovery, and privacy-safe web profiles; no implementation is implied. |
 | 0.4.4 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
 | 0.4.5 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |
+| 0.4.6 | 2026-10-29 | Document VRZO decoded-clip visual identity, lifecycle, preview, pack trust and remaining native acceptance. |
+| 0.4.7 | 2026-10-29 | Record verified v8 mix, single audio owner, personal-event identity and pending native acceptance. |

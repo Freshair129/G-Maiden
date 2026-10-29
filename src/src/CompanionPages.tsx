@@ -1,5 +1,8 @@
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
-import { formatKda, formatTimer, toneClass, useCompanionData, useMinimapFrame } from "./companion";
+import { formatKda, formatTimer, toneClass, useCompanionData } from "./companion";
+import { MinimapCanvas } from "./MinimapCanvas";
+import { useMinimapPreview } from "./live/useMinimapPreview";
+import { previewMatchesCv } from "./live/minimapPreview";
 import { prettyHeroName } from "./live/events";
 import { useStartupSettings } from "./app/settingsContext";
 
@@ -137,7 +140,8 @@ function rosterHeroName(name: string | null | undefined): string {
 export const CvHeroesPage = memo(function CvHeroesPage() {
   const { data } = useCompanionData();
   const { settings } = useStartupSettings();
-  const frame = useMinimapFrame();
+  const preview = useMinimapPreview();
+  const frame = preview.geometry;
   const cv = data.heroCv;
   const roster = cv.roster;
   const knownCount = [...(roster?.radiant ?? []), ...(roster?.dire ?? [])]
@@ -146,7 +150,7 @@ export const CvHeroesPage = memo(function CvHeroesPage() {
   const detections = cv.phase === "live" && cv.health?.healthy
     ? (cv.minimap?.detections ?? []).filter((detection) => seenNames.has(shortHeroName(detection.name)))
     : [];
-  const mapReady = cv.phase === "live" && !!frame && !!cv.minimap && cv.health?.healthy === true;
+  const mapReady = cv.phase === "live" && preview.status === "live" && previewMatchesCv(frame, cv.minimap) && cv.health?.healthy === true;
   const missingNames = new Set(cv.phase === "live" ? cv.missing.map(shortHeroName) : []);
   const lastSeenMarkers = mapReady && frame && cv.minimap
     ? cv.missingPos.flatMap(([name, [x, y]]) => {
@@ -275,9 +279,10 @@ export const CvHeroesPage = memo(function CvHeroesPage() {
             </div>
             <span className="metric-chip">{mapReady ? `${detections.length} จุด` : "—"}</span>
           </div>
-          {mapReady && frame && cv.minimap ? (
-            <div className="cv-map-frame">
-              <img src={frame.image} alt="ภาพ minimap ล่าสุดจาก CV" />
+            <div className={preview.status === "live" ? "cv-map-frame" : "cv-map-empty"}
+              style={{ position: "relative", overflow: "hidden" }}>
+              <MinimapCanvas />
+              {mapReady && frame && cv.minimap && <>
               {lastSeenMarkers.map((marker, index) => (
                 <span
                   className="cv-map-marker last-seen"
@@ -307,10 +312,8 @@ export const CvHeroesPage = memo(function CvHeroesPage() {
                   </span>
                 );
               })}
+              </>}
             </div>
-          ) : (
-            <div className="cv-map-empty">ยังไม่มีภาพ minimap ที่ยืนยันสถานะเซนเซอร์ได้</div>
-          )}
           <div className="cv-gank-state">
             <span>G-Signal</span>
             <strong>{gankText}</strong>

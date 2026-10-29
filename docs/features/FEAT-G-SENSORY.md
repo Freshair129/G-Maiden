@@ -2,8 +2,8 @@
 title: "FEAT-G-SENSORY — Overlay & Hardware Optimization"
 doc_id: "FEAT-G-SENSORY"
 status: "active"
-version: "0.2.6"
-updated: "2026-10-13"
+version: "0.2.7"
+updated: "2026-10-29"
 owner: "Boss"
 source_of_truth: false
 complexity: "C-2"
@@ -39,11 +39,11 @@ event ไปยัง control window แล้วเช็ค budget:
 
 | Resource | Limit | Mitigation |
 | --- | --- | --- |
-| CPU budget | OS Job Object hard cap at 10% of whole-app logical CPU capacity | One-second group accounting; capture loop also drops to ~2 Hz when a sample exceeds 10%, and releases after ≤8% for 3 samples |
-| RAM | ≤400 MB | (นับรวมใน over-budget flag เดียวกัน) |
+| CPU budget | ≤10% whole-app normalized CPU per 1-second sample; OS Job operating hard cap 8% | One-second group accounting and capture throttle; release at ≤8% for 3 samples |
+| RAM | ≤900,000,000 bytes aggregate Working Set | รวมใน over-budget flag เดียวกัน |
 | FPS impact | ≤3% | GATE P7 PresentMon/ETW receipt; live acceptance ยังไม่ยืนยัน |
 
-> **สถานะ (2026-10-13):** ตาม MVP decision v0.3.0, `measure()` อ่าน CPU สะสมของ Windows Job Object group ทุก 1 วินาทีและใช้ logical CPU capacity เป็นตัวหาร; `over_budget` เป็นจริงเมื่อ RAM >400 MB, CPU >10% หรือ runtime CPU group query อ่านไม่ได้. ก่อน Tauri สร้าง WebView2, governor ต้องตั้ง OS hard cap 10% และ `KILL_ON_JOB_CLOSE`. แอปที่สร้าง children ผ่าน `CreateProcess` โดยไม่ใช้ breakaway flag จะอยู่ใน job ตาม Windows default; การรวม WebView2 process ยังต้องยืนยันด้วย Windows acceptance. หากสร้าง/configure/assign job ไม่ได้ แอปบันทึก error แล้วออกก่อนสร้าง Tauri/WebView หรือ sidecar; จะไม่มี degraded startup. หลัง setup สำเร็จแต่ runtime query ล้มเหลว UI แสดง unavailable และคง `CPU_THROTTLE` แม้ OS hard cap ยังทำงาน. ไม่มี fallback ที่อนุมานจากชื่อหรือ PID. การลด capture cadence ราวครึ่งหนึ่งเป็น soft mitigation เพิ่มเติม ไม่ใช่เพดาน CPU.
+> **สถานะ (2026-10-29):** ตาม [[mvp-decisions]] (`docs/product/mvp-decisions.md`), `measure()` อ่าน CPU สะสมของ Windows Job Object group ทุก 1 วินาทีและใช้ logical CPU capacity เป็นตัวหาร; `over_budget` เป็นจริงเมื่อ RAM >900,000,000 bytes, CPU >10% หรือ runtime CPU group query อ่านไม่ได้. ก่อน Tauri สร้าง WebView2, governor ต้องตั้ง OS operating hard cap 8% และ `KILL_ON_JOB_CLOSE`. แอปที่สร้าง children ผ่าน `CreateProcess` โดยไม่ใช้ breakaway flag จะอยู่ใน job ตาม Windows default; การรวม WebView2 process ยังต้องยืนยันด้วย Windows acceptance. หากสร้าง/configure/assign job ไม่ได้ แอปบันทึก error แล้วออกก่อนสร้าง Tauri/WebView หรือ sidecar; จะไม่มี degraded startup. หลัง setup สำเร็จแต่ runtime query ล้มเหลว UI แสดง unavailable และคง `CPU_THROTTLE` แม้ OS hard cap ยังทำงาน. ไม่มี fallback ที่อนุมานจากชื่อหรือ PID. การลด capture cadence ราวครึ่งหนึ่งเป็น soft mitigation เพิ่มเติม ไม่ใช่เพดาน CPU.
 >
 > **CPU gate ของ MVP ยังไม่ถือว่าผ่าน** จนกว่าจะเก็บ one-second job-group samples และ process-group harness บนเส้นทางจริงของ app; hard cap ที่ตั้งสำเร็จไม่พิสูจน์ FPS หรือ G-Signal latency. ตาราง "unload SLM / ปิด blur / static HUD" ยังเป็น
 > aspirational (ยังไม่ได้ทำ). FPS มี measurement apparatus แล้วใน
@@ -93,8 +93,7 @@ Global shortcuts จริงจาก [`main.rs`](file:///g:/G-Maiden/src-tauri
 
 - UI state → React overlay (Tauri events: `listen('core-event', ...)`)
 - Render commands → GPU-composited transparent window
-- Announcer pack banner → overlay ([`packBanner`](file:///g:/G-Maiden/src/src/App.tsx) ใน [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx), driven โดย
-  `announcer-banner` event; รูปของ pack แทน built-in kill card เมื่อ event fire)
+- Announcer pack banner → overlay: other packs retain the existing image path. VRZO uses the selected clip/event and decoded-audio SHA-256 to resolve one of 21 bundled muted composite WebM visuals; playback identity and session/pack scope fence starts and stops. A normal completion allows ≤1.4 s silent outro, while cancellation/preemption/new playback or scope change clears it. Inventory provides a variant picker when VRZO is equipped. Matching a catalog hash does not assert Store signature or entitlement. WebView2 alpha/mute, cold timing, live sync and resource acceptance remain NOT_RUN; see [[vrzo-banner-validation]] (`docs/operations/vrzo-banner-validation.md`).
 - [`ResourceStats`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L180) `{ ram_mb, cpu_pct, cpu_group_processes, over_budget, gpu_pct, gpu_temp_c, vram_used_mb, vram_total_mb }`
   (`cpu_group_processes` เป็น `i32`; ค่า `-1` หมายถึงอ่าน Job Object group accounting ใน sample นั้นไม่สำเร็จ แม้ cap ยัง active หลัง startup; ดู [`measure()`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L276). `cpu_pct` และ sensor fields เป็น `f64`.) → emit `resource-stats` ไปยัง control window
 
@@ -165,7 +164,7 @@ Canonical UI/UX contract: [[design-system]] (`docs/architecture/design-system.md
 - [ ] ไม่บัง minimap, skill bar, stats panel
 - [ ] **FPS drop ≤3%** vs baseline (GATE P7) — requires a real measured overlay-on receipt with `verdict=pass`
 - [ ] **CPU ≤10%** per one-second whole-app process-group sample (GATE P2/P7; MVP decision v0.2.0)
-- [ ] **RAM ≤400 MB** (GATE P7)
+- [ ] **RAM ≤900,000,000 bytes** aggregate Working Set (GATE P7; native acceptance pending)
 - [ ] global hotkeys ทำงาน: `Ctrl+Alt+S` (toggle overlay), `Alt+↑/↓` (vol ±10%), `Alt+M` (mute toggle)
 - [ ] governor auto-throttle เมื่อ resource เกิน budget
 - [ ] glassmorphism visual ตรง design spec
@@ -194,3 +193,4 @@ Canonical UI/UX contract: [[design-system]] (`docs/architecture/design-system.md
 | 0.2.4 | 2026-10-12 | Documented the unavailable-cap/query ambiguity, kill-on-close assumptions, and degraded-state feeder risk. |
 | 0.2.5 | 2026-10-12 | Corrected the `governor::ingest_gpu` symbol anchor after the CPU governor changes. |
 | 0.2.6 | 2026-10-13 | Documented fail-closed startup on Job Object setup failure and clarified that the `-1` process-count sentinel means a runtime accounting read failed. |
+| 0.2.7 | 2026-10-29 | Document VRZO visual lifecycle and pending native acceptance; align active RAM and operating CPU cap with MVP. |

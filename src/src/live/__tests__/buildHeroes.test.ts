@@ -198,6 +198,7 @@ describe("buildHeroes — honest FALLBACK base (CR-007 WP-4 regression)", () => 
 
   it("does not treat a raw CV classification as confirmed current presence", () => {
     const cv: MinimapCv = {
+      geometry_generation: "1", display_index: 0, display_fingerprint: "3", desktop_origin: [0, 0],
       region: { x: 0, y: 0, side: 100 },
       icon: 0,
       candidates: [],
@@ -242,6 +243,19 @@ describe("buildHeroes — Draft-CV roster fill", () => {
     const result = buildHeroes(tick, new Map(), null, FALLBACK.heroes, new Map(), roster, "radiant");
     expect(result[0].hero).toBe("Crystal Maiden"); // local from GSI
     expect(result.slice(1, 5).map((h) => h.hero)).toEqual(["Juggernaut", "Pudge", "Lion", "Axe"]);
+  });
+
+  it("shows individually confirmed allies without waiting for all ten heroes", () => {
+    const partial = { ...roster, complete: false, radiant: [null, "pudge", "crystal_maiden", null, "axe"], dire: [null, "zeus", null, null, null] };
+    const result = buildHeroes(makeTick(), new Map(), null, FALLBACK.heroes, new Map(), partial, "radiant");
+    expect(result.slice(1, 5).map((hero) => hero.hero)).toEqual(["—", "Pudge", "—", "Axe"]);
+    expect(result.slice(1, 5).every((hero) => hero.state === "empty" && hero.kills === undefined)).toBe(true);
+  });
+
+  it("does not guess teammate ordering before the local portrait is confirmed", () => {
+    const partial = { ...roster, complete: false, radiant: [null, "pudge", null, null, "axe"] };
+    const result = buildHeroes(makeTick(), new Map(), null, FALLBACK.heroes, new Map(), partial, "radiant");
+    expect(result.slice(1, 5).map((hero) => hero.hero)).toEqual(["—", "—", "—", "—"]);
   });
 
   it("keeps ally identity-only (no fabricated KDA — GSI still can't see teammates)", () => {
@@ -309,7 +323,7 @@ describe("assignEnemySlot — permanent, order-preserving assignment (CR-007 WP-
     let result = buildHeroes(
       null,
       new Map(),
-      { region: { x: 0, y: 0, side: 100 }, icon: 0, candidates: [], count: 1, classifier: true,
+      { geometry_generation: "1", display_index: 0, display_fingerprint: "3", desktop_origin: [0, 0], region: { x: 0, y: 0, side: 100 }, icon: 0, candidates: [], count: 1, classifier: true,
         detections: [{ label: 1, name: "npc_dota_hero_zeus", x: 1, y: 1, score: 0.9 }] },
       FALLBACK.heroes,
       enemySlots
@@ -321,7 +335,7 @@ describe("assignEnemySlot — permanent, order-preserving assignment (CR-007 WP-
     result = buildHeroes(
       null,
       new Map(),
-      { region: { x: 0, y: 0, side: 100 }, icon: 0, candidates: [], count: 2, classifier: true,
+      { geometry_generation: "1", display_index: 0, display_fingerprint: "3", desktop_origin: [0, 0], region: { x: 0, y: 0, side: 100 }, icon: 0, candidates: [], count: 2, classifier: true,
         detections: [
           { label: 2, name: "npc_dota_hero_axe", x: 2, y: 2, score: 0.9 },
           { label: 1, name: "npc_dota_hero_zeus", x: 1, y: 1, score: 0.9 }

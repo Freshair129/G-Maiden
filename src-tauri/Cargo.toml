@@ -78,3 +78,11 @@ tauri-build = { version = "2.7", features = [] }
 # the measured resident-code and CPU cost of an unoptimized application crate.
 [profile.dev.package.g-maiden]
 opt-level = 2
+
+# Unit tests should not inherit the optimized interactive-app profile. Keep their
+# code generation deterministic across interrupted local test compilations.
+[profile.test]
+incremental = false
+
+[profile.test.package.g-maiden]
+opt-level = 0

@@ -2,8 +2,8 @@
 title: "G-Maiden — Engineering Spec"
 doc_id: "engineering-spec"
 status: "active"
-version: "0.3.1"
-updated: "2026-10-18"
+version: "0.3.2"
+updated: "2026-10-29"
 owner: "Boss"
 source_of_truth: false
 complexity: "C-3"
@@ -172,7 +172,13 @@ enum CoreEvent {
 }
 ```
 
-UI subscribe ผ่าน event แยกชื่อ (ไม่มี channel รวม `core-event`): `game-tick`, `gsi-status`, `resource-stats`, `minimap-cv`, `gank-alert`, `gank-clear`, `enemy-missing`, `announcer-banner`, `advice-update`, `buyback-advice`, `buyback-narrative`, `capture-mode`, `volume-change`, `oauth-callback`, `oauth-error`, `preview-kill`. commands ที่สั่งจาก UI เช่น `set_cv_signal_sensitivity`, `set_cv_signal_enabled` (ไม่มี `set_sensitivity`/`toggle_module`).
+UI subscribe ผ่าน event แยกชื่อ (ไม่มี channel รวม `core-event`): `game-tick`, `gsi-status`, `resource-stats`, `minimap-cv`, `gank-alert`, `gank-clear`, `enemy-missing`, `announcer-banner`, `vrzo-banner-playback`, `advice-update`, `buyback-advice`, `buyback-narrative`, `capture-mode`, `volume-change`, `oauth-callback`, `oauth-error`, `preview-kill`. commands ที่สั่งจาก UI เช่น `set_cv_signal_sensitivity`, `set_cv_signal_enabled` และ `preview_vrzo_banner_variant` (ไม่มี `set_sensitivity`/`toggle_module`).
+
+### 5.1 VRZO playback identity และ local preview (source integration)
+
+`vrzo-banner-playback` เป็น local overlay event ของ VRZO พร้อม `id`, `phase` (`start`/`completed`/`stop`), `clipId`, `event`, `session_epoch`, `preview` และ `expires_at_ms`; ไม่ใช่การยืนยันว่าภาพแสดงหรือเสียงออกลำโพงแล้ว. Audio owner ออก monotonic playback identity หลัง rodio รับ source; bounded nonblocking lifecycle channel ส่งไป worker นอก audio thread. Worker เทียบ pack/event/selected clip ID กับ SHA-256 ของ bytes ที่ถอดรหัสและ catalog ก่อนเลือก bundled composite WebM; overlay ใน `src/src/app/Overlay.tsx` fence ด้วย playback/session/pack scope. WebM ปิดเสียง และ rodio เป็นเจ้าของเสียงเพียงตัวเดียว. Reject/unknown/mismatch ไม่สร้าง VRZO visual; pack hash match ไม่เป็น Store signature หรือ entitlement.
+
+Natural completion อาจคง silent tail ได้สูงสุด 1.4 วินาทีและไม่เกิน expiry; cancel/preemption/new playback/เปลี่ยน scope ล้าง visual. `preview_vrzo_banner_variant(event, clipId)` เป็น trusted Control command สำหรับแพ็ก VRZO ที่ equip แล้ว มี preview identity แยกจาก event แมตช์. ดู [[vrzo-banner-validation]] (`docs/operations/vrzo-banner-validation.md`) สำหรับขั้นตอนและ [[2026-10-29-vrzo-synced-banner]] (`docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md`) สำหรับขอบเขตแบบ. WebView2 alpha/mute, first cold timing, live synchronization และ resource acceptance 900,000,000 bytes ยัง **NOT_RUN**; source/dispatch ไม่ใช่ native presentation proof.
 
 > **สถานะ (2026-07): `enum CoreEvent` ด้านบนเป็นแบบจำลอง — โค้ดจริง emit แต่ละ event แยกชื่อตามรายการนี้ และ `ResourceStats` มาจาก [`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs).**
 
@@ -321,3 +327,4 @@ native cold/offline/revoke acceptance remains pending.
 | 0.2.0 | 2026-10-10 | Reconciled T0/T3 and strict G-Signal latency, local-only Voice/Memory and critical path, cloud allowlist target, account-optional target versus current gate, and whole-app acceptance measurements. |
 | 0.2.1 | 2026-10-11 | Added the static gameplay data structural and lineage consistency checks to the CI acceptance gate; retained accuracy and patch currency as unverified. |
 | 0.3.0 | 2026-10-12 | Updated the whole-app CPU acceptance threshold to 10% per one-second sample per MVP decision v0.2.0. |
+| 0.3.2 | 2026-10-29 | Record VRZO playback event, decoded clip identity, preview command and unverified native acceptance. |
