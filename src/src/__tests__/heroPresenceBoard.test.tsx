@@ -8,7 +8,6 @@ let data: CompanionData
 vi.mock('../companion', async (importOriginal) => ({
   ...await importOriginal<typeof import('../companion')>(),
   useCompanionData: () => ({ data }),
-  useMinimapFrame: () => null,
 }))
 vi.mock('../app/settingsContext', () => ({ useStartupSettings: () => ({ settings: DEFAULTS }) }))
 
@@ -16,7 +15,7 @@ function boardData() {
   data = { ...FALLBACK, heroCv: { ...FALLBACK.heroCv, phase: 'live',
     roster: { radiant: ['crystal_maiden', null, null, null, null], dire: ['axe', null, null, null, null], complete: false, recognizer_active: true, templates_loading: false },
     health: { backend: 'dxgi', healthy: true, classifier: true, throttled: false, frameAgeMs: 0 },
-    minimap: { region: { x: 0, y: 0, side: 100 }, icon: 10, candidates: [], count: 1, classifier: true,
+    minimap: { geometry_generation: "1", display_index: 0, display_fingerprint: "3", desktop_origin: [0, 0], region: { x: 0, y: 0, side: 100 }, icon: 10, candidates: [], count: 1, classifier: true,
       detections: [{ name: 'axe', label: 1, score: 0.99, x: 10, y: 10 }] },
   } }
 }

@@ -7,7 +7,6 @@ import { ReadinessRundown } from '../deck/onair'
 vi.mock('../companion', () => ({
   latestBackendReceiptAt: () => 0,
   toneClass: () => '',
-  useMinimapImage: () => null,
 }))
 
 let root: Root

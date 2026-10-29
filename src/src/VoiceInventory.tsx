@@ -9,6 +9,8 @@
 import { CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
 import { invoke } from "@tauri-apps/api/core";
 import type { VoiceEvent, VoicePack, VoiceState } from "./voice-types";
+import { VRZO_CLIPS } from "./overlay/vrzoBanner";
+import { C } from "./app/theme";
 
 
 // Pack tile — cover image on top, name/author on the bottom. Falls back to a
@@ -109,6 +111,7 @@ export default function VoiceInventory() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [vrzoClip, setVrzoClip] = useState(VRZO_CLIPS[0].clipId);
 
   const refresh = useCallback(async () => {
     try {
@@ -178,6 +181,15 @@ export default function VoiceInventory() {
     const firstMapped = selectedPack.items.find((item) => item.mapping);
     if (firstMapped) void previewOnOverlay(firstMapped);
   }, [selectedPack, previewOnOverlay]);
+
+  const previewVrzoVariant = useCallback(async () => {
+    const variant = VRZO_CLIPS.find((item) => item.clipId === vrzoClip);
+    if (!variant) return;
+    try {
+      await invoke("preview_vrzo_banner_variant", { event: variant.event, clipId: variant.clipId });
+      setErr(null);
+    } catch (e) { setErr(errMessage(e)); }
+  }, [vrzoClip]);
 
   if (!state) {
     return (
@@ -277,6 +289,15 @@ export default function VoiceInventory() {
                   Preview overlay
                 </button>
               </div>
+
+              {selectedPack.id === 'pack_vrzo_20261028' && (
+                <div className="voice-detail-actions">
+                  <label>ทดลองแบนเนอร์ VRZO <select aria-label="VRZO variant" style={{ backgroundColor: C.bg, color: C.txt, colorScheme: 'dark' }} value={vrzoClip} onChange={(e) => setVrzoClip(e.target.value)}>
+                    {VRZO_CLIPS.map((item) => <option key={item.clipId} value={item.clipId} style={{ backgroundColor: C.bg, color: C.txt }}>{item.event} · {item.clipId}</option>)}
+                  </select></label>
+                  <button className="voice-btn" aria-label="Preview VRZO variant" onClick={() => void previewVrzoVariant()} disabled={!isEquipped}>ทดลองภาพและเสียง</button>
+                </div>
+              )}
 
               <div className="voice-detail-events">
                 {state.groups.map((group) => {

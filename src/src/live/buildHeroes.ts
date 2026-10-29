@@ -79,19 +79,15 @@ export function buildHeroes(
   // Draft-CV: the full roster (all 10 identities) split by the LOCAL player's
   // team — this is what fills ally slots 1-4 (which GSI never reveals) and
   // pre-seeds enemy identities before CV ever sights them. Short label form.
-  let allyOthers: string[] = [];
+  let allyOthers: (string | null)[] = [];
   let enemyRoster: (string | null)[] | null = null;
   if (roster && (teamName === "radiant" || teamName === "dire")) {
     enemyRoster = teamName === "radiant" ? roster.dire : roster.radiant;
-  }
-  if (roster?.complete && teamName) {
-    const mine = (teamName === "radiant" ? roster.radiant : roster.dire)
-      .filter((name): name is string => name !== null);
-    const theirs = (teamName === "radiant" ? roster.dire : roster.radiant)
-      .filter((name): name is string => name !== null);
-    const localShort = tick ? tick.hero.replace(/^npc_dota_hero_/, "") : "";
-    allyOthers = mine.filter((n) => n !== localShort); // the 4 teammates
-    enemyRoster = theirs;
+    const mine = teamName === "radiant" ? roster.radiant : roster.dire;
+    const localShort = tick ? shortName(tick.hero) : "";
+    const localSlot = mine.findIndex((name) => name !== null && shortName(name) === localShort);
+    // Preserve unknown portrait slots; compacting them would reorder teammates.
+    if (localSlot >= 0) allyOthers = mine.filter((_, slot) => slot !== localSlot);
   }
 
   let allyIndex = 0;
@@ -103,6 +99,7 @@ export function buildHeroes(
     if (hero.team === "ally") {
       const a = allyIndex;
       allyIndex += 1;
+      const allyName = allyOthers[a - 1];
       if (tick && index === 0) {
         next = {
           ...next,
@@ -120,10 +117,10 @@ export function buildHeroes(
           state: tick.alive ? "visible" : "dead",
           timer: tick.alive ? 0 : Math.round(tick.respawn_seconds),
         };
-      } else if (a >= 1 && allyOthers[a - 1]) {
+      } else if (a >= 1 && allyName) {
         // Ally slots 1-4: identity ONLY (GSI never exposes teammate KDA/economy,
         // so those stay "—"). This is the honest gain Draft-CV unlocks.
-        next = { ...next, hero: prettyHeroName(allyOthers[a - 1]) || next.hero };
+        next = { ...next, hero: prettyHeroName(allyName) || next.hero };
       }
     }
 

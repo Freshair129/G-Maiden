@@ -714,6 +714,7 @@ pub(crate) fn asset_option(base: &Path, rel: &str) -> Option<VoiceAssetOption> {
 // becomes a HashMap lookup behind one mutex lock: no disk I/O, no JSON parse,
 // no canonicalize, on the hot path, ever.
 struct ResolvedCache {
+    revision: u64,
     /// Which pack this cache reflects — not currently read back by anyone
     /// (`cached_event_clips` only serves the map), but kept for the obvious
     /// future need (a debug/status surface showing what's cached) and because
@@ -744,14 +745,23 @@ thread_local! {
 }
 
 #[cfg(not(test))]
-fn store_resolved_cache(next: Option<ResolvedCache>) {
+fn store_resolved_cache(mut next: Option<ResolvedCache>) {
     if let Ok(mut cache) = RESOLVED_CACHE.lock() {
+        stamp_cache(&mut next);
         *cache = next;
     }
 }
 #[cfg(test)]
-fn store_resolved_cache(next: Option<ResolvedCache>) {
+fn store_resolved_cache(mut next: Option<ResolvedCache>) {
+    stamp_cache(&mut next);
     RESOLVED_CACHE.with(|cell| *cell.borrow_mut() = next);
+}
+
+fn stamp_cache(next: &mut Option<ResolvedCache>) {
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+    if let Some(cache) = next {
+        cache.revision = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    }
 }
 
 #[cfg(not(test))]
@@ -805,6 +815,7 @@ pub(crate) fn rebuild_resolved_cache() {
         let dir = packs_dir().join(sanitize_id(&id));
         if id == DEFAULT_PACK_ID {
             return Some(ResolvedCache {
+                revision: 0,
                 pack_id: id,
                 pack_name: "G-Maiden Default".into(),
                 clips_by_event: EVENTS
@@ -819,6 +830,7 @@ pub(crate) fn rebuild_resolved_cache() {
             clips_by_event.insert(event.clone(), resolve_existing_clips(&dir, &mapping.clips));
         }
         Some(ResolvedCache {
+            revision: 0,
             pack_id: id.clone(),
             pack_name: if manifest.name.is_empty() {
                 id
@@ -848,6 +860,7 @@ pub(crate) fn cached_event_clips(event: &str) -> Option<Vec<PathBuf>> {
 
 #[derive(Clone, Debug)]
 pub struct AnnouncerClip {
+    pub revision: u64,
     pub pack_id: String,
     pub pack_name: String,
     pub path: PathBuf,
@@ -859,9 +872,25 @@ pub fn select_announcer_clip(event: &str) -> Option<AnnouncerClip> {
         let cache = cache?;
         let path = audio::choose_clip(cache.clips_by_event.get(event)?.clone())?;
         Some(AnnouncerClip {
+            revision: cache.revision,
             pack_id: cache.pack_id.clone(),
             pack_name: cache.pack_name.clone(),
             path,
+        })
+    })
+}
+
+pub fn select_announcer_path(pack: &str, event: &str, path: &Path) -> Option<AnnouncerClip> {
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        if cache.pack_id != pack || !cache.clips_by_event.get(event)?.iter().any(|p| p == path) {
+            return None;
+        }
+        Some(AnnouncerClip {
+            revision: cache.revision,
+            pack_id: cache.pack_id.clone(),
+            pack_name: cache.pack_name.clone(),
+            path: path.to_owned(),
         })
     })
 }
@@ -873,7 +902,8 @@ pub fn with_current_announcer_clip<T>(
 ) -> Option<T> {
     with_resolved_cache(|cache| {
         let cache = cache?;
-        (cache.pack_id == selected.pack_id
+        (cache.revision == selected.revision
+            && cache.pack_id == selected.pack_id
             && cache
                 .clips_by_event
                 .get(event)

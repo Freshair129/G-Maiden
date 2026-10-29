@@ -16,18 +16,25 @@ use std::fs;
 use std::io::BufReader;
 use std::path::PathBuf;
 use std::sync::atomic::{AtomicU8, Ordering};
-use std::sync::{mpsc, Mutex, OnceLock};
+use std::sync::{mpsc, Arc, Mutex, OnceLock};
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
 
 use rodio::{Decoder, OutputStream, Sink};
+#[path = "audio_lifecycle.rs"]
+mod audio_lifecycle;
 #[path = "playback_admission.rs"]
 mod playback_admission;
+pub use audio_lifecycle::{
+    PlaybackLifecycleEvent, PlaybackLifecycleObserver, PlaybackLifecyclePhase,
+};
 pub use playback_admission::PlaybackResult;
 use playback_admission::{attempt_commit_if, OutputAdmission, PlaybackReceipt};
 static OUTPUT_ADMISSION: OutputAdmission = OutputAdmission::new();
 static PLAYING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 #[path = "audio_preparation.rs"]
 mod preparation;
+#[path = "audio_render.rs"]
+mod render;
 
 pub(crate) fn output_admission() -> Option<std::sync::MutexGuard<'static, ()>> {
     OUTPUT_ADMISSION.try_enter()
@@ -40,6 +47,27 @@ type PlaybackAdmission = dyn Fn(&mut dyn FnMut()) + Send;
 struct PlaybackObservation {
     admit: Box<PlaybackAdmission>,
     receipt: PlaybackReceipt,
+    lifecycle: Option<PlaybackLifecycleObserver>,
+}
+
+fn lifecycle_current() -> &'static Arc<std::sync::atomic::AtomicU64> {
+    static CURRENT: OnceLock<Arc<std::sync::atomic::AtomicU64>> = OnceLock::new();
+    CURRENT.get_or_init(|| Arc::new(std::sync::atomic::AtomicU64::new(0)))
+}
+
+fn audio_generation() -> &'static Arc<std::sync::atomic::AtomicU64> {
+    static GENERATION: OnceLock<Arc<std::sync::atomic::AtomicU64>> = OnceLock::new();
+    GENERATION.get_or_init(|| Arc::new(std::sync::atomic::AtomicU64::new(0)))
+}
+
+/// Changes on every admitted source append, including unobserved playback.
+pub fn current_audio_generation() -> u64 {
+    audio_generation().load(Ordering::Acquire)
+}
+
+/// Reconcile a bounded lifecycle subscriber after dropped notifications.
+pub fn current_lifecycle_playback_id() -> u64 {
+    lifecycle_current().load(Ordering::Acquire)
 }
 
 /// Master volume 0-100. Shared with the audio thread via atomic so `set_volume`
@@ -176,6 +204,7 @@ struct PlaybackTrace {
     started: Instant,
     duration: Option<Duration>,
     priority: Priority,
+    render: Arc<render::Stats>,
 }
 fn finish_trace(trace: &mut Option<PlaybackTrace>, reason: &str) {
     if let Some(trace) = trace.take() {
@@ -186,6 +215,10 @@ fn finish_trace(trace: &mut Option<PlaybackTrace>, reason: &str) {
             trace.duration.unwrap_or_default().as_millis(),
             trace.priority
         );
+        eprintln!("[G-Maiden audio] phase=render_diagnostics mmcss={} max_consumption_gap_ms={:.1} gaps_over_50ms={} (not audible-output proof)",
+            trace.render.mmcss.load(Ordering::Relaxed),
+            trace.render.max_gap_us.load(Ordering::Relaxed) as f64 / 1000.0,
+            trace.render.gaps_over_50ms.load(Ordering::Relaxed));
     }
 }
 
@@ -200,9 +233,12 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
     let mut sink: Option<Sink> = None;
     let mut current_priority = Priority::Cosmetic;
     let mut trace = None;
+    let mut lifecycle =
+        audio_lifecycle::Lifecycle::new(lifecycle_current().clone(), audio_generation().clone());
 
     loop {
         if sink.as_ref().is_some_and(|s| s.empty()) {
+            lifecycle.finish(PlaybackLifecyclePhase::Completed);
             finish_trace(&mut trace, "completed");
             sink = None;
             current_priority = Priority::Cosmetic;
@@ -216,7 +252,7 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
             Err(mpsc::RecvTimeoutError::Disconnected) => break,
         };
 
-        let (cmd, critical, observation, prepared) = match cmd {
+        let (cmd, critical, mut observation, prepared) = match cmd {
             Cmd::Critical(path, deadline, accepted) => (
                 Cmd::Play(path, Priority::Critical),
                 Some((deadline, accepted)),
@@ -244,6 +280,7 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                         s.stop();
                         finish_trace(&mut trace, "cancelled");
                     }
+                    lifecycle.finish(PlaybackLifecyclePhase::Cancelled);
                     current_priority = Priority::Cosmetic;
                     ACTIVE_PRIORITY.store(Priority::Cosmetic.as_u8(), Ordering::Relaxed);
                     PLAYING.store(false, Ordering::Release);
@@ -254,6 +291,7 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                     s.stop();
                     finish_trace(&mut trace, "cancelled");
                 }
+                lifecycle.finish(PlaybackLifecyclePhase::Cancelled);
                 current_priority = Priority::Cosmetic;
                 ACTIVE_PRIORITY.store(Priority::Cosmetic.as_u8(), Ordering::Relaxed);
                 PLAYING.store(false, Ordering::Release);
@@ -274,6 +312,8 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                     continue;
                 }
                 let fence = prepared.as_ref().map(|pcm| pcm.fence.clone());
+                let audio_sha256 = prepared.as_ref().and_then(|pcm| pcm.audio_sha256);
+                let played_audio_sha256 = prepared.as_ref().and_then(|pcm| pcm.played_audio_sha256);
                 if fence.as_ref().is_some_and(|fence| !fence.is_current()) {
                     continue;
                 }
@@ -337,13 +377,15 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                                         previous_trace = trace.take();
                                         previous.stop();
                                     }
+                                    let render_stats = Arc::new(render::Stats::default());
                                     trace = Some(PlaybackTrace {
                                         path: path.clone(),
                                         started: Instant::now(),
                                         duration: source.total_duration(),
                                         priority,
+                                        render: render_stats.clone(),
                                     });
-                                    s.append(source);
+                                    s.append(render::RenderSource::new(source, render_stats));
                                     sink = Some(s);
                                     current_priority = priority;
                                     ACTIVE_PRIORITY.store(priority.as_u8(), Ordering::Relaxed);
@@ -353,6 +395,13 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                         );
                         drop(_output_guard);
                         if committed {
+                            if previous_trace.is_some() {
+                                lifecycle.finish(PlaybackLifecyclePhase::Preempted);
+                            }
+                            let observer = observation
+                                .as_mut()
+                                .and_then(|value| value.lifecycle.take());
+                            lifecycle.start(observer, audio_sha256, played_audio_sha256);
                             if let Some((_, accepted)) = critical {
                                 let _ = accepted.try_send(true);
                             }
@@ -373,6 +422,7 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
             }
         }
     }
+    lifecycle.finish(PlaybackLifecyclePhase::Cancelled);
 }
 
 fn send(cmd: Cmd) {
@@ -405,6 +455,27 @@ pub fn play_observed(
     let observation = PlaybackObservation {
         admit: Box::new(admit),
         receipt: PlaybackReceipt::new(notify),
+        lifecycle: None,
+    };
+    if priority == Priority::Critical {
+        send(Cmd::Observed(path, priority, observation));
+    } else {
+        preparation::enqueue(path, priority, observation);
+    }
+}
+
+/// Send bounded lifecycle notifications only after this exact clip is admitted.
+pub fn play_observed_with_lifecycle(
+    path: PathBuf,
+    priority: Priority,
+    admit: impl Fn(&mut dyn FnMut()) + Send + 'static,
+    notify: impl FnOnce(PlaybackResult) + Send + 'static,
+    lifecycle: PlaybackLifecycleObserver,
+) {
+    let observation = PlaybackObservation {
+        admit: Box::new(admit),
+        receipt: PlaybackReceipt::new(notify),
+        lifecycle: Some(lifecycle),
     };
     if priority == Priority::Critical {
         send(Cmd::Observed(path, priority, observation));

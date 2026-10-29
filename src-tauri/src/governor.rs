@@ -93,6 +93,7 @@ static LATEST_GPU: Mutex<Option<GpuSample>> = Mutex::new(None);
 /// True while resource usage is over budget; the capture loop reads this to
 /// drop half its ticks automatically.
 static CPU_THROTTLE: AtomicBool = AtomicBool::new(true);
+static PREVIEW_ALLOWED: AtomicBool = AtomicBool::new(false);
 #[cfg(windows)]
 static PROCESS_JOB: OnceLock<Result<ProcessJob, String>> = OnceLock::new();
 
@@ -178,6 +179,25 @@ pub fn cpu_throttle() -> bool {
     CPU_THROTTLE.load(Ordering::Relaxed)
 }
 
+pub(crate) fn preview_allowed() -> bool {
+    PREVIEW_ALLOWED.load(Ordering::Relaxed) && !cpu_throttle()
+}
+
+pub(crate) fn owns_child_process(pid: u32) -> bool {
+    #[cfg(windows)]
+    {
+        let Some(Ok(job)) = PROCESS_JOB.get() else {
+            return false;
+        };
+        job_pids(job).is_some_and(|members| members.contains(&pid))
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = pid;
+        false
+    }
+}
+
 #[derive(Clone, serde::Serialize)]
 pub struct ResourceStats {
     pub ram_mb: f64,
@@ -220,6 +240,7 @@ fn poll_loop(app: AppHandle) {
     let mut peak_ram = 0.0f64;
     let mut throttled = false;
     let mut release_samples = 0u8;
+    let mut preview = crate::minimap_admission::Admission::default();
     loop {
         let mut stats = measure();
         if stats.cpu_pct >= 0.0 {
@@ -247,6 +268,13 @@ fn poll_loop(app: AppHandle) {
             } else {
                 release_samples = 0;
             }
+        }
+        let preview_allowed = preview.update(stats.ram_mb, stats.cpu_pct, throttled);
+        if PREVIEW_ALLOWED.swap(preview_allowed, Ordering::Relaxed) != preview_allowed {
+            eprintln!(
+                "[G-Gov] preview admitted={} RAM {:.0} MB CPU {:.1}%",
+                preview_allowed, stats.ram_mb, stats.cpu_pct
+            );
         }
         CPU_THROTTLE.store(throttled, Ordering::Relaxed);
         if stats.over_budget {
@@ -524,12 +552,12 @@ fn job_pids(job: &ProcessJob) -> Option<Vec<u32>> {
 }
 
 #[cfg(windows)]
-fn process_membership(job: &ProcessJob) -> Option<Vec<u32>> {
+fn process_membership(job: &ProcessJob) -> Option<Vec<resource_accounting::Identity>> {
     use windows::Win32::System::Diagnostics::ToolHelp::{
         CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
         TH32CS_SNAPPROCESS,
     };
-    let mut pids = job_pids(job)?;
+    let pids = job_pids(job)?;
     let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) }.ok()?;
     let snapshot = unsafe { OwnedHandle::from_raw_handle(snapshot.0) };
     let mut entry = PROCESSENTRY32W {
@@ -558,23 +586,31 @@ fn process_membership(job: &ProcessJob) -> Option<Vec<u32>> {
         }
     }
     // Verify app descendants did inherit the OS cap; never quietly exempt a breakaway.
-    let mut owned = std::collections::BTreeSet::from([std::process::id()]);
-    loop {
-        let before = owned.len();
-        for (pid, parent, _) in &processes {
-            if owned.contains(parent) {
-                owned.insert(*pid);
-            }
-        }
-        if before == owned.len() {
-            break;
-        }
-    }
-    if owned.iter().any(|pid| !pids.contains(pid)) {
+    let edges: Vec<_> = processes
+        .iter()
+        .map(|(pid, parent, _)| (*pid, *parent))
+        .collect();
+    let owned = resource_accounting::descendants(&[std::process::id()], &edges, process_created)?;
+    if !resource_accounting::all_in_job(&owned, &pids) {
         return None;
     }
+    let mut required = std::collections::BTreeMap::new();
+    for pid in pids {
+        let identity = resource_accounting::Identity {
+            pid,
+            created: process_created(pid)?,
+        };
+        if identity.created == 0 || required.insert(pid, identity).is_some() {
+            return None;
+        }
+    }
+    for identity in owned {
+        if required.get(&identity.pid) != Some(&identity) {
+            return None;
+        }
+    }
     if EXTERNAL_OLLAMA_USED.load(Ordering::Acquire) {
-        let mut providers: std::collections::BTreeSet<u32> = processes
+        let providers: Vec<u32> = processes
             .iter()
             .filter(|(_, _, name)| name.starts_with("ollama") && name.ends_with(".exe"))
             .map(|(pid, _, _)| *pid)
@@ -582,22 +618,44 @@ fn process_membership(job: &ProcessJob) -> Option<Vec<u32>> {
         if providers.is_empty() {
             return None;
         }
-        loop {
-            let before = providers.len();
-            for (pid, parent, _) in &processes {
-                if providers.contains(parent) {
-                    providers.insert(*pid);
-                }
-            }
-            if before == providers.len() {
-                break;
+        for identity in resource_accounting::descendants(&providers, &edges, process_created)? {
+            if required
+                .insert(identity.pid, identity)
+                .is_some_and(|previous| previous != identity)
+            {
+                return None;
             }
         }
-        pids.extend(providers);
     }
-    pids.sort_unstable();
-    pids.dedup();
-    Some(pids)
+    Some(required.into_values().collect())
+}
+
+#[cfg(windows)]
+fn process_created(pid: u32) -> Option<u64> {
+    use windows::Win32::Foundation::FILETIME;
+    use windows::Win32::System::Threading::{
+        GetProcessTimes, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+    };
+    let raw = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) }.ok()?;
+    let handle = unsafe { OwnedHandle::from_raw_handle(raw.0) };
+    let (mut created, mut exited, mut kernel, mut user) = (
+        FILETIME::default(),
+        FILETIME::default(),
+        FILETIME::default(),
+        FILETIME::default(),
+    );
+    unsafe {
+        GetProcessTimes(
+            HANDLE(handle.as_raw_handle()),
+            &mut created,
+            &mut exited,
+            &mut kernel,
+            &mut user,
+        )
+    }
+    .ok()?;
+    let ticks = (u64::from(created.dwHighDateTime) << 32) | u64::from(created.dwLowDateTime);
+    (ticks != 0).then_some(ticks)
 }
 
 #[cfg(windows)]
@@ -641,16 +699,23 @@ fn process_reading(pid: u32) -> Option<resource_accounting::Reading> {
 #[cfg(windows)]
 fn measure_process_group() -> Option<(f64, f64, i32)> {
     let job = PROCESS_JOB.get()?.as_ref().ok()?;
-    let owned = job_pids(job)?;
+    let mut owned = job_pids(job)?;
+    owned.sort_unstable();
     let required = process_membership(job)?;
     let readings: Vec<_> = required
         .iter()
-        .map(|pid| process_reading(*pid))
+        .map(|identity| process_reading(identity.pid))
         .collect::<Option<_>>()?;
-    if process_membership(job)? != required {
+    let mut owned_after = job_pids(job)?;
+    owned_after.sort_unstable();
+    if owned != owned_after
+        || process_membership(job)? != required
+        || !resource_accounting::same_identities(&required, &readings)
+    {
         return None;
     }
-    let (bytes, mut cpu) = resource_accounting::aggregate(&required, &readings)?;
+    let pids: Vec<_> = required.iter().map(|identity| identity.pid).collect();
+    let (bytes, mut cpu) = resource_accounting::aggregate(&pids, &readings)?;
     cpu.retain(|identity, _| !owned.contains(&identity.pid));
     use windows::Win32::System::JobObjects::{
         JobObjectBasicAccountingInformation, JOBOBJECT_BASIC_ACCOUNTING_INFORMATION,

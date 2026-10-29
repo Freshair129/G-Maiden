@@ -111,6 +111,32 @@ pub fn preview_clip(pack_id: &str, event: &str) -> Option<PathBuf> {
         .find_map(|rel| safe_pack_path(&dir, rel))
 }
 
+/// Resolve one named variant from the already admitted pack manifest.
+pub(crate) fn preview_variant(pack_id: &str, event: &str, clip_id: &str) -> Option<PathBuf> {
+    if !super::commands::is_store_installed(pack_id)
+        || !event_ids().any(|id| id == event)
+        || clip_id.is_empty()
+        || clip_id.len() > 64
+        || !clip_id
+            .bytes()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_')
+    {
+        return None;
+    }
+    let dir = packs_dir().join(sanitize_id(pack_id));
+    let manifest = read_manifest(&dir).ok()?;
+    let mapping = manifest.mappings.get(event)?;
+    let mut paths = mapping.clips.iter().filter(|rel| {
+        Path::new(rel).file_stem().and_then(|s| s.to_str()) == Some(clip_id)
+            && Path::new(rel).extension().and_then(|s| s.to_str()) == Some("wav")
+    });
+    let path = paths.next()?;
+    if paths.next().is_some() {
+        return None;
+    }
+    safe_pack_path(&dir, path)
+}
+
 pub fn preview_audio_clip(pack_id: &str, event: &str) -> Result<PathBuf, String> {
     if !super::commands::is_store_installed(pack_id) {
         return Err("ดูตัวอย่างได้เฉพาะแพ็กที่ติดตั้งจาก Store".into());

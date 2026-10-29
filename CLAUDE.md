@@ -2,8 +2,8 @@
 title: "CLAUDE.md"
 doc_id: "claude"
 status: active
-version: "0.4.4"
-updated: "2026-10-28"
+version: "0.4.6"
+updated: "2026-10-29"
 owner: "G-Maiden"
 ---
 # CLAUDE.md
@@ -181,16 +181,10 @@ instead of a false "missing".
   `ultra_kill`/`rampage`, 18s window), the streak ladder (`killing_spree`/`dominating`/`mega_kill`/
   `unstoppable`/`wicked_sick`/`monster_kill`/`godlike`/`beyond_godlike`), and
   `death`/`respawn`/`levelUp`/`hpLow`/`manaLow`.
-- **Banner + sound bundle ("queue banner")** — on the GSI path, when `announcer::most_important`
-  picks the event to voice, `gsi.rs` also emits the **`announcer-banner`** event
-  (`voice_api::fired_banner`; the banner image is inlined as a base64 `data:` URL because the overlay
-  CSP is `img-src 'self' data:`). The overlay (`App.tsx` `packBanner`) then shows the active pack's
-  banner **image** for that event, replacing the built-in kill card (falls back to the card when the
-  pack maps no image). Preview without a match: the **"Show on overlay"** button in `AudioSettingsCard.tsx`
-  → the `preview_announcer_event(pack_id, event)` command fires the exact same path.
+- **VRZO banner and audio** — the local source integration maps the selected VRZO clip using the event, exact clip ID and SHA-256 of the bytes decoded by rodio to a bundled composite WebM. The visual is muted, and rodio remains the only sound owner. Bounded nonblocking audio lifecycle notifications carry playback identity; rejected audio starts no video. Stale playback/session/pack events are fenced, and natural completion permits a silent tail up to 1.4 s, while cancellation, preemption, a new playback or scope change clears the visual. The Control inventory exposes a 21-variant preview picker for equipped VRZO; preview has separate authority from live match events. Other packs use their existing banner path. Clip-hash matching does not establish signed Store provenance or entitlement. See [[vrzo-banner-validation]] (`docs/operations/vrzo-banner-validation.md`) and [[2026-10-29-vrzo-synced-banner]] (`docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md`). WebView2 alpha/mute, cold-start timing, live sync and incremental resource acceptance are NOT_RUN.
 - **Kill-banner sync (enforce)** — the streak ladder in `announcer.rs` mirrors the overlay kill
   banner (`src/src/App.tsx` `STREAK_LABELS`) exactly, so the voiced streak and the on-screen banner
-  always agree. Both detect kills from `tick.kills` rising-edge and reset on death. Audio is
+  are intended to agree; real timing requires in-game acceptance. Both detect kills from `tick.kills` rising-edge and reset on death. Audio is
   single-slot, so `announcer::most_important` voices only the top-priority event per tick. If you
   add/rename a streak tier, change it in **both** places + `gmaiden-events.json`.
 - **Authoring + install** — packs are built in **G-AnnStudio** (the
@@ -311,6 +305,10 @@ The gate above answers *how* to release; this answers *when*.
 ## repo https://github.com/Freshair129/G-Maiden.git
 deploy to web by vercel cli
 
+### VRZO v8 runtime correction
+
+VRZO v8 verifies the selected original WAV snapshot and the bundled mixed WAV snapshot separately, then admits exactly one mono48k PCM16 source through rodio. Mixed bytes must match their catalog hash, format and original duration; failure plays original once, suppresses the v8 visual and logs the reason. Lifecycle carries distinct original/played hashes. Silent video is cancelled even during its natural-completion tail. Native GSI owns gameplay pack events when announcer is enabled; Overlay does not issue a second persona clip. Personal events require player SteamID agreement with the active local Steam login (read-only HKCU ActiveProcess.ActiveUser; provider SteamID is not required); unknown identity is silent, owner changes reseed, and aggregate kill jumps do not establish multi-kill timing. Native acoustic/sync and false-event match acceptance remain unverified.
+
 ## Changelog
 
 | Version | Date | Summary |
@@ -324,3 +322,5 @@ deploy to web by vercel cli
 | 0.4.1b | 2026-10-16 | Remove retired local review integration and its references. |
 | 0.4.3 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
 | 0.4.4 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |
+| 0.4.5 | 2026-10-29 | Record VRZO visual/audio identity, bounded lifecycle, preview and native acceptance boundaries. |
+| 0.4.6 | 2026-10-29 | Record verified v8 mix, single audio owner, personal-event identity and pending native acceptance. |

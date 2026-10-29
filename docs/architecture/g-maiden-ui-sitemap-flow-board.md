@@ -1,7 +1,7 @@
 ---
-version: "0.3.4"
+version: "0.3.5"
 created_at: "2026-06-24T03:10:00+07:00,ATHER,pending"
-last_update: "2026-10-18T00:00:00+07:00,Codex (store-only voice pack flow)"
+last_update: "2026-10-29,Codex (VRZO documentation)"
 status: "accepted"
 superseded_by: null
 attributes:
@@ -10,7 +10,7 @@ attributes:
   language: "th"
 title: "G-Maiden UI Sitemap / User Flow / Design Board"
 doc_id: "g-maiden-ui-sitemap-flow-board"
-updated: "2026-10-18"
+updated: "2026-10-29"
 owner: "Boss"
 ---
 
@@ -59,7 +59,7 @@ flowchart TD
 
   CTRL --> P1["1 · Dashboard (phase-aware)"]
   CTRL --> P2["2 · Live  [สด | บิลด์]"]
-  CTRL --> P3["3 · Voice (packs)"]
+  CTRL --> P3["3 · Voice (packs + VRZO variant preview)"]
   CTRL --> P4["4 · G-Store  [ร้านค้า | กระเป๋า | คลัง | บันทึก]"]
   CTRL --> P5["5 · Insights  [ภาพรวม | ประวัติ]"]
   CTRL --> P6["6 · Account (GID)"]
@@ -173,13 +173,13 @@ Layout Editor.
 
 | Component | Purpose | UI notes |
 | --- | --- | --- |
-| `OverlayAlertBanner` | Critical danger / gank warnings | Top-center, short pulse, strong contrast. **Announcer pack banner layer:** เมื่อ event ยิงและ pack ที่ active map รูปไว้ → render banner image ของ pack ([`packBanner`](file:///g:/G-Maiden/src/src/App.tsx) ใน [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) ผ่าน event `announcer-banner`) — priority เหนือ lettered kill-banner (แทน card เดิม) |
+| `OverlayAlertBanner` | Critical danger / gank warnings; announcer visual | Other packs retain `announcer-banner` image path. VRZO source uses `vrzo-banner-playback` in `src/src/app/Overlay.tsx`: selected-clip ID and decoded-audio hash resolve a bundled **muted** composite video, with bounded playback/session/pack fencing. Normal completion permits ≤1.4 s silent tail; cancel/preemption/new playback or scope change clears it. Actual WebView2 alpha/mute, timing and in-game behavior remain NOT_RUN; see [[vrzo-banner-validation]] (`docs/operations/vrzo-banner-validation.md`). |
 | `AdvicePanel` | Maiden guidance (G-Master) | Small portrait, waveform, confidence, dismiss state; 20s auto-dismiss |
 | `GMeter` | Continuous risk gauge (G-Sentry missing + G-Signal alert) | 4-segment LED (ปลอดภัย/ระวัง/เสี่ยง/อันตราย); ไม่แสดง % — gradient only |
 | `VoiceToast` | On-screen mirror of last voice event | Silent fallback when voice pack ยังไม่มา; auto-dismiss |
 | `BuybackVerdict` | G-Revive buyback advice | Verdict + narrative on death |
 | `CompanionStage` | Character presence module | Crystal Maiden stylized SVG กำลังมา; ตอนนี้ badge placeholder |
-| `VoicePacksPage` | หน้าผู้เล่นสำหรับแพ็กเสียงที่ติดตั้งจาก Store ([`VoicePacksPage.tsx`](file:///g:/G-Maiden/src/src/VoicePacksPage.tsx)) | เลือกและดูแพ็กเสียงที่ซื้อ/ติดตั้งจาก Store; ผู้เล่นอัปโหลดแพ็กเองไม่ได้ งานสร้างและนำเข้าแพ็กทำผ่าน G-AnnStudio สำหรับ dev/collaborator แยกต่างหาก |
+| `VoicePacksPage` | หน้าผู้เล่นสำหรับแพ็กเสียงที่ติดตั้งจาก Store ([`VoicePacksPage.tsx`](file:///g:/G-Maiden/src/src/VoicePacksPage.tsx)) | เลือกและดูแพ็ก; เมื่อ equip VRZO สามารถเลือก preview ได้ทั้ง 21 variants ผ่าน `preview_vrzo_banner_variant` ใน Control โดยไม่สร้าง event แมตช์. Catalog hash ไม่ยกระดับ imported pack เป็น signed Store pack; authoring ยังคงเป็นงาน G-AnnStudio สำหรับ dev/collaborator |
 | ~~`LayoutEditor`~~ | **ลบแล้ว 2026-08-11** — ย้ายไป G-AnnStudio **Overlay Lab** (`packages/ann-studio/src/src/components/OverlayLab.tsx`) | Lab วาดโมดูลขนาดจริงทับภาพ HUD ของ Dota, เตือนเมื่อทับโซนเกม, ตรวจทั้งจอในเกมและก่อนเกม แล้ว Sync กลับผ่าน `sync_overlay_layout` → event `overlay-layout-sync`; `Settings.layout` ยังเป็นแหล่งความจริงเดิม |
 | `SensitivityPicker` | G-Signal danger threshold | Mirror → [`set_cv_signal_sensitivity`](file:///g:/G-Maiden/src-tauri/src/main.rs); thresholds 0.85 / 0.65 / 0.50 |
 | `MotionIntensity` | Motion control | Low / Medium / High + reduced-motion fallback |
@@ -218,3 +218,4 @@ Layout Editor.
 | 0.3.2 | 2026-07-19 | + geometry clarification banner (panel-world ≠ stage; stage = 1420×760) — design-doc audit |
 | 0.3.3 | 2026-07-19 | link/metadata sweep (G1.5) — wikilink/symbol-link fixes only, no content change |
 | 0.3.4 | 2026-10-18 | accepted | Update the voice page boundary: players use Store-installed packs; authoring stays in G-AnnStudio, and remove the deleted AudioSettings.tsx reference. | pending | Codex |
+| 0.3.5 | 2026-10-29 | accepted | Document the VRZO variant preview and local muted visual lifecycle with native acceptance pending. | pending | Codex |

@@ -63,22 +63,21 @@ pub use types::{
     VoiceGroup, VoiceMapping, VoicePack, VoiceState, DEFAULT_PACK_ID,
 };
 
-/// Shared with `capture.rs` for inlining the live minimap PNG onto the event
-/// bus (`crate::voice_api::base64_encode`).
-pub(crate) use base64::base64_encode;
-
 /// Test-only voice-root override, also used directly from `gsi.rs`'s own
 /// `#[cfg(test)] mod tests` (`crate::voice_api::set_test_voice_root`).
 #[cfg(test)]
 pub(crate) use paths::set_test_voice_root;
 
+pub(crate) use banner::preview_variant;
 pub(crate) use pack_io::open_verified_store_clip;
 /// Warm the resolved-clip cache (audit H8) once at app startup, so a pack left
 /// active from a prior session is already cached before the first event fires
 /// — not just after the first pack switch. See `pack_io::rebuild_resolved_cache`.
 pub(crate) use pack_io::rebuild_resolved_cache;
 pub(crate) use pack_io::validate_store_clip_integrity;
-pub use pack_io::{select_announcer_clip, with_current_announcer_clip};
+pub use pack_io::{
+    select_announcer_clip, select_announcer_path, with_current_announcer_clip, AnnouncerClip,
+};
 
 /// Test-only cache teardown, paired with `set_test_voice_root(None)` in every
 /// pack-lifecycle test's `Drop` guard — same reason, same pattern: a pooled

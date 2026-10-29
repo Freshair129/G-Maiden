@@ -40,7 +40,7 @@ vi.mock('../companion', async (original) => {
     }, () => companion.version)
     companion.renders++
     return { data: actual.FALLBACK, loading: false, error: null }
-  }, useMinimapImage: () => null }
+  } }
 })
 vi.mock('../profile', () => ({ useProfile: () => ({ displayName: '', email: '' }) }))
 vi.mock('../useAppUpdate', () => ({ useAppUpdate: () => ({ available: null, phase: 'idle' }) }))

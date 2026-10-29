@@ -16,6 +16,8 @@ import { TONE_DANGER_LINES, TONE_LINES, TONE_REVISION_LINES } from './lines'
 import { fmtClock, heroName, overlayPanel, Bar, Stat, sep, dangerStyle, gankStyle, gankClearStyle, killBannerStyle, packBannerStyle } from './primitives'
 import { allowsSessionLifecycleAdvance } from '../live/session'
 import { adviceAllowedBySettings, advicePolicyKey, isAdviceGenerationCurrent, validAdviceGeneration } from './adviceGeneration'
+import { VrzoBannerController, type VrzoVisual } from '../overlay/vrzoBanner'
+import { VrzoBannerVideo } from '../overlay/vrzoBannerVideo'
 
 export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSettings = DEFAULTS }) => {
   const [lastTick, setLastTick] = useState<GameTick | null>(null)
@@ -73,6 +75,10 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   const [packBanner, setPackBanner] = useState<{
     phase: 'show' | 'exit'; url: string | null; text: string; thai: string; clip: string | null
   } | null>(null)
+  const [vrzoVisual, setVrzoVisual] = useState<VrzoVisual | null>(null)
+  const vrzo = useRef<VrzoBannerController | null>(null)
+  if (!vrzo.current) vrzo.current = new VrzoBannerController(setVrzoVisual)
+  const failVrzo = useCallback((id: string) => vrzo.current?.fail(id), [])
   const packBannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const latestPackPreview = useRef(0)
   const gankTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
@@ -113,6 +119,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     setToast((current) => current?.event === 'advice' ? null : current)
   }, [])
   const resetSessionUi = useCallback(() => {
+    vrzo.current?.clearLive()
     adviceRevision.current += 1
     for (const timer of [gankTimer, gankClearTimer, adviceTimer, killTimer, packBannerTimer, revisionTimer]) {
       if (timer.current) clearTimeout(timer.current)
@@ -213,6 +220,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     })
     const u2 = listen<Settings>('settings', (e) => {
       const next: Settings = { ...DEFAULTS, ...e.payload, uiMode: 'full' }
+      if (!next.killVisuals || !next.layout?.banner?.enabled) vrzo.current?.clear()
       if (advicePolicyKey(next) !== advicePolicyKey(sRef.current)) invalidateAdvice()
       sRef.current = next
       setS(next)
@@ -377,7 +385,14 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       latestPackPreview.current = payload.preview_id
       showPackBanner(payload, payload.expires_at_ms)
     })
-    const registrations = [u1, u2, uMaster, u3, u4, u5, u6, uSH, u7, u8, u9, uBA, uBN, u10, uK, uPB, uPP]
+    const uVrzo = listen<unknown>('vrzo-banner-playback', ({ payload }) => {
+      if (!sRef.current.killVisuals || !sRef.current.layout?.banner?.enabled) return
+      if (vrzo.current?.receive(payload, sessionEpoch.current, Date.now())) {
+        setPackBanner(null)
+        setKillBanner(null)
+      }
+    })
+    const registrations = [u1, u2, uMaster, u3, u4, u5, u6, uSH, u7, u8, u9, uBA, uBN, u10, uK, uPB, uPP, uVrzo]
     // Hydrated settings are already supplied by the provider. Native readiness
     // additionally requires every listener before the Control settings reply.
     void Promise.all(registrations).then(async () => {
@@ -387,6 +402,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     }).catch(() => {})
     return () => {
       active = false
+      vrzo.current?.destroy()
       for (const registration of registrations) void registration.then((unlisten) => unlisten()).catch(() => {})
       clearTimeout(previewExpiry)
       adviceRevision.current += 1
@@ -479,7 +495,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   // every utterance to 6s and skip persona lines whenever a danger line is
   // already due, so Maiden never talks over her own warnings.
   useEffect(() => {
-    if (!tick?.in_game) { prev.current = null; return }
+    if (!tick?.in_game || tick.local_player_verified !== true) { prev.current = null; return }
     const p = prev.current
     prev.current = { level: tick.level, kills: tick.kills, deaths: tick.deaths, alive: tick.alive, mana: tick.mana_percent, hp: tick.hp_percent }
     if (!p || !sRef.current.voiceEnabled || !sRef.current.personaLines || sRef.current.personaPreset === 'silent') return
@@ -527,13 +543,17 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     lastSpokeKind.current = 'persona'
     setToast({ event: evt, text: line })
     if (sRef.current.calibration) void invoke('capture_calibration_clip', { event: evt, line, context: { clock: tick.clock_time, level: tick.level, kills: tick.kills, deaths: tick.deaths } }).catch(() => {})
-    void invoke('speak_event', { event: evt, fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
+    // Native GSI chooses the highest-priority pack event for this transition.
+    // A second persona clip would interrupt that same event's audio and video.
+    if (!sRef.current.announcerEnabled) {
+      void invoke('speak_event', { event: evt, fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
+    }
   }, [tick, tick?.in_game, tick?.level, tick?.kills, tick?.deaths, tick?.alive, tick?.mana_percent, lowHp])
 
   // Kill banner — show variant-B for 4.0s, then run its 0.8s exit whenever the player scores a kill.
   // Missing heroes provide no evidence about victim identity.
   useEffect(() => {
-    if (!tick?.in_game) { prevKill.current = null; return }
+    if (!tick?.in_game || tick.local_player_verified !== true) { prevKill.current = null; killStreak.current = 0; setKillBanner(null); return }
     const p = prevKill.current
     prevKill.current = { kills: tick.kills, deaths: tick.deaths }
     if (!p) return
@@ -829,15 +849,20 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   // dormant — kept one release as a fallback, not user-reachable.
   if (s.uiMode === 'full') {
     return (
+      <>
       <FullOverlay
         tick={previewTick ?? tick} s={s} gank={gank} missingHeroes={missingHeroes} warningStatus={warningStatus}
         overlayAdvice={overlayAdvice} buyback={buyback} toast={toast}
-        killBanner={killBanner} packBanner={packBanner} lowHp={lowHp}
+        killBanner={vrzoVisual ? null : killBanner} packBanner={vrzoVisual ? null : packBanner} lowHp={lowHp}
         volToast={volToast} gsiActive={gsiActive} gsiFresh={gsiFresh || previewMode}
         gsiFreshness={gsiStatus?.gsi_freshness ?? 'unavailable'} gsiAgeMs={gsiStatus?.gsi_age_ms ?? null}
         matchActive={previewMode ? !!previewTick.in_game : matchActive} previewMode={previewMode}
         sensorOk={sensorHealth?.healthy ?? false}
       />
+      {vrzoVisual && s.killVisuals && s.layout?.banner?.enabled && (
+        <VrzoBannerVideo visual={vrzoVisual} layout={s.layout.banner} fail={failVrzo} />
+      )}
+      </>
     )
   }
 

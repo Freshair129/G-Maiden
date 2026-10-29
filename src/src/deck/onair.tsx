@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
-import { latestBackendReceiptAt, toneClass, useMinimapImage, type CompanionData } from "../companion";
+import { latestBackendReceiptAt, toneClass, type CompanionData } from "../companion";
+import { MinimapCanvas } from "../MinimapCanvas";
+import { useMinimapPreview } from "../live/useMinimapPreview";
 import type { MatchPhase } from "../live/phase";
 import type { GsiFreshness } from "../live/events";
 import type { ContextMenuController, ContextMenuEntry } from "../ContextMenu";
@@ -64,32 +66,12 @@ export function MomentumInline({ momentum }: { momentum: CompanionData["momentum
   );
 }
 
-/** Live mirror of the real in-game minimap (captured + downscaled by the DXGI CV
- *  pipeline, arrives as a base64 PNG on `minimap-frame`). Falls back to the
- *  decorative grid before the first frame / when capture is in Lite mode. Its own
- *  hook keeps the ≈2 Hz image refresh from re-rendering the rest of the deck. */
+/** The preview worker is independent of CV inference and Companion snapshots. */
 export function MinimapMirror() {
-  const image = useMinimapImage();
-  if (image) {
-    return (
-      <div className="gm-minimap gm-minimap-live">
-        <img className="gm-minimap-img" src={image} alt="In-game minimap" draggable={false} />
-      </div>
-    );
-  }
-  // No CV frame yet — before the match, or in Lite mode where capture never
-  // starts. The decorative grid that used to sit here read as "the map is
-  // empty" rather than "we cannot see it". A real Dota map is the honest
-  // placeholder for the shape of the thing, but it is a STATIC REFERENCE, not
-  // a mirror: it carries no hero positions and must never be mistaken for one.
-  // Hence the dimming and the explicit badge — CR-007's rule that unknown state
-  // renders as unknown, never as a plausible-looking zero.
-  return (
-    <div className="gm-minimap gm-minimap-ref">
-      <img className="gm-minimap-img" src="/dota-minimap-reference.webp" alt="" draggable={false} />
-      <span className="gm-minimap-ref-badge">ยังไม่เห็นแมพ · ภาพอ้างอิง</span>
-    </div>
-  );
+  const preview = useMinimapPreview();
+  return <div className={`gm-minimap ${preview.status === "live" ? "gm-minimap-live" : "gm-minimap-ref"}`}>
+    <MinimapCanvas />
+  </div>;
 }
 
 const UTT_SOURCE_LABEL: Record<"signal" | "master" | "announcer", string> = {

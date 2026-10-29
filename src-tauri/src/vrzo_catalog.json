@@ -1,0 +1,218 @@
+{
+  "pack_id": "pack_vrzo_20261028",
+  "version": "0.2.0",
+  "entries": [
+    {
+      "id": "match_start_01",
+      "event": "match_start",
+      "clip": "clips/spaced-v2/match_start_01.wav",
+      "audio_sha256": "891854b434c8cc76ba26f5caeecae0cb62eab7499dcadf15b2ec4ab2adaf4562",
+      "video_sha256": "a1a78d36af8953e3900cab0a362995d37c9d724205655c54decf7ce63630cce7",
+      "caption_status": "draft-transcript",
+      "mixed_sha256": "0a184ab4da4fa1ae7a683ac7419d428711d3963e9169cc65b8b8d4eb47310d2f",
+      "mixed_samples": 207840
+    },
+    {
+      "id": "first_blood_01",
+      "event": "first_blood",
+      "clip": "clips/spaced-v2/first_blood_01.wav",
+      "audio_sha256": "70202b11d3a3fc80a66f41eb4ec96d8778bd59cc6e3987abea5640b7e8546756",
+      "video_sha256": "93f342373199616663d1e5c0b117967227887e5eb6806fb6be9a87f0b2798473",
+      "caption_status": "retained-sample",
+      "mixed_sha256": "5b0e5261f1178241a065380b80a9972754971ecd29b1376733453a4da6f0fd65",
+      "mixed_samples": 194400
+    },
+    {
+      "id": "kill_01",
+      "event": "kill",
+      "clip": "clips/spaced-v2/kill_01.wav",
+      "audio_sha256": "519cf14031b1d9788aaae9502ab5f7402c67148f7fb4ccd69289d639d11ae160",
+      "video_sha256": "8a75c333f4aa7d554ce4dbda914cefc4a115f6f0351910e3752badf690816986",
+      "caption_status": "draft-transcript",
+      "mixed_sha256": "b73ffd2b7caaaf4029ce9cb622d8b1004b3c909eefb3b3b16d3cff12ea72145e",
+      "mixed_samples": 165839
+    },
+    {
+      "id": "kill_02",
+      "event": "kill",
+      "clip": "clips/spaced-v2/kill_02.wav",
+      "audio_sha256": "586921a429c1b5c5b05eb60a39b6bf12eeaa45b44f3d6d69a44fd901c3a4466a",
+      "video_sha256": "75ffd5ab91a868a1752ceacd73cffd52a2e4f8971bc2d5f3c2a72f293aa2fd4f",
+      "caption_status": "draft-transcript",
+      "mixed_sha256": "645471fe6b124002aa3f621fe21199045923753c1068732353e773c72409d476",
+      "mixed_samples": 106321
+    },
+    {
+      "id": "kill_03",
+      "event": "kill",
+      "clip": "clips/spaced-v2/kill_03.wav",
+      "audio_sha256": "19b407d0e542b45f9333a8671d0b8f6a63c31b3fbceb36c930d187e8010df4c5",
+      "video_sha256": "02f7fcc043ae304635c969ecd086764ec09980372b95647cb6a7767f1b7c5236",
+      "caption_status": "draft-transcript",
+      "mixed_sha256": "6b7243a7bcead0a613e555ee9383f0cfd6cac3f8d948f9606846f132ec0b2625",
+      "mixed_samples": 213841
+    },
+    {
+      "id": "kill_04",
+      "event": "kill",
+      "clip": "clips/spaced-v2/kill_04.wav",
+      "audio_sha256": "de57c13c74a8061d9e1da7c11302e8ac04cbae169932e47e1f0ba13eff34226a",
+      "video_sha256": "cb490d0626c7d259c4f3bd1c189a1e7b4d4c32cc3f59b4a55c329752e18e521c",
+      "caption_status": "draft-transcript",
+      "mixed_sha256": "71bcdb791df72174925131f1805c47d5b0811b167af753398ff2161a1ff3b78e",
+      "mixed_samples": 96719
+    },
+    {
+      "id": "kill_05",
+      "event": "kill",
+      "clip": "clips/spaced-v2/kill_05.wav",
+      "audio_sha256": "8cfb31785898fd6c8fcfe283b03ea94e736f4280236fe871721af1b39dfc9b2d",
+      "video_sha256": "132731dc185f8400d02fa0649042a61569764fa50597915aa089fdf81a1a68a6",
+      "caption_status": "user-confirmed",
+      "mixed_sha256": "b7c21a079d68d291871228c7904929e03e9442948b9f0fa40e8160d023e580e0",
+      "mixed_samples": 126001
+    },
+    {
+      "id": "kill_06",
+      "event": "kill",
+      "clip": "clips/spaced-v2/kill_06.wav",
+      "audio_sha256": "bc9212beff3b446e5ec7875ac091712b4c6d2f87cbcd15f668db0523b3bfa8e4",
+      "video_sha256": "fd34dfde1f991268b3677441fb00270509cd2aa7de7aec1f5a8ed7dfc64b1a1f",
+      "caption_status": "draft-transcript",
+      "mixed_sha256": "23fd055c2345d310495403783b9879bc222f4a33d27d2cb9493bb80a656ca454",
+      "mixed_samples": 154799
+    },
+    {
+      "id": "double_kill_01",
+      "event": "double_kill",
+      "clip": "clips/spaced-v2/double_kill_01.wav",
+      "audio_sha256": "fb86f8ce239376f9c435f907e27e52a15ce8cc3702575c67aaeb735da8e14650",
+      "video_sha256": "56d7b487da7d57c5f9d4df1617c3d9a67be31fc09a09abec5cdd69b295aab957",
+      "caption_status": "user-confirmed",
+      "mixed_sha256": "83a0e476777e4ad97e13fa26aff4f5fc3ded1372d24faffd8494fa8324e27af7",
+      "mixed_samples": 132239
+    },
+    {
+      "id": "triple_kill_01",
+      "event": "triple_kill",
+      "clip": "clips/spaced-v2/triple_kill_01.wav",
+      "audio_sha256": "cc4183de35d2457ddf2cf94b2561a9820df4f65f7d6689c160c59a3ee059e0ab",
+      "video_sha256": "c33b7b9d3af23e35051fbe708d2d974c80a242a9337cc3fb65256dad1cc3b7b5",
+      "caption_status": "draft-transcript",
+      "mixed_sha256": "120e9862da0c2ae0355588c009d36891706a29823c578aab7c2b917ccb4c98fe",
+      "mixed_samples": 115201
+    },
+    {
+      "id": "ultra_kill_01",
+      "event": "ultra_kill",
+      "clip": "clips/spaced-v2/ultra_kill_01.wav",
+      "audio_sha256": "cd0bd15d84c0ef28fdf6e2f07ccde39f62d803fc57ae57b7aff38ad6aea67b59",
+      "video_sha256": "661063389e6e0d02a4e6b361bca0c48049316da0fbd167c3fcf04f9f123beae0",
+      "caption_status": "draft-transcript",
+      "mixed_sha256": "18e8c6c9c1b1c15084055f0b10fa79d54f1a437e7d8886da66238440ce0a8801",
+      "mixed_samples": 115680
+    },
+    {
+      "id": "killing_spree_01",
+      "event": "killing_spree",
+      "clip": "clips/spaced-v2/killing_spree_01.wav",
+      "audio_sha256": "aabd9852fb2996f09d3ffd50f71556217dfcd40dcf6e5337ec7dc169533ea161",
+      "video_sha256": "1e25589fc97356f05b2f769d07a2c0be3f310a7801c4baa2a3ee09ade33fef2b",
+      "caption_status": "draft-transcript",
+      "mixed_sha256": "5b04a25bdb4707bf06f8d058eb8fa70e4e83bc8faef2437f9f52d23f407b607e",
+      "mixed_samples": 123119
+    },
+    {
+      "id": "dominating_01",
+      "event": "dominating",
+      "clip": "clips/spaced-v2/dominating_01.wav",
+      "audio_sha256": "3642129026f14c421b982af94beb09bf8777d6b1998f12a687ae222d9d15a31d",
+      "video_sha256": "71841658aeb6b1d68ea2e007f20eb602d2744484de2cedc2fe2025b042fb1368",
+      "caption_status": "draft-transcript",
+      "mixed_sha256": "4b64906ee6ac0e86eb3e864654d1d79156bd8e016a9d7e22751b75a227cf8e87",
+      "mixed_samples": 133201
+    },
+    {
+      "id": "mega_kill_01",
+      "event": "mega_kill",
+      "clip": "clips/spaced-v2/mega_kill_01.wav",
+      "audio_sha256": "3b631c15657fcead057ac6bdfc451b630d555beedeaff61a1277ee94db655e72",
+      "video_sha256": "1884afad41da21294274754d528064c6fefceb42522701fda82015bed8e6e170",
+      "caption_status": "user-confirmed",
+      "mixed_sha256": "2783b61011e4457d3396cd56dc376392e22ceb140600697f2198529574b63190",
+      "mixed_samples": 125759
+    },
+    {
+      "id": "unstoppable_01",
+      "event": "unstoppable",
+      "clip": "clips/spaced-v2/unstoppable_01.wav",
+      "audio_sha256": "d0b10ae857e70e3c9973a404e306f6f23ea06bcf115d81010e766f13e6e4ab1c",
+      "video_sha256": "242597276e77b6493f027353dc8b5b327e2ba9271deb5d86869888e2208ed44e",
+      "caption_status": "user-confirmed",
+      "mixed_sha256": "1eede149a2961d09d88467de7dbef60332093f3f383e4b9e5d78648f8894f830",
+      "mixed_samples": 156241
+    },
+    {
+      "id": "wicked_sick_01",
+      "event": "wicked_sick",
+      "clip": "clips/spaced-v2/wicked_sick_01.wav",
+      "audio_sha256": "d791bc20fd8c7d4dd633d88fea5fe170d0f7c020aa8a99f1ca0a58785740b348",
+      "video_sha256": "0dd85a65da6cfa0d36d5265fa9a8af3d7155df3b9e6848b298827cc313b00cc1",
+      "caption_status": "draft-transcript",
+      "mixed_sha256": "505517ce1e8528e1d62cc36eac079ff10b59cda63100d8e1a537816b345fd0b8",
+      "mixed_samples": 165600
+    },
+    {
+      "id": "monster_kill_01",
+      "event": "monster_kill",
+      "clip": "clips/spaced-v2/monster_kill_01.wav",
+      "audio_sha256": "297bc246b984542118190b86fd61161fe76096d26264a63f807f0cfee2eb66dc",
+      "video_sha256": "141ef26df2c72696cea0bfd2618f5fa44f6d7c7dbecc177f1795f7b34191d498",
+      "caption_status": "draft-transcript",
+      "mixed_sha256": "07c63260c2c31508d6ee32b11e4b4cd143d26911c36a64278fa9de2dbc28ac0b",
+      "mixed_samples": 189841
+    },
+    {
+      "id": "godlike_01",
+      "event": "godlike",
+      "clip": "clips/spaced-v2/godlike_01.wav",
+      "audio_sha256": "49bbb5e321c6dd7223f5f162fea4f2a16d9f7097a755a0f835428d13601f1ae7",
+      "video_sha256": "9ca3b2ee7e4142adf4cbfc002ce8c930758e9a91c43624e554c223bb8bd73923",
+      "caption_status": "draft-transcript",
+      "mixed_sha256": "e6d92421da03f795bbc8a051971344f100466792882c6fff7df5e2e1b54dea00",
+      "mixed_samples": 189600
+    },
+    {
+      "id": "beyond_godlike_01",
+      "event": "beyond_godlike",
+      "clip": "clips/spaced-v2/beyond_godlike_01.wav",
+      "audio_sha256": "71d8a7885ba06ea69bd312dc5b1b2dfe9b8e292d57d7b9003932cdef1505defe",
+      "video_sha256": "f6c46bea885d304e8552ddb04b822da75ac40eece74ca285c481f6a751e1c7c6",
+      "caption_status": "event-title-placeholder",
+      "mixed_sha256": "bd9327340a7a9f0ba2cf5385b156be988e8d29e1220c77db9d142473e1456b5c",
+      "mixed_samples": 127200
+    },
+    {
+      "id": "beyond_godlike_02",
+      "event": "beyond_godlike",
+      "clip": "clips/spaced-v2/beyond_godlike_02.wav",
+      "audio_sha256": "c4598fffbb57649afaa24ab507959fd1abd8927a2da7030bd4234a8510b5d636",
+      "video_sha256": "2b7bf6db5e2d352d9f1cc5279b8792baf1724e3893c82321cd8be93200a8b6f1",
+      "caption_status": "draft-transcript",
+      "mixed_sha256": "b6481d4a30a523a121005903254f56e6ef755a7bd25bd93cc3dde1d63bbeb527",
+      "mixed_samples": 190560
+    },
+    {
+      "id": "rampage_01",
+      "event": "rampage",
+      "clip": "clips/spaced-v2/rampage_01.wav",
+      "audio_sha256": "637973094c2ab485c991583e0127c8b7a9e3b6ea321e513e564b6a31ad26ac22",
+      "video_sha256": "050b513f07dfcebdbe0f528f5c871ff3a7ea5e56c79783f15db100dab14eaf87",
+      "caption_status": "user-confirmed",
+      "mixed_sha256": "1bee25fe6de6a8dc7c9e82d0897f63d8b0c4566f6fb0037386376a9bd27181a2",
+      "mixed_samples": 169679
+    }
+  ],
+  "visual_version": 8,
+  "studio_manifest_sha256": "1868efeb10a211883b798100600e18df6f7aa45e7a1ec0c1d29243a4e56029b5"
+}

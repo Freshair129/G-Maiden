@@ -16,6 +16,8 @@ mod audio_waveform;
 mod calibration;
 pub mod capture;
 pub mod capture_frame;
+#[cfg(not(feature = "wgc"))]
+mod capture_recovery;
 #[cfg(feature = "wgc")]
 mod capture_wgc;
 mod counter_advice;
@@ -28,9 +30,17 @@ pub mod gsi;
 mod identity;
 mod items;
 mod local_endpoint;
+mod local_player;
 mod log;
 mod master;
 pub mod memory;
+mod minimap_admission;
+mod minimap_clock;
+mod minimap_owned_child;
+pub mod minimap_preview;
+mod minimap_preview_process;
+mod minimap_preview_runtime;
+mod minimap_preview_wire;
 pub mod motion;
 mod ocr;
 pub mod respawn;
@@ -51,6 +61,10 @@ mod updater_install_guard_regression;
 mod usage;
 mod utterance;
 mod voice_api;
+mod vrzo_banner;
+mod vrzo_fence;
+mod vrzo_mix;
+mod vrzo_playback;
 mod webview_bootstrap;
 
 /// The update found by the last `check_channel_update`, held so `install_pending_update`
@@ -771,6 +785,92 @@ fn voice_api_update_pack(
 }
 
 /// Preview an announcer event only for an installed Store pack or the bundled default.
+static VRZO_PREVIEW_SERIAL: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+
+/// Audition the exact VRZO variant through the same audio admission lifecycle.
+#[tauri::command]
+async fn preview_vrzo_banner_variant(
+    app: tauri::AppHandle,
+    window: tauri::WebviewWindow,
+    event: String,
+    clip_id: String,
+) -> Result<(), String> {
+    use std::sync::atomic::Ordering;
+    if window.label() != "control" {
+        return Err("Preview is restricted to Control".into());
+    }
+    let bootstrap = app
+        .try_state::<OverlayBootstrap>()
+        .ok_or("Control bootstrap unavailable")?;
+    let root = bootstrap
+        .state
+        .lock()
+        .map_err(|_| "Control bootstrap unavailable")?
+        .root();
+    if !root.trusts(
+        window
+            .url()
+            .map_err(|_| "Control URL unavailable")?
+            .as_str(),
+    ) {
+        return Err("Untrusted preview origin".into());
+    }
+    let id = VRZO_PREVIEW_SERIAL
+        .fetch_add(1, Ordering::AcqRel)
+        .wrapping_add(1);
+    let requested = std::time::Instant::now();
+    tauri::async_runtime::spawn_blocking(move || {
+        let pack = "pack_vrzo_20261028";
+        let path = voice_api::preview_variant(pack, &event, &clip_id)
+            .ok_or_else(|| "ไม่พบคลิป VRZO ที่ติดตั้งสำหรับอีเวนต์นี้".to_string())?;
+        if vrzo_banner::resolve_clip_id(pack, &event, &path).as_deref() != Some(clip_id.as_str()) {
+            return Err("คลิป VRZO ไม่ตรงกับชุดแบนเนอร์".into());
+        }
+        audio::validate_clip(&path)?;
+        let selected = voice_api::select_announcer_path(pack, &event, &path)
+            .ok_or("กรุณาเลือก VRZO เป็นแพ็กที่ใช้งานก่อน")?;
+        let scope_selected = selected.clone();
+        let scope_event = event.clone();
+        let scope = std::sync::Arc::new(move || {
+            VRZO_PREVIEW_SERIAL.load(Ordering::Acquire) == id
+                && voice_api::with_current_announcer_clip(&scope_event, &scope_selected, || ())
+                    .is_some()
+        });
+        if !scope() {
+            return Err("กรุณาเลือก VRZO เป็นแพ็กที่ใช้งานก่อน".into());
+        }
+        let observer =
+            vrzo_playback::observer(app, selected.clone(), event.clone(), 0, true, scope)
+                .ok_or_else(|| "ตัวอย่างแบนเนอร์ไม่พร้อม".to_string())?;
+        let (tx, rx) = std::sync::mpsc::sync_channel(1);
+        audio::play_observed_with_lifecycle(
+            path,
+            audio::Priority::Normal,
+            move |commit| {
+                if VRZO_PREVIEW_SERIAL.load(Ordering::Acquire) == id
+                    && requested.elapsed() < std::time::Duration::from_secs(2)
+                {
+                    let _ = voice_api::with_current_announcer_clip(&event, &selected, commit);
+                }
+            },
+            move |outcome| {
+                let _ = tx.try_send(outcome == audio::PlaybackResult::Admitted);
+            },
+            observer,
+        );
+        if rx
+            .recv_timeout(std::time::Duration::from_secs(3))
+            .unwrap_or(false)
+        {
+            Ok(())
+        } else {
+            Err("เสียงตัวอย่างยังไม่พร้อมหรือถูกเสียงสำคัญขัดจังหวะ".into())
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
 #[tauri::command]
 async fn preview_announcer_event(
     app: tauri::AppHandle,
@@ -1354,6 +1454,9 @@ fn delete_all_match_logs() -> Result<u32, String> {
 /// as a plain function (not `fn main`) so external tools (e.g. `tests/perf`)
 /// can depend on this crate as a library without linking the app entry point.
 pub fn run() {
+    if let Some(code) = minimap_preview_process::run_if_requested() {
+        std::process::exit(code);
+    }
     // Forensics first: route panics on ANY thread (capture / GSI / governor) to
     // %LOCALAPPDATA%\G-Maiden\logs\error.log so a freeze/crash leaves a trace.
     log::init_panic_hook();
@@ -1422,6 +1525,9 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
+            minimap_preview_runtime::start_minimap_preview,
+            minimap_preview_runtime::read_minimap_preview,
+            minimap_preview_runtime::stop_minimap_preview,
             set_overlay_visible,
             overlay_bootstrap_ready,
             check_channel_update,
@@ -1468,6 +1574,7 @@ pub fn run() {
             voice_api_map_event,
             voice_api_update_pack,
             preview_announcer_event,
+            preview_vrzo_banner_variant,
             read_audio_waveform,
             preview_voice_event_audio,
             list_event_clips,

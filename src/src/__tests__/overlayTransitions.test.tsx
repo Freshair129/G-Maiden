@@ -37,7 +37,7 @@ let root: Root
 let container: HTMLDivElement
 let settings: Settings
 const base = { ...OVERLAY_PREVIEW_TICK, session_epoch: 8, session_lifecycle: 'live' as const,
-  clock_time: 100, level: 5, kills: 0, deaths: 0, alive: true, hp_percent: 100, mana_percent: 100 }
+  clock_time: 100, level: 5, kills: 0, deaths: 0, alive: true, hp_percent: 100, mana_percent: 100, local_player_verified: true }
 async function send(name: string, payload: unknown) {
   await act(async () => { handlers.get(name)?.({ payload }) })
 }
@@ -49,7 +49,7 @@ beforeEach(async () => {
   invokeMock.mockReset().mockResolvedValue(undefined)
   view.current = {}
   settings = { ...DEFAULTS, uiMode: 'full', voiceEnabled: true, personaLines: true,
-    personaPreset: 'caster', masterEnabled: true, autoAdvice: true, killVisuals: true }
+    personaPreset: 'caster', masterEnabled: true, autoAdvice: true, killVisuals: true, announcerEnabled: false }
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
   container = document.createElement('div')
   document.body.append(container)
@@ -63,6 +63,23 @@ afterEach(async () => {
   await act(async () => { root.unmount() })
   container.remove()
   vi.useRealTimers()
+})
+it('leaves gameplay audio to the native announcer while retaining kill visuals', async () => {
+  await send('settings', { ...settings, announcerEnabled: true })
+  await tick({ kills: 1, clock_time: 110 })
+  expect(view.current.killBanner).toMatchObject({ kills: 1 })
+  expect(invokeMock.mock.calls.filter(([cmd]) => cmd === 'speak_event')).toHaveLength(0)
+  await act(async () => { vi.advanceTimersByTime(7000) })
+  await tick({ kills: 1, deaths: 1, alive: false, clock_time: 120 })
+  expect(invokeMock.mock.calls.filter(([cmd]) => cmd === 'speak_event')).toHaveLength(0)
+})
+it('never announces or shows kills from unverified player data and reseeds on recovery', async () => {
+  await tick({ kills: 2, clock_time: 110, local_player_verified: false })
+  expect(view.current.killBanner).toBeNull()
+  expect(invokeMock.mock.calls.filter(([cmd]) => cmd === 'speak_event')).toHaveLength(0)
+  await tick({ kills: 2, clock_time: 111 })
+  expect(view.current.killBanner).toBeNull()
+  expect(invokeMock.mock.calls.filter(([cmd]) => cmd === 'speak_event')).toHaveLength(0)
 })
 it('delivers one kill transition to both persona and banner without replay on settings or duplicate ticks', async () => {
   await tick({ kills: 2, clock_time: 110 })

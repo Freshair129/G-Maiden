@@ -115,17 +115,6 @@ mod backend {
     /// triggered gank alerts / enemy-missing events still emit immediately.
     const DEBUG_EMIT_INTERVAL_MS: u128 = 200;
 
-    /// Cap the rate of the live minimap mirror (`minimap-frame`) — a downscaled
-    /// PNG of the captured minimap sent to the Command Deck (ms) ≈ 6.7 Hz.
-    /// Raised from 300ms after Boss's in-game feedback (2026-07-20) that 3 Hz
-    /// reads as laggy; the encode + base64 + IPC cost still has to respect the
-    /// CPU/RAM budget, so we don't chase full capture cadence.
-    const MINIMAP_FRAME_INTERVAL_MS: u128 = 150;
-    /// Target width (px) the mirrored minimap is downscaled to before PNG-encode.
-    /// The real region is ≈15.6% of screen height (≈220–320 px), so this is a
-    /// mild shrink that keeps the base64 payload to a few KB.
-    const MINIMAP_FRAME_WIDTH: u32 = 220;
-
     /// If a single frame's compute exceeds this (ms) we log it — a developing CV
     /// stall shows up as frames creeping over budget before anything locks up.
     const SLOW_FRAME_MS: u128 = 100;
@@ -207,26 +196,10 @@ mod backend {
         classifier: bool,
         capture_frame_id: Option<u64>,
         capture_acquired_at_ms: Option<u64>,
-    }
-
-    /// Live minimap mirror for the Command Deck: a downscaled PNG of the exact
-    /// pixels we already crop for CV, inlined as a base64 `data:` URL (the same
-    /// technique pack banners use — the overlay/deck CSP allows `img-src data:`).
-    /// `region` travels alongside so the deck can place markers in the same
-    /// coordinate space as the image if it wants.
-    #[derive(Clone, serde::Serialize)]
-    struct MinimapFrame {
-        image: String,
-        region: MinimapRegion,
-        map_crop: MinimapMirrorCrop,
-    }
-
-    #[derive(Clone, Copy, serde::Serialize)]
-    struct MinimapMirrorCrop {
-        left: f32,
-        top: f32,
-        right: f32,
-        bottom: f32,
+        geometry_generation: String,
+        display_index: u32,
+        display_fingerprint: String,
+        desktop_origin: [i32; 2],
     }
 
     /// Honest state of the minimap sensor, broadcast to every window.
@@ -296,8 +269,6 @@ mod backend {
         start: Instant,
         /// last debug `minimap-cv` emit (throttled ≈5 Hz).
         last_emit: Instant,
-        /// last live minimap-mirror `minimap-frame` emit (throttled ≈6.7 Hz).
-        last_frame_emit: Instant,
         /// last calibration-buffer feed (≈9 Hz when QA mode on).
         last_calib: Instant,
         /// last recorded `risk_trace` log line (throttled ≈1 Hz — see
@@ -315,6 +286,11 @@ mod backend {
         last_draft_progress_epoch: Option<u64>,
         last_draft_progress: Option<crate::runtime::DraftRosterProgress>,
         last_hero_hud_emit: Instant,
+        last_inference_log: Instant,
+        inference_frames: u64,
+        inference_hits: u64,
+        inference_misses: u64,
+        inference_ms: u128,
         roster_votes: crate::cv::roster::RosterVotes,
         roster_vote_epoch: u64,
         scene_ok_ms: Option<u64>,
@@ -327,6 +303,10 @@ mod backend {
         /// shared counter moves past this, a match boundary happened and
         /// Sentry/Motion/Signal are rebuilt (see `reset_pipeline`).
         match_epoch: u64,
+        preview_geometry_generation: u64,
+        preview_display_index: u32,
+        preview_display_id: u64,
+        preview_desktop_origin: [i32; 2],
         /// Last frame that reached `process_frame`. Drives `frame_age_ms`.
         last_frame_ok: Instant,
         cycle_started: Instant,
@@ -383,7 +363,6 @@ mod backend {
                 signal: Signal::new(),
                 start: now,
                 last_emit: now,
-                last_frame_emit: now,
                 last_calib: now,
                 last_risk_trace: now,
                 draft,
@@ -397,6 +376,11 @@ mod backend {
                 last_draft_progress_epoch: None,
                 last_draft_progress: None,
                 last_hero_hud_emit: now,
+                last_inference_log: now,
+                inference_frames: 0,
+                inference_hits: 0,
+                inference_misses: 0,
+                inference_ms: 0,
                 roster_votes: crate::cv::roster::RosterVotes::default(),
                 roster_vote_epoch: 0,
                 scene_ok_ms: None,
@@ -406,6 +390,10 @@ mod backend {
                 warning_reason: String::new(),
                 last_warning_log: now,
                 match_epoch: crate::runtime::match_epoch(),
+                preview_geometry_generation: 0,
+                preview_display_index: 0,
+                preview_display_id: 0,
+                preview_desktop_origin: [0, 0],
                 last_frame_ok: now,
                 cycle_started: now,
                 frames: super::schedule::FrameGate::default(),
@@ -730,6 +718,8 @@ mod backend {
     /// Returns `Err` when capture must degrade to Lite, or a control event when
     /// the supervisor should retry or stop.
     fn run_dxgi(app: AppHandle, retry: &Receiver<()>) -> Result<CaptureExit, String> {
+        let _preview_source = crate::minimap_preview_runtime::SourceScope::new();
+        let mut preview_geometry = None;
         let mut current_monitor = crate::dxgi::detect_dota_monitor().unwrap_or(0);
         let mut dxgi = DxgiCapture::new(current_monitor)?;
         let mut reported_backend = dxgi.backend();
@@ -753,10 +743,22 @@ mod backend {
         // capture timeout/access-lost affects both accessors identically and
         // needs no fallback, see `rect_is_on_screen`'s doc comment below).
         let mut warned_rect_geometry = false;
+        let mut recovery = Duration::ZERO;
 
         loop {
             // T0 precedes scheduler checks, capture wait, copies, and inference.
             state.cycle_started = state.next_cycle_due;
+            if !recovery.is_zero() {
+                match retry.recv_timeout(recovery) {
+                    Ok(()) => return Ok(CaptureExit::RetryRequested),
+                    Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                        return Ok(CaptureExit::SenderClosed);
+                    }
+                    Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
+                }
+                recovery = Duration::ZERO;
+            }
+            let active_started = Instant::now();
             match retry.try_recv() {
                 Ok(()) => return Ok(CaptureExit::RetryRequested),
                 Err(TryRecvError::Disconnected) => return Ok(CaptureExit::SenderClosed),
@@ -829,6 +831,26 @@ mod backend {
                 }
             }
 
+            let geometry = crate::minimap_preview::Geometry {
+                x: state.region.x,
+                y: state.region.y,
+                side: state.region.side,
+                screen_w: dxgi.width(),
+                screen_h: dxgi.height(),
+                display: current_monitor,
+                display_id: dxgi.display_id(),
+                origin_x: dxgi.desktop_origin().0,
+                origin_y: dxgi.desktop_origin().1,
+            };
+            if preview_geometry != Some(geometry) {
+                state.preview_geometry_generation =
+                    crate::minimap_preview_runtime::invalidate_geometry();
+                state.preview_display_index = current_monitor;
+                state.preview_display_id = geometry.display_id;
+                state.preview_desktop_origin = [geometry.origin_x, geometry.origin_y];
+                preview_geometry = Some(geometry);
+            }
+            crate::minimap_preview_runtime::publish_geometry(geometry);
             if !crate::dxgi::dota_is_foreground() {
                 state.suspend_observation();
                 state.scene_ok_ms = None;
@@ -867,6 +889,16 @@ mod backend {
                     // sits on-screen, so no geometry fallback is needed here.
                     let (bx, by, bw, bh) = draft_bounding_rect(&state.draft_region.boxes);
                     if let Some((strip, sw, sh)) = dxgi.acquire_rect(bx, by, bw, bh) {
+                        if !crate::minimap_preview::matches_output(
+                            geometry,
+                            dxgi.display_id(),
+                            dxgi.desktop_origin(),
+                            (dxgi.width(), dxgi.height()),
+                        ) {
+                            state.suspend_observation();
+                            state.scene_ok_ms = None;
+                            continue;
+                        }
                         process_draft_frame(&mut state, &strip, sw, sh, bx, by, &session);
                     }
                 }
@@ -945,6 +977,16 @@ mod backend {
             // square — far cheaper than copying and cropping the full desktop.
             if crate::calibration::is_enabled() {
                 if let Some((full, fw, fh)) = dxgi.acquire_frame() {
+                    if !crate::minimap_preview::matches_output(
+                        geometry,
+                        dxgi.display_id(),
+                        dxgi.desktop_origin(),
+                        (dxgi.width(), dxgi.height()),
+                    ) {
+                        state.suspend_observation();
+                        state.scene_ok_ms = None;
+                        continue;
+                    }
                     if state.last_calib.elapsed().as_millis() >= 110 {
                         state.last_calib = Instant::now();
                         if crate::runtime::is_current_capture_session(session.session_epoch) {
@@ -995,6 +1037,20 @@ mod backend {
                         .map(|(bytes, w, h)| (bytes, w, h, None))
                 };
                 if let Some((cropped, w, h, frame_metadata)) = cropped_frame {
+                    if !crate::minimap_preview::matches_output(
+                        geometry,
+                        dxgi.display_id(),
+                        dxgi.desktop_origin(),
+                        (dxgi.width(), dxgi.height()),
+                    ) || frame_metadata.is_some_and(|m| {
+                        m.display_id != geometry.display_id
+                            || m.screen_width != geometry.screen_w
+                            || m.screen_height != geometry.screen_h
+                    }) {
+                        state.suspend_observation();
+                        state.scene_ok_ms = None;
+                        continue;
+                    }
                     process_frame(&mut state, cropped, w, h, &session, frame_metadata);
                 }
             }
@@ -1010,6 +1066,19 @@ mod backend {
                 if rect_is_on_screen(x, y, width, height, dxgi.width(), dxgi.height()) {
                     let request = CaptureRoi::new(CaptureRoiKind::TopHeroBar, x, y, width, height);
                     if let Some(bundle) = dxgi.acquire_regions(session.session_epoch, &[request]) {
+                        if !crate::minimap_preview::matches_output(
+                            geometry,
+                            dxgi.display_id(),
+                            dxgi.desktop_origin(),
+                            (dxgi.width(), dxgi.height()),
+                        ) || bundle.metadata.display_id != geometry.display_id
+                            || bundle.metadata.screen_width != geometry.screen_w
+                            || bundle.metadata.screen_height != geometry.screen_h
+                        {
+                            state.suspend_observation();
+                            state.scene_ok_ms = None;
+                            continue;
+                        }
                         if let Some(region) = bundle.into_region(CaptureRoiKind::TopHeroBar) {
                             if let Some(frame) = Frame::from_bgra(
                                 region.rect.width as usize,
@@ -1060,6 +1129,9 @@ mod backend {
             }
 
             let backend = dxgi.backend();
+            recovery = Duration::from_millis(super::schedule::recovery_ms(
+                active_started.elapsed().as_millis() as u64,
+            ));
             if backend != reported_backend {
                 reported_backend = backend;
                 publish_mode(&state.app, backend);
@@ -1290,64 +1362,6 @@ mod backend {
         publish_roster_samples(state, samples, session);
     }
 
-    /// Inner crop applied to the CV region before the mirror encode, as
-    /// fractions of the region's side. The CV region deliberately over-grabs
-    /// ("a sliver of HUD, never clip the map" — `region.rs`), which is right
-    /// for the detector but made the deck mirror show the map off-centre with
-    /// HUD junk on the edges (Boss 2026-07-20 "minimap ไม่พอดีกรอบ"). Measured
-    /// from Boss's 1080p screenshot: map square ≈ (9, 807)–(272, 1068) inside
-    /// region (0, 788, 292).
-    const MIRROR_CROP_L: f32 = 0.031;
-    const MIRROR_CROP_T: f32 = 0.064;
-    const MIRROR_CROP_R: f32 = 0.932;
-    const MIRROR_CROP_B: f32 = 0.961;
-
-    /// Crop the over-grabbed CV region down to the actual map square, downscale
-    /// to [`MINIMAP_FRAME_WIDTH`] and PNG-encode into a base64 `data:image/png`
-    /// URL for the Command Deck mirror. Nearest-neighbour resize (same cheap
-    /// kernel `calibration.rs` uses) so it stays well inside budget at the
-    /// ≈6.7 Hz call rate. Returns `None` on a degenerate size or an encode
-    /// failure — the caller then simply skips this frame.
-    fn encode_minimap_dataurl(bgra: &[u8], w: usize, h: usize) -> Option<String> {
-        use image::codecs::png::PngEncoder;
-        use image::{ExtendedColorType, ImageEncoder};
-
-        if w == 0 || h == 0 {
-            return None;
-        }
-        // Source window = the measured map square inside the region.
-        let cx0 = ((w as f32) * MIRROR_CROP_L) as usize;
-        let cy0 = ((h as f32) * MIRROR_CROP_T) as usize;
-        let cw = (((w as f32) * (MIRROR_CROP_R - MIRROR_CROP_L)) as usize).max(1);
-        let ch = (((h as f32) * (MIRROR_CROP_B - MIRROR_CROP_T)) as usize).max(1);
-        let (sw, sh) = (cw as u32, ch as u32);
-        let tw = MINIMAP_FRAME_WIDTH.min(sw);
-        let th = ((tw as u64 * sh as u64) / sw as u64).max(1) as u32;
-        let mut rgba = vec![0u8; (tw as usize) * (th as usize) * 4];
-        for y in 0..th {
-            let sy = cy0 + (y as u64 * sh as u64 / th as u64) as usize;
-            for x in 0..tw {
-                let sx = cx0 + (x as u64 * sw as u64 / tw as u64) as usize;
-                let si = (sy * w + sx) * 4;
-                let di = ((y * tw + x) * 4) as usize;
-                if si + 3 < bgra.len() {
-                    rgba[di] = bgra[si + 2]; // R (BGRA → RGBA)
-                    rgba[di + 1] = bgra[si + 1]; // G
-                    rgba[di + 2] = bgra[si]; // B
-                    rgba[di + 3] = 255; // A
-                }
-            }
-        }
-        let mut png: Vec<u8> = Vec::new();
-        PngEncoder::new(&mut png)
-            .write_image(&rgba, tw, th, ExtendedColorType::Rgba8)
-            .ok()?;
-        Some(format!(
-            "data:image/png;base64,{}",
-            crate::voice_api::base64_encode(&png)
-        ))
-    }
-
     /// Run the full CV → game-knowledge pipeline on one already-cropped minimap
     /// frame (`cropped`, sized `w`×`h`) — a pre-cropped rect-local BGRA8 buffer.
     /// The caller does the acquisition/crop: a GPU subrect `acquire_rect` of just
@@ -1410,7 +1424,23 @@ mod backend {
                 DEFAULT_THRESHOLD_FRAC,
                 crate::runtime::enemy_team_ring(),
             );
+            let inference_started = Instant::now();
             let mut detections = state.detector.detect(&f, &candidates, state.icon);
+            let (hits, misses) = state.detector.last_inference_work();
+            state.inference_frames += 1;
+            state.inference_hits += hits as u64;
+            state.inference_misses += misses as u64;
+            state.inference_ms += inference_started.elapsed().as_millis();
+            if state.last_inference_log.elapsed() >= Duration::from_secs(5) {
+                eprintln!("[G-CV] interval_ms={} frames={} exact_patch_hits={} inference_calls={} classifier_ms={}",
+                    state.last_inference_log.elapsed().as_millis(), state.inference_frames,
+                    state.inference_hits, state.inference_misses, state.inference_ms);
+                state.last_inference_log = Instant::now();
+                state.inference_frames = 0;
+                state.inference_hits = 0;
+                state.inference_misses = 0;
+                state.inference_ms = 0;
+            }
 
             if !super::schedule::admits_critical(
                 state.cycle_started.elapsed().as_millis() as u64,
@@ -1724,33 +1754,14 @@ mod backend {
                     classifier: state.detector.is_active(),
                     capture_frame_id: frame_metadata.map(|metadata| metadata.frame_id),
                     capture_acquired_at_ms: frame_metadata.map(|metadata| metadata.acquired_at_ms),
+                    geometry_generation: state.preview_geometry_generation.to_string(),
+                    display_index: state.preview_display_index,
+                    display_fingerprint: state.preview_display_id.to_string(),
+                    desktop_origin: state.preview_desktop_origin,
                 };
                 if crate::runtime::is_current_capture_session(session.session_epoch) {
                     let event = crate::runtime::MatchSessionEvent::new(payload, session);
                     let _ = state.app.emit("minimap-cv", event);
-                }
-            }
-
-            // Live minimap mirror for the Command Deck (throttled ≈6.7 Hz). Encodes
-            // the same cropped pixels we just ran CV over — no extra capture. Kept
-            // at the tail so it never delays the G-Signal latency path above.
-            if state.last_frame_emit.elapsed().as_millis() >= MINIMAP_FRAME_INTERVAL_MS {
-                state.last_frame_emit = Instant::now();
-                if let Some(image) = encode_minimap_dataurl(&f.bgra, f.width, f.height) {
-                    if crate::runtime::is_current_capture_session(session.session_epoch) {
-                        let payload = MinimapFrame {
-                            image,
-                            region: r,
-                            map_crop: MinimapMirrorCrop {
-                                left: MIRROR_CROP_L,
-                                top: MIRROR_CROP_T,
-                                right: MIRROR_CROP_R,
-                                bottom: MIRROR_CROP_B,
-                            },
-                        };
-                        let event = crate::runtime::MatchSessionEvent::new(payload, session);
-                        let _ = state.app.emit("minimap-frame", event);
-                    }
                 }
             }
         }

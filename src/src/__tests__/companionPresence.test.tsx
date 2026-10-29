@@ -72,6 +72,20 @@ it('ignores a wrong-epoch snapshot without disturbing current observations', asy
   expect(container.textContent).toContain('Axe:visible,Zeus:empty')
 })
 
+it('does not reacquire preview for a late terminal-session heartbeat and allows the next epoch', async () => {
+  await send('gsi-status', { ...session, session_lifecycle: 'end', gsi_freshness: 'waiting', gsi_active: false, dota_running: true, in_game: false })
+  const { minimapPreview } = await import('../live/minimapPreviewStore')
+  const { invoke } = await import('@tauri-apps/api/core')
+  vi.mocked(invoke).mockClear()
+  const unsubscribe = minimapPreview.subscribeFrames(() => {})
+  try {
+    await send('gsi-status', { ...session, gsi_freshness: 'fresh', gsi_active: true, dota_running: true, in_game: true })
+    expect(vi.mocked(invoke).mock.calls.filter(([name]) => name === 'start_minimap_preview')).toHaveLength(0)
+    await send('gsi-status', { ...session, session_epoch: 9, gsi_freshness: 'fresh', gsi_active: true, dota_running: true, in_game: true })
+    expect(vi.mocked(invoke).mock.calls.filter(([name]) => name === 'start_minimap_preview')).toHaveLength(1)
+  } finally { unsubscribe() }
+})
+
 it('publishes expired presence when the deck regains focus after background expiry', async () => {
   await send('missing-state', snapshot)
   expect(container.textContent).toContain('Axe:visible')
@@ -83,7 +97,31 @@ it('publishes expired presence when the deck regains focus after background expi
   expect(container.textContent).toContain('Axe:empty')
 })
 
+it('updates a visible unfocused dashboard while the player controls Dota', async () => {
+  await act(async () => { window.dispatchEvent(new Event('blur')) })
+  await send('draft-roster', { ...session, radiant: ['crystal_maiden', 'lion', 'pudge', 'drow_ranger', 'lina'], dire: ['axe', 'lina', 'sniper', 'invoker', 'tinker'], complete: true })
+  await act(async () => { vi.advanceTimersByTime(1000) })
+  expect(container.textContent).toContain('Axe:empty,Lina:empty')
+})
+
 const idleStatus = { session_epoch: 8, session_lifecycle: 'live', gsi_freshness: 'unavailable', gsi_active: false, dota_running: false, in_game: false, gsi_age_ms: null, server_state: 'listening', gsi_port: 3000, dota_restart_required: false }
+
+it('keeps truly hidden dashboards idle and publishes the latest roster when visible again', async () => {
+  const original = Object.getOwnPropertyDescriptor(document, 'visibilityState')
+  try {
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'hidden' })
+    await act(async () => { document.dispatchEvent(new Event('visibilitychange')) })
+    await send('draft-roster', { ...session, radiant: ['crystal_maiden', 'lion', 'pudge', 'drow_ranger', 'lina'], dire: ['axe', 'lina', 'sniper', 'invoker', 'tinker'], complete: true })
+    await act(async () => { vi.advanceTimersByTime(1000) })
+    expect(container.textContent).toContain('Axe:empty,Zeus:empty')
+    Object.defineProperty(document, 'visibilityState', { configurable: true, value: 'visible' })
+    await act(async () => { document.dispatchEvent(new Event('visibilitychange')) })
+    expect(container.textContent).toContain('Axe:empty,Lina:empty')
+  } finally {
+    if (original) Object.defineProperty(document, 'visibilityState', original)
+    else Reflect.deleteProperty(document, 'visibilityState')
+  }
+})
 const idleSensor = { backend: 'lite', classifier: false, throttled: false, frameAgeMs: null, healthy: false }
 
 it('does not rebuild the deck for an exact idle status heartbeat but keeps receipt age current', async () => {

@@ -1,7 +1,7 @@
 ---
-version: "0.1.3"
+version: "0.1.4"
 created_at: "2026-06-23T22:51:10+07:00,ATHER,pending"
-last_update: "2026-07-19,Claude"
+last_update: "2026-10-29,Codex (VRZO documentation)"
 status: "draft"
 superseded_by: null
 attributes:
@@ -10,7 +10,7 @@ attributes:
   language: "th"
 title: "G-Maiden Iceglass Design System"
 doc_id: "design-system"
-updated: "2026-10-28"
+updated: "2026-10-29"
 owner: "Boss"
 ---
 
@@ -425,6 +425,8 @@ Governor visual degradation levels:
 > the `announcer-banner` event) and **gpu-feeder telemetry** (GPU load/temp + VRAM
 > in the deck footer, fed by the out-of-process `gpu-feeder` sidecar) also shipped.
 
+> **Current-source cross-reference (2026-10-29):** ข้อความ SHIPPED ด้านบนเป็นหลักฐานของ image banner ในช่วงนั้น. Source ปัจจุบันมี VRZO selected-clip lifecycle ผ่าน `vrzo-banner-playback` ที่ `src/src/app/Overlay.tsx`, muted bundled composite video และ Control inventory picker ผ่าน `preview_vrzo_banner_variant`. การตรงภาพ/เสียง, WebView2 alpha/mute, first cold timing และ in-game/resource acceptance ยัง **NOT_RUN**; ดู [[vrzo-banner-validation]] (`docs/operations/vrzo-banner-validation.md`).
+
 ### Allowed in Phase 1 (documentation only)
 
 - Add this design system doc.
@@ -527,3 +529,4 @@ Use only these docs unless a worker reports `BLOCKED:`:
 | 0.1.1b | 2026-07-19 | symbol-link coverage extension (G1.5) |
 | 0.1.2 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
 | 0.1.3 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |
+| 0.1.4 | 2026-10-29 | Cross-reference current VRZO overlay and preview without rewriting historical shipped evidence. |

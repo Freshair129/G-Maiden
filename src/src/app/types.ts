@@ -21,6 +21,7 @@ export interface MissingState extends MatchSessionMetadata {
 
 /** Mirrors the Rust `GameTick` emitted by the GSI server (src-tauri/src/gsi.rs). */
 export interface GameTick extends MatchSessionMetadata {
+  local_player_verified?: boolean
   in_game: boolean
   clock_time: number
   game_state: string

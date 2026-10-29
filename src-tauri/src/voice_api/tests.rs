@@ -57,6 +57,34 @@ fn announcer_selection_never_substitutes_an_unmapped_pack_and_retains_provenance
     write_active_pack_id("other").unwrap();
     assert!(super::with_current_announcer_clip("kill", &selected, || ()).is_none());
     assert_eq!(selected.pack_id, "nakom");
+    write_active_pack_id("nakom").unwrap();
+    assert!(super::with_current_announcer_clip("kill", &selected, || ()).is_none());
+    let fresh = super::select_announcer_clip("kill").unwrap();
+    assert!(super::with_current_announcer_clip("kill", &fresh, || ()).is_some());
+}
+
+#[test]
+fn preview_variant_resolves_only_the_named_mapped_clip() {
+    let root = temp_root("preview-variant");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    let dir = write_pack(
+        &root,
+        "variants",
+        BTreeMap::from([(
+            "kill".into(),
+            mapping(&["clips/kill_01.wav", "clips/kill_02.wav"]),
+        )]),
+    );
+    fs::write(dir.join("clips/kill_01.wav"), b"one").unwrap();
+    fs::write(dir.join("clips/kill_02.wav"), b"two").unwrap();
+    assert_eq!(
+        super::preview_variant("variants", "kill", "kill_02"),
+        Some(dir.join("clips/kill_02.wav"))
+    );
+    assert!(super::preview_variant("variants", "death", "kill_02").is_none());
+    assert!(super::preview_variant("variants", "kill", "../kill_02").is_none());
+    assert!(super::preview_variant("variants", "kill", "kill_03").is_none());
 }
 
 #[test]

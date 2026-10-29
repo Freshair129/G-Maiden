@@ -79,6 +79,8 @@ pub struct GameTick {
     /// the deck can auto-load their OpenDota profile without manual entry. "" when
     /// absent (menu / some spectator states).
     pub steamid: String,
+    #[serde(default)]
+    pub local_player_verified: bool,
     /// GSI `hero.buyback_cost` — gold needed to buy back (0 when N/A). Feeds G-Revive.
     pub buyback_cost: i64,
     /// GSI `hero.respawn_seconds` — live respawn countdown (0 when alive). Feeds G-Revive.
@@ -240,6 +242,10 @@ fn parse_tick_from_value(v: &Value) -> GameTick {
         hp: i(v, &["hero", "health"]),
         max_hp: i(v, &["hero", "max_health"]),
         steamid: s(v, &["player", "steamid"]),
+        local_player_verified: local_player_verified(
+            v,
+            crate::local_player::active_steam_id().as_deref(),
+        ),
         buyback_cost: i(v, &["hero", "buyback_cost"]),
         respawn_seconds: i(v, &["hero", "respawn_seconds"]),
         kill_list_len: kl_len,
@@ -247,6 +253,14 @@ fn parse_tick_from_value(v: &Value) -> GameTick {
         item_names: crate::items::item_names_from(&v["items"]),
         combat_items: crate::items::combat_loadout_from(&v["items"]),
     }
+}
+
+fn local_player_verified(v: &Value, active_steam_id: Option<&str>) -> bool {
+    let player = s(v, &["player", "steamid"]);
+    active_steam_id.is_some_and(|active| active.len() == 17 && active == player)
+        && matches!(s(v, &["player", "team_name"]).as_str(), "radiant" | "dire")
+        && value_at(v, &["player", "activity"])
+            .is_none_or(|activity| activity.as_str() == Some("playing"))
 }
 
 fn parse_match_id(v: &Value) -> Option<String> {
@@ -599,8 +613,35 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
     crate::runtime::update_warning_context(session.session_epoch, &tick);
     // Announcer: detect kill/streak/state events from the tick and voice the
     // most significant one (clip-or-silent — these aren't TTS-faked).
-    let announce =
-        crate::announcer::most_important(&crate::announcer::observe_for_session(&tick, &session));
+    let announce_candidates = crate::announcer::observe_for_session(&tick, &session);
+    let announce = crate::announcer::most_important(&announce_candidates);
+    if tick.in_game {
+        static LAST_OWNER_STATE: AtomicU8 = AtomicU8::new(0);
+        let state = if tick.local_player_verified { 1 } else { 2 };
+        if LAST_OWNER_STATE.swap(state, Ordering::Relaxed) != state {
+            eprintln!(
+                "[G-Announcer] local_player_verified={} personal_events={}",
+                tick.local_player_verified,
+                if tick.local_player_verified {
+                    "enabled"
+                } else {
+                    "suppressed"
+                }
+            );
+        }
+    }
+    if let Some(event) = announce.as_ref() {
+        eprintln!("[G-Announcer] event={event} epoch={} clock={} local_kills={} local_deaths={} team_scores={}:{} owner_verified={}",
+            session.session_epoch, tick.clock_time, tick.kills, tick.deaths, tick.radiant_score, tick.dire_score, tick.local_player_verified);
+        crate::log::note_event_for_session(
+            session.session_epoch,
+            serde_json::json!({
+                "type": "announcer_selection", "candidates": announce_candidates,
+                "selected": event, "reason": "highest_priority_single_clip",
+                "clock": tick.clock_time, "local_player_verified": tick.local_player_verified,
+            }),
+        );
+    }
     // G-Motion threat discount (audit H3): a dead enemy is off the minimap and
     // therefore "missing", but is the opposite of a gank threat. Folded in here
     // — after `set_in_game` above, so a match boundary has already cleared the
@@ -639,6 +680,28 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
             if let Some(selected) = crate::voice_api::select_announcer_clip(&ev) {
                 let mut banner = crate::voice_api::preview_banner(&selected.pack_id, &ev);
                 banner.clip = Some(selected.path.to_string_lossy().into_owned());
+                let visual_selected = selected.clone();
+                let visual_event = ev.clone();
+                let visual_epoch = session.session_epoch;
+                let visual_scope = std::sync::Arc::new(move || {
+                    crate::runtime::announcer_enabled()
+                        && crate::runtime::is_current_active_session_epoch(visual_epoch)
+                        && crate::voice_api::with_current_announcer_clip(
+                            &visual_event,
+                            &visual_selected,
+                            || (),
+                        )
+                        .is_some()
+                });
+                let visual = crate::vrzo_playback::observer(
+                    app.clone(),
+                    selected.clone(),
+                    ev.clone(),
+                    session.session_epoch,
+                    false,
+                    visual_scope,
+                );
+                let vrzo_pack = selected.pack_id == "pack_vrzo_20261028";
                 crate::log::note_event_for_session(
                     session.session_epoch,
                     serde_json::json!({"type":"announcer_audio","phase":"requested","event":ev,"pack_id":selected.pack_id}),
@@ -646,58 +709,69 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
                 let guard_clip = selected.clone();
                 let guard_event = ev.clone();
                 let epoch = session.session_epoch;
-                crate::audio::play_observed(
-                    selected.path.clone(),
-                    crate::audio::priority_for_event(&ev),
-                    move |commit| {
-                        let _ = crate::runtime::with_speech_admission(epoch, None, || {
-                            if crate::runtime::announcer_enabled() {
-                                let _ = crate::voice_api::with_current_announcer_clip(
-                                    &guard_event,
-                                    &guard_clip,
-                                    commit,
-                                );
-                            }
-                            Ok(())
-                        });
-                    },
-                    move |outcome| {
-                        tauri::async_runtime::spawn_blocking(move || {
-                            let admitted = outcome == crate::audio::PlaybackResult::Admitted;
-                            crate::log::note_event_for_session(
-                                epoch,
-                                serde_json::json!({
+                let selected_path = selected.path.clone();
+                let priority = crate::audio::priority_for_event(&ev);
+                let admit = move |commit: &mut dyn FnMut()| {
+                    let _ = crate::runtime::with_speech_admission(epoch, None, || {
+                        if crate::runtime::announcer_enabled() {
+                            let _ = crate::voice_api::with_current_announcer_clip(
+                                &guard_event,
+                                &guard_clip,
+                                commit,
+                            );
+                        }
+                        Ok(())
+                    });
+                };
+                let notify = move |outcome| {
+                    tauri::async_runtime::spawn_blocking(move || {
+                        let admitted = outcome == crate::audio::PlaybackResult::Admitted;
+                        crate::log::note_event_for_session(
+                            epoch,
+                            serde_json::json!({
                                 "type":"announcer_audio","phase":if admitted {"admitted"} else {"rejected"},
                                 "event":ev,"pack_id":selected.pack_id}),
-                            );
-                            if !admitted || !crate::runtime::is_current_active_session_epoch(epoch)
-                            {
-                                return;
-                            }
-                            crate::utterance::emit_for_session(
-                                &app,
-                                crate::utterance::UtterancePayload::new_for_session(
-                                    "announcer",
-                                    "line",
-                                    ev.clone(),
-                                    None,
-                                    Some(selected.pack_name),
-                                    &session,
-                                )
-                                .admitted(),
-                            );
-                            let result = app.emit(
-                                "announcer-banner",
-                                crate::runtime::MatchSessionEvent::new(banner, &session),
-                            );
-                            crate::log::note_event_for_session(
-                                epoch,
-                                serde_json::json!({"type":"announcer_banner",
+                        );
+                        if !admitted || !crate::runtime::is_current_active_session_epoch(epoch) {
+                            return;
+                        }
+                        crate::utterance::emit_for_session(
+                            &app,
+                            crate::utterance::UtterancePayload::new_for_session(
+                                "announcer",
+                                "line",
+                                ev.clone(),
+                                None,
+                                Some(selected.pack_name),
+                                &session,
+                            )
+                            .admitted(),
+                        );
+                        if vrzo_pack {
+                            return;
+                        }
+                        let result = app.emit(
+                            "announcer-banner",
+                            crate::runtime::MatchSessionEvent::new(banner, &session),
+                        );
+                        crate::log::note_event_for_session(
+                            epoch,
+                            serde_json::json!({"type":"announcer_banner",
                                 "phase":if result.is_ok() {"emitted"} else {"emit_failed"},"event":ev,"pack_id":selected.pack_id}),
-                            );
-                        });
-                    },
-                );
+                        );
+                    });
+                };
+                if let Some(observer) = visual {
+                    crate::audio::play_observed_with_lifecycle(
+                        selected_path,
+                        priority,
+                        admit,
+                        notify,
+                        observer,
+                    );
+                } else {
+                    crate::audio::play_observed(selected_path, priority, admit, notify);
+                }
             } else {
                 crate::log::note_event_for_session(
                     session.session_epoch,
@@ -1228,6 +1302,22 @@ fn bind_available_listener() -> std::io::Result<(tokio::net::TcpListener, u16)> 
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn personal_events_require_local_steam_login_without_provider_steamid() {
+        let active = Some("76561198115363193");
+        let mut v = serde_json::json!({"provider":{"appid":570},
+            "player":{"steamid":"76561198115363193","team_name":"radiant","activity":"playing"}});
+        assert!(super::local_player_verified(&v, active));
+        assert!(!super::local_player_verified(&v, None));
+        v["player"]["steamid"] = "76561198115363194".into();
+        assert!(!super::local_player_verified(&v, active));
+        v["player"]["steamid"] = "76561198115363193".into();
+        v["player"]["activity"] = "menu".into();
+        assert!(!super::local_player_verified(&v, active));
+        v["player"]["activity"] = "playing".into();
+        v["player"]["team_name"] = "spectator".into();
+        assert!(!super::local_player_verified(&v, active));
+    }
     use super::*;
 
     #[test]
