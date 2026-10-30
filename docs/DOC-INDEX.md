@@ -1,11 +1,11 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.8"
+version: "0.2.9"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
-last_update: "2026-10-19T00:00:00+07:00,Codex"
+last_update: "2026-10-30T00:00:00+07:00,Codex"
 status: "active"
-updated: "2026-10-19"
+updated: "2026-10-30"
 owner: "Boss"
 attributes:
   domain: "documentation-governance"
@@ -82,6 +82,8 @@ attributes:
   - `docs/design-system/11-wireflows.md` — target navigation and recovery wireflows
 - [[12-user-flows]]
   - `docs/design-system/12-user-flows.md` — target user goals, decisions, and outcomes
+- [[13-ui-technical-drawing-atlas]]
+  - `docs/design-system/13-ui-technical-drawing-atlas.md` — 36 measured/source technical drawing sheets, SVG exports, source hashes and browser evidence
 - `docs/design-system/landing_page_prompt.md`
   - `docs/design-system/landing_page_prompt.md` — prompt reference สำหรับออกแบบหน้าเว็บ landing
 - `docs/design-system/assets/`
@@ -211,3 +213,4 @@ attributes:
 | 0.2.5 | 2026-10-11 | Added the MVP-038 local STT evaluation protocol to the architecture-spike index. |
 | 0.2.7 | 2026-10-18 | Indexed ADR-19 and CR-035. |
 | 0.2.8 | 2026-10-19 | Indexed Graphite Clarity and the Command Deck wireframe, wireflow, and user-flow documents. |
+| 0.2.9 | 2026-10-30 | Indexed the UI technical drawing atlas and its source/browser evidence. |

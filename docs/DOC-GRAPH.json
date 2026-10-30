@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-29T13:05:56.532Z",
+  "generatedAt": "2026-10-30T10:03:04.099Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -674,6 +674,13 @@
       "path": "docs/design-system/12-user-flows.md",
       "title": "12 — User Flows: Goals, decisions and outcomes",
       "status": "draft"
+    },
+    {
+      "id": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "type": "doc",
+      "path": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "title": "13 — UI Technical Drawing Atlas",
+      "status": "active"
     },
     {
       "id": "docs/design-system/README.md",
@@ -1766,81 +1773,87 @@
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/tech-stack.md",
+      "to": "docs/design-system/13-ui-technical-drawing-atlas.md",
       "type": "wikilink",
-      "line": 92
+      "line": 85
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/engineering-spec.md",
+      "to": "docs/architecture/tech-stack.md",
       "type": "wikilink",
       "line": 94
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/technical-design-document.md",
+      "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
       "line": 96
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/design-system.md",
+      "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
       "line": 98
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/product-family-design-map.md",
+      "to": "docs/architecture/design-system.md",
       "type": "wikilink",
       "line": 100
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "to": "docs/architecture/product-family-design-map.md",
       "type": "wikilink",
       "line": 102
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/implementation-plan.md",
+      "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "type": "wikilink",
       "line": 104
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "to": "docs/architecture/implementation-plan.md",
       "type": "wikilink",
       "line": 106
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/features/README.md",
+      "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
       "type": "wikilink",
-      "line": 139
+      "line": 108
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/features/README.md",
       "type": "wikilink",
       "line": 141
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/guides/scaffold-setup.md",
+      "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 176
+      "line": 143
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/guides/small-model-prompting.md",
+      "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
       "line": 178
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/guides/small-model-prompting.md",
+      "type": "wikilink",
+      "line": 180
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 183
+      "line": 185
     },
     {
       "from": "docs/README.md",
@@ -6829,6 +6842,42 @@
       "line": 142
     },
     {
+      "from": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "to": "docs/design-system/03-layout.md",
+      "type": "wikilink",
+      "line": 22
+    },
+    {
+      "from": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "to": "docs/design-system/04-components.md",
+      "type": "wikilink",
+      "line": 22
+    },
+    {
+      "from": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
+      "type": "wikilink",
+      "line": 23
+    },
+    {
+      "from": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "to": "docs/design-system/07-combat-hud.md",
+      "type": "wikilink",
+      "line": 23
+    },
+    {
+      "from": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "to": "docs/design-system/10-wireframes.md",
+      "type": "wikilink",
+      "line": 23
+    },
+    {
+      "from": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 87
+    },
+    {
       "from": "docs/design-system/README.md",
       "to": "docs/design-system/01-foundations.md",
       "type": "wikilink",
@@ -6902,63 +6951,69 @@
     },
     {
       "from": "docs/design-system/README.md",
+      "to": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "type": "wikilink",
+      "line": 46
+    },
+    {
+      "from": "docs/design-system/README.md",
       "to": "docs/design-system/06-stack.md",
       "type": "wikilink",
-      "line": 55
+      "line": 56
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/architecture/design-system.md",
       "type": "wikilink",
-      "line": 70
+      "line": 71
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "type": "wikilink",
-      "line": 71
+      "line": 72
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
-      "line": 71
+      "line": 72
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/design-system/10-wireframes.md",
       "type": "wikilink",
-      "line": 71
+      "line": 72
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/design-system/11-wireflows.md",
       "type": "wikilink",
-      "line": 71
+      "line": 72
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/design-system/12-user-flows.md",
       "type": "wikilink",
-      "line": 71
+      "line": 72
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 72
+      "line": 73
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 72
+      "line": 73
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 72
+      "line": 73
     },
     {
       "from": "docs/design-system/assets/wireframes/design-qa.md",
@@ -8997,19 +9052,19 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 132,
+      "line": 134,
       "reason": "glob-slug",
       "slug": "SPEC--*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 134,
+      "line": 136,
       "reason": "glob-slug",
       "slug": "ADR-O-*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 143,
+      "line": 145,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -10563,7 +10618,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-29T13:06:08.109Z",
+    "generatedAt": "2026-10-30T10:03:39.419Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,
