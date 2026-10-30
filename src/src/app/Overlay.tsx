@@ -859,7 +859,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
         matchActive={previewMode ? !!previewTick.in_game : matchActive} previewMode={previewMode}
         sensorOk={sensorHealth?.healthy ?? false}
       />
-      {vrzoVisual && s.killVisuals && s.layout?.banner?.enabled && (
+      {s.killVisuals && s.layout?.banner?.enabled && (
         <VrzoBannerVideo visual={vrzoVisual} layout={s.layout.banner} fail={failVrzo} />
       )}
       </>

@@ -631,6 +631,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
         }
     }
     if let Some(event) = announce.as_ref() {
+        crate::voice_api::prewarm_next_banner(event);
         eprintln!("[G-Announcer] event={event} epoch={} clock={} local_kills={} local_deaths={} team_scores={}:{} owner_verified={}",
             session.session_epoch, tick.clock_time, tick.kills, tick.deaths, tick.radiant_score, tick.dire_score, tick.local_player_verified);
         crate::log::note_event_for_session(
@@ -940,7 +941,7 @@ fn run_announcer_install(req: &InstallRequest) -> serde_json::Value {
     if req.pack_id.is_empty() {
         return serde_json::json!({ "ok": false, "error": "missing packId" });
     }
-    if !crate::voice_api::is_store_installed(&req.pack_id) {
+    if !crate::voice_api::is_pack_available(&req.pack_id) {
         return serde_json::json!({
             "ok": false,
             "pack": req.pack_id,

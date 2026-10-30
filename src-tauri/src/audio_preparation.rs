@@ -10,7 +10,8 @@ use std::sync::{
 use std::time::{Duration, Instant};
 
 const MAX_SAMPLES: usize = 2 * 1024 * 1024;
-const MAX_CLIPS: usize = 2;
+// Active +150ms retiree +one replacement preparing; PCM stays <=12MiB.
+const MAX_CLIPS: usize = 3;
 const MAX_WAIT: Duration = Duration::from_secs(2);
 const MAX_VISUAL_AUDIO_BYTES: usize = 16 * 1024 * 1024;
 
@@ -375,11 +376,12 @@ mod tests {
             fence: Fence::capture(&Arc::new(Epochs::default()), Priority::Cosmetic),
         };
         let queued = Slot::acquire(&count).unwrap();
+        let retiring = Slot::acquire(&count).unwrap();
         assert!(Slot::acquire(&count).is_none());
         assert_eq!(playing.collect::<Vec<_>>(), vec![1]);
         let replacement = Slot::acquire(&count).unwrap();
         assert!(Slot::acquire(&count).is_none());
-        drop((queued, replacement));
+        drop((queued, replacement, retiring));
         assert_eq!(count.load(Ordering::Acquire), 0);
     }
 

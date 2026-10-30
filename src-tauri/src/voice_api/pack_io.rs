@@ -387,6 +387,9 @@ pub(crate) fn open_verified_store_clip(path: &Path) -> Result<Option<fs::File>, 
         .to_str()
         .ok_or_else(|| "รหัสแพ็ก Store ไม่ถูกต้อง".to_string())?;
     let clip_path = components.as_path();
+    if super::id_container::is_local_package(pack_id) {
+        return super::id_container::open_local_clip(pack_id, clip_path).map(Some);
+    }
     let record =
         read_store_install_record(pack_id).ok_or_else(|| "ไม่พบหลักฐานติดตั้งแพ็ก Store".to_string())?;
     let archive_index = load_store_archive_index(&record)?;
@@ -421,12 +424,18 @@ pub(crate) fn validate_store_clip_integrity(path: &Path) -> Result<(), String> {
 }
 
 pub(crate) fn read_manifest(dir: &Path) -> Result<Manifest, String> {
+    if super::id_manifest::manifest_path(dir)?.is_some() {
+        return Ok(super::id_manifest::read(dir)?.project());
+    }
     let path = dir.join("manifest.json");
     let raw = fs::read_to_string(&path).map_err(|e| format!("read {}: {e}", path.display()))?;
     serde_json::from_str(&raw).map_err(|e| format!("parse {}: {e}", path.display()))
 }
 
 pub(crate) fn write_manifest(dir: &Path, manifest: &Manifest) -> Result<(), String> {
+    if super::id_manifest::manifest_path(dir)?.is_some() {
+        return Err("ID manifests are read-only; edit the package in G-AnnStudio".into());
+    }
     let path = dir.join("manifest.json");
     let raw =
         serde_json::to_string_pretty(manifest).map_err(|e| format!("serialize manifest: {e}"))?;
@@ -442,7 +451,7 @@ pub(crate) fn write_manifest(dir: &Path, manifest: &Manifest) -> Result<(), Stri
 
 pub(crate) fn build_pack(dir: &Path) -> Result<VoicePack, String> {
     let manifest = read_manifest(dir)?;
-    let clips = list_assets(dir, "clips", &["wav", "mp3", "ogg", "m4a"]);
+    let clips = list_assets(dir, if manifest.id.starts_with("ann_") { "audio" } else { "clips" }, &["wav", "mp3", "ogg", "m4a"]);
     let banners = list_assets(dir, "banners", &["png", "jpg", "jpeg", "webp", "svg"]);
 
     // Cover image resolution — pack tiles need SOMETHING to show, so:
@@ -541,7 +550,7 @@ pub(crate) fn build_pack(dir: &Path) -> Result<VoicePack, String> {
         locale: manifest.locale,
         author: manifest.author,
         author_gid: manifest.author_gid,
-        description: manifest.description,
+        description: if super::id_container::is_local_package(dir.file_name().and_then(|s|s.to_str()).unwrap_or("")) { format!("Local .gann · {}", manifest.description) } else { manifest.description },
         path: dir.to_string_lossy().to_string(),
         covered_events: covered,
         total_events: EVENTS.len(),
@@ -724,6 +733,7 @@ struct ResolvedCache {
     pack_id: String,
     pack_name: String,
     clips_by_event: HashMap<String, Vec<PathBuf>>,
+    pairs: super::id_manifest::Pairs,
 }
 
 // Production: one process-global slot — there is exactly one active pack per
@@ -748,20 +758,123 @@ thread_local! {
 fn store_resolved_cache(mut next: Option<ResolvedCache>) {
     if let Ok(mut cache) = RESOLVED_CACHE.lock() {
         stamp_cache(&mut next);
+        super::video_cache::reset(next.as_ref().map_or(0, |c| c.revision));
         *cache = next;
     }
+    prewarm_likely_videos(&["first_blood", "double_kill", "kill"]);
 }
 #[cfg(test)]
 fn store_resolved_cache(mut next: Option<ResolvedCache>) {
     stamp_cache(&mut next);
+    super::video_cache::reset(next.as_ref().map_or(0, |c| c.revision));
     RESOLVED_CACHE.with(|cell| *cell.borrow_mut() = next);
 }
 
+#[cfg(not(test))]
+fn prewarm_likely_videos(events: &[&str]) {
+    super::visual_warm::publish(visual_candidates_for(events));
+    let snapshot = with_resolved_cache(|cache| {
+        let c = cache?;
+        let videos = events.iter().filter_map(|event| {
+            let path = c.clips_by_event.get(*event)?.first()?;
+            Some(c.pairs.get(&(event.to_string(), path.clone()))?.clone())
+        }).collect::<Vec<_>>();
+        Some((c.pack_id.clone(), c.revision, videos))
+    });
+    if let Some(plan) = snapshot { queue_warm_videos(plan); }
+}
+
+#[cfg(not(test))]
+fn queue_warm_videos(plan: (String, u64, Vec<Arc<super::id_manifest::Pair>>)) {
+        type Plan = (String, u64, Vec<Arc<super::id_manifest::Pair>>);
+        #[derive(Default)]
+        struct WarmState { running: bool, latest_revision: u64, pending: Option<Plan> }
+        static WARM: OnceLock<Mutex<WarmState>> = OnceLock::new();
+        let state = WARM.get_or_init(Mutex::default);
+        let Ok(mut guard) = state.lock() else { return; };
+        if plan.1 < guard.latest_revision { return; }
+        guard.latest_revision = plan.1;
+        // One worker and one latest pending hint; a new generation is never lost.
+        guard.pending = Some(plan);
+        if guard.running { return; }
+        guard.running = true;
+        drop(guard);
+        if std::thread::Builder::new().name("g-banner-prewarm".into()).spawn(move || loop {
+            let next = {
+                let Ok(mut guard) = state.lock() else { return; };
+                let next = guard.pending.take();
+                if next.is_none() { guard.running = false; }
+                next
+            };
+            let Some((pack, revision, videos)) = next else { return; };
+            for pair in videos {
+                if id_video(&pack, &pair.banner_id, revision).is_none() { break; }
+                let ready = super::video_cache::verified(revision, &pair.video, &pair.video_hash).is_some();
+                eprintln!("[G-BannerCache] warm revision={revision} banner={} ready={ready}", pair.banner_id);
+            }
+        }).is_err() { if let Ok(mut guard) = state.lock() { guard.running = false; } }
+}
+
+pub fn prewarm_next_banner(event: &str) {
+    #[cfg(not(test))]
+    match event {
+        "match_start" => prewarm_likely_videos(&["first_blood", "double_kill", "kill"]),
+        "first_blood" | "kill" => prewarm_likely_videos(&["double_kill"]),
+        "double_kill" => prewarm_likely_videos(&["triple_kill"]),
+        "triple_kill" => prewarm_likely_videos(&["ultra_kill"]),
+        "ultra_kill" => prewarm_likely_videos(&["rampage"]),
+        _ => {},
+    }
+    #[cfg(test)]
+    let _ = event;
+}
+
+pub(crate) fn announcer_revision_current(revision: u64) -> bool {
+    with_resolved_cache(|cache| cache.is_some_and(|c| c.revision == revision))
+}
+
+static LAST_REVISION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 fn stamp_cache(next: &mut Option<ResolvedCache>) {
     static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+    let revision = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    LAST_REVISION.fetch_max(revision, std::sync::atomic::Ordering::AcqRel);
     if let Some(cache) = next {
-        cache.revision = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+        cache.revision = revision;
     }
+}
+
+fn visual_candidates_for(events: &[&str]) -> super::visual_warm::Candidates {
+    use super::visual_warm::{Candidate, Candidates};
+    with_resolved_cache(|cache| {
+        let Some(cache) = cache else {
+            return Candidates { pack_id: None, revision: LAST_REVISION.load(std::sync::atomic::Ordering::Acquire), visuals: vec![] };
+        };
+        let mut visuals: Vec<Candidate> = Vec::new();
+        for event in events.iter().take(3) {
+            let Some(paths) = cache.clips_by_event.get(*event) else { continue; };
+            let Some(pair) = paths.first().and_then(|path| cache.pairs.get(&(event.to_string(), path.clone()))) else { continue; };
+            if !visuals.iter().any(|v| v.banner_id == pair.banner_id) {
+                visuals.push(Candidate { pack_id: cache.pack_id.clone(), banner_id: pair.banner_id.clone(), revision: cache.revision, event: event.to_string() });
+            }
+        }
+        Candidates { pack_id: Some(cache.pack_id.clone()), revision: cache.revision, visuals }
+    })
+}
+
+pub(crate) fn visual_warm_candidates() -> super::visual_warm::Candidates {
+    visual_candidates_for(&["first_blood", "double_kill", "kill"])
+}
+
+pub(crate) fn warm_announcer_variant(pack: &str, event: &str, clip_id: &str) -> Result<(), String> {
+    let path = super::banner::preview_variant(pack, event, clip_id).ok_or("Unknown announcer variant")?;
+    let selected = select_announcer_path(pack, event, &path).ok_or("Inactive announcer pack")?;
+    let pair = selected.pair.ok_or("Variant has no ID visual")?;
+    let candidate = super::visual_warm::Candidate { pack_id: selected.pack_id.clone(), banner_id: pair.banner_id.clone(), revision: selected.revision, event: event.to_owned() };
+    // Publishing a stale snapshot is harmless: the overlay and protocol fence revisions.
+    super::visual_warm::publish(super::visual_warm::Candidates { pack_id: Some(selected.pack_id.clone()), revision: selected.revision, visuals: vec![candidate] });
+    #[cfg(not(test))]
+    queue_warm_videos((selected.pack_id, selected.revision, vec![pair]));
+    Ok(())
 }
 
 #[cfg(not(test))]
@@ -805,10 +918,10 @@ fn with_resolved_cache<R>(f: impl FnOnce(Option<&ResolvedCache>) -> R) -> R {
 pub(crate) fn rebuild_resolved_cache() {
     let next = (|| {
         let id = read_active_pack_id()?;
-        if !cfg!(debug_assertions) && id != DEFAULT_PACK_ID && !is_store_installed(&id) {
+        if !super::commands::is_pack_available(&id) {
             return None;
         }
-        if !cfg!(debug_assertions) && id != DEFAULT_PACK_ID {
+        if !cfg!(debug_assertions) && id != DEFAULT_PACK_ID && !super::id_container::is_local_package(&id) {
             let record = read_store_install_record(&id)?;
             load_store_archive_index(&record).ok()?;
         }
@@ -822,9 +935,13 @@ pub(crate) fn rebuild_resolved_cache() {
                     .iter()
                     .map(|e| (e.id.to_string(), audio::default_event_clips(e.id)))
                     .collect(),
+                pairs: HashMap::new(),
             });
         }
         let manifest = read_manifest(&dir).ok()?;
+        let pairs = if super::id_manifest::manifest_path(&dir).ok()?.is_some() {
+            super::id_manifest::read(&dir).ok()?.admit(&dir).ok()?
+        } else { HashMap::new() };
         let mut clips_by_event = HashMap::with_capacity(manifest.mappings.len());
         for (event, mapping) in &manifest.mappings {
             clips_by_event.insert(event.clone(), resolve_existing_clips(&dir, &mapping.clips));
@@ -838,6 +955,7 @@ pub(crate) fn rebuild_resolved_cache() {
                 manifest.name
             },
             clips_by_event,
+            pairs,
         })
     })();
     store_resolved_cache(next);
@@ -864,6 +982,7 @@ pub struct AnnouncerClip {
     pub pack_id: String,
     pub pack_name: String,
     pub path: PathBuf,
+    pub(crate) pair: Option<Arc<super::id_manifest::Pair>>,
 }
 
 /// The selected pack and clip are read under the same cache lock. No ANN fallback.
@@ -875,8 +994,17 @@ pub fn select_announcer_clip(event: &str) -> Option<AnnouncerClip> {
             revision: cache.revision,
             pack_id: cache.pack_id.clone(),
             pack_name: cache.pack_name.clone(),
+            pair: cache.pairs.get(&(event.to_owned(), path.clone())).cloned(),
             path,
         })
+    })
+}
+
+pub(crate) fn id_video(pack: &str, banner: &str, revision: u64) -> Option<Arc<super::id_manifest::Pair>> {
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        if cache.pack_id != pack || cache.revision != revision { return None; }
+        cache.pairs.values().find(|pair| pair.banner_id == banner).cloned()
     })
 }
 
@@ -890,6 +1018,7 @@ pub fn select_announcer_path(pack: &str, event: &str, path: &Path) -> Option<Ann
             revision: cache.revision,
             pack_id: cache.pack_id.clone(),
             pack_name: cache.pack_name.clone(),
+            pair: cache.pairs.get(&(event.to_owned(), path.to_owned())).cloned(),
             path: path.to_owned(),
         })
     })
@@ -966,6 +1095,37 @@ pub(crate) fn sanitize_file_name(value: &str) -> String {
 mod integrity_tests {
     use super::*;
     use ring::signature::{Ed25519KeyPair, KeyPair};
+
+    #[test]
+    fn warm_descriptors_are_bounded_exact_ids_and_invalidated_with_a_new_generation() {
+        let pack = "ann_c4d92f17-167a-504b-9393-64fd959981cd";
+        let banner = "bnr_c4d92f17-167a-504b-9393-64fd959981cd";
+        let path = PathBuf::from("private/audio/snd.wav");
+        let pair = Arc::new(super::super::id_manifest::Pair {
+            banner_id: banner.into(), original: path.clone(), original_hash: "a".repeat(64),
+            mixed: PathBuf::from("private/mixed.wav"), mixed_hash: "b".repeat(64), samples: 1,
+            video: PathBuf::from("private/video.webm"), video_hash: "c".repeat(64),
+        });
+        let events = ["first_blood", "double_kill", "kill", "rampage"];
+        store_resolved_cache(Some(ResolvedCache { revision: 0, pack_id: pack.into(), pack_name: "Test".into(),
+            clips_by_event: events.iter().map(|event| (event.to_string(), vec![path.clone()])).collect(),
+            pairs: events.iter().map(|event| ((event.to_string(), path.clone()), pair.clone())).collect(),
+        }));
+        let candidates = visual_candidates_for(&events);
+        assert_eq!(candidates.pack_id.as_deref(), Some(pack));
+        assert_eq!(candidates.visuals.len(), 1, "duplicate banner needs one paused decoder");
+        let candidate = &candidates.visuals[0];
+        assert_eq!(candidate.banner_id, banner);
+        assert_eq!(candidate.revision, candidates.revision);
+        assert_eq!(candidate.event, "first_blood");
+        assert!(!serde_json::to_string(&candidates).unwrap().contains("private"));
+        assert!(id_video(pack, banner, candidates.revision).is_some());
+        store_resolved_cache(None);
+        let cleared = visual_warm_candidates();
+        assert!(cleared.pack_id.is_none() && cleared.visuals.is_empty());
+        assert!(cleared.revision > candidates.revision);
+        assert!(id_video(pack, banner, candidates.revision).is_none());
+    }
 
     #[test]
     fn install_receipt_signature_covers_the_archive_digest() {

@@ -2,8 +2,8 @@
 title: "VRZO synchronized banner validation"
 doc_id: vrzo-banner-validation
 status: active
-version: 0.3.0
-updated: 2026-10-29
+version: "0.3.3"
+updated: 2026-10-30
 owner: G-Maiden
 ---
 
@@ -28,7 +28,7 @@ READY manifest SHA-256: `1868efeb10a211883b798100600e18df6f7aa45e7a1ec0c1d29243a
 
 เมื่อ rodio รับ source เข้าเล่นแล้ว audio owner ออก playback identity และแจ้งผ่าน channel แบบ bounded/nonblocking ไป worker นอก audio thread; การรับ source ไม่พิสูจน์เวลาที่เสียงออก DAC. สถานะที่ไม่เข้าเล่นไม่ควรมี visual start. Overlay ตรวจ playback identity, event/clip, session และขอบเขต preview; visual เก่าหรือเปลี่ยนแพ็ก/เซสชันต้องไม่กลับมาแสดง.
 
-เสียงจบตามปกติอนุญาต silent visual tail ไม่เกิน 1.4 วินาทีและไม่เกิน expiry; cancel, preemption, playback ใหม่, เปลี่ยน scope หรือปิดหน้าต่างล้าง visual. Worker และ event queue มีขอบเขต และการปิด/ยกเลิก WebM ปล่อย element/resources. ระยะเวลานี้เป็นสัญญาใน source ไม่ใช่ผลวัดความตรงของภาพกับเสียงจริง.
+เสียงจบตามปกติอนุญาต silent visual tail ไม่เกิน 3.2 วินาทีและไม่เกิน expiry; cancel, เปลี่ยน scope หรือปิดหน้าต่างล้าง visual; same-scope preemption uses the bounded retirement below. Worker และ event queue มีขอบเขต และการปิด/ยกเลิก WebM ปล่อย element/resources. ระยะเวลานี้เป็นสัญญาใน source ไม่ใช่ผลวัดความตรงของภาพกับเสียงจริง.
 
 เลือก VRZO เป็นแพ็กที่ใช้งาน แล้วเปิด Voice inventory และใช้ **ทดลองแบนเนอร์ VRZO** เลือก event/variant และกด **ทดลองภาพและเสียง**; ตัวเลือกถูกปิดหากไม่ได้ equip VRZO. Preview ใช้เส้นทาง admission เสียงจริงแต่แยก identity จาก event ในแมตช์ จึงไม่ควรเปลี่ยน GSI หรือ match state. เมื่อไม่พบไฟล์/คลิปไม่ตรง catalog ให้แสดง failure แทนการเดา variant.
 
@@ -58,6 +58,36 @@ Local candidate วันที่ 2026-10-29 ผ่าน Rust 616 tests (7 exi
 
 **Resource acceptance ยังไม่ผ่าน**: พบ startup transient เกินเพดาน RAM 900,000,000 bytes และ whole-app CPU group unavailable; capture throttling ยังทำงาน. Live minimap 60 FPS, ผลต่อ Dota, เสียงในแมตช์ และ aggregate resource acceptance ยังต้องตรวจซ้ำ. การ merge นี้รวม source สำหรับทดสอบต่อ ไม่ใช่การ release หรือเพิ่มเพดานทรัพยากร.
 
+
+## VRZO filesystem revision 3 transition contract (historical)
+
+Owner-directed local candidate change,2026-10-30: ID manifest revision3 preserves every sound ID and all63 WAV bytes;21silent1280x560 VP9 alpha files now60fps/CRF32 with one lossless transparent final frame. Native width680px/max72vw. Natural completion permits a3.2s silent tail, including approximately0.7s eased fade; expiry still bounds it.
+
+Same-scope announcer replacement starts the new selected event immediately at normal audio rate/gain. Previous visual plays2x with300ms opacity fade; previous voice receives a sample-accurate150ms fade. Bound to one active plus one outgoing visual/sink; a third arrival removes oldest outgoing. Preparation admission is3slots, at most12MiB PCM. Critical/non-announcer interruption, explicit cancellation, pack revision/session invalidation or live announcer disable hard-stops stale announcer sources. Audio owner validates scoped sources on its50ms control loop, outside the output callback. Draft match_start retains the active-session contract. New audio remains uniquely selected/verified; overlap is a bounded old-source retirement authorized by the owner.
+
+Verified native video byte cache is24MiB/6entries, keyed by admitted revision/path/hash/file metadata. One worker coalesces the latest pending warmup, preloads FirstBlood/DoubleKill/firstKill on activation/startup, then predicts next multikill on relevant events. Pack cache rebuild invalidates snapshots and stale worker insertion. It does not preplay audio or run hidden animations, and byte warmup does not establish decoder readiness. Local-only G-BannerVisual receipts record browser frame/drop/first-frame counters; native playback, visual smoothness and900,000,000-byte resource acceptance must be measured separately. No SQL/release or player-data egress.
+
+Current checks/asset/native evidence: ignored target/vrzo-smooth-20261030 and Studio workspace/vrzo-smooth-v3. Historical v8/v2 receipts remain historical; these local receipts do not establish release or native acceptance.
+
+
+## VRZO filesystem revision 4 ready-frame contract
+
+This runtime contract supersedes the revision3 video/runtime policy. Release and native acceptance remain separate. Revision4 keeps all IDs and63 WAV bytes;21 silent VP8 alpha videos are960x420/60fps, rendered directly from1280x560 Canvas sources. Apparent width remains680px/max72vw. Video ends with a fully transparent frame after its intended3.2s post-audio tail (including0.7s eased fade).
+
+The Overlay owns at most3 video DOM nodes total: active, optional retiring, and remaining paused warm candidates. Native ID-only hints carry resolved pack generation, on startup/activation, predicted events and Control variant selection. Muted first-frame preparation pauses rather than looping hidden media; admitted playback reuses the prepared node. Scope change destroys stale candidates. Same-generation hints preserve useful paused nodes and evict only an unclaimed lower-priority candidate under capacity pressure. Byte-cache warmup alone is not decoder readiness. The ID protocol allows at most3 simultaneous verified reads and waits at most500ms for a permit, then checks the generation again; no arbitrary webview filesystem path is accepted.
+
+Natural completion permits the queued current=0 lifecycle state while its audio generation and scope still match. Video ended clears normally; native/frontend hard caps allow up to4.2s after completion receipt (3.2s intended tail plus1s bounded decoding grace), under the original15s lifetime. Duplicate completion cannot extend the deadline. Cancellation, critical interruption, pack/session invalidation and expiry remain hard fences. Same-scope replacement retains the old visual2x/300ms opacity fade and old voice150ms fade; incoming image/audio start without waiting for old retirement, at normal rate. At most one active and one outgoing source remain.
+
+Local visual receipts distinguish warmed/cold, wait count, first nontransparent presented frame (frame1 rather than transparent frame0), frame/drop deltas excluding preparation, full media duration and ended/cleared/error. Native acceptance must separately verify FirstBlood, DoubleKill, Rampage, quiet drops, complete fade and rapid differing-event insertion. Target ready first present<=100ms and quiet drops<=1% per clip. Source/asset tests do not establish these native gates or acoustic/whole-match/FPS acceptance. Aggregate RAM ceiling900000000bytes, original Nakhom, local-only data and filesystem-only persistence remain unchanged. Evidence: target/vrzo-ready-20261030 and Studio workspace/vrzo-smooth-v4; native results are recorded there without rewriting failed v3 evidence.
+
+## Local .gann container (2026-10-30)
+
+Owner-authorized local package import is available separately from signed Store installation. `.gann` v1 is an indexed ZIP with `gann.json`, one canonical `ann_<UUID>.json`, ID-named audio/video, and inert authoring stock under `motion/`. Preserve registry config/component/instance/cue IDs and unknown authoring fields. Do not execute imported scripts. No SQL is introduced.
+
+Trusted Control imports a local file, validates bounded paths/counts/sizes and SHA-256 references, admits all native audio/video pairs, preserves a content-addressed original under `voice-cache/containers/<sha256>.gann`, and atomically installs a playback cache under `packs/<announcer_id>/`. Identical reimport is idempotent; a conflicting same-ID package is refused and active selection remains unchanged. A local origin record is not a Store receipt, signature or entitlement. Release runtime inventory/equip/clip validation must explicitly accept admitted local containers without weakening the signed Store path. Events use existing native caches and do not unzip in the audio hot path.
+
+G-AnnStudio opens the same container through its package panel or a file argument, inspects configuration, previews each mapped mixed WAV with its muted WebM, and can save a byte-identical copy. A file association is declared for installed builds; a no-bundle build does not register it in Windows. Existing authoring projects are not overwritten. Evidence and portable source are under Studio `workspace/gann-container-v1`; tests/build/UI results there remain distinct from live-match, acoustic, frame-drop or whole-match resource acceptance.
+
 ## Changelog
 
 | Version | Date | Summary |
@@ -65,3 +95,6 @@ Local candidate วันที่ 2026-10-29 ผ่าน Rust 616 tests (7 exi
 | 0.1.0 | 2026-10-29 | Document decoded clip identity, bounded visual lifecycle, pack trust and pending native and live validation. |
 | 0.2.0 | 2026-10-29 | Add v8 provenance/fallback, single gameplay owner and personal-event gates. |
 | 0.3.0 | 2026-10-29 | Record local regression/native preview evidence and open resource/live acceptance. |
+| 0.3.1 | 2026-10-30 | Record larger60fps ID visuals, predictive bounded cache and owner-authorized visual/audio retirement. |
+| 0.3.2 | 2026-10-30 | Record revision4 paused decoder preparation, VP8 media and bounded natural-completion grace. |
+| 0.3.3 | 2026-10-30 | Add indexed container admission and package preview validation scope. |

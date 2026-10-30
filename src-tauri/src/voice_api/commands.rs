@@ -50,6 +50,11 @@ pub fn is_store_installed(pack_id: &str) -> bool {
     pack_id == DEFAULT_PACK_ID || cfg!(debug_assertions) || pack_io::is_store_installed(pack_id)
 }
 
+/// Local containers permit playback without conferring a signed Store receipt.
+pub fn is_pack_available(pack_id: &str) -> bool {
+    is_store_installed(pack_id) || super::id_container::is_local_package(pack_id)
+}
+
 /// Ask the server to authorize the signed-in user, download the private bundle
 /// from the fixed Supabase host, and install only the pack id returned by the
 /// server. The WebView never supplies archive bytes or a storage URL.
@@ -178,7 +183,7 @@ pub fn state() -> Result<VoiceState, String> {
         pack_dirs.retain(|dir| {
             dir.file_name()
                 .and_then(|name| name.to_str())
-                .is_some_and(pack_io::is_store_installed)
+                .is_some_and(is_pack_available)
         });
     }
     if cfg!(debug_assertions) && pack_dirs.is_empty() {
@@ -194,7 +199,7 @@ pub fn state() -> Result<VoiceState, String> {
     // it's absent do we fall back to the first user pack dir.
     let active_id = read_active_pack_id()
         .filter(|id| {
-            cfg!(debug_assertions) || id == DEFAULT_PACK_ID || pack_io::is_store_installed(id)
+            is_pack_available(id)
         })
         .or_else(|| {
             if bundled_default.is_some() {
@@ -229,6 +234,7 @@ pub fn state() -> Result<VoiceState, String> {
         .and_then(|id| packs_out.iter().find(|pack| &pack.id == id).cloned());
 
     Ok(VoiceState {
+        authoring_enabled: cfg!(debug_assertions),
         root_dir: root.to_string_lossy().to_string(),
         packs_dir: packs.to_string_lossy().to_string(),
         cache_dir: audio::voice_cache_dir().to_string_lossy().to_string(),
@@ -250,8 +256,8 @@ pub fn action(action: &str, pack_id: Option<&str>) -> Result<VoiceState, String>
     match action {
         "activate" => {
             let id = pack_id.ok_or_else(|| "missing packId".to_string())?;
-            if !is_store_installed(id) {
-                return Err("ติดตั้งและใช้งานได้เฉพาะแพ็กที่ซื้อจาก Store".into());
+            if !is_pack_available(id) {
+                return Err("เลือกแพ็กที่ติดตั้งจาก Store หรือนำเข้าไฟล์ .gann แล้ว".into());
             }
             if id != DEFAULT_PACK_ID {
                 super::banner::activate_if_exists(id)?;
@@ -296,6 +302,9 @@ pub fn upload_asset(
     bytes: &[u8],
 ) -> Result<UploadResult, String> {
     ensure_dev_authoring()?;
+    if super::id_manifest::manifest_path(&pack_dir(pack_id)?)?.is_some() {
+        return Err("ID package assets are immutable; edit in G-AnnStudio".into());
+    }
     let base = pack_dir(pack_id)?;
     let folder = match kind {
         "clip" => "clips",
@@ -387,6 +396,9 @@ fn import_archive_with_expected(
         }
         candidates[0].clone()
     };
+    if super::id_manifest::manifest_path(&source)?.is_some() {
+        return Err("นำเข้าแพ็ก ID ด้วยโฟลเดอร์ G-AnnStudio เท่านั้น".into());
+    }
     let manifest = read_manifest(&source)?;
     let id = manifest.id.clone();
     if id.is_empty() || sanitize_id(&id) != id || id == DEFAULT_PACK_ID {
@@ -417,6 +429,9 @@ fn import_archive_with_expected(
     }
     fs::create_dir_all(packs_dir()).map_err(|e| e.to_string())?;
     let dest = packs_dir().join(&id);
+    if dest.is_dir() && super::id_manifest::manifest_path(&dest)?.is_some() {
+        return Err("แพ็ก ID ที่ติดตั้งแล้วไม่สามารถเขียนทับด้วย ZIP".into());
+    }
     let backup = stage.dir.join("previous");
     if dest.exists() {
         fs::rename(&dest, &backup).map_err(|e| format!("สำรองแพ็กเดิมไม่ได้: {e}"))?;

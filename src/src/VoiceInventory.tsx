@@ -7,6 +7,7 @@
 // through it. All state/props are already sync-ready.
 
 import { CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
+import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import type { VoiceEvent, VoicePack, VoiceState } from "./voice-types";
 import { VRZO_CLIPS } from "./overlay/vrzoBanner";
@@ -112,6 +113,7 @@ export default function VoiceInventory() {
   const [notice, setNotice] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
   const [vrzoClip, setVrzoClip] = useState(VRZO_CLIPS[0].clipId);
+  const [directory, setDirectory] = useState('');
 
   const refresh = useCallback(async () => {
     try {
@@ -140,6 +142,41 @@ export default function VoiceInventory() {
 
   const equippedId = state?.activePackId ?? null;
   const isEquipped = !!selectedPack && selectedPack.id === equippedId;
+  const idVariants = selectedPack?.id.startsWith('ann_')
+    ? selectedPack.items.flatMap(item => (item.mapping?.clips ?? []).map(path => ({ event: item.id, clipId: path.split('/').pop()!.replace(/\.wav$/i, '') }))) : [];
+  const variants = idVariants.length ? idVariants : VRZO_CLIPS;
+  const chosenVariant = variants.find(item => item.clipId === vrzoClip) ?? variants[0];
+  const warmPack = isEquipped ? selectedPack?.id : undefined;
+  const warmEvent = chosenVariant?.event;
+  const warmClip = chosenVariant?.clipId;
+  useEffect(() => {
+    if (!warmPack?.startsWith('ann_') || !warmEvent || !warmClip) return;
+    void invoke('warm_announcer_visual_variant', { packId: warmPack, event: warmEvent, clipId: warmClip }).catch(() => {});
+  }, [warmPack, warmEvent, warmClip]);
+
+  const importContainer = async () => {
+    setBusy(true);
+    try {
+      const path = await open({ title: 'นำเข้า Announcer Package', filters: [{ name: 'G-Ann Package', extensions: ['gann'] }] });
+      if (typeof path !== 'string') return;
+      const result = await invoke<{ imported: string[] }>('voice_api_import_file', { path });
+      await refresh(); setSelectedId(result.imported[0] ?? null);
+      setNotice('นำเข้าแพ็ก local .gann แล้ว เลือก Equip เพื่อใช้งาน'); setErr(null);
+    } catch (e) { setErr(errMessage(e)); }
+    finally { setBusy(false); }
+  };
+
+  const importDirectory = async () => {
+    setBusy(true);
+    try {
+      const result = await invoke<{ imported: string[] }>('voice_api_import_directory', { directory: directory.trim() });
+      await refresh();
+      setSelectedId(result.imported[0] ?? null);
+      setNotice('นำเข้าแพ็กแล้ว เลือก Equip เพื่อใช้งาน');
+      setErr(null);
+    } catch (e) { setErr(errMessage(e)); }
+    finally { setBusy(false); }
+  };
 
   const equip = useCallback(async (packId: string) => {
     setBusy(true);
@@ -183,13 +220,13 @@ export default function VoiceInventory() {
   }, [selectedPack, previewOnOverlay]);
 
   const previewVrzoVariant = useCallback(async () => {
-    const variant = VRZO_CLIPS.find((item) => item.clipId === vrzoClip);
+    const variant = chosenVariant;
     if (!variant) return;
     try {
-      await invoke("preview_vrzo_banner_variant", { event: variant.event, clipId: variant.clipId });
+      await invoke("preview_vrzo_banner_variant", { event: variant.event, clipId: variant.clipId, packId: selectedPack?.id });
       setErr(null);
     } catch (e) { setErr(errMessage(e)); }
-  }, [vrzoClip]);
+  }, [chosenVariant, selectedPack?.id]);
 
   if (!state) {
     return (
@@ -211,12 +248,17 @@ export default function VoiceInventory() {
         </div>
         <div className="voice-inventory-actions">
 
+          <button className="voice-btn" onClick={() => void importContainer()} disabled={busy}>นำเข้า .gann</button>
           <button className="voice-btn" onClick={() => void refresh()} disabled={busy}>Rescan</button>
         </div>
       </header>
 
       {notice ? <div className="voice-toast ok">{notice}</div> : null}
       {err ? <div className="voice-toast err">{err}</div> : null}
+      {state.authoringEnabled && <div className="voice-inventory-actions">
+        <input aria-label="Announcer folder" placeholder="โฟลเดอร์แพ็ก announcer" value={directory} onChange={e => setDirectory(e.target.value)} style={{ flex: 1, background: C.bg, color: C.txt }} />
+        <button className="voice-btn" disabled={busy || !directory.trim()} onClick={() => void importDirectory()}>นำเข้าโฟลเดอร์</button>
+      </div>}
 
       {state.packs.length === 0 ? (
         <div className="voice-empty">
@@ -290,10 +332,10 @@ export default function VoiceInventory() {
                 </button>
               </div>
 
-              {selectedPack.id === 'pack_vrzo_20261028' && (
+              {(selectedPack.id === 'pack_vrzo_20261028' || idVariants.length > 0) && (
                 <div className="voice-detail-actions">
-                  <label>ทดลองแบนเนอร์ VRZO <select aria-label="VRZO variant" style={{ backgroundColor: C.bg, color: C.txt, colorScheme: 'dark' }} value={vrzoClip} onChange={(e) => setVrzoClip(e.target.value)}>
-                    {VRZO_CLIPS.map((item) => <option key={item.clipId} value={item.clipId} style={{ backgroundColor: C.bg, color: C.txt }}>{item.event} · {item.clipId}</option>)}
+                  <label>ทดลองแบนเนอร์ <select aria-label="VRZO variant" style={{ backgroundColor: C.bg, color: C.txt, colorScheme: 'dark' }} value={chosenVariant?.clipId ?? ''} onChange={(e) => setVrzoClip(e.target.value)}>
+                    {variants.map((item) => <option key={item.clipId} value={item.clipId} style={{ backgroundColor: C.bg, color: C.txt }}>{item.event} · {item.clipId}</option>)}
                   </select></label>
                   <button className="voice-btn" aria-label="Preview VRZO variant" onClick={() => void previewVrzoVariant()} disabled={!isEquipped}>ทดลองภาพและเสียง</button>
                 </div>

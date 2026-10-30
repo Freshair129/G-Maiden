@@ -9,6 +9,7 @@ const { handlers, invokeMock } = vi.hoisted(() => ({
   invokeMock: vi.fn().mockResolvedValue(undefined),
 }))
 vi.mock('@tauri-apps/api/core', () => ({ invoke: invokeMock }))
+vi.mock('../overlay/vrzoBannerVideo', () => ({ VrzoBannerVideo: () => null }))
 vi.mock('@tauri-apps/api/event', () => ({
   emit: vi.fn().mockResolvedValue(undefined),
   listen: vi.fn((name: string, handler: (event: { payload: unknown }) => void) => {

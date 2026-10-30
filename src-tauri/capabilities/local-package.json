@@ -1,0 +1,7 @@
+{
+  "$schema": "../gen/schemas/desktop-schema.json",
+  "identifier": "local-package",
+  "description": "Control can select a local .gann container for native validated import.",
+  "windows": ["control"],
+  "permissions": ["dialog:allow-open"]
+}

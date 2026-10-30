@@ -17,6 +17,7 @@ vi.mock('@tauri-apps/api/event', () => ({
   })),
 }))
 vi.mock('../overlay/FullOverlay', () => ({ FullOverlay: () => <output>overlay</output> }))
+vi.mock('../overlay/vrzoBannerVideo', () => ({ VrzoBannerVideo: () => null }))
 import { Overlay } from '../app/Overlay'
 
 let root: Root | null

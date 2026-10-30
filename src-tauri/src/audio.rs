@@ -9,8 +9,8 @@
 //! Both .wav and .mp3 work - rodio's Symphonia decodes both.
 //!
 //! OutputStream is !Sync, so we own it on a dedicated thread and communicate via
-//! a channel. Single-slot: Maiden never plays two clips at once; `cancel()`
-//! stops the current clip for Belief Revision.
+//! a channel. Announcer replacements permit one150ms outgoing fade;
+//! critical/non-announcer interrupts and `cancel()` stop stale sources.
 
 use std::fs;
 use std::io::BufReader;
@@ -35,6 +35,8 @@ static PLAYING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::n
 mod preparation;
 #[path = "audio_render.rs"]
 mod render;
+#[path = "audio_fade.rs"]
+mod fade;
 
 pub(crate) fn output_admission() -> Option<std::sync::MutexGuard<'static, ()>> {
     OUTPUT_ADMISSION.try_enter()
@@ -169,6 +171,18 @@ pub(crate) fn should_cancel_current(current: Priority, ceiling: Priority) -> boo
     current <= ceiling
 }
 
+fn should_fade_announcer(previous: bool, incoming: bool, priority: Priority) -> bool {
+    previous && incoming && priority != Priority::Critical
+}
+
+type AnnouncerScope = (u64, u64, bool);
+type RetiringVoice = (Sink, Instant, Priority, AnnouncerScope);
+
+fn announcer_scope_current((revision, epoch, preview): AnnouncerScope) -> bool {
+    crate::voice_api::announcer_revision_current(revision)
+        && (preview || (crate::runtime::announcer_enabled() && crate::runtime::is_current_active_session_epoch(epoch)))
+}
+
 fn cached_critical_path(cached: Option<PathBuf>, prepared: Option<PathBuf>) -> Option<PathBuf> {
     cached.or(prepared)
 }
@@ -231,16 +245,34 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
 
     AUDIO_READY.store(true, Ordering::Release);
     let mut sink: Option<Sink> = None;
+    let mut current_fade: Option<Arc<std::sync::atomic::AtomicBool>> = None;
+    let mut current_scope = None;
+    let mut retiring: Option<RetiringVoice> = None;
     let mut current_priority = Priority::Cosmetic;
     let mut trace = None;
     let mut lifecycle =
         audio_lifecycle::Lifecycle::new(lifecycle_current().clone(), audio_generation().clone());
 
     loop {
+        if retiring.as_ref().is_some_and(|(s, started, _, scope)| s.empty()
+            || started.elapsed() >= Duration::from_millis(fade::FADE_MS + 50) || !announcer_scope_current(*scope)) {
+            if let Some((s, _, _, _)) = retiring.take() { s.stop(); }
+        }
+        if current_scope.is_some_and(|scope| !announcer_scope_current(scope)) {
+            if let Some(s) = sink.take() { s.stop(); }
+            lifecycle.finish(PlaybackLifecyclePhase::Cancelled);
+            finish_trace(&mut trace, "scope_cancelled");
+            current_fade = None; current_scope = None;
+            current_priority = Priority::Cosmetic;
+            ACTIVE_PRIORITY.store(Priority::Cosmetic.as_u8(), Ordering::Relaxed);
+            PLAYING.store(false, Ordering::Release);
+        }
         if sink.as_ref().is_some_and(|s| s.empty()) {
             lifecycle.finish(PlaybackLifecyclePhase::Completed);
             finish_trace(&mut trace, "completed");
             sink = None;
+            current_fade = None;
+            current_scope = None;
             current_priority = Priority::Cosmetic;
             ACTIVE_PRIORITY.store(Priority::Cosmetic.as_u8(), Ordering::Relaxed);
             PLAYING.store(false, Ordering::Release);
@@ -275,23 +307,31 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                 unreachable!("playback command is normalized above")
             }
             Cmd::StopAtMost(ceiling) => {
+                if retiring.as_ref().is_some_and(|(_, _, priority, _)| should_cancel_current(*priority, ceiling)) {
+                    if let Some((s, _, _, _)) = retiring.take() { s.stop(); }
+                }
                 if should_cancel_current(current_priority, ceiling) {
                     if let Some(s) = sink.take() {
                         s.stop();
                         finish_trace(&mut trace, "cancelled");
                     }
                     lifecycle.finish(PlaybackLifecyclePhase::Cancelled);
+                    current_fade = None;
+                    current_scope = None;
                     current_priority = Priority::Cosmetic;
                     ACTIVE_PRIORITY.store(Priority::Cosmetic.as_u8(), Ordering::Relaxed);
                     PLAYING.store(false, Ordering::Release);
                 }
             }
             Cmd::Stop => {
+                if let Some((s, _, _, _)) = retiring.take() { s.stop(); }
                 if let Some(s) = sink.take() {
                     s.stop();
                     finish_trace(&mut trace, "cancelled");
                 }
                 lifecycle.finish(PlaybackLifecyclePhase::Cancelled);
+                current_fade = None;
+                current_scope = None;
                 current_priority = Priority::Cosmetic;
                 ACTIVE_PRIORITY.store(Priority::Cosmetic.as_u8(), Ordering::Relaxed);
                 PLAYING.store(false, Ordering::Release);
@@ -300,8 +340,12 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                 if let Some(s) = &sink {
                     s.set_volume(vol);
                 }
+                if let Some((s, _, _, _)) = &retiring { s.set_volume(vol); }
             }
             Cmd::Play(path, priority) => {
+                let incoming_announcer = observation.as_ref().is_some_and(|o| o.lifecycle.is_some());
+                let incoming_scope = observation.as_ref().and_then(|o| o.lifecycle.as_ref()).and_then(|o| o.visual_scope);
+                let next_fade = incoming_announcer.then(|| Arc::new(std::sync::atomic::AtomicBool::new(false)));
                 if critical
                     .as_ref()
                     .is_some_and(|(deadline, _)| Instant::now() >= *deadline)
@@ -339,6 +383,9 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                 if !source_has_frames(&source) {
                     continue;
                 }
+                let source: Box<dyn rodio::Source<Item = i16> + Send> = if let Some(control) = &next_fade {
+                    Box::new(fade::Fade::new(source, control.clone()))
+                } else { source };
                 let Some(_output_guard) = output_admission() else {
                     continue;
                 };
@@ -359,6 +406,7 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                             continue;
                         }
                         let mut previous_trace = None;
+                        let mut retired_previous = false;
                         let committed = attempt_commit_if(
                             || fence.as_ref().is_none_or(|fence| fence.is_current()),
                             |commit| {
@@ -373,10 +421,21 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                                     if priority == Priority::Critical {
                                         preparation::cancel_up_to(Priority::Normal);
                                     }
+                                    if let Some((s, _, _, _)) = retiring.take() { s.stop(); }
                                     if let Some(previous) = sink.take() {
                                         previous_trace = trace.take();
-                                        previous.stop();
+                                        if should_fade_announcer(current_fade.is_some(), incoming_announcer, priority)
+                                            && incoming_scope.is_some() && current_scope == incoming_scope {
+                                            if let Some(control) = current_fade.take() {
+                                                control.store(true, Ordering::Release);
+                                                retiring = Some((previous, Instant::now(), current_priority, current_scope.expect("matching announcer scope")));
+                                                retired_previous = true;
+                                                eprintln!("[G-Maiden audio] phase=announcer_retiring fade_ms={} incoming_delay_ms=0 incoming_rate=1", fade::FADE_MS);
+                                            }
+                                        } else { previous.stop(); }
                                     }
+                                    current_fade = next_fade;
+                                    current_scope = incoming_scope;
                                     let render_stats = Arc::new(render::Stats::default());
                                     trace = Some(PlaybackTrace {
                                         path: path.clone(),
@@ -396,7 +455,7 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                         drop(_output_guard);
                         if committed {
                             if previous_trace.is_some() {
-                                lifecycle.finish(PlaybackLifecyclePhase::Preempted);
+                                lifecycle.finish(if retired_previous { PlaybackLifecyclePhase::Retiring } else { PlaybackLifecyclePhase::Preempted });
                             }
                             let observer = observation
                                 .as_mut()
@@ -848,6 +907,13 @@ pub(crate) fn prepared_wav_has_frames(path: &std::path::Path) -> bool {
 
 #[cfg(test)]
 mod tests {
+    #[test]
+    fn crossfade_is_only_for_two_announcers_and_never_critical_warnings() {
+        assert!(super::should_fade_announcer(true, true, super::Priority::Cosmetic));
+        assert!(!super::should_fade_announcer(true, true, super::Priority::Critical));
+        assert!(!super::should_fade_announcer(false, true, super::Priority::Cosmetic));
+        assert!(!super::should_fade_announcer(true, false, super::Priority::Normal));
+    }
     use super::*;
 
     #[test]

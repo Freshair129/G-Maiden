@@ -9,6 +9,7 @@ pub enum PlaybackLifecyclePhase {
     Completed,
     Cancelled,
     Preempted,
+    Retiring,
 }
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PlaybackLifecycleEvent {
@@ -20,6 +21,7 @@ pub struct PlaybackLifecycleEvent {
 }
 pub struct PlaybackLifecycleObserver {
     pub(crate) mixed: Option<crate::vrzo_banner::MixedSelection>,
+    pub(crate) visual_scope: Option<(u64, u64, bool)>,
     token: u64,
     tx: mpsc::SyncSender<PlaybackLifecycleEvent>,
 }
@@ -29,6 +31,7 @@ impl PlaybackLifecycleObserver {
             token,
             tx,
             mixed: None,
+            visual_scope: None,
         }
     }
 }

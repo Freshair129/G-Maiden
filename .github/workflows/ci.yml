@@ -75,7 +75,9 @@ jobs:
         run: pnpm -C src lint --max-warnings=0
 
       - name: Rust tests
-        run: cargo test --manifest-path src-tauri/Cargo.toml --locked
+        run: |
+          cargo test --manifest-path src-tauri/gann-package/Cargo.toml --locked
+          cargo test --manifest-path src-tauri/Cargo.toml --locked
 
       - name: Frontend tests
         run: pnpm -C src test
