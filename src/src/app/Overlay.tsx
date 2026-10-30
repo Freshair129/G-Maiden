@@ -931,7 +931,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
               <img
                 src={packBanner.url}
                 alt={packBanner.text}
-                style={{ display: 'block', maxWidth: 420, maxHeight: 150, width: 'auto', height: 'auto', objectFit: 'contain' }}
+                style={{ display: 'block', maxWidth: 300, maxHeight: 108, width: 'auto', height: 'auto', objectFit: 'contain', borderRadius: 12 }}
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
               />
             )}
@@ -950,8 +950,8 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
                 the whole banner when the pack maps no image for this event. */}
             {packBanner.clip && (
               <div style={{
-                display: 'flex', flexDirection: 'column', gap: 4, alignItems: 'center',
-                padding: packBanner.url ? '6px 10px 8px' : '10px 14px',
+                display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center',
+                padding: packBanner.url ? '4px 6px 5px' : '6px 8px',
                 background: 'rgba(12,14,20,0.82)', lineHeight: 1.25,
               }}>
                 {!packBanner.url && (packBanner.text || packBanner.thai) && (
@@ -964,7 +964,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
                     )}
                   </div>
                 )}
-                <VoiceWave key={packBanner.clip} clip={packBanner.clip} />
+                <VoiceWave key={packBanner.clip} clip={packBanner.clip} width={220} />
               </div>
             )}
           </div>
@@ -972,9 +972,9 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
         {s.killVisuals && killBanner && !packBanner && (
           <div className={killBanner.phase === 'exit' ? 'gm-kill-exit' : 'gm-kill'} style={killBannerStyle}>
             {/* Hero portrait circle + animated red X */}
-            <div style={{ position: 'relative', width: 56, height: 56, flexShrink: 0 }}>
+            <div style={{ position: 'relative', width: 44, height: 44, flexShrink: 0 }}>
               <div style={{
-                width: 56, height: 56, borderRadius: '50%', overflow: 'hidden',
+                width: 44, height: 44, borderRadius: '50%', overflow: 'hidden',
                 background: 'rgba(18,20,28,0.9)', border: '2px solid rgba(91,227,167,0.6)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
               }}>
@@ -989,7 +989,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
                 )}
               </div>
               <svg className="gm-kill-cross" viewBox="0 0 56 56" style={{
-                position: 'absolute', inset: 0, width: 56, height: 56, pointerEvents: 'none',
+                position: 'absolute', inset: 0, width: 44, height: 44, pointerEvents: 'none',
               }}>
                 <line x1="12" y1="12" x2="44" y2="44" stroke="#ff4455" strokeWidth="3.5" strokeLinecap="round" />
                 <line x1="44" y1="12" x2="12" y2="44" stroke="#ff4455" strokeWidth="3.5" strokeLinecap="round" />
@@ -1007,7 +1007,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
             {/* YOU : FOE score */}
             <div style={{
               background: 'rgba(143,212,255,0.06)', border: '1px solid rgba(143,212,255,0.18)',
-              borderRadius: 10, padding: '5px 16px', textAlign: 'center', flexShrink: 0,
+              borderRadius: 8, padding: '4px 8px', textAlign: 'center', flexShrink: 0,
             }}>
               <div style={{ fontSize: 20, fontWeight: 800, whiteSpace: 'nowrap', letterSpacing: 1 }}>
                 <span style={{ color: C.ok }}>{t.kills}</span>

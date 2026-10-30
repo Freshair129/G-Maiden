@@ -23,7 +23,7 @@ function validWaveform(value: unknown): value is Waveform {
       && frame.every((bin) => Number.isInteger(bin) && bin >= 0 && bin <= 255))
 }
 
-export const VoiceWave: React.FC<{ clip: string }> = ({ clip }) => {
+export const VoiceWave: React.FC<{ clip: string; width?: number }> = ({ clip, width = 280 }) => {
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
   useEffect(() => {
     const started = performance.now()
@@ -62,5 +62,5 @@ export const VoiceWave: React.FC<{ clip: string }> = ({ clip }) => {
       clear()
     }
   }, [clip])
-  return <canvas ref={canvasRef} width={280} height={38} style={{ display: 'block', width: 280, height: 38 }} />
+  return <canvas ref={canvasRef} width={width} height={38} style={{ display: 'block', width, height: 38 }} />
 }

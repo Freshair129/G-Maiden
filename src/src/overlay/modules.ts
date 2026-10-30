@@ -108,7 +108,7 @@ export const MODULE_BOX: Record<ModuleId, { w: number; h: number }> = {
   advice: { w: 420, h: 120 },
   buyback: { w: 420, h: 120 },
   missing: { w: 300, h: 84 },
-  banner: { w: 420, h: 210 },    // art plus caption / waveform
+  banner: { w: 320, h: 190 },    // compact art frame; captions keep their type size and may overflow
   lowhp: { w: 300, h: 38 },      // pad 9/22, one line
   vol: { w: 190, h: 34 },        // icon + 80px bar + 32px readout
   standby: { w: 150, h: 50 },    // dot + two text lines
