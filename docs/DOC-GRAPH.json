@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T08:53:01.662Z",
+  "generatedAt": "2026-10-30T10:03:04.099Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -10618,7 +10618,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-30T08:53:10.967Z",
+    "generatedAt": "2026-10-30T10:03:39.419Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

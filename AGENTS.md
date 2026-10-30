@@ -2,8 +2,8 @@
 title: "AGENTS.md"
 doc_id: "agents"
 status: active
-version: "0.4.7"
-updated: "2026-10-29"
+version: "0.4.8"
+updated: "2026-10-30"
 owner: "G-Maiden"
 ---
 # AGENTS.md
@@ -218,6 +218,22 @@ detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`)
 ### Custom Agent Skills & SOP
 We maintain custom AI skills under `.agents/skills/`.
 
+### UI dimensional drawing reference
+
+- Start with [the UI technical drawing atlas](docs/design-system/13-ui-technical-drawing-atlas.md)
+  for the 36-sheet implementation snapshot: all seven main pages, sub-tabs, settings categories,
+  menus, the fullscreen overlay editor, and the in-game overlay's 19 modules / 11 HUD keep-outs.
+  [Open the offline HTML viewer](docs/design-system/assets/ui-drawing-atlas-20261030/ui-technical-drawings.html)
+  or use its component registers and SVG exports.
+- This atlas records source `e8bd6695c57fe842569dfe9d419528d13adda06e`, not a guarantee that the
+  current checkout or a separately built candidate has the same geometry. Check its source hashes
+  against the implementation before reusing dimensions. Product/design authority remains
+  `docs/product/mvp-decisions.md` and the canonical layout/component/HUD documents linked by the atlas.
+- Use the `dimensional-drawing` skill when generating or refreshing these sheets. Measure the
+  rendered implementation, retain variable-based dimensions and neutral slots, mark unknown values
+  `[TBD]`, and distinguish source schematics / layout fixtures from measured browser states.
+  Browser drawing checks do not establish native, authenticated-flow, gameplay, audio or performance acceptance.
+
 
 ### General
 - Specs (PRD, SRS) are in **Thai**. `docs/product/mvp-decisions.md` governs accepted MVP scope,
@@ -304,11 +320,7 @@ node tools/doc-graph/ci-gate.mjs
   **with** the documentation change; a PR that leaves them stale fails.
 - A new or edited document needs frontmatter with `title`, `doc_id`, `status`, `version`,
   `updated`, `owner`; `status` from `draft | active | accepted | stable | superseded | historical`;
-  and `version` equal to the last row of that document's own `### VRZO v8 runtime correction
-
-VRZO v8 verifies the selected original WAV snapshot and the bundled mixed WAV snapshot separately, then admits exactly one mono48k PCM16 source through rodio. Mixed bytes must match their catalog hash, format and original duration; failure plays original once, suppresses the v8 visual and logs the reason. Lifecycle carries distinct original/played hashes. Silent video is cancelled even during its natural-completion tail. Native GSI owns gameplay pack events when announcer is enabled; Overlay does not issue a second persona clip. Personal events require player SteamID agreement with the active local Steam login (read-only HKCU ActiveProcess.ActiveUser; provider SteamID is not required); unknown identity is silent, owner changes reseed, and aggregate kill jumps do not establish multi-kill timing. Native acoustic/sync and false-event match acceptance remain unverified.
-
-## Changelog` table — that heading
+  and `version` equal to the last row of that document's own `## Changelog` table — that heading
   **exactly**, since a numbered variant like `## 8. Changelog` is not matched.
 
 ---
@@ -398,6 +410,10 @@ removed in Vitest 4, where it fails as a reporter-load stack trace that looks no
 flag.
 
 ---
+
+## VRZO v8 runtime correction
+
+VRZO v8 verifies the selected original WAV snapshot and the bundled mixed WAV snapshot separately, then admits exactly one mono48k PCM16 source through rodio. Mixed bytes must match their catalog hash, format and original duration; failure plays original once, suppresses the v8 visual and logs the reason. Lifecycle carries distinct original/played hashes. Silent video is cancelled even during its natural-completion tail. Native GSI owns gameplay pack events when announcer is enabled; Overlay does not issue a second persona clip. Personal events require player SteamID agreement with the active local Steam login (read-only HKCU ActiveProcess.ActiveUser; provider SteamID is not required); unknown identity is silent, owner changes reseed, and aggregate kill jumps do not establish multi-kill timing. Native acoustic/sync and false-event match acceptance remain unverified.
 
 ## Current State (v0.13.2 shipping)
 
@@ -509,3 +525,4 @@ These are **functional requirements**, not flavor text. Maiden must:
 | 0.4.5 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |
 | 0.4.6 | 2026-10-29 | Document VRZO decoded-clip visual identity, lifecycle, preview, pack trust and remaining native acceptance. |
 | 0.4.7 | 2026-10-29 | Record verified v8 mix, single audio owner, personal-event identity and pending native acceptance. |
+| 0.4.8 | 2026-10-30 | Index the 36-sheet UI drawing atlas and its snapshot/evidence rules; restore the changelog-heading guidance and move the existing VRZO v8 note into its own section. |
