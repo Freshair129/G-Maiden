@@ -52,7 +52,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' http://localhost:* ws://localhost:*; frame-src 'none'; connect-src 'self' http://localhost:* ws://localhost:* https://api.opendota.com https://wsseitulmcgnolgsrxgh.supabase.co; script-src 'self' 'wasm-unsafe-eval' http://localhost:*; img-src 'self' data: https://cdn.cloudflare.steamstatic.com; media-src 'self' data:"
+      "csp": "default-src 'self' http://localhost:* ws://localhost:*; frame-src 'none'; connect-src 'self' http://localhost:* ws://localhost:* https://api.opendota.com https://wsseitulmcgnolgsrxgh.supabase.co; script-src 'self' 'wasm-unsafe-eval' http://localhost:*; img-src 'self' data: https://cdn.cloudflare.steamstatic.com; media-src 'self' data: http://g-announcer-video.localhost g-announcer-video:"
     }
   },
   "bundle": {

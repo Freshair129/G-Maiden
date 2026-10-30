@@ -105,6 +105,7 @@ pub struct VoiceGroup {
 #[derive(Serialize)]
 #[serde(rename_all = "camelCase")]
 pub struct VoiceState {
+    pub(crate) authoring_enabled: bool,
     pub(crate) root_dir: String,
     pub(crate) packs_dir: String,
     pub(crate) cache_dir: String,

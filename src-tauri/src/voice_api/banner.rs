@@ -113,13 +113,13 @@ pub fn preview_clip(pack_id: &str, event: &str) -> Option<PathBuf> {
 
 /// Resolve one named variant from the already admitted pack manifest.
 pub(crate) fn preview_variant(pack_id: &str, event: &str, clip_id: &str) -> Option<PathBuf> {
-    if !super::commands::is_store_installed(pack_id)
+    if !super::commands::is_pack_available(pack_id)
         || !event_ids().any(|id| id == event)
         || clip_id.is_empty()
         || clip_id.len() > 64
         || !clip_id
             .bytes()
-            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_')
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_' || c == b'-')
     {
         return None;
     }
@@ -138,8 +138,8 @@ pub(crate) fn preview_variant(pack_id: &str, event: &str, clip_id: &str) -> Opti
 }
 
 pub fn preview_audio_clip(pack_id: &str, event: &str) -> Result<PathBuf, String> {
-    if !super::commands::is_store_installed(pack_id) {
-        return Err("ดูตัวอย่างได้เฉพาะแพ็กที่ติดตั้งจาก Store".into());
+    if !super::commands::is_pack_available(pack_id) {
+        return Err("ดูตัวอย่างได้เฉพาะแพ็กที่ติดตั้งแล้ว".into());
     }
     if !event_ids().any(|id| id == event) {
         return Err("ไม่พบเหตุการณ์เสียงนี้".into());
@@ -233,8 +233,10 @@ pub fn activate_if_exists(pack_id: &str) -> Result<(), String> {
     if id.is_empty() {
         return Err("pack id is required".into());
     }
-    if !packs_dir().join(&id).join("manifest.json").is_file() {
-        return Err(format!("pack not found: {id}"));
+    let dir = packs_dir().join(&id);
+    read_manifest(&dir)?;
+    if super::id_manifest::manifest_path(&dir)?.is_some() {
+        super::id_manifest::read(&dir)?.admit(&dir)?;
     }
     write_active_pack_id(&id)
 }

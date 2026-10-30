@@ -1,22 +1,31 @@
 import { useEffect, useRef } from 'react'
+import { invoke } from '@tauri-apps/api/core'
+import { listen } from '@tauri-apps/api/event'
 import type { ModuleCfg } from './modules'
 import type { VrzoVisual } from './vrzoBanner'
+import { VrzoVideoPool } from './vrzoVideoPool'
 
-export function VrzoBannerVideo({ visual, layout, fail }: { visual: VrzoVisual; layout: ModuleCfg; fail: (id: string) => void }) {
-  const ref = useRef<HTMLVideoElement>(null)
+export function VrzoBannerVideo({ visual, layout, fail }: { visual: VrzoVisual | null; layout: ModuleCfg; fail: (id: string) => void }) {
+  const host = useRef<HTMLDivElement>(null)
+  const pool = useRef<VrzoVideoPool | null>(null)
+  const failRef = useRef(fail)
+  failRef.current = fail
   useEffect(() => {
-    const video = ref.current
-    if (!video) return
-    video.muted = true
-    void video.play().catch(() => {
-      console.error('[G-Maiden] VRZO visual playback unavailable')
-      fail(visual.id)
+    if (!host.current) return
+    const current = new VrzoVideoPool(host.current, id => failRef.current(id), receipt => {
+      void invoke('record_announcer_visual', { ...receipt }).catch(() => {})
     })
-    return () => { video.pause(); video.removeAttribute('src'); video.load() }
-  }, [visual.id, fail])
-  return <video ref={ref} key={visual.id} src={visual.url} muted playsInline autoPlay preload="auto" onEnded={() => fail(visual.id)}
-    onError={() => { console.error('[G-Maiden] VRZO visual decoding unavailable'); fail(visual.id) }}
-    style={{ position: 'fixed', left: `${layout.x}%`, top: `${layout.y}%`, width: 420,
-      maxWidth: '40vw', transform: `translate(-50%, -50%) scale(${layout.scale})`,
-      pointerEvents: 'none', zIndex: 40 }} aria-label="VRZO announcer visual" />
+    pool.current = current
+    let active = true
+    const subscription = listen<unknown>('announcer-visual-warm', ({ payload }) => { if (active) current.candidates(payload) })
+    void subscription.then(() => {
+      if (active) void invoke<unknown>('announcer_visual_warm_candidates').then(batch => { if (active) current.candidates(batch) }).catch(() => {})
+    }).catch(() => {})
+    return () => {
+      active = false; current.dispose(); pool.current = null
+      void subscription.then(unlisten => unlisten()).catch(() => {})
+    }
+  }, [])
+  useEffect(() => { pool.current?.show(visual, layout) }, [visual, layout])
+  return <div ref={host} data-vrzo-video-pool="" />
 }

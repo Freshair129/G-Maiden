@@ -1459,11 +1459,22 @@ dependencies = [
 ]
 
 [[package]]
+name = "g-ann-package"
+version = "0.1.0"
+dependencies = [
+ "ring",
+ "serde",
+ "serde_json",
+ "zip",
+]
+
+[[package]]
 name = "g-maiden"
 version = "0.13.4"
 dependencies = [
  "axum",
  "base64 0.22.1",
+ "g-ann-package",
  "geo-types",
  "image",
  "pure-onnx-ocr-sync",

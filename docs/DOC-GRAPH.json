@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T10:03:04.099Z",
+  "generatedAt": "2026-10-30T13:14:52.918Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -835,6 +835,13 @@
       "domain": "account-identity-security"
     },
     {
+      "id": "docs/operations/announcer-id-filesystem.md",
+      "type": "doc",
+      "path": "docs/operations/announcer-id-filesystem.md",
+      "title": "Announcer ID filesystem packages",
+      "status": "active"
+    },
+    {
       "id": "docs/operations/auth-failure-remediation-proposal.md",
       "type": "doc",
       "path": "docs/operations/auth-failure-remediation-proposal.md",
@@ -1020,6 +1027,13 @@
       "id": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md",
       "type": "doc",
       "path": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-10-29-announcer-id-filesystem.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-10-29-announcer-id-filesystem.md",
+      "title": "G-Announcer ID filesystem integration",
+      "status": "active"
     },
     {
       "id": "docs/superpowers/plans/2026-10-29-announcer-playback-buffering.md",
@@ -10618,7 +10632,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-30T10:03:39.419Z",
+    "generatedAt": "2026-10-30T13:15:08.401Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

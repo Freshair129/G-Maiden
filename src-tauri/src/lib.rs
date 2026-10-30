@@ -724,6 +724,33 @@ fn voice_api_state() -> Result<voice_api::VoiceState, String> {
 }
 
 #[tauri::command]
+async fn voice_api_import_directory(window: tauri::WebviewWindow, directory: String) -> Result<voice_api::ImportResult, String> {
+    if window.label() != "control" { return Err("Import is restricted to Control".into()); }
+    let app = window.app_handle();
+    let bootstrap = app.try_state::<OverlayBootstrap>().ok_or("Control bootstrap unavailable")?;
+    let root = bootstrap.state.lock().map_err(|_| "Control bootstrap unavailable")?.root();
+    if !root.trusts(window.url().map_err(|_| "Control URL unavailable")?.as_str()) {
+        return Err("Untrusted import origin".into());
+    }
+    tauri::async_runtime::spawn_blocking(move || voice_api::import_directory(std::path::Path::new(&directory)))
+        .await.map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn voice_api_import_file(window: tauri::WebviewWindow, path: String) -> Result<voice_api::ImportResult, String> {
+    if window.label() != "control" { return Err("Import is restricted to Control".into()); }
+    let app = window.app_handle();
+    let bootstrap = app.try_state::<OverlayBootstrap>().ok_or("Control bootstrap unavailable")?;
+    let root = bootstrap.state.lock().map_err(|_| "Control bootstrap unavailable")?.root();
+    if !root.trusts(window.url().map_err(|_| "Control URL unavailable")?.as_str()) {
+        return Err("Untrusted import origin".into());
+    }
+    tauri::async_runtime::spawn_blocking(move || voice_api::import_file(std::path::Path::new(&path)))
+        .await.map_err(|e| e.to_string())?
+}
+
+
+#[tauri::command]
 async fn voice_api_install_store_pack(
     item_id: String,
     access_token: String,
@@ -736,11 +763,15 @@ async fn voice_api_install_store_pack(
 }
 
 #[tauri::command]
-fn voice_api_action(
+async fn voice_api_action(
     action: String,
     pack_id: Option<String>,
 ) -> Result<voice_api::VoiceState, String> {
-    voice_api::action(&action, pack_id.as_deref())
+    static ACTIONS: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+    let _order = ACTIONS.lock().await;
+    tauri::async_runtime::spawn_blocking(move || voice_api::action(&action, pack_id.as_deref()))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 #[tauri::command]
@@ -787,6 +818,49 @@ fn voice_api_update_pack(
 /// Preview an announcer event only for an installed Store pack or the bundled default.
 static VRZO_PREVIEW_SERIAL: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
 
+/// Local decoder evidence only; never game data or a network telemetry stream.
+#[tauri::command]
+#[allow(clippy::too_many_arguments)]
+fn record_announcer_visual(window: tauri::WebviewWindow, playback_id: String, reason: String,
+    frames: u32, dropped: u32, first_frame_ms: f64, elapsed_ms: f64, media_seconds: f64,
+    warmed: Option<bool>, duration_seconds: Option<f64>, waiting: Option<u32>) -> Result<(), String> {
+    let bootstrap = window.state::<OverlayBootstrap>();
+    let root = bootstrap.state.lock().map_err(|_| "Overlay bootstrap unavailable")?.root();
+    if window.label() != "overlay" || !root.trusts(window.url().map_err(|_| "Overlay URL unavailable")?.as_str())
+        || playback_id.parse::<u64>().is_err() || !matches!(reason.as_str(), "ended" | "cleared" | "error")
+        || frames > 10_000 || dropped > frames || !(-1.0..=30_000.0).contains(&first_frame_ms)
+        || !(0.0..=60_000.0).contains(&elapsed_ms) || !(0.0..=30.0).contains(&media_seconds)
+        || duration_seconds.is_some_and(|n| !(0.0..=30.0).contains(&n)) || waiting.is_some_and(|n| n > 10_000) {
+        return Err("Invalid visual receipt".into());
+    }
+    eprintln!("[G-BannerVisual] playback={playback_id} reason={reason} frames={frames} dropped={dropped} first_frame_ms={first_frame_ms:.1} elapsed_ms={elapsed_ms:.1} media_seconds={media_seconds:.3} warmed={} duration_seconds={:.3} waiting={}", warmed.unwrap_or(false), duration_seconds.unwrap_or(0.0), waiting.unwrap_or(0));
+    Ok(())
+}
+
+fn trusted_announcer_surface(window: &tauri::WebviewWindow, label: &str) -> Result<(), String> {
+    if window.label() != label { return Err("Restricted announcer surface".into()); }
+    let bootstrap = window.state::<OverlayBootstrap>();
+    let root = bootstrap.state.lock().map_err(|_| "Overlay bootstrap unavailable")?.root();
+    if !root.trusts(window.url().map_err(|_| "Surface URL unavailable")?.as_str()) {
+        return Err("Untrusted announcer origin".into());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn announcer_visual_warm_candidates(window: tauri::WebviewWindow) -> Result<voice_api::visual_warm::Candidates, String> {
+    trusted_announcer_surface(&window, "overlay")?;
+    Ok(voice_api::visual_warm_candidates())
+}
+
+#[tauri::command]
+async fn warm_announcer_visual_variant(window: tauri::WebviewWindow, pack_id: String, event: String, clip_id: String) -> Result<(), String> {
+    trusted_announcer_surface(&window, "control")?;
+    if pack_id.len() > 96 || event.len() > 64 || clip_id.len() > 96 { return Err("Invalid warm hint".into()); }
+    tauri::async_runtime::spawn_blocking(move || voice_api::warm_announcer_variant(&pack_id, &event, &clip_id))
+        .await.map_err(|e| e.to_string())?
+}
+
 /// Audition the exact VRZO variant through the same audio admission lifecycle.
 #[tauri::command]
 async fn preview_vrzo_banner_variant(
@@ -794,6 +868,7 @@ async fn preview_vrzo_banner_variant(
     window: tauri::WebviewWindow,
     event: String,
     clip_id: String,
+    pack_id: Option<String>,
 ) -> Result<(), String> {
     use std::sync::atomic::Ordering;
     if window.label() != "control" {
@@ -820,15 +895,15 @@ async fn preview_vrzo_banner_variant(
         .wrapping_add(1);
     let requested = std::time::Instant::now();
     tauri::async_runtime::spawn_blocking(move || {
-        let pack = "pack_vrzo_20261028";
+        let pack = pack_id.as_deref().unwrap_or("pack_vrzo_20261028");
         let path = voice_api::preview_variant(pack, &event, &clip_id)
             .ok_or_else(|| "ไม่พบคลิป VRZO ที่ติดตั้งสำหรับอีเวนต์นี้".to_string())?;
-        if vrzo_banner::resolve_clip_id(pack, &event, &path).as_deref() != Some(clip_id.as_str()) {
-            return Err("คลิป VRZO ไม่ตรงกับชุดแบนเนอร์".into());
-        }
         audio::validate_clip(&path)?;
         let selected = voice_api::select_announcer_path(pack, &event, &path)
             .ok_or("กรุณาเลือก VRZO เป็นแพ็กที่ใช้งานก่อน")?;
+        if selected.pair.is_none() && vrzo_banner::resolve_clip_id(pack, &event, &path).as_deref() != Some(clip_id.as_str()) {
+            return Err("คลิปไม่ตรงกับชุดแบนเนอร์".into());
+        }
         let scope_selected = selected.clone();
         let scope_event = event.clone();
         let scope = std::sync::Arc::new(move || {
@@ -887,8 +962,8 @@ async fn preview_announcer_event(
     };
     let requested = std::time::Instant::now();
     tauri::async_runtime::spawn_blocking(move || {
-        if !voice_api::is_store_installed(&pack_id) {
-            return Err("ดูตัวอย่างได้เฉพาะแพ็กที่ติดตั้งจาก Store".into());
+        if !voice_api::is_pack_available(&pack_id) {
+            return Err("ดูตัวอย่างได้เฉพาะแพ็กที่ติดตั้งแล้ว".into());
         }
         let clip = voice_api::preview_clip(&pack_id, &event)
             .ok_or_else(|| "เหตุการณ์นี้ไม่มีไฟล์เสียงที่ใช้ได้".to_string())?;
@@ -1485,6 +1560,9 @@ pub fn run() {
     static MUTED_VOL: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
 
     tauri::Builder::default()
+        .register_asynchronous_uri_scheme_protocol("g-announcer-video", |_ctx, request, responder| {
+            tauri::async_runtime::spawn_blocking(move || responder.respond(voice_api::id_video::response(request)));
+        })
         .manage(PendingUpdate::default())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
@@ -1566,6 +1644,8 @@ pub fn run() {
             set_telemetry_source,
             voice_cache_status,
             voice_api_state,
+            voice_api_import_directory,
+            voice_api_import_file,
             voice_api_install_store_pack,
             voice_api_action,
             voice_api_create_template,
@@ -1575,6 +1655,9 @@ pub fn run() {
             voice_api_update_pack,
             preview_announcer_event,
             preview_vrzo_banner_variant,
+            record_announcer_visual,
+            announcer_visual_warm_candidates,
+            warm_announcer_visual_variant,
             read_audio_waveform,
             preview_voice_event_audio,
             list_event_clips,
@@ -1625,6 +1708,7 @@ pub fn run() {
             // cold-cache resolution cost on the first gank alert of a new
             // session. Cheap (one manifest read+parse) and infallible — see
             // `voice_api::pack_io::rebuild_resolved_cache`.
+            voice_api::visual_warm::install(app.handle().clone());
             voice_api::rebuild_resolved_cache();
 
             // Audit H9: prewarm G-Signal's fixed TTS fallback lines to WAV so

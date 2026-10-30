@@ -620,6 +620,28 @@ fn build_test_zip(entries: &[(&str, &[u8])]) -> Vec<u8> {
 }
 
 #[test]
+fn archive_import_cannot_bypass_id_admission_or_overwrite_id_destination() {
+    let root = temp_root("id-archive-boundary");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    let id = "ann_c4d92f17-167a-504b-9393-64fd959981cd";
+    let dir = root.join("packs").join(id);
+    fs::create_dir_all(&dir).unwrap();
+    let name = format!("{id}.json");
+    fs::write(dir.join(&name), b"KEEP existing ID package").unwrap();
+    write_active_pack_id(DEFAULT_PACK_ID).unwrap();
+    let manifest = serde_json::to_vec(&Manifest { id: id.into(), ..Default::default() }).unwrap();
+    let mixed_archive = build_test_zip(&[("manifest.json", &manifest), (&name, b"{}")]);
+    let error = super::import_archive("id.zip", &mixed_archive).err().unwrap();
+    assert!(error.contains("โฟลเดอร์"));
+    let legacy_archive = build_test_zip(&[("manifest.json", &manifest)]);
+    let error = super::import_archive("legacy.zip", &legacy_archive).err().unwrap();
+    assert!(error.contains("เขียนทับ"));
+    assert_eq!(fs::read(dir.join(name)).unwrap(), b"KEEP existing ID package");
+    assert_eq!(super::pack_io::read_active_pack_id().as_deref(), Some(DEFAULT_PACK_ID));
+}
+
+#[test]
 fn extract_pack_zip_refuses_traversal_entry_and_writes_nothing() {
     let root = temp_root("zip-traversal");
     let _guard = RootGuard(root.clone());

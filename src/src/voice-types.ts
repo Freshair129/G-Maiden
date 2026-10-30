@@ -70,6 +70,7 @@ export type VoiceGroup = {
 };
 
 export type VoiceState = {
+  authoringEnabled?: boolean;
   rootDir: string;
   packsDir: string;
   cacheDir: string;

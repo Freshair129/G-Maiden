@@ -2,8 +2,8 @@
 title: "CLAUDE.md"
 doc_id: "claude"
 status: active
-version: "0.4.6"
-updated: "2026-10-29"
+version: "0.4.9"
+updated: 2026-10-30
 owner: "G-Maiden"
 ---
 # CLAUDE.md
@@ -181,7 +181,7 @@ instead of a false "missing".
   `ultra_kill`/`rampage`, 18s window), the streak ladder (`killing_spree`/`dominating`/`mega_kill`/
   `unstoppable`/`wicked_sick`/`monster_kill`/`godlike`/`beyond_godlike`), and
   `death`/`respawn`/`levelUp`/`hpLow`/`manaLow`.
-- **VRZO banner and audio** — the local source integration maps the selected VRZO clip using the event, exact clip ID and SHA-256 of the bytes decoded by rodio to a bundled composite WebM. The visual is muted, and rodio remains the only sound owner. Bounded nonblocking audio lifecycle notifications carry playback identity; rejected audio starts no video. Stale playback/session/pack events are fenced, and natural completion permits a silent tail up to 1.4 s, while cancellation, preemption, a new playback or scope change clears the visual. The Control inventory exposes a 21-variant preview picker for equipped VRZO; preview has separate authority from live match events. Other packs use their existing banner path. Clip-hash matching does not establish signed Store provenance or entitlement. See [[vrzo-banner-validation]] (`docs/operations/vrzo-banner-validation.md`) and [[2026-10-29-vrzo-synced-banner]] (`docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md`). WebView2 alpha/mute, cold-start timing, live sync and incremental resource acceptance are NOT_RUN.
+- **VRZO banner and audio** — the local source integration maps the selected VRZO clip using the event, exact clip ID and SHA-256 of the bytes decoded by rodio to a bundled composite WebM. The visual is muted, and rodio remains the only sound owner. Bounded nonblocking audio lifecycle notifications carry playback identity; rejected audio starts no video. Stale playback/session/pack events are fenced, and natural completion permits a silent tail up to 3.2 s, while cancellation, preemption, a new playback or scope change clears the visual. The Control inventory exposes a 21-variant preview picker for equipped VRZO; preview has separate authority from live match events. Other packs use their existing banner path. Clip-hash matching does not establish signed Store provenance or entitlement. See [[vrzo-banner-validation]] (`docs/operations/vrzo-banner-validation.md`) and [[2026-10-29-vrzo-synced-banner]] (`docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md`). WebView2 alpha/mute, cold-start timing, live sync and incremental resource acceptance are NOT_RUN.
 - **Kill-banner sync (enforce)** — the streak ladder in `announcer.rs` mirrors the overlay kill
   banner (`src/src/App.tsx` `STREAK_LABELS`) exactly, so the voiced streak and the on-screen banner
   are intended to agree; real timing requires in-game acceptance. Both detect kills from `tick.kills` rising-edge and reset on death. Audio is
@@ -309,6 +309,36 @@ deploy to web by vercel cli
 
 VRZO v8 verifies the selected original WAV snapshot and the bundled mixed WAV snapshot separately, then admits exactly one mono48k PCM16 source through rodio. Mixed bytes must match their catalog hash, format and original duration; failure plays original once, suppresses the v8 visual and logs the reason. Lifecycle carries distinct original/played hashes. Silent video is cancelled even during its natural-completion tail. Native GSI owns gameplay pack events when announcer is enabled; Overlay does not issue a second persona clip. Personal events require player SteamID agreement with the active local Steam login (read-only HKCU ActiveProcess.ActiveUser; provider SteamID is not required); unknown identity is silent, owner changes reseed, and aggregate kill jumps do not establish multi-kill timing. Native acoustic/sync and false-event match acceptance remain unverified.
 
+
+## VRZO filesystem revision 3 transition contract (historical)
+
+Owner-directed local candidate change,2026-10-30: ID manifest revision3 preserves every sound ID and all63 WAV bytes;21silent1280x560 VP9 alpha files now60fps/CRF32 with one lossless transparent final frame. Native width680px/max72vw. Natural completion permits a3.2s silent tail, including approximately0.7s eased fade; expiry still bounds it.
+
+Same-scope announcer replacement starts the new selected event immediately at normal audio rate/gain. Previous visual plays2x with300ms opacity fade; previous voice receives a sample-accurate150ms fade. Bound to one active plus one outgoing visual/sink; a third arrival removes oldest outgoing. Preparation admission is3slots, at most12MiB PCM. Critical/non-announcer interruption, explicit cancellation, pack revision/session invalidation or live announcer disable hard-stops stale announcer sources. Audio owner validates scoped sources on its50ms control loop, outside the output callback. Draft match_start retains the active-session contract. New audio remains uniquely selected/verified; overlap is a bounded old-source retirement authorized by the owner.
+
+Verified native video byte cache is24MiB/6entries, keyed by admitted revision/path/hash/file metadata. One worker coalesces the latest pending warmup, preloads FirstBlood/DoubleKill/firstKill on activation/startup, then predicts next multikill on relevant events. Pack cache rebuild invalidates snapshots and stale worker insertion. It does not preplay audio or run hidden animations, and byte warmup does not establish decoder readiness. Local-only G-BannerVisual receipts record browser frame/drop/first-frame counters; native playback, visual smoothness and900,000,000-byte resource acceptance must be measured separately. No SQL/release or player-data egress.
+
+Current checks/asset/native evidence: ignored target/vrzo-smooth-20261030 and Studio workspace/vrzo-smooth-v3. Historical v8/v2 receipts remain historical; these local receipts do not establish release or native acceptance.
+
+
+## VRZO filesystem revision 4 ready-frame contract
+
+This runtime contract supersedes the revision3 video/runtime policy. Release and native acceptance remain separate. Revision4 keeps all IDs and63 WAV bytes;21 silent VP8 alpha videos are960x420/60fps, rendered directly from1280x560 Canvas sources. Apparent width remains680px/max72vw. Video ends with a fully transparent frame after its intended3.2s post-audio tail (including0.7s eased fade).
+
+The Overlay owns at most3 video DOM nodes total: active, optional retiring, and remaining paused warm candidates. Native ID-only hints carry resolved pack generation, on startup/activation, predicted events and Control variant selection. Muted first-frame preparation pauses rather than looping hidden media; admitted playback reuses the prepared node. Scope change destroys stale candidates. Same-generation hints preserve useful paused nodes and evict only an unclaimed lower-priority candidate under capacity pressure. Byte-cache warmup alone is not decoder readiness. The ID protocol allows at most3 simultaneous verified reads and waits at most500ms for a permit, then checks the generation again; no arbitrary webview filesystem path is accepted.
+
+Natural completion permits the queued current=0 lifecycle state while its audio generation and scope still match. Video ended clears normally; native/frontend hard caps allow up to4.2s after completion receipt (3.2s intended tail plus1s bounded decoding grace), under the original15s lifetime. Duplicate completion cannot extend the deadline. Cancellation, critical interruption, pack/session invalidation and expiry remain hard fences. Same-scope replacement retains the old visual2x/300ms opacity fade and old voice150ms fade; incoming image/audio start without waiting for old retirement, at normal rate. At most one active and one outgoing source remain.
+
+Local visual receipts distinguish warmed/cold, wait count, first nontransparent presented frame (frame1 rather than transparent frame0), frame/drop deltas excluding preparation, full media duration and ended/cleared/error. Native acceptance must separately verify FirstBlood, DoubleKill, Rampage, quiet drops, complete fade and rapid differing-event insertion. Target ready first present<=100ms and quiet drops<=1% per clip. Source/asset tests do not establish these native gates or acoustic/whole-match/FPS acceptance. Aggregate RAM ceiling900000000bytes, original Nakhom, local-only data and filesystem-only persistence remain unchanged. Evidence: target/vrzo-ready-20261030 and Studio workspace/vrzo-smooth-v4; native results are recorded there without rewriting failed v3 evidence.
+
+## Local .gann container (2026-10-30)
+
+Owner-authorized local package import is available separately from signed Store installation. `.gann` v1 is an indexed ZIP with `gann.json`, one canonical `ann_<UUID>.json`, ID-named audio/video, and inert authoring stock under `motion/`. Preserve registry config/component/instance/cue IDs and unknown authoring fields. Do not execute imported scripts. No SQL is introduced.
+
+Trusted Control imports a local file, validates bounded paths/counts/sizes and SHA-256 references, admits all native audio/video pairs, preserves a content-addressed original under `voice-cache/containers/<sha256>.gann`, and atomically installs a playback cache under `packs/<announcer_id>/`. Identical reimport is idempotent; a conflicting same-ID package is refused and active selection remains unchanged. A local origin record is not a Store receipt, signature or entitlement. Release runtime inventory/equip/clip validation must explicitly accept admitted local containers without weakening the signed Store path. Events use existing native caches and do not unzip in the audio hot path.
+
+G-AnnStudio opens the same container through its package panel or a file argument, inspects configuration, previews each mapped mixed WAV with its muted WebM, and can save a byte-identical copy. A file association is declared for installed builds; a no-bundle build does not register it in Windows. Existing authoring projects are not overwritten. Evidence and portable source are under Studio `workspace/gann-container-v1`; tests/build/UI results there remain distinct from live-match, acoustic, frame-drop or whole-match resource acceptance.
+
 ## Changelog
 
 | Version | Date | Summary |
@@ -324,3 +354,6 @@ VRZO v8 verifies the selected original WAV snapshot and the bundled mixed WAV sn
 | 0.4.4 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |
 | 0.4.5 | 2026-10-29 | Record VRZO visual/audio identity, bounded lifecycle, preview and native acceptance boundaries. |
 | 0.4.6 | 2026-10-29 | Record verified v8 mix, single audio owner, personal-event identity and pending native acceptance. |
+| 0.4.7 | 2026-10-30 | Record larger60fps ID visuals, predictive bounded cache and owner-authorized visual/audio retirement. |
+| 0.4.8 | 2026-10-30 | Record revision4 paused decoder preparation, VP8 media and bounded natural-completion grace. |
+| 0.4.9 | 2026-10-30 | Document user-authorized .gann filesystem import and shared G-Ann opener. |

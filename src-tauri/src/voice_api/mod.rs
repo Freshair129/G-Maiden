@@ -32,10 +32,20 @@ mod banner;
 mod base64;
 mod commands;
 mod events;
+mod id_manifest;
+mod id_import;
+mod id_container;
+pub use id_container::import_file;
+pub use id_import::import_directory;
+pub(crate) mod id_video;
 mod pack_io;
 mod path_safety;
 mod paths;
 mod types;
+mod video_cache;
+mod video_reads;
+pub(crate) mod visual_warm;
+pub(crate) use pack_io::{visual_warm_candidates, warm_announcer_variant};
 
 #[cfg(test)]
 mod tests;
@@ -54,7 +64,7 @@ pub use banner::{
 };
 pub use commands::{
     action, active_event_clips, create_template, ensure_dev_authoring, import_archive,
-    install_store_pack, is_store_installed, map_event, state, update_pack, upload_asset,
+    install_store_pack, is_pack_available, map_event, state, update_pack, upload_asset,
 };
 pub use events::event_ids;
 #[allow(unused_imports)]
@@ -74,6 +84,8 @@ pub(crate) use pack_io::open_verified_store_clip;
 /// active from a prior session is already cached before the first event fires
 /// — not just after the first pack switch. See `pack_io::rebuild_resolved_cache`.
 pub(crate) use pack_io::rebuild_resolved_cache;
+pub(crate) use pack_io::prewarm_next_banner;
+pub(crate) use pack_io::announcer_revision_current;
 pub(crate) use pack_io::validate_store_clip_integrity;
 pub use pack_io::{
     select_announcer_clip, select_announcer_path, with_current_announcer_clip, AnnouncerClip,
