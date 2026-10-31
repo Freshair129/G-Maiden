@@ -35,6 +35,14 @@ pub fn ensure_dev_authoring() -> Result<(), String> {
 
 /// Admit verified GANN containers without conferring a signed Store receipt.
 pub fn is_pack_available(pack_id: &str) -> bool {
+    if let Some(installer) = crate::package_ipc::installer() {
+        if let Ok(records) = installer.installed() {
+            if records.iter().any(|r| r.installation_id.0 == pack_id) {
+                return true;
+            }
+        }
+        return false;
+    }
     super::id_container::is_local_package(pack_id)
 }
 
@@ -156,7 +164,7 @@ pub fn install_store_pack(item_id: &str, access_token: &str) -> Result<VoiceStat
         if package.index.announcer_id != grant.pack_id {
             return Err("Store GANN ID mismatch".into());
         }
-        super::import_file(&temporary)
+        Err::<super::ImportResult,String>("Store installation requires a verified release envelope and authorization adapter; the previous selection was kept".into())
     })();
     let _ = fs::remove_file(&temporary);
     installed?;
@@ -174,25 +182,74 @@ fn is_uuid(value: &str) -> bool {
 }
 
 pub fn state() -> Result<VoiceState, String> {
-    let root = voice_root();
-    let packs = packs_dir();
-    fs::create_dir_all(&packs).map_err(|e| format!("create voice packs dir: {e}"))?;
+    let registry = crate::package_ipc::installer();
+    #[cfg(not(test))]
+    if registry.is_none() {
+        return Err(
+            "บริการติดตั้งแพ็กยังไม่พร้อม — เปิดโปรไฟล์ Maiden ใหม่ แล้วนำเข้าไฟล์ .gann ผ่าน Studio".into(),
+        );
+    }
+    let root = registry
+        .map(|i| i.profile_root().to_path_buf())
+        .unwrap_or_else(voice_root);
+    let packs = if registry.is_some() {
+        root.join("installed")
+    } else {
+        packs_dir()
+    };
+    if registry.is_none() {
+        fs::create_dir_all(&packs).map_err(|e| format!("create voice packs dir: {e}"))?;
+    }
 
     let pack_dirs = discover_pack_dirs(&packs).into_iter().filter(|dir| {
         dir.file_name()
             .and_then(|name| name.to_str())
             .is_some_and(is_pack_available)
     });
-    let active_id = read_active_pack_id().filter(|id| is_pack_available(id));
+    let active_id = if registry.is_none() {
+        read_active_pack_id().filter(|id| is_pack_available(id))
+    } else {
+        None
+    };
     let mut packs_out = Vec::new();
 
-    for dir in pack_dirs {
-        match pack_io::build_pack(&dir) {
-            Ok(pack) => packs_out.push(pack),
-            Err(e) => eprintln!("[G-Maiden] voice pack load failed: {e}"),
+    if registry.is_none() {
+        for dir in pack_dirs {
+            match pack_io::build_pack(&dir) {
+                Ok(pack) => packs_out.push(pack),
+                Err(e) => eprintln!("[G-Maiden] voice pack load failed: {e}"),
+            }
+        }
+    }
+    if let Some(installer) = crate::package_ipc::installer() {
+        if let Ok(records) = installer.installed() {
+            for record in records {
+                if let Ok(admitted) = installer.admit_package(&record.installation_id) {
+                    if let Ok(mut pack) = pack_io::build_pack(admitted.cache_root()) {
+                        pack.installation_id = Some(record.installation_id.0.clone());
+                        pack.id = record.installation_id.0;
+                        pack.version = record.artifact.revision.to_string();
+                        pack.description = format!(
+                            "Local .gann · revision {} · {}",
+                            record.artifact.revision,
+                            &record.artifact.digest[..12]
+                        );
+                        packs_out.push(pack);
+                    }
+                }
+            }
         }
     }
     packs_out.sort_by(|a, b| a.name.cmp(&b.name));
+    let active_id = if let Some(installer) = crate::package_ipc::installer() {
+        installer
+            .selection()
+            .map_err(|e| e.to_string())?
+            .active
+            .map(|id| id.0)
+    } else {
+        active_id
+    };
     let active_pack_id = active_id.filter(|id| packs_out.iter().any(|pack| &pack.id == id));
     let active_pack = active_pack_id
         .as_ref()
@@ -221,6 +278,24 @@ pub fn action(action: &str, pack_id: Option<&str>) -> Result<VoiceState, String>
     match action {
         "activate" => {
             let id = pack_id.ok_or_else(|| "missing packId".to_string())?;
+            if let Some(installer) = crate::package_ipc::installer() {
+                if installer
+                    .installed()
+                    .map_err(|e| e.to_string())?
+                    .iter()
+                    .any(|r| r.installation_id.0 == id)
+                {
+                    installer
+                        .equip_package(
+                            &crate::package_registry::InstallationId(id.into()),
+                            crate::package_install::EquipPolicy::NowIfIdle,
+                        )
+                        .map_err(|e| e.to_string())?;
+                    pack_io::adopt_registry_selection(installer)?;
+                    return state();
+                }
+                return Err("แพ็กนี้ยังไม่ได้ลงทะเบียนในโปรไฟล์นี้ — นำเข้าไฟล์ .gann ผ่าน Studio แล้วเลือกโปรไฟล์ Maiden อีกครั้ง".into());
+            }
             if !is_pack_available(id) {
                 return Err("เลือกแพ็กที่ติดตั้งจาก Store หรือนำเข้าไฟล์ .gann แล้ว".into());
             }
@@ -229,6 +304,12 @@ pub fn action(action: &str, pack_id: Option<&str>) -> Result<VoiceState, String>
         }
         "rescan" => {
             pack_io::rebuild_resolved_cache();
+            state()
+        }
+        "deactivate" => {
+            let installer = crate::package_ipc::installer().ok_or("บริการติดตั้งแพ็กยังไม่พร้อม")?;
+            installer.clear_selection().map_err(|e| e.to_string())?;
+            pack_io::adopt_registry_selection(installer)?;
             state()
         }
         "open-root" => {

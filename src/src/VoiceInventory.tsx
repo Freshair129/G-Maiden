@@ -127,15 +127,15 @@ export default function VoiceInventory() {
 
   const equippedId = state?.activePackId ?? null;
   const isEquipped = !!selectedPack && selectedPack.id === equippedId;
-  const idVariants = selectedPack?.id.startsWith('ann_')
+  const idVariants = selectedPack?.capabilities.eventPreview
     ? selectedPack.items.flatMap(item => (item.mapping?.clips ?? []).map(path => ({ event: item.id, clipId: path.split('/').pop()!.replace(/\.wav$/i, '') }))) : [];
   const variants = idVariants;
   const chosenVariant = variants.find(item => item.clipId === vrzoClip) ?? variants[0];
-  const warmPack = isEquipped ? selectedPack?.id : undefined;
+  const warmPack = isEquipped && selectedPack?.capabilities.eventPreview ? selectedPack.id : undefined;
   const warmEvent = chosenVariant?.event;
   const warmClip = chosenVariant?.clipId;
   useEffect(() => {
-    if (!warmPack?.startsWith('ann_') || !warmEvent || !warmClip) return;
+    if (!warmPack || !warmEvent || !warmClip) return;
     void invoke('warm_announcer_visual_variant', { packId: warmPack, event: warmEvent, clipId: warmClip }).catch(() => {});
   }, [warmPack, warmEvent, warmClip]);
 

@@ -1,16 +1,21 @@
 //! GANN event preview lookup and activation/reporting of installed packages.
+#[cfg(test)]
 use super::events::event_ids;
 use super::pack_io::{read_manifest, sanitize_id, write_active_pack_id};
-use super::path_safety::{resolve_existing_clips, safe_pack_path};
-use super::paths::packs_dir;
+#[cfg(test)]
+use super::path_safety::resolve_existing_clips;
+#[cfg(test)]
+use super::path_safety::safe_pack_path;
+#[cfg(test)]
 use std::collections::BTreeMap;
 use std::path::PathBuf;
 /// Resolve one named variant from the already admitted pack manifest.
 pub(crate) fn preview_variant(pack_id: &str, event: &str, clip_id: &str) -> Option<PathBuf> {
-    super::select_announcer_variant(pack_id, event, clip_id).map(|clip| clip.path)
+    super::pack_io::select_announcer_variant(pack_id, event, clip_id).map(|clip| clip.path)
 }
 
 /// Verified per-event coverage returned by the installation API.
+#[cfg(test)]
 pub struct InstallReport {
     pub pack_id: String,
     pub counts: BTreeMap<String, usize>,
@@ -19,6 +24,7 @@ pub struct InstallReport {
 }
 
 /// Reports only an admitted GANN registry; rejected packages cannot be activated.
+#[cfg(test)]
 pub fn install_report(pack_id: &str) -> Result<InstallReport, String> {
     let id = sanitize_id(pack_id);
     if id.is_empty() {
@@ -27,7 +33,7 @@ pub fn install_report(pack_id: &str) -> Result<InstallReport, String> {
     if !super::commands::is_pack_available(&id) {
         return Err("Only verified GANN packages can be installed".into());
     }
-    let dir = packs_dir().join(&id);
+    let dir = super::paths::pack_dir(&id);
     let manifest = read_manifest(&dir)?;
 
     let mut counts = BTreeMap::new();
@@ -68,6 +74,30 @@ pub fn install_report(pack_id: &str) -> Result<InstallReport, String> {
 /// Activate an already installed, verified GANN via the same serialized mutation as the UI.
 /// The loopback notification never extracts or writes package media.
 pub fn activate_if_exists(pack_id: &str) -> Result<(), String> {
+    #[cfg(not(test))]
+    if crate::package_ipc::installer().is_none() {
+        return Err(
+            "บริการติดตั้งแพ็กยังไม่พร้อม — นำเข้าไฟล์ .gann ผ่าน Studio หลังเปิดโปรไฟล์ Maiden ใหม่".into(),
+        );
+    }
+    if let Some(installer) = crate::package_ipc::installer() {
+        if installer
+            .installed()
+            .map_err(|e| e.to_string())?
+            .iter()
+            .any(|r| r.installation_id.0 == pack_id)
+        {
+            installer
+                .equip_package(
+                    &crate::package_registry::InstallationId(pack_id.into()),
+                    crate::package_install::EquipPolicy::NowIfIdle,
+                )
+                .map_err(|e| e.to_string())?;
+            super::pack_io::adopt_registry_selection(installer)?;
+            return Ok(());
+        }
+        return Err("แพ็กนี้ยังไม่ได้ลงทะเบียน — นำเข้าไฟล์ .gann ผ่าน Studio แล้วเลือกโปรไฟล์ Maiden".into());
+    }
     let id = sanitize_id(pack_id);
     if id.is_empty() {
         return Err("pack id is required".into());
@@ -75,7 +105,7 @@ pub fn activate_if_exists(pack_id: &str) -> Result<(), String> {
     if !super::commands::is_pack_available(&id) {
         return Err("Only verified GANN packages can be activated".into());
     }
-    let dir = packs_dir().join(&id);
+    let dir = super::paths::pack_dir(&id);
     read_manifest(&dir)?;
     if super::id_manifest::manifest_path(&dir)?.is_some() {
         super::id_manifest::read(&dir)?.admit(&dir)?;

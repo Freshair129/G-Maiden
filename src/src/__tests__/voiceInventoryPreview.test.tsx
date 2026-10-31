@@ -20,6 +20,8 @@ function event(id: string, clip: string | null): VoiceEvent {
 }
 function pack(id: string, name: string): VoicePack {
   return {
+    announcerId: 'ann_00000000-0000-0000-0000-000000000001', installationId: id,
+    capabilities: { eventPreview: true },
     id, name, version: '1', locale: 'th-TH', author: 'Local', description: '',
     path: `C:\\voice-cache\\packs\\${id}`, coveredEvents: 1, totalEvents: 3, clips: 1,
     availableClips: [], availableBanners: [], coverImage: '', coverImageUrl: null,
@@ -83,6 +85,15 @@ it('keeps events with no playable clip disabled', async () => {
   expect(button.disabled).toBe(true)
   await act(async () => { button.click() })
   expect(invokeMock).not.toHaveBeenCalled()
+})
+
+it('warms and previews explicit variants using the installation ID rather than an announcer-name prefix', async () => {
+  await act(async () => {container.querySelectorAll<HTMLButtonElement>('button.voice-card')[0].click()})
+  expect(invokeMock).toHaveBeenCalledWith('warm_announcer_visual_variant', {packId:'original',event:'kill',clipId:'kill'})
+  const select=container.querySelector<HTMLSelectElement>('select')
+  expect(select).not.toBeNull()
+  await act(async()=>{container.querySelector<HTMLButtonElement>('[aria-label="Preview Announcer variant"]')!.click()})
+  expect(invokeMock).toHaveBeenCalledWith('preview_announcer_variant',{packId:'original',event:'kill',clipId:'kill'})
 })
 
 it('retains the explicit overlay preview action separately', async () => {

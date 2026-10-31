@@ -728,12 +728,14 @@ async fn telemetry_ingest(body: String) -> &'static str {
 
 /// Notification uses packId and explicit containerSha256 when activation is requested.
 /// An omitted activate flag retains the existing true default and still requires that digest.
+#[cfg(test)]
 struct InstallRequest {
     pack_id: String,
     activate: bool,
     container_sha256: Option<String>,
 }
 
+#[cfg(test)]
 fn parse_install_request(body: &str) -> InstallRequest {
     let v: Value = serde_json::from_str(body).unwrap_or(Value::Null);
     let pack_id = v["packId"]
@@ -752,8 +754,8 @@ fn parse_install_request(body: &str) -> InstallRequest {
 
 /// Report verified installed GANN coverage and optionally activate its exact container digest.
 /// This loopback route never extracts or rewrites package media.
-async fn announcer_install(body: String) -> axum::Json<serde_json::Value> {
-    axum::Json(run_announcer_install(&parse_install_request(&body)))
+async fn announcer_install(_body: String) -> (axum::http::StatusCode, axum::Json<serde_json::Value>) {
+    (axum::http::StatusCode::GONE,axum::Json(serde_json::json!({"ok":false,"error":"Use the registered current-user Maiden package pipe"})))
 }
 
 /// Parse the bounded v1 authoring payload from G-AnnStudio. This is deliberately
@@ -866,6 +868,7 @@ async fn overlay_layout_sync(State(app): State<AppHandle>, body: String) -> axum
 
 /// Pure decision logic, split out of the async handler so it's unit-testable
 /// without spinning up axum/tokio.
+#[cfg(test)]
 fn run_announcer_install(req: &InstallRequest) -> serde_json::Value {
     if req.pack_id.is_empty() {
         return serde_json::json!({ "ok": false, "error": "missing packId" });

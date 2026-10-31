@@ -447,6 +447,7 @@ pub fn observe_match_tick(
         };
     };
     let (snapshot, boundary) = observe_session_state(&mut state, lifecycle, match_id, clock_time);
+    crate::package_ipc::note_lifecycle(snapshot.session_lifecycle);
     let effective_in_game = in_game
         && !snapshot
             .session_lifecycle
@@ -499,6 +500,7 @@ pub fn observe_gsi_status(dota_running: bool, gsi_fresh: bool) -> MatchSessionSn
         }
     }
     let snapshot = snapshot_of(&state);
+    crate::package_ipc::note_lifecycle(snapshot.session_lifecycle);
     crate::master::observe_advice_session(
         snapshot.session_epoch,
         snapshot.session_lifecycle == Some(MatchLifecycle::Live),
@@ -532,6 +534,7 @@ pub fn mark_dota_exited() -> MatchSessionSnapshot {
         MATCH_EPOCH.fetch_add(1, Ordering::Relaxed);
     }
     let snapshot = snapshot_of(&state);
+    crate::package_ipc::note_lifecycle(snapshot.session_lifecycle);
     crate::master::observe_advice_session(snapshot.session_epoch, false);
     snapshot
 }

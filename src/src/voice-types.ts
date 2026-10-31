@@ -36,6 +36,9 @@ export type VoiceEvent = {
 
 export type VoicePack = {
   id: string;
+  installationId: string | null;
+  announcerId: string;
+  capabilities: { eventPreview: boolean };
   name: string;
   version: string;
   locale: string;

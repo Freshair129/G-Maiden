@@ -55,26 +55,25 @@ fn gann_only_selects_the_indexed_pair_and_never_substitutes_an_unmapped_event() 
 }
 
 #[test]
-fn active_variant_lookup_uses_only_the_admitted_event_and_pack() {
-    let root = temp_root("gann-variant-cache");
+fn named_preview_uses_admitted_generation_and_fences_other_events() {
+    let root = temp_root("preview-admitted-generation");
     set_test_voice_root(Some(root.clone()));
     let _guard = RootGuard(root.clone());
     let (id, original, _) = super::test_package::install(&root, 1201, "kill");
     activate_if_exists(&id).unwrap();
+    let marker: serde_json::Value = serde_json::from_slice(
+        &fs::read(root.join("packs").join(&id).join("local-gann.json")).unwrap(),
+    )
+    .unwrap();
+    let container = root.join("containers").join(format!(
+        "{}.gann",
+        marker["container_sha256"].as_str().unwrap()
+    ));
+    fs::write(container, b"changed archive after admission").unwrap();
     let clip_id = original.file_stem().unwrap().to_str().unwrap();
-    let selected = super::select_announcer_variant(&id, "kill", clip_id).unwrap();
-    assert_eq!(selected.path, original);
-    assert_eq!(
-        super::preview_variant(&id, "kill", clip_id),
-        Some(original.clone())
-    );
-    assert!(super::select_announcer_variant(&id, "death", clip_id).is_none());
-    assert!(super::select_announcer_variant("other", "kill", clip_id).is_none());
-    assert!(super::select_announcer_variant(&id, "kill", "../escape").is_none());
-    let (other, _, _) = super::test_package::install(&root, 1202, "death");
-    activate_if_exists(&other).unwrap();
-    assert!(super::preview_variant(&id, "kill", clip_id).is_none());
-    assert!(super::with_current_announcer_clip("kill", &selected, || ()).is_none());
+    assert_eq!(super::preview_variant(&id, "kill", clip_id), Some(original.clone()));
+    assert!(super::preview_variant(&id, "death", clip_id).is_none());
+    assert!(super::preview_variant(&id, "kill", "../escape").is_none());
 }
 
 #[test]

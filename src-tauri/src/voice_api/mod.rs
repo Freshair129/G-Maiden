@@ -5,6 +5,7 @@ mod commands;
 mod events;
 mod id_manifest;
 mod playback;
+#[cfg(test)]
 pub use id_container::container_sha256;
 pub(crate) use playback::{
     app as playback_app, install as install_playback, play_event, play_selected, verify_visual,
@@ -28,9 +29,11 @@ pub(crate) mod test_package;
 mod tests;
 
 #[allow(unused_imports)]
-pub use banner::{activate_if_exists, install_report, InstallReport};
+pub use banner::activate_if_exists;
+#[cfg(test)]
+pub use banner::install_report;
 pub use commands::{
-    action, active_event_clips, ensure_dev_authoring, install_store_pack, is_pack_available, state,
+    action, active_event_clips, ensure_dev_authoring, install_store_pack, state,
 };
 pub use events::event_ids;
 #[allow(unused_imports)]
@@ -50,7 +53,7 @@ pub(crate) use pack_io::prewarm_next_banner;
 /// active from a prior session is already cached before the first event fires
 /// — not just after the first pack switch. See `pack_io::rebuild_resolved_cache`.
 pub(crate) use pack_io::rebuild_resolved_cache;
-pub(crate) use pack_io::select_announcer_variant;
+pub(crate) use pack_io::adopt_registry_selection;
 pub(crate) use pack_io::validate_store_clip_integrity;
 pub(crate) use pack_io::{announcer_revision_current, current_announcer_revision};
 pub use pack_io::{
@@ -68,3 +71,6 @@ pub(crate) use pack_io::clear_resolved_cache_for_test;
 pub fn voice_root_id() -> Result<String, String> {
     g_ann_package::root_identity(&paths::voice_root())
 }
+
+#[cfg(test)]
+pub use commands::is_pack_available;

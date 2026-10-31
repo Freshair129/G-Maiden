@@ -1462,9 +1462,12 @@ dependencies = [
 name = "g-ann-package"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "ring",
  "serde",
  "serde_json",
+ "tokio",
+ "windows-sys 0.61.2",
  "zip",
 ]
 

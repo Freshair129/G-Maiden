@@ -58,6 +58,8 @@ pub(crate) fn play_selected(
     let pair = selected.pair.as_ref().ok_or("GANN pair unavailable")?;
     verify_visual(&selected)?;
     let request = serde_json::json!({"phase":"requested","event":event,"pack_id":selected.pack_id,
+        "installation_id":selected.installation.as_ref().map(|i|&i.installation_id().0),
+        "artifact":selected.installation.as_ref().map(|i|i.artifact()),
         "pack_name":selected.pack_name,"banner_id":pair.banner_id,"original_sha256":pair.original_hash,"played_sha256":pair.mixed_hash,
         "revision":selected.revision,"session_epoch":epoch,"preview":preview});
     eprintln!("[G-AnnouncerMedia] {request}");
