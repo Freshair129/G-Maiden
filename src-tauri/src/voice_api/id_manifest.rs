@@ -75,6 +75,8 @@ struct Visual {
 #[derive(Deserialize)]
 struct Config {
     duration_seconds: f64,
+    #[serde(default)]
+    visual_tail_ms: u32,
 }
 #[derive(Deserialize)]
 struct Banner {
@@ -98,6 +100,7 @@ pub(crate) struct Pair {
     pub samples: usize,
     pub video: PathBuf,
     pub video_hash: String,
+    pub visual_tail_ms: u32,
 }
 impl Pair {
     pub(crate) fn matches(&self, original: &[u8; 32], played: &[u8; 32]) -> bool {
@@ -257,6 +260,7 @@ impl Registry {
                 b.config.duration_seconds.is_finite()
                     && b.config.duration_seconds > 0.0
                     && b.config.duration_seconds <= 15.0
+                    && b.config.visual_tail_ms <= 3200
                     && b.components.len() <= 16
                     && b.cues.len() <= 64,
                 "banner bounds",
@@ -452,6 +456,7 @@ impl Registry {
                     video: safe_pack_path(root, &b.visual_source.video)
                         .ok_or("Video disappeared")?,
                     video_hash: b.visual_source.sha256.clone(),
+                    visual_tail_ms: b.config.visual_tail_ms,
                 }),
             );
         }

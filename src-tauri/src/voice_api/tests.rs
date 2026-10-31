@@ -55,6 +55,28 @@ fn gann_only_selects_the_indexed_pair_and_never_substitutes_an_unmapped_event() 
 }
 
 #[test]
+fn named_preview_uses_admitted_generation_and_fences_other_events() {
+    let root = temp_root("preview-admitted-generation");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    let (id, original, _) = super::test_package::install(&root, 1201, "kill");
+    activate_if_exists(&id).unwrap();
+    let marker: serde_json::Value = serde_json::from_slice(
+        &fs::read(root.join("packs").join(&id).join("local-gann.json")).unwrap(),
+    )
+    .unwrap();
+    let container = root.join("containers").join(format!(
+        "{}.gann",
+        marker["container_sha256"].as_str().unwrap()
+    ));
+    fs::write(container, b"changed archive after admission").unwrap();
+    let clip_id = original.file_stem().unwrap().to_str().unwrap();
+    assert_eq!(super::preview_variant(&id, "kill", clip_id), Some(original.clone()));
+    assert!(super::preview_variant(&id, "death", clip_id).is_none());
+    assert!(super::preview_variant(&id, "kill", "../escape").is_none());
+}
+
+#[test]
 fn gann_only_rejects_changed_container_even_when_marker_and_manifest_remain() {
     let root = temp_root("gann-origin");
     set_test_voice_root(Some(root.clone()));

@@ -4,7 +4,7 @@
 // by plain path. Run from before{Dev,Build}Command (CWD = repo root).
 import { execSync } from "node:child_process";
 import { mkdirSync, copyFileSync, existsSync } from "node:fs";
-import { dirname, join } from "node:path";
+import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const scriptDir = dirname(fileURLToPath(import.meta.url)); // src-tauri/scripts
@@ -24,7 +24,8 @@ execSync("cargo build --release", { cwd: feederDir, stdio: "inherit" });
 
 const win = process.platform === "win32";
 const exeName = win ? "gpu-feeder.exe" : "gpu-feeder";
-const built = join(feederDir, "target", "release", exeName);
+const feederTarget = process.env.CARGO_TARGET_DIR ? resolve(feederDir, process.env.CARGO_TARGET_DIR) : join(feederDir, "target");
+const built = join(feederTarget, "release", exeName);
 if (!existsSync(built)) {
   console.error(`[stage-gpu-feeder] built binary not found: ${built}`);
   process.exit(1);
@@ -40,9 +41,10 @@ console.log(`[stage-gpu-feeder] staged -> ${dest}`);
 // 2) Next to the app build outputs, so `tauri dev` / a local `cargo run` can
 //    spawn it by plain path even if the externalBin isn't copied in dev.
 for (const profile of ["debug", "release"]) {
-  const outDir = join(srcTauri, "target", profile);
+  const appTarget = process.env.CARGO_TARGET_DIR ? resolve(srcTauri, process.env.CARGO_TARGET_DIR) : join(srcTauri, "target");
+  const outDir = join(appTarget, profile);
   if (existsSync(outDir)) {
-    copyFileSync(built, join(outDir, exeName));
+    if (resolve(built) !== resolve(join(outDir, exeName))) copyFileSync(built, join(outDir, exeName));
     console.log(`[stage-gpu-feeder] copied -> ${join(outDir, exeName)}`);
   }
 }

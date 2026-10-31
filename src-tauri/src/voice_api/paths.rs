@@ -34,6 +34,26 @@ pub(crate) fn packs_dir() -> PathBuf {
     voice_root().join("packs")
 }
 
+/// Resolve an explicit installed revision, or the active announcer's immutable
+/// cache. Callers use this on the control/preparation workers, never audio.
+pub(crate) fn pack_dir(id: &str) -> PathBuf {
+    if let Some(installer) = crate::package_ipc::installer() {
+        if let Ok(records) = installer.installed() {
+            let active = installer.selection().ok().and_then(|s| s.active);
+            if let Some(record) = records.iter().find(|r| {
+                r.installation_id.0 == id
+                    || (r.artifact.announcer_id == id
+                        && active.as_ref() == Some(&r.installation_id))
+            }) {
+                if let Ok(path) = installer.cache_path(&record.installation_id) {
+                    return path;
+                }
+            }
+        }
+    }
+    packs_dir().join(id)
+}
+
 pub(crate) fn active_path() -> PathBuf {
     voice_root().join("active-pack.txt")
 }

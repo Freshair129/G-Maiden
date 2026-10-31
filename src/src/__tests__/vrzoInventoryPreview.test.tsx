@@ -8,7 +8,7 @@ vi.mock('@tauri-apps/plugin-dialog', () => ({ open }))
 vi.mock('@tauri-apps/api/core', () => ({ invoke }))
 it('does not offer embedded variants for a legacy pack', async () => {
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
-  const pack = { id:'legacy', name:'Legacy', version:'1', locale:'th', author:'', description:'', path:'', coveredEvents:0, totalEvents:24, clips:0, availableClips:[], availableBanners:[], coverImage:'', coverImageUrl:null, builtIn:false, items:[] }
+  const pack = { id:'legacy', announcerId:'legacy', installationId:null, capabilities:{eventPreview:false}, name:'Legacy', version:'1', locale:'th', author:'', description:'', path:'', coveredEvents:0, totalEvents:24, clips:0, availableClips:[], availableBanners:[], coverImage:'', coverImageUrl:null, builtIn:false, items:[] }
   invoke.mockReset().mockResolvedValue({rootDir:'',packsDir:'',cacheDir:'',activePackId:null,activePack:null,packs:[pack],groups:[]})
   const el=document.createElement('div');document.body.appendChild(el);const root=createRoot(el)
   await act(async()=>{root.render(<VoiceInventory />)})
@@ -19,7 +19,7 @@ it('does not offer embedded variants for a legacy pack', async () => {
 it('uses only manifest sound IDs for preview and excludes folder import', async () => {
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
   const id = 'snd_73de4801-07f0-57ad-82ef-535c8bd0e7ae'
-  const pack = { id:'ann_c4d92f17-167a-504b-9393-64fd959981cd', name:'VRZO ID', version:'2', locale:'th', author:'', description:'', path:'', coveredEvents:1, totalEvents:15, clips:1, availableClips:[], availableBanners:[], coverImage:'', coverImageUrl:null, builtIn:false, items:[{id:'double_kill', mapping:{clips:[`audio/${id}.wav`]}}] }
+  const pack = { id:'install_vrzo', announcerId:'ann_c4d92f17-167a-504b-9393-64fd959981cd', installationId:'install_vrzo', capabilities:{eventPreview:true}, name:'VRZO ID', version:'2', locale:'th', author:'', description:'', path:'', coveredEvents:1, totalEvents:15, clips:1, availableClips:[], availableBanners:[], coverImage:'', coverImageUrl:null, builtIn:false, items:[{id:'double_kill', mapping:{clips:[`audio/${id}.wav`]}}] }
   invoke.mockReset().mockResolvedValue({authoringEnabled:true,rootDir:'',packsDir:'',cacheDir:'',activePackId:pack.id,activePack:pack,packs:[pack],groups:[]})
   const el=document.createElement('div');document.body.appendChild(el);const root=createRoot(el)
   await act(async()=>{root.render(<VoiceInventory />)})
