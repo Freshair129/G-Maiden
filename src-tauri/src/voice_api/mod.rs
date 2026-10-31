@@ -50,6 +50,7 @@ pub(crate) use pack_io::prewarm_next_banner;
 /// active from a prior session is already cached before the first event fires
 /// — not just after the first pack switch. See `pack_io::rebuild_resolved_cache`.
 pub(crate) use pack_io::rebuild_resolved_cache;
+pub(crate) use pack_io::select_announcer_variant;
 pub(crate) use pack_io::validate_store_clip_integrity;
 pub(crate) use pack_io::{announcer_revision_current, current_announcer_revision};
 pub use pack_io::{

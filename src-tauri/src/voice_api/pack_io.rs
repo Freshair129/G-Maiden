@@ -646,6 +646,43 @@ pub fn select_announcer_clip(event: &str) -> Option<AnnouncerClip> {
     })
 }
 
+/// Resolve a named variant from the already admitted active generation.
+pub(crate) fn select_announcer_variant(
+    pack: &str,
+    event: &str,
+    clip_id: &str,
+) -> Option<AnnouncerClip> {
+    if clip_id.is_empty()
+        || clip_id.len() > 64
+        || !clip_id
+            .bytes()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_' || c == b'-')
+    {
+        return None;
+    }
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        if cache.pack_id != pack {
+            return None;
+        }
+        let mut paths = cache.clips_by_event.get(event)?.iter().filter(|path| {
+            path.file_stem().and_then(|s| s.to_str()) == Some(clip_id)
+                && path.extension().and_then(|s| s.to_str()) == Some("wav")
+        });
+        let path = paths.next()?.clone();
+        if paths.next().is_some() {
+            return None;
+        }
+        Some(AnnouncerClip {
+            revision: cache.revision,
+            pack_id: cache.pack_id.clone(),
+            pack_name: cache.pack_name.clone(),
+            pair: Some(cache.pairs.get(&(event.to_owned(), path.clone()))?.clone()),
+            path,
+        })
+    })
+}
+
 pub(crate) fn id_video(
     pack: &str,
     banner: &str,

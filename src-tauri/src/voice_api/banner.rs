@@ -4,31 +4,10 @@ use super::pack_io::{read_manifest, sanitize_id, write_active_pack_id};
 use super::path_safety::{resolve_existing_clips, safe_pack_path};
 use super::paths::packs_dir;
 use std::collections::BTreeMap;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 /// Resolve one named variant from the already admitted pack manifest.
 pub(crate) fn preview_variant(pack_id: &str, event: &str, clip_id: &str) -> Option<PathBuf> {
-    if !super::commands::is_pack_available(pack_id)
-        || !event_ids().any(|id| id == event)
-        || clip_id.is_empty()
-        || clip_id.len() > 64
-        || !clip_id
-            .bytes()
-            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_' || c == b'-')
-    {
-        return None;
-    }
-    let dir = packs_dir().join(sanitize_id(pack_id));
-    let manifest = read_manifest(&dir).ok()?;
-    let mapping = manifest.mappings.get(event)?;
-    let mut paths = mapping.clips.iter().filter(|rel| {
-        Path::new(rel).file_stem().and_then(|s| s.to_str()) == Some(clip_id)
-            && Path::new(rel).extension().and_then(|s| s.to_str()) == Some("wav")
-    });
-    let path = paths.next()?;
-    if paths.next().is_some() {
-        return None;
-    }
-    safe_pack_path(&dir, path)
+    super::select_announcer_variant(pack_id, event, clip_id).map(|clip| clip.path)
 }
 
 /// Verified per-event coverage returned by the installation API.

@@ -55,6 +55,29 @@ fn gann_only_selects_the_indexed_pair_and_never_substitutes_an_unmapped_event() 
 }
 
 #[test]
+fn active_variant_lookup_uses_only_the_admitted_event_and_pack() {
+    let root = temp_root("gann-variant-cache");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    let (id, original, _) = super::test_package::install(&root, 1201, "kill");
+    activate_if_exists(&id).unwrap();
+    let clip_id = original.file_stem().unwrap().to_str().unwrap();
+    let selected = super::select_announcer_variant(&id, "kill", clip_id).unwrap();
+    assert_eq!(selected.path, original);
+    assert_eq!(
+        super::preview_variant(&id, "kill", clip_id),
+        Some(original.clone())
+    );
+    assert!(super::select_announcer_variant(&id, "death", clip_id).is_none());
+    assert!(super::select_announcer_variant("other", "kill", clip_id).is_none());
+    assert!(super::select_announcer_variant(&id, "kill", "../escape").is_none());
+    let (other, _, _) = super::test_package::install(&root, 1202, "death");
+    activate_if_exists(&other).unwrap();
+    assert!(super::preview_variant(&id, "kill", clip_id).is_none());
+    assert!(super::with_current_announcer_clip("kill", &selected, || ()).is_none());
+}
+
+#[test]
 fn gann_only_rejects_changed_container_even_when_marker_and_manifest_remain() {
     let root = temp_root("gann-origin");
     set_test_voice_root(Some(root.clone()));

@@ -2,6 +2,9 @@
 
 ## [Unreleased]
 
+## [0.13.5] — Pending release
+
+- **Preview คลิป GANN** — เลือก variant จากแพ็กที่ตรวจและเปิดใช้งานแล้ว เพื่อลดเวลาตรวจแพ็กซ้ำก่อนเล่น พร้อมตรวจความถูกต้องของเสียงและภาพก่อนส่งออก
 - **แพ็ก announcer ไฟล์เดียว `.gann`** — รวม manifest แบบ ID, เสียง, silent banner video, motion/config และ stock ใน indexed ZIP ที่ตรวจขนาด/พาธ/SHA-256; นำเข้าจาก Control ได้ทั้ง local development และ consumer build เก็บต้นฉบับพร้อม playback cache โดยไม่เพิ่ม SQL หรือสิทธิ์ Store
 - **เตรียมและเปลี่ยนแบนเนอร์** — ใช้ video pool ที่พัก decoder รอได้ จำกัดสาม DOM nodes; อีเวนต์ใหม่เริ่มทันที ขณะที่ภาพเก่าเร่ง 2x/เฟด 300 ms และเสียงเก่าเฟด 150 ms พร้อมช่วงท้ายแบบมีขอบเขต การวัด Rampage/การแทรก/เฟรมดรอป native ยังไม่ครบเพราะหยุดทดสอบด้วย Esc
 
