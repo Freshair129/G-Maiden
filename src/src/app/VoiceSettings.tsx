@@ -1,6 +1,5 @@
 import React from 'react'
 import { invoke } from '@tauri-apps/api/core'
-import { emit } from '@tauri-apps/api/event'
 import type { Settings, VoiceInfo, Sensitivity } from './types'
 import { C } from './theme'
 import { Card, Row, Toggle } from './primitives'
@@ -65,7 +64,7 @@ export const VoiceSettings = React.memo(function VoiceSettings({ settings: s, vo
               <Row label="แบนเนอร์เตือนแก๊งค์ (gank)"><Toggle on={s.gankVisuals} onChange={(v) => set('gankVisuals', v)} /></Row>
               <Row label="แบนเนอร์ฆ่า / สตรีค (kill banner)">
                 <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                  <button onClick={() => { void emit('preview-kill', { streak: 5, victim: 'npc_dota_hero_lina' }); void invoke('speak_event', { event: 'mega_kill', fallback: 'เมก้าคิล!', voice: null, rate: null }).catch(() => {}) }}
+                  <button onClick={() => { void invoke('speak_event', { event: 'mega_kill' }).catch(() => {}) }}
                     title="โชว์ตัวอย่างแบนเนอร์บน overlay (ต้องเปิด overlay อยู่)"
                     style={{ background: 'transparent', color: C.ice, border: `1px solid ${C.line}`, borderRadius: 8, padding: '5px 11px', fontSize: 12, cursor: 'pointer' }}>▶ ดูตัวอย่าง</button>
                   <Toggle on={s.killVisuals} onChange={(v) => set('killVisuals', v)} />

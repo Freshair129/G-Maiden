@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-30T13:14:52.918Z",
+  "generatedAt": "2026-10-31T11:39:00.993Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -148,6 +148,13 @@
       "title": "G-Maiden UI Sitemap / User Flow / Design Board",
       "status": "accepted",
       "domain": "ui-ux"
+    },
+    {
+      "id": "docs/architecture/gann-event-media-contract.md",
+      "type": "doc",
+      "path": "docs/architecture/gann-event-media-contract.md",
+      "title": "GANN-only announcer event media contract",
+      "status": "active"
     },
     {
       "id": "docs/architecture/implementation-plan.md",
@@ -399,7 +406,9 @@
     {
       "id": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "type": "doc",
-      "path": "docs/change request/CR-009-gannstudio-authoring-install-contract.md"
+      "path": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "title": "G-AnnStudio original authoring and install contract",
+      "status": "superseded"
     },
     {
       "id": "docs/change request/CR-010-overlay-exact-kill-victim.md",
@@ -1061,6 +1070,13 @@
       "type": "doc",
       "path": "docs/superpowers/plans/2026-10-29-vrzo-v8-mixed-audio.md",
       "title": "VRZO v8 verified mixed audio implementation plan",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-10-31-gann-only-events.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-10-31-gann-only-events.md",
+      "title": "GANN-only event media implementation",
       "status": "active"
     },
     {
@@ -2818,6 +2834,24 @@
       "line": 198
     },
     {
+      "from": "docs/architecture/gann-event-media-contract.md",
+      "to": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "type": "wikilink",
+      "line": 12
+    },
+    {
+      "from": "docs/architecture/gann-event-media-contract.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 12
+    },
+    {
+      "from": "docs/architecture/gann-event-media-contract.md",
+      "to": "docs/superpowers/plans/2026-10-31-gann-only-events.md",
+      "type": "wikilink",
+      "line": 66
+    },
+    {
       "from": "docs/architecture/implementation-plan.md",
       "to": "src-tauri/tauri.conf.json",
       "type": "symbol",
@@ -4175,18 +4209,6 @@
     },
     {
       "from": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 99
-    },
-    {
-      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 102
-    },
-    {
-      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
       "to": "src-tauri/src/voice_api/mod.rs",
       "type": "symbol",
       "line": 118
@@ -4433,105 +4455,93 @@
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "to": "docs/architecture/gann-event-media-contract.md",
+      "type": "wikilink",
+      "line": 10
+    },
+    {
+      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 7
+      "line": 18
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "type": "wikilink",
-      "line": 7
+      "line": 18
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "docs/change request/CR-004-voice-command-browser.md",
       "type": "wikilink",
-      "line": 7
+      "line": 18
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
-      "line": 9
+      "line": 20
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
-      "line": 9
+      "line": 20
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
-      "line": 36
+      "line": 47
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/voice_api/mod.rs",
       "type": "symbol",
-      "line": 36
+      "line": 47
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
-      "line": 36
+      "line": 51
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
-      "line": 40
+      "line": 81
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
-      "line": 61
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 70
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 71
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 72
+      "line": 82
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/voice_api/tests.rs",
       "type": "symbol",
-      "line": 77
+      "line": 88
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
-      "line": 98
+      "line": 109
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/voice_api/mod.rs",
       "type": "symbol",
-      "line": 98
+      "line": 109
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/audio.rs",
       "type": "symbol",
-      "line": 98
+      "line": 109
     },
     {
       "from": "docs/change request/CR-010-overlay-exact-kill-victim.md",
@@ -8759,12 +8769,6 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/commands.rs",
-      "type": "symbol",
-      "line": 6
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/path_safety.rs",
       "type": "symbol",
       "line": 7
@@ -8813,12 +8817,6 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 21
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 23
@@ -8840,12 +8838,6 @@
       "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 25
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 26
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -8912,30 +8904,6 @@
       "to": "src-tauri/src/voice_api/path_safety.rs",
       "type": "symbol",
       "line": 60
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/commands.rs",
-      "type": "symbol",
-      "line": 60
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 61
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 61
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 61
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -9215,6 +9183,22 @@
       "symbol": "useCompanionData"
     },
     {
+      "file": "docs/audits/2026-07-07-independent-full-audit.md",
+      "line": 138,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 80,
+      "symbol": "read_banner_data_url"
+    },
+    {
+      "file": "docs/audits/2026-07-07-independent-full-audit.md",
+      "line": 138,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/commands.rs",
+      "anchor": 13,
+      "symbol": "sanitize_file_name"
+    },
+    {
       "file": "docs/audits/2026-10-27-400mb-remediation-plan.md",
       "line": 14,
       "reason": "unresolved",
@@ -9272,6 +9256,14 @@
       "status": "IMPLEMENTED — merged to main 170805b8 (2026-07-02)"
     },
     {
+      "file": "docs/change request/CR-003-account-phase1-wallet-billing.md",
+      "line": 712,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 3,
+      "symbol": "rs"
+    },
+    {
       "file": "docs/change request/CR-003-payment-golive-checklist.md",
       "line": null,
       "reason": "invalid-status",
@@ -9316,11 +9308,47 @@
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 99,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
       "line": 102,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/banner.rs",
       "anchor": 128,
       "symbol": "install_report"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 102,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 123,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 3,
+      "symbol": "rs"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 124,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 60,
+      "symbol": "fired_banner_from"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 125,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 100,
+      "symbol": "preview_clip"
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
@@ -9414,7 +9442,15 @@
     },
     {
       "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 36,
+      "line": 20,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 3,
+      "symbol": "rs"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 47,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/gsi.rs",
       "anchor": 268,
@@ -9422,7 +9458,7 @@
     },
     {
       "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 36,
+      "line": 47,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/banner.rs",
       "anchor": 182,
@@ -9430,11 +9466,17 @@
     },
     {
       "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 61,
+      "line": 47,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 51,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/banner.rs",
-      "anchor": 206,
-      "symbol": "image_mime"
+      "anchor": 17,
+      "symbol": "packs_dir"
     },
     {
       "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
@@ -9446,16 +9488,47 @@
     },
     {
       "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 77,
+      "line": 72,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 81,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 17,
+      "symbol": "packs_dir"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 82,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 3,
+      "symbol": "rs"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 83,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 206,
+      "symbol": "image_mime"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 83,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 88,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/tests.rs",
       "anchor": 182,
       "symbol": "real_pack_mrijgajn_maps_voice_and_banners"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": null,
-      "reason": "no-metadata"
     },
     {
       "file": "docs/change request/CR-010-overlay-exact-kill-victim.md",
@@ -10081,6 +10154,14 @@
       "symbol": "Control"
     },
     {
+      "file": "docs/design-system/07-combat-hud.md",
+      "line": 96,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/overlay/FullOverlay.tsx",
+      "anchor": 24,
+      "symbol": "}"
+    },
+    {
       "file": "docs/design-system/landing_page_prompt.md",
       "line": null,
       "reason": "no-metadata"
@@ -10390,6 +10471,20 @@
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 6,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/commands.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 9,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 47,
+      "symbol": "fired_banner"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 10,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/pack_io.rs",
@@ -10422,11 +10517,25 @@
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 20,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 60,
+      "symbol": "fired_banner_from"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 21,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/banner.rs",
       "anchor": 194,
       "symbol": "read_banner_data_url"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 21,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -10467,6 +10576,12 @@
       "target": "src-tauri/src/voice_api/banner.rs",
       "anchor": 194,
       "symbol": "read_banner_data_url"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 26,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -10526,6 +10641,28 @@
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 60,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/commands.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 61,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 60,
+      "symbol": "fired_banner_from"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 61,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 100,
+      "symbol": "preview_clip"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 61,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/banner.rs",
@@ -10539,6 +10676,12 @@
       "target": "src-tauri/src/voice_api/pack_io.rs",
       "anchor": 66,
       "symbol": "build_pack"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 61,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
     },
     {
       "file": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
@@ -10632,7 +10775,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-30T13:15:08.401Z",
+    "generatedAt": "2026-10-31T11:39:09.939Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

@@ -3,7 +3,7 @@
 # FEATURE-ORPHAN-REPORT
 
 > **GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs**  
-> Generated `2026-10-30T13:15:09.430Z` · candidates=22
+> Generated `2026-10-31T11:39:11.206Z` · candidates=22
 
 ## Summary
 
@@ -21,7 +21,7 @@
 
 | ID | Path | Lifecycle | Classification | Strong anchors | Weak anchors | Replacement | Reason |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| CR-004-voice-command-browser | docs/change request/CR-004-voice-command-browser.md | — | weakly-anchored | — | docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md, docs/change request/CR-009-gannstudio-authoring-install-contract.md | — | Only active document references remain; no strong registry/code anchor found. |
+| CR-004-voice-command-browser | docs/change request/CR-004-voice-command-browser.md | — | weakly-anchored | — | docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md | — | Only active document references remain; no strong registry/code anchor found. |
 | FEAT-G-COACH | docs/features/FEAT-G-COACH.md | active | planned | feature-ledger, features-readme, project-feature-map | docs/features/README.md, docs/product/mvp-backlog.md, docs/product/roadmap.md, docs/features/G-SERIES-DATA-LINEAGE.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-DAMAGE | docs/features/FEAT-G-DAMAGE.md | draft | archived | feature-ledger, code-evidence, features-readme | docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md, docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md, docs/features/G-SERIES-DATA-LINEAGE.md, docs/features/README.md, docs/product/competitive-brief.md, docs/README.md | — | Lifecycle explicitly marks the document as retained history. |
 | FEAT-G-LOG | docs/features/FEAT-G-LOG.md | active | planned | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |

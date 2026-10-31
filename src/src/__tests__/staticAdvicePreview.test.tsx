@@ -43,11 +43,11 @@ it('keeps Maiden Line static voice preview behind the current native generation'
   expect(invokeMock).toHaveBeenCalledWith('preview_static_advice_voice', expect.objectContaining({ adviceGeneration: 7 }))
 })
 
-it('keeps the advice-pack preview behind the current native generation', async () => {
+it('routes the advice event preview to GANN without TTS fallback', async () => {
   await act(async () => { root.render(<AudioSettingsCard />) })
   const adviceLabel = [...container.querySelectorAll('span')].find((span) => span.textContent === 'advice')!
   const play = adviceLabel.parentElement!.parentElement!.querySelector('button')!
   await act(async () => { play.click() })
-  expect(invokeMock).toHaveBeenCalledWith('get_master_context_generation')
-  expect(invokeMock).toHaveBeenCalledWith('preview_static_advice_voice', expect.objectContaining({ adviceGeneration: 7 }))
+  expect(invokeMock).toHaveBeenCalledWith('speak_event', {event:'advice'})
+  expect(invokeMock.mock.calls.some(([command]) => command === 'preview_static_advice_voice')).toBe(false)
 })

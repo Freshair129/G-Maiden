@@ -62,7 +62,7 @@ function annunciatorMenuItems(): ContextMenuEntry[] {
       id: "sig-test-alert",
       label: "ทดสอบเสียงเตือน",
       run: () => {
-        void invoke("speak_event", { event: "danger", fallback: "ทดสอบสัญญาณเตือนค่ะ" }).catch(() => {});
+        void invoke("speak_event", { event: "danger" }).catch(() => {});
       }
     }
   ];

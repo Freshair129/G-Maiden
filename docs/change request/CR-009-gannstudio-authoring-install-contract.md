@@ -1,3 +1,14 @@
+---
+title: G-AnnStudio original authoring and install contract
+doc_id: CR-009-gannstudio-authoring-install-contract
+status: superseded
+version: 0.2.0
+updated: 2026-10-31
+owner: G-Maiden
+---
+
+> Interface superseded by [[gann-event-media-contract]] under the explicit user instruction of 2026-10-31. The sections below preserve the historical 2026-07 implementation and its incomplete live acceptance; they are not the current playback/install interface.
+
 # CR-009 — G-AnnStudio Authoring Pipeline + G-Maiden Install Contract
 
 - **Status:** Implemented (G-Ann side, in the `G-Suite` repo) · live in-game verify pending (Boss)
@@ -102,3 +113,4 @@
 | Version | Date | Summary |
 | --- | --- | --- |
 | — | 2026-07-19 | link/metadata sweep (G1.5): wikilink/symbol-link fixes only — no content change |
+| 0.2.0 | 2026-10-31 | Mark original manifest/flat-cache interface superseded by the GANN-only contract; preserve historical evidence. |

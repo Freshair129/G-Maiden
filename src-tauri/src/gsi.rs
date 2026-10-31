@@ -613,6 +613,25 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
     crate::runtime::update_warning_context(session.session_epoch, &tick);
     // Announcer: detect kill/streak/state events from the tick and voice the
     // most significant one (clip-or-silent — these aren't TTS-faked).
+    let hp_event = crate::audio::critical_media_ready()
+        .then(|| crate::safety_events::observe_for_session(&tick, &session))
+        .flatten();
+    if let Some(event) = hp_event {
+        let app = app.clone();
+        let epoch = session.session_epoch;
+        let event = event.to_string();
+        tauri::async_runtime::spawn_blocking(move || {
+            if let Err(reason) = crate::voice_api::play_event(
+                app,
+                event,
+                epoch,
+                false,
+                crate::audio::Priority::Critical,
+            ) {
+                eprintln!("[G-AnnouncerMedia] phase=rejected owner=hp reason={reason}");
+            }
+        });
+    }
     let announce_candidates = crate::announcer::observe_for_session(&tick, &session);
     let announce = crate::announcer::most_important(&announce_candidates);
     if tick.in_game {
@@ -678,107 +697,19 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
         if crate::runtime::announcer_enabled()
             && crate::runtime::is_current_active_session_epoch(session.session_epoch)
         {
-            if let Some(selected) = crate::voice_api::select_announcer_clip(&ev) {
-                let mut banner = crate::voice_api::preview_banner(&selected.pack_id, &ev);
-                banner.clip = Some(selected.path.to_string_lossy().into_owned());
-                let visual_selected = selected.clone();
-                let visual_event = ev.clone();
-                let visual_epoch = session.session_epoch;
-                let visual_scope = std::sync::Arc::new(move || {
-                    crate::runtime::announcer_enabled()
-                        && crate::runtime::is_current_active_session_epoch(visual_epoch)
-                        && crate::voice_api::with_current_announcer_clip(
-                            &visual_event,
-                            &visual_selected,
-                            || (),
-                        )
-                        .is_some()
-                });
-                let visual = crate::vrzo_playback::observer(
-                    app.clone(),
-                    selected.clone(),
-                    ev.clone(),
-                    session.session_epoch,
+            let app = app.clone();
+            let epoch = session.session_epoch;
+            tauri::async_runtime::spawn_blocking(move || {
+                if let Err(reason) = crate::voice_api::play_event(
+                    app,
+                    ev,
+                    epoch,
                     false,
-                    visual_scope,
-                );
-                let vrzo_pack = selected.pack_id == "pack_vrzo_20261028";
-                crate::log::note_event_for_session(
-                    session.session_epoch,
-                    serde_json::json!({"type":"announcer_audio","phase":"requested","event":ev,"pack_id":selected.pack_id}),
-                );
-                let guard_clip = selected.clone();
-                let guard_event = ev.clone();
-                let epoch = session.session_epoch;
-                let selected_path = selected.path.clone();
-                let priority = crate::audio::priority_for_event(&ev);
-                let admit = move |commit: &mut dyn FnMut()| {
-                    let _ = crate::runtime::with_speech_admission(epoch, None, || {
-                        if crate::runtime::announcer_enabled() {
-                            let _ = crate::voice_api::with_current_announcer_clip(
-                                &guard_event,
-                                &guard_clip,
-                                commit,
-                            );
-                        }
-                        Ok(())
-                    });
-                };
-                let notify = move |outcome| {
-                    tauri::async_runtime::spawn_blocking(move || {
-                        let admitted = outcome == crate::audio::PlaybackResult::Admitted;
-                        crate::log::note_event_for_session(
-                            epoch,
-                            serde_json::json!({
-                                "type":"announcer_audio","phase":if admitted {"admitted"} else {"rejected"},
-                                "event":ev,"pack_id":selected.pack_id}),
-                        );
-                        if !admitted || !crate::runtime::is_current_active_session_epoch(epoch) {
-                            return;
-                        }
-                        crate::utterance::emit_for_session(
-                            &app,
-                            crate::utterance::UtterancePayload::new_for_session(
-                                "announcer",
-                                "line",
-                                ev.clone(),
-                                None,
-                                Some(selected.pack_name),
-                                &session,
-                            )
-                            .admitted(),
-                        );
-                        if vrzo_pack {
-                            return;
-                        }
-                        let result = app.emit(
-                            "announcer-banner",
-                            crate::runtime::MatchSessionEvent::new(banner, &session),
-                        );
-                        crate::log::note_event_for_session(
-                            epoch,
-                            serde_json::json!({"type":"announcer_banner",
-                                "phase":if result.is_ok() {"emitted"} else {"emit_failed"},"event":ev,"pack_id":selected.pack_id}),
-                        );
-                    });
-                };
-                if let Some(observer) = visual {
-                    crate::audio::play_observed_with_lifecycle(
-                        selected_path,
-                        priority,
-                        admit,
-                        notify,
-                        observer,
-                    );
-                } else {
-                    crate::audio::play_observed(selected_path, priority, admit, notify);
+                    crate::audio::Priority::Announcer,
+                ) {
+                    eprintln!("[G-AnnouncerMedia] phase=rejected reason={reason}");
                 }
-            } else {
-                crate::log::note_event_for_session(
-                    session.session_epoch,
-                    serde_json::json!({"type":"announcer_audio","phase":"unmapped","event":ev}),
-                );
-            }
+            });
         }
     }
     (StatusCode::OK, "ok")
@@ -795,13 +726,12 @@ async fn telemetry_ingest(body: String) -> &'static str {
     "ok"
 }
 
-/// Body accepted by `POST /announcer/install`. `pack_id` is preferred;
-/// `pack` is the legacy key kept for G-AnnStudio builds that predate this
-/// fix. `activate` defaults to true — install almost always means "use this
-/// pack now", but the caller can opt out (e.g. to stage a pack ahead of time).
+/// Notification uses packId and explicit containerSha256 when activation is requested.
+/// An omitted activate flag retains the existing true default and still requires that digest.
 struct InstallRequest {
     pack_id: String,
     activate: bool,
+    container_sha256: Option<String>,
 }
 
 fn parse_install_request(body: &str) -> InstallRequest {
@@ -812,17 +742,16 @@ fn parse_install_request(body: &str) -> InstallRequest {
         .unwrap_or("")
         .to_string();
     let activate = v["activate"].as_bool().unwrap_or(true);
-    InstallRequest { pack_id, activate }
+    let container_sha256 = v["containerSha256"].as_str().map(str::to_owned);
+    InstallRequest {
+        pack_id,
+        activate,
+        container_sha256,
+    }
 }
 
-/// Receive a notify from G-AnnStudio after it installs a pack into
-/// `voice-cache/packs/<id>/`. `:3000` has no auth and never writes, moves, or
-/// extracts files. Development builds can activate local authoring packs;
-/// release builds accept only a Store-install receipt and otherwise reject the
-/// activation. Returns real per-event counts resolved from the pack's manifest
-/// (`voice_api::install_report`), replacing the old
-/// `audio::all_counts()` call which counted subfolders of the legacy flat
-/// `voice-cache/` layout and had no notion of a manifest-based pack.
+/// Report verified installed GANN coverage and optionally activate its exact container digest.
+/// This loopback route never extracts or rewrites package media.
 async fn announcer_install(body: String) -> axum::Json<serde_json::Value> {
     axum::Json(run_announcer_install(&parse_install_request(&body)))
 }
@@ -949,6 +878,10 @@ fn run_announcer_install(req: &InstallRequest) -> serde_json::Value {
         });
     }
 
+    let digest = crate::voice_api::container_sha256(&req.pack_id);
+    if req.activate && (req.container_sha256.is_none() || req.container_sha256 != digest) {
+        return serde_json::json!({"ok":false,"packId":req.pack_id,"error":"GANN container hash mismatch"});
+    }
     let report = match crate::voice_api::install_report(&req.pack_id) {
         Ok(r) => r,
         Err(e) => {
@@ -992,6 +925,7 @@ fn run_announcer_install(req: &InstallRequest) -> serde_json::Value {
         "pack": report.pack_id,
         "packId": report.pack_id,
         "activated": activated,
+        "containerSha256": digest,
         "counts": report.counts,
         "unmappedEvents": report.unmapped_events,
         "missingClips": report.missing_clips,
@@ -1096,10 +1030,13 @@ pub fn note_config_port_changed(changed: bool) {
 }
 
 async fn endpoint_health() -> ([(axum::http::header::HeaderName, &'static str); 1], String) {
-    (
-        [(axum::http::header::CONTENT_TYPE, "application/json")],
-        crate::local_endpoint::health_body(current_port()),
-    )
+    ([(axum::http::header::CONTENT_TYPE, "application/json")], {
+        let mut body: Value =
+            serde_json::from_str(&crate::local_endpoint::health_body(current_port()))
+                .unwrap_or(Value::Null);
+        body["voiceRootId"] = crate::voice_api::voice_root_id().ok().into();
+        body.to_string()
+    })
 }
 static DOTA_PROCESS_RUNNING: AtomicBool = AtomicBool::new(false);
 static DISPLAY_EXCLUSIVE_ACTIVE: AtomicBool = AtomicBool::new(false);
@@ -1786,69 +1723,52 @@ mod tests {
 
     #[test]
     fn install_activates_existing_pack_and_reports_real_counts() {
-        let root = install_temp_root("ok");
+        let root = install_temp_root("gann-ok");
         crate::voice_api::set_test_voice_root(Some(root.clone()));
         let _guard = InstallRootGuard(root.clone());
-
-        install_write_pack(
-            &root,
-            "demo",
-            r#"{"kill":{"text":"","thai":"","banner":"","bannerAsset":"","clips":["clips/kill_01.wav","clips/kill_02.wav"]}}"#,
-        );
-        std::fs::write(root.join("packs/demo/clips/kill_01.wav"), b"x").unwrap();
-        std::fs::write(root.join("packs/demo/clips/kill_02.wav"), b"x").unwrap();
-
-        let resp = run_announcer_install(&InstallRequest {
-            pack_id: "demo".into(),
+        let (id, _, _) = crate::voice_api::test_package::install(&root, 91, "kill");
+        let digest = crate::voice_api::container_sha256(&id).unwrap();
+        let response = run_announcer_install(&InstallRequest {
+            pack_id: id.clone(),
             activate: true,
+            container_sha256: Some(digest.clone()),
         });
-        assert_eq!(resp["ok"], true);
-        assert_eq!(resp["activated"], true);
-        assert_eq!(resp["packId"], "demo");
-        assert_eq!(resp["counts"]["kill"], 2);
-
-        let active = std::fs::read_to_string(root.join("active-pack.txt")).unwrap();
-        assert_eq!(active.trim(), "demo");
+        assert_eq!(response["ok"], true);
+        assert_eq!(response["activated"], true);
+        assert_eq!(response["counts"]["kill"], 1);
+        assert_eq!(response["containerSha256"], digest);
+        assert_eq!(
+            std::fs::read_to_string(root.join("active-pack.txt")).unwrap(),
+            id
+        );
     }
 
     #[test]
-    fn install_accepts_legacy_pack_key_when_pack_id_absent() {
-        let root = install_temp_root("legacy-key");
+    fn install_rejects_legacy_pack_without_mutating_selection() {
+        let root = install_temp_root("legacy-rejected");
         crate::voice_api::set_test_voice_root(Some(root.clone()));
         let _guard = InstallRootGuard(root.clone());
-
         install_write_pack(&root, "demo", r#"{}"#);
-
-        let req = parse_install_request(r#"{"pack":"demo"}"#);
-        assert_eq!(req.pack_id, "demo");
-        assert!(req.activate); // default true when omitted
-
-        let resp = run_announcer_install(&req);
-        assert_eq!(resp["ok"], true);
-        assert_eq!(resp["activated"], true);
+        let response = run_announcer_install(&parse_install_request(r#"{"pack":"demo"}"#));
+        assert_eq!(response["ok"], false);
+        assert!(!root.join("active-pack.txt").exists());
     }
 
     #[test]
     fn install_activate_false_returns_counts_without_writing_active_pack() {
-        let root = install_temp_root("no-activate");
+        let root = install_temp_root("gann-stage");
         crate::voice_api::set_test_voice_root(Some(root.clone()));
         let _guard = InstallRootGuard(root.clone());
-
-        install_write_pack(
-            &root,
-            "demo",
-            r#"{"kill":{"text":"","thai":"","banner":"","bannerAsset":"","clips":["clips/kill_01.wav"]}}"#,
-        );
-        std::fs::write(root.join("packs/demo/clips/kill_01.wav"), b"x").unwrap();
-
-        let resp = run_announcer_install(&InstallRequest {
-            pack_id: "demo".into(),
+        let (id, _, _) = crate::voice_api::test_package::install(&root, 92, "kill");
+        let response = run_announcer_install(&InstallRequest {
+            pack_id: id,
             activate: false,
+            container_sha256: None,
         });
-        assert_eq!(resp["ok"], true);
-        assert_eq!(resp["activated"], false);
-        assert_eq!(resp["counts"]["kill"], 1);
-        assert!(!root.join("active-pack.txt").is_file());
+        assert_eq!(response["ok"], true);
+        assert_eq!(response["activated"], false);
+        assert_eq!(response["counts"]["kill"], 1);
+        assert!(!root.join("active-pack.txt").exists());
     }
 
     #[test]
@@ -1862,11 +1782,40 @@ mod tests {
         let resp = run_announcer_install(&InstallRequest {
             pack_id: "does-not-exist".into(),
             activate: true,
+            container_sha256: None,
         });
         assert_eq!(resp["ok"], false);
 
         let active = std::fs::read_to_string(root.join("active-pack.txt")).unwrap();
         assert_eq!(active.trim(), "previous");
+    }
+
+    #[test]
+    fn install_digest_mismatch_and_omission_preserve_the_current_gann() {
+        let root = install_temp_root("digest-fence");
+        crate::voice_api::set_test_voice_root(Some(root.clone()));
+        let _guard = InstallRootGuard(root.clone());
+        let (previous, _, _) = crate::voice_api::test_package::install(&root, 93, "kill");
+        crate::voice_api::activate_if_exists(&previous).unwrap();
+        let (next, _, _) = crate::voice_api::test_package::install(&root, 94, "death");
+        for digest in [None, Some("0".repeat(64))] {
+            let response = run_announcer_install(&InstallRequest {
+                pack_id: next.clone(),
+                activate: true,
+                container_sha256: digest,
+            });
+            assert_eq!(response["ok"], false);
+            assert_eq!(
+                std::fs::read_to_string(root.join("active-pack.txt")).unwrap(),
+                previous
+            );
+            assert_eq!(
+                crate::voice_api::select_announcer_clip("kill")
+                    .unwrap()
+                    .pack_id,
+                previous
+            );
+        }
     }
 
     #[test]

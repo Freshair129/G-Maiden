@@ -8,10 +8,9 @@ import type { VoiceEvent, VoicePack, VoiceState } from '../voice-types'
 const { invokeMock } = vi.hoisted(() => ({ invokeMock: vi.fn() }))
 vi.mock('@tauri-apps/api/core', () => ({ invoke: invokeMock }))
 
-function event(id: string, clip: string | null, fallback: string | null): VoiceEvent {
+function event(id: string, clip: string | null): VoiceEvent {
   return {
     id, group: 'combat', label: id, subtitle: '', thai: id, accent: '#64c7ff',
-    defaultClipCount: fallback ? 1 : 0, defaultClipUrl: fallback,
     mapping: clip ? {
       text: id, thai: id, banner: '', bannerAsset: '', bannerUrl: null,
       clip: 'clips/kill.wav', clips: ['clips/kill.wav'], hasClip: true, clipCount: 1,
@@ -23,11 +22,11 @@ function pack(id: string, name: string): VoicePack {
   return {
     id, name, version: '1', locale: 'th-TH', author: 'Local', description: '',
     path: `C:\\voice-cache\\packs\\${id}`, coveredEvents: 1, totalEvents: 3, clips: 1,
-    availableClips: [], availableBanners: [], coverImage: '', coverImageUrl: null, builtIn: false,
+    availableClips: [], availableBanners: [], coverImage: '', coverImageUrl: null,
     items: [
-      event('kill', `C:\\voice-cache\\packs\\${id}\\clips\\kill.wav`, 'C:\\voice-pack-default\\kill\\1.wav'),
-      event('respawn', null, 'C:\\voice-pack-default\\respawn\\1.wav'),
-      event('danger', null, null)
+      event('kill', `C:\\voice-cache\\packs\\${id}\\clips\\kill.wav`),
+      event('respawn', null),
+      event('danger', null)
     ]
   }
 }
@@ -65,7 +64,7 @@ afterEach(async () => {
 it('previews the selected non-active pack through native audio without banner or activation', async () => {
   await act(async () => { container.querySelector<HTMLButtonElement>('[aria-label="Play kill"]')!.click() })
   expect(invokeMock).toHaveBeenCalledTimes(1)
-  expect(invokeMock).toHaveBeenCalledWith('preview_voice_event_audio', { packId: 'selected-other', event: 'kill' })
+  expect(invokeMock).toHaveBeenCalledWith('preview_announcer_event', { packId: 'selected-other', event: 'kill' })
   expect(browserAudio).not.toHaveBeenCalled()
   expect(container.querySelector('.voice-detail h3')?.textContent).toBe('Other')
   expect(container.querySelector('.voice-inventory-sub')?.textContent).toContain('Original')
@@ -99,7 +98,7 @@ it('displays native preview errors without activating a pack or invoking a banne
   await act(async () => { container.querySelector<HTMLButtonElement>('[aria-label="Play kill"]')!.click() })
   expect(container.querySelector('.voice-toast.err')?.textContent).toBe('Selected clip is unavailable')
   expect(invokeMock).toHaveBeenCalledTimes(1)
-  expect(invokeMock).toHaveBeenCalledWith('preview_voice_event_audio', { packId: 'selected-other', event: 'kill' })
+  expect(invokeMock).toHaveBeenCalledWith('preview_announcer_event', { packId: 'selected-other', event: 'kill' })
   expect(browserAudio).not.toHaveBeenCalled()
   expect(container.querySelector('.voice-inventory-sub')?.textContent).toContain('Original')
 })

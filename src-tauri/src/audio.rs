@@ -1,12 +1,6 @@
 //! Voice-clip playback via rodio (in-process, no PowerShell).
 //!
-//! Lookup order per event:
-//!   1. user's `voice-cache/{event}/*.{wav,mp3}` (their installed pack, exe-rel
-//!      first, then `assets/voice-cache` for dev mode)
-//!   2. `voice-pack-default/{event}/*.{wav,mp3}` - the gTTS Thai pack bundled
-//!      with the installer so an intelligible Maiden ships out of the box.
-//!
-//! Both .wav and .mp3 work - rodio's Symphonia decodes both.
+//! Events resolve only from the equipped, verified GANN snapshot.
 //!
 //! OutputStream is !Sync, so we own it on a dedicated thread and communicate via
 //! a channel. Announcer replacements permit one150ms outgoing fade;
@@ -31,12 +25,12 @@ pub use playback_admission::PlaybackResult;
 use playback_admission::{attempt_commit_if, OutputAdmission, PlaybackReceipt};
 static OUTPUT_ADMISSION: OutputAdmission = OutputAdmission::new();
 static PLAYING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+#[path = "audio_fade.rs"]
+mod fade;
 #[path = "audio_preparation.rs"]
 mod preparation;
 #[path = "audio_render.rs"]
 mod render;
-#[path = "audio_fade.rs"]
-mod fade;
 
 pub(crate) fn output_admission() -> Option<std::sync::MutexGuard<'static, ()>> {
     OUTPUT_ADMISSION.try_enter()
@@ -79,56 +73,183 @@ static VOLUME: AtomicU8 = AtomicU8::new(80);
 static ACTIVE_PRIORITY: AtomicU8 = AtomicU8::new(0);
 static AUDIO_READY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 static AUDIO_SENDER: OnceLock<Mutex<mpsc::Sender<Cmd>>> = OnceLock::new();
-struct CriticalClips {
-    at: Instant,
-    gank: Option<PathBuf>,
-    revision: Option<PathBuf>,
+struct CriticalClip {
+    selected: crate::voice_api::AnnouncerClip,
+    samples: Vec<i16>,
+    original: [u8; 32],
+    played: [u8; 32],
 }
+impl CriticalClip {
+    fn source(&self) -> rodio::buffer::SamplesBuffer<i16> {
+        rodio::buffer::SamplesBuffer::new(1, 48000, self.samples.clone())
+    }
+}
+struct CriticalClips {
+    generation: Option<u64>,
+    gank: Option<Arc<CriticalClip>>,
+    revision: Option<Arc<CriticalClip>>,
+    danger: Option<Arc<CriticalClip>>,
+}
+#[cfg(not(test))]
 static CRITICAL_CLIPS: Mutex<Option<CriticalClips>> = Mutex::new(None);
+#[cfg(test)]
+thread_local! {static CRITICAL_CLIPS:std::cell::RefCell<Option<CriticalClips>>=const{std::cell::RefCell::new(None)};}
+#[cfg(not(test))]
+fn with_critical_cache<T>(f: impl FnOnce(Option<&CriticalClips>) -> T) -> Option<T> {
+    Some(f(CRITICAL_CLIPS.try_lock().ok()?.as_ref()))
+}
+#[cfg(test)]
+fn with_critical_cache<T>(f: impl FnOnce(Option<&CriticalClips>) -> T) -> Option<T> {
+    Some(CRITICAL_CLIPS.with(|cache| f(cache.borrow().as_ref())))
+}
+#[cfg(not(test))]
+fn store_critical_cache(next: CriticalClips) -> bool {
+    if let Ok(mut cache) = CRITICAL_CLIPS.lock() {
+        if next.generation != crate::voice_api::current_announcer_revision() {
+            return false;
+        }
+        *cache = Some(next);
+        return true;
+    }
+    false
+}
+#[cfg(test)]
+fn store_critical_cache(next: CriticalClips) -> bool {
+    CRITICAL_CLIPS.with(|cache| {
+        if next.generation == crate::voice_api::current_announcer_revision() {
+            *cache.borrow_mut() = Some(next);
+            true
+        } else {
+            false
+        }
+    })
+}
+fn cached_critical(event: &str) -> Option<Arc<CriticalClip>> {
+    with_critical_cache(|cache| {
+        let cache = cache?;
+        match event {
+            "gank" => cache.gank.clone(),
+            "revision" => cache.revision.clone(),
+            "danger" => cache.danger.clone(),
+            _ => None,
+        }
+    })?
+}
+pub(crate) fn critical_media_ready() -> bool {
+    let revision = crate::voice_api::current_announcer_revision();
+    with_critical_cache(|cache| match cache {
+        Some(cache) => cache.generation == revision,
+        None => revision.is_none(),
+    })
+    .unwrap_or(false)
+}
+pub(crate) fn critical_event_selection(event: &str) -> Option<crate::voice_api::AnnouncerClip> {
+    let clip = cached_critical(event)?;
+    crate::voice_api::announcer_revision_current(clip.selected.revision)
+        .then(|| clip.selected.clone())
+}
 
-/// Called from startup/prewarm workers; file resolution never runs on capture.
 pub fn prepare_critical_playback() {
     let _ = sender();
-    static STARTED: OnceLock<()> = OnceLock::new();
-    STARTED.get_or_init(|| {
-        let _ = std::thread::Builder::new()
-            .name("g-critical-clips".into())
-            .spawn(|| loop {
-                let gank = pick_clip("gank");
-                let revision = pick_clip("revision");
-                if let Ok(mut slot) = CRITICAL_CLIPS.lock() {
-                    *slot = Some(CriticalClips {
-                        at: Instant::now(),
-                        gank,
-                        revision,
-                    });
-                }
-                std::thread::sleep(Duration::from_secs(1));
-            });
-    });
+    refresh_critical_cache();
 }
-
+fn critical_snapshot(event: &str) -> Option<Arc<CriticalClip>> {
+    use std::io::Read;
+    let selected = crate::voice_api::select_announcer_clip(event)?;
+    crate::voice_api::verify_visual(&selected).ok()?;
+    let pair = selected.pair.as_ref()?;
+    let read = |path: &std::path::Path| -> Option<Vec<u8>> {
+        let file = fs::File::open(path).ok()?;
+        let mut bytes = Vec::new();
+        file.take(16 * 1024 * 1024 + 1)
+            .read_to_end(&mut bytes)
+            .ok()?;
+        (bytes.len() <= 16 * 1024 * 1024).then_some(bytes)
+    };
+    let original_bytes = read(&pair.original)?;
+    let hash = ring::digest::digest(&ring::digest::SHA256, &original_bytes);
+    let mut original = [0; 32];
+    original.copy_from_slice(hash.as_ref());
+    if crate::vrzo_mix::hex_digest(&original) != pair.original_hash {
+        return None;
+    }
+    let bytes = read(&pair.mixed)?;
+    let (samples, played) =
+        crate::vrzo_mix::decode_mix(&bytes, &pair.mixed_hash, pair.samples).ok()?;
+    Some(Arc::new(CriticalClip {
+        selected,
+        samples,
+        original,
+        played,
+    }))
+}
+/// Only mutation/startup work performs media I/O; capture reads immutable PCM.
+pub(crate) fn refresh_critical_cache() {
+    let next = CriticalClips {
+        generation: crate::voice_api::current_announcer_revision(),
+        gank: critical_snapshot("gank"),
+        revision: critical_snapshot("revision"),
+        danger: critical_snapshot("danger"),
+    };
+    let ready:Vec<_>=[("gank",&next.gank),("revision",&next.revision),("danger",&next.danger)].into_iter().filter_map(|(event,clip)|{
+        let clip=clip.as_ref()?;Some(format!("[G-AnnouncerMedia] phase=critical_ready event={event} revision={} original_sha256={} played_sha256={}",clip.selected.revision,crate::vrzo_mix::hex_digest(&clip.original),crate::vrzo_mix::hex_digest(&clip.played)))
+    }).collect();
+    if store_critical_cache(next) {
+        for message in ready {
+            eprintln!("{message}");
+        }
+    } else {
+        eprintln!("[G-AnnouncerMedia] phase=rejected reason=stale_critical_generation");
+    }
+}
 pub fn try_interrupt_cached_before(
     event: &str,
-    prepared: Option<PathBuf>,
+    _prepared: Option<PathBuf>,
     deadline: Instant,
 ) -> bool {
     if !AUDIO_READY.load(Ordering::Acquire) || Instant::now() >= deadline {
         return false;
     }
-    let cached = CRITICAL_CLIPS.try_lock().ok().and_then(|slot| {
-        let cache = slot
-            .as_ref()
-            .filter(|cache| cache.at.elapsed() < Duration::from_secs(2))?;
-        match event {
-            "gank" => cache.gank.clone(),
-            "revision" => cache.revision.clone(),
-            _ => None,
-        }
-    });
-    let path = cached_critical_path(cached, prepared);
-    let Some(path) = path else {
+    let Some(clip) = cached_critical(event) else {
+        eprintln!("[G-AnnouncerMedia] phase=unmapped event={event} source=gann-critical");
         return false;
+    };
+    if !crate::voice_api::announcer_revision_current(clip.selected.revision) {
+        return false;
+    }
+    let Some(app) = crate::voice_api::playback_app() else {
+        return false;
+    };
+    let epoch = crate::runtime::match_session_snapshot().session_epoch;
+    let selected = clip.selected.clone();
+    let visual_selected = selected.clone();
+    let visual_event = event.to_owned();
+    let scope = Arc::new(move || {
+        crate::runtime::signal_enabled()
+            && crate::runtime::is_current_capture_session(epoch)
+            && crate::voice_api::with_current_announcer_clip(&visual_event, &visual_selected, || ())
+                .is_some()
+    });
+    let Some(observer) = crate::vrzo_playback::observer(
+        app,
+        selected.clone(),
+        event.to_owned(),
+        epoch,
+        false,
+        scope,
+    ) else {
+        return false;
+    };
+    let event = event.to_owned();
+    let observation = PlaybackObservation {
+        admit: Box::new(move |commit| {
+            if crate::runtime::signal_enabled() && crate::runtime::is_current_capture_session(epoch)
+            {
+                let _ = crate::voice_api::with_current_announcer_clip(&event, &selected, commit);
+            }
+        }),
+        receipt: PlaybackReceipt::new(|_| {}),
+        lifecycle: Some(observer),
     };
     let Some(sender) = AUDIO_SENDER.get() else {
         return false;
@@ -138,7 +259,7 @@ pub fn try_interrupt_cached_before(
     };
     let (accepted, admission) = mpsc::sync_channel(1);
     if sender
-        .send(Cmd::Critical(path, deadline, accepted))
+        .send(Cmd::Critical(clip, deadline, accepted, observation))
         .is_err()
     {
         return false;
@@ -154,7 +275,8 @@ pub fn try_interrupt_cached_before(
 pub enum Priority {
     Cosmetic = 0,
     Normal = 1,
-    Critical = 2,
+    Announcer = 2,
+    Critical = 3,
 }
 
 impl Priority {
@@ -175,28 +297,33 @@ fn should_fade_announcer(previous: bool, incoming: bool, priority: Priority) -> 
     previous && incoming && priority != Priority::Critical
 }
 
-type AnnouncerScope = (u64, u64, bool);
+type AnnouncerScope = (u64, u64, bool, u8);
 type RetiringVoice = (Sink, Instant, Priority, AnnouncerScope);
 
-fn announcer_scope_current((revision, epoch, preview): AnnouncerScope) -> bool {
+fn announcer_scope_current((revision, epoch, preview, owner): AnnouncerScope) -> bool {
     crate::voice_api::announcer_revision_current(revision)
-        && (preview || (crate::runtime::announcer_enabled() && crate::runtime::is_current_active_session_epoch(epoch)))
-}
-
-fn cached_critical_path(cached: Option<PathBuf>, prepared: Option<PathBuf>) -> Option<PathBuf> {
-    cached.or(prepared)
+        && (preview
+            || ((match owner {
+                1 => crate::runtime::signal_enabled(),
+                2 => crate::runtime::hp_alert_media_enabled(),
+                _ => crate::runtime::announcer_enabled(),
+            }) && crate::runtime::is_current_active_session_epoch(epoch)))
 }
 
 enum Cmd {
     Play(PathBuf, Priority),
-    Observed(PathBuf, Priority, PlaybackObservation),
     Prepared(
         PathBuf,
         Priority,
         preparation::PreparedClip,
         PlaybackObservation,
     ),
-    Critical(PathBuf, Instant, mpsc::SyncSender<bool>),
+    Critical(
+        Arc<CriticalClip>,
+        Instant,
+        mpsc::SyncSender<bool>,
+        PlaybackObservation,
+    ),
     Stop,
     StopAtMost(Priority),
     Volume(f32),
@@ -254,15 +381,23 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
         audio_lifecycle::Lifecycle::new(lifecycle_current().clone(), audio_generation().clone());
 
     loop {
-        if retiring.as_ref().is_some_and(|(s, started, _, scope)| s.empty()
-            || started.elapsed() >= Duration::from_millis(fade::FADE_MS + 50) || !announcer_scope_current(*scope)) {
-            if let Some((s, _, _, _)) = retiring.take() { s.stop(); }
+        if retiring.as_ref().is_some_and(|(s, started, _, scope)| {
+            s.empty()
+                || started.elapsed() >= Duration::from_millis(fade::FADE_MS + 50)
+                || !announcer_scope_current(*scope)
+        }) {
+            if let Some((s, _, _, _)) = retiring.take() {
+                s.stop();
+            }
         }
         if current_scope.is_some_and(|scope| !announcer_scope_current(scope)) {
-            if let Some(s) = sink.take() { s.stop(); }
+            if let Some(s) = sink.take() {
+                s.stop();
+            }
             lifecycle.finish(PlaybackLifecyclePhase::Cancelled);
             finish_trace(&mut trace, "scope_cancelled");
-            current_fade = None; current_scope = None;
+            current_fade = None;
+            current_scope = None;
             current_priority = Priority::Cosmetic;
             ACTIVE_PRIORITY.store(Priority::Cosmetic.as_u8(), Ordering::Relaxed);
             PLAYING.store(false, Ordering::Release);
@@ -285,15 +420,12 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
         };
 
         let (cmd, critical, mut observation, prepared) = match cmd {
-            Cmd::Critical(path, deadline, accepted) => (
-                Cmd::Play(path, Priority::Critical),
-                Some((deadline, accepted)),
-                None,
+            Cmd::Critical(clip, deadline, accepted, observation) => (
+                Cmd::Play(clip.selected.path.clone(), Priority::Critical),
+                Some((deadline, accepted, clip)),
+                Some(observation),
                 None,
             ),
-            Cmd::Observed(path, priority, observation) => {
-                (Cmd::Play(path, priority), None, Some(observation), None)
-            }
             Cmd::Prepared(path, priority, pcm, observation) => (
                 Cmd::Play(path, priority),
                 None,
@@ -303,12 +435,17 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
             other => (other, None, None, None),
         };
         match cmd {
-            Cmd::Critical(..) | Cmd::Observed(..) | Cmd::Prepared(..) => {
+            Cmd::Critical(..) | Cmd::Prepared(..) => {
                 unreachable!("playback command is normalized above")
             }
             Cmd::StopAtMost(ceiling) => {
-                if retiring.as_ref().is_some_and(|(_, _, priority, _)| should_cancel_current(*priority, ceiling)) {
-                    if let Some((s, _, _, _)) = retiring.take() { s.stop(); }
+                if retiring
+                    .as_ref()
+                    .is_some_and(|(_, _, priority, _)| should_cancel_current(*priority, ceiling))
+                {
+                    if let Some((s, _, _, _)) = retiring.take() {
+                        s.stop();
+                    }
                 }
                 if should_cancel_current(current_priority, ceiling) {
                     if let Some(s) = sink.take() {
@@ -324,7 +461,9 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                 }
             }
             Cmd::Stop => {
-                if let Some((s, _, _, _)) = retiring.take() { s.stop(); }
+                if let Some((s, _, _, _)) = retiring.take() {
+                    s.stop();
+                }
                 if let Some(s) = sink.take() {
                     s.stop();
                     finish_trace(&mut trace, "cancelled");
@@ -340,15 +479,22 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                 if let Some(s) = &sink {
                     s.set_volume(vol);
                 }
-                if let Some((s, _, _, _)) = &retiring { s.set_volume(vol); }
+                if let Some((s, _, _, _)) = &retiring {
+                    s.set_volume(vol);
+                }
             }
             Cmd::Play(path, priority) => {
-                let incoming_announcer = observation.as_ref().is_some_and(|o| o.lifecycle.is_some());
-                let incoming_scope = observation.as_ref().and_then(|o| o.lifecycle.as_ref()).and_then(|o| o.visual_scope);
-                let next_fade = incoming_announcer.then(|| Arc::new(std::sync::atomic::AtomicBool::new(false)));
+                let incoming_announcer =
+                    observation.as_ref().is_some_and(|o| o.lifecycle.is_some());
+                let incoming_scope = observation
+                    .as_ref()
+                    .and_then(|o| o.lifecycle.as_ref())
+                    .and_then(|o| o.visual_scope);
+                let next_fade =
+                    incoming_announcer.then(|| Arc::new(std::sync::atomic::AtomicBool::new(false)));
                 if critical
                     .as_ref()
-                    .is_some_and(|(deadline, _)| Instant::now() >= *deadline)
+                    .is_some_and(|(deadline, _, _)| Instant::now() >= *deadline)
                 {
                     continue;
                 }
@@ -356,13 +502,22 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                     continue;
                 }
                 let fence = prepared.as_ref().map(|pcm| pcm.fence.clone());
-                let audio_sha256 = prepared.as_ref().and_then(|pcm| pcm.audio_sha256);
-                let played_audio_sha256 = prepared.as_ref().and_then(|pcm| pcm.played_audio_sha256);
+                let audio_sha256 = prepared
+                    .as_ref()
+                    .and_then(|pcm| pcm.audio_sha256)
+                    .or_else(|| critical.as_ref().map(|(_, _, clip)| clip.original));
+                let played_audio_sha256 = prepared
+                    .as_ref()
+                    .and_then(|pcm| pcm.played_audio_sha256)
+                    .or_else(|| critical.as_ref().map(|(_, _, clip)| clip.played));
                 if fence.as_ref().is_some_and(|fence| !fence.is_current()) {
                     continue;
                 }
                 let source: Box<dyn rodio::Source<Item = i16> + Send> = match prepared {
                     Some(pcm) => Box::new(pcm),
+                    None if critical.is_some() => {
+                        Box::new(critical.as_ref().expect("critical source").2.source())
+                    }
                     None => {
                         let file = match preparation::open_verified_file(&path) {
                             Ok(file) => file,
@@ -383,15 +538,18 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                 if !source_has_frames(&source) {
                     continue;
                 }
-                let source: Box<dyn rodio::Source<Item = i16> + Send> = if let Some(control) = &next_fade {
-                    Box::new(fade::Fade::new(source, control.clone()))
-                } else { source };
+                let source: Box<dyn rodio::Source<Item = i16> + Send> =
+                    if let Some(control) = &next_fade {
+                        Box::new(fade::Fade::new(source, control.clone()))
+                    } else {
+                        source
+                    };
                 let Some(_output_guard) = output_admission() else {
                     continue;
                 };
                 let deadline = critical
                     .as_ref()
-                    .map(|(deadline, _)| *deadline)
+                    .map(|(deadline, _, _)| *deadline)
                     .unwrap_or_else(|| Instant::now() + Duration::from_millis(50));
                 if !crate::tts::stop_for_clip(priority, deadline) {
                     continue;
@@ -401,7 +559,7 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                         s.set_volume(VOLUME.load(Ordering::Relaxed) as f32 / 100.0);
                         if critical
                             .as_ref()
-                            .is_some_and(|(deadline, _)| Instant::now() >= *deadline)
+                            .is_some_and(|(deadline, _, _)| Instant::now() >= *deadline)
                         {
                             continue;
                         }
@@ -421,18 +579,33 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                                     if priority == Priority::Critical {
                                         preparation::cancel_up_to(Priority::Normal);
                                     }
-                                    if let Some((s, _, _, _)) = retiring.take() { s.stop(); }
+                                    if let Some((s, _, _, _)) = retiring.take() {
+                                        s.stop();
+                                    }
                                     if let Some(previous) = sink.take() {
                                         previous_trace = trace.take();
-                                        if should_fade_announcer(current_fade.is_some(), incoming_announcer, priority)
-                                            && incoming_scope.is_some() && current_scope == incoming_scope {
+                                        if should_fade_announcer(
+                                            current_fade.is_some(),
+                                            incoming_announcer,
+                                            priority,
+                                        ) && incoming_scope.is_some()
+                                            && current_scope == incoming_scope
+                                        {
                                             if let Some(control) = current_fade.take() {
                                                 control.store(true, Ordering::Release);
-                                                retiring = Some((previous, Instant::now(), current_priority, current_scope.expect("matching announcer scope")));
+                                                retiring = Some((
+                                                    previous,
+                                                    Instant::now(),
+                                                    current_priority,
+                                                    current_scope
+                                                        .expect("matching announcer scope"),
+                                                ));
                                                 retired_previous = true;
                                                 eprintln!("[G-Maiden audio] phase=announcer_retiring fade_ms={} incoming_delay_ms=0 incoming_rate=1", fade::FADE_MS);
                                             }
-                                        } else { previous.stop(); }
+                                        } else {
+                                            previous.stop();
+                                        }
                                     }
                                     current_fade = next_fade;
                                     current_scope = incoming_scope;
@@ -455,13 +628,17 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                         drop(_output_guard);
                         if committed {
                             if previous_trace.is_some() {
-                                lifecycle.finish(if retired_previous { PlaybackLifecyclePhase::Retiring } else { PlaybackLifecyclePhase::Preempted });
+                                lifecycle.finish(if retired_previous {
+                                    PlaybackLifecyclePhase::Retiring
+                                } else {
+                                    PlaybackLifecyclePhase::Preempted
+                                });
                             }
                             let observer = observation
                                 .as_mut()
                                 .and_then(|value| value.lifecycle.take());
                             lifecycle.start(observer, audio_sha256, played_audio_sha256);
-                            if let Some((_, accepted)) = critical {
+                            if let Some((_, accepted, _)) = critical {
                                 let _ = accepted.try_send(true);
                             }
                             if let Some(observation) = observation {
@@ -495,16 +672,6 @@ fn send(cmd: Cmd) {
     }
 }
 
-/// Play a specific WAV file by path (used by Piper TTS to play its output).
-/// Cancels any currently-playing clip first so Maiden never overlaps herself.
-pub fn play_file(path: PathBuf) {
-    play_file_with_priority(path, Priority::Normal);
-}
-
-pub fn play_file_with_priority(path: PathBuf, priority: Priority) {
-    send(Cmd::Play(path, priority));
-}
-
 pub fn play_observed(
     path: PathBuf,
     priority: Priority,
@@ -516,11 +683,7 @@ pub fn play_observed(
         receipt: PlaybackReceipt::new(notify),
         lifecycle: None,
     };
-    if priority == Priority::Critical {
-        send(Cmd::Observed(path, priority, observation));
-    } else {
-        preparation::enqueue(path, priority, observation);
-    }
+    preparation::enqueue(path, priority, observation);
 }
 
 /// Send bounded lifecycle notifications only after this exact clip is admitted.
@@ -537,7 +700,41 @@ pub fn play_observed_with_lifecycle(
         lifecycle: Some(lifecycle),
     };
     if priority == Priority::Critical {
-        send(Cmd::Observed(path, priority, observation));
+        let revision = observation
+            .lifecycle
+            .as_ref()
+            .and_then(|o| o.visual_scope)
+            .map(|s| s.0);
+        let expected = observation
+            .lifecycle
+            .as_ref()
+            .and_then(|o| o.mixed.as_ref())
+            .map(|m| m.mixed_sha256.clone());
+        let clip = with_critical_cache(|cache| {
+            cache.and_then(|cache| {
+                [&cache.gank, &cache.revision, &cache.danger]
+                    .into_iter()
+                    .flatten()
+                    .find(|clip| {
+                        clip.selected.path == path
+                            && Some(clip.selected.revision) == revision
+                            && Some(crate::vrzo_mix::hex_digest(&clip.played)) == expected
+                    })
+                    .cloned()
+            })
+        })
+        .flatten();
+        if let Some(clip) = clip {
+            let (accepted, _) = mpsc::sync_channel(1);
+            send(Cmd::Critical(
+                clip,
+                Instant::now() + Duration::from_millis(250),
+                accepted,
+                observation,
+            ));
+        } else {
+            eprintln!("[G-AnnouncerMedia] phase=rejected reason=critical_snapshot_unready");
+        }
     } else {
         preparation::enqueue(path, priority, observation);
     }
@@ -562,85 +759,15 @@ pub fn voice_cache_dir() -> PathBuf {
     })
 }
 
-/// Where the bundled default Thai voice pack lives. `pub(crate)` so
-/// `voice_api` can surface it as a first-class, read-only pack in the
-/// inventory (CS2-music-kit style: the default kit is always an equippable
-/// item, not an invisible fallback).
-pub(crate) fn default_pack_dir() -> Option<PathBuf> {
-    if let Ok(exe) = std::env::current_exe() {
-        if let Some(parent) = exe.parent() {
-            let near = parent.join("voice-pack-default");
-            if near.is_dir() {
-                return Some(near);
-            }
-        }
-    }
-    let dev = PathBuf::from("voice-pack-default");
-    if dev.is_dir() {
-        return Some(dev);
-    }
-    None
-}
-
 fn is_clip(p: &std::path::Path) -> bool {
     p.is_file()
         && p.extension()
             .and_then(|x| x.to_str())
-            .map(|x| {
-                let l = x.to_ascii_lowercase();
-                l == "wav" || l == "mp3"
-            })
-            .unwrap_or(false)
+            .is_some_and(|ext| ext.eq_ignore_ascii_case("wav") || ext.eq_ignore_ascii_case("mp3"))
 }
-
-fn list_clips_in(dir: &std::path::Path) -> Vec<PathBuf> {
-    fs::read_dir(dir)
-        .ok()
-        .map(|it| {
-            it.filter_map(|e| e.ok())
-                .map(|e| e.path())
-                .filter(|p| is_clip(p))
-                .collect()
-        })
-        .unwrap_or_default()
-}
-
-/// Resolution order (first non-empty wins):
-///   1. the active Store pack's mapped clips (or a local pack in dev builds)
-///   2. a flat local cache in dev builds only
-///   3. the bundled default pack
-fn resolve_clips(active: Vec<PathBuf>, event: &str) -> (&'static str, Vec<PathBuf>) {
-    if !active.is_empty() {
-        return ("pack", active);
-    }
-    if cfg!(debug_assertions) {
-        let local = list_clips_in(&voice_cache_dir().join(event));
-        if !local.is_empty() {
-            return ("cache", local);
-        }
-    }
-    if let Some(default) = default_pack_dir() {
-        let clips = list_clips_in(&default.join(event));
-        if !clips.is_empty() {
-            return ("default", clips);
-        }
-    }
-    ("silent", Vec::new())
-}
-
 fn list_clips(event: &str) -> Vec<PathBuf> {
-    resolve_clips(crate::voice_api::active_event_clips(event), event).1
+    crate::voice_api::active_event_clips(event)
 }
-
-/// Clips the bundled default pack ships for `event` (empty when the default
-/// pack is absent or has no folder for it). Used by `voice_api` to report the
-/// per-event fallback truthfully: pack clip → default clip → TTS.
-pub(crate) fn default_event_clips(event: &str) -> Vec<PathBuf> {
-    default_pack_dir()
-        .map(|dir| list_clips_in(&dir.join(event)))
-        .unwrap_or_default()
-}
-
 pub fn priority_for_event(event: &str) -> Priority {
     match event {
         "gank" | "danger" | "revision" => Priority::Critical,
@@ -653,33 +780,9 @@ pub fn clip_count(event: &str) -> usize {
     list_clips(event).len()
 }
 
-/// Count clips in every event sub-dir of voice-cache.
-///
-/// Not called from production code right now (its former caller, GSI's
-/// `POST /announcer/install` handler, was replaced by
-/// `voice_api::install_report` — this walks flat `voice-cache/{event}/` dirs
-/// and has no notion of a manifest-based pack, so it under/over-counts once a
-/// pack is active). Left in place and `pub` per instruction not to remove it —
-/// other callers may still want the legacy flat-layout counts.
-#[allow(dead_code)]
-pub fn all_counts() -> std::collections::BTreeMap<String, usize> {
-    let mut out = std::collections::BTreeMap::new();
-    if let Ok(it) = fs::read_dir(voice_cache_dir()) {
-        for entry in it.flatten() {
-            let p = entry.path();
-            if p.is_dir() {
-                if let Some(name) = p.file_name().and_then(|n| n.to_str()) {
-                    out.insert(name.to_string(), clip_count(name));
-                }
-            }
-        }
-    }
-    out
-}
-
 /// List individual clip file names for a given event.
 pub fn list_event_clips(event: &str) -> Vec<(String, String, String)> {
-    let (source, clips) = resolve_clips(crate::voice_api::active_event_clips(event), event);
+    let (source, clips) = ("gann", crate::voice_api::active_event_clips(event));
     clips
         .into_iter()
         .map(|path| {
@@ -729,7 +832,8 @@ pub fn cancel_at_most(priority: Priority) {
 
 pub fn active_priority() -> Priority {
     match ACTIVE_PRIORITY.load(Ordering::Relaxed) {
-        2 => Priority::Critical,
+        3 => Priority::Critical,
+        2 => Priority::Announcer,
         1 => Priority::Normal,
         _ => Priority::Cosmetic,
     }
@@ -748,25 +852,7 @@ pub fn get_volume() -> u8 {
     VOLUME.load(Ordering::Relaxed)
 }
 
-/// Play a random clip for `event`. Returns true if a clip was found and sent for
-/// playback, false if no clips exist (caller falls back to TTS).
-pub fn play_random(event: &str) -> bool {
-    play_random_with_priority(event, priority_for_event(event))
-}
-
-pub fn play_random_with_priority(event: &str, priority: Priority) -> bool {
-    match pick_clip(event) {
-        Some(path) => {
-            send(Cmd::Play(path, priority));
-            true
-        }
-        None => false,
-    }
-}
-
-/// Resolve the clip that WOULD play for an event (active pack → legacy → default),
-/// picking one at random. Split out so the caller can play it AND hand the same
-/// path to the overlay for bounded native waveform metadata analysis.
+/// Choose one mixed sound from the current verified GANN event mapping.
 pub fn pick_clip(event: &str) -> Option<PathBuf> {
     let clips = list_clips(event);
     choose_clip(clips)
@@ -789,22 +875,7 @@ pub(crate) fn choose_clip(clips: Vec<PathBuf>) -> Option<PathBuf> {
     Some(clips[(z as usize) % clips.len()].clone())
 }
 
-pub fn recorded_advice_label(path: &std::path::Path) -> String {
-    format!(
-        "คลิปเสียง advice: {}",
-        path.file_name().unwrap_or_default().to_string_lossy()
-    )
-}
-
-/// Play a specific already-resolved clip file (the twin of pick_clip).
-pub fn play_path(path: PathBuf, event: &str) {
-    send(Cmd::Play(path, priority_for_event(event)));
-}
-
-/// Legacy clip-byte reader retained while callers migrate to native metadata. Confined to the
-/// voice-cache / bundled-default roots and to audio files: the caller only ever
-/// passes a path our own resolver produced, but we contain-check anyway so a
-/// stray path can't turn this into an arbitrary file read.
+/// Read only audio from the admitted GANN snapshot.
 pub fn read_clip_bytes(path: &str) -> Result<Vec<u8>, String> {
     fs::read(canonical_clip_path(path)?).map_err(|e| e.to_string())
 }
@@ -828,16 +899,8 @@ fn canonical_clip_path(path: &str) -> Result<PathBuf, String> {
         return Err("not an audio clip".into());
     }
     let canon = p.canonicalize().map_err(|e| e.to_string())?;
-    let roots = [
-        voice_cache_dir().canonicalize().ok(),
-        default_pack_dir().and_then(|d| d.canonicalize().ok()),
-    ];
-    let allowed = roots
-        .into_iter()
-        .flatten()
-        .any(|root| canon.starts_with(&root));
-    if !allowed {
-        return Err("clip outside voice-cache".into());
+    if !is_resolved_clip_path(&canon) {
+        return Err("clip is outside the admitted GANN snapshot".into());
     }
     Ok(canon)
 }
@@ -857,6 +920,7 @@ fn admit_nonempty_source<S: rodio::Source<Item = i16>>(source: S, admit: impl Fn
 
 /// Prewarm outputs are WAVs. Check physical data bounds too: rodio's WAV
 /// adapter substitutes zero for some truncated-data errors during iteration.
+#[cfg(test)]
 pub(crate) fn prepared_wav_has_frames(path: &std::path::Path) -> bool {
     fn complete_data(file: &mut fs::File) -> std::io::Result<bool> {
         use std::io::{Read, Seek, SeekFrom};
@@ -908,23 +972,72 @@ pub(crate) fn prepared_wav_has_frames(path: &std::path::Path) -> bool {
 #[cfg(test)]
 mod tests {
     #[test]
+    fn critical_gann_snapshot_feeds_mixed_pcm_and_both_exact_lifecycle_hashes() {
+        use super::*;
+        let root = std::env::temp_dir().join(format!(
+            "gm-critical-pair-{}-{}",
+            std::process::id(),
+            SystemTime::now()
+                .duration_since(UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        crate::voice_api::set_test_voice_root(Some(root.clone()));
+        let (id, original, _) = crate::voice_api::test_package::install(&root, 991, "danger");
+        crate::voice_api::activate_if_exists(&id).unwrap();
+        assert!(critical_media_ready());
+        let selected = critical_event_selection("danger").unwrap();
+        assert_eq!(selected.path, original);
+        let clip = cached_critical("danger").unwrap();
+        assert_ne!(clip.original, clip.played);
+        let pair = selected.pair.as_ref().unwrap();
+        assert_eq!(
+            crate::vrzo_mix::hex_digest(&clip.original),
+            pair.original_hash
+        );
+        assert_eq!(crate::vrzo_mix::hex_digest(&clip.played), pair.mixed_hash);
+        let mut source = clip.source();
+        assert_eq!(rodio::Source::channels(&source), 1);
+        assert_eq!(rodio::Source::sample_rate(&source), 48000);
+        assert_eq!(source.next(), Some(200));
+        assert_eq!(source.next(), Some(-200));
+        let (other, _, _) = crate::voice_api::test_package::install(&root, 993, "kill");
+        crate::voice_api::activate_if_exists(&other).unwrap();
+        store_critical_cache(CriticalClips {
+            generation: Some(selected.revision),
+            gank: None,
+            revision: None,
+            danger: Some(clip),
+        });
+        assert!(critical_media_ready());
+        assert!(critical_event_selection("danger").is_none());
+        crate::voice_api::set_test_voice_root(None);
+        let _ = std::fs::remove_dir_all(root);
+    }
+    #[test]
     fn crossfade_is_only_for_two_announcers_and_never_critical_warnings() {
-        assert!(super::should_fade_announcer(true, true, super::Priority::Cosmetic));
-        assert!(!super::should_fade_announcer(true, true, super::Priority::Critical));
-        assert!(!super::should_fade_announcer(false, true, super::Priority::Cosmetic));
-        assert!(!super::should_fade_announcer(true, false, super::Priority::Normal));
+        assert!(super::should_fade_announcer(
+            true,
+            true,
+            super::Priority::Cosmetic
+        ));
+        assert!(!super::should_fade_announcer(
+            true,
+            true,
+            super::Priority::Critical
+        ));
+        assert!(!super::should_fade_announcer(
+            false,
+            true,
+            super::Priority::Cosmetic
+        ));
+        assert!(!super::should_fade_announcer(
+            true,
+            false,
+            super::Priority::Normal
+        ));
     }
     use super::*;
-
-    #[test]
-    fn prepared_fallback_survives_a_pack_cache_miss() {
-        let prepared = PathBuf::from("prepared_gank.wav");
-        assert_eq!(
-            cached_critical_path(None, Some(prepared.clone())),
-            Some(prepared)
-        );
-        assert_eq!(cached_critical_path(None, None), None);
-    }
 
     #[test]
     fn advice_cancel_after_critical_admission_preserves_current_warning() {

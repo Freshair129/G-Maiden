@@ -82,10 +82,10 @@ export class VrzoVideoPool {
   }
 
   private visualScope(visual: VrzoVisual) {
-    return visual.manifestVisual ? scopeOf(visual.manifestVisual.packId, visual.manifestVisual.revision) : 'legacy'
+    return scopeOf(visual.manifestVisual.packId, visual.manifestVisual.revision)
   }
   private accepts(visual: VrzoVisual) {
-    if (!visual.manifestVisual) return !this.batch || !id(this.batch.packId, 'ann')
+    if (!visual.manifestVisual) return false
     const manifest = visual.manifestVisual
     if (!id(manifest.packId, 'ann') || !id(manifest.bannerId, 'bnr')
       || visual.url !== `http://g-announcer-video.localhost/${manifest.packId}/${manifest.bannerId}/${manifest.revision}`) return false

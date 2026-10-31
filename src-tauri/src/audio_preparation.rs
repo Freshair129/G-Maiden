@@ -148,36 +148,25 @@ fn prepare_file(
 fn prepare_mix(
     pcm: SamplesBuffer<i16>,
     original: Option<[u8; 32]>,
-    selection: Option<&crate::vrzo_banner::MixedSelection>,
-) -> (SamplesBuffer<i16>, Option<[u8; 32]>) {
-    let Some(selection) = selection else {
-        return (pcm, None);
-    };
-    let attempt = || -> Result<_, String> {
-        let digest = original.ok_or("original_snapshot_unavailable")?;
-        if crate::vrzo_mix::hex_digest(&digest) != selection.original_sha256 {
-            return Err("original_hash".into());
-        }
-        let duration = pcm
-            .total_duration()
-            .ok_or("original_duration")?
-            .as_secs_f64();
-        if (selection.samples as f64 - duration * 48000.0).abs() > 1.0001 {
-            return Err("mixed_duration".into());
-        }
-        let mut file = std::fs::File::open(&selection.path).map_err(|_| "mixed_missing")?;
-        let bytes = visual_snapshot(&mut file, MAX_VISUAL_AUDIO_BYTES).ok_or("mixed_size")?;
-        let (samples, digest) =
-            crate::vrzo_mix::decode_mix(&bytes, &selection.mixed_sha256, selection.samples)?;
-        Ok((SamplesBuffer::new(1, 48000, samples), Some(digest)))
-    };
-    match attempt() {
-        Ok(mix) => mix,
-        Err(reason) => {
-            eprintln!("[G-Maiden audio] phase=degraded source=original reason={reason}");
-            (pcm, None)
-        }
+    selection: Option<&crate::event_media::MixedSelection>,
+) -> Result<(SamplesBuffer<i16>, Option<[u8; 32]>), String> {
+    let selection = selection.ok_or("GANN_pair_required")?;
+    let digest = original.ok_or("original_snapshot_unavailable")?;
+    if crate::vrzo_mix::hex_digest(&digest) != selection.original_sha256 {
+        return Err("original_hash".into());
     }
+    let duration = pcm
+        .total_duration()
+        .ok_or("original_duration")?
+        .as_secs_f64();
+    if (selection.samples as f64 - duration * 48000.0).abs() > 1.0001 {
+        return Err("mixed_duration".into());
+    }
+    let mut file = std::fs::File::open(&selection.path).map_err(|_| "mixed_missing")?;
+    let bytes = visual_snapshot(&mut file, MAX_VISUAL_AUDIO_BYTES).ok_or("mixed_size")?;
+    let (samples, digest) =
+        crate::vrzo_mix::decode_mix(&bytes, &selection.mixed_sha256, selection.samples)?;
+    Ok((SamplesBuffer::new(1, 48000, samples), Some(digest)))
 }
 
 fn prepare_reader<R: Read + Seek + Send + Sync + 'static>(
@@ -241,11 +230,15 @@ pub(super) fn enqueue(path: PathBuf, priority: Priority, observation: PlaybackOb
                     .and_then(|file| prepare_file(file, request.observation.lifecycle.is_some()));
                 match prepared {
                     Ok((pcm, audio_sha256)) if request.requested.elapsed() < MAX_WAIT && request.fence.is_current() => {
-                        let (pcm, played_audio_sha256) = prepare_mix(pcm, audio_sha256,
-                            request.observation.lifecycle.as_ref().and_then(|observer| observer.mixed.as_ref()));
+                        let (pcm, played_audio_sha256) = if let Some(observer)=request.observation.lifecycle.as_ref(){
+                            match prepare_mix(pcm,audio_sha256,observer.mixed.as_ref()){
+                                Ok(source)=>source,
+                                Err(reason)=>{eprintln!("[G-AnnouncerMedia] phase=rejected reason={reason}");continue;}
+                            }
+                        }else{(pcm,None)};
                         if request.requested.elapsed() >= MAX_WAIT || !request.fence.is_current() { continue; }
                         eprintln!("[G-Maiden audio] source={} original_sha256={} played_sha256={}",
-                            if played_audio_sha256.is_some() {"vrzo-mixed"} else {"original"},
+                            if played_audio_sha256.is_some() {"gann-mixed"} else {"original"},
                             audio_sha256.as_ref().map(crate::vrzo_mix::hex_digest).unwrap_or_default(),
                             played_audio_sha256.or(audio_sha256).as_ref().map(crate::vrzo_mix::hex_digest).unwrap_or_default());
                         eprintln!("[G-Maiden audio] phase=prepared clip={} preparation_ms={} duration_ms={}",
@@ -284,23 +277,64 @@ mod tests {
     use super::*;
 
     #[test]
-    fn invalid_or_missing_mix_preserves_exact_original_once_without_visual_proof() {
-        let mut selection = crate::vrzo_banner::MixedSelection {
-            path: std::env::temp_dir().join("gm-nonexistent-v8-mix.wav"),
+    fn admitted_original_cannot_play_when_its_gann_mixed_file_is_changed_or_removed() {
+        let root = std::env::temp_dir().join(format!(
+            "gm-pair-preparation-{}-{}",
+            std::process::id(),
+            std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos()
+        ));
+        crate::voice_api::set_test_voice_root(Some(root.clone()));
+        let (id, original, mixed) = crate::voice_api::test_package::install(&root, 992, "kill");
+        crate::voice_api::activate_if_exists(&id).unwrap();
+        let selected = crate::voice_api::select_announcer_clip("kill").unwrap();
+        let pair = selected.pair.as_ref().unwrap();
+        let selection = crate::event_media::MixedSelection {
+            path: mixed.clone(),
+            original_sha256: pair.original_hash.clone(),
+            mixed_sha256: pair.mixed_hash.clone(),
+            samples: pair.samples,
+        };
+        for removed in [false, true] {
+            if removed {
+                std::fs::remove_file(&mixed).unwrap();
+            } else {
+                std::fs::write(&mixed, b"tampered mixed WAV").unwrap();
+            }
+            let (pcm, original_hash) =
+                prepare_file(open_verified_file(&original).unwrap(), true).unwrap();
+            assert!(prepare_mix(pcm, original_hash, Some(&selection)).is_err());
+        }
+        crate::voice_api::set_test_voice_root(None);
+        let _ = std::fs::remove_dir_all(root);
+    }
+
+    #[test]
+    fn invalid_or_missing_gann_mix_rejects_instead_of_playing_original() {
+        let mut selection = crate::event_media::MixedSelection {
+            path: std::env::temp_dir().join("missing-gann.wav"),
             original_sha256: "0".repeat(64),
             mixed_sha256: "1".repeat(64),
             samples: 3,
         };
-        let original = || SamplesBuffer::new(1, 48000, vec![11i16, 0, -12]);
         for digest in [None, Some([1; 32]), Some([0; 32])] {
-            let (pcm, proof) = prepare_mix(original(), digest, Some(&selection));
-            assert_eq!(pcm.collect::<Vec<_>>(), vec![11, 0, -12]);
-            assert_eq!(proof, None);
+            assert!(prepare_mix(
+                SamplesBuffer::new(1, 48000, vec![11i16, 0, -12]),
+                digest,
+                Some(&selection)
+            )
+            .is_err());
         }
         selection.samples = 100;
-        let (pcm, proof) = prepare_mix(original(), Some([0; 32]), Some(&selection));
-        assert_eq!(pcm.collect::<Vec<_>>(), vec![11, 0, -12]);
-        assert_eq!(proof, None);
+        assert!(prepare_mix(
+            SamplesBuffer::new(1, 48000, vec![11i16, 0, -12]),
+            Some([0; 32]),
+            Some(&selection)
+        )
+        .is_err());
+        assert!(prepare_mix(SamplesBuffer::new(1, 48000, vec![1i16]), None, None).is_err());
     }
 
     #[test]

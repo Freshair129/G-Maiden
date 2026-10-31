@@ -63,9 +63,8 @@ const SLOW_FRAME_MS: u128 = 250;
 
 // Review fix: alias to tts.rs's single source of truth instead of
 // duplicating the literals here too — see capture.rs's copy of this fix for
-// the full rationale (same GANK_LINE == GANK_LINE_ALT / REVISION_LINE ==
-// REVISION_LINE_ALT duplication existed in both capture backends).
-use crate::tts::{GANK_LINE_ALT as GANK_LINE, REVISION_LINE_ALT as REVISION_LINE};
+// the full rationale (same "gank" == "gank"_ALT / "revision" ==
+// "revision"_ALT duplication existed in both capture backends).
 
 /// Debug/result payload emitted per processed frame. Candidates feed the
 /// calibration overlay; detections are the confirmed heroes (empty until the
@@ -267,16 +266,16 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                             if !crate::runtime::is_current_capture_session(session.session_epoch) {
                                 return Ok(());
                             }
-                            crate::tts::voice_interrupt("gank", GANK_LINE);
+                            crate::tts::voice_interrupt("gank");
                             crate::utterance::emit_for_session(
                                 &self.app,
                                 crate::utterance::UtterancePayload::new_for_session(
-                                    "signal", "line", GANK_LINE, None, None, &session,
+                                    "signal", "line", "gank", None, None, &session,
                                 ),
                             );
                         }
                         // W2: only capture calibration evidence when the line
-                        // was actually voiced — in the silent arm GANK_LINE is
+                        // was actually voiced — in the silent arm "gank" is
                         // suppressed, so recording it would falsely log it as
                         // spoken. The gank_signal log below stays unconditional.
                         if armed
@@ -285,7 +284,7 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                         {
                             crate::calibration::record(
                                 "gank",
-                                Some(GANK_LINE),
+                                Some("gank"),
                                 serde_json::json!({
                                     "probability": alert.probability,
                                     "missing_heroes": alert.missing_heroes,
@@ -315,14 +314,14 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                             if !crate::runtime::is_current_capture_session(session.session_epoch) {
                                 return Ok(());
                             }
-                            crate::tts::voice_interrupt("revision", REVISION_LINE);
+                            crate::tts::voice_interrupt("revision");
                             crate::utterance::emit_for_session(
                                 &self.app,
                                 crate::utterance::UtterancePayload::new_for_session(
                                     "signal",
                                     "revision",
-                                    REVISION_LINE,
-                                    Some(GANK_LINE.to_string()),
+                                    "revision",
+                                    Some("gank".to_string()),
                                     None,
                                     &session,
                                 ),
