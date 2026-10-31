@@ -19,7 +19,9 @@ pub(crate) struct Candidates {
     pub visuals: Vec<Candidate>,
 }
 static APP: OnceLock<tauri::AppHandle> = OnceLock::new();
-pub(crate) fn install(app: tauri::AppHandle) { let _ = APP.set(app); }
+pub(crate) fn install(app: tauri::AppHandle) {
+    let _ = APP.set(app);
+}
 pub(super) fn publish(batch: Candidates) {
     if let Some(app) = APP.get() {
         let _ = app.emit_to("overlay", "announcer-visual-warm", batch);

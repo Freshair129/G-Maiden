@@ -795,6 +795,7 @@ pub fn persona_preset() -> u8 {
 #[derive(Debug, PartialEq, Eq)]
 struct StartupSettings {
     volume: u8,
+    hp_alert: crate::safety_events::Settings,
     announcer_enabled: bool,
     signal_enabled: bool,
     signal_sensitivity: u8,
@@ -886,6 +887,16 @@ fn parse_startup_settings(json: &str) -> Result<StartupSettings, String> {
 
     Ok(StartupSettings {
         volume,
+        hp_alert: crate::safety_events::Settings {
+            enabled: bool_or("alertEnabled", true),
+            voice_enabled: bool_or("voiceEnabled", true),
+            threshold: settings
+                .get("alertThreshold")
+                .and_then(serde_json::Value::as_f64)
+                .filter(|n| n.is_finite())
+                .map(|n| n.clamp(0.0, 100.0).round() as i64)
+                .unwrap_or(25),
+        },
         announcer_enabled: bool_or("announcerEnabled", true),
         signal_enabled: bool_or("signalEnabled", true),
         signal_sensitivity: sensitivity,
@@ -910,6 +921,11 @@ fn parse_startup_settings(json: &str) -> Result<StartupSettings, String> {
 pub fn apply_startup_settings_json(json: &str) -> Result<(), String> {
     let settings = parse_startup_settings(json)?;
     crate::audio::set_volume(settings.volume);
+    set_hp_alert_settings(
+        settings.hp_alert.enabled,
+        settings.hp_alert.voice_enabled,
+        settings.hp_alert.threshold,
+    );
     set_announcer_enabled(settings.announcer_enabled);
     set_signal_enabled(settings.signal_enabled);
     set_signal_sensitivity(match settings.signal_sensitivity {
@@ -1078,6 +1094,26 @@ pub fn signal_enabled() -> bool {
 /// gank/danger/revision interrupts are a different, always-critical path
 /// (capture.rs's `voice_interrupt`, gated only by `signal_enabled()`) and must
 /// never be gated by this flag — CLAUDE.md's audio priority rule.
+// Pack all HP preferences together so a live settings write cannot expose a partial tuple.
+static HP_ALERT_SETTINGS: AtomicU64 = AtomicU64::new(25 | (1 << 8) | (1 << 9));
+pub fn set_hp_alert_settings(enabled: bool, voice_enabled: bool, threshold: i64) {
+    let value =
+        threshold.clamp(0, 100) as u64 | ((enabled as u64) << 8) | ((voice_enabled as u64) << 9);
+    HP_ALERT_SETTINGS.store(value, Ordering::Release);
+}
+pub(crate) fn hp_alert_settings() -> crate::safety_events::Settings {
+    let value = HP_ALERT_SETTINGS.load(Ordering::Acquire);
+    crate::safety_events::Settings {
+        enabled: value & (1 << 8) != 0,
+        voice_enabled: value & (1 << 9) != 0,
+        threshold: (value & 127) as i64,
+    }
+}
+pub fn hp_alert_media_enabled() -> bool {
+    let settings = hp_alert_settings();
+    settings.enabled && settings.voice_enabled
+}
+
 static ANNOUNCER_ENABLED: AtomicBool = AtomicBool::new(true);
 
 pub fn set_announcer_enabled(v: bool) {

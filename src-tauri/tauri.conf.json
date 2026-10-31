@@ -31,8 +31,7 @@
         "decorations": false,
         "shadow": false,
         "center": true,
-        "visible": true,
-        "transparent": true
+        "visible": true
       },
       {
         "title": "G-Maiden Overlay",
@@ -69,11 +68,8 @@
       "binaries/gpu-feeder"
     ],
     "resources": {
-      "vrzo-mixed": "vrzo-mixed",
       "../models/minimap-detector.onnx": "models/minimap-detector.onnx",
-      "../models/labels.json": "models/labels.json",
-      "voice-pack-default": "voice-pack-default",
-      "../assets/voice-cache": "voice-cache"
+      "../models/labels.json": "models/labels.json"
     }
   },
   "plugins": {

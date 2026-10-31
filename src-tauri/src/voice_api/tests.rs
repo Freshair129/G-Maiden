@@ -1,117 +1,201 @@
-//! Unit tests for the voice-pack API, moved verbatim out of the original
-//! single-file `voice_api.rs` (facade refactor — no behavior/logic change,
-//! no test renamed or dropped). Reaches into sibling submodules' private
-//! helpers via their `pub(crate)` visibility (bumped from bare-private only
-//! because this file now lives in its own submodule — see each submodule's
-//! header comment).
+//! GANN admission, exact media pairing, mutation fencing, and Store signature behavior.
 
 use std::collections::BTreeMap;
 use std::fs;
-use std::io::Write;
 use std::path::{Path, PathBuf};
 
 use serde::Deserialize;
 
-use crate::audio;
-
-use super::banner::{
-    activate_if_exists, fired_banner, fired_banner_from, image_mime, install_report, preview_clip,
-};
-use super::base64::base64_encode;
-use super::commands::{
-    action, active_event_clips, active_pack_name, extract_pack_zip, upload_asset,
-};
+use super::banner::{activate_if_exists, install_report};
+use super::commands::active_event_clips;
 use super::events::EVENTS;
 use super::pack_io::{
-    cached_event_clips, clear_resolved_cache_for_test, default_pack, sanitize_id,
-    write_active_pack_id, write_manifest, Manifest, ManifestMapping,
+    cached_event_clips, clear_resolved_cache_for_test, sanitize_id, Manifest, ManifestMapping,
 };
 use super::path_safety::safe_pack_path;
 use super::paths::set_test_voice_root;
-use super::types::DEFAULT_PACK_ID;
 
 #[test]
-fn announcer_selection_never_substitutes_an_unmapped_pack_and_retains_provenance() {
-    let root = temp_root("ann-selection");
+fn gann_only_rejects_legacy_manifest_packs_without_changing_selection() {
+    let root = temp_root("gann-only-legacy");
     set_test_voice_root(Some(root.clone()));
     let _guard = RootGuard(root.clone());
-    assert!(super::select_announcer_clip("gank").is_none());
     let dir = write_pack(
         &root,
-        "nakom",
+        "legacy",
         BTreeMap::from([("kill".into(), mapping(&["clips/k.wav"]))]),
     );
-    fs::write(dir.join("clips/k.wav"), b"clip").unwrap();
-    write_active_pack_id("nakom").unwrap();
-    assert!(super::select_announcer_clip("gank").is_none());
+    fs::write(dir.join("clips/k.wav"), b"legacy").unwrap();
+    assert!(!super::is_pack_available("legacy"));
+    assert!(super::activate_if_exists("legacy").is_err());
+    assert!(super::select_announcer_clip("kill").is_none());
+    assert!(super::preview_variant("legacy", "kill", "k").is_none());
+    assert!(super::state().unwrap().packs.is_empty());
+}
+
+#[test]
+fn gann_only_selects_the_indexed_pair_and_never_substitutes_an_unmapped_event() {
+    let root = temp_root("gann-pair");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    let (id, original, mixed) = super::test_package::install(&root, 1, "kill");
+    activate_if_exists(&id).unwrap();
+    let clip = super::select_announcer_clip("kill").unwrap();
+    assert_eq!(clip.path, original);
+    let pair = clip.pair.as_ref().unwrap();
+    assert_eq!(pair.mixed, mixed);
+    assert_eq!(active_event_clips("kill"), vec![mixed]);
+    assert!(super::select_announcer_clip("death").is_none());
+    assert!(crate::audio::pick_clip("death").is_none());
+    assert!(super::with_current_announcer_clip("kill", &clip, || ()).is_some());
+    let (other, _, _) = super::test_package::install(&root, 2, "death");
+    activate_if_exists(&other).unwrap();
+    assert!(super::with_current_announcer_clip("kill", &clip, || ()).is_none());
+    assert!(crate::audio::pick_clip("kill").is_none());
+}
+
+#[test]
+fn gann_only_rejects_changed_container_even_when_marker_and_manifest_remain() {
+    let root = temp_root("gann-origin");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    let (id, _, _) = super::test_package::install(&root, 3, "kill");
+    assert!(super::is_pack_available(&id));
+    let marker: serde_json::Value = serde_json::from_slice(
+        &fs::read(root.join("packs").join(&id).join("local-gann.json")).unwrap(),
+    )
+    .unwrap();
+    let container = root.join("containers").join(format!(
+        "{}.gann",
+        marker["container_sha256"].as_str().unwrap()
+    ));
+    fs::write(container, b"changed archive").unwrap();
+    assert!(!super::is_pack_available(&id));
+    assert!(activate_if_exists(&id).is_err());
+    assert!(super::select_announcer_clip("kill").is_none());
+}
+
+#[test]
+fn gann_only_resolves_every_schema_event_to_its_own_exact_media_pair() {
+    let root = temp_root("gann-schema-events");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    let schema: serde_json::Value =
+        serde_json::from_str(include_str!("../../../schemas/gmaiden-events.json")).unwrap();
+    for (index, event) in schema["x-events"].as_array().unwrap().iter().enumerate() {
+        let event = event["id"].as_str().unwrap();
+        if event == "unused" {
+            continue;
+        }
+        let serial = index as u64 + 20;
+        let (id, original, mixed) = super::test_package::install(&root, serial, event);
+        activate_if_exists(&id).unwrap();
+        let selected = super::select_announcer_clip(event).unwrap();
+        assert_eq!(selected.path, original);
+        let pair = selected.pair.as_ref().unwrap();
+        assert_eq!(pair.mixed, mixed);
+        assert_eq!(
+            pair.banner_id,
+            format!("bnr_00000000-0000-0000-0000-{serial:012x}")
+        );
+        assert!(pair.video.ends_with(format!(
+            "video/bnr_00000000-0000-0000-0000-{serial:012x}.webm"
+        )));
+        assert_eq!(active_event_clips(event), vec![mixed]);
+        assert!(super::verify_visual(&selected).is_ok());
+        assert!(super::select_announcer_clip("unknown_event").is_none());
+    }
+}
+
+#[test]
+fn gann_only_preflight_rejects_missing_video_and_changed_audio_before_playback() {
+    let root = temp_root("gann-read-integrity");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    let (id, _, mixed) = super::test_package::install(&root, 81, "kill");
+    activate_if_exists(&id).unwrap();
     let selected = super::select_announcer_clip("kill").unwrap();
-    assert_eq!(selected.pack_id, "nakom");
-    assert_eq!(selected.path, dir.join("clips/k.wav"));
-    assert!(super::with_current_announcer_clip("kill", &selected, || ()).is_some());
-    let other = write_pack(
-        &root,
-        "other",
-        BTreeMap::from([("kill".into(), mapping(&["clips/k.wav"]))]),
-    );
-    fs::write(other.join("clips/k.wav"), b"other").unwrap();
-    write_active_pack_id("other").unwrap();
-    assert!(super::with_current_announcer_clip("kill", &selected, || ()).is_none());
-    assert_eq!(selected.pack_id, "nakom");
-    write_active_pack_id("nakom").unwrap();
-    assert!(super::with_current_announcer_clip("kill", &selected, || ()).is_none());
-    let fresh = super::select_announcer_clip("kill").unwrap();
-    assert!(super::with_current_announcer_clip("kill", &fresh, || ()).is_some());
+    assert!(crate::audio::validate_clip(&mixed).is_ok());
+    fs::write(&mixed, b"changed mixed").unwrap();
+    assert!(crate::audio::validate_clip(&mixed).is_err());
+    fs::remove_file(&selected.pair.as_ref().unwrap().video).unwrap();
+    assert!(super::verify_visual(&selected).is_err());
 }
 
 #[test]
-fn preview_variant_resolves_only_the_named_mapped_clip() {
-    let root = temp_root("preview-variant");
+fn gann_only_selection_publication_cannot_overtake_a_prior_activation() {
+    use std::sync::{mpsc, Arc, Mutex};
+    use std::time::Duration;
+    let root = temp_root("gann-publish-race");
     set_test_voice_root(Some(root.clone()));
     let _guard = RootGuard(root.clone());
-    let dir = write_pack(
-        &root,
-        "variants",
-        BTreeMap::from([(
-            "kill".into(),
-            mapping(&["clips/kill_01.wav", "clips/kill_02.wav"]),
-        )]),
+    let (a, _, _) = super::test_package::install(&root, 82, "kill");
+    let (b, _, _) = super::test_package::install(&root, 83, "death");
+    let (read_tx, read_rx) = mpsc::sync_channel(1);
+    let (release_tx, release_rx) = mpsc::sync_channel(1);
+    let (attempt_tx, attempt_rx) = mpsc::sync_channel(1);
+    let (published_tx, published_rx) = mpsc::sync_channel(1);
+    let release = Mutex::new(release_rx);
+    let journal = Arc::new(Mutex::new(Vec::new()));
+    let hooked_root = root.clone();
+    let hooked_a = a.clone();
+    let hooked_b = b.clone();
+    let entries = journal.clone();
+    super::pack_io::set_mutation_hook(Some(Arc::new(move |phase, id| {
+        if super::paths::voice_root() != hooked_root {
+            return;
+        }
+        if phase == "read" && id == hooked_a {
+            read_tx.send(()).unwrap();
+            release.lock().unwrap().recv().unwrap();
+        }
+        if phase == "attempt" && id == hooked_b {
+            attempt_tx.send(()).unwrap();
+        }
+        if phase == "published" {
+            assert!(
+                !crate::audio::critical_media_ready(),
+                "HP edges must wait for this generation to finish prewarming"
+            );
+            entries.lock().unwrap().push(id.to_owned());
+            if id == hooked_b {
+                published_tx.send(()).unwrap();
+            }
+        }
+    })));
+    struct Reset;
+    impl Drop for Reset {
+        fn drop(&mut self) {
+            super::pack_io::set_mutation_hook(None);
+        }
+    }
+    let _reset = Reset;
+    let root_a = root.clone();
+    let id_a = a.clone();
+    let first = std::thread::spawn(move || {
+        set_test_voice_root(Some(root_a));
+        super::pack_io::write_active_pack_id(&id_a).unwrap();
+        assert!(crate::audio::critical_media_ready());
+    });
+    read_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+    let root_b = root.clone();
+    let id_b = b.clone();
+    let second = std::thread::spawn(move || {
+        set_test_voice_root(Some(root_b));
+        super::pack_io::write_active_pack_id(&id_b).unwrap();
+        assert!(crate::audio::critical_media_ready());
+    });
+    attempt_rx.recv_timeout(Duration::from_secs(5)).unwrap();
+    let overtook = published_rx.recv_timeout(Duration::from_secs(2)).is_ok();
+    release_tx.send(()).unwrap();
+    first.join().unwrap();
+    second.join().unwrap();
+    assert!(
+        !overtook,
+        "B published while A was still validating its selected GANN"
     );
-    fs::write(dir.join("clips/kill_01.wav"), b"one").unwrap();
-    fs::write(dir.join("clips/kill_02.wav"), b"two").unwrap();
-    assert_eq!(
-        super::preview_variant("variants", "kill", "kill_02"),
-        Some(dir.join("clips/kill_02.wav"))
-    );
-    assert!(super::preview_variant("variants", "death", "kill_02").is_none());
-    assert!(super::preview_variant("variants", "kill", "../kill_02").is_none());
-    assert!(super::preview_variant("variants", "kill", "kill_03").is_none());
-}
-
-#[test]
-fn base64_rfc4648_vectors() {
-    // Canonical RFC 4648 §10 test vectors — a wrong encoder = broken banners.
-    assert_eq!(base64_encode(b""), "");
-    assert_eq!(base64_encode(b"f"), "Zg==");
-    assert_eq!(base64_encode(b"fo"), "Zm8=");
-    assert_eq!(base64_encode(b"foo"), "Zm9v");
-    assert_eq!(base64_encode(b"foob"), "Zm9vYg==");
-    assert_eq!(base64_encode(b"fooba"), "Zm9vYmE=");
-    assert_eq!(base64_encode(b"foobar"), "Zm9vYmFy");
-}
-
-#[test]
-fn base64_handles_high_bytes() {
-    assert_eq!(base64_encode(&[0xff, 0xff, 0xff]), "////");
-    assert_eq!(base64_encode(&[0x00, 0x00, 0x00]), "AAAA");
-}
-
-#[test]
-fn image_mime_maps_known_extensions() {
-    assert_eq!(image_mime("PNG"), "image/png");
-    assert_eq!(image_mime("jpg"), "image/jpeg");
-    assert_eq!(image_mime("jpeg"), "image/jpeg");
-    assert_eq!(image_mime("svg"), "image/svg+xml");
-    assert_eq!(image_mime("bmp"), "application/octet-stream");
+    assert_eq!(journal.lock().unwrap().as_slice(), [a, b.clone()]);
+    assert_eq!(fs::read_to_string(root.join("active-pack.txt")).unwrap(), b);
 }
 
 #[test]
@@ -152,7 +236,11 @@ fn write_pack(root: &Path, id: &str, mappings: BTreeMap<String, ManifestMapping>
         cover_image: String::new(),
         mappings,
     };
-    write_manifest(&dir, &manifest).unwrap();
+    fs::write(
+        dir.join("manifest.json"),
+        serde_json::to_vec(&manifest).unwrap(),
+    )
+    .unwrap();
     dir
 }
 
@@ -173,159 +261,6 @@ impl Drop for RootGuard {
         clear_resolved_cache_for_test();
         let _ = fs::remove_dir_all(&self.0);
     }
-}
-
-#[test]
-fn install_report_happy_path_counts_existing_clips() {
-    let root = temp_root("happy");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-
-    let pack_dir = write_pack(
-        &root,
-        "demo",
-        BTreeMap::from([(
-            "kill".to_string(),
-            mapping(&["clips/kill_01.wav", "clips/kill_02.wav"]),
-        )]),
-    );
-    fs::write(pack_dir.join("clips/kill_01.wav"), b"x").unwrap();
-    fs::write(pack_dir.join("clips/kill_02.wav"), b"x").unwrap();
-
-    let report = install_report("demo").expect("report");
-    assert_eq!(report.pack_id, "demo");
-    assert_eq!(report.counts.get("kill"), Some(&2));
-    assert!(!report.unmapped_events.contains(&"kill".to_string()));
-    assert!(report.missing_clips.is_empty());
-
-    activate_if_exists("demo").expect("activate");
-    let active = fs::read_to_string(root.join("active-pack.txt")).unwrap();
-    assert_eq!(active.trim(), "demo");
-}
-
-#[test]
-fn install_report_flags_mapped_but_missing_clip() {
-    let root = temp_root("missing-clip");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-
-    let pack_dir = write_pack(
-        &root,
-        "demo",
-        BTreeMap::from([(
-            "kill".to_string(),
-            mapping(&["clips/kill_01.wav", "clips/ghost.wav"]),
-        )]),
-    );
-    fs::write(pack_dir.join("clips/kill_01.wav"), b"x").unwrap();
-    // clips/ghost.wav intentionally never written.
-
-    let report = install_report("demo").expect("report");
-    assert_eq!(report.counts.get("kill"), Some(&1));
-    assert!(report.missing_clips.iter().any(|c| c == "clips/ghost.wav"));
-}
-
-#[test]
-fn install_report_flags_event_with_zero_clips_as_unmapped() {
-    let root = temp_root("zero-clip");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-
-    write_pack(
-        &root,
-        "demo",
-        BTreeMap::from([("kill".to_string(), mapping(&[]))]),
-    );
-
-    let report = install_report("demo").expect("report");
-    assert_eq!(report.counts.get("kill"), Some(&0));
-    assert!(report.unmapped_events.contains(&"kill".to_string()));
-}
-
-#[test]
-fn real_pack_mrijgajn_maps_voice_and_banners() {
-    // Exercises the manifest reader against the REAL committed announcer pack
-    // (G-Maiden `2a7ba551`, blessed as reader test data by CR-009 §3): the
-    // local half of CR-009's still-pending "install → activate → hear/see in
-    // Dota" gate — it proves the pack's voice + banner mapping resolves.
-    // cargo test runs from `src-tauri/`, so the repo assets are one level up.
-    let root = PathBuf::from("../assets/voice-cache");
-    if !root.join("packs/pack_mrijgajn/manifest.json").is_file() {
-        eprintln!("skip: pack_mrijgajn not present under {}", root.display());
-        return;
-    }
-    // Reset the override on the way out. Do NOT delete the dir — unlike the
-    // scratch-tempdir tests above, this points at the real repo asset.
-    struct Reset;
-    impl Drop for Reset {
-        fn drop(&mut self) {
-            set_test_voice_root(None);
-            clear_resolved_cache_for_test();
-        }
-    }
-    let _reset = Reset;
-    set_test_voice_root(Some(root));
-
-    let report = install_report("pack_mrijgajn").expect("report for real pack");
-
-    // Core integrity: every mapped clip resolves to a real, in-bounds file —
-    // no dangling or path-escaping references.
-    assert!(
-        report.missing_clips.is_empty(),
-        "pack has dangling/unsafe clip refs: {:?}",
-        report.missing_clips
-    );
-
-    // Each of the 13 mapped events resolves >=1 clip; two have two takes.
-    for ev in [
-        "death",
-        "dominating",
-        "double_kill",
-        "first_blood",
-        "kill",
-        "killing_spree",
-        "mega_kill",
-        "monster_kill",
-        "respawn",
-        "triple_kill",
-        "ultra_kill",
-        "unstoppable",
-        "wicked_sick",
-    ] {
-        assert!(
-            report.counts.get(ev).copied().unwrap_or(0) >= 1,
-            "mapped event {ev} resolved no clips"
-        );
-        assert!(
-            !report.unmapped_events.contains(&ev.to_string()),
-            "{ev} wrongly reported unmapped"
-        );
-    }
-    assert_eq!(report.counts.get("death"), Some(&2));
-    assert_eq!(report.counts.get("mega_kill"), Some(&2));
-
-    // Events the pack doesn't cover fall through cleanly (count 0, unmapped).
-    for ev in ["danger", "gank", "match_start", "advice"] {
-        assert_eq!(report.counts.get(ev), Some(&0), "{ev} unexpectedly mapped");
-        assert!(report.unmapped_events.contains(&ev.to_string()));
-    }
-
-    // Banner resolution: a mapped event inlines its webp as a data: URL and
-    // carries the event's default Thai caption; an unmapped event yields no
-    // image but still the default caption (overlay falls back to its card).
-    let kill = fired_banner_from(Some("pack_mrijgajn".to_string()), "kill");
-    assert!(
-        kill.banner_data
-            .as_deref()
-            .unwrap_or("")
-            .starts_with("data:image/webp;base64,"),
-        "kill banner did not resolve to a webp data URL"
-    );
-    assert_eq!(kill.thai, "คิล");
-
-    let danger = fired_banner_from(Some("pack_mrijgajn".to_string()), "danger");
-    assert!(danger.banner_data.is_none());
-    assert_eq!(danger.thai, "อันตราย");
 }
 
 #[test]
@@ -478,302 +413,21 @@ fn canonicalize_containment_predicate_direct() {
 }
 
 #[test]
-fn fired_banner_ignores_traversal_banner_asset() {
-    let root = temp_root("banner-traversal");
+fn event_clip_preview_uses_only_exact_mixed_path_from_the_current_gann() {
+    let root = temp_root("gann-exact-clip");
     set_test_voice_root(Some(root.clone()));
     let _guard = RootGuard(root.clone());
-
-    let mut evil_mapping = mapping(&[]);
-    evil_mapping.banner_asset = "../../../../Windows/win.ini".to_string();
-    write_pack(
-        &root,
-        "demo",
-        BTreeMap::from([("kill".to_string(), evil_mapping)]),
-    );
-    write_active_pack_id("demo").unwrap();
-
-    // Falls back to the built-in card (no banner_data) instead of
-    // resolving the traversal and inlining whatever it points at.
-    let banner = fired_banner("kill");
-    assert!(banner.banner_data.is_none());
-    assert_eq!(banner.event, "kill");
+    let (id, original, mixed) = super::test_package::install(&root, 994, "kill");
+    activate_if_exists(&id).unwrap();
+    assert!(super::select_announcer_playback_path("kill", &original).is_none());
+    assert!(super::select_announcer_playback_path("death", &mixed).is_none());
+    let selected = super::select_announcer_playback_path("kill", &mixed).unwrap();
+    assert_eq!(selected.path, original);
+    assert_eq!(selected.pair.unwrap().mixed, mixed);
+    let (other, _, _) = super::test_package::install(&root, 995, "death");
+    activate_if_exists(&other).unwrap();
+    assert!(super::select_announcer_playback_path("kill", &mixed).is_none());
 }
-
-#[test]
-fn preview_clip_ignores_traversal_and_finds_real_clip_after() {
-    let root = temp_root("preview-clip-traversal");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-
-    let dir = write_pack(
-        &root,
-        "demo",
-        BTreeMap::from([(
-            "kill".to_string(),
-            mapping(&["../../evil.wav", "clips/kill_01.wav"]),
-        )]),
-    );
-    fs::write(dir.join("clips/kill_01.wav"), b"x").unwrap();
-
-    // The traversal entry is skipped; the real clip after it is still found.
-    let clip = preview_clip("demo", "kill");
-    assert_eq!(clip, Some(dir.join("clips/kill_01.wav")));
-}
-
-#[test]
-fn audio_preview_resolves_nonactive_pack_without_changing_activation() {
-    let root = temp_root("audio-preview-selected");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-    write_pack(&root, "active", BTreeMap::new());
-    write_active_pack_id("active").unwrap();
-    let selected = write_pack(
-        &root,
-        "selected",
-        BTreeMap::from([("kill".into(), mapping(&["clips/kill.wav"]))]),
-    );
-    fs::write(selected.join("clips/kill.wav"), b"clip").unwrap();
-    assert_eq!(
-        super::preview_audio_clip("selected", "kill").unwrap(),
-        selected.join("clips/kill.wav")
-    );
-    assert_eq!(
-        super::pack_io::read_active_pack_id().as_deref(),
-        Some("active")
-    );
-}
-
-#[test]
-fn audio_preview_ann_default_is_explicit_and_signal_fallback_is_preserved() {
-    let root = temp_root("audio-preview-default");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-    write_pack(&root, "selected", BTreeMap::new());
-    let default = audio::default_event_clips("kill")
-        .into_iter()
-        .next()
-        .expect("bundled kill clip");
-    assert_eq!(
-        super::preview_audio_clip(DEFAULT_PACK_ID, "kill").unwrap(),
-        default
-    );
-    assert!(super::preview_audio_clip("selected", "kill").is_err());
-    let danger = audio::default_event_clips("danger")
-        .into_iter()
-        .next()
-        .expect("bundled danger clip");
-    assert_eq!(
-        super::preview_audio_clip("selected", "danger").unwrap(),
-        danger
-    );
-}
-
-#[test]
-fn audio_preview_rejects_missing_pack_and_unknown_event() {
-    let root = temp_root("audio-preview-reject");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-    assert!(super::preview_audio_clip("missing", "kill").is_err());
-    assert!(super::preview_audio_clip(DEFAULT_PACK_ID, "../../kill").is_err());
-}
-
-#[test]
-fn install_report_rejects_traversal_clip_as_missing() {
-    let root = temp_root("install-report-traversal");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-
-    write_pack(
-        &root,
-        "demo",
-        BTreeMap::from([("kill".to_string(), mapping(&["../../../evil.wav"]))]),
-    );
-
-    let report = install_report("demo").expect("report");
-    assert_eq!(report.counts.get("kill"), Some(&0));
-    assert!(report
-        .missing_clips
-        .iter()
-        .any(|c| c == "../../../evil.wav"));
-    assert!(report.unmapped_events.contains(&"kill".to_string()));
-}
-
-// -- Gap 2: zip-slip on archive import (extract_pack_zip) -----------
-
-/// Builds an in-memory `.zip` with the given (entry name, contents)
-/// pairs, using `Stored` (uncompressed) so the test needs no codec
-/// feature beyond what the crate always provides.
-fn build_test_zip(entries: &[(&str, &[u8])]) -> Vec<u8> {
-    let mut buf = Vec::new();
-    {
-        let cursor = std::io::Cursor::new(&mut buf);
-        let mut writer = zip::ZipWriter::new(cursor);
-        let options = zip::write::SimpleFileOptions::default()
-            .compression_method(zip::CompressionMethod::Stored);
-        for (name, data) in entries {
-            writer.start_file(*name, options).unwrap();
-            writer.write_all(data).unwrap();
-        }
-        writer.finish().unwrap();
-    }
-    buf
-}
-
-#[test]
-fn archive_import_cannot_bypass_id_admission_or_overwrite_id_destination() {
-    let root = temp_root("id-archive-boundary");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-    let id = "ann_c4d92f17-167a-504b-9393-64fd959981cd";
-    let dir = root.join("packs").join(id);
-    fs::create_dir_all(&dir).unwrap();
-    let name = format!("{id}.json");
-    fs::write(dir.join(&name), b"KEEP existing ID package").unwrap();
-    write_active_pack_id(DEFAULT_PACK_ID).unwrap();
-    let manifest = serde_json::to_vec(&Manifest { id: id.into(), ..Default::default() }).unwrap();
-    let mixed_archive = build_test_zip(&[("manifest.json", &manifest), (&name, b"{}")]);
-    let error = super::import_archive("id.zip", &mixed_archive).err().unwrap();
-    assert!(error.contains("โฟลเดอร์"));
-    let legacy_archive = build_test_zip(&[("manifest.json", &manifest)]);
-    let error = super::import_archive("legacy.zip", &legacy_archive).err().unwrap();
-    assert!(error.contains("เขียนทับ"));
-    assert_eq!(fs::read(dir.join(name)).unwrap(), b"KEEP existing ID package");
-    assert_eq!(super::pack_io::read_active_pack_id().as_deref(), Some(DEFAULT_PACK_ID));
-}
-
-#[test]
-fn extract_pack_zip_refuses_traversal_entry_and_writes_nothing() {
-    let root = temp_root("zip-traversal");
-    let _guard = RootGuard(root.clone());
-    let dest = root.join("dest");
-    let bytes = build_test_zip(&[("manifest.json", b"{}" as &[u8]), ("../evil.txt", b"pwned")]);
-
-    assert!(extract_pack_zip(&bytes, &dest, "demo").is_err());
-    assert!(!root.join("evil.txt").is_file());
-    // Two-pass validation: pass 1 rejected before pass 2 wrote anything,
-    // so not even the well-formed sibling entry landed.
-    assert!(!dest.join("manifest.json").is_file());
-}
-
-#[test]
-fn extract_pack_zip_refuses_absolute_path_entry() {
-    let root = temp_root("zip-absolute");
-    let _guard = RootGuard(root.clone());
-    let dest = root.join("dest");
-    let bytes = build_test_zip(&[("/evil.txt", b"pwned" as &[u8])]);
-
-    assert!(extract_pack_zip(&bytes, &dest, "demo").is_err());
-    assert!(!std::path::Path::new("/evil.txt").is_file());
-}
-
-#[test]
-fn extract_pack_zip_imports_clean_archive() {
-    let root = temp_root("zip-clean");
-    let _guard = RootGuard(root.clone());
-    let dest = root.join("dest");
-    fs::create_dir_all(&dest).unwrap();
-    let bytes = build_test_zip(&[
-        ("manifest.json", b"{}" as &[u8]),
-        ("clips/kill_01.wav", b"clipdata"),
-    ]);
-
-    extract_pack_zip(&bytes, &dest, "demo").expect("clean archive should import");
-    assert!(dest.join("manifest.json").is_file());
-    assert!(dest.join("clips/kill_01.wav").is_file());
-    assert_eq!(
-        fs::read(dest.join("clips/kill_01.wav")).unwrap(),
-        b"clipdata"
-    );
-}
-
-// --- authorGid (GID pipeline Phase 2 Task 4) ----------------------------
-
-#[test]
-fn manifest_author_gid_roundtrip() {
-    // with the field
-    let with: super::pack_io::Manifest = serde_json::from_str(
-        r#"{"id":"p1","name":"n","version":"1","locale":"th","author":"a",
-            "description":"","mappings":{},"authorGid":"G-F43KRAKGE"}"#,
-    )
-    .unwrap();
-    assert_eq!(with.author_gid.as_deref(), Some("G-F43KRAKGE"));
-    let out = serde_json::to_string(&with).unwrap();
-    assert!(out.contains("\"authorGid\":\"G-F43KRAKGE\""));
-
-    // without the field: parses, and does NOT serialize a null/empty key
-    let without: super::pack_io::Manifest = serde_json::from_str(
-        r#"{"id":"p2","name":"n","version":"1","locale":"th","author":"a",
-            "description":"","mappings":{}}"#,
-    )
-    .unwrap();
-    assert_eq!(without.author_gid, None);
-    let out2 = serde_json::to_string(&without).unwrap();
-    assert!(!out2.contains("authorGid"));
-}
-
-// --- active_pack_name (CR-011 §B utterance ledger meta) ---------------
-
-#[test]
-fn active_pack_name_none_when_nothing_activated() {
-    let root = temp_root("active-name-none");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-
-    assert_eq!(active_pack_name(), None);
-}
-
-#[test]
-fn active_pack_name_returns_the_manifest_name() {
-    let root = temp_root("active-name-ok");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-
-    write_pack(&root, "demo", BTreeMap::new());
-    activate_if_exists("demo").expect("activate");
-
-    assert_eq!(active_pack_name(), Some("Test Pack".to_string()));
-}
-
-// --- bundled default pack (the out-of-the-box voice) -------------------
-
-/// Every event in the contract must ship at least one clip in the bundled
-/// default pack. This is the "event ไม่ครบ" regression guard: adding an
-/// event to `EVENTS` without adding lines to
-/// `tools/voice-gen/gen_default_pack.py` (and regenerating) fails here.
-#[test]
-fn bundled_default_pack_covers_every_event() {
-    // cargo test runs from src-tauri/, where the committed pack lives.
-    let Some(pack) = default_pack() else {
-        panic!("bundled voice-pack-default/ missing next to src-tauri");
-    };
-    assert!(pack.built_in);
-    assert_eq!(pack.total_events, EVENTS.len());
-    let missing: Vec<_> = pack
-        .items
-        .iter()
-        .filter(|item| item.mapping.is_none())
-        .map(|item| item.id.clone())
-        .collect();
-    assert!(
-        missing.is_empty(),
-        "default pack has no clips for: {} — add lines to gen_default_pack.py and re-run it",
-        missing.join(", ")
-    );
-}
-
-/// Previewing the built-in pack must resolve a real clip even though it
-/// has no manifest (the UI "Preview" button on the default card).
-#[test]
-fn preview_clip_resolves_bundled_default_clips() {
-    if audio::default_pack_dir().is_none() {
-        eprintln!("skip: bundled voice-pack-default not present");
-        return;
-    }
-    let clip = preview_clip(DEFAULT_PACK_ID, "kill");
-    assert!(clip.is_some_and(|p| p.is_file()));
-}
-
-// --- event-contract sync vs schemas/gmaiden-events.json -----------------
 
 #[derive(Deserialize)]
 struct SchemaEvent {
@@ -832,12 +486,20 @@ fn events_match_schema_contract() {
 /// when the sibling checkout isn't present — CI only has this repo.
 #[test]
 fn vendored_schema_matches_g_suite_sibling() {
-    let g_suite_dir = std::env::var("G_SUITE_DIR")
-        .unwrap_or_else(|_| format!("{}/../../G-Suite", env!("CARGO_MANIFEST_DIR")));
+    let selected_root = std::env::var("G_SUITE_DIR").ok();
+    let g_suite_dir = selected_root
+        .clone()
+        .unwrap_or_else(|| format!("{}/../../G-Suite", env!("CARGO_MANIFEST_DIR")));
     let sibling_path = format!("{g_suite_dir}/schemas/gmaiden-events.json");
-    let Ok(sibling_raw) = fs::read_to_string(&sibling_path) else {
-        eprintln!("skip: sibling G-Suite checkout not found at {sibling_path}");
-        return;
+    let sibling_raw = match fs::read_to_string(&sibling_path) {
+        Ok(raw) => raw,
+        Err(error) if selected_root.is_some() => {
+            panic!("selected G_SUITE_DIR schema {sibling_path} is unavailable: {error}")
+        }
+        Err(_) => {
+            eprintln!("skip: sibling G-Suite checkout not found at {sibling_path}");
+            return;
+        }
     };
 
     let vendored_path = format!(
@@ -854,208 +516,11 @@ fn vendored_schema_matches_g_suite_sibling() {
 
     assert_eq!(
         vendored_value, sibling_value,
-        "vendored schemas/gmaiden-events.json is stale vs G-Suite — re-copy and review the diff"
+        "vendored schemas/gmaiden-events.json is stale vs selected G-Suite — review the full diff"
     );
 }
 
-// --- Resolved-clip cache (audit H8) ----------------------------------------
-//
-// The G-Signal gank path used to call `active_event_clips` and pay 2 file
-// reads + a manifest parse + a per-clip stat+canonicalize, live, on every
-// alert. `write_active_pack_id`/`write_manifest` now populate a cache eagerly
-// instead, and `active_event_clips`/`cached_event_clips` just read it. These
-// tests exercise every place the cache is supposed to change, not just the
-// happy path — a cache that goes stale on ANY of these is worse than no
-// cache, because it would fail silently (wrong or missing clips) rather than
-// loudly (the old code's Err/empty-Vec paths).
-
-#[test]
-fn cached_clips_populate_on_activation_and_match_the_manifest() {
-    let root = temp_root("h8-activate");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-
-    let dir = write_pack(
-        &root,
-        "demo",
-        BTreeMap::from([(
-            "gank".to_string(),
-            mapping(&["clips/g1.wav", "clips/g2.wav"]),
-        )]),
-    );
-    fs::write(dir.join("clips/g1.wav"), b"x").unwrap();
-    fs::write(dir.join("clips/g2.wav"), b"x").unwrap();
-
-    // Before activation: no active pack yet, so nothing is cached.
-    assert_eq!(cached_event_clips("gank"), None);
-    assert_eq!(
-        active_event_clips("gank").len(),
-        0,
-        "public wrapper: empty Vec, not a panic"
-    );
-
-    write_active_pack_id("demo").unwrap();
-
-    let clips = cached_event_clips("gank").expect("activation must populate the cache");
-    assert_eq!(clips.len(), 2);
-    assert!(clips.iter().all(|p| p.starts_with(&dir)));
-    assert_eq!(
-        active_event_clips("gank"),
-        clips,
-        "public wrapper must match the cache exactly"
-    );
-}
-
-#[test]
-fn editing_the_active_packs_manifest_updates_the_cache_without_reactivating() {
-    let root = temp_root("h8-edit");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-
-    let dir = write_pack(
-        &root,
-        "demo",
-        BTreeMap::from([("kill".to_string(), mapping(&["clips/k1.wav"]))]),
-    );
-    fs::write(dir.join("clips/k1.wav"), b"x").unwrap();
-    write_active_pack_id("demo").unwrap();
-    assert_eq!(cached_event_clips("kill").unwrap().len(), 1);
-
-    // Re-map "kill" to a second clip — via write_manifest directly, exactly
-    // what map_event() does — WITHOUT touching active-pack.txt again.
-    fs::write(dir.join("clips/k2.wav"), b"x").unwrap();
-    let mut manifest = super::pack_io::read_manifest(&dir).unwrap();
-    manifest.mappings.insert(
-        "kill".to_string(),
-        mapping(&["clips/k1.wav", "clips/k2.wav"]),
-    );
-    write_manifest(&dir, &manifest).unwrap();
-
-    assert_eq!(
-        cached_event_clips("kill").unwrap().len(),
-        2,
-        "a manifest edit on the ACTIVE pack must reach the cache without a re-activate"
-    );
-}
-
-#[test]
-fn switching_the_active_pack_replaces_the_cache_not_merges_it() {
-    let root = temp_root("h8-switch");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-
-    let dir_a = write_pack(
-        &root,
-        "pack-a",
-        BTreeMap::from([("gank".to_string(), mapping(&["clips/a.wav"]))]),
-    );
-    fs::write(dir_a.join("clips/a.wav"), b"x").unwrap();
-    let dir_b = write_pack(
-        &root,
-        "pack-b",
-        BTreeMap::from([("gank".to_string(), mapping(&["clips/b.wav"]))]),
-    );
-    fs::write(dir_b.join("clips/b.wav"), b"x").unwrap();
-
-    write_active_pack_id("pack-a").unwrap();
-    let a_clips = cached_event_clips("gank").unwrap();
-    assert!(a_clips[0].starts_with(&dir_a));
-
-    write_active_pack_id("pack-b").unwrap();
-    let b_clips = cached_event_clips("gank").unwrap();
-    assert_eq!(
-        b_clips.len(),
-        1,
-        "must not accumulate pack-a's entries alongside pack-b's"
-    );
-    assert!(
-        b_clips[0].starts_with(&dir_b),
-        "must serve pack-b now, not a stale pack-a path"
-    );
-}
-
-#[test]
-fn uploading_a_clip_updates_the_cache_without_a_manifest_write() {
-    // The one mutation site that doesn't flow through write_manifest/
-    // write_active_pack_id: a manifest can map an event to a clip path that
-    // doesn't exist on disk YET (authored elsewhere, uploaded after).
-    // resolve_existing_clips' existence check is what decides whether that
-    // mapping counts, so upload_asset must invalidate explicitly.
-    let root = temp_root("h8-upload");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-
-    write_pack(
-        &root,
-        "demo",
-        BTreeMap::from([("gank".to_string(), mapping(&["clips/not_yet.wav"]))]),
-    );
-    write_active_pack_id("demo").unwrap();
-
-    assert_eq!(
-        cached_event_clips("gank").unwrap().len(),
-        0,
-        "mapped but missing from disk — must not be reported as playable"
-    );
-
-    upload_asset("demo", "clip", "not_yet.wav", b"x").expect("upload must succeed");
-
-    assert_eq!(
-        cached_event_clips("gank").unwrap().len(),
-        1,
-        "uploading the mapped clip must make it appear WITHOUT any write_manifest call"
-    );
-}
-
-#[test]
-fn banner_upload_does_not_fabricate_a_missing_clip() {
-    // The kind=="clip" gate on the explicit invalidation in upload_asset: a
-    // banner upload changes nothing resolve_existing_clips cares about, and
-    // must not have the side effect of making an unrelated missing clip
-    // suddenly resolve (it wouldn't, today — this pins that non-behavior so a
-    // future refactor of the gate can't silently regress it).
-    let root = temp_root("h8-banner");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-
-    write_pack(
-        &root,
-        "demo",
-        BTreeMap::from([("gank".to_string(), mapping(&["clips/still_missing.wav"]))]),
-    );
-    write_active_pack_id("demo").unwrap();
-    assert_eq!(cached_event_clips("gank").unwrap().len(), 0);
-
-    upload_asset("demo", "banner", "cover.png", b"x").expect("banner upload must succeed");
-
-    assert_eq!(
-        cached_event_clips("gank").unwrap().len(),
-        0,
-        "a banner upload must not affect clip resolution for an unrelated event"
-    );
-}
-
-#[test]
-fn activating_via_the_action_command_populates_the_cache_too() {
-    // action("activate", ..) is the Voice Packs UI's actual entry point
-    // (distinct from calling write_active_pack_id directly, which every
-    // other test here does for brevity) — must go through the same path.
-    let root = temp_root("h8-action");
-    set_test_voice_root(Some(root.clone()));
-    let _guard = RootGuard(root.clone());
-
-    let dir = write_pack(
-        &root,
-        "demo",
-        BTreeMap::from([("death".to_string(), mapping(&["clips/d1.wav"]))]),
-    );
-    fs::write(dir.join("clips/d1.wav"), b"x").unwrap();
-
-    action("activate", Some("demo")).expect("activate action must succeed");
-
-    assert_eq!(cached_event_clips("death").unwrap().len(), 1);
-}
-
+// A fresh test root cannot inherit another equipped GANN generation.
 #[test]
 fn no_active_pack_is_a_clean_none_not_a_leftover_from_a_prior_test() {
     // Guards the test-isolation fix itself: on a freshly test-rooted

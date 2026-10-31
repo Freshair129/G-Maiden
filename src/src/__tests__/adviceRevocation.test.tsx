@@ -135,7 +135,7 @@ it('includes generation in manual voice replay for native admission', async () =
   await renderCard()
   await click('ขอคำแนะนำ')
   await click('🔊 อ่าน')
-  expect(invokeMock).toHaveBeenCalledWith('speak_event', expect.objectContaining({ event: 'advice', adviceGeneration: 7 }))
+  expect(invokeMock).toHaveBeenCalledWith('speak_advice', expect.objectContaining({ text: 'private stale answer', adviceGeneration: 7 }))
 })
 
 it('rejects an advice event delivered after native consent revocation', async () => {
@@ -144,7 +144,7 @@ it('rejects an advice event delivered after native consent revocation', async ()
   currentGeneration = false
   await send('advice-update', { ...session, ...answer })
   expect(container.textContent).not.toContain(answer.text)
-  expect(invokeMock.mock.calls.some(([command, args]) => command === 'speak_event' && args?.event === 'advice')).toBe(false)
+  expect(invokeMock.mock.calls.some(([command, args]) => command === 'speak_advice' && args?.adviceGeneration === 7)).toBe(false)
 })
 
 it('clears displayed advice when native configuration changes without a settings change', async () => {

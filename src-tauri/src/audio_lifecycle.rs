@@ -20,8 +20,8 @@ pub struct PlaybackLifecycleEvent {
     pub played_audio_sha256: Option<[u8; 32]>,
 }
 pub struct PlaybackLifecycleObserver {
-    pub(crate) mixed: Option<crate::vrzo_banner::MixedSelection>,
-    pub(crate) visual_scope: Option<(u64, u64, bool)>,
+    pub(crate) mixed: Option<crate::event_media::MixedSelection>,
+    pub(crate) visual_scope: Option<(u64, u64, bool, u8)>,
     token: u64,
     tx: mpsc::SyncSender<PlaybackLifecycleEvent>,
 }

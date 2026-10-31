@@ -1,19 +1,3 @@
-const clips: Readonly<Record<string, readonly string[]>> = {
-  match_start: ['match_start_01'], first_blood: ['first_blood_01'],
-  double_kill: ['double_kill_01'], triple_kill: ['triple_kill_01'],
-  ultra_kill: ['ultra_kill_01'], rampage: ['rampage_01'],
-  killing_spree: ['killing_spree_01'], dominating: ['dominating_01'],
-  mega_kill: ['mega_kill_01'], unstoppable: ['unstoppable_01'],
-  wicked_sick: ['wicked_sick_01'], monster_kill: ['monster_kill_01'],
-  godlike: ['godlike_01'], beyond_godlike: ['beyond_godlike_01', 'beyond_godlike_02'],
-  kill: ['kill_01', 'kill_02', 'kill_03', 'kill_04', 'kill_05', 'kill_06'],
-}
-export const VRZO_CLIPS: readonly { event: string; clipId: string }[] = Object.entries(clips)
-  .flatMap(([event, entries]) => entries.map((clipId) => ({ event, clipId })))
-export function vrzoAsset(clipId: string, event: string): string | null {
-  return Object.prototype.hasOwnProperty.call(clips, event) && clips[event].includes(clipId)
-    ? `/vrzo-banners/${clipId}.webm` : null
-}
 export interface VrzoPlayback {
   id: string
   phase: 'start' | 'stop' | 'completed' | 'retire'
@@ -22,7 +6,7 @@ export interface VrzoPlayback {
   session_epoch: number
   preview: boolean
   expires_at_ms: number
-  manifestVisual?: { packId: string; bannerId: string; revision: string } | null
+  manifestVisual: { packId: string; bannerId: string; revision: string }
 }
 export interface VrzoVisual extends VrzoPlayback { url: string; exiting?: boolean; outgoing?: VrzoVisual }
 
@@ -52,7 +36,7 @@ export class VrzoBannerController {
         || typeof v.revision !== 'string' || !/^[1-9]\d{0,19}$/.test(v.revision)
         || BigInt(v.revision) > 0xffffffffffffffffn) return
       url = `http://g-announcer-video.localhost/${v.packId}/${v.bannerId}/${v.revision}`
-    } else url = vrzoAsset(p.clipId, p.event)
+    } else return
     if (!url || (!p.preview && (session === null || p.session_epoch !== session || session <= 0))) return
     const id = BigInt(p.id)
     const outgoing = this.current?.outgoing

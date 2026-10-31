@@ -1,12 +1,18 @@
 import { describe, expect, it, vi } from 'vitest'
-import { VrzoBannerController, VRZO_CLIPS, vrzoAsset } from './vrzoBanner'
+import { VrzoBannerController } from './vrzoBanner'
 
 const msg = (id: string, phase: 'start' | 'stop' = 'start', extra = {}) => ({
-  id, phase, clipId: 'kill_01', event: 'kill', session_epoch: 3, preview: false,
-  expires_at_ms: 6000, ...extra,
+  id, phase, clipId: 'bnr_00000000-0000-0000-0000-000000000001', event: 'kill', session_epoch: 3, preview: false,
+  expires_at_ms: 6000, manifestVisual: { packId: 'ann_00000000-0000-0000-0000-000000000001', bannerId: 'bnr_00000000-0000-0000-0000-000000000001', revision: '1' }, ...extra,
 })
 
 describe('VRZO visual lifecycle', () => {
+  it('rejects legacy embedded-media events without a verified GANN visual descriptor', () => {
+    const update = vi.fn(), c = new VrzoBannerController(update)
+    expect(c.receive(msg('1', 'start', {manifestVisual: undefined}), 3, 1000)).toBeUndefined()
+    expect(update).not.toHaveBeenCalled()
+    c.destroy()
+  })
   it('does not blend across scopes and lets a matching old hard stop remove only outgoing', () => {
     const update = vi.fn(), c = new VrzoBannerController(update)
     c.receive(msg('1'), 3, 1000)
@@ -57,29 +63,6 @@ describe('VRZO visual lifecycle', () => {
     ]) c.receive(msg('1', 'start', { manifestVisual }), 3, 1000)
     expect(update).not.toHaveBeenCalled()
   })
-  it('permits only explicit clip and event combinations', () => {
-    expect(vrzoAsset('kill_06', 'kill')).toBe('/vrzo-banners/kill_06.webm')
-    expect(vrzoAsset('kill_07', 'kill')).toBeNull()
-    expect(vrzoAsset('../kill_01', 'kill')).toBeNull()
-    expect(vrzoAsset('kill_01', 'triple_kill')).toBeNull()
-  })
-  it('maps all 21 configured clips across 15 events, rejecting substitutions', () => {
-    const events = ['match_start', 'first_blood', 'double_kill', 'triple_kill', 'ultra_kill', 'rampage', 'killing_spree', 'dominating', 'mega_kill', 'unstoppable', 'wicked_sick', 'monster_kill', 'godlike', 'beyond_godlike', 'kill']
-    let count = 0
-    for (const event of events) {
-      const variants = event === 'kill' ? 6 : event === 'beyond_godlike' ? 2 : 1
-      for (let n = 1; n <= variants; n++) {
-        const clip = `${event}_${String(n).padStart(2, '0')}`
-        expect(vrzoAsset(clip, event)).toBe(`/vrzo-banners/${clip}.webm`)
-        expect(vrzoAsset(clip, 'first_blood' === event ? 'kill' : 'first_blood')).toBeNull()
-        count++
-      }
-    }
-    expect(count).toBe(21)
-    expect(VRZO_CLIPS).toHaveLength(21)
-    expect(new Set(VRZO_CLIPS.map(({ event }) => event)).size).toBe(15)
-    for (const { event, clipId } of VRZO_CLIPS) expect(vrzoAsset(clipId, event)).not.toBeNull()
-  })
   it('rejects wrong session, invalid, expired and stale events; old stop cannot hide newer clip', () => {
     const update = vi.fn(); const c = new VrzoBannerController(update)
     c.receive(msg('1', 'start', { session_epoch: 2 }), 3, 1000)
@@ -87,13 +70,13 @@ describe('VRZO visual lifecycle', () => {
     c.receive(msg('1', 'start', { expires_at_ms: 999 }), 3, 1000)
     expect(update).not.toHaveBeenCalled()
     c.receive(msg('2'), 3, 1000)
-    c.receive(msg('3', 'start', { clipId: 'kill_02' }), 3, 1000)
+    c.receive(msg('3', 'start', { clipId: 'bnr_00000000-0000-0000-0000-000000000002', manifestVisual: {packId:'ann_00000000-0000-0000-0000-000000000001',bannerId:'bnr_00000000-0000-0000-0000-000000000002',revision:'1'} }), 3, 1000)
     c.receive(msg('2', 'stop'), 3, 1000)
     expect(update).toHaveBeenCalledTimes(3)
     expect(update.mock.lastCall?.[0]?.id).toBe('3')
     c.receive(msg('3', 'stop'), 3, 1000)
     expect(update.mock.lastCall?.[0]?.id).toBe('3')
-    c.receive(msg('3', 'stop', { clipId: 'kill_02' }), 3, 1000)
+    c.receive(msg('3', 'stop', { clipId: 'bnr_00000000-0000-0000-0000-000000000002', manifestVisual: {packId:'ann_00000000-0000-0000-0000-000000000001',bannerId:'bnr_00000000-0000-0000-0000-000000000002',revision:'1'} }), 3, 1000)
     expect(update.mock.lastCall?.[0]).toBeNull()
     c.receive(msg('3'), 3, 1000)
     expect(update.mock.lastCall?.[0]).toBeNull()

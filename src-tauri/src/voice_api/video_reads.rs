@@ -3,23 +3,35 @@ use std::sync::atomic::{AtomicUsize, Ordering};
 pub(crate) struct ReadSlots(AtomicUsize);
 pub(crate) struct ReadSlot<'a>(&'a ReadSlots);
 impl ReadSlots {
-    pub(crate) const fn new() -> Self { Self(AtomicUsize::new(0)) }
+    pub(crate) const fn new() -> Self {
+        Self(AtomicUsize::new(0))
+    }
     pub(crate) fn acquire(&self) -> Option<ReadSlot<'_>> {
-        self.0.fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| (n < 3).then_some(n + 1))
-            .ok().map(|_| ReadSlot(self))
+        self.0
+            .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+                (n < 3).then_some(n + 1)
+            })
+            .ok()
+            .map(|_| ReadSlot(self))
     }
     pub(crate) fn acquire_timeout(&self, timeout: std::time::Duration) -> Option<ReadSlot<'_>> {
         let deadline = std::time::Instant::now() + timeout;
         loop {
-            if let Some(slot) = self.acquire() { return Some(slot); }
-            if std::time::Instant::now() >= deadline { return None; }
+            if let Some(slot) = self.acquire() {
+                return Some(slot);
+            }
+            if std::time::Instant::now() >= deadline {
+                return None;
+            }
             // A cancelled WebView request can leave a short verified read in flight.
             std::thread::sleep(std::time::Duration::from_millis(2));
         }
     }
 }
 impl Drop for ReadSlot<'_> {
-    fn drop(&mut self) { self.0.0.fetch_sub(1, Ordering::AcqRel); }
+    fn drop(&mut self) {
+        self.0 .0.fetch_sub(1, Ordering::AcqRel);
+    }
 }
 #[cfg(test)]
 mod tests {
@@ -43,7 +55,11 @@ mod tests {
         let b = slots.acquire().unwrap();
         let c = slots.acquire().unwrap();
         std::thread::scope(|scope| {
-            let next = scope.spawn(|| slots.acquire_timeout(std::time::Duration::from_millis(500)).is_some());
+            let next = scope.spawn(|| {
+                slots
+                    .acquire_timeout(std::time::Duration::from_millis(500))
+                    .is_some()
+            });
             std::thread::sleep(std::time::Duration::from_millis(10));
             drop(a);
             assert!(next.join().unwrap());

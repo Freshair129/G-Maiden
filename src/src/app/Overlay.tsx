@@ -2,18 +2,15 @@ import React, { useCallback, useEffect, useRef, useState } from 'react'
 import { emit, listen } from '@tauri-apps/api/event'
 import { invoke } from '@tauri-apps/api/core'
 import { FullOverlay } from '../overlay/FullOverlay'
-import { VoiceWave } from '../overlay/VoiceWave'
-import { STREAK_LABELS } from '../overlay/streaks'
-import { crossedAnyLevelUpMilestone, crossedLevelUpMilestones } from '../personaMilestones'
+import { crossedLevelUpMilestones } from '../personaMilestones'
 import type {
   GameTick, MinimapCv, GankAlert, MissingState, Advice, AdviceUpdate, ReviveAdvice, GsiStatus, SensorHealth,
-  MatchSessionMetadata, AnnouncerBanner, BuybackIdentity, BuybackNarrative,
-  Settings, GankState, PersonaEvent,
+  MatchSessionMetadata, BuybackIdentity, BuybackNarrative,
+  Settings, GankState,
 } from './types'
 import { DEFAULTS } from './types'
 import { C } from './theme'
-import { TONE_DANGER_LINES, TONE_LINES, TONE_REVISION_LINES } from './lines'
-import { fmtClock, heroName, overlayPanel, Bar, Stat, sep, dangerStyle, gankStyle, gankClearStyle, killBannerStyle, packBannerStyle } from './primitives'
+import { heroName } from './primitives'
 import { allowsSessionLifecycleAdvance } from '../live/session'
 import { adviceAllowedBySettings, advicePolicyKey, isAdviceGenerationCurrent, validAdviceGeneration } from './adviceGeneration'
 import { VrzoBannerController, type VrzoVisual } from '../overlay/vrzoBanner'
@@ -22,9 +19,7 @@ import { VrzoBannerVideo } from '../overlay/vrzoBannerVideo'
 export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSettings = DEFAULTS }) => {
   const [lastTick, setLastTick] = useState<GameTick | null>(null)
   const [gsiStatus, setGsiStatus] = useState<GsiStatus | null>(null)
-  const [seen, setSeen] = useState(false)
   const [s, setS] = useState<Settings>(initialSettings)
-  const tone = (s.personaPreset === 'caster' || s.personaPreset === 'meme') ? 'casual' : 'serious'
   // G-Signal gank banner + CV debug feed (item A & B).
   const [gank, setGank] = useState<GankState>(null)
   const [cv, setCv] = useState<MinimapCv | null>(null)
@@ -58,49 +53,16 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   // fail-closed. Until a fresh capture status arrives, the overlay must not
   // report the sensor as healthy (audit B3).
   const [sensorHealth, setSensorHealth] = useState<SensorHealth | null>(null)
-  // #6: mirror each Maiden voice line as a transient on-screen toast so triggers
-  // are verifiable even before the voice pack / TTS is finalized (debug aid —
-  // becomes a user toggle in the overlay redesign). The voice still fires too.
-  const [toast, setToast] = useState<{ event: string; text: string } | null>(null)
-  // Kill banner state: 'show' → visible, 'exit' → fading out, null → hidden.
-  const [killBanner, setKillBanner] = useState<{
-    phase: 'show' | 'exit'; kills: number; streak: number; victim: string | null
-  } | null>(null)
-  const killTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const killStreak = useRef(0)
-  // Pack banner (announcer bundle) — the active voice pack's image for a fired
-  // event. When present it REPLACES the built-in kill card; falls back to the
-  // card when the pack has no banner for that event. Driven by the backend
-  // `announcer-banner` event so the image and the voiced clip fire together.
-  const [packBanner, setPackBanner] = useState<{
-    phase: 'show' | 'exit'; url: string | null; text: string; thai: string; clip: string | null
-  } | null>(null)
   const [vrzoVisual, setVrzoVisual] = useState<VrzoVisual | null>(null)
   const vrzo = useRef<VrzoBannerController | null>(null)
   if (!vrzo.current) vrzo.current = new VrzoBannerController(setVrzoVisual)
   const failVrzo = useCallback((id: string) => vrzo.current?.fail(id), [])
-  const packBannerTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const latestPackPreview = useRef(0)
   const gankTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const gankClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const revisionTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Volume toast — brief on-screen feedback when player uses Alt+Up/Down/M.
   const [volToast, setVolToast] = useState<number | null>(null)
   const volToastTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
-  // rising-edge state for danger: speak once when HP crosses the threshold down,
-  // not every tick. Reset when HP recovers or the hero dies/respawns.
-  const dangerActive = useRef(false)
-  const lastSpokeAt = useRef(0)
-  // What Maiden last said (so Belief Revision can retract a danger line specifically)
-  // and the HP at the moment she warned, so we can detect a real recovery.
-  const lastSpokeKind = useRef<'danger' | 'persona' | 'revision' | null>(null)
-  const dangerHpAtSpeak = useRef(0)
-  // Previous tick for transition detection (level up, kill, death, respawn).
-  // We don't snapshot the whole tick — only the fields that drive a persona line.
-  const prev = useRef<{ level: number; kills: number; deaths: number; alive: boolean; mana: number; hp: number } | null>(null)
-  const prevKill = useRef<{ kills: number; deaths: number } | null>(null)
   const prevAdvice = useRef<{ level: number; deaths: number } | null>(null)
-  const manaActive = useRef(false)
   const tickRef = useRef<GameTick | null>(null)
   // Auto-advice trigger memory (in clock_time seconds; -Infinity = never fired).
   // Per-key cooldown keeps the Plan quota honest even if multiple triggers fire close together.
@@ -116,12 +78,11 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     if (adviceTimer.current) clearTimeout(adviceTimer.current)
     adviceTimer.current = null
     setOverlayAdvice(null)
-    setToast((current) => current?.event === 'advice' ? null : current)
   }, [])
   const resetSessionUi = useCallback(() => {
     vrzo.current?.clearLive()
     adviceRevision.current += 1
-    for (const timer of [gankTimer, gankClearTimer, adviceTimer, killTimer, packBannerTimer, revisionTimer]) {
+    for (const timer of [gankTimer, gankClearTimer, adviceTimer]) {
       if (timer.current) clearTimeout(timer.current)
       timer.current = null
     }
@@ -135,19 +96,8 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     setOverlayAdvice(null)
     setBuyback(null)
     buybackIdentity.current = null
-    setToast(null)
-    setKillBanner(null)
-    setPackBanner(null)
-    killStreak.current = 0
-    dangerActive.current = false
-    lastSpokeAt.current = 0
-    lastSpokeKind.current = null
-    dangerHpAtSpeak.current = 0
-    prev.current = null
-    prevKill.current = null
     prevAdvice.current = null
     prevAlive.current = null
-    manaActive.current = false
     recentDeathClock.current = null
     advisedAt.current = {}
   }, [])
@@ -212,11 +162,9 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       tickRef.current = e.payload
       if (e.payload.session_lifecycle === 'end' || e.payload.session_lifecycle === 'abandon') {
         setLastTick(null)
-        setSeen(true)
         return
       }
       setLastTick(e.payload)
-      setSeen(true)
     })
     const u2 = listen<Settings>('settings', (e) => {
       const next: Settings = { ...DEFAULTS, ...e.payload, uiMode: 'full' }
@@ -335,64 +283,11 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       if (volToastTimer.current) clearTimeout(volToastTimer.current)
       volToastTimer.current = setTimeout(() => setVolToast(null), 1500)
     })
-    // Kill-banner preview (fired from the settings panel so users can see/hear
-    // the kill/streak banner without being in a match).
-    const uK = listen<{ streak: number; victim: string | null }>('preview-kill', (e) => {
-      if (killTimer.current) clearTimeout(killTimer.current)
-      setKillBanner({ phase: 'show', kills: 0, streak: e.payload.streak, victim: e.payload.victim })
-      const epoch = sessionEpoch.current
-      killTimer.current = setTimeout(() => {
-        if (sessionEpoch.current !== epoch) return
-        setKillBanner((kb) => kb ? { ...kb, phase: 'exit' } : null)
-        killTimer.current = setTimeout(() => {
-          if (sessionEpoch.current === epoch) setKillBanner(null)
-        }, 800)
-      }, 4000)
-    })
-    // Announcer bundle: the active pack's banner image for a fired event. Only
-    // shows when the pack actually maps an image (bannerUrl); otherwise we leave
-    // the built-in kill card to handle it. Clears the card so we never stack both.
-    const showPackBanner = (payload: AnnouncerBanner, expiresAt = Date.now() + 4800) => {
-      // Show the bundle banner when the pack maps an image OR a voice clip fired —
-      // a voice-only event still gets the transcript + reactive waveform strip.
-      if ((!payload.bannerData && !payload.clip) || !sRef.current.killVisuals) return
-      if (killTimer.current) { clearTimeout(killTimer.current); killTimer.current = null }
-      setKillBanner(null)
-      // Consolidation (Boss 2026-07-20): the banner carries the transcript +
-      // waveform for this same event — drop the voice toast so the player never
-      // reads the same line twice on screen.
-      setToast(null)
-      if (packBannerTimer.current) clearTimeout(packBannerTimer.current)
-      setPackBanner({ phase: 'show', url: payload.bannerData, text: payload.bannerText, thai: payload.thai, clip: payload.clip })
-      const epoch = sessionEpoch.current
-      packBannerTimer.current = setTimeout(() => {
-        if (sessionEpoch.current !== epoch) return
-        setPackBanner((pb) => pb ? { ...pb, phase: 'exit' } : null)
-        packBannerTimer.current = setTimeout(() => {
-          if (sessionEpoch.current === epoch) setPackBanner(null)
-        }, 800)
-      }, Math.max(0, Math.min(4000, expiresAt - Date.now() - 800)))
-    }
-    const uPB = listen<AnnouncerBanner>('announcer-banner', (e) => {
-      if (!Number.isSafeInteger(e.payload.session_epoch) || (e.payload.session_epoch ?? 0) <= 0
-        || !acceptsSessionEvent(e.payload, ['draft', 'live', 'disconnected']) || !mayUseOwnState()) return
-      showPackBanner(e.payload)
-    })
-    const uPP = listen<AnnouncerBanner & { preview_id: number; expires_at_ms: number }>('announcer-preview', ({ payload }) => {
-      if (!Number.isSafeInteger(payload.preview_id) || payload.preview_id <= latestPackPreview.current
-        || !Number.isFinite(payload.expires_at_ms) || payload.expires_at_ms <= Date.now()
-        || payload.expires_at_ms > Date.now() + 5000) return
-      latestPackPreview.current = payload.preview_id
-      showPackBanner(payload, payload.expires_at_ms)
-    })
-    const uVrzo = listen<unknown>('vrzo-banner-playback', ({ payload }) => {
+    const uVrzo = listen<unknown>('announcer-media-playback', ({ payload }) => {
       if (!sRef.current.killVisuals || !sRef.current.layout?.banner?.enabled) return
-      if (vrzo.current?.receive(payload, sessionEpoch.current, Date.now())) {
-        setPackBanner(null)
-        setKillBanner(null)
-      }
+      vrzo.current?.receive(payload, sessionEpoch.current, Date.now())
     })
-    const registrations = [u1, u2, uMaster, u3, u4, u5, u6, uSH, u7, u8, u9, uBA, uBN, u10, uK, uPB, uPP, uVrzo]
+    const registrations = [u1, u2, uMaster, u3, u4, u5, u6, uSH, u7, u8, u9, uBA, uBN, u10, uVrzo]
     // Hydrated settings are already supplied by the provider. Native readiness
     // additionally requires every listener before the Control settings reply.
     void Promise.all(registrations).then(async () => {
@@ -410,170 +305,11 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       if (gankClearTimer.current) clearTimeout(gankClearTimer.current)
       if (adviceTimer.current) clearTimeout(adviceTimer.current)
       if (volToastTimer.current) clearTimeout(volToastTimer.current)
-      if (packBannerTimer.current) clearTimeout(packBannerTimer.current)
-      if (killTimer.current) clearTimeout(killTimer.current)
-      if (revisionTimer.current) clearTimeout(revisionTimer.current)
       for (const timer of missingTimerMap.values()) clearTimeout(timer)
       missingTimerMap.clear()
     }
   }, [acceptsSessionEvent, observeSessionAuthority, invalidateAdvice])
 
-  // #6: auto-dismiss the event toast 4s after the most recent voice event.
-  useEffect(() => {
-    if (!toast) return
-    const epoch = sessionEpoch.current
-    const id = setTimeout(() => {
-      if (sessionEpoch.current === epoch) setToast(null)
-    }, 4000)
-    return () => clearTimeout(id)
-  }, [toast])
-
-  // ── All hooks below run EVERY render, before any early return. React requires
-  // a constant hook order; an early `return` above these (as there was) makes the
-  // hook count change when a match starts and crashes the overlay. They guard on
-  // `tick` internally instead. ──
-  const lowHp = !!tick && tick.in_game && s.alertEnabled && tick.alive
-    && tick.hp_percent > 0 && tick.hp_percent <= s.alertThreshold
-
-  // Speak on the rising edge (alive + crossing the line). Re-arm when safe again,
-  // and throttle to at most once every 8s in case HP flickers across the line.
-  useEffect(() => {
-    if (!tick || !tick.in_game) return
-    if (!tick.alive || tick.hp_percent > s.alertThreshold + 5) {
-      dangerActive.current = false
-      return
-    }
-    if (lowHp && !dangerActive.current && s.voiceEnabled) {
-      const now = Date.now()
-      if (now - lastSpokeAt.current > 8000) {
-        lastSpokeAt.current = now
-        dangerActive.current = true
-        lastSpokeKind.current = 'danger'
-        dangerHpAtSpeak.current = tick.hp_percent
-        const t = (sRef.current.personaPreset === 'caster' || sRef.current.personaPreset === 'meme') ? 'casual' : 'serious'
-        const pool = TONE_DANGER_LINES[t]
-        const line = pool[Math.floor(Math.random() * pool.length)]
-        setToast({ event: 'danger', text: line })
-        if (sRef.current.calibration) void invoke('capture_calibration_clip', { event: 'danger', line, context: { hp: tick.hp_percent, clock: tick.clock_time, level: tick.level } }).catch(() => {})
-        void invoke('speak_event', { event: 'danger', fallback: line, voice: s.voiceName || null, rate: s.voiceRate }).catch(() => {})
-      }
-    }
-  }, [lowHp, tick, tick?.in_game, tick?.alive, tick?.hp_percent, s.alertThreshold, s.voiceEnabled, s.voiceName, s.voiceRate])
-
-  // Belief Revision (CLAUDE.md): if Maiden just yelled "ถอย!" but the danger
-  // evaporated within ~2.5s (player got a kill, or HP swung well above safe),
-  // kill the in-flight line and replace with a self-correcting one.
-  useEffect(() => {
-    if (!tick || !tick.in_game) return
-    const p = prev.current
-    if (!p || lastSpokeKind.current !== 'danger') return
-    const sinceSpoke = Date.now() - lastSpokeAt.current
-    if (sinceSpoke > 2500 || sinceSpoke < 100) return  // out of window / same tick
-    const hpRecovered = tick.hp_percent >= dangerHpAtSpeak.current + 25 && tick.hp_percent > s.alertThreshold + 15
-    const gotKill = tick.kills > p.kills
-    if (!hpRecovered && !gotKill) return
-    const t = (sRef.current.personaPreset === 'caster' || sRef.current.personaPreset === 'meme') ? 'casual' : 'serious'
-    const pool = TONE_REVISION_LINES[t].dangerRetracted
-    const line = pool[Math.floor(Math.random() * pool.length)]
-    lastSpokeAt.current = Date.now()
-    lastSpokeKind.current = 'revision'
-    dangerActive.current = false  // arm danger again so a fresh crossing can re-warn
-    setToast({ event: 'revision', text: line })
-    if (sRef.current.calibration) void invoke('capture_calibration_clip', { event: 'revision', line, context: { hp: tick.hp_percent, clock: tick.clock_time } }).catch(() => {})
-    void invoke('cancel_speech').catch(() => {})
-    // brief gap lets the killed SAPI process die before the new one starts,
-    // otherwise Windows audio sometimes squashes the first syllable
-    const epoch = sessionEpoch.current
-    if (revisionTimer.current) clearTimeout(revisionTimer.current)
-    revisionTimer.current = setTimeout(() => {
-      if (sessionEpoch.current !== epoch) return
-      void invoke('speak_event', { event: 'revision', fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
-    }, 90)
-  }, [tick, tick?.in_game, tick?.hp_percent, tick?.kills, s.alertThreshold])
-
-  // Persona events — detect transitions vs. the previous tick. We minimum-gap
-  // every utterance to 6s and skip persona lines whenever a danger line is
-  // already due, so Maiden never talks over her own warnings.
-  useEffect(() => {
-    if (!tick?.in_game || tick.local_player_verified !== true) { prev.current = null; return }
-    const p = prev.current
-    prev.current = { level: tick.level, kills: tick.kills, deaths: tick.deaths, alive: tick.alive, mana: tick.mana_percent, hp: tick.hp_percent }
-    if (!p || !sRef.current.voiceEnabled || !sRef.current.personaLines || sRef.current.personaPreset === 'silent') return
-    if (lowHp) return // don't talk over a danger warning
-
-    const events: PersonaEvent[] = []
-    if (crossedAnyLevelUpMilestone(p.level, tick.level)) events.push('levelUp')
-    if (tick.kills > p.kills) events.push('kill')
-    if (p.alive && !tick.alive) events.push('death')
-    if (!p.alive && tick.alive) events.push('respawn')
-
-    // mana-low rising edge: <= 15% while alive; clear at > 25%.
-    if (tick.alive && tick.mana_percent > 0 && tick.mana_percent <= 15 && !manaActive.current) {
-      events.push('manaLow')
-      manaActive.current = true
-    } else if (tick.mana_percent > 25) {
-      manaActive.current = false
-    }
-    if (events.length === 0) return
-
-    const now = Date.now()
-    if (now - lastSpokeAt.current < 6000) return
-    // Pick the highest-priority event in order: death > respawn > kill > levelUp > manaLow
-    const order: PersonaEvent[] = ['death', 'respawn', 'kill', 'levelUp', 'manaLow']
-    const evt = order.find((e) => events.includes(e))!
-    
-    const currentPreset = sRef.current.personaPreset
-    const t = (currentPreset === 'caster' || currentPreset === 'meme') ? 'casual' : 'serious'
-    const pool = TONE_LINES[t][evt]
-    let line: string = pool[Math.floor(Math.random() * pool.length)]
-
-    // Slot-splicing / placeholder replacement:
-    if (line.includes('{hero}')) {
-      let nameToSplice = 'ศัตรู'
-      if (evt === 'kill') {
-        const rawVictim = tick.kills - p.kills === 1 ? tick.last_victim_hero || null : null
-        if (rawVictim) {
-          nameToSplice = heroName(rawVictim)
-        }
-      }
-      line = line.replace('{hero}', nameToSplice)
-    }
-
-    lastSpokeAt.current = now
-    lastSpokeKind.current = 'persona'
-    setToast({ event: evt, text: line })
-    if (sRef.current.calibration) void invoke('capture_calibration_clip', { event: evt, line, context: { clock: tick.clock_time, level: tick.level, kills: tick.kills, deaths: tick.deaths } }).catch(() => {})
-    // Native GSI chooses the highest-priority pack event for this transition.
-    // A second persona clip would interrupt that same event's audio and video.
-    if (!sRef.current.announcerEnabled) {
-      void invoke('speak_event', { event: evt, fallback: line, voice: sRef.current.voiceName || null, rate: sRef.current.voiceRate }).catch(() => {})
-    }
-  }, [tick, tick?.in_game, tick?.level, tick?.kills, tick?.deaths, tick?.alive, tick?.mana_percent, lowHp])
-
-  // Kill banner — show variant-B for 4.0s, then run its 0.8s exit whenever the player scores a kill.
-  // Missing heroes provide no evidence about victim identity.
-  useEffect(() => {
-    if (!tick?.in_game || tick.local_player_verified !== true) { prevKill.current = null; killStreak.current = 0; setKillBanner(null); return }
-    const p = prevKill.current
-    prevKill.current = { kills: tick.kills, deaths: tick.deaths }
-    if (!p) return
-    const deathsChanged = tick.deaths !== p.deaths
-    if (deathsChanged || tick.kills < p.kills) killStreak.current = 0
-    const newKills = tick.kills - p.kills
-    if (newKills <= 0) return
-    if (killTimer.current) clearTimeout(killTimer.current)
-    if (!deathsChanged && tick.alive) killStreak.current += newKills
-    const victim = newKills === 1 ? tick.last_victim_hero || null : null
-    setKillBanner({ phase: 'show', kills: tick?.kills ?? 0, streak: killStreak.current, victim })
-    const epoch = sessionEpoch.current
-    killTimer.current = setTimeout(() => {
-      if (sessionEpoch.current !== epoch) return
-      setKillBanner((kb) => kb ? { ...kb, phase: 'exit' } : null)
-      killTimer.current = setTimeout(() => {
-        if (sessionEpoch.current === epoch) setKillBanner(null)
-      }, 800)
-    }, 4000)
-  }, [tick])
   // Reset streak on death + fire the G-Revive buyback verdict; clear on respawn.
   // Each transition consumer owns its baseline so effect ordering cannot hide edges.
   const prevAlive = useRef<boolean | null>(null)
@@ -584,7 +320,6 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     prevAlive.current = currentTick.alive
     if (was === null) return
     if (was && !currentTick.alive) {
-      killStreak.current = 0
       // G-Revive: ask the backend for this death's buyback verdict. The verdict
       // returns immediately (deterministic) and is broadcast on `buyback-advice`
       // — the listener above owns display; the voiced narrative follows on
@@ -615,10 +350,6 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       setOverlayAdvice(null)
       setGank(null)
       setMissingHeroes(new Set())
-      setToast(null)
-      setKillBanner(null)
-      setPackBanner(null)
-      killStreak.current = 0
     }
     prevInGame.current = now
   }, [matchActive])
@@ -629,16 +360,6 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     if (wasFresh.current && !nowFresh) {
       setBuyback(null)
       setOverlayAdvice(null)
-      setToast(null)
-      setKillBanner(null)
-      setPackBanner(null)
-      killStreak.current = 0
-      dangerActive.current = false
-      manaActive.current = false
-      lastSpokeKind.current = null
-      lastSpokeAt.current = 0
-      prev.current = null
-      prevKill.current = null
       prevAdvice.current = null
       prevAlive.current = null
       recentDeathClock.current = null
@@ -710,11 +431,9 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
           if (!requestIsCurrent() || !adviceAllowedBySettings(a, sRef.current)) return
           if (adviceNativeGeneration.current !== null && a.context_generation < adviceNativeGeneration.current) return
           adviceNativeGeneration.current = a.context_generation
-          setToast({ event: 'advice', text: a.text })
           if (sRef.current.calibration) void invoke('capture_calibration_clip', { event: 'advice', line: a.text, context: { clock: currentTick.clock_time, level: currentTick.level } }).catch(() => {})
-          void invoke('speak_event', {
-            event: 'advice',
-            fallback: a.text,
+          void invoke('speak_advice', {
+            text: a.text,
             voice: sRef.current.voiceName || null,
             rate: sRef.current.voiceRate,
             adviceGeneration: a.context_generation,
@@ -725,14 +444,6 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       })()
     }
   }, [tick])
-
-  const wrap: React.CSSProperties = s.position === 'custom'
-    ? { position: 'fixed', left: `${s.customX}%`, top: `${s.customY}%`, transform: 'translateX(-50%)', pointerEvents: 'none', zIndex: 10 }
-    : {
-        position: 'fixed', inset: 0, background: 'transparent', display: 'flex',
-        justifyContent: s.position === 'left' ? 'flex-start' : s.position === 'right' ? 'flex-end' : 'center',
-        alignItems: 'flex-start', padding: 12, pointerEvents: 'none',
-      }
 
   // B. CV debug overlay (calibration) — full-screen, screen px == overlay px.
   // OFF by default; drawn only when settings.cvDebug is on.
@@ -760,331 +471,16 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     </div>
   ) : null
 
-  // G2.6: Enemy-missing indicator — compact badge list. Shows which heroes
-  // G-Sentry has flagged missing >5s but haven't yet hit the 85% gank threshold.
-  // Only shown when NOT already in a full gank-alert (to avoid double-messaging).
-  const missingBadge = missingHeroes.size > 0 && !gank && s.gankVisuals ? (
-    <div style={{
-      background: 'rgba(18,20,28,0.78)', border: `1px solid rgba(255,207,107,0.45)`,
-      borderRadius: 10, padding: '6px 14px', fontFamily: '"Segoe UI", system-ui, sans-serif',
-      fontSize: 12.5, color: C.warn, display: 'flex', alignItems: 'center', gap: 8,
-      boxShadow: '0 6px 18px rgba(0,0,0,0.24)',
-    }}>
-      <span style={{ opacity: 0.7 }}>👁️</span>
-      <span>หาย: {[...missingHeroes].map(heroName).join(', ')}</span>
-    </div>
-  ) : null
-
-  // G5.4: Overlay advice panel — shows G-Master response for 20s, dismissable.
-  const advicePanel = overlayAdvice && s.gankVisuals ? (
-    <div style={{
-      ...overlayPanel(s.opacity), padding: '10px 16px', maxWidth: 380, fontSize: 13,
-      lineHeight: 1.5, position: 'relative',
-    }}>
-      <div style={{ fontSize: 10.5, color: C.ice, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5 }}>Maiden แนะนำ</div>
-      <div style={{ color: C.txt }}>{overlayAdvice}</div>
-      <button onClick={() => setOverlayAdvice(null)} style={{
-        position: 'absolute', top: 6, right: 8, background: 'transparent', border: 'none',
-        color: C.mut, cursor: 'pointer', fontSize: 13, lineHeight: 1,
-      }}>✕</button>
-    </div>
-  ) : null
-
-  // G-Revive: buyback verdict card — shown while dead, dismissed on respawn.
-  // Accent tracks urgency: Strong = red (buy back NOW), Consider = amber, else ice.
-  const buybackPanel = buyback && s.gankVisuals ? (() => {
-    const a = buyback.advice
-    const accent = a.urgency === 'Strong' ? C.bad : a.urgency === 'Consider' ? C.warn : C.ice
-    const verdict = a.recommend_buyback === null ? 'ยังประเมินไม่ได้' : a.recommend_buyback ? (a.urgency === 'Strong' ? 'ซื้อเกิดเลย!' : 'ควรซื้อเกิด') : 'รอเกิด'
-    // Live GSI countdown over the frozen at-death snapshot (parity with FullOverlay).
-    const secs = tick && !tick.alive && tick.respawn_seconds > 0
-      ? tick.respawn_seconds
-      : Math.max(0, Math.round(a.natural_respawn_remaining))
-    return (
-      <div style={{
-        ...overlayPanel(s.opacity), padding: '10px 16px', maxWidth: 380, fontSize: 13,
-        lineHeight: 1.5, position: 'relative', border: `1px solid ${accent}`,
-      }}>
-        <div style={{ fontSize: 10.5, color: accent, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 5, display: 'flex', alignItems: 'center', gap: 8 }}>
-          <span>💀 Buyback</span>
-          <span style={{ background: accent, color: C.bg, borderRadius: 6, padding: '1px 7px', fontWeight: 700, letterSpacing: 0.4 }}>{verdict}</span>
-        </div>
-        <div style={{ color: C.txt }}>{buyback.narrative || a.reason}</div>
-        <div style={{ fontSize: 11, color: C.mut, marginTop: 4 }}>
-          เกิดเองใน {secs}s{a.affordable === false ? ' · เงินไม่พอซื้อเกิด' : ''}
-        </div>
-        <button onClick={() => setBuyback(null)} style={{
-          position: 'absolute', top: 6, right: 8, background: 'transparent', border: 'none',
-          color: C.mut, cursor: 'pointer', fontSize: 13, lineHeight: 1,
-        }}>✕</button>
-      </div>
-    )
-  })() : null
-
-  // A. Gank warning banner — top-center, above the stat HUD, never over the minimap.
-  const gankBanner = s.gankVisuals && gank ? (
-    gank.phase === 'clear'
-      ? <div className="gm-gank-clear" style={gankClearStyle}>{TONE_REVISION_LINES[tone].gankCleared[0]}</div>
-      : <div className="gm-gank" style={gankStyle}>
-          ⚠️ ระวังแก๊งค์! {gank.heroes.length ? gank.heroes.map(heroName).join(', ') + ' หาย — ' : ''}{Math.round(gank.probability * 100)}%
-        </div>
-  ) : null
-
-  // #6: transient event toast — same lifetime as a voice cue, near the alert zone.
-  const eventToast = toast ? (
-    <div style={{
-      background: 'rgba(18,20,28,0.86)', border: `1px solid ${C.ice}`, borderRadius: 10,
-      padding: '7px 16px', fontFamily: '"Segoe UI", system-ui, sans-serif', fontSize: 12.5,
-      color: C.txt, display: 'flex', alignItems: 'center', gap: 8, maxWidth: 440,
-      boxShadow: '0 6px 18px rgba(0,0,0,0.24)',
-    }}>
-      <span style={{ fontSize: 10, color: C.ice, textTransform: 'uppercase', letterSpacing: 0.6, flex: 'none' }}>🔔 {toast.event}</span>
-      <span style={{ opacity: 0.92 }}>{toast.text}</span>
-    </div>
-  ) : null
-
-  // Single overlay: the merged Full tier (positionable modules + all the
-  // announcer/persona visuals ported from lite). uiMode is coerced to 'full'
-  // everywhere (startup settings / settings broadcast), so the lite render below is
-  // dormant — kept one release as a fallback, not user-reachable.
-  if (s.uiMode === 'full') {
-    return (
-      <>
-      <FullOverlay
-        tick={previewTick ?? tick} s={s} gank={gank} missingHeroes={missingHeroes} warningStatus={warningStatus}
-        overlayAdvice={overlayAdvice} buyback={buyback} toast={toast}
-        killBanner={vrzoVisual ? null : killBanner} packBanner={vrzoVisual ? null : packBanner} lowHp={lowHp}
-        volToast={volToast} gsiActive={gsiActive} gsiFresh={gsiFresh || previewMode}
-        gsiFreshness={gsiStatus?.gsi_freshness ?? 'unavailable'} gsiAgeMs={gsiStatus?.gsi_age_ms ?? null}
-        matchActive={previewMode ? !!previewTick.in_game : matchActive} previewMode={previewMode}
-        sensorOk={sensorHealth?.healthy ?? false}
-      />
-      {s.killVisuals && s.layout?.banner?.enabled && (
-        <VrzoBannerVideo visual={vrzoVisual} layout={s.layout.banner} fail={failVrzo} />
-      )}
-      </>
-    )
-  }
-
-  if (!seen || !tick || !tick.in_game || (!gsiActive && !previewMode)) {
-    // Boss 2026-07-18 "กรอบทะลุตลอด": the standby chip used to render
-    // UNCONDITIONALLY here, so with no game running the always-on-top overlay
-    // window painted a floating "G-Maiden / GSI Signal" pill on the bare
-    // desktop, permanently. Only show it when there's a live GSI feed (Dota
-    // menus — useful "I'm alive" feedback over the game) or during the
-    // settings overlay-preview; on a plain desktop the overlay draws nothing.
-    const stale = gsiStatus?.gsi_freshness === 'stale'
-    const showStandbyChip = gsiActive || previewMode || stale
-    return (
-      <>
-        {cvDebug}
-        <div style={wrap}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            {gankBanner}
-            {missingBadge}
-            {eventToast}
-            {showStandbyChip && (
-              <div style={{ ...overlayPanel(s.opacity), padding: '8px 12px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span style={{ width: 8, height: 8, borderRadius: 99, background: stale ? C.warn : gsiActive ? C.ok : C.bad }} />
-                <div>
-                  <div style={{ fontWeight: 600, fontSize: 13 }}>G-Maiden</div>
-                  <div style={{ fontSize: 11, color: stale ? C.warn : C.mut }}>
-                    {stale ? `GSI stale${gsiStatus?.gsi_age_ms === null || gsiStatus?.gsi_age_ms === undefined ? '' : ` · ${(gsiStatus.gsi_age_ms / 1000).toFixed(1)}s`}` : 'GSI Signal'}
-                  </div>
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-        {volToast !== null && (
-          <div style={{
-            position: 'fixed', bottom: 60, left: '50%', transform: 'translateX(-50%)',
-            ...overlayPanel(s.opacity), padding: '8px 18px', display: 'flex', alignItems: 'center', gap: 10,
-            fontSize: 13, pointerEvents: 'none', transition: 'opacity .2s', zIndex: 20,
-          }}>
-            <span>{volToast === 0 ? '🔇' : volToast <= 30 ? '🔈' : volToast <= 70 ? '🔉' : '🔊'}</span>
-            <div style={{ width: 80, height: 5, background: 'rgba(255,255,255,0.12)', borderRadius: 99, overflow: 'hidden' }}>
-              <div style={{ height: '100%', width: `${volToast}%`, background: C.ice, borderRadius: 99, transition: 'width .15s' }} />
-            </div>
-            <span style={{ color: C.ice, fontWeight: 600, minWidth: 32, textAlign: 'right' }}>{volToast}%</span>
-          </div>
-        )}
-      </>
-    )
-  }
-  const t = tick
-
-  return (
-    <>
+  return <>
     {cvDebug}
-    <div style={wrap}>
-      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-        {gankBanner}
-        {missingBadge}
-        {eventToast}
-        {lowHp && <div className="gm-danger" style={dangerStyle}>⚠ HP เหลือ {t.hp_percent}% — ถอยก่อนค่ะเพื่อน!</div>}
-        {/* Announcer bundle: the active pack's queue banner image (replaces the
-            built-in card when the pack maps an image for the fired event). */}
-        {s.killVisuals && packBanner && (
-          <div className={packBanner.phase === 'exit' ? 'gm-kill-exit' : 'gm-kill'} style={packBannerStyle}>
-            {packBanner.url && (
-              <img
-                src={packBanner.url}
-                alt={packBanner.text}
-                style={{ display: 'block', maxWidth: 300, maxHeight: 108, width: 'auto', height: 'auto', objectFit: 'contain', borderRadius: 12 }}
-                onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-              />
-            )}
-            {packBanner.url && (packBanner.text || packBanner.thai) && (
-              <div style={{ position: 'absolute', left: 0, right: 0, bottom: 6, textAlign: 'center', pointerEvents: 'none' }}>
-                {packBanner.text && (
-                  <div style={{ fontSize: 12, fontWeight: 700, color: C.txt, letterSpacing: 1, textTransform: 'uppercase', textShadow: '0 1px 4px rgba(0,0,0,0.85)' }}>{packBanner.text}</div>
-                )}
-                {packBanner.thai && (
-                  <div style={{ fontSize: 13, fontWeight: 600, color: C.ice, textShadow: '0 1px 4px rgba(0,0,0,0.85)' }}>{packBanner.thai}</div>
-                )}
-              </div>
-            )}
-            {/* Voice strip: the transcript caption + a waveform reactive to the
-                clip the overlay is playing (silently). Footer under an image, or
-                the whole banner when the pack maps no image for this event. */}
-            {packBanner.clip && (
-              <div style={{
-                display: 'flex', flexDirection: 'column', gap: 2, alignItems: 'center',
-                padding: packBanner.url ? '4px 6px 5px' : '6px 8px',
-                background: 'rgba(12,14,20,0.82)', lineHeight: 1.25,
-              }}>
-                {!packBanner.url && (packBanner.text || packBanner.thai) && (
-                  <div style={{ textAlign: 'center' }}>
-                    {packBanner.text && (
-                      <div style={{ fontSize: 12, fontWeight: 700, color: C.txt, letterSpacing: 1, textTransform: 'uppercase', textShadow: '0 1px 4px rgba(0,0,0,0.85)' }}>{packBanner.text}</div>
-                    )}
-                    {packBanner.thai && (
-                      <div style={{ fontSize: 13, fontWeight: 600, color: C.ice, textShadow: '0 1px 4px rgba(0,0,0,0.85)' }}>{packBanner.thai}</div>
-                    )}
-                  </div>
-                )}
-                <VoiceWave key={packBanner.clip} clip={packBanner.clip} width={220} />
-              </div>
-            )}
-          </div>
-        )}
-        {s.killVisuals && killBanner && !packBanner && (
-          <div className={killBanner.phase === 'exit' ? 'gm-kill-exit' : 'gm-kill'} style={killBannerStyle}>
-            {/* Hero portrait circle + animated red X */}
-            <div style={{ position: 'relative', width: 44, height: 44, flexShrink: 0 }}>
-              <div style={{
-                width: 44, height: 44, borderRadius: '50%', overflow: 'hidden',
-                background: 'rgba(18,20,28,0.9)', border: '2px solid rgba(91,227,167,0.6)',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-              }}>
-                {killBanner.victim ? (
-                  <img
-                    src={`https://cdn.cloudflare.steamstatic.com/apps/dota2/images/dota_react/heroes/${killBanner.victim.replace(/^npc_dota_hero_/, '')}.png`}
-                    alt="" style={{ width: '110%', height: '110%', objectFit: 'cover' }}
-                    onError={(e) => { (e.target as HTMLImageElement).style.display = 'none' }}
-                  />
-                ) : (
-                  <span style={{ fontSize: 22, opacity: 0.6 }}>💀</span>
-                )}
-              </div>
-              <svg className="gm-kill-cross" viewBox="0 0 56 56" style={{
-                position: 'absolute', inset: 0, width: 44, height: 44, pointerEvents: 'none',
-              }}>
-                <line x1="12" y1="12" x2="44" y2="44" stroke="#ff4455" strokeWidth="3.5" strokeLinecap="round" />
-                <line x1="44" y1="12" x2="12" y2="44" stroke="#ff4455" strokeWidth="3.5" strokeLinecap="round" />
-              </svg>
-            </div>
-            {/* Kill text + victim name */}
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div style={{ fontSize: 11, color: C.ok, fontWeight: 600, letterSpacing: 1.5, textTransform: 'uppercase', opacity: 0.8 }}>
-                {killBanner.streak >= 3 ? (STREAK_LABELS[Math.min(killBanner.streak, 10)] ?? 'BEYOND GODLIKE') : 'ENEMY SLAIN'}
-              </div>
-              <div style={{ fontSize: 17, fontWeight: 700, color: C.txt, marginTop: 2, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                {killBanner.victim ? heroName(killBanner.victim) : 'ฆ่าได้สวยค่ะ!'}
-              </div>
-            </div>
-            {/* YOU : FOE score */}
-            <div style={{
-              background: 'rgba(143,212,255,0.06)', border: '1px solid rgba(143,212,255,0.18)',
-              borderRadius: 8, padding: '4px 8px', textAlign: 'center', flexShrink: 0,
-            }}>
-              <div style={{ fontSize: 20, fontWeight: 800, whiteSpace: 'nowrap', letterSpacing: 1 }}>
-                <span style={{ color: C.ok }}>{t.kills}</span>
-                <span style={{ color: C.mut, fontSize: 14, margin: '0 6px' }}>:</span>
-                <span style={{ color: C.bad }}>{t.deaths}</span>
-              </div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 9, letterSpacing: 0.8, marginTop: 2 }}>
-                <span style={{ color: C.ok, fontWeight: 600 }}>YOU</span>
-                <span style={{ color: C.bad, fontWeight: 600 }}>FOE</span>
-              </div>
-            </div>
-          </div>
-        )}
-        {buybackPanel}
-        {advicePanel}
-        {(s.showTimer || s.showScore || s.showHeroBar || s.showKda || s.showGold) && (
-        <div style={{ ...overlayPanel(s.opacity), padding: '12px 18px', display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
-          {s.showTimer && (
-            <div style={{ textAlign: 'center', minWidth: 54 }}>
-              <div style={{ fontSize: 22, fontWeight: 700, color: C.ice, lineHeight: 1 }}>{fmtClock(t.clock_time)}</div>
-              <div style={{ fontSize: 10, color: C.mut, marginTop: 3 }}>{t.daytime ? '☀' : '🌙'}</div>
-            </div>
-          )}
-          {s.showScore && (
-            <div style={{ textAlign: 'center', minWidth: 54 }}>
-              <div style={{ fontSize: 16, fontWeight: 700 }}>
-                <span style={{ color: C.ok }}>{t.radiant_score}</span>
-                <span style={{ margin: '0 4px', opacity: 0.5, color: C.mut }}>:</span>
-                <span style={{ color: C.bad }}>{t.dire_score}</span>
-              </div>
-              <div style={{ fontSize: 10, color: C.mut }}>SCORE</div>
-            </div>
-          )}
-          {s.showHeroBar && (
-            <>
-              {(s.showTimer || s.showScore) && sep}
-              <div style={{ minWidth: 120 }}>
-                <div style={{ fontWeight: 600, fontSize: 14, color: t.alive ? C.txt : C.bad }}>{heroName(t.hero)} {!t.alive && '💀'}</div>
-                <div style={{ fontSize: 11, color: C.mut, marginBottom: 5 }}>Lvl {t.level}</div>
-                <div style={{ marginBottom: 3 }}><Bar pct={t.hp_percent} color={C.ok} /></div>
-                <Bar pct={t.mana_percent} color={C.ice} />
-              </div>
-            </>
-          )}
-          {s.showKda && (
-            <>
-              {(s.showTimer || s.showScore || s.showHeroBar) && sep}
-              <Stat label="K / D / A" value={`${t.kills}/${t.deaths}/${t.assists}`} />
-              <Stat label="LH / DN" value={`${t.last_hits}/${t.denies}`} />
-            </>
-          )}
-          {s.showGold && (
-            <>
-              {(s.showTimer || s.showScore || s.showHeroBar || s.showKda) && sep}
-              <Stat label="Gold" value={t.gold.toLocaleString()} color={C.warn} />
-              <Stat label="NW" value={t.net_worth.toLocaleString()} color={C.ice} />
-              <Stat label="GPM" value={t.gpm} />
-              <Stat label="XPM" value={t.xpm} />
-            </>
-          )}
-        </div>
-        )}
-      </div>
-    </div>
-    {volToast !== null && (
-      <div style={{
-        position: 'fixed', bottom: 60, left: '50%', transform: 'translateX(-50%)',
-        ...overlayPanel(s.opacity), padding: '8px 18px', display: 'flex', alignItems: 'center', gap: 10,
-        fontSize: 13, pointerEvents: 'none', transition: 'opacity .2s', zIndex: 20,
-      }}>
-        <span>{volToast === 0 ? '🔇' : volToast <= 30 ? '🔈' : volToast <= 70 ? '🔉' : '🔊'}</span>
-        <div style={{ width: 80, height: 5, background: 'rgba(255,255,255,0.12)', borderRadius: 99, overflow: 'hidden' }}>
-          <div style={{ height: '100%', width: `${volToast}%`, background: C.ice, borderRadius: 99, transition: 'width .15s' }} />
-        </div>
-        <span style={{ color: C.ice, fontWeight: 600, minWidth: 32, textAlign: 'right' }}>{volToast}%</span>
-      </div>
-    )}
-    </>
-  )
+    <FullOverlay
+      tick={previewTick ?? tick} s={s} gank={gank} missingHeroes={missingHeroes} warningStatus={warningStatus}
+      overlayAdvice={overlayAdvice} buyback={buyback}
+      volToast={volToast} gsiActive={gsiActive} gsiFresh={gsiFresh || previewMode}
+      gsiFreshness={gsiStatus?.gsi_freshness ?? 'unavailable'} gsiAgeMs={gsiStatus?.gsi_age_ms ?? null}
+      matchActive={previewMode ? !!previewTick.in_game : matchActive} previewMode={previewMode}
+      sensorOk={sensorHealth?.healthy ?? false}
+    />
+    {s.killVisuals && s.layout?.banner?.enabled && <VrzoBannerVideo visual={vrzoVisual} layout={s.layout.banner} fail={failVrzo} />}
+  </>
 }

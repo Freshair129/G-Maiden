@@ -64,10 +64,6 @@ impl UtterancePayload {
         }
     }
 
-    pub fn admitted(mut self) -> Self {
-        self.phase = "admitted";
-        self
-    }
     pub fn generated(mut self) -> Self {
         self.phase = "generated";
         self
@@ -124,7 +120,6 @@ mod tests {
         assert!(p.session_epoch.is_none());
         assert_eq!(p.phase, "requested");
         assert_eq!(p.clone().generated().phase, "generated");
-        assert_eq!(p.admitted().phase, "admitted");
     }
 
     #[test]
