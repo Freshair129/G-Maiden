@@ -1,5 +1,18 @@
 # TODO / self-note - next session
 
+อัปเดตล่าสุด: **2026-11-01 — GANN live match และงานก่อน Store**
+
+1. ทดสอบ VRZO ในแมตช์จริงโดยยืนยันแพ็กและโปรไฟล์ก่อนเริ่ม: แมตช์ล่าสุดเผลอเลือก Creator UAT ไม่ใช่ VRZO; ยังไม่ผ่าน VRZO acoustic/visual acceptance
+2. ตรวจ CV ตก Lite, classifier ช้า และ overlay bootstrap timeout ครั้งแรก; ตรวจ player-name OCR และ replay จากภาพ CV ซึ่งยังไม่ได้พิสูจน์
+3. ผู้ใช้สั่งลบ recordings สองแมตช์ แต่ auto-review ปฏิเสธคำสั่งลบแม้เป็นไฟล์เดี่ยว; บันทึกยังอยู่ ต้องจัดการโดยวิธีที่ได้รับอนุญาต
+4. เก็บ checkout/worktree ที่มี uncommitted changes โดยไม่ทิ้งงาน; ตรวจ shared node_modules และประสานผู้เกี่ยวข้องก่อนทำให้เหลือ main
+5. PR #102 รวม b22a0ee8 แล้ว; Store และ release ยังรอ ข้อมูล local tag v0.13.5 เก่ากว่า head ล่าสุด
+
+รายละเอียด: `.govibe/.brain/session/2026-11-01-gann-match-closeout.md`.
+
+---
+# TODO / self-note - next session
+
 อัปเดตล่าสุด: **2026-07-20 (บ่าย) — G-pipeline จบทั้งสาย G1→G3.5**: G3 feature-ledger รันครบ
 cascade (7/7, R-adv PASS) + prune manifest จน authoritative (0 violations) + CI gate
 (`tools/doc-graph/ci-gate.mjs` 4 gates เป็น step แรกใน ci.yml) — **pushed ถึง `6f2d1af0`**.
