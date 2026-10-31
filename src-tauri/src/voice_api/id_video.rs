@@ -20,7 +20,7 @@ pub(crate) fn response(request: tauri::http::Request<Vec<u8>>) -> tauri::http::R
         }
         let revision = parts[2].parse::<u64>().ok()?;
         let pair = super::pack_io::id_video(parts[0], parts[1], revision)?;
-        let root = super::paths::packs_dir().join(parts[0]);
+        let root = super::pack_io::cached_pack_root(parts[0])?;
         let safe = super::path_safety::safe_pack_path(&root, &format!("video/{}.webm", parts[1]))?;
         if safe != pair.video {
             return None;

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-31T11:39:00.993Z",
+  "generatedAt": "2026-10-31T19:52:04.231Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -154,6 +154,13 @@
       "type": "doc",
       "path": "docs/architecture/gann-event-media-contract.md",
       "title": "GANN-only announcer event media contract",
+      "status": "active"
+    },
+    {
+      "id": "docs/architecture/gann-package-v1-local-authoring.md",
+      "type": "doc",
+      "path": "docs/architecture/gann-package-v1-local-authoring.md",
+      "title": "GANN v1 local authoring and installation",
       "status": "active"
     },
     {
@@ -2847,9 +2854,27 @@
     },
     {
       "from": "docs/architecture/gann-event-media-contract.md",
+      "to": "docs/architecture/gann-package-v1-local-authoring.md",
+      "type": "wikilink",
+      "line": 48
+    },
+    {
+      "from": "docs/architecture/gann-event-media-contract.md",
       "to": "docs/superpowers/plans/2026-10-31-gann-only-events.md",
       "type": "wikilink",
-      "line": 66
+      "line": 58
+    },
+    {
+      "from": "docs/architecture/gann-package-v1-local-authoring.md",
+      "to": "docs/architecture/gann-event-media-contract.md",
+      "type": "wikilink",
+      "line": 12
+    },
+    {
+      "from": "docs/architecture/gann-package-v1-local-authoring.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 69
     },
     {
       "from": "docs/architecture/implementation-plan.md",
@@ -8769,6 +8794,12 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
+      "type": "symbol",
+      "line": 6
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/path_safety.rs",
       "type": "symbol",
       "line": 7
@@ -8902,6 +8933,12 @@
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/path_safety.rs",
+      "type": "symbol",
+      "line": 60
+    },
+    {
+      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "to": "src-tauri/src/voice_api/commands.rs",
       "type": "symbol",
       "line": 60
     },
@@ -10471,12 +10508,6 @@
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 6,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/voice_api/commands.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 9,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/banner.rs",
@@ -10641,12 +10672,6 @@
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "line": 60,
-      "reason": "bad-anchor",
-      "target": "src-tauri/src/voice_api/commands.rs"
-    },
-    {
-      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 61,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/banner.rs",
@@ -10775,7 +10800,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-31T11:39:09.939Z",
+    "generatedAt": "2026-10-31T19:52:42.280Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 74,

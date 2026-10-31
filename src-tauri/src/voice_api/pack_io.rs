@@ -145,6 +145,30 @@ fn content_matches_hash(expected_hash: &str, bytes: &[u8]) -> bool {
 }
 
 pub(crate) fn open_verified_store_clip(path: &Path) -> Result<Option<fs::File>, String> {
+    if let Some(expected) = with_resolved_cache(|cache| {
+        cache?.pairs.values().find_map(|pair| {
+            if pair.original == path {
+                Some(pair.original_hash.clone())
+            } else if pair.mixed == path {
+                Some(pair.mixed_hash.clone())
+            } else {
+                None
+            }
+        })
+    }) {
+        use std::io::{Read, Seek, SeekFrom};
+        let mut file = fs::File::open(path).map_err(|e| e.to_string())?;
+        let mut bytes = Vec::new();
+        Read::by_ref(&mut file)
+            .take(16 * 1024 * 1024 + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|e| e.to_string())?;
+        if bytes.len() > 16 * 1024 * 1024 || g_ann_package::sha256(&bytes) != expected {
+            return Err("Installed GANN sound hash mismatch".into());
+        }
+        file.seek(SeekFrom::Start(0)).map_err(|e| e.to_string())?;
+        return Ok(Some(file));
+    }
     let Ok(packs_root) = packs_dir().canonicalize() else {
         return Ok(None);
     };
@@ -252,6 +276,11 @@ pub(crate) fn build_pack(dir: &Path) -> Result<VoicePack, String> {
         .collect::<Vec<_>>();
 
     Ok(VoicePack {
+        installation_id: None,
+        announcer_id: manifest.id.clone(),
+        capabilities: super::types::VoicePackCapabilities {
+            event_preview: true,
+        },
         id: manifest.id,
         name: manifest.name,
         version: manifest.version,
@@ -299,6 +328,8 @@ struct ResolvedCache {
     pack_name: String,
     clips_by_event: HashMap<String, Vec<PathBuf>>,
     pairs: super::id_manifest::Pairs,
+    installation: Option<Arc<crate::package_install::AdmittedInstallation>>,
+    root: PathBuf,
 }
 
 // Each runtime owns one generation; parallel tests keep their voice-root override isolated.
@@ -310,19 +341,29 @@ thread_local! {
 }
 
 #[cfg(not(test))]
-fn store_resolved_cache(mut next: Option<ResolvedCache>) {
-    if let Ok(mut cache) = RESOLVED_CACHE.lock() {
+fn publish_resolved_cache(mut next: Option<ResolvedCache>) -> Result<u64, String> {
+    let epoch = {
+        let mut cache = RESOLVED_CACHE.lock().map_err(|_| {
+            crate::package_ipc::note_cache_publication();
+            "Resolved cache is unavailable".to_string()
+        })?;
         stamp_cache(&mut next);
         super::video_cache::reset(next.as_ref().map_or(0, |c| c.revision));
         *cache = next;
-    }
+        crate::package_ipc::note_cache_publication()
+    };
     prewarm_likely_videos(&["first_blood", "double_kill", "kill"]);
+    Ok(epoch)
 }
 #[cfg(test)]
-fn store_resolved_cache(mut next: Option<ResolvedCache>) {
+fn publish_resolved_cache(mut next: Option<ResolvedCache>) -> Result<u64, String> {
     stamp_cache(&mut next);
     super::video_cache::reset(next.as_ref().map_or(0, |c| c.revision));
     RESOLVED_CACHE.with(|cell| *cell.borrow_mut() = next);
+    Ok(crate::package_ipc::note_cache_publication())
+}
+fn store_resolved_cache(next: Option<ResolvedCache>) {
+    let _ = publish_resolved_cache(next);
 }
 
 #[cfg(not(test))]
@@ -535,6 +576,23 @@ pub(crate) fn rebuild_resolved_cache() {
     rebuild_resolved_cache_inner();
 }
 fn rebuild_resolved_cache_inner() {
+    if let Some(installer) = crate::package_ipc::installer() {
+        if let Err(error) = adopt_registry_selection_inner(installer) {
+            eprintln!("[G-AnnInstall] selection admission failed: {error}");
+        }
+        return;
+    }
+    #[cfg(not(test))]
+    {
+        store_resolved_cache(None);
+        crate::audio::refresh_critical_cache();
+        super::playback::changed();
+    }
+    #[cfg(test)]
+    rebuild_fixture_cache();
+}
+#[cfg(test)]
+fn rebuild_fixture_cache() {
     let next = (|| {
         let id = read_active_pack_id()?;
         #[cfg(test)]
@@ -559,6 +617,8 @@ fn rebuild_resolved_cache_inner() {
             },
             clips_by_event,
             pairs,
+            installation: None,
+            root: dir,
         })
     })();
     #[cfg(test)]
@@ -570,6 +630,82 @@ fn rebuild_resolved_cache_inner() {
     }
     crate::audio::refresh_critical_cache();
     super::playback::changed();
+}
+
+pub(crate) fn adopt_registry_selection(
+    installer: &crate::package_install::PackageInstaller,
+) -> Result<u64, String> {
+    let _guard = MUTATIONS
+        .lock()
+        .map_err(|_| "Package mutation lock is unavailable")?;
+    adopt_registry_selection_inner(installer)
+}
+fn adopt_registry_selection_inner(
+    installer: &crate::package_install::PackageInstaller,
+) -> Result<u64, String> {
+    let next = installer
+        .selection()
+        .map_err(|e| e.to_string())
+        .and_then(|selection| {
+            if selection.active.is_some() {
+                build_installed_cache(installer).map(Some)
+            } else {
+                Ok(None)
+            }
+        });
+    // A failed admission clears coverage, and the host retries this exact key.
+    // No previous revision or legacy active-pack file is silently substituted.
+    match next {
+        Ok(cache) => {
+            let epoch = publish_resolved_cache(cache)?;
+            crate::audio::refresh_critical_cache();
+            super::playback::changed();
+            Ok(epoch)
+        }
+        Err(error) => {
+            store_resolved_cache(None);
+            crate::audio::refresh_critical_cache();
+            super::playback::changed();
+            Err(error)
+        }
+    }
+}
+
+fn build_installed_cache(
+    installer: &crate::package_install::PackageInstaller,
+) -> Result<ResolvedCache, String> {
+    let id = installer
+        .selection()
+        .map_err(|e| e.to_string())?
+        .active
+        .ok_or("No installed selection")?;
+    let admitted = Arc::new(installer.admit_package(&id).map_err(|e| e.to_string())?);
+    let dir = admitted.cache_root();
+    let manifest = read_manifest(dir)?;
+    let pairs = super::id_manifest::read(dir)?.admit(dir)?;
+    let clips_by_event = manifest
+        .mappings
+        .iter()
+        .map(|(event, mapping)| (event.clone(), resolve_existing_clips(dir, &mapping.clips)))
+        .collect();
+    Ok(ResolvedCache {
+        revision: 0,
+        pack_id: admitted.artifact().announcer_id.clone(),
+        pack_name: manifest.name,
+        root: dir.to_path_buf(),
+        clips_by_event,
+        pairs,
+        installation: Some(admitted),
+    })
+}
+#[cfg(test)]
+#[path = "package_lifecycle_tests.rs"]
+mod package_lifecycle_tests;
+pub(crate) fn cached_pack_root(id: &str) -> Option<PathBuf> {
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        (cache.pack_id == id).then(|| cache.root.clone())
+    })
 }
 
 /// Drop the cache without recomputing it — for test teardown, where there may
@@ -629,6 +765,18 @@ pub struct AnnouncerClip {
     pub pack_name: String,
     pub path: PathBuf,
     pub(crate) pair: Option<Arc<super::id_manifest::Pair>>,
+    pub(crate) installation: Option<Arc<crate::package_install::AdmittedInstallation>>,
+}
+
+impl AnnouncerClip {
+    pub(crate) fn installation_lease(
+        &self,
+    ) -> Result<Option<crate::package_install::InstalledSnapshot>, String> {
+        self.installation
+            .as_ref()
+            .map(|i| i.lease_active().map_err(|e| e.to_string()))
+            .transpose()
+    }
 }
 
 /// The selected pack and clip are read under the same cache lock. No ANN fallback.
@@ -637,6 +785,51 @@ pub fn select_announcer_clip(event: &str) -> Option<AnnouncerClip> {
         let cache = cache?;
         let path = audio::choose_clip(cache.clips_by_event.get(event)?.clone())?;
         Some(AnnouncerClip {
+            installation: cache.installation.clone(),
+            revision: cache.revision,
+            pack_id: cache.pack_id.clone(),
+            pack_name: cache.pack_name.clone(),
+            pair: Some(cache.pairs.get(&(event.to_owned(), path.clone()))?.clone()),
+            path,
+        })
+    })
+}
+
+pub(crate) fn select_announcer_variant(
+    pack: &str,
+    event: &str,
+    clip_id: &str,
+) -> Option<AnnouncerClip> {
+    if clip_id.is_empty()
+        || clip_id.len() > 64
+        || !clip_id
+            .bytes()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_' || c == b'-')
+    {
+        return None;
+    }
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        if !crate::package_ipc::matches_preview_identity(
+            pack,
+            &cache.pack_id,
+            cache
+                .installation
+                .as_ref()
+                .map(|i| i.installation_id().0.as_str()),
+        ) {
+            return None;
+        }
+        let mut paths = cache.clips_by_event.get(event)?.iter().filter(|path| {
+            path.file_stem().and_then(|s| s.to_str()) == Some(clip_id)
+                && path.extension().and_then(|s| s.to_str()) == Some("wav")
+        });
+        let path = paths.next()?.clone();
+        if paths.next().is_some() {
+            return None;
+        }
+        Some(AnnouncerClip {
+            installation: cache.installation.clone(),
             revision: cache.revision,
             pack_id: cache.pack_id.clone(),
             pack_name: cache.pack_name.clone(),
@@ -667,10 +860,19 @@ pub(crate) fn id_video(
 pub fn select_announcer_path(pack: &str, event: &str, path: &Path) -> Option<AnnouncerClip> {
     with_resolved_cache(|cache| {
         let cache = cache?;
-        if cache.pack_id != pack || !cache.clips_by_event.get(event)?.iter().any(|p| p == path) {
+        if !crate::package_ipc::matches_preview_identity(
+            pack,
+            &cache.pack_id,
+            cache
+                .installation
+                .as_ref()
+                .map(|i| i.installation_id().0.as_str()),
+        ) || !cache.clips_by_event.get(event)?.iter().any(|p| p == path)
+        {
             return None;
         }
         Some(AnnouncerClip {
+            installation: cache.installation.clone(),
             revision: cache.revision,
             pack_id: cache.pack_id.clone(),
             pack_name: cache.pack_name.clone(),
@@ -695,6 +897,7 @@ pub fn select_announcer_playback_path(event: &str, path: &Path) -> Option<Announ
                 .is_some_and(|pair| pair.mixed == path)
         })?;
         Some(AnnouncerClip {
+            installation: cache.installation.clone(),
             revision: cache.revision,
             pack_id: cache.pack_id.clone(),
             pack_name: cache.pack_name.clone(),
@@ -779,9 +982,12 @@ mod integrity_tests {
             samples: 1,
             video: PathBuf::from("private/video.webm"),
             video_hash: "c".repeat(64),
+            visual_tail_ms: 0,
         });
         let events = ["first_blood", "double_kill", "kill", "rampage"];
         store_resolved_cache(Some(ResolvedCache {
+            installation: None,
+            root: PathBuf::from("private"),
             revision: 0,
             pack_id: pack.into(),
             pack_name: "Test".into(),

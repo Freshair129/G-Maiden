@@ -2,7 +2,7 @@
 title: GANN-only announcer event media contract
 doc_id: gann-event-media-contract
 status: active
-version: 0.1.0
+version: 0.2.0
 updated: 2026-10-31
 owner: G-Maiden
 ---
@@ -45,21 +45,13 @@ Unmapped/invalid mappings stop before audio admission; the overlay consumes the 
 
 ## Installation and activation
 
-`g-ann-package::install(source, voice_root)` เป็น installer ร่วมของ Studio/Maiden เก็บ archive เดิมที่ `containers/<sha256>.gann` และ cache ที่ `packs/ann_<UUID>/` พร้อม origin record ไม่เขียน `active-pack.txt` การติดตั้งซ้ำ digest เดิมต้องตรวจ cache; ID เดิมที่มีเนื้อหาต่างกันต้องปฏิเสธและรักษาแพ็กเดิม
+ดู [[gann-package-v1-local-authoring]] สำหรับ compression profile, portable project, named-pipe protocol, trust และ revision/installation ownership.
 
-Studio ตรวจ `/health` ของพอร์ตที่เผยแพร่ใน profile นั้น (3000–3010):
+Maiden เป็น installer เพียงตัวเดียวใน production. Studio ส่ง local package request ผ่าน current-user/profile-bound named pipe พร้อม expected digest และ request ID. Maiden ตรวจ archive และ staged bytes ก่อน commit registry; install ไม่เท่ากับ equip. ไม่มีการแตกแพ็กผ่าน HTTP หรือ Studio direct-folder install.
 
-```json
-{"service":"g-maiden","port":3001,"voiceRootId":"<canonical-root-sha256>"}
-```
+Selection, inventory และ preview ใช้ opaque installation ID; announcer ID เป็น media identity แยกต่างหาก. Runtime ถือ immutable revision lease จนเสียงและ declared visual tail จบ; pending selection ใช้เมื่อไม่มี match/lease. Cache adoption ที่ล้มเหลวต้อง retry และ re-admit หลัง repair generation เปลี่ยน.
 
-`voiceRootId` ต้องตรงกับ cache ที่ผู้ใช้เลือกก่อนส่ง activation:
-
-```json
-{"packId":"ann_<UUID>","containerSha256":"<verified-archive-sha256>","activate":true}
-```
-
-`POST /announcer/install` ตรวจ origin/digest ของแพ็กที่มีบน disk ก่อนเปลี่ยน selection และตอบ `ok`, `packId`, `activated`, `containerSha256` ให้ตรวจเทียบ ไม่มี arbitrary-path write หรือ upload/extract ผ่าน HTTP route นี้ Local integrity ไม่เป็น Store receipt หรือ entitlement
+แพ็กโฟลเดอร์เดิมที่ไม่อยู่ใน registry ต้องนำ `.gann` เข้าอย่างชัดเจน ไม่อนุมาน System/Store authority และไม่กลับไปใช้ active-pack.txt เป็น production fallback. Local integrity ไม่เป็น Store receipt หรือ entitlement.
 
 ## Evidence boundaries
 
@@ -70,3 +62,4 @@ Package tests ตรวจ archive/schema/rollback; native injected-GSI ตร�
 | Version | Date | Change |
 |---|---|---|
 | 0.1.0 | 2026-10-31 | Owner-directed GANN-only creation, installation, activation and event media contract. |
+| 0.2.0 | 2026-10-31 | Shared compression/profile, Maiden-owned registry/IPC install, installation identity and revision leases; link local creator contract. |

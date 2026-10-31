@@ -42,6 +42,9 @@ pub struct VoiceEvent {
 #[serde(rename_all = "camelCase")]
 pub struct VoicePack {
     pub(crate) id: String,
+    pub(crate) installation_id: Option<String>,
+    pub(crate) announcer_id: String,
+    pub(crate) capabilities: VoicePackCapabilities,
     pub(crate) name: String,
     pub(crate) version: String,
     pub(crate) locale: String,
@@ -63,6 +66,11 @@ pub struct VoicePack {
     pub(crate) cover_image: String,
     /// Inventory cover URL, absent when the GANN registry has no cover.
     pub(crate) cover_image_url: Option<String>,
+}
+#[derive(Serialize, Clone)]
+#[serde(rename_all = "camelCase")]
+pub struct VoicePackCapabilities {
+    pub(crate) event_preview: bool,
 }
 
 #[derive(Serialize, Clone)]

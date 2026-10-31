@@ -66,7 +66,19 @@ pub(super) fn verified_origin(id: &str) -> Option<Origin> {
 pub(super) fn is_local_package(id: &str) -> bool {
     verified_origin(id).is_some()
 }
+#[cfg(test)]
 pub fn container_sha256(id: &str) -> Option<String> {
+    if let Some(installer) = crate::package_ipc::installer() {
+        let active = installer.selection().ok()?.active?;
+        let record = installer
+            .installed()
+            .ok()?
+            .into_iter()
+            .find(|r| r.installation_id == active)?;
+        if record.artifact.announcer_id == id || record.installation_id.0 == id {
+            return Some(record.artifact.digest);
+        }
+    }
     Some(verified_origin(id)?.container_sha256)
 }
 pub(super) fn open_local_clip(id: &str, relative: &Path) -> Result<fs::File, String> {
@@ -88,12 +100,31 @@ pub(super) fn open_local_clip(id: &str, relative: &Path) -> Result<fs::File, Str
     Ok(file)
 }
 pub fn import_file(source: &Path) -> Result<ImportResult, String> {
-    let installed = g_ann_package::install(source, &paths::voice_root())?;
-    let registry = id_manifest::read(&installed.pack_dir)?;
-    registry.admit(&installed.pack_dir)?;
-    Ok(ImportResult {
-        imported: vec![installed.pack_id],
-    })
+    if let Some(installer) = crate::package_ipc::installer() {
+        let result = installer
+            .install_package(crate::package_install::InstallSource::Local {
+                path: source.to_path_buf(),
+                expected_digest: g_ann_package::file_digest(source)?,
+                project_binding: None,
+            })
+            .map_err(|e| e.to_string())?;
+        return Ok(ImportResult {
+            imported: vec![result.installation_id.0],
+        });
+    }
+    #[cfg(not(test))]
+    {
+        Err("The registered Maiden installation service is unavailable; restart this profile before importing".into())
+    }
+    #[cfg(test)]
+    {
+        let installed = g_ann_package::install(source, &paths::voice_root())?;
+        let registry = id_manifest::read(&installed.pack_dir)?;
+        registry.admit(&installed.pack_dir)?;
+        Ok(ImportResult {
+            imported: vec![installed.pack_id],
+        })
+    }
 }
 #[cfg(test)]
 mod tests {

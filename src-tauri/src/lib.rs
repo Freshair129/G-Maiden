@@ -44,6 +44,9 @@ mod minimap_preview_runtime;
 mod minimap_preview_wire;
 pub mod motion;
 mod ocr;
+pub mod package_registry;
+pub mod package_install;
+mod package_ipc;
 pub mod respawn;
 mod revive;
 pub mod runtime;
@@ -918,7 +921,7 @@ async fn preview_announcer_event(
 ) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
         let selected = voice_api::select_announcer_clip(&event).ok_or("GANN event is unmapped")?;
-        if selected.pack_id != pack_id {
+        if !package_ipc::matches_preview_identity(&pack_id,&selected.pack_id,selected.installation.as_ref().map(|i|i.installation_id().0.as_str())) {
             return Err("เลือก Equip แพ็ก GANN ก่อนดูตัวอย่าง".into());
         }
         voice_api::play_selected(app, selected, event, 0, true, audio::Priority::Normal)
@@ -1601,6 +1604,9 @@ pub fn run() {
             // `voice_api::pack_io::rebuild_resolved_cache`.
             voice_api::visual_warm::install(app.handle().clone());
             voice_api::install_playback(app.handle().clone());
+            if let Err(error) = package_ipc::start(app.path().app_local_data_dir()?, tauri::is_dev()) {
+                eprintln!("[G-AnnInstall] installation service unavailable: {error}");
+            }
             voice_api::rebuild_resolved_cache();
 
             // Audit H9: prewarm G-Signal's fixed TTS fallback lines to WAV so

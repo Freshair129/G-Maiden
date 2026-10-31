@@ -69,7 +69,7 @@ fn emit(
             event: event.to_string(),
             session_epoch: epoch,
             preview,
-            expires_at_ms: now.saturating_add(15_000),
+            expires_at_ms: now.saturating_add(18_200),
             manifest_visual: manifest_visual.clone(),
         },
     );
@@ -84,7 +84,12 @@ pub(crate) fn observer(
     preview: bool,
     scope: Arc<dyn Fn() -> bool + Send + Sync>,
 ) -> Option<PlaybackLifecycleObserver> {
+    let installation_lease = selected.installation_lease().ok()?;
     let pair = selected.pair.as_ref()?;
+    let visual_timeline = crate::vrzo_fence::VisualLifetime::from_timeline(
+        (pair.samples as u64).saturating_mul(1000).div_ceil(48000),
+        u64::from(pair.visual_tail_ms),
+    );
     let mixed = Some(crate::event_media::MixedSelection {
         path: pair.mixed.clone(),
         original_sha256: pair.original_hash.clone(),
@@ -117,14 +122,15 @@ pub(crate) fn observer(
     let spawn = std::thread::Builder::new()
         .name("g-vrzo-banner".into())
         .spawn(move || {
+            let _installation_lease = installation_lease;
             let _slot = slot;
-            let start = Instant::now();
             let first = match rx.recv_timeout(Duration::from_secs(3)) {
                 Ok(e) if e.token == token && e.phase == PlaybackLifecyclePhase::Started => e,
                 _ => return,
             };
+            let start = Instant::now();
             let id = first.playback_id;
-            let mut lifetime = crate::vrzo_fence::VisualLifetime::default();
+            let mut lifetime = visual_timeline;
             let valid = |tail| {
                 crate::vrzo_fence::valid_visual(
                     id,
@@ -177,7 +183,7 @@ pub(crate) fn observer(
                 &manifest_visual,
             );
             loop {
-                if start.elapsed() > Duration::from_secs(15) {
+                if start.elapsed() > Duration::from_millis(lifetime.end_ms()) {
                     emit(
                         &app,
                         id,
