@@ -32,6 +32,12 @@ beforeEach(() => {
 afterEach(() => { vi.restoreAllMocks(); vi.useRealTimers() })
 
 describe('bounded ready-frame video pool', () => {
+  it('refuses raw or embedded video URLs without a GANN pair descriptor', () => {
+    const host = document.createElement('div'), pool = new VrzoVideoPool(host, vi.fn(), vi.fn())
+    pool.show({ ...visual('1'), manifestVisual: undefined, url: '/embedded.webm' } as unknown as VrzoVisual, layout)
+    expect(host.querySelector('video')).toBeNull()
+    pool.dispose()
+  })
   it('primes muted nodes once, reuses the exact ready DOM node and measures only visible playback', () => {
     const host = document.createElement('div'), report = vi.fn(), pool = new VrzoVideoPool(host, vi.fn(), report)
     pool.candidates({ packId: pack, revision: 1, visuals: [candidate(1)] })

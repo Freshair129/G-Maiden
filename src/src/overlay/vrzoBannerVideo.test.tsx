@@ -9,8 +9,10 @@ import { listen } from '@tauri-apps/api/event'
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue(undefined) }))
 vi.mock('@tauri-apps/api/event', () => ({ listen: vi.fn().mockResolvedValue(() => {}) }))
 
-const visual: VrzoVisual = { id: '42', phase: 'start', clipId: 'kill_01', event: 'kill',
-  session_epoch: 2, preview: false, expires_at_ms: 9000, url: '/vrzo-banners/kill_01.webm' }
+const visual: VrzoVisual = { id: '42', phase: 'start', clipId: 'bnr_00000000-0000-0000-0000-000000000001', event: 'kill',
+  session_epoch: 2, preview: false, expires_at_ms: 9000,
+  url: 'http://g-announcer-video.localhost/ann_00000000-0000-0000-0000-000000000001/bnr_00000000-0000-0000-0000-000000000001/1',
+  manifestVisual: { packId: 'ann_00000000-0000-0000-0000-000000000001', bannerId: 'bnr_00000000-0000-0000-0000-000000000001', revision: '1' } }
 afterEach(() => { vi.restoreAllMocks() })
 beforeEach(() => {
   vi.mocked(invoke).mockResolvedValue(undefined); vi.mocked(invoke).mockClear()
@@ -52,7 +54,7 @@ describe('VRZO video', () => {
     await act(async () => root.render(<VrzoBannerVideo visual={visual} fail={fail} layout={{ x: 80, y: 40, scale: 1, enabled: true }} />))
     const video = container.querySelector('video')!
     expect(video.muted).toBe(true)
-    expect(video.getAttribute('src')).toBe('/vrzo-banners/kill_01.webm')
+    expect(video.getAttribute('src')).toBe(visual.url)
     expect(play).toHaveBeenCalledOnce()
     await act(async () => video.dispatchEvent(new Event('error')))
     expect(fail).toHaveBeenCalledWith('42')

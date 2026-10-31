@@ -6,33 +6,29 @@ import VoiceInventory from '../VoiceInventory'
 const { invoke, open } = vi.hoisted(() => ({ invoke: vi.fn(), open: vi.fn() }))
 vi.mock('@tauri-apps/plugin-dialog', () => ({ open }))
 vi.mock('@tauri-apps/api/core', () => ({ invoke }))
-it('previews an exact VRZO variant using the native admitted audio path', async () => {
+it('does not offer embedded variants for a legacy pack', async () => {
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
-  const pack = { id:'pack_vrzo_20261028', name:'VRZO', version:'0.2.0', locale:'th', author:'', description:'', path:'', coveredEvents:1, totalEvents:15, clips:21, availableClips:[], availableBanners:[], coverImage:'', coverImageUrl:null, builtIn:false, items:[] }
-  invoke.mockReset().mockImplementation((cmd:string) => Promise.resolve(cmd === 'voice_api_state' ? {rootDir:'',packsDir:'',cacheDir:'',activePackId:pack.id,activePack:pack,packs:[pack],groups:[]} : undefined))
+  const pack = { id:'legacy', name:'Legacy', version:'1', locale:'th', author:'', description:'', path:'', coveredEvents:0, totalEvents:24, clips:0, availableClips:[], availableBanners:[], coverImage:'', coverImageUrl:null, builtIn:false, items:[] }
+  invoke.mockReset().mockResolvedValue({rootDir:'',packsDir:'',cacheDir:'',activePackId:null,activePack:null,packs:[pack],groups:[]})
   const el=document.createElement('div');document.body.appendChild(el);const root=createRoot(el)
   await act(async()=>{root.render(<VoiceInventory />)})
-  const select=el.querySelector<HTMLSelectElement>('[aria-label="VRZO variant"]')!
-  expect(select.options.length).toBe(21)
-  await act(async()=>{select.value='kill_05';select.dispatchEvent(new Event('change',{bubbles:true}))})
-  await act(async()=>{el.querySelector<HTMLButtonElement>('[aria-label="Preview VRZO variant"]')!.click()})
-  expect(invoke).toHaveBeenCalledWith('preview_vrzo_banner_variant',{event:'kill',clipId:'kill_05',packId:pack.id})
+  expect(el.querySelector('[aria-label="Announcer variant"]')).toBeNull()
   await act(async()=>{root.unmount()});el.remove()
 })
 
-it('uses manifest sound IDs for preview and exposes folder import only for authoring', async () => {
+it('uses only manifest sound IDs for preview and excludes folder import', async () => {
   ;(globalThis as { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
   const id = 'snd_73de4801-07f0-57ad-82ef-535c8bd0e7ae'
   const pack = { id:'ann_c4d92f17-167a-504b-9393-64fd959981cd', name:'VRZO ID', version:'2', locale:'th', author:'', description:'', path:'', coveredEvents:1, totalEvents:15, clips:1, availableClips:[], availableBanners:[], coverImage:'', coverImageUrl:null, builtIn:false, items:[{id:'double_kill', mapping:{clips:[`audio/${id}.wav`]}}] }
   invoke.mockReset().mockResolvedValue({authoringEnabled:true,rootDir:'',packsDir:'',cacheDir:'',activePackId:pack.id,activePack:pack,packs:[pack],groups:[]})
   const el=document.createElement('div');document.body.appendChild(el);const root=createRoot(el)
   await act(async()=>{root.render(<VoiceInventory />)})
-  expect(el.querySelector('[aria-label="Announcer folder"]')).not.toBeNull()
-  const select=el.querySelector<HTMLSelectElement>('[aria-label="VRZO variant"]')!
+  expect(el.querySelector('[aria-label="Announcer folder"]')).toBeNull()
+  const select=el.querySelector<HTMLSelectElement>('[aria-label="Announcer variant"]')!
   expect(select.options.length).toBe(1)
   expect(select.value).toBe(id)
-  await act(async()=>{el.querySelector<HTMLButtonElement>('[aria-label="Preview VRZO variant"]')!.click()})
-  expect(invoke).toHaveBeenCalledWith('preview_vrzo_banner_variant',{event:'double_kill',clipId:id,packId:pack.id})
+  await act(async()=>{el.querySelector<HTMLButtonElement>('[aria-label="Preview Announcer variant"]')!.click()})
+  expect(invoke).toHaveBeenCalledWith('preview_announcer_variant',{event:'double_kill',clipId:id,packId:pack.id})
   await act(async()=>{root.unmount()});el.remove()
 })
 

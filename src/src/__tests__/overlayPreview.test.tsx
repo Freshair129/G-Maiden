@@ -18,8 +18,8 @@ function render(previewMode: boolean, gsiActive = false, statsEnabled = true, ad
       kda: { ...DEFAULTS.layout.kda, enabled: statsEnabled },
       gold: { ...DEFAULTS.layout.gold, enabled: statsEnabled },
     } }}
-    gank={null} missingHeroes={new Set()} overlayAdvice={null} buyback={advice ? { advice, narrative: null } : null} toast={null}
-    killBanner={null} packBanner={null} lowHp={false} volToast={null}
+    gank={null} missingHeroes={new Set()} overlayAdvice={null} buyback={advice ? { advice, narrative: null } : null}
+    volToast={null}
     gsiActive={gsiActive} gsiFresh={gsiActive || previewMode} gsiFreshness={gsiActive ? "fresh" : "unavailable"} gsiAgeMs={null} matchActive={gsiActive || previewMode} previewMode={previewMode} sensorOk={false} />)
 }
 

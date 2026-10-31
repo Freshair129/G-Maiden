@@ -174,14 +174,13 @@ mod backend {
     }
 
     // Review fix: these used to be this module's own `const` copies of the
-    // same Thai text tts.rs bakes into the prewarm cache (GANK_LINE ==
-    // GANK_LINE_ALT, REVISION_LINE == REVISION_LINE_ALT, byte-for-byte) —
+    // same Thai text tts.rs bakes into the prewarm cache ("gank" ==
+    // "gank"_ALT, "revision" == "revision"_ALT, byte-for-byte) —
     // tts.rs's doc comment claims hoisting the prewarm lines there means the
     // cache "can never drift from what's actually said," but this second
     // copy (feeding voice_interrupt's caption/utterance-ledger/calibration
     // uses below) meant it silently could. Alias to the single source of
     // truth instead of duplicating the literals.
-    use crate::tts::{GANK_LINE_ALT as GANK_LINE, REVISION_LINE_ALT as REVISION_LINE};
 
     /// Debug/result payload emitted per processed frame. Candidates feed the
     /// calibration overlay; detections are confirmed heroes (empty until the ONNX
@@ -1642,12 +1641,12 @@ mod backend {
                             crate::utterance::emit_for_session(
                                 &state.app,
                                 crate::utterance::UtterancePayload::new_for_session(
-                                    "signal", "line", GANK_LINE, None, None, session,
+                                    "signal", "line", "gank", None, None, session,
                                 ),
                             );
                         }
                         // W2: only capture calibration evidence when the line
-                        // was actually voiced — in the silent arm GANK_LINE is
+                        // was actually voiced — in the silent arm "gank" is
                         // suppressed, so recording it would falsely log it as
                         // spoken. The gank_signal log below stays unconditional.
                         if armed
@@ -1656,7 +1655,7 @@ mod backend {
                         {
                             crate::calibration::record(
                                 "gank",
-                                Some(GANK_LINE),
+                                Some("gank"),
                                 serde_json::json!({
                                     "probability": alert.probability,
                                     "missing_heroes": alert.missing_heroes,
@@ -1715,14 +1714,14 @@ mod backend {
                                 return;
                             }
                             // Belief Revision — retracted carries the earlier
-                            // GANK_LINE warning being struck through.
+                            // "gank" warning being struck through.
                             crate::utterance::emit_for_session(
                                 &state.app,
                                 crate::utterance::UtterancePayload::new_for_session(
                                     "signal",
                                     "revision",
-                                    REVISION_LINE,
-                                    Some(GANK_LINE.to_string()),
+                                    "revision",
+                                    Some("gank".to_string()),
                                     None,
                                     session,
                                 ),

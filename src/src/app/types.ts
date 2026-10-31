@@ -1,5 +1,4 @@
 import { DEFAULT_LAYOUT, type Layout } from '../overlay/modules'
-import { PERSONA_LINES } from './lines'
 
 export type MatchLifecycle = 'draft' | 'live' | 'disconnected' | 'end' | 'abandon'
 export interface MatchSessionMetadata {
@@ -232,5 +231,3 @@ export interface MatchLog { name: string; size: number; modified_ms: number }
 // has opted into `efficacyStudy`.
 export interface EfficacyArm { events: number; deaths: number; rate: number | null }
 export interface EfficacySummary { armed: EfficacyArm; silent: EfficacyArm }
-
-export type PersonaEvent = keyof typeof PERSONA_LINES

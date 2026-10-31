@@ -95,8 +95,8 @@ export const MasterCard: React.FC<{ tick: GameTick | null; voice: string; rate: 
   }
   const speakAdvice = () => {
     if (!advice) return
-    // Go through speak_event so a user-supplied advice/ WAV pool is used when present.
-    void invoke('speak_event', { event: 'advice', fallback: advice.text, voice: voice || null, rate,
+    // Dynamic advice uses its own generation-guarded speech route.
+    void invoke('speak_advice', { text: advice.text, voice: voice || null, rate,
       adviceGeneration: advice.context_generation, adviceSessionEpoch: activeSessionEpoch.current }).catch(() => {})
   }
   const backendLabel: Record<MasterBackend, string> = {

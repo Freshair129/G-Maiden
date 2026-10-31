@@ -6,7 +6,7 @@ use std::sync::{
     mpsc, Arc,
 };
 use std::time::{Duration, Instant, SystemTime, UNIX_EPOCH};
-use tauri::{AppHandle, Emitter, Manager};
+use tauri::{AppHandle, Emitter};
 
 const MAX_WORKERS: usize = 4;
 static WORKERS: AtomicUsize = AtomicUsize::new(0);
@@ -33,7 +33,11 @@ struct VisualEvent {
 }
 #[derive(Clone, serde::Serialize)]
 #[serde(rename_all = "camelCase")]
-struct ManifestVisual { pack_id: String, banner_id: String, revision: String }
+struct ManifestVisual {
+    pack_id: String,
+    banner_id: String,
+    revision: String,
+}
 #[allow(clippy::too_many_arguments)]
 fn emit(
     app: &AppHandle,
@@ -50,8 +54,14 @@ fn emit(
         .unwrap_or_default()
         .as_millis()
         .min(u64::MAX as u128) as u64;
+    if let Some(visual) = manifest_visual {
+        eprintln!(
+            "[G-AnnouncerMedia] {}",
+            serde_json::json!({"phase":phase,"playback_id":id,"pack_id":visual.pack_id,"banner_id":visual.banner_id,"revision":visual.revision,"event":event,"session_epoch":epoch,"preview":preview})
+        );
+    }
     let _ = app.emit(
-        "vrzo-banner-playback",
+        "announcer-media-playback",
         VisualEvent {
             id: id.to_string(),
             phase,
@@ -74,16 +84,17 @@ pub(crate) fn observer(
     preview: bool,
     scope: Arc<dyn Fn() -> bool + Send + Sync>,
 ) -> Option<PlaybackLifecycleObserver> {
-    if selected.pack_id != "pack_vrzo_20261028" && selected.pair.is_none() {
-        return None;
-    }
-    let mixed = selected.pair.as_ref().map(|p| crate::vrzo_banner::MixedSelection {
-        path: p.mixed.clone(), original_sha256: p.original_hash.clone(), mixed_sha256: p.mixed_hash.clone(), samples: p.samples,
-    }).or_else(|| app.path().resource_dir().ok().and_then(|root| {
-        crate::vrzo_banner::mixed_selection(&selected.pack_id, &event, &selected.path, &root)
-    }));
-    let manifest_visual = selected.pair.as_ref().map(|p| ManifestVisual {
-        pack_id: selected.pack_id.clone(), banner_id: p.banner_id.clone(), revision: selected.revision.to_string(),
+    let pair = selected.pair.as_ref()?;
+    let mixed = Some(crate::event_media::MixedSelection {
+        path: pair.mixed.clone(),
+        original_sha256: pair.original_hash.clone(),
+        mixed_sha256: pair.mixed_hash.clone(),
+        samples: pair.samples,
+    });
+    let manifest_visual = Some(ManifestVisual {
+        pack_id: selected.pack_id.clone(),
+        banner_id: pair.banner_id.clone(),
+        revision: selected.revision.to_string(),
     });
     WORKERS
         .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
@@ -93,7 +104,16 @@ pub(crate) fn observer(
     let slot = Slot;
     let (tx, rx) = mpsc::sync_channel::<PlaybackLifecycleEvent>(4);
     let token = NEXT.fetch_add(1, Ordering::Relaxed);
-    let visual_scope = (selected.revision, epoch, preview);
+    let visual_scope = (
+        selected.revision,
+        epoch,
+        preview,
+        if matches!(event.as_str(), "gank" | "revision") {
+            1
+        } else {
+            0
+        },
+    );
     let spawn = std::thread::Builder::new()
         .name("g-vrzo-banner".into())
         .spawn(move || {
@@ -118,26 +138,27 @@ pub(crate) fn observer(
                 return;
             }
             let end_phase = || {
-                let same_pack = crate::voice_api::with_current_announcer_clip(&event, &selected, || true).is_some();
+                let same_pack =
+                    crate::voice_api::with_current_announcer_clip(&event, &selected, || true)
+                        .is_some();
                 let current = crate::audio::current_lifecycle_playback_id();
-                if same_pack && (preview || crate::runtime::is_current_active_session_epoch(epoch))
-                    && ((current != 0 && current != id) || (preview && current == id && !scope())) { "retire" } else { "stop" }
+                if same_pack
+                    && (preview || crate::runtime::is_current_active_session_epoch(epoch))
+                    && ((current != 0 && current != id) || (preview && current == id && !scope()))
+                {
+                    "retire"
+                } else {
+                    "stop"
+                }
             };
             let Some(clip_id) = first
                 .audio_sha256
                 .as_ref()
                 .zip(first.played_audio_sha256.as_ref())
                 .and_then(|(digest, played)| {
-                    if let Some(pair) = &selected.pair {
-                        return (selected.path == pair.original && pair.matches(digest, played)).then(|| pair.banner_id.clone());
-                    }
-                    crate::vrzo_banner::resolve_played_clip(
-                        &selected.pack_id,
-                        &event,
-                        &selected.path,
-                        digest,
-                        played,
-                    )
+                    let pair = selected.pair.as_ref()?;
+                    (selected.path == pair.original && pair.matches(digest, played))
+                        .then(|| pair.banner_id.clone())
                 })
             else {
                 return;
@@ -145,10 +166,28 @@ pub(crate) fn observer(
             if !valid(false) {
                 return;
             }
-            emit(&app, id, "start", &clip_id, &event, epoch, preview, &manifest_visual);
+            emit(
+                &app,
+                id,
+                "start",
+                &clip_id,
+                &event,
+                epoch,
+                preview,
+                &manifest_visual,
+            );
             loop {
                 if start.elapsed() > Duration::from_secs(15) {
-                    emit(&app, id, "stop", &clip_id, &event, epoch, preview, &manifest_visual);
+                    emit(
+                        &app,
+                        id,
+                        "stop",
+                        &clip_id,
+                        &event,
+                        epoch,
+                        preview,
+                        &manifest_visual,
+                    );
                     return;
                 }
                 match rx.recv_timeout(Duration::from_millis(50)) {
@@ -158,15 +197,48 @@ pub(crate) fn observer(
                             && e.phase == PlaybackLifecyclePhase::Completed =>
                     {
                         if !valid(true) {
-                            emit(&app, id, end_phase(), &clip_id, &event, epoch, preview, &manifest_visual);
+                            emit(
+                                &app,
+                                id,
+                                end_phase(),
+                                &clip_id,
+                                &event,
+                                epoch,
+                                preview,
+                                &manifest_visual,
+                            );
                             return;
                         }
-                        emit(&app, id, "completed", &clip_id, &event, epoch, preview, &manifest_visual);
+                        emit(
+                            &app,
+                            id,
+                            "completed",
+                            &clip_id,
+                            &event,
+                            epoch,
+                            preview,
+                            &manifest_visual,
+                        );
                         lifetime.complete(start.elapsed().as_millis() as u64);
-                        while lifetime.valid(id, crate::audio::current_audio_generation(), crate::audio::current_lifecycle_playback_id(), scope(), start.elapsed().as_millis() as u64) {
+                        while lifetime.valid(
+                            id,
+                            crate::audio::current_audio_generation(),
+                            crate::audio::current_lifecycle_playback_id(),
+                            scope(),
+                            start.elapsed().as_millis() as u64,
+                        ) {
                             std::thread::sleep(Duration::from_millis(50));
                         }
-                        emit(&app, id, end_phase(), &clip_id, &event, epoch, preview, &manifest_visual);
+                        emit(
+                            &app,
+                            id,
+                            end_phase(),
+                            &clip_id,
+                            &event,
+                            epoch,
+                            preview,
+                            &manifest_visual,
+                        );
                         return;
                     }
                     Ok(e)
@@ -180,18 +252,61 @@ pub(crate) fn observer(
                             ) =>
                     {
                         let phase = if e.phase == PlaybackLifecyclePhase::Retiring
-                            && crate::voice_api::with_current_announcer_clip(&event, &selected, || true).is_some()
-                            && (preview || crate::runtime::is_current_active_session_epoch(epoch)) { "retire" } else { "stop" };
-                        emit(&app, id, phase, &clip_id, &event, epoch, preview, &manifest_visual);
+                            && crate::voice_api::with_current_announcer_clip(
+                                &event,
+                                &selected,
+                                || true,
+                            )
+                            .is_some()
+                            && (preview || crate::runtime::is_current_active_session_epoch(epoch))
+                        {
+                            "retire"
+                        } else {
+                            "stop"
+                        };
+                        emit(
+                            &app,
+                            id,
+                            phase,
+                            &clip_id,
+                            &event,
+                            epoch,
+                            preview,
+                            &manifest_visual,
+                        );
                         return;
                     }
                     Err(mpsc::RecvTimeoutError::Disconnected) => {
-                        emit(&app, id, "stop", &clip_id, &event, epoch, preview, &manifest_visual);
+                        emit(
+                            &app,
+                            id,
+                            "stop",
+                            &clip_id,
+                            &event,
+                            epoch,
+                            preview,
+                            &manifest_visual,
+                        );
                         return;
                     }
                     _ => {
-                        if !lifetime.valid(id, crate::audio::current_audio_generation(), crate::audio::current_lifecycle_playback_id(), scope(), start.elapsed().as_millis() as u64) {
-                            emit(&app, id, end_phase(), &clip_id, &event, epoch, preview, &manifest_visual);
+                        if !lifetime.valid(
+                            id,
+                            crate::audio::current_audio_generation(),
+                            crate::audio::current_lifecycle_playback_id(),
+                            scope(),
+                            start.elapsed().as_millis() as u64,
+                        ) {
+                            emit(
+                                &app,
+                                id,
+                                end_phase(),
+                                &clip_id,
+                                &event,
+                                epoch,
+                                preview,
+                                &manifest_visual,
+                            );
                             return;
                         }
                     }

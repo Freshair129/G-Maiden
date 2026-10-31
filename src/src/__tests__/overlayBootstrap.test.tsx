@@ -43,7 +43,7 @@ async function unmount() { await act(async () => { root!.unmount(); root = null 
 it.each([
   'game-tick', 'settings', 'master-context-changed', 'minimap-cv', 'gank-alert', 'gank-clear',
   'gsi-status', 'sensor-health', 'overlay-preview', 'missing-state', 'advice-update',
-  'buyback-advice', 'buyback-narrative', 'volume-change', 'preview-kill', 'announcer-banner',
+  'buyback-advice', 'buyback-narrative', 'volume-change', 'announcer-media-playback',
 ])('waits for %s and native acknowledgement before the settings handshake', async (delayedName) => {
   let acknowledge!: () => void
   invokeMock.mockImplementation((command: string) => {

@@ -33,7 +33,7 @@ function writeBrowserCopies(settings: Settings, legacyMasterApiKey: string | nul
 const RUNTIME_BOOTSTRAP_FIELDS: (keyof Settings)[] = [
   'volume', 'announcerEnabled', 'signalEnabled', 'signalSensitivity', 'voiceName', 'voiceRate',
   'personaPreset', 'masterBackend', 'cloudContextOptIn', 'masterAuth', 'masterOllamaModel', 'telemetrySource',
-  'calibration', 'efficacyStudy',
+  'calibration', 'efficacyStudy', 'alertEnabled', 'alertThreshold', 'voiceEnabled',
 ]
 
 function applyNativeSettings(
@@ -50,6 +50,9 @@ function applyNativeSettings(
   if (syncRuntime('volume')) calls.push(invoke('set_volume', { vol: settings.volume }))
   if (syncRuntime('announcerEnabled')) calls.push(invoke('set_announcer_enabled', { enabled: settings.announcerEnabled }))
   if (syncRuntime('signalEnabled')) calls.push(invoke('set_cv_signal_enabled', { enabled: settings.signalEnabled }))
+  if (syncRuntime('alertEnabled') || syncRuntime('voiceEnabled') || syncRuntime('alertThreshold')) {
+    calls.push(invoke('set_hp_alert_settings', { enabled: settings.alertEnabled, voiceEnabled: settings.voiceEnabled, threshold: settings.alertThreshold }))
+  }
   if (options.includeVoice !== false && (syncRuntime('voiceName') || syncRuntime('voiceRate'))) {
     calls.push(invoke('set_cv_voice', { name: settings.voiceName || null, rate: settings.voiceRate }))
   }

@@ -4,11 +4,10 @@ import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, expect, it, vi } from 'vitest'
 import type { GameTick, Settings } from '../app/types'
 
-const { handlers, invokeMock, view, killLine } = vi.hoisted(() => ({
+const { handlers, invokeMock, view } = vi.hoisted(() => ({
   handlers: new Map<string, (event: { payload: unknown }) => void>(),
   invokeMock: vi.fn().mockResolvedValue(undefined),
   view: { current: {} as Record<string, unknown> },
-  killLine: 'ฆ่า {hero}',
 }))
 vi.mock('@tauri-apps/api/core', () => ({ invoke: invokeMock }))
 vi.mock('@tauri-apps/api/event', () => ({
@@ -22,13 +21,6 @@ vi.mock('../overlay/FullOverlay', () => ({ FullOverlay: (props: Record<string, u
   view.current = props
   return <output />
 } }))
-vi.mock('../app/lines', async (original) => {
-  const actual = await original<typeof import('../app/lines')>()
-  return { ...actual, TONE_LINES: {
-    serious: { ...actual.TONE_LINES.serious, kill: [killLine] },
-    casual: { ...actual.TONE_LINES.casual, kill: [killLine] },
-  } }
-})
 import { Overlay } from '../app/Overlay'
 import { DEFAULTS } from '../app/types'
 import { OVERLAY_PREVIEW_TICK } from '../overlay/preview'
@@ -64,10 +56,10 @@ afterEach(async () => {
   container.remove()
   vi.useRealTimers()
 })
-it('leaves gameplay audio to the native announcer while retaining kill visuals', async () => {
+it('leaves all gameplay media to the native GANN announcer', async () => {
   await send('settings', { ...settings, announcerEnabled: true })
   await tick({ kills: 1, clock_time: 110 })
-  expect(view.current.killBanner).toMatchObject({ kills: 1 })
+  expect(view.current.killBanner).toBeUndefined()
   expect(invokeMock.mock.calls.filter(([cmd]) => cmd === 'speak_event')).toHaveLength(0)
   await act(async () => { vi.advanceTimersByTime(7000) })
   await tick({ kills: 1, deaths: 1, alive: false, clock_time: 120 })
@@ -75,34 +67,34 @@ it('leaves gameplay audio to the native announcer while retaining kill visuals',
 })
 it('never announces or shows kills from unverified player data and reseeds on recovery', async () => {
   await tick({ kills: 2, clock_time: 110, local_player_verified: false })
-  expect(view.current.killBanner).toBeNull()
+  expect(view.current.killBanner).toBeUndefined()
   expect(invokeMock.mock.calls.filter(([cmd]) => cmd === 'speak_event')).toHaveLength(0)
   await tick({ kills: 2, clock_time: 111 })
-  expect(view.current.killBanner).toBeNull()
+  expect(view.current.killBanner).toBeUndefined()
   expect(invokeMock.mock.calls.filter(([cmd]) => cmd === 'speak_event')).toHaveLength(0)
 })
-it('delivers one kill transition to both persona and banner without replay on settings or duplicate ticks', async () => {
+it('never creates persona or kill-card media from repeated gameplay ticks', async () => {
   await tick({ kills: 2, clock_time: 110 })
-  expect(view.current.killBanner).toMatchObject({ kills: 2, streak: 2, victim: null })
-  expect(invokeMock.mock.calls.filter(([cmd, args]) => cmd === 'speak_event' && args.event === 'kill')).toHaveLength(1)
+  expect(view.current.killBanner).toBeUndefined()
+  expect(invokeMock.mock.calls.filter(([cmd]) => cmd === 'speak_event')).toHaveLength(0)
   await send('settings', settings)
   await tick({ kills: 2, clock_time: 110 })
-  expect(view.current.killBanner).toMatchObject({ streak: 2 })
-  expect(invokeMock.mock.calls.filter(([cmd, args]) => cmd === 'speak_event' && args.event === 'kill')).toHaveLength(1)
+  expect(view.current.killBanner).toBeUndefined()
+  expect(invokeMock.mock.calls.filter(([cmd]) => cmd === 'speak_event')).toHaveLength(0)
 })
 it('never names a missing hero as the victim without a confirmed victim ID', async () => {
   await send('missing-state', { session_epoch: 8, session_lifecycle: 'live', heroes: ['axe'], roster_known: 5, ready: true })
   await tick({ kills: 1, clock_time: 110 })
   const call = invokeMock.mock.calls.find(([cmd, args]) => cmd === 'speak_event' && args.event === 'kill')
-  expect(call?.[1].fallback).toBe('ฆ่า ศัตรู')
-  expect(view.current.killBanner).toMatchObject({ victim: null })
+  expect(call).toBeUndefined()
+  expect(view.current.killBanner).toBeUndefined()
 })
-it('retains confirmed victim identity and counts later kills after persona cooldown', async () => {
+it('does not manufacture media even when victim identity is confirmed', async () => {
   await tick({ kills: 1, clock_time: 110, last_victim_hero: 'npc_dota_hero_axe' })
-  expect(view.current.killBanner).toMatchObject({ victim: 'npc_dota_hero_axe', streak: 1 })
+  expect(view.current.killBanner).toBeUndefined()
   await act(async () => { vi.advanceTimersByTime(7000) })
   await tick({ kills: 2, clock_time: 120, last_victim_hero: 'npc_dota_hero_lina' })
-  expect(view.current.killBanner).toMatchObject({ victim: 'npc_dota_hero_lina', streak: 2 })
+  expect(view.current.killBanner).toBeUndefined()
 })
 it('lets auto-advice observe level and cumulative death transitions independently', async () => {
   await tick({ level: 6, clock_time: 120 })
@@ -113,32 +105,32 @@ it('lets auto-advice observe level and cumulative death transitions independentl
   await tick({ level: 6, clock_time: 141, deaths: 2 })
   expect(invokeMock.mock.calls.filter(([cmd]) => cmd === 'request_advice')).toHaveLength(2)
 })
-it('clears kill history after a death hidden in a feed gap and on a new session', async () => {
+it('keeps generated kill media absent across feed gaps and session changes', async () => {
   await tick({ kills: 2, clock_time: 110 })
   await tick({ kills: 2, deaths: 1, clock_time: 150 })
   await tick({ kills: 3, deaths: 1, clock_time: 180 })
-  expect(view.current.killBanner).toMatchObject({ streak: 1 })
+  expect(view.current.killBanner).toBeUndefined()
   await send('gsi-status', { session_epoch: 9, session_lifecycle: 'live', gsi_freshness: 'fresh', dota_running: true, in_game: true })
   await tick({ session_epoch: 9, kills: 7, level: 12 })
-  expect(view.current.killBanner).toBeNull()
+  expect(view.current.killBanner).toBeUndefined()
 })
-it('does not infer a streak from unordered kills and deaths in one update', async () => {
+it('keeps unordered kills and deaths out of the frontend media pipeline', async () => {
   await tick({ kills: 2, clock_time: 110 })
   await tick({ kills: 3, deaths: 1, clock_time: 150 })
-  expect(view.current.killBanner).toMatchObject({ streak: 0 })
+  expect(view.current.killBanner).toBeUndefined()
 })
 it('rebaselines after a stale feed rather than replaying missed transitions', async () => {
   await send('gsi-status', { session_epoch: 8, session_lifecycle: 'live', gsi_freshness: 'stale', dota_running: true, in_game: true })
   await tick({ kills: 8, level: 12 })
   await send('gsi-status', { session_epoch: 8, session_lifecycle: 'live', gsi_freshness: 'fresh', dota_running: true, in_game: true })
-  expect(view.current.killBanner).toBeNull()
+  expect(view.current.killBanner).toBeUndefined()
   expect(invokeMock.mock.calls.some(([cmd]) => cmd === 'request_advice')).toBe(false)
 })
 
 it('seeds independent consumers when a new epoch begins with identical tick values', async () => {
   await tick({ session_epoch: 9 })
   await tick({ session_epoch: 9, kills: 1, level: 6, clock_time: 110 })
-  expect(view.current.killBanner).toMatchObject({ kills: 1, streak: 1 })
+  expect(view.current.killBanner).toBeUndefined()
   expect(invokeMock.mock.calls.filter(([cmd]) => cmd === 'request_advice')).toHaveLength(1)
 })
 
@@ -147,7 +139,7 @@ it('seeds independent consumers on draft to live with identical counters', async
   await tick({ session_epoch: 9, session_lifecycle: 'draft' })
   await tick({ session_epoch: 9, session_lifecycle: 'live' })
   await tick({ session_epoch: 9, kills: 1, level: 6, clock_time: 110 })
-  expect(view.current.killBanner).toMatchObject({ kills: 1, streak: 1 })
+  expect(view.current.killBanner).toBeUndefined()
   expect(invokeMock.mock.calls.filter(([cmd]) => cmd === 'request_advice')).toHaveLength(1)
 })
 
