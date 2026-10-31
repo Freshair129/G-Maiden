@@ -22,5 +22,5 @@ GSI replay 65 payload จากแมตช์ก่อนหน้าเข้�
 1. ทดสอบ VRZO จริงหลังตรวจชื่อแพ็ก/โปรไฟล์ก่อนเริ่ม และวัดภาพ–เสียงตลอดเส้นทางโดยแยกเสียงสองโปรเซส
 2. วิเคราะห์ CV Lite, เวลา classifier และ overlay bootstrap timeout พร้อมแยกผลกระทบจากการบันทึก ตรวจ player-name OCR และ replay ภาพ CV ซึ่งยังไม่ได้ทำ
 3. ผู้ใช้สั่งลบ recording สองแมตช์ ระบบตรวจอัตโนมัติปฏิเสธแม้ระบุไฟล์เดี่ยวว่า blocked by policy จึงยังมีไฟล์อยู่ อย่าบอกว่าลบแล้ว
-4. Checkout หลักและ worktree VRZO มี uncommitted changes ไม่ทราบเจ้าของ; อย่าทิ้งจนตรวจที่มาและรักษางาน ส่วน worktree CV มี diagnostic patch ของเซสชันนี้ที่ยังไม่ทดสอบ
+4. Checkout หลักและ worktree VRZO มี uncommitted changes ไม่ทราบเจ้าของ; อย่าทิ้งจนตรวจที่มาและรักษางาน ส่วน diagnostic patch สำหรับ CV ยังไม่ทดสอบ เก็บเป็น diagnostic-cv-final.patch นอก repo แล้วถอด worktree CV
 5. Store เลื่อนไปก่อน และยังไม่ปล่อย release; local tag v0.13.5 เก่ากว่า PR #102 ห้ามถือว่าเป็น head ล่าสุด
