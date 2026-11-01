@@ -117,9 +117,9 @@ function assertAffectedSnapshot(snapshot) {
 }
 
 /**
- * Launch a smoke executable with native and WebView2 stores rooted in a fresh,
- * validated run directory. A supported key-scoped reader can additionally
- * prove the normal profile's affected settings were unchanged.
+ * Launch a smoke executable with native, WebView2, and package data rooted in
+ * a fresh, validated run directory. A supported key-scoped reader can
+ * additionally prove the normal profile's affected settings were unchanged.
  */
 export async function runMvp009IsolatedSmoke({
   command,
@@ -192,7 +192,7 @@ async function main() {
   const pathIsolationOnly = requestedArgs.includes('--path-isolation-only');
   const args = requestedArgs.filter((arg) => arg !== '--path-isolation-only');
   if (pathIsolationOnly) {
-    process.stderr.write('Normal settings were not snapshot-verified; native and WebView2 paths are isolated for this smoke run.\n');
+    process.stderr.write('Normal settings were not snapshot-verified; native, WebView2, and package data paths are isolated for this smoke run.\n');
   }
   const result = await runMvp009IsolatedSmoke({
     command: path.resolve(command),

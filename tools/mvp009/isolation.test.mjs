@@ -16,7 +16,7 @@ test('resolves native settings and WebView2 stores under a separate run root', (
   assert.equal(result.webview2UserDataDirectory, result.environment.WEBVIEW2_USER_DATA_FOLDER);
 });
 
-test('assigns both isolated stores to a unique child-process environment', () => {
+test('assigns isolated stores to a unique child-process environment', () => {
   const args = {
     tempParent: 'D:\\',
     normalLocalAppData: process.env.LOCALAPPDATA,
@@ -40,6 +40,22 @@ test('assigns both isolated stores to a unique child-process environment', () =>
   assert.equal(first.childEnvironment.MVP009_NORMAL_LOCALAPPDATA.toLowerCase(), process.env.LOCALAPPDATA.toLowerCase());
   assert.ok(first.nativeSettingsFile.startsWith(`${first.runRoot}\\`));
   assert.ok(first.webview2UserDataDirectory.startsWith(`${first.runRoot}\\`));
+});
+
+test('keeps package installer writes under the isolated run root', () => {
+  const launch = createMvp009IsolatedLaunch({
+    tempParent: 'D:\\',
+    normalLocalAppData: process.env.LOCALAPPDATA,
+    normalUserProfile: process.env.USERPROFILE,
+    baseEnvironment: {
+      GMAIDEN_PACKAGE_DATA_ROOT: `${process.env.LOCALAPPDATA}\\G-Maiden\\packages`,
+    },
+  });
+
+  assert.equal(
+    launch.childEnvironment.GMAIDEN_PACKAGE_DATA_ROOT,
+    `${launch.runRoot}\\package-data`,
+  );
 });
 
 test('fails closed when the run root is inside the normal Windows profile', () => {

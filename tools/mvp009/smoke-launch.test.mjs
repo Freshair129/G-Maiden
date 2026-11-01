@@ -65,6 +65,7 @@ test('smoke launcher passes only isolated storage paths to the executable', asyn
   assert.equal(spawnCall.options.env.TMP, `${result.runRoot}\\temp`);
   assert.equal(spawnCall.options.env.MVP009_ISOLATION_ROOT, result.runRoot);
   assert.equal(spawnCall.options.env.MVP009_TEMP_PARENT, result.tempParent);
+  assert.equal(spawnCall.options.env.GMAIDEN_PACKAGE_DATA_ROOT, `${result.runRoot}\\package-data`);
   assert.equal(spawnCall.options.env.MVP009_NORMAL_USER_PROFILE.toLowerCase(), process.env.USERPROFILE.toLowerCase());
   assert.equal(spawnCall.options.env.MVP009_NORMAL_LOCALAPPDATA.toLowerCase(), process.env.LOCALAPPDATA.toLowerCase());
   assert.equal(spawnCall.options.env.API_KEY, undefined);

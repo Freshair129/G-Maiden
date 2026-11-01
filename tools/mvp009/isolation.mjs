@@ -26,7 +26,7 @@ function requireStrictChild(child, root, label) {
   }
 }
 
-/** Resolve and fail closed unless both persisted stores are isolated from the normal profile. */
+/** Resolve and fail closed unless persisted stores are isolated from the normal profile. */
 export function resolveMvp009Isolation({ runRoot, normalLocalAppData, normalUserProfile }) {
   const root = normalized(runRoot, 'runRoot');
   const profile = normalized(normalUserProfile, 'normalUserProfile');
@@ -35,6 +35,7 @@ export function resolveMvp009Isolation({ runRoot, normalLocalAppData, normalUser
   const isolatedLocalAppData = win.join(root, 'native-local-app-data');
   const nativeSettings = win.join(isolatedLocalAppData, 'G-Maiden', 'settings.json');
   const webviewData = win.join(root, 'webview2-user-data');
+  const packageDataRoot = win.join(root, 'package-data');
   const normalSettings = win.join(normalLocal, 'G-Maiden', 'settings.json');
   const normalWebviewData = win.join(normalLocal, 'com.gmaiden.app', 'EBWebView');
 
@@ -42,6 +43,7 @@ export function resolveMvp009Isolation({ runRoot, normalLocalAppData, normalUser
     ['isolated LOCALAPPDATA', normalized(isolatedLocalAppData, 'isolatedLocalAppData')],
     ['native settings file', normalized(nativeSettings, 'nativeSettings')],
     ['WebView2 user-data directory', normalized(webviewData, 'webviewData')],
+    ['package data root', normalized(packageDataRoot, 'packageDataRoot')],
   ];
 
   for (const [label, candidate] of isolated) {
@@ -72,6 +74,7 @@ export function resolveMvp009Isolation({ runRoot, normalLocalAppData, normalUser
     environment: Object.freeze({
       LOCALAPPDATA: win.join(root, 'native-local-app-data'),
       WEBVIEW2_USER_DATA_FOLDER: win.join(root, 'webview2-user-data'),
+      GMAIDEN_PACKAGE_DATA_ROOT: packageDataRoot,
     }),
     nativeSettingsFile: nativeSettings,
     webview2UserDataDirectory: webviewData,
