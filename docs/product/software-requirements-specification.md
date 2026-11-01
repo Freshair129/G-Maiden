@@ -2,11 +2,11 @@
 title: "G-Maiden Software Requirements Specification"
 doc_id: "software-requirements-specification"
 status: "active"
-version: "0.5.0"
+version: "0.6.0"
 updated: "2026-11-01"
 owner: "Boss"
 source_of_truth: true
-related_docs: ["product-requirements", "mvp-decisions", "roadmap", "G-SERIES-DATA-LINEAGE", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing"]
+related_docs: ["product-requirements", "mvp-decisions", "roadmap", "G-SERIES-DATA-LINEAGE", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations"]
 ---
 
 # **Software Requirements Specification (SRS)**
@@ -200,6 +200,20 @@ G-Party ให้สมาชิกที่ยินยอมและอยู
 5. Leave หยุดและล้าง local sharing ทันที; remote delete best effort โดย health TTL 2 s/membership timeout 30 s เมื่อ offline. Owner kick/rotate/leave และ room TTL ตาม FEAT; network failure ไม่ล็อก local core.
 6. Consent ของ G-Party ไม่ให้ AI consent และไม่ส่ง received peer stats ไป AI/Memory/G-Log/public profile. Denylist ของ MVP-005 คงเดิม; MVP-005A อนุญาตเฉพาะ peer route นี้. Native/live Dota/สองจอ/resource acceptance ยังไม่ถูกปิดด้วย contract/source tests.
 
+### 3.14 G-Friends — Optional social coordination for G-Party
+
+ตาม [[FEAT-G-FRIENDS]] และ [[mvp-decisions]] MVP-005B: Google-authenticated users ส่ง exact GID friend request, ตอบรับ/ปฏิเสธ/ยกเลิก, remove/block/unblock, ควบคุม requests/invites และ opt-in online-in-app presence ได้ Friends ≤200/account, pending combined ≤50, blocks ≤500; acceptance และ cap checks ต้อง atomic และคำขอย้อนกลับไม่ autoaccept
+
+Presence heartbeat 20 s/lease 60 s และ state poll 15 s ทำงานผ่าน CommandDeck-owned controller ขณะดูแผนที่ Client หัก whole RTT+monotonic elapsed; hidden/expired/revoked/unavailable ไม่กลายเป็น last-seen ผู้ใช้แยก opt-in profile link กับ actual native-held room membership; scope change ต้อง acknowledged unlink และ authoritative bindingRevision ใหม่ก่อน relink
+
+Targeted invitation อายุ 5 นาที, one-use ticket ≤60 s, owner proof และ friend/block/receive/live-session checks ทุก boundary ผู้รับต้อง fresh unchecked-to-checked GSI consent และ explicit Join; native idle-only admission, expected roomId และ post-await owner/generation/capacity validation ห้าม autojoin/implicit leave/guest fallback หน้าจอแสดง joined เฉพาะ connected native result
+
+Private schema ไม่ expose ผ่าน PostgREST; runtime ใช้ narrow definer EXECUTE ไม่มี direct social/profile/auth table access Public projection เฉพาะ safe GID/name ไม่ส่ง JWT/GID/UUID ไป relay และไม่เก็บ GMP1/memberToken/GSI ใน social storage Existing guest code/local core และ AI/raw-data restrictions ไม่เปลี่ยน
+
+Strict DTO/signature byte contract, rate/size/retention limits, session-before-pair locking, post-wait expiry, replay and denial accounting อยู่ใน [[2026-11-01-g-party-friends-design]]. [[ADR-20]] บันทึก trust/architecture choices. Live Google, deployed service, Windows runtime/สองจอ และ budgets ใน §5.1 ต้องมีหลักฐานแยกตาม [[g-party-social-operations]]
+
+
+
 ## **4\. ความต้องการด้านอินเตอร์เฟสภายนอก (External Interface Requirements)**
 
 ### **4.1 อินเตอร์เฟสกับผู้ใช้ (User Interface: UI/UX Specification)**
@@ -254,3 +268,4 @@ G-Party ให้สมาชิกที่ยินยอมและอยู
 | 0.4.2 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
 | 0.4.3 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |
 | 0.5.0 | 2026-11-01 | เพิ่ม G-Party source/consent/transport/freshness contract และ optional peer route โดยรักษา AI denylist, local-core resilience และ pending native/live acceptance. |
+| 0.6.0 | 2026-11-01 | เพิ่ม G-Friends social/privacy/consent/transaction requirements และ runtime boundaries โดยรักษา guest/core, GSI allowlist และ NFR เดิม. |

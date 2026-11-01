@@ -11,7 +11,7 @@ import {
   type PartyView,
 } from "./partyModel";
 
-type PartyAction = "connect" | "leave" | "kick" | "rotate";
+type PartyAction = "social" | "connect" | "leave" | "kick" | "rotate";
 interface TimedView { view: PartyView; receivedAt: number }
 
 export function useParty() {
@@ -24,6 +24,8 @@ export function useParty() {
   const generation = useRef(0);
   const action = useRef<PartyAction | null>(null);
   const inFlight = useRef<object | null>(null);
+  const latestView = useRef(snapshot.view);
+  latestView.current = snapshot.view;
 
   const fail = useCallback((reason: unknown) => {
     const now = performance.now();
@@ -101,17 +103,17 @@ export function useParty() {
   }, [snapshot, clock]);
 
   const runAction = useCallback(async (kind: PartyAction, command: string, args?: Record<string, unknown>) => {
-    if (action.current && kind !== "leave") return;
-    if (action.current === "leave") return;
+    if (action.current && kind !== "leave") return false;
+    if (action.current === "leave") return false;
     const fence = ++generation.current;
     const requestedAt = performance.now();
     action.current = kind;
     inFlight.current = null;
     setBusy(kind);
     setError(null);
-    if (kind === "connect" || kind === "leave") {
+    if (kind === "connect" || kind === "social" || kind === "leave") {
       const now = performance.now();
-      setSnapshot({ view: emptyPartyView(kind === "connect" ? "connecting" : "idle"), receivedAt: now });
+      setSnapshot({ view: emptyPartyView(kind === "connect" || kind === "social" ? "connecting" : "idle"), receivedAt: now });
       setClock(now);
       setCanLeave(true);
     }
@@ -122,12 +124,22 @@ export function useParty() {
     }
     try {
       const raw = args === undefined ? await invoke<unknown>(command) : await invoke<unknown>(command, args);
-      if (active.current && generation.current === fence) accept(raw, requestedAt);
+      if (active.current && generation.current === fence) {
+        const parsed = parsePartyView(raw);
+        if (kind === "social" && parsed?.status === "connected" && (parsed.roomId !== args?.roomId || parsed.relayUrl === null || new URL(parsed.relayUrl).origin !== new URL(String(args?.relayUrl)).origin)) {
+          fail("invalid_state"); return false;
+        }
+        accept(raw, requestedAt);
+        return !!parsed && (kind === "social" ? parsed.status === "connected" && parsed.error === null && parsed.roomId === args?.roomId && parsed.relayUrl !== null && new URL(parsed.relayUrl).origin === new URL(String(args?.relayUrl)).origin
+          : kind === "leave" ? parsed.status === "idle" || parsed.status === "closed" : true);
+      }
+      return false;
     } catch (reason) {
       if (active.current && generation.current === fence) {
         fail(reason);
         if (kind === "leave") setError("ยังยืนยันการหยุดแชร์ไม่ได้ กรุณากดออกและหยุดแชร์อีกครั้ง");
       }
+      return false;
     } finally {
       if (active.current && generation.current === fence) {
         action.current = null;
@@ -140,6 +152,17 @@ export function useParty() {
     const validated = validatePartyConnection(input);
     if (!validated.ok) { setError(validated.error); return; }
     await runAction("connect", "party_connect", { ...validated.value });
+  }, [runAction]);
+
+  const joinSocial = useCallback(async (input: { ticket: string; relayUrl: string; roomId: string; displayName: string; consent: boolean }): Promise<boolean> => {
+    if (action.current || !["idle", "closed"].includes(latestView.current.status)) {
+      setError("ออกจากปาร์ตี้ปัจจุบันก่อนรับคำเชิญ"); return false;
+    }
+    const validated = validatePartyConnection({ ...input, invite: null });
+    if (!validated.ok || !/^[a-f0-9]{64}$/.test(input.ticket) || !/^[a-f0-9]{32}$/.test(input.roomId) || !input.relayUrl.startsWith("https://")) {
+      setError(validated.ok ? partyErrorMessage("invalid_request") : validated.error); return false;
+    }
+    return runAction("social", "party_join_social", { ticket: input.ticket, roomId: input.roomId, relayUrl: validated.value.relayUrl, displayName: validated.value.displayName, consent: true });
   }, [runAction]);
 
   const leave = useCallback(() => runAction("leave", "party_leave"), [runAction]);
@@ -157,6 +180,7 @@ export function useParty() {
     error,
     canLeave,
     connect,
+    joinSocial,
     leave,
     kick,
     rotateInvite,

@@ -3,11 +3,13 @@
 use serde_json::Value;
 mod client;
 mod protocol;
+mod social;
 pub use client::{ConnectOptions, PartyClient};
 pub use protocol::{
     display_name, valid_invite, validate_relay_url, MemberState, MemberView, PartyStatus,
     PartyView, Scope, SharedSample, Stats, SyncRequest, FRESH_MS,
 };
+pub use social::{SocialJoinOptions, SocialProof};
 
 #[derive(Clone, PartialEq, Eq)]
 pub struct LocalObservation {

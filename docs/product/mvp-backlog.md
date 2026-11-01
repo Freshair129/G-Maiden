@@ -2,10 +2,10 @@
 title: "G-Maiden MVP Backlog"
 doc_id: "mvp-backlog"
 status: "draft"
-version: "0.3.12"
+version: "0.3.13"
 updated: "2026-11-01"
 owner: "Boss"
-related_docs: ["roadmap", "mvp-execution-dag", "software-requirements-specification", "G-SERIES-DATA-LINEAGE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "EXEC-PLAN-CR-034-iam-remediation", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "2026-11-01-g-party-gsi-sharing"]
+related_docs: ["roadmap", "mvp-execution-dag", "software-requirements-specification", "G-SERIES-DATA-LINEAGE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "EXEC-PLAN-CR-034-iam-remediation", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "2026-11-01-g-party-gsi-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations", "2026-11-01-g-party-friends"]
 ---
 
 # G-Maiden MVP Backlog
@@ -19,6 +19,12 @@ Backlog สำหรับทำให้ผู้เล่นใช้งาน
 Owner สั่งพัฒนา own-GSI sharing ระหว่างสมาชิกที่ยินยอมเพื่อดู HP/MP/alive/respawn โดยไม่ camera-select. Scope/consent อยู่ใน [[CR-037-party-gsi-own-stat-sharing]], [[FEAT-G-PARTY]] และ [[mvp-decisions]] MVP-005A; transport/protocol เป็น assistant implementation decisions และ native/live/resource acceptance ยัง pending.
 
 ใช้ task **GP-001–006** ใน [[2026-11-01-g-party-gsi-sharing]] สำหรับ docs/relay/native/UI/integration/qualification. เป็นส่วนขยายแยก ไม่ renumber/ปิด/เปลี่ยน priority ของ 62 MVP parent task และไม่เปลี่ยน execution DAG เดิม. ไม่มี release/deployment หรือการอนุญาต AI/raw-data egress เพิ่มจากงานนี้.
+
+## Owner-directed extension: G-Friends (CR-038)
+
+[[CR-038-party-friends-presence-invitations]] และ [[FEAT-G-FRIENDS]] เพิ่ม optional friends/presence/verified room links/targeted invitations บนฐาน G-Party ผู้ใช้อนุญาต supervised multi-agent execution ผ่าน protected merge ใช้ Tasks 1–5 ใน [[2026-11-01-g-party-friends]] สำหรับ private SQL, Edge broker, relay/native, frontend และ root integration
+
+นี่เป็น extension แยกจาก 62 MVP parent tasks/DAG เดิม ไม่ auto-promote เป็น P0 ไม่ปิด parent task จากการ merge และไม่ครอบคลุม deployment/release เกณฑ์ live Google/Dota/สองจอ/resource ยังแยกตาม [[g-party-social-operations]]
 
 ## วิธีใช้ backlog
 
@@ -325,3 +331,4 @@ Status:
 | 0.3.10 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
 | 0.3.11 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |
 | 0.3.12 | 2026-11-01 | Link owner-directed G-Party GP-001–006 extension while preserving all 62 MVP task IDs/statuses and separate consent/native/live acceptance. |
+| 0.3.13 | 2026-11-01 | Link CR-038 Friends Tasks1–5 as a separate owner-directed extension without changing any of the 62 MVP parent task IDs, priorities or completion states. |

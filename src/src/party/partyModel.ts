@@ -26,6 +26,8 @@ export interface PartyMember {
 export interface PartyView {
   status: PartyStatus;
   roomId: string | null;
+  relayUrl: string | null;
+  roomGeneration: number | null;
   selfId: string | null;
   ownerId: string | null;
   invite: string | null;
@@ -51,7 +53,7 @@ const STATUS_VALUES: PartyStatus[] = ["idle", "connecting", "connected", "reconn
 const MEMBER_STATES: MemberState[] = ["live", "stale", "waiting", "different_match"];
 
 export function emptyPartyView(status: PartyStatus = "idle"): PartyView {
-  return { status, roomId: null, selfId: null, ownerId: null, invite: null, expiresInMs: null, error: null, members: [] };
+  return { status, relayUrl: null, roomGeneration: null, roomId: null, selfId: null, ownerId: null, invite: null, expiresInMs: null, error: null, members: [] };
 }
 
 function validDisplayName(value: unknown): value is string {
@@ -114,14 +116,16 @@ function validMember(value: unknown): value is PartyMember {
 }
 
 export function parsePartyView(value: unknown): PartyView | null {
-  if (!objectWithKeys(value, ["status", "roomId", "selfId", "ownerId", "invite", "expiresInMs", "error", "members"])) return null;
+  if (!objectWithKeys(value, ["status", "relayUrl", "roomGeneration", "roomId", "selfId", "ownerId", "invite", "expiresInMs", "error", "members"])) return null;
   if (!STATUS_VALUES.includes(value.status as PartyStatus)
+    || !(value.relayUrl === null || (typeof value.relayUrl === "string" && validatePartyConnection({ relayUrl: value.relayUrl, displayName: "scope", consent: true, invite: null }).ok))
+    || !(value.roomGeneration === null || integer(value.roomGeneration, 1))
     || !nullableId(value.roomId) || !nullableId(value.selfId) || !nullableId(value.ownerId)
     || !(value.invite === null || (typeof value.invite === "string" && INVITE_PATTERN.test(value.invite)))
     || !(value.expiresInMs === null || integer(value.expiresInMs, 0))
     || !(value.error === null || (typeof value.error === "string" && value.error.length <= 128))
     || !Array.isArray(value.members) || value.members.length > 5 || !value.members.every(validMember)) return null;
-  if (value.status === "connected" && (!value.roomId || !value.selfId || !value.ownerId)) return null;
+  if (value.status === "connected" && (!value.roomId || !value.selfId || !value.ownerId || !value.relayUrl || !value.roomGeneration)) return null;
   if (value.invite !== null && (value.selfId !== value.ownerId || !value.roomId || !value.invite.startsWith(`GMP1.${value.roomId}.`))) return null;
   if (new Set(value.members.map((member) => member.memberId)).size !== value.members.length) return null;
   if (value.members.some((member) => member.isOwner !== (member.memberId === value.ownerId))) return null;

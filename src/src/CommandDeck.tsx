@@ -8,6 +8,9 @@ import { LogicalSize } from "@tauri-apps/api/dpi";
 import type { SettingsCat } from "./App";
 import { useCompanionData } from "./companion";
 import { useProfile } from "./profile";
+import { useAuth } from "./auth";
+import { useParty } from "./party/useParty";
+import { useFriends } from "./party/useFriends";
 import { useAppUpdate } from "./useAppUpdate";
 import type { VoiceState } from "./voice-types";
 import MaidenLine from "./MaidenLine";
@@ -71,6 +74,9 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
   // History. Local to CommandDeck (same "single owner" shape as `tab` above);
   // no persistence, no URL sync — a page switch always lands on the default sub-tab.
   const [liveTab, setLiveTab] = useState("live"); // "live" | "build" | "cv" | "party"
+  const { session: friendsSession } = useAuth();
+  const party = useParty();
+  const friends = useFriends({ session: friendsSession, party, panelVisible: tab === "live" && liveTab === "party" });
   const [insightsTab, setInsightsTab] = useState("overview"); // "overview" | "history"
   // CR-013 W4-01: G-Store's own in-page tabs (§5.1) — shop/wallet/inventory/
   // ledger, same "single local owner, no persistence" shape as liveTab/
@@ -600,7 +606,7 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
                     : liveTab === "build"
                       ? <BuildAdvisorPage />
                       : liveTab === "party"
-                        ? <GPartyPage />
+                        ? <GPartyPage party={party} friends={friends} />
                         : <CvHeroesPage />}
                 </DeferredPage>
               </div>

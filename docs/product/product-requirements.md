@@ -2,11 +2,11 @@
 title: "G-Maiden Product Requirements"
 doc_id: "product-requirements"
 status: "active"
-version: "0.3.0"
+version: "0.4.0"
 updated: "2026-11-01"
 owner: "Boss"
 source_of_truth: true
-related_docs: ["software-requirements-specification", "mvp-decisions", "roadmap", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing"]
+related_docs: ["software-requirements-specification", "mvp-decisions", "roadmap", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations"]
 ---
 
 # **Product Requirement Document (PRD)**
@@ -137,6 +137,16 @@ related_docs: ["software-requirements-specification", "mvp-decisions", "roadmap"
 * **Platform:** Windows x64 build 19045 และ 26100 เป็นเป้าหมายตรวจรับ; ถือว่า support เมื่อมี evidence ตาม matrix ของ MVP เท่านั้น.
 * **Resource:** CPU ทั้ง process group ≤10% ของ logical CPU capacity ทุก sample 1 วินาที; aggregate peak Working Set ≤900,000,000 bytes; FPS impact ≤3% ตาม paired-run protocol ใน [[mvp-decisions]].
 
+## 3C. G-Friends — เพื่อนและคำเชิญใน G-Party
+
+ส่วนขยายตาม [[CR-038-party-friends-presence-invitations]] และ [[mvp-decisions]] MVP-005B ช่วยกลุ่มที่เล่นซ้ำค้นกันด้วย exact GID หรือ verified room binding, ตอบรับ/ปฏิเสธคำขอ, ลบ/block/unblock และเชิญเข้าห้องโดยไม่ย้ายกล้องไปเลือกฮีโร่ สมาชิกต้องเปิด own-GSI sharing ของตนเอง ข้อมูล HP/MP มาจาก [[FEAT-G-PARTY]] เท่านั้น
+
+Google sign-in ใช้เฉพาะ social actions; guest room code และ local core ยังคงใช้ได้โดยไม่เป็นเพื่อนหรือมีบัญชี Presence ค่าเริ่มต้นซ่อนและเป็น online-in-app แบบมีอายุ ไม่แสดง last-seen/แมตช์ปัจจุบัน การผูกโปรไฟล์กับสมาชิกห้องต้อง opt-in แยกและไม่ใช้ nickname เดา GID
+
+ผู้รับคำเชิญต้องตรวจผู้เชิญ/relay และติ๊ก GSI consent ใหม่ก่อน Join ไม่มี autojoin หรือการออกจากห้องเดิมเอง การเป็นเพื่อนไม่เปิดสิทธิ์ดู stats UI อยู่ใน G-Party ใช้พื้นที่เลื่อนภายใน ไม่แย่ง focus และไม่ลด minimap บนจอรอง ใช้ design tokens เดิมตามคำสั่งล่าสุดของผู้ใช้ แต่จัดเลย์เอาต์ใหม่รอบ minimap ได้โดยไม่ต้องตามหน้าเดิม
+
+[[FEAT-G-FRIENDS]] / [[ADR-20]] เป็นสัญญา privacy, private storage, registered relay proof และ one-use admission. ไม่มี chat/voice/community/screen share/Steam friend import ในรอบนี้ การ merge code ไม่ทำให้ hosted service หรือ live acceptance ผ่านโดยอัตโนมัติ ดู [[g-party-social-operations]]
+
 ## Changelog
 | Version | Date | Summary |
 | --- | --- | --- |
@@ -146,3 +156,4 @@ related_docs: ["software-requirements-specification", "mvp-decisions", "roadmap"
 | 0.2.3 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
 | 0.2.4 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |
 | 0.3.0 | 2026-11-01 | เพิ่ม G-Party own-stat sharing เป็น Owner-directed extension พร้อม separate consent และ evidence boundaries โดยไม่ขยาย AI/data scope อื่น. |
+| 0.4.0 | 2026-11-01 | เพิ่ม optional G-Friends social graph และ targeted invitation ที่ต้อง consent ใหม่; guest/core ยังคง account-optional และคง pending operational/live acceptance. |

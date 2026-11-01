@@ -105,6 +105,8 @@ pub enum PartyStatus {
 pub struct PartyView {
     pub status: PartyStatus,
     pub room_id: Option<String>,
+    pub relay_url: Option<String>,
+    pub room_generation: Option<u64>,
     pub self_id: Option<String>,
     pub owner_id: Option<String>,
     pub invite: Option<String>,
@@ -117,6 +119,7 @@ pub struct PartyView {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct Membership {
     pub room_id: String,
+    pub room_generation: u64,
     pub member_id: String,
     pub member_token: String,
     pub owner_id: String,
@@ -129,6 +132,7 @@ pub(crate) struct Membership {
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub(crate) struct RoomSnapshot {
     pub room_id: String,
+    pub room_generation: u64,
     pub self_id: String,
     pub owner_id: String,
     pub expires_in_ms: u64,

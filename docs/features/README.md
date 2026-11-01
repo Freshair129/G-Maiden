@@ -2,10 +2,10 @@
 title: "G-Series Feature Specifications"
 doc_id: "features/README"
 status: "active"
-version: "0.3.0"
+version: "0.4.0"
 updated: "2026-11-01"
 owner: "Boss"
-related_docs: ["mvp-decisions", "G-SERIES-DATA-LINEAGE", "software-requirements-specification", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing"]
+related_docs: ["mvp-decisions", "G-SERIES-DATA-LINEAGE", "software-requirements-specification", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations"]
 ---
 
 # G-Series Feature Specifications
@@ -50,6 +50,7 @@ related_docs: ["mvp-decisions", "G-SERIES-DATA-LINEAGE", "software-requirements-
 
 | Module | Scope / status | Phase | Doc |
 | --- | --- | --- | --- |
+| **G-Friends** — Friends, presence and targeted party invitations | Owner authorized CR-038 through protected source merge; optional account social actions, guest route retained; operational/live acceptance pending. | 3 (extension integration) | [[FEAT-G-FRIENDS]] · [[ADR-20]] · [[CR-038-party-friends-presence-invitations]] |
 | **G-Party** — Cooperative own-GSI status sharing | Owner authorized 2026-11-01; implementation in progress, native/live acceptance pending. Separate checked consent; no reprioritization of the existing MVP tasks. | 3 (extension integration) | [[FEAT-G-PARTY]] · [[CR-037-party-gsi-own-stat-sharing]] |
 
 G-Party own stats use a distinct peer relay route under MVP-005A. It does not grant AI/cloud consent, does not send raw GSI/raw match ID/SteamID, and does not forward received peer data into Memory/G-Log/AI. Execution/evidence: [[2026-11-01-g-party-gsi-sharing]].
@@ -98,3 +99,4 @@ G-Coach (post-match) ◄── G-Memory
 | 0.2.2 | 2026-10-12 | Aligned the module and cross-cutting CPU gates with the approved 10% whole-app budget. |
 | 0.2.0 | 2026-10-10 | Reconciled module index, G-Signal hard-max label, local Voice/Memory routing, G-Motion heuristic scope, and MVP decision precedence |
 | 0.3.0 | 2026-11-01 | Register owner-directed G-Party extension and separate consent/lineage boundaries; align the touched RAM summary with the accepted 900MB ceiling without claiming acceptance. |
+| 0.4.0 | 2026-11-01 | Register G-Friends optional account social extension, private projection and consent boundaries alongside guest G-Party; preserve independent live/operational acceptance. |

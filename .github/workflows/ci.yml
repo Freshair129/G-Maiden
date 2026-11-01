@@ -22,14 +22,53 @@ jobs:
         with:
           workspaces: src-tauri/g-party
       - name: Party relay HTTP integration tests
-        run: node --test services/g-party-relay/server.test.mjs
+        run: timeout 120 node --test services/g-party-relay/server.test.mjs services/g-party-relay/social.test.mjs
       - name: Party portable client tests
-        run: cargo test --manifest-path src-tauri/g-party/Cargo.toml --locked
+        run: timeout 900 cargo test --manifest-path src-tauri/g-party/Cargo.toml --locked
       - name: Party portable client lint
-        run: cargo clippy --manifest-path src-tauri/g-party/Cargo.toml --all-targets --locked -- -D warnings
+        run: timeout 900 cargo clippy --manifest-path src-tauri/g-party/Cargo.toml --all-targets --locked -- -D warnings
+
+  social:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 25
+    env:
+      SOCIAL_TEST_DATABASE_URL: postgresql://postgres@127.0.0.1:55438/postgres
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v7.1.0
+        with:
+          node-version: '22'
+          package-manager-cache: false
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.7.0
+      - uses: dtolnay/rust-toolchain@1.96.0
+        with:
+          components: clippy
+      - uses: Swatinem/rust-cache@v2
+        with:
+          workspaces: src-tauri/g-party
+      - name: Provision disposable PostgreSQL and pgTAP
+        run: |
+          timeout 180 sudo apt-get update
+          timeout 180 sudo apt-get install -y postgresql-16 postgresql-16-pgtap
+          pgbin=/usr/lib/postgresql/16/bin
+          "$pgbin/initdb" -D "$RUNNER_TEMP/g-party-pg" -U postgres --auth=trust --encoding=UTF8 --locale=C
+          "$pgbin/pg_ctl" -D "$RUNNER_TEMP/g-party-pg" -w -t 30 -l "$RUNNER_TEMP/g-party-pg.log" -o "-h 127.0.0.1 -p 55438 -k $RUNNER_TEMP" start
+          echo "$pgbin" >> "$GITHUB_PATH"
+      - name: Social migration, privilege, transaction and HTTP integration tests
+        run: timeout 900 node tools/social-tests/run.mjs --native-boundary
+      - name: Social broker and existing IAM tests
+        run: timeout 120 deno test --no-lock --node-modules-dir=none --allow-env supabase/functions/_shared/social.test.ts supabase/functions/_shared/social_crypto.test.ts supabase/functions/_shared/iam.test.ts supabase/functions/_shared/iam_security.test.ts
+      - name: Stop disposable PostgreSQL
+        if: always()
+        run: |
+          if [ -f "$RUNNER_TEMP/g-party-pg/postmaster.pid" ]; then
+            /usr/lib/postgresql/16/bin/pg_ctl -D "$RUNNER_TEMP/g-party-pg" -w -t 30 -m fast stop
+          fi
 
   ci:
-    needs: party
+    needs: [party, social]
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v5

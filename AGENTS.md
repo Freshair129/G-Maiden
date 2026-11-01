@@ -2,7 +2,7 @@
 title: "AGENTS.md"
 doc_id: "agents"
 status: active
-version: "0.4.13"
+version: "0.4.14"
 updated: "2026-11-01"
 owner: "G-Maiden"
 ---
@@ -51,6 +51,19 @@ Relay/network failure cannot lock local core. Detailed protocol choices are assi
 implementation decisions; native/live/resource acceptance and deployment remain separate.
 
 ---
+
+
+The CR-038 G-Friends extension (`FEAT-G-FRIENDS`, `ADR-20`, MVP-005B) adds optional Google-backed
+friends/presence/verified room labels/targeted invitations. Guest codes and local core remain
+account-optional. Friendship, presence visibility, profile linking and GSI sharing are separate
+permissions; accepting an invite requires fresh checked sharing consent and explicit idle-only
+native admission. Private social data never enters AI/Memory/G-Log; relay receives no account
+JWT/GID/UUID and social storage holds no GMP1/memberToken/GSI. CommandDeck owns its persistent
+lifecycle; every room scope transition requires acknowledged unlink/revision refresh before
+relinking. Preserve the large minimap. The latest owner direction explicitly requires existing design
+tokens while allowing a completely new map-centered G-Party layout; do not copy the old layout. Source checks/merge are distinct from hosted/live/NFR acceptance;
+follow `g-party-social-operations` for configuration, retention and ticket-aware key rotation.
+
 
 ## Tech Stack
 
@@ -552,3 +565,4 @@ These are **functional requirements**, not flavor text. Maiden must:
 | 0.4.11 | 2026-10-30 | Add local .gann single-file container import and preserve separate Store provenance. |
 | 0.4.12 | 2026-10-31 | Record owner-directed GANN-only event source, cache identity and verification boundaries. |
 | 0.4.13 | 2026-11-01 | Record separate owner-directed G-Party consent/own-stat route while retaining AI/raw-data restrictions and pending native/live acceptance. |
+| 0.4.14 | 2026-11-01 | Record CR-038 optional Friends/account/relay privacy, consent, lifecycle and map constraints with separate operational/live acceptance. |

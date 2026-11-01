@@ -1,3 +1,4 @@
+import { socialConfiguration, environmentSocialConfiguration, signProof, redeemTicket } from './social.mjs';
 import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
 import { createServer } from 'node:http';
 import { performance } from 'node:perf_hooks';
@@ -100,7 +101,9 @@ function reply(response, status, body) {
 }
 
 /** Each server owns its rooms; the clock is injected for deterministic expiry tests. */
-export function createRelay({ now = () => performance.now() } = {}) {
+export function createRelay({ now = () => performance.now(), wallNow = () => Date.now(), social } = {}) {
+  const socialConfig = social === undefined ? environmentSocialConfiguration() : socialConfiguration(social, social?.allowLoopback === true);
+  let socialJoins = 0;
   const rooms = new Map();
   const attempts = new Map();
 
@@ -144,7 +147,7 @@ export function createRelay({ now = () => performance.now() } = {}) {
   function membership(room, member, memberToken, invite, at) {
     return {
       roomId: room.roomId, memberId: member.memberId, memberToken,
-      ownerId: room.ownerId, invite, expiresInMs: Math.max(0, Math.floor(room.expiresAt - at)),
+      ownerId: room.ownerId, roomGeneration: room.generation, invite, expiresInMs: Math.max(0, Math.floor(room.expiresAt - at)),
     };
   }
 
@@ -159,7 +162,7 @@ export function createRelay({ now = () => performance.now() } = {}) {
 
   function snapshot(room, viewer, at) {
     return {
-      roomId: room.roomId, selfId: viewer.memberId, ownerId: room.ownerId,
+      roomId: room.roomId, selfId: viewer.memberId, ownerId: room.ownerId, roomGeneration: room.generation,
       expiresInMs: Math.max(0, Math.floor(room.expiresAt - at)),
       members: [...room.members.values()].map(member => {
         const row = {
@@ -201,7 +204,7 @@ export function createRelay({ now = () => performance.now() } = {}) {
         const createdAt = now();
         const roomId = randomBytes(16).toString('hex');
         const inviteSecret = randomBytes(32).toString('hex');
-        const room = { roomId, inviteHash: hash(inviteSecret), ownerId: '', expiresAt: createdAt + ROOM_TTL, members: new Map() };
+        const room = { roomId, inviteHash: hash(inviteSecret), ownerId: '', generation: 1, expiresAt: createdAt + ROOM_TTL, members: new Map() };
         const { member, memberToken } = addMember(room, name, createdAt);
         room.ownerId = member.memberId;
         rooms.set(roomId, room);
@@ -221,12 +224,49 @@ export function createRelay({ now = () => performance.now() } = {}) {
         const { member, memberToken } = addMember(room, name, joinedAt);
         reply(response, 201, membership(room, member, memberToken, null, joinedAt)); return;
       }
-      const route = /^\/v1\/rooms\/([a-f0-9]{32})\/(sync|invite|members\/(?:me|[a-f0-9]{32}))$/.exec(path);
+      if (request.method === 'POST' && path === '/v1/rooms/social-join') {
+        if (!socialConfig) reject(503, 'social_unavailable');
+        limit(request.socket.remoteAddress ?? 'unknown', 'social-join', 20, at);
+        if (socialJoins >= 32) reject(503, 'capacity');
+        socialJoins++;
+        try {
+          const body = await readJson(request);
+          exactObject(body, ['ticket','displayName']);
+          if (typeof body.ticket !== 'string' || !SECRET.test(body.ticket)) reject();
+          const name = displayName(body.displayName);
+          let admission;
+          try { admission = await redeemTicket(socialConfig, body.ticket, wallNow()); }
+          catch { reject(503, 'social_unavailable'); }
+          const joinedAt = now(); reap(joinedAt);
+          const room = rooms.get(admission.roomId);
+          if (!room || room.ownerId !== admission.ownerId || room.generation !== admission.generation || !room.members.has(room.ownerId)) reject(404,'room_unavailable');
+          if (room.members.size >= MAX_MEMBERS) reject(409,'room_full');
+          const {member,memberToken} = addMember(room,name,joinedAt);
+          reply(response,201,membership(room,member,memberToken,null,joinedAt)); return;
+        } finally { socialJoins--; }
+      }
+      const route = /^\/v1\/rooms\/([a-f0-9]{32})\/(sync|invite|social-proof|members\/(?:me|[a-f0-9]{32}))$/.exec(path);
       if (!route) reject(404, 'room_unavailable');
       const room = rooms.get(route[1]);
       if (!room) reject(404, 'room_unavailable');
       const member = authenticate(request, room);
       const action = route[2];
+      if (action === 'social-proof' && request.method === 'POST') {
+        if (!socialConfig) reject(503,'social_unavailable');
+        limit(member.memberId,'social-proof',30,at);
+        const initialGeneration = room.generation;
+        const body = await readJson(request);
+        exactObject(body,['challenge']);
+        if (typeof body.challenge !== 'string' || !SECRET.test(body.challenge)) reject();
+        reap(now());
+        if (rooms.get(room.roomId) !== room || room.generation !== initialGeneration) reject(404,'room_unavailable');
+        if (room.members.get(member.memberId) !== member || authenticate(request,room) !== member) reject(401,'unauthorized');
+        const issuedAtMs = wallNow();
+        const payload = {v:1,relayOrigin:socialConfig.relayOrigin,challenge:body.challenge,
+          roomId:room.roomId,memberId:member.memberId,ownerId:room.ownerId,generation:room.generation,
+          memberIds:[...room.members.keys()],issuedAtMs,expiresAtMs:issuedAtMs+60_000};
+        reply(response,200,{proof:signProof(payload,socialConfig.key)}); return;
+      }
       if (action === 'sync' && request.method === 'POST') {
         const body = await readJson(request);
         validateSync(body);
@@ -257,8 +297,11 @@ export function createRelay({ now = () => performance.now() } = {}) {
         reap(now());
         if (rooms.get(room.roomId) !== room) reject(404, 'room_unavailable');
         const secret = randomBytes(32).toString('hex');
+        if (room.members.get(member.memberId) !== member || member.memberId !== room.ownerId) reject(401, 'unauthorized');
+        if (room.generation >= Number.MAX_SAFE_INTEGER) reject(503, 'capacity');
+        room.generation++;
         room.inviteHash = hash(secret);
-        reply(response, 200, { invite: `GMP1.${room.roomId}.${secret}` }); return;
+        reply(response, 200, { invite: `GMP1.${room.roomId}.${secret}`, roomGeneration: room.generation }); return;
       }
       if (action.startsWith('members/') && request.method === 'DELETE') {
         request.resume();

@@ -434,3 +434,9 @@ verify_jwt = true
 
 [functions.g-annstudio-access]
 verify_jwt = true
+
+[functions.g-party-social]
+verify_jwt = true
+
+[functions.g-party-social-redeem]
+verify_jwt = false
