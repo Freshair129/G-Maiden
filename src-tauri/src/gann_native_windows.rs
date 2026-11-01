@@ -143,7 +143,7 @@ unsafe fn play(
     )?;
     let render: IAudioRenderClient = client.0.GetService()?;
     let clock: IAudioClock = client.0.GetService()?;
-    let volume = super::volume::StreamGain::new(&client.0)?;
+    let mut volume = super::volume::StreamGain::new(&client.0)?;
     let frequency = clock.GetFrequency()?;
     let capacity = client.0.GetBufferSize()?;
     let preroll = if critical { 0.05 } else { 0.25 };

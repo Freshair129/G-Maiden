@@ -1,12 +1,19 @@
 //! Per-stream gain must never change another event or the rodio session.
 use windows::Win32::Media::Audio::{IAudioClient, IAudioStreamVolume};
-pub(super) struct StreamGain(IAudioStreamVolume);
+pub(super) struct StreamGain {
+    stream: IAudioStreamVolume,
+    levels: Vec<f32>,
+}
 impl StreamGain {
     pub unsafe fn new(client: &IAudioClient) -> windows::core::Result<Self> {
-        Ok(Self(client.GetService()?))
+        let stream: IAudioStreamVolume = client.GetService()?;
+        // AUTOCONVERTPCM can expose endpoint channels even for mono input.
+        let levels = vec![1.; stream.GetChannelCount()? as usize];
+        Ok(Self { stream, levels })
     }
-    pub unsafe fn set(&self, gain: f32) -> windows::core::Result<()> {
-        self.0.SetChannelVolume(0, gain)
+    pub unsafe fn set(&mut self, gain: f32) -> windows::core::Result<()> {
+        self.levels.fill(gain);
+        self.stream.SetAllVolumes(&self.levels)
     }
 }
 #[cfg(test)]
@@ -68,7 +75,16 @@ mod tests {
             );
             let first_gain: IAudioStreamVolume = first.GetService().unwrap();
             let sibling_gain: IAudioStreamVolume = sibling.GetService().unwrap();
-            assert_eq!(first_gain.GetChannelVolume(0).unwrap(), 0.25);
+            let mut gains = vec![0.; first_gain.GetChannelCount().unwrap() as usize];
+            first_gain.GetAllVolumes(&mut gains).unwrap();
+            assert!(gains.iter().all(|gain| *gain == 0.25), "converted channels were not all controlled: {gains:?}");
+            StreamGain::new(&first).unwrap().set(0.).unwrap();
+            first_gain.GetAllVolumes(&mut gains).unwrap();
+            assert!(gains.iter().all(|gain| *gain == 0.));
+            let mut sibling_gains = vec![0.; sibling_gain.GetChannelCount().unwrap() as usize];
+            sibling_gain.GetAllVolumes(&mut sibling_gains).unwrap();
+            assert!(sibling_gains.iter().all(|gain| *gain == 1.));
+            assert_eq!(first_gain.GetChannelVolume(0).unwrap(), 0.);
             assert_eq!(sibling_gain.GetChannelVolume(0).unwrap(), 1.0);
             // Neither stream is started and no PCM buffer is submitted.
         }
