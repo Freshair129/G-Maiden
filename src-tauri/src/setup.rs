@@ -7,7 +7,7 @@
 use std::fs;
 use std::io::Read;
 use std::os::windows::process::CommandExt;
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use std::process::Command;
 
 #[path = "process_snapshot.rs"]
@@ -367,15 +367,35 @@ pub fn clear_published_gsi_port(port: u16) {
 static SELECTION_READY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 static CONFIG_SYNC: std::sync::Mutex<()> = std::sync::Mutex::new(());
 
+fn gsi_config_writes_disabled(isolated_smoke: bool) -> bool {
+    isolated_smoke || crate::secret::is_mvp009_isolated_smoke_process()
+}
+
 pub fn set_dota_selection(selected: Option<&str>) -> Result<bool, String> {
+    let isolated_smoke = crate::secret::is_mvp009_isolated_smoke_process();
+    if gsi_config_writes_disabled(isolated_smoke) {
+        return Ok(false);
+    }
+    let file = integration_file("gsi-dota-path.txt").ok_or("LocalAppData unavailable")?;
+    set_dota_selection_at(&file, selected, isolated_smoke, sync_selected_config)
+}
+
+fn set_dota_selection_at(
+    file: &Path,
+    selected: Option<&str>,
+    isolated_smoke: bool,
+    sync: impl FnOnce() -> Result<bool, String>,
+) -> Result<bool, String> {
+    if gsi_config_writes_disabled(isolated_smoke) {
+        return Ok(false);
+    }
     let _guard = CONFIG_SYNC.lock().map_err(|_| "GSI setup is unavailable")?;
     let root = selected
         .map(|path| validate_dota_install_dir(std::path::Path::new(path)))
         .transpose()?;
-    let file = integration_file("gsi-dota-path.txt").ok_or("LocalAppData unavailable")?;
-    write_selected_root(&file, root.as_deref())?;
+    write_selected_root(file, root.as_deref())?;
     SELECTION_READY.store(true, std::sync::atomic::Ordering::Release);
-    match sync_selected_config() {
+    match sync() {
         Ok(changed) => Ok(changed),
         Err(error) => {
             eprintln!("[G-Maiden] selected Dota config needs repair: {error}");
@@ -423,24 +443,65 @@ fn saved_install_root() -> Result<Option<PathBuf>, String> {
 }
 
 pub fn sync_gsi_config_port() -> Result<bool, String> {
-    let _guard = CONFIG_SYNC.lock().map_err(|_| "GSI setup is unavailable")?;
-    if !SELECTION_READY.load(std::sync::atomic::Ordering::Acquire) {
+    sync_gsi_config_port_with_policy(
+        crate::secret::is_mvp009_isolated_smoke_process(),
+        SELECTION_READY.load(std::sync::atomic::Ordering::Acquire),
+        sync_selected_config,
+    )
+}
+
+fn sync_gsi_config_port_with_policy(
+    isolated_smoke: bool,
+    selection_ready: bool,
+    sync: impl FnOnce() -> Result<bool, String>,
+) -> Result<bool, String> {
+    if gsi_config_writes_disabled(isolated_smoke) {
         return Ok(false);
     }
-    sync_selected_config()
+    let _guard = CONFIG_SYNC.lock().map_err(|_| "GSI setup is unavailable")?;
+    if !selection_ready {
+        return Ok(false);
+    }
+    sync()
 }
 
 fn sync_selected_config() -> Result<bool, String> {
+    sync_selected_config_with_policy(crate::secret::is_mvp009_isolated_smoke_process())
+}
+
+fn sync_selected_config_with_policy(isolated_smoke: bool) -> Result<bool, String> {
+    if gsi_config_writes_disabled(isolated_smoke) {
+        return Ok(false);
+    }
     let saved = saved_install_root()?;
     let selected = saved
         .as_ref()
         .map(|path| path.to_string_lossy().to_string());
     let (_, root) =
         resolve_dota_install_dir(selected.as_deref()).map_err(|status| status.message)?;
-    sync_config_at_root(&root, crate::local_endpoint::current_port())
+    sync_config_at_root_with_policy(
+        &root,
+        crate::local_endpoint::current_port(),
+        isolated_smoke,
+    )
 }
 
 fn sync_config_at_root(root: &std::path::Path, port: u16) -> Result<bool, String> {
+    sync_config_at_root_with_policy(
+        root,
+        port,
+        crate::secret::is_mvp009_isolated_smoke_process(),
+    )
+}
+
+fn sync_config_at_root_with_policy(
+    root: &std::path::Path,
+    port: u16,
+    isolated_smoke: bool,
+) -> Result<bool, String> {
+    if gsi_config_writes_disabled(isolated_smoke) {
+        return Ok(false);
+    }
     let cfg = resolve_cfg_dir(root, false)?.join(CFG_NAME);
     let path = match fs::canonicalize(&cfg) {
         Ok(path) if path.starts_with(root) => path,
@@ -631,6 +692,19 @@ pub fn detect(selected_install_dir: Option<&str>) -> SetupStatus {
 
 /// Write our GSI cfg only under a validated Dota 2 install root.
 pub fn install(selected_install_dir: Option<&str>) -> SetupStatus {
+    install_with_policy(
+        selected_install_dir,
+        crate::secret::is_mvp009_isolated_smoke_process(),
+    )
+}
+
+fn install_with_policy(selected_install_dir: Option<&str>, isolated_smoke: bool) -> SetupStatus {
+    if gsi_config_writes_disabled(isolated_smoke) {
+        return empty_status(
+            None,
+            "Dota GSI config writes are disabled in isolated smoke mode.".into(),
+        );
+    }
     let (steam_path, root) = match resolve_dota_install_dir(selected_install_dir) {
         Ok(resolved) => resolved,
         Err(status) => return status,
@@ -954,6 +1028,46 @@ mod tests {
         );
         fs::remove_dir_all(first).unwrap();
         fs::remove_dir_all(second).unwrap();
+    }
+
+    #[test]
+    fn isolated_smoke_blocks_every_gsi_config_write_path_without_process_env_changes() {
+        let root = fs::canonicalize(fake_dota_install()).unwrap();
+        let config_dir = resolve_cfg_dir(&root, true).unwrap();
+        let config = config_dir.join(CFG_NAME);
+        let original = CFG_BODY.replace("127.0.0.1:3000/gsi", "127.0.0.1:3001/gsi");
+        fs::write(&config, &original).unwrap();
+
+        let selection_file = root.join("preferences/selection.txt");
+        fs::create_dir_all(selection_file.parent().unwrap()).unwrap();
+        fs::write(&selection_file, "remembered selection").unwrap();
+        let selection_before = fs::read(&selection_file).unwrap();
+        let config_before = fs::read(&config).unwrap();
+        let mut selection_sync_called = false;
+
+        assert!(!set_dota_selection_at(&selection_file, None, true, || {
+            selection_sync_called = true;
+            Ok(false)
+        })
+        .unwrap());
+        assert!(!selection_sync_called);
+        assert_eq!(fs::read(&selection_file).unwrap(), selection_before);
+
+        let mut port_sync_called = false;
+        assert!(!sync_gsi_config_port_with_policy(true, true, || {
+            port_sync_called = true;
+            sync_config_at_root_with_policy(&root, 3002, false)
+        })
+        .unwrap());
+        assert!(!port_sync_called);
+
+        assert!(!sync_config_at_root_with_policy(&root, 3003, true).unwrap());
+        let root_text = root.to_string_lossy().to_string();
+        let status = install_with_policy(Some(&root_text), true);
+        assert!(!status.installed);
+        assert_eq!(fs::read(&config).unwrap(), config_before);
+
+        fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

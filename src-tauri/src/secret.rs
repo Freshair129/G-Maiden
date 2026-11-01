@@ -28,6 +28,16 @@ const MVP009_TEMP_PARENT_ENV: &str = "MVP009_TEMP_PARENT";
 const MVP009_NORMAL_PROFILE_ENV: &str = "MVP009_NORMAL_USER_PROFILE";
 const MVP009_NORMAL_LOCAL_APP_DATA_ENV: &str = "MVP009_NORMAL_LOCALAPPDATA";
 
+pub(crate) fn has_mvp009_isolated_smoke_arg(args: &[OsString]) -> bool {
+    args.iter()
+        .any(|arg| arg.as_os_str() == OsStr::new(MVP009_ISOLATED_SMOKE_ARG))
+}
+
+pub(crate) fn is_mvp009_isolated_smoke_process() -> bool {
+    let args: Vec<OsString> = env::args_os().collect();
+    has_mvp009_isolated_smoke_arg(&args)
+}
+
 fn validate_name(name: &str) -> Result<(), String> {
     if name.is_empty() {
         return Err("secret name must not be empty".to_string());
@@ -351,10 +361,7 @@ fn isolated_app_base_dir(
     environment: SmokeIsolationEnvironment<'_>,
     identifier: &str,
 ) -> Result<Option<PathBuf>, String> {
-    if !args
-        .iter()
-        .any(|arg| arg.as_os_str() == OsStr::new(MVP009_ISOLATED_SMOKE_ARG))
-    {
+    if !has_mvp009_isolated_smoke_arg(args) {
         return Ok(None);
     }
 
@@ -571,6 +578,17 @@ mod tests {
         )
         .expect_err("isolated smoke must reject relative roots");
         assert!(relative_root.contains("absolute directory"));
+    }
+
+    #[test]
+    fn isolated_smoke_mode_uses_its_explicit_process_argument() {
+        assert!(!has_mvp009_isolated_smoke_arg(&[
+            OsString::from("g-maiden.exe"),
+        ]));
+        assert!(has_mvp009_isolated_smoke_arg(&[
+            OsString::from("g-maiden.exe"),
+            OsString::from(MVP009_ISOLATED_SMOKE_ARG),
+        ]));
     }
 
     #[test]
