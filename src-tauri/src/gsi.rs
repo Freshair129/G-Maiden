@@ -2,6 +2,9 @@
 //! Local HTTP server on 127.0.0.1:3000 that receives Dota 2 Game State Integration
 //! POSTs, extracts the useful fields, and emits a clean `game-tick` event to the UI.
 
+#[path = "gsi_ability.rs"]
+mod gsi_ability;
+
 use axum::{
     extract::{Query, State},
     http::StatusCode,
@@ -291,6 +294,8 @@ struct ParsedGsiPayload {
     tick: GameTick,
     match_id: Option<String>,
     party_observation: Option<g_party::LocalObservation>,
+    // CR-039: never emit/log/share this unverified selected-unit candidate.
+    ability_candidate: Option<gsi_ability::AbilityCandidate>,
 }
 
 fn parse_gsi_payload_with_identity(body: &str) -> Result<ParsedGsiPayload, GsiPayloadError> {
@@ -304,10 +309,13 @@ fn parse_gsi_payload_with_identity(body: &str) -> Result<ParsedGsiPayload, GsiPa
     })?;
     let tick = parse_tick_from_value(&value);
     let party_observation = g_party::project_local(&value, tick.local_player_verified);
+    // Bad/missing abilities only withhold skills, never valid vitals.
+    let ability_candidate = gsi_ability::parse_candidate(&value);
     Ok(ParsedGsiPayload {
         tick,
         match_id: parse_match_id(&value),
         party_observation,
+        ability_candidate,
     })
 }
 
@@ -598,6 +606,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
         tick,
         match_id,
         party_observation,
+        ability_candidate: _, // Intentionally not part of GameTick, Party or AI.
     } = match parse_gsi_payload_with_identity(&body) {
         Ok(parsed) => parsed,
         Err(GsiPayloadError::InvalidJson) => {
@@ -1363,6 +1372,34 @@ mod tests {
                       "buyback_cost": 0, "respawn_seconds": 0 },
             "items": { "slot0": { "name": "empty" } }
         })
+    }
+
+    #[test]
+    fn cr039_ability_candidate_is_not_projected_or_shared() {
+        let mut payload = live_payload();
+        // Synthetic parser fixture: this is not player-mode Dota attribution proof.
+        payload["abilities"] = serde_json::json!({
+            "ability0": {
+                "name": "crystal_maiden_crystal_nova",
+                "level": 2, "cooldown": 4.5,
+                "can_cast": false, "ultimate": false
+            }
+        });
+        let parsed = parse_gsi_payload_with_identity(&payload.to_string()).unwrap();
+        assert_eq!(parsed.ability_candidate.as_ref().unwrap().entries.len(), 1);
+        // No ability fields escape via the shared game-tick, log, or existing Party v1.
+        let ui_tick = serde_json::to_value(&parsed.tick).unwrap();
+        assert!(ui_tick.get("abilities").is_none());
+        assert!(ui_tick.get("ability_candidate").is_none());
+        assert_eq!(parsed.tick.hp, 507);
+        assert!(parsed.party_observation.is_none());
+
+        payload["abilities"]["ability0"]["cooldown"] = serde_json::json!("ready");
+        let invalid_ability = parse_gsi_payload_with_identity(&payload.to_string()).unwrap();
+        assert!(invalid_ability.ability_candidate.is_none());
+        assert_eq!(invalid_ability.tick.hp, 507);
+        let ui_tick = serde_json::to_value(&invalid_ability.tick).unwrap();
+        assert!(ui_tick.get("abilities").is_none());
     }
 
     #[test]
