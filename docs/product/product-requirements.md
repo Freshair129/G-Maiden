@@ -2,11 +2,11 @@
 title: "G-Maiden Product Requirements"
 doc_id: "product-requirements"
 status: "active"
-version: "0.2.4"
-updated: "2026-10-28"
+version: "0.3.0"
+updated: "2026-11-01"
 owner: "Boss"
 source_of_truth: true
-related_docs: ["software-requirements-specification", "mvp-decisions", "roadmap"]
+related_docs: ["software-requirements-specification", "mvp-decisions", "roadmap", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing"]
 ---
 
 # **Product Requirement Document (PRD)**
@@ -26,6 +26,7 @@ related_docs: ["software-requirements-specification", "mvp-decisions", "roadmap"
 * **โหมดเกมเริ่มต้น:** Dota 2 แบบ live 5v5 All Pick ทั้ง Ranked และ Unranked. Turbo, custom game, spectator และ replay ไม่รองรับข้อสรุปที่ขึ้นกับโหมด; ถ้าไม่ทราบโหมดให้ระบุ unknown.
 * **CV layout เริ่มต้น:** 1920×1080, 16:9, จอหลักหนึ่งจอ, DPI 100%, HUD ค่าเริ่มต้นและ minimap มุมล่างซ้าย, borderless-fullscreen. Geometry อื่นต้อง calibration และหลักฐานก่อนเพิ่มใน certified matrix. GSI-only Lite mode ยังให้ local core ทำงานได้ แต่ไม่มี CV; ไม่มี coverage/ข้อมูลว่างไม่ใช่คำยืนยันว่าปลอดภัย.
 * **Access และ data:** local core ต้องเริ่มได้โดยไม่ลงชื่อเข้าใช้/สิทธิ์/network ตาม target; account actions ยังตรวจสิทธิ์บน server. Cloud game context ปิดโดยค่าเริ่มต้นและต้อง opt-in แยกตาม allowlist. Voice transcript/audio, G-Memory, G-Log และ CV ไม่ส่ง cloud.
+* **G-Party extension:** Owner สั่งเพิ่ม own-stat peer sharing ตาม [[mvp-decisions]] MVP-005A โดยไม่เปลี่ยน priority/62 task เดิม; consent และ route แยกจาก AI และไม่ต้องมี app account. Implementation/native/live acceptance ยังต้องมีหลักฐานของตน.
 
 ข้อกำหนดเชิงข้อมูล, quality threshold, สถานะ offline/account และวิธีวัดฉบับเต็มอยู่ใน [[mvp-decisions]]; SRS §5 เป็นรายละเอียด requirement ที่ต้องสอดคล้องกับมตินี้.
 
@@ -113,6 +114,14 @@ related_docs: ["software-requirements-specification", "mvp-decisions", "roadmap"
 * **Logic:** ปรับ Overlay/โทนสำหรับออกอากาศ; ไม่ส่ง G-Memory/G-Log ออกนอกเครื่อง
 * **Maiden's Touch:** "สวัสดีทุกคนในห้องค่ะ~ วันนี้เราจะพา Crystal Maiden ไปได้ไกลแค่ไหนกันนะ"
 
+## **3B. G-Party — Cooperative own-GSI sharing (Owner-directed extension)**
+
+* **ผู้ใช้ทำอะไรได้:** สมาชิกที่เปิดใช้เองดู HP/MP%/alive/respawn ของกันและกันได้โดยไม่ camera-select. ไม่อ่านผู้เล่นที่ไม่ได้เข้าร่วมและไม่เติม roster จำลอง.
+* **ขอบเขต:** own hero/level/HP/maxHP/manaPercent/alive/respawn จาก admitted local GSI เท่านั้น พร้อม room-scoped match/team binding. Raw match ID/SteamID อยู่ local; peer stats ไม่เข้า AI, Memory หรือ G-Log.
+* **การยินยอม:** create/join ต้อง checked sharing consent พร้อม activation; ไม่มี view-only/auto-join/saved room credentials ใน slice นี้. Leave หยุดและล้าง local sharing; remote expiry แสดงตามจริงเมื่อ offline.
+* **โครงสร้างที่เลือก:** optional self-hosted in-memory relay, remote HTTPS, native async transport; ไม่มี app account requirement หรือ hosting/deployment claim. ใช้ [[FEAT-G-PARTY]] เป็น protocol/acceptance SSOT.
+* **สถานะ:** scope ได้รับคำสั่งให้พัฒนาแล้ว; รายละเอียด implementation เลือกโดย assistant. แยก source/socket tests จาก Windows/live Dota/สองจอ/resource acceptance และไม่เปลี่ยน MVP เดิมเป็น “เสร็จแล้ว”.
+
 ## **4\. ADR-01: G-Series Branding Nomenclature**
 
 * **Decision:** ใช้ Prefix **"G-"** สำหรับทุกโมดูลการทำงานภายใน G-Maiden
@@ -136,3 +145,4 @@ related_docs: ["software-requirements-specification", "mvp-decisions", "roadmap"
 | 0.2.2 | 2026-10-19 | Corrected G-Sentry inputs: enemy positions come from minimap CV; GSI supplies player/session and score-derived death context. |
 | 0.2.3 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
 | 0.2.4 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |
+| 0.3.0 | 2026-11-01 | เพิ่ม G-Party own-stat sharing เป็น Owner-directed extension พร้อม separate consent และ evidence boundaries โดยไม่ขยาย AI/data scope อื่น. |

@@ -47,6 +47,7 @@ mod ocr;
 pub mod package_registry;
 pub mod package_install;
 mod package_ipc;
+mod party;
 pub mod respawn;
 mod revive;
 pub mod runtime;
@@ -1502,6 +1503,11 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
+            party::party_connect,
+            party::party_get_state,
+            party::party_leave,
+            party::party_kick,
+            party::party_rotate_invite,
             minimap_preview_runtime::start_minimap_preview,
             minimap_preview_runtime::read_minimap_preview,
             minimap_preview_runtime::stop_minimap_preview,
@@ -1619,6 +1625,9 @@ pub fn run() {
             std::thread::spawn(audio::prepare_critical_playback);
 
             // G1.1: GSI ingestion server (127.0.0.1:3000); emits `game-tick` to all windows.
+            if let Err(reason) = party::install(app.handle()) {
+                eprintln!("[G-Party] unavailable reason={reason}");
+            }
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(gsi::serve(handle));
             if runtime::mark_local_capture_started() {

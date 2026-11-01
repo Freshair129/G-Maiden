@@ -290,6 +290,7 @@ fn value_at<'a>(v: &'a Value, path: &[&str]) -> Option<&'a Value> {
 struct ParsedGsiPayload {
     tick: GameTick,
     match_id: Option<String>,
+    party_observation: Option<g_party::LocalObservation>,
 }
 
 fn parse_gsi_payload_with_identity(body: &str) -> Result<ParsedGsiPayload, GsiPayloadError> {
@@ -301,9 +302,12 @@ fn parse_gsi_payload_with_identity(body: &str) -> Result<ParsedGsiPayload, GsiPa
         let _ = reason;
         GsiPayloadError::InvalidSchema
     })?;
+    let tick = parse_tick_from_value(&value);
+    let party_observation = g_party::project_local(&value, tick.local_player_verified);
     Ok(ParsedGsiPayload {
-        tick: parse_tick_from_value(&value),
+        tick,
         match_id: parse_match_id(&value),
+        party_observation,
     })
 }
 
@@ -590,12 +594,18 @@ fn parse_gsi_payload(body: &str) -> Result<GameTick, GsiPayloadError> {
 }
 
 async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'static str) {
-    let ParsedGsiPayload { tick, match_id } = match parse_gsi_payload_with_identity(&body) {
+    let ParsedGsiPayload {
+        tick,
+        match_id,
+        party_observation,
+    } = match parse_gsi_payload_with_identity(&body) {
         Ok(parsed) => parsed,
         Err(GsiPayloadError::InvalidJson) => {
+            crate::party::invalidate_local(&app);
             return (StatusCode::BAD_REQUEST, "invalid JSON");
         }
         Err(GsiPayloadError::InvalidSchema) => {
+            crate::party::invalidate_local(&app);
             return (StatusCode::UNPROCESSABLE_ENTITY, "invalid GSI payload");
         }
     };
@@ -611,6 +621,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
     crate::runtime::set_in_draft(is_in_draft(&tick.game_state));
     crate::runtime::set_player_team_name(&tick.team_name);
     crate::runtime::update_warning_context(session.session_epoch, &tick);
+    crate::party::observe_local(&app, party_observation, &session);
     // Announcer: detect kill/streak/state events from the tick and voice the
     // most significant one (clip-or-silent — these aren't TTS-faked).
     let hp_event = crate::audio::critical_media_ready()

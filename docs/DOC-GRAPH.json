@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-31T19:52:04.231Z",
+  "generatedAt": "2026-11-01T05:22:13.553Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -587,6 +587,13 @@
       "status": "accepted"
     },
     {
+      "id": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "type": "doc",
+      "path": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "title": "CR-037 — แชร์ own-GSI stats ระหว่างสมาชิกปาร์ตี้",
+      "status": "accepted"
+    },
+    {
       "id": "docs/change request/DXGI-task-assignment.md",
       "type": "doc",
       "path": "docs/change request/DXGI-task-assignment.md",
@@ -765,6 +772,13 @@
       "type": "doc",
       "path": "docs/features/FEAT-G-MOTION.md",
       "title": "FEAT-G-MOTION — Time-off-map Risk Heuristic",
+      "status": "active"
+    },
+    {
+      "id": "docs/features/FEAT-G-PARTY.md",
+      "type": "doc",
+      "path": "docs/features/FEAT-G-PARTY.md",
+      "title": "FEAT: G-Party — Cooperative own-GSI status sharing",
       "status": "active"
     },
     {
@@ -1084,6 +1098,13 @@
       "type": "doc",
       "path": "docs/superpowers/plans/2026-10-31-gann-only-events.md",
       "title": "GANN-only event media implementation",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "title": "G-Party own-GSI sharing implementation plan",
       "status": "active"
     },
     {
@@ -1876,21 +1897,27 @@
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 145
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 178
+      "line": 181
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 180
+      "line": 183
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 185
+      "line": 188
     },
     {
       "from": "docs/README.md",
@@ -5157,6 +5184,30 @@
       "line": 152
     },
     {
+      "from": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 24
+    },
+    {
+      "from": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 24
+    },
+    {
+      "from": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 39
+    },
+    {
+      "from": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "type": "wikilink",
+      "line": 39
+    },
+    {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
       "to": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "type": "wikilink",
@@ -7545,6 +7596,36 @@
       "line": 82
     },
     {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "type": "wikilink",
+      "line": 21
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/product/mvp-backlog.md",
+      "type": "wikilink",
+      "line": 23
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 33
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 102
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "type": "wikilink",
+      "line": 117
+    },
+    {
       "from": "docs/features/FEAT-G-PERSONA.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
@@ -7948,123 +8029,147 @@
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
-      "to": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
       "type": "wikilink",
-      "line": 471
+      "line": 76
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
-      "to": "docs/features/FEAT-G-DAMAGE.md",
+      "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
       "type": "wikilink",
       "line": 472
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 476
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "type": "wikilink",
+      "line": 482
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
+      "type": "wikilink",
+      "line": 488
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/features/FEAT-G-DAMAGE.md",
+      "type": "wikilink",
+      "line": 489
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/data/provenance.json",
       "type": "symbol",
-      "line": 99
+      "line": 102
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "tools/data-provenance/verify_manifest.py",
       "type": "symbol",
-      "line": 112
+      "line": 115
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
-      "line": 122
+      "line": 125
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/sentry.rs",
       "type": "symbol",
-      "line": 163
+      "line": 166
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/motion.rs",
       "type": "symbol",
-      "line": 207
+      "line": 210
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/tuning.rs",
       "type": "symbol",
-      "line": 207
+      "line": 210
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/signal.rs",
       "type": "symbol",
-      "line": 230
+      "line": 233
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 287
+      "line": 290
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 288
+      "line": 291
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 289
+      "line": 292
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 318
+      "line": 321
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 344
+      "line": 347
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 344
+      "line": 347
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "tests/perf/src/bin/perf_p7.rs",
       "type": "symbol",
-      "line": 344
+      "line": 347
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 354
+      "line": 357
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/tuning.rs",
       "type": "symbol",
-      "line": 354
+      "line": 357
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "tests/perf/src/bin/replay_fit.rs",
       "type": "symbol",
-      "line": 354
+      "line": 357
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/revive.rs",
       "type": "symbol",
-      "line": 380
+      "line": 383
     },
     {
       "from": "docs/features/README.md",
@@ -8164,9 +8269,27 @@
     },
     {
       "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-SCORE.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
       "type": "wikilink",
       "line": 53
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "type": "wikilink",
+      "line": 53
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "type": "wikilink",
+      "line": 55
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-SCORE.md",
+      "type": "wikilink",
+      "line": 61
     },
     {
       "from": "docs/guides/scaffold-setup.md",
@@ -8446,81 +8569,135 @@
     },
     {
       "from": "docs/product/mvp-backlog.md",
+      "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "type": "wikilink",
+      "line": 19
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 19
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 35
+      "line": 19
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "type": "wikilink",
+      "line": 21
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 41
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/design-system/10-wireframes.md",
       "type": "wikilink",
-      "line": 65
+      "line": 71
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/design-system/11-wireflows.md",
       "type": "wikilink",
-      "line": 65
+      "line": 71
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/design-system/12-user-flows.md",
       "type": "wikilink",
-      "line": 65
+      "line": 71
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 106
+      "line": 112
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 106
+      "line": 112
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-MEMORY.md",
       "type": "wikilink",
-      "line": 185
+      "line": 191
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-COACH.md",
       "type": "wikilink",
-      "line": 185
+      "line": 191
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-VOICE.md",
       "type": "wikilink",
-      "line": 200
+      "line": 206
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 200
+      "line": 206
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/README.md",
       "type": "wikilink",
-      "line": 230
+      "line": 236
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/release-channel-architecture.md",
       "type": "wikilink",
-      "line": 230
+      "line": 236
     },
     {
       "from": "docs/product/mvp-decisions.md",
       "to": "docs/product/mvp-backlog.md",
       "type": "wikilink",
       "line": 18
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 29
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "type": "wikilink",
+      "line": 75
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 79
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 84
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "type": "wikilink",
+      "line": 84
     },
     {
       "from": "docs/product/mvp-execution-dag.md",
@@ -8580,31 +8757,43 @@
       "from": "docs/product/product-requirements.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 30
+      "line": 29
     },
     {
       "from": "docs/product/product-requirements.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 55
+      "line": 31
     },
     {
       "from": "docs/product/product-requirements.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 78
+      "line": 56
     },
     {
       "from": "docs/product/product-requirements.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 126
+      "line": 79
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 122
     },
     {
       "from": "docs/product/product-requirements.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 129
+      "line": 135
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 138
     },
     {
       "from": "docs/product/roadmap.md",
@@ -8700,37 +8889,55 @@
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 50
+      "line": 51
     },
     {
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 112
+      "line": 114
     },
     {
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 158
+      "line": 160
     },
     {
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 165
+      "line": 167
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 194
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "type": "wikilink",
+      "line": 194
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 213
     },
     {
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 201
+      "line": 215
     },
     {
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 218
+      "line": 233
     },
     {
       "from": "docs/rca/2026-07-10-release-gate-drift-v0.9.0.md",
@@ -9061,6 +9268,18 @@
       "to": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
       "type": "wikilink",
       "line": 19
+    },
+    {
+      "from": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "type": "wikilink",
+      "line": 15
+    },
+    {
+      "from": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 15
     }
   ],
   "violations": [
@@ -9083,7 +9302,7 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 145,
+      "line": 147,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -10452,18 +10671,11 @@
     },
     {
       "file": "docs/features/G-SERIES-DATA-LINEAGE.md",
-      "line": 122,
+      "line": 125,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/gsi.rs",
       "anchor": 193,
       "symbol": "parse_tick_from_value"
-    },
-    {
-      "file": "docs/features/README.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.2.2",
-      "changelog": "0.2.0"
     },
     {
       "file": "docs/guides/scaffold-setup.md",
@@ -10800,26 +11012,41 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-31T19:52:42.280Z",
+    "generatedAt": "2026-11-01T05:22:14.194Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
-    "rowCount": 74,
+    "rowCount": 75,
     "byKind": {
-      "feature": 49,
+      "feature": 50,
       "nfr": 6,
       "fr": 19
     },
     "byStatus": {
+      "code+tests-present (unrun)": 15,
       "code+needs-test-or-review": 19,
-      "code+tests-present (unrun)": 14,
       "doc-only": 30,
       "in-code": 11
     },
     "byDrift": {
+      "status-understated": 1,
       "aligned": 68,
       "unclaimed": 6
     },
     "rows": [
+      {
+        "id": "3-g-party",
+        "kind": "feature",
+        "phase_target": "P3",
+        "phase_source": "doc",
+        "phase_target_source": "sourced",
+        "computed": "code+tests-present (unrun)",
+        "claimed": "code+needs-test-or-review",
+        "drift": "status-understated",
+        "gaps": [
+          "tests not run (--run-tests)"
+        ],
+        "source": "owner-directed extension, 2026-11-01; tested implementation candidate, Windows/live/NFR acceptance pending"
+      },
       {
         "id": "1.1-g-sentry",
         "kind": "feature",
@@ -11899,6 +12126,12 @@
       }
     ],
     "violations": [
+      {
+        "id": "3-g-party",
+        "type": "status-understated",
+        "blocking": false,
+        "detail": "claimed=code+needs-test-or-review below computed=code+tests-present (unrun)"
+      },
       {
         "id": "fr-4.2.2",
         "type": "unbacked-phase-source",

@@ -2,8 +2,8 @@
 title: "CLAUDE.md"
 doc_id: "claude"
 status: active
-version: "0.4.10"
-updated: "2026-10-31"
+version: "0.4.11"
+updated: "2026-11-01"
 owner: "G-Maiden"
 ---
 # CLAUDE.md
@@ -130,13 +130,21 @@ When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scal
 - Overlay must not drop Dota 2 FPS by more than **3%**, and must not obscure minimap, skill bar,
   or stats panels.
 - **Privacy-first (match data), local-first by default:** G-Log raw data, live match state, and
-  CV detections stay **local only** unless the user explicitly opts in. **Two opt-ins exist, and
-  they are separate:**
+  CV detections stay **local only** under the existing contract. **Account, AI and the new
+  G-Party peer route have separate authorization/consent boundaries:**
   1. **Account layer (ADR-14)** - identity and public OpenDota profile data; sign-in is not cloud
      game-context consent.
   2. **MVP cloud-context opt-in** - separate local preference for only the own-stat allowlist in
      `docs/product/mvp-decisions.md`; API-key entry, backend choice, sign-in, or Ask does not imply
      consent. Opt-out cancels future sends and invalidates stale responses.
+  3. **G-Party peer sharing (MVP-005A)** — checked explicit sharing consent plus create/join
+     activation for the selected relay; no view-only/auto-join/saved credentials or app-account
+     requirement. Only admitted own hero/level/HP/maxHP/MP%/alive/respawn and bounded protocol
+     metadata cross this route. Same room/match/team is required; raw match ID/SteamID stay
+     local and the room-scoped hash is a pseudonym, not anonymity or game attestation. Received
+     peer stats do not enter AI/Memory/G-Log. Relay sees shared stats; remote HTTPS is required
+     and no E2EE/hosting/deployment claim is made. See [[FEAT-G-PARTY]]; detailed implementation
+     decisions and pending native/live evidence are separate from owner-authorized scope.
    **MVP denylist:** G-Log/history/replay, G-Memory including aggregates, CV/enemy fields, raw
    GSI/GameTick, match ID, items/exact clock/self-burst, local paths/diagnostics, account/security
    data, microphone audio, transcript, and free-form Voice questions stay local. Do not infer that
@@ -336,3 +344,4 @@ G-AnnStudio opens the same container through its package panel or a file argumen
 | 0.4.8 | 2026-10-30 | Record revision4 paused decoder preparation, VP8 media and bounded natural-completion grace. |
 | 0.4.9 | 2026-10-30 | Document user-authorized .gann filesystem import and shared G-Ann opener. |
 | 0.4.10 | 2026-10-31 | Replace announcer fallback routes with verified GANN-only event media and bound activation. |
+| 0.4.11 | 2026-11-01 | Add separately consented G-Party own-stat sharing guidance without widening AI/raw-data permissions or claiming native/live acceptance. |

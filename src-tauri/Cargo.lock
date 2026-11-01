@@ -1478,6 +1478,7 @@ dependencies = [
  "axum",
  "base64 0.22.1",
  "g-ann-package",
+ "g-party",
  "geo-types",
  "image",
  "pure-onnx-ocr-sync",
@@ -1500,6 +1501,17 @@ dependencies = [
  "windows-capture",
  "windows-core 0.62.2",
  "zip",
+]
+
+[[package]]
+name = "g-party"
+version = "0.1.0"
+dependencies = [
+ "reqwest",
+ "ring",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
