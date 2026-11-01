@@ -1,0 +1,231 @@
+{
+  "$schema": "G-Orchestra backlog tasks: id,title,type,phase,deps,est,accept,scope",
+  "project": "G-Maiden",
+  "change": "CR-040",
+  "owner_issue": 109,
+  "source_branch": "main",
+  "run_policy": "Do NOT dispatch code agents concurrently in the same checkout; use external isolated worktrees. No PR merge, version, release or native recorder permitted.",
+  "tasks": [
+    {
+      "id": "CR040-ARCH",
+      "title": "Lock OBS v5 / GSI / CV read-only integration seams before code",
+      "type": "architecture",
+      "phase": "recon",
+      "deps": [],
+      "est": 2,
+      "accept": "Issue #109 is the scope authority. Inspect current main and PR #105/#88/#108; publish a short decision/risks report on #109 (or a new draft-only PR), no shared runtime edits. Define source-of-truth event/clock, authenticated localhost obs-websocket v5, source-only video capture/privacy rules, error/degraded states, output interface and conflict ownership. OBS external MVP; Native deferred #115. Do not tag/release, change branch protection or claim native OBS UAT.",
+      "scope": {
+        "docs": [
+          "AGENTS.md",
+          "CLAUDE.md",
+          "docs/product/mvp-decisions.md",
+          "docs/features/FEAT-G-STREAM.md",
+          "src-tauri/src/capture.rs",
+          "src-tauri/src/gsi.rs",
+          "src-tauri/src/announcer.rs"
+        ],
+        "needs": [
+          "Issue #109 owner MVP decision",
+          "Issues #110–#114 accepted lane scopes",
+          "PRs #105 and #88 collision check"
+        ],
+        "excludes": [
+          "src-tauri/src/gsi.rs edits",
+          "src-tauri/src/capture.rs edits",
+          "src-tauri/src/lib.rs edits",
+          "src/src/CommandDeck.tsx edits",
+          "production deploy/release",
+          "native recorder implementation"
+        ],
+        "budgetTokens": 9000
+      }
+    },
+    {
+      "id": "CR040-A",
+      "title": "Build local authenticated OBS WebSocket control adapter",
+      "type": "code",
+      "phase": "parallel",
+      "deps": [
+        "CR040-ARCH"
+      ],
+      "est": 5,
+      "accept": "Issue #110. Create isolated NEW files under src-tauri/src/obs_media/ only. OBS WebSocket v5 loopback + auth, GetVersion/status, StartReplayBuffer/SaveReplayBuffer and ReplayBufferSaved receipt with bounded retries and failures. Never log passwords or send media/cloud. Unit/mock server tests and draft PR; integrator owns lib.rs/Cargo registration. No observable behavior claims without real OBS Windows receipt.",
+      "scope": {
+        "docs": [
+          "AGENTS.md",
+          "CLAUDE.md",
+          "src-tauri/src/gsi.rs",
+          "src-tauri/src/capture.rs"
+        ],
+        "needs": [
+          "#110 OBS v5 requirements",
+          "#109 replay semantics",
+          "No shared runtime files may be edited"
+        ],
+        "excludes": [
+          "src-tauri/src/lib.rs",
+          "src-tauri/src/gsi.rs",
+          "src-tauri/src/capture.rs",
+          "src-tauri/src/announcer.rs",
+          "src/src/CommandDeck.tsx",
+          "native encoder",
+          "production deploy"
+        ],
+        "budgetTokens": 9000
+      }
+    },
+    {
+      "id": "CR040-B",
+      "title": "Review source-only highlight planner PR #116",
+      "type": "manual",
+      "phase": "parallel",
+      "deps": [
+        "CR040-ARCH"
+      ],
+      "est": 1,
+      "accept": "Issue #111 / Draft PR #116 already contains clipPlanner.ts and 12 tests. Integrator/independent reviewer verifies Vitest, tsc, eslint on exact SHA, buffer math, session/idempotency, checked GSI source. Do not start a duplicate implementation lane or mark done without CI/review receipts. Keep native GSI wiring deferred until shared-file PRs reconcile.",
+      "scope": {
+        "docs": [
+          "AGENTS.md",
+          "src/src/highlights/clipPlanner.ts",
+          "src/src/highlights/clipPlanner.test.ts"
+        ],
+        "needs": [
+          "Review PR #116 and capture CI status"
+        ],
+        "excludes": [
+          "native GSI edits",
+          "auto merge",
+          "release"
+        ],
+        "budgetTokens": 4000
+      }
+    },
+    {
+      "id": "CR040-C",
+      "title": "OBS virtual camera CV input compatibility and performance spike",
+      "type": "spike",
+      "phase": "parallel",
+      "deps": [
+        "CR040-ARCH"
+      ],
+      "est": 3,
+      "accept": "Issue #112. Capture source-mode (game-only) virtual camera probe and calibrated ROI mapping of 16:9/non-16:9; compare DXGI baseline. Read-only spike/tool files under tools/obs-cv-spike/. Test Dota 2 single/two monitor, alt-tab, borderless/exclusive, webcam/desktop privacy, stale frame, CPU/RAM/GPU/FPS/T0-T3. Do not edit current capture.rs or promote OBS CV unless actual acceptance passes. If unavailable, state NOT_RUN and keep DXGI CV MVP fallback.",
+      "scope": {
+        "docs": [
+          "AGENTS.md",
+          "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
+          "src-tauri/src/capture.rs",
+          "src-tauri/src/minimap_preview.rs"
+        ],
+        "needs": [
+          "#112 test matrix",
+          "#109 native/OBS fallback contract"
+        ],
+        "excludes": [
+          "src-tauri/src/capture.rs edits",
+          "src-tauri/src/dxgi.rs edits",
+          "src-tauri/src/gsi.rs edits",
+          "src-tauri/src/lib.rs edits",
+          "OBS game hook code"
+        ],
+        "budgetTokens": 9000
+      }
+    },
+    {
+      "id": "CR040-D",
+      "title": "Build isolated G-Highlights clip control and listing components",
+      "type": "code",
+      "phase": "parallel",
+      "deps": [
+        "CR040-ARCH"
+      ],
+      "est": 4,
+      "accept": "Issue #113. Create new TSX components within src/src/highlights/components/ only, read-only props/local state; status unavailable vs ready vs saving vs saved, failed/partial/error, clip metadata, no implicit mic. Vitest+eslint+tsc. Do not edit src/src/highlights/clipPlanner.ts or CommandDeck.tsx, App.tsx, existing GANN/party UI while PR #105/#108 unresolved. Integrator connects later.",
+      "scope": {
+        "docs": [
+          "AGENTS.md",
+          "src/src/live/events.ts",
+          "src/src/app/types.ts",
+          "src/src/highlights/clipPlanner.ts"
+        ],
+        "needs": [
+          "#113 UI acceptance",
+          "No fake saved status; browser mock != native receipt"
+        ],
+        "excludes": [
+          "src/src/highlights/clipPlanner.ts edits",
+          "src/src/highlights/clipPlanner.test.ts edits",
+          "src/src/CommandDeck.tsx",
+          "src/src/App.tsx",
+          "existing design tokens",
+          "production deploy"
+        ],
+        "budgetTokens": 8000
+      }
+    },
+    {
+      "id": "CR040-QA",
+      "title": "Independently verify OBS MVP integration, privacy and performance gates",
+      "type": "test",
+      "phase": "verification",
+      "deps": [
+        "CR040-A",
+        "CR040-B",
+        "CR040-C",
+        "CR040-D"
+      ],
+      "est": 4,
+      "accept": "Issue #114. Independent source review + deterministic integration fixtures, Windows x64 OBS/Dota UAT when available. Explicit PASS/FAIL/NOT_RUN for event→save with pre/post, reconnect/auth, source window privacy, audio tracks/default mic off, buffering overflow, exact source SHA/OBS version and device. Existing G-Maiden NFR <=10% CPU and <=900MB aggregate Working Set, G-Signal p50<=250ms and ALL<=300ms, paired Dota FPS drop<=3%, plus separately measured OBS combined cost. No fake PASS from synthetic tests.",
+      "scope": {
+        "docs": [
+          "AGENTS.md",
+          "docs/product/mvp-decisions.md",
+          "src/src/highlights/clipPlanner.test.ts",
+          "src-tauri/src/capture.rs"
+        ],
+        "needs": [
+          "#114 UAT acceptance",
+          "#110 #111 #112 #113 source PRs and CI receipts"
+        ],
+        "excludes": [
+          "source runtime edits",
+          "CI rule bypass",
+          "native recorder",
+          "release/merge without gate"
+        ],
+        "budgetTokens": 9000
+      }
+    },
+    {
+      "id": "CR040-INTEGRATE",
+      "title": "Supervisor integration and owner-governed MVP merge readiness",
+      "type": "manual",
+      "phase": "integration",
+      "deps": [
+        "CR040-QA"
+      ],
+      "est": 2,
+      "accept": "Review source ownership and reconcile PR #105/#88 and issue #108 before touching shared files. Integrator updates docs/SSOT and generated doc graph, binds Rust GSI/OBS commands/UI, validates entire CI + Windows OBS/Dota NFR separately, follows protected merge process, and does NOT launch release/tag/deploy without explicit authorization. Native post-launch #115 remains blocked.",
+      "scope": {
+        "docs": [
+          "AGENTS.md",
+          "CLAUDE.md",
+          "docs/product/mvp-decisions.md"
+        ],
+        "needs": [
+          "CI on exact PR head SHA",
+          "Independent QA verdict #114",
+          "Win OBS and Dota UAT receipts",
+          "Owner-approved release gate separate"
+        ],
+        "excludes": [
+          "auto merge",
+          "disable checks",
+          "postlaunch native implementation"
+        ],
+        "budgetTokens": 5000
+      }
+    }
+  ]
+}
