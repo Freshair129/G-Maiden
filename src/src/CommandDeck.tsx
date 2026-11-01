@@ -8,6 +8,9 @@ import { LogicalSize } from "@tauri-apps/api/dpi";
 import type { SettingsCat } from "./App";
 import { useCompanionData } from "./companion";
 import { useProfile } from "./profile";
+import { useAuth } from "./auth";
+import { useParty } from "./party/useParty";
+import { useFriends } from "./party/useFriends";
 import { useAppUpdate } from "./useAppUpdate";
 import type { VoiceState } from "./voice-types";
 import MaidenLine from "./MaidenLine";
@@ -36,6 +39,7 @@ import { initializeGsiSetupSelection, savedDotaInstallPath } from "./app/gsiSetu
 const VoicePacksPage = lazy(() => import("./VoicePacksPage"));
 const LiveMatchPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.LiveMatchPage })));
 const CvHeroesPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.CvHeroesPage })));
+const GPartyPage = lazy(() => import("./party/GPartyPage"));
 const BuildAdvisorPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.BuildAdvisorPage })));
 const InsightsPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.InsightsPage })));
 const HistoryPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.HistoryPage })));
@@ -69,7 +73,10 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
   // CR-013 W1-01: in-page tabs — Live folds in Build, Insights folds in
   // History. Local to CommandDeck (same "single owner" shape as `tab` above);
   // no persistence, no URL sync — a page switch always lands on the default sub-tab.
-  const [liveTab, setLiveTab] = useState("live"); // "live" | "build" | "cv"
+  const [liveTab, setLiveTab] = useState("live"); // "live" | "build" | "cv" | "party"
+  const { session: friendsSession } = useAuth();
+  const party = useParty();
+  const friends = useFriends({ session: friendsSession, party, panelVisible: tab === "live" && liveTab === "party" });
   const [insightsTab, setInsightsTab] = useState("overview"); // "overview" | "history"
   // CR-013 W4-01: G-Store's own in-page tabs (§5.1) — shop/wallet/inventory/
   // ledger, same "single local owner, no persistence" shape as liveTab/
@@ -586,7 +593,8 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
                 tabs={[
                   { key: "live", label: "สด" },
                   { key: "build", label: "บิลด์" },
-                  { key: "cv", label: "ฮีโร่ CV" }
+                  { key: "cv", label: "ฮีโร่ CV" },
+                  { key: "party", label: "G-Party" }
                 ]}
                 active={liveTab}
                 onChange={setLiveTab}
@@ -597,7 +605,9 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
                     ? <LiveMatchPage />
                     : liveTab === "build"
                       ? <BuildAdvisorPage />
-                      : <CvHeroesPage />}
+                      : liveTab === "party"
+                        ? <GPartyPage party={party} friends={friends} />
+                        : <CvHeroesPage />}
                 </DeferredPage>
               </div>
             </div>

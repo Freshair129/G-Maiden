@@ -1478,6 +1478,7 @@ dependencies = [
  "axum",
  "base64 0.22.1",
  "g-ann-package",
+ "g-party",
  "gann-vpx",
  "geo-types",
  "image",
@@ -1502,6 +1503,17 @@ dependencies = [
  "windows-core 0.62.2",
  "windows-numerics 0.2.0",
  "zip",
+]
+
+[[package]]
+name = "g-party"
+version = "0.1.0"
+dependencies = [
+ "reqwest",
+ "ring",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]

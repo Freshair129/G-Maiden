@@ -1,0 +1,12 @@
+{
+  "status": "PASS",
+  "checks": [
+    "Invitation displays canonical relay and expiry; starts unchecked; requires explicit consent; clears on attempt and tab remount.",
+    "Existing room membership disables social admission and displays explicit prior-leave instruction.",
+    "Member and Friend details are keyboard-openable; verified Add Friend, owner Kick, remove and block remain reachable.",
+    "500 blocked accounts remain internally scrollable with the final unblock action reachable and no document overflow.",
+    "800×720 defaults to the map; explicit Room and Friends switches reveal their controls; switching back restores map without page overflow.",
+    "No browser page errors across all interaction scenarios. Synthetic UI fixture only; no actual account, relay admission, native focus or live game claim."
+  ],
+  "errors": []
+}
