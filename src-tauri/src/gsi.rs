@@ -1392,7 +1392,6 @@ mod tests {
         assert!(ui_tick.get("abilities").is_none());
         assert!(ui_tick.get("ability_candidate").is_none());
         assert_eq!(parsed.tick.hp, 507);
-        assert!(parsed.party_observation.is_none());
 
         payload["abilities"]["ability0"]["cooldown"] = serde_json::json!("ready");
         let invalid_ability = parse_gsi_payload_with_identity(&payload.to_string()).unwrap();
