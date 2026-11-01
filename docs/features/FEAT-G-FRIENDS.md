@@ -2,7 +2,7 @@
 title: "FEAT: G-Friends — Friends and consented party invitations"
 doc_id: "FEAT-G-FRIENDS"
 status: "active"
-version: "0.1.0"
+version: "0.1.1"
 updated: "2026-11-01"
 owner: "G-Maiden"
 source_of_truth: true
@@ -14,7 +14,7 @@ related_docs: ["FEAT-G-PARTY", "ADR-20", "mvp-decisions", "G-SERIES-DATA-LINEAGE
 # FEAT-G-FRIENDS — Friends and consented party invitations
 
 > **Module:** G-Friends, ภายในหน้า G-Party · **Phase:** 3 (extension integration)
-> **สถานะ:** กำลังพัฒนาตาม CR-038; source verification, hosted service และ live acceptance เป็นหลักฐานคนละชุด
+> **สถานะ:** source implementation และ task reviews ผ่านแล้วใน [PR #107](https://github.com/Freshair129/G-Maiden/pull/107); final CI/merge receipts ดู PR และ issue #106 ส่วน hosted service และ live acceptance เป็นหลักฐานคนละชุด
 
 ## 1. เป้าหมายและอำนาจดำเนินงาน
 
@@ -110,7 +110,7 @@ Checkbox เป็นผลหลักฐาน ไม่ใช่สิ่ง�
 - [x] `FRIENDS-AC-002` Separate DB connections พิสูจน์ cap races, block-first/redeem-first, session-delete ordering, post-lock expiry, replay และ denial accounting
 - [x] `FRIENDS-AC-003` Real Edge handler → SQL → DTO และ signed redeem → one-use ticket; strict bounds, canonical HMAC vector, origin/expiry/unknown-key errors; existing IAM AAL2/audit regressions ผ่าน
 - [x] `FRIENDS-AC-004` Relay/native real HTTP tests ครอบคลุม owner loss/rotate/full/in-flight ceiling, no heartbeat refresh, expected room mismatch และ cancelled admission cleanup
-- [ ] `FRIENDS-AC-005` Frontend strict DTO, consent reset, account/scope epochs, acknowledged unlink, stale online expiry, action direction และ failure states ผ่าน
+- [x] `FRIENDS-AC-005` Frontend strict DTO, consent reset, account/scope epochs, acknowledged unlink, stale online expiry, action direction และ failure states ผ่าน
 - [ ] `FRIENDS-AC-006` Guest route/local core regression, frontend build/lint/typecheck, portable Rust/relay/Deno/SQL และ Windows CI checks ผ่านบน PR head
 - [ ] `FRIENDS-AC-007` Fresh independent review ปิด confirmed blockers และ protected PR merge verified
 - [ ] `FRIENDS-AC-008` Live Google signup/signout/revoke และ production-equivalent HTTPS broker/relay configuration/rotation/cleanup ตรวจจริงโดยผู้ดูแล
@@ -130,3 +130,4 @@ Rollback ปิด social functions/config/UI ก่อน รักษา guest
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-11-01 | Define optional Friends/presence/verified profile links and targeted invitations, separate consent/privacy, transaction ordering, protocol upgrade and evidence gates under CR-038. |
+| 0.1.1 | 2026-11-01 | Record implemented source and reviewed frontend lifecycle/lease corrections while keeping final CI/merge and live acceptance receipts separate. |

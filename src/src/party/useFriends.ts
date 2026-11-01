@@ -45,6 +45,7 @@ export function useFriends({ session, party, panelVisible }: { session: Session 
   const data = useRef<TimedState | null>(null);
   const read = useRef<{ epoch: Epoch; promise: Promise<SocialState | null> } | null>(null);
   const stateSerial = useRef(0);
+  const writeRefreshes = useRef(new Set<{ epoch: Epoch }>());
   const linkFlight = useRef<{ epoch: Epoch; version: number } | null>(null);
   const rosterFlight = useRef<Epoch | null>(null);
   const transitionTail = useRef<Promise<void>>(Promise.resolve());
@@ -65,8 +66,8 @@ export function useFriends({ session, party, panelVisible }: { session: Session 
     } finally { e.requests.delete(controller); }
   }, [current]);
 
-  const load = useCallback((e: Epoch): Promise<SocialState | null> => {
-    if (!available(e)) return Promise.resolve(null);
+  const load = useCallback((e: Epoch, authoritative = false): Promise<SocialState | null> => {
+    if (!available(e) || (!authoritative && [...writeRefreshes.current].some((barrier) => barrier.epoch === e))) return Promise.resolve(null);
     if (read.current?.epoch === e) return read.current.promise;
     const serial = stateSerial.current;
     const started = performance.now();
@@ -86,6 +87,27 @@ export function useFriends({ session, party, panelVisible }: { session: Session 
     return promise;
   }, [available, current, request]);
 
+  const refreshAfterWrite = useCallback(async (e: Epoch): Promise<SocialState | null> => {
+    if (!available(e)) return null;
+    const barrier = { epoch: e }; writeRefreshes.current.add(barrier);
+    // A read started before the confirmed write cannot acknowledge that write.
+    // Hide its preferences immediately, including from heartbeat/settings code.
+    stateSerial.current++;
+    data.current = null; setSnapshot(null); setRoster(null);
+    try {
+      while (available(e)) {
+        if (read.current?.epoch === e) await read.current.promise;
+        if (!available(e)) return null;
+        const serial = stateSerial.current;
+        const value = await load(e, true);
+        // Another confirmed write may invalidate this refresh. Drain and read
+        // again; simultaneous refreshes still share the one in-flight read.
+        if (value || serial === stateSerial.current) return value;
+      }
+      return null;
+    } finally { writeRefreshes.current.delete(barrier); }
+  }, [available, load]);
+
   const reconcile = useCallback((e: Epoch, nextScope: string) => {
     linkedIntent.current = false; linkVersion.current++; reconciled.current = null;
     stateSerial.current++;
@@ -96,9 +118,7 @@ export function useFriends({ session, party, panelVisible }: { session: Session 
       try {
         const previousRevision = data.current?.epoch === e ? data.current.value.bindingRevision : null;
         await request({ action: "unlink" }, e);
-        // An older read cannot serve as the authoritative post-unlink revision.
-        if (read.current?.epoch === e) await read.current.promise;
-        const value = await load(e);
+        const value = await refreshAfterWrite(e);
         if (!value || (previousRevision !== null && value.bindingRevision <= previousRevision)) throw new Error("unavailable");
         if (current(e) && latest.current.scope === nextScope) { reconciled.current = { epoch: e, scope: nextScope }; refresh((v) => v + 1); }
       } catch {
@@ -107,7 +127,7 @@ export function useFriends({ session, party, panelVisible }: { session: Session 
     });
     transitionTail.current = work;
     return work;
-  }, [available, current, load, request]);
+  }, [available, current, refreshAfterWrite, request]);
 
   useEffect(() => {
     const e = epoch.current; e.live = true;
@@ -234,17 +254,26 @@ export function useFriends({ session, party, panelVisible }: { session: Session 
     const e = epoch.current;
     if (!available(e) || operation.current === e || data.current?.epoch !== e) return false;
     operation.current = e; setBusy(true); setError(null);
-    try { await request(body, e); await load(e); return current(e); }
-    catch { if (current(e)) setError("ยังยืนยันผลคำสั่งไม่ได้ กรุณาโหลดข้อมูลแล้วลองอีกครั้ง"); return false; }
+    try { await request(body, e); return !!(await refreshAfterWrite(e)) && current(e); }
+    catch {
+      if (current(e)) { stateSerial.current++; data.current = null; setSnapshot(null); setRoster(null); setError("ยังยืนยันผลคำสั่งไม่ได้ กรุณาโหลดข้อมูลแล้วลองอีกครั้ง"); }
+      return false;
+    }
     finally { if (operation.current === e) operation.current = null; if (current(e)) setBusy(false); }
-  }, [available, current, load, request]);
+  }, [available, current, refreshAfterWrite, request]);
 
   const setPresence = useCallback((visible: boolean) => {
     const value = data.current;
     if (!value || value.epoch !== epoch.current) return Promise.resolve(false);
     return mutate({ action: "settings", ...value.value.settings, presenceVisible: visible });
   }, [mutate]);
-  const setSettings = useCallback((settings: SocialSettings) => mutate({ action: "settings", ...settings }), [mutate]);
+  const setSettings = useCallback((settings: SocialSettings) => {
+    const value = data.current;
+    if (!value || value.epoch !== epoch.current) return Promise.resolve(false);
+    // Receive controls cannot opt into presence, even with an older UI closure.
+    // Only the dedicated explicit presence action may change that preference.
+    return mutate({ action: "settings", ...settings, presenceVisible: value.value.settings.presenceVisible });
+  }, [mutate]);
   const setLink = useCallback(async (consent: boolean) => {
     if (!consent) { await reconcile(epoch.current, latest.current.scope); return false; }
     return renew(true);
@@ -256,10 +285,10 @@ export function useFriends({ session, party, panelVisible }: { session: Session 
     try {
       const version = linkVersion.current; const requestedScope = latest.current.scope;
       const proof = await proofFor("invite", gid, e, version, requestedScope, null);
-      await request({ action: "invite", proof }, e); await load(e); return current(e);
+      await request({ action: "invite", proof }, e); return !!(await refreshAfterWrite(e)) && current(e);
     } catch { if (current(e)) setError("ส่งคำเชิญเข้าห้องไม่สำเร็จ กรุณาลองอีกครั้ง"); return false; }
     finally { if (operation.current === e) operation.current = null; if (current(e)) setBusy(false); }
-  }, [available, current, load, proofFor, request]);
+  }, [available, current, proofFor, refreshAfterWrite, request]);
   const acceptInvite = useCallback(async (inviteId: string, displayName: string, consent: boolean) => {
     const e = epoch.current; const p = latest.current.party;
     if (!consent || !available(e) || operation.current === e || data.current?.epoch !== e || p.canLeave || p.busy || !["idle", "closed"].includes(p.view.status)) return false;
@@ -278,11 +307,11 @@ export function useFriends({ session, party, panelVisible }: { session: Session 
       pendingJoin.current = null;
       if (!joined) setError(JOIN_FAILED);
       else setError("เข้าร่วมห้องแล้ว กำลังแชร์ GSI จนกว่าจะออกจากห้อง");
-      await load(e); if (current(e)) setError(joined ? "เข้าร่วมห้องแล้ว กำลังแชร์ GSI จนกว่าจะออกจากห้อง" : JOIN_FAILED);
+      await refreshAfterWrite(e); if (current(e)) setError(joined ? "เข้าร่วมห้องแล้ว กำลังแชร์ GSI จนกว่าจะออกจากห้อง" : JOIN_FAILED);
       return joined;
     } catch { if (current(e)) setError(JOIN_FAILED); return false; }
     finally { if (operation.current === e) operation.current = null; if (current(e)) setBusy(false); }
-  }, [available, current, load, request]);
+  }, [available, current, refreshAfterWrite, request]);
 
   const refreshState = useCallback(async () => {
     const e = epoch.current;
@@ -307,7 +336,7 @@ export function useFriends({ session, party, panelVisible }: { session: Session 
   const bindings: SocialBinding[] = state && roster?.epoch === epoch.current && roster.scope === scope && party.view.status === "connected" && roster.value.roomId === party.view.roomId && roster.value.generation === party.view.roomGeneration
     ? roster.value.bindings.filter((b) => party.view.members.some((m) => m.memberId === b.memberId) && b.expiresAtMs > roster.value.serverNowMs + roster.rtt + Math.max(0, clock - roster.at)) : [];
   const roomAvailable = !!state?.relayOrigin && party.view.status === "connected" && origin(party.view.relayUrl) === state.relayOrigin;
-  return { state, nowMs: source ? source.value.serverNowMs + elapsed : null, ready: !!state, signedIn: !!key, busy: busy && !!state, error: key ? error : null, bindings,
+  return { state, nowMs: source ? source.value.serverNowMs + elapsed : null, ready: !!state, signedIn: !!key, busy: busy && operation.current === epoch.current, error: key ? error : null, bindings,
     linked: roomAvailable && linkedIntent.current && !hasForeignBinding(epoch.current),
     linkAvailable: roomAvailable && !hasForeignBinding(epoch.current) && reconciled.current?.epoch === epoch.current && reconciled.current.scope === scope && !(linkFlight.current?.epoch === epoch.current && linkFlight.current.version === linkVersion.current),
     roomAvailable, mutate, setPresence, setSettings, setLink, invite, acceptInvite, refresh: refreshState,

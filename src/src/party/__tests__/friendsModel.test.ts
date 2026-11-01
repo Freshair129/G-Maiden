@@ -49,3 +49,9 @@ it("validates the maximum 50 requests, 100 direction-bounded invites, and 500 bl
   expect(model?.parseSocialState({ ...state, invites: invites.map((x) => ({ ...x, direction: "incoming" })) })).toBeNull();
   expect(model?.parseSocialState({ ...state, blocked: [...people, self] })).toBeNull();
 });
+
+it("accepts a roster binding lease of 60000ms and rejects 60001ms", () => {
+  const roster = { roomId: "1".repeat(32), generation: 1, serverNowMs: 1000, bindings: [{ memberId: "2".repeat(32), person: self, expiresAtMs: 61000 }] };
+  expect(model?.parseSocialRoster(roster)).toEqual(roster);
+  expect(model?.parseSocialRoster({ ...roster, bindings: [{ ...roster.bindings[0], expiresAtMs: 61001 }] })).toBeNull();
+});

@@ -2,7 +2,7 @@
 title: "G-Party social operations and evidence"
 doc_id: "g-party-social-operations"
 status: "active"
-version: "0.1.0"
+version: "0.1.1"
 updated: "2026-11-01"
 owner: "G-Maiden"
 complexity: "C-3"
@@ -16,7 +16,7 @@ related_docs: ["FEAT-G-FRIENDS", "FEAT-G-PARTY", "ADR-20", "CR-038-party-friends
 
 CR-038 permits implementation through protected source merge. It does **not** deploy the database migration, Edge functions, relay, credentials, release artifacts or channel manifests. This runbook gives an authorized operator concrete readiness/rollback checks; it is not a claim that a hosted service exists.
 
-Tracking: [CR issue #106](https://github.com/Freshair129/G-Maiden/issues/106). G-Party prerequisite [PR #104](https://github.com/Freshair129/G-Maiden/pull/104) merged at `a9b31b06ffd1c0ffb6c4177d428bf8ff4923b917`. Its CI run `41278442753` and ready-for-review PR gate `41320018976` passed. That source receipt does not close live Dota, native runtime, two-monitor, resource or hosted acceptance.
+Tracking: [CR issue #106](https://github.com/Freshair129/G-Maiden/issues/106), implementation [PR #107](https://github.com/Freshair129/G-Maiden/pull/107). G-Party prerequisite [PR #104](https://github.com/Freshair129/G-Maiden/pull/104) merged at `a9b31b06ffd1c0ffb6c4177d428bf8ff4923b917`. Its CI run `41278442753` and ready-for-review PR gate `41320018976` passed. That source receipt does not close live Dota, native runtime, two-monitor, resource or hosted acceptance.
 
 The exact protocol, retention and trust boundary is [[2026-11-01-g-party-friends-design]]. Product expectations and acceptance IDs are [[FEAT-G-FRIENDS]]. The implementation plan is [[2026-11-01-g-party-friends]].
 
@@ -95,11 +95,11 @@ Local results below were executed against the CR-038 working branch based on `a9
 | SQL | Applied migration; pgTAP under least privilege; actual multi-connection cap/revoke/expiry/replay tests | PASS: 68 pgTAP and 29 deterministic race assertions; isolated child-database safety regression also passed |
 | Edge | Deno handler/crypto + existing IAM regressions; real handler→SQL→DTO and signed redeem | PASS: 26 Deno tests and 20 real HTTP/repository assertions, including Unicode name projection and exact-body BOM/whitespace handling |
 | Relay/native | Real HTTP proof/admission/rotation/owner/full-room/concurrency; portable Rust tests + Clippy | PASS: 28 Node tests, 37 portable Rust tests, Clippy with warnings denied; one database-dependent Rust test is explicitly run by the combined gate and passed with zero ignored |
-| Frontend | Strict DTOs, consent/lifecycle/TTL/UI controls/guest regression; full Vitest, tsc, ESLint, build | Initial PASS: 646 tests/69 files, including 101 Party tests; tsc, ESLint and production build passed. Mutation/read freshness review correction is pending at this checkpoint |
-| Documentation | Strict doc graph, checklist rule, generated ledger clean, diff check | Initial PASS: 215 tests, 14 existing checklist-covered errors and zero uncovered; final regeneration required with this evidence update |
-| Windows | Existing native root-crate test/Clippy and Tauri smoke/package CI on final PR head | Pending PR CI |
-| Independent review | Spec, authorization/transactions, native races, account UI transitions, no open confirmed blockers | Design, backend and native scoped re-reviews passed; frontend correction remains in progress at this checkpoint |
-| Protected merge | Final head required checks, resolved review threads, up-to-date branch and verified merge SHA | Pending PR |
+| Frontend | Strict DTOs, consent/lifecycle/TTL/UI controls/guest regression; full Vitest, tsc, ESLint, build | PASS after review corrections: 649 tests/69 files, including 104 Party tests; tsc, ESLint with zero warnings and production build passed |
+| Documentation | Strict doc graph, checklist rule, generated ledger clean, diff check | PASS: 215 tests, 14 existing checklist-covered errors and zero uncovered; required generated outputs accompany each documentation commit |
+| Windows | Existing native root-crate test/Clippy and Tauri smoke/package CI on final PR head | Required final-head `ci` check on PR #107; no local Linux root-crate PASS is claimed |
+| Independent review | Spec, authorization/transactions, native races, account UI transitions, no open confirmed blockers | Design plus backend, native and frontend scoped re-reviews passed. Whole-branch review and exact-head merge receipts are maintained on PR #107 |
+| Protected merge | Final head required checks, resolved review threads, up-to-date branch and verified merge SHA | Protected integration through PR #107; immutable merge receipt is recorded there and on issue #106 after execution |
 
 Tooling sanity before implementation: isolated PostgreSQL 16.15 and pgTAP 1.3.2 successfully created the extension and passed a one-assertion tooling probe. Rust/Cargo 1.96.0 and Clippy are available. The official Deno 2.7.0 archive used locally reports `2.7.0+fb4db33 (canary, release, x86_64-unknown-linux-gnu)`; JSR imports resolved with system certificate validation enabled. These are tooling receipts, not product tests.
 
@@ -128,6 +128,21 @@ node tools/doc-graph/ci-gate.mjs
 ```
 
 The local frontend runs used the equivalent direct Node entry points in the installed `src/node_modules` to avoid an unrelated global pnpm-wrapper version change. Its passing full-suite output includes existing multiple-GoTrue-client notices in account tests and React act/deprecation notices in unrelated banner tests; this is not a claim of warning-free test output. ESLint itself passed with zero warnings.
+
+### Review corrections and supervised workflow
+
+Three implementation lanes had disjoint file ownership: SQL/Edge, relay/native, and frontend. The integrator alone staged, committed, updated GitHub and edited shared/canonical documentation. Fresh independent task reviews checked specification compliance and code quality; scoped re-reviews inspected the corrections. Final whole-branch review and protected checks are additional gates, with their immutable receipts on PR #107.
+
+The review cycle closed these concrete defects with regressions:
+
+- SQL public-name normalization previously disagreed with JavaScript Unicode trimming. Projection now trims the specified Unicode whitespace and falls back to GID for unsafe/empty/oversized names. Real SQL→HTTP checks include non-BMP names and related/blocked people.
+- Default UTF-8 BOM removal could change redemption bytes before HMAC verification. The decoder now preserves a BOM so the JSON boundary rejects it; changed whitespace fails authentication and unchanged signed bytes succeed.
+- A rejected or oversized redemption response could leave a stalled response stream after releasing its concurrency permit. Relay cleanup now aborts/cancels the body before releasing that permit.
+- A generation-1 sync reply arriving after generation-2 rotation could clear valid native membership. An overtaken valid response is discarded while current credentials/generation remain intact, followed by a fresh sync; genuine regression still fails closed.
+- A delayed pre-mutation state read could restore a confirmed presence opt-out and an unrelated settings change could persist it. A common post-write barrier now invalidates/drains old reads and requires an authoritative fresh read, with unavailable controls on failure. Only explicit presence actions can change visibility; stale receive-setting objects preserve the current authoritative preference. The regression verifies one read in flight, blocked controls during refresh, no visibility restoration and no restarted heartbeat.
+- Frontend roster parsing now rejects a binding lease beyond 60 seconds, with exact 60,000/60,001 ms boundary assertions.
+
+The real database suite also adds deterministic unlink-versus-delayed-mint/initial-link, competing account/session member bindings and post-lock expiry coverage. These additions were evidence gaps rather than claims of an observed authorization bypass. No confirmed task-level Critical/Important finding remains after scoped re-review; final whole-branch findings, if any, must be resolved before merge.
 
 ### Rendered frontend evidence
 
@@ -159,3 +174,4 @@ Saved captures: [wide view](evidence/cr038/wide.png), [1366px view](evidence/cr0
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-11-01 | Separate source integration from hosted/live readiness; document configuration, least privilege, retention, ticket-aware key rotation, rollback and honest acceptance ledger for CR-038. |
+| 0.1.1 | 2026-11-01 | Record PR107, final local frontend649/Party104 checks, independent scoped review corrections and immutable final-gate receipt locations. |

@@ -249,3 +249,52 @@ it("refuses initial profile linking when the current native member already has a
   await act(async () => { expect(await current.setLink(true)).toBe(false); });
   expect(api.request.mock.calls.filter(([a]) => a.action === "link")).toHaveLength(0);
 });
+
+it("drains a pre-opt-out poll and requires a fresh authoritative read before another privacy change", async () => {
+  serverState.settings.presenceVisible = true; await render();
+  const stale = structuredClone(serverState);
+  const oldPoll = defer<unknown>(); const fresh = defer<unknown>(); const base = api.request.getMockImplementation()!;
+  let reads = 0; let stateInFlight = 0; let maxStateInFlight = 0;
+  api.request.mockImplementation((...args) => {
+    if (args[0].action !== "state") return base(...args);
+    stateInFlight++; maxStateInFlight = Math.max(maxStateInFlight, stateInFlight);
+    const result = ++reads === 1 ? oldPoll.promise : reads === 2 ? fresh.promise : Promise.resolve(base(...args));
+    return result.finally(() => { stateInFlight--; });
+  });
+  await act(async () => { await vi.advanceTimersByTimeAsync(15000); });
+  expect(stateInFlight).toBe(1);
+  let completed = false; let optOut!: Promise<boolean>;
+  await act(async () => { optOut = current.setPresence(false).then((result) => { completed = true; return result; }); });
+  expect(serverState.settings.presenceVisible).toBe(false);
+  expect(current.ready).toBe(false); expect(current.busy).toBe(true); expect(completed).toBe(false);
+  const heartbeatsAtOptOut = api.request.mock.calls.filter(([a]) => a.action === "heartbeat").length;
+  await act(async () => { await vi.advanceTimersByTimeAsync(5000); });
+  expect(api.request.mock.calls.filter(([a]) => a.action === "heartbeat")).toHaveLength(heartbeatsAtOptOut);
+  expect(reads).toBe(1);
+  await act(async () => { oldPoll.resolve(stale); });
+  expect(reads).toBe(2); expect(completed).toBe(false); expect(current.ready).toBe(false);
+  await act(async () => { expect(await current.setSettings({ ...stale.settings, allowInvites: false })).toBe(false); });
+  expect(api.request.mock.calls.filter(([a]) => a.action === "settings")).toHaveLength(1);
+  await act(async () => { fresh.resolve(structuredClone(serverState)); expect(await optOut).toBe(true); });
+  expect(current.state?.settings.presenceVisible).toBe(false);
+  await act(async () => { expect(await current.setSettings({ ...stale.settings, allowInvites: false })).toBe(true); });
+  await act(async () => { await vi.advanceTimersByTimeAsync(45000); });
+  expect(serverState.settings).toEqual({ presenceVisible: false, allowFriendRequests: true, allowInvites: false });
+  expect(api.request.mock.calls.filter(([a]) => a.action === "settings").every(([a]) => a.presenceVisible === false)).toBe(true);
+  expect(api.request.mock.calls.filter(([a]) => a.action === "heartbeat")).toHaveLength(heartbeatsAtOptOut);
+  expect(maxStateInFlight).toBe(1);
+});
+
+it("keeps account controls unavailable when the fresh post-mutation state read fails", async () => {
+  serverState.settings.presenceVisible = true; await render();
+  const stale = structuredClone(serverState); const oldPoll = defer<unknown>(); const base = api.request.getMockImplementation()!;
+  let reads = 0;
+  api.request.mockImplementation((...args) => args[0].action === "state"
+    ? ++reads === 1 ? oldPoll.promise : Promise.reject(new Error("offline")) : base(...args));
+  await act(async () => { await vi.advanceTimersByTimeAsync(15000); });
+  let result!: Promise<boolean>; await act(async () => { result = current.setPresence(false); });
+  await act(async () => { oldPoll.resolve(stale); expect(await result).toBe(false); });
+  expect(current.ready).toBe(false); expect(current.state).toBeNull();
+  await act(async () => { expect(await current.setSettings({ ...stale.settings, allowFriendRequests: false })).toBe(false); });
+  expect(api.request.mock.calls.filter(([a]) => a.action === "settings")).toHaveLength(1);
+});

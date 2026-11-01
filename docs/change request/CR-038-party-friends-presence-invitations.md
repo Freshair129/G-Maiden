@@ -2,7 +2,7 @@
 title: "CR-038 — G-Party Friends, presence และคำเชิญเข้าปาร์ตี้"
 doc_id: "CR-038-party-friends-presence-invitations"
 status: active
-version: "0.2.0"
+version: "0.2.1"
 updated: "2026-11-01"
 owner: "G-Maiden"
 complexity: "C-3"
@@ -12,7 +12,7 @@ related_docs: ["FEAT-G-FRIENDS", "FEAT-G-PARTY", "mvp-decisions", "2026-11-01-g-
 
 # CR-038 — G-Party Friends, presence และคำเชิญเข้าปาร์ตี้
 
-GitHub tracking: https://github.com/Freshair129/G-Maiden/issues/106
+GitHub tracking: https://github.com/Freshair129/G-Maiden/issues/106 · implementation PR: https://github.com/Freshair129/G-Maiden/pull/107
 
 ## เป้าหมายและอำนาจดำเนินงาน
 
@@ -60,12 +60,14 @@ Supervisor/integrator คุม contract, lane ownership, evidence ledger แล
 - [x] Safe presence lease + account isolation + hidden semantics
 - [x] Room-bound invite/identity contract พร้อม replay/expiry/wrong-recipient/revocation tests
 - [x] Native trusted-Control bridge; ไม่เผย credentials และไม่ auto-join/share
-- [ ] Friends UI + fresh consent + sign-out/switch/race/failure tests
-- [ ] Guest G-Party/local core regression tests
+- [x] Friends UI + fresh consent + sign-out/switch/race/failure tests
+- [x] Guest G-Party/local core regression tests
 - [ ] Independent review ปิด confirmed blockers
 - [ ] Required CI, doc graph, Windows/native compile/tests/package และ review threads ผ่านบน final mergeable head
 - [ ] Protected PR merge verified และบันทึก merge SHA
 - [ ] บันทึก live Dota/two-client/two-monitor/NFR และ hosted deployment acceptance ตามหลักฐานจริง
+
+The repository checklist is the source checkpoint. Final whole-branch review, exact-head CI and merge receipts are updated on issue #106 / PR #107 after execution, without claiming hosted/live acceptance.
 
 ## Source integration versus release
 
@@ -89,3 +91,4 @@ PR #104 merged through the protected PR flow at `a9b31b06ffd1c0ffb6c4177d428bf8f
 | --- | --- | --- |
 | 0.1.0 | 2026-11-01 | Record owner-authorized Friends implementation through protected merge, separate social consent/data scope, supervised workflow and G-Party dependency integration. |
 | 0.2.0 | 2026-11-01 | Record latest owner frontend direction: reuse design tokens while redesigning room/member/Friends layout around a large minimap; retain consent and functional scope. |
+| 0.2.1 | 2026-11-01 | Link PR107 and record implemented/reviewed source gates; final protected merge and live receipts remain separately evidenced. |

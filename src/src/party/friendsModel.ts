@@ -59,6 +59,7 @@ export function parseSocialState(v: unknown): SocialState | null {
 export function parseSocialRoster(v: unknown): SocialRoster | null {
   if (!exact(v, ["roomId", "generation", "bindings", "serverNowMs"]) || !id(v.roomId) || !int(v.generation, 1) || !int(v.serverNowMs)
     || !collection(v.bindings, 5, (x) => exact(x, ["memberId", "person", "expiresAtMs"]) && id(x.memberId) && person(x.person) && int(x.expiresAtMs), "memberId")) return null;
+  if ((v.bindings as SocialBinding[]).some((binding) => binding.expiresAtMs - (v.serverNowMs as number) > SOCIAL_LEASE_MS)) return null;
   return v as unknown as SocialRoster;
 }
 export function parseSocialResult(action: SocialAction, v: unknown): unknown | null {
