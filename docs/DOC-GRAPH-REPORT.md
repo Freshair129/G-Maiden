@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-10-31T19:52:04.231Z
+สร้างเมื่อ / Generated at: 2026-11-01T05:22:13.553Z
 
-สแกน 158 ไฟล์เอกสาร, 274 nodes, 1230 edges, 234 รายการปัญหา (204 ตัวบล็อก exit code) / scanned 158 doc files, 274 nodes, 1230 edges, 234 violations (204 blocking exit code).
+สแกน 161 ไฟล์เอกสาร, 277 nodes, 1263 edges, 233 รายการปัญหา (203 ตัวบล็อก exit code) / scanned 161 doc files, 277 nodes, 1263 edges, 233 violations (203 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -18,7 +18,7 @@
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 27 | no (informational) |
 | unresolved | wikilink หาไม่เจอ / unresolved wikilink | 6 | yes |
-| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 12 | yes |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 11 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -30,7 +30,7 @@
 
 - [L134] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="SPEC--*")
 - [L136] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="ADR-O-*")
-- [L145] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
+- [L147] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
 
 ### docs/DOCS-IA-REORG-PROPOSAL.md
 
@@ -390,11 +390,7 @@
 
 ### docs/features/G-SERIES-DATA-LINEAGE.md
 
-- [L122] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=193, symbol="parse_tick_from_value")
-
-### docs/features/README.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.2.2", changelog="0.2.0")
+- [L125] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/gsi.rs", anchor=193, symbol="parse_tick_from_value")
 
 ### docs/guides/scaffold-setup.md
 

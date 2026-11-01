@@ -2,8 +2,8 @@
 title: "AGENTS.md"
 doc_id: "agents"
 status: active
-version: "0.4.12"
-updated: "2026-10-31"
+version: "0.4.13"
+updated: "2026-11-01"
 owner: "G-Maiden"
 ---
 # AGENTS.md
@@ -38,6 +38,17 @@ opt-in. G-Voice audio/transcript/free-form question, G-Memory including aggregat
 GSI/GameTick, G-Log/history/replay, account/security fields and local diagnostics stay local.
 G-Signal is pure Rust with no cloud or SLM dependency. `Ctrl+Alt+V` is the MVP PTT default to
 implement; `Alt+M` remains mute. These are product targets until implementation/evidence lands.
+
+The owner-directed G-Party extension is separately scoped by `FEAT-G-PARTY` and
+`mvp-decisions` MVP-005A. Create/join requires checked explicit sharing consent plus
+activation; no view-only mode, auto-join, saved room credentials or app-account gate.
+Only admitted own hero/level/HP/maxHP/MP%/alive/respawn and bounded room/session
+metadata may pass to the selected in-memory relay and same-match/team peers. Raw GSI,
+raw match ID/SteamID, CV, Voice, Memory and G-Log remain excluded; the room-scoped
+match hash is a pseudonym, not anonymity/game attestation. This route does not widen
+AI consent/allowlists or create an AI/Memory/Log consumer for received peer data.
+Relay/network failure cannot lock local core. Detailed protocol choices are assistant
+implementation decisions; native/live/resource acceptance and deployment remain separate.
 
 ---
 
@@ -540,3 +551,4 @@ These are **functional requirements**, not flavor text. Maiden must:
 | 0.4.10 | 2026-10-30 | Record revision4 paused decoder preparation, VP8 media and bounded natural-completion grace. |
 | 0.4.11 | 2026-10-30 | Add local .gann single-file container import and preserve separate Store provenance. |
 | 0.4.12 | 2026-10-31 | Record owner-directed GANN-only event source, cache identity and verification boundaries. |
+| 0.4.13 | 2026-11-01 | Record separate owner-directed G-Party consent/own-stat route while retaining AI/raw-data restrictions and pending native/live acceptance. |

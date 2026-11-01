@@ -1,11 +1,11 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.9"
+version: "0.2.10"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
-last_update: "2026-10-30T00:00:00+07:00,Codex"
+last_update: "2026-11-01T00:00:00+07:00,Codex"
 status: "active"
-updated: "2026-10-30"
+updated: "2026-11-01"
 owner: "Boss"
 attributes:
   domain: "documentation-governance"
@@ -142,6 +142,8 @@ attributes:
   - `docs/features/README.md` — ดัชนี feature docs
 - [[G-SERIES-DATA-LINEAGE]]
   - `docs/features/G-SERIES-DATA-LINEAGE.md` — source, transport, formula, fallback, and output lineage ของ G-Series ทุกโมดูล
+- [[FEAT-G-PARTY]]
+  - `docs/features/FEAT-G-PARTY.md` — owner-directed own-GSI party sharing, separate consent, relay/protocol และ pending native/live evidence
 - [[FEAT-G-*]]
   - `docs/features/FEAT-G-*.md` — เอกสารเชิงโมดูลของ G-series
 
@@ -155,7 +157,8 @@ attributes:
   - `docs/change request/CR-033-pr-gate-agent-required-status-review-gate.md` — PR gate agent review rule
   - `docs/change request/CR-034-gid-iam-production-completion.md` — GID IAM Phase 2 implemented locally; live verification and production promotion pending
   - `docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md` — proposed selected-target HUD CV + single-action G-Damage, Issue #71
-  - `docs/change request/CR-*.md` — เอกสาร CR อื่นๆ ทั้งหมดตั้งแต่ CR-001 ถึง CR-035
+  - `docs/change request/CR-037-party-gsi-own-stat-sharing.md` — owner-authorized cooperative own-stat sharing; detailed implementation decisions and acceptance boundaries
+  - `docs/change request/CR-*.md` — เอกสาร CR อื่นๆ ทั้งหมดตั้งแต่ CR-001 ถึง CR-037
 
 ## Operations
 
@@ -191,6 +194,7 @@ attributes:
   - `docs/superpowers/specs/2026-08-09-gid-central-pipeline-design.md` — GID Central Pipeline Design
   - `docs/superpowers/plans/2026-08-09-gid-pipeline-phase1.md` — GID Central Pipeline Phase 1 Plan
   - `docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md` — GID Central Pipeline Phase 2 Plan (AnnStudio)
+  - `docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md` — G-Party GP-001–006 implementation and verification plan; separate from existing 62 MVP parent tasks
 
 ## Changelog
 | Version | Date | Summary |
@@ -214,3 +218,4 @@ attributes:
 | 0.2.7 | 2026-10-18 | Indexed ADR-19 and CR-035. |
 | 0.2.8 | 2026-10-19 | Indexed Graphite Clarity and the Command Deck wireframe, wireflow, and user-flow documents. |
 | 0.2.9 | 2026-10-30 | Indexed the UI technical drawing atlas and its source/browser evidence. |
+| 0.2.10 | 2026-11-01 | Register G-Party feature, CR-037 and implementation plan with explicit consent and pending acceptance. |

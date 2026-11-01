@@ -3,13 +3,13 @@
 # FEATURE-ORPHAN-REPORT
 
 > **GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs**  
-> Generated `2026-10-31T19:52:46.912Z` · candidates=22
+> Generated `2026-11-01T05:22:14.363Z` · candidates=23
 
 ## Summary
 
 | Classification | Count |
 | --- | --- |
-| anchored | 3 |
+| anchored | 4 |
 | planned | 9 |
 | weakly-anchored | 7 |
 | superseded | 0 |
@@ -29,6 +29,7 @@
 | FEAT-G-MEMORY | docs/features/FEAT-G-MEMORY.md | active | archived | feature-ledger, features-readme, project-feature-map | docs/features/README.md, docs/product/mvp-backlog.md, docs/product/roadmap.md, docs/features/G-SERIES-DATA-LINEAGE.md | — | Lifecycle explicitly marks the document as retained history. |
 | FEAT-G-MIND | docs/features/FEAT-G-MIND.md | active | planned | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-MOTION | docs/features/FEAT-G-MOTION.md | active | anchored | feature-ledger, code-evidence, features-readme, project-feature-map | docs/features/README.md | — | At least one strong anchor exists (registry and/or code evidence). |
+| FEAT-G-PARTY | docs/features/FEAT-G-PARTY.md | active | anchored | feature-ledger, code-evidence, features-readme | docs/change request/CR-037-party-gsi-own-stat-sharing.md, docs/DOC-INDEX.md, docs/features/G-SERIES-DATA-LINEAGE.md, docs/features/README.md, docs/product/mvp-backlog.md, docs/product/mvp-decisions.md, docs/product/product-requirements.md, docs/product/software-requirements-specification.md, docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md | — | At least one strong anchor exists (registry and/or code evidence). |
 | FEAT-G-PERSONA | docs/features/FEAT-G-PERSONA.md | planned | planned | feature-ledger, features-readme, project-feature-map | docs/architecture/design-system.md, docs/features/README.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-REVIVE | docs/features/FEAT-G-REVIVE.md | — | anchored | feature-ledger, code-evidence, features-readme | docs/features/README.md | — | At least one strong anchor exists (registry and/or code evidence). |
 | FEAT-G-SCORE | docs/features/FEAT-G-SCORE.md | draft | planned | features-readme | docs/features/README.md, docs/features/G-SERIES-DATA-LINEAGE.md | — | Document is explicitly planned and remains visible in active registry/docs. |

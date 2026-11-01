@@ -5,6 +5,7 @@ import { useMinimapPreview } from "./live/useMinimapPreview";
 import { previewMatchesCv } from "./live/minimapPreview";
 import { prettyHeroName } from "./live/events";
 import { useStartupSettings } from "./app/settingsContext";
+import { PartyStrip } from "./party/PartyStrip";
 
 // CR-013 W5-01: content that grows (match history) paginates within a
 // fixed-height frame instead of scrolling the whole tab body (R2) — same pure
@@ -213,7 +214,7 @@ export const CvHeroesPage = memo(function CvHeroesPage() {
   };
 
   return (
-    <div className="domain-page cv-heroes-page">
+    <div className="domain-page cv-heroes-page g-party-live-container">
       <section className="card-shell page-hero">
         <div>
           <div className="eyebrow">CV HERO BOARD</div>
@@ -328,6 +329,7 @@ export const CvHeroesPage = memo(function CvHeroesPage() {
           ) : null}
         </section>
       </div>
+      <PartyStrip />
     </div>
   );
 });
