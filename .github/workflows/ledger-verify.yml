@@ -40,6 +40,10 @@ jobs:
       - name: Stage gpu-feeder sidecar
         run: node src-tauri/scripts/stage-gpu-feeder.mjs
 
+      - name: Build pinned native MSVC video decoder
+        shell: pwsh
+        run: ./scripts/setup-native-vpx.ps1
+
       - name: Ledger with real test evidence
         shell: bash
         run: |

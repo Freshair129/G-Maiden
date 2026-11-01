@@ -1478,6 +1478,7 @@ dependencies = [
  "axum",
  "base64 0.22.1",
  "g-ann-package",
+ "gann-vpx",
  "geo-types",
  "image",
  "pure-onnx-ocr-sync",
@@ -1499,7 +1500,16 @@ dependencies = [
  "windows 0.61.3",
  "windows-capture",
  "windows-core 0.62.2",
+ "windows-numerics 0.2.0",
  "zip",
+]
+
+[[package]]
+name = "gann-vpx"
+version = "0.1.0"
+dependencies = [
+ "cc",
+ "vcpkg",
 ]
 
 [[package]]
@@ -6257,6 +6267,12 @@ dependencies = [
  "num-traits",
  "wasm-bindgen",
 ]
+
+[[package]]
+name = "vcpkg"
+version = "0.2.15"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "accd4ea62f7bb7a82fe23066fb0957d48ef677f6eeb8215f372f52e48bb32426"
 
 [[package]]
 name = "version-compare"

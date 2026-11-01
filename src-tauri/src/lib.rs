@@ -26,6 +26,8 @@ pub mod damage;
 #[cfg(not(feature = "wgc"))]
 pub mod dxgi;
 mod event_media;
+mod gann_webm;
+mod gann_native;
 mod governor;
 pub mod gsi;
 mod identity;
@@ -66,7 +68,6 @@ mod updater_install_guard_regression;
 mod usage;
 mod utterance;
 mod voice_api;
-mod vrzo_fence;
 mod vrzo_mix;
 mod vrzo_playback;
 mod webview_bootstrap;
@@ -76,6 +77,13 @@ mod webview_bootstrap;
 /// manifest edit.
 #[derive(Default)]
 struct PendingUpdate(std::sync::Mutex<Option<tauri_plugin_updater::Update>>);
+
+#[tauri::command]
+fn set_announcer_presentation_diagnostics(window:tauri::WebviewWindow, enabled:bool)->Result<(),String> {
+    if window.label()!="control" {return Err("Presentation diagnostics require the control window".into());}
+    gann_native::set_presentation_probe(enabled);
+    Ok(())
+}
 static UPDATE_INSTALLING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 fn update_safety() -> update_guard::UpdateSafety {
@@ -232,6 +240,7 @@ fn dispatch_overlay_visibility(
         move |visible| {
             let result = (|| {
                 let visible = visible.ok_or("overlay bootstrap unavailable")?;
+                gann_native::set_visible(visible);
                 let window = apply_app
                     .get_webview_window("overlay")
                     .ok_or("overlay window unavailable")?;
@@ -1369,7 +1378,9 @@ pub(crate) fn save_settings_json(json: &str) -> Result<(), String> {
     // Write-then-rename so a crash mid-write can't truncate the only copy.
     let tmp = path.with_extension("json.tmp");
     std::fs::write(&tmp, json).map_err(|e| e.to_string())?;
-    std::fs::rename(&tmp, &path).map_err(|e| e.to_string())
+    std::fs::rename(&tmp, &path).map_err(|e| e.to_string())?;
+    gann_native::settings(json);
+    Ok(())
 }
 
 #[tauri::command]
@@ -1508,6 +1519,7 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
+            set_announcer_presentation_diagnostics,
             minimap_preview_runtime::start_minimap_preview,
             minimap_preview_runtime::read_minimap_preview,
             minimap_preview_runtime::stop_minimap_preview,
@@ -1591,6 +1603,7 @@ pub fn run() {
             // first gameplay tick. The webview later hydrates the same,
             // validated snapshot for Control and Overlay.
             if let Some(settings) = load_settings_json() {
+                gann_native::settings(&settings);
                 if let Err(error) = runtime::apply_startup_settings_json(&settings) {
                     eprintln!("[settings] saved runtime settings were not loaded: {error}");
                 }

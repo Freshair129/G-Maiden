@@ -68,6 +68,7 @@
       "binaries/gpu-feeder"
     ],
     "resources": {
+        "native-vpx/THIRD-PARTY-NOTICES.txt": "licenses/libvpx.txt",
       "../models/minimap-detector.onnx": "models/minimap-detector.onnx",
       "../models/labels.json": "models/labels.json"
     }

@@ -6,7 +6,7 @@
 
 - **Preview คลิป GANN** — เลือก variant จากแพ็กที่ตรวจและเปิดใช้งานแล้ว เพื่อลดเวลาตรวจแพ็กซ้ำก่อนเล่น พร้อมตรวจความถูกต้องของเสียงและภาพก่อนส่งออก
 - **แพ็ก announcer ไฟล์เดียว `.gann`** — รวม manifest แบบ ID, เสียง, silent banner video, motion/config และ stock ใน indexed ZIP ที่ตรวจขนาด/พาธ/SHA-256; นำเข้าจาก Control ได้ทั้ง local development และ consumer build เก็บต้นฉบับพร้อม playback cache โดยไม่เพิ่ม SQL หรือสิทธิ์ Store
-- **เตรียมและเปลี่ยนแบนเนอร์** — ใช้ video pool ที่พัก decoder รอได้ จำกัดสาม DOM nodes; อีเวนต์ใหม่เริ่มทันที ขณะที่ภาพเก่าเร่ง 2x/เฟด 300 ms และเสียงเก่าเฟด 150 ms พร้อมช่วงท้ายแบบมีขอบเขต การวัด Rampage/การแทรก/เฟรมดรอป native ยังไม่ครบเพราะหยุดทดสอบด้วย Esc
+- **ตัวเล่น GANN แบบ native** — ถอดรหัส VP8/VP9 และ alpha ภายในแอป แสดงผ่าน DirectComposition โดยใช้ clock ร่วมกับ WASAPI; เลิกเส้นทางแบนเนอร์ WebView สำหรับ event คงเวลา/เฟรมจากแพ็ก การตรวจ hash, priority, Stop, volume และ session/pack fences พร้อมจำกัด worker/หน่วยความจำและแยก gain ของแต่ละ stream
 
 
 - **CV/เสียงแย่ง CPU** — เว้นช่วงคืน CPU ตามงานจับภาพ/CV ที่ใช้จริง โดยรวมเวลารอใน deadline เดิม; ลงทะเบียนเธรดที่ดึง PCM กับ Windows MMCSS Audio และเพิ่มตัวนับช่วงขาดการดึง sample เพื่อแยกจากเวลารายงานจบช้า ความลื่น/เสียงในเกมยังรอวัดกับ build ใหม่
