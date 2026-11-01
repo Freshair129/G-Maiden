@@ -69,7 +69,7 @@ fn emit(
             event: event.to_string(),
             session_epoch: epoch,
             preview,
-            expires_at_ms: now.saturating_add(18_200),
+            expires_at_ms: now.saturating_add(19_200),
             manifest_visual: manifest_visual.clone(),
         },
     );

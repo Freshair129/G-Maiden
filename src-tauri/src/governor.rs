@@ -22,6 +22,8 @@ use std::os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle};
 use std::process::{Child, Command};
 #[path = "resource_accounting.rs"]
 mod resource_accounting;
+#[path = "governor_startup.rs"]
+mod startup;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Mutex;
 #[cfg(windows)]
@@ -47,9 +49,44 @@ use windows::Win32::System::Threading::GetCurrentProcess;
 
 const POLL_INTERVAL_S: u64 = 1;
 const CPU_BUDGET_PCT: f64 = 10.0;
-// Leave operating headroom for OS cap windows versus the measured 1s ceiling.
-// The unchanged acceptance limit above remains 10%, not this operating rate.
-const CPU_HARD_CAP_RATE: u32 = 800;
+// Windows caps cycles per scheduling interval, not our wall-clock 1s samples.
+// The 8% rate still measured >10% during concurrent native/WebView startup.
+// Reserve more headroom; acceptance remains the unchanged measured 10% limit.
+const CPU_HARD_CAP_RATE: u32 = 600;
+const CPU_OPERATING_CAP_RATE: u32 = 800;
+static STARTUP_UI_READY: AtomicBool = AtomicBool::new(false);
+static STARTUP_CAPTURE_READY: AtomicBool = AtomicBool::new(false);
+
+pub(crate) fn startup_ui_ready() {
+    STARTUP_UI_READY.store(true, Ordering::Release);
+}
+
+pub(crate) fn startup_capture_ready() {
+    STARTUP_CAPTURE_READY.store(true, Ordering::Release);
+}
+
+#[cfg(windows)]
+fn apply_operating_cpu_cap() -> Result<(), String> {
+    let job = PROCESS_JOB
+        .get()
+        .and_then(|r| r.as_ref().ok())
+        .ok_or("CPU Job unavailable")?;
+    let rate = JOBOBJECT_CPU_RATE_CONTROL_INFORMATION {
+        ControlFlags: JOB_OBJECT_CPU_RATE_CONTROL_ENABLE | JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP,
+        Anonymous: JOBOBJECT_CPU_RATE_CONTROL_INFORMATION_0 {
+            CpuRate: CPU_OPERATING_CAP_RATE,
+        },
+    };
+    unsafe {
+        SetInformationJobObject(
+            HANDLE(job.handle.as_raw_handle()),
+            JobObjectCpuRateControlInformation,
+            (&rate as *const JOBOBJECT_CPU_RATE_CONTROL_INFORMATION).cast(),
+            std::mem::size_of::<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>() as u32,
+        )
+    }
+    .map_err(|error| format!("operating CPU quota unavailable; retaining startup cap: {error}"))
+}
 const CPU_THROTTLE_RELEASE_PCT: f64 = 8.0;
 const CPU_THROTTLE_RELEASE_SAMPLES: u8 = 3;
 const RAM_BUDGET_MB: f64 = resource_accounting::RAM_BUDGET_BYTES as f64 / 1_000_000.;
@@ -149,7 +186,7 @@ fn create_process_job() -> Result<ProcessJob, String> {
             std::mem::size_of::<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>() as u32,
         )
     }
-    .map_err(|error| format!("setting the 8% operating Job Object CPU hard cap failed: {error}"))?;
+    .map_err(|error| format!("setting the 6% operating Job Object CPU hard cap failed: {error}"))?;
 
     let mut extended_limits = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
     extended_limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
@@ -183,6 +220,11 @@ pub(crate) fn preview_allowed() -> bool {
     PREVIEW_ALLOWED.load(Ordering::Relaxed) && !cpu_throttle()
 }
 
+static PREVIEW_FPS: AtomicU8 = AtomicU8::new(15);
+pub(crate) fn preview_fps() -> u8 {
+    PREVIEW_FPS.load(Ordering::Relaxed)
+}
+
 pub(crate) fn owns_child_process(pid: u32) -> bool {
     #[cfg(windows)]
     {
@@ -200,6 +242,7 @@ pub(crate) fn owns_child_process(pid: u32) -> bool {
 
 #[derive(Clone, serde::Serialize)]
 pub struct ResourceStats {
+    pub minimap_preview_fps: u8,
     pub ram_mb: f64,
     pub cpu_pct: f64,
     /// Accounted owned/job and used external-provider processes; `-1` means
@@ -241,6 +284,9 @@ fn poll_loop(app: AppHandle) {
     let mut throttled = false;
     let mut release_samples = 0u8;
     let mut preview = crate::minimap_admission::Admission::default();
+    let mut preview_cadence = crate::minimap_admission::Cadence::default();
+    let mut startup_budget = startup::StartupBudget::default();
+    let mut operating_quota = false;
     loop {
         let mut stats = measure();
         if stats.cpu_pct >= 0.0 {
@@ -253,6 +299,23 @@ fn poll_loop(app: AppHandle) {
         peak_ram = peak_ram.max(stats.ram_mb);
         stats.peak_cpu_pct = peak_cpu;
         stats.peak_ram_mb = peak_ram;
+        if !operating_quota
+            && startup_budget.observe(
+                STARTUP_UI_READY.load(Ordering::Acquire),
+                STARTUP_CAPTURE_READY.load(Ordering::Acquire),
+                stats.cpu_pct,
+                stats.ram_mb,
+            )
+        {
+            #[cfg(windows)]
+            match apply_operating_cpu_cap() {
+                Ok(()) => {
+                    operating_quota = true;
+                    eprintln!("[G-Gov] startup settled; operating CPU quota 8%, measured budget remains 10%");
+                }
+                Err(error) => eprintln!("[G-Gov] {error}"),
+            }
+        }
         // Keep the reduced capture rate through noisy samples; restore full rate
         // only after a sustained margin below the CPU budget.
         if stats.over_budget {
@@ -270,6 +333,8 @@ fn poll_loop(app: AppHandle) {
             }
         }
         let preview_allowed = preview.update(stats.ram_mb, stats.cpu_pct, throttled);
+        stats.minimap_preview_fps = preview_cadence.update(stats.cpu_pct);
+        PREVIEW_FPS.store(stats.minimap_preview_fps, Ordering::Relaxed);
         if PREVIEW_ALLOWED.swap(preview_allowed, Ordering::Relaxed) != preview_allowed {
             eprintln!(
                 "[G-Gov] preview admitted={} RAM {:.0} MB CPU {:.1}%",
@@ -303,6 +368,7 @@ fn measure() -> ResourceStats {
     let over_budget = is_over_budget(ram_mb, cpu_pct);
     let g = resolve_gpu();
     ResourceStats {
+        minimap_preview_fps: preview_fps(),
         ram_mb,
         cpu_pct,
         cpu_group_processes,
@@ -937,6 +1003,7 @@ mod tests {
     #[test]
     fn over_budget_flag_set_when_ram_high() {
         let s = ResourceStats {
+            minimap_preview_fps: 15,
             ram_mb: 901.0,
             cpu_pct: 1.0,
             cpu_group_processes: 1,

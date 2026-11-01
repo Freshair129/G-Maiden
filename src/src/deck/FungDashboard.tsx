@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { formatKda, toneClass, type CompanionData } from "../companion";
 import type { MatchPhase } from "../live/phase";
 import type { ContextMenuController, ContextMenuEntry } from "../ContextMenu";
+import { heroSlotStatus } from "../live/heroSlotStatus";
 import { heroPortraitUrl } from "../heroPortrait";
 import { MinimapMirror, MomentumInline, OnAirConsole, ReadinessRundown } from "./onair";
 import { DebriefTimeline } from "./Debrief";
@@ -64,11 +65,11 @@ export function GMaidenFungDashboard({
         {seatPhase === "live" ? (
           <>
             <div className="gm-slot-column">
-              {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`a-${idx}`} id={idx + 1} hero={allyHeroes[idx]} menu={menu} />)}
+              {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`a-${idx}`} id={idx + 1} hero={allyHeroes[idx]} cv={data.heroCv} menu={menu} />)}
             </div>
             <MinimapMirror />
             <div className="gm-slot-column">
-              {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`e-${idx}`} id={idx + 6} hero={enemyHeroes[idx]} menu={menu} />)}
+              {[0, 1, 2, 3, 4].map((idx) => <HeroSlot key={`e-${idx}`} id={idx + 6} hero={enemyHeroes[idx]} cv={data.heroCv} menu={menu} />)}
             </div>
           </>
         ) : seatPhase === "debrief" ? (
@@ -128,7 +129,7 @@ function MiniStat({ label, value, sub }: { label: string; value: string; sub: st
   return (
     <div className="gm-mini-stat">
       <span>{label}</span>
-      <strong>{value}</strong>
+      <strong title={value}>{value}</strong>
       <small>{sub}</small>
     </div>
   );
@@ -206,17 +207,16 @@ function heroMenuItems(heroName: string, known: boolean): ContextMenuEntry[] {
   ];
 }
 
-function HeroSlot({ id, hero, menu }: { id: number; hero?: CompanionData["heroes"][number]; menu: ContextMenuController }) {
+function HeroSlot({ id, hero, cv, menu }: { id: number; hero?: CompanionData["heroes"][number]; cv: CompanionData["heroCv"]; menu: ContextMenuController }) {
   const heroName = hero && hero.hero !== "—" ? hero.hero : "—";
   const known = heroName !== "—";
-  const stateLabel = !hero || hero.state === "empty" ? "Waiting" : hero.state;
+  const status = heroSlotStatus(hero, cv);
   const kda = hero ? formatKda(hero) : "—";
   // portrait art behind the card (CDN, dimmed); dead = fainter, missing = grey.
   const portrait = heroPortraitUrl(hero?.hero);
-  const overlay = { position: "relative", zIndex: 1 } as const;
   return (
     <div
-      className={`gm-hero-slot ${hero?.state ?? "empty"}`}
+      className={`gm-hero-slot gm-hero-${status.tone}`}
       style={portrait ? { position: "relative", overflow: "hidden" } : undefined}
       aria-label={`Hero slot ${id}`}
       tabIndex={0}
@@ -246,9 +246,9 @@ function HeroSlot({ id, hero, menu }: { id: number; hero?: CompanionData["heroes
           }}
         />
       )}
-      <strong style={portrait ? overlay : undefined}>{heroName}</strong>
-      <span style={portrait ? overlay : undefined}>{stateLabel}</span>
-      <em style={portrait ? overlay : undefined}>{kda}</em>
+      <strong title={heroName}>{heroName}</strong>
+      <span title={status.label}>{status.label}</span>
+      <em title={`K / D / A: ${kda}`}>{kda}</em>
     </div>
   );
 }

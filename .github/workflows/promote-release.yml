@@ -18,6 +18,7 @@ on:
 
 permissions:
   contents: write
+  pull-requests: write
 
 jobs:
   promote:
@@ -42,14 +43,20 @@ jobs:
           const fs=require('fs');
           const c=JSON.parse(fs.readFileSync('${{ inputs.candidate_manifest }}'));
           const s=JSON.parse(fs.readFileSync('release/channels/stable.json'));
-          if (JSON.stringify(c.artifacts)!==JSON.stringify(s.artifacts)) throw new Error('artifact set changed during promotion');
+          if (JSON.stringify(c.platforms)!==JSON.stringify(s.platforms)) throw new Error('artifact set changed during promotion');
           if (c.sourceSha!==s.sourceSha || c.version!==s.version) throw new Error('source/version changed during promotion');
           NODE
-      - name: Commit audited Stable pointer
+      - name: Open audited Stable pointer PR
         if: ${{ !inputs.dry_run }}
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
+          branch="release/stable-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
+          git switch -c "$branch"
           git config user.name github-actions[bot]
           git config user.email 41898282+github-actions[bot]@users.noreply.github.com
           git add release/channels/stable.json
-          git commit -m "release: promote $(node -p \"require('./release/channels/stable.json').version\") to stable"
-          git push
+          version=$(node -p "require('./release/channels/stable.json').version")
+          git commit -m "release: promote $version to stable"
+          git push --set-upstream origin "$branch"
+          gh pr create --repo "$GITHUB_REPOSITORY" --base main --head "$branch" --title "release: promote $version to stable" --body "Promotes the approved signed candidate without rebuilding. Review the production approval, source SHA, and unchanged platform URLs, hashes and signatures before merging."

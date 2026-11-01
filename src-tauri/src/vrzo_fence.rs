@@ -1,4 +1,7 @@
 //! Playback-identity fence for synchronized local visuals.
+// A silent video may start decoding after the audio lifecycle begins. The video
+// ends itself; this bound only prevents a stalled decoder from retaining a lease.
+const DECODE_GRACE_MS: u64 = 1000;
 pub(crate) fn valid_visual(
     id: u64,
     generation: u64,
@@ -23,10 +26,11 @@ impl Default for VisualLifetime {
 impl VisualLifetime {
     pub(crate) fn from_timeline(audio_ms: u64, tail_ms: u64) -> Self {
         let tail_ms = tail_ms.min(3200);
+        let grace_ms = if tail_ms == 0 { 0 } else { DECODE_GRACE_MS };
         Self {
             completed_at_ms: None,
             tail_ms,
-            end_ms: audio_ms.min(15000).saturating_add(tail_ms),
+            end_ms: audio_ms.min(15000).saturating_add(tail_ms).saturating_add(grace_ms),
         }
     }
     pub(crate) fn end_ms(&self) -> u64 {
@@ -44,7 +48,10 @@ impl VisualLifetime {
         elapsed_ms: u64,
     ) -> bool {
         elapsed_ms < self.end_ms
-            && self.completed_at_ms.is_none_or(|at| elapsed_ms < at.saturating_add(self.tail_ms))
+            && self.completed_at_ms.is_none_or(|at| {
+                let grace = if self.tail_ms == 0 { 0 } else { DECODE_GRACE_MS };
+                elapsed_ms < at.saturating_add(self.tail_ms).saturating_add(grace)
+            })
             // Audio publishes current=0 before queuing Completed. The unchanged
             // generation distinguishes this transition from cancellation/replacement.
             && valid_visual(id, generation, current, self.completed_at_ms.is_some() || current == 0, scope)
@@ -61,9 +68,19 @@ mod tests {
         let mut tail = VisualLifetime::from_timeline(15000, 3200);
         tail.complete(15000);
         assert!(tail.valid(7, 7, 0, true, 18199));
-        assert!(!tail.valid(7, 7, 0, true, 18200));
+        assert!(!tail.valid(7, 7, 0, true, 19200));
         assert!(!tail.valid(7, 8, 0, true, 16000));
         assert!(!tail.valid(7, 7, 0, false, 16000));
+    }
+    #[test]
+    fn natural_tail_allows_delayed_video_to_finish_but_still_fences_replacement() {
+        let mut life = VisualLifetime::from_timeline(2400, 3200);
+        life.complete(2425);
+        assert!(life.valid(7, 7, 0, true, 5638));
+        assert!(!life.valid(7, 8, 0, true, 5638));
+        assert!(!life.valid(7, 7, 0, false, 5638));
+        assert!(!life.valid(7, 7, 8, true, 5638));
+        assert!(!life.valid(7, 7, 0, true, 6600));
     }
     #[test]
     fn poll_survives_current_zero_before_completed_message_arrives() {
@@ -80,14 +97,14 @@ mod tests {
         life.complete(2700);
         assert!(life.valid(7, 7, 0, true, 5899));
         life.complete(5800);
-        assert!(!life.valid(7, 7, 0, true, 5900));
+        assert!(!life.valid(7, 7, 0, true, 6900));
     }
     #[test]
     fn completion_is_capped_by_start_expiry_and_invalidated_by_cancel_scope_or_new_audio() {
         let mut life = VisualLifetime::from_timeline(14000, 1000);
         life.complete(14_000);
         assert!(life.valid(7, 7, 0, true, 14_999));
-        assert!(!life.valid(7, 7, 0, true, 15_000));
+        assert!(!life.valid(7, 7, 0, true, 16_000));
         assert!(!life.valid(7, 8, 0, true, 14_001));
         assert!(!life.valid(7, 7, 0, false, 14_001));
         assert!(!life.valid(7, 7, 8, true, 14_001));

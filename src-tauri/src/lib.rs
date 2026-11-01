@@ -315,6 +315,7 @@ async fn overlay_bootstrap_ready(window: tauri::WebviewWindow) -> Result<(), Str
                 }
             }
             eprintln!("[G-WebViewBootstrap] window=overlay status=ready trusted_final_url=true");
+            governor::startup_ui_ready();
         }
         Ok(())
     })
@@ -746,7 +747,9 @@ fn record_announcer_visual(
     playback_id: String,
     reason: String,
     frames: u32,
-    dropped: u32,
+    expected_frames: u32,
+    max_lateness_ms: f64,
+    renderer: String,
     first_frame_ms: f64,
     elapsed_ms: f64,
     media_seconds: f64,
@@ -770,7 +773,10 @@ fn record_announcer_visual(
         || playback_id.parse::<u64>().is_err()
         || !matches!(reason.as_str(), "ended" | "cleared" | "error")
         || frames > 10_000
-        || dropped > frames
+        || expected_frames > 10_000
+        || frames > expected_frames
+        || !(0.0..=60_000.0).contains(&max_lateness_ms)
+        || renderer != "webcodecs-webgl"
         || !(-1.0..=30_000.0).contains(&first_frame_ms)
         || !(0.0..=60_000.0).contains(&elapsed_ms)
         || !(0.0..=30.0).contains(&media_seconds)
@@ -779,7 +785,7 @@ fn record_announcer_visual(
     {
         return Err("Invalid visual receipt".into());
     }
-    eprintln!("[G-BannerVisual] playback={playback_id} reason={reason} frames={frames} dropped={dropped} first_frame_ms={first_frame_ms:.1} elapsed_ms={elapsed_ms:.1} media_seconds={media_seconds:.3} warmed={} duration_seconds={:.3} waiting={}", warmed.unwrap_or(false), duration_seconds.unwrap_or(0.0), waiting.unwrap_or(0));
+    eprintln!("[G-BannerVisual] playback={playback_id} reason={reason} renderer={renderer} submitted_frames={frames} expected_frames={expected_frames} max_lateness_ms={max_lateness_ms:.1} compositor_dropped=unmeasured first_frame_ms={first_frame_ms:.1} elapsed_ms={elapsed_ms:.1} media_seconds={media_seconds:.3} warmed={} duration_seconds={:.3} waiting={}", warmed.unwrap_or(false), duration_seconds.unwrap_or(0.0), waiting.unwrap_or(0));
     Ok(())
 }
 

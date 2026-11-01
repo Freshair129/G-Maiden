@@ -4,7 +4,7 @@ use crate::minimap_preview_wire as wire;
 use std::io::{Read, Write};
 use std::process::{ChildStdin, Command, Stdio};
 use std::sync::{
-    atomic::{AtomicBool, AtomicU64, Ordering},
+    atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
     mpsc, Arc, Mutex,
 };
 use std::time::{Duration, Instant};
@@ -236,7 +236,7 @@ impl Connection {
             last_heartbeat: 0,
         })
     }
-    fn heartbeat(&mut self) -> bool {
+    fn heartbeat(&mut self, capture_enabled: bool) -> bool {
         if self.fault.load(Ordering::Acquire) {
             return false;
         }
@@ -247,7 +247,16 @@ impl Connection {
             let Some(input) = self.input.as_mut() else {
                 return false;
             };
-            if input.write_all(&[1]).and_then(|()| input.flush()).is_err() {
+            let command = if capture_enabled {
+                crate::governor::preview_fps()
+            } else {
+                0
+            };
+            if input
+                .write_all(&[command])
+                .and_then(|()| input.flush())
+                .is_err()
+            {
                 return false;
             }
             self.last_heartbeat = now;
@@ -295,20 +304,20 @@ pub(crate) fn parent_worker(
             if now == 0 {
                 s.set_status(Status::Unavailable);
                 None
-            } else if !crate::governor::preview_allowed() {
-                s.set_status(Status::Pressure);
-                None
             } else {
+                if !crate::governor::preview_allowed() {
+                    s.set_status(Status::Pressure);
+                }
                 // Control may have renewed the lease while this worker waited for the lock.
                 s.snapshot(clock_us())
             }
         };
         if let Some(active) = connection.as_mut() {
-            let heartbeat_ok = active.heartbeat();
+            let heartbeat_ok = active.heartbeat(crate::governor::preview_allowed());
             if stopping || Some(active.source) != wanted || !heartbeat_ok {
                 if !stopping {
                     let reason = if wanted.is_none() {
-                        "inactive or pressure"
+                        "inactive source or expired lease"
                     } else if Some(active.source) != wanted {
                         "source changed"
                     } else {
@@ -332,7 +341,7 @@ pub(crate) fn parent_worker(
             }
         }
         if let Some(source) = wanted {
-            if connection.is_none() && now >= retry_at {
+            if connection.is_none() && now >= retry_at && crate::governor::preview_allowed() {
                 match Connection::spawn(source, wake.clone()) {
                     Ok(active) => {
                         connection = Some(active);
@@ -373,7 +382,7 @@ pub(crate) fn parent_worker(
             }
         }
         if connection.is_some() && logged_at.elapsed() >= Duration::from_secs(5) {
-            eprintln!("[G-MinimapPreview] interval_ms={} published={} target_fps=60 (not presentation proof)",logged_at.elapsed().as_millis(),frames);
+            eprintln!("[G-MinimapPreview] interval_ms={} published={} target_fps={} (not presentation proof)",logged_at.elapsed().as_millis(),frames,crate::governor::preview_fps());
             frames = 0;
             logged_at = Instant::now();
         }
@@ -509,15 +518,21 @@ fn run_child() -> Result<(), String> {
     }
     let heartbeat = Arc::new(AtomicU64::new(now));
     let beats = heartbeat.clone();
+    let capture_enabled = Arc::new(AtomicU8::new(0));
+    let enabled = capture_enabled.clone();
     std::thread::Builder::new()
         .name("g-preview-heartbeat".into())
         .spawn(move || {
             let mut input = std::io::stdin().lock();
             loop {
                 let mut b = [0];
-                if input.read_exact(&mut b).is_err() || b[0] != 1 {
+                if input.read_exact(&mut b).is_err() {
                     std::process::exit(0);
                 }
+                let Some(capture) = wire::capture_fps(b[0]) else {
+                    std::process::exit(2);
+                };
+                enabled.store(capture, Ordering::Release);
                 let now = clock_us();
                 if now == 0 {
                     std::process::exit(2);
@@ -557,7 +572,22 @@ fn run_child() -> Result<(), String> {
             ));
             continue;
         }
-        pacer.advance(now);
+        let fps = capture_enabled.load(Ordering::Acquire);
+        pacer.advance(now, 1_000_000u64.div_ceil(u64::from(fps.max(15))));
+        // Keep the D3D device and duplication alive: rebuilding them on every
+        // pressure sample costs more CPU than retaining an idle capture owner.
+        if fps == 0 {
+            if now.saturating_sub(last_status) >= 100_000 {
+                let packet = core::worker_packet(source, sequence, Status::Pressure, None, now);
+                output
+                    .write_all(&packet)
+                    .and_then(|()| output.flush())
+                    .map_err(|e| e.to_string())?;
+                last_status = now;
+            }
+            std::thread::sleep(Duration::from_millis(50));
+            continue;
+        }
         if now.saturating_sub(scan_at) >= 500_000 || scan_at == 0 {
             window = crate::dxgi::preview_dota_window();
             scan_at = now;

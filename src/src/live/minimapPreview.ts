@@ -32,7 +32,15 @@ export interface PreviewSnapshot {
 }
 
 /** Validate the fixed native wire contract before allocating ImageData. */
-export function parseMinimapPacket(buffer: ArrayBuffer): PreviewFrame | null {
+export function parseMinimapPacket(input: unknown): PreviewFrame | null {
+  // Tauri's postMessage transport represents binary IPC responses as JSON bytes.
+  // Validate before converting so malformed values cannot wrap into valid headers.
+  let buffer = input;
+  if (Array.isArray(input)) {
+    if (input.length < 144 || input.length > 144 + 320 * 320 * 4) return null;
+    for (const byte of input) if (!Number.isInteger(byte) || byte < 0 || byte > 255) return null;
+    buffer = new Uint8Array(input).buffer;
+  }
   if (!(buffer instanceof ArrayBuffer) || buffer.byteLength < 144) return null;
   const d = new DataView(buffer);
   const u32 = (at: number) => d.getUint32(at, true);
@@ -71,8 +79,8 @@ type Received = { frame: PreviewFrame; receivedAt: number; rtt: number; nativeAg
 const INTERVAL = 1000 / 60;
 const STATUS: PreviewStatus[] = ["waiting", "live", "inactive", "pressure", "unavailable", "stale"];
 const EMPTY: PreviewSnapshot = { status: "inactive", geometry: null, drawFps: 0, rpcRttMs: 0, estimatedDrawAgeMs: 0, clockUncertaintyMs: 0 };
-function nextDeadline(previous: number, now: number) {
-  return previous + (Math.floor(Math.max(0, now - previous) / INTERVAL) + 1) * INTERVAL;
+function nextDeadline(previous: number, now: number, interval: number) {
+  return previous + (Math.floor(Math.max(0, now - previous) / interval) + 1) * interval;
 }
 function sameGeometry(a: PreviewGeometry | null, b: PreviewGeometry | null): boolean {
   return a === b || !!a && !!b && a.streamId === b.streamId && a.epoch === b.epoch && a.generation === b.generation &&
@@ -92,6 +100,11 @@ function geometryMetadata(geometry: PreviewGeometry): PreviewGeometry {
 
 /** One lease/RPC and two bounded pixel slots shared by all visible canvases. */
 export class MinimapPreviewDriver {
+  private interval = INTERVAL;
+  setFrameRate(fps: number) {
+    if (![15, 30, 60].includes(fps)) return;
+    this.interval = 1000 / fps;
+  }
   private frames = new Set<(frame: PreviewFrame | null) => void>();
   private metadata = new Set<() => void>();
   private snapshot: PreviewSnapshot = EMPTY;
@@ -195,7 +208,7 @@ export class MinimapPreviewDriver {
         this.timing = { rpcRttMs: received.rtt, estimatedDrawAgeMs: received.nativeAge + received.rtt / 2 + now - received.receivedAt, clockUncertaintyMs: received.rtt / 2 };
         this.notify("live", received.frame);
       }
-      this.nextDraw = nextDeadline(this.nextDraw, now);
+      this.nextDraw = nextDeadline(this.nextDraw, now, this.interval);
     }
     if (this.displayed && this.ageUpper(this.displayed, now) > 250) this.clear("stale");
     if (now - this.sampleAt >= 1000) {
@@ -219,7 +232,7 @@ export class MinimapPreviewDriver {
   private read(sentAt: number) {
     const lease = this.lease!, revision = this.revision;
     this.inFlight = true;
-    this.nextRead = nextDeadline(this.nextRead, sentAt);
+    this.nextRead = nextDeadline(this.nextRead, sentAt, this.interval);
     void this.transport.read(lease, this.after.toString()).then((buffer) => {
       if (!this.wanted() || revision !== this.revision || lease !== this.lease) return;
       const frame = parseMinimapPacket(buffer);

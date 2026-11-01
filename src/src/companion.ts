@@ -1045,7 +1045,10 @@ function ensureRuntime() {
       };
     })
   );
-  sub<ResourceStats>("resource-stats", (p) => updateLive((s) => ({ ...s, stats: p }), true));
+  sub<ResourceStats>("resource-stats", (p) => {
+    minimapPreview.setFrameRate(p.minimap_preview_fps ?? 15);
+    updateLive((s) => ({ ...s, stats: p }), true);
+  });
   // Immediate, not batched: this gates whether the deck is allowed to claim
   // safety at all, so it must never sit in the 250ms flush queue behind other
   // live state.
@@ -1116,11 +1119,16 @@ function ensureRuntime() {
       ? ({ ...s, roster: p, active: s.active || p.complete })
       : s, true)
   );
-  sub<HeroHudRead>("hero-hud", (p) =>
-    updateLive((s) => sessionEventIsCurrent(s, p, ["live", "disconnected"])
-      ? ({ ...s, heroHud: p })
-      : s, true)
-  );
+  sub<HeroHudRead>("hero-hud", (p) => {
+    if (!sessionEventIsCurrent(pendingLive ?? liveState, p, ["live", "disconnected"])) return;
+    updateLive((s) => ({ ...s, heroHud: p }), true);
+    const old = expiryTimers.get("hero-hud");
+    if (old) window.clearTimeout(old);
+    expiryTimers.set("hero-hud", window.setTimeout(() => {
+      updateLive((s) => s.session?.session_epoch === p.session_epoch ? { ...s, heroHud: null } : s, true);
+      expiryTimers.delete("hero-hud");
+    }, 1500));
+  });
   sub<SignalAlert>("gank-alert", (p) => {
     if (!sessionEventIsCurrent(pendingLive ?? liveState, p, ["live", "disconnected"])) return;
     updateLive((s) => ({ ...s, gank: p, active: true,

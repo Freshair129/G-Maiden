@@ -14,6 +14,14 @@ function packet({ status = 1, frame = 1n, epoch = 7n, generation = 1n, acquired 
 }
 
 describe("binary minimap contract", () => {
+  it("reads Tauri JSON byte responses with the same validated frame identity", () => {
+    const bytes = Array.from(new Uint8Array(packet()));
+    expect(parseMinimapPacket(bytes as unknown as ArrayBuffer)?.pixels?.[0]).toBe(123);
+    for (const invalid of [-1, 256, 1.5, NaN, "71", null]) {
+      expect(parseMinimapPacket([invalid, ...bytes.slice(1)] as unknown as ArrayBuffer)).toBeNull();
+    }
+    expect(parseMinimapPacket(new Array(409745).fill(0) as unknown as ArrayBuffer)).toBeNull();
+  });
   it("preserves full u64 identity and validates before exposing RGBA", () => {
     const result = parseMinimapPacket(packet());
     expect(result?.streamId).toBe(9007199254740993n);
@@ -70,6 +78,16 @@ function rig() {
 }
 
 describe("latest-only preview lifecycle", () => {
+  it("reduces both RPC and drawing cadence without replacing the lease or freshness fence", async () => {
+    const r = rig(); r.driver.setFrameRate(15); r.subscribe();
+    r.starts[0].resolve({ leaseId: "9007199254740993" }); await settle();
+    r.step(0); r.reads[0].result.resolve(packet()); await settle(); r.step(17);
+    expect(r.drawn.filter(Boolean)).toHaveLength(1);
+    r.step(34); r.step(50); expect(r.reads).toHaveLength(1);
+    r.step(67); expect(r.reads).toHaveLength(2);
+    expect(r.starts).toHaveLength(1); expect(r.stopped).toHaveLength(0);
+    r.step(251); expect(r.driver.getSnapshot().status).toBe("stale");
+  });
   it("shares one lease, allows one RPC in flight and counts/draws unique frames only at <=60Hz", async () => {
     const r = rig();
     const off = r.subscribe(); const off2 = r.driver.subscribeFrames(() => {});

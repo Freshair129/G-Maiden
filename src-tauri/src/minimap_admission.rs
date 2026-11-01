@@ -1,4 +1,40 @@
-//! Preview yields with headroom; these are not the critical runtime hard limits.
+//! Preview reduces cadence under soft CPU load; memory/core pressure still withdraws it.
+pub(crate) struct Cadence {
+    fps: u8,
+    good_samples: u8,
+}
+impl Default for Cadence {
+    fn default() -> Self {
+        Self {
+            fps: 15,
+            good_samples: 0,
+        }
+    }
+}
+impl Cadence {
+    pub fn update(&mut self, cpu: f64) -> u8 {
+        let target = if !(0.0..3.0).contains(&cpu) {
+            15
+        } else if cpu >= 2.0 {
+            30
+        } else {
+            60
+        };
+        if target < self.fps {
+            self.fps = target;
+            self.good_samples = 0;
+        } else if target > self.fps {
+            self.good_samples += 1;
+            if self.good_samples >= 10 {
+                self.fps = if self.fps == 15 { 30 } else { 60 };
+                self.good_samples = 0;
+            }
+        } else {
+            self.good_samples = 0;
+        }
+        self.fps
+    }
+}
 #[derive(Default)]
 pub(crate) struct Admission {
     allowed: bool,
@@ -11,7 +47,10 @@ impl Admission {
             && cpu_pct.is_finite()
             && ram_mb >= 0.
             && cpu_pct >= 0.;
-        if !available || ram_mb >= 800. || cpu_pct >= 6. {
+        // Cadence already reduces capture and IPC work before CPU pressure. Killing
+        // visibility at 6% caused an endless live/reference cycle below the actual
+        // 10% whole-app budget. Keep the core throttle and memory reserve fail-closed.
+        if !available || ram_mb >= 800. || cpu_pct >= 10. {
             self.allowed = false;
             self.good_samples = 0;
         } else if !self.allowed {
@@ -31,6 +70,24 @@ impl Admission {
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn cadence_backs_off_before_admission_limit_and_recovers_without_churn() {
+        let mut c = Cadence::default();
+        for _ in 0..9 {
+            assert_eq!(c.update(1.), 15);
+        }
+        assert_eq!(c.update(1.), 30);
+        for _ in 0..9 {
+            assert_eq!(c.update(1.), 30);
+        }
+        assert_eq!(c.update(1.), 60);
+        assert_eq!(c.update(2.5), 30);
+        assert_eq!(c.update(4.), 15);
+        for _ in 0..20 {
+            assert_eq!(c.update(4.9), 15);
+        }
+        assert_eq!(c.update(f64::NAN), 15);
+    }
     fn ready() -> Admission {
         let mut a = Admission::default();
         for _ in 0..3 {
@@ -47,12 +104,14 @@ mod tests {
         assert!(a.update(790., 5.9, false));
     }
     #[test]
-    fn preview_stops_while_critical_capture_still_has_budget_headroom() {
+    fn memory_and_core_limits_stop_preview_but_soft_cpu_load_uses_cadence() {
         let mut a = ready();
         assert!(a.update(400., 2., false));
         assert!(!a.update(800., 2., false));
         let mut a = ready();
-        assert!(!a.update(400., 6., false));
+        assert!(a.update(400., 6., false));
+        assert!(a.update(400., 9.9, false));
+        assert!(!a.update(400., 10., false));
         for _ in 0..5 {
             assert!(!a.update(780., 5.5, false));
         }

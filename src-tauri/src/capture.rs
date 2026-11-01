@@ -735,6 +735,7 @@ mod backend {
         ));
         let (screen_w, screen_h) = (dxgi.width(), dxgi.height());
         let mut state = CaptureState::new(app, region, screen_w, screen_h);
+        crate::governor::startup_capture_ready();
         let mut last_monitor_check = Instant::now();
         // CR-live-probe-rect: fires at most once — logs the ONE legitimate case
         // an `acquire_rect` can fail where `acquire_frame` would not (the

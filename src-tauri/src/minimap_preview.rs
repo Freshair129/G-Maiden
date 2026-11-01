@@ -16,7 +16,9 @@ pub(crate) fn packet_health(
     // A concurrent reader may publish a packet after the clock is sampled.
     let now = clock();
     let age = now.checked_sub(if last == 0 { started } else { last })?;
-    (now != 0 && age <= if last == 0 { 2_000_000 } else { 500_000 }).then_some(now)
+    // Process/DLL loading shares the app's CPU cap. Allow a bounded cold start
+    // before the first packet; never extend the running worker/frame freshness.
+    (now != 0 && age <= if last == 0 { 5_000_000 } else { 500_000 }).then_some(now)
 }
 
 pub fn matches_output(g: Geometry, display_id: u64, origin: (i32, i32), size: (u32, u32)) -> bool {
@@ -274,13 +276,10 @@ impl Pacer {
     pub fn due(&self, now: u64) -> bool {
         now >= self.next
     }
-    pub fn advance(&mut self, now: u64) {
-        self.next = self
-            .next
-            .saturating_add(PERIOD_US)
-            .max(now.saturating_add(1));
+    pub fn advance(&mut self, now: u64, period: u64) {
+        self.next = self.next.saturating_add(period).max(now.saturating_add(1));
         if self.next <= now.saturating_add(1) {
-            self.next = now.saturating_add(PERIOD_US);
+            self.next = now.saturating_add(period);
         }
     }
     pub fn wait_us(&self, now: u64) -> u64 {
@@ -374,10 +373,10 @@ mod tests {
     fn worker_health_keeps_startup_timeout_freshness_and_clock_failure_checks() {
         use std::sync::atomic::AtomicU64;
         assert_eq!(
-            packet_health(&AtomicU64::new(0), 100, || 2_000_100),
-            Some(2_000_100)
+            packet_health(&AtomicU64::new(0), 100, || 5_000_100),
+            Some(5_000_100)
         );
-        assert_eq!(packet_health(&AtomicU64::new(0), 100, || 2_000_101), None);
+        assert_eq!(packet_health(&AtomicU64::new(0), 100, || 5_000_101), None);
         assert_eq!(
             packet_health(&AtomicU64::new(100), 1, || 500_100),
             Some(500_100)
@@ -601,13 +600,24 @@ mod tests {
     fn sixty_hz_deadlines_do_not_add_a_second_interval_or_catch_up_burst() {
         let mut p = Pacer::default();
         assert!(p.due(0));
-        p.advance(0);
+        p.advance(0, PERIOD_US);
         assert!(!p.due(16_666));
         assert!(p.due(16_667));
-        p.advance(16_667);
+        p.advance(16_667, PERIOD_US);
         assert_eq!(p.wait_us(20_000), 13_334);
-        p.advance(100_000);
+        p.advance(100_000, PERIOD_US);
         assert!(!p.due(100_000));
         assert_eq!(p.wait_us(100_000), PERIOD_US);
+    }
+    #[test]
+    fn adaptive_pacing_keeps_fresh_capture_without_catchup_bursts() {
+        let mut p = Pacer::default();
+        p.advance(0, 66_667);
+        assert!(!p.due(16_667));
+        assert!(p.due(66_667));
+        p.advance(66_667, 33_334);
+        assert_eq!(p.wait_us(66_667), 33_334);
+        p.advance(500_000, 66_667);
+        assert_eq!(p.wait_us(500_000), 66_667);
     }
 }

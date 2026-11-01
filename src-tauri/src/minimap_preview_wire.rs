@@ -2,6 +2,13 @@
 use crate::minimap_preview::{self as core, Snapshot, Status};
 pub const WORKER_ARG: &str = "--minimap-preview-worker";
 
+pub fn capture_fps(command: u8) -> Option<u8> {
+    match command {
+        0 | 15 | 30 | 60 => Some(command),
+        _ => None,
+    }
+}
+
 pub fn worker_role(args: &[String]) -> Option<bool> {
     if !args.iter().any(|arg| arg == WORKER_ARG) {
         return None;
@@ -63,6 +70,7 @@ pub fn header(bytes: &[u8; core::HEADER_LEN], source: Snapshot, now: u64) -> Opt
     let status = match u32_at(8) {
         0 => Status::Waiting,
         1 => Status::Frame,
+        3 => Status::Pressure,
         4 => Status::Unavailable,
         _ => return None,
     };
@@ -108,6 +116,27 @@ pub fn header(bytes: &[u8; core::HEADER_LEN], source: Snapshot, now: u64) -> Opt
 mod tests {
     use super::*;
     use crate::minimap_preview::{Geometry, Pixels};
+    #[test]
+    fn pause_and_resume_are_explicit_and_invalid_commands_fail_closed() {
+        for command in [0, 15, 30, 60] {
+            assert_eq!(capture_fps(command), Some(command));
+        }
+        for command in [1, 2, 3, 255] {
+            assert_eq!(capture_fps(command), None);
+        }
+    }
+    #[test]
+    fn pressure_heartbeat_keeps_worker_transport_alive_without_pixels() {
+        let bytes = core::worker_packet(source(), 7, Status::Pressure, None, 100);
+        let parsed = header(bytes.as_slice().try_into().unwrap(), source(), 101);
+        assert!(
+            parsed.is_some(),
+            "pressure is a live worker state, not a broken pipe"
+        );
+        let parsed = parsed.unwrap();
+        assert_eq!(parsed.status, Status::Pressure);
+        assert_eq!(parsed.payload, 0);
+    }
     fn source() -> Snapshot {
         Snapshot {
             lease: 9,
