@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-10-19T20:39:45.876Z",
+  "generatedAt": "2026-11-01T16:36:27.633Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -122,6 +122,13 @@
       "status": "draft"
     },
     {
+      "id": "docs/architecture/adr/ADR-20.md",
+      "type": "doc",
+      "path": "docs/architecture/adr/ADR-20.md",
+      "title": "ADR-20: Optional Friends and brokered G-Party invitations",
+      "status": "active"
+    },
+    {
       "id": "docs/architecture/assets/design-references/README.md",
       "type": "doc",
       "path": "docs/architecture/assets/design-references/README.md"
@@ -150,9 +157,25 @@
       "domain": "ui-ux"
     },
     {
+      "id": "docs/architecture/gann-event-media-contract.md",
+      "type": "doc",
+      "path": "docs/architecture/gann-event-media-contract.md",
+      "title": "GANN-only announcer event media contract",
+      "status": "active"
+    },
+    {
+      "id": "docs/architecture/gann-package-v1-local-authoring.md",
+      "type": "doc",
+      "path": "docs/architecture/gann-package-v1-local-authoring.md",
+      "title": "GANN v1 local authoring and installation",
+      "status": "active"
+    },
+    {
       "id": "docs/architecture/implementation-plan.md",
       "type": "doc",
-      "path": "docs/architecture/implementation-plan.md"
+      "path": "docs/architecture/implementation-plan.md",
+      "title": "G-Maiden — Ultraplan (Master Implementation Plan)",
+      "status": "draft"
     },
     {
       "id": "docs/architecture/oauth-jwt-client-authorization-flows.md",
@@ -215,6 +238,90 @@
       "id": "docs/audits/2026-07-07-independent-full-audit.md",
       "type": "doc",
       "path": "docs/audits/2026-07-07-independent-full-audit.md"
+    },
+    {
+      "id": "docs/audits/2026-10-27-400mb-remediation-plan.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-27-400mb-remediation-plan.md",
+      "title": "G-Maiden — Keep 400 MB Native Remediation",
+      "status": "superseded"
+    },
+    {
+      "id": "docs/audits/2026-10-27-feature-logic-audit.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-27-feature-logic-audit.md",
+      "title": "G-Maiden — Feature Logic Audit 2026-10-27",
+      "status": "draft"
+    },
+    {
+      "id": "docs/audits/2026-10-27-memory-budget-decision-proposal.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-27-memory-budget-decision-proposal.md",
+      "title": "G-Maiden — Native RAM Budget Decision Proposal",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/audits/2026-10-27-p1-remediation-plan.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-27-p1-remediation-plan.md",
+      "title": "G-Maiden — Seven P1 Remediation Plan",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/audits/2026-10-27-p1-remediation-results.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-27-p1-remediation-results.md",
+      "title": "G-Maiden — Seven P1 Remediation Results",
+      "status": "draft"
+    },
+    {
+      "id": "docs/audits/2026-10-28-audit-completion-plan.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-28-audit-completion-plan.md",
+      "title": "G-Maiden — Remaining audit completion plan",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/audits/2026-10-28-audit-completion-results.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-28-audit-completion-results.md",
+      "title": "G-Maiden — Audit completion results",
+      "status": "active"
+    },
+    {
+      "id": "docs/audits/2026-10-28-mvp-event-corrections-plan.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-28-mvp-event-corrections-plan.md",
+      "title": "G-Maiden — MVP event corrections and 900 MB budget",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/audits/2026-10-28-mvp-event-corrections-results.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-28-mvp-event-corrections-results.md",
+      "title": "G-Maiden — MVP event corrections results",
+      "status": "active"
+    },
+    {
+      "id": "docs/audits/2026-10-28-mvp011-readiness-semantics-plan.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-28-mvp011-readiness-semantics-plan.md",
+      "title": "G-Maiden — MVP-011 readiness semantics correction",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/audits/2026-10-28-mvp048-runtime-baseline.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-28-mvp048-runtime-baseline.md",
+      "title": "G-Maiden — Post-audit native resource baseline",
+      "status": "active"
+    },
+    {
+      "id": "docs/audits/2026-10-28-related-webviews-memory-spike.md",
+      "type": "doc",
+      "path": "docs/audits/2026-10-28-related-webviews-memory-spike.md",
+      "title": "G-Maiden — Related WebViews Memory Spike",
+      "status": "draft"
     },
     {
       "id": "docs/audits/SEC-001-auth-identity-hardening.md",
@@ -313,7 +420,9 @@
     {
       "id": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "type": "doc",
-      "path": "docs/change request/CR-009-gannstudio-authoring-install-contract.md"
+      "path": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "title": "G-AnnStudio original authoring and install contract",
+      "status": "superseded"
     },
     {
       "id": "docs/change request/CR-010-overlay-exact-kill-victim.md",
@@ -478,6 +587,27 @@
       "status": "draft"
     },
     {
+      "id": "docs/change request/CR-036-missing-alert-evidence.md",
+      "type": "doc",
+      "path": "docs/change request/CR-036-missing-alert-evidence.md",
+      "title": "CR-036 — ยืนยันรายชื่อและหลักฐานก่อนเตือนฮีโร่หาย",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "type": "doc",
+      "path": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "title": "CR-037 — แชร์ own-GSI stats ระหว่างสมาชิกปาร์ตี้",
+      "status": "accepted"
+    },
+    {
+      "id": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "doc",
+      "path": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "title": "CR-038 — G-Party Friends, presence และคำเชิญเข้าปาร์ตี้",
+      "status": "active"
+    },
+    {
       "id": "docs/change request/DXGI-task-assignment.md",
       "type": "doc",
       "path": "docs/change request/DXGI-task-assignment.md",
@@ -583,6 +713,13 @@
       "status": "draft"
     },
     {
+      "id": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "type": "doc",
+      "path": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "title": "13 — UI Technical Drawing Atlas",
+      "status": "active"
+    },
+    {
       "id": "docs/design-system/README.md",
       "type": "doc",
       "path": "docs/design-system/README.md",
@@ -617,6 +754,13 @@
       "status": "draft"
     },
     {
+      "id": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "doc",
+      "path": "docs/features/FEAT-G-FRIENDS.md",
+      "title": "FEAT: G-Friends — Friends and consented party invitations",
+      "status": "active"
+    },
+    {
       "id": "docs/features/FEAT-G-LOG.md",
       "type": "doc",
       "path": "docs/features/FEAT-G-LOG.md",
@@ -649,6 +793,13 @@
       "type": "doc",
       "path": "docs/features/FEAT-G-MOTION.md",
       "title": "FEAT-G-MOTION — Time-off-map Risk Heuristic",
+      "status": "active"
+    },
+    {
+      "id": "docs/features/FEAT-G-PARTY.md",
+      "type": "doc",
+      "path": "docs/features/FEAT-G-PARTY.md",
+      "title": "FEAT: G-Party — Cooperative own-GSI status sharing",
       "status": "active"
     },
     {
@@ -735,6 +886,13 @@
       "domain": "account-identity-security"
     },
     {
+      "id": "docs/operations/announcer-id-filesystem.md",
+      "type": "doc",
+      "path": "docs/operations/announcer-id-filesystem.md",
+      "title": "Announcer ID filesystem packages",
+      "status": "active"
+    },
+    {
       "id": "docs/operations/auth-failure-remediation-proposal.md",
       "type": "doc",
       "path": "docs/operations/auth-failure-remediation-proposal.md",
@@ -752,6 +910,20 @@
       "domain": "ui-ux"
     },
     {
+      "id": "docs/operations/g-party-social-operations.md",
+      "type": "doc",
+      "path": "docs/operations/g-party-social-operations.md",
+      "title": "G-Party social operations and evidence",
+      "status": "active"
+    },
+    {
+      "id": "docs/operations/vrzo-banner-validation.md",
+      "type": "doc",
+      "path": "docs/operations/vrzo-banner-validation.md",
+      "title": "VRZO synchronized banner validation",
+      "status": "active"
+    },
+    {
       "id": "docs/product/MASTERPLAN-account-phase1.md",
       "type": "doc",
       "path": "docs/product/MASTERPLAN-account-phase1.md",
@@ -761,7 +933,9 @@
     {
       "id": "docs/product/business-requirements.md",
       "type": "doc",
-      "path": "docs/product/business-requirements.md"
+      "path": "docs/product/business-requirements.md",
+      "title": "Business Requirements Document (BRD) — G-Maiden",
+      "status": "draft"
     },
     {
       "id": "docs/product/business-validation-plan.md",
@@ -911,6 +1085,83 @@
       "id": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md",
       "type": "doc",
       "path": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-10-29-announcer-id-filesystem.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-10-29-announcer-id-filesystem.md",
+      "title": "G-Announcer ID filesystem integration",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-10-29-announcer-playback-buffering.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-10-29-announcer-playback-buffering.md",
+      "title": "แผนแก้เสียง announcer สะดุดระหว่างเล่นเกม",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-10-29-minimap-live-preview-60fps.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-10-29-minimap-live-preview-60fps.md",
+      "title": "แผนกู้และแก้มินิแมปสด",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md",
+      "title": "VRZO synchronized banner implementation plan",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-10-29-vrzo-v8-mixed-audio.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-10-29-vrzo-v8-mixed-audio.md",
+      "title": "VRZO v8 verified mixed audio implementation plan",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-10-31-gann-only-events.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-10-31-gann-only-events.md",
+      "title": "GANN-only event media implementation",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
+      "title": "G-Party Friends implementation plan",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "title": "G-Party own-GSI sharing implementation plan",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/specs/2026-10-29-minimap-live-preview-60fps-design.md",
+      "type": "doc",
+      "path": "docs/superpowers/specs/2026-10-29-minimap-live-preview-60fps-design.md",
+      "title": "แบบพรีวิวมินิแมปสด 60 FPS",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
+      "type": "doc",
+      "path": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
+      "title": "VRZO banner synchronized with announcer",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "type": "doc",
+      "path": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "title": "G-Party Friends design",
+      "status": "active"
     },
     {
       "id": "src-tauri/src/capture.rs",
@@ -1622,81 +1873,117 @@
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/tech-stack.md",
+      "to": "docs/design-system/13-ui-technical-drawing-atlas.md",
       "type": "wikilink",
-      "line": 92
+      "line": 85
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/engineering-spec.md",
+      "to": "docs/architecture/tech-stack.md",
       "type": "wikilink",
       "line": 94
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/technical-design-document.md",
+      "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
       "line": 96
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/design-system.md",
+      "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
       "line": 98
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/product-family-design-map.md",
+      "to": "docs/architecture/design-system.md",
       "type": "wikilink",
       "line": 100
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "to": "docs/architecture/product-family-design-map.md",
       "type": "wikilink",
       "line": 102
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/implementation-plan.md",
+      "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "type": "wikilink",
       "line": 104
     },
     {
       "from": "docs/DOC-INDEX.md",
-      "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "to": "docs/architecture/implementation-plan.md",
       "type": "wikilink",
       "line": 106
     },
     {
       "from": "docs/DOC-INDEX.md",
+      "to": "docs/architecture/oauth-jwt-client-authorization-flows.md",
+      "type": "wikilink",
+      "line": 108
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
       "to": "docs/features/README.md",
       "type": "wikilink",
-      "line": 139
+      "line": 142
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 141
+      "line": 144
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 146
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 148
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 169
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 176
+      "line": 188
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 178
+      "line": 190
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 183
+      "line": 195
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "type": "wikilink",
+      "line": 206
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
+      "type": "wikilink",
+      "line": 208
     },
     {
       "from": "docs/README.md",
@@ -2215,6 +2502,24 @@
       "line": 141
     },
     {
+      "from": "docs/architecture/adr/ADR-20.md",
+      "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "wikilink",
+      "line": 20
+    },
+    {
+      "from": "docs/architecture/adr/ADR-20.md",
+      "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "type": "wikilink",
+      "line": 55
+    },
+    {
+      "from": "docs/architecture/adr/ADR-20.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 57
+    },
+    {
       "from": "docs/architecture/design-system.md",
       "to": "docs/design-system/02-tokens.md",
       "type": "wikilink",
@@ -2294,45 +2599,51 @@
     },
     {
       "from": "docs/architecture/design-system.md",
-      "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
+      "to": "docs/operations/vrzo-banner-validation.md",
       "type": "wikilink",
-      "line": 449
+      "line": 428
     },
     {
       "from": "docs/architecture/design-system.md",
-      "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
       "line": 451
     },
     {
       "from": "docs/architecture/design-system.md",
+      "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
+      "type": "wikilink",
+      "line": 453
+    },
+    {
+      "from": "docs/architecture/design-system.md",
       "to": "docs/features/FEAT-G-SENSORY.md",
-      "type": "wikilink",
-      "line": 479
-    },
-    {
-      "from": "docs/architecture/design-system.md",
-      "to": "docs/product/software-requirements-specification.md",
-      "type": "wikilink",
-      "line": 480
-    },
-    {
-      "from": "docs/architecture/design-system.md",
-      "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
       "line": 481
     },
     {
       "from": "docs/architecture/design-system.md",
-      "to": "docs/architecture/technical-design-document.md",
+      "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
       "line": 482
     },
     {
       "from": "docs/architecture/design-system.md",
-      "to": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "to": "docs/architecture/engineering-spec.md",
       "type": "wikilink",
       "line": 483
+    },
+    {
+      "from": "docs/architecture/design-system.md",
+      "to": "docs/architecture/technical-design-document.md",
+      "type": "wikilink",
+      "line": 484
+    },
+    {
+      "from": "docs/architecture/design-system.md",
+      "to": "docs/audits/2026-06-23-audit-gsi-setup-overlay-settings-th.md",
+      "type": "wikilink",
+      "line": 485
     },
     {
       "from": "docs/architecture/design-system.md",
@@ -2374,7 +2685,7 @@
       "from": "docs/architecture/design-system.md",
       "to": "src/src/App.tsx",
       "type": "symbol",
-      "line": 436
+      "line": 438
     },
     {
       "from": "docs/architecture/engineering-spec.md",
@@ -2402,21 +2713,33 @@
     },
     {
       "from": "docs/architecture/engineering-spec.md",
+      "to": "docs/operations/vrzo-banner-validation.md",
+      "type": "wikilink",
+      "line": 181
+    },
+    {
+      "from": "docs/architecture/engineering-spec.md",
+      "to": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
+      "type": "wikilink",
+      "line": 181
+    },
+    {
+      "from": "docs/architecture/engineering-spec.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
-      "line": 286
+      "line": 292
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 287
+      "line": 293
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 303
+      "line": 309
     },
     {
       "from": "docs/architecture/engineering-spec.md",
@@ -2446,79 +2769,79 @@
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 177
+      "line": 183
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 183
+      "line": 189
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/providers.mjs",
       "type": "symbol",
-      "line": 266
+      "line": 272
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/config.json",
       "type": "symbol",
-      "line": 266
+      "line": 272
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/engine.mjs",
       "type": "symbol",
-      "line": 266
+      "line": 272
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/companion.ts",
       "type": "symbol",
-      "line": 271
+      "line": 277
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildTelemetry.ts",
       "type": "symbol",
-      "line": 273
+      "line": 279
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildWeekly.ts",
       "type": "symbol",
-      "line": 273
+      "line": 279
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildInsights.ts",
       "type": "symbol",
-      "line": 273
+      "line": 279
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildHistory.ts",
       "type": "symbol",
-      "line": 273
+      "line": 279
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 276
+      "line": 282
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 278
+      "line": 284
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 278
+      "line": 284
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -2564,6 +2887,12 @@
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "to": "docs/operations/vrzo-banner-validation.md",
+      "type": "wikilink",
+      "line": 176
+    },
+    {
+      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
       "line": 191
@@ -2591,18 +2920,6 @@
       "to": "src/src/shortcuts.ts",
       "type": "symbol",
       "line": 53
-    },
-    {
-      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 176
-    },
-    {
-      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 176
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -2635,22 +2952,58 @@
       "line": 198
     },
     {
+      "from": "docs/architecture/gann-event-media-contract.md",
+      "to": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "type": "wikilink",
+      "line": 12
+    },
+    {
+      "from": "docs/architecture/gann-event-media-contract.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 12
+    },
+    {
+      "from": "docs/architecture/gann-event-media-contract.md",
+      "to": "docs/architecture/gann-package-v1-local-authoring.md",
+      "type": "wikilink",
+      "line": 48
+    },
+    {
+      "from": "docs/architecture/gann-event-media-contract.md",
+      "to": "docs/superpowers/plans/2026-10-31-gann-only-events.md",
+      "type": "wikilink",
+      "line": 58
+    },
+    {
+      "from": "docs/architecture/gann-package-v1-local-authoring.md",
+      "to": "docs/architecture/gann-event-media-contract.md",
+      "type": "wikilink",
+      "line": 12
+    },
+    {
+      "from": "docs/architecture/gann-package-v1-local-authoring.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 69
+    },
+    {
       "from": "docs/architecture/implementation-plan.md",
       "to": "src-tauri/tauri.conf.json",
       "type": "symbol",
-      "line": 139
+      "line": 147
     },
     {
       "from": "docs/architecture/implementation-plan.md",
       "to": "package.json",
       "type": "symbol",
-      "line": 139
+      "line": 147
     },
     {
       "from": "docs/architecture/implementation-plan.md",
       "to": ".github/workflows/ci.yml",
       "type": "symbol",
-      "line": 142
+      "line": 150
     },
     {
       "from": "docs/architecture/oauth-jwt-client-authorization-flows.md",
@@ -2723,6 +3076,12 @@
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
       "line": 38
+    },
+    {
+      "from": "docs/architecture/tech-stack.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 99
     },
     {
       "from": "docs/architecture/tech-stack.md",
@@ -3221,6 +3580,60 @@
       "to": "src/src/auth.ts",
       "type": "symbol",
       "line": 144
+    },
+    {
+      "from": "docs/audits/2026-10-27-400mb-remediation-plan.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 14
+    },
+    {
+      "from": "docs/audits/2026-10-27-400mb-remediation-plan.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 16
+    },
+    {
+      "from": "docs/audits/2026-10-27-memory-budget-decision-proposal.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 13
+    },
+    {
+      "from": "docs/audits/2026-10-27-memory-budget-decision-proposal.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 15
+    },
+    {
+      "from": "docs/audits/2026-10-27-p1-remediation-results.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 13
+    },
+    {
+      "from": "docs/audits/2026-10-27-p1-remediation-results.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 15
+    },
+    {
+      "from": "docs/audits/2026-10-28-mvp-event-corrections-results.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 13
+    },
+    {
+      "from": "docs/audits/2026-10-28-mvp011-readiness-semantics-plan.md",
+      "to": "docs/audits/2026-10-28-mvp048-runtime-baseline.md",
+      "type": "wikilink",
+      "line": 31
+    },
+    {
+      "from": "docs/audits/2026-10-28-mvp048-runtime-baseline.md",
+      "to": "docs/audits/2026-10-28-mvp011-readiness-semantics-plan.md",
+      "type": "wikilink",
+      "line": 48
     },
     {
       "from": "docs/audits/SEC-001-auth-identity-hardening.md",
@@ -3932,18 +4345,6 @@
     },
     {
       "from": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 99
-    },
-    {
-      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 102
-    },
-    {
-      "from": "docs/change request/CR-007-frostline-deck-refresh.md",
       "to": "src-tauri/src/voice_api/mod.rs",
       "type": "symbol",
       "line": 118
@@ -4190,105 +4591,93 @@
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "to": "docs/architecture/gann-event-media-contract.md",
+      "type": "wikilink",
+      "line": 10
+    },
+    {
+      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 7
+      "line": 18
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "type": "wikilink",
-      "line": 7
+      "line": 18
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "docs/change request/CR-004-voice-command-browser.md",
       "type": "wikilink",
-      "line": 7
+      "line": 18
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
-      "line": 9
+      "line": 20
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
-      "line": 9
+      "line": 20
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
-      "line": 36
+      "line": 47
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/voice_api/mod.rs",
       "type": "symbol",
-      "line": 36
+      "line": 47
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
-      "line": 36
+      "line": 51
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
-      "line": 40
+      "line": 81
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/voice_api/banner.rs",
       "type": "symbol",
-      "line": 61
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 70
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 71
-    },
-    {
-      "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 72
+      "line": 82
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/voice_api/tests.rs",
       "type": "symbol",
-      "line": 77
+      "line": 88
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
-      "line": 98
+      "line": 109
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/voice_api/mod.rs",
       "type": "symbol",
-      "line": 98
+      "line": 109
     },
     {
       "from": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
       "to": "src-tauri/src/audio.rs",
       "type": "symbol",
-      "line": 98
+      "line": 109
     },
     {
       "from": "docs/change request/CR-010-overlay-exact-kill-victim.md",
@@ -4877,6 +5266,30 @@
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
       "line": 152
+    },
+    {
+      "from": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 24
+    },
+    {
+      "from": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 24
+    },
+    {
+      "from": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 39
+    },
+    {
+      "from": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "type": "wikilink",
+      "line": 39
     },
     {
       "from": "docs/change request/IMPL-PLAN-DXGI-migration.md",
@@ -6613,6 +7026,42 @@
       "line": 142
     },
     {
+      "from": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "to": "docs/design-system/03-layout.md",
+      "type": "wikilink",
+      "line": 22
+    },
+    {
+      "from": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "to": "docs/design-system/04-components.md",
+      "type": "wikilink",
+      "line": 22
+    },
+    {
+      "from": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "to": "docs/design-system/05-sitemap-ia.md",
+      "type": "wikilink",
+      "line": 23
+    },
+    {
+      "from": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "to": "docs/design-system/07-combat-hud.md",
+      "type": "wikilink",
+      "line": 23
+    },
+    {
+      "from": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "to": "docs/design-system/10-wireframes.md",
+      "type": "wikilink",
+      "line": 23
+    },
+    {
+      "from": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 87
+    },
+    {
       "from": "docs/design-system/README.md",
       "to": "docs/design-system/01-foundations.md",
       "type": "wikilink",
@@ -6686,63 +7135,69 @@
     },
     {
       "from": "docs/design-system/README.md",
+      "to": "docs/design-system/13-ui-technical-drawing-atlas.md",
+      "type": "wikilink",
+      "line": 46
+    },
+    {
+      "from": "docs/design-system/README.md",
       "to": "docs/design-system/06-stack.md",
       "type": "wikilink",
-      "line": 55
+      "line": 56
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/architecture/design-system.md",
       "type": "wikilink",
-      "line": 70
+      "line": 71
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "type": "wikilink",
-      "line": 71
+      "line": 72
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
-      "line": 71
+      "line": 72
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/design-system/10-wireframes.md",
       "type": "wikilink",
-      "line": 71
+      "line": 72
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/design-system/11-wireflows.md",
       "type": "wikilink",
-      "line": 71
+      "line": 72
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/design-system/12-user-flows.md",
       "type": "wikilink",
-      "line": 71
+      "line": 72
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 72
+      "line": 73
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 72
+      "line": 73
     },
     {
       "from": "docs/design-system/README.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 72
+      "line": 73
     },
     {
       "from": "docs/design-system/assets/wireframes/design-qa.md",
@@ -6977,6 +7432,42 @@
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
       "line": 287
+    },
+    {
+      "from": "docs/features/FEAT-G-FRIENDS.md",
+      "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "wikilink",
+      "line": 21
+    },
+    {
+      "from": "docs/features/FEAT-G-FRIENDS.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 21
+    },
+    {
+      "from": "docs/features/FEAT-G-FRIENDS.md",
+      "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "type": "wikilink",
+      "line": 58
+    },
+    {
+      "from": "docs/features/FEAT-G-FRIENDS.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 75
+    },
+    {
+      "from": "docs/features/FEAT-G-FRIENDS.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 107
+    },
+    {
+      "from": "docs/features/FEAT-G-FRIENDS.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 124
     },
     {
       "from": "docs/features/FEAT-G-LOG.md",
@@ -7225,6 +7716,60 @@
       "line": 82
     },
     {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "type": "wikilink",
+      "line": 21
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/product/mvp-backlog.md",
+      "type": "wikilink",
+      "line": 23
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 29
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 33
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 98
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "type": "wikilink",
+      "line": 100
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 107
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 110
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "type": "wikilink",
+      "line": 125
+    },
+    {
       "from": "docs/features/FEAT-G-PERSONA.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
@@ -7376,27 +7921,39 @@
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 46
+    },
+    {
+      "from": "docs/features/FEAT-G-SENSORY.md",
+      "to": "docs/operations/vrzo-banner-validation.md",
+      "type": "wikilink",
+      "line": 96
+    },
+    {
+      "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/architecture/design-system.md",
       "type": "wikilink",
-      "line": 108
+      "line": 107
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 134
+      "line": 133
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/architecture/technical-design-document.md",
       "type": "wikilink",
-      "line": 158
+      "line": 157
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "docs/architecture/design-system.md",
       "type": "wikilink",
-      "line": 172
+      "line": 171
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
@@ -7424,15 +7981,9 @@
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
-      "to": "src/src/App.tsx",
+      "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 96
-    },
-    {
-      "from": "docs/features/FEAT-G-SENSORY.md",
-      "to": "src/src/App.tsx",
-      "type": "symbol",
-      "line": 96
+      "line": 97
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
@@ -7442,51 +7993,45 @@
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
-      "to": "src-tauri/src/governor.rs",
-      "type": "symbol",
-      "line": 99
-    },
-    {
-      "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "gpu-feeder/",
       "type": "symbol",
-      "line": 103
+      "line": 102
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 103
+      "line": 102
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/App.tsx",
       "type": "symbol",
-      "line": 134
+      "line": 133
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/CommandDeck.tsx",
       "type": "symbol",
-      "line": 135
+      "line": 134
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src/src/live/",
       "type": "symbol",
-      "line": 137
+      "line": 136
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 158
+      "line": 157
     },
     {
       "from": "docs/features/FEAT-G-SENSORY.md",
       "to": "tests/perf/src/bin/perf_cpu_tree.rs",
       "type": "symbol",
-      "line": 181
+      "line": 180
     },
     {
       "from": "docs/features/FEAT-G-SENTRY.md",
@@ -7628,123 +8173,171 @@
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
-      "to": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
       "type": "wikilink",
-      "line": 471
+      "line": 76
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
-      "to": "docs/features/FEAT-G-DAMAGE.md",
+      "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
       "type": "wikilink",
       "line": 472
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 476
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "type": "wikilink",
+      "line": 482
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "wikilink",
+      "line": 486
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/architecture/adr/ADR-20.md",
+      "type": "wikilink",
+      "line": 486
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 486
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 498
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
+      "type": "wikilink",
+      "line": 504
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/features/FEAT-G-DAMAGE.md",
+      "type": "wikilink",
+      "line": 505
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/data/provenance.json",
       "type": "symbol",
-      "line": 99
+      "line": 102
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "tools/data-provenance/verify_manifest.py",
       "type": "symbol",
-      "line": 112
+      "line": 115
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
-      "line": 122
+      "line": 125
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/sentry.rs",
       "type": "symbol",
-      "line": 163
+      "line": 166
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/motion.rs",
       "type": "symbol",
-      "line": 207
+      "line": 210
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/tuning.rs",
       "type": "symbol",
-      "line": 207
+      "line": 210
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/signal.rs",
       "type": "symbol",
-      "line": 230
+      "line": 233
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 287
+      "line": 290
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 288
+      "line": 291
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 289
+      "line": 292
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 318
+      "line": 321
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 344
+      "line": 347
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 344
+      "line": 347
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "tests/perf/src/bin/perf_p7.rs",
       "type": "symbol",
-      "line": 344
+      "line": 347
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 354
+      "line": 357
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/tuning.rs",
       "type": "symbol",
-      "line": 354
+      "line": 357
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "tests/perf/src/bin/replay_fit.rs",
       "type": "symbol",
-      "line": 354
+      "line": 357
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "src-tauri/src/revive.rs",
       "type": "symbol",
-      "line": 380
+      "line": 383
     },
     {
       "from": "docs/features/README.md",
@@ -7844,9 +8437,45 @@
     },
     {
       "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-SCORE.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
       "type": "wikilink",
       "line": 53
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/architecture/adr/ADR-20.md",
+      "type": "wikilink",
+      "line": 53
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "wikilink",
+      "line": 53
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 54
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "type": "wikilink",
+      "line": 54
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "type": "wikilink",
+      "line": 56
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-SCORE.md",
+      "type": "wikilink",
+      "line": 62
     },
     {
       "from": "docs/guides/scaffold-setup.md",
@@ -7945,6 +8574,36 @@
       "line": 72
     },
     {
+      "from": "docs/operations/g-party-social-operations.md",
+      "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "type": "wikilink",
+      "line": 21
+    },
+    {
+      "from": "docs/operations/g-party-social-operations.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 21
+    },
+    {
+      "from": "docs/operations/g-party-social-operations.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
+      "type": "wikilink",
+      "line": 21
+    },
+    {
+      "from": "docs/operations/vrzo-banner-validation.md",
+      "to": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
+      "type": "wikilink",
+      "line": 12
+    },
+    {
+      "from": "docs/operations/vrzo-banner-validation.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 12
+    },
+    {
       "from": "docs/product/MASTERPLAN-account-phase1.md",
       "to": "docs/change request/CR-003-account-phase1-wallet-billing.md",
       "type": "wikilink",
@@ -7954,145 +8613,145 @@
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 3
+      "line": 11
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 3
+      "line": 11
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 5
+      "line": 13
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 5
+      "line": 13
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
-      "line": 5
+      "line": 13
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/roadmap.md",
       "type": "wikilink",
-      "line": 5
+      "line": 13
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
-      "line": 25
+      "line": 33
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
-      "line": 78
+      "line": 86
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 89
+      "line": 97
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 89
+      "line": 97
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
       "type": "wikilink",
-      "line": 95
+      "line": 103
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 96
+      "line": 104
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "type": "wikilink",
-      "line": 102
+      "line": 110
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
-      "line": 120
+      "line": 128
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
-      "line": 157
+      "line": 165
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
       "type": "wikilink",
-      "line": 159
+      "line": 167
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 160
+      "line": 168
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "type": "wikilink",
-      "line": 161
+      "line": 169
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 185
+      "line": 193
     },
     {
       "from": "docs/product/business-requirements.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
-      "type": "wikilink",
-      "line": 204
-    },
-    {
-      "from": "docs/product/business-requirements.md",
-      "to": "docs/product/product-requirements.md",
-      "type": "wikilink",
-      "line": 211
-    },
-    {
-      "from": "docs/product/business-requirements.md",
-      "to": "docs/product/software-requirements-specification.md",
-      "type": "wikilink",
-      "line": 211
-    },
-    {
-      "from": "docs/product/business-requirements.md",
-      "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
       "line": 212
     },
     {
       "from": "docs/product/business-requirements.md",
+      "to": "docs/product/product-requirements.md",
+      "type": "wikilink",
+      "line": 219
+    },
+    {
+      "from": "docs/product/business-requirements.md",
+      "to": "docs/product/software-requirements-specification.md",
+      "type": "wikilink",
+      "line": 219
+    },
+    {
+      "from": "docs/product/business-requirements.md",
+      "to": "docs/product/competitive-brief.md",
+      "type": "wikilink",
+      "line": 220
+    },
+    {
+      "from": "docs/product/business-requirements.md",
       "to": "docs/product/roadmap.md",
       "type": "wikilink",
-      "line": 213
+      "line": 221
     },
     {
       "from": "docs/product/competitive-brief.md",
@@ -8114,81 +8773,189 @@
     },
     {
       "from": "docs/product/mvp-backlog.md",
+      "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "type": "wikilink",
+      "line": 19
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 19
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 35
+      "line": 19
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "type": "wikilink",
+      "line": 21
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "wikilink",
+      "line": 25
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 25
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
+      "type": "wikilink",
+      "line": 25
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 27
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 47
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/design-system/10-wireframes.md",
       "type": "wikilink",
-      "line": 65
+      "line": 77
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/design-system/11-wireflows.md",
       "type": "wikilink",
-      "line": 65
+      "line": 77
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/design-system/12-user-flows.md",
       "type": "wikilink",
-      "line": 65
+      "line": 77
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 106
+      "line": 118
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 106
+      "line": 118
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-MEMORY.md",
       "type": "wikilink",
-      "line": 185
+      "line": 197
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-COACH.md",
       "type": "wikilink",
-      "line": 185
+      "line": 197
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-VOICE.md",
       "type": "wikilink",
-      "line": 200
+      "line": 212
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 200
+      "line": 212
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/README.md",
       "type": "wikilink",
-      "line": 230
+      "line": 242
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/release-channel-architecture.md",
       "type": "wikilink",
-      "line": 230
+      "line": 242
     },
     {
       "from": "docs/product/mvp-decisions.md",
       "to": "docs/product/mvp-backlog.md",
       "type": "wikilink",
       "line": 18
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 29
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "type": "wikilink",
+      "line": 75
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 79
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 84
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "type": "wikilink",
+      "line": 84
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "wikilink",
+      "line": 88
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 88
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/architecture/adr/ADR-20.md",
+      "type": "wikilink",
+      "line": 88
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "type": "wikilink",
+      "line": 88
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 97
     },
     {
       "from": "docs/product/mvp-execution-dag.md",
@@ -8248,31 +9015,79 @@
       "from": "docs/product/product-requirements.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 30
+      "line": 29
     },
     {
       "from": "docs/product/product-requirements.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 55
+      "line": 31
     },
     {
       "from": "docs/product/product-requirements.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 78
+      "line": 56
     },
     {
       "from": "docs/product/product-requirements.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 126
+      "line": 79
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 122
     },
     {
       "from": "docs/product/product-requirements.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 129
+      "line": 135
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 138
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "wikilink",
+      "line": 142
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 142
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 142
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 148
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/architecture/adr/ADR-20.md",
+      "type": "wikilink",
+      "line": 148
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 148
     },
     {
       "from": "docs/product/roadmap.md",
@@ -8368,37 +9183,85 @@
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 50
+      "line": 51
     },
     {
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 112
+      "line": 114
     },
     {
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 158
+      "line": 160
     },
     {
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 165
+      "line": 167
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 194
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "type": "wikilink",
+      "line": 194
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 205
     },
     {
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 201
+      "line": 205
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "type": "wikilink",
+      "line": 213
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/architecture/adr/ADR-20.md",
+      "type": "wikilink",
+      "line": 213
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 213
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 227
     },
     {
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 218
+      "line": 229
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 247
     },
     {
       "from": "docs/rca/2026-07-10-release-gate-drift-v0.9.0.md",
@@ -8516,12 +9379,6 @@
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 21
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 23
@@ -8543,12 +9400,6 @@
       "to": "src-tauri/src/voice_api/pack_io.rs",
       "type": "symbol",
       "line": 25
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 26
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -8621,24 +9472,6 @@
       "to": "src-tauri/src/voice_api/commands.rs",
       "type": "symbol",
       "line": 60
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 61
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 61
-    },
-    {
-      "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
-      "to": "src-tauri/src/voice_api/banner.rs",
-      "type": "symbol",
-      "line": 61
     },
     {
       "from": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -8753,6 +9586,30 @@
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
       "line": 190
+    },
+    {
+      "from": "docs/superpowers/plans/2026-10-29-vrzo-v8-mixed-audio.md",
+      "to": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
+      "type": "wikilink",
+      "line": 19
+    },
+    {
+      "from": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 126
+    },
+    {
+      "from": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
+      "type": "wikilink",
+      "line": 15
+    },
+    {
+      "from": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 15
     }
   ],
   "violations": [
@@ -8763,19 +9620,19 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 132,
+      "line": 135,
       "reason": "glob-slug",
       "slug": "SPEC--*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 134,
+      "line": 137,
       "reason": "glob-slug",
       "slug": "ADR-O-*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 143,
+      "line": 150,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -8870,18 +9727,11 @@
     },
     {
       "file": "docs/architecture/engineering-spec.md",
-      "line": 271,
+      "line": 277,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/companion.ts",
       "anchor": 941,
       "symbol": "useCompanionData"
-    },
-    {
-      "file": "docs/architecture/engineering-spec.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.3.1",
-      "changelog": "0.3.0"
     },
     {
       "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -8897,11 +9747,6 @@
       "reason": "missing-approval",
       "severity": "error",
       "status": "accepted"
-    },
-    {
-      "file": "docs/architecture/implementation-plan.md",
-      "line": null,
-      "reason": "no-metadata"
     },
     {
       "file": "docs/architecture/oauth-jwt-client-authorization-flows.md",
@@ -8924,6 +9769,58 @@
       "symbol": "useCompanionData"
     },
     {
+      "file": "docs/audits/2026-07-07-independent-full-audit.md",
+      "line": 138,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 80,
+      "symbol": "read_banner_data_url"
+    },
+    {
+      "file": "docs/audits/2026-07-07-independent-full-audit.md",
+      "line": 138,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/commands.rs",
+      "anchor": 13,
+      "symbol": "sanitize_file_name"
+    },
+    {
+      "file": "docs/audits/2026-10-27-400mb-remediation-plan.md",
+      "line": 14,
+      "reason": "unresolved",
+      "slug": "PLAN-MVP-EVENT-CORRECTIONS-20261028"
+    },
+    {
+      "file": "docs/audits/2026-10-27-feature-logic-audit.md",
+      "line": 13,
+      "reason": "unresolved",
+      "slug": "RESULTS-AUDIT-COMPLETION-20261028"
+    },
+    {
+      "file": "docs/audits/2026-10-27-memory-budget-decision-proposal.md",
+      "line": 13,
+      "reason": "unresolved",
+      "slug": "PLAN-MVP-EVENT-CORRECTIONS-20261028"
+    },
+    {
+      "file": "docs/audits/2026-10-27-p1-remediation-results.md",
+      "line": 13,
+      "reason": "unresolved",
+      "slug": "PLAN-MVP-EVENT-CORRECTIONS-20261028"
+    },
+    {
+      "file": "docs/audits/2026-10-28-audit-completion-results.md",
+      "line": 35,
+      "reason": "unresolved",
+      "slug": "AUDIT-P1-REMEDIATION-RESULTS-20261027"
+    },
+    {
+      "file": "docs/audits/2026-10-28-audit-completion-results.md",
+      "line": 35,
+      "reason": "unresolved",
+      "slug": "RESULTS-MVP-EVENT-CORRECTIONS-20261028"
+    },
+    {
       "file": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
       "line": null,
       "reason": "invalid-status",
@@ -8943,6 +9840,14 @@
       "reason": "invalid-status",
       "severity": "error",
       "status": "IMPLEMENTED — merged to main 170805b8 (2026-07-02)"
+    },
+    {
+      "file": "docs/change request/CR-003-account-phase1-wallet-billing.md",
+      "line": 712,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 3,
+      "symbol": "rs"
     },
     {
       "file": "docs/change request/CR-003-payment-golive-checklist.md",
@@ -8981,6 +9886,58 @@
     },
     {
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 99,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 182,
+      "symbol": "activate_if_exists"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 99,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 102,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 128,
+      "symbol": "install_report"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 102,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 123,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 3,
+      "symbol": "rs"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 124,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 60,
+      "symbol": "fired_banner_from"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
+      "line": 125,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 100,
+      "symbol": "preview_clip"
+    },
+    {
+      "file": "docs/change request/CR-007-frostline-deck-refresh.md",
       "line": 126,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/commands.rs",
@@ -8999,6 +9956,22 @@
       "file": "docs/change request/CR-007-frostline-deck-refresh.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 19,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/auth.ts",
+      "anchor": 98,
+      "symbol": "signInWithGoogle"
+    },
+    {
+      "file": "docs/change request/CR-008-login-hardening.md",
+      "line": 70,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/secret.rs",
+      "anchor": 229,
+      "symbol": "load_secret"
     },
     {
       "file": "docs/change request/CR-008-login-hardening.md",
@@ -9055,7 +10028,15 @@
     },
     {
       "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 36,
+      "line": 20,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 3,
+      "symbol": "rs"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 47,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/gsi.rs",
       "anchor": 268,
@@ -9063,16 +10044,77 @@
     },
     {
       "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": 77,
+      "line": 47,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 182,
+      "symbol": "activate_if_exists"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 47,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 51,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 17,
+      "symbol": "packs_dir"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 72,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 206,
+      "symbol": "image_mime"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 72,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 81,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 17,
+      "symbol": "packs_dir"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 82,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 3,
+      "symbol": "rs"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 83,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 206,
+      "symbol": "image_mime"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 83,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
+    },
+    {
+      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
+      "line": 88,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/tests.rs",
       "anchor": 182,
       "symbol": "real_pack_mrijgajn_maps_voice_and_banners"
-    },
-    {
-      "file": "docs/change request/CR-009-gannstudio-authoring-install-contract.md",
-      "line": null,
-      "reason": "no-metadata"
     },
     {
       "file": "docs/change request/CR-010-overlay-exact-kill-victim.md",
@@ -9083,6 +10125,14 @@
       "file": "docs/change request/CR-011-cold-booth-ux-direction.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
+      "line": 38,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/StorePage.tsx",
+      "anchor": 80,
+      "symbol": "rowsThatFit"
     },
     {
       "file": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
@@ -9602,20 +10652,20 @@
       "symbol": "g-volume-rail"
     },
     {
-      "file": "docs/design-system/04-components.md",
-      "line": 597,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src/src/CommandDeck.tsx",
-      "anchor": 444,
-      "symbol": "startWindowDrag"
-    },
-    {
       "file": "docs/design-system/05-sitemap-ia.md",
       "line": 61,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/CommandDeck.tsx",
       "anchor": 42,
       "symbol": "DeckTabs"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": 61,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/StorePage.tsx",
+      "anchor": 80,
+      "symbol": "rowsThatFit"
     },
     {
       "file": "docs/design-system/05-sitemap-ia.md",
@@ -9640,6 +10690,14 @@
       "target": "src/src/styles.css",
       "anchor": 3078,
       "symbol": "gm-phase-chip"
+    },
+    {
+      "file": "docs/design-system/05-sitemap-ia.md",
+      "line": 135,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/CompanionPages.tsx",
+      "anchor": 17,
+      "symbol": "LiveMatchPage"
     },
     {
       "file": "docs/design-system/05-sitemap-ia.md",
@@ -9672,6 +10730,14 @@
       "target": "src/src/App.tsx",
       "anchor": 5,
       "symbol": "Control"
+    },
+    {
+      "file": "docs/design-system/07-combat-hud.md",
+      "line": 96,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/overlay/FullOverlay.tsx",
+      "anchor": 24,
+      "symbol": "}"
     },
     {
       "file": "docs/design-system/landing_page_prompt.md",
@@ -9808,6 +10874,14 @@
     },
     {
       "file": "docs/features/FEAT-G-MOTION.md",
+      "line": 44,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/sentry.rs",
+      "anchor": 164,
+      "symbol": "missing"
+    },
+    {
+      "file": "docs/features/FEAT-G-MOTION.md",
       "line": 56,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/motion.rs",
@@ -9853,6 +10927,22 @@
     },
     {
       "file": "docs/features/FEAT-G-REVIVE.md",
+      "line": 98,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/revive.rs",
+      "anchor": 105,
+      "symbol": "advise_buyback"
+    },
+    {
+      "file": "docs/features/FEAT-G-REVIVE.md",
+      "line": 102,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/revive.rs",
+      "anchor": 170,
+      "symbol": "narrate_prompt"
+    },
+    {
+      "file": "docs/features/FEAT-G-REVIVE.md",
       "line": 102,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/slm.rs",
@@ -9865,24 +10955,49 @@
       "reason": "no-metadata"
     },
     {
+      "file": "docs/features/FEAT-G-SENSORY.md",
+      "line": 37,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/governor.rs",
+      "anchor": 45,
+      "symbol": "POLL_INTERVAL_S"
+    },
+    {
+      "file": "docs/features/FEAT-G-SENSORY.md",
+      "line": 97,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/governor.rs",
+      "anchor": 180,
+      "symbol": "ResourceStats"
+    },
+    {
+      "file": "docs/features/FEAT-G-SENSORY.md",
+      "line": 98,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/governor.rs",
+      "anchor": 276,
+      "symbol": "measure"
+    },
+    {
+      "file": "docs/features/FEAT-G-SENSORY.md",
+      "line": 102,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/governor.rs",
+      "anchor": 319,
+      "symbol": "ingest_gpu"
+    },
+    {
       "file": "docs/features/FEAT-G-SENTRY.md",
       "line": null,
       "reason": "no-metadata"
     },
     {
       "file": "docs/features/G-SERIES-DATA-LINEAGE.md",
-      "line": 122,
+      "line": 125,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/gsi.rs",
       "anchor": 193,
       "symbol": "parse_tick_from_value"
-    },
-    {
-      "file": "docs/features/README.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.2.2",
-      "changelog": "0.2.0"
     },
     {
       "file": "docs/guides/scaffold-setup.md",
@@ -9910,13 +11025,6 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/product/software-requirements-specification.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.4.1",
-      "changelog": "0.4.0"
-    },
-    {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 6,
       "reason": "anchor-symbol-mismatch",
@@ -9931,6 +11039,14 @@
       "target": "src-tauri/src/voice_api/commands.rs",
       "anchor": 283,
       "symbol": "active_event_clips"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 9,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 47,
+      "symbol": "fired_banner"
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -9966,6 +11082,28 @@
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 20,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 60,
+      "symbol": "fired_banner_from"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 21,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 194,
+      "symbol": "read_banner_data_url"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 21,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 23,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/pack_io.rs",
@@ -9995,6 +11133,20 @@
       "target": "src-tauri/src/voice_api/pack_io.rs",
       "anchor": 66,
       "symbol": "build_pack"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 26,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 194,
+      "symbol": "read_banner_data_url"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 26,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
     },
     {
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
@@ -10056,9 +11208,39 @@
       "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
       "line": 61,
       "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 60,
+      "symbol": "fired_banner_from"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 61,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 100,
+      "symbol": "preview_clip"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 61,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src-tauri/src/voice_api/banner.rs",
+      "anchor": 128,
+      "symbol": "install_report"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 61,
+      "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/voice_api/pack_io.rs",
       "anchor": 66,
       "symbol": "build_pack"
+    },
+    {
+      "file": "docs/rca/2026-07-10-voice-pack-path-traversal.md",
+      "line": 61,
+      "reason": "bad-anchor",
+      "target": "src-tauri/src/voice_api/banner.rs"
     },
     {
       "file": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
@@ -10130,30 +11312,63 @@
       "file": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md",
       "line": null,
       "reason": "no-metadata"
+    },
+    {
+      "file": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "2026-10-29-vrzo-synced-banner",
+      "siblings": [
+        "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md"
+      ]
+    },
+    {
+      "file": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
+      "line": null,
+      "reason": "duplicate-slug",
+      "slug": "2026-10-29-vrzo-synced-banner",
+      "siblings": [
+        "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md"
+      ]
     }
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-10-19T20:39:54.791Z",
+    "generatedAt": "2026-11-01T16:36:28.302Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
-    "rowCount": 74,
+    "rowCount": 75,
     "byKind": {
-      "feature": 49,
+      "feature": 50,
       "nfr": 6,
       "fr": 19
     },
     "byStatus": {
+      "code+tests-present (unrun)": 15,
       "code+needs-test-or-review": 19,
-      "code+tests-present (unrun)": 14,
       "doc-only": 30,
       "in-code": 11
     },
     "byDrift": {
+      "status-understated": 1,
       "aligned": 68,
       "unclaimed": 6
     },
     "rows": [
+      {
+        "id": "3-g-party",
+        "kind": "feature",
+        "phase_target": "P3",
+        "phase_source": "doc",
+        "phase_target_source": "sourced",
+        "computed": "code+tests-present (unrun)",
+        "claimed": "code+needs-test-or-review",
+        "drift": "status-understated",
+        "gaps": [
+          "tests not run (--run-tests)"
+        ],
+        "source": "owner-directed extension, 2026-11-01; tested implementation candidate, Windows/live/NFR acceptance pending"
+      },
       {
         "id": "1.1-g-sentry",
         "kind": "feature",
@@ -11233,6 +12448,12 @@
       }
     ],
     "violations": [
+      {
+        "id": "3-g-party",
+        "type": "status-understated",
+        "blocking": false,
+        "detail": "claimed=code+needs-test-or-review below computed=code+tests-present (unrun)"
+      },
       {
         "id": "fr-4.2.2",
         "type": "unbacked-phase-source",

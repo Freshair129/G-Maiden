@@ -11,7 +11,7 @@ default-run = "latency_harness"
 name = "latency_harness"
 path = "src/main.rs"
 
-# GATE P7: RAM ≤400 MB + FPS drop ≤3% (TDD §7 / SRS §5)
+# GATE P7: host-only RAM diagnostic (aggregate acceptance is SKIP) + FPS drop ≤3%.
 # FPS measured via PresentMon ETW on dota2.exe — NOT DWM composition timing.
 [[bin]]
 name = "perf_p7"

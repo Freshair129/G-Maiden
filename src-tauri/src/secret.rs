@@ -169,12 +169,25 @@ fn set_secret_in(base: &Path, name: &str, value: &str) -> Result<(), String> {
                 .write(true)
                 .create_new(true)
                 .open(&temp_path)
-                .map_err(|err| format!("failed to create temp secret file '{}': {err}", temp_path.display()))?;
+                .map_err(|err| {
+                    format!(
+                        "failed to create temp secret file '{}': {err}",
+                        temp_path.display()
+                    )
+                })?;
             temp_created = true;
-            file.write_all(&cipher)
-                .map_err(|err| format!("failed to write temp secret file '{}': {err}", temp_path.display()))?;
-            file.sync_all()
-                .map_err(|err| format!("failed to sync temp secret file '{}': {err}", temp_path.display()))?;
+            file.write_all(&cipher).map_err(|err| {
+                format!(
+                    "failed to write temp secret file '{}': {err}",
+                    temp_path.display()
+                )
+            })?;
+            file.sync_all().map_err(|err| {
+                format!(
+                    "failed to sync temp secret file '{}': {err}",
+                    temp_path.display()
+                )
+            })?;
         }
 
         fs::rename(&temp_path, &final_path).map_err(|err| {

@@ -44,19 +44,22 @@ export const Welcome: React.FC<{ onDone: () => void }> = ({ onDone }) => {
     try {
       const path = await chooseDotaInstallPath(selectedPath)
       if (!path) return
+      await saveDotaInstallPath(path)
       setSelectedPath(path)
-      saveDotaInstallPath(path)
       await refresh(path)
     } catch (error) {
-      setPathError(`เปิดหน้าต่างเลือกโฟลเดอร์ไม่สำเร็จ: ${String(error)}`)
+      setPathError(`เลือกหรือบันทึกโฟลเดอร์ Dota 2 ไม่สำเร็จ: ${String(error)}`)
     } finally { setBusy(false) }
   }
   const clearPath = async () => {
     setBusy(true)
-    setSelectedPath(null)
-    saveDotaInstallPath(null)
-    try { setSt(await detectGsiSetup(null)); setPathError('') }
-    catch (error) { setPathError(`ตรวจ GSI setup ไม่สำเร็จ: ${String(error)}`) }
+    try {
+      await saveDotaInstallPath(null)
+      setSelectedPath(null)
+      setSt(await detectGsiSetup(null))
+      setPathError('')
+    }
+    catch (error) { setPathError(`เปลี่ยนตำแหน่ง Dota 2 ไม่สำเร็จ: ${String(error)}`) }
     finally { setBusy(false) }
   }
   const step1Done = st?.installed === true

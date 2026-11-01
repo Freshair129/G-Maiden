@@ -8,6 +8,9 @@ import { LogicalSize } from "@tauri-apps/api/dpi";
 import type { SettingsCat } from "./App";
 import { useCompanionData } from "./companion";
 import { useProfile } from "./profile";
+import { useAuth } from "./auth";
+import { useParty } from "./party/useParty";
+import { useFriends } from "./party/useFriends";
 import { useAppUpdate } from "./useAppUpdate";
 import type { VoiceState } from "./voice-types";
 import MaidenLine from "./MaidenLine";
@@ -31,9 +34,12 @@ import { DeckTabs, FeedAgePill, PhaseChip } from "./deck/onair";
 import { GMaidenFungDashboard, VolumeRail } from "./deck/FungDashboard";
 import { SignalGrid } from "./deck/SignalGrid";
 import { useStartupSettings } from "./app/settingsContext";
+import { initializeGsiSetupSelection, savedDotaInstallPath } from "./app/gsiSetup";
 
 const VoicePacksPage = lazy(() => import("./VoicePacksPage"));
 const LiveMatchPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.LiveMatchPage })));
+const CvHeroesPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.CvHeroesPage })));
+const GPartyPage = lazy(() => import("./party/GPartyPage"));
 const BuildAdvisorPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.BuildAdvisorPage })));
 const InsightsPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.InsightsPage })));
 const HistoryPage = lazy(() => import("./CompanionPages").then((pages) => ({ default: pages.HistoryPage })));
@@ -48,6 +54,14 @@ function DeferredPage({ children }: { children: ReactNode }) {
 }
 
 export default function CommandDeck({ renderSettings }: { renderSettings?: (cat: SettingsCat) => ReactNode } = {}) {
+  const gsiSelectionInitialized = useRef(false);
+  useEffect(() => {
+    if (gsiSelectionInitialized.current) return;
+    gsiSelectionInitialized.current = true;
+    // Native automatic cfg repair waits for this launch's saved selection,
+    // including an explicit null that clears a former native-only path.
+    void initializeGsiSetupSelection(savedDotaInstallPath()).catch(() => {});
+  }, []);
   const { settings, setSettings } = useStartupSettings();
   const [tab, setTab] = useState("dashboard");
   const [profileOpen, setProfileOpen] = useState(false);
@@ -59,7 +73,10 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
   // CR-013 W1-01: in-page tabs — Live folds in Build, Insights folds in
   // History. Local to CommandDeck (same "single owner" shape as `tab` above);
   // no persistence, no URL sync — a page switch always lands on the default sub-tab.
-  const [liveTab, setLiveTab] = useState("live"); // "live" | "build"
+  const [liveTab, setLiveTab] = useState("live"); // "live" | "build" | "cv" | "party"
+  const { session: friendsSession } = useAuth();
+  const party = useParty();
+  const friends = useFriends({ session: friendsSession, party, panelVisible: tab === "live" && liveTab === "party" });
   const [insightsTab, setInsightsTab] = useState("overview"); // "overview" | "history"
   // CR-013 W4-01: G-Store's own in-page tabs (§5.1) — shop/wallet/inventory/
   // ledger, same "single local owner, no persistence" shape as liveTab/
@@ -233,33 +250,36 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
   // the backend emits *-change events for all three (main.rs) precisely so
   // no single owner can be silently desynced by another writer.
   useEffect(() => {
+    let disposed = false;
     let unlisten: (() => void) | undefined;
     listen<number>("volume-change", (e) => setSettings((prev) => ({ ...prev, volume: e.payload })))
-      .then((fn) => { unlisten = fn; })
+      .then((fn) => { if (disposed) fn(); else unlisten = fn; })
       .catch(() => {
         /* not running under Tauri — ignore */
       });
-    return () => unlisten?.();
+    return () => { disposed = true; unlisten?.(); };
   }, [setSettings]);
 
   useEffect(() => {
+    let disposed = false;
     let unlisten: (() => void) | undefined;
     listen<boolean>("signal-change", (e) => setSettings((prev) => ({ ...prev, signalEnabled: e.payload })))
-      .then((fn) => { unlisten = fn; })
+      .then((fn) => { if (disposed) fn(); else unlisten = fn; })
       .catch(() => {
         /* not running under Tauri — ignore */
       });
-    return () => unlisten?.();
+    return () => { disposed = true; unlisten?.(); };
   }, [setSettings]);
 
   useEffect(() => {
+    let disposed = false;
     let unlisten: (() => void) | undefined;
     listen<boolean>("announcer-change", (e) => setSettings((prev) => ({ ...prev, announcerEnabled: e.payload })))
-      .then((fn) => { unlisten = fn; })
+      .then((fn) => { if (disposed) fn(); else unlisten = fn; })
       .catch(() => {
         /* not running under Tauri — ignore */
       });
-    return () => unlisten?.();
+    return () => { disposed = true; unlisten?.(); };
   }, [setSettings]);
 
   // Companion State "Voice" tile — active announcer pack name, fetched once.
@@ -572,13 +592,23 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
               <DeckTabs
                 tabs={[
                   { key: "live", label: "สด" },
-                  { key: "build", label: "บิลด์" }
+                  { key: "build", label: "บิลด์" },
+                  { key: "cv", label: "ฮีโร่ CV" },
+                  { key: "party", label: "G-Party" }
                 ]}
                 active={liveTab}
                 onChange={setLiveTab}
               />
               <div className="deck-tabbed-body">
-                <DeferredPage>{liveTab === "live" ? <LiveMatchPage /> : <BuildAdvisorPage />}</DeferredPage>
+                <DeferredPage>
+                  {liveTab === "live"
+                    ? <LiveMatchPage />
+                    : liveTab === "build"
+                      ? <BuildAdvisorPage />
+                      : liveTab === "party"
+                        ? <GPartyPage party={party} friends={friends} />
+                        : <CvHeroesPage />}
+                </DeferredPage>
               </div>
             </div>
           )}
@@ -661,7 +691,7 @@ export default function CommandDeck({ renderSettings }: { renderSettings?: (cat:
                       <span>
                         {update.phase === "downloading"
                           ? "กำลังดาวน์โหลดและติดตั้ง… แอปจะรีสตาร์ทเอง"
-                          : update.available.notes || "อัปเดตแล้วแอปจะรีสตาร์ทให้อัตโนมัติ"}
+                          : update.error || update.available.notes || "ปิด Dota 2 ก่อนติดตั้ง · อัปเดตแล้วแอปจะรีสตาร์ทให้อัตโนมัติ"}
                       </span>
                     </div>
                     <button

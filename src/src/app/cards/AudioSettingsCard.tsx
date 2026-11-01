@@ -5,32 +5,6 @@ import { Card } from '../primitives'
 import type { VoiceCacheStatus, EventClip } from '../types'
 
 // ─────────────────────────────── AUDIO SETTINGS (unified voice pack + event manager) ───────────────────────────────
-const PREVIEW_LINES: Record<string, string> = {
-  match_start: 'เริ่มเกมแล้ว ลุยกันเลยค่ะ!',
-  danger: 'ถอยก่อนค่ะเพื่อน เลือดเหลือน้อยแล้ว',
-  gank: 'ระวังนะคะ ศัตรูหายไปจากแมพหลายตัว อาจมีแก๊งค์',
-  revision: 'เอ๊ะ เดี๋ยวก่อน ดูเหมือนจะปลอดภัยแล้วค่ะ',
-  first_blood: 'เลือดแรกเป็นของเรา!',
-  kill: 'ฆ่าได้สวยค่ะ เก็บไปเรื่อยๆ',
-  double_kill: 'สองศพรวด เด็ดมาก!',
-  triple_kill: 'ขจัดไปสามแล้ว เริ่มมีกลิ่นแล้วนะ!',
-  ultra_kill: 'สี่ศพ หยุดไม่อยู่แล้ว!',
-  rampage: 'ห้าศพรวด แรมเพจ!',
-  killing_spree: 'กำลังขึ้น คิลลิ่งสปรี!',
-  dominating: 'ครองเกมแล้ว โดมิเนตติ้ง!',
-  mega_kill: 'เมก้าคิล!',
-  unstoppable: 'ไม่มีใครหยุดได้ อันสต็อปเปเบิล!',
-  wicked_sick: 'โหดเกินไปแล้ว วิคเก็ดซิค!',
-  monster_kill: 'มอนสเตอร์คิล!',
-  godlike: 'ระดับเทพ ก็อดไลก์!',
-  beyond_godlike: 'เหนือกว่าเทพ บียอนด์ก็อดไลก์!',
-  death: 'ตายแล้วเหรอคะ ไม่เป็นไรเดี๋ยวกลับมาใหม่',
-  respawn: 'กลับมาแล้ว ค่อยๆนะคะ',
-  levelUp: 'ขึ้นเลเวลแล้วค่ะ สวยมาก',
-  hpLow: 'เลือดน้อยมากแล้ว ระวังตัวด้วย!',
-  manaLow: 'มานาเหลือน้อยแล้วค่ะ ระวังด้วย',
-  advice: 'ลองดูคำแนะนำนี้นะคะ',
-}
 const EVENT_CATEGORIES: { label: string; color: string; events: string[] }[] = [
   { label: 'แจ้งเตือน', color: '#ff6b6b', events: ['danger', 'gank', 'revision', 'hpLow', 'manaLow'] },
   { label: 'คิล / มัลติคิล', color: '#ffd93d', events: ['first_blood', 'kill', 'double_kill', 'triple_kill', 'ultra_kill', 'rampage'] },
@@ -44,7 +18,7 @@ const EVENT_LABELS: Record<string, string> = {
   wicked_sick: 'โหดมาก', monster_kill: 'มอนสเตอร์', godlike: 'ก็อดไลก์', beyond_godlike: 'เหนือเทพ',
   match_start: 'เริ่มเกม', death: 'ตาย', respawn: 'ฟื้น', levelUp: 'เลเวลอัป', advice: 'คำแนะนำ',
 }
-export const AudioSettingsCard: React.FC = () => {
+export const AudioSettingsCard: React.FC = React.memo(function AudioSettingsCard() {
   const [st, setSt] = useState<VoiceCacheStatus | null>(null)
   const [expanded, setExpanded] = useState<string | null>(null)
   const [clips, setClips] = useState<EventClip[]>([])
@@ -52,7 +26,7 @@ export const AudioSettingsCard: React.FC = () => {
   const refresh = () => { void invoke<VoiceCacheStatus>('voice_cache_status').then(setSt).catch(() => {}) }
   useEffect(refresh, [])
   const counts = st?.counts ?? {}
-  const allEvents = Object.keys(PREVIEW_LINES)
+  const allEvents = Object.keys(EVENT_LABELS)
   const total = st?.total ?? 0
   const covered = allEvents.filter((ev) => (counts[ev] ?? 0) > 0).length
   const pct = Math.round((covered / allEvents.length) * 100)
@@ -64,12 +38,12 @@ export const AudioSettingsCard: React.FC = () => {
   }
   const playClip = (path: string) => {
     setPlaying(path)
-    void invoke('play_clip', { path }).catch(() => {})
+    void invoke('preview_announcer_clip', { event: expanded, path }).catch(() => {})
     setTimeout(() => setPlaying(null), 2000)
   }
   const playEvent = (ev: string) => {
     setPlaying(ev)
-    void invoke('speak_event', { event: ev, fallback: PREVIEW_LINES[ev] ?? '', voice: null, rate: null }).catch(() => {})
+    void invoke('speak_event', { event: ev }).catch(() => {})
     setTimeout(() => setPlaying(null), 2000)
   }
 
@@ -81,7 +55,7 @@ export const AudioSettingsCard: React.FC = () => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(143,212,255,0.12)', border: `1px solid ${C.line}`, display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 18 }}>🎙️</div>
           <div>
-            <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>Voice Pack Set01 <span style={{ fontSize: 10, color: '#0c1018', fontWeight: 600, background: C.ice, borderRadius: 4, padding: '1px 6px', marginLeft: 6 }}>hotfix</span></div>
+            <div style={{ fontSize: 14, fontWeight: 600, color: C.txt }}>GANN Event Media</div>
             <div style={{ fontSize: 12, color: C.mut }}>{total} clips · {covered}/{allEvents.length} events ({pct}%)</div>
           </div>
         </div>
@@ -95,7 +69,7 @@ export const AudioSettingsCard: React.FC = () => {
         <div style={{ height: '100%', width: `${pct}%`, background: pct === 100 ? C.ok : C.ice, borderRadius: 6, transition: 'width 0.3s' }} />
       </div>
       <div style={{ fontSize: 10.5, color: C.mut, marginTop: 4, display: 'flex', justifyContent: 'space-between' }}>
-        <span>{pct === 100 ? 'ครบทุก event แล้ว!' : `ยังขาด ${allEvents.length - covered} event — ใช้ SAPI fallback`}</span>
+        <span>{pct === 100 ? 'ครบทุก event แล้ว!' : `ยังขาด ${allEvents.length - covered} event — ไม่มี mapping ใน GANN`}</span>
         <span style={{ color: C.ice }}>{st.dir}</span>
       </div>
 
@@ -124,10 +98,11 @@ export const AudioSettingsCard: React.FC = () => {
                         <span style={{ fontFamily: 'monospace', fontSize: 11.5, color: has ? C.ice : C.mut }}>{ev}</span>
                         <span style={{ color: C.mut, marginLeft: 6, fontSize: 11 }}>{EVENT_LABELS[ev] ?? ''}</span>
                       </span>
-                      <span style={{ fontSize: 11, color: has ? C.ok : C.mut, fontFamily: 'monospace', minWidth: 30, textAlign: 'right' }}>{has ? `${n} clip${n > 1 ? 's' : ''}` : 'SAPI'}</span>
+                      <span style={{ fontSize: 11, color: has ? C.ok : C.mut, fontFamily: 'monospace', minWidth: 30, textAlign: 'right' }}>{has ? `${n} clip${n > 1 ? 's' : ''}` : 'silent'}</span>
                       <button
                         onClick={(e) => { e.stopPropagation(); playEvent(ev) }}
-                        title={has ? 'เล่น clip สุ่ม' : 'เล่นเสียง SAPI'}
+                        disabled={!has}
+                        title={has ? 'เล่นคู่เสียงและภาพจาก GANN' : 'ไม่มี mapping ใน GANN'}
                         style={{ background: 'transparent', color: playing === ev ? C.ok : (has ? C.ice : C.mut), border: `1px solid ${C.line}`, borderRadius: 6, padding: '3px 8px', fontSize: 11, cursor: 'pointer', flexShrink: 0 }}
                       >{playing === ev ? '⏹' : '▶'}</button>
                       <span style={{ fontSize: 10, color: C.mut, transition: 'transform 0.2s', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
@@ -150,7 +125,7 @@ export const AudioSettingsCard: React.FC = () => {
                             ))}
                           </div>
                         ) : (
-                          <div style={{ fontSize: 12, color: C.mut }}>ไม่มี clip — จะใช้ SAPI TTS พูดว่า "<span style={{ color: C.txt, fontStyle: 'italic' }}>{PREVIEW_LINES[ev] ?? ''}</span>"</div>
+                          <div style={{ fontSize: 12, color: C.mut }}>ไม่มี mapping ใน GANN — event นี้จะเงียบ</div>
                         )}
                         {clips.length > 0 && clips[0].source === 'default' && (
                           <div style={{ fontSize: 10.5, color: C.mut, marginTop: 6 }}>ต้องการแพ็กเสียงเพิ่มเติม เลือกแพ็กที่ซื้อไว้ใน Store</div>
@@ -173,4 +148,4 @@ export const AudioSettingsCard: React.FC = () => {
       </div>
     </Card>
   )
-}
+})

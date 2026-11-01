@@ -1,13 +1,14 @@
 //! Utterance ledger event (CR-011 §B) — a single canonical `utterance` Tauri
-//! event fired whenever Maiden actually voices something (G-Signal's gank
+//! event recording generated, requested or natively admitted speech (G-Signal's gank
 //! warning + belief revision, G-Master's advice, the announcer packs), so the
 //! Cold Booth UI can render one running transcript instead of stitching it
 //! together from unrelated feature events.
 //!
 //! One shared payload shape, reused by every call site — see `UtterancePayload`.
 //! Emission is fire-and-forget (`emit` swallows the Tauri emit error) and must
-//! always happen AFTER the real audio/TTS dispatch at each site, never before,
-//! so this stays zero-cost on the GSI → G-Signal → voice latency path
+//! distinguish generated/requested work from native audio admission. Admission
+//! is not proof of acoustic output or completion. Metadata publication stays off
+//! the GSI → G-Signal → voice latency path
 //! (CLAUDE.md: G-Signal end-to-end ≤300ms is a hard constraint).
 
 use tauri::{AppHandle, Emitter};
@@ -22,6 +23,8 @@ pub struct UtterancePayload {
     pub source: &'static str,
     /// "line" | "revision"
     pub kind: &'static str,
+    /// Native admission is distinct from acoustic/audible playback proof.
+    pub phase: &'static str,
     pub text: String,
     /// kind=="revision": the earlier claim being struck through.
     pub retracted: Option<String>,
@@ -50,6 +53,7 @@ impl UtterancePayload {
             at_ms: epoch_ms(),
             source,
             kind,
+            phase: "requested",
             text: text.into(),
             retracted,
             meta,
@@ -58,6 +62,11 @@ impl UtterancePayload {
             session_epoch: None,
             session_lifecycle: None,
         }
+    }
+
+    pub fn generated(mut self) -> Self {
+        self.phase = "generated";
+        self
     }
 
     pub fn new_for_session(
@@ -109,6 +118,8 @@ mod tests {
         assert!(p.retracted.is_none());
         assert!(p.meta.is_none());
         assert!(p.session_epoch.is_none());
+        assert_eq!(p.phase, "requested");
+        assert_eq!(p.clone().generated().phase, "generated");
     }
 
     #[test]

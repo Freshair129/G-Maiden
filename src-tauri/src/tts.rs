@@ -1,13 +1,6 @@
-//! G-Maiden TTS (seed of voice persona).
-//! Shells out to Windows SAPI via PowerShell. Zero extra Rust deps, works on
-//! any Windows 10+. Thai text is round-tripped via base64 so we don't have to
-//! worry about console codepages or quote-escaping. This is the temporary
-//! stand-in for the Piper local TTS planned in the TDD — it gives "Maiden"
-//! an actual voice today, while we keep `models/` reserved for the upgrade.
-//!
-//! Cold start ~150-200ms (PowerShell startup). Fine for the HP danger alert,
-//! which is event-driven and rare. The hard-latency G-Signal path (gank
-//! warning) will need in-process TTS later.
+//! Non-event dynamic advice and voice audition through local Piper or Windows SAPI.
+//! Gameplay event media is admitted exclusively from verified GANN pairs.
+//! SAPI text travels as base64 to preserve Unicode and avoid shell quoting.
 
 use std::process::{Child, Command, Stdio};
 use std::sync::Mutex;
@@ -49,63 +42,14 @@ fn base64(data: &[u8]) -> String {
     out
 }
 
-fn run_powershell(script: &str) -> Option<String> {
-    let mut cmd = Command::new("powershell");
-    cmd.args([
-        "-NoProfile",
-        "-NonInteractive",
-        "-OutputFormat",
-        "Text",
-        "-Command",
-        script,
-    ])
-    .stdin(Stdio::null())
-    .stdout(Stdio::piped())
-    .stderr(Stdio::null());
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x0800_0000);
-    }
-    let out = cmd.output().ok()?;
-    if out.status.success() {
-        Some(String::from_utf8_lossy(&out.stdout).to_string())
-    } else {
-        None
-    }
-}
-
 /// Enumerate the SAPI voices installed on this machine. Used by the UI to
 /// let the player pick which voice Maiden should speak with.
 pub fn list_voices() -> Vec<Voice> {
-    // Pipe-delimited output is the simplest format that survives PowerShell's
-    // Format-Table whitespace munging and the host's default codepage.
-    let script = "Add-Type -AssemblyName System.Speech; \
-                  $s = New-Object System.Speech.Synthesis.SpeechSynthesizer; \
-                  $s.GetInstalledVoices() | ForEach-Object { \
-                    $i = $_.VoiceInfo; \
-                    Write-Output (\"{0}|{1}|{2}|{3}\" -f $i.Name, $i.Culture.Name, $i.Gender, $i.Age) \
-                  }; \
-                  $s.Dispose()";
-    let Some(out) = run_powershell(script) else {
-        return Vec::new();
-    };
-    out.lines()
-        .filter_map(|line| {
-            let parts: Vec<&str> = line.split('|').map(|s| s.trim()).collect();
-            if parts.len() == 4 && !parts[0].is_empty() {
-                Some(Voice {
-                    name: parts[0].into(),
-                    culture: parts[1].into(),
-                    gender: parts[2].into(),
-                    age: parts[3].into(),
-                })
-            } else {
-                None
-            }
-        })
-        .collect()
+    voice_catalog::list_voices()
 }
+
+#[path = "voice_catalog.rs"]
+mod voice_catalog;
 
 // ─────── Piper local TTS (G4.4) ────────────────────────────────────────────
 // Piper is a fast, offline neural TTS engine: https://github.com/rhasspy/piper
@@ -133,7 +77,7 @@ fn piper_bin() -> Option<std::path::PathBuf> {
         use std::os::windows::process::CommandExt;
         let mut cmd = Command::new("where");
         cmd.arg("piper.exe");
-        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW — runs on every alert; must not flash
+        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW for background synthesis
         if let Ok(out) = cmd.output() {
             if out.status.success() {
                 let path = String::from_utf8_lossy(&out.stdout)
@@ -202,9 +146,9 @@ fn find_piper_model(dir: &std::path::Path) -> Option<std::path::PathBuf> {
 
 // Audit H9: `piper_bin()` shells out to `where.exe` and `piper_model_dir()` /
 // `find_piper_model()` each do a `read_dir` — cheap once, but this used to run
-// on *every* TTS call, including G-Signal's hot-path fallback. Piper install
+// on every dynamic TTS call. Piper install
 // state doesn't change over a running session, so probe once per process and
-// reuse the answer (mirrors H8's "resolve once, not on every fired event").
+// reuse the answer between dynamic speech requests.
 //
 // Review fix: a bare `OnceLock` cached a *negative* probe forever too — if
 // Piper wasn't found on the very first TTS call of the session (asset
@@ -252,10 +196,18 @@ fn piper_probe() -> Option<(std::path::PathBuf, std::path::PathBuf)> {
 /// Synthesize `text` to a WAV file at `out` via Piper (no live playback).
 /// Returns true if Piper was available and synthesis succeeded (the process
 /// exited cleanly and `out` was written with nonzero size). Shared by the
-/// live speak path below (which plays the result) and the prewarm bake
-/// (`synth_to_wav`, which only wants the file) so the spawn/feed/wait
-/// sequence exists in exactly one place.
+/// dynamic voice audition and guarded advice paths.
 fn piper_synth(text: &str, out: &std::path::Path) -> bool {
+    piper_synth_with_spawn(text, out, |cmd| {
+        cmd.spawn().map_err(|error| error.to_string())
+    })
+}
+
+fn piper_synth_with_spawn(
+    text: &str,
+    out: &std::path::Path,
+    spawn: impl FnOnce(&mut Command) -> Result<Child, String>,
+) -> bool {
     use std::io::Write;
     let Some((bin, model)) = piper_probe() else {
         return false;
@@ -275,7 +227,7 @@ fn piper_synth(text: &str, out: &std::path::Path) -> bool {
         use std::os::windows::process::CommandExt;
         cmd.creation_flags(0x0800_0000);
     }
-    let mut child = match cmd.spawn() {
+    let mut child = match spawn(&mut cmd) {
         Ok(c) => c,
         Err(e) => {
             eprintln!("[G-Maiden Piper] spawn failed: {e}");
@@ -309,65 +261,11 @@ pub fn piper_speak_with_priority(text: &str, priority: crate::audio::Priority) -
         return false;
     }
     // Play the generated WAV via rodio (in-process, no PowerShell startup cost).
-    crate::audio::play_file_with_priority(tmp, priority);
+    crate::audio::play_observed(tmp, priority, |commit| commit(), |_| {});
     true
 }
 
-// ─────── Prewarmed critical-line cache (H9) ────────────────────────────────
-// `voice_interrupt` (capture.rs / capture_wgc.rs) only reaches TTS at all when
-// `audio::play_random` finds no voice-pack clip for `gank`/`revision` — rare,
-// since the bundled default pack covers every event (H8), but the G-Signal
-// hard-latency path can't assume "rare" means "never". When it does happen,
-// the fallback used to pay for a `where.exe` probe (now cached, see above)
-// AND a full PowerShell + `Add-Type System.Speech` cold start (~150-200ms) —
-// synchronously, inside the capture loop. The fallback can only ever speak
-// one of four fixed lines (gank/revision × the two persona phrasings), so
-// synthesize all four to WAV once — at startup and again whenever the voice
-// picker changes — and play the cached file instead of shelling out.
-
-/// The four fixed lines `voice_interrupt` speaks when no clip resolves.
-/// Hoisted here (not duplicated per capture backend) so the prewarm cache
-/// below can never drift from what's actually said.
-pub const GANK_LINE_GENTLE: &str =
-    "ระวังค่ะ ตรวจพบการขาดหายไปของศัตรูบนแผนที่ อาจมีการแก๊งค์เกิดขึ้น";
-pub const GANK_LINE_ALT: &str = "ระวังนะคะ ศัตรูหายไปจากแมพหลายตัว อาจมีแก๊งค์!";
-pub const REVISION_LINE_GENTLE: &str = "ยกเลิกการเตือนภัยแก๊งค์ค่ะ ปลอดภัยแล้ว";
-pub const REVISION_LINE_ALT: &str = "เอ๊ะ! เดี๋ยวก่อน ดูเหมือนจะปลอดภัยแล้วค่ะ";
-
-struct PrewarmedCritical {
-    voice: Option<String>,
-    rate: Option<i32>,
-    gank_gentle: std::path::PathBuf,
-    gank_alt: std::path::PathBuf,
-    revision_gentle: std::path::PathBuf,
-    revision_alt: std::path::PathBuf,
-}
-
-static PREWARMED_CRITICAL: Mutex<Option<PrewarmedCritical>> = Mutex::new(None);
-
-// Review fix: `prewarm_critical_lines` is spawned from two independent sites
-// (app startup, and every `set_cv_voice` call) that can overlap in time —
-// e.g. the startup bake is still running when the frontend's mount-time
-// settings sync fires `set_cv_voice` with the user's actually-persisted
-// voice, which differs from the Rust-side startup default. Both write to the
-// same four fixed paths below via separate PowerShell subprocesses; only the
-// final `PREWARMED_CRITICAL` swap was ever mutex-protected, so the file
-// *writes* themselves could interleave and leave the cache's recorded
-// (voice, rate) pointing at bytes a different, concurrently-running bake
-// actually produced. Serialize the whole bake (writes + swap) behind one
-// lock so at most one invocation ever touches the shared files at a time —
-// a queued call still re-reads the live voice/rate once it's its turn, so
-// the cache ends up correct for whichever call ran last; it just pays the
-// wait instead of racing.
-static PREWARM_LOCK: Mutex<()> = Mutex::new(());
-
-/// Build the PowerShell fragment that selects `voice` on `$s` (a live
-/// `SpeechSynthesizer`), or an empty fragment if no override is given.
-/// `SelectVoice()` fails loudly if the named voice is missing; wrapped in
-/// try/catch so callers fall back to the system default instead of going
-/// silent. Review fix: factored out of synth_to_wav and speak_with_priority,
-/// which each built this same fragment (base64-roundtripping the voice name
-/// to dodge quoting it into a single-quoted PowerShell literal) by hand.
+// Dynamic voice audition and advice synthesis stay separate from GANN events.
 fn sapi_voice_select_script(voice: Option<&str>) -> String {
     match voice {
         Some(v) if !v.trim().is_empty() => {
@@ -382,205 +280,53 @@ fn sapi_voice_select_script(voice: Option<&str>) -> String {
     }
 }
 
-/// Clamp a rate override to SAPI's supported range. Shared for the same
-/// reason as [`sapi_voice_select_script`].
 fn sapi_rate_value(rate: Option<i32>) -> i32 {
     rate.unwrap_or(0).clamp(-10, 10)
 }
-
-/// Synthesize `text` to a WAV file at `out` (no live playback). Tries Piper
-/// first, falling back to SAPI — the same preference order
-/// `speak_with_priority` uses live. Review fix: this used to go straight to
-/// SAPI unconditionally, so once the prewarm cache warmed (the common case),
-/// G-Signal's fallback silently and permanently stopped using Piper on any
-/// machine where it's installed, even though the live cache-miss path still
-/// preferred it. `voice`/`rate` only apply to the SAPI branch below — like
-/// the live path, Piper always speaks in its bundled model's voice.
-/// Returns false on any failure — spawn error, PowerShell error, or a file
-/// that never got written — so the caller can leave a prior cache in place
-/// rather than serve a broken path.
-fn synth_to_wav(text: &str, voice: Option<&str>, rate: Option<i32>, out: &std::path::Path) -> bool {
-    if piper_synth(text, out) {
-        return true;
-    }
-    let b64 = base64(text.as_bytes());
-    let voice_line = sapi_voice_select_script(voice);
-    let rate_value = sapi_rate_value(rate);
-    // Base64-roundtrip the output path too, same as the text — sidesteps
-    // quoting a Windows path into a single-quoted PowerShell string literal.
-    let out_b64 = base64(out.to_string_lossy().as_bytes());
-    let script = format!(
-        "Add-Type -AssemblyName System.Speech; \
-         $b=[Convert]::FromBase64String('{b64}'); \
-         $t=[System.Text.Encoding]::UTF8.GetString($b); \
-         $ob=[Convert]::FromBase64String('{out_b64}'); \
-         $op=[System.Text.Encoding]::UTF8.GetString($ob); \
-         $s=New-Object System.Speech.Synthesis.SpeechSynthesizer; \
-         {voice_line} \
-         $s.Rate={rate_value}; \
-         $s.SetOutputToWaveFile($op); \
-         $s.Speak($t); \
-         $s.Dispose()"
-    );
-    if run_powershell(&script).is_none() {
+/// Critical event media never synthesizes a substitute or consults persona text.
+pub fn voice_interrupt(event: &str) -> bool {
+    try_voice_interrupt_cached(event)
+}
+pub fn try_voice_interrupt_cached(event: &str) -> bool {
+    try_voice_interrupt_cached_before(event, Instant::now() + Duration::from_millis(100))
+}
+pub fn try_voice_interrupt_cached_before(event: &str, deadline: Instant) -> bool {
+    if !matches!(event, "gank" | "revision") {
         return false;
     }
-    std::fs::metadata(out).map(|m| m.len() > 0).unwrap_or(false)
+    crate::audio::try_interrupt_cached_before(event, None, deadline)
 }
 
-/// Bake the four critical lines to WAV under the current voice/rate setting.
-/// Called at app startup and again whenever the voice picker changes
-/// (`set_cv_voice`) — never from the hot path itself. Best-effort: on any
-/// failure the existing cache (possibly `None`, possibly just stale) is left
-/// untouched, since a cache miss still falls through to the live path
-/// correctly — it just doesn't get the fast path's latency win.
-pub fn prewarm_critical_lines() {
-    // Hold for the whole bake, not just the cache swap — see PREWARM_LOCK's
-    // doc comment. The guard protects no data of its own (it's a `()`), so
-    // recovering from poison (a prior bake panicking mid-write) is safe:
-    // it can't leave any real invariant broken, only skip a lock we'd
-    // otherwise deadlock on forever.
-    let _serialize = PREWARM_LOCK
-        .lock()
-        .unwrap_or_else(|poisoned| poisoned.into_inner());
-    let (voice, rate) = crate::runtime::voice();
-    let dir = std::env::temp_dir();
-    let gank_gentle = dir.join("gmaiden_prewarm_gank_gentle.wav");
-    let gank_alt = dir.join("gmaiden_prewarm_gank_alt.wav");
-    let revision_gentle = dir.join("gmaiden_prewarm_revision_gentle.wav");
-    let revision_alt = dir.join("gmaiden_prewarm_revision_alt.wav");
-    // Review fix: the four lines are independent (different fixed text,
-    // different output files, same voice/rate) but used to bake one after
-    // another — each synth_to_wav blocks on its own ~150-200ms PowerShell
-    // cold start, so the bake took ~600-800ms end to end. Run all four on
-    // their own threads instead, so the wall-clock cost drops to one
-    // subprocess's worth. Safe to parallelize: PREWARM_LOCK above already
-    // keeps this whole function from overlapping with another
-    // prewarm_critical_lines() call, and each closure below clones the
-    // voice/path values it needs rather than sharing mutable state.
-    let h1 = std::thread::spawn({
-        let voice = voice.clone();
-        let gank_gentle = gank_gentle.clone();
-        move || synth_to_wav(GANK_LINE_GENTLE, voice.as_deref(), rate, &gank_gentle)
-    });
-    let h2 = std::thread::spawn({
-        let voice = voice.clone();
-        let gank_alt = gank_alt.clone();
-        move || synth_to_wav(GANK_LINE_ALT, voice.as_deref(), rate, &gank_alt)
-    });
-    let h3 = std::thread::spawn({
-        let voice = voice.clone();
-        let revision_gentle = revision_gentle.clone();
-        move || synth_to_wav(REVISION_LINE_GENTLE, voice.as_deref(), rate, &revision_gentle)
-    });
-    let h4 = std::thread::spawn({
-        let voice = voice.clone();
-        let revision_alt = revision_alt.clone();
-        move || synth_to_wav(REVISION_LINE_ALT, voice.as_deref(), rate, &revision_alt)
-    });
-    // `&` (not `&&`): every join() must run regardless of an earlier
-    // failure, or a thread whose WAV write is still in flight would be
-    // abandoned mid-write instead of joined.
-    let ok = h1.join().unwrap_or(false)
-        & h2.join().unwrap_or(false)
-        & h3.join().unwrap_or(false)
-        & h4.join().unwrap_or(false);
-    if !ok {
-        return;
-    }
-    if let Ok(mut g) = PREWARMED_CRITICAL.lock() {
-        *g = Some(PrewarmedCritical {
-            voice,
-            rate,
-            gank_gentle,
-            gank_alt,
-            revision_gentle,
-            revision_alt,
-        });
-    }
-}
-
-/// Speak G-Signal's fixed fallback for `event` ("gank" or "revision") — the
-/// path `voice_interrupt` takes only when no voice-pack clip resolved. Plays
-/// the prewarmed WAV (a rodio file play, same cost as the primary clip path)
-/// when the cache matches the live voice/rate setting; only a cache miss
-/// (nothing baked yet, or the voice changed since the last bake) pays for the
-/// live Piper-probe-then-SAPI round trip this function replaces on the hot
-/// path. `default_fallback` covers any event this function doesn't
-/// recognize — defensive; both capture backends only ever pass "gank"/"revision".
-/// Pure text-selection logic, factored out of `speak_critical_fallback` so it
-/// doesn't require touching global runtime state to test.
-fn resolve_critical_text<'a>(event: &str, persona_preset: u8, default_fallback: &'a str) -> &'a str {
-    let gentle = matches!(persona_preset, 0 | 1);
-    match (event, gentle) {
-        ("gank", true) => GANK_LINE_GENTLE,
-        ("gank", false) => GANK_LINE_ALT,
-        ("revision", true) => REVISION_LINE_GENTLE,
-        ("revision", false) => REVISION_LINE_ALT,
-        _ => default_fallback,
-    }
-}
-
-/// Pure cache-lookup logic, factored out for the same reason.
-fn prewarmed_path_for<'a>(
-    cache: &'a PrewarmedCritical,
-    event: &str,
-    gentle: bool,
-) -> Option<&'a std::path::PathBuf> {
-    match (event, gentle) {
-        ("gank", true) => Some(&cache.gank_gentle),
-        ("gank", false) => Some(&cache.gank_alt),
-        ("revision", true) => Some(&cache.revision_gentle),
-        ("revision", false) => Some(&cache.revision_alt),
-        _ => None,
-    }
-}
-
-pub fn speak_critical_fallback(event: &str, default_fallback: &str) {
-    let persona_preset = crate::runtime::persona_preset();
-    let gentle = matches!(persona_preset, 0 | 1);
-    let text = resolve_critical_text(event, persona_preset, default_fallback);
-    let (voice, rate) = crate::runtime::voice();
-    if let Ok(guard) = PREWARMED_CRITICAL.lock() {
-        if let Some(cache) = guard.as_ref() {
-            if cache.voice == voice && cache.rate == rate {
-                if let Some(p) = prewarmed_path_for(cache, event, gentle) {
-                    // Review fix: the miss-path below (speak_with_priority)
-                    // cancels any in-flight SAPI/rodio playback before it
-                    // speaks — this cache-hit path used to skip that, relying
-                    // solely on voice_interrupt's own top-of-function cancel.
-                    // That leaves a narrow window (e.g. a concurrent Normal-
-                    // priority speak_event call from G-Master's advice line
-                    // or an Overlay.tsx persona/danger line) where a racing
-                    // utterance isn't torn down before the critical line
-                    // plays, violating "Maiden never speaks two lines in
-                    // parallel". Cancel here too so both branches give the
-                    // same interrupt guarantee.
-                    cancel();
-                    crate::audio::cancel();
-                    crate::audio::play_path(p.clone(), event);
-                    return;
-                }
-            }
+/// Called under the shared output gate; lower-priority clips cannot stop SAPI.
+pub(crate) fn stop_for_clip(priority: crate::audio::Priority, deadline: Instant) -> bool {
+    let Ok(mut current) = CURRENT.try_lock() else {
+        return false;
+    };
+    let Some((child, active)) = current.as_mut() else {
+        return true;
+    };
+    match child.try_wait() {
+        Ok(Some(_)) => {
+            *current = None;
+            return true;
         }
+        Err(_) => return false,
+        Ok(None) => {}
     }
-    speak_with_priority(text, voice.as_deref(), rate, crate::audio::Priority::Critical);
-}
-
-/// G-Signal's voice-interrupt sequence: cancel any in-flight speech, then
-/// play a resolved voice-pack clip for `event` if one exists, falling back
-/// to [`speak_critical_fallback`] otherwise. Review fix: capture.rs and
-/// capture_wgc.rs each defined their own byte-for-byte identical copy of
-/// this function — only one of those two modules is ever compiled into a
-/// given binary (see the `--features wgc` gate), so the duplication never
-/// showed up as a build conflict, but any future change to the interrupt
-/// sequence had to be applied and kept in sync by hand in both places with
-/// nothing to catch a missed one. Both backends now call this instead.
-pub fn voice_interrupt(event: &str, fallback: &str) {
-    cancel();
-    crate::audio::cancel();
-    if !crate::audio::play_random(event) {
-        speak_critical_fallback(event, fallback);
+    if !crate::audio::should_accept_incoming(*active, priority) || child.kill().is_err() {
+        return false;
+    }
+    let until = deadline.min(Instant::now() + Duration::from_millis(50));
+    loop {
+        match child.try_wait() {
+            Ok(Some(_)) => {
+                *current = None;
+                return true;
+            }
+            Err(_) => return false,
+            Ok(None) if Instant::now() < until => std::thread::sleep(Duration::from_millis(1)),
+            Ok(None) => return false,
+        }
     }
 }
 
@@ -595,6 +341,30 @@ pub fn cancel() {
             let _ = c.wait();
         }
     }
+}
+
+fn cancel_at_most(ceiling: crate::audio::Priority) -> bool {
+    let Ok(mut current) = CURRENT.lock() else {
+        return false;
+    };
+    if current
+        .as_ref()
+        .is_some_and(|(_, priority)| !crate::audio::should_cancel_current(*priority, ceiling))
+    {
+        return false;
+    }
+    let Some((mut child, priority)) = current.take() else {
+        return true;
+    };
+    let stopped = match child.try_wait() {
+        Ok(Some(_)) => true,
+        Ok(None) => child.kill().is_ok() && child.wait().is_ok(),
+        Err(_) => false,
+    };
+    if !stopped {
+        *current = Some((child, priority));
+    }
+    stopped
 }
 
 fn active_priority() -> crate::audio::Priority {
@@ -627,26 +397,7 @@ pub fn speak(text: &str, voice: Option<&str>, rate: Option<i32>) {
     speak_with_priority(text, voice, rate, crate::audio::Priority::Normal);
 }
 
-pub fn speak_with_priority(
-    text: &str,
-    voice: Option<&str>,
-    rate: Option<i32>,
-    priority: crate::audio::Priority,
-) {
-    if text.trim().is_empty() {
-        return;
-    }
-    if crate::audio::active_priority() > priority || active_priority() > priority {
-        return;
-    }
-    // Cancel both SAPI and any in-flight rodio (Piper) clip.
-    cancel();
-    crate::audio::cancel();
-    // Fast path: Piper neural TTS (~40-80 ms, no PowerShell cold-start).
-    if piper_speak_with_priority(text, priority) {
-        return;
-    }
-    // Fallback: SAPI via PowerShell.
+fn sapi_speech_command(text: &str, voice: Option<&str>, rate: Option<i32>) -> Command {
     let b64 = base64(text.as_bytes());
     let voice_line = sapi_voice_select_script(voice);
     let rate_value = sapi_rate_value(rate);
@@ -679,6 +430,152 @@ pub fn speak_with_priority(
         // CREATE_NO_WINDOW — keep the PS console flash off-screen.
         cmd.creation_flags(0x0800_0000);
     }
+    cmd
+}
+
+const STATIC_ADVICE_PREVIEW_TEXT: &str = "ลองดูคำแนะนำนี้นะคะ";
+
+fn with_advice_voice_admission<T>(
+    session_epoch: Option<u64>,
+    generation: u64,
+    admit: impl FnOnce() -> Result<T, String>,
+) -> Result<T, String> {
+    match session_epoch {
+        Some(epoch) => crate::runtime::with_speech_admission(epoch, Some(generation), admit),
+        None => crate::runtime::with_master_generation_admission(generation, false, admit),
+    }
+}
+
+/// Fixed local preview: the caller cannot supply arbitrary gameplay text.
+pub fn speak_static_advice_preview(
+    voice: Option<&str>,
+    rate: Option<i32>,
+    generation: u64,
+) -> Result<(), String> {
+    speak_advice_pipeline(STATIC_ADVICE_PREVIEW_TEXT, voice, rate, generation, None)
+}
+
+pub fn speak_advice_guarded(
+    text: &str,
+    voice: Option<&str>,
+    rate: Option<i32>,
+    generation: u64,
+    session_epoch: u64,
+) -> Result<(), String> {
+    speak_advice_pipeline(text, voice, rate, generation, Some(session_epoch))
+}
+
+/// Advice preparation may block; only native spawn/queue admission holds the
+/// preference lock, so opt-out never waits for synthesis or cancellation.
+fn speak_advice_pipeline(
+    text: &str,
+    voice: Option<&str>,
+    rate: Option<i32>,
+    generation: u64,
+    session_epoch: Option<u64>,
+) -> Result<(), String> {
+    if text.trim().is_empty() {
+        return Ok(());
+    }
+    with_advice_voice_admission(session_epoch, generation, || Ok(()))?;
+    let priority = crate::audio::Priority::Normal;
+    if crate::audio::active_priority() > priority || active_priority() > priority {
+        return Err("Critical speech is active; advice voice deferred.".into());
+    }
+    if !cancel_at_most(priority) {
+        return Err("Higher-priority speech is active; advice voice deferred.".into());
+    }
+    crate::audio::cancel_at_most(priority);
+    static NEXT_ADVICE_WAV: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+    let sequence = NEXT_ADVICE_WAV.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    let wav = std::env::temp_dir().join(format!(
+        "gmaiden_advice_{}_{}_{}.wav",
+        std::process::id(),
+        generation,
+        sequence
+    ));
+    let piper_ready = piper_synth_with_spawn(text, &wav, |cmd| {
+        with_advice_voice_admission(session_epoch, generation, || {
+            cmd.spawn()
+                .map_err(|error| format!("Piper spawn failed: {error}"))
+        })
+    });
+    if piper_ready {
+        let admitted = with_advice_voice_admission(session_epoch, generation, || {
+            if crate::audio::active_priority() > priority {
+                return Err("Critical speech is active; advice voice deferred.".into());
+            }
+            crate::audio::play_observed(
+                wav.clone(),
+                priority,
+                move |commit| {
+                    let _ = with_advice_voice_admission(session_epoch, generation, || {
+                        commit();
+                        Ok(())
+                    });
+                },
+                |_| {},
+            );
+            Ok(())
+        });
+        if admitted.is_err() {
+            let _ = std::fs::remove_file(&wav);
+        }
+        return admitted;
+    }
+    // A revoked Piper attempt must never fall through to a new SAPI spawn.
+    with_advice_voice_admission(session_epoch, generation, || Ok(()))?;
+    let mut cmd = sapi_speech_command(text, voice, rate);
+    // Acquire CURRENT before the configuration lock: critical playback can hold
+    // CURRENT until its bounded audio admission completes.
+    let _output_guard = crate::audio::output_admission()
+        .ok_or_else(|| "Audio admission is busy; advice voice deferred.".to_string())?;
+    let mut current = CURRENT
+        .try_lock()
+        .map_err(|_| "SAPI state unavailable".to_string())?;
+    if current.is_some() || crate::audio::is_playing() {
+        return Err("Speech changed during advice preparation; advice voice deferred.".into());
+    }
+    with_advice_voice_admission(session_epoch, generation, || {
+        let child = cmd
+            .spawn()
+            .map_err(|error| format!("SAPI spawn failed: {error}"))?;
+        *current = Some((child, priority));
+        Ok(())
+    })
+}
+
+pub fn speak_with_priority(
+    text: &str,
+    voice: Option<&str>,
+    rate: Option<i32>,
+    priority: crate::audio::Priority,
+) {
+    if text.trim().is_empty() {
+        return;
+    }
+    if crate::audio::active_priority() > priority || active_priority() > priority {
+        return;
+    }
+    // Cancel both SAPI and any in-flight rodio (Piper) clip.
+    if !cancel_at_most(priority) {
+        return;
+    }
+    crate::audio::cancel_at_most(priority);
+    // Fast path: Piper neural TTS (~40-80 ms, no PowerShell cold-start).
+    if piper_speak_with_priority(text, priority) {
+        return;
+    }
+    let mut cmd = sapi_speech_command(text, voice, rate);
+    let Some(_output_guard) = crate::audio::output_admission() else {
+        return;
+    };
+    let Ok(mut current) = CURRENT.try_lock() else {
+        return;
+    };
+    if current.is_some() || crate::audio::is_playing() {
+        return;
+    }
     let child = match cmd.spawn() {
         Ok(c) => c,
         Err(e) => {
@@ -688,14 +585,33 @@ pub fn speak_with_priority(
     };
     // Stash the child so cancel() can kill it later. Anything previously in the
     // slot was already drained by the cancel() at the top of this function.
-    if let Ok(mut g) = CURRENT.lock() {
-        *g = Some((child, priority));
-    }
+    *current = Some((child, priority));
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn critical_cached_dispatch_refuses_sapi_lock_contention_without_waiting() {
+        let _guard = CURRENT.lock().unwrap();
+        assert!(!try_voice_interrupt_cached("gank"));
+    }
+
+    #[test]
+    fn critical_cached_dispatch_refuses_unknown_event_and_expired_deadline() {
+        assert!(!try_voice_interrupt_cached("advice"));
+        assert!(!try_voice_interrupt_cached_before(
+            "gank",
+            Instant::now() - Duration::from_millis(1)
+        ));
+    }
+
+    #[test]
+    fn revoked_advice_generation_cannot_reach_voice_preparation_or_spawn() {
+        let result = speak_advice_guarded("stale advice", None, None, u64::MAX, u64::MAX);
+        assert!(result.is_err());
+    }
 
     // Hand-verified vectors against `[Convert]::ToBase64String` to lock in
     // PowerShell-roundtrip correctness — that round-trip is the whole reason
@@ -731,76 +647,5 @@ mod tests {
         assert_eq!(s.len(), expected_len);
         let pad = s.chars().rev().take_while(|c| *c == '=').count();
         assert!(pad <= 2);
-    }
-
-    // ─── H9: critical-fallback text/cache selection (pure, no subprocess) ───
-
-    #[test]
-    fn resolve_critical_text_picks_the_gentle_persona_line() {
-        assert_eq!(resolve_critical_text("gank", 0, "fallback"), GANK_LINE_GENTLE);
-        assert_eq!(resolve_critical_text("gank", 1, "fallback"), GANK_LINE_GENTLE);
-        assert_eq!(resolve_critical_text("revision", 0, "fallback"), REVISION_LINE_GENTLE);
-        assert_eq!(resolve_critical_text("revision", 1, "fallback"), REVISION_LINE_GENTLE);
-    }
-
-    #[test]
-    fn resolve_critical_text_picks_the_alt_persona_line() {
-        // Any preset other than 0/1 is the non-gentle persona.
-        assert_eq!(resolve_critical_text("gank", 2, "fallback"), GANK_LINE_ALT);
-        assert_eq!(resolve_critical_text("revision", 9, "fallback"), REVISION_LINE_ALT);
-    }
-
-    #[test]
-    fn resolve_critical_text_falls_back_for_an_unknown_event() {
-        // Defensive branch — `voice_interrupt` never actually passes anything
-        // other than "gank"/"revision", but the function must not guess.
-        assert_eq!(resolve_critical_text("advice", 0, "the fallback"), "the fallback");
-    }
-
-    fn stub_cache(voice: Option<&str>, rate: Option<i32>) -> PrewarmedCritical {
-        PrewarmedCritical {
-            voice: voice.map(String::from),
-            rate,
-            gank_gentle: std::path::PathBuf::from("gank_gentle.wav"),
-            gank_alt: std::path::PathBuf::from("gank_alt.wav"),
-            revision_gentle: std::path::PathBuf::from("revision_gentle.wav"),
-            revision_alt: std::path::PathBuf::from("revision_alt.wav"),
-        }
-    }
-
-    #[test]
-    fn prewarmed_path_for_covers_all_four_combinations() {
-        let cache = stub_cache(None, None);
-        assert_eq!(prewarmed_path_for(&cache, "gank", true), Some(&cache.gank_gentle));
-        assert_eq!(prewarmed_path_for(&cache, "gank", false), Some(&cache.gank_alt));
-        assert_eq!(
-            prewarmed_path_for(&cache, "revision", true),
-            Some(&cache.revision_gentle)
-        );
-        assert_eq!(
-            prewarmed_path_for(&cache, "revision", false),
-            Some(&cache.revision_alt)
-        );
-    }
-
-    #[test]
-    fn prewarmed_path_for_is_none_for_an_unknown_event() {
-        let cache = stub_cache(None, None);
-        assert_eq!(prewarmed_path_for(&cache, "advice", true), None);
-    }
-
-    #[test]
-    fn a_stale_cache_would_be_rejected_by_the_voice_rate_match_speak_critical_fallback_makes() {
-        // speak_critical_fallback itself touches global runtime state and
-        // spawns SAPI on a miss, so it isn't unit-tested directly (same
-        // reasoning the rest of this file already applies to the live PS
-        // paths). This pins the equality check it guards the fast path with,
-        // so a future refactor can't silently loosen it to a partial match.
-        let cache = stub_cache(Some("Microsoft Sirikit"), Some(2));
-        let live_voice = Some("Microsoft Sirikit".to_string());
-        let live_rate = Some(2);
-        assert!(cache.voice == live_voice && cache.rate == live_rate);
-        let changed_voice = Some("Microsoft Premwadee".to_string());
-        assert!(!(cache.voice == changed_voice && cache.rate == live_rate));
     }
 }

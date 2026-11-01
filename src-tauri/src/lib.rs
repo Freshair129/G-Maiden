@@ -12,9 +12,12 @@ use tauri_plugin_updater::UpdaterExt;
 pub mod action_damage;
 pub mod announcer;
 pub mod audio;
+mod audio_waveform;
 mod calibration;
 pub mod capture;
 pub mod capture_frame;
+#[cfg(not(feature = "wgc"))]
+mod capture_recovery;
 #[cfg(feature = "wgc")]
 mod capture_wgc;
 mod counter_advice;
@@ -22,19 +25,33 @@ pub mod cv;
 pub mod damage;
 #[cfg(not(feature = "wgc"))]
 pub mod dxgi;
+mod event_media;
 mod governor;
-pub mod update_channel;
 pub mod gsi;
 mod identity;
 mod items;
+mod local_endpoint;
+mod local_player;
 mod log;
 mod master;
 pub mod memory;
+mod minimap_admission;
+mod minimap_clock;
+mod minimap_owned_child;
+pub mod minimap_preview;
+mod minimap_preview_process;
+mod minimap_preview_runtime;
+mod minimap_preview_wire;
 pub mod motion;
 mod ocr;
+pub mod package_registry;
+pub mod package_install;
+mod package_ipc;
+mod party;
 pub mod respawn;
 mod revive;
 pub mod runtime;
+mod safety_events;
 mod secret;
 pub mod sentry;
 mod setup;
@@ -42,15 +59,41 @@ pub mod signal;
 mod slm;
 pub mod tts;
 pub mod tuning;
+pub mod update_channel;
+mod update_guard;
+#[cfg(test)]
+#[path = "../vendor/tauri-plugin-updater/src/install_guard.rs"]
+mod updater_install_guard_regression;
 mod usage;
 mod utterance;
 mod voice_api;
+mod vrzo_fence;
+mod vrzo_mix;
+mod vrzo_playback;
+mod webview_bootstrap;
 
 /// The update found by the last `check_channel_update`, held so `install_pending_update`
 /// installs exactly what the user was shown rather than re-resolving and racing a
 /// manifest edit.
 #[derive(Default)]
 struct PendingUpdate(std::sync::Mutex<Option<tauri_plugin_updater::Update>>);
+static UPDATE_INSTALLING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+fn update_safety() -> update_guard::UpdateSafety {
+    let session = runtime::match_session_snapshot();
+    update_guard::UpdateSafety {
+        dota_running: setup::dota_running_status(),
+        session_active: matches!(
+            session.session_lifecycle,
+            Some(
+                runtime::MatchLifecycle::Draft
+                    | runtime::MatchLifecycle::Live
+                    | runtime::MatchLifecycle::Disconnected
+            )
+        ),
+        in_game: runtime::in_game(),
+    }
+}
 
 #[derive(serde::Serialize)]
 struct UpdateOffer {
@@ -78,9 +121,7 @@ struct UpdateOffer {
 /// verification is untouched: the plugin still checks minisign against the pubkey
 /// embedded in the app before anything is installed.
 #[tauri::command]
-async fn check_channel_update(
-    app: tauri::AppHandle,
-) -> Result<Option<UpdateOffer>, String> {
+async fn check_channel_update(app: tauri::AppHandle) -> Result<Option<UpdateOffer>, String> {
     // Desktop clients check only the signed stable manifest.
     let channel = update_channel::ReleaseChannel::Stable;
 
@@ -114,23 +155,172 @@ async fn check_channel_update(
 /// Download and install the update from the last successful check.
 #[tauri::command]
 async fn install_pending_update(app: tauri::AppHandle) -> Result<(), String> {
+    let _lease = update_guard::InstallLease::acquire(&UPDATE_INSTALLING)?;
+    update_guard::ensure_idle(update_safety())?;
     // Clone out of the mutex before awaiting — holding the guard across an await
     // would make this future non-Send and can deadlock a second caller.
     let update = app.state::<PendingUpdate>().0.lock().unwrap().clone();
     let update = update.ok_or_else(|| "no update pending".to_string())?;
-    update
-        .download_and_install(|_, _| {}, || {})
+    let bytes = update
+        .download(|_, _| {}, || {})
         .await
-        .map_err(|e| format!("install failed: {e}"))?;
+        .map_err(|e| format!("download failed: {e}"))?;
+    tauri::async_runtime::spawn_blocking(move || {
+        update_guard::commit_if_idle(update_safety, || {
+            update.install_guarded(bytes, || {
+                update_guard::ensure_idle(update_safety())
+                    .map_err(|error| std::io::Error::other(error).into())
+            })
+        })?
+        .map_err(|e| format!("install failed: {e}"))
+    })
+    .await
+    .map_err(|e| format!("install task failed: {e}"))??;
     Ok(())
 }
 
 /// Show/hide the OSD overlay window (called by the control GUI toggle).
 #[tauri::command]
 fn set_overlay_visible(app: tauri::AppHandle, visible: bool) {
-    if let Some(ov) = app.get_webview_window("overlay") {
-        let _ = if visible { ov.show() } else { ov.hide() };
+    update_overlay_visibility(&app, Some(visible));
+}
+
+struct OverlayBootstrap {
+    started: std::time::Instant,
+    state: std::sync::Mutex<webview_bootstrap::Bootstrap>,
+}
+
+impl OverlayBootstrap {
+    fn new(root: webview_bootstrap::SelectedRoot) -> Self {
+        Self {
+            started: std::time::Instant::now(),
+            state: std::sync::Mutex::new(webview_bootstrap::Bootstrap::new(root)),
+        }
     }
+}
+
+impl OverlayBootstrap {
+    fn elapsed(&self) -> u64 {
+        self.started.elapsed().as_millis().min(u64::MAX as u128) as u64
+    }
+}
+
+fn bootstrap_failed(app: &tauri::AppHandle, reason: &'static str) {
+    if let Some(bootstrap) = app.try_state::<OverlayBootstrap>() {
+        if let Ok(mut state) = bootstrap.state.lock() {
+            state.fail();
+        }
+    }
+    log::error(&format!(
+        "[G-WebViewBootstrap] status=failed reason={reason}"
+    ));
+}
+
+fn dispatch_overlay_visibility(
+    app: &tauri::AppHandle,
+) -> Result<std::sync::mpsc::Receiver<Result<(), String>>, String> {
+    let (completed, completion) = std::sync::mpsc::channel();
+    let read_app = app.clone();
+    let apply_app = app.clone();
+    webview_bootstrap::dispatch_visibility(
+        |action| app.run_on_main_thread(action),
+        move || {
+            let bootstrap = read_app.try_state::<OverlayBootstrap>()?;
+            let mut state = bootstrap.state.lock().ok()?;
+            state.expire(bootstrap.elapsed());
+            (state.phase == webview_bootstrap::Phase::Ready).then_some(state.visible)
+        },
+        move |visible| {
+            let result = (|| {
+                let visible = visible.ok_or("overlay bootstrap unavailable")?;
+                let window = apply_app
+                    .get_webview_window("overlay")
+                    .ok_or("overlay window unavailable")?;
+                if visible {
+                    window.show()
+                } else {
+                    window.hide()
+                }
+                .map_err(|_| "overlay visibility unavailable".to_string())
+            })();
+            let _ = completed.send(result);
+        },
+    )
+    .map_err(|_| "overlay visibility dispatch unavailable")?;
+    Ok(completion)
+}
+
+fn update_overlay_visibility(app: &tauri::AppHandle, intent: Option<bool>) {
+    let Some(bootstrap) = app.try_state::<OverlayBootstrap>() else {
+        return;
+    };
+    let ready = bootstrap.state.lock().ok().is_some_and(|mut state| {
+        state.expire(bootstrap.elapsed());
+        let visible = intent.unwrap_or(!state.visible);
+        state.visibility(visible).is_some()
+    });
+    if ready {
+        let _ = dispatch_overlay_visibility(app);
+    }
+}
+
+#[tauri::command]
+async fn overlay_bootstrap_ready(window: tauri::WebviewWindow) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let url = window.url().map_err(|_| "overlay URL unavailable")?;
+        let bootstrap = window.state::<OverlayBootstrap>();
+        let root = bootstrap
+            .state
+            .lock()
+            .map_err(|_| "overlay bootstrap unavailable")?
+            .root();
+        if window.label() != "overlay" || !root.trusts(url.as_str()) {
+            return Err("untrusted overlay readiness".to_string());
+        }
+        let first = loop {
+            let pending = {
+                let mut state = bootstrap
+                    .state
+                    .lock()
+                    .map_err(|_| "overlay bootstrap unavailable")?;
+                state.expire(bootstrap.elapsed());
+                if state.phase == webview_bootstrap::Phase::Failed {
+                    return Err("overlay bootstrap unavailable".to_string());
+                }
+                state
+                    .ready(window.label(), url.as_str(), bootstrap.elapsed())
+                    .ok()
+            };
+            if let Some(first) = pending {
+                break first;
+            }
+            // React can finish hydration before PageLoad Finished. Wait off the
+            // event-loop thread so that native page callback can complete setup.
+            std::thread::sleep(std::time::Duration::from_millis(10));
+        };
+        if first {
+            let final_url = window.url().map_err(|_| "overlay URL unavailable")?;
+            if !root.trusts(final_url.as_str()) {
+                bootstrap_failed(window.app_handle(), "overlay-ready-url");
+                return Err("untrusted overlay readiness".to_string());
+            }
+            let completion = dispatch_overlay_visibility(window.app_handle())?;
+            let remaining = std::time::Duration::from_millis(
+                webview_bootstrap::DEADLINE_MS.saturating_sub(bootstrap.elapsed()),
+            );
+            match completion.recv_timeout(remaining) {
+                Ok(Ok(())) => {}
+                _ => {
+                    bootstrap_failed(window.app_handle(), "overlay-visibility");
+                    return Err("overlay visibility unavailable".to_string());
+                }
+            }
+            eprintln!("[G-WebViewBootstrap] window=overlay status=ready trusted_final_url=true");
+        }
+        Ok(())
+    })
+    .await
+    .map_err(|_| "overlay bootstrap task unavailable".to_string())?
 }
 
 #[tauri::command]
@@ -162,19 +352,259 @@ fn quit_application(app: tauri::AppHandle) {
     app.exit(0);
 }
 
-/// Try to play a pre-recorded clip for `event`. If no clips are present,
-/// fall back to SAPI speaking `fallback`. Keeps the Maiden voice unified at
-/// the call site — the UI doesn't have to know which path is active.
+/// Event previews use the equipped GANN pair and its native media lifecycle.
 #[tauri::command]
-fn speak_event(event: String, fallback: String, voice: Option<String>, rate: Option<i32>) {
-    if !audio::play_random(&event) {
-        tts::speak_with_priority(
-            &fallback,
-            voice.as_deref(),
-            rate,
-            audio::priority_for_event(&event),
-        );
+async fn speak_event(app: tauri::AppHandle, event: String) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        voice_api::play_event(app, event, 0, true, audio::Priority::Normal)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+fn speak_advice(
+    app: tauri::AppHandle,
+    text: String,
+    voice: Option<String>,
+    rate: Option<i32>,
+    advice_generation: u64,
+    advice_session_epoch: u64,
+) -> Result<(), String> {
+    let session = runtime::match_session_snapshot();
+    if session.session_epoch != advice_session_epoch {
+        return Err("Advice session changed".into());
     }
+    tts::speak_advice_guarded(
+        &text,
+        voice.as_deref(),
+        rate,
+        advice_generation,
+        advice_session_epoch,
+    )?;
+    utterance::emit_for_session(
+        &app,
+        utterance::UtterancePayload::new_for_session("master", "line", text, None, None, &session),
+    );
+    Ok(())
+}
+
+#[tauri::command]
+fn is_advice_generation_current(advice_generation: u64) -> bool {
+    runtime::with_master_generation_admission(advice_generation, false, || Ok(())).is_ok()
+}
+
+#[tauri::command]
+fn get_master_context_generation() -> u64 {
+    runtime::master_cloud_context_generation()
+}
+
+#[tauri::command]
+fn preview_static_advice_voice(
+    voice: Option<String>,
+    rate: Option<i32>,
+    advice_generation: u64,
+) -> Result<(), String> {
+    tts::speak_static_advice_preview(voice.as_deref(), rate, advice_generation)
+}
+
+fn emit_master_context(app: &tauri::AppHandle) {
+    let _ = app.emit(
+        "master-context-changed",
+        serde_json::json!({ "context_generation": runtime::master_cloud_context_generation() }),
+    );
+}
+
+fn configure_webview_memory(window: &tauri::WebviewWindow) {
+    use webview2_com::Microsoft::Web::WebView2::Win32::{
+        ICoreWebView2_19, COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW,
+    };
+    use webview2_core::Interface;
+    let label = window.label().to_string();
+    let _ = window.with_webview(move |webview| {
+        let result = unsafe {
+            webview.controller().CoreWebView2().and_then(|view| {
+                let mut browser_pid = 0;
+                if view.BrowserProcessId(&mut browser_pid).is_ok() {
+                    eprintln!("[G-WebViewBootstrap] window={label} browser_pid={browser_pid}");
+                }
+                view.cast::<ICoreWebView2_19>()?
+                    .SetMemoryUsageTargetLevel(COREWEBVIEW2_MEMORY_USAGE_TARGET_LEVEL_LOW)
+            })
+        };
+        match result {
+            Ok(()) => eprintln!("[G-Gov] WebView {label}: low memory target applied"),
+            Err(error) => {
+                eprintln!("[G-Gov] WebView {label}: low memory target unavailable: {error}")
+            }
+        }
+    });
+}
+
+fn configure_overlay_window(window: &tauri::WebviewWindow) -> Result<(), String> {
+    let monitor = window
+        .current_monitor()
+        .map_err(|_| "overlay monitor unavailable")?
+        .ok_or("overlay monitor unavailable")?;
+    window
+        .set_size(*monitor.size())
+        .map_err(|_| "overlay size unavailable")?;
+    window
+        .set_position(tauri::PhysicalPosition::new(0, 0))
+        .map_err(|_| "overlay position unavailable")?;
+    window
+        .set_ignore_cursor_events(true)
+        .map_err(|_| "overlay pass-through unavailable")?;
+    window
+        .set_always_on_top(true)
+        .map_err(|_| "overlay topmost unavailable")?;
+    configure_webview_memory(window);
+    Ok(())
+}
+
+fn create_control_window(app: &tauri::AppHandle) -> Result<(), Box<dyn std::error::Error>> {
+    use tauri::webview::{NewWindowResponse, PageLoadEvent};
+    let root = {
+        let bootstrap = app.state::<OverlayBootstrap>();
+        let root = bootstrap
+            .state
+            .lock()
+            .map_err(|_| "overlay bootstrap unavailable")?
+            .root();
+        root
+    };
+    let popup_script = format!(
+        "window.open({}, 'g-maiden-overlay');",
+        serde_json::to_string(root.as_str())?
+    );
+
+    let mut control = app
+        .config()
+        .app
+        .windows
+        .iter()
+        .find(|config| config.label == "control")
+        .ok_or("control window template missing")?
+        .clone();
+    let overlay = app
+        .config()
+        .app
+        .windows
+        .iter()
+        .find(|config| config.label == "overlay")
+        .ok_or("overlay window template missing")?
+        .clone();
+    // App(index.html) follows Tauri's framework mode resolver. Admission still
+    // accepts exactly the single root selected before either window is built.
+    if control.use_https_scheme || overlay.use_https_scheme {
+        return Err("related WebView experiment requires the packaged HTTP root".into());
+    }
+    control.url = tauri::WebviewUrl::App("index.html".into());
+    let popup_app = app.clone();
+    let control_window = tauri::WebviewWindowBuilder::from_config(app, &control)?
+        .on_navigation(move |url| root.trusts(url.as_str()))
+        .on_new_window(move |target, features| {
+            let control_url = popup_app.get_webview_window("control").and_then(|window| window.url().ok());
+            let admitted = {
+                let bootstrap = popup_app.state::<OverlayBootstrap>();
+                let Ok(mut state) = bootstrap.state.lock() else { return NewWindowResponse::Deny; };
+                state.admit(control_url.as_ref().map_or("", |url| url.as_str()), target.as_str(), bootstrap.elapsed())
+            };
+            if !admitted { return NewWindowResponse::Deny; }
+
+            // Building can pump native events. Never retain the state mutex across
+            // native creation or the opener's deferred SetNewWindow callback.
+            let mut config = overlay.clone();
+            config.url = tauri::WebviewUrl::External("about:blank".parse().expect("constant blank URL"));
+            config.visible = false;
+            let built = tauri::WebviewWindowBuilder::from_config(&popup_app, &config)
+                .map(|builder| builder.window_features(features)
+                    .on_navigation(move |url| root.trusts(url.as_str()))
+                    .on_new_window(|_, _| NewWindowResponse::Deny)
+                    .on_page_load(move |window, payload| {
+                        if payload.event() != PageLoadEvent::Finished || !root.trusts(payload.url().as_str()) { return; }
+                        let final_trusted = window.url().is_ok_and(|url| root.trusts(url.as_str()));
+                        if !final_trusted || configure_overlay_window(&window).is_err() {
+                            bootstrap_failed(window.app_handle(), "overlay-configuration");
+                            return;
+                        }
+                        let bootstrap = window.state::<OverlayBootstrap>();
+                        if let Ok(mut state) = bootstrap.state.lock() {
+                            if state.loaded(window.label(), payload.url().as_str(), bootstrap.elapsed()) {
+                                eprintln!("[G-WebViewBootstrap] window=overlay status=loaded trusted_final_url=true");
+                            }
+                        };
+                    }))
+                .and_then(|builder| builder.build());
+            match built {
+                Ok(window) => {
+                    let accepted = {
+                        let bootstrap = popup_app.state::<OverlayBootstrap>();
+                        let accepted = bootstrap.state.lock().map(|mut state| state.created(bootstrap.elapsed())).unwrap_or(false);
+                        accepted
+                    };
+                    if accepted { NewWindowResponse::Create { window } }
+                    else {
+                        let _ = window.destroy();
+                        bootstrap_failed(&popup_app, "late-overlay-creation");
+                        NewWindowResponse::Deny
+                    }
+                }
+                Err(_) => {
+                    bootstrap_failed(&popup_app, "overlay-creation");
+                    NewWindowResponse::Deny
+                }
+            }
+        })
+        .on_page_load(move |window, payload| {
+            if payload.event() != PageLoadEvent::Finished || !root.trusts(payload.url().as_str()) { return; }
+            if !window.url().is_ok_and(|url| root.trusts(url.as_str())) {
+                bootstrap_failed(window.app_handle(), "control-final-url");
+                return;
+            }
+            configure_webview_memory(&window);
+            let request = {
+                let bootstrap = window.state::<OverlayBootstrap>();
+                let request = bootstrap.state.lock().map(|mut state| state.request(payload.url().as_str(), bootstrap.elapsed())).unwrap_or(false);
+                request
+            };
+            if request {
+                eprintln!("[G-WebViewBootstrap] window=control status=loaded trusted_final_url=true");
+                if window.eval(&popup_script).is_err() {
+                    bootstrap_failed(window.app_handle(), "popup-request");
+                }
+            }
+        })
+        .build()?;
+    let close_window = control_window.clone();
+    control_window.on_window_event(move |event| {
+        if let tauri::WindowEvent::CloseRequested { api, .. } = event {
+            api.prevent_close();
+            let _ = close_window.hide();
+        }
+    });
+
+    let deadline_app = app.clone();
+    std::thread::Builder::new()
+        .name("g-webview-bootstrap".into())
+        .spawn(move || {
+            let bootstrap = deadline_app.state::<OverlayBootstrap>();
+            std::thread::sleep(std::time::Duration::from_millis(
+                webview_bootstrap::DEADLINE_MS.saturating_sub(bootstrap.elapsed()),
+            ));
+            let failed = bootstrap
+                .state
+                .lock()
+                .map(|mut state| {
+                    state.expire(bootstrap.elapsed());
+                    state.phase == webview_bootstrap::Phase::Failed
+                })
+                .unwrap_or(true);
+            if failed {
+                bootstrap_failed(&deadline_app, "startup-deadline");
+            }
+        })?;
+    Ok(())
 }
 
 /// Voice-cache status: directory + clip count per known event.
@@ -218,17 +648,21 @@ struct EventClip {
 
 /// Preview a clip only when it belongs to an installed Store pack or the bundled default.
 #[tauri::command]
-fn play_clip(path: String) -> Result<(), String> {
-    let path = std::path::PathBuf::from(path);
-    if !audio::is_resolved_clip_path(&path) {
-        return Err("ดูตัวอย่างได้เฉพาะเสียงจากแพ็กที่ติดตั้งและเลือกใช้อยู่".into());
-    }
-    audio::validate_clip(&path)?;
-    audio::play_file(path);
-    Ok(())
+async fn preview_announcer_clip(
+    app: tauri::AppHandle,
+    event: String,
+    path: String,
+) -> Result<(), String> {
+    tauri::async_runtime::spawn_blocking(move || {
+        let selected =
+            voice_api::select_announcer_playback_path(&event, std::path::Path::new(&path))
+                .ok_or("GANN clip is not mapped by the active package")?;
+        voice_api::play_selected(app, selected, event, 0, true, audio::Priority::Normal)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
-/// Open the voice-cache directory only in development builds for authoring.
 #[tauri::command]
 fn open_voice_cache_dir() -> Result<(), String> {
     voice_api::ensure_dev_authoring()?;
@@ -246,6 +680,38 @@ fn voice_api_state() -> Result<voice_api::VoiceState, String> {
 }
 
 #[tauri::command]
+async fn voice_api_import_file(
+    window: tauri::WebviewWindow,
+    path: String,
+) -> Result<voice_api::ImportResult, String> {
+    if window.label() != "control" {
+        return Err("Import is restricted to Control".into());
+    }
+    let app = window.app_handle();
+    let bootstrap = app
+        .try_state::<OverlayBootstrap>()
+        .ok_or("Control bootstrap unavailable")?;
+    let root = bootstrap
+        .state
+        .lock()
+        .map_err(|_| "Control bootstrap unavailable")?
+        .root();
+    if !root.trusts(
+        window
+            .url()
+            .map_err(|_| "Control URL unavailable")?
+            .as_str(),
+    ) {
+        return Err("Untrusted import origin".into());
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        voice_api::import_file(std::path::Path::new(&path))
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
 async fn voice_api_install_store_pack(
     item_id: String,
     access_token: String,
@@ -258,83 +724,218 @@ async fn voice_api_install_store_pack(
 }
 
 #[tauri::command]
-fn voice_api_action(
+async fn voice_api_action(
     action: String,
     pack_id: Option<String>,
 ) -> Result<voice_api::VoiceState, String> {
-    voice_api::action(&action, pack_id.as_deref())
-}
-
-#[tauri::command]
-fn voice_api_create_template(
-    pack_id: String,
-    name: String,
-    locale: String,
-) -> Result<voice_api::VoiceState, String> {
-    voice_api::create_template(&pack_id, &name, &locale)
-}
-
-#[tauri::command]
-fn voice_api_upload_asset(
-    pack_id: String,
-    kind: String,
-    name: String,
-    bytes: Vec<u8>,
-) -> Result<voice_api::UploadResult, String> {
-    voice_api::upload_asset(&pack_id, &kind, &name, &bytes)
-}
-
-#[tauri::command]
-fn voice_api_import_archive(
-    name: String,
-    bytes: Vec<u8>,
-) -> Result<voice_api::ImportResult, String> {
-    voice_api::import_archive(&name, &bytes)
-}
-
-#[tauri::command]
-fn voice_api_map_event(
-    payload: voice_api::MapEventRequest,
-) -> Result<voice_api::VoiceState, String> {
-    voice_api::map_event(payload)
-}
-
-#[tauri::command]
-fn voice_api_update_pack(
-    payload: voice_api::UpdatePackRequest,
-) -> Result<voice_api::VoiceState, String> {
-    voice_api::update_pack(payload)
+    static ACTIONS: tokio::sync::Mutex<()> = tokio::sync::Mutex::const_new(());
+    let _order = ACTIONS.lock().await;
+    tauri::async_runtime::spawn_blocking(move || voice_api::action(&action, pack_id.as_deref()))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 /// Preview an announcer event only for an installed Store pack or the bundled default.
+static ANNOUNCER_PREVIEW_SERIAL: std::sync::atomic::AtomicU64 =
+    std::sync::atomic::AtomicU64::new(0);
+
+/// Local decoder evidence only; never game data or a network telemetry stream.
 #[tauri::command]
-fn preview_announcer_event(
+#[allow(clippy::too_many_arguments)]
+fn record_announcer_visual(
+    window: tauri::WebviewWindow,
+    playback_id: String,
+    reason: String,
+    frames: u32,
+    dropped: u32,
+    first_frame_ms: f64,
+    elapsed_ms: f64,
+    media_seconds: f64,
+    warmed: Option<bool>,
+    duration_seconds: Option<f64>,
+    waiting: Option<u32>,
+) -> Result<(), String> {
+    let bootstrap = window.state::<OverlayBootstrap>();
+    let root = bootstrap
+        .state
+        .lock()
+        .map_err(|_| "Overlay bootstrap unavailable")?
+        .root();
+    if window.label() != "overlay"
+        || !root.trusts(
+            window
+                .url()
+                .map_err(|_| "Overlay URL unavailable")?
+                .as_str(),
+        )
+        || playback_id.parse::<u64>().is_err()
+        || !matches!(reason.as_str(), "ended" | "cleared" | "error")
+        || frames > 10_000
+        || dropped > frames
+        || !(-1.0..=30_000.0).contains(&first_frame_ms)
+        || !(0.0..=60_000.0).contains(&elapsed_ms)
+        || !(0.0..=30.0).contains(&media_seconds)
+        || duration_seconds.is_some_and(|n| !(0.0..=30.0).contains(&n))
+        || waiting.is_some_and(|n| n > 10_000)
+    {
+        return Err("Invalid visual receipt".into());
+    }
+    eprintln!("[G-BannerVisual] playback={playback_id} reason={reason} frames={frames} dropped={dropped} first_frame_ms={first_frame_ms:.1} elapsed_ms={elapsed_ms:.1} media_seconds={media_seconds:.3} warmed={} duration_seconds={:.3} waiting={}", warmed.unwrap_or(false), duration_seconds.unwrap_or(0.0), waiting.unwrap_or(0));
+    Ok(())
+}
+
+fn trusted_announcer_surface(window: &tauri::WebviewWindow, label: &str) -> Result<(), String> {
+    if window.label() != label {
+        return Err("Restricted announcer surface".into());
+    }
+    let bootstrap = window.state::<OverlayBootstrap>();
+    let root = bootstrap
+        .state
+        .lock()
+        .map_err(|_| "Overlay bootstrap unavailable")?
+        .root();
+    if !root.trusts(
+        window
+            .url()
+            .map_err(|_| "Surface URL unavailable")?
+            .as_str(),
+    ) {
+        return Err("Untrusted announcer origin".into());
+    }
+    Ok(())
+}
+
+#[tauri::command]
+fn announcer_visual_warm_candidates(
+    window: tauri::WebviewWindow,
+) -> Result<voice_api::visual_warm::Candidates, String> {
+    trusted_announcer_surface(&window, "overlay")?;
+    Ok(voice_api::visual_warm_candidates())
+}
+
+#[tauri::command]
+async fn warm_announcer_visual_variant(
+    window: tauri::WebviewWindow,
+    pack_id: String,
+    event: String,
+    clip_id: String,
+) -> Result<(), String> {
+    trusted_announcer_surface(&window, "control")?;
+    if pack_id.len() > 96 || event.len() > 64 || clip_id.len() > 96 {
+        return Err("Invalid warm hint".into());
+    }
+    tauri::async_runtime::spawn_blocking(move || {
+        voice_api::warm_announcer_variant(&pack_id, &event, &clip_id)
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+/// Audition the exact GANN variant through the same audio admission lifecycle.
+#[tauri::command]
+async fn preview_announcer_variant(
+    app: tauri::AppHandle,
+    window: tauri::WebviewWindow,
+    event: String,
+    clip_id: String,
+    pack_id: String,
+) -> Result<(), String> {
+    use std::sync::atomic::Ordering;
+    if window.label() != "control" {
+        return Err("Preview is restricted to Control".into());
+    }
+    let bootstrap = app
+        .try_state::<OverlayBootstrap>()
+        .ok_or("Control bootstrap unavailable")?;
+    let root = bootstrap
+        .state
+        .lock()
+        .map_err(|_| "Control bootstrap unavailable")?
+        .root();
+    if !root.trusts(
+        window
+            .url()
+            .map_err(|_| "Control URL unavailable")?
+            .as_str(),
+    ) {
+        return Err("Untrusted preview origin".into());
+    }
+    let id = ANNOUNCER_PREVIEW_SERIAL
+        .fetch_add(1, Ordering::AcqRel)
+        .wrapping_add(1);
+    let requested = std::time::Instant::now();
+    tauri::async_runtime::spawn_blocking(move || {
+        let pack = pack_id.as_str();
+        let path = voice_api::preview_variant(pack, &event, &clip_id)
+            .ok_or_else(|| "ไม่พบคลิป GANN ที่ติดตั้งสำหรับอีเวนต์นี้".to_string())?;
+        audio::validate_clip(&path)?;
+        let selected = voice_api::select_announcer_path(pack, &event, &path)
+            .ok_or("กรุณาเลือก GANN เป็นแพ็กที่ใช้งานก่อน")?;
+        voice_api::verify_visual(&selected)?;
+        let scope_selected = selected.clone();
+        let scope_event = event.clone();
+        let scope = std::sync::Arc::new(move || {
+            ANNOUNCER_PREVIEW_SERIAL.load(Ordering::Acquire) == id
+                && voice_api::with_current_announcer_clip(&scope_event, &scope_selected, || ())
+                    .is_some()
+        });
+        if !scope() {
+            return Err("กรุณาเลือก GANN เป็นแพ็กที่ใช้งานก่อน".into());
+        }
+        let observer =
+            vrzo_playback::observer(app, selected.clone(), event.clone(), 0, true, scope)
+                .ok_or_else(|| "ตัวอย่างแบนเนอร์ไม่พร้อม".to_string())?;
+        let (tx, rx) = std::sync::mpsc::sync_channel(1);
+        audio::play_observed_with_lifecycle(
+            path,
+            audio::Priority::Normal,
+            move |commit| {
+                if ANNOUNCER_PREVIEW_SERIAL.load(Ordering::Acquire) == id
+                    && requested.elapsed() < std::time::Duration::from_secs(2)
+                {
+                    let _ = voice_api::with_current_announcer_clip(&event, &selected, commit);
+                }
+            },
+            move |outcome| {
+                let _ = tx.try_send(outcome == audio::PlaybackResult::Admitted);
+            },
+            observer,
+        );
+        if rx
+            .recv_timeout(std::time::Duration::from_secs(3))
+            .unwrap_or(false)
+        {
+            Ok(())
+        } else {
+            Err("เสียงตัวอย่างยังไม่พร้อมหรือถูกเสียงสำคัญขัดจังหวะ".into())
+        }
+    })
+    .await
+    .map_err(|e| e.to_string())?
+}
+
+#[tauri::command]
+async fn preview_announcer_event(
     app: tauri::AppHandle,
     pack_id: String,
     event: String,
 ) -> Result<(), String> {
-    if !voice_api::is_store_installed(&pack_id) {
-        return Err("ดูตัวอย่างได้เฉพาะแพ็กที่ติดตั้งจาก Store".into());
-    }
-    let clip = voice_api::preview_clip(&pack_id, &event)
-        .ok_or_else(|| "เหตุการณ์นี้ไม่มีไฟล์เสียงที่ใช้ได้".to_string())?;
-    audio::validate_clip(&clip)?;
-    audio::play_file(clip.clone());
-    let mut banner = voice_api::preview_banner(&pack_id, &event);
-    banner.clip = Some(clip.to_string_lossy().into_owned());
-    let _ = app.emit("announcer-banner", banner);
-    Ok(())
+    tauri::async_runtime::spawn_blocking(move || {
+        let selected = voice_api::select_announcer_clip(&event).ok_or("GANN event is unmapped")?;
+        if !package_ipc::matches_preview_identity(&pack_id,&selected.pack_id,selected.installation.as_ref().map(|i|i.installation_id().0.as_str())) {
+            return Err("เลือก Equip แพ็ก GANN ก่อนดูตัวอย่าง".into());
+        }
+        voice_api::play_selected(app, selected, event, 0, true, audio::Priority::Normal)
+    })
+    .await
+    .map_err(|e| e.to_string())?
 }
 
-/// Read a voiced clip's bytes so the overlay can decode it via Web Audio and drive
-/// a reactive waveform from the SAME audio it hears. Confined to the voice-cache
-/// dir — the path always originates from our own clip resolver, never user input.
 #[tauri::command]
-fn read_audio_bytes(path: String) -> Result<Vec<u8>, String> {
-    if !audio::is_resolved_clip_path(std::path::Path::new(&path)) {
-        return Err("อ่านได้เฉพาะเสียงจากแพ็กที่ติดตั้งและเลือกใช้อยู่".into());
-    }
-    audio::read_clip_bytes(&path)
+async fn read_audio_waveform(path: String) -> Result<audio_waveform::Waveform, String> {
+    tauri::async_runtime::spawn_blocking(move || audio_waveform::read_audio_waveform(&path))
+        .await
+        .map_err(|e| e.to_string())?
 }
 
 /// Open an external http(s) URL in the default browser (e.g. the voice-pack
@@ -389,50 +990,58 @@ async fn request_advice(
     .await
     .map_err(|e| format!("internal: {e}"))??;
     if !runtime::is_current_live_session(session_epoch) {
-        return Err("Advice response belongs to an earlier match session and was discarded.".into());
+        return Err(
+            "Advice response belongs to an earlier match session and was discarded.".into(),
+        );
     }
     let session = runtime::match_session_snapshot();
     if session.session_epoch != session_epoch {
-        return Err("Advice response belongs to an earlier match session and was discarded.".into());
-    }
-    // Broadcast a flattened identity envelope so both the companion and overlay
-    // can reject a response queued before a match boundary.
-    let event = runtime::MatchSessionEvent::new(result.clone(), &session);
-    let _ = app.emit("advice-update", event);
-    // CR-011 §B utterance ledger — fired after the broadcast above, never
-    // before, so it can't add latency to the advice dispatch itself. `meta`
-    // is the resolved backend ("claude"/"ollama") when `advise()` just ran a
-    // fresh (non-cached) call; best-effort, so `None` on a cache-miss race.
-    // Cached re-fetches are NOT logged: the auto path re-voices the same text
-    // within its cooldown window, and verbatim duplicates would crowd genuine
-    // signal/announcer entries out of the 30-cap ledger (Opus gate, CR011-P2).
-    if !result.cached {
-        let backend_meta = master::last_backend().map(str::to_string);
-        let payload = utterance::UtterancePayload::new_for_session(
-            "master",
-            "line",
-            result.text.clone(),
-            None,
-            backend_meta,
-            &session,
-        );
-        utterance::emit_for_session(
-            &app,
-            payload,
+        return Err(
+            "Advice response belongs to an earlier match session and was discarded.".into(),
         );
     }
-    Ok(result)
+    master::with_advice_publication(&result, || {
+        // Broadcast a flattened identity envelope so both the companion and overlay
+        // can reject a response queued before a match boundary.
+        let event = runtime::MatchSessionEvent::new(result.clone(), &session);
+        let _ = app.emit("advice-update", event);
+        // CR-011 §B utterance ledger — fired after the broadcast above, never
+        // before, so it can't add latency to the advice dispatch itself. `meta`
+        // is the resolved backend ("claude"/"ollama") when `advise()` just ran a
+        // fresh (non-cached) call; best-effort, so `None` on a cache-miss race.
+        // Cached re-fetches are NOT logged: the auto path re-voices the same text
+        // within its cooldown window, and verbatim duplicates would crowd genuine
+        // signal/announcer entries out of the 30-cap ledger (Opus gate, CR011-P2).
+        if !result.cached {
+            let backend_meta = master::last_backend().map(str::to_string);
+            let payload = utterance::UtterancePayload::new_for_session(
+                "master",
+                "line",
+                result.text.clone(),
+                None,
+                backend_meta,
+                &session,
+            )
+            .generated();
+            utterance::emit_for_session(&app, payload);
+        }
+        Ok(result.clone())
+    })
 }
 
 /// G-Revive: on death, return the deterministic buyback verdict immediately and
 /// fire a best-effort local-SLM narrative that arrives later via `buyback-narrative`.
-/// Threat fields default safe until CV is wired, so the verdict is conservative.
+/// Unobserved threat fields remain unknown and cannot produce a safe verdict.
 #[tauri::command]
 async fn request_buyback_advice(
     app: tauri::AppHandle,
     tick: gsi::GameTick,
     session_epoch: u64,
 ) -> Result<revive::ReviveAdvice, String> {
+    if !runtime::is_current_live_session(session_epoch) || !tick.in_game || tick.alive {
+        return Err("Buyback request does not belong to an active death episode.".into());
+    }
+    let identity = runtime::begin_buyback_request(session_epoch, tick.deaths)?;
     if !runtime::is_current_live_session(session_epoch) || !tick.in_game {
         return Err("Buyback request does not belong to the active live match.".into());
     }
@@ -442,8 +1051,17 @@ async fn request_buyback_advice(
     }
     let ctx = revive::DeathContext::from_tick(&tick);
     let advice = revive::advise_buyback(&ctx);
-    let event = runtime::MatchSessionEvent::new(advice.clone(), &session);
-    let _ = app.emit("buyback-advice", event);
+    runtime::with_buyback_publication(session_epoch, identity, || {
+        let event = runtime::MatchSessionEvent::new(
+            runtime::BuybackEvent {
+                payload: advice.clone(),
+                identity,
+            },
+            &session,
+        );
+        let _ = app.emit("buyback-advice", event);
+        Ok(())
+    })?;
 
     // Voice the verdict via the local SLM off the hot path — fire-and-forget so the
     // UI gets the verdict now; the narrative emits when (if) ollama answers.
@@ -453,27 +1071,17 @@ async fn request_buyback_advice(
         // Use the user-picked model from Settings; empty → legacy chain in slm.rs.
         let model = runtime::master_ollama_model();
         if let Ok(text) = slm::advise_offline(&prompt, &model) {
-            if runtime::is_current_active_session_epoch(session_epoch) {
-                let current = runtime::match_session_snapshot();
-                if current.session_epoch == session_epoch {
-                    let event = runtime::SessionTextEvent::new(text, &current);
-                    let _ = app2.emit("buyback-narrative", event);
-                }
-            }
+            let _ = runtime::with_buyback_publication(session_epoch, identity, || {
+                let event = runtime::BuybackEvent {
+                    payload: runtime::SessionTextEvent::new(text, &session),
+                    identity,
+                };
+                let _ = app2.emit("buyback-narrative", event);
+                Ok(())
+            });
         }
     });
     Ok(advice)
-}
-
-/// Manual roster injection (Draft-CV). Sets the match roster by hand — 10 hero
-/// labels in labels.json short form (e.g. "crystal_maiden") — without waiting for
-/// the pick-screen recognizer. Lets the ally/enemy slot fill + roster-grounded
-/// phantom filter be exercised before the portrait asset pack / calibration ship.
-/// Emits `draft-roster` exactly as the capture loop's Draft-CV path does.
-#[tauri::command]
-fn set_draft_roster(app: tauri::AppHandle, radiant: Vec<String>, dire: Vec<String>) {
-    runtime::set_roster(radiant.clone(), dire.clone());
-    let _ = app.emit("draft-roster", runtime::Roster { radiant, dire });
 }
 
 /// Aggregated Claude usage stats for the QuotaCard (5h + 7d windows).
@@ -504,13 +1112,18 @@ fn set_cv_voice(name: Option<String>, rate: Option<i32>) {
     // but re-baking here means a voice change doesn't leave the fast path
     // cold for the rest of the session. Off-thread: same reasoning as the
     // startup call in `lib.rs::run`.
-    std::thread::spawn(tts::prewarm_critical_lines);
+    std::thread::spawn(audio::prepare_critical_playback);
 }
 
 /// Mirror the UI's G-Signal toggle so the capture loop can skip warning work.
 /// Emits `signal-change` (mirrors `set_volume`'s `volume-change`) so any
 /// surface that owns this flag (the deck's audio rail) stays in sync even
 /// when a different writer changes it (CR-007 WP-4 Fix 1).
+#[tauri::command]
+fn set_hp_alert_settings(enabled: bool, voice_enabled: bool, threshold: i64) {
+    runtime::set_hp_alert_settings(enabled, voice_enabled, threshold);
+}
+
 #[tauri::command]
 fn set_cv_signal_enabled(app: tauri::AppHandle, enabled: bool) {
     runtime::set_signal_enabled(enabled);
@@ -549,22 +1162,25 @@ fn set_persona_preset(preset: String) {
 /// Pick the G-Master backend (auto/claude/ollama). The user can route around
 /// claude rate-limits or pin to local for privacy/offline play.
 #[tauri::command]
-fn set_master_backend(backend: runtime::MasterBackend) {
+fn set_master_backend(app: tauri::AppHandle, backend: runtime::MasterBackend) {
     runtime::set_master_backend(backend);
+    emit_master_context(&app);
 }
 
 /// Set the separate local consent for sending the own-stat allowlist to Claude.
 /// Choosing a provider or invoking Ask does not call or imply this opt-in.
 #[tauri::command]
-fn set_master_cloud_context_opt_in(enabled: bool) {
+fn set_master_cloud_context_opt_in(app: tauri::AppHandle, enabled: bool) {
     runtime::set_master_cloud_context_opt_in(enabled);
+    emit_master_context(&app);
 }
 
 /// Pick the Ollama model G-Master uses when the Ollama backend is active.
 /// Empty string = legacy default chain in slm.rs.
 #[tauri::command]
-fn set_master_ollama_model(name: String) {
+fn set_master_ollama_model(app: tauri::AppHandle, name: String) {
     runtime::set_master_ollama_model(name);
+    emit_master_context(&app);
 }
 
 /// Pick the G-Master Claude auth *mode*. `auth = "apikey"` routes Claude advice
@@ -572,8 +1188,9 @@ fn set_master_ollama_model(name: String) {
 /// else (e.g. "plan") keeps the signed-in `claude` CLI Plan quota. The key is
 /// NOT passed here — see `set_master_api_key` (CR-008 WP-2).
 #[tauri::command]
-fn set_master_mode(auth: String) {
+fn set_master_mode(app: tauri::AppHandle, auth: String) {
     runtime::set_master_mode(auth == "apikey");
+    emit_master_context(&app);
 }
 
 /// Store (or clear, when empty) the Anthropic API key in the DPAPI secret store
@@ -583,12 +1200,17 @@ fn set_master_mode(auth: String) {
 fn set_master_api_key(app: tauri::AppHandle, key: String) -> Result<(), String> {
     let trimmed = key.trim().to_string();
     if trimmed.is_empty() {
-        secret::secret_delete(app, "anthropic_api_key".to_string())?;
+        secret::secret_delete(app.clone(), "anthropic_api_key".to_string())?;
         runtime::set_master_api_key(None);
     } else {
-        secret::secret_set(app, "anthropic_api_key".to_string(), trimmed.clone())?;
+        secret::secret_set(
+            app.clone(),
+            "anthropic_api_key".to_string(),
+            trimmed.clone(),
+        )?;
         runtime::set_master_api_key(Some(trimmed));
     }
+    emit_master_context(&app);
     Ok(())
 }
 
@@ -604,6 +1226,9 @@ fn has_master_api_key() -> bool {
 /// actually initiated (CR-008 WP-3 — login-CSRF / session-fixation guard).
 #[tauri::command]
 fn oauth_begin(state: String) -> Result<(), String> {
+    if !gsi::oauth_listener_ready() {
+        return Err("Google sign-in requires port 3000. Close the app using that port, then restart G-Maiden; GSI can continue on its selected fallback port.".into());
+    }
     let now = std::time::SystemTime::now()
         .duration_since(std::time::UNIX_EPOCH)
         .map(|d| d.as_millis() as u64)
@@ -690,6 +1315,13 @@ fn detect_dota_running() -> bool {
 #[tauri::command]
 fn install_gsi_config(dota_install_path: Option<String>) -> setup::SetupStatus {
     setup::install(dota_install_path.as_deref())
+}
+
+#[tauri::command]
+fn set_gsi_dota_selection(dota_install_path: Option<String>) -> Result<(), String> {
+    let changed = setup::set_dota_selection(dota_install_path.as_deref())?;
+    gsi::note_config_port_changed(changed);
+    Ok(())
 }
 
 /// Path to the G-Log directory (privacy-first; local only).
@@ -792,6 +1424,9 @@ fn delete_all_match_logs() -> Result<u32, String> {
 /// as a plain function (not `fn main`) so external tools (e.g. `tests/perf`)
 /// can depend on this crate as a library without linking the app entry point.
 pub fn run() {
+    if let Some(code) = minimap_preview_process::run_if_requested() {
+        std::process::exit(code);
+    }
     // Forensics first: route panics on ANY thread (capture / GSI / governor) to
     // %LOCALAPPDATA%\G-Maiden\logs\error.log so a freeze/crash leaves a trace.
     log::init_panic_hook();
@@ -820,6 +1455,14 @@ pub fn run() {
     static MUTED_VOL: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
 
     tauri::Builder::default()
+        .register_asynchronous_uri_scheme_protocol(
+            "g-announcer-video",
+            |_ctx, request, responder| {
+                tauri::async_runtime::spawn_blocking(move || {
+                    responder.respond(voice_api::id_video::response(request))
+                });
+            },
+        )
         .manage(PendingUpdate::default())
         .plugin(tauri_plugin_updater::Builder::new().build())
         .plugin(tauri_plugin_dialog::init())
@@ -832,14 +1475,7 @@ pub fn run() {
                         return;
                     }
                     if shortcut == &toggle2 {
-                        if let Some(ov) = app.get_webview_window("overlay") {
-                            let visible = ov.is_visible().unwrap_or(true);
-                            let _ = if visible {
-                                ov.hide()
-                            } else {
-                                ov.show()
-                            };
-                        }
+                        update_overlay_visibility(app, None);
                     } else if shortcut == &vol_up2 {
                         let cur = audio::get_volume();
                         let next = (cur + 10).min(100);
@@ -867,19 +1503,35 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
+            party::party_connect,
+            party::party_social_proof,
+            party::party_join_social,
+            party::party_get_state,
+            party::party_leave,
+            party::party_kick,
+            party::party_rotate_invite,
+            minimap_preview_runtime::start_minimap_preview,
+            minimap_preview_runtime::read_minimap_preview,
+            minimap_preview_runtime::stop_minimap_preview,
             set_overlay_visible,
+            overlay_bootstrap_ready,
             check_channel_update,
             install_pending_update,
             speak,
             get_capture_mode,
             retry_capture,
             speak_event,
+            speak_advice,
+            preview_static_advice_voice,
+            is_advice_generation_current,
+            get_master_context_generation,
             cancel_speech,
             quit_application,
             list_voices,
             set_cv_voice,
             set_persona_preset,
             set_cv_signal_enabled,
+            set_hp_alert_settings,
             set_announcer_enabled,
             set_cv_signal_sensitivity,
             set_master_backend,
@@ -901,22 +1553,23 @@ pub fn run() {
             set_telemetry_source,
             voice_cache_status,
             voice_api_state,
+            voice_api_import_file,
             voice_api_install_store_pack,
             voice_api_action,
-            voice_api_create_template,
-            voice_api_upload_asset,
-            voice_api_import_archive,
-            voice_api_map_event,
-            voice_api_update_pack,
             preview_announcer_event,
-            read_audio_bytes,
+            preview_announcer_variant,
+            record_announcer_visual,
+            announcer_visual_warm_candidates,
+            warm_announcer_visual_variant,
+            read_audio_waveform,
             list_event_clips,
-            play_clip,
+            preview_announcer_clip,
             open_voice_cache_dir,
             open_url,
             detect_gsi_setup,
             detect_dota_running,
             install_gsi_config,
+            set_gsi_dota_selection,
             get_log_dir,
             get_player_memory,
             delete_player_memory,
@@ -931,7 +1584,6 @@ pub fn run() {
             request_advice,
             get_master_readiness,
             request_buyback_advice,
-            set_draft_roster,
             read_usage,
             clear_usage_log,
             identity::resolve_steam_id
@@ -958,6 +1610,11 @@ pub fn run() {
             // cold-cache resolution cost on the first gank alert of a new
             // session. Cheap (one manifest read+parse) and infallible — see
             // `voice_api::pack_io::rebuild_resolved_cache`.
+            voice_api::visual_warm::install(app.handle().clone());
+            voice_api::install_playback(app.handle().clone());
+            if let Err(error) = package_ipc::start(app.path().app_local_data_dir()?, tauri::is_dev()) {
+                eprintln!("[G-AnnInstall] installation service unavailable: {error}");
+            }
             voice_api::rebuild_resolved_cache();
 
             // Audit H9: prewarm G-Signal's fixed TTS fallback lines to WAV so
@@ -967,9 +1624,12 @@ pub fn run() {
             // startup thread so it never delays window creation; harmless if
             // it's still running when the first gank alert fires, since that
             // just falls through to the pre-H9 live path exactly as before.
-            std::thread::spawn(tts::prewarm_critical_lines);
+            std::thread::spawn(audio::prepare_critical_playback);
 
             // G1.1: GSI ingestion server (127.0.0.1:3000); emits `game-tick` to all windows.
+            if let Err(reason) = party::install(app.handle()) {
+                eprintln!("[G-Party] unavailable reason={reason}");
+            }
             let handle = app.handle().clone();
             tauri::async_runtime::spawn(gsi::serve(handle));
             if runtime::mark_local_capture_started() {
@@ -990,15 +1650,12 @@ pub fn run() {
             app.global_shortcut().register(vol_down)?;
             app.global_shortcut().register(mute)?;
 
-            // OSD overlay: full-screen, click-through, over the game.
-            if let Some(ov) = app.get_webview_window("overlay") {
-                if let Ok(Some(monitor)) = ov.current_monitor() {
-                    let _ = ov.set_size(*monitor.size());
-                    let _ = ov.set_position(tauri::PhysicalPosition::new(0, 0));
-                }
-                let _ = ov.set_ignore_cursor_events(true);
-                let _ = ov.hide();
-            }
+            let root = webview_bootstrap::SelectedRoot::select(
+                tauri::is_dev(),
+                app.config().build.dev_url.as_ref().map(|url| url.as_str()),
+            )?;
+            app.manage(OverlayBootstrap::new(root));
+            create_control_window(app.handle())?;
 
             // --- System tray ---
             let show_item =
@@ -1037,18 +1694,6 @@ pub fn run() {
                     }
                 })
                 .build(app)?;
-
-            // Closing the control window hides it to tray instead of quitting the process.
-            // The overlay (and G-Signal) keep running; use tray → Quit to exit.
-            if let Some(ctrl) = app.get_webview_window("control") {
-                let ctrl2 = ctrl.clone();
-                ctrl.on_window_event(move |event| {
-                    if let tauri::WindowEvent::CloseRequested { api, .. } = event {
-                        api.prevent_close();
-                        let _ = ctrl2.hide();
-                    }
-                });
-            }
 
             Ok(())
         })

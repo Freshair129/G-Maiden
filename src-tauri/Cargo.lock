@@ -1459,11 +1459,26 @@ dependencies = [
 ]
 
 [[package]]
+name = "g-ann-package"
+version = "0.1.0"
+dependencies = [
+ "base64 0.22.1",
+ "ring",
+ "serde",
+ "serde_json",
+ "tokio",
+ "windows-sys 0.61.2",
+ "zip",
+]
+
+[[package]]
 name = "g-maiden"
-version = "0.13.4"
+version = "0.13.5"
 dependencies = [
  "axum",
  "base64 0.22.1",
+ "g-ann-package",
+ "g-party",
  "geo-types",
  "image",
  "pure-onnx-ocr-sync",
@@ -1481,9 +1496,22 @@ dependencies = [
  "tauri-plugin-updater",
  "tokio",
  "tract-onnx 0.21.10",
+ "webview2-com",
  "windows 0.61.3",
  "windows-capture",
+ "windows-core 0.62.2",
  "zip",
+]
+
+[[package]]
+name = "g-party"
+version = "0.1.0"
+dependencies = [
+ "reqwest",
+ "ring",
+ "serde",
+ "serde_json",
+ "tokio",
 ]
 
 [[package]]
@@ -5347,8 +5375,6 @@ dependencies = [
 [[package]]
 name = "tauri-plugin-updater"
 version = "2.10.1"
-source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "806d9dac662c2e4594ff03c647a552f2c9bd544e7d0f683ec58f872f952ce4af"
 dependencies = [
  "base64 0.22.1",
  "dirs 6.0.0",

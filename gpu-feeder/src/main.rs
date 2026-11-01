@@ -1,27 +1,24 @@
 //! Headless GPU telemetry feeder for G-Maiden.
 //!
-//! A tiny, dependency-free sidecar the main app spawns at startup. It runs
-//! `nvidia-smi` every N seconds and POSTs the first GPU's metrics to G-Maiden's
-//! local server (`POST http://127.0.0.1:3000/telemetry`). Keeping this in a
-//! SEPARATE process means the main app never spawns nvidia-smi itself — the NFR
-//! budgets stay about the app's own work, and a slow/blocked nvidia-smi can't
-//! stall the UI. No UI, no crates (raw std only).
+//! A dependency-free sidecar maintains a read-only NVML GPU0 session and POSTs
+//! telemetry to the selected local G-Maiden service. Driver DLL residency remains
+//! part of whole-app resource accounting. No query child processes are spawned.
 //!
 //! Interval: `GMAIDEN_GPU_FEED_MS` env (default 3000, floored at 500).
 
+#![cfg_attr(all(target_os = "windows", not(test)), windows_subsystem = "windows")]
+
 use std::io::{Read, Write};
 use std::net::TcpStream;
-use std::process::Command;
 use std::thread::sleep;
 use std::time::Duration;
 
-const HOST: &str = "127.0.0.1:3000";
-/// Consecutive failed pushes (or no-GPU samples) before we assume G-Maiden has
-/// exited and shut ourselves down. At the default 3s interval this is ~60s. This
-/// is a backstop; on normal exit G-Maiden stops and waits only for the exact
-/// child it spawned. A feeder launched outside a Job Object (such as by an older
-/// degraded-mode host) may outlive the host after an abnormal exit.
-const GIVE_UP_AFTER: u32 = 20;
+// Endpoint loss still exits after 20 failed checks (~60s at the default interval).
+// GPU reconnect cooldown ticks are not failed acquisition attempts.
+mod feed_loop;
+
+#[cfg(windows)]
+mod nvml;
 
 fn main() {
     let interval = std::env::var("GMAIDEN_GPU_FEED_MS")
@@ -30,69 +27,148 @@ fn main() {
         .unwrap_or(3000)
         .max(500);
 
-    let mut fails: u32 = 0;
+    #[cfg(windows)]
+    let mut gpu = nvml::Sampler::new();
+    let mut failures = feed_loop::FailureBudget::new();
     loop {
-        let ok = sample_json().map(|body| post(&body).is_ok()).unwrap_or(false);
-        if ok {
-            fails = 0;
-        } else {
-            // No GPU, or G-Maiden's server is unreachable. Give it a while, then
-            // exit (the parent app is gone, or there's nothing to feed).
-            fails += 1;
-            if fails >= GIVE_UP_AFTER {
-                return;
-            }
+        let endpoint = selected_port().and_then(|port| {
+            let host = format!("127.0.0.1:{port}");
+            verify_health(&host, port).ok().map(|_| host)
+        });
+        let keep_running = failures.tick(
+            endpoint.is_some(),
+            || {
+                #[cfg(windows)]
+                {
+                    gpu.sample_json()
+                }
+                #[cfg(not(windows))]
+                {
+                    feed_loop::SampleState::ActualUnavailable
+                }
+            },
+            |body| {
+                endpoint
+                    .as_ref()
+                    .is_some_and(|host| post_to(host, body).is_ok())
+            },
+        );
+        if !keep_running {
+            return;
         }
         sleep(Duration::from_millis(interval));
     }
 }
 
-/// Query nvidia-smi for the first GPU and build the `{ "gpus": [ ... ] }` body.
-/// `None` when nvidia-smi is missing/fails or reports no GPU.
-fn sample_json() -> Option<String> {
-    let mut cmd = Command::new("nvidia-smi");
-    cmd.args([
-        "--query-gpu=name,utilization.gpu,memory.used,memory.total,temperature.gpu",
-        "--format=csv,noheader,nounits",
-    ]);
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW — no console flash
-    }
-    let out = cmd.output().ok()?;
-    if !out.status.success() {
-        return None;
-    }
-    let stdout = String::from_utf8_lossy(&out.stdout);
-    let line = stdout.lines().find(|l| !l.trim().is_empty())?;
-    let f: Vec<&str> = line.split(',').map(|s| s.trim()).collect();
-    if f.len() < 5 {
-        return None;
-    }
-    // Keep the name JSON-safe (drop quotes/backslashes); numbers are plain.
-    let name = f[0].replace(['"', '\\'], "");
-    let load: f64 = f[1].parse().ok()?;
-    let used: f64 = f[2].parse().ok()?; // MiB
-    let total: f64 = f[3].parse().ok()?; // MiB
-    let temp: f64 = f[4].parse().ok()?;
-    Some(format!(
-        "{{\"gpus\":[{{\"name\":\"{name}\",\"loadPercent\":{load},\"tempC\":{temp},\"vramUsedMb\":{used},\"vramTotalMb\":{total}}}]}}"
-    ))
+/// Minimal HTTP/1.1 POST to the loopback server — no HTTP-client crate needed.
+fn selected_port() -> Option<u16> {
+    let file =
+        std::path::PathBuf::from(std::env::var_os("LOCALAPPDATA")?).join("G-Maiden/gsi-port.txt");
+    let text = std::fs::read_to_string(file).ok()?;
+    parse_port(&text)
 }
 
-/// Minimal HTTP/1.1 POST to the loopback server — no HTTP-client crate needed.
-fn post(body: &str) -> std::io::Result<()> {
-    let mut stream = TcpStream::connect(HOST)?;
+fn parse_port(text: &str) -> Option<u16> {
+    text.trim()
+        .parse::<u16>()
+        .ok()
+        .filter(|port| (3000..=3010).contains(port))
+}
+
+fn verify_health(host: &str, port: u16) -> std::io::Result<()> {
+    let response = request(host, "GET", "/health", "")?;
+    let (_, body) = response
+        .split_once("\r\n\r\n")
+        .ok_or_else(|| std::io::Error::other("invalid health response"))?;
+    let compact: String = body
+        .chars()
+        .filter(|ch| !ch.is_ascii_whitespace())
+        .collect();
+    if compact != format!("{{\"service\":\"g-maiden\",\"port\":{port}}}") {
+        return Err(std::io::Error::other(
+            "endpoint is not the selected G-Maiden service",
+        ));
+    }
+    Ok(())
+}
+
+fn post_to(host: &str, body: &str) -> std::io::Result<()> {
+    request(host, "POST", "/telemetry", body).map(|_| ())
+}
+
+fn request(host: &str, method: &str, path: &str, body: &str) -> std::io::Result<String> {
+    let address = host
+        .parse()
+        .map_err(|_| std::io::Error::other("invalid loopback endpoint"))?;
+    let mut stream = TcpStream::connect_timeout(&address, Duration::from_secs(2))?;
     stream.set_write_timeout(Some(Duration::from_secs(2)))?;
     stream.set_read_timeout(Some(Duration::from_secs(2)))?;
     let req = format!(
-        "POST /telemetry HTTP/1.1\r\nHost: {HOST}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
-        body.len(),
-        body
+        "{method} {path} HTTP/1.1\r\nHost: {host}\r\nContent-Type: application/json\r\nContent-Length: {}\r\nConnection: close\r\n\r\n{}",
+        body.len(), body
     );
     stream.write_all(req.as_bytes())?;
-    let mut buf = [0u8; 128];
-    let _ = stream.read(&mut buf); // drain/ack, ignore contents
-    Ok(())
+    let mut response = String::new();
+    stream.take(8192).read_to_string(&mut response)?;
+    if !response.starts_with("HTTP/1.1 200 ") && !response.starts_with("HTTP/1.0 200 ") {
+        return Err(std::io::Error::other(
+            "G-Maiden did not acknowledge telemetry/health",
+        ));
+    }
+    Ok(response)
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    fn server(response: &'static str) -> (String, std::thread::JoinHandle<()>) {
+        let listener = std::net::TcpListener::bind("127.0.0.1:0").unwrap();
+        let host = listener.local_addr().unwrap().to_string();
+        let worker = std::thread::spawn(move || {
+            let (mut stream, _) = listener.accept().unwrap();
+            let mut buf = [0; 4096];
+            let _ = stream.read(&mut buf);
+            stream.write_all(response.as_bytes()).unwrap();
+        });
+        (host, worker)
+    }
+    #[test]
+    fn telemetry_requires_success_ack() {
+        let (host, worker) = server(
+            "HTTP/1.1 500 Internal Server Error\r\nContent-Length: 0\r\nConnection: close\r\n\r\n",
+        );
+        assert!(post_to(&host, "{}").is_err());
+        worker.join().unwrap();
+    }
+    #[test]
+    fn telemetry_accepts_success_ack() {
+        let (host, worker) =
+            server("HTTP/1.1 200 OK\r\nContent-Length: 0\r\nConnection: close\r\n\r\n");
+        assert!(post_to(&host, "{}").is_ok());
+        worker.join().unwrap();
+    }
+    #[test]
+    fn only_supported_published_ports_are_admitted() {
+        assert_eq!(parse_port("3007\n"), Some(3007));
+        assert_eq!(parse_port("3011"), None);
+        assert_eq!(parse_port("http://evil"), None);
+    }
+    #[test]
+    fn health_must_identify_service_and_selected_port() {
+        let (host, worker) = server(
+            "HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n{\"service\":\"g-maiden\",\"port\":3007}",
+        );
+        assert!(verify_health(&host, 3007).is_ok());
+        worker.join().unwrap();
+        let (host, worker) = server(
+            "HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n{\"service\":\"other\",\"port\":3007}",
+        );
+        assert!(verify_health(&host, 3007).is_err());
+        worker.join().unwrap();
+        let (host, worker) = server(
+            "HTTP/1.1 200 OK\r\nConnection: close\r\n\r\n{\"service\":\"g-maiden\",\"port\":3000}",
+        );
+        assert!(verify_health(&host, 3007).is_err());
+        worker.join().unwrap();
+    }
 }

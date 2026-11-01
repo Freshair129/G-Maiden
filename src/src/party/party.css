@@ -1,0 +1,370 @@
+.g-party,
+.g-party-strip {
+  color: #edf3f5;
+  font-family: system-ui, "Leelawadee UI", sans-serif;
+  font-size: 16px;
+  line-height: 1.55;
+}
+
+.g-party {
+  box-sizing: border-box;
+  display: grid;
+  align-content: start;
+  gap: 24px;
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+  padding: 24px;
+}
+
+.g-party *,
+.g-party-strip * {
+  box-sizing: border-box;
+}
+
+.g-party-live-container {
+  min-height: 0;
+  overflow-y: auto;
+  overscroll-behavior-y: contain;
+}
+
+.g-party h2,
+.g-party h3,
+.g-party p,
+.g-party-strip h3,
+.g-party-strip p {
+  margin: 0;
+}
+
+.g-party h2 {
+  font-size: 26px;
+  font-weight: 700;
+}
+
+.g-party h3 {
+  font-size: 19px;
+}
+
+.g-party-intro,
+.g-party-session,
+.g-party-section {
+  display: grid;
+  gap: 12px;
+}
+
+.g-party-description,
+.g-party-note {
+  color: #bac9cf;
+  font-size: 14px;
+}
+
+.g-party-header,
+.g-party-section-heading,
+.g-party-member-heading,
+.g-party-stat-label,
+.g-party-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.g-party-form,
+.g-party-session,
+.g-party-member {
+  border: 1px solid #43535b;
+  border-radius: 12px;
+  background: #172229;
+  padding: 20px;
+}
+
+.g-party-form {
+  display: grid;
+  gap: 20px;
+  max-width: 760px;
+}
+
+.g-party-mode {
+  display: flex;
+  gap: 8px;
+}
+
+.g-party-field {
+  display: grid;
+  gap: 7px;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.g-party input:not([type="checkbox"]),
+.g-party button,
+.g-party-strip button {
+  min-height: 44px;
+  border: 1px solid #657982;
+  border-radius: 7px;
+  font: inherit;
+  font-size: 15px;
+}
+
+.g-party input:not([type="checkbox"]) {
+  width: 100%;
+  padding: 10px 12px;
+  background: #0d171d;
+  color: #f4f8fa;
+}
+
+.g-party input::placeholder {
+  color: #9aadb7;
+  opacity: 1;
+}
+
+.g-party button,
+.g-party-strip button {
+  padding: 9px 15px;
+  background: #20343e;
+  color: #f4f8fa;
+  cursor: pointer;
+  font-weight: 600;
+}
+
+.g-party button:hover:not(:disabled),
+.g-party-strip button:hover:not(:disabled) {
+  background: #2b4654;
+}
+
+.g-party button[aria-pressed="true"],
+.g-party button.g-party-primary {
+  border-color: #8de7c7;
+  background: #a0efd3;
+  color: #10281e;
+}
+
+.g-party button.g-party-primary:hover:not(:disabled) {
+  background: #c2f6e5;
+}
+
+.g-party button.g-party-danger,
+.g-party-strip button.g-party-danger {
+  border-color: #d49a90;
+  background: #422c2b;
+  color: #ffe0d9;
+}
+
+.g-party button:disabled,
+.g-party-strip button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.g-party input:focus-visible,
+.g-party button:focus-visible,
+.g-party-strip button:focus-visible {
+  outline: 3px solid #a0efd3;
+  outline-offset: 3px;
+}
+
+.g-party-consent {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 15px;
+}
+
+.g-party-consent input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin: 2px 0 0;
+  accent-color: #a0efd3;
+}
+
+.g-party-feedback {
+  border: 1px solid #d49a90;
+  border-radius: 8px;
+  padding: 13px 16px;
+  background: #382927;
+  color: #ffe0d9;
+}
+
+.g-party-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid #657982;
+  border-radius: 6px;
+  padding: 4px 9px;
+  color: #d2dee3;
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.g-party-status[data-ready="true"] {
+  border-color: #79bba5;
+  color: #a0efd3;
+}
+
+.g-party-member-list {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 250px), 1fr));
+  gap: 14px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.g-party-member {
+  display: grid;
+  align-content: start;
+  gap: 12px;
+  min-width: 0;
+}
+
+.g-party-member-name {
+  color: #f6fafb;
+  font-size: 18px;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.g-party-member-hero {
+  color: #c1d2da;
+  font-size: 14px;
+  overflow-wrap: anywhere;
+}
+
+.g-party-member-state {
+  color: #d6e0e5;
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.g-party-stat {
+  display: grid;
+  gap: 5px;
+}
+
+.g-party-stat-label {
+  gap: 5px;
+  font-size: 15px;
+}
+
+.g-party-stat-label strong {
+  font-size: 19px;
+  font-variant-numeric: tabular-nums;
+}
+
+.g-party-meter {
+  height: 18px;
+  overflow: hidden;
+  border: 1px solid #63747d;
+  border-radius: 4px;
+  background: #0a151b;
+}
+
+.g-party-meter-fill {
+  height: 100%;
+  background: #88dcb4;
+}
+
+.g-party-meter[data-kind="mana"] .g-party-meter-fill {
+  background: #87cafa;
+}
+
+.g-party-unknown {
+  min-height: 18px;
+  border-bottom: 1px dashed #657982;
+  color: #bac9cf;
+  font-size: 13px;
+}
+
+.g-party-strip {
+  display: grid;
+  grid-column: 1 / -1;
+  align-content: start;
+  gap: 6px;
+  margin-top: 16px;
+  max-height: 260px;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  border-top: 1px solid #43535b;
+  padding-top: 12px;
+}
+
+.g-party-strip > .g-party-note {
+  font-size: 12px;
+  line-height: 1.4;
+}
+
+.g-party-strip h3 {
+  font-size: 16px;
+}
+
+.g-party-strip .g-party-member-list {
+  display: flex;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  overflow-x: auto;
+  min-width: 0;
+  gap: 8px;
+  padding-bottom: 8px;
+  overscroll-behavior-x: contain;
+  scroll-snap-type: x proximity;
+}
+
+.g-party-strip .g-party-member {
+  flex: 1 0 220px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 0.6fr);
+  gap: 5px 8px;
+  border-radius: 7px;
+  padding: 10px;
+  scroll-snap-align: start;
+}
+
+.g-party-strip .g-party-member-heading,
+.g-party-strip .g-party-member-hero,
+.g-party-strip .g-party-member > .g-party-status,
+.g-party-strip .g-party-member-state {
+  grid-column: 1 / -1;
+}
+
+.g-party-strip .g-party-member > .g-party-status {
+  justify-self: start;
+  padding: 1px 6px;
+  font-size: 12px;
+}
+
+.g-party-strip .g-party-member-name,
+.g-party-strip .g-party-stat-label strong {
+  font-size: 15px;
+}
+
+.g-party-strip .g-party-stat-label,
+.g-party-strip .g-party-member-state,
+.g-party-strip .g-party-member-hero {
+  font-size: 12px;
+}
+
+.g-party-strip .g-party-meter {
+  height: 12px;
+}
+
+@media (max-width: 600px) {
+  .g-party {
+    padding: 16px;
+  }
+
+  .g-party-form,
+  .g-party-session {
+    padding: 16px;
+  }
+
+  .g-party-actions {
+    align-items: stretch;
+  }
+}

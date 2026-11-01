@@ -218,3 +218,9 @@ export function iamErrorBody(
 }
 
 export type { IamContext };
+
+// Social use intentionally has no security audit callback and permits AAL1.
+export function requireSocialContext(authorization: string): Promise<IamDecision> {
+  const { verifyUser, sessionExists, loadRole } = dependencies("g-party-social", "");
+  return resolveIamContext(authorization, "social.use", false, { verifyUser, sessionExists, loadRole });
+}

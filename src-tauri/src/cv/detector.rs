@@ -46,7 +46,7 @@ const NEGATIVE_LABEL: &str = "__negative__";
 
 type Runnable = TypedRunnableModel<TypedModel>;
 
-/// A confirmed hero detection at a minimap patch.
+/// A classifier candidate; Sentry still requires portrait-backed ID admission.
 #[derive(Clone, serde::Serialize)]
 pub struct Detection {
     /// Class index into the labels list.
@@ -65,6 +65,7 @@ pub struct Detector {
     model: Option<Runnable>,
     labels: Vec<String>,
     negative_idx: Option<usize>,
+    cache: std::cell::RefCell<super::patch_cache::PatchCache>,
 }
 
 impl Detector {
@@ -91,6 +92,7 @@ impl Detector {
                     model: None,
                     labels: Vec::new(),
                     negative_idx: None,
+                    cache: Default::default(),
                 }
             }
         }
@@ -108,6 +110,7 @@ impl Detector {
             model: Some(model),
             labels,
             negative_idx,
+            cache: Default::default(),
         })
     }
 
@@ -123,18 +126,21 @@ impl Detector {
             return Vec::new();
         };
         let mut raw: Vec<Detection> = Vec::new();
+        let mut cache = self.cache.borrow_mut();
+        cache.begin_frame();
         for &(px, py) in candidates {
             let input = self.patch_to_tensor(frame, px, py, icon);
-            let out = match model.run(tvec!(input.into())) {
-                Ok(o) => o,
-                Err(_) => continue, // a bad patch shouldn't kill the frame
+            let Ok(values) = input.as_slice::<f32>() else {
+                continue;
             };
-            let view = match out[0].to_array_view::<f32>() {
-                Ok(v) => v,
-                Err(_) => continue,
+            let key = values.iter().map(|value| value.to_bits()).collect();
+            let Some((idx, conf)) = cache.classify(key, || {
+                let out = model.run(tvec!(input.into())).ok()?;
+                let view = out[0].to_array_view::<f32>().ok()?;
+                Some(softmax_argmax(&view.iter().copied().collect::<Vec<_>>()))
+            }) else {
+                continue;
             };
-            let logits: Vec<f32> = view.iter().copied().collect();
-            let (idx, conf) = softmax_argmax(&logits);
             if Some(idx) == self.negative_idx || conf < CONF_THRESHOLD {
                 continue;
             }
@@ -150,21 +156,34 @@ impl Detector {
         nms(raw, icon)
     }
 
+    pub fn last_inference_work(&self) -> (usize, usize) {
+        let cache = self.cache.borrow();
+        (cache.hits, cache.misses)
+    }
+
     /// Crop the `icon×icon` patch at (px,py) and bilinear-resize to the model's
     /// 32×32 RGB input. `Frame::at` already yields RGB in [0,1], satisfying the
     /// ÷255 normalization in the contract.
     fn patch_to_tensor(&self, frame: &Frame, px: i32, py: i32, icon: usize) -> Tensor {
-        let n = MODEL_INPUT;
-        let scale = icon as f32 / n as f32;
-        let arr = tract_ndarray::Array4::<f32>::from_shape_fn((1, 3, n, n), |(_, c, oy, ox)| {
-            // map output pixel centre back into the source patch (clamped)
+        patch_rgb_tensor(frame, px, py, icon).into_tensor()
+    }
+}
+
+fn patch_rgb_tensor(frame: &Frame, px: i32, py: i32, icon: usize) -> tract_ndarray::Array4<f32> {
+    let n = MODEL_INPUT;
+    let scale = icon as f32 / n as f32;
+    let mut arr = tract_ndarray::Array4::<f32>::zeros((1, 3, n, n));
+    for oy in 0..n {
+        for ox in 0..n {
             let sx = ((ox as f32 + 0.5) * scale - 0.5).clamp(0.0, (icon - 1) as f32);
             let sy = ((oy as f32 + 0.5) * scale - 0.5).clamp(0.0, (icon - 1) as f32);
             let rgb = bilinear(frame, px, py, icon, sx, sy);
-            rgb[c]
-        });
-        arr.into_tensor()
+            for c in 0..3 {
+                arr[[0, c, oy, ox]] = rgb[c];
+            }
+        }
     }
+    arr
 }
 
 /// Bilinear sample of the patch [px..px+icon, py..py+icon] at fractional
@@ -237,6 +256,40 @@ mod tests {
     use super::*;
 
     #[test]
+    fn resized_patch_matches_original_channel_sampling_bit_for_bit() {
+        let bytes: Vec<u8> = (0..67 * 51 * 4)
+            .map(|i| ((i * 71 + i / 13) % 256) as u8)
+            .collect();
+        let frame = Frame::from_bgra(67, 51, bytes).unwrap();
+        for (px, py, icon) in [
+            (0, 0, 1),
+            (0, 0, 7),
+            (4, 5, 20),
+            (-6, -3, 19),
+            (60, 48, 29),
+            (10, 2, 64),
+        ] {
+            let scale = icon as f32 / MODEL_INPUT as f32;
+            let expected = tract_ndarray::Array4::<f32>::from_shape_fn(
+                (1, 3, MODEL_INPUT, MODEL_INPUT),
+                |(_, c, y, x)| {
+                    let sx = ((x as f32 + 0.5) * scale - 0.5).clamp(0.0, (icon - 1) as f32);
+                    let sy = ((y as f32 + 0.5) * scale - 0.5).clamp(0.0, (icon - 1) as f32);
+                    bilinear(&frame, px, py, icon, sx, sy)[c]
+                },
+            );
+            let actual = patch_rgb_tensor(&frame, px, py, icon);
+            assert!(
+                actual
+                    .iter()
+                    .zip(expected.iter())
+                    .all(|(a, b)| a.to_bits() == b.to_bits()),
+                "px={px}, py={py}, icon={icon}"
+            );
+        }
+    }
+
+    #[test]
     fn softmax_picks_largest_logit() {
         let (idx, p) = softmax_argmax(&[0.1, 2.0, -1.0, 0.5]);
         assert_eq!(idx, 1);
@@ -303,5 +356,40 @@ mod tests {
         assert!(!d.is_active());
         let f = Frame::from_bgra(40, 40, vec![0u8; 40 * 40 * 4]).unwrap();
         assert!(d.detect(&f, &[(0, 0), (10, 10)], 20).is_empty());
+    }
+
+    #[test]
+    fn cached_real_model_matches_fresh_inference_for_current_pixels() {
+        let model = Path::new("../models/minimap-detector.onnx");
+        if !model.exists() {
+            return;
+        }
+        let labels = Path::new("../models/labels.json");
+        let cached = Detector::load(model, labels);
+        let fresh = Detector::load(model, labels);
+        assert!(cached.is_active() && fresh.is_active());
+        let mut frame =
+            Frame::from_bgra(64, 64, (0..64 * 64 * 4).map(|i| (i % 251) as u8).collect()).unwrap();
+        let candidates = [(0, 0), (20, 20), (40, 40)];
+        let encode = |values: Vec<Detection>| {
+            values
+                .into_iter()
+                .map(|d| (d.label, d.name, d.x, d.y, d.score.to_bits()))
+                .collect::<Vec<_>>()
+        };
+        cached.detect(&frame, &candidates, 20);
+        assert_eq!(
+            encode(cached.detect(&frame, &candidates, 20)),
+            encode(fresh.detect(&frame, &candidates, 20))
+        );
+        assert_eq!(cached.last_inference_work(), (3, 0));
+        frame.bgra[4 * (5 * 64 + 5)] ^= 127;
+        fresh.cache.borrow_mut().begin_frame();
+        fresh.cache.borrow_mut().begin_frame();
+        assert_eq!(
+            encode(cached.detect(&frame, &candidates, 20)),
+            encode(fresh.detect(&frame, &candidates, 20))
+        );
+        assert_eq!(cached.last_inference_work(), (2, 1));
     }
 }

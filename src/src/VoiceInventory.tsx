@@ -7,8 +7,10 @@
 // through it. All state/props are already sync-ready.
 
 import { CSSProperties, useCallback, useEffect, useMemo, useState } from "react";
+import { open } from "@tauri-apps/plugin-dialog";
 import { invoke } from "@tauri-apps/api/core";
 import type { VoiceEvent, VoicePack, VoiceState } from "./voice-types";
+import { C } from "./app/theme";
 
 
 // Pack tile — cover image on top, name/author on the bottom. Falls back to a
@@ -30,7 +32,6 @@ function PackCard({
     <button type="button" className={className} onClick={onSelect}>
       <div className="voice-card-cover">
         {equipped ? <span className="voice-card-badge">ถูกใช้อยู่</span> : null}
-        {pack.builtIn ? <span className="voice-card-badge builtin">ติดมากับแอป</span> : null}
         {pack.coverImageUrl ? (
           <img src={pack.coverImageUrl} alt={`${pack.name} cover`} />
         ) : (
@@ -67,22 +68,12 @@ function pickAccentGradient(pack: VoicePack): string {
   return `linear-gradient(135deg, ${accent}44 0%, #0b1220 65%, #060913 100%)`;
 }
 
-// One event row in the detail panel — clip status + play button that goes
-// through the same `play_clip` Tauri command AudioSettings uses.
-//
-// Status mirrors the REAL runtime resolution chain (audio.rs list_clips):
-// pack clip → bundled default clip → TTS. "missing" is never shown — an
-// unmapped event still voices via the default pack, and the play button
-// previews exactly the sound the player will hear in-game.
+// Event previews use the same admitted GANN audio/video pair as live triggers.
 function EventRow({ event, onPlay }: { event: VoiceEvent; onPlay: (event: VoiceEvent) => void }) {
   const hasPackClip = !!event.mapping?.hasClip;
-  const status = hasPackClip ? "clip" : event.defaultClipCount > 0 ? "default" : "tts";
-  const statusText = hasPackClip
-    ? `${event.mapping!.clipCount} คลิป`
-    : event.defaultClipCount > 0
-    ? "เสียงกลาง"
-    : "TTS";
-  const playable = hasPackClip ? event.mapping?.clipUrl : event.defaultClipUrl;
+  const status = hasPackClip ? "clip" : "silent";
+  const statusText = hasPackClip ? `${event.mapping!.clipCount} คลิป` : "ไม่มี mapping ใน GANN";
+  const playable = hasPackClip && event.mapping?.clipUrl;
   return (
     <div className="voice-event-row">
       <button
@@ -107,6 +98,7 @@ export default function VoiceInventory() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [vrzoClip, setVrzoClip] = useState('');
 
   const refresh = useCallback(async () => {
     try {
@@ -135,6 +127,29 @@ export default function VoiceInventory() {
 
   const equippedId = state?.activePackId ?? null;
   const isEquipped = !!selectedPack && selectedPack.id === equippedId;
+  const idVariants = selectedPack?.capabilities.eventPreview
+    ? selectedPack.items.flatMap(item => (item.mapping?.clips ?? []).map(path => ({ event: item.id, clipId: path.split('/').pop()!.replace(/\.wav$/i, '') }))) : [];
+  const variants = idVariants;
+  const chosenVariant = variants.find(item => item.clipId === vrzoClip) ?? variants[0];
+  const warmPack = isEquipped && selectedPack?.capabilities.eventPreview ? selectedPack.id : undefined;
+  const warmEvent = chosenVariant?.event;
+  const warmClip = chosenVariant?.clipId;
+  useEffect(() => {
+    if (!warmPack || !warmEvent || !warmClip) return;
+    void invoke('warm_announcer_visual_variant', { packId: warmPack, event: warmEvent, clipId: warmClip }).catch(() => {});
+  }, [warmPack, warmEvent, warmClip]);
+
+  const importContainer = async () => {
+    setBusy(true);
+    try {
+      const path = await open({ title: 'นำเข้า Announcer Package', filters: [{ name: 'G-Ann Package', extensions: ['gann'] }] });
+      if (typeof path !== 'string') return;
+      const result = await invoke<{ imported: string[] }>('voice_api_import_file', { path });
+      await refresh(); setSelectedId(result.imported[0] ?? null);
+      setNotice('นำเข้าแพ็ก local .gann แล้ว เลือก Equip เพื่อใช้งาน'); setErr(null);
+    } catch (e) { setErr(errMessage(e)); }
+    finally { setBusy(false); }
+  };
 
   const equip = useCallback(async (packId: string) => {
     setBusy(true);
@@ -152,20 +167,15 @@ export default function VoiceInventory() {
     }
   }, []);
 
-  const playEventClip = useCallback((event: VoiceEvent) => {
-    // Preview what will REALLY play: the pack's clip, else the bundled
-    // default clip this event falls back to (audio.rs resolution chain).
-    const url = event.mapping?.clipUrl || event.defaultClipUrl;
-    if (!url) return;
-    // Windows paths go through the Tauri command; anything else is treated
-    // as a URL and played via <audio>. Matches AudioSettings.playUrl().
-    if (/^[a-z]:[\\/]/i.test(url) || url.startsWith("\\\\")) {
-      invoke("play_clip", { path: url }).catch(() => {});
-      return;
+  const playEventClip = useCallback(async (event: VoiceEvent) => {
+    if (!selectedPack || !event.mapping?.clipUrl) return;
+    try {
+      await invoke("preview_announcer_event", { packId: selectedPack.id, event: event.id });
+      setErr(null);
+    } catch (e) {
+      setErr(errMessage(e));
     }
-    const audio = new Audio(url);
-    audio.play().catch(() => {});
-  }, []);
+  }, [selectedPack]);
 
   const previewOnOverlay = useCallback(async (event: VoiceEvent) => {
     if (!selectedPack) return;
@@ -181,6 +191,15 @@ export default function VoiceInventory() {
     const firstMapped = selectedPack.items.find((item) => item.mapping);
     if (firstMapped) void previewOnOverlay(firstMapped);
   }, [selectedPack, previewOnOverlay]);
+
+  const previewVrzoVariant = useCallback(async () => {
+    const variant = chosenVariant;
+    if (!variant) return;
+    try {
+      await invoke("preview_announcer_variant", { event: variant.event, clipId: variant.clipId, packId: selectedPack?.id });
+      setErr(null);
+    } catch (e) { setErr(errMessage(e)); }
+  }, [chosenVariant, selectedPack?.id]);
 
   if (!state) {
     return (
@@ -202,6 +221,7 @@ export default function VoiceInventory() {
         </div>
         <div className="voice-inventory-actions">
 
+          <button className="voice-btn" onClick={() => void importContainer()} disabled={busy}>นำเข้า .gann</button>
           <button className="voice-btn" onClick={() => void refresh()} disabled={busy}>Rescan</button>
         </div>
       </header>
@@ -209,9 +229,10 @@ export default function VoiceInventory() {
       {notice ? <div className="voice-toast ok">{notice}</div> : null}
       {err ? <div className="voice-toast err">{err}</div> : null}
 
+
       {state.packs.length === 0 ? (
         <div className="voice-empty">
-          ยังไม่มีแพ็กเสียงที่ติดตั้งจาก Store — เลือกซื้อและติดตั้งได้ที่ G-Store
+          ยังไม่มีแพ็ก GANN — นำเข้าไฟล์ .gann เพื่อใช้งาน
         </div>
       ) : (
         <div className="voice-split">
@@ -242,7 +263,6 @@ export default function VoiceInventory() {
               <div className="voice-detail-meta">
                 <h3>{selectedPack.name}</h3>
                 <div className="voice-detail-chips">
-                  {selectedPack.builtIn ? <span className="voice-detail-chip builtin">ติดมากับแอป</span> : null}
                   {selectedPack.author ? <span className="voice-detail-chip">by {selectedPack.author}</span> : null}
                   {/* Provenance belongs on the screen where packs are CHOSEN, not
                       only in the deep editor (AudioSettings). `author` above is
@@ -280,6 +300,15 @@ export default function VoiceInventory() {
                   Preview overlay
                 </button>
               </div>
+
+              {idVariants.length > 0 && (
+                <div className="voice-detail-actions">
+                  <label>ทดลองแบนเนอร์ <select aria-label="Announcer variant" style={{ backgroundColor: C.bg, color: C.txt, colorScheme: 'dark' }} value={chosenVariant?.clipId ?? ''} onChange={(e) => setVrzoClip(e.target.value)}>
+                    {variants.map((item) => <option key={item.clipId} value={item.clipId} style={{ backgroundColor: C.bg, color: C.txt }}>{item.event} · {item.clipId}</option>)}
+                  </select></label>
+                  <button className="voice-btn" aria-label="Preview Announcer variant" onClick={() => void previewVrzoVariant()} disabled={!isEquipped}>ทดลองภาพและเสียง</button>
+                </div>
+              )}
 
               <div className="voice-detail-events">
                 {state.groups.map((group) => {

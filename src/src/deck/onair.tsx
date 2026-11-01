@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
-import { toneClass, useMinimapImage, type CompanionData } from "../companion";
+import { latestBackendReceiptAt, toneClass, type CompanionData } from "../companion";
+import { MinimapCanvas } from "../MinimapCanvas";
+import { useMinimapPreview } from "../live/useMinimapPreview";
 import type { MatchPhase } from "../live/phase";
+import type { GsiFreshness } from "../live/events";
 import type { ContextMenuController, ContextMenuEntry } from "../ContextMenu";
 
 /** Honest replacement for the old permanent "—" ping readout: GSI has no ping
@@ -16,8 +19,9 @@ export function FeedAgePill({ updatedAt, online }: { updatedAt: number; online: 
   }, []);
 
   let value = "—";
-  if (online && updatedAt > 0) {
-    const age = Date.now() - updatedAt;
+  const receiptAt = Math.max(updatedAt, latestBackendReceiptAt());
+  if (online && receiptAt > 0) {
+    const age = Date.now() - receiptAt;
     value = age < 1000 ? "<1s" : `${Math.min(99, Math.round(age / 1000))}s`;
   }
 
@@ -62,32 +66,12 @@ export function MomentumInline({ momentum }: { momentum: CompanionData["momentum
   );
 }
 
-/** Live mirror of the real in-game minimap (captured + downscaled by the DXGI CV
- *  pipeline, arrives as a base64 PNG on `minimap-frame`). Falls back to the
- *  decorative grid before the first frame / when capture is in Lite mode. Its own
- *  hook keeps the ≈2 Hz image refresh from re-rendering the rest of the deck. */
+/** The preview worker is independent of CV inference and Companion snapshots. */
 export function MinimapMirror() {
-  const image = useMinimapImage();
-  if (image) {
-    return (
-      <div className="gm-minimap gm-minimap-live">
-        <img className="gm-minimap-img" src={image} alt="In-game minimap" draggable={false} />
-      </div>
-    );
-  }
-  // No CV frame yet — before the match, or in Lite mode where capture never
-  // starts. The decorative grid that used to sit here read as "the map is
-  // empty" rather than "we cannot see it". A real Dota map is the honest
-  // placeholder for the shape of the thing, but it is a STATIC REFERENCE, not
-  // a mirror: it carries no hero positions and must never be mistaken for one.
-  // Hence the dimming and the explicit badge — CR-007's rule that unknown state
-  // renders as unknown, never as a plausible-looking zero.
-  return (
-    <div className="gm-minimap gm-minimap-ref">
-      <img className="gm-minimap-img" src="/dota-minimap-reference.webp" alt="" draggable={false} />
-      <span className="gm-minimap-ref-badge">ยังไม่เห็นแมพ · ภาพอ้างอิง</span>
-    </div>
-  );
+  const preview = useMinimapPreview();
+  return <div className={`gm-minimap ${preview.status === "live" ? "gm-minimap-live" : "gm-minimap-ref"}`}>
+    <MinimapCanvas />
+  </div>;
 }
 
 const UTT_SOURCE_LABEL: Record<"signal" | "master" | "announcer", string> = {
@@ -95,6 +79,7 @@ const UTT_SOURCE_LABEL: Record<"signal" | "master" | "announcer", string> = {
   master: "MASTER",
   announcer: "ANN"
 };
+const UTT_PHASE_LABEL = { generated: "สร้างแล้ว", requested: "ร้องขอเสียง", admitted: "รับเข้าเล่นแล้ว" };
 
 /** Text copied by the utterance row's "คัดลอกข้อความ" context-menu item —
  *  includes the retracted prefix when the line is a belief-revision, so the
@@ -127,7 +112,7 @@ export function OnAirConsole({ data, menu }: { data: CompanionData; menu: Contex
   const rest = list.slice(1);
   // Backend chip: the newest MASTER-sourced line tells us which engine answered
   // ("ollama" = the local-SLM fallback, anything else = the cloud path).
-  const latestMaster = list.find((u) => u.source === "master");
+  const latestMaster = list.find((u) => u.source === "master" && (u.meta === "ollama" || u.meta === "claude"));
   const isLocalSlm = latestMaster?.meta === "ollama";
   const tallyOn = data.match.gsiOnline;
 
@@ -138,7 +123,7 @@ export function OnAirConsole({ data, menu }: { data: CompanionData; menu: Contex
         <b className="gm-onair-title">ON AIR — MAIDEN</b>
         <span className="gm-onair-end">
           <span className={`gm-onair-chip ${isLocalSlm ? "gm-onair-chip-local" : "gm-onair-chip-cloud"}`}>
-            {isLocalSlm ? "LOCAL SLM" : "CLOUD"}
+            {latestMaster ? (isLocalSlm ? "LOCAL SLM" : "CLOUD") : "SOURCE —"}
           </span>
           <span className="gm-onair-agent">{data.agentSector.name}</span>
         </span>
@@ -151,7 +136,7 @@ export function OnAirConsole({ data, menu }: { data: CompanionData; menu: Contex
           onContextMenu={(e) => menu.openFromMouseEvent(e, utteranceMenuItems(newest))}
           onKeyDown={(e) => menu.openFromKeyboard(e, utteranceMenuItems(newest))}
         >
-          <span className="gm-onair-now-meta">{newest.timeLabel} · {UTT_SOURCE_LABEL[newest.source]}</span>
+          <span className="gm-onair-now-meta">{newest.timeLabel} · {UTT_SOURCE_LABEL[newest.source]} · {UTT_PHASE_LABEL[newest.phase]}</span>
           <p className="gm-onair-now-text">
             {/* Belief revision is the headline signature — the strikethrough must
                 show at the most prominent slot too, not only in the log rows
@@ -184,7 +169,7 @@ export function OnAirConsole({ data, menu }: { data: CompanionData; menu: Contex
             onKeyDown={(e) => menu.openFromKeyboard(e, utteranceMenuItems(u))}
           >
             <span className="gm-onair-row-time">{u.timeLabel}</span>
-            <span className={`gm-onair-row-chip gm-onair-row-chip-${u.source}`}>{UTT_SOURCE_LABEL[u.source]}</span>
+            <span className={`gm-onair-row-chip gm-onair-row-chip-${u.source}`}>{UTT_SOURCE_LABEL[u.source]} · {UTT_PHASE_LABEL[u.phase]}</span>
             <p className="gm-onair-row-text">
               {u.kind === "revision" && u.retracted ? (
                 <>
@@ -254,10 +239,11 @@ export function DeckTabs({
 
 /** CR-011 §E standby/prep seat content — replaces the hero columns + minimap
  *  with a readiness rundown built ONLY from data the deck genuinely has today
- *  (no fake "Dota detected" checks). Ready rows get an ice check glyph;
- *  not-ready rows render an honest "—" mute, never a fake pass. */
+ *  (no fake "Dota detected" checks). Fresh evidence gets an ice check;
+ *  configuration gets a circle, and unknown/disabled rows get a dash. */
 export function ReadinessRundown({
   gsiOnline,
+  gsiFreshness,
   voicePackName,
   signalEnabled,
   annEnabled,
@@ -266,6 +252,7 @@ export function ReadinessRundown({
   onPreviewLive
 }: {
   gsiOnline: boolean;
+  gsiFreshness: GsiFreshness;
   voicePackName: string | null;
   signalEnabled: boolean;
   annEnabled: boolean;
@@ -273,14 +260,16 @@ export function ReadinessRundown({
   draftNote: boolean;
   onPreviewLive: () => void;
 }) {
-  // "ปิด"/"ปิดเสียง" for deliberately-toggled-off features — a user choice is not
-  // the same state as a genuinely-absent capability ("—") (Opus gate, CR011-P3).
-  const rows: Array<{ label: string; ready: boolean; value: string }> = [
-    { label: "เชื่อมต่อ GSI", ready: gsiOnline, value: gsiOnline ? "ออนไลน์" : "—" },
-    { label: "แพ็กเสียง", ready: voicePackName != null, value: voicePackName ?? "—" },
-    { label: "G-Signal", ready: signalEnabled, value: signalEnabled ? "พร้อม" : "ปิด" },
-    { label: "เสียงประกาศ ANN", ready: annEnabled, value: annEnabled ? "พร้อม" : "ปิด" },
-    { label: "ระดับเสียง", ready: masterVolume > 0, value: masterVolume > 0 ? `${masterVolume}%` : "ปิดเสียง" }
+  const freshGsi = gsiOnline && gsiFreshness === "fresh";
+  const packName = voicePackName?.trim() || null;
+  const validVolume = Number.isFinite(masterVolume) && masterVolume >= 0 && masterVolume <= 100;
+  // Settings prove configuration, not capture coverage or successful audio output.
+  const rows: Array<{ label: string; status: "ready" | "configured" | "disabled" | "unknown"; value: string }> = [
+    { label: "เชื่อมต่อ GSI", status: freshGsi ? "ready" : "unknown", value: freshGsi ? "ออนไลน์ · ข้อมูลสด" : gsiFreshness === "stale" ? "ข้อมูลล้าสมัย" : "ยังไม่ทราบ" },
+    { label: "แพ็กเสียง", status: packName ? "configured" : "unknown", value: packName ?? "ยังไม่ทราบ" },
+    { label: "G-Signal", status: signalEnabled ? "configured" : "disabled", value: signalEnabled ? "เปิด · ยังไม่ยืนยัน" : "ปิด" },
+    { label: "เสียงประกาศ ANN", status: annEnabled ? "configured" : "disabled", value: annEnabled ? "เปิด · ยังไม่ยืนยัน" : "ปิด" },
+    { label: "ระดับเสียง", status: !validVolume ? "unknown" : masterVolume > 0 ? "configured" : "disabled", value: !validVolume ? "ยังไม่ทราบ" : masterVolume > 0 ? `${masterVolume}%` : "ปิดเสียง" }
   ];
 
   return (
@@ -288,8 +277,9 @@ export function ReadinessRundown({
       {draftNote ? <div className="gm-rundown-note">กำลังดราฟต์ — รอเข้าเกม</div> : null}
       <div className="gm-rundown-list">
         {rows.map((row) => (
-          <div key={row.label} className={`gm-rundown-row${row.ready ? " ready" : ""}`}>
-            <span className="gm-rundown-glyph">{row.ready ? "✓" : "—"}</span>
+          <div key={row.label} className={`gm-rundown-row${row.status === "ready" ? " ready" : ""}`}
+            title={row.status === "configured" ? "ตั้งค่าแล้ว ยังไม่ยืนยันการจับภาพและเสียงออก" : undefined}>
+            <span className="gm-rundown-glyph">{row.status === "ready" ? "✓" : row.status === "configured" ? "○" : "—"}</span>
             <span className="gm-rundown-label">{row.label}</span>
             <span className="gm-rundown-value">{row.value}</span>
           </div>

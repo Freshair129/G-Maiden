@@ -10,9 +10,10 @@ use std::os::windows::process::CommandExt;
 use std::path::PathBuf;
 use std::process::Command;
 
-/// Win32 CREATE_NO_WINDOW — stop spawned console tools (tasklist, reg) from
-/// flashing a cmd window. Critical for the 4s watchdog `tasklist` poll, which
-/// otherwise pops a console every tick.
+#[path = "process_snapshot.rs"]
+mod process_snapshot;
+
+/// Win32 CREATE_NO_WINDOW — keep registry queries out of the desktop.
 const CREATE_NO_WINDOW: u32 = 0x0800_0000;
 
 const DOTA_APPID: &str = "570";
@@ -157,7 +158,37 @@ fn parse_keyvalues_entries(
     }
 }
 
+fn cfg_body_for_port(port: u16) -> String {
+    CFG_BODY.replace("127.0.0.1:3000/gsi", &format!("127.0.0.1:{port}/gsi"))
+}
+
+fn repair_config_port(text: &str, port: u16) -> Result<Option<String>, String> {
+    for previous in crate::local_endpoint::PORT_START..=crate::local_endpoint::PORT_END {
+        if !validate_gsi_config_for_port(text, previous) {
+            continue;
+        }
+        if previous == port {
+            return Ok(None);
+        }
+        let uri = format!("http://127.0.0.1:{previous}/gsi");
+        if text.matches(&uri).count() != 1 {
+            return Err("GSI config มี URI ซ้ำหรือกำกวม จึงไม่แก้ไขอัตโนมัติ".into());
+        }
+        return Ok(Some(text.replacen(
+            &uri,
+            &format!("http://127.0.0.1:{port}/gsi"),
+            1,
+        )));
+    }
+    Ok(None)
+}
+
+#[cfg(test)]
 fn validate_gsi_config(text: &str) -> bool {
+    validate_gsi_config_for_port(text, 3000)
+}
+
+fn validate_gsi_config_for_port(text: &str, port: u16) -> bool {
     if text.len() > MAX_CFG_BYTES {
         return false;
     }
@@ -184,7 +215,11 @@ fn validate_gsi_config(text: &str) -> bool {
             matches!(entry, KvEntry::Pair(candidate, actual) if candidate.eq_ignore_ascii_case(key) && actual == value)
         })
     };
-    if !pair_is(root, "uri", "http://127.0.0.1:3000/gsi") {
+    let uri_count = root
+        .iter()
+        .filter(|entry| matches!(entry, KvEntry::Pair(key, _) if key.eq_ignore_ascii_case("uri")))
+        .count();
+    if uri_count != 1 || !pair_is(root, "uri", &format!("http://127.0.0.1:{port}/gsi")) {
         return false;
     }
     let mut heartbeat_count = 0;
@@ -219,18 +254,12 @@ fn validate_gsi_config(text: &str) -> bool {
 /// watchdog to reset connection state + close the G-Log when the game exits
 /// (Dota just stops POSTing on close — it doesn't send a final out-of-game tick).
 pub fn dota_running() -> bool {
-    // tasklist filtered to the exact image name; if it's running the name shows
-    // up in stdout, otherwise tasklist prints an "INFO: No tasks" line.
-    let out = Command::new("tasklist")
-        .args(["/FI", "IMAGENAME eq dota2.exe", "/NH"])
-        .creation_flags(CREATE_NO_WINDOW)
-        .output();
-    match out {
-        Ok(o) => String::from_utf8_lossy(&o.stdout)
-            .to_lowercase()
-            .contains("dota2.exe"),
-        Err(_) => false,
-    }
+    dota_running_status().unwrap_or(false)
+}
+
+/// Unlike the display watchdog, update admission must distinguish probe failure.
+pub fn dota_running_status() -> Option<bool> {
+    process_snapshot::image_running("dota2.exe")
 }
 
 /// True when a *true* exclusive-fullscreen Direct3D app (e.g. Dota in "Exclusive
@@ -312,6 +341,124 @@ fn dota_cfg_dir(install_dir: &std::path::Path) -> PathBuf {
         .join("dota")
         .join("cfg")
         .join("gamestate_integration")
+}
+
+fn integration_file(name: &str) -> Option<PathBuf> {
+    std::env::var_os("LOCALAPPDATA").map(|path| PathBuf::from(path).join("G-Maiden").join(name))
+}
+
+pub fn publish_gsi_port(port: u16) -> Result<(), String> {
+    let file = integration_file("gsi-port.txt").ok_or("LocalAppData unavailable")?;
+    fs::create_dir_all(file.parent().ok_or("invalid port file")?).map_err(|e| e.to_string())?;
+    fs::write(file, format!("{port}\n")).map_err(|e| e.to_string())
+}
+
+pub fn clear_published_gsi_port(port: u16) {
+    if let Some(file) = integration_file("gsi-port.txt") {
+        if fs::read_to_string(&file)
+            .ok()
+            .is_some_and(|body| body.trim() == port.to_string())
+        {
+            let _ = fs::remove_file(file);
+        }
+    }
+}
+
+static SELECTION_READY: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+static CONFIG_SYNC: std::sync::Mutex<()> = std::sync::Mutex::new(());
+
+pub fn set_dota_selection(selected: Option<&str>) -> Result<bool, String> {
+    let _guard = CONFIG_SYNC.lock().map_err(|_| "GSI setup is unavailable")?;
+    let root = selected
+        .map(|path| validate_dota_install_dir(std::path::Path::new(path)))
+        .transpose()?;
+    let file = integration_file("gsi-dota-path.txt").ok_or("LocalAppData unavailable")?;
+    write_selected_root(&file, root.as_deref())?;
+    SELECTION_READY.store(true, std::sync::atomic::Ordering::Release);
+    match sync_selected_config() {
+        Ok(changed) => Ok(changed),
+        Err(error) => {
+            eprintln!("[G-Maiden] selected Dota config needs repair: {error}");
+            Ok(false)
+        }
+    }
+}
+
+fn write_selected_root(
+    file: &std::path::Path,
+    root: Option<&std::path::Path>,
+) -> Result<(), String> {
+    if let Some(root) = root {
+        fs::create_dir_all(file.parent().ok_or("invalid setup file")?)
+            .map_err(|e| e.to_string())?;
+        fs::write(file, root.to_string_lossy().as_bytes()).map_err(|e| e.to_string())
+    } else {
+        match fs::remove_file(file) {
+            Ok(()) => Ok(()),
+            Err(error) if error.kind() == std::io::ErrorKind::NotFound => Ok(()),
+            Err(error) => Err(error.to_string()),
+        }
+    }
+}
+
+fn saved_install_root() -> Result<Option<PathBuf>, String> {
+    let file = integration_file("gsi-dota-path.txt").ok_or("LocalAppData unavailable")?;
+    let text = match fs::read_to_string(file) {
+        Ok(text) => text,
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(None),
+        Err(error) => return Err(error.to_string()),
+    };
+    let path = PathBuf::from(text.trim());
+    // Older setup saved game/dota. An invalid remembered selection must never
+    // silently redirect automatic repair to another Steam installation.
+    validate_dota_install_dir(&path)
+        .or_else(|_| {
+            let root = path
+                .parent()
+                .and_then(|p| p.parent())
+                .ok_or("Invalid saved Dota selection")?;
+            validate_dota_install_dir(root)
+        })
+        .map(Some)
+}
+
+pub fn sync_gsi_config_port() -> Result<bool, String> {
+    let _guard = CONFIG_SYNC.lock().map_err(|_| "GSI setup is unavailable")?;
+    if !SELECTION_READY.load(std::sync::atomic::Ordering::Acquire) {
+        return Ok(false);
+    }
+    sync_selected_config()
+}
+
+fn sync_selected_config() -> Result<bool, String> {
+    let saved = saved_install_root()?;
+    let selected = saved
+        .as_ref()
+        .map(|path| path.to_string_lossy().to_string());
+    let (_, root) =
+        resolve_dota_install_dir(selected.as_deref()).map_err(|status| status.message)?;
+    sync_config_at_root(&root, crate::local_endpoint::current_port())
+}
+
+fn sync_config_at_root(root: &std::path::Path, port: u16) -> Result<bool, String> {
+    let cfg = resolve_cfg_dir(root, false)?.join(CFG_NAME);
+    let path = match fs::canonicalize(&cfg) {
+        Ok(path) if path.starts_with(root) => path,
+        Ok(_) => return Err("GSI config points outside Dota install".into()),
+        Err(error) if error.kind() == std::io::ErrorKind::NotFound => return Ok(false),
+        Err(error) => return Err(error.to_string()),
+    };
+    let mut text = String::new();
+    fs::File::open(&path)
+        .map_err(|e| e.to_string())?
+        .take((MAX_CFG_BYTES + 1) as u64)
+        .read_to_string(&mut text)
+        .map_err(|e| e.to_string())?;
+    let Some(updated) = repair_config_port(&text, port)? else {
+        return Ok(false);
+    };
+    fs::write(path, updated).map_err(|e| e.to_string())?;
+    Ok(true)
 }
 
 fn empty_status(steam_path: Option<String>, message: String) -> SetupStatus {
@@ -457,7 +604,10 @@ pub fn detect(selected_install_dir: Option<&str>) -> SetupStatus {
                 file.take((MAX_CFG_BYTES + 1) as u64)
                     .read_to_string(&mut contents)
                     .ok()?;
-                Some(validate_gsi_config(&contents))
+                Some(validate_gsi_config_for_port(
+                    &contents,
+                    crate::local_endpoint::current_port(),
+                ))
             })
             .unwrap_or(false)
     } else {
@@ -525,7 +675,10 @@ pub fn install(selected_install_dir: Option<&str>) -> SetupStatus {
             );
         }
     }
-    match fs::write(&cfg, CFG_BODY) {
+    match fs::write(
+        &cfg,
+        cfg_body_for_port(crate::local_endpoint::current_port()),
+    ) {
         Ok(()) => {
             let root_string = root.to_string_lossy().to_string();
             let mut status = detect(Some(&root_string));
@@ -764,5 +917,58 @@ mod tests {
         assert!(!validate_gsi_config(&"x".repeat(MAX_CFG_BYTES + 1)));
         let nested = format!("{}\"G-Maiden Integration\" {{}}", "\"x\" { ".repeat(17));
         assert!(!validate_gsi_config(&nested));
+    }
+
+    #[test]
+    fn selected_port_render_validation_and_preserving_repair() {
+        let body = cfg_body_for_port(3007);
+        assert!(body.contains("127.0.0.1:3007/gsi"));
+        assert!(validate_gsi_config_for_port(&body, 3007));
+        assert!(!validate_gsi_config_for_port(&body, 3000));
+        let original = CFG_BODY.replace("\"timeout\"", "// keep my note\n    \"timeout\"");
+        let updated = repair_config_port(&original, 3002).unwrap().unwrap();
+        assert!(updated.contains("// keep my note"));
+        assert!(validate_gsi_config_for_port(&updated, 3002));
+        assert!(repair_config_port(&updated, 3002).unwrap().is_none());
+        let manual = CFG_BODY.replace("127.0.0.1:3000/gsi", "localhost:9000/manual");
+        assert!(repair_config_port(&manual, 3002).unwrap().is_none());
+    }
+
+    #[test]
+    fn port_repair_changes_only_selected_validated_install() {
+        let first = fake_dota_install();
+        let second = fake_dota_install();
+        let first = fs::canonicalize(first).unwrap();
+        let second = fs::canonicalize(second).unwrap();
+        for root in [&first, &second] {
+            let dir = resolve_cfg_dir(root, true).unwrap();
+            fs::write(dir.join(CFG_NAME), CFG_BODY).unwrap();
+        }
+        assert!(sync_config_at_root(&first, 3004).unwrap());
+        assert!(fs::read_to_string(dota_cfg_dir(&first).join(CFG_NAME))
+            .unwrap()
+            .contains(":3004/gsi"));
+        assert_eq!(
+            fs::read_to_string(dota_cfg_dir(&second).join(CFG_NAME)).unwrap(),
+            CFG_BODY
+        );
+        fs::remove_dir_all(first).unwrap();
+        fs::remove_dir_all(second).unwrap();
+    }
+
+    #[test]
+    fn selected_root_persistence_replaces_and_clears_the_exact_selection_file() {
+        let root = fake_dota_install();
+        let file = root.join("preferences/selection.txt");
+        let first = root.join("first");
+        let second = root.join("second");
+        write_selected_root(&file, Some(&first)).unwrap();
+        assert_eq!(fs::read_to_string(&file).unwrap(), first.to_string_lossy());
+        write_selected_root(&file, Some(&second)).unwrap();
+        assert_eq!(fs::read_to_string(&file).unwrap(), second.to_string_lossy());
+        write_selected_root(&file, None).unwrap();
+        assert!(!file.exists());
+        write_selected_root(&file, None).unwrap();
+        fs::remove_dir_all(root).unwrap();
     }
 }

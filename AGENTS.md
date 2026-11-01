@@ -1,3 +1,11 @@
+---
+title: "AGENTS.md"
+doc_id: "agents"
+status: active
+version: "0.4.14"
+updated: "2026-11-01"
+owner: "G-Maiden"
+---
 # AGENTS.md
 
 > Context and governance for AI coding agents (Codex, Claude Code, Copilot, etc.)
@@ -31,7 +39,31 @@ GSI/GameTick, G-Log/history/replay, account/security fields and local diagnostic
 G-Signal is pure Rust with no cloud or SLM dependency. `Ctrl+Alt+V` is the MVP PTT default to
 implement; `Alt+M` remains mute. These are product targets until implementation/evidence lands.
 
+The owner-directed G-Party extension is separately scoped by `FEAT-G-PARTY` and
+`mvp-decisions` MVP-005A. Create/join requires checked explicit sharing consent plus
+activation; no view-only mode, auto-join, saved room credentials or app-account gate.
+Only admitted own hero/level/HP/maxHP/MP%/alive/respawn and bounded room/session
+metadata may pass to the selected in-memory relay and same-match/team peers. Raw GSI,
+raw match ID/SteamID, CV, Voice, Memory and G-Log remain excluded; the room-scoped
+match hash is a pseudonym, not anonymity/game attestation. This route does not widen
+AI consent/allowlists or create an AI/Memory/Log consumer for received peer data.
+Relay/network failure cannot lock local core. Detailed protocol choices are assistant
+implementation decisions; native/live/resource acceptance and deployment remain separate.
+
 ---
+
+
+The CR-038 G-Friends extension (`FEAT-G-FRIENDS`, `ADR-20`, MVP-005B) adds optional Google-backed
+friends/presence/verified room labels/targeted invitations. Guest codes and local core remain
+account-optional. Friendship, presence visibility, profile linking and GSI sharing are separate
+permissions; accepting an invite requires fresh checked sharing consent and explicit idle-only
+native admission. Private social data never enters AI/Memory/G-Log; relay receives no account
+JWT/GID/UUID and social storage holds no GMP1/memberToken/GSI. CommandDeck owns its persistent
+lifecycle; every room scope transition requires acknowledged unlink/revision refresh before
+relinking. Preserve the large minimap. The latest owner direction explicitly requires existing design
+tokens while allowing a completely new map-centered G-Party layout; do not copy the old layout. Source checks/merge are distinct from hosted/live/NFR acceptance;
+follow `g-party-social-operations` for configuration, retention and ticket-aware key rotation.
+
 
 ## Tech Stack
 
@@ -160,7 +192,7 @@ detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`)
 |-----------|--------|------------------------|
 | G-Signal end-to-end latency | p50 ≤ 250ms, **every measured sample ≤300ms** from acquisition/GSI arrival to audible onset | Player dies before warning |
 | Whole-app CPU | ≤ 10% normalized by logical CPU capacity, every 1s sample (MVP decision v0.2.0) | Game stutters |
-| Whole-app RAM | Aggregate peak Working Set ≤ 400,000,000 bytes, including host/WebView2/feeder/STT/SLM/model processes | Swap thrash |
+| Whole-app RAM | Aggregate peak Working Set ≤ 900,000,000 bytes, including host/WebView2/feeder/STT/SLM/model processes | Swap thrash |
 | FPS impact | ≤ 3% Dota 2 FPS drop | Unacceptable for competitive play |
 | **Privacy** | G-Log, G-Memory (including aggregates), CV, Voice audio/transcript local only; own-stat cloud context requires separate opt-in + allowlist | No implicit egress from sign-in/Ask/provider choice |
 | **Resilience** | G-Sentry/G-Motion/G-Signal and local Voice/Memory work without cloud; G-Signal has no SLM dependency | Core safety must survive disconnects |
@@ -209,6 +241,22 @@ detector), `voice_api.rs` (voice-pack bundles + `EVENTS` table + `fired_banner`)
 
 ### Custom Agent Skills & SOP
 We maintain custom AI skills under `.agents/skills/`.
+
+### UI dimensional drawing reference
+
+- Start with [the UI technical drawing atlas](docs/design-system/13-ui-technical-drawing-atlas.md)
+  for the 36-sheet implementation snapshot: all seven main pages, sub-tabs, settings categories,
+  menus, the fullscreen overlay editor, and the in-game overlay's 19 modules / 11 HUD keep-outs.
+  [Open the offline HTML viewer](docs/design-system/assets/ui-drawing-atlas-20261030/ui-technical-drawings.html)
+  or use its component registers and SVG exports.
+- This atlas records source `e8bd6695c57fe842569dfe9d419528d13adda06e`, not a guarantee that the
+  current checkout or a separately built candidate has the same geometry. Check its source hashes
+  against the implementation before reusing dimensions. Product/design authority remains
+  `docs/product/mvp-decisions.md` and the canonical layout/component/HUD documents linked by the atlas.
+- Use the `dimensional-drawing` skill when generating or refreshing these sheets. Measure the
+  rendered implementation, retain variable-based dimensions and neutral slots, mark unknown values
+  `[TBD]`, and distinguish source schematics / layout fixtures from measured browser states.
+  Browser drawing checks do not establish native, authenticated-flow, gameplay, audio or performance acceptance.
 
 
 ### General
@@ -387,6 +435,19 @@ flag.
 
 ---
 
+## GANN-only announcer event media
+
+The user's 2026-10-31 correction supersedes earlier requirements to preserve legacy
+announcer media. Every event audio/video pair must originate from a verified `.gann`.
+Import and activation verify package identity, registry and media hashes; the hot
+path uses a bounded cache tied to pack revision. Missing/unmapped/invalid event media
+is silent and logged. Do not restore flat cache, default voice packs, embedded VRZO
+catalogs, generated event cards or event TTS fallback. Studio creation, Event Test,
+export and installation use the same container contract. Activation binds the selected
+cache `voiceRootId` and `containerSha256`; local integrity never grants Store entitlement.
+Keep Rust event detection, safety priority, session fences and non-event dynamic advice.
+Native injected-GSI evidence is separate from live-match/acoustic/resource acceptance.
+
 ## Current State (v0.13.2 shipping)
 
 ### What works
@@ -423,9 +484,8 @@ flag.
   has a partial local reader/snapshot slice. Do not describe either as complete; see
   `docs/features/FEAT-G-VOICE.md` and `FEAT-G-MEMORY.md`.
 - G-Log local JSONL logging
-- **Announcer packs = bundles**: activating a pack changes the in-game voice (active-pack-first clip
-  resolution) and shows the pack's **banner image** on the overlay when an event fires
-  (`announcer-banner` event); "Show on overlay" previews a pack without a match
+- **Announcer event media:** the GANN-only candidate resolves verified package audio/video pairs; see the implementation plan for current tests and remaining native acceptance.
+
 - **Deck panels live-wired (Phase 2c)**: telemetry footer, weeklyReport, insights, history,
   agentSector.status now use real data (resource-stats / OpenDota / G-Log / GSI); buildAdvisor still MOCK
 - **GPU/VRAM/temp telemetry**: bundled headless `gpu-feeder` sidecar (nvidia-smi → POST /telemetry);
@@ -495,3 +555,14 @@ These are **functional requirements**, not flavor text. Maiden must:
 | 0.2.1b | 2026-07-22 | Normalized reader-facing product naming while preserving technical identifiers and anchors. |
 | 0.2.0b | 2026-07-21 | Added authoritative GMAD delivery, legal-consent, and desktop first-run handoff context for cross-session agents. |
 | 0.1.0b | 2026-07-21 | Added governance for proposed GID security, recovery, and privacy-safe web profiles; no implementation is implied. |
+| 0.4.4 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
+| 0.4.5 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |
+| 0.4.6 | 2026-10-29 | Document VRZO decoded-clip visual identity, lifecycle, preview, pack trust and remaining native acceptance. |
+| 0.4.7 | 2026-10-29 | Record verified v8 mix, single audio owner, personal-event identity and pending native acceptance. |
+| 0.4.8 | 2026-10-30 | Index the 36-sheet UI drawing atlas and its snapshot/evidence rules; restore the changelog-heading guidance and move the existing VRZO v8 note into its own section. |
+| 0.4.9 | 2026-10-30 | Record larger60fps ID visuals, predictive bounded cache and owner-authorized visual/audio retirement. |
+| 0.4.10 | 2026-10-30 | Record revision4 paused decoder preparation, VP8 media and bounded natural-completion grace. |
+| 0.4.11 | 2026-10-30 | Add local .gann single-file container import and preserve separate Store provenance. |
+| 0.4.12 | 2026-10-31 | Record owner-directed GANN-only event source, cache identity and verification boundaries. |
+| 0.4.13 | 2026-11-01 | Record separate owner-directed G-Party consent/own-stat route while retaining AI/raw-data restrictions and pending native/live acceptance. |
+| 0.4.14 | 2026-11-01 | Record CR-038 optional Friends/account/relay privacy, consent, lifecycle and map constraints with separate operational/live acceptance. |

@@ -2,15 +2,15 @@
 title: "G-Series Data Lineage and Computation Contract"
 doc_id: "G-SERIES-DATA-LINEAGE"
 status: "accepted"
-version: "1.1.3"
-updated: "2026-10-13"
+version: "1.3.0"
+updated: "2026-11-01"
 owner: "Boss"
 approved_by: "user"
 approved_date: "2026-10-06"
 source_of_truth: true
 complexity: "C-3"
 risk: "HIGH"
-related_docs: ["features/README", "engineering-spec", "technical-design-document", "mvp-decisions", "FEAT-G-SENTRY", "FEAT-G-MOTION", "FEAT-G-SIGNAL", "FEAT-G-DAMAGE", "FEAT-G-MASTER", "FEAT-G-SENSORY", "FEAT-G-LOG", "FEAT-G-REVIVE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "FEAT-G-MIND", "FEAT-G-PERSONA", "FEAT-G-STREAM", "FEAT-G-SCORE"]
+related_docs: ["features/README", "engineering-spec", "technical-design-document", "mvp-decisions", "FEAT-G-SENTRY", "FEAT-G-MOTION", "FEAT-G-SIGNAL", "FEAT-G-DAMAGE", "FEAT-G-MASTER", "FEAT-G-SENSORY", "FEAT-G-LOG", "FEAT-G-REVIVE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "FEAT-G-MIND", "FEAT-G-PERSONA", "FEAT-G-STREAM", "FEAT-G-SCORE", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations"]
 ---
 
 # G-Series Data Lineage and Computation Contract
@@ -73,6 +73,8 @@ enforced; MVP-027/MVP-050 own runtime enforcement and evidence.
 
 **Transport rule:** core G-Signal data does not use GET. Dota sends a local `POST /gsi`; CV is an in-process pipeline. GET is used by the non-critical OpenDota profile enrichment path.
 
+**G-Party extension (implementation in progress; native/live UNVERIFIED):** admitted own GSI → bounded own-stat projection → separately consented native async sync → optional in-memory relay → same-room/match/team peer state. This new route is scoped by MVP-005A and [[FEAT-G-PARTY]], not the AI route. Raw GSI/raw match ID/SteamID stay local; source owner/session and all allowlisted fields are revalidated rather than reusing historical parser defaults. Received peer state has no AI/Memory/G-Log consumer in this slice.
+
 ## 3. Source catalogue
 
 | Source ID | Source and transport | Payload/fields | Consumers | Fallback and boundary |
@@ -91,6 +93,7 @@ enforced; MVP-027/MVP-050 own runtime enforcement and evidence.
 | `SRC-OLLAMA` | Local `POST http://127.0.0.1:11434/api/chat` | prompt plus selected local model | G-Master, G-Revive narration | Local-only fallback; failure returns an error or cached result. |
 | `SRC-GPU` | GPU feeder `POST /telemetry`, or local `telemetry-latest.json` | GPU load/temp/VRAM and optional CPU temp | G-Sensory | Feeder stale after 30s; bridge file stale after 5s; unavailable values are `-1`/`—`. |
 | `SRC-RUNTIME` | Tauri settings/events and atomics | sensitivity, backend, persona, signal enabled | G-Signal, G-Master, G-Persona, overlay | Runtime state is local; settings do not change GSI source data. |
+| `SRC-PARTY` | Admitted own GSI → native async POST to optional HTTPS relay; literal loopback HTTP for local testing only | Own hero/level/HP/maxHP/MP%/alive/respawn plus strict room/member/sequence/freshness and scoped match/team binding | G-Party peer status only | Separate checked consent+activation; same-room/match/team; >2000 ms/missing/invalid → null sample, never default values. Memory-only; no raw match ID/SteamID or AI/Memory/G-Log/CV/Voice egress. Contract in FEAT-G-PARTY; runtime/live evidence pending. |
 
 ### 3.1 DL-005 — static data provenance manifest
 
@@ -464,6 +467,36 @@ The full source/formula/audio-priority/fallback/evidence contract is in [`FEAT-G
 
 **Status:** `PROPOSED` / post-v1.
 
+### 6.9 G-Party — cooperative own-GSI status sharing
+
+**Authority/status:** Owner requested this feature and documentation on 2026-11-01; [[CR-037-party-gsi-own-stat-sharing]] records scope. Detailed protocol is an assistant implementation decision; implementation is in progress and native/live/resource acceptance is `UNVERIFIED`. Existing accepted lineage and MVP-005 AI denylist are not broadened.
+
+**Source:** app570 GSI with explicit playing, verified active local Steam owner, real canonical match ID, exact radiant/dire and PRE_GAME/GAME_IN_PROGRESS. Hero/level/HP/maxHP/manaPercent/alive/respawn must all be present/valid. No raw forwarding or default values. Export hook owns one bounded latest slot, with owner/session recheck and no network await/task per tick.
+
+**Projection/transport:** Stats allowlist and native commands/strict JSON are in [[FEAT-G-PARTY]] §§3–6. MatchKey is room-scoped SHA-256 over the specified prefix, roomId and canonical match ID; raw match ID/SteamID stay local. Separate checked consent+connect permits only this peer route. Native reqwest async sync has one request in flight; relay keeps rooms/tokens/stats in memory. Remote HTTPS; HTTP literal loopback for local tests only. Relay can read shared stats, with no E2EE/official-party attestation claim.
+
+**Computation/output:** relay filters by caller/source matchKey and team; missing → waiting, mismatch → different_match, expired → stale, each withholding vitals as required. Live age ≤2000 ms; age is sourceAge + publisherUploadBound + relay monotonic elapsed + whole receiver request RTT + local UI elapsed. PublisherUploadBound covers the entire interval since that publishing member's previous admission/sync response; administrative requests never advance it. Conservative bounds may expire data early; polling never refreshes old GSI. After transport failure the sequential native loop awaits a null scope/sample sync probe before publishing again. No countdown-based alive inference or cross-PC wall-clock comparison. Output is PartyView for joined members only, never a fabricated complete team.
+
+**Fallback/privacy:** null publication clears prior sample. Leave/session/generation changes fence pending replies; late join cleanup best effort. Offline peer health expires within 2 s and membership within 30 s, owner leave/expiry closes room. Local core/G-Signal continues. No durable peer history, AI/Voice/Memory/G-Log/public profile/analytics consumer or forbidden raw data egress.
+
+**Evidence:** PARTY-AC-001–010 cover source authority, serializer denylist, consent, real socket sender/relay/receiver, auth/isolation/replay/limits/TTL/cancellation, UI aging and independent Windows/live/NFR qualification. Record results in [[2026-11-01-g-party-gsi-sharing]]; synthetic fixtures do not close camera-independent live Dota acceptance.
+
+### 6.10 G-Friends — private social coordination
+
+**Authority/status:** [[CR-038-party-friends-presence-invitations]] authorizes source implementation through protected merge. Architecture choices are in [[ADR-20]]; current verification and operational gaps are recorded in [[g-party-social-operations]]. Hosted/live acceptance remains `UNVERIFIED`.
+
+**Sources:** verified existing Google account/session; exact server-minted GID; mutually accepted relationship and privacy controls; explicit online preference/heartbeat; registered relay membership proof only after native member-token authorization. Nicknames do not establish identity. Source GSI is not an input to the social database.
+
+**Transport/projection:** renderer → fixed authenticated `g-party-social` Edge → private SQL using least-privilege runtime. SocialPerson exposes only GID/safe displayName. Renderer/native carry opaque challenge/proof/ticket; native → registered relay never carries account JWT/GID/UUID. Signed relay → fixed `g-party-social-redeem` consumes a one-use ticket and returns only room/owner/generation. MemberToken remains native; GMP1 secrets remain outside social storage.
+
+**Computation/state:** friend acceptance/caps/removal/block and invite redemption are serialized with live auth-session row locks before canonical pair/account locks; expiry is evaluated after lock waits. Presence visible only for unexpired lease plus live provider session; TTL display subtracts whole RTT/local elapsed. Account-room links require opt-in, proof-bound session revision and acknowledged unlink on all room/member/generation transitions. Current roster intersection limits labels to actual members. Ticket accepted/redeemed does not imply joined.
+
+**Retention/output:** private friendships/settings/blocks persist until removed/account deletion; requests ≤30 days, presence/links 60 s, invites 5 min, challenges/tickets ≤60 s, nonce hashes 120 s. Daily bounded cleanup removes expired/completed ephemeral records within 24 h. Only G-Party Friends UI consumes this data; no last-seen, match history, AI/Voice/Memory/G-Log/public profile/analytics consumer and no gameplay payload in social tables/audit.
+
+**Fallback:** hidden/expired/revoked/network failure clears online/binding assertions. Missing relay configuration disables proof/link/invitation/redemption while friends/settings/presence may work with relayOrigin=null. Guest code/local core continue independently. Block/remove prevents unredeemed authorization but does not kick existing room members. Revalidate relay owner/generation/capacity after broker await; stale account/scope/native work cannot restore prior credentials.
+
+**Evidence:** FRIENDS-AC-001–010 in [[FEAT-G-FRIENDS]] require real least-privilege SQL/race tests, Edge/DB integration, relay/native HTTP, frontend lifecycle, Windows CI and separate hosted/live/NFR evidence. No inferred official Dota membership, legal identity or E2EE.
+
 ## 7. Open lineage and computation gaps
 
 | ID | Gap | Impact | Required next action |
@@ -538,3 +571,5 @@ The following are documentation/verification requirements, not claims that the c
 | 1.1.1 | 2026-10-11 | Added CI-gated static gameplay data schema, coverage, duplicate-key, and curated/runtime consistency verification without upgrading unknown source evidence. |
 | 1.1.2 | 2026-10-12 | Updated whole-app CPU calculation, threshold, cadence and Job Object failure/lifecycle contract. |
 | 1.1.3 | 2026-10-13 | Recorded fail-closed startup on Job Object setup failure and runtime-query-only unavailable telemetry. |
+| 1.2.0 | 2026-11-01 | Added separately consented G-Party own-stat lineage, scoped match/team/freshness and no-forwarding boundaries; preserve AI/raw-data restrictions and pending runtime/live evidence. |
+| 1.3.0 | 2026-11-01 | Add private G-Friends social graph/presence/link/invitation lineage and distinct account/relay trust boundaries without routing gameplay into social storage or expanding AI permissions. |

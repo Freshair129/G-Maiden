@@ -84,16 +84,16 @@ export const gankClearStyle: React.CSSProperties = {
 }
 export const killBannerStyle: React.CSSProperties = {
   background: 'rgba(12,20,32,0.45)', border: `1px solid rgba(91,227,167,0.35)`,
-  borderRadius: 16, padding: '10px 18px 10px 10px', display: 'flex', alignItems: 'center', gap: 14,
+  borderRadius: 12, padding: '6px 10px 6px 6px', display: 'flex', alignItems: 'center', gap: 8,
   backdropFilter: 'none', WebkitBackdropFilter: 'none', fontFamily: '"Segoe UI", system-ui, sans-serif',
-  boxShadow: '0 0 24px rgba(91,227,167,0.2)',
+  boxShadow: '0 0 16px rgba(91,227,167,0.18)',
 }
 // Pack banner (announcer bundle) — a frame for the pack's own image. Relative so
 // the caption can be absolutely positioned over the bottom of the image.
 export const packBannerStyle: React.CSSProperties = {
   position: 'relative', display: 'inline-block', lineHeight: 0,
-  borderRadius: 16, overflow: 'hidden',
-  boxShadow: '0 0 24px rgba(91,227,167,0.25)',
+  borderRadius: 12, overflow: 'visible',
+  boxShadow: '0 0 16px rgba(91,227,167,0.22)',
 }
 
 export const fmtSize = (b: number) => b < 1024 ? `${b} B` : b < 1024 * 1024 ? `${(b / 1024).toFixed(1)} KB` : `${(b / 1024 / 1024).toFixed(2)} MB`

@@ -38,8 +38,7 @@ use windows::Win32::Graphics::Gdi::{
     ReleaseDC, SelectObject, BITMAPINFO, BITMAPINFOHEADER, BI_RGB, DIB_RGB_COLORS, SRCCOPY,
 };
 use windows::Win32::System::Threading::{
-    OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32,
-    PROCESS_QUERY_LIMITED_INFORMATION,
+    OpenProcess, QueryFullProcessImageNameW, PROCESS_NAME_WIN32, PROCESS_QUERY_LIMITED_INFORMATION,
 };
 use windows::Win32::UI::WindowsAndMessaging::{
     EnumWindows, GetClientRect, GetWindowRect, GetWindowTextW, GetWindowThreadProcessId,
@@ -48,7 +47,67 @@ use windows::Win32::UI::WindowsAndMessaging::{
 
 /// How long `acquire_frame` blocks waiting for a new desktop frame before giving
 /// up for this tick (ms). Keeps the loop responsive without busy-waiting.
-const ACQUIRE_TIMEOUT_MS: u32 = 100;
+const ACQUIRE_TIMEOUT_MS: u32 = 32;
+
+struct CompositorWait {
+    request: std::sync::mpsc::SyncSender<u64>,
+    completed: std::sync::mpsc::Receiver<(u64, bool)>,
+    ticket: u64,
+}
+
+// DwmFlush has no timeout. Keep it off the capture thread: a stuck compositor
+// withdraws GDI observations after 32ms instead of stalling critical evaluation.
+fn wait_for_compositor_frame() -> bool {
+    static WAITER: OnceLock<std::sync::Mutex<Option<CompositorWait>>> = OnceLock::new();
+    let waiter = WAITER.get_or_init(|| {
+        let (request, receiver) = std::sync::mpsc::sync_channel(1);
+        let (completed, completions) = std::sync::mpsc::sync_channel(1);
+        let worker = std::thread::Builder::new()
+            .name("g-compositor-wait".into())
+            .spawn(move || {
+                while let Ok(ticket) = receiver.recv() {
+                    let ready = unsafe { windows::Win32::Graphics::Dwm::DwmFlush() }.is_ok();
+                    // Never block this worker on an obsolete completion.
+                    let _ = completed.try_send((ticket, ready));
+                }
+            });
+        std::sync::Mutex::new(worker.ok().map(|_| CompositorWait {
+            request,
+            completed: completions,
+            ticket: 0,
+        }))
+    });
+    let Ok(mut slot) = waiter.try_lock() else {
+        return false;
+    };
+    let Some(waiter) = slot.as_mut() else {
+        return false;
+    };
+    while waiter.completed.try_recv().is_ok() {}
+    waiter.ticket = waiter.ticket.wrapping_add(1);
+    let ticket = waiter.ticket;
+    if waiter.request.try_send(ticket).is_err() {
+        // One hung compositor call must not turn its recovery path into a spin.
+        let _ = waiter
+            .completed
+            .recv_timeout(std::time::Duration::from_millis(u64::from(
+                ACQUIRE_TIMEOUT_MS,
+            )));
+        return false;
+    }
+    let started = Instant::now();
+    let budget = std::time::Duration::from_millis(u64::from(ACQUIRE_TIMEOUT_MS));
+    loop {
+        let Some(remaining) = budget.checked_sub(started.elapsed()) else {
+            return false;
+        };
+        match waiter.completed.recv_timeout(remaining) {
+            Ok((completed, ready)) if completed == ticket => return ready,
+            Ok(_) => {}
+            Err(_) => return false,
+        }
+    }
+}
 
 /// CR012-P2-01: consecutive DXGI `ACCESS_LOST` results (each followed by a
 /// `recreate()` attempt) before we give up on the GPU duplication path for
@@ -112,10 +171,11 @@ fn display_fingerprint(device_name: &[u16; 32]) -> u64 {
 
 /// A live Desktop Duplication session for one monitor.
 pub struct DxgiCapture {
-    duplication: IDXGIOutputDuplication,
+    duplication: Option<IDXGIOutputDuplication>,
     device: ID3D11Device,
     context: ID3D11DeviceContext,
-    staging: ID3D11Texture2D,
+    /// Full-frame calibration/fallback only; ROI capture never allocates it.
+    staging: Option<ID3D11Texture2D>,
     /// Rect-local staging textures for [`Self::acquire_rect`], cached by
     /// `(w, h)` — at most a couple of distinct sizes are ever requested
     /// (minimap square, draft-pick strip), so each is created once on first
@@ -278,13 +338,36 @@ impl<F: FnOnce()> Drop for FrameReleaseGuard<F> {
     }
 }
 
+fn ensure_full_staging<T, E>(
+    staging: &mut Option<T>,
+    width: u32,
+    height: u32,
+    allocate: impl FnOnce(u32, u32) -> Result<T, E>,
+) -> Result<&T, E> {
+    if staging.is_none() {
+        *staging = Some(allocate(width, height)?);
+    }
+    Ok(staging.as_ref().expect("allocated above"))
+}
+
+fn invalidate_full_staging<T>(staging: &mut Option<T>) {
+    *staging = None;
+}
+
 /// Clamp a requested rect `(x, y, w, h)` to `(screen_w, screen_h)` bounds.
 /// Returns `None` when the rect has zero area after clamping — either it was
 /// requested with `w == 0`/`h == 0`, or its origin already sits at/past the
 /// screen edge. Otherwise returns the (possibly shrunk) `(x, y, w, h)` that
 /// is guaranteed to fit entirely within the screen. Kept free of any Windows
 /// types so it's unit-testable without a real display/GPU.
-fn clamp_rect(x: u32, y: u32, w: u32, h: u32, screen_w: u32, screen_h: u32) -> Option<(u32, u32, u32, u32)> {
+fn clamp_rect(
+    x: u32,
+    y: u32,
+    w: u32,
+    h: u32,
+    screen_w: u32,
+    screen_h: u32,
+) -> Option<(u32, u32, u32, u32)> {
     if w == 0 || h == 0 || x >= screen_w || y >= screen_h {
         return None;
     }
@@ -344,17 +427,15 @@ impl DxgiCapture {
                 return Err(format!("duplication reported zero size {width}x{height}"));
             }
 
-            let staging = create_staging_texture(&device, width, height)?;
-
             crate::log::error(&format!(
                 "[dxgi] capture ready — monitor {monitor_index}, {width}x{height} BGRA8"
             ));
 
             Ok(Self {
-                duplication,
+                duplication: Some(duplication),
                 device,
                 context,
-                staging,
+                staging: None,
                 rect_staging: std::collections::HashMap::new(),
                 output1,
                 width,
@@ -373,6 +454,13 @@ impl DxgiCapture {
 
     pub fn width(&self) -> u32 {
         self.width
+    }
+
+    pub(crate) fn desktop_origin(&self) -> (i32, i32) {
+        (self.desktop_left, self.desktop_top)
+    }
+    pub(crate) fn display_id(&self) -> u64 {
+        self.display_id
     }
 
     pub fn height(&self) -> u32 {
@@ -426,6 +514,9 @@ impl DxgiCapture {
                 // through to the GDI capture below so this tick still
                 // yields a frame instead of a dropped one.
             }
+            if !wait_for_compositor_frame() {
+                return None;
+            }
             let frame = self.gdi_capture();
             if frame.is_some() {
                 self.diag.gdi_copied += 1;
@@ -466,6 +557,9 @@ impl DxgiCapture {
                 // through to the GDI rect capture below so this tick still
                 // yields a frame instead of a dropped one.
             }
+            if !wait_for_compositor_frame() {
+                return None;
+            }
             let frame = self.gdi_capture_rect(cx, cy, cw, ch);
             if frame.is_some() {
                 self.diag.gdi_copied += 1;
@@ -502,6 +596,9 @@ impl DxgiCapture {
                 }
             }
 
+            if !wait_for_compositor_frame() {
+                return None;
+            }
             let (full, width, height) = self.gdi_capture()?;
             let identity = next_capture_identity();
             let metadata = FrameCaptureMetadata {
@@ -636,9 +733,11 @@ impl DxgiCapture {
         let mut resource: Option<IDXGIResource> = None;
 
         // SAFETY: out-params are owned locals; we check the Result before use.
-        let acquired = unsafe {
-            self.duplication
-                .AcquireNextFrame(ACQUIRE_TIMEOUT_MS, &mut info, &mut resource)
+        let acquired = match &self.duplication {
+            Some(duplication) => unsafe {
+                duplication.AcquireNextFrame(ACQUIRE_TIMEOUT_MS, &mut info, &mut resource)
+            },
+            None => Err(DXGI_ERROR_ACCESS_LOST.into()),
         };
         self.diag.calls += 1;
         if let Err(e) = acquired {
@@ -705,15 +804,21 @@ impl DxgiCapture {
     fn release_frame(&mut self) {
         // SAFETY: only ever called after a successful AcquireNextFrame whose
         // frame hasn't yet been released this tick.
-        unsafe {
-            let _ = self.duplication.ReleaseFrame();
+        if let Some(duplication) = &self.duplication {
+            unsafe {
+                let _ = duplication.ReleaseFrame();
+            }
         }
     }
 
     fn frame_release_guard(&self) -> FrameReleaseGuard<impl FnOnce()> {
         let duplication = self.duplication.clone();
-        FrameReleaseGuard::new(move || unsafe {
-            let _ = duplication.ReleaseFrame();
+        FrameReleaseGuard::new(move || {
+            if let Some(duplication) = duplication {
+                unsafe {
+                    let _ = duplication.ReleaseFrame();
+                }
+            }
         })
     }
 
@@ -904,14 +1009,30 @@ impl DxgiCapture {
         let resource = resource?;
         let desktop: ID3D11Texture2D = resource.cast().ok()?;
 
-        // SAFETY: `desktop` and `self.staging` are valid same-size BGRA textures;
-        // Map yields a CPU pointer valid until Unmap, which we always pair below.
+        let staging = match ensure_full_staging(
+            &mut self.staging,
+            self.width,
+            self.height,
+            |width, height| unsafe { create_staging_texture(&self.device, width, height) },
+        ) {
+            Ok(staging) => staging,
+            Err(error) => {
+                crate::log::error(&format!(
+                    "[dxgi] create_staging_texture full {}x{} failed: {error}",
+                    self.width, self.height
+                ));
+                return None;
+            }
+        };
+
+        // SAFETY: `desktop` and `staging` are valid same-size BGRA textures.
+        // The cache borrow keeps staging alive through the matching Map/Unmap.
         unsafe {
-            self.context.CopyResource(&self.staging, &desktop);
+            self.context.CopyResource(staging, &desktop);
 
             let mut mapped = D3D11_MAPPED_SUBRESOURCE::default();
             self.context
-                .Map(&self.staging, 0, D3D11_MAP_READ, 0, Some(&mut mapped))
+                .Map(staging, 0, D3D11_MAP_READ, 0, Some(&mut mapped))
                 .ok()?;
 
             let w = self.width as usize;
@@ -932,7 +1053,7 @@ impl DxgiCapture {
                 }
             }
 
-            self.context.Unmap(&self.staging, 0);
+            self.context.Unmap(staging, 0);
             Some((out, self.width, self.height))
         }
     }
@@ -1024,46 +1145,41 @@ impl DxgiCapture {
     /// Rebuild the output duplication after the OS revoked it. Best-effort: on
     /// failure the next `acquire_frame` simply keeps returning `None`.
     fn recreate(&mut self) {
-        // SAFETY: FFI; on success we swap in the fresh duplication, on error we
-        // keep the (now-dead) old one and report None until the next attempt.
-        unsafe {
-            match self.output1.DuplicateOutput(&self.device) {
-                Ok(dup) => {
-                    let output_desc = match self.output1.GetDesc() {
-                        Ok(desc) => desc,
-                        Err(e) => {
-                            eprintln!("[dxgi] output description refresh failed: {e}");
-                            return;
-                        }
-                    };
-                    let mode = dup.GetDesc().ModeDesc;
-                    if mode.Width == 0 || mode.Height == 0 {
-                        eprintln!("[dxgi] recreated duplication reported zero size");
-                        return;
-                    }
-                    if mode.Width != self.width || mode.Height != self.height {
-                        match create_staging_texture(&self.device, mode.Width, mode.Height) {
-                            Ok(staging) => {
-                                self.staging = staging;
-                                self.rect_staging.clear();
-                                self.width = mode.Width;
-                                self.height = mode.Height;
-                            }
-                            Err(e) => {
-                                eprintln!("[dxgi] staging refresh failed: {e}");
-                                return;
-                            }
-                        }
-                    }
-                    self.duplication = dup;
-                    self.desktop_left = output_desc.DesktopCoordinates.left;
-                    self.desktop_top = output_desc.DesktopCoordinates.top;
-                    self.display_id = display_fingerprint(&output_desc.DeviceName);
-                    // The first frame of the fresh duplication is undefined again.
-                    self.first_frame = true;
-                }
-                Err(e) => eprintln!("[dxgi] recreate DuplicateOutput failed: {e}"),
+        // Windows permits one duplication per process/output, including invalid
+        // interfaces. Drop it before requesting the replacement, not after.
+        let output = &self.output1;
+        let device = &self.device;
+        let mut refreshed = None;
+        let result = crate::capture_recovery::replace_released(&mut self.duplication, || unsafe {
+            let duplication = output
+                .DuplicateOutput(device)
+                .map_err(|e| format!("DuplicateOutput failed: {e}"))?;
+            let description = output
+                .GetDesc()
+                .map_err(|e| format!("output refresh failed: {e}"))?;
+            let mode = duplication.GetDesc().ModeDesc;
+            if mode.Width == 0 || mode.Height == 0 {
+                return Err("recreated duplication reported zero size".to_string());
             }
+            refreshed = Some((mode.Width, mode.Height, description));
+            Ok(duplication)
+        });
+        match result {
+            Ok(()) => {
+                let (width, height, description) =
+                    refreshed.expect("successful replacement has geometry");
+                invalidate_full_staging(&mut self.staging);
+                if width != self.width || height != self.height {
+                    self.rect_staging.clear();
+                    self.width = width;
+                    self.height = height;
+                }
+                self.desktop_left = description.DesktopCoordinates.left;
+                self.desktop_top = description.DesktopCoordinates.top;
+                self.display_id = display_fingerprint(&description.DeviceName);
+                self.first_frame = true;
+            }
+            Err(error) => eprintln!("[dxgi] recreate {error}"),
         }
     }
 }
@@ -1182,14 +1298,16 @@ fn point_in_rect(px: i32, py: i32, rect: (i32, i32, i32, i32)) -> bool {
 struct DotaWindowScan {
     best_area: i64,
     best_rect: Option<RECT>,
+    best_hwnd: Option<HWND>,
 }
 
 /// Find Dota 2's main window and return the center point of its screen rect
 /// (in virtual-desktop coordinates, matching `DXGI_OUTPUT_DESC.DesktopCoordinates`).
-fn find_dota_window_center() -> Option<(i32, i32)> {
+fn scan_dota_windows() -> DotaWindowScan {
     let mut scan = DotaWindowScan {
         best_area: 0,
         best_rect: None,
+        best_hwnd: None,
     };
     // SAFETY: `EnumWindows` is synchronous — it only returns once every
     // top-level window has been visited (or the callback stops it), so
@@ -1200,8 +1318,25 @@ fn find_dota_window_center() -> Option<(i32, i32)> {
         let lparam = LPARAM(std::ptr::addr_of_mut!(scan) as isize);
         let _ = EnumWindows(Some(enum_windows_proc), lparam);
     }
-    let r = scan.best_rect?;
+    scan
+}
+fn find_dota_window_center() -> Option<(i32, i32)> {
+    let r = scan_dota_windows().best_rect?;
     Some(((r.left + r.right) / 2, (r.top + r.bottom) / 2))
+}
+
+/// Preview requires an identified game process rather than a title-only match.
+pub(crate) fn preview_dota_window() -> Option<(HWND, u32)> {
+    let scan = scan_dota_windows();
+    let hwnd = scan.best_hwnd?;
+    unsafe {
+        if !process_exe_name(hwnd)?.eq_ignore_ascii_case("dota2.exe") {
+            return None;
+        }
+        let mut pid = 0;
+        windows::Win32::UI::WindowsAndMessaging::GetWindowThreadProcessId(hwnd, Some(&mut pid));
+        Some((hwnd, pid))
+    }
 }
 
 /// `EnumWindows` callback: skip anything that isn't a visible Dota 2 window,
@@ -1209,13 +1344,15 @@ fn find_dota_window_center() -> Option<(i32, i32)> {
 /// `TRUE` (continue enumerating) since we want the largest match overall,
 /// not just the first hit.
 unsafe extern "system" fn enum_windows_proc(hwnd: HWND, lparam: LPARAM) -> BOOL {
-    // SAFETY: `lparam` was set by `find_dota_window_center` to a live
+    // SAFETY: `lparam` was set by `scan_dota_windows` to a live
     // `&mut DotaWindowScan` valid for the duration of this synchronous
     // `EnumWindows` call. `hwnd` is a handle Windows owns; every API used
     // below either takes it read-only or writes into a local out-param.
     unsafe {
         let scan = &mut *(lparam.0 as *mut DotaWindowScan);
-        if !is_dota_window(hwnd) {
+        if !is_dota_window(hwnd)
+            || windows::Win32::UI::WindowsAndMessaging::IsIconic(hwnd).as_bool()
+        {
             return BOOL(1);
         }
         let mut rect = RECT::default();
@@ -1231,6 +1368,7 @@ unsafe extern "system" fn enum_windows_proc(hwnd: HWND, lparam: LPARAM) -> BOOL 
         if area > scan.best_area {
             scan.best_area = area;
             scan.best_rect = Some(rect);
+            scan.best_hwnd = Some(hwnd);
         }
         BOOL(1)
     }
@@ -1261,6 +1399,12 @@ unsafe fn is_dota_window(hwnd: HWND) -> bool {
         }
         window_title(hwnd).map(|t| t == "Dota 2").unwrap_or(false)
     }
+}
+
+/// Desktop duplication sees other apps too. Never interpret their pixels as
+/// missing enemies while Dota is not the foreground window.
+pub fn dota_is_foreground() -> bool {
+    unsafe { is_dota_window(windows::Win32::UI::WindowsAndMessaging::GetForegroundWindow()) }
 }
 
 /// Resolve the base exe filename (e.g. `"dota2.exe"`) of the process that
@@ -1353,6 +1497,118 @@ mod tests {
     use std::rc::Rc;
 
     #[test]
+    fn full_staging_first_demand_allocates_once_and_reuses() {
+        let calls = std::cell::Cell::new(0);
+        let mut staging = None;
+        assert!(staging.is_none());
+        assert_eq!(calls.get(), 0);
+        let texture = ensure_full_staging(&mut staging, 1920, 1080, |w, h| {
+            calls.set(calls.get() + 1);
+            Ok::<_, ()>((w, h))
+        })
+        .unwrap();
+        assert_eq!(*texture, (1920, 1080));
+        assert_eq!(calls.get(), 1);
+        assert_eq!(
+            *ensure_full_staging(&mut staging, 1920, 1080, |_, _| {
+                calls.set(calls.get() + 1);
+                Ok::<_, ()>((0, 0))
+            })
+            .unwrap(),
+            (1920, 1080)
+        );
+        assert_eq!(calls.get(), 1);
+    }
+
+    #[test]
+    fn full_staging_allocation_failure_stays_empty_then_retries() {
+        let mut staging = None;
+        assert!(
+            ensure_full_staging::<(u32, u32), _>(&mut staging, 1920, 1080, |_, _| Err(
+                "allocation failed"
+            ))
+            .is_err()
+        );
+        assert!(staging.is_none());
+        assert_eq!(
+            *ensure_full_staging(&mut staging, 1920, 1080, |w, h| Ok::<_, ()>((w, h))).unwrap(),
+            (1920, 1080)
+        );
+    }
+
+    #[test]
+    fn full_staging_known_good_texture_bypasses_failing_allocator() {
+        let mut staging = Some((1920, 1080));
+        let calls = std::cell::Cell::new(0);
+        let result = ensure_full_staging(&mut staging, 1920, 1080, |_, _| {
+            calls.set(calls.get() + 1);
+            Err("must not allocate")
+        });
+        assert_eq!(result.copied(), Ok((1920, 1080)));
+        assert_eq!(calls.get(), 0);
+        assert_eq!(staging, Some((1920, 1080)));
+    }
+
+    #[test]
+    fn full_staging_resize_invalidation_cannot_return_stale_geometry_after_failure() {
+        let mut staging = Some((1920, 1080));
+        let calls = std::cell::Cell::new(0);
+        invalidate_full_staging(&mut staging);
+        assert!(staging.is_none());
+        assert!(ensure_full_staging(&mut staging, 2560, 1440, |_, _| {
+            calls.set(calls.get() + 1);
+            Err("allocation failed")
+        })
+        .is_err());
+        assert!(staging.is_none());
+        assert_eq!(
+            *ensure_full_staging(&mut staging, 2560, 1440, |w, h| {
+                calls.set(calls.get() + 1);
+                Ok::<_, ()>((w, h))
+            })
+            .unwrap(),
+            (2560, 1440)
+        );
+        assert_eq!(calls.get(), 2);
+        assert_eq!(
+            *ensure_full_staging(&mut staging, 2560, 1440, |_, _| {
+                panic!("resized texture must be reused")
+            })
+            .unwrap_or_else(|_: ()| unreachable!()),
+            (2560, 1440)
+        );
+        assert_eq!(calls.get(), 2);
+    }
+
+    #[test]
+    fn full_staging_recreation_drops_old_texture_without_eager_allocation() {
+        struct Texture<'a>(&'a std::cell::Cell<usize>);
+        impl Drop for Texture<'_> {
+            fn drop(&mut self) {
+                self.0.set(self.0.get() + 1);
+            }
+        }
+        let drops = std::cell::Cell::new(0);
+        let mut staging = Some(Texture(&drops));
+        invalidate_full_staging(&mut staging);
+        assert!(staging.is_none());
+        assert_eq!(drops.get(), 1);
+    }
+
+    #[test]
+    fn full_staging_allocation_failure_releases_acquired_frame() {
+        let releases = std::cell::Cell::new(0);
+        let result: Option<()> = (|| {
+            let _release = FrameReleaseGuard::new(|| releases.set(releases.get() + 1));
+            let mut staging: Option<()> = None;
+            ensure_full_staging(&mut staging, 1920, 1080, |_, _| Err(())).ok()?;
+            Some(())
+        })();
+        assert!(result.is_none());
+        assert_eq!(releases.get(), 1);
+    }
+
+    #[test]
     fn release_guard_calls_its_release_action_once_on_drop() {
         let calls = Rc::new(Cell::new(0));
         {
@@ -1388,7 +1644,10 @@ mod tests {
     fn point_in_rect_inside_and_edges() {
         let rect = (100, 200, 300, 400); // left, top, right, bottom
         assert!(point_in_rect(150, 250, rect), "clearly inside");
-        assert!(point_in_rect(100, 200, rect), "top-left corner is inclusive");
+        assert!(
+            point_in_rect(100, 200, rect),
+            "top-left corner is inclusive"
+        );
         assert!(
             !point_in_rect(300, 250, rect),
             "right edge is exclusive (belongs to the next monitor)"
@@ -1416,7 +1675,10 @@ mod tests {
     #[test]
     fn clamp_rect_fits_within_bounds() {
         // Fully inside — unchanged.
-        assert_eq!(clamp_rect(0, 788, 292, 292, 1920, 1080), Some((0, 788, 292, 292)));
+        assert_eq!(
+            clamp_rect(0, 788, 292, 292, 1920, 1080),
+            Some((0, 788, 292, 292))
+        );
     }
 
     #[test]
@@ -1453,6 +1715,7 @@ mod tests {
     fn acquire_regions_uses_one_frame_for_multiple_rois() {
         let mut cap = DxgiCapture::new(0).expect("init primary monitor");
         assert!(cap.width() >= 128 && cap.height() >= 64);
+        assert!(cap.staging.is_none());
         let requests = [
             CaptureRoi::new(crate::capture_frame::CaptureRoiKind::Minimap, 0, 0, 64, 64),
             CaptureRoi::new(
@@ -1466,6 +1729,10 @@ mod tests {
 
         for _ in 0..30 {
             if let Some(bundle) = cap.acquire_regions(19, &requests) {
+                assert!(
+                    cap.staging.is_none(),
+                    "ROI capture must not allocate full staging"
+                );
                 assert_eq!(bundle.regions.len(), 2);
                 assert_eq!(bundle.metadata.session_epoch, 19);
                 assert!(bundle.metadata.frame_id > 0);
@@ -1496,6 +1763,9 @@ mod tests {
                 assert_eq!(fw as usize, w);
                 assert_eq!(fh as usize, h);
                 assert_eq!(buf.len(), w * h * 4);
+                if cap.backend() == "dxgi" {
+                    assert!(cap.staging.is_some());
+                }
                 got += 1;
                 if got >= 10 {
                     break;

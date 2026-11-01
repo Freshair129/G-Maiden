@@ -9,8 +9,12 @@
 pub mod detector;
 pub mod draft_detector;
 pub mod draft_region;
+pub mod hero_hud;
+pub mod identity;
+mod patch_cache;
 pub mod prefilter;
 pub mod region;
+pub mod roster;
 pub mod selected_target;
 
 /// Dire-red enemy team-ring colour (normalised RGB), from Spike S-1.

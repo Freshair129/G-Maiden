@@ -1,18 +1,10 @@
-//! Manifest read/write, pack assembly (`build_pack`/`default_pack`), asset
-//! discovery, and id/filename sanitizing. Split out of the original
-//! `voice_api.rs` monolith (facade refactor, no behavior change).
-//!
-//! `Manifest`/`ManifestMapping` live here rather than in `types.rs` — they
-//! are pack-storage implementation details (never serialized directly to the
-//! frontend; `build_pack`/`default_pack` project them into the public
-//! `VoicePack`/`VoiceEvent`/`VoiceMapping` DTOs), so they sit next to the
-//! code that reads/writes them.
-
+//! Verified GANN snapshot projection, media integrity, cache generations and Store provenance.
 use std::collections::{BTreeMap, HashMap};
 use std::fs;
-use std::io::{Read, Seek, SeekFrom, Write};
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex, OnceLock};
+#[cfg(not(test))]
+use std::sync::OnceLock;
+use std::sync::{Arc, Mutex};
 
 use base64::Engine as _;
 use ring::signature::{UnparsedPublicKey, ED25519};
@@ -20,11 +12,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::audio;
 
-use super::banner::read_banner_data_url;
 use super::events::{EVENTS, GROUPS};
 use super::path_safety::{resolve_existing_clips, safe_pack_path};
 use super::paths::{active_path, packs_dir, voice_root};
-use super::types::{VoiceAssetOption, VoiceEvent, VoiceMapping, VoicePack, DEFAULT_PACK_ID};
+use super::types::{VoiceAssetOption, VoiceEvent, VoiceMapping, VoicePack};
 
 #[derive(Deserialize, Serialize, Default)]
 #[serde(rename_all = "camelCase")]
@@ -39,9 +30,7 @@ pub(crate) struct Manifest {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub(crate) author_gid: Option<String>,
     pub(crate) description: String,
-    /// Pack-level cover image (relative path within the pack dir). Empty when
-    /// the pack didn't ship one — build_pack() will fall back to the first
-    /// banner file so packs still have a visible tile in the inventory.
+    /// Explicit inventory cover metadata; empty when absent from the registry.
     #[serde(default)]
     pub(crate) cover_image: String,
     pub(crate) mappings: BTreeMap<String, ManifestMapping>,
@@ -71,28 +60,12 @@ pub(crate) struct StoreInstallRecord {
 }
 
 const STORE_INSTALL_PUBLIC_KEY: [u8; 32] = [
-    0x79, 0xe2, 0x56, 0xed, 0x1d, 0x81, 0x6f, 0x08,
-    0x3a, 0x0c, 0xb9, 0x80, 0x2a, 0x6f, 0x59, 0x00,
-    0x30, 0x45, 0xf9, 0xc1, 0x0a, 0x38, 0x16, 0x17,
-    0xc1, 0xea, 0x9a, 0x9f, 0xae, 0xc1, 0xa8, 0x7a,
+    0x79, 0xe2, 0x56, 0xed, 0x1d, 0x81, 0x6f, 0x08, 0x3a, 0x0c, 0xb9, 0x80, 0x2a, 0x6f, 0x59, 0x00,
+    0x30, 0x45, 0xf9, 0xc1, 0x0a, 0x38, 0x16, 0x17, 0xc1, 0xea, 0x9a, 0x9f, 0xae, 0xc1, 0xa8, 0x7a,
 ];
 
 fn store_installations_path() -> PathBuf {
     voice_root().join("store-installations.json")
-}
-
-pub(crate) fn is_store_installed(pack_id: &str) -> bool {
-    read_store_install_record(pack_id).is_some()
-}
-
-fn read_store_install_record(pack_id: &str) -> Option<StoreInstallRecord> {
-    let Ok(raw) = fs::read_to_string(store_installations_path()) else {
-        return None;
-    };
-    serde_json::from_str::<Vec<StoreInstallRecord>>(&raw)
-        .ok()?
-        .into_iter()
-        .find(|record| record.pack_id == pack_id && verify_store_install(record))
 }
 
 pub(crate) fn verify_store_install(record: &StoreInstallRecord) -> bool {
@@ -171,202 +144,30 @@ fn content_matches_hash(expected_hash: &str, bytes: &[u8]) -> bool {
     is_sha256_hex(expected_hash) && sha256_hex(bytes) == expected_hash
 }
 
-fn indexed_content_matches(index: &ArchiveIndex, path: &str, bytes: &[u8]) -> bool {
-    index
-        .get(path)
-        .is_some_and(|expected_hash| content_matches_hash(expected_hash, bytes))
-}
-
-pub(crate) fn persist_store_archive(
-    record: &StoreInstallRecord,
-    bytes: &[u8],
-) -> Result<(), String> {
-    if !archive_hash_matches(record, bytes) {
-        return Err("ไฟล์แพ็กไม่ตรงกับลายเซ็นจาก Store".into());
-    }
-    let path = store_archive_path(record);
-    let parent = path
-        .parent()
-        .ok_or_else(|| "ตำแหน่งเก็บแพ็กไม่ถูกต้อง".to_string())?;
-    fs::create_dir_all(parent).map_err(|e| format!("create Store archive directory: {e}"))?;
-
-    if path.exists() {
-        let existing = fs::read(&path).map_err(|e| format!("read Store archive: {e}"))?;
-        return if sha256_hex(&existing) == record.archive_sha256 {
-            Ok(())
-        } else {
-            Err("ไฟล์แพ็ก Store ที่บันทึกไว้เสียหาย".into())
-        };
-    }
-
-    let nonce = std::time::SystemTime::now()
-        .duration_since(std::time::UNIX_EPOCH)
-        .map_err(|e| e.to_string())?
-        .as_nanos();
-    let temp = parent.join(format!(
-        ".{}.{}.{nonce}.tmp",
-        record.archive_sha256,
-        std::process::id()
-    ));
-    let write_result = (|| {
-        let mut file = fs::OpenOptions::new()
-            .write(true)
-            .create_new(true)
-            .open(&temp)
-            .map_err(|e| format!("create Store archive: {e}"))?;
-        file.write_all(bytes)
-            .map_err(|e| format!("write Store archive: {e}"))?;
-        file.sync_all()
-            .map_err(|e| format!("flush Store archive: {e}"))?;
-        match fs::rename(&temp, &path) {
-            Ok(()) => Ok(()),
-            Err(error) if path.exists() => {
-                let existing = fs::read(&path).map_err(|e| format!("read Store archive: {e}"))?;
-                if sha256_hex(&existing) == record.archive_sha256 {
-                    Ok(())
-                } else {
-                    Err(format!("Store archive destination already exists: {error}"))
-                }
-            }
-            Err(error) => Err(format!("save Store archive: {error}")),
-        }
-    })();
-    let _ = fs::remove_file(&temp);
-    write_result
-}
-
-fn store_archive_path(record: &StoreInstallRecord) -> PathBuf {
-    voice_root()
-        .join("store-archives")
-        .join(sanitize_id(&record.pack_id))
-        .join(format!("{}.zip", record.archive_sha256))
-}
-
-type ArchiveIndex = HashMap<String, String>;
-type CachedArchiveIndex = Result<Arc<ArchiveIndex>, String>;
-static STORE_ARCHIVE_INDEXES: OnceLock<Mutex<HashMap<String, CachedArchiveIndex>>> =
-    OnceLock::new();
-
-fn archive_index_cache() -> &'static Mutex<HashMap<String, CachedArchiveIndex>> {
-    STORE_ARCHIVE_INDEXES.get_or_init(|| Mutex::new(HashMap::new()))
-}
-
-fn load_store_archive_index(record: &StoreInstallRecord) -> CachedArchiveIndex {
-    let archive_path = store_archive_path(record);
-    let key = format!("{}:{}", archive_path.display(), record.archive_sha256);
-    if let Ok(cache) = archive_index_cache().lock() {
-        if let Some(index) = cache.get(&key) {
-            return index.clone();
-        }
-    }
-
-    let loaded = (|| {
-        let bytes =
-            fs::read(&archive_path).map_err(|e| format!("read signed Store archive: {e}"))?;
-        if bytes.len() > 32 * 1024 * 1024 || !content_matches_hash(&record.archive_sha256, &bytes) {
-            return Err("ไฟล์แพ็ก Store ไม่ตรงกับลายเซ็น".into());
-        }
-        build_store_archive_index(&bytes, &record.pack_id).map(Arc::new)
-    })();
-    if let Ok(mut cache) = archive_index_cache().lock() {
-        cache.insert(key, loaded.clone());
-    }
-    loaded
-}
-
-fn build_store_archive_index(bytes: &[u8], pack_id: &str) -> Result<ArchiveIndex, String> {
-    let mut archive = zip::ZipArchive::new(std::io::Cursor::new(bytes))
-        .map_err(|e| format!("open signed Store archive: {e}"))?;
-    if archive.len() > 4096 {
-        return Err("แพ็กมีจำนวนไฟล์มากเกินไป".into());
-    }
-    let mut expanded = 0u64;
-    let mut entries = Vec::with_capacity(archive.len());
-    for index in 0..archive.len() {
-        let file = archive
-            .by_index(index)
-            .map_err(|e| format!("read Store archive entry: {e}"))?;
-        expanded = expanded.saturating_add(file.size());
-        if expanded > 96 * 1024 * 1024 {
-            return Err("ขนาดแพ็กหลังแตกไฟล์เกิน 96 MB".into());
-        }
-        let path = file
-            .enclosed_name()
-            .ok_or_else(|| "แพ็กมี path ที่ไม่ปลอดภัย".to_string())?;
-        if file.is_symlink() {
-            return Err("แพ็ก Store มี symlink ที่ไม่อนุญาต".into());
-        }
-        entries.push((index, path, file.is_dir(), file.size()));
-    }
-
-    let (manifest_index, manifest_path, manifest_size) = {
-        let manifests: Vec<_> = entries
-            .iter()
-            .filter(|(_, path, is_dir, _)| {
-                !*is_dir
-                    && path.file_name().is_some_and(|name| name == "manifest.json")
-                    && path.components().count() <= 2
-            })
-            .collect();
-        if manifests.len() != 1 {
-            return Err("ZIP ต้องมี manifest.json ของแพ็กเดียว".into());
-        }
-        let (index, path, _, size) = manifests[0];
-        (*index, path.clone(), *size)
-    };
-    let mut manifest_bytes = Vec::new();
-    archive
-        .by_index(manifest_index)
-        .map_err(|e| format!("read Store pack manifest: {e}"))?
-        .take(manifest_size.saturating_add(1))
-        .read_to_end(&mut manifest_bytes)
-        .map_err(|e| format!("read Store pack manifest: {e}"))?;
-    if manifest_bytes.len() as u64 != manifest_size {
-        return Err("ขนาด manifest ในแพ็กไม่ถูกต้อง".into());
-    }
-    let manifest: Manifest = serde_json::from_slice(&manifest_bytes)
-        .map_err(|e| format!("parse Store pack manifest: {e}"))?;
-    if manifest.id != pack_id {
-        return Err("รหัสแพ็กในไฟล์ไม่ตรงกับหลักฐาน Store".into());
-    }
-    let pack_root = manifest_path.parent().unwrap_or_else(|| Path::new("")).to_path_buf();
-
-    let mut index = HashMap::with_capacity(entries.len());
-    for (entry_index, path, is_dir, size) in entries {
-        if is_dir {
-            continue;
-        }
-        let relative = if pack_root.as_os_str().is_empty() {
-            path.as_path()
-        } else if let Ok(relative) = path.strip_prefix(&pack_root) {
-            relative
-        } else {
-            continue;
-        };
-        if relative.as_os_str().is_empty() {
-            continue;
-        }
-        let mut content = Vec::new();
-        archive
-            .by_index(entry_index)
-            .map_err(|e| format!("read Store archive entry: {e}"))?
-            .take(size.saturating_add(1))
-            .read_to_end(&mut content)
-            .map_err(|e| format!("read Store archive entry: {e}"))?;
-        if content.len() as u64 != size {
-            return Err("ขนาดไฟล์ในแพ็กไม่ถูกต้อง".into());
-        }
-        index.insert(
-            relative.to_string_lossy().replace('\\', "/"),
-            sha256_hex(&content),
-        );
-    }
-    Ok(index)
-}
-
 pub(crate) fn open_verified_store_clip(path: &Path) -> Result<Option<fs::File>, String> {
-    if cfg!(debug_assertions) {
-        return Ok(None);
+    if let Some(expected) = with_resolved_cache(|cache| {
+        cache?.pairs.values().find_map(|pair| {
+            if pair.original == path {
+                Some(pair.original_hash.clone())
+            } else if pair.mixed == path {
+                Some(pair.mixed_hash.clone())
+            } else {
+                None
+            }
+        })
+    }) {
+        use std::io::{Read, Seek, SeekFrom};
+        let mut file = fs::File::open(path).map_err(|e| e.to_string())?;
+        let mut bytes = Vec::new();
+        Read::by_ref(&mut file)
+            .take(16 * 1024 * 1024 + 1)
+            .read_to_end(&mut bytes)
+            .map_err(|e| e.to_string())?;
+        if bytes.len() > 16 * 1024 * 1024 || g_ann_package::sha256(&bytes) != expected {
+            return Err("Installed GANN sound hash mismatch".into());
+        }
+        file.seek(SeekFrom::Start(0)).map_err(|e| e.to_string())?;
+        return Ok(Some(file));
     }
     let Ok(packs_root) = packs_dir().canonicalize() else {
         return Ok(None);
@@ -386,33 +187,10 @@ pub(crate) fn open_verified_store_clip(path: &Path) -> Result<Option<fs::File>, 
         .to_str()
         .ok_or_else(|| "รหัสแพ็ก Store ไม่ถูกต้อง".to_string())?;
     let clip_path = components.as_path();
-    let record =
-        read_store_install_record(pack_id).ok_or_else(|| "ไม่พบหลักฐานติดตั้งแพ็ก Store".to_string())?;
-    let archive_index = load_store_archive_index(&record)?;
-    let relative_name = clip_path.to_string_lossy().replace('\\', "/");
-    let mut file = fs::File::open(canonical_path).map_err(|e| format!("open Store clip: {e}"))?;
-    if file
-        .metadata()
-        .map_err(|e| format!("read Store clip metadata: {e}"))?
-        .len()
-        > 96 * 1024 * 1024
-    {
-        return Err("ไฟล์เสียง Store ใหญ่เกินกำหนด".into());
+    if super::id_manifest::valid_id(pack_id, "ann_") {
+        return super::id_container::open_local_clip(pack_id, clip_path).map(Some);
     }
-    let mut bytes = Vec::new();
-    Read::by_ref(&mut file)
-        .take(96 * 1024 * 1024 + 1)
-        .read_to_end(&mut bytes)
-        .map_err(|e| format!("read Store clip: {e}"))?;
-    if bytes.len() > 96 * 1024 * 1024 {
-        return Err("ไฟล์เสียง Store ใหญ่เกินกำหนด".into());
-    }
-    if !indexed_content_matches(&archive_index, &relative_name, &bytes) {
-        return Err("ไฟล์เสียงไม่ตรงกับแพ็กที่ Store เซ็นรับรอง".into());
-    }
-    file.seek(SeekFrom::Start(0))
-        .map_err(|e| format!("rewind Store clip: {e}"))?;
-    Ok(Some(file))
+    Err("Event audio must come from an admitted GANN package".into())
 }
 
 pub(crate) fn validate_store_clip_integrity(path: &Path) -> Result<(), String> {
@@ -420,49 +198,19 @@ pub(crate) fn validate_store_clip_integrity(path: &Path) -> Result<(), String> {
 }
 
 pub(crate) fn read_manifest(dir: &Path) -> Result<Manifest, String> {
-    let path = dir.join("manifest.json");
-    let raw = fs::read_to_string(&path).map_err(|e| format!("read {}: {e}", path.display()))?;
-    serde_json::from_str(&raw).map_err(|e| format!("parse {}: {e}", path.display()))
+    super::id_manifest::read(dir).map(|registry| registry.project())
 }
-
-pub(crate) fn write_manifest(dir: &Path, manifest: &Manifest) -> Result<(), String> {
-    let path = dir.join("manifest.json");
-    let raw =
-        serde_json::to_string_pretty(manifest).map_err(|e| format!("serialize manifest: {e}"))?;
-    fs::write(&path, raw).map_err(|e| format!("write {}: {e}", path.display()))?;
-    // Unconditional, even though `dir` might not be the currently-active
-    // pack's dir (editing a pack you haven't equipped yet). A rebuild that
-    // re-reads the SAME active pack is a harmless no-op; the alternative is
-    // threading a "is this the active pack" check through every caller for a
-    // cost that only matters on an explicit, human-paced admin action.
-    rebuild_resolved_cache();
-    Ok(())
-}
-
 pub(crate) fn build_pack(dir: &Path) -> Result<VoicePack, String> {
     let manifest = read_manifest(dir)?;
-    let clips = list_assets(dir, "clips", &["wav", "mp3", "ogg", "m4a"]);
-    let banners = list_assets(dir, "banners", &["png", "jpg", "jpeg", "webp", "svg"]);
-
-    // Cover image resolution — pack tiles need SOMETHING to show, so:
-    //   1. `manifest.coverImage` (what G-AnnStudio writes when it ships a pack)
-    //   2. first banner alphabetically (banners are sorted by list_assets)
-    //   3. neither → cover_image = "" and cover_image_url = None; the inventory
-    //      renders a gradient placeholder client-side.
-    let (cover_image, cover_image_url) = if !manifest.cover_image.is_empty() {
-        // manifest.coverImage is attacker-influenced exactly like clips[] and
-        // bannerAsset (see safe_pack_path) — this path runs on every
-        // `state()` call, i.e. merely opening Audio Settings, not just on a
-        // fired event, so it must be validated too.
-        let url = safe_pack_path(dir, &manifest.cover_image).and_then(|path| read_banner_data_url(&path));
-        (manifest.cover_image.clone(), url)
-    } else if let Some(first) = banners.first() {
-        let path = dir.join(first.path.replace('\\', "/"));
-        (first.path.clone(), read_banner_data_url(&path))
-    } else {
-        (String::new(), None)
-    };
-
+    let clips = manifest
+        .mappings
+        .values()
+        .flat_map(|mapping| mapping.clips.iter())
+        .filter_map(|path| asset_option(dir, path))
+        .collect::<Vec<_>>();
+    let banners = Vec::new();
+    let cover_image = String::new();
+    let cover_image_url = None;
     let mut covered = 0;
 
     let items = EVENTS
@@ -515,7 +263,6 @@ pub(crate) fn build_pack(dir: &Path) -> Result<VoicePack, String> {
                     clip_options,
                 }
             });
-            let default_clips = audio::default_event_clips(event.id);
             VoiceEvent {
                 id: event.id.into(),
                 group: event.group.into(),
@@ -524,22 +271,29 @@ pub(crate) fn build_pack(dir: &Path) -> Result<VoicePack, String> {
                 thai: event.thai.into(),
                 accent: accent.into(),
                 mapping,
-                default_clip_count: default_clips.len(),
-                default_clip_url: default_clips
-                    .first()
-                    .map(|p| p.to_string_lossy().to_string()),
             }
         })
         .collect::<Vec<_>>();
 
     Ok(VoicePack {
+        installation_id: None,
+        announcer_id: manifest.id.clone(),
+        capabilities: super::types::VoicePackCapabilities {
+            event_preview: true,
+        },
         id: manifest.id,
         name: manifest.name,
         version: manifest.version,
         locale: manifest.locale,
         author: manifest.author,
         author_gid: manifest.author_gid,
-        description: manifest.description,
+        description: if super::id_container::is_local_package(
+            dir.file_name().and_then(|s| s.to_str()).unwrap_or(""),
+        ) {
+            format!("Local .gann · {}", manifest.description)
+        } else {
+            manifest.description
+        },
         path: dir.to_string_lossy().to_string(),
         covered_events: covered,
         total_events: EVENTS.len(),
@@ -549,142 +303,7 @@ pub(crate) fn build_pack(dir: &Path) -> Result<VoicePack, String> {
         items,
         cover_image,
         cover_image_url,
-        built_in: false,
     })
-}
-
-/// Synthesize the bundled `voice-pack-default/` folder (flat `{event}/*.mp3`
-/// layout, no manifest) into a first-class, read-only [`VoicePack`] so the
-/// inventory always shows the pack that actually voices Maiden out of the box.
-/// `None` when the bundled folder is missing entirely (dev tree without assets).
-pub(crate) fn default_pack() -> Option<VoicePack> {
-    let dir = audio::default_pack_dir()?;
-    let mut covered = 0;
-    let mut total_clips = 0;
-
-    let items = EVENTS
-        .iter()
-        .map(|event| {
-            let accent = GROUPS
-                .iter()
-                .find(|group| group.id == event.group)
-                .map(|group| group.accent)
-                .unwrap_or("#8fd3ff");
-            let clips = audio::default_event_clips(event.id);
-            let clip_options = clips
-                .iter()
-                .filter_map(|full| {
-                    Some(VoiceAssetOption {
-                        path: format!(
-                            "{}/{}",
-                            event.id,
-                            full.file_name()?.to_string_lossy()
-                        ),
-                        name: full.file_name()?.to_string_lossy().to_string(),
-                        url: full.to_string_lossy().to_string(),
-                    })
-                })
-                .collect::<Vec<_>>();
-            let mapping = if clip_options.is_empty() {
-                None
-            } else {
-                covered += 1;
-                total_clips += clip_options.len();
-                Some(VoiceMapping {
-                    text: event.label.to_string(),
-                    thai: event.thai.to_string(),
-                    banner: String::new(),
-                    banner_asset: String::new(),
-                    banner_url: None,
-                    clip: clip_options
-                        .first()
-                        .map(|c| c.path.clone())
-                        .unwrap_or_default(),
-                    clips: clip_options.iter().map(|c| c.path.clone()).collect(),
-                    has_clip: true,
-                    clip_count: clip_options.len(),
-                    clip_url: clip_options.first().map(|c| c.url.clone()),
-                    clip_options,
-                })
-            };
-            VoiceEvent {
-                id: event.id.into(),
-                group: event.group.into(),
-                label: event.label.into(),
-                subtitle: event.subtitle.into(),
-                thai: event.thai.into(),
-                accent: accent.into(),
-                mapping,
-                // On the default card itself the "fallback" IS the pack.
-                default_clip_count: clips.len(),
-                default_clip_url: clips.first().map(|p| p.to_string_lossy().to_string()),
-            }
-        })
-        .collect::<Vec<_>>();
-
-    Some(VoicePack {
-        id: DEFAULT_PACK_ID.to_string(),
-        name: "Maiden Default (ไทย)".to_string(),
-        version: env!("CARGO_PKG_VERSION").to_string(),
-        locale: "th-TH".to_string(),
-        author: "G-Maiden".to_string(),
-        author_gid: None,
-        description: "เสียงไทยมาตรฐานที่ติดตั้งมากับแอป — ใช้เป็นเสียงสำรองให้ทุกแพ็กเสมอ".to_string(),
-        path: dir.to_string_lossy().to_string(),
-        covered_events: covered,
-        total_events: EVENTS.len(),
-        clips: total_clips,
-        available_clips: Vec::new(),
-        available_banners: Vec::new(),
-        items,
-        cover_image: String::new(),
-        cover_image_url: None,
-        built_in: true,
-    })
-}
-
-pub(crate) fn list_assets(dir: &Path, folder: &str, extensions: &[&str]) -> Vec<VoiceAssetOption> {
-    let root = dir.join(folder);
-    let mut out = Vec::new();
-    collect_assets(dir, &root, extensions, &mut out);
-    out.sort_by(|a, b| a.path.cmp(&b.path));
-    out
-}
-
-pub(crate) fn collect_assets(
-    base: &Path,
-    dir: &Path,
-    extensions: &[&str],
-    out: &mut Vec<VoiceAssetOption>,
-) {
-    let Ok(entries) = fs::read_dir(dir) else {
-        return;
-    };
-    for entry in entries.flatten() {
-        let path = entry.path();
-        if path.is_dir() {
-            collect_assets(base, &path, extensions, out);
-            continue;
-        }
-        let Some(ext) = path
-            .extension()
-            .and_then(|x| x.to_str())
-            .map(|x| x.to_ascii_lowercase())
-        else {
-            continue;
-        };
-        if extensions.iter().any(|allowed| *allowed == ext) {
-            if let Some(asset) = asset_option(
-                base,
-                path.strip_prefix(base)
-                    .unwrap_or(&path)
-                    .to_string_lossy()
-                    .as_ref(),
-            ) {
-                out.push(asset);
-            }
-        }
-    }
 }
 
 pub(crate) fn asset_option(base: &Path, rel: &str) -> Option<VoiceAssetOption> {
@@ -702,41 +321,18 @@ pub(crate) fn asset_option(base: &Path, rel: &str) -> Option<VoiceAssetOption> {
 
 // ── Resolved-clip cache (audit H8) ───────────────────────────────────────────
 //
-// `active_event_clips` used to do this on every call, live, from the G-Signal
-// gank path: read `active-pack.txt`, read + parse `manifest.json`, then for
-// every clip in the mapping stat the file AND canonicalize both the pack dir
-// and the candidate to check containment (`resolve_existing_clips`) — ~9
-// filesystem syscalls plus a JSON parse, on a hop with a ≤300ms total budget.
-// A pack switch or a manifest edit is a rare, explicit, admin-UI action; a
-// gank alert firing is not. There is no reason the second should ever pay for
-// the first.
-//
-// So the resolution now happens ONCE, eagerly, at the moment something that
-// could change the answer actually changes — not on read. `active_event_clips`
-// becomes a HashMap lookup behind one mutex lock: no disk I/O, no JSON parse,
-// no canonicalize, on the hot path, ever.
+// Resolution and verification occur before publishing one immutable generation.
 struct ResolvedCache {
-    /// Which pack this cache reflects — not currently read back by anyone
-    /// (`cached_event_clips` only serves the map), but kept for the obvious
-    /// future need (a debug/status surface showing what's cached) and because
-    /// a struct that names its own cache key is easier to reason about in six
-    /// months than a bare `HashMap`.
-    #[allow(dead_code)]
+    revision: u64,
     pack_id: String,
+    pack_name: String,
     clips_by_event: HashMap<String, Vec<PathBuf>>,
+    pairs: super::id_manifest::Pairs,
+    installation: Option<Arc<crate::package_install::AdmittedInstallation>>,
+    root: PathBuf,
 }
 
-// Production: one process-global slot — there is exactly one active pack per
-// running app. Test: a `thread_local`, for the SAME reason `voice_root()`'s
-// override two files over is one (see that file's doc comment) — this cache
-// is written by `write_active_pack_id`/`write_manifest`, which every existing
-// pack-lifecycle test already calls against its own scratch `voice_root()`, so
-// a single shared static here would let one test's pack silently answer
-// another's `cached_event_clips` query whenever cargo schedules two tests
-// onto the same worker thread. A real, non-hot-path-only staleness bug in
-// production would need to survive a full pack switch to matter this same
-// way; in a test binary "some other test just ran on this thread" is the
-// normal case, not the exotic one.
+// Each runtime owns one generation; parallel tests keep their voice-root override isolated.
 #[cfg(not(test))]
 static RESOLVED_CACHE: Mutex<Option<ResolvedCache>> = Mutex::new(None);
 #[cfg(test)]
@@ -745,14 +341,204 @@ thread_local! {
 }
 
 #[cfg(not(test))]
-fn store_resolved_cache(next: Option<ResolvedCache>) {
-    if let Ok(mut cache) = RESOLVED_CACHE.lock() {
+fn publish_resolved_cache(mut next: Option<ResolvedCache>) -> Result<u64, String> {
+    let epoch = {
+        let mut cache = RESOLVED_CACHE.lock().map_err(|_| {
+            crate::package_ipc::note_cache_publication();
+            "Resolved cache is unavailable".to_string()
+        })?;
+        stamp_cache(&mut next);
+        super::video_cache::reset(next.as_ref().map_or(0, |c| c.revision));
         *cache = next;
-    }
+        crate::package_ipc::note_cache_publication()
+    };
+    prewarm_likely_videos(&["first_blood", "double_kill", "kill"]);
+    Ok(epoch)
 }
 #[cfg(test)]
-fn store_resolved_cache(next: Option<ResolvedCache>) {
+fn publish_resolved_cache(mut next: Option<ResolvedCache>) -> Result<u64, String> {
+    stamp_cache(&mut next);
+    super::video_cache::reset(next.as_ref().map_or(0, |c| c.revision));
     RESOLVED_CACHE.with(|cell| *cell.borrow_mut() = next);
+    Ok(crate::package_ipc::note_cache_publication())
+}
+fn store_resolved_cache(next: Option<ResolvedCache>) {
+    let _ = publish_resolved_cache(next);
+}
+
+#[cfg(not(test))]
+fn prewarm_likely_videos(events: &[&str]) {
+    super::visual_warm::publish(visual_candidates_for(events));
+    let snapshot = with_resolved_cache(|cache| {
+        let c = cache?;
+        let videos = events
+            .iter()
+            .filter_map(|event| {
+                let path = c.clips_by_event.get(*event)?.first()?;
+                Some(c.pairs.get(&(event.to_string(), path.clone()))?.clone())
+            })
+            .collect::<Vec<_>>();
+        Some((c.pack_id.clone(), c.revision, videos))
+    });
+    if let Some(plan) = snapshot {
+        queue_warm_videos(plan);
+    }
+}
+
+#[cfg(not(test))]
+fn queue_warm_videos(plan: (String, u64, Vec<Arc<super::id_manifest::Pair>>)) {
+    type Plan = (String, u64, Vec<Arc<super::id_manifest::Pair>>);
+    #[derive(Default)]
+    struct WarmState {
+        running: bool,
+        latest_revision: u64,
+        pending: Option<Plan>,
+    }
+    static WARM: OnceLock<Mutex<WarmState>> = OnceLock::new();
+    let state = WARM.get_or_init(Mutex::default);
+    let Ok(mut guard) = state.lock() else {
+        return;
+    };
+    if plan.1 < guard.latest_revision {
+        return;
+    }
+    guard.latest_revision = plan.1;
+    // One worker and one latest pending hint; a new generation is never lost.
+    guard.pending = Some(plan);
+    if guard.running {
+        return;
+    }
+    guard.running = true;
+    drop(guard);
+    if std::thread::Builder::new()
+        .name("g-banner-prewarm".into())
+        .spawn(move || loop {
+            let next = {
+                let Ok(mut guard) = state.lock() else {
+                    return;
+                };
+                let next = guard.pending.take();
+                if next.is_none() {
+                    guard.running = false;
+                }
+                next
+            };
+            let Some((pack, revision, videos)) = next else {
+                return;
+            };
+            for pair in videos {
+                if id_video(&pack, &pair.banner_id, revision).is_none() {
+                    break;
+                }
+                let ready =
+                    super::video_cache::verified(revision, &pair.video, &pair.video_hash).is_some();
+                eprintln!(
+                    "[G-BannerCache] warm revision={revision} banner={} ready={ready}",
+                    pair.banner_id
+                );
+            }
+        })
+        .is_err()
+    {
+        if let Ok(mut guard) = state.lock() {
+            guard.running = false;
+        }
+    }
+}
+
+pub fn prewarm_next_banner(event: &str) {
+    #[cfg(not(test))]
+    match event {
+        "match_start" => prewarm_likely_videos(&["first_blood", "double_kill", "kill"]),
+        "first_blood" | "kill" => prewarm_likely_videos(&["double_kill"]),
+        "double_kill" => prewarm_likely_videos(&["triple_kill"]),
+        "triple_kill" => prewarm_likely_videos(&["ultra_kill"]),
+        "ultra_kill" => prewarm_likely_videos(&["rampage"]),
+        _ => {}
+    }
+    #[cfg(test)]
+    let _ = event;
+}
+
+pub(crate) fn current_announcer_revision() -> Option<u64> {
+    with_resolved_cache(|cache| cache.map(|c| c.revision))
+}
+pub(crate) fn announcer_revision_current(revision: u64) -> bool {
+    with_resolved_cache(|cache| cache.is_some_and(|c| c.revision == revision))
+}
+
+static LAST_REVISION: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(0);
+fn stamp_cache(next: &mut Option<ResolvedCache>) {
+    static NEXT: std::sync::atomic::AtomicU64 = std::sync::atomic::AtomicU64::new(1);
+    let revision = NEXT.fetch_add(1, std::sync::atomic::Ordering::Relaxed);
+    LAST_REVISION.fetch_max(revision, std::sync::atomic::Ordering::AcqRel);
+    if let Some(cache) = next {
+        cache.revision = revision;
+    }
+}
+
+fn visual_candidates_for(events: &[&str]) -> super::visual_warm::Candidates {
+    use super::visual_warm::{Candidate, Candidates};
+    with_resolved_cache(|cache| {
+        let Some(cache) = cache else {
+            return Candidates {
+                pack_id: None,
+                revision: LAST_REVISION.load(std::sync::atomic::Ordering::Acquire),
+                visuals: vec![],
+            };
+        };
+        let mut visuals: Vec<Candidate> = Vec::new();
+        for event in events.iter().take(3) {
+            let Some(paths) = cache.clips_by_event.get(*event) else {
+                continue;
+            };
+            let Some(pair) = paths
+                .first()
+                .and_then(|path| cache.pairs.get(&(event.to_string(), path.clone())))
+            else {
+                continue;
+            };
+            if !visuals.iter().any(|v| v.banner_id == pair.banner_id) {
+                visuals.push(Candidate {
+                    pack_id: cache.pack_id.clone(),
+                    banner_id: pair.banner_id.clone(),
+                    revision: cache.revision,
+                    event: event.to_string(),
+                });
+            }
+        }
+        Candidates {
+            pack_id: Some(cache.pack_id.clone()),
+            revision: cache.revision,
+            visuals,
+        }
+    })
+}
+
+pub(crate) fn visual_warm_candidates() -> super::visual_warm::Candidates {
+    visual_candidates_for(&["first_blood", "double_kill", "kill"])
+}
+
+pub(crate) fn warm_announcer_variant(pack: &str, event: &str, clip_id: &str) -> Result<(), String> {
+    let path =
+        super::banner::preview_variant(pack, event, clip_id).ok_or("Unknown announcer variant")?;
+    let selected = select_announcer_path(pack, event, &path).ok_or("Inactive announcer pack")?;
+    let pair = selected.pair.ok_or("Variant has no ID visual")?;
+    let candidate = super::visual_warm::Candidate {
+        pack_id: selected.pack_id.clone(),
+        banner_id: pair.banner_id.clone(),
+        revision: selected.revision,
+        event: event.to_owned(),
+    };
+    // Publishing a stale snapshot is harmless: the overlay and protocol fence revisions.
+    super::visual_warm::publish(super::visual_warm::Candidates {
+        pack_id: Some(selected.pack_id.clone()),
+        revision: selected.revision,
+        visuals: vec![candidate],
+    });
+    #[cfg(not(test))]
+    queue_warm_videos((selected.pack_id, selected.revision, vec![pair]));
+    Ok(())
 }
 
 #[cfg(not(test))]
@@ -767,51 +553,159 @@ fn with_resolved_cache<R>(f: impl FnOnce(Option<&ResolvedCache>) -> R) -> R {
     RESOLVED_CACHE.with(|cell| f(cell.borrow().as_ref()))
 }
 
-/// Recompute the cache from whatever pack is active on disk RIGHT NOW.
-///
-/// Infallible by design: a rebuild that can't complete (no active pack, a
-/// manifest that fails to parse) clears the cache to `None` rather than
-/// erroring, which makes `cached_event_clips` return `None` for every event —
-/// exactly the "no active-pack clips, fall through to legacy/default" behavior
-/// the old live-resolution code had on any read failure. Never fails the
-/// caller's write, which has already landed on disk by the time this runs.
-///
-/// Called from every place that can change what `active_event_clips` would
-/// return: [`write_active_pack_id`] and [`write_manifest`] below cover six of
-/// the seven real command-level mutation sites for free (`activate_if_exists`,
-/// `action("activate")`, `create_template`, `import_archive`, `map_event`,
-/// `update_pack` — every "activate a pack" / "edit its manifest" command in
-/// `commands.rs` and `banner.rs` bottoms out in one of those two functions).
-/// The seventh — `commands::upload_asset` adding a clip FILE without touching
-/// manifest.json — calls this directly, because
-/// `resolve_existing_clips`'s existence check cares about that even though no
-/// manifest byte changed. Also called once at app startup (`lib.rs`) so a
-/// pack left active from a prior session is warm before the first alert, not
-/// just after the first pack switch.
-///
-/// Also called from every test-root teardown guard (mirroring
-/// `set_test_voice_root(None)`) so a pooled worker thread starts the next
-/// test's pack-lifecycle assertions from a clean cache, not the previous
-/// test's leftovers.
+/// Admit the selected GANN archive/registry/media before publishing its new generation.
+/// Failure clears event coverage; no alternate pack or synthetic media is substituted.
+static MUTATIONS: Mutex<()> = Mutex::new(());
+#[cfg(test)]
+type MutationHook = Arc<dyn Fn(&'static str, &str) + Send + Sync>;
+#[cfg(test)]
+static MUTATION_HOOK: Mutex<Option<MutationHook>> = Mutex::new(None);
+#[cfg(test)]
+pub(crate) fn set_mutation_hook(hook: Option<MutationHook>) {
+    *MUTATION_HOOK.lock().unwrap() = hook;
+}
+#[cfg(test)]
+fn mutation_hook(phase: &'static str, id: &str) {
+    let hook = MUTATION_HOOK.lock().unwrap().clone();
+    if let Some(hook) = hook {
+        hook(phase, id);
+    }
+}
 pub(crate) fn rebuild_resolved_cache() {
+    let _guard = MUTATIONS.lock().unwrap_or_else(|e| e.into_inner());
+    rebuild_resolved_cache_inner();
+}
+fn rebuild_resolved_cache_inner() {
+    if let Some(installer) = crate::package_ipc::installer() {
+        if let Err(error) = adopt_registry_selection_inner(installer) {
+            eprintln!("[G-AnnInstall] selection admission failed: {error}");
+        }
+        return;
+    }
+    #[cfg(not(test))]
+    {
+        store_resolved_cache(None);
+        crate::audio::refresh_critical_cache();
+        super::playback::changed();
+    }
+    #[cfg(test)]
+    rebuild_fixture_cache();
+}
+#[cfg(test)]
+fn rebuild_fixture_cache() {
     let next = (|| {
         let id = read_active_pack_id()?;
-        if !cfg!(debug_assertions) && id != DEFAULT_PACK_ID && !is_store_installed(&id) {
+        #[cfg(test)]
+        mutation_hook("read", &id);
+        if !super::commands::is_pack_available(&id) {
             return None;
         }
-        if !cfg!(debug_assertions) && id != DEFAULT_PACK_ID {
-            let record = read_store_install_record(&id)?;
-            load_store_archive_index(&record).ok()?;
-        }
-        let dir = packs_dir().join(sanitize_id(&id));
+        let dir = packs_dir().join(&id);
         let manifest = read_manifest(&dir).ok()?;
+        let pairs = super::id_manifest::read(&dir).ok()?.admit(&dir).ok()?;
         let mut clips_by_event = HashMap::with_capacity(manifest.mappings.len());
         for (event, mapping) in &manifest.mappings {
             clips_by_event.insert(event.clone(), resolve_existing_clips(&dir, &mapping.clips));
         }
-        Some(ResolvedCache { pack_id: id, clips_by_event })
+        Some(ResolvedCache {
+            revision: 0,
+            pack_id: id.clone(),
+            pack_name: if manifest.name.is_empty() {
+                id
+            } else {
+                manifest.name
+            },
+            clips_by_event,
+            pairs,
+            installation: None,
+            root: dir,
+        })
     })();
+    #[cfg(test)]
+    let published = next.as_ref().map(|cache| cache.pack_id.clone());
     store_resolved_cache(next);
+    #[cfg(test)]
+    if let Some(id) = published {
+        mutation_hook("published", &id);
+    }
+    crate::audio::refresh_critical_cache();
+    super::playback::changed();
+}
+
+pub(crate) fn adopt_registry_selection(
+    installer: &crate::package_install::PackageInstaller,
+) -> Result<u64, String> {
+    let _guard = MUTATIONS
+        .lock()
+        .map_err(|_| "Package mutation lock is unavailable")?;
+    adopt_registry_selection_inner(installer)
+}
+fn adopt_registry_selection_inner(
+    installer: &crate::package_install::PackageInstaller,
+) -> Result<u64, String> {
+    let next = installer
+        .selection()
+        .map_err(|e| e.to_string())
+        .and_then(|selection| {
+            if selection.active.is_some() {
+                build_installed_cache(installer).map(Some)
+            } else {
+                Ok(None)
+            }
+        });
+    // A failed admission clears coverage, and the host retries this exact key.
+    // No previous revision or legacy active-pack file is silently substituted.
+    match next {
+        Ok(cache) => {
+            let epoch = publish_resolved_cache(cache)?;
+            crate::audio::refresh_critical_cache();
+            super::playback::changed();
+            Ok(epoch)
+        }
+        Err(error) => {
+            store_resolved_cache(None);
+            crate::audio::refresh_critical_cache();
+            super::playback::changed();
+            Err(error)
+        }
+    }
+}
+
+fn build_installed_cache(
+    installer: &crate::package_install::PackageInstaller,
+) -> Result<ResolvedCache, String> {
+    let id = installer
+        .selection()
+        .map_err(|e| e.to_string())?
+        .active
+        .ok_or("No installed selection")?;
+    let admitted = Arc::new(installer.admit_package(&id).map_err(|e| e.to_string())?);
+    let dir = admitted.cache_root();
+    let manifest = read_manifest(dir)?;
+    let pairs = super::id_manifest::read(dir)?.admit(dir)?;
+    let clips_by_event = manifest
+        .mappings
+        .iter()
+        .map(|(event, mapping)| (event.clone(), resolve_existing_clips(dir, &mapping.clips)))
+        .collect();
+    Ok(ResolvedCache {
+        revision: 0,
+        pack_id: admitted.artifact().announcer_id.clone(),
+        pack_name: manifest.name,
+        root: dir.to_path_buf(),
+        clips_by_event,
+        pairs,
+        installation: Some(admitted),
+    })
+}
+#[cfg(test)]
+#[path = "package_lifecycle_tests.rs"]
+mod package_lifecycle_tests;
+pub(crate) fn cached_pack_root(id: &str) -> Option<PathBuf> {
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        (cache.pack_id == id).then(|| cache.root.clone())
+    })
 }
 
 /// Drop the cache without recomputing it — for test teardown, where there may
@@ -822,11 +716,217 @@ pub(crate) fn clear_resolved_cache_for_test() {
     store_resolved_cache(None);
 }
 
-/// O(1) read of the cache [`rebuild_resolved_cache`] built. `None` when there
-/// is no active pack or its manifest is unreadable — callers already treat
-/// that as "fall through to the legacy flat dir / bundled default pack".
+/// Snapshot-only original lookup; unknown events remain unmapped.
+#[cfg(test)]
 pub(crate) fn cached_event_clips(event: &str) -> Option<Vec<PathBuf>> {
     with_resolved_cache(|cache| cache?.clips_by_event.get(event).cloned())
+}
+
+pub(crate) fn cached_event_playback_clips(event: &str) -> Option<Vec<PathBuf>> {
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        Some(
+            cache
+                .clips_by_event
+                .get(event)?
+                .iter()
+                .filter_map(|path| {
+                    cache
+                        .pairs
+                        .get(&(event.to_owned(), path.clone()))
+                        .map(|pair| pair.mixed.clone())
+                })
+                .collect(),
+        )
+    })
+}
+pub(crate) fn cached_audio_hash(pack: &str, path: &Path) -> Option<String> {
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        if cache.pack_id != pack {
+            return None;
+        }
+        cache.pairs.values().find_map(|pair| {
+            if pair.original == path {
+                Some(pair.original_hash.clone())
+            } else if pair.mixed == path {
+                Some(pair.mixed_hash.clone())
+            } else {
+                None
+            }
+        })
+    })
+}
+
+#[derive(Clone, Debug)]
+pub struct AnnouncerClip {
+    pub revision: u64,
+    pub pack_id: String,
+    pub pack_name: String,
+    pub path: PathBuf,
+    pub(crate) pair: Option<Arc<super::id_manifest::Pair>>,
+    pub(crate) installation: Option<Arc<crate::package_install::AdmittedInstallation>>,
+}
+
+impl AnnouncerClip {
+    pub(crate) fn installation_lease(
+        &self,
+    ) -> Result<Option<crate::package_install::InstalledSnapshot>, String> {
+        self.installation
+            .as_ref()
+            .map(|i| i.lease_active().map_err(|e| e.to_string()))
+            .transpose()
+    }
+}
+
+/// The selected pack and clip are read under the same cache lock. No ANN fallback.
+pub fn select_announcer_clip(event: &str) -> Option<AnnouncerClip> {
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        let path = audio::choose_clip(cache.clips_by_event.get(event)?.clone())?;
+        Some(AnnouncerClip {
+            installation: cache.installation.clone(),
+            revision: cache.revision,
+            pack_id: cache.pack_id.clone(),
+            pack_name: cache.pack_name.clone(),
+            pair: Some(cache.pairs.get(&(event.to_owned(), path.clone()))?.clone()),
+            path,
+        })
+    })
+}
+
+pub(crate) fn select_announcer_variant(
+    pack: &str,
+    event: &str,
+    clip_id: &str,
+) -> Option<AnnouncerClip> {
+    if clip_id.is_empty()
+        || clip_id.len() > 64
+        || !clip_id
+            .bytes()
+            .all(|c| c.is_ascii_lowercase() || c.is_ascii_digit() || c == b'_' || c == b'-')
+    {
+        return None;
+    }
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        if !crate::package_ipc::matches_preview_identity(
+            pack,
+            &cache.pack_id,
+            cache
+                .installation
+                .as_ref()
+                .map(|i| i.installation_id().0.as_str()),
+        ) {
+            return None;
+        }
+        let mut paths = cache.clips_by_event.get(event)?.iter().filter(|path| {
+            path.file_stem().and_then(|s| s.to_str()) == Some(clip_id)
+                && path.extension().and_then(|s| s.to_str()) == Some("wav")
+        });
+        let path = paths.next()?.clone();
+        if paths.next().is_some() {
+            return None;
+        }
+        Some(AnnouncerClip {
+            installation: cache.installation.clone(),
+            revision: cache.revision,
+            pack_id: cache.pack_id.clone(),
+            pack_name: cache.pack_name.clone(),
+            pair: Some(cache.pairs.get(&(event.to_owned(), path.clone()))?.clone()),
+            path,
+        })
+    })
+}
+
+pub(crate) fn id_video(
+    pack: &str,
+    banner: &str,
+    revision: u64,
+) -> Option<Arc<super::id_manifest::Pair>> {
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        if cache.pack_id != pack || cache.revision != revision {
+            return None;
+        }
+        cache
+            .pairs
+            .values()
+            .find(|pair| pair.banner_id == banner)
+            .cloned()
+    })
+}
+
+pub fn select_announcer_path(pack: &str, event: &str, path: &Path) -> Option<AnnouncerClip> {
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        if !crate::package_ipc::matches_preview_identity(
+            pack,
+            &cache.pack_id,
+            cache
+                .installation
+                .as_ref()
+                .map(|i| i.installation_id().0.as_str()),
+        ) || !cache.clips_by_event.get(event)?.iter().any(|p| p == path)
+        {
+            return None;
+        }
+        Some(AnnouncerClip {
+            installation: cache.installation.clone(),
+            revision: cache.revision,
+            pack_id: cache.pack_id.clone(),
+            pack_name: cache.pack_name.clone(),
+            pair: Some(
+                cache
+                    .pairs
+                    .get(&(event.to_owned(), path.to_owned()))?
+                    .clone(),
+            ),
+            path: path.to_owned(),
+        })
+    })
+}
+
+pub fn select_announcer_playback_path(event: &str, path: &Path) -> Option<AnnouncerClip> {
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        let original = cache.clips_by_event.get(event)?.iter().find(|original| {
+            cache
+                .pairs
+                .get(&(event.to_owned(), (*original).clone()))
+                .is_some_and(|pair| pair.mixed == path)
+        })?;
+        Some(AnnouncerClip {
+            installation: cache.installation.clone(),
+            revision: cache.revision,
+            pack_id: cache.pack_id.clone(),
+            pack_name: cache.pack_name.clone(),
+            path: original.clone(),
+            pair: Some(
+                cache
+                    .pairs
+                    .get(&(event.to_owned(), original.clone()))?
+                    .clone(),
+            ),
+        })
+    })
+}
+
+pub fn with_current_announcer_clip<T>(
+    event: &str,
+    selected: &AnnouncerClip,
+    admit: impl FnOnce() -> T,
+) -> Option<T> {
+    with_resolved_cache(|cache| {
+        let cache = cache?;
+        (cache.revision == selected.revision
+            && cache.pack_id == selected.pack_id
+            && cache
+                .clips_by_event
+                .get(event)
+                .is_some_and(|clips| clips.contains(&selected.path)))
+        .then(admit)
+    })
 }
 
 pub(crate) fn read_active_pack_id() -> Option<String> {
@@ -837,20 +937,14 @@ pub(crate) fn read_active_pack_id() -> Option<String> {
 }
 
 pub(crate) fn write_active_pack_id(id: &str) -> Result<(), String> {
-    let root = voice_root();
-    fs::create_dir_all(&root).map_err(|e| format!("create voice root: {e}"))?;
-    fs::write(active_path(), id).map_err(|e| format!("write active pack: {e}"))?;
-    rebuild_resolved_cache();
-    Ok(())
-}
-
-pub(crate) fn write_bytes(path: &Path, bytes: &[u8]) -> Result<(), String> {
-    if let Some(parent) = path.parent() {
-        fs::create_dir_all(parent).map_err(|e| format!("create {}: {e}", parent.display()))?;
-    }
-    let mut file = fs::File::create(path).map_err(|e| format!("create {}: {e}", path.display()))?;
-    file.write_all(bytes)
-        .map_err(|e| format!("write {}: {e}", path.display()))
+    #[cfg(test)]
+    mutation_hook("attempt", id);
+    let _guard = MUTATIONS.lock().unwrap_or_else(|e| e.into_inner());
+    store_resolved_cache(None);
+    fs::create_dir_all(voice_root()).map_err(|e| e.to_string())?;
+    let result = fs::write(active_path(), id).map_err(|e| e.to_string());
+    rebuild_resolved_cache_inner();
+    result
 }
 
 pub(crate) fn sanitize_id(value: &str) -> String {
@@ -869,20 +963,64 @@ pub(crate) fn sanitize_id(value: &str) -> String {
         .to_string()
 }
 
-pub(crate) fn sanitize_file_name(value: &str) -> String {
-    Path::new(value)
-        .file_name()
-        .and_then(|name| name.to_str())
-        .unwrap_or_default()
-        .chars()
-        .filter(|ch| ch.is_ascii_alphanumeric() || matches!(ch, '.' | '-' | '_' | ' '))
-        .collect::<String>()
-}
-
 #[cfg(test)]
 mod integrity_tests {
     use super::*;
     use ring::signature::{Ed25519KeyPair, KeyPair};
+
+    #[test]
+    fn warm_descriptors_are_bounded_exact_ids_and_invalidated_with_a_new_generation() {
+        let pack = "ann_c4d92f17-167a-504b-9393-64fd959981cd";
+        let banner = "bnr_c4d92f17-167a-504b-9393-64fd959981cd";
+        let path = PathBuf::from("private/audio/snd.wav");
+        let pair = Arc::new(super::super::id_manifest::Pair {
+            banner_id: banner.into(),
+            original: path.clone(),
+            original_hash: "a".repeat(64),
+            mixed: PathBuf::from("private/mixed.wav"),
+            mixed_hash: "b".repeat(64),
+            samples: 1,
+            video: PathBuf::from("private/video.webm"),
+            video_hash: "c".repeat(64),
+            visual_tail_ms: 0,
+        });
+        let events = ["first_blood", "double_kill", "kill", "rampage"];
+        store_resolved_cache(Some(ResolvedCache {
+            installation: None,
+            root: PathBuf::from("private"),
+            revision: 0,
+            pack_id: pack.into(),
+            pack_name: "Test".into(),
+            clips_by_event: events
+                .iter()
+                .map(|event| (event.to_string(), vec![path.clone()]))
+                .collect(),
+            pairs: events
+                .iter()
+                .map(|event| ((event.to_string(), path.clone()), pair.clone()))
+                .collect(),
+        }));
+        let candidates = visual_candidates_for(&events);
+        assert_eq!(candidates.pack_id.as_deref(), Some(pack));
+        assert_eq!(
+            candidates.visuals.len(),
+            1,
+            "duplicate banner needs one paused decoder"
+        );
+        let candidate = &candidates.visuals[0];
+        assert_eq!(candidate.banner_id, banner);
+        assert_eq!(candidate.revision, candidates.revision);
+        assert_eq!(candidate.event, "first_blood");
+        assert!(!serde_json::to_string(&candidates)
+            .unwrap()
+            .contains("private"));
+        assert!(id_video(pack, banner, candidates.revision).is_some());
+        store_resolved_cache(None);
+        let cleared = visual_warm_candidates();
+        assert!(cleared.pack_id.is_none() && cleared.visuals.is_empty());
+        assert!(cleared.revision > candidates.revision);
+        assert!(id_video(pack, banner, candidates.revision).is_none());
+    }
 
     #[test]
     fn install_receipt_signature_covers_the_archive_digest() {
@@ -918,39 +1056,22 @@ mod integrity_tests {
     }
 
     #[test]
-    fn signed_archive_index_rejects_changed_clip_bytes() {
-        let mut zip_bytes = Vec::new();
-        {
-            let cursor = std::io::Cursor::new(&mut zip_bytes);
-            let mut zip = zip::ZipWriter::new(cursor);
-            let options = zip::write::SimpleFileOptions::default()
-                .compression_method(zip::CompressionMethod::Stored);
-            zip.start_file("demo/manifest.json", options).unwrap();
-            zip.write_all(
-                br#"{"id":"demo","name":"Demo","version":"1","locale":"en","author":"","description":"","mappings":{}}"#,
-            )
-            .unwrap();
-            zip.start_file("demo/clips/kill.wav", options).unwrap();
-            zip.write_all(b"trusted clip bytes").unwrap();
-            zip.finish().unwrap();
-        }
-
-        let index = build_store_archive_index(&zip_bytes, "demo").unwrap();
-        assert!(indexed_content_matches(
-            &index,
-            "clips/kill.wav",
-            b"trusted clip bytes"
+    fn gann_snapshot_rejects_changed_clip_bytes() {
+        let root = std::env::temp_dir().join(format!(
+            "gann-store-hash-{}-{:?}",
+            std::process::id(),
+            std::thread::current().id()
         ));
-        assert!(!indexed_content_matches(
-            &index,
-            "clips/kill.wav",
-            b"replaced clip bytes"
-        ));
-        assert!(!indexed_content_matches(
-            &index,
-            "clips/not-in-pack.wav",
-            b"trusted clip bytes"
-        ));
+        std::fs::create_dir_all(&root).unwrap();
+        super::super::paths::set_test_voice_root(Some(root.clone()));
+        let (id, _, mixed) = super::super::test_package::install(&root, 96, "kill");
+        super::super::activate_if_exists(&id).unwrap();
+        assert!(open_verified_store_clip(&mixed).unwrap().is_some());
+        std::fs::write(&mixed, b"changed bytes").unwrap();
+        assert!(open_verified_store_clip(&mixed).is_err());
+        super::super::paths::set_test_voice_root(None);
+        clear_resolved_cache_for_test();
+        std::fs::remove_dir_all(root).unwrap();
     }
 
     #[test]

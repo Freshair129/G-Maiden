@@ -1,6 +1,6 @@
 [package]
 name = "g-maiden"
-version = "0.13.4"
+version = "0.13.5"
 edition = "2021"
 description = "G-Maiden Rust core — Dota 2 AI companion (latency-critical path)"
 
@@ -13,13 +13,17 @@ name = "g-maiden"
 path = "src/main.rs"
 
 [dependencies]
+g-ann-package = { path = "gann-package" }
+g-party = { path = "g-party" }
 tauri      = { version = "2.0", features = ["tray-icon"] }
+webview2-com = "=0.39.1"
+webview2-core = { package = "windows-core", version = "=0.62.2" }
 serde      = { version = "1", features = ["derive"] }
 serde_json = "1"
 tokio      = { version = "1", features = ["rt-multi-thread", "net", "macros"] }
 axum       = "0.7"
 tauri-plugin-global-shortcut = "2"
-tauri-plugin-updater = "2"
+tauri-plugin-updater = { version = "=2.10.1", path = "vendor/tauri-plugin-updater" }
 tauri-plugin-dialog = "=2.7.3"
 tauri-plugin-process = "2"
 tauri-plugin-store = "2"
@@ -28,6 +32,9 @@ base64 = "0.22"
 ring = "0.17"
 windows-capture = { version = "2.0", optional = true }
 windows = { version = "0.61", features = [
+    "Win32_Media_Speech",
+    "Win32_System_Com",
+    "Win32_Globalization",
     "Win32_UI_Shell",
     "Win32_UI_WindowsAndMessaging",
     "Win32_Foundation",
@@ -36,12 +43,14 @@ windows = { version = "0.61", features = [
     "Win32_System_JobObjects",
     "Win32_System_Memory",
     "Win32_System_ProcessStatus",
+    "Win32_System_Diagnostics_ToolHelp",
     "Win32_System_Threading",
     "Win32_Graphics_Dxgi",
     "Win32_Graphics_Dxgi_Common",
     "Win32_Graphics_Direct3D",
     "Win32_Graphics_Direct3D11",
     "Win32_Graphics_Gdi",
+    "Win32_Graphics_Dwm",
 ] }
 tract-onnx = "0.21"
 rodio      = "0.19"
@@ -66,3 +75,16 @@ wgc = ["dep:windows-capture"]
 
 [build-dependencies]
 tauri-build = { version = "2.7", features = [] }
+
+# Local in-game candidates retain debug assertions/authoring but should not pay
+# the measured resident-code and CPU cost of an unoptimized application crate.
+[profile.dev.package.g-maiden]
+opt-level = 2
+
+# Unit tests should not inherit the optimized interactive-app profile. Keep their
+# code generation deterministic across interrupted local test compilations.
+[profile.test]
+incremental = false
+
+[profile.test.package.g-maiden]
+opt-level = 0

@@ -2,11 +2,11 @@
 title: "G-Maiden Software Requirements Specification"
 doc_id: "software-requirements-specification"
 status: "active"
-version: "0.4.1"
-updated: "2026-10-18"
+version: "0.6.0"
+updated: "2026-11-01"
 owner: "Boss"
 source_of_truth: true
-related_docs: ["product-requirements", "mvp-decisions", "roadmap", "G-SERIES-DATA-LINEAGE"]
+related_docs: ["product-requirements", "mvp-decisions", "roadmap", "G-SERIES-DATA-LINEAGE", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations"]
 ---
 
 # **Software Requirements Specification (SRS)**
@@ -44,6 +44,7 @@ G-Maiden เป็นแอป desktop แบบ local-first ที่เชื�
 1. **Local Gateway:** รับ GSI, ประมวลผล CV/G-Motion/G-Signal และออกเสียงเตือน; G-Signal เป็น pure Rust path ที่ไม่มี cloud, SLM หรือ WebView dependency.
 2. **Local Companion:** G-Voice ทำ PTT → local STT → local interpretation/answer → TTS; G-Memory อ่าน/เก็บ aggregate ในเครื่อง. Audio, transcript/free-form utterance, G-Memory และ raw G-Log/CV ไม่ออก cloud.
 3. **Optional cloud advice:** G-Master สามารถเรียก backend ที่เลือกสำหรับ manual advice ได้เมื่อ cloud-context opt-in เปิด; สร้าง payload จาก purpose-built allowlist เท่านั้น. การ sign-in, เลือก provider/API key หรือกด Ask ไม่ใช่ consent.
+4. **Optional party sharing:** G-Party เป็น Owner-directed extension แยกตาม MVP-005A. Checked sharing consent+activation เปิด narrow own-stat native→relay→peer route; ไม่เปลี่ยน AI consent หรือ local-only data restrictions. ไม่มี app account requirement และ native/live acceptance ยังต้องพิสูจน์.
 
 ### **2.2 หน้าที่หลักของซอฟต์แวร์ (Product Functions)**
 
@@ -66,6 +67,7 @@ G-Maiden เป็นแอป desktop แบบ local-first ที่เชื�
 * **G-Mind (P1):** provider-router และการสลับผู้ให้บริการอยู่นอก MVP; Gemini เป็น design target เดิมเท่านั้น.
 * **G-Persona:** ชุดปรับโทนเสียงและความถี่การพูดของ Maiden (เงียบ↔ช่างพูด, จริงจัง↔มีม) โดยคงแบรนด์เดิม
 * **G-Stream:** โหมดผู้ช่วยสำหรับสตรีมเมอร์ (Co-host) พร้อมการปกปิดข้อมูลละเอียดอ่อน
+* **G-Party (Owner-directed extension):** แชร์ admitted own-GSI HP/MP%/alive/respawn ให้สมาชิกที่ยินยอมใน room/match/team เดียวกันโดยไม่ camera-select; ดู §3.13. ไม่ reprioritize MVP เดิมเป็น P0.
 
 ### **2.3 คาแรคเตอร์และการผสานตัวตน (AI Persona Integration: "Maiden")**
 
@@ -187,6 +189,31 @@ G-Maiden เป็นแอป desktop แบบ local-first ที่เชื�
   3. ต้องเคารพ Privacy-First — ไม่ส่งข้อมูล G-Memory/G-Log ออกนอกเครื่อง
 * **บทสนทนาตัวอย่าง (Maiden Voice):**"สวัสดีทุกคนในห้องค่ะ~ วันนี้เราจะมาดูกันว่าคุณ \[ชื่อผู้เล่น\] จะพา Crystal Maiden ตัวจริงไปได้ไกลแค่ไหน อย่าลืมเป็นกำลังใจให้เรานะคะ!"
 
+### **3.13 G-Party (Cooperative own-GSI sharing) — Owner-directed extension**
+
+G-Party ให้สมาชิกที่ยินยอมและอยู่ room/match/team เดียวกันดู own HP/MP%/alive/respawn จาก GSI ของแต่ละเครื่องได้โดยไม่ camera-select. Owner อนุญาต feature scope วันที่ 2026-11-01; protocol เป็น assistant implementation decision ตาม [[FEAT-G-PARTY]] และ [[CR-037-party-gsi-own-stat-sharing]]. ไม่เพิ่ม P0 หรือเปลี่ยน 62 MVP parent tasks โดยปริยาย.
+
+1. Create/join ต้อง checked explicit sharing consent พร้อม activation ใน action เดียวกัน. Native ปฏิเสธก่อน network เมื่อไม่ยินยอม; ไม่มี view-only/auto-join/saved room credentials และไม่ต้อง Google/app account.
+2. Source ต้อง app570, explicit playing, verified active local Steam owner, real canonical positive match ID, radiant/dire, PRE_GAME/GAME_IN_PROGRESS และ valid hero/level/HP/maxHP/manaPercent/alive/respawn ครบ. Missing/invalid ไม่ถูก default หรืออนุมาน. Raw GSI/raw match ID/SteamID ไม่ออกเครือข่าย.
+3. Native ส่ง purpose-built DTO ผ่าน optional in-memory relay เท่านั้น พร้อม room-scoped SHA-256 matchKey/team/sequence/sourceAge. Same room/matchKey/team จึงได้ vitals; waiting/different_match/stale ต้องคืน null sample ตาม FEAT. Hash ไม่ใช่ anonymity/game attestation; relay เห็น stats ได้ ไม่อ้าง E2EE.
+4. Native sync async sequential 500 ms อยู่นอก GSI/G-Signal path, one in-flight, bounded payload/cache/timeout. Source/relay/publisher-upload-bound/receiver-RTT/UI aging ใช้ monotonic elapsed; age >2000 ms ไม่แสดง live และ conservative bounds อาจหมดอายุเร็ว. หลัง transport failure ต้อง await null scope/sample probe ก่อน resume samples. Identity/team/session/generation เปลี่ยนต้อง drop cached/pending context.
+5. Leave หยุดและล้าง local sharing ทันที; remote delete best effort โดย health TTL 2 s/membership timeout 30 s เมื่อ offline. Owner kick/rotate/leave และ room TTL ตาม FEAT; network failure ไม่ล็อก local core.
+6. Consent ของ G-Party ไม่ให้ AI consent และไม่ส่ง received peer stats ไป AI/Memory/G-Log/public profile. Denylist ของ MVP-005 คงเดิม; MVP-005A อนุญาตเฉพาะ peer route นี้. Native/live Dota/สองจอ/resource acceptance ยังไม่ถูกปิดด้วย contract/source tests.
+
+### 3.14 G-Friends — Optional social coordination for G-Party
+
+ตาม [[FEAT-G-FRIENDS]] และ [[mvp-decisions]] MVP-005B: Google-authenticated users ส่ง exact GID friend request, ตอบรับ/ปฏิเสธ/ยกเลิก, remove/block/unblock, ควบคุม requests/invites และ opt-in online-in-app presence ได้ Friends ≤200/account, pending combined ≤50, blocks ≤500; acceptance และ cap checks ต้อง atomic และคำขอย้อนกลับไม่ autoaccept
+
+Presence heartbeat 20 s/lease 60 s และ state poll 15 s ทำงานผ่าน CommandDeck-owned controller ขณะดูแผนที่ Client หัก whole RTT+monotonic elapsed; hidden/expired/revoked/unavailable ไม่กลายเป็น last-seen ผู้ใช้แยก opt-in profile link กับ actual native-held room membership; scope change ต้อง acknowledged unlink และ authoritative bindingRevision ใหม่ก่อน relink
+
+Targeted invitation อายุ 5 นาที, one-use ticket ≤60 s, owner proof และ friend/block/receive/live-session checks ทุก boundary ผู้รับต้อง fresh unchecked-to-checked GSI consent และ explicit Join; native idle-only admission, expected roomId และ post-await owner/generation/capacity validation ห้าม autojoin/implicit leave/guest fallback หน้าจอแสดง joined เฉพาะ connected native result
+
+Private schema ไม่ expose ผ่าน PostgREST; runtime ใช้ narrow definer EXECUTE ไม่มี direct social/profile/auth table access Public projection เฉพาะ safe GID/name ไม่ส่ง JWT/GID/UUID ไป relay และไม่เก็บ GMP1/memberToken/GSI ใน social storage Existing guest code/local core และ AI/raw-data restrictions ไม่เปลี่ยน
+
+Strict DTO/signature byte contract, rate/size/retention limits, session-before-pair locking, post-wait expiry, replay and denial accounting อยู่ใน [[2026-11-01-g-party-friends-design]]. [[ADR-20]] บันทึก trust/architecture choices. Live Google, deployed service, Windows runtime/สองจอ และ budgets ใน §5.1 ต้องมีหลักฐานแยกตาม [[g-party-social-operations]]
+
+
+
 ## **4\. ความต้องการด้านอินเตอร์เฟสภายนอก (External Interface Requirements)**
 
 ### **4.1 อินเตอร์เฟสกับผู้ใช้ (User Interface: UI/UX Specification)**
@@ -197,6 +224,7 @@ G-Maiden เป็นแอป desktop แบบ local-first ที่เชื�
 
 ### **4.2 อินเตอร์เฟสทางซอฟต์แวร์ (Software Interface)**
 
+* **G-Party peer relay:** Native Rust transport ↔ Node in-memory relay ตาม [[FEAT-G-PARTY]]; remote HTTPS, HTTP literal loopback เฉพาะ local testing. Trusted Control IPC ไม่รับ arbitrary WebView network request และไม่คืน memberToken. Separate checked consent และ narrow own-stat DTO ไม่ขยาย AI prompt allowlist. ยังไม่มี deployment/hosting claim.
 * **Dota 2 GSI Engine:** เชื่อมต่อผ่าน Local HTTP Post ที่พอร์ต 3000 โดยได้รับโครงสร้าง JSON ส่งจากเครื่องผู้ใช้เอง
 * **Optional Cloud Cognitive Engine:** runtime ปัจจุบันของ G-Master ใช้ Claude CLI/Anthropic API และ Ollama ผ่าน backend picker; Gemini เป็น design target เดิมและยังไม่ wire. Cloud game context ปิดโดยค่าเริ่มต้น. เป้าหมายเมื่อ opt-in คือ purpose-built allowlist ของ own stats ตาม [[mvp-decisions]]; ห้ามส่ง raw GSI/GameTick, match ID, enemy/CV fields, G-Memory, G-Log, audio/transcript หรือข้อมูลบัญชี. Current provider wiring ยังรอ MVP-027/MVP-050 enforcement และ evidence; ห้ามอธิบาย target ว่าถูกบังคับใช้แล้ว.
 * **TTS Module (Text-to-Speech):** เชื่อมโยงโมดูลการถอดเสียงเป็นข้อความพูดที่ตอบสนองความถี่สูง โดยมีสไตล์น้ำเสียงที่ใกล้เคียงกับอารมณ์นักพากย์มากที่สุด
@@ -207,13 +235,14 @@ G-Maiden เป็นแอป desktop แบบ local-first ที่เชื�
 ### **5.1 ประสิทธิภาพการทำงาน (Performance)**
 
 * **G-Signal latency:** p50 ≤250ms และทุก measured sample ≤300ms; วัด T3−T0 ตั้งแต่ GSI POST arrival หรือเวลาที่ capture acquisition cycle ถึงกำหนดก่อน scheduler/acquisition/inference wait จนถึง loopback first audible sample. T1 คือ Rust decision และ T2 คือ audio admission. รายงาน source-observation age แยก; ห้ามย้าย T0 หลัง frame-ready. เก็บ ≥300 samples/scenario/profile พร้อม live audible probe.
-* **CPU:** whole-app process group, normalized by logical CPU capacity, ทุก sample 1 วินาที ≤10% (MVP decision v0.2.0). หากสร้าง/configure/assign Windows Job Object ไม่สำเร็จ implementation ต้องบันทึกข้อผิดพลาดและออกด้วย exit code 1 ก่อนสร้าง Tauri/WebView หรือ sidecar; ห้ามเปิดแอปโดยไม่มี hard-cap guarantee. หาก runtime accounting query ล้มเหลวหลัง setup สำเร็จ ให้แสดง CPU sample unavailable (`—`) และคง capture throttle ขณะที่ OS hard cap ยังทำงาน. **RAM:** aggregate peak Working Set ≤400,000,000 bytes รวม host/WebView2/feeder/STT/SLM และ external model processes. **FPS:** drop ≤3% ในแต่ละ paired overlay-off/on run (อย่างน้อย 3 คู่ ×60 วินาที) บนอุปกรณ์/ช่วงเกม/setting เดียวกัน.
+* **CPU:** whole-app process group, normalized by logical CPU capacity, ทุก sample 1 วินาที ≤10% (MVP decision v0.2.0). หากสร้าง/configure/assign Windows Job Object ไม่สำเร็จ implementation ต้องบันทึกข้อผิดพลาดและออกด้วย exit code 1 ก่อนสร้าง Tauri/WebView หรือ sidecar; ห้ามเปิดแอปโดยไม่มี hard-cap guarantee. หาก runtime accounting query ล้มเหลวหลัง setup สำเร็จ ให้แสดง CPU sample unavailable (`—`) และคง capture throttle ขณะที่ OS hard cap ยังทำงาน. **RAM:** aggregate peak Working Set ≤900,000,000 bytes รวม host/WebView2/feeder/STT/SLM และ external model processes. **FPS:** drop ≤3% ในแต่ละ paired overlay-off/on run (อย่างน้อย 3 คู่ ×60 วินาที) บนอุปกรณ์/ช่วงเกม/setting เดียวกัน.
   > **หมายเหตุ (2026-07):** ปัจจุบันแอปยัง surface **GPU load/temp + VRAM** เพิ่มที่ deck footer
   > ด้วย (ingest ผ่าน `POST /telemetry` ที่ feed จาก `gpu-feeder` sidecar ซึ่งรัน nvidia-smi
   > out-of-process) — เป็นข้อมูลเชิง informational เท่านั้น ไม่ใช่การเปลี่ยน budget ของ NFR ข้างต้น
 
 ### **5.2 ความน่าเชื่อถือและการบำรุงรักษา (Reliability & Maintainability)**
 
+* G-Party เป็น optional peer route ตาม MVP-005A; relay/network loss ทำให้ peer data unavailable/stale โดย local core ยังทำงาน. Rooms/tokens/stats อยู่ memory ไม่ persist หรือเข้าสู่ AI/Memory/Log; raw GSI/raw match ID/SteamID/CV/Voice และ denylist เดิมยังอยู่ local. เกณฑ์ของ §5.1 ไม่เปลี่ยนจากการเพิ่ม feature นี้.
 * เมื่อ cloud/network ขาด G-Sentry/G-Motion/G-Signal และ local Voice/Memory ต้องไม่พึ่ง cloud; G-Signal ใช้ pure Rust rule path และไม่พึ่ง SLM. G-Master ใช้ local backend หรือรายงาน unavailable ตามสถานะจริง.
 * G-Log, G-Memory, CV detections, microphone audio, transcript และ free-form utterance อยู่ในเครื่อง. Cloud context สำหรับ manual advice ปิดโดย default และส่งได้เฉพาะ own-stat allowlist ภายใต้ separate opt-in; รายละเอียด allowlist/consent/cache invalidation อยู่ใน [[mvp-decisions]].
 
@@ -236,3 +265,7 @@ G-Maiden เป็นแอป desktop แบบ local-first ที่เชื�
 | 0.3.0 | 2026-10-12 | Updated the whole-app CPU budget to 10% per one-second sample per MVP decision v0.2.0. |
 | 0.3.1 | 2026-10-12 | Clarified unavailable CPU telemetry when setup/query fails; no cap guarantee when setup fails and the payload does not distinguish the cause. |
 | 0.4.0 | 2026-10-13 | Set fail-closed startup when the CPU Job Object cannot initialize; retained unavailable telemetry only for runtime query failures after successful setup. |
+| 0.4.2 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
+| 0.4.3 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |
+| 0.5.0 | 2026-11-01 | เพิ่ม G-Party source/consent/transport/freshness contract และ optional peer route โดยรักษา AI denylist, local-core resilience และ pending native/live acceptance. |
+| 0.6.0 | 2026-11-01 | เพิ่ม G-Friends social/privacy/consent/transaction requirements และ runtime boundaries โดยรักษา guest/core, GSI allowlist และ NFR เดิม. |

@@ -6,8 +6,7 @@
 //   game-tick     gsi.rs:136        validated GSI observation (LOCAL player only)
 //   gsi-status    gsi.rs:194        every 500ms freshness watchdog + observations
 //   minimap-cv    capture.rs:314    ~5Hz CV debug (detections = pixels within region)
-//   minimap-frame capture.rs        ~3Hz live minimap mirror (base64 PNG data URL)
-//   draft-roster  capture.rs / set_draft_roster cmd  10-hero roster from the pick screen
+//   draft-roster  capture.rs (portrait CV only)  10-hero roster from the pick screen
 //   enemy-missing capture.rs:261    edge, per hero crossing 5s threshold
 //   gank-alert    capture.rs:292    edge, gank probability >= danger threshold
 //   gank-clear    capture.rs:297    edge, unit payload
@@ -29,6 +28,7 @@ export interface MatchSessionMetadata {
 
 /** game-tick — GSI snapshot of the LOCAL player only (not all 10 heroes). */
 export interface GameTick extends MatchSessionMetadata {
+  local_player_verified?: boolean;
   in_game: boolean;
   clock_time: number;      // seconds; negative before horn
   game_state: string;      // e.g. "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS"
@@ -94,6 +94,10 @@ export interface MinimapRegion {
 
 /** minimap-cv — CV debug/detection feed (~5Hz). */
 export interface MinimapCv extends MatchSessionMetadata {
+  geometry_generation: string;
+  display_index: number;
+  display_fingerprint: string;
+  desktop_origin: [number, number];
   region: MinimapRegion;
   icon: number;
   candidates: [number, number][];
@@ -120,20 +124,28 @@ export interface SensorHealth {
   healthy: boolean;
 }
 
-/** minimap-frame — live minimap mirror for the Command Deck (~3Hz). `image` is a
- *  ready-to-render base64 `data:image/png` URL of the downscaled captured minimap;
- *  `region` is the same geometry as minimap-cv, in screen px. */
-export interface MinimapFrame extends MatchSessionMetadata {
-  image: string;
-  region: MinimapRegion;
+/** draft-roster — slot-preserving progress from the pick-screen CV read.
+ *  Null slots are unknown; arrays always map to the same 5 player positions. */
+export interface DraftRoster extends MatchSessionMetadata {
+  radiant: Array<string | null>;
+  dire: Array<string | null>;
+  complete: boolean;
+  recognizer_active: boolean;
+  templates_loading: boolean;
 }
 
-/** draft-roster — the full 10-hero roster read off the pick screen (Draft-CV),
- *  raw labels.json short form (e.g. "crystal_maiden"). Fills ally identities GSI
- *  can't expose and pre-seeds enemy slots. Split by team; index-independent. */
-export interface DraftRoster extends MatchSessionMetadata {
-  radiant: string[];
-  dire: string[];
+export type HeroHudCue = "death_hint" | "colored" | "unknown";
+
+export interface HeroHudSlot {
+  cue: HeroHudCue;
+  /** Mean RGB chroma over the portrait, 0..255. Low chroma is only a visual death hint. */
+  mean_chroma: number;
+}
+
+/** hero-hud — one sample per topbar player slot; identity is joined by draft slot order. */
+export interface HeroHudRead extends MatchSessionMetadata {
+  radiant: HeroHudSlot[];
+  dire: HeroHudSlot[];
 }
 
 /** enemy-missing — edge event, last_pos already normalised to [0,1]². */
@@ -179,6 +191,7 @@ export interface UtteranceEvent extends MatchSessionMetadata {
   atMs: number;
   source: "signal" | "master" | "announcer";
   kind: "line" | "revision";
+  phase: "generated" | "requested" | "admitted";
   text: string;
   retracted?: string | null;
   meta?: string | null; // master: "claude"|"ollama"; announcer: pack name

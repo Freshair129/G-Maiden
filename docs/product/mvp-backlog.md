@@ -2,10 +2,10 @@
 title: "G-Maiden MVP Backlog"
 doc_id: "mvp-backlog"
 status: "draft"
-version: "0.3.9"
-updated: 2026-10-20
+version: "0.3.13"
+updated: "2026-11-01"
 owner: "Boss"
-related_docs: ["roadmap", "mvp-execution-dag", "software-requirements-specification", "G-SERIES-DATA-LINEAGE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "EXEC-PLAN-CR-034-iam-remediation"]
+related_docs: ["roadmap", "mvp-execution-dag", "software-requirements-specification", "G-SERIES-DATA-LINEAGE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "EXEC-PLAN-CR-034-iam-remediation", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "2026-11-01-g-party-gsi-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations", "2026-11-01-g-party-friends"]
 ---
 
 # G-Maiden MVP Backlog
@@ -13,6 +13,18 @@ related_docs: ["roadmap", "mvp-execution-dag", "software-requirements-specificat
 Backlog สำหรับทำให้ผู้เล่นใช้งาน Companion ได้ครบหนึ่งแมตช์และกลับมาใช้งานต่อได้ แบ่งเป็น **52 tasks ในแผน MVP** ซึ่งมีงานบัญชี/Terms แบบมีเงื่อนไข และ **10 tasks หลัง MVP หรือแยกสายงาน** ลำดับ milestone อยู่ใน [[roadmap]] ทุก task ยังไม่ปิดจากการเขียนแผนนี้
 
 แผนทำงานขนานอยู่ที่ [[mvp-execution-dag]] และไฟล์ `docs/product/mvp-execution-dag.json` โดยคง task แม่ทั้ง 62 ID นี้ไว้ รายการ 001, 011, 048, 051 แยกขั้น A/B เพื่อไม่ให้ evidence หรือ readiness ถูกปิดก่อน prerequisite จริง; task แม่ DONE เมื่อทุกขั้นที่ใช้ผ่านแล้ว Wave เป็นคิวตาม dependency ไม่ใช่กำหนดส่งหรือการเริ่มงานอัตโนมัติ
+
+## Owner-directed extension: G-Party (2026-11-01)
+
+Owner สั่งพัฒนา own-GSI sharing ระหว่างสมาชิกที่ยินยอมเพื่อดู HP/MP/alive/respawn โดยไม่ camera-select. Scope/consent อยู่ใน [[CR-037-party-gsi-own-stat-sharing]], [[FEAT-G-PARTY]] และ [[mvp-decisions]] MVP-005A; transport/protocol เป็น assistant implementation decisions และ native/live/resource acceptance ยัง pending.
+
+ใช้ task **GP-001–006** ใน [[2026-11-01-g-party-gsi-sharing]] สำหรับ docs/relay/native/UI/integration/qualification. เป็นส่วนขยายแยก ไม่ renumber/ปิด/เปลี่ยน priority ของ 62 MVP parent task และไม่เปลี่ยน execution DAG เดิม. ไม่มี release/deployment หรือการอนุญาต AI/raw-data egress เพิ่มจากงานนี้.
+
+## Owner-directed extension: G-Friends (CR-038)
+
+[[CR-038-party-friends-presence-invitations]] และ [[FEAT-G-FRIENDS]] เพิ่ม optional friends/presence/verified room links/targeted invitations บนฐาน G-Party ผู้ใช้อนุญาต supervised multi-agent execution ผ่าน protected merge ใช้ Tasks 1–5 ใน [[2026-11-01-g-party-friends]] สำหรับ private SQL, Edge broker, relay/native, frontend และ root integration
+
+นี่เป็น extension แยกจาก 62 MVP parent tasks/DAG เดิม ไม่ auto-promote เป็น P0 ไม่ปิด parent task จากการ merge และไม่ครอบคลุม deployment/release เกณฑ์ live Google/Dota/สองจอ/resource ยังแยกตาม [[g-party-social-operations]]
 
 ## วิธีใช้ backlog
 
@@ -233,7 +245,7 @@ Backlog สำหรับทำให้ผู้เล่นใช้งาน
 | --- | --- | --- | --- | --- |
 | MVP-046 | P0 / M | TODO | MVP-004, MVP-015 | **ทำ update ที่ไม่ขัดแมตช์.** ตรวจ/ดาวน์โหลดได้ตาม policy แต่ install/relaunch รอจบเกม; สถานะผิดพลาด/retry/channel/locked-user recovery ชัด, ทดสอบ signed manifest/platform และ rollback; ไม่เพิ่ม path ที่ bypass signature |
 | MVP-047 | P0 / M | TODO | MVP-012, MVP-026, MVP-038, MVP-040 | **ตรวจ resource packaging และ clean install.** Model/labels/default voice/cache/GPU sidecar และ STT resources ที่เลือกมีครบหรือ provision ด้วยขั้นตอนที่ตกลง; รอ STT integration จริงก่อนปิด packaging; ตรวจ Windows/WebView prerequisite, install/upgrade/uninstall/data retention; missing/corrupt asset ให้ actionable error |
-| MVP-048 | P0 / L | TODO | MVP-002, MVP-006; ผลสุดท้ายหลัง MVP-025, MVP-042 | **วัดและแก้ NFR ทั้งระบบ.** เริ่ม baseline เร็ว, วัด acquisition→audible onset รวม cold/cache-miss/interrupt/throttle; วัด process tree, peak RAM, STT/SLM และ PresentMon Dota FPS แบบ A/B บน matrix; ผ่าน ≤250ms p50/ทุก sample ≤300ms, CPU≤2.5%, RAM≤400MB, FPS drop≤3% หรือกลับไปแก้ design; SKIP ไม่ใช่ PASS |
+| MVP-048 | P0 / L | TODO | MVP-002, MVP-006; ผลสุดท้ายหลัง MVP-025, MVP-042 | **วัดและแก้ NFR ทั้งระบบ.** เริ่ม baseline เร็ว, วัด acquisition→audible onset รวม cold/cache-miss/interrupt/throttle; วัด process tree, peak RAM, STT/SLM และ PresentMon Dota FPS แบบ A/B บน matrix; ผ่าน ≤250ms p50/ทุก sample ≤300ms, CPU≤10%, RAM≤900MB, FPS drop≤3% หรือกลับไปแก้ design; SKIP ไม่ใช่ PASS |
 | MVP-049 | P0 / L | TODO | MVP-006, MVP-012, MVP-021, MVP-026, MVP-031, MVP-033, MVP-035, MVP-037, MVP-042, MVP-046, MVP-047 | **รัน player journey และ fault matrix.** Fresh install→match→summary→restart→next match รวม GSI loss, malformed payload, alt-tab, capture/device/network failure, unknown data, crash/reconnect และ live alert accuracy; มี expected/actual, defect IDs, exact build และ local evidence ทุก scenario |
 | MVP-050 | P0 / M | TODO | MVP-005, MVP-027, MVP-035, MVP-041 | **ตรวจ privacy/no-egress ที่ runtime.** เก็บ outbound destinations/payload fields ของ CLI/API/Ollama/account paths ด้วยข้อมูลทดสอบที่ไม่ระบุตัวบุคคล; local-only, non-consented fields, CV/raw logs/Memory และ transient mic data ไม่มี egress ที่ห้าม; forget/retention/diagnostic redaction ผ่าน |
 | MVP-051 | P0 / M | TODO | MVP-001, MVP-002, MVP-006 | **ทำ verification matrix และ CI coverage.** Rust/clippy/eslint/tsc/Vitest/native smoke รวม landing/Deno/SQL เมื่อพื้นที่นั้นอยู่ใน scope; suites มี timeoutและแยก headless/live/manual gates, required check ชี้ exact SHA; doc graph/ledger ใช้ผลจริง ไม่มี disable check เพื่อผ่าน |
@@ -316,3 +328,7 @@ Status:
 | 0.3.7 | 2026-10-19 | เพิ่มการเทียบ transition registry ทุกกลุ่มกับ handler ที่ mount; ปรับ account-security evidence และแยก wired, partial, target, viewer-only ตาม source ปัจจุบัน |
 | 0.3.8 | 2026-10-19 | Pin crosswalk to origin/main, repair stale source anchors and flow claims, and keep MVP-007/008 open pending integrated/runtime acceptance. |
 | 0.3.9 | 2026-10-20 | ปิด MVP-009 หลัง isolated native cold-start acceptance บน integrated SHA; บันทึก settings persistence, provider egress ที่ไม่พบ และคิวงานถัดไป |
+| 0.3.10 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
+| 0.3.11 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |
+| 0.3.12 | 2026-11-01 | Link owner-directed G-Party GP-001–006 extension while preserving all 62 MVP task IDs/statuses and separate consent/native/live acceptance. |
+| 0.3.13 | 2026-11-01 | Link CR-038 Friends Tasks1–5 as a separate owner-directed extension without changing any of the 62 MVP parent task IDs, priorities or completion states. |

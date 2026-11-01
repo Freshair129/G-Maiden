@@ -63,9 +63,8 @@ const SLOW_FRAME_MS: u128 = 250;
 
 // Review fix: alias to tts.rs's single source of truth instead of
 // duplicating the literals here too — see capture.rs's copy of this fix for
-// the full rationale (same GANK_LINE == GANK_LINE_ALT / REVISION_LINE ==
-// REVISION_LINE_ALT duplication existed in both capture backends).
-use crate::tts::{GANK_LINE_ALT as GANK_LINE, REVISION_LINE_ALT as REVISION_LINE};
+// the full rationale (same "gank" == "gank"_ALT / "revision" ==
+// "revision"_ALT duplication existed in both capture backends).
 
 /// Debug/result payload emitted per processed frame. Candidates feed the
 /// calibration overlay; detections are the confirmed heroes (empty until the
@@ -202,7 +201,11 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                 DEFAULT_THRESHOLD_FRAC,
                 crate::runtime::enemy_team_ring(),
             );
-            let detections = self.detector.detect(&f, &candidates, self.icon);
+            let mut detections = self.detector.detect(&f, &candidates, self.icon);
+            let allowed = crate::runtime::enemy_roster_labels();
+            detections.retain(|d| allowed.contains(&d.name));
+            self.sentry.retain_allowed(&allowed);
+            self.motion.retain_allowed(&allowed);
 
             // Record identified enemies for grounded G-Master counter advice
             // (runtime source of truth, cleared at match start). Mirrors capture.rs.
@@ -247,7 +250,10 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                 // since the previous tick (atomic read, ~free).
                 self.signal
                     .set_sensitivity(crate::runtime::signal_sensitivity());
-                match self.signal.evaluate(&risk) {
+                match self
+                    .signal
+                    .evaluate(&risk, &risk.missing_heroes, now_ms, false)
+                {
                     SignalEvent::Alert(alert) => {
                         // Silent-arm efficacy study (TASK 2): when this match is
                         // silent-armed the pipeline + logging still run, but the
@@ -260,24 +266,25 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                             if !crate::runtime::is_current_capture_session(session.session_epoch) {
                                 return Ok(());
                             }
-                            crate::tts::voice_interrupt("gank", GANK_LINE);
+                            crate::tts::voice_interrupt("gank");
                             crate::utterance::emit_for_session(
                                 &self.app,
                                 crate::utterance::UtterancePayload::new_for_session(
-                                    "signal", "line", GANK_LINE, None, None, &session,
+                                    "signal", "line", "gank", None, None, &session,
                                 ),
                             );
                         }
                         // W2: only capture calibration evidence when the line
-                        // was actually voiced — in the silent arm GANK_LINE is
+                        // was actually voiced — in the silent arm "gank" is
                         // suppressed, so recording it would falsely log it as
                         // spoken. The gank_signal log below stays unconditional.
-                        if armed && crate::calibration::is_enabled()
+                        if armed
+                            && crate::calibration::is_enabled()
                             && crate::runtime::is_current_capture_session(session.session_epoch)
                         {
                             crate::calibration::record(
                                 "gank",
-                                Some(GANK_LINE),
+                                Some("gank"),
                                 serde_json::json!({
                                     "probability": alert.probability,
                                     "missing_heroes": alert.missing_heroes,
@@ -294,7 +301,9 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                                 armed,
                             ),
                         );
-                        if armed && crate::runtime::is_current_capture_session(session.session_epoch) {
+                        if armed
+                            && crate::runtime::is_current_capture_session(session.session_epoch)
+                        {
                             let event = crate::runtime::MatchSessionEvent::new(&alert, &session);
                             let _ = self.app.emit("gank-alert", event);
                         }
@@ -305,14 +314,14 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                             if !crate::runtime::is_current_capture_session(session.session_epoch) {
                                 return Ok(());
                             }
-                            crate::tts::voice_interrupt("revision", REVISION_LINE);
+                            crate::tts::voice_interrupt("revision");
                             crate::utterance::emit_for_session(
                                 &self.app,
                                 crate::utterance::UtterancePayload::new_for_session(
                                     "signal",
                                     "revision",
-                                    REVISION_LINE,
-                                    Some(GANK_LINE.to_string()),
+                                    "revision",
+                                    Some("gank".to_string()),
                                     None,
                                     &session,
                                 ),
@@ -322,7 +331,9 @@ impl GraphicsCaptureApiHandler for MinimapCapture {
                             session.session_epoch,
                             crate::log::gank_revision_record(),
                         );
-                        if armed && crate::runtime::is_current_capture_session(session.session_epoch) {
+                        if armed
+                            && crate::runtime::is_current_capture_session(session.session_epoch)
+                        {
                             let _ = self.app.emit("gank-clear", session.clone());
                         }
                     }
@@ -549,7 +560,7 @@ mod tests {
             motion.record(&dets, &region, now_ms);
             let missing = sentry.missing(now_ms);
             let risk = motion.assess(&missing, now_ms);
-            let _ = signal.evaluate(&risk);
+            let _ = signal.evaluate(&risk, &risk.missing_heroes, now_ms, true);
             samples_us.push(t.elapsed().as_micros());
         }
         samples_us.sort_unstable();

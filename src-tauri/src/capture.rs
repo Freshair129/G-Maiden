@@ -12,14 +12,17 @@
 //! full-screen BGRA8 buffer and feed [`crate::cv::Frame`] exactly as before
 //! (prefilter → detect → G-Sentry → G-Motion → G-Signal → emit).
 //!
-//! Cadence (CR-001): ~4 Hz normal, ~8 Hz when G-Sentry is "suspicious" (missing
-//! heroes), ~2 Hz when the governor reports over-budget. The DXGI loop controls
-//! cadence with an explicit sleep rather than a high-rate callback.
+//! Fresh frames drive critical evaluation; bounded DXGI acquisition includes its wait
+//! in T0. Resource pressure withdraws observation readiness. A separate 500ms
+//! freshness watchdog never substitutes for a critical capture cadence.
 //!
 //! Live verification (compile alone is NOT sufficient) needs Dota 2 open in
 //! borderless fullscreen — see ADR-13 Phase 3 validation.
 
 use std::sync::atomic::{AtomicU8, Ordering};
+#[cfg(not(feature = "wgc"))]
+#[path = "capture_schedule.rs"]
+mod schedule;
 
 const MODE_INITIALIZING: u8 = 0;
 const MODE_RETRYING: u8 = 1;
@@ -72,8 +75,9 @@ pub use backend::{retry, start};
 
 #[cfg(not(feature = "wgc"))]
 mod backend {
+    use std::sync::atomic::{AtomicBool, Ordering};
     use std::sync::mpsc::{self, Receiver, SyncSender, TryRecvError, TrySendError};
-    use std::sync::{Mutex, OnceLock};
+    use std::sync::{Arc, Mutex, OnceLock};
     use std::time::{Duration, Instant};
 
     use tauri::{AppHandle, Emitter, Manager};
@@ -83,6 +87,7 @@ mod backend {
     use crate::cv::detector::{Detection, Detector};
     use crate::cv::draft_detector::DraftRecognizer;
     use crate::cv::draft_region::{DraftRegion, PortraitBox};
+    use crate::cv::hero_hud::HeroHudRegion;
     use crate::cv::prefilter::{prefilter_candidates, DEFAULT_THRESHOLD_FRAC};
     use crate::cv::region::MinimapRegion;
     use crate::cv::Frame;
@@ -90,16 +95,6 @@ mod backend {
     use crate::motion::Motion;
     use crate::sentry::Sentry;
     use crate::signal::{Signal, SignalEvent};
-
-    /// Normal-state loop cadence (ms) ≈ 4 Hz.
-    const NORMAL_INTERVAL_MS: u64 = 250;
-    /// Alert cadence (ms) ≈ 8 Hz — used while G-Sentry has missing heroes so a
-    /// developing gank is read with minimum lag (gank window is 10–12 s, so this
-    /// is ample).
-    const ALERT_INTERVAL_MS: u64 = 125;
-    /// Throttled cadence (ms) ≈ 2 Hz — used when the governor reports the process
-    /// is over its CPU/RAM budget. Resource safety wins over freshness here.
-    const THROTTLE_INTERVAL_MS: u64 = 500;
 
     /// Draft-CV poll cadence (ms) ≈ 2 Hz while in the pick window. The pick screen
     /// changes only when someone picks, and the match isn't running, so there's no
@@ -120,32 +115,18 @@ mod backend {
     /// triggered gank alerts / enemy-missing events still emit immediately.
     const DEBUG_EMIT_INTERVAL_MS: u128 = 200;
 
-    /// Cap the rate of the live minimap mirror (`minimap-frame`) — a downscaled
-    /// PNG of the captured minimap sent to the Command Deck (ms) ≈ 6.7 Hz.
-    /// Raised from 300ms after Boss's in-game feedback (2026-07-20) that 3 Hz
-    /// reads as laggy; the encode + base64 + IPC cost still has to respect the
-    /// CPU/RAM budget, so we don't chase full capture cadence.
-    const MINIMAP_FRAME_INTERVAL_MS: u128 = 150;
-    /// Target width (px) the mirrored minimap is downscaled to before PNG-encode.
-    /// The real region is ≈15.6% of screen height (≈220–320 px), so this is a
-    /// mild shrink that keeps the base64 payload to a few KB.
-    const MINIMAP_FRAME_WIDTH: u32 = 220;
-
     /// If a single frame's compute exceeds this (ms) we log it — a developing CV
     /// stall shows up as frames creeping over budget before anything locks up.
     const SLOW_FRAME_MS: u128 = 100;
 
-    /// How long the pipeline may go without a frame before `sensor-health`
-    /// stops calling the minimap sensor trustworthy. Normal cadence is 250ms
-    /// (125ms in alert, 500ms throttled), so this is ~8 missed normal ticks —
-    /// generous enough not to flap on a couple of `DXGI_ERROR_WAIT_TIMEOUT`s,
-    /// tight enough that a real capture stall is visible within a gank window.
-    const STALE_FRAME_MS: u64 = 2_000;
+    /// Freshness watchdog only: silence is unavailable observation, never a
+    /// delayed critical evaluation or evidence that all heroes remain visible.
+    const STALE_FRAME_MS: u64 = super::schedule::FRESHNESS_WATCHDOG_MS;
 
     /// A live capture session with no completed frame for this long is torn
     /// down so DXGI/device state can be rebuilt. This absorbs short Alt-Tab
     /// and mode changes while bounding a permanently lost capture session.
-    const CAPTURE_RECOVERY_MS: u64 = STALE_FRAME_MS * 3;
+    const CAPTURE_RECOVERY_MS: u64 = 6_000;
 
     /// Heartbeat for `sensor-health` (ms). The event is edge-triggered on any
     /// field the UI branches on; this only exists so `frame_age_ms` keeps
@@ -193,14 +174,13 @@ mod backend {
     }
 
     // Review fix: these used to be this module's own `const` copies of the
-    // same Thai text tts.rs bakes into the prewarm cache (GANK_LINE ==
-    // GANK_LINE_ALT, REVISION_LINE == REVISION_LINE_ALT, byte-for-byte) —
+    // same Thai text tts.rs bakes into the prewarm cache ("gank" ==
+    // "gank"_ALT, "revision" == "revision"_ALT, byte-for-byte) —
     // tts.rs's doc comment claims hoisting the prewarm lines there means the
     // cache "can never drift from what's actually said," but this second
     // copy (feeding voice_interrupt's caption/utterance-ledger/calibration
     // uses below) meant it silently could. Alias to the single source of
     // truth instead of duplicating the literals.
-    use crate::tts::{GANK_LINE_ALT as GANK_LINE, REVISION_LINE_ALT as REVISION_LINE};
 
     /// Debug/result payload emitted per processed frame. Candidates feed the
     /// calibration overlay; detections are confirmed heroes (empty until the ONNX
@@ -215,17 +195,10 @@ mod backend {
         classifier: bool,
         capture_frame_id: Option<u64>,
         capture_acquired_at_ms: Option<u64>,
-    }
-
-    /// Live minimap mirror for the Command Deck: a downscaled PNG of the exact
-    /// pixels we already crop for CV, inlined as a base64 `data:` URL (the same
-    /// technique pack banners use — the overlay/deck CSP allows `img-src data:`).
-    /// `region` travels alongside so the deck can place markers in the same
-    /// coordinate space as the image if it wants.
-    #[derive(Clone, serde::Serialize)]
-    struct MinimapFrame {
-        image: String,
-        region: MinimapRegion,
+        geometry_generation: String,
+        display_index: u32,
+        display_fingerprint: String,
+        desktop_origin: [i32; 2],
     }
 
     /// Honest state of the minimap sensor, broadcast to every window.
@@ -282,7 +255,7 @@ mod backend {
 
     /// Per-frame pipeline state. Same shape as the old WGC `MinimapCapture` minus
     /// the capture-API trait (the DXGI loop owns cadence) and `last_processed`
-    /// (the explicit loop sleep replaces the per-frame throttle).
+    /// Critical work is admitted only for fresh frames within the due-time budget.
     struct CaptureState {
         app: AppHandle,
         region: MinimapRegion,
@@ -295,8 +268,6 @@ mod backend {
         start: Instant,
         /// last debug `minimap-cv` emit (throttled ≈5 Hz).
         last_emit: Instant,
-        /// last live minimap-mirror `minimap-frame` emit (throttled ≈6.7 Hz).
-        last_frame_emit: Instant,
         /// last calibration-buffer feed (≈9 Hz when QA mode on).
         last_calib: Instant,
         /// last recorded `risk_trace` log line (throttled ≈1 Hz — see
@@ -305,16 +276,62 @@ mod backend {
         /// Draft-CV: pick-screen portrait recognizer + the 10 portrait boxes.
         draft: DraftRecognizer,
         draft_region: DraftRegion,
+        draft_template_dir: std::path::PathBuf,
+        draft_bundled_template_dir: std::path::PathBuf,
+        draft_labels_path: std::path::PathBuf,
+        draft_template_fetch_started: bool,
+        draft_template_fetch_done: Arc<AtomicBool>,
+        draft_templates_reloaded: bool,
+        last_draft_progress_epoch: Option<u64>,
+        last_draft_progress: Option<crate::runtime::DraftRosterProgress>,
+        last_hero_hud_emit: Instant,
+        last_inference_log: Instant,
+        inference_frames: u64,
+        inference_hits: u64,
+        inference_misses: u64,
+        inference_ms: u128,
+        roster_votes: crate::cv::roster::RosterVotes,
+        roster_vote_epoch: u64,
+        scene_ok_ms: Option<u64>,
+        warning_frame_ms: Option<u64>,
+        observation_since_ms: Option<u64>,
+        last_missing_emit: Instant,
+        warning_reason: String,
+        last_warning_log: Instant,
         /// `runtime::match_epoch()` as of the last pipeline rebuild. When the
         /// shared counter moves past this, a match boundary happened and
         /// Sentry/Motion/Signal are rebuilt (see `reset_pipeline`).
         match_epoch: u64,
+        preview_geometry_generation: u64,
+        preview_display_index: u32,
+        preview_display_id: u64,
+        preview_desktop_origin: [i32; 2],
         /// Last frame that reached `process_frame`. Drives `frame_age_ms`.
         last_frame_ok: Instant,
+        cycle_started: Instant,
+        frames: super::schedule::FrameGate,
+        next_cycle_due: Instant,
         /// Last `sensor-health` emit + the field tuple it carried, so the event
         /// is edge-triggered rather than spammed at loop cadence.
         last_health_emit: Instant,
         last_health_key: Option<(&'static str, bool, bool, bool)>,
+    }
+
+    fn missing_state_payload(
+        missing: &[(String, u64, (f32, f32))],
+        visible: Vec<String>,
+        known: usize,
+        ready: bool,
+        reason: &str,
+        age_ms: u64,
+    ) -> serde_json::Value {
+        let visible_heroes = if ready { visible } else { Vec::new() };
+        let missing = if ready { missing } else { &[] };
+        let heroes: Vec<_> = missing.iter().map(|(hero, _, _)| hero).collect();
+        let observations: Vec<_> = missing.iter().map(|(hero, age, pos)| {
+            serde_json::json!({"hero":hero,"hero_id":crate::cv::identity::HeroId::from_label(hero),"missing_for_ms":age,"last_pos":pos})
+        }).collect();
+        serde_json::json!({"heroes":heroes,"visible_heroes":visible_heroes,"observation_age_ms":age_ms,"observations":observations,"roster_known":known,"ready":ready,"reason":reason})
     }
 
     impl CaptureState {
@@ -323,7 +340,16 @@ mod backend {
             let dir = model_dir(&app);
             let detector =
                 Detector::load(&dir.join("minimap-detector.onnx"), &dir.join("labels.json"));
-            let draft = DraftRecognizer::load(&dir.join("portraits"));
+            let draft_template_dir = app
+                .path()
+                .app_local_data_dir()
+                .map(|path| path.join("cv").join("portraits"))
+                .unwrap_or_else(|_| dir.join("portraits"));
+            let draft_bundled_template_dir = dir.join("portraits");
+            let draft = DraftRecognizer::load_from_dirs(&[
+                &draft_template_dir,
+                &draft_bundled_template_dir,
+            ]);
             let draft_region = DraftRegion::for_resolution(screen_w, screen_h);
             let now = Instant::now();
             CaptureState {
@@ -336,13 +362,41 @@ mod backend {
                 signal: Signal::new(),
                 start: now,
                 last_emit: now,
-                last_frame_emit: now,
                 last_calib: now,
                 last_risk_trace: now,
                 draft,
                 draft_region,
+                draft_template_dir,
+                draft_bundled_template_dir,
+                draft_labels_path: dir.join("labels.json"),
+                draft_template_fetch_started: false,
+                draft_template_fetch_done: Arc::new(AtomicBool::new(false)),
+                draft_templates_reloaded: false,
+                last_draft_progress_epoch: None,
+                last_draft_progress: None,
+                last_hero_hud_emit: now,
+                last_inference_log: now,
+                inference_frames: 0,
+                inference_hits: 0,
+                inference_misses: 0,
+                inference_ms: 0,
+                roster_votes: crate::cv::roster::RosterVotes::default(),
+                roster_vote_epoch: 0,
+                scene_ok_ms: None,
+                warning_frame_ms: None,
+                observation_since_ms: None,
+                last_missing_emit: now,
+                warning_reason: String::new(),
+                last_warning_log: now,
                 match_epoch: crate::runtime::match_epoch(),
+                preview_geometry_generation: 0,
+                preview_display_index: 0,
+                preview_display_id: 0,
+                preview_desktop_origin: [0, 0],
                 last_frame_ok: now,
+                cycle_started: now,
+                frames: super::schedule::FrameGate::default(),
+                next_cycle_due: now,
                 last_health_emit: now,
                 last_health_key: None,
             }
@@ -355,9 +409,69 @@ mod backend {
         /// G-Signal holds an `alerted` latch. Carrying any of that across a
         /// match boundary or a monitor switch turns it from memory into a lie.
         fn reset_pipeline(&mut self) {
+            self.frames = super::schedule::FrameGate::default();
             self.sentry = Sentry::new();
             self.motion = Motion::for_next_match();
             self.signal = Signal::new();
+            self.observation_since_ms = None;
+            self.warning_frame_ms = None;
+            self.scene_ok_ms = None;
+        }
+
+        fn suspend_observation(&mut self) {
+            self.sentry = Sentry::new();
+            self.motion.reset_tracking();
+            self.signal.suspend();
+            self.observation_since_ms = None;
+            self.warning_frame_ms = None;
+        }
+
+        fn missing_snapshot(
+            &mut self,
+            session: &crate::runtime::MatchSessionSnapshot,
+            missing: &[(String, u64, (f32, f32))],
+            known: usize,
+            ready: bool,
+            reason: &str,
+        ) {
+            if !crate::runtime::is_current_capture_session(session.session_epoch) {
+                return;
+            }
+            if self.last_missing_emit.elapsed() < Duration::from_millis(500)
+                && self.warning_reason == reason
+            {
+                return;
+            }
+            self.last_missing_emit = Instant::now();
+            let visible_heroes = self
+                .sentry
+                .visible(self.warning_frame_ms.unwrap_or(u64::MAX));
+            let payload = missing_state_payload(
+                missing,
+                visible_heroes,
+                known,
+                ready,
+                reason,
+                self.last_frame_ok.elapsed().as_millis() as u64,
+            );
+            let _ = self.app.emit(
+                "missing-state",
+                crate::runtime::MatchSessionEvent::new(&payload, session),
+            );
+            if self.warning_reason != reason
+                || self.last_warning_log.elapsed() >= Duration::from_secs(10)
+            {
+                crate::log::note_event_for_session(
+                    session.session_epoch,
+                    serde_json::json!({
+                        "type": "warning_gate", "reason": reason, "ready": ready, "roster_known": known,
+                        "missing_count": payload["heroes"].as_array().map_or(0, Vec::len),
+                        "roster_source": "portrait_temporal",
+                    }),
+                );
+                self.last_warning_log = Instant::now();
+            }
+            self.warning_reason = reason.to_string();
         }
 
         /// Rebuild the pipeline if a match boundary passed since the last check.
@@ -374,6 +488,79 @@ mod backend {
             }
         }
 
+        /// Warm the public, static portrait reference cache only after Dota
+        /// reaches hero selection. Network work is isolated on its own thread;
+        /// the capture loop keeps rendering unknown slots until local templates
+        /// are ready.
+        fn prepare_draft_templates(&mut self) {
+            if !self.draft_template_fetch_started {
+                self.draft_template_fetch_started = true;
+                let dir = self.draft_template_dir.clone();
+                let labels = self.draft_labels_path.clone();
+                let done = Arc::clone(&self.draft_template_fetch_done);
+                let spawn = std::thread::Builder::new()
+                    .name("g-draft-assets".into())
+                    .spawn(move || {
+                        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                            let downloaded =
+                                DraftRecognizer::fetch_missing_templates(&dir, &labels);
+                            crate::log::error(&format!(
+                                "[draft] cached {downloaded} hero portrait templates locally"
+                            ));
+                        }));
+                        done.store(true, Ordering::Release);
+                    });
+                if spawn.is_err() {
+                    self.draft_template_fetch_done
+                        .store(true, Ordering::Release);
+                }
+            }
+
+            self.reload_draft_templates_if_ready();
+        }
+
+        fn reload_draft_templates_if_ready(&mut self) -> bool {
+            if self.draft_templates_reloaded
+                || !self.draft_template_fetch_done.load(Ordering::Acquire)
+            {
+                return false;
+            }
+            self.draft = DraftRecognizer::load_from_dirs(&[
+                &self.draft_template_dir,
+                &self.draft_bundled_template_dir,
+            ]);
+            self.draft_templates_reloaded = true;
+            true
+        }
+
+        fn emit_draft_template_ready(&mut self) {
+            let session = crate::runtime::match_session_snapshot();
+            if self.last_draft_progress_epoch != Some(session.session_epoch) {
+                return;
+            }
+            let Some(mut progress) = self.last_draft_progress.clone() else {
+                return;
+            };
+            if !progress.templates_loading {
+                return;
+            }
+            progress.templates_loading = false;
+            progress.recognizer_active = self.draft.is_active();
+            if !crate::runtime::is_current_capture_session(session.session_epoch)
+                && !crate::runtime::is_current_draft_session(session.session_epoch)
+            {
+                return;
+            }
+            self.last_draft_progress = Some(progress.clone());
+            let event = crate::runtime::MatchSessionEvent::new(progress, &session);
+            let _ = self.app.emit("draft-roster", event);
+        }
+
+        fn draft_templates_loading(&self) -> bool {
+            self.draft_template_fetch_started
+                && !self.draft_template_fetch_done.load(Ordering::Acquire)
+        }
+
         /// Emit `sensor-health` when anything the UI branches on changed, or on
         /// the [`HEALTH_HEARTBEAT_MS`] heartbeat. Called from the loop body,
         /// never from `process_frame` — the ≤300ms G-Signal path must not pay
@@ -387,7 +574,10 @@ mod backend {
                 classifier,
                 throttled,
                 frame_age_ms: Some(frame_age_ms),
-                healthy: backend != "lite" && classifier && frame_age_ms <= STALE_FRAME_MS,
+                healthy: backend != "lite"
+                    && classifier
+                    && !throttled
+                    && frame_age_ms <= STALE_FRAME_MS,
             };
             let key = health.key();
             if self.last_health_key != Some(key)
@@ -416,9 +606,10 @@ mod backend {
             self.region = region;
             self.icon = region.icon_size();
             self.draft_region = DraftRegion::for_resolution(screen_w, screen_h);
-            self.sentry = Sentry::new();
-            self.motion.reset_tracking();
-            self.signal = Signal::new();
+            self.last_draft_progress = None;
+            self.last_hero_hud_emit = Instant::now();
+            self.suspend_observation();
+            self.scene_ok_ms = None;
         }
     }
 
@@ -526,6 +717,8 @@ mod backend {
     /// Returns `Err` when capture must degrade to Lite, or a control event when
     /// the supervisor should retry or stop.
     fn run_dxgi(app: AppHandle, retry: &Receiver<()>) -> Result<CaptureExit, String> {
+        let _preview_source = crate::minimap_preview_runtime::SourceScope::new();
+        let mut preview_geometry = None;
         let mut current_monitor = crate::dxgi::detect_dota_monitor().unwrap_or(0);
         let mut dxgi = DxgiCapture::new(current_monitor)?;
         let mut reported_backend = dxgi.backend();
@@ -549,8 +742,22 @@ mod backend {
         // capture timeout/access-lost affects both accessors identically and
         // needs no fallback, see `rect_is_on_screen`'s doc comment below).
         let mut warned_rect_geometry = false;
+        let mut recovery = Duration::ZERO;
 
         loop {
+            // T0 precedes scheduler checks, capture wait, copies, and inference.
+            state.cycle_started = state.next_cycle_due;
+            if !recovery.is_zero() {
+                match retry.recv_timeout(recovery) {
+                    Ok(()) => return Ok(CaptureExit::RetryRequested),
+                    Err(std::sync::mpsc::RecvTimeoutError::Disconnected) => {
+                        return Ok(CaptureExit::SenderClosed);
+                    }
+                    Err(std::sync::mpsc::RecvTimeoutError::Timeout) => {}
+                }
+                recovery = Duration::ZERO;
+            }
+            let active_started = Instant::now();
             match retry.try_recv() {
                 Ok(()) => return Ok(CaptureExit::RetryRequested),
                 Err(TryRecvError::Disconnected) => return Ok(CaptureExit::SenderClosed),
@@ -561,10 +768,27 @@ mod backend {
             // frame can fold into last match's tracks. Ahead of the draft and
             // in-game gates so state is already clean when the horn lands.
             state.sync_match_epoch();
+            let templates_reloaded = state.reload_draft_templates_if_ready();
+            if templates_reloaded && !crate::runtime::in_draft() {
+                state.emit_draft_template_ready();
+            }
             // Honest sensor state for the overlay + deck. Ahead of the gates
             // too, so "capture is alive" is reported at the menu and during the
             // draft, not only mid-match.
             state.emit_health(dxgi.backend());
+            if state.warning_frame_ms.is_some()
+                && state.last_frame_ok.elapsed().as_millis() > u128::from(STALE_FRAME_MS)
+            {
+                state.suspend_observation();
+                let session = crate::runtime::match_session_snapshot();
+                state.missing_snapshot(
+                    &session,
+                    &[],
+                    crate::runtime::enemy_roster_labels().len(),
+                    false,
+                    "capture_stale",
+                );
+            }
             // CR012-P1-01: periodically re-detect which monitor Dota 2 is on
             // and hot-swap the DXGI duplication if it moved (or if the app
             // started before Dota launched and only now can find it).
@@ -606,21 +830,74 @@ mod backend {
                 }
             }
 
+            let geometry = crate::minimap_preview::Geometry {
+                x: state.region.x,
+                y: state.region.y,
+                side: state.region.side,
+                screen_w: dxgi.width(),
+                screen_h: dxgi.height(),
+                display: current_monitor,
+                display_id: dxgi.display_id(),
+                origin_x: dxgi.desktop_origin().0,
+                origin_y: dxgi.desktop_origin().1,
+            };
+            if preview_geometry != Some(geometry) {
+                state.preview_geometry_generation =
+                    crate::minimap_preview_runtime::invalidate_geometry();
+                state.preview_display_index = current_monitor;
+                state.preview_display_id = geometry.display_id;
+                state.preview_desktop_origin = [geometry.origin_x, geometry.origin_y];
+                preview_geometry = Some(geometry);
+            }
+            crate::minimap_preview_runtime::publish_geometry(geometry);
+            if !crate::dxgi::dota_is_foreground() {
+                state.suspend_observation();
+                state.scene_ok_ms = None;
+                state.last_frame_ok = Instant::now();
+                let session = crate::runtime::match_session_snapshot();
+                state.missing_snapshot(
+                    &session,
+                    &[],
+                    crate::runtime::enemy_roster_labels().len(),
+                    false,
+                    "game_not_visible",
+                );
+                if retry
+                    .recv_timeout(Duration::from_millis(u64::from(
+                        super::schedule::ACQUIRE_WAIT_MS,
+                    )))
+                    .is_ok()
+                {
+                    return Ok(CaptureExit::RetryRequested);
+                }
+                state.next_cycle_due = Instant::now();
+                continue;
+            }
+
             // Draft-CV: read the roster off the pick screen before the horn. Runs
             // ONLY while in hero selection and ONLY until a roster is committed
             // (`roster().is_none()`), then idles. `in_game()` is false here, so
             // this is the only place the loop wakes during the draft.
             if crate::runtime::in_draft() {
+                state.prepare_draft_templates();
                 let session = crate::runtime::match_session_snapshot();
-                if crate::runtime::is_current_draft_session(session.session_epoch)
-                    && crate::runtime::roster().is_none()
-                {
+                if crate::runtime::is_current_draft_session(session.session_epoch) {
                     // CR-live-probe-rect: acquire only the bounding strip of the
                     // 10 portrait boxes instead of the full desktop — `DraftRegion`
                     // guarantees every box (and therefore the strip bounding them)
                     // sits on-screen, so no geometry fallback is needed here.
                     let (bx, by, bw, bh) = draft_bounding_rect(&state.draft_region.boxes);
                     if let Some((strip, sw, sh)) = dxgi.acquire_rect(bx, by, bw, bh) {
+                        if !crate::minimap_preview::matches_output(
+                            geometry,
+                            dxgi.display_id(),
+                            dxgi.desktop_origin(),
+                            (dxgi.width(), dxgi.height()),
+                        ) {
+                            state.suspend_observation();
+                            state.scene_ok_ms = None;
+                            continue;
+                        }
                         process_draft_frame(&mut state, &strip, sw, sh, bx, by, &session);
                     }
                 }
@@ -628,7 +905,13 @@ mod backend {
                 // pipeline is idle by design during the pick screen, so don't
                 // let it age into a false "stalled" reading.
                 state.last_frame_ok = Instant::now();
-                std::thread::sleep(Duration::from_millis(DRAFT_INTERVAL_MS));
+                if retry
+                    .recv_timeout(Duration::from_millis(DRAFT_INTERVAL_MS))
+                    .is_ok()
+                {
+                    return Ok(CaptureExit::RetryRequested);
+                }
+                state.next_cycle_due = Instant::now();
                 continue;
             }
             // Gate to live matches — no CV work at the menu (idle-CPU saver).
@@ -638,14 +921,50 @@ mod backend {
                 // like a 40-minute-old stall. `frame_age_ms` is only meaningful
                 // as "the pipeline is running but starved".
                 state.last_frame_ok = Instant::now();
-                std::thread::sleep(Duration::from_millis(500));
+                if retry
+                    .recv_timeout(Duration::from_millis(u64::from(
+                        super::schedule::ACQUIRE_WAIT_MS,
+                    )))
+                    .is_ok()
+                {
+                    return Ok(CaptureExit::RetryRequested);
+                }
+                state.next_cycle_due = Instant::now();
                 continue;
             }
 
             state.sync_match_epoch();
             let session = crate::runtime::match_session_snapshot();
             if !crate::runtime::is_current_capture_session(session.session_epoch) {
-                std::thread::sleep(Duration::from_millis(250));
+                if retry
+                    .recv_timeout(Duration::from_millis(u64::from(
+                        super::schedule::ACQUIRE_WAIT_MS,
+                    )))
+                    .is_ok()
+                {
+                    return Ok(CaptureExit::RetryRequested);
+                }
+                state.next_cycle_due = Instant::now();
+                continue;
+            }
+
+            if crate::governor::cpu_throttle() {
+                state.suspend_observation();
+                state.missing_snapshot(
+                    &session,
+                    &[],
+                    crate::runtime::enemy_roster_labels().len(),
+                    false,
+                    "resource_unavailable_or_over_budget",
+                );
+                // Readiness is withdrawn; this wait is only a recovery watchdog.
+                if retry
+                    .recv_timeout(Duration::from_millis(STALE_FRAME_MS))
+                    .is_ok()
+                {
+                    return Ok(CaptureExit::RetryRequested);
+                }
+                state.next_cycle_due = Instant::now();
                 continue;
             }
 
@@ -657,6 +976,16 @@ mod backend {
             // square — far cheaper than copying and cropping the full desktop.
             if crate::calibration::is_enabled() {
                 if let Some((full, fw, fh)) = dxgi.acquire_frame() {
+                    if !crate::minimap_preview::matches_output(
+                        geometry,
+                        dxgi.display_id(),
+                        dxgi.desktop_origin(),
+                        (dxgi.width(), dxgi.height()),
+                    ) {
+                        state.suspend_observation();
+                        state.scene_ok_ms = None;
+                        continue;
+                    }
                     if state.last_calib.elapsed().as_millis() >= 110 {
                         state.last_calib = Instant::now();
                         if crate::runtime::is_current_capture_session(session.session_epoch) {
@@ -707,11 +1036,101 @@ mod backend {
                         .map(|(bytes, w, h)| (bytes, w, h, None))
                 };
                 if let Some((cropped, w, h, frame_metadata)) = cropped_frame {
+                    if !crate::minimap_preview::matches_output(
+                        geometry,
+                        dxgi.display_id(),
+                        dxgi.desktop_origin(),
+                        (dxgi.width(), dxgi.height()),
+                    ) || frame_metadata.is_some_and(|m| {
+                        m.display_id != geometry.display_id
+                            || m.screen_width != geometry.screen_w
+                            || m.screen_height != geometry.screen_h
+                    }) {
+                        state.suspend_observation();
+                        state.scene_ok_ms = None;
+                        continue;
+                    }
                     process_frame(&mut state, cropped, w, h, &session, frame_metadata);
                 }
             }
 
+            // The next critical cycle is due now. Preserve this timestamp across
+            // noncritical HUD/template work instead of hiding that work before T0.
+            state.next_cycle_due = Instant::now();
+            state.prepare_draft_templates();
+            if state.last_hero_hud_emit.elapsed() >= Duration::from_millis(1000) {
+                state.last_hero_hud_emit = Instant::now();
+                let hud = HeroHudRegion::for_resolution(dxgi.width(), dxgi.height());
+                let (x, y, width, height) = hud.bounding_rect();
+                if rect_is_on_screen(x, y, width, height, dxgi.width(), dxgi.height()) {
+                    let request = CaptureRoi::new(CaptureRoiKind::TopHeroBar, x, y, width, height);
+                    if let Some(bundle) = dxgi.acquire_regions(session.session_epoch, &[request]) {
+                        if !crate::minimap_preview::matches_output(
+                            geometry,
+                            dxgi.display_id(),
+                            dxgi.desktop_origin(),
+                            (dxgi.width(), dxgi.height()),
+                        ) || bundle.metadata.display_id != geometry.display_id
+                            || bundle.metadata.screen_width != geometry.screen_w
+                            || bundle.metadata.screen_height != geometry.screen_h
+                        {
+                            state.suspend_observation();
+                            state.scene_ok_ms = None;
+                            continue;
+                        }
+                        if let Some(region) = bundle.into_region(CaptureRoiKind::TopHeroBar) {
+                            if let Some(frame) = Frame::from_bgra(
+                                region.rect.width as usize,
+                                region.rect.height as usize,
+                                region.bgra,
+                            ) {
+                                if crate::runtime::is_current_capture_session(session.session_epoch)
+                                {
+                                    let payload = hud.read(&frame, x, y);
+                                    let usable = payload
+                                        .radiant
+                                        .iter()
+                                        .chain(&payload.dire)
+                                        .filter(|slot| {
+                                            slot.cue != crate::cv::hero_hud::HeroHudCue::Unknown
+                                        })
+                                        .count();
+                                    if usable >= 6 {
+                                        state.scene_ok_ms =
+                                            Some(state.start.elapsed().as_millis() as u64);
+                                        let samples = HeroHudRegion::identity_boxes(
+                                            dxgi.width(),
+                                            dxgi.height(),
+                                        )
+                                        .iter()
+                                        .map(|b| {
+                                            crop_rect_frame(
+                                                &frame,
+                                                b.x - x,
+                                                b.y - y,
+                                                b.width,
+                                                b.height,
+                                            )
+                                            .and_then(|crop| state.draft.recognize_hud(&crop))
+                                            .map(|(name, _)| name)
+                                        })
+                                        .collect::<Vec<_>>();
+                                        publish_roster_samples(&mut state, samples, &session);
+                                    }
+                                    let event =
+                                        crate::runtime::MatchSessionEvent::new(payload, &session);
+                                    let _ = state.app.emit("hero-hud", event);
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             let backend = dxgi.backend();
+            recovery = Duration::from_millis(super::schedule::recovery_ms(
+                active_started.elapsed().as_millis() as u64,
+            ));
             if backend != reported_backend {
                 reported_backend = backend;
                 publish_mode(&state.app, backend);
@@ -722,21 +1141,6 @@ mod backend {
                     state.last_frame_ok.elapsed().as_millis()
                 ));
             }
-            std::thread::sleep(Duration::from_millis(select_interval(&state)));
-        }
-    }
-
-    /// Pick the loop cadence: governor over-budget → throttle (2 Hz); else alert
-    /// (8 Hz) while Sentry is suspicious; else normal (4 Hz).
-    fn select_interval(state: &CaptureState) -> u64 {
-        if crate::governor::cpu_throttle() {
-            return THROTTLE_INTERVAL_MS;
-        }
-        let now = state.start.elapsed().as_millis() as u64;
-        if state.sentry.missing(now).is_empty() {
-            NORMAL_INTERVAL_MS
-        } else {
-            ALERT_INTERVAL_MS
         }
     }
 
@@ -757,14 +1161,27 @@ mod backend {
     /// Smallest rect that bounds every Draft-CV portrait box, so the loop can
     /// `acquire_rect` just that strip instead of the full desktop.
     /// `DraftRegion::for_resolution` always produces boxes that fit on screen
-    /// (see its `boxes_are_on_screen_and_square_sized` test), so the bounding
+    /// (see its calibration tests), so the bounding
     /// strip is guaranteed on-screen too — no geometry fallback needed here.
     fn draft_bounding_rect(boxes: &[PortraitBox]) -> (u32, u32, u32, u32) {
         let min_x = boxes.iter().map(|b| b.x).min().unwrap_or(0);
         let min_y = boxes.iter().map(|b| b.y).min().unwrap_or(0);
-        let max_x = boxes.iter().map(|b| b.x + b.side).max().unwrap_or(0);
-        let max_y = boxes.iter().map(|b| b.y + b.side).max().unwrap_or(0);
-        (min_x, min_y, max_x.saturating_sub(min_x), max_y.saturating_sub(min_y))
+        let max_x = boxes
+            .iter()
+            .map(|b| b.x.saturating_add(b.width))
+            .max()
+            .unwrap_or(0);
+        let max_y = boxes
+            .iter()
+            .map(|b| b.y.saturating_add(b.height))
+            .max()
+            .unwrap_or(0);
+        (
+            min_x,
+            min_y,
+            max_x.saturating_sub(min_x),
+            max_y.saturating_sub(min_y),
+        )
     }
 
     /// Crop the minimap square out of a full-screen tightly-packed BGRA8 buffer.
@@ -790,8 +1207,20 @@ mod backend {
         y: u32,
         side: u32,
     ) -> Option<(Vec<u8>, usize, usize)> {
-        let end_x = (x + side).min(fw);
-        let end_y = (y + side).min(fh);
+        crop_rect(full, fw, fh, x, y, side, side)
+    }
+
+    fn crop_rect(
+        full: &[u8],
+        fw: u32,
+        fh: u32,
+        x: u32,
+        y: u32,
+        width: u32,
+        height: u32,
+    ) -> Option<(Vec<u8>, usize, usize)> {
+        let end_x = x.checked_add(width)?.min(fw);
+        let end_y = y.checked_add(height)?.min(fh);
         if x >= end_x || y >= end_y {
             return None;
         }
@@ -814,11 +1243,88 @@ mod backend {
     /// Draft-CV: crop the 10 pick-screen portrait boxes out of `strip` — a
     /// pre-acquired subrect (`sw`×`sh`) that bounds all 10 boxes, acquired at
     /// `(strip_x, strip_y)` in screen space (see `draft_bounding_rect`) —
-    /// recognize each, and once ALL 10 read confidently (i.e. the draft is
-    /// complete) commit the roster to `runtime` and emit `draft-roster`. A
-    /// partial pick screen (picks still coming in) recognizes fewer than 10
-    /// and simply retries next poll. No-op when the recognizer has no
-    /// templates (asset pack not shipped yet).
+    /// recognize each, and emit slot-preserving progress as picks become
+    /// readable. Partial identities stay slot-preserving and unknown slots
+    /// cannot admit minimap labels.
+    fn crop_rect_frame(frame: &Frame, x: u32, y: u32, w: u32, h: u32) -> Option<Frame> {
+        if x as usize + w as usize > frame.width || y as usize + h as usize > frame.height {
+            return None;
+        }
+        let mut bytes = Vec::with_capacity((w * h * 4) as usize);
+        for yy in y..y + h {
+            for xx in x..x + w {
+                let [red, green, blue] = frame.at(xx as usize, yy as usize);
+                bytes.extend_from_slice(&[
+                    (blue * 255.0) as u8,
+                    (green * 255.0) as u8,
+                    (red * 255.0) as u8,
+                    255,
+                ]);
+            }
+        }
+        Frame::from_bgra(w as usize, h as usize, bytes)
+    }
+
+    fn publish_roster_samples(
+        state: &mut CaptureState,
+        samples: Vec<Option<String>>,
+        session: &crate::runtime::MatchSessionSnapshot,
+    ) {
+        if state.roster_vote_epoch != session.session_epoch {
+            state.roster_votes = crate::cv::roster::RosterVotes::default();
+            state.roster_vote_epoch = session.session_epoch;
+            state.last_draft_progress = None;
+        }
+        let slots = state
+            .roster_votes
+            .observe(&samples, state.start.elapsed().as_millis() as u64);
+        let progress = crate::runtime::DraftRosterProgress {
+            radiant: slots[..5].to_vec(),
+            dire: slots[5..].to_vec(),
+            complete: slots.iter().all(Option::is_some),
+            recognizer_active: state.draft.is_active(),
+            templates_loading: state.draft_templates_loading(),
+        };
+        if state.last_draft_progress.as_ref() == Some(&progress) {
+            return;
+        }
+        if !crate::runtime::set_roster_for_capture_session(
+            session.session_epoch,
+            progress
+                .radiant
+                .iter()
+                .map(|name| name.clone().unwrap_or_default())
+                .collect(),
+            progress
+                .dire
+                .iter()
+                .map(|name| name.clone().unwrap_or_default())
+                .collect(),
+        ) {
+            return;
+        }
+        state.last_draft_progress_epoch = Some(session.session_epoch);
+        state.last_draft_progress = Some(progress.clone());
+        crate::log::note_event_for_session(
+            session.session_epoch,
+            serde_json::json!({
+                "type": "roster_confirmed", "source": "portrait_temporal",
+                "slots": slots.iter().enumerate().map(|(slot, name)| serde_json::json!({
+                    "slot": slot, "team": if slot < 5 { "radiant" } else { "dire" },
+                    "hero": name, "hero_id": name.as_deref().and_then(crate::cv::identity::HeroId::from_label),
+                })).collect::<Vec<_>>(),
+            }),
+        );
+        let allowed = crate::runtime::enemy_roster_labels();
+        state.sentry.retain_allowed(&allowed);
+        state.motion.retain_allowed(&allowed);
+        state.signal.suspend();
+        let _ = state.app.emit(
+            "draft-roster",
+            crate::runtime::MatchSessionEvent::new(progress, session),
+        );
+    }
+
     fn process_draft_frame(
         state: &mut CaptureState,
         strip: &[u8],
@@ -829,107 +1335,30 @@ mod backend {
         session: &crate::runtime::MatchSessionSnapshot,
     ) {
         state.sync_match_epoch();
-        if !state.draft.is_active()
-            || !crate::runtime::is_current_draft_session(session.session_epoch)
-        {
+        if !crate::runtime::is_current_draft_session(session.session_epoch) {
             return;
         }
-        let mut radiant = Vec::with_capacity(5);
-        let mut dire = Vec::with_capacity(5);
-        for (i, b) in state.draft_region.boxes.iter().enumerate() {
-            // Boxes are in screen-space; `strip` is local to `(strip_x, strip_y)`.
-            let local_x = b.x.saturating_sub(strip_x);
-            let local_y = b.y.saturating_sub(strip_y);
-            let name = crop_square(strip, sw, sh, local_x, local_y, b.side)
+
+        let samples = state
+            .draft_region
+            .boxes
+            .iter()
+            .map(|b| {
+                crop_rect(
+                    strip,
+                    sw,
+                    sh,
+                    b.x.saturating_sub(strip_x),
+                    b.y.saturating_sub(strip_y),
+                    b.width,
+                    b.height,
+                )
                 .and_then(|(bytes, w, h)| Frame::from_bgra(w, h, bytes))
-                .and_then(|f| state.draft.recognize(&f))
-                .map(|(name, _score)| name);
-            match name {
-                Some(n) if i < 5 => radiant.push(n),
-                Some(n) => dire.push(n),
-                None => {}
-            }
-        }
-        // Only commit a COMPLETE roster (both teams fully identified). This
-        // naturally waits for the draft to finish — unpicked slots recognize
-        // nothing — and once committed, `roster().is_some()` idles the loop.
-        if radiant.len() == 5 && dire.len() == 5 {
-            crate::log::error(&format!(
-                "[draft] roster read — radiant {radiant:?} dire {dire:?}"
-            ));
-            if !crate::runtime::set_roster_for_draft_session(
-                session.session_epoch,
-                radiant.clone(),
-                dire.clone(),
-            ) {
-                return;
-            }
-            if crate::runtime::is_current_draft_session(session.session_epoch) {
-                let event = crate::runtime::MatchSessionEvent::new(
-                    crate::runtime::Roster { radiant, dire },
-                    session,
-                );
-                let _ = state.app.emit("draft-roster", event);
-            }
-        }
-    }
-
-    /// Inner crop applied to the CV region before the mirror encode, as
-    /// fractions of the region's side. The CV region deliberately over-grabs
-    /// ("a sliver of HUD, never clip the map" — `region.rs`), which is right
-    /// for the detector but made the deck mirror show the map off-centre with
-    /// HUD junk on the edges (Boss 2026-07-20 "minimap ไม่พอดีกรอบ"). Measured
-    /// from Boss's 1080p screenshot: map square ≈ (9, 807)–(272, 1068) inside
-    /// region (0, 788, 292).
-    const MIRROR_CROP_L: f32 = 0.031;
-    const MIRROR_CROP_T: f32 = 0.064;
-    const MIRROR_CROP_R: f32 = 0.932;
-    const MIRROR_CROP_B: f32 = 0.961;
-
-    /// Crop the over-grabbed CV region down to the actual map square, downscale
-    /// to [`MINIMAP_FRAME_WIDTH`] and PNG-encode into a base64 `data:image/png`
-    /// URL for the Command Deck mirror. Nearest-neighbour resize (same cheap
-    /// kernel `calibration.rs` uses) so it stays well inside budget at the
-    /// ≈6.7 Hz call rate. Returns `None` on a degenerate size or an encode
-    /// failure — the caller then simply skips this frame.
-    fn encode_minimap_dataurl(bgra: &[u8], w: usize, h: usize) -> Option<String> {
-        use image::codecs::png::PngEncoder;
-        use image::{ExtendedColorType, ImageEncoder};
-
-        if w == 0 || h == 0 {
-            return None;
-        }
-        // Source window = the measured map square inside the region.
-        let cx0 = ((w as f32) * MIRROR_CROP_L) as usize;
-        let cy0 = ((h as f32) * MIRROR_CROP_T) as usize;
-        let cw = (((w as f32) * (MIRROR_CROP_R - MIRROR_CROP_L)) as usize).max(1);
-        let ch = (((h as f32) * (MIRROR_CROP_B - MIRROR_CROP_T)) as usize).max(1);
-        let (sw, sh) = (cw as u32, ch as u32);
-        let tw = MINIMAP_FRAME_WIDTH.min(sw);
-        let th = ((tw as u64 * sh as u64) / sw as u64).max(1) as u32;
-        let mut rgba = vec![0u8; (tw as usize) * (th as usize) * 4];
-        for y in 0..th {
-            let sy = cy0 + (y as u64 * sh as u64 / th as u64) as usize;
-            for x in 0..tw {
-                let sx = cx0 + (x as u64 * sw as u64 / tw as u64) as usize;
-                let si = (sy * w + sx) * 4;
-                let di = ((y * tw + x) * 4) as usize;
-                if si + 3 < bgra.len() {
-                    rgba[di] = bgra[si + 2]; // R (BGRA → RGBA)
-                    rgba[di + 1] = bgra[si + 1]; // G
-                    rgba[di + 2] = bgra[si]; // B
-                    rgba[di + 3] = 255; // A
-                }
-            }
-        }
-        let mut png: Vec<u8> = Vec::new();
-        PngEncoder::new(&mut png)
-            .write_image(&rgba, tw, th, ExtendedColorType::Rgba8)
-            .ok()?;
-        Some(format!(
-            "data:image/png;base64,{}",
-            crate::voice_api::base64_encode(&png)
-        ))
+                .and_then(|frame| state.draft.recognize(&frame))
+                .map(|(name, _)| name)
+            })
+            .collect();
+        publish_roster_samples(state, samples, session);
     }
 
     /// Run the full CV → game-knowledge pipeline on one already-cropped minimap
@@ -952,6 +1381,33 @@ mod backend {
             return;
         }
         let work_start = Instant::now();
+        if !super::schedule::admits_critical(
+            state.cycle_started.elapsed().as_millis() as u64,
+            crate::governor::cpu_throttle(),
+            true,
+        ) {
+            state.suspend_observation();
+            state.missing_snapshot(
+                session,
+                &[],
+                crate::runtime::enemy_roster_labels().len(),
+                false,
+                "capture_deadline_or_resource_pressure",
+            );
+            return;
+        }
+        // Identical desktop crops are not new observations and cannot accumulate confirmation.
+        use std::hash::{Hash, Hasher};
+        let mut hasher = std::collections::hash_map::DefaultHasher::new();
+        cropped.hash(&mut hasher);
+        let fingerprint = hasher.finish();
+        if !state.frames.admit(
+            state.cycle_started.elapsed().as_millis() as u64,
+            crate::governor::cpu_throttle(),
+            Some(fingerprint),
+        ) {
+            return;
+        }
         // A frame reached the pipeline — this is the only thing that resets the
         // staleness clock `sensor-health` reports.
         state.last_frame_ok = work_start;
@@ -967,17 +1423,64 @@ mod backend {
                 DEFAULT_THRESHOLD_FRAC,
                 crate::runtime::enemy_team_ring(),
             );
+            let inference_started = Instant::now();
             let mut detections = state.detector.detect(&f, &candidates, state.icon);
-
-            // Roster-grounded phantom-hero fix (Draft-CV): once the pick-screen
-            // roster is known, drop any detection classified as a hero that isn't
-            // actually in this match — the tiny minimap model otherwise misfires
-            // non-hero blips into random heroes. Complements G-Sentry's temporal
-            // confirmation gate; this one is a hard identity constraint. No-op
-            // until a roster has been read (own-game may never read one).
-            if let Some(roster) = crate::runtime::roster_labels() {
-                detections.retain(|d| roster.iter().any(|h| h == &d.name));
+            let (hits, misses) = state.detector.last_inference_work();
+            state.inference_frames += 1;
+            state.inference_hits += hits as u64;
+            state.inference_misses += misses as u64;
+            state.inference_ms += inference_started.elapsed().as_millis();
+            if state.last_inference_log.elapsed() >= Duration::from_secs(5) {
+                eprintln!("[G-CV] interval_ms={} frames={} exact_patch_hits={} inference_calls={} classifier_ms={}",
+                    state.last_inference_log.elapsed().as_millis(), state.inference_frames,
+                    state.inference_hits, state.inference_misses, state.inference_ms);
+                state.last_inference_log = Instant::now();
+                state.inference_frames = 0;
+                state.inference_hits = 0;
+                state.inference_misses = 0;
+                state.inference_ms = 0;
             }
+
+            if !super::schedule::admits_critical(
+                state.cycle_started.elapsed().as_millis() as u64,
+                crate::governor::cpu_throttle(),
+                true,
+            ) {
+                state.suspend_observation();
+                state.missing_snapshot(
+                    session,
+                    &[],
+                    crate::runtime::enemy_roster_labels().len(),
+                    false,
+                    "capture_deadline_or_resource_pressure",
+                );
+                return;
+            }
+            let allowed = crate::runtime::enemy_roster_labels();
+            detections.retain(|d| allowed.contains(&d.name));
+            state.sentry.retain_allowed(&allowed);
+            state.motion.retain_allowed(&allowed);
+            let context_ok = crate::runtime::warning_context_is_ready(session.session_epoch);
+            let scene_ok = state
+                .scene_ok_ms
+                .is_some_and(|last| now_ms.saturating_sub(last) <= 2500);
+            let frame_gap = state
+                .warning_frame_ms
+                .is_some_and(|last| now_ms.saturating_sub(last) > 1500);
+            if frame_gap || !context_ok || !scene_ok || allowed.is_empty() {
+                state.suspend_observation();
+            }
+            let tracking = context_ok && scene_ok && !allowed.is_empty();
+            if tracking {
+                state.warning_frame_ms = Some(now_ms);
+                state.observation_since_ms.get_or_insert(now_ms);
+            } else {
+                detections.clear();
+            }
+            // The same hero is one observation per frame, including for motion/advice.
+            detections.sort_by(|a, b| b.score.total_cmp(&a.score));
+            let mut seen = std::collections::HashSet::new();
+            detections.retain(|d| seen.insert(d.name.clone()));
 
             // Record identified enemies so G-Master's counter advice is grounded
             // on who's actually in the match (runtime is the single source of
@@ -1013,6 +1516,8 @@ mod backend {
                 }
             }
 
+            state.signal.observe_visible(&state.sentry.visible(now_ms));
+
             // G-Motion: history + gank-risk over currently-missing enemies.
             state.motion.record(&detections, &r, now_ms);
             // A score-based death count is only authoritative while the last
@@ -1025,7 +1530,38 @@ mod backend {
             );
             state.motion.set_dead_enemies(dead_enemies);
             let missing = state.sentry.missing(now_ms);
-            let risk = state.motion.assess(&missing, now_ms);
+            let rotating = state.motion.coordinated_rotation_heroes(&missing, now_ms);
+            let rotation_missing: Vec<_> = missing
+                .iter()
+                .filter(|(hero, _, _)| rotating.contains(hero))
+                .cloned()
+                .collect();
+            let risk = state.motion.assess(&rotation_missing, now_ms);
+            let missing_names: Vec<_> = missing.iter().map(|(name, _, _)| name.clone()).collect();
+            let baseline = state
+                .observation_since_ms
+                .is_some_and(|since| now_ms.saturating_sub(since) >= 5000);
+            let eligible = tracking && baseline && allowed.len() == 5;
+            let corroborated = !rotating.is_empty();
+            state
+                .signal
+                .set_sensitivity(crate::runtime::signal_sensitivity());
+            let reason = if !crate::runtime::signal_enabled() {
+                "disabled"
+            } else if !context_ok {
+                "phase_alive_or_clock"
+            } else if !scene_ok {
+                "capture_unknown"
+            } else if allowed.len() != 5 {
+                "roster_incomplete"
+            } else if !baseline {
+                "observation_warmup"
+            } else if !corroborated {
+                "missing_without_rotation"
+            } else {
+                state.signal.suppression_reason(&risk, now_ms)
+            };
+            state.missing_snapshot(session, &missing, allowed.len(), eligible, reason);
 
             // Offline re-fit input (audit item: G-Motion/G-Signal thresholds are
             // unmeasured magic numbers because the model's own inputs were never
@@ -1049,7 +1585,8 @@ mod backend {
 
             // G-Signal: edge-triggered warning + Belief Revision, voiced now (only
             // when the user has G-Signal enabled).
-            if crate::runtime::signal_enabled() {
+            {
+                let eligible = eligible && crate::runtime::signal_enabled();
                 state
                     .signal
                     .set_sensitivity(crate::runtime::signal_sensitivity());
@@ -1060,30 +1597,56 @@ mod backend {
                 // later measure whether the warning itself changed the death
                 // rate. `armed` = the user WAS alerted this time.
                 let armed = !crate::runtime::silent_arm();
-                match state.signal.evaluate(&risk) {
+                match state
+                    .signal
+                    .evaluate(&risk, &missing_names, now_ms, eligible)
+                {
                     SignalEvent::Alert(alert) => {
                         if armed {
                             if !crate::runtime::is_current_capture_session(session.session_epoch) {
                                 return;
                             }
-                            crate::tts::voice_interrupt("gank", GANK_LINE);
+                            if !super::schedule::admits_critical(
+                                state.cycle_started.elapsed().as_millis() as u64,
+                                crate::governor::cpu_throttle(),
+                                true,
+                            ) {
+                                state.suspend_observation();
+                                state.missing_snapshot(
+                                    session,
+                                    &[],
+                                    allowed.len(),
+                                    false,
+                                    "capture_deadline_or_resource_pressure",
+                                );
+                                return;
+                            }
+                            if !crate::tts::try_voice_interrupt_cached_before(
+                                "gank",
+                                state.cycle_started + Duration::from_millis(250),
+                            ) {
+                                state.suspend_observation();
+                                state.missing_snapshot(
+                                    session,
+                                    &[],
+                                    allowed.len(),
+                                    false,
+                                    "critical_audio_unready",
+                                );
+                                return;
+                            }
                             // CR-011 §B utterance ledger — after the voice
                             // dispatch above, never before, so it can't add
                             // latency to the G-Signal path (CLAUDE.md ≤300ms).
                             crate::utterance::emit_for_session(
                                 &state.app,
                                 crate::utterance::UtterancePayload::new_for_session(
-                                    "signal",
-                                    "line",
-                                    GANK_LINE,
-                                    None,
-                                    None,
-                                    session,
+                                    "signal", "line", "gank", None, None, session,
                                 ),
                             );
                         }
                         // W2: only capture calibration evidence when the line
-                        // was actually voiced — in the silent arm GANK_LINE is
+                        // was actually voiced — in the silent arm "gank" is
                         // suppressed, so recording it would falsely log it as
                         // spoken. The gank_signal log below stays unconditional.
                         if armed
@@ -1092,7 +1655,7 @@ mod backend {
                         {
                             crate::calibration::record(
                                 "gank",
-                                Some(GANK_LINE),
+                                Some("gank"),
                                 serde_json::json!({
                                     "probability": alert.probability,
                                     "missing_heroes": alert.missing_heroes,
@@ -1109,7 +1672,9 @@ mod backend {
                                 armed,
                             ),
                         );
-                        if armed && crate::runtime::is_current_capture_session(session.session_epoch) {
+                        if armed
+                            && crate::runtime::is_current_capture_session(session.session_epoch)
+                        {
                             let event = crate::runtime::MatchSessionEvent::new(&alert, session);
                             let _ = state.app.emit("gank-alert", event);
                         }
@@ -1119,16 +1684,44 @@ mod backend {
                             if !crate::runtime::is_current_capture_session(session.session_epoch) {
                                 return;
                             }
-                            crate::tts::voice_interrupt("revision", REVISION_LINE);
+                            if !super::schedule::admits_critical(
+                                state.cycle_started.elapsed().as_millis() as u64,
+                                crate::governor::cpu_throttle(),
+                                true,
+                            ) {
+                                state.suspend_observation();
+                                state.missing_snapshot(
+                                    session,
+                                    &[],
+                                    allowed.len(),
+                                    false,
+                                    "capture_deadline_or_resource_pressure",
+                                );
+                                return;
+                            }
+                            if !crate::tts::try_voice_interrupt_cached_before(
+                                "revision",
+                                state.cycle_started + Duration::from_millis(250),
+                            ) {
+                                state.suspend_observation();
+                                state.missing_snapshot(
+                                    session,
+                                    &[],
+                                    allowed.len(),
+                                    false,
+                                    "critical_audio_unready",
+                                );
+                                return;
+                            }
                             // Belief Revision — retracted carries the earlier
-                            // GANK_LINE warning being struck through.
+                            // "gank" warning being struck through.
                             crate::utterance::emit_for_session(
                                 &state.app,
                                 crate::utterance::UtterancePayload::new_for_session(
                                     "signal",
                                     "revision",
-                                    REVISION_LINE,
-                                    Some(GANK_LINE.to_string()),
+                                    "revision",
+                                    Some("gank".to_string()),
                                     None,
                                     session,
                                 ),
@@ -1138,7 +1731,9 @@ mod backend {
                             session.session_epoch,
                             crate::log::gank_revision_record(),
                         );
-                        if armed && crate::runtime::is_current_capture_session(session.session_epoch) {
+                        if armed
+                            && crate::runtime::is_current_capture_session(session.session_epoch)
+                        {
                             let _ = state.app.emit("gank-clear", session);
                         }
                     }
@@ -1158,24 +1753,14 @@ mod backend {
                     classifier: state.detector.is_active(),
                     capture_frame_id: frame_metadata.map(|metadata| metadata.frame_id),
                     capture_acquired_at_ms: frame_metadata.map(|metadata| metadata.acquired_at_ms),
+                    geometry_generation: state.preview_geometry_generation.to_string(),
+                    display_index: state.preview_display_index,
+                    display_fingerprint: state.preview_display_id.to_string(),
+                    desktop_origin: state.preview_desktop_origin,
                 };
                 if crate::runtime::is_current_capture_session(session.session_epoch) {
                     let event = crate::runtime::MatchSessionEvent::new(payload, session);
                     let _ = state.app.emit("minimap-cv", event);
-                }
-            }
-
-            // Live minimap mirror for the Command Deck (throttled ≈6.7 Hz). Encodes
-            // the same cropped pixels we just ran CV over — no extra capture. Kept
-            // at the tail so it never delays the G-Signal latency path above.
-            if state.last_frame_emit.elapsed().as_millis() >= MINIMAP_FRAME_INTERVAL_MS {
-                state.last_frame_emit = Instant::now();
-                if let Some(image) = encode_minimap_dataurl(&f.bgra, f.width, f.height) {
-                    if crate::runtime::is_current_capture_session(session.session_epoch) {
-                        let payload = MinimapFrame { image, region: r };
-                        let event = crate::runtime::MatchSessionEvent::new(payload, session);
-                        let _ = state.app.emit("minimap-frame", event);
-                    }
                 }
             }
         }
@@ -1221,6 +1806,33 @@ mod backend {
         //! asserts p99 stays well inside budget. Capture I/O is budgeted
         //! separately, so it's not in this measurement.
         use super::*;
+        #[test]
+        fn missing_state_schema_has_confirmed_presence_and_clears_unready() {
+            let missing = vec![("axe".to_string(), 6000, (0.2, 0.4))];
+            let live = super::missing_state_payload(
+                &missing,
+                vec!["nevermore".into()],
+                5,
+                true,
+                "ready",
+                0,
+            );
+            assert_eq!(live["visible_heroes"], serde_json::json!(["nevermore"]));
+            assert_eq!(live["heroes"], serde_json::json!(["axe"]));
+            let suspended = super::missing_state_payload(
+                &missing,
+                vec!["nevermore".into()],
+                5,
+                false,
+                "resource_pressure",
+                500,
+            );
+            assert_eq!(suspended["visible_heroes"], serde_json::json!([]));
+            assert_eq!(suspended["heroes"], serde_json::json!([]));
+            assert_eq!(suspended["observations"], serde_json::json!([]));
+            assert_eq!(suspended["roster_known"], 5);
+        }
+
         use crate::audio::{priority_for_event, should_accept_incoming, Priority};
         use crate::motion::GankRisk;
         use std::path::Path;
@@ -1299,7 +1911,7 @@ mod backend {
                 motion.record(&dets, &region, now_ms);
                 let missing = sentry.missing(now_ms);
                 let risk = motion.assess(&missing, now_ms);
-                let _ = signal.evaluate(&risk);
+                let _ = signal.evaluate(&risk, &risk.missing_heroes, now_ms, true);
                 samples_us.push(t.elapsed().as_micros());
             }
             samples_us.sort_unstable();
@@ -1338,7 +1950,7 @@ mod backend {
                     missing_heroes: vec!["npc_dota_hero_axe".into(), "npc_dota_hero_lina".into()],
                     eta_ms: 2400,
                 };
-                let event = signal.evaluate(&risk);
+                let event = signal.evaluate(&risk, &risk.missing_heroes, 0, true);
                 let accepted = matches!(event, SignalEvent::Alert(_))
                     && should_accept_incoming(Priority::Cosmetic, priority_for_event("gank"));
                 assert!(accepted, "critical gank alert should be enqueueable");

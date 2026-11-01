@@ -11,6 +11,7 @@ import { supabase } from "./supabase";
 import { useAuth } from "./auth";
 import { useWallet } from "./wallet";
 import TopupModal from "./TopupModal";
+import { localAuthBlocked } from "./securitySession";
 
 interface CatalogItem {
   id: string;
@@ -128,6 +129,10 @@ export default function StorePage({ onNavigateToWallet, onRequestSignIn }: Store
   const [catalogUnavailable, setCatalogUnavailable] = useState(false);
   const [catalogError, setCatalogError] = useState<string | null>(null);
   const [catalogAttempt, setCatalogAttempt] = useState(0);
+  const [dataEpoch, setDataEpoch] = useState(0);
+  const owner = useRef({ userId, epoch: 0 });
+  if (owner.current.userId !== userId) owner.current = { userId, epoch: owner.current.epoch + 1 };
+  const ownedRequest = useRef({ seq: 0 });
 
   const frameRef = useRef<HTMLDivElement | null>(null);
   const [frameH, setFrameH] = useState(STORE_FRAME_DEFAULT_H);
@@ -179,12 +184,22 @@ export default function StorePage({ onNavigateToWallet, onRequestSignIn }: Store
   }, [catalogAttempt]);
 
   const loadOwned = useCallback(async () => {
+    const epoch = owner.current.epoch;
+    const seq = ++ownedRequest.current.seq;
     if (!userId) { setOwnedIds(new Set()); return; }
     const { data } = await supabase.from("inventory").select("item_id").eq("user_id", userId);
+    if (owner.current.userId !== userId || owner.current.epoch !== epoch || ownedRequest.current.seq !== seq || localAuthBlocked()) return;
     setOwnedIds(new Set(((data as { item_id: string }[] | null) ?? []).map((r) => r.item_id)));
   }, [userId]);
 
-  useEffect(() => { void loadOwned(); }, [loadOwned]);
+  useEffect(() => {
+    const lifetime = owner.current;
+    const requests = ownedRequest.current;
+    setDataEpoch(owner.current.epoch);
+    setOwnedIds(new Set()); setConfirmItem(null); setPurchasingId(null); setTopupOpen(false); setMsg(null);
+    void loadOwned();
+    return () => { requests.seq++; lifetime.epoch++; };
+  }, [loadOwned]);
 
   useEffect(() => {
     const el = frameRef.current;
@@ -211,18 +226,21 @@ export default function StorePage({ onNavigateToWallet, onRequestSignIn }: Store
   }
 
   async function confirmPurchase() {
-    if (!confirmItem) return;
+    if (!confirmItem || !userId || localAuthBlocked()) return;
+    const epoch = owner.current.epoch;
+    const current = () => owner.current.userId === userId && owner.current.epoch === epoch && !localAuthBlocked();
     setPurchasingId(confirmItem.id);
     setMsg(null);
     try {
       await purchase(confirmItem.id);
+      if (!current()) return;
       setOwnedIds((prev) => new Set(prev).add(confirmItem.id));
       setMsg(`ซื้อ "${confirmItem.title}" สำเร็จ — เพิ่มเข้า Inventory แล้ว`);
       setConfirmItem(null);
     } catch (e) {
-      setMsg(errText(e));
+      if (current()) setMsg(errText(e));
     } finally {
-      setPurchasingId(null);
+      if (current()) setPurchasingId(null);
     }
   }
 
@@ -238,7 +256,7 @@ export default function StorePage({ onNavigateToWallet, onRequestSignIn }: Store
         </button>
       );
     }
-    if (ownedIds.has(item.id)) {
+    if (dataEpoch === owner.current.epoch && ownedIds.has(item.id)) {
       return <span className="store-owned-badge">✓ เป็นเจ้าของ</span>;
     }
     const have = balanceFor(item.currency);
@@ -340,9 +358,9 @@ export default function StorePage({ onNavigateToWallet, onRequestSignIn }: Store
         </button>
       </div>
 
-      {msg ? <div className="store-msg">{msg}</div> : null}
+      {dataEpoch === owner.current.epoch && msg ? <div className="store-msg">{msg}</div> : null}
 
-      {confirmItem ? (
+      {dataEpoch === owner.current.epoch && confirmItem ? (
         <div className="store-confirm-overlay" onClick={() => setConfirmItem(null)}>
           <div className="store-confirm-sheet" onClick={(e) => e.stopPropagation()}>
             <div className="store-confirm-title">
@@ -364,7 +382,7 @@ export default function StorePage({ onNavigateToWallet, onRequestSignIn }: Store
         </div>
       ) : null}
 
-      <TopupModal open={topupOpen} onClose={() => setTopupOpen(false)} />
+      <TopupModal open={dataEpoch === owner.current.epoch && topupOpen} onClose={() => setTopupOpen(false)} />
     </div>
   );
 }

@@ -86,6 +86,27 @@ function normalizeLayout(value: unknown, fallback: Layout): Layout {
   return next
 }
 
+const LEGACY_DEFAULT_POSITIONS = {
+  banner: { x: 50, y: 34, scale: 1, enabled: true },
+  standby: { x: 50, y: 5, scale: 1, enabled: true },
+} as const
+
+function migrateLegacyDefaultPositions(value: unknown): unknown {
+  const saved = asRecord(value)
+  if (!saved) return value
+
+  const next = { ...saved }
+  for (const id of ['banner', 'standby'] as const) {
+    const current = asRecord(saved[id])
+    const legacy = LEGACY_DEFAULT_POSITIONS[id]
+    if (current?.x === legacy.x && current.y === legacy.y
+      && current.scale === legacy.scale && current.enabled === legacy.enabled) {
+      next[id] = { ...DEFAULT_LAYOUT[id] }
+    }
+  }
+  return next
+}
+
 export function sameSettings(left: Settings, right: Settings): boolean {
   for (const key of Object.keys(DEFAULTS) as (keyof Settings)[]) {
     if (key === 'layout') {
@@ -104,6 +125,8 @@ export function sameSettings(left: Settings, right: Settings): boolean {
 /** Validate every persisted setting; invalid fields fall back field by field. */
 export function normalizeSettings(value: unknown, fallback: Settings = DEFAULTS): Settings {
   const raw = withLegacyStats(value)
+  // Move only exact shipped defaults. Any user-adjusted module remains intact.
+  const layout = migrateLegacyDefaultPositions(raw.layout)
   return {
     overlayVisible: boolValue(raw, 'overlayVisible', fallback.overlayVisible),
     position: enumValue(raw, 'position', ['top', 'left', 'right', 'custom'] as const, fallback.position),
@@ -133,7 +156,7 @@ export function normalizeSettings(value: unknown, fallback: Settings = DEFAULTS)
     efficacyStudy: boolValue(raw, 'efficacyStudy', fallback.efficacyStudy),
     telemetrySource: enumValue(raw, 'telemetrySource', ['auto', 'feeder', 'gtelemetry', 'off'] as const, fallback.telemetrySource),
     uiMode: 'full',
-    layout: normalizeLayout(raw.layout, fallback.layout),
+    layout: normalizeLayout(layout, fallback.layout),
     showTimer: boolValue(raw, 'showTimer', fallback.showTimer),
     showScore: boolValue(raw, 'showScore', fallback.showScore),
     showHeroBar: boolValue(raw, 'showHeroBar', fallback.showHeroBar),

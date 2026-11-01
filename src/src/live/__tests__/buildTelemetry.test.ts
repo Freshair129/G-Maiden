@@ -24,7 +24,20 @@ describe("buildTelemetry", () => {
     const result = buildTelemetry(stats(), fallback);
     expect(result.cpuLoad).toBe(1.7);
     expect(result.ramUsedGb).toBeCloseTo(0.38, 2); // 384 MB
-    expect(result.ramTotalGb).toBeCloseTo(400 / 1024, 5);
+    expect(result.ramTotalGb).toBeCloseTo(900 / 1024, 5);
+  });
+
+  it.each([-1, Number.NaN, Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY])("retains unknown RAM before conversion for %s", (ram_mb) => {
+    const result = buildTelemetry(stats({ ram_mb }), fallback);
+    expect(result.ramUsedGb).toBe(NO_SENSOR);
+    expect(result.ramLoad).toBe(NO_SENSOR);
+    expect(result.ramTotalGb).toBeCloseTo(900 / 1024, 5);
+  });
+
+  it("retains a valid zero RAM reading", () => {
+    const result = buildTelemetry(stats({ ram_mb: 0 }), fallback);
+    expect(result.ramUsedGb).toBe(0);
+    expect(result.ramLoad).toBe(0);
   });
 
   it("uses CPU temp from the rich G-Telemetry source when present", () => {

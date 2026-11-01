@@ -1,3 +1,11 @@
+---
+title: "G-Maiden — Ultraplan (Master Implementation Plan)"
+doc_id: "implementation-plan"
+status: draft
+version: "0.0.2"
+updated: "2026-10-28"
+owner: "G-Maiden"
+---
 # G-Maiden — Ultraplan (Master Implementation Plan)
 
 > ⚠️ **เอกสารเชิงประวัติ (planning artifact, ~v0.1–0.5).** แผนนี้เขียนก่อนลงมือ และหลายอย่าง
@@ -190,7 +198,7 @@ framer-motion      (micro-interactions, ใช้แบบประหยัด)
 ### Phase 7 — Resilience + Resource hardening (Track A+B)
 - **G7.1** Local SLM fallback (Qwen2.5, lazy-load, unload เมื่อ cloud กลับ). Files: `brain/slm.rs`, `models/`. Accept: cloud หลุด → persona text ยังออกจาก SLM. Est 3d
 - **G7.2** Resource Governor เต็มรูปแบบ (throttle CPU/RAM/FPS ตาม budget). Files: `src-tauri/src/governor/`. Accept: บังคับ budget ได้จริงใต้โหลด. Est 2.5d
-- **G7.3** Perf suite: วัด **RAM ≤400MB, FPS drop ≤3%** บนเครื่องระดับกลาง. Files: `tests/perf/`. Accept: ผ่านทุกตัวเลข. Deps G7.2. Est 2d
+- **G7.3** Perf suite: วัด **RAM ≤900MB, FPS drop ≤3%** บนเครื่องระดับกลาง. Files: `tests/perf/`. Accept: ผ่านทุกตัวเลข. Deps G7.2. Est 2d
 - **🚪 GATE P7:** Definition of Done ครบทุกข้อ (Eng Spec §7).
 
 ### Phase 8 — Validation and Launch (Track E)
@@ -255,7 +263,7 @@ S-1,S-2,S-3 ─► G0.x ─► G1.x ─► G2.x ─► G3.x ─► [GATE P3] ─
 | **GATE P3** | **G-Signal p99 ≤300ms, p50 ≤250ms** | G3.6 |
 | GATE P4 | cloud-loss → sentry/signal ยังครบ | G4 |
 | GATE P6 | no-egress (G-Log ไม่ออกนอกเครื่อง) | G6 |
-| **GATE P7** | RAM ≤400MB & FPS drop ≤3% & DoD ครบ | G7.3 |
+| **GATE P7** | RAM ≤900MB & FPS drop ≤3% & DoD ครบ | G7.3 |
 | GATE P8 | v1.0 NFR ครบบนเครื่องผู้ใช้จริง | G8 |
 
 ---
@@ -270,3 +278,9 @@ S-1,S-2,S-3 ─► G0.x ─► G1.x ─► G2.x ─► G3.x ─► [GATE P3] ─
 ```
 สถานะถัดไปที่แนะนำ: เริ่ม Sprint 1 ข้อ 1–4 (toolchain + spike ทั้งสาม)
 ```
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.0.1 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
+| 0.0.2 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |

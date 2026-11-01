@@ -1,25 +1,27 @@
 //! G7.2 — Resource Governor.
 //!
-//! Monitors the process's RAM and whole-app job-group CPU usage. Emits `resource-stats` events
+//! Monitors aggregate owned/job and used external-provider RAM and CPU usage. Emits `resource-stats` events
 //! to the control window every [`POLL_INTERVAL_S`] seconds so the dashboard can
 //! display live numbers. Also enforces the NFR budgets (SRS):
-//!   - RAM ≤ 400 MB working set
+//!   - RAM ≤ 900 MB aggregate full working set (900,000,000 bytes)
 //!   - Whole-app CPU ≤ 10% of logical CPU capacity
 //!
 //! On Windows, a Job Object both hard-caps CPU and accounts the host plus its
 //! inherited child processes (WebView2 and sidecars). Tauri startup aborts if the
 //! job cannot be configured or assigned. After successful initialization, an
 //! accounting-query failure reports CPU as unavailable and keeps capture
-//! throttled while the OS hard cap remains active. We never infer whole-app usage
-//! from process names.
+//! suspended while the OS hard cap remains active. Owned membership is verified
+//! against the Job; external Ollama trees are included conservatively when used.
 //!
-//! Throttle callbacks are exported so the capture loop can check whether to
-//! drop a processing tick (reducing to ~2 Hz) when CPU is high. This is an
-//! additional soft mitigation; the OS Job Object hard cap is the 10% ceiling.
+//! Resource pressure withdraws critical capture readiness; the 500ms recovery
+//! watchdog does not issue late alarms. The Job hard cap covers owned members,
+//! never an unmanaged shared provider.
 
 #[cfg(windows)]
 use std::os::windows::io::{AsRawHandle, FromRawHandle, OwnedHandle};
 use std::process::{Child, Command};
+#[path = "resource_accounting.rs"]
+mod resource_accounting;
 use std::sync::atomic::{AtomicBool, AtomicU8, Ordering};
 use std::sync::Mutex;
 #[cfg(windows)]
@@ -32,9 +34,8 @@ use windows::core::PCWSTR;
 use windows::Win32::Foundation::HANDLE;
 #[cfg(windows)]
 use windows::Win32::System::JobObjects::{
-    AssignProcessToJobObject, CreateJobObjectW, JobObjectBasicAccountingInformation,
-    JobObjectCpuRateControlInformation, JobObjectExtendedLimitInformation,
-    QueryInformationJobObject, SetInformationJobObject, JOBOBJECT_BASIC_ACCOUNTING_INFORMATION,
+    AssignProcessToJobObject, CreateJobObjectW, JobObjectCpuRateControlInformation,
+    JobObjectExtendedLimitInformation, QueryInformationJobObject, SetInformationJobObject,
     JOBOBJECT_CPU_RATE_CONTROL_INFORMATION, JOBOBJECT_CPU_RATE_CONTROL_INFORMATION_0,
     JOBOBJECT_EXTENDED_LIMIT_INFORMATION, JOB_OBJECT_CPU_RATE_CONTROL_ENABLE,
     JOB_OBJECT_CPU_RATE_CONTROL_HARD_CAP, JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE,
@@ -46,10 +47,12 @@ use windows::Win32::System::Threading::GetCurrentProcess;
 
 const POLL_INTERVAL_S: u64 = 1;
 const CPU_BUDGET_PCT: f64 = 10.0;
-const CPU_HARD_CAP_RATE: u32 = 1_000;
+// Leave operating headroom for OS cap windows versus the measured 1s ceiling.
+// The unchanged acceptance limit above remains 10%, not this operating rate.
+const CPU_HARD_CAP_RATE: u32 = 800;
 const CPU_THROTTLE_RELEASE_PCT: f64 = 8.0;
 const CPU_THROTTLE_RELEASE_SAMPLES: u8 = 3;
-const RAM_BUDGET_MB: f64 = 400.0;
+const RAM_BUDGET_MB: f64 = resource_accounting::RAM_BUDGET_BYTES as f64 / 1_000_000.;
 
 /// GPU telemetry source, user-selectable via `set_telemetry_source`. The bundled
 /// headless `gpu-feeder` sidecar PUSHes GPU-only samples to `POST /telemetry`
@@ -90,6 +93,7 @@ static LATEST_GPU: Mutex<Option<GpuSample>> = Mutex::new(None);
 /// True while resource usage is over budget; the capture loop reads this to
 /// drop half its ticks automatically.
 static CPU_THROTTLE: AtomicBool = AtomicBool::new(true);
+static PREVIEW_ALLOWED: AtomicBool = AtomicBool::new(false);
 #[cfg(windows)]
 static PROCESS_JOB: OnceLock<Result<ProcessJob, String>> = OnceLock::new();
 
@@ -102,9 +106,9 @@ struct ProcessJob {
 }
 
 #[cfg(windows)]
-#[derive(Clone, Copy)]
 struct CpuSample {
-    total_100ns: u64,
+    cpu: std::collections::BTreeMap<resource_accounting::Identity, u64>,
+    job_cpu_100ns: u64,
     wall: Instant,
 }
 
@@ -145,7 +149,7 @@ fn create_process_job() -> Result<ProcessJob, String> {
             std::mem::size_of::<JOBOBJECT_CPU_RATE_CONTROL_INFORMATION>() as u32,
         )
     }
-    .map_err(|error| format!("setting the 10% Job Object CPU hard cap failed: {error}"))?;
+    .map_err(|error| format!("setting the 8% operating Job Object CPU hard cap failed: {error}"))?;
 
     let mut extended_limits = JOBOBJECT_EXTENDED_LIMIT_INFORMATION::default();
     extended_limits.BasicLimitInformation.LimitFlags = JOB_OBJECT_LIMIT_KILL_ON_JOB_CLOSE;
@@ -169,27 +173,44 @@ fn create_process_job() -> Result<ProcessJob, String> {
     })
 }
 
-/// Read by the capture loop every tick (`capture.rs`) — when true it drops
-/// capture cadence to ~2 Hz. Driven by CPU **or** RAM over-budget (see
-/// `poll_loop` / `over_budget`), so the name is historical: a RAM breach
-/// throttles capture too.
+/// True means critical capture readiness must be withdrawn. Both unavailable
+/// accounting and CPU/RAM pressure fail closed; recovery uses a separate watchdog.
 pub fn cpu_throttle() -> bool {
     CPU_THROTTLE.load(Ordering::Relaxed)
+}
+
+pub(crate) fn preview_allowed() -> bool {
+    PREVIEW_ALLOWED.load(Ordering::Relaxed) && !cpu_throttle()
+}
+
+pub(crate) fn owns_child_process(pid: u32) -> bool {
+    #[cfg(windows)]
+    {
+        let Some(Ok(job)) = PROCESS_JOB.get() else {
+            return false;
+        };
+        job_pids(job).is_some_and(|members| members.contains(&pid))
+    }
+    #[cfg(not(windows))]
+    {
+        let _ = pid;
+        false
+    }
 }
 
 #[derive(Clone, serde::Serialize)]
 pub struct ResourceStats {
     pub ram_mb: f64,
     pub cpu_pct: f64,
-    /// Active processes accounted by the Windows Job Object; `-1` means that
-    /// whole-app process-group containment/accounting is unavailable.
+    /// Accounted owned/job and used external-provider processes; `-1` means
+    /// complete membership/accounting is unavailable.
     pub cpu_group_processes: i32,
     /// True when one or more NFRs are over budget.
     pub over_budget: bool,
-    /// Session peaks (max seen since launch) — lets the deck footer prove the
-    /// SRS §5.1 budgets held over a whole match without an external harness.
-    /// `cpu_pct` is the whole-app Job Object reading, normalized by logical CPU
-    /// capacity and hard-capped by Windows at 10% when group setup succeeds.
+    /// Maxima of observed 1-second samples, not continuous peak/acceptance proof.
+    /// CPU is normalized aggregate usage; the Job cap covers owned members only.
+    /// Shared external provider processes are measured conservatively, never capped
+    /// by this application's Job Object.
     #[serde(default)]
     pub peak_cpu_pct: f64,
     #[serde(default)]
@@ -219,6 +240,7 @@ fn poll_loop(app: AppHandle) {
     let mut peak_ram = 0.0f64;
     let mut throttled = false;
     let mut release_samples = 0u8;
+    let mut preview = crate::minimap_admission::Admission::default();
     loop {
         let mut stats = measure();
         if stats.cpu_pct >= 0.0 {
@@ -247,6 +269,13 @@ fn poll_loop(app: AppHandle) {
                 release_samples = 0;
             }
         }
+        let preview_allowed = preview.update(stats.ram_mb, stats.cpu_pct, throttled);
+        if PREVIEW_ALLOWED.swap(preview_allowed, Ordering::Relaxed) != preview_allowed {
+            eprintln!(
+                "[G-Gov] preview admitted={} RAM {:.0} MB CPU {:.1}%",
+                preview_allowed, stats.ram_mb, stats.cpu_pct
+            );
+        }
         CPU_THROTTLE.store(throttled, Ordering::Relaxed);
         if stats.over_budget {
             if stats.cpu_pct < 0.0 {
@@ -267,16 +296,10 @@ fn poll_loop(app: AppHandle) {
 
 fn measure() -> ResourceStats {
     #[cfg(windows)]
-    let ram_mb = measure_ram_mb_native()
-        .or_else(measure_ram_mb)
-        .unwrap_or(0.0);
+    let (ram_mb, cpu_pct, cpu_group_processes) =
+        measure_process_group().unwrap_or((NO_READING, NO_READING, -1));
     #[cfg(not(windows))]
-    let ram_mb = measure_ram_mb().unwrap_or(0.0);
-
-    #[cfg(windows)]
-    let (cpu_pct, cpu_group_processes) = measure_cpu_group_pct().unwrap_or((NO_READING, -1));
-    #[cfg(not(windows))]
-    let (cpu_pct, cpu_group_processes) = (NO_READING, -1);
+    let (ram_mb, cpu_pct, cpu_group_processes) = (NO_READING, NO_READING, -1);
     let over_budget = is_over_budget(ram_mb, cpu_pct);
     let g = resolve_gpu();
     ResourceStats {
@@ -297,7 +320,7 @@ fn measure() -> ResourceStats {
 }
 
 fn is_over_budget(ram_mb: f64, cpu_pct: f64) -> bool {
-    ram_mb > RAM_BUDGET_MB || !(0.0..=CPU_BUDGET_PCT).contains(&cpu_pct)
+    !(0.0..=RAM_BUDGET_MB).contains(&ram_mb) || !(0.0..=CPU_BUDGET_PCT).contains(&cpu_pct)
 }
 
 /// Resolve (gpu_load, gpu_temp, vram_used, vram_total, cpu_temp) from the active
@@ -487,27 +510,216 @@ pub fn spawn_gpu_feeder() -> GpuFeederProcess {
     GpuFeederProcess::new(child)
 }
 
-#[cfg(windows)]
-fn measure_ram_mb_native() -> Option<f64> {
-    let handle = unsafe { GetCurrentProcess() };
-    let mut counters = PROCESS_MEMORY_COUNTERS::default();
-    let ok = unsafe {
-        GetProcessMemoryInfo(
-            handle,
-            &mut counters,
-            std::mem::size_of::<PROCESS_MEMORY_COUNTERS>() as u32,
-        )
-    }
-    .is_ok();
-    if !ok {
-        return None;
-    }
-    Some(counters.WorkingSetSize as f64 / 1_048_576.0)
+// Shared providers are never reparented, killed, or covered by the host Job cap.
+static EXTERNAL_OLLAMA_USED: AtomicBool = AtomicBool::new(false);
+
+// Called only on the real provider launch path, never by readiness/tag probes.
+pub fn record_external_ollama_use() {
+    EXTERNAL_OLLAMA_USED.store(true, Ordering::Release);
+}
+
+pub fn admit_local_provider() -> Result<(), String> {
+    Err(format!("Ollama unavailable under the {RAM_BUDGET_MB:.0} MB ({}-byte) whole-app budget: shared external model loading has no provable resource reservation or app Job CPU cap. Select a budget-qualified local implementation before generating advice.", resource_accounting::RAM_BUDGET_BYTES))
 }
 
 #[cfg(windows)]
-fn measure_cpu_group_pct() -> Option<(f64, i32)> {
+fn job_pids(job: &ProcessJob) -> Option<Vec<u32>> {
+    use windows::Win32::System::JobObjects::JobObjectBasicProcessIdList;
+    // Fixed bounded capacity; a truncated/changing membership is unavailable.
+    let mut storage = vec![0_usize; 4098];
+    unsafe {
+        QueryInformationJobObject(
+            Some(HANDLE(job.handle.as_raw_handle())),
+            JobObjectBasicProcessIdList,
+            storage.as_mut_ptr().cast(),
+            (storage.len() * std::mem::size_of::<usize>()) as u32,
+            None,
+        )
+        .ok()?;
+    }
+    let counts = storage.as_ptr().cast::<u32>();
+    let (assigned, returned) = unsafe { (*counts, *counts.add(1)) };
+    if assigned == 0 || assigned != returned || returned > 4096 {
+        return None;
+    }
+    let list = unsafe {
+        std::slice::from_raw_parts(
+            storage.as_ptr().cast::<u8>().add(8).cast::<usize>(),
+            returned as usize,
+        )
+    };
+    list.iter().map(|pid| u32::try_from(*pid).ok()).collect()
+}
+
+#[cfg(windows)]
+fn process_membership(job: &ProcessJob) -> Option<Vec<resource_accounting::Identity>> {
+    use windows::Win32::System::Diagnostics::ToolHelp::{
+        CreateToolhelp32Snapshot, Process32FirstW, Process32NextW, PROCESSENTRY32W,
+        TH32CS_SNAPPROCESS,
+    };
+    let pids = job_pids(job)?;
+    let snapshot = unsafe { CreateToolhelp32Snapshot(TH32CS_SNAPPROCESS, 0) }.ok()?;
+    let snapshot = unsafe { OwnedHandle::from_raw_handle(snapshot.0) };
+    let mut entry = PROCESSENTRY32W {
+        dwSize: std::mem::size_of::<PROCESSENTRY32W>() as u32,
+        ..Default::default()
+    };
+    unsafe { Process32FirstW(HANDLE(snapshot.as_raw_handle()), &mut entry) }.ok()?;
+    let mut processes = Vec::new();
+    loop {
+        let len = entry
+            .szExeFile
+            .iter()
+            .position(|c| *c == 0)
+            .unwrap_or(entry.szExeFile.len());
+        processes.push((
+            entry.th32ProcessID,
+            entry.th32ParentProcessID,
+            String::from_utf16_lossy(&entry.szExeFile[..len]).to_ascii_lowercase(),
+        ));
+        if let Err(error) = unsafe { Process32NextW(HANDLE(snapshot.as_raw_handle()), &mut entry) }
+        {
+            if error.code() != windows::core::HRESULT::from_win32(18) {
+                return None;
+            }
+            break;
+        }
+    }
+    // Verify app descendants did inherit the OS cap; never quietly exempt a breakaway.
+    let edges: Vec<_> = processes
+        .iter()
+        .map(|(pid, parent, _)| (*pid, *parent))
+        .collect();
+    let owned = resource_accounting::descendants(&[std::process::id()], &edges, process_created)?;
+    if !resource_accounting::all_in_job(&owned, &pids) {
+        return None;
+    }
+    let mut required = std::collections::BTreeMap::new();
+    for pid in pids {
+        let identity = resource_accounting::Identity {
+            pid,
+            created: process_created(pid)?,
+        };
+        if identity.created == 0 || required.insert(pid, identity).is_some() {
+            return None;
+        }
+    }
+    for identity in owned {
+        if required.get(&identity.pid) != Some(&identity) {
+            return None;
+        }
+    }
+    if EXTERNAL_OLLAMA_USED.load(Ordering::Acquire) {
+        let providers: Vec<u32> = processes
+            .iter()
+            .filter(|(_, _, name)| name.starts_with("ollama") && name.ends_with(".exe"))
+            .map(|(pid, _, _)| *pid)
+            .collect();
+        if providers.is_empty() {
+            return None;
+        }
+        for identity in resource_accounting::descendants(&providers, &edges, process_created)? {
+            if required
+                .insert(identity.pid, identity)
+                .is_some_and(|previous| previous != identity)
+            {
+                return None;
+            }
+        }
+    }
+    Some(required.into_values().collect())
+}
+
+#[cfg(windows)]
+fn process_created(pid: u32) -> Option<u64> {
+    use windows::Win32::Foundation::FILETIME;
+    use windows::Win32::System::Threading::{
+        GetProcessTimes, OpenProcess, PROCESS_QUERY_LIMITED_INFORMATION,
+    };
+    let raw = unsafe { OpenProcess(PROCESS_QUERY_LIMITED_INFORMATION, false, pid) }.ok()?;
+    let handle = unsafe { OwnedHandle::from_raw_handle(raw.0) };
+    let (mut created, mut exited, mut kernel, mut user) = (
+        FILETIME::default(),
+        FILETIME::default(),
+        FILETIME::default(),
+        FILETIME::default(),
+    );
+    unsafe {
+        GetProcessTimes(
+            HANDLE(handle.as_raw_handle()),
+            &mut created,
+            &mut exited,
+            &mut kernel,
+            &mut user,
+        )
+    }
+    .ok()?;
+    let ticks = (u64::from(created.dwHighDateTime) << 32) | u64::from(created.dwLowDateTime);
+    (ticks != 0).then_some(ticks)
+}
+
+#[cfg(windows)]
+fn process_reading(pid: u32) -> Option<resource_accounting::Reading> {
+    use windows::Win32::Foundation::FILETIME;
+    use windows::Win32::System::Threading::{
+        GetProcessTimes, OpenProcess, PROCESS_QUERY_INFORMATION, PROCESS_VM_READ,
+    };
+    let raw =
+        unsafe { OpenProcess(PROCESS_QUERY_INFORMATION | PROCESS_VM_READ, false, pid) }.ok()?;
+    let handle = unsafe { OwnedHandle::from_raw_handle(raw.0) };
+    let raw = HANDLE(handle.as_raw_handle());
+    let (mut created, mut exited, mut kernel, mut user) = (
+        FILETIME::default(),
+        FILETIME::default(),
+        FILETIME::default(),
+        FILETIME::default(),
+    );
+    unsafe { GetProcessTimes(raw, &mut created, &mut exited, &mut kernel, &mut user) }.ok()?;
+    let mut memory = PROCESS_MEMORY_COUNTERS::default();
+    unsafe {
+        GetProcessMemoryInfo(
+            raw,
+            &mut memory,
+            std::mem::size_of::<PROCESS_MEMORY_COUNTERS>() as u32,
+        )
+    }
+    .ok()?;
+    let ticks =
+        |time: FILETIME| (u64::from(time.dwHighDateTime) << 32) | u64::from(time.dwLowDateTime);
+    Some(resource_accounting::Reading {
+        identity: resource_accounting::Identity {
+            pid,
+            created: ticks(created),
+        },
+        working_set: memory.WorkingSetSize as u64,
+        cpu_100ns: ticks(kernel).checked_add(ticks(user))?,
+    })
+}
+
+#[cfg(windows)]
+fn measure_process_group() -> Option<(f64, f64, i32)> {
     let job = PROCESS_JOB.get()?.as_ref().ok()?;
+    let mut owned = job_pids(job)?;
+    owned.sort_unstable();
+    let required = process_membership(job)?;
+    let readings: Vec<_> = required
+        .iter()
+        .map(|identity| process_reading(identity.pid))
+        .collect::<Option<_>>()?;
+    let mut owned_after = job_pids(job)?;
+    owned_after.sort_unstable();
+    if owned != owned_after
+        || process_membership(job)? != required
+        || !resource_accounting::same_identities(&required, &readings)
+    {
+        return None;
+    }
+    let pids: Vec<_> = required.iter().map(|identity| identity.pid).collect();
+    let (bytes, mut cpu) = resource_accounting::aggregate(&pids, &readings)?;
+    cpu.retain(|identity, _| !owned.contains(&identity.pid));
+    use windows::Win32::System::JobObjects::{
+        JobObjectBasicAccountingInformation, JOBOBJECT_BASIC_ACCOUNTING_INFORMATION,
+    };
     let mut accounting = JOBOBJECT_BASIC_ACCOUNTING_INFORMATION::default();
     unsafe {
         QueryInformationJobObject(
@@ -519,46 +731,33 @@ fn measure_cpu_group_pct() -> Option<(f64, i32)> {
         )
     }
     .ok()?;
-    if accounting.ActiveProcesses == 0 {
-        return None;
-    }
-    let total_100ns = (accounting.TotalUserTime.max(0) as u64)
-        .saturating_add(accounting.TotalKernelTime.max(0) as u64);
-    let now = Instant::now();
-    let mut slot = job.sample.lock().ok()?;
-    let prev = slot.replace(CpuSample {
-        total_100ns,
-        wall: now,
+    let job_cpu_100ns = u64::try_from(accounting.TotalUserTime)
+        .ok()?
+        .checked_add(u64::try_from(accounting.TotalKernelTime).ok()?)?;
+    let wall = Instant::now();
+    let mut sample = job.sample.lock().ok()?;
+    let previous = sample.replace(CpuSample {
+        cpu: cpu.clone(),
+        job_cpu_100ns,
+        wall,
     });
-    let prev = prev?;
-    let cpu_delta_s = (total_100ns.saturating_sub(prev.total_100ns) as f64) / 10_000_000.0;
-    let wall_s = now.duration_since(prev.wall).as_secs_f64();
-    if wall_s <= 0.0 {
-        return None;
-    }
-    let cores = std::thread::available_parallelism().ok()?.get() as f64;
-    Some((
-        ((cpu_delta_s / (wall_s * cores)) * 100.0).max(0.0),
-        accounting.ActiveProcesses as i32,
-    ))
-}
-
-fn measure_ram_mb() -> Option<f64> {
-    // PowerShell: get working-set bytes of *this* process, convert to MB.
-    let pid = std::process::id();
-    let script = format!("(Get-Process -Id {pid}).WorkingSet64 / 1MB");
-    let mut cmd = std::process::Command::new("powershell");
-    cmd.args(["-NoProfile", "-NonInteractive", "-Command", &script]);
-    #[cfg(windows)]
-    {
-        use std::os::windows::process::CommandExt;
-        cmd.creation_flags(0x0800_0000); // CREATE_NO_WINDOW — stop the PS console flashing every poll
-    }
-    let out = cmd.output().ok()?;
-    String::from_utf8_lossy(&out.stdout)
-        .trim()
-        .parse::<f64>()
-        .ok()
+    let pct = previous
+        .and_then(|previous| {
+            resource_accounting::normalized_with_job(
+                previous.job_cpu_100ns,
+                job_cpu_100ns,
+                &previous.cpu,
+                &cpu,
+                wall.duration_since(previous.wall)
+                    .as_nanos()
+                    .checked_div(100)?
+                    .try_into()
+                    .ok()?,
+                std::thread::available_parallelism().ok()?.get(),
+            )
+        })
+        .unwrap_or(NO_READING);
+    Some((bytes as f64 / 1_000_000., pct, required.len() as i32))
 }
 
 #[cfg(test)]
@@ -568,6 +767,35 @@ mod tests {
     use std::time::Instant;
 
     const GPU_FEEDER_TEST_CHILD_ENV: &str = "G_MAIDEN_GPU_FEEDER_TEST_CHILD";
+
+    #[test]
+    fn operating_headroom_preserves_ten_percent_admission_contract() {
+        assert!(!is_over_budget(100.0, 8.1));
+        assert!(!is_over_budget(100.0, 10.0));
+        assert!(is_over_budget(100.0, 10.0001));
+        assert!(is_over_budget(900.000001, 0.0));
+    }
+
+    #[test]
+    fn approved_ram_boundary_allows_six_and_eight_hundred_decimal_mb() {
+        assert!(!is_over_budget(600.0, 0.0));
+        assert!(!is_over_budget(900.0, 10.0));
+        assert!(is_over_budget(900.000001, 0.0));
+    }
+
+    #[test]
+    fn invalid_ram_or_cpu_measurements_fail_closed() {
+        for invalid in [
+            NO_READING,
+            -f64::EPSILON,
+            f64::NAN,
+            f64::INFINITY,
+            f64::NEG_INFINITY,
+        ] {
+            assert!(is_over_budget(invalid, 0.0));
+            assert!(is_over_budget(0.0, invalid));
+        }
+    }
 
     #[test]
     fn gpu_feeder_child_process_fixture() {
@@ -693,7 +921,11 @@ mod tests {
         let s = measure();
         // RAM: a running Rust test binary should be at least a few MB.
         // CPU: 0-100% per core.
-        assert!(s.ram_mb >= 0.0, "ram_mb must be non-negative: {}", s.ram_mb);
+        assert!(
+            s.ram_mb == NO_READING || s.ram_mb >= 0.0,
+            "ram_mb must be non-negative: {}",
+            s.ram_mb
+        );
         assert!(
             s.cpu_pct == NO_READING || (s.cpu_pct >= 0.0 && s.cpu_pct <= 200.0),
             "cpu_pct out of range: {}",
@@ -705,7 +937,7 @@ mod tests {
     #[test]
     fn over_budget_flag_set_when_ram_high() {
         let s = ResourceStats {
-            ram_mb: 450.0,
+            ram_mb: 901.0,
             cpu_pct: 1.0,
             cpu_group_processes: 1,
             over_budget: false,
@@ -718,6 +950,15 @@ mod tests {
             cpu_temp_c: NO_READING,
         };
         assert!(is_over_budget(s.ram_mb, s.cpu_pct));
+    }
+
+    #[test]
+    fn unavailable_ram_and_unqualified_external_admission_fail_closed() {
+        assert!(is_over_budget(NO_READING, 0.0));
+        let denial = admit_local_provider().unwrap_err();
+        assert!(denial.contains("900 MB"));
+        assert!(denial.contains("900000000-byte"));
+        assert!(denial.contains("no provable resource reservation or app Job CPU cap"));
     }
 
     #[test]

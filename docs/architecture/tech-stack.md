@@ -2,8 +2,8 @@
 title: "G-Maiden Tech Stack"
 doc_id: "tech-stack"
 status: "active"
-version: "0.2.1"
-updated: "2026-10-13"
+version: "0.2.3"
+updated: "2026-10-28"
 owner: "Boss"
 related_docs: ["product-requirements", "software-requirements-specification", "mvp-decisions"]
 ---
@@ -12,7 +12,7 @@ related_docs: ["product-requirements", "software-requirements-specification", "m
 
 > เอกสารนี้กำหนด **เทคโนโลยีที่เลือกใช้** และเหตุผลที่ผูกตรงกับ Non-Functional Requirements (SRS §5).
 > หลักการตัดสินใจ: ทุกตัวเลือกต้องพิสูจน์ได้ว่าช่วยให้อยู่ใน budget — latency ≤300ms, whole-app CPU ≤10% per [[mvp-decisions]],
-> RAM ≤400MB, FPS drop ≤3%, privacy-first, resilient-offline.
+> RAM ≤900MB, FPS drop ≤3%, privacy-first, resilient-offline.
 
 ---
 
@@ -41,7 +41,7 @@ related_docs: ["product-requirements", "software-requirements-specification", "m
 
 ## 2. ทำไม Tauri ไม่ใช่ Electron
 
-ข้อจำกัด RAM ≤400MB และ whole-app CPU ≤10% ทำให้ต้องเลือก stack ที่ควบคุม footprint ได้ — Electron ลำพังกิน RAM 150–250MB
+ข้อจำกัด RAM ≤900MB และ whole-app CPU ≤10% ทำให้ต้องเลือก stack ที่ควบคุม footprint ได้ — Electron ลำพังกิน RAM 150–250MB
 ก่อนโหลดแอปด้วยซ้ำ และฝัง Chromium เต็มตัว (CPU สูง). Tauri v2:
 
 - ใช้ **WebView2** ที่ติดมากับ Windows 10/11 อยู่แล้ว → ไม่ฝัง browser engine
@@ -85,7 +85,7 @@ cloud และ webview **ห้าม** อยู่บนเส้นทาง
 | --- | --- |
 | G-Signal ≤300ms (target 250) | เส้นทางวิกฤตเป็น Rust ล้วน; เสียงเตือนใช้ **audio cache ที่ render ไว้ล่วงหน้า** (ไม่เรียก LLM/TTS สด); ดู budget ละเอียดใน `engineering-spec.md` |
 | Whole-app CPU ≤10% per MVP decision | Rust + tokio (async, ไม่ busy-loop); Windows Job Object hard cap + kill-on-close; startup exits before Tauri/WebView if setup fails; a runtime query failure after setup leaves telemetry unavailable and capture throttled while the cap remains active |
-| RAM ≤400MB | Tauri (WebView2 ใช้ร่วมกับระบบ); SLM โหลดแบบ lazy เฉพาะตอน fallback (ดู §5 หมายเหตุ) |
+| RAM ≤900MB | Tauri (WebView2 ใช้ร่วมกับระบบ); SLM โหลดแบบ lazy เฉพาะตอน fallback (ดู §5 หมายเหตุ) |
 | FPS drop ≤3% | DXGI Desktop Duplication (GPU-assisted capture, ไม่ block render); overlay เป็น window แยก composited โดย DWM |
 | Privacy-first | G-Log เก็บใน JSONL local (match-*.jsonl); ข้อมูลดิบ/สถิติผู้เล่น **ไม่อัปโหลด**; cloud รับเฉพาะ context ที่ผ่าน redaction |
 | Resilient offline | G-Sentry/G-Signal ทำงานบน Rust core 100%; persona text fallback ไป local SLM/templated lines |
@@ -96,15 +96,11 @@ cloud และ webview **ห้าม** อยู่บนเส้นทาง
 
 > **สถานะ (2026-07): Local SLM รันผ่าน Ollama (ไม่ pin โมเดลในโค้ด — เลือกใน UI). ตัวเลข Qwen2.5 ด้านล่างเป็นแนวคิด sizing เดิม ไม่ใช่โมเดลที่ hard-code.**
 
-โมเดล SLM 1.5B แบบ Q4 กินหน่วยความจำ ~1–1.3GB ตอนโหลด — **เกิน** budget 400MB ถ้าโหลดค้างไว้ตลอด.
-ดังนั้นนิยาม budget ให้ชัด:
+งบปัจจุบันตาม [[mvp-decisions]] v0.5.0 คือ **900,000,000 bytes peak aggregate full Working Set** รวม Rust host, WebView2, feeder, STT/SLM และ external model PIDs ที่ใช้จริง. ไม่มีการยกเว้นน้ำหนักโมเดลหรือ shared resident pages.
 
-- **400MB = always-on background footprint** ของ Rust core + overlay (ไม่รวมน้ำหนักโมเดล)
-- SLM **ไม่โหลดในสถานะปกติ** (ขณะ cloud ออนไลน์) — โหลด lazy เฉพาะเมื่อ cloud หลุด
-- **critical path ไม่ต้องใช้ LLM เลย** — gank warning เป็น logic เชิงกฎ + เสียง cache → deterministic, เร็ว
+Auto advice ใช้ local Ollama ตาม source ปัจจุบัน แต่ shared provider ที่พิสูจน์ reservation/process containment ไม่ได้ยังถูกปฏิเสธ. การเพิ่มงบไม่เปิด provider/cloud โดยอัตโนมัติ และไม่มี automatic cloud fallback เมื่อ Ollama ล้มเหลว. Critical G-Sentry/G-Signal ใช้ logic และ cached audio ใน Rust โดยไม่พึ่ง LLM.
 
-ทางเลือกถ้าต้องการ SLM ค้างตลอดจริง ๆ ให้ลดเป็นโมเดล ~0.5B (Qwen2.5-0.5B) หรือใช้ template engine
-แทน LLM สำหรับ fallback. **ประเด็นนี้ถูกยกเป็น Risk R-01 ใน TDD.**
+ตัวอย่างขนาดโมเดลด้านบนเป็น sizing concept เก่า ไม่ใช่หลักฐานว่ามีโมเดลใดผ่าน900MB. ต้องวัดทุก PID ที่ใช้งานตามสัญญาก่อนอ้าง admission/acceptance.
 
 ---
 
@@ -119,4 +115,5 @@ cloud และ webview **ห้าม** อยู่บนเส้นทาง
 | --- | --- | --- |
 | 0.2.0 | 2026-10-12 | Synced the active stack rationale with the whole-app 10% CPU decision and Job Object enforcement design. |
 | 0.2.1 | 2026-10-13 | Clarified that Job Object initialization failure aborts startup while runtime query failure remains a throttled unavailable reading. |
-
+| 0.2.2 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
+| 0.2.3 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |

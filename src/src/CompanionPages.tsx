@@ -1,5 +1,11 @@
 import { memo, useEffect, useRef, useState, type ReactNode } from "react";
 import { formatKda, formatTimer, toneClass, useCompanionData } from "./companion";
+import { MinimapCanvas } from "./MinimapCanvas";
+import { useMinimapPreview } from "./live/useMinimapPreview";
+import { previewMatchesCv } from "./live/minimapPreview";
+import { prettyHeroName } from "./live/events";
+import { useStartupSettings } from "./app/settingsContext";
+import { PartyStrip } from "./party/PartyStrip";
 
 // CR-013 W5-01: content that grows (match history) paginates within a
 // fixed-height frame instead of scrolling the whole tab body (R2) — same pure
@@ -118,6 +124,212 @@ export const LiveMatchPage = memo(function LiveMatchPage() {
           </div>
         </section>
       </div>
+    </div>
+  );
+});
+
+const teamLabels = { radiant: "Radiant", dire: "Dire" } as const;
+
+function shortHeroName(name: string | null | undefined): string {
+  return name?.replace(/^npc_dota_hero_/, "") ?? "";
+}
+
+function rosterHeroName(name: string | null | undefined): string {
+  return name ? prettyHeroName(name) || name.split("_").join(" ") : "ยังไม่รู้";
+}
+
+export const CvHeroesPage = memo(function CvHeroesPage() {
+  const { data } = useCompanionData();
+  const { settings } = useStartupSettings();
+  const preview = useMinimapPreview();
+  const frame = preview.geometry;
+  const cv = data.heroCv;
+  const roster = cv.roster;
+  const knownCount = [...(roster?.radiant ?? []), ...(roster?.dire ?? [])]
+    .filter((name) => typeof name === "string").length;
+  const seenNames = new Set(cv.phase === "live" && cv.warningReady ? cv.visible.map(shortHeroName) : []);
+  const detections = cv.phase === "live" && cv.health?.healthy
+    ? (cv.minimap?.detections ?? []).filter((detection) => seenNames.has(shortHeroName(detection.name)))
+    : [];
+  const mapReady = cv.phase === "live" && preview.status === "live" && previewMatchesCv(frame, cv.minimap) && cv.health?.healthy === true;
+  const missingNames = new Set(cv.phase === "live" ? cv.missing.map(shortHeroName) : []);
+  const lastSeenMarkers = mapReady && frame && cv.minimap
+    ? cv.missingPos.flatMap(([name, [x, y]]) => {
+        const crop = frame.map_crop;
+        const halfIcon = cv.minimap!.icon / (2 * cv.minimap!.region.side);
+        const nx = x + halfIcon;
+        const ny = y + halfIcon;
+        if (nx < crop.left || nx > crop.right || ny < crop.top || ny > crop.bottom) return [];
+        return [{
+          name,
+          left: ((nx - crop.left) / (crop.right - crop.left)) * 100,
+          top: ((ny - crop.top) / (crop.bottom - crop.top)) * 100
+        }];
+      })
+    : [];
+  const signalReady = settings.signalEnabled && cv.phase === "live" && cv.health?.healthy === true && cv.warningReady;
+  const gankText = !settings.signalEnabled
+    ? "ปิดอยู่ในการตั้งค่า"
+    : cv.phase !== "live"
+      ? "ยังประเมินไม่ได้ · อยู่นอกช่วงเกม"
+      : cv.gank
+    ? `เสี่ยง ${Math.round(cv.gank.probability * 100)}% · ETA ${Math.round(cv.gank.eta_ms / 1000)} วินาที`
+    : signalReady
+      ? "ยังไม่มีสัญญาณเตือนจาก G-Signal"
+      : "ยังประเมินไม่ได้ · minimap CV ไม่พร้อม";
+
+  const playerSlots = (team: "radiant" | "dire") => {
+    const names = team === "radiant" ? roster?.radiant : roster?.dire;
+    const hudSlots = team === "radiant" ? cv.hud?.radiant : cv.hud?.dire;
+    return Array.from({ length: 5 }, (_, index) => {
+      const name = names?.[index] ?? null;
+      const isLocal = !!name && !!cv.local && shortHeroName(name) === shortHeroName(cv.local.hero);
+      const isSeen = !!name && seenNames.has(shortHeroName(name));
+      const isMissing = !!name && missingNames.has(shortHeroName(name));
+      const hudCue = cv.phase === "live" ? hudSlots?.[index]?.cue : undefined;
+      const status = isLocal
+        ? cv.local?.alive
+          ? "มีชีวิต · GSI"
+          : `ตาย · GSI · ${Math.ceil(cv.local?.respawnSeconds ?? 0)} วิ`
+        : hudCue === "death_hint"
+          ? "อาจตาย · ภาพ HUD ซีด"
+          : hudCue === "colored"
+            ? "ไม่พบสัญญาณตาย"
+            : "ยังไม่ทราบสถานะ";
+      const statusClass = isLocal
+        ? cv.local?.alive ? "ready" : "death"
+        : hudCue === "death_hint" ? "death-hint" : hudCue === "colored" ? "colored" : "unknown";
+      return (
+        <div className="cv-slot-row" key={`${team}-${index}`}>
+          <span className="cv-slot-index">{team === "radiant" ? "R" : "D"}{index + 1}</span>
+          <span className="cv-slot-hero">
+            <strong>{rosterHeroName(name)}</strong>
+            {isSeen ? <i className="cv-legend-dot green" title="ตรวจพบฮีโร่นี้บน minimap" /> : null}
+            {!isSeen && isMissing ? <i className="cv-legend-dot last-seen" title="หายจากสายตา · จุดเทาคือตำแหน่งล่าสุด" /> : null}
+          </span>
+          <span className={`cv-hero-cue ${statusClass}`}>{status}</span>
+        </div>
+      );
+    });
+  };
+
+  return (
+    <div className="domain-page cv-heroes-page g-party-live-container">
+      <section className="card-shell page-hero">
+        <div>
+          <div className="eyebrow">CV HERO BOARD</div>
+          <h2>ฮีโร่ทั้งเกม · Draft ถึง In-game</h2>
+          <p>ชื่อฮีโร่มาจากภาพ Draft, จุดเขียวมาจาก minimap CV และสถานะตายใช้ GSI ของเราเมื่อมีข้อมูล</p>
+        </div>
+        <div className="page-pill-row">
+          <span className="metric-chip">อ่านชื่อได้ {knownCount}/10</span>
+          {cv.local ? (
+            <span className={`metric-chip${cv.local.alive ? " live" : ""}`}>
+              คุณ · {cv.local.alive ? "มีชีวิต · GSI" : `ตาย · GSI · ${Math.ceil(cv.local.respawnSeconds)} วิ`}
+            </span>
+          ) : null}
+          <span className={`metric-chip${cv.health?.healthy ? " live" : ""}`}>
+            {cv.health?.healthy ? "MINIMAP CV LIVE" : "MINIMAP CV UNVERIFIED"}
+          </span>
+          <span className={`metric-chip${signalReady ? " live" : ""}`}>
+            {signalReady ? "G-SIGNAL READY" : settings.signalEnabled ? "G-SIGNAL WAITING" : "G-SIGNAL OFF"}
+          </span>
+        </div>
+      </section>
+
+      {roster?.recognizer_active === false && roster.templates_loading ? (
+        <div className="cv-notice">กำลังเตรียมภาพอ้างอิงฮีโร่ไว้ในเครื่อง · ยังไม่ประเมิน roster จนกว่าจะโหลดเสร็จ</div>
+      ) : roster?.recognizer_active === false ? (
+        <div className="cv-notice warn">ระบบอ่านภาพ Draft ยังไม่มีชุด portrait template จึงยังระบุชื่อจากภาพไม่ได้</div>
+      ) : !roster ? (
+        <div className="cv-notice">รอเข้า Hero Selection หรือรอ CV อ่าน roster จากเกม</div>
+      ) : (
+        <div className="cv-notice">
+          {roster.complete ? "อ่าน roster ครบ 10/10" : `อ่านได้ ${knownCount}/10 ช่อง · ช่องที่เหลือจะแสดงเป็น “ยังไม่รู้”`}
+        </div>
+      )}
+
+      <div className="domain-grid two-up cv-board-grid">
+        <section className="card-shell domain-card cv-roster-card">
+          <div className="panel-head compact">
+            <div>
+              <div className="eyebrow">PLAYER SLOTS</div>
+              <h3>รายชื่อและสัญญาณตายจาก HUD</h3>
+            </div>
+          </div>
+          <div className="cv-roster-grid">
+            {(["radiant", "dire"] as const).map((team) => (
+              <div className="cv-team-list" key={team}>
+                <div className={`cv-team-heading ${team}`}>{teamLabels[team]}</div>
+                {playerSlots(team)}
+              </div>
+            ))}
+          </div>
+          <div className="cv-legend">
+            <span><i className="cv-legend-dot green" /> CV เห็นอยู่บน minimap</span>
+            <span><i className="cv-legend-dot last-seen" /> ตำแหน่งล่าสุดเมื่อหายจากสายตา</span>
+            <span>“อาจตาย” คือสี HUD ซีด ยังไม่ใช่ผลยืนยัน</span>
+          </div>
+        </section>
+
+        <section className="card-shell domain-card cv-map-card">
+          <div className="panel-head compact">
+            <div>
+              <div className="eyebrow">MINIMAP CV</div>
+              <h3>ตำแหน่งที่ตรวจพบ</h3>
+            </div>
+            <span className="metric-chip">{mapReady ? `${detections.length} จุด` : "—"}</span>
+          </div>
+            <div className={preview.status === "live" ? "cv-map-frame" : "cv-map-empty"}
+              style={{ position: "relative", overflow: "hidden" }}>
+              <MinimapCanvas />
+              {mapReady && frame && cv.minimap && <>
+              {lastSeenMarkers.map((marker, index) => (
+                <span
+                  className="cv-map-marker last-seen"
+                  key={`${marker.name}-last-seen-${index}`}
+                  style={{ left: `${marker.left}%`, top: `${marker.top}%` }}
+                  title={`${rosterHeroName(marker.name)} · ตำแหน่งล่าสุด`}
+                >
+                  <span>{rosterHeroName(marker.name).slice(0, 2)}</span>
+                </span>
+              ))}
+              {detections.map((detection, index) => {
+                const crop = frame.map_crop;
+                const halfIcon = cv.minimap!.icon / 2;
+                const nx = (detection.x + halfIcon) / cv.minimap!.region.side;
+                const ny = (detection.y + halfIcon) / cv.minimap!.region.side;
+                if (nx < crop.left || nx > crop.right || ny < crop.top || ny > crop.bottom) return null;
+                const left = ((nx - crop.left) / (crop.right - crop.left)) * 100;
+                const top = ((ny - crop.top) / (crop.bottom - crop.top)) * 100;
+                return (
+                  <span
+                    className="cv-map-marker"
+                    key={`${detection.name}-${index}`}
+                    style={{ left: `${left}%`, top: `${top}%` }}
+                    title={rosterHeroName(detection.name)}
+                  >
+                    <span>{rosterHeroName(detection.name).slice(0, 2)}</span>
+                  </span>
+                );
+              })}
+              </>}
+            </div>
+          <div className="cv-gank-state">
+            <span>G-Signal</span>
+            <strong>{gankText}</strong>
+            <small>{signalReady ? `หายจากสายตา ${cv.missing.length} ฮีโร่` : "ไม่แสดงสถานะปลอดภัยเมื่อ G-Signal หรือ minimap CV ไม่พร้อม"}</small>
+          </div>
+          {detections.length > 0 ? (
+            <div className="cv-seen-list">
+              {detections.map((detection, index) => (
+                <span key={`${detection.name}-seen-${index}`}><i className="cv-legend-dot green" />{rosterHeroName(detection.name)}</span>
+              ))}
+            </div>
+          ) : null}
+        </section>
+      </div>
+      <PartyStrip />
     </div>
   );
 });

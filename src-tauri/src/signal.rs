@@ -13,6 +13,7 @@
 //! capture loop owns voicing and this stays unit-testable.
 
 use crate::motion::GankRisk;
+use std::collections::{HashMap, HashSet};
 
 /// SRS §3.3 baseline (Low). Users testing the v0.7.3 release reported it never
 /// fired in real matches — the spec threshold is conservative and rarely crossed
@@ -70,7 +71,10 @@ pub struct SignalAlert {
 /// (not const) so the capture loop can apply the player's chosen Sensitivity
 /// without rebuilding the state machine on every tick.
 pub struct Signal {
-    alerted: bool,
+    alerted: Vec<String>,
+    notified: HashSet<String>,
+    last_alert: Option<u64>,
+    last_hero_alert: HashMap<String, u64>,
     danger: f32,
     clear: f32,
 }
@@ -85,7 +89,10 @@ impl Signal {
     pub fn new() -> Self {
         let (d, c) = Sensitivity::default().thresholds();
         Signal {
-            alerted: false,
+            alerted: Vec::new(),
+            notified: HashSet::new(),
+            last_alert: None,
+            last_hero_alert: HashMap::new(),
             danger: d,
             clear: c,
         }
@@ -99,18 +106,91 @@ impl Signal {
         self.clear = c;
     }
 
-    pub fn evaluate(&mut self, risk: &GankRisk) -> SignalEvent {
-        if !self.alerted && risk.probability >= self.danger {
-            self.alerted = true;
+    /// Losing evidence cancels UI state silently; it is not proof of safety.
+    /// Cooldowns survive capture gaps and enable/disable changes.
+    pub fn suspend(&mut self) {
+        self.alerted.clear();
+    }
+
+    pub fn observe_visible(&mut self, visible: &[String]) {
+        self.notified.retain(|name| !visible.contains(name));
+    }
+
+    pub fn suppression_reason(&self, risk: &GankRisk, now: u64) -> &'static str {
+        if !risk.probability.is_finite() || risk.probability < self.danger {
+            return "below_threshold";
+        }
+        if self
+            .last_alert
+            .is_some_and(|last| now.saturating_sub(last) < 30_000)
+        {
+            return "global_cooldown";
+        }
+        if risk
+            .missing_heroes
+            .iter()
+            .any(|name| self.notified.contains(name))
+        {
+            return "same_absence";
+        }
+        if risk
+            .missing_heroes
+            .iter()
+            .filter(|name| !self.notified.contains(*name))
+            .any(|name| {
+                self.last_hero_alert
+                    .get(name)
+                    .is_some_and(|last| now.saturating_sub(*last) < 60_000)
+            })
+        {
+            return "hero_cooldown";
+        }
+        "evidence_ready"
+    }
+
+    pub fn evaluate(
+        &mut self,
+        risk: &GankRisk,
+        missing: &[String],
+        now: u64,
+        eligible: bool,
+    ) -> SignalEvent {
+        if !eligible {
+            self.suspend();
+            return SignalEvent::None;
+        }
+        if !self.alerted.is_empty() && self.alerted.iter().all(|name| !missing.contains(name)) {
+            self.alerted.clear();
+            if risk.probability < self.clear {
+                return SignalEvent::Revision;
+            }
+        }
+        let new_threat = !risk.missing_heroes.is_empty()
+            && risk.missing_heroes.iter().all(|name| {
+                !self.notified.contains(name)
+                    && self
+                        .last_hero_alert
+                        .get(name)
+                        .is_none_or(|last| now.saturating_sub(*last) >= 60_000)
+            });
+        if risk.probability.is_finite()
+            && risk.probability >= self.danger
+            && new_threat
+            && self
+                .last_alert
+                .is_none_or(|last| now.saturating_sub(last) >= 30_000)
+        {
+            self.last_alert = Some(now);
+            self.alerted = risk.missing_heroes.clone();
+            for name in &risk.missing_heroes {
+                self.notified.insert(name.clone());
+                self.last_hero_alert.insert(name.clone(), now);
+            }
             return SignalEvent::Alert(SignalAlert {
                 probability: risk.probability,
                 missing_heroes: risk.missing_heroes.clone(),
                 eta_ms: risk.eta_ms,
             });
-        }
-        if self.alerted && risk.probability < self.clear {
-            self.alerted = false;
-            return SignalEvent::Revision;
         }
         SignalEvent::None
     }
@@ -119,6 +199,42 @@ impl Signal {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn risk_decay_without_visibility_does_not_claim_safe() {
+        let mut s = Signal::new();
+        assert!(matches!(
+            s.evaluate(&risk(0.9), &["CM".into()], 0, true),
+            SignalEvent::Alert(_)
+        ));
+        assert_eq!(
+            s.evaluate(&risk(0.1), &["CM".into()], 0, true),
+            SignalEvent::None
+        );
+    }
+
+    #[test]
+    fn global_cooldown_applies_to_a_different_new_hero() {
+        let mut s = Signal::new();
+        let first = risk(0.9);
+        assert!(matches!(
+            s.evaluate(&first, &first.missing_heroes, 0, true),
+            SignalEvent::Alert(_)
+        ));
+        let next = GankRisk {
+            missing_heroes: vec!["axe".into()],
+            ..risk(0.9)
+        };
+        assert_eq!(
+            s.evaluate(&next, &next.missing_heroes, 29_999, true),
+            SignalEvent::None
+        );
+        assert_eq!(s.suppression_reason(&next, 29_999), "global_cooldown");
+        assert!(matches!(
+            s.evaluate(&next, &next.missing_heroes, 30_000, true),
+            SignalEvent::Alert(_)
+        ));
+    }
 
     fn risk(p: f32) -> GankRisk {
         GankRisk {
@@ -131,28 +247,53 @@ mod tests {
     #[test]
     fn alert_fires_once_on_crossing() {
         let mut s = Signal::new();
-        assert_eq!(s.evaluate(&risk(0.4)), SignalEvent::None);
-        assert!(matches!(s.evaluate(&risk(0.9)), SignalEvent::Alert(_)));
+        assert_eq!(
+            s.evaluate(&risk(0.4), &["CM".into()], 0, true),
+            SignalEvent::None
+        );
+        assert!(matches!(
+            s.evaluate(&risk(0.9), &["CM".into()], 0, true),
+            SignalEvent::Alert(_)
+        ));
         // stays high — no repeat alert
-        assert_eq!(s.evaluate(&risk(0.88)), SignalEvent::None);
+        assert_eq!(
+            s.evaluate(&risk(0.88), &["CM".into()], 0, true),
+            SignalEvent::None
+        );
     }
 
     #[test]
     fn revision_fires_when_risk_clears_after_alert() {
         let mut s = Signal::new();
-        assert!(matches!(s.evaluate(&risk(0.9)), SignalEvent::Alert(_)));
+        assert!(matches!(
+            s.evaluate(&risk(0.9), &["CM".into()], 0, true),
+            SignalEvent::Alert(_)
+        ));
         // drops into the hysteresis band — not yet cleared
-        assert_eq!(s.evaluate(&risk(0.6)), SignalEvent::None);
+        assert_eq!(
+            s.evaluate(&risk(0.6), &["CM".into()], 0, true),
+            SignalEvent::None
+        );
         // drops below clear threshold — belief revision
-        assert_eq!(s.evaluate(&risk(0.3)), SignalEvent::Revision);
+        assert_eq!(
+            s.evaluate(&risk(0.3), &[], 10_000, true),
+            SignalEvent::Revision
+        );
+        s.observe_visible(&["CM".into()]);
         // can alert again on a fresh crossing
-        assert!(matches!(s.evaluate(&risk(0.95)), SignalEvent::Alert(_)));
+        assert!(matches!(
+            s.evaluate(&risk(0.95), &["CM".into()], 61_000, true),
+            SignalEvent::Alert(_)
+        ));
     }
 
     #[test]
     fn no_revision_without_prior_alert() {
         let mut s = Signal::new();
-        assert_eq!(s.evaluate(&risk(0.2)), SignalEvent::None);
+        assert_eq!(
+            s.evaluate(&risk(0.2), &["CM".into()], 0, true),
+            SignalEvent::None
+        );
     }
 
     #[test]
@@ -175,10 +316,16 @@ mod tests {
         let p = 0.55;
         let mut low = Signal::new();
         low.set_sensitivity(Sensitivity::Low);
-        assert_eq!(low.evaluate(&risk(p)), SignalEvent::None);
+        assert_eq!(
+            low.evaluate(&risk(p), &["CM".into()], 0, true),
+            SignalEvent::None
+        );
         let mut high = Signal::new();
         high.set_sensitivity(Sensitivity::High);
-        assert!(matches!(high.evaluate(&risk(p)), SignalEvent::Alert(_)));
+        assert!(matches!(
+            high.evaluate(&risk(p), &["CM".into()], 0, true),
+            SignalEvent::Alert(_)
+        ));
     }
 
     #[test]
@@ -186,10 +333,69 @@ mod tests {
         let mut s = Signal::new();
         s.set_sensitivity(Sensitivity::High);
         // Cross High's 0.50 → alerts.
-        assert!(matches!(s.evaluate(&risk(0.55)), SignalEvent::Alert(_)));
+        assert!(matches!(
+            s.evaluate(&risk(0.55), &["CM".into()], 0, true),
+            SignalEvent::Alert(_)
+        ));
         // User pulls sensitivity to Low — we don't re-fire, and the still-elevated
         // risk shouldn't trigger a spurious revision.
         s.set_sensitivity(Sensitivity::Low);
-        assert_eq!(s.evaluate(&risk(0.55)), SignalEvent::None);
+        assert_eq!(
+            s.evaluate(&risk(0.55), &["CM".into()], 0, true),
+            SignalEvent::None
+        );
+    }
+    #[test]
+    fn cooldown_expiry_does_not_repeat_the_same_absence() {
+        let mut s = Signal::new();
+        let names = vec!["CM".into()];
+        assert!(matches!(
+            s.evaluate(&risk(0.9), &names, 0, true),
+            SignalEvent::Alert(_)
+        ));
+        assert_eq!(
+            s.evaluate(&risk(0.1), &names, 20_000, true),
+            SignalEvent::None
+        );
+        assert_eq!(
+            s.evaluate(&risk(0.9), &names, 90_000, true),
+            SignalEvent::None
+        );
+        assert_eq!(
+            s.evaluate(&GankRisk::default(), &[], 91_000, true),
+            SignalEvent::Revision
+        );
+        s.observe_visible(&names);
+        assert!(matches!(
+            s.evaluate(&risk(0.9), &names, 100_000, true),
+            SignalEvent::Alert(_)
+        ));
+    }
+    #[test]
+    fn inactive_context_is_silent_and_preserves_cooldown() {
+        let mut s = Signal::new();
+        let names = vec!["CM".into()];
+        assert_eq!(s.evaluate(&risk(0.99), &names, 0, false), SignalEvent::None);
+        assert!(matches!(
+            s.evaluate(&risk(0.9), &names, 1000, true),
+            SignalEvent::Alert(_)
+        ));
+        assert_eq!(
+            s.evaluate(&GankRisk::default(), &[], 2000, false),
+            SignalEvent::None
+        );
+        assert_eq!(
+            s.evaluate(&risk(0.9), &names, 40000, true),
+            SignalEvent::None
+        );
+        assert_eq!(
+            s.evaluate(&risk(0.9), &names, 62000, true),
+            SignalEvent::None
+        );
+        s.observe_visible(&names);
+        assert!(matches!(
+            s.evaluate(&risk(0.9), &names, 70000, true),
+            SignalEvent::Alert(_)
+        ));
     }
 }
