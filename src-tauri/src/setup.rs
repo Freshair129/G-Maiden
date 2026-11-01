@@ -445,21 +445,23 @@ fn saved_install_root() -> Result<Option<PathBuf>, String> {
 pub fn sync_gsi_config_port() -> Result<bool, String> {
     sync_gsi_config_port_with_policy(
         crate::secret::is_mvp009_isolated_smoke_process(),
-        SELECTION_READY.load(std::sync::atomic::Ordering::Acquire),
+        &CONFIG_SYNC,
+        || SELECTION_READY.load(std::sync::atomic::Ordering::Acquire),
         sync_selected_config,
     )
 }
 
 fn sync_gsi_config_port_with_policy(
     isolated_smoke: bool,
-    selection_ready: bool,
+    sync_lock: &std::sync::Mutex<()>,
+    selection_ready: impl FnOnce() -> bool,
     sync: impl FnOnce() -> Result<bool, String>,
 ) -> Result<bool, String> {
     if gsi_config_writes_disabled(isolated_smoke) {
         return Ok(false);
     }
-    let _guard = CONFIG_SYNC.lock().map_err(|_| "GSI setup is unavailable")?;
-    if !selection_ready {
+    let _guard = sync_lock.lock().map_err(|_| "GSI setup is unavailable")?;
+    if !selection_ready() {
         return Ok(false);
     }
     sync()
@@ -1053,11 +1055,17 @@ mod tests {
         assert!(!selection_sync_called);
         assert_eq!(fs::read(&selection_file).unwrap(), selection_before);
 
+        let port_sync_lock = std::sync::Mutex::new(());
         let mut port_sync_called = false;
-        assert!(!sync_gsi_config_port_with_policy(true, true, || {
-            port_sync_called = true;
-            sync_config_at_root_with_policy(&root, 3002, false)
-        })
+        assert!(!sync_gsi_config_port_with_policy(
+            true,
+            &port_sync_lock,
+            || true,
+            || {
+                port_sync_called = true;
+                sync_config_at_root_with_policy(&root, 3002, false)
+            }
+        )
         .unwrap());
         assert!(!port_sync_called);
 
@@ -1068,6 +1076,34 @@ mod tests {
         assert_eq!(fs::read(&config).unwrap(), config_before);
 
         fs::remove_dir_all(root).unwrap();
+    }
+
+    #[test]
+    fn port_sync_checks_selection_readiness_after_acquiring_the_config_lock() {
+        let config_sync = std::sync::Mutex::new(());
+        let mut readiness_was_checked_under_lock = false;
+        let mut sync_called = false;
+
+        let changed = sync_gsi_config_port_with_policy(
+            false,
+            &config_sync,
+            || {
+                readiness_was_checked_under_lock = matches!(
+                    config_sync.try_lock(),
+                    Err(std::sync::TryLockError::WouldBlock)
+                );
+                false
+            },
+            || {
+                sync_called = true;
+                Ok(true)
+            },
+        )
+        .unwrap();
+
+        assert!(!changed);
+        assert!(readiness_was_checked_under_lock);
+        assert!(!sync_called);
     }
 
     #[test]
