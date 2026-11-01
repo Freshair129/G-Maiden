@@ -240,6 +240,27 @@ export async function handleSocial(
   request: Request,
   deps: SocialDependencies,
 ): Promise<Response> {
+  const corsHeaders = {
+    "access-control-allow-origin": "*",
+    "access-control-allow-headers":
+      "authorization, x-client-info, apikey, content-type",
+    "access-control-allow-methods": "POST, OPTIONS",
+  };
+  if (request.method === "OPTIONS") {
+    return new Response("ok", {
+      headers: { ...corsHeaders, "cache-control": "no-store" },
+    });
+  }
+  const result = await handleSocialAccount(request, deps);
+  for (const [name, value] of Object.entries(corsHeaders)) {
+    result.headers.set(name, value);
+  }
+  return result;
+}
+async function handleSocialAccount(
+  request: Request,
+  deps: SocialDependencies,
+): Promise<Response> {
   let b: Record<string, unknown>;
   try {
     b = JSON.parse(await rawBody(request));

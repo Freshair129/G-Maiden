@@ -217,13 +217,16 @@ export function useFriends({ session, party, panelVisible }: { session: Session 
 
   const refreshRoster = useCallback(async () => {
     const e = epoch.current; const requestedScope = latest.current.scope; const version = linkVersion.current;
+    const serial = stateSerial.current;
     if (!latest.current.panelVisible || rosterFlight.current === e || !available(e) || data.current?.epoch !== e || latest.current.party.view.status !== "connected" || origin(latest.current.party.view.relayUrl) !== data.current.value.relayOrigin) return;
     rosterFlight.current = e; const start = performance.now();
     try {
       const proof = await proofFor("roster", null, e, version, requestedScope, null);
+      if (serial !== stateSerial.current) return;
       const value = await request<SocialRoster>({ action: "roster", proof }, e);
-      if (current(e) && version === linkVersion.current && latest.current.scope === requestedScope) setRoster({ epoch: e, scope: requestedScope, value, at: performance.now(), rtt: Math.max(0, performance.now() - start) });
-    } catch { if (current(e) && version === linkVersion.current) setRoster(null); }
+      // A confirmed privacy/state write invalidates roster reads as well as state reads.
+      if (current(e) && serial === stateSerial.current && version === linkVersion.current && latest.current.scope === requestedScope) setRoster({ epoch: e, scope: requestedScope, value, at: performance.now(), rtt: Math.max(0, performance.now() - start) });
+    } catch { if (current(e) && serial === stateSerial.current && version === linkVersion.current) setRoster(null); }
     finally { if (rosterFlight.current === e) rosterFlight.current = null; }
   }, [available, current, proofFor, request]);
   const hasSource = !!source;
@@ -334,7 +337,7 @@ export function useFriends({ session, party, panelVisible }: { session: Session 
     invites: source.value.invites.filter((x) => x.expiresAtMs > source.value.serverNowMs + elapsed),
   } : null;
   const bindings: SocialBinding[] = state && roster?.epoch === epoch.current && roster.scope === scope && party.view.status === "connected" && roster.value.roomId === party.view.roomId && roster.value.generation === party.view.roomGeneration
-    ? roster.value.bindings.filter((b) => party.view.members.some((m) => m.memberId === b.memberId) && b.expiresAtMs > roster.value.serverNowMs + roster.rtt + Math.max(0, clock - roster.at)) : [];
+    ? roster.value.bindings.filter((b) => !state.blocked.some((person) => person.gid === b.person.gid) && party.view.members.some((m) => m.memberId === b.memberId) && b.expiresAtMs > roster.value.serverNowMs + roster.rtt + Math.max(0, clock - roster.at)) : [];
   const roomAvailable = !!state?.relayOrigin && party.view.status === "connected" && origin(party.view.relayUrl) === state.relayOrigin;
   return { state, nowMs: source ? source.value.serverNowMs + elapsed : null, ready: !!state, signedIn: !!key, busy: busy && operation.current === epoch.current, error: key ? error : null, bindings,
     linked: roomAvailable && linkedIntent.current && !hasForeignBinding(epoch.current),

@@ -1,0 +1,116 @@
+{
+  "beforeCommit": "5372fc929d083f1eb55a415356f3b4fb8af54902",
+  "afterSocialSourceBlob": "929844bcbcea2da863157c16b73d457825a65681",
+  "fixtureCorrection": "First GREEN attempt used an incomplete synthetic IAM denial without code/status, so the real handler correctly returned readable503 instead of expected401. Corrected fixture to IamDecision invalid_session; no product change was made for that fixture error. The prior RED remains a preflight-only failure with zero POSTs.",
+  "red": {
+    "phase": "red",
+    "status": "REPRODUCED: browser blocked before POST",
+    "boundary": "Actual Chrome cross-origin fetch against production handleSocial; synthetic authorization/repository only, no live Google or hosted deployment.",
+    "results": [
+      {
+        "label": "authorized JSON POST",
+        "expectedAfterFix": 200,
+        "result": {
+          "fetchError": "TypeError: Failed to fetch"
+        }
+      },
+      {
+        "label": "readable unauthorized error",
+        "expectedAfterFix": 401,
+        "result": {
+          "fetchError": "TypeError: Failed to fetch"
+        }
+      },
+      {
+        "label": "readable invalid-body error",
+        "expectedAfterFix": 400,
+        "result": {
+          "fetchError": "TypeError: Failed to fetch"
+        }
+      }
+    ],
+    "requests": [
+      {
+        "method": "OPTIONS",
+        "status": 400,
+        "origin": "http://127.0.0.1:41695",
+        "allowOrigin": null
+      },
+      {
+        "method": "OPTIONS",
+        "status": 400,
+        "origin": "http://127.0.0.1:41695",
+        "allowOrigin": null
+      },
+      {
+        "method": "OPTIONS",
+        "status": 400,
+        "origin": "http://127.0.0.1:41695",
+        "allowOrigin": null
+      }
+    ]
+  },
+  "green": {
+    "phase": "green",
+    "status": "PASS",
+    "boundary": "Actual Chrome cross-origin fetch against production handleSocial; synthetic authorization/repository only, no live Google or hosted deployment.",
+    "results": [
+      {
+        "label": "authorized JSON POST",
+        "expectedAfterFix": 200,
+        "result": {
+          "status": 200,
+          "body": {
+            "ok": true
+          }
+        }
+      },
+      {
+        "label": "readable unauthorized error",
+        "expectedAfterFix": 401,
+        "result": {
+          "status": 401,
+          "body": {
+            "error": "invalid_session"
+          }
+        }
+      },
+      {
+        "label": "readable invalid-body error",
+        "expectedAfterFix": 400,
+        "result": {
+          "status": 400,
+          "body": {
+            "error": "invalid_request"
+          }
+        }
+      }
+    ],
+    "requests": [
+      {
+        "method": "OPTIONS",
+        "status": 200,
+        "origin": "http://127.0.0.1:35329",
+        "allowOrigin": "*"
+      },
+      {
+        "method": "POST",
+        "status": 200,
+        "origin": "http://127.0.0.1:35329",
+        "allowOrigin": "*"
+      },
+      {
+        "method": "POST",
+        "status": 401,
+        "origin": "http://127.0.0.1:35329",
+        "allowOrigin": "*"
+      },
+      {
+        "method": "POST",
+        "status": 400,
+        "origin": "http://127.0.0.1:35329",
+        "allowOrigin": "*"
+      }
+    ]
+  }
+}

@@ -5,6 +5,7 @@ import { beforeEach, afterEach, describe, it, expect, vi } from "vitest";
 import type { Session } from "@supabase/supabase-js";
 import { generateGid } from "../../gid";
 import { emptyPartyView } from "../partyModel";
+import { PartyMembers } from "../PartyMembers";
 import type { SocialState } from "../friendsModel";
 import type { PartyController } from "../useParty";
 const api = vi.hoisted(() => ({ request: vi.fn(), blocked: false, invoke: vi.fn() }));
@@ -26,7 +27,7 @@ let serverState: SocialState;
 function Harness({ account = session(), visible = true }: { account?: Session | null; visible?: boolean }) {
   if (!module) return null;
   current = module.useFriends({ session: account, party, panelVisible: visible });
-  return <span>{current.ready ? "ready" : "unavailable"}:{current.state?.friends[0]?.online ? "online" : "offline"}</span>;
+  return <><span>{current.ready ? "ready" : "unavailable"}:{current.state?.friends[0]?.online ? "online" : "offline"}</span><PartyMembers view={party.view} elapsedMs={party.elapsedMs} accountBindings={current.bindings} onAddFriend={(gid) => { void current.mutate({ action: "request", gid }); }} /></>;
 }
 async function render(account: Session | null = session(), visible = true) { await act(async () => { root.render(<Harness account={account} visible={visible} />); }); }
 beforeEach(() => {
@@ -297,4 +298,54 @@ it("keeps account controls unavailable when the fresh post-mutation state read f
   expect(current.ready).toBe(false); expect(current.state).toBeNull();
   await act(async () => { expect(await current.setSettings({ ...stale.settings, allowFriendRequests: false })).toBe(false); });
   expect(api.request.mock.calls.filter(([a]) => a.action === "settings")).toHaveLength(1);
+});
+
+it("discards a delayed pre-block roster after block and fresh state complete without removing native members", async () => {
+  const peer = { memberId: "3".repeat(32), displayName: "Guest peer", isOwner: false, state: "waiting" as const, ageMs: null, sample: null };
+  party = { ...party, view: { ...room(), members: [...room().members, peer] }, canLeave: true };
+  await render();
+  const oldRoster = defer<unknown>(); const base = api.request.getMockImplementation()!;
+  let rosterReads = 0; let rosterInFlight = 0; let maxRosterInFlight = 0;
+  api.request.mockImplementation((...args) => {
+    if (args[0].action === "block") {
+      serverState.blocked = [{ gid: otherGid, displayName: "Blocked" }]; serverState.friends = [];
+      return Promise.resolve({ ok: true });
+    }
+    if (args[0].action !== "roster") return base(...args);
+    rosterReads++; rosterInFlight++; maxRosterInFlight = Math.max(maxRosterInFlight, rosterInFlight);
+    return oldRoster.promise.finally(() => { rosterInFlight--; });
+  });
+  await act(async () => { await vi.advanceTimersByTimeAsync(15000); });
+  expect(rosterReads).toBe(1);
+  await act(async () => { expect(await current.mutate({ action: "block", gid: otherGid })).toBe(true); });
+  expect(current.state?.blocked).toEqual([{ gid: otherGid, displayName: "Blocked" }]);
+  expect(current.bindings).toEqual([]);
+  await act(async () => { await vi.advanceTimersByTimeAsync(15000); });
+  expect(rosterReads).toBe(1); expect(maxRosterInFlight).toBe(1);
+  await act(async () => { oldRoster.resolve({ roomId: "1".repeat(32), generation: 1, serverNowMs: 1000, bindings: [
+    { memberId: peer.memberId, person: { gid: otherGid, displayName: "Blocked" }, expiresAtMs: 61000 },
+    { memberId: "2".repeat(32), person: { gid, displayName: "Self" }, expiresAtMs: 61000 },
+  ] }); });
+  expect(current.state?.blocked.map((person) => person.gid)).toEqual([otherGid]);
+  expect(current.bindings).toEqual([]);
+  expect(container.querySelector('code[aria-label="GID ที่ยืนยันการเชื่อมกับสมาชิกห้อง"]')).toBeNull();
+  expect(container.textContent).not.toContain("เพิ่มเพื่อน");
+  expect(container.textContent).toContain("Guest peer");
+  expect(party.view.members).toHaveLength(2); expect(party.leave).not.toHaveBeenCalled(); expect(party.kick).not.toHaveBeenCalled();
+});
+
+it("excludes currently blocked GIDs from a fresh roster while preserving other verified and native members", async () => {
+  serverState.blocked = [{ gid: otherGid, displayName: "Blocked" }]; serverState.friends = [];
+  const peer = { memberId: "3".repeat(32), displayName: "Guest peer", isOwner: false, state: "waiting" as const, ageMs: null, sample: null };
+  party = { ...party, view: { ...room(), members: [...room().members, peer] }, canLeave: true };
+  const base = api.request.getMockImplementation()!;
+  api.request.mockImplementation((...args) => args[0].action === "roster" ? Promise.resolve({ roomId: "1".repeat(32), generation: 1, serverNowMs: 1000, bindings: [
+    { memberId: peer.memberId, person: { gid: otherGid, displayName: "Blocked" }, expiresAtMs: 61000 },
+    { memberId: "2".repeat(32), person: { gid, displayName: "Self" }, expiresAtMs: 61000 },
+  ] }) : base(...args));
+  await render();
+  expect(current.bindings.map((binding) => binding.person.gid)).toEqual([gid]);
+  expect(container.textContent).not.toContain(otherGid); expect(container.textContent).not.toContain("เพิ่มเพื่อน");
+  expect(container.textContent).toContain("Guest peer"); expect(container.textContent).toContain(gid);
+  expect(party.view.members).toHaveLength(2);
 });

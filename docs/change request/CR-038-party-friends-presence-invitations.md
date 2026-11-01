@@ -2,7 +2,7 @@
 title: "CR-038 — G-Party Friends, presence และคำเชิญเข้าปาร์ตี้"
 doc_id: "CR-038-party-friends-presence-invitations"
 status: active
-version: "0.2.1"
+version: "0.2.2"
 updated: "2026-11-01"
 owner: "G-Maiden"
 complexity: "C-3"
@@ -62,7 +62,7 @@ Supervisor/integrator คุม contract, lane ownership, evidence ledger แล
 - [x] Native trusted-Control bridge; ไม่เผย credentials และไม่ auto-join/share
 - [x] Friends UI + fresh consent + sign-out/switch/race/failure tests
 - [x] Guest G-Party/local core regression tests
-- [ ] Independent review ปิด confirmed blockers
+- [x] Independent review ปิด confirmed blockers
 - [ ] Required CI, doc graph, Windows/native compile/tests/package และ review threads ผ่านบน final mergeable head
 - [ ] Protected PR merge verified และบันทึก merge SHA
 - [ ] บันทึก live Dota/two-client/two-monitor/NFR และ hosted deployment acceptance ตามหลักฐานจริง
@@ -92,3 +92,4 @@ PR #104 merged through the protected PR flow at `a9b31b06ffd1c0ffb6c4177d428bf8f
 | 0.1.0 | 2026-11-01 | Record owner-authorized Friends implementation through protected merge, separate social consent/data scope, supervised workflow and G-Party dependency integration. |
 | 0.2.0 | 2026-11-01 | Record latest owner frontend direction: reuse design tokens while redesigning room/member/Friends layout around a large minimap; retain consent and functional scope. |
 | 0.2.1 | 2026-11-01 | Link PR107 and record implemented/reviewed source gates; final protected merge and live receipts remain separately evidenced. |
+| 0.2.2 | 2026-11-01 | Record final independent source-review closure after CORS and delayed blocked-roster corrections; final CI/merge receipts remain linked on GitHub. |

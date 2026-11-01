@@ -3,8 +3,8 @@ import {
   handleSocialRedeem,
   type SocialDependencies,
 } from "./social.ts";
-function assert(v: unknown) {
-  if (!v) throw Error("assertion failed");
+function assert(v: unknown, message = "assertion failed") {
+  if (!v) throw Error(message);
 }
 const deps: SocialDependencies = {
   authorize: async () => ({
@@ -380,4 +380,169 @@ Deno.test("redemption authenticates exact received bytes and rejects a prepended
     d,
   );
   assert(unchanged.status === 200 && calls === 1);
+});
+
+Deno.test("account CORS preflight permits renderer POST headers without authorization or repository work", async () => {
+  let calls = 0;
+  const forbiddenWork = async (): Promise<never> => {
+    calls++;
+    throw Error("preflight called a dependency");
+  };
+  const result = await handleSocial(
+    new Request("https://broker.test", {
+      method: "OPTIONS",
+      headers: {
+        origin: "http://tauri.localhost",
+        "access-control-request-method": "POST",
+        "access-control-request-headers":
+          "authorization,content-type,apikey,x-client-info",
+      },
+    }),
+    {
+      ...deps,
+      authorize: forbiddenWork,
+      repository: { action: forbiddenWork, redeem: forbiddenWork },
+    },
+  );
+  assert(result.status === 200, `preflight status: ${result.status}`);
+  assert(result.headers.get("access-control-allow-origin") === "*");
+  assert(
+    result.headers.get("access-control-allow-methods") === "POST, OPTIONS",
+  );
+  const allowed = result.headers.get("access-control-allow-headers")?.split(
+    /,\s*/,
+  );
+  for (
+    const header of ["authorization", "content-type", "apikey", "x-client-info"]
+  ) assert(allowed?.includes(header));
+  assert(result.headers.get("cache-control") === "no-store");
+  assert(result.headers.get("access-control-allow-credentials") === null);
+  assert(calls === 0);
+});
+
+Deno.test("account CORS exposes successful and denied responses while preserving authorization and no-store", async () => {
+  const cases: {
+    body: unknown;
+    dependencies: SocialDependencies;
+    status: number;
+    error?: string;
+  }[] = [
+    { body: { action: "heartbeat" }, dependencies: deps, status: 200 },
+    {
+      body: { action: "heartbeat", extra: true },
+      dependencies: deps,
+      status: 400,
+      error: "invalid_request",
+    },
+    {
+      body: { action: "heartbeat" },
+      dependencies: {
+        ...deps,
+        authorize: async () => ({
+          ok: false,
+          status: 401,
+          code: "invalid_session",
+        }),
+      },
+      status: 401,
+      error: "invalid_session",
+    },
+    {
+      body: { action: "heartbeat" },
+      dependencies: {
+        ...deps,
+        authorize: async () => ({
+          ok: false,
+          status: 403,
+          code: "capability_denied",
+        }),
+      },
+      status: 403,
+      error: "forbidden",
+    },
+    {
+      body: { action: "heartbeat" },
+      dependencies: {
+        ...deps,
+        repository: {
+          ...deps.repository,
+          action: async () => ({ error: "rate_limited" }),
+        },
+      },
+      status: 429,
+      error: "rate_limited",
+    },
+    {
+      body: { action: "heartbeat" },
+      dependencies: {
+        ...deps,
+        authorize: async () => {
+          throw Error("offline");
+        },
+      },
+      status: 503,
+      error: "social_unavailable",
+    },
+  ];
+  for (const scenario of cases) {
+    let repositoryCalls = 0;
+    const result = await handleSocial(
+      new Request("https://broker.test", {
+        method: "POST",
+        headers: {
+          origin: "http://tauri.localhost",
+          authorization: "Bearer fixture",
+          "content-type": "application/json",
+        },
+        body: JSON.stringify(scenario.body),
+      }),
+      {
+        ...scenario.dependencies,
+        repository: {
+          ...scenario.dependencies.repository,
+          action: async (...args) => {
+            repositoryCalls++;
+            return scenario.dependencies.repository.action(...args);
+          },
+        },
+      },
+    );
+    assert(result.status === scenario.status);
+    assert(
+      result.headers.get("access-control-allow-origin") === "*",
+      `missing CORS for status ${scenario.status}`,
+    );
+    assert(result.headers.get("cache-control") === "no-store");
+    assert(result.headers.get("content-type") === "application/json");
+    const body = await result.json();
+    assert(scenario.error ? body.error === scenario.error : body.ok === true);
+    if ([400, 401, 403, 503].includes(scenario.status)) {
+      assert(repositoryCalls === 0);
+    }
+  }
+});
+
+Deno.test("redemption remains a server-to-server route without browser preflight or CORS", async () => {
+  const d = { ...deps, config: { origin, key } };
+  const preflight = await handleSocialRedeem(
+    new Request("https://broker.test", {
+      method: "OPTIONS",
+      headers: { origin: "http://tauri.localhost" },
+    }),
+    d,
+  );
+  assert(preflight.status === 400);
+  assert(preflight.headers.get("access-control-allow-origin") === null);
+  const denied = await handleSocialRedeem(
+    req({
+      ticket: "1".repeat(64),
+      relayOrigin: origin,
+      nonce: "2".repeat(64),
+      issuedAtMs: now,
+    }),
+    d,
+  );
+  assert(denied.status === 403);
+  assert(denied.headers.get("access-control-allow-origin") === null);
+  assert(denied.headers.get("cache-control") === "no-store");
 });

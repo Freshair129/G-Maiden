@@ -2,7 +2,7 @@
 title: "G-Party Friends implementation plan"
 doc_id: "2026-11-01-g-party-friends"
 status: active
-version: "0.2.1"
+version: "0.2.2"
 updated: "2026-11-01"
 owner: "G-Maiden"
 related_docs: ["2026-11-01-g-party-friends-design", "FEAT-G-PARTY", "FEAT-G-FRIENDS", "ADR-20", "mvp-decisions"]
@@ -121,9 +121,9 @@ The latest user instruction supersedes the earlier prohibition on the existing d
 
 ## Execution ledger
 
-Tasks 1–4 are implemented and independently reviewed after scoped correction rounds. Backend passes 68 pgTAP assertions, 29 deterministic transaction races, 20 real HTTP/repository assertions and 26 Deno/IAM tests. Relay/native passes 28 Node tests, 37 portable Rust tests and Clippy; the combined SQL→Edge→relay→native gate explicitly runs its dependency-bound native test and passed with zero ignored. Frontend passes 649 tests in 69 files, including 104 Party tests, plus tsc, ESLint and production build. The post-mutation privacy read barrier, dedicated visibility setter and 60-second roster-lease parser have focused regressions and passed independent scoped re-review. Actual browser fixtures validate map geometry, five visible member cards, narrow tabs, menus and consent; they are not native/live acceptance.
+Tasks 1–4 are implemented and independently reviewed after scoped correction rounds. Backend passes 68 pgTAP assertions, 29 deterministic transaction races, 20 real HTTP/repository assertions and 29 core Deno/IAM tests (plus 4 existing account CORS/method checks locally). Relay/native passes 28 Node tests, 37 portable Rust tests and Clippy; the combined SQL→Edge→relay→native gate explicitly runs its dependency-bound native test and passed with zero ignored. Frontend passes 651 tests in 69 files, including 106 Party tests, plus tsc, ESLint and production build. The post-mutation privacy read barrier, dedicated visibility setter and 60-second roster-lease parser have focused regressions and passed independent scoped re-review. Actual browser fixtures validate map geometry, five visible member cards, narrow tabs, menus and consent; they are not native/live acceptance.
 
-Task 5 canonical docs/CI are implemented and draft PR #107 is open. Final Windows/exact-head CI, whole-branch review and protected merge remain required execution gates. Detailed commands, review corrections and visual receipts are in [[g-party-social-operations]]. GitHub issue #106 and PR #107 carry immutable final CI/review/merge receipts after execution. No hosted/live/native-runtime/NFR acceptance is inferred from these source checks.
+Task 5 canonical docs/CI are implemented and PR #107 is open. Fresh whole-branch review found missing account CORS and a delayed roster restoring a blocked GID; one complete correction wave and independent scoped re-review closed both. Actual browser preflight/POST200/401/400 checks passed with synthetic authorization. Windows CI passed at the earlier5372fc9 checkpoint, and final exact-head CI/protected merge remain required execution gates. Detailed commands, review corrections and visual receipts are in [[g-party-social-operations]]. GitHub issue #106 and PR #107 carry immutable final CI/review/merge receipts after execution. No hosted/live/native-runtime/NFR acceptance is inferred from these source checks.
 
 ## Changelog
 
@@ -132,3 +132,4 @@ Task 5 canonical docs/CI are implemented and draft PR #107 is open. Final Window
 | 0.1.0 | 2026-11-01 | Define independent backend/relay-native/frontend lanes, exact contracts, real database/API gates and authorized integration through merge. |
 | 0.2.0 | 2026-11-01 | Apply latest owner UI direction: reuse existing tokens and redesign G-Party around a dominant minimap with room/member/Friends regions; chat/voice remain outside this functional CR. |
 | 0.2.1 | 2026-11-01 | Record Tasks1–4 source completion and reviewed fixes, final local gate counts, PR107 and separately tracked final integration/live evidence. |
+| 0.2.2 | 2026-11-01 | Record final integrated CORS/roster correction wave, independent review approval and fresh frontend/browser evidence before final-head protected gates. |

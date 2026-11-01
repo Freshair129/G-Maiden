@@ -2,7 +2,7 @@
 title: "G-Party social operations and evidence"
 doc_id: "g-party-social-operations"
 status: "active"
-version: "0.1.1"
+version: "0.1.2"
 updated: "2026-11-01"
 owner: "G-Maiden"
 complexity: "C-3"
@@ -93,12 +93,12 @@ Local results below were executed against the CR-038 working branch based on `a9
 | Gate | Required evidence | Current result |
 | --- | --- | --- |
 | SQL | Applied migration; pgTAP under least privilege; actual multi-connection cap/revoke/expiry/replay tests | PASS: 68 pgTAP and 29 deterministic race assertions; isolated child-database safety regression also passed |
-| Edge | Deno handler/crypto + existing IAM regressions; real handler→SQL→DTO and signed redeem | PASS: 26 Deno tests and 20 real HTTP/repository assertions, including Unicode name projection and exact-body BOM/whitespace handling |
+| Edge | Deno handler/crypto + existing IAM regressions; real handler→SQL→DTO and signed redeem | PASS: 29 core social/crypto/IAM Deno tests plus 4 existing GMAD/mint CORS checks (33 locally), and 20 real HTTP/repository assertions; Unicode projection, exact bytes and browser CORS covered |
 | Relay/native | Real HTTP proof/admission/rotation/owner/full-room/concurrency; portable Rust tests + Clippy | PASS: 28 Node tests, 37 portable Rust tests, Clippy with warnings denied; one database-dependent Rust test is explicitly run by the combined gate and passed with zero ignored |
-| Frontend | Strict DTOs, consent/lifecycle/TTL/UI controls/guest regression; full Vitest, tsc, ESLint, build | PASS after review corrections: 649 tests/69 files, including 104 Party tests; tsc, ESLint with zero warnings and production build passed |
+| Frontend | Strict DTOs, consent/lifecycle/TTL/UI controls/guest regression; full Vitest, tsc, ESLint, build | PASS after review corrections: 651 tests/69 files, including 106 Party tests; tsc, ESLint with zero warnings and production build passed |
 | Documentation | Strict doc graph, checklist rule, generated ledger clean, diff check | PASS: 215 tests, 14 existing checklist-covered errors and zero uncovered; required generated outputs accompany each documentation commit |
-| Windows | Existing native root-crate test/Clippy and Tauri smoke/package CI on final PR head | Required final-head `ci` check on PR #107; no local Linux root-crate PASS is claimed |
-| Independent review | Spec, authorization/transactions, native races, account UI transitions, no open confirmed blockers | Design plus backend, native and frontend scoped re-reviews passed. Whole-branch review and exact-head merge receipts are maintained on PR #107 |
+| Windows | Existing native root-crate test/Clippy and Tauri smoke/package CI on final PR head | Windows CI run 41325738837 passed at source5372fc9: root Rust633 passed/9 ignored, package suites, Clippy and MSI/NSIS build. Final-head `ci` remains mandatory on PR #107; no local Linux root-crate PASS is claimed |
+| Independent review | Spec, authorization/transactions, native races, account UI transitions, no open confirmed blockers | Design and all lane re-reviews passed; fresh whole-branch review plus its single scoped correction wave passed with no open findings. Exact-head CI/merge receipts are maintained on PR #107 |
 | Protected merge | Final head required checks, resolved review threads, up-to-date branch and verified merge SHA | Protected integration through PR #107; immutable merge receipt is recorded there and on issue #106 after execution |
 
 Tooling sanity before implementation: isolated PostgreSQL 16.15 and pgTAP 1.3.2 successfully created the extension and passed a one-assertion tooling probe. Rust/Cargo 1.96.0 and Clippy are available. The official Deno 2.7.0 archive used locally reports `2.7.0+fb4db33 (canary, release, x86_64-unknown-linux-gnu)`; JSR imports resolved with system certificate validation enabled. These are tooling receipts, not product tests.
@@ -142,7 +142,14 @@ The review cycle closed these concrete defects with regressions:
 - A delayed pre-mutation state read could restore a confirmed presence opt-out and an unrelated settings change could persist it. A common post-write barrier now invalidates/drains old reads and requires an authoritative fresh read, with unavailable controls on failure. Only explicit presence actions can change visibility; stale receive-setting objects preserve the current authoritative preference. The regression verifies one read in flight, blocked controls during refresh, no visibility restoration and no restarted heartbeat.
 - Frontend roster parsing now rejects a binding lease beyond 60 seconds, with exact 60,000/60,001 ms boundary assertions.
 
-The real database suite also adds deterministic unlink-versus-delayed-mint/initial-link, competing account/session member bindings and post-lock expiry coverage. These additions were evidence gaps rather than claims of an observed authorization bypass. No confirmed task-level Critical/Important finding remains after scoped re-review; final whole-branch findings, if any, must be resolved before merge.
+The fresh whole-branch review found and closed two additional integration defects in one fix wave:
+
+- Account browser fetch required CORS, while the new handler previously rejected OPTIONS and omitted response headers. An account-only wrapper now handles preflight without authorization/database work and exposes successful and failed authenticated responses with the established CORS policy and no-store. The independently HMAC-authenticated redemption route remains server-to-server. Deno regressions cover preflight and actual-response branches.
+- A delayed roster response could restore a verified account label after a confirmed block. Roster continuations now honor the state invalidation serial, and the final displayed binding projection excludes current blocked GIDs. Tests hold the old response until block plus authoritative refresh finish, then verify no verified GID/Add Friend returns, one roster request remains in flight, and the native guest member is preserved.
+
+Independent scoped re-review of this complete four-file correction passed with no new findings. Root's final full frontend run passed 651 tests/69 files and production build; the affected Party suite passed 106 tests/7 files. The final exact-head CI is an additional protected-merge requirement.
+
+The real database suite also adds deterministic unlink-versus-delayed-mint/initial-link, competing account/session member bindings and post-lock expiry coverage. These additions were evidence gaps rather than claims of an observed authorization bypass. No Critical, Important or Minor finding remains open from the final scoped review. Existing unrelated suite warning qualification and real-world acceptance boundaries remain explicit.
 
 ### Rendered frontend evidence
 
@@ -157,6 +164,12 @@ Actual Chrome 156 rendered the new React components with the existing `--g-*` to
 No document overflow, browser page error or initial autofocus was observed. Keyboard-openable member/Friend menus exposed Add Friend, owner Kick, remove and block. All 500 blocked entries remained reachable by internal scrolling. Invitation checks verified canonical relay/expiry disclosure, unchecked initial consent, consent cleared on an attempt and tab remount, and disabled admission while another room was active. A visual pass caught Thai headings incorrectly assigned the Latin monospace token; those human-language labels now use the existing UI font token, while numeric/code styling remains separate.
 
 Saved captures: [wide view](evidence/cr038/wide.png), [1366px view](evidence/cr038/laptop.png), [narrow Friends](evidence/cr038/narrow-friends.png), [invitation consent](evidence/cr038/invitation.png). Machine-readable [layout measurements](evidence/cr038/layout-report.json) and [interaction results](evidence/cr038/interaction-report.json) accompany them. These are isolated component-browser checks, not native WebView2, actual two-monitor, provider or live-match acceptance.
+
+### Actual browser account-transport regression
+
+Root independently launched Chrome with a page on one loopback origin and the production `handleSocial` function on another. Authorization/repository dependencies were synthetic; no live account or production database was used. Before correction, all three attempted browser fetches failed at OPTIONS400, with no CORS header and zero POSTs. After correction, preflight succeeded and the browser could read POST200 (`ok`), POST401 (`invalid_session`) and POST400 (`invalid_request`). This establishes browser enforcement behavior beyond Node/Deno fetch tests.
+
+The [browser CORS record](evidence/cr038/browser-cors-report.json) includes both phases and the corrected social source blob. It also records a fixture setup error: an early GREEN attempt omitted the synthetic IAM denial's code/status and correctly received readable503; the fixture was corrected without a product change. This does not establish a real Google login or deployed HTTPS endpoint.
 
 ### Live acceptance still required
 
@@ -175,3 +188,4 @@ Saved captures: [wide view](evidence/cr038/wide.png), [1366px view](evidence/cr0
 | --- | --- | --- |
 | 0.1.0 | 2026-11-01 | Separate source integration from hosted/live readiness; document configuration, least privilege, retention, ticket-aware key rotation, rollback and honest acceptance ledger for CR-038. |
 | 0.1.1 | 2026-11-01 | Record PR107, final local frontend649/Party104 checks, independent scoped review corrections and immutable final-gate receipt locations. |
+| 0.1.2 | 2026-11-01 | Close whole-branch CORS/blocked-roster findings with independent re-review, actual browser RED/GREEN, frontend651/Party106 and qualified Deno/Windows evidence. |
