@@ -2,7 +2,7 @@
 title: "G-Series Data Lineage and Computation Contract"
 doc_id: "G-SERIES-DATA-LINEAGE"
 status: "accepted"
-version: "1.2.0"
+version: "1.3.0"
 updated: "2026-11-01"
 owner: "Boss"
 approved_by: "user"
@@ -10,7 +10,7 @@ approved_date: "2026-10-06"
 source_of_truth: true
 complexity: "C-3"
 risk: "HIGH"
-related_docs: ["features/README", "engineering-spec", "technical-design-document", "mvp-decisions", "FEAT-G-SENTRY", "FEAT-G-MOTION", "FEAT-G-SIGNAL", "FEAT-G-DAMAGE", "FEAT-G-MASTER", "FEAT-G-SENSORY", "FEAT-G-LOG", "FEAT-G-REVIVE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "FEAT-G-MIND", "FEAT-G-PERSONA", "FEAT-G-STREAM", "FEAT-G-SCORE", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing"]
+related_docs: ["features/README", "engineering-spec", "technical-design-document", "mvp-decisions", "FEAT-G-SENTRY", "FEAT-G-MOTION", "FEAT-G-SIGNAL", "FEAT-G-DAMAGE", "FEAT-G-MASTER", "FEAT-G-SENSORY", "FEAT-G-LOG", "FEAT-G-REVIVE", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-COACH", "FEAT-G-MIND", "FEAT-G-PERSONA", "FEAT-G-STREAM", "FEAT-G-SCORE", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations"]
 ---
 
 # G-Series Data Lineage and Computation Contract
@@ -481,6 +481,22 @@ The full source/formula/audio-priority/fallback/evidence contract is in [`FEAT-G
 
 **Evidence:** PARTY-AC-001–010 cover source authority, serializer denylist, consent, real socket sender/relay/receiver, auth/isolation/replay/limits/TTL/cancellation, UI aging and independent Windows/live/NFR qualification. Record results in [[2026-11-01-g-party-gsi-sharing]]; synthetic fixtures do not close camera-independent live Dota acceptance.
 
+### 6.10 G-Friends — private social coordination
+
+**Authority/status:** [[CR-038-party-friends-presence-invitations]] authorizes source implementation through protected merge. Architecture choices are in [[ADR-20]]; current verification and operational gaps are recorded in [[g-party-social-operations]]. Hosted/live acceptance remains `UNVERIFIED`.
+
+**Sources:** verified existing Google account/session; exact server-minted GID; mutually accepted relationship and privacy controls; explicit online preference/heartbeat; registered relay membership proof only after native member-token authorization. Nicknames do not establish identity. Source GSI is not an input to the social database.
+
+**Transport/projection:** renderer → fixed authenticated `g-party-social` Edge → private SQL using least-privilege runtime. SocialPerson exposes only GID/safe displayName. Renderer/native carry opaque challenge/proof/ticket; native → registered relay never carries account JWT/GID/UUID. Signed relay → fixed `g-party-social-redeem` consumes a one-use ticket and returns only room/owner/generation. MemberToken remains native; GMP1 secrets remain outside social storage.
+
+**Computation/state:** friend acceptance/caps/removal/block and invite redemption are serialized with live auth-session row locks before canonical pair/account locks; expiry is evaluated after lock waits. Presence visible only for unexpired lease plus live provider session; TTL display subtracts whole RTT/local elapsed. Account-room links require opt-in, proof-bound session revision and acknowledged unlink on all room/member/generation transitions. Current roster intersection limits labels to actual members. Ticket accepted/redeemed does not imply joined.
+
+**Retention/output:** private friendships/settings/blocks persist until removed/account deletion; requests ≤30 days, presence/links 60 s, invites 5 min, challenges/tickets ≤60 s, nonce hashes 120 s. Daily bounded cleanup removes expired/completed ephemeral records within 24 h. Only G-Party Friends UI consumes this data; no last-seen, match history, AI/Voice/Memory/G-Log/public profile/analytics consumer and no gameplay payload in social tables/audit.
+
+**Fallback:** hidden/expired/revoked/network failure clears online/binding assertions. Missing relay configuration disables proof/link/invitation/redemption while friends/settings/presence may work with relayOrigin=null. Guest code/local core continue independently. Block/remove prevents unredeemed authorization but does not kick existing room members. Revalidate relay owner/generation/capacity after broker await; stale account/scope/native work cannot restore prior credentials.
+
+**Evidence:** FRIENDS-AC-001–010 in [[FEAT-G-FRIENDS]] require real least-privilege SQL/race tests, Edge/DB integration, relay/native HTTP, frontend lifecycle, Windows CI and separate hosted/live/NFR evidence. No inferred official Dota membership, legal identity or E2EE.
+
 ## 7. Open lineage and computation gaps
 
 | ID | Gap | Impact | Required next action |
@@ -556,3 +572,4 @@ The following are documentation/verification requirements, not claims that the c
 | 1.1.2 | 2026-10-12 | Updated whole-app CPU calculation, threshold, cadence and Job Object failure/lifecycle contract. |
 | 1.1.3 | 2026-10-13 | Recorded fail-closed startup on Job Object setup failure and runtime-query-only unavailable telemetry. |
 | 1.2.0 | 2026-11-01 | Added separately consented G-Party own-stat lineage, scoped match/team/freshness and no-forwarding boundaries; preserve AI/raw-data restrictions and pending runtime/live evidence. |
+| 1.3.0 | 2026-11-01 | Add private G-Friends social graph/presence/link/invitation lineage and distinct account/relay trust boundaries without routing gameplay into social storage or expanding AI permissions. |

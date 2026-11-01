@@ -1,10 +1,10 @@
 {
   "_generated": "GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs",
-  "generatedAt": "2026-11-01T05:22:14.363Z",
+  "generatedAt": "2026-11-01T16:06:00.743Z",
   "baselineOrphanCandidates": 0,
-  "rowCount": 23,
+  "rowCount": 24,
   "summary": {
-    "anchored": 4,
+    "anchored": 5,
     "planned": 9,
     "weakly-anchored": 7,
     "superseded": 0,
@@ -70,6 +70,31 @@
       "supersededBy": null,
       "supersededByExists": true,
       "reason": "Lifecycle explicitly marks the document as retained history."
+    },
+    {
+      "id": "FEAT-G-FRIENDS",
+      "slug": "FEAT-G-FRIENDS",
+      "path": "docs/features/FEAT-G-FRIENDS.md",
+      "lifecycle": "active",
+      "classification": "anchored",
+      "strongAnchors": [
+        "features-readme"
+      ],
+      "weakAnchors": [
+        "docs/DOC-INDEX.md",
+        "docs/features/FEAT-G-PARTY.md",
+        "docs/features/G-SERIES-DATA-LINEAGE.md",
+        "docs/features/README.md",
+        "docs/operations/g-party-social-operations.md",
+        "docs/product/mvp-backlog.md",
+        "docs/product/mvp-decisions.md",
+        "docs/product/product-requirements.md",
+        "docs/product/software-requirements-specification.md",
+        "docs/superpowers/plans/2026-11-01-g-party-friends.md"
+      ],
+      "supersededBy": null,
+      "supersededByExists": true,
+      "reason": "At least one strong anchor exists (registry and/or code evidence)."
     },
     {
       "id": "FEAT-G-LOG",
@@ -183,6 +208,7 @@
       "weakAnchors": [
         "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
         "docs/DOC-INDEX.md",
+        "docs/features/FEAT-G-FRIENDS.md",
         "docs/features/G-SERIES-DATA-LINEAGE.md",
         "docs/features/README.md",
         "docs/product/mvp-backlog.md",

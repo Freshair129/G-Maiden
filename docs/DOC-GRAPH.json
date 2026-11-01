@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-01T05:22:13.553Z",
+  "generatedAt": "2026-11-01T16:05:59.980Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -120,6 +120,13 @@
       "path": "docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md",
       "title": "ADR-19: Local HUD Observation and Action-Scoped Lethality",
       "status": "draft"
+    },
+    {
+      "id": "docs/architecture/adr/ADR-20.md",
+      "type": "doc",
+      "path": "docs/architecture/adr/ADR-20.md",
+      "title": "ADR-20: Optional Friends and brokered G-Party invitations",
+      "status": "active"
     },
     {
       "id": "docs/architecture/assets/design-references/README.md",
@@ -594,6 +601,13 @@
       "status": "accepted"
     },
     {
+      "id": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "doc",
+      "path": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "title": "CR-038 — G-Party Friends, presence และคำเชิญเข้าปาร์ตี้",
+      "status": "active"
+    },
+    {
       "id": "docs/change request/DXGI-task-assignment.md",
       "type": "doc",
       "path": "docs/change request/DXGI-task-assignment.md",
@@ -738,6 +752,13 @@
       "path": "docs/features/FEAT-G-DAMAGE.md",
       "title": "FEAT: G-Damage — Real-time Lethality Engine",
       "status": "draft"
+    },
+    {
+      "id": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "doc",
+      "path": "docs/features/FEAT-G-FRIENDS.md",
+      "title": "FEAT: G-Friends — Friends and consented party invitations",
+      "status": "active"
     },
     {
       "id": "docs/features/FEAT-G-LOG.md",
@@ -887,6 +908,13 @@
       "title": "Overlay motion — four-method comparison",
       "status": "accepted",
       "domain": "ui-ux"
+    },
+    {
+      "id": "docs/operations/g-party-social-operations.md",
+      "type": "doc",
+      "path": "docs/operations/g-party-social-operations.md",
+      "title": "G-Party social operations and evidence",
+      "status": "active"
     },
     {
       "id": "docs/operations/vrzo-banner-validation.md",
@@ -1101,6 +1129,13 @@
       "status": "active"
     },
     {
+      "id": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
+      "title": "G-Party Friends implementation plan",
+      "status": "active"
+    },
+    {
       "id": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
       "type": "doc",
       "path": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
@@ -1119,6 +1154,13 @@
       "type": "doc",
       "path": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
       "title": "VRZO banner synchronized with announcer",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "type": "doc",
+      "path": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "title": "G-Party Friends design",
       "status": "active"
     },
     {
@@ -1887,37 +1929,61 @@
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/README.md",
       "type": "wikilink",
-      "line": 141
+      "line": 142
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 143
+      "line": 144
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/FEAT-G-PARTY.md",
       "type": "wikilink",
-      "line": 145
+      "line": 146
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 148
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 169
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 181
+      "line": 188
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 183
+      "line": 190
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 188
+      "line": 195
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "type": "wikilink",
+      "line": 206
+    },
+    {
+      "from": "docs/DOC-INDEX.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
+      "type": "wikilink",
+      "line": 208
     },
     {
       "from": "docs/README.md",
@@ -2434,6 +2500,24 @@
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
       "line": 141
+    },
+    {
+      "from": "docs/architecture/adr/ADR-20.md",
+      "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "wikilink",
+      "line": 20
+    },
+    {
+      "from": "docs/architecture/adr/ADR-20.md",
+      "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "type": "wikilink",
+      "line": 55
+    },
+    {
+      "from": "docs/architecture/adr/ADR-20.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 57
     },
     {
       "from": "docs/architecture/design-system.md",
@@ -7350,6 +7434,42 @@
       "line": 287
     },
     {
+      "from": "docs/features/FEAT-G-FRIENDS.md",
+      "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "wikilink",
+      "line": 21
+    },
+    {
+      "from": "docs/features/FEAT-G-FRIENDS.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 21
+    },
+    {
+      "from": "docs/features/FEAT-G-FRIENDS.md",
+      "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "type": "wikilink",
+      "line": 58
+    },
+    {
+      "from": "docs/features/FEAT-G-FRIENDS.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 75
+    },
+    {
+      "from": "docs/features/FEAT-G-FRIENDS.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 107
+    },
+    {
+      "from": "docs/features/FEAT-G-FRIENDS.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 124
+    },
+    {
       "from": "docs/features/FEAT-G-LOG.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
@@ -7609,21 +7729,45 @@
     },
     {
       "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 29
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
       "line": 33
     },
     {
       "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 98
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "type": "wikilink",
+      "line": 100
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 107
+    },
+    {
+      "from": "docs/features/FEAT-G-PARTY.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 102
+      "line": 110
     },
     {
       "from": "docs/features/FEAT-G-PARTY.md",
       "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
       "type": "wikilink",
-      "line": 117
+      "line": 125
     },
     {
       "from": "docs/features/FEAT-G-PERSONA.md",
@@ -8053,15 +8197,39 @@
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "wikilink",
+      "line": 486
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/architecture/adr/ADR-20.md",
+      "type": "wikilink",
+      "line": 486
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 486
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 498
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "docs/rca/2026-10-04-g-damage-magic-resistance-unit-mismatch.md",
       "type": "wikilink",
-      "line": 488
+      "line": 504
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "docs/features/FEAT-G-DAMAGE.md",
       "type": "wikilink",
-      "line": 489
+      "line": 505
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
@@ -8269,27 +8437,45 @@
     },
     {
       "from": "docs/features/README.md",
-      "to": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
       "type": "wikilink",
       "line": 53
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/architecture/adr/ADR-20.md",
+      "type": "wikilink",
+      "line": 53
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "wikilink",
+      "line": 53
+    },
+    {
+      "from": "docs/features/README.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 54
     },
     {
       "from": "docs/features/README.md",
       "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
       "type": "wikilink",
-      "line": 53
+      "line": 54
     },
     {
       "from": "docs/features/README.md",
       "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
       "type": "wikilink",
-      "line": 55
+      "line": 56
     },
     {
       "from": "docs/features/README.md",
       "to": "docs/features/FEAT-G-SCORE.md",
       "type": "wikilink",
-      "line": 61
+      "line": 62
     },
     {
       "from": "docs/guides/scaffold-setup.md",
@@ -8386,6 +8572,24 @@
       "to": "orchestration",
       "type": "symbol",
       "line": 72
+    },
+    {
+      "from": "docs/operations/g-party-social-operations.md",
+      "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "type": "wikilink",
+      "line": 21
+    },
+    {
+      "from": "docs/operations/g-party-social-operations.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 21
+    },
+    {
+      "from": "docs/operations/g-party-social-operations.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
+      "type": "wikilink",
+      "line": 21
     },
     {
       "from": "docs/operations/vrzo-banner-validation.md",
@@ -8593,75 +8797,99 @@
     },
     {
       "from": "docs/product/mvp-backlog.md",
+      "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "wikilink",
+      "line": 25
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 25
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
+      "type": "wikilink",
+      "line": 25
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 27
+    },
+    {
+      "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 41
+      "line": 47
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/design-system/10-wireframes.md",
       "type": "wikilink",
-      "line": 71
+      "line": 77
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/design-system/11-wireflows.md",
       "type": "wikilink",
-      "line": 71
+      "line": 77
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/design-system/12-user-flows.md",
       "type": "wikilink",
-      "line": 71
+      "line": 77
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 112
+      "line": 118
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 112
+      "line": 118
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-MEMORY.md",
       "type": "wikilink",
-      "line": 191
+      "line": 197
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-COACH.md",
       "type": "wikilink",
-      "line": 191
+      "line": 197
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/features/FEAT-G-VOICE.md",
       "type": "wikilink",
-      "line": 206
+      "line": 212
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 206
+      "line": 212
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/README.md",
       "type": "wikilink",
-      "line": 236
+      "line": 242
     },
     {
       "from": "docs/product/mvp-backlog.md",
       "to": "docs/releases/release-channel-architecture.md",
       "type": "wikilink",
-      "line": 236
+      "line": 242
     },
     {
       "from": "docs/product/mvp-decisions.md",
@@ -8698,6 +8926,36 @@
       "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
       "type": "wikilink",
       "line": 84
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "wikilink",
+      "line": 88
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 88
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/architecture/adr/ADR-20.md",
+      "type": "wikilink",
+      "line": 88
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
+      "type": "wikilink",
+      "line": 88
+    },
+    {
+      "from": "docs/product/mvp-decisions.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 97
     },
     {
       "from": "docs/product/mvp-execution-dag.md",
@@ -8794,6 +9052,42 @@
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
       "line": 138
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
+      "type": "wikilink",
+      "line": 142
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 142
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 142
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 148
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/architecture/adr/ADR-20.md",
+      "type": "wikilink",
+      "line": 148
+    },
+    {
+      "from": "docs/product/product-requirements.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 148
     },
     {
       "from": "docs/product/roadmap.md",
@@ -8923,21 +9217,51 @@
     },
     {
       "from": "docs/product/software-requirements-specification.md",
-      "to": "docs/features/FEAT-G-PARTY.md",
+      "to": "docs/features/FEAT-G-FRIENDS.md",
+      "type": "wikilink",
+      "line": 205
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 205
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
       "type": "wikilink",
       "line": 213
     },
     {
       "from": "docs/product/software-requirements-specification.md",
-      "to": "docs/product/mvp-decisions.md",
+      "to": "docs/architecture/adr/ADR-20.md",
       "type": "wikilink",
-      "line": 215
+      "line": 213
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 213
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/features/FEAT-G-PARTY.md",
+      "type": "wikilink",
+      "line": 227
     },
     {
       "from": "docs/product/software-requirements-specification.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 233
+      "line": 229
+    },
+    {
+      "from": "docs/product/software-requirements-specification.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 247
     },
     {
       "from": "docs/rca/2026-07-10-release-gate-drift-v0.9.0.md",
@@ -9270,6 +9594,12 @@
       "line": 19
     },
     {
+      "from": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
+      "to": "docs/operations/g-party-social-operations.md",
+      "type": "wikilink",
+      "line": 124
+    },
+    {
       "from": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
       "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
       "type": "wikilink",
@@ -9290,19 +9620,19 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 134,
+      "line": 135,
       "reason": "glob-slug",
       "slug": "SPEC--*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 136,
+      "line": 137,
       "reason": "glob-slug",
       "slug": "ADR-O-*"
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 147,
+      "line": 150,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -10322,14 +10652,6 @@
       "symbol": "g-volume-rail"
     },
     {
-      "file": "docs/design-system/04-components.md",
-      "line": 597,
-      "reason": "anchor-symbol-mismatch",
-      "target": "src/src/CommandDeck.tsx",
-      "anchor": 444,
-      "symbol": "startWindowDrag"
-    },
-    {
       "file": "docs/design-system/05-sitemap-ia.md",
       "line": 61,
       "reason": "anchor-symbol-mismatch",
@@ -11012,7 +11334,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-01T05:22:14.194Z",
+    "generatedAt": "2026-11-01T16:06:00.561Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

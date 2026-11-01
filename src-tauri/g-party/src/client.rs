@@ -33,6 +33,7 @@ struct Credentials {
     member_id: String,
     member_token: String,
     owner_id: String,
+    room_generation: u64,
 }
 
 struct Observed {
@@ -140,6 +141,8 @@ impl State {
         PartyView {
             status: self.status,
             room_id: self.credentials.as_ref().map(|c| c.room_id.clone()),
+            relay_url: self.credentials.as_ref().map(|c| c.origin.to_string()),
+            room_generation: self.credentials.as_ref().map(|c| c.room_generation),
             self_id: self.credentials.as_ref().map(|c| c.member_id.clone()),
             owner_id: self.credentials.as_ref().map(|c| c.owner_id.clone()),
             invite: self.invite.clone(),
@@ -159,6 +162,8 @@ struct Inner {
     clock: Instant,
     cancelled: watch::Sender<u64>,
     invalidation_pending: AtomicBool,
+    #[cfg(test)]
+    allow_social_loopback: bool,
 }
 
 #[derive(Clone)]
@@ -215,6 +220,7 @@ impl Failure {
             (409, Some("replayed_sequence")) => "replayed_sequence",
             (429, Some("rate_limited")) => "rate_limited",
             (503, Some("capacity")) => "capacity",
+            (503, Some("social_unavailable")) => "social_unavailable",
             (500, Some("unavailable")) => "relay_unavailable",
             _ => return Self::invalid(),
         };
@@ -244,6 +250,8 @@ impl PartyClient {
                 clock: Instant::now(),
                 cancelled,
                 invalidation_pending: AtomicBool::new(false),
+                #[cfg(test)]
+                allow_social_loopback: false,
             }),
         })
     }
@@ -463,6 +471,7 @@ impl PartyClient {
             member_id: membership.member_id,
             member_token: membership.member_token,
             owner_id: membership.owner_id,
+            room_generation: membership.room_generation,
         };
         let accepted = {
             let mut state = self.lock();
@@ -486,6 +495,183 @@ impl PartyClient {
         if !accepted {
             self.delete_membership(&credentials).await;
             return Err("cancelled");
+        }
+        Ok(self.view())
+    }
+
+    #[cfg(test)]
+    pub(crate) fn new_for_social_tests() -> Self {
+        let mut client = Self::new().unwrap();
+        Arc::get_mut(&mut client.inner)
+            .unwrap()
+            .allow_social_loopback = true;
+        client
+    }
+    fn social_origin(&self, value: &str) -> Result<Url, String> {
+        let url = validate_relay_url(value).map_err(str::to_owned)?;
+        #[cfg(test)]
+        if self.inner.allow_social_loopback {
+            return Ok(url);
+        }
+        if url.scheme() != "https" {
+            return Err("social_unavailable".into());
+        }
+        Ok(url)
+    }
+    pub async fn social_proof(
+        &self,
+        challenge: String,
+        relay_url: String,
+    ) -> Result<crate::SocialProof, String> {
+        if !valid_hex(&challenge, 64) {
+            return Err("invalid_request".into());
+        }
+        let origin = self.social_origin(&relay_url)?;
+        let (generation, credentials) = {
+            let mut state = self.lock();
+            state.expire(self.now());
+            if state.status != PartyStatus::Connected {
+                return Err("room_unavailable".into());
+            }
+            let credentials = state.credentials.clone().ok_or("room_unavailable")?;
+            if credentials.origin != origin {
+                return Err("social_unavailable".into());
+            }
+            (state.generation, credentials)
+        };
+        let path = format!("/v1/rooms/{}/social-proof", credentials.room_id);
+        let result: crate::SocialProof = self
+            .json(
+                Method::POST,
+                &credentials.origin,
+                &path,
+                Some(&credentials.member_token),
+                Some(&json!({"challenge":challenge})),
+                200,
+            )
+            .await
+            .map_err(|f| f.code.to_owned())?;
+        let mut state = self.lock();
+        state.expire(self.now());
+        if state.generation != generation
+            || state.status != PartyStatus::Connected
+            || state
+                .credentials
+                .as_ref()
+                .is_none_or(|c| c.room_generation != credentials.room_generation)
+        {
+            return Err("cancelled".into());
+        }
+        let Some((payload, signature)) = result.proof.split_once('.') else {
+            return Err("invalid_response".into());
+        };
+        let canonical = |value: &str| {
+            !value.is_empty()
+                && value
+                    .bytes()
+                    .all(|b| b.is_ascii_alphanumeric() || b == b'-' || b == b'_')
+        };
+        if payload.len() > 2731
+            || signature.len() != 43
+            || !canonical(payload)
+            || !canonical(signature)
+        {
+            return Err("invalid_response".into());
+        }
+        Ok(result)
+    }
+    pub async fn join_social(
+        &self,
+        options: crate::SocialJoinOptions,
+    ) -> Result<PartyView, String> {
+        if !options.consent {
+            return Err("consent_required".into());
+        }
+        let origin = self.social_origin(&options.relay_url)?;
+        let name = display_name(&options.display_name).map_err(str::to_owned)?;
+        if !valid_hex(&options.ticket, 64) || !valid_hex(&options.room_id, 32) {
+            return Err("invalid_request".into());
+        }
+        let generation = {
+            let mut state = self.lock();
+            if state.credentials.is_some()
+                || !matches!(state.status, PartyStatus::Idle | PartyStatus::Closed)
+                || state.sync_in_flight
+                || state.admin_in_flight
+            {
+                return Err("already_in_room".into());
+            }
+            state.reset(PartyStatus::Connecting, None);
+            self.signal_change();
+            state.generation
+        };
+        let sent = self.now();
+        let response: Result<Membership, Failure> = self
+            .json(
+                Method::POST,
+                &origin,
+                "/v1/rooms/social-join",
+                None,
+                Some(&json!({"ticket":options.ticket,"displayName":name})),
+                201,
+            )
+            .await;
+        let membership = match response {
+            Ok(value) => value,
+            Err(failure) => {
+                let mut state = self.lock();
+                if state.generation != generation {
+                    return Err("cancelled".into());
+                }
+                state.reset(PartyStatus::Closed, Some(failure.code));
+                self.signal_change();
+                return Err(failure.code.into());
+            }
+        };
+        // Even a semantically invalid response can have granted a real member.
+        // Retain only the bounded native credential needed for best-effort cleanup.
+        let cleanup = valid_hex(&membership.room_id, 32) && valid_hex(&membership.member_token, 64);
+        let valid = valid_social_membership(&membership) && membership.room_id == options.room_id;
+        let credentials = Credentials {
+            origin,
+            room_id: membership.room_id,
+            member_id: membership.member_id,
+            member_token: membership.member_token,
+            owner_id: membership.owner_id,
+            room_generation: membership.room_generation,
+        };
+        let outcome = {
+            let mut state = self.lock();
+            if state.generation != generation {
+                Some("cancelled")
+            } else if !valid {
+                state.reset(PartyStatus::Closed, Some("invalid_response"));
+                self.signal_change();
+                Some("invalid_response")
+            } else {
+                let now = self.now();
+                let remaining = membership
+                    .expires_in_ms
+                    .saturating_sub(now.saturating_sub(sent));
+                if remaining == 0 {
+                    state.reset(PartyStatus::Closed, Some("room_unavailable"));
+                    self.signal_change();
+                    Some("room_unavailable")
+                } else {
+                    state.credentials = Some(credentials.clone());
+                    state.expires_ms = now.saturating_add(remaining);
+                    state.last_success_ms = now;
+                    state.status = PartyStatus::Connected;
+                    state.error = None;
+                    None
+                }
+            }
+        };
+        if let Some(error) = outcome {
+            if cleanup {
+                self.delete_membership(&credentials).await;
+            }
+            return Err(error.into());
         }
         Ok(self.view())
     }
@@ -573,8 +759,26 @@ impl PartyClient {
             return POLL_INTERVAL;
         }
         state.sync_in_flight = false;
+        if let Ok(snapshot) = &result {
+            let overtaken = state.credentials.as_ref().is_some_and(|current| {
+                current.room_generation > work.credentials.room_generation
+                    && snapshot.room_generation < current.room_generation
+                    && valid_snapshot(snapshot, &work.credentials, work.request.scope.is_some())
+            });
+            if overtaken {
+                // A previously valid observation may arrive after a rotation reply.
+                // Preserve current membership without publishing that old roster.
+                state.needs_probe = true;
+                for member in &mut state.members {
+                    member.withhold();
+                }
+                return POLL_INTERVAL;
+            }
+        }
         let result = result.and_then(|snapshot| {
-            if valid_snapshot(&snapshot, &work.credentials, work.request.scope.is_some()) {
+            if state.credentials.as_ref().is_some_and(|current| {
+                valid_snapshot(&snapshot, current, work.request.scope.is_some())
+            }) {
                 Ok(snapshot)
             } else {
                 Err(Failure::invalid())
@@ -582,6 +786,9 @@ impl PartyClient {
         });
         match result {
             Ok(mut snapshot) => {
+                if let Some(current) = state.credentials.as_mut() {
+                    current.room_generation = snapshot.room_generation;
+                }
                 state.last_success_ms = now;
                 state.expires_ms = state
                     .expires_ms
@@ -735,9 +942,10 @@ impl PartyClient {
 
     pub async fn rotate_invite(&self) -> Result<PartyView, &'static str> {
         #[derive(serde::Deserialize)]
-        #[serde(deny_unknown_fields)]
+        #[serde(rename_all = "camelCase", deny_unknown_fields)]
         struct Invitation {
             invite: String,
+            room_generation: u64,
         }
         let (generation, credentials) = self.begin_owner_action()?;
         let path = format!("/v1/rooms/{}/invite", credentials.room_id);
@@ -755,7 +963,9 @@ impl PartyClient {
             Ok(invitation) => invitation,
             Err(failure) => return Err(self.owner_failure(generation, failure)),
         };
-        if !valid_invite(&invitation.invite)
+        if !(1..=MAX_SEQUENCE).contains(&invitation.room_generation)
+            || invitation.room_generation <= credentials.room_generation
+            || !valid_invite(&invitation.invite)
             || invitation.invite.split('.').nth(1) != Some(credentials.room_id.as_str())
         {
             return Err(self.owner_failure(generation, Failure::invalid()));
@@ -766,6 +976,17 @@ impl PartyClient {
                 return Err("cancelled");
             }
             state.admin_in_flight = false;
+            if state
+                .credentials
+                .as_ref()
+                .is_none_or(|current| invitation.room_generation < current.room_generation)
+            {
+                state.admin_in_flight = false;
+                return Err("cancelled");
+            }
+            if let Some(current) = state.credentials.as_mut() {
+                current.room_generation = invitation.room_generation;
+            }
             state.invite = Some(invitation.invite);
             state.error = None;
         }
@@ -774,7 +995,8 @@ impl PartyClient {
 }
 
 fn valid_membership(membership: &Membership, invite: Option<&str>) -> bool {
-    valid_hex(&membership.room_id, 32)
+    (1..=MAX_SEQUENCE).contains(&membership.room_generation)
+        && valid_hex(&membership.room_id, 32)
         && valid_hex(&membership.member_id, 32)
         && valid_hex(&membership.owner_id, 32)
         && valid_hex(&membership.member_token, 64)
@@ -796,7 +1018,8 @@ fn valid_membership(membership: &Membership, invite: Option<&str>) -> bool {
 }
 
 fn valid_snapshot(snapshot: &RoomSnapshot, credentials: &Credentials, scoped: bool) -> bool {
-    if snapshot.room_id != credentials.room_id
+    if !(credentials.room_generation..=MAX_SEQUENCE).contains(&snapshot.room_generation)
+        || snapshot.room_id != credentials.room_id
         || snapshot.self_id != credentials.member_id
         || snapshot.owner_id != credentials.owner_id
         || snapshot.members.is_empty()
@@ -845,6 +1068,17 @@ fn valid_snapshot(snapshot: &RoomSnapshot, credentials: &Credentials, scoped: bo
     ids.contains(snapshot.self_id.as_str()) && ids.contains(snapshot.owner_id.as_str())
 }
 
+fn valid_social_membership(value: &Membership) -> bool {
+    valid_hex(&value.room_id, 32)
+        && valid_hex(&value.member_id, 32)
+        && valid_hex(&value.owner_id, 32)
+        && valid_hex(&value.member_token, 64)
+        && value.member_id != value.owner_id
+        && value.invite.is_none()
+        && (1..=MAX_SEQUENCE).contains(&value.room_generation)
+        && (1..=ROOM_LIFETIME_MS).contains(&value.expires_in_ms)
+}
+
 #[cfg(test)]
 mod contention_tests {
     use super::*;
@@ -860,6 +1094,7 @@ mod contention_tests {
             member_id: "b".repeat(32),
             member_token: "c".repeat(64),
             owner_id: "b".repeat(32),
+            room_generation: 1,
         });
         locked.status = PartyStatus::Connected;
         locked.expires_ms = ROOM_LIFETIME_MS;

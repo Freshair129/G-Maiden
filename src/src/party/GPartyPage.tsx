@@ -2,12 +2,15 @@ import { useId, useState, type FormEvent } from "react";
 import { PartyMembers } from "./PartyMembers";
 import { PARTY_STATUS_LABELS, validatePartyConnection } from "./partyModel";
 import { useParty, type PartyController } from "./useParty";
-import "./party.css";
+import "./partyWorkspace.css";
+import { MinimapCanvas } from "../MinimapCanvas";
+import { FriendsPanel } from "./FriendsPanel";
+import type { FriendsController } from "./useFriends";
 
 function ConnectionForm({ connect }: Pick<PartyController, "connect">) {
   const id = useId();
   const [mode, setMode] = useState<"create" | "join">("create");
-  const [relayUrl, setRelayUrl] = useState("");
+  const [relayUrl, setRelayUrl] = useState(import.meta.env.VITE_G_PARTY_RELAY_URL ?? "");
   const [displayName, setDisplayName] = useState("");
   const [invite, setInvite] = useState("");
   const [consent, setConsent] = useState(false);
@@ -67,56 +70,65 @@ function ConnectionForm({ connect }: Pick<PartyController, "connect">) {
   );
 }
 
-export default function GPartyPage() {
+function StandalonePartyPage() {
   const party = useParty();
+  return <PartyPage party={party} friends={null} />;
+}
+export default function GPartyPage({ party, friends = null }: { party?: PartyController; friends?: FriendsController | null } = {}) {
+  return party ? <PartyPage party={party} friends={friends} /> : <StandalonePartyPage />;
+}
+function PartyPage({ party, friends }: { party: PartyController; friends: FriendsController | null }) {
   const inviteId = useId();
+  const [mobilePanel, setMobilePanel] = useState<"map" | "room" | "friends">("map");
   const isOwner = party.view.selfId !== null && party.view.selfId === party.view.ownerId;
   const connected = party.view.status === "connected";
   const remainingMs = party.view.expiresInMs === null ? null : Math.max(0, party.view.expiresInMs - party.elapsedMs);
 
   return (
-    <section className="g-party" aria-labelledby="g-party-title">
-      <div className="g-party-header">
-        <div className="g-party-intro">
-          <h2 id="g-party-title">G-Party · สถานะเพื่อนที่แชร์ GSI</h2>
-          <p className="g-party-description">สถานะจาก GSI ของสมาชิกที่ยินยอมแชร์ แสดงค่าเมื่อแมตช์และทีมตรงกัน และข้อมูลไม่เกิน 2 วินาที</p>
-        </div>
-        <span className="g-party-status" role="status" data-ready={connected}>
-          {party.busy === "leave" ? "กำลังหยุดแชร์" : PARTY_STATUS_LABELS[party.view.status]}
-        </span>
+    <section className="g-party-workspace" aria-labelledby="g-party-title">
+      <header className="g-party-workspace-heading">
+        <div><span className="g-party-kicker">เล่นด้วยกัน</span><h2 id="g-party-title">G-Party</h2></div>
+        <span className="g-party-status" role="status" data-ready={connected}>{party.busy === "leave" ? "กำลังหยุดแชร์" : PARTY_STATUS_LABELS[party.view.status]}</span>
+      </header>
+      <nav className="g-party-mobile-nav" aria-label="พื้นที่ G-Party">
+        {([ ["map", "แผนที่"], ["room", "ห้องและสมาชิก"], ["friends", "Friends"] ] as const).map(([panel, label]) => <button key={panel} type="button" aria-pressed={mobilePanel === panel} onClick={() => setMobilePanel(panel)}>{label}</button>)}
+      </nav>
+      <div className="g-party-layout" data-mobile-panel={mobilePanel}>
+        <section className="g-party-room-rail" aria-label="ห้องและสมาชิก">
+          <div className="g-party-rail-title"><h3>ห้องของคุณ</h3><span>{party.view.members.length} / 5</span></div>
+          {party.error && <p className="g-party-feedback" role="alert">{party.error}</p>}
+          {party.canLeave && <button type="button" className="g-party-danger g-party-leave" onClick={() => void party.leave()} disabled={party.busy === "leave"}>ออกและหยุดแชร์</button>}
+          <div className="g-party-room-scroll">
+            {!party.canLeave && <ConnectionForm connect={party.connect} />}
+            {party.canLeave && <>
+              <details className="g-party-room-management">
+                <summary>จัดการห้องและรหัสเชิญ</summary>
+                <p className="g-party-note">{remainingMs === null ? "กำลังตรวจสถานะห้อง" : `ห้องหมดอายุภายใน ${Math.ceil(remainingMs / 60_000)} นาที`}</p>
+                {isOwner && connected && <>
+                  {party.view.invite && <label className="g-party-field" htmlFor={inviteId}>รหัสเชิญสำหรับเพื่อน<input id={inviteId} value={party.view.invite} readOnly autoComplete="off" spellCheck={false} onFocus={(event) => event.currentTarget.select()} /></label>}
+                  <button type="button" onClick={() => void party.rotateInvite()} disabled={party.busy !== null}>เปลี่ยนรหัสเชิญ</button>
+                  <p className="g-party-note">รหัสใหม่ปิดการเข้าด้วยรหัสเดิม แต่ไม่เอาสมาชิกปัจจุบันออก</p>
+                  <p className="g-party-note">เมื่อนำสมาชิกออก ควรเปลี่ยนรหัสเชิญด้วย ผู้ที่รู้รหัสเดิมอาจเข้าร่วมซ้ำได้ · เจ้าของออกจะปิดปาร์ตี้</p>
+                </>}
+                <p className="g-party-note">เมื่อออกขณะออฟไลน์ ข้อมูลสุขภาพที่เพื่อนเห็นจะหมดอายุภายใน 2 วินาที และสมาชิกภายใน 30 วินาที</p>
+              </details>
+              <div className="g-party-member-section"><h3>สถานะสมาชิก</h3><p className="g-party-note">GSI แมตช์/ทีมเดียวกัน · ไม่เกิน 2 วินาที</p>
+                <PartyMembers workspace view={party.view} elapsedMs={party.elapsedMs}
+                  onKick={isOwner && connected ? (memberId) => void party.kick(memberId) : undefined}
+                  disabled={party.busy !== null || friends?.busy}
+                  accountBindings={friends?.bindings}
+                  onAddFriend={friends?.ready ? (gid) => { void friends.mutate({ action: "request", gid }); } : undefined} />
+              </div>
+            </>}
+          </div>
+        </section>
+        <section className="g-party-map" aria-label="แผนที่หลัก G-Party">
+          <div className="g-party-map-heading"><h3>มินิแมป</h3><span>ภาพจากเครื่องคุณ · ไม่ส่งภาพให้ปาร์ตี้</span></div>
+          <div className="g-party-map-display"><div className="g-party-map-frame"><MinimapCanvas /></div></div>
+          <p className="g-party-map-note">แผนที่และระบบในเครื่องทำงานได้โดยไม่ต้องเข้าสู่ระบบ</p>
+        </section>
+        <aside className="g-party-social-rail" aria-label="Friends"><FriendsPanel friends={friends} party={party} /></aside>
       </div>
-      {party.error && <p className="g-party-feedback" role="alert">{party.error}</p>}
-      {!party.canLeave && <ConnectionForm connect={party.connect} />}
-      {party.canLeave && <section className="g-party-session" aria-label="จัดการปาร์ตี้">
-        <div className="g-party-actions">
-          <div>
-            <h3>ปาร์ตี้ของคุณ · {party.view.members.length} / 5 คน</h3>
-            <p className="g-party-note">{remainingMs === null ? "กำลังตรวจสถานะห้อง" : `ห้องหมดอายุภายใน ${Math.ceil(remainingMs / 60_000)} นาที`}</p>
-          </div>
-          <button type="button" className="g-party-danger" onClick={() => void party.leave()} disabled={party.busy === "leave"}>
-            ออกและหยุดแชร์
-          </button>
-        </div>
-        {isOwner && connected && <>
-          {party.view.invite && <label className="g-party-field" htmlFor={inviteId}>
-            รหัสเชิญสำหรับเพื่อน
-            <input id={inviteId} value={party.view.invite} readOnly autoComplete="off" spellCheck={false}
-              onFocus={(event) => event.currentTarget.select()} />
-          </label>}
-          <div className="g-party-actions">
-            <button type="button" onClick={() => void party.rotateInvite()} disabled={party.busy !== null}>เปลี่ยนรหัสเชิญ</button>
-            <p className="g-party-note">รหัสใหม่ปิดการเข้าด้วยรหัสเดิม แต่ไม่เอาสมาชิกปัจจุบันออก</p>
-          </div>
-          <p className="g-party-note">เมื่อนำสมาชิกออก ควรเปลี่ยนรหัสเชิญด้วย ผู้ที่รู้รหัสเดิมอาจเข้าร่วมซ้ำได้ · เจ้าของออกจะปิดปาร์ตี้</p>
-        </>}
-        <p className="g-party-note">เมื่อออกขณะออฟไลน์ ข้อมูลสุขภาพที่เพื่อนเห็นจะหมดอายุภายใน 2 วินาที และสมาชิกภายใน 30 วินาที</p>
-      </section>}
-      <section className="g-party-section" aria-label="ข้อมูลสมาชิก">
-        <div className="g-party-section-heading"><h3>สถานะสมาชิก</h3><span className="g-party-note">ค่าที่ไม่ทราบจะแสดง —</span></div>
-        <PartyMembers view={party.view} elapsedMs={party.elapsedMs}
-          onKick={isOwner && connected ? (memberId) => void party.kick(memberId) : undefined}
-          disabled={party.busy !== null} />
-      </section>
     </section>
   );
 }

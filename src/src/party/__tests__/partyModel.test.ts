@@ -31,6 +31,7 @@ const liveMember = {
 };
 
 const connected = {
+  relayUrl: "https://relay.example", roomGeneration: 1,
   status: "connected" as const,
   roomId,
   selfId,
@@ -131,8 +132,13 @@ describe("G-Party snapshot validation and freshness", () => {
 
   it("starts with no party, no invite and no invented roster", () => {
     expect(emptyPartyView()).toEqual({
-      status: "idle", roomId: null, selfId: null, ownerId: null,
+      status: "idle", relayUrl: null, roomGeneration: null, roomId: null, selfId: null, ownerId: null,
       invite: null, expiresInMs: null, error: null, members: [],
     });
   });
+});
+
+it("requires authoritative relay and room generation for connected social scope", () => {
+  expect(parsePartyView({ ...connected, relayUrl: "https://relay.example", roomGeneration: 1 })).not.toBeNull();
+  expect(parsePartyView({ ...connected, relayUrl: "https://relay.example", roomGeneration: 0 })).toBeNull();
 });

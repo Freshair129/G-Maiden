@@ -2,13 +2,13 @@
 title: "G-Maiden MVP — Scope, Access, Data and Quality Decisions"
 doc_id: "mvp-decisions"
 status: "accepted"
-version: "0.6.0"
-updated: 2026-11-01
+version: "0.7.0"
+updated: "2026-11-01"
 owner: "Boss"
 approved_by: "Boss — explicit owner instruction in conversation"
 approved_date: "2026-11-01"
 approval_basis: "Owner authorized cooperative own-GSI party sharing and repository documentation; assistant selects detailed protocol. Prior 900MB decision is preserved; no release/native acceptance is implied."
-related_docs: ["roadmap", "mvp-backlog", "mvp-execution-dag", "software-requirements-specification", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing"]
+related_docs: ["roadmap", "mvp-backlog", "mvp-execution-dag", "software-requirements-specification", "FEAT-G-VOICE", "FEAT-G-MEMORY", "FEAT-G-PARTY", "CR-037-party-gsi-own-stat-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations"]
 ---
 
 # มติสำหรับเริ่มพัฒนา MVP
@@ -83,6 +83,19 @@ Consent toggle, match/session generation และ backend เป็นส่ว
 
 รายละเอียด strict schema, freshness, limits, kick/rotate และเกณฑ์ PARTY-AC อยู่ใน [[FEAT-G-PARTY]]; plan/evidence แยกที่ [[2026-11-01-g-party-gsi-sharing]]. คง thresholds/resource matrix ใน MVP-006 โดยไม่เปลี่ยนเพื่อทำให้ feature ผ่าน.
 
+## MVP-005B — G-Friends social contract
+
+ผู้ใช้อนุญาต source implementation ผ่าน CR/PR/merge สำหรับระบบเพื่อนและคำเชิญวันที่ 2026-11-01 ตาม [[CR-038-party-friends-presence-invitations]]. [[FEAT-G-FRIENDS]] เป็น feature contract; [[ADR-20]] และ [[2026-11-01-g-party-friends-design]] บันทึก implementation choices ของ assistant หลัง design review ไม่ใช่การอ้างว่า Owner ตรวจราย field แล้ว
+
+- Google session เป็น requirement เฉพาะ friend/presence/targeted-invite actions; guest room code, local core และ own-GSI source admission เดิมไม่ต้องมี app account และไม่บังคับเป็นเพื่อนก่อนเข้าห้อง
+- มิตรภาพที่ทั้งสองฝ่ายยอมรับไม่เปิด stats หรือ sharing อัตโนมัติ Presence off by default หมายถึงออนไลน์ในแอปเท่านั้น; profile linking มี opt-in แยก; ทุก join ต้อง fresh checked GSI consent พร้อม action ของผู้ใช้
+- อนุญาต private social graph/settings/blocks และ bounded temporary presence/request/invitation/account-room binding ใน `social_private` ของ account backend เท่านั้น ไม่ส่งข้อมูลเหล่านี้ไป AI/Memory/G-Log และไม่ส่ง gameplay stats เข้า social storage
+- Public social projection จำกัด GID + safe displayName ของความสัมพันธ์ที่มีสิทธิ์ดู ไม่ขยาย profiles SELECT ไม่เปิด email/phone/Steam/session UUID/raw profile ไม่มี public directory หรือ last-seen/history
+- Account JWT อยู่กับ account broker; relay ไม่รับ JWT/GID/UUID. Native เก็บ member credentials; social DB ไม่เก็บ GMP1 secret/memberToken. Registered HTTPS relay proof + one-use challenge/ticket ใช้ permission และ expiry แยกจาก stats route
+- Block/remove/revocation ปฏิเสธ pending authorization ตาม transaction ordering ที่กำหนด ไม่อ้างว่าเตะ current room members ทันที ห้าม fallback เข้า guest code อัตโนมัติเมื่อ social admission ล้มเหลว
+- Limits, retention/cleanup, key rotation, failure semantics และ protocol upgrade ต้องเป็นไปตาม FEAT/spec/runbook. Missing configuration ทำให้ social link/invites unavailable โดย friends/settings/presence และ guest/core ที่มี prerequisites ของตนยังทำงาน
+- คง 62 MVP task/priority และ MVP-006 quality budgets เดิม Source merge ไม่เท่ากับ migration/deployment/release/live Google/Dota/two-monitor/NFR acceptance ดู [[g-party-social-operations]]
+
 ## MVP-006 — เกณฑ์ก่อนเริ่มวัด
 
 Reference tier: 6 physical cores / 12 logical processors, RAM 16 GB, DXGI GPU และจอ 1080p ≥60 Hz; บันทึก SKU/driver/OS/audio/model จริงทุก receipt. เลือกเครื่องใน tier นี้ก่อนวัด ห้ามใช้จำนวน core สมมติเป็นผลวัด.
@@ -154,3 +167,4 @@ MVP-007 reconcile PRD/SRS/AGENTS/CLAUDE ตามมตินี้. งาน c
 | 0.4.0 | 2026-10-28 | Owner explicitly raised aggregate full Working Set budget to800MB; retain all-process accounting, CPU/latency/FPS/privacy and provider-admission gates. |
 | 0.5.0 | 2026-10-28 | Owner approved900MB for MVP and continuing other audited event defects; retain prior evidence and all accounting/quality gates. |
 | 0.6.0 | 2026-11-01 | เพิ่ม Owner-authorized G-Party peer route พร้อม consent/allowlist/match-team/freshness boundaries แยกจาก AI; รักษา MVP tasks, raw-data denylist และ pending native/live acceptance. |
+| 0.7.0 | 2026-11-01 | เพิ่ม G-Friends เป็น optional social extension ตาม CR-038 แยก friendship/presence/profile-link/GSI consent และ private persistence โดยไม่เปลี่ยน MVP parent tasks หรืออ้าง live/deployed acceptance. |

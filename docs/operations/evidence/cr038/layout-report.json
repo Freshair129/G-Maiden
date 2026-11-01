@@ -1,0 +1,311 @@
+[
+  {
+    "label": "wide",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "errors": [],
+    "pageOverflowX": false,
+    "pageOverflowY": false,
+    "map": {
+      "x": 533.9375,
+      "y": 149.890625,
+      "width": 802.109375,
+      "height": 802.109375,
+      "scrollHeight": 800,
+      "clientHeight": 800,
+      "scrollWidth": 800,
+      "clientWidth": 800,
+      "display": "block"
+    },
+    "room": {
+      "x": 54,
+      "y": 193.5,
+      "width": 224,
+      "height": 463.890625,
+      "scrollHeight": 464,
+      "clientHeight": 464,
+      "scrollWidth": 224,
+      "clientWidth": 224,
+      "display": "block"
+    },
+    "friends": {
+      "x": 1580,
+      "y": 111.5,
+      "width": 298,
+      "height": 870.5,
+      "scrollHeight": 871,
+      "clientHeight": 871,
+      "scrollWidth": 298,
+      "clientWidth": 298,
+      "display": "flex"
+    },
+    "memberVisible": [
+      {
+        "h": 73,
+        "fullyVisible": true
+      },
+      {
+        "h": 73,
+        "fullyVisible": true
+      },
+      {
+        "h": 73,
+        "fullyVisible": true
+      },
+      {
+        "h": 73,
+        "fullyVisible": true
+      },
+      {
+        "h": 72,
+        "fullyVisible": true
+      }
+    ],
+    "activeElement": "BODY"
+  },
+  {
+    "label": "laptop",
+    "viewport": {
+      "width": 1366,
+      "height": 768
+    },
+    "errors": [],
+    "pageOverflowX": false,
+    "pageOverflowY": false,
+    "map": {
+      "x": 412.9375,
+      "y": 149.890625,
+      "width": 490.109375,
+      "height": 490.109375,
+      "scrollHeight": 488,
+      "clientHeight": 488,
+      "scrollWidth": 488,
+      "clientWidth": 488,
+      "display": "block"
+    },
+    "room": {
+      "x": 54,
+      "y": 193.5,
+      "width": 224,
+      "height": 463.890625,
+      "scrollHeight": 464,
+      "clientHeight": 464,
+      "scrollWidth": 224,
+      "clientWidth": 224,
+      "display": "block"
+    },
+    "friends": {
+      "x": 1026,
+      "y": 111.5,
+      "width": 298,
+      "height": 558.5,
+      "scrollHeight": 559,
+      "clientHeight": 559,
+      "scrollWidth": 298,
+      "clientWidth": 298,
+      "display": "flex"
+    },
+    "memberVisible": [
+      {
+        "h": 73,
+        "fullyVisible": true
+      },
+      {
+        "h": 73,
+        "fullyVisible": true
+      },
+      {
+        "h": 73,
+        "fullyVisible": true
+      },
+      {
+        "h": 73,
+        "fullyVisible": true
+      },
+      {
+        "h": 72,
+        "fullyVisible": true
+      }
+    ],
+    "activeElement": "BODY"
+  },
+  {
+    "label": "narrow",
+    "viewport": {
+      "width": 800,
+      "height": 720
+    },
+    "errors": [],
+    "pageOverflowX": false,
+    "pageOverflowY": false,
+    "map": {
+      "x": 200.1875,
+      "y": 192.390625,
+      "width": 399.609375,
+      "height": 399.609375,
+      "scrollHeight": 398,
+      "clientHeight": 398,
+      "scrollWidth": 398,
+      "clientWidth": 398,
+      "display": "block"
+    },
+    "room": {
+      "x": 0,
+      "y": 0,
+      "width": 0,
+      "height": 0,
+      "scrollHeight": 0,
+      "clientHeight": 0,
+      "scrollWidth": 0,
+      "clientWidth": 0,
+      "display": "block"
+    },
+    "friends": {
+      "x": 0,
+      "y": 0,
+      "width": 0,
+      "height": 0,
+      "scrollHeight": 0,
+      "clientHeight": 0,
+      "scrollWidth": 0,
+      "clientWidth": 0,
+      "display": "flex"
+    },
+    "memberVisible": [
+      {
+        "h": 0,
+        "fullyVisible": true
+      },
+      {
+        "h": 0,
+        "fullyVisible": true
+      },
+      {
+        "h": 0,
+        "fullyVisible": true
+      },
+      {
+        "h": 0,
+        "fullyVisible": true
+      },
+      {
+        "h": 0,
+        "fullyVisible": true
+      }
+    ],
+    "activeElement": "BODY"
+  },
+  {
+    "label": "capacity",
+    "viewport": {
+      "width": 1920,
+      "height": 1080
+    },
+    "errors": [],
+    "pageOverflowX": false,
+    "pageOverflowY": false,
+    "map": {
+      "x": 533.9375,
+      "y": 149.890625,
+      "width": 802.109375,
+      "height": 802.109375,
+      "scrollHeight": 800,
+      "clientHeight": 800,
+      "scrollWidth": 800,
+      "clientWidth": 800,
+      "display": "block"
+    },
+    "room": {
+      "x": 54,
+      "y": 193.5,
+      "width": 224,
+      "height": 463.890625,
+      "scrollHeight": 464,
+      "clientHeight": 464,
+      "scrollWidth": 224,
+      "clientWidth": 224,
+      "display": "block"
+    },
+    "friends": {
+      "x": 1580,
+      "y": 111.5,
+      "width": 298,
+      "height": 870.5,
+      "scrollHeight": 871,
+      "clientHeight": 871,
+      "scrollWidth": 298,
+      "clientWidth": 298,
+      "display": "flex"
+    },
+    "memberVisible": [
+      {
+        "h": 73,
+        "fullyVisible": true
+      },
+      {
+        "h": 73,
+        "fullyVisible": true
+      },
+      {
+        "h": 73,
+        "fullyVisible": true
+      },
+      {
+        "h": 73,
+        "fullyVisible": true
+      },
+      {
+        "h": 72,
+        "fullyVisible": true
+      }
+    ],
+    "activeElement": "BODY"
+  },
+  {
+    "label": "idle",
+    "viewport": {
+      "width": 1366,
+      "height": 768
+    },
+    "errors": [],
+    "pageOverflowX": false,
+    "pageOverflowY": false,
+    "map": {
+      "x": 412.9375,
+      "y": 149.890625,
+      "width": 490.109375,
+      "height": 490.109375,
+      "scrollHeight": 488,
+      "clientHeight": 488,
+      "scrollWidth": 488,
+      "clientWidth": 488,
+      "display": "block"
+    },
+    "room": {
+      "x": 54,
+      "y": 153,
+      "width": 224,
+      "height": 466,
+      "scrollHeight": 466,
+      "clientHeight": 466,
+      "scrollWidth": 224,
+      "clientWidth": 224,
+      "display": "block"
+    },
+    "friends": {
+      "x": 1026,
+      "y": 111.5,
+      "width": 298,
+      "height": 558.5,
+      "scrollHeight": 559,
+      "clientHeight": 559,
+      "scrollWidth": 298,
+      "clientWidth": 298,
+      "display": "flex"
+    },
+    "memberVisible": [],
+    "activeElement": "BODY"
+  }
+]

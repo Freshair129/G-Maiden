@@ -1,7 +1,7 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.10"
+version: "0.2.11"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
 last_update: "2026-11-01T00:00:00+07:00,Codex"
 status: "active"
@@ -118,6 +118,7 @@ attributes:
   - `docs/architecture/adr/ADR-17-brokered-oauth-transaction-boundary.md` — Supabase OAuth Server Transaction Boundary
   - `docs/architecture/adr/ADR-18-dev-runtime-governance-split.md` — Dev & Runtime Governance Split (renamed from ADR-17)
   - `docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md` — proposed local HUD target observation and action-scoped lethality (Issue #71)
+  - `docs/architecture/adr/ADR-20.md` — optional Friends/private social graph and brokered G-Party membership proof/invitations
 - `docs/architecture/spikes/` — Spikes & Technical Proofs:
   - `docs/architecture/spikes/S-1-minimap-cv.md` — Spike minimap computer vision
   - `docs/architecture/spikes/S-2-oauth-broker-provider-capability.md` — Spike Supabase OAuth Server & Loopback gate capability
@@ -144,6 +145,8 @@ attributes:
   - `docs/features/G-SERIES-DATA-LINEAGE.md` — source, transport, formula, fallback, and output lineage ของ G-Series ทุกโมดูล
 - [[FEAT-G-PARTY]]
   - `docs/features/FEAT-G-PARTY.md` — owner-directed own-GSI party sharing, separate consent, relay/protocol และ pending native/live evidence
+- [[FEAT-G-FRIENDS]]
+  - `docs/features/FEAT-G-FRIENDS.md` — optional Friends, presence, verified room links and consent-gated invitations
 - [[FEAT-G-*]]
   - `docs/features/FEAT-G-*.md` — เอกสารเชิงโมดูลของ G-series
 
@@ -158,9 +161,13 @@ attributes:
   - `docs/change request/CR-034-gid-iam-production-completion.md` — GID IAM Phase 2 implemented locally; live verification and production promotion pending
   - `docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md` — proposed selected-target HUD CV + single-action G-Damage, Issue #71
   - `docs/change request/CR-037-party-gsi-own-stat-sharing.md` — owner-authorized cooperative own-stat sharing; detailed implementation decisions and acceptance boundaries
-  - `docs/change request/CR-*.md` — เอกสาร CR อื่นๆ ทั้งหมดตั้งแต่ CR-001 ถึง CR-037
+  - `docs/change request/CR-038-party-friends-presence-invitations.md` — supervised Friends implementation through protected PR merge, issue #106
+  - `docs/change request/CR-*.md` — เอกสาร CR อื่นๆ ทั้งหมดตั้งแต่ CR-001 ถึง CR-038
 
 ## Operations
+
+- [[g-party-social-operations]]
+  - `docs/operations/g-party-social-operations.md` — private social configuration, retention, ticket-aware HMAC rotation, rollback and source/live evidence
 
 - `docs/operations/validation/`
   - `docs/operations/validation/` — toolkit, forms, social validation assets
@@ -196,6 +203,11 @@ attributes:
   - `docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md` — GID Central Pipeline Phase 2 Plan (AnnStudio)
   - `docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md` — G-Party GP-001–006 implementation and verification plan; separate from existing 62 MVP parent tasks
 
+- [[2026-11-01-g-party-friends-design]]
+  - `docs/superpowers/specs/2026-11-01-g-party-friends-design.md` — normative account/relay/native/UI contracts and threat cases
+- [[2026-11-01-g-party-friends]]
+  - `docs/superpowers/plans/2026-11-01-g-party-friends.md` — Tasks 1–5 and multi-agent ownership/evidence/merge workflow
+
 ## Changelog
 | Version | Date | Summary |
 | --- | --- | --- |
@@ -219,3 +231,4 @@ attributes:
 | 0.2.8 | 2026-10-19 | Indexed Graphite Clarity and the Command Deck wireframe, wireflow, and user-flow documents. |
 | 0.2.9 | 2026-10-30 | Indexed the UI technical drawing atlas and its source/browser evidence. |
 | 0.2.10 | 2026-11-01 | Register G-Party feature, CR-037 and implementation plan with explicit consent and pending acceptance. |
+| 0.2.11 | 2026-11-01 | Index CR-038, ADR-20, G-Friends feature, design/implementation plan and social operations/evidence runbook. |

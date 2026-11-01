@@ -2,7 +2,7 @@
 title: "CLAUDE.md"
 doc_id: "claude"
 status: active
-version: "0.4.11"
+version: "0.4.12"
 updated: "2026-11-01"
 owner: "G-Maiden"
 ---
@@ -120,6 +120,19 @@ or client-readable auth metadata), explicit SMS consent/rate limiting, and a C-3
 and approval gate before any schema, provider, or route is implemented.
 
 When adding any new module/feature, keep the `G-` prefix (ADR-01) for brand/scalability unity.
+
+
+The CR-038 G-Friends extension (`FEAT-G-FRIENDS`, `ADR-20`, MVP-005B) adds optional Google-backed
+friends/presence/verified room labels/targeted invitations. Guest codes and local core remain
+account-optional. Friendship, presence visibility, profile linking and GSI sharing are separate
+permissions; accepting an invite requires fresh checked sharing consent and explicit idle-only
+native admission. Private social data never enters AI/Memory/G-Log; relay receives no account
+JWT/GID/UUID and social storage holds no GMP1/memberToken/GSI. CommandDeck owns its persistent
+lifecycle; every room scope transition requires acknowledged unlink/revision refresh before
+relinking. Preserve the large minimap. The latest owner direction explicitly requires existing design
+tokens while allowing a completely new map-centered G-Party layout; do not copy the old layout. Source checks/merge are distinct from hosted/live/NFR acceptance;
+follow `g-party-social-operations` for configuration, retention and ticket-aware key rotation.
+
 
 ### Hard constraints (non-functional — enforce these)
 
@@ -345,3 +358,4 @@ G-AnnStudio opens the same container through its package panel or a file argumen
 | 0.4.9 | 2026-10-30 | Document user-authorized .gann filesystem import and shared G-Ann opener. |
 | 0.4.10 | 2026-10-31 | Replace announcer fallback routes with verified GANN-only event media and bound activation. |
 | 0.4.11 | 2026-11-01 | Add separately consented G-Party own-stat sharing guidance without widening AI/raw-data permissions or claiming native/live acceptance. |
+| 0.4.12 | 2026-11-01 | Document optional G-Friends social authorization separately from guest sharing and AI; preserve native/live/deployment evidence boundaries. |

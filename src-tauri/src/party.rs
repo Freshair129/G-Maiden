@@ -1,6 +1,8 @@
 //! G-Party native boundary. Only trusted Control can consent to or manage a room.
 
-use g_party::{ConnectOptions, LocalObservation, PartyClient, PartyView};
+use g_party::{
+    ConnectOptions, LocalObservation, PartyClient, PartyView, SocialJoinOptions, SocialProof,
+};
 use tauri::{AppHandle, Manager, WebviewWindow};
 
 struct PartyState {
@@ -141,5 +143,39 @@ pub(crate) async fn party_rotate_invite(
 ) -> Result<PartyView, String> {
     let client = trusted_client(&app, &window)?;
     client.rotate_invite().await.map_err(str::to_owned)?;
+    Ok(current_view(&client))
+}
+
+#[tauri::command]
+pub(crate) async fn party_social_proof(
+    app: AppHandle,
+    window: WebviewWindow,
+    challenge: String,
+    relay_url: String,
+) -> Result<SocialProof, String> {
+    trusted_client(&app, &window)?
+        .social_proof(challenge, relay_url)
+        .await
+}
+#[tauri::command]
+pub(crate) async fn party_join_social(
+    app: AppHandle,
+    window: WebviewWindow,
+    ticket: String,
+    relay_url: String,
+    room_id: String,
+    display_name: String,
+    consent: bool,
+) -> Result<PartyView, String> {
+    let client = trusted_client(&app, &window)?;
+    client
+        .join_social(SocialJoinOptions {
+            ticket,
+            relay_url,
+            room_id,
+            display_name,
+            consent,
+        })
+        .await?;
     Ok(current_view(&client))
 }

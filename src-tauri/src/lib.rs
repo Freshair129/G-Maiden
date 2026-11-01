@@ -1504,6 +1504,8 @@ pub fn run() {
         )
         .invoke_handler(tauri::generate_handler![
             party::party_connect,
+            party::party_social_proof,
+            party::party_join_social,
             party::party_get_state,
             party::party_leave,
             party::party_kick,

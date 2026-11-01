@@ -2,19 +2,19 @@
 title: "FEAT: G-Party — Cooperative own-GSI status sharing"
 doc_id: "FEAT-G-PARTY"
 status: "active"
-version: "0.1.0"
+version: "0.2.0"
 updated: "2026-11-01"
 owner: "G-Maiden"
 source_of_truth: true
 complexity: "C-3"
 risk: "HIGH"
-related_docs: ["mvp-decisions", "product-requirements", "software-requirements-specification", "G-SERIES-DATA-LINEAGE", "CR-037-party-gsi-own-stat-sharing", "2026-11-01-g-party-gsi-sharing"]
+related_docs: ["mvp-decisions", "product-requirements", "software-requirements-specification", "G-SERIES-DATA-LINEAGE", "CR-037-party-gsi-own-stat-sharing", "2026-11-01-g-party-gsi-sharing", "FEAT-G-FRIENDS", "ADR-20", "CR-038-party-friends-presence-invitations"]
 ---
 
 # FEAT-G-PARTY — Cooperative own-GSI status sharing
 
 > **Module:** G-Party · **Phase:** 3 (การเชื่อมแหล่งข้อมูลและ consumer ของส่วนขยายนี้ ไม่ใช่การเปลี่ยน priority ของ MVP เดิม)
-> **สถานะ:** implementation candidate ครบ relay, portable Rust sender/receiver, native hooks และ UI; ผลทดสอบและ independent review อยู่ในแผน ส่วน Windows/native live Dota/สองจอ/resource acceptance ยังรอหลักฐาน
+> **สถานะ:** base source merged ผ่าน PR #104; CR-038 เพิ่ม optional G-Friends และ required roomGeneration schema ตาม §5–6. Native runtime/live Dota/สองจอ/resource acceptance ยังรอหลักฐานของตน
 
 ## 1. เป้าหมายและอำนาจตัดสินใจ
 
@@ -26,9 +26,9 @@ G-Party เป็น **ส่วนขยายที่ Owner สั่งเ�
 
 - `PARTY-FR-001` สร้าง/เข้าห้องต้องระบุ relay URL, display name และ **ติ๊ก consent อย่างชัดเจนพร้อมกดเปิดใช้ใน action เดียวกัน**. Native ปฏิเสธ `consent=false` ก่อน request เครือข่ายใด ๆ. การรู้ invitation หรือการ sign-in ไม่ใช่ consent.
 - `PARTY-FR-002` รอบนี้ไม่มี view-only mode. ข้อความก่อน connect ต้องบอกว่าเมื่อเปิดใช้จะส่งเฉพาะ own stats ที่อนุญาต พร้อม room-scoped match/team binding ผ่าน relay ที่เลือกให้สมาชิกห้อง. ต้องยินยอมใหม่ในแต่ละการเปิดแอป/การเชื่อมต่อโดยตั้งใจ ไม่มี auto-join ตอน startup และไม่บันทึก room credentials ลงดิสก์.
-- `PARTY-FR-003` ใช้ได้โดยไม่ต้องมี Google/GID/Steam account session ของ G-Maiden. การตรวจ active local Steam owner เพื่อยืนยัน source เป็นการตรวจในเครื่อง ไม่ใช่ app account gate และไม่ส่ง SteamID ออกไป.
+- `PARTY-FR-003` Guest create/join ด้วยรหัสใช้ได้โดยไม่ต้องมี Google/GID/Steam account session ของ G-Maiden. Optional Friends/targeted invitations ใช้ Google session ตาม [[FEAT-G-FRIENDS]] โดยไม่เปลี่ยน guest route. การตรวจ active local Steam owner เพื่อยืนยัน source เป็นการตรวจในเครื่อง ไม่ใช่ app account gate และไม่ส่ง SteamID ออกไป.
 - `PARTY-FR-004` Leave หยุด sharing ล้าง credentials/peer state ในเครื่องทันที และ fence งานที่ค้าง; ลบ membership ที่ relay แบบ best effort. เมื่อ offline ห้ามอ้างว่าปลายทางถูกลบทันที: peer health หมดความสดไม่เกิน 2 วินาทีและ membership หมดอายุหลังไม่ sync 30 วินาที.
-- `PARTY-FR-005` ห้องมีได้ไม่เกิน 5 คนรวม owner อายุไม่เกิน 4 ชั่วโมง. Owner leave/หมดอายุทำให้ห้องปิด. Owner kick สมาชิกได้และหมุน invitation ได้; rotate ปิดเฉพาะการ join ในอนาคตด้วย code เก่า ไม่ revoke สมาชิกที่อยู่แล้ว. ผู้ถูก kick ที่ยังมี invite ใช้ได้อาจกลับมา join จึงต้องแนะนำให้ rotate ด้วย.
+- `PARTY-FR-005` ห้องมีได้ไม่เกิน 5 คนรวม owner อายุไม่เกิน 4 ชั่วโมง. Owner leave/หมดอายุทำให้ห้องปิด. Owner kick สมาชิกได้และหมุน invitation ได้; rotate เพิ่ม authoritative roomGeneration และปิดการ join ในอนาคตด้วย code เก่าหรือ social proof/invite/ticket generation เก่า ไม่ revoke สมาชิกที่อยู่แล้ว. ผู้ถูก kick ที่ยังมี invite ใช้ได้อาจกลับมา join จึงต้องแนะนำให้ rotate ด้วย.
 
 Consent ของ G-Party แยกจาก account consent และ AI/cloud-context consent ใน [[mvp-decisions]] MVP-005 โดยสมบูรณ์. ไม่เพิ่ม telemetry, public profile, match contribution, AI prompt หรือการเผยแพร่สู่ชุมชนจาก action นี้.
 
@@ -74,12 +74,12 @@ Unknown keys ทุกระดับถูกปฏิเสธ. roomId/memberI
 | `POST /v1/rooms/:roomId/sync` | Bearer memberToken; `{sequence,scope,sample}` | 200 RoomSnapshot |
 | `DELETE /v1/rooms/:roomId/members/me` | Bearer memberToken | 204; owner leave ปิดห้อง |
 | `DELETE /v1/rooms/:roomId/members/:memberId` | owner เท่านั้น; kick owner ไม่ได้ | 204 |
-| `POST /v1/rooms/:roomId/invite` | owner เท่านั้น; `{}` | 200 `{invite}` |
+| `POST /v1/rooms/:roomId/invite` | owner เท่านั้น; `{}` | 200 `{invite,roomGeneration}` |
 | `GET /health` | ไม่คืนข้อมูลห้อง | `{ok:true,protocol:1}` |
 
-Membership มี `roomId, memberId, memberToken, ownerId, invite, expiresInMs`. `sequence` เป็น positive safe integer ที่เพิ่มต่อ membership; ค่าซ้ำ/ย้อนกลับถูกปฏิเสธ. `scope` เป็น null หรือ `{matchKey: string64hex,team:"radiant"|"dire"}`. `sample` เป็น null หรือ Stats พร้อม `sourceAgeMs` เป็น nonnegative integer ≤10000; non-null sample ต้องมี non-null scope.
+Membership มี `roomId, memberId, memberToken, ownerId, invite, expiresInMs, roomGeneration`. CR-038 กำหนด roomGeneration เป็น positive safe integer เริ่ม 1 และเพิ่มเมื่อ rotate; ต้องอัปเดต relay/native คู่กันและปฏิเสธ schema เก่าที่ field หายโดยไม่เติม default. `sequence` เป็น positive safe integer ที่เพิ่มต่อ membership; ค่าซ้ำ/ย้อนกลับถูกปฏิเสธ. `scope` เป็น null หรือ `{matchKey: string64hex,team:"radiant"|"dire"}`. `sample` เป็น null หรือ Stats พร้อม `sourceAgeMs` เป็น nonnegative integer ≤10000; non-null sample ต้องมี non-null scope.
 
-RoomSnapshot มี `roomId,selfId,ownerId,expiresInMs,members`. สมาชิกแต่ละรายมี `memberId,displayName,isOwner,state,ageMs,sample`. ข้อมูลชื่อ/ID/owner มองเห็นภายในห้อง; raw scope ไม่ส่งกลับ. Relay คืน Stats/age เฉพาะ caller และ source มี matchKey **และ** team ตรงกัน. Scope หาย → `waiting` และ sample/age=null; scope ต่าง → `different_match` และ sample/age=null ไม่เผย hero/vitals; เกิน TTL → `stale` และ sample=null; ผ่าน → `live` พร้อม Stats.
+RoomSnapshot มี `roomId,selfId,ownerId,expiresInMs,members,roomGeneration`. สมาชิกแต่ละรายมี `memberId,displayName,isOwner,state,ageMs,sample`. ข้อมูลชื่อ/ID/owner มองเห็นภายในห้อง; raw scope ไม่ส่งกลับ. Relay คืน Stats/age เฉพาะ caller และ source มี matchKey **และ** team ตรงกัน. Scope หาย → `waiting` และ sample/age=null; scope ต่าง → `different_match` และ sample/age=null ไม่เผย hero/vitals; เกิน TTL → `stale` และ sample=null; ผ่าน → `live` พร้อม Stats.
 
 ข้อผิดพลาดเป็น JSON `{error: code}` เท่านั้น: `invalid_request` 400, `unauthorized` 401, `room_unavailable` 404, `room_full` 409, `forbidden` 403, `replayed_sequence` 409, `rate_limited` 429, `capacity` 503; unexpected internal error คืน `unavailable` 500 โดยไม่มี raw exception. Native รับเฉพาะ error code ที่อยู่ใน allowlist และตรง HTTP status; ข้อความอื่นเป็น generic error.
 
@@ -89,14 +89,22 @@ RoomSnapshot มี `roomId,selfId,ownerId,expiresInMs,members`. สมาชิ
 
 Commands จำกัด trusted Control WebView origin+label: `party_connect({relayUrl,displayName,invite:null|string,consent:boolean})`, `party_get_state()`, `party_leave()`, `party_kick({memberId})`, `party_rotate_invite()`. ไม่ส่ง memberToken ข้าม IPC.
 
-PartyView มี `status` (`idle|connecting|connected|reconnecting|closed|error`), `roomId,selfId,ownerId,invite,expiresInMs,error,members`. Native get_state คำนวณอายุใหม่ก่อนคืน; error เป็น sanitized code. Connect สำเร็จหลัง relay admission จริง. UI แสดง consent, create/join, leave, owner controls และสถานะเพื่อนที่เข้าร่วมจริง; การดู HP/MP ไม่ต้องเปลี่ยน camera selection. ไม่ใช้ mock fallback และไม่เรียก “allies ทั้งทีม” ถ้ามีสมาชิกเพียงบางคน.
+PartyView มี `status` (`idle|connecting|connected|reconnecting|closed|error`), `roomId,selfId,ownerId,invite,expiresInMs,error,members` และ required nullable `relayUrl,roomGeneration`. Connected ต้องมี validated relay origin และ positive roomGeneration ของ relay แยกจาก native local cancellation epoch. Native get_state คำนวณอายุใหม่ก่อนคืน; error เป็น sanitized code. Connect สำเร็จหลัง relay admission จริง. UI แสดง consent, create/join, leave, owner controls และสถานะเพื่อนที่เข้าร่วมจริง; การดู HP/MP ไม่ต้องเปลี่ยน camera selection. ไม่ใช้ mock fallback และไม่เรียก “allies ทั้งทีม” ถ้ามีสมาชิกเพียงบางคน.
 
-พื้นที่ใช้งาน slice นี้คือ G-Party ภายใต้ Live พร้อม status cards ใกล้ minimap บนจอที่สอง. นี่เป็น functional placement สำหรับเชื่อมงาน ไม่ใช้ design system เดิมเป็น reference และไม่รับรองการรองรับสองจอจาก source checks. ปุ่ม/แสดงสถานะไม่ดึง focus จากเกมเอง.
+พื้นที่ใช้งาน slice นี้คือ G-Party ภายใต้ Live พร้อม status cards ใกล้ minimap บนจอที่สอง. คำสั่งล่าสุดใน CR-038 ให้ใช้ design tokens เดิมและออกแบบเลย์เอาต์ใหม่รอบแผนที่ใหญ่; source checks ไม่รับรองการรองรับสองจอจริง. ปุ่ม/แสดงสถานะไม่ดึง focus จากเกมเอง.
+
+### 6.1 Optional G-Friends bridge (CR-038)
+
+[[FEAT-G-FRIENDS]] เพิ่ม `party_social_proof({challenge,relayUrl})` และ `party_join_social({ticket,relayUrl,roomId,displayName,consent})` ด้วย trusted Control checks เดิม Native ไม่คืน memberToken และไม่ส่ง account JWT/GID/UUID ไป relay Social join ต้อง idle-only และ consent ใหม่ ห้ามใช้ connect path ที่ออกจากห้องเดิมเอง; response ต้องตรง expected roomId ก่อนแสดง connected
+
+Registered relay เพิ่ม member-authenticated `POST /v1/rooms/:roomId/social-proof` และ anonymous-ticket `POST /v1/rooms/social-join`. Proof ไม่ต่อ heartbeat/sample age และ social-join ต้อง revalidate owner/generation/capacity หลัง await signed broker redemption. สัญญา exact DTO/HMAC/limits/replay และ account-room profile binding อยู่ใน [[2026-11-01-g-party-friends-design]]. Custom relay ที่ไม่ registered ยังคง guest code ได้แต่ social controls unavailable
+
+Private friendships/temporary profile links/invites อยู่ใน account backend ตาม MVP-005B ไม่ใช่การ persist peer stats หรือ room credentials; ห้ามนำข้อมูล social หรือ received stats ไป AI/Memory/G-Log การเป็นเพื่อนไม่ให้สิทธิ์อ่าน GSI จนเข้าห้องโดยยินยอมและผ่าน source/match/team/freshness gates เดิม
 
 ## 7. Trust, privacy และ resilience
 
 - Relay operator อ่าน shared stats ได้; TLS ป้องกันระหว่างทาง **ไม่มี end-to-end encryption claim**. Cooperative client อาจโกหก stats ได้ และ protocol ไม่พิสูจน์ official Dota party membership.
-- Rooms, tokens, source slot และ received samples อยู่ใน memory; ไม่มี durable room/profile/stat history, telemetry หรือ credentials persistence. Restart ล้างสถานะ; fresh consent/activation ใช้เปิดใหม่.
+- Rooms, tokens, source slot และ received samples อยู่ใน memory; ไม่มี durable room/profile/stat history ที่ relay, telemetry หรือ credentials persistence. Optional private social graph และ temporary account-room binding ที่ broker เป็น route แยกตาม [[FEAT-G-FRIENDS]] ไม่เก็บ gameplay/room secrets. Restart ล้างสถานะ; fresh consent/activation ใช้เปิดใหม่.
 - Invite เป็นความลับที่แบ่งปันให้ผู้รับที่ตั้งใจ. Kick และ rotate มีผลต่างกันตาม §2; membership/health expiry เป็นเพดานหลังหลุดการเชื่อมต่อ ไม่อ้าง remote erase ทันที.
 - Relay/network/account failure ไม่หยุด local GSI/CV/G-Signal/Voice/Memory/Log. ไม่เพิ่ม remote dependencies ใน critical warning path.
 - CPU/RAM/FPS และ latency targets ของ [[mvp-decisions]] ไม่เปลี่ยน: CPU ≤10% ทุก 1 s, aggregate Working Set ≤900000000 bytes, FPS impact ≤3%, G-Signal p50 ≤250 ms/ทุก sample ≤300 ms. หากรัน relay บนเครื่องเล่นเดียวกัน ต้องนับ resource ของ relay ในการวัดด้วย. Cadence G-Party ไม่ใช่การอ้างว่าผ่านงบ G-Signal.
@@ -121,3 +129,4 @@ PartyView มี `status` (`idle|connecting|connected|reconnecting|closed|error`
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-11-01 | เพิ่ม G-Party owner-authorized extension: explicit per-launch consent, narrow own-stat protocol, in-memory relay, match/team/freshness fences และ pending acceptance; ไม่ขยาย AI allowlist. |
+| 0.2.0 | 2026-11-01 | Add CR-038 required authoritative roomGeneration/PartyView origin schema and optional social native/relay bridge; preserve guest consent, source allowlist and separate live acceptance. |

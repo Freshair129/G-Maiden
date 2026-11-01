@@ -7,12 +7,14 @@ import { emptyPartyView } from "../partyModel";
 
 const native = vi.hoisted(() => ({ invoke: vi.fn() }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: native.invoke }));
+vi.mock("../../MinimapCanvas", () => ({ MinimapCanvas: () => <canvas aria-label="Synthetic minimap fixture" /> }));
 
 const roomId = "3".repeat(32);
 const selfId = "1".repeat(32);
 const otherId = "2".repeat(32);
 const invite = `GMP1.${roomId}.${"a".repeat(64)}`;
 const connected = {
+  relayUrl: "https://relay.example", roomGeneration: 1,
   status: "connected", roomId, selfId, ownerId: selfId, invite,
   expiresInMs: 120000, error: null,
   members: [{
