@@ -606,7 +606,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
         tick,
         match_id,
         party_observation,
-        ability_candidate: _, // Intentionally not part of GameTick, Party or AI.
+        ability_candidate,
     } = match parse_gsi_payload_with_identity(&body) {
         Ok(parsed) => parsed,
         Err(GsiPayloadError::InvalidJson) => {
@@ -618,6 +618,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
             return (StatusCode::UNPROCESSABLE_ENTITY, "invalid GSI payload");
         }
     };
+    let _ = ability_candidate; // Intentionally not part of GameTick, Party or AI.
     // Note the POST (watchdog uses recency) and gate the CV pipeline to live
     // matches (saves idle CPU).
     crate::runtime::mark_post(epoch_ms());
