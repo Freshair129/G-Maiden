@@ -109,6 +109,13 @@ describe('candidate build evidence', () => {
     await assert.rejects(validate(input), /generatedAt must be a valid timestamp/);
   });
 
+  it('rejects a malformed publishedAt in the candidate manifest', async () => {
+    const input = cloneFixture();
+    input.manifest.publishedAt = 'not-a-timestamp';
+
+    await assert.rejects(validate(input), /published manifest requires a real publishedAt/);
+  });
+
   it('rejects ambiguous artifact identities and paths outside the candidate bundle', async () => {
     const duplicate = cloneFixture();
     duplicate.buildEvidence.artifacts.push({

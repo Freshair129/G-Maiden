@@ -32,6 +32,12 @@ describe('release channel manifests', () => {
   it('rejects unpublishable seeded metadata', () => {
     assert.throws(() => validatePublishedManifest({ ...candidate, platforms: { 'windows-x86_64': { ...artifact, signature: 'not-published' } } }), /signature/);
   });
+  it('rejects malformed publishedAt timestamps', () => {
+    assert.throws(
+      () => validatePublishedManifest({ ...candidate, publishedAt: 'not-a-timestamp' }),
+      /published manifest requires a real publishedAt/
+    );
+  });
   it('promotes the same artifact identity', () => {
     const promoted = promoteManifest(candidate, stable, { version: candidate.version, sourceSha: candidate.sourceSha, unresolvedS0S1: 0, approver: 'Boss', approvedAt: '2026-08-01T00:00:00.000Z' }, '2026-08-01T01:00:00.000Z');
     assert.equal(promoted.channel, 'stable');
