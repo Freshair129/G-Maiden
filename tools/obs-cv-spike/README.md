@@ -2,7 +2,7 @@
 title: "CR-040/C OBS CV compatibility spike"
 doc_id: "cr040-obs-cv-spike"
 status: "draft"
-version: "0.1.0"
+version: "0.1.1"
 updated: "2026-11-02"
 owner: "G-Maiden"
 ---
@@ -29,10 +29,11 @@ This directory contains no native hook, injection, OBS connection, captured fram
 node --test tools/obs-cv-spike/contract.test.mjs
 ```
 
-Local execution is `NOT RUN` for this candidate because a later process snapshot reported Dota 2 and two G-Maiden processes active. No Node test result is claimed here. The current CI workflow has explicit Node test paths and does not invoke this file. Hosted CI validates the repository gates but does not execute this focused suite.
+Author-lane execution is `NOT RUN` for this candidate because a later process snapshot reported Dota 2 and G-Maiden processes active. A separate Terra execution reported a focused-test pass on the previous PR head; its exact-SHA receipt is recorded in the PR's verification evidence. That receipt is historical and does not establish a test result for this later candidate. Hosted CI does not invoke this file, so it provides no focused-test result.
 
 ## Changelog
 
 | Version | Date | Change |
 | --- | --- | --- |
 | 0.1.0 | 2026-11-02 | Add the source-only spike contract, synthetic fixtures, and live acceptance plan. |
+| 0.1.1 | 2026-11-02 | Distinguish author-lane test status from the prior-head independent Terra receipt. |

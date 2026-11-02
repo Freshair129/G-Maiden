@@ -2,7 +2,7 @@
 title: "CR-040/C OBS CV source compatibility proposal"
 doc_id: "cr040-obs-cv-compatibility-proposal"
 status: "draft"
-version: "0.1.0"
+version: "0.1.1"
 updated: "2026-11-02"
 owner: "G-Maiden"
 ---
@@ -61,10 +61,11 @@ Keep DXGI selected for MVP until a paired live comparison clears source privacy,
 - `contract.test.mjs` covers source eligibility, geometry mapping, timestamp provenance, and fail-closed freshness.
 - `acceptance-matrix.md` defines the future Windows / OBS / Dota measurement plan. All live rows remain `NOT RUN` and all runtime results remain `UNKNOWN`.
 
-The focused command is `node --test tools/obs-cv-spike/contract.test.mjs`. It was not run locally because the later runtime snapshot found Dota 2 and two G-Maiden processes active. Current hosted CI does not invoke this focused path; no local or hosted focused-test pass is claimed.
+The focused command is `node --test tools/obs-cv-spike/contract.test.mjs`. Author-lane execution is `NOT RUN` for this candidate because the later runtime snapshot found Dota 2 and G-Maiden processes active. A separate Terra execution reported a pass on the previous PR head; its exact-SHA receipt is recorded in the PR's verification evidence. That previous-head result is historical and does not establish a test result for this later candidate. Hosted CI does not invoke this focused path, so it provides no focused-test result.
 
 ## Changelog
 
 | Version | Date | Change |
 | --- | --- | --- |
 | 0.1.0 | 2026-11-02 | Record source review and a non-binding adapter boundary for the isolated OBS CV spike. |
+| 0.1.1 | 2026-11-02 | Distinguish author-lane test status from the prior-head independent Terra receipt. |
