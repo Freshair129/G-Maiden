@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-02T19:28:33.036Z",
+  "generatedAt": "2026-11-02T22:55:09.121Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -11309,13 +11309,6 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/releases/release-channel-implementation.md",
-      "line": null,
-      "reason": "version-changelog-mismatch",
-      "frontmatter": "0.5.0",
-      "changelog": "0.1.0"
-    },
-    {
       "file": "docs/research/assets/dota2-hud-reference.md",
       "line": null,
       "reason": "no-metadata"
@@ -11363,7 +11356,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-02T19:28:44.738Z",
+    "generatedAt": "2026-11-02T22:55:14.372Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-02T19:28:33.036Z
+สร้างเมื่อ / Generated at: 2026-11-02T22:55:09.121Z
 
-สแกน 170 ไฟล์เอกสาร, 286 nodes, 1311 edges, 233 รายการปัญหา (203 ตัวบล็อก exit code) / scanned 170 doc files, 286 nodes, 1311 edges, 233 violations (203 blocking exit code).
+สแกน 170 ไฟล์เอกสาร, 286 nodes, 1311 edges, 232 รายการปัญหา (202 ตัวบล็อก exit code) / scanned 170 doc files, 286 nodes, 1311 edges, 232 violations (202 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -18,7 +18,7 @@
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 27 | no (informational) |
 | unresolved | wikilink หาไม่เจอ / unresolved wikilink | 6 | yes |
-| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 11 | yes |
+| version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 10 | yes |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
 
@@ -453,10 +453,6 @@
 ### docs/reference/dota-ui/README.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/releases/release-channel-implementation.md
-
-- [-] **version-changelog-mismatch** — version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row (frontmatter="0.5.0", changelog="0.1.0")
 
 ### docs/research/assets/dota2-hud-reference.md
 
