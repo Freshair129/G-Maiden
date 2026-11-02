@@ -63,7 +63,8 @@ export type ObserveRejectReason =
   | "duplicate_event"
   | "out_of_order"
   | "replay_window_expired"
-  | "queue_full";
+  | "queue_full"
+  | "event_capacity";
 
 export type ObserveResult =
   | { accepted: true; windowId: string }
@@ -90,6 +91,20 @@ export interface ExpiredReplayWindow {
 export interface ReplayAdvance {
   saveIntents: ReplaySaveIntent[];
   expired: ExpiredReplayWindow[];
+}
+
+export interface UnresolvedReplayWindow {
+  windowId: string;
+  eventIds: string[];
+  eventKinds: HighlightKind[];
+  desiredStartMs: number;
+  desiredEndMs: number;
+  status: "unsaved";
+  reason: "session_replaced" | "session_cleared";
+}
+
+export interface ReplaySessionTransition {
+  unresolved: UnresolvedReplayWindow[];
 }
 
 interface PendingWindow {
@@ -137,23 +152,27 @@ export class ReplayClipPlanner {
   }
 
   /** Explicit match boundary: pending clips from another match cannot leak in. */
-  startSession(sessionEpoch: number, startedAtMs: number): void {
+  startSession(sessionEpoch: number, startedAtMs: number): ReplaySessionTransition {
     if (!isTime(sessionEpoch) || !isTime(startedAtMs)) {
       throw new Error("Invalid session identity/time");
     }
+    const transition = this.reportUnresolved("session_replaced");
     this.epoch = sessionEpoch;
     this.startedAtMs = startedAtMs;
     this.lastObservedAtMs = -1;
     this.nextId = 1;
     this.windows = [];
     this.seenEvents.clear();
+    return transition;
   }
 
-  clearSession(): void {
+  clearSession(): ReplaySessionTransition {
+    const transition = this.reportUnresolved("session_cleared");
     this.epoch = null;
     this.windows = [];
     this.seenEvents.clear();
     this.lastObservedAtMs = -1;
+    return transition;
   }
 
   pendingCount(): number {
@@ -197,6 +216,9 @@ export class ReplayClipPlanner {
         this.windows.length >= this.policy.maxPendingWindows) {
       return { accepted: false, reason: "queue_full" };
     }
+    if (this.seenEvents.size >= MAX_SEEN_EVENTS) {
+      return { accepted: false, reason: "event_capacity" };
+    }
 
     let windowId: string;
     if (overlapping.length && canMerge) {
@@ -225,12 +247,24 @@ export class ReplayClipPlanner {
 
     this.windows.sort((a, b) => a.startMs - b.startMs);
     this.lastObservedAtMs = event.observedAtMs;
-    if (this.seenEvents.size >= MAX_SEEN_EVENTS) {
-      const oldest = this.seenEvents.values().next().value;
-      if (oldest !== undefined) this.seenEvents.delete(oldest);
-    }
     this.seenEvents.add(event.eventId);
     return { accepted: true, windowId };
+  }
+
+  private reportUnresolved(
+    reason: UnresolvedReplayWindow["reason"]
+  ): ReplaySessionTransition {
+    return {
+      unresolved: this.windows.map((window) => ({
+        windowId: window.windowId,
+        eventIds: [...window.eventIds],
+        eventKinds: [...window.eventKinds],
+        desiredStartMs: window.startMs,
+        desiredEndMs: window.endMs,
+        status: "unsaved",
+        reason
+      }))
+    };
   }
 
   /**

@@ -157,6 +157,82 @@ describe("ReplayClipPlanner / CR-040 source-only contract", () => {
     expect(planner.takeDue(125_000).saveIntents).toEqual([]);
   });
 
+  it("reports pending windows as unsaved when a new session replaces the old one", () => {
+    const planner = new ReplayClipPlanner();
+    planner.startSession(7, 0);
+    planner.observe(event("e1", 100_000), 100_000);
+
+    expect(planner.startSession(8, 101_000)).toEqual({
+      unresolved: [{
+        windowId: "clip-7-1",
+        eventIds: ["e1"],
+        eventKinds: ["double_kill"],
+        desiredStartMs: 70_000,
+        desiredEndMs: 115_000,
+        status: "unsaved",
+        reason: "session_replaced"
+      }]
+    });
+    expect(planner.takeDue(116_000)).toEqual({ saveIntents: [], expired: [] });
+  });
+
+  it("reports pending windows as unsaved when the session is cleared", () => {
+    const planner = new ReplayClipPlanner();
+    planner.startSession(7, 0);
+    planner.observe(event("e1", 100_000), 100_000);
+
+    expect(planner.clearSession()).toEqual({
+      unresolved: [{
+        windowId: "clip-7-1",
+        eventIds: ["e1"],
+        eventKinds: ["double_kill"],
+        desiredStartMs: 70_000,
+        desiredEndMs: 115_000,
+        status: "unsaved",
+        reason: "session_cleared"
+      }]
+    });
+    expect(planner.takeDue(116_000)).toEqual({ saveIntents: [], expired: [] });
+  });
+
+  it("rejects new unique event ids at the session dedupe cap", () => {
+    const planner = new ReplayClipPlanner();
+    planner.startSession(7, 0);
+    for (let index = 0; index < 256; index += 1) {
+      expect(planner.observe(event(`event-${index}`, 50_000), 50_000).accepted).toBe(true);
+    }
+
+    expect(planner.observe(event("event-256", 50_000), 50_000))
+      .toEqual({ accepted: false, reason: "event_capacity" });
+  });
+
+  it("bounds merged event metadata at the session dedupe cap", () => {
+    const planner = new ReplayClipPlanner();
+    planner.startSession(7, 0);
+    for (let index = 0; index < 256; index += 1) {
+      planner.observe(event(`event-${index}`, 50_000), 50_000);
+    }
+
+    planner.observe(event("event-256", 50_000), 50_000);
+    const intent = planner.takeDue(65_000).saveIntents[0];
+    expect(intent?.eventIds).toHaveLength(256);
+    expect(intent?.eventKinds).toHaveLength(256);
+    expect(intent?.eventIds[0]).toBe("event-0");
+    expect(intent?.eventIds[255]).toBe("event-255");
+  });
+
+  it("does not reaccept an old event id after the session dedupe cap", () => {
+    const planner = new ReplayClipPlanner();
+    planner.startSession(7, 0);
+    for (let index = 0; index < 256; index += 1) {
+      planner.observe(event(`event-${index}`, 50_000), 50_000);
+    }
+
+    planner.observe(event("event-256", 50_000), 50_000);
+    expect(planner.observe(event("event-0", 50_000), 50_000))
+      .toEqual({ accepted: false, reason: "duplicate_event" });
+  });
+
   it("rejects policy settings that cannot retain the requested trim interval", () => {
     expect(() => new ReplayClipPlanner({ ...DEFAULT_REPLAY_POLICY, replayBufferMs: 44_000 }))
       .toThrow(/Invalid replay policy/);
