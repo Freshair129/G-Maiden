@@ -1,0 +1,104 @@
+{
+  "syntheticOnly": true,
+  "sourceEligibility": {
+    "accepted": [
+      {
+        "id": "synthetic-dota-game-only-scene",
+        "descriptor": {
+          "transport": "obs_virtual_camera",
+          "sourceType": "game_capture",
+          "targetProcessName": "dota2.exe",
+          "visibleSceneSourceTypes": ["game_capture"]
+        }
+      }
+    ],
+    "rejected": [
+      {
+        "id": "synthetic-desktop-capture",
+        "expectedReason": "non_game_source",
+        "descriptor": {
+          "transport": "obs_virtual_camera",
+          "sourceType": "desktop_capture",
+          "targetProcessName": "dota2.exe",
+          "visibleSceneSourceTypes": ["desktop_capture"]
+        }
+      },
+      {
+        "id": "synthetic-webcam-source",
+        "expectedReason": "non_game_source",
+        "descriptor": {
+          "transport": "obs_virtual_camera",
+          "sourceType": "webcam",
+          "targetProcessName": "dota2.exe",
+          "visibleSceneSourceTypes": ["webcam"]
+        }
+      },
+      {
+        "id": "synthetic-unknown-provider-type",
+        "expectedReason": "unknown_source_type",
+        "descriptor": {
+          "transport": "obs_virtual_camera",
+          "sourceType": "capture-plugin-added-later",
+          "targetProcessName": "dota2.exe",
+          "visibleSceneSourceTypes": ["capture-plugin-added-later"]
+        }
+      },
+      {
+        "id": "synthetic-game-plus-desktop-scene",
+        "expectedReason": "scene_not_game_only",
+        "descriptor": {
+          "transport": "obs_virtual_camera",
+          "sourceType": "game_capture",
+          "targetProcessName": "dota2.exe",
+          "visibleSceneSourceTypes": ["game_capture", "desktop_capture"]
+        }
+      },
+      {
+        "id": "synthetic-non-dota-game-process",
+        "expectedReason": "target_process_not_dota",
+        "descriptor": {
+          "transport": "obs_virtual_camera",
+          "sourceType": "game_capture",
+          "targetProcessName": "another-game.exe",
+          "visibleSceneSourceTypes": ["game_capture"]
+        }
+      },
+      {
+        "id": "synthetic-missing-scene-inventory",
+        "expectedReason": "scene_composition_unverified",
+        "descriptor": {
+          "transport": "obs_virtual_camera",
+          "sourceType": "game_capture",
+          "targetProcessName": "dota2.exe",
+          "visibleSceneSourceTypes": []
+        }
+      }
+    ]
+  },
+  "geometry": [
+    {
+      "id": "synthetic-1080p-16x9",
+      "source": { "width": 1920, "height": 1080 },
+      "target": { "width": 1920, "height": 1080 },
+      "targetRoi": { "x": 0, "y": 788, "width": 292, "height": 292 },
+      "expectedViewport": { "x": 0, "y": 0, "width": 1920, "height": 1080 },
+      "expectedSourceRoi": { "x": 0, "y": 788, "width": 292, "height": 292 }
+    },
+    {
+      "id": "synthetic-21x9-source-letterboxed-into-16x9-target",
+      "source": { "width": 2560, "height": 1080 },
+      "target": { "width": 1920, "height": 1080 },
+      "targetRoi": { "x": 1200, "y": 300, "width": 120, "height": 90 },
+      "expectedViewport": { "x": 0, "y": 135, "width": 1920, "height": 810 },
+      "expectedSourceRoi": { "x": 1600, "y": 220, "width": 160, "height": 120 }
+    },
+    {
+      "id": "synthetic-16x9-source-pillarboxed-into-21x9-target",
+      "source": { "width": 1920, "height": 1080 },
+      "target": { "width": 2560, "height": 1080 },
+      "targetRoi": { "x": 320, "y": 788, "width": 292, "height": 292 },
+      "expectedViewport": { "x": 320, "y": 0, "width": 1920, "height": 1080 },
+      "expectedSourceRoi": { "x": 0, "y": 788, "width": 292, "height": 292 }
+    }
+  ]
+}
