@@ -2,7 +2,7 @@
 title: "CR-040/C OBS CV source compatibility proposal"
 doc_id: "cr040-obs-cv-compatibility-proposal"
 status: "draft"
-version: "0.1.1"
+version: "0.1.2"
 updated: "2026-11-02"
 owner: "G-Maiden"
 ---
@@ -61,7 +61,7 @@ Keep DXGI selected for MVP until a paired live comparison clears source privacy,
 - `contract.test.mjs` covers source eligibility, geometry mapping, timestamp provenance, and fail-closed freshness.
 - `acceptance-matrix.md` defines the future Windows / OBS / Dota measurement plan. All live rows remain `NOT RUN` and all runtime results remain `UNKNOWN`.
 
-The focused command is `node --test tools/obs-cv-spike/contract.test.mjs`. Author-lane execution is `NOT RUN` for this candidate because the later runtime snapshot found Dota 2 and G-Maiden processes active. A separate Terra execution reported a pass on the previous PR head; its exact-SHA receipt is recorded in the PR's verification evidence. That previous-head result is historical and does not establish a test result for this later candidate. Hosted CI does not invoke this focused path, so it provides no focused-test result.
+The focused command is `node --test tools/obs-cv-spike/contract.test.mjs`. Author-lane focused-test status for this candidate is `NOT RUN`. Focused-test commands and receipts are recorded in the PR's current exact-SHA verification. Each receipt qualifies only the SHA it names. Hosted CI does not invoke this file.
 
 ## Changelog
 
@@ -69,3 +69,4 @@ The focused command is `node --test tools/obs-cv-spike/contract.test.mjs`. Autho
 | --- | --- | --- |
 | 0.1.0 | 2026-11-02 | Record source review and a non-binding adapter boundary for the isolated OBS CV spike. |
 | 0.1.1 | 2026-11-02 | Distinguish author-lane test status from the prior-head independent Terra receipt. |
+| 0.1.2 | 2026-11-02 | Clarify exact-SHA focused-test receipts and hosted CI coverage. |
