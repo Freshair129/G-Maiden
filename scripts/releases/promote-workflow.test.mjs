@@ -24,6 +24,10 @@ test('promotion checks out main and passes dispatch paths through quoted environ
   assert.equal((workflow.match(/\$\{\{\s*inputs\.approval_file\s*\}\}/g) ?? []).length, 1);
 });
 
+test('promotion job only runs for workflow_dispatch refs on main', () => {
+  assert.match(workflow, /^  promote:\r?\n    if:\s*\$\{\{\s*github\.ref\s*==\s*'refs\/heads\/main'\s*\}\}/m);
+});
+
 test('promotion proves platform, source SHA, and version identity', () => {
   assert.match(workflow, /JSON\.stringify\(c\.platforms\)\s*!==\s*JSON\.stringify\(s\.platforms\)/);
   assert.match(workflow, /c\.sourceSha\s*!==\s*s\.sourceSha\s*\|\|\s*c\.version\s*!==\s*s\.version/);
