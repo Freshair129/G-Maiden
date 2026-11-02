@@ -364,8 +364,8 @@ Read it before touching versions. The summary below exists only so this file doe
   `release/channels/`. Both workflows are **`workflow_dispatch` only**; a tag is an *input* you hand
   to a workflow, never a trigger.
 - `candidate-release.yml` verifies tag↔HEAD lineage, runs clippy/cargo test/eslint/tsc/vitest,
-  builds and **signs once**, publishes a GitHub **prerelease**, and opens a PR updating `dev.json`.
-  Someone must merge that PR before `dev` moves.
+  builds and **signs once**, publishes a GitHub **prerelease**, and pushes a branch updating `dev.json`.
+  An operator opens and merges the PR before `dev` moves.
 - `promote-release.yml` runs in the `production` environment (required reviewer: the owner),
   defaults to `dry_run: true`, and **re-points the same signed artifact** — promotion never rebuilds
   and never re-signs.

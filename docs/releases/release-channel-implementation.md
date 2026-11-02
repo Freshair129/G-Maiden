@@ -2,8 +2,8 @@
 title: "G-Maiden Release Channel Implementation and Evidence Runbook"
 doc_id: "release-channel-implementation"
 status: "active"
-version: "0.5.0"
-updated: "2026-10-18"
+version: "0.5.1"
+updated: "2026-11-03"
 owner: "Boss"
 related_docs: ["RELEASE-CHANNEL-ARCHITECTURE"]
 ---
@@ -14,8 +14,9 @@ related_docs: ["RELEASE-CHANNEL-ARCHITECTURE"]
 
 - `candidate-release.yml` verifies tag lineage, runs release checks, builds and signs once, publishes
   a GitHub prerelease, records the source SHA and artifact hashes, and uploads the evidence.
-- The same workflow derives `release/channels/dev.json` from the signed artifact metadata and opens a
-  protected-main pull request. It does not rebuild or resign during manifest publication.
+- The same workflow derives `release/channels/dev.json` from the signed artifact metadata and pushes a
+  branch. An operator opens a protected-main pull request using the workflow summary link. It does not
+  rebuild or resign during manifest publication.
 - `channel-manifest.mjs` validates channel metadata and platform keys, rejects non-publishable
   placeholders, and writes manifest changes atomically.
 - `promote-release.yml` is manually dispatched, uses the `production` environment, validates the
@@ -71,3 +72,4 @@ resign an already-promoted candidate to perform a rollback.
 | 0.3.0 | 2026-08-01 | Documented candidate evidence upload and signed Dev manifest publication. |
 | 0.2.0 | 2026-08-01 | Added publication validation and artifact rehearsal. |
 | 0.1.0 | 2026-07-23 | Initial release-channel and artifact-promotion architecture. |
+| 0.5.1 | 2026-11-03 | Documented manual Dev pull request creation from the candidate workflow branch. |
