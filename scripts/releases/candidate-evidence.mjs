@@ -1,4 +1,5 @@
 import { validatePublishedManifest } from './channel-manifest.mjs';
+import { isValidWindowsArtifactBasename } from './artifact-filename.mjs';
 
 const CANDIDATE_WORKFLOW_PATH = '.github/workflows/candidate-release.yml';
 const SOURCE_SHA = /^[0-9a-f]{40}$/i;
@@ -6,9 +7,6 @@ const ARTIFACT_SHA256 = /^[0-9a-f]{64}$/i;
 const RELEASE_TAG = /^v((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?)$/;
 const BUNDLE_PREFIX = 'src-tauri/target/release/bundle/';
 const APPROVAL_FIELDS = ['approval', 'approver', 'approvedAt', 'approvedBy', 'promotion'];
-const WINDOWS_INVALID_FILENAME_CHARS = /[\u0000-\u001f<>:"/\\|?*]/;
-const WINDOWS_RESERVED_DEVICE_NAME = /^(?:CON|PRN|AUX|NUL|CONIN\$|CONOUT\$|COM[1-9¹²³]|LPT[1-9¹²³])$/i;
-
 function requireObject(value, name) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
     throw new Error(`${name} must be an object`);
@@ -44,19 +42,7 @@ function normalizeTag(tag, manifestVersion) {
 }
 
 function validateWindowsArtifactFilename(filename, description) {
-  if (
-    typeof filename !== 'string' ||
-    !filename ||
-    filename === '.' ||
-    filename === '..' ||
-    WINDOWS_INVALID_FILENAME_CHARS.test(filename) ||
-    /[. ]$/.test(filename)
-  ) {
-    throw new Error(`${description} is invalid for Windows`);
-  }
-
-  const deviceName = filename.split('.')[0].replace(/[ .]+$/, '');
-  if (WINDOWS_RESERVED_DEVICE_NAME.test(deviceName)) {
+  if (!isValidWindowsArtifactBasename(filename)) {
     throw new Error(`${description} is invalid for Windows`);
   }
   return filename;

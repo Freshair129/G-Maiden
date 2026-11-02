@@ -102,17 +102,26 @@ describe('candidate build evidence', () => {
     await assert.rejects(validate(missingArtifact), /artifact is missing from build evidence/);
   });
 
-  it('rejects NUL bytes after decoding a manifest artifact URL filename', async () => {
-    const input = cloneFixture();
-    input.manifest.platforms['windows-x86_64'].url =
-      'https://github.com/Freshair129/G-Maiden/releases/download/v0.13.5/G-Maiden_%00_0.13.5_x64_en-US.msi';
+  it('rejects Windows-invalid names after decoding a manifest artifact URL filename', async () => {
+    for (const filename of [
+      'G-Maiden_%00_0.13.5_x64_en-US.msi',
+      'G-Maiden_%01_0.13.5_x64_en-US.msi',
+      'G-Maiden_%1F_0.13.5_x64_en-US.msi',
+      'CON.msi'
+    ]) {
+      const input = cloneFixture();
+      input.manifest.platforms['windows-x86_64'].url =
+        `https://github.com/Freshair129/G-Maiden/releases/download/v0.13.5/${filename}`;
 
-    await assert.rejects(validate(input), /candidate artifact URL filename is invalid for Windows/);
+      await assert.rejects(validate(input), /candidate artifact URL filename is invalid for Windows/);
+    }
   });
 
   it('rejects Windows-invalid build evidence basenames', async () => {
     const invalidFilenames = [
       'G-Maiden_0.13.5_x64_\u0000en-US.msi',
+      'G-Maiden_0.13.5_x64_\u0001en-US.msi',
+      'G-Maiden_0.13.5_x64_\u001fen-US.msi',
       'G-Maiden_0.13.5_x64_<en-US>.msi',
       'CON.msi',
       'G-Maiden_0.13.5_x64_en-US.msi:stream.exe',

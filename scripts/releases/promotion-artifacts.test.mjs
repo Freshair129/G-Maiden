@@ -130,6 +130,45 @@ describe('promotion artifact byte identity', () => {
     });
   });
 
+  for (const [label, encodedFilename] of [
+    ['NUL', 'G-Maiden_1.2.3_%00_x64_en-US.msi'],
+    ['U+0001', 'G-Maiden_1.2.3_%01_x64_en-US.msi'],
+    ['U+001F', 'G-Maiden_1.2.3_%1F_x64_en-US.msi'],
+    ['reserved device name CON.msi', 'CON.msi']
+  ]) {
+    it(`rejects ${label} in promotion manifest URL-derived filenames`, async () => {
+      const input = createInput();
+      input.manifest.platforms['windows-x86_64'].url =
+        `https://github.com/Freshair129/G-Maiden/releases/download/v1.2.3/${encodedFilename}`;
+
+      await inTempDirectory(async (downloadDirectory) => {
+        await assert.rejects(
+          verifyPromotionArtifacts({ ...input, downloadDirectory }),
+          /candidate artifact URL filename is invalid for Windows/
+        );
+      });
+    });
+  }
+
+  for (const [label, filename] of [
+    ['NUL', 'G-Maiden_1.2.3_\u0000_x64_en-US.msi'],
+    ['U+0001', 'G-Maiden_1.2.3_\u0001_x64_en-US.msi'],
+    ['U+001F', 'G-Maiden_1.2.3_\u001f_x64_en-US.msi'],
+    ['reserved device name CON.msi', 'CON.msi']
+  ]) {
+    it(`rejects ${label} in promotion build-evidence path basenames`, async () => {
+      const input = createInput();
+      input.buildEvidence.artifacts[0].path = `${BUNDLE}/${filename}`;
+
+      await inTempDirectory(async (downloadDirectory) => {
+        await assert.rejects(
+          verifyPromotionArtifacts({ ...input, downloadDirectory }),
+          /build evidence artifact filename is invalid for Windows/
+        );
+      });
+    });
+  }
+
   it('rejects unsupported and unreferenced downloaded files', async () => {
     const unsupportedEvidence = createInput();
     unsupportedEvidence.buildEvidence.artifacts[0].path = `${BUNDLE}/payload.dll`;

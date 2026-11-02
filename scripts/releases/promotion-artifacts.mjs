@@ -2,11 +2,19 @@ import { createHash } from 'node:crypto';
 import { lstat, readdir, readFile } from 'node:fs/promises';
 import { join, resolve } from 'node:path';
 import { validatePublishedManifest } from './channel-manifest.mjs';
+import { isValidWindowsArtifactBasename } from './artifact-filename.mjs';
 
 const BUNDLE_PREFIX = 'src-tauri/target/release/bundle/';
 const EVIDENCE_ARTIFACT_EXTENSION = /\.(?:msi|exe|zip|sig)$/i;
 const MANIFEST_ARTIFACT_EXTENSION = /\.(?:msi|exe|zip)$/i;
 const SHA256 = /^[0-9a-f]{64}$/i;
+
+function validateWindowsArtifactFilename(filename, description) {
+  if (!isValidWindowsArtifactBasename(filename)) {
+    throw new Error(`${description} is invalid for Windows`);
+  }
+  return filename;
+}
 
 function requireObject(value, name) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -37,7 +45,10 @@ function normalizeEvidenceArtifact(artifact) {
     throw new Error(`invalid build evidence sha256 for ${path}`);
   }
 
-  const filename = segments.at(-1);
+  const filename = validateWindowsArtifactFilename(
+    segments.at(-1),
+    'build evidence artifact filename'
+  );
   return {
     filename,
     filenameKey: filename.toLowerCase(),
@@ -91,15 +102,7 @@ function filenameFromUrl(url) {
   } catch {
     throw new Error('candidate artifact URL filename is invalid');
   }
-  if (
-    !filename ||
-    filename === '.' ||
-    filename === '..' ||
-    /[\\/<>:"|?*\u0000]/.test(filename) ||
-    /[. ]$/.test(filename)
-  ) {
-    throw new Error('candidate artifact URL filename is invalid');
-  }
+  validateWindowsArtifactFilename(filename, 'candidate artifact URL filename');
   if (!MANIFEST_ARTIFACT_EXTENSION.test(filename)) {
     throw new Error(`candidate manifest contains an unsupported artifact type: ${filename}`);
   }
