@@ -1,4 +1,5 @@
 import { spawn } from 'node:child_process';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import { pathToFileURL } from 'node:url';
@@ -116,6 +117,27 @@ function assertAffectedSnapshot(snapshot) {
   assertProjection(snapshot['gm-deck-audio-rail'], LEGACY_AUDIO_FIELDS, 'gm-deck-audio-rail');
 }
 
+/** Fingerprint the native settings mirror without retaining or returning contents. */
+async function readNativeSettingsFingerprint(filePath) {
+  try {
+    const contents = await fs.promises.readFile(filePath);
+    return createHash('sha256').update(contents).digest('hex');
+  } catch (error) {
+    if (error?.code === 'ENOENT') return null;
+    throw new Error('native settings snapshot could not be read');
+  }
+}
+
+function unchangedOrAbsent(before, after, absent) {
+  if (!isDeepStrictEqual(before, after)) return 'changed';
+  return absent ? 'absent' : 'unchanged';
+}
+
+function localStorageSnapshotStatus(before, after) {
+  const absent = Object.values(before).every((value) => value === null);
+  return unchangedOrAbsent(before, after, absent);
+}
+
 /**
  * Launch a smoke executable with native, WebView2, and package data rooted in
  * a fresh, validated run directory. A supported key-scoped reader can
@@ -142,15 +164,23 @@ export async function runMvp009IsolatedSmoke({
   const canReadNormalSettings = typeof readNormalAffectedSettings === 'function'
     && readNormalAffectedSettings.supportedReadOnlyKeyScoped === true;
   if (requireProfileSnapshot && !canReadNormalSettings) {
-    throw new Error('refusing to launch: no supported read-only key-scoped reader is available for normal-profile settings');
+    throw new Error('refusing to launch: localStorage status: unverified (no supported read-only key-scoped reader is available for normal-profile settings)');
   }
 
   const readSnapshot = canReadNormalSettings ? async () => {
-    const snapshot = await readNormalAffectedSettings(AFFECTED_KEYS);
+    let snapshot;
+    try {
+      snapshot = await readNormalAffectedSettings(AFFECTED_KEYS, Object.freeze({
+        webview2UserDataDirectory: launch.normalWebview2UserDataDirectory,
+      }));
+    } catch {
+      throw new Error('normal-profile localStorage snapshot could not be read; localStorage status: unverified');
+    }
     assertAffectedSnapshot(snapshot);
     return snapshot;
   } : null;
-  const before = readSnapshot ? await readSnapshot() : null;
+  const beforeLocalStorage = readSnapshot ? await readSnapshot() : null;
+  const beforeNativeSettings = await readNativeSettingsFingerprint(launch.normalSettingsFile);
   let exit = null;
   let launchError = null;
   try {
@@ -168,9 +198,20 @@ export async function runMvp009IsolatedSmoke({
     launchError = error;
   }
 
-  const after = readSnapshot ? await readSnapshot() : null;
-  if (readSnapshot && !isDeepStrictEqual(before, after)) {
-    throw new Error('normal-profile affected settings changed during isolated smoke; snapshots withheld');
+  const afterLocalStorage = readSnapshot ? await readSnapshot() : null;
+  const afterNativeSettings = await readNativeSettingsFingerprint(launch.normalSettingsFile);
+  const localStorageStatus = readSnapshot
+    ? localStorageSnapshotStatus(beforeLocalStorage, afterLocalStorage)
+    : 'unverified';
+  const nativeSettingsStatus = unchangedOrAbsent(
+    beforeNativeSettings,
+    afterNativeSettings,
+    beforeNativeSettings === null,
+  );
+  if (localStorageStatus === 'changed' || nativeSettingsStatus === 'changed') {
+    throw new Error(
+      `normal-profile settings snapshot changed (localStorage: ${localStorageStatus}; native settings: ${nativeSettingsStatus}); snapshot values withheld`,
+    );
   }
   if (launchError) throw launchError;
   if (exit.code !== 0) throw new Error(`smoke command exited with code ${exit.code ?? 'unknown'}`);
@@ -180,7 +221,10 @@ export async function runMvp009IsolatedSmoke({
     tempParent: launch.tempParent,
     nativeSettingsFile: launch.nativeSettingsFile,
     webview2UserDataDirectory: launch.webview2UserDataDirectory,
-    normalSettingsSnapshotVerified: Boolean(readSnapshot),
+    normalSettingsSnapshot: Object.freeze({
+      localStorage: localStorageStatus,
+      nativeSettings: nativeSettingsStatus,
+    }),
   });
 }
 
@@ -192,7 +236,7 @@ async function main() {
   const pathIsolationOnly = requestedArgs.includes('--path-isolation-only');
   const args = requestedArgs.filter((arg) => arg !== '--path-isolation-only');
   if (pathIsolationOnly) {
-    process.stderr.write('Normal settings were not snapshot-verified; native, WebView2, and package data paths are isolated for this smoke run.\n');
+    process.stderr.write('localStorage status: unverified; the native settings mirror is checked read-only; native, WebView2, and package data paths are isolated for this smoke run.\n');
   }
   const result = await runMvp009IsolatedSmoke({
     command: path.resolve(command),

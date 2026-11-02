@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { existsSync, rmSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import path from 'node:path';
@@ -8,12 +8,12 @@ import { runMvp009IsolatedSmoke } from './smoke-launch.mjs';
 
 const normalPaths = {
   tempParent: 'D:\\',
-  normalLocalAppData: process.env.LOCALAPPDATA,
-  normalUserProfile: process.env.USERPROFILE,
+  normalLocalAppData: 'D:\\normal-local-app-data',
+  normalUserProfile: 'D:\\normal-user-profile',
   baseEnvironment: {
     PATH: 'system-path',
     SystemRoot: 'C:\\Windows',
-    LOCALAPPDATA: process.env.LOCALAPPDATA,
+    LOCALAPPDATA: 'C:\\Users\\player\\AppData\\Local',
     WEBVIEW2_USER_DATA_FOLDER: 'C:\\Users\\player\\AppData\\Local\\com.gmaiden.app\\EBWebView',
     API_KEY: 'must-not-forward',
     USERPROFILE: 'C:\\Users\\player',
@@ -41,111 +41,294 @@ function safeReader() {
   return read;
 }
 
-test('smoke launcher passes only isolated storage paths to the executable', async () => {
-  let spawnCall;
-  const result = await runMvp009IsolatedSmoke({
+function isolatedProfileFixture() {
+  const driveRoot = path.win32.parse(process.cwd()).root;
+  const root = mkdtempSync(path.win32.join(driveRoot, 'mvp009-profile-snapshot-'));
+  const normalLocalAppData = path.win32.join(root, 'local-app-data');
+  const normalUserProfile = path.win32.join(root, 'user-profile');
+  mkdirSync(normalLocalAppData, { recursive: true });
+  mkdirSync(normalUserProfile, { recursive: true });
+  return {
     ...normalPaths,
-    command: 'D:\\build\\g-maiden.exe',
-    args: ['--smoke'],
-    readNormalAffectedSettings: safeReader(),
-    spawnCommand: (command, args, options) => {
-      spawnCall = { command, args, options };
-      const child = new EventEmitter();
-      queueMicrotask(() => child.emit('close', 0, null));
-      return child;
-    },
-  });
+    root,
+    tempParent: driveRoot,
+    normalLocalAppData,
+    normalUserProfile,
+  };
+}
 
-  assert.equal(spawnCall.command, 'D:\\build\\g-maiden.exe');
-  assert.deepEqual(spawnCall.args, ['--smoke', '--mvp009-isolated-smoke']);
-  assert.equal(spawnCall.options.shell, false);
-  assert.equal(spawnCall.options.env.LOCALAPPDATA, `${result.runRoot}\\native-local-app-data`);
-  assert.equal(spawnCall.options.env.WEBVIEW2_USER_DATA_FOLDER, result.webview2UserDataDirectory);
-  assert.equal(spawnCall.options.env.TEMP, `${result.runRoot}\\temp`);
-  assert.equal(spawnCall.options.env.TMP, `${result.runRoot}\\temp`);
-  assert.equal(spawnCall.options.env.MVP009_ISOLATION_ROOT, result.runRoot);
-  assert.equal(spawnCall.options.env.MVP009_TEMP_PARENT, result.tempParent);
-  assert.equal(spawnCall.options.env.GMAIDEN_PACKAGE_DATA_ROOT, `${result.runRoot}\\package-data`);
-  assert.equal(spawnCall.options.env.MVP009_NORMAL_USER_PROFILE.toLowerCase(), process.env.USERPROFILE.toLowerCase());
-  assert.equal(spawnCall.options.env.MVP009_NORMAL_LOCALAPPDATA.toLowerCase(), process.env.LOCALAPPDATA.toLowerCase());
-  assert.equal(spawnCall.options.env.API_KEY, undefined);
-  assert.equal(spawnCall.options.env.USERPROFILE, undefined);
-  assert.equal(existsSync(spawnCall.options.env.TEMP), true);
-  assert.ok(result.nativeSettingsFile.startsWith(`${result.runRoot}\\`));
-  assert.ok(result.webview2UserDataDirectory.startsWith(`${result.runRoot}\\`));
-  assert.equal(result.exitCode, 0);
-  assert.match(result.runRoot, /^d:\\gmaiden-mvp009-[0-9a-f-]+$/);
-  rmSync(result.runRoot, { recursive: true, force: true });
+function removeSmokeArtifacts(fixture, runRoot) {
+  if (runRoot) rmSync(runRoot, { recursive: true, force: true });
+  if (fixture.root) rmSync(fixture.root, { recursive: true, force: true });
+}
+
+test('smoke launcher passes only isolated storage paths to the executable', async () => {
+  const fixture = isolatedProfileFixture();
+  let spawnCall;
+  let runRoot;
+  try {
+    const result = await runMvp009IsolatedSmoke({
+      ...fixture,
+      command: 'D:\\build\\g-maiden.exe',
+      args: ['--smoke'],
+      readNormalAffectedSettings: safeReader(),
+      spawnCommand: (command, args, options) => {
+        spawnCall = { command, args, options };
+        runRoot = path.win32.dirname(options.env.TEMP);
+        const child = new EventEmitter();
+        queueMicrotask(() => child.emit('close', 0, null));
+        return child;
+      },
+    });
+
+    assert.equal(spawnCall.command, 'D:\\build\\g-maiden.exe');
+    assert.deepEqual(spawnCall.args, ['--smoke', '--mvp009-isolated-smoke']);
+    assert.equal(spawnCall.options.shell, false);
+    assert.equal(spawnCall.options.env.LOCALAPPDATA, `${result.runRoot}\\native-local-app-data`);
+    assert.equal(spawnCall.options.env.WEBVIEW2_USER_DATA_FOLDER, result.webview2UserDataDirectory);
+    assert.equal(spawnCall.options.env.TEMP, `${result.runRoot}\\temp`);
+    assert.equal(spawnCall.options.env.TMP, `${result.runRoot}\\temp`);
+    assert.equal(spawnCall.options.env.MVP009_ISOLATION_ROOT, result.runRoot);
+    assert.equal(spawnCall.options.env.MVP009_TEMP_PARENT, result.tempParent);
+    assert.equal(spawnCall.options.env.GMAIDEN_PACKAGE_DATA_ROOT, `${result.runRoot}\\package-data`);
+    assert.equal(spawnCall.options.env.MVP009_NORMAL_USER_PROFILE.toLowerCase(), fixture.normalUserProfile.toLowerCase());
+    assert.equal(spawnCall.options.env.MVP009_NORMAL_LOCALAPPDATA.toLowerCase(), fixture.normalLocalAppData.toLowerCase());
+    assert.equal(spawnCall.options.env.API_KEY, undefined);
+    assert.equal(spawnCall.options.env.USERPROFILE, undefined);
+    assert.equal(existsSync(spawnCall.options.env.TEMP), true);
+    assert.ok(result.nativeSettingsFile.startsWith(`${result.runRoot}\\`));
+    assert.ok(result.webview2UserDataDirectory.startsWith(`${result.runRoot}\\`));
+    assert.equal(result.exitCode, 0);
+    assert.deepEqual(result.normalSettingsSnapshot, {
+      localStorage: 'unchanged',
+      nativeSettings: 'absent',
+    });
+    assert.match(result.runRoot, /^d:\\gmaiden-mvp009-[0-9a-f-]+$/);
+  } finally {
+    removeSmokeArtifacts(fixture, runRoot);
+  }
+});
+
+test('injects the localStorage reader with only the affected keys and normal WebView2 profile path', async () => {
+  const fixture = isolatedProfileFixture();
+  const calls = [];
+  const reader = async (keys, sources) => {
+    calls.push({ keys, sources });
+    return {
+      'gm-settings': { volume: 80 },
+      'gm-deck-audio-rail': null,
+    };
+  };
+  reader.supportedReadOnlyKeyScoped = true;
+  let runRoot;
+  try {
+    const result = await runMvp009IsolatedSmoke({
+      ...fixture,
+      command: 'D:\\build\\g-maiden.exe',
+      readNormalAffectedSettings: reader,
+      spawnCommand: (_command, _args, options) => {
+        runRoot = path.win32.dirname(options.env.TEMP);
+        const child = new EventEmitter();
+        queueMicrotask(() => child.emit('close', 0, null));
+        return child;
+      },
+    });
+
+    assert.equal(calls.length, 2);
+    for (const call of calls) {
+      assert.deepEqual(call.keys, ['gm-settings', 'gm-deck-audio-rail']);
+      assert.equal(
+        call.sources?.webview2UserDataDirectory.toLowerCase(),
+        path.win32.join(fixture.normalLocalAppData, 'com.gmaiden.app', 'EBWebView').toLowerCase(),
+      );
+    }
+    assert.equal(result.normalSettingsSnapshot.localStorage, 'unchanged');
+  } finally {
+    removeSmokeArtifacts(fixture, runRoot);
+  }
+});
+
+test('snapshots the native settings mirror without returning its values', async () => {
+  const fixture = isolatedProfileFixture();
+  const nativeFile = path.win32.join(fixture.normalLocalAppData, 'G-Maiden', 'settings.json');
+  const nativeContents = JSON.stringify({ volume: 80, voiceName: 'private-value', masterApiKey: 'secret-marker' });
+  mkdirSync(path.win32.dirname(nativeFile), { recursive: true });
+  writeFileSync(nativeFile, nativeContents);
+  let runRoot;
+  try {
+    const result = await runMvp009IsolatedSmoke({
+      ...fixture,
+      command: 'D:\\build\\g-maiden.exe',
+      readNormalAffectedSettings: safeReader(),
+      spawnCommand: (_command, _args, options) => {
+        runRoot = path.win32.dirname(options.env.TEMP);
+        const child = new EventEmitter();
+        queueMicrotask(() => child.emit('close', 0, null));
+        return child;
+      },
+    });
+
+    assert.deepEqual(result.normalSettingsSnapshot, {
+      localStorage: 'unchanged',
+      nativeSettings: 'unchanged',
+    });
+    const output = JSON.stringify(result);
+    assert.equal(output.includes('private-value'), false);
+    assert.equal(output.includes('secret-marker'), false);
+    assert.equal(output.includes(nativeContents), false);
+  } finally {
+    removeSmokeArtifacts(fixture, runRoot);
+  }
+});
+
+test('reports the native settings mirror absent when it is absent before and after smoke', async () => {
+  const fixture = isolatedProfileFixture();
+  let runRoot;
+  try {
+    const result = await runMvp009IsolatedSmoke({
+      ...fixture,
+      command: 'D:\\build\\g-maiden.exe',
+      readNormalAffectedSettings: safeReader(),
+      spawnCommand: (_command, _args, options) => {
+        runRoot = path.win32.dirname(options.env.TEMP);
+        const child = new EventEmitter();
+        queueMicrotask(() => child.emit('close', 0, null));
+        return child;
+      },
+    });
+    assert.equal(result.normalSettingsSnapshot.nativeSettings, 'absent');
+  } finally {
+    removeSmokeArtifacts(fixture, runRoot);
+  }
+});
+
+test('fails with native settings status changed without exposing either snapshot', async () => {
+  const fixture = isolatedProfileFixture();
+  const nativeFile = path.win32.join(fixture.normalLocalAppData, 'G-Maiden', 'settings.json');
+  const beforeValue = 'before-private-value';
+  const afterValue = 'after-private-value';
+  mkdirSync(path.win32.dirname(nativeFile), { recursive: true });
+  writeFileSync(nativeFile, JSON.stringify({ voiceName: beforeValue }));
+  let runRoot;
+  try {
+    await assert.rejects(
+      runMvp009IsolatedSmoke({
+        ...fixture,
+        command: 'D:\\build\\g-maiden.exe',
+        readNormalAffectedSettings: safeReader(),
+        spawnCommand: (_command, _args, options) => {
+          runRoot = path.win32.dirname(options.env.TEMP);
+          writeFileSync(nativeFile, JSON.stringify({ voiceName: afterValue }));
+          const child = new EventEmitter();
+          queueMicrotask(() => child.emit('close', 0, null));
+          return child;
+        },
+      }),
+      (error) => {
+        assert.match(error.message, /native settings: changed/);
+        assert.equal(error.message.includes(beforeValue), false);
+        assert.equal(error.message.includes(afterValue), false);
+        return true;
+      },
+    );
+  } finally {
+    removeSmokeArtifacts(fixture, runRoot);
+  }
 });
 
 test('refuses to spawn when no supported key-scoped reader is configured', async () => {
+  const fixture = isolatedProfileFixture();
   let spawned = false;
-  await assert.rejects(
-    runMvp009IsolatedSmoke({
-      ...normalPaths,
-      command: 'D:\\build\\g-maiden.exe',
-      spawnCommand: () => { spawned = true; },
-    }),
-    /no supported read-only key-scoped reader is available/,
-  );
-  assert.equal(spawned, false);
+  try {
+    await assert.rejects(
+      runMvp009IsolatedSmoke({
+        ...fixture,
+        command: 'D:\\build\\g-maiden.exe',
+        spawnCommand: () => { spawned = true; },
+      }),
+      /localStorage status: unverified.*no supported read-only key-scoped reader is available/,
+    );
+    assert.equal(spawned, false);
+  } finally {
+    removeSmokeArtifacts(fixture);
+  }
 });
 
 test('permits the explicit path-isolation-only smoke mode without a profile reader', async () => {
+  const fixture = isolatedProfileFixture();
   let spawnCall;
-  const result = await runMvp009IsolatedSmoke({
-    ...normalPaths,
-    command: 'D:\\build\\g-maiden.exe',
-    requireProfileSnapshot: false,
-    spawnCommand: (command, args, options) => {
-      spawnCall = { command, args, options };
-      const child = new EventEmitter();
-      queueMicrotask(() => child.emit('close', 0, null));
-      return child;
-    },
-  });
+  let runRoot;
+  try {
+    const result = await runMvp009IsolatedSmoke({
+      ...fixture,
+      command: 'D:\\build\\g-maiden.exe',
+      requireProfileSnapshot: false,
+      spawnCommand: (command, args, options) => {
+        spawnCall = { command, args, options };
+        runRoot = path.win32.dirname(options.env.TEMP);
+        const child = new EventEmitter();
+        queueMicrotask(() => child.emit('close', 0, null));
+        return child;
+      },
+    });
 
-  assert.deepEqual(spawnCall.args, ['--mvp009-isolated-smoke']);
-  assert.equal(spawnCall.options.env.WEBVIEW2_USER_DATA_FOLDER, result.webview2UserDataDirectory);
-  assert.equal(result.normalSettingsSnapshotVerified, false);
-  rmSync(result.runRoot, { recursive: true, force: true });
+    assert.deepEqual(spawnCall.args, ['--mvp009-isolated-smoke']);
+    assert.equal(spawnCall.options.env.WEBVIEW2_USER_DATA_FOLDER, result.webview2UserDataDirectory);
+    assert.deepEqual(result.normalSettingsSnapshot, {
+      localStorage: 'unverified',
+      nativeSettings: 'absent',
+    });
+  } finally {
+    removeSmokeArtifacts(fixture, runRoot);
+  }
 });
 
 test('refuses to spawn when the temp parent overlaps normal LOCALAPPDATA', async () => {
+  const fixture = isolatedProfileFixture();
   let spawned = false;
-  await assert.rejects(
-    runMvp009IsolatedSmoke({
-      ...normalPaths,
-      tempParent: process.env.LOCALAPPDATA,
-      command: 'D:\\build\\g-maiden.exe',
-      readNormalAffectedSettings: safeReader(),
-      spawnCommand: () => { spawned = true; },
-    }),
-    /overlaps the normal Windows user profile|overlaps normal LOCALAPPDATA/,
-  );
-  assert.equal(spawned, false);
+  try {
+    await assert.rejects(
+      runMvp009IsolatedSmoke({
+        ...fixture,
+        tempParent: fixture.normalLocalAppData,
+        command: 'D:\\build\\g-maiden.exe',
+        readNormalAffectedSettings: safeReader(),
+        spawnCommand: () => { spawned = true; },
+      }),
+      /overlaps the normal Windows user profile|overlaps normal LOCALAPPDATA/,
+    );
+    assert.equal(spawned, false);
+  } finally {
+    removeSmokeArtifacts(fixture);
+  }
 });
 
 test('rejects a profile projection that contains credential fields before spawning', async () => {
+  const fixture = isolatedProfileFixture();
   let spawned = false;
   const reader = async () => ({
     'gm-settings': { masterApiKey: 'redacted-test-only' },
     'gm-deck-audio-rail': null,
   });
   reader.supportedReadOnlyKeyScoped = true;
-  await assert.rejects(
-    runMvp009IsolatedSmoke({
-      ...normalPaths,
-      command: 'D:\\build\\g-maiden.exe',
-      readNormalAffectedSettings: reader,
-      spawnCommand: () => { spawned = true; },
-    }),
-    /unsupported field/,
-  );
-  assert.equal(spawned, false);
+  try {
+    await assert.rejects(
+      runMvp009IsolatedSmoke({
+        ...fixture,
+        command: 'D:\\build\\g-maiden.exe',
+        readNormalAffectedSettings: reader,
+        spawnCommand: () => { spawned = true; },
+      }),
+      /unsupported field/,
+    );
+    assert.equal(spawned, false);
+  } finally {
+    removeSmokeArtifacts(fixture);
+  }
 });
 
 test('fails the run if the two-key normal-profile projection changes during smoke', async () => {
+  const fixture = isolatedProfileFixture();
   let reads = 0;
   let spawned = false;
   let runRoot;
@@ -159,7 +342,7 @@ test('fails the run if the two-key normal-profile projection changes during smok
   reader.supportedReadOnlyKeyScoped = true;
   await assert.rejects(
     runMvp009IsolatedSmoke({
-      ...normalPaths,
+      ...fixture,
       command: 'D:\\build\\g-maiden.exe',
       readNormalAffectedSettings: reader,
       spawnCommand: (_command, _args, options) => {
@@ -170,10 +353,10 @@ test('fails the run if the two-key normal-profile projection changes during smok
         return child;
       },
     }),
-    /normal-profile affected settings changed/,
+    /normal-profile settings snapshot changed.*localStorage: changed/,
   );
   assert.equal(spawned, true);
   assert.equal(reads, 2);
   assert.match(runRoot, /^d:\\gmaiden-mvp009-[0-9a-f-]+$/);
-  rmSync(runRoot, { recursive: true, force: true });
+  removeSmokeArtifacts(fixture, runRoot);
 });
