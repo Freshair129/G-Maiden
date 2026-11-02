@@ -5,6 +5,9 @@ mod commands;
 mod events;
 mod id_manifest;
 mod playback;
+mod variant_rotation;
+#[cfg(test)]
+pub(crate) use variant_rotation::Coordinator as TestVariantCoordinator;
 #[cfg(test)]
 pub use id_container::container_sha256;
 pub(crate) use playback::{

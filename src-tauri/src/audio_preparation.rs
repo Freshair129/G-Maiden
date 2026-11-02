@@ -51,6 +51,9 @@ pub(super) fn cancel_up_to(ceiling: Priority) {
 pub(super) fn critical_fence() -> Fence {
     reserve_critical_fence(epochs())
 }
+pub(super) fn announcer_fence() -> Fence {
+    Fence::capture(epochs(), Priority::Announcer)
+}
 fn reserve_critical_fence(epochs: &Arc<Epochs>) -> Fence {
     Fence {
         epochs: epochs.clone(),
@@ -233,11 +236,14 @@ struct Request {
     fence: Fence,
 }
 
-pub(super) fn enqueue(path: PathBuf, priority: Priority, observation: PlaybackObservation) {
+pub(super) fn enqueue(path: PathBuf, priority: Priority, mut observation: PlaybackObservation) {
     if priority < Priority::Critical && super::active_priority() == Priority::Critical {
         return;
     }
-    let fence = Fence::capture(epochs(), priority);
+    let fence = observation
+        .request_fence
+        .take()
+        .unwrap_or_else(|| Fence::capture(epochs(), priority));
     static COUNT: OnceLock<Arc<AtomicUsize>> = OnceLock::new();
     static WORKER: OnceLock<mpsc::SyncSender<Request>> = OnceLock::new();
     let Some(slot) = Slot::acquire(COUNT.get_or_init(|| Arc::new(AtomicUsize::new(0)))) else {
@@ -310,6 +316,45 @@ pub(super) fn open_verified_file(path: &std::path::Path) -> Result<std::fs::File
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stop_during_variant_reservation_rejects_the_waiting_request() {
+        let epochs = Arc::new(Epochs::default());
+        let fence = Fence::capture(&epochs, Priority::Announcer);
+        let coordinator = Arc::new(crate::voice_api::TestVariantCoordinator::default());
+        let first = coordinator.reserve(1, "kill", Duration::ZERO).unwrap();
+        let worker = coordinator.clone();
+        let (ready, wait) = mpsc::channel();
+        let thread = std::thread::spawn(move || {
+            let ready = std::sync::Mutex::new(Some(ready));
+            worker.reserve_current(1, "kill", Duration::from_secs(2), || {
+                let current = fence.is_current();
+                if let Some(sender) = ready.lock().unwrap().take() {
+                    sender.send(current).unwrap();
+                }
+                current
+            }).is_some()
+        });
+        assert!(wait.recv().unwrap());
+        epochs.invalidate(Priority::Critical);
+        drop(first);
+        assert!(!thread.join().unwrap());
+        assert_eq!(coordinator.reserve(1, "kill", Duration::ZERO).unwrap().last(), None);
+    }
+
+    #[test]
+    fn stop_before_dispatched_event_starts_rejects_its_original_fence() {
+        let epochs = Arc::new(Epochs::default());
+        let fence = Fence::capture(&epochs, Priority::Announcer);
+        let coordinator = Arc::new(crate::voice_api::TestVariantCoordinator::default());
+        let queued = {
+            let coordinator = coordinator.clone();
+            move || coordinator.reserve_current(1, "kill", Duration::ZERO, || fence.is_current()).is_some()
+        };
+        epochs.invalidate(Priority::Critical);
+        assert!(!queued());
+        assert_eq!(coordinator.reserve(1, "kill", Duration::ZERO).unwrap().last(), None);
+    }
 
     #[test]
     fn admitted_original_cannot_play_when_its_gann_mixed_file_is_changed_or_removed() {

@@ -44,6 +44,20 @@ struct PlaybackObservation {
     admit: Box<PlaybackAdmission>,
     receipt: PlaybackReceipt,
     lifecycle: Option<PlaybackLifecycleObserver>,
+    request_fence: Option<preparation::Fence>,
+}
+
+#[derive(Clone)]
+pub(crate) struct AnnouncerRequestFence(preparation::Fence);
+
+impl AnnouncerRequestFence {
+    pub(crate) fn capture() -> Self {
+        Self(preparation::announcer_fence())
+    }
+
+    pub(crate) fn is_current(&self) -> bool {
+        self.0.is_current()
+    }
 }
 
 fn lifecycle_current() -> &'static Arc<std::sync::atomic::AtomicU64> {
@@ -250,6 +264,7 @@ pub fn try_interrupt_cached_before(
         }),
         receipt: PlaybackReceipt::new(|_| {}),
         lifecycle: Some(observer),
+        request_fence: None,
     };
     let (accepted, admission) = mpsc::sync_channel(1);
     if !prepare_critical_command(clip, deadline, accepted, observation) {
@@ -878,22 +893,25 @@ pub fn play_observed(
         admit: Box::new(admit),
         receipt: PlaybackReceipt::new(notify),
         lifecycle: None,
+        request_fence: None,
     };
     preparation::enqueue(path, priority, observation);
 }
 
 /// Send bounded lifecycle notifications only after this exact clip is admitted.
-pub fn play_observed_with_lifecycle(
+pub(crate) fn play_observed_with_lifecycle(
     path: PathBuf,
     priority: Priority,
     admit: impl Fn(&mut dyn FnMut()) + Send + 'static,
     notify: impl FnOnce(PlaybackResult) + Send + 'static,
     lifecycle: PlaybackLifecycleObserver,
+    request_fence: Option<AnnouncerRequestFence>,
 ) {
     let observation = PlaybackObservation {
         admit: Box::new(admit),
         receipt: PlaybackReceipt::new(notify),
         lifecycle: Some(lifecycle),
+        request_fence: request_fence.map(|fence| fence.0),
     };
     if priority == Priority::Critical {
         let revision = observation

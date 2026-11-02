@@ -366,7 +366,7 @@ fn quit_application(app: tauri::AppHandle) {
 #[tauri::command]
 async fn speak_event(app: tauri::AppHandle, event: String) -> Result<(), String> {
     tauri::async_runtime::spawn_blocking(move || {
-        voice_api::play_event(app, event, 0, true, audio::Priority::Normal)
+        voice_api::play_event(app, event, 0, true, audio::Priority::Normal, None)
     })
     .await
     .map_err(|e| e.to_string())?
@@ -915,6 +915,7 @@ async fn preview_announcer_variant(
                 let _ = tx.try_send(outcome == audio::PlaybackResult::Admitted);
             },
             observer,
+            None,
         );
         if rx
             .recv_timeout(std::time::Duration::from_secs(3))
