@@ -9,6 +9,8 @@
 
 ## [0.13.5] — Pending release
 
+- **ความต่อเนื่องของ minimap ระหว่างคลิป** — ให้ worker ทำงานที่ priority ปกติภายใต้งบ CPU เดิม ลดเฉพาะภาพสะท้อน minimap เหลือ 5 FPS ระหว่างเล่นคลิป และคืน cadence หลังจบ พร้อมบันทึกจุดสะดุดแบบตัวเลขในเครื่อง
+- **CV ลองภาพใหม่หลังประมวลผลไม่ทัน** — ภาพที่ถูกปฏิเสธเพราะเลย deadline หรือทรัพยากรไม่พร้อมไม่กินสิทธิ์ของภาพจากการจับครั้งใหม่ที่เหมือนกัน โดยยังไม่นับภาพที่ผ่านแล้วซ้ำเป็นการยืนยันเพิ่ม
 - **Preview คลิป GANN** — เลือก variant จากแพ็กที่ตรวจและเปิดใช้งานแล้ว เพื่อลดเวลาตรวจแพ็กซ้ำก่อนเล่น พร้อมตรวจความถูกต้องของเสียงและภาพก่อนส่งออก
 - **แพ็ก announcer ไฟล์เดียว `.gann`** — รวม manifest แบบ ID, เสียง, silent banner video, motion/config และ stock ใน indexed ZIP ที่ตรวจขนาด/พาธ/SHA-256; นำเข้าจาก Control ได้ทั้ง local development และ consumer build เก็บต้นฉบับพร้อม playback cache โดยไม่เพิ่ม SQL หรือสิทธิ์ Store
 - **ตัวเล่น GANN แบบ native** — ถอดรหัส VP8/VP9 และ alpha ภายในแอป แสดงผ่าน DirectComposition โดยใช้ clock ร่วมกับ WASAPI; เลิกเส้นทางแบนเนอร์ WebView สำหรับ event คงเวลา/เฟรมจากแพ็ก การตรวจ hash, priority, Stop, volume และ session/pack fences พร้อมจำกัด worker/หน่วยความจำและแยก gain ของแต่ละ stream

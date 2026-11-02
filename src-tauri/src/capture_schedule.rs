@@ -21,8 +21,12 @@ pub struct FrameGate {
 }
 
 impl FrameGate {
+    pub fn is_candidate(&self, elapsed_ms: u64, pressure: bool, frame: Option<u64>) -> bool {
+        admits_critical(elapsed_ms, pressure, frame.is_some()) && self.last_frame != frame
+    }
+
     pub fn admit(&mut self, elapsed_ms: u64, pressure: bool, frame: Option<u64>) -> bool {
-        if !admits_critical(elapsed_ms, pressure, frame.is_some()) || self.last_frame == frame {
+        if !self.is_candidate(elapsed_ms, pressure, frame) {
             return false;
         }
         self.last_frame = frame;
@@ -67,5 +71,27 @@ mod tests {
         assert!(!frames.admit(32, true, Some(2)));
         // Rejected observations never consume the next usable frame.
         assert!(frames.admit(32, false, Some(2)));
+    }
+
+    #[test]
+    fn late_inference_does_not_consume_a_fresh_retry_of_the_same_crop() {
+        let mut frames = FrameGate::default();
+        assert!(frames.admit(32, false, Some(1)));
+        assert!(frames.is_candidate(32, false, Some(2)));
+        assert!(!frames.admit(210, false, Some(2)));
+        assert!(!frames.is_candidate(32, false, Some(1)));
+        assert!(frames.is_candidate(32, false, Some(2)));
+        assert!(frames.admit(32, false, Some(2)));
+        assert!(!frames.is_candidate(32, false, Some(2)));
+    }
+
+    #[test]
+    fn pressure_after_inference_keeps_the_crop_retryable() {
+        let mut frames = FrameGate::default();
+        assert!(frames.is_candidate(32, false, Some(42)));
+        assert!(!frames.admit(40, true, Some(42)));
+        assert!(frames.is_candidate(32, false, Some(42)));
+        assert!(frames.admit(40, false, Some(42)));
+        assert!(!frames.is_candidate(32, false, Some(42)));
     }
 }

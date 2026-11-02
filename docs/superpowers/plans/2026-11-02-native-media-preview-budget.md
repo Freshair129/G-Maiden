@@ -2,7 +2,7 @@
 title: "Native media minimap preview budget"
 doc_id: "2026-11-02-native-media-preview-budget"
 status: active
-version: "0.1.2"
+version: "0.1.5"
 updated: "2026-11-02"
 owner: "G-Maiden"
 ---
@@ -20,7 +20,7 @@ owner: "G-Maiden"
 
 ## Design and Approaches
 
-The owner selected a temporary preview CPU reserve over a GPU conversion prototype. No media, mapping, authored PTS/duration, CPU quota or CV cadence changes are authorized by this policy. The 5 FPS cap affects the companion's minimap mirror, not Dota's minimap. A normal clip, Stop, error and unwind release their lease; overlapping owners retain the cap until the final owner exits. Adaptive preview state is held through playback and its first post-playback sample so a sample containing clip work does not permanently overwrite the previous rate.
+The owner first selected a temporary preview CPU reserve and later approved GPU color conversion in the separate GPU plan. No media, mapping, authored PTS/duration, CPU quota or CV cadence changes are authorized by this policy. The 5 FPS cap affects the companion's minimap mirror, not Dota's minimap. A normal clip, Stop, error and unwind release their lease; overlapping owners retain the cap until the final owner exits. Adaptive preview state is held through playback and its first post-playback sample so a sample containing clip work does not permanently overwrite the previous rate.
 
 ## Global Constraints
 
@@ -45,8 +45,9 @@ The owner selected a temporary preview CPU reserve over a GPU conversion prototy
 - [x] Add a failing protocol test for 5 FPS; implement the bounded command/interval contract.
 - [x] Add counted playback leases and overlap/error/unwind tests in `gann_native_budget.rs`; expose state through `gann_native.rs` and acquire only after admission in `gann_native_windows.rs`.
 - [x] Apply the cap in `governor.rs`; hold adaptive state in `minimap_admission.rs`; use the protocol interval in `minimap_preview_process.rs` without capture recreation.
-- [ ] Run focused contracts, full cargo test/clippy, ESLint, tsc, Vitest, doc graph and native smoke build with bounded suites.
-- [ ] Inspect fresh runtime identity before replacement; verify startup/ONNX/VRZO. Test all five events and repeat with independent desktop/endpoint evidence, CPU/RAM and real-game minimap/CV/worker continuity, including FPS restoration and Stop.
+- [x] Run focused contracts, full cargo test/clippy, ESLint, tsc, Vitest, doc graph and native smoke build with bounded suites.
+- [x] Inspect fresh runtime identity before replacement; verify startup/ONNX/VRZO. Test all five events with independent desktop/compositor/process-loopback evidence, CPU/RAM and a bounded real-game minimap/CV/worker continuity window, including FPS restoration and Stop.
+- [ ] Verify idle pack deactivation/reactivation after the current match and recheck the earlier 60 FPS restoration/first-match CPU failure on the new candidate. Do not infer those scenarios from the passing 15 FPS baseline window.
 - [ ] Only after required acceptance, review/commit/push/PR, merge, exact-main CI, tag/release and signed old-version update acceptance through the established release workflow.
 
 ## Validation rulings
@@ -60,6 +61,17 @@ The owner selected a temporary preview CPU reserve over a GPU conversion prototy
 - The temporary preview reserve is insufficient for release. Preserve failed evidence locally and discuss the native scheduling architecture before another implementation attempt. No further architecture choice or release readiness is implied by this plan.
 - GPU follow-up revealed a worker restart storm during a failed Match Start: early Pressure/transport packets prematurely ended the existing 5s initialization grace. Track completed capture-loop initialization separately. Pressure/transport cannot graduate startup; a real Frame/Waiting/Unavailable loop observation can, without asserting healthy sensing. Keep the 5s fixed startup bound, 500ms running transport watchdog and 250ms image freshness unchanged. Do not reset the startup deadline on every heartbeat.
 - A fully validated/read frame that is too old to display still establishes a completed capture loop. Report initialization through a private non-pixel item; never publish its stale pixels or turn it into healthy sensing.
+- The current GPU binary passed four critical media tests on an active desktop and again during real Dota. All 1,570 frame indices had independent desktop/compositor coverage and exact process-only source audio; live duration deviation was at most 17.77 ms with no audio-underrun observations. Actual canvas cadence was approximately 5 FPS in all four capped windows, with four 15 -> 5 -> 15 restorations. Endpoint audio included Dota and was not treated as clean source-fidelity evidence. Match Start remains separately owner-waived.
+- Steady-state preview workers subsequently restarted on the same lease/epoch/geometry at 505-560 ms without transport progress. Preserve this failure despite passing media and capped-window observations; it does not establish continuous preview acceptance.
+- Reversible runtime priority diagnostics retained the shared CPU Job and all watchdog/freshness limits. BelowNormal over 60 s had a restart and a 2.38 s canvas gap; Normal over 90 s retained its worker, with a 236 ms maximum gap and no unhealthy sensor samples. A separate 180 s Normal trial retained its worker through four more passing media events within CPU/RAM limits, but had one sensor-health withdrawal at age 546 ms and later canvas gaps around 0.7 s. These are runtime-policy diagnostics, not acceptance of a newly compiled candidate or proof that priority explains every stall.
+- The follow-up uses Normal worker priority inside the same Job and adds local numeric stage/control-heartbeat ages. Stage codes are 0 idle/pacing, 1 capture, 2 crop/packet preparation, 3 pipe write, 4 window/output checks and 5 DXGI initialization. Wall-clock stage age can locate a delay but cannot by itself distinguish a GPU wait from scheduler preemption. Keep the 500 ms transport watchdog, 250 ms image fence and fail-closed health behavior unchanged. New native build, startup and actual live continuity tests remain pending; no full pass or release readiness is claimed.
+- The compiled Normal-priority candidate `0a618c53a72301744bdfc659472101eac0f68afe832439b6d1908b5f544d08c2` loaded ONNX/VRZO and passed the four mandatory real-game media checks: all 1,570 compositor frame indices, process-only source audio correlation approximately 1, maximum duration deviation 51.21 ms and isolated timestamp deviation 41.39 ms. It retained its preview worker and restored 15 -> 5 -> 15 four times. However, four sensor-health withdrawals (ages 507-1,017 ms), a 699.6 ms canvas gap, and a separate first-map CPU sample of 10.30% keep continuity/resource acceptance open. Later passing CPU samples do not invalidate that failure.
+- A source-level regression reproduced premature crop-hash consumption: an inference rejected after the unchanged 200 ms deadline prevented a fresh identical acquisition from retrying. Candidate selection is now read-only; only a result passing the final deadline/resource gate consumes its hash. Successful identical crops remain deduplicated, failed results do not become semantic evidence, and safety/readiness thresholds are unchanged. Focused retry/pressure tests pass; native rebuild and actual runtime revalidation remain required.
+- The transactional candidate `03f29c3f906532854928b6dfe2bf4fff7962c777cc73b0c73323f2a31cedb8c5` passed the native no-bundle build with all 554 tracked runtime inputs frozen. Rust passed 658 tests plus the package/decoder/Party suites; clippy passed. ONNX128/VRZO startup passed at 7.95% CPU and 695,840,768 bytes aggregate peak Working Set. Frontend input content is unchanged from the passing 673-test/ESLint/tsc run.
+- The candidate's five real-Dota Event Tests had all 2,022 frame indices confirmed through independent desktop pixels and OS composition records together. Eight pixel samples were absent but covered by composition; no unknown or out-of-order indices remained. All process-only source waveform correlations were approximately 1, with no recorded discontinuities or underrun observations. Maximum duration deviation was 17.56 ms and maximum isolated compositor/audio timestamp deviation 11.73 ms. This is not physical-panel or microphone acoustic qualification.
+- In the separate 180-second live window, all five actual canvas caps measured approximately 5 FPS and restored 15 FPS. The same worker remained present; 702 distinct capture IDs reached CV, 172 health samples had no withdrawal (maximum age 170 ms), and 2,327 canvas draws had a maximum 333.5 ms gap. Native CPU peaked at 8.50%, independent rolling intervals of at least one second at 8.63%, and aggregate Working Set at 549,650,432 bytes. These are bounded observations, not a whole-match/FPS-impact guarantee.
+- Current-binary process-loopback mute and Stop were silent, replacement commands succeeded, and pack disable remained pinned both during playback and after Stop in the live match. The idle-oriented lifecycle script correctly encountered that live-match fence; retain its failed invocation separately instead of treating it as an application defect. A live-specific repeat passed, restored volume 30 and kept VRZO active. Idle deactivation/reactivation remains pending.
+- The earlier 10.30% sample occurred after a 5 -> 60 FPS restoration on the preceding candidate, followed by adaptive reduction to 15 FPS. This temporal association does not establish its sole cause. The new 15 FPS-baseline passing batch does not retest that transition; it remains a release follow-up, alongside idle lifecycle and signed installed/upgrade checks.
 
 ## Changelog
 
@@ -68,3 +80,6 @@ The owner selected a temporary preview CPU reserve over a GPU conversion prototy
 | 0.1.0 | 2026-11-02 | Record owner-approved temporary preview reserve and validation plan. |
 | 0.1.1 | 2026-11-02 | Record actual preview restoration, Stop, sensing and failed media timing evidence. |
 | 0.1.2 | 2026-11-02 | Record owner 500ms MVP tolerance and cold-start heartbeat phase correction. |
+| 0.1.3 | 2026-11-02 | Record real-game media passes, steady-state preview failure and bounded priority/stage diagnostics. |
+| 0.1.4 | 2026-11-02 | Record compiled priority validation limits and transactional crop admission retry fix. |
+| 0.1.5 | 2026-11-02 | Record five-event native/runtime passes and preserve idle lifecycle/60 FPS transition follow-ups. |

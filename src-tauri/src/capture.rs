@@ -1402,7 +1402,7 @@ mod backend {
         let mut hasher = std::collections::hash_map::DefaultHasher::new();
         cropped.hash(&mut hasher);
         let fingerprint = hasher.finish();
-        if !state.frames.admit(
+        if !state.frames.is_candidate(
             state.cycle_started.elapsed().as_millis() as u64,
             crate::governor::cpu_throttle(),
             Some(fingerprint),
@@ -1442,10 +1442,12 @@ mod backend {
                 state.inference_ms = 0;
             }
 
-            if !super::schedule::admits_critical(
+            // Only successful inference consumes a crop; a late or pressured result
+            // must leave a fresh identical acquisition eligible to retry.
+            if !state.frames.admit(
                 state.cycle_started.elapsed().as_millis() as u64,
                 crate::governor::cpu_throttle(),
-                true,
+                Some(fingerprint),
             ) {
                 state.suspend_observation();
                 state.missing_snapshot(

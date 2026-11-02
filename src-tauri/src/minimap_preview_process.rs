@@ -11,6 +11,22 @@ use std::time::{Duration, Instant};
 
 pub(crate) use crate::minimap_clock::now_us as clock_us;
 
+#[cfg(not(feature = "wgc"))]
+fn mark_worker_stage(stage: &AtomicU64, kind: u64) {
+    let now = clock_us();
+    if now != 0 && now <= u64::MAX >> 3 {
+        let previous = stage.swap((now << 3) | kind, Ordering::AcqRel);
+        if previous != 0 && now.saturating_sub(previous >> 3) >= 300_000 {
+            eprintln!(
+                "[G-MinimapWorker] slow_completed stage={} age_us={} qpc_us={}",
+                previous & 7,
+                now.saturating_sub(previous >> 3),
+                now
+            );
+        }
+    }
+}
+
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
 struct Request {
@@ -138,9 +154,11 @@ impl Connection {
         wake: mpsc::SyncSender<()>,
     ) -> Result<Self, String> {
         use std::os::windows::process::CommandExt;
-        use windows::Win32::System::Threading::{BELOW_NORMAL_PRIORITY_CLASS, CREATE_NO_WINDOW};
+        use windows::Win32::System::Threading::{CREATE_NO_WINDOW, NORMAL_PRIORITY_CLASS};
+        // Let heartbeat progress compete with the normal-priority host.
+        // The shared CPU Job, rather than worker priority, bounds total work.
         command
-            .creation_flags((CREATE_NO_WINDOW | BELOW_NORMAL_PRIORITY_CLASS).0)
+            .creation_flags((CREATE_NO_WINDOW | NORMAL_PRIORITY_CLASS).0)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit());
@@ -230,8 +248,8 @@ impl Connection {
             clock_us,
         ) else {
             let now = clock_us();
-            eprintln!("[G-MinimapPreview] worker watchdog initialized={} packet_age_us={} startup_age_us={}",
-                self.initialized.load(Ordering::Acquire), now.saturating_sub(self.packet_at.load(Ordering::Acquire)), now.saturating_sub(self.started));
+            eprintln!("[G-MinimapPreview] worker watchdog initialized={} packet_age_us={} startup_age_us={} control_age_us={}",
+                self.initialized.load(Ordering::Acquire), now.saturating_sub(self.packet_at.load(Ordering::Acquire)), now.saturating_sub(self.started), now.saturating_sub(self.last_heartbeat));
             return false;
         };
         if now.saturating_sub(self.last_heartbeat) >= 100_000 {
@@ -512,10 +530,13 @@ fn run_child() -> Result<(), String> {
     let beats = heartbeat.clone();
     let capture_enabled = Arc::new(AtomicU8::new(0));
     let enabled = capture_enabled.clone();
+    let worker_stage = Arc::new(AtomicU64::new(0));
+    let observed_stage = worker_stage.clone();
     std::thread::Builder::new()
         .name("g-preview-heartbeat".into())
         .spawn(move || {
             let mut input = std::io::stdin().lock();
+            let mut reported_stage = 0;
             loop {
                 let mut b = [0];
                 if input.read_exact(&mut b).is_err() {
@@ -530,6 +551,19 @@ fn run_child() -> Result<(), String> {
                     std::process::exit(2);
                 }
                 beats.store(now, Ordering::Release);
+                let point = observed_stage.load(Ordering::Acquire);
+                if point != 0
+                    && point != reported_stage
+                    && now.saturating_sub(point >> 3) >= 300_000
+                {
+                    eprintln!(
+                        "[G-MinimapWorker] slow stage={} age_us={} qpc_us={}",
+                        point & 7,
+                        now.saturating_sub(point >> 3),
+                        now
+                    );
+                    reported_stage = point;
+                }
             }
         })
         .map_err(|e| e.to_string())?;
@@ -554,6 +588,7 @@ fn run_child() -> Result<(), String> {
     let (mut captures, mut frames_out, mut capture_us, mut crop_us, mut pipe_us) =
         (0u64, 0u64, 0u64, 0u64, 0u64);
     loop {
+        mark_worker_stage(&worker_stage, 0);
         let now = clock_us();
         if now == 0 {
             return Err("shared clock unavailable".into());
@@ -561,10 +596,12 @@ fn run_child() -> Result<(), String> {
         if !pacer.due(now) {
             if now.saturating_sub(last_status) >= 100_000 {
                 let packet = wire::keepalive(source, sequence, now);
+                mark_worker_stage(&worker_stage, 3);
                 output
                     .write_all(&packet)
                     .and_then(|()| output.flush())
                     .map_err(|e| e.to_string())?;
+                mark_worker_stage(&worker_stage, 0);
                 last_status = now;
             }
             std::thread::sleep(Duration::from_micros(
@@ -582,16 +619,19 @@ fn run_child() -> Result<(), String> {
         if fps == 0 {
             if now.saturating_sub(last_status) >= 100_000 {
                 let packet = core::worker_packet(source, sequence, Status::Pressure, None, now);
+                mark_worker_stage(&worker_stage, 3);
                 output
                     .write_all(&packet)
                     .and_then(|()| output.flush())
                     .map_err(|e| e.to_string())?;
+                mark_worker_stage(&worker_stage, 0);
                 last_status = now;
             }
             std::thread::sleep(Duration::from_millis(50));
             continue;
         }
         if now.saturating_sub(scan_at) >= 500_000 || scan_at == 0 {
+            mark_worker_stage(&worker_stage, 4);
             window = crate::dxgi::preview_dota_window();
             scan_at = now;
         }
@@ -599,6 +639,7 @@ fn run_child() -> Result<(), String> {
         let mut pixels = None;
         if let Some((hwnd, pid)) = window {
             if capture.is_none() && now >= retry_at {
+                mark_worker_stage(&worker_stage, 5);
                 match crate::dxgi::DxgiCapture::new(source.geometry.display) {
                     Ok(dxgi) => capture = Some(dxgi),
                     Err(error) => {
@@ -609,6 +650,7 @@ fn run_child() -> Result<(), String> {
             }
             if let Some(dxgi) = capture.as_mut() {
                 let g = source.geometry;
+                mark_worker_stage(&worker_stage, 4);
                 if dxgi.backend() != "dxgi"
                     || !core::matches_output(
                         g,
@@ -631,10 +673,12 @@ fn run_child() -> Result<(), String> {
                         g.side,
                         g.side,
                     );
+                    mark_worker_stage(&worker_stage, 1);
                     let stage = Instant::now();
                     let bundle = dxgi.acquire_regions(source.epoch, &[roi]);
                     capture_us += stage.elapsed().as_micros() as u64;
                     captures += 1;
+                    mark_worker_stage(&worker_stage, 4);
                     if dxgi.backend() != "dxgi"
                         || !core::matches_output(
                             g,
@@ -655,6 +699,7 @@ fn run_child() -> Result<(), String> {
                             if let Some(roi) =
                                 bundle.into_region(crate::capture_frame::CaptureRoiKind::Minimap)
                             {
+                                mark_worker_stage(&worker_stage, 2);
                                 let stage = Instant::now();
                                 pixels = core::crop_rgba(
                                     &roi.bgra,
@@ -682,12 +727,14 @@ fn run_child() -> Result<(), String> {
                 sequence = sequence.saturating_add(1);
             }
             let packet = core::worker_packet(source, sequence, status, pixels.as_ref(), clock_us());
+            mark_worker_stage(&worker_stage, 3);
             let stage = Instant::now();
             output
                 .write_all(&packet)
                 .and_then(|()| output.flush())
                 .map_err(|e| e.to_string())?;
             pipe_us += stage.elapsed().as_micros() as u64;
+            mark_worker_stage(&worker_stage, 0);
             if status == Status::Frame {
                 frames_out += 1;
             }
