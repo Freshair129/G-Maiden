@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import { EventEmitter } from 'node:events';
-import { existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs';
+import { existsSync, mkdirSync, mkdtempSync, rmdirSync, rmSync, writeFileSync } from 'node:fs';
 import { readFile } from 'node:fs/promises';
 import { test } from 'node:test';
 import path from 'node:path';
@@ -44,6 +44,7 @@ function safeReader() {
 function isolatedProfileFixture() {
   const driveRoot = path.win32.parse(process.cwd()).root;
   const root = mkdtempSync(path.win32.join(driveRoot, 'mvp009-profile-snapshot-'));
+  const tempParent = mkdtempSync(path.win32.join(driveRoot, 'mvp009-smoke-temp-parent-'));
   const normalLocalAppData = path.win32.join(root, 'local-app-data');
   const normalUserProfile = path.win32.join(root, 'user-profile');
   mkdirSync(normalLocalAppData, { recursive: true });
@@ -51,16 +52,64 @@ function isolatedProfileFixture() {
   return {
     ...normalPaths,
     root,
-    tempParent: driveRoot,
+    tempParent,
     normalLocalAppData,
     normalUserProfile,
   };
 }
 
 function removeSmokeArtifacts(fixture, runRoot) {
-  if (runRoot) rmSync(runRoot, { recursive: true, force: true });
+  const resolvedRunRoot = typeof runRoot === 'string' ? path.win32.resolve(runRoot) : null;
+  const resolvedTempParent = typeof fixture.tempParent === 'string'
+    ? path.win32.resolve(fixture.tempParent)
+    : null;
+  const isOwnedRunRoot = resolvedRunRoot !== null
+    && resolvedTempParent !== null
+    && path.win32.dirname(resolvedRunRoot).toLowerCase() === resolvedTempParent.toLowerCase()
+    && /^gmaiden-mvp009-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      path.win32.basename(resolvedRunRoot),
+    );
+  if (isOwnedRunRoot) rmSync(resolvedRunRoot, { recursive: true, force: true });
   if (fixture.root) rmSync(fixture.root, { recursive: true, force: true });
+  if (fixture.tempParent) {
+    try {
+      rmdirSync(fixture.tempParent);
+    } catch (error) {
+      if (!['ENOTEMPTY', 'EEXIST', 'ENOENT'].includes(error?.code)) throw error;
+    }
+  }
 }
+
+test('smoke test cleanup preserves a sentinel outside its owned temp parent', () => {
+  const fixture = isolatedProfileFixture();
+  const outsideParent = mkdtempSync(path.win32.join(path.win32.parse(process.cwd()).root, 'mvp009-outside-cleanup-'));
+  const outsideRunRoot = path.win32.join(outsideParent, 'gmaiden-mvp009-11111111-2222-4333-8444-555555555555');
+  const sentinel = path.win32.join(outsideRunRoot, 'sentinel.txt');
+  mkdirSync(outsideRunRoot, { recursive: true });
+  writeFileSync(sentinel, 'fixture sentinel');
+  try {
+    removeSmokeArtifacts(fixture, outsideRunRoot);
+    assert.equal(existsSync(sentinel), true);
+  } finally {
+    rmSync(outsideParent, { recursive: true, force: true });
+    removeSmokeArtifacts(fixture);
+  }
+});
+
+test('smoke test cleanup preserves a sentinel under an unrecognized child name', () => {
+  const fixture = isolatedProfileFixture();
+  const unrecognizedRunRoot = path.win32.join(fixture.tempParent, 'mvp009-unrecognized-child');
+  const sentinel = path.win32.join(unrecognizedRunRoot, 'sentinel.txt');
+  mkdirSync(unrecognizedRunRoot, { recursive: true });
+  writeFileSync(sentinel, 'fixture sentinel');
+  try {
+    removeSmokeArtifacts(fixture, unrecognizedRunRoot);
+    assert.equal(existsSync(sentinel), true);
+  } finally {
+    rmSync(unrecognizedRunRoot, { recursive: true, force: true });
+    removeSmokeArtifacts(fixture);
+  }
+});
 
 test('smoke launcher passes only isolated storage paths to the executable', async () => {
   const fixture = isolatedProfileFixture();
@@ -103,7 +152,11 @@ test('smoke launcher passes only isolated storage paths to the executable', asyn
       localStorage: 'unchanged',
       nativeSettings: 'absent',
     });
-    assert.match(result.runRoot, /^d:\\gmaiden-mvp009-[0-9a-f-]+$/);
+    assert.equal(path.win32.dirname(result.runRoot).toLowerCase(), fixture.tempParent.toLowerCase());
+    assert.match(
+      path.win32.basename(result.runRoot),
+      /^gmaiden-mvp009-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+    );
   } finally {
     removeSmokeArtifacts(fixture, runRoot);
   }
@@ -357,6 +410,10 @@ test('fails the run if the two-key normal-profile projection changes during smok
   );
   assert.equal(spawned, true);
   assert.equal(reads, 2);
-  assert.match(runRoot, /^d:\\gmaiden-mvp009-[0-9a-f-]+$/);
+  assert.equal(path.win32.dirname(runRoot).toLowerCase(), fixture.tempParent.toLowerCase());
+  assert.match(
+    path.win32.basename(runRoot),
+    /^gmaiden-mvp009-[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+  );
   removeSmokeArtifacts(fixture, runRoot);
 });
