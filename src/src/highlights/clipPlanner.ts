@@ -46,6 +46,7 @@ export interface ReplayPolicy {
   replayBufferMs: number;
   safetyMarginMs: number;
   maxPendingWindows: number;
+  maxEventChainLength: number;
 }
 
 export const DEFAULT_REPLAY_POLICY: Readonly<ReplayPolicy> = {
@@ -53,7 +54,8 @@ export const DEFAULT_REPLAY_POLICY: Readonly<ReplayPolicy> = {
   postRollMs: 15_000,
   replayBufferMs: 90_000,
   safetyMarginMs: 5_000,
-  maxPendingWindows: 32
+  maxPendingWindows: 32,
+  maxEventChainLength: 8
 };
 
 export type ObserveRejectReason =
@@ -64,7 +66,8 @@ export type ObserveRejectReason =
   | "out_of_order"
   | "replay_window_expired"
   | "queue_full"
-  | "event_capacity";
+  | "event_capacity"
+  | "session_closed";
 
 export type ObserveResult =
   | { accepted: true; windowId: string }
@@ -79,19 +82,15 @@ export interface ReplaySaveIntent {
   requestedAtMs: number;
   desiredStartMs: number;
   desiredEndMs: number;
+  /** Original post-roll target when a partial end policy truncates desiredEndMs. */
+  plannedEndMs?: number;
+  /** Present only when the available interval is shorter than the planned window. */
+  partial?: true;
   /** SaveReplayBuffer includes additional footage; trimming happens later. */
   requiresOfflineTrim: true;
 }
 
-export interface ExpiredReplayWindow {
-  windowId: string;
-  reason: "replay_window_expired";
-}
-
-export interface ReplayAdvance {
-  saveIntents: ReplaySaveIntent[];
-  expired: ExpiredReplayWindow[];
-}
+export type ReplaySessionEndPolicy = "wait" | "partial" | "discard";
 
 export interface UnresolvedReplayWindow {
   windowId: string;
@@ -100,7 +99,37 @@ export interface UnresolvedReplayWindow {
   desiredStartMs: number;
   desiredEndMs: number;
   status: "unsaved";
-  reason: "session_replaced" | "session_cleared";
+  reason:
+    | "replay_window_expired"
+    | "session_replaced"
+    | "session_cleared"
+    | "session_discarded";
+}
+
+export interface ExpiredReplayWindow extends UnresolvedReplayWindow {
+  reason: "replay_window_expired";
+}
+
+export interface WaitingReplayWindow {
+  windowId: string;
+  eventIds: string[];
+  eventKinds: HighlightKind[];
+  desiredStartMs: number;
+  desiredEndMs: number;
+  notBeforeMs: number;
+  status: "waiting";
+}
+
+export interface ReplayAdvance {
+  saveIntents: ReplaySaveIntent[];
+  expired: ExpiredReplayWindow[];
+  waiting?: WaitingReplayWindow[];
+}
+
+export interface ReplayFinalization extends ReplayAdvance {
+  policy: ReplaySessionEndPolicy;
+  waiting: WaitingReplayWindow[];
+  unresolved: UnresolvedReplayWindow[];
 }
 
 export interface ReplaySessionTransition {
@@ -124,15 +153,17 @@ function validatePolicy(config: ReplayPolicy): void {
     config.postRollMs,
     config.replayBufferMs,
     config.safetyMarginMs,
-    config.maxPendingWindows
+    config.maxPendingWindows,
+    config.maxEventChainLength
   ];
   if (!values.every(isTime) || config.preRollMs === 0 ||
       config.postRollMs === 0 || config.maxPendingWindows < 1 ||
       config.maxPendingWindows > 256 ||
+      config.maxEventChainLength < 1 || config.maxEventChainLength > MAX_SEEN_EVENTS ||
       config.replayBufferMs <= config.safetyMarginMs ||
       config.preRollMs + config.postRollMs >
         config.replayBufferMs - config.safetyMarginMs) {
-    throw new Error("Invalid replay policy: pre/post roll must fit the safe buffer");
+    throw new Error("Invalid replay policy: limits must fit the safe buffer and event bounds");
   }
 }
 
@@ -145,6 +176,9 @@ export class ReplayClipPlanner {
   private nextId = 1;
   private windows: PendingWindow[] = [];
   private seenEvents = new Set<string>();
+  private sessionClosed = false;
+  private finalizationPolicy: ReplaySessionEndPolicy | null = null;
+  private finalizedAtMs: number | null = null;
 
   constructor(policy: ReplayPolicy = DEFAULT_REPLAY_POLICY) {
     validatePolicy(policy);
@@ -163,6 +197,9 @@ export class ReplayClipPlanner {
     this.nextId = 1;
     this.windows = [];
     this.seenEvents.clear();
+    this.sessionClosed = false;
+    this.finalizationPolicy = null;
+    this.finalizedAtMs = null;
     return transition;
   }
 
@@ -172,6 +209,9 @@ export class ReplayClipPlanner {
     this.windows = [];
     this.seenEvents.clear();
     this.lastObservedAtMs = -1;
+    this.sessionClosed = false;
+    this.finalizationPolicy = null;
+    this.finalizedAtMs = null;
     return transition;
   }
 
@@ -180,6 +220,9 @@ export class ReplayClipPlanner {
   }
 
   observe(event: HighlightObservation, nowMs: number): ObserveResult {
+    if (this.sessionClosed) {
+      return { accepted: false, reason: "session_closed" };
+    }
     if (this.epoch === null || event.sessionEpoch !== this.epoch) {
       return { accepted: false, reason: "session_unavailable" };
     }
@@ -205,35 +248,50 @@ export class ReplayClipPlanner {
     if (!Number.isSafeInteger(endMs) || nowMs - startMs > safeSpanMs) {
       return { accepted: false, reason: "replay_window_expired" };
     }
+    if (this.seenEvents.size >= MAX_SEEN_EVENTS) {
+      return { accepted: false, reason: "event_capacity" };
+    }
     const overlapping = this.windows.filter(
       (window) => window.startMs <= endMs && window.endMs >= startMs
     );
     const mergedStart = Math.min(startMs, ...overlapping.map((window) => window.startMs));
     const mergedEnd = Math.max(endMs, ...overlapping.map((window) => window.endMs));
-    const canMerge = mergedEnd - mergedStart <= safeSpanMs &&
+    const allFit = overlapping.length > 0 &&
+      overlapping.reduce((count, window) => count + window.eventIds.length, 0) + 1 <=
+        this.policy.maxEventChainLength &&
+      mergedEnd - mergedStart <= safeSpanMs &&
       nowMs - mergedStart <= safeSpanMs;
-    if ((!canMerge || overlapping.length === 0) &&
+    const mergeTarget = allFit ? null : [...overlapping].reverse().find((window) => {
+      const candidateStart = Math.min(startMs, window.startMs);
+      const candidateEnd = Math.max(endMs, window.endMs);
+      return window.eventIds.length < this.policy.maxEventChainLength &&
+        candidateEnd - candidateStart <= safeSpanMs &&
+        nowMs - candidateStart <= safeSpanMs;
+    });
+    if (!allFit && !mergeTarget &&
         this.windows.length >= this.policy.maxPendingWindows) {
       return { accepted: false, reason: "queue_full" };
     }
-    if (this.seenEvents.size >= MAX_SEEN_EVENTS) {
-      return { accepted: false, reason: "event_capacity" };
-    }
 
     let windowId: string;
-    if (overlapping.length && canMerge) {
+    if (allFit) {
       const first = overlapping[0];
       windowId = first.windowId;
-      const ids = overlapping.flatMap((window) => window.eventIds);
-      const kinds = overlapping.flatMap((window) => window.eventKinds);
-      this.windows = this.windows.filter((window) => !overlapping.includes(window));
-      this.windows.push({
-        windowId,
-        startMs: mergedStart,
-        endMs: mergedEnd,
-        eventIds: [...ids, event.eventId],
-        eventKinds: [...kinds, event.kind]
-      });
+      first.startMs = mergedStart;
+      first.endMs = mergedEnd;
+      for (const duplicate of overlapping.slice(1)) {
+        first.eventIds.push(...duplicate.eventIds);
+        first.eventKinds.push(...duplicate.eventKinds);
+        this.windows = this.windows.filter((window) => window !== duplicate);
+      }
+      first.eventIds.push(event.eventId);
+      first.eventKinds.push(event.kind);
+    } else if (mergeTarget) {
+      windowId = mergeTarget.windowId;
+      mergeTarget.startMs = Math.min(startMs, mergeTarget.startMs);
+      mergeTarget.endMs = Math.max(endMs, mergeTarget.endMs);
+      mergeTarget.eventIds.push(event.eventId);
+      mergeTarget.eventKinds.push(event.kind);
     } else {
       windowId = `clip-${this.epoch}-${this.nextId++}`;
       this.windows.push({
@@ -255,15 +313,107 @@ export class ReplayClipPlanner {
     reason: UnresolvedReplayWindow["reason"]
   ): ReplaySessionTransition {
     return {
-      unresolved: this.windows.map((window) => ({
-        windowId: window.windowId,
-        eventIds: [...window.eventIds],
-        eventKinds: [...window.eventKinds],
-        desiredStartMs: window.startMs,
-        desiredEndMs: window.endMs,
-        status: "unsaved",
-        reason
-      }))
+      unresolved: this.windows.map((window) => this.unsavedWindow(window, reason))
+    };
+  }
+
+  private unsavedWindow(
+    window: PendingWindow,
+    reason: UnresolvedReplayWindow["reason"]
+  ): UnresolvedReplayWindow {
+    return {
+      windowId: window.windowId,
+      eventIds: [...window.eventIds],
+      eventKinds: [...window.eventKinds],
+      desiredStartMs: window.startMs,
+      desiredEndMs: window.endMs,
+      status: "unsaved",
+      reason
+    };
+  }
+
+  private expiredWindow(window: PendingWindow): ExpiredReplayWindow {
+    return {
+      ...this.unsavedWindow(window, "replay_window_expired"),
+      reason: "replay_window_expired"
+    };
+  }
+
+  private waitingWindows(): WaitingReplayWindow[] {
+    return this.windows.map((window): WaitingReplayWindow => ({
+      windowId: window.windowId,
+      eventIds: [...window.eventIds],
+      eventKinds: [...window.eventKinds],
+      desiredStartMs: window.startMs,
+      desiredEndMs: window.endMs,
+      notBeforeMs: window.endMs,
+      status: "waiting"
+    }));
+  }
+
+  /** Normal match end freezes admission and applies a selected old-epoch policy. */
+  finalizeSession(
+    policy: ReplaySessionEndPolicy,
+    endedAtMs: number
+  ): ReplayFinalization {
+    if (this.epoch === null || this.sessionClosed) {
+      throw new Error("No open replay session to finalize");
+    }
+    if (policy !== "wait" && policy !== "partial" && policy !== "discard") {
+      throw new Error("Invalid replay session end policy");
+    }
+    if (!isTime(endedAtMs) || endedAtMs < this.startedAtMs ||
+        this.lastObservedAtMs > endedAtMs) {
+      throw new Error("Invalid session end time");
+    }
+
+    const sessionEpoch = this.epoch;
+    this.sessionClosed = true;
+    this.finalizationPolicy = policy;
+    this.finalizedAtMs = endedAtMs;
+
+    if (policy === "discard") {
+      const unresolved = this.reportUnresolved("session_discarded").unresolved;
+      this.windows = [];
+      this.epoch = null;
+      return { policy, saveIntents: [], waiting: [], expired: [], unresolved };
+    }
+
+    if (policy === "partial") {
+      const saveIntents: ReplaySaveIntent[] = [];
+      const expired: ExpiredReplayWindow[] = [];
+      const safeSpanMs = this.policy.replayBufferMs - this.policy.safetyMarginMs;
+      for (const window of this.windows) {
+        if (endedAtMs - window.startMs > safeSpanMs) {
+          expired.push(this.expiredWindow(window));
+          continue;
+        }
+        const desiredEndMs = Math.min(window.endMs, endedAtMs);
+        const isPartial = desiredEndMs < window.endMs;
+        saveIntents.push({
+          windowId: window.windowId,
+          sessionEpoch,
+          eventIds: [...window.eventIds],
+          eventKinds: [...window.eventKinds],
+          requestedAtMs: endedAtMs,
+          desiredStartMs: window.startMs,
+          desiredEndMs,
+          ...(isPartial ? { plannedEndMs: window.endMs, partial: true } : {}),
+          requiresOfflineTrim: true
+        });
+      }
+      this.windows = [];
+      this.epoch = null;
+      return { policy, saveIntents, waiting: [], expired, unresolved: [] };
+    }
+
+    const advance = this.takeDue(endedAtMs);
+    return {
+      policy,
+      saveIntents: advance.saveIntents,
+      waiting: advance.waiting ?? [],
+      expired: advance.expired,
+      unresolved: []
     };
   }
 
@@ -273,24 +423,26 @@ export class ReplayClipPlanner {
    */
   takeDue(nowMs: number): ReplayAdvance {
     const result: ReplayAdvance = { saveIntents: [], expired: [] };
-    if (this.epoch === null || !isTime(nowMs)) return result;
+    if (this.epoch === null || !isTime(nowMs) ||
+        (this.sessionClosed && this.finalizationPolicy !== "wait")) return result;
+    if (this.sessionClosed && this.finalizedAtMs !== null && nowMs < this.finalizedAtMs) {
+      result.waiting = this.waitingWindows();
+      return result;
+    }
 
     const stillPending: PendingWindow[] = [];
     const safeSpanMs = this.policy.replayBufferMs - this.policy.safetyMarginMs;
     for (const window of this.windows) {
       if (nowMs < window.endMs) {
         if (nowMs - window.startMs > safeSpanMs) {
-          result.expired.push({
-            windowId: window.windowId,
-            reason: "replay_window_expired"
-          });
+          result.expired.push(this.expiredWindow(window));
         } else {
           stillPending.push(window);
         }
         continue;
       }
       if (nowMs - window.startMs > safeSpanMs) {
-        result.expired.push({ windowId: window.windowId, reason: "replay_window_expired" });
+        result.expired.push(this.expiredWindow(window));
         continue;
       }
       result.saveIntents.push({
@@ -305,6 +457,10 @@ export class ReplayClipPlanner {
       });
     }
     this.windows = stillPending;
+    if (this.sessionClosed) {
+      result.waiting = this.waitingWindows();
+      if (this.windows.length === 0) this.epoch = null;
+    }
     return result;
   }
 }

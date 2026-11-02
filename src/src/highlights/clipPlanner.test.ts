@@ -124,6 +124,11 @@ describe("ReplayClipPlanner / CR-040 source-only contract", () => {
     expect(late.saveIntents).toEqual([]);
     expect(late.expired).toEqual([{
       windowId: "clip-7-1",
+      eventIds: ["old"],
+      eventKinds: ["double_kill"],
+      desiredStartMs: 70_000,
+      desiredEndMs: 115_000,
+      status: "unsaved",
       reason: "replay_window_expired"
     }]);
   });
@@ -161,6 +166,7 @@ describe("ReplayClipPlanner / CR-040 source-only contract", () => {
     const planner = new ReplayClipPlanner();
     planner.startSession(7, 0);
     planner.observe(event("e1", 100_000), 100_000);
+    planner.finalizeSession("wait", 101_000);
 
     expect(planner.startSession(8, 101_000)).toEqual({
       unresolved: [{
@@ -214,11 +220,15 @@ describe("ReplayClipPlanner / CR-040 source-only contract", () => {
     }
 
     planner.observe(event("event-256", 50_000), 50_000);
-    const intent = planner.takeDue(65_000).saveIntents[0];
-    expect(intent?.eventIds).toHaveLength(256);
-    expect(intent?.eventKinds).toHaveLength(256);
-    expect(intent?.eventIds[0]).toBe("event-0");
-    expect(intent?.eventIds[255]).toBe("event-255");
+    const intents = planner.takeDue(65_000).saveIntents;
+    expect(intents).toHaveLength(32);
+    expect(intents.every((intent) => intent.eventIds.length <= 8)).toBe(true);
+    expect(intents.every((intent) => intent.eventKinds.length <= 8)).toBe(true);
+    const eventIds = intents.flatMap((intent) => intent.eventIds);
+    expect(eventIds).toHaveLength(256);
+    expect(new Set(eventIds).size).toBe(256);
+    expect(eventIds[0]).toBe("event-0");
+    expect(eventIds[255]).toBe("event-255");
   });
 
   it("does not reaccept an old event id after the session dedupe cap", () => {
@@ -233,10 +243,225 @@ describe("ReplayClipPlanner / CR-040 source-only contract", () => {
       .toEqual({ accepted: false, reason: "duplicate_event" });
   });
 
+  it("waits for only the ended epoch's post-roll target before emitting an intent", () => {
+    const planner = new ReplayClipPlanner();
+    planner.startSession(7, 0);
+    planner.observe(event("e1", 100_000), 100_000);
+    const waitingWindow = {
+      windowId: "clip-7-1",
+      eventIds: ["e1"],
+      eventKinds: ["double_kill"],
+      desiredStartMs: 70_000,
+      desiredEndMs: 115_000,
+      notBeforeMs: 115_000,
+      status: "waiting"
+    };
+
+    expect(planner.finalizeSession("wait", 105_000)).toEqual({
+      policy: "wait",
+      saveIntents: [],
+      waiting: [waitingWindow],
+      expired: [],
+      unresolved: []
+    });
+    expect(planner.observe(event("late", 106_000), 106_000))
+      .toEqual({ accepted: false, reason: "session_closed" });
+    expect(planner.takeDue(114_999)).toEqual({
+      saveIntents: [],
+      expired: [],
+      waiting: [waitingWindow]
+    });
+    const due = planner.takeDue(115_000);
+    expect(due.saveIntents).toEqual([{
+      windowId: "clip-7-1",
+      sessionEpoch: 7,
+      eventIds: ["e1"],
+      eventKinds: ["double_kill"],
+      requestedAtMs: 115_000,
+      desiredStartMs: 70_000,
+      desiredEndMs: 115_000,
+      requiresOfflineTrim: true
+    }]);
+    expect(due.waiting).toEqual([]);
+    expect(planner.observe(event("later", 116_000), 116_000))
+      .toEqual({ accepted: false, reason: "session_closed" });
+  });
+
+  it("emits a full wait-policy intent immediately when post-roll already completed", () => {
+    const planner = new ReplayClipPlanner();
+    planner.startSession(7, 0);
+    planner.observe(event("e1", 100_000), 100_000);
+
+    expect(planner.finalizeSession("wait", 120_000)).toEqual({
+      policy: "wait",
+      saveIntents: [{
+        windowId: "clip-7-1",
+        sessionEpoch: 7,
+        eventIds: ["e1"],
+        eventKinds: ["double_kill"],
+        requestedAtMs: 120_000,
+        desiredStartMs: 70_000,
+        desiredEndMs: 115_000,
+        requiresOfflineTrim: true
+      }],
+      waiting: [],
+      expired: [],
+      unresolved: []
+    });
+  });
+
+  it("reports a wait as unsaved when the replay buffer rolls past its bounded window", () => {
+    const planner = new ReplayClipPlanner();
+    planner.startSession(7, 0);
+    planner.observe(event("e1", 100_000), 100_000);
+    planner.finalizeSession("wait", 100_000);
+
+    expect(planner.takeDue(156_000)).toEqual({
+      saveIntents: [],
+      expired: [{
+        windowId: "clip-7-1",
+        eventIds: ["e1"],
+        eventKinds: ["double_kill"],
+        desiredStartMs: 70_000,
+        desiredEndMs: 115_000,
+        status: "unsaved",
+        reason: "replay_window_expired"
+      }],
+      waiting: []
+    });
+  });
+
+  it("emits a bounded partial intent with both available and planned end times", () => {
+    const planner = new ReplayClipPlanner();
+    planner.startSession(7, 0);
+    planner.observe(event("e1", 100_000), 100_000);
+
+    expect(planner.finalizeSession("partial", 105_000)).toEqual({
+      policy: "partial",
+      saveIntents: [{
+        windowId: "clip-7-1",
+        sessionEpoch: 7,
+        eventIds: ["e1"],
+        eventKinds: ["double_kill"],
+        requestedAtMs: 105_000,
+        desiredStartMs: 70_000,
+        desiredEndMs: 105_000,
+        plannedEndMs: 115_000,
+        partial: true,
+        requiresOfflineTrim: true
+      }],
+      waiting: [],
+      expired: [],
+      unresolved: []
+    });
+    expect(planner.takeDue(200_000).saveIntents).toEqual([]);
+  });
+
+  it("keeps a fully available interval complete under the partial policy", () => {
+    const planner = new ReplayClipPlanner();
+    planner.startSession(7, 0);
+    planner.observe(event("e1", 100_000), 100_000);
+
+    expect(planner.finalizeSession("partial", 120_000)).toEqual({
+      policy: "partial",
+      saveIntents: [{
+        windowId: "clip-7-1",
+        sessionEpoch: 7,
+        eventIds: ["e1"],
+        eventKinds: ["double_kill"],
+        requestedAtMs: 120_000,
+        desiredStartMs: 70_000,
+        desiredEndMs: 115_000,
+        requiresOfflineTrim: true
+      }],
+      waiting: [],
+      expired: [],
+      unresolved: []
+    });
+  });
+
+  it("returns every discarded pending window as explicitly unsaved", () => {
+    const planner = new ReplayClipPlanner();
+    planner.startSession(7, 0);
+    planner.observe(event("e1", 100_000), 100_000);
+
+    expect(planner.finalizeSession("discard", 105_000)).toEqual({
+      policy: "discard",
+      saveIntents: [],
+      waiting: [],
+      expired: [],
+      unresolved: [{
+        windowId: "clip-7-1",
+        eventIds: ["e1"],
+        eventKinds: ["double_kill"],
+        desiredStartMs: 70_000,
+        desiredEndMs: 115_000,
+        status: "unsaved",
+        reason: "session_discarded"
+      }]
+    });
+    expect(planner.takeDue(115_000).saveIntents).toEqual([]);
+  });
+
+  it("closes event admission under each normal end policy", () => {
+    for (const policy of ["wait", "partial", "discard"] as const) {
+      const planner = new ReplayClipPlanner();
+      planner.startSession(7, 0);
+      planner.finalizeSession(policy, 0);
+      expect(planner.observe(event("after-end", 1), 1))
+        .toEqual({ accepted: false, reason: "session_closed" });
+    }
+  });
+
+  it("cancels a waiting finalization as unsaved on hard session invalidation", () => {
+    const planner = new ReplayClipPlanner();
+    planner.startSession(7, 0);
+    planner.observe(event("e1", 100_000), 100_000);
+    planner.finalizeSession("wait", 105_000);
+
+    expect(planner.clearSession()).toEqual({
+      unresolved: [{
+        windowId: "clip-7-1",
+        eventIds: ["e1"],
+        eventKinds: ["double_kill"],
+        desiredStartMs: 70_000,
+        desiredEndMs: 115_000,
+        status: "unsaved",
+        reason: "session_cleared"
+      }]
+    });
+    expect(planner.takeDue(115_000).saveIntents).toEqual([]);
+  });
+
+  it("opens a bounded follow-up segment when an event chain reaches its cap", () => {
+    const planner = new ReplayClipPlanner({
+      ...DEFAULT_REPLAY_POLICY,
+      maxEventChainLength: 2
+    });
+    planner.startSession(7, 0);
+    expect(planner.observe(event("a", 100_000), 100_000))
+      .toEqual({ accepted: true, windowId: "clip-7-1" });
+    expect(planner.observe(event("b", 101_000), 101_000))
+      .toEqual({ accepted: true, windowId: "clip-7-1" });
+    expect(planner.observe(event("c", 102_000), 102_000))
+      .toEqual({ accepted: true, windowId: "clip-7-2" });
+    expect(planner.observe(event("d", 103_000), 103_000))
+      .toEqual({ accepted: true, windowId: "clip-7-2" });
+
+    const due = planner.takeDue(118_000);
+    expect(due.saveIntents.map(({ windowId, eventIds }) => ({ windowId, eventIds })))
+      .toEqual([
+        { windowId: "clip-7-1", eventIds: ["a", "b"] },
+        { windowId: "clip-7-2", eventIds: ["c", "d"] }
+      ]);
+  });
+
   it("rejects policy settings that cannot retain the requested trim interval", () => {
     expect(() => new ReplayClipPlanner({ ...DEFAULT_REPLAY_POLICY, replayBufferMs: 44_000 }))
       .toThrow(/Invalid replay policy/);
     expect(() => new ReplayClipPlanner({ ...DEFAULT_REPLAY_POLICY, maxPendingWindows: 0 }))
+      .toThrow(/Invalid replay policy/);
+    expect(() => new ReplayClipPlanner({ ...DEFAULT_REPLAY_POLICY, maxEventChainLength: 0 }))
       .toThrow(/Invalid replay policy/);
   });
 });
