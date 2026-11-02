@@ -488,6 +488,7 @@ fn sync_selected_config_with_policy(isolated_smoke: bool) -> Result<bool, String
     )
 }
 
+#[cfg(test)]
 fn sync_config_at_root(root: &std::path::Path, port: u16) -> Result<bool, String> {
     sync_config_at_root_with_policy(
         root,
