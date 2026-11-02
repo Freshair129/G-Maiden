@@ -16,4 +16,6 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
+      - uses: dtolnay/rust-toolchain@1.96.0
       - run: node --test scripts/releases/legacy-publication.test.mjs
+      - run: cargo test --locked --manifest-path tools/verify-updater-signature/Cargo.toml
