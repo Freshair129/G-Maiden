@@ -10,15 +10,19 @@ pub const MAP_CROP: [f32; 4] = [0.031, 0.064, 0.932, 0.961];
 pub(crate) fn packet_health(
     packet_at: &std::sync::atomic::AtomicU64,
     started: u64,
+    initialized: bool,
     clock: impl FnOnce() -> u64,
 ) -> Option<u64> {
     let last = packet_at.load(std::sync::atomic::Ordering::Acquire);
     // A concurrent reader may publish a packet after the clock is sampled.
     let now = clock();
-    let age = now.checked_sub(if last == 0 { started } else { last })?;
-    // Process/DLL loading shares the app's CPU cap. Allow a bounded cold start
-    // before the first packet; never extend the running worker/frame freshness.
-    (now != 0 && age <= if last == 0 { 5_000_000 } else { 500_000 }).then_some(now)
+    if now == 0 || started == 0 || started > now || last > now || (initialized && last == 0) {
+        return None;
+    }
+    let age = now.checked_sub(if initialized { last } else { started })?;
+    // Pressure/transport packets can precede DXGI initialization under the Job
+    // cap. They must not turn the bounded cold-start grace into a restart loop.
+    (age <= if initialized { 500_000 } else { 5_000_000 }).then_some(now)
 }
 
 pub fn matches_output(g: Geometry, display_id: u64, origin: (i32, i32), size: (u32, u32)) -> bool {
@@ -357,11 +361,28 @@ mod tests {
     use super::*;
 
     #[test]
+    fn cold_pressure_heartbeat_does_not_end_the_initialization_grace() {
+        use std::sync::atomic::AtomicU64;
+        assert_eq!(
+            packet_health(&AtomicU64::new(100), 1, false, || 1_000_000),
+            Some(1_000_000)
+        );
+        assert_eq!(
+            packet_health(&AtomicU64::new(4_900_000), 1, false, || 5_000_002),
+            None
+        );
+        assert_eq!(
+            packet_health(&AtomicU64::new(100), 1, true, || 500_101),
+            None
+        );
+    }
+
+    #[test]
     fn packet_arriving_during_clock_sample_does_not_kill_healthy_worker() {
         use std::sync::atomic::{AtomicU64, Ordering};
         let packet_at = AtomicU64::new(100);
         assert_eq!(
-            packet_health(&packet_at, 1, || {
+            packet_health(&packet_at, 1, true, || {
                 packet_at.store(102, Ordering::Release);
                 101
             }),
@@ -373,17 +394,28 @@ mod tests {
     fn worker_health_keeps_startup_timeout_freshness_and_clock_failure_checks() {
         use std::sync::atomic::AtomicU64;
         assert_eq!(
-            packet_health(&AtomicU64::new(0), 100, || 5_000_100),
+            packet_health(&AtomicU64::new(0), 100, false, || 5_000_100),
             Some(5_000_100)
         );
-        assert_eq!(packet_health(&AtomicU64::new(0), 100, || 5_000_101), None);
         assert_eq!(
-            packet_health(&AtomicU64::new(100), 1, || 500_100),
+            packet_health(&AtomicU64::new(0), 100, false, || 5_000_101),
+            None
+        );
+        assert_eq!(
+            packet_health(&AtomicU64::new(100), 1, true, || 500_100),
             Some(500_100)
         );
-        assert_eq!(packet_health(&AtomicU64::new(100), 1, || 500_101), None);
-        assert_eq!(packet_health(&AtomicU64::new(100), 1, || 99), None);
-        assert_eq!(packet_health(&AtomicU64::new(100), 1, || 0), None);
+        assert_eq!(
+            packet_health(&AtomicU64::new(100), 1, true, || 500_101),
+            None
+        );
+        assert_eq!(packet_health(&AtomicU64::new(100), 1, true, || 99), None);
+        assert_eq!(packet_health(&AtomicU64::new(100), 1, true, || 0), None);
+        assert_eq!(packet_health(&AtomicU64::new(0), 100, true, || 101), None);
+        assert_eq!(
+            packet_health(&AtomicU64::new(200), 100, false, || 199),
+            None
+        );
     }
 
     #[test]

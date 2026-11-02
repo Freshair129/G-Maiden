@@ -78,6 +78,17 @@ function rig() {
 }
 
 describe("latest-only preview lifecycle", () => {
+  it("uses 200ms RPC cadence at five FPS and restores cadence on the same lease", async () => {
+    const r = rig(); r.driver.setFrameRate(5); r.subscribe();
+    r.starts[0].resolve({ leaseId: "9007199254740993" }); await settle();
+    r.step(0); r.reads[0].result.resolve(packet()); await settle(); r.step(17);
+    r.step(67); r.step(199); expect(r.reads).toHaveLength(1);
+    r.step(200); expect(r.reads).toHaveLength(2);
+    r.reads[1].result.resolve(packet({ frame: 2n, acquired: 200000n, response: 200001n })); await settle();
+    r.driver.setFrameRate(15);
+    r.step(267); expect(r.reads).toHaveLength(3);
+    expect(r.starts).toHaveLength(1); expect(r.stopped).toHaveLength(0);
+  });
   it("reduces both RPC and drawing cadence without replacing the lease or freshness fence", async () => {
     const r = rig(); r.driver.setFrameRate(15); r.subscribe();
     r.starts[0].resolve({ leaseId: "9007199254740993" }); await settle();

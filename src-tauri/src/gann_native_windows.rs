@@ -67,6 +67,20 @@ impl Drop for WaitHandle {
     }
 }
 struct AudioTask(Option<HANDLE>);
+struct PlayingOutputs {
+    _budget: super::budget::Playing<'static>,
+    audio: IAudioClient,
+    window: HWND,
+}
+impl Drop for PlayingOutputs {
+    fn drop(&mut self) {
+        unsafe {
+            let _ = self.audio.Stop();
+            let _ = ShowWindow(self.window, SW_HIDE);
+        }
+        // The budget field releases only after both outputs have been stopped.
+    }
+}
 impl Drop for AudioTask {
     fn drop(&mut self) {
         if let Some(h) = self.0 {
@@ -84,6 +98,26 @@ fn qpc() -> f64 {
         QueryPerformanceFrequency(&mut f).expect("QPC frequency");
         p as f64 / f as f64
     }
+}
+
+fn trace_stage<T>(
+    traces: &mut Vec<serde_json::Value>,
+    enabled: bool,
+    index: usize,
+    stage: &str,
+    operation: impl FnOnce() -> T,
+) -> T {
+    if !enabled {
+        return operation();
+    }
+    let start = qpc();
+    let result = operation();
+    let end = qpc();
+    if end - start >= 0.004 && traces.len() < 1024 {
+        traces
+            .push(serde_json::json!({"stage":stage,"index":index,"start_qpc":start,"end_qpc":end}));
+    }
+    result
 }
 unsafe extern "system" fn proc(hwnd: HWND, msg: u32, w: WPARAM, l: LPARAM) -> LRESULT {
     if msg == WM_NCHITTEST {
@@ -183,6 +217,7 @@ unsafe fn play(
     let device = device.ok_or("native D3D device")?;
     let context = context.ok_or("native D3D context")?;
     let (w, h) = (asset.video.width as u32, asset.video.height as u32);
+    let mut converter = super::gpu::Converter::new(&device, &context, w as usize, h as usize)?;
     let factory: IDXGIFactory2 = CreateDXGIFactory1()?;
     let desc = DXGI_SWAP_CHAIN_DESC1 {
         Width: w,
@@ -310,7 +345,14 @@ unsafe fn play(
                     if decode_control.cancelled() {
                         break;
                     }
-                    let pixels = frames.frame(index)?;
+                    let started = decoded_asset.diagnostic_marker.then(qpc);
+                    let pixels = frames.planar(index)?;
+                    if let Some(started) = started {
+                        let ended = qpc();
+                        if ended - started >= 0.010 {
+                            eprintln!("[G-NativeDecode] {}", serde_json::json!({"index":index,"start_qpc":started,"end_qpc":ended}));
+                        }
+                    }
                     if tx.send(Ok((index, pixels))).is_err() {
                         break;
                     }
@@ -342,6 +384,11 @@ unsafe fn play(
         if control.cancelled() {
             return Ok(());
         }
+        let playing_budget = PlayingOutputs {
+            _budget: super::budget::PLAYING.acquire(),
+            audio: client.0.clone(),
+            window: window.0,
+        };
         volume.set(control.gain())?;
         client.0.Start()?;
         let start = qpc();
@@ -356,15 +403,27 @@ unsafe fn play(
         let mut available = false;
         let mut authored_end = false;
         let mut last_fill = Instant::now();
+        let mut last_statistics = Instant::now() - Duration::from_millis(4);
         let mut last_scope = Instant::now() - Duration::from_secs(1);
         let mut fade_start = None;
         let mut underruns = 0;
+        let mut stages = Vec::new();
+        let diagnostic = asset.diagnostic_marker;
+        let mut loop_resume = qpc();
         while wall.elapsed().as_secs_f64() < finish + preroll + 2. {
+            if diagnostic {
+                let resumed = qpc();
+                if resumed - loop_resume >= 0.010 && stages.len() < 1024 {
+                    stages.push(serde_json::json!({"stage":"loop_resume","index":index,"start_qpc":loop_resume,"end_qpc":resumed}));
+                }
+            }
             if control.cancelled() {
                 break;
             }
             if last_scope.elapsed() >= Duration::from_millis(20) {
-                if control.scope.as_ref().is_some_and(|scope| !scope()) {
+                if trace_stage(&mut stages, diagnostic, index, "scope", || {
+                    control.scope.as_ref().is_some_and(|scope| !scope())
+                }) {
                     control.stop.store(true, Ordering::Release);
                     break;
                 }
@@ -389,23 +448,33 @@ unsafe fn play(
             if fade == 0. {
                 break;
             }
-            volume.set(control.gain() * fade)?;
+            trace_stage(&mut stages, diagnostic, index, "volume", || {
+                volume.set(control.gain() * fade)
+            })?;
             if last_fill.elapsed() >= Duration::from_millis(3) {
-                if fill(&mut cursor)? == 0 {
+                if trace_stage(&mut stages, diagnostic, index, "fill", || fill(&mut cursor))? == 0 {
                     underruns += 1;
                 }
                 last_fill = Instant::now();
             }
-            let mut s = DXGI_FRAME_STATISTICS_MEDIA::default();
-            if media.GetFrameStatisticsMedia(&mut s).is_ok()
-                && (s.PresentCount, s.PresentRefreshCount) != previous
-            {
-                statistics.push(serde_json::json!({"observed_qpc":qpc(),"present_count":s.PresentCount,"present_refresh":s.PresentRefreshCount,"sync_refresh":s.SyncRefreshCount,"sync_qpc_raw":s.SyncQPCTime,"mode":s.CompositionMode.0}));
-                previous = (s.PresentCount, s.PresentRefreshCount);
+            if last_statistics.elapsed() >= Duration::from_millis(4) {
+                last_statistics = Instant::now();
+                let mut s = DXGI_FRAME_STATISTICS_MEDIA::default();
+                if trace_stage(&mut stages, diagnostic, index, "statistics", || {
+                    media.GetFrameStatisticsMedia(&mut s)
+                })
+                .is_ok()
+                    && (s.PresentCount, s.PresentRefreshCount) != previous
+                {
+                    statistics.push(serde_json::json!({"observed_qpc":qpc(),"present_count":s.PresentCount,"present_refresh":s.PresentRefreshCount,"sync_refresh":s.SyncRefreshCount,"sync_qpc_raw":s.SyncQPCTime,"mode":s.CompositionMode.0}));
+                    previous = (s.PresentCount, s.PresentRefreshCount);
+                }
             }
             let mut pos = 0;
             let mut correlated = 0;
-            clock.GetPosition(&mut pos, Some(&mut correlated))?;
+            trace_stage(&mut stages, diagnostic, index, "clock", || {
+                clock.GetPosition(&mut pos, Some(&mut correlated))
+            })?;
             let time = pos as f64 / frequency as f64
                 + if pos > 0 {
                     (qpc() - correlated as f64 / 1e7).max(0.)
@@ -440,13 +509,19 @@ unsafe fn play(
                             return Err("native decoder ended early".into())
                         }
                         Err(mpsc::TryRecvError::Empty) => {
+                            if diagnostic && stages.len() < 1024 {
+                                stages.push(serde_json::json!({"stage":"decoder_empty","index":index,"qpc":qpc()}));
+                            }
+                            loop_resume = qpc();
                             std::thread::sleep(Duration::from_millis(1));
                             continue;
                         }
                     }
                 }
                 if !available {
-                    available = WaitForSingleObject(latency.0, 1) == WAIT_OBJECT_0;
+                    available = trace_stage(&mut stages, diagnostic, index, "latency_wait", || {
+                        WaitForSingleObject(latency.0, 1)
+                    }) == WAIT_OBJECT_0;
                 }
                 let pts = asset.video.frames[index].pts_us as f64 / 1e6;
                 if available && time + 2. / 60. >= pts {
@@ -454,20 +529,30 @@ unsafe fn play(
                     if actual != index {
                         return Err("native decode sequence mismatch".into());
                     }
-                    let back: ID3D11Texture2D = swap.GetBuffer(0)?;
+                    let back: ID3D11Texture2D =
+                        trace_stage(&mut stages, diagnostic, index, "get_buffer", || {
+                            swap.GetBuffer(0)
+                        })?;
                     let submit = qpc();
-                    context.UpdateSubresource(&back, 0, None, pixels.as_ptr().cast(), w * 4, 0);
-                    swap.Present(1, DXGI_PRESENT(0)).ok()?;
+                    trace_stage(&mut stages, diagnostic, index, "upload", || {
+                        converter.render(&pixels, &back)
+                    })?;
+                    trace_stage(&mut stages, diagnostic, index, "present", || {
+                        swap.Present(1, DXGI_PRESENT(0))
+                    })
+                    .ok()?;
                     records.push(serde_json::json!({"index":index,"pts":pts,"audio_time":time,"submit_qpc":submit,"present_count":swap.GetLastPresentCount()?}));
                     index += 1;
                     available = false;
                 }
             }
+            loop_resume = qpc();
             std::thread::sleep(Duration::from_millis(1));
         }
         client.0.Stop()?;
         let hidden = qpc();
         let _ = ShowWindow(window.0, SW_HIDE);
+        drop(playing_budget);
         for _ in 0..40 {
             if control.cancelled() || fade_start.is_some() {
                 break;
@@ -480,6 +565,12 @@ unsafe fn play(
                 previous = (s.PresentCount, s.PresentRefreshCount);
             }
             std::thread::sleep(Duration::from_millis(2));
+        }
+        if diagnostic {
+            eprintln!(
+                "[G-NativeStages] {}",
+                serde_json::json!({"start_qpc":start,"stages":stages})
+            );
         }
         eprintln!(
             "[G-NativeMedia] {}",

@@ -1,7 +1,49 @@
 use std::{
-    sync::Mutex,
+    sync::{
+        atomic::{AtomicU64, AtomicUsize, Ordering},
+        Mutex,
+    },
     time::{Duration, Instant},
 };
+
+pub(super) struct PlaybackCadence {
+    users: AtomicUsize,
+    epoch: AtomicU64,
+}
+impl PlaybackCadence {
+    const fn new() -> Self {
+        Self {
+            users: AtomicUsize::new(0),
+            epoch: AtomicU64::new(0),
+        }
+    }
+    pub fn acquire(&self) -> Playing<'_> {
+        self.epoch.fetch_add(1, Ordering::AcqRel);
+        self.users.fetch_add(1, Ordering::AcqRel);
+        Playing(&self.users)
+    }
+    pub fn active(&self) -> bool {
+        self.users.load(Ordering::Acquire) != 0
+    }
+    pub fn activity(&self) -> (bool, u64) {
+        (self.active(), self.epoch.load(Ordering::Acquire))
+    }
+    pub fn preview_fps(&self, configured: u8) -> u8 {
+        if self.active() {
+            configured.min(5)
+        } else {
+            configured
+        }
+    }
+}
+#[must_use]
+pub(super) struct Playing<'a>(&'a AtomicUsize);
+impl Drop for Playing<'_> {
+    fn drop(&mut self) {
+        self.0.fetch_sub(1, Ordering::AcqRel);
+    }
+}
+pub(super) static PLAYING: PlaybackCadence = PlaybackCadence::new();
 #[derive(Default)]
 struct Budget {
     workers: usize,
@@ -72,6 +114,38 @@ pub(crate) fn acquire(
 #[cfg(test)]
 mod tests {
     use super::*;
+    #[test]
+    fn playing_owners_cap_preview_and_only_the_last_release_restores_it() {
+        for configured in [15, 30, 60] {
+            let cadence = PlaybackCadence::new();
+            assert_eq!(cadence.preview_fps(configured), configured);
+            let first = cadence.acquire();
+            let second = cadence.acquire();
+            assert_eq!(cadence.preview_fps(configured), 5);
+            drop(first);
+            assert_eq!(cadence.preview_fps(configured), 5);
+            drop(second);
+            assert_eq!(cadence.preview_fps(configured), configured);
+        }
+    }
+    #[test]
+    fn error_and_unwind_release_playback_cadence() {
+        let cadence = PlaybackCadence::new();
+        let error = || -> Result<(), ()> {
+            let _playing = cadence.acquire();
+            assert_eq!(cadence.preview_fps(30), 5);
+            Err(())?;
+            Ok(())
+        };
+        assert!(error().is_err());
+        assert_eq!(cadence.preview_fps(30), 30);
+        assert!(std::panic::catch_unwind(|| {
+            let _playing = cadence.acquire();
+            panic!("test unwind");
+        })
+        .is_err());
+        assert_eq!(cadence.preview_fps(60), 60);
+    }
     #[test]
     fn critical_reservation_blocks_new_normal_allocations_before_they_take_pixels() {
         let mut pool = Budget::default();

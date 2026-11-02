@@ -102,8 +102,11 @@ function geometryMetadata(geometry: PreviewGeometry): PreviewGeometry {
 export class MinimapPreviewDriver {
   private interval = INTERVAL;
   setFrameRate(fps: number) {
-    if (![15, 30, 60].includes(fps)) return;
+    if (![5, 15, 30, 60].includes(fps)) return;
     this.interval = 1000 / fps;
+    const deadline = this.transport.now() + this.interval;
+    this.nextRead = Math.min(this.nextRead, deadline);
+    this.nextDraw = Math.min(this.nextDraw, deadline);
   }
   private frames = new Set<(frame: PreviewFrame | null) => void>();
   private metadata = new Set<() => void>();

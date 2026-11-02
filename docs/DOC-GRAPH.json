@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-01T16:36:27.633Z",
+  "generatedAt": "2026-11-02T01:43:14.274Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -1140,6 +1140,20 @@
       "type": "doc",
       "path": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
       "title": "G-Party own-GSI sharing implementation plan",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-11-02-native-gpu-color.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-11-02-native-gpu-color.md",
+      "title": "Native GPU color conversion",
+      "status": "active"
+    },
+    {
+      "id": "docs/superpowers/plans/2026-11-02-native-media-preview-budget.md",
+      "type": "doc",
+      "path": "docs/superpowers/plans/2026-11-02-native-media-preview-budget.md",
+      "title": "Native media minimap preview budget",
       "status": "active"
     },
     {
@@ -10469,6 +10483,14 @@
     },
     {
       "file": "docs/design-system/04-components.md",
+      "line": 156,
+      "reason": "anchor-symbol-mismatch",
+      "target": "src/src/deck/FungDashboard.tsx",
+      "anchor": 135,
+      "symbol": "VolumeRail"
+    },
+    {
+      "file": "docs/design-system/04-components.md",
       "line": 180,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/styles.css",
@@ -11334,7 +11356,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-01T16:36:28.302Z",
+    "generatedAt": "2026-11-02T01:43:29.870Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

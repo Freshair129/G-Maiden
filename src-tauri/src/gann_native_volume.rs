@@ -3,17 +3,27 @@ use windows::Win32::Media::Audio::{IAudioClient, IAudioStreamVolume};
 pub(super) struct StreamGain {
     stream: IAudioStreamVolume,
     levels: Vec<f32>,
+    applied: Option<f32>,
 }
 impl StreamGain {
     pub unsafe fn new(client: &IAudioClient) -> windows::core::Result<Self> {
         let stream: IAudioStreamVolume = client.GetService()?;
         // AUTOCONVERTPCM can expose endpoint channels even for mono input.
         let levels = vec![1.; stream.GetChannelCount()? as usize];
-        Ok(Self { stream, levels })
+        Ok(Self {
+            stream,
+            levels,
+            applied: None,
+        })
     }
     pub unsafe fn set(&mut self, gain: f32) -> windows::core::Result<()> {
+        if self.applied == Some(gain) {
+            return Ok(());
+        }
         self.levels.fill(gain);
-        self.stream.SetAllVolumes(&self.levels)
+        self.stream.SetAllVolumes(&self.levels)?;
+        self.applied = Some(gain);
+        Ok(())
     }
 }
 #[cfg(test)]

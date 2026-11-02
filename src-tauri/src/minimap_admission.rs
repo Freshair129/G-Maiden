@@ -2,17 +2,27 @@
 pub(crate) struct Cadence {
     fps: u8,
     good_samples: u8,
+    playback_held: bool,
+    playback_epoch: u64,
 }
 impl Default for Cadence {
     fn default() -> Self {
         Self {
             fps: 15,
             good_samples: 0,
+            playback_held: false,
+            playback_epoch: 0,
         }
     }
 }
 impl Cadence {
-    pub fn update(&mut self, cpu: f64) -> u8 {
+    pub fn update(&mut self, cpu: f64, playing: bool, epoch: u64) -> u8 {
+        // A sample containing clip work must not replace the pre-clip cadence.
+        let was_held = std::mem::replace(&mut self.playback_held, playing);
+        let previous_epoch = std::mem::replace(&mut self.playback_epoch, epoch);
+        if playing || was_held || previous_epoch != epoch {
+            return self.fps;
+        }
         let target = if !(0.0..3.0).contains(&cpu) {
             15
         } else if cpu >= 2.0 {
@@ -74,19 +84,41 @@ mod tests {
     fn cadence_backs_off_before_admission_limit_and_recovers_without_churn() {
         let mut c = Cadence::default();
         for _ in 0..9 {
-            assert_eq!(c.update(1.), 15);
+            assert_eq!(c.update(1., false, 0), 15);
         }
-        assert_eq!(c.update(1.), 30);
+        assert_eq!(c.update(1., false, 0), 30);
         for _ in 0..9 {
-            assert_eq!(c.update(1.), 30);
+            assert_eq!(c.update(1., false, 0), 30);
         }
-        assert_eq!(c.update(1.), 60);
-        assert_eq!(c.update(2.5), 30);
-        assert_eq!(c.update(4.), 15);
+        assert_eq!(c.update(1., false, 0), 60);
+        assert_eq!(c.update(2.5, false, 0), 30);
+        assert_eq!(c.update(4., false, 0), 15);
         for _ in 0..20 {
-            assert_eq!(c.update(4.9), 15);
+            assert_eq!(c.update(4.9, false, 0), 15);
         }
-        assert_eq!(c.update(f64::NAN), 15);
+        assert_eq!(c.update(f64::NAN, false, 0), 15);
+    }
+    #[test]
+    fn playback_preserves_base_cadence_through_the_first_post_clip_sample() {
+        let mut c = Cadence::default();
+        for _ in 0..20 {
+            c.update(1., false, 0);
+        }
+        assert_eq!(c.update(1., false, 0), 60);
+        for _ in 0..10 {
+            assert_eq!(c.update(9., true, 1), 60);
+        }
+        assert_eq!(c.update(9., false, 1), 60);
+        assert_eq!(c.update(4., false, 1), 15);
+    }
+    #[test]
+    fn short_clip_between_samples_preserves_original_cadence() {
+        let mut c = Cadence::default();
+        for _ in 0..20 {
+            c.update(1., false, 0);
+        }
+        assert_eq!(c.update(9., false, 1), 60);
+        assert_eq!(c.update(4., false, 1), 15);
     }
     fn ready() -> Admission {
         let mut a = Admission::default();

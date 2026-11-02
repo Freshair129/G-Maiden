@@ -10,10 +10,19 @@ use std::time::Duration;
 mod budget;
 #[path = "gann_native_decode.rs"]
 mod decode;
+#[path = "gann_native_gpu.rs"]
+mod gpu;
 #[path = "gann_native_windows.rs"]
 mod platform;
 #[path = "gann_native_volume.rs"]
 mod volume;
+
+pub(crate) fn playback_activity() -> (bool, u64) {
+    budget::PLAYING.activity()
+}
+pub(crate) fn preview_fps(configured: u8) -> u8 {
+    budget::PLAYING.preview_fps(configured)
+}
 
 pub(crate) struct Asset {
     pub bytes: Arc<Vec<u8>>,

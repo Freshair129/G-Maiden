@@ -1,6 +1,6 @@
 //! One headless child owns preview DXGI; CV keeps its original process/output.
-use crate::minimap_preview::{self as core, Geometry, Pixels, Snapshot, Status, Stream};
-use crate::minimap_preview_wire as wire;
+use crate::minimap_preview::{self as core, Geometry, Snapshot, Status, Stream};
+use crate::minimap_preview_wire::{self as wire, Item};
 use std::io::{Read, Write};
 use std::process::{ChildStdin, Command, Stdio};
 use std::sync::{
@@ -113,16 +113,13 @@ pub(crate) fn run_if_requested() -> Option<i32> {
 
 use crate::minimap_owned_child::OwnedChild;
 
-enum Item {
-    Frame(Pixels),
-    State(Status),
-}
 struct Connection {
     child: OwnedChild,
     input: Option<ChildStdin>,
     latest: Arc<Mutex<Option<Item>>>,
     fault: Arc<AtomicBool>,
     packet_at: Arc<AtomicU64>,
+    initialized: Arc<AtomicBool>,
     reader: Option<std::thread::JoinHandle<()>>,
     source: Snapshot,
     started: u64,
@@ -167,38 +164,17 @@ impl Connection {
         let failed = fault.clone();
         let packet_at = Arc::new(AtomicU64::new(0));
         let received = packet_at.clone();
+        let initialized = Arc::new(AtomicBool::new(false));
+        let capture_ready = initialized.clone();
         let reader = std::thread::Builder::new()
             .name("g-minimap-pipe".into())
             .spawn(move || {
                 let mut sequence = 0;
                 loop {
-                    let item = (|| {
-                        let mut bytes = [0; core::HEADER_LEN];
-                        output.read_exact(&mut bytes).ok()?;
-                        let h = wire::header(&bytes, source, clock_us())?;
-                        let item = if h.status == Status::Frame {
-                            if h.sequence <= sequence {
-                                return None;
-                            }
-                            let mut rgba = vec![0; h.payload];
-                            output.read_exact(&mut rgba).ok()?;
-                            sequence = h.sequence;
-                            if h.stale {
-                                received.store(clock_us(), Ordering::Release);
-                                return Some(None);
-                            }
-                            Item::Frame(Pixels {
-                                width: h.width,
-                                height: h.height,
-                                acquired_us: h.acquired_us,
-                                rgba,
-                            })
-                        } else {
-                            Item::State(h.status)
-                        };
-                        received.store(clock_us(), Ordering::Release);
-                        Some(Some(item))
-                    })();
+                    let item =
+                        wire::read_next(&mut output, source, &mut sequence, clock_us, |at| {
+                            received.store(at, Ordering::Release);
+                        });
                     let Some(item) = item else {
                         failed.store(true, Ordering::Release);
                         eprintln!("[G-MinimapPreview] worker pipe closed or invalid packet");
@@ -206,6 +182,12 @@ impl Connection {
                         return;
                     };
                     let Some(item) = item else { continue };
+                    if item.capture_loop_initialized() {
+                        capture_ready.store(true, Ordering::Release);
+                    }
+                    if matches!(item, Item::CaptureInitialized) {
+                        continue;
+                    }
                     let Ok(mut target) = slot.lock() else {
                         failed.store(true, Ordering::Release);
                         return;
@@ -230,6 +212,7 @@ impl Connection {
             latest,
             fault,
             packet_at,
+            initialized,
             reader: Some(reader),
             source,
             started,
@@ -240,7 +223,15 @@ impl Connection {
         if self.fault.load(Ordering::Acquire) {
             return false;
         }
-        let Some(now) = core::packet_health(&self.packet_at, self.started, clock_us) else {
+        let Some(now) = core::packet_health(
+            &self.packet_at,
+            self.started,
+            self.initialized.load(Ordering::Acquire),
+            clock_us,
+        ) else {
+            let now = clock_us();
+            eprintln!("[G-MinimapPreview] worker watchdog initialized={} packet_age_us={} startup_age_us={}",
+                self.initialized.load(Ordering::Acquire), now.saturating_sub(self.packet_at.load(Ordering::Acquire)), now.saturating_sub(self.started));
             return false;
         };
         if now.saturating_sub(self.last_heartbeat) >= 100_000 {
@@ -375,6 +366,7 @@ pub(crate) fn parent_worker(
                                     }
                                 }
                                 Item::State(status) => s.set_status(status),
+                                Item::CaptureInitialized => {}
                             }
                         }
                     }
@@ -567,13 +559,24 @@ fn run_child() -> Result<(), String> {
             return Err("shared clock unavailable".into());
         }
         if !pacer.due(now) {
+            if now.saturating_sub(last_status) >= 100_000 {
+                let packet = wire::keepalive(source, sequence, now);
+                output
+                    .write_all(&packet)
+                    .and_then(|()| output.flush())
+                    .map_err(|e| e.to_string())?;
+                last_status = now;
+            }
             std::thread::sleep(Duration::from_micros(
                 pacer.wait_us(now).min(core::PERIOD_US),
             ));
             continue;
         }
         let fps = capture_enabled.load(Ordering::Acquire);
-        pacer.advance(now, 1_000_000u64.div_ceil(u64::from(fps.max(15))));
+        pacer.advance(
+            now,
+            wire::capture_period_us(fps).ok_or("invalid preview cadence")?,
+        );
         // Keep the D3D device and duplication alive: rebuilding them on every
         // pressure sample costs more CPU than retaining an idle capture owner.
         if fps == 0 {

@@ -222,7 +222,7 @@ pub(crate) fn preview_allowed() -> bool {
 
 static PREVIEW_FPS: AtomicU8 = AtomicU8::new(15);
 pub(crate) fn preview_fps() -> u8 {
-    PREVIEW_FPS.load(Ordering::Relaxed)
+    crate::gann_native::preview_fps(PREVIEW_FPS.load(Ordering::Relaxed))
 }
 
 pub(crate) fn owns_child_process(pid: u32) -> bool {
@@ -333,8 +333,10 @@ fn poll_loop(app: AppHandle) {
             }
         }
         let preview_allowed = preview.update(stats.ram_mb, stats.cpu_pct, throttled);
-        stats.minimap_preview_fps = preview_cadence.update(stats.cpu_pct);
-        PREVIEW_FPS.store(stats.minimap_preview_fps, Ordering::Relaxed);
+        let (playing, playback_epoch) = crate::gann_native::playback_activity();
+        let base_fps = preview_cadence.update(stats.cpu_pct, playing, playback_epoch);
+        PREVIEW_FPS.store(base_fps, Ordering::Relaxed);
+        stats.minimap_preview_fps = preview_fps();
         if PREVIEW_ALLOWED.swap(preview_allowed, Ordering::Relaxed) != preview_allowed {
             eprintln!(
                 "[G-Gov] preview admitted={} RAM {:.0} MB CPU {:.1}%",
