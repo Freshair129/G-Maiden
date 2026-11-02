@@ -109,7 +109,7 @@ jobs:
           pnpm -C src install --frozen-lockfile
 
       - name: Release manifest and packaged updater regression tests
-        run: node --test scripts/releases/channel-manifest.test.mjs
+        run: node --test scripts/releases/channel-manifest.test.mjs scripts/releases/promote-workflow.test.mjs
 
       # Doc-graph gate (G1-G3 tooling), one entry point: unit suite +
       # strict scan + G2.5 checklist-exception rule + feature-ledger clean.
