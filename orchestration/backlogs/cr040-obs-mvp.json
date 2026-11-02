@@ -51,7 +51,7 @@
       "scope": {
         "docs": ["AGENTS.md", "CLAUDE.md", "src-tauri/src/gsi.rs", "src-tauri/src/capture.rs"],
         "needs": ["#110 OBS v5 requirements", "#109 consent/receipt contract", "No shared runtime files may be edited"],
-        "excludes": ["src-tauri/src/lib.rs", "src-tauri/src/Cargo.toml", "src-tauri/src/gsi.rs", "src-tauri/src/capture.rs", "src-tauri/src/announcer.rs", "full-match StartRecord/StopRecord", "production deploy"],
+        "excludes": ["src-tauri/src/lib.rs", "src-tauri/Cargo.toml", "src-tauri/Cargo.lock", "src-tauri/src/gsi.rs", "src-tauri/src/capture.rs", "src-tauri/src/announcer.rs", "full-match StartRecord/StopRecord", "production deploy"],
         "budgetTokens": 9000
       }
     },
