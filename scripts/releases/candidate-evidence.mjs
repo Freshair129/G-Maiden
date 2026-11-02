@@ -6,6 +6,8 @@ const ARTIFACT_SHA256 = /^[0-9a-f]{64}$/i;
 const RELEASE_TAG = /^v((?:0|[1-9]\d*)\.(?:0|[1-9]\d*)\.(?:0|[1-9]\d*)(?:-[0-9A-Za-z.-]+)?)$/;
 const BUNDLE_PREFIX = 'src-tauri/target/release/bundle/';
 const APPROVAL_FIELDS = ['approval', 'approver', 'approvedAt', 'approvedBy', 'promotion'];
+const WINDOWS_INVALID_FILENAME_CHARS = /[\u0000-\u001f<>:"/\\|?*]/;
+const WINDOWS_RESERVED_DEVICE_NAME = /^(?:CON|PRN|AUX|NUL|CONIN\$|CONOUT\$|COM[1-9¹²³]|LPT[1-9¹²³])$/i;
 
 function requireObject(value, name) {
   if (!value || typeof value !== 'object' || Array.isArray(value)) {
@@ -41,6 +43,25 @@ function normalizeTag(tag, manifestVersion) {
   return match[1];
 }
 
+function validateWindowsArtifactFilename(filename, description) {
+  if (
+    typeof filename !== 'string' ||
+    !filename ||
+    filename === '.' ||
+    filename === '..' ||
+    WINDOWS_INVALID_FILENAME_CHARS.test(filename) ||
+    /[. ]$/.test(filename)
+  ) {
+    throw new Error(`${description} is invalid for Windows`);
+  }
+
+  const deviceName = filename.split('.')[0].replace(/[ .]+$/, '');
+  if (WINDOWS_RESERVED_DEVICE_NAME.test(deviceName)) {
+    throw new Error(`${description} is invalid for Windows`);
+  }
+  return filename;
+}
+
 function normalizeBuildArtifact(artifact) {
   requireObject(artifact, 'build evidence artifact');
   if (typeof artifact.path !== 'string' || !artifact.path) {
@@ -56,6 +77,7 @@ function normalizeBuildArtifact(artifact) {
   ) {
     throw new Error('artifact path is outside the release bundle');
   }
+  const filename = validateWindowsArtifactFilename(segments.at(-1), 'build evidence artifact filename');
   if (!/\.(?:msi|exe|zip|sig)$/i.test(path)) {
     throw new Error('build evidence contains an unsupported artifact type');
   }
@@ -63,8 +85,8 @@ function normalizeBuildArtifact(artifact) {
     throw new Error(`invalid build evidence sha256 for ${path}`);
   }
   return {
-    filename: segments.at(-1),
-    filenameKey: segments.at(-1).toLowerCase(),
+    filename,
+    filenameKey: filename.toLowerCase(),
     sha256: artifact.sha256.toLowerCase()
   };
 }
@@ -82,10 +104,7 @@ function filenameFromUrl(url) {
   } catch {
     throw new Error('candidate artifact URL filename is invalid');
   }
-  if (!filename || filename.includes('/') || filename.includes('\\')) {
-    throw new Error('candidate artifact URL filename is invalid');
-  }
-  return filename;
+  return validateWindowsArtifactFilename(filename, 'candidate artifact URL filename');
 }
 
 function indexBuildArtifacts(artifacts) {

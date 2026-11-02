@@ -102,6 +102,36 @@ describe('candidate build evidence', () => {
     await assert.rejects(validate(missingArtifact), /artifact is missing from build evidence/);
   });
 
+  it('rejects NUL bytes after decoding a manifest artifact URL filename', async () => {
+    const input = cloneFixture();
+    input.manifest.platforms['windows-x86_64'].url =
+      'https://github.com/Freshair129/G-Maiden/releases/download/v0.13.5/G-Maiden_%00_0.13.5_x64_en-US.msi';
+
+    await assert.rejects(validate(input), /candidate artifact URL filename is invalid for Windows/);
+  });
+
+  it('rejects Windows-invalid build evidence basenames', async () => {
+    const invalidFilenames = [
+      'G-Maiden_0.13.5_x64_\u0000en-US.msi',
+      'G-Maiden_0.13.5_x64_<en-US>.msi',
+      'CON.msi',
+      'G-Maiden_0.13.5_x64_en-US.msi:stream.exe',
+      'G-Maiden_0.13.5_x64_en-US.msi.',
+      'G-Maiden_0.13.5_x64_en-US.msi '
+    ];
+
+    for (const filename of invalidFilenames) {
+      const input = cloneFixture();
+      input.buildEvidence.artifacts[0].path =
+        `src-tauri/target/release/bundle/msi/${filename}`;
+      await assert.rejects(
+        validate(input),
+        /build evidence artifact filename is invalid for Windows/,
+        `expected ${JSON.stringify(filename)} to be rejected`
+      );
+    }
+  });
+
   it('rejects an invalid build evidence generation timestamp', async () => {
     const input = cloneFixture();
     input.buildEvidence.generatedAt = 'not-a-timestamp';
