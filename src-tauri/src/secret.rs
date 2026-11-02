@@ -410,7 +410,7 @@ fn isolated_app_base_dir(
     Ok(Some(app_base))
 }
 
-fn app_base_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
+pub(crate) fn app_local_data_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
     let args: Vec<OsString> = env::args_os().collect();
     let isolation_root = env::var_os(MVP009_ISOLATION_ROOT_ENV);
     let temp_parent = env::var_os(MVP009_TEMP_PARENT_ENV);
@@ -437,24 +437,24 @@ fn app_base_dir(app: &tauri::AppHandle) -> Result<PathBuf, String> {
 
 #[tauri::command]
 pub fn secret_set(app: tauri::AppHandle, name: String, value: String) -> Result<(), String> {
-    let base = app_base_dir(&app)?;
+    let base = app_local_data_dir(&app)?;
     set_secret_in(&base, &name, &value)
 }
 
 #[tauri::command]
 pub fn secret_get(app: tauri::AppHandle, name: String) -> Result<Option<String>, String> {
-    let base = app_base_dir(&app)?;
+    let base = app_local_data_dir(&app)?;
     get_secret_in(&base, &name)
 }
 
 #[tauri::command]
 pub fn secret_delete(app: tauri::AppHandle, name: String) -> Result<(), String> {
-    let base = app_base_dir(&app)?;
+    let base = app_local_data_dir(&app)?;
     delete_secret_in(&base, &name)
 }
 
 pub fn load_secret(app: &tauri::AppHandle, name: &str) -> Option<String> {
-    let base = app_base_dir(app).ok()?;
+    let base = app_local_data_dir(app).ok()?;
     get_secret_in(&base, name).ok().flatten()
 }
 

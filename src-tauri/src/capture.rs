@@ -133,6 +133,43 @@ mod backend {
     /// ticking on screen while nothing else changes.
     const HEALTH_HEARTBEAT_MS: u128 = 1_000;
 
+    struct DraftTemplateLocations {
+        cache_dir: Option<std::path::PathBuf>,
+        load_dirs: Vec<std::path::PathBuf>,
+    }
+
+    fn draft_template_locations(
+        app_local_data: Result<std::path::PathBuf, String>,
+        bundled_dir: std::path::PathBuf,
+        isolated_smoke: bool,
+    ) -> DraftTemplateLocations {
+        match app_local_data {
+            Ok(app_local_data) => {
+                let cache_dir = app_local_data.join("cv").join("portraits");
+                DraftTemplateLocations {
+                    cache_dir: Some(cache_dir.clone()),
+                    load_dirs: vec![cache_dir, bundled_dir],
+                }
+            }
+            Err(_) if isolated_smoke => DraftTemplateLocations {
+                cache_dir: None,
+                load_dirs: vec![bundled_dir],
+            },
+            Err(_) => DraftTemplateLocations {
+                cache_dir: Some(bundled_dir.clone()),
+                load_dirs: vec![bundled_dir.clone(), bundled_dir],
+            },
+        }
+    }
+
+    fn fetch_draft_templates_if_enabled(
+        cache_dir: Option<&std::path::Path>,
+        labels_path: &std::path::Path,
+        fetch: impl FnOnce(&std::path::Path, &std::path::Path) -> usize,
+    ) -> Option<usize> {
+        Some(fetch(cache_dir?, labels_path))
+    }
+
     /// Minimum gap (ms) between recorded `risk_trace` log lines ≈ 1 Hz — this is
     /// the offline re-fit input for G-Motion/G-Signal (audit item: thresholds
     /// unmeasured because inputs were never recorded), sampled far below the CV
@@ -276,8 +313,8 @@ mod backend {
         /// Draft-CV: pick-screen portrait recognizer + the 10 portrait boxes.
         draft: DraftRecognizer,
         draft_region: DraftRegion,
-        draft_template_dir: std::path::PathBuf,
-        draft_bundled_template_dir: std::path::PathBuf,
+        draft_template_dir: Option<std::path::PathBuf>,
+        draft_template_load_dirs: Vec<std::path::PathBuf>,
         draft_labels_path: std::path::PathBuf,
         draft_template_fetch_started: bool,
         draft_template_fetch_done: Arc<AtomicBool>,
@@ -340,16 +377,17 @@ mod backend {
             let dir = model_dir(&app);
             let detector =
                 Detector::load(&dir.join("minimap-detector.onnx"), &dir.join("labels.json"));
-            let draft_template_dir = app
-                .path()
-                .app_local_data_dir()
-                .map(|path| path.join("cv").join("portraits"))
-                .unwrap_or_else(|_| dir.join("portraits"));
-            let draft_bundled_template_dir = dir.join("portraits");
-            let draft = DraftRecognizer::load_from_dirs(&[
-                &draft_template_dir,
-                &draft_bundled_template_dir,
-            ]);
+            let locations = draft_template_locations(
+                crate::secret::app_local_data_dir(&app),
+                dir.join("portraits"),
+                crate::secret::is_mvp009_isolated_smoke_process(),
+            );
+            let load_dirs = locations
+                .load_dirs
+                .iter()
+                .map(std::path::PathBuf::as_path)
+                .collect::<Vec<_>>();
+            let draft = DraftRecognizer::load_from_dirs(&load_dirs);
             let draft_region = DraftRegion::for_resolution(screen_w, screen_h);
             let now = Instant::now();
             CaptureState {
@@ -366,8 +404,8 @@ mod backend {
                 last_risk_trace: now,
                 draft,
                 draft_region,
-                draft_template_dir,
-                draft_bundled_template_dir,
+                draft_template_dir: locations.cache_dir,
+                draft_template_load_dirs: locations.load_dirs,
                 draft_labels_path: dir.join("labels.json"),
                 draft_template_fetch_started: false,
                 draft_template_fetch_done: Arc::new(AtomicBool::new(false)),
@@ -498,19 +536,28 @@ mod backend {
                 let dir = self.draft_template_dir.clone();
                 let labels = self.draft_labels_path.clone();
                 let done = Arc::clone(&self.draft_template_fetch_done);
-                let spawn = std::thread::Builder::new()
-                    .name("g-draft-assets".into())
-                    .spawn(move || {
-                        let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
-                            let downloaded =
-                                DraftRecognizer::fetch_missing_templates(&dir, &labels);
-                            crate::log::error(&format!(
-                                "[draft] cached {downloaded} hero portrait templates locally"
-                            ));
-                        }));
-                        done.store(true, Ordering::Release);
-                    });
-                if spawn.is_err() {
+                if let Some(dir) = dir {
+                    let spawn = std::thread::Builder::new()
+                        .name("g-draft-assets".into())
+                        .spawn(move || {
+                            let _ = std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+                                let downloaded = fetch_draft_templates_if_enabled(
+                                    Some(&dir),
+                                    &labels,
+                                    DraftRecognizer::fetch_missing_templates,
+                                )
+                                .unwrap_or(0);
+                                crate::log::error(&format!(
+                                    "[draft] cached {downloaded} hero portrait templates locally"
+                                ));
+                            }));
+                            done.store(true, Ordering::Release);
+                        });
+                    if spawn.is_err() {
+                        self.draft_template_fetch_done
+                            .store(true, Ordering::Release);
+                    }
+                } else {
                     self.draft_template_fetch_done
                         .store(true, Ordering::Release);
                 }
@@ -525,10 +572,12 @@ mod backend {
             {
                 return false;
             }
-            self.draft = DraftRecognizer::load_from_dirs(&[
-                &self.draft_template_dir,
-                &self.draft_bundled_template_dir,
-            ]);
+            let load_dirs = self
+                .draft_template_load_dirs
+                .iter()
+                .map(std::path::PathBuf::as_path)
+                .collect::<Vec<_>>();
+            self.draft = DraftRecognizer::load_from_dirs(&load_dirs);
             self.draft_templates_reloaded = true;
             true
         }
@@ -1844,6 +1893,89 @@ mod backend {
             assert!(queue_retry(&sender).is_ok());
             assert!(receiver.try_recv().is_ok());
             assert!(receiver.try_recv().is_err());
+        }
+
+        fn isolated_portrait_test_root() -> std::path::PathBuf {
+            let nonce = std::time::SystemTime::now()
+                .duration_since(std::time::UNIX_EPOCH)
+                .unwrap()
+                .as_nanos();
+            std::env::temp_dir().join(format!(
+                "gmaiden-mvp009-portrait-{}-{nonce}",
+                std::process::id()
+            ))
+        }
+
+        #[test]
+        fn isolated_smoke_portrait_cache_reads_and_fetches_under_run_root() {
+            let root = isolated_portrait_test_root();
+            let app_data = root.join("app-local-data").join("com.gmaiden.app");
+            let bundled = root.join("models").join("portraits");
+            let normal_app_data = root.join("normal-profile").join("AppData").join("Local");
+            std::fs::create_dir_all(&app_data).unwrap();
+            std::fs::create_dir_all(&normal_app_data).unwrap();
+
+            let locations = draft_template_locations(Ok(app_data.clone()), bundled.clone(), true);
+            let isolated_cache = app_data.join("cv").join("portraits");
+            assert_eq!(locations.cache_dir, Some(isolated_cache.clone()));
+            assert_eq!(locations.load_dirs, vec![isolated_cache.clone(), bundled]);
+
+            let marker = isolated_cache.join("fetch-target.marker");
+            let fetched = fetch_draft_templates_if_enabled(
+                locations.cache_dir.as_deref(),
+                Path::new("labels.json"),
+                |dir, _| {
+                    std::fs::create_dir_all(dir).unwrap();
+                    std::fs::write(dir.join("fetch-target.marker"), b"isolated").unwrap();
+                    1
+                },
+            );
+            assert_eq!(fetched, Some(1));
+            assert_eq!(std::fs::read(marker).unwrap(), b"isolated");
+            assert!(!normal_app_data.join("cv").join("portraits").exists());
+            std::fs::remove_dir_all(root).unwrap();
+        }
+
+        #[test]
+        fn isolated_smoke_portrait_resolution_failure_disables_fetch() {
+            let root = isolated_portrait_test_root();
+            let bundled = root.join("models").join("portraits");
+            let locations = draft_template_locations(
+                Err("invalid isolated paths".into()),
+                bundled.clone(),
+                true,
+            );
+            assert_eq!(locations.cache_dir, None);
+            assert_eq!(locations.load_dirs, vec![bundled]);
+
+            let fetch_called = std::cell::Cell::new(false);
+            let fetched =
+                fetch_draft_templates_if_enabled(None, Path::new("labels.json"), |_, _| {
+                    fetch_called.set(true);
+                    1
+                });
+            assert_eq!(fetched, None);
+            assert!(!fetch_called.get());
+        }
+
+        #[test]
+        fn normal_portrait_cache_keeps_app_data_and_bundled_fallback() {
+            let root = isolated_portrait_test_root();
+            let app_data = root.join("normal-profile").join("AppData").join("Local");
+            let bundled = root.join("models").join("portraits");
+            let cache = app_data.join("cv").join("portraits");
+
+            let resolved = draft_template_locations(Ok(app_data), bundled.clone(), false);
+            assert_eq!(resolved.cache_dir, Some(cache.clone()));
+            assert_eq!(resolved.load_dirs, vec![cache, bundled.clone()]);
+
+            let fallback = draft_template_locations(
+                Err("app data unavailable".into()),
+                bundled.clone(),
+                false,
+            );
+            assert_eq!(fallback.cache_dir, Some(bundled.clone()));
+            assert_eq!(fallback.load_dirs, vec![bundled.clone(), bundled]);
         }
 
         fn synthetic_frame(n: usize) -> Frame {
