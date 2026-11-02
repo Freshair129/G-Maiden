@@ -1,0 +1,62 @@
+{
+  "run": {
+    "id": 334455,
+    "run_attempt": 2,
+    "workflow_id": 77,
+    "event": "workflow_dispatch",
+    "status": "completed",
+    "conclusion": "success",
+    "head_sha": "dddddddddddddddddddddddddddddddddddddddd"
+  },
+  "workflow": {
+    "id": 77,
+    "path": ".github/workflows/candidate-release.yml"
+  },
+  "evidenceArtifact": {
+    "id": 7788,
+    "name": "candidate-evidence-v0.13.5",
+    "expired": false,
+    "workflow_run": {
+      "id": 334455
+    }
+  },
+  "buildEvidence": {
+    "version": "v0.13.5",
+    "sourceSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "generatedAt": "2026-11-02T00:00:00.000Z",
+    "artifacts": [
+      {
+        "path": "src-tauri\\target\\release\\bundle\\msi\\G-Maiden_0.13.5_x64_en-US.msi",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      {
+        "path": "src-tauri\\target\\release\\bundle\\nsis\\G-Maiden_0.13.5_x64-setup.exe",
+        "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    ]
+  },
+  "manifest": {
+    "schemaVersion": 1,
+    "channel": "dev",
+    "version": "0.13.5",
+    "sourceSha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "publishedAt": "2026-11-02T00:10:00.000Z",
+    "platforms": {
+      "windows-x86_64": {
+        "url": "https://github.com/Freshair129/G-Maiden/releases/download/v0.13.5/G-Maiden_0.13.5_x64_en-US.msi",
+        "signature": "dGVzdC1taXNpLXNpZw==",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "windows-x86_64-msi": {
+        "url": "https://github.com/Freshair129/G-Maiden/releases/download/v0.13.5/G-Maiden_0.13.5_x64_en-US.msi",
+        "signature": "dGVzdC1taXNpLXNpZw==",
+        "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb"
+      },
+      "windows-x86_64-nsis": {
+        "url": "https://github.com/Freshair129/G-Maiden/releases/download/v0.13.5/G-Maiden_0.13.5_x64-setup.exe",
+        "signature": "dGVzdC1uc2lzLXNpZw==",
+        "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+      }
+    }
+  }
+}
