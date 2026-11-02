@@ -638,6 +638,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
                 epoch,
                 false,
                 crate::audio::Priority::Critical,
+                None,
             ) {
                 eprintln!("[G-AnnouncerMedia] phase=rejected owner=hp reason={reason}");
             }
@@ -710,6 +711,9 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
         {
             let app = app.clone();
             let epoch = session.session_epoch;
+            // Capture cancellation before dispatch: Stop can occur while the
+            // blocking-pool request is still queued.
+            let request_fence = crate::audio::AnnouncerRequestFence::capture();
             tauri::async_runtime::spawn_blocking(move || {
                 if let Err(reason) = crate::voice_api::play_event(
                     app,
@@ -717,6 +721,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
                     epoch,
                     false,
                     crate::audio::Priority::Announcer,
+                    Some(request_fence),
                 ) {
                     eprintln!("[G-AnnouncerMedia] phase=rejected reason={reason}");
                 }

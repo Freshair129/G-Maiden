@@ -1,5 +1,6 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
 import { validateManifest, validatePublishedManifest, promoteManifest } from './channel-manifest.mjs';
 
 const artifact = { url: 'https://github.com/Freshair129/G-Maiden/releases/download/v1.2.3/G-Maiden.msi', signature: 'untrusted comment: signature\nABC', sha256: 'a'.repeat(64) };
@@ -7,6 +8,12 @@ const candidate = { schemaVersion: 1, channel: 'dev', version: '1.2.3', sourceSh
 const stable = { ...candidate, channel: 'stable', version: '1.2.2', sourceSha: 'c'.repeat(40) };
 
 describe('release channel manifests', () => {
+  it('keeps the packaged default endpoint on stable, independent of platform target', () => {
+    const config = JSON.parse(readFileSync(new URL('../../src-tauri/tauri.conf.json', import.meta.url), 'utf8'));
+    assert.deepEqual(config.plugins.updater.endpoints, [
+      'https://raw.githubusercontent.com/Freshair129/G-Maiden/main/release/channels/stable.json',
+    ]);
+  });
   // Regression guard. The updater uses ONE string both to fill `{{target}}` in the
   // endpoint template and as the `platforms` key, so keying a manifest by channel name
   // reads as a working way to select a channel — and then fails with TargetNotFound, or

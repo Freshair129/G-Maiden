@@ -13,8 +13,6 @@ import { C } from './theme'
 import { heroName } from './primitives'
 import { allowsSessionLifecycleAdvance } from '../live/session'
 import { adviceAllowedBySettings, advicePolicyKey, isAdviceGenerationCurrent, validAdviceGeneration } from './adviceGeneration'
-import { VrzoBannerController, type VrzoVisual } from '../overlay/vrzoBanner'
-import { VrzoBannerVideo } from '../overlay/vrzoBannerVideo'
 
 export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSettings = DEFAULTS }) => {
   const [lastTick, setLastTick] = useState<GameTick | null>(null)
@@ -53,10 +51,6 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
   // fail-closed. Until a fresh capture status arrives, the overlay must not
   // report the sensor as healthy (audit B3).
   const [sensorHealth, setSensorHealth] = useState<SensorHealth | null>(null)
-  const [vrzoVisual, setVrzoVisual] = useState<VrzoVisual | null>(null)
-  const vrzo = useRef<VrzoBannerController | null>(null)
-  if (!vrzo.current) vrzo.current = new VrzoBannerController(setVrzoVisual)
-  const failVrzo = useCallback((id: string) => vrzo.current?.fail(id), [])
   const gankTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   const gankClearTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
   // Volume toast — brief on-screen feedback when player uses Alt+Up/Down/M.
@@ -80,7 +74,6 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     setOverlayAdvice(null)
   }, [])
   const resetSessionUi = useCallback(() => {
-    vrzo.current?.clearLive()
     adviceRevision.current += 1
     for (const timer of [gankTimer, gankClearTimer, adviceTimer]) {
       if (timer.current) clearTimeout(timer.current)
@@ -168,7 +161,6 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     })
     const u2 = listen<Settings>('settings', (e) => {
       const next: Settings = { ...DEFAULTS, ...e.payload, uiMode: 'full' }
-      if (!next.killVisuals || !next.layout?.banner?.enabled) vrzo.current?.clear()
       if (advicePolicyKey(next) !== advicePolicyKey(sRef.current)) invalidateAdvice()
       sRef.current = next
       setS(next)
@@ -283,11 +275,7 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       if (volToastTimer.current) clearTimeout(volToastTimer.current)
       volToastTimer.current = setTimeout(() => setVolToast(null), 1500)
     })
-    const uVrzo = listen<unknown>('announcer-media-playback', ({ payload }) => {
-      if (!sRef.current.killVisuals || !sRef.current.layout?.banner?.enabled) return
-      vrzo.current?.receive(payload, sessionEpoch.current, Date.now())
-    })
-    const registrations = [u1, u2, uMaster, u3, u4, u5, u6, uSH, u7, u8, u9, uBA, uBN, u10, uVrzo]
+    const registrations = [u1, u2, uMaster, u3, u4, u5, u6, uSH, u7, u8, u9, uBA, uBN, u10]
     // Hydrated settings are already supplied by the provider. Native readiness
     // additionally requires every listener before the Control settings reply.
     void Promise.all(registrations).then(async () => {
@@ -297,7 +285,6 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
     }).catch(() => {})
     return () => {
       active = false
-      vrzo.current?.destroy()
       for (const registration of registrations) void registration.then((unlisten) => unlisten()).catch(() => {})
       clearTimeout(previewExpiry)
       adviceRevision.current += 1
@@ -481,6 +468,5 @@ export const Overlay: React.FC<{ initialSettings?: Settings }> = ({ initialSetti
       matchActive={previewMode ? !!previewTick.in_game : matchActive} previewMode={previewMode}
       sensorOk={sensorHealth?.healthy ?? false}
     />
-    {s.killVisuals && s.layout?.banner?.enabled && <VrzoBannerVideo visual={vrzoVisual} layout={s.layout.banner} fail={failVrzo} />}
   </>
 }

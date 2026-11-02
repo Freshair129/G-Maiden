@@ -27,6 +27,10 @@ jobs:
       - name: Stage gpu-feeder sidecar
         run: node src-tauri/scripts/stage-gpu-feeder.mjs
 
+      - name: Build pinned native MSVC video decoder
+        shell: pwsh
+        run: ./scripts/setup-native-vpx.ps1
+
       # Headless latency_harness: measures hops 2-5 (vision, motion, signal, interrupt).
       # Hops 1 (DXGI capture) and 6 (audio output) report SKIP and their budgets (70ms)
       # are factored into the gate math: measured(2-5) + 70ms <= 300ms.

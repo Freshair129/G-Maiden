@@ -6,7 +6,9 @@ pub const FRESHNESS_WATCHDOG_MS: u64 = 500;
 /// Cooperative headroom for audio/preview before the next fresh acquisition.
 /// The caller includes this wait in the next critical cycle's deadline.
 pub fn recovery_ms(active_ms: u64) -> u64 {
-    active_ms.saturating_mul(2).min(100)
+    // Bound CV's cooperative duty cycle before optional preview admission trips.
+    // This wait is still charged to the next decision's unchanged deadline.
+    active_ms.saturating_mul(4).min(100)
 }
 
 pub fn admits_critical(elapsed_ms: u64, pressure: bool, fresh: bool) -> bool {
@@ -19,8 +21,12 @@ pub struct FrameGate {
 }
 
 impl FrameGate {
+    pub fn is_candidate(&self, elapsed_ms: u64, pressure: bool, frame: Option<u64>) -> bool {
+        admits_critical(elapsed_ms, pressure, frame.is_some()) && self.last_frame != frame
+    }
+
     pub fn admit(&mut self, elapsed_ms: u64, pressure: bool, frame: Option<u64>) -> bool {
-        if !admits_critical(elapsed_ms, pressure, frame.is_some()) || self.last_frame == frame {
+        if !self.is_candidate(elapsed_ms, pressure, frame) {
             return false;
         }
         self.last_frame = frame;
@@ -33,7 +39,8 @@ mod tests {
     use super::*;
     #[test]
     fn continuous_frames_leave_headroom_without_hiding_latency() {
-        assert_eq!(recovery_ms(30), 60);
+        assert_eq!(recovery_ms(30), 100);
+        assert_eq!(recovery_ms(20), 80);
         assert_eq!(recovery_ms(70), 100);
         assert_eq!(recovery_ms(0), 0);
         assert_eq!(recovery_ms(u64::MAX), 100);
@@ -64,5 +71,27 @@ mod tests {
         assert!(!frames.admit(32, true, Some(2)));
         // Rejected observations never consume the next usable frame.
         assert!(frames.admit(32, false, Some(2)));
+    }
+
+    #[test]
+    fn late_inference_does_not_consume_a_fresh_retry_of_the_same_crop() {
+        let mut frames = FrameGate::default();
+        assert!(frames.admit(32, false, Some(1)));
+        assert!(frames.is_candidate(32, false, Some(2)));
+        assert!(!frames.admit(210, false, Some(2)));
+        assert!(!frames.is_candidate(32, false, Some(1)));
+        assert!(frames.is_candidate(32, false, Some(2)));
+        assert!(frames.admit(32, false, Some(2)));
+        assert!(!frames.is_candidate(32, false, Some(2)));
+    }
+
+    #[test]
+    fn pressure_after_inference_keeps_the_crop_retryable() {
+        let mut frames = FrameGate::default();
+        assert!(frames.is_candidate(32, false, Some(42)));
+        assert!(!frames.admit(40, true, Some(42)));
+        assert!(frames.is_candidate(32, false, Some(42)));
+        assert!(frames.admit(40, false, Some(42)));
+        assert!(!frames.is_candidate(32, false, Some(42)));
     }
 }

@@ -167,6 +167,7 @@ export interface SignalAlert extends MatchSessionMetadata {
  *  10% when Job Object setup succeeds. A negative sample means the CPU group
  *  cannot be measured; this payload does not distinguish setup from query failure. */
 export interface ResourceStats {
+  minimap_preview_fps?: number;
   ram_mb: number;
   cpu_pct: number;
   cpu_group_processes: number;

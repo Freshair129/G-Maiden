@@ -781,9 +781,21 @@ impl AnnouncerClip {
 
 /// The selected pack and clip are read under the same cache lock. No ANN fallback.
 pub fn select_announcer_clip(event: &str) -> Option<AnnouncerClip> {
+    select_announcer_clip_for_revision(event, None, None)
+}
+
+pub(super) fn select_announcer_clip_for_revision(
+    event: &str,
+    revision: Option<u64>,
+    last: Option<&Path>,
+) -> Option<AnnouncerClip> {
     with_resolved_cache(|cache| {
         let cache = cache?;
-        let path = audio::choose_clip(cache.clips_by_event.get(event)?.clone())?;
+        if revision.is_some_and(|expected| expected != cache.revision) {
+            return None;
+        }
+        let candidates = super::variant_rotation::eligible(cache.clips_by_event.get(event)?, last);
+        let path = audio::choose_clip(candidates)?;
         Some(AnnouncerClip {
             installation: cache.installation.clone(),
             revision: cache.revision,

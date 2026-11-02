@@ -1,15 +1,31 @@
 //! One headless child owns preview DXGI; CV keeps its original process/output.
-use crate::minimap_preview::{self as core, Geometry, Pixels, Snapshot, Status, Stream};
-use crate::minimap_preview_wire as wire;
+use crate::minimap_preview::{self as core, Geometry, Snapshot, Status, Stream};
+use crate::minimap_preview_wire::{self as wire, Item};
 use std::io::{Read, Write};
 use std::process::{ChildStdin, Command, Stdio};
 use std::sync::{
-    atomic::{AtomicBool, AtomicU64, Ordering},
+    atomic::{AtomicBool, AtomicU64, AtomicU8, Ordering},
     mpsc, Arc, Mutex,
 };
 use std::time::{Duration, Instant};
 
 pub(crate) use crate::minimap_clock::now_us as clock_us;
+
+#[cfg(not(feature = "wgc"))]
+fn mark_worker_stage(stage: &AtomicU64, kind: u64) {
+    let now = clock_us();
+    if now != 0 && now <= u64::MAX >> 3 {
+        let previous = stage.swap((now << 3) | kind, Ordering::AcqRel);
+        if previous != 0 && now.saturating_sub(previous >> 3) >= 300_000 {
+            eprintln!(
+                "[G-MinimapWorker] slow_completed stage={} age_us={} qpc_us={}",
+                previous & 7,
+                now.saturating_sub(previous >> 3),
+                now
+            );
+        }
+    }
+}
 
 #[derive(serde::Serialize, serde::Deserialize)]
 #[serde(deny_unknown_fields)]
@@ -113,16 +129,13 @@ pub(crate) fn run_if_requested() -> Option<i32> {
 
 use crate::minimap_owned_child::OwnedChild;
 
-enum Item {
-    Frame(Pixels),
-    State(Status),
-}
 struct Connection {
     child: OwnedChild,
     input: Option<ChildStdin>,
     latest: Arc<Mutex<Option<Item>>>,
     fault: Arc<AtomicBool>,
     packet_at: Arc<AtomicU64>,
+    initialized: Arc<AtomicBool>,
     reader: Option<std::thread::JoinHandle<()>>,
     source: Snapshot,
     started: u64,
@@ -141,9 +154,11 @@ impl Connection {
         wake: mpsc::SyncSender<()>,
     ) -> Result<Self, String> {
         use std::os::windows::process::CommandExt;
-        use windows::Win32::System::Threading::{BELOW_NORMAL_PRIORITY_CLASS, CREATE_NO_WINDOW};
+        use windows::Win32::System::Threading::{CREATE_NO_WINDOW, NORMAL_PRIORITY_CLASS};
+        // Let heartbeat progress compete with the normal-priority host.
+        // The shared CPU Job, rather than worker priority, bounds total work.
         command
-            .creation_flags((CREATE_NO_WINDOW | BELOW_NORMAL_PRIORITY_CLASS).0)
+            .creation_flags((CREATE_NO_WINDOW | NORMAL_PRIORITY_CLASS).0)
             .stdin(Stdio::piped())
             .stdout(Stdio::piped())
             .stderr(Stdio::inherit());
@@ -167,38 +182,17 @@ impl Connection {
         let failed = fault.clone();
         let packet_at = Arc::new(AtomicU64::new(0));
         let received = packet_at.clone();
+        let initialized = Arc::new(AtomicBool::new(false));
+        let capture_ready = initialized.clone();
         let reader = std::thread::Builder::new()
             .name("g-minimap-pipe".into())
             .spawn(move || {
                 let mut sequence = 0;
                 loop {
-                    let item = (|| {
-                        let mut bytes = [0; core::HEADER_LEN];
-                        output.read_exact(&mut bytes).ok()?;
-                        let h = wire::header(&bytes, source, clock_us())?;
-                        let item = if h.status == Status::Frame {
-                            if h.sequence <= sequence {
-                                return None;
-                            }
-                            let mut rgba = vec![0; h.payload];
-                            output.read_exact(&mut rgba).ok()?;
-                            sequence = h.sequence;
-                            if h.stale {
-                                received.store(clock_us(), Ordering::Release);
-                                return Some(None);
-                            }
-                            Item::Frame(Pixels {
-                                width: h.width,
-                                height: h.height,
-                                acquired_us: h.acquired_us,
-                                rgba,
-                            })
-                        } else {
-                            Item::State(h.status)
-                        };
-                        received.store(clock_us(), Ordering::Release);
-                        Some(Some(item))
-                    })();
+                    let item =
+                        wire::read_next(&mut output, source, &mut sequence, clock_us, |at| {
+                            received.store(at, Ordering::Release);
+                        });
                     let Some(item) = item else {
                         failed.store(true, Ordering::Release);
                         eprintln!("[G-MinimapPreview] worker pipe closed or invalid packet");
@@ -206,6 +200,12 @@ impl Connection {
                         return;
                     };
                     let Some(item) = item else { continue };
+                    if item.capture_loop_initialized() {
+                        capture_ready.store(true, Ordering::Release);
+                    }
+                    if matches!(item, Item::CaptureInitialized) {
+                        continue;
+                    }
                     let Ok(mut target) = slot.lock() else {
                         failed.store(true, Ordering::Release);
                         return;
@@ -230,24 +230,42 @@ impl Connection {
             latest,
             fault,
             packet_at,
+            initialized,
             reader: Some(reader),
             source,
             started,
             last_heartbeat: 0,
         })
     }
-    fn heartbeat(&mut self) -> bool {
+    fn heartbeat(&mut self, capture_enabled: bool) -> bool {
         if self.fault.load(Ordering::Acquire) {
             return false;
         }
-        let Some(now) = core::packet_health(&self.packet_at, self.started, clock_us) else {
+        let Some(now) = core::packet_health(
+            &self.packet_at,
+            self.started,
+            self.initialized.load(Ordering::Acquire),
+            clock_us,
+        ) else {
+            let now = clock_us();
+            eprintln!("[G-MinimapPreview] worker watchdog initialized={} packet_age_us={} startup_age_us={} control_age_us={}",
+                self.initialized.load(Ordering::Acquire), now.saturating_sub(self.packet_at.load(Ordering::Acquire)), now.saturating_sub(self.started), now.saturating_sub(self.last_heartbeat));
             return false;
         };
         if now.saturating_sub(self.last_heartbeat) >= 100_000 {
             let Some(input) = self.input.as_mut() else {
                 return false;
             };
-            if input.write_all(&[1]).and_then(|()| input.flush()).is_err() {
+            let command = if capture_enabled {
+                crate::governor::preview_fps()
+            } else {
+                0
+            };
+            if input
+                .write_all(&[command])
+                .and_then(|()| input.flush())
+                .is_err()
+            {
                 return false;
             }
             self.last_heartbeat = now;
@@ -295,20 +313,20 @@ pub(crate) fn parent_worker(
             if now == 0 {
                 s.set_status(Status::Unavailable);
                 None
-            } else if !crate::governor::preview_allowed() {
-                s.set_status(Status::Pressure);
-                None
             } else {
+                if !crate::governor::preview_allowed() {
+                    s.set_status(Status::Pressure);
+                }
                 // Control may have renewed the lease while this worker waited for the lock.
                 s.snapshot(clock_us())
             }
         };
         if let Some(active) = connection.as_mut() {
-            let heartbeat_ok = active.heartbeat();
+            let heartbeat_ok = active.heartbeat(crate::governor::preview_allowed());
             if stopping || Some(active.source) != wanted || !heartbeat_ok {
                 if !stopping {
                     let reason = if wanted.is_none() {
-                        "inactive or pressure"
+                        "inactive source or expired lease"
                     } else if Some(active.source) != wanted {
                         "source changed"
                     } else {
@@ -332,7 +350,7 @@ pub(crate) fn parent_worker(
             }
         }
         if let Some(source) = wanted {
-            if connection.is_none() && now >= retry_at {
+            if connection.is_none() && now >= retry_at && crate::governor::preview_allowed() {
                 match Connection::spawn(source, wake.clone()) {
                     Ok(active) => {
                         connection = Some(active);
@@ -366,6 +384,7 @@ pub(crate) fn parent_worker(
                                     }
                                 }
                                 Item::State(status) => s.set_status(status),
+                                Item::CaptureInitialized => {}
                             }
                         }
                     }
@@ -373,7 +392,7 @@ pub(crate) fn parent_worker(
             }
         }
         if connection.is_some() && logged_at.elapsed() >= Duration::from_secs(5) {
-            eprintln!("[G-MinimapPreview] interval_ms={} published={} target_fps=60 (not presentation proof)",logged_at.elapsed().as_millis(),frames);
+            eprintln!("[G-MinimapPreview] interval_ms={} published={} target_fps={} (not presentation proof)",logged_at.elapsed().as_millis(),frames,crate::governor::preview_fps());
             frames = 0;
             logged_at = Instant::now();
         }
@@ -509,20 +528,42 @@ fn run_child() -> Result<(), String> {
     }
     let heartbeat = Arc::new(AtomicU64::new(now));
     let beats = heartbeat.clone();
+    let capture_enabled = Arc::new(AtomicU8::new(0));
+    let enabled = capture_enabled.clone();
+    let worker_stage = Arc::new(AtomicU64::new(0));
+    let observed_stage = worker_stage.clone();
     std::thread::Builder::new()
         .name("g-preview-heartbeat".into())
         .spawn(move || {
             let mut input = std::io::stdin().lock();
+            let mut reported_stage = 0;
             loop {
                 let mut b = [0];
-                if input.read_exact(&mut b).is_err() || b[0] != 1 {
+                if input.read_exact(&mut b).is_err() {
                     std::process::exit(0);
                 }
+                let Some(capture) = wire::capture_fps(b[0]) else {
+                    std::process::exit(2);
+                };
+                enabled.store(capture, Ordering::Release);
                 let now = clock_us();
                 if now == 0 {
                     std::process::exit(2);
                 }
                 beats.store(now, Ordering::Release);
+                let point = observed_stage.load(Ordering::Acquire);
+                if point != 0
+                    && point != reported_stage
+                    && now.saturating_sub(point >> 3) >= 300_000
+                {
+                    eprintln!(
+                        "[G-MinimapWorker] slow stage={} age_us={} qpc_us={}",
+                        point & 7,
+                        now.saturating_sub(point >> 3),
+                        now
+                    );
+                    reported_stage = point;
+                }
             }
         })
         .map_err(|e| e.to_string())?;
@@ -547,18 +588,50 @@ fn run_child() -> Result<(), String> {
     let (mut captures, mut frames_out, mut capture_us, mut crop_us, mut pipe_us) =
         (0u64, 0u64, 0u64, 0u64, 0u64);
     loop {
+        mark_worker_stage(&worker_stage, 0);
         let now = clock_us();
         if now == 0 {
             return Err("shared clock unavailable".into());
         }
         if !pacer.due(now) {
+            if now.saturating_sub(last_status) >= 100_000 {
+                let packet = wire::keepalive(source, sequence, now);
+                mark_worker_stage(&worker_stage, 3);
+                output
+                    .write_all(&packet)
+                    .and_then(|()| output.flush())
+                    .map_err(|e| e.to_string())?;
+                mark_worker_stage(&worker_stage, 0);
+                last_status = now;
+            }
             std::thread::sleep(Duration::from_micros(
                 pacer.wait_us(now).min(core::PERIOD_US),
             ));
             continue;
         }
-        pacer.advance(now);
+        let fps = capture_enabled.load(Ordering::Acquire);
+        pacer.advance(
+            now,
+            wire::capture_period_us(fps).ok_or("invalid preview cadence")?,
+        );
+        // Keep the D3D device and duplication alive: rebuilding them on every
+        // pressure sample costs more CPU than retaining an idle capture owner.
+        if fps == 0 {
+            if now.saturating_sub(last_status) >= 100_000 {
+                let packet = core::worker_packet(source, sequence, Status::Pressure, None, now);
+                mark_worker_stage(&worker_stage, 3);
+                output
+                    .write_all(&packet)
+                    .and_then(|()| output.flush())
+                    .map_err(|e| e.to_string())?;
+                mark_worker_stage(&worker_stage, 0);
+                last_status = now;
+            }
+            std::thread::sleep(Duration::from_millis(50));
+            continue;
+        }
         if now.saturating_sub(scan_at) >= 500_000 || scan_at == 0 {
+            mark_worker_stage(&worker_stage, 4);
             window = crate::dxgi::preview_dota_window();
             scan_at = now;
         }
@@ -566,6 +639,7 @@ fn run_child() -> Result<(), String> {
         let mut pixels = None;
         if let Some((hwnd, pid)) = window {
             if capture.is_none() && now >= retry_at {
+                mark_worker_stage(&worker_stage, 5);
                 match crate::dxgi::DxgiCapture::new(source.geometry.display) {
                     Ok(dxgi) => capture = Some(dxgi),
                     Err(error) => {
@@ -576,6 +650,7 @@ fn run_child() -> Result<(), String> {
             }
             if let Some(dxgi) = capture.as_mut() {
                 let g = source.geometry;
+                mark_worker_stage(&worker_stage, 4);
                 if dxgi.backend() != "dxgi"
                     || !core::matches_output(
                         g,
@@ -598,10 +673,12 @@ fn run_child() -> Result<(), String> {
                         g.side,
                         g.side,
                     );
+                    mark_worker_stage(&worker_stage, 1);
                     let stage = Instant::now();
                     let bundle = dxgi.acquire_regions(source.epoch, &[roi]);
                     capture_us += stage.elapsed().as_micros() as u64;
                     captures += 1;
+                    mark_worker_stage(&worker_stage, 4);
                     if dxgi.backend() != "dxgi"
                         || !core::matches_output(
                             g,
@@ -622,6 +699,7 @@ fn run_child() -> Result<(), String> {
                             if let Some(roi) =
                                 bundle.into_region(crate::capture_frame::CaptureRoiKind::Minimap)
                             {
+                                mark_worker_stage(&worker_stage, 2);
                                 let stage = Instant::now();
                                 pixels = core::crop_rgba(
                                     &roi.bgra,
@@ -649,12 +727,14 @@ fn run_child() -> Result<(), String> {
                 sequence = sequence.saturating_add(1);
             }
             let packet = core::worker_packet(source, sequence, status, pixels.as_ref(), clock_us());
+            mark_worker_stage(&worker_stage, 3);
             let stage = Instant::now();
             output
                 .write_all(&packet)
                 .and_then(|()| output.flush())
                 .map_err(|e| e.to_string())?;
             pipe_us += stage.elapsed().as_micros() as u64;
+            mark_worker_stage(&worker_stage, 0);
             if status == Status::Frame {
                 frames_out += 1;
             }

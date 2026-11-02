@@ -3284,7 +3284,7 @@ body:has(.deck-v3.g-deck) {
   position: absolute;
   left: 128px;
   top: 98px;
-  width: 478px;
+  width: 640px;
   height: 42px;
   display: grid;
   grid-template-columns: repeat(3, 1fr);
@@ -3354,52 +3354,41 @@ body:has(.deck-v3.g-deck) {
 
 .gm-hero-slot {
   position: relative;
-  /* CR012-P3-02: even division + hard clip — see .gm-slot-column comment. */
   flex: 1 1 0;
+  min-width: 0;
   min-height: 0;
   overflow: hidden;
-  padding: 8px 10px;
+  padding: 5px 8px;
   border-radius: 10px;
-  /* CR-011 §B two-material rule: instrument matte, no blur/shadow. */
   border: 1px solid var(--g-hairline);
   background: var(--g-instrument);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  grid-template-rows: repeat(2, minmax(0, 1fr));
+  align-items: center;
+  gap: 2px 6px;
+  text-align: left;
+  color: var(--g-text);
 }
-
-.gm-hero-slot strong,
-.gm-hero-slot span,
-.gm-hero-slot em {
-  display: block;
+.gm-hero-slot > strong,
+.gm-hero-slot > span,
+.gm-hero-slot > em {
+  position: relative;
+  z-index: 1;
+  min-width: 0;
+  margin: 0;
   font-style: normal;
-  line-height: 1.1;
-}
-
-.gm-hero-slot strong {
-  font-size: 11px;
-  /* long hero names (e.g. "Ancient Apparition") must stay one line — a wrap makes
-     the card exceed its grid track and re-triggers the column overflow. */
+  line-height: 1.2;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: calc(100% - 34px); /* leave room for the right-aligned KDA (em) */
 }
-
-.gm-hero-slot span {
-  margin-top: 3px;
-  /* Stays 10px (micro tier, NOT the 11px caption floor): the battle grid's frozen 276px
-     height gives each of the 5 cards a ~45.2px track with ~1px slack (commit 5269cda3);
-     an 11px caption re-overflows the bottom card into sector-log (Opus gate, CR011-P1). */
-  font-size: 10px;
-  color: #aebbd0;
-}
-
-.gm-hero-slot em {
-  position: absolute;
-  right: 10px;
-  top: 20px;
-  color: #aebbd0;
-  font-size: 11px;
-  font-weight: 800;
-}
+.gm-hero-slot > strong { grid-column: 1 / -1; font-size: 11px; }
+.gm-hero-slot > span { font-size: 10px; color: var(--g-text-dim); }
+.gm-hero-slot > em { font-size: 10px; font-weight: 700; font-variant-numeric: tabular-nums; }
+.gm-hero-visible > span { color: var(--g-ok); }
+.gm-hero-missing > span, .gm-hero-death-hint > span { color: var(--g-warn); }
+.gm-hero-dead > span { color: var(--g-text-dim); }
 
 /* ===== CR-011 §E phase axis: standby/prep/debrief seat content (CR011-P3-02) =====
    Additive only — `.gm-battle-grid`'s own geometry/CSS above is untouched; these
@@ -3720,36 +3709,39 @@ body:has(.deck-v3.g-deck) {
 .gm-sector-log {
   position: absolute;
   left: 128px;
-  /* follows the taller battle-grid (bottom now 424) + 10px rhythm; bottom 604 still
-     clears the surface, leaving headroom. */
   top: 434px;
-  width: 620px;
+  width: 640px;
   height: 170px;
   display: grid;
-  grid-template-columns: 1fr 260px;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 260px);
   gap: 16px;
-  padding: 18px;
+  padding: 14px 16px;
   border-radius: 14px;
-  /* CR-011 §B two-material rule: instrument matte, no blur/shadow. */
   border: 1px solid var(--g-hairline);
   background: var(--g-instrument);
 }
-
-.gm-sector-log h3 {
-  margin: 0 0 12px;
-  font-size: 16px;
-}
-
-.gm-sector-log p {
-  margin: 0;
-}
-
+.gm-sector-log > div { display: flex; flex-direction: column; min-width: 0; min-height: 0; }
+.gm-sector-log h3 { flex: 0 0 auto; margin: 0 0 8px; font-size: 16px; line-height: 20px; }
+.gm-sector-log .log-list { flex: 1; min-height: 0; overflow-y: auto; overflow-x: hidden; }
+.gm-sector-log .log-row { flex: 0 0 auto; min-width: 0; padding: 7px 10px; gap: 8px; }
+.gm-sector-log .log-text { min-width: 0; overflow-wrap: anywhere; }
 .gm-state-grid {
+  flex: 1;
+  min-height: 0;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  grid-template-rows: repeat(2, minmax(0, 1fr));
   gap: 8px;
 }
-
+.gm-mini-stat { overflow: hidden; }
+.gm-mini-stat strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.gm-stats-bar .gm-mini-stat { padding: 5px 8px; }
+.gm-stats-bar .gm-mini-stat span { font-size: 10px; line-height: 12px; }
+.gm-stats-bar .gm-mini-stat small { display: none; }
+.gm-stats-bar .gm-mini-stat strong { margin: 0; font-size: 14px; line-height: 15px; }
+.gm-state-grid .gm-mini-stat { padding: 5px 8px; }
+.gm-state-grid .gm-mini-stat span, .gm-state-grid .gm-mini-stat small { font-size: 10px; line-height: 10px; }
+.gm-state-grid .gm-mini-stat strong { margin: 1px 0; font-size: 14px; line-height: 15px; }
 
 /* -- Store -- */
 .store-page { padding: 4px 2px 12px; height: 100%; min-height: 0; display: flex; flex-direction: column; }

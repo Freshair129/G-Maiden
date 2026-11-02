@@ -19,10 +19,13 @@ const MAX_VISUAL_AUDIO_BYTES: usize = 16 * 1024 * 1024;
 struct Epochs {
     cosmetic: AtomicU64,
     normal: AtomicU64,
+    critical: AtomicU64,
 }
 impl Epochs {
     fn counter(&self, priority: Priority) -> &AtomicU64 {
-        if priority == Priority::Cosmetic {
+        if priority == Priority::Critical {
+            &self.critical
+        } else if priority == Priority::Cosmetic {
             &self.cosmetic
         } else {
             &self.normal
@@ -33,6 +36,9 @@ impl Epochs {
         if ceiling >= Priority::Normal {
             self.normal.fetch_add(1, Ordering::AcqRel);
         }
+        if ceiling >= Priority::Critical {
+            self.critical.fetch_add(1, Ordering::AcqRel);
+        }
     }
 }
 fn epochs() -> &'static Arc<Epochs> {
@@ -41,6 +47,23 @@ fn epochs() -> &'static Arc<Epochs> {
 }
 pub(super) fn cancel_up_to(ceiling: Priority) {
     epochs().invalidate(ceiling);
+}
+pub(super) fn critical_fence() -> Fence {
+    reserve_critical_fence(epochs())
+}
+pub(super) fn announcer_fence() -> Fence {
+    Fence::capture(epochs(), Priority::Announcer)
+}
+fn reserve_critical_fence(epochs: &Arc<Epochs>) -> Fence {
+    Fence {
+        epochs: epochs.clone(),
+        priority: Priority::Critical,
+        generation: epochs
+            .critical
+            .fetch_add(1, Ordering::AcqRel)
+            .wrapping_add(1),
+        deadline: Instant::now() + MAX_WAIT,
+    }
 }
 
 #[derive(Clone)]
@@ -213,8 +236,14 @@ struct Request {
     fence: Fence,
 }
 
-pub(super) fn enqueue(path: PathBuf, priority: Priority, observation: PlaybackObservation) {
-    let fence = Fence::capture(epochs(), priority);
+pub(super) fn enqueue(path: PathBuf, priority: Priority, mut observation: PlaybackObservation) {
+    if priority < Priority::Critical && super::active_priority() == Priority::Critical {
+        return;
+    }
+    let fence = observation
+        .request_fence
+        .take()
+        .unwrap_or_else(|| Fence::capture(epochs(), priority));
     static COUNT: OnceLock<Arc<AtomicUsize>> = OnceLock::new();
     static WORKER: OnceLock<mpsc::SyncSender<Request>> = OnceLock::new();
     let Some(slot) = Slot::acquire(COUNT.get_or_init(|| Arc::new(AtomicUsize::new(0)))) else {
@@ -224,19 +253,31 @@ pub(super) fn enqueue(path: PathBuf, priority: Priority, observation: PlaybackOb
     let sender = WORKER.get_or_init(|| {
         let (tx, rx) = mpsc::sync_channel::<Request>(1);
         std::thread::Builder::new().name("g-clip-prepare".into()).spawn(move || {
-            for request in rx {
+            for mut request in rx {
                 if request.requested.elapsed() >= MAX_WAIT || !request.fence.is_current() { continue; }
                 let prepared = open_verified_file(&request.path)
                     .and_then(|file| prepare_file(file, request.observation.lifecycle.is_some()));
                 match prepared {
                     Ok((pcm, audio_sha256)) if request.requested.elapsed() < MAX_WAIT && request.fence.is_current() => {
-                        let (pcm, played_audio_sha256) = if let Some(observer)=request.observation.lifecycle.as_ref(){
+                        let (mut pcm, played_audio_sha256) = if let Some(observer)=request.observation.lifecycle.as_ref(){
                             match prepare_mix(pcm,audio_sha256,observer.mixed.as_ref()){
                                 Ok(source)=>source,
                                 Err(reason)=>{eprintln!("[G-AnnouncerMedia] phase=rejected reason={reason}");continue;}
                             }
                         }else{(pcm,None)};
                         if request.requested.elapsed() >= MAX_WAIT || !request.fence.is_current() { continue; }
+                        if let Some(observer) = request.observation.lifecycle.as_mut() {
+                            if let Some(asset) = observer.native_asset.as_ref() {
+                                let fence=request.fence.clone();
+                                observer.native_pending=Some(Arc::new(move||fence.is_current() && super::active_priority()!=Priority::Critical));
+                                let samples: Vec<i16> = pcm.collect();
+                                pcm = SamplesBuffer::new(1,48000,samples.clone());
+                                match crate::gann_native::prepare(asset.clone(), samples, observer.native_fade.clone(), observer.native_scope.clone(), observer.native_pending.clone(), false) {
+                                    Ok(playback) => observer.native_playback = Some(playback),
+                                    Err(error) => { eprintln!("[G-NativeMedia] phase=rejected error={error}"); continue; }
+                                }
+                            }
+                        }
                         eprintln!("[G-Maiden audio] source={} original_sha256={} played_sha256={}",
                             if played_audio_sha256.is_some() {"gann-mixed"} else {"original"},
                             audio_sha256.as_ref().map(crate::vrzo_mix::hex_digest).unwrap_or_default(),
@@ -275,6 +316,45 @@ pub(super) fn open_verified_file(path: &std::path::Path) -> Result<std::fs::File
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn stop_during_variant_reservation_rejects_the_waiting_request() {
+        let epochs = Arc::new(Epochs::default());
+        let fence = Fence::capture(&epochs, Priority::Announcer);
+        let coordinator = Arc::new(crate::voice_api::TestVariantCoordinator::default());
+        let first = coordinator.reserve(1, "kill", Duration::ZERO).unwrap();
+        let worker = coordinator.clone();
+        let (ready, wait) = mpsc::channel();
+        let thread = std::thread::spawn(move || {
+            let ready = std::sync::Mutex::new(Some(ready));
+            worker.reserve_current(1, "kill", Duration::from_secs(2), || {
+                let current = fence.is_current();
+                if let Some(sender) = ready.lock().unwrap().take() {
+                    sender.send(current).unwrap();
+                }
+                current
+            }).is_some()
+        });
+        assert!(wait.recv().unwrap());
+        epochs.invalidate(Priority::Critical);
+        drop(first);
+        assert!(!thread.join().unwrap());
+        assert_eq!(coordinator.reserve(1, "kill", Duration::ZERO).unwrap().last(), None);
+    }
+
+    #[test]
+    fn stop_before_dispatched_event_starts_rejects_its_original_fence() {
+        let epochs = Arc::new(Epochs::default());
+        let fence = Fence::capture(&epochs, Priority::Announcer);
+        let coordinator = Arc::new(crate::voice_api::TestVariantCoordinator::default());
+        let queued = {
+            let coordinator = coordinator.clone();
+            move || coordinator.reserve_current(1, "kill", Duration::ZERO, || fence.is_current()).is_some()
+        };
+        epochs.invalidate(Priority::Critical);
+        assert!(!queued());
+        assert_eq!(coordinator.reserve(1, "kill", Duration::ZERO).unwrap().last(), None);
+    }
 
     #[test]
     fn admitted_original_cannot_play_when_its_gann_mixed_file_is_changed_or_removed() {
@@ -431,6 +511,43 @@ mod tests {
         epochs.invalidate(Priority::Normal);
         assert!(!normal.is_current());
         assert!(Fence::capture(&epochs, Priority::Normal).is_current());
+    }
+
+    #[test]
+    fn a_user_stop_revokes_prepared_critical_pairs_but_normal_preemption_does_not() {
+        let epochs = Arc::new(Epochs::default());
+        let critical = Fence::capture(&epochs, Priority::Critical);
+        epochs.invalidate(Priority::Normal);
+        assert!(critical.is_current());
+        epochs.invalidate(Priority::Critical);
+        assert!(!critical.is_current());
+    }
+    #[test]
+    fn concurrent_critical_requests_get_distinct_generations_and_stop_revokes_them_all() {
+        let epochs = Arc::new(Epochs::default());
+        let barrier = Arc::new(std::sync::Barrier::new(16));
+        let workers: Vec<_> = (0..16)
+            .map(|_| {
+                let epochs = epochs.clone();
+                let barrier = barrier.clone();
+                std::thread::spawn(move || {
+                    barrier.wait();
+                    (0..200)
+                        .map(|_| reserve_critical_fence(&epochs))
+                        .collect::<Vec<_>>()
+                })
+            })
+            .collect();
+        let fences: Vec<_> = workers
+            .into_iter()
+            .flat_map(|w| w.join().unwrap())
+            .collect();
+        let generations: std::collections::HashSet<_> =
+            fences.iter().map(|f| f.generation).collect();
+        assert_eq!(generations.len(), 3200);
+        assert_eq!(fences.iter().filter(|f| f.is_current()).count(), 1);
+        epochs.invalidate(Priority::Critical);
+        assert!(fences.iter().all(|f| !f.is_current()));
     }
 
     #[test]

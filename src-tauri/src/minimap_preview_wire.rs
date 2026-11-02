@@ -1,6 +1,18 @@
 //! Bounded child-process framing; never accepts a caller-selected image source.
 use crate::minimap_preview::{self as core, Snapshot, Status};
+use std::io::Read;
 pub const WORKER_ARG: &str = "--minimap-preview-worker";
+
+pub fn capture_fps(command: u8) -> Option<u8> {
+    match command {
+        0 | 5 | 15 | 30 | 60 => Some(command),
+        _ => None,
+    }
+}
+pub fn capture_period_us(command: u8) -> Option<u64> {
+    capture_fps(command)
+        .map(|fps| 1_000_000u64.div_ceil(u64::from(if fps == 0 { 15 } else { fps })))
+}
 
 pub fn worker_role(args: &[String]) -> Option<bool> {
     if !args.iter().any(|arg| arg == WORKER_ARG) {
@@ -18,6 +30,7 @@ pub fn heartbeat_live(last: u64, now: u64) -> bool {
 
 #[derive(Debug)]
 pub struct Header {
+    pub keepalive: bool,
     pub status: Status,
     pub sequence: u64,
     pub width: u32,
@@ -60,10 +73,13 @@ pub fn header(bytes: &[u8; core::HEADER_LEN], source: Snapshot, now: u64) -> Opt
     {
         return None;
     }
+    let keepalive = u32_at(8) == 6;
     let status = match u32_at(8) {
         0 => Status::Waiting,
         1 => Status::Frame,
+        3 => Status::Pressure,
         4 => Status::Unavailable,
+        6 => Status::Waiting,
         _ => return None,
     };
     let (width, height, payload) = (u32_at(12), u32_at(16), u32_at(116) as usize);
@@ -94,6 +110,7 @@ pub fn header(bytes: &[u8; core::HEADER_LEN], source: Snapshot, now: u64) -> Opt
         return None;
     }
     Some(Header {
+        keepalive,
         status,
         sequence,
         width,
@@ -104,10 +121,199 @@ pub fn header(bytes: &[u8; core::HEADER_LEN], source: Snapshot, now: u64) -> Opt
     })
 }
 
+pub enum Item {
+    Frame(core::Pixels),
+    State(Status),
+    CaptureInitialized,
+}
+impl Item {
+    pub fn capture_loop_initialized(&self) -> bool {
+        // Unavailable is a completed loop observation, not affirmative sensing.
+        // Pressure can be emitted before the first DXGI initialization attempt.
+        matches!(
+            self,
+            Self::Frame(_)
+                | Self::State(Status::Waiting | Status::Unavailable)
+                | Self::CaptureInitialized
+        )
+    }
+}
+
+pub fn keepalive(source: Snapshot, sequence: u64, now: u64) -> Vec<u8> {
+    let mut bytes = core::worker_packet(source, sequence, Status::Waiting, None, now);
+    bytes[8..12].copy_from_slice(&6_u32.to_le_bytes());
+    bytes
+}
+
+pub fn read_next(
+    input: &mut impl Read,
+    source: Snapshot,
+    sequence: &mut u64,
+    mut clock: impl FnMut() -> u64,
+    mut progress: impl FnMut(u64),
+) -> Option<Option<Item>> {
+    let mut bytes = [0; core::HEADER_LEN];
+    input.read_exact(&mut bytes).ok()?;
+    let h = header(&bytes, source, clock())?;
+    if h.status == Status::Frame && h.sequence <= *sequence {
+        return None;
+    }
+    progress(clock());
+    if h.keepalive {
+        return Some(None);
+    }
+    if h.status != Status::Frame {
+        return Some(Some(Item::State(h.status)));
+    }
+    let mut rgba = vec![0; h.payload];
+    for chunk in rgba.chunks_mut(64 * 1024) {
+        input.read_exact(chunk).ok()?;
+        progress(clock());
+    }
+    *sequence = h.sequence;
+    let now = clock();
+    if now == 0 || now < h.acquired_us {
+        return None;
+    }
+    if h.stale || now - h.acquired_us > core::STALE_US {
+        return Some(Some(Item::CaptureInitialized));
+    }
+    Some(Some(Item::Frame(core::Pixels {
+        width: h.width,
+        height: h.height,
+        acquired_us: h.acquired_us,
+        rgba,
+    })))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::minimap_preview::{Geometry, Pixels};
+    #[test]
+    fn early_pressure_does_not_end_startup_but_completed_unavailable_loop_does() {
+        assert!(!Item::State(Status::Pressure).capture_loop_initialized());
+        assert!(Item::State(Status::Unavailable).capture_loop_initialized());
+        assert!(Item::State(Status::Waiting).capture_loop_initialized());
+        assert!(Item::CaptureInitialized.capture_loop_initialized());
+        assert!(Item::Frame(Pixels {
+            width: 1,
+            height: 1,
+            acquired_us: 1,
+            rgba: vec![0; 4]
+        })
+        .capture_loop_initialized());
+    }
+    #[test]
+    fn keepalive_is_transport_only_and_cannot_carry_pixels() {
+        let bytes = keepalive(source(), 1, 100);
+        assert_eq!(bytes.len(), core::HEADER_LEN);
+        assert!(
+            header(bytes.as_slice().try_into().unwrap(), source(), 101)
+                .unwrap()
+                .keepalive
+        );
+        let mut seq = 1;
+        let mut progress = Vec::new();
+        assert!(matches!(
+            read_next(
+                &mut bytes.as_slice(),
+                source(),
+                &mut seq,
+                || 101,
+                |at| progress.push(at)
+            ),
+            Some(None)
+        ));
+        assert_eq!(seq, 1);
+        assert_eq!(progress, [101]);
+        let mut forged = packet();
+        forged[8..12].copy_from_slice(&6_u32.to_le_bytes());
+        assert!(header(
+            forged[..core::HEADER_LEN].try_into().unwrap(),
+            source(),
+            201
+        )
+        .is_none());
+    }
+    #[test]
+    fn payload_progress_does_not_make_an_old_image_fresh() {
+        use std::{cell::Cell, io::Cursor};
+        struct Slow<'a> {
+            input: Cursor<Vec<u8>>,
+            clock: &'a Cell<u64>,
+        }
+        impl Read for Slow<'_> {
+            fn read(&mut self, bytes: &mut [u8]) -> std::io::Result<usize> {
+                self.clock.set(self.clock.get() + 40_000);
+                self.input.read(bytes)
+            }
+        }
+        let bytes = core::worker_packet(
+            source(),
+            42,
+            Status::Frame,
+            Some(&Pixels {
+                width: 320,
+                height: 320,
+                acquired_us: 100_000,
+                rgba: vec![0; 320 * 320 * 4],
+            }),
+            100_001,
+        );
+        let now = Cell::new(100_001);
+        let mut input = Slow {
+            input: Cursor::new(bytes),
+            clock: &now,
+        };
+        let mut progress = Vec::new();
+        let mut seq = 0;
+        assert!(matches!(
+            read_next(
+                &mut input,
+                source(),
+                &mut seq,
+                || now.get(),
+                |at| progress.push(at)
+            ),
+            Some(Some(Item::CaptureInitialized))
+        ));
+        assert_eq!(seq, 42);
+        assert_eq!(progress.len(), 8);
+        assert!(progress.windows(2).all(|p| p[1] - p[0] == 40_000));
+        assert!(now.get() - 100_000 > core::STALE_US);
+    }
+    #[test]
+    fn pause_and_resume_are_explicit_and_invalid_commands_fail_closed() {
+        for command in [0, 5, 15, 30, 60] {
+            assert_eq!(capture_fps(command), Some(command));
+        }
+        for command in [1, 2, 3, 255] {
+            assert_eq!(capture_fps(command), None);
+        }
+    }
+    #[test]
+    fn five_fps_uses_two_hundred_ms_without_disabling_capture() {
+        assert_eq!(capture_fps(5), Some(5));
+        assert_eq!(capture_period_us(5), Some(200_000));
+        assert_eq!(capture_period_us(15), Some(66_667));
+        assert_eq!(capture_period_us(30), Some(33_334));
+        assert_eq!(capture_period_us(60), Some(16_667));
+        assert_eq!(capture_period_us(0), Some(66_667));
+        assert_eq!(capture_period_us(255), None);
+    }
+    #[test]
+    fn pressure_heartbeat_keeps_worker_transport_alive_without_pixels() {
+        let bytes = core::worker_packet(source(), 7, Status::Pressure, None, 100);
+        let parsed = header(bytes.as_slice().try_into().unwrap(), source(), 101);
+        assert!(
+            parsed.is_some(),
+            "pressure is a live worker state, not a broken pipe"
+        );
+        let parsed = parsed.unwrap();
+        assert_eq!(parsed.status, Status::Pressure);
+        assert_eq!(parsed.payload, 0);
+    }
     fn source() -> Snapshot {
         Snapshot {
             lease: 9,

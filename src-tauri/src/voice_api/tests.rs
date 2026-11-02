@@ -16,6 +16,39 @@ use super::path_safety::safe_pack_path;
 use super::paths::set_test_voice_root;
 
 #[test]
+fn verified_multi_variant_selection_keeps_audio_and_video_paired() {
+    let root = temp_root("gann-two-variants");
+    set_test_voice_root(Some(root.clone()));
+    let _guard = RootGuard(root.clone());
+    let (id, _, _) = super::test_package::install_two_variants(&root, 981, "kill");
+    activate_if_exists(&id).unwrap();
+    let revision = super::current_announcer_revision().unwrap();
+    let coordinator = std::sync::Arc::new(super::variant_rotation::Coordinator::default());
+    let permit = coordinator.reserve(revision, "kill", std::time::Duration::ZERO).unwrap();
+    let first = super::pack_io::select_announcer_clip_for_revision("kill", Some(revision), permit.last()).unwrap();
+    let first_pair = first.pair.as_ref().unwrap();
+    assert_eq!(first_pair.original, first.path);
+    assert!(first_pair.video.is_file());
+    let first_path = first.path.clone();
+    let first_video = first_pair.video.clone();
+    permit.admitted(first_path.clone());
+    // A preview lookup must not change the last admitted match-event pair.
+    assert!(super::select_announcer_clip("kill").is_some());
+    let permit = coordinator.reserve(revision, "kill", std::time::Duration::ZERO).unwrap();
+    let second = super::pack_io::select_announcer_clip_for_revision("kill", Some(revision), permit.last()).unwrap();
+    assert_ne!(first_path, second.path);
+    let second_pair = second.pair.as_ref().unwrap();
+    assert_eq!(second_pair.original, second.path);
+    assert!(second_pair.video.is_file());
+    assert_ne!(first_video, second_pair.video);
+    drop(permit);
+    let permit = coordinator.reserve(revision, "kill", std::time::Duration::ZERO).unwrap();
+    assert_eq!(permit.last(), Some(first_path.as_path()));
+    assert!(super::pack_io::select_announcer_clip_for_revision("kill", Some(revision + 1), permit.last()).is_none());
+    assert!(super::pack_io::select_announcer_clip_for_revision("death", Some(revision), None).is_none());
+}
+
+#[test]
 fn gann_only_rejects_legacy_manifest_packs_without_changing_selection() {
     let root = temp_root("gann-only-legacy");
     set_test_voice_root(Some(root.clone()));

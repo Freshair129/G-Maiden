@@ -7,11 +7,11 @@ const msg = (id: string, phase: 'start' | 'stop' = 'start', extra = {}) => ({
 })
 
 describe('VRZO visual lifecycle', () => {
-  it('accepts the native maximum 18.2 second playback expiry and rejects later values', () => {
+  it('accepts the bounded decoder grace expiry and rejects later values', () => {
     const update = vi.fn(), c = new VrzoBannerController(update)
-    expect(c.receive(msg('1', 'start', { expires_at_ms: 19_200 }), 3, 1000)).toBe(true)
+    expect(c.receive(msg('1', 'start', { expires_at_ms: 20_200 }), 3, 1000)).toBe(true)
     expect(update.mock.lastCall?.[0]?.id).toBe('1')
-    expect(c.receive(msg('2', 'start', { expires_at_ms: 19_201 }), 3, 1000)).toBeUndefined()
+    expect(c.receive(msg('2', 'start', { expires_at_ms: 20_201 }), 3, 1000)).toBeUndefined()
     expect(update.mock.lastCall?.[0]?.id).toBe('1')
     c.destroy()
   })

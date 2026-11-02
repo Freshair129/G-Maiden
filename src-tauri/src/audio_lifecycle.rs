@@ -20,6 +20,11 @@ pub struct PlaybackLifecycleEvent {
     pub played_audio_sha256: Option<[u8; 32]>,
 }
 pub struct PlaybackLifecycleObserver {
+    pub(crate) native_asset: Option<Arc<crate::gann_native::Asset>>,
+    pub(crate) native_playback: Option<crate::gann_native::Playback>,
+    pub(crate) native_fade: Arc<std::sync::atomic::AtomicBool>,
+    pub(crate) native_scope: Option<Arc<dyn Fn() -> bool + Send + Sync>>,
+    pub(crate) native_pending: Option<Arc<dyn Fn() -> bool + Send + Sync>>,
     pub(crate) mixed: Option<crate::event_media::MixedSelection>,
     pub(crate) visual_scope: Option<(u64, u64, bool, u8)>,
     token: u64,
@@ -28,6 +33,11 @@ pub struct PlaybackLifecycleObserver {
 impl PlaybackLifecycleObserver {
     pub fn new(token: u64, tx: mpsc::SyncSender<PlaybackLifecycleEvent>) -> Self {
         Self {
+            native_asset: None,
+            native_playback: None,
+            native_fade: Arc::new(std::sync::atomic::AtomicBool::new(false)),
+            native_scope: None,
+            native_pending: None,
             token,
             tx,
             mixed: None,

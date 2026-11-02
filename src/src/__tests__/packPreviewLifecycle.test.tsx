@@ -31,9 +31,10 @@ beforeEach(async () => {
   invokeMock.mockClear()
 })
 afterEach(async () => { await act(async () => { root.unmount() }); host.remove(); vi.useRealTimers() })
-it('shows an explicit offline pack preview with independent expiry and no simulated game/audio/advice', async () => {
-  await send('announcer-media-playback', preview(1))
-  expect(view.media).toMatchObject({id:'1',preview:true})
+it('leaves a native offline pack preview to the audio owner without creating duplicate WebView media', async () => {
+  await send('announcer-media-playback', { ...preview(1), renderer: 'native' })
+  expect(view.media).toBeNull()
+  expect(handlers.has('announcer-media-playback')).toBe(false)
   expect(view.current.tick).toBeNull()
   expect(view.current.gsiFresh).toBe(false)
   expect(view.current.matchActive).toBe(false)
@@ -41,11 +42,13 @@ it('shows an explicit offline pack preview with independent expiry and no simula
   await act(async () => { vi.advanceTimersByTime(4801) })
   expect(view.media).toBeNull()
 })
-it('rejects expired and older preview identities without replacing the latest', async () => {
+it('cannot restart the retired WebView path with old or forged preview notifications', async () => {
   await send('announcer-media-playback', preview(2))
   await send('announcer-media-playback', preview(1))
   await send('announcer-media-playback', preview(3, Date.now() - 1))
-  expect(view.media).toMatchObject({id:'2',preview:true})
+  expect(view.media).toBeNull()
+  expect(host.querySelector('video,canvas[data-playback-id]')).toBeNull()
+  expect(invokeMock).not.toHaveBeenCalled()
 })
 it('does not accept untagged live banners as an offline preview', async () => {
   await send('announcer-banner', preview(1))

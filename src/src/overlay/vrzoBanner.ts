@@ -71,8 +71,8 @@ export class VrzoBannerController {
       }
       return
     }
-    // Native bounds the visual to 15 s of audio plus at most 3.2 s of tail.
-    if (id <= this.latest || p.expires_at_ms <= now || p.expires_at_ms > now + 18_200) return
+    // Native bounds audio and the authored tail, plus a decoder watchdog grace.
+    if (id <= this.latest || p.expires_at_ms <= now || p.expires_at_ms > now + 19_200) return
     this.latest = id
     this.completedId = null
     if (this.timer !== null) clearTimeout(this.timer)

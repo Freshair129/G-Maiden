@@ -5,10 +5,13 @@ mod commands;
 mod events;
 mod id_manifest;
 mod playback;
+mod variant_rotation;
+#[cfg(test)]
+pub(crate) use variant_rotation::Coordinator as TestVariantCoordinator;
 #[cfg(test)]
 pub use id_container::container_sha256;
 pub(crate) use playback::{
-    app as playback_app, install as install_playback, play_event, play_selected, verify_visual,
+    app as playback_app, install as install_playback, play_event, play_selected, verify_visual, native_asset,
 };
 mod id_container;
 pub use id_container::import_file;
