@@ -156,3 +156,14 @@ it('preserves every real port, lifecycle, freshness and sensor-age change', asyn
   await send('gsi-status', { ...idleStatus, gsi_freshness: 'fresh', gsi_active: true, in_game: true, dota_running: true })
   expect(currentData.match.gsiFreshness).toBe('fresh')
 })
+
+it('expires HUD status cues and rejects an old-session HUD without losing roster identity', async () => {
+  const hud = { ...session, radiant: [{ cue: 'colored', mean_chroma: 50 }], dire: [] }
+  await send('hero-hud', hud)
+  expect(currentData.heroCv.hud).toEqual(hud)
+  await send('hero-hud', { ...hud, session_epoch: 7, radiant: [] })
+  expect(currentData.heroCv.hud).toEqual(hud)
+  await act(async () => { vi.advanceTimersByTime(1501) })
+  expect(currentData.heroCv.hud).toBeNull()
+  expect(currentData.heroes[1].hero).toBe('Lion')
+})

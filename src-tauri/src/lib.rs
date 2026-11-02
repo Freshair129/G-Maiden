@@ -26,6 +26,8 @@ pub mod damage;
 #[cfg(not(feature = "wgc"))]
 pub mod dxgi;
 mod event_media;
+mod gann_webm;
+mod gann_native;
 mod governor;
 pub mod gsi;
 mod identity;
@@ -67,7 +69,6 @@ mod updater_install_guard_regression;
 mod usage;
 mod utterance;
 mod voice_api;
-mod vrzo_fence;
 mod vrzo_mix;
 mod vrzo_playback;
 mod webview_bootstrap;
@@ -77,6 +78,13 @@ mod webview_bootstrap;
 /// manifest edit.
 #[derive(Default)]
 struct PendingUpdate(std::sync::Mutex<Option<tauri_plugin_updater::Update>>);
+
+#[tauri::command]
+fn set_announcer_presentation_diagnostics(window:tauri::WebviewWindow, enabled:bool)->Result<(),String> {
+    if window.label()!="control" {return Err("Presentation diagnostics require the control window".into());}
+    gann_native::set_presentation_probe(enabled);
+    Ok(())
+}
 static UPDATE_INSTALLING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
 
 fn update_safety() -> update_guard::UpdateSafety {
@@ -233,6 +241,7 @@ fn dispatch_overlay_visibility(
         move |visible| {
             let result = (|| {
                 let visible = visible.ok_or("overlay bootstrap unavailable")?;
+                gann_native::set_visible(visible);
                 let window = apply_app
                     .get_webview_window("overlay")
                     .ok_or("overlay window unavailable")?;
@@ -316,6 +325,7 @@ async fn overlay_bootstrap_ready(window: tauri::WebviewWindow) -> Result<(), Str
                 }
             }
             eprintln!("[G-WebViewBootstrap] window=overlay status=ready trusted_final_url=true");
+            governor::startup_ui_ready();
         }
         Ok(())
     })
@@ -747,7 +757,9 @@ fn record_announcer_visual(
     playback_id: String,
     reason: String,
     frames: u32,
-    dropped: u32,
+    expected_frames: u32,
+    max_lateness_ms: f64,
+    renderer: String,
     first_frame_ms: f64,
     elapsed_ms: f64,
     media_seconds: f64,
@@ -771,7 +783,10 @@ fn record_announcer_visual(
         || playback_id.parse::<u64>().is_err()
         || !matches!(reason.as_str(), "ended" | "cleared" | "error")
         || frames > 10_000
-        || dropped > frames
+        || expected_frames > 10_000
+        || frames > expected_frames
+        || !(0.0..=60_000.0).contains(&max_lateness_ms)
+        || renderer != "webcodecs-webgl"
         || !(-1.0..=30_000.0).contains(&first_frame_ms)
         || !(0.0..=60_000.0).contains(&elapsed_ms)
         || !(0.0..=30.0).contains(&media_seconds)
@@ -780,7 +795,7 @@ fn record_announcer_visual(
     {
         return Err("Invalid visual receipt".into());
     }
-    eprintln!("[G-BannerVisual] playback={playback_id} reason={reason} frames={frames} dropped={dropped} first_frame_ms={first_frame_ms:.1} elapsed_ms={elapsed_ms:.1} media_seconds={media_seconds:.3} warmed={} duration_seconds={:.3} waiting={}", warmed.unwrap_or(false), duration_seconds.unwrap_or(0.0), waiting.unwrap_or(0));
+    eprintln!("[G-BannerVisual] playback={playback_id} reason={reason} renderer={renderer} submitted_frames={frames} expected_frames={expected_frames} max_lateness_ms={max_lateness_ms:.1} compositor_dropped=unmeasured first_frame_ms={first_frame_ms:.1} elapsed_ms={elapsed_ms:.1} media_seconds={media_seconds:.3} warmed={} duration_seconds={:.3} waiting={}", warmed.unwrap_or(false), duration_seconds.unwrap_or(0.0), waiting.unwrap_or(0));
     Ok(())
 }
 
@@ -1364,7 +1379,9 @@ pub(crate) fn save_settings_json(json: &str) -> Result<(), String> {
     // Write-then-rename so a crash mid-write can't truncate the only copy.
     let tmp = path.with_extension("json.tmp");
     std::fs::write(&tmp, json).map_err(|e| e.to_string())?;
-    std::fs::rename(&tmp, &path).map_err(|e| e.to_string())
+    std::fs::rename(&tmp, &path).map_err(|e| e.to_string())?;
+    gann_native::settings(json);
+    Ok(())
 }
 
 #[tauri::command]
@@ -1503,6 +1520,7 @@ pub fn run() {
                 .build(),
         )
         .invoke_handler(tauri::generate_handler![
+            set_announcer_presentation_diagnostics,
             party::party_connect,
             party::party_social_proof,
             party::party_join_social,
@@ -1593,11 +1611,11 @@ pub fn run() {
             // first gameplay tick. The webview later hydrates the same,
             // validated snapshot for Control and Overlay.
             if let Some(settings) = load_settings_json() {
+                gann_native::settings(&settings);
                 if let Err(error) = runtime::apply_startup_settings_json(&settings) {
                     eprintln!("[settings] saved runtime settings were not loaded: {error}");
                 }
             }
-
             // CR-008 WP-2: load the Anthropic API key from the DPAPI secret store
             // into the runtime once at startup. Owned separately from the auth
             // mode so the frontend's mode-sync effect can never clobber it (B2).

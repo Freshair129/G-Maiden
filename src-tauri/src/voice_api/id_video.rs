@@ -2,6 +2,11 @@
 static READS: super::video_reads::ReadSlots = super::video_reads::ReadSlots::new();
 
 pub(crate) fn response(request: tauri::http::Request<Vec<u8>>) -> tauri::http::Response<Vec<u8>> {
+    let origin = request.headers().get("Origin").and_then(|v| v.to_str().ok());
+    let origin = origin.filter(|origin| {
+        matches!(*origin, "http://tauri.localhost" | "https://tauri.localhost" | "tauri://localhost")
+            || (cfg!(debug_assertions) && *origin == "http://localhost:5173")
+    });
     let read = || -> Option<Vec<u8>> {
         if request.method() != tauri::http::Method::GET {
             return None;
@@ -32,11 +37,15 @@ pub(crate) fn response(request: tauri::http::Request<Vec<u8>>) -> tauri::http::R
         Some(bytes.as_ref().clone())
     };
     let bytes = read();
-    tauri::http::Response::builder()
+    let mut response = tauri::http::Response::builder()
         .status(if bytes.is_some() { 200 } else { 404 })
         .header("Content-Type", "video/webm")
         .header("Cache-Control", "no-store")
-        .header("X-Content-Type-Options", "nosniff")
+        .header("X-Content-Type-Options", "nosniff");
+    if let Some(origin) = origin {
+        response = response.header("Access-Control-Allow-Origin", origin).header("Vary", "Origin");
+    }
+    response
         .body(bytes.unwrap_or_default())
         .expect("fixed response headers")
 }

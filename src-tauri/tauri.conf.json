@@ -51,7 +51,7 @@
       }
     ],
     "security": {
-      "csp": "default-src 'self' http://localhost:* ws://localhost:*; frame-src 'none'; connect-src 'self' http://localhost:* ws://localhost:* https://api.opendota.com https://wsseitulmcgnolgsrxgh.supabase.co; script-src 'self' 'wasm-unsafe-eval' http://localhost:*; img-src 'self' data: https://cdn.cloudflare.steamstatic.com; media-src 'self' data: http://g-announcer-video.localhost g-announcer-video:"
+      "csp": "default-src 'self' http://localhost:* ws://localhost:*; frame-src 'none'; connect-src 'self' ipc: http://ipc.localhost http://g-announcer-video.localhost g-announcer-video: http://localhost:* ws://localhost:* https://api.opendota.com https://wsseitulmcgnolgsrxgh.supabase.co; script-src 'self' 'wasm-unsafe-eval' http://localhost:*; img-src 'self' data: https://cdn.cloudflare.steamstatic.com; media-src 'self' data: http://g-announcer-video.localhost g-announcer-video:"
     }
   },
   "bundle": {
@@ -68,6 +68,7 @@
       "binaries/gpu-feeder"
     ],
     "resources": {
+        "native-vpx/THIRD-PARTY-NOTICES.txt": "licenses/libvpx.txt",
       "../models/minimap-detector.onnx": "models/minimap-detector.onnx",
       "../models/labels.json": "models/labels.json"
     }
@@ -75,7 +76,7 @@
   "plugins": {
     "updater": {
       "endpoints": [
-        "https://raw.githubusercontent.com/Freshair129/G-Maiden/main/release/channels/{{target}}.json"
+        "https://raw.githubusercontent.com/Freshair129/G-Maiden/main/release/channels/stable.json"
       ],
       "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDkzNkE0NDgwOTcyOTk0MwpSV1JEbVhJSlNLUTJDYjVMNXRESEpvcDlVKzFiTllWQmxKSnJlSzliQ2p3dXY4aUVxR0lrY2VyQwo="
     }

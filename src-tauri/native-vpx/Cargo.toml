@@ -1,0 +1,10 @@
+[package]
+name = "gann-vpx"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+description = "Bounded in-process GANN VP8/VP9 decoder over native MSVC libvpx"
+
+[build-dependencies]
+cc = "1"
+vcpkg = "0.2"

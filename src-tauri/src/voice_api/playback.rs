@@ -25,6 +25,26 @@ pub(crate) fn verify_visual(selected: &super::AnnouncerClip) -> Result<(), Strin
         .ok_or_else(|| "GANN video is missing or changed".into())
 }
 
+pub(crate) fn native_asset(
+    selected: &super::AnnouncerClip,
+) -> Result<Arc<crate::gann_native::Asset>, String> {
+    let pair = selected.pair.as_ref().ok_or("GANN pair unavailable")?;
+    let bytes = super::video_cache::verified(selected.revision, &pair.video, &pair.video_hash)
+        .ok_or("GANN video is missing or changed")?;
+    let mut asset = crate::gann_native::Asset::new(bytes)?;
+    if asset.video.duration_us
+        > (pair.samples as u64).saturating_mul(1_000_000) / 48000
+            + u64::from(pair.visual_tail_ms) * 1000
+            + 20_000
+    {
+        return Err("GANN video exceeds the declared audio and visual-tail timeline".into());
+    }
+    Arc::get_mut(&mut asset)
+        .ok_or("native asset ownership")?
+        .lease = selected.installation_lease()?;
+    Ok(asset)
+}
+
 pub(crate) fn play_event(
     app: AppHandle,
     event: String,

@@ -8,6 +8,7 @@ export const minimapPreview = new MinimapPreviewDriver({
   read: (leaseId, afterFrameId) => invoke<ArrayBuffer>("read_minimap_preview", { leaseId, afterFrameId }),
   stop: (leaseId) => invoke("stop_minimap_preview", { leaseId }),
 });
+minimapPreview.setFrameRate(15);
 
 let viewers = 0;
 function visibilityChanged() { minimapPreview.setVisible(document.visibilityState !== "hidden"); }

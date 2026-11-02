@@ -36,6 +36,7 @@ it("paints raw pixels directly while React updates only source/status and clears
   }) as unknown as CanvasRenderingContext2D);
   const element = document.createElement("div"), root = createRoot(element);
   try {
+    minimapPreview.setFrameRate(60);
     minimapPreview.setSession(7n, true);
     await act(async () => root.render(<Profiler id="map" onRender={() => { renders++; }}><MinimapCanvas /></Profiler>));
     expect(element.textContent).toContain("ภาพอ้างอิง");
@@ -59,6 +60,7 @@ it("paints raw pixels directly while React updates only source/status and clears
   } finally {
     await act(async () => root.unmount());
     minimapPreview.setSession(null, false);
+    minimapPreview.setFrameRate(15);
     delete (document as unknown as { visibilityState?: string }).visibilityState;
     vi.restoreAllMocks(); vi.unstubAllGlobals();
   }

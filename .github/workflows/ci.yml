@@ -108,6 +108,9 @@ jobs:
           pnpm install --frozen-lockfile
           pnpm -C src install --frozen-lockfile
 
+      - name: Release manifest and packaged updater regression tests
+        run: node --test scripts/releases/channel-manifest.test.mjs
+
       # Doc-graph gate (G1-G3 tooling), one entry point: unit suite +
       # strict scan + G2.5 checklist-exception rule + feature-ledger clean.
       # Runs first: pure node, <30s, catches doc/claim drift before any
@@ -128,6 +131,10 @@ jobs:
       - name: Stage gpu-feeder sidecar
         run: node src-tauri/scripts/stage-gpu-feeder.mjs
 
+      - name: Build pinned native MSVC video decoder
+        shell: pwsh
+        run: ./scripts/setup-native-vpx.ps1
+
       # Fix: cargo clippy directly — not via pnpm exec (clippy is not a Node package)
       - name: Clippy
         run: cargo clippy --manifest-path src-tauri/Cargo.toml --all-targets --locked -- -D warnings
@@ -138,6 +145,7 @@ jobs:
       - name: Rust tests
         run: |
           cargo test --manifest-path src-tauri/gann-package/Cargo.toml --locked
+          cargo test --manifest-path src-tauri/native-vpx/Cargo.toml --locked
           cargo test --manifest-path src-tauri/Cargo.toml --locked
 
       - name: Frontend tests

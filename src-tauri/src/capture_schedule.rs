@@ -6,7 +6,9 @@ pub const FRESHNESS_WATCHDOG_MS: u64 = 500;
 /// Cooperative headroom for audio/preview before the next fresh acquisition.
 /// The caller includes this wait in the next critical cycle's deadline.
 pub fn recovery_ms(active_ms: u64) -> u64 {
-    active_ms.saturating_mul(2).min(100)
+    // Bound CV's cooperative duty cycle before optional preview admission trips.
+    // This wait is still charged to the next decision's unchanged deadline.
+    active_ms.saturating_mul(4).min(100)
 }
 
 pub fn admits_critical(elapsed_ms: u64, pressure: bool, fresh: bool) -> bool {
@@ -33,7 +35,8 @@ mod tests {
     use super::*;
     #[test]
     fn continuous_frames_leave_headroom_without_hiding_latency() {
-        assert_eq!(recovery_ms(30), 60);
+        assert_eq!(recovery_ms(30), 100);
+        assert_eq!(recovery_ms(20), 80);
         assert_eq!(recovery_ms(70), 100);
         assert_eq!(recovery_ms(0), 0);
         assert_eq!(recovery_ms(u64::MAX), 100);

@@ -251,20 +251,10 @@ pub fn try_interrupt_cached_before(
         receipt: PlaybackReceipt::new(|_| {}),
         lifecycle: Some(observer),
     };
-    let Some(sender) = AUDIO_SENDER.get() else {
-        return false;
-    };
-    let Ok(sender) = sender.try_lock() else {
-        return false;
-    };
     let (accepted, admission) = mpsc::sync_channel(1);
-    if sender
-        .send(Cmd::Critical(clip, deadline, accepted, observation))
-        .is_err()
-    {
+    if !prepare_critical_command(clip, deadline, accepted, observation) {
         return false;
     }
-    drop(sender);
     let Some(remaining) = deadline.checked_duration_since(Instant::now()) else {
         return false;
     };
@@ -298,7 +288,31 @@ fn should_fade_announcer(previous: bool, incoming: bool, priority: Priority) -> 
 }
 
 type AnnouncerScope = (u64, u64, bool, u8);
-type RetiringVoice = (Sink, Instant, Priority, AnnouncerScope);
+enum Voice {
+    Rodio(Sink),
+    Native(crate::gann_native::Playback),
+}
+impl Voice {
+    fn stop(&self) {
+        match self {
+            Self::Rodio(s) => s.stop(),
+            Self::Native(s) => s.stop(),
+        }
+    }
+    fn empty(&self) -> bool {
+        match self {
+            Self::Rodio(s) => s.empty(),
+            Self::Native(s) => s.empty(),
+        }
+    }
+    fn set_volume(&self, volume: f32) {
+        match self {
+            Self::Rodio(s) => s.set_volume(volume),
+            Self::Native(s) => s.set_volume(volume),
+        }
+    }
+}
+type RetiringVoice = (Voice, Instant, Priority, AnnouncerScope);
 
 fn announcer_scope_current((revision, epoch, preview, owner): AnnouncerScope) -> bool {
     crate::voice_api::announcer_revision_current(revision)
@@ -311,6 +325,12 @@ fn announcer_scope_current((revision, epoch, preview, owner): AnnouncerScope) ->
 }
 
 enum Cmd {
+    ReserveCritical(
+        Arc<CriticalClip>,
+        Instant,
+        mpsc::SyncSender<bool>,
+        PlaybackObservation,
+    ),
     Play(PathBuf, Priority),
     Prepared(
         PathBuf,
@@ -345,7 +365,7 @@ struct PlaybackTrace {
     started: Instant,
     duration: Option<Duration>,
     priority: Priority,
-    render: Arc<render::Stats>,
+    render: Option<Arc<render::Stats>>,
 }
 fn finish_trace(trace: &mut Option<PlaybackTrace>, reason: &str) {
     if let Some(trace) = trace.take() {
@@ -356,10 +376,12 @@ fn finish_trace(trace: &mut Option<PlaybackTrace>, reason: &str) {
             trace.duration.unwrap_or_default().as_millis(),
             trace.priority
         );
-        eprintln!("[G-Maiden audio] phase=render_diagnostics mmcss={} max_consumption_gap_ms={:.1} gaps_over_50ms={} (not audible-output proof)",
-            trace.render.mmcss.load(Ordering::Relaxed),
-            trace.render.max_gap_us.load(Ordering::Relaxed) as f64 / 1000.0,
-            trace.render.gaps_over_50ms.load(Ordering::Relaxed));
+        if let Some(render) = trace.render {
+            eprintln!("[G-Maiden audio] phase=render_diagnostics mmcss={} max_consumption_gap_ms={:.1} gaps_over_50ms={} (not audible-output proof)",
+                render.mmcss.load(Ordering::Relaxed),
+                render.max_gap_us.load(Ordering::Relaxed) as f64 / 1000.0,
+                render.gaps_over_50ms.load(Ordering::Relaxed));
+        }
     }
 }
 
@@ -371,16 +393,24 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
     };
 
     AUDIO_READY.store(true, Ordering::Release);
-    let mut sink: Option<Sink> = None;
+    let mut sink: Option<Voice> = None;
     let mut current_fade: Option<Arc<std::sync::atomic::AtomicBool>> = None;
     let mut current_scope = None;
     let mut retiring: Option<RetiringVoice> = None;
     let mut current_priority = Priority::Cosmetic;
+    let mut critical_preparing: Option<Instant> = None;
     let mut trace = None;
     let mut lifecycle =
         audio_lifecycle::Lifecycle::new(lifecycle_current().clone(), audio_generation().clone());
 
     loop {
+        if critical_preparing.is_some_and(|until| Instant::now() >= until) {
+            critical_preparing = None;
+            if sink.is_none() {
+                current_priority = Priority::Cosmetic;
+                ACTIVE_PRIORITY.store(current_priority.as_u8(), Ordering::Relaxed);
+            }
+        }
         if retiring.as_ref().is_some_and(|(s, started, _, scope)| {
             s.empty()
                 || started.elapsed() >= Duration::from_millis(fade::FADE_MS + 50)
@@ -398,6 +428,17 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
             finish_trace(&mut trace, "scope_cancelled");
             current_fade = None;
             current_scope = None;
+            current_priority = Priority::Cosmetic;
+            ACTIVE_PRIORITY.store(Priority::Cosmetic.as_u8(), Ordering::Relaxed);
+            PLAYING.store(false, Ordering::Release);
+        }
+        if sink
+            .as_ref()
+            .is_some_and(|s| matches!(s,Voice::Native(p) if p.audio_done()))
+            && current_lifecycle_playback_id() != 0
+        {
+            lifecycle.finish(PlaybackLifecyclePhase::Completed);
+            finish_trace(&mut trace, "completed");
             current_priority = Priority::Cosmetic;
             ACTIVE_PRIORITY.store(Priority::Cosmetic.as_u8(), Ordering::Relaxed);
             PLAYING.store(false, Ordering::Release);
@@ -435,10 +476,46 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
             other => (other, None, None, None),
         };
         match cmd {
+            Cmd::ReserveCritical(clip, deadline, accepted, observation) => {
+                if Instant::now() >= deadline {
+                    continue;
+                }
+                let Some(guard) = output_admission() else {
+                    continue;
+                };
+                let committed = attempt_commit_if(
+                    || Instant::now() < deadline,
+                    |commit| (observation.admit)(commit),
+                    || {
+                        preparation::cancel_up_to(Priority::Normal);
+                        if let Some((voice, _, _, _)) = retiring.take() {
+                            voice.stop();
+                        }
+                        if let Some(voice) = sink.take() {
+                            voice.stop();
+                        }
+                        lifecycle.finish(PlaybackLifecyclePhase::Preempted);
+                        finish_trace(&mut trace, "critical_reserved");
+                        current_fade = None;
+                        current_scope = None;
+                        current_priority = Priority::Critical;
+                        critical_preparing = Some(deadline);
+                        ACTIVE_PRIORITY.store(Priority::Critical.as_u8(), Ordering::Relaxed);
+                        PLAYING.store(false, Ordering::Release);
+                    },
+                );
+                drop(guard);
+                if committed {
+                    launch_critical_preparation(clip, deadline, accepted, observation);
+                }
+            }
             Cmd::Critical(..) | Cmd::Prepared(..) => {
                 unreachable!("playback command is normalized above")
             }
             Cmd::StopAtMost(ceiling) => {
+                if ceiling >= Priority::Critical {
+                    critical_preparing = None;
+                }
                 if retiring
                     .as_ref()
                     .is_some_and(|(_, _, priority, _)| should_cancel_current(*priority, ceiling))
@@ -461,6 +538,7 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                 }
             }
             Cmd::Stop => {
+                critical_preparing = None;
                 if let Some((s, _, _, _)) = retiring.take() {
                     s.stop();
                 }
@@ -490,15 +568,35 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                     .as_ref()
                     .and_then(|o| o.lifecycle.as_ref())
                     .and_then(|o| o.visual_scope);
-                let next_fade =
-                    incoming_announcer.then(|| Arc::new(std::sync::atomic::AtomicBool::new(false)));
+                let next_fade = observation
+                    .as_ref()
+                    .and_then(|o| o.lifecycle.as_ref())
+                    .map(|o| o.native_fade.clone());
+                let native = observation
+                    .as_mut()
+                    .and_then(|o| o.lifecycle.as_mut())
+                    .and_then(|o| o.native_playback.take());
+                if native.as_ref().is_some_and(|p| p.empty()) {
+                    continue;
+                }
+                if observation
+                    .as_ref()
+                    .and_then(|o| o.lifecycle.as_ref())
+                    .is_some_and(|o| o.native_asset.is_some())
+                    && native.is_none()
+                {
+                    eprintln!("[G-NativeMedia] phase=rejected reason=native_pair_unready");
+                    continue;
+                }
                 if critical
                     .as_ref()
                     .is_some_and(|(deadline, _, _)| Instant::now() >= *deadline)
                 {
                     continue;
                 }
-                if sink.is_some() && !should_accept_incoming(current_priority, priority) {
+                if (sink.is_some() || critical_preparing.is_some())
+                    && !should_accept_incoming(current_priority, priority)
+                {
                     continue;
                 }
                 let fence = prepared.as_ref().map(|pcm| pcm.fence.clone());
@@ -554,7 +652,12 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                 if !crate::tts::stop_for_clip(priority, deadline) {
                     continue;
                 }
-                match Sink::try_new(&handle) {
+                let output = if let Some(native) = native {
+                    Ok(Voice::Native(native))
+                } else {
+                    Sink::try_new(&handle).map(Voice::Rodio)
+                };
+                match output {
                     Ok(s) => {
                         s.set_volume(VOLUME.load(Ordering::Relaxed) as f32 / 100.0);
                         if critical
@@ -615,9 +718,16 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                                         started: Instant::now(),
                                         duration: source.total_duration(),
                                         priority,
-                                        render: render_stats.clone(),
+                                        render: matches!(&s, Voice::Rodio(_))
+                                            .then(|| render_stats.clone()),
                                     });
-                                    s.append(render::RenderSource::new(source, render_stats));
+                                    match &s {
+                                        Voice::Rodio(s) => s.append(render::RenderSource::new(
+                                            source,
+                                            render_stats,
+                                        )),
+                                        Voice::Native(s) => s.start(),
+                                    }
                                     sink = Some(s);
                                     current_priority = priority;
                                     ACTIVE_PRIORITY.store(priority.as_u8(), Ordering::Relaxed);
@@ -627,6 +737,7 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                         );
                         drop(_output_guard);
                         if committed {
+                            critical_preparing = None;
                             if previous_trace.is_some() {
                                 lifecycle.finish(if retired_previous {
                                     PlaybackLifecyclePhase::Retiring
@@ -663,13 +774,98 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
 
 fn send(cmd: Cmd) {
     match &cmd {
-        Cmd::Stop => preparation::cancel_up_to(Priority::Normal),
+        Cmd::Stop => preparation::cancel_up_to(Priority::Critical),
         Cmd::StopAtMost(ceiling) => preparation::cancel_up_to(*ceiling),
         _ => {}
     }
     if let Ok(tx) = sender().lock() {
         let _ = tx.send(cmd);
     }
+}
+
+fn prepare_critical_command(
+    clip: Arc<CriticalClip>,
+    deadline: Instant,
+    accepted: mpsc::SyncSender<bool>,
+    mut observation: PlaybackObservation,
+) -> bool {
+    let fence = preparation::critical_fence();
+    if let Some(observer) = observation.lifecycle.as_mut() {
+        let pending = fence.clone();
+        observer.native_pending = Some(Arc::new(move || {
+            Instant::now() < deadline && pending.is_current()
+        }));
+    }
+    let admit = observation.admit;
+    observation.admit = Box::new(move |commit| {
+        if fence.is_current() {
+            admit(&mut || {
+                if fence.is_current() {
+                    commit();
+                }
+            });
+        }
+    });
+    let Ok(sender) = sender().try_lock() else {
+        return false;
+    };
+    sender
+        .send(Cmd::ReserveCritical(clip, deadline, accepted, observation))
+        .is_ok()
+}
+
+fn launch_critical_preparation(
+    clip: Arc<CriticalClip>,
+    deadline: Instant,
+    accepted: mpsc::SyncSender<bool>,
+    mut observation: PlaybackObservation,
+) -> bool {
+    static COUNT: std::sync::atomic::AtomicUsize = std::sync::atomic::AtomicUsize::new(0);
+    struct Slot;
+    impl Drop for Slot {
+        fn drop(&mut self) {
+            COUNT.fetch_sub(1, Ordering::AcqRel);
+        }
+    }
+    if COUNT
+        .fetch_update(Ordering::AcqRel, Ordering::Acquire, |n| {
+            (n < 2).then_some(n + 1)
+        })
+        .is_err()
+    {
+        return false;
+    }
+    let slot = Slot;
+    std::thread::Builder::new()
+        .name("g-critical-prepare".into())
+        .spawn(move || {
+            let _slot = slot;
+            if Instant::now() >= deadline {
+                return;
+            }
+            if let Some(observer) = observation.lifecycle.as_mut() {
+                if let Some(asset) = observer.native_asset.as_ref() {
+                    match crate::gann_native::prepare(
+                        asset.clone(),
+                        clip.samples.clone(),
+                        observer.native_fade.clone(),
+                        observer.native_scope.clone(),
+                        observer.native_pending.clone(),
+                        true,
+                    ) {
+                        Ok(playback) => observer.native_playback = Some(playback),
+                        Err(error) => {
+                            eprintln!("[G-NativeMedia] phase=rejected error={error}");
+                            return;
+                        }
+                    }
+                }
+            }
+            if Instant::now() < deadline {
+                send(Cmd::Critical(clip, deadline, accepted, observation));
+            }
+        })
+        .is_ok()
 }
 
 pub fn play_observed(
@@ -726,12 +922,12 @@ pub fn play_observed_with_lifecycle(
         .flatten();
         if let Some(clip) = clip {
             let (accepted, _) = mpsc::sync_channel(1);
-            send(Cmd::Critical(
+            prepare_critical_command(
                 clip,
                 Instant::now() + Duration::from_millis(250),
                 accepted,
                 observation,
-            ));
+            );
         } else {
             eprintln!("[G-AnnouncerMedia] phase=rejected reason=critical_snapshot_unready");
         }
