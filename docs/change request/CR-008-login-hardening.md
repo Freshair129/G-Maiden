@@ -149,6 +149,10 @@ attempt cannot write or delete the primary session.
   This is evidence about the client-returned URL only; it does **not** establish whether hosted
   Supabase Auth or Google creates and validates provider transaction state elsewhere. Do not inject
   an application value into provider `state`.
+- The current `auth.ts` requires `state` in that returned URL before it arms the native callback gate
+  or opens the system browser. Thus the synthetic 2.110.0 probe reaches the local fail-closed error
+  before browser sign-in; this is a verified client compatibility gap, not evidence about provider
+  state handling.
 - Each Supabase client accepts a storage adapter and `storageKey`. A distinct per-attempt client and
   isolated DPAPI-backed key namespace could keep that attempt's PKCE verifier and exchanged session
   apart from the primary session, provided the same client is used to start and exchange that flow.
