@@ -161,6 +161,12 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
         reset(s);
         s.opening_closed = true;
     }
+    // The match clock is the only ordering field carried into GameTick. A
+    // delayed sample with an earlier clock must not rewind kill/death baselines
+    // and replay an already observed GANN event on the next current sample.
+    if s.seen && tick.clock_time < s.clock {
+        return out;
+    }
 
     // match boundary
     if tick.in_game && (!s.in_game || !s.seen) {
@@ -469,6 +475,27 @@ mod tests {
             MatchLifecycle::Live,
         );
         assert!(resumed.contains(&"double_kill".to_string()));
+    }
+
+    #[test]
+    fn regressing_game_clock_tick_cannot_rewind_event_baselines() {
+        let mut state = State::default();
+        assert!(step(&mut state, &tick(true, 20, 0, true)).is_empty());
+        assert_eq!(
+            step(&mut state, &tick(true, 30, 1, true)),
+            vec!["first_blood", "kill"]
+        );
+
+        // A delayed snapshot from earlier in the same match must be ignored;
+        // rewinding kills would replay a GANN event on the next current tick.
+        assert!(step(&mut state, &tick(true, 25, 0, true)).is_empty());
+        let current = step(&mut state, &tick(true, 31, 1, true));
+        assert!(
+            current.is_empty(),
+            "stale GSI sample replayed an event: {current:?}"
+        );
+        assert_eq!(state.kills, 1);
+        assert_eq!(state.clock, 31);
     }
 
     #[test]

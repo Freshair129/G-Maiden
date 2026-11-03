@@ -2,8 +2,8 @@
 title: "G-Maiden — Engineering Spec"
 doc_id: "engineering-spec"
 status: "active"
-version: "0.3.4"
-updated: 2026-10-30
+version: "0.3.5"
+updated: 2026-11-03
 owner: "Boss"
 source_of_truth: false
 complexity: "C-3"
@@ -76,6 +76,7 @@ admission, T3 = loopback first audible sample. รวม acquisition wait ห้
 - **Runtime:** pure Rust; ไม่เรียก cloud หรือ SLM. Current defaults are sensitivity-based (Med 0.65/0.40).
 - **Speech priority contract:** `Critical = danger | gank | revision`, `Normal = manual/advice speech`, `Cosmetic = announcer events`; cosmetic ห้ามทับ critical
 - **Level-up milestone contract:** announcer/persona path ใช้จุด `6, 12, 18, 25` และถือว่า "triggered" เมื่อข้าม milestone แม้ปลายทางจะไม่ตรง milestone พอดี (`11 -> 13` ต้องยัง fire)
+- **Announcer ordering contract:** ภายใน match session เดียวกัน ถ้า verified `GameTick` มี `map.clock_time` ต่ำกว่า tick ที่ยอมรับก่อนหน้า ให้ทิ้ง sample ก่อนแก้ event baseline หรือส่ง GANN event ID; ห้าม replay `kill`/streak จาก sample เก่า. ค่า clock เท่ากันยังใช้เรียงลำดับไม่ได้ จึงไม่อ้าง guarantee สำหรับการสลับลำดับภายในวินาทีเดียวกัน.
 - **Latency harness contract:** ต้องมี harness ที่วัดเส้นทาง in-process `GSI JSON parse -> team-side routing -> signal evaluate -> audio enqueue intent` เพิ่มจาก compute-only harness
 
 ### 2.4 G-Master (Strategic & Financial Advisor) — non-critical
@@ -352,3 +353,4 @@ Local visual receipts distinguish warmed/cold, wait count, first nontransparent 
 | 0.3.2 | 2026-10-29 | Record VRZO playback event, decoded clip identity, preview command and unverified native acceptance. |
 | 0.3.3 | 2026-10-30 | Record larger60fps ID visuals, predictive bounded cache and owner-authorized visual/audio retirement. |
 | 0.3.4 | 2026-10-30 | Record revision4 paused decoder preparation, VP8 media and bounded natural-completion grace. |
+| 0.3.5 | 2026-11-03 | Define same-session announcer behavior for regressed GSI match-clock samples; equal-clock ordering remains unknown. |

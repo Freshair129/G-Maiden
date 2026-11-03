@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-01T16:36:27.633Z",
+  "generatedAt": "2026-11-03T16:48:58.424Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -2715,133 +2715,133 @@
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/operations/vrzo-banner-validation.md",
       "type": "wikilink",
-      "line": 181
+      "line": 182
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
       "type": "wikilink",
-      "line": 181
+      "line": 182
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "type": "wikilink",
-      "line": 292
+      "line": 293
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 293
+      "line": 294
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 309
+      "line": 310
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/data/provenance.json",
       "type": "symbol",
-      "line": 87
+      "line": 88
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "tools/data-provenance/verify_manifest.py",
       "type": "symbol",
-      "line": 88
+      "line": 89
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 108
+      "line": 109
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/master.rs",
       "type": "symbol",
-      "line": 136
+      "line": 137
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 183
+      "line": 184
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
-      "line": 189
+      "line": 190
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/providers.mjs",
       "type": "symbol",
-      "line": 272
+      "line": 273
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/config.json",
       "type": "symbol",
-      "line": 272
+      "line": 273
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "orchestration/engine.mjs",
       "type": "symbol",
-      "line": 272
+      "line": 273
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/companion.ts",
       "type": "symbol",
-      "line": 277
+      "line": 278
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildTelemetry.ts",
       "type": "symbol",
-      "line": 279
+      "line": 280
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildWeekly.ts",
       "type": "symbol",
-      "line": 279
+      "line": 280
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildInsights.ts",
       "type": "symbol",
-      "line": 279
+      "line": 280
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/live/buildHistory.ts",
       "type": "symbol",
-      "line": 279
+      "line": 280
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 282
+      "line": 283
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 284
+      "line": 285
     },
     {
       "from": "docs/architecture/engineering-spec.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 284
+      "line": 285
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
@@ -9727,7 +9727,7 @@
     },
     {
       "file": "docs/architecture/engineering-spec.md",
-      "line": 277,
+      "line": 278,
       "reason": "anchor-symbol-mismatch",
       "target": "src/src/companion.ts",
       "anchor": 941,
@@ -11334,7 +11334,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-01T16:36:28.302Z",
+    "generatedAt": "2026-11-03T16:49:06.057Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,
