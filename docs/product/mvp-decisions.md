@@ -2,7 +2,7 @@
 title: "G-Maiden MVP — Scope, Access, Data and Quality Decisions"
 doc_id: "mvp-decisions"
 status: "accepted"
-version: "0.8.0"
+version: "0.8.1"
 updated: "2026-11-03"
 owner: "Boss"
 approved_by: "Boss — explicit owner instruction in conversation"
@@ -87,7 +87,7 @@ Consent toggle, match/session generation และ backend เป็นส่ว
 
 On 2026-11-03 the Owner approved the policy direction: peer skill status may be shown only with a separate, explicit skill-sharing consent that is off by default, for a verified friend on the same team and in the same match; stale or unverifiable data is unknown. Voice chat is deferred. This is approval of scope constraints only. It does not revise the MVP-005A or FEAT-G-PARTY data allowlist, authorize live sharing, or establish that the current boolean presentation flags verify identity or consent.
 
-The existing peer route remains limited to its documented own-player `Stats`/`SharedSample` fields and bounded session metadata. No peer skill fields may enter IPC, `Stats`, `SharedSample`, `SyncRequest`, relay serialization, persistence, AI, Memory, or G-Log until a versioned contract is proposed and reviewed. Before that change, resolve the verified-friend identity binding, consent lifecycle/revocation semantics, match/team/session and reconnect fences, and skill status/freshness schema. Require a provenance-labeled real player-mode fixture demonstrating own-hero attribution; synthetic fixtures do not satisfy this gate. The local `peerSkillPresentation` helper is a testable presentation guard only and does not close these requirements.
+The existing peer route remains limited to its documented own-player `Stats`/`SharedSample` fields and bounded session metadata. No peer skill fields may enter IPC, `Stats`, `SharedSample`, `SyncRequest`, relay serialization, persistence, AI, Memory, or G-Log until a versioned contract is proposed and reviewed. Before that change, resolve the verified-friend identity binding, consent lifecycle/revocation semantics, match/team/session and reconnect fences, and skill status/freshness schema. Require a provenance-labeled real player-mode fixture demonstrating own-hero attribution; synthetic fixtures do not satisfy this gate. The local `peerSkillPresentation` helper is a testable presentation guard only and does not close these requirements. Its input contract is a detached, data-only DTO from a trusted producer; it rechecks source stability and uses one clone for both authorization and displayed skills. Structural checks do not authenticate that producer or prove identity/consent. No live peer-data caller is authorized.
 
 ## MVP-005B — G-Friends social contract
 
@@ -175,3 +175,4 @@ MVP-007 reconcile PRD/SRS/AGENTS/CLAUDE ตามมตินี้. งาน c
 | 0.6.0 | 2026-11-01 | เพิ่ม Owner-authorized G-Party peer route พร้อม consent/allowlist/match-team/freshness boundaries แยกจาก AI; รักษา MVP tasks, raw-data denylist และ pending native/live acceptance. |
 | 0.7.0 | 2026-11-01 | เพิ่ม G-Friends เป็น optional social extension ตาม CR-038 แยก friendship/presence/profile-link/GSI consent และ private persistence โดยไม่เปลี่ยน MVP parent tasks หรืออ้าง live/deployed acceptance. |
 | 0.8.0 | 2026-11-03 | Record Owner-approved CR-039 peer-skill scope as a proposal only; preserve the current own-stat allowlist pending identity, protocol, consent-lifecycle, and real player-mode provenance gates. |
+| 0.8.1 | 2026-11-03 | Clarify the peer-skill helper's trusted detached DTO precondition and require one stable snapshot for authorization and display; keep the existing allowlist and live-sharing gates unchanged. |

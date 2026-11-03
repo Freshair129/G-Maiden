@@ -148,6 +148,7 @@ export function memberPresentation(member: PartyMember, status: PartyStatus, ela
   return { state: "live", sample: member.sample, ageMs };
 }
 
+/** DTO shape only; trusted integrations must validate and detach values before calling the presentation helper. */
 export interface PeerSkillEvidence {
   skills: readonly string[] | null;
   skillShareConsent: boolean;
@@ -177,15 +178,14 @@ export type PeerSkillPresentation =
   | { state: "unknown"; skills: null; reason: PeerSkillPresentationReason; ageMs: number | null };
 
 /**
- * Presentation-only gate over an exact-shape own-data record. It rejects
- * accessors and requires a detached structured clone before using evidence.
- * Boolean evidence flags are assertions; they do not authenticate peer
- * identity, friendship or consent. A trusted producer must establish those
- * facts before calling this helper. Reconnect invalidation and session-
- * generation fencing remain future integration requirements; `connected`
- * alone does not bind a sample to the current session. This is not a security
- * boundary against arbitrary code running in the same process and must not
- * publish peer data.
+ * Presentation-only gate. Its contract requires a detached, data-only DTO from
+ * a trusted producer; callers must not pass raw or untrusted JavaScript values.
+ * This helper checks shape and source stability, then uses one detached clone
+ * for both authorization and displayed skills. It cannot authenticate the
+ * producer, identity, friendship or consent, and is not a security boundary
+ * against arbitrary code in the same process. Reconnect/session-generation
+ * fencing remains future integration work; `connected` alone does not bind a
+ * sample to the current session. This helper must not publish peer data.
  */
 export function peerSkillPresentation(input: unknown): PeerSkillPresentation {
   const unknown = (reason: PeerSkillPresentationReason, ageMs: number | null = null): PeerSkillPresentation => ({
@@ -194,73 +194,110 @@ export function peerSkillPresentation(input: unknown): PeerSkillPresentation {
 
   try {
     if (input === null || typeof input !== "object" || Array.isArray(input)) return unknown("invalid_evidence");
-    const descriptors = Object.getOwnPropertyDescriptors(input);
-    const ownValue = (key: string): unknown => {
-      const descriptor = descriptors[key];
-      return descriptor && Object.prototype.hasOwnProperty.call(descriptor, "value") ? descriptor.value : undefined;
-    };
-
-    if (ownValue("skillShareConsent") !== true) return unknown("consent_required");
+    const descriptors = Object.getOwnPropertyDescriptors(input) as unknown as Record<string, PropertyDescriptor>;
     const prototype = Object.getPrototypeOf(input);
-    if (prototype !== Object.prototype && prototype !== null) return unknown("invalid_evidence");
-    if (ownValue("verifiedFriend") !== true) return unknown("friend_unverified");
-    if (ownValue("sameMatch") !== true || ownValue("sameTeam") !== true) return unknown("scope_unverified");
-    if (ownValue("sourceAttributionVerified") !== true) return unknown("source_unverified");
-    if (ownValue("partyStatus") !== "connected") return unknown("party_unavailable");
 
     const evidenceKeys = [
       "skills", "skillShareConsent", "verifiedFriend", "sameMatch", "sameTeam",
       "sourceAttributionVerified", "partyStatus", "sampleAgeMsAtObservation",
       "observedAtMonotonicMs", "nowMonotonicMs",
     ];
-    const descriptorKeys = Reflect.ownKeys(descriptors);
-    if (descriptorKeys.length !== evidenceKeys.length
-      || evidenceKeys.some((key) => !Object.prototype.hasOwnProperty.call(descriptors, key))) {
+    const hasExactDataFields = (fieldDescriptors: Record<string, PropertyDescriptor>): boolean => {
+      const keys = Reflect.ownKeys(fieldDescriptors);
+      return keys.length === evidenceKeys.length
+        && evidenceKeys.every((key) => {
+          const descriptor = fieldDescriptors[key];
+          return descriptor
+            && Object.prototype.hasOwnProperty.call(descriptor, "value")
+            && descriptor.enumerable;
+        });
+    };
+    const ownValue = (fieldDescriptors: Record<string, PropertyDescriptor>, key: string): unknown => {
+      const descriptor = fieldDescriptors[key];
+      return descriptor && Object.prototype.hasOwnProperty.call(descriptor, "value") ? descriptor.value : undefined;
+    };
+
+    if (ownValue(descriptors, "skillShareConsent") !== true) return unknown("consent_required");
+    if (ownValue(descriptors, "verifiedFriend") !== true) return unknown("friend_unverified");
+    if (ownValue(descriptors, "sameMatch") !== true || ownValue(descriptors, "sameTeam") !== true) {
+      return unknown("scope_unverified");
+    }
+    if (ownValue(descriptors, "sourceAttributionVerified") !== true) return unknown("source_unverified");
+    if (ownValue(descriptors, "partyStatus") !== "connected") return unknown("party_unavailable");
+    if (prototype !== Object.prototype && prototype !== null) return unknown("invalid_evidence");
+    if (!hasExactDataFields(descriptors)) return unknown("invalid_evidence");
+
+    const inputSkills = ownValue(descriptors, "skills");
+    const readDataSkills = (value: unknown): string[] | null => {
+      if (!Array.isArray(value)) return null;
+      const skillDescriptors = Object.getOwnPropertyDescriptors(value) as unknown as Record<string, PropertyDescriptor>;
+      const skillKeys = Reflect.ownKeys(skillDescriptors);
+      const lengthDescriptor = skillDescriptors.length;
+      if (!lengthDescriptor || !Object.prototype.hasOwnProperty.call(lengthDescriptor, "value")
+        || typeof lengthDescriptor.value !== "number" || !Number.isSafeInteger(lengthDescriptor.value)
+        || lengthDescriptor.value === 0 || skillKeys.length !== lengthDescriptor.value + 1) return null;
+
+      const skills: string[] = [];
+      for (let index = 0; index < lengthDescriptor.value; index += 1) {
+        const descriptor = skillDescriptors[index];
+        if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value") || !descriptor.enumerable) {
+          return null;
+        }
+        const skill = descriptor.value as unknown;
+        if (typeof skill !== "string" || skill.length === 0 || skill.trim() !== skill) return null;
+        skills.push(skill);
+      }
+      return skills;
+    };
+
+    // Inspect nested data without invoking accessors; a Proxy may run code here.
+    // Capture its possible source mutations before any authorization is trusted.
+    const preflightSkills = readDataSkills(inputSkills);
+    if (!preflightSkills) return unknown("invalid_sample");
+    const sourceIsStable = (): boolean => {
+      if (Object.getPrototypeOf(input) !== prototype) return false;
+      const current = Object.getOwnPropertyDescriptors(input) as unknown as Record<string, PropertyDescriptor>;
+      if (!hasExactDataFields(current)) return false;
+      return evidenceKeys.every((key) => {
+        const before = descriptors[key];
+        const after = current[key];
+        return Object.is(before.value, after.value)
+          && before.enumerable === after.enumerable
+          && before.configurable === after.configurable
+          && before.writable === after.writable;
+      });
+    };
+    if (!sourceIsStable()) return unknown("invalid_evidence");
+
+    // The detached snapshot, rather than values read before cloning, is the only
+    // source for both authorization and display. Proxy inputs fail to clone.
+    const snapshot = structuredClone(input);
+    if (!sourceIsStable()) return unknown("invalid_evidence");
+    if (snapshot === null || typeof snapshot !== "object" || Array.isArray(snapshot)) {
       return unknown("invalid_evidence");
     }
-    for (const key of evidenceKeys) {
-      const descriptor = descriptors[key];
-      if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value") || !descriptor.enumerable) {
-        return unknown("invalid_evidence");
-      }
+    const snapshotDescriptors = Object.getOwnPropertyDescriptors(snapshot) as unknown as Record<string, PropertyDescriptor>;
+    if (!hasExactDataFields(snapshotDescriptors)) return unknown("invalid_evidence");
+    const snapshotValue = (key: string): unknown => ownValue(snapshotDescriptors, key);
+
+    if (snapshotValue("skillShareConsent") !== true) return unknown("consent_required");
+    if (snapshotValue("verifiedFriend") !== true) return unknown("friend_unverified");
+    if (snapshotValue("sameMatch") !== true || snapshotValue("sameTeam") !== true) {
+      return unknown("scope_unverified");
     }
+    if (snapshotValue("sourceAttributionVerified") !== true) return unknown("source_unverified");
+    if (snapshotValue("partyStatus") !== "connected") return unknown("party_unavailable");
 
-    const rawSkills = ownValue("skills");
-    if (!Array.isArray(rawSkills)) return unknown("invalid_sample");
-    const skillDescriptors = Object.getOwnPropertyDescriptors(rawSkills) as unknown as PropertyDescriptorMap;
-    const skillKeys = Reflect.ownKeys(skillDescriptors);
-    const lengthDescriptor = skillDescriptors.length;
-    if (!lengthDescriptor || !Object.prototype.hasOwnProperty.call(lengthDescriptor, "value")
-      || typeof lengthDescriptor.value !== "number" || !Number.isSafeInteger(lengthDescriptor.value)
-      || lengthDescriptor.value === 0 || skillKeys.length !== lengthDescriptor.value + 1) return unknown("invalid_sample");
+    const skills = readDataSkills(snapshotValue("skills"));
+    if (!skills || skills.length !== preflightSkills.length
+      || skills.some((skill, index) => skill !== preflightSkills[index])) return unknown("invalid_evidence");
 
-    const skillCount = lengthDescriptor.value;
-    const skills: string[] = [];
-    for (let index = 0; index < skillCount; index += 1) {
-      const descriptor = skillDescriptors[index];
-      if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value") || !descriptor.enumerable) {
-        return unknown("invalid_sample");
-      }
-      const skill = descriptor.value as unknown;
-      if (typeof skill !== "string" || skill.length === 0 || skill.trim() !== skill) return unknown("invalid_sample");
-      skills.push(skill);
-    }
-
-    // Data-only preflight above avoids invoking accessors. structuredClone
-    // supplies the stable snapshot and rejects Proxy records/arrays.
-    const snapshot = structuredClone(input) as Record<string, unknown>;
-    if (snapshot.skillShareConsent !== true) return unknown("consent_required");
-    if (snapshot.verifiedFriend !== true) return unknown("friend_unverified");
-    if (snapshot.sameMatch !== true || snapshot.sameTeam !== true) return unknown("scope_unverified");
-    if (snapshot.sourceAttributionVerified !== true) return unknown("source_unverified");
-    if (snapshot.partyStatus !== "connected") return unknown("party_unavailable");
-
-    const sampleAgeMsAtObservation = snapshot.sampleAgeMsAtObservation;
+    const sampleAgeMsAtObservation = snapshotValue("sampleAgeMsAtObservation");
     if (typeof sampleAgeMsAtObservation !== "number" || !Number.isFinite(sampleAgeMsAtObservation)
       || sampleAgeMsAtObservation < 0) return unknown("invalid_sample");
 
-    const observedAtMonotonicMs = snapshot.observedAtMonotonicMs;
-    const nowMonotonicMs = snapshot.nowMonotonicMs;
+    const observedAtMonotonicMs = snapshotValue("observedAtMonotonicMs");
+    const nowMonotonicMs = snapshotValue("nowMonotonicMs");
     if (typeof observedAtMonotonicMs !== "number" || !Number.isFinite(observedAtMonotonicMs)
       || observedAtMonotonicMs < 0 || typeof nowMonotonicMs !== "number" || !Number.isFinite(nowMonotonicMs)
       || nowMonotonicMs < 0 || nowMonotonicMs < observedAtMonotonicMs) return unknown("invalid_clock");

@@ -122,58 +122,94 @@ describe("peer skill presentation guard", () => {
     expect(envelope.skillShareConsent).toBe(true);
   });
 
-  it("rejects a proxied skill array whose descriptor trap changes consent", () => {
-    const envelope = { ...eligible, skills: ["ability_1"] };
-    envelope.skills = new Proxy(envelope.skills, {
-      getOwnPropertyDescriptor(target, property) {
-        const descriptor = Reflect.getOwnPropertyDescriptor(target, property);
-        if (property === "0") envelope.skillShareConsent = false;
+  it("rejects a nested Proxy that replaces the source skill list during descriptor inspection", () => {
+    const target = { ...eligible };
+    let descriptorTrapRan = false;
+    target.skills = new Proxy(["ability_from_preflight"], {
+      getOwnPropertyDescriptor(skillTarget, property) {
+        const descriptor = Reflect.getOwnPropertyDescriptor(skillTarget, property);
+        if (property === "0") {
+          descriptorTrapRan = true;
+          target.skills = ["ability_from_clone"];
+        }
         return descriptor;
       },
     });
 
-    expect(visibility(envelope)).toEqual({
-      state: "unknown", skills: null, reason: "invalid_evidence", ageMs: null,
+    const result = visibility(target);
+    expect({ result, descriptorTrapRan, sourceSkillsAfterInspection: target.skills }).toEqual({
+      result: { state: "unknown", skills: null, reason: "invalid_evidence", ageMs: null },
+      descriptorTrapRan: true,
+      sourceSkillsAfterInspection: ["ability_from_clone"],
     });
   });
 
-  it("rejects a top-level Proxy that revokes consent during descriptor checks", () => {
+  it("rejects a nested Proxy replacement that could revoke consent during cloning", () => {
+    const target = {
+      skillShareConsent: true,
+      verifiedFriend: true,
+      sameMatch: true,
+      sameTeam: true,
+      sourceAttributionVerified: true,
+      partyStatus: "connected" as const,
+      sampleAgeMsAtObservation: 500,
+      observedAtMonotonicMs: 1_000,
+      nowMonotonicMs: 1_500,
+      skills: ["ability_from_source"],
+    };
+    let descriptorTrapRan = false;
+    let consentRevokedDuringClone = false;
+    const replacementSkills = ["ability_from_clone"];
+    Object.defineProperty(replacementSkills, 0, {
+      configurable: true,
+      enumerable: true,
+      get: () => {
+        consentRevokedDuringClone = true;
+        target.skillShareConsent = false;
+        return "ability_from_clone";
+      },
+    });
+    target.skills = new Proxy(["ability_1"], {
+      getOwnPropertyDescriptor(skillTarget, property) {
+        const descriptor = Reflect.getOwnPropertyDescriptor(skillTarget, property);
+        if (property === "0" && !descriptorTrapRan) {
+          descriptorTrapRan = true;
+          target.skills = replacementSkills;
+        }
+        return descriptor;
+      },
+    });
+
+    const result = visibility(target);
+    expect({ result, descriptorTrapRan, consentRevokedDuringClone, consentAfterInspection: target.skillShareConsent })
+      .toEqual({
+        result: { state: "unknown", skills: null, reason: "invalid_evidence", ageMs: null },
+        descriptorTrapRan: true,
+        consentRevokedDuringClone: false,
+        consentAfterInspection: true,
+      });
+  });
+
+  it("rejects a top-level Proxy whose descriptor trap mutates consent", () => {
     const target = { ...eligible };
-    let consentDescriptorReads = 0;
+    let descriptorTrapRan = false;
     const envelope = new Proxy(target, {
       getOwnPropertyDescriptor(proxyTarget, property) {
         const descriptor = Reflect.getOwnPropertyDescriptor(proxyTarget, property);
         if (property === "skillShareConsent") {
-          consentDescriptorReads += 1;
-          if (consentDescriptorReads === 2) proxyTarget.skillShareConsent = false;
-        }
-        return descriptor;
-      },
-    });
-
-    expect(visibility(envelope)).toEqual({
-      state: "unknown", skills: null, reason: "invalid_evidence", ageMs: null,
-    });
-  });
-
-  it("rejects a re-entrant top-level descriptor trap that changes consent", () => {
-    const target = { ...eligible };
-    let consentRevoked = false;
-    const envelope = new Proxy(target, {
-      getOwnPropertyDescriptor(proxyTarget, property) {
-        const descriptor = Reflect.getOwnPropertyDescriptor(proxyTarget, property);
-        if (property === "sourceAttributionVerified") {
+          descriptorTrapRan = true;
           proxyTarget.skillShareConsent = false;
-          consentRevoked = true;
         }
         return descriptor;
       },
     });
 
-    expect(visibility(envelope)).toEqual({
-      state: "unknown", skills: null, reason: "invalid_evidence", ageMs: null,
+    const result = visibility(envelope);
+    expect({ result, descriptorTrapRan, consentAfterInspection: target.skillShareConsent }).toEqual({
+      result: { state: "unknown", skills: null, reason: "invalid_evidence", ageMs: null },
+      descriptorTrapRan: true,
+      consentAfterInspection: false,
     });
-    expect(consentRevoked).toBe(true);
   });
 
   it.each([null, [""], [" a"], ["a "], ["a", null], ["a", 3], "ability_1"])(
