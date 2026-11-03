@@ -27,7 +27,9 @@ beforeEach(() => {
   fixture.callbacks.clear(); fixture.authEvents.clear();
   fixture.initial.mockReset().mockResolvedValue({ data: { session: null } });
   fixture.exchange.mockReset().mockResolvedValue({ data: {}, error: null });
-  fixture.startOAuth.mockReset(); fixture.native.mockReset();
+  fixture.startOAuth.mockReset().mockResolvedValue({
+    data: { url: "https://example.invalid/authorize?state=synthetic-state-value" }, error: null,
+  }); fixture.native.mockReset().mockResolvedValue(undefined);
   auth = []; root = createRoot(document.createElement("div"));
 });
 afterEach(async () => { await act(async () => root.unmount()); vi.unstubAllGlobals(); });
@@ -36,10 +38,13 @@ it("exchanges one callback once across mounted auth hooks and after a consumer r
   const { useAuth } = await import("../auth");
   function Observer({ index }: { index: number }) { auth[index] = useAuth(); return null; }
   await act(async () => root.render(<><Observer index={0} /><Observer index={1} /><Observer index={2} /></>));
+  // Callback exchange is accepted only for a currently pending app-initiated attempt.
+  await act(async () => { await auth[0].signInWithGoogle(); });
   await act(async () => { await Promise.all([...fixture.callbacks].map((callback) => callback({ payload: "one-code" }))); });
   expect(fixture.exchange).toHaveBeenCalledTimes(1);
   expect(auth.every((value) => value.error === null && !value.busy)).toBe(true);
   await act(async () => root.render(<Observer index={0} />));
+  await act(async () => { await auth[0].signInWithGoogle(); });
   await act(async () => { await Promise.all([...fixture.callbacks].map((callback) => callback({ payload: "next-code" }))); });
   expect(fixture.exchange).toHaveBeenCalledTimes(2);
 });

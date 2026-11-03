@@ -41,9 +41,32 @@ let oauthStatus: OAuthStatus = { busy: false, error: null };
 let oauthStop: (() => void) | null = null;
 let oauthRequest = 0;
 let lastOAuthCode: string | null = null;
+const OAUTH_CALLBACK_TIMEOUT_MS = 602_000;
+let pendingOAuthRequest: number | null = null;
+let oauthCallbackTimeout: ReturnType<typeof setTimeout> | null = null;
 function publishOAuth(status: OAuthStatus) {
   oauthStatus = status;
   oauthConsumers.forEach((consumer) => consumer(status));
+}
+function clearOAuthWait(request?: number): boolean {
+  if (request !== undefined && pendingOAuthRequest !== request) return false;
+  if (oauthCallbackTimeout !== null) {
+    clearTimeout(oauthCallbackTimeout);
+    oauthCallbackTimeout = null;
+  }
+  if (request === undefined || pendingOAuthRequest === request) pendingOAuthRequest = null;
+  return true;
+}
+function waitForOAuthCallback(request: number) {
+  clearOAuthWait();
+  pendingOAuthRequest = request;
+  oauthCallbackTimeout = setTimeout(() => {
+    if (pendingOAuthRequest !== request || oauthRequest !== request) return;
+    pendingOAuthRequest = null;
+    oauthCallbackTimeout = null;
+    oauthRequest++;
+    publishOAuth({ busy: false, error: "Google sign-in timed out. Please try again." });
+  }, OAUTH_CALLBACK_TIMEOUT_MS);
 }
 function subscribeOAuth(consumer: (status: OAuthStatus) => void) {
   oauthConsumers.add(consumer);
@@ -60,6 +83,9 @@ function subscribeOAuth(consumer: (status: OAuthStatus) => void) {
     oauthStop = () => { stopped = true; unsubs.forEach((unsub) => unsub()); };
     void register("oauth-callback", async ({ payload }) => {
       if (stopped || localAuthBlocked() || getCurrentSignOut().phase !== "idle" || payload === lastOAuthCode) return;
+      const pendingRequest = pendingOAuthRequest;
+      if (pendingRequest === null || pendingRequest !== oauthRequest) return;
+      clearOAuthWait(pendingRequest);
       lastOAuthCode = payload;
       const request = ++oauthRequest;
       const current = () => request === oauthRequest && !localAuthBlocked();
@@ -76,6 +102,9 @@ function subscribeOAuth(consumer: (status: OAuthStatus) => void) {
     });
     void register("oauth-error", ({ payload }) => {
       if (stopped || localAuthBlocked()) return;
+      const pendingRequest = pendingOAuthRequest;
+      if (pendingRequest === null || pendingRequest !== oauthRequest) return;
+      clearOAuthWait(pendingRequest);
       oauthRequest++;
       publishOAuth({ busy: false, error: payload || "sign-in was cancelled" });
     });
@@ -124,9 +153,10 @@ export function useAuth() {
 
   const signInWithGoogle = useCallback(async () => {
     if (!prepareGoogleSignIn()) return;
+    clearOAuthWait();
     const request = ++oauthRequest;
     const current = () => request === oauthRequest && !localAuthBlocked();
-    publishOAuth({ busy: false, error: null });
+    publishOAuth({ busy: true, error: null });
     setBusy(true);
     setError(null);
     try {
@@ -145,15 +175,25 @@ export function useAuth() {
         // a code and state for this app-initiated sign-in, then open the system browser.
         await invoke("oauth_begin", { state });
         if (!current()) return;
+        waitForOAuthCallback(request);
         await invoke("open_url", { url: data.url });
+      } else {
+        throw new Error("Google sign-in could not start. Please try again.");
       }
       // The session arrives asynchronously via the oauth-callback listener.
     } catch (e) {
-      if (current()) { setError(msg(e)); setBusy(false); }
+      if (current()) {
+        clearOAuthWait(request);
+        oauthRequest++;
+        publishOAuth({ busy: false, error: msg(e) });
+        setError(msg(e));
+        setBusy(false);
+      }
     }
   }, []);
 
   const signOut = useCallback(async () => {
+    clearOAuthWait();
     oauthRequest++;
     publishOAuth({ busy: false, error: null });
     setBusy(false);
