@@ -2,7 +2,7 @@
 title: "G-Maiden — Engineering Spec"
 doc_id: "engineering-spec"
 status: "active"
-version: "0.3.5"
+version: "0.3.6"
 updated: 2026-11-03
 owner: "Boss"
 source_of_truth: false
@@ -76,7 +76,7 @@ admission, T3 = loopback first audible sample. รวม acquisition wait ห้
 - **Runtime:** pure Rust; ไม่เรียก cloud หรือ SLM. Current defaults are sensitivity-based (Med 0.65/0.40).
 - **Speech priority contract:** `Critical = danger | gank | revision`, `Normal = manual/advice speech`, `Cosmetic = announcer events`; cosmetic ห้ามทับ critical
 - **Level-up milestone contract:** announcer/persona path ใช้จุด `6, 12, 18, 25` และถือว่า "triggered" เมื่อข้าม milestone แม้ปลายทางจะไม่ตรง milestone พอดี (`11 -> 13` ต้องยัง fire)
-- **Announcer ordering contract:** ภายใน match-session epoch เดียวกัน ให้ทิ้ง `GameTick` ที่ `map.clock_time` ต่ำกว่า tick ที่ยอมรับก่อนหน้า ก่อนเปลี่ยน owner, verification state หรือ event baseline; ห้าม replay event จาก sample เก่า. ที่ clock เท่ากัน อนุญาต counter เพิ่มตามจริง แต่ทิ้ง sample ที่ kill/death counter ลดลง. ค่า clock ระดับวินาทีไม่สามารถเรียง sample อื่นในวินาทีเดียวกันได้ จึงไม่อ้าง ordering guarantee สำหรับ field อื่น; การเริ่มแมตช์ใหม่ต้องได้ epoch ใหม่จาก session tracker.
+- **Announcer ordering contract:** ภายใน match-session epoch เดียวกัน ให้ทิ้ง `GameTick` ที่ `map.clock_time` ต่ำกว่า watermark สูงสุดที่เห็นก่อนหน้า ก่อนเปลี่ยน owner, verification state หรือ event baseline; watermark อยู่ต่อเมื่อ verification หายชั่วคราว และ reset เฉพาะเมื่อ epoch เปลี่ยน. ที่ clock เท่ากัน ค่า kill/death counter ที่ลดลงใน verified sample ให้ทิ้ง แต่ unverified sample ให้ล้าง event baseline พร้อมเก็บ watermark เพื่อกันการ replay หลัง recovery. Counter ที่เพิ่มใน clock เดียวกันยังใช้ตรวจ event ได้. ค่า clock ระดับวินาทีไม่สามารถเรียง field อื่นภายในวินาทีเดียวกันได้; การเริ่มแมตช์ใหม่ต้องได้ epoch ใหม่จาก session tracker.
 - **Latency harness contract:** ต้องมี harness ที่วัดเส้นทาง in-process `GSI JSON parse -> team-side routing -> signal evaluate -> audio enqueue intent` เพิ่มจาก compute-only harness
 
 ### 2.4 G-Master (Strategic & Financial Advisor) — non-critical
@@ -354,3 +354,4 @@ Local visual receipts distinguish warmed/cold, wait count, first nontransparent 
 | 0.3.3 | 2026-10-30 | Record larger60fps ID visuals, predictive bounded cache and owner-authorized visual/audio retirement. |
 | 0.3.4 | 2026-10-30 | Record revision4 paused decoder preparation, VP8 media and bounded natural-completion grace. |
 | 0.3.5 | 2026-11-03 | Define same-session announcer behavior for regressed GSI match-clock samples and equal-clock kill/death counter regressions; other same-second ordering remains unknown. |
+| 0.3.6 | 2026-11-03 | Preserve the match-clock watermark across verification gaps and reseeds to prevent delayed snapshots from replaying events. |

@@ -39,6 +39,9 @@ struct State {
     kills: i64,
     deaths: i64,
     clock: i64,
+    // Receipt-order watermark survives local verification gaps within one
+    // match epoch; `clock` remains the current verified event baseline.
+    watermark_clock: Option<i64>,
     opening_closed: bool,
     mana: i64,
     hp: i64,
@@ -103,6 +106,19 @@ fn reset(s: &mut State) {
     *s = State::default();
 }
 
+fn reset_preserving_watermark(s: &mut State) {
+    let watermark_clock = s.watermark_clock;
+    reset(s);
+    s.watermark_clock = watermark_clock;
+}
+
+fn advance_watermark(s: &mut State, clock_time: i64) {
+    s.watermark_clock = Some(
+        s.watermark_clock
+            .map_or(clock_time, |last| last.max(clock_time)),
+    );
+}
+
 /// Observe a tick only if it still belongs to the current match session.
 /// Detector streaks and dedup baselines are reset once when a newer session
 /// epoch arrives; an out-of-order older tick can never reset newer state.
@@ -157,24 +173,27 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
     // Reject stale snapshots before verification or owner changes can reset
     // the current baseline. A match-session epoch transition resets State
     // before this function, so a legitimate new match can start at clock 0.
-    if s.seen && tick.clock_time < s.clock {
-        return out;
-    }
-    // GSI clocks have one-second resolution. Equal clocks cannot order a
-    // forward event, but a kill/death counter moving backwards is inconsistent
-    // with the current same-session baseline and must not cause a replay.
-    if s.seen && tick.clock_time == s.clock && (tick.kills < s.kills || tick.deaths < s.deaths) {
+    if s.watermark_clock
+        .is_some_and(|watermark| tick.clock_time < watermark)
+    {
         return out;
     }
 
     if !tick.local_player_verified {
         let opening_closed = s.opening_closed;
-        reset(s);
+        reset_preserving_watermark(s);
         s.opening_closed = opening_closed;
+        advance_watermark(s, tick.clock_time);
+        return out;
+    }
+    // GSI clocks have one-second resolution. Equal clocks cannot order a
+    // forward event, but verified kill/death counter regressions cannot rewind
+    // the baseline or make an already observed event replay.
+    if s.seen && tick.clock_time == s.clock && (tick.kills < s.kills || tick.deaths < s.deaths) {
         return out;
     }
     if s.seen && s.owner != tick.steamid {
-        reset(s);
+        reset_preserving_watermark(s);
         s.opening_closed = true;
     }
 
@@ -197,6 +216,7 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
         s.kills = tick.kills;
         s.deaths = tick.deaths;
         s.clock = tick.clock_time;
+        advance_watermark(s, tick.clock_time);
         s.mana = tick.mana_percent;
         s.hp = tick.hp_percent;
         s.score_total = tick.radiant_score + tick.dire_score;
@@ -205,6 +225,7 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
     }
     if !tick.in_game {
         s.in_game = false;
+        advance_watermark(s, tick.clock_time);
         return out;
     }
     if !s.opening_closed && tick.clock_time >= 0 {
@@ -315,6 +336,7 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
     s.kills = tick.kills;
     s.deaths = tick.deaths;
     s.clock = tick.clock_time;
+    advance_watermark(s, tick.clock_time);
     s.mana = tick.mana_percent;
     s.hp = tick.hp_percent;
     s.score_total = tick.radiant_score + tick.dire_score;
@@ -572,6 +594,47 @@ mod tests {
         assert_eq!((state.clock, state.kills), (30, 1));
         let current = step(&mut state, &tick(true, 31, 2, true));
         assert!(current.contains(&"double_kill".to_string()));
+    }
+
+    #[test]
+    fn verification_gap_keeps_clock_watermark_against_late_verified_sample() {
+        let mut state = State::default();
+        step(&mut state, &tick(true, 20, 0, true));
+        step(&mut state, &tick(true, 30, 1, true));
+
+        let mut unverified = tick(true, 31, 1, true);
+        unverified.local_player_verified = false;
+        assert!(step(&mut state, &unverified).is_empty());
+
+        assert!(step(&mut state, &tick(true, 25, 0, true)).is_empty());
+        let current = step(&mut state, &tick(true, 32, 2, true));
+        assert!(
+            current.is_empty(),
+            "verification gap replayed events after a late sample: {current:?}"
+        );
+        assert_eq!((state.clock, state.kills), (32, 2));
+    }
+
+    #[test]
+    fn equal_clock_unverified_counter_regression_breaks_multikill_chain() {
+        let mut state = State::default();
+        step(&mut state, &tick(true, 29, 0, true));
+        step(&mut state, &tick(true, 30, 1, true));
+
+        let mut unverified = tick(true, 30, 0, true);
+        unverified.local_player_verified = false;
+        assert!(step(&mut state, &unverified).is_empty());
+
+        let current = step(&mut state, &tick(true, 31, 2, true));
+        assert!(
+            !current.contains(&"double_kill".to_string()),
+            "multikill crossed an unverified interval: {current:?}"
+        );
+        assert!(
+            !current.contains(&"kill".to_string()),
+            "unverified recovery should reseed, not replay the accumulated kill: {current:?}"
+        );
+        assert_eq!((state.clock, state.kills), (31, 2));
     }
 
     #[test]
