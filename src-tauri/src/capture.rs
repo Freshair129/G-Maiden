@@ -232,6 +232,22 @@ mod backend {
         healthy: bool,
     }
 
+    /// Freshness alone is insufficient: background/Alt-Tab resets the frame
+    /// clock without acquiring evidence. Keep this gate pure for regression tests.
+    fn sensor_is_healthy(
+        backend: &str,
+        classifier: bool,
+        throttled: bool,
+        dota_foreground: bool,
+        frame_age_ms: u64,
+    ) -> bool {
+        backend != "lite"
+            && classifier
+            && !throttled
+            && dota_foreground
+            && frame_age_ms <= STALE_FRAME_MS
+    }
+
     impl SensorHealth {
         /// No capture backend is currently producing frames. GSI and voice
         /// remain available while the supervisor waits for a manual retry.
@@ -574,11 +590,13 @@ mod backend {
                 classifier,
                 throttled,
                 frame_age_ms: Some(frame_age_ms),
-                healthy: backend != "lite"
-                    && classifier
-                    && !throttled
-                    && dota_foreground
-                    && frame_age_ms <= STALE_FRAME_MS,
+                healthy: sensor_is_healthy(
+                    backend,
+                    classifier,
+                    throttled,
+                    dota_foreground,
+                    frame_age_ms,
+                ),
             };
             let key = health.key();
             if self.last_health_key != Some(key)
@@ -1808,6 +1826,18 @@ mod backend {
 
     #[cfg(test)]
     mod tests {
+        use super::*;
+
+        #[test]
+        fn foreground_eligibility_withdraws_health_during_alt_tab() {
+            assert!(sensor_is_healthy("dxgi", true, false, true, 20));
+            assert!(!sensor_is_healthy("dxgi", true, false, false, 0));
+            assert!(!sensor_is_healthy("gdi", true, false, false, 0));
+            assert!(!sensor_is_healthy("lite", true, false, true, 0));
+            assert!(!sensor_is_healthy("dxgi", false, false, true, 0));
+            assert!(!sensor_is_healthy("dxgi", true, true, true, 0));
+            assert!(!sensor_is_healthy("dxgi", true, false, true, STALE_FRAME_MS + 1));
+        }
         //! Latency harness — times the controllable compute pipeline (prefilter →
         //! detect → sentry → motion → signal) over many synthetic frames and
         //! asserts p99 stays well inside budget. Capture I/O is budgeted
