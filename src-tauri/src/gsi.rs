@@ -85,11 +85,9 @@ pub struct GameTick {
     pub buyback_cost: i64,
     /// GSI `hero.respawn_seconds` — live respawn countdown (0 when alive). Feeds G-Revive.
     pub respawn_seconds: i64,
-    /// Number of entries in hero.kill_list — when it grows we know a new kill happened.
-    /// Each entry's `victimid` is a player slot (0-9); the latest entry is the newest kill.
+    /// Sum of per-victim counters; -1 when the list is absent or invalid.
     pub kill_list_len: i64,
-    /// Player-slot ID of the most recent kill victim (from the last entry in kill_list).
-    /// -1 when kill_list is empty.
+    /// Unknown (-1): a cumulative snapshot alone does not identify the latest victim.
     pub last_victim_slot: i64,
     /// The player's own item names from the GSI `items` block (empty slots
     /// dropped). Ownership/NW context only; combat eligibility is separate. Own-hero
@@ -122,24 +120,35 @@ fn b(v: &Value, path: &[&str]) -> bool {
     dig(v, path).as_bool().unwrap_or(false)
 }
 
-/// Extract the latest victim slot from hero.kill_list. Dota 2 GSI sends this as
-/// `{"0": {"victimid": 5}, "1": {"victimid": 3}, ...}` — sequential string keys.
-/// Returns (count, last_victim_slot).
+/// Sum observed per-victim counters. Object key order does not encode kill order.
 fn parse_kill_list(v: &Value) -> (i64, i64) {
-    let kl = &v["hero"]["kill_list"];
-    if let Some(obj) = kl.as_object() {
-        let count = obj.len() as i64;
-        let last = (0..count)
-            .rev()
-            .find_map(|idx| {
-                obj.get(&idx.to_string())
-                    .and_then(|entry| entry["victimid"].as_i64())
-            })
-            .unwrap_or(-1);
-        (count, last)
-    } else {
-        (0, -1)
+    let kill_list = &v["player"]["kill_list"];
+    if kill_list.is_null() {
+        return (-1, -1);
     }
+    if validate_kill_list(kill_list).is_err() {
+        return (-1, -1);
+    }
+    let count = kill_list
+        .as_object()
+        .map(|entries| entries.values().filter_map(Value::as_i64).sum())
+        .unwrap_or(0);
+    (count, -1)
+}
+
+fn validate_kill_list(kill_list: &Value) -> Result<(), &'static str> {
+    let entries = kill_list.as_object().ok_or("kill list must be an object")?;
+    for (key, count) in entries {
+        let valid_key = (0..=9).any(|slot| *key == format!("victimid_{slot}"));
+        if !valid_key
+            || !count
+                .as_i64()
+                .is_some_and(|value| (0..=100_000).contains(&value))
+        {
+            return Err("invalid victim counter");
+        }
+    }
+    Ok(())
 }
 
 /// The local team's score, which in Dota's GSI IS the enemy death count:
@@ -478,7 +487,7 @@ fn validate_gsi_payload(v: &Value) -> Result<(), &'static str> {
         }
     }
 
-    if let Some(hero) = optional_object(v, &["hero"])? {
+    if optional_object(v, &["hero"])?.is_some() {
         let name = validate_string(v, &["hero", "name"], false, 128)?;
         if name.is_some_and(|name| !name.is_empty() && !name.starts_with("npc_dota_hero_")) {
             return Err("invalid hero name");
@@ -491,18 +500,6 @@ fn validate_gsi_payload(v: &Value) -> Result<(), &'static str> {
         validate_int(v, &["hero", "max_health"], 0, 100_000, false)?;
         validate_int(v, &["hero", "buyback_cost"], 0, i64::MAX, false)?;
         validate_int(v, &["hero", "respawn_seconds"], 0, i64::MAX, false)?;
-        if let Some(kill_list) = hero.get("kill_list").filter(|value| !value.is_null()) {
-            let entries = kill_list.as_object().ok_or("kill list must be an object")?;
-            for entry in entries.values() {
-                let victimid = entry
-                    .get("victimid")
-                    .and_then(Value::as_i64)
-                    .ok_or("victim slot must be an integer")?;
-                if !(0..=9).contains(&victimid) {
-                    return Err("victim slot outside allowed range");
-                }
-            }
-        }
     }
 
     if let Some(items) = optional_object(v, &["items"])? {
@@ -1676,27 +1673,51 @@ mod tests {
     }
 
     #[test]
-    fn kill_list_parsed() {
+    fn kill_list_counts_each_victim_total_without_inventing_latest_victim() {
         let mut payload = live_payload();
-        payload["player"]["kills"] = serde_json::json!(3);
-        payload["hero"]["kill_list"] = serde_json::json!({
-            "0": { "victimid": 5 },
-            "1": { "victimid": 2 },
-            "2": { "victimid": 7 }
+        payload["player"]["kills"] = serde_json::json!(6);
+        payload["player"]["kill_list"] = serde_json::json!({
+            "victimid_4": 3,
+            "victimid_1": 2,
+            "victimid_2": 1
         });
         let t = run_handle(payload);
-        assert_eq!(t.kill_list_len, 3);
-        assert_eq!(t.last_victim_slot, 7);
+        assert_eq!(t.kill_list_len, 6);
+        assert_eq!(t.last_victim_slot, -1);
     }
 
     #[test]
     fn kill_list_empty() {
         let mut payload = live_payload();
-        payload["hero"]["name"] = serde_json::json!("npc_dota_hero_invoker");
-        payload["hero"]["kill_list"] = serde_json::json!({});
+        payload["player"]["kill_list"] = serde_json::json!({});
         let t = run_handle(payload);
         assert_eq!(t.kill_list_len, 0);
         assert_eq!(t.last_victim_slot, -1);
+    }
+
+    #[test]
+    fn absent_kill_list_is_unknown() {
+        let tick = run_handle(live_payload());
+        assert_eq!(tick.kill_list_len, -1);
+        assert_eq!(tick.last_victim_slot, -1);
+    }
+
+    #[test]
+    fn kill_list_invalid_counts_or_keys_do_not_reject_the_tick() {
+        for bad in [
+            serde_json::json!({"victimid_1": -1}),
+            serde_json::json!({"victimid_1": "2"}),
+            serde_json::json!({"victimid_10": 1}),
+            serde_json::json!({"other": 1}),
+            serde_json::json!([]),
+        ] {
+            let mut payload = live_payload();
+            payload["player"]["kill_list"] = bad;
+            let tick = run_handle(payload);
+            assert_eq!(tick.kill_list_len, -1);
+            assert_eq!(tick.last_victim_slot, -1);
+            assert!(tick.in_game);
+        }
     }
 
     // --- POST /announcer/install (`run_announcer_install`) ---------------

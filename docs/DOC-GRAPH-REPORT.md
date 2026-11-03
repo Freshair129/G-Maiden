@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-02T22:55:09.121Z
+สร้างเมื่อ / Generated at: 2026-11-03T11:20:02.522Z
 
-สแกน 170 ไฟล์เอกสาร, 286 nodes, 1311 edges, 232 รายการปัญหา (202 ตัวบล็อก exit code) / scanned 170 doc files, 286 nodes, 1311 edges, 232 violations (202 blocking exit code).
+สแกน 171 ไฟล์เอกสาร, 287 nodes, 1313 edges, 231 รายการปัญหา (202 ตัวบล็อก exit code) / scanned 171 doc files, 287 nodes, 1313 edges, 231 violations (202 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -16,7 +16,7 @@
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 3 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
-| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 27 | no (informational) |
+| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 26 | no (informational) |
 | unresolved | wikilink หาไม่เจอ / unresolved wikilink | 6 | yes |
 | version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 10 | yes |
 
@@ -198,10 +198,6 @@
 - [L83] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/banner.rs", anchor=206, symbol="image_mime")
 - [L83] **bad-anchor** — เลขบรรทัด anchor ผิดช่วง / symbol link anchor out of range (target="src-tauri/src/voice_api/banner.rs")
 - [L88] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/tests.rs", anchor=182, symbol="real_pack_mrijgajn_maps_voice_and_banners")
-
-### docs/change request/CR-010-overlay-exact-kill-victim.md
-
-- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/change request/CR-011-cold-booth-ux-direction.md
 

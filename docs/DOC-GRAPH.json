@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-02T22:55:09.121Z",
+  "generatedAt": "2026-11-03T11:20:02.522Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -427,7 +427,9 @@
     {
       "id": "docs/change request/CR-010-overlay-exact-kill-victim.md",
       "type": "doc",
-      "path": "docs/change request/CR-010-overlay-exact-kill-victim.md"
+      "path": "docs/change request/CR-010-overlay-exact-kill-victim.md",
+      "title": "CR-010: Exact slain hero for the kill banner",
+      "status": "historical"
     },
     {
       "id": "docs/change request/CR-011-cold-booth-ux-direction.md",
@@ -1057,6 +1059,13 @@
       "path": "docs/research/2026-07-19-govibe-gmaiden-governance-comparison.md",
       "title": "เทียบ GoVibe ↔ G-Maiden: doc governance · context/brain · ตำแหน่งใน ADR-18 + ข้อเสนอ unify",
       "status": "draft"
+    },
+    {
+      "id": "docs/research/2026-11-03-gsi-victim-slot-evidence.md",
+      "type": "doc",
+      "path": "docs/research/2026-11-03-gsi-victim-slot-evidence.md",
+      "title": "GSI victim counters and draft slot evidence",
+      "status": "active"
     },
     {
       "id": "docs/research/assets/dota2-hud-reference.md",
@@ -4702,45 +4711,51 @@
     },
     {
       "from": "docs/change request/CR-010-overlay-exact-kill-victim.md",
+      "to": "docs/research/2026-11-03-gsi-victim-slot-evidence.md",
+      "type": "wikilink",
+      "line": 17
+    },
+    {
+      "from": "docs/change request/CR-010-overlay-exact-kill-victim.md",
       "to": "src-tauri/src/gsi.rs",
       "type": "symbol",
-      "line": 6
+      "line": 24
     },
     {
       "from": "docs/change request/CR-010-overlay-exact-kill-victim.md",
       "to": "src-tauri/src/runtime.rs",
       "type": "symbol",
-      "line": 6
+      "line": 24
     },
     {
       "from": "docs/change request/CR-010-overlay-exact-kill-victim.md",
       "to": "src-tauri/src/cv/",
       "type": "symbol",
-      "line": 6
+      "line": 24
     },
     {
       "from": "docs/change request/CR-010-overlay-exact-kill-victim.md",
       "to": "src/src/App.tsx",
       "type": "symbol",
-      "line": 9
+      "line": 27
     },
     {
       "from": "docs/change request/CR-010-overlay-exact-kill-victim.md",
       "to": "src/src/App.tsx",
       "type": "symbol",
-      "line": 32
+      "line": 50
     },
     {
       "from": "docs/change request/CR-010-overlay-exact-kill-victim.md",
       "to": "src/src/index.css",
       "type": "symbol",
-      "line": 32
+      "line": 50
     },
     {
       "from": "docs/change request/CR-010-overlay-exact-kill-victim.md",
       "to": "src/src/heroPortrait.ts",
       "type": "symbol",
-      "line": 33
+      "line": 51
     },
     {
       "from": "docs/change request/CR-011-cold-booth-ux-direction.md",
@@ -8200,6 +8215,12 @@
     },
     {
       "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
+      "to": "docs/research/2026-11-03-gsi-victim-slot-evidence.md",
+      "type": "wikilink",
+      "line": 145
+    },
+    {
+      "from": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "to": "docs/change request/CR-037-party-gsi-own-stat-sharing.md",
       "type": "wikilink",
       "line": 472
@@ -10138,11 +10159,6 @@
       "symbol": "real_pack_mrijgajn_maps_voice_and_banners"
     },
     {
-      "file": "docs/change request/CR-010-overlay-exact-kill-victim.md",
-      "line": null,
-      "reason": "no-metadata"
-    },
-    {
       "file": "docs/change request/CR-011-cold-booth-ux-direction.md",
       "line": null,
       "reason": "no-metadata"
@@ -11356,7 +11372,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-02T22:55:14.372Z",
+    "generatedAt": "2026-11-03T11:20:07.614Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

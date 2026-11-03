@@ -990,9 +990,9 @@ pub fn enemy_team_ring() -> (f32, f32, f32) {
 // What is exactly observable, and what is not:
 //   • HOW MANY enemies are dead — yes. `map.{radiant,dire}_score` is kills-by
 //     that team, so the LOCAL team's score is the enemy death count. Exact.
-//   • WHICH enemy died — effectively no. `hero.kill_list` carries a victim
-//     slot, but only for the local player's OWN kills, and mapping slot→hero
-//     needs the Draft-CV roster, which ships inert (no portrait assets). So
+//   • WHICH enemy died — effectively no. The observed `player.kill_list`
+//     contains cumulative per-victim counters for the local player's kills;
+//     a snapshot does not establish the latest victim or a verified roster. So
 //     this pool is deliberately ANONYMOUS: a count, never an identity.
 //   • For HOW LONG — not observable. Respawn scales with the dead hero's
 //     level, which GSI never exposes for enemies. The caller supplies an

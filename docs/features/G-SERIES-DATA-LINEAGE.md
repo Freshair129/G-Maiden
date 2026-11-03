@@ -2,8 +2,8 @@
 title: "G-Series Data Lineage and Computation Contract"
 doc_id: "G-SERIES-DATA-LINEAGE"
 status: "accepted"
-version: "1.3.0"
-updated: "2026-11-01"
+version: "1.3.1"
+updated: "2026-11-03"
 owner: "Boss"
 approved_by: "user"
 approved_date: "2026-10-06"
@@ -142,7 +142,7 @@ The parser is implemented in [`gsi.rs::parse_tick_from_value`](file:///g:/G-Maid
 | `hero.health_percent` / `mana_percent` | `hp_percent` / `mana_percent` | Overlay and G-Master prompt. |
 | `hero.health` / `max_health` | `hp` / `max_hp` | Groundwork for target/lethality contracts; local player only today. |
 | `hero.buyback_cost` / `respawn_seconds` | `buyback_cost` / `respawn_seconds` | G-Revive live inputs. |
-| `hero.kill_list` | `kill_list_len` / `last_victim_slot` | Derived count and latest victim slot. |
+| `player.kill_list` | `kill_list_len` / `last_victim_slot` | Observed per-victim cumulative counts are summed; a single snapshot does not establish the most recent victim, so the slot remains unknown (`-1`); an absent, unrecognized or malformed list makes the count unknown (`-1`) without rejecting the game tick. See [[2026-11-03-gsi-victim-slot-evidence]]. |
 | `items.*` | `item_names` | Feeds G-Damage self-burst and item-cost net-worth fallback. |
 
 ## 5. Core G-series contracts
@@ -573,3 +573,4 @@ The following are documentation/verification requirements, not claims that the c
 | 1.1.3 | 2026-10-13 | Recorded fail-closed startup on Job Object setup failure and runtime-query-only unavailable telemetry. |
 | 1.2.0 | 2026-11-01 | Added separately consented G-Party own-stat lineage, scoped match/team/freshness and no-forwarding boundaries; preserve AI/raw-data restrictions and pending runtime/live evidence. |
 | 1.3.0 | 2026-11-01 | Add private G-Friends social graph/presence/link/invitation lineage and distinct account/relay trust boundaries without routing gameplay into social storage or expanding AI permissions. |
+| 1.3.1 | 2026-11-03 | Correct observed GSI victim counters and mark latest victim unknown without temporal evidence. |
