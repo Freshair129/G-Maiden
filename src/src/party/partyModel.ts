@@ -177,13 +177,15 @@ export type PeerSkillPresentation =
   | { state: "unknown"; skills: null; reason: PeerSkillPresentationReason; ageMs: number | null };
 
 /**
- * Presentation-only fail-closed gate. Boolean evidence flags are assertions;
- * they do not authenticate peer identity, friendship or consent. A trusted
- * producer must establish those facts before calling this helper. Reconnect
- * invalidation and session-generation fencing must be enforced by future
- * integration; `connected` alone does not bind a sample to the current session.
- * Observation and current times must share a local monotonic clock origin.
- * This helper does not verify these properties and must not publish peer data.
+ * Presentation-only gate over an exact-shape own-data record. It rejects
+ * accessors and requires a detached structured clone before using evidence.
+ * Boolean evidence flags are assertions; they do not authenticate peer
+ * identity, friendship or consent. A trusted producer must establish those
+ * facts before calling this helper. Reconnect invalidation and session-
+ * generation fencing remain future integration requirements; `connected`
+ * alone does not bind a sample to the current session. This is not a security
+ * boundary against arbitrary code running in the same process and must not
+ * publish peer data.
  */
 export function peerSkillPresentation(input: unknown): PeerSkillPresentation {
   const unknown = (reason: PeerSkillPresentationReason, ageMs: number | null = null): PeerSkillPresentation => ({
@@ -192,41 +194,73 @@ export function peerSkillPresentation(input: unknown): PeerSkillPresentation {
 
   try {
     if (input === null || typeof input !== "object" || Array.isArray(input)) return unknown("invalid_evidence");
-    const evidence = input as Record<string, unknown>;
+    const descriptors = Object.getOwnPropertyDescriptors(input);
     const ownValue = (key: string): unknown => {
-      const descriptor = Object.getOwnPropertyDescriptor(evidence, key);
+      const descriptor = descriptors[key];
       return descriptor && Object.prototype.hasOwnProperty.call(descriptor, "value") ? descriptor.value : undefined;
     };
 
     if (ownValue("skillShareConsent") !== true) return unknown("consent_required");
+    const prototype = Object.getPrototypeOf(input);
+    if (prototype !== Object.prototype && prototype !== null) return unknown("invalid_evidence");
     if (ownValue("verifiedFriend") !== true) return unknown("friend_unverified");
     if (ownValue("sameMatch") !== true || ownValue("sameTeam") !== true) return unknown("scope_unverified");
     if (ownValue("sourceAttributionVerified") !== true) return unknown("source_unverified");
     if (ownValue("partyStatus") !== "connected") return unknown("party_unavailable");
 
+    const evidenceKeys = [
+      "skills", "skillShareConsent", "verifiedFriend", "sameMatch", "sameTeam",
+      "sourceAttributionVerified", "partyStatus", "sampleAgeMsAtObservation",
+      "observedAtMonotonicMs", "nowMonotonicMs",
+    ];
+    const descriptorKeys = Reflect.ownKeys(descriptors);
+    if (descriptorKeys.length !== evidenceKeys.length
+      || evidenceKeys.some((key) => !Object.prototype.hasOwnProperty.call(descriptors, key))) {
+      return unknown("invalid_evidence");
+    }
+    for (const key of evidenceKeys) {
+      const descriptor = descriptors[key];
+      if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value") || !descriptor.enumerable) {
+        return unknown("invalid_evidence");
+      }
+    }
+
     const rawSkills = ownValue("skills");
     if (!Array.isArray(rawSkills)) return unknown("invalid_sample");
-    const lengthDescriptor = Object.getOwnPropertyDescriptor(rawSkills, "length");
+    const skillDescriptors = Object.getOwnPropertyDescriptors(rawSkills) as unknown as PropertyDescriptorMap;
+    const skillKeys = Reflect.ownKeys(skillDescriptors);
+    const lengthDescriptor = skillDescriptors.length;
     if (!lengthDescriptor || !Object.prototype.hasOwnProperty.call(lengthDescriptor, "value")
       || typeof lengthDescriptor.value !== "number" || !Number.isSafeInteger(lengthDescriptor.value)
-      || lengthDescriptor.value === 0) return unknown("invalid_sample");
+      || lengthDescriptor.value === 0 || skillKeys.length !== lengthDescriptor.value + 1) return unknown("invalid_sample");
 
     const skillCount = lengthDescriptor.value;
     const skills: string[] = [];
     for (let index = 0; index < skillCount; index += 1) {
-      const descriptor = Object.getOwnPropertyDescriptor(rawSkills, index);
-      if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value")) return unknown("invalid_sample");
+      const descriptor = skillDescriptors[index];
+      if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value") || !descriptor.enumerable) {
+        return unknown("invalid_sample");
+      }
       const skill = descriptor.value as unknown;
       if (typeof skill !== "string" || skill.length === 0 || skill.trim() !== skill) return unknown("invalid_sample");
       skills.push(skill);
     }
 
-    const sampleAgeMsAtObservation = ownValue("sampleAgeMsAtObservation");
+    // Data-only preflight above avoids invoking accessors. structuredClone
+    // supplies the stable snapshot and rejects Proxy records/arrays.
+    const snapshot = structuredClone(input) as Record<string, unknown>;
+    if (snapshot.skillShareConsent !== true) return unknown("consent_required");
+    if (snapshot.verifiedFriend !== true) return unknown("friend_unverified");
+    if (snapshot.sameMatch !== true || snapshot.sameTeam !== true) return unknown("scope_unverified");
+    if (snapshot.sourceAttributionVerified !== true) return unknown("source_unverified");
+    if (snapshot.partyStatus !== "connected") return unknown("party_unavailable");
+
+    const sampleAgeMsAtObservation = snapshot.sampleAgeMsAtObservation;
     if (typeof sampleAgeMsAtObservation !== "number" || !Number.isFinite(sampleAgeMsAtObservation)
       || sampleAgeMsAtObservation < 0) return unknown("invalid_sample");
 
-    const observedAtMonotonicMs = ownValue("observedAtMonotonicMs");
-    const nowMonotonicMs = ownValue("nowMonotonicMs");
+    const observedAtMonotonicMs = snapshot.observedAtMonotonicMs;
+    const nowMonotonicMs = snapshot.nowMonotonicMs;
     if (typeof observedAtMonotonicMs !== "number" || !Number.isFinite(observedAtMonotonicMs)
       || observedAtMonotonicMs < 0 || typeof nowMonotonicMs !== "number" || !Number.isFinite(nowMonotonicMs)
       || nowMonotonicMs < 0 || nowMonotonicMs < observedAtMonotonicMs) return unknown("invalid_clock");
@@ -243,13 +277,6 @@ export function peerSkillPresentation(input: unknown): PeerSkillPresentation {
     const ageMs = sampleAgeMsAtObservation + elapsedMs;
     if (!Number.isFinite(ageMs)) return unknown("invalid_sample");
     if (ageMs > PARTY_FRESH_MS) return unknown("stale", ageMs);
-
-    // Recheck the assertions after reading the untrusted skill container.
-    if (ownValue("verifiedFriend") !== true) return unknown("friend_unverified");
-    if (ownValue("sameMatch") !== true || ownValue("sameTeam") !== true) return unknown("scope_unverified");
-    if (ownValue("sourceAttributionVerified") !== true) return unknown("source_unverified");
-    if (ownValue("partyStatus") !== "connected") return unknown("party_unavailable");
-    if (ownValue("skillShareConsent") !== true) return unknown("consent_required");
 
     return { state: "visible", skills, ageMs };
   } catch {

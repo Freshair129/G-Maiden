@@ -122,7 +122,7 @@ describe("peer skill presentation guard", () => {
     expect(envelope.skillShareConsent).toBe(true);
   });
 
-  it("rechecks consent after inspecting a proxied skill array", () => {
+  it("rejects a proxied skill array whose descriptor trap changes consent", () => {
     const envelope = { ...eligible, skills: ["ability_1"] };
     envelope.skills = new Proxy(envelope.skills, {
       getOwnPropertyDescriptor(target, property) {
@@ -133,8 +133,47 @@ describe("peer skill presentation guard", () => {
     });
 
     expect(visibility(envelope)).toEqual({
-      state: "unknown", skills: null, reason: "consent_required", ageMs: null,
+      state: "unknown", skills: null, reason: "invalid_evidence", ageMs: null,
     });
+  });
+
+  it("rejects a top-level Proxy that revokes consent during descriptor checks", () => {
+    const target = { ...eligible };
+    let consentDescriptorReads = 0;
+    const envelope = new Proxy(target, {
+      getOwnPropertyDescriptor(proxyTarget, property) {
+        const descriptor = Reflect.getOwnPropertyDescriptor(proxyTarget, property);
+        if (property === "skillShareConsent") {
+          consentDescriptorReads += 1;
+          if (consentDescriptorReads === 2) proxyTarget.skillShareConsent = false;
+        }
+        return descriptor;
+      },
+    });
+
+    expect(visibility(envelope)).toEqual({
+      state: "unknown", skills: null, reason: "invalid_evidence", ageMs: null,
+    });
+  });
+
+  it("rejects a re-entrant top-level descriptor trap that changes consent", () => {
+    const target = { ...eligible };
+    let consentRevoked = false;
+    const envelope = new Proxy(target, {
+      getOwnPropertyDescriptor(proxyTarget, property) {
+        const descriptor = Reflect.getOwnPropertyDescriptor(proxyTarget, property);
+        if (property === "sourceAttributionVerified") {
+          proxyTarget.skillShareConsent = false;
+          consentRevoked = true;
+        }
+        return descriptor;
+      },
+    });
+
+    expect(visibility(envelope)).toEqual({
+      state: "unknown", skills: null, reason: "invalid_evidence", ageMs: null,
+    });
+    expect(consentRevoked).toBe(true);
   });
 
   it.each([null, [""], [" a"], ["a "], ["a", null], ["a", 3], "ability_1"])(

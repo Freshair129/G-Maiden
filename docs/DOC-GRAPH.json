@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-01T16:36:27.633Z",
+  "generatedAt": "2026-11-03T12:11:45.174Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -7743,31 +7743,31 @@
       "from": "docs/features/FEAT-G-PARTY.md",
       "to": "docs/features/FEAT-G-FRIENDS.md",
       "type": "wikilink",
-      "line": 98
+      "line": 104
     },
     {
       "from": "docs/features/FEAT-G-PARTY.md",
       "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
       "type": "wikilink",
-      "line": 100
+      "line": 106
     },
     {
       "from": "docs/features/FEAT-G-PARTY.md",
       "to": "docs/features/FEAT-G-FRIENDS.md",
       "type": "wikilink",
-      "line": 107
+      "line": 113
     },
     {
       "from": "docs/features/FEAT-G-PARTY.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 110
+      "line": 116
     },
     {
       "from": "docs/features/FEAT-G-PARTY.md",
       "to": "docs/superpowers/plans/2026-11-01-g-party-gsi-sharing.md",
       "type": "wikilink",
-      "line": 125
+      "line": 131
     },
     {
       "from": "docs/features/FEAT-G-PERSONA.md",
@@ -8931,31 +8931,31 @@
       "from": "docs/product/mvp-decisions.md",
       "to": "docs/change request/CR-038-party-friends-presence-invitations.md",
       "type": "wikilink",
-      "line": 88
+      "line": 94
     },
     {
       "from": "docs/product/mvp-decisions.md",
       "to": "docs/features/FEAT-G-FRIENDS.md",
       "type": "wikilink",
-      "line": 88
+      "line": 94
     },
     {
       "from": "docs/product/mvp-decisions.md",
       "to": "docs/architecture/adr/ADR-20.md",
       "type": "wikilink",
-      "line": 88
+      "line": 94
     },
     {
       "from": "docs/product/mvp-decisions.md",
       "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
       "type": "wikilink",
-      "line": 88
+      "line": 94
     },
     {
       "from": "docs/product/mvp-decisions.md",
       "to": "docs/operations/g-party-social-operations.md",
       "type": "wikilink",
-      "line": 97
+      "line": 103
     },
     {
       "from": "docs/product/mvp-execution-dag.md",
@@ -11334,7 +11334,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-01T16:36:28.302Z",
+    "generatedAt": "2026-11-03T12:11:51.342Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

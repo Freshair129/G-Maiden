@@ -2,8 +2,8 @@
 title: "FEAT: G-Party — Cooperative own-GSI status sharing"
 doc_id: "FEAT-G-PARTY"
 status: "active"
-version: "0.2.0"
-updated: "2026-11-01"
+version: "0.3.0"
+updated: "2026-11-03"
 owner: "G-Maiden"
 source_of_truth: true
 complexity: "C-3"
@@ -31,6 +31,12 @@ G-Party เป็น **ส่วนขยายที่ Owner สั่งเ�
 - `PARTY-FR-005` ห้องมีได้ไม่เกิน 5 คนรวม owner อายุไม่เกิน 4 ชั่วโมง. Owner leave/หมดอายุทำให้ห้องปิด. Owner kick สมาชิกได้และหมุน invitation ได้; rotate เพิ่ม authoritative roomGeneration และปิดการ join ในอนาคตด้วย code เก่าหรือ social proof/invite/ticket generation เก่า ไม่ revoke สมาชิกที่อยู่แล้ว. ผู้ถูก kick ที่ยังมี invite ใช้ได้อาจกลับมา join จึงต้องแนะนำให้ rotate ด้วย.
 
 Consent ของ G-Party แยกจาก account consent และ AI/cloud-context consent ใน [[mvp-decisions]] MVP-005 โดยสมบูรณ์. ไม่เพิ่ม telemetry, public profile, match contribution, AI prompt หรือการเผยแพร่สู่ชุมชนจาก action นี้.
+
+### 2.1 Proposed CR-039 peer-skill extension — scope approved, protocol pending
+
+The Owner approved this policy direction on 2026-11-03: peer skill status is off by default and requires separate explicit skill-sharing consent; any eventual recipient must be a verified friend in the same match and on the same team; stale or unverifiable data is presented as unknown. Voice chat is deferred. This is a scope approval only, not an accepted protocol or allowlist change.
+
+Until the following gates are satisfied, the existing own-GSI allowlist and protocol in §§3 and 5 remain unchanged: define and verify the friend-to-party identity binding; specify versioned skill fields and consent/revocation lifecycle; prove own-hero source attribution with a provenance-labeled real player-mode fixture; define match/team/session and reconnect invalidation; and test the privacy boundary end to end. The presentation helper accepts only an exact-shape own-data envelope and a detached structured clone; accessors and Proxy inputs fail closed. This is an in-process input boundary, not authentication and not a security boundary against arbitrary same-process code. A trusted producer must still establish identity, friendship, consent and scope. The helper is not a producer, serializer, relay route, or identity/consent verifier. Do not connect it to live peer data or enable skill sharing yet.
 
 ## 3. Source admission และ allowlist
 
@@ -130,3 +136,4 @@ Private friendships/temporary profile links/invites อยู่ใน account b
 | --- | --- | --- |
 | 0.1.0 | 2026-11-01 | เพิ่ม G-Party owner-authorized extension: explicit per-launch consent, narrow own-stat protocol, in-memory relay, match/team/freshness fences และ pending acceptance; ไม่ขยาย AI allowlist. |
 | 0.2.0 | 2026-11-01 | Add CR-038 required authoritative roomGeneration/PartyView origin schema and optional social native/relay bridge; preserve guest consent, source allowlist and separate live acceptance. |
+| 0.3.0 | 2026-11-03 | Record Owner-approved CR-039 peer-skill policy as a proposal only; retain own-GSI allowlist pending identity, protocol, consent lifecycle, reconnect, and real source-provenance gates. |
