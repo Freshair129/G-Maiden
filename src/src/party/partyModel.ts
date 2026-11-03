@@ -148,6 +148,75 @@ export function memberPresentation(member: PartyMember, status: PartyStatus, ela
   return { state: "live", sample: member.sample, ageMs };
 }
 
+export interface PeerSkillEvidence {
+  skills: readonly string[] | null;
+  skillShareConsent: boolean;
+  verifiedFriend: boolean;
+  sameMatch: boolean;
+  sameTeam: boolean;
+  sourceAttributionVerified: boolean;
+  partyStatus: PartyStatus;
+  sampleAgeMsAtObservation: number | null;
+  observedAtMonotonicMs: number | null;
+  nowMonotonicMs: number;
+}
+
+export type PeerSkillPresentationReason =
+  | "consent_required"
+  | "friend_unverified"
+  | "scope_unverified"
+  | "source_unverified"
+  | "party_unavailable"
+  | "invalid_sample"
+  | "invalid_clock"
+  | "stale";
+
+export type PeerSkillPresentation =
+  | { state: "visible"; skills: string[]; ageMs: number }
+  | { state: "unknown"; skills: null; reason: PeerSkillPresentationReason; ageMs: number | null };
+
+/**
+ * Presentation-only fail-closed gate. Its evidence must come from the trusted
+ * local identity, consent, scope and source-validation paths. Observation and
+ * current times must share a local monotonic clock origin. This helper does
+ * not prove any of them and must not be used to publish peer data.
+ */
+export function peerSkillPresentation(input: PeerSkillEvidence): PeerSkillPresentation {
+  if (input.skillShareConsent !== true) {
+    return { state: "unknown", skills: null, reason: "consent_required", ageMs: null };
+  }
+  if (input.verifiedFriend !== true) {
+    return { state: "unknown", skills: null, reason: "friend_unverified", ageMs: null };
+  }
+  if (input.sameMatch !== true || input.sameTeam !== true) {
+    return { state: "unknown", skills: null, reason: "scope_unverified", ageMs: null };
+  }
+  if (input.sourceAttributionVerified !== true) {
+    return { state: "unknown", skills: null, reason: "source_unverified", ageMs: null };
+  }
+  if (input.partyStatus !== "connected") {
+    return { state: "unknown", skills: null, reason: "party_unavailable", ageMs: null };
+  }
+  if (!Array.isArray(input.skills) || input.skills.length === 0
+    || input.skills.some((skill) => typeof skill !== "string" || skill.trim() !== skill || skill.length === 0)) {
+    return { state: "unknown", skills: null, reason: "invalid_sample", ageMs: null };
+  }
+  if (typeof input.sampleAgeMsAtObservation !== "number" || !Number.isFinite(input.sampleAgeMsAtObservation)
+    || input.sampleAgeMsAtObservation < 0) {
+    return { state: "unknown", skills: null, reason: "invalid_sample", ageMs: null };
+  }
+  if (typeof input.observedAtMonotonicMs !== "number" || !Number.isFinite(input.observedAtMonotonicMs)
+    || input.observedAtMonotonicMs < 0 || !Number.isFinite(input.nowMonotonicMs)
+    || input.nowMonotonicMs < input.observedAtMonotonicMs) {
+    return { state: "unknown", skills: null, reason: "invalid_clock", ageMs: null };
+  }
+
+  const ageMs = input.sampleAgeMsAtObservation + input.nowMonotonicMs - input.observedAtMonotonicMs;
+  if (!Number.isFinite(ageMs)) return { state: "unknown", skills: null, reason: "invalid_sample", ageMs: null };
+  if (ageMs > PARTY_FRESH_MS) return { state: "unknown", skills: null, reason: "stale", ageMs };
+  return { state: "visible", skills: [...input.skills], ageMs };
+}
+
 export const PARTY_STATUS_LABELS: Record<PartyStatus, string> = {
   idle: "ยังไม่ได้เข้าปาร์ตี้",
   connecting: "กำลังเชื่อมต่อ",
