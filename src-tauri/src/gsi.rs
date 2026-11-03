@@ -951,6 +951,18 @@ const OAUTH_CALLBACK_HTML: &str = "<!doctype html><meta charset=utf-8><title>G-M
 <div style=\"text-align:center\"><h2>G-Maiden</h2><p>เข้าสู่ระบบสำเร็จ — กลับไปที่แอปได้เลย</p>\
 <p style=\"opacity:.6\">ปิดหน้านี้ได้</p></div><script>setTimeout(()=>window.close(),800)</script></body>";
 
+#[derive(Serialize, Clone)]
+struct OAuthCallbackEvent {
+    state: String,
+    code: String,
+}
+
+#[derive(Serialize, Clone)]
+struct OAuthErrorEvent {
+    state: String,
+    message: String,
+}
+
 /// OAuth (Google) redirect target. The system browser lands here after the
 /// provider + Supabase round-trip; we hand the PKCE `code` back to the webview
 /// via an event and it calls exchangeCodeForSession. Reuses the GSI :3000 server
@@ -964,19 +976,55 @@ async fn oauth_callback(
         // (single-use, time-boxed). This unauthenticated local endpoint would
         // otherwise let a drive-by page inject an attacker's `code` → session
         // fixation. An unsolicited/expired callback is ignored, not exchanged.
-        if crate::runtime::take_oauth_pending(params.get("state").map(String::as_str), epoch_ms()) {
-            let _ = app.emit("oauth-callback", code.clone());
-        } else {
-            let _ = app.emit(
-                "oauth-error",
-                "การเข้าสู่ระบบหมดเวลา หรือไม่ได้เริ่มจากแอป — กรุณาลองใหม่".to_string(),
-            );
+        match crate::runtime::resolve_oauth_pending(
+            params.get("state").map(String::as_str),
+            epoch_ms(),
+        ) {
+            crate::runtime::OAuthPendingResolution::Accepted { state } => {
+                let _ = app.emit(
+                    "oauth-callback",
+                    OAuthCallbackEvent {
+                        state,
+                        code: code.clone(),
+                    },
+                );
+            }
+            crate::runtime::OAuthPendingResolution::Expired { state } => {
+                let _ = app.emit(
+                    "oauth-error",
+                    OAuthErrorEvent {
+                        state,
+                        message: "Google sign-in timed out. Please try again.".to_string(),
+                    },
+                );
+            }
+            crate::runtime::OAuthPendingResolution::Rejected => {
+                // A missing/mismatched state is stale or unsolicited. It must
+                // neither consume the current gate nor clear a newer UI attempt.
+            }
         }
     } else if let Some(err) = params
         .get("error_description")
         .or_else(|| params.get("error"))
     {
-        let _ = app.emit("oauth-error", err.clone());
+        match crate::runtime::resolve_oauth_pending(
+            params.get("state").map(String::as_str),
+            epoch_ms(),
+        ) {
+            crate::runtime::OAuthPendingResolution::Accepted { state }
+            | crate::runtime::OAuthPendingResolution::Expired { state } => {
+                let _ = app.emit(
+                    "oauth-error",
+                    OAuthErrorEvent {
+                        state,
+                        message: err.chars().take(1024).collect(),
+                    },
+                );
+            }
+            crate::runtime::OAuthPendingResolution::Rejected => {
+                // Only report provider errors for the state of the active attempt.
+            }
+        }
     }
     Html(OAUTH_CALLBACK_HTML)
 }

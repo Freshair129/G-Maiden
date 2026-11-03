@@ -1589,71 +1589,11 @@ pub fn clear_roster() {
     }
 }
 
-// ── OAuth callback anti-CSRF gate (CR-008 WP-3) ──────────────────────────────
-// `:3000/auth/callback` is an unauthenticated local endpoint. Without a gate,
-// any local process — or a drive-by web page (`<img src=".../auth/callback?code
-// =ATTACKER">`) — could hand the app an OAuth `code` and sign the user into an
-// attacker's account (login CSRF / session fixation). We only honor a callback
-// while a sign-in the app *itself* started is in flight: single-use + time-boxed.
-// The OAuth redirect URL is deliberately left untouched so it keeps matching the
-// Supabase redirect allowlist.
-struct OAuthPending {
-    state: String,
-    since_ms: u64,
-}
-
-static OAUTH_PENDING: Mutex<Option<OAuthPending>> = Mutex::new(None);
-const OAUTH_PENDING_TIMEOUT_MS: u64 = 600_000; // 10 min — generous for the browser round-trip
-const OAUTH_STATE_MIN_LEN: usize = 16;
-const OAUTH_STATE_MAX_LEN: usize = 4096;
-
-/// Arm the gate: a sign-in the app initiated is now in flight (called from the
-/// frontend right before it opens the system browser).
-pub fn set_oauth_pending(state: String, now_ms: u64) -> bool {
-    if !(OAUTH_STATE_MIN_LEN..=OAUTH_STATE_MAX_LEN).contains(&state.len()) {
-        return false;
-    }
-    if let Ok(mut pending) = OAUTH_PENDING.lock() {
-        *pending = Some(OAuthPending {
-            state,
-            since_ms: now_ms,
-        });
-        true
-    } else {
-        false
-    }
-}
-
-/// Pure, testable window check for the gate.
-fn oauth_pending_ok(
-    pending: bool,
-    expected_state: &str,
-    callback_state: Option<&str>,
-    since_ms: u64,
-    now_ms: u64,
-    timeout_ms: u64,
-) -> bool {
-    pending
-        && callback_state.is_some_and(|state| state == expected_state)
-        && now_ms.saturating_sub(since_ms) <= timeout_ms
-}
-
-/// Consume the gate (single-use): `true` only if a sign-in is in flight AND still
-/// within the timeout window. Clears the flag either way so a code is honored at
-/// most once.
-pub fn take_oauth_pending(callback_state: Option<&str>, now_ms: u64) -> bool {
-    let pending = OAUTH_PENDING.lock().ok().and_then(|mut p| p.take());
-    pending.is_some_and(|p| {
-        oauth_pending_ok(
-            true,
-            &p.state,
-            callback_state,
-            p.since_ms,
-            now_ms,
-            OAUTH_PENDING_TIMEOUT_MS,
-        )
-    })
-}
+// The OAuth gate is isolated as a std-only module so its consume/mismatch
+// semantics can be tested without building the desktop/Tauri application.
+pub use crate::oauth_gate::{
+    resolve_oauth_pending, set_oauth_pending, take_oauth_pending, OAuthPendingResolution,
+};
 
 #[cfg(test)]
 mod tests {
@@ -1865,32 +1805,6 @@ mod tests {
             ),
             "past window → reject"
         );
-    }
-
-    #[test]
-    fn take_oauth_pending_is_single_use() {
-        assert!(set_oauth_pending(
-            "test-state-0123456789".to_string(),
-            10_000
-        ));
-        assert!(
-            take_oauth_pending(Some("test-state-0123456789"), 10_500),
-            "first consume within window"
-        );
-        assert!(
-            !take_oauth_pending(Some("test-state-0123456789"), 10_600),
-            "already consumed → reject the replay"
-        );
-    }
-
-    #[test]
-    fn oauth_gate_rejects_unusable_state_before_arming() {
-        assert!(!set_oauth_pending("short".to_string(), 10_000));
-        assert!(!take_oauth_pending(Some("short"), 10_500));
-        assert!(!set_oauth_pending(
-            "x".repeat(OAUTH_STATE_MAX_LEN + 1),
-            10_000
-        ));
     }
 
     #[test]

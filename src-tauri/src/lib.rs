@@ -44,6 +44,7 @@ mod minimap_preview_runtime;
 mod minimap_preview_wire;
 pub mod motion;
 mod ocr;
+mod oauth_gate;
 pub mod package_registry;
 pub mod package_install;
 mod package_ipc;

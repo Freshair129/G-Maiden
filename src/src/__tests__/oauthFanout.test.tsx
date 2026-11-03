@@ -4,11 +4,12 @@ import { createRoot, type Root } from "react-dom/client";
 import { afterEach, beforeEach, expect, it, vi } from "vitest";
 
 const fixture = vi.hoisted(() => ({
-  callbacks: new Set<(event: { payload: string }) => Promise<void> | void>(),
+  callbacks: new Set<(event: { payload: unknown }) => Promise<void> | void>(),
   exchange: vi.fn(), initial: vi.fn(), startOAuth: vi.fn(), native: vi.fn(), authEvents: new Set<(event: string, session: unknown) => void>(),
+  attempt: 0, state: "",
 }));
 vi.mock("@tauri-apps/api/core", () => ({ invoke: fixture.native }));
-vi.mock("@tauri-apps/api/event", () => ({ listen: vi.fn(async (name: string, callback: (event: { payload: string }) => void) => {
+vi.mock("@tauri-apps/api/event", () => ({ listen: vi.fn(async (name: string, callback: (event: { payload: unknown }) => void) => {
   if (name === "oauth-callback") fixture.callbacks.add(callback);
   return () => fixture.callbacks.delete(callback);
 }) }));
@@ -25,10 +26,13 @@ let auth: Array<ReturnType<typeof import("../auth").useAuth>>;
 beforeEach(() => {
   vi.resetModules(); vi.stubGlobal("IS_REACT_ACT_ENVIRONMENT", true);
   fixture.callbacks.clear(); fixture.authEvents.clear();
+  fixture.attempt = 0; fixture.state = "";
   fixture.initial.mockReset().mockResolvedValue({ data: { session: null } });
   fixture.exchange.mockReset().mockResolvedValue({ data: {}, error: null });
-  fixture.startOAuth.mockReset().mockResolvedValue({
-    data: { url: "https://example.invalid/authorize?state=synthetic-state-value" }, error: null,
+  fixture.startOAuth.mockReset().mockImplementation(async () => {
+    fixture.attempt += 1;
+    fixture.state = `synthetic-state-${fixture.attempt}-0123456789`;
+    return { data: { url: `https://example.invalid/authorize?state=${fixture.state}` }, error: null };
   }); fixture.native.mockReset().mockResolvedValue(undefined);
   auth = []; root = createRoot(document.createElement("div"));
 });
@@ -40,12 +44,12 @@ it("exchanges one callback once across mounted auth hooks and after a consumer r
   await act(async () => root.render(<><Observer index={0} /><Observer index={1} /><Observer index={2} /></>));
   // Callback exchange is accepted only for a currently pending app-initiated attempt.
   await act(async () => { await auth[0].signInWithGoogle(); });
-  await act(async () => { await Promise.all([...fixture.callbacks].map((callback) => callback({ payload: "one-code" }))); });
+  await act(async () => { await Promise.all([...fixture.callbacks].map((callback) => callback({ payload: { state: fixture.state, code: "one-code" } }))); });
   expect(fixture.exchange).toHaveBeenCalledTimes(1);
   expect(auth.every((value) => value.error === null && !value.busy)).toBe(true);
   await act(async () => root.render(<Observer index={0} />));
   await act(async () => { await auth[0].signInWithGoogle(); });
-  await act(async () => { await Promise.all([...fixture.callbacks].map((callback) => callback({ payload: "next-code" }))); });
+  await act(async () => { await Promise.all([...fixture.callbacks].map((callback) => callback({ payload: { state: fixture.state, code: "next-code" } }))); });
   expect(fixture.exchange).toHaveBeenCalledTimes(2);
 });
 

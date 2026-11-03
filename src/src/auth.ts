@@ -36,37 +36,86 @@ async function linkProfile(userId: string): Promise<void> {
 }
 
 type OAuthStatus = { busy: boolean; error: string | null };
+type OAuthPhase = "starting" | "callback" | "exchange";
+type OAuthCallbackPayload = { state: string; code: string };
+type OAuthErrorPayload = { state: string; message: string };
 const oauthConsumers = new Set<(status: OAuthStatus) => void>();
 let oauthStatus: OAuthStatus = { busy: false, error: null };
 let oauthStop: (() => void) | null = null;
 let oauthRequest = 0;
 let lastOAuthCode: string | null = null;
+const OAUTH_STARTUP_TIMEOUT_MS = 60_000;
 const OAUTH_CALLBACK_TIMEOUT_MS = 602_000;
-let pendingOAuthRequest: number | null = null;
-let oauthCallbackTimeout: ReturnType<typeof setTimeout> | null = null;
+const OAUTH_EXCHANGE_TIMEOUT_MS = 60_000;
+let activeOAuthRequest: number | null = null;
+let activeOAuthState: string | null = null;
+let activeOAuthPhase: OAuthPhase | null = null;
+let oauthPhaseTimeout: ReturnType<typeof setTimeout> | null = null;
+let authSessionObserved = false;
+let observedAuthUserId: string | null = null;
 function publishOAuth(status: OAuthStatus) {
   oauthStatus = status;
   oauthConsumers.forEach((consumer) => consumer(status));
 }
-function clearOAuthWait(request?: number): boolean {
-  if (request !== undefined && pendingOAuthRequest !== request) return false;
-  if (oauthCallbackTimeout !== null) {
-    clearTimeout(oauthCallbackTimeout);
-    oauthCallbackTimeout = null;
+function clearOAuthAttempt(request?: number) {
+  if (request !== undefined && activeOAuthRequest !== request) return;
+  if (oauthPhaseTimeout !== null) {
+    clearTimeout(oauthPhaseTimeout);
+    oauthPhaseTimeout = null;
   }
-  if (request === undefined || pendingOAuthRequest === request) pendingOAuthRequest = null;
-  return true;
+  activeOAuthRequest = null;
+  activeOAuthState = null;
+  activeOAuthPhase = null;
 }
-function waitForOAuthCallback(request: number) {
-  clearOAuthWait();
-  pendingOAuthRequest = request;
-  oauthCallbackTimeout = setTimeout(() => {
-    if (pendingOAuthRequest !== request || oauthRequest !== request) return;
-    pendingOAuthRequest = null;
-    oauthCallbackTimeout = null;
+function armOAuthPhaseTimeout(request: number, phase: OAuthPhase, durationMs: number, error: string) {
+  if (activeOAuthRequest !== request) return;
+  if (oauthPhaseTimeout !== null) clearTimeout(oauthPhaseTimeout);
+  activeOAuthPhase = phase;
+  oauthPhaseTimeout = setTimeout(() => {
+    if (activeOAuthRequest !== request || oauthRequest !== request || activeOAuthPhase !== phase) return;
+    activeOAuthRequest = null;
+    activeOAuthState = null;
+    activeOAuthPhase = null;
+    oauthPhaseTimeout = null;
     oauthRequest++;
-    publishOAuth({ busy: false, error: "Google sign-in timed out. Please try again." });
-  }, OAUTH_CALLBACK_TIMEOUT_MS);
+    publishOAuth({ busy: false, error });
+  }, durationMs);
+}
+function oauthCallbackFrom(value: unknown): OAuthCallbackPayload | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const candidate = value as Record<string, unknown>;
+  if (
+    typeof candidate.state !== "string" || candidate.state.length < 16 || candidate.state.length > 4096 ||
+    typeof candidate.code !== "string" || candidate.code.length === 0 || candidate.code.length > 8192
+  ) return null;
+  return { state: candidate.state, code: candidate.code };
+}
+function oauthErrorFrom(value: unknown): OAuthErrorPayload | null {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return null;
+  const candidate = value as Record<string, unknown>;
+  if (
+    typeof candidate.state !== "string" || candidate.state.length < 16 || candidate.state.length > 4096 ||
+    typeof candidate.message !== "string" || candidate.message.length === 0 || candidate.message.length > 1024
+  ) return null;
+  return { state: candidate.state, message: candidate.message };
+}
+function observeAuthUser(userId: string | null) {
+  if (!authSessionObserved) {
+    authSessionObserved = true;
+    observedAuthUserId = userId;
+    return;
+  }
+  if (observedAuthUserId === userId) return;
+  observedAuthUserId = userId;
+  if (activeOAuthRequest !== null && activeOAuthPhase !== "exchange") {
+    const request = activeOAuthRequest;
+    clearOAuthAttempt(request);
+    oauthRequest++;
+    publishOAuth({
+      busy: false,
+      error: "Google sign-in was interrupted because the account changed. Please try again.",
+    });
+  }
 }
 function subscribeOAuth(consumer: (status: OAuthStatus) => void) {
   oauthConsumers.add(consumer);
@@ -74,39 +123,69 @@ function subscribeOAuth(consumer: (status: OAuthStatus) => void) {
   if (!oauthStop) {
     let stopped = false;
     const unsubs: Array<() => void> = [];
-    const register = async (name: string, callback: (event: { payload: string }) => void) => {
+    const register = async <T,>(name: string, callback: (event: { payload: T }) => void) => {
       try {
-        const unsub = await listen<string>(name, callback);
+        const unsub = await listen<T>(name, callback);
         if (stopped) unsub(); else unsubs.push(unsub);
       } catch { /* plain browser: Google callback unavailable */ }
     };
     oauthStop = () => { stopped = true; unsubs.forEach((unsub) => unsub()); };
-    void register("oauth-callback", async ({ payload }) => {
-      if (stopped || localAuthBlocked() || getCurrentSignOut().phase !== "idle" || payload === lastOAuthCode) return;
-      const pendingRequest = pendingOAuthRequest;
-      if (pendingRequest === null || pendingRequest !== oauthRequest) return;
-      clearOAuthWait(pendingRequest);
-      lastOAuthCode = payload;
-      const request = ++oauthRequest;
-      const current = () => request === oauthRequest && !localAuthBlocked();
+    void register<unknown>("oauth-callback", async ({ payload: rawPayload }) => {
+      const payload = oauthCallbackFrom(rawPayload);
+      const request = activeOAuthRequest;
+      if (
+        stopped || localAuthBlocked() || getCurrentSignOut().phase !== "idle" || !payload ||
+        request === null || request !== oauthRequest || activeOAuthPhase !== "callback" ||
+        payload.state !== activeOAuthState || payload.code === lastOAuthCode
+      ) return;
+      if (oauthPhaseTimeout !== null) clearTimeout(oauthPhaseTimeout);
+      oauthPhaseTimeout = null;
+      activeOAuthState = null;
+      armOAuthPhaseTimeout(
+        request,
+        "exchange",
+        OAUTH_EXCHANGE_TIMEOUT_MS,
+        "Google sign-in response timed out. Please try again.",
+      );
+      lastOAuthCode = payload.code;
+      const current = () => request === oauthRequest && activeOAuthRequest === request &&
+        activeOAuthPhase === "exchange" && !localAuthBlocked();
       publishOAuth({ busy: true, error: null });
       try {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(payload);
+        const { data, error } = await supabase.auth.exchangeCodeForSession(payload.code);
         if (!current()) return;
         if (error) throw error;
-        if (data.user) await linkProfile(data.user.id).catch(() => {});
-        if (current()) publishOAuth({ busy: false, error: null });
+        if (data.user && oauthConsumers.size > 0 && authSessionObserved && observedAuthUserId !== data.user.id) {
+          clearOAuthAttempt(request);
+          oauthRequest++;
+          publishOAuth({
+            busy: false,
+            error: "Google sign-in was interrupted because the account changed. Please try again.",
+          });
+          return;
+        }
+        clearOAuthAttempt(request);
+        oauthRequest++;
+        publishOAuth({ busy: false, error: null });
+        if (data.user) void linkProfile(data.user.id).catch(() => {});
       } catch (error) {
-        if (current()) publishOAuth({ busy: false, error: msg(error) });
+        if (current()) {
+          clearOAuthAttempt(request);
+          oauthRequest++;
+          publishOAuth({ busy: false, error: msg(error) });
+        }
       }
     });
-    void register("oauth-error", ({ payload }) => {
-      if (stopped || localAuthBlocked()) return;
-      const pendingRequest = pendingOAuthRequest;
-      if (pendingRequest === null || pendingRequest !== oauthRequest) return;
-      clearOAuthWait(pendingRequest);
+    void register<unknown>("oauth-error", ({ payload: rawPayload }) => {
+      const payload = oauthErrorFrom(rawPayload);
+      const request = activeOAuthRequest;
+      if (
+        stopped || localAuthBlocked() || !payload || request === null || request !== oauthRequest ||
+        activeOAuthPhase !== "callback" || payload.state !== activeOAuthState
+      ) return;
+      clearOAuthAttempt(request);
       oauthRequest++;
-      publishOAuth({ busy: false, error: payload || "sign-in was cancelled" });
+      publishOAuth({ busy: false, error: payload.message });
     });
   }
   return () => {
@@ -132,12 +211,16 @@ export function useAuth() {
 
     supabase.auth.getSession().then(({ data }) => {
       if (!cancelled) {
-        if (!providerChanged) setSession(localAuthBlocked() ? null : data.session);
+        if (!providerChanged) {
+          observeAuthUser(data.session?.user.id ?? null);
+          setSession(localAuthBlocked() ? null : data.session);
+        }
         setLoading(false);
       }
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       providerChanged = true;
+      observeAuthUser(s?.user.id ?? null);
       setSession(localAuthBlocked() ? null : s);
       setLastAuthEvent(localAuthBlocked() ? "SIGNED_OUT" : event);
     });
@@ -152,10 +235,17 @@ export function useAuth() {
   }, []);
 
   const signInWithGoogle = useCallback(async () => {
-    if (!prepareGoogleSignIn()) return;
-    clearOAuthWait();
+    if (activeOAuthRequest !== null || !prepareGoogleSignIn()) return;
     const request = ++oauthRequest;
-    const current = () => request === oauthRequest && !localAuthBlocked();
+    activeOAuthRequest = request;
+    activeOAuthState = null;
+    const current = () => request === oauthRequest && activeOAuthRequest === request && !localAuthBlocked();
+    armOAuthPhaseTimeout(
+      request,
+      "starting",
+      OAUTH_STARTUP_TIMEOUT_MS,
+      "Google sign-in setup timed out. Please try again.",
+    );
     publishOAuth({ busy: true, error: null });
     setBusy(true);
     setError(null);
@@ -171,11 +261,17 @@ export function useAuth() {
       if (data?.url) {
         const state = oauthStateFromAuthorizationUrl(data.url);
         if (!state) throw new Error("Google sign-in could not start securely. Please try again.");
+        activeOAuthState = state;
         // CR-008 WP-3: arm the callback gate so :3000/auth/callback only accepts
         // a code and state for this app-initiated sign-in, then open the system browser.
         await invoke("oauth_begin", { state });
         if (!current()) return;
-        waitForOAuthCallback(request);
+        armOAuthPhaseTimeout(
+          request,
+          "callback",
+          OAUTH_CALLBACK_TIMEOUT_MS,
+          "Google sign-in timed out. Please try again.",
+        );
         await invoke("open_url", { url: data.url });
       } else {
         throw new Error("Google sign-in could not start. Please try again.");
@@ -183,7 +279,7 @@ export function useAuth() {
       // The session arrives asynchronously via the oauth-callback listener.
     } catch (e) {
       if (current()) {
-        clearOAuthWait(request);
+        clearOAuthAttempt(request);
         oauthRequest++;
         publishOAuth({ busy: false, error: msg(e) });
         setError(msg(e));
@@ -193,7 +289,7 @@ export function useAuth() {
   }, []);
 
   const signOut = useCallback(async () => {
-    clearOAuthWait();
+    clearOAuthAttempt();
     oauthRequest++;
     publishOAuth({ busy: false, error: null });
     setBusy(false);
