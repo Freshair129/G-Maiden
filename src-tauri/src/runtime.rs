@@ -102,11 +102,14 @@ static SIGNAL_ENABLED: AtomicBool = AtomicBool::new(true);
 /// the capture loop reads it without locking; Med default matches `Sensitivity`.
 static SIGNAL_SENSITIVITY: AtomicU8 = AtomicU8::new(1); // 0=Low, 1=Med, 2=High
 
-/// Epoch-ms of the last GSI POST received. 0 = none yet. The watchdog uses this
-/// to tell "Dota open & sending" from "gone quiet".
-static LAST_POST_MS: AtomicU64 = AtomicU64::new(0);
-/// Accepted MVP contract: a GSI-backed conclusion is usable only while its
-/// last validated source observation is at most two seconds old.
+/// Epoch-ms of the last accepted GSI observation. Rejected/regressed POSTs do
+/// not refresh game-data freshness. Equal-clock samples remain acceptable
+/// because GSI's integer-second clock can carry changing state; without source
+/// ordering metadata, a same-clock replay cannot be distinguished. Dota
+/// process and listener status report transport/process liveness separately.
+static LAST_ACCEPTED_GSI_OBSERVATION_MS: AtomicU64 = AtomicU64::new(0);
+/// A GSI-backed conclusion is usable only while its last accepted source
+/// observation is at most two seconds old.
 pub const GSI_FRESHNESS_MAX_AGE_MS: u64 = 2_000;
 static PLAYER_TEAM: AtomicU8 = AtomicU8::new(0);
 
@@ -213,19 +216,27 @@ static SILENT_ARM: AtomicBool = AtomicBool::new(false);
 /// Percent chance (0-100) a match is silent-armed when the study is enabled.
 const SILENT_ARM_PROB: u32 = 25;
 
-pub fn mark_post(ms: u64) {
-    LAST_POST_MS.store(ms, Ordering::Relaxed);
-}
-pub fn last_post_ms() -> u64 {
-    LAST_POST_MS.load(Ordering::Relaxed)
+pub fn last_accepted_gsi_observation_ms() -> u64 {
+    LAST_ACCEPTED_GSI_OBSERVATION_MS.load(Ordering::Relaxed)
 }
 
-pub fn gsi_is_fresh_at(last_post_ms: u64, now_ms: u64) -> bool {
-    last_post_ms != 0 && now_ms.saturating_sub(last_post_ms) <= GSI_FRESHNESS_MAX_AGE_MS
+fn record_gsi_observation_if_accepted(
+    last_accepted_observation_ms: &AtomicU64,
+    accepted: bool,
+    observed_at_ms: u64,
+) {
+    if accepted {
+        last_accepted_observation_ms.store(observed_at_ms, Ordering::Relaxed);
+    }
+}
+
+pub fn gsi_is_fresh_at(last_accepted_observation_ms: u64, now_ms: u64) -> bool {
+    last_accepted_observation_ms != 0
+        && now_ms.saturating_sub(last_accepted_observation_ms) <= GSI_FRESHNESS_MAX_AGE_MS
 }
 
 pub fn gsi_is_fresh() -> bool {
-    gsi_is_fresh_at(last_post_ms(), epoch_ms())
+    gsi_is_fresh_at(last_accepted_gsi_observation_ms(), epoch_ms())
 }
 
 /// The score-derived dead-enemy discount is own-state. While the GSI feed is
@@ -278,60 +289,51 @@ fn session_id_for(match_id: Option<&str>, state: &mut MatchSessionState) -> Stri
     }
 }
 
+fn match_id_establishes_new_session(
+    current: &MatchSession,
+    incoming_match_id: Option<&str>,
+) -> bool {
+    match (current.match_id.as_deref(), incoming_match_id) {
+        (Some(current_id), Some(incoming_id)) => current_id != incoming_id,
+        (None, Some(_)) => lifecycle_is_terminal(current.lifecycle),
+        _ => false,
+    }
+}
+
 fn should_start_new_session(
     current: &MatchSession,
     lifecycle: MatchLifecycle,
     match_id: Option<&str>,
-    clock_time: i64,
+    explicit_entry_phase: bool,
 ) -> bool {
+    if current.lifecycle == MatchLifecycle::Abandon {
+        // A validated same ID still identifies the abandoned session. Unknown
+        // same-ID Draft observations are rejected before this helper; known
+        // states can resume or finish the original epoch.
+        if current.match_id.is_some() && current.match_id.as_deref() == match_id {
+            return false;
+        }
+        return lifecycle != MatchLifecycle::Abandon;
+    }
+
+    if match_id_establishes_new_session(current, match_id) {
+        return true;
+    }
+
     if let (Some(current_id), Some(incoming_id)) = (current.match_id.as_deref(), match_id) {
-        if current_id != incoming_id {
-            return true;
-        }
-        // A validated match id is authoritative across reconnects. A clock
-        // reset in the same match must not detach the resumed feed from its
-        // existing identity.
-        return false;
+        // A validated same ID is authoritative across reconnects and clock
+        // resets; it cannot create a new epoch by itself.
+        return current_id != incoming_id;
     }
 
-    match current.lifecycle {
-        MatchLifecycle::End => {
-            return match lifecycle {
-                MatchLifecycle::End => false,
-                MatchLifecycle::Draft => true,
-                MatchLifecycle::Live => current.last_clock_time > 5 && clock_time <= 5,
-                MatchLifecycle::Disconnected | MatchLifecycle::Abandon => false,
-            };
-        }
-        MatchLifecycle::Abandon => {
-            if matches!(
-                lifecycle,
-                MatchLifecycle::Live | MatchLifecycle::Disconnected
-            ) && current.match_id.is_some()
-                && current.match_id.as_deref() == match_id
-            {
-                return false;
-            }
-            return lifecycle != MatchLifecycle::Abandon;
-        }
-        _ => {}
+    if explicit_entry_phase && lifecycle == MatchLifecycle::Draft {
+        return current.lifecycle != MatchLifecycle::Draft
+            && current.resume_lifecycle != Some(MatchLifecycle::Draft);
     }
 
-    if lifecycle == MatchLifecycle::Draft {
-        return match current.lifecycle {
-            MatchLifecycle::Live => true,
-            MatchLifecycle::Disconnected => current.resume_lifecycle != Some(MatchLifecycle::Draft),
-            _ => false,
-        };
-    }
-
-    matches!(lifecycle, MatchLifecycle::Live)
-        && current.last_clock_time > 5
-        && clock_time <= 5
-        && matches!(
-            current.lifecycle,
-            MatchLifecycle::Live | MatchLifecycle::Disconnected
-        )
+    // A clock reset alone cannot distinguish a new match from a delayed GSI
+    // snapshot, especially when matchid is absent.
+    false
 }
 
 fn start_session(
@@ -375,31 +377,101 @@ fn observe_session_state(
     match_id: Option<String>,
     clock_time: i64,
 ) -> (MatchSessionSnapshot, bool) {
+    let (snapshot, boundary, _) =
+        observe_session_state_with_entry_evidence(state, lifecycle, match_id, clock_time, false);
+    (snapshot, boundary)
+}
+
+fn observe_session_state_with_entry_evidence(
+    state: &mut MatchSessionState,
+    lifecycle: MatchLifecycle,
+    match_id: Option<String>,
+    clock_time: i64,
+    explicit_entry_phase: bool,
+) -> (MatchSessionSnapshot, bool, bool) {
     let usable_match_id = match_id;
-    // POST_GAME is terminal. A delayed tick with the same or missing ID must
-    // not move the detector back to Live; a new trusted ID, a fresh draft, or
-    // a clock reset can establish a distinct session.
-    if let Some(current) = state
+    let same_abandoned_match_id = state.current.as_ref().is_some_and(|current| {
+        current.lifecycle == MatchLifecycle::Abandon
+            && current.match_id.is_some()
+            && current.match_id.as_deref() == usable_match_id.as_deref()
+    });
+    if same_abandoned_match_id && lifecycle == MatchLifecycle::Draft && !explicit_entry_phase {
+        // A non-entry/unknown state cannot prove that a same-ID process-exit
+        // resume has reached a usable game state. Keep the abandoned session
+        // and let a later validated Live/Disconnected tick resume it.
+        return (snapshot_of(state), false, false);
+    }
+    let identity_boundary = state.current.as_ref().is_some_and(|current| {
+        match_id_establishes_new_session(current, usable_match_id.as_deref())
+    });
+    let process_exit_boundary = state
         .current
         .as_ref()
-        .filter(|current| current.lifecycle == MatchLifecycle::End)
+        .is_some_and(|current| current.lifecycle == MatchLifecycle::Abandon);
+    // `lifecycle_for_tick` maps several non-terminal/unknown GSI states to
+    // Draft. Keep the current lifecycle for those states unless a changed
+    // identity or process-exit edge independently establishes a new session.
+    let lifecycle = if lifecycle == MatchLifecycle::Draft
+        && !explicit_entry_phase
+        && !identity_boundary
+        && !process_exit_boundary
     {
-        let distinct_id = match (current.match_id.as_deref(), usable_match_id.as_deref()) {
-            (Some(current_id), Some(incoming_id)) => current_id != incoming_id,
-            (None, Some(_)) => true,
-            _ => false,
-        };
-        let new_without_id = usable_match_id.is_none()
-            && (lifecycle == MatchLifecycle::Draft
-                || (lifecycle == MatchLifecycle::Live
-                    && current.last_clock_time > 5
-                    && clock_time <= 5));
-        if !distinct_id && !new_without_id {
-            return (snapshot_of(state), false);
+        state
+            .current
+            .as_ref()
+            .map_or(MatchLifecycle::Draft, |current| current.lifecycle)
+    } else {
+        lifecycle
+    };
+
+    if let Some(current) = state.current.as_ref() {
+        let changed_match_id =
+            match_id_establishes_new_session(current, usable_match_id.as_deref());
+        let same_match_id = matches!(
+            (current.match_id.as_deref(), usable_match_id.as_deref()),
+            (Some(current_id), Some(incoming_id)) if current_id == incoming_id
+        );
+        let explicit_entry = explicit_entry_phase && lifecycle == MatchLifecycle::Draft;
+        let resumed_after_disconnect =
+            current.lifecycle == MatchLifecycle::Disconnected && lifecycle == MatchLifecycle::Live;
+        let resumed_after_process_exit = current.lifecycle == MatchLifecycle::Abandon
+            && matches!(
+                lifecycle,
+                MatchLifecycle::Draft | MatchLifecycle::Live | MatchLifecycle::Disconnected
+            );
+
+        // An exact entry state paired with the same known match ID is
+        // contradictory after leaving Draft; ignore it as a delayed snapshot.
+        if same_match_id && explicit_entry && current.lifecycle != MatchLifecycle::Draft {
+            return (snapshot_of(state), false, false);
+        }
+
+        // A lower clock may be a delayed snapshot. Accept it only with a
+        // changed match ID, exact entry phase, or restart-like process-resume
+        // state. POST_GAME is not a resume signal and must keep its watermark.
+        if clock_time < current.last_clock_time
+            && !changed_match_id
+            && !explicit_entry
+            && !resumed_after_disconnect
+            && !resumed_after_process_exit
+        {
+            return (snapshot_of(state), false, false);
+        }
+
+        // POST_GAME remains terminal until a changed validated ID or an exact
+        // GSI match-entry phase appears. A Live clock reset is insufficient.
+        if current.lifecycle == MatchLifecycle::End && !changed_match_id && !explicit_entry {
+            return (snapshot_of(state), false, false);
         }
     }
+
     let start_new = state.current.as_ref().is_none_or(|current| {
-        should_start_new_session(current, lifecycle, usable_match_id.as_deref(), clock_time)
+        should_start_new_session(
+            current,
+            lifecycle,
+            usable_match_id.as_deref(),
+            explicit_entry_phase,
+        )
     });
 
     let mut boundary = false;
@@ -408,6 +480,15 @@ fn observe_session_state(
         boundary = true;
     } else if let Some(current) = state.current.as_mut() {
         let was_terminal = lifecycle_is_terminal(current.lifecycle);
+        let resumed_after_disconnect =
+            current.lifecycle == MatchLifecycle::Disconnected && lifecycle == MatchLifecycle::Live;
+        let resumed_same_match_after_process_exit = current.lifecycle == MatchLifecycle::Abandon
+            && matches!(
+                lifecycle,
+                MatchLifecycle::Live | MatchLifecycle::Disconnected
+            )
+            && current.match_id.is_some()
+            && current.match_id.as_deref() == usable_match_id.as_deref();
         if lifecycle == MatchLifecycle::Disconnected
             && !matches!(current.lifecycle, MatchLifecycle::Disconnected)
         {
@@ -422,11 +503,38 @@ fn observe_session_state(
             }
         }
         current.lifecycle = lifecycle;
-        current.last_clock_time = clock_time;
+        if resumed_after_disconnect || resumed_same_match_after_process_exit {
+            // A fresh GSI feed may resume an existing session with a reset
+            // clock. Keep its epoch and use the resumed clock as the new local
+            // baseline; the announcer still fences delayed samples separately.
+            current.last_clock_time = clock_time;
+        } else {
+            current.last_clock_time = current.last_clock_time.max(clock_time);
+        }
         boundary = !was_terminal && lifecycle_is_terminal(lifecycle);
     }
 
-    (snapshot_of(state), boundary)
+    (snapshot_of(state), boundary, true)
+}
+
+fn observe_session_state_with_freshness(
+    state: &mut MatchSessionState,
+    lifecycle: MatchLifecycle,
+    match_id: Option<String>,
+    clock_time: i64,
+    explicit_entry_phase: bool,
+    observed_at_ms: u64,
+    last_accepted_observation_ms: &AtomicU64,
+) -> (MatchSessionSnapshot, bool, bool) {
+    let result = observe_session_state_with_entry_evidence(
+        state,
+        lifecycle,
+        match_id,
+        clock_time,
+        explicit_entry_phase,
+    );
+    record_gsi_observation_if_accepted(last_accepted_observation_ms, result.2, observed_at_ms);
+    result
 }
 
 /// Apply one validated GSI lifecycle observation. A trusted match id enriches
@@ -438,15 +546,63 @@ pub fn observe_match_tick(
     clock_time: i64,
     in_game: bool,
 ) -> MatchSessionSnapshot {
+    observe_match_tick_with_entry_evidence(lifecycle, match_id, clock_time, in_game, false).0
+}
+
+/// Apply one GSI observation with an exact match-entry-state signal.
+/// Returns `(session, accepted)`; callers must not forward a rejected stale
+/// observation to downstream consumers. Clock regression alone never starts
+/// a session when matchid is absent.
+pub fn observe_match_tick_with_entry_evidence(
+    lifecycle: MatchLifecycle,
+    match_id: Option<String>,
+    clock_time: i64,
+    in_game: bool,
+    explicit_entry_phase: bool,
+) -> (MatchSessionSnapshot, bool) {
+    observe_match_tick_with_entry_evidence_at(
+        lifecycle,
+        match_id,
+        clock_time,
+        in_game,
+        explicit_entry_phase,
+        epoch_ms(),
+    )
+}
+
+/// Apply an observation with its receipt time. The freshness clock advances
+/// only when the session tracker accepts the observation.
+pub fn observe_match_tick_with_entry_evidence_at(
+    lifecycle: MatchLifecycle,
+    match_id: Option<String>,
+    clock_time: i64,
+    in_game: bool,
+    explicit_entry_phase: bool,
+    observed_at_ms: u64,
+) -> (MatchSessionSnapshot, bool) {
     let Ok(mut state) = MATCH_SESSION.lock() else {
-        return MatchSessionSnapshot {
-            match_id: None,
-            session_id: None,
-            session_epoch: 0,
-            session_lifecycle: None,
-        };
+        return (
+            MatchSessionSnapshot {
+                match_id: None,
+                session_id: None,
+                session_epoch: 0,
+                session_lifecycle: None,
+            },
+            false,
+        );
     };
-    let (snapshot, boundary) = observe_session_state(&mut state, lifecycle, match_id, clock_time);
+    let (snapshot, boundary, accepted) = observe_session_state_with_freshness(
+        &mut state,
+        lifecycle,
+        match_id,
+        clock_time,
+        explicit_entry_phase,
+        observed_at_ms,
+        &LAST_ACCEPTED_GSI_OBSERVATION_MS,
+    );
+    if !accepted {
+        return (snapshot, false);
+    }
     crate::package_ipc::note_lifecycle(snapshot.session_lifecycle);
     let effective_in_game = in_game
         && !snapshot
@@ -466,7 +622,7 @@ pub fn observe_match_tick(
         snapshot.session_epoch,
         snapshot.session_lifecycle == Some(MatchLifecycle::Live),
     );
-    snapshot
+    (snapshot, true)
 }
 
 /// GSI can stop while Dota remains open. Keep the session identity stable and
@@ -1704,6 +1860,23 @@ mod tests {
         observe_session_state(state, lifecycle, match_id.map(str::to_string), clock_time)
     }
 
+    fn observe_with_entry_phase(
+        state: &mut MatchSessionState,
+        lifecycle: MatchLifecycle,
+        match_id: Option<&str>,
+        clock_time: i64,
+        explicit_entry_phase: bool,
+    ) -> (MatchSessionSnapshot, bool) {
+        let (snapshot, boundary, _) = observe_session_state_with_entry_evidence(
+            state,
+            lifecycle,
+            match_id.map(str::to_string),
+            clock_time,
+            explicit_entry_phase,
+        );
+        (snapshot, boundary)
+    }
+
     #[test]
     fn draft_identity_is_promoted_when_a_valid_match_id_arrives() {
         let mut state = MatchSessionState::default();
@@ -1770,13 +1943,247 @@ mod tests {
     }
 
     #[test]
-    fn a_clock_reset_starts_a_new_local_session_when_match_id_is_unavailable() {
+    fn a_live_clock_reset_without_match_id_does_not_start_a_new_epoch() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, None, 30);
+        let (delayed, boundary) = observe(&mut state, MatchLifecycle::Live, None, 0);
+
+        assert_eq!(delayed.session_epoch, first.session_epoch);
+        assert_eq!(delayed.session_id, first.session_id);
+        assert_eq!(delayed.session_lifecycle, Some(MatchLifecycle::Live));
+        assert!(!boundary);
+        assert_eq!(state.current.as_ref().unwrap().last_clock_time, 30);
+    }
+
+    #[test]
+    fn a_missing_match_id_on_a_delayed_clock_reset_preserves_known_identity() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 30);
+        let (delayed, boundary) = observe(&mut state, MatchLifecycle::Live, None, 0);
+
+        assert_eq!(delayed.session_epoch, first.session_epoch);
+        assert_eq!(delayed.session_id, first.session_id);
+        assert_eq!(delayed.match_id.as_deref(), Some("123"));
+        assert_eq!(delayed.session_lifecycle, Some(MatchLifecycle::Live));
+        assert!(!boundary);
+        assert_eq!(state.current.as_ref().unwrap().last_clock_time, 30);
+    }
+
+    #[test]
+    fn same_match_id_with_a_regressed_terminal_tick_is_ignored() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 30);
+        let (delayed, boundary, accepted) = observe_session_state_with_entry_evidence(
+            &mut state,
+            MatchLifecycle::End,
+            Some("123".into()),
+            0,
+            false,
+        );
+
+        assert_eq!(delayed.session_epoch, first.session_epoch);
+        assert_eq!(delayed.session_id, first.session_id);
+        assert_eq!(delayed.session_lifecycle, Some(MatchLifecycle::Live));
+        assert!(!boundary);
+        assert!(
+            !accepted,
+            "stale GSI observations must be skipped downstream"
+        );
+        assert_eq!(state.current.as_ref().unwrap().last_clock_time, 30);
+    }
+
+    #[test]
+    fn exact_gsi_entry_phase_starts_a_new_local_session_when_match_id_is_unavailable() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, None, 30);
+        let (draft, boundary) =
+            observe_with_entry_phase(&mut state, MatchLifecycle::Draft, None, -1, true);
+        assert_eq!(draft.session_epoch, first.session_epoch + 1);
+        assert_ne!(draft.session_id, first.session_id);
+        assert!(boundary);
+
+        let (live, boundary) = observe(&mut state, MatchLifecycle::Live, None, 0);
+        assert_eq!(live.session_epoch, draft.session_epoch);
+        assert!(!boundary);
+    }
+
+    #[test]
+    fn unknown_draft_mapping_does_not_start_a_new_session() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, None, 30);
+        let (unknown, boundary) =
+            observe_with_entry_phase(&mut state, MatchLifecycle::Draft, None, 0, false);
+        assert_eq!(unknown.session_epoch, first.session_epoch);
+        assert_eq!(unknown.session_lifecycle, Some(MatchLifecycle::Live));
+        assert!(!boundary);
+        assert_eq!(state.current.as_ref().unwrap().last_clock_time, 30);
+    }
+
+    #[test]
+    fn delayed_zero_clock_after_terminal_end_does_not_resurrect_local_session() {
         let mut state = MatchSessionState::default();
         let (first, _) = observe(&mut state, MatchLifecycle::Live, None, 900);
-        let (next, boundary) = observe(&mut state, MatchLifecycle::Live, None, 0);
-        assert_eq!(next.session_epoch, first.session_epoch + 1);
-        assert_ne!(next.session_id, first.session_id);
+        observe(&mut state, MatchLifecycle::End, None, 1200);
+        let (late, boundary) = observe(&mut state, MatchLifecycle::Live, None, 0);
+        assert_eq!(late.session_epoch, first.session_epoch);
+        assert_eq!(late.session_lifecycle, Some(MatchLifecycle::End));
+        assert!(!boundary);
+    }
+
+    #[test]
+    fn explicit_entry_phase_after_terminal_end_starts_local_session() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, None, 900);
+        observe(&mut state, MatchLifecycle::End, None, 1200);
+        let (draft, boundary) =
+            observe_with_entry_phase(&mut state, MatchLifecycle::Draft, None, -1, true);
+        assert_eq!(draft.session_epoch, first.session_epoch + 1);
         assert!(boundary);
+    }
+
+    #[test]
+    fn changed_match_id_on_non_entry_state_starts_as_draft_after_terminal_session() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 900);
+        observe(&mut state, MatchLifecycle::End, Some("123"), 1200);
+
+        let (next, boundary) = observe(&mut state, MatchLifecycle::Draft, Some("456"), -1);
+        assert_eq!(next.session_epoch, first.session_epoch + 1);
+        assert_eq!(next.match_id.as_deref(), Some("456"));
+        assert_eq!(next.session_lifecycle, Some(MatchLifecycle::Draft));
+        assert!(boundary);
+    }
+
+    #[test]
+    fn new_match_id_after_idless_terminal_session_starts_new_draft() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, None, 900);
+        observe(&mut state, MatchLifecycle::End, None, 1200);
+
+        let (next, boundary) = observe(&mut state, MatchLifecycle::Draft, Some("456"), -1);
+        assert_eq!(next.session_epoch, first.session_epoch + 1);
+        assert_eq!(next.match_id.as_deref(), Some("456"));
+        assert_eq!(next.session_lifecycle, Some(MatchLifecycle::Draft));
+        assert!(boundary);
+    }
+
+    #[test]
+    fn explicit_process_exit_can_restart_from_non_entry_draft_state() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, None, 30);
+        observe(&mut state, MatchLifecycle::Abandon, None, 30);
+
+        let (next, boundary) = observe(&mut state, MatchLifecycle::Draft, None, -1);
+        assert_eq!(next.session_epoch, first.session_epoch + 1);
+        assert_eq!(next.session_lifecycle, Some(MatchLifecycle::Draft));
+        assert!(boundary);
+    }
+
+    #[test]
+    fn same_id_process_exit_resume_resets_clock_baseline_for_followup_ticks() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 900);
+        observe(&mut state, MatchLifecycle::Abandon, Some("123"), 900);
+
+        let (resumed, boundary) = observe(&mut state, MatchLifecycle::Live, Some("123"), 0);
+        assert_eq!(resumed.session_epoch, first.session_epoch);
+        assert!(!boundary);
+        assert_eq!(state.current.as_ref().unwrap().last_clock_time, 0);
+
+        observe(&mut state, MatchLifecycle::Live, Some("123"), 1);
+        assert_eq!(state.current.as_ref().unwrap().last_clock_time, 1);
+    }
+
+    #[test]
+    fn same_id_non_entry_after_process_exit_does_not_start_new_epoch() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 900);
+        observe(&mut state, MatchLifecycle::Abandon, Some("123"), 900);
+
+        let (unknown, boundary, accepted) = observe_session_state_with_entry_evidence(
+            &mut state,
+            MatchLifecycle::Draft,
+            Some("123".to_string()),
+            950,
+            false,
+        );
+        assert!(!accepted);
+        assert_eq!(unknown.session_epoch, first.session_epoch);
+        assert_eq!(unknown.match_id.as_deref(), Some("123"));
+        assert_eq!(unknown.session_lifecycle, Some(MatchLifecycle::Abandon));
+        assert!(!boundary);
+    }
+
+    #[test]
+    fn same_id_post_game_after_process_exit_finishes_existing_epoch() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 900);
+        observe(&mut state, MatchLifecycle::Abandon, Some("123"), 900);
+
+        let (ended, boundary) = observe(&mut state, MatchLifecycle::End, Some("123"), 1200);
+        assert_eq!(ended.session_epoch, first.session_epoch);
+        assert_eq!(ended.match_id.as_deref(), Some("123"));
+        assert_eq!(ended.session_lifecycle, Some(MatchLifecycle::End));
+        assert!(!boundary);
+    }
+
+    #[test]
+    fn regressed_same_id_post_game_after_process_exit_is_rejected_before_live_resume() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 900);
+        observe(&mut state, MatchLifecycle::Abandon, Some("123"), 900);
+
+        let (stale_end, boundary, accepted) = observe_session_state_with_entry_evidence(
+            &mut state,
+            MatchLifecycle::End,
+            Some("123".to_string()),
+            800,
+            false,
+        );
+        assert!(!accepted);
+        assert!(!boundary);
+        assert_eq!(stale_end.session_epoch, first.session_epoch);
+        assert_eq!(stale_end.session_lifecycle, Some(MatchLifecycle::Abandon));
+        assert_eq!(state.current.as_ref().unwrap().last_clock_time, 900);
+
+        let (resumed, boundary, accepted) = observe_session_state_with_entry_evidence(
+            &mut state,
+            MatchLifecycle::Live,
+            Some("123".to_string()),
+            0,
+            false,
+        );
+        assert!(accepted);
+        assert!(!boundary);
+        assert_eq!(resumed.session_epoch, first.session_epoch);
+        assert_eq!(resumed.session_lifecycle, Some(MatchLifecycle::Live));
+        assert_eq!(state.current.as_ref().unwrap().last_clock_time, 0);
+    }
+
+    #[test]
+    fn same_match_id_entry_phase_cannot_resurrect_a_terminal_session() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, Some("123"), 900);
+        observe(&mut state, MatchLifecycle::End, Some("123"), 1200);
+        let (late_entry, boundary) =
+            observe_with_entry_phase(&mut state, MatchLifecycle::Draft, Some("123"), -1, true);
+
+        assert_eq!(late_entry.session_epoch, first.session_epoch);
+        assert_eq!(late_entry.session_id, first.session_id);
+        assert_eq!(late_entry.session_lifecycle, Some(MatchLifecycle::End));
+        assert!(!boundary);
+        assert_eq!(state.current.as_ref().unwrap().last_clock_time, 1200);
+    }
+
+    #[test]
+    fn no_id_reconnect_keeps_epoch_without_clock_only_restart() {
+        let mut state = MatchSessionState::default();
+        let (first, _) = observe(&mut state, MatchLifecycle::Live, None, 30);
+        observe(&mut state, MatchLifecycle::Disconnected, None, 30);
+        let (resumed, boundary) = observe(&mut state, MatchLifecycle::Live, None, 0);
+        assert_eq!(resumed.session_epoch, first.session_epoch);
+        assert_eq!(resumed.session_lifecycle, Some(MatchLifecycle::Live));
+        assert!(!boundary);
     }
 
     #[test]
@@ -1974,7 +2381,10 @@ mod tests {
 
     #[test]
     fn gsi_freshness_uses_the_accepted_two_second_source_age() {
-        assert!(!gsi_is_fresh_at(0, 10_000), "no valid post is unknown");
+        assert!(
+            !gsi_is_fresh_at(0, 10_000),
+            "no accepted source observation is unknown"
+        );
         assert!(
             gsi_is_fresh_at(10_000, 12_000),
             "the 2s boundary is inclusive"
@@ -1987,6 +2397,70 @@ mod tests {
             gsi_is_fresh_at(11_000, 10_000),
             "clock rollback must not age a source"
         );
+    }
+
+    #[test]
+    fn rejected_observations_do_not_refresh_source_freshness_but_accepted_control_does() {
+        let mut state = MatchSessionState::default();
+        let last_accepted_observation_ms = AtomicU64::new(0);
+
+        let (_, _, accepted) = observe_session_state_with_freshness(
+            &mut state,
+            MatchLifecycle::Live,
+            None,
+            30,
+            false,
+            10_000,
+            &last_accepted_observation_ms,
+        );
+        assert!(
+            accepted,
+            "the initial live sample is a valid freshness baseline"
+        );
+        assert_eq!(last_accepted_observation_ms.load(Ordering::Relaxed), 10_000);
+
+        let (_, _, accepted) = observe_session_state_with_freshness(
+            &mut state,
+            MatchLifecycle::Live,
+            None,
+            30,
+            false,
+            11_000,
+            &last_accepted_observation_ms,
+        );
+        assert!(accepted, "same-second GSI samples may carry changing state");
+        assert_eq!(last_accepted_observation_ms.load(Ordering::Relaxed), 11_000);
+
+        let (_, _, accepted) = observe_session_state_with_freshness(
+            &mut state,
+            MatchLifecycle::Live,
+            None,
+            29,
+            false,
+            13_001,
+            &last_accepted_observation_ms,
+        );
+        assert!(!accepted, "a regressed clock sample is rejected");
+        let last_accepted = last_accepted_observation_ms.load(Ordering::Relaxed);
+        assert_eq!(last_accepted, 11_000);
+        assert!(
+            !gsi_is_fresh_at(last_accepted, 13_001),
+            "a rejected POST must not make the older accepted game data fresh"
+        );
+
+        let (_, _, accepted) = observe_session_state_with_freshness(
+            &mut state,
+            MatchLifecycle::Live,
+            None,
+            31,
+            false,
+            13_002,
+            &last_accepted_observation_ms,
+        );
+        assert!(accepted, "a current sample remains an accepted control");
+        let last_accepted = last_accepted_observation_ms.load(Ordering::Relaxed);
+        assert_eq!(last_accepted, 13_002);
+        assert!(gsi_is_fresh_at(last_accepted, 13_002));
     }
 
     #[test]

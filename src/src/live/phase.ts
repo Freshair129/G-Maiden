@@ -12,8 +12,8 @@
 export type MatchPhase = "standby" | "prep" | "live" | "debrief";
 
 export type PhaseInput = {
-  /** GsiStatus.gsi_active — false means the backend hasn't heard from GSI
-   *  recently (watchdog, gsi.rs). Not connected = nothing else is trustworthy. */
+  /** GsiStatus.gsi_active — true only while an accepted GSI observation is
+   *  within its freshness window. Process and listener liveness are separate. */
   gsiOnline: boolean;
   /** Dota process liveness; lets an in-progress session remain live while its
    *  GSI source is stale, without trusting the last tick's stats. */

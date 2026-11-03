@@ -197,6 +197,17 @@ fn is_in_draft(game_state: &str) -> bool {
     )
 }
 
+/// Exact GSI states that show a match is entering its lobby/start phase.
+/// Unknown states are not session-boundary evidence.
+fn is_explicit_match_entry_phase(game_state: &str) -> bool {
+    matches!(
+        game_state,
+        "DOTA_GAMERULES_STATE_HERO_SELECTION"
+            | "DOTA_GAMERULES_STATE_STRATEGY_TIME"
+            | "DOTA_GAMERULES_STATE_PRE_GAME"
+    )
+}
+
 fn lifecycle_for_tick(tick: &GameTick) -> crate::runtime::MatchLifecycle {
     use crate::runtime::MatchLifecycle;
     match tick.game_state.as_str() {
@@ -609,15 +620,22 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
             return (StatusCode::UNPROCESSABLE_ENTITY, "invalid GSI payload");
         }
     };
-    // Note the POST (watchdog uses recency) and gate the CV pipeline to live
-    // matches (saves idle CPU).
-    crate::runtime::mark_post(epoch_ms());
-    let session = crate::runtime::observe_match_tick(
+    // Preserve receipt time, but advance source freshness only if the tracker
+    // accepts this observation. Dota process/listener status reports liveness.
+    let observed_at_ms = epoch_ms();
+    let (session, accepted) = crate::runtime::observe_match_tick_with_entry_evidence_at(
         lifecycle_for_tick(&tick),
         match_id,
         tick.clock_time,
         tick.in_game,
+        is_explicit_match_entry_phase(&tick.game_state),
+        observed_at_ms,
     );
+    if !accepted {
+        // Do not let a regressed snapshot update any downstream state or event
+        // detector after the session tracker has rejected it.
+        return (StatusCode::OK, "ok");
+    }
     crate::runtime::set_in_draft(is_in_draft(&tick.game_state));
     crate::runtime::set_player_team_name(&tick.team_name);
     crate::runtime::update_warning_context(session.session_epoch, &tick);
@@ -770,8 +788,15 @@ fn parse_install_request(body: &str) -> InstallRequest {
 
 /// Report verified installed GANN coverage and optionally activate its exact container digest.
 /// This loopback route never extracts or rewrites package media.
-async fn announcer_install(_body: String) -> (axum::http::StatusCode, axum::Json<serde_json::Value>) {
-    (axum::http::StatusCode::GONE,axum::Json(serde_json::json!({"ok":false,"error":"Use the registered current-user Maiden package pipe"})))
+async fn announcer_install(
+    _body: String,
+) -> (axum::http::StatusCode, axum::Json<serde_json::Value>) {
+    (
+        axum::http::StatusCode::GONE,
+        axum::Json(
+            serde_json::json!({"ok":false,"error":"Use the registered current-user Maiden package pipe"}),
+        ),
+    )
 }
 
 /// Parse the bounded v1 authoring payload from G-AnnStudio. This is deliberately
@@ -1016,14 +1041,14 @@ enum GsiFreshness {
 fn freshness_at(
     dota_running: bool,
     listener_ready: bool,
-    last_post_ms: u64,
+    last_accepted_observation_ms: u64,
     now_ms: u64,
 ) -> GsiFreshness {
     if !dota_running || !listener_ready {
         GsiFreshness::Unavailable
-    } else if last_post_ms == 0 {
+    } else if last_accepted_observation_ms == 0 {
         GsiFreshness::Waiting
-    } else if crate::runtime::gsi_is_fresh_at(last_post_ms, now_ms) {
+    } else if crate::runtime::gsi_is_fresh_at(last_accepted_observation_ms, now_ms) {
         GsiFreshness::Fresh
     } else {
         GsiFreshness::Stale
@@ -1090,7 +1115,7 @@ struct GsiStatus {
     /// True only while a validated GSI observation is within the accepted 2s age.
     gsi_active: bool,
     gsi_freshness: GsiFreshness,
-    /// Age of the last validated GSI POST; absent until the first valid payload.
+    /// Age of the last accepted GSI observation; absent until an observation is accepted.
     gsi_age_ms: Option<u64>,
     in_game: bool,
     match_id: Option<String>,
@@ -1138,7 +1163,7 @@ fn emit_freshness_status(app: &AppHandle) {
 
 fn emit_status_snapshot(app: &AppHandle, running: bool, display_exclusive: bool) {
     let now_ms = epoch_ms();
-    let last = crate::runtime::last_post_ms();
+    let last = crate::runtime::last_accepted_gsi_observation_ms();
     let server_state = server_state();
     let gsi_age_ms = (last != 0).then(|| now_ms.saturating_sub(last));
     let gsi_freshness = freshness_at(
@@ -1420,6 +1445,32 @@ mod tests {
             lifecycle_for_tick(&tick),
             crate::runtime::MatchLifecycle::End
         );
+    }
+
+    #[test]
+    fn only_exact_lobby_entry_states_are_session_boundary_evidence() {
+        for state in [
+            "DOTA_GAMERULES_STATE_HERO_SELECTION",
+            "DOTA_GAMERULES_STATE_STRATEGY_TIME",
+            "DOTA_GAMERULES_STATE_PRE_GAME",
+        ] {
+            assert!(is_explicit_match_entry_phase(state), "{state}");
+        }
+        for state in [
+            "DOTA_GAMERULES_STATE_INIT",
+            "DOTA_GAMERULES_STATE_WAIT_FOR_PLAYERS_TO_LOAD",
+            "DOTA_GAMERULES_STATE_WAIT_FOR_MAP_TO_LOAD",
+            "DOTA_GAMERULES_STATE_PLAYER_DRAFT",
+            "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS",
+            "DOTA_GAMERULES_STATE_POST_GAME",
+            "DOTA_GAMERULES_STATE_DISCONNECT",
+            "DOTA_GAMERULES_STATE_TEAM_SHOWCASE",
+            "DOTA_GAMERULES_STATE_CUSTOM_GAME_SETUP",
+            "DOTA_GAMERULES_STATE_SCENARIO_SETUP",
+            "DOTA_GAMERULES_STATE_UNKNOWN",
+        ] {
+            assert!(!is_explicit_match_entry_phase(state), "{state}");
+        }
     }
 
     fn run_handle(payload: Value) -> GameTick {

@@ -2,7 +2,7 @@
 title: "G-Maiden — Engineering Spec"
 doc_id: "engineering-spec"
 status: "active"
-version: "0.3.6"
+version: "0.3.10"
 updated: 2026-11-03
 owner: "Boss"
 source_of_truth: false
@@ -132,6 +132,51 @@ admission, T3 = loopback first audible sample. รวม acquisition wait ห้
 - ฟิลด์ที่บริโภค: `map` (clock_time, game_state), `player` (net worth, gold), `hero` (xpos/ypos/level/hp),
   `abilities`, `items`, `provider`
 - **ข้อจำกัดสำคัญ:** GSI **ไม่ส่งตำแหน่งฮีโร่ศัตรู** → ตำแหน่งศัตรูมาจาก minimap CV (ดู TDD R-02)
+
+#### 4.1.1 Match session identity and epoch boundaries
+
+The GSI handler reads `map.matchid`, `map.game_state`, and `map.clock_time` from a validated local
+payload. A new local session epoch is established by a different non-empty match ID from the
+current known ID, the first non-empty match ID after an ID-less terminal session, or an exact entry state (`DOTA_GAMERULES_STATE_HERO_SELECTION`,
+`DOTA_GAMERULES_STATE_STRATEGY_TIME`, or `DOTA_GAMERULES_STATE_PRE_GAME`) when it does not
+contradict the same known match ID. A local `Abandon`/process-exit transition can start a new local
+session when a prior match cannot be matched; a same-ID resume retains its epoch. A clock reset by
+itself is never sufficient.
+
+If an observation omits an already known match ID, retain the known ID and session identity. Drop a
+regressed clock sample unless the feed is explicitly resuming from `DISCONNECTED`, a changed match ID
+arrives, an exact entry state establishes a new local session, or a process-exit observation has a
+restart-like `DRAFT`, `LIVE`, or `DISCONNECTED` lifecycle. A same-ID reconnect retains its epoch; a
+same-ID regressed terminal or entry-state sample cannot change the current lifecycle. After a
+process exit, an unknown/non-entry state carrying the same known match ID is rejected until a
+validated `LIVE` or `DISCONNECTED` tick resumes that epoch; the resumed tick resets the local clock
+watermark. A same-ID `POST_GAME` tick closes the existing epoch only when its clock is not regressed;
+`POST_GAME` is not process-exit resume evidence. Unrecognized/non-entry `game_state` values cannot
+establish a new epoch by themselves; a changed match ID or explicit process-exit lifecycle can still
+establish a boundary.
+
+**Acceptance criteria:** (1) `LIVE` clock 30 → 0 with no match ID preserves epoch and clock
+watermark; (2) a delayed zero-clock observation with `matchid` missing preserves the prior ID and
+session; (3) a same-ID regressed terminal sample is ignored; (4) a different ID from the current
+known ID or first ID after an ID-less terminal session starts an epoch; (5) an exact entry state can start a no-ID session; (6) same-ID reconnect and explicit process-exit resume retain their existing lifecycle
+semantics, with the same-ID process-exit resume resetting the clock watermark and same-ID
+`POST_GAME` closing the existing epoch only at a non-regressed clock; (7) a same-ID non-entry state
+after process exit is rejected until a validated resume tick; (8) unknown states do not establish a
+new session by themselves, while a changed match ID may establish a boundary; (9) a rejected
+regressed POST is not forwarded to downstream GSI consumers.
+
+**Success criteria:** the runtime and GSI unit tests pass, and a composed test covers the GSI entry
+state mapping through session-epoch assignment while preserving legitimate match-ID and reconnect
+transitions. Full-crate Cargo tests remain required for integration acceptance; a source-only harness
+does not replace that gate.
+
+**Evidence limit:** The session tracker does not retain a per-POST ordering token or use the optional
+`provider.timestamp` field as ordering evidence. A delayed exact entry-state payload without a
+contradictory known match ID is therefore indistinguishable from a current entry state and may create
+a local epoch. When both match ID and explicit entry evidence are absent, a true new match cannot be
+distinguished from a delayed old snapshot; the implementation preserves the current epoch and may
+defer recognizing the new match. These rules are local event-grouping behavior, not game identity
+attestation.
 
 ### 4.2 Cloud Cognitive Engine — Claude CLI / Anthropic API (SRS §4.2)
 - โค้ดจริง: **Claude CLI** (subprocess) หรือ **Anthropic Messages API** `POST https://api.anthropic.com/v1/messages` (`model: claude-haiku-4-5`, [`master.rs`](file:///g:/G-Maiden/src-tauri/src/master.rs))
@@ -355,3 +400,7 @@ Local visual receipts distinguish warmed/cold, wait count, first nontransparent 
 | 0.3.4 | 2026-10-30 | Record revision4 paused decoder preparation, VP8 media and bounded natural-completion grace. |
 | 0.3.5 | 2026-11-03 | Define same-session announcer behavior for regressed GSI match-clock samples and equal-clock kill/death counter regressions; other same-second ordering remains unknown. |
 | 0.3.6 | 2026-11-03 | Preserve the match-clock watermark across verification gaps and reseeds to prevent delayed snapshots from replaying events. |
+| 0.3.7 | 2026-11-03 | Require explicit GSI/process evidence for local session epochs; clock resets alone cannot start or resurrect a session. |
+| 0.3.8 | 2026-11-03 | Reject unknown same-ID ticks after process exit and reset the clock watermark on a validated same-ID resume. |
+| 0.3.9 | 2026-11-03 | Keep same-ID post-game observations within the existing epoch after process exit. |
+| 0.3.10 | 2026-11-03 | Reject regressed same-ID post-game observations after process exit; only restart-like states may use the reset exception. |
