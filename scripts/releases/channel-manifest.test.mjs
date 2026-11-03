@@ -1,6 +1,10 @@
 import { describe, it } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, mkdtempSync, writeFileSync, rmSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import { join } from 'node:path';
+import { spawnSync } from 'node:child_process';
+import { fileURLToPath } from 'node:url';
 import { validateManifest, validatePublishedManifest, promoteManifest } from './channel-manifest.mjs';
 
 const artifact = { url: 'https://github.com/Freshair129/G-Maiden/releases/download/v1.2.3/G-Maiden.msi', signature: 'untrusted comment: signature\nABC', sha256: 'a'.repeat(64) };
@@ -44,6 +48,22 @@ describe('release channel manifests', () => {
     assert.equal(promoted.channel, 'stable');
     assert.deepEqual(promoted.platforms, candidate.platforms);
     assert.equal(promoted.sourceSha, candidate.sourceSha);
+  });
+  it('promotes through the CLI with three manifest paths', () => {
+    const dir = mkdtempSync(join(tmpdir(), 'gm-promote-'));
+    try {
+      const paths = ['candidate.json', 'stable.json', 'approval.json'].map(name => join(dir, name));
+      const approval = { version: candidate.version, sourceSha: candidate.sourceSha, unresolvedS0S1: 0, approver: 'Boss', approvedAt: '2026-08-01T00:00:00.000Z' };
+      [candidate, stable, approval].forEach((value, i) => writeFileSync(paths[i], JSON.stringify(value)));
+      const result = spawnSync(process.execPath, [fileURLToPath(new URL('./channel-manifest.mjs', import.meta.url)), 'promote', ...paths], { encoding: 'utf8' });
+      assert.equal(result.status, 0, result.stderr);
+      const output = JSON.parse(readFileSync(paths[1], 'utf8'));
+      assert.equal(output.channel, 'stable');
+      assert.deepEqual(output.platforms, candidate.platforms);
+      assert.equal(output.sourceSha, candidate.sourceSha);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
   it('rejects an unresolved release blocker before Stable mutation', () => {
     assert.throws(() => promoteManifest(candidate, stable, { version: candidate.version, sourceSha: candidate.sourceSha, unresolvedS0S1: 1, approver: 'Boss', approvedAt: '2026-08-01T00:00:00.000Z' }), /unresolved S0\/S1/);
