@@ -1826,6 +1826,10 @@ mod backend {
 
     #[cfg(test)]
     mod tests {
+        //! Latency harness — times the controllable compute pipeline (prefilter →
+        //! detect → sentry → motion → signal) over many synthetic frames and
+        //! asserts p99 stays well inside budget. Capture I/O is budgeted
+        //! separately, so it's not in this measurement.
         use super::*;
 
         #[test]
@@ -1838,11 +1842,7 @@ mod backend {
             assert!(!sensor_is_healthy("dxgi", true, true, true, 0));
             assert!(!sensor_is_healthy("dxgi", true, false, true, STALE_FRAME_MS + 1));
         }
-        //! Latency harness — times the controllable compute pipeline (prefilter →
-        //! detect → sentry → motion → signal) over many synthetic frames and
-        //! asserts p99 stays well inside budget. Capture I/O is budgeted
-        //! separately, so it's not in this measurement.
-        use super::*;
+
         #[test]
         fn missing_state_schema_has_confirmed_presence_and_clears_unready() {
             let missing = vec![("axe".to_string(), 6000, (0.2, 0.4))];
