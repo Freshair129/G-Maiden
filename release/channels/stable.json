@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "channel": "stable",
   "version": "0.13.6",
-  "notes": "Candidate build. Not promoted to Stable.",
+  "notes": "G-Maiden 0.13.6 MVP release.",
   "pub_date": "2026-11-03T01:21:28.575Z",
   "sourceSha": "8efdd32e03a6ce26088c06db29394bddbe9ad4bf",
   "publishedAt": "2026-11-03T12:38:53.139Z",
@@ -27,7 +27,7 @@
     "approver": "Codex (owner-delegated technical review)",
     "approvedAt": "2026-11-03T04:02:31Z",
     "previousVersion": "0.0.0",
-    "candidateManifest": "/home/runner/work/G-Maiden/G-Maiden/release/channels/dev.json",
+    "candidateManifest": "release/channels/dev.json",
     "evidence": "release/evidence/v0.13.6/review.md"
   }
 }
