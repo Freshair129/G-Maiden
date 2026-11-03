@@ -103,6 +103,40 @@ describe("peer skill presentation guard", () => {
     });
   });
 
+  it("does not execute a skill getter that revokes consent during evaluation", () => {
+    const envelope = { ...eligible, skills: ["ability_1"] };
+    let getterCalls = 0;
+    Object.defineProperty(envelope.skills, 0, {
+      configurable: true,
+      get: () => {
+        getterCalls += 1;
+        envelope.skillShareConsent = false;
+        return "ability_1";
+      },
+    });
+
+    expect(visibility(envelope)).toEqual({
+      state: "unknown", skills: null, reason: "invalid_sample", ageMs: null,
+    });
+    expect(getterCalls).toBe(0);
+    expect(envelope.skillShareConsent).toBe(true);
+  });
+
+  it("rechecks consent after inspecting a proxied skill array", () => {
+    const envelope = { ...eligible, skills: ["ability_1"] };
+    envelope.skills = new Proxy(envelope.skills, {
+      getOwnPropertyDescriptor(target, property) {
+        const descriptor = Reflect.getOwnPropertyDescriptor(target, property);
+        if (property === "0") envelope.skillShareConsent = false;
+        return descriptor;
+      },
+    });
+
+    expect(visibility(envelope)).toEqual({
+      state: "unknown", skills: null, reason: "consent_required", ageMs: null,
+    });
+  });
+
   it.each([null, [""], [" a"], ["a "], ["a", null], ["a", 3], "ability_1"])(
     "rejects malformed skill lists: %o",
     (skills) => {

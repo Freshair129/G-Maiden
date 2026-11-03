@@ -205,11 +205,18 @@ export function peerSkillPresentation(input: unknown): PeerSkillPresentation {
     if (ownValue("partyStatus") !== "connected") return unknown("party_unavailable");
 
     const rawSkills = ownValue("skills");
-    if (!Array.isArray(rawSkills) || rawSkills.length === 0) return unknown("invalid_sample");
+    if (!Array.isArray(rawSkills)) return unknown("invalid_sample");
+    const lengthDescriptor = Object.getOwnPropertyDescriptor(rawSkills, "length");
+    if (!lengthDescriptor || !Object.prototype.hasOwnProperty.call(lengthDescriptor, "value")
+      || typeof lengthDescriptor.value !== "number" || !Number.isSafeInteger(lengthDescriptor.value)
+      || lengthDescriptor.value === 0) return unknown("invalid_sample");
+
+    const skillCount = lengthDescriptor.value;
     const skills: string[] = [];
-    for (let index = 0; index < rawSkills.length; index += 1) {
-      if (!Object.prototype.hasOwnProperty.call(rawSkills, index)) return unknown("invalid_sample");
-      const skill = rawSkills[index] as unknown;
+    for (let index = 0; index < skillCount; index += 1) {
+      const descriptor = Object.getOwnPropertyDescriptor(rawSkills, index);
+      if (!descriptor || !Object.prototype.hasOwnProperty.call(descriptor, "value")) return unknown("invalid_sample");
+      const skill = descriptor.value as unknown;
       if (typeof skill !== "string" || skill.length === 0 || skill.trim() !== skill) return unknown("invalid_sample");
       skills.push(skill);
     }
@@ -236,6 +243,14 @@ export function peerSkillPresentation(input: unknown): PeerSkillPresentation {
     const ageMs = sampleAgeMsAtObservation + elapsedMs;
     if (!Number.isFinite(ageMs)) return unknown("invalid_sample");
     if (ageMs > PARTY_FRESH_MS) return unknown("stale", ageMs);
+
+    // Recheck the assertions after reading the untrusted skill container.
+    if (ownValue("verifiedFriend") !== true) return unknown("friend_unverified");
+    if (ownValue("sameMatch") !== true || ownValue("sameTeam") !== true) return unknown("scope_unverified");
+    if (ownValue("sourceAttributionVerified") !== true) return unknown("source_unverified");
+    if (ownValue("partyStatus") !== "connected") return unknown("party_unavailable");
+    if (ownValue("skillShareConsent") !== true) return unknown("consent_required");
+
     return { state: "visible", skills, ageMs };
   } catch {
     return unknown("invalid_evidence");
