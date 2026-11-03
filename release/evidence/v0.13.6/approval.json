@@ -1,0 +1,8 @@
+{
+  "version": "0.13.6",
+  "sourceSha": "8efdd32e03a6ce26088c06db29394bddbe9ad4bf",
+  "unresolvedS0S1": 0,
+  "approver": "Codex (owner-delegated technical review)",
+  "approvedAt": "2026-11-03T04:02:31Z",
+  "evidence": "release/evidence/v0.13.6/review.md"
+}
