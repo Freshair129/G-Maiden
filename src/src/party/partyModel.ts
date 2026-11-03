@@ -162,6 +162,7 @@ export interface PeerSkillEvidence {
 }
 
 export type PeerSkillPresentationReason =
+  | "invalid_evidence"
   | "consent_required"
   | "friend_unverified"
   | "scope_unverified"
@@ -176,45 +177,69 @@ export type PeerSkillPresentation =
   | { state: "unknown"; skills: null; reason: PeerSkillPresentationReason; ageMs: number | null };
 
 /**
- * Presentation-only fail-closed gate. Its evidence must come from the trusted
- * local identity, consent, scope and source-validation paths. Observation and
- * current times must share a local monotonic clock origin. This helper does
- * not prove any of them and must not be used to publish peer data.
+ * Presentation-only fail-closed gate. Boolean evidence flags are assertions;
+ * they do not authenticate peer identity, friendship or consent. A trusted
+ * producer must establish those facts before calling this helper. Reconnect
+ * invalidation and session-generation fencing must be enforced by future
+ * integration; `connected` alone does not bind a sample to the current session.
+ * Observation and current times must share a local monotonic clock origin.
+ * This helper does not verify these properties and must not publish peer data.
  */
-export function peerSkillPresentation(input: PeerSkillEvidence): PeerSkillPresentation {
-  if (input.skillShareConsent !== true) {
-    return { state: "unknown", skills: null, reason: "consent_required", ageMs: null };
-  }
-  if (input.verifiedFriend !== true) {
-    return { state: "unknown", skills: null, reason: "friend_unverified", ageMs: null };
-  }
-  if (input.sameMatch !== true || input.sameTeam !== true) {
-    return { state: "unknown", skills: null, reason: "scope_unverified", ageMs: null };
-  }
-  if (input.sourceAttributionVerified !== true) {
-    return { state: "unknown", skills: null, reason: "source_unverified", ageMs: null };
-  }
-  if (input.partyStatus !== "connected") {
-    return { state: "unknown", skills: null, reason: "party_unavailable", ageMs: null };
-  }
-  if (!Array.isArray(input.skills) || input.skills.length === 0
-    || input.skills.some((skill) => typeof skill !== "string" || skill.trim() !== skill || skill.length === 0)) {
-    return { state: "unknown", skills: null, reason: "invalid_sample", ageMs: null };
-  }
-  if (typeof input.sampleAgeMsAtObservation !== "number" || !Number.isFinite(input.sampleAgeMsAtObservation)
-    || input.sampleAgeMsAtObservation < 0) {
-    return { state: "unknown", skills: null, reason: "invalid_sample", ageMs: null };
-  }
-  if (typeof input.observedAtMonotonicMs !== "number" || !Number.isFinite(input.observedAtMonotonicMs)
-    || input.observedAtMonotonicMs < 0 || !Number.isFinite(input.nowMonotonicMs)
-    || input.nowMonotonicMs < input.observedAtMonotonicMs) {
-    return { state: "unknown", skills: null, reason: "invalid_clock", ageMs: null };
-  }
+export function peerSkillPresentation(input: unknown): PeerSkillPresentation {
+  const unknown = (reason: PeerSkillPresentationReason, ageMs: number | null = null): PeerSkillPresentation => ({
+    state: "unknown", skills: null, reason, ageMs,
+  });
 
-  const ageMs = input.sampleAgeMsAtObservation + input.nowMonotonicMs - input.observedAtMonotonicMs;
-  if (!Number.isFinite(ageMs)) return { state: "unknown", skills: null, reason: "invalid_sample", ageMs: null };
-  if (ageMs > PARTY_FRESH_MS) return { state: "unknown", skills: null, reason: "stale", ageMs };
-  return { state: "visible", skills: [...input.skills], ageMs };
+  try {
+    if (input === null || typeof input !== "object" || Array.isArray(input)) return unknown("invalid_evidence");
+    const evidence = input as Record<string, unknown>;
+    const ownValue = (key: string): unknown => {
+      const descriptor = Object.getOwnPropertyDescriptor(evidence, key);
+      return descriptor && Object.prototype.hasOwnProperty.call(descriptor, "value") ? descriptor.value : undefined;
+    };
+
+    if (ownValue("skillShareConsent") !== true) return unknown("consent_required");
+    if (ownValue("verifiedFriend") !== true) return unknown("friend_unverified");
+    if (ownValue("sameMatch") !== true || ownValue("sameTeam") !== true) return unknown("scope_unverified");
+    if (ownValue("sourceAttributionVerified") !== true) return unknown("source_unverified");
+    if (ownValue("partyStatus") !== "connected") return unknown("party_unavailable");
+
+    const rawSkills = ownValue("skills");
+    if (!Array.isArray(rawSkills) || rawSkills.length === 0) return unknown("invalid_sample");
+    const skills: string[] = [];
+    for (let index = 0; index < rawSkills.length; index += 1) {
+      if (!Object.prototype.hasOwnProperty.call(rawSkills, index)) return unknown("invalid_sample");
+      const skill = rawSkills[index] as unknown;
+      if (typeof skill !== "string" || skill.length === 0 || skill.trim() !== skill) return unknown("invalid_sample");
+      skills.push(skill);
+    }
+
+    const sampleAgeMsAtObservation = ownValue("sampleAgeMsAtObservation");
+    if (typeof sampleAgeMsAtObservation !== "number" || !Number.isFinite(sampleAgeMsAtObservation)
+      || sampleAgeMsAtObservation < 0) return unknown("invalid_sample");
+
+    const observedAtMonotonicMs = ownValue("observedAtMonotonicMs");
+    const nowMonotonicMs = ownValue("nowMonotonicMs");
+    if (typeof observedAtMonotonicMs !== "number" || !Number.isFinite(observedAtMonotonicMs)
+      || observedAtMonotonicMs < 0 || typeof nowMonotonicMs !== "number" || !Number.isFinite(nowMonotonicMs)
+      || nowMonotonicMs < 0 || nowMonotonicMs < observedAtMonotonicMs) return unknown("invalid_clock");
+
+    // A sample already beyond the freshness limit cannot become fresh again.
+    // Check that first so large finite clock values cannot erase its source age.
+    if (sampleAgeMsAtObservation > PARTY_FRESH_MS) return unknown("stale", sampleAgeMsAtObservation);
+    if (observedAtMonotonicMs > Number.MAX_SAFE_INTEGER || nowMonotonicMs > Number.MAX_SAFE_INTEGER) {
+      return unknown("invalid_clock");
+    }
+
+    const elapsedMs = nowMonotonicMs - observedAtMonotonicMs;
+    if (!Number.isFinite(elapsedMs) || elapsedMs < 0) return unknown("invalid_clock");
+    const ageMs = sampleAgeMsAtObservation + elapsedMs;
+    if (!Number.isFinite(ageMs)) return unknown("invalid_sample");
+    if (ageMs > PARTY_FRESH_MS) return unknown("stale", ageMs);
+    return { state: "visible", skills, ageMs };
+  } catch {
+    return unknown("invalid_evidence");
+  }
 }
 
 export const PARTY_STATUS_LABELS: Record<PartyStatus, string> = {
