@@ -106,7 +106,7 @@ async function main() {
     return;
   }
   if (cmd === 'promote') {
-    const [candidatePath, stablePath, approvalPath] = args.map(resolve);
+    const [candidatePath, stablePath, approvalPath] = args.map(path => resolve(path));
     const candidate = validateManifest(JSON.parse(await readFile(candidatePath, 'utf8')));
     const approval = JSON.parse(await readFile(approvalPath, 'utf8'));
     const previous = validateManifest(JSON.parse(await readFile(stablePath, 'utf8')));
