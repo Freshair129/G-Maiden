@@ -1,11 +1,11 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.11"
+version: "0.2.12"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
-last_update: "2026-11-01T00:00:00+07:00,Codex"
+last_update: "2026-11-03T19:53:22+07:00,Codex"
 status: "active"
-updated: "2026-11-01"
+updated: "2026-11-03"
 owner: "Boss"
 attributes:
   domain: "documentation-governance"
@@ -168,6 +168,8 @@ attributes:
 
 - [[g-party-social-operations]]
   - `docs/operations/g-party-social-operations.md` — private social configuration, retention, ticket-aware HMAC rotation, rollback and source/live evidence
+- [[g-party-cr039-fixture-capture]]
+  - `docs/operations/g-party-cr039-fixture-capture.md` — local-only CR-039 player-mode GSI fixture capture, redaction and provenance review plan
 
 - `docs/operations/validation/`
   - `docs/operations/validation/` — toolkit, forms, social validation assets
@@ -232,3 +234,4 @@ attributes:
 | 0.2.9 | 2026-10-30 | Indexed the UI technical drawing atlas and its source/browser evidence. |
 | 0.2.10 | 2026-11-01 | Register G-Party feature, CR-037 and implementation plan with explicit consent and pending acceptance. |
 | 0.2.11 | 2026-11-01 | Index CR-038, ADR-20, G-Friends feature, design/implementation plan and social operations/evidence runbook. |
+| 0.2.12 | 2026-11-03 | Index the draft CR-039 player-mode fixture capture plan with local-only handling and pending provenance acceptance. |

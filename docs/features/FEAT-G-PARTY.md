@@ -2,7 +2,7 @@
 title: "FEAT: G-Party — Cooperative own-GSI status sharing"
 doc_id: "FEAT-G-PARTY"
 status: "active"
-version: "0.3.1"
+version: "0.3.2"
 updated: "2026-11-03"
 owner: "G-Maiden"
 source_of_truth: true
@@ -36,7 +36,7 @@ Consent ของ G-Party แยกจาก account consent และ AI/cloud-
 
 The Owner approved this policy direction on 2026-11-03: peer skill status is off by default and requires separate explicit skill-sharing consent; any eventual recipient must be a verified friend in the same match and on the same team; stale or unverifiable data is presented as unknown. Voice chat is deferred. This is a scope approval only, not an accepted protocol or allowlist change.
 
-Until the following gates are satisfied, the existing own-GSI allowlist and protocol in §§3 and 5 remain unchanged: define and verify the friend-to-party identity binding; specify versioned skill fields and consent/revocation lifecycle; prove own-hero source attribution with a provenance-labeled real player-mode fixture; define match/team/session and reconnect invalidation; and test the privacy boundary end to end. The presentation helper's input contract is a detached, validated, data-only DTO from a trusted producer. It rejects accessors, Proxy inputs, and source changes detected during preflight; it uses one detached clone for both authorization and displayed skills and fails closed on inconsistent snapshots. This input-consistency check does not authenticate the producer, identity, friendship or consent, and is not a security boundary against arbitrary same-process code. The trusted producer must establish those facts. The helper is not a producer, serializer, relay route, or identity/consent verifier. Do not connect it to live peer data or enable skill sharing yet.
+Until the following gates are satisfied, the existing own-GSI allowlist and protocol in §§3 and 5 remain unchanged: define and verify the friend-to-party identity binding; specify versioned skill fields and consent/revocation lifecycle; prove own-hero source attribution with a provenance-labeled real player-mode fixture; define match/team/session and reconnect invalidation; and test the privacy boundary end to end. The presentation helper's input contract is a detached, validated, data-only DTO from a trusted producer. It rejects accessors, Proxy inputs, and source changes detected during preflight; it uses one detached clone for both authorization and displayed skills and fails closed on inconsistent snapshots. This input-consistency check does not authenticate the producer, identity, friendship or consent, and is not a security boundary against arbitrary same-process code. The trusted producer must establish those facts. The helper is not a producer, serializer, relay route, or identity/consent verifier. Capture preparation is documented in [[g-party-cr039-fixture-capture]]; this does not claim that a real fixture exists or authorize its publication. Do not connect it to live peer data or enable skill sharing yet.
 
 ## 3. Source admission และ allowlist
 
@@ -138,3 +138,4 @@ Private friendships/temporary profile links/invites อยู่ใน account b
 | 0.2.0 | 2026-11-01 | Add CR-038 required authoritative roomGeneration/PartyView origin schema and optional social native/relay bridge; preserve guest consent, source allowlist and separate live acceptance. |
 | 0.3.0 | 2026-11-03 | Record Owner-approved CR-039 peer-skill policy as a proposal only; retain own-GSI allowlist pending identity, protocol, consent lifecycle, reconnect, and real source-provenance gates. |
 | 0.3.1 | 2026-11-03 | Clarify trusted detached DTO precondition and snapshot consistency for the local presentation helper; retain current own-GSI allowlist and pending live-sharing gates. |
+| 0.3.2 | 2026-11-03 | Link a local-only CR-039 player-mode fixture capture plan; preserve PR #118 parser ownership and defer all real data/publication gates. |
