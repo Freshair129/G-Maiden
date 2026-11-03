@@ -153,19 +153,29 @@ fn observe_session_state(
 /// Pure detector — all the logic, no globals (so tests own their state).
 fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
     let mut out = Vec::new();
+
+    // Reject stale snapshots before verification or owner changes can reset
+    // the current baseline. A match-session epoch transition resets State
+    // before this function, so a legitimate new match can start at clock 0.
+    if s.seen && tick.clock_time < s.clock {
+        return out;
+    }
+    // GSI clocks have one-second resolution. Equal clocks cannot order a
+    // forward event, but a kill/death counter moving backwards is inconsistent
+    // with the current same-session baseline and must not cause a replay.
+    if s.seen && tick.clock_time == s.clock && (tick.kills < s.kills || tick.deaths < s.deaths) {
+        return out;
+    }
+
     if !tick.local_player_verified {
+        let opening_closed = s.opening_closed;
         reset(s);
+        s.opening_closed = opening_closed;
         return out;
     }
     if s.seen && s.owner != tick.steamid {
         reset(s);
         s.opening_closed = true;
-    }
-    // The match clock is the only ordering field carried into GameTick. A
-    // delayed sample with an earlier clock must not rewind kill/death baselines
-    // and replay an already observed GANN event on the next current sample.
-    if s.seen && tick.clock_time < s.clock {
-        return out;
     }
 
     // match boundary
@@ -496,6 +506,72 @@ mod tests {
         );
         assert_eq!(state.kills, 1);
         assert_eq!(state.clock, 31);
+    }
+
+    #[test]
+    fn regressing_tick_with_different_owner_cannot_reset_current_baselines() {
+        let mut state = State::default();
+        step(&mut state, &tick(true, 20, 0, true));
+        step(&mut state, &tick(true, 30, 1, true));
+
+        let mut stale = tick(true, 25, 0, true);
+        stale.steamid = "different-owner".into();
+        assert!(step(&mut state, &stale).is_empty());
+        assert_eq!(state.owner, "76561198115363193");
+        assert_eq!((state.clock, state.kills), (30, 1));
+
+        let current = step(&mut state, &tick(true, 31, 2, true));
+        assert!(current.contains(&"double_kill".to_string()));
+    }
+
+    #[test]
+    fn equal_clock_counter_regression_cannot_rewind_kill_baseline() {
+        let mut state = State::default();
+        step(&mut state, &tick(true, 29, 0, true));
+        step(&mut state, &tick(true, 30, 1, true));
+
+        assert!(step(&mut state, &tick(true, 30, 0, true)).is_empty());
+        assert_eq!((state.clock, state.kills), (30, 1));
+        assert!(step(&mut state, &tick(true, 30, 1, true)).is_empty());
+        assert_eq!((state.clock, state.kills), (30, 1));
+    }
+
+    #[test]
+    fn same_clock_forward_kill_is_still_observed() {
+        let mut state = State::default();
+        step(&mut state, &tick(true, 30, 0, true));
+        let events = step(&mut state, &tick(true, 30, 1, true));
+        assert!(events.contains(&"kill".to_string()));
+    }
+
+    #[test]
+    fn unverified_tick_cannot_reopen_already_announced_match_start() {
+        let mut state = State::default();
+        assert_eq!(
+            step(&mut state, &tick(true, 0, 0, true)),
+            vec!["match_start"]
+        );
+
+        let mut unverified = tick(true, 1, 0, true);
+        unverified.local_player_verified = false;
+        assert!(step(&mut state, &unverified).is_empty());
+
+        let events = step(&mut state, &tick(true, 2, 0, true));
+        assert!(!events.contains(&"match_start".to_string()));
+    }
+
+    #[test]
+    fn stale_unverified_tick_does_not_reset_current_session_state() {
+        let mut state = State::default();
+        step(&mut state, &tick(true, 20, 0, true));
+        step(&mut state, &tick(true, 30, 1, true));
+
+        let mut stale = tick(true, 29, 0, true);
+        stale.local_player_verified = false;
+        assert!(step(&mut state, &stale).is_empty());
+        assert_eq!((state.clock, state.kills), (30, 1));
+        let current = step(&mut state, &tick(true, 31, 2, true));
+        assert!(current.contains(&"double_kill".to_string()));
     }
 
     #[test]
