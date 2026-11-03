@@ -565,7 +565,7 @@ mod backend {
         /// the [`HEALTH_HEARTBEAT_MS`] heartbeat. Called from the loop body,
         /// never from `process_frame` — the ≤300ms G-Signal path must not pay
         /// for reporting.
-        fn emit_health(&mut self, backend: &'static str) {
+        fn emit_health(&mut self, backend: &'static str, dota_foreground: bool) {
             let frame_age_ms = self.last_frame_ok.elapsed().as_millis() as u64;
             let classifier = self.detector.is_active();
             let throttled = crate::governor::cpu_throttle();
@@ -577,6 +577,7 @@ mod backend {
                 healthy: backend != "lite"
                     && classifier
                     && !throttled
+                    && dota_foreground
                     && frame_age_ms <= STALE_FRAME_MS,
             };
             let key = health.key();
@@ -776,7 +777,10 @@ mod backend {
             // Honest sensor state for the overlay + deck. Ahead of the gates
             // too, so "capture is alive" is reported at the menu and during the
             // draft, not only mid-match.
-            state.emit_health(dxgi.backend());
+            // A fresh frame age is not evidence of a visible game: the background
+            // branch deliberately refreshes last_frame_ok to avoid a stale-loop.
+            let dota_foreground = crate::dxgi::dota_is_foreground();
+            state.emit_health(dxgi.backend(), dota_foreground);
             if state.warning_frame_ms.is_some()
                 && state.last_frame_ok.elapsed().as_millis() > u128::from(STALE_FRAME_MS)
             {
@@ -851,7 +855,7 @@ mod backend {
                 preview_geometry = Some(geometry);
             }
             crate::minimap_preview_runtime::publish_geometry(geometry);
-            if !crate::dxgi::dota_is_foreground() {
+            if !dota_foreground {
                 state.suspend_observation();
                 state.scene_ok_ms = None;
                 state.last_frame_ok = Instant::now();
