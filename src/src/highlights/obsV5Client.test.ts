@@ -29,7 +29,7 @@ class MockObsSocket {
   }
 
   respond(type: string, result: Record<string, unknown> = {}, ok = true): void {
-    const request = this.sent.findLast((item) =>
+    const request = [...this.sent].reverse().find((item) =>
       item.op === 6 && item.d.requestType === type
     );
     if (!request) throw new Error("Request not seen: " + type);
