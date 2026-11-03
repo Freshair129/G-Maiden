@@ -210,3 +210,19 @@ it("does not report code-exchange success after the provider switches to another
   expect(auth.error).toContain("account changed");
   expect(fixture.cleanup).not.toHaveBeenCalled();
 });
+
+it("invalidates a pending attempt when the first auth event is an account change", async () => {
+  fixture.initial.mockReturnValue(new Promise(() => {}));
+  await mount();
+  await act(async () => { await auth.signInWithGoogle(); });
+  const callback = fixture.listeners.get("oauth-callback")?.values().next().value;
+  await act(async () => {
+    fixture.authEvents.forEach((change) => change("SIGNED_IN", { user: { id: "new-account" } }));
+  });
+  await act(async () => {
+    await callback?.({ payload: { state: fixture.state, code: "old-attempt-code" } });
+  });
+  expect(fixture.exchange).not.toHaveBeenCalled();
+  expect(auth.user?.id).toBe("new-account");
+  expect(auth.busy).toBe(false);
+});

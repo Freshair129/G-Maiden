@@ -1594,6 +1594,8 @@ pub fn clear_roster() {
 pub use crate::oauth_gate::{
     resolve_oauth_pending, set_oauth_pending, take_oauth_pending, OAuthPendingResolution,
 };
+#[cfg(test)]
+pub(crate) use crate::oauth_gate::oauth_pending_ok;
 
 #[cfg(test)]
 mod tests {

@@ -99,23 +99,28 @@ function oauthErrorFrom(value: unknown): OAuthErrorPayload | null {
   ) return null;
   return { state: candidate.state, message: candidate.message };
 }
-function observeAuthUser(userId: string | null) {
+function invalidatePendingOAuthForAccountChange() {
+  if (activeOAuthRequest === null || activeOAuthPhase === "exchange") return;
+  const request = activeOAuthRequest;
+  clearOAuthAttempt(request);
+  oauthRequest++;
+  publishOAuth({
+    busy: false,
+    error: "Google sign-in was interrupted because the account changed. Please try again.",
+  });
+}
+function observeAuthUser(userId: string | null, event?: AuthChangeEvent) {
   if (!authSessionObserved) {
     authSessionObserved = true;
     observedAuthUserId = userId;
+    if (event !== undefined && event !== "INITIAL_SESSION") {
+      invalidatePendingOAuthForAccountChange();
+    }
     return;
   }
   if (observedAuthUserId === userId) return;
   observedAuthUserId = userId;
-  if (activeOAuthRequest !== null && activeOAuthPhase !== "exchange") {
-    const request = activeOAuthRequest;
-    clearOAuthAttempt(request);
-    oauthRequest++;
-    publishOAuth({
-      busy: false,
-      error: "Google sign-in was interrupted because the account changed. Please try again.",
-    });
-  }
+  invalidatePendingOAuthForAccountChange();
 }
 function subscribeOAuth(consumer: (status: OAuthStatus) => void) {
   oauthConsumers.add(consumer);
@@ -220,7 +225,7 @@ export function useAuth() {
     });
     const { data: sub } = supabase.auth.onAuthStateChange((event, s) => {
       providerChanged = true;
-      observeAuthUser(s?.user.id ?? null);
+      observeAuthUser(s?.user.id ?? null, event);
       setSession(localAuthBlocked() ? null : s);
       setLastAuthEvent(localAuthBlocked() ? "SIGNED_OUT" : event);
     });

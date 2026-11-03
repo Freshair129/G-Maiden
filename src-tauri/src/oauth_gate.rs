@@ -34,7 +34,7 @@ pub fn set_oauth_pending(state: String, now_ms: u64) -> bool {
     }
 }
 
-fn oauth_pending_ok(
+pub(crate) fn oauth_pending_ok(
     pending: bool,
     expected_state: &str,
     callback_state: Option<&str>,
