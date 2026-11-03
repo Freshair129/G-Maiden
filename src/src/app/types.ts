@@ -47,10 +47,8 @@ export interface GameTick extends MatchSessionMetadata {
   mana_percent: number
   kill_list_len: number
   last_victim_slot: number
-  // Exact slain hero (npc name) resolved backend-side from last_victim_slot +
-  // the roster the backend already holds (GSI/CV). Optional — when the backend
-  // populates it for a single kill, the banner can show the victim; otherwise
-  // use generic wording. Missing-map evidence never identifies a victim.
+  // Reserved for a verified slain hero; the current backend does not populate it.
+  // Missing-map evidence and a cumulative kill snapshot do not identify a victim.
   last_victim_hero?: string
 }
 

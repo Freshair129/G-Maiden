@@ -1,4 +1,22 @@
+---
+title: "CR-010: Exact slain hero for the kill banner"
+doc_id: "CR-010-overlay-exact-kill-victim"
+status: "historical"
+version: "1.0.0"
+updated: "2026-11-03"
+owner: "G-Maiden"
+---
+
 # CR-010 — Exact slain hero for the kill banner (overlay ← backend)
+
+> **Evidence update (2026-11-03):** This historical request's assumptions about
+> `hero.kill_list`, ordered victim entries, and an already available slot-to-hero roster
+> are not established by the owner-recorded GSI feed. The observed feed uses cumulative
+> `player.kill_list` counters; a snapshot alone cannot establish the latest victim.
+> Treat victim identity as unknown until a session-fenced delta and roster are validated.
+> See [[2026-11-03-gsi-victim-slot-evidence]]. The text below records the original request,
+> not current implementation or acceptance.
+
 
 - **Status:** Overlay side ready; needs one backend field.
 - **Date:** 2026-07-13
@@ -31,3 +49,9 @@ The overlay builds the portrait URL as `dota_react/heroes/<short>.png` after str
 ## References
 - Overlay: [`src/src/App.tsx`](file:///g:/G-Maiden/src/src/App.tsx) (Tick interface + the kill `useEffect`), [`src/src/index.css`](file:///g:/G-Maiden/src/src/index.css) (`gm-kill*`).
 - Portrait helper (deck): [`src/src/heroPortrait.ts`](file:///g:/G-Maiden/src/src/heroPortrait.ts).
+
+## Changelog
+
+| Version | Date | Summary |
+| --- | --- | --- |
+| 1.0.0 | 2026-11-03 | Marked the original request historical and added the observed GSI format and evidence boundary. |
