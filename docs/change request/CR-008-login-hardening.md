@@ -130,7 +130,99 @@ it directly onto `redirectTo` itself, e.g. `http://127.0.0.1:3000/auth/callback?
      current global single-slot gate — it already fails safe, so there's no regression to guard
      against, only a wasted implementation attempt.
 
+## 2026-11-03 feasibility reassessment — local transaction IDs and session promotion
+
+**Status: design only.** This section records a local feasibility review; it does not supersede
+ADR-17, change a hosted setting, or authorize a live sign-in. The current objective is to preserve
+Supabase's provider-managed OAuth/PKCE behavior while ensuring that an expired or superseded
+attempt cannot write or delete the primary session.
+
+### Verified implementation facts
+
+- The installed `@supabase/auth-js` is **2.110.0**. Its supported declaration is
+  `exchangeCodeForSession(authCode)`; it has no `flowId` argument or the documented experimental
+  `appendPkceFlowIdToRedirects` option. Its `_exchangeCodeForSession` reads the verifier from
+  `<storageKey>-code-verifier`, removes it, then saves the returned session and notifies subscribers
+  before the promise resolves. A timeout or stale-result check after `await` therefore cannot fence
+  that SDK write.
+- A network-free SDK probe returns an authorization URL without a visible `state` query parameter.
+  This is evidence about the client-returned URL only; it does **not** establish whether hosted
+  Supabase Auth or Google creates and validates provider transaction state elsewhere. Do not inject
+  an application value into provider `state`.
+- Each Supabase client accepts a storage adapter and `storageKey`. A distinct per-attempt client and
+  isolated DPAPI-backed key namespace could keep that attempt's PKCE verifier and exchanged session
+  apart from the primary session, provided the same client is used to start and exchange that flow.
+  This has not been integrated or validated end to end.
+- The current native secret store serializes individual file writes/deletes with `WRITE_LOCK` and
+  atomically renames a temp file into place. It has no auth-generation token, compare-and-swap, or
+  transaction that atomically guards session promotion and invalidation. The frontend
+  `secureStorage.setItem` currently swallows native write failures, and `removeItem` has no attempt
+  generation. The present storage boundary therefore cannot prove stale writes or deletes are
+  fenced.
+- The checked-in local `supabase/config.toml` is not a remote-settings readback: it has a local
+  `site_url` at `http://127.0.0.1:3000` and an `additional_redirect_urls` entry at
+  `https://127.0.0.1:3000`, neither the fixed callback URL. An older CR-008 note records a historical
+  hosted exact callback entry, but current hosted settings were not read. Supabase's current docs
+  say `redirectTo` must match the configured list and document wildcard patterns. ADR-17 selects an
+  exact fixed callback and rejects a dynamic nonce redirect/wildcard. Thus support for a dynamic
+  application query parameter is **unverified and conflicts with the recorded redirect decision**;
+  no provider or hosted setting change is justified by this review.
+
+### Candidate local design (not implemented)
+
+1. Native code creates an unpredictable, one-use application transaction ID and binds it to the
+   pending login with a short expiry. The app ID is carried only as an application query parameter
+   on the fixed callback and validated by the native callback gate; it is not OAuth `state` and does
+   not replace provider state or S256 PKCE. Do not proceed until exact redirect/query handling is
+   supported by an authorized non-production configuration and the ADR-17 conflict is resolved.
+2. Create one Supabase client per attempt with an immutable, unique `storageKey` and isolated secure
+   storage. Start OAuth and exchange that callback code through the same client so its PKCE verifier
+   stays with the attempt. A late exchange may write only to its isolated namespace.
+3. Introduce a native session owner. Every auth client/storage adapter is bound to an immutable
+   generation. A native compare-and-swap under the same lock as secure-store writes must reject
+   stale `setItem`, `removeItem`, logout, and promotion operations. Promotion consumes the active
+   one-use attempt and writes the primary session only if its generation still matches. Retire old
+   clients and ignore their auth events. Propagate native persistence errors to the SDK; never
+   report success for a rejected write. Plain frontend checks or an SDK promise timeout are not a
+   storage fence.
+4. Preserve the current primary session while an attempt is pending. Logout and account switch
+   advance the native generation before clearing/promoting. Timeout, retry, and callback rejection
+   invalidate only the matching attempt. The coordinator must reconcile a commit racing its timeout
+   before displaying either result.
+
+### Acceptance criteria for implementation
+
+- **AC-1:** Missing, malformed, wrong, expired, or replayed application transaction IDs fail closed;
+  a mismatch never consumes or invalidates a newer transaction.
+- **AC-2:** Two attempts use distinct verifier/session storage. Each callback exchanges only through
+  its matching attempt client and cannot touch primary storage before promotion.
+- **AC-3:** Native generation checks serialize with authoritative secret writes and deletes. A stale
+  generation cannot create, replace, or remove the primary session, even when its SDK call resolves
+  after timeout, retry, logout, account switch, or a newer promotion.
+- **AC-4:** Concurrent promotions for the same or different attempts have one native winner; all
+  stale clients and their auth events are fenced after the winner commits.
+- **AC-5:** No success is emitted until the guarded primary write succeeds. Persistence failures
+  surface as errors without plaintext fallback or stale in-memory account publication.
+- **AC-6:** Test callback parsing, attempt storage isolation, native compare-and-swap races, and
+  logout/timeout/retry/account-switch/concurrent-promotion interleavings. Run at least one native
+  command/storage integration test; pure frontend mocks alone are insufficient evidence.
+- **AC-7:** Never log the callback code, verifier, session/token values, or full authorization and
+  callback URLs. Tests use synthetic credentials only.
+- **SC-1:** Every adversarial lifecycle test proves the persisted primary session remains the newest
+  committed session or signed out; no expired/superseded attempt can alter it.
+- **SC-2:** A non-production callback round-trip confirms the exact fixed redirect plus application
+  query parameter is accepted and preserved. Until that gate and the architecture decision pass,
+  keep this design unimplemented and sharing/sign-in claims unchanged.
+
+**Current blocker:** AC-3 through AC-6 require a new native auth session-owner boundary; current
+SDK writes and native storage API do not provide it. SC-2 also lacks current remote redirect
+allow-list evidence and conflicts with ADR-17's exact-redirect decision. The safe next step is to
+resolve the redirect policy and then implement the native generation/CAS boundary with regression
+tests before wiring any new flow. No local account data or remote settings were changed during this
+review.
+
 ## Changelog
 | Version | Date | Summary |
 | --- | --- | --- |
 | — | 2026-07-19 | link/metadata sweep (G15-T5): symbol-link `signInWithGoogle`, `WRITE_LOCK`, `validate_name`, `load_secret`, `set_master_mode`, `set_master_api_key`, `master_api_key_present`, `oauth_callback` to their definitions |
+| — | 2026-11-03 | Feasibility review: record installed SDK behavior, redirect-policy evidence, native promotion gap, and fail-closed acceptance criteria for an isolated OAuth attempt/session owner |
