@@ -1,6 +1,6 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-02T22:55:09.121Z
+สร้างเมื่อ / Generated at: 2026-11-04T06:58:49.630Z
 
 สแกน 170 ไฟล์เอกสาร, 286 nodes, 1311 edges, 232 รายการปัญหา (202 ตัวบล็อก exit code) / scanned 170 doc files, 286 nodes, 1311 edges, 232 violations (202 blocking exit code).
 
@@ -87,7 +87,7 @@
 
 ### docs/architecture/engineering-spec.md
 
-- [L277] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/companion.ts", anchor=941, symbol="useCompanionData")
+- [L323] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src/src/companion.ts", anchor=941, symbol="useCompanionData")
 
 ### docs/architecture/g-maiden-ui-sitemap-flow-board.md
 
