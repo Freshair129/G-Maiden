@@ -1266,6 +1266,7 @@ mod tests {
             local_player_verified: true,
             in_game: true,
             clock_time: 720,
+            clock_time_observed: true,
             game_state: "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS".into(),
             daytime: true,
             radiant_score: 8,

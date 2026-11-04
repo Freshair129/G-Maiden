@@ -42,6 +42,8 @@ struct State {
     // Receipt-order watermark survives local verification gaps within one
     // match epoch; `clock` remains the current verified event baseline.
     watermark_clock: Option<i64>,
+    // Delay a verification-gap reseed until a clocked sample passes ordering checks.
+    unverified_gap_pending: bool,
     opening_closed: bool,
     mana: i64,
     hp: i64,
@@ -173,24 +175,54 @@ fn step(s: &mut State, tick: &GameTick) -> Vec<String> {
     // Reject stale snapshots before verification or owner changes can reset
     // the current baseline. A match-session epoch transition resets State
     // before this function, so a legitimate new match can start at clock 0.
-    if s.watermark_clock
-        .is_some_and(|watermark| tick.clock_time < watermark)
+    if tick.clock_time_observed
+        && s.watermark_clock
+            .is_some_and(|watermark| tick.clock_time < watermark)
     {
         return out;
     }
 
+    // GSI clocks have one-second resolution. Equal clocks cannot order a
+    // forward event, but a counter regression is still stale evidence. Run
+    // this before deferring a verification gap so it can use the last good
+    // counters at the watermark.
+    if tick.clock_time_observed
+        && s.seen
+        && tick.clock_time == s.clock
+        && (tick.kills < s.kills || tick.deaths < s.deaths)
+    {
+        if !tick.local_player_verified {
+            s.unverified_gap_pending = true;
+        }
+        return out;
+    }
+
     if !tick.local_player_verified {
+        // Defer reseeding until an ordered verified sample arrives. Keeping the
+        // last good counters lets the stale/equal-clock guards reject late data.
+        s.unverified_gap_pending = true;
+        if tick.in_game && tick.clock_time_observed {
+            advance_watermark(s, tick.clock_time);
+        }
+        return out;
+    }
+    if !tick.clock_time_observed {
+        // An unorderable verified sample must not reset or advance the last good state.
+        return out;
+    }
+    if s.unverified_gap_pending
+        && s.seen
+        && s.owner == tick.steamid
+        && (tick.kills < s.kills || tick.deaths < s.deaths)
+    {
+        // Same-owner counters are cumulative within an epoch. Wait for them to
+        // catch up before reseeding, or a later rebound could replay an event.
+        return out;
+    }
+    if s.unverified_gap_pending {
         let opening_closed = s.opening_closed;
         reset_preserving_watermark(s);
         s.opening_closed = opening_closed;
-        advance_watermark(s, tick.clock_time);
-        return out;
-    }
-    // GSI clocks have one-second resolution. Equal clocks cannot order a
-    // forward event, but verified kill/death counter regressions cannot rewind
-    // the baseline or make an already observed event replay.
-    if s.seen && tick.clock_time == s.clock && (tick.kills < s.kills || tick.deaths < s.deaths) {
-        return out;
     }
     if s.seen && s.owner != tick.steamid {
         reset_preserving_watermark(s);
@@ -353,6 +385,7 @@ mod tests {
         GameTick {
             in_game,
             clock_time: clock,
+            clock_time_observed: true,
             alive,
             local_player_verified: true,
             steamid: "76561198115363193".into(),
@@ -382,6 +415,182 @@ mod tests {
         unverified.local_player_verified = false;
         assert!(step(&mut state, &unverified).is_empty());
         assert!(step(&mut state, &tick(true, 22, 5, true)).is_empty());
+    }
+
+    #[test]
+    fn missing_draft_clock_does_not_discard_negative_pregame_or_first_kill() {
+        let mut current = SessionDetector::default();
+        let selection = GameTick {
+            game_state: "DOTA_GAMERULES_STATE_HERO_SELECTION".into(),
+            local_player_verified: false,
+            ..Default::default()
+        };
+        assert_eq!(selection.clock_time, 0);
+        assert!(
+            observe_session_state(&mut current, &selection, 4, MatchLifecycle::Draft,).is_empty()
+        );
+        assert_eq!(current.detector.watermark_clock, None);
+
+        let mut pregame = tick(true, -90, 0, true);
+        pregame.game_state = "DOTA_GAMERULES_STATE_PRE_GAME".into();
+        assert!(
+            observe_session_state(&mut current, &pregame, 4, MatchLifecycle::Draft,).is_empty()
+        );
+
+        let mut first_kill = tick(true, -80, 1, true);
+        first_kill.game_state = "DOTA_GAMERULES_STATE_PRE_GAME".into();
+        assert_eq!(
+            observe_session_state(&mut current, &first_kill, 4, MatchLifecycle::Draft,),
+            vec!["first_blood", "kill"]
+        );
+
+        let mut horn = tick(true, 0, 1, true);
+        horn.game_state = "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS".into();
+        assert_eq!(
+            observe_session_state(&mut current, &horn, 4, MatchLifecycle::Live),
+            vec!["match_start"]
+        );
+    }
+
+    #[test]
+    fn missing_verified_non_game_clock_does_not_discard_negative_pregame() {
+        let mut state = State::default();
+        let selection = GameTick {
+            game_state: "DOTA_GAMERULES_STATE_HERO_SELECTION".into(),
+            local_player_verified: true,
+            ..Default::default()
+        };
+        assert!(step(&mut state, &selection).is_empty());
+        assert_eq!(state.watermark_clock, None);
+
+        let mut pregame = tick(true, -90, 0, true);
+        pregame.game_state = "DOTA_GAMERULES_STATE_PRE_GAME".into();
+        assert!(step(&mut state, &pregame).is_empty());
+
+        let mut first_kill = tick(true, -80, 1, true);
+        first_kill.game_state = "DOTA_GAMERULES_STATE_PRE_GAME".into();
+        assert_eq!(step(&mut state, &first_kill), vec!["first_blood", "kill"]);
+
+        let mut horn = tick(true, 0, 1, true);
+        horn.game_state = "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS".into();
+        assert_eq!(step(&mut state, &horn), vec!["match_start"]);
+    }
+
+    #[test]
+    fn missing_verified_clock_does_not_reseed_last_good_state() {
+        let mut state = State::default();
+        step(&mut state, &tick(true, 20, 0, true));
+        assert_eq!(
+            step(&mut state, &tick(true, 30, 1, true)),
+            vec!["first_blood", "kill"]
+        );
+
+        let missing = GameTick {
+            game_state: "DOTA_GAMERULES_STATE_HERO_SELECTION".into(),
+            local_player_verified: true,
+            ..Default::default()
+        };
+        assert!(step(&mut state, &missing).is_empty());
+        assert_eq!(state.watermark_clock, Some(30));
+        assert!(state.seen);
+        assert!(state.in_game);
+        assert_eq!(state.clock, 30);
+        assert_eq!(state.kills, 1);
+
+        let mut stale = tick(true, 29, 2, true);
+        stale.steamid = "76561198115363194".into();
+        assert!(step(&mut state, &stale).is_empty());
+        assert!(step(&mut state, &tick(true, 30, 0, true)).is_empty());
+        assert_eq!(state.watermark_clock, Some(30));
+        assert!(state.seen);
+        assert_eq!(state.owner, "76561198115363193");
+        assert!(step(&mut state, &tick(true, 31, 1, true)).is_empty());
+    }
+
+    #[test]
+    fn missing_unverified_clock_waits_for_an_ordered_reseed() {
+        let mut state = State::default();
+        step(&mut state, &tick(true, 20, 0, true));
+        assert_eq!(
+            step(&mut state, &tick(true, 30, 1, true)),
+            vec!["first_blood", "kill"]
+        );
+
+        let gap = GameTick {
+            in_game: true,
+            game_state: "DOTA_GAMERULES_STATE_PRE_GAME".into(),
+            local_player_verified: false,
+            ..Default::default()
+        };
+        assert!(step(&mut state, &gap).is_empty());
+        assert!(state.seen);
+        assert_eq!(state.kills, 1);
+        assert_eq!(state.watermark_clock, Some(30));
+        assert!(state.unverified_gap_pending);
+        assert!(step(&mut state, &tick(true, 25, 0, true)).is_empty());
+        assert!(state.seen);
+        assert!(step(&mut state, &tick(true, 30, 0, true)).is_empty());
+        assert!(state.seen);
+
+        let recovery = step(&mut state, &tick(true, 31, 1, true));
+        assert!(
+            recovery.is_empty(),
+            "gap recovery replayed events: {recovery:?}"
+        );
+        assert!(state.seen);
+        assert!(!state.unverified_gap_pending);
+        assert_eq!((state.clock, state.kills), (31, 1));
+        assert_eq!(step(&mut state, &tick(true, 32, 2, true)), vec!["kill"]);
+    }
+
+    #[test]
+    fn same_owner_counter_rollback_after_gap_does_not_reseed_or_replay() {
+        let mut state = State::default();
+        step(&mut state, &tick(true, 20, 0, true));
+        assert_eq!(
+            step(&mut state, &tick(true, 30, 1, true)),
+            vec!["first_blood", "kill"]
+        );
+
+        let mut gap = tick(true, 31, 1, true);
+        gap.local_player_verified = false;
+        assert!(step(&mut state, &gap).is_empty());
+        assert!(state.unverified_gap_pending);
+
+        assert!(step(&mut state, &tick(true, 32, 0, true)).is_empty());
+        assert!(state.unverified_gap_pending);
+        assert_eq!((state.clock, state.kills), (30, 1));
+        assert_eq!(state.watermark_clock, Some(31));
+
+        assert!(step(&mut state, &tick(true, 33, 1, true)).is_empty());
+        assert!(!state.unverified_gap_pending);
+        assert_eq!((state.clock, state.kills), (33, 1));
+        assert_eq!(step(&mut state, &tick(true, 34, 2, true)), vec!["kill"]);
+    }
+
+    #[test]
+    fn missing_unverified_pregame_clock_does_not_discard_negative_pregame() {
+        let mut state = State::default();
+        let selection = GameTick {
+            in_game: true,
+            game_state: "DOTA_GAMERULES_STATE_PRE_GAME".into(),
+            local_player_verified: false,
+            ..Default::default()
+        };
+        assert!(step(&mut state, &selection).is_empty());
+        assert_eq!(state.watermark_clock, None);
+
+        let mut pregame = tick(true, -90, 0, true);
+        pregame.game_state = "DOTA_GAMERULES_STATE_PRE_GAME".into();
+        assert!(step(&mut state, &pregame).is_empty());
+
+        let mut first_kill = tick(true, -80, 1, true);
+        first_kill.game_state = "DOTA_GAMERULES_STATE_PRE_GAME".into();
+        assert_eq!(step(&mut state, &first_kill), vec!["first_blood", "kill"]);
+
+        let mut horn = tick(true, 0, 1, true);
+        horn.game_state = "DOTA_GAMERULES_STATE_GAME_IN_PROGRESS".into();
+        assert_eq!(step(&mut state, &horn), vec!["match_start"]);
     }
 
     #[test]

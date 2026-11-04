@@ -44,6 +44,10 @@ const GSI_STATUS_INTERVAL_MS: u64 = 500;
 pub struct GameTick {
     pub in_game: bool,
     pub clock_time: i64,
+    /// Internal provenance bit: the source included a numeric `map.clock_time`.
+    /// The zero fallback is not an observed match-time sample.
+    #[serde(skip)]
+    pub(crate) clock_time_observed: bool,
     pub game_state: String,
     pub daytime: bool,
     pub radiant_score: i64,
@@ -220,6 +224,8 @@ fn lifecycle_for_tick(tick: &GameTick) -> crate::runtime::MatchLifecycle {
 
 fn parse_tick_from_value(v: &Value) -> GameTick {
     let game_state = s(v, &["map", "game_state"]);
+    let clock_time_observed = value_at(v, &["map", "clock_time"])
+        .is_some_and(|value| value.as_i64().is_some() || value.as_f64().is_some());
     let gold = i(v, &["player", "gold"]);
     let raw_nw = i(v, &["player", "net_worth"]);
     let net_worth = if raw_nw > 0 {
@@ -231,6 +237,7 @@ fn parse_tick_from_value(v: &Value) -> GameTick {
     GameTick {
         in_game: is_in_game(&game_state),
         clock_time: i(v, &["map", "clock_time"]),
+        clock_time_observed,
         game_state,
         daytime: b(v, &["map", "daytime"]),
         radiant_score: i(v, &["map", "radiant_score"]),
@@ -1503,6 +1510,31 @@ mod tests {
         });
         let tick = parse_gsi_payload(&payload.to_string()).unwrap();
         assert!(tick.hero.is_empty());
+    }
+
+    #[test]
+    fn clock_presence_tracks_source_and_stays_internal() {
+        let mut missing = live_payload();
+        assert!(missing["map"]
+            .as_object_mut()
+            .unwrap()
+            .remove("clock_time")
+            .is_some());
+        let missing_tick = parse_tick_from_value(&missing);
+        assert_eq!(missing_tick.clock_time, 0);
+        assert!(!missing_tick.clock_time_observed);
+
+        let mut present = live_payload();
+        present["map"]["clock_time"] = serde_json::json!(-90);
+        let present_tick = parse_tick_from_value(&present);
+        assert_eq!(present_tick.clock_time, -90);
+        assert!(present_tick.clock_time_observed);
+        let serialized = serde_json::to_value(&present_tick).unwrap();
+        assert!(serialized.get("clock_time_observed").is_none());
+        let mut forged = serialized;
+        forged["clock_time_observed"] = serde_json::json!(true);
+        let decoded: GameTick = serde_json::from_value(forged).unwrap();
+        assert!(!decoded.clock_time_observed);
     }
 
     #[test]
