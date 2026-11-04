@@ -371,6 +371,7 @@ fn snapshot_of(state: &MatchSessionState) -> MatchSessionSnapshot {
     }
 }
 
+#[cfg(test)]
 fn observe_session_state(
     state: &mut MatchSessionState,
     lifecycle: MatchLifecycle,
