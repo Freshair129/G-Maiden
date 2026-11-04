@@ -2,14 +2,23 @@
 title: "AGENTS.md"
 doc_id: "agents"
 status: active
-version: "0.4.14"
-updated: "2026-11-01"
+version: "0.4.15"
+updated: "2026-11-04"
 owner: "G-Maiden"
 ---
 # AGENTS.md
 
 > Context and governance for AI coding agents (Codex, Claude Code, Copilot, etc.)
 > working on the G-Maiden codebase. Read this before touching any file.
+
+## Git, Worktree & Multi-Agent Lifecycle
+
+- For Git/worktree operations read the relevant sections of [the local lifecycle policy](docs/engineering/GIT-WORKTREE-POLICY.md); it extends the existing Git & GitHub rules without duplicating them.
+- Reuse an appropriate owned checkout/branch first. One active writer owns each mutable worktree; serialize shared generators and writer handoffs. Read-only subagents may share the checkout.
+- Active implementation, native/runtime and test sessions are protected. Verify ownership before writes; unknown ownership requires a patch/handoff, not a branch switch or new worktree to bypass it.
+- Preserve explicit `origin` selection, Conventional Commits/agent attribution, protected-main PR gates, exact-head CI, owner merge authority and Windows/Tauri acceptance boundaries.
+- Record dependency/UAT/decision blockers and final disposition in existing task/PR/session records. Complete valid backlog work or explicitly retire obsolete work with preserved evidence.
+- Cleanup is separate: MERGED never implies VERIFIED_SAFE. Require current owner release, dependency/runtime checks and verified recovery of unique tracked/untracked/ignored/unpushed work before an authorized removal.
 
 ---
 
@@ -566,3 +575,4 @@ These are **functional requirements**, not flavor text. Maiden must:
 | 0.4.12 | 2026-10-31 | Record owner-directed GANN-only event source, cache identity and verification boundaries. |
 | 0.4.13 | 2026-11-01 | Record separate owner-directed G-Party consent/own-stat route while retaining AI/raw-data restrictions and pending native/live acceptance. |
 | 0.4.14 | 2026-11-01 | Record CR-038 optional Friends/account/relay privacy, consent, lifecycle and map constraints with separate operational/live acceptance. |
+| 0.4.15 | 2026-11-04 | Add early lifecycle-policy navigation, reuse-first ownership and protected runtime/dependency cleanup boundaries. |

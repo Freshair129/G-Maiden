@@ -2,13 +2,17 @@
 title: "CLAUDE.md"
 doc_id: "claude"
 status: active
-version: "0.4.12"
-updated: "2026-11-01"
+version: "0.4.13"
+updated: "2026-11-04"
 owner: "G-Maiden"
 ---
 # CLAUDE.md
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Git, Worktree & Multi-Agent Lifecycle
+
+For Git/worktree operations read the relevant sections of [the local lifecycle policy](docs/engineering/GIT-WORKTREE-POLICY.md). It preserves this primary working guide, protected-main/review/release rules and native acceptance; workspaces actively owned by another session, or with unknown ownership, require a patch/handoff. Reuse owned allocations and serialize writers.
 
 ## Status: implemented (v0.13.2), shipping via in-app updater
 
@@ -359,3 +363,4 @@ G-AnnStudio opens the same container through its package panel or a file argumen
 | 0.4.10 | 2026-10-31 | Replace announcer fallback routes with verified GANN-only event media and bound activation. |
 | 0.4.11 | 2026-11-01 | Add separately consented G-Party own-stat sharing guidance without widening AI/raw-data permissions or claiming native/live acceptance. |
 | 0.4.12 | 2026-11-01 | Document optional G-Friends social authorization separately from guest sharing and AI; preserve native/live/deployment evidence boundaries. |
+| 0.4.13 | 2026-11-04 | Reference the shared lifecycle policy without changing release or native acceptance authority. |
