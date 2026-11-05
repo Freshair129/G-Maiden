@@ -732,7 +732,7 @@ async fn handle(State(app): State<AppHandle>, body: String) -> (StatusCode, &'st
 }
 
 /// Receive a GPU telemetry sample PUSHed by the headless `gpu-feeder` sidecar
-/// (own process, runs nvidia-smi). Body: `{ "gpus": [ { loadPercent, tempC,
+/// (own process, reads NVML). Body: `{ "gpus": [ { loadPercent, tempC,
 /// vramUsedMb, vramTotalMb } ] }`. Stashed in the governor; the next
 /// `resource-stats` emit carries it to the deck footer.
 async fn telemetry_ingest(body: String) -> &'static str {

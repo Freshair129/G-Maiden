@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-04T11:55:08.244Z
+สร้างเมื่อ / Generated at: 2026-11-05T22:25:56.570Z
 
-สแกน 171 ไฟล์เอกสาร, 287 nodes, 1311 edges, 232 รายการปัญหา (202 ตัวบล็อก exit code) / scanned 171 doc files, 287 nodes, 1311 edges, 232 violations (202 blocking exit code).
+สแกน 171 ไฟล์เอกสาร, 287 nodes, 1311 edges, 230 รายการปัญหา (200 ตัวบล็อก exit code) / scanned 171 doc files, 287 nodes, 1311 edges, 230 violations (200 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -12,7 +12,6 @@
 | --- | --- | --- | --- |
 | anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 162 | yes |
 | bad-anchor | เลขบรรทัด anchor ผิดช่วง / symbol link anchor out of range | 8 | yes |
-| duplicate-slug | สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) | 2 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 3 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
@@ -473,12 +472,4 @@
 ### docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md
-
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="2026-10-29-vrzo-synced-banner", siblings=["docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md"])
-
-### docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md
-
-- [-] **duplicate-slug** — สแลกซ้ำ (ของจริง — สองไฟล์แย่งสแลกเดียวกัน) / duplicate slug (true ambiguity — two files claim one slug) (slug="2026-10-29-vrzo-synced-banner", siblings=["docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md"])
 

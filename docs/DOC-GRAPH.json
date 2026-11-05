@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-04T11:55:08.244Z",
+  "generatedAt": "2026-11-05T22:25:56.570Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -1115,9 +1115,9 @@
       "status": "active"
     },
     {
-      "id": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md",
+      "id": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner-plan.md",
       "type": "doc",
-      "path": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md",
+      "path": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner-plan.md",
       "title": "VRZO synchronized banner implementation plan",
       "status": "active"
     },
@@ -11341,29 +11341,11 @@
       "file": "docs/superpowers/plans/2026-08-09-gid-pipeline-phase2-annstudio.md",
       "line": null,
       "reason": "no-metadata"
-    },
-    {
-      "file": "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md",
-      "line": null,
-      "reason": "duplicate-slug",
-      "slug": "2026-10-29-vrzo-synced-banner",
-      "siblings": [
-        "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md"
-      ]
-    },
-    {
-      "file": "docs/superpowers/specs/2026-10-29-vrzo-synced-banner.md",
-      "line": null,
-      "reason": "duplicate-slug",
-      "slug": "2026-10-29-vrzo-synced-banner",
-      "siblings": [
-        "docs/superpowers/plans/2026-10-29-vrzo-synced-banner.md"
-      ]
     }
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-04T11:55:13.952Z",
+    "generatedAt": "2026-11-05T22:25:59.066Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

@@ -1,9 +1,9 @@
 ---
 title: "VRZO synchronized banner implementation plan"
-doc_id: 2026-10-29-vrzo-synced-banner
+doc_id: 2026-10-29-vrzo-synced-banner-plan
 status: active
-version: 0.1.0
-updated: 2026-10-29
+version: 0.1.1
+updated: 2026-11-06
 owner: G-Maiden
 ---
 
@@ -21,3 +21,4 @@ owner: G-Maiden
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-10-29 | Specify implementation ownership, sequencing and evidence. |
+| 0.1.1 | 2026-11-06 | Rename to `-plan` and give it its own doc_id: the filename slug and doc_id collided with the spec of the same name (duplicate-slug), leaving `[[2026-10-29-vrzo-synced-banner]]` ambiguous. No content change (#134). |
