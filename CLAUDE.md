@@ -179,7 +179,7 @@ follow `g-party-social-operations` for configuration, retention and ticket-aware
   fallback (`src-tauri/src/master.rs`, backends `Auto | Claude | Ollama`). Gemini is not wired.
 - **TTS module** → text-to-speech tuned for a live-caster vocal style (Windows SAPI via PowerShell
   today; Piper local-ONNX TTS is used instead only when `piper.exe` and a `models/piper/` model are found).
-- **GPU telemetry** → a bundled headless sidecar `gpu-feeder/` (repo-root, zero-dep crate) runs
+- **GPU telemetry** → a bundled headless sidecar `gpu-feeder/` (repo-root, zero-dep crate)
   reads GPU0 via the driver NVML ABI in its own process and `POST`s to `/telemetry`; the main app never queries the GPU itself,
   so the NFR budgets stay about its own work. Governor merges it into `resource-stats` (deck footer);
   shows "—" when the feeder isn't running (30s staleness).
