@@ -20,6 +20,7 @@ import { LogCard } from './cards/LogCard'
 import { Welcome } from './cards/Welcome'
 import { useStartupSettings } from './settingsContext'
 import { RAM_BUDGET_MB } from './resourceBudget'
+import { MODULE_STATUS, WIRING_MARK } from './moduleStatus'
 
 // CR-002 Phase 1: the command deck (<CommandDeck/>) renders in the control
 // window. CR-013 W3: `Control` now only ever renders one settings category
@@ -290,19 +291,15 @@ export const Control: React.FC<{ category: SettingsCat }> = ({ category }) => {
                 )
               })()}
               <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, paddingTop: 6, fontSize: 12.5 }}>
-                {[
-                  ['G-Sentry', 'fog-of-war monitor'],
-                  ['G-Motion', 'gank prediction'],
-                  ['G-Signal', 'voice gank warning'],
-                  ['G-Master', 'advisor (Claude Plan + SLM fallback)'],
-                  ['G-Damage', 'burst lethality engine'],
-                  ['G-Log', 'match history'],
-                ].map(([mod, desc]) => (
-                  <span key={mod} style={{ color: C.ok }}>
-                    <span style={{ color: C.ok }}>✓</span> <b style={{ color: C.ice }}>{mod}</b>
-                    <span style={{ color: C.mut }}> — {desc}</span>
-                  </span>
-                ))}
+                {MODULE_STATUS.map((m) => {
+                  const color = m.wiring === 'live' ? C.ok : m.wiring === 'partial' ? C.warn : C.mut
+                  return (
+                    <span key={m.name} style={{ color }} data-wiring={m.wiring}>
+                      <span style={{ color }}>{WIRING_MARK[m.wiring]}</span> <b style={{ color: C.ice }}>{m.name}</b>
+                      <span style={{ color: C.mut }}> — {m.desc}{m.note ? ` (${m.note})` : ''}</span>
+                    </span>
+                  )
+                })}
               </div>
               {resources && (
                 <div style={{ borderTop: `1px solid ${C.line}`, marginTop: 10, paddingTop: 8, display: 'flex', gap: 20, fontSize: 12 }}>
