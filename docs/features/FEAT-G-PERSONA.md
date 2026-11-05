@@ -54,17 +54,17 @@ related_docs: ["FEAT-G-MASTER", "FEAT-G-SIGNAL", "mvp-decisions"]
 | Preset | แมปกับ §2 | พฤติกรรมของคำแนะนำ non-critical (G-Master) |
 | --- | --- | --- |
 | `coach` (default) | verbosity 3 · tone 1 | prompt เดิม แต่เน้นสถิติ ลด humor |
-| `silent` | verbosity 1 | **ไม่สร้างและไม่พูด/แสดง** คำแนะนำ non-critical |
+| `silent` | verbosity 1 | **ไม่เรียกคำแนะนำอัตโนมัติ (proactive)** — คงพฤติกรรมเดิมที่ Overlay; ปุ่ม Ask ที่ผู้ใช้กดเองยังใช้ได้ (explicit intent) และใช้โทนเดียวกับ `coach` |
 | `caster` | verbosity 3 · tone 2 | สไตล์แคสเตอร์ สรุปสถานการณ์เป็นประโยคสั้น |
 | `meme` | verbosity 3 · tone 3 | เพิ่ม humor เรื่อง Nerf CM ตามบุคลิกหลัก |
 
 กติกา v1 (ต้องเป็นจริงทุกข้อ):
 
-1. Preset เปลี่ยนเฉพาะ **ข้อความ prompt ที่ส่งให้ G-Master** (ส่วนโทน) และการ **ระงับ** คำแนะนำ non-critical เมื่อเป็น `silent` — ไม่ใส่ข้อมูลเกมเพิ่ม ไม่ขยายข้อมูลที่ส่งออก cloud (ยังอยู่ใต้ allowlist ใน [[mvp-decisions]])
+1. Preset เปลี่ยนเฉพาะ **ข้อความ prompt ที่ส่งให้ G-Master** (ส่วนโทน) ส่วน `silent` ระงับเฉพาะคำแนะนำอัตโนมัติ — ไม่ใส่ข้อมูลเกมเพิ่ม ไม่ขยายข้อมูลที่ส่งออก cloud (ยังอยู่ใต้ allowlist ใน [[mvp-decisions]])
 2. **G-Signal ไม่อ่าน preset**: เสียงเตือน/Belief Revision/interrupt (§3) ทำงานเหมือนเดิมทุก preset รวมถึง `silent` และ G-Signal ยังเป็น Rust ล้วนไม่พึ่ง SLM/WebView
 3. Preset ที่ไม่รู้จักถือเป็น `coach`
 4. เปลี่ยน preset ระหว่างเกมมีผลกับคำแนะนำ **ถัดไป**: คำแนะนำที่ cache ไว้ภายใต้ preset อื่นต้องไม่ถูกนำมาใช้ซ้ำ
-5. การระงับตอน `silent` ต้องบังคับใช้ที่ backend (Rust) ไม่ใช่เฉพาะใน Overlay เพื่อให้ผลตรงกับคำอธิบายในหน้า Voice settings
+5. การระงับคำแนะนำอัตโนมัติของ `silent` อยู่ที่ Overlay (จุดเดียวที่สร้าง trigger อัตโนมัติ) และคงไว้ตามเดิมใน v1; ไม่ย้ายเข้า backend เพราะ `request_advice` ไม่แยก auto/manual และการเรียกด้วยมือต้องใช้ได้เสมอ
 6. ไม่เพิ่มเวลาใน G-Signal critical path
 
 ## 3. Immutable Behaviors (ลบไม่ได้ไม่ว่า preset ใด) — **ทำแล้ว**
@@ -139,7 +139,7 @@ on event received (advice, narration, signal):
 
 **v1 (4 presets — ต้องผ่านก่อนเปลี่ยนสถานะเป็น active):**
 
-- [ ] `silent`: backend ไม่สร้าง/ไม่ส่งคำแนะนำ non-critical; G-Signal ยังเตือนตามปกติ (unit test)
+- [ ] `silent`: คำแนะนำอัตโนมัติไม่ถูกเรียก (test เดิมของ Overlay ยังผ่าน); Ask ด้วยมือยังทำงาน; G-Signal ยังเตือนตามปกติ
 - [ ] `coach` / `caster` / `meme`: prompt ที่ส่ง G-Master ต่างกันตาม preset และยังมี persona หลักครบ (unit test บน builder ของ prompt)
 - [ ] preset ไม่รู้จัก → `coach` (unit test)
 - [ ] เปลี่ยน preset ทำให้ advice ที่ cache ไว้ภายใต้ preset เดิมไม่ถูกใช้ซ้ำ (unit test)
@@ -162,4 +162,4 @@ Native/live acceptance (เสียงจริงใน Dota) แยกจา�
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-07 | Design-only draft of tone & verbosity presets; immutable behaviors implemented. |
-| 0.2.0 | 2026-11-06 | Add frontmatter; define v1 scope for the four shipped presets (G-Master prompt tone + `silent` suppression, G-Signal unaffected) and split v1 vs design-only acceptance (#134, Owner-approved). |
+| 0.2.0 | 2026-11-06 | Add frontmatter; define v1 scope for the four shipped presets (G-Master prompt tone; `silent` keeps its existing Overlay suppression of proactive advice; G-Signal unaffected) and split v1 vs design-only acceptance (#134, Owner-approved). |
