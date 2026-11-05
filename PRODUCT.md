@@ -53,7 +53,7 @@ statistically credible. Calm by default, loud only on danger.
 3. **Honest state.** No data = `—`, never a fake 0. Confidence and staleness are shown, not
    hidden. (This includes belief revision — being visibly wrong-then-corrected is a feature.)
 4. **Glass = depth, not decoration.** Translucency means "floats above the game"; it belongs
-   to the shell, not to every card. NFR budgets (CPU ≤2.5%, RAM ≤400MB, overlay FPS ≤3%)
+   to the shell, not to every card. NFR budgets (CPU ≤10%, RAM ≤900MB, overlay FPS ≤3%)
    gate every visual decision.
 5. **Persona in voice and copy, not in effects.** Maiden's character shows up as what she
    says and how she corrects herself — the chrome stays credible.
