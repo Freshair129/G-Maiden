@@ -2,8 +2,8 @@
 title: "G-Maiden — Engineering Spec"
 doc_id: "engineering-spec"
 status: "active"
-version: "0.3.4"
-updated: 2026-10-30
+version: "0.3.5"
+updated: 2026-11-06
 owner: "Boss"
 source_of_truth: false
 complexity: "C-3"
@@ -301,7 +301,7 @@ native cold/offline/revoke acceptance remains pending.
 - [ ] CPU whole-app process group normalized by logical CPU capacity, every 1s sample ≤10% on the MVP reference tier (MVP decision v0.2.0)
 - [ ] CPU gate ต้องพิสูจน์จาก sustained app-path harness; Windows Task Manager peak `20%+` ณ 2026-07-08 ยังสูงกว่า budget ใหม่ จนกว่าจะยืนยัน steady-state อยู่ใน budget
 - [ ] CPU investigation ต้องแยก `Rust host` vs `WebView2 child processes` vs `sidecars/subprocesses`; harness หลักคือ `tests/perf/src/bin/perf_cpu_tree.rs`
-- [ ] aggregate peak Working Set ≤400,000,000 bytes; include app host, WebView2, feeder, STT/SLM and external model PIDs
+- [ ] aggregate peak Working Set ≤900,000,000 bytes (MVP decision v0.5.0); include app host, WebView2, feeder, STT/SLM and external model PIDs
 - [ ] FPS impact ≤3% in each of ≥3 paired overlay-off/on 60s runs, same device/segment/settings; P7 receipt `verdict=pass`
 - [ ] matrix evidence: ≥10 sessions per required OS/mode/geometry cell; Windows 19045/26100, live All Pick Ranked/Unranked, default 1080p borderless geometry
 - [ ] cloud-loss test: local G-Sentry/G-Motion/G-Signal and Voice/Memory path stay local; G-Signal has no cloud or SLM dependency
@@ -352,3 +352,4 @@ Local visual receipts distinguish warmed/cold, wait count, first nontransparent 
 | 0.3.2 | 2026-10-29 | Record VRZO playback event, decoded clip identity, preview command and unverified native acceptance. |
 | 0.3.3 | 2026-10-30 | Record larger60fps ID visuals, predictive bounded cache and owner-authorized visual/audio retirement. |
 | 0.3.4 | 2026-10-30 | Record revision4 paused decoder preparation, VP8 media and bounded natural-completion grace. |
+| 0.3.5 | 2026-11-06 | Align the Definition of Done RAM gate with the accepted 900,000,000-byte aggregate Working Set ceiling (MVP decision v0.5.0); it still read 400,000,000 bytes (#134). |
