@@ -96,7 +96,7 @@ const RAM_BUDGET_MB: f64 = resource_accounting::RAM_BUDGET_BYTES as f64 / 1_000_
 /// (`ingest_gpu`) — light and always available. The sibling G-Telemetry app
 /// writes a RICHER file (adds CPU temp, ~200ms) at
 /// `%LOCALAPPDATA%\G-Series\telemetry-latest.json` which we read. The main app
-/// never runs nvidia-smi itself, so the NFR budgets keep covering only our own
+/// never queries the GPU itself, so the NFR budgets keep covering only our own
 /// work. Source values (match `telemetrySource` in the frontend): 0 = auto
 /// (prefer the rich G-Telemetry file, else the feeder push), 1 = feeder only,
 /// 2 = G-Telemetry only, 3 = off.
@@ -545,7 +545,7 @@ impl GpuFeederProcess {
     }
 }
 
-/// Spawn the headless `gpu-feeder` sidecar (own process; runs nvidia-smi and
+/// Spawn the headless `gpu-feeder` sidecar (own process; reads NVML and
 /// pushes to `POST /telemetry`). Looks next to our exe: the bundled name first,
 /// then the dev second-bin name. The child joins this process's Job Object only
 /// if setup and host assignment succeeded and it starts without a breakaway flag;
