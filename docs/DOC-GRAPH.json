@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-05T22:25:56.570Z",
+  "generatedAt": "2026-11-05T23:35:23.083Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -812,7 +812,9 @@
     {
       "id": "docs/features/FEAT-G-PERSONA.md",
       "type": "doc",
-      "path": "docs/features/FEAT-G-PERSONA.md"
+      "path": "docs/features/FEAT-G-PERSONA.md",
+      "title": "FEAT: G-Persona — Tone & Verbosity Presets",
+      "status": "draft"
     },
     {
       "id": "docs/features/FEAT-G-REVIVE.md",
@@ -7459,7 +7461,7 @@
       "from": "docs/features/FEAT-G-DAMAGE.md",
       "to": "src-tauri/src/damage.rs",
       "type": "symbol",
-      "line": 287
+      "line": 296
     },
     {
       "from": "docs/features/FEAT-G-FRIENDS.md",
@@ -7801,31 +7803,37 @@
       "from": "docs/features/FEAT-G-PERSONA.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 4
+      "line": 17
     },
     {
       "from": "docs/features/FEAT-G-PERSONA.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 4
+      "line": 17
+    },
+    {
+      "from": "docs/features/FEAT-G-PERSONA.md",
+      "to": "docs/product/mvp-decisions.md",
+      "type": "wikilink",
+      "line": 63
     },
     {
       "from": "docs/features/FEAT-G-PERSONA.md",
       "to": "src-tauri/src/signal.rs",
       "type": "symbol",
-      "line": 38
+      "line": 72
     },
     {
       "from": "docs/features/FEAT-G-PERSONA.md",
       "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 39
+      "line": 73
     },
     {
       "from": "docs/features/FEAT-G-PERSONA.md",
       "to": "src-tauri/src/tts.rs",
       "type": "symbol",
-      "line": 39
+      "line": 73
     },
     {
       "from": "docs/features/FEAT-G-REVIVE.md",
@@ -10957,11 +10965,6 @@
       "symbol": "record"
     },
     {
-      "file": "docs/features/FEAT-G-PERSONA.md",
-      "line": null,
-      "reason": "no-metadata"
-    },
-    {
       "file": "docs/features/FEAT-G-REVIVE.md",
       "line": 98,
       "reason": "anchor-symbol-mismatch",
@@ -11345,7 +11348,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-05T22:25:59.066Z",
+    "generatedAt": "2026-11-05T23:35:25.578Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

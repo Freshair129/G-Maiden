@@ -2,8 +2,8 @@
 title: "FEAT: G-Damage — Real-time Lethality Engine"
 doc_id: "FEAT-G-DAMAGE"
 status: "draft"
-version: "0.3.3"
-updated: "2026-10-05"
+version: "0.3.4"
+updated: "2026-11-06"
 owner: "Boss"
 source_of_truth: true
 prd_system: "SYSTEM-03::G-Signal"
@@ -281,6 +281,15 @@ pub fn can_i_kill_from_snapshot(attacker, attacker_level, ability_levels, items,
 - [ ] ฝั่ง defensive (`is_lethal`) เดิมยังทำงานปกติ (ไม่ regress)
 - [ ] ทำงาน offline ทั้งหมด (ไม่พึ่ง cloud)
 
+## 12a. สถานะที่แสดงใน UI (Owner-approved 2026-11-06)
+
+หน้า Settings → ภาพรวม (`src/src/app/Control.tsx`) เคยแสดง ✓ เขียวให้ G-Damage โดย hardcode ทั้งที่ต่อสายแค่ self-burst กติกาใหม่:
+
+- สถานะแต่ละโมดูลในรายการนั้นมาจากค่าคงที่แบบ typed ตัวเดียว (`live` / `partial` / `not-wired`) ที่ตรงกับ `docs/FEATURE-LEDGER.md` และเอกสาร FEAT ของโมดูลนั้น ไม่ใช่ ✓ ที่ทุกโมดูลได้เหมือนกัน
+- **G-Damage = `partial`** พร้อมข้อความสั้น "self-burst เท่านั้น" จนกว่าจะต่อ `is_lethal`/`can_i_kill` เข้า G-Signal หรือ Tauri command จริงและติ๊ก §12 ที่เกี่ยวข้อง
+- ค่าคงที่นี้เป็นข้อความที่ตรวจสอบได้จากเอกสาร **ไม่ใช่ runtime health**: ไม่ได้บอกว่าโมดูลทำงานอยู่ ณ ตอนนี้ (G-Damage ไม่มี event/command รายงานสถานะ) การทำให้แต่ละโมดูลส่งสถานะ runtime จริงเป็นงานแยก
+- การเปลี่ยนสถานะโมดูลใดต้องแก้ค่าคงที่และเอกสารในการเปลี่ยนแปลงเดียวกัน มี test ตรวจว่าทุกโมดูลในรายการมีสถานะ
+
 ## Changelog
 | Version | Date | Summary |
 |---|---|---|
@@ -292,3 +301,4 @@ pub fn can_i_kill_from_snapshot(attacker, attacker_level, ability_levels, items,
 | 0.3.1 | 2026-10-04 | Implemented the source-neutral target snapshot normalization, TTL/confidence gate, and fail-closed lethality wrapper with Rust unit coverage; live CV/OCR sources remain blocked. |
 | 0.3.2 | 2026-10-04 | Added conservative target-observation reconciliation: compatible partial observations merge, while conflicts and out-of-window data fail closed. |
 | 0.3.3 | 2026-10-05 | Linked the DL-005 static-data provenance manifest and preserved unknown patch/date evidence as non-verified metadata. |
+| 0.3.4 | 2026-11-06 | Define honest module status for the Settings overview (G-Damage = partial/self-burst only) instead of a hardcoded all-green list (#134, Owner-approved). |
