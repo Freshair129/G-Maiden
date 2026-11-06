@@ -1,0 +1,14 @@
+[
+  {
+    "clientH": 720,
+    "overflowY": "auto",
+    "scrollH": 720,
+    "selector": "surface page-voice"
+  },
+  {
+    "clientH": 556,
+    "overflowY": "visible",
+    "scrollH": 556,
+    "selector": "gm-packs-body"
+  }
+]

@@ -10,6 +10,9 @@
 - **G-Party — แชร์สถานะของเพื่อนจาก GSI ของแต่ละเครื่อง** — สร้าง/เข้าห้องด้วยรหัสเชิญและความยินยอมแยก แสดงฮีโร่ เลเวล HP/HP สูงสุด MP% และสถานะชีวิต/รอเกิดเฉพาะแมตช์และทีมเดียวกัน; ค่าเก่าเป็น unknown พร้อมออก/เตะ/เปลี่ยนรหัสเชิญ ตัว relay เก็บในหน่วยความจำและ native transport แยกจาก G-Signal ต้องรัน relay ที่เข้าถึงได้ก่อนใช้งานข้ามเครื่อง; Windows/live Dota/สองจอและงบทรัพยากรยังรอ acceptance
 - **เอกสาร G-Party และการทดสอบ** — เพิ่ม FEAT/CR-037/implementation plan, สัญญา peer-sharing แยกจาก AI consent และ CI สำหรับ relay/portable Rust โดยคง 62 MVP tasks เดิม
 
+### Fixed
+- **One Canvas UI** — Voice pack inventory paginates within its available space, Account content uses a bounded scroll region, Insights links to Account when Steam is not linked.
+
 ## [0.13.5] — Pending release
 
 - **ความต่อเนื่องของ minimap ระหว่างคลิป** — ให้ worker ทำงานที่ priority ปกติภายใต้งบ CPU เดิม ลดเฉพาะภาพสะท้อน minimap เหลือ 5 FPS ระหว่างเล่นคลิป และคืน cadence หลังจบ พร้อมบันทึกจุดสะดุดแบบตัวเลขในเครื่อง

@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-06T03:41:57.800Z",
+  "generatedAt": "2026-11-06T15:01:00.107Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -341,6 +341,15 @@
       "id": "docs/audits/gap-analysis-prd-srs-vs-impl-2026-08-26.md",
       "type": "doc",
       "path": "docs/audits/gap-analysis-prd-srs-vs-impl-2026-08-26.md"
+    },
+    {
+      "id": "docs/audits/ui-wireframe-alignment-2026-09-13.md",
+      "type": "doc",
+      "path": "docs/audits/ui-wireframe-alignment-2026-09-13.md",
+      "title": "G-Maiden UI versus wireframe — page-by-page review",
+      "status": "active",
+      "doc_type": "audit",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
@@ -926,6 +935,14 @@
       "path": "docs/operations/g-party-social-operations.md",
       "title": "G-Party social operations and evidence",
       "status": "active"
+    },
+    {
+      "id": "docs/operations/ui-wireframe-remediation-proposal.md",
+      "type": "doc",
+      "path": "docs/operations/ui-wireframe-remediation-proposal.md",
+      "title": "UI wireframe remediation — WF-01 ถึง WF-07",
+      "status": "superseded",
+      "domain": "ui-ux"
     },
     {
       "id": "docs/operations/vrzo-banner-validation.md",
@@ -9837,7 +9854,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-06T03:42:00.163Z",
+    "generatedAt": "2026-11-06T15:01:02.805Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

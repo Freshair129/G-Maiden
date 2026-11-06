@@ -1,0 +1,29 @@
+[
+  {
+    "afterScrollTop": 505,
+    "before": {
+      "clientH": 720,
+      "scrollH": 1225,
+      "scrollTop": 0
+    },
+    "selector": ".surface.page-voice"
+  },
+  {
+    "afterScrollTop": 246,
+    "before": {
+      "clientH": 622,
+      "scrollH": 868,
+      "scrollTop": 0
+    },
+    "selector": ".account-page"
+  },
+  {
+    "afterScrollTop": 214,
+    "before": {
+      "clientH": 622,
+      "scrollH": 836,
+      "scrollTop": 0
+    },
+    "selector": ".settings-detail-body"
+  }
+]
