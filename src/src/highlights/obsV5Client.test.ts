@@ -1,3 +1,4 @@
+// @vitest-environment node
 import { describe, expect, it, vi } from "vitest";
 import { ObsV5Client, obsAuthentication, validateObsEndpoint } from "./obsV5Client";
 
