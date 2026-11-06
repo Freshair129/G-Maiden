@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-05T22:25:56.570Z
+สร้างเมื่อ / Generated at: 2026-11-05T23:35:23.083Z
 
-สแกน 171 ไฟล์เอกสาร, 287 nodes, 1311 edges, 230 รายการปัญหา (200 ตัวบล็อก exit code) / scanned 171 doc files, 287 nodes, 1311 edges, 230 violations (200 blocking exit code).
+สแกน 171 ไฟล์เอกสาร, 287 nodes, 1312 edges, 229 รายการปัญหา (200 ตัวบล็อก exit code) / scanned 171 doc files, 287 nodes, 1312 edges, 229 violations (200 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -15,7 +15,7 @@
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 3 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
-| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 27 | no (informational) |
+| no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 26 | no (informational) |
 | unresolved | wikilink หาไม่เจอ / unresolved wikilink | 6 | yes |
 | version-changelog-mismatch | version ใน frontmatter ไม่ตรงแถวล่าสุดของ Changelog / frontmatter version != last Changelog row | 10 | yes |
 
@@ -364,10 +364,6 @@
 - [L76] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/motion.rs", anchor=192, symbol="heading_multiplier")
 - [L80] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/motion.rs", anchor=248, symbol="eta_estimate")
 - [L82] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/motion.rs", anchor=121, symbol="record")
-
-### docs/features/FEAT-G-PERSONA.md
-
-- [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
 
 ### docs/features/FEAT-G-REVIVE.md
 
