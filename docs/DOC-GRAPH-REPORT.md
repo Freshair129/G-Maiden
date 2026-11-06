@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-06T02:22:05.188Z
+สร้างเมื่อ / Generated at: 2026-11-06T03:02:37.584Z
 
-สแกน 171 ไฟล์เอกสาร, 283 nodes, 1324 edges, 177 รายการปัญหา (150 ตัวบล็อก exit code) / scanned 171 doc files, 283 nodes, 1324 edges, 177 violations (150 blocking exit code).
+สแกน 171 ไฟล์เอกสาร, 283 nodes, 1324 edges, 171 รายการปัญหา (144 ตัวบล็อก exit code) / scanned 171 doc files, 283 nodes, 1324 edges, 171 violations (144 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -12,7 +12,7 @@
 | --- | --- | --- | --- |
 | anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 143 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 1 | no (informational) |
-| invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
+| invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 1 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 26 | no (informational) |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
@@ -40,10 +40,6 @@
 ### docs/README.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/architecture/CR-001-dxgi-capture-migration.md
-
-- [-] **invalid-status** — ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) (severity="error", status="Submitted")
 
 ### docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md
 
@@ -75,33 +71,13 @@
 - [L138] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/banner.rs", anchor=80, symbol="read_banner_data_url")
 - [L138] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/commands.rs", anchor=13, symbol="sanitize_file_name")
 
-### docs/change request/CR-001-REVIEW-and-execution-plan.md
-
-- [-] **invalid-status** — ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) (severity="error", status="Wave A+B code-complete & gate-green (2026-06-29); Wave C in-game test pending Boss")
-
-### docs/change request/CR-001-Wave-C-test-plan.md
-
-- [-] **invalid-status** — ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) (severity="error", status="ready to execute")
-
-### docs/change request/CR-002-Phase2-wire-backend.md
-
-- [-] **invalid-status** — ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) (severity="error", status="IMPLEMENTED — merged to main 170805b8 (2026-07-02)")
-
 ### docs/change request/CR-003-account-phase1-wallet-billing.md
 
 - [L712] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/voice_api/banner.rs", anchor=3, symbol="rs")
 
-### docs/change request/CR-003-payment-golive-checklist.md
-
-- [-] **invalid-status** — ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) (severity="error", status="Open — blocked on Phase 0 (legal/terms) + Phase 1 (Omise)")
-
 ### docs/change request/CR-004-voice-command-browser.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/change request/CR-005-landing-auth-social.md
-
-- [-] **invalid-status** — ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) (severity="error", status="DRAFT — awaiting approval")
 
 ### docs/change request/CR-007-frostline-deck-refresh.md
 

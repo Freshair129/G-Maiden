@@ -1,9 +1,9 @@
 ---
 title: "CR-002 Phase 2 — Wire command-deck UI to live backend + run in Tauri"
 doc_id: "CR-002-Phase2-wire-backend"
-status: "IMPLEMENTED — merged to main 170805b8 (2026-07-02)"
-version: "0.1.0"
-updated: "2026-06-29"
+status: "historical"
+version: "0.1.1"
+updated: "2026-11-06"
 owner: "Boss"
 related_docs: ["CR-002-command-deck-ui-port", "ADR-13-dxgi-capture-migration"]
 ---
@@ -69,3 +69,4 @@ Rust backend already emits, and feeds it to the deck.
 | Version | Date | Summary |
 |---|---|---|
 | 0.1.0 | 2026-06-29 | Phase 2 plan: run-in-Tauri (mock ok) + source map + 2a/2b phasing + AC/SC |
+| 0.1.1 | 2026-11-06 | status normalized to enum `historical` (was "IMPLEMENTED — merged to main 170805b8 (2026-07-02)"): merged; plan kept for history |
