@@ -2,9 +2,9 @@
 title: "CR-001: Migrate Screen Capture from WGC to DXGI Desktop Duplication"
 doc_id: "CR-001-dxgi-capture-migration"
 type: "Change Request"
-status: "Submitted"
+status: "historical"
 priority: "Critical"
-version: "1.0.0"
+version: "1.0.1"
 submitted: "2026-06-28"
 submitted_by: "Boss"
 reviewed_by: ""
@@ -14,7 +14,7 @@ related_docs:
   - "ADR-13-dxgi-capture-migration"
   - "IMPL-PLAN-DXGI-migration"
   - "DXGI-task-assignment"
-updated: "2026-06-28"
+updated: "2026-11-06"
 owner: "Boss"
 ---
 
@@ -341,3 +341,4 @@ Total: 33pt on critical path │ Bottleneck: Opus (18pt) │ ~3 days minimum
 | Version | Date | Summary |
 |---|---|---|
 | 1.0.0 | 2026-06-28 | Initial submission — CR-001 |
+| 1.0.1 | 2026-11-06 | status normalized to enum `historical` (was "Submitted"): shipped as ADR-13 (DXGI capture); record kept for history |
