@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-06T01:16:14.609Z",
+  "generatedAt": "2026-11-06T01:29:24.237Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -7687,13 +7687,13 @@
       "from": "docs/features/FEAT-G-MIND.md",
       "to": "docs/product/product-requirements.md",
       "type": "wikilink",
-      "line": 19
+      "line": 21
     },
     {
       "from": "docs/features/FEAT-G-MIND.md",
       "to": "docs/product/software-requirements-specification.md",
       "type": "wikilink",
-      "line": 19
+      "line": 21
     },
     {
       "from": "docs/features/FEAT-G-MOTION.md",
@@ -11082,7 +11082,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-06T01:16:16.991Z",
+    "generatedAt": "2026-11-06T01:29:26.697Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

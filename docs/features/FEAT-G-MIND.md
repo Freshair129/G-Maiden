@@ -2,8 +2,8 @@
 title: "FEAT-G-MIND — Cognitive Model Router"
 doc_id: "FEAT-G-MIND"
 status: "active"
-version: "0.2.0"
-updated: "2026-10-10"
+version: "0.2.1"
+updated: "2026-11-06"
 owner: "Boss"
 source_of_truth: true
 complexity: "C-2"
@@ -14,6 +14,8 @@ related_docs: ["software-requirements-specification", "mvp-decisions", "FEAT-G-M
 # FEAT-G-MIND — Cognitive Model Router
 
 > **สถานะ (2026-07): ยังไม่ได้ทำ (spec ล่วงหน้า) — ยังไม่มีโมดูลนี้ในโค้ด (`src-tauri/src/`)**
+>
+> **ขอบเขตของแถว ledger `3-g-mind` ("in-code"):** หมายถึงเฉพาะ backend chain `Auto | Claude | Ollama` ใน `master.rs` เท่านั้น ยังไม่มีโมดูล G-Mind แยก, ไม่มี provider-router และไม่มีการสลับ provider ตามผู้ใช้ — ส่วนเหล่านี้ยังเป็น spec ล่วงหน้า (post-MVP)
 
 > **Module:** G-Mind · **Priority:** Companion P1 · **Phase:** 4
 > **PRD:** [[product-requirements|PRD]] §3A G-Mind · **SRS:** [[software-requirements-specification|SRS]] §3.10
@@ -131,3 +133,4 @@ query(prompt, context):
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.2.0 | 2026-10-10 | จำกัด provider-router เป็น P1/post-MVP; G-Voice/G-Memory ไม่เข้าคลาวด์ และ manual advice ต้องใช้ accepted allowlist/opt-in |
+| 0.2.1 | 2026-11-06 | ระบุว่าแถว ledger "in-code" ครอบคลุมเฉพาะ backend chain ใน `master.rs`; โมดูล/ตัวสลับ provider ยังไม่ได้สร้าง (#134) |
