@@ -1,11 +1,11 @@
 ---
 title: "Documentation Index"
 doc_id: "DOC-INDEX"
-version: "0.2.11"
+version: "0.2.12"
 created_at: "2026-07-19T00:00:00+07:00,Unknown"
 last_update: "2026-11-01T00:00:00+07:00,Codex"
 status: "active"
-updated: "2026-11-01"
+updated: "2026-11-06"
 owner: "Boss"
 attributes:
   domain: "documentation-governance"
@@ -126,16 +126,7 @@ attributes:
 
 ## Orchestration
 
-- `orchestration/docs/SRS--G-ORCHESTRA.md`
-  - `orchestration/docs/SRS--G-ORCHESTRA.md` — SRS สำหรับ G-Orchestra multi-agent orchestrator
-- `orchestration/docs/FEAT--MULTI-AGENT-ORCHESTRATOR.md`
-  - `orchestration/docs/FEAT--MULTI-AGENT-ORCHESTRATOR.md` — feature spec สำหรับ G-Orchestra multi-agent workflow
-- `orchestration/docs/g-orchestra-ui-sitemap-flow-board.md`
-  - `orchestration/docs/g-orchestra-ui-sitemap-flow-board.md` — G-Orchestra UI sitemap, user flow, and design board
-- [[SPEC--*]]
-  - `orchestration/docs/SPEC--*.md` — specs เฉพาะระบบ orchestration เช่น verify gate, provider registry, local model anti-error loop
-- [[ADR-O-*]]
-  - `orchestration/docs/ADR-O-*.md` — architecture decisions ของ orchestration
+- G-Orchestra moved out of this repository (#134): <https://github.com/Freshair129/g-orchestra>. Its SRS, FEAT, SPEC and ADR-O documents are indexed there.
 
 ## Features
 
@@ -232,3 +223,4 @@ attributes:
 | 0.2.9 | 2026-10-30 | Indexed the UI technical drawing atlas and its source/browser evidence. |
 | 0.2.10 | 2026-11-01 | Register G-Party feature, CR-037 and implementation plan with explicit consent and pending acceptance. |
 | 0.2.11 | 2026-11-01 | Index CR-038, ADR-20, G-Friends feature, design/implementation plan and social operations/evidence runbook. |
+| 0.2.12 | 2026-11-06 | Replace the in-repo Orchestration section with a pointer to the standalone G-Orchestra repository (#134). |

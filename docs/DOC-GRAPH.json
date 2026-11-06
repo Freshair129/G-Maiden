@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-05T23:35:23.083Z",
+  "generatedAt": "2026-11-06T00:31:59.368Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -1294,21 +1294,6 @@
       "path": "src-tauri/src/master.rs"
     },
     {
-      "id": "orchestration/providers.mjs",
-      "type": "code",
-      "path": "orchestration/providers.mjs"
-    },
-    {
-      "id": "orchestration/config.json",
-      "type": "code",
-      "path": "orchestration/config.json"
-    },
-    {
-      "id": "orchestration/engine.mjs",
-      "type": "code",
-      "path": "orchestration/engine.mjs"
-    },
-    {
       "id": "src/src/live/buildTelemetry.ts",
       "type": "code",
       "path": "src/src/live/buildTelemetry.ts"
@@ -1754,11 +1739,6 @@
       "path": "src/src/main.tsx"
     },
     {
-      "id": "orchestration",
-      "type": "code",
-      "path": "orchestration"
-    },
-    {
       "id": "src-tauri/src/voice_api/path_safety.rs",
       "type": "code",
       "path": "src-tauri/src/voice_api/path_safety.rs"
@@ -1959,61 +1939,61 @@
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/README.md",
       "type": "wikilink",
-      "line": 142
+      "line": 133
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/G-SERIES-DATA-LINEAGE.md",
       "type": "wikilink",
-      "line": 144
+      "line": 135
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/FEAT-G-PARTY.md",
       "type": "wikilink",
-      "line": 146
+      "line": 137
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/features/FEAT-G-FRIENDS.md",
       "type": "wikilink",
-      "line": 148
+      "line": 139
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/operations/g-party-social-operations.md",
       "type": "wikilink",
-      "line": 169
+      "line": 160
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/scaffold-setup.md",
       "type": "wikilink",
-      "line": 188
+      "line": 179
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/guides/small-model-prompting.md",
       "type": "wikilink",
-      "line": 190
+      "line": 181
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/research/concepts/subagent-context-scoping.md",
       "type": "wikilink",
-      "line": 195
+      "line": 186
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
       "type": "wikilink",
-      "line": 206
+      "line": 197
     },
     {
       "from": "docs/DOC-INDEX.md",
       "to": "docs/superpowers/plans/2026-11-01-g-party-friends.md",
       "type": "wikilink",
-      "line": 208
+      "line": 199
     },
     {
       "from": "docs/README.md",
@@ -2806,24 +2786,6 @@
       "to": "src-tauri/src/log.rs",
       "type": "symbol",
       "line": 189
-    },
-    {
-      "from": "docs/architecture/engineering-spec.md",
-      "to": "orchestration/providers.mjs",
-      "type": "symbol",
-      "line": 272
-    },
-    {
-      "from": "docs/architecture/engineering-spec.md",
-      "to": "orchestration/config.json",
-      "type": "symbol",
-      "line": 272
-    },
-    {
-      "from": "docs/architecture/engineering-spec.md",
-      "to": "orchestration/engine.mjs",
-      "type": "symbol",
-      "line": 272
     },
     {
       "from": "docs/architecture/engineering-spec.md",
@@ -8604,12 +8566,6 @@
       "line": 35
     },
     {
-      "from": "docs/guides/small-model-prompting.md",
-      "to": "orchestration",
-      "type": "symbol",
-      "line": 72
-    },
-    {
       "from": "docs/operations/g-party-social-operations.md",
       "to": "docs/superpowers/specs/2026-11-01-g-party-friends-design.md",
       "type": "wikilink",
@@ -9656,19 +9612,7 @@
     },
     {
       "file": "docs/DOC-INDEX.md",
-      "line": 135,
-      "reason": "glob-slug",
-      "slug": "SPEC--*"
-    },
-    {
-      "file": "docs/DOC-INDEX.md",
-      "line": 137,
-      "reason": "glob-slug",
-      "slug": "ADR-O-*"
-    },
-    {
-      "file": "docs/DOC-INDEX.md",
-      "line": 150,
+      "line": 141,
       "reason": "glob-slug",
       "slug": "FEAT-G-*"
     },
@@ -11348,7 +11292,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-05T23:35:25.578Z",
+    "generatedAt": "2026-11-06T00:32:01.690Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

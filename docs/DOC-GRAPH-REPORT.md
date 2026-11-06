@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-05T23:35:23.083Z
+สร้างเมื่อ / Generated at: 2026-11-06T00:31:59.368Z
 
-สแกน 171 ไฟล์เอกสาร, 287 nodes, 1312 edges, 229 รายการปัญหา (200 ตัวบล็อก exit code) / scanned 171 doc files, 287 nodes, 1312 edges, 229 violations (200 blocking exit code).
+สแกน 171 ไฟล์เอกสาร, 283 nodes, 1308 edges, 227 รายการปัญหา (200 ตัวบล็อก exit code) / scanned 171 doc files, 283 nodes, 1308 edges, 227 violations (200 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -12,7 +12,7 @@
 | --- | --- | --- | --- |
 | anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 162 | yes |
 | bad-anchor | เลขบรรทัด anchor ผิดช่วง / symbol link anchor out of range | 8 | yes |
-| glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 3 | no (informational) |
+| glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 1 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
 | missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 26 | no (informational) |
@@ -27,9 +27,7 @@
 
 ### docs/DOC-INDEX.md
 
-- [L135] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="SPEC--*")
-- [L137] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="ADR-O-*")
-- [L150] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
+- [L141] **glob-slug** — สแลกแบบ wildcard (informational) / glob slug (informational) (slug="FEAT-G-*")
 
 ### docs/DOCS-IA-REORG-PROPOSAL.md
 
