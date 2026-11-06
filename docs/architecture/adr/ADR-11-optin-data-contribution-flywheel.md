@@ -2,8 +2,10 @@
 title: "ADR: Opt-in Data Contribution + match_id Flywheel"
 doc_id: "ADR-11-optin-data-contribution-flywheel"
 status: "accepted"
-version: "1.0.1"
-updated: "2026-07-20"
+approved_by: "Boss"
+approved_date: "2026-11-06"
+version: "1.0.2"
+updated: "2026-11-06"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["ADR-06", "ADR-10", "docs/product/competitive-brief.md", "docs/product/business-requirements.md"]
@@ -58,4 +60,5 @@ ADR-06 + no-egress test (P8.2) + G-Memory `local_only` กำหนดให้�
 | 0.1.0 | 2026-06-23 | Proposed — opt-in contribution + match_id flywheel; amends ADR-06 no-egress scope |
 | 1.0.0 | 2026-06-23 | Accepted — ADR-06 no-egress re-scoped to "non-opted-in data only" |
 | 1.0.1 | 2026-07-20 | Repair UTF-8 mojibake; no semantic change |
+| 1.0.2 | 2026-11-06 | Boss approved this document status (explicit "approve" reply, #134 session, 2026-11-06). Records document approval only; does not widen MVP scope, consent or data-flow boundaries. |
 

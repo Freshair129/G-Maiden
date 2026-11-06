@@ -1,8 +1,8 @@
 # G-Maiden Doc Graph Report
 
-สร้างเมื่อ / Generated at: 2026-11-06T01:16:14.609Z
+สร้างเมื่อ / Generated at: 2026-11-06T02:22:05.188Z
 
-สแกน 171 ไฟล์เอกสาร, 283 nodes, 1324 edges, 184 รายการปัญหา (157 ตัวบล็อก exit code) / scanned 171 doc files, 283 nodes, 1324 edges, 184 violations (157 blocking exit code).
+สแกน 171 ไฟล์เอกสาร, 283 nodes, 1324 edges, 177 รายการปัญหา (150 ตัวบล็อก exit code) / scanned 171 doc files, 283 nodes, 1324 edges, 177 violations (150 blocking exit code).
 
 ผลลัพธ์ / Result: **FAIL (exit 1)**
 
@@ -13,7 +13,6 @@
 | anchor-symbol-mismatch | anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) | 143 | yes |
 | glob-slug | สแลกแบบ wildcard (informational) / glob slug (informational) | 1 | no (informational) |
 | invalid-status | ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) | 7 | yes |
-| missing-approval | status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) | 7 | yes |
 | no-metadata | ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational) | 26 | no (informational) |
 
 ## รายการปัญหารายไฟล์ / Per-file violation list
@@ -46,26 +45,6 @@
 
 - [-] **invalid-status** — ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) (severity="error", status="Submitted")
 
-### docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md
-
-- [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="accepted")
-
-### docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md
-
-- [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="accepted")
-
-### docs/architecture/adr/ADR-12-community-ai-marketplace.md
-
-- [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="accepted")
-
-### docs/architecture/adr/ADR-13-dxgi-capture-migration.md
-
-- [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="accepted")
-
-### docs/architecture/adr/ADR-14-gid-account-identity.md
-
-- [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="accepted")
-
 ### docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md
 
 - [-] **invalid-status** — ค่า status ไม่อยู่ใน enum ที่กำหนด (--strict) / status value not in the pinned enum (--strict) (severity="error", status="accepted (design) · pending implementation")
@@ -84,8 +63,7 @@
 
 ### docs/architecture/g-maiden-ui-sitemap-flow-board.md
 
-- [L187] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/setup.rs", anchor=72, symbol="exclusive_fullscreen_active")
-- [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="accepted")
+- [L189] **anchor-symbol-mismatch** — anchor อยู่ในช่วงแต่ไม่มีสัญลักษณ์ที่อ้างถึง (--strict) / anchor in-bounds but the named symbol is not near it (--strict) (target="src-tauri/src/setup.rs", anchor=72, symbol="exclusive_fullscreen_active")
 
 ### docs/architecture/spikes/S-1-minimap-cv.md
 
@@ -366,10 +344,6 @@
 ### docs/research/competitor-brightgir-opendota-analysis.md
 
 - [-] **no-metadata** — ไม่มี metadata หัวเอกสารเลย (informational) / no header metadata at all (informational)
-
-### docs/research/concepts/subagent-context-scoping.md
-
-- [-] **missing-approval** — status accepted/stable แต่ไม่มี approved_by+approved_date (--strict) / accepted|stable status missing approved_by+approved_date (--strict) (severity="error", status="stable")
 
 ### docs/research/huggingface-dota2-resources.md
 

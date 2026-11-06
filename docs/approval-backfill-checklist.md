@@ -2,8 +2,8 @@
 title: "Approval Backfill Checklist — missing-approval violations without in-doc evidence"
 doc_id: approval-backfill-checklist
 status: draft
-version: 0.1.0
-updated: 2026-07-20
+version: 0.2.0
+updated: 2026-11-06
 owner: Boss
 ---
 
@@ -29,13 +29,8 @@ fixed directly (not listed here): `ADR-16-credit-economy-and-mint-oracle` (body 
 
 | doc_id | Current status | Evidence searched | Suggested `approved_date` (from history) |
 | --- | --- | --- | --- |
-| `ADR-10-hybrid-ingestion-resilience` | accepted | Body + `## Status` line + `## Changelog` scanned for a named sign-off (Boss / "signed off" / "อนุมัติ"). Only found: `owner: "Boss"` in frontmatter (not evidence per the rule) and an unattributed `Accepted · 2026-06-23` status line / changelog row — no line names who accepted it. | 2026-06-23 (changelog row `1.0.0 \| 2026-06-23 \| Accepted`) |
-| `ADR-11-optin-data-contribution-flywheel` | accepted | Same scan; same result — `owner: "Boss"` only, `Accepted *(amends ADR-06)* · 2026-06-23` status line has no named approver. | 2026-06-23 (changelog row `1.0.0 \| 2026-06-23 \| Accepted`) |
-| `ADR-12-community-ai-marketplace` | accepted | Same scan; same result — `owner: "Boss"` only, `Accepted *(new product surface — post-v1.0)* · 2026-06-23` status line has no named approver. | 2026-06-23 (changelog row `1.0.0 \| 2026-06-23 \| Accepted (scheduled post-v1.0)`) |
-| `ADR-14-gid-account-identity` | accepted | Full body scan (incl. `## Status` "shipped on `main` (merge `170805b8`)" and full changelog) — a merge hash is implementation evidence, not a sign-off statement; no line names an approver. | 2026-07-02 (changelog row `1.0.0 \| 2026-07-02 \| Accepted — ...`) |
-| `g-maiden-ui-sitemap-flow-board` | accepted | This doc's `## CHANGELOG` table has its own `Status`/`Agent` columns — every row that flipped `Status` to `accepted` (`0.2.0`, `0.3.0`, `0.3.1`) is attributed to an AI agent (`Opus`, `docs-accuracy-pass`), never to `Boss`; no body text names a human sign-off. | 2026-06-26 (first row with `Status: accepted`, `0.2.0`) |
-| `ADR-13-dxgi-capture-migration` | accepted | Full body scan (in-game `error.log` evidence section, `## Status` line, full `## Changelog`) — the changelog never records an acceptance transition at all (`0.1.0` proposal → `0.1.1` link sweep, no row in between); no named sign-off anywhere. | 2026-06-28 (initial proposal date / `## Status` line date — no better anchor exists) |
-| `subagent-context-scoping` | stable (requires approval same as `accepted`) | Full body scan — no `## Changelog` section exists in this doc at all (research/concepts doc, not audits/rca-exempt), so there is no changelog evidence to search; body has no sign-off statement, only `owner: Boss` in frontmatter. | 2026-05-13 (`created_at` — weakest anchor available; no changelog history to derive from) |
+
+**Resolved 2026-11-06:** Boss replied "approve" in the #134 session; `approved_by: "Boss"` / `approved_date: "2026-11-06"` were set on `ADR-10-hybrid-ingestion-resilience`, `ADR-11-optin-data-contribution-flywheel`, `ADR-12-community-ai-marketplace`, `ADR-14-gid-account-identity`, `g-maiden-ui-sitemap-flow-board`, `ADR-13-dxgi-capture-migration`, `subagent-context-scoping`. The table above is now empty by design; new `missing-approval` docs get a row here until Boss signs off.
 
 (Table below intentionally omits the space after the leading `|` on every row — still
 valid GFM, still parsed by `tools/doc-graph/metadata.mjs`'s `splitRow`/`isSeparatorRow`
@@ -47,6 +42,7 @@ table above.)
 |Version|Date|Summary|
 |---|---|---|
 |0.1.0|2026-07-20|Initial checklist (G25-T3) — 7 `missing-approval` docs without in-doc sign-off evidence|
+|0.2.0|2026-11-06|Boss approved all 7 listed docs; rows removed, resolution recorded above|
 
 ## Unmappable statuses (Boss decision needed — free-text ที่ map อัตโนมัติไม่ได้ตามกฎ no-guess)
 

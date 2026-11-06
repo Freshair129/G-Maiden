@@ -1,8 +1,10 @@
 ---
-version: "0.3.5"
+version: "0.3.6"
 created_at: "2026-06-24T03:10:00+07:00,ATHER,pending"
 last_update: "2026-10-29,Codex (VRZO documentation)"
 status: "accepted"
+approved_by: "Boss"
+approved_date: "2026-11-06"
 superseded_by: null
 attributes:
   domain: "ui-ux"
@@ -10,7 +12,7 @@ attributes:
   language: "th"
 title: "G-Maiden UI Sitemap / User Flow / Design Board"
 doc_id: "g-maiden-ui-sitemap-flow-board"
-updated: "2026-10-29"
+updated: "2026-11-06"
 owner: "Boss"
 ---
 
@@ -219,3 +221,4 @@ Layout Editor.
 | 0.3.3 | 2026-07-19 | link/metadata sweep (G1.5) — wikilink/symbol-link fixes only, no content change |
 | 0.3.4 | 2026-10-18 | accepted | Update the voice page boundary: players use Store-installed packs; authoring stays in G-AnnStudio, and remove the deleted AudioSettings.tsx reference. | pending | Codex |
 | 0.3.5 | 2026-10-29 | accepted | Document the VRZO variant preview and local muted visual lifecycle with native acceptance pending. | pending | Codex |
+| 0.3.6 | 2026-11-06 | accepted | Boss approved this document status (explicit "approve" reply, #134 session, 2026-11-06). Records document approval only; does not widen MVP scope, consent or data-flow boundaries. | — | Boss |

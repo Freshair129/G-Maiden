@@ -2,8 +2,10 @@
 title: "ADR: Migrate Screen Capture from WGC to DXGI Desktop Duplication"
 doc_id: "ADR-13-dxgi-capture-migration"
 status: "accepted"
-version: "0.1.4"
-updated: "2026-10-28"
+approved_by: "Boss"
+approved_date: "2026-11-06"
+version: "0.1.5"
+updated: "2026-11-06"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["ADR-05", "ADR-10-hybrid-ingestion-resilience", "src-tauri/src/capture.rs", "src-tauri/src/governor.rs"]
@@ -143,3 +145,4 @@ capture::start()
 | 0.1.2 | 2026-10-12 | Clarified that the 2.5% capture measurement was historical and aligned the pending CPU validation gate with MVP decision v0.2.0. |
 | 0.1.3 | 2026-10-28 | Align active RAM target with owner-approved800MB aggregate full Working Set (MVP decision v0.4.0); retain accounting and historical evidence. |
 | 0.1.4 | 2026-10-28 | Align active MVP RAM ceiling to owner-approved900MB aggregate Working Set; preserve accounting and historical evidence. |
+| 0.1.5 | 2026-11-06 | Boss approved this document status (explicit "approve" reply, #134 session, 2026-11-06). Records document approval only; does not widen MVP scope, consent or data-flow boundaries. |
