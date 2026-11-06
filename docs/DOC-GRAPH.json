@@ -1,5 +1,5 @@
 {
-  "generatedAt": "2026-11-06T01:29:24.237Z",
+  "generatedAt": "2026-11-06T02:22:05.188Z",
   "nodes": [
     {
       "id": "docs/DOC-GRAPH-REPORT.md",
@@ -2155,211 +2155,211 @@
       "from": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
       "to": "docs/architecture/spikes/S-1-minimap-cv.md",
       "type": "wikilink",
-      "line": 52
+      "line": 54
     },
     {
       "from": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
       "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
-      "line": 52
+      "line": 54
     },
     {
       "from": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
       "to": "docs/product/business-requirements.md",
       "type": "wikilink",
-      "line": 52
+      "line": 54
     },
     {
       "from": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "to": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
       "type": "wikilink",
-      "line": 52
+      "line": 54
     },
     {
       "from": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "to": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "type": "wikilink",
-      "line": 52
+      "line": 54
     },
     {
       "from": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
-      "line": 53
+      "line": 55
     },
     {
       "from": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "to": "docs/product/business-requirements.md",
       "type": "wikilink",
-      "line": 53
+      "line": 55
     },
     {
       "from": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 53
+      "line": 55
     },
     {
       "from": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "to": "docs/product/competitive-brief.md",
       "type": "wikilink",
-      "line": 53
+      "line": 55
     },
     {
       "from": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "to": "docs/product/business-requirements.md",
       "type": "wikilink",
-      "line": 53
+      "line": 55
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "docs/change request/CR-001-REVIEW-and-execution-plan.md",
       "type": "wikilink",
-      "line": 16
+      "line": 18
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 25
+      "line": 27
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "docs/product/mvp-decisions.md",
       "type": "wikilink",
-      "line": 121
+      "line": 123
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
       "type": "wikilink",
-      "line": 133
+      "line": 135
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "src-tauri/src/dxgi.rs",
       "type": "symbol",
-      "line": 69
+      "line": 71
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "src-tauri/src/dxgi.rs",
       "type": "symbol",
-      "line": 111
+      "line": 113
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 116
+      "line": 118
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "src-tauri/src/capture.rs",
       "type": "symbol",
-      "line": 134
+      "line": 136
     },
     {
       "from": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
       "to": "src-tauri/src/governor.rs",
       "type": "symbol",
-      "line": 135
+      "line": 137
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
       "type": "wikilink",
-      "line": 112
+      "line": 114
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
       "type": "wikilink",
-      "line": 112
+      "line": 114
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
       "type": "wikilink",
-      "line": 112
+      "line": 114
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "docs/change request/CR-002-Phase2-wire-backend.md",
       "type": "wikilink",
-      "line": 113
+      "line": 115
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 52
+      "line": 54
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 55
+      "line": 57
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "src/src/profile.ts",
       "type": "symbol",
-      "line": 62
+      "line": 64
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 66
+      "line": 68
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 66
+      "line": 68
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 83
+      "line": 85
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 108
+      "line": 110
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "src/src/gid.ts",
       "type": "symbol",
-      "line": 113
+      "line": 115
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "src/src/auth.ts",
       "type": "symbol",
-      "line": 114
+      "line": 116
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "src/src/profile.ts",
       "type": "symbol",
-      "line": 114
+      "line": 116
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "src/src/supabase.ts",
       "type": "symbol",
-      "line": 114
+      "line": 116
     },
     {
       "from": "docs/architecture/adr/ADR-14-gid-account-identity.md",
       "to": "src-tauri/src/identity.rs",
       "type": "symbol",
-      "line": 115
+      "line": 117
     },
     {
       "from": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md",
@@ -2839,109 +2839,109 @@
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "docs/design-system/03-layout.md",
       "type": "wikilink",
-      "line": 19
+      "line": 21
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "docs/architecture/product-family-design-map.md",
       "type": "wikilink",
-      "line": 24
+      "line": 26
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
-      "line": 27
+      "line": 29
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "docs/change request/CR-013-one-canvas-sitemap-gstore-ios-settings.md",
       "type": "wikilink",
-      "line": 49
+      "line": 51
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
-      "line": 87
+      "line": 89
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "docs/change request/CR-011-cold-booth-ux-direction.md",
       "type": "wikilink",
-      "line": 140
+      "line": 142
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "docs/design-system/07-combat-hud.md",
       "type": "wikilink",
-      "line": 171
+      "line": 173
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "docs/operations/vrzo-banner-validation.md",
       "type": "wikilink",
-      "line": 176
+      "line": 178
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "docs/design-system/05-sitemap-ia.md",
       "type": "wikilink",
-      "line": 191
+      "line": 193
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "docs/design-system/04-components.md",
       "type": "wikilink",
-      "line": 191
+      "line": 193
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "src/src/App.tsx",
       "type": "symbol",
-      "line": 51
-    },
-    {
-      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "to": "src/src/shortcuts.ts",
-      "type": "symbol",
       "line": 53
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "src/src/shortcuts.ts",
       "type": "symbol",
-      "line": 53
+      "line": 55
+    },
+    {
+      "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
+      "to": "src/src/shortcuts.ts",
+      "type": "symbol",
+      "line": 55
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "src/src/VoicePacksPage.tsx",
       "type": "symbol",
-      "line": 182
+      "line": 184
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "src-tauri/src/main.rs",
       "type": "symbol",
-      "line": 184
+      "line": 186
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "src-tauri/src/setup.rs",
       "type": "symbol",
-      "line": 187
+      "line": 189
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "src/src/shortcuts.ts",
       "type": "symbol",
-      "line": 198
+      "line": 200
     },
     {
       "from": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
       "to": "src/src/shortcuts.ts",
       "type": "symbol",
-      "line": 198
+      "line": 200
     },
     {
       "from": "docs/architecture/gann-event-media-contract.md",
@@ -9740,41 +9740,6 @@
       "status": "Submitted"
     },
     {
-      "file": "docs/architecture/adr/ADR-10-hybrid-ingestion-resilience.md",
-      "line": null,
-      "reason": "missing-approval",
-      "severity": "error",
-      "status": "accepted"
-    },
-    {
-      "file": "docs/architecture/adr/ADR-11-optin-data-contribution-flywheel.md",
-      "line": null,
-      "reason": "missing-approval",
-      "severity": "error",
-      "status": "accepted"
-    },
-    {
-      "file": "docs/architecture/adr/ADR-12-community-ai-marketplace.md",
-      "line": null,
-      "reason": "missing-approval",
-      "severity": "error",
-      "status": "accepted"
-    },
-    {
-      "file": "docs/architecture/adr/ADR-13-dxgi-capture-migration.md",
-      "line": null,
-      "reason": "missing-approval",
-      "severity": "error",
-      "status": "accepted"
-    },
-    {
-      "file": "docs/architecture/adr/ADR-14-gid-account-identity.md",
-      "line": null,
-      "reason": "missing-approval",
-      "severity": "error",
-      "status": "accepted"
-    },
-    {
       "file": "docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md",
       "line": null,
       "reason": "invalid-status",
@@ -9804,18 +9769,11 @@
     },
     {
       "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "line": 187,
+      "line": 189,
       "reason": "anchor-symbol-mismatch",
       "target": "src-tauri/src/setup.rs",
       "anchor": 72,
       "symbol": "exclusive_fullscreen_active"
-    },
-    {
-      "file": "docs/architecture/g-maiden-ui-sitemap-flow-board.md",
-      "line": null,
-      "reason": "missing-approval",
-      "severity": "error",
-      "status": "accepted"
     },
     {
       "file": "docs/architecture/spikes/S-1-minimap-cv.md",
@@ -11063,13 +11021,6 @@
       "reason": "no-metadata"
     },
     {
-      "file": "docs/research/concepts/subagent-context-scoping.md",
-      "line": null,
-      "reason": "missing-approval",
-      "severity": "error",
-      "status": "stable"
-    },
-    {
       "file": "docs/research/huggingface-dota2-resources.md",
       "line": null,
       "reason": "no-metadata"
@@ -11082,7 +11033,7 @@
   ],
   "ledger": {
     "_generated": "GENERATED — do not hand-edit; edit docs/feature-ledger.manifest.yaml and re-run tools/doc-graph/ledger.mjs",
-    "generatedAt": "2026-11-06T01:29:26.697Z",
+    "generatedAt": "2026-11-06T02:22:07.595Z",
     "manifest": "docs/feature-ledger.manifest.yaml",
     "runTests": false,
     "rowCount": 75,

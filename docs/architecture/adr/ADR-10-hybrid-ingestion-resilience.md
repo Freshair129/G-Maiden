@@ -2,8 +2,10 @@
 title: "ADR: Hybrid Ingestion Resilience"
 doc_id: "ADR-10-hybrid-ingestion-resilience"
 status: "accepted"
-version: "1.0.1"
-updated: "2026-07-20"
+approved_by: "Boss"
+approved_date: "2026-11-06"
+version: "1.0.2"
+updated: "2026-11-06"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["ADR-05", "ADR-03", "docs/product/competitive-brief.md", "docs/product/business-requirements.md"]
@@ -57,5 +59,6 @@ Accepted *(extends ADR-05)* · 2026-06-23
 | 0.1.0 | 2026-06-23 | Proposed — hybrid GSI + CV own-state fallback + pro-replay priors |
 | 1.0.0 | 2026-06-23 | Accepted |
 | 1.0.1 | 2026-07-20 | Repair UTF-8 mojibake; no semantic change |
+| 1.0.2 | 2026-11-06 | Boss approved this document status (explicit "approve" reply, #134 session, 2026-11-06). Records document approval only; does not widen MVP scope, consent or data-flow boundaries. |
 
 

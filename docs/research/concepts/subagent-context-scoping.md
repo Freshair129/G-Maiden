@@ -3,6 +3,8 @@ id: CONCEPT--SUBAGENT-CONTEXT-SCOPING
 phase: 1
 type: concept
 status: stable
+approved_by: "Boss"
+approved_date: "2026-11-06"
 vault_id: default
 tier: process
 source_type: axiomatic
@@ -38,8 +40,8 @@ attributes:
   leak_risk: high
   encryption_level: none
 doc_id: "subagent-context-scoping"
-version: "0.1.0"
-updated: "2026-07-20"
+version: "0.1.1"
+updated: "2026-11-06"
 owner: "Boss"
 ---
 
@@ -177,3 +179,4 @@ A Resource that fails the scope filter has no tier; it does not appear in the su
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-07-20 | changelog table added per Step-5 SOP (G2.5) — baseline row matching frontmatter version |
+| 0.1.1 | 2026-11-06 | Boss approved this document status (explicit "approve" reply, #134 session, 2026-11-06). Records document approval only; does not widen MVP scope, consent or data-flow boundaries. |
