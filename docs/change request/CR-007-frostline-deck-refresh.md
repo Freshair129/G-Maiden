@@ -79,7 +79,7 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
 - Minimap: มี CV data → marker จริง; ไม่มี → แผนที่นิ่ง + label "CV standby" (Lite mode)
 - **Audio-flag boundary (gate follow-up, 2026-07-10):** the deck's ANN toggle
   ([`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) audio rail) only gates G-AnnStudio announcer-pack events
-  ([`set_announcer_enabled`](file:///g:/G-Maiden/src-tauri/src/main.rs) → [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) → [`announcer::most_important`](file:///g:/G-Maiden/src-tauri/src/announcer.rs#L84)) — kill/
+  ([`set_announcer_enabled`](file:///g:/G-Maiden/src-tauri/src/main.rs) → [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) → [`announcer::most_important`](file:///g:/G-Maiden/src-tauri/src/announcer.rs#L97)) — kill/
   streak/death lines. It is **independent** of Maiden's persona voice
   (`s.voiceEnabled` in [`App.tsx`](file:///g:/G-Maiden/src/src/App.tsx), persona TTS only) and of G-Signal's gank
   voice (now gated solely by the deck's SIGNAL toggle, [`set_cv_signal_enabled`](file:///g:/G-Maiden/src-tauri/src/main.rs)).
@@ -91,7 +91,7 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
   so any other surface (e.g. the legacy Control panel under Settings) stays in
   sync instead of silently overwriting the rail's state.
 - **G-AnnStudio install endpoint fix (2026-07-10):** `POST /announcer/install`
-  ([`src-tauri/src/gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) [`announcer_install`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L268)) was a near no-op — it logged the
+  ([`src-tauri/src/gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) [`announcer_install`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L783)) was a near no-op — it logged the
   pack name and returned `audio::all_counts()`, which counts subfolders of the
   legacy flat `voice-cache/` tree (including non-event dirs like `packs/` and
   `imports/`) and never activated the pack, so CLAUDE.md's "picked up live"
@@ -123,8 +123,8 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
   pack whose target escapes it. Every manifest-string join in [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs)
   (`resolve_existing_clips`/`active_event_clips`, [`fired_banner_from`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs),
   [`preview_clip`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs), `install_report`, and `build_pack`'s `cover_image`/
-  `clip_options`/`banner_url` — i.e. the pack-listing path [`state()`](file:///g:/G-Maiden/src-tauri/src/voice_api/commands.rs#L23) hits too,
-  not just the fire path) now goes through it. Separately, [`import_archive`](file:///g:/G-Maiden/src-tauri/src/voice_api/commands.rs#L139)'s
+  `clip_options`/`banner_url` — i.e. the pack-listing path [`state()`](file:///g:/G-Maiden/src-tauri/src/voice_api/commands.rs#L184) hits too,
+  not just the fire path) now goes through it. Separately, [`import_archive`](file:///g:/G-Maiden/src-tauri/src/voice_api/commands.rs)'s
   `Expand-Archive` PowerShell shell-out (whose safety depended entirely on the
   .NET implementation) was replaced with in-process extraction using the `zip`
   crate (already pulled in transitively via `tauri-plugin-updater`, now an

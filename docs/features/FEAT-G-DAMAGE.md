@@ -2,7 +2,7 @@
 title: "FEAT: G-Damage — Real-time Lethality Engine"
 doc_id: "FEAT-G-DAMAGE"
 status: "draft"
-version: "0.3.4"
+version: "0.3.5"
 updated: "2026-11-06"
 owner: "Boss"
 source_of_truth: true
@@ -17,7 +17,7 @@ related_docs: ["FEAT-G-SIGNAL", "FEAT-G-MASTER", "FEAT-G-MOTION", "FEAT-G-SENSOR
 
 > **Module:** G-Damage · **Priority:** Core · **Phase:** 3 (feeds G-Signal)
 > **SRS:** [[software-requirements-specification|SRS]] §3.3, §3.4 · [[engineering-spec|Eng Spec]] §2.3 · [[technical-design-document|TDD]] §3
-> **สถานะโค้ดปัจจุบัน:** [`src-tauri/src/damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs) — defensive ([`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)) + offensive ([`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334), P-D1) + item/ability-level engine ([`burst_damage_with`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136), P-D2a) + JSON hero/item DB (P-D3) + source-neutral [`TargetCombatSnapshot`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L345) normalization/fail-closed wrapper (DL-002) พร้อม unit coverage. Static hero, curated-ability, and burst-item inputs are tracked by the local [`provenance.json`](file:///g:/G-Maiden/src-tauri/data/provenance.json) manifest; missing historical patch/date evidence remains explicit rather than being treated as current. **ต่อสายจริงแล้ว (บางส่วน):** [`self_burst()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L465) ใช้ hero/level/item_names จริงจาก GSI ป้อน [`burst_damage_with()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136) แล้วถูกเรียกจาก [`master::build_prompt`](file:///g:/G-Maiden/src-tauri/src/master.rs#L51) (`master.rs:72`) — โผล่เป็นบรรทัด "พลังคอมโบโดยประมาณ ~X dmg" ใน advice ของ **G-Master** จริงในเกม. Baseline magic resistance ใช้ canonical percentage `[0, 100]` โดย 25% ส่งเป็น `25.0`; มี regression test ครอบ caller-to-formula path แล้ว. **ยังขาด:** live target-side source/wiring — [`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)/[`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334)/[`KillWindow`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L309) ยังไม่ต่อเข้า G-Signal หรือ Tauri command ใด ๆ, ability-level array จาก GSI (P-D2b), CV HP-bar (P-D4), belief-revision wiring (P-D5) — โมดูลยังมี `#![allow(dead_code)]` ครอบส่วนที่ยังไม่ถูกเรียก
+> **สถานะโค้ดปัจจุบัน:** [`src-tauri/src/damage.rs`](file:///g:/G-Maiden/src-tauri/src/damage.rs) — defensive ([`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)) + offensive ([`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L546), P-D1) + item/ability-level engine ([`burst_damage_with`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136), P-D2a) + JSON hero/item DB (P-D3) + source-neutral [`TargetCombatSnapshot`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L345) normalization/fail-closed wrapper (DL-002) พร้อม unit coverage. Static hero, curated-ability, and burst-item inputs are tracked by the local [`provenance.json`](file:///g:/G-Maiden/src-tauri/data/provenance.json) manifest; missing historical patch/date evidence remains explicit rather than being treated as current. **ต่อสายจริงแล้ว (บางส่วน):** [`self_burst()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L695) ใช้ hero/level/item_names จริงจาก GSI ป้อน [`burst_damage_with()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136) แล้วถูกเรียกจาก [`master::build_prompt`](file:///g:/G-Maiden/src-tauri/src/master.rs#L289) (`master.rs:72`) — โผล่เป็นบรรทัด "พลังคอมโบโดยประมาณ ~X dmg" ใน advice ของ **G-Master** จริงในเกม. Baseline magic resistance ใช้ canonical percentage `[0, 100]` โดย 25% ส่งเป็น `25.0`; มี regression test ครอบ caller-to-formula path แล้ว. **ยังขาด:** live target-side source/wiring — [`is_lethal`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L256)/[`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L546)/[`KillWindow`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L309) ยังไม่ต่อเข้า G-Signal หรือ Tauri command ใด ๆ, ability-level array จาก GSI (P-D2b), CV HP-bar (P-D4), belief-revision wiring (P-D5) — โมดูลยังมี `#![allow(dead_code)]` ครอบส่วนที่ยังไม่ถูกเรียก
 
 ---
 
@@ -239,13 +239,13 @@ pub fn can_i_kill_from_snapshot(attacker, attacker_level, ability_levels, items,
 | 2 | [`estimate_ability_level`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L217) เดาเลเวลสกิล | ✅ **P-D2a** | รับ `ability_levels` จริงได้แล้ว, estimate เป็น fallback |
 | 3 | ฮาร์ดโค้ด "ตี 2 ที" | ⏳ P-D4 | ต้องมี attack-speed timing |
 | 4 | Hero DB มีแค่ 8 ฮีโร่ | 🟡 **P-D3** | base stats ครบ 127 ตัว (JSON); ability tables curate แล้ว 8/127 |
-| 5 | ฝั่ง offensive ([`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334)) | ✅ **P-D1** | + confidence model |
+| 5 | ฝั่ง offensive ([`can_i_kill`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L546)) | ✅ **P-D1** | + confidence model |
 | 6 | อ่าน current HP ศัตรู | ⏳ P-D4 | HP-bar detector ใน [`cv/`](file:///g:/G-Maiden/src-tauri/src/cv/) |
 
 ## 9. Implementation Plan (phased)
 
-- ✅ **P-D1 — Offensive core:** [`can_i_kill()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L334) + [`KillWindow`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L309) + [`kill_confidence()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L291) (23 tests). DONE `b7ed1c6`.
-- ✅ **P-D2a — Item/ability engine:** [`burst_damage_with()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136) รับ items + ability levels จริง; item DB + [`loadout_from_names()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L444). DONE.
+- ✅ **P-D1 — Offensive core:** [`can_i_kill()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L546) + [`KillWindow`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L309) + [`kill_confidence()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L291) (23 tests). DONE `b7ed1c6`.
+- ✅ **P-D2a — Item/ability engine:** [`burst_damage_with()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L136) รับ items + ability levels จริง; item DB + [`loadout_from_names()`](file:///g:/G-Maiden/src-tauri/src/damage.rs#L680). DONE.
 - ⏳ **P-D2b — GSI wiring:** พาร์ส `items`/`abilities` arrays ใน [`gsi.rs`](file:///g:/G-Maiden/src-tauri/src/gsi.rs) (ตอนนี้ดึงแค่ summary) → ป้อนเข้า `*_with()`; เกราะศัตรูจาก G-Master.
 - 🟡 **P-D3 — JSON-backed DB:** DB ย้ายออกจาก Rust ไป [`data/heroes.json`](file:///g:/G-Maiden/src-tauri/data/heroes.json) + [`data/items.json`](file:///g:/G-Maiden/src-tauri/data/items.json) (โหลดผ่าน `include_str!`); generator [`tools/gen-herodb/`](file:///g:/G-Maiden/tools/gen-herodb/) ดึง base stats ครบ 127 จาก dotaconstants. เหลือ curate ability tables (8/127) — งานข้อมูลล้วน ไม่ต้องแก้ logic.
 - ⏳ **P-D4 — CV HP-bar + attack timing:** enemy HP-bar detector → current HP %; attack-speed → จำนวนตีจริง.
@@ -302,3 +302,4 @@ pub fn can_i_kill_from_snapshot(attacker, attacker_level, ability_levels, items,
 | 0.3.2 | 2026-10-04 | Added conservative target-observation reconciliation: compatible partial observations merge, while conflicts and out-of-window data fail closed. |
 | 0.3.3 | 2026-10-05 | Linked the DL-005 static-data provenance manifest and preserved unknown patch/date evidence as non-verified metadata. |
 | 0.3.4 | 2026-11-06 | Define honest module status for the Settings overview (G-Damage = partial/self-burst only) instead of a hardcoded all-green list (#134, Owner-approved). |
+| 0.3.5 | 2026-11-06 | relinked 7 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |

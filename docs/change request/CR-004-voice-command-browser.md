@@ -1,6 +1,15 @@
+---
+title: "CR-004: Voice Command + Stealth Browser"
+doc_id: "CR-004-voice-command-browser"
+status: "historical"
+version: "0.1.0"
+updated: "2026-11-06"
+owner: "Boss"
+---
+
 # CR-004: Voice Command + Stealth Browser
 
-**Status:** DESIGN  
+**Status:** DESIGN (2026-07-04) — **shelved 2026-11-06, kept for history.** No `browser-sidecar/`, `ear.rs` or `intent.rs` exists in the code, the feature is absent from the ledger and MVP decisions, and a ~200 MB Chromium sidecar would not fit the 900,000,000-byte aggregate RAM ceiling. Voice is covered by G-Voice (local only); revive this as a new CR if wanted.  
 **Author:** Boss  
 **Date:** 2026-07-04  
 **Predecessor:** None (additive feature)
@@ -387,3 +396,8 @@ serde_json = "1"
 3. **Whisper model size:** tiny (39MB, เร็วแต่ accuracy ต่ำ) vs base (74MB, ดีกว่า) vs small (244MB, best Thai)
 4. **Overlay search UX:** แสดงผลแบบไหน? card 3 items? หรือ minimal 1-line TTS only?
 5. **forked repo or clean impl?** stealth-browser-mcp เป็น Python/nodriver — port เป็น Rust หรือ fork แล้วรันเป็น Python sidecar?
+
+## Changelog
+| Version | Date | Summary |
+| --- | --- | --- |
+| 0.1.0 | 2026-11-06 | Added metadata and marked the design shelved/historical; no content change (#134) |
