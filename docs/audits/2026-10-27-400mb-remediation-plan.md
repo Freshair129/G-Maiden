@@ -2,8 +2,8 @@
 title: "G-Maiden — Keep 400 MB Native Remediation"
 doc_id: "PLAN-KEEP400-NATIVE-20261027"
 status: superseded
-version: "0.10.1"
-updated: "2026-10-28"
+version: "0.10.2"
+updated: "2026-11-06"
 owner: "G-Maiden"
 approved_by: "Owner selected keep 400 MB and reduce RAM in this chat"
 related_docs: ["mvp-decisions", "PLAN-P1-REMEDIATION-20261027", "PROPOSAL-RAM-BUDGET-20261027"]
@@ -11,7 +11,7 @@ related_docs: ["mvp-decisions", "PLAN-P1-REMEDIATION-20261027", "PROPOSAL-RAM-BU
 
 # ลดการใช้ RAM โดยคง 400 MB
 
-**Current MVP decision:900,000,000bytes aggregate Working Set** per owner instruction and [[mvp-decisions]] v0.5.0. Earlier400/800MB statements below are historical; no old result is reclassified as900MB acceptance. Continue event corrections per [[PLAN-MVP-EVENT-CORRECTIONS-20261028]].
+**Current MVP decision:900,000,000bytes aggregate Working Set** per owner instruction and [[mvp-decisions]] v0.5.0. Earlier400/800MB statements below are historical; no old result is reclassified as900MB acceptance. Continue event corrections per [[2026-10-28-mvp-event-corrections-plan]].
 
 **Superseded by owner instruction2026-10-28: “เพิ่มramจาก400เป็น 800”.** เป้าปัจจุบันคือ800,000,000bytesตาม [[mvp-decisions]] v0.4.0. เอกสารนี้เก็บการทดลองและผลล้มเหลวภายใต้400MBเดิม; ไม่อ้างว่าบรรลุ400MBและไม่เปลี่ยนผลย้อนหลังให้ผ่าน800MB. การปรับภาพ/ฟอนต์/blurเพิ่มเติมยังไม่ได้ทำ.
 
@@ -127,3 +127,4 @@ Before implementation, retain the exact baseline source. RED/GREEN must demonstr
 | 0.9.0 | 2026-10-28 | Record510/422 checks and full458MB failure; reject unsupported font attribution and isolate Voice rendering as the next single-variable experiment. |
 | 0.10.0 | 2026-10-28 | Owner replaced the400MB target with800MB; retain old failures and completed render isolation without claiming memory acceptance. |
 | 0.10.1 | 2026-10-28 | Record current900MB MVP decision; preserve historical400/800MB results without acceptance claims. |
+| 0.10.2 | 2026-11-06 | Repointed wikilinks to file-name slugs so they resolve. |

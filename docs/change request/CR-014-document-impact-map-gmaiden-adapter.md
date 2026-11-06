@@ -218,6 +218,6 @@ a speculative SQL parser.
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 |---|---|---|---|---|---|
-| 0.2.0b | 2026-07-21 | beta | Normalized the live manifest to the approved parent ontology; added mandatory declaration provenance, cardinality/FK proof, and deterministic C4 filters. | null | ATHER |
-| 0.1.1b | 2026-07-21 | approved | Owner approved the initial G-Maiden adapter format, metadata vocabulary, and manifest-led ERD baseline. | null | ATHER |
 | 0.1.0b | 2026-07-21 | candidate | Technical design for the G-Maiden document-impact adapter, C4 metadata, and schema-evidenced ERD baseline. | null | ATHER |
+| 0.1.1b | 2026-07-21 | approved | Owner approved the initial G-Maiden adapter format, metadata vocabulary, and manifest-led ERD baseline. | null | ATHER |
+| 0.2.0b | 2026-07-21 | beta | Normalized the live manifest to the approved parent ontology; added mandatory declaration provenance, cardinality/FK proof, and deterministic C4 filters. | null | ATHER |

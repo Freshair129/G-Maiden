@@ -187,5 +187,5 @@ hosted capability instead of a custom broker once it is enabled and configured.
 | 0.3.1b | 2026-07-21 | beta | Recorded read-only confirmation that `gstore` is active; its available management surface has no OAuth Server configuration operation. | ATHER |
 | 0.4.0b | 2026-07-21 | beta | Chose the RFC 8252 fixed-loopback Desktop callback and claimed-HTTPS Mobile callback profiles; recorded required loopback binding controls. | ATHER |
 | 0.4.1b | 2026-07-21 | beta | Implemented legacy callback state binding: issuer-created state is stored in the single-use native gate and exact-matched before code exchange. | ATHER |
-| 0.4.3b | 2026-07-22 | beta | Normalized reader-facing authorization wording from GMAD to G-Maiden while preserving technical identifiers and linked CR names. | ATHER |
 | 0.4.2b | 2026-07-21 | beta | Bounded OAuth state input before the native transaction is armed; Desktop frontend, Rust tests, and clippy pass. | ATHER |
+| 0.4.3b | 2026-07-22 | beta | Normalized reader-facing authorization wording from GMAD to G-Maiden while preserving technical identifiers and linked CR names. | ATHER |

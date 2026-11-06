@@ -2,8 +2,8 @@
 title: "G-Maiden — Audit completion results"
 doc_id: "RESULTS-AUDIT-COMPLETION-20261028"
 status: active
-version: "0.3.0"
-updated: "2026-10-28"
+version: "0.3.1"
+updated: "2026-11-06"
 owner: "G-Maiden"
 related_docs: ["PLAN-AUDIT-COMPLETION-20261028", "AUDIT-FEATURE-LOGIC-20261027", "RESULTS-MVP-EVENT-CORRECTIONS-20261028", "AUDIT-P1-REMEDIATION-RESULTS-20261027", "mvp-decisions"]
 ---
@@ -32,7 +32,7 @@ Owner requested completing the remaining audit while preserving the 900,000,000-
 
 ## Reconciliation of earlier12findings
 
-F01/F03/F04/F05/F06/F07/F25 were source-corrected in [[AUDIT-P1-REMEDIATION-RESULTS-20261027]]. F09/F10/F20/F21/F22 were source-corrected in [[RESULTS-MVP-EVENT-CORRECTIONS-20261028]]. Their regression suites remain part of the full integration run; no earlier source fix is silently redone or presented as new work. F07 sustained resource and F25 acoustic/FPS acceptance remain open evidence gates, independently of code closure.
+F01/F03/F04/F05/F06/F07/F25 were source-corrected in [[2026-10-27-p1-remediation-results]]. F09/F10/F20/F21/F22 were source-corrected in [[2026-10-28-mvp-event-corrections-results]]. Their regression suites remain part of the full integration run; no earlier source fix is silently redone or presented as new work. F07 sustained resource and F25 acoustic/FPS acceptance remain open evidence gates, independently of code closure.
 
 ## Verification and review
 
@@ -69,3 +69,4 @@ Source/test resolution of25findings does not prove live CV precision, audible on
 | 0.1.0 | 2026-10-28 | Reconcile all25findings, remaining13source fixes and bounded regression/review evidence; final gates pending. |
 | 0.2.0 | 2026-10-28 | Record final Rust/Clippy/frontend passes, unsigned native build and opened candidate, startup and original/optional voice-pack integrity; keep live resource/acoustic/FPS acceptance open. |
 | 0.3.0 | 2026-10-28 | Record owner-authorized PR delivery scope and exclusion of accidental pnpm configuration; preserve implementation evidence and live-acceptance boundaries. |
+| 0.3.1 | 2026-11-06 | Repointed wikilinks to file-name slugs so they resolve. |

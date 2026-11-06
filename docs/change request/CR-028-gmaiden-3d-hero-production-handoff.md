@@ -150,9 +150,9 @@ delete provenance evidence or alter the existing landing.
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 | --- | --- | --- | --- | --- | --- |
-| 2.0.0b | 2026-07-22 | superseded | Retracted the unsupported visual-pass decision after owner UAT and superseded the production MPFB handoff with CR-029. | null | ATHER |
-| 1.1.1b | 2026-07-21 | accepted | Added the pinned doc-graph `updated` and approval metadata and mapped the approved beta lifecycle to canonical `accepted`; no requirement changed. | null | ATHER |
-| 1.1.0b | 2026-07-21 | beta | Completed the reviewed MPFB v14 GLB/fallback handoff, landing WebGL/fallback runtime, build and responsive browser gates, and Vercel production deployment. | null | ATHER |
-| 1.0.0b | 2026-07-21 | beta | Owner expanded the approved scope through autonomous MPFB2 authoring, delegated asset review, landing integration, QA, and Vercel production deployment. | null | ATHER |
-| 0.2.0b | 2026-07-21 | beta | Produced and importer-validated a review-pending GLB/fallback/idle technical package; it remains blocked because the stylised source fails the semi-realistic art-quality gate. | null | ATHER |
 | 0.1.0b | 2026-07-21 | candidate | Proposed the bounded, local original-asset production and review handoff required to finish the 3D Hero package. | null | ATHER |
+| 0.2.0b | 2026-07-21 | beta | Produced and importer-validated a review-pending GLB/fallback/idle technical package; it remains blocked because the stylised source fails the semi-realistic art-quality gate. | null | ATHER |
+| 1.0.0b | 2026-07-21 | beta | Owner expanded the approved scope through autonomous MPFB2 authoring, delegated asset review, landing integration, QA, and Vercel production deployment. | null | ATHER |
+| 1.1.0b | 2026-07-21 | beta | Completed the reviewed MPFB v14 GLB/fallback handoff, landing WebGL/fallback runtime, build and responsive browser gates, and Vercel production deployment. | null | ATHER |
+| 1.1.1b | 2026-07-21 | accepted | Added the pinned doc-graph `updated` and approval metadata and mapped the approved beta lifecycle to canonical `accepted`; no requirement changed. | null | ATHER |
+| 2.0.0b | 2026-07-22 | superseded | Retracted the unsupported visual-pass decision after owner UAT and superseded the production MPFB handoff with CR-029. | null | ATHER |

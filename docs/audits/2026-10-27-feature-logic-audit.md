@@ -2,15 +2,15 @@
 title: "G-Maiden — Feature Logic Audit 2026-10-27"
 doc_id: "AUDIT-FEATURE-LOGIC-20261027"
 status: draft
-version: "0.2.0"
-updated: "2026-10-28"
+version: "0.2.1"
+updated: "2026-11-06"
 owner: "G-Maiden"
 related_docs: ["mvp-decisions", "G-SERIES-DATA-LINEAGE", "CR-036-missing-alert-evidence"]
 ---
 
 # G-Maiden — Feature Logic Audit 2026-10-27
 
-**Historical snapshot:** findings/OPEN labels below describe the audited pre-fix source. Current source/test resolution and remaining live acceptance gates are tracked in [[RESULTS-AUDIT-COMPLETION-20261028]]; retain this original evidence rather than rewriting it as if defects never existed.
+**Historical snapshot:** findings/OPEN labels below describe the audited pre-fix source. Current source/test resolution and remaining live acceptance gates are tracked in [[2026-10-28-audit-completion-results]]; retain this original evidence rather than rewriting it as if defects never existed.
 
 ## Scope and result
 
@@ -296,3 +296,4 @@ postเขียนTCPแล้วละเลยread/statusและคืนOk
 | --- | --- | --- |
 | 0.1.0 | 2026-10-27 | Read-only feature logic audit, bounded production-function probes and resumed original-announcer local activation. |
 | 0.2.0 | 2026-10-28 | Preserve historical findings and link the current full-audit completion ledger. |
+| 0.2.1 | 2026-11-06 | Repointed wikilinks to file-name slugs so they resolve. |

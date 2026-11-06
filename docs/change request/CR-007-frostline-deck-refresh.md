@@ -96,10 +96,10 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
   legacy flat `voice-cache/` tree (including non-event dirs like `packs/` and
   `imports/`) and never activated the pack, so CLAUDE.md's "picked up live"
   claim was false. Fixed: the handler now reads `packId` (falls back to legacy
-  `pack`), auto-activates via [`voice_api::activate_if_exists`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L182) (default
+  `pack`), auto-activates via [`voice_api::activate_if_exists`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs) (default
   `activate: true`, opt out with `"activate": false`), and returns real
   per-event counts + `unmappedEvents` + `missingClips` from
-  [`voice_api::install_report`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L128), which resolves the pack's manifest against disk
+  [`voice_api::install_report`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs), which resolves the pack's manifest against disk
   the same way live playback does. **Constraint that shaped the design:** :3000
   has no auth, so any local process can POST here — activation only ever
   targets a pack that already has a readable `manifest.json` on disk, and the
@@ -120,9 +120,9 @@ CR-006 shell (subtract glass + FAB) merge แล้วและ**เป็น id
   parsed `Path::components()` (not substring matching), and — only when the
   target exists as a file — canonicalizes both the pack dir and the candidate
   and requires containment, which is what catches a symlink planted inside a
-  pack whose target escapes it. Every manifest-string join in [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L3)
-  (`resolve_existing_clips`/`active_event_clips`, [`fired_banner_from`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L60),
-  [`preview_clip`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L100), `install_report`, and `build_pack`'s `cover_image`/
+  pack whose target escapes it. Every manifest-string join in [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs)
+  (`resolve_existing_clips`/`active_event_clips`, [`fired_banner_from`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs),
+  [`preview_clip`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs), `install_report`, and `build_pack`'s `cover_image`/
   `clip_options`/`banner_url` — i.e. the pack-listing path [`state()`](file:///g:/G-Maiden/src-tauri/src/voice_api/commands.rs#L23) hits too,
   not just the fire path) now goes through it. Separately, [`import_archive`](file:///g:/G-Maiden/src-tauri/src/voice_api/commands.rs#L139)'s
   `Expand-Archive` PowerShell shell-out (whose safety depended entirely on the
@@ -193,3 +193,4 @@ Batch ลง `main` โดย**ไม่ tag** ตาม batching policy — bum
 | --- | --- | --- |
 | — | 2026-07-19 | link/metadata sweep (G15-T5): symbol-link `announcer_install`, `fired_banner_from`, `preview_clip`, `state()` to their definitions |
 | — | 2026-07-19 | link/metadata sweep (G1.5): wikilink/symbol-link fixes only — no content change |
+| — | 2026-11-06 | dropped stale `banner.rs` line anchors (file rewritten) — no content change |

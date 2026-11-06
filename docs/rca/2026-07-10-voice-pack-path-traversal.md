@@ -6,7 +6,7 @@
   the result ([`audio::play_file`](file:///g:/G-Maiden/src-tauri/src/audio.rs#L145), via [`active_event_clips`](file:///g:/G-Maiden/src-tauri/src/voice_api/commands.rs#L283) /
   [`resolve_existing_clips`](file:///g:/G-Maiden/src-tauri/src/voice_api/path_safety.rs#L136)) or reading it into a base64 `data:` URL and
   broadcasting it on the Tauri event bus to the overlay renderer
-  ([`fired_banner`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L47) → `announcer-banner`, and the pack-inventory cover/clip
+  ([`fired_banner`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs) → `announcer-banner`, and the pack-inventory cover/clip
   tiles built by [`build_pack`](file:///g:/G-Maiden/src-tauri/src/voice_api/pack_io.rs#L66), which runs on every [`state()`](file:///g:/G-Maiden/src-tauri/src/voice_api/commands.rs#L23) call — i.e.
   merely opening Audio Settings, not only on a fired event). Separately,
   [`voice_api::import_archive`](file:///g:/G-Maiden/src-tauri/src/voice_api/commands.rs#L139) shelled out to PowerShell `Expand-Archive` with
@@ -17,13 +17,13 @@
     — a manifest `clips[]` entry of `../../../../Windows/System32/config/SAM`
     resolves and, if it happened to be a playable extension check elsewhere
     were bypassed, would be handed to [`audio::play_file`](file:///g:/G-Maiden/src-tauri/src/audio.rs#L145).
-  - [`fired_banner_from`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L60) (pre-fix): `dir.join(mapping.banner_asset.replace('\\','/'))` fed
-    directly into [`read_banner_data_url`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L194), which reads up to 3MB and
+  - [`fired_banner_from`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs) (pre-fix): `dir.join(mapping.banner_asset.replace('\\','/'))` fed
+    directly into [`read_banner_data_url`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs), which reads up to 3MB and
     base64-inlines it — no existence/containment check before the read.
   - [`build_pack`](file:///g:/G-Maiden/src-tauri/src/voice_api/pack_io.rs#L66)'s `manifest.cover_image` resolution had the identical
     unguarded join, and is reachable just by listing packs ([`state()`](file:///g:/G-Maiden/src-tauri/src/voice_api/commands.rs#L23)),
     confirmed by tracing [`voice_api::state()`](file:///g:/G-Maiden/src-tauri/src/voice_api/commands.rs#L23) → [`build_pack()`](file:///g:/G-Maiden/src-tauri/src/voice_api/pack_io.rs#L66) →
-    [`read_banner_data_url()`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L194) with no caller-side gate.
+    [`read_banner_data_url()`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs) with no caller-side gate.
   - This became reachable from the unauthenticated `:3000` GSI server the
     moment `POST /announcer/install` ([`gsi.rs::announcer_install`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L268), commit
     `b75944cd`) started auto-activating an existing pack — any local process
@@ -58,7 +58,7 @@
   [`voice_api::safe_pack_path(pack_dir: &Path, rel: &str) -> Option<PathBuf>`](file:///g:/G-Maiden/src-tauri/src/voice_api/mod.rs),
   is now the single choke point for every manifest-derived path join in
   [`voice_api.rs`](file:///g:/G-Maiden/src-tauri/src/voice_api/mod.rs) ([`resolve_existing_clips`](file:///g:/G-Maiden/src-tauri/src/voice_api/path_safety.rs#L136)/[`active_event_clips`](file:///g:/G-Maiden/src-tauri/src/voice_api/commands.rs#L283),
-  [`fired_banner_from`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L60), [`preview_clip`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L100), [`install_report`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs#L128), and [`build_pack`](file:///g:/G-Maiden/src-tauri/src/voice_api/pack_io.rs#L66)'s
+  [`fired_banner_from`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs), [`preview_clip`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs), [`install_report`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs), and [`build_pack`](file:///g:/G-Maiden/src-tauri/src/voice_api/pack_io.rs#L66)'s
   `cover_image`/`clip_options`/`banner_url`). It rejects absolute/drive/
   UNC/verbatim paths and any `..` component via parsed `Path::components()`
   (structural, not substring matching) with zero syscalls, and only pays for
