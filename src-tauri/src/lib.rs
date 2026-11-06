@@ -69,6 +69,8 @@ mod updater_install_guard_regression;
 mod usage;
 mod utterance;
 mod voice_api;
+mod voice_ptt;
+mod voice_turn;
 mod vrzo_mix;
 mod vrzo_playback;
 mod webview_bootstrap;
@@ -86,6 +88,96 @@ fn set_announcer_presentation_diagnostics(window:tauri::WebviewWindow, enabled:b
     Ok(())
 }
 static UPDATE_INSTALLING: std::sync::atomic::AtomicBool = std::sync::atomic::AtomicBool::new(false);
+
+struct VoicePttBindingState {
+    binding: std::sync::Mutex<voice_ptt::PttBinding>,
+    shortcut_id: std::sync::atomic::AtomicU32,
+    registered: std::sync::atomic::AtomicBool,
+}
+
+struct VoiceTurnMonitor(std::sync::Arc<std::sync::atomic::AtomicBool>);
+
+static VOICE_TURN_MONITOR_THREAD: std::sync::OnceLock<std::thread::Thread> =
+    std::sync::OnceLock::new();
+
+impl Default for VoiceTurnMonitor {
+    fn default() -> Self {
+        Self(std::sync::Arc::new(std::sync::atomic::AtomicBool::new(
+            true,
+        )))
+    }
+}
+
+impl VoicePttBindingState {
+    fn new() -> Self {
+        let accelerator = voice_ptt::validate_accelerator(voice_ptt::DEFAULT_SHORTCUT)
+            .expect("the default PTT shortcut is valid");
+        Self {
+            binding: std::sync::Mutex::new(voice_ptt::PttBinding {
+                accelerator,
+                registered: false,
+                error_code: None,
+            }),
+            shortcut_id: std::sync::atomic::AtomicU32::new(0),
+            registered: std::sync::atomic::AtomicBool::new(false),
+        }
+    }
+
+    fn update_route(&self, binding: &voice_ptt::PttBinding) {
+        self.shortcut_id.store(
+            binding.accelerator.shortcut().id(),
+            std::sync::atomic::Ordering::Relaxed,
+        );
+        self.registered
+            .store(binding.registered, std::sync::atomic::Ordering::Release);
+    }
+
+    fn is_registered_shortcut(&self, shortcut: &Shortcut) -> bool {
+        self.registered.load(std::sync::atomic::Ordering::Acquire)
+            && self.shortcut_id.load(std::sync::atomic::Ordering::Relaxed) == shortcut.id()
+    }
+}
+
+impl Default for VoicePttBindingState {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+struct AppShortcutRegistrar<R: tauri::Runtime> {
+    app: tauri::AppHandle<R>,
+}
+
+impl<R: tauri::Runtime> voice_ptt::ShortcutRegistrar for AppShortcutRegistrar<R> {
+    fn register(
+        &mut self,
+        shortcut: &voice_ptt::Accelerator,
+    ) -> Result<(), voice_ptt::RegistrationError> {
+        self.app
+            .global_shortcut()
+            .register(shortcut.shortcut())
+            .map_err(|_| voice_ptt::RegistrationError)
+    }
+
+    fn unregister(
+        &mut self,
+        shortcut: &voice_ptt::Accelerator,
+    ) -> Result<(), voice_ptt::RegistrationError> {
+        self.app
+            .global_shortcut()
+            .unregister(shortcut.shortcut())
+            .map_err(|_| voice_ptt::RegistrationError)
+    }
+}
+
+fn emit_voice_turn_events<R: tauri::Runtime>(
+    app: &tauri::AppHandle<R>,
+    events: Vec<voice_turn::VoiceTurnEvent>,
+) {
+    for event in events {
+        let _ = app.emit("voice-turn", event);
+    }
+}
 
 fn update_safety() -> update_guard::UpdateSafety {
     let session = runtime::match_session_snapshot();
@@ -1373,6 +1465,13 @@ fn settings_file_path() -> std::path::PathBuf {
 }
 
 pub(crate) fn save_settings_json(json: &str) -> Result<(), String> {
+    let existing = load_settings_json();
+    let merged = voice_ptt::preserve_shortcut_setting(existing.as_deref(), json)
+        .map_err(|error| error.code().to_owned())?;
+    persist_settings_json(&merged)
+}
+
+fn persist_settings_json(json: &str) -> Result<(), String> {
     let path = settings_file_path();
     if let Some(dir) = path.parent() {
         std::fs::create_dir_all(dir).map_err(|e| e.to_string())?;
@@ -1397,6 +1496,36 @@ pub(crate) fn load_settings_json() -> Option<String> {
 #[tauri::command]
 fn load_settings_file() -> Option<String> {
     load_settings_json()
+}
+
+#[tauri::command]
+fn get_voice_ptt_status(state: tauri::State<'_, VoicePttBindingState>) -> voice_ptt::PttStatus {
+    state
+        .binding
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner)
+        .status()
+}
+
+#[tauri::command]
+fn set_voice_ptt_shortcut(
+    app: tauri::AppHandle,
+    accelerator: String,
+    state: tauri::State<'_, VoicePttBindingState>,
+) -> Result<String, String> {
+    let mut binding = state
+        .binding
+        .lock()
+        .unwrap_or_else(std::sync::PoisonError::into_inner);
+    let mut registrar = AppShortcutRegistrar { app };
+    let result = voice_ptt::remap_with(&mut registrar, &mut binding, &accelerator, |next| {
+        let current = load_settings_json();
+        let shortcut = voice_ptt::validate_accelerator(next)?;
+        let settings = voice_ptt::write_shortcut_to_settings(current.as_deref(), &shortcut)?;
+        persist_settings_json(&settings).map_err(|_| voice_ptt::PttError::SettingsWriteFailed)
+    });
+    state.update_route(&binding);
+    result.map_err(|error| error.code().to_owned())
 }
 
 /// Path of the currently-recording match log, or null if no match is active.
@@ -1473,6 +1602,11 @@ pub fn run() {
     static MUTED_VOL: std::sync::atomic::AtomicU8 = std::sync::atomic::AtomicU8::new(0);
 
     tauri::Builder::default()
+        .manage(VoicePttBindingState::default())
+        .manage(std::sync::Mutex::new(voice_turn::VoiceTurn::new(
+            voice_turn::NoSttBackend,
+        )))
+        .manage(VoiceTurnMonitor::default())
         .register_asynchronous_uri_scheme_protocol(
             "g-announcer-video",
             |_ctx, request, responder| {
@@ -1489,6 +1623,26 @@ pub fn run() {
         .plugin(
             tauri_plugin_global_shortcut::Builder::new()
                 .with_handler(move |app, shortcut, event| {
+                    let ptt_state = app.state::<VoicePttBindingState>();
+                    if ptt_state.is_registered_shortcut(shortcut) {
+                        let events = {
+                            let state = app.state::<std::sync::Mutex<voice_turn::VoiceTurn>>();
+                            let mut turn = state
+                                .lock()
+                                .unwrap_or_else(std::sync::PoisonError::into_inner);
+                            match event.state() {
+                                ShortcutState::Pressed => turn.press(),
+                                ShortcutState::Released => turn.release(),
+                            }
+                        };
+                        if event.state() == ShortcutState::Pressed {
+                            if let Some(thread) = VOICE_TURN_MONITOR_THREAD.get() {
+                                thread.unpark();
+                            }
+                        }
+                        emit_voice_turn_events(app, events);
+                        return;
+                    }
                     if event.state() != ShortcutState::Pressed {
                         return;
                     }
@@ -1592,6 +1746,8 @@ pub fn run() {
             get_log_dir,
             get_player_memory,
             delete_player_memory,
+            set_voice_ptt_shortcut,
+            get_voice_ptt_status,
             save_settings_file,
             load_settings_file,
             current_match_path,
@@ -1611,12 +1767,29 @@ pub fn run() {
             // Restore local runtime preferences before GSI can deliver the
             // first gameplay tick. The webview later hydrates the same,
             // validated snapshot for Control and Overlay.
-            if let Some(settings) = load_settings_json() {
-                gann_native::settings(&settings);
-                if let Err(error) = runtime::apply_startup_settings_json(&settings) {
+            let saved_settings = load_settings_json();
+            if let Some(settings) = saved_settings.as_deref() {
+                gann_native::settings(settings);
+                if let Err(error) = runtime::apply_startup_settings_json(settings) {
                     eprintln!("[settings] saved runtime settings were not loaded: {error}");
                 }
             }
+
+            let configured_ptt = voice_ptt::read_shortcut_from_settings(saved_settings.as_deref());
+            let mut shortcut_registrar = AppShortcutRegistrar {
+                app: app.handle().clone(),
+            };
+            let ptt_binding =
+                voice_ptt::register_startup(&mut shortcut_registrar, Some(configured_ptt.as_str()));
+            let ptt_state = app.state::<VoicePttBindingState>();
+            let mut binding = ptt_state
+                .binding
+                .lock()
+                .unwrap_or_else(std::sync::PoisonError::into_inner);
+            *binding = ptt_binding;
+            ptt_state.update_route(&binding);
+            drop(binding);
+
             // CR-008 WP-2: load the Anthropic API key from the DPAPI secret store
             // into the runtime once at startup. Owned separately from the auth
             // mode so the frontend's mode-sync effect can never clobber it (B2).
@@ -1714,12 +1887,53 @@ pub fn run() {
                 })
                 .build(app)?;
 
+            let voice_turn_app = app.handle().clone();
+            let monitor_active = app.state::<VoiceTurnMonitor>().0.clone();
+            std::thread::spawn(move || {
+                let _ = VOICE_TURN_MONITOR_THREAD.set(std::thread::current());
+                while monitor_active.load(std::sync::atomic::Ordering::Acquire) {
+                    if !voice_turn::turn_active() {
+                        std::thread::park();
+                        continue;
+                    }
+                    std::thread::sleep(std::time::Duration::from_millis(50));
+                    if !monitor_active.load(std::sync::atomic::Ordering::Acquire) {
+                        break;
+                    }
+                    if !voice_turn::turn_active() {
+                        continue;
+                    }
+                    let events = {
+                        let state =
+                            voice_turn_app.state::<std::sync::Mutex<voice_turn::VoiceTurn>>();
+                        let mut turn = state
+                            .lock()
+                            .unwrap_or_else(std::sync::PoisonError::into_inner);
+                        turn.tick()
+                    };
+                    emit_voice_turn_events(&voice_turn_app, events);
+                }
+            });
+
             Ok(())
         })
         .build(tauri::generate_context!())
         .expect("error while building tauri application")
         .run(|app, event| {
             if let tauri::RunEvent::Exit = event {
+                if let Some(monitor) = app.try_state::<VoiceTurnMonitor>() {
+                    monitor.0.store(false, std::sync::atomic::Ordering::Release);
+                }
+                if let Some(thread) = VOICE_TURN_MONITOR_THREAD.get() {
+                    thread.unpark();
+                }
+                if let Some(state) = app.try_state::<std::sync::Mutex<voice_turn::VoiceTurn>>() {
+                    let events = state
+                        .lock()
+                        .unwrap_or_else(std::sync::PoisonError::into_inner)
+                        .cancel(voice_turn::TurnReason::AppExit, voice_turn::monotonic_ms());
+                    emit_voice_turn_events(app, events);
+                }
                 if let Some(feeder) = app.try_state::<governor::GpuFeederProcess>() {
                     if !feeder.shutdown() {
                         eprintln!("could not fully stop owned gpu-feeder sidecar on app exit");

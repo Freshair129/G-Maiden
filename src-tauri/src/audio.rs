@@ -695,6 +695,7 @@ fn audio_thread(rx: mpsc::Receiver<Cmd>) {
                             || {
                                 admit_nonempty_source(source, |source| {
                                     if priority == Priority::Critical {
+                                        crate::voice_turn::critical_preempt();
                                         preparation::cancel_up_to(Priority::Normal);
                                     }
                                     if let Some((s, _, _, _)) = retiring.take() {
