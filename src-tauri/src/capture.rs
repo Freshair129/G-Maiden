@@ -267,7 +267,7 @@ mod backend {
             }
         }
 
-        fn frame_received(&mut self) {
+        fn frame_accepted_by_pipeline(&mut self) {
             self.awaiting_fresh_frame = false;
         }
     }
@@ -1471,9 +1471,6 @@ mod backend {
         let suspicious = !state.sentry.missing(now_ms).is_empty();
 
         if let Some(f) = Frame::from_bgra(w, h, cropped) {
-            // Only a valid newly acquired frame after focus returns re-opens
-            // the health gate; a background clock reset cannot.
-            state.foreground_frame_gate.frame_received();
             let candidates = prefilter_candidates(
                 &f,
                 state.icon,
@@ -1515,6 +1512,8 @@ mod backend {
                 );
                 return;
             }
+            // Only a frame accepted after CV work and scheduling clears the gate.
+            state.foreground_frame_gate.frame_accepted_by_pipeline();
             let allowed = crate::runtime::enemy_roster_labels();
             detections.retain(|d| allowed.contains(&d.name));
             state.sentry.retain_allowed(&allowed);
@@ -1890,7 +1889,7 @@ mod backend {
             assert!(gate.awaiting_fresh_frame);
             assert!(!sensor_is_healthy("dxgi", true, false, true, gate.awaiting_fresh_frame, 0));
 
-            gate.frame_received();
+            gate.frame_accepted_by_pipeline();
             assert!(!gate.awaiting_fresh_frame);
             assert!(sensor_is_healthy("dxgi", true, false, true, gate.awaiting_fresh_frame, 0));
 
