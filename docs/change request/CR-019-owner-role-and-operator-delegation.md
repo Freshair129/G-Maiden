@@ -83,7 +83,7 @@ Boss approved CR-019 and provided the first-owner bootstrap target on 2026-07-21
 
 | Version | Date | Status | Summary | Commit Hash | Agent |
 |---|---|---|---|---|---|
-| 0.3.1b | 2026-07-22 | beta | Normalized reader-facing controller wording from GMAD to G-Maiden while preserving deployed function identifiers. | null | ATHER |
-| 0.3.0b | 2026-07-21 | beta | Owner schema, audited one-time bootstrap, and operator controller deployed; signed-in owner UAT remains. | null | ATHER |
-| 0.2.0b | 2026-07-21 | accepted | Boss approved owner delegation and supplied an existing email for one-time server-side bootstrap. | null | ATHER |
 | 0.1.0b | 2026-07-21 | candidate | Proposed C-3 owner delegation model; awaiting first-owner GID and approval. | null | ATHER |
+| 0.2.0b | 2026-07-21 | accepted | Boss approved owner delegation and supplied an existing email for one-time server-side bootstrap. | null | ATHER |
+| 0.3.0b | 2026-07-21 | beta | Owner schema, audited one-time bootstrap, and operator controller deployed; signed-in owner UAT remains. | null | ATHER |
+| 0.3.1b | 2026-07-22 | beta | Normalized reader-facing controller wording from GMAD to G-Maiden while preserving deployed function identifiers. | null | ATHER |

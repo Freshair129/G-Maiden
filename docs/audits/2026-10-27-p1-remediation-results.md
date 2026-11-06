@@ -2,15 +2,15 @@
 title: "G-Maiden — Seven P1 Remediation Results"
 doc_id: "AUDIT-P1-REMEDIATION-RESULTS-20261027"
 status: draft
-version: "0.6.1"
-updated: "2026-10-28"
+version: "0.6.2"
+updated: "2026-11-06"
 owner: "G-Maiden"
 related_docs: ["AUDIT-FEATURE-LOGIC-20261027", "PLAN-P1-REMEDIATION-20261027"]
 ---
 
 # ผลการแก้เจ็ดจุดเร่งด่วน
 
-**Current MVP decision:900,000,000bytes aggregate Working Set** per owner instruction and [[mvp-decisions]] v0.5.0. Earlier400/800MB statements below are historical; no old result is reclassified as900MB acceptance. Continue event corrections per [[PLAN-MVP-EVENT-CORRECTIONS-20261028]].
+**Current MVP decision:900,000,000bytes aggregate Working Set** per owner instruction and [[mvp-decisions]] v0.5.0. Earlier400/800MB statements below are historical; no old result is reclassified as900MB acceptance. Continue event corrections per [[2026-10-28-mvp-event-corrections-plan]].
 
 **Historical800MB contract:** Owner explicitly approved800,000,000bytes on2026-10-28 ([[mvp-decisions]] v0.4.0). Historical400MB failures below retain their original classification. New800MB code/build/native verification is required; the approval itself is not a passing runtime receipt.
 
@@ -118,3 +118,4 @@ Owner then replaced400MB with800MB. Backend thresholds, frontend labels and cano
 | 0.5.0 | 2026-10-28 | Record510/422 integrated checks, same-source native DXGI retest, fresh waveform candidate and full458MB failure with explicit runtime-evidence limits. |
 | 0.6.0 | 2026-10-28 | Retain428-test render isolation and incomplete400MB failure; record owner-approved800MB contract with new verification pending. |
 | 0.6.1 | 2026-10-28 | Record current900MB MVP decision; preserve historical400/800MB results without acceptance claims. |
+| 0.6.2 | 2026-11-06 | Repointed wikilinks to file-name slugs so they resolve. |
