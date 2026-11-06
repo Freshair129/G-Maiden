@@ -2,7 +2,7 @@
 title: G-AnnStudio original authoring and install contract
 doc_id: CR-009-gannstudio-authoring-install-contract
 status: superseded
-version: 0.2.1
+version: 0.2.2
 updated: 2026-11-06
 owner: G-Maiden
 ---
@@ -44,7 +44,7 @@ owner: G-Maiden
 ### 2.1 Activation endpoint
 - G-Ann POSTs, after writing the pack files: `POST http://localhost:3000/announcer/install`
   body `{"packId":"<id>"}` (legacy `{"pack":"<id>"}` still accepted), optional `{"activate":true}`.
-- G-Maiden handler: [`gsi.rs::announcer_install`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L268) → `parse_install_request` → `run_announcer_install` → [`voice_api::install_report(packId)`](file:///g:/G-Maiden/src-tauri/src/voice_api/mod.rs) + [`activate_if_exists`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs). **No auth on `:3000`; the handler ONLY activates a pack already on disk — it never writes/moves/extracts files.** Response `{ok, ...}` with per-event counts.
+- G-Maiden handler: [`gsi.rs::announcer_install`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L783) → `parse_install_request` → `run_announcer_install` → [`voice_api::install_report(packId)`](file:///g:/G-Maiden/src-tauri/src/voice_api/mod.rs) + [`activate_if_exists`](file:///g:/G-Maiden/src-tauri/src/voice_api/banner.rs). **No auth on `:3000`; the handler ONLY activates a pack already on disk — it never writes/moves/extracts files.** Response `{ok, ...}` with per-event counts.
 - G-Ann call site: `install_gmaiden_pack` / `install_library_pack` / `install_pack` in `G-Suite/packages/ann-studio/src-tauri/src/lib.rs` (the `endpoint` arg, hardcoded to `http://localhost:3000/announcer/install` in the frontend `exportGmaidenPack.ts` / `actions.ts`).
 
 ### 2.2 Pack location (files written directly to disk by G-Ann)
@@ -85,7 +85,7 @@ owner: G-Maiden
 
 **Heads-up / no action needed:**
 - The vision sidecars (`detect_boundaries.py` / `detect_buttons.py` / `transcribe.py`) + `analyze_video` orchestration live **entirely in G-Ann**, not G-Maiden. The contract between the tools is the **manifest + endpoint**, not the Python. Please don't re-implement a pack pipeline inside G-Maiden — extend the manifest/endpoint if you need more.
-- `pack_mrijgajn` (G-Maiden commit `2a7ba551`) is a real installed pack — usable as test data for the reader. **It is now pinned by a G-Maiden reader test** ([`voice_api.rs::real_pack_mrijgajn_maps_voice_and_banners`](file:///g:/G-Maiden/src-tauri/src/voice_api/tests.rs#L182), commit `8c1f05d7`) that asserts its exact mapping — no dangling clips, 13 mapped events, `death`/`mega_kill` = 2 takes. Re-authoring or overwriting this pack (changing its clip counts / events) will fail that test until it's updated. If G-Ann needs to regenerate it, either keep the shape or ping the G-Maiden side to update the assertions.
+- `pack_mrijgajn` (G-Maiden commit `2a7ba551`) is a real installed pack — usable as test data for the reader. **It is now pinned by a G-Maiden reader test** ([`voice_api.rs::real_pack_mrijgajn_maps_voice_and_banners`](file:///g:/G-Maiden/src-tauri/src/voice_api/tests.rs), commit `8c1f05d7`) that asserts its exact mapping — no dangling clips, 13 mapped events, `death`/`mega_kill` = 2 takes. Re-authoring or overwriting this pack (changing its clip counts / events) will fail that test until it's updated. If G-Ann needs to regenerate it, either keep the shape or ping the G-Maiden side to update the assertions.
 - G-Ann is Windows-only; the installed-build auto-detect shells out to PowerShell (`WScript.Shell`) to resolve the Start-menu shortcut.
 
 **What I need from you (if applicable):** if the backend-wire work moves the GSI server off `:3000`, or puts auth in front of `/announcer/install`, tell me the new address/scheme so G-Ann can target it (the endpoint is currently hardcoded and unauthenticated by design).
@@ -115,3 +115,4 @@ owner: G-Maiden
 | — | 2026-07-19 | link/metadata sweep (G1.5): wikilink/symbol-link fixes only — no content change |
 | 0.2.0 | 2026-10-31 | Mark original manifest/flat-cache interface superseded by the GANN-only contract; preserve historical evidence. |
 | 0.2.1 | 2026-11-06 | Dropped stale `banner.rs` line anchors; the file was rewritten and the cited lines no longer exist. |
+| 0.2.2 | 2026-11-06 | relinked 2 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |

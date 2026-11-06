@@ -1,15 +1,15 @@
 ---
-version: "1.0.0-draft"
+version: "1.0.1"
 created_at: "2026-07-09T00:00:00+07:00,Fable"
 last_update: "2026-07-09T00:00:00+07:00,Fable"
-status: "draft"
+status: "active"
 attributes:
   domain: "ui-ux"
   scope: "Combat HUD (in-game overlay) — design contract อิง implementation จริง"
   language: "th/en"
 title: "07 — Combat HUD (In-game Overlay)"
 doc_id: "07-combat-hud"
-updated: "2026-07-19"
+updated: "2026-11-06"
 owner: "Boss"
 ---
 
@@ -93,7 +93,7 @@ Backend เดียวกันทั้งคู่ (game-tick / gank events) 
 ## 8. Alignment กับ CR-007 (ไม่แตะโค้ด overlay ในรอบนี้)
 
 - Token: เมื่อ WP-2 (OKLCH) ลง ให้ overlay ใช้ผ่าน **alias `--g-*` เดิม** — ห้ามเปลี่ยนค่า
-  ที่ตามองเห็น; ค่าคงที่ฝังใน `FullOverlay.tsx` ([`C = {...}`](file:///g:/G-Maiden/src/src/overlay/FullOverlay.tsx#L24)) ให้คงไว้ก่อน จน CR รอบถัดไป
+  ที่ตามองเห็น; ค่าคงที่ฝังใน `FullOverlay.tsx` ([`C = {...}`](file:///g:/G-Maiden/src/src/overlay/FullOverlay.tsx#L30)) ให้คงไว้ก่อน จน CR รอบถัดไป
 - จุดที่*ควร*ตามใน CR ถัดไป (จดไว้ ไม่ทำตอนนี้): อีโมจิ ⚠️/👁️/🔔/💀 → stroke icon ชุดเดียว
   กับ [`DeckIcons.tsx`](file:///g:/G-Maiden/src/src/DeckIcons.tsx); ฟอนต์ Segoe UI → Plex (ตาม WP-3) โดยต้องวัด FPS ก่อน/หลัง
 - Quality tier ของ deck (**ไม่**ใช้กับ overlay) — overlay มีงบ FPS ของตัวเองและ blur 16px
@@ -104,3 +104,5 @@ Backend เดียวกันทั้งคู่ (game-tick / gank events) 
 | Version | Date | Summary |
 | --- | --- | --- |
 | 1.0.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
+| 1.0.0 | 2026-11-06 | status `draft` → `active`: referenced as the design SSOT (CLAUDE.md, code and sibling docs) and describes the shipped deck; not marked accepted because no owner approval is recorded |
+| 1.0.1 | 2026-11-06 | relinked 1 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |

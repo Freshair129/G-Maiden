@@ -1,15 +1,15 @@
 ---
-version: "2.2.2-draft"
+version: "2.2.3"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
 last_update: "2026-07-19,Claude"
-status: "draft"
+status: "active"
 attributes:
   domain: "ui-ux"
   scope: "component catalog"
   language: "th/en"
 title: "04 - Components"
 doc_id: "04-components"
-updated: "2026-07-19"
+updated: "2026-11-06"
 owner: "Boss"
 ---
 
@@ -56,7 +56,7 @@ Primitives:
 
 Code:
 - [`src/src/CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx)
-- [`.g-topbar-fab`](file:///g:/G-Maiden/src/src/styles.css#L2212) in `src/src/styles.css`
+- [`.g-topbar-fab`](file:///g:/G-Maiden/src/src/styles.css) in `src/src/styles.css`
 
 Current anatomy:
 
@@ -80,9 +80,9 @@ Current notes:
 ## 2. Profile trigger
 
 Code:
-- [`.profile-wrap`](file:///g:/G-Maiden/src/src/styles.css#L960)
-- [`.profile-trigger`](file:///g:/G-Maiden/src/src/styles.css#L965)
-- [`.profile-dropdown`](file:///g:/G-Maiden/src/src/styles.css#L1028)
+- [`.profile-wrap`](file:///g:/G-Maiden/src/src/styles.css)
+- [`.profile-trigger`](file:///g:/G-Maiden/src/src/styles.css#L991)
+- [`.profile-dropdown`](file:///g:/G-Maiden/src/src/styles.css)
 
 Current anatomy:
 
@@ -104,8 +104,8 @@ Open state:
 ## 3. Sidebar FAB
 
 Code:
-- [`.g-sidebar-fab`](file:///g:/G-Maiden/src/src/styles.css#L2186)
-- [`.g-nav-item`](file:///g:/G-Maiden/src/src/styles.css#L2202)
+- [`.g-sidebar-fab`](file:///g:/G-Maiden/src/src/styles.css#L2786)
+- [`.g-nav-item`](file:///g:/G-Maiden/src/src/styles.css#L2368)
 
 Current anatomy:
 
@@ -125,9 +125,9 @@ Current role:
 ## 4. Power radial
 
 Code:
-- [`.g-power-radial`](file:///g:/G-Maiden/src/src/styles.css#L2611)
-- [`.g-power-main`](file:///g:/G-Maiden/src/src/styles.css#L2621)
-- [`.g-power-menu`](file:///g:/G-Maiden/src/src/styles.css#L2645)
+- [`.g-power-radial`](file:///g:/G-Maiden/src/src/styles.css)
+- [`.g-power-main`](file:///g:/G-Maiden/src/src/styles.css)
+- [`.g-power-menu`](file:///g:/G-Maiden/src/src/styles.css)
 - [`.g-power-action.*`](file:///g:/G-Maiden/src/src/styles.css)
 
 Current anatomy:
@@ -152,8 +152,8 @@ Known issue:
 ## 5. Audio rail
 
 Code:
-- [`.g-audio-rail`](file:///g:/G-Maiden/src/src/styles.css#L2892)
-- [`VolumeRail()`](file:///g:/G-Maiden/src/src/deck/FungDashboard.tsx#L135)
+- [`.g-audio-rail`](file:///g:/G-Maiden/src/src/styles.css)
+- [`VolumeRail()`](file:///g:/G-Maiden/src/src/deck/FungDashboard.tsx#L138)
 
 Current anatomy:
 
@@ -177,7 +177,7 @@ Data contract:
 ## 6. Score header
 
 Code:
-- [`.gm-score-header`](file:///g:/G-Maiden/src/src/styles.css#L3022)
+- [`.gm-score-header`](file:///g:/G-Maiden/src/src/styles.css)
 
 Current anatomy:
 
@@ -195,9 +195,9 @@ Current note:
 ## 6b. Phase chip
 
 Code:
-- [`.gm-phase-chip`](file:///g:/G-Maiden/src/src/styles.css#L3078) + 4 state modifiers `.gm-phase-chip-standby/prep/live/debrief`
-- [`PhaseChip()`](file:///g:/G-Maiden/src/src/deck/onair.tsx#L216) in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx)
-- phase state machine: [`src/src/live/phase.ts`](file:///g:/G-Maiden/src/src/live/phase.ts) [`stepPhase()`](file:///g:/G-Maiden/src/src/live/phase.ts#L71)
+- [`.gm-phase-chip`](file:///g:/G-Maiden/src/src/styles.css) + 4 state modifiers `.gm-phase-chip-standby/prep/live/debrief`
+- [`PhaseChip()`](file:///g:/G-Maiden/src/src/deck/onair.tsx#L206) in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx)
+- phase state machine: [`src/src/live/phase.ts`](file:///g:/G-Maiden/src/src/live/phase.ts) [`stepPhase()`](file:///g:/G-Maiden/src/src/live/phase.ts#L76)
 
 Current anatomy:
 
@@ -237,7 +237,7 @@ Phase machine rules (order of precedence, `stepPhase()`):
 ## 7. Mini stat
 
 Code:
-- [`.gm-mini-stat`](file:///g:/G-Maiden/src/src/styles.css#L3126)
+- [`.gm-mini-stat`](file:///g:/G-Maiden/src/src/styles.css)
 - [`MiniStat(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx)
 
 Current set in dashboard:
@@ -254,7 +254,7 @@ Current note:
 ## 8. Hero slot
 
 Code:
-- [`.gm-hero-slot`](file:///g:/G-Maiden/src/src/styles.css#L3187)
+- [`.gm-hero-slot`](file:///g:/G-Maiden/src/src/styles.css#L4246)
 
 Current anatomy:
 
@@ -270,7 +270,7 @@ Current note:
 ## 9. Agent card (shell)
 
 Code:
-- [`.gm-agent-card`](file:///g:/G-Maiden/src/src/styles.css#L3501) — the frozen box (geometry untouched by CR-011)
+- [`.gm-agent-card`](file:///g:/G-Maiden/src/src/styles.css) — the frozen box (geometry untouched by CR-011)
 - [`.gm-card-head`](file:///g:/G-Maiden/src/src/styles.css), [`.gm-agent-art`](file:///g:/G-Maiden/src/src/styles.css) — **superseded**, see §14
 
 Current anatomy:
@@ -291,8 +291,8 @@ Current geometry:
 ## 9a. Tally dot
 
 Code:
-- [`.gm-tally`](file:///g:/G-Maiden/src/src/styles.css#L3674) (base, 6x6px rounded square) + [`.gm-tally-onair`](file:///g:/G-Maiden/src/src/styles.css#L3684) (state modifier)
-- used in: ON AIR console header, [`.gm-sector-log`](file:///g:/G-Maiden/src/src/styles.css#L3525) `<h3>` headers (Alert Deck /
+- [`.gm-tally`](file:///g:/G-Maiden/src/src/styles.css) (base, 6x6px rounded square) + [`.gm-tally-onair`](file:///g:/G-Maiden/src/src/styles.css) (state modifier)
+- used in: ON AIR console header, [`.gm-sector-log`](file:///g:/G-Maiden/src/src/styles.css) `<h3>` headers (Alert Deck /
   Companion State)
 
 Current anatomy:
@@ -312,7 +312,7 @@ Current logic:
 
 Code:
 - [`OnAirConsole(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) in `CommandDeck.tsx`
-- [`.gm-onair`](file:///g:/G-Maiden/src/src/styles.css#L3697), `.gm-onair-head`, `.gm-onair-title`, `.gm-onair-end`,
+- [`.gm-onair`](file:///g:/G-Maiden/src/src/styles.css), `.gm-onair-head`, `.gm-onair-title`, `.gm-onair-end`,
   `.gm-onair-chip` (+ `-cloud`/`-local`), `.gm-onair-agent`, `.gm-onair-now`
   (+ `-meta`/`-text`), `.gm-onair-empty`, `.gm-onair-log`, `.gm-onair-row`
   (+ `-time`/`-chip`/`-text`), `.gm-onair-retract`, `.gm-onair-pack`
@@ -347,7 +347,7 @@ Current states:
 
 Code:
 - [`FeedAgePill(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) (function name is new; the DOM class is
-  the pre-existing [`.g-ping-pill`](file:///g:/G-Maiden/src/src/styles.css#L2783) — reused, not renamed)
+  the pre-existing [`.g-ping-pill`](file:///g:/G-Maiden/src/src/styles.css) — reused, not renamed)
 - lives in the topbar FAB (see §1 Topbar FAB)
 
 Current anatomy:
@@ -371,7 +371,7 @@ no real ping field at all):
 
 Code:
 - [`ReadinessRundown(...)`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx)
-- `.gm-battle-alt`[`.gm-rundown`](file:///g:/G-Maiden/src/src/styles.css#L3251), `.gm-rundown-note`, `.gm-rundown-list`,
+- `.gm-battle-alt`[`.gm-rundown`](file:///g:/G-Maiden/src/src/styles.css), `.gm-rundown-note`, `.gm-rundown-list`,
   `.gm-rundown-row` (+ `.ready` modifier), `.gm-rundown-glyph`, `.gm-rundown-label`,
   `.gm-rundown-value`
 
@@ -394,7 +394,7 @@ Current anatomy — phase-axis content swap (CR-011 §E, CR011-P3):
 Code:
 - [`DebriefTimeline`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) render block in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) (reads [`list_match_logs`](file:///g:/G-Maiden/src-tauri/src/main.rs) /
   [`read_match_log`](file:///g:/G-Maiden/src-tauri/src/main.rs) Tauri commands — [`log.rs`](file:///g:/G-Maiden/src-tauri/src/log.rs))
-- [`.gm-debrief`](file:///g:/G-Maiden/src/src/styles.css#L3318), `.gm-debrief-head`, `.gm-debrief-title`, `.gm-debrief-back`,
+- [`.gm-debrief`](file:///g:/G-Maiden/src/src/styles.css), `.gm-debrief-head`, `.gm-debrief-title`, `.gm-debrief-back`,
   `.gm-debrief-empty`, `.gm-debrief-list`, `.gm-debrief-row` (+ `-time`/`-chip`/
   `-text`), `.gm-debrief-row-chip-{gank,revision,missing,start,other}`
 
@@ -410,8 +410,8 @@ Current anatomy — phase-axis content swap for `debrief`:
 ## 10. Signal card cluster
 
 Code:
-- [`.g-signals-fab`](file:///g:/G-Maiden/src/src/styles.css#L2261)
-- [`.g-sig`](file:///g:/G-Maiden/src/src/styles.css#L2266)
+- [`.g-signals-fab`](file:///g:/G-Maiden/src/src/styles.css)
+- [`.g-sig`](file:///g:/G-Maiden/src/src/styles.css#L4249)
 
 Current anatomy per card:
 
@@ -436,7 +436,7 @@ Current note:
 
 Code:
 - [`MaidenLine.tsx`](file:///g:/G-Maiden/src/src/MaidenLine.tsx#L62) (default export)
-- [`.gm-palette-backdrop`](file:///g:/G-Maiden/src/src/styles.css#L3819), [`.gm-palette`](file:///g:/G-Maiden/src/src/styles.css#L3838), `.gm-palette-input`, `.gm-palette-list`,
+- [`.gm-palette-backdrop`](file:///g:/G-Maiden/src/src/styles.css), [`.gm-palette`](file:///g:/G-Maiden/src/src/styles.css), `.gm-palette-input`, `.gm-palette-list`,
   `.gm-palette-section` (+ `-label`), `.gm-palette-row` (+ `.selected`/`.danger`),
   `.gm-palette-row-label`, `.gm-palette-row-hotkey`, `.gm-palette-empty`
 
@@ -475,7 +475,7 @@ disarms-then-closes (never both in one press).
 Code:
 - shortcut-sheet render block in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx) (registry from
   [`src/src/shortcuts.ts`](file:///g:/G-Maiden/src/src/shortcuts.ts) [`buildRegistry()`](file:///g:/G-Maiden/src/src/shortcuts.ts#L137))
-- [`.gm-sheet-backdrop`](file:///g:/G-Maiden/src/src/styles.css#L3820), `.gm-sheet`, `.gm-sheet-head`, `.gm-sheet-close`,
+- [`.gm-sheet-backdrop`](file:///g:/G-Maiden/src/src/styles.css), `.gm-sheet`, `.gm-sheet-head`, `.gm-sheet-close`,
   `.gm-sheet-section-label`, `.gm-sheet-row`, `.gm-sheet-row-combo`
 
 Current anatomy:
@@ -521,7 +521,7 @@ Current targets (all read/act honestly — no item that cannot truly act):
 ## 11. Status pill
 
 Code:
-- [`.g-status-pill`](file:///g:/G-Maiden/src/src/styles.css#L2782)
+- [`.g-status-pill`](file:///g:/G-Maiden/src/src/styles.css)
 - `.g-ping-pill` (see §9c Feed-age pill — same DOM class, new honest content)
 
 Current anatomy:
@@ -570,9 +570,9 @@ Tokens (`:root` in `src/src/styles.css`) — ค่าปัจจุบัน�
 
 ถ้าจะจูนต่อ แก้ 3 จุดนี้ที่เดียว — ห้าม fork ค่าเงาลง component (governance ข้อ 1)
 
-Panel edge: [`.g-deck-panel`](file:///g:/G-Maiden/src/src/styles.css#L2227) is clipped by the Subtract path (`clip-path`, plus
+Panel edge: [`.g-deck-panel`](file:///g:/G-Maiden/src/src/styles.css#L2409) is clipped by the Subtract path (`clip-path`, plus
 `overflow:hidden` + `contain:paint`), so a `box-shadow` — or a `filter` on a
-child of the panel — never draws outside the notches. [`.g-panel-rim`](file:///g:/G-Maiden/src/src/styles.css#L2530) fixes this
+child of the panel — never draws outside the notches. [`.g-panel-rim`](file:///g:/G-Maiden/src/src/styles.css) fixes this
 by living as a **`.g-deck-stage` sibling** of `.g-deck-panel` (rendered right
 after `</main>` in [`CommandDeck.tsx`](file:///g:/G-Maiden/src/src/CommandDeck.tsx), same escape pattern as `SignalGrid`),
 positioned in stage coordinates to exactly overlay the panel box while reusing
@@ -588,7 +588,7 @@ Rim lines: border/stroke alpha on `.g-sidebar-fab`, `.g-topbar-fab`, `.g-power-m
 `.g-power-action.*`, `.g-sig`, and the `.g-panel-rim use` stroke were softened
 ~20-30% so the 1px rim line doesn't fight the new soft shadow.
 
-Not shadowed: `.g-audio-rail` / [`.g-volume-rail`](file:///g:/G-Maiden/src/src/styles.css#L2906) stay transparent/borderless — the
+Not shadowed: `.g-audio-rail` / [`.g-volume-rail`](file:///g:/G-Maiden/src/src/styles.css) stay transparent/borderless — the
 prior "drop milky window plate" fix (commit `0eb35042`) deliberately removed their
 plate, and a shadow on a fill-less box would reintroduce a hazy floating-rectangle
 artifact with nothing backing it. Revisit only if the audio rail gets a real plate
@@ -623,3 +623,5 @@ If any of these return, add them back only after implementation and screenshot r
 | 2.2.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
 | 2.2.1-draft | 2026-07-19 | symbol-link coverage extension (G1.5) |
 | 2.2.2-draft | 2026-07-19 | link/metadata sweep (G1.5) — link `PAGES` def |
+| 2.2.2 | 2026-11-06 | status `draft` → `active`: referenced as the design SSOT (CLAUDE.md, code and sibling docs) and describes the shipped deck; not marked accepted because no owner approval is recorded |
+| 2.2.3 | 2026-11-06 | relinked 34 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |

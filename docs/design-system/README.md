@@ -1,8 +1,8 @@
 ---
-version: "3.0.3-draft"
+version: "3.0.3"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
 last_update: "2026-10-30T00:00:00+07:00,Codex"
-status: "draft"
+status: "active"
 supersedes: "docs/architecture/design-system.md (Iceglass v0.1.0b, candidate)"
 attributes:
   domain: "ui-ux"
@@ -10,7 +10,7 @@ attributes:
   language: "th/en"
 title: "G-Maiden Design System — SSOT"
 doc_id: "design-system/README"
-updated: "2026-10-30"
+updated: "2026-11-06"
 owner: "Boss"
 ---
 
@@ -117,3 +117,4 @@ owner: "Boss"
 | 3.0.1-draft | 2026-10-12 | Synced the CPU design gate with the current MVP decision; runtime acceptance remains evidence-gated. |
 | 3.0.2-draft | 2026-10-19 | Indexed accepted Graphite Clarity and the target flow documents while retaining the accepted product flow-board reference. |
 | 3.0.3-draft | 2026-10-30 | Indexed the measured UI technical drawing atlas as an implementation snapshot separate from the target design contracts. |
+| 3.0.3 | 2026-11-06 | status `draft` → `active`: referenced as the design SSOT (CLAUDE.md, code and sibling docs) and describes the shipped deck; not marked accepted because no owner approval is recorded |

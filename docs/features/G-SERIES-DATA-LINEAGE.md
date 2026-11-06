@@ -2,8 +2,8 @@
 title: "G-Series Data Lineage and Computation Contract"
 doc_id: "G-SERIES-DATA-LINEAGE"
 status: "accepted"
-version: "1.3.0"
-updated: "2026-11-01"
+version: "1.3.1"
+updated: "2026-11-06"
 owner: "Boss"
 approved_by: "user"
 approved_date: "2026-10-06"
@@ -122,7 +122,7 @@ coverage. Missing historical provenance remains explicitly unverified.
 
 ## 4. GSI field mapping
 
-The parser is implemented in [`gsi.rs::parse_tick_from_value`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L193).
+The parser is implemented in [`gsi.rs::parse_tick_from_value`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L213).
 
 | GSI JSON path | `GameTick` field | Derived behavior |
 | --- | --- | --- |
@@ -573,3 +573,4 @@ The following are documentation/verification requirements, not claims that the c
 | 1.1.3 | 2026-10-13 | Recorded fail-closed startup on Job Object setup failure and runtime-query-only unavailable telemetry. |
 | 1.2.0 | 2026-11-01 | Added separately consented G-Party own-stat lineage, scoped match/team/freshness and no-forwarding boundaries; preserve AI/raw-data restrictions and pending runtime/live evidence. |
 | 1.3.0 | 2026-11-01 | Add private G-Friends social graph/presence/link/invitation lineage and distinct account/relay trust boundaries without routing gameplay into social storage or expanding AI permissions. |
+| 1.3.1 | 2026-11-06 | relinked 1 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |

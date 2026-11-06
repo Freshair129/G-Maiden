@@ -1,15 +1,15 @@
 ---
-version: "2.0.0-draft"
+version: "2.0.0"
 created_at: "2026-07-05T00:00:00+07:00,Opus"
 last_update: "2026-07-05T00:00:00+07:00,Opus"
-status: "draft"
+status: "active"
 attributes:
   domain: "ui-ux"
   scope: "principles, visual language, surfaces"
   language: "th/en"
 title: "01 — Foundations"
 doc_id: "01-foundations"
-updated: "2026-07-19"
+updated: "2026-11-06"
 owner: "Boss"
 ---
 
@@ -108,3 +108,4 @@ Privacy: match data / CV / G-Log = local only; deck แสดง identity + publ
 | Version | Date | Summary |
 | --- | --- | --- |
 | 2.0.0-draft | 2026-07-19 | changelog table added per Step-5 SOP (G1.5) |
+| 2.0.0 | 2026-11-06 | status `draft` → `active`: referenced as the design SSOT (CLAUDE.md, code and sibling docs) and describes the shipped deck; not marked accepted because no owner approval is recorded |

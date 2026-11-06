@@ -1,9 +1,9 @@
 ---
 title: "IMPLEMENTATION PLAN: DXGI Desktop Duplication Migration"
 doc_id: "IMPL-PLAN-DXGI-migration"
-status: "draft"
-version: "0.1.0"
-updated: "2026-06-28"
+status: "historical"
+version: "0.1.1"
+updated: "2026-11-06"
 owner: "Boss"
 source_of_truth: true
 related_docs: ["ADR-13-dxgi-capture-migration", "ADR-10-hybrid-ingestion-resilience", "ADR-05"]
@@ -349,3 +349,4 @@ context: |
 | Version | Date | Summary |
 |---|---|---|
 | 0.1.0 | 2026-06-28 | Initial plan — 4 phases, 18 tasks, 7 sub-tasks, ~46 story points |
+| 0.1.1 | 2026-11-06 | status `draft` → `historical`: DXGI capture shipped (ADR-13); plan kept for history |

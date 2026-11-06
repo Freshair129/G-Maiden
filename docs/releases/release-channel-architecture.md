@@ -1,9 +1,9 @@
 ---
 title: "G-Maiden Release Channel Architecture"
 doc_id: "release-channel-architecture"
-status: "draft"
-version: "0.1.0"
-updated: "2026-07-23"
+status: "active"
+version: "0.1.1"
+updated: "2026-11-06"
 owner: "Boss"
 related_docs: ["RELEASE-GOVERNANCE"]
 ---
@@ -162,3 +162,4 @@ The desktop currently checks the signed `stable` manifest; account state does no
 | Version | Date | Summary |
 | --- | --- | --- |
 | 0.1.0 | 2026-07-23 | Initial release-channel and artifact-promotion architecture |
+| 0.1.1 | 2026-11-06 | status `draft` → `active`: cited by CLAUDE.md as the release design; candidate-release, promote-release and the dev/stable manifests implement it |
