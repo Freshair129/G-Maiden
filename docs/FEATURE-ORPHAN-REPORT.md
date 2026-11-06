@@ -3,7 +3,7 @@
 # FEATURE-ORPHAN-REPORT
 
 > **GENERATED — do not hand-edit; re-run tools/doc-graph/orphan-report.mjs**  
-> Generated `2026-11-06T01:16:17.214Z` · candidates=18
+> Generated `2026-11-06T03:42:00.357Z` · candidates=18
 
 ## Summary
 
@@ -11,9 +11,9 @@
 | --- | --- |
 | anchored | 5 |
 | planned | 9 |
-| weakly-anchored | 1 |
+| weakly-anchored | 0 |
 | superseded | 0 |
-| archived | 3 |
+| archived | 4 |
 | orphan-candidate | 0 |
 | confirmed-orphan | 0 |
 
@@ -21,7 +21,7 @@
 
 | ID | Path | Lifecycle | Classification | Strong anchors | Weak anchors | Replacement | Reason |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| CR-004-voice-command-browser | docs/change request/CR-004-voice-command-browser.md | — | weakly-anchored | — | docs/architecture/adr/ADR-15-command-deck-hud-v2-design-system.md | — | Only active document references remain; no strong registry/code anchor found. |
+| CR-004-voice-command-browser | docs/change request/CR-004-voice-command-browser.md | historical | archived | — | — | — | Lifecycle explicitly marks the document as retained history. |
 | FEAT-G-COACH | docs/features/FEAT-G-COACH.md | active | planned | feature-ledger, features-readme, project-feature-map | docs/features/README.md, docs/product/mvp-backlog.md, docs/product/roadmap.md, docs/features/G-SERIES-DATA-LINEAGE.md | — | Document is explicitly planned and remains visible in active registry/docs. |
 | FEAT-G-DAMAGE | docs/features/FEAT-G-DAMAGE.md | draft | archived | feature-ledger, code-evidence, features-readme | docs/architecture/adr/ADR-19-local-hud-observation-and-action-lethality.md, docs/change request/CR-035-selected-target-hud-cv-and-action-lethality.md, docs/features/G-SERIES-DATA-LINEAGE.md, docs/features/README.md, docs/product/competitive-brief.md, docs/README.md | — | Lifecycle explicitly marks the document as retained history. |
 | FEAT-G-FRIENDS | docs/features/FEAT-G-FRIENDS.md | active | anchored | features-readme | docs/DOC-INDEX.md, docs/features/FEAT-G-PARTY.md, docs/features/G-SERIES-DATA-LINEAGE.md, docs/features/README.md, docs/operations/g-party-social-operations.md, docs/product/mvp-backlog.md, docs/product/mvp-decisions.md, docs/product/product-requirements.md, docs/product/software-requirements-specification.md, docs/superpowers/plans/2026-11-01-g-party-friends.md | — | At least one strong anchor exists (registry and/or code evidence). |

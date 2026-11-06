@@ -2,8 +2,8 @@
 title: "FEAT-G-SENSORY — Overlay & Hardware Optimization"
 doc_id: "FEAT-G-SENSORY"
 status: "active"
-version: "0.2.9"
-updated: 2026-10-30
+version: "0.2.10"
+updated: 2026-11-06
 owner: "Boss"
 source_of_truth: false
 complexity: "C-2"
@@ -34,7 +34,7 @@ risk: "MEDIUM"
 
 ### 2b. Resource Governor (TDD §7)
 
-วัดทุก **1 วินาที** ([`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs) [`POLL_INTERVAL_S`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L45) `= 1`) → emit `resource-stats`
+วัดทุก **1 วินาที** ([`governor.rs`](file:///g:/G-Maiden/src-tauri/src/governor.rs) [`POLL_INTERVAL_S`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L50) `= 1`) → emit `resource-stats`
 event ไปยัง control window แล้วเช็ค budget:
 
 | Resource | Limit | Mitigation |
@@ -94,12 +94,12 @@ Global shortcuts จริงจาก [`main.rs`](file:///g:/G-Maiden/src-tauri
 - UI state → React overlay (Tauri events: `listen('core-event', ...)`)
 - Render commands → GPU-composited transparent window
 - Announcer pack banner → overlay: other packs retain the existing image path. VRZO uses the selected clip/event and decoded-audio SHA-256 to resolve one of 21 bundled muted composite WebM visuals; playback identity and session/pack scope fence starts and stops. A normal completion allows ≤3.2 s silent outro, while cancellation or scope change clears it; same-scope announcer replacement uses the bounded retirement below. Inventory provides a variant picker when VRZO is equipped. Matching a catalog hash does not assert Store signature or entitlement. WebView2 alpha/mute, cold timing, live sync and resource acceptance remain NOT_RUN; see [[vrzo-banner-validation]] (`docs/operations/vrzo-banner-validation.md`).
-- [`ResourceStats`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L180) `{ ram_mb, cpu_pct, cpu_group_processes, over_budget, gpu_pct, gpu_temp_c, vram_used_mb, vram_total_mb }`
-  (`cpu_group_processes` เป็น `i32`; ค่า `-1` หมายถึงอ่าน Job Object group accounting ใน sample นั้นไม่สำเร็จ แม้ cap ยัง active หลัง startup; ดู [`measure()`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L276). `cpu_pct` และ sensor fields เป็น `f64`.) → emit `resource-stats` ไปยัง control window
+- [`ResourceStats`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L244) `{ ram_mb, cpu_pct, cpu_group_processes, over_budget, gpu_pct, gpu_temp_c, vram_used_mb, vram_total_mb }`
+  (`cpu_group_processes` เป็น `i32`; ค่า `-1` หมายถึงอ่าน Job Object group accounting ใน sample นั้นไม่สำเร็จ แม้ cap ยัง active หลัง startup; ดู [`measure()`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L364). `cpu_pct` และ sensor fields เป็น `f64`.) → emit `resource-stats` ไปยัง control window
 
 > **สถานะ (2026-07): ไม่มีฟิลด์ `est_fps_impact_pct`** — struct จริงคือ
 > `ResourceStats` ข้างบน. GPU load/temp + VRAM เป็นฟิลด์จริงที่ป้อนโดย
-> [`gpu-feeder`](file:///g:/G-Maiden/gpu-feeder/) sidecar (nvidia-smi → `POST /telemetry` → [`governor::ingest_gpu`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L319),
+> [`gpu-feeder`](file:///g:/G-Maiden/gpu-feeder/) sidecar (nvidia-smi → `POST /telemetry` → [`governor::ingest_gpu`](file:///g:/G-Maiden/src-tauri/src/governor.rs#L411),
 > staleness 30s; main app ไม่รัน nvidia-smi เอง). `-1` = ไม่มีค่า → footer แสดง "—".
 
 ## 5. Visual Design
@@ -218,3 +218,4 @@ Local visual receipts distinguish warmed/cold, wait count, first nontransparent 
 | 0.2.7 | 2026-10-29 | Document VRZO visual lifecycle and pending native acceptance; align active RAM and operating CPU cap with MVP. |
 | 0.2.8 | 2026-10-30 | Record larger60fps ID visuals, predictive bounded cache and owner-authorized visual/audio retirement. |
 | 0.2.9 | 2026-10-30 | Record revision4 paused decoder preparation, VP8 media and bounded natural-completion grace. |
+| 0.2.10 | 2026-11-06 | relinked 4 code symbol anchor(s) to the symbol's current definition (or dropped the line anchor where the symbol no longer exists) — no content change |

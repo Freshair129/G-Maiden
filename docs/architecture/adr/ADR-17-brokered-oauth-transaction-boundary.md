@@ -1,11 +1,11 @@
 ---
 title: "ADR-17: Supabase OAuth Server Transaction Boundary"
 doc_id: "ADR-17-brokered-oauth-transaction-boundary"
-version: "0.4.3b"
+version: "0.4.4b"
 created_at: "2026-07-21T20:30:58+07:00,ATHER"
 last_update: "2026-07-22T13:45:00+07:00,ATHER"
 status: "active"
-updated: "2026-07-22"
+updated: "2026-11-06"
 owner: "Boss"
 source_of_truth: true
 attributes:
@@ -130,7 +130,7 @@ sequenceDiagram
 random client state, exact redirect match, and protected token storage. This is the native-app
 profile permitted by RFC 8252; HTTPS is required for remotely reachable redirects, while the local
 loopback listener remains HTTP because it never leaves the host. The current listener is already
-bound to `127.0.0.1` in [`gsi.rs:L422`](file:///g:/G-Maiden/src-tauri/src/gsi.rs#L422).
+bound to `127.0.0.1` in [`gsi.rs:L422`](file:///g:/G-Maiden/src-tauri/src/gsi.rs).
 
 The callback is not trusted merely because it arrives on loopback. Before exchange it must bind the
 received `state` to the locally stored state and original PKCE verifier, consume the transaction once,
@@ -189,3 +189,4 @@ hosted capability instead of a custom broker once it is enabled and configured.
 | 0.4.1b | 2026-07-21 | beta | Implemented legacy callback state binding: issuer-created state is stored in the single-use native gate and exact-matched before code exchange. | ATHER |
 | 0.4.2b | 2026-07-21 | beta | Bounded OAuth state input before the native transaction is armed; Desktop frontend, Rust tests, and clippy pass. | ATHER |
 | 0.4.3b | 2026-07-22 | beta | Normalized reader-facing authorization wording from GMAD to G-Maiden while preserving technical identifiers and linked CR names. | ATHER |
+| 0.4.4b | 2026-11-06 | beta | relinked code symbol anchors to current definitions (or dropped the line anchor where the symbol no longer exists) — no content change | Claude |
