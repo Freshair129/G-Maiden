@@ -2,7 +2,7 @@
 title: "G-Maiden — Engineering Spec"
 doc_id: "engineering-spec"
 status: "active"
-version: "0.3.5"
+version: "0.3.6"
 updated: 2026-11-06
 owner: "Boss"
 source_of_truth: false
@@ -216,9 +216,9 @@ MVP own-stat cloud allowlist applies to manual G-Master advice only.
 
 ## 7. Orchestrator — Role-based Multi-Platform Agent Dispatch
 
-> ADR: [ADR-O-005](../orchestration/docs/ADR-O-005--provider-registry.md) ·
-> Spec: [SPEC--PROVIDER-REGISTRY](../orchestration/docs/SPEC--PROVIDER-REGISTRY.md) ·
-> Guide: [GUIDE--ADDING-PROVIDER](../orchestration/docs/GUIDE--ADDING-PROVIDER.md)
+> ADR: [ADR-O-005](https://github.com/Freshair129/g-orchestra/blob/main/docs/ADR-O-005--provider-registry.md) ·
+> Spec: [SPEC--PROVIDER-REGISTRY](https://github.com/Freshair129/g-orchestra/blob/main/docs/SPEC--PROVIDER-REGISTRY.md) ·
+> Guide: [GUIDE--ADDING-PROVIDER](https://github.com/Freshair129/g-orchestra/blob/main/docs/GUIDE--ADDING-PROVIDER.md)
 
 G-Maiden ใช้ **G-Orch** orchestrator สำหรับจัดการ development agents (AI ที่เขียน code,
 review, และ plan). G-Orch dispatch task ผ่าน **role-based provider registry** —
@@ -269,7 +269,7 @@ Role ประกาศ `requires`; Provider ประกาศ `capabilities`.
 | Full-agent | claude, codex, antigravity | ชี้ doc paths ให้ agent อ่านเอง |
 | Text-only | ollama, openrouter | Inline scaffold + small-model rules |
 
-**Implementation:** [`orchestration/providers.mjs`](file:///g:/G-Maiden/orchestration/providers.mjs), [`orchestration/config.json`](file:///g:/G-Maiden/orchestration/config.json), [`orchestration/engine.mjs`](file:///g:/G-Maiden/orchestration/engine.mjs)
+**Implementation:** [`orchestration/providers.mjs`](https://github.com/Freshair129/g-orchestra/blob/main/providers.mjs), [`orchestration/config.json`](https://github.com/Freshair129/g-orchestra/blob/main/config.json), [`orchestration/engine.mjs`](https://github.com/Freshair129/g-orchestra/blob/main/engine.mjs)
 
 ### 7.6 Live Tauri events (command deck) & GID/account contract
 
@@ -353,3 +353,4 @@ Local visual receipts distinguish warmed/cold, wait count, first nontransparent 
 | 0.3.3 | 2026-10-30 | Record larger60fps ID visuals, predictive bounded cache and owner-authorized visual/audio retirement. |
 | 0.3.4 | 2026-10-30 | Record revision4 paused decoder preparation, VP8 media and bounded natural-completion grace. |
 | 0.3.5 | 2026-11-06 | Align the Definition of Done RAM gate with the accepted 900,000,000-byte aggregate Working Set ceiling (MVP decision v0.5.0); it still read 400,000,000 bytes (#134). |
+| 0.3.6 | 2026-11-06 | Point the provider-registry ADR/spec/guide links at the G-Orchestra repository after `orchestration/` moved out of this repo (#134). |
